@@ -342,6 +342,11 @@ fn appendSource(buf: *std.ArrayList(u8), gpa: std.mem.Allocator, source: []const
 /// Renders the source inside a ```botopink code block.
 /// When `cursor` is non-null, a line with `↑` is printed immediately after
 /// the cursor's line, aligned to `cursor.character` — matching Gleam's style.
+///
+/// Edge cases handled:
+///   • Source ending with `\n` — the trailing empty segment is stripped.
+///   • Cursor column beyond line length — spaces extend past visible content.
+///   • Cursor on the last line (with or without trailing `\n`).
 fn appendSourceWithCursor(
     buf: *std.ArrayList(u8),
     gpa: std.mem.Allocator,
@@ -350,26 +355,32 @@ fn appendSourceWithCursor(
 ) !void {
     try buf.appendSlice(gpa, "----- SOURCE\n```botopink\n");
 
-    var line_idx: u32 = 0;
-    var it = std.mem.splitScalar(u8, source, '\n');
-    while (it.next()) |line| {
-        // Skip the empty trailing segment produced by a final '\n'.
-        if (it.index == null and line.len == 0) break;
+    // Collect all lines explicitly so we can strip the trailing empty segment
+    // that `splitScalar` produces when source ends with '\n', without relying
+    // on iterator-internal state (it.index) which can be version-sensitive.
+    var lines: std.ArrayList([]const u8) = .empty;
+    defer lines.deinit(gpa);
 
+    var it = std.mem.splitScalar(u8, source, '\n');
+    while (it.next()) |line| try lines.append(gpa, line);
+
+    // Drop a trailing empty segment produced by a final '\n'.
+    if (lines.items.len > 0 and lines.items[lines.items.len - 1].len == 0)
+        _ = lines.pop();
+
+    for (lines.items, 0..) |line, i| {
+        const line_idx: u32 = @intCast(i);
         try buf.appendSlice(gpa, line);
         try buf.append(gpa, '\n');
 
         if (cursor) |cur| {
             if (cur.line == line_idx) {
-                // Pad spaces up to cursor column, then ↑.
                 var col: u32 = 0;
                 while (col < cur.character) : (col += 1)
                     try buf.append(gpa, ' ');
                 try buf.appendSlice(gpa, "↑\n");
             }
         }
-
-        line_idx += 1;
     }
 
     try buf.appendSlice(gpa, "```\n\n");

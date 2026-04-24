@@ -143,7 +143,10 @@ pub fn definition(
         const tok = tokens[i];
         var is_decl_kw = false;
         for (decl_kinds) |k| {
-            if (tok.kind == k) { is_decl_kw = true; break; }
+            if (tok.kind == k) {
+                is_decl_kw = true;
+                break;
+            }
         }
         if (!is_decl_kw) continue;
 
@@ -224,7 +227,10 @@ fn identAt(source: []const u8, pos: proto.Position) ?[]const u8 {
     const offset = lsp_types.positionToOffset(source, pos);
     var i: usize = 0;
     while (i < source.len) {
-        if (!isIdentStart(source[i])) { i += 1; continue; }
+        if (!isIdentStart(source[i])) {
+            i += 1;
+            continue;
+        }
         const start = i;
         while (i < source.len and isIdentCont(source[i])) i += 1;
         if (offset >= start and offset < i) return source[start..i];
@@ -333,10 +339,15 @@ pub fn signatureHelp(
                 depth -= 1;
             },
             '(' => {
-                if (depth == 0) { paren_idx = i; break; }
+                if (depth == 0) {
+                    paren_idx = i;
+                    break;
+                }
                 depth -= 1;
             },
-            ',' => if (depth == 0) { active_param += 1; },
+            ',' => if (depth == 0) {
+                active_param += 1;
+            },
             else => {},
         }
     }
@@ -416,7 +427,10 @@ pub fn inlayHints(
         const tok = tokens[i];
         var is_decl = false;
         for (decl_kinds) |k| {
-            if (tok.kind == k) { is_decl = true; break; }
+            if (tok.kind == k) {
+                is_decl = true;
+                break;
+            }
         }
         if (!is_decl) continue;
 
@@ -433,7 +447,10 @@ pub fn inlayHints(
             name_tok.col + name_tok.lexeme.len,
         );
 
-        if (!posInRange(hint_pos, range)) { i = j; continue; }
+        if (!posInRange(hint_pos, range)) {
+            i = j;
+            continue;
+        }
 
         // Find the binding and render its type.
         for (bindings) |b| {
@@ -470,14 +487,34 @@ fn posInRange(pos: proto.Position, range: proto.Range) bool {
 /// The prefix typed so far (the partial identifier before the cursor) is used
 /// to filter candidates. Caller owns the returned slice and all `label`/`detail`
 /// strings inside each item.
+///
+/// Returns an empty slice when the cursor is inside a string literal or when
+/// the cursor is positioned on / immediately before a numeric literal.
 pub fn completion(
     gpa: std.mem.Allocator,
     source: []const u8,
     pos: proto.Position,
     bindings: []const comptime_pipeline.TypedBinding,
 ) ![]proto.CompletionItem {
-    // Extract the partial word before the cursor as a filter prefix.
+    const offset = lsp_types.positionToOffset(source, pos);
+
+    // ── guard: cursor inside a string literal ─────────────────────────────────
+    if (cursorInString(source, offset))
+        return gpa.alloc(proto.CompletionItem, 0);
+
+    // ── guard: cursor inside a comment ────────────────────────────────────────
+    if (cursorInComment(source, pos))
+        return gpa.alloc(proto.CompletionItem, 0);
+
+    // ── guard: cursor on a numeric literal ────────────────────────────────────
+    // Case A: prefix itself starts with a digit (cursor is inside/after a number).
+    // Case B: prefix is empty but the character at the cursor is a digit
+    //         (cursor is just before a number literal, e.g. `{ |42 }`).
     const prefix = prefixAt(source, pos);
+    if (prefix.len > 0 and isDigit(prefix[0]))
+        return gpa.alloc(proto.CompletionItem, 0);
+    if (prefix.len == 0 and offset < source.len and isDigit(source[offset]))
+        return gpa.alloc(proto.CompletionItem, 0);
 
     var items: std.ArrayList(proto.CompletionItem) = .empty;
     errdefer {
@@ -504,6 +541,71 @@ pub fn completion(
     }
 
     return items.toOwnedSlice(gpa);
+}
+
+/// Returns true if `offset` (byte index into `source`) falls inside a
+/// double-quoted string literal.  Handles `\"` escapes; strings cannot span
+/// newlines so a bare `\n` also closes an open string.
+fn cursorInString(source: []const u8, offset: usize) bool {
+    var in_string = false;
+    var i: usize = 0;
+    while (i < offset) {
+        const c = source[i];
+        if (in_string) {
+            if (c == '\\' and i + 1 < source.len) {
+                i += 2; // skip escape sequence
+                continue;
+            }
+            if (c == '"' or c == '\n') in_string = false;
+        } else {
+            if (c == '"') in_string = true;
+        }
+        i += 1;
+    }
+    return in_string;
+}
+
+/// Returns true if the cursor at `pos` is inside a line comment (`//`).
+/// Locates the start of the cursor's line and scans forward until the cursor
+/// position to check if `//` appears before it (outside of a string).
+fn cursorInComment(source: []const u8, pos: proto.Position) bool {
+    const offset = lsp_types.positionToOffset(source, pos);
+
+    // Find the start of the current line
+    var line_start: usize = offset;
+    while (line_start > 0 and source[line_start - 1] != '\n') {
+        line_start -= 1;
+    }
+
+    // Scan from line start to cursor position
+    var in_string = false;
+    var i: usize = line_start;
+    while (i < offset) {
+        const c = source[i];
+
+        // Track string state (but don't care about closing strings here)
+        if (in_string) {
+            if (c == '\\' and i + 1 < offset) {
+                i += 2; // skip escape sequence
+                continue;
+            }
+            if (c == '"') in_string = false;
+        } else {
+            if (c == '"') {
+                in_string = true;
+            } else if (c == '/' and i + 1 < offset and source[i + 1] == '/') {
+                // Found `//` before cursor position (and not inside a string)
+                return true;
+            }
+        }
+        i += 1;
+    }
+
+    return false;
+}
+
+fn isDigit(c: u8) bool {
+    return c >= '0' and c <= '9';
 }
 
 fn bindingCompletionKind(b: comptime_pipeline.TypedBinding) u32 {

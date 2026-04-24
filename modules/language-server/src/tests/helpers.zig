@@ -26,11 +26,37 @@ pub fn range(sl: u32, sc: u32, el: u32, ec: u32) proto.Range {
     return .{ .start = pos(sl, sc), .end = pos(el, ec) };
 }
 
-/// Compila `source` e devolve um handle que o chamador deve `.deinit(gpa)`.
+/// Compila `source` (módulo único) e devolve um handle que o chamador deve `.deinit(gpa)`.
 pub fn compile(gpa: std.mem.Allocator, source: []const u8) !CompileHandle {
     var lsp_compiler = compiler_mod.LspCompiler.init(gpa);
     const entries = [_]compiler_mod.ModuleEntry{.{ .uri = TEST_URI, .source = source }};
     const result = try lsp_compiler.compile(&entries);
+    return .{ .result = result };
+}
+
+/// Compila múltiplos módulos juntos e devolve um handle que o chamador deve `.deinit(gpa)`.
+///
+/// Os módulos são compilados em ordem: os primeiros servem como dependências
+/// para os posteriores, exatamente como `TestProject.add_module("dep", dep)` no Gleam.
+/// O URI do módulo principal (último da lista) é `TEST_URI`; os demais recebem
+/// `"file:///dep_{i}.bp"`.
+///
+/// Exemplo:
+/// ```zig
+/// const dep_src = "pub fn greet() -> string { return \"hi\"; }";
+/// const main_src = "use { greet } from \"file:///dep_0.bp\"; val x = greet();";
+/// var c = try h.compileMulti(gpa, &.{
+///     .{ .uri = "file:///dep_0.bp", .source = dep_src },
+///     .{ .uri = TEST_URI,           .source = main_src },
+/// });
+/// defer c.deinit(gpa);
+/// ```
+pub fn compileMulti(
+    gpa: std.mem.Allocator,
+    entries: []const compiler_mod.ModuleEntry,
+) !CompileHandle {
+    var lsp_compiler = compiler_mod.LspCompiler.init(gpa);
+    const result = try lsp_compiler.compile(entries);
     return .{ .result = result };
 }
 

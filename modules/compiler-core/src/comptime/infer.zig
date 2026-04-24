@@ -77,8 +77,28 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
         try registerTypeDecl(env, decl);
     }
     for (program.decls) |decl| {
-        if (try inferDeclTyped(env, decl)) |b| {
-            try list.append(env.arena, b);
+        switch (decl) {
+            // `resolveImports` (called before inference in comptime.zig) already
+            // called `env.bind(name, ty)` for each symbol in the `use` statement.
+            // Emit one TypedBinding per import so the LSP completion engine can
+            // see them — the dummy `name = ""` binding is gone.
+            .use => |u| {
+                for (u.imports) |name| {
+                    if (env.lookup(name)) |ty| {
+                        try list.append(env.arena, .{
+                            .name = name,
+                            .type_ = ty,
+                            .typedExpr = null,
+                            .decl = decl,
+                        });
+                    }
+                }
+            },
+            else => {
+                if (try inferDeclTyped(env, decl)) |b| {
+                    try list.append(env.arena, b);
+                }
+            },
         }
     }
     return list.toOwnedSlice(env.arena);
@@ -136,9 +156,8 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
             const typeName = try buildInterfaceDeclName(env, d);
             return .{ .name = d.name, .type_ = try env.namedType(typeName), .typedExpr = null, .decl = decl };
         },
-        .use => {
-            return .{ .name = "", .type_ = try env.namedType("void"), .typedExpr = null, .decl = decl };
-        },
+        // Handled in `inferProgramTyped` — each import name is looked up in env.
+        .use => return null,
         else => return null,
     }
 }
