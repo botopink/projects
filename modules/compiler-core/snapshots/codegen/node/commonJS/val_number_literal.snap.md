@@ -12,3 +12,7 @@ const x = 42;
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

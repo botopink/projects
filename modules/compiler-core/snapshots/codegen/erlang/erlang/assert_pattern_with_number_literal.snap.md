@@ -12,3 +12,7 @@ fn f() {
 f() ->
     case Answer of 42 -> Answer; _ -> erlang:throw(Error(<<"not 42">>)) end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

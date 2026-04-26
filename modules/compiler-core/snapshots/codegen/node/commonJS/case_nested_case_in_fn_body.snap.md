@@ -34,3 +34,7 @@ function process(x) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

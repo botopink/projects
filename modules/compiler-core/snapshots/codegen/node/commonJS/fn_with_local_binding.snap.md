@@ -18,3 +18,7 @@ function double(x) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

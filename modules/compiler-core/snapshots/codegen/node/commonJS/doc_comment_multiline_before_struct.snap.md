@@ -21,3 +21,7 @@ class Account {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

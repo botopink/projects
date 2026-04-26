@@ -10,3 +10,7 @@ val t: #(string, string) = #("56454", "85484");
 t() ->
     {<<"56454">>, <<"85484">>}.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

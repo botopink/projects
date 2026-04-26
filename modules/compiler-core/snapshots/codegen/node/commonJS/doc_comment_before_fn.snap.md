@@ -19,3 +19,7 @@ function greet(name) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

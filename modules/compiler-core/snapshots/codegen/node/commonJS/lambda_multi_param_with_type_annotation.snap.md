@@ -22,3 +22,7 @@ function main() {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

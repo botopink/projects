@@ -12,3 +12,7 @@ fn process(#(x, y): #(i32, i32)) -> i32 {
 process({X, Y}) ->
     X.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

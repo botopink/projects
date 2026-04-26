@@ -46,3 +46,7 @@ scale_$1(Value) ->
     Factor = 3,
     (Value * Factor).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

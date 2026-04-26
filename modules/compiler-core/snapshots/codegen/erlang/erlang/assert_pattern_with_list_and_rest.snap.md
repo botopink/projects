@@ -12,3 +12,7 @@ fn f() {
 f() ->
     case Items of [First, Second | Rest] -> Items; _ -> [] end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -18,3 +18,7 @@ exports.add = add;
 export declare function add(a: , b: ): i32;
 
 ```
+
+----- RUN LOG -----
+```logs
+```

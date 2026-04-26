@@ -15,6 +15,10 @@ HOST() ->
     <<"localhost">>.
 ```
 
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```
+
 ----- SOURCE CODE -- main.bp
 ```botopink
 use {PORT, HOST} from "config";
@@ -34,3 +38,7 @@ addr() ->
 port() ->
     PORT.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

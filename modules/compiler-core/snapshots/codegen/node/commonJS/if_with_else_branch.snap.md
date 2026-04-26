@@ -18,3 +18,7 @@ function abs(n) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

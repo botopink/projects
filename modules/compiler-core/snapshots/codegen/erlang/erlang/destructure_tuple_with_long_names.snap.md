@@ -18,3 +18,7 @@ get_coordinates() ->
 extract_coordinates() ->
     {Longitude, Latitude} = get_coordinates().
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

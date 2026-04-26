@@ -19,3 +19,7 @@ export declare const VERSION: i32;
 export declare const HOST: string;
 
 ```
+
+----- RUN LOG -----
+```logs
+```

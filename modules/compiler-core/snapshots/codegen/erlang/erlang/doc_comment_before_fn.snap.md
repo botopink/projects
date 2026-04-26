@@ -15,3 +15,7 @@ fn greet(name: string) -> string {
 greet(Name) ->
     Name.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -419,6 +419,18 @@ const Emitter = struct {
 
                 .call => |cc| {
                     if (cc.is_builtin) {
+                        if (std.mem.eql(u8, cc.callee, "print")) {
+                            // @print(arg1, arg2, ...) becomes io:format("~p~n", [arg1, arg2, ...])
+                            try this.w("io:format(\"~p~n\", [");
+                            var first = true;
+                            for (cc.args) |arg| {
+                                if (!first) try this.w(", ");
+                                try this.emitExpr(arg.value.*);
+                                first = false;
+                            }
+                            try this.w("])");
+                            return;
+                        }
                         if (std.mem.eql(u8, cc.callee, "todo")) {
                             try this.w("erlang:error({todo, ");
                             if (cc.args.len > 0) {

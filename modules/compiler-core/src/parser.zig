@@ -2572,7 +2572,7 @@ pub const Parser = struct {
                         }
                         break :rhs_blk Expr{ .call = .{ .loc = locFromToken(nameTok), .kind = .{ .call = .{
                             .receiver = null,
-                            .callee = nameTok.lexeme,
+                            .callee = nameTok.lexeme[1..],
                             .is_builtin = false,
                             .args = args,
                             .trailing = trailing,
@@ -2868,7 +2868,7 @@ pub const Parser = struct {
                 .loc = locFromToken(nameTok),
                 .kind = .{ .call = .{
                     .receiver = null,
-                    .callee = nameTok.lexeme,
+                    .callee = nameTok.lexeme[1..],
                     .is_builtin = true,
                     .args = args,
                     .trailing = trailing,

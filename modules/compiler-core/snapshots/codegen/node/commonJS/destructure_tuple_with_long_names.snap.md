@@ -25,3 +25,7 @@ function extract_coordinates() {
 
 
 ```
+
+----- RUN LOG -----
+```logs
+```

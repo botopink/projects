@@ -22,3 +22,7 @@ const Direction = Object.freeze({
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

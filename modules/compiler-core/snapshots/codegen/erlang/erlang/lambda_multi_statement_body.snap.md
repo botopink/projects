@@ -12,3 +12,7 @@ fn process(f: syntax fn(x: i32) -> i32) -> i32 {
 process(F) ->
     f(5).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

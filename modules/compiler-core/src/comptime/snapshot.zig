@@ -506,8 +506,10 @@ pub fn buildSnapshot(allocator: std.mem.Allocator, output: comptimeMod.ComptimeO
                 try items.append(value);
             }
 
-            var root = std.json.ObjectMap.init(ja);
-            try root.put("declarations", .{ .array = items });
+            const empty_keys: []const []const u8 = &.{};
+            const empty_values: []const std.json.Value = &.{};
+            var root = try std.json.ObjectMap.init(ja, empty_keys, empty_values);
+            try root.put(ja, "declarations", .{ .array = items });
 
             const json = try std.json.Stringify.valueAlloc(
                 allocator,

@@ -27,3 +27,7 @@ function classify(n) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

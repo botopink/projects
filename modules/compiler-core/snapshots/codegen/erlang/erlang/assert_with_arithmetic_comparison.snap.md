@@ -12,3 +12,7 @@ fn f() {
 f() ->
     true = (((1.0 + 2.0) =:= 3.0)).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -12,3 +12,7 @@ const greeting = "Hello, World!";
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

@@ -14,3 +14,7 @@ increment() ->
     Count = 0,
     Count = Count + 1.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

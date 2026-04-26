@@ -17,3 +17,7 @@ describe(P) ->
     {X, Y} = P,
     X.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

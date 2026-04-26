@@ -16,3 +16,7 @@ function either(a, b) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

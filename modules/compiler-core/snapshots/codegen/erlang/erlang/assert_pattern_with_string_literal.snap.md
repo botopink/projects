@@ -12,3 +12,7 @@ fn f() {
 f() ->
     case Greeting of <<"hello">> -> Greeting; _ -> erlang:throw(Error(<<"not hello">>)) end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -16,3 +16,7 @@ function getFirst(t) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

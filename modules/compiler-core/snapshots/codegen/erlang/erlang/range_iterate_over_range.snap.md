@@ -16,3 +16,7 @@ sumTo(N) ->
         I
     end, lists:seq(0, N)).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

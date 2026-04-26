@@ -16,3 +16,7 @@ function describe(n) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

@@ -10,3 +10,7 @@ val sum = 1 + 2;
 sum() ->
     (1 + 2).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

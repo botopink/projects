@@ -12,3 +12,7 @@ fn apply(f: syntax fn(x: i32) -> i32) -> i32 {
 apply(F) ->
     f(10).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

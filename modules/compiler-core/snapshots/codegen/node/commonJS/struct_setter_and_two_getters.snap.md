@@ -37,3 +37,7 @@ class Temperature {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

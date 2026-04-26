@@ -18,7 +18,7 @@
             "kind": {
               "call": {
                 "receiver": null,
-                "callee": "@sizeOf",
+                "callee": "sizeOf",
                 "is_builtin": true,
                 "args": [
                   {
@@ -61,7 +61,7 @@
             "kind": {
               "call": {
                 "receiver": null,
-                "callee": "@typeName",
+                "callee": "typeName",
                 "is_builtin": true,
                 "args": [
                   {
@@ -104,7 +104,7 @@
             "kind": {
               "call": {
                 "receiver": null,
-                "callee": "@src",
+                "callee": "src",
                 "is_builtin": true,
                 "args": [],
                 "trailing": []

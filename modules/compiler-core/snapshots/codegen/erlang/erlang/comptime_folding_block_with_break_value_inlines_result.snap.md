@@ -24,3 +24,7 @@ main(_) ->
 
 %% comptime val t
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

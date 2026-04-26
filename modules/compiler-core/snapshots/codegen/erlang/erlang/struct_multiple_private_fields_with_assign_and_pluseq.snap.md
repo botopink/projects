@@ -30,3 +30,7 @@ deposit(Amount) ->
 setOwner(Name) ->
     %% self._owner = ....
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

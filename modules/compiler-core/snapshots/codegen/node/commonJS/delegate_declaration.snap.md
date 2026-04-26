@@ -11,3 +11,7 @@ declare fn Callback(msg: string) -> void;
 ----- TYPESCRIPT TYPEDEF -- main.d.ts
 ```typescript
 ```
+
+----- RUN LOG -----
+```logs
+```

@@ -22,3 +22,7 @@ isDefault(S) ->
     Current = Status_Active,
     Current.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

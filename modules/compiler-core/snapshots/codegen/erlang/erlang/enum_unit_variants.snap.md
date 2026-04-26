@@ -18,3 +18,7 @@ val Direction = enum {
 %%   East
 %%   West
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

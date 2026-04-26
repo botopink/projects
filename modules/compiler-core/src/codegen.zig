@@ -5,6 +5,7 @@ const commonJS = @import("./codegen/commonJS.zig");
 const erlang = @import("./codegen/erlang.zig");
 const comptimeMod = @import("./comptime.zig");
 const moduleMod = @import("./module.zig");
+const runtime = @import("./codegen/runtime.zig");
 
 pub const Module = moduleMod.Module;
 pub const ModuleOutput = moduleOutput.ModuleOutput;
@@ -22,8 +23,26 @@ pub fn generate(
 ) !std.ArrayListUnmanaged(ModuleOutput) {
     var session = try comptimeMod.compile(allocator, modules, io, config.comptimeRuntime, config.build_root);
     defer session.deinit(allocator);
-    return switch (config.targetSource) {
-        .commonJS => try commonJS.codegenEmit(allocator, session.outputs.items, config),
-        .erlang => try erlang.codegenEmit(allocator, session.outputs.items, config),
+    const outputs = try switch (config.targetSource) {
+        .commonJS => commonJS.codegenEmit(allocator, session.outputs.items, config),
+        .erlang => erlang.codegenEmit(allocator, session.outputs.items, config),
     };
+
+    // Execute generated code and capture output
+    for (outputs.items) |*output| {
+        if (output.result.comptime_err == null) {
+            output.result.run_output = switch (config.targetSource) {
+                .commonJS => runtime.executeJavaScript(allocator, output.result.js, io) catch |err| blk: {
+                    const err_msg = try std.fmt.allocPrint(allocator, "Execution error: {}", .{err});
+                    break :blk err_msg;
+                },
+                .erlang => runtime.executeErlang(allocator, output.result.js, output.name, io) catch |err| blk: {
+                    const err_msg = try std.fmt.allocPrint(allocator, "Execution error: {}", .{err});
+                    break :blk err_msg;
+                },
+            };
+        }
+    }
+
+    return outputs;
 }

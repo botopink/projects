@@ -17,3 +17,7 @@ val Drawable = interface {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

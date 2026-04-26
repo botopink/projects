@@ -41,3 +41,7 @@ function main() {
 
 
 ```
+
+----- RUN LOG -----
+```logs
+```

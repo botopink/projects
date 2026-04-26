@@ -12,3 +12,7 @@ fn f() {
 f() ->
     true = (([] =:= [])).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

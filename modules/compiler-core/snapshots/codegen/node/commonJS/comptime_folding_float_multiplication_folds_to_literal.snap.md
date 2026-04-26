@@ -23,3 +23,7 @@ const pi2 = 6.28;
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

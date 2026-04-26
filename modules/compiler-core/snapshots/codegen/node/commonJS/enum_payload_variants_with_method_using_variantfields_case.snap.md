@@ -46,3 +46,7 @@ const Shape = Object.freeze({
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

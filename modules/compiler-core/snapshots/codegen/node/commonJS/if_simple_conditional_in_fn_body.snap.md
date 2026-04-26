@@ -18,3 +18,7 @@ function sign(n) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

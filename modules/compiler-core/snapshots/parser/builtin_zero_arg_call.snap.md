@@ -31,7 +31,7 @@
                     "kind": {
                       "call": {
                         "receiver": null,
-                        "callee": "@src",
+                        "callee": "src",
                         "is_builtin": true,
                         "args": [],
                         "trailing": []

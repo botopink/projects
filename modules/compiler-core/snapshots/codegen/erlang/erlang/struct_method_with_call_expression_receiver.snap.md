@@ -26,3 +26,7 @@ setPrefix(P) ->
 log(Msg) ->
     console:log(Self__prefix, Msg).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

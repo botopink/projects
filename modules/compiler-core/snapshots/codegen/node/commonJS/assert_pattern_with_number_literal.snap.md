@@ -16,3 +16,7 @@ function f() {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

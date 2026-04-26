@@ -30,3 +30,7 @@ class Counter {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

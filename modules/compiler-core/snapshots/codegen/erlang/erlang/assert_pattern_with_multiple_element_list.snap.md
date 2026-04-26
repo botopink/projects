@@ -12,3 +12,7 @@ fn f() {
 f() ->
     case Numbers of [1, 2, 3] -> Numbers; _ -> erlang:throw(Error(<<"not matching">>)) end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

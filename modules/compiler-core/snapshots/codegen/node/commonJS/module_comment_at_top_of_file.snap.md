@@ -23,3 +23,7 @@ function capitalize(s) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

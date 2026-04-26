@@ -18,3 +18,7 @@ _loop() ->
         print(<<"mensagem">>)
     end, Messages).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

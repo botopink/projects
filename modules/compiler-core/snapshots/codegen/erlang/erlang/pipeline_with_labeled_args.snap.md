@@ -22,3 +22,7 @@ inc(X) ->
 main() ->
     Result = Inc(Double(1)).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

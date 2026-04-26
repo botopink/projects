@@ -12,3 +12,7 @@ const nothing = null;
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

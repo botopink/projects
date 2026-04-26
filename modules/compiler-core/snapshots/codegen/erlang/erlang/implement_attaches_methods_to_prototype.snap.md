@@ -24,3 +24,7 @@ val PersonPrintable = implement Printable for Person {
 print() ->
     Self_name.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -28,3 +28,7 @@ multiply_$1(X) ->
     Factor = 3,
     (X * Factor).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

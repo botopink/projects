@@ -21,3 +21,7 @@ const result = 30;
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

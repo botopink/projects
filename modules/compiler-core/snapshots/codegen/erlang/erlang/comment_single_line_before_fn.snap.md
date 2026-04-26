@@ -15,3 +15,7 @@ fn main() {
 main() ->
     undefined.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

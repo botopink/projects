@@ -51,3 +51,7 @@ function scale_$1(value) {
 
 
 ```
+
+----- RUN LOG -----
+```logs
+```

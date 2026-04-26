@@ -10,3 +10,7 @@ val list3 = [1, 2, ..[3, 4]];
 list3() ->
     [1, 2] ++ [3, 4].
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

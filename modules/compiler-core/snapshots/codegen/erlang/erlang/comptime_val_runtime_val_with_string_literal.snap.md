@@ -10,3 +10,7 @@ val greeting = "Hello, World!";
 greeting() ->
     <<"Hello, World!">>.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

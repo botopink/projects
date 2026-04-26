@@ -25,3 +25,7 @@ class Point {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

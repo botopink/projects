@@ -12,3 +12,7 @@ const pair = [1, "hello"];
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

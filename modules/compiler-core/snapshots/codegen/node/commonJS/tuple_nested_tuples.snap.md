@@ -12,3 +12,7 @@ const nested = [[1, 2], [3, 4]];
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

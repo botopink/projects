@@ -18,3 +18,7 @@ const Color = Object.freeze({
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

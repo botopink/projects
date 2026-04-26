@@ -10,3 +10,7 @@ val pair = #(1, "hello");
 pair() ->
     {1, <<"hello">>}.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

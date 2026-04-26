@@ -12,3 +12,7 @@ fn f() {
 f() ->
     case List of [] -> List; _ -> erlang:throw(Error(<<"not empty">>)) end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

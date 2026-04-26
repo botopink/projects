@@ -24,3 +24,7 @@ main(_) ->
 
 %% comptime val pi2
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

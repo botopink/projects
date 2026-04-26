@@ -25,3 +25,7 @@ classify(N) ->
     end,
     Result.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

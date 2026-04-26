@@ -18,3 +18,7 @@ function increment() {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

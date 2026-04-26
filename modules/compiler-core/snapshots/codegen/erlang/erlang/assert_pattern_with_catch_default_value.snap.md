@@ -12,3 +12,7 @@ fn f() {
 f() ->
     case R of {tag, Person, Name, Age} -> R; _ -> Person(<<"bob">>, 12) end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

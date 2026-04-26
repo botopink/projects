@@ -36,3 +36,7 @@ function build_$1(name) {
 
 
 ```
+
+----- RUN LOG -----
+```logs
+```

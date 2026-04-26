@@ -34,3 +34,7 @@ class Vec2 {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

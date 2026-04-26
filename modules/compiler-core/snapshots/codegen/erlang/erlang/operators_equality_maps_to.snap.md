@@ -12,3 +12,7 @@ fn isZero(n: i32) -> bool {
 isZero(N) ->
     (N =:= 0).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

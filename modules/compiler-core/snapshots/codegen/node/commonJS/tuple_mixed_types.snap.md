@@ -12,3 +12,7 @@ const t = [12, "5452"];
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

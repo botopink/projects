@@ -14,3 +14,7 @@ rest() ->
 list() ->
     [1, 2, rest].
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

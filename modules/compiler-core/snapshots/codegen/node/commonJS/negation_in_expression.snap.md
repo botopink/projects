@@ -16,3 +16,7 @@ function diff(x, y) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

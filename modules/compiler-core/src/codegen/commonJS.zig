@@ -1126,7 +1126,17 @@ const Emitter = struct {
                         const is_todo = std.mem.eql(u8, cc.callee, "todo");
                         const is_panic = std.mem.eql(u8, cc.callee, "panic");
                         const is_block = std.mem.eql(u8, cc.callee, "block");
-                        if (is_todo or is_panic) {
+                        const is_print = std.mem.eql(u8, cc.callee, "print");
+                        if (is_print) {
+                            try self.w("console.log(");
+                            var first = true;
+                            for (cc.args) |arg| {
+                                if (!first) try self.w(", ");
+                                try self.emitExpr(arg.value.*);
+                                first = false;
+                            }
+                            try self.w(")");
+                        } else if (is_todo or is_panic) {
                             const default_msg: []const u8 = if (is_todo) "not implemented" else "panic";
                             try self.w("(() => { throw new Error(");
                             if (cc.args.len > 0) {

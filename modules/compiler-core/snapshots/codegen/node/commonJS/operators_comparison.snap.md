@@ -16,3 +16,7 @@ function isPositive(n) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

@@ -16,3 +16,7 @@ function apply(f) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

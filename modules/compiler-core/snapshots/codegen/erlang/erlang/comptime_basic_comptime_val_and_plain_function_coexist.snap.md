@@ -37,3 +37,7 @@ double(N) ->
 main() ->
     R = double(21).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

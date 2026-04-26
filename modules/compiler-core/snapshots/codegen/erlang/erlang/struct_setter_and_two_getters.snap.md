@@ -20,3 +20,7 @@ val Temperature = struct {
 
 -record(Temperature, {_celsius}).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -12,3 +12,7 @@ fn extract() {
 extract() ->
     {A, B} = {12, <<"hello">>}.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

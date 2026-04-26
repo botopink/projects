@@ -53,7 +53,7 @@
                               "kind": {
                                 "call": {
                                   "receiver": null,
-                                  "callee": "@abs",
+                                  "callee": "abs",
                                   "is_builtin": true,
                                   "args": [
                                     {
@@ -86,7 +86,7 @@
                               "kind": {
                                 "call": {
                                   "receiver": null,
-                                  "callee": "@abs",
+                                  "callee": "abs",
                                   "is_builtin": true,
                                   "args": [
                                     {

@@ -12,3 +12,7 @@ fn either(a: bool, b: bool) -> bool {
 either(A, B) ->
     (A or B).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -10,3 +10,7 @@ val array: string[] = ["65454"];
 array() ->
     [<<"65454">>].
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

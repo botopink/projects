@@ -12,3 +12,7 @@ fn isPositive(n: i32) -> bool {
 isPositive(N) ->
     (N > 0).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

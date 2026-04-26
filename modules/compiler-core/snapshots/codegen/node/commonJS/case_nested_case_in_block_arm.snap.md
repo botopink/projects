@@ -30,3 +30,7 @@ const result = (() => {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

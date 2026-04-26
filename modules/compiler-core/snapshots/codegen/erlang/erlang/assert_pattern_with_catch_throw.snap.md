@@ -12,3 +12,7 @@ fn f() {
 f() ->
     case R of {tag, Person, Name, Age} -> R; _ -> erlang:throw(Error(<<"is not person">>)) end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

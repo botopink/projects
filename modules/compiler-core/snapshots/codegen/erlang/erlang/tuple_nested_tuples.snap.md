@@ -10,3 +10,7 @@ val nested = #(#(1, 2), #(3, 4));
 nested() ->
     {{1, 2}, {3, 4}}.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

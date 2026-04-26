@@ -16,3 +16,7 @@ record Unimplemented { id: i32,
 process() ->
     @todo().
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

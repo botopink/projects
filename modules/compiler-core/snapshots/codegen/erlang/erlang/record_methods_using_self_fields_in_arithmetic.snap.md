@@ -24,3 +24,7 @@ lengthSq() ->
 scale(Factor) ->
     (Self_x * Factor).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

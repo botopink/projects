@@ -5,6 +5,7 @@
 ///   ----- COMPTIME JAVASCRIPT -- name.js  (optional)
 ///   ----- JAVASCRIPT -- name.js
 ///   ----- TYPESCRIPT TYPEDEF -- name.d.ts  (optional)
+///   ----- RUN LOG -----  (optional)
 ///
 /// And for error tests:
 ///   ----- SOURCE CODE -- main.bp
@@ -62,6 +63,15 @@ pub fn buildSnapshot(alloc: std.mem.Allocator, name: []const u8, src: []const u8
                 try buf.appendSlice(alloc, ts);
                 try buf.appendSlice(alloc, "```\n");
             }
+
+            // RUN LOG section (if any)
+            if (result.run_output) |output| {
+                const runLogHdr = try std.fmt.allocPrint(alloc, "\n----- RUN LOG -----\n```logs\n", .{});
+                defer alloc.free(runLogHdr);
+                try buf.appendSlice(alloc, runLogHdr);
+                try buf.appendSlice(alloc, output);
+                try buf.appendSlice(alloc, "```\n");
+            }
         },
         .erlang => {
             // Comptime Erlang section (if any)
@@ -79,6 +89,15 @@ pub fn buildSnapshot(alloc: std.mem.Allocator, name: []const u8, src: []const u8
             try buf.appendSlice(alloc, erlHdr);
             try buf.appendSlice(alloc, result.js);
             try buf.appendSlice(alloc, "```\n");
+
+            // RUN LOG section (if any)
+            if (result.run_output) |output| {
+                const runLogHdr = try std.fmt.allocPrint(alloc, "\n----- RUN LOG -----\n```logs\n", .{});
+                defer alloc.free(runLogHdr);
+                try buf.appendSlice(alloc, runLogHdr);
+                try buf.appendSlice(alloc, output);
+                try buf.appendSlice(alloc, "```\n");
+            }
         },
     }
 

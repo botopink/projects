@@ -18,3 +18,7 @@ main() ->
     end,
     add(10, 20).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

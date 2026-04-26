@@ -36,3 +36,7 @@ function multiply_$1(x) {
 
 
 ```
+
+----- RUN LOG -----
+```logs
+```

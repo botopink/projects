@@ -9,3 +9,7 @@ declare fn Callback(msg: string) -> void;
 
 %% delegate Callback
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

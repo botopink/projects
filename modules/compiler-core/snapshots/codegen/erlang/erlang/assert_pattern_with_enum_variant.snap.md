@@ -12,3 +12,7 @@ fn f() {
 f() ->
     case Result of {tag, Ok, Value} -> Result; _ -> erlang:throw(Error(<<"not ok">>)) end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

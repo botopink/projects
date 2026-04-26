@@ -20,3 +20,7 @@ function sumTo(n) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

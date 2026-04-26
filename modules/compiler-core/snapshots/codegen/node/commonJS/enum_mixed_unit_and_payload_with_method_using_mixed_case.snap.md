@@ -34,3 +34,7 @@ const Maybe = Object.freeze({
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

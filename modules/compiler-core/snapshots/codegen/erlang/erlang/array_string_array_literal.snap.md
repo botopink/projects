@@ -10,3 +10,7 @@ val xs = ["hello", "world"];
 xs() ->
     [<<"hello">>, <<"world">>].
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

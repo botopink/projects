@@ -48,7 +48,7 @@
                 "kind": {
                   "call": {
                     "receiver": null,
-                    "callee": "@todo",
+                    "callee": "todo",
                     "is_builtin": true,
                     "args": [],
                     "trailing": []

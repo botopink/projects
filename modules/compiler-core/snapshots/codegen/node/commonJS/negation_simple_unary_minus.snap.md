@@ -16,3 +16,7 @@ function negate(x) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

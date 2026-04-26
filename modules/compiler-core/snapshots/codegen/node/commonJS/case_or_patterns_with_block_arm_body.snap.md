@@ -25,3 +25,7 @@ const parity = (() => {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

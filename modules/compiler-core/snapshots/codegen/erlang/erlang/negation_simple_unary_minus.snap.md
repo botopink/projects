@@ -12,3 +12,7 @@ fn negate(x: i32) -> i32 {
 negate(X) ->
     (-X).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

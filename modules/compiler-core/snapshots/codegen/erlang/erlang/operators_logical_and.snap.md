@@ -12,3 +12,7 @@ fn both(a: bool, b: bool) -> bool {
 both(A, B) ->
     (A and B).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

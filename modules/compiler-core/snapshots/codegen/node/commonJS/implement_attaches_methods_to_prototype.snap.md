@@ -34,3 +34,7 @@ Person.prototype.print = function() {
 
 
 ```
+
+----- RUN LOG -----
+```logs
+```

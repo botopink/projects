@@ -12,3 +12,7 @@ const msg = null;
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

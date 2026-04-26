@@ -12,3 +12,7 @@ fn allThree(a: bool, b: bool, c: bool) -> bool {
 allThree(A, B, C) ->
     ((A and B) and C).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

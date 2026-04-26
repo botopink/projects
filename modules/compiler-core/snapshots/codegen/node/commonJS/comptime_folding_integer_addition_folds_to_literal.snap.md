@@ -21,3 +21,7 @@ const v1 = 2;
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

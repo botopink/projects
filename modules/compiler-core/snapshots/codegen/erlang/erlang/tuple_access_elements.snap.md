@@ -12,3 +12,7 @@ fn getFirst(t: #(i32, string)) -> i32 {
 getFirst(T) ->
     T__0.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

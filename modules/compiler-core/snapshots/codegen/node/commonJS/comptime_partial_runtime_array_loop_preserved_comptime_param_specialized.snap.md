@@ -54,3 +54,7 @@ function execute_$1(input) {
 
 
 ```
+
+----- RUN LOG -----
+```logs
+```

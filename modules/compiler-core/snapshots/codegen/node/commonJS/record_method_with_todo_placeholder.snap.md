@@ -15,7 +15,7 @@ class Unimplemented {
     }
 
     process() {
-        return @@todo();
+        return (() => { throw new Error("not implemented") })();
     }
 }
 ```
@@ -23,4 +23,8 @@ class Unimplemented {
 ----- TYPESCRIPT TYPEDEF -- main.d.ts
 ```typescript
 
+```
+
+----- RUN LOG -----
+```logs
 ```

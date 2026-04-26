@@ -21,3 +21,7 @@ sumEvens(Arr) ->
         X
     end, Arr).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -219,6 +219,7 @@ test "js: val ---- string literal" {
 test "js: val ---- binary expression" {
     try assertJsSingle(std.testing.allocator, @src(),
         \\val sum = 1 + 2;
+        \\@print(sum);
     );
 }
 
@@ -230,6 +231,8 @@ test "js: fn ---- private function with return" {
         \\fn double(x: i32) -> i32 {
         \\    return x * 2;
         \\}
+        \\val result = double(5);
+        \\@print(result);
     );
 }
 
@@ -239,6 +242,8 @@ test "js: fn ---- pub exported function" {
         \\pub fn add(a: i32, b: i32) -> i32 {
         \\    return a + b;
         \\}
+        \\val result = add(3, 4);
+        \\@print(result);
     );
 }
 
@@ -249,6 +254,8 @@ test "js: fn ---- with local binding" {
         \\    val result = x * 2;
         \\    return result;
         \\}
+        \\val output = double(10);
+        \\@print(output);
     );
 }
 
@@ -827,7 +834,7 @@ test "js: loop ---- side-effect print in iterator" {
     try assertJsSingle(std.testing.allocator, @src(),
         \\val messages = ["Erro 404", "Sucesso 200", "Aviso 500"];
         \\loop (messages, 0..) { msg, i ->
-        \\    print("mensagem");
+        \\    @print(msg);
         \\};
     );
 }
@@ -835,7 +842,7 @@ test "js: loop ---- side-effect print in iterator" {
 test "js: loop ---- side-effect over range" {
     try assertJsSingle(std.testing.allocator, @src(),
         \\loop (0..10) { i ->
-        \\    print("item");
+        \\    @print(i);
         \\};
     );
 }
@@ -849,6 +856,7 @@ test "js: loop ---- map with break (add tax)" {
         \\    val taxa = valor * 0.15;
         \\    break valor + taxa;
         \\};
+        \\@print(precosComTaxa);
     );
 }
 
@@ -860,6 +868,7 @@ test "js: loop ---- filter with conditional break" {
         \\        break valor;
         \\    };
         \\};
+        \\@print(apenasGrandes);
     );
 }
 
@@ -869,6 +878,7 @@ test "js: loop ---- map with break simple" {
         \\val dobrados = loop (ids) { id ->
         \\    break id * 2;
         \\};
+        \\@print(dobrados);
     );
 }
 
@@ -881,6 +891,7 @@ test "js: loop ---- even numbers with break" {
         \\        break i;
         \\    };
         \\};
+        \\@print(processamento);
     );
 }
 
@@ -1678,6 +1689,31 @@ test "js: builtin ---- @panic with message" {
     try assertJsSingle(std.testing.allocator, @src(),
         \\fn fail() {
         \\    @panic("something went wrong");
+        \\}
+    );
+}
+
+test "js: builtin ---- @print single argument" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    @print("Hello, World!");
+        \\}
+    );
+}
+
+test "js: builtin ---- @print multiple arguments" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    @print("Hello", 42, true);
+        \\}
+    );
+}
+
+test "js: builtin ---- @print expression" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val x = 10;
+        \\    @print(x * 2);
         \\}
     );
 }

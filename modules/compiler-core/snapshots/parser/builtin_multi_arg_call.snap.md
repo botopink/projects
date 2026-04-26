@@ -31,7 +31,7 @@
                     "kind": {
                       "call": {
                         "receiver": null,
-                        "callee": "@min",
+                        "callee": "min",
                         "is_builtin": true,
                         "args": [
                           {
@@ -82,7 +82,7 @@
                     "kind": {
                       "call": {
                         "receiver": null,
-                        "callee": "@max",
+                        "callee": "max",
                         "is_builtin": true,
                         "args": [
                           {
@@ -133,7 +133,7 @@
                     "kind": {
                       "call": {
                         "receiver": null,
-                        "callee": "@as",
+                        "callee": "as",
                         "is_builtin": true,
                         "args": [
                           {

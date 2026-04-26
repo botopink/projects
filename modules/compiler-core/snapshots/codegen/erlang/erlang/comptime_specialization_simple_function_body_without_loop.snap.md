@@ -26,3 +26,7 @@ execute_$0(Input) ->
 execute_$1(Input) ->
     (Input + 0).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

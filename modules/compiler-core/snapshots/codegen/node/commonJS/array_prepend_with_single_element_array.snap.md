@@ -12,3 +12,7 @@ const list2 = [1, 2, ...[3]];
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

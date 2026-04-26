@@ -28,3 +28,7 @@ build_$1(Name) ->
     Prefix = <<"WARN">>,
     ((Prefix + <<": ">>) + Name).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

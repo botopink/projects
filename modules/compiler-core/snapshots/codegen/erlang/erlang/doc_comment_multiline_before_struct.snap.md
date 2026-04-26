@@ -15,3 +15,7 @@ val Account = struct { name: string, email: string };
 
 -record(Account, {name, email}).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

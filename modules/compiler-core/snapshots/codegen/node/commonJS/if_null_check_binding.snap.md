@@ -20,3 +20,7 @@ function getName(name) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

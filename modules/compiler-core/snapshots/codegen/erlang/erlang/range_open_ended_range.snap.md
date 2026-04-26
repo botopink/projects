@@ -21,3 +21,7 @@ countUp(X) ->
         end
     end, lists:seq(X, infinity)).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

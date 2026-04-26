@@ -12,3 +12,7 @@ const xs = ["hello", "world"];
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

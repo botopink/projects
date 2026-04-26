@@ -10,3 +10,7 @@ val nothing = null;
 nothing() ->
     undefined.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

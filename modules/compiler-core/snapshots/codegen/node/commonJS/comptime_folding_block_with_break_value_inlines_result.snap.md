@@ -23,3 +23,7 @@ const t = 24;
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

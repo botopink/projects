@@ -46,3 +46,7 @@ class BankAccount {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

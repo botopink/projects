@@ -16,3 +16,7 @@ function process([ x, y ]) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

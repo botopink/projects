@@ -14,6 +14,10 @@ double(X) ->
     (X * 2).
 ```
 
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```
+
 ----- SOURCE CODE -- main.bp
 ```botopink
 use {double} from "math";
@@ -29,3 +33,7 @@ val result = double(21);
 result() ->
     double(21).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

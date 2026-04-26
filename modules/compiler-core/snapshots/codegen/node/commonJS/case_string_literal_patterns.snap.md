@@ -27,3 +27,7 @@ function greet(lang) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

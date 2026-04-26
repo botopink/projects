@@ -9,3 +9,7 @@ use { foo, bar } from "mylib";
 
 -import(mylib, [foo/0, bar/0]).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

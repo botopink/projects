@@ -25,3 +25,7 @@ function classify(day) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

@@ -37,3 +37,7 @@ class Logger {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

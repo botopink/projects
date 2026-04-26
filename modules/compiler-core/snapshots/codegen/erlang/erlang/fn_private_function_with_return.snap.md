@@ -12,3 +12,7 @@ fn double(x: i32) -> i32 {
 double(X) ->
     (X * 2).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

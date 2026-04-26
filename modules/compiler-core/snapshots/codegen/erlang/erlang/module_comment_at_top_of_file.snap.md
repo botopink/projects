@@ -19,3 +19,7 @@ fn capitalize(s: string) -> string {
 capitalize(S) ->
     S.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

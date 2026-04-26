@@ -16,3 +16,7 @@ function allThree(a, b, c) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

@@ -20,3 +20,7 @@ val Counter = struct {
 increment() ->
     %% field += not directly supported in Erlang.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

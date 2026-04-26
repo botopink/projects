@@ -18,3 +18,7 @@ val Point = struct {
 sum() ->
     (Self_x + Self_y).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

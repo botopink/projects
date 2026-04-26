@@ -12,3 +12,7 @@ fn diff(x: i32, y: i32) -> i32 {
 diff(X, Y) ->
     (X + (-Y)).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

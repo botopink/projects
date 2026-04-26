@@ -14,3 +14,7 @@ double(X) ->
     Result = (X * 2),
     Result.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -18,3 +18,7 @@ record Vec2 {
 dot(Other) ->
     ((Self_x * Other_x) + (Self_y * Other_y)).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

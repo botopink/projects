@@ -12,3 +12,7 @@ fn f() {
 f() ->
     case Items of [First | _] -> Items; _ -> erlang:throw(Error(<<"not a list">>)) end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

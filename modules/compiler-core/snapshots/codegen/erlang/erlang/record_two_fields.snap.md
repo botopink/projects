@@ -9,3 +9,7 @@ val Point = record { x: i32, y: i32 }
 
 -record(Point, {x, y}).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -16,3 +16,7 @@ function both(a, b) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

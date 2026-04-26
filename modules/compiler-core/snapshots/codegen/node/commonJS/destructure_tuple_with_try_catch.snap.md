@@ -34,3 +34,7 @@ function f() {
 
 
 ```
+
+----- RUN LOG -----
+```logs
+```

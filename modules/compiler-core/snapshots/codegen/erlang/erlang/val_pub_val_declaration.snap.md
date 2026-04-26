@@ -14,3 +14,7 @@ VERSION() ->
 HOST() ->
     <<"localhost">>.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

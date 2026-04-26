@@ -16,3 +16,7 @@ function isZero(n) {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

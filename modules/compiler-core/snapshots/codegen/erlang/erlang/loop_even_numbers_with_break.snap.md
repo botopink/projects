@@ -19,3 +19,7 @@ processamento() ->
         end
     end, lists:seq(0, 10)).
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

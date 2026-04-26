@@ -36,3 +36,7 @@ area(Shape) ->
             0.0
     end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

@@ -16,3 +16,7 @@ function extract() {
 ```typescript
 
 ```
+
+----- RUN LOG -----
+```logs
+```

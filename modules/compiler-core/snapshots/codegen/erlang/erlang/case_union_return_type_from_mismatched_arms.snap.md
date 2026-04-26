@@ -18,3 +18,7 @@ result() ->
             1
     end.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```

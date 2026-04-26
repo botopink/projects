@@ -10,3 +10,7 @@ val x = 42;
 x() ->
     42.
 ```
+
+----- RUN LOG -----
+```logs
+// Erlang execution not yet implemented```
