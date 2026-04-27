@@ -17,4 +17,4 @@ settings.local.json
 .qwen/settings.json.orig
 testemd
 .botopinkbuild
-format.o
+format.o*.a
