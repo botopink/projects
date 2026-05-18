@@ -23,27 +23,26 @@
                     "col": 35
                   },
                   "kind": {
-                    "add": {
-                      "lhs": {
-                        "literal": {
-                          "loc": {
-                            "line": 1,
-                            "col": 25
-                          },
-                          "kind": {
-                            "stringLit": "Hello, "
-                          }
+                    "op": "add",
+                    "lhs": {
+                      "literal": {
+                        "loc": {
+                          "line": 1,
+                          "col": 25
+                        },
+                        "kind": {
+                          "stringLit": "Hello, "
                         }
-                      },
-                      "rhs": {
-                        "literal": {
-                          "loc": {
-                            "line": 1,
-                            "col": 37
-                          },
-                          "kind": {
-                            "stringLit": "World"
-                          }
+                      }
+                    },
+                    "rhs": {
+                      "literal": {
+                        "loc": {
+                          "line": 1,
+                          "col": 37
+                        },
+                        "kind": {
+                          "stringLit": "World"
                         }
                       }
                     }

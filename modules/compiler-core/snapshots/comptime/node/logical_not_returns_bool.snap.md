@@ -9,6 +9,7 @@ val result = !true;
   "declarations": [
     {
       "ast": "val",
+      "indent": "result",
       "return_type": "bool"
     }
   ]

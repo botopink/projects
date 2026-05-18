@@ -29,27 +29,26 @@
                       "col": 11
                     },
                     "kind": {
-                      "add": {
-                        "lhs": {
-                          "identifier": {
-                            "loc": {
-                              "line": 3,
-                              "col": 9
-                            },
-                            "kind": {
-                              "ident": "a"
-                            }
+                      "op": "add",
+                      "lhs": {
+                        "identifier": {
+                          "loc": {
+                            "line": 3,
+                            "col": 9
+                          },
+                          "kind": {
+                            "ident": "a"
                           }
-                        },
-                        "rhs": {
-                          "identifier": {
-                            "loc": {
-                              "line": 3,
-                              "col": 13
-                            },
-                            "kind": {
-                              "ident": "b"
-                            }
+                        }
+                      },
+                      "rhs": {
+                        "identifier": {
+                          "loc": {
+                            "line": 3,
+                            "col": 13
+                          },
+                          "kind": {
+                            "ident": "b"
                           }
                         }
                       }

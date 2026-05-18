@@ -20,7 +20,7 @@ val r = identity(42);
       "params": [
         {
           "name": "x",
-          "type": ""
+          "type": "T"
         }
       ],
       "return_type": "T",
@@ -32,6 +32,8 @@ val r = identity(42);
     },
     {
       "ast": "val",
+      "indent": "r",
+      "return_type": "i32",
       "expr": {
         "ast": "call",
         "params": [
@@ -40,8 +42,7 @@ val r = identity(42);
           }
         ],
         "return_type": "i32"
-      },
-      "return_type": "i32"
+      }
     }
   ]
 }

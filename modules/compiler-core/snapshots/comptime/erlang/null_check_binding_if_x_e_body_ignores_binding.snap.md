@@ -34,12 +34,13 @@ val r = check();
     },
     {
       "ast": "val",
+      "indent": "r",
+      "return_type": "string",
       "expr": {
         "ast": "call",
         "params": [],
         "return_type": "string"
-      },
-      "return_type": "string"
+      }
     }
   ]
 }

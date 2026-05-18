@@ -1,5 +1,10 @@
 # core/src/parser
 
+## AGENTS links
+
+- [Root AGENTS](../../../../AGENTS.md)
+- [Compiler-core src AGENTS](../AGENTS.md)
+
 Parser tests live here. The parser itself is at `../parser.zig`.
 
 ## Files

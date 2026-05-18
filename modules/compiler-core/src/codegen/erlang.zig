@@ -75,15 +75,34 @@ fn emitErlang(
     // Module header
     try aw.writer.print("-module({s}).\n", .{module_name});
 
-    // Collect public function names for export
+    // Check for main function/val defined by user
+    const user_main = blk: {
+        for (program.decls) |decl| {
+            switch (decl) {
+                .@"fn" => |f| if (std.mem.eql(u8, f.name, "main")) break :blk true,
+                .val => |v| if (std.mem.eql(u8, v.name, "main") and !v.value.isComptimeExpr()) break :blk true,
+                else => {},
+            }
+        }
+        break :blk false;
+    };
+
+    // Collect public function names for export (excluding main)
     var pub_fns: std.ArrayListUnmanaged(ast.FnDecl) = .empty;
     defer pub_fns.deinit(alloc);
     for (program.decls) |decl| {
         switch (decl) {
-            .@"fn" => |f| if (f.isPub) try pub_fns.append(alloc, f),
+            .@"fn" => |f| if (f.isPub and !std.mem.eql(u8, f.name, "main")) try pub_fns.append(alloc, f),
             else => {},
         }
     }
+
+    // Export main with exclusive name if it exists
+    if (user_main) {
+        try aw.writer.writeAll("-export([_botopink_main/0]).\n");
+    }
+
+    // Export other public functions
     if (pub_fns.items.len > 0) {
         try aw.writer.writeAll("-export([");
         for (pub_fns.items, 0..) |f, i| {
@@ -167,7 +186,8 @@ const Emitter = struct {
             return;
         }
         // Emit as a 0-arity function (Erlang has no top-level constants)
-        try this.fmt("{s}() ->\n", .{v.name});
+        const val_name = if (std.mem.eql(u8, v.name, "main")) "_botopink_main" else v.name;
+        try this.fmt("{s}() ->\n", .{val_name});
         const saved = this.indent;
         this.indent = 1;
         try this.writeIndent();
@@ -179,7 +199,8 @@ const Emitter = struct {
     // ── fn ────────────────────────────────────────────────────────────────────
 
     fn emitFn(this: *Emitter, f: ast.FnDecl) !void {
-        try this.w(f.name);
+        const fn_name = if (std.mem.eql(u8, f.name, "main")) "_botopink_main" else f.name;
+        try this.w(fn_name);
         try this.w("(");
         var first = true;
         for (f.params) |p| {
@@ -249,12 +270,12 @@ const Emitter = struct {
     fn emitBodyStmt(this: *Emitter, stmt: ast.Stmt, is_last: bool) !void {
         const e = stmt.expr;
         switch (e) {
-            .controlFlow => |cf| switch (cf.kind) {
+            .jump => |j| switch (j.kind) {
                 .@"return" => |r| {
                     // In Erlang the last expression is the return value.
                     // Emit a bare expression; if not last, wrap in a noop binding.
                     _ = is_last;
-                    try this.emitExpr(r.*);
+                    if (r) |val| try this.emitExpr(val.*) else try this.w("undefined");
                 },
                 else => try this.emitExpr(e),
             },
@@ -266,16 +287,21 @@ const Emitter = struct {
                     try this.emitExpr(lb.value.*);
                 },
                 .assign => |a| {
-                    const vname = try erlangVar(this.alloc, a.name);
-                    defer this.alloc.free(vname);
-                    try this.fmt("{s} = ", .{vname});
-                    try this.emitExpr(a.value.*);
-                },
-                .assignPlus => |a| {
-                    const vname = try erlangVar(this.alloc, a.name);
-                    defer this.alloc.free(vname);
-                    try this.fmt("{s} = {s} + ", .{ vname, vname });
-                    try this.emitExpr(a.value.*);
+                    switch (a.target) {
+                        .name => |name| {
+                            const vname = try erlangVar(this.alloc, name);
+                            defer this.alloc.free(vname);
+                            switch (a.op) {
+                                .assign => try this.fmt("{s} = ", .{vname}),
+                                .plusAssign => try this.fmt("{s} = {s} + ", .{ vname, vname }),
+                            }
+                            try this.emitExpr(a.value.*);
+                        },
+                        .fieldAccess => |*fa| {
+                            _ = fa;
+                            try this.w("%% field assignment is not directly supported in Erlang");
+                        },
+                    }
                 },
                 .localBindDestruct => |lb| {
                     switch (lb.pattern) {
@@ -305,7 +331,6 @@ const Emitter = struct {
                     }
                     try this.emitExpr(lb.value.*);
                 },
-                else => try this.emitExpr(e),
             },
             else => try this.emitExpr(e),
         }
@@ -352,31 +377,31 @@ const Emitter = struct {
                 .dotIdent => |n| try this.fmt("{s}", .{n}),
             },
 
-            .binaryOp => |bin| switch (bin.kind) {
-                .add => |b| try this.emitBinaryOp("+", b.lhs, b.rhs),
-                .sub => |b| try this.emitBinaryOp("-", b.lhs, b.rhs),
-                .mul => |b| try this.emitBinaryOp("*", b.lhs, b.rhs),
-                .div => |b| try this.emitBinaryOp("div", b.lhs, b.rhs),
-                .mod => |b| try this.emitBinaryOp("rem", b.lhs, b.rhs),
-                .lt => |b| try this.emitBinaryOp("<", b.lhs, b.rhs),
-                .gt => |b| try this.emitBinaryOp(">", b.lhs, b.rhs),
-                .lte => |b| try this.emitBinaryOp("=<", b.lhs, b.rhs),
-                .gte => |b| try this.emitBinaryOp(">=", b.lhs, b.rhs),
-                .eq => |b| try this.emitBinaryOp("=:=", b.lhs, b.rhs),
-                .ne => |b| try this.emitBinaryOp("=/=", b.lhs, b.rhs),
-                .@"and" => |b| try this.emitBinaryOp("and", b.lhs, b.rhs),
-                .@"or" => |b| try this.emitBinaryOp("or", b.lhs, b.rhs),
+            .binaryOp => |bin| switch (bin.kind.op) {
+                .add => try this.emitBinaryOp("+", bin.kind.lhs, bin.kind.rhs),
+                .sub => try this.emitBinaryOp("-", bin.kind.lhs, bin.kind.rhs),
+                .mul => try this.emitBinaryOp("*", bin.kind.lhs, bin.kind.rhs),
+                .div => try this.emitBinaryOp("div", bin.kind.lhs, bin.kind.rhs),
+                .mod => try this.emitBinaryOp("rem", bin.kind.lhs, bin.kind.rhs),
+                .lt => try this.emitBinaryOp("<", bin.kind.lhs, bin.kind.rhs),
+                .gt => try this.emitBinaryOp(">", bin.kind.lhs, bin.kind.rhs),
+                .lte => try this.emitBinaryOp("=<", bin.kind.lhs, bin.kind.rhs),
+                .gte => try this.emitBinaryOp(">=", bin.kind.lhs, bin.kind.rhs),
+                .eq => try this.emitBinaryOp("=:=", bin.kind.lhs, bin.kind.rhs),
+                .ne => try this.emitBinaryOp("=/=", bin.kind.lhs, bin.kind.rhs),
+                .@"and" => try this.emitBinaryOp("and", bin.kind.lhs, bin.kind.rhs),
+                .@"or" => try this.emitBinaryOp("or", bin.kind.lhs, bin.kind.rhs),
             },
 
-            .unaryOp => |un| switch (un.kind) {
-                .not => |operand| {
+            .unaryOp => |un| switch (un.kind.op) {
+                .not => {
                     try this.w("(not ");
-                    try this.emitExpr(operand.*);
+                    try this.emitExpr(un.kind.expr.*);
                     try this.w(")");
                 },
-                .neg => |operand| {
+                .neg => {
                     try this.w("(-");
-                    try this.emitExpr(operand.*);
+                    try this.emitExpr(un.kind.expr.*);
                     try this.w(")");
                 },
             },
@@ -637,7 +662,20 @@ const Emitter = struct {
                 },
             },
 
-            .controlFlow => |cf| switch (cf.kind) {
+            .jump => |j| switch (j.kind) {
+                .@"return" => |r| if (r) |val| try this.emitExpr(val.*),
+                .throw_ => |r| if (r) |val| {
+                    try this.w("erlang:throw(");
+                    try this.emitExpr(val.*);
+                    try this.w(")");
+                },
+                .try_ => |t| if (t) |val| try this.emitExpr(val.*),
+                .@"break" => |b| if (b) |bp| try this.emitExpr(bp.*),
+                .yield => |y| if (y) |val| try this.emitExpr(val.*),
+                .@"continue" => try this.w("%% continue"),
+            },
+
+            .branch => |br| switch (br.kind) {
                 .if_ => |i| {
                     try this.w("case ");
                     try this.emitExpr(i.cond.*);
@@ -667,19 +705,9 @@ const Emitter = struct {
                     try this.writeIndent();
                     try this.w("end");
                 },
-                .@"return" => |r| try this.emitExpr(r.*),
-                .throw_ => |r| {
-                    try this.w("erlang:throw(");
-                    try this.emitExpr(r.*);
-                    try this.w(")");
-                },
-                .try_ => |t| try this.emitExpr(t.*),
                 .tryCatch => |tc| {
                     const handlerIsStatement = switch (tc.handler.*) {
-                        .controlFlow => |hcf| switch (hcf.kind) {
-                            .throw_, .@"return" => true,
-                            else => false,
-                        },
+                        .jump => |j| j.kind == .throw_ or j.kind == .@"return",
                         else => false,
                     };
                     try this.w("try\n");
@@ -702,42 +730,37 @@ const Emitter = struct {
                     this.indent -= 2;
                     try this.w("\nend");
                 },
-                .@"break" => |b| if (b) |bp| try this.emitExpr(bp.*),
-                .yield => |y| try this.emitExpr(y.*),
-                .@"continue" => try this.w("%% continue"),
-                .loop => |lp| {
-                    const has_yield = blk: {
-                        for (lp.body) |stmt| {
-                            switch (stmt.expr) {
-                                .controlFlow => |scf| switch (scf.kind) {
-                                    .yield => break :blk true,
-                                    else => {},
-                                },
-                                else => {},
-                            }
-                        }
-                        break :blk false;
-                    };
-                    const fun_kw = if (has_yield) "lists:map" else "lists:foreach";
-                    try this.fmt("{s}(fun(", .{fun_kw});
-                    for (lp.params, 0..) |p, i| {
-                        if (i > 0) try this.w(", ");
-                        const vname = try erlangVar(this.alloc, p);
-                        defer this.alloc.free(vname);
-                        try this.w(vname);
+            },
+
+            .loop => |lp| {
+                const has_yield = blk: {
+                    for (lp.kind.body) |stmt| {
+                        if (switch (stmt.expr) {
+                            .jump => |j| j.kind == .yield,
+                            else => false,
+                        }) break :blk true;
                     }
-                    try this.w(") ->\n");
-                    const fun_body_indent = this.indent + 1;
-                    const saved2 = this.indent;
-                    this.indent = fun_body_indent;
-                    try this.emitBody(lp.body);
-                    this.indent = saved2;
-                    try this.w("\n");
-                    try this.writeIndent();
-                    try this.w("end, ");
-                    try this.emitExpr(lp.iter.*);
-                    try this.w(")");
-                },
+                    break :blk false;
+                };
+                const fun_kw = if (has_yield) "lists:map" else "lists:foreach";
+                try this.fmt("{s}(fun(", .{fun_kw});
+                for (lp.kind.params, 0..) |p, i| {
+                    if (i > 0) try this.w(", ");
+                    const vname = try erlangVar(this.alloc, p);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                }
+                try this.w(") ->\n");
+                const fun_body_indent = this.indent + 1;
+                const saved2 = this.indent;
+                this.indent = fun_body_indent;
+                try this.emitBody(lp.kind.body);
+                this.indent = saved2;
+                try this.w("\n");
+                try this.writeIndent();
+                try this.w("end, ");
+                try this.emitExpr(lp.kind.iter.*);
+                try this.w(")");
             },
 
             .binding => |b| switch (b.kind) {
@@ -748,24 +771,21 @@ const Emitter = struct {
                     try this.emitExpr(lb.value.*);
                 },
                 .assign => |a| {
-                    const vname = try erlangVar(this.alloc, a.name);
-                    defer this.alloc.free(vname);
-                    try this.fmt("{s} = ", .{vname});
-                    try this.emitExpr(a.value.*);
-                },
-                .assignPlus => |a| {
-                    const vname = try erlangVar(this.alloc, a.name);
-                    defer this.alloc.free(vname);
-                    try this.fmt("{s} = {s} + ", .{ vname, vname });
-                    try this.emitExpr(a.value.*);
-                },
-                .fieldAssign => |sfa| {
-                    // Erlang records don't support mutation like this; emit a comment
-                    try this.fmt("%% {s}.{s} = ...", .{ "self", sfa.field });
-                },
-                .fieldPlusEq => |sfpe| {
-                    _ = sfpe;
-                    try this.w("%% field += not directly supported in Erlang");
+                    switch (a.target) {
+                        .name => |name| {
+                            const vname = try erlangVar(this.alloc, name);
+                            defer this.alloc.free(vname);
+                            switch (a.op) {
+                                .assign => try this.fmt("{s} = ", .{vname}),
+                                .plusAssign => try this.fmt("{s} = {s} + ", .{ vname, vname }),
+                            }
+                            try this.emitExpr(a.value.*);
+                        },
+                        .fieldAccess => |*fa| {
+                            // Erlang records don't support mutation like this; emit a comment
+                            try this.fmt("%% {s}.{s} = ...", .{ "self", fa.field });
+                        },
+                    }
                 },
                 .localBindDestruct => |lb| {
                     switch (lb.pattern) {
@@ -802,7 +822,7 @@ const Emitter = struct {
                 .comptimeBlock => |cb| {
                     for (cb.body) |stmt| {
                         switch (stmt.expr) {
-                            .controlFlow => |cf| switch (cf.kind) {
+                            .jump => |j| switch (j.kind) {
                                 .@"break" => |y| {
                                     if (y) |yp| try this.emitExpr(yp.*);
                                     return;

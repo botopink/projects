@@ -52,7 +52,7 @@
             "body": [
               {
                 "expr": {
-                  "controlFlow": {
+                  "jump": {
                     "loc": {
                       "line": 5,
                       "col": 9
@@ -65,98 +65,95 @@
                             "col": 46
                           },
                           "kind": {
-                            "add": {
-                              "lhs": {
-                                "binaryOp": {
-                                  "loc": {
-                                    "line": 5,
-                                    "col": 35
-                                  },
-                                  "kind": {
-                                    "add": {
-                                      "lhs": {
-                                        "binaryOp": {
-                                          "loc": {
-                                            "line": 5,
-                                            "col": 24
-                                          },
-                                          "kind": {
-                                            "add": {
-                                              "lhs": {
-                                                "literal": {
-                                                  "loc": {
-                                                    "line": 5,
-                                                    "col": 16
-                                                  },
-                                                  "kind": {
-                                                    "stringLit": "Lat: "
-                                                  }
-                                                }
-                                              },
-                                              "rhs": {
-                                                "identifier": {
-                                                  "loc": {
-                                                    "line": 5,
-                                                    "col": 26
-                                                  },
-                                                  "kind": {
-                                                    "identAccess": {
-                                                      "receiver": {
-                                                        "identifier": {
-                                                          "loc": {
-                                                            "line": 5,
-                                                            "col": 26
-                                                          },
-                                                          "kind": {
-                                                            "ident": "self"
-                                                          }
-                                                        }
-                                                      },
-                                                      "member": "lat"
+                            "op": "add",
+                            "lhs": {
+                              "binaryOp": {
+                                "loc": {
+                                  "line": 5,
+                                  "col": 35
+                                },
+                                "kind": {
+                                  "op": "add",
+                                  "lhs": {
+                                    "binaryOp": {
+                                      "loc": {
+                                        "line": 5,
+                                        "col": 24
+                                      },
+                                      "kind": {
+                                        "op": "add",
+                                        "lhs": {
+                                          "literal": {
+                                            "loc": {
+                                              "line": 5,
+                                              "col": 16
+                                            },
+                                            "kind": {
+                                              "stringLit": "Lat: "
+                                            }
+                                          }
+                                        },
+                                        "rhs": {
+                                          "identifier": {
+                                            "loc": {
+                                              "line": 5,
+                                              "col": 26
+                                            },
+                                            "kind": {
+                                              "identAccess": {
+                                                "receiver": {
+                                                  "identifier": {
+                                                    "loc": {
+                                                      "line": 5,
+                                                      "col": 26
+                                                    },
+                                                    "kind": {
+                                                      "ident": "self"
                                                     }
                                                   }
-                                                }
+                                                },
+                                                "member": "lat"
                                               }
                                             }
                                           }
                                         }
+                                      }
+                                    }
+                                  },
+                                  "rhs": {
+                                    "literal": {
+                                      "loc": {
+                                        "line": 5,
+                                        "col": 37
                                       },
-                                      "rhs": {
-                                        "literal": {
-                                          "loc": {
-                                            "line": 5,
-                                            "col": 37
-                                          },
-                                          "kind": {
-                                            "stringLit": " Lon: "
-                                          }
-                                        }
+                                      "kind": {
+                                        "stringLit": " Lon: "
                                       }
                                     }
                                   }
                                 }
-                              },
-                              "rhs": {
-                                "identifier": {
-                                  "loc": {
-                                    "line": 5,
-                                    "col": 48
-                                  },
-                                  "kind": {
-                                    "identAccess": {
-                                      "receiver": {
-                                        "identifier": {
-                                          "loc": {
-                                            "line": 5,
-                                            "col": 48
-                                          },
-                                          "kind": {
-                                            "ident": "self"
-                                          }
+                              }
+                            },
+                            "rhs": {
+                              "identifier": {
+                                "loc": {
+                                  "line": 5,
+                                  "col": 48
+                                },
+                                "kind": {
+                                  "identAccess": {
+                                    "receiver": {
+                                      "identifier": {
+                                        "loc": {
+                                          "line": 5,
+                                          "col": 48
+                                        },
+                                        "kind": {
+                                          "ident": "self"
                                         }
-                                      },
-                                      "member": "lon"
-                                    }
+                                      }
+                                    },
+                                    "member": "lon"
                                   }
                                 }
                               }

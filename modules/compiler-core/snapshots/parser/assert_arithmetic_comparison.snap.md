@@ -29,50 +29,48 @@
                           "col": 22
                         },
                         "kind": {
-                          "eq": {
-                            "lhs": {
-                              "binaryOp": {
-                                "loc": {
-                                  "line": 2,
-                                  "col": 16
-                                },
-                                "kind": {
-                                  "sub": {
-                                    "lhs": {
-                                      "literal": {
-                                        "loc": {
-                                          "line": 2,
-                                          "col": 12
-                                        },
-                                        "kind": {
-                                          "numberLit": "5.0"
-                                        }
-                                      }
+                          "op": "eq",
+                          "lhs": {
+                            "binaryOp": {
+                              "loc": {
+                                "line": 2,
+                                "col": 16
+                              },
+                              "kind": {
+                                "op": "sub",
+                                "lhs": {
+                                  "literal": {
+                                    "loc": {
+                                      "line": 2,
+                                      "col": 12
                                     },
-                                    "rhs": {
-                                      "literal": {
-                                        "loc": {
-                                          "line": 2,
-                                          "col": 18
-                                        },
-                                        "kind": {
-                                          "numberLit": "1.0"
-                                        }
-                                      }
+                                    "kind": {
+                                      "numberLit": "5.0"
+                                    }
+                                  }
+                                },
+                                "rhs": {
+                                  "literal": {
+                                    "loc": {
+                                      "line": 2,
+                                      "col": 18
+                                    },
+                                    "kind": {
+                                      "numberLit": "1.0"
                                     }
                                   }
                                 }
                               }
-                            },
-                            "rhs": {
-                              "literal": {
-                                "loc": {
-                                  "line": 2,
-                                  "col": 25
-                                },
-                                "kind": {
-                                  "numberLit": "4.0"
-                                }
+                            }
+                          },
+                          "rhs": {
+                            "literal": {
+                              "loc": {
+                                "line": 2,
+                                "col": 25
+                              },
+                              "kind": {
+                                "numberLit": "4.0"
                               }
                             }
                           }

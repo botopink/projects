@@ -29,7 +29,7 @@
                       ]
                     },
                     "value": {
-                      "controlFlow": {
+                      "branch": {
                         "loc": {
                           "line": 2,
                           "col": 19
@@ -54,7 +54,7 @@
                               }
                             },
                             "handler": {
-                              "controlFlow": {
+                              "jump": {
                                 "loc": {
                                   "line": 2,
                                   "col": 37

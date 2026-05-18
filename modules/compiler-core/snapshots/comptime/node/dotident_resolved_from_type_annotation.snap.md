@@ -18,6 +18,7 @@ val c: Color = .Red;
     },
     {
       "ast": "val",
+      "indent": "c",
       "return_type": "Color"
     }
   ]

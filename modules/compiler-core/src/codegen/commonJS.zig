@@ -730,49 +730,19 @@ const Emitter = struct {
                     try self.emitExpr(lb.value.*);
                     try self.w(";");
                 },
-                .fieldAssign => |sfa| {
-                    const isSelf = switch (sfa.receiver.*) {
-                        .identifier => |id| if (id.kind == .ident)
-                            std.mem.eql(u8, id.kind.ident, "self")
-                        else
-                            false,
-                        else => false,
-                    };
-                    if (isSelf) {
-                        try self.fmt("this.{s} = ", .{sfa.field});
-                    } else {
-                        try self.emitExpr(sfa.receiver.*);
-                        try self.fmt(".{s} = ", .{sfa.field});
-                    }
-                    try self.emitExpr(sfa.value.*);
-                    try self.w(";");
-                },
-                .fieldPlusEq => |sfpe| {
-                    const isSelf = switch (sfpe.receiver.*) {
-                        .identifier => |id| if (id.kind == .ident)
-                            std.mem.eql(u8, id.kind.ident, "self")
-                        else
-                            false,
-                        else => false,
-                    };
-                    if (isSelf) {
-                        try self.fmt("this.{s} += ", .{sfpe.field});
-                    } else {
-                        try self.emitExpr(sfpe.receiver.*);
-                        try self.fmt(".{s} += ", .{sfpe.field});
-                    }
-                    try self.emitExpr(sfpe.value.*);
-                    try self.w(";");
-                },
                 else => {
                     try self.emitExpr(e);
                     try self.w(";");
                 },
             },
-            .controlFlow => |cf| switch (cf.kind) {
+            .jump => |j| switch (j.kind) {
                 .@"return" => |r| {
-                    try self.w("return ");
-                    try self.emitExpr(r.*);
+                    if (r) |rp| {
+                        try self.w("return ");
+                        try self.emitExpr(rp.*);
+                    } else {
+                        try self.w("return");
+                    }
                     try self.w(";");
                 },
                 else => {
@@ -790,7 +760,7 @@ const Emitter = struct {
     /// Emit the last stmt of an if-branch as a value expression.
     fn emitIfLast(self: *Emitter, stmt: ast.Stmt) !void {
         switch (stmt.expr) {
-            .controlFlow => |cf| switch (cf.kind) {
+            .jump => |j| switch (j.kind) {
                 .@"return", .throw_ => try self.emitStmt(stmt),
                 else => {
                     try self.w("return ");
@@ -853,76 +823,70 @@ const Emitter = struct {
                 },
             },
 
-            .binaryOp => |bin| switch (bin.kind) {
-                .add => |b| try self.emitBinaryOp("+", b.lhs, b.rhs),
-                .sub => |b| try self.emitBinaryOp("-", b.lhs, b.rhs),
-                .mul => |b| try self.emitBinaryOp("*", b.lhs, b.rhs),
-                .div => |b| try self.emitBinaryOp("/", b.lhs, b.rhs),
-                .mod => |b| try self.emitBinaryOp("%", b.lhs, b.rhs),
-                .lt => |b| try self.emitBinaryOp("<", b.lhs, b.rhs),
-                .gt => |b| try self.emitBinaryOp(">", b.lhs, b.rhs),
-                .lte => |b| try self.emitBinaryOp("<=", b.lhs, b.rhs),
-                .gte => |b| try self.emitBinaryOp(">=", b.lhs, b.rhs),
-                .eq => |b| try self.emitBinaryOp("===", b.lhs, b.rhs),
-                .ne => |b| try self.emitBinaryOp("!==", b.lhs, b.rhs),
-                .@"and" => |b| try self.emitBinaryOp("&&", b.lhs, b.rhs),
-                .@"or" => |b| try self.emitBinaryOp("||", b.lhs, b.rhs),
+            .binaryOp => |bin| switch (bin.kind.op) {
+                .add => try self.emitBinaryOp("+", bin.kind.lhs, bin.kind.rhs),
+                .sub => try self.emitBinaryOp("-", bin.kind.lhs, bin.kind.rhs),
+                .mul => try self.emitBinaryOp("*", bin.kind.lhs, bin.kind.rhs),
+                .div => try self.emitBinaryOp("/", bin.kind.lhs, bin.kind.rhs),
+                .mod => try self.emitBinaryOp("%", bin.kind.lhs, bin.kind.rhs),
+                .lt => try self.emitBinaryOp("<", bin.kind.lhs, bin.kind.rhs),
+                .gt => try self.emitBinaryOp(">", bin.kind.lhs, bin.kind.rhs),
+                .lte => try self.emitBinaryOp("<=", bin.kind.lhs, bin.kind.rhs),
+                .gte => try self.emitBinaryOp(">=", bin.kind.lhs, bin.kind.rhs),
+                .eq => try self.emitBinaryOp("===", bin.kind.lhs, bin.kind.rhs),
+                .ne => try self.emitBinaryOp("!==", bin.kind.lhs, bin.kind.rhs),
+                .@"and" => try self.emitBinaryOp("&&", bin.kind.lhs, bin.kind.rhs),
+                .@"or" => try self.emitBinaryOp("||", bin.kind.lhs, bin.kind.rhs),
             },
 
-            .unaryOp => |un| switch (un.kind) {
-                .not => |operand| {
+            .unaryOp => |un| switch (un.kind.op) {
+                .not => {
                     try self.w("(!");
-                    try self.emitExpr(operand.*);
+                    try self.emitExpr(un.kind.expr.*);
                     try self.w(")");
                 },
-                .neg => |operand| {
+                .neg => {
                     try self.w("(-");
-                    try self.emitExpr(operand.*);
+                    try self.emitExpr(un.kind.expr.*);
                     try self.w(")");
                 },
             },
 
-            .controlFlow => |cf| switch (cf.kind) {
-                .@"return" => |r| {
+            .jump => |j| switch (j.kind) {
+                .@"return" => |r| if (r) |val| {
                     try self.w("return ");
-                    try self.emitExpr(r.*);
+                    try self.emitExpr(val.*);
+                } else {
+                    try self.w("return");
                 },
-                .throw_ => |r| {
+                .throw_ => |r| if (r) |val| {
                     try self.w("throw ");
-                    try self.emitExpr(r.*);
+                    try self.emitExpr(val.*);
+                } else {
+                    try self.w("throw");
                 },
-                .try_ => |t| try self.emitExpr(t.*),
-                .tryCatch => |tc| {
-                    const handlerIsStatement = switch (tc.handler.*) {
-                        .controlFlow => |hcf| switch (hcf.kind) {
-                            .throw_, .@"return" => true,
-                            else => false,
-                        },
-                        else => false,
-                    };
-                    try self.w("(() => { try { return ");
-                    try self.emitExpr(tc.expr.*);
-                    try self.w("; } catch(_e) { ");
-                    if (handlerIsStatement) {
-                        try self.emitExpr(tc.handler.*);
-                        try self.w(";");
-                    } else {
-                        try self.w("return (");
-                        try self.emitExpr(tc.handler.*);
-                        try self.w(")(_e);");
-                    }
-                    try self.w(" } })()");
+                .try_ => |t| if (t) |val| try self.emitExpr(val.*),
+                .@"break" => |b| if (b) |val| {
+                    try self.w("return ");
+                    try self.emitExpr(val.*);
+                } else {
+                    try self.w("return");
                 },
+                .yield => |y| if (y) |val| try self.emitExpr(val.*),
+                .@"continue" => try self.w("continue"),
+            },
+
+            .branch => |br| switch (br.kind) {
                 .if_ => |i| {
                     // Check if the if statement contains a return
                     const thenContainsReturn = i.then_.len > 0 and
                         switch (i.then_[i.then_.len - 1].expr) {
-                            .controlFlow => |cf_ret| cf_ret.kind == .@"return",
+                            .jump => |j| j.kind == .@"return",
                             else => false,
                         };
                     const elseContainsReturn = if (i.else_) |els|
                         els.len > 0 and switch (els[els.len - 1].expr) {
-                            .controlFlow => |cf_else| cf_else.kind == .@"return",
+                            .jump => |j| j.kind == .@"return",
                             else => false,
                         }
                     else
@@ -977,67 +941,80 @@ const Emitter = struct {
                         try self.w(" })()");
                     }
                 },
-                .loop => |lp| {
-                    const has_yield = blk: {
-                        for (lp.body) |stmt| {
-                            if (switch (stmt.expr) {
-                                .controlFlow => |cf_yield| cf_yield.kind == .yield,
-                                else => false,
-                            }) break :blk true;
-                        }
-                        break :blk false;
+                .tryCatch => |tc| {
+                    const handlerIsStatement = switch (tc.handler.*) {
+                        .jump => |j| j.kind == .throw_ or j.kind == .@"return",
+                        else => false,
                     };
-
-                    if (has_yield) {
-                        try self.emitExpr(lp.iter.*);
-                        try self.w(".map((");
-                        for (lp.params, 0..) |p, i| {
-                            if (i > 0) try self.w(", ");
-                            try self.w(p);
-                        }
-                        try self.w(") => {\n");
-                        for (lp.body) |stmt| {
-                            const isYield = switch (stmt.expr) {
-                                .controlFlow => |cf2| cf2.kind == .yield,
-                                else => false,
-                            };
-                            if (isYield) {
-                                const yield_val = stmt.expr.controlFlow.kind.yield;
-                                try self.w("    return ");
-                                try self.emitExpr(yield_val.*);
-                                try self.w(";\n");
-                            } else {
-                                try self.w("    ");
-                                try self.emitStmt(stmt);
-                                try self.w("\n");
-                            }
-                        }
-                        try self.w("})");
+                    try self.w("(() => { try { return ");
+                    try self.emitExpr(tc.expr.*);
+                    try self.w("; } catch(_e) { ");
+                    if (handlerIsStatement) {
+                        try self.emitExpr(tc.handler.*);
+                        try self.w(";");
                     } else {
-                        try self.w("for (const [");
-                        for (lp.params, 0..) |p, i| {
-                            if (i > 0) try self.w(", ");
-                            try self.w(p);
-                        }
-                        try self.w("] of Object.entries(");
-                        try self.emitExpr(lp.iter.*);
-                        try self.w(")) {\n");
-                        for (lp.body) |stmt| {
+                        try self.w("return (");
+                        try self.emitExpr(tc.handler.*);
+                        try self.w(")(_e);");
+                    }
+                    try self.w(" } })()");
+                },
+            },
+
+            .loop => |lp| {
+                const has_yield = blk: {
+                    for (lp.kind.body) |stmt| {
+                        if (switch (stmt.expr) {
+                            .jump => |j| j.kind == .yield,
+                            else => false,
+                        }) break :blk true;
+                    }
+                    break :blk false;
+                };
+
+                if (has_yield) {
+                    try self.emitExpr(lp.kind.iter.*);
+                    try self.w(".map((");
+                    for (lp.kind.params, 0..) |p, i| {
+                        if (i > 0) try self.w(", ");
+                        try self.w(p);
+                    }
+                    try self.w(") => {\n");
+                    for (lp.kind.body) |stmt| {
+                        const isYield = switch (stmt.expr) {
+                            .jump => |j| j.kind == .yield,
+                            else => false,
+                        };
+                        if (isYield) {
+                            const yield_val = stmt.expr.jump.kind.yield;
+                            if (yield_val) |val| {
+                                try self.w("    return ");
+                                try self.emitExpr(val.*);
+                                try self.w(";\n");
+                            }
+                        } else {
                             try self.w("    ");
                             try self.emitStmt(stmt);
                             try self.w("\n");
                         }
-                        try self.w("}");
                     }
-                },
-                .@"break" => |b| if (b) |val| {
-                    try self.w("return ");
-                    try self.emitExpr(val.*);
+                    try self.w("})");
                 } else {
-                    try self.w("return");
-                },
-                .yield => |y| try self.emitExpr(y.*),
-                .@"continue" => try self.w("continue"),
+                    try self.w("for (const [");
+                    for (lp.kind.params, 0..) |p, i| {
+                        if (i > 0) try self.w(", ");
+                        try self.w(p);
+                    }
+                    try self.w("] of Object.entries(");
+                    try self.emitExpr(lp.kind.iter.*);
+                    try self.w(")) {\n");
+                    for (lp.kind.body) |stmt| {
+                        try self.w("    ");
+                        try self.emitStmt(stmt);
+                        try self.w("\n");
+                    }
+                    try self.w("}");
+                }
             },
 
             .binding => |b| switch (b.kind) {
@@ -1047,44 +1024,32 @@ const Emitter = struct {
                     try self.emitExpr(lb.value.*);
                 },
                 .assign => |a| {
-                    try self.fmt("{s} = ", .{a.name});
-                    try self.emitExpr(a.value.*);
-                },
-                .assignPlus => |a| {
-                    try self.fmt("{s} += ", .{a.name});
-                    try self.emitExpr(a.value.*);
-                },
-                .fieldAssign => |sfa| {
-                    const isSelf = switch (sfa.receiver.*) {
-                        .identifier => |recv_id| if (recv_id.kind == .ident)
-                            std.mem.eql(u8, recv_id.kind.ident, "self")
-                        else
-                            false,
-                        else => false,
+                    const op_str: []const u8 = switch (a.op) {
+                        .assign => "=",
+                        .plusAssign => "+=",
                     };
-                    if (isSelf) {
-                        try self.fmt("this.{s} = ", .{sfa.field});
-                    } else {
-                        try self.emitExpr(sfa.receiver.*);
-                        try self.fmt(".{s} = ", .{sfa.field});
+                    switch (a.target) {
+                        .name => |name| {
+                            try self.fmt("{s} {s} ", .{ name, op_str });
+                            try self.emitExpr(a.value.*);
+                        },
+                        .fieldAccess => |*fa| {
+                            const isSelf = switch (fa.receiver.*) {
+                                .identifier => |recv_id| if (recv_id.kind == .ident)
+                                    std.mem.eql(u8, recv_id.kind.ident, "self")
+                                else
+                                    false,
+                                else => false,
+                            };
+                            if (isSelf) {
+                                try self.fmt("this.{s} {s} ", .{ fa.field, op_str });
+                            } else {
+                                try self.emitExpr(fa.receiver.*);
+                                try self.fmt(".{s} {s} ", .{ fa.field, op_str });
+                            }
+                            try self.emitExpr(a.value.*);
+                        },
                     }
-                    try self.emitExpr(sfa.value.*);
-                },
-                .fieldPlusEq => |sfpe| {
-                    const isSelf = switch (sfpe.receiver.*) {
-                        .identifier => |recv_id| if (recv_id.kind == .ident)
-                            std.mem.eql(u8, recv_id.kind.ident, "self")
-                        else
-                            false,
-                        else => false,
-                    };
-                    if (isSelf) {
-                        try self.fmt("this.{s} += ", .{sfpe.field});
-                    } else {
-                        try self.emitExpr(sfpe.receiver.*);
-                        try self.fmt(".{s} += ", .{sfpe.field});
-                    }
-                    try self.emitExpr(sfpe.value.*);
                 },
                 .localBindDestruct => |lb| {
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
@@ -1319,7 +1284,7 @@ const Emitter = struct {
                 .comptimeBlock => |cb| {
                     for (cb.body) |stmt| {
                         switch (stmt.expr) {
-                            .controlFlow => |cf| switch (cf.kind) {
+                            .jump => |j| switch (j.kind) {
                                 .@"break" => |b| if (b) |bp| {
                                     try self.emitExpr(bp.*);
                                     return;
@@ -1350,10 +1315,7 @@ const Emitter = struct {
                     try self.w("return _match; ");
                     try self.w("} else { ");
                     const handlerIsStatement = switch (ap.handler.*) {
-                        .controlFlow => |cf| switch (cf.kind) {
-                            .throw_, .@"return" => true,
-                            else => false,
-                        },
+                        .jump => |j| j.kind == .throw_ or j.kind == .@"return",
                         else => false,
                     };
                     if (!handlerIsStatement) try self.w("return ");
@@ -1384,7 +1346,7 @@ const Emitter = struct {
             for (l.body) |st| {
                 b.writeIndent();
                 switch (st.expr) {
-                    .controlFlow => |cf| switch (cf.kind) {
+                    .jump => |j| switch (j.kind) {
                         .@"break" => |br| if (br) |bp| {
                             try self.w("return ");
                             try self.emitExpr(bp.*);

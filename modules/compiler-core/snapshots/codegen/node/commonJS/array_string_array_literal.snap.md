@@ -15,4 +15,4 @@ const xs = ["hello", "world"];
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

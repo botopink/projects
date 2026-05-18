@@ -26,7 +26,7 @@ fn buildScript(allocator: std.mem.Allocator, entries: []const eval.ComptimeEntry
                 .comptimeBlock => |cb| {
                     for (cb.body) |stmt| {
                         switch (stmt.expr) {
-                            .controlFlow => |cf| switch (cf.kind) {
+                            .jump => |j| switch (j.kind) {
                                 .@"break" => |y| if (y) |yp| {
                                     try writeExprJs(bw, allocator, yp.*);
                                     break;
@@ -69,40 +69,40 @@ fn writeExprJs(bw: anytype, allocator: std.mem.Allocator, te: ast.TypedExpr) !vo
             },
             .null_ => try bw.writeAll("null"),
         },
-        .binaryOp => |b| switch (b.kind) {
-            .add => |op| {
+        .binaryOp => |b| switch (b.kind.op) {
+            .add => {
                 try bw.writeByte('(');
-                try writeExprJs(bw, allocator, op.lhs.*);
+                try writeExprJs(bw, allocator, b.kind.lhs.*);
                 try bw.writeAll(" + ");
-                try writeExprJs(bw, allocator, op.rhs.*);
+                try writeExprJs(bw, allocator, b.kind.rhs.*);
                 try bw.writeByte(')');
             },
-            .sub => |op| {
+            .sub => {
                 try bw.writeByte('(');
-                try writeExprJs(bw, allocator, op.lhs.*);
+                try writeExprJs(bw, allocator, b.kind.lhs.*);
                 try bw.writeAll(" - ");
-                try writeExprJs(bw, allocator, op.rhs.*);
+                try writeExprJs(bw, allocator, b.kind.rhs.*);
                 try bw.writeByte(')');
             },
-            .mul => |op| {
+            .mul => {
                 try bw.writeByte('(');
-                try writeExprJs(bw, allocator, op.lhs.*);
+                try writeExprJs(bw, allocator, b.kind.lhs.*);
                 try bw.writeAll(" * ");
-                try writeExprJs(bw, allocator, op.rhs.*);
+                try writeExprJs(bw, allocator, b.kind.rhs.*);
                 try bw.writeByte(')');
             },
-            .div => |op| {
+            .div => {
                 try bw.writeByte('(');
-                try writeExprJs(bw, allocator, op.lhs.*);
+                try writeExprJs(bw, allocator, b.kind.lhs.*);
                 try bw.writeAll(" / ");
-                try writeExprJs(bw, allocator, op.rhs.*);
+                try writeExprJs(bw, allocator, b.kind.rhs.*);
                 try bw.writeByte(')');
             },
-            .mod => |op| {
+            .mod => {
                 try bw.writeByte('(');
-                try writeExprJs(bw, allocator, op.lhs.*);
+                try writeExprJs(bw, allocator, b.kind.lhs.*);
                 try bw.writeAll(" % ");
-                try writeExprJs(bw, allocator, op.rhs.*);
+                try writeExprJs(bw, allocator, b.kind.rhs.*);
                 try bw.writeByte(')');
             },
             else => try bw.writeAll("undefined"),
@@ -160,7 +160,7 @@ fn writeExprJs(bw: anytype, allocator: std.mem.Allocator, te: ast.TypedExpr) !vo
             .comptimeExpr => |e| try writeExprJs(bw, allocator, e.*),
             else => try bw.writeAll("undefined"),
         },
-        .controlFlow => |cf| switch (cf.kind) {
+        .jump => |j| switch (j.kind) {
             .@"break" => |y| if (y) |yp| try writeExprJs(bw, allocator, yp.*),
             else => try bw.writeAll("undefined"),
         },
@@ -253,7 +253,9 @@ fn parseResults(
                         },
                         else => try allocator.dupe(u8, "undefined"),
                     };
-                    try buf.appendSlice(allocator, try elem_str);
+                    const elem_str_owned = try elem_str;
+                    try buf.appendSlice(allocator, elem_str_owned);
+                    allocator.free(elem_str_owned);
                 }
                 try buf.append(allocator, ']');
                 break :blk buf.toOwnedSlice(allocator);

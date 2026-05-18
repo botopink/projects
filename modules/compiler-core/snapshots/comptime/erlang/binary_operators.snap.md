@@ -11,14 +11,17 @@ val joined = "a" + "b";
   "declarations": [
     {
       "ast": "val",
+      "indent": "sum",
       "return_type": "i32"
     },
     {
       "ast": "val",
+      "indent": "product",
       "return_type": "f64"
     },
     {
       "ast": "val",
+      "indent": "joined",
       "return_type": "string"
     }
   ]

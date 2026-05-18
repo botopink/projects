@@ -11,8 +11,9 @@ fn main() -> i32 {
 ----- ERLANG -- main.erl
 ```erlang
 -module(main).
+-export([_botopink_main/0]).
 
-main() ->
+_botopink_main() ->
     Add = fun(A, B) ->
         (A + B)
     end,
@@ -21,11 +22,4 @@ main() ->
 
 ----- RUN LOG -----
 ```logs
-Error! Failed to load module 'main' because it cannot be found.
-Make sure that the module name is correct and that its .beam file
-is in the code path.
-
-Runtime terminating during boot ({undef,[{init,start_it,1,[]},{init,start_em,1,[]},{init,do_boot,3,[]}]})
-
-Crash dump is being written to: erl_crash.dump...done
-```
+Execution error: error.FileNotFound```

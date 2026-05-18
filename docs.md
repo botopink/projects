@@ -1,9 +1,10 @@
 # botopink Language Reference
 
-Complete examples and language features organized by topic. Each example is backed by a snapshot test in the codegen suite.
+Complete examples and language features organized by topic. Most examples map to parser/comptime/codegen snapshot coverage, and snapshot slugs may evolve across refactors.
 
 ## Table of Contents
 
+- [Reference Updates (v0.0.13-beta)](#reference-updates-v0013-beta)
 - [Imports](#imports)
 - [Variables](#variables)
 - [Functions](#functions)
@@ -25,6 +26,26 @@ Complete examples and language features organized by topic. Each example is back
 - [Implement](#implement)
 - [Destructuring](#destructuring)
 - [Arrays and Tuples](#arrays-and-tuples)
+
+---
+
+## Reference Updates (v0.0.13-beta)
+
+This reference was updated after reviewing the latest commit series:
+`787e5c0`, `9b93b5c`, `e61ba77`, `e98f4f5`, and `b86c5de`.
+
+### Compiler changes that affect this document
+
+- The active expression model is now grouped into AST families:
+  `literal`, `identifier`, `binaryOp`, `unaryOp`, `jump`, `branch`, `loop`, `binding`, `call`, `function`, `collection`, `comptime_`.
+- Legacy expression variants (including `staticCall` and older control-flow grouping) were removed from the active compiler flow.
+- Parser/comptime/codegen snapshots were refreshed for Zig `0.16.0`; obsolete snapshot files were removed or renamed.
+- Runtime helpers for executing generated output are centralized in `modules/compiler-core/src/codegen/runtime.zig`.
+- Generated static library artifacts (`format.o*.a`) are now ignored in version control.
+
+### Reading note
+
+Examples in this file describe language behavior. Exact snapshot file names may change as internals are refactored.
 
 ---
 

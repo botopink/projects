@@ -755,7 +755,9 @@ pub fn inferExprTyped(env: *Env, expr: ast.Expr) InferError!TypedExpr {
         .unaryOp => |u| inferUnaryOpExpr(env, u, u.loc),
 
         // ── control flow ──────────────────────────────────────────────────────
-        .controlFlow => |c| inferControlFlowExpr(env, c, c.loc),
+        .jump => |j| inferJumpExpr(env, j, j.loc),
+        .branch => |b| inferBranchExpr(env, b, b.loc),
+        .loop => |lp| inferLoopExpr(env, lp, lp.loc),
 
         // ── binding expressions ────────────────────────────────────────────────
         .binding => |b| inferBindingExpr(env, b, b.loc),
@@ -841,30 +843,13 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
 
 /// Infer type for binary operation expressions
 fn inferBinaryOpExpr(env: *Env, binop: ast.BinOpExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    // Extract the BinOp struct (all variants have the same structure)
-    const op = switch (binop.kind) {
-        .lt => |v| v,
-        .gt => |v| v,
-        .lte => |v| v,
-        .gte => |v| v,
-        .eq => |v| v,
-        .ne => |v| v,
-        .add => |v| v,
-        .sub => |v| v,
-        .mul => |v| v,
-        .div => |v| v,
-        .mod => |v| v,
-        .@"and" => |v| v,
-        .@"or" => |v| v,
-    };
-
-    const lhsTyped = try inferExprTyped(env, op.lhs.*);
-    const rhsTyped = try inferExprTyped(env, op.rhs.*);
+    const lhsTyped = try inferExprTyped(env, binop.kind.lhs.*);
+    const rhsTyped = try inferExprTyped(env, binop.kind.rhs.*);
     const lhsPtr = try makeTypedPtr(env, lhsTyped);
     const rhsPtr = try makeTypedPtr(env, rhsTyped);
 
     // Determine result type based on operator
-    const resultType: *T.Type = switch (binop.kind) {
+    const resultType: *T.Type = switch (binop.kind.op) {
         .lt, .gt, .lte, .gte, .eq, .ne => try env.namedType("bool"),
         .@"and", .@"or" => blk: {
             try unifyAt(env, lhsTyped.getType(), try env.namedType("bool"), loc);
@@ -891,45 +876,57 @@ fn inferBinaryOpExpr(env: *Env, binop: ast.BinOpExprOf(.untyped), loc: ast.Loc) 
             break :blk lhsTy;
         },
     };
-
-    // Reconstruct the same binary op variant with typed operands
-    return switch (binop.kind) {
-        .lt => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .lt = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .gt => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .gt = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .lte => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .lte = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .gte => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .gte = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .eq => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .eq = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .ne => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .ne = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .add => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .add = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .sub => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .sub = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .mul => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .mul = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .div => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .div = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .mod => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .mod = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .@"and" => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .@"and" = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-        .@"or" => TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{ .@"or" = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } },
-    };
+    return TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{
+        .op = binop.kind.op,
+        .lhs = lhsPtr,
+        .rhs = rhsPtr,
+    } } };
 }
 
 /// Infer type for unary operation expressions
 fn inferUnaryOpExpr(env: *Env, unaryop: ast.UnaryOpExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    const operandTyped = try inferExprTyped(env, switch (unaryop.kind) {
-        .not => |e| e.*,
-        .neg => |e| e.*,
-    });
+    const operandTyped = try inferExprTyped(env, unaryop.kind.expr.*);
     const operandPtr = try makeTypedPtr(env, operandTyped);
-
-    return switch (unaryop.kind) {
+    return switch (unaryop.kind.op) {
         .not => blk: {
             try unifyAt(env, operandTyped.getType(), try env.namedType("bool"), loc);
-            break :blk TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = try env.namedType("bool"), .kind = .{ .not = operandPtr } } };
+            break :blk TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = try env.namedType("bool"), .kind = .{ .op = .not, .expr = operandPtr } } };
         },
-        .neg => TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = operandTyped.getType(), .kind = .{ .neg = operandPtr } } },
+        .neg => TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = operandTyped.getType(), .kind = .{ .op = .neg, .expr = operandPtr } } },
     };
 }
 
-/// Infer type for control flow expressions (branching, error propagation, iteration)
-fn inferControlFlowExpr(env: *Env, cf: ast.ControlFlowExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    return switch (cf.kind) {
+/// Infer type for jump expressions (return, throw, try, break, continue, yield)
+fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)), loc: ast.Loc) InferError!TypedExpr {
+    return switch (j.kind) {
+        .@"return" => |r| {
+            const valPtr: ?*TypedExpr = if (r) |rv| try makeTypedPtr(env, try inferExprTyped(env, rv.*)) else null;
+            return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .@"return" = valPtr } } };
+        },
+        .throw_ => |e| {
+            const valPtr: ?*TypedExpr = if (e) |ev| try makeTypedPtr(env, try inferExprTyped(env, ev.*)) else null;
+            return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .throw_ = valPtr } } };
+        },
+        .try_ => |e| {
+            const valPtr: ?*TypedExpr = if (e) |ev| try makeTypedPtr(env, try inferExprTyped(env, ev.*)) else null;
+            const ty = if (valPtr) |vp| vp.getType() else try env.freshVar();
+            return TypedExpr{ .jump = .{ .loc = loc, .type_ = ty, .kind = .{ .try_ = valPtr } } };
+        },
+        .@"break" => |e| {
+            const typedPtr: ?*TypedExpr = if (e) |expr| try makeTypedPtr(env, try inferExprTyped(env, expr.*)) else null;
+            return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .@"break" = typedPtr } } };
+        },
+        .@"continue" => TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .@"continue" } },
+        .yield => |e| {
+            const typedPtr: ?*TypedExpr = if (e) |expr| try makeTypedPtr(env, try inferExprTyped(env, expr.*)) else null;
+            return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .yield = typedPtr } } };
+        },
+    };
+}
+
+/// Infer type for branch expressions (if and try-catch)
+fn inferBranchExpr(env: *Env, b: ast.MakeExpr(.untyped, ast.BranchExprOf(.untyped)), loc: ast.Loc) InferError!TypedExpr {
+    return switch (b.kind) {
         .if_ => |i| {
             const condTyped = try inferExprTyped(env, i.cond.*);
             const condPtr = try makeTypedPtr(env, condTyped);
@@ -962,30 +959,12 @@ fn inferControlFlowExpr(env: *Env, cf: ast.ControlFlowExprOf(.untyped), loc: ast
             if (elseTyped != null) {
                 try unify(env, bodyType, elseType);
             }
-            return TypedExpr{ .controlFlow = .{ .loc = loc, .type_ = bodyType, .kind = .{ .if_ = .{
+            return TypedExpr{ .branch = .{ .loc = loc, .type_ = bodyType, .kind = .{ .if_ = .{
                 .cond = condPtr,
                 .binding = i.binding,
                 .then_ = thenTyped,
                 .else_ = elseTyped,
             } } } };
-        },
-
-        .@"return" => |r| {
-            const valTyped = try inferExprTyped(env, r.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            return TypedExpr{ .controlFlow = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .@"return" = valPtr } } };
-        },
-
-        .throw_ => |e| {
-            const valTyped = try inferExprTyped(env, e.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            return TypedExpr{ .controlFlow = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .throw_ = valPtr } } };
-        },
-
-        .try_ => |e| {
-            const valTyped = try inferExprTyped(env, e.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            return TypedExpr{ .controlFlow = .{ .loc = loc, .type_ = valTyped.getType(), .kind = .{ .try_ = valPtr } } };
         },
 
         .tryCatch => |tc| {
@@ -997,50 +976,33 @@ fn inferControlFlowExpr(env: *Env, cf: ast.ControlFlowExprOf(.untyped), loc: ast
             if (!handlerTyped.getType().isNamed("void")) {
                 try unify(env, exprTyped.getType(), handlerTyped.getType());
             }
-            return TypedExpr{ .controlFlow = .{ .loc = loc, .type_ = exprTyped.getType(), .kind = .{ .tryCatch = .{
+            return TypedExpr{ .branch = .{ .loc = loc, .type_ = exprTyped.getType(), .kind = .{ .tryCatch = .{
                 .expr = exprPtr,
                 .handler = handlerPtr,
             } } } };
         },
-
-        .loop => |lp| {
-            const iterTyped = try inferExprTyped(env, lp.iter.*);
-            const iterPtr = try makeTypedPtr(env, iterTyped);
-            const indexRangePtr = if (lp.indexRange) |ir| try makeTypedPtr(env, try inferExprTyped(env, ir.*)) else null;
-
-            for (lp.params) |p| {
-                try env.bind(p, try env.freshVar());
-            }
-
-            const typedBody = try inferStmtsTyped(env, lp.body);
-            const loopArrayArgs = try env.arena.alloc(*T.Type, 1);
-            loopArrayArgs[0] = try env.freshVar();
-            return TypedExpr{ .controlFlow = .{ .loc = loc, .type_ = try env.namedTypeArgs("array", loopArrayArgs), .kind = .{ .loop = .{
-                .iter = iterPtr,
-                .indexRange = indexRangePtr,
-                .params = lp.params,
-                .body = typedBody,
-            } } } };
-        },
-
-        .@"break" => |e| {
-            if (e) |expr| {
-                const typed = try inferExprTyped(env, expr.*);
-                const typedPtr = try makeTypedPtr(env, typed);
-                return TypedExpr{ .controlFlow = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .@"break" = typedPtr } } };
-            } else {
-                return TypedExpr{ .controlFlow = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .@"break" = null } } };
-            }
-        },
-
-        .@"continue" => TypedExpr{ .controlFlow = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .@"continue" } },
-
-        .yield => |e| {
-            const typed = try inferExprTyped(env, e.*);
-            const typedPtr = try makeTypedPtr(env, typed);
-            return TypedExpr{ .controlFlow = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .yield = typedPtr } } };
-        },
     };
+}
+
+/// Infer type for loop expressions
+fn inferLoopExpr(env: *Env, lp: ast.MakeExpr(.untyped, ast.LoopExprOf(.untyped)), loc: ast.Loc) InferError!TypedExpr {
+    const iterTyped = try inferExprTyped(env, lp.kind.iter.*);
+    const iterPtr = try makeTypedPtr(env, iterTyped);
+    const indexRangePtr = if (lp.kind.indexRange) |ir| try makeTypedPtr(env, try inferExprTyped(env, ir.*)) else null;
+
+    for (lp.kind.params) |p| {
+        try env.bind(p, try env.freshVar());
+    }
+
+    const typedBody = try inferStmtsTyped(env, lp.kind.body);
+    const loopArrayArgs = try env.arena.alloc(*T.Type, 1);
+    loopArrayArgs[0] = try env.freshVar();
+    return TypedExpr{ .loop = .{ .loc = loc, .type_ = try env.namedTypeArgs("array", loopArrayArgs), .kind = .{
+        .iter = iterPtr,
+        .indexRange = indexRangePtr,
+        .params = lp.kind.params,
+        .body = typedBody,
+    } } };
 }
 
 /// Infer type for binding expressions (variable declarations and assignments)
@@ -1060,53 +1022,25 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
         .assign => |a| {
             const valTyped = try inferExprTyped(env, a.value.*);
             const valPtr = try makeTypedPtr(env, valTyped);
-            if (env.lookup(a.name)) |ty| {
-                try unifyAt(env, ty, valTyped.getType(), loc);
-            } else {
-                env.lastError = TypeError.unboundVariable(a.name).withLoc(loc);
-                return error.TypeError;
-            }
+
             return TypedExpr{ .binding = .{ .loc = loc, .type_ = valTyped.getType(), .kind = .{ .assign = .{
-                .name = a.name,
-                .value = valPtr,
-            } } } };
-        },
-
-        .assignPlus => |a| {
-            const valTyped = try inferExprTyped(env, a.value.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            if (env.lookup(a.name)) |ty| {
-                try unifyAt(env, ty, valTyped.getType(), loc);
-            } else {
-                env.lastError = TypeError.unboundVariable(a.name).withLoc(loc);
-                return error.TypeError;
-            }
-            return TypedExpr{ .binding = .{ .loc = loc, .type_ = valTyped.getType(), .kind = .{ .assignPlus = .{
-                .name = a.name,
-                .value = valPtr,
-            } } } };
-        },
-
-        .fieldAssign => |fa| {
-            const recvTyped = try inferExprTyped(env, fa.receiver.*);
-            const recvPtr = try makeTypedPtr(env, recvTyped);
-            const valTyped = try inferExprTyped(env, fa.value.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            return TypedExpr{ .binding = .{ .loc = loc, .type_ = valTyped.getType(), .kind = .{ .fieldAssign = .{
-                .receiver = recvPtr,
-                .field = fa.field,
-                .value = valPtr,
-            } } } };
-        },
-
-        .fieldPlusEq => |fp| {
-            const recvTyped = try inferExprTyped(env, fp.receiver.*);
-            const recvPtr = try makeTypedPtr(env, recvTyped);
-            const valTyped = try inferExprTyped(env, fp.value.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            return TypedExpr{ .binding = .{ .loc = loc, .type_ = valTyped.getType(), .kind = .{ .fieldPlusEq = .{
-                .receiver = recvPtr,
-                .field = fp.field,
+                .target = switch (a.target) {
+                    .name => |name| blk: {
+                        if (env.lookup(name)) |ty| {
+                            try unifyAt(env, ty, valTyped.getType(), loc);
+                        } else {
+                            env.lastError = TypeError.unboundVariable(name).withLoc(loc);
+                            return error.TypeError;
+                        }
+                        break :blk .{ .name = name };
+                    },
+                    .fieldAccess => |fa| blk: {
+                        const recvTyped = try inferExprTyped(env, fa.receiver.*);
+                        const recvPtr = try makeTypedPtr(env, recvTyped);
+                        break :blk .{ .fieldAccess = .{ .receiver = recvPtr, .field = fa.field } };
+                    },
+                },
+                .op = a.op,
                 .value = valPtr,
             } } } };
         },
@@ -1423,6 +1357,8 @@ fn inferComptimeExpr(env: *Env, ct: ast.ComptimeExprOf(.untyped), loc: ast.Loc) 
             } } } };
         },
     };
+}
+
 pub fn freshEnv(a: std.mem.Allocator, gpa: std.mem.Allocator) !Env {
     var e = Env.init(a);
     try e.registerBuiltins();

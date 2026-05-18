@@ -6,6 +6,13 @@
 
 **botopink** is a programming language with its own syntax, currently in early development. This repository contains the full compiler toolchain: lexer, parser, AST representation, Hindley-Milner type inference, JavaScript/Erlang code generation with comptime evaluation, a source code formatter, and a complete LSP language server.
 
+## Recent Updates (May 2026)
+
+- Refactored expression flow in `compiler-core` to the new categorized AST model (`literal`, `identifier`, `binaryOp`, `unaryOp`, `jump`, `branch`, `loop`, `binding`, `call`, `function`, `collection`, `comptime_`).
+- Removed legacy expression variants (`controlFlow`, `staticCall`) and aligned parser, formatter, comptime pipeline, codegen emitters, and language-server integration.
+- Refreshed parser/comptime/codegen snapshots for Zig `0.16.0` compatibility and updated generated baselines.
+- Added `src/codegen/runtime.zig` runtime helpers and ignored compiled `format.o*.a` artifacts in version control.
+
 ## Project Structure
 
 ```
@@ -29,6 +36,7 @@ modules/
 │   │   ├── config.zig       # Target and runtime config
 │   │   ├── commonJS.zig     # CommonJS backend
 │   │   ├── erlang.zig       # Erlang backend
+│   │   ├── runtime.zig      # Runtime execution helpers for generated output
 │   │   ├── typescript.zig   # TypeScript typedef generator
 │   │   └── tests.zig        # Snapshot-based codegen tests
 │   └── src/utils/           # Test infrastructure (snapshots, diffs)
@@ -77,7 +85,7 @@ zig build run       # compile and run the botopink CLI
 - Declarations: `use`, `interface`, `struct`, `record`, `enum`, `implement`, `pub fn`, `val`, delegate
 - Shorthand declarations: `struct Name {}`, `record Name(...) {}`, `enum Name {}`, `interface Name {}`
 - Delegate declarations: `val X = interface fn(...)` and `[pub] declare fnX(...)` — single-method interface aliases
-- Expressions: literals, field access, method calls, binary operators, `return`, `try`, `if`, `null`, `comptime`, `yield`, pipeline `|>`
+- Expressions: literals, field access, method calls, binary operators, unary operators, `return`, `throw`, `try`, `if`, `loop`, `break`, `continue`, `yield`, `comptime`, pipeline `|>`, and anonymous `fn(...) { ... }`
 - Pipeline operator: `a |> b |> c` — left-associative function composition
 - Lambda syntax: `{ params -> body }` — inline anonymous function
 - Optional types `?T`, error unions `E!T`, array types `T[]`, tuple types `#(T1,T2)` in type annotations
@@ -95,10 +103,11 @@ zig build run       # compile and run the botopink CLI
 ### AST
 - Typed representation of all language nodes via Zig's `union(enum)`
 - `Param.typeRef: TypeRef` — structured type references in function parameters (not flat strings)
-- `TypeRef` union: `named`, `array`, `tuple_`, `optional`, `errorUnion`, `func` — covers all type annotation forms
+- `TypeRef` union: `named`, `array`, `tuple_`, `optional`, `errorUnion`, `function` — covers all type annotation forms
 - `ValDecl`, `FnDecl`, `DelegateDecl`, `RecordDecl`, `StructDecl`, `EnumDecl`, `InterfaceDecl`
 - Generic parameters, parameter modifiers, getters/setters
-- `ExprKind.pipeline`, `ExprKind.fnExpr`, `ExprKind.lambda`, `CaseArm.emptyLineBefore`
+- `ExprOf(phase)` categorized families: `literal`, `identifier`, `binaryOp`, `unaryOp`, `jump`, `branch`, `loop`, `binding`, `call`, `function`, `collection`, `comptime_`
+- `CaseArm.emptyLineBefore` preserves intentional blank lines in `case` formatting
 
 ### Type System
 - Hindley-Milner type inference with let-polymorphism

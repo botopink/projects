@@ -84,39 +84,38 @@
                                   "col": 59
                                 },
                                 "kind": {
-                                  "add": {
-                                    "lhs": {
-                                      "literal": {
-                                        "loc": {
-                                          "line": 5,
-                                          "col": 27
-                                        },
-                                        "kind": {
-                                          "stringLit": "Rendering object with color: "
-                                        }
+                                  "op": "add",
+                                  "lhs": {
+                                    "literal": {
+                                      "loc": {
+                                        "line": 5,
+                                        "col": 27
+                                      },
+                                      "kind": {
+                                        "stringLit": "Rendering object with color: "
                                       }
-                                    },
-                                    "rhs": {
-                                      "identifier": {
-                                        "loc": {
-                                          "line": 5,
-                                          "col": 61
-                                        },
-                                        "kind": {
-                                          "identAccess": {
-                                            "receiver": {
-                                              "identifier": {
-                                                "loc": {
-                                                  "line": 5,
-                                                  "col": 61
-                                                },
-                                                "kind": {
-                                                  "ident": "self"
-                                                }
+                                    }
+                                  },
+                                  "rhs": {
+                                    "identifier": {
+                                      "loc": {
+                                        "line": 5,
+                                        "col": 61
+                                      },
+                                      "kind": {
+                                        "identAccess": {
+                                          "receiver": {
+                                            "identifier": {
+                                              "loc": {
+                                                "line": 5,
+                                                "col": 61
+                                              },
+                                              "kind": {
+                                                "ident": "self"
                                               }
-                                            },
-                                            "member": "color"
-                                          }
+                                            }
+                                          },
+                                          "member": "color"
                                         }
                                       }
                                     }

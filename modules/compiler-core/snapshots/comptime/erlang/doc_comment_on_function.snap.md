@@ -18,11 +18,11 @@ val result = add(1, 2);
       "params": [
         {
           "name": "a",
-          "type": ""
+          "type": "i32"
         },
         {
           "name": "b",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "i32",
@@ -34,6 +34,8 @@ val result = add(1, 2);
     },
     {
       "ast": "val",
+      "indent": "result",
+      "return_type": "i32",
       "expr": {
         "ast": "call",
         "params": [
@@ -45,8 +47,7 @@ val result = add(1, 2);
           }
         ],
         "return_type": "i32"
-      },
-      "return_type": "i32"
+      }
     }
   ]
 }

@@ -9,6 +9,7 @@ val greeting = "hello";
   "declarations": [
     {
       "ast": "val",
+      "indent": "greeting",
       "return_type": "string"
     }
   ]

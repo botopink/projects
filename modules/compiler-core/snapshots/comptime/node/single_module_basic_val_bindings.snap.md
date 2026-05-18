@@ -10,10 +10,12 @@ val name = "alice";
   "declarations": [
     {
       "ast": "val",
+      "indent": "x",
       "return_type": "i32"
     },
     {
       "ast": "val",
+      "indent": "name",
       "return_type": "string"
     }
   ]

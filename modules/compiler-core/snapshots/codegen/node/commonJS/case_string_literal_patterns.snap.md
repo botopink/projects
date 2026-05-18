@@ -30,4 +30,4 @@ function greet(lang) {
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

@@ -141,6 +141,8 @@ pub fn transform(
                 // Look up the comptime value and replace with a literal.
                 if (agg.val_ct_map.get(val_decl.name)) |ct_id| {
                     if (agg.comptime_vals.get(ct_id)) |lit| {
+                        val_decl.value.deinit(allocator);
+                        allocator.destroy(val_decl.value);
                         val_decl.value = try makeLiteralExpr(allocator, lit);
                     }
                 }
@@ -203,12 +205,15 @@ fn scanStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_
             .assign => |a| scanExpr(agg, fn_decls, comptime_arrays, a.value.*) catch return ScanError.OutOfMemory,
             else => {},
         },
-        .controlFlow => |cf| switch (cf.kind) {
-            .@"return" => |r| scanExpr(agg, fn_decls, comptime_arrays, r.*) catch return ScanError.OutOfMemory,
-            .loop => |lp| {
-                scanExpr(agg, fn_decls, comptime_arrays, lp.iter.*) catch return ScanError.OutOfMemory;
-                for (lp.body) |s| scanStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
-            },
+        .binaryOp => |b| {
+            scanExpr(agg, fn_decls, comptime_arrays, b.kind.lhs.*) catch return ScanError.OutOfMemory;
+            scanExpr(agg, fn_decls, comptime_arrays, b.kind.rhs.*) catch return ScanError.OutOfMemory;
+        },
+        .jump => |j| switch (j.kind) {
+            .@"return" => |r| if (r) |rp| scanExpr(agg, fn_decls, comptime_arrays, rp.*) catch return ScanError.OutOfMemory,
+            else => {},
+        },
+        .branch => |br| switch (br.kind) {
             .if_ => |if_node| {
                 scanExpr(agg, fn_decls, comptime_arrays, if_node.cond.*) catch return ScanError.OutOfMemory;
                 for (if_node.then_) |s| scanStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
@@ -216,7 +221,15 @@ fn scanStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_
                     for (else_stmts) |s| scanStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
                 }
             },
-            else => {},
+            .tryCatch => |tc| {
+                scanExpr(agg, fn_decls, comptime_arrays, tc.expr.*) catch return ScanError.OutOfMemory;
+                scanExpr(agg, fn_decls, comptime_arrays, tc.handler.*) catch return ScanError.OutOfMemory;
+            },
+        },
+        .loop => |lp| {
+            scanExpr(agg, fn_decls, comptime_arrays, lp.kind.iter.*) catch return ScanError.OutOfMemory;
+            if (lp.kind.indexRange) |ir| scanExpr(agg, fn_decls, comptime_arrays, ir.*) catch return ScanError.OutOfMemory;
+            for (lp.kind.body) |s| scanStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
         },
         .call, .identifier, .literal => scanExpr(agg, fn_decls, comptime_arrays, stmt.expr) catch return ScanError.OutOfMemory,
         else => {},
@@ -258,7 +271,15 @@ fn scanExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_
             .localBind => |lb| scanExpr(agg, fn_decls, comptime_arrays, lb.value.*) catch return ScanError.OutOfMemory,
             else => {},
         },
-        .controlFlow => |cf| switch (cf.kind) {
+        .jump => |j| switch (j.kind) {
+            .throw_ => |t| if (t) |tp| scanExpr(agg, fn_decls, comptime_arrays, tp.*) catch return ScanError.OutOfMemory,
+            .try_ => |t| if (t) |tp| scanExpr(agg, fn_decls, comptime_arrays, tp.*) catch return ScanError.OutOfMemory,
+            .@"return" => |r| if (r) |rp| scanExpr(agg, fn_decls, comptime_arrays, rp.*) catch return ScanError.OutOfMemory,
+            .@"break" => |b| if (b) |bp| scanExpr(agg, fn_decls, comptime_arrays, bp.*) catch return ScanError.OutOfMemory,
+            .yield => |y| if (y) |yp| scanExpr(agg, fn_decls, comptime_arrays, yp.*) catch return ScanError.OutOfMemory,
+            else => {},
+        },
+        .branch => |br| switch (br.kind) {
             .if_ => |if_node| {
                 scanExpr(agg, fn_decls, comptime_arrays, if_node.cond.*) catch return ScanError.OutOfMemory;
                 for (if_node.then_) |s| scanExpr(agg, fn_decls, comptime_arrays, s.expr) catch return ScanError.OutOfMemory;
@@ -266,23 +287,19 @@ fn scanExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_
                     for (else_stmts) |s| scanExpr(agg, fn_decls, comptime_arrays, s.expr) catch return ScanError.OutOfMemory;
                 }
             },
-            .loop => |lp| {
-                scanExpr(agg, fn_decls, comptime_arrays, lp.iter.*) catch return ScanError.OutOfMemory;
-                for (lp.body) |s| scanExpr(agg, fn_decls, comptime_arrays, s.expr) catch return ScanError.OutOfMemory;
-            },
-            .throw_ => |t| scanExpr(agg, fn_decls, comptime_arrays, t.*) catch return ScanError.OutOfMemory,
-            .try_ => |t| scanExpr(agg, fn_decls, comptime_arrays, t.*) catch return ScanError.OutOfMemory,
             .tryCatch => |tc| {
                 scanExpr(agg, fn_decls, comptime_arrays, tc.expr.*) catch return ScanError.OutOfMemory;
                 scanExpr(agg, fn_decls, comptime_arrays, tc.handler.*) catch return ScanError.OutOfMemory;
             },
-            else => {},
         },
-        .binaryOp => |b| switch (b.kind) {
-            .add, .sub, .mul, .div, .mod, .eq, .ne, .lt, .gt, .lte, .gte, .@"and", .@"or" => |op| {
-                scanExpr(agg, fn_decls, comptime_arrays, op.lhs.*) catch return ScanError.OutOfMemory;
-                scanExpr(agg, fn_decls, comptime_arrays, op.rhs.*) catch return ScanError.OutOfMemory;
-            },
+        .loop => |lp| {
+            scanExpr(agg, fn_decls, comptime_arrays, lp.kind.iter.*) catch return ScanError.OutOfMemory;
+            if (lp.kind.indexRange) |ir| scanExpr(agg, fn_decls, comptime_arrays, ir.*) catch return ScanError.OutOfMemory;
+            for (lp.kind.body) |s| scanExpr(agg, fn_decls, comptime_arrays, s.expr) catch return ScanError.OutOfMemory;
+        },
+        .binaryOp => |b| {
+            scanExpr(agg, fn_decls, comptime_arrays, b.kind.lhs.*) catch return ScanError.OutOfMemory;
+            scanExpr(agg, fn_decls, comptime_arrays, b.kind.rhs.*) catch return ScanError.OutOfMemory;
         },
         .collection => |col| switch (col.kind) {
             .arrayLit => |al| {
@@ -337,12 +354,15 @@ fn rewriteStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
             .assign => |a| rewriteExpr(agg, fn_decls, comptime_arrays, a.value) catch return ScanError.OutOfMemory,
             else => {},
         },
-        .controlFlow => |*cf| switch (cf.kind) {
-            .@"return" => |r| rewriteExpr(agg, fn_decls, comptime_arrays, r) catch return ScanError.OutOfMemory,
-            .loop => |lp| {
-                rewriteExpr(agg, fn_decls, comptime_arrays, lp.iter) catch return ScanError.OutOfMemory;
-                for (lp.body) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
-            },
+        .jump => |*j| switch (j.kind) {
+            .@"return" => |r| if (r) |rp| rewriteExpr(agg, fn_decls, comptime_arrays, rp) catch return ScanError.OutOfMemory,
+            .throw_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
+            .try_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
+            .@"break" => |b| if (b) |bp| rewriteExpr(agg, fn_decls, comptime_arrays, bp) catch return ScanError.OutOfMemory,
+            .yield => |y| if (y) |yp| rewriteExpr(agg, fn_decls, comptime_arrays, yp) catch return ScanError.OutOfMemory,
+            .@"continue" => {},
+        },
+        .branch => |*br| switch (br.kind) {
             .if_ => |if_node| {
                 rewriteExpr(agg, fn_decls, comptime_arrays, if_node.cond) catch return ScanError.OutOfMemory;
                 for (if_node.then_) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
@@ -350,7 +370,15 @@ fn rewriteStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
                     for (else_stmts) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, @constCast(s)) catch return ScanError.OutOfMemory;
                 }
             },
-            else => {},
+            .tryCatch => |tc| {
+                rewriteExpr(agg, fn_decls, comptime_arrays, tc.expr) catch return ScanError.OutOfMemory;
+                rewriteExpr(agg, fn_decls, comptime_arrays, tc.handler) catch return ScanError.OutOfMemory;
+            },
+        },
+        .loop => |*lp| {
+            rewriteExpr(agg, fn_decls, comptime_arrays, lp.kind.iter) catch return ScanError.OutOfMemory;
+            if (lp.kind.indexRange) |ir| rewriteExpr(agg, fn_decls, comptime_arrays, ir) catch return ScanError.OutOfMemory;
+            for (lp.kind.body) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
         },
         else => {},
     }
@@ -369,7 +397,15 @@ fn rewriteExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
             .localBind => |lb| rewriteExpr(agg, fn_decls, comptime_arrays, lb.value) catch return ScanError.OutOfMemory,
             else => {},
         },
-        .controlFlow => |*cf| switch (cf.kind) {
+        .jump => |*j| switch (j.kind) {
+            .@"return" => |r| if (r) |rp| rewriteExpr(agg, fn_decls, comptime_arrays, rp) catch return ScanError.OutOfMemory,
+            .@"break" => |b| if (b) |bp| rewriteExpr(agg, fn_decls, comptime_arrays, bp) catch return ScanError.OutOfMemory,
+            .yield => |y| if (y) |yp| rewriteExpr(agg, fn_decls, comptime_arrays, yp) catch return ScanError.OutOfMemory,
+            .@"continue" => {},
+            .throw_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
+            .try_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
+        },
+        .branch => |*br| switch (br.kind) {
             .if_ => |if_node| {
                 rewriteExpr(agg, fn_decls, comptime_arrays, if_node.cond) catch return ScanError.OutOfMemory;
                 for (if_node.then_) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
@@ -377,23 +413,19 @@ fn rewriteExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
                     for (else_stmts) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, @constCast(s)) catch return ScanError.OutOfMemory;
                 }
             },
-            .loop => |lp| {
-                rewriteExpr(agg, fn_decls, comptime_arrays, lp.iter) catch return ScanError.OutOfMemory;
-                for (lp.body) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
-            },
-            .throw_ => |t| rewriteExpr(agg, fn_decls, comptime_arrays, t) catch return ScanError.OutOfMemory,
-            .try_ => |t| rewriteExpr(agg, fn_decls, comptime_arrays, t) catch return ScanError.OutOfMemory,
             .tryCatch => |tc| {
                 rewriteExpr(agg, fn_decls, comptime_arrays, tc.expr) catch return ScanError.OutOfMemory;
                 rewriteExpr(agg, fn_decls, comptime_arrays, tc.handler) catch return ScanError.OutOfMemory;
             },
-            else => {},
         },
-        .binaryOp => |*b| switch (b.kind) {
-            .add, .sub, .mul, .div, .mod, .eq, .ne, .lt, .gt, .lte, .gte, .@"and", .@"or" => |op| {
-                rewriteExpr(agg, fn_decls, comptime_arrays, op.lhs) catch return ScanError.OutOfMemory;
-                rewriteExpr(agg, fn_decls, comptime_arrays, op.rhs) catch return ScanError.OutOfMemory;
-            },
+        .loop => |*lp| {
+            rewriteExpr(agg, fn_decls, comptime_arrays, lp.kind.iter) catch return ScanError.OutOfMemory;
+            if (lp.kind.indexRange) |ir| rewriteExpr(agg, fn_decls, comptime_arrays, ir) catch return ScanError.OutOfMemory;
+            for (lp.kind.body) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
+        },
+        .binaryOp => |*b| {
+            rewriteExpr(agg, fn_decls, comptime_arrays, b.kind.lhs) catch return ScanError.OutOfMemory;
+            rewriteExpr(agg, fn_decls, comptime_arrays, b.kind.rhs) catch return ScanError.OutOfMemory;
         },
         .collection => |*col| switch (col.kind) {
             .arrayLit => |al| {

@@ -1,5 +1,10 @@
 # core/src/format
 
+## AGENTS links
+
+- [Root AGENTS](../../../../AGENTS.md)
+- [Compiler-core src AGENTS](../AGENTS.md)
+
 Formatter tests live here. The formatter implementation itself is at
 `../format.zig` (Wadler-Lindig pretty-printer).
 

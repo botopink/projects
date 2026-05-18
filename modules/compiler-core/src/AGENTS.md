@@ -1,5 +1,17 @@
 # core/src
 
+## AGENTS links
+
+- [Root AGENTS](../../../AGENTS.md)
+- [Compiler-core AGENTS](../AGENTS.md)
+- [Codegen AGENTS](codegen/AGENTS.md)
+- [Comptime AGENTS](comptime/AGENTS.md)
+- [Comptime runtime AGENTS](comptime/runtime/AGENTS.md)
+- [Format AGENTS](format/AGENTS.md)
+- [Lexer AGENTS](lexer/AGENTS.md)
+- [Parser AGENTS](parser/AGENTS.md)
+- [Utils AGENTS](utils/AGENTS.md)
+
 ## Files at this level
 
 | File | Role |

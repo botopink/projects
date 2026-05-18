@@ -17,7 +17,7 @@ val s = describe(5);
       "params": [
         {
           "name": "n",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "string",
@@ -29,6 +29,8 @@ val s = describe(5);
     },
     {
       "ast": "val",
+      "indent": "s",
+      "return_type": "string",
       "expr": {
         "ast": "call",
         "params": [
@@ -37,8 +39,7 @@ val s = describe(5);
           }
         ],
         "return_type": "string"
-      },
-      "return_type": "string"
+      }
     }
   ]
 }

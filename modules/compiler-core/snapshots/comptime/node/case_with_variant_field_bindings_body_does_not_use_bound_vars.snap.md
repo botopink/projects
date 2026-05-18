@@ -25,6 +25,7 @@ val label = case s {
     },
     {
       "ast": "val",
+      "indent": "s",
       "return_type": "Shape"
     },
     {

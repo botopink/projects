@@ -1,5 +1,10 @@
 # core/src/lexer
 
+## AGENTS links
+
+- [Root AGENTS](../../../../AGENTS.md)
+- [Compiler-core src AGENTS](../AGENTS.md)
+
 Lexer support files. The lexer entry point is `../lexer.zig`.
 
 ## Files

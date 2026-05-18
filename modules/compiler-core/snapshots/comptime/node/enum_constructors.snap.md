@@ -20,10 +20,13 @@ val c3: Color = .Red;
     },
     {
       "ast": "val",
+      "indent": "c1",
       "return_type": "Color"
     },
     {
       "ast": "val",
+      "indent": "c2",
+      "return_type": "Color",
       "expr": {
         "ast": "call",
         "params": [
@@ -41,11 +44,11 @@ val c3: Color = .Red;
           }
         ],
         "return_type": "Color"
-      },
-      "return_type": "Color"
+      }
     },
     {
       "ast": "val",
+      "indent": "c3",
       "return_type": "Color"
     }
   ]

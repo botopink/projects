@@ -1,5 +1,11 @@
 # core
 
+## AGENTS links
+
+- [Root AGENTS](../../AGENTS.md)
+- [Modules AGENTS](../AGENTS.md)
+- [Compiler-core src AGENTS](src/AGENTS.md)
+
 Main Zig package. See the root `AGENTS.md` for the full architecture and
 conventions reference. This file covers package-level layout only.
 

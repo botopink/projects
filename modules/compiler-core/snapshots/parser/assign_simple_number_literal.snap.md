@@ -50,7 +50,10 @@
                 },
                 "kind": {
                   "assign": {
-                    "name": "x",
+                    "target": {
+                      "name": "x"
+                    },
+                    "op": "assign",
                     "value": {
                       "literal": {
                         "loc": {

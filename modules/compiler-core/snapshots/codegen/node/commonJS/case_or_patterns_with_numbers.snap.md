@@ -28,4 +28,4 @@ function classify(day) {
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

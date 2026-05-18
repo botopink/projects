@@ -33,6 +33,8 @@ val origin = Point(0, 0);
   "declarations": [
     {
       "ast": "val",
+      "indent": "origin",
+      "return_type": "Point",
       "expr": {
         "ast": "call",
         "params": [
@@ -44,8 +46,17 @@ val origin = Point(0, 0);
           }
         ],
         "return_type": "Point"
-      },
-      "return_type": "Point"
+      }
+    },
+    {
+      "ast": "use",
+      "declarations": [
+        {
+          "ast": "use-declaration",
+          "indent": "Point",
+          "return_type": "Point"
+        }
+      ]
     }
   ]
 }

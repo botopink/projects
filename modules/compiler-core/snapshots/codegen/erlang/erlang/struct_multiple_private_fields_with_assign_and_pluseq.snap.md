@@ -25,19 +25,12 @@ val BankAccount = struct {
 -record(BankAccount, {_balance, _owner}).
 
 deposit(Amount) ->
-    %% field += not directly supported in Erlang.
+    %% field assignment is not directly supported in Erlang.
 
 setOwner(Name) ->
-    %% self._owner = ....
+    %% field assignment is not directly supported in Erlang.
 ```
 
 ----- RUN LOG -----
 ```logs
-Error! Failed to load module 'main' because it cannot be found.
-Make sure that the module name is correct and that its .beam file
-is in the code path.
-
-Runtime terminating during boot ({undef,[{init,start_it,1,[]},{init,start_em,1,[]},{init,do_boot,3,[]}]})
-
-Crash dump is being written to: erl_crash.dump...done
-```
+Execution error: error.FileNotFound```

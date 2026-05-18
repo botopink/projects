@@ -35,7 +35,7 @@ val n = label(Direction.North);
       "params": [
         {
           "name": "d",
-          "type": ""
+          "type": "Direction"
         }
       ],
       "return_type": "string",
@@ -50,6 +50,8 @@ val n = label(Direction.North);
     },
     {
       "ast": "val",
+      "indent": "n",
+      "return_type": "string",
       "expr": {
         "ast": "call",
         "params": [
@@ -58,8 +60,7 @@ val n = label(Direction.North);
           }
         ],
         "return_type": "string"
-      },
-      "return_type": "string"
+      }
     }
   ]
 }

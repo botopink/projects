@@ -28,12 +28,13 @@ val r = count();
     },
     {
       "ast": "val",
+      "indent": "r",
+      "return_type": "i32",
       "expr": {
         "ast": "call",
         "params": [],
         "return_type": "i32"
-      },
-      "return_type": "i32"
+      }
     }
   ]
 }

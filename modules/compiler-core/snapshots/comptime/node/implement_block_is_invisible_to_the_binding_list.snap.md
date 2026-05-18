@@ -30,6 +30,8 @@ val c = Circle(radius: 5.0);
     },
     {
       "ast": "val",
+      "indent": "c",
+      "return_type": "Circle",
       "expr": {
         "ast": "call",
         "params": [
@@ -39,8 +41,7 @@ val c = Circle(radius: 5.0);
           }
         ],
         "return_type": "Circle"
-      },
-      "return_type": "Circle"
+      }
     }
   ]
 }

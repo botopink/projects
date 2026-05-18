@@ -18,7 +18,7 @@ fn find(arr: i32[]) -> i32 {
       "params": [
         {
           "name": "arr",
-          "type": ""
+          "type": "?"
         }
       ],
       "return_type": "i32",

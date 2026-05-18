@@ -1,5 +1,10 @@
 # core/src/utils
 
+## AGENTS links
+
+- [Root AGENTS](../../../../AGENTS.md)
+- [Compiler-core src AGENTS](../AGENTS.md)
+
 Snapshot testing infrastructure shared by parser, codegen, and type tests.
 
 ## Files

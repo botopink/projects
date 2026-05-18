@@ -15,4 +15,4 @@ const list1 = [1, ...[]];
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

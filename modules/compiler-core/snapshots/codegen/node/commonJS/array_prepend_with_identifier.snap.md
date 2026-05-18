@@ -20,4 +20,4 @@ const list = [1, 2, ...rest];
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

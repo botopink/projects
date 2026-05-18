@@ -18,7 +18,7 @@ val result = compute(21);
       "params": [
         {
           "name": "x",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "i32",
@@ -33,6 +33,8 @@ val result = compute(21);
     },
     {
       "ast": "val",
+      "indent": "result",
+      "return_type": "i32",
       "expr": {
         "ast": "call",
         "params": [
@@ -41,8 +43,7 @@ val result = compute(21);
           }
         ],
         "return_type": "i32"
-      },
-      "return_type": "i32"
+      }
     }
   ]
 }

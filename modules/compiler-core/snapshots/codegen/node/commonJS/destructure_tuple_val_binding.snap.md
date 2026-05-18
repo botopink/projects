@@ -19,4 +19,4 @@ function extract() {
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

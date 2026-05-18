@@ -19,4 +19,4 @@ function allThree(a, b, c) {
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

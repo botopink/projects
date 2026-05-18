@@ -11,14 +11,17 @@ val c = b + a;
   "declarations": [
     {
       "ast": "val",
+      "indent": "a",
       "return_type": "i32"
     },
     {
       "ast": "val",
+      "indent": "b",
       "return_type": "i32"
     },
     {
       "ast": "val",
+      "indent": "c",
       "return_type": "i32"
     }
   ]

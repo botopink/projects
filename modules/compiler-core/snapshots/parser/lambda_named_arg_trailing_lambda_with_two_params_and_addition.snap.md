@@ -66,27 +66,26 @@
                                       "col": 15
                                     },
                                     "kind": {
-                                      "add": {
-                                        "lhs": {
-                                          "identifier": {
-                                            "loc": {
-                                              "line": 4,
-                                              "col": 13
-                                            },
-                                            "kind": {
-                                              "ident": "a"
-                                            }
+                                      "op": "add",
+                                      "lhs": {
+                                        "identifier": {
+                                          "loc": {
+                                            "line": 4,
+                                            "col": 13
+                                          },
+                                          "kind": {
+                                            "ident": "a"
                                           }
-                                        },
-                                        "rhs": {
-                                          "identifier": {
-                                            "loc": {
-                                              "line": 4,
-                                              "col": 17
-                                            },
-                                            "kind": {
-                                              "ident": "b"
-                                            }
+                                        }
+                                      },
+                                      "rhs": {
+                                        "identifier": {
+                                          "loc": {
+                                            "line": 4,
+                                            "col": 17
+                                          },
+                                          "kind": {
+                                            "ident": "b"
                                           }
                                         }
                                       }

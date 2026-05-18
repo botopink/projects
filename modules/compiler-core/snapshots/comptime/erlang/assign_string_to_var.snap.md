@@ -28,12 +28,13 @@ val r = f();
     },
     {
       "ast": "val",
+      "indent": "r",
+      "return_type": "void",
       "expr": {
         "ast": "call",
         "params": [],
         "return_type": "void"
-      },
-      "return_type": "void"
+      }
     }
   ]
 }

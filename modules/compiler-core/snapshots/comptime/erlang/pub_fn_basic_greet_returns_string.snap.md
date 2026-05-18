@@ -17,7 +17,7 @@ val msg = greet("world");
       "params": [
         {
           "name": "name",
-          "type": ""
+          "type": "string"
         }
       ],
       "return_type": "string",
@@ -29,6 +29,8 @@ val msg = greet("world");
     },
     {
       "ast": "val",
+      "indent": "msg",
+      "return_type": "string",
       "expr": {
         "ast": "call",
         "params": [
@@ -37,8 +39,7 @@ val msg = greet("world");
           }
         ],
         "return_type": "string"
-      },
-      "return_type": "string"
+      }
     }
   ]
 }

@@ -19,4 +19,4 @@ function negate(v) {
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

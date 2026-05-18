@@ -23,6 +23,8 @@ val a = Account(0);
     },
     {
       "ast": "val",
+      "indent": "a",
+      "return_type": "Account",
       "expr": {
         "ast": "call",
         "params": [
@@ -31,8 +33,7 @@ val a = Account(0);
           }
         ],
         "return_type": "Account"
-      },
-      "return_type": "Account"
+      }
     }
   ]
 }

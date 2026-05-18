@@ -50,42 +50,51 @@ pub const Loc = struct {
 
 // ── Expression kind categories (parameterized by phase) ───────────────────────
 
-/// Literal expressions: constant values and comments
-pub fn LiteralExprOf(comptime phase: Phase) type {
+/// Helper to generate expression types with standard fields (loc, type_, kind)
+pub fn MakeExpr(comptime phase: Phase, comptime Kind: type) type {
     return struct {
-        /// Source location
         loc: Loc,
-        /// Type annotation (only for typed expressions)
         type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
             if (phase == .typed) undefined else {},
-
-        /// The kind of literal expression
-        kind: union(enum) {
-            /// A string literal value, e.g. `"hello"`
-            stringLit: []const u8,
-            /// A number literal, e.g. `0`
-            numberLit: []const u8,
-            /// `null` literal
-            null_,
-            /// A comment treated as an expression: `//` normal, `///` doc, or `////` module.
-            /// `kind` tells you which type; `text` is the content without the leading slashes.
-            comment: struct {
-                kind: CommentKind,
-                text: []const u8,
-            },
-
-            pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-                switch (this.*) {
-                    .stringLit, .numberLit, .null_ => {},
-                    .comment => |c| allocator.free(c.text),
-                }
-            }
-        },
+        kind: Kind,
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             this.kind.deinit(allocator);
         }
     };
+}
+
+/// Helper function to destroy an expression and free its memory
+fn destroyExpr(allocator: std.mem.Allocator, expr: anytype) void {
+    expr.deinit(allocator);
+    allocator.destroy(expr);
+}
+
+/// Literal expressions: constant values and comments
+pub fn LiteralExprOf(comptime phase: Phase) type {
+    const Kind = union(enum) {
+        /// A string literal value, e.g. `"hello"`
+        stringLit: []const u8,
+        /// A number literal, e.g. `0`
+        numberLit: []const u8,
+        /// `null` literal
+        null_,
+        /// A comment treated as an expression: `//` normal, `///` doc, or `////` module.
+        /// `kind` tells you which type; `text` is the content without the leading slashes.
+        comment: struct {
+            kind: CommentKind,
+            text: []const u8,
+        },
+
+        pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
+            switch (this.*) {
+                .stringLit, .numberLit, .null_ => {},
+                .comment => |c| allocator.free(c.text),
+            }
+        }
+    };
+
+    return MakeExpr(phase, Kind);
 }
 
 // ── Top-level expression types ─────────────────────────────────────────────────────
@@ -98,7 +107,9 @@ pub fn ExprOf(comptime phase: Phase) type {
         identifier: IdentifierExprOf(phase),
         binaryOp: BinOpExprOf(phase),
         unaryOp: UnaryOpExprOf(phase),
-        controlFlow: ControlFlowExprOf(phase),
+        jump: MakeExpr(phase, JumpExprOf(phase)),
+        branch: MakeExpr(phase, BranchExprOf(phase)),
+        loop: MakeExpr(phase, LoopExprOf(phase)),
         binding: BindingExprOf(phase),
         call: CallExprOf(phase),
         function: FunctionExprOf(phase),
@@ -149,7 +160,9 @@ pub const LiteralExpr = LiteralExprOf(.untyped);
 pub const IdentifierExpr = IdentifierExprOf(.untyped);
 pub const BinOpExpr = BinOpExprOf(.untyped);
 pub const UnaryOpExpr = UnaryOpExprOf(.untyped);
-pub const ControlFlowExpr = ControlFlowExprOf(.untyped);
+pub const JumpExpr = JumpExprOf(.untyped);
+pub const BranchExpr = BranchExprOf(.untyped);
+pub const LoopExpr = LoopExprOf(.untyped);
 pub const BindingExpr = BindingExprOf(.untyped);
 pub const FunctionExpr = FunctionExprOf(.untyped);
 pub const CollectionExpr = CollectionExprOf(.untyped);
@@ -158,7 +171,7 @@ pub const ComptimeExpr = ComptimeExprOf(.untyped);
 /// Helper to get the correct statement type based on phase
 pub fn StmtOf(comptime phase: Phase) type {
     return struct {
-        expr: if (phase == .untyped) Expr else TypedExpr,
+        expr: ExprOf(phase),
         /// Number of empty lines before this statement in the source
         emptyLinesBefore: u32 = 0,
 
@@ -173,7 +186,7 @@ pub fn CallArgOf(comptime phase: Phase) type {
     return struct {
         /// null for positional args; non-null for named args (`fator: 2`).
         label: ?[]const u8,
-        value: if (phase == .untyped) *Expr else *TypedExpr,
+        value: *ExprOf(phase),
         /// Comments appearing before this argument (text only, without `// `)
         comments: []const []const u8 = &.{},
 
@@ -206,7 +219,7 @@ pub fn TrailingLambdaOf(comptime phase: Phase) type {
 pub fn CaseArmOf(comptime phase: Phase) type {
     return struct {
         pattern: Pattern,
-        body: if (phase == .untyped) Expr else TypedExpr,
+        body: ExprOf(phase),
         /// Number of empty lines before this arm in the source
         emptyLinesBefore: u32 = 0,
 
@@ -219,613 +232,460 @@ pub fn CaseArmOf(comptime phase: Phase) type {
 
 /// Identifier expressions: name-based access and references
 pub fn IdentifierExprOf(comptime phase: Phase) type {
-    return struct {
-        /// Source location
-        loc: Loc,
-        /// Type annotation (only for typed expressions)
-        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
-            if (phase == .typed) undefined else {},
-
-        /// The kind of identifier expression
-        kind: union(enum) {
-            /// A plain identifier, e.g. `Console`
-            ident: []const u8,
-            /// Dot-shorthand variant: `.Red` ---- the type is inferred from context.
-            dotIdent: []const u8,
-            /// Identifier-based access: `this.field`, `Color.Red`, `obj.x`
-            identAccess: struct {
-                receiver: if (phase == .untyped) *Expr else *TypedExpr,
-                member: []const u8,
-            },
-
-            pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-                switch (this.*) {
-                    .ident, .dotIdent => {},
-                    .identAccess => |a| {
-                        a.receiver.deinit(allocator);
-                        allocator.destroy(a.receiver);
-                    },
-                }
-            }
+    const Kind = union(enum) {
+        /// A plain identifier, e.g. `Console`
+        ident: []const u8,
+        /// Dot-shorthand variant: `.Red` ---- the type is inferred from context.
+        dotIdent: []const u8,
+        /// Identifier-based access: `this.field`, `Color.Red`, `obj.x`
+        identAccess: struct {
+            receiver: *ExprOf(phase),
+            member: []const u8,
         },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            this.kind.deinit(allocator);
+            switch (this.*) {
+                .ident, .dotIdent => {},
+                .identAccess => |a| {
+                    a.receiver.deinit(allocator);
+                    allocator.destroy(a.receiver);
+                },
+            }
         }
     };
+
+    return MakeExpr(phase, Kind);
 }
 
 /// Binary operations: all binary operators
 pub fn BinOpExprOf(comptime phase: Phase) type {
-    return struct {
-        /// Source location
-        loc: Loc,
-        /// Type annotation (only for typed expressions)
-        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
-            if (phase == .typed) undefined else {},
-
-        /// The kind of binary operation
-        kind: union(enum) {
-            /// Shared payload for all binary operators
-            const BinOp = struct { lhs: if (phase == .untyped) *Expr else *TypedExpr, rhs: if (phase == .untyped) *Expr else *TypedExpr };
-
-            /// Binary `<`
-            lt: BinOp,
-            /// Binary `>`
-            gt: BinOp,
-            /// Binary `<=`
-            lte: BinOp,
-            /// Binary `>=`
-            gte: BinOp,
-            /// Binary `==`
-            eq: BinOp,
-            /// Binary `!=`
-            ne: BinOp,
-            /// Binary `+`
-            add: BinOp,
-            /// Binary `-`
-            sub: BinOp,
-            /// Binary `*`
-            mul: BinOp,
-            /// Binary `/`
-            div: BinOp,
-            /// Binary `%`
-            mod: BinOp,
-            /// Binary `&&` — logical and
-            @"and": BinOp,
-            /// Binary `||` — logical or
-            @"or": BinOp,
-
-            pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-                // All variants share the same BinOp structure
-                const b = switch (this.*) {
-                    .lt => |v| v,
-                    .gt => |v| v,
-                    .lte => |v| v,
-                    .gte => |v| v,
-                    .eq => |v| v,
-                    .ne => |v| v,
-                    .add => |v| v,
-                    .sub => |v| v,
-                    .mul => |v| v,
-                    .div => |v| v,
-                    .mod => |v| v,
-                    .@"and" => |v| v,
-                    .@"or" => |v| v,
-                };
-                b.lhs.deinit(allocator);
-                allocator.destroy(b.lhs);
-                b.rhs.deinit(allocator);
-                allocator.destroy(b.rhs);
-            }
+    const Kind = struct {
+        /// Binary operator type
+        op: enum {
+            lt,    // `<`
+            gt,    // `>`
+            lte,   // `<=`
+            gte,   // `>=`
+            eq,    // `==`
+            ne,    // `!=`
+            add,   // `+`
+            sub,   // `-`
+            mul,   // `*`
+            div,   // `/`
+            mod,   // `%`
+            @"and", // `&&`
+            @"or",  // `||`
         },
+        lhs: *ExprOf(phase),
+        rhs: *ExprOf(phase),
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            this.kind.deinit(allocator);
+            destroyExpr(allocator, this.lhs);
+            destroyExpr(allocator, this.rhs);
         }
     };
+
+    return MakeExpr(phase, Kind);
 }
 
 /// Unary operations: unary operators
 pub fn UnaryOpExprOf(comptime phase: Phase) type {
-    return struct {
-        /// Source location
-        loc: Loc,
-        /// Type annotation (only for typed expressions)
-        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
-            if (phase == .typed) undefined else {},
-
-        /// The kind of unary operation
-        kind: union(enum) {
-            /// Unary `!` — logical not
-            not: if (phase == .untyped) *Expr else *TypedExpr,
-            /// Unary `-` — numeric negation (e.g., `-x`, `-expr`)
-            neg: if (phase == .untyped) *Expr else *TypedExpr,
-
-            pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-                const e = switch (this.*) {
-                    .not => |e| e,
-                    .neg => |e| e,
-                };
-                e.deinit(allocator);
-                allocator.destroy(e);
-            }
+    const Kind = struct {
+        /// Unary operator type
+        op: enum {
+            neg,  // `-` negation
+            not,  // `not` logical not
         },
+        expr: *ExprOf(phase),
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            this.kind.deinit(allocator);
+            destroyExpr(allocator, this.expr);
+        }
+    };
+
+    return MakeExpr(phase, Kind);
+}
+
+/// Jump expressions: simple control flow jumps (return, break, continue, throw, yield, try)
+pub fn JumpExprOf(comptime phase: Phase) type {
+    return union(enum) {
+        /// `return expr`
+        @"return": ?*ExprOf(phase),
+        /// `throw expr` — throw any expression (e.g. a constructor call)
+        throw_: ?*ExprOf(phase),
+        /// `try expr` — propagate error union failure upward
+        try_: ?*ExprOf(phase),
+        /// `break [expr]` ---- exit a block/loop early; expr=null means bare `break`
+        @"break": ?*ExprOf(phase),
+        /// `continue` ---- skip the rest of this loop iteration
+        @"continue",
+        /// `yield expr` ---- accumulate `expr` into a loop's result list; loop continues
+        yield: ?*ExprOf(phase),
+
+        pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
+            switch (this.*) {
+                inline .@"return", .throw_, .try_, .@"break", .yield => |e| {
+                    if (e) |expr| destroyExpr(allocator, expr);
+                },
+                .@"continue" => {},
+            }
         }
     };
 }
 
-/// Control flow expressions: branching, error propagation, and iteration
-pub fn ControlFlowExprOf(comptime phase: Phase) type {
-    return struct {
-        /// Source location
-        loc: Loc,
-        /// Type annotation (only for typed expressions)
-        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
-            if (phase == .typed) undefined else {},
-
-        /// The kind of control flow expression
-        kind: union(enum) {
-            /// `if (cond) { [binding ->] then } [else { else_ }]`
-            if_: struct {
-                cond: if (phase == .untyped) *Expr else *TypedExpr,
-                /// Optional binding for null-check form: `if (email) { e -> ... }`
-                binding: ?[]const u8,
-                then_: []StmtOf(phase),
-                else_: ?[]StmtOf(phase),
-            },
-            /// `return expr`
-            @"return": if (phase == .untyped) *Expr else *TypedExpr,
-            /// `throw expr` — throw any expression (e.g. a constructor call)
-            throw_: if (phase == .untyped) *Expr else *TypedExpr,
-            /// `try expr` — propagate error union failure upward
-            try_: if (phase == .untyped) *Expr else *TypedExpr,
-            /// `try expr catch handler` — handle error inline
-            tryCatch: struct {
-                expr: if (phase == .untyped) *Expr else *TypedExpr,
-                handler: if (phase == .untyped) *Expr else *TypedExpr,
-            },
-            /// `loop (iter) { params -> body }` or `loop (iter, 0..) { item, i -> body }`
-            loop: struct {
-                iter: if (phase == .untyped) *Expr else *TypedExpr,
-                indexRange: ?if (phase == .untyped) *Expr else *TypedExpr,
-                params: []const []const u8,
-                body: []StmtOf(phase),
-            },
-            /// `break [expr]` ---- exit a block/loop early; expr=null means bare `break`
-            @"break": ?if (phase == .untyped) *Expr else *TypedExpr,
-            /// `continue` ---- skip the rest of this loop iteration
-            @"continue",
-            /// `yield expr` ---- accumulate `expr` into a loop's result list; loop continues
-            yield: if (phase == .untyped) *Expr else *TypedExpr,
-
-            pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-                switch (this.*) {
-                    .if_ => |i| {
-                        i.cond.deinit(allocator);
-                        allocator.destroy(i.cond);
-                        for (i.then_) |*s| s.deinit(allocator);
-                        allocator.free(i.then_);
-                        if (i.else_) |els| {
-                            for (els) |*s| @constCast(s).deinit(allocator);
-                            allocator.free(els);
-                        }
-                    },
-                    .@"return" => |r| {
-                        r.deinit(allocator);
-                        allocator.destroy(r);
-                    },
-                    .throw_ => |e| {
-                        e.deinit(allocator);
-                        allocator.destroy(e);
-                    },
-                    .try_ => |e| {
-                        e.deinit(allocator);
-                        allocator.destroy(e);
-                    },
-                    .tryCatch => |tc| {
-                        tc.expr.deinit(allocator);
-                        allocator.destroy(tc.expr);
-                        tc.handler.deinit(allocator);
-                        allocator.destroy(tc.handler);
-                    },
-                    .loop => |lp| {
-                        lp.iter.deinit(allocator);
-                        allocator.destroy(lp.iter);
-                        if (lp.indexRange) |ir| {
-                            ir.deinit(allocator);
-                            allocator.destroy(ir);
-                        }
-                        allocator.free(lp.params);
-                        for (lp.body) |*s| s.deinit(allocator);
-                        allocator.free(lp.body);
-                    },
-                    .@"break" => |e| {
-                        if (e) |ep| {
-                            ep.deinit(allocator);
-                            allocator.destroy(ep);
-                        }
-                    },
-                    .@"continue" => {},
-                    .yield => |e| {
-                        e.deinit(allocator);
-                        allocator.destroy(e);
-                    },
-                }
-            }
+/// Branch expressions: conditional and error handling constructs
+pub fn BranchExprOf(comptime phase: Phase) type {
+    return union(enum) {
+        /// `if (cond) { [binding ->] then } [else { else_ }]`
+        if_: struct {
+            cond: *ExprOf(phase),
+            /// Optional binding for null-check form: `if (email) { e -> ... }`
+            binding: ?[]const u8,
+            then_: []StmtOf(phase),
+            else_: ?[]StmtOf(phase),
+        },
+        /// `try expr catch handler` — handle error inline
+        tryCatch: struct {
+            expr: *ExprOf(phase),
+            handler: *ExprOf(phase),
         },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            this.kind.deinit(allocator);
+            switch (this.*) {
+                .if_ => |*i| {
+                    destroyExpr(allocator, i.cond);
+                    for (i.then_) |*s| s.deinit(allocator);
+                    allocator.free(i.then_);
+                    if (i.else_) |els| {
+                        for (els) |*s| @constCast(s).deinit(allocator);
+                        allocator.free(els);
+                    }
+                },
+                .tryCatch => |*tc| {
+                    destroyExpr(allocator, tc.expr);
+                    destroyExpr(allocator, tc.handler);
+                },
+            }
+        }
+    };
+}
+
+/// Loop expressions: iteration constructs
+pub fn LoopExprOf(comptime phase: Phase) type {
+    return struct {
+        /// `loop (iter) { params -> body }` or `loop (iter, 0..) { item, i -> body }`
+        iter: *ExprOf(phase),
+        indexRange: ?*ExprOf(phase),
+        params: []const []const u8,
+        body: []StmtOf(phase),
+
+        pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
+            destroyExpr(allocator, this.iter);
+            if (this.indexRange) |ir| destroyExpr(allocator, ir);
+            allocator.free(this.params);
+            for (this.body) |*s| s.deinit(allocator);
+            allocator.free(this.body);
         }
     };
 }
 
 /// Binding expressions: variable declarations and assignments
 pub fn BindingExprOf(comptime phase: Phase) type {
-    return struct {
-        /// Source location
-        loc: Loc,
-        /// Type annotation (only for typed expressions)
-        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
-            if (phase == .typed) undefined else {},
-
-        /// The kind of binding expression
-        kind: union(enum) {
-            /// `val name = expr` (immutable) or `var name = expr` (mutable)
-            localBind: struct {
-                name: []const u8,
-                value: if (phase == .untyped) *Expr else *TypedExpr,
-                /// true when declared with `var`, false for `val`
-                mutable: bool,
-            },
-            /// `name = expr` ---- assign to a previously declared `var` binding
-            assign: struct {
-                name: []const u8,
-                value: if (phase == .untyped) *Expr else *TypedExpr,
-            },
-            /// `name += expr` ---- compound assignment to a var
-            assignPlus: struct {
-                name: []const u8,
-                value: if (phase == .untyped) *Expr else *TypedExpr,
-            },
-            /// Assign to a field, e.g. `this._balance = value`
-            fieldAssign: struct {
-                receiver: if (phase == .untyped) *Expr else *TypedExpr,
-                field: []const u8,
-                value: if (phase == .untyped) *Expr else *TypedExpr,
-            },
-            /// `this._field += amount`
-            fieldPlusEq: struct {
-                receiver: if (phase == .untyped) *Expr else *TypedExpr,
-                field: []const u8,
-                value: if (phase == .untyped) *Expr else *TypedExpr,
-            },
-            /// Destructuring val/var binding: `val TypeName(x, y) = expr` or `val { name, age } = expr`
-            localBindDestruct: struct {
-                pattern: ParamDestruct,
-                value: if (phase == .untyped) *Expr else *TypedExpr,
-                mutable: bool,
-            },
-
-            pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-                switch (this.*) {
-                    .localBind => |lb| {
-                        lb.value.deinit(allocator);
-                        allocator.destroy(lb.value);
-                    },
-                    .assign => |a| {
-                        a.value.deinit(allocator);
-                        allocator.destroy(a.value);
-                    },
-                    .assignPlus => |a| {
-                        a.value.deinit(allocator);
-                        allocator.destroy(a.value);
-                    },
-                    .fieldAssign => |a| {
-                        a.receiver.deinit(allocator);
-                        allocator.destroy(a.receiver);
-                        a.value.deinit(allocator);
-                        allocator.destroy(a.value);
-                    },
-                    .fieldPlusEq => |a| {
-                        a.receiver.deinit(allocator);
-                        allocator.destroy(a.receiver);
-                        a.value.deinit(allocator);
-                        allocator.destroy(a.value);
-                    },
-                    .localBindDestruct => |lb| {
-                        @constCast(&lb.pattern).deinit(allocator);
-                        lb.value.deinit(allocator);
-                        allocator.destroy(lb.value);
-                    },
-                }
-            }
+    const LValue = union(enum) {
+        /// Simple name: `name`
+        name: []const u8,
+        /// Field access: `receiver.field`
+        fieldAccess: struct {
+            receiver: *ExprOf(phase),
+            field: []const u8,
         },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            this.kind.deinit(allocator);
+            switch (this.*) {
+                .name => {},
+                .fieldAccess => |*fa| {
+                    destroyExpr(allocator, fa.receiver);
+                },
+            }
         }
     };
+
+    const AssignOp = enum {
+        assign,     // `=`
+        plusAssign, // `+=`
+    };
+
+    const Kind = union(enum) {
+        /// `val name = expr` (immutable) or `var name = expr` (mutable)
+        localBind: struct {
+            name: []const u8,
+            value: *ExprOf(phase),
+            /// true when declared with `var`, false for `val`
+            mutable: bool,
+        },
+        /// Assignment to a variable or field: `name = expr`, `name += expr`, `this.field = expr`, `this.field += expr`
+        assign: struct {
+            target: LValue,
+            op: AssignOp,
+            value: *ExprOf(phase),
+        },
+        /// Destructuring val/var binding: `val TypeName(x, y) = expr` or `val { name, age } = expr`
+        localBindDestruct: struct {
+            pattern: ParamDestruct,
+            value: *ExprOf(phase),
+            mutable: bool,
+        },
+
+        pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
+            switch (this.*) {
+                .localBind => |*lb| {
+                    destroyExpr(allocator, lb.value);
+                },
+                .assign => |*a| {
+                    a.target.deinit(allocator);
+                    destroyExpr(allocator, a.value);
+                },
+                .localBindDestruct => |*lb| {
+                    @constCast(&lb.pattern).deinit(allocator);
+                    destroyExpr(allocator, lb.value);
+                },
+            }
+        }
+    };
+
+    return MakeExpr(phase, Kind);
 }
 
 /// Function definition expressions: lambdas and anonymous functions
 pub fn FunctionExprOf(comptime phase: Phase) type {
-    return struct {
-        /// Source location
-        loc: Loc,
-        /// Type annotation (only for typed expressions)
-        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
-            if (phase == .typed) undefined else {},
-
-        /// The kind of function expression
-        kind: union(enum) {
-            /// A lambda expression: `{ a, b -> stmts }` or `{ stmts }` (no params).
-            lambda: struct {
-                /// Parameter names (inferred types). Empty for no-param lambdas.
-                params: []const []const u8,
-                body: []StmtOf(phase),
-            },
-            /// An anonymous function expression: `fn(a, b) { stmts }`
-            fnExpr: struct {
-                /// Parameter names.
-                params: []const []const u8,
-                body: []StmtOf(phase),
-            },
-
-            pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-                switch (this.*) {
-                    .lambda => |l| {
-                        allocator.free(l.params);
-                        for (l.body) |*s| s.deinit(allocator);
-                        allocator.free(l.body);
-                    },
-                    .fnExpr => |f| {
-                        allocator.free(f.params);
-                        for (f.body) |*s| s.deinit(allocator);
-                        allocator.free(f.body);
-                    },
-                }
-            }
+    const Kind = union(enum) {
+        /// A lambda expression: `{ a, b -> stmts }` or `{ stmts }` (no params).
+        lambda: struct {
+            /// Parameter names (inferred types). Empty for no-param lambdas.
+            params: []const []const u8,
+            body: []StmtOf(phase),
+        },
+        /// An anonymous function expression: `fn(a, b) { stmts }`
+        fnExpr: struct {
+            /// Parameter names.
+            params: []const []const u8,
+            body: []StmtOf(phase),
         },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            this.kind.deinit(allocator);
+            switch (this.*) {
+                .lambda => |l| {
+                    allocator.free(l.params);
+                    for (l.body) |*s| s.deinit(allocator);
+                    allocator.free(l.body);
+                },
+                .fnExpr => |f| {
+                    allocator.free(f.params);
+                    for (f.body) |*s| s.deinit(allocator);
+                    allocator.free(f.body);
+                },
+            }
         }
     };
+
+    return MakeExpr(phase, Kind);
 }
 
 /// Call expressions: function/method invocations and pipelines
 pub fn CallExprOf(comptime phase: Phase) type {
-    return struct {
-        /// Source location
-        loc: Loc,
-        /// Type annotation (only for typed expressions)
-        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
-            if (phase == .typed) undefined else {},
-
-        /// The kind of call expression
-        kind: union(enum) {
-            /// A function or method call with optional named args and trailing lambda blocks.
-            ///
-            /// Examples:
-            ///   `calcular(fator: 2) { a, b -> ... }`   receiver=null, callee="calcular", is_builtin=false
-            ///   `@sizeOf(T)`                        receiver=null, callee="sizeOf", is_builtin=true
-            ///   `@block{ ... }`                     receiver=null, callee="block", is_builtin=true
-            ///   `executar { ... } erro: { ... }`    receiver=null, callee="executar", is_builtin=false
-            ///   `precos.forEach { ... }`             receiver="precos", callee="forEach", is_builtin=false
-            call: struct {
-                /// null for plain calls; the object for method calls.
-                receiver: ?[]const u8,
-                /// Function/method name (without @ prefix for builtins)
-                callee: []const u8,
-                /// true if this is a builtin call (starts with @ in source)
-                is_builtin: bool,
-                args: []CallArgOf(phase),
-                trailing: []TrailingLambdaOf(phase),
-            },
-            /// `expr |> fn1 |> fn2` — pipeline operator, left-associative chain
-            pipeline: struct {
-                lhs: if (phase == .untyped) *Expr else *TypedExpr,
-                rhs: if (phase == .untyped) *Expr else *TypedExpr,
-                /// Optional comment appearing before this `|>` step in the source
-                comment: ?[]const u8 = null,
-            },
-
-            pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-                switch (this.*) {
-                    .call => |c| {
-                        for (c.args) |*a| a.deinit(allocator);
-                        allocator.free(c.args);
-                        for (c.trailing) |*t| t.deinit(allocator);
-                        allocator.free(c.trailing);
-                    },
-                    .pipeline => |p| {
-                        p.lhs.deinit(allocator);
-                        allocator.destroy(p.lhs);
-                        p.rhs.deinit(allocator);
-                        allocator.destroy(p.rhs);
-                        if (p.comment) |cm| allocator.free(cm);
-                    },
-                }
-            }
+    const Kind = union(enum) {
+        /// A function or method call with optional named args and trailing lambda blocks.
+        ///
+        /// Examples:
+        ///   `calcular(fator: 2) { a, b -> ... }`   receiver=null, callee="calcular", is_builtin=false
+        ///   `@sizeOf(T)`                        receiver=null, callee="sizeOf", is_builtin=true
+        ///   `@block{ ... }`                     receiver=null, callee="block", is_builtin=true
+        ///   `executar { ... } erro: { ... }`    receiver=null, callee="executar", is_builtin=false
+        ///   `precos.forEach { ... }`             receiver="precos", callee="forEach", is_builtin=false
+        call: struct {
+            /// null for plain calls; the object for method calls.
+            receiver: ?[]const u8,
+            /// Function/method name (without @ prefix for builtins)
+            callee: []const u8,
+            /// true if this is a builtin call (starts with @ in source)
+            is_builtin: bool,
+            args: []CallArgOf(phase),
+            trailing: []TrailingLambdaOf(phase),
+        },
+        /// `expr |> fn1 |> fn2` — pipeline operator, left-associative chain
+        pipeline: struct {
+            lhs: *ExprOf(phase),
+            rhs: *ExprOf(phase),
+            /// Optional comment appearing before this `|>` step in the source
+            comment: ?[]const u8 = null,
         },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            this.kind.deinit(allocator);
+            switch (this.*) {
+                .call => |c| {
+                    for (c.args) |*a| a.deinit(allocator);
+                    allocator.free(c.args);
+                    for (c.trailing) |*t| t.deinit(allocator);
+                    allocator.free(c.trailing);
+                },
+                .pipeline => |p| {
+                    p.lhs.deinit(allocator);
+                    allocator.destroy(p.lhs);
+                    p.rhs.deinit(allocator);
+                    allocator.destroy(p.rhs);
+                    if (p.comment) |cm| allocator.free(cm);
+                },
+            }
         }
     };
+
+    return MakeExpr(phase, Kind);
 }
 
 /// Collection expressions: data structures and grouping
 pub fn CollectionExprOf(comptime phase: Phase) type {
-    return struct {
-        /// Source location
-        loc: Loc,
-        /// Type annotation (only for typed expressions)
-        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
-            if (phase == .typed) undefined else {},
-
-        /// The kind of expression
-        kind: union(enum) {
-            /// `[e1, e2, ...]` or `[e1, ..rest]` — array literal with optional spread
-            arrayLit: struct {
-                elems: if (phase == .untyped) []Expr else []TypedExpr,
-                /// null = no spread; "" = `..`; non-empty = `..name`
-                spread: ?[]const u8 = null,
-                /// Complex spread expression: `..[expr]`, `..(expr)`, etc. Set when
-                /// the spread value is not a simple identifier.
-                spreadExpr: ?if (phase == .untyped) *Expr else *TypedExpr = null,
-                /// Comments appearing between elements (text only, without `// `)
-                comments: []const []const u8 = &.{},
-                /// Number of comments before each element, then before spread, then trailing.
-                /// Length = elems.len + 2 (or 0 when no comments).
-                commentsPerElem: []const u32 = &.{},
-                /// true when source had trailing comma after last element → forces multi-line
-                trailingComma: bool = false,
-            },
-            /// `#(e1, e2, ...)` ---- tuple literal
-            tupleLit: struct {
-                elems: if (phase == .untyped) []Expr else []TypedExpr,
-                /// Comments appearing between elements (text only, without `// `)
-                comments: []const []const u8 = &.{},
-                /// Number of comments before each element, then trailing.
-                /// Length = elems.len + 1 (or 0 when no comments).
-                commentsPerElem: []const u32 = &.{},
-            },
-            /// `start..end` or `start..` ---- integer range (end=null means open)
-            range: struct {
-                start: if (phase == .untyped) *Expr else *TypedExpr,
-                end: ?if (phase == .untyped) *Expr else *TypedExpr,
-            },
-            /// `case .identifier{ arm* }` or `case expr1, expr2 { arm* }`
-            case: struct {
-                subjects: if (phase == .untyped) []Expr else []TypedExpr,
-                arms: []CaseArmOf(phase),
-                /// Comments appearing after the last arm, before closing `}`
-                trailingComments: []const []const u8 = &.{},
-            },
-            /// `(expr)` ---- grouped expression (parentheses for precedence)
-            grouped: if (phase == .untyped) *Expr else *TypedExpr,
-
-            pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-                switch (this.*) {
-                    .arrayLit => |al| {
-                        for (al.elems) |*e| e.deinit(allocator);
-                        allocator.free(al.elems);
-                        if (al.spreadExpr) |se| {
-                            se.deinit(allocator);
-                            allocator.destroy(se);
-                        }
-                        for (al.comments) |c| allocator.free(c);
-                        allocator.free(al.comments);
-                        allocator.free(al.commentsPerElem);
-                    },
-                    .tupleLit => |tl| {
-                        for (tl.elems) |*e| e.deinit(allocator);
-                        allocator.free(tl.elems);
-                        for (tl.comments) |c| allocator.free(c);
-                        allocator.free(tl.comments);
-                        allocator.free(tl.commentsPerElem);
-                    },
-                    .range => |r| {
-                        r.start.deinit(allocator);
-                        allocator.destroy(r.start);
-                        if (r.end) |e| {
-                            e.deinit(allocator);
-                            allocator.destroy(e);
-                        }
-                    },
-                    .case => |c| {
-                        for (c.subjects) |*s| s.deinit(allocator);
-                        allocator.free(c.subjects);
-                        for (c.arms) |*a| a.deinit(allocator);
-                        allocator.free(c.arms);
-                        for (c.trailingComments) |tc| allocator.free(tc);
-                        allocator.free(c.trailingComments);
-                    },
-                    .grouped => |e| {
-                        e.deinit(allocator);
-                        allocator.destroy(e);
-                    },
-                }
-            }
+    const Kind = union(enum) {
+        /// `[e1, e2, ...]` or `[e1, ..rest]` — array literal with optional spread
+        arrayLit: struct {
+            elems: []ExprOf(phase),
+            /// null = no spread; "" = `..`; non-empty = `..name`
+            spread: ?[]const u8 = null,
+            /// Complex spread expression: `..[expr]`, `..(expr)`, etc. Set when
+            /// the spread value is not a simple identifier.
+            spreadExpr: ?*ExprOf(phase) = null,
+            /// Comments appearing between elements (text only, without `// `)
+            comments: []const []const u8 = &.{},
+            /// Number of comments before each element, then before spread, then trailing.
+            /// Length = elems.len + 2 (or 0 when no comments).
+            commentsPerElem: []const u32 = &.{},
+            /// true when source had trailing comma after last element → forces multi-line
+            trailingComma: bool = false,
         },
+        /// `#(e1, e2, ...)` ---- tuple literal
+        tupleLit: struct {
+            elems: []ExprOf(phase),
+            /// Comments appearing between elements (text only, without `// `)
+            comments: []const []const u8 = &.{},
+            /// Number of comments before each element, then trailing.
+            /// Length = elems.len + 1 (or 0 when no comments).
+            commentsPerElem: []const u32 = &.{},
+        },
+        /// `start..end` or `start..` ---- integer range (end=null means open)
+        range: struct {
+            start: *ExprOf(phase),
+            end: ?*ExprOf(phase),
+        },
+        /// `case .identifier{ arm* }` or `case expr1, expr2 { arm* }`
+        case: struct {
+            subjects: []ExprOf(phase),
+            arms: []CaseArmOf(phase),
+            /// Comments appearing after the last arm, before closing `}`
+            trailingComments: []const []const u8 = &.{},
+        },
+        /// `(expr)` ---- grouped expression (parentheses for precedence)
+        grouped: *ExprOf(phase),
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            this.kind.deinit(allocator);
+            switch (this.*) {
+                .arrayLit => |al| {
+                    for (al.elems) |*e| e.deinit(allocator);
+                    allocator.free(al.elems);
+                    if (al.spreadExpr) |se| {
+                        se.deinit(allocator);
+                        allocator.destroy(se);
+                    }
+                    for (al.comments) |c| allocator.free(c);
+                    allocator.free(al.comments);
+                    allocator.free(al.commentsPerElem);
+                },
+                .tupleLit => |tl| {
+                    for (tl.elems) |*e| e.deinit(allocator);
+                    allocator.free(tl.elems);
+                    for (tl.comments) |c| allocator.free(c);
+                    allocator.free(tl.comments);
+                    allocator.free(tl.commentsPerElem);
+                },
+                .range => |r| {
+                    r.start.deinit(allocator);
+                    allocator.destroy(r.start);
+                    if (r.end) |e| {
+                        e.deinit(allocator);
+                        allocator.destroy(e);
+                    }
+                },
+                .case => |c| {
+                    for (c.subjects) |*s| s.deinit(allocator);
+                    allocator.free(c.subjects);
+                    for (c.arms) |*a| a.deinit(allocator);
+                    allocator.free(c.arms);
+                    for (c.trailingComments) |tc| allocator.free(tc);
+                    allocator.free(c.trailingComments);
+                },
+                .grouped => |e| {
+                    e.deinit(allocator);
+                    allocator.destroy(e);
+                },
+            }
         }
     };
+
+    return MakeExpr(phase, Kind);
 }
 
 /// Compile-time expressions: comptime evaluation and assertions
 pub fn ComptimeExprOf(comptime phase: Phase) type {
-    return struct {
-        /// Source location
-        loc: Loc,
-        /// Type annotation (only for typed expressions)
-        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
-            if (phase == .typed) undefined else {},
-
-        /// The kind of comptime expression
-        kind: union(enum) {
-            /// `comptime expr` ---- evaluate expression at compile time
-            comptimeExpr: if (phase == .untyped) *Expr else *TypedExpr,
-            /// `comptime { break expr; ... }` ---- comptime block
-            comptimeBlock: struct { body: []StmtOf(phase) },
-            /// `assert cond` or `assert cond, "message"` ---- assertion that fails if cond is false
-            assert: struct {
-                condition: if (phase == .untyped) *Expr else *TypedExpr,
-                /// Optional error message displayed when assertion fails
-                message: ?if (phase == .untyped) *Expr else *TypedExpr = null,
-            },
-            /// `assert Pattern = expr catch handler` ---- pattern assertion with error handling
-            assertPattern: struct {
-                /// Pattern to match against (e.g., Person(name, ..))
-                pattern: Pattern,
-                /// Expression being matched
-                expr: if (phase == .untyped) *Expr else *TypedExpr,
-                /// catch handler expression (can be throw, return, or a fallback value)
-                handler: if (phase == .untyped) *Expr else *TypedExpr,
-            },
-
-            pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-                switch (this.*) {
-                    .comptimeExpr => |e| {
-                        e.deinit(allocator);
-                        allocator.destroy(e);
-                    },
-                    .comptimeBlock => |cb| {
-                        for (cb.body) |*s| s.deinit(allocator);
-                        allocator.free(cb.body);
-                    },
-                    .assert => |a| {
-                        a.condition.deinit(allocator);
-                        allocator.destroy(a.condition);
-                        if (a.message) |msg| {
-                            msg.deinit(allocator);
-                            allocator.destroy(msg);
-                        }
-                    },
-                    .assertPattern => |ap| {
-                        var patternCopy = ap.pattern;
-                        patternCopy.deinit(allocator);
-                        ap.expr.deinit(allocator);
-                        allocator.destroy(ap.expr);
-                        ap.handler.deinit(allocator);
-                        allocator.destroy(ap.handler);
-                    },
-                }
-            }
+    const Kind = union(enum) {
+        /// `comptime expr` ---- evaluate expression at compile time
+        comptimeExpr: *ExprOf(phase),
+        /// `comptime { break expr; ... }` ---- comptime block
+        comptimeBlock: struct { body: []StmtOf(phase) },
+        /// `assert cond` or `assert cond, "message"` ---- assertion that fails if cond is false
+        assert: struct {
+            condition: *ExprOf(phase),
+            /// Optional error message displayed when assertion fails
+            message: ?*ExprOf(phase) = null,
+        },
+        /// `assert Pattern = expr catch handler` ---- pattern assertion with error handling
+        assertPattern: struct {
+            /// Pattern to match against (e.g., Person(name, ..))
+            pattern: Pattern,
+            /// Expression being matched
+            expr: *ExprOf(phase),
+            /// catch handler expression (can be throw, return, or a fallback value)
+            handler: *ExprOf(phase),
         },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            this.kind.deinit(allocator);
+            switch (this.*) {
+                .comptimeExpr => |e| {
+                    e.deinit(allocator);
+                    allocator.destroy(e);
+                },
+                .comptimeBlock => |cb| {
+                    for (cb.body) |*s| s.deinit(allocator);
+                    allocator.free(cb.body);
+                },
+                .assert => |a| {
+                    a.condition.deinit(allocator);
+                    allocator.destroy(a.condition);
+                    if (a.message) |msg| {
+                        msg.deinit(allocator);
+                        allocator.destroy(msg);
+                    }
+                },
+                .assertPattern => |ap| {
+                    var patternCopy = ap.pattern;
+                    patternCopy.deinit(allocator);
+                    ap.expr.deinit(allocator);
+                    allocator.destroy(ap.expr);
+                    ap.handler.deinit(allocator);
+                    allocator.destroy(ap.handler);
+                },
+            }
         }
     };
+
+    return MakeExpr(phase, Kind);
 }
 
 // ── patterns ──────────────────────────────────────────────────────────────────

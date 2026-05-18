@@ -10,10 +10,12 @@ val y = 3.14;
   "declarations": [
     {
       "ast": "val",
+      "indent": "x",
       "return_type": "i32"
     },
     {
       "ast": "val",
+      "indent": "y",
       "return_type": "f64"
     }
   ]

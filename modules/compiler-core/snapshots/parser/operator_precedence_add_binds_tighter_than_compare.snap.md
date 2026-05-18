@@ -29,70 +29,67 @@
                       "col": 15
                     },
                     "kind": {
-                      "lt": {
-                        "lhs": {
-                          "binaryOp": {
-                            "loc": {
-                              "line": 3,
-                              "col": 11
-                            },
-                            "kind": {
-                              "add": {
-                                "lhs": {
-                                  "identifier": {
-                                    "loc": {
-                                      "line": 3,
-                                      "col": 9
-                                    },
-                                    "kind": {
-                                      "ident": "a"
-                                    }
-                                  }
+                      "op": "lt",
+                      "lhs": {
+                        "binaryOp": {
+                          "loc": {
+                            "line": 3,
+                            "col": 11
+                          },
+                          "kind": {
+                            "op": "add",
+                            "lhs": {
+                              "identifier": {
+                                "loc": {
+                                  "line": 3,
+                                  "col": 9
                                 },
-                                "rhs": {
-                                  "literal": {
-                                    "loc": {
-                                      "line": 3,
-                                      "col": 13
-                                    },
-                                    "kind": {
-                                      "numberLit": "1"
-                                    }
-                                  }
+                                "kind": {
+                                  "ident": "a"
+                                }
+                              }
+                            },
+                            "rhs": {
+                              "literal": {
+                                "loc": {
+                                  "line": 3,
+                                  "col": 13
+                                },
+                                "kind": {
+                                  "numberLit": "1"
                                 }
                               }
                             }
                           }
-                        },
-                        "rhs": {
-                          "binaryOp": {
-                            "loc": {
-                              "line": 3,
-                              "col": 19
-                            },
-                            "kind": {
-                              "add": {
-                                "lhs": {
-                                  "identifier": {
-                                    "loc": {
-                                      "line": 3,
-                                      "col": 17
-                                    },
-                                    "kind": {
-                                      "ident": "b"
-                                    }
-                                  }
+                        }
+                      },
+                      "rhs": {
+                        "binaryOp": {
+                          "loc": {
+                            "line": 3,
+                            "col": 19
+                          },
+                          "kind": {
+                            "op": "add",
+                            "lhs": {
+                              "identifier": {
+                                "loc": {
+                                  "line": 3,
+                                  "col": 17
                                 },
-                                "rhs": {
-                                  "literal": {
-                                    "loc": {
-                                      "line": 3,
-                                      "col": 21
-                                    },
-                                    "kind": {
-                                      "numberLit": "2"
-                                    }
-                                  }
+                                "kind": {
+                                  "ident": "b"
+                                }
+                              }
+                            },
+                            "rhs": {
+                              "literal": {
+                                "loc": {
+                                  "line": 3,
+                                  "col": 21
+                                },
+                                "kind": {
+                                  "numberLit": "2"
                                 }
                               }
                             }

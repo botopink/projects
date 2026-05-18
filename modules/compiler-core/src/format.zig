@@ -378,29 +378,41 @@ pub const Formatter = struct {
                     try this.text(ia.member),
                 }),
             },
-            .binaryOp => |bin| switch (bin.kind) {
-                .add => |op| this.fmtBinop(op.lhs.*, " + ", op.rhs.*),
-                .sub => |op| this.fmtBinop(op.lhs.*, " - ", op.rhs.*),
-                .mul => |op| this.fmtBinop(op.lhs.*, " * ", op.rhs.*),
-                .div => |op| this.fmtBinop(op.lhs.*, " / ", op.rhs.*),
-                .mod => |op| this.fmtBinop(op.lhs.*, " % ", op.rhs.*),
-                .lt => |op| this.fmtBinop(op.lhs.*, " < ", op.rhs.*),
-                .gt => |op| this.fmtBinop(op.lhs.*, " > ", op.rhs.*),
-                .lte => |op| this.fmtBinop(op.lhs.*, " <= ", op.rhs.*),
-                .gte => |op| this.fmtBinop(op.lhs.*, " >= ", op.rhs.*),
-                .eq => |op| this.fmtBinop(op.lhs.*, " == ", op.rhs.*),
-                .ne => |op| this.fmtBinop(op.lhs.*, " != ", op.rhs.*),
-                .@"and" => |op| this.fmtBinop(op.lhs.*, " && ", op.rhs.*),
-                .@"or" => |op| this.fmtBinop(op.lhs.*, " || ", op.rhs.*),
+            .binaryOp => |bin| this.fmtBinop(
+                bin.kind.lhs.*,
+                switch (bin.kind.op) {
+                    .add => " + ",
+                    .sub => " - ",
+                    .mul => " * ",
+                    .div => " / ",
+                    .mod => " % ",
+                    .lt => " < ",
+                    .gt => " > ",
+                    .lte => " <= ",
+                    .gte => " >= ",
+                    .eq => " == ",
+                    .ne => " != ",
+                    .@"and" => " && ",
+                    .@"or" => " || ",
+                },
+                bin.kind.rhs.*,
+            ),
+            .unaryOp => |un| switch (un.kind.op) {
+                .not => this.concat(try this.text("!"), try this.fmtExpr(un.kind.expr.*)),
+                .neg => this.concat(try this.text("-"), try this.fmtExpr(un.kind.expr.*)),
             },
-            .unaryOp => |un| switch (un.kind) {
-                .not => |operand| this.concat(try this.text("!"), try this.fmtExpr(operand.*)),
-                .neg => |operand| this.concat(try this.text("-"), try this.fmtExpr(operand.*)),
+            .jump => |j| switch (j.kind) {
+                .@"return" => |e| if (e) |ep| this.concat(try this.text("return "), try this.fmtExpr(ep.*)) else this.text("return"),
+                .throw_ => |e| if (e) |ep| this.concat(try this.text("throw "), try this.fmtExpr(ep.*)) else this.text("throw"),
+                .try_ => |e| if (e) |ep| this.concat(try this.text("try "), try this.fmtExpr(ep.*)) else this.text("try"),
+                .@"break" => |e| if (e) |ep|
+                    this.concat(try this.text("break "), try this.fmtExpr(ep.*))
+                else
+                    this.text("break"),
+                .yield => |e| if (e) |ep| this.concat(try this.text("yield "), try this.fmtExpr(ep.*)) else this.text("yield"),
+                .@"continue" => this.text("continue"),
             },
-            .controlFlow => |cf| switch (cf.kind) {
-                .@"return" => |e| this.concat(try this.text("return "), try this.fmtExpr(e.*)),
-                .throw_ => |e| this.concat(try this.text("throw "), try this.fmtExpr(e.*)),
-                .try_ => |e| this.concat(try this.text("try "), try this.fmtExpr(e.*)),
+            .branch => |br| switch (br.kind) {
                 .tryCatch => |tc| this.concatAll(&.{
                     try this.text("try "),
                     try this.fmtExpr(tc.expr.*),
@@ -472,31 +484,25 @@ pub const Formatter = struct {
                         thenDoc,
                     });
                 },
-                .loop => |lp| blk: {
-                    var doc: *const Doc = try this.text("loop (");
-                    doc = try this.concat(doc, try this.fmtExpr(lp.iter.*));
-                    if (lp.indexRange) |ir| {
-                        doc = try this.concat(doc, try this.text(", "));
-                        doc = try this.concat(doc, try this.fmtExpr(ir.*));
-                    }
-                    doc = try this.concat(doc, try this.text(") {"));
-                    for (lp.params, 0..) |p, i| {
-                        doc = try this.concat(doc, if (i == 0) try this.text(" ") else try this.text(", "));
-                        doc = try this.concat(doc, try this.text(p));
-                    }
-                    doc = try this.concat(doc, try this.text(" ->"));
-                    for (lp.body) |stmt| {
-                        doc = try this.concat(doc, try this.surroundBreak("", try this.fmtExpr(stmt.expr), ""));
-                    }
-                    doc = try this.concat(doc, try this.text("}"));
-                    break :blk doc;
-                },
-                .@"break" => |e| if (e) |ep|
-                    this.concat(try this.text("break "), try this.fmtExpr(ep.*))
-                else
-                    this.text("break"),
-                .yield => |e| this.concat(try this.text("yield "), try this.fmtExpr(e.*)),
-                .@"continue" => this.text("continue"),
+            },
+            .loop => |lp| blk: {
+                var doc: *const Doc = try this.text("loop (");
+                doc = try this.concat(doc, try this.fmtExpr(lp.kind.iter.*));
+                if (lp.kind.indexRange) |ir| {
+                    doc = try this.concat(doc, try this.text(", "));
+                    doc = try this.concat(doc, try this.fmtExpr(ir.*));
+                }
+                doc = try this.concat(doc, try this.text(") {"));
+                for (lp.kind.params, 0..) |p, i| {
+                    doc = try this.concat(doc, if (i == 0) try this.text(" ") else try this.text(", "));
+                    doc = try this.concat(doc, try this.text(p));
+                }
+                doc = try this.concat(doc, try this.text(" ->"));
+                for (lp.kind.body) |stmt| {
+                    doc = try this.concat(doc, try this.surroundBreak("", try this.fmtExpr(stmt.expr), ""));
+                }
+                doc = try this.concat(doc, try this.text("}"));
+                break :blk doc;
             },
             .binding => |b| switch (b.kind) {
                 .localBind => |lb| this.concatAll(&.{
@@ -505,30 +511,21 @@ pub const Formatter = struct {
                     try this.text(" = "),
                     try this.fmtExpr(lb.value.*),
                 }),
-                .assign => |a| this.concatAll(&.{
-                    try this.text(a.name),
-                    try this.text(" = "),
-                    try this.fmtExpr(a.value.*),
-                }),
-                .assignPlus => |a| this.concatAll(&.{
-                    try this.text(a.name),
-                    try this.text(" += "),
-                    try this.fmtExpr(a.value.*),
-                }),
-                .fieldAssign => |a| this.concatAll(&.{
-                    try this.fmtExpr(a.receiver.*),
-                    try this.text("."),
-                    try this.text(a.field),
-                    try this.text(" = "),
-                    try this.fmtExpr(a.value.*),
-                }),
-                .fieldPlusEq => |a| this.concatAll(&.{
-                    try this.fmtExpr(a.receiver.*),
-                    try this.text("."),
-                    try this.text(a.field),
-                    try this.text(" += "),
-                    try this.fmtExpr(a.value.*),
-                }),
+                .assign => |a| blk: {
+                    const targetDoc: *const Doc = switch (a.target) {
+                        .name => |name| try this.text(name),
+                        .fieldAccess => |fa| try this.concatAll(&.{
+                            try this.fmtExpr(fa.receiver.*),
+                            try this.text("."),
+                            try this.text(fa.field),
+                        }),
+                    };
+                    break :blk this.concatAll(&.{
+                        targetDoc,
+                        try this.text(if (a.op == .plusAssign) " += " else " = "),
+                        try this.fmtExpr(a.value.*),
+                    });
+                },
                 .localBindDestruct => |lb| blk: {
                     var doc: *const Doc = try this.text(if (lb.mutable) "var " else "val ");
                     doc = try this.concat(doc, try this.fmtParamDestruct(lb.pattern));
@@ -977,7 +974,18 @@ pub const Formatter = struct {
         try parts.append(this.arena, callee);
         // Only emit () if there are actual args when trailing lambdas present
         if (c.args.len > 0) try parts.append(this.arena, argsDoc);
-        try parts.append(this.arena, try this.text(" "));
+        // Add space before trailing lambda:
+        // - Always add space if lambda has params (e.g. "fn { a -> ... }")
+        // - For parameterless lambdas: only add space for non-builtin calls
+        //   (e.g., "executar { ... }" has space, but "@block{ ... }" does not)
+        const needs_space = if (c.trailing.len > 0) blk: {
+            if (c.trailing[0].params.len > 0) break :blk true;
+            // Parameterless lambda: no space only for builtins
+            break :blk !is_builtin;
+        } else false;
+        if (needs_space) {
+            try parts.append(this.arena, try this.text(" "));
+        }
 
         for (c.trailing, 0..) |tl, ti| {
             if (ti > 0) try parts.append(this.arena, try this.text(" "));

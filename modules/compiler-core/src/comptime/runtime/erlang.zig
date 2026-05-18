@@ -28,7 +28,7 @@ fn buildScript(allocator: std.mem.Allocator, entries: []const eval.ComptimeEntry
                 .comptimeBlock => |cb| {
                     for (cb.body) |stmt| {
                         switch (stmt.expr) {
-                            .controlFlow => |cf| switch (cf.kind) {
+                            .jump => |j| switch (j.kind) {
                                 .@"break" => |y| if (y) |yp| {
                                     try writeExprErl(bw, allocator, yp.*);
                                     break;
@@ -59,10 +59,10 @@ fn buildScript(allocator: std.mem.Allocator, entries: []const eval.ComptimeEntry
 fn isStringExpr(te: ast.TypedExpr) bool {
     return switch (te) {
         .literal => |lit| lit.kind == .stringLit,
-        .binaryOp => |b| switch (b.kind) {
-            .add => |op| isStringExpr(op.lhs.*) or isStringExpr(op.rhs.*),
-            else => false,
-        },
+        .binaryOp => |b| if (b.kind.op == .add)
+            isStringExpr(b.kind.lhs.*) or isStringExpr(b.kind.rhs.*)
+        else
+            false,
         .comptime_ => |ct| switch (ct.kind) {
             .comptimeExpr => |e| isStringExpr(e.*),
             else => false,
@@ -99,41 +99,41 @@ fn writeExprErl(bw: anytype, allocator: std.mem.Allocator, te: ast.TypedExpr) !v
             },
             .null_ => try bw.writeAll("undefined"),
         },
-        .binaryOp => |b| switch (b.kind) {
-            .add => |op| {
-                const is_string_op = isStringExpr(op.lhs.*) or isStringExpr(op.rhs.*);
+        .binaryOp => |b| switch (b.kind.op) {
+            .add => {
+                const is_string_op = isStringExpr(b.kind.lhs.*) or isStringExpr(b.kind.rhs.*);
                 try bw.writeByte('(');
-                try writeExprErl(bw, allocator, op.lhs.*);
+                try writeExprErl(bw, allocator, b.kind.lhs.*);
                 try bw.writeAll(if (is_string_op) " ++ " else " + ");
-                try writeExprErl(bw, allocator, op.rhs.*);
+                try writeExprErl(bw, allocator, b.kind.rhs.*);
                 try bw.writeByte(')');
             },
-            .sub => |op| {
+            .sub => {
                 try bw.writeByte('(');
-                try writeExprErl(bw, allocator, op.lhs.*);
+                try writeExprErl(bw, allocator, b.kind.lhs.*);
                 try bw.writeAll(" - ");
-                try writeExprErl(bw, allocator, op.rhs.*);
+                try writeExprErl(bw, allocator, b.kind.rhs.*);
                 try bw.writeByte(')');
             },
-            .mul => |op| {
+            .mul => {
                 try bw.writeByte('(');
-                try writeExprErl(bw, allocator, op.lhs.*);
+                try writeExprErl(bw, allocator, b.kind.lhs.*);
                 try bw.writeAll(" * ");
-                try writeExprErl(bw, allocator, op.rhs.*);
+                try writeExprErl(bw, allocator, b.kind.rhs.*);
                 try bw.writeByte(')');
             },
-            .div => |op| {
+            .div => {
                 try bw.writeByte('(');
-                try writeExprErl(bw, allocator, op.lhs.*);
+                try writeExprErl(bw, allocator, b.kind.lhs.*);
                 try bw.writeAll(" div ");
-                try writeExprErl(bw, allocator, op.rhs.*);
+                try writeExprErl(bw, allocator, b.kind.rhs.*);
                 try bw.writeByte(')');
             },
-            .mod => |op| {
+            .mod => {
                 try bw.writeByte('(');
-                try writeExprErl(bw, allocator, op.lhs.*);
+                try writeExprErl(bw, allocator, b.kind.lhs.*);
                 try bw.writeAll(" rem ");
-                try writeExprErl(bw, allocator, op.rhs.*);
+                try writeExprErl(bw, allocator, b.kind.rhs.*);
                 try bw.writeByte(')');
             },
             else => try bw.writeAll("undefined"),
@@ -186,7 +186,7 @@ fn writeExprErl(bw: anytype, allocator: std.mem.Allocator, te: ast.TypedExpr) !v
             .comptimeExpr => |e| try writeExprErl(bw, allocator, e.*),
             else => try bw.writeAll("undefined"),
         },
-        .controlFlow => |cf| switch (cf.kind) {
+        .jump => |j| switch (j.kind) {
             .@"break" => |y| if (y) |yp| try writeExprErl(bw, allocator, yp.*),
             else => try bw.writeAll("undefined"),
         },
@@ -262,6 +262,7 @@ fn parseResults(
                             else => try allocator.dupe(u8, "undefined"),
                         };
                         try out_buf.appendSlice(allocator, elem_lit);
+                        allocator.free(elem_lit);
                     }
                     try out_buf.append(allocator, ']');
                     break :blk out_buf.toOwnedSlice(allocator);

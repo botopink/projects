@@ -57,4 +57,4 @@ function execute_$1(input) {
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

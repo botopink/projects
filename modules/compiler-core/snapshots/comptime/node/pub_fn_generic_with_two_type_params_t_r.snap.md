@@ -21,11 +21,11 @@ val result = transform(42, "mapped");
       "params": [
         {
           "name": "x",
-          "type": ""
+          "type": "T"
         },
         {
           "name": "y",
-          "type": ""
+          "type": "R"
         }
       ],
       "return_type": "R",
@@ -37,6 +37,8 @@ val result = transform(42, "mapped");
     },
     {
       "ast": "val",
+      "indent": "result",
+      "return_type": "string",
       "expr": {
         "ast": "call",
         "params": [
@@ -48,8 +50,7 @@ val result = transform(42, "mapped");
           }
         ],
         "return_type": "string"
-      },
-      "return_type": "string"
+      }
     }
   ]
 }

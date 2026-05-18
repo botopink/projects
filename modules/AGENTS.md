@@ -1,5 +1,11 @@
 # botopink/modules
 
+## AGENTS links
+
+- [Root AGENTS](../AGENTS.md)
+- [Compiler-core AGENTS](compiler-core/AGENTS.md)
+- [Stdlib AGENTS](stdlib/AGENTS.md)
+
 ## Directory Structure
 
 - `core/` — Zig library: lexer, parser, type inference, comptime evaluation, codegen (CommonJS + Erlang), formatter

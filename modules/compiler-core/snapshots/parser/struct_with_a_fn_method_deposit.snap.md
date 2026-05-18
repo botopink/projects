@@ -52,19 +52,24 @@
                         "col": 9
                       },
                       "kind": {
-                        "fieldPlusEq": {
-                          "receiver": {
-                            "identifier": {
-                              "loc": {
-                                "line": 3,
-                                "col": 9
+                        "assign": {
+                          "target": {
+                            "fieldAccess": {
+                              "receiver": {
+                                "identifier": {
+                                  "loc": {
+                                    "line": 3,
+                                    "col": 9
+                                  },
+                                  "kind": {
+                                    "ident": "self"
+                                  }
+                                }
                               },
-                              "kind": {
-                                "ident": "self"
-                              }
+                              "field": "_balance"
                             }
                           },
-                          "field": "_balance",
+                          "op": "plusAssign",
                           "value": {
                             "identifier": {
                               "loc": {

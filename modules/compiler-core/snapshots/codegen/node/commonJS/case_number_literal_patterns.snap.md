@@ -30,4 +30,4 @@ function classify(n) {
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

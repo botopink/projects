@@ -29,27 +29,26 @@
                           "col": 14
                         },
                         "kind": {
-                          "eq": {
-                            "lhs": {
-                              "literal": {
-                                "loc": {
-                                  "line": 2,
-                                  "col": 12
-                                },
-                                "kind": {
-                                  "numberLit": "1"
-                                }
+                          "op": "eq",
+                          "lhs": {
+                            "literal": {
+                              "loc": {
+                                "line": 2,
+                                "col": 12
+                              },
+                              "kind": {
+                                "numberLit": "1"
                               }
-                            },
-                            "rhs": {
-                              "literal": {
-                                "loc": {
-                                  "line": 2,
-                                  "col": 17
-                                },
-                                "kind": {
-                                  "numberLit": "1"
-                                }
+                            }
+                          },
+                          "rhs": {
+                            "literal": {
+                              "loc": {
+                                "line": 2,
+                                "col": 17
+                              },
+                              "kind": {
+                                "numberLit": "1"
                               }
                             }
                           }

@@ -25,6 +25,8 @@ val g = GPSCoordinates(lat: 5.0, lon: 3.0);
     },
     {
       "ast": "val",
+      "indent": "g",
+      "return_type": "GPSCoordinates",
       "expr": {
         "ast": "call",
         "params": [
@@ -38,8 +40,7 @@ val g = GPSCoordinates(lat: 5.0, lon: 3.0);
           }
         ],
         "return_type": "GPSCoordinates"
-      },
-      "return_type": "GPSCoordinates"
+      }
     }
   ]
 }

@@ -16,7 +16,7 @@ pub fn double(x: i32) -> i32 {
       "params": [
         {
           "name": "x",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "i32",
@@ -43,6 +43,8 @@ val result = double(21);
   "declarations": [
     {
       "ast": "val",
+      "indent": "result",
+      "return_type": "i32",
       "expr": {
         "ast": "call",
         "params": [
@@ -51,8 +53,17 @@ val result = double(21);
           }
         ],
         "return_type": "i32"
-      },
-      "return_type": "i32"
+      }
+    },
+    {
+      "ast": "use",
+      "declarations": [
+        {
+          "ast": "use-declaration",
+          "indent": "double",
+          "return_type": "i32"
+        }
+      ]
     }
   ]
 }

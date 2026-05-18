@@ -16,7 +16,7 @@ fn greet(name: ?string) -> string {
       "params": [
         {
           "name": "name",
-          "type": ""
+          "type": "?"
         }
       ],
       "return_type": "string",

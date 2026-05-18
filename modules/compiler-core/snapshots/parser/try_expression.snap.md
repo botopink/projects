@@ -24,7 +24,7 @@
                   "localBind": {
                     "name": "x",
                     "value": {
-                      "controlFlow": {
+                      "jump": {
                         "loc": {
                           "line": 2,
                           "col": 13

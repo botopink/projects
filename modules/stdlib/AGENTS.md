@@ -1,5 +1,10 @@
 # stdlib
 
+## AGENTS links
+
+- [Root AGENTS](../../AGENTS.md)
+- [Modules AGENTS](../AGENTS.md)
+
 Standard library for botopink programs.
 
 ## Files

@@ -19,6 +19,8 @@ val p = Point(x: 1, y: 2);
     },
     {
       "ast": "val",
+      "indent": "p",
+      "return_type": "Point",
       "expr": {
         "ast": "call",
         "params": [
@@ -32,8 +34,7 @@ val p = Point(x: 1, y: 2);
           }
         ],
         "return_type": "Point"
-      },
-      "return_type": "Point"
+      }
     }
   ]
 }

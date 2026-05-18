@@ -20,6 +20,8 @@ val c = Counter(0);
     },
     {
       "ast": "val",
+      "indent": "c",
+      "return_type": "Counter",
       "expr": {
         "ast": "call",
         "params": [
@@ -28,8 +30,7 @@ val c = Counter(0);
           }
         ],
         "return_type": "Counter"
-      },
-      "return_type": "Counter"
+      }
     }
   ]
 }

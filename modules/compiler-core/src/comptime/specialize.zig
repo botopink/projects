@@ -179,47 +179,46 @@ fn transformBody(
     // Transform each top-level statement.
     for (original_body) |stmt| {
         switch (stmt.expr) {
-            .controlFlow => |cf| switch (cf.kind) {
-                .loop => |lp| {
-                    const iter_name: ?[]const u8 = switch (lp.iter.*) {
-                        .identifier => |id| if (id.kind == .ident) id.kind.ident else null,
-                        else => null,
-                    };
-                    const elements_opt = if (iter_name) |n| comptime_arrays.get(n) else null;
-                    if (elements_opt) |elements| {
-                        // Comptime array: unroll the loop.
-                        for (elements) |elem| {
-                            const elem_val: []const u8 = switch (elem) {
-                                .literal => |lit| switch (lit.kind) {
-                                    .stringLit => |s| s,
-                                    .numberLit => |n| n,
-                                    else => continue,
-                                },
+            .loop => |lp| {
+                const iter_name: ?[]const u8 = switch (lp.kind.iter.*) {
+                    .identifier => |id| if (id.kind == .ident) id.kind.ident else null,
+                    else => null,
+                };
+                const elements_opt = if (iter_name) |n| comptime_arrays.get(n) else null;
+                if (elements_opt) |elements| {
+                    // Comptime array: unroll the loop.
+                    for (elements) |elem| {
+                        const elem_val: []const u8 = switch (elem) {
+                            .literal => |lit| switch (lit.kind) {
+                                .stringLit => |s| s,
+                                .numberLit => |n| n,
                                 else => continue,
-                            };
-                            try transformBodyWithLoopCtx(
-                                arena,
-                                &out,
-                                lp.body,
-                                lp.params,
-                                elem_val,
-                                ct_arg_map,
-                            );
-                        }
-                    } else {
-                        // Runtime array: keep the loop as-is.
-                        try out.append(arena, stmt);
+                            },
+                            else => continue,
+                        };
+                        try transformBodyWithLoopCtx(
+                            arena,
+                            &out,
+                            lp.kind.body,
+                            lp.kind.params,
+                            elem_val,
+                            ct_arg_map,
+                        );
                     }
-                },
+                } else {
+                    // Runtime array: keep the loop as-is.
+                    try out.append(arena, stmt);
+                }
+            },
+            .jump => |j| switch (j.kind) {
                 .@"return" => try out.append(arena, stmt),
                 .throw_ => try out.append(arena, stmt),
                 .try_ => try out.append(arena, stmt),
-                .tryCatch => try out.append(arena, stmt),
-                .if_ => try out.append(arena, stmt),
                 .@"break" => try out.append(arena, stmt),
                 .yield => try out.append(arena, stmt),
                 .@"continue" => try out.append(arena, stmt),
             },
+            .branch => try out.append(arena, stmt),
             else => try out.append(arena, stmt),
         }
     }
@@ -240,7 +239,7 @@ fn transformBodyWithLoopCtx(
 ) !void {
     for (stmts) |stmt| {
         switch (stmt.expr) {
-            .controlFlow => |cf| switch (cf.kind) {
+            .branch => |br| switch (br.kind) {
                 .if_ => |if_node| {
                     if (evalEqCondition(if_node.cond.*, loop_params, elem_val, ct_arg_map)) |cond_val| {
                         if (cond_val) {
@@ -260,18 +259,21 @@ fn transformBodyWithLoopCtx(
             },
             .binding => |b| switch (b.kind) {
                 .assign => |a| {
-                    switch (a.value.*) {
-                        .collection => |col| switch (col.kind) {
-                            .case => |cn| {
-                                if (try tryFoldCaseAssign(arena, a.name, cn, loop_params, elem_val, ct_arg_map)) |folded| {
-                                    try out.append(arena, folded);
-                                } else {
-                                    try out.append(arena, stmt);
-                                }
+                    switch (a.target) {
+                        .name => |name| switch (a.value.*) {
+                            .collection => |col| switch (col.kind) {
+                                .case => |cn| {
+                                    if (try tryFoldCaseAssign(arena, name, cn, loop_params, elem_val, ct_arg_map)) |folded| {
+                                        try out.append(arena, folded);
+                                    } else {
+                                        try out.append(arena, stmt);
+                                    }
+                                },
+                                else => try out.append(arena, stmt),
                             },
                             else => try out.append(arena, stmt),
                         },
-                        else => try out.append(arena, stmt),
+                        .fieldAccess => try out.append(arena, stmt),
                     }
                 },
                 else => try out.append(arena, stmt),
@@ -311,7 +313,11 @@ fn tryFoldCaseAssign(
             return ast.Stmt{
                 .expr = ast.Expr{ .binding = .{
                     .loc = .{ .line = 0, .col = 0 },
-                    .kind = .{ .assign = .{ .name = name, .value = body_copy } },
+                    .kind = .{ .assign = .{
+                        .target = .{ .name = name },
+                        .op = .assign,
+                        .value = body_copy,
+                    } },
                 } },
             };
         }
@@ -346,13 +352,11 @@ fn evalEqCondition(
     ct_arg_map: *const std.StringHashMap([]const u8),
 ) ?bool {
     switch (cond) {
-        .binaryOp => |bin| switch (bin.kind) {
-            .eq => |b| {
-                const lv = resolveToStr(b.lhs.*, loop_params, elem_val, ct_arg_map) orelse return null;
-                const rv = resolveToStr(b.rhs.*, loop_params, elem_val, ct_arg_map) orelse return null;
-                return std.mem.eql(u8, lv, rv);
-            },
-            else => return null,
+        .binaryOp => |bin| {
+            if (bin.kind.op != .eq) return null;
+            const lv = resolveToStr(bin.kind.lhs.*, loop_params, elem_val, ct_arg_map) orelse return null;
+            const rv = resolveToStr(bin.kind.rhs.*, loop_params, elem_val, ct_arg_map) orelse return null;
+            return std.mem.eql(u8, lv, rv);
         },
         else => return null,
     }
@@ -394,19 +398,20 @@ fn bodyNeedsParamConst(
 ) bool {
     for (body) |stmt| {
         switch (stmt.expr) {
-            .controlFlow => |cf| switch (cf.kind) {
-                .loop => |lp| {
-                    const is_ct_loop = switch (lp.iter.*) {
-                        .identifier => |id| if (id.kind == .ident)
-                            comptime_arrays.get(id.kind.ident) != null
-                        else
-                            false,
-                        else => false,
-                    };
-                    if (is_ct_loop) continue; // handled by unrolling — skip
-                    if (identInExpr(lp.iter.*, param_name)) return true;
-                    for (lp.body) |bs| if (identInExpr(bs.expr, param_name)) return true;
-                },
+            .loop => |lp| {
+                const is_ct_loop = switch (lp.kind.iter.*) {
+                    .identifier => |id| if (id.kind == .ident)
+                        comptime_arrays.get(id.kind.ident) != null
+                    else
+                        false,
+                    else => false,
+                };
+                if (is_ct_loop) continue; // handled by unrolling — skip
+                if (identInExpr(lp.kind.iter.*, param_name)) return true;
+                for (lp.kind.body) |bs| if (identInExpr(bs.expr, param_name)) return true;
+            },
+            .branch => if (identInExpr(stmt.expr, param_name)) return true,
+            .jump => |j| switch (j.kind) {
                 else => if (identInExpr(stmt.expr, param_name)) return true,
             },
             else => if (identInExpr(stmt.expr, param_name)) return true,
@@ -422,9 +427,7 @@ fn identInExpr(expr: anytype, name: []const u8) bool {
             std.mem.eql(u8, id.kind.ident, name)
         else
             false,
-        .binaryOp => |bin| switch (bin.kind) {
-            .add, .sub, .mul, .div, .mod, .eq, .ne, .lt, .gt, .lte, .gte, .@"and", .@"or" => |b| identInExpr(b.lhs.*, name) or identInExpr(b.rhs.*, name),
-        },
+        .binaryOp => |bin| identInExpr(bin.kind.lhs.*, name) or identInExpr(bin.kind.rhs.*, name),
         .call => |c| switch (c.kind) {
             .pipeline => |p| identInExpr(p.lhs.*, name) or identInExpr(p.rhs.*, name),
             .call => |cc| blk: {
@@ -438,30 +441,39 @@ fn identInExpr(expr: anytype, name: []const u8) bool {
         },
         .binding => |b| switch (b.kind) {
             .localBind => |lb| identInExpr(lb.value.*, name),
-            .assign => |a| identInExpr(a.value.*, name),
-            .assignPlus => |ap| identInExpr(ap.value.*, name),
-            .fieldAssign => |fa| identInExpr(fa.receiver.*, name) or identInExpr(fa.value.*, name),
-            .fieldPlusEq => |fpe| identInExpr(fpe.receiver.*, name) or identInExpr(fpe.value.*, name),
+            .assign => |a| blk: {
+                const target_has = switch (a.target) {
+                    .name => false,
+                    .fieldAccess => |fa| identInExpr(fa.receiver.*, name),
+                };
+                break :blk target_has or identInExpr(a.value.*, name);
+            },
             .localBindDestruct => |lb| identInExpr(lb.value.*, name),
         },
-        .controlFlow => |cf| switch (cf.kind) {
-            .@"return" => |r| identInExpr(r.*, name),
-            .throw_ => |t| identInExpr(t.*, name),
-            .try_ => |t| identInExpr(t.*, name),
+        .jump => |j| switch (j.kind) {
+            .@"return" => |r| if (r) |rp| identInExpr(rp.*, name) else false,
+            .throw_ => |t| if (t) |tp| identInExpr(tp.*, name) else false,
+            .try_ => |t| if (t) |tp| identInExpr(tp.*, name) else false,
+            .@"break" => |b| if (b) |bp| identInExpr(bp.*, name) else false,
+            .yield => |y| if (y) |yp| identInExpr(yp.*, name) else false,
+            .@"continue" => false,
+        },
+        .branch => |br| switch (br.kind) {
             .tryCatch => |tc| identInExpr(tc.expr.*, name) or identInExpr(tc.handler.*, name),
             .if_ => |inode| blk: {
                 if (identInExpr(inode.cond.*, name)) break :blk true;
                 for (inode.then_) |s| if (identInExpr(s.expr, name)) break :blk true;
+                if (inode.else_) |else_stmts| {
+                    for (else_stmts) |s| if (identInExpr(s.expr, name)) break :blk true;
+                }
                 break :blk false;
             },
-            .loop => |lp| blk: {
-                if (identInExpr(lp.iter.*, name)) break :blk true;
-                for (lp.body) |s| if (identInExpr(s.expr, name)) break :blk true;
-                break :blk false;
-            },
-            .@"break" => |b| if (b) |bp| identInExpr(bp.*, name) else false,
-            .yield => |y| identInExpr(y.*, name),
-            .@"continue" => false,
+        },
+        .loop => |lp| blk: {
+            if (identInExpr(lp.kind.iter.*, name)) break :blk true;
+            if (lp.kind.indexRange) |idx| if (identInExpr(idx.*, name)) break :blk true;
+            for (lp.kind.body) |s| if (identInExpr(s.expr, name)) break :blk true;
+            break :blk false;
         },
         .function => |f| switch (f.kind) {
             .lambda => |l| blk: {
@@ -517,9 +529,6 @@ fn identInExpr(expr: anytype, name: []const u8) bool {
         .literal => |lit| switch (lit.kind) {
             .stringLit, .numberLit, .null_, .comment => false,
         },
-        .unaryOp => |un| switch (un.kind) {
-            .not => |o| identInExpr(o.*, name),
-            .neg => |o| identInExpr(o.*, name),
-        },
+        .unaryOp => |un| identInExpr(un.kind.expr.*, name),
     };
 }

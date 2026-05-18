@@ -18,7 +18,7 @@ fn sumTo(n: i32) {
       "params": [
         {
           "name": "n",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "void",

@@ -54,39 +54,38 @@
                                   "col": 64
                                 },
                                 "kind": {
-                                  "add": {
-                                    "lhs": {
-                                      "literal": {
-                                        "loc": {
-                                          "line": 3,
-                                          "col": 27
-                                        },
-                                        "kind": {
-                                          "stringLit": "Conectado via USB. Bateria atual: "
-                                        }
+                                  "op": "add",
+                                  "lhs": {
+                                    "literal": {
+                                      "loc": {
+                                        "line": 3,
+                                        "col": 27
+                                      },
+                                      "kind": {
+                                        "stringLit": "Conectado via USB. Bateria atual: "
                                       }
-                                    },
-                                    "rhs": {
-                                      "identifier": {
-                                        "loc": {
-                                          "line": 3,
-                                          "col": 66
-                                        },
-                                        "kind": {
-                                          "identAccess": {
-                                            "receiver": {
-                                              "identifier": {
-                                                "loc": {
-                                                  "line": 3,
-                                                  "col": 66
-                                                },
-                                                "kind": {
-                                                  "ident": "self"
-                                                }
+                                    }
+                                  },
+                                  "rhs": {
+                                    "identifier": {
+                                      "loc": {
+                                        "line": 3,
+                                        "col": 66
+                                      },
+                                      "kind": {
+                                        "identAccess": {
+                                          "receiver": {
+                                            "identifier": {
+                                              "loc": {
+                                                "line": 3,
+                                                "col": 66
+                                              },
+                                              "kind": {
+                                                "ident": "self"
                                               }
-                                            },
-                                            "member": "batteryLevel"
-                                          }
+                                            }
+                                          },
+                                          "member": "batteryLevel"
                                         }
                                       }
                                     }
@@ -146,39 +145,38 @@
                                   "col": 73
                                 },
                                 "kind": {
-                                  "add": {
-                                    "lhs": {
-                                      "literal": {
-                                        "loc": {
-                                          "line": 6,
-                                          "col": 27
-                                        },
-                                        "kind": {
-                                          "stringLit": "Conectado via Painel Solar. Bateria atual: "
-                                        }
+                                  "op": "add",
+                                  "lhs": {
+                                    "literal": {
+                                      "loc": {
+                                        "line": 6,
+                                        "col": 27
+                                      },
+                                      "kind": {
+                                        "stringLit": "Conectado via Painel Solar. Bateria atual: "
                                       }
-                                    },
-                                    "rhs": {
-                                      "identifier": {
-                                        "loc": {
-                                          "line": 6,
-                                          "col": 75
-                                        },
-                                        "kind": {
-                                          "identAccess": {
-                                            "receiver": {
-                                              "identifier": {
-                                                "loc": {
-                                                  "line": 6,
-                                                  "col": 75
-                                                },
-                                                "kind": {
-                                                  "ident": "self"
-                                                }
+                                    }
+                                  },
+                                  "rhs": {
+                                    "identifier": {
+                                      "loc": {
+                                        "line": 6,
+                                        "col": 75
+                                      },
+                                      "kind": {
+                                        "identAccess": {
+                                          "receiver": {
+                                            "identifier": {
+                                              "loc": {
+                                                "line": 6,
+                                                "col": 75
+                                              },
+                                              "kind": {
+                                                "ident": "self"
                                               }
-                                            },
-                                            "member": "batteryLevel"
-                                          }
+                                            }
+                                          },
+                                          "member": "batteryLevel"
                                         }
                                       }
                                     }

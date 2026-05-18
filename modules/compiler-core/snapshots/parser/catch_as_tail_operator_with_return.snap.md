@@ -24,7 +24,7 @@
                   "localBind": {
                     "name": "item",
                     "value": {
-                      "controlFlow": {
+                      "branch": {
                         "loc": {
                           "line": 2,
                           "col": 28
@@ -49,7 +49,7 @@
                               }
                             },
                             "handler": {
-                              "controlFlow": {
+                              "jump": {
                                 "loc": {
                                   "line": 2,
                                   "col": 34

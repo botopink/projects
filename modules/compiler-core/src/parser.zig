@@ -20,7 +20,9 @@ pub const Param = ast.Param;
 pub const Stmt = ast.Stmt;
 pub const Expr = ast.Expr;
 pub const CollectionExpr = ast.CollectionExpr;
-pub const ControlFlowExpr = ast.ControlFlowExpr;
+pub const JumpExpr = ast.JumpExpr;
+pub const BranchExpr = ast.BranchExpr;
+pub const LoopExpr = ast.MakeExpr(.untyped, ast.LoopExprOf(.untyped));
 pub const FunctionExpr = ast.FunctionExpr;
 pub const Loc = ast.Loc;
 pub const RecordDecl = ast.RecordDecl;
@@ -196,7 +198,7 @@ pub const Parser = struct {
             } else if (this.check(.loop)) blk: {
                 // top-level loop statement: parsed as a val named "_loop"
                 const e = try this.parseLoopExpr(alloc);
-                const ePtr = try this.boxExpr(alloc, .{ .controlFlow = e });
+                const ePtr = try this.boxExpr(alloc, .{ .loop = e });
                 _ = this.match(.semicolon);
                 break :blk DeclKind{ .val = ast.ValDecl{ .name = "_loop", .value = ePtr } };
             } else if (this.checkShorthand(.val)) blk: {
@@ -528,7 +530,7 @@ pub const Parser = struct {
             const handler = try this.parseExpr(alloc);
             const exprPtr = try this.boxExpr(alloc, expr);
             const handlerPtr = try this.boxExpr(alloc, handler);
-            return Expr{ .controlFlow = .{ .loc = locFromToken(catchTok), .kind = .{ .tryCatch = .{ .expr = exprPtr, .handler = handlerPtr } } } };
+            return Expr{ .branch = .{ .loc = locFromToken(catchTok), .kind = .{ .tryCatch = .{ .expr = exprPtr, .handler = handlerPtr } } } };
         }
         return expr;
     }
@@ -2036,7 +2038,11 @@ pub const Parser = struct {
                 var valExpr = try this.parseExpr(alloc);
                 errdefer valExpr.deinit(alloc);
                 const valPtr = try this.boxExpr(alloc, valExpr);
-                return Expr{ .binding = .{ .loc = locFromToken(identTok), .kind = .{ .assign = .{ .name = identTok.lexeme, .value = valPtr } } } };
+                return Expr{ .binding = .{ .loc = locFromToken(identTok), .kind = .{ .assign = .{
+                    .target = .{ .name = identTok.lexeme },
+                    .op = .assign,
+                    .value = valPtr,
+                } } } };
             }
             this.current = saved;
         }
@@ -2047,7 +2053,7 @@ pub const Parser = struct {
             _ = this.match(.new); // skip optional `new` keyword
             const inner = try this.parseExpr(alloc);
             const innerPtr = try this.boxExpr(alloc, inner);
-            return Expr{ .controlFlow = .{ .loc = locFromToken(throwTok), .kind = .{ .throw_ = innerPtr } } };
+            return Expr{ .jump = .{ .loc = locFromToken(throwTok), .kind = .{ .throw_ = innerPtr } } };
         }
 
         // try expr [catch handler]
@@ -2061,9 +2067,9 @@ pub const Parser = struct {
             if (this.match(.@"catch")) {
                 const handler = try this.parseExpr(alloc);
                 const handlerPtr = try this.boxExpr(alloc, handler);
-                return Expr{ .controlFlow = .{ .loc = locFromToken(tryTok), .kind = .{ .tryCatch = .{ .expr = innerPtr, .handler = handlerPtr } } } };
+                return Expr{ .branch = .{ .loc = locFromToken(tryTok), .kind = .{ .tryCatch = .{ .expr = innerPtr, .handler = handlerPtr } } } };
             }
-            return Expr{ .controlFlow = .{ .loc = locFromToken(tryTok), .kind = .{ .try_ = innerPtr } } };
+            return Expr{ .jump = .{ .loc = locFromToken(tryTok), .kind = .{ .try_ = innerPtr } } };
         }
 
         // if (cond) { [binding ->] stmt; } [else { stmt; }]
@@ -2117,7 +2123,7 @@ pub const Parser = struct {
                 };
             } else null;
 
-            return Expr{ .controlFlow = .{ .loc = locFromToken(ifTok), .kind = .{ .if_ = .{
+            return Expr{ .branch = .{ .loc = locFromToken(ifTok), .kind = .{ .if_ = .{
                 .cond = condPtr,
                 .binding = binding,
                 .then_ = then_,
@@ -2131,7 +2137,7 @@ pub const Parser = struct {
             const inner = try this.parseExpr(alloc);
             const innerPtr = try alloc.create(Expr);
             innerPtr.* = inner;
-            return Expr{ .controlFlow = .{ .loc = locFromToken(retTok), .kind = .{ .@"return" = innerPtr } } };
+            return Expr{ .jump = .{ .loc = locFromToken(retTok), .kind = .{ .@"return" = innerPtr } } };
         }
 
         // case expr { arm* }
@@ -2160,13 +2166,13 @@ pub const Parser = struct {
             // break with no expression (e.g. bare `break` inside a loop)
             const isEnd = this.check(.rightBrace) or this.check(.endOfFile) or this.check(.newLine) or this.check(.semicolon);
             if (isEnd) {
-                return Expr{ .controlFlow = .{ .loc = locFromToken(breakTok), .kind = .{ .@"break" = null } } };
+                return Expr{ .jump = .{ .loc = locFromToken(breakTok), .kind = .{ .@"break" = null } } };
             }
             var inner = try this.parseExpr(alloc);
             errdefer inner.deinit(alloc);
             const innerPtr = try alloc.create(Expr);
             innerPtr.* = inner;
-            return Expr{ .controlFlow = .{ .loc = locFromToken(breakTok), .kind = .{ .@"break" = innerPtr } } };
+            return Expr{ .jump = .{ .loc = locFromToken(breakTok), .kind = .{ .@"break" = innerPtr } } };
         }
 
         // yield expr
@@ -2176,13 +2182,13 @@ pub const Parser = struct {
             errdefer inner.deinit(alloc);
             const innerPtr = try alloc.create(Expr);
             innerPtr.* = inner;
-            return Expr{ .controlFlow = .{ .loc = locFromToken(yieldTok), .kind = .{ .yield = innerPtr } } };
+            return Expr{ .jump = .{ .loc = locFromToken(yieldTok), .kind = .{ .yield = innerPtr } } };
         }
 
         // continue
         if (this.check(.@"continue")) {
             const contTok = this.advance();
-            return Expr{ .controlFlow = .{ .loc = locFromToken(contTok), .kind = .{ .@"continue" = {} } } };
+            return Expr{ .jump = .{ .loc = locFromToken(contTok), .kind = .@"continue" } };
         }
 
         // assert condition [,"message"]
@@ -2200,7 +2206,7 @@ pub const Parser = struct {
 
         // loop (iter) { params -> body }  /  loop (iter, 0..) { item, i -> body }
         if (this.check(.loop)) {
-            return .{ .controlFlow = try this.parseLoopExpr(alloc) };
+            return .{ .loop = try this.parseLoopExpr(alloc) };
         }
 
         // #(e1, e2, ...) ---- tuple literal
@@ -2223,7 +2229,11 @@ pub const Parser = struct {
                 const valExpr = try this.parseExpr(alloc);
                 const valPtr = try alloc.create(Expr);
                 valPtr.* = valExpr;
-                return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .assignPlus = .{ .name = first.lexeme, .value = valPtr } } } };
+                return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .assign = .{
+                    .target = .{ .name = first.lexeme },
+                    .op = .plusAssign,
+                    .value = valPtr,
+                } } } };
             }
 
             if (this.check(.dot)) {
@@ -2240,7 +2250,11 @@ pub const Parser = struct {
                     valPtr.* = valExpr;
                     const recvPtr = try alloc.create(Expr);
                     recvPtr.* = Expr{ .identifier = .{ .loc = locFromToken(first), .kind = .{ .ident = first.lexeme } } };
-                    return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .fieldAssign = .{ .receiver = recvPtr, .field = fieldTok.lexeme, .value = valPtr } } } };
+                    return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .assign = .{
+                        .target = .{ .fieldAccess = .{ .receiver = recvPtr, .field = fieldTok.lexeme } },
+                        .op = .assign,
+                        .value = valPtr,
+                    } } } };
                 }
 
                 if (this.match(.plusEqual)) {
@@ -2249,7 +2263,11 @@ pub const Parser = struct {
                     valPtr.* = valExpr;
                     const recvPtr = try alloc.create(Expr);
                     recvPtr.* = Expr{ .identifier = .{ .loc = locFromToken(first), .kind = .{ .ident = first.lexeme } } };
-                    return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .fieldPlusEq = .{ .receiver = recvPtr, .field = fieldTok.lexeme, .value = valPtr } } } };
+                    return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .assign = .{
+                        .target = .{ .fieldAccess = .{ .receiver = recvPtr, .field = fieldTok.lexeme } },
+                        .op = .plusAssign,
+                        .value = valPtr,
+                    } } } };
                 }
 
                 this.current = saved;
@@ -2572,7 +2590,7 @@ pub const Parser = struct {
                         }
                         break :rhs_blk Expr{ .call = .{ .loc = locFromToken(nameTok), .kind = .{ .call = .{
                             .receiver = null,
-                            .callee = nameTok.lexeme[1..],
+                            .callee = nameTok.lexeme,
                             .is_builtin = false,
                             .args = args,
                             .trailing = trailing,
@@ -2625,7 +2643,7 @@ pub const Parser = struct {
             lhsPtr.* = lhs;
             const rhsPtr = try alloc.create(Expr);
             rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .@"or" = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } };
+            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .@"or", .lhs = lhsPtr, .rhs = rhsPtr } } };
         }
 
         return lhs;
@@ -2641,7 +2659,7 @@ pub const Parser = struct {
             lhsPtr.* = lhs;
             const rhsPtr = try alloc.create(Expr);
             rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .@"and" = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } };
+            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .@"and", .lhs = lhsPtr, .rhs = rhsPtr } } };
         }
 
         return lhs;
@@ -2657,10 +2675,11 @@ pub const Parser = struct {
             lhsPtr.* = lhs;
             const rhsPtr = try alloc.create(Expr);
             rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = if (opTok.kind == .equalEqual)
-                .{ .eq = .{ .lhs = lhsPtr, .rhs = rhsPtr } }
-            else
-                .{ .ne = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } };
+            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
+                .op = if (opTok.kind == .equalEqual) .eq else .ne,
+                .lhs = lhsPtr,
+                .rhs = rhsPtr,
+            } } };
         }
 
         return lhs;
@@ -2689,12 +2708,16 @@ pub const Parser = struct {
             lhsPtr.* = lhs;
             const rhsPtr = try alloc.create(Expr);
             rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = switch (opTok.kind) {
-                .lessThan => .{ .lt = .{ .lhs = lhsPtr, .rhs = rhsPtr } },
-                .greaterThan => .{ .gt = .{ .lhs = lhsPtr, .rhs = rhsPtr } },
-                .lessThanEqual => .{ .lte = .{ .lhs = lhsPtr, .rhs = rhsPtr } },
-                .greaterThanEqual => .{ .gte = .{ .lhs = lhsPtr, .rhs = rhsPtr } },
-                else => unreachable,
+            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
+                .op = switch (opTok.kind) {
+                    .lessThan => .lt,
+                    .greaterThan => .gt,
+                    .lessThanEqual => .lte,
+                    .greaterThanEqual => .gte,
+                    else => unreachable,
+                },
+                .lhs = lhsPtr,
+                .rhs = rhsPtr,
             } } };
         }
 
@@ -2711,10 +2734,11 @@ pub const Parser = struct {
             lhsPtr.* = lhs;
             const rhsPtr = try alloc.create(Expr);
             rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = if (opTok.kind == .plus)
-                .{ .add = .{ .lhs = lhsPtr, .rhs = rhsPtr } }
-            else
-                .{ .sub = .{ .lhs = lhsPtr, .rhs = rhsPtr } } } };
+            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
+                .op = if (opTok.kind == .plus) .add else .sub,
+                .lhs = lhsPtr,
+                .rhs = rhsPtr,
+            } } };
         }
 
         return lhs;
@@ -2730,11 +2754,15 @@ pub const Parser = struct {
             lhsPtr.* = lhs;
             const rhsPtr = try alloc.create(Expr);
             rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = switch (opTok.kind) {
-                .star => .{ .mul = .{ .lhs = lhsPtr, .rhs = rhsPtr } },
-                .slash => .{ .div = .{ .lhs = lhsPtr, .rhs = rhsPtr } },
-                .percent => .{ .mod = .{ .lhs = lhsPtr, .rhs = rhsPtr } },
-                else => unreachable,
+            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
+                .op = switch (opTok.kind) {
+                    .star => .mul,
+                    .slash => .div,
+                    .percent => .mod,
+                    else => unreachable,
+                },
+                .lhs = lhsPtr,
+                .rhs = rhsPtr,
             } } };
         }
 
@@ -2748,7 +2776,7 @@ pub const Parser = struct {
             const operand = try this.parsePrimary(alloc);
             const operandPtr = try alloc.create(Expr);
             operandPtr.* = operand;
-            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .neg = operandPtr } } };
+            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .neg, .expr = operandPtr } } };
         }
 
         // { params? -> body } ---- lambda expression (standalone or trailing)
@@ -2823,7 +2851,7 @@ pub const Parser = struct {
             const operand = try this.parsePrimary(alloc);
             const operandPtr = try alloc.create(Expr);
             operandPtr.* = operand;
-            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .not = operandPtr } } };
+            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .not, .expr = operandPtr } } };
         }
 
         // @name(args...) ---- built-in function call (same as regular calls, just with @ prefix)
@@ -3425,7 +3453,7 @@ pub const Parser = struct {
     ///   `loop (iter, 0..) { item, i -> body }`
     ///   `loop (start..end) { i -> body }`
     ///   `loop (start..) { i -> body }`
-    fn parseLoopExpr(this: *This, alloc: std.mem.Allocator) ParseError!ControlFlowExpr {
+    fn parseLoopExpr(this: *This, alloc: std.mem.Allocator) ParseError!LoopExpr {
         const loopTok = this.advance(); // consume 'loop'
         _ = try this.consume(.leftParenthesis);
 
@@ -3471,12 +3499,10 @@ pub const Parser = struct {
         return .{
             .loc = locFromToken(loopTok),
             .kind = .{
-                .loop = .{
-                    .iter = iterPtr,
-                    .indexRange = indexPtr,
-                    .params = try params.toOwnedSlice(alloc),
-                    .body = body,
-                },
+                .iter = iterPtr,
+                .indexRange = indexPtr,
+                .params = try params.toOwnedSlice(alloc),
+                .body = body,
             },
         };
     }

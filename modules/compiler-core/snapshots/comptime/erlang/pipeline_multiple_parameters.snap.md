@@ -19,11 +19,11 @@ fn main() {
       "params": [
         {
           "name": "a",
-          "type": ""
+          "type": "i32"
         },
         {
           "name": "b",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "i32",
@@ -40,11 +40,11 @@ fn main() {
       "params": [
         {
           "name": "a",
-          "type": ""
+          "type": "i32"
         },
         {
           "name": "b",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "i32",
@@ -61,15 +61,15 @@ fn main() {
       "params": [
         {
           "name": "value",
-          "type": ""
+          "type": "i32"
         },
         {
           "name": "prefix",
-          "type": ""
+          "type": "string"
         },
         {
           "name": "suffix",
-          "type": ""
+          "type": "string"
         }
       ],
       "return_type": "string",

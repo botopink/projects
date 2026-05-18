@@ -9,6 +9,7 @@ val s = "hello" + 42;
   "declarations": [
     {
       "ast": "val",
+      "indent": "s",
       "return_type": "string"
     }
   ]

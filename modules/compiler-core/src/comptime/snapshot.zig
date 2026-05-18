@@ -43,6 +43,24 @@ const FnBodyLine = struct {
     source: []const u8,
 };
 
+/// A use-declaration inside a `use` statement.
+const UseDeclaration = struct {
+    ast: []const u8,
+    indent: []const u8,
+    return_type: []const u8,
+    
+    pub fn jsonStringify(self: @This(), jws: anytype) !void {
+        try jws.beginObject();
+        try jws.objectField("ast");
+        try jws.write(self.ast);
+        try jws.objectField("indent");
+        try jws.write(self.indent);
+        try jws.objectField("return_type");
+        try jws.write(self.return_type);
+        try jws.endObject();
+    }
+};
+
 /// A call argument in a constructor or function call.
 const CallParam = struct {
     name: ?[]const u8,
@@ -77,12 +95,47 @@ const CaseExpr = struct {
     return_type: []const u8,
 };
 
+/// Full JSON representation of a `use {a, b} from "module"` statement.
+const UseExpr = struct {
+    ast: []const u8,
+    declarations: []const UseDeclaration,
+};
+
 /// Tagged union over all binding values — serialized via `jsonStringify`.
 const BindingRepr = union(enum) {
     val: struct {
         ast: []const u8,
+        indent: []const u8,
         expr: ?CallExpr,
         return_type: []const u8,
+
+        pub fn jsonStringify(self: @This(), jws: anytype) !void {
+            try jws.beginObject();
+            try jws.objectField("ast");
+            try jws.write(self.ast);
+            try jws.objectField("indent");
+            try jws.write(self.indent);
+            try jws.objectField("return_type");
+            try jws.write(self.return_type);
+            if (self.expr) |expr| {
+                try jws.objectField("expr");
+                try jws.write(expr);
+            }
+            try jws.endObject();
+        }
+    },
+    use: struct {
+        ast: []const u8,
+        declarations: []const UseDeclaration,
+        
+        pub fn jsonStringify(self: @This(), jws: anytype) !void {
+            try jws.beginObject();
+            try jws.objectField("ast");
+            try jws.write(self.ast);
+            try jws.objectField("declarations");
+            try jws.write(self.declarations);
+            try jws.endObject();
+        }
     },
     case: struct {
         ast: []const u8,
@@ -238,7 +291,9 @@ fn getTypedExprType(expr: ast.TypedExpr) *T.Type {
         .identifier => |e| e.type_,
         .binaryOp => |e| e.type_,
         .unaryOp => |e| e.type_,
-        .controlFlow => |e| e.type_,
+        .jump => |e| e.type_,
+        .branch => |e| e.type_,
+        .loop => |e| e.type_,
         .binding => |e| e.type_,
         .call => |e| e.type_,
         .function => |e| e.type_,
@@ -254,7 +309,9 @@ fn getTypedExprLoc(expr: ast.TypedExpr) ast.Loc {
         .identifier => |e| e.loc,
         .binaryOp => |e| e.loc,
         .unaryOp => |e| e.loc,
-        .controlFlow => |e| e.loc,
+        .jump => |e| e.loc,
+        .branch => |e| e.loc,
+        .loop => |e| e.loc,
         .binding => |e| e.loc,
         .call => |e| e.loc,
         .function => |e| e.loc,
@@ -270,7 +327,9 @@ fn getExprLoc(expr: ast.Expr) ast.Loc {
         .identifier => |e| e.loc,
         .binaryOp => |e| e.loc,
         .unaryOp => |e| e.loc,
-        .controlFlow => |e| e.loc,
+        .jump => |e| e.loc,
+        .branch => |e| e.loc,
+        .loop => |e| e.loc,
         .binding => |e| e.loc,
         .call => |e| e.loc,
         .function => |e| e.loc,
@@ -308,12 +367,24 @@ fn bindingToRepr(
     src: []const u8,
     type_ids: std.StringHashMap(usize),
 ) !?BindingRepr {
-    if (b.decl == .use) return null;
-
     const resolvedTypeId = resolveTypeId(b.type_, type_ids);
     const typeStr = try typeNameOf(allocator, b.type_);
 
     return switch (b.decl) {
+        .use => {
+            // Create a slice with a single use-declaration for this binding
+            const decls = try allocator.alloc(UseDeclaration, 1);
+            decls[0] = .{
+                .ast = "use-declaration",
+                .indent = b.name,
+                .return_type = typeStr,
+            };
+            
+            return .{ .use = .{
+                .ast = "use",
+                .declarations = decls,
+            } };
+        },
         .val => blk: {
             if (b.typedExpr) |te| {
                 if (te == .collection and te.collection.kind == .case) {
@@ -328,12 +399,13 @@ fn bindingToRepr(
                 if (te == .call) {
                     break :blk .{ .val = .{
                         .ast = "val",
+                        .indent = b.name,
                         .expr = try buildCallExpr(allocator, te),
                         .return_type = typeStr,
                     } };
                 }
             }
-            break :blk .{ .val = .{ .ast = "val", .expr = null, .return_type = typeStr } };
+            break :blk .{ .val = .{ .ast = "val", .indent = b.name, .expr = null, .return_type = typeStr } };
         },
 
         .@"fn" => |f| blk: {
@@ -341,7 +413,7 @@ fn bindingToRepr(
             for (f.params) |p| {
                 try params.append(allocator, .{
                     .name = p.name,
-                    .type = p.typeName,
+                    .type = typeNameFromTypeRef(p.typeRef),
                     .is_comptime = if (p.modifier == .@"comptime") true else null,
                 });
             }
@@ -422,13 +494,16 @@ pub fn typeNameOf(allocator: std.mem.Allocator, ty: *T.Type) std.mem.Allocator.E
             defer buf.deinit(allocator);
             if (std.mem.eql(u8, n.name, "array") and n.args.len == 1) {
                 const elem = try typeNameOf(allocator, n.args[0]);
+                defer allocator.free(elem);
                 return std.fmt.allocPrint(allocator, "{s}[]", .{elem});
             }
             if (std.mem.eql(u8, n.name, "tuple")) {
                 try buf.appendSlice(allocator, "#(");
                 for (n.args, 0..) |arg, i| {
                     if (i > 0) try buf.append(allocator, ',');
-                    try buf.appendSlice(allocator, try typeNameOf(allocator, arg));
+                    const arg_name = try typeNameOf(allocator, arg);
+                    defer allocator.free(arg_name);
+                    try buf.appendSlice(allocator, arg_name);
                 }
                 try buf.append(allocator, ')');
                 return buf.toOwnedSlice(allocator);
@@ -437,7 +512,9 @@ pub fn typeNameOf(allocator: std.mem.Allocator, ty: *T.Type) std.mem.Allocator.E
             try buf.append(allocator, '<');
             for (n.args, 0..) |arg, i| {
                 if (i > 0) try buf.append(allocator, ',');
-                try buf.appendSlice(allocator, try typeNameOf(allocator, arg));
+                const arg_name = try typeNameOf(allocator, arg);
+                defer allocator.free(arg_name);
+                try buf.appendSlice(allocator, arg_name);
             }
             try buf.append(allocator, '>');
             return buf.toOwnedSlice(allocator);
@@ -449,7 +526,9 @@ pub fn typeNameOf(allocator: std.mem.Allocator, ty: *T.Type) std.mem.Allocator.E
             defer buf.deinit(allocator);
             for (types, 0..) |t, i| {
                 if (i > 0) try buf.appendSlice(allocator, " | ");
-                try buf.appendSlice(allocator, try typeNameOf(allocator, t));
+                const type_name = try typeNameOf(allocator, t);
+                defer allocator.free(type_name);
+                try buf.appendSlice(allocator, type_name);
             }
             return buf.toOwnedSlice(allocator);
         },
@@ -496,9 +575,53 @@ pub fn buildSnapshot(allocator: std.mem.Allocator, output: comptimeMod.ComptimeO
             const ja = json_arena.allocator();
 
             var items = std.json.Array.init(ja);
+
+            // First pass: collect and merge use declarations
+            var merged_uses: std.StringHashMap(std.ArrayList(UseDeclaration)) = std.StringHashMap(std.ArrayList(UseDeclaration)).init(ja);
+            defer {
+                var iter = merged_uses.iterator();
+                while (iter.next()) |entry| {
+                    entry.value_ptr.deinit(ja);
+                }
+                merged_uses.deinit();
+            }
+
             for (ok.bindings) |b| {
                 const repr = (try bindingToRepr(ja, b, output.src, ok.type_ids)) orelse continue;
-                const jsonStr = try std.json.Stringify.valueAlloc(ja, repr, .{ .emit_null_optional_fields = false, .whitespace = .indent_2 });
+
+                if (repr == .use) {
+                    // For use declarations, merge them by module source
+                    const use_info = b.decl.use;
+                    const module_source = switch (use_info.source) {
+                        .stringPath => |s| s,
+                        .functionCall => |s| s,
+                    };
+
+                    const gop = try merged_uses.getOrPut(module_source);
+                    if (!gop.found_existing) {
+                        gop.value_ptr.* = std.ArrayList(UseDeclaration).empty;
+                    }
+
+                    // Add all declarations from this use to the merged list
+                    for (repr.use.declarations) |decl| {
+                        try gop.value_ptr.append(ja, decl);
+                    }
+                } else {
+                    // For non-use declarations, add directly to items
+                    const jsonStr = try std.json.Stringify.valueAlloc(ja, repr, .{ .emit_null_optional_fields = false, .whitespace = .indent_2 });
+                    const value = try std.json.parseFromSliceLeaky(std.json.Value, ja, jsonStr, .{});
+                    try items.append(value);
+                }
+            }
+
+            // Second pass: add merged use declarations to items
+            var iter = merged_uses.iterator();
+            while (iter.next()) |entry| {
+                const use_repr = BindingRepr{ .use = .{
+                    .ast = "use",
+                    .declarations = try entry.value_ptr.toOwnedSlice(ja),
+                } };
+                const jsonStr = try std.json.Stringify.valueAlloc(ja, use_repr, .{ .emit_null_optional_fields = false, .whitespace = .indent_2 });
                 const value = try std.json.parseFromSliceLeaky(std.json.Value, ja, jsonStr, .{});
                 try items.append(value);
             }

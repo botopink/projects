@@ -51,7 +51,7 @@
                       }
                     },
                     "handler": {
-                      "controlFlow": {
+                      "jump": {
                         "loc": {
                           "line": 2,
                           "col": 47

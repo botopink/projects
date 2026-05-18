@@ -1,5 +1,11 @@
 # core/src/comptime/runtime
 
+## AGENTS links
+
+- [Root AGENTS](../../../../../AGENTS.md)
+- [Comptime AGENTS](../AGENTS.md)
+- [Codegen AGENTS](../../codegen/AGENTS.md)
+
 Comptime evaluation runtime backends. Each backend builds a script from typed
 comptime expressions, runs it via the external runtime, and parses the JSON
 output back into a map of `id → literal string`.

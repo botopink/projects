@@ -25,6 +25,7 @@ val label = case subject {
     },
     {
       "ast": "val",
+      "indent": "subject",
       "return_type": "Color"
     },
     {

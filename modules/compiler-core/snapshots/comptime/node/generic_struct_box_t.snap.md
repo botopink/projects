@@ -23,6 +23,8 @@ val b = Box(42);
     },
     {
       "ast": "val",
+      "indent": "b",
+      "return_type": "Box",
       "expr": {
         "ast": "call",
         "params": [
@@ -31,8 +33,7 @@ val b = Box(42);
           }
         ],
         "return_type": "Box"
-      },
-      "return_type": "Box"
+      }
     }
   ]
 }

@@ -1,5 +1,11 @@
 # core/src/codegen
 
+## AGENTS links
+
+- [Root AGENTS](../../../../AGENTS.md)
+- [Compiler-core src AGENTS](../AGENTS.md)
+- [Comptime AGENTS](../comptime/AGENTS.md)
+
 ## Files
 
 | File | Role |

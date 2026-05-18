@@ -10,10 +10,12 @@ val bigger = 10 < 5;
   "declarations": [
     {
       "ast": "val",
+      "indent": "less",
       "return_type": "bool"
     },
     {
       "ast": "val",
+      "indent": "bigger",
       "return_type": "bool"
     }
   ]

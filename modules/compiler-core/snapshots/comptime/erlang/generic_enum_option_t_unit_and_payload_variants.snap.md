@@ -22,10 +22,13 @@ val s = Option.Some(value: 42);
     },
     {
       "ast": "val",
+      "indent": "n",
       "return_type": "Option"
     },
     {
       "ast": "val",
+      "indent": "s",
+      "return_type": "Option",
       "expr": {
         "ast": "call",
         "params": [
@@ -35,8 +38,7 @@ val s = Option.Some(value: 42);
           }
         ],
         "return_type": "Option"
-      },
-      "return_type": "Option"
+      }
     }
   ]
 }

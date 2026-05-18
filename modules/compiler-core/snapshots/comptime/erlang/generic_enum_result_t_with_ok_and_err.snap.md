@@ -30,7 +30,7 @@ val ok = isOk(r);
       "params": [
         {
           "name": "r",
-          "type": ""
+          "type": "Result"
         }
       ],
       "return_type": "bool",
@@ -42,6 +42,8 @@ val ok = isOk(r);
     },
     {
       "ast": "val",
+      "indent": "r",
+      "return_type": "Result",
       "expr": {
         "ast": "call",
         "params": [
@@ -51,11 +53,12 @@ val ok = isOk(r);
           }
         ],
         "return_type": "Result"
-      },
-      "return_type": "Result"
+      }
     },
     {
       "ast": "val",
+      "indent": "ok",
+      "return_type": "bool",
       "expr": {
         "ast": "call",
         "params": [
@@ -64,8 +67,7 @@ val ok = isOk(r);
           }
         ],
         "return_type": "bool"
-      },
-      "return_type": "bool"
+      }
     }
   ]
 }

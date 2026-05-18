@@ -1,5 +1,12 @@
 # core/src/comptime
 
+## AGENTS links
+
+- [Root AGENTS](../../../../AGENTS.md)
+- [Compiler-core src AGENTS](../AGENTS.md)
+- [Comptime runtime AGENTS](runtime/AGENTS.md)
+- [Codegen AGENTS](../codegen/AGENTS.md)
+
 Hindley-Milner type inference, comptime evaluation, and AST transformation for specialization.
 
 ## Files

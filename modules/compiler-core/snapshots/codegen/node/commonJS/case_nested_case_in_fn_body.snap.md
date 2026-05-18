@@ -37,4 +37,4 @@ function process(x) {
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

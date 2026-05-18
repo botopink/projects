@@ -43,7 +43,7 @@
           },
           {
             "expr": {
-              "controlFlow": {
+              "branch": {
                 "loc": {
                   "line": 3,
                   "col": 5

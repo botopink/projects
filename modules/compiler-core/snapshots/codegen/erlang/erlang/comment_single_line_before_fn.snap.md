@@ -9,18 +9,14 @@ fn main() {
 ----- ERLANG -- main.erl
 ```erlang
 -module(main).
+-export([_botopink_main/0]).
 
 % This is a comment
 
-main() ->
+_botopink_main() ->
     undefined.
 ```
 
 ----- RUN LOG -----
 ```logs
-Error! main:main/0 is not exported.
-
-Runtime terminating during boot ({undef,[{main,main,[],[]},{init,start_it,1,[]},{init,start_em,1,[]},{init,do_boot,3,[]}]})
-
-Crash dump is being written to: erl_crash.dump...done
-```
+Execution error: error.FileNotFound```

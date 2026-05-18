@@ -9,6 +9,7 @@ val secret = "hidden";
   "declarations": [
     {
       "ast": "val",
+      "indent": "secret",
       "return_type": "string"
     }
   ]
@@ -27,6 +28,7 @@ val answer = 42;
   "declarations": [
     {
       "ast": "val",
+      "indent": "answer",
       "return_type": "i32"
     }
   ]

@@ -43,7 +43,7 @@
             "body": [
               {
                 "expr": {
-                  "controlFlow": {
+                  "jump": {
                     "loc": {
                       "line": 4,
                       "col": 9

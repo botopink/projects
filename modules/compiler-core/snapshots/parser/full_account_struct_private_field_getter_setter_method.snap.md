@@ -48,7 +48,7 @@
               "body": [
                 {
                   "expr": {
-                    "controlFlow": {
+                    "jump": {
                       "loc": {
                         "line": 4,
                         "col": 9
@@ -124,19 +124,24 @@
                         "col": 9
                       },
                       "kind": {
-                        "fieldAssign": {
-                          "receiver": {
-                            "identifier": {
-                              "loc": {
-                                "line": 7,
-                                "col": 9
+                        "assign": {
+                          "target": {
+                            "fieldAccess": {
+                              "receiver": {
+                                "identifier": {
+                                  "loc": {
+                                    "line": 7,
+                                    "col": 9
+                                  },
+                                  "kind": {
+                                    "ident": "self"
+                                  }
+                                }
                               },
-                              "kind": {
-                                "ident": "self"
-                              }
+                              "field": "_balance"
                             }
                           },
-                          "field": "_balance",
+                          "op": "assign",
                           "value": {
                             "identifier": {
                               "loc": {
@@ -197,19 +202,24 @@
                         "col": 9
                       },
                       "kind": {
-                        "fieldPlusEq": {
-                          "receiver": {
-                            "identifier": {
-                              "loc": {
-                                "line": 10,
-                                "col": 9
+                        "assign": {
+                          "target": {
+                            "fieldAccess": {
+                              "receiver": {
+                                "identifier": {
+                                  "loc": {
+                                    "line": 10,
+                                    "col": 9
+                                  },
+                                  "kind": {
+                                    "ident": "self"
+                                  }
+                                }
                               },
-                              "kind": {
-                                "ident": "self"
-                              }
+                              "field": "_balance"
                             }
                           },
-                          "field": "_balance",
+                          "op": "plusAssign",
                           "value": {
                             "identifier": {
                               "loc": {

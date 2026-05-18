@@ -16,7 +16,7 @@ fn negate(x: i32) -> i32 {
       "params": [
         {
           "name": "x",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "i32",

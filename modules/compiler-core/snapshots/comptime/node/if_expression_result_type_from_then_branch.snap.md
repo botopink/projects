@@ -18,7 +18,7 @@ val s = sign(1);
       "params": [
         {
           "name": "n",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "string",
@@ -33,6 +33,8 @@ val s = sign(1);
     },
     {
       "ast": "val",
+      "indent": "s",
+      "return_type": "string",
       "expr": {
         "ast": "call",
         "params": [
@@ -41,8 +43,7 @@ val s = sign(1);
           }
         ],
         "return_type": "string"
-      },
-      "return_type": "string"
+      }
     }
   ]
 }

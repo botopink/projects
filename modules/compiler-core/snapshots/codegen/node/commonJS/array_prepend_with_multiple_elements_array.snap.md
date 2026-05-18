@@ -15,4 +15,4 @@ const list3 = [1, 2, ...[3, 4]];
 
 ----- RUN LOG -----
 ```logs
-```
+Execution error: error.FileNotFound```

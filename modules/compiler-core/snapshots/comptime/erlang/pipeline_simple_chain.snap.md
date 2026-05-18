@@ -18,7 +18,7 @@ fn main() {
       "params": [
         {
           "name": "x",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "i32",
@@ -35,7 +35,7 @@ fn main() {
       "params": [
         {
           "name": "x",
-          "type": ""
+          "type": "i32"
         }
       ],
       "return_type": "i32",
