@@ -5,6 +5,7 @@ fn classify(day: i32) -> string {
         6 | 7 -> "weekend";
         _ -> "weekday";
     };
+    @print(kind);
     return kind;
 }
 ```
@@ -17,6 +18,7 @@ function classify(day) {
         if (_s === 6 || _s === 7) return "weekend";
         return "weekday";
     })();
+    console.log(kind);
     return kind;
 }
 ```
@@ -28,4 +30,4 @@ function classify(day) {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

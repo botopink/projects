@@ -12,3 +12,33 @@ val get_value = fn(r: Result) -> i32 {
 };
 ```
 
+----- TYPED AST JSON -- main.json
+```json
+{
+  "declarations": [
+    {
+      "ast": "enum_def",
+      "name": "Result",
+      "id": 0
+    },
+    {
+      "ast": "fn_def",
+      "name": "get_value",
+      "is_pub": false,
+      "params": [
+        {
+          "name": "r",
+          "type": "Result"
+        }
+      ],
+      "return_type": "i32",
+      "body": [
+        {
+          "source": "case r {"
+        }
+      ]
+    }
+  ]
+}
+```
+

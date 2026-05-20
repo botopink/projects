@@ -21,7 +21,7 @@ export declare function double(x: ): i32;
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```
 
 ----- SOURCE CODE -- main.bp
 ```botopink
@@ -46,4 +46,4 @@ import { double } from "./math";
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

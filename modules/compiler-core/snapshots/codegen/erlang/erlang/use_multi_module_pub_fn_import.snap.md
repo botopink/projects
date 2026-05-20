@@ -16,7 +16,7 @@ double(X) ->
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```
 
 ----- SOURCE CODE -- main.bp
 ```botopink
@@ -36,4 +36,4 @@ result() ->
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

@@ -23,4 +23,4 @@ process(A, B) ->
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

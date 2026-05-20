@@ -6,6 +6,7 @@ fn greet(lang: string) -> string {
         "pt" -> "ola";
         _ -> "hi";
     };
+    @print(msg);
     return msg;
 }
 ```
@@ -23,9 +24,10 @@ greet(Lang) ->
         _ ->
             <<"hi">>
     end,
+    io:format("~p~n", [Msg]),
     Msg.
 ```
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

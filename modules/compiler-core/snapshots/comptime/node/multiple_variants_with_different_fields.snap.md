@@ -14,3 +14,33 @@ val area = fn(s: Shape) -> f64 {
 };
 ```
 
+----- TYPED AST JSON -- main.json
+```json
+{
+  "declarations": [
+    {
+      "ast": "enum_def",
+      "name": "Shape",
+      "id": 0
+    },
+    {
+      "ast": "fn_def",
+      "name": "area",
+      "is_pub": false,
+      "params": [
+        {
+          "name": "s",
+          "type": "Shape"
+        }
+      ],
+      "return_type": "f64",
+      "body": [
+        {
+          "source": "case s {"
+        }
+      ]
+    }
+  ]
+}
+```
+

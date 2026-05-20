@@ -26,4 +26,4 @@ function capitalize(s) {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

@@ -22,4 +22,4 @@ _botopink_main() ->
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

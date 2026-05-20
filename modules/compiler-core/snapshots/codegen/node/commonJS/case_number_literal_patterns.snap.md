@@ -6,6 +6,7 @@ fn classify(n: i32) -> string {
         1 -> "one";
         _ -> "many";
     };
+    @print(result);
     return result;
 }
 ```
@@ -19,6 +20,7 @@ function classify(n) {
         if (_s === 1) return "one";
         return "many";
     })();
+    console.log(result);
     return result;
 }
 ```
@@ -30,4 +32,4 @@ function classify(n) {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

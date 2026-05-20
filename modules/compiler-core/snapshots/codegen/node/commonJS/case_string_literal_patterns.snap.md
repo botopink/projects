@@ -6,6 +6,7 @@ fn greet(lang: string) -> string {
         "pt" -> "ola";
         _ -> "hi";
     };
+    @print(msg);
     return msg;
 }
 ```
@@ -19,6 +20,7 @@ function greet(lang) {
         if (_s === "pt") return "ola";
         return "hi";
     })();
+    console.log(msg);
     return msg;
 }
 ```
@@ -30,4 +32,4 @@ function greet(lang) {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

@@ -23,4 +23,4 @@ getName(Name) ->
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

@@ -18,4 +18,4 @@ val Account = struct { name: string, email: string };
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

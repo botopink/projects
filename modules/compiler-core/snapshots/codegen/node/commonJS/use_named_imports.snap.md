@@ -14,4 +14,4 @@ const { foo, bar } = require("./mylib.js");
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

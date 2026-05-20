@@ -21,4 +21,4 @@ enum Direction {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

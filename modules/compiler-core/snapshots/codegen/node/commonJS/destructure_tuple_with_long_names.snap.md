@@ -28,4 +28,4 @@ function extract_coordinates() {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

@@ -18,4 +18,4 @@ greet({Name, _}) ->
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

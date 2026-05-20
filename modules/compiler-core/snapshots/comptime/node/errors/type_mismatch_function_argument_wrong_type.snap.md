@@ -5,10 +5,11 @@ pub fn double(x: i32) -> i32 {
 val bad = double("hello");
 
 ----- ERROR
-error: unbound variable
-  ┌─ :2:5
+error: type mismatch
+  ┌─ :4:18
   │
-2 │     @todo();
-  │     ^
+4 │ val bad = double("hello");
+  │                  ^
 
-  'todo' is not in scope
+  expected: i32
+  found:    string

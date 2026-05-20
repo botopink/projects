@@ -14,3 +14,33 @@ val name = fn(c: Color) -> string {
 };
 ```
 
+----- TYPED AST JSON -- main.json
+```json
+{
+  "declarations": [
+    {
+      "ast": "enum_def",
+      "name": "Color",
+      "id": 0
+    },
+    {
+      "ast": "fn_def",
+      "name": "name",
+      "is_pub": false,
+      "params": [
+        {
+          "name": "c",
+          "type": "Color"
+        }
+      ],
+      "return_type": "string",
+      "body": [
+        {
+          "source": "case c {"
+        }
+      ]
+    }
+  ]
+}
+```
+

@@ -22,7 +22,7 @@ export declare const HOST: string;
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```
 
 ----- SOURCE CODE -- main.bp
 ```botopink
@@ -55,4 +55,4 @@ import { PORT, HOST } from "./config";
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

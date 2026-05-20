@@ -15,4 +15,4 @@ const pair = [1, "hello"];
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

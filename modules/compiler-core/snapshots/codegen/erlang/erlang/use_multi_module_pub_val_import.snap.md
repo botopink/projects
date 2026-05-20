@@ -17,7 +17,7 @@ HOST() ->
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```
 
 ----- SOURCE CODE -- main.bp
 ```botopink
@@ -41,4 +41,4 @@ port() ->
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

@@ -19,4 +19,4 @@ const _loop = for (const [i] of Object.entries(0..10)) {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

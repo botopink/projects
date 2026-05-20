@@ -12,4 +12,4 @@ val Point = record { x: i32, y: i32 }
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

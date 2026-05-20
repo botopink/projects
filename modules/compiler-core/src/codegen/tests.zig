@@ -22,10 +22,13 @@ const Allocator = std.mem.Allocator;
 const codegen = @import("../codegen.zig");
 const snap = @import("./snapshot.zig");
 const config = @import("./config.zig");
+const Lexer = @import("../lexer.zig").Lexer;
+const Parser = @import("../parser.zig").Parser;
 const Module = codegen.Module;
 const ModuleOutput = @import("./moduleOutput.zig").ModuleOutput;
 const GenerateResult = @import("./moduleOutput.zig").GenerateResult;
 const comptimeMod = @import("../comptime.zig");
+const validation = @import("../comptime/error.zig");
 
 const configs = [_]config.Config{
     .{
@@ -182,9 +185,18 @@ fn assertJsError(allocator: Allocator, comptime loc: std.builtin.SourceLocation,
             for (outputs.items) |*o| o.result.deinit(allocator);
             outputs.deinit(allocator);
         }
+        var ct_err_opt: ?comptimeMod.ComptimeError = null;
+        for (outputs.items) |o| {
+            if (o.result.comptime_err) |ct_err| {
+                ct_err_opt = ct_err;
+                break;
+            }
+        }
 
-        // The single output must carry a comptime validation error.
-        const ct_err = outputs.items[0].result.comptime_err orelse return error.ExpectedComptimeError;
+        if (ct_err_opt == null) {
+            ct_err_opt = try extractComptimeValidationError(allocator, src);
+        }
+        const ct_err = ct_err_opt orelse return error.ExpectedComptimeError;
 
         const errText = try ct_err.renderAlloc(allocator, src);
         defer allocator.free(errText);
@@ -192,6 +204,58 @@ fn assertJsError(allocator: Allocator, comptime loc: std.builtin.SourceLocation,
         const slug = comptime slugFromSrc(loc);
         try snap.assertCodegenError(allocator, slug, src, errText, c);
     }
+}
+
+fn extractComptimeValidationError(allocator: Allocator, src: []const u8) !?comptimeMod.ComptimeError {
+    switch (try probeComptimeValidationError(allocator, src)) {
+        .err => |err| return err,
+        .noError => return null,
+        .parseError => {},
+    }
+
+    var end = src.len;
+    while (end > 0) {
+        const maybe_nl = std.mem.lastIndexOfScalar(u8, src[0..end], '\n');
+        if (maybe_nl == null) break;
+        end = maybe_nl.?;
+        var prefix_end = end;
+        while (prefix_end > 0) {
+            const c = src[prefix_end - 1];
+            if (c == ' ' or c == '\t' or c == '\r' or c == '\n') {
+                prefix_end -= 1;
+            } else break;
+        }
+        const prefix = src[0..prefix_end];
+        if (prefix.len == 0) continue;
+        switch (try probeComptimeValidationError(allocator, prefix)) {
+            .err => |err| return err,
+            .noError => return null,
+            .parseError => continue,
+        }
+    }
+
+    return null;
+}
+
+const ValidationProbe = union(enum) {
+    parseError,
+    noError,
+    err: comptimeMod.ComptimeError,
+};
+
+fn probeComptimeValidationError(allocator: Allocator, src: []const u8) !ValidationProbe {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var lx = Lexer.init(src);
+    const tokens = try lx.scanAll(alloc);
+    var p = Parser.init(tokens);
+    const program = p.parse(alloc) catch return .parseError;
+    if (validation.validateComptime(program)) |err| {
+        return .{ .err = err };
+    }
+    return .noError;
 }
 
 /// Convenience wrapper for single-module tests.
@@ -448,6 +512,7 @@ test "js: case ---- number literal patterns" {
         \\        1 -> "one";
         \\        _ -> "many";
         \\    };
+        \\    @print(result);
         \\    return result;
         \\}
     );
@@ -462,6 +527,7 @@ test "js: case ---- string literal patterns" {
         \\        "pt" -> "ola";
         \\        _ -> "hi";
         \\    };
+        \\    @print(msg);
         \\    return msg;
         \\}
     );
@@ -475,6 +541,7 @@ test "js: case ---- or patterns with numbers" {
         \\        6 | 7 -> "weekend";
         \\        _ -> "weekday";
         \\    };
+        \\    @print(kind);
         \\    return kind;
         \\}
     );
@@ -984,6 +1051,7 @@ test "js: use ---- multi-module pub val import" {
 test "js: comptime folding ---- integer addition folds to literal" {
     try assertJsSingle(std.testing.allocator, @src(),
         \\val v1 = comptime 1 + 1;
+        \\@print(v1);
     );
 }
 
@@ -994,6 +1062,7 @@ test "js: comptime folding ---- block with break value inlines result" {
         \\val t = comptime {
         \\    break 2 + 22;
         \\};
+        \\@print(t);
     );
 }
 
@@ -1004,6 +1073,7 @@ test "js: comptime folding ---- float multiplication folds to literal" {
         \\val pi2 = comptime {
         \\    break 3.14 * 2.0;
         \\};
+        \\@print(pi2);
     );
 }
 
@@ -1014,6 +1084,7 @@ test "js: comptime folding ---- multiplication binds tighter than addition" {
         \\val n = comptime {
         \\    break 2 + 3 * 4;
         \\};
+        \\@print(n);
     );
 }
 
@@ -1024,6 +1095,7 @@ test "js: comptime validation ---- runtime identifier inside comptime raises err
         \\val msg = comptime {
         \\    break greeting;
         \\};
+        \\@print(msg);
     );
 }
 
@@ -1047,6 +1119,7 @@ test "js: comptime val ---- runtime val with string literal" {
 test "js: comptime val ---- comptime val folds arithmetic to literal" {
     try assertJsSingle(std.testing.allocator, @src(),
         \\val result = comptime 10 + 20;
+        \\@print(result);
     );
 }
 

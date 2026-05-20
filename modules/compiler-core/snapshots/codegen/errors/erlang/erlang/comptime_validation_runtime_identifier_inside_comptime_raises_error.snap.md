@@ -3,6 +3,7 @@
 val msg = comptime {
     break greeting;
 };
+@print(msg);
 ```
 
 ----- ERROR

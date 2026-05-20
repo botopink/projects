@@ -24,4 +24,4 @@ const result = add(10, 20);
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

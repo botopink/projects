@@ -5,6 +5,7 @@ fn classify(day: i32) -> string {
         6 | 7 -> "weekend";
         _ -> "weekday";
     };
+    @print(kind);
     return kind;
 }
 ```
@@ -22,9 +23,10 @@ classify(Day) ->
         _ ->
             <<"weekday">>
     end,
+    io:format("~p~n", [Kind]),
     Kind.
 ```
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

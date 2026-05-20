@@ -17,4 +17,4 @@ val Color = enum {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

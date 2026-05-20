@@ -6,6 +6,7 @@ fn classify(n: i32) -> string {
         1 -> "one";
         _ -> "many";
     };
+    @print(result);
     return result;
 }
 ```
@@ -23,9 +24,10 @@ classify(N) ->
         _ ->
             <<"many">>
     end,
+    io:format("~p~n", [Result]),
     Result.
 ```
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

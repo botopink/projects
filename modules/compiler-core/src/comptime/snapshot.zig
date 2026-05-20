@@ -489,7 +489,7 @@ fn bindingToRepr(
 pub fn typeNameOf(allocator: std.mem.Allocator, ty: *T.Type) std.mem.Allocator.Error![]const u8 {
     return switch (ty.deref().*) {
         .named => |n| {
-            if (n.args.len == 0) return n.name;
+            if (n.args.len == 0) return allocator.dupe(u8, n.name);
             var buf: std.ArrayList(u8) = .empty;
             defer buf.deinit(allocator);
             if (std.mem.eql(u8, n.name, "array") and n.args.len == 1) {
@@ -520,7 +520,7 @@ pub fn typeNameOf(allocator: std.mem.Allocator, ty: *T.Type) std.mem.Allocator.E
             return buf.toOwnedSlice(allocator);
         },
         .func => |f| return typeNameOf(allocator, f.ret),
-        .typeVar => return "?",
+        .typeVar => return allocator.dupe(u8, "?"),
         .union_ => |types| {
             var buf: std.ArrayList(u8) = .empty;
             defer buf.deinit(allocator);

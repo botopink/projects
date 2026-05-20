@@ -334,7 +334,9 @@ pub const Parser = struct {
             }
 
             const expr = try this.parseExpr(alloc);
-            _ = try this.consume(.semicolon);
+            if (!this.match(.semicolon) and !this.check(.rightBrace)) {
+                return ParseError.UnexpectedToken;
+            }
             try stmts.append(alloc, .{ .expr = expr, .emptyLinesBefore = emptyLinesBefore });
         }
         _ = try this.consume(.rightBrace);
@@ -816,7 +818,11 @@ pub const Parser = struct {
     fn parseFnDeclFromVal(this: *This, alloc: std.mem.Allocator) ParseError!FnDecl {
         const isPub = this.match(.@"pub");
         _ = try this.consume(.val);
-        const name = (try this.consume(.identifier)).lexeme;
+        const nameTok: Token = if (this.check(.identifier) or this.check(.@"test"))
+            this.advance()
+        else
+            try this.consume(.identifier);
+        const name = nameTok.lexeme;
         _ = try this.consume(.equal);
         const annotations = try this.parseAnnotations(alloc);
         errdefer {
@@ -3325,6 +3331,17 @@ pub const Parser = struct {
             while (this.isComment()) {
                 const cTok = this.advance();
                 try argComments.append(alloc, try alloc.dupe(u8, commentText(cTok.lexeme)));
+            }
+
+            // Spread argument used by record/variant update calls, e.g. `Ctor(..base, x: 1)`.
+            if (this.match(.dotDot)) {
+                const valExpr = try this.parseExpr(alloc);
+                const valPtr = try alloc.create(Expr);
+                valPtr.* = valExpr;
+                const commentsSlice = try argComments.toOwnedSlice(alloc);
+                try args.append(alloc, .{ .label = "..", .value = valPtr, .comments = commentsSlice });
+                if (!this.match(.comma)) break;
+                continue;
             }
 
             // Detect named arg: ident : expr

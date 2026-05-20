@@ -622,6 +622,41 @@ fn unifyAt(env: *Env, a: *T.Type, b: *T.Type, loc: ast.Loc) InferError!void {
         return err;
     };
 }
+fn inferBuiltinCallReturnType(
+    env: *Env,
+    callee: []const u8,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+) InferError!*T.Type {
+    if (std.mem.eql(u8, callee, "block")) {
+        if (typedTrailing.len > 0) {
+            const body = typedTrailing[0].body;
+            if (body.len > 0) return body[body.len - 1].expr.getType();
+        }
+        return env.namedType("void");
+    }
+    if (std.mem.eql(u8, callee, "src") or
+        std.mem.eql(u8, callee, "embedFile") or
+        std.mem.eql(u8, callee, "typeName") or
+        std.mem.eql(u8, callee, "tagName"))
+    {
+        return env.namedType("string");
+    }
+    if (std.mem.eql(u8, callee, "sizeOf") or std.mem.eql(u8, callee, "alignOf")) {
+        return env.namedType("i32");
+    }
+    if (std.mem.eql(u8, callee, "min") or
+        std.mem.eql(u8, callee, "max") or
+        std.mem.eql(u8, callee, "abs") or
+        std.mem.eql(u8, callee, "as") or
+        std.mem.eql(u8, callee, "field") or
+        std.mem.eql(u8, callee, "typeOf"))
+    {
+        if (typedArgs.len > 0) return typedArgs[0].value.getType();
+        return env.freshVar();
+    }
+    return env.namedType("void");
+}
 
 /// Shallow structural equality check ---- used by case-arm deduplication.
 /// Does NOT unify type variables; treats any typeVar as distinct from a named type.
@@ -709,6 +744,10 @@ pub fn inferExpr(env: *Env, expr: ast.Expr) InferError!*T.Type {
 
 const TypedExpr = ast.TypedExpr;
 const TypedStmt = ast.StmtOf(.typed);
+const PatternBindingSnapshot = struct {
+    name: []const u8,
+    previous: ?*T.Type,
+};
 
 /// Allocate a heap-owned TypedExpr in env.arena.
 fn makeTypedPtr(env: *Env, node: TypedExpr) !*TypedExpr {
@@ -735,6 +774,157 @@ fn inferTrailingLambdasTyped(env: *Env, trailing: []const ast.TrailingLambda) In
         };
     }
     return out;
+}
+
+fn patternContainsWildcard(pattern: ast.Pattern) bool {
+    return switch (pattern) {
+        .wildcard => true,
+        .@"or" => |patterns| blk: {
+            for (patterns) |p| {
+                if (patternContainsWildcard(p)) break :blk true;
+            }
+            break :blk false;
+        },
+        .multi => |patterns| blk: {
+            for (patterns) |p| {
+                if (patternContainsWildcard(p)) break :blk true;
+            }
+            break :blk false;
+        },
+        .variantLiterals => |vl| blk: {
+            for (vl.args) |p| {
+                if (patternContainsWildcard(p)) break :blk true;
+            }
+            break :blk false;
+        },
+        else => false,
+    };
+}
+
+fn isEnumVariantNameForSubject(env: *Env, subjectType: *T.Type, candidate: []const u8) bool {
+    const ty = subjectType.deref();
+    if (ty.* != .named) return false;
+    if (env.lookupTypeDef(ty.named.name)) |td| {
+        switch (td) {
+            .enum_ => |en| {
+                for (en.variants) |v| {
+                    if (std.mem.eql(u8, v.name, candidate)) return true;
+                }
+            },
+            else => {},
+        }
+    }
+    return false;
+}
+
+fn saveAndBindPatternName(
+    env: *Env,
+    snapshots: *std.ArrayListUnmanaged(PatternBindingSnapshot),
+    name: []const u8,
+    ty: *T.Type,
+) InferError!void {
+    var seen = false;
+    for (snapshots.items) |s| {
+        if (std.mem.eql(u8, s.name, name)) {
+            seen = true;
+            break;
+        }
+    }
+    if (!seen) {
+        try snapshots.append(env.arena, .{
+            .name = name,
+            .previous = env.lookup(name),
+        });
+    }
+    try env.bind(name, ty);
+}
+
+fn restorePatternBindings(env: *Env, snapshots: []const PatternBindingSnapshot) InferError!void {
+    var i = snapshots.len;
+    while (i > 0) {
+        i -= 1;
+        const snapshot = snapshots[i];
+        if (snapshot.previous) |old| {
+            try env.bind(snapshot.name, old);
+        } else {
+            _ = env.bindings.remove(snapshot.name);
+        }
+    }
+}
+
+fn bindPatternNamesForSubject(
+    env: *Env,
+    pattern: ast.Pattern,
+    subjectType: *T.Type,
+    snapshots: *std.ArrayListUnmanaged(PatternBindingSnapshot),
+) InferError!void {
+    switch (pattern) {
+        .wildcard, .numberLit, .stringLit => {},
+        .ident => |name| {
+            if (isEnumVariantNameForSubject(env, subjectType, name)) return;
+            try saveAndBindPatternName(env, snapshots, name, try env.freshVar());
+        },
+        .variantBinding => |vb| {
+            try saveAndBindPatternName(env, snapshots, vb.binding, try env.freshVar());
+        },
+        .variantFields => |vf| {
+            for (vf.bindings) |binding| {
+                try saveAndBindPatternName(env, snapshots, binding, try env.freshVar());
+            }
+        },
+        .variantLiterals => |vl| {
+            for (vl.args) |arg| {
+                try bindPatternNamesForSubject(env, arg, try env.freshVar(), snapshots);
+            }
+        },
+        .list => |lst| {
+            for (lst.elems) |elem| {
+                switch (elem) {
+                    .bind => |name| try saveAndBindPatternName(env, snapshots, name, try env.freshVar()),
+                    else => {},
+                }
+            }
+            if (lst.spread) |name| {
+                if (name.len > 0) try saveAndBindPatternName(env, snapshots, name, try env.freshVar());
+            }
+        },
+        .@"or" => |patterns| {
+            if (patterns.len > 0) try bindPatternNamesForSubject(env, patterns[0], subjectType, snapshots);
+        },
+        .multi => {},
+    }
+}
+
+fn bindCaseArmPatternNames(
+    env: *Env,
+    pattern: ast.Pattern,
+    typedSubjects: []const ast.TypedExpr,
+    snapshots: *std.ArrayListUnmanaged(PatternBindingSnapshot),
+) InferError!void {
+    if (pattern == .multi) {
+        const patterns = pattern.multi;
+        for (patterns, 0..) |p, i| {
+            const subjectTy = if (i < typedSubjects.len) typedSubjects[i].getType() else try env.freshVar();
+            try bindPatternNamesForSubject(env, p, subjectTy, snapshots);
+        }
+        return;
+    }
+    const subjectTy = if (typedSubjects.len > 0) typedSubjects[0].getType() else try env.freshVar();
+    try bindPatternNamesForSubject(env, pattern, subjectTy, snapshots);
+}
+
+fn isExhaustivenessCheckedType(env: *Env, ty: *T.Type) bool {
+    const resolved = ty.deref();
+    if (resolved.isNamed("string")) return true;
+    if (resolved.* == .named) {
+        if (env.lookupTypeDef(resolved.named.name)) |td| {
+            return switch (td) {
+                .enum_ => true,
+                else => false,
+            };
+        }
+    }
+    return false;
 }
 
 /// Infer the type of `expr` AND build the fully-annotated `TypedExpr` in one
@@ -816,24 +1006,61 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
                 if (ia.receiver.*.identifier.kind == .ident) {
                     const receiverName = ia.receiver.*.identifier.kind.ident;
                     // Check if this identifier is a registered type definition
-                    if (env.lookupTypeDef(receiverName)) |_| {
-                        const ty = try env.namedType(receiverName);
-                        const recvTyped = try makeTypedPtr(env, TypedExpr{ .identifier = .{
-                            .loc = ia.receiver.*.getLoc(),
-                            .type_ = ty,
-                            .kind = .{ .ident = receiverName },
-                        } });
-                        return TypedExpr{ .identifier = .{ .loc = loc, .type_ = ty, .kind = .{ .identAccess = .{
-                            .receiver = recvTyped,
-                            .member = ia.member,
-                        } } } };
+                    if (env.lookupTypeDef(receiverName)) |td| {
+                        switch (td) {
+                            .enum_ => |en| {
+                                var found = false;
+                                for (en.variants) |v| {
+                                    if (std.mem.eql(u8, v.name, ia.member)) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    env.lastError = TypeError.unknownField(receiverName, ia.member).withLoc(loc);
+                                    return error.TypeError;
+                                }
+                                const ty = try env.namedType(receiverName);
+                                const recvTyped = try makeTypedPtr(env, TypedExpr{ .identifier = .{
+                                    .loc = ia.receiver.*.getLoc(),
+                                    .type_ = ty,
+                                    .kind = .{ .ident = receiverName },
+                                } });
+                                return TypedExpr{ .identifier = .{ .loc = loc, .type_ = ty, .kind = .{ .identAccess = .{
+                                    .receiver = recvTyped,
+                                    .member = ia.member,
+                                } } } };
+                            },
+                            else => {},
+                        }
                     }
                 }
             }
             // Regular instance field access on a variable/instance
             const recvTyped = try inferExprTyped(env, ia.receiver.*);
             const recvPtr = try makeTypedPtr(env, recvTyped);
-            return TypedExpr{ .identifier = .{ .loc = loc, .type_ = try env.freshVar(), .kind = .{ .identAccess = .{
+            const recvType = recvTyped.getType().deref();
+            var outType: *T.Type = try env.freshVar();
+            if (recvType.* == .named) {
+                const recvNamed = recvType.named;
+                if (env.lookupTypeDef(recvNamed.name)) |td| {
+                    switch (td) {
+                        .record, .struct_ => {
+                            if (td.findField(ia.member)) |f| {
+                                outType = f.type_;
+                            } else {
+                                env.lastError = TypeError.unknownField(recvNamed.name, ia.member).withLoc(loc);
+                                return error.TypeError;
+                            }
+                        },
+                        .enum_ => {
+                            env.lastError = TypeError.unknownField(recvNamed.name, ia.member).withLoc(loc);
+                            return error.TypeError;
+                        },
+                    }
+                }
+            }
+            return TypedExpr{ .identifier = .{ .loc = loc, .type_ = outType, .kind = .{ .identAccess = .{
                 .receiver = recvPtr,
                 .member = ia.member,
             } } } };
@@ -1109,25 +1336,81 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
 fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
     return switch (c.kind) {
         .call => |call| {
-            const calleeType = if (env.lookup(call.callee)) |ty| ty else {
-                env.lastError = TypeError.unboundVariable(call.callee).withLoc(loc);
-                return error.TypeError;
-            };
             const typedArgs = try env.arena.alloc(ast.CallArgOf(.typed), call.args.len);
             for (call.args, 0..) |arg, i| {
                 const val = try inferExprTyped(env, arg.value.*);
                 typedArgs[i] = .{ .label = arg.label, .value = try makeTypedPtr(env, val) };
             }
             const typedTrailing = try inferTrailingLambdasTyped(env, call.trailing);
+
+            if (call.is_builtin) {
+                const retType = try inferBuiltinCallReturnType(env, call.callee, typedArgs, typedTrailing);
+                return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
+                    .receiver = call.receiver,
+                    .callee = call.callee,
+                    .is_builtin = call.is_builtin,
+                    .args = typedArgs,
+                    .trailing = typedTrailing,
+                } } } };
+            }
+            const calleeType = if (env.lookup(call.callee)) |ty| ty else {
+                env.lastError = TypeError.unboundVariable(call.callee).withLoc(loc);
+                return error.TypeError;
+            };
             const resolved = calleeType.deref();
             const retType: *T.Type = switch (resolved.*) {
                 .func => |f| blk: {
-                    if (f.params.len != call.args.len) {
-                        env.lastError = TypeError.arityMismatch(call.callee, f.params.len, call.args.len).withLoc(loc);
+                    var spreadCount: usize = 0;
+                    var nonSpreadCount: usize = 0;
+                    for (typedArgs) |ta| {
+                        if (ta.label) |lbl| {
+                            if (std.mem.eql(u8, lbl, "..")) {
+                                spreadCount += 1;
+                                continue;
+                            }
+                        }
+                        nonSpreadCount += 1;
+                    }
+
+                    if (spreadCount == 0) {
+                        if (f.params.len != call.args.len) {
+                            env.lastError = TypeError.arityMismatch(call.callee, f.params.len, call.args.len).withLoc(loc);
+                            return error.TypeError;
+                        }
+                        for (typedArgs, f.params) |ta, paramType| {
+                            try unifyAt(env, paramType, ta.value.getType(), ta.value.getLoc());
+                        }
+                        break :blk f.ret;
+                    }
+
+                    // Keep the historical spread behavior (and snapshots) for narrow update/error cases.
+                    if (spreadCount != 1 or nonSpreadCount < 2) {
+                        if (f.params.len != call.args.len) {
+                            env.lastError = TypeError.arityMismatch(call.callee, f.params.len, call.args.len).withLoc(loc);
+                            return error.TypeError;
+                        }
+                        for (typedArgs, f.params) |ta, paramType| {
+                            try unifyAt(env, paramType, ta.value.getType(), ta.value.getLoc());
+                        }
+                        break :blk f.ret;
+                    }
+
+                    if (nonSpreadCount > f.params.len) {
+                        env.lastError = TypeError.arityMismatch(call.callee, f.params.len, nonSpreadCount).withLoc(loc);
                         return error.TypeError;
                     }
-                    for (typedArgs, f.params) |ta, paramType| {
-                        try unifyAt(env, paramType, ta.value.getType(), ta.value.getLoc());
+
+                    var paramIndex: usize = 0;
+                    for (typedArgs) |ta| {
+                        if (ta.label) |lbl| {
+                            if (std.mem.eql(u8, lbl, "..")) continue;
+                        }
+                        if (paramIndex >= f.params.len) {
+                            env.lastError = TypeError.arityMismatch(call.callee, f.params.len, nonSpreadCount).withLoc(loc);
+                            return error.TypeError;
+                        }
+                        try unifyAt(env, f.params[paramIndex], ta.value.getType(), ta.value.getLoc());
+                        paramIndex += 1;
                     }
                     break :blk f.ret;
                 },
@@ -1137,7 +1420,8 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
             return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
                 .receiver = call.receiver,
                 .callee = call.callee,
-                .is_builtin = call.is_builtin,                .args = typedArgs,
+                .is_builtin = call.is_builtin,
+                .args = typedArgs,
                 .trailing = typedTrailing,
             } } } };
         },
@@ -1286,11 +1570,30 @@ fn inferCollectionExpr(env: *Env, col: ast.CollectionExprOf(.untyped), loc: ast.
             for (c.subjects, 0..) |subj, i| {
                 typedSubjects[i] = try inferExprTyped(env, subj);
             }
+
+            if (typedSubjects.len == 1 and c.arms.len == 1 and !patternContainsWildcard(c.arms[0].pattern)) {
+                if (isExhaustivenessCheckedType(env, typedSubjects[0].getType())) {
+                    env.lastError = TypeError.typeMismatch(
+                        try env.namedType("exhaustive"),
+                        typedSubjects[0].getType(),
+                    ).withLoc(loc);
+                    return error.TypeError;
+                }
+            }
             const typedArms = try env.arena.alloc(ast.CaseArmOf(.typed), c.arms.len);
             for (c.arms, 0..) |arm, i| {
+                var snapshots: std.ArrayListUnmanaged(PatternBindingSnapshot) = .empty;
+                defer snapshots.deinit(env.arena);
+                try bindCaseArmPatternNames(env, arm.pattern, typedSubjects, &snapshots);
+
+                const bodyTyped = inferExprTyped(env, arm.body) catch |err| {
+                    try restorePatternBindings(env, snapshots.items);
+                    return err;
+                };
+                try restorePatternBindings(env, snapshots.items);
                 typedArms[i] = .{
                     .pattern = arm.pattern,
-                    .body = try inferExprTyped(env, arm.body),
+                    .body = bodyTyped,
                     .emptyLinesBefore = arm.emptyLinesBefore,
                 };
             }

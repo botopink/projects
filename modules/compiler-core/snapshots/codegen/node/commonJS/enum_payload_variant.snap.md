@@ -21,4 +21,4 @@ const Color = Object.freeze({
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

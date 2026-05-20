@@ -21,4 +21,4 @@ val Direction = enum {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

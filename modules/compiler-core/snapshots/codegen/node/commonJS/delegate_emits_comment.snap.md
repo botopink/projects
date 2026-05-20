@@ -14,4 +14,4 @@ declare fn Callback(msg: string) -> void;
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

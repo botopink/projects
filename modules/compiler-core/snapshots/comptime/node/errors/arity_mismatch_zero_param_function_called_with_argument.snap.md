@@ -5,10 +5,10 @@ pub fn hello() -> string {
 val bad = hello(42);
 
 ----- ERROR
-error: unbound variable
-  ┌─ :2:5
+error: arity mismatch
+  ┌─ :4:11
   │
-2 │     @todo();
-  │     ^
+4 │ val bad = hello(42);
+  │           ^
 
-  'todo' is not in scope
+  'hello' expected 0 argument(s), got 1

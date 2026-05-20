@@ -28,4 +28,4 @@ const parity = (() => {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

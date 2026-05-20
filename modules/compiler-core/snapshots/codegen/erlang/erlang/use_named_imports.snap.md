@@ -12,4 +12,4 @@ use { foo, bar } from "mylib";
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

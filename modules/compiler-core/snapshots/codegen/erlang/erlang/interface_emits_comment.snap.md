@@ -15,4 +15,4 @@ val Drawable = interface {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```

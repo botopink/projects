@@ -15,4 +15,4 @@ negate(V) ->
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```
