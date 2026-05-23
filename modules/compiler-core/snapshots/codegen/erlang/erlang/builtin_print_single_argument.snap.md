@@ -22,4 +22,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+<<"Hello, World!">>
 ```
