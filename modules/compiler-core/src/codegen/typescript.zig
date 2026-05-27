@@ -395,9 +395,9 @@ const Emitter = struct {
                 try self.w(") => ");
                 try self.emitTypeRef(f.returnType.*);
             },
-            .builtin => |b| {
+            .generic => |b| {
                 if (std.mem.eql(u8, b.name, "Result") and b.args.len == 2) {
-                    try self.w("{ tag: \"Ok\"; data: ");
+                    try self.w("{ tag: \"Ok\"; result: ");
                     try self.emitTypeRef(b.args[0]);
                     try self.w(" } | { tag: \"Error\"; error: ");
                     try self.emitTypeRef(b.args[1]);

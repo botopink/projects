@@ -1,7 +1,7 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
 record FetchError { url: string }
-fn fetch() -> @Result(i32, FetchError) {
+fn fetch() -> @Result<i32, FetchError> {
     throw FetchError(url: "/api");
 }
 fn safe() -> i32 {

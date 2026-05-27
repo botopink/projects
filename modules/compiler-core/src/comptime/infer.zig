@@ -494,15 +494,15 @@ fn appendTypeRefStr(buf: *std.ArrayListUnmanaged(u8), allocator: std.mem.Allocat
             try buf.appendSlice(allocator, ") -> ");
             try appendTypeRefStr(buf, allocator, f.returnType.*);
         },
-        .builtin => |b| {
-            try buf.append(allocator, '@');
+        .generic => |b| {
+            if (b.is_builtin) try buf.append(allocator, '@');
             try buf.appendSlice(allocator, b.name);
-            try buf.append(allocator, '(');
+            try buf.append(allocator, '<');
             for (b.args, 0..) |a, i| {
                 if (i > 0) try buf.appendSlice(allocator, ", ");
                 try appendTypeRefStr(buf, allocator, a);
             }
-            try buf.append(allocator, ')');
+            try buf.append(allocator, '>');
         },
     }
 }
@@ -659,11 +659,6 @@ fn inferBuiltinCallReturnType(
         if (typedArgs.len > 0) return typedArgs[0].value.getType();
         return env.freshVar();
     }
-    if (std.mem.eql(u8, callee, "Result")) {
-        const args = try env.arena.alloc(*T.Type, typedArgs.len);
-        for (typedArgs, 0..) |a, i| args[i] = a.value.getType();
-        return env.namedTypeArgs("Result", args);
-    }
     return env.namedType("void");
 }
 
@@ -735,7 +730,7 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             args[f.params.len] = returnType;
             return env.namedTypeArgs("function", args);
         },
-        .builtin => |b| {
+        .generic => |b| {
             const args = try env.arena.alloc(*T.Type, b.args.len);
             for (b.args, 0..) |a, i| {
                 args[i] = try resolveTypeRefInContext(env, a, genericMap);

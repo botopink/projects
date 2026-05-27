@@ -493,7 +493,7 @@ test "parser error: removed error union syntax T!E" {
         \\1 | fn foo() -> i32!Error { }
         \\  |                ^ Error union syntax `T!E` has been removed
         \\  |
-        \\  = hint: Use `@Result(D, E)` instead, e.g. `fn fetch() -> @Result(i32, MyError)`
+        \\  = hint: Use `@Result<D, E>` instead, e.g. `fn fetch() -> @Result<i32, MyError>`
         \\
         \\
     , "fn foo() -> i32!Error { }");

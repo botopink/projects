@@ -1,7 +1,7 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
 val ErrorKind = enum { NotFound, Timeout }
-fn fetch() -> @Result(i32, ErrorKind) {
+fn fetch() -> @Result<i32, ErrorKind> {
     throw ErrorKind.NotFound;
 }
 fn handle() -> i32 {

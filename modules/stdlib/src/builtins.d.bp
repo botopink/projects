@@ -1,0 +1,79 @@
+
+// ── type reflection ───────────────────────────────────────────────────────────
+
+fn typeOf<T>(val: T) type
+fn typeName(comptime T: typeparam) string
+fn sizeOf(comptime T: typeparam) i32
+fn alignOf(comptime T: typeparam) i32
+fn hasField(comptime T: typeparam, comptime name: string) bool
+fn hasDecl(comptime T: typeparam, comptime name: string) bool
+fn field<T, F>(obj: T, comptime name: string) F
+fn tagName<T>(val: T) string
+
+// ── numeric ───────────────────────────────────────────────────────────────────
+
+fn min<T>(a: T, b: T) T
+fn max<T>(a: T, b: T) T
+fn abs<T>(val: T) T
+fn as(comptime T: typeparam, val: T) T
+
+// ── result type ──────────────────────────────────────────────────────────────
+
+pub enum Result<R, E> {
+    Ok(result: R),
+    Error(error: E);
+}
+
+// ── iterator ─────────────────────────────────────────────────────────────────
+
+pub interface Iterator<T> {
+    fn next(self: Self) -> ?T
+}
+
+pub interface Iterable<T> {
+    fn iter(self: Self) -> Iterator<T>
+}
+
+// ── generator ────────────────────────────────────────────────────────────────
+
+pub enum Yield<T, R> {
+    Yielded(value: T),
+    Done(result: R);
+}
+
+pub interface Generator<T, R> {
+    fn next(self: Self) -> Yield<T, R>
+}
+
+// ── async ────────────────────────────────────────────────────────────────────
+
+pub interface Future<T, E> {
+    fn await(self: Self) -> Result<T, E>
+    fn map<R>(self: Self, transform: fn(value: T) -> R) -> Future<R, E>
+    fn flatMap<R>(self: Self, transform: fn(value: T) -> Future<R, E>) -> Future<R, E>
+}
+
+// ── async iterator ───────────────────────────────────────────────────────────
+
+pub interface AsyncIterator<T, E> {
+    fn next(self: Self) -> Future<?T, E>
+}
+
+pub interface AsyncIterable<T, E> {
+    fn iter(self: Self) -> AsyncIterator<T, E>
+}
+
+// ── control flow ───────────────────────────────────────────────────────────────
+
+fn block<T>(body: fn() -> T) T
+
+// ── runtime ───────────────────────────────────────────────────────────────────
+
+fn panic(message: string) noreturn
+fn trap() noreturn
+fn src() string
+
+
+// ── compile-time I/O ──────────────────────────────────────────────────────────
+
+fn embedFile(comptime path: string) string

@@ -246,10 +246,15 @@ fn appendTypeRef(gpa: std.mem.Allocator, buf: *std.ArrayList(u8), tr: ast.TypeRe
             }
             try buf.append(gpa, ')');
         },
-        .errorUnion => |eu| {
-            try appendTypeRef(gpa, buf, eu.errorType.*);
-            try buf.append(gpa, '!');
-            try appendTypeRef(gpa, buf, eu.payload.*);
+        .generic => |b| {
+            if (b.is_builtin) try buf.append(gpa, '@');
+            try buf.appendSlice(gpa, b.name);
+            try buf.append(gpa, '<');
+            for (b.args, 0..) |a, i| {
+                if (i > 0) try buf.appendSlice(gpa, ", ");
+                try appendTypeRef(gpa, buf, a);
+            }
+            try buf.append(gpa, '>');
         },
     }
 }
@@ -820,17 +825,16 @@ pub fn prepareRename(
 
 fn isKeyword(name: []const u8) bool {
     const keywords = [_][]const u8{
-        "as",       "assert",   "auto",      "break",    "case",
-        "catch",    "comptime", "const",     "continue", "declare",
-        "default",  "delegate", "derive",    "echo",     "else",
-        "enum",     "extends",  "fn",        "for",      "from",
-        "get",      "if",       "implement", "import",   "interface",
-        "loop",     "macro",    "new",       "null",     "opaque",
-        "private",  "pub",      "record",    "return",   "self",
-        "set",      "struct",   "syntax",    "test",     "throw",
-        "todo",     "true",     "false",     "try",      "type",
-        "typeinfo", "use",      "val",       "var",      "yield",
-        "Self",
+        "as",      "assert",   "auto",      "break",    "case",
+        "catch",   "comptime", "const",     "continue", "declare",
+        "default", "delegate", "derive",    "echo",     "else",
+        "enum",    "extends",  "fn",        "for",      "from",
+        "get",     "if",       "implement", "import",   "interface",
+        "loop",    "macro",    "new",       "null",     "opaque",
+        "private", "pub",      "record",    "return",   "self",
+        "set",     "struct",   "syntax",    "test",     "throw",
+        "todo",    "true",     "false",     "try",      "type",
+        "use",     "val",      "var",       "yield",    "Self",
     };
     for (keywords) |kw| {
         if (std.mem.eql(u8, name, kw)) return true;

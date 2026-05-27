@@ -29,7 +29,7 @@ The grammar mirrors `compiler-core/src/lexer/token.zig`:
 | Group | Patterns |
 |---|---|
 | Control keywords | `if`, `else`, `case`, `loop`, `for`, `break`, `continue`, `yield`, `return`, `try`, `catch`, `throw` |
-| Declaration keywords | `fn`, `val`, `var`, `pub`, `private`, `struct`, `record`, `enum`, `interface`, `type`, `implement`, `implementations`, `extends`, `delegate`, `declare`, `macro`, `use`, `from`, `import`, `new`, `opaque`, `const`, `default`, `derive`, `test`, `assert`, `syntax`, `typeinfo`, `comptime`, `auto`, `echo`, `set`, `get`, `as` |
+| Declaration keywords | `fn`, `val`, `var`, `pub`, `private`, `struct`, `record`, `enum`, `interface`, `type`, `implement`, `implementations`, `extends`, `delegate`, `declare`, `macro`, `use`, `from`, `import`, `new`, `opaque`, `const`, `default`, `derive`, `test`, `assert`, `syntax`, `comptime`, `auto`, `echo`, `set`, `get`, `as` |
 | Language constants | `true`, `false`, `null`, `todo`, `Self` |
 | Operators | `->`, `\|>`, `..`, comparison, logical, bitwise, assignment, arithmetic, `?`, `\|` |
 | Numbers | binary `0b…`, octal `0o…`, hex `0x…`, float (mantissa + `[eE][+-]?…` exponent), decimal — all support `_` separators |

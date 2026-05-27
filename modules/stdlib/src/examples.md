@@ -5,7 +5,7 @@
 Practical `.bp` snippets that use the embedded stdlib. Every interface
 mentioned here is defined in this directory.
 
-## Primitives — `primitives.bp`
+## Primitives — `primitives.d.bp`
 
 ```text
 val n: i32 = 42;
@@ -17,7 +17,7 @@ val absx = (-5).abs();        // 5
 val m = (-3).max(7);          // 7
 ```
 
-## Arrays — `array.bp`
+## Arrays — `array.d.bp`
 
 ```text
 val xs: Array<i32> = [10, 20, 30, 40];
@@ -45,7 +45,7 @@ val total = [1, 2, 3, 4, 5]
     |> sum();                         // 35
 ```
 
-## Strings — `string.bp`
+## Strings — `string.d.bp`
 
 ```text
 val s = "Hello, world";
@@ -68,7 +68,7 @@ val i = s.index_of("w");                 // 7
 val sub = s.slice(0, 5);                 // "Hello"
 ```
 
-## Builtins — `builtins.bp`
+## Builtins — `builtins.d.bp`
 
 ### Reflection (all comptime)
 
@@ -89,6 +89,37 @@ val m1 = min(3, 7);           // 3
 val m2 = max(3.5, 1.2);       // 3.5
 val a  = abs(-9);             // 9
 val as_f = (10).as(f32);      // 10.0
+```
+
+### Result type — `@Result<D, E>`
+
+```text
+val ParseError = enum { InvalidInput, UnexpectedEnd }
+
+fn parse(input: string) -> @Result<i32, ParseError> {
+    if (input == "") {
+        return @Result.Error(error: ParseError.UnexpectedEnd);
+    }
+    return @Result.Ok(result: 42);
+}
+
+// try propagates the error upward
+fn process() -> @Result<string, ParseError> {
+    val n = try parse("hello");
+    return @Result.Ok(result: n.to_string());
+}
+
+// try-catch handles the error inline
+fn safe_parse(input: string) -> i32 {
+    val n = try parse(input) catch 0;
+    return n;
+}
+
+// catch with throw — re-throw a different error
+fn strict_parse(input: string) -> @Result<i32, string> {
+    val n = try parse(input) catch throw "parse failed";
+    return @Result.Ok(result: n);
+}
 ```
 
 ### Control-flow

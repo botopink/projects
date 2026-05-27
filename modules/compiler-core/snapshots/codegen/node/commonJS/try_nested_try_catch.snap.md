@@ -1,10 +1,10 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
 record DbError { msg: string }
-fn inner() -> @Result(i32, DbError) {
+fn inner() -> @Result<i32, DbError> {
     throw DbError(msg: "conn refused");
 }
-fn outer() -> @Result(i32, DbError) {
+fn outer() -> @Result<i32, DbError> {
     throw DbError(msg: "timeout");
 }
 fn process() -> i32 {

@@ -56,7 +56,11 @@ pub fn errorMessages(info: ParseErrorInfo) ErrorMessages {
         },
         .removedErrorUnion => .{
             .message = "Error union syntax `T!E` has been removed",
-            .hint = "Use `@Result(D, E)` instead, e.g. `fn fetch() -> @Result(i32, MyError)`",
+            .hint = "Use `@Result<D, E>` instead, e.g. `fn fetch() -> @Result<i32, MyError>`",
+        },
+        .removedBuiltinType => .{
+            .message = "Builtin type syntax `@Result(D, E)` has been removed",
+            .hint = "Use `@Result<D, E>` instead",
         },
     };
 }

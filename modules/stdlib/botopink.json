@@ -4,9 +4,9 @@
   "description": "Botopink standard library — builtin types, primitives, and core interfaces",
   "src": "src/",
   "files": [
-    "primitives.bp",
-    "array.bp",
-    "string.bp",
-    "builtins.bp"
+    "primitives.d.bp",
+    "array.d.bp",
+    "string.d.bp",
+    "builtins.d.bp"
   ]
 }

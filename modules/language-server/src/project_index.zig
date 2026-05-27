@@ -168,8 +168,11 @@ pub const ProjectIndex = struct {
             const file_uri = lsp_types.pathToUri(self.gpa, file_path) catch continue;
             defer self.gpa.free(file_uri);
 
-            // Module name: filename without .bp extension.
-            const module_name_end = name.len - 3; // strip ".bp"
+            // Module name: filename without .d.bp or .bp extension.
+            const module_name_end = if (std.mem.endsWith(u8, name, ".d.bp"))
+                name.len - 5 // strip ".d.bp"
+            else
+                name.len - 3; // strip ".bp"
             const module_name = name[0..module_name_end];
 
             self.module_uris.append(self.gpa, self.gpa.dupe(u8, module_name) catch continue) catch {};

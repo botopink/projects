@@ -15,10 +15,10 @@ src/
 ├── docs.md            ← registry + per-file roles
 ├── examples.md        ← stdlib usage in `.bp` (Array, String, builtins)
 ├── prelude.zig        ← @embedFile of every .bp file
-├── primitives.bp      ← numeric + bool interfaces
-├── array.bp           ← generic Array<T> interface
-├── string.bp          ← String interface methods
-└── builtins.bp        ← @typeOf / @sizeOf / @panic / @typeName / …
+├── primitives.d.bp      ← numeric + bool interfaces
+├── array.d.bp           ← generic Array<T> interface
+├── string.d.bp          ← String interface methods
+└── builtins.d.bp        ← @typeOf / @sizeOf / @panic / @typeName / …
 ```
 
 ## Files
@@ -26,10 +26,10 @@ src/
 | File | Role |
 |---|---|
 | `prelude.zig` | Zig module that re-exports every `.bp` source as a `pub const` string via `@embedFile`. |
-| `primitives.bp` | `interface I32 { … }`, `interface U32 { … }`, …, `interface Bool { … }`. |
-| `array.bp` | `interface Array<T>` — `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter`. |
-| `string.bp` | `interface String` — `len`, `split`, `to_upper/lower`, `contains`, `starts_with`, `ends_with`, `trim*`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
-| `builtins.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`). |
+| `primitives.d.bp` | `interface I32 { … }`, `interface U32 { … }`, …, `interface Bool { … }`. |
+| `array.d.bp` | `interface Array<T>` — `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter`. |
+| `string.d.bp` | `interface String` — `len`, `split`, `to_upper/lower`, `contains`, `starts_with`, `ends_with`, `trim*`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
+| `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`). |
 
 ## Conventions
 

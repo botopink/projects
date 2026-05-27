@@ -1805,20 +1805,28 @@ pub const Formatter = struct {
                     try this.fmtTypeRef(f.returnType.*),
                 });
             },
-            .builtin => |b| blk: {
+            .generic => |b| blk: {
                 var argDocs = try this.arena.alloc(*const Doc, b.args.len);
                 for (b.args, 0..) |a, i| argDocs[i] = try this.fmtTypeRef(a);
                 const inner = if (b.args.len == 0)
                     this.nil()
                 else
                     try this.join(argDocs, try this.text(", "));
-                break :blk this.concatAll(&.{
-                    try this.text("@"),
-                    try this.text(b.name),
-                    try this.text("("),
-                    inner,
-                    try this.text(")"),
-                });
+                break :blk if (b.is_builtin)
+                    this.concatAll(&.{
+                        try this.text("@"),
+                        try this.text(b.name),
+                        try this.text("<"),
+                        inner,
+                        try this.text(">"),
+                    })
+                else
+                    this.concatAll(&.{
+                        try this.text(b.name),
+                        try this.text("<"),
+                        inner,
+                        try this.text(">"),
+                    });
             },
         };
     }

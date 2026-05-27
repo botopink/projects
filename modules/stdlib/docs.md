@@ -15,10 +15,10 @@ stdlib/
 ├── botopink.json      ← package metadata
 └── src/               ← .bp source files + prelude.zig
     ├── prelude.zig    ← @embedFile of every .bp into Zig const strings
-    ├── primitives.bp  ← I32/U32/I64/U64/F32/F64/Bool interfaces
-    ├── array.bp       ← generic Array<T> interface
-    ├── string.bp      ← String interface
-    └── builtins.bp    ← compiler/runtime builtins (typeOf, sizeOf, panic, …)
+    ├── primitives.d.bp  ← I32/U32/I64/U64/F32/F64/Bool interfaces
+    ├── array.d.bp       ← generic Array<T> interface
+    ├── string.d.bp      ← String interface
+    └── builtins.d.bp    ← compiler/runtime builtins (typeOf, sizeOf, panic, …)
 ```
 
 ## How the stdlib reaches the compiler
@@ -51,7 +51,7 @@ keeps the compiler's surface stable across targets while letting each
 backend emit idiomatic code.
 
 ```text
-// stdlib/src/array.bp
+// stdlib/src/array.d.bp
 interface Array<T> {
     fn length(): i32,
     fn at(i: i32): T,
@@ -74,10 +74,10 @@ appropriate target idiom.
 
 | File | Highlights |
 |---|---|
-| `primitives.bp` | `interface I32 { fn to_string(): string, fn abs(): i32, fn max(o: i32): i32, … }`, plus `U32`, `I64`, `U64`, `F32`, `F64`, `Bool` |
-| `array.bp` | `Array<T>` with `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter` |
-| `string.bp` | `String` with `len`, `split`, `to_upper`/`to_lower`, `contains`, `starts_with`, `ends_with`, `trim*`, `replace`, `slice`, `char_at`, `index_of`, `to_string` |
-| `builtins.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`) |
+| `primitives.d.bp` | `interface I32 { fn to_string(): string, fn abs(): i32, fn max(o: i32): i32, … }`, plus `U32`, `I64`, `U64`, `F32`, `F64`, `Bool` |
+| `array.d.bp` | `Array<T>` with `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter` |
+| `string.d.bp` | `String` with `len`, `split`, `to_upper`/`to_lower`, `contains`, `starts_with`, `ends_with`, `trim*`, `replace`, `slice`, `char_at`, `index_of`, `to_string` |
+| `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`) |
 
 Concrete usage snippets: [`src/examples.md`](src/examples.md).
 

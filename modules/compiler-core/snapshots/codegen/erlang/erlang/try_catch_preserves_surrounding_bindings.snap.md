@@ -1,7 +1,7 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
 record LoadError { msg: string }
-fn load() -> @Result(i32, LoadError) {
+fn load() -> @Result<i32, LoadError> {
     throw LoadError(msg: "not found");
 }
 fn process() -> i32 {

@@ -1746,12 +1746,12 @@ test "variant inference: pattern matching on generic enum" {
     );
 }
 
-// ── @Result type resolution ──────────────────────────────────────────────────
+// ── @Result<R, E> type resolution ──────────────────────────────────────────────────
 
 test "@Result: try unwraps Result to D" {
     try assertComptimeAstSingle(std.testing.allocator, @src(),
         \\record AppError { msg: string }
-        \\fn fetch() -> @Result(i32, AppError) {
+        \\fn fetch() -> @Result<i32, AppError> {
         \\    throw AppError(msg: "fail");
         \\}
         \\fn process() -> i32 {
@@ -1764,10 +1764,10 @@ test "@Result: try unwraps Result to D" {
 test "@Result: try propagates without catch" {
     try assertComptimeAstSingle(std.testing.allocator, @src(),
         \\record IoError { path: string }
-        \\fn load() -> @Result(string, IoError) {
+        \\fn load() -> @Result<string, IoError> {
         \\    throw IoError(path: "/data");
         \\}
-        \\fn run() -> @Result(string, IoError) {
+        \\fn run() -> @Result<string, IoError> {
         \\    val s = try load();
         \\    return s;
         \\}
@@ -1777,10 +1777,10 @@ test "@Result: try propagates without catch" {
 test "@Result: multiple catch with different types" {
     try assertComptimeAstSingle(std.testing.allocator, @src(),
         \\record UserError { msg: string }
-        \\fn getName() -> @Result(string, UserError) {
+        \\fn getName() -> @Result<string, UserError> {
         \\    throw UserError(msg: "missing");
         \\}
-        \\fn getAge() -> @Result(i32, UserError) {
+        \\fn getAge() -> @Result<i32, UserError> {
         \\    throw UserError(msg: "missing");
         \\}
         \\fn loadUser() {

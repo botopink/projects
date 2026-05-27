@@ -13,19 +13,19 @@ new stdlib module = drop a `.bp` here + one line in `prelude.zig`.
 ```text
 src/
 ├── prelude.zig        ← @embedFile of every .bp file
-├── primitives.bp      ← numeric + bool interfaces
-├── array.bp           ← generic Array<T> interface
-├── string.bp          ← String interface methods
-└── builtins.bp        ← @typeOf / @sizeOf / @panic / @typeName / …
+├── primitives.d.bp      ← numeric + bool interfaces
+├── array.d.bp           ← generic Array<T> interface
+├── string.d.bp          ← String interface methods
+└── builtins.d.bp        ← @typeOf / @sizeOf / @panic / @typeName / …
 ```
 
 ## `prelude.zig` shape
 
 ```zig
-pub const primitives = @embedFile("primitives.bp");
-pub const array      = @embedFile("array.bp");
-pub const string     = @embedFile("string.bp");
-pub const builtins   = @embedFile("builtins.bp");
+pub const primitives = @embedFile("primitives.d.bp");
+pub const array      = @embedFile("array.d.bp");
+pub const string     = @embedFile("string.d.bp");
+pub const builtins   = @embedFile("builtins.d.bp");
 ```
 
 That's the entire file — one `pub const` per `.bp`. Adding a `.bp` means
@@ -35,10 +35,10 @@ adding exactly one line here.
 
 | File | What it declares |
 |---|---|
-| `primitives.bp` | `interface I32 { … }`, `U32`, `I64`, `U64`, `F32`, `F64`, `Bool`. Numeric methods: `to_string`, `abs`, `min`, `max`, `as<T>`. Bool methods: `to_string`. |
-| `array.bp` | `interface Array<T>` — `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter`. |
-| `string.bp` | `interface String` — `len`, `split`, `to_upper`/`to_lower`, `contains`, `starts_with`, `ends_with`, `trim`/`trim_left`/`trim_right`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
-| `builtins.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`). |
+| `primitives.d.bp` | `interface I32 { … }`, `U32`, `I64`, `U64`, `F32`, `F64`, `Bool`. Numeric methods: `to_string`, `abs`, `min`, `max`, `as<T>`. Bool methods: `to_string`. |
+| `array.d.bp` | `interface Array<T>` — `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter`. |
+| `string.d.bp` | `interface String` — `len`, `split`, `to_upper`/`to_lower`, `contains`, `starts_with`, `ends_with`, `trim`/`trim_left`/`trim_right`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
+| `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`). |
 
 ## Declarative style — no bodies
 

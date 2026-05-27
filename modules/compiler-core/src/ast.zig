@@ -1115,8 +1115,8 @@ pub const TypeRef = union(enum) {
     optional: *TypeRef,
     /// Function type: `fn(T1, T2) -> R`. Owns both param types and return type.
     function: struct { params: []TypeRef, returnType: *TypeRef },
-    /// Builtin type constructor: `@Result(D, E)`. Owns the argument types.
-    builtin: struct { name: []const u8, args: []TypeRef },
+    /// Generic type: `@Result<D, E>` (builtin) or `MyType<T>` (user-defined). Owns the argument types.
+    generic: struct { name: []const u8, args: []TypeRef, is_builtin: bool },
 
     pub fn deinit(this: *TypeRef, allocator: std.mem.Allocator) void {
         switch (this.*) {
@@ -1139,7 +1139,7 @@ pub const TypeRef = union(enum) {
                 f.returnType.deinit(allocator);
                 allocator.destroy(f.returnType);
             },
-            .builtin => |b| {
+            .generic => |b| {
                 for (b.args) |*a| a.deinit(allocator);
                 allocator.free(b.args);
             },

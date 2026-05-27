@@ -17,10 +17,10 @@ stdlib/
 ├── botopink.json      ← package metadata
 └── src/               ← .bp source files + prelude.zig — see src/AGENTS.md
     ├── prelude.zig    ← @embedFile of every .bp into Zig const strings
-    ├── primitives.bp  ← I32/U32/I64/U64/F32/F64/Bool interfaces
-    ├── array.bp       ← generic Array<T> interface
-    ├── string.bp      ← String interface
-    └── builtins.bp    ← compiler/runtime builtins (typeOf, sizeOf, panic, …)
+    ├── primitives.d.bp  ← I32/U32/I64/U64/F32/F64/Bool interfaces
+    ├── array.d.bp       ← generic Array<T> interface
+    ├── string.d.bp      ← String interface
+    └── builtins.d.bp    ← compiler/runtime builtins (typeOf, sizeOf, panic, …)
 ```
 
 ## Wiring

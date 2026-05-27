@@ -67,8 +67,10 @@ pub const ParseErrorType = enum {
     listSpreadNotLast,
     /// Useless spread with no elements to its left (e.g. [..wibble])
     uselessSpread,
-    /// Removed error union syntax `T!E` (use `@Result(D, E)` instead)
+    /// Removed error union syntax `T!E` (use `@Result<D, E>` instead)
     removedErrorUnion,
+    /// Removed builtin type syntax `@Result(D, E)` (use `@Result<D, E>` instead)
+    removedBuiltinType,
 };
 
 pub const ParseErrorInfo = struct {
@@ -746,26 +748,53 @@ pub const Parser = struct {
                 .returnType = returnPtr,
             } };
         }
-        // @Name(T1, T2) ---- builtin type constructor
+        // @Name<T1, T2> — builtin type constructor
         if (this.check(.builtinIdent)) {
             const tok = this.advance();
             const name = tok.lexeme[1..];
-            _ = try this.consume(.leftParenthesis);
+            if (this.check(.leftParenthesis)) {
+                this.parseError = .{
+                    .kind = .removedBuiltinType,
+                    .start = tok.col - 1,
+                    .end = tok.col - 1 + tok.lexeme.len,
+                    .lexeme = tok.lexeme,
+                    .line = tok.line,
+                    .col = tok.col,
+                };
+                return ParseError.UnexpectedToken;
+            }
+            _ = try this.consume(.lessThan);
             var args: std.ArrayList(ast.TypeRef) = .empty;
             errdefer {
                 for (args.items) |*a| a.deinit(alloc);
                 args.deinit(alloc);
             }
-            while (!this.check(.rightParenthesis) and !this.check(.endOfFile)) {
+            while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
                 try args.append(alloc, try this.parseTypeRef(alloc));
                 if (!this.match(.comma)) break;
             }
-            _ = try this.consume(.rightParenthesis);
-            return ast.TypeRef{ .builtin = .{ .name = name, .args = try args.toOwnedSlice(alloc) } };
+            _ = try this.consume(.greaterThan);
+            return ast.TypeRef{ .generic = .{ .name = name, .args = try args.toOwnedSlice(alloc), .is_builtin = true } };
         }
-        // Plain named type, possibly followed by [] for array
+        // Plain named type, possibly followed by <T1, T2> and/or []
         const nameTok = try this.consumeTypeName();
-        var ref = ast.TypeRef{ .named = nameTok.lexeme };
+        var ref: ast.TypeRef = undefined;
+        if (this.check(.lessThan)) {
+            _ = this.advance();
+            var args: std.ArrayList(ast.TypeRef) = .empty;
+            errdefer {
+                for (args.items) |*a| a.deinit(alloc);
+                args.deinit(alloc);
+            }
+            while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
+                try args.append(alloc, try this.parseTypeRef(alloc));
+                if (!this.match(.comma)) break;
+            }
+            _ = try this.consume(.greaterThan);
+            ref = ast.TypeRef{ .generic = .{ .name = nameTok.lexeme, .args = try args.toOwnedSlice(alloc), .is_builtin = false } };
+        } else {
+            ref = ast.TypeRef{ .named = nameTok.lexeme };
+        }
         // T[] — zero or more array wraps
         while (this.check(.leftSquareBracket) and this.peekAt(1).kind == .rightSquareBracket) {
             _ = this.advance(); // [
