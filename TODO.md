@@ -118,10 +118,14 @@ fn fetch(url: string) -> @Future<@Result<Response, Error>> {
 
 ### Custom hooks
 
-Funções cujo retorno implementa `@Context<B, _>` são hooks. A validação é transitiva:
+Funções cujo retorno implementa `@Context<B, _>` são hooks. A validação é transitiva.
+`@Context` é uma interface builtin — implementação inline via `struct implement`:
 
 ```bp
-struct AuthState: @Context<Element, {user: User, isLoggedIn: bool}> { }
+val AuthState = struct implement @Context<Element, {user: User, isLoggedIn: bool}> {
+    user: User
+    isLoggedIn: bool
+}
 
 fn useAuth() -> AuthState {
     use {token} = state(null)        // @Context<Element, _> ✓
@@ -131,6 +135,17 @@ fn useAuth() -> AuthState {
 
 fn Dashboard() -> Element {
     use {user, isLoggedIn} = useAuth() // @Context<Element, _> ✓
+}
+```
+
+Ambas as formas são válidas:
+```bp
+// Inline — curta, para o caso comum
+val AuthState = struct implement @Context<Element, AuthState> {}
+
+// Separada — para implementar interface em tipo já existente
+val CircleDrawing = implement Drawable for Circle {
+    fn draw(self: Self) {}
 }
 ```
 
@@ -199,29 +214,33 @@ error: `fn` cannot return @Future directly
 
 ## Pending — @Context Implementation
 
+`@Context<B, R>` é uma interface builtin (como `@Result<D, E>`).
+Duas formas de implementar:
+- **Inline**: `val X = struct implement @Context<B, R> { }` — curta, caso comum
+- **Separada**: `val Y = implement @Context<B, R> for X { }` — para tipo já existente
+
 ### Fase 1: AST
 
-- [x] Adicionar `interface` como keyword/declaração no AST (`ast.zig`) — já existia
-- [x] Adicionar variant `Expr.useHook` para `use` como hook no body (distinto de `UseDecl` de imports)
-- [ ] Adicionar `ContextBase` tracking na representação de tipo — phantom param em `TypeRef.generic`
-- [ ] Adicionar `ImplList` ao `StructDecl`/`EnumDecl` para `struct X: @Context<B, R> { }`
+- [x] `interface` keyword/declaração no AST — já existia
+- [x] `Expr.useHook` variant para `use` como hook no body (distinto de `UseDecl` de imports)
+- [x] `TypeRef.generic` com `is_builtin` já representa `@Context<B, R>`
+- [ ] Adicionar `implement: []TypeRef` ao `StructDecl`/`EnumDecl`/`RecordDecl` para `struct implement I1, I2 { }`
 
 ### Fase 2: Parser
 
-- [ ] Parsear `interface @Name<params> { }` como declaração (`parser.zig`)
-- [ ] Parsear `struct X: @Context<B, R> + @Future<T> { }` — lista de interfaces após `:`
+- [ ] Parsear `struct implement Interface1, Interface2 { }` — lista de TypeRef após `implement` keyword
+- [ ] Parsear `enum implement Interface { }` e `record(...) implement Interface { }` — mesma regra
 - [ ] Parsear `use expr` (sem `=`) para hooks void (`parser.zig`)
 - [ ] Parsear `use binding = expr` como hook no body (diferente de `use {imports} = source` no top-level por posição)
 - [ ] Validar prefix estático: emitir erro se `use` aparece após branch/return
 
 ### Fase 3: Type Inference
 
-- [ ] Resolver `@Context<B, R>` como interface — verificar que tipos declarados implementam
+- [ ] Definir `@Context<B, R>` como interface builtin em `builtins.d.bp`
+- [ ] Resolver `implement` (inline e separado) — registrar que T impl @Context
 - [ ] Ao entrar em fn body: extrair ContextBase do return type se impl `@Context`
 - [ ] Ao encontrar `use`: verificar que a expressão retorna `@Context<B, _>` com B == ContextBase da fn
-- [ ] Ao encontrar `await`: verificar que return type impl `@Future<_>`
 - [ ] Erro se `use` em fn cujo retorno não impl `@Context`
-- [ ] Erro se `await` em fn cujo retorno não impl `@Future`
 - [ ] Erro se ContextBase do `use` diverge do ContextBase da fn
 - [ ] Validação transitiva: custom hooks propagam ContextBase via return type
 
@@ -245,21 +264,26 @@ error: `fn` cannot return @Future directly
 ### Cenários de teste
 
 ```
+parser ---- struct implement @Context<B, R> { } (inline implement)
+parser ---- struct implement A, B { } (multiple inline interfaces)
+parser ---- enum implement @Context<B, R> { } (inline implement on enum)
+parser ---- record(...) implement @Context<B, R> { } (inline implement on record)
+parser ---- use expr (void hook, no binding)
+parser ---- use name = expr (hook with simple binding)
+parser ---- use {a, b} = expr (hook with destructuring)
+parser ---- use after if branch (error: not in static prefix)
+parser ---- use after early return (error: not in static prefix)
 context ---- use in fn -> @Context<Element, _> (pass)
 context ---- use in fn -> string (error: not @Context)
 context ---- ContextBase mismatch Element vs Http (error)
-context ---- use after if branch (error: not in static prefix)
-context ---- use after early return (error: not in static prefix)
 context ---- use without binding for void hook (pass)
 context ---- use with binding for non-void hook (pass)
 context ---- custom hook propagates ContextBase transitively (pass)
-context ---- await in fn -> @Future (pass)
-context ---- await in fn -> Element (error: not @Future)
-context ---- use + await in fn -> @Context + @Future (pass)
-context ---- module top-level use with @root() (pass)
-context ---- module top-level use with @module("x") (pass)
-context ---- struct implements @Context + @Future (pass)
+context ---- struct implement @Context — resolved via inline impl (pass)
+context ---- implement @Context for struct — resolved via separate impl (pass)
 context ---- struct missing @Context impl but used with use (error)
+codegen ---- inline implement erased at runtime (no code for phantom)
+codegen ---- separate implement erased at runtime (no code for phantom)
 ```
 
 ---
@@ -580,6 +604,79 @@ try ---- try on non-Result type (comptime error)
 - [ ] List patterns in case arms (currently placeholder)
 - [ ] Constructor patterns in case arms (currently placeholder)
 - [ ] Proper arity tracking for qualified function calls
+
+---
+
+## Pending — Interface / Struct / Record / Implement Full Coverage
+
+### Fase 1: Parser tests
+
+- [ ] Interface with field + abstract method + default method (full Drawable spec)
+- [ ] Interface with multiple abstract methods (Canvas spec)
+- [ ] Struct with private field + getter + setter (with throw) + method
+- [ ] Record with fields + method (toString pattern)
+- [ ] Implement single interface with method body (separada: `implement I for T {}`)
+- [ ] Implement multiple interfaces with qualified method disambiguation (separada)
+- [ ] Struct with inline implement (`struct implement I1, I2 {}`)
+- [ ] Enum with inline implement (`enum implement I {}`)
+- [ ] Record with inline implement (`record(...) implement I {}`)
+
+### Fase 2: Comptime / Inference tests
+
+- [ ] Interface with field and abstract method infers correctly
+- [ ] Interface with multiple abstract methods infers param types
+- [ ] Struct with getter/setter/method infers Self and field types
+- [ ] Record with fields and method infers return type
+- [ ] Implement single interface — binding list sees implement decl
+- [ ] Implement two interfaces with qualified methods — disambiguation resolves
+
+### Fase 3: Semantic validation
+
+- [ ] Error: implement block missing a required interface method
+- [ ] Error: implement block has method not declared in interface
+- [ ] Error: qualified method prefix doesn't match any declared interface
+- [ ] Error: duplicate method name across interfaces without qualification
+- [ ] Error: struct getter return type mismatch with field type
+- [ ] Error: setter called with wrong value type
+
+### Fase 4: Codegen
+
+- [ ] CommonJS: interface → comment, struct → class with getter/setter, record → class with constructor
+- [ ] CommonJS: implement → prototype.method attachment
+- [ ] Erlang: struct → map + accessor fns, record → tagged tuple, implement → module export
+- [ ] BEAM ASM: struct/record/implement lowering
+- [ ] WAT: struct/record memory layout
+
+### Cenários de teste
+
+```
+parser ---- interface with field + abstract + default method
+parser ---- interface with multiple abstract methods (Canvas)
+parser ---- struct with private field + getter + setter(throw) + method
+parser ---- record with two fields + toString method
+parser ---- implement single interface with method body (separada)
+parser ---- implement two interfaces with qualified disambiguation (separada)
+parser ---- struct with inline implement single interface
+parser ---- struct with inline implement multiple interfaces
+parser ---- enum with inline implement
+parser ---- record with inline implement
+infer ---- interface with field and abstract method
+infer ---- interface with multiple abstract methods
+infer ---- struct with getter/setter/method
+infer ---- record with fields and method
+infer ---- implement single interface for record (separada)
+infer ---- implement two interfaces with qualified methods (separada)
+infer ---- struct with inline implement resolves interface
+infer ---- inline implement + separate implement both visible
+infer error ---- implement missing required method
+infer error ---- implement extra method not in interface
+infer error ---- qualified prefix doesn't match interface
+infer error ---- duplicate method without qualification
+codegen ---- interface as comment (CommonJS, Erlang)
+codegen ---- struct to class with getter/setter (CommonJS)
+codegen ---- record to class with constructor (CommonJS)
+codegen ---- implement attaches methods to prototype (CommonJS)
+```
 
 ---
 
