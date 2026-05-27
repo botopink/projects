@@ -3,23 +3,12 @@
   "decls": [
     {
       "use": {
-        "imports": [
-          {
-            "segments": [
-              "a"
-            ]
-          },
-          {
-            "segments": [
-              "b"
-            ]
-          }
-        ],
+        "imports": [],
         "source": {
           "call": {
             "loc": {
               "line": 1,
-              "col": 15
+              "col": 10
             },
             "kind": {
               "call": {

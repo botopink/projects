@@ -26,14 +26,14 @@ export declare const HOST: string;
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-use {PORT, HOST} from "config";
+use {PORT, HOST} = @root()
 val addr = HOST;
 val port = PORT;
 ```
 
 ----- JAVASCRIPT -- main.js
 ```javascript
-const { PORT, HOST } = require("./config.js");
+const { PORT, HOST } = @root();
 
 const addr = HOST;
 
@@ -42,10 +42,10 @@ const port = PORT;
 
 ----- TYPESCRIPT TYPEDEF -- main.d.ts
 ```typescript
-import { PORT, HOST } from "./config";
+import { PORT, HOST } from "./module";
 
 
-import { PORT, HOST } from "./config";
+import { PORT, HOST } from "./module";
 
 
 

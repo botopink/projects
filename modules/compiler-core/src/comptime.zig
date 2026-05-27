@@ -116,10 +116,13 @@ fn resolveImports(
     for (program.decls) |decl| {
         switch (decl) {
             .use => |u| {
-                if (u.source == .stringPath) {
-                    if (registry.get(u.source.stringPath)) |exports| {
-                        for (u.imports) |name| {
-                            if (exports.get(name)) |ty| try env.bind(name, ty);
+                for (u.imports) |imp| {
+                    const name = imp.name();
+                    var it = registry.valueIterator();
+                    while (it.next()) |exports| {
+                        if (exports.get(name)) |ty| {
+                            try env.bind(name, ty);
+                            break;
                         }
                     }
                 }

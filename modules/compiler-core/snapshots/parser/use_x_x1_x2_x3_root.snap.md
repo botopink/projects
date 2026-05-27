@@ -6,12 +6,10 @@
         "imports": [
           {
             "segments": [
-              "a"
-            ]
-          },
-          {
-            "segments": [
-              "b"
+              "X",
+              "x1",
+              "x2",
+              "X3"
             ]
           }
         ],
@@ -19,7 +17,7 @@
           "call": {
             "loc": {
               "line": 1,
-              "col": 15
+              "col": 20
             },
             "kind": {
               "call": {

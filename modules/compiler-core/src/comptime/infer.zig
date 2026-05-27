@@ -82,7 +82,8 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
             // Emit one TypedBinding per import so the LSP completion engine can
             // see them — the dummy `name = ""` binding is gone.
             .use => |u| {
-                for (u.imports) |name| {
+                for (u.imports) |imp| {
+                    const name = imp.name();
                     if (env.lookup(name)) |ty| {
                         try list.append(env.arena, .{
                             .name = name,

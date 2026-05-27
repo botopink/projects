@@ -1,5 +1,5 @@
 ----- SOURCE CODE
-use {SECRET} from "mod";
+use {SECRET} = @root()
 val x = SECRET;
 
 ----- ERROR

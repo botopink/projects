@@ -86,28 +86,34 @@ fn assertIdempotent(allocator: Allocator, src: []const u8) !void {
 
 // ── use declarations ──────────────────────────────────────────────────────────
 
-test "format: use ---- empty imports from string path" {
+test "format: use ---- empty imports from @root()" {
     try assertFormat(std.testing.allocator,
-        \\use {} from "mylib";
+        \\use {} = @root();
     );
 }
 
 test "format: use ---- named imports" {
     try assertFormat(std.testing.allocator,
-        \\use {foo, bar, baz} from "my-lib";
+        \\use {foo, bar, baz} = @root();
     );
 }
 
-test "format: use ---- from function call" {
+test "format: use ---- @module() source" {
     try assertFormat(std.testing.allocator,
-        \\use {x, y} from loader();
+        \\use {x, y} = @module();
     );
 }
 
 test "format: use ---- multiple declarations" {
     try assertFormat(std.testing.allocator,
-        \\use {a} from "lib1";
-        \\use {b, c} from "lib2";
+        \\use {a} = @root();
+        \\use {b, c} = @module();
+    );
+}
+
+test "format: use ---- dotted path" {
+    try assertFormat(std.testing.allocator,
+        \\use {X.x1.x2} = @root();
     );
 }
 
@@ -531,49 +537,43 @@ test "format: idempotent ---- pub fn with comptime params" {
     );
 }
 
-// ── imports (adapted from Gleam) ─────────────────────────────────────────────
+// ── imports ──────────────────────────────────────────────────────────────────
 
 test "format: use ---- empty" {
     try assertFormat(std.testing.allocator,
-        \\use {} from "one";
+        \\use {} = @root();
     );
 }
 
 test "format: use ---- single import" {
     try assertFormat(std.testing.allocator,
-        \\use {one} from "one";
+        \\use {one} = @root();
     );
 }
 
 test "format: use ---- multiple imports" {
     try assertFormat(std.testing.allocator,
-        \\use {one} from "one";
-        \\use {two} from "two";
-    );
-}
-
-test "format: use ---- nested path" {
-    try assertFormat(std.testing.allocator,
-        \\use {one, two, three} from "one/two/three";
+        \\use {one} = @root();
+        \\use {two} = @module();
     );
 }
 
 test "format: use ---- ordered imports" {
     try assertFormat(std.testing.allocator,
-        \\use {four, five} from "four/five";
-        \\use {one, two, three} from "one/two/three";
+        \\use {four, five} = @root();
+        \\use {one, two, three} = @module();
     );
 }
 
 test "format: use ---- selective imports" {
     try assertFormat(std.testing.allocator,
-        \\use {fun, fun2, fun3} from "one";
+        \\use {fun, fun2, fun3} = @root();
     );
 }
 
 test "format: use ---- mixed type and function imports" {
     try assertFormat(std.testing.allocator,
-        \\use {One, Two, fun1, fun2} from "one";
+        \\use {One, Two, fun1, fun2} = @root();
     );
 }
 
@@ -581,9 +581,9 @@ test "format: use ---- mixed type and function imports" {
 
 test "format: multiple statements with use and types" {
     try assertFormat(std.testing.allocator,
-        \\use {one} from "one";
-        \\use {three} from "three";
-        \\use {two} from "two";
+        \\use {one} = @root();
+        \\use {three} = @root();
+        \\use {two} = @root();
         \\
         \\pub val One = struct {};
         \\

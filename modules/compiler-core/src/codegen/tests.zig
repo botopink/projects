@@ -132,7 +132,7 @@ fn freshEnv(arena_alloc: std.mem.Allocator, gpa: Allocator) !comptimeMod.Env_ {
 ///
 /// All modules are inferred in order in isolated envs. Only `pub` declarations
 /// from each dependency module are exported to the registry and available for
-/// `use {X} from "path"` imports.
+/// `use {X} = @root()` imports.
 ///
 /// JS is generated for **every** module. The snapshot shows each module's
 /// source under its own `----- SOURCE CODE -- name.bp` header, a single
@@ -665,7 +665,7 @@ test "js: interface ---- emits comment" {
 // Tests named imports from module
 test "js: use ---- named imports" {
     try assertJsSingle(std.testing.allocator, @src(),
-        \\use { foo, bar } from "mylib";
+        \\use { foo, bar } = @root()
     );
 }
 
@@ -1073,7 +1073,7 @@ test "js: use ---- multi-module pub fn import" {
         \\}
         },
         .{ .path = "", .source =
-        \\use {double} from "math";
+        \\use {double} = @root()
         \\val result = double(21);
         },
     });
@@ -1086,7 +1086,7 @@ test "js: use ---- multi-module pub val import" {
         \\pub val HOST = "localhost";
         },
         .{ .path = "", .source =
-        \\use {PORT, HOST} from "config";
+        \\use {PORT, HOST} = @root()
         \\val addr = HOST;
         \\val port = PORT;
         },

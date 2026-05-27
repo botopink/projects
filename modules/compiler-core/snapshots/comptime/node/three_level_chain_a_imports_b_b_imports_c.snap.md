@@ -19,7 +19,7 @@ pub val VERSION = 1;
 
 ----- SOURCE CODE -- mid.bp
 ```botopink
-use {VERSION} from "base";
+use {VERSION} = @root()
 pub val MAJOR = VERSION;
 ```
 
@@ -49,7 +49,7 @@ pub val MAJOR = VERSION;
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-use {MAJOR} from "mid";
+use {MAJOR} = @root()
 val v = MAJOR;
 ```
 

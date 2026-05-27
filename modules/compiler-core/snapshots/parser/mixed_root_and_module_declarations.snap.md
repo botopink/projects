@@ -6,7 +6,7 @@
         "imports": [
           {
             "segments": [
-              "a"
+              "x"
             ]
           }
         ],
@@ -37,12 +37,7 @@
         "imports": [
           {
             "segments": [
-              "b"
-            ]
-          },
-          {
-            "segments": [
-              "c"
+              "y"
             ]
           }
         ],
@@ -50,12 +45,44 @@
           "call": {
             "loc": {
               "line": 2,
-              "col": 14
+              "col": 11
             },
             "kind": {
               "call": {
                 "receiver": null,
                 "callee": "module",
+                "is_builtin": true,
+                "args": [],
+                "trailing": []
+              }
+            }
+          }
+        },
+        "docComment": null,
+        "comment": null,
+        "moduleComment": null
+      }
+    },
+    {
+      "use": {
+        "imports": [
+          {
+            "segments": [
+              "z",
+              "W"
+            ]
+          }
+        ],
+        "source": {
+          "call": {
+            "loc": {
+              "line": 3,
+              "col": 13
+            },
+            "kind": {
+              "call": {
+                "receiver": null,
+                "callee": "root",
                 "is_builtin": true,
                 "args": [],
                 "trailing": []

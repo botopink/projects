@@ -21,7 +21,7 @@ HOST() ->
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-use {PORT, HOST} from "config";
+use {PORT, HOST} = @root()
 val addr = HOST;
 val port = PORT;
 ```
@@ -30,7 +30,7 @@ val port = PORT;
 ```erlang
 -module(main).
 
--import(config, [PORT/0, HOST/0]).
+%% use PORT, HOST
 
 addr() ->
     HOST.

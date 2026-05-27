@@ -1,5 +1,229 @@
 # TODO — Botopink Compiler
 
+## Design — `@Context<ContextBase, Return>` + `@Future<Return>`
+
+### Regra central
+
+O **tipo de retorno** da função define quais capacidades o body pode usar:
+
+| Retorno impl        | `use` | `await` |
+|----------------------|-------|---------|
+| `@Context<B, R>`    | ✓     | ✗       |
+| `@Future<R>`        | ✗     | ✓       |
+| `@Context + @Future`| ✓     | ✓       |
+| nenhum               | ✗     | ✗       |
+
+- `use` exige `@Context<ContextBase, _>` no retorno
+- `await` exige `@Future<_>` no retorno
+- Todos os `use` numa mesma função devem ter o **mesmo ContextBase**
+- Misturou ContextBase = compile error
+
+### Interface
+
+```bp
+interface @Context<ContextBase, Return> { }
+```
+
+- `ContextBase` = phantom type (erased em runtime, zero custo)
+- `Return` = shape do que `use` destructura
+- Sem método `resolve()` — é contrato de tipos, codegen é target-specific
+
+### Módulo
+
+Um arquivo `.bp` é implicitamente `fn*() -> @Context<Module, Exports> + @Future<Exports>`:
+
+- `@Context<Module, _>` habilita `use` no top-level
+- `@Future<Exports>` torna o módulo async (carregamento de dependências)
+- `@root()` e `@module("x")` retornam `@Context<Module, ModuleTree>` (não `@Future`)
+
+```bp
+use {std.List, std.Map} = @root()
+use {state, memo, effect} = @module("framework")
+
+pub fn App() -> Element {
+    use {val, set} = state(0)
+    div { val.to_string() }
+}
+```
+
+### ContextBases (definidos por frameworks, não pela linguagem)
+
+| ContextBase | Retorno típico | Hooks disponíveis                |
+|-------------|----------------|----------------------------------|
+| `Module`    | `Exports`      | `@root()`, `@module("x")`       |
+| `Element`   | `Element`      | `state`, `memo`, `effect`, `context` |
+| `Http`      | `Response`     | `connection`, `auth`, `session`  |
+| `Cli`       | `CliApp`       | `flags`, `stdout`, `stdin`       |
+
+A linguagem só fornece `Module`. Os demais são userland/framework.
+
+### Fontes de import
+
+```bp
+@root()              // raiz do projeto atual
+@module("name")      // dependência externa / pacote
+```
+
+Dotted path dentro do `{}`:
+```bp
+use {std.List} = @root()             // binding: List
+use {ui.components.Button} = @root() // binding: Button
+use {std.List as L} = @root()        // binding: L
+```
+
+### `use` sem binding (void)
+
+```bp
+use effect({ -> cleanup() })         // @Context<_, void> — sem = necessário
+use {val, set} = state(0)            // @Context<_, T> — binding obrigatório
+```
+
+### Prefix estático
+
+Todos os `use` devem vir antes de qualquer branch/return no body:
+
+```bp
+fn Dashboard(loading: bool) -> Element {
+    // === prefix estático ===
+    use {val, set} = state(0)
+    use doubled = memo({ -> val * 2 })
+    // === fim ===
+    if loading { return Spinner() }
+    div { doubled.to_string() }
+}
+```
+
+### `*fn` e `@Context` — ortogonais
+
+`*fn` (async/generator) e `@Context` (hooks) não se combinam por default. Uma fn pode ter ambos **somente se o retorno implementa ambos** (`@Context + @Future`).
+
+### Custom hooks
+
+Funções cujo retorno implementa `@Context<B, _>` são hooks. A validação é transitiva:
+
+```bp
+struct AuthState: @Context<Element, {user: User, isLoggedIn: bool}> { }
+
+fn useAuth() -> AuthState {
+    use {token} = state(null)        // @Context<Element, _> ✓
+    use {user} = context(UserCtx)    // @Context<Element, _> ✓
+    AuthState { user, isLoggedIn: token != null }
+}
+
+fn Dashboard() -> Element {
+    use {user, isLoggedIn} = useAuth() // @Context<Element, _> ✓
+}
+```
+
+### Erros do compilador
+
+```
+error: ContextBase mismatch
+  function returns @Context<Element, _>
+  but `connection()` returns @Context<Http, _>
+  all `use` in a function must share the same ContextBase
+
+error: `use` not allowed
+  function returns `string` which does not implement @Context
+  `use` requires the return type to implement @Context<_, _>
+
+error: `await` not allowed
+  function returns `Element` which does not implement @Future
+  `await` requires the return type to implement @Future<_>
+
+error: `use` must be in static prefix
+  `use` cannot appear after `if`, `case`, `loop`, or `return`
+  move all `use` statements to the top of the function body
+```
+
+---
+
+## Pending — AST & Parser Simplification
+
+Refactoring para reduzir verbosidade do AST e eliminar duplicação no parser.
+
+**Arquivos principais**: `ast.zig` (1360 linhas), `parser.zig` (3630 linhas)
+**Consumidores do AST**: `format.zig`, `infer.zig`, `transform.zig`, `beam_asm.zig`, `wat.zig`, `erlang.zig`, `typescript.zig`, `print.zig`
+
+### Fase 1: Helpers de construção no parser (só parser.zig)
+
+Reduzir verbosidade na construção de nós — zero impacto nos consumidores.
+
+- [ ] Substituir 27 instâncias manuais de `alloc.create(Expr); ptr.* = expr` pelo helper `boxExpr()` já existente
+- [ ] Criar helper `makeBinOp(alloc, op, opTok, lhs, rhs) -> Expr` — encapsula box de lhs/rhs + construção do nó
+- [ ] Criar helper `makeCall(tok, receiver, callee, is_builtin, args, trailing) -> Expr` — substitui 11 sites de construção de call
+- [ ] Criar helper `makeJump(tok, comptime variant, inner) -> Expr` — unifica return/throw/try/break/yield
+- [ ] Criar helper `tryParseCommentStmt(alloc) -> ?Stmt` — extrai o padrão duplicado de `check(.commentNormal) or .commentDoc or .commentModule` + conversão CommentKind (3-4 ocorrências)
+
+### Fase 2: Unificar parsing de blocos (só parser.zig)
+
+5 métodos quase idênticos → 1 método parametrizado + 1 wrapper fino.
+
+- [ ] Criar `BlockParseOptions = struct { trackEmptyLines: bool, handleComments: bool, semicolonPolicy: enum { strict, required_except_last, always_optional } }`
+- [ ] Criar `parseBlock(alloc, opts) -> []Stmt` unificando:
+  - `parseStmtListInBraces` → `parseBlock(alloc, .{ .trackEmptyLines = true, .handleComments = true, .semicolonPolicy = .required_except_last })`
+  - `parseMethodBodyStmts` → `parseBlock(alloc, .{ .handleComments = true })`
+  - `parseSimpleBodyStmts` → `parseBlock(alloc, .{})`
+  - `parseBlockWithOptionalTrailingSemicolon` → `parseBlock(alloc, .{ .semicolonPolicy = .always_optional })`
+- [ ] Manter `parseBlockOrExpr` como wrapper fino: se `{` chama `parseBlock`, senão parseia expressão simples
+- [ ] Remover os 5 métodos antigos
+
+### Fase 3: Unificar operadores binários (só parser.zig)
+
+6 métodos idênticos → 1 método genérico com tabela de precedência comptime.
+
+- [ ] Criar tabela `precedence_table` mapeando nível → tokens + op enum
+- [ ] Criar `parseBinaryExpr(alloc, comptime level: u8) -> Expr` — chama `parseBinaryExpr(alloc, level + 1)` recursivamente (nível 6 → `parsePrimary`)
+- [ ] Tratar `opNakedRight` error check no nível de comparação (level 4) via `if (comptime level == 4) { ... }`
+- [ ] Substituir chamadas: `parseOrExpr` → `parseBinaryExpr(alloc, 1)`, `parsePipelineExpr` continua chamando `parseBinaryExpr(alloc, 1)`
+- [ ] Remover `parseOrExpr`, `parseAndExpr`, `parseEqExpr`, `parseCompareExpr`, `parseAddExpr`, `parseMulExpr`
+
+### Fase 4: Flatten AST — eliminar triplo aninhamento (ast.zig + todos consumidores)
+
+Nós struct-based (BinOp, UnaryOp, Loop) perdem a camada `.kind`, campos ficam direto no struct.
+Nós union-based (Literal, Identifier, Jump, Branch, Call, etc.) mantêm 2 níveis mas construtores ajudam.
+
+**Antes**: `Expr{ .binaryOp = .{ .loc = ..., .kind = .{ .op = .add, .lhs = ..., .rhs = ... } } }`
+**Depois**: `Expr{ .binaryOp = .{ .loc = ..., .op = .add, .lhs = ..., .rhs = ... } }`
+
+- [ ] Flatten `BinOpExprOf`: remover `MakeExpr`, struct direto com `loc, type_, op, lhs, rhs`
+- [ ] Flatten `UnaryOpExprOf`: struct direto com `loc, type_, op, expr`
+- [ ] Flatten `LoopExprOf`: struct direto com `loc, type_, iter, indexRange, params, body`
+- [ ] Para nós union-based (`LiteralExprOf`, `IdentifierExprOf`, `JumpExprOf`, `BranchExprOf`, `CallExprOf`, `FunctionExprOf`, `CollectionExprOf`, `ComptimeExprOf`): manter `MakeExpr` mas avaliar renomear `kind` → nome mais descritivo por tipo
+- [ ] Migrar consumidores (search-and-replace mecânico): `bin.kind.op` → `bin.op`, `un.kind.expr` → `un.expr`, `lp.kind.iter` → `lp.iter`, etc.
+- [ ] Atualizar `deinit` de cada tipo flattened
+
+### Fase 5: Merge lambda/fnExpr (ast.zig + consumidores)
+
+Duas variantes idênticas em dados → struct único com campo `syntax`.
+
+- [ ] Substituir `FunctionExprOf.Kind` (union lambda/fnExpr) por struct: `{ syntax: enum { lambda, fnExpr }, params, body }`
+- [ ] Migrar consumidores: `switch (func.kind) { .lambda => ..., .fnExpr => ... }` → acesso direto a `.params`/`.body`, usar `if (func.syntax == .lambda)` quando necessário
+- [ ] Simplificar `deinit` — de switch com 2 branches idênticos para código linear
+
+### Fase 6: Unificar preamble de declarações (só parser.zig)
+
+Os 10 métodos de parse de declarações (5 pares shorthand/full) repetem annotations + pub + name + genericParams.
+
+- [ ] Criar `DeclPreamble = struct { isPub: bool, name: []const u8, annotations: []Annotation, genericParams: []GenericParam }`
+- [ ] Criar `parseDeclPreamble(alloc, syntax: enum { val_form, shorthand }) -> DeclPreamble` que extrai o padrão comum
+- [ ] Refatorar `parseStructDecl`/`parseShorthandStructDecl`, `parseRecordDecl`/`parseShorthandRecordDecl`, `parseEnumDecl`/`parseShorthandEnumDecl`, `parseInterfaceDecl`/`parseShorthandInterfaceDecl` para usar `parseDeclPreamble`
+- [ ] Reduzir errdefer duplicado de annotations (10 ocorrências → centralizado em `parseDeclPreamble`)
+
+### Fase 7 (opcional): Merge pattern variants (ast.zig + consumidores)
+
+3 variantes de pattern → 1 com payload union.
+
+- [ ] Unificar `variantBinding`, `variantFields`, `variantLiterals` em `variant: struct { name, payload: union(enum) { binding, fields, patterns } }`
+- [ ] Migrar 14 sites de match em 4 arquivos (format, erlang, beam_asm, infer)
+
+### Verificação
+
+Após cada fase, rodar `zig build test` — os snapshot tests + parser tests + format tests cobrem regressões.
+O compilador Zig garante que qualquer acesso a campo removido falha em compilação.
+
+---
+
 ## Done
 
 ### @Result(D, E) migration
@@ -60,25 +284,25 @@ use { X } = @root()
 use { X.x1.x2.X3 } = @module()
 ```
 
-#### Fase 1: AST
-- [ ] `Source` union: remover `stringPath` e `functionCall`, adicionar `builtinCall: []const u8` para `@root`, `@module` etc. (`ast.zig`)
-- [ ] `UseDecl.imports`: mudar de `[]const []const u8` para suportar dotted paths (ex: `X.x1.x2.X3`) — usar struct `ImportPath { segments: []const []const u8 }` ou `[]const []const []const u8`
-- [ ] Atualizar `DeclKind.deinit` para desalocar novos campos
+#### Fase 1: AST ✓
+- [x] `Source` type: remover union `stringPath`/`functionCall`, usar `*Expr` (qualquer expressão) (`ast.zig`)
+- [x] `UseDecl.imports`: mudar de `[]const []const u8` para `[]const ImportPath` com `ImportPath { segments: []const []const u8 }` (`ast.zig`)
+- [x] Atualizar `DeclKind.deinit` para desalocar `ImportPath.segments` e `source: *Expr` (`ast.zig`)
 
-#### Fase 2: Lexer
-- [ ] Verificar que `@` seguido de identifier já é parseado (provavelmente via `@identifier` como builtin)
-- [ ] Remover keyword `from` do lexer (`token.zig`) — ou manter como reserved/deprecated
-- [ ] Garantir que `=` após `}` no contexto de `use` é reconhecido corretamente
+#### Fase 2: Lexer ✓
+- [x] `@` seguido de identifier já é parseado como `builtinIdent` — nenhuma mudança necessária
+- [x] Manter keyword `from` como reserved/deprecated (gera erro de parse automaticamente)
+- [x] `=` após `}` reconhecido como `.equal` token — nenhuma mudança necessária
 
-#### Fase 3: Parser
-- [ ] `parseUseDecl`: trocar consumo de `from` por consumo de `=` (`parser.zig`)
-- [ ] `parseSource`: parsear `@name()` como `Source.builtinCall` — consumir `@`, identifier, `(`, `)` (`parser.zig`)
-- [ ] `parseImportList`: suportar dotted paths — parsear `X.x1.x2.X3` como lista de segmentos separados por `.` (`parser.zig`)
+#### Fase 3: Parser ✓
+- [x] `parseUseDecl`: consumir `=` e chamar `parseExpr` para source genérico (`parser.zig`)
+- [x] `parseImportList`: retornar `[]const ImportPath` com `parseDottedPath` (`parser.zig`)
+- [x] `parseDottedPath`: parsear `X.x1.x2.X3` como lista de segmentos separados por `.` (`parser.zig`)
 - [ ] Error message: rejeitar sintaxe antiga `use { X } from "mod"` com hint para usar `= @root()`
 
-#### Fase 4: Formatter & Printer
-- [ ] `fmtUse`: emitir `use { X.x1.x2 } = @root()` em vez de `use { X } from "mod"` (`format.zig`)
-- [ ] `print.zig`: atualizar printer para nova sintaxe se aplicável
+#### Fase 4: Formatter & Printer ✓
+- [x] `fmtUse`: emitir `use { X.x1.x2 } = <expr>;` com dotted paths e expressão genérica (`format.zig`)
+- [x] Codegen emitters: atualizar para `ImportPath.name()` e `u.source.*` (`commonJS.zig`, `erlang.zig`, `typescript.zig`)
 
 #### Fase 5: Type inference / Comptime
 - [ ] `resolveImports`: resolver `@root()` como caminho para o módulo raiz do projeto (`comptime.zig` / `infer.zig`)
@@ -99,12 +323,12 @@ use { X.x1.x2.X3 } = @module()
 - [ ] LSP unused imports: atualizar scan para nova sintaxe (`engine.zig`)
 - [ ] LSP go-to-definition: resolver `@root()` / `@module()` para arquivo/módulo correto
 
-#### Fase 8: Tests & Snapshots
-- [ ] Parser tests: atualizar todos os testes `use` existentes para nova sintaxe (`parser/tests.zig`)
-- [ ] Parser tests: adicionar testes para dotted paths (`X.x1.x2.X3`)
+#### Fase 8: Tests & Snapshots ✓
+- [x] Parser tests: atualizar todos os testes `use` existentes para nova sintaxe (`parser/tests.zig`)
+- [x] Parser tests: adicionar testes para dotted paths (`X.x1.x2.X3`)
 - [ ] Parser tests: adicionar teste de erro para sintaxe antiga `from`
-- [ ] Format tests: atualizar para nova sintaxe (`format/tests.zig`)
-- [ ] Codegen tests: atualizar snapshots de import para todos os backends
+- [x] Format tests: atualizar para nova sintaxe (`format/tests.zig`)
+- [x] Codegen tests: atualizar snapshots de import para todos os backends
 - [ ] Comptime tests: verificar resolução de `@root()` e `@module()`
 - [ ] Regenerar todos os snapshots afetados
 
@@ -155,7 +379,7 @@ use ---- multiple use declarations alignment
 #### Fase 9: Docs & Stdlib
 - [ ] Atualizar `docs.md` com nova sintaxe de imports
 - [ ] Atualizar `examples.md` com exemplos usando `@root()` / `@module()`
-- [ ] Atualizar `builtins.d.bp` se tiver declarações `use`
+- [x] Atualizar `builtins.d.bp` — adicionar `fn root() module` e `fn module() module`
 - [ ] Atualizar AGENTS.md com mudança de sintaxe
 
 ---

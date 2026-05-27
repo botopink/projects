@@ -23,7 +23,7 @@ record Point { x: i32, y: i32 }
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-use {Point} from "models";
+use {Point} = @root()
 val origin = Point(0, 0);
 ```
 

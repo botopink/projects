@@ -7,7 +7,7 @@ pub const Token = token.Token;
 pub const TokenKind = token.TokenKind;
 
 pub const UseDecl = ast.UseDecl;
-pub const Source = ast.Source;
+pub const ImportPath = ast.ImportPath;
 pub const InterfaceDecl = ast.InterfaceDecl;
 pub const InterfaceField = ast.InterfaceField;
 pub const InterfaceMethod = ast.InterfaceMethod;
@@ -812,41 +812,41 @@ pub const Parser = struct {
         _ = try this.consume(.use);
         _ = try this.consume(.leftBrace);
         const imports = try this.parseImportList(alloc);
-        errdefer alloc.free(imports);
+        errdefer {
+            for (imports) |imp| alloc.free(imp.segments);
+            alloc.free(imports);
+        }
         _ = try this.consume(.rightBrace);
-        _ = try this.consume(.from);
-        return UseDecl{ .imports = imports, .source = try this.parseSource() };
+        _ = try this.consume(.equal);
+        const expr_val = try this.parseExpr(alloc);
+        const source = try alloc.create(Expr);
+        source.* = expr_val;
+        return UseDecl{ .imports = imports, .source = source };
     }
 
-    fn parseImportList(this: *This, alloc: std.mem.Allocator) ParseError![]const []const u8 {
-        var names: std.ArrayList([]const u8) = .empty;
-        errdefer names.deinit(alloc);
-        if (!this.check(.identifier)) return names.toOwnedSlice(alloc);
-        try names.append(alloc, (try this.consume(.identifier)).lexeme);
+    fn parseImportList(this: *This, alloc: std.mem.Allocator) ParseError![]const ImportPath {
+        var paths: std.ArrayList(ImportPath) = .empty;
+        errdefer {
+            for (paths.items) |p| alloc.free(p.segments);
+            paths.deinit(alloc);
+        }
+        if (!this.check(.identifier)) return paths.toOwnedSlice(alloc);
+        try paths.append(alloc, try this.parseDottedPath(alloc));
         while (this.match(.comma)) {
             if (this.check(.rightBrace)) break;
-            try names.append(alloc, (try this.consume(.identifier)).lexeme);
+            try paths.append(alloc, try this.parseDottedPath(alloc));
         }
-        return names.toOwnedSlice(alloc);
+        return paths.toOwnedSlice(alloc);
     }
 
-    fn parseSource(this: *This) ParseError!Source {
-        if (this.check(.stringLiteral)) {
-            const tok = this.advance();
-            return Source{ .stringPath = tok.lexeme[1 .. tok.lexeme.len - 1] };
+    fn parseDottedPath(this: *This, alloc: std.mem.Allocator) ParseError!ImportPath {
+        var segs: std.ArrayList([]const u8) = .empty;
+        errdefer segs.deinit(alloc);
+        try segs.append(alloc, (try this.consume(.identifier)).lexeme);
+        while (this.match(.dot)) {
+            try segs.append(alloc, (try this.consume(.identifier)).lexeme);
         }
-        if (this.check(.multilineStringLiteral)) {
-            const tok = this.advance();
-            // Remove the triple quotes from both ends
-            return Source{ .stringPath = tok.lexeme[3 .. tok.lexeme.len - 3] };
-        }
-        if (this.check(.identifier)) {
-            const tok = try this.consume(.identifier);
-            _ = try this.consume(.leftParenthesis);
-            _ = try this.consume(.rightParenthesis);
-            return Source{ .functionCall = tok.lexeme };
-        }
-        return ParseError.UnexpectedToken;
+        return ImportPath{ .segments = try segs.toOwnedSlice(alloc) };
     }
 
     // ── fn decl ───────────────────────────────────────────────────────────────────

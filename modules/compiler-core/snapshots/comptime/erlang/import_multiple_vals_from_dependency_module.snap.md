@@ -25,7 +25,7 @@ pub val port = 8080;
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-use {host, port} from "config";
+use {host, port} = @root()
 val addr = host;
 val p = port;
 ```

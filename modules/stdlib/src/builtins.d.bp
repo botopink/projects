@@ -74,6 +74,11 @@ fn trap() noreturn
 fn src() string
 
 
+// ── module imports ───────────────────────────────────────────────────────────
+
+fn root() module
+fn module() module
+
 // ── compile-time I/O ──────────────────────────────────────────────────────────
 
 fn embedFile(comptime path: string) string

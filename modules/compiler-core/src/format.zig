@@ -1320,16 +1320,20 @@ pub const Formatter = struct {
 
     fn fmtUse(this: *Formatter, u: ast.UseDecl) !*const Doc {
         var items = try this.arena.alloc(*const Doc, u.imports.len);
-        for (u.imports, 0..) |imp, i| items[i] = try this.text(imp);
+        for (u.imports, 0..) |imp, i| {
+            var seg_docs = try this.arena.alloc(*const Doc, imp.segments.len * 2 - 1);
+            for (imp.segments, 0..) |seg, j| {
+                if (j > 0) seg_docs[j * 2 - 1] = try this.text(".");
+                seg_docs[j * 2] = try this.text(seg);
+            }
+            items[i] = try this.concatAll(seg_docs);
+        }
         const importsDoc = try this.commaList("{", items, "}");
-        const sourceDoc: *const Doc = switch (u.source) {
-            .stringPath => |s| try this.text(try std.fmt.allocPrint(this.arena, "\"{s}\"", .{s})),
-            .functionCall => |f| try this.text(try std.fmt.allocPrint(this.arena, "{s}()", .{f})),
-        };
+        const sourceDoc = try this.fmtExpr(u.source.*);
         return this.concatAll(&.{
             try this.text("use "),
             importsDoc,
-            try this.text(" from "),
+            try this.text(" = "),
             sourceDoc,
         });
     }

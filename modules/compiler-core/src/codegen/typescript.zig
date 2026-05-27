@@ -264,17 +264,12 @@ const Emitter = struct {
     }
 
     fn emitUse(self: *Emitter, u: ast.UseDecl) !void {
-        switch (u.source) {
-            .stringPath => |p| {
-                try self.w("import { ");
-                for (u.imports, 0..) |name, i| {
-                    if (i > 0) try self.w(", ");
-                    try self.w(name);
-                }
-                try self.fmt(" }} from \"./{s}\";\n", .{p});
-            },
-            .functionCall => {}, // Dynamic imports don't translate cleanly
+        try self.w("import { ");
+        for (u.imports, 0..) |imp, i| {
+            if (i > 0) try self.w(", ");
+            try self.w(imp.name());
         }
+        try self.w(" } from \"./module\";\n");
     }
 
     fn emitDelegate(self: *Emitter, d: ast.DelegateDecl) !void {

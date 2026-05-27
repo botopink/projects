@@ -183,50 +183,50 @@ test "parser: whitespace-only source" {
 
 // ── use decl ─────────────────────────────────────────────────────────────────
 
-test "parser: use {} from \"mylib\" (empty imports)" {
-    try assertParser(std.testing.allocator, @src(), "use {} from \"mylib\"");
+test "parser: use {} = @root() (empty imports)" {
+    try assertParser(std.testing.allocator, @src(), "use {} = @root()");
 }
 
-test "parser: use {foo} from \"lib\"" {
-    try assertParser(std.testing.allocator, @src(), "use {foo} from \"lib\"");
+test "parser: use {foo} = @root()" {
+    try assertParser(std.testing.allocator, @src(), "use {foo} = @root()");
 }
 
-test "parser: use {alpha, beta, gamma} from \"pkg\"" {
-    try assertParser(std.testing.allocator, @src(), "use {alpha, beta, gamma} from \"pkg\"");
+test "parser: use {alpha, beta, gamma} = @root()" {
+    try assertParser(std.testing.allocator, @src(), "use {alpha, beta, gamma} = @root()");
 }
 
 test "parser: trailing comma in import list" {
-    try assertParser(std.testing.allocator, @src(), "use {a, b,} from \"x\"");
+    try assertParser(std.testing.allocator, @src(), "use {a, b,} = @root()");
 }
 
-test "parser: empty string path" {
-    try assertParser(std.testing.allocator, @src(), "use {x} from \"\"");
+test "parser: use {x} = @module()" {
+    try assertParser(std.testing.allocator, @src(), "use {x} = @module()");
 }
 
-// ── use: source FunctionCall ──────────────────────────────────────────────────
+// ── use: dotted paths ────────────────────────────────────────────────────────
 
-test "parser: use {x} from loader()" {
-    try assertParser(std.testing.allocator, @src(), "use {x} from loader()");
+test "parser: use {X.x1.x2.X3} = @root()" {
+    try assertParser(std.testing.allocator, @src(), "use {X.x1.x2.X3} = @root()");
 }
 
-test "parser: use {} from init() (empty imports + FunctionCall)" {
-    try assertParser(std.testing.allocator, @src(), "use {} from init()");
+test "parser: use {A, B.c.D} = @module()" {
+    try assertParser(std.testing.allocator, @src(), "use {A, B.c.D} = @module()");
 }
 
 // ── use: multiple declarations ────────────────────────────────────────────────
 
 test "parser: two use declarations" {
     try assertParser(std.testing.allocator, @src(),
-        \\use {a} from "lib1"
-        \\use {b, c} from "lib2"
+        \\use {a} = @root()
+        \\use {b, c} = @module()
     );
 }
 
-test "parser: mixed StringPath and FunctionCall declarations" {
+test "parser: mixed @root and @module declarations" {
     try assertParser(std.testing.allocator, @src(),
-        \\use {x} from "a"
-        \\use {y} from b()
-        \\use {z} from "c"
+        \\use {x} = @root()
+        \\use {y} = @module()
+        \\use {z.W} = @root()
     );
 }
 

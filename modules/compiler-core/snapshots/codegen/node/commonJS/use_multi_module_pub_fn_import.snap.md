@@ -25,20 +25,20 @@ export declare function double(x: ): i32;
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-use {double} from "math";
+use {double} = @root()
 val result = double(21);
 ```
 
 ----- JAVASCRIPT -- main.js
 ```javascript
-const { double } = require("./math.js");
+const { double } = @root();
 
 const result = double(21);
 ```
 
 ----- TYPESCRIPT TYPEDEF -- main.d.ts
 ```typescript
-import { double } from "./math";
+import { double } from "./module";
 
 
 

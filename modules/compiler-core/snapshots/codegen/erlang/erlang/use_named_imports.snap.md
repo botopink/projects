@@ -1,13 +1,13 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-use { foo, bar } from "mylib";
+use { foo, bar } = @root()
 ```
 
 ----- ERLANG -- main.erl
 ```erlang
 -module(main).
 
--import(mylib, [foo/0, bar/0]).
+%% use foo, bar
 ```
 
 ----- RUN LOG -----

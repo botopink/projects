@@ -48,7 +48,7 @@ const UseDeclaration = struct {
     ast: []const u8,
     indent: []const u8,
     return_type: []const u8,
-    
+
     pub fn jsonStringify(self: @This(), jws: anytype) !void {
         try jws.beginObject();
         try jws.objectField("ast");
@@ -127,7 +127,7 @@ const BindingRepr = union(enum) {
     use: struct {
         ast: []const u8,
         declarations: []const UseDeclaration,
-        
+
         pub fn jsonStringify(self: @This(), jws: anytype) !void {
             try jws.beginObject();
             try jws.objectField("ast");
@@ -379,7 +379,7 @@ fn bindingToRepr(
                 .indent = b.name,
                 .return_type = typeStr,
             };
-            
+
             return .{ .use = .{
                 .ast = "use",
                 .declarations = decls,
@@ -590,12 +590,9 @@ pub fn buildSnapshot(allocator: std.mem.Allocator, output: comptimeMod.ComptimeO
                 const repr = (try bindingToRepr(ja, b, output.src, ok.type_ids)) orelse continue;
 
                 if (repr == .use) {
-                    // For use declarations, merge them by module source
                     const use_info = b.decl.use;
-                    const module_source = switch (use_info.source) {
-                        .stringPath => |s| s,
-                        .functionCall => |s| s,
-                    };
+                    const module_source = "module";
+                    _ = use_info;
 
                     const gop = try merged_uses.getOrPut(module_source);
                     if (!gop.found_existing) {

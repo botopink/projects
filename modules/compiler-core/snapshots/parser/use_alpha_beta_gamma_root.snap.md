@@ -6,12 +6,17 @@
         "imports": [
           {
             "segments": [
-              "a"
+              "alpha"
             ]
           },
           {
             "segments": [
-              "b"
+              "beta"
+            ]
+          },
+          {
+            "segments": [
+              "gamma"
             ]
           }
         ],
@@ -19,7 +24,7 @@
           "call": {
             "loc": {
               "line": 1,
-              "col": 15
+              "col": 28
             },
             "kind": {
               "call": {

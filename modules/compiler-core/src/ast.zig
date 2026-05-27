@@ -5,10 +5,7 @@ pub const Phase = enum { untyped, typed };
 
 // ── use decl ──────────────────────────────────────────────────────────────────
 
-pub const Source = union(enum) {
-    stringPath: []const u8,
-    functionCall: []const u8,
-};
+pub const Source = *Expr;
 
 pub const CommentKind = union(enum) {
     /// `// ...` — regular inline comment (non-documenting)
@@ -29,8 +26,16 @@ pub const Comment = struct {
         allocator.free(this.text);
     }
 };
+pub const ImportPath = struct {
+    segments: []const []const u8,
+
+    pub fn name(this: ImportPath) []const u8 {
+        return this.segments[this.segments.len - 1];
+    }
+};
+
 pub const UseDecl = struct {
-    imports: []const []const u8,
+    imports: []const ImportPath,
     source: Source,
     /// `///` documentation comment (multi-line joined with `\n`)
     docComment: ?[]const u8 = null,
@@ -1188,7 +1193,12 @@ pub const DeclKind = union(enum) {
 
     pub fn deinit(this: *DeclKind, allocator: std.mem.Allocator) void {
         switch (this.*) {
-            .use => |*u| allocator.free(u.imports),
+            .use => |*u| {
+                for (u.imports) |imp| allocator.free(imp.segments);
+                allocator.free(u.imports);
+                u.source.deinit(allocator);
+                allocator.destroy(u.source);
+            },
             .interface => |*t| t.deinit(allocator),
             .delegate => |*d| d.deinit(allocator),
             .@"struct" => |*s| s.deinit(allocator),

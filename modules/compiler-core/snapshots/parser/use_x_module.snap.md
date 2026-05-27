@@ -6,12 +6,7 @@
         "imports": [
           {
             "segments": [
-              "a"
-            ]
-          },
-          {
-            "segments": [
-              "b"
+              "x"
             ]
           }
         ],
@@ -19,12 +14,12 @@
           "call": {
             "loc": {
               "line": 1,
-              "col": 15
+              "col": 11
             },
             "kind": {
               "call": {
                 "receiver": null,
-                "callee": "root",
+                "callee": "module",
                 "is_builtin": true,
                 "args": [],
                 "trailing": []

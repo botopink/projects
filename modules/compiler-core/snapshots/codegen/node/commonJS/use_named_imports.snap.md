@@ -1,11 +1,11 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-use { foo, bar } from "mylib";
+use { foo, bar } = @root()
 ```
 
 ----- JAVASCRIPT -- main.js
 ```javascript
-const { foo, bar } = require("./mylib.js");
+const { foo, bar } = @root();
 ```
 
 ----- TYPESCRIPT TYPEDEF -- main.d.ts

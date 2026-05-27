@@ -548,19 +548,13 @@ const Emitter = struct {
 
     fn emitUse(self: *Emitter, u: ast.UseDecl) !void {
         try self.w("const { ");
-        for (u.imports, 0..) |name, i| {
+        for (u.imports, 0..) |imp, i| {
             if (i > 0) try self.w(", ");
-            try self.w(name);
+            try self.w(imp.name());
         }
         try self.w(" } = ");
-        switch (u.source) {
-            .stringPath => |p| {
-                try self.w("require(\"./");
-                try self.w(p);
-                try self.w(".js\");");
-            },
-            .functionCall => |name| try self.fmt("require({s}());", .{name}),
-        }
+        try self.emitExpr(u.source.*);
+        try self.w(";");
     }
 
     // ── params ────────────────────────────────────────────────────────────────

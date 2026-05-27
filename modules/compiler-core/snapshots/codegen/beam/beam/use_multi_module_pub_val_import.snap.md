@@ -36,7 +36,7 @@ pub val HOST = "localhost";
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-use {PORT, HOST} from "config";
+use {PORT, HOST} = @root()
 val addr = HOST;
 val port = PORT;
 ```

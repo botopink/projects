@@ -29,7 +29,7 @@ pub fn double(x: i32) -> i32 {
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-use {double} from "math";
+use {double} = @root()
 val result = double(21);
 ```
 

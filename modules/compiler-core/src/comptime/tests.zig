@@ -1012,7 +1012,7 @@ test "types: tuple literal with mixed types" {
     );
 }
 
-// ── assertTypeAst: multi-module (use … from "…") ─────────────────────────────
+// ── assertTypeAst: multi-module (use … = @root()) ────────────────────────────
 
 test "assertTypeAst: single module ---- basic val bindings" {
     try assertComptimeAst(std.testing.allocator, @src(), &.{
@@ -1029,7 +1029,7 @@ test "assertTypeAst: import single val from dependency module" {
         \\pub val MAX = 100;
         },
         .{ .path = "", .source =
-        \\use {MAX} from "constants";
+        \\use {MAX} = @root()
         \\val limit = MAX;
         },
     });
@@ -1042,7 +1042,7 @@ test "assertTypeAst: import multiple vals from dependency module" {
         \\pub val port = 8080;
         },
         .{ .path = "", .source =
-        \\use {host, port} from "config";
+        \\use {host, port} = @root()
         \\val addr = host;
         \\val p = port;
         },
@@ -1057,7 +1057,7 @@ test "assertTypeAst: import fn from dependency module" {
         \\}
         },
         .{ .path = "", .source =
-        \\use {double} from "math";
+        \\use {double} = @root()
         \\val result = double(21);
         },
     });
@@ -1069,22 +1069,19 @@ test "assertTypeAst: three-level chain ---- a imports b, b imports c" {
         \\pub val VERSION = 1;
         },
         .{ .path = "mid", .source =
-        \\use {VERSION} from "base";
+        \\use {VERSION} = @root()
         \\pub val MAJOR = VERSION;
         },
         .{ .path = "", .source =
-        \\use {MAJOR} from "mid";
+        \\use {MAJOR} = @root()
         \\val v = MAJOR;
         },
     });
 }
 
 test "infer error: import of val ---- unbound variable" {
-    // `val SECRET` is private (no `pub`), so it is not exported to the registry.
-    // The `use` declaration resolves nothing, leaving SECRET unbound in the
-    // main module.  The type checker must report an unbound variable error.
     try assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\use {SECRET} from "mod";
+        \\use {SECRET} = @root()
         \\val x = SECRET;
     );
 }
@@ -1106,7 +1103,7 @@ test "assertTypeAst: import record constructor from dependency" {
         \\record Point { x: i32, y: i32 }
         },
         .{ .path = "", .source =
-        \\use {Point} from "models";
+        \\use {Point} = @root()
         \\val origin = Point(0, 0);
         },
     });

@@ -1225,18 +1225,12 @@ const Emitter = struct {
     }
 
     fn emitUse(this: *Emitter, u: ast.UseDecl) !void {
-        switch (u.source) {
-            .stringPath => |p| {
-                try this.fmt("-import({s}, [", .{p});
-                for (u.imports, 0..) |name, i| {
-                    if (i > 0) try this.w(", ");
-                    try this.w(name);
-                    try this.w("/0"); // arity unknown at this point, use 0 as placeholder
-                }
-                try this.w("]).\n");
-            },
-            .functionCall => |name| try this.fmt("%% use {s}()\n", .{name}),
+        try this.w("%% use ");
+        for (u.imports, 0..) |imp, i| {
+            if (i > 0) try this.w(", ");
+            try this.w(imp.name());
         }
+        try this.w("\n");
     }
 
     // ── binary string helper ─────────────────────────────────────────────────
