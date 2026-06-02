@@ -515,6 +515,47 @@ pub const Parser = struct {
         return list.toOwnedSlice(alloc);
     }
 
+    /// The shared opening of a type/interface declaration: visibility, name and
+    /// annotations. The keyword that introduces the construct (and the trailing
+    /// generic params / body) are parsed by the caller.
+    const DeclPreamble = struct {
+        isPub: bool,
+        name: []const u8,
+        annotations: []Annotation,
+    };
+
+    /// Frees an owned annotation slice (used on declaration parse-error paths).
+    fn freeAnnotations(alloc: std.mem.Allocator, annotations: []Annotation) void {
+        for (annotations) |*a| a.deinit(alloc);
+        alloc.free(annotations);
+    }
+
+    /// Parses the shared preamble of a declaration up to and including `keyword`.
+    /// Two surface forms are supported:
+    ///   - val-form (`shorthand == false`):  `[pub] val Name = #[...] <keyword>`
+    ///   - shorthand (`shorthand == true`):   `#[...] [pub] <keyword> Name`
+    /// On error the parsed annotations are freed.
+    fn parseDeclPreamble(this: *This, alloc: std.mem.Allocator, keyword: TokenKind, shorthand: bool) ParseError!DeclPreamble {
+        if (shorthand) {
+            const annotations = try this.parseAnnotations(alloc);
+            errdefer freeAnnotations(alloc, annotations);
+            const isPub = this.match(.@"pub");
+            _ = try this.consume(keyword);
+            const name = (try this.consume(.identifier)).lexeme;
+            _ = this.tryParseId();
+            return .{ .isPub = isPub, .name = name, .annotations = annotations };
+        }
+        const isPub = this.match(.@"pub");
+        _ = try this.consume(.val);
+        const name = (try this.consume(.identifier)).lexeme;
+        _ = this.tryParseId();
+        _ = try this.consume(.equal);
+        const annotations = try this.parseAnnotations(alloc);
+        errdefer freeAnnotations(alloc, annotations);
+        _ = try this.consume(keyword);
+        return .{ .isPub = isPub, .name = name, .annotations = annotations };
+    }
+
     // ── expression helper ─────────────────────────────────────────────────────
 
     /// Creates a heap-allocated copy of an expression.
@@ -1026,35 +1067,19 @@ pub const Parser = struct {
     // ── interface decl ───────────────────────────────────────────────────────────
 
     fn parseInterfaceDecl(this: *This, alloc: std.mem.Allocator) ParseError!InterfaceDecl {
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.val);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        _ = try this.consume(.equal);
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        _ = try this.consume(.interface);
-        // optional: `extends T1, T2, T3` after `interface`
+        // val-form: the `extends` clause (if any) follows the `interface` keyword.
+        const p = try this.parseDeclPreamble(alloc, .interface, false);
+        errdefer freeAnnotations(alloc, p.annotations);
         const extendsSlice = try this.parseExtendsClause(alloc);
-        return this.parseInterfaceBody(alloc, name, extendsSlice, annotations, isPub);
+        return this.parseInterfaceBody(alloc, p.name, extendsSlice, p.annotations, p.isPub);
     }
 
     fn parseShorthandInterfaceDecl(this: *This, alloc: std.mem.Allocator) ParseError!InterfaceDecl {
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.interface);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        // optional: `extends T1, T2, T3` after name
+        // shorthand: the `extends` clause (if any) follows the interface name.
+        const p = try this.parseDeclPreamble(alloc, .interface, true);
+        errdefer freeAnnotations(alloc, p.annotations);
         const extendsSlice = try this.parseExtendsClause(alloc);
-        return this.parseInterfaceBody(alloc, name, extendsSlice, annotations, isPub);
+        return this.parseInterfaceBody(alloc, p.name, extendsSlice, p.annotations, p.isPub);
     }
 
     /// Parses an optional `extends T1, T2, T3` clause.
@@ -1215,31 +1240,15 @@ pub const Parser = struct {
     // ── struct decl ───────────────────────────────────────────────────────────
 
     fn parseStructDecl(this: *This, alloc: std.mem.Allocator) ParseError!StructDecl {
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.val);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        _ = try this.consume(.equal);
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        _ = try this.consume(.@"struct");
-        return this.parseStructBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .@"struct", false);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseStructBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseShorthandStructDecl(this: *This, alloc: std.mem.Allocator) ParseError!StructDecl {
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.@"struct");
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        return this.parseStructBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .@"struct", true);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseStructBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!StructDecl {
@@ -1363,31 +1372,15 @@ pub const Parser = struct {
     // ── record decl ──────────────────────────────────────────────────────────
 
     fn parseRecordDecl(this: *This, alloc: std.mem.Allocator) ParseError!RecordDecl {
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.val);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        _ = try this.consume(.equal);
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        _ = try this.consume(.record);
-        return this.parseRecordBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .record, false);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseRecordBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseShorthandRecordDecl(this: *This, alloc: std.mem.Allocator) ParseError!RecordDecl {
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.record);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        return this.parseRecordBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .record, true);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseRecordBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!RecordDecl {
@@ -1551,31 +1544,15 @@ pub const Parser = struct {
     // ── enum decl ─────────────────────────────────────────────────────────────
 
     fn parseEnumDecl(this: *This, alloc: std.mem.Allocator) ParseError!EnumDecl {
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.val);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        _ = try this.consume(.equal);
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        _ = try this.consume(.@"enum");
-        return this.parseEnumBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .@"enum", false);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseEnumBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseShorthandEnumDecl(this: *This, alloc: std.mem.Allocator) ParseError!EnumDecl {
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.@"enum");
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        return this.parseEnumBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .@"enum", true);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseEnumBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseEnumBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!EnumDecl {
