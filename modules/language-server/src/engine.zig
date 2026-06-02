@@ -124,7 +124,8 @@ pub fn hover(
         switch (b.decl) {
             .@"fn" => |f| {
                 if (f.isPub) try buf.appendSlice(gpa, "pub ");
-                try buf.appendSlice(gpa, "fn ");
+                // `*fn` marks an async / generator function.
+                try buf.appendSlice(gpa, if (f.isStarFn) "*fn " else "fn ");
                 try buf.appendSlice(gpa, b.name);
                 try buf.append(gpa, '(');
                 for (f.params, 0..) |p, pi| {
@@ -137,6 +138,10 @@ pub fn hover(
                 if (f.returnType) |rt| {
                     try buf.appendSlice(gpa, " -> ");
                     try appendTypeRef(gpa, &buf, rt);
+                }
+                if (f.label) |lbl| {
+                    try buf.appendSlice(gpa, " :");
+                    try buf.appendSlice(gpa, lbl);
                 }
             },
             .val => {
@@ -192,6 +197,19 @@ pub fn hover(
 
         try buf.appendSlice(gpa, "\n```");
 
+        // For a `*fn`, surface the unwrapped element type produced by
+        // `await` / `yield` / iteration (the `T` of `@Future<T>` /
+        // `@Iterator<T>` / `@AsyncIterator<T, _>`).
+        if (b.decl == .@"fn" and b.decl.@"fn".isStarFn) {
+            if (b.decl.@"fn".returnType) |rt| {
+                if (asyncItemTypeRef(rt)) |item| {
+                    try buf.appendSlice(gpa, "\n\n---\n\n`await`/`yield` element type: `");
+                    try appendTypeRef(gpa, &buf, item);
+                    try buf.appendSlice(gpa, "`");
+                }
+            }
+        }
+
         // Append doc comment if available.
         const doc = getDeclDocComment(b.decl);
         if (doc) |d| {
@@ -214,6 +232,21 @@ fn getDeclDocComment(decl: ast.DeclKind) ?[]const u8 {
         .interface => |i| i.docComment,
         .delegate => |d| d.docComment,
         .implement => |i| i.docComment,
+        else => null,
+    };
+}
+
+/// The element type `T` of an async/generator return type
+/// (`@Future<T>` / `@Iterator<T>` / `@AsyncIterator<T, _>`), or null.
+fn asyncItemTypeRef(tr: ast.TypeRef) ?ast.TypeRef {
+    return switch (tr) {
+        .generic => |g| if (g.is_builtin and g.args.len >= 1 and
+            (std.mem.eql(u8, g.name, "Future") or
+                std.mem.eql(u8, g.name, "Iterator") or
+                std.mem.eql(u8, g.name, "AsyncIterator")))
+            g.args[0]
+        else
+            null,
         else => null,
     };
 }
@@ -832,16 +865,15 @@ pub fn prepareRename(
 
 fn isKeyword(name: []const u8) bool {
     const keywords = [_][]const u8{
-        "as",      "assert",   "auto",      "break",    "case",
-        "catch",   "comptime", "const",     "continue", "declare",
-        "default", "delegate", "derive",    "echo",     "else",
-        "enum",    "extends",  "fn",        "for",      "from",
-        "get",     "if",       "implement", "import",   "interface",
-        "loop",    "macro",    "new",       "null",     "opaque",
-        "private", "pub",      "record",    "return",   "self",
-        "set",     "struct",   "syntax",    "test",     "throw",
-        "todo",    "true",     "false",     "try",      "type",
-        "use",     "val",      "var",       "yield",    "Self",
+        "as",       "assert",    "auto",   "await",    "break",   "case",
+        "catch",    "comptime",  "const",  "continue", "declare", "default",
+        "delegate", "derive",    "echo",   "else",     "enum",    "extends",
+        "fn",       "for",       "from",   "get",      "if",      "implement",
+        "import",   "interface", "loop",   "macro",    "new",     "null",
+        "opaque",   "private",   "pub",    "record",   "return",  "self",
+        "set",      "struct",    "syntax", "test",     "throw",   "todo",
+        "true",     "false",     "try",    "type",     "use",     "val",
+        "var",      "yield",     "Self",
     };
     for (keywords) |kw| {
         if (std.mem.eql(u8, name, kw)) return true;
@@ -1837,6 +1869,22 @@ fn dotCompletion(
             receiver_type_name = t.named.name;
         }
         break;
+    }
+
+    // Iterator receivers (`@Iterator` / `@AsyncIterator`) expose the iteration
+    // protocol: `next()`, `iter()` and `map()`.
+    if (receiver_type_name) |rtn| {
+        if (std.mem.eql(u8, rtn, "Iterator") or std.mem.eql(u8, rtn, "AsyncIterator")) {
+            const iter_methods = [_][]const u8{ "next", "iter", "map" };
+            for (iter_methods) |m| {
+                try items.append(gpa, .{
+                    .label = try gpa.dupe(u8, m),
+                    .kind = proto.CompletionItemKind.Method,
+                    .detail = null,
+                });
+            }
+            return items.toOwnedSlice(gpa);
+        }
     }
 
     const type_name = receiver_type_name orelse {
