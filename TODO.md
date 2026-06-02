@@ -2,7 +2,7 @@
 
 **Branch**: `feat/async-generators`
 **Depends on**: `feat/use-await-prefix` for the `await` prefix (the rest is independent)
-**Status**: in progress — front-end + codegen done; inference validation pending
+**Status**: done — all steps implemented and tested (937 passing)
 
 > `*fn` is sugar: it marks that the return implements `@Future<_>` or `@Iterator<_>`.
 > The `await`/`yield` rules follow from the return type, not from `*fn` itself.
@@ -15,21 +15,26 @@
 - Parser: `*fn` (decl + anonymous), `await` prefix, `loop await`, `loop :label`,
   `*fn … -> R :label`, `yield :label`, error on bodyless `*fn`. Snapshot tests.
 - Inference (type-flow): `await @Future<T> → T`, `try await @Future<@Result<T,E>> → T`,
-  `yield` carries its label. (Validation/error rules below still pending.)
+  `yield` carries its label.
+- Inference (validation): `*fn` must return `@Future`/`@Iterator`/`@AsyncIterator`;
+  normal `fn` returning one is an error; `await` only inside an async `*fn` and on a
+  `@Future`; `yield` unifies with the iterator item type; `yield :label`/loop labels
+  must be in scope; `loop await` ⇒ `@AsyncIterator<T, E>` (param bound to `T`).
 - Codegen CommonJS: `*fn` → `async function` / `function*` / `async function*`
   (chosen by return type, else by `yield` presence); `await`/`yield` keywords.
+- Codegen Erlang/BEAM/WAT: eager lowering — async `@Future` = identity (`await`);
+  Erlang finite generator ⇒ list `[…]`; `*fn` carries a header comment. Full
+  process/state-machine async runtime remains future work.
 - TypeScript `.d.ts`: `@Future<T>→Promise<T>`, `@Iterator<T>→IterableIterator<T>`,
   `@AsyncIterator<T,E>→AsyncIterableIterator<T>`. Codegen snapshot tests.
 - Formatter: `*fn`, `await`, `loop await`, `loop :label`, `yield :label`, fn label.
+- LSP: `await` keyword; hover shows `*fn` + label + `await`/`yield` element type;
+  completion offers `next()`/`iter()`/`map()` on `@Iterator`/`@AsyncIterator` receivers.
 
-### Remaining
+### Future work
 
-- Inference **validation** (steps 12–17 below): `*fn` return must impl `@Future`/`@Iterator`;
-  reject normal `fn` returning those; `await` outside `*fn` / on non-`@Future`; `yield`
-  unify with `@Iterator<T>`; label existence; `loop await` ⇒ `@AsyncIterator<T,E>`.
-- Codegen for `*fn`/`await`/`loop await` on the Erlang / BEAM ASM / WAT backends
-  (currently emit the body without async lowering).
-- LSP hover/autocomplete for unwrapped `await`/`yield` types.
+- Full async runtime lowering on Erlang (spawn/receive), BEAM ASM (OTP processes)
+  and WAT (state machines) — currently eager approximations.
 
 ## Steps
 
