@@ -1224,6 +1224,7 @@ pub const ValDecl = struct {
 pub const DeclKind = union(enum) {
     record: RecordDecl,
     implement: ImplementDecl,
+    extend: ExtendDecl,
     use: UseDecl,
     interface: InterfaceDecl,
     delegate: DelegateDecl,
@@ -1250,6 +1251,7 @@ pub const DeclKind = union(enum) {
             .@"struct" => |*s| s.deinit(allocator),
             .record => |*r| r.deinit(allocator),
             .implement => |*i| i.deinit(allocator),
+            .extend => |*x| x.deinit(allocator),
             .@"enum" => |*e| e.deinit(allocator),
             .@"fn" => |*f| f.deinit(allocator),
             .val => |*v| v.deinit(allocator),
@@ -1371,10 +1373,15 @@ pub const ImplementMethod = struct {
     }
 };
 
-/// `val Name = implement interface1, interface2 for TargetType { fn ... }`
-/// or `val Name<T> = implement Container<T> for MyType { fn ... }`
+/// Named trait implementation. Two surface forms, both always named:
+///   shorthand: `pub? Name implement interface1, interface2 for TargetType { fn ... }`
+///   explicit:  `pub? val Name = implement interface1, interface2 for TargetType { fn ... }`
 pub const ImplementDecl = struct {
     name: []const u8,
+    isPub: bool = false,
+    /// true when written in shorthand form (`Name implement …`), false for the
+    /// explicit `val Name = implement …` form. Used by the formatter to round-trip.
+    shorthand: bool = false,
     /// Generic type parameters on the implement block, e.g. `<T>`.
     genericParams: []GenericParam = &.{},
     docComment: ?[]const u8 = null,
@@ -1391,6 +1398,35 @@ pub const ImplementDecl = struct {
     pub fn deinit(this: *ImplementDecl, allocator: std.mem.Allocator) void {
         allocator.free(this.genericParams);
         allocator.free(this.interfaces);
+        for (this.methods) |*m| m.deinit(allocator);
+        allocator.free(this.methods);
+    }
+};
+
+/// Named extension without a trait. Two surface forms, both always named:
+///   shorthand: `pub? Name extend TargetType { fn ... }`
+///   explicit:  `pub? val Name = extend TargetType { fn ... }`
+/// Reuses `ImplementMethod` for its method bodies (extensions are never qualified,
+/// so `qualifier` is always null).
+pub const ExtendDecl = struct {
+    name: []const u8,
+    isPub: bool = false,
+    /// true when written in shorthand form (`Name extend …`), false for the
+    /// explicit `val Name = extend …` form. Used by the formatter to round-trip.
+    shorthand: bool = false,
+    /// Generic type parameters on the extend block, e.g. `<T>`.
+    genericParams: []GenericParam = &.{},
+    docComment: ?[]const u8 = null,
+    /// `//` regular comment (last one before the declaration)
+    comment: ?[]const u8 = null,
+    /// `////` module-level documentation
+    moduleComment: ?[]const u8 = null,
+    /// The type this extension adds methods to, e.g. "Pato".
+    target: []const u8,
+    methods: []ImplementMethod,
+
+    pub fn deinit(this: *ExtendDecl, allocator: std.mem.Allocator) void {
+        allocator.free(this.genericParams);
         for (this.methods) |*m| m.deinit(allocator);
         allocator.free(this.methods);
     }

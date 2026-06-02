@@ -4,6 +4,8 @@
     {
       "implement": {
         "name": "CameraPowerCharger",
+        "isPub": false,
+        "shorthand": false,
         "genericParams": [],
         "docComment": null,
         "comment": null,

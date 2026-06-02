@@ -3,7 +3,8 @@
 **Branch**: `feat/implement-extend-decls`
 **Phase**: F4 + F5
 **Depends on**: nothing (independent). F4 and F5 are parallel to each other.
-**Status**: pending (inline `struct implement` already parses — commits `abb4eb2`/`ce98b8d`)
+**Status**: done — shorthand + explicit `implement`/`extend` parse, format round-trips,
+anonymous forms rejected. Inference/codegen dispatch deferred to `feat/extension-dispatch` (F6).
 
 ## Target syntax
 

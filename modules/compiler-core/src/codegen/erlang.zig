@@ -168,6 +168,8 @@ fn emitErlang(
             .@"enum" => |e| try em.emitEnum(e),
             .interface => |i| try em.emitInterface(i),
             .implement => |im| try em.emitImplement(im),
+            // `extend` dispatch/codegen is handled in a later phase (extension-dispatch).
+            .extend => {},
             .use => |u| try em.emitUse(u),
             .delegate => |d| try aw.writer.print("%% delegate {s}\n", .{d.name}),
             .comment => |c| {

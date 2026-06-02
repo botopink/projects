@@ -320,7 +320,8 @@ fn emitBeamAsm(
             .implement => |im| try em.emitImplement(im),
             // Purely abstract decls (interface/delegate) and module-graph
             // metadata (use) don't lower to runtime code — silently skip.
-            .interface, .delegate, .use => {},
+            // `extend` codegen is handled in a later phase (extension-dispatch).
+            .interface, .delegate, .use, .extend => {},
         }
     }
 

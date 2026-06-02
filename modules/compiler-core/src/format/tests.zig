@@ -357,6 +357,40 @@ test "format: implement ---- two interfaces with qualified methods" {
     );
 }
 
+test "format: implement ---- shorthand named" {
+    try assertFormat(std.testing.allocator,
+        \\PatoNada implement Nada for Pato {
+        \\    fn swim(self: Self) {}
+        \\};
+    );
+}
+
+test "format: implement ---- shorthand named pub" {
+    try assertFormat(std.testing.allocator,
+        \\pub PatoNada implement Nada for Pato {
+        \\    fn swim(self: Self) {}
+        \\};
+    );
+}
+
+// ── extend ──────────────────────────────────────────────────────────────────────
+
+test "format: extend ---- shorthand named" {
+    try assertFormat(std.testing.allocator,
+        \\PatoExtra extend Pato {
+        \\    fn quack(self: Self) {}
+        \\};
+    );
+}
+
+test "format: extend ---- explicit named" {
+    try assertFormat(std.testing.allocator,
+        \\val PatoExtra = extend Pato {
+        \\    fn quack(self: Self) {}
+        \\};
+    );
+}
+
 // ── pub fn ────────────────────────────────────────────────────────────────────
 
 test "format: pub fn ---- simple with return type" {

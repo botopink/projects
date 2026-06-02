@@ -28,6 +28,7 @@ pub const Loc = ast.Loc;
 pub const RecordDecl = ast.RecordDecl;
 pub const RecordField = ast.RecordField;
 pub const ImplementDecl = ast.ImplementDecl;
+pub const ExtendDecl = ast.ExtendDecl;
 pub const ImplementMethod = ast.ImplementMethod;
 pub const DeclKind = ast.DeclKind;
 pub const Program = ast.Program;
@@ -75,6 +76,8 @@ pub const ParseErrorType = enum {
     removedFromSyntax,
     /// `use` hook after branch/return (must be in static prefix)
     useAfterBranch,
+    /// Anonymous `implement`/`extend` block (the name is required)
+    anonymousImplExtend,
 };
 
 pub const ParseErrorInfo = struct {
@@ -203,6 +206,14 @@ pub const Parser = struct {
                 const d = try this.parseShorthandInterfaceDecl(alloc);
                 _ = this.match(.semicolon);
                 break :blk .{ .interface = d };
+            } else if (this.checkNamedDecl(.implement)) blk: {
+                const d = try this.parseShorthandImplementDecl(alloc);
+                _ = this.match(.semicolon);
+                break :blk .{ .implement = d };
+            } else if (this.checkNamedDecl(.extend)) blk: {
+                const d = try this.parseShorthandExtendDecl(alloc);
+                _ = this.match(.semicolon);
+                break :blk .{ .extend = d };
             } else if (this.check(.loop)) blk: {
                 // top-level loop statement: parsed as a val named "_loop"
                 const e = try this.parseLoopExpr(alloc);
@@ -240,6 +251,14 @@ pub const Parser = struct {
                     .is_doc = tok.kind == .commentDoc,
                 } };
             } else {
+                // A bare `implement …` / `extend …` (optionally `pub`) with no name:
+                // these declarations are always named, so reject with a clear error.
+                if (this.check(.implement) or this.check(.extend) or
+                    (this.check(.@"pub") and (this.peekAt(1).kind == .implement or this.peekAt(1).kind == .extend)))
+                {
+                    this.reportAnonImplExtendError();
+                    return ParseError.UnexpectedToken;
+                }
                 if (isReservedWord(this.peek().kind)) {
                     this.reportReservedWordError();
                 }
@@ -277,6 +296,7 @@ pub const Parser = struct {
             .@"struct" => .{ .@"struct" = try this.parseStructDecl(alloc) },
             .record => .{ .record = try this.parseRecordDecl(alloc) },
             .implement => .{ .implement = try this.parseImplementDecl(alloc) },
+            .extend => .{ .extend = try this.parseExtendDecl(alloc) },
             .@"enum" => .{ .@"enum" = try this.parseEnumDecl(alloc) },
             .declare => .{ .delegate = try this.parseDelegateDecl(alloc) },
             .interface => if (bodyNext == .@"fn")
@@ -291,6 +311,14 @@ pub const Parser = struct {
     /// true if the current token is `kind`, or `pub` followed by `kind`.
     inline fn checkShorthand(this: *This, kind: TokenKind) bool {
         return this.check(kind) or (this.check(.@"pub") and this.peekAt(1).kind == kind);
+    }
+
+    /// true for a named shorthand decl `Name <kind> …` or `pub Name <kind> …`,
+    /// used to detect `Name implement …` / `Name extend …`.
+    inline fn checkNamedDecl(this: *This, kind: TokenKind) bool {
+        if (this.check(.identifier)) return this.peekAt(1).kind == kind;
+        if (this.check(.@"pub")) return this.peekAt(1).kind == .identifier and this.peekAt(2).kind == kind;
+        return false;
     }
 
     /// true if a shorthand delegate (`declare fn` or `pub declare fn`) is next.
@@ -1435,13 +1463,36 @@ pub const Parser = struct {
 
     // ── implement decl ────────────────────────────────────────────────────────────
 
+    /// Explicit form: `pub? val Name = implement Iface, … for Type { fn … }`.
     fn parseImplementDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImplementDecl {
-        _ = this.match(.@"pub");
+        const isPub = this.match(.@"pub");
         _ = try this.consume(.val);
         const name = (try this.consume(.identifier)).lexeme;
         const genericParams = try this.parseGenericParams(alloc);
         errdefer alloc.free(genericParams);
         _ = try this.consume(.equal);
+        return this.parseImplementBody(alloc, name, isPub, false, genericParams);
+    }
+
+    /// Shorthand form: `pub? Name implement Iface, … for Type { fn … }`.
+    fn parseShorthandImplementDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImplementDecl {
+        const isPub = this.match(.@"pub");
+        const name = (try this.consume(.identifier)).lexeme;
+        const genericParams = try this.parseGenericParams(alloc);
+        errdefer alloc.free(genericParams);
+        return this.parseImplementBody(alloc, name, isPub, true, genericParams);
+    }
+
+    /// Parses `implement Iface, … for Type { fn … }` starting at the `implement`
+    /// keyword. The name / pub / generic params / form were consumed by the caller.
+    fn parseImplementBody(
+        this: *This,
+        alloc: std.mem.Allocator,
+        name: []const u8,
+        isPub: bool,
+        shorthand: bool,
+        genericParams: []GenericParam,
+    ) ParseError!ImplementDecl {
         _ = try this.consume(.implement);
 
         var interfaces: std.ArrayList([]const u8) = .empty;
@@ -1457,6 +1508,65 @@ pub const Parser = struct {
         _ = try this.consume(.@"for");
         const target = (try this.consume(.identifier)).lexeme;
 
+        const ifaceSlice = try interfaces.toOwnedSlice(alloc);
+        errdefer alloc.free(ifaceSlice);
+        const methods = try this.parseImplementMethods(alloc);
+
+        return ImplementDecl{
+            .name = name,
+            .isPub = isPub,
+            .shorthand = shorthand,
+            .genericParams = genericParams,
+            .interfaces = ifaceSlice,
+            .target = target,
+            .methods = methods,
+        };
+    }
+
+    /// Explicit form: `pub? val Name = extend Type { fn … }`.
+    fn parseExtendDecl(this: *This, alloc: std.mem.Allocator) ParseError!ExtendDecl {
+        const isPub = this.match(.@"pub");
+        _ = try this.consume(.val);
+        const name = (try this.consume(.identifier)).lexeme;
+        const genericParams = try this.parseGenericParams(alloc);
+        errdefer alloc.free(genericParams);
+        _ = try this.consume(.equal);
+        return this.parseExtendBody(alloc, name, isPub, false, genericParams);
+    }
+
+    /// Shorthand form: `pub? Name extend Type { fn … }`.
+    fn parseShorthandExtendDecl(this: *This, alloc: std.mem.Allocator) ParseError!ExtendDecl {
+        const isPub = this.match(.@"pub");
+        const name = (try this.consume(.identifier)).lexeme;
+        const genericParams = try this.parseGenericParams(alloc);
+        errdefer alloc.free(genericParams);
+        return this.parseExtendBody(alloc, name, isPub, true, genericParams);
+    }
+
+    /// Parses `extend Type { fn … }` starting at the `extend` keyword.
+    fn parseExtendBody(
+        this: *This,
+        alloc: std.mem.Allocator,
+        name: []const u8,
+        isPub: bool,
+        shorthand: bool,
+        genericParams: []GenericParam,
+    ) ParseError!ExtendDecl {
+        _ = try this.consume(.extend);
+        const target = (try this.consume(.identifier)).lexeme;
+        const methods = try this.parseImplementMethods(alloc);
+        return ExtendDecl{
+            .name = name,
+            .isPub = isPub,
+            .shorthand = shorthand,
+            .genericParams = genericParams,
+            .target = target,
+            .methods = methods,
+        };
+    }
+
+    /// Parses a `{ fn … fn … }` block of method bodies shared by implement/extend.
+    fn parseImplementMethods(this: *This, alloc: std.mem.Allocator) ParseError![]ImplementMethod {
         _ = try this.consume(.leftBrace);
         var methods: std.ArrayList(ImplementMethod) = .empty;
         errdefer {
@@ -1473,13 +1583,20 @@ pub const Parser = struct {
             }
         }
         _ = try this.consume(.rightBrace);
+        return methods.toOwnedSlice(alloc);
+    }
 
-        return ImplementDecl{
-            .name = name,
-            .genericParams = genericParams,
-            .interfaces = try interfaces.toOwnedSlice(alloc),
-            .target = target,
-            .methods = try methods.toOwnedSlice(alloc),
+    /// Reports an anonymous-implement/extend error for the current token.
+    fn reportAnonImplExtendError(this: *This) void {
+        const tok = this.peek();
+        this.parseError = .{
+            .kind = .anonymousImplExtend,
+            .start = tok.col - 1,
+            .end = tok.col - 1 + tok.lexeme.len,
+            .lexeme = tok.lexeme,
+            .line = tok.line,
+            .col = tok.col,
+            .detail = tok.lexeme,
         };
     }
 

@@ -3,21 +3,21 @@
   "decls": [
     {
       "implement": {
-        "name": "Myimplement",
-        "isPub": false,
-        "shorthand": false,
+        "name": "PatoNada",
+        "isPub": true,
+        "shorthand": true,
         "genericParams": [],
         "docComment": null,
         "comment": null,
         "moduleComment": null,
         "interfaces": [
-          "Drawable"
+          "Nada"
         ],
-        "target": "Circle",
+        "target": "Pato",
         "methods": [
           {
             "qualifier": null,
-            "name": "draw",
+            "name": "swim",
             "params": [
               {
                 "name": "self",

@@ -545,6 +545,72 @@ test "parser: implement two interfaces with qualified method disambiguation" {
     );
 }
 
+// ── implement / extend: named shorthand declarations ────────────────────────
+
+test "parser: implement shorthand named" {
+    try assertParser(std.testing.allocator, @src(),
+        \\PatoNada implement Nada for Pato {
+        \\    fn swim(self: Self) {}
+        \\}
+    );
+}
+
+test "parser: implement shorthand named pub" {
+    try assertParser(std.testing.allocator, @src(),
+        \\pub PatoNada implement Nada for Pato {
+        \\    fn swim(self: Self) {}
+        \\}
+    );
+}
+
+test "parser: extend shorthand named" {
+    try assertParser(std.testing.allocator, @src(),
+        \\PatoExtra extend Pato {
+        \\    fn quack(self: Self) {}
+        \\}
+    );
+}
+
+test "parser: extend explicit named" {
+    try assertParser(std.testing.allocator, @src(),
+        \\val PatoExtra = extend Pato {
+        \\    fn quack(self: Self) {}
+        \\}
+    );
+}
+
+test "parser: anonymous implement rejected" {
+    try expectParseError(std.testing.allocator,
+        \\error: An `implement`/`extend` block must be named
+        \\ --> <test>:1:1
+        \\  |
+        \\1 | implement Nada for Pato {}
+        \\  | ^^^^^^^^^ An `implement`/`extend` block must be named
+        \\  |
+        \\  = hint: Give it a name, e.g. `Name implement Trait for Type { … }` or `Name extend Type { … }`
+        \\
+        \\
+    ,
+        \\implement Nada for Pato {}
+    );
+}
+
+test "parser: anonymous extend rejected" {
+    try expectParseError(std.testing.allocator,
+        \\error: An `implement`/`extend` block must be named
+        \\ --> <test>:1:1
+        \\  |
+        \\1 | extend Pato {}
+        \\  | ^^^^^^ An `implement`/`extend` block must be named
+        \\  |
+        \\  = hint: Give it a name, e.g. `Name implement Trait for Type { … }` or `Name extend Type { … }`
+        \\
+        \\
+    ,
+        \\extend Pato {}
+    );
+}
+
 // ── use hooks in function body ───────────────────────────────────────────────
 
 test "parser: use void hook (discard with _)" {
