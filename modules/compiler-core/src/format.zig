@@ -550,22 +550,7 @@ pub const Formatter = struct {
                     break :blk doc;
                 },
             },
-            .useHook => |uh| switch (uh.kind) {
-                .useVoid => |v| this.concat(try this.text("use "), try this.fmtExpr(v.*)),
-                .useBind => |b| this.concatAll(&.{
-                    try this.text("use "),
-                    try this.text(b.name),
-                    try this.text(" = "),
-                    try this.fmtExpr(b.value.*),
-                }),
-                .useBindDestruct => |b| blk: {
-                    var doc: *const Doc = try this.text("use ");
-                    doc = try this.concat(doc, try this.fmtParamDestruct(b.pattern));
-                    doc = try this.concat(doc, try this.text(" = "));
-                    doc = try this.concat(doc, try this.fmtExpr(b.value.*));
-                    break :blk doc;
-                },
-            },
+            .useHook => |uh| this.concat(try this.text("use "), try this.fmtExpr(uh.kind.inner.*)),
             .function => |func| switch (func.kind.syntax) {
                 .lambda => try this.fmtLambda(func.kind.params, func.kind.body),
                 .fnExpr => try this.fmtFnExpr(func.kind.params, func.kind.body, func.kind.isStarFn),

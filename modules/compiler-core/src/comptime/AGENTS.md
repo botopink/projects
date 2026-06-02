@@ -54,7 +54,9 @@ try assertTypeErrorSnap(alloc, @src(), source);
 
 ## `@Context<B, R>` capability inference (F7)
 
-`use` inside a function body is gated by the function's **return type**:
+`use` is a **prefix operator** (`use <hookcall>`); any binding is done by the
+enclosing `val`/`var` (`val {v, s} = use state(0)`, `use effect { … }` for void).
+The AST node is `Expr.useHook { inner }`. It is gated by the function's **return type**:
 
 - The return must implement `@Context<ContextBase, Return>` — either directly
   (`fn f() -> @Context<Element, R>`) or via a named type whose inline
@@ -70,7 +72,16 @@ Wiring in `infer.zig`:
 - `inferFnDecl` records the body's capability in `env.fnContext`
   (`contextInfoFromReturn`) and restores it afterwards.
 - `inferUseHookExpr` checks `env.fnContext` then `validateUseBase` (compares
-  ContextBases). Diagnostics: `useNotAllowed`, `useNotContext`, `contextMismatch`.
+  ContextBases), and exposes the hook's Return type `R` as the prefix's type.
+  Diagnostics: `useNotAllowed`, `useNotContext`, `contextMismatch`.
+- A destructuring `val {v, s} = use …` binds leniently via `bindUseDestructure`
+  (the Return type need not be a record).
+
+Codegen (F8) lowers `use` per target. CommonJS maps it to React hooks
+(`state` → `useState`, `memo`/`effect` get an inferred dependency array); the
+other targets treat `use` as a transparent prefix (bind the call result into a
+slot). Phantom `@Context` base structs (`struct implement @Context { }`, no
+members) are erased — see `codegen/AGENTS.md`.
 
 ## Children
 

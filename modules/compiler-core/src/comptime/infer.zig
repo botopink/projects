@@ -1931,6 +1931,17 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
         .localBindDestruct => |lb| {
             const valTyped = try inferExprTyped(env, lb.value.*);
             const valPtr = try makeTypedPtr(env, valTyped);
+            // Destructuring a hook (`val {v, s} = use state(0)`) is lenient: the
+            // hook's Return type `R` need not be a record, so unknown fields bind
+            // to fresh type vars rather than triggering a `notARecord` error.
+            if (isUseHookValue(lb.value)) {
+                try bindUseDestructure(env, lb.pattern, valTyped.getType());
+                return TypedExpr{ .binding = .{ .loc = loc, .type_ = valTyped.getType(), .kind = .{ .localBindDestruct = .{
+                    .pattern = lb.pattern,
+                    .value = valPtr,
+                    .mutable = lb.mutable,
+                } } } };
+            }
             // Bind destructured names into the environment.
             const derefedTy = valTyped.getType().deref();
             switch (lb.pattern) {
@@ -2105,31 +2116,19 @@ fn inferUseHookExpr(env: *Env, uh: ast.UseHookExprOf(.untyped), loc: ast.Loc) In
         return error.TypeError;
     }
 
-    return switch (uh.kind) {
-        .useVoid => |v| blk: {
-            const valTyped = try inferExprTyped(env, v.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            try validateUseBase(env, valTyped.getType(), fc, loc);
-            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .useVoid = valPtr } } };
-        },
-        .useBind => |b| blk: {
-            const valTyped = try inferExprTyped(env, b.value.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            try validateUseBase(env, valTyped.getType(), fc, loc);
-            const srcTy = bindingSourceType(valTyped.getType());
-            // `use _ = expr` discards the result (void hook); no binding to introduce.
-            if (!std.mem.eql(u8, b.name, "_")) try env.bind(b.name, srcTy);
-            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = srcTy, .kind = .{ .useBind = .{ .name = b.name, .value = valPtr } } } };
-        },
-        .useBindDestruct => |b| blk: {
-            const valTyped = try inferExprTyped(env, b.value.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            try validateUseBase(env, valTyped.getType(), fc, loc);
-            const srcTy = bindingSourceType(valTyped.getType());
-            try bindUseDestructure(env, b.pattern, srcTy);
-            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = srcTy, .kind = .{ .useBindDestruct = .{ .pattern = b.pattern, .value = valPtr } } } };
-        },
-    };
+    // `use <hookcall>` — infer the wrapped call, check it yields the right
+    // ContextBase, and expose its Return type `R` as the prefix's type. Any
+    // binding/destructuring is performed by the enclosing `val`/`var`.
+    const valTyped = try inferExprTyped(env, uh.kind.inner.*);
+    const valPtr = try makeTypedPtr(env, valTyped);
+    try validateUseBase(env, valTyped.getType(), fc, loc);
+    const srcTy = bindingSourceType(valTyped.getType());
+    return TypedExpr{ .useHook = .{ .loc = loc, .type_ = srcTy, .kind = .{ .inner = valPtr } } };
+}
+
+/// True when a binding's value is a `use`-hook prefix expression.
+fn isUseHookValue(value: *const ast.ExprOf(.untyped)) bool {
+    return value.* == .useHook;
 }
 
 /// Verify a `use` expression returns `@Context<B, _>` whose `B` matches the

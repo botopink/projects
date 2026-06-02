@@ -2414,7 +2414,7 @@ test "context: use with binding in @Context fn passes" {
         \\    initial;
         \\}
         \\fn useThing() -> @Context<Element, i32> {
-        \\    use x = state(0);
+        \\    val x = use state(0);
         \\    state(0);
         \\}
     );
@@ -2426,7 +2426,7 @@ test "context: use void hook with discard binding passes" {
         \\    cb;
         \\}
         \\fn comp() -> @Context<Element, i32> {
-        \\    use _ = effect(0);
+        \\    use effect(0);
         \\    effect(0);
         \\}
     );
@@ -2439,7 +2439,7 @@ test "context: struct implement @Context resolved via inline impl passes" {
         \\    initial;
         \\}
         \\fn Counter() -> Element {
-        \\    use n = state(0);
+        \\    val n = use state(0);
         \\    Element();
         \\}
     );
@@ -2455,11 +2455,11 @@ test "context: custom hook propagates ContextBase transitively passes" {
         \\    initial;
         \\}
         \\fn useAuth() -> AuthState {
-        \\    use t = state(0);
+        \\    val t = use state(0);
         \\    AuthState(loggedIn: true);
         \\}
         \\fn Dashboard() -> Element {
-        \\    use {loggedIn} = useAuth();
+        \\    val {loggedIn} = use useAuth();
         \\    Element();
         \\}
     );
@@ -2471,7 +2471,7 @@ test "context error: use in fn returning string" {
         \\    initial;
         \\}
         \\fn bad() -> string {
-        \\    use x = state(0);
+        \\    val x = use state(0);
         \\    "hi";
         \\}
     );
@@ -2486,7 +2486,7 @@ test "context error: ContextBase mismatch Element vs Http" {
         \\    0;
         \\}
         \\fn bad() -> @Context<Element, i32> {
-        \\    use c = connection();
+        \\    val c = use connection();
         \\    state(0);
         \\}
     );
@@ -2499,7 +2499,7 @@ test "context error: struct without @Context impl used with use" {
         \\    Plain(x: 0);
         \\}
         \\fn comp() -> @Context<Element, i32> {
-        \\    use p = make();
+        \\    val p = use make();
         \\    0;
         \\}
     );

@@ -421,7 +421,7 @@ fn bodyNeedsParamConst(
     return false;
 }
 
-fn identInExpr(expr: anytype, name: []const u8) bool {
+pub fn identInExpr(expr: anytype, name: []const u8) bool {
     const e = if (@typeInfo(@TypeOf(expr)) == .pointer) expr.* else expr;
     return switch (e) {
         .identifier => |id| if (id.kind == .ident)
@@ -450,11 +450,7 @@ fn identInExpr(expr: anytype, name: []const u8) bool {
             },
             .localBindDestruct => |lb| identInExpr(lb.value.*, name),
         },
-        .useHook => |uh| switch (uh.kind) {
-            .useVoid => |v| identInExpr(v.*, name),
-            .useBind => |b| identInExpr(b.value.*, name),
-            .useBindDestruct => |b| identInExpr(b.value.*, name),
-        },
+        .useHook => |uh| identInExpr(uh.kind.inner.*, name),
         .jump => |j| switch (j.kind) {
             .@"return" => |r| if (r) |rp| identInExpr(rp.*, name) else false,
             .throw_ => |t| if (t) |tp| identInExpr(tp.*, name) else false,

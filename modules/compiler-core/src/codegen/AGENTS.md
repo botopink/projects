@@ -57,6 +57,14 @@ codegen/
   snapshots each). They reuse the existing comptime runtimes (`erlang`
   for BEAM, `node` for WASM). See [`/TODO.md`](../../../../TODO.md) for
   optional future improvements.
+- `use` hooks (F8): `use` is a transparent prefix; `val`/`var` does the binding.
+  CommonJS maps hooks to React (`state`→`useState`, `memo`→`useMemo`, …) via the
+  `use`+Capitalize convention (`writeHookName`); `memo`/`effect`/`callback` get an
+  inferred dependency array — the reactive names (bound by earlier hooks, tracked
+  in `Emitter.hook_state`) the lambda reads, via `identInExpr`. Erlang/BEAM/WAT
+  lower `use` transparently (the call result lands in a binding/slot). Phantom
+  `@Context` base structs (`isPhantomContextStruct`: implements `@Context`, no
+  members) emit no runtime code; the `.d.ts` erases `@Context<B, R>` to `R`.
 
 For the `.bp` → target translation gallery see
 [`./examples.md`](examples.md); for the full API surface and snapshot

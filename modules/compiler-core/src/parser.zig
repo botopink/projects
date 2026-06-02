@@ -2355,60 +2355,14 @@ pub const Parser = struct {
             return this.makeJump(alloc, throwTok, .throw_, inner);
         }
 
-        // use hook: `use expr` | `use name = expr` | `use {a, b} = expr`
+        // `use` prefix operator: `use <hookcall>`. Binding (if any) is handled
+        // by the enclosing `val`/`var`, e.g. `val {v, s} = use state(0)`.
         if (this.check(.use)) {
             const useTok = this.advance();
             const loc = locFromToken(useTok);
-
-            // use {a, b} = expr — destructuring hook
-            if (this.check(.leftBrace)) {
-                _ = this.advance();
-                var fields: std.ArrayList(ast.FieldDestruct) = .empty;
-                errdefer {
-                    for (fields.items) |f| {
-                        alloc.free(f.field_name);
-                        if (f.bind_name.ptr != f.field_name.ptr or f.bind_name.len != f.field_name.len)
-                            alloc.free(f.bind_name);
-                    }
-                    fields.deinit(alloc);
-                }
-                var hasSpread = false;
-                while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-                    if (this.check(.dotDot)) {
-                        _ = this.advance();
-                        hasSpread = true;
-                        break;
-                    }
-                    const field_name = try alloc.dupe(u8, (try this.consume(.identifier)).lexeme);
-                    const bind_name: []const u8 = if (this.match(.colon))
-                        try alloc.dupe(u8, (try this.consume(.identifier)).lexeme)
-                    else
-                        field_name;
-                    try fields.append(alloc, .{ .field_name = field_name, .bind_name = bind_name });
-                    if (!this.match(.comma)) break;
-                }
-                _ = try this.consume(.rightBrace);
-                _ = try this.consume(.equal);
-                const value = try this.parseExpr(alloc);
-                const valuePtr = try this.boxExpr(alloc, value);
-                return Expr{ .useHook = .{ .loc = loc, .kind = .{ .useBindDestruct = .{
-                    .pattern = .{ .names = .{ .fields = try fields.toOwnedSlice(alloc), .hasSpread = hasSpread } },
-                    .value = valuePtr,
-                } } } };
-            }
-
-            // use name = expr — simple binding (including `use _ = expr` for void)
-            const nameTok = if (this.check(.identifier))
-                this.advance()
-            else if (this.check(.underscore))
-                this.advance()
-            else
-                return ParseError.UnexpectedToken;
-            _ = try this.consume(.equal);
-            const value = try this.parseExpr(alloc);
-            const valuePtr = try this.boxExpr(alloc, value);
-            const name = if (nameTok.kind == .underscore) "_" else nameTok.lexeme;
-            return Expr{ .useHook = .{ .loc = loc, .kind = .{ .useBind = .{ .name = name, .value = valuePtr } } } };
+            const inner = try this.parseExpr(alloc);
+            const innerPtr = try this.boxExpr(alloc, inner);
+            return Expr{ .useHook = .{ .loc = loc, .kind = .{ .inner = innerPtr } } };
         }
 
         // try expr [catch handler]
@@ -3614,6 +3568,9 @@ pub const Parser = struct {
                     try paramList.append(alloc, (try this.consume(.identifier)).lexeme);
                 }
                 _ = try this.consume(.rightArrow);
+            } else if (this.check(.rightArrow)) {
+                // `{ -> body }` — explicit no-param lambda; consume the arrow.
+                _ = this.advance();
             }
 
             // Parse body statements

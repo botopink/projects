@@ -1086,7 +1086,10 @@ const Emitter = struct {
                 },
             },
 
-            .useHook => {},
+            // `use` is a transparent prefix in Erlang: lower the wrapped call.
+            // Any binding is handled by the enclosing `val` (localBind/Destruct),
+            // so the hook result lands in a bound variable (a per-process slot).
+            .useHook => |uh| try this.emitExpr(uh.kind.inner.*),
 
             .comptime_ => |ct| switch (ct.kind) {
                 .comptimeExpr => |inner| try this.emitExpr(inner.*),
