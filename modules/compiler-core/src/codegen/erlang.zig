@@ -212,6 +212,24 @@ fn erlangVar(alloc: std.mem.Allocator, name: []const u8) ![]u8 {
     return buf;
 }
 
+/// True when `name` looks like a module/type reference (PascalCase) rather than
+/// a local variable. A qualified call whose receiver is such a name maps to an
+/// Erlang remote call `module:fun(...)`; a lowercase receiver is a value the
+/// method is invoked on and is left as-is.
+fn isModuleRef(name: []const u8) bool {
+    return name.len > 0 and std.ascii.isUpper(name[0]);
+}
+
+/// Return a heap-allocated copy of `name` with the first byte lowercased so it
+/// is a valid unquoted Erlang module atom (`List` → `list`). Inverse of
+/// `erlangVar`. Caller owns the result.
+fn erlangModule(alloc: std.mem.Allocator, name: []const u8) ![]u8 {
+    if (name.len == 0) return alloc.dupe(u8, name);
+    const buf = try alloc.dupe(u8, name);
+    buf[0] = std.ascii.toLower(buf[0]);
+    return buf;
+}
+
 // ── Emitter ───────────────────────────────────────────────────────────────────
 
 const Emitter = struct {
@@ -607,7 +625,18 @@ const Emitter = struct {
                         try this.w(")");
                     } else {
                         if (cc.receiver) |recv| {
-                            try this.fmt("{s}:{s}(", .{ recv, cc.callee });
+                            if (isModuleRef(recv)) {
+                                // Module-qualified call: `List.map(xs, f)` → a remote
+                                // call `list:map(Xs, F)`. The module name is lowercased
+                                // to a valid atom; arity is implicit from the arg count
+                                // (args + trailing lambdas).
+                                const mod = try erlangModule(this.alloc, recv);
+                                defer this.alloc.free(mod);
+                                try this.fmt("{s}:{s}(", .{ mod, cc.callee });
+                            } else {
+                                // Method call on a value receiver.
+                                try this.fmt("{s}:{s}(", .{ recv, cc.callee });
+                            }
                         } else {
                             try this.fmt("{s}(", .{cc.callee});
                         }

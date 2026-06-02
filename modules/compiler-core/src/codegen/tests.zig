@@ -622,6 +622,37 @@ test "js: enum ---- method using qualified enum member" {
     );
 }
 
+// ── qualified module calls ────────────────────────────────────────────────────
+
+// Tests a module-qualified call: `List.map(xs, f)` resolves to a remote call
+// `list:map(Xs, F)` in Erlang — the PascalCase module name is lowercased to a
+// valid module atom and the arity is the argument count (2), not 1.
+test "js: call ---- qualified module call resolves arity" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\record Pipeline {
+        \\    items: i32[],
+        \\    fn run(self: Self, f: fn(item: i32) -> i32) -> i32[] {
+        \\        return List.map(self.items, f);
+        \\    }
+        \\}
+    );
+}
+
+// Tests that a qualified call's arity follows the argument count: the same
+// callee `map` with a trailing-lambda argument is arity 2 (`list:map/2`).
+test "js: call ---- qualified module call with trailing lambda arity" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\record Pipeline {
+        \\    items: i32[],
+        \\    fn doubled(self: Self) -> i32[] {
+        \\        return List.map(self.items) { x ->
+        \\            return x * 2;
+        \\        };
+        \\    }
+        \\}
+    );
+}
+
 // ── implement declaration ─────────────────────────────────────────────────────
 
 // Tests implement attaches methods to prototype
