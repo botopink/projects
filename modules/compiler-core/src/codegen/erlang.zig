@@ -169,6 +169,8 @@ fn emitErlang(
             .@"enum" => |e| try em.emitEnum(e),
             .interface => |i| try em.emitInterface(i),
             .implement => |im| try em.emitImplement(im),
+            // `extend` dispatch/codegen is handled in a later phase (extension-dispatch).
+            .extend => {},
             .use => |u| try em.emitUse(u),
             .delegate => |d| try aw.writer.print("%% delegate {s}\n", .{d.name}),
             .comment => |c| {
@@ -213,12 +215,31 @@ fn erlangVar(alloc: std.mem.Allocator, name: []const u8) ![]u8 {
     return buf;
 }
 
+/// True when `name` looks like a module/type reference (PascalCase) rather than
+/// a local variable. A qualified call whose receiver is such a name maps to an
+/// Erlang remote call `module:fun(...)`; a lowercase receiver is a value the
+/// method is invoked on and is left as-is.
+fn isModuleRef(name: []const u8) bool {
+    return name.len > 0 and std.ascii.isUpper(name[0]);
+}
+
+/// Return a heap-allocated copy of `name` with the first byte lowercased so it
+/// is a valid unquoted Erlang module atom (`List` → `list`). Inverse of
+/// `erlangVar`. Caller owns the result.
+fn erlangModule(alloc: std.mem.Allocator, name: []const u8) ![]u8 {
+    if (name.len == 0) return alloc.dupe(u8, name);
+    const buf = try alloc.dupe(u8, name);
+    buf[0] = std.ascii.toLower(buf[0]);
+    return buf;
+}
+
 // ── Emitter ───────────────────────────────────────────────────────────────────
 
 const Emitter = struct {
     out: *std.Io.Writer,
     cv: std.StringHashMap([]const u8),
     indent: usize = 0,
+    try_seq: usize = 0,
     alloc: std.mem.Allocator,
 
     fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8)) Emitter {
@@ -269,7 +290,22 @@ const Emitter = struct {
 
     // ── fn ────────────────────────────────────────────────────────────────────
 
+    /// True when the body is a flat sequence of `yield` statements (a simple
+    /// finite generator that lowers to an eager Erlang list).
+    fn isPlainYieldGenerator(f: ast.FnDecl) bool {
+        if (!f.isStarFn or f.body.len == 0) return false;
+        for (f.body) |stmt| {
+            if (!(stmt.expr == .jump and stmt.expr.jump.kind == .yield)) return false;
+        }
+        return true;
+    }
+
     fn emitFn(this: *Emitter, f: ast.FnDecl) !void {
+        // `*fn` is async/generator. Erlang is eager: a `@Future<T>` resolves to
+        // `T` (so `await` is identity) and a finite `@Iterator<T>` is a list.
+        if (f.isStarFn) {
+            try this.fmt("%% *fn (async/generator) — eager lowering\n", .{});
+        }
         try this.w(f.name);
         try this.w("(");
         var first = true;
@@ -315,9 +351,33 @@ const Emitter = struct {
         try this.w(") ->\n");
         const saved = this.indent;
         this.indent = 1;
-        try this.emitBody(f.body);
+        this.try_seq = 0;
+        if (isPlainYieldGenerator(f)) {
+            // Finite generator → eager list of yielded items: `[V1, V2, ...]`.
+            try this.writeIndent();
+            try this.w("[");
+            for (f.body, 0..) |stmt, i| {
+                if (i > 0) try this.w(", ");
+                if (stmt.expr.jump.kind.yield.value) |val| try this.emitExpr(val.*);
+            }
+            try this.w("]");
+        } else {
+            try this.emitBody(f.body);
+        }
         this.indent = saved;
         try this.w(".\n");
+    }
+
+    /// `try expr` (no catch) at body position → propagate `{error, E}` by nesting
+    /// the rest of the body inside the `{ok, V}` arm. Returns the inner expr.
+    fn propagateTryInner(e: ast.Expr) ?ast.Expr {
+        return switch (e) {
+            .jump => |j| switch (j.kind) {
+                .try_ => |t| if (t) |i| i.* else null,
+                else => null,
+            },
+            else => null,
+        };
     }
 
     // ── body (comma-separated stmts; does NOT emit trailing newline) ──────────
@@ -327,11 +387,138 @@ const Emitter = struct {
     //   fun end → "\nINDENT end"
 
     fn emitBody(this: *Emitter, body: []const ast.Stmt) !void {
-        for (body, 0..) |stmt, i| {
+        try this.emitBodyFrom(body, 0);
+    }
+
+    /// Emit statements `body[start..]`. A `try` without `catch` short-circuits:
+    /// it lowers to `case Inner of {ok, V} -> <rest>; {error, E} -> {error, E} end`,
+    /// nesting every following statement inside the Ok arm (Erlang has no early
+    /// return), so the Error variant propagates up as the function's value.
+    fn emitBodyFrom(this: *Emitter, body: []const ast.Stmt, start: usize) anyerror!void {
+        var i = start;
+        while (i < body.len) : (i += 1) {
+            const stmt = body[i];
             const is_last = (i == body.len - 1);
+
+            // Detect `[val name =] try inner` (no catch) at this position.
+            const prop: ?struct { inner: ast.Expr, head: TryHead } = switch (stmt.expr) {
+                .binding => |b| switch (b.kind) {
+                    .localBind => |lb| if (propagateTryInner(lb.value.*)) |inner|
+                        .{ .inner = inner, .head = .{ .name = lb.name } }
+                    else
+                        null,
+                    .localBindDestruct => |lb| if (propagateTryInner(lb.value.*)) |inner|
+                        .{ .inner = inner, .head = .{ .destruct = lb.pattern } }
+                    else
+                        null,
+                    else => null,
+                },
+                .jump => |j| switch (j.kind) {
+                    .try_ => |t| if (t) |inner|
+                        .{ .inner = inner.*, .head = .none }
+                    else
+                        null,
+                    .@"return" => |r| if (r) |rv| if (propagateTryInner(rv.*)) |inner|
+                        .{ .inner = inner, .head = .none }
+                    else
+                        null else null,
+                    else => null,
+                },
+                else => null,
+            };
+
+            if (prop) |p| {
+                try this.writeIndent();
+                try this.emitPropagateTry(body, i, p.inner, p.head);
+                return; // remaining statements are nested inside the Ok arm
+            }
+
             try this.writeIndent();
             try this.emitBodyStmt(stmt, is_last);
             if (!is_last) try this.w(",\n");
+        }
+    }
+
+    const TryHead = union(enum) {
+        name: []const u8,
+        destruct: ast.ParamDestruct,
+        none,
+    };
+
+    /// Emit the propagating `case` for a `try` at `body[i]`, nesting `body[i+1..]`
+    /// inside the `{ok, _}` arm.
+    fn emitPropagateTry(this: *Emitter, body: []const ast.Stmt, i: usize, inner: ast.Expr, head: TryHead) !void {
+        const n = this.try_seq;
+        this.try_seq += 1;
+
+        try this.w("case ");
+        try this.emitExpr(inner);
+        try this.w(" of\n");
+        this.indent += 1;
+        try this.writeIndent();
+
+        // {ok, <bind>} ->
+        try this.w("{ok, ");
+        switch (head) {
+            .name => |nm| {
+                const vname = try erlangVar(this.alloc, nm);
+                defer this.alloc.free(vname);
+                try this.w(vname);
+            },
+            .destruct => |pat| try this.emitDestructPattern(pat),
+            .none => try this.fmt("_TryV{d}", .{n}),
+        }
+        try this.w("} ->\n");
+
+        this.indent += 1;
+        if (i + 1 < body.len) {
+            try this.emitBodyFrom(body, i + 1);
+        } else {
+            // No continuation: the Ok value is the function's result.
+            try this.writeIndent();
+            switch (head) {
+                .name => |nm| {
+                    const vname = try erlangVar(this.alloc, nm);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                },
+                else => try this.fmt("_TryV{d}", .{n}),
+            }
+        }
+        this.indent -= 1;
+        try this.w(";\n");
+        try this.writeIndent();
+        try this.fmt("{{error, _TryE{d}}} -> {{error, _TryE{d}}}\n", .{ n, n });
+        this.indent -= 1;
+        try this.writeIndent();
+        try this.w("end");
+    }
+
+    /// Render a destructuring pattern (tuple/record names) as an Erlang pattern.
+    fn emitDestructPattern(this: *Emitter, pattern: ast.ParamDestruct) !void {
+        switch (pattern) {
+            .names => |n| {
+                try this.w("{");
+                for (n.fields, 0..) |fld, k| {
+                    if (k > 0) try this.w(", ");
+                    const vname = try erlangVar(this.alloc, fld.bind_name);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                }
+                if (n.hasSpread) try this.w(", _");
+                try this.w("}");
+            },
+            .tuple_ => |t| {
+                try this.w("{");
+                for (t, 0..) |nm, k| {
+                    if (k > 0) try this.w(", ");
+                    const vname = try erlangVar(this.alloc, nm);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                }
+                try this.w("}");
+            },
+            .list, .ctor => try this.w("_"),
         }
     }
 
@@ -447,31 +634,31 @@ const Emitter = struct {
                 .dotIdent => |n| try this.fmt("{s}", .{n}),
             },
 
-            .binaryOp => |bin| switch (bin.kind.op) {
-                .add => try this.emitBinaryOp("+", bin.kind.lhs, bin.kind.rhs),
-                .sub => try this.emitBinaryOp("-", bin.kind.lhs, bin.kind.rhs),
-                .mul => try this.emitBinaryOp("*", bin.kind.lhs, bin.kind.rhs),
-                .div => try this.emitBinaryOp("div", bin.kind.lhs, bin.kind.rhs),
-                .mod => try this.emitBinaryOp("rem", bin.kind.lhs, bin.kind.rhs),
-                .lt => try this.emitBinaryOp("<", bin.kind.lhs, bin.kind.rhs),
-                .gt => try this.emitBinaryOp(">", bin.kind.lhs, bin.kind.rhs),
-                .lte => try this.emitBinaryOp("=<", bin.kind.lhs, bin.kind.rhs),
-                .gte => try this.emitBinaryOp(">=", bin.kind.lhs, bin.kind.rhs),
-                .eq => try this.emitBinaryOp("=:=", bin.kind.lhs, bin.kind.rhs),
-                .ne => try this.emitBinaryOp("=/=", bin.kind.lhs, bin.kind.rhs),
-                .@"and" => try this.emitBinaryOp("and", bin.kind.lhs, bin.kind.rhs),
-                .@"or" => try this.emitBinaryOp("or", bin.kind.lhs, bin.kind.rhs),
+            .binaryOp => |bin| switch (bin.op) {
+                .add => try this.emitBinaryOp("+", bin.lhs, bin.rhs),
+                .sub => try this.emitBinaryOp("-", bin.lhs, bin.rhs),
+                .mul => try this.emitBinaryOp("*", bin.lhs, bin.rhs),
+                .div => try this.emitBinaryOp("div", bin.lhs, bin.rhs),
+                .mod => try this.emitBinaryOp("rem", bin.lhs, bin.rhs),
+                .lt => try this.emitBinaryOp("<", bin.lhs, bin.rhs),
+                .gt => try this.emitBinaryOp(">", bin.lhs, bin.rhs),
+                .lte => try this.emitBinaryOp("=<", bin.lhs, bin.rhs),
+                .gte => try this.emitBinaryOp(">=", bin.lhs, bin.rhs),
+                .eq => try this.emitBinaryOp("=:=", bin.lhs, bin.rhs),
+                .ne => try this.emitBinaryOp("=/=", bin.lhs, bin.rhs),
+                .@"and" => try this.emitBinaryOp("and", bin.lhs, bin.rhs),
+                .@"or" => try this.emitBinaryOp("or", bin.lhs, bin.rhs),
             },
 
-            .unaryOp => |un| switch (un.kind.op) {
+            .unaryOp => |un| switch (un.op) {
                 .not => {
                     try this.w("(not ");
-                    try this.emitExpr(un.kind.expr.*);
+                    try this.emitExpr(un.expr.*);
                     try this.w(")");
                 },
                 .neg => {
                     try this.w("(-");
-                    try this.emitExpr(un.kind.expr.*);
+                    try this.emitExpr(un.expr.*);
                     try this.w(")");
                 },
             },
@@ -608,7 +795,18 @@ const Emitter = struct {
                         try this.w(")");
                     } else {
                         if (cc.receiver) |recv| {
-                            try this.fmt("{s}:{s}(", .{ recv, cc.callee });
+                            if (isModuleRef(recv)) {
+                                // Module-qualified call: `List.map(xs, f)` → a remote
+                                // call `list:map(Xs, F)`. The module name is lowercased
+                                // to a valid atom; arity is implicit from the arg count
+                                // (args + trailing lambdas).
+                                const mod = try erlangModule(this.alloc, recv);
+                                defer this.alloc.free(mod);
+                                try this.fmt("{s}:{s}(", .{ mod, cc.callee });
+                            } else {
+                                // Method call on a value receiver.
+                                try this.fmt("{s}:{s}(", .{ recv, cc.callee });
+                            }
                         } else {
                             try this.fmt("{s}(", .{cc.callee});
                         }
@@ -643,42 +841,22 @@ const Emitter = struct {
                 },
             },
 
-            .function => |func| switch (func.kind) {
-                .lambda => |l| {
-                    try this.w("fun(");
-                    for (l.params, 0..) |p, i| {
-                        if (i > 0) try this.w(", ");
-                        const vname = try erlangVar(this.alloc, p);
-                        defer this.alloc.free(vname);
-                        try this.w(vname);
-                    }
-                    try this.w(") ->\n");
-                    const lam_saved = this.indent;
-                    this.indent = this.indent + 1;
-                    try this.emitBody(l.body);
-                    this.indent = lam_saved;
-                    try this.w("\n");
-                    try this.writeIndent();
-                    try this.w("end");
-                },
-
-                .fnExpr => |f| {
-                    try this.w("fun(");
-                    for (f.params, 0..) |p, i| {
-                        if (i > 0) try this.w(", ");
-                        const vname = try erlangVar(this.alloc, p);
-                        defer this.alloc.free(vname);
-                        try this.w(vname);
-                    }
-                    try this.w(") ->\n");
-                    const lam_saved = this.indent;
-                    this.indent = this.indent + 1;
-                    try this.emitBody(f.body);
-                    this.indent = lam_saved;
-                    try this.w("\n");
-                    try this.writeIndent();
-                    try this.w("end");
-                },
+            .function => |func| {
+                try this.w("fun(");
+                for (func.kind.params, 0..) |p, i| {
+                    if (i > 0) try this.w(", ");
+                    const vname = try erlangVar(this.alloc, p);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                }
+                try this.w(") ->\n");
+                const lam_saved = this.indent;
+                this.indent = this.indent + 1;
+                try this.emitBody(func.kind.body);
+                this.indent = lam_saved;
+                try this.w("\n");
+                try this.writeIndent();
+                try this.w("end");
             },
 
             .collection => |col| switch (col.kind) {
@@ -741,8 +919,9 @@ const Emitter = struct {
                     try this.w(")");
                 },
                 .try_ => |t| if (t) |val| try this.emitExpr(val.*),
+                .await_ => |av| try this.emitExpr(av.*),
                 .@"break" => |b| if (b) |bp| try this.emitExpr(bp.*),
-                .yield => |y| if (y) |val| try this.emitExpr(val.*),
+                .yield => |y| if (y.value) |val| try this.emitExpr(val.*),
                 .@"continue" => try this.w("%% continue"),
             },
 
@@ -783,35 +962,49 @@ const Emitter = struct {
                     try this.w("end");
                 },
                 .tryCatch => |tc| {
-                    const handlerIsStatement = switch (tc.handler.*) {
-                        .jump => |j| j.kind == .throw_ or j.kind == .@"return",
+                    // `try expr catch handler` → pattern match on the Result tag.
+                    //   case Expr of {ok, V} -> V; {error, E} -> Handler end
+                    const handler = tc.handler.*;
+                    const is_jump = switch (handler) {
+                        .jump => |j| switch (j.kind) {
+                            .throw_, .@"return", .@"break", .@"continue", .yield => true,
+                            else => false,
+                        },
                         else => false,
                     };
-                    try this.w("try\n");
-                    this.indent += 1;
-                    try this.writeIndent();
+                    const is_fun = switch (handler) {
+                        .function => true,
+                        else => false,
+                    };
+                    const n = this.try_seq;
+                    this.try_seq += 1;
+
+                    try this.w("case ");
                     try this.emitExpr(tc.expr.*);
-                    this.indent -= 1;
-                    try this.w("\ncatch\n");
+                    try this.w(" of\n");
                     this.indent += 1;
                     try this.writeIndent();
-                    try this.w("_Err ->\n");
+                    try this.fmt("{{ok, TryV{d}}} -> TryV{d};\n", .{ n, n });
+                    try this.writeIndent();
+                    try this.fmt("{{error, _TryE{d}}} ->\n", .{n});
                     this.indent += 1;
                     try this.writeIndent();
-                    if (handlerIsStatement) {
-                        try this.emitExpr(tc.handler.*);
-                    } else {
-                        try this.emitExpr(tc.handler.*);
-                        try this.w("(_Err)");
+                    try this.emitExpr(handler);
+                    if (is_fun) {
+                        try this.fmt("(_TryE{d})", .{n});
+                    } else if (is_jump) {
+                        // handler already emitted its own control-flow expression
                     }
                     this.indent -= 2;
-                    try this.w("\nend");
+                    try this.w("\n");
+                    try this.writeIndent();
+                    try this.w("end");
                 },
             },
 
             .loop => |lp| {
                 const has_yield = blk: {
-                    for (lp.kind.body) |stmt| {
+                    for (lp.body) |stmt| {
                         if (switch (stmt.expr) {
                             .jump => |j| j.kind == .yield,
                             else => false,
@@ -821,7 +1014,7 @@ const Emitter = struct {
                 };
                 const fun_kw = if (has_yield) "lists:map" else "lists:foreach";
                 try this.fmt("{s}(fun(", .{fun_kw});
-                for (lp.kind.params, 0..) |p, i| {
+                for (lp.params, 0..) |p, i| {
                     if (i > 0) try this.w(", ");
                     const vname = try erlangVar(this.alloc, p);
                     defer this.alloc.free(vname);
@@ -831,12 +1024,12 @@ const Emitter = struct {
                 const fun_body_indent = this.indent + 1;
                 const saved2 = this.indent;
                 this.indent = fun_body_indent;
-                try this.emitBody(lp.kind.body);
+                try this.emitBody(lp.body);
                 this.indent = saved2;
                 try this.w("\n");
                 try this.writeIndent();
                 try this.w("end, ");
-                try this.emitExpr(lp.kind.iter.*);
+                try this.emitExpr(lp.iter.*);
                 try this.w(")");
             },
 
@@ -1016,28 +1209,30 @@ const Emitter = struct {
             .ident => |n| try this.w(n), // enum variant → atom
             .numberLit => |n| try this.w(n),
             .stringLit => |s| try this.emitBinary(s),
-            .variantBinding => |vb| {
-                const vname = try erlangVar(this.alloc, vb.binding);
-                defer this.alloc.free(vname);
-                try this.fmt("{{tag, {s}, {s}}}", .{ vb.name, vname });
-            },
-            .variantFields => |vf| {
-                try this.fmt("{{tag, {s}", .{vf.name});
-                for (vf.bindings) |bb| {
-                    try this.w(", ");
-                    const vname = try erlangVar(this.alloc, bb);
+            .variant => |v| switch (v.payload) {
+                .binding => |binding| {
+                    const vname = try erlangVar(this.alloc, binding);
                     defer this.alloc.free(vname);
-                    try this.w(vname);
-                }
-                try this.w("}");
-            },
-            .variantLiterals => |vl| {
-                try this.fmt("{{tag, {s}", .{vl.name});
-                for (vl.args) |arg| {
-                    try this.w(", ");
-                    try this.emitPattern(arg);
-                }
-                try this.w("}");
+                    try this.fmt("{{tag, {s}, {s}}}", .{ v.name, vname });
+                },
+                .fields => |fields| {
+                    try this.fmt("{{tag, {s}", .{v.name});
+                    for (fields) |bb| {
+                        try this.w(", ");
+                        const vname = try erlangVar(this.alloc, bb);
+                        defer this.alloc.free(vname);
+                        try this.w(vname);
+                    }
+                    try this.w("}");
+                },
+                .literals => |args| {
+                    try this.fmt("{{tag, {s}", .{v.name});
+                    for (args) |arg| {
+                        try this.w(", ");
+                        try this.emitPattern(arg);
+                    }
+                    try this.w("}");
+                },
             },
             .list => |lp| {
                 if (lp.spread) |sp| {
@@ -1099,12 +1294,12 @@ const Emitter = struct {
 
     fn emitCaseBody(this: *Emitter, body: ast.Expr) !void {
         switch (body) {
-            .function => |func| switch (func.kind) {
-                .lambda => |l| {
+            .function => |func| switch (func.kind.syntax) {
+                .lambda => {
                     // Multi-statement block: emitBody handles indentation via this.indent
-                    try this.emitBody(l.body);
+                    try this.emitBody(func.kind.body);
                 },
-                else => {
+                .fnExpr => {
                     // Single expression: emit with current indentation
                     try this.writeIndent();
                     try this.emitExpr(body);
@@ -1227,8 +1422,8 @@ const Emitter = struct {
         }
     }
 
-    fn emitUse(this: *Emitter, u: ast.UseDecl) !void {
-        try this.w("%% use ");
+    fn emitUse(this: *Emitter, u: ast.ImportDecl) !void {
+        try this.w(if (u.activationOnly) "%% activate " else "%% import ");
         for (u.imports, 0..) |imp, i| {
             if (i > 0) try this.w(", ");
             try this.w(imp.name());

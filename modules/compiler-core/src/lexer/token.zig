@@ -62,6 +62,7 @@ pub const TokenKind = enum {
     as,
     assert,
     auto,
+    await,
     case,
     @"const", // reserved, not used in surface syntax
     default,
@@ -70,6 +71,7 @@ pub const TokenKind = enum {
     echo,
     @"else",
     @"enum",
+    extend,
     extends,
     @"fn",
     @"for",

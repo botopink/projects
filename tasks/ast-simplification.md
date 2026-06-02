@@ -2,7 +2,7 @@
 
 **Branch**: `feat/ast-simplification`
 **Depends on**: nothing — but **do NOT parallelize** with other branches
-**Status**: pending
+**Status**: done (all 7 phases implemented & tested)
 
 > ⚠️ Touches almost every AST consumer (`format.zig`, `infer.zig`, `transform.zig`,
 > `beam_asm.zig`, `wat.zig`, `erlang.zig`, `typescript.zig`, `print.zig`). High merge-conflict

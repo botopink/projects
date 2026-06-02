@@ -114,7 +114,7 @@ pub fn assertHover(
     try appendSourceWithCursor(&buf, gpa, source, cursor);
     try buf.print(gpa, "----- HOVER at (line {d}, char {d})\n", .{ cursor.line, cursor.character });
     if (result) |hov| {
-        try buf.print(gpa, "kind: {s}\n\n{s}\n", .{ hov.contents.kind, hov.contents.kind });
+        try buf.print(gpa, "kind: {s}\n\n{s}\n", .{ hov.contents.kind, hov.contents.value });
     } else {
         try buf.appendSlice(gpa, "null\n");
     }

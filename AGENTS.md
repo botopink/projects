@@ -64,13 +64,13 @@ modules/compiler-core/                         → main compiler library (lex �
       │   ├── wasm/wasm/                       → 162 WASM Text outputs
       │   └── errors/                          → codegen-time error rendering (4 targets × 1)
       ├── comptime/                            → inference + evaluation snapshots (per backend)
-      │   ├── erlang/{,errors/}                → success (145) + errors (22)
-      │   └── node/{,errors/}                  → success (145) + errors (22)
-      └── parser/                              → 154 AST golden snapshots
+      │   ├── erlang/{,errors/}                → success (136) + errors (41)
+      │   └── node/{,errors/}                  → success (136) + errors (41)
+      └── parser/                              → 174 AST golden snapshots
 modules/language-server/                       → `botopink-lsp` LSP server
   ├── src/                                     → JSON-RPC server + feature engine
   │   └── tests/                               → LSP feature test harness (15 feature files)
-  └── snapshots/lsp/                           → 69 LSP feature snapshots
+  └── snapshots/lsp/                           → 70 LSP feature snapshots
 modules/stdlib/                                → embedded .bp standard library
   └── src/                                     → prelude.zig + primitives/array/string.bp + builtins.d.bp
 modules/vscode-extension/                      → VS Code extension (TypeScript)
@@ -135,6 +135,7 @@ snapshots/                                     → workspace-level smoke snapsho
 
 | Commit | Summary |
 |---|---|
+| `611275f` | feat: lower try/catch to `Ok`/`Error` pattern matching across all backends (+ `tryOnNonResult` inference error) |
 | `a42d948` | feat: add `Expr.useHook` AST variant for use-hooks in function bodies |
 | `1888bfb` | feat: reject old `from "mod"` import syntax with migration hint |
 | `65f990d` | feat: use syntax migration `from "mod"` → `= @root()` / `= @module()` |

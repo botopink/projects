@@ -15,15 +15,30 @@ fn strict() -> @Result<i32, string> {
 (module
   (memory (export "memory") 1)
   (data (i32.const 256) "not found")
-  (global $__heap_ptr (mut i32) (i32.const 268))
+  (data (i32.const 268) "fetch failed")
+  (global $__heap_ptr (mut i32) (i32.const 280))
   (func $fetch (result i32)
     i32.const 256
     call $ApiError
     unreachable
   )
   (func $strict (result i32)
+    (local $_try0 i32)
     (local $r i32)
     call $fetch
+    local.set $_try0
+    local.get $_try0
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if (result i32)
+      (then
+    i32.const 268
+    unreachable
+      )
+      (else
+    local.get $_try0
+    i32.load offset=4 ;; Ok payload
+      )
+    )
     local.set $r
     local.get $r
     return

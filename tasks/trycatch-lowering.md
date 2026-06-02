@@ -2,7 +2,7 @@
 
 **Branch**: `feat/trycatch-lowering`
 **Depends on**: nothing (independent)
-**Status**: pending
+**Status**: done
 
 > `try`/`catch` must lower to pattern matching on `Ok`/`Error`, **not** to JS try/catch.
 

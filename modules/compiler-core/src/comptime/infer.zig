@@ -64,6 +64,10 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
             try list.append(env.arena, b);
         }
     }
+
+    // Pass 3: semantic validation of `implement` blocks and struct accessors.
+    try validateProgram(env, program);
+
     return list.toOwnedSlice(env.arena);
 }
 
@@ -101,7 +105,166 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
             },
         }
     }
+
+    // Semantic validation of `implement` blocks and struct accessors.
+    try validateProgram(env, program);
+
     return list.toOwnedSlice(env.arena);
+}
+
+// ── pass 3: semantic validation ───────────────────────────────────────────────
+
+/// Validate `implement` blocks against the interfaces they claim to satisfy and
+/// check that struct getters/setters agree with their backing field's type.
+///
+/// Runs after type registration so user-defined interface and field types are
+/// already known. Only the standalone `implement … for …` form is checked for
+/// method coverage; inline `struct/enum/record implement` clauses carry no method
+/// bodies of their own here. Interfaces that are not declared in this program
+/// (e.g. stdlib interfaces) are skipped — their method sets are not visible.
+fn validateProgram(env: *Env, program: ast.Program) InferError!void {
+    var interfaces = std.StringHashMap(ast.InterfaceDecl).init(env.arena);
+    defer interfaces.deinit();
+    for (program.decls) |decl| switch (decl) {
+        .interface => |d| try interfaces.put(d.name, d),
+        else => {},
+    };
+
+    for (program.decls) |decl| switch (decl) {
+        .implement => |impl| try validateImplement(env, impl, interfaces),
+        .@"struct" => |s| try validateStructAccessors(env, s),
+        else => {},
+    };
+}
+
+/// True when interface `d` declares a method named `name` (abstract or default).
+fn interfaceHasMethod(d: ast.InterfaceDecl, name: []const u8) bool {
+    for (d.methods) |m| {
+        if (std.mem.eql(u8, m.name, name)) return true;
+    }
+    return false;
+}
+
+/// True when `name` is one of the interfaces this implement block declares.
+fn implementsInterface(impl: ast.ImplementDecl, name: []const u8) bool {
+    for (impl.interfaces) |iname| {
+        if (std.mem.eql(u8, iname, name)) return true;
+    }
+    return false;
+}
+
+fn validateImplement(
+    env: *Env,
+    impl: ast.ImplementDecl,
+    interfaces: std.StringHashMap(ast.InterfaceDecl),
+) InferError!void {
+    // Per-method checks: qualifier validity, method existence, ambiguity.
+    for (impl.methods) |m| {
+        if (m.qualifier) |q| {
+            // The qualifier must name an interface this block implements.
+            if (!implementsInterface(impl, q)) {
+                env.lastError = TypeError.unknownInterface(q, m.name);
+                return error.TypeError;
+            }
+            // If the interface is visible, it must declare the method.
+            if (interfaces.get(q)) |d| {
+                if (!interfaceHasMethod(d, m.name)) {
+                    env.lastError = TypeError.unknownMethod(impl.target, m.name);
+                    return error.TypeError;
+                }
+            }
+        } else {
+            // Unqualified: find which implemented interfaces declare this method.
+            var first: ?[]const u8 = null;
+            var second: ?[]const u8 = null;
+            for (impl.interfaces) |iname| {
+                const d = interfaces.get(iname) orelse continue;
+                if (!interfaceHasMethod(d, m.name)) continue;
+                if (first == null) {
+                    first = iname;
+                } else if (second == null) {
+                    second = iname;
+                }
+            }
+            if (first == null) {
+                env.lastError = TypeError.unknownMethod(impl.target, m.name);
+                return error.TypeError;
+            }
+            if (second) |snd| {
+                env.lastError = TypeError.ambiguousMethod(m.name, first.?, snd);
+                return error.TypeError;
+            }
+        }
+    }
+
+    // Coverage: every abstract method of every implemented interface must be met.
+    for (impl.interfaces) |iname| {
+        const d = interfaces.get(iname) orelse continue;
+        for (d.methods) |am| {
+            if (am.body != null) continue; // default method — implementing it is optional
+            var covered = false;
+            for (impl.methods) |m| {
+                if (!std.mem.eql(u8, m.name, am.name)) continue;
+                if (m.qualifier) |q| {
+                    if (std.mem.eql(u8, q, iname)) {
+                        covered = true;
+                        break;
+                    }
+                } else {
+                    covered = true;
+                    break;
+                }
+            }
+            if (!covered) {
+                env.lastError = TypeError.missingMethod(impl.target, iname, am.name);
+                return error.TypeError;
+            }
+        }
+    }
+}
+
+/// Resolve the declared type of struct field `name`, or null when there is no
+/// field with that name (e.g. a computed getter that backs no field).
+fn structFieldType(
+    env: *Env,
+    s: ast.StructDecl,
+    genericMap: std.StringHashMap(*T.Type),
+    name: []const u8,
+) InferError!?*T.Type {
+    for (s.members) |m| switch (m) {
+        .field => |f| if (std.mem.eql(u8, f.name, name)) {
+            return try env.resolveTypeName(f.typeName, genericMap);
+        },
+        else => {},
+    };
+    return null;
+}
+
+/// Check that each getter/setter named after a field agrees with that field's
+/// type: a getter must return the field type, a setter must accept it.
+fn validateStructAccessors(env: *Env, s: ast.StructDecl) InferError!void {
+    var genericMap = std.StringHashMap(*T.Type).init(env.arena);
+    defer genericMap.deinit();
+    for (s.genericParams) |gp| {
+        try genericMap.put(gp.name, try env.freshVar());
+    }
+
+    for (s.members) |m| switch (m) {
+        .getter => |g| {
+            const fieldTy = (try structFieldType(env, s, genericMap, g.name)) orelse continue;
+            const retTy = try env.resolveTypeName(g.returnType, genericMap);
+            try unify(env, fieldTy, retTy);
+        },
+        .setter => |st| {
+            const fieldTy = (try structFieldType(env, s, genericMap, st.name)) orelse continue;
+            // The value parameter follows `self`; skip malformed setters.
+            if (st.params.len < 2) continue;
+            const valueParam = st.params[st.params.len - 1];
+            const valueTy = try resolveTypeRefInContext(env, valueParam.typeRef, genericMap);
+            try unify(env, fieldTy, valueTy);
+        },
+        else => {},
+    };
 }
 
 // ── stdlib preload ────────────────────────────────────────────────────────────
@@ -189,6 +352,80 @@ fn extractImplementNames(arena: std.mem.Allocator, impls: []const ast.TypeRef) !
     return names;
 }
 
+/// Render a `TypeRef` to its source-level string form (heap-allocated in `arena`).
+fn typeRefToString(arena: std.mem.Allocator, ref: ast.TypeRef) ![]const u8 {
+    var buf: std.ArrayListUnmanaged(u8) = .empty;
+    try appendTypeRefStr(&buf, arena, ref);
+    return buf.toOwnedSlice(arena);
+}
+
+/// If any of `impls` is `@Context<B, R>`, return the rendered `ContextBase` (`B`).
+/// Returns null when the type does not implement `@Context`.
+fn contextBaseFromImplements(arena: std.mem.Allocator, impls: []const ast.TypeRef) !?[]const u8 {
+    for (impls) |im| {
+        switch (im) {
+            .generic => |g| if (std.mem.eql(u8, g.name, "Context")) {
+                if (g.args.len >= 1) return try typeRefToString(arena, g.args[0]);
+                return null;
+            },
+            else => {},
+        }
+    }
+    return null;
+}
+
+/// Derive the `@Context` capability of a function from its declared return type.
+/// A return type implements `@Context` either directly (`@Context<B, R>`) or via a
+/// named type whose inline `implement` clause lists `@Context<B, R>`.
+fn contextInfoFromReturn(env: *Env, retType: ?ast.TypeRef) InferError!envMod.FnContext {
+    const display = if (retType) |rt| try typeRefToString(env.arena, rt) else "void";
+    if (retType) |rt| switch (rt) {
+        .generic => |g| if (std.mem.eql(u8, g.name, "Context")) {
+            const base = if (g.args.len >= 1) try typeRefToString(env.arena, g.args[0]) else null;
+            return .{ .implementsContext = true, .base = base, .returnDisplay = display };
+        },
+        .named => |n| if (env.lookupTypeDef(n)) |td| {
+            if (td.contextBase()) |b| return .{ .implementsContext = true, .base = b, .returnDisplay = display };
+        },
+        else => {},
+    };
+    return .{ .implementsContext = false, .base = null, .returnDisplay = display };
+}
+
+/// The display name of a `ContextBase` type (a phantom, typically a plain named type).
+fn baseNameOfType(ty: *T.Type) ?[]const u8 {
+    return switch (ty.deref().*) {
+        .named => |n| n.name,
+        else => null,
+    };
+}
+
+/// The `ContextBase` of an inferred type, if it implements `@Context`.
+/// Handles both `@Context<B, R>` directly and named types implementing it inline.
+fn contextBaseOfType(env: *Env, ty: *T.Type) ?[]const u8 {
+    const t = ty.deref();
+    return switch (t.*) {
+        .named => |n| blk: {
+            if (std.mem.eql(u8, n.name, "Context")) {
+                break :blk if (n.args.len >= 1) baseNameOfType(n.args[0]) else null;
+            }
+            if (env.lookupTypeDef(n.name)) |td| break :blk td.contextBase();
+            break :blk null;
+        },
+        else => null,
+    };
+}
+
+/// The type a `use` binding destructures from: the `Return` (`R`) of `@Context<B, R>`
+/// when the hook's type is `@Context`, or the type itself for a named context type.
+fn bindingSourceType(ty: *T.Type) *T.Type {
+    const t = ty.deref();
+    return switch (t.*) {
+        .named => |n| if (std.mem.eql(u8, n.name, "Context") and n.args.len >= 2) n.args[1] else ty,
+        else => ty,
+    };
+}
+
 fn registerRecord(env: *Env, r: ast.RecordDecl) InferError!void {
     // Build generic param map: each param name → fresh generic type var.
     var genericMap = std.StringHashMap(*T.Type).init(env.arena);
@@ -212,12 +449,14 @@ fn registerRecord(env: *Env, r: ast.RecordDecl) InferError!void {
     // Register the type definition.
     const typeId = env.allocTypeId();
     const implNames = try extractImplementNames(env.arena, r.implement);
+    const ctxBase = try contextBaseFromImplements(env.arena, r.implement);
     try env.registerTypeDef(r.name, .{ .record = .{
         .name = r.name,
         .id = typeId,
         .genericParams = genericIds,
         .fields = fields,
         .implements = implNames,
+        .contextBase = ctxBase,
     } });
 
     // Build constructor function type: `fn(T1, T2, ...) -> RecordName<A,B,...>`.
@@ -264,12 +503,14 @@ fn registerStruct(env: *Env, s: ast.StructDecl) InferError!void {
 
     const structTypeId = env.allocTypeId();
     const implNames = try extractImplementNames(env.arena, s.implement);
+    const ctxBase = try contextBaseFromImplements(env.arena, s.implement);
     try env.registerTypeDef(s.name, .{ .struct_ = .{
         .name = s.name,
         .id = structTypeId,
         .genericParams = genericIds,
         .fields = fields,
         .implements = implNames,
+        .contextBase = ctxBase,
     } });
 
     var paramTypes = try env.arena.alloc(*T.Type, fields.len);
@@ -314,12 +555,14 @@ fn registerEnum(env: *Env, e: ast.EnumDecl) InferError!void {
 
     const enumTypeId = env.allocTypeId();
     const implNames = try extractImplementNames(env.arena, e.implement);
+    const ctxBase = try contextBaseFromImplements(env.arena, e.implement);
     try env.registerTypeDef(e.name, .{ .enum_ = .{
         .name = e.name,
         .id = enumTypeId,
         .genericParams = genericIds,
         .variants = variants,
         .implements = implNames,
+        .contextBase = ctxBase,
     } });
     // Bind the enum name itself so `inferDecl` can look it up.
     try env.bind(e.name, try env.namedType(e.name));
@@ -527,6 +770,13 @@ fn appendTypeRefStr(buf: *std.ArrayListUnmanaged(u8), allocator: std.mem.Allocat
             }
             try buf.append(allocator, '>');
         },
+        .typeparam => |constraints| {
+            try buf.appendSlice(allocator, "typeparam");
+            for (constraints, 0..) |c, i| {
+                try buf.appendSlice(allocator, if (i == 0) " " else " | ");
+                try appendTypeRefStr(buf, allocator, c);
+            }
+        },
     }
 }
 
@@ -577,9 +827,23 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
         try genericMap.put(gp.name, try env.freshVar());
     }
 
+    // Collect typeparam constraints so call sites can validate comptime args.
+    var typeparams: std.ArrayListUnmanaged(envMod.TypeparamConstraint) = .empty;
+
     // Infer parameter types.
     var paramTypes = try env.arena.alloc(*T.Type, f.params.len);
     for (f.params, 0..) |p, i| {
+        if (p.typeRef == .typeparam) {
+            const constraints = p.typeRef.typeparam;
+            const names = try env.arena.alloc([]const u8, constraints.len);
+            for (constraints, 0..) |c, ci| {
+                names[ci] = switch (c) {
+                    .named => |n| n,
+                    else => "",
+                };
+            }
+            try typeparams.append(env.arena, .{ .paramIndex = i, .paramName = p.name, .names = names });
+        }
         const ty = try resolveTypeRefInContext(env, p.typeRef, genericMap);
         paramTypes[i] = ty;
         if (p.destruct) |d| {
@@ -620,12 +884,116 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     else
         try env.namedType("void");
 
+    // The return type decides whether `use` is allowed in the body and which
+    // ContextBase every `use` must agree on (@Context F7). Scope it to the body.
+    const savedFnCtx = env.fnContext;
+    env.fnContext = try contextInfoFromReturn(env, f.returnType);
+    defer env.fnContext = savedFnCtx;
+
+    // Determine how `throw` is checked inside this body:
+    //   - no declared return type  → unchecked (lenient: e.g. `catch throw …`)
+    //   - `@Result<D, E>` return   → thrown value must match `E`
+    //   - any other return type    → `throw` is illegal
+    var throwCtx: envMod.ThrowContext = .unchecked;
+    if (f.returnType) |rt| {
+        throwCtx = .plain;
+        if (rt == .generic and rt.generic.is_builtin and
+            std.mem.eql(u8, rt.generic.name, "Result"))
+        {
+            const rtDeref = retType.deref();
+            if (rtDeref.* == .named and rtDeref.named.args.len >= 2) {
+                throwCtx = .{ .result = rtDeref.named.args[1] };
+            }
+        }
+    }
+    const savedThrowCtx = env.throwContext;
+    env.throwContext = throwCtx;
+    defer env.throwContext = savedThrowCtx;
+
+    // ── `*fn` validation + async/generator context ──────────────────────────
+    // A `*fn` must return `@Future<_>` / `@Iterator<_>` / `@AsyncIterator<_, _>`;
+    // a normal `fn` must NOT (it would have to be a `*fn`).
+    const asyncKind = classifyAsyncReturn(retType);
+    const fnLoc: ?ast.Loc = if (f.body.len > 0) f.body[0].expr.getLoc() else null;
+    if (f.isStarFn and asyncKind == .none) {
+        var e = TypeError.custom(
+            "a `*fn` must return `@Future<_>`, `@Iterator<_>` or `@AsyncIterator<_, _>`",
+            "Drop the `*` if this is a plain function, or change the return type.",
+        );
+        if (fnLoc) |l| e = e.withLoc(l);
+        env.lastError = e;
+        return error.TypeError;
+    }
+    if (!f.isStarFn and asyncKind != .none) {
+        var e = TypeError.custom(
+            "a function returning `@Future`/`@Iterator`/`@AsyncIterator` must be declared `*fn`",
+            "Prefix the function with `*` to make it async/generator.",
+        );
+        if (fnLoc) |l| e = e.withLoc(l);
+        env.lastError = e;
+        return error.TypeError;
+    }
+
+    // Establish the `*fn` context (saved/restored around the body) so nested
+    // `await`/`yield` validate against this function, not an enclosing one.
+    const prevStarFn = env.starFn;
+    const prevLabelsLen = env.labelStack.items.len;
+    defer {
+        env.starFn = prevStarFn;
+        env.labelStack.shrinkRetainingCapacity(prevLabelsLen);
+    }
+    if (f.isStarFn) {
+        env.starFn = starCtxFromReturn(retType, asyncKind);
+        if (f.label) |lbl| try env.labelStack.append(env.arena, lbl);
+    } else {
+        // A normal function body sees no async context and no outer labels.
+        env.starFn = null;
+        env.labelStack.shrinkRetainingCapacity(0);
+    }
+
     // Infer body (for type checking; we ignore the result for now).
     for (f.body) |stmt| {
         _ = try inferExpr(env, stmt.expr);
     }
 
+    if (typeparams.items.len > 0) {
+        try env.registerTypeparams(f.name, try typeparams.toOwnedSlice(env.arena));
+    }
+
     return env.funcType(paramTypes, retType);
+}
+
+const AsyncReturnKind = enum { none, future, iterator, asyncIterator };
+
+/// Classify a resolved return type as `@Future` / `@Iterator` / `@AsyncIterator`.
+fn classifyAsyncReturn(ty: *T.Type) AsyncReturnKind {
+    const t = ty.deref();
+    return switch (t.*) {
+        .named => |n| if (std.mem.eql(u8, n.name, "Future"))
+            .future
+        else if (std.mem.eql(u8, n.name, "Iterator"))
+            .iterator
+        else if (std.mem.eql(u8, n.name, "AsyncIterator"))
+            .asyncIterator
+        else
+            .none,
+        else => .none,
+    };
+}
+
+/// Build the `*fn` body context from its (already classified) return type.
+fn starCtxFromReturn(ty: *T.Type, kind: AsyncReturnKind) envMod.StarFnCtx {
+    const t = ty.deref();
+    const item: ?*T.Type = switch (t.*) {
+        .named => |n| if (n.args.len >= 1) n.args[0] else null,
+        else => null,
+    };
+    return switch (kind) {
+        .future => .{ .allowsAwait = true, .iterItem = null },
+        .iterator => .{ .allowsAwait = false, .iterItem = item },
+        .asyncIterator => .{ .allowsAwait = true, .iterItem = item },
+        .none => .{ .allowsAwait = false, .iterItem = null },
+    };
 }
 
 // ── expression inference ──────────────────────────────────────────────────────
@@ -640,6 +1008,52 @@ fn isIntType(t: *T.Type) bool {
 
 fn isFloatType(t: *T.Type) bool {
     return t.isNamed("f32") or t.isNamed("f64");
+}
+
+/// True when `t` satisfies a single typeparam constraint named `name`.
+/// Besides exact name matches, the category names `int` and `float` match any
+/// integer / floating-point primitive respectively.
+fn typeSatisfiesConstraint(t: *T.Type, name: []const u8) bool {
+    if (t.isNamed(name)) return true;
+    if (std.mem.eql(u8, name, "int")) return isIntType(t);
+    if (std.mem.eql(u8, name, "float")) return isFloatType(t);
+    return false;
+}
+
+/// True when index `i` names a typeparam parameter in `constraints`.
+fn isTypeparamIndex(constraints: []const envMod.TypeparamConstraint, i: usize) bool {
+    for (constraints) |c| {
+        if (c.paramIndex == i) return true;
+    }
+    return false;
+}
+
+/// Validate every constrained typeparam argument of a call against its declared
+/// constraints. Unconstrained typeparams (empty `names`) accept any type.
+/// On violation: sets `env.lastError` and returns `error.TypeError`.
+fn validateTypeparams(
+    env: *Env,
+    constraints: []const envMod.TypeparamConstraint,
+    typedArgs: []ast.CallArgOf(.typed),
+) InferError!void {
+    for (constraints) |c| {
+        if (c.names.len == 0) continue; // unconstrained — accepts any type
+        if (c.paramIndex >= typedArgs.len) continue;
+        const argType = typedArgs[c.paramIndex].value.getType();
+        var ok = false;
+        for (c.names) |name| {
+            if (typeSatisfiesConstraint(argType, name)) {
+                ok = true;
+                break;
+            }
+        }
+        if (!ok) {
+            env.lastError = TypeError
+                .typeparamConstraint(c.paramName, argType, c.names)
+                .withLoc(typedArgs[c.paramIndex].value.getLoc());
+            return error.TypeError;
+        }
+    }
 }
 
 /// Calls `unify` and, if it fails, stamps the expression's location onto the error.
@@ -689,6 +1103,42 @@ fn unwrapResultType(ty: *T.Type) ?*T.Type {
     const t = ty.deref();
     return switch (t.*) {
         .named => |n| if (std.mem.eql(u8, n.name, "Result") and n.args.len >= 1)
+            n.args[0]
+        else
+            null,
+        else => null,
+    };
+}
+
+/// Unwrap the Ok type of a `@Result<D, E>` operand for `try`/`catch`.
+/// A still-unresolved type variable is allowed (its `Result`-ness is unknown);
+/// any other concrete non-Result type is a compile-time error.
+fn tryUnwrapOrError(env: *Env, rawTy: *T.Type, loc: ast.Loc) InferError!*T.Type {
+    if (unwrapResultType(rawTy)) |ty| return ty;
+    const d = rawTy.deref();
+    if (d.* == .typeVar) return rawTy;
+    env.lastError = TypeError.tryOnNonResult(d).withLoc(loc);
+    return InferError.TypeError;
+}
+
+/// `@Future<T>` -> `T`. Returns null when `ty` is not a `Future`.
+fn unwrapFutureType(ty: *T.Type) ?*T.Type {
+    const t = ty.deref();
+    return switch (t.*) {
+        .named => |n| if (std.mem.eql(u8, n.name, "Future") and n.args.len >= 1)
+            n.args[0]
+        else
+            null,
+        else => null,
+    };
+}
+
+/// `@Iterator<T>` / `@AsyncIterator<T, E>` -> `T`. Returns null when `ty` is not an iterator.
+fn unwrapIteratorType(ty: *T.Type) ?*T.Type {
+    const t = ty.deref();
+    return switch (t.*) {
+        .named => |n| if ((std.mem.eql(u8, n.name, "Iterator") or
+            std.mem.eql(u8, n.name, "AsyncIterator")) and n.args.len >= 1)
             n.args[0]
         else
             null,
@@ -759,6 +1209,10 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             }
             return env.namedTypeArgs(b.name, args);
         },
+        // A comptime typeparam accepts a value of any type at the call site;
+        // its constraints are validated separately (see `validateTypeparams`).
+        // Resolve to a fresh variable so unification against it never fails.
+        .typeparam => return env.freshVar(),
     }
 }
 
@@ -827,8 +1281,9 @@ fn patternContainsWildcard(pattern: ast.Pattern) bool {
             }
             break :blk false;
         },
-        .variantLiterals => |vl| blk: {
-            for (vl.args) |p| {
+        .variant => |v| blk: {
+            if (v.payload != .literals) break :blk false;
+            for (v.payload.literals) |p| {
                 if (patternContainsWildcard(p)) break :blk true;
             }
             break :blk false;
@@ -900,18 +1355,20 @@ fn bindPatternNamesForSubject(
             if (isEnumVariantNameForSubject(env, subjectType, name)) return;
             try saveAndBindPatternName(env, snapshots, name, try env.freshVar());
         },
-        .variantBinding => |vb| {
-            try saveAndBindPatternName(env, snapshots, vb.binding, try env.freshVar());
-        },
-        .variantFields => |vf| {
-            for (vf.bindings) |binding| {
+        .variant => |v| switch (v.payload) {
+            .binding => |binding| {
                 try saveAndBindPatternName(env, snapshots, binding, try env.freshVar());
-            }
-        },
-        .variantLiterals => |vl| {
-            for (vl.args) |arg| {
-                try bindPatternNamesForSubject(env, arg, try env.freshVar(), snapshots);
-            }
+            },
+            .fields => |fields| {
+                for (fields) |binding| {
+                    try saveAndBindPatternName(env, snapshots, binding, try env.freshVar());
+                }
+            },
+            .literals => |args| {
+                for (args) |arg| {
+                    try bindPatternNamesForSubject(env, arg, try env.freshVar(), snapshots);
+                }
+            },
         },
         .list => |lst| {
             for (lst.elems) |elem| {
@@ -988,8 +1445,8 @@ pub fn inferExprTyped(env: *Env, expr: ast.Expr) InferError!TypedExpr {
         // ── binding expressions ────────────────────────────────────────────────
         .binding => |b| inferBindingExpr(env, b, b.loc),
 
-        // ── use-hook expressions (@Context Fase 3) ────────────────────────────
-        .useHook => return InferError.TypeError,
+        // ── use-hook expressions (@Context F7) ────────────────────────────────
+        .useHook => |uh| inferUseHookExpr(env, uh, uh.loc),
 
         // ── call expressions ───────────────────────────────────────────────────
         .call => |c| inferCallExpr(env, c, c.loc),
@@ -1109,13 +1566,13 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
 
 /// Infer type for binary operation expressions
 fn inferBinaryOpExpr(env: *Env, binop: ast.BinOpExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    const lhsTyped = try inferExprTyped(env, binop.kind.lhs.*);
-    const rhsTyped = try inferExprTyped(env, binop.kind.rhs.*);
+    const lhsTyped = try inferExprTyped(env, binop.lhs.*);
+    const rhsTyped = try inferExprTyped(env, binop.rhs.*);
     const lhsPtr = try makeTypedPtr(env, lhsTyped);
     const rhsPtr = try makeTypedPtr(env, rhsTyped);
 
     // Determine result type based on operator
-    const resultType: *T.Type = switch (binop.kind.op) {
+    const resultType: *T.Type = switch (binop.op) {
         .lt, .gt, .lte, .gte, .eq, .ne => try env.namedType("bool"),
         .@"and", .@"or" => blk: {
             try unifyAt(env, lhsTyped.getType(), try env.namedType("bool"), loc);
@@ -1142,23 +1599,25 @@ fn inferBinaryOpExpr(env: *Env, binop: ast.BinOpExprOf(.untyped), loc: ast.Loc) 
             break :blk lhsTy;
         },
     };
-    return TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{
-        .op = binop.kind.op,
+    return TypedExpr{ .binaryOp = .{
+        .loc = loc,
+        .type_ = resultType,
+        .op = binop.op,
         .lhs = lhsPtr,
         .rhs = rhsPtr,
-    } } };
+    } };
 }
 
 /// Infer type for unary operation expressions
 fn inferUnaryOpExpr(env: *Env, unaryop: ast.UnaryOpExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    const operandTyped = try inferExprTyped(env, unaryop.kind.expr.*);
+    const operandTyped = try inferExprTyped(env, unaryop.expr.*);
     const operandPtr = try makeTypedPtr(env, operandTyped);
-    return switch (unaryop.kind.op) {
+    return switch (unaryop.op) {
         .not => blk: {
             try unifyAt(env, operandTyped.getType(), try env.namedType("bool"), loc);
-            break :blk TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = try env.namedType("bool"), .kind = .{ .op = .not, .expr = operandPtr } } };
+            break :blk TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = try env.namedType("bool"), .op = .not, .expr = operandPtr } };
         },
-        .neg => TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = operandTyped.getType(), .kind = .{ .op = .neg, .expr = operandPtr } } },
+        .neg => TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = operandTyped.getType(), .op = .neg, .expr = operandPtr } },
     };
 }
 
@@ -1171,22 +1630,78 @@ fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)),
         },
         .throw_ => |e| {
             const valPtr: ?*TypedExpr = if (e) |ev| try makeTypedPtr(env, try inferExprTyped(env, ev.*)) else null;
+            // Validate the thrown value against the enclosing fn's error type.
+            switch (env.throwContext) {
+                .result => |errType| {
+                    if (valPtr) |vp| {
+                        // Order matters: `errType` is the expected `E`, the thrown
+                        // value is what we got — so unify(expected, got).
+                        try unifyAt(env, errType, vp.getType(), loc);
+                    }
+                },
+                .plain => {
+                    env.lastError = TypeError.throwWithoutResult().withLoc(loc);
+                    return error.TypeError;
+                },
+                .unchecked => {},
+            }
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .throw_ = valPtr } } };
         },
         .try_ => |e| {
             const valPtr: ?*TypedExpr = if (e) |ev| try makeTypedPtr(env, try inferExprTyped(env, ev.*)) else null;
             const rawTy = if (valPtr) |vp| vp.getType() else try env.freshVar();
-            const ty = unwrapResultType(rawTy) orelse rawTy;
+            const ty = try tryUnwrapOrError(env, rawTy, loc);
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = ty, .kind = .{ .try_ = valPtr } } };
         },
         .@"break" => |e| {
             const typedPtr: ?*TypedExpr = if (e) |expr| try makeTypedPtr(env, try inferExprTyped(env, expr.*)) else null;
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .@"break" = typedPtr } } };
         },
+        .await_ => |e| {
+            // `await` is only valid inside an async `*fn` (returns `@Future`/`@AsyncIterator`).
+            if (env.starFn == null or !env.starFn.?.allowsAwait) {
+                env.lastError = TypeError.custom(
+                    "`await` can only be used inside an async `*fn`",
+                    "Mark the enclosing function `*fn` with a `@Future`/`@AsyncIterator` return type.",
+                ).withLoc(loc);
+                return error.TypeError;
+            }
+            const valPtr = try makeTypedPtr(env, try inferExprTyped(env, e.*));
+            const rawTy = valPtr.getType();
+            // `await @Future<T>` yields `T`. A resolved non-`@Future` named type is
+            // an error; an unresolved type variable stays lenient.
+            const deref = rawTy.deref();
+            if (deref.* == .named and !std.mem.eql(u8, deref.named.name, "Future")) {
+                env.lastError = TypeError.custom(
+                    "`await` expects a `@Future<_>` value",
+                    null,
+                ).withLoc(loc);
+                return error.TypeError;
+            }
+            const ty = unwrapFutureType(rawTy) orelse rawTy;
+            return TypedExpr{ .jump = .{ .loc = loc, .type_ = ty, .kind = .{ .await_ = valPtr } } };
+        },
         .@"continue" => TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .@"continue" } },
-        .yield => |e| {
-            const typedPtr: ?*TypedExpr = if (e) |expr| try makeTypedPtr(env, try inferExprTyped(env, expr.*)) else null;
-            return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .yield = typedPtr } } };
+        .yield => |y| {
+            // A `:label` must name an enclosing labelled `*fn`/loop.
+            if (y.label) |lbl| {
+                if (!env.hasLabel(lbl)) {
+                    env.lastError = TypeError.custom(
+                        "`yield` targets an unknown label",
+                        "Label a `*fn` (`-> @Iterator<T> :name`) or a `loop :name (...)`.",
+                    ).withLoc(loc);
+                    return error.TypeError;
+                }
+            }
+            const typedPtr: ?*TypedExpr = if (y.value) |expr| try makeTypedPtr(env, try inferExprTyped(env, expr.*)) else null;
+            // Inside a `*fn` generator, each yielded value unifies with the
+            // iterator item type `T` of `@Iterator<T>` / `@AsyncIterator<T, _>`.
+            if (env.starFn) |ctx| {
+                if (ctx.iterItem) |item| {
+                    if (typedPtr) |vp| try unifyAt(env, vp.getType(), item, loc);
+                }
+            }
+            return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .yield = .{ .label = y.label, .value = typedPtr } } } };
         },
     };
 }
@@ -1240,7 +1755,7 @@ fn inferBranchExpr(env: *Env, b: ast.MakeExpr(.untyped, ast.BranchExprOf(.untype
             const handlerTyped = try inferExprTyped(env, tc.handler.*);
             const handlerPtr = try makeTypedPtr(env, handlerTyped);
             const rawTy = exprTyped.getType();
-            const resultTy = unwrapResultType(rawTy) orelse rawTy;
+            const resultTy = try tryUnwrapOrError(env, rawTy, loc);
             const handlerTy = handlerTyped.getType().deref();
             const effectiveTy = switch (handlerTy.*) {
                 .func => |f| f.ret,
@@ -1258,24 +1773,56 @@ fn inferBranchExpr(env: *Env, b: ast.MakeExpr(.untyped, ast.BranchExprOf(.untype
 }
 
 /// Infer type for loop expressions
-fn inferLoopExpr(env: *Env, lp: ast.MakeExpr(.untyped, ast.LoopExprOf(.untyped)), loc: ast.Loc) InferError!TypedExpr {
-    const iterTyped = try inferExprTyped(env, lp.kind.iter.*);
+fn inferLoopExpr(env: *Env, lp: ast.LoopExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
+    const iterTyped = try inferExprTyped(env, lp.iter.*);
     const iterPtr = try makeTypedPtr(env, iterTyped);
-    const indexRangePtr = if (lp.kind.indexRange) |ir| try makeTypedPtr(env, try inferExprTyped(env, ir.*)) else null;
+    const indexRangePtr = if (lp.indexRange) |ir| try makeTypedPtr(env, try inferExprTyped(env, ir.*)) else null;
 
-    for (lp.kind.params) |p| {
-        try env.bind(p, try env.freshVar());
+    // `loop await (iter)` requires an async context and an `@AsyncIterator<T, E>`
+    // iterable; the loop param binds to the item type `T`.
+    var awaitItem: ?*T.Type = null;
+    if (lp.awaitLoop) {
+        if (env.starFn == null or !env.starFn.?.allowsAwait) {
+            env.lastError = TypeError.custom(
+                "`loop await` can only be used inside an async `*fn`",
+                "Mark the enclosing function `*fn` with a `@Future`/`@AsyncIterator` return type.",
+            ).withLoc(loc);
+            return error.TypeError;
+        }
+        const iterTy = iterTyped.getType().deref();
+        if (iterTy.* == .named and std.mem.eql(u8, iterTy.named.name, "AsyncIterator") and iterTy.named.args.len >= 1) {
+            awaitItem = iterTy.named.args[0];
+        } else if (iterTy.* != .typeVar) {
+            env.lastError = TypeError.custom(
+                "`loop await` expects an `@AsyncIterator<T, E>` value",
+                null,
+            ).withLoc(loc);
+            return error.TypeError;
+        }
     }
 
-    const typedBody = try inferStmtsTyped(env, lp.kind.body);
+    for (lp.params) |p| {
+        try env.bind(p, awaitItem orelse try env.freshVar());
+    }
+
+    // A `loop :label (...)` adds its label to scope for `yield :label` inside it.
+    const prevLabelsLen = env.labelStack.items.len;
+    defer env.labelStack.shrinkRetainingCapacity(prevLabelsLen);
+    if (lp.label) |lbl| try env.labelStack.append(env.arena, lbl);
+
+    const typedBody = try inferStmtsTyped(env, lp.body);
     const loopArrayArgs = try env.arena.alloc(*T.Type, 1);
     loopArrayArgs[0] = try env.freshVar();
-    return TypedExpr{ .loop = .{ .loc = loc, .type_ = try env.namedTypeArgs("array", loopArrayArgs), .kind = .{
+    return TypedExpr{ .loop = .{
+        .loc = loc,
+        .type_ = try env.namedTypeArgs("array", loopArrayArgs),
         .iter = iterPtr,
         .indexRange = indexRangePtr,
-        .params = lp.kind.params,
+        .params = lp.params,
         .body = typedBody,
-    } } };
+        .awaitLoop = lp.awaitLoop,
+        .label = lp.label,
+    } };
 }
 
 /// Infer type for binding expressions (variable declarations and assignments)
@@ -1357,14 +1904,14 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
                     // Bind pattern variable names to fresh type vars.
                     switch (pat) {
                         .ident => |name| try env.bind(name, try env.freshVar()),
-                        .variantFields => |vf| for (vf.bindings) |binding| try env.bind(binding, try env.freshVar()),
+                        .variant => |v| if (v.payload == .fields) for (v.payload.fields) |binding| try env.bind(binding, try env.freshVar()),
                         else => {},
                     }
                 },
                 .ctor => |pat| {
                     switch (pat) {
                         .ident => |name| try env.bind(name, try env.freshVar()),
-                        .variantFields => |vf| for (vf.bindings) |binding| try env.bind(binding, try env.freshVar()),
+                        .variant => |v| if (v.payload == .fields) for (v.payload.fields) |binding| try env.bind(binding, try env.freshVar()),
                         else => {},
                     }
                 },
@@ -1376,6 +1923,89 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
             } } } };
         },
     };
+}
+
+/// Infer type for `use`-hook expressions (@Context F7).
+///
+/// The enclosing function's return type decides whether `use` is allowed and which
+/// ContextBase the hook expression must agree on. The capability was recorded in
+/// `env.fnContext` by `inferFnDecl` before the body was visited.
+fn inferUseHookExpr(env: *Env, uh: ast.UseHookExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
+    const fc = env.fnContext orelse {
+        env.lastError = TypeError.useNotAllowed("void").withLoc(loc);
+        return error.TypeError;
+    };
+    if (!fc.implementsContext) {
+        env.lastError = TypeError.useNotAllowed(fc.returnDisplay).withLoc(loc);
+        return error.TypeError;
+    }
+
+    return switch (uh.kind) {
+        .useVoid => |v| blk: {
+            const valTyped = try inferExprTyped(env, v.*);
+            const valPtr = try makeTypedPtr(env, valTyped);
+            try validateUseBase(env, valTyped.getType(), fc, loc);
+            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .useVoid = valPtr } } };
+        },
+        .useBind => |b| blk: {
+            const valTyped = try inferExprTyped(env, b.value.*);
+            const valPtr = try makeTypedPtr(env, valTyped);
+            try validateUseBase(env, valTyped.getType(), fc, loc);
+            const srcTy = bindingSourceType(valTyped.getType());
+            // `use _ = expr` discards the result (void hook); no binding to introduce.
+            if (!std.mem.eql(u8, b.name, "_")) try env.bind(b.name, srcTy);
+            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = srcTy, .kind = .{ .useBind = .{ .name = b.name, .value = valPtr } } } };
+        },
+        .useBindDestruct => |b| blk: {
+            const valTyped = try inferExprTyped(env, b.value.*);
+            const valPtr = try makeTypedPtr(env, valTyped);
+            try validateUseBase(env, valTyped.getType(), fc, loc);
+            const srcTy = bindingSourceType(valTyped.getType());
+            try bindUseDestructure(env, b.pattern, srcTy);
+            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = srcTy, .kind = .{ .useBindDestruct = .{ .pattern = b.pattern, .value = valPtr } } } };
+        },
+    };
+}
+
+/// Verify a `use` expression returns `@Context<B, _>` whose `B` matches the
+/// enclosing function's ContextBase.
+fn validateUseBase(env: *Env, valTy: *T.Type, fc: envMod.FnContext, loc: ast.Loc) InferError!void {
+    const useBase = contextBaseOfType(env, valTy) orelse {
+        const disp = baseNameOfType(valTy) orelse "value";
+        env.lastError = TypeError.useNotContext(disp).withLoc(loc);
+        return error.TypeError;
+    };
+    const fnBase = fc.base orelse return; // implements @Context but base unconstrained
+    if (!std.mem.eql(u8, fnBase, useBase)) {
+        env.lastError = TypeError.contextMismatch(fnBase, useBase).withLoc(loc);
+        return error.TypeError;
+    }
+}
+
+/// Bind the names introduced by a destructuring `use { ... } = expr` against the
+/// hook's Return type. Falls back to fresh type vars when fields are unknown.
+fn bindUseDestructure(env: *Env, pattern: ast.ParamDestruct, srcTy: *T.Type) InferError!void {
+    const derefed = srcTy.deref();
+    switch (pattern) {
+        .names => |n| {
+            const typeName: []const u8 = switch (derefed.*) {
+                .named => |nm| nm.name,
+                else => "",
+            };
+            const maybeDef = env.typeDefs.get(typeName);
+            for (n.fields) |fld| {
+                const fieldTy = if (maybeDef) |td|
+                    if (td.findField(fld.field_name)) |f| f.type_ else try env.freshVar()
+                else
+                    try env.freshVar();
+                try env.bind(fld.bind_name, fieldTy);
+            }
+        },
+        .tuple_ => |t| {
+            for (t) |nm| try env.bind(nm, try env.freshVar());
+        },
+        .list, .ctor => {},
+    }
 }
 
 /// Infer type for call expressions (function/method invocations and pipelines)
@@ -1406,6 +2036,11 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
             const resolved = calleeType.deref();
             const retType: *T.Type = switch (resolved.*) {
                 .func => |f| blk: {
+                    // Constrained comptime typeparam args are validated against their
+                    // declared constraints; their param slots skip ordinary unification.
+                    const typeparams = env.lookupTypeparams(call.callee);
+                    if (typeparams) |constraints| try validateTypeparams(env, constraints, typedArgs);
+
                     var spreadCount: usize = 0;
                     var nonSpreadCount: usize = 0;
                     for (typedArgs) |ta| {
@@ -1423,7 +2058,8 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                             env.lastError = TypeError.arityMismatch(call.callee, f.params.len, call.args.len).withLoc(loc);
                             return error.TypeError;
                         }
-                        for (typedArgs, f.params) |ta, paramType| {
+                        for (typedArgs, f.params, 0..) |ta, paramType, i| {
+                            if (typeparams) |constraints| if (isTypeparamIndex(constraints, i)) continue;
                             try unifyAt(env, paramType, ta.value.getType(), ta.value.getLoc());
                         }
                         break :blk f.ret;
@@ -1435,7 +2071,8 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                             env.lastError = TypeError.arityMismatch(call.callee, f.params.len, call.args.len).withLoc(loc);
                             return error.TypeError;
                         }
-                        for (typedArgs, f.params) |ta, paramType| {
+                        for (typedArgs, f.params, 0..) |ta, paramType, i| {
+                            if (typeparams) |constraints| if (isTypeparamIndex(constraints, i)) continue;
                             try unifyAt(env, paramType, ta.value.getType(), ta.value.getLoc());
                         }
                         break :blk f.ret;
@@ -1538,46 +2175,59 @@ fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc
 /// member calls and operators against the annotated types — and the body's
 /// result is unified with the expected return type.
 fn inferFunctionExprExpected(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc, expected: ?*T.Type) InferError!TypedExpr {
-    const paramNames = switch (func.kind) {
-        .lambda => |l| l.params,
-        .fnExpr => |f| f.params,
-    };
-    const bodyStmts = switch (func.kind) {
-        .lambda => |l| l.body,
-        .fnExpr => |f| f.body,
-    };
+    // A nested function expression has no declared return type, so `throw`
+    // inside it is not checked against the enclosing fn's `E`.
+    const savedThrowCtx = env.throwContext;
+    env.throwContext = .unchecked;
+    defer env.throwContext = savedThrowCtx;
+
+    // A nested function gets its own async/label scope: it does not inherit the
+    // enclosing `*fn`'s `await`/`yield`/label context.
+    const prevStarFn = env.starFn;
+    const prevLabelsLen = env.labelStack.items.len;
+    defer {
+        env.starFn = prevStarFn;
+        env.labelStack.shrinkRetainingCapacity(prevLabelsLen);
+    }
+    env.labelStack.shrinkRetainingCapacity(0);
+
+    const fk = func.kind;
+    // An anonymous `*fn(...)` has no declared return type, so we permit both
+    // `await` and `yield` (item type unknown ⇒ no unification). Lambdas and plain
+    // `fn` expressions clear the async context.
+    env.starFn = if (fk.syntax == .fnExpr and fk.isStarFn)
+        .{ .allowsAwait = true, .iterItem = null }
+    else
+        null;
 
     // Pull expected param/return types out of `expected`, but only when it is a
-    // function type whose arity matches this lambda.
+    // function type whose arity matches this lambda. This lets `val f: fn(A, B)
+    // -> R = { a, b -> ... }` bind the params to A/B before the body is inferred.
     var expParams: ?[]*T.Type = null;
     var expRet: ?*T.Type = null;
     if (expected) |e| {
         const d = e.deref();
-        if (d.* == .func and d.func.params.len == paramNames.len) {
+        if (d.* == .func and d.func.params.len == fk.params.len) {
             expParams = d.func.params;
             expRet = d.func.ret;
         }
     }
 
-    const params = try env.arena.alloc(*T.Type, paramNames.len);
-    for (paramNames, 0..) |p, i| {
+    const params = try env.arena.alloc(*T.Type, fk.params.len);
+    for (fk.params, 0..) |p, i| {
         params[i] = if (expParams) |ep| ep[i] else try env.freshVar();
         try env.bind(p, params[i]);
     }
-    const bodyTyped = try inferStmtsTyped(env, bodyStmts);
+    const bodyTyped = try inferStmtsTyped(env, fk.body);
     const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
     if (expRet) |er| try unifyAt(env, retType, er, loc);
     const funcType = try env.funcType(params, retType);
-    return switch (func.kind) {
-        .lambda => TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{ .lambda = .{
-            .params = paramNames,
-            .body = bodyTyped,
-        } } } },
-        .fnExpr => TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{ .fnExpr = .{
-            .params = paramNames,
-            .body = bodyTyped,
-        } } } },
-    };
+    return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{
+        .syntax = fk.syntax,
+        .params = fk.params,
+        .body = bodyTyped,
+        .isStarFn = fk.isStarFn,
+    } } };
 }
 
 /// Infer type for collection expressions (arrays, tuples, ranges, case, block, grouped)

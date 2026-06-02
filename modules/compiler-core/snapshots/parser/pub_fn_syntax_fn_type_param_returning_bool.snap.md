@@ -4,6 +4,8 @@
     {
       "fn": {
         "isPub": true,
+        "isStarFn": false,
+        "label": null,
         "name": "where",
         "docComment": null,
         "comment": null,

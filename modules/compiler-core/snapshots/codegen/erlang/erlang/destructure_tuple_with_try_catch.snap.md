@@ -1,8 +1,8 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
 record Error { msg: string }
-fn fetch() -> #(i32, i32) {
-    return #(1, 2);
+fn fetch() -> @Result<#(i32, i32), Error> {
+    throw Error(msg: "boom");
 }
 fn f() {
     val #(a, b) = try fetch() catch throw Error(msg: "failed");
@@ -16,15 +16,14 @@ fn f() {
 -record(Error, {msg}).
 
 fetch() ->
-    {1, 2}.
+    erlang:throw(Error(<<"boom">>)).
 
 f() ->
-    {A, B} = try
-        fetch()
-catch
-        _Err ->
+    {A, B} = case fetch() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
             erlang:throw(Error(<<"failed">>))
-end.
+    end.
 ```
 
 ----- RUN LOG -----

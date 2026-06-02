@@ -7,4 +7,6 @@ fn f(a: i32) { return a; }
 ----- HOVER at (line 0, char 3)
 kind: markdown
 
-markdown
+```botopink
+fn f(a: i32)
+```

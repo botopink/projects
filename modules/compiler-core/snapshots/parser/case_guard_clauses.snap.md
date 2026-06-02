@@ -4,6 +4,8 @@
     {
       "implement": {
         "name": "X",
+        "isPub": false,
+        "shorthand": false,
         "genericParams": [],
         "docComment": null,
         "comment": null,
@@ -74,28 +76,26 @@
                                   "line": 4,
                                   "col": 20
                                 },
-                                "kind": {
-                                  "op": "gt",
-                                  "lhs": {
-                                    "identifier": {
-                                      "loc": {
-                                        "line": 4,
-                                        "col": 18
-                                      },
-                                      "kind": {
-                                        "ident": "x"
-                                      }
+                                "op": "gt",
+                                "lhs": {
+                                  "identifier": {
+                                    "loc": {
+                                      "line": 4,
+                                      "col": 18
+                                    },
+                                    "kind": {
+                                      "ident": "x"
                                     }
-                                  },
-                                  "rhs": {
-                                    "literal": {
-                                      "loc": {
-                                        "line": 4,
-                                        "col": 22
-                                      },
-                                      "kind": {
-                                        "numberLit": "0"
-                                      }
+                                  }
+                                },
+                                "rhs": {
+                                  "literal": {
+                                    "loc": {
+                                      "line": 4,
+                                      "col": 22
+                                    },
+                                    "kind": {
+                                      "numberLit": "0"
                                     }
                                   }
                                 }

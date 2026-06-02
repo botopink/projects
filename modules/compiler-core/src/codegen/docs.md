@@ -108,6 +108,26 @@ Add a new target by extending `Target`, wiring its emitter into
 
 Error snapshots live under `../../snapshots/codegen/errors/`.
 
+## try / catch lowering
+
+`try` / `catch` lower to **pattern matching on the `@Result` `Ok`/`Error` tag**
+in every target — never to host exceptions (no JS `try/catch`, no Erlang
+`try…catch`, no BEAM `try`/`try_case`). A `@Result` is represented as:
+
+| Target | Ok | Error | tag test |
+|---|---|---|---|
+| commonJS | `{ tag: "Ok", result }` | `{ tag: "Error", error }` | `_t.tag === "Error"` |
+| erlang / beam | `{ok, V}` | `{error, E}` | `is_tagged_tuple … {atom, ok}` |
+| wasm | ptr; `[ptr]==0`, `[ptr+4]=V` | ptr; `[ptr]!=0`, `[ptr+4]=E` | `i32.load` of `[ptr]` |
+
+- `try expr` (no catch) unwraps `Ok`; on `Error` it short-circuits the enclosing
+  function with the error variant. JS/BEAM/WAT use a real early `return`; Erlang
+  (no early return) nests the rest of the body inside the `{ok, V}` arm.
+- `try expr catch h` keeps the `Ok` value or applies the handler on `Error`
+  (a lambda handler receives the unwrapped error). Emitted as an expression.
+- Codegen is type-erased, so the *non-`@Result`* guard lives in inference
+  (`tryUnwrapOrError` in `comptime/infer.zig`), not here.
+
 ## Notes
 
 - All public functions use `alloc: std.mem.Allocator` (not `allocator`).

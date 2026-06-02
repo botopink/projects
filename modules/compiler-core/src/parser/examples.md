@@ -178,6 +178,42 @@ fn count_to(n: i32) {
 }
 ```
 
+## Async, generators & iterators (`*fn`, `await`, `yield`, `loop await`)
+
+`*fn` marks a function whose return implements `@Future<_>` (async) or
+`@Iterator<_>` / `@AsyncIterator<_, _>` (generator). It sets `FnDecl.isStarFn`;
+`await`/`yield` then follow from the return type.
+
+```text
+*fn fetch(url: string) -> @Future<Response> {   // async function
+    val body = await download(url);             // await → jump.await_
+    return body;
+}
+
+*fn fib() -> @Iterator<Int> :gen {              // labelled generator
+    yield :gen 1;                               // yield with label
+    yield 1;                                    // yield without label
+}
+
+pub *fn stream() -> @AsyncIterator<Int, Error> {  // async generator
+    yield 1;
+}
+
+val producer = *fn(n) { yield n; };             // anonymous *fn expression
+
+fn consume(items: Int[]) {
+    loop await (items) { item ->                // loop await → LoopExpr.awaitLoop
+        handle(item);
+    }
+    loop :acc (items) { item ->                 // labelled loop
+        yield :acc item;
+    }
+}
+```
+
+A `*fn` must have a body (it is sugar, not a declaration); a bodyless `*fn`
+is a parse error.
+
 ## Type annotations always use `TypeRef`
 
 ```text

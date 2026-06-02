@@ -27,9 +27,15 @@ step2(X) ->
     erlang:throw(IoError(<<"/out">>)).
 
 pipeline() ->
-    A = step1(),
-    B = step2(A),
-    B.
+    case step1() of
+        {ok, A} ->
+            case step2(A) of
+                {ok, B} ->
+                    B;
+                {error, _TryE1} -> {error, _TryE1}
+            end;
+        {error, _TryE0} -> {error, _TryE0}
+    end.
 ```
 
 ----- RUN LOG -----

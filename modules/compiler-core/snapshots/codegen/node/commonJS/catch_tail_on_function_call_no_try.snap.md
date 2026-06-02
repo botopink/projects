@@ -22,7 +22,8 @@ function risky() {
 }
 
 function safe() {
-    return (() => { try { return risky(); } catch(_e) { return ((-1))(_e); } })();
+    const _try0 = risky();
+    return _try0.tag === "Error" ? ((-1)) : _try0.result;
 }
 ```
 

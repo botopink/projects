@@ -23,7 +23,8 @@ function getA() {
 }
 
 function compute() {
-    const r = (() => { try { return getA(); } catch(_e) { return (0)(_e); } })();
+    const _try0 = getA();
+    const r = _try0.tag === "Error" ? (0) : _try0.result;
     return r;
 }
 ```

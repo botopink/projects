@@ -84,36 +84,48 @@ fn assertIdempotent(allocator: Allocator, src: []const u8) !void {
     }
 }
 
-// ── use declarations ──────────────────────────────────────────────────────────
+// ── import declarations ───────────────────────────────────────────────────────
 
-test "format: use ---- empty imports from @root()" {
+test "format: import ---- empty imports from root" {
     try assertFormat(std.testing.allocator,
-        \\use {} = @root();
+        \\import {};
     );
 }
 
-test "format: use ---- named imports" {
+test "format: import ---- named imports" {
     try assertFormat(std.testing.allocator,
-        \\use {foo, bar, baz} = @root();
+        \\import {foo, bar, baz};
     );
 }
 
-test "format: use ---- @module() source" {
+test "format: import ---- from module source" {
     try assertFormat(std.testing.allocator,
-        \\use {x, y} = @module();
+        \\import {x, y} from "mod";
     );
 }
 
-test "format: use ---- multiple declarations" {
+test "format: import ---- multiple declarations" {
     try assertFormat(std.testing.allocator,
-        \\use {a} = @root();
-        \\use {b, c} = @module();
+        \\import {a};
+        \\import {b, c} from "dep";
     );
 }
 
-test "format: use ---- dotted path" {
+test "format: import ---- dotted path" {
     try assertFormat(std.testing.allocator,
-        \\use {X.x1.x2} = @root();
+        \\import {X.x1.x2};
+    );
+}
+
+test "format: import ---- activation suffix and alias" {
+    try assertFormat(std.testing.allocator,
+        \\import {Pato, PatoNada*, std.List as L} from "ducks";
+    );
+}
+
+test "format: import ---- activation fallback statement" {
+    try assertFormat(std.testing.allocator,
+        \\X*;
     );
 }
 
@@ -357,6 +369,40 @@ test "format: implement ---- two interfaces with qualified methods" {
     );
 }
 
+test "format: implement ---- shorthand named" {
+    try assertFormat(std.testing.allocator,
+        \\PatoNada implement Nada for Pato {
+        \\    fn swim(self: Self) {}
+        \\};
+    );
+}
+
+test "format: implement ---- shorthand named pub" {
+    try assertFormat(std.testing.allocator,
+        \\pub PatoNada implement Nada for Pato {
+        \\    fn swim(self: Self) {}
+        \\};
+    );
+}
+
+// ── extend ──────────────────────────────────────────────────────────────────────
+
+test "format: extend ---- shorthand named" {
+    try assertFormat(std.testing.allocator,
+        \\PatoExtra extend Pato {
+        \\    fn quack(self: Self) {}
+        \\};
+    );
+}
+
+test "format: extend ---- explicit named" {
+    try assertFormat(std.testing.allocator,
+        \\val PatoExtra = extend Pato {
+        \\    fn quack(self: Self) {}
+        \\};
+    );
+}
+
 // ── pub fn ────────────────────────────────────────────────────────────────────
 
 test "format: pub fn ---- simple with return type" {
@@ -386,6 +432,22 @@ test "format: pub fn ---- syntax fn type param" {
 test "format: pub fn ---- typeparam no constraint" {
     try assertFormat(std.testing.allocator,
         \\pub fn wrap(comptime T: typeparam) -> type {
+        \\    todo;
+        \\}
+    );
+}
+
+test "format: pub fn ---- typeparam single constraint" {
+    try assertFormat(std.testing.allocator,
+        \\fn render(comptime tag: typeparam string, props: i32) -> string {
+        \\    todo;
+        \\}
+    );
+}
+
+test "format: pub fn ---- typeparam multiple pipe constraints" {
+    try assertFormat(std.testing.allocator,
+        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
         \\    todo;
         \\}
     );
@@ -585,51 +647,51 @@ test "format: idempotent ---- pub fn with comptime params" {
 
 // ── imports ──────────────────────────────────────────────────────────────────
 
-test "format: use ---- empty" {
+test "format: import ---- empty" {
     try assertFormat(std.testing.allocator,
-        \\use {} = @root();
+        \\import {};
     );
 }
 
-test "format: use ---- single import" {
+test "format: import ---- single import" {
     try assertFormat(std.testing.allocator,
-        \\use {one} = @root();
+        \\import {one};
     );
 }
 
-test "format: use ---- multiple imports" {
+test "format: import ---- multiple imports" {
     try assertFormat(std.testing.allocator,
-        \\use {one} = @root();
-        \\use {two} = @module();
+        \\import {one};
+        \\import {two} from "dep";
     );
 }
 
-test "format: use ---- ordered imports" {
+test "format: import ---- ordered imports" {
     try assertFormat(std.testing.allocator,
-        \\use {four, five} = @root();
-        \\use {one, two, three} = @module();
+        \\import {four, five};
+        \\import {one, two, three} from "dep";
     );
 }
 
-test "format: use ---- selective imports" {
+test "format: import ---- selective imports" {
     try assertFormat(std.testing.allocator,
-        \\use {fun, fun2, fun3} = @root();
+        \\import {fun, fun2, fun3};
     );
 }
 
-test "format: use ---- mixed type and function imports" {
+test "format: import ---- mixed type and function imports" {
     try assertFormat(std.testing.allocator,
-        \\use {One, Two, fun1, fun2} = @root();
+        \\import {One, Two, fun1, fun2};
     );
 }
 
 // ── multiple statements ──────────────────────────────────────────────────────
 
-test "format: multiple statements with use and types" {
+test "format: multiple statements with import and types" {
     try assertFormat(std.testing.allocator,
-        \\use {one} = @root();
-        \\use {three} = @root();
-        \\use {two} = @root();
+        \\import {one};
+        \\import {three};
+        \\import {two};
         \\
         \\pub val One = struct {};
         \\
@@ -2065,6 +2127,33 @@ test "format: assert pattern ---- with list and rest" {
     try assertFormat(std.testing.allocator,
         \\fn f() {
         \\    val assert [first, second, ..rest] = items catch [];
+        \\}
+    );
+}
+
+// ── async / generators (*fn, await, yield :label) ─────────────────────────────
+
+test "format: star fn ---- async function" {
+    try assertFormat(std.testing.allocator,
+        \\*fn fetch(url: string) -> @Future<Response> {
+        \\    return download(url);
+        \\}
+    );
+}
+
+test "format: star fn ---- generator with label" {
+    try assertFormat(std.testing.allocator,
+        \\*fn gen() -> @Iterator<Int> :gen {
+        \\    yield :gen 1;
+        \\}
+    );
+}
+
+test "format: await ---- prefix expression" {
+    try assertFormat(std.testing.allocator,
+        \\*fn run() -> @Future<Int> {
+        \\    val x = await load(url);
+        \\    return x;
         \\}
     );
 }

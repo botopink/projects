@@ -32,28 +32,26 @@
                                 "line": 2,
                                 "col": 16
                               },
-                              "kind": {
-                                "op": "add",
-                                "lhs": {
-                                  "literal": {
-                                    "loc": {
-                                      "line": 2,
-                                      "col": 11
-                                    },
-                                    "kind": {
-                                      "numberLit": "6364"
-                                    }
+                              "op": "add",
+                              "lhs": {
+                                "literal": {
+                                  "loc": {
+                                    "line": 2,
+                                    "col": 11
+                                  },
+                                  "kind": {
+                                    "numberLit": "6364"
                                   }
-                                },
-                                "rhs": {
-                                  "literal": {
-                                    "loc": {
-                                      "line": 2,
-                                      "col": 18
-                                    },
-                                    "kind": {
-                                      "numberLit": "11"
-                                    }
+                                }
+                              },
+                              "rhs": {
+                                "literal": {
+                                  "loc": {
+                                    "line": 2,
+                                    "col": 18
+                                  },
+                                  "kind": {
+                                    "numberLit": "11"
                                   }
                                 }
                               }

@@ -4,6 +4,8 @@
     {
       "fn": {
         "isPub": false,
+        "isStarFn": false,
+        "label": null,
         "name": "f",
         "docComment": null,
         "comment": null,
@@ -23,11 +25,13 @@
                 "kind": {
                   "assertPattern": {
                     "pattern": {
-                      "variantFields": {
+                      "variant": {
                         "name": "Ok",
-                        "bindings": [
-                          "value"
-                        ]
+                        "payload": {
+                          "fields": [
+                            "value"
+                          ]
+                        }
                       }
                     },
                     "expr": {

@@ -132,7 +132,7 @@ fn freshEnv(arena_alloc: std.mem.Allocator, gpa: Allocator) !comptimeMod.Env_ {
 ///
 /// All modules are inferred in order in isolated envs. Only `pub` declarations
 /// from each dependency module are exported to the registry and available for
-/// `use {X} = @root()` imports.
+/// `import {X} from "name";` imports.
 ///
 /// JS is generated for **every** module. The snapshot shows each module's
 /// source under its own `----- SOURCE CODE -- name.bp` header, a single
@@ -346,6 +346,58 @@ test "js: fn ---- with local binding" {
         \\}
         \\val output = double(10);
         \\@print(output);
+    );
+}
+
+// ── async / generators (*fn) ──────────────────────────────────────────────────
+
+// `*fn -> @Future<_>` lowers to a JS `async function`; `await` to `await`.
+test "js: star fn ---- async function with await" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\*fn fetch(x: i32) -> @Future<i32> {
+        \\    return x;
+        \\}
+        \\*fn loadTwice(x: i32) -> @Future<i32> {
+        \\    val a = await fetch(x);
+        \\    return a + a;
+        \\}
+    );
+}
+
+// `*fn -> @Iterator<_>` lowers to a JS `function*`; `yield` to `yield`.
+test "js: star fn ---- generator with yield" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\*fn counter() -> @Iterator<i32> {
+        \\    yield 1;
+        \\    yield 2;
+        \\    yield 3;
+        \\}
+    );
+}
+
+// `*fn -> @AsyncIterator<_, _>` lowers to a JS `async function*`.
+test "js: star fn ---- async generator" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\*fn stream() -> @AsyncIterator<i32, string> {
+        \\    yield 1;
+        \\    yield 2;
+        \\}
+    );
+}
+
+// `pub *fn` exports drive the `.d.ts`: @Future→Promise, @Iterator→IterableIterator,
+// @AsyncIterator→AsyncIterableIterator.
+test "js: star fn ---- pub typedefs" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\pub *fn loadOne(x: i32) -> @Future<i32> {
+        \\    return x;
+        \\}
+        \\pub *fn count() -> @Iterator<i32> {
+        \\    yield 1;
+        \\}
+        \\pub *fn pulses() -> @AsyncIterator<i32, string> {
+        \\    yield 1;
+        \\}
     );
 }
 
@@ -622,6 +674,37 @@ test "js: enum ---- method using qualified enum member" {
     );
 }
 
+// ── qualified module calls ────────────────────────────────────────────────────
+
+// Tests a module-qualified call: `List.map(xs, f)` resolves to a remote call
+// `list:map(Xs, F)` in Erlang — the PascalCase module name is lowercased to a
+// valid module atom and the arity is the argument count (2), not 1.
+test "js: call ---- qualified module call resolves arity" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\record Pipeline {
+        \\    items: i32[],
+        \\    fn run(self: Self, f: fn(item: i32) -> i32) -> i32[] {
+        \\        return List.map(self.items, f);
+        \\    }
+        \\}
+    );
+}
+
+// Tests that a qualified call's arity follows the argument count: the same
+// callee `map` with a trailing-lambda argument is arity 2 (`list:map/2`).
+test "js: call ---- qualified module call with trailing lambda arity" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\record Pipeline {
+        \\    items: i32[],
+        \\    fn doubled(self: Self) -> i32[] {
+        \\        return List.map(self.items) { x ->
+        \\            return x * 2;
+        \\        };
+        \\    }
+        \\}
+    );
+}
+
 // ── implement declaration ─────────────────────────────────────────────────────
 
 // Tests implement attaches methods to prototype
@@ -663,9 +746,9 @@ test "js: interface ---- emits comment" {
 // ── use → import ──────────────────────────────────────────────────────────────
 
 // Tests named imports from module
-test "js: use ---- named imports" {
+test "js: import ---- named imports" {
     try assertJsSingle(std.testing.allocator, @src(),
-        \\use { foo, bar } = @root()
+        \\import { foo, bar };
     );
 }
 
@@ -824,8 +907,8 @@ test "js: destructure ---- tuple with long names" {
 test "js: destructure ---- tuple with try-catch" {
     try assertJsSingle(std.testing.allocator, @src(),
         \\record Error { msg: string }
-        \\fn fetch() -> #(i32, i32) {
-        \\    return #(1, 2);
+        \\fn fetch() -> @Result<#(i32, i32), Error> {
+        \\    throw Error(msg: "boom");
         \\}
         \\fn f() {
         \\    val #(a, b) = try fetch() catch throw Error(msg: "failed");
@@ -880,7 +963,7 @@ test "js: if ---- conditional with else branch" {
 // Tests try without catch propagates error
 test "js: try ---- propagate without catch" {
     try assertJsSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> i32 {
+        \\fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn process() -> i32 {
@@ -894,7 +977,7 @@ test "js: try ---- propagate without catch" {
 // Tests try with inline catch handler
 test "js: try ---- with inline catch handler" {
     try assertJsSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> i32 {
+        \\fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn safe() -> i32 {
@@ -1065,7 +1148,7 @@ test "js: enum ---- shorthand declaration without val Name =" {
 
 // ── multi-module import/export ────────────────────────────────────────────────
 
-test "js: use ---- multi-module pub fn import" {
+test "js: import ---- multi-module pub fn import" {
     try assertJs(std.testing.allocator, @src(), &.{
         .{ .path = "math", .source =
         \\pub fn double(x: i32) -> i32 {
@@ -1073,20 +1156,20 @@ test "js: use ---- multi-module pub fn import" {
         \\}
         },
         .{ .path = "", .source =
-        \\use {double} = @root()
+        \\import {double} from "math";
         \\val result = double(21);
         },
     });
 }
 
-test "js: use ---- multi-module pub val import" {
+test "js: import ---- multi-module pub val import" {
     try assertJs(std.testing.allocator, @src(), &.{
         .{ .path = "config", .source =
         \\pub val PORT = 8080;
         \\pub val HOST = "localhost";
         },
         .{ .path = "", .source =
-        \\use {PORT, HOST} = @root()
+        \\import {PORT, HOST} from "config";
         \\val addr = HOST;
         \\val port = PORT;
         },
@@ -1241,6 +1324,23 @@ test "js: comptime specialization ---- comptime val used as specialization argum
         \\    val doubled = scale(2, base);
         \\    val tripled = scale(3, base);
         \\    val doubledAgain = scale(2, 100);
+        \\}
+    );
+}
+
+// Verifies that a comptime parameter annotated with a constrained `typeparam`
+// specializes per distinct value exactly like a plain comptime param: "s" and 7
+// produce separate specializations, and the repeated "s" reuses the first one.
+test "js: comptime specialization ---- constrained typeparam specializes per value" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\    return x;
+        \\}
+        \\
+        \\fn main() {
+        \\    val a = coerce("s", 1);
+        \\    val b = coerce(7, 2);
+        \\    val c = coerce("s", 3);
         \\}
     );
 }

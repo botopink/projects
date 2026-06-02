@@ -32,8 +32,10 @@ function outer() {
 }
 
 function process() {
-    const a = (() => { try { return inner(); } catch(_e) { return (0)(_e); } })();
-    const b = (() => { try { return outer(); } catch(_e) { return (a)(_e); } })();
+    const _try0 = inner();
+    const a = _try0.tag === "Error" ? (0) : _try0.result;
+    const _try1 = outer();
+    const b = _try1.tag === "Error" ? (a) : _try1.result;
     console.log(a, b);
     return (a + b);
 }

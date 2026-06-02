@@ -476,3 +476,45 @@ test "completion: dot completes enum variants" {
     try std.testing.expect(has_active and has_inactive);
     try snap.assertCompletion(gpa, "completion_dot_enum_variants", source, cursor, items);
 }
+
+// ── iterator method completion (*fn generators) ───────────────────────────────
+
+test "completion: iterator receiver offers next/iter/map" {
+    const gpa = std.testing.allocator;
+    // Bindings come from a valid compile; completion runs on the mid-edit buffer
+    // (`it.`) just like the LSP serves completion against the last good index.
+    const valid_source =
+        \\*fn gen() -> @Iterator<i32> { yield 1; }
+        \\val it = gen();
+    ;
+    const edit_source =
+        \\*fn gen() -> @Iterator<i32> { yield 1; }
+        \\val it = gen();
+        \\val first = it.
+    ;
+
+    var c = try h.compile(gpa, valid_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    // Cursor at end of `val first = it.` on line 2 (col 15).
+    const cursor = h.pos(2, 15);
+    const items = try engine.completion(gpa, edit_source, cursor, bindings);
+    defer {
+        for (items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        gpa.free(items);
+    }
+
+    var have_next = false;
+    var have_iter = false;
+    var have_map = false;
+    for (items) |it| {
+        if (std.mem.eql(u8, it.label, "next")) have_next = true;
+        if (std.mem.eql(u8, it.label, "iter")) have_iter = true;
+        if (std.mem.eql(u8, it.label, "map")) have_map = true;
+    }
+    try std.testing.expect(have_next and have_iter and have_map);
+}

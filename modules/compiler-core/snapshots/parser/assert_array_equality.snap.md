@@ -4,6 +4,8 @@
     {
       "fn": {
         "isPub": false,
+        "isStarFn": false,
+        "label": null,
         "name": "f",
         "docComment": null,
         "comment": null,
@@ -28,41 +30,39 @@
                           "line": 2,
                           "col": 15
                         },
-                        "kind": {
-                          "op": "eq",
-                          "lhs": {
-                            "collection": {
-                              "loc": {
-                                "line": 2,
-                                "col": 12
-                              },
-                              "kind": {
-                                "arrayLit": {
-                                  "elems": [],
-                                  "spread": null,
-                                  "spreadExpr": null,
-                                  "comments": [],
-                                  "commentsPerElem": [],
-                                  "trailingComma": false
-                                }
+                        "op": "eq",
+                        "lhs": {
+                          "collection": {
+                            "loc": {
+                              "line": 2,
+                              "col": 12
+                            },
+                            "kind": {
+                              "arrayLit": {
+                                "elems": [],
+                                "spread": null,
+                                "spreadExpr": null,
+                                "comments": [],
+                                "commentsPerElem": [],
+                                "trailingComma": false
                               }
                             }
-                          },
-                          "rhs": {
-                            "collection": {
-                              "loc": {
-                                "line": 2,
-                                "col": 18
-                              },
-                              "kind": {
-                                "arrayLit": {
-                                  "elems": [],
-                                  "spread": null,
-                                  "spreadExpr": null,
-                                  "comments": [],
-                                  "commentsPerElem": [],
-                                  "trailingComma": false
-                                }
+                          }
+                        },
+                        "rhs": {
+                          "collection": {
+                            "loc": {
+                              "line": 2,
+                              "col": 18
+                            },
+                            "kind": {
+                              "arrayLit": {
+                                "elems": [],
+                                "spread": null,
+                                "spreadExpr": null,
+                                "comments": [],
+                                "commentsPerElem": [],
+                                "trailingComma": false
                               }
                             }
                           }

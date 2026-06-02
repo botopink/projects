@@ -69,40 +69,40 @@ fn writeExprJs(bw: anytype, allocator: std.mem.Allocator, te: ast.TypedExpr) !vo
             },
             .null_ => try bw.writeAll("null"),
         },
-        .binaryOp => |b| switch (b.kind.op) {
+        .binaryOp => |b| switch (b.op) {
             .add => {
                 try bw.writeByte('(');
-                try writeExprJs(bw, allocator, b.kind.lhs.*);
+                try writeExprJs(bw, allocator, b.lhs.*);
                 try bw.writeAll(" + ");
-                try writeExprJs(bw, allocator, b.kind.rhs.*);
+                try writeExprJs(bw, allocator, b.rhs.*);
                 try bw.writeByte(')');
             },
             .sub => {
                 try bw.writeByte('(');
-                try writeExprJs(bw, allocator, b.kind.lhs.*);
+                try writeExprJs(bw, allocator, b.lhs.*);
                 try bw.writeAll(" - ");
-                try writeExprJs(bw, allocator, b.kind.rhs.*);
+                try writeExprJs(bw, allocator, b.rhs.*);
                 try bw.writeByte(')');
             },
             .mul => {
                 try bw.writeByte('(');
-                try writeExprJs(bw, allocator, b.kind.lhs.*);
+                try writeExprJs(bw, allocator, b.lhs.*);
                 try bw.writeAll(" * ");
-                try writeExprJs(bw, allocator, b.kind.rhs.*);
+                try writeExprJs(bw, allocator, b.rhs.*);
                 try bw.writeByte(')');
             },
             .div => {
                 try bw.writeByte('(');
-                try writeExprJs(bw, allocator, b.kind.lhs.*);
+                try writeExprJs(bw, allocator, b.lhs.*);
                 try bw.writeAll(" / ");
-                try writeExprJs(bw, allocator, b.kind.rhs.*);
+                try writeExprJs(bw, allocator, b.rhs.*);
                 try bw.writeByte(')');
             },
             .mod => {
                 try bw.writeByte('(');
-                try writeExprJs(bw, allocator, b.kind.lhs.*);
+                try writeExprJs(bw, allocator, b.lhs.*);
                 try bw.writeAll(" % ");
-                try writeExprJs(bw, allocator, b.kind.rhs.*);
+                try writeExprJs(bw, allocator, b.rhs.*);
                 try bw.writeByte(')');
             },
             else => try bw.writeAll("undefined"),
