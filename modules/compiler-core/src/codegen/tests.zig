@@ -752,6 +752,86 @@ test "js: import ---- named imports" {
     );
 }
 
+// ── use → hooks (React-like codegen) ──────────────────────────────────────────
+
+// `val {v, s} = use state(0)` lowers to `const { v, s } = useState(0)`: the hook
+// name maps by the `use` + Capitalize convention and `val` does the binding.
+test "codegen ---- use object destructure state to useState" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn Counter() -> Element {
+        \\    val {count, setCount} = use state(0);
+        \\    Element();
+        \\}
+    );
+}
+
+// `val #(v, s) = use state(0)` lowers to `const [ v, s ] = useState(0)` — tuple
+// destructure maps to JS array destructure (React's `[value, setter]` shape).
+test "codegen ---- use tuple destructure state to useState" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn Counter() -> Element {
+        \\    val #(count, setCount) = use state(0);
+        \\    Element();
+        \\}
+    );
+}
+
+// `val d = use memo { -> count*2 }` lowers to `const d = useMemo(() => …, [count])`
+// — the dependency array is inferred from the reactive names the lambda reads.
+test "codegen ---- use memo infers dependency array" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn memo() -> @Context<Element, i32> {
+        \\    0;
+        \\}
+        \\fn Counter() -> Element {
+        \\    val {count, setCount} = use state(0);
+        \\    val doubled = use memo { -> return count * 2; };
+        \\    Element();
+        \\}
+    );
+}
+
+// `use effect { -> cleanup() }` lowers to `useEffect(() => …, [])` — a void hook
+// (no `val` binding) with no reactive reads, so the inferred deps array is empty.
+test "codegen ---- use effect void hook empty deps" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn cleanup() {
+        \\    0;
+        \\}
+        \\fn effect() -> @Context<Element, i32> {
+        \\    0;
+        \\}
+        \\fn Widget() -> Element {
+        \\    use effect { -> cleanup(); };
+        \\    Element();
+        \\}
+    );
+}
+
+// A struct that exists only as a phantom `@Context` base is erased at runtime —
+// the JS output carries no `class Element { … }` for it.
+test "codegen ---- inline implement context base erased at runtime" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn render() -> Element {
+        \\    Element();
+        \\}
+    );
+}
+
 // ── operators ─────────────────────────────────────────────────────────────────
 
 // Tests comparison operators

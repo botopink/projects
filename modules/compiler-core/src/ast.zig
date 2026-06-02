@@ -499,35 +499,21 @@ pub fn BindingExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
-/// Use-hook expressions: `use` inside function bodies (distinct from top-level `ImportDecl` imports)
+/// Use-hook expressions: the `use` prefix operator inside function bodies
+/// (distinct from top-level `ImportDecl` imports).
 ///
-/// Two forms:
-///   `use expr`              — void hook, no binding (e.g. `use effect(cleanup)`)
-///   `use binding = expr`    — hook with binding (e.g. `use {val, set} = state(0)`)
+/// `use` is a prefix operator on a hook call. Binding is handled by the
+/// enclosing `val`/`var`, never by `use` itself:
+///   `use effect { -> cleanup() }`       — void hook (statement position)
+///   `val d = use memo { -> v*2 }`        — value bound by `val`
+///   `val {v, s} = use state(0)`          — destructured by `val`
 pub fn UseHookExprOf(comptime phase: Phase) type {
-    const Kind = union(enum) {
-        /// `use expr` — void hook, no binding
-        useVoid: *ExprOf(phase),
-        /// `use name = expr` — hook with simple name binding
-        useBind: struct {
-            name: []const u8,
-            value: *ExprOf(phase),
-        },
-        /// `use {a, b} = expr` — hook with destructuring binding
-        useBindDestruct: struct {
-            pattern: ParamDestruct,
-            value: *ExprOf(phase),
-        },
+    const Kind = struct {
+        /// The hook call the `use` prefix wraps, e.g. `state(0)` or `memo { … }`.
+        inner: *ExprOf(phase),
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            switch (this.*) {
-                .useVoid => |e| destroyExpr(allocator, e),
-                .useBind => |*b| destroyExpr(allocator, b.value),
-                .useBindDestruct => |*b| {
-                    @constCast(&b.pattern).deinit(allocator);
-                    destroyExpr(allocator, b.value);
-                },
-            }
+            destroyExpr(allocator, this.inner);
         }
     };
 
