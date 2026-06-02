@@ -197,6 +197,9 @@ fn renderTypeError(
         .recursiveType => "recursive type",
         .unknownTypeName => "unknown type",
         .missingField => "missing field",
+        .methodNotActive => "method not active",
+        .ambiguousExtension => "ambiguous extension method",
+        .notAnExtension => "not an extension symbol",
         .useNotAllowed => "`use` not allowed",
         .useNotContext => "`use` requires @Context",
         .contextMismatch => "ContextBase mismatch",
@@ -289,6 +292,27 @@ fn renderTypeError(
                 tmp,
                 "\n  '{s}' requires field '{s}'\n",
                 .{ f.typeName, f.field },
+            ));
+        },
+        .methodNotActive => |m| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' has no active method '{s}'\n  hint: activate the extension with `{s}*`\n",
+                .{ m.typeName, m.method, m.hintSym },
+            ));
+        },
+        .ambiguousExtension => |a| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}.{s}' is provided by both '{s}' and '{s}'\n  hint: qualify the call, e.g. `{s}.{s}(obj)`\n",
+                .{ a.typeName, a.method, a.symA, a.symB, a.symA, a.method },
+            ));
+        },
+        .notAnExtension => |name| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' does not name an implement/extend symbol\n",
+                .{name},
             ));
         },
         .useNotAllowed => |returnType| {
@@ -1454,6 +1478,120 @@ test "infer error: import of val ---- unbound variable" {
     try assertTypeErrorSnap(std.testing.allocator, @src(),
         \\import {SECRET};
         \\val x = SECRET;
+    );
+}
+
+// ── static extension dispatch (F6) ──────────────────────────────────────────────
+
+test "infer error: extension method not active ---- hint to activate" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\record Pato { id: i32 }
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\val donald = Pato(1);
+        \\val r = donald.swim();
+    );
+}
+
+test "infer error: extension method ambiguous ---- two activated impls" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\val Diver = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\record Pato { id: i32 }
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\val PatoFundo = implement Diver for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\PatoNada*;
+        \\PatoFundo*;
+        \\val donald = Pato(1);
+        \\val r = donald.swim();
+    );
+}
+
+test "infer error: activation of non-extension symbol" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\record Pato { id: i32 }
+        \\Pato*;
+    );
+}
+
+test "infer error: implement declares method not in interface" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\record Pato { id: i32 }
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\    fn fly(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+    );
+}
+
+test "infer: activated extension method resolves" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\record Pato { id: i32 }
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\PatoNada*;
+        \\val donald = Pato(1);
+        \\val splash = donald.swim();
+    );
+}
+
+test "infer: qualified extension call needs no activation" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\record Pato { id: i32 }
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\val donald = Pato(1);
+        \\val splash = PatoNada.swim(donald);
+    );
+}
+
+test "infer: inherent record method is always available" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\record Pato {
+        \\    id: i32,
+        \\    fn quack(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\val donald = Pato(1);
+        \\val noise = donald.quack();
     );
 }
 

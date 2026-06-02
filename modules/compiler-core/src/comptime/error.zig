@@ -76,6 +76,24 @@ pub const TypeErrorKind = union(enum) {
         typeName: []const u8,
         field: []const u8,
     },
+    /// `obj.method()` where an `implement`/`extend` provides `method` for the
+    /// receiver type but its symbol has not been activated. `hintSym` is the
+    /// symbol to activate (`hintSym*`).
+    methodNotActive: struct {
+        typeName: []const u8,
+        method: []const u8,
+        hintSym: []const u8,
+    },
+    /// `obj.method()` resolves to two or more activated extensions; the call must
+    /// be qualified (`symA.method(obj)`).
+    ambiguousExtension: struct {
+        typeName: []const u8,
+        method: []const u8,
+        symA: []const u8,
+        symB: []const u8,
+    },
+    /// `name*` where `name` does not name an `implement`/`extend` symbol.
+    notAnExtension: []const u8,
     /// `use` appeared in a function whose return type does not implement `@Context`.
     /// Payload is the rendered return type (e.g. `"string"`, `"void"`).
     useNotAllowed: []const u8,
@@ -189,6 +207,18 @@ pub const TypeError = struct {
         return .{ .kind = .{ .missingField = .{ .typeName = typeName, .field = field } } };
     }
 
+    pub fn methodNotActive(typeName: []const u8, method: []const u8, hintSym: []const u8) TypeError {
+        return .{ .kind = .{ .methodNotActive = .{ .typeName = typeName, .method = method, .hintSym = hintSym } } };
+    }
+
+    pub fn ambiguousExtension(typeName: []const u8, method: []const u8, symA: []const u8, symB: []const u8) TypeError {
+        return .{ .kind = .{ .ambiguousExtension = .{ .typeName = typeName, .method = method, .symA = symA, .symB = symB } } };
+    }
+
+    pub fn notAnExtension(name: []const u8) TypeError {
+        return .{ .kind = .{ .notAnExtension = name } };
+    }
+
     pub fn useNotAllowed(returnType: []const u8) TypeError {
         return .{ .kind = .{ .useNotAllowed = returnType } };
     }
@@ -257,6 +287,9 @@ pub const TypeError = struct {
             .useNotContext => |e| std.fmt.allocPrint(gpa, "`use` requires @Context: '{s}' does not implement @Context", .{e}),
             .contextMismatch => |m| std.fmt.allocPrint(gpa, "ContextBase mismatch: function returns @Context<{s}, _> but `use` returns @Context<{s}, _>", .{ m.fnBase, m.useBase }),
             .throwWithoutResult => std.fmt.allocPrint(gpa, "'throw' requires the enclosing fn to return '@Result<D, E>'", .{}),
+            .methodNotActive => |m| std.fmt.allocPrint(gpa, "'{s}' has no active method '{s}' — activate the extension with `{s}*`", .{ m.typeName, m.method, m.hintSym }),
+            .ambiguousExtension => |a| std.fmt.allocPrint(gpa, "'{s}.{s}' is provided by both '{s}' and '{s}' — qualify the call, e.g. `{s}.{s}(obj)`", .{ a.typeName, a.method, a.symA, a.symB, a.symA, a.method }),
+            .notAnExtension => |name| std.fmt.allocPrint(gpa, "'{s}' does not name an implement/extend symbol", .{name}),
             .missingMethod => |m| std.fmt.allocPrint(gpa, "'{s}' does not implement '{s}' required by interface '{s}'", .{ m.typeName, m.method, m.interfaceName }),
             .unknownMethod => |m| std.fmt.allocPrint(gpa, "'{s}' is not declared in any interface implemented for '{s}'", .{ m.method, m.typeName }),
             .unknownInterface => |u| std.fmt.allocPrint(gpa, "'{s}' is not an interface implemented here (method '{s}')", .{ u.qualifier, u.method }),

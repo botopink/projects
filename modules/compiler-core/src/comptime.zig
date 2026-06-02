@@ -57,6 +57,9 @@ pub const ComptimeOutput = struct {
         transformed: ast.Program,
         /// Type name → type definition ID map (for snapshot serialization).
         type_ids: std.StringHashMap(usize),
+        /// Static extension dispatch: call-site location → activated extension
+        /// symbol. Backends lower `obj.m(args)` at these sites to `Sym.m(obj, args)`.
+        dispatch_rewrites: std.AutoHashMap(ast.Loc, []const u8),
     };
 };
 
@@ -271,6 +274,11 @@ pub fn compileTypesOnly(
                 });
             },
             .success => |succ| {
+                var dispatch_rewrites = std.AutoHashMap(ast.Loc, []const u8).init(arena_alloc);
+                {
+                    var rit = succ.env.dispatchRewrites.iterator();
+                    while (rit.next()) |e| try dispatch_rewrites.put(e.key_ptr.*, e.value_ptr.*);
+                }
                 if (idx < modules.len - 1) {
                     var env = succ.env;
                     try registerExports(arena_alloc, &registry, mod.path, succ.bindings, &env);
@@ -306,6 +314,7 @@ pub fn compileTypesOnly(
                         .comptime_vals = empty_vals,
                         .transformed = transformed,
                         .type_ids = type_ids,
+                        .dispatch_rewrites = dispatch_rewrites,
                     } },
                 });
             },
@@ -365,6 +374,11 @@ pub fn compile(
                 });
             },
             .success => |succ| {
+                var dispatch_rewrites = std.AutoHashMap(ast.Loc, []const u8).init(arena_alloc);
+                {
+                    var rit = succ.env.dispatchRewrites.iterator();
+                    while (rit.next()) |e| try dispatch_rewrites.put(e.key_ptr.*, e.value_ptr.*);
+                }
                 if (idx < modules.len - 1) {
                     var env = succ.env;
                     try registerExports(arena_alloc, &registry, mod.path, succ.bindings, &env);
@@ -411,6 +425,7 @@ pub fn compile(
                         .comptime_vals = ct.comptime_vals,
                         .transformed = transformed,
                         .type_ids = type_ids,
+                        .dispatch_rewrites = dispatch_rewrites,
                     } },
                 });
             },
