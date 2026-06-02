@@ -23,10 +23,10 @@ val r = donald.swim();
 
 ----- ERROR
 error: ambiguous extension method
-  ┌─ :21:9
+  ┌─ :21:16
   │
 21 │ val r = donald.swim();
-  │         ^
+  │                ^
 
   'Pato.swim' is provided by both 'PatoNada' and 'PatoFundo'
   hint: qualify the call, e.g. `PatoNada.swim(obj)`

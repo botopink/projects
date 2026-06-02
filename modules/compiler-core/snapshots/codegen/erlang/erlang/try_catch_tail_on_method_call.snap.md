@@ -24,7 +24,7 @@ parse() ->
     erlang:throw(ParseError(<<"bad input">>)).
 
 run(P) ->
-    Result = case p:parse() of
+    Result = case P:parse() of
         {ok, TryV0} -> TryV0;
         {error, _TryE0} ->
             0

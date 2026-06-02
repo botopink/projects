@@ -24,6 +24,32 @@ pub enum Result<R, E> {
     Error(error: E);
 }
 
+// `@Result<R, E>` carries the following builtin methods. They are resolved by
+// type inference and lowered inline by every codegen backend (there is no
+// runtime dispatch table), so they are documented here rather than declared as
+// enum methods:
+//
+//   fn map(self, transform: fn(value: R) -> R2) -> @Result<R2, E>
+//       Apply `transform` to the Ok payload; an Error is propagated untouched.
+//   fn flatMap(self, transform: fn(value: R) -> @Result<R2, E>) -> @Result<R2, E>
+//       Like `map` but `transform` itself returns a Result (no nesting).
+//   fn unwrapOr(self, default: R) -> R
+//       The Ok payload, or `default` when the receiver is an Error.
+//   fn isOk(self) -> bool        // true when the receiver is `Ok`
+//   fn isError(self) -> bool     // true when the receiver is `Error`
+
+// ── option type ──────────────────────────────────────────────────────────────
+
+// `@Option<T>` is the canonical spelling of the optional type `?T`; both share
+// one representation (a value, or absent). It mirrors the Result method API
+// (also inference-resolved + inline-lowered):
+//
+//   fn map(self, transform: fn(value: T) -> T2) -> @Option<T2>
+//       Apply `transform` to the present value; absence is propagated.
+//   fn flatMap(self, transform: fn(value: T) -> @Option<T2>) -> @Option<T2>
+//   fn unwrapOr(self, default: T) -> T
+//       The present value, or `default` when absent.
+
 // ── iterator ─────────────────────────────────────────────────────────────────
 
 pub interface Iterator<T> {

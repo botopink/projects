@@ -53,6 +53,16 @@ val splash = donald.swim();
         "params": [],
         "return_type": "?"
       }
+    },
+    {
+      "ast": "use",
+      "declarations": [
+        {
+          "ast": "use-declaration",
+          "indent": "PatoNada",
+          "return_type": "?"
+        }
+      ]
     }
   ]
 }

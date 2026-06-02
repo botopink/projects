@@ -1002,7 +1002,8 @@ const Emitter = struct {
         };
 
         if (cc.receiver) |recv| {
-            try self.fmt("{s}.", .{recv});
+            try self.emitExpr(recv.*);
+            try self.w(".");
             try self.w(cc.callee);
         } else {
             try self.writeHookName(cc.callee);
@@ -1216,6 +1217,55 @@ const Emitter = struct {
         try self.w(" ");
         try self.emitExpr(rhs.*);
         try self.w(")");
+    }
+
+    /// Emit the inline CommonJS form for a lowered `@Result`/`@Option` method op.
+    /// `args[0]` is the receiver expression; `args[1]` (when present) is the
+    /// transform function or default value. An IIFE binds the receiver once so it
+    /// is not re-evaluated (important for method chains).
+    fn emitResultOptionOp(self: *Emitter, callee: []const u8, args: []const ast.CallArg) anyerror!void {
+        const recv = args[0].value;
+        const arg1: ?*ast.Expr = if (args.len > 1) args[1].value else null;
+
+        if (std.mem.eql(u8, callee, "__bp_result_map")) {
+            try self.w("((_r) => _r.tag === \"Ok\" ? { tag: \"Ok\", result: (");
+            if (arg1) |a| try self.emitExpr(a.*);
+            try self.w(")(_r.result) } : _r)(");
+            try self.emitExpr(recv.*);
+            try self.w(")");
+        } else if (std.mem.eql(u8, callee, "__bp_result_flatMap")) {
+            try self.w("((_r) => _r.tag === \"Ok\" ? (");
+            if (arg1) |a| try self.emitExpr(a.*);
+            try self.w(")(_r.result) : _r)(");
+            try self.emitExpr(recv.*);
+            try self.w(")");
+        } else if (std.mem.eql(u8, callee, "__bp_result_unwrapOr")) {
+            try self.w("((_r) => _r.tag === \"Ok\" ? _r.result : (");
+            if (arg1) |a| try self.emitExpr(a.*);
+            try self.w("))(");
+            try self.emitExpr(recv.*);
+            try self.w(")");
+        } else if (std.mem.eql(u8, callee, "__bp_result_isOk")) {
+            try self.w("((_r) => _r.tag === \"Ok\")(");
+            try self.emitExpr(recv.*);
+            try self.w(")");
+        } else if (std.mem.eql(u8, callee, "__bp_result_isError")) {
+            try self.w("((_r) => _r.tag === \"Error\")(");
+            try self.emitExpr(recv.*);
+            try self.w(")");
+        } else if (std.mem.eql(u8, callee, "__bp_option_map") or std.mem.eql(u8, callee, "__bp_option_flatMap")) {
+            try self.w("((_o) => _o != null ? (");
+            if (arg1) |a| try self.emitExpr(a.*);
+            try self.w(")(_o) : null)(");
+            try self.emitExpr(recv.*);
+            try self.w(")");
+        } else if (std.mem.eql(u8, callee, "__bp_option_unwrapOr")) {
+            try self.w("((_o) => _o != null ? _o : (");
+            if (arg1) |a| try self.emitExpr(a.*);
+            try self.w("))(");
+            try self.emitExpr(recv.*);
+            try self.w(")");
+        }
     }
 
     fn emitExpr(self: *Emitter, e: ast.Expr) anyerror!void {
@@ -1594,6 +1644,8 @@ const Emitter = struct {
                             } else {
                                 return error.InvalidArgs;
                             }
+                        } else if (std.mem.startsWith(u8, cc.callee, "__bp_")) {
+                            try self.emitResultOptionOp(cc.callee, cc.args);
                         } else {
                             try self.w("@");
                             try self.w(cc.callee);
@@ -1611,10 +1663,11 @@ const Emitter = struct {
                             // `Sym.m(recv, args)` at activated call sites.
                             if (self.rewrites.get(c.loc)) |sym| {
                                 try self.fmt("{s}.{s}(", .{ sym, cc.callee });
-                                try self.w(recv);
+                                try self.emitExpr(recv.*);
                                 first = false;
                             } else {
-                                try self.fmt("{s}.{s}(", .{ recv, cc.callee });
+                                try self.emitExpr(recv.*);
+                                try self.fmt(".{s}(", .{cc.callee});
                             }
                         } else {
                             try self.fmt("{s}(", .{cc.callee});

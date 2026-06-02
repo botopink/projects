@@ -38,7 +38,18 @@ adding exactly one line here.
 | `primitives.d.bp` | `interface I32 { … }`, `U32`, `I64`, `U64`, `F32`, `F64`, `Bool`. Numeric methods: `to_string`, `abs`, `min`, `max`, `as<T>`. Bool methods: `to_string`. |
 | `array.d.bp` | `interface Array<T>` — `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter`. |
 | `string.d.bp` | `interface String` — `len`, `split`, `to_upper`/`to_lower`, `contains`, `starts_with`, `ends_with`, `trim`/`trim_left`/`trim_right`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
-| `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`). |
+| `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`), and the `@Result` enum + the `@Result`/`@Option` method API docs (`map`/`flatMap`/`unwrapOr`/`isOk`/`isError`). |
+
+## `@Result` / `@Option` methods
+
+`@Result<R, E>` and `@Option<T>` (the canonical spelling of `?T`) expose
+`.map` / `.flatMap` / `.unwrapOr` (plus `.isOk` / `.isError` for Result). Unlike
+the other stdlib signatures, these are **not** type-checked from a declaration —
+they are special-cased in inference (`comptime/infer.zig`, `inferResultOptionMethod`)
+and lowered by the AST transform into `__bp_<domain>_<op>(...)` builtin calls
+that each codegen backend emits inline. `builtins.d.bp` documents the API in a
+comment block (bodyless enum methods do not parse, so it cannot be a real
+declaration). See the language reference `Result & Option methods` section.
 
 ## Declarative style — no bodies
 

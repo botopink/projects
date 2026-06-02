@@ -32,8 +32,18 @@ comptime/
 |---|---|
 | `analyzeModule(…)` | lex / parse / validate comptime purity / infer |
 | `evaluateComptime(…)` | run eval script via runtime, parse JSON output |
-| `transform.transform(…)` | full AST rewrite pass |
+| `transform.transform(…)` | full AST rewrite pass (specialization + `@Result`/`@Option` method lowering) |
 | `ComptimeSession` | owns shared arena + per-module `ComptimeOutput` |
+
+### `@Result` / `@Option` method lowering
+
+`CallExpr.receiver` is an expression (`?*Expr`), so method chains and zero-arg
+method calls parse. Inference (`inferResultOptionMethod`) type-checks `.map` /
+`.flatMap` / `.unwrapOr` / `.isOk` / `.isError` on `@Result<R,E>` and `@Option<T>`
+(`?T` normalised), recording a decision in `Env.method_lowerings` keyed by call
+loc. `transform.transform` consumes that map and rewrites each call into a
+`__bp_<domain>_<op>(receiver, args…)` builtin call; the codegen backends emit the
+inline form (`commonJS`/`erlang` fully, `beam`/`wasm` as a documented stub).
 
 ## Type system at a glance
 

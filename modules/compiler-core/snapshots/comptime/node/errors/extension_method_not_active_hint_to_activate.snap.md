@@ -13,10 +13,10 @@ val r = donald.swim();
 
 ----- ERROR
 error: method not active
-  ┌─ :11:9
+  ┌─ :11:16
   │
 11 │ val r = donald.swim();
-  │         ^
+  │                ^
 
   'Pato' has no active method 'swim'
   hint: activate the extension with `PatoNada*`
