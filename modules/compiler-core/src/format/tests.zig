@@ -437,6 +437,22 @@ test "format: pub fn ---- typeparam no constraint" {
     );
 }
 
+test "format: pub fn ---- typeparam single constraint" {
+    try assertFormat(std.testing.allocator,
+        \\fn render(comptime tag: typeparam string, props: i32) -> string {
+        \\    todo;
+        \\}
+    );
+}
+
+test "format: pub fn ---- typeparam multiple pipe constraints" {
+    try assertFormat(std.testing.allocator,
+        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\    todo;
+        \\}
+    );
+}
+
 // ── case expressions ──────────────────────────────────────────────────────────
 
 test "format: case ---- wildcard and ident" {

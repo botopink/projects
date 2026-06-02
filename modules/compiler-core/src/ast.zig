@@ -1176,6 +1176,10 @@ pub const TypeRef = union(enum) {
     function: struct { params: []TypeRef, returnType: *TypeRef },
     /// Generic type: `@Result<D, E>` (builtin) or `MyType<T>` (user-defined). Owns the argument types.
     generic: struct { name: []const u8, args: []TypeRef, is_builtin: bool },
+    /// Comptime type parameter: `typeparam` or `typeparam string | int | bool`.
+    /// `constraints` is the `|`-separated list of accepted types; an empty slice
+    /// means the typeparam is unconstrained and accepts any type. Owns the constraints.
+    typeparam: []TypeRef,
 
     pub fn deinit(this: *TypeRef, allocator: std.mem.Allocator) void {
         switch (this.*) {
@@ -1201,6 +1205,10 @@ pub const TypeRef = union(enum) {
             .generic => |b| {
                 for (b.args) |*a| a.deinit(allocator);
                 allocator.free(b.args);
+            },
+            .typeparam => |constraints| {
+                for (constraints) |*c| c.deinit(allocator);
+                allocator.free(constraints);
             },
         }
     }

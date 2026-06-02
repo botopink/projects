@@ -416,6 +416,8 @@ const Emitter = struct {
                     try self.w(">");
                 }
             },
+            // A comptime typeparam is erased after specialization; surface it as `any`.
+            .typeparam => try self.w("any"),
         }
     }
 

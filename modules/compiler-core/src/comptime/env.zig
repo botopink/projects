@@ -116,6 +116,18 @@ pub const ThrowContext = union(enum) {
     plain,
 };
 
+/// Constraint metadata for one `comptime ...: typeparam` parameter of a function.
+/// Recorded at fn-declaration time and consulted at each call site.
+pub const TypeparamConstraint = struct {
+    /// Index of this parameter in the function's parameter list.
+    paramIndex: usize,
+    /// The parameter's name (for diagnostics).
+    paramName: []const u8,
+    /// Accepted type names (e.g. `string`, `int`, `bool`). Empty means
+    /// the typeparam is unconstrained and accepts a value of any type.
+    names: []const []const u8,
+};
+
 // ── environment ───────────────────────────────────────────────────────────────
 
 /// The type-checking environment.
@@ -129,6 +141,9 @@ pub const Env = struct {
     bindings: std.StringHashMap(*T.Type),
     /// Registered type definitions: type name → TypeDef.
     typeDefs: std.StringHashMap(TypeDef),
+    /// Per-function typeparam constraints: function name → constraint list.
+    /// Only functions with at least one `typeparam` parameter appear here.
+    fnTypeparams: std.StringHashMap([]const TypeparamConstraint),
     /// Monotonically increasing counter for fresh type variable IDs.
     nextId: T.TypeId,
     /// Monotonically increasing counter for type definition IDs (record$$0, struct$$1, ...).
@@ -147,6 +162,7 @@ pub const Env = struct {
             .arena = arena,
             .bindings = std.StringHashMap(*T.Type).init(arena),
             .typeDefs = std.StringHashMap(TypeDef).init(arena),
+            .fnTypeparams = std.StringHashMap([]const TypeparamConstraint).init(arena),
             .nextId = 0,
             .nextTypeId = 0,
             .level = 0,
@@ -159,6 +175,7 @@ pub const Env = struct {
     pub fn deinit(self: *Env) void {
         self.bindings.deinit();
         self.typeDefs.deinit();
+        self.fnTypeparams.deinit();
     }
 
     // ── type constructors ─────────────────────────────────────────────────────
@@ -216,6 +233,16 @@ pub const Env = struct {
 
     pub fn lookupTypeDef(self: *Env, name: []const u8) ?TypeDef {
         return self.typeDefs.get(name);
+    }
+
+    /// Record the typeparam constraints for a function (keyed by name).
+    pub fn registerTypeparams(self: *Env, name: []const u8, constraints: []const TypeparamConstraint) !void {
+        try self.fnTypeparams.put(name, constraints);
+    }
+
+    /// Look up the typeparam constraints for a function, or null if it has none.
+    pub fn lookupTypeparams(self: *Env, name: []const u8) ?[]const TypeparamConstraint {
+        return self.fnTypeparams.get(name);
     }
 
     pub fn registerTypeDef(self: *Env, name: []const u8, def: TypeDef) !void {

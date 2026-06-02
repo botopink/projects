@@ -1317,6 +1317,22 @@ test "parser: pub fn ---- typeparam no constraint" {
     );
 }
 
+test "parser: pub fn ---- typeparam single constraint" {
+    try assertParser(std.testing.allocator, @src(),
+        \\fn render(comptime tag: typeparam string, props: i32) -> string {
+        \\    @todo();
+        \\}
+    );
+}
+
+test "parser: pub fn ---- typeparam multiple pipe constraints" {
+    try assertParser(std.testing.allocator, @src(),
+        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\    @todo();
+        \\}
+    );
+}
+
 // ── top-level val with call expression ───────────────────────────────────────
 
 test "parser: val top-level ---- call expression" {

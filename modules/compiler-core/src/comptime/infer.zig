@@ -767,6 +767,13 @@ fn appendTypeRefStr(buf: *std.ArrayListUnmanaged(u8), allocator: std.mem.Allocat
             }
             try buf.append(allocator, '>');
         },
+        .typeparam => |constraints| {
+            try buf.appendSlice(allocator, "typeparam");
+            for (constraints, 0..) |c, i| {
+                try buf.appendSlice(allocator, if (i == 0) " " else " | ");
+                try appendTypeRefStr(buf, allocator, c);
+            }
+        },
     }
 }
 
@@ -817,9 +824,23 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
         try genericMap.put(gp.name, try env.freshVar());
     }
 
+    // Collect typeparam constraints so call sites can validate comptime args.
+    var typeparams: std.ArrayListUnmanaged(envMod.TypeparamConstraint) = .empty;
+
     // Infer parameter types.
     var paramTypes = try env.arena.alloc(*T.Type, f.params.len);
     for (f.params, 0..) |p, i| {
+        if (p.typeRef == .typeparam) {
+            const constraints = p.typeRef.typeparam;
+            const names = try env.arena.alloc([]const u8, constraints.len);
+            for (constraints, 0..) |c, ci| {
+                names[ci] = switch (c) {
+                    .named => |n| n,
+                    else => "",
+                };
+            }
+            try typeparams.append(env.arena, .{ .paramIndex = i, .paramName = p.name, .names = names });
+        }
         const ty = try resolveTypeRefInContext(env, p.typeRef, genericMap);
         paramTypes[i] = ty;
         if (p.destruct) |d| {
@@ -891,6 +912,10 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
         _ = try inferExpr(env, stmt.expr);
     }
 
+    if (typeparams.items.len > 0) {
+        try env.registerTypeparams(f.name, try typeparams.toOwnedSlice(env.arena));
+    }
+
     return env.funcType(paramTypes, retType);
 }
 
@@ -906,6 +931,52 @@ fn isIntType(t: *T.Type) bool {
 
 fn isFloatType(t: *T.Type) bool {
     return t.isNamed("f32") or t.isNamed("f64");
+}
+
+/// True when `t` satisfies a single typeparam constraint named `name`.
+/// Besides exact name matches, the category names `int` and `float` match any
+/// integer / floating-point primitive respectively.
+fn typeSatisfiesConstraint(t: *T.Type, name: []const u8) bool {
+    if (t.isNamed(name)) return true;
+    if (std.mem.eql(u8, name, "int")) return isIntType(t);
+    if (std.mem.eql(u8, name, "float")) return isFloatType(t);
+    return false;
+}
+
+/// True when index `i` names a typeparam parameter in `constraints`.
+fn isTypeparamIndex(constraints: []const envMod.TypeparamConstraint, i: usize) bool {
+    for (constraints) |c| {
+        if (c.paramIndex == i) return true;
+    }
+    return false;
+}
+
+/// Validate every constrained typeparam argument of a call against its declared
+/// constraints. Unconstrained typeparams (empty `names`) accept any type.
+/// On violation: sets `env.lastError` and returns `error.TypeError`.
+fn validateTypeparams(
+    env: *Env,
+    constraints: []const envMod.TypeparamConstraint,
+    typedArgs: []ast.CallArgOf(.typed),
+) InferError!void {
+    for (constraints) |c| {
+        if (c.names.len == 0) continue; // unconstrained — accepts any type
+        if (c.paramIndex >= typedArgs.len) continue;
+        const argType = typedArgs[c.paramIndex].value.getType();
+        var ok = false;
+        for (c.names) |name| {
+            if (typeSatisfiesConstraint(argType, name)) {
+                ok = true;
+                break;
+            }
+        }
+        if (!ok) {
+            env.lastError = TypeError
+                .typeparamConstraint(c.paramName, argType, c.names)
+                .withLoc(typedArgs[c.paramIndex].value.getLoc());
+            return error.TypeError;
+        }
+    }
 }
 
 /// Calls `unify` and, if it fails, stamps the expression's location onto the error.
@@ -1026,6 +1097,10 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             }
             return env.namedTypeArgs(b.name, args);
         },
+        // A comptime typeparam accepts a value of any type at the call site;
+        // its constraints are validated separately (see `validateTypeparams`).
+        // Resolve to a fresh variable so unification against it never fails.
+        .typeparam => return env.freshVar(),
     }
 }
 
@@ -1778,6 +1853,11 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
             const resolved = calleeType.deref();
             const retType: *T.Type = switch (resolved.*) {
                 .func => |f| blk: {
+                    // Constrained comptime typeparam args are validated against their
+                    // declared constraints; their param slots skip ordinary unification.
+                    const typeparams = env.lookupTypeparams(call.callee);
+                    if (typeparams) |constraints| try validateTypeparams(env, constraints, typedArgs);
+
                     var spreadCount: usize = 0;
                     var nonSpreadCount: usize = 0;
                     for (typedArgs) |ta| {
@@ -1795,7 +1875,8 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                             env.lastError = TypeError.arityMismatch(call.callee, f.params.len, call.args.len).withLoc(loc);
                             return error.TypeError;
                         }
-                        for (typedArgs, f.params) |ta, paramType| {
+                        for (typedArgs, f.params, 0..) |ta, paramType, i| {
+                            if (typeparams) |constraints| if (isTypeparamIndex(constraints, i)) continue;
                             try unifyAt(env, paramType, ta.value.getType(), ta.value.getLoc());
                         }
                         break :blk f.ret;
@@ -1807,7 +1888,8 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                             env.lastError = TypeError.arityMismatch(call.callee, f.params.len, call.args.len).withLoc(loc);
                             return error.TypeError;
                         }
-                        for (typedArgs, f.params) |ta, paramType| {
+                        for (typedArgs, f.params, 0..) |ta, paramType, i| {
+                            if (typeparams) |constraints| if (isTypeparamIndex(constraints, i)) continue;
                             try unifyAt(env, paramType, ta.value.getType(), ta.value.getLoc());
                         }
                         break :blk f.ret;

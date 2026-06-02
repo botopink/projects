@@ -3,8 +3,8 @@
   "decls": [
     {
       "fn": {
-        "isPub": true,
-        "name": "wrap",
+        "isPub": false,
+        "name": "coerce",
         "docComment": null,
         "comment": null,
         "moduleComment": null,
@@ -12,19 +12,40 @@
         "genericParams": [],
         "params": [
           {
-            "name": "T",
+            "name": "v",
             "typeRef": {
-              "typeparam": []
+              "typeparam": [
+                {
+                  "named": "string"
+                },
+                {
+                  "named": "int"
+                },
+                {
+                  "named": "bool"
+                }
+              ]
             },
             "typeName": "",
             "modifier": "comptime",
             "fnType": null,
             "destruct": null,
             "defaultVal": null
+          },
+          {
+            "name": "x",
+            "typeRef": {
+              "named": "i32"
+            },
+            "typeName": "",
+            "modifier": "none",
+            "fnType": null,
+            "destruct": null,
+            "defaultVal": null
           }
         ],
         "returnType": {
-          "named": "type"
+          "named": "i32"
         },
         "body": [
           {

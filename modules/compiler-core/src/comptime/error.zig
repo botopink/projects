@@ -111,6 +111,15 @@ pub const TypeErrorKind = union(enum) {
         interfaceA: []const u8,
         interfaceB: []const u8,
     },
+    /// A comptime `typeparam` argument's type is not among the declared constraints.
+    typeparamConstraint: struct {
+        /// The constrained parameter's name.
+        paramName: []const u8,
+        /// The offending argument's type.
+        got: *T.Type,
+        /// The accepted constraint type names.
+        constraints: []const []const u8,
+    },
 };
 
 /// A type error with its source location.
@@ -187,6 +196,10 @@ pub const TypeError = struct {
 
     pub fn ambiguousMethod(method: []const u8, interfaceA: []const u8, interfaceB: []const u8) TypeError {
         return .{ .kind = .{ .ambiguousMethod = .{ .method = method, .interfaceA = interfaceA, .interfaceB = interfaceB } } };
+    }
+
+    pub fn typeparamConstraint(paramName: []const u8, got: *T.Type, constraints: []const []const u8) TypeError {
+        return .{ .kind = .{ .typeparamConstraint = .{ .paramName = paramName, .got = got, .constraints = constraints } } };
     }
 };
 
