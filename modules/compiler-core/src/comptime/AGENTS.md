@@ -35,9 +35,9 @@ comptime/
 |---|---|
 | `types.zig` | All type representations as `union(enum)`. |
 | `env.zig` | Type environment — scopes, builtins + stdlib, `TypeDef.contextBase`, `FnContext`. |
-| `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. |
+| `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. Ends with `validateProgram` — `implement`/interface coverage + getter/setter type checks. |
 | `unify.zig` | Unification with substitution + occurs check. |
-| `error.zig` | Structured type errors with source ranges and hints. |
+| `error.zig` | Structured type errors with source ranges and hints (incl. `missingMethod`/`unknownMethod`/`unknownInterface`/`ambiguousMethod`). |
 | `eval.zig` | Builds eval scripts, calls runtime, parses JSON results. |
 | `render.zig` | Converts an evaluated comptime value into a target literal. |
 | `specialize.zig` | Pure AST specialization — unroll loops, fold static if/case. |

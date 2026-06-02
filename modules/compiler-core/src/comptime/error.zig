@@ -89,6 +89,28 @@ pub const TypeErrorKind = union(enum) {
     },
     /// `throw` used in a function whose return type is not `@Result<D, E>`.
     throwWithoutResult,
+    /// An `implement` block does not provide a method required by an interface.
+    missingMethod: struct {
+        typeName: []const u8,
+        interfaceName: []const u8,
+        method: []const u8,
+    },
+    /// An `implement` block declares a method not present in any implemented interface.
+    unknownMethod: struct {
+        typeName: []const u8,
+        method: []const u8,
+    },
+    /// A qualified method's interface prefix is not one of the implemented interfaces.
+    unknownInterface: struct {
+        qualifier: []const u8,
+        method: []const u8,
+    },
+    /// An unqualified method name is declared by more than one implemented interface.
+    ambiguousMethod: struct {
+        method: []const u8,
+        interfaceA: []const u8,
+        interfaceB: []const u8,
+    },
     /// A comptime `typeparam` argument's type is not among the declared constraints.
     typeparamConstraint: struct {
         /// The constrained parameter's name.
@@ -160,6 +182,22 @@ pub const TypeError = struct {
 
     pub fn throwWithoutResult() TypeError {
         return .{ .kind = .throwWithoutResult };
+    }
+
+    pub fn missingMethod(typeName: []const u8, interfaceName: []const u8, method: []const u8) TypeError {
+        return .{ .kind = .{ .missingMethod = .{ .typeName = typeName, .interfaceName = interfaceName, .method = method } } };
+    }
+
+    pub fn unknownMethod(typeName: []const u8, method: []const u8) TypeError {
+        return .{ .kind = .{ .unknownMethod = .{ .typeName = typeName, .method = method } } };
+    }
+
+    pub fn unknownInterface(qualifier: []const u8, method: []const u8) TypeError {
+        return .{ .kind = .{ .unknownInterface = .{ .qualifier = qualifier, .method = method } } };
+    }
+
+    pub fn ambiguousMethod(method: []const u8, interfaceA: []const u8, interfaceB: []const u8) TypeError {
+        return .{ .kind = .{ .ambiguousMethod = .{ .method = method, .interfaceA = interfaceA, .interfaceB = interfaceB } } };
     }
 
     pub fn typeparamConstraint(paramName: []const u8, got: *T.Type, constraints: []const []const u8) TypeError {
