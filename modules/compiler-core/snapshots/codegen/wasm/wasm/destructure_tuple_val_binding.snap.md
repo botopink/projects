@@ -11,13 +11,33 @@ fn extract() {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (global $__heap_ptr (mut i32) (i32.const 256))
+  (data (i32.const 256) "hello")
+  (global $__heap_ptr (mut i32) (i32.const 264))
   (func $extract
+    (local $__mem0 i32)
+    (local $__mem1 i32)
     (local $a i32)
     (local $b i32)
-    i32.const 0 ;; tuple
-    local.set $b
+    global.get $__heap_ptr
+    local.set $__mem1
+    global.get $__heap_ptr
+    i32.const 8
+    i32.add
+    global.set $__heap_ptr
+    local.get $__mem1
+    i32.const 12
+    i32.store
+    local.get $__mem1
+    i32.const 256
+    i32.store offset=4
+    local.get $__mem1
+    local.set $__mem0
+    local.get $__mem0
+    i32.load
     local.set $a
+    local.get $__mem0
+    i32.load offset=4
+    local.set $b
     local.get $a
     call $__print_i32
   )

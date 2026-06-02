@@ -16,7 +16,7 @@ fn handle() -> i32 {
   (memory (export "memory") 1)
   (global $__heap_ptr (mut i32) (i32.const 256))
   (func $fetch (result i32)
-    i32.const 0 ;; field access
+    i32.const 0 ;; ErrorKind.NotFound
     unreachable
   )
   (func $handle (result i32)

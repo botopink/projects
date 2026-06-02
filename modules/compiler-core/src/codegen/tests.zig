@@ -1752,6 +1752,60 @@ test "js: pipeline ---- with labeled args" {
     );
 }
 
+// ── WAT linear-memory features ─────────────────────────────────────────────────
+//
+// These exercise the WebAssembly backend's lowering of aggregates and strings
+// into linear memory (records/tuples/enum payloads as contiguous 4-byte slots,
+// string concat via `memory.copy`, string compare via a byte loop). They run
+// across every backend, but the WAT output is the one under test here.
+
+test "wat: record construct two fields" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\record Point { x: i32, y: i32 }
+        \\fn make() -> Point {
+        \\    return Point(x: 3, y: 4);
+        \\}
+    );
+}
+
+test "wat: tuple construct then destructure" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val t = #(10, 20);
+        \\    val #(a, b) = t;
+        \\    @print(a + b);
+        \\}
+    );
+}
+
+test "wat: enum payload construct as tagged struct" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\enum Shape {
+        \\    Circle(r: i32),
+        \\    Square(side: i32),
+        \\}
+        \\fn makeCircle() -> Shape {
+        \\    return Shape.Circle(r: 5);
+        \\}
+    );
+}
+
+test "wat: string concat via linear memory" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn greeting() -> string {
+        \\    return "Hello, " + "World";
+        \\}
+    );
+}
+
+test "wat: string compare via byte loop" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn sameWord() -> bool {
+        \\    return "foo" == "bar";
+        \\}
+    );
+}
+
 // ── break / continue / yield ──────────────────────────────────────────────────
 
 test "js: loop ---- break with value" {
