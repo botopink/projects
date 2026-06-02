@@ -26,16 +26,25 @@ fn Counter() -> Element {
     i32.const 0
   )
   (func $Counter (result i32)
+    (local $__mem0 i32)
+    (local $__mem1 i32)
     (local $count i32)
     (local $setCount i32)
     (local $doubled i32)
     i32.const 0
     call $state
+    local.set $__mem0
+    local.get $__mem0
+    i32.load
     local.set $count
+    local.get $__mem0
+    i32.load offset=4
     local.set $setCount
     call $memo
     local.set $doubled
-    call $Element
+    global.get $__heap_ptr
+    local.set $__mem1
+    local.get $__mem1
   )
 )
 ```

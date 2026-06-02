@@ -28,8 +28,8 @@ fn pipeline() -> @Result<i32, IoError> {
   {label, 3}.
     {allocate, 0, 0}.
     {move, {literal, <<"/data">>}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 1, {list, [{atom, path}, {x, 0}]}}.
+    {move, {x, 0}, {x, 1}}.
+    {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, path}, {x, 1}]}}.
     {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
 
 {function, step2, 1, 5}.

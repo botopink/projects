@@ -17,12 +17,23 @@ fn f() {
   (data (i32.const 260) "failed")
   (global $__heap_ptr (mut i32) (i32.const 268))
   (func $fetch (result i32)
+    (local $__mem0 i32)
+    global.get $__heap_ptr
+    local.set $__mem0
+    global.get $__heap_ptr
+    i32.const 4
+    i32.add
+    global.set $__heap_ptr
+    local.get $__mem0
     i32.const 256
-    call $Error
+    i32.store
+    local.get $__mem0
     unreachable
   )
   (func $f
     (local $_try0 i32)
+    (local $__mem0 i32)
+    (local $__mem1 i32)
     (local $a i32)
     (local $b i32)
     call $fetch
@@ -31,8 +42,16 @@ fn f() {
     i32.load ;; Result tag (0 = Ok, non-zero = Error)
     (if (result i32)
       (then
+    global.get $__heap_ptr
+    local.set $__mem1
+    global.get $__heap_ptr
+    i32.const 4
+    i32.add
+    global.set $__heap_ptr
+    local.get $__mem1
     i32.const 260
-    call $Error
+    i32.store
+    local.get $__mem1
     unreachable
       )
       (else
@@ -40,8 +59,13 @@ fn f() {
     i32.load offset=4 ;; Ok payload
       )
     )
-    local.set $b
+    local.set $__mem0
+    local.get $__mem0
+    i32.load
     local.set $a
+    local.get $__mem0
+    i32.load offset=4
+    local.set $b
   )
 )
 ```

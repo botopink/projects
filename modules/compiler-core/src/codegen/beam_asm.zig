@@ -1479,6 +1479,16 @@ const Emitter = struct {
                 if (rn.len > 0 and rn.len <= 128 and
                     std.ascii.isUpper(rn[0]) and !self.reg_map.contains(rn))
                 {
+                    // `Type.Variant(…)` — a PascalCase callee on a PascalCase
+                    // type receiver is an enum variant constructor, not a module
+                    // call → tagged tuple `{Variant, payload…}` (matches the tag
+                    // tested by `is_tagged_tuple`). A lowercase callee (`List.map`)
+                    // is a module-qualified remote call.
+                    if (cc.callee.len > 0 and std.ascii.isUpper(cc.callee[0])) {
+                        try self.lowerTaggedTuple(cc.callee, cc.args);
+                        if (mode == .tail) try self.emitReturn();
+                        return;
+                    }
                     const total = cc.args.len + cc.trailing.len;
                     const scratch = self.cur_arity;
                     for (cc.args, 0..) |arg, i| {
@@ -1611,7 +1621,10 @@ const Emitter = struct {
             try self.bodyWrite("    {move, {literal, #{}}, {x, 0}}.\n");
             return;
         }
-        const scratch = self.cur_arity;
+        // Scratch slots start at `max(cur_arity, 1)` — never `{x, 0}`, which each
+        // `lowerExprIntoX0` overwrites; storing a value there would clobber it as
+        // soon as the next field is evaluated.
+        const scratch = @max(self.cur_arity, 1);
         for (args, 0..) |arg, i| {
             try self.lowerExprIntoX0(arg.value.*);
             try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + i});
@@ -1623,6 +1636,25 @@ const Emitter = struct {
         for (args, 0..) |arg, i| {
             if (i > 0) try self.bodyWrite(", ");
             try self.bodyPrint("{{atom, {s}}}, {{x, {d}}}", .{ arg.label.?, scratch + i });
+        }
+        try self.bodyWrite("]}}.\n");
+    }
+
+    /// Build a tagged tuple `{Tag, Field0, …}` from an enum variant constructor
+    /// `Shape.Circle(r: 5)` → `{Circle, 5}`. The tag atom matches the one tested
+    /// by `is_tagged_tuple` when the variant is pattern-matched. Result in `{x, 0}`.
+    fn lowerTaggedTuple(self: *Emitter, tag: []const u8, args: anytype) anyerror!void {
+        const n = args.len;
+        const scratch = @max(self.cur_arity, 1);
+        for (args, 0..) |arg, i| {
+            try self.lowerExprIntoX0(arg.value.*);
+            try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + i});
+        }
+        // A tuple of `n + 1` elements (tag + fields) needs `n + 2` heap words.
+        try self.bodyPrint("    {{test_heap, {d}, {d}}}.\n", .{ n + 2, scratch + n });
+        try self.bodyPrint("    {{put_tuple2, {{x, 0}}, {{list, [{{atom, {s}}}", .{tag});
+        for (0..n) |i| {
+            try self.bodyPrint(", {{x, {d}}}", .{scratch + i});
         }
         try self.bodyWrite("]}}.\n");
     }

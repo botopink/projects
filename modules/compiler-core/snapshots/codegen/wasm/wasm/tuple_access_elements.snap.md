@@ -11,7 +11,8 @@ fn getFirst(t: #(i32, string)) -> i32 {
   (memory (export "memory") 1)
   (global $__heap_ptr (mut i32) (i32.const 256))
   (func $getFirst (param $t i32) (result i32)
-    i32.const 0 ;; field access
+    local.get $t
+    i32.load
     return
   )
 )
