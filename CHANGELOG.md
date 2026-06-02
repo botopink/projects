@@ -6,6 +6,16 @@ All notable changes to the botopink compiler workspace are documented in this fi
 
 ### Highlights
 
+- **`use` hook codegen (F8)**
+  - `use` is now a prefix operator (`val {v, s} = use state(0)`); the AST node
+    collapsed to `Expr.useHook { inner }` and binding moved to `val`/`var`.
+  - CommonJS lowers hooks to React: `state`→`useState`, `memo`→`useMemo`,
+    `effect`→`useEffect` (via the `"use"+Capitalize` convention), with an
+    inferred dependency array for `memo`/`effect`. Erlang/BEAM/WAT lower `use`
+    transparently into the binding's slot.
+  - Phantom `@Context` base structs emit no runtime code; the `.d.ts` erases
+    `@Context<B, R>` to its Return type `R`.
+  - Parser fix: no-param trailing lambdas `{ -> … }` now consume their arrow.
 - **Expression-flow refactor across compiler-core** (`b86c5de`)
   - `ast.ExprOf(phase)` now uses categorized families:
     `literal`, `identifier`, `binaryOp`, `unaryOp`, `jump`, `branch`, `loop`, `binding`, `call`, `function`, `collection`, `comptime_`.

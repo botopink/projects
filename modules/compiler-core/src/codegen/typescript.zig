@@ -5,6 +5,7 @@
 const std = @import("std");
 const ast = @import("../ast.zig");
 const comptimeMod = @import("../comptime.zig");
+const commonJS = @import("./commonJS.zig");
 
 /// Emit a TypeScript declaration file for all bindings.
 pub fn emitProgram(
@@ -39,7 +40,8 @@ const Emitter = struct {
         switch (b.decl) {
             .val => |v| try self.emitVal(v.name, v.isPub, b.type_),
             .@"fn" => |f| try self.emitFn(f),
-            .@"struct" => |s| try self.emitStruct(s),
+            // Phantom `@Context` base structs are erased from the typedef too.
+            .@"struct" => |s| if (!commonJS.isPhantomContextStruct(s)) try self.emitStruct(s),
             .record => |r| try self.emitRecord(r),
             .@"enum" => |e| try self.emitEnum(e),
             .interface => |i| try self.emitInterface(i),
@@ -400,7 +402,11 @@ const Emitter = struct {
                 try self.emitTypeRef(f.returnType.*);
             },
             .generic => |b| {
-                if (std.mem.eql(u8, b.name, "Result") and b.args.len == 2) {
+                // `@Context<B, R>` is a phantom capability — at the value level a
+                // context function yields its Return type `R`. Erase the wrapper.
+                if (std.mem.eql(u8, b.name, "Context") and b.args.len == 2) {
+                    try self.emitTypeRef(b.args[1]);
+                } else if (std.mem.eql(u8, b.name, "Result") and b.args.len == 2) {
                     try self.w("{ tag: \"Ok\"; result: ");
                     try self.emitTypeRef(b.args[0]);
                     try self.w(" } | { tag: \"Error\"; error: ");

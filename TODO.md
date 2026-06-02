@@ -84,10 +84,13 @@
 > ainda não mergeado). Quando `feat/use-await-prefix` entrar, portar `inferUseHookExpr`
 > para o nó prefixo — a extração/validação de ContextBase (`env.zig`/`infer.zig`) não muda.
 
-**`feat/hook-codegen`** — codegen dos hooks (plano F8) · *após context-inference*
-1. CommonJS: `use state()/memo()/effect()` → `useState/useMemo/useEffect` (deps inferidas)
-2. Mapeamento de nome do hook (ver P1)
-3. Erlang/BEAM/WAT: hook → slot de state / offset memória linear
+**`feat/hook-codegen`** — codegen dos hooks (plano F8) · ✅ **feito**
+1. ✅ CommonJS: `use state()/memo()/effect()` → `useState/useMemo/useEffect` (deps inferidas)
+2. ✅ Mapeamento de nome do hook — convenção `"use" + Capitalize` (P1 resolvido)
+3. ✅ Erlang/BEAM/WAT: `use` é prefixo transparente; resultado vai p/ binding/slot do `val`
+   - `@Context<B,R>` apagado p/ `R` no `.d.ts`; struct-base fantasma não emite código
+   - `use` virou operador prefixo (binding no `val`); fix no parser: trailing lambda `{ -> … }`
+   - detalhes em [`tasks/hook-codegen.md`](tasks/hook-codegen.md)
 
 **Backlog paralelo (já detalhado nas seções abaixo)**
 - `feat/beam-asm` — BEAM ASM Fases 3–9

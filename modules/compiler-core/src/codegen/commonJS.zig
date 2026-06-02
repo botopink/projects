@@ -4,6 +4,7 @@ const tsEmit = @import("./typescript.zig");
 const moduleOutput = @import("./moduleOutput.zig");
 const configMod = @import("./config.zig");
 const ast = @import("../ast.zig");
+const specialize = @import("../comptime/specialize.zig");
 
 const ModuleOutput = moduleOutput.ModuleOutput;
 const ComptimeOutput = comptimeMod.ComptimeOutput;
@@ -92,6 +93,31 @@ pub fn isComptimeExpr(te: ast.TypedExpr) bool {
         .@"comptime", .comptimeBlock => true,
         else => false,
     };
+}
+
+/// If `e` is a `use`-hook prefix, return the wrapped hook-call expression.
+pub fn useHookInner(e: ast.Expr) ?*ast.Expr {
+    return switch (e) {
+        .useHook => |uh| uh.kind.inner,
+        else => null,
+    };
+}
+
+/// True when a type reference is the phantom capability `@Context<B, R>`.
+pub fn isContextTypeRef(tr: ast.TypeRef) bool {
+    return switch (tr) {
+        .generic => |g| std.mem.eql(u8, g.name, "Context"),
+        else => false,
+    };
+}
+
+/// True when a struct exists solely as a phantom `ContextBase` marker —
+/// it `implement`s `@Context` and carries no members. Such structs are erased:
+/// they describe a capability, not a runtime value.
+pub fn isPhantomContextStruct(s: ast.StructDecl) bool {
+    if (s.members.len != 0) return false;
+    for (s.implement) |im| if (isContextTypeRef(im)) return true;
+    return false;
 }
 
 /// Emit all declarations as JavaScript source.
@@ -188,10 +214,13 @@ pub fn emitProgram(
                 firstEmitted = false;
             },
             .@"struct" => |s| {
-                if (!firstEmitted) try aw.writer.writeByte('\n');
-                try em.emitStruct(s);
-                try aw.writer.writeByte('\n');
-                firstEmitted = false;
+                // Phantom `@Context` base structs are erased — emit no runtime code.
+                if (!isPhantomContextStruct(s)) {
+                    if (!firstEmitted) try aw.writer.writeByte('\n');
+                    try em.emitStruct(s);
+                    try aw.writer.writeByte('\n');
+                    firstEmitted = false;
+                }
             },
             .record => |r| {
                 if (!firstEmitted) try aw.writer.writeByte('\n');
@@ -325,6 +354,10 @@ const Emitter = struct {
     cv: std.StringHashMap([]const u8),
     current_indent: usize = 0,
     alloc: std.mem.Allocator,
+    /// Names bound by `use` hooks seen so far in the current function body, in
+    /// source order. Used to infer the dependency array of `useMemo`/`useEffect`:
+    /// a hook's lambda dep list is the reactive names it references.
+    hook_state: std.ArrayListUnmanaged([]const u8) = .empty,
 
     fn emitterInit(
         alloc: std.mem.Allocator,
@@ -339,7 +372,7 @@ const Emitter = struct {
     }
 
     fn deinit(self: *Emitter) void {
-        _ = self;
+        self.hook_state.deinit(self.alloc);
     }
 
     fn w(self: *Emitter, s: []const u8) !void {
@@ -403,6 +436,8 @@ const Emitter = struct {
         try self.w(") {\n");
         const prev_fn_indent = self.current_indent;
         self.current_indent = 1;
+        // Each function body gets a fresh reactive-name scope for hook deps.
+        self.hook_state.clearRetainingCapacity();
         for (f.body) |s| {
             try self.w("    ");
             try self.emitStmt(s);
@@ -757,40 +792,27 @@ const Emitter = struct {
                 .localBind => |lb| {
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
                     try self.fmt("{s} {s} = ", .{ kw, lb.name });
-                    try self.emitExpr(lb.value.*);
+                    // `val d = use memo { … }` → `const d = useMemo(…, [deps])`.
+                    if (useHookInner(lb.value.*)) |inner| {
+                        try self.emitHookCall(inner.*);
+                        try self.hook_state.append(self.alloc, lb.name);
+                    } else {
+                        try self.emitExpr(lb.value.*);
+                    }
                     try self.w(";");
                 },
                 .localBindDestruct => |lb| {
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
                     try self.fmt("{s} ", .{kw});
-                    switch (lb.pattern) {
-                        .names => |*n| {
-                            try self.w("{ ");
-                            for (n.fields, 0..) |nm, i| {
-                                if (i > 0) try self.w(", ");
-                                try self.w(nm.bind_name);
-                            }
-                            if (n.hasSpread) try self.w(", ...");
-                            try self.w(" } = ");
-                        },
-                        .tuple_ => |t| {
-                            try self.w("[ ");
-                            for (t, 0..) |nm, i| {
-                                if (i > 0) try self.w(", ");
-                                try self.w(nm);
-                            }
-                            try self.w(" ] = ");
-                        },
-                        .list => |pat| {
-                            try self.emitPattern(pat);
-                            try self.w(" = ");
-                        },
-                        .ctor => |pat| {
-                            try self.emitPattern(pat);
-                            try self.w(" = ");
-                        },
+                    try self.emitDestructPattern(lb.pattern);
+                    try self.w(" = ");
+                    // `val {v, s} = use state(0)` → `const { v, s } = useState(0)`.
+                    if (useHookInner(lb.value.*)) |inner| {
+                        try self.emitHookCall(inner.*);
+                        try self.trackDestructNames(lb.pattern);
+                    } else {
+                        try self.emitExpr(lb.value.*);
                     }
-                    try self.emitExpr(lb.value.*);
                     try self.w(";");
                 },
                 else => {
@@ -798,7 +820,11 @@ const Emitter = struct {
                     try self.w(";");
                 },
             },
-            .useHook => {},
+            // A bare `use <hookcall>;` statement is a void hook (e.g. `use effect { … }`).
+            .useHook => |uh| {
+                try self.emitHookCall(uh.kind.inner.*);
+                try self.w(";");
+            },
             .jump => |j| switch (j.kind) {
                 .@"return" => |r| {
                     if (r) |rp| {
@@ -818,6 +844,153 @@ const Emitter = struct {
                 try self.emitExpr(e);
                 try self.w(";");
             },
+        }
+    }
+
+    // ── use-hooks (React-like target) ───────────────────────────────────────────
+
+    /// Hooks whose lambda argument is wrapped with an inferred dependency array,
+    /// matching React's `useMemo`/`useEffect`/`useCallback` calling convention.
+    fn hookTakesDeps(callee: []const u8) bool {
+        const with_deps = [_][]const u8{ "memo", "effect", "callback", "layoutEffect", "imperativeHandle" };
+        for (with_deps) |h| if (std.mem.eql(u8, callee, h)) return true;
+        return false;
+    }
+
+    /// Write a hook's JS name. Bare capability names map by the React convention
+    /// `state` → `useState`, `memo` → `useMemo`. Names already in `useXxx` form
+    /// (custom hooks like `useAuth`) pass through unchanged.
+    fn writeHookName(self: *Emitter, callee: []const u8) !void {
+        const is_custom = callee.len > 3 and
+            std.mem.startsWith(u8, callee, "use") and
+            std.ascii.isUpper(callee[3]);
+        if (is_custom) {
+            try self.w(callee);
+            return;
+        }
+        try self.w("use");
+        if (callee.len > 0) {
+            const upper = [_]u8{std.ascii.toUpper(callee[0])};
+            try self.w(&upper);
+            try self.w(callee[1..]);
+        }
+    }
+
+    /// Emit a `use`-hook's value expression as a React hook call: map the hook
+    /// name and, for dependency-taking hooks, append the inferred deps array.
+    fn emitHookCall(self: *Emitter, value: ast.Expr) anyerror!void {
+        const cc = switch (value) {
+            .call => |c| switch (c.kind) {
+                .call => |call| call,
+                else => return self.emitExpr(value),
+            },
+            else => return self.emitExpr(value),
+        };
+
+        if (cc.receiver) |recv| {
+            try self.fmt("{s}.", .{recv});
+            try self.w(cc.callee);
+        } else {
+            try self.writeHookName(cc.callee);
+        }
+        try self.w("(");
+        var first = true;
+        for (cc.args) |arg| {
+            if (!first) try self.w(", ");
+            try self.emitExpr(arg.value.*);
+            first = false;
+        }
+        for (cc.trailing) |tl| {
+            if (!first) try self.w(", ");
+            first = false;
+            try self.emitLambda(tl.params, tl.body);
+        }
+        if (hookTakesDeps(cc.callee)) {
+            try self.w(", [");
+            try self.emitHookDeps(cc);
+            try self.w("]");
+        }
+        try self.w(")");
+    }
+
+    /// Emit the inferred dependency array contents: the reactive names (bound by
+    /// prior hooks) referenced inside this hook's lambda argument, in source order.
+    fn emitHookDeps(self: *Emitter, cc: anytype) !void {
+        const body = hookLambdaBody(cc) orelse return;
+        var first = true;
+        for (self.hook_state.items) |name| {
+            var referenced = false;
+            for (body) |s| {
+                if (specialize.identInExpr(s.expr, name)) {
+                    referenced = true;
+                    break;
+                }
+            }
+            if (referenced) {
+                if (!first) try self.w(", ");
+                try self.w(name);
+                first = false;
+            }
+        }
+    }
+
+    /// Find the lambda body among a hook call's arguments (the dependency source).
+    fn hookLambdaBody(cc: anytype) ?[]ast.Stmt {
+        for (cc.args) |arg| switch (arg.value.*) {
+            .function => |f| return f.kind.body,
+            else => {},
+        };
+        if (cc.trailing.len > 0) return cc.trailing[0].body;
+        return null;
+    }
+
+    /// Emit a `params => { body }` arrow function (for trailing-lambda hook args).
+    fn emitLambda(self: *Emitter, params: []const []const u8, body: []ast.Stmt) !void {
+        try self.w("(");
+        for (params, 0..) |p, i| {
+            if (i > 0) try self.w(", ");
+            try self.w(p);
+        }
+        try self.w(") => {\n");
+        for (body) |st| {
+            try self.w("    ");
+            try self.emitStmt(st);
+            try self.w("\n");
+        }
+        try self.w("}");
+    }
+
+    /// Emit a destructuring binding target (`{ a, b }` or `[ a, b ]`).
+    fn emitDestructPattern(self: *Emitter, pattern: ast.ParamDestruct) !void {
+        switch (pattern) {
+            .names => |n| {
+                try self.w("{ ");
+                for (n.fields, 0..) |nm, i| {
+                    if (i > 0) try self.w(", ");
+                    try self.w(nm.bind_name);
+                }
+                if (n.hasSpread) try self.w(", ...");
+                try self.w(" }");
+            },
+            .tuple_ => |t| {
+                try self.w("[ ");
+                for (t, 0..) |nm, i| {
+                    if (i > 0) try self.w(", ");
+                    try self.w(nm);
+                }
+                try self.w(" ]");
+            },
+            .list => |pat| try self.emitPattern(pat),
+            .ctor => |pat| try self.emitPattern(pat),
+        }
+    }
+
+    /// Record the names introduced by a destructuring `use` as reactive deps.
+    fn trackDestructNames(self: *Emitter, pattern: ast.ParamDestruct) !void {
+        switch (pattern) {
+            .names => |n| for (n.fields) |nm| try self.hook_state.append(self.alloc, nm.bind_name),
+            .tuple_ => |t| for (t) |nm| try self.hook_state.append(self.alloc, nm),
+            else => {},
         }
     }
 
@@ -1160,7 +1333,8 @@ const Emitter = struct {
                 },
             },
 
-            .useHook => {},
+            // A `use` hook used in value position: emit the underlying hook call.
+            .useHook => |uh| try self.emitHookCall(uh.kind.inner.*),
 
             .call => |c| switch (c.kind) {
                 .call => |cc| {
