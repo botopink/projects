@@ -1182,27 +1182,29 @@ pub const Formatter = struct {
                 }
             },
 
-            .variantBinding => |vb| {
-                return this.concat(
-                    try this.text(vb.name),
-                    try this.concat(try this.text(" "), try this.text(vb.binding)),
-                );
-            },
-            .variantFields => |vf| {
-                var items = try this.arena.alloc(*const Doc, vf.bindings.len);
-                for (vf.bindings, 0..) |b, i| items[i] = try this.text(b);
-                return this.concat(
-                    try this.text(vf.name),
-                    try this.commaList("(", items, ")"),
-                );
-            },
-            .variantLiterals => |vl| {
-                var items = try this.arena.alloc(*const Doc, vl.args.len);
-                for (vl.args, 0..) |arg, i| items[i] = try this.fmtPattern(arg);
-                return this.concat(
-                    try this.text(vl.name),
-                    try this.commaList("(", items, ")"),
-                );
+            .variant => |v| switch (v.payload) {
+                .binding => |binding| {
+                    return this.concat(
+                        try this.text(v.name),
+                        try this.concat(try this.text(" "), try this.text(binding)),
+                    );
+                },
+                .fields => |fields| {
+                    var items = try this.arena.alloc(*const Doc, fields.len);
+                    for (fields, 0..) |b, i| items[i] = try this.text(b);
+                    return this.concat(
+                        try this.text(v.name),
+                        try this.commaList("(", items, ")"),
+                    );
+                },
+                .literals => |args| {
+                    var items = try this.arena.alloc(*const Doc, args.len);
+                    for (args, 0..) |arg, i| items[i] = try this.fmtPattern(arg);
+                    return this.concat(
+                        try this.text(v.name),
+                        try this.commaList("(", items, ")"),
+                    );
+                },
             },
 
             .list => |l| {

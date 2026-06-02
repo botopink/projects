@@ -1677,32 +1677,39 @@ const Emitter = struct {
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
                     try self.bodyPrint("  {{label, {d}}}.\n", .{next});
                 },
-                .variantFields => |vf| {
-                    const next = self.allocLabel();
-                    try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, {d}, {{atom, {s}}}}}.\n", .{ next, vf.bindings.len + 1, vf.name });
-                    for (vf.bindings, 0..) |bname, i| {
-                        try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, {d}, {{x, 1}}}}.\n", .{i + 1});
+                .variant => |v| switch (v.payload) {
+                    .fields => |fields| {
+                        const next = self.allocLabel();
+                        try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, {d}, {{atom, {s}}}}}.\n", .{ next, fields.len + 1, v.name });
+                        for (fields, 0..) |bname, i| {
+                            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, {d}, {{x, 1}}}}.\n", .{i + 1});
+                            const y_idx = self.next_y;
+                            self.next_y += 1;
+                            try self.reg_map.put(bname, .{ .y = y_idx });
+                            try self.bodyPrint("    {{move, {{x, 1}}, {{y, {d}}}}}.\n", .{y_idx});
+                        }
+                        try self.lowerExprIntoX0(arm.body);
+                        try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                        try self.bodyPrint("  {{label, {d}}}.\n", .{next});
+                    },
+                    .binding => |binding| {
+                        const next = self.allocLabel();
+                        try self.bodyPrint("    {{test, is_tuple, {{f, {d}}}, [{{x, 0}}]}}.\n", .{next});
+                        try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 0, {{x, 1}}}}.\n", .{});
+                        try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 1}}, {{atom, {s}}}]}}.\n", .{ next, v.name });
                         const y_idx = self.next_y;
                         self.next_y += 1;
-                        try self.reg_map.put(bname, .{ .y = y_idx });
-                        try self.bodyPrint("    {{move, {{x, 1}}, {{y, {d}}}}}.\n", .{y_idx});
-                    }
-                    try self.lowerExprIntoX0(arm.body);
-                    try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
-                    try self.bodyPrint("  {{label, {d}}}.\n", .{next});
-                },
-                .variantBinding => |vb| {
-                    const next = self.allocLabel();
-                    try self.bodyPrint("    {{test, is_tuple, {{f, {d}}}, [{{x, 0}}]}}.\n", .{next});
-                    try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 0, {{x, 1}}}}.\n", .{});
-                    try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 1}}, {{atom, {s}}}]}}.\n", .{ next, vb.name });
-                    const y_idx = self.next_y;
-                    self.next_y += 1;
-                    try self.reg_map.put(vb.binding, .{ .y = y_idx });
-                    try self.bodyPrint("    {{move, {{x, 0}}, {{y, {d}}}}}.\n", .{y_idx});
-                    try self.lowerExprIntoX0(arm.body);
-                    try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
-                    try self.bodyPrint("  {{label, {d}}}.\n", .{next});
+                        try self.reg_map.put(binding, .{ .y = y_idx });
+                        try self.bodyPrint("    {{move, {{x, 0}}, {{y, {d}}}}}.\n", .{y_idx});
+                        try self.lowerExprIntoX0(arm.body);
+                        try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                        try self.bodyPrint("  {{label, {d}}}.\n", .{next});
+                    },
+                    .literals => {
+                        // Literal-argument variants are not lowered specially yet.
+                        try self.lowerExprIntoX0(arm.body);
+                        try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                    },
                 },
                 .list => |lst| {
                     const next = self.allocLabel();
@@ -1758,10 +1765,6 @@ const Emitter = struct {
                     try self.lowerExprIntoX0(arm.body);
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
                     try self.bodyPrint("  {{label, {d}}}.\n", .{next});
-                },
-                else => {
-                    try self.lowerExprIntoX0(arm.body);
-                    try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
                 },
             }
         }

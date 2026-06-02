@@ -825,8 +825,9 @@ fn patternContainsWildcard(pattern: ast.Pattern) bool {
             }
             break :blk false;
         },
-        .variantLiterals => |vl| blk: {
-            for (vl.args) |p| {
+        .variant => |v| blk: {
+            if (v.payload != .literals) break :blk false;
+            for (v.payload.literals) |p| {
                 if (patternContainsWildcard(p)) break :blk true;
             }
             break :blk false;
@@ -898,18 +899,20 @@ fn bindPatternNamesForSubject(
             if (isEnumVariantNameForSubject(env, subjectType, name)) return;
             try saveAndBindPatternName(env, snapshots, name, try env.freshVar());
         },
-        .variantBinding => |vb| {
-            try saveAndBindPatternName(env, snapshots, vb.binding, try env.freshVar());
-        },
-        .variantFields => |vf| {
-            for (vf.bindings) |binding| {
+        .variant => |v| switch (v.payload) {
+            .binding => |binding| {
                 try saveAndBindPatternName(env, snapshots, binding, try env.freshVar());
-            }
-        },
-        .variantLiterals => |vl| {
-            for (vl.args) |arg| {
-                try bindPatternNamesForSubject(env, arg, try env.freshVar(), snapshots);
-            }
+            },
+            .fields => |fields| {
+                for (fields) |binding| {
+                    try saveAndBindPatternName(env, snapshots, binding, try env.freshVar());
+                }
+            },
+            .literals => |args| {
+                for (args) |arg| {
+                    try bindPatternNamesForSubject(env, arg, try env.freshVar(), snapshots);
+                }
+            },
         },
         .list => |lst| {
             for (lst.elems) |elem| {
@@ -1359,14 +1362,14 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
                     // Bind pattern variable names to fresh type vars.
                     switch (pat) {
                         .ident => |name| try env.bind(name, try env.freshVar()),
-                        .variantFields => |vf| for (vf.bindings) |binding| try env.bind(binding, try env.freshVar()),
+                        .variant => |v| if (v.payload == .fields) for (v.payload.fields) |binding| try env.bind(binding, try env.freshVar()),
                         else => {},
                     }
                 },
                 .ctor => |pat| {
                     switch (pat) {
                         .ident => |name| try env.bind(name, try env.freshVar()),
-                        .variantFields => |vf| for (vf.bindings) |binding| try env.bind(binding, try env.freshVar()),
+                        .variant => |v| if (v.payload == .fields) for (v.payload.fields) |binding| try env.bind(binding, try env.freshVar()),
                         else => {},
                     }
                 },

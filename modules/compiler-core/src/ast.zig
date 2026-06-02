@@ -742,20 +742,18 @@ pub const Pattern = union(enum) {
     wildcard,
     /// enum variant or variable binding: `Red`, `x`, `total`
     ident: []const u8,
-    /// enum variant with whole-payload binding: `Ok ok` (bind entire payload to `ok`)
-    variantBinding: struct {
+    /// enum variant with a payload: `Ok ok`, `Rgb(r, g, b)`, `Ok(1)`.
+    /// The `name` is the variant; `payload` records how its contents are matched.
+    variant: struct {
         name: []const u8,
-        binding: []const u8,
-    },
-    /// enum variant with bound fields: `Rgb(r, g, b)`
-    variantFields: struct {
-        name: []const u8,
-        bindings: []const []const u8,
-    },
-    /// enum variant with literal arguments: `Ok(1)`, `Error("not found")`
-    variantLiterals: struct {
-        name: []const u8,
-        args: []Pattern,
+        payload: union(enum) {
+            /// whole-payload binding: `Ok ok` (bind entire payload to `ok`)
+            binding: []const u8,
+            /// bound fields: `Rgb(r, g, b)`
+            fields: []const []const u8,
+            /// literal / nested-pattern arguments: `Ok(1)`, `Error("not found")`
+            literals: []Pattern,
+        },
     },
     /// Number literal: `42`
     numberLit: []const u8,
@@ -776,10 +774,13 @@ pub const Pattern = union(enum) {
 
     pub fn deinit(this: *Pattern, allocator: std.mem.Allocator) void {
         switch (this.*) {
-            .variantFields => |vf| allocator.free(vf.bindings),
-            .variantLiterals => |vl| {
-                for (vl.args) |*p| p.deinit(allocator);
-                allocator.free(vl.args);
+            .variant => |*v| switch (v.payload) {
+                .fields => |f| allocator.free(f),
+                .literals => |args| {
+                    for (args) |*p| p.deinit(allocator);
+                    allocator.free(args);
+                },
+                .binding => {},
             },
             .list => |l| allocator.free(l.elems),
             .@"or" => |pats| {

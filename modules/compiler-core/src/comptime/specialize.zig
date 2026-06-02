@@ -304,7 +304,7 @@ fn tryFoldCaseAssign(
             .numberLit => |n| std.mem.eql(u8, n, subject_val),
             .wildcard => true,
             .ident => |i| std.mem.eql(u8, i, subject_val),
-            else => continue, // variantFields, list, or-pattern — not foldable
+            else => continue, // variant, list, or-pattern — not foldable
         };
         if (matched) {
             // Shallow-copy the matched arm body expression into the spec arena.

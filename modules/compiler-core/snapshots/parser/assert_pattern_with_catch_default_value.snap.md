@@ -23,12 +23,14 @@
                 "kind": {
                   "assertPattern": {
                     "pattern": {
-                      "variantFields": {
+                      "variant": {
                         "name": "Person",
-                        "bindings": [
-                          "name",
-                          "age"
-                        ]
+                        "payload": {
+                          "fields": [
+                            "name",
+                            "age"
+                          ]
+                        }
                       }
                     },
                     "expr": {

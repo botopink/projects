@@ -85,13 +85,15 @@
                           },
                           {
                             "pattern": {
-                              "variantFields": {
+                              "variant": {
                                 "name": "Rgb",
-                                "bindings": [
-                                  "r",
-                                  "g",
-                                  "b"
-                                ]
+                                "payload": {
+                                  "fields": [
+                                    "r",
+                                    "g",
+                                    "b"
+                                  ]
+                                }
                               }
                             },
                             "body": {

@@ -573,19 +573,30 @@ const Emitter = struct {
         switch (pat) {
             .wildcard => try self.w("_"),
             .ident => |name| try self.w(name),
-            .variantBinding => |vb| {
-                try self.w(vb.name);
-                try self.w(" ");
-                try self.w(vb.binding);
-            },
-            .variantFields => |vf| {
-                try self.w(vf.name);
-                try self.w("(");
-                for (vf.bindings, 0..) |b, i| {
-                    if (i > 0) try self.w(", ");
-                    try self.w(b);
-                }
-                try self.w(")");
+            .variant => |v| switch (v.payload) {
+                .binding => |binding| {
+                    try self.w(v.name);
+                    try self.w(" ");
+                    try self.w(binding);
+                },
+                .fields => |fields| {
+                    try self.w(v.name);
+                    try self.w("(");
+                    for (fields, 0..) |b, i| {
+                        if (i > 0) try self.w(", ");
+                        try self.w(b);
+                    }
+                    try self.w(")");
+                },
+                .literals => |args| {
+                    try self.w(v.name);
+                    try self.w("(");
+                    for (args, 0..) |arg, i| {
+                        if (i > 0) try self.w(", ");
+                        try self.emitPattern(arg);
+                    }
+                    try self.w(")");
+                },
             },
             .numberLit => |n| try self.w(n),
             .stringLit => |s| try self.fmt("\"{s}\"", .{s}),
@@ -607,15 +618,6 @@ const Emitter = struct {
                     if (i > 0) try self.w(" | ");
                     try self.emitPattern(p);
                 }
-            },
-            .variantLiterals => |vl| {
-                try self.w(vl.name);
-                try self.w("(");
-                for (vl.args, 0..) |arg, i| {
-                    if (i > 0) try self.w(", ");
-                    try self.emitPattern(arg);
-                }
-                try self.w(")");
             },
             .multi => |pats| {
                 for (pats, 0..) |p, i| {
@@ -642,13 +644,11 @@ const Emitter = struct {
                 // Identifier pattern - check if value is truthy and has the right type
                 try self.fmt("({s} !== null && {s} !== undefined)", .{ value, value });
             },
-            .variantFields => |vf| {
+            .variant => |v| switch (v.payload) {
                 // Check if value is an instance of the variant type
-                try self.fmt("({s} instanceof {s})", .{ value, vf.name });
-            },
-            .variantBinding => |vb| {
-                // Check if value is an instance of the variant type
-                try self.fmt("({s} instanceof {s})", .{ value, vb.name });
+                .binding, .fields => try self.fmt("({s} instanceof {s})", .{ value, v.name }),
+                // Literal-argument variants fall back to the generic check below.
+                .literals => try self.w("true"),
             },
             .numberLit => |n| {
                 try self.fmt("({s} === {s})", .{ value, n });
@@ -1463,53 +1463,26 @@ const Emitter = struct {
                     }
                 },
 
-                .variantBinding => |vb| {
-                    b.fmtLine("if (_s.tag === \"{s}\") {{", .{vb.name});
+                .variant => |v| {
+                    b.fmtLine("if (_s.tag === \"{s}\") {{", .{v.name});
                     b.newline();
                     b.indent();
-                    b.fmtLine("const {s} = _s;", .{vb.binding});
-                    b.newline();
-                    if (isLambdaBlock(arm.body)) {
-                        try self.emitCaseBody(arm.body, &b);
-                    } else {
-                        b.line("return ");
-                        try self.emitExpr(arm.body);
-                        b.raw(";");
-                        b.newline();
+                    switch (v.payload) {
+                        .binding => |binding| {
+                            b.fmtLine("const {s} = _s;", .{binding});
+                            b.newline();
+                        },
+                        .fields => |fields| if (fields.len > 0) {
+                            b.line("const { ");
+                            for (fields, 0..) |bb, bi| {
+                                if (bi > 0) b.raw(", ");
+                                b.raw(bb);
+                            }
+                            b.raw(" } = _s;");
+                            b.newline();
+                        },
+                        .literals => {},
                     }
-                    b.close();
-                    b.newline();
-                },
-
-                .variantFields => |vf| {
-                    b.fmtLine("if (_s.tag === \"{s}\") {{", .{vf.name});
-                    b.newline();
-                    b.indent();
-                    if (vf.bindings.len > 0) {
-                        b.line("const { ");
-                        for (vf.bindings, 0..) |bb, bi| {
-                            if (bi > 0) b.raw(", ");
-                            b.raw(bb);
-                        }
-                        b.raw(" } = _s;");
-                        b.newline();
-                    }
-                    if (isLambdaBlock(arm.body)) {
-                        try self.emitCaseBody(arm.body, &b);
-                    } else {
-                        b.line("return ");
-                        try self.emitExpr(arm.body);
-                        b.raw(";");
-                        b.newline();
-                    }
-                    b.close();
-                    b.newline();
-                },
-
-                .variantLiterals => |vl| {
-                    b.fmtLine("if (_s.tag === \"{s}\") {{", .{vl.name});
-                    b.newline();
-                    b.indent();
                     if (isLambdaBlock(arm.body)) {
                         try self.emitCaseBody(arm.body, &b);
                     } else {

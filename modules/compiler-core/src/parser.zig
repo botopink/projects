@@ -1809,7 +1809,7 @@ pub const Parser = struct {
             if (this.check(.leftParenthesis)) {
                 _ = this.advance(); // consume '('
 
-                // Determine if this is variantFields (identifiers) or variantLiterals (literals or patterns)
+                // Determine the variant payload: `fields` (identifiers) or `literals` (literals or patterns)
                 var isLiterals = false;
                 const lookahead = this.tokens[this.current];
                 if (lookahead.kind != .rightParenthesis) {
@@ -1825,7 +1825,7 @@ pub const Parser = struct {
                 }
 
                 if (isLiterals) {
-                    // Parse as variantLiterals (can contain nested patterns)
+                    // `literals` payload (can contain nested patterns)
                     var args: std.ArrayList(Pattern) = .empty;
                     errdefer {
                         for (args.items) |*a| a.deinit(alloc);
@@ -1839,12 +1839,12 @@ pub const Parser = struct {
                     }
                     _ = try this.consume(.rightParenthesis);
 
-                    return Pattern{ .variantLiterals = .{
+                    return Pattern{ .variant = .{
                         .name = name,
-                        .args = try args.toOwnedSlice(alloc),
+                        .payload = .{ .literals = try args.toOwnedSlice(alloc) },
                     } };
                 } else {
-                    // Parse as variantFields (existing logic)
+                    // `fields` payload (existing logic)
                     var bindings: std.ArrayList([]const u8) = .empty;
                     errdefer bindings.deinit(alloc);
 
@@ -1855,9 +1855,9 @@ pub const Parser = struct {
                     }
                     _ = try this.consume(.rightParenthesis);
 
-                    return Pattern{ .variantFields = .{
+                    return Pattern{ .variant = .{
                         .name = name,
-                        .bindings = try bindings.toOwnedSlice(alloc),
+                        .payload = .{ .fields = try bindings.toOwnedSlice(alloc) },
                     } };
                 }
             }
@@ -1865,9 +1865,9 @@ pub const Parser = struct {
             // `Variant binding` pattern: `Ok ok` — two identifiers, bind whole payload
             if (this.check(.identifier)) {
                 const binding = this.advance().lexeme;
-                return Pattern{ .variantBinding = .{
+                return Pattern{ .variant = .{
                     .name = name,
-                    .binding = binding,
+                    .payload = .{ .binding = binding },
                 } };
             }
 
@@ -2633,7 +2633,7 @@ pub const Parser = struct {
                 _ = try this.consume(.equal);
                 const valPtr = try this.boxExpr(alloc, try this.parseExpr(alloc));
                 return Expr{ .binding = .{ .loc = locFromToken(bindTok), .kind = .{ .localBindDestruct = .{
-                    .pattern = .{ .ctor = .{ .variantLiterals = .{ .name = ctorName, .args = try args.toOwnedSlice(alloc) } } },
+                    .pattern = .{ .ctor = .{ .variant = .{ .name = ctorName, .payload = .{ .literals = try args.toOwnedSlice(alloc) } } } },
                     .value = valPtr,
                     .mutable = mutable,
                 } } } };

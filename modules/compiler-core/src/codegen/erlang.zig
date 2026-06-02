@@ -995,28 +995,30 @@ const Emitter = struct {
             .ident => |n| try this.w(n), // enum variant → atom
             .numberLit => |n| try this.w(n),
             .stringLit => |s| try this.emitBinary(s),
-            .variantBinding => |vb| {
-                const vname = try erlangVar(this.alloc, vb.binding);
-                defer this.alloc.free(vname);
-                try this.fmt("{{tag, {s}, {s}}}", .{ vb.name, vname });
-            },
-            .variantFields => |vf| {
-                try this.fmt("{{tag, {s}", .{vf.name});
-                for (vf.bindings) |bb| {
-                    try this.w(", ");
-                    const vname = try erlangVar(this.alloc, bb);
+            .variant => |v| switch (v.payload) {
+                .binding => |binding| {
+                    const vname = try erlangVar(this.alloc, binding);
                     defer this.alloc.free(vname);
-                    try this.w(vname);
-                }
-                try this.w("}");
-            },
-            .variantLiterals => |vl| {
-                try this.fmt("{{tag, {s}", .{vl.name});
-                for (vl.args) |arg| {
-                    try this.w(", ");
-                    try this.emitPattern(arg);
-                }
-                try this.w("}");
+                    try this.fmt("{{tag, {s}, {s}}}", .{ v.name, vname });
+                },
+                .fields => |fields| {
+                    try this.fmt("{{tag, {s}", .{v.name});
+                    for (fields) |bb| {
+                        try this.w(", ");
+                        const vname = try erlangVar(this.alloc, bb);
+                        defer this.alloc.free(vname);
+                        try this.w(vname);
+                    }
+                    try this.w("}");
+                },
+                .literals => |args| {
+                    try this.fmt("{{tag, {s}", .{v.name});
+                    for (args) |arg| {
+                        try this.w(", ");
+                        try this.emitPattern(arg);
+                    }
+                    try this.w("}");
+                },
             },
             .list => |lp| {
                 if (lp.spread) |sp| {
