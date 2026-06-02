@@ -1439,7 +1439,7 @@ pub const Parser = struct {
                 errdefer fieldType.deinit(alloc);
                 var defaultExpr: ?Expr = null;
                 if (this.match(.equal)) {
-                    defaultExpr = try this.parseEqExpr(alloc);
+                    defaultExpr = try this.parseBinaryExpr(alloc, prec.equality);
                 }
                 trailingComma = this.match(.comma);
                 try fields.append(alloc, .{ .name = fieldName, .typeRef = fieldType, .default = defaultExpr });
@@ -1673,13 +1673,13 @@ pub const Parser = struct {
         if (this.check(.leftParenthesis)) {
             // Single subject wrapped in parens (e.g. tuple)
             _ = this.advance(); // consume '('
-            const e = try this.parseEqExpr(alloc);
+            const e = try this.parseBinaryExpr(alloc, prec.equality);
             _ = try this.consume(.rightParenthesis);
             try subjects.append(alloc, e);
         } else {
             // Multiple subjects separated by commas
             while (!this.check(.leftBrace) and !this.check(.endOfFile)) {
-                try subjects.append(alloc, try this.parseEqExpr(alloc));
+                try subjects.append(alloc, try this.parseBinaryExpr(alloc, prec.equality));
                 if (!this.match(.comma)) break;
             }
         }
@@ -2251,7 +2251,7 @@ pub const Parser = struct {
             const ifTok = this.advance();
 
             _ = try this.consume(.leftParenthesis);
-            const cond = try this.parseEqExpr(alloc);
+            const cond = try this.parseBinaryExpr(alloc, prec.equality);
             errdefer @constCast(&cond).deinit(alloc);
             _ = try this.consume(.rightParenthesis);
             const condPtr = try this.boxExpr(alloc, cond);
@@ -2323,7 +2323,7 @@ pub const Parser = struct {
                 const body = try this.parseStmtListInBraces(alloc);
                 return Expr{ .comptime_ = .{ .loc = locFromToken(comptimeTok), .kind = .{ .comptimeBlock = .{ .body = body } } } };
             } else {
-                const inner = try this.parseEqExpr(alloc);
+                const inner = try this.parseBinaryExpr(alloc, prec.equality);
                 const innerPtr = try this.boxExpr(alloc, inner);
                 return Expr{ .comptime_ = .{ .loc = locFromToken(comptimeTok), .kind = .{ .comptimeExpr = innerPtr } } };
             }
@@ -2344,7 +2344,7 @@ pub const Parser = struct {
         // yield expr
         if (this.check(.yield)) {
             const yieldTok = this.advance();
-            const inner = try this.parseEqExpr(alloc);
+            const inner = try this.parseBinaryExpr(alloc, prec.equality);
             return this.makeJump(alloc, yieldTok, .yield, inner);
         }
 
@@ -2407,7 +2407,7 @@ pub const Parser = struct {
                     try this.consume(.identifier);
 
                 if (this.match(.equal)) {
-                    const valExpr = try this.parseEqExpr(alloc);
+                    const valExpr = try this.parseBinaryExpr(alloc, prec.equality);
                     const valPtr = try this.boxExpr(alloc, valExpr);
                     const recvPtr = try this.boxExpr(alloc, Expr{ .identifier = .{ .loc = locFromToken(first), .kind = .{ .ident = first.lexeme } } });
                     return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .assign = .{
@@ -2418,7 +2418,7 @@ pub const Parser = struct {
                 }
 
                 if (this.match(.plusEqual)) {
-                    const valExpr = try this.parseEqExpr(alloc);
+                    const valExpr = try this.parseBinaryExpr(alloc, prec.equality);
                     const valPtr = try this.boxExpr(alloc, valExpr);
                     const recvPtr = try this.boxExpr(alloc, Expr{ .identifier = .{ .loc = locFromToken(first), .kind = .{ .ident = first.lexeme } } });
                     return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .assign = .{
@@ -2684,7 +2684,7 @@ pub const Parser = struct {
     }
 
     fn parsePipelineExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseOrExpr(alloc);
+        var lhs = try this.parseBinaryExpr(alloc, prec.lowest);
 
         while (true) {
             // Collect any comment that appears before the `|>` operator
@@ -2746,7 +2746,7 @@ pub const Parser = struct {
                         this.current = saved;
                     }
                 }
-                break :rhs_blk try this.parseOrExpr(alloc);
+                break :rhs_blk try this.parseBinaryExpr(alloc, prec.lowest);
             };
             const lhsPtr = try this.boxExpr(alloc, lhs);
             const rhsPtr = try this.boxExpr(alloc, rhs);
@@ -2756,66 +2756,54 @@ pub const Parser = struct {
         return lhs;
     }
 
-    fn parseOrExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseAndExpr(alloc);
+    /// One operator token and the AST op it maps to, at a given precedence level.
+    const PrecedenceOp = struct { tok: TokenKind, op: BinOp };
 
-        while (this.match(.verticalBarVerticalBar)) {
+    /// One precedence level: the operators it recognises (left-associative) plus
+    /// whether it enforces the `opNakedRight` rule (a compare op with no RHS value).
+    const PrecedenceLevel = struct { ops: []const PrecedenceOp, nakedRightCheck: bool = false };
+
+    /// Binary-operator precedence, lowest level first. `parseBinaryExpr` walks this
+    /// table recursively; level == len delegates to `parsePrimary`.
+    const precedence_table = [_]PrecedenceLevel{
+        .{ .ops = &.{.{ .tok = .verticalBarVerticalBar, .op = .@"or" }} },
+        .{ .ops = &.{.{ .tok = .amperAmper, .op = .@"and" }} },
+        .{ .ops = &.{ .{ .tok = .equalEqual, .op = .eq }, .{ .tok = .notEqual, .op = .ne } } },
+        .{ .ops = &.{
+            .{ .tok = .lessThan, .op = .lt },
+            .{ .tok = .greaterThan, .op = .gt },
+            .{ .tok = .lessThanEqual, .op = .lte },
+            .{ .tok = .greaterThanEqual, .op = .gte },
+        }, .nakedRightCheck = true },
+        .{ .ops = &.{ .{ .tok = .plus, .op = .add }, .{ .tok = .minus, .op = .sub } } },
+        .{ .ops = &.{
+            .{ .tok = .star, .op = .mul },
+            .{ .tok = .slash, .op = .div },
+            .{ .tok = .percent, .op = .mod },
+        } },
+    };
+
+    /// Precedence-level entry points used by callers outside `parseBinaryExpr`.
+    const prec = struct {
+        /// `||` — the loosest binary level (full binary expression).
+        const lowest: usize = 0;
+        /// `==`/`!=` and tighter — the entry point for operand positions where
+        /// `||`/`&&` are not accepted (if-conditions, yields, ranges, assignments…).
+        const equality: usize = 2;
+    };
+
+    /// Left-associative precedence-climbing parser driven by `precedence_table`.
+    fn parseBinaryExpr(this: *This, alloc: std.mem.Allocator, comptime level: usize) ParseError!Expr {
+        if (level == precedence_table.len) return this.parsePrimary(alloc);
+        const entry = precedence_table[level];
+
+        var lhs = try this.parseBinaryExpr(alloc, level + 1);
+        while (true) {
+            const op: BinOp = inline for (entry.ops) |o| {
+                if (this.match(o.tok)) break o.op;
+            } else break;
             const opTok = this.tokens[this.current - 1];
-            const rhs = try this.parseAndExpr(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .@"or", .lhs = lhsPtr, .rhs = rhsPtr } } };
-        }
-
-        return lhs;
-    }
-
-    fn parseAndExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseEqExpr(alloc);
-
-        while (this.match(.amperAmper)) {
-            const opTok = this.tokens[this.current - 1];
-            const rhs = try this.parseEqExpr(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .@"and", .lhs = lhsPtr, .rhs = rhsPtr } } };
-        }
-
-        return lhs;
-    }
-
-    fn parseEqExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseCompareExpr(alloc);
-
-        while (this.match(.equalEqual) or this.match(.notEqual)) {
-            const opTok = this.tokens[this.current - 1];
-            const rhs = try this.parseCompareExpr(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
-                .op = if (opTok.kind == .equalEqual) .eq else .ne,
-                .lhs = lhsPtr,
-                .rhs = rhsPtr,
-            } } };
-        }
-
-        return lhs;
-    }
-
-    fn parseCompareExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseAddExpr(alloc);
-
-        while (this.match(.lessThan) or this.match(.greaterThan) or
-            this.match(.lessThanEqual) or this.match(.greaterThanEqual))
-        {
-            const opTok = this.tokens[this.current - 1];
-            if (this.check(.val) or this.check(.endOfFile)) {
+            if (entry.nakedRightCheck and (this.check(.val) or this.check(.endOfFile))) {
                 this.parseError = .{
                     .kind = .opNakedRight,
                     .start = opTok.col - 1,
@@ -2826,69 +2814,9 @@ pub const Parser = struct {
                 };
                 return ParseError.UnexpectedToken;
             }
-            const rhs = try this.parseAddExpr(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
-                .op = switch (opTok.kind) {
-                    .lessThan => .lt,
-                    .greaterThan => .gt,
-                    .lessThanEqual => .lte,
-                    .greaterThanEqual => .gte,
-                    else => unreachable,
-                },
-                .lhs = lhsPtr,
-                .rhs = rhsPtr,
-            } } };
+            const rhs = try this.parseBinaryExpr(alloc, level + 1);
+            lhs = try this.makeBinOp(alloc, op, opTok, lhs, rhs);
         }
-
-        return lhs;
-    }
-
-    fn parseAddExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseMulExpr(alloc);
-
-        while (this.match(.plus) or this.match(.minus)) {
-            const opTok = this.tokens[this.current - 1];
-            const rhs = try this.parseMulExpr(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
-                .op = if (opTok.kind == .plus) .add else .sub,
-                .lhs = lhsPtr,
-                .rhs = rhsPtr,
-            } } };
-        }
-
-        return lhs;
-    }
-
-    fn parseMulExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parsePrimary(alloc);
-
-        while (this.match(.star) or this.match(.slash) or this.match(.percent)) {
-            const opTok = this.tokens[this.current - 1];
-            const rhs = try this.parsePrimary(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
-                .op = switch (opTok.kind) {
-                    .star => .mul,
-                    .slash => .div,
-                    .percent => .mod,
-                    else => unreachable,
-                },
-                .lhs = lhsPtr,
-                .rhs = rhsPtr,
-            } } };
-        }
-
         return lhs;
     }
 
@@ -3606,7 +3534,7 @@ pub const Parser = struct {
     /// Parses a range expression `expr..` or `expr..expr`, or falls back to
     /// a plain `parseEqExpr` if `..` is not present.
     fn parseRangeExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var start = try this.parseEqExpr(alloc);
+        var start = try this.parseBinaryExpr(alloc, prec.equality);
         errdefer start.deinit(alloc);
         if (!this.check(.dotDot)) return start;
         const dotTok = this.advance(); // consume '..'
@@ -3615,7 +3543,7 @@ pub const Parser = struct {
         const hasEnd = !this.check(.rightParenthesis) and !this.check(.comma) and
             !this.check(.endOfFile);
         if (hasEnd) {
-            const end = try this.parseEqExpr(alloc);
+            const end = try this.parseBinaryExpr(alloc, prec.equality);
             const endPtr = try this.boxExpr(alloc, end);
             return Expr{ .collection = .{ .loc = locFromToken(dotTok), .kind = .{ .range = .{ .start = startPtr, .end = endPtr } } } };
         }
