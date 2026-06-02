@@ -752,6 +752,86 @@ test "js: import ---- named imports" {
     );
 }
 
+// ── use → hooks (React-like codegen) ──────────────────────────────────────────
+
+// `val {v, s} = use state(0)` lowers to `const { v, s } = useState(0)`: the hook
+// name maps by the `use` + Capitalize convention and `val` does the binding.
+test "codegen ---- use object destructure state to useState" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn Counter() -> Element {
+        \\    val {count, setCount} = use state(0);
+        \\    Element();
+        \\}
+    );
+}
+
+// `val #(v, s) = use state(0)` lowers to `const [ v, s ] = useState(0)` — tuple
+// destructure maps to JS array destructure (React's `[value, setter]` shape).
+test "codegen ---- use tuple destructure state to useState" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn Counter() -> Element {
+        \\    val #(count, setCount) = use state(0);
+        \\    Element();
+        \\}
+    );
+}
+
+// `val d = use memo { -> count*2 }` lowers to `const d = useMemo(() => …, [count])`
+// — the dependency array is inferred from the reactive names the lambda reads.
+test "codegen ---- use memo infers dependency array" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn memo() -> @Context<Element, i32> {
+        \\    0;
+        \\}
+        \\fn Counter() -> Element {
+        \\    val {count, setCount} = use state(0);
+        \\    val doubled = use memo { -> return count * 2; };
+        \\    Element();
+        \\}
+    );
+}
+
+// `use effect { -> cleanup() }` lowers to `useEffect(() => …, [])` — a void hook
+// (no `val` binding) with no reactive reads, so the inferred deps array is empty.
+test "codegen ---- use effect void hook empty deps" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn cleanup() {
+        \\    0;
+        \\}
+        \\fn effect() -> @Context<Element, i32> {
+        \\    0;
+        \\}
+        \\fn Widget() -> Element {
+        \\    use effect { -> cleanup(); };
+        \\    Element();
+        \\}
+    );
+}
+
+// A struct that exists only as a phantom `@Context` base is erased at runtime —
+// the JS output carries no `class Element { … }` for it.
+test "codegen ---- inline implement context base erased at runtime" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn render() -> Element {
+        \\    Element();
+        \\}
+    );
+}
+
 // ── operators ─────────────────────────────────────────────────────────────────
 
 // Tests comparison operators
@@ -2201,6 +2281,86 @@ test "js: try ---- catch tail on method call" {
     );
 }
 
+// ── stdlib: @Result / @Option methods ─────────────────────────────────────────
+//
+// `.map` / `.flatMap` / `.unwrapOr` / `.isOk` / `.isError` are resolved by type
+// inference and lowered inline by each codegen backend (a value is matched on
+// its `Ok`/`Error` tag, or an option on presence). The lowered shape itself
+// encodes the semantics: `map`/`flatMap` only run the function on `Ok`/present
+// and propagate `Error`/absence untouched.
+
+// Result.map transforms the Ok payload and propagates Error intact.
+test "js: stdlib ---- Result.map transforms Ok, propagates Error intact" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\fn main() {
+        \\    val r = parseAge("42").map({ n -> n + 1 });
+        \\}
+    );
+}
+
+// Result.flatMap chains a fallible step without nesting the Result.
+test "js: stdlib ---- Result.flatMap chains and flattens" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\fn validate(n: i32) -> @Result<i32, string> { @todo(); }
+        \\fn main() {
+        \\    val r = parseAge("42").flatMap({ n -> validate(n) });
+        \\}
+    );
+}
+
+// Result.unwrapOr returns the Ok payload, or the default on Error.
+test "js: stdlib ---- Result.unwrapOr returns data on Ok, default on Error" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\fn main() {
+        \\    val n = parseAge("42").unwrapOr(0);
+        \\}
+    );
+}
+
+// Result.isOk / isError are boolean tag predicates.
+test "js: stdlib ---- Result.isOk and isError predicates" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\fn main() {
+        \\    val r = parseAge("42");
+        \\    val ok = r.isOk();
+        \\    val bad = r.isError();
+        \\}
+    );
+}
+
+// Option mirrors the Result API: map / flatMap / unwrapOr.
+test "js: stdlib ---- Option map, flatMap and unwrapOr mirror Result" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\record Person { name: string }
+        \\fn firstName(p: Person) -> @Option<string> { @todo(); }
+        \\fn shout(s: string) -> @Option<string> { @todo(); }
+        \\fn greet(p: Person) -> string {
+        \\    return firstName(p)
+        \\        .map({ n -> "Hello " + n })
+        \\        .flatMap({ n -> shout(n) })
+        \\        .unwrapOr("Hello stranger");
+        \\}
+    );
+}
+
+// A full map().flatMap().unwrapOr() chain type-checks and lowers end to end.
+test "js: stdlib ---- chain map flatMap unwrapOr types correctly" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\fn validate(n: i32) -> @Result<i32, string> { @todo(); }
+        \\fn main() {
+        \\    val r = parseAge("42")
+        \\        .map({ n -> n + 1 })
+        \\        .flatMap({ n -> validate(n) })
+        \\        .unwrapOr(0);
+        \\}
+    );
+}
+
 test "js: throw ---- string literal" {
     try assertJsSingle(std.testing.allocator, @src(),
         \\fn fail() {
@@ -2392,4 +2552,94 @@ test "js: builtin ---- @print return value void" {
         \\    log("done");
         \\}
     );
+}
+
+// ── case guard clauses (commonJS target only) ────────────────────────────────
+//
+// Guards are lowered for the commonJS target; emission for erlang/beam/wasm is
+// part of those targets' own roadmaps, so these tests assert the JS directly
+// instead of going through the all-target snapshot harness.
+
+/// Generate commonJS only and assert each needle appears in the emitted JS.
+fn assertJsContains(allocator: Allocator, src: []const u8, needles: []const []const u8) !void {
+    const io = std.testing.io;
+    var outputs = try codegen.generate(
+        allocator,
+        &.{.{ .path = "", .source = src }},
+        io,
+        configs[0], // commonJS / node
+    );
+    defer {
+        for (outputs.items) |*o| o.result.deinit(allocator);
+        outputs.deinit(allocator);
+    }
+    try std.testing.expect(outputs.items.len > 0);
+    const js = outputs.items[outputs.items.len - 1].result.js;
+    for (needles) |needle| {
+        if (std.mem.indexOf(u8, js, needle) == null) {
+            std.debug.print(
+                "\n=== generated JS ===\n{s}\n=== missing needle: {s} ===\n",
+                .{ js, needle },
+            );
+            return error.NeedleNotFound;
+        }
+    }
+}
+
+test "js: case ---- guard clause on bound identifier" {
+    try assertJsContains(std.testing.allocator,
+        \\fn classify(n: i32) -> string {
+        \\    return case n {
+        \\        x if x > 0 -> "positive";
+        \\        0 -> "zero";
+        \\        _ -> "negative";
+        \\    };
+        \\}
+    , &.{
+        "const x = _s;",
+        "if ((x > 0)) return \"positive\";",
+        "if (_s === 0) return \"zero\";",
+        "return \"negative\";",
+    });
+}
+
+test "js: lambda ---- full type annotation infers params" {
+    // Before the `fn(...) -> ...` annotation was lowered to a `.func` type,
+    // this failed to type-check (named-vs-func mismatch). It must now compile,
+    // with `a`/`b` inferred as `i32` from the annotation.
+    try assertJsContains(std.testing.allocator,
+        \\val add: fn(i32, i32) -> i32 = { a, b -> a + b };
+        \\val result = add(2, 3);
+    , &.{
+        "add(2, 3)",
+    });
+}
+
+test "js: lambda ---- string-typed annotation infers params" {
+    // A different element type proves the annotation (not just `+` defaulting)
+    // drives param typing: `a`/`b` are `string` and the body concatenates them.
+    try assertJsContains(std.testing.allocator,
+        \\val join: fn(string, string) -> string = { a, b -> a + b };
+        \\val r = join("x", "y");
+    , &.{
+        "join(",
+    });
+}
+
+test "js: case ---- guard clause on variant fields" {
+    try assertJsContains(std.testing.allocator,
+        \\val Shape = enum {
+        \\    Circle(r: i32),
+        \\    Square(s: i32),
+        \\}
+        \\fn big(sh: Shape) -> string {
+        \\    return case sh {
+        \\        Circle(r) if r > 10 -> "big circle";
+        \\        _ -> "other";
+        \\    };
+        \\}
+    , &.{
+        "if (_s.tag === \"Circle\") {",
+        "if ((r > 10)) return \"big circle\";",
+    });
 }

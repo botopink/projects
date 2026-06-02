@@ -66,6 +66,7 @@ pub fn codegenEmit(
     for (outputs) |*ct| {
         switch (ct.outcome) {
             .parseError => continue,
+            .typeError => continue,
             .validationError => |verr| {
                 try results.append(alloc, .{
                     .name = ct.name,
@@ -638,6 +639,9 @@ const Emitter = struct {
 
     fn lowerExpr(self: *Emitter, e: ast.Expr) anyerror!void {
         switch (e) {
+            // `use` is a transparent prefix: lower the wrapped hook call. The
+            // enclosing `val` stores the result into its local slot.
+            .useHook => |uh| try self.lowerExpr(uh.kind.inner.*),
             .literal => |lit| switch (lit.kind) {
                 .numberLit => |n| {
                     const t = numLitType(n);

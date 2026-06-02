@@ -17,7 +17,7 @@ codegen/
 ├── moduleOutput.zig  ← shared types: Module, ModuleOutput, GenerateResult
 ├── commonJS.zig      ← CommonJS emitter (blind: iterates transformed AST)
 ├── erlang.zig        ← Erlang emitter (blind)
-├── beam_asm.zig      ← BEAM Assembly `.S` emitter (complete — 0 unsupported across 164 snapshots)
+├── beam_asm.zig      ← BEAM Assembly `.S` emitter (broad coverage; a few cross-backend gaps remain — see row below)
 ├── wat.zig           ← WebAssembly Text `.wat` emitter (complete — 0 unsupported across 164 snapshots)
 ├── typescript.zig    ← TypeScript `.d.ts` typedef generator
 ├── runtime.zig       ← runtime helpers used when executing generated JS/Erlang in tests
@@ -55,9 +55,18 @@ codegen/
   (args + trailing lambdas).
 - BEAM ASM and WAT backends cover the language broadly and reuse the
   existing comptime runtimes (`erlang` for BEAM, `node` for WASM). BEAM ASM
-  still emits `%% unresolved`/`%% unsupported` comments for a few cases
-  (PascalCase constructors, `console.log`, cross-module imports, Fase 9
+  still emits `%% unresolved`/`%% unsupported` comments for a few cross-backend /
+  separate-feature cases (`new Error`, `console.log`, cross-module imports,
+  mutable closure capture across `lists:foreach`, `*fn` async/`await`, Fase 9
   polish) — see the `beam_asm.zig` row above and [`/TODO.md`](../../../../TODO.md).
+- `use` hooks (F8): `use` is a transparent prefix; `val`/`var` does the binding.
+  CommonJS maps hooks to React (`state`→`useState`, `memo`→`useMemo`, …) via the
+  `use`+Capitalize convention (`writeHookName`); `memo`/`effect`/`callback` get an
+  inferred dependency array — the reactive names (bound by earlier hooks, tracked
+  in `Emitter.hook_state`) the lambda reads, via `identInExpr`. Erlang/BEAM/WAT
+  lower `use` transparently (the call result lands in a binding/slot). Phantom
+  `@Context` base structs (`isPhantomContextStruct`: implements `@Context`, no
+  members) emit no runtime code; the `.d.ts` erases `@Context<B, R>` to `R`.
 
 For the `.bp` → target translation gallery see
 [`./examples.md`](examples.md); for the full API surface and snapshot

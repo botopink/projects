@@ -17,13 +17,13 @@
         "body": [
           {
             "expr": {
-              "useHook": {
+              "binding": {
                 "loc": {
                   "line": 2,
                   "col": 5
                 },
                 "kind": {
-                  "useBindDestruct": {
+                  "localBindDestruct": {
                     "pattern": {
                       "names": {
                         "fields": [
@@ -40,38 +40,49 @@
                       }
                     },
                     "value": {
-                      "call": {
+                      "useHook": {
                         "loc": {
                           "line": 2,
                           "col": 29
                         },
                         "kind": {
-                          "call": {
-                            "receiver": null,
-                            "callee": "state",
-                            "is_builtin": false,
-                            "args": [
-                              {
-                                "label": null,
-                                "value": {
-                                  "literal": {
-                                    "loc": {
-                                      "line": 2,
-                                      "col": 35
-                                    },
-                                    "kind": {
-                                      "numberLit": "0"
+                          "inner": {
+                            "call": {
+                              "loc": {
+                                "line": 2,
+                                "col": 33
+                              },
+                              "kind": {
+                                "call": {
+                                  "receiver": null,
+                                  "callee": "state",
+                                  "is_builtin": false,
+                                  "args": [
+                                    {
+                                      "label": null,
+                                      "value": {
+                                        "literal": {
+                                          "loc": {
+                                            "line": 2,
+                                            "col": 39
+                                          },
+                                          "kind": {
+                                            "numberLit": "0"
+                                          }
+                                        }
+                                      },
+                                      "comments": []
                                     }
-                                  }
-                                },
-                                "comments": []
+                                  ],
+                                  "trailing": []
+                                }
                               }
-                            ],
-                            "trailing": []
+                            }
                           }
                         }
                       }
-                    }
+                    },
+                    "mutable": false
                   }
                 }
               }

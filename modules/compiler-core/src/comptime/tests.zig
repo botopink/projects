@@ -207,6 +207,8 @@ fn renderTypeError(
         .ambiguousMethod => "ambiguous method",
         .typeparamConstraint => "typeparam constraint not satisfied",
         .tryOnNonResult => "try on non-Result",
+        .nonExhaustive => "non-exhaustive case",
+        .redundantPattern => "unreachable case arm",
         .custom => |c| c.message,
     };
     try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "error: {s}\n", .{title}));
@@ -359,6 +361,33 @@ fn renderTypeError(
                 tmp,
                 "\n  `try` requires a @Result<D, E> value, found '{s}'\n",
                 .{try snapshot.typeNameOf(tmp, ty)},
+            ));
+        },
+        .nonExhaustive => |n| {
+            if (n.missing.len == 0) {
+                try out.appendSlice(allocator, try std.fmt.allocPrint(
+                    tmp,
+                    "\n  `{s}` has no wildcard `_` arm; it cannot be matched exhaustively\n",
+                    .{n.typeName},
+                ));
+            } else {
+                var list: std.ArrayList(u8) = .empty;
+                for (n.missing, 0..) |name, i| {
+                    if (i > 0) try list.appendSlice(tmp, ", ");
+                    try list.appendSlice(tmp, name);
+                }
+                try out.appendSlice(allocator, try std.fmt.allocPrint(
+                    tmp,
+                    "\n  '{s}' is missing variant(s): {s}\n",
+                    .{ n.typeName, list.items },
+                ));
+            }
+        },
+        .redundantPattern => |r| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  {s} is already covered by an earlier arm ('{s}')\n",
+                .{ r.description, r.typeName },
             ));
         },
         .custom => |c| {
@@ -1991,6 +2020,74 @@ test "exhaustiveness: nested pattern matching" {
     );
 }
 
+test "exhaustiveness: or-pattern covers multiple variants" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\val Color = enum {
+        \\    Red,
+        \\    Green,
+        \\    Blue,
+        \\};
+        \\val warm = fn(c: Color) -> bool {
+        \\    case c {
+        \\        Red | Green -> true;
+        \\        Blue -> false;
+        \\    }
+        \\};
+    );
+}
+
+test "exhaustiveness: guarded arm does not cover its variant" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Color = enum {
+        \\    Red,
+        \\    Green,
+        \\    Blue,
+        \\};
+        \\val name = fn(c: Color) -> string {
+        \\    case c {
+        \\        Red -> "red";
+        \\        Green -> "green";
+        \\        Blue if false -> "blue";
+        \\    }
+        \\};
+    );
+}
+
+test "exhaustiveness error: unreachable arm after wildcard" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Color = enum {
+        \\    Red,
+        \\    Green,
+        \\    Blue,
+        \\};
+        \\val name = fn(c: Color) -> string {
+        \\    case c {
+        \\        Red -> "red";
+        \\        _ -> "other";
+        \\        Blue -> "blue";
+        \\    }
+        \\};
+    );
+}
+
+test "exhaustiveness error: duplicate variant arm" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Color = enum {
+        \\    Red,
+        \\    Green,
+        \\    Blue,
+        \\};
+        \\val name = fn(c: Color) -> string {
+        \\    case c {
+        \\        Red -> "red";
+        \\        Green -> "green";
+        \\        Red -> "again";
+        \\        Blue -> "blue";
+        \\    }
+        \\};
+    );
+}
+
 test "pattern: non-empty list pattern" {
     try assertComptimeAstSingle(std.testing.allocator, @src(),
         \\val first_or_default = fn(list: i32[], default: i32) -> i32 {
@@ -2276,7 +2373,7 @@ test "context: use with binding in @Context fn passes" {
         \\    initial;
         \\}
         \\fn useThing() -> @Context<Element, i32> {
-        \\    use x = state(0);
+        \\    val x = use state(0);
         \\    state(0);
         \\}
     );
@@ -2288,7 +2385,7 @@ test "context: use void hook with discard binding passes" {
         \\    cb;
         \\}
         \\fn comp() -> @Context<Element, i32> {
-        \\    use _ = effect(0);
+        \\    use effect(0);
         \\    effect(0);
         \\}
     );
@@ -2301,7 +2398,7 @@ test "context: struct implement @Context resolved via inline impl passes" {
         \\    initial;
         \\}
         \\fn Counter() -> Element {
-        \\    use n = state(0);
+        \\    val n = use state(0);
         \\    Element();
         \\}
     );
@@ -2317,11 +2414,11 @@ test "context: custom hook propagates ContextBase transitively passes" {
         \\    initial;
         \\}
         \\fn useAuth() -> AuthState {
-        \\    use t = state(0);
+        \\    val t = use state(0);
         \\    AuthState(loggedIn: true);
         \\}
         \\fn Dashboard() -> Element {
-        \\    use {loggedIn} = useAuth();
+        \\    val {loggedIn} = use useAuth();
         \\    Element();
         \\}
     );
@@ -2333,7 +2430,7 @@ test "context error: use in fn returning string" {
         \\    initial;
         \\}
         \\fn bad() -> string {
-        \\    use x = state(0);
+        \\    val x = use state(0);
         \\    "hi";
         \\}
     );
@@ -2348,7 +2445,7 @@ test "context error: ContextBase mismatch Element vs Http" {
         \\    0;
         \\}
         \\fn bad() -> @Context<Element, i32> {
-        \\    use c = connection();
+        \\    val c = use connection();
         \\    state(0);
         \\}
     );
@@ -2361,7 +2458,7 @@ test "context error: struct without @Context impl used with use" {
         \\    Plain(x: 0);
         \\}
         \\fn comp() -> @Context<Element, i32> {
-        \\    use p = make();
+        \\    val p = use make();
         \\    0;
         \\}
     );

@@ -79,6 +79,7 @@
                                         }
                                       }
                                     },
+                                    "guard": null,
                                     "emptyLinesBefore": 0
                                   }
                                 ],

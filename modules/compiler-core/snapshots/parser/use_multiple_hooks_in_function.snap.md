@@ -17,13 +17,13 @@
         "body": [
           {
             "expr": {
-              "useHook": {
+              "binding": {
                 "loc": {
                   "line": 2,
                   "col": 5
                 },
                 "kind": {
-                  "useBindDestruct": {
+                  "localBindDestruct": {
                     "pattern": {
                       "names": {
                         "fields": [
@@ -40,38 +40,49 @@
                       }
                     },
                     "value": {
-                      "call": {
+                      "useHook": {
                         "loc": {
                           "line": 2,
                           "col": 29
                         },
                         "kind": {
-                          "call": {
-                            "receiver": null,
-                            "callee": "state",
-                            "is_builtin": false,
-                            "args": [
-                              {
-                                "label": null,
-                                "value": {
-                                  "literal": {
-                                    "loc": {
-                                      "line": 2,
-                                      "col": 35
-                                    },
-                                    "kind": {
-                                      "numberLit": "0"
+                          "inner": {
+                            "call": {
+                              "loc": {
+                                "line": 2,
+                                "col": 33
+                              },
+                              "kind": {
+                                "call": {
+                                  "receiver": null,
+                                  "callee": "state",
+                                  "is_builtin": false,
+                                  "args": [
+                                    {
+                                      "label": null,
+                                      "value": {
+                                        "literal": {
+                                          "loc": {
+                                            "line": 2,
+                                            "col": 39
+                                          },
+                                          "kind": {
+                                            "numberLit": "0"
+                                          }
+                                        }
+                                      },
+                                      "comments": []
                                     }
-                                  }
-                                },
-                                "comments": []
+                                  ],
+                                  "trailing": []
+                                }
                               }
-                            ],
-                            "trailing": []
+                            }
                           }
                         }
                       }
-                    }
+                    },
+                    "mutable": false
                   }
                 }
               }
@@ -80,85 +91,96 @@
           },
           {
             "expr": {
-              "useHook": {
+              "binding": {
                 "loc": {
                   "line": 3,
                   "col": 5
                 },
                 "kind": {
-                  "useBind": {
+                  "localBind": {
                     "name": "doubled",
                     "value": {
-                      "call": {
+                      "useHook": {
                         "loc": {
                           "line": 3,
                           "col": 19
                         },
                         "kind": {
-                          "call": {
-                            "receiver": null,
-                            "callee": "memo",
-                            "is_builtin": false,
-                            "args": [
-                              {
-                                "label": null,
-                                "value": {
-                                  "function": {
-                                    "loc": {
-                                      "line": 3,
-                                      "col": 24
-                                    },
-                                    "kind": {
-                                      "syntax": "lambda",
-                                      "params": [],
-                                      "body": [
-                                        {
-                                          "expr": {
-                                            "binaryOp": {
-                                              "loc": {
-                                                "line": 3,
-                                                "col": 35
-                                              },
-                                              "op": "mul",
-                                              "lhs": {
-                                                "identifier": {
-                                                  "loc": {
-                                                    "line": 3,
-                                                    "col": 29
-                                                  },
-                                                  "kind": {
-                                                    "ident": "count"
-                                                  }
-                                                }
-                                              },
-                                              "rhs": {
-                                                "literal": {
-                                                  "loc": {
-                                                    "line": 3,
-                                                    "col": 37
-                                                  },
-                                                  "kind": {
-                                                    "numberLit": "2"
-                                                  }
-                                                }
-                                              }
-                                            }
+                          "inner": {
+                            "call": {
+                              "loc": {
+                                "line": 3,
+                                "col": 23
+                              },
+                              "kind": {
+                                "call": {
+                                  "receiver": null,
+                                  "callee": "memo",
+                                  "is_builtin": false,
+                                  "args": [
+                                    {
+                                      "label": null,
+                                      "value": {
+                                        "function": {
+                                          "loc": {
+                                            "line": 3,
+                                            "col": 28
                                           },
-                                          "emptyLinesBefore": 0
+                                          "kind": {
+                                            "syntax": "lambda",
+                                            "params": [],
+                                            "body": [
+                                              {
+                                                "expr": {
+                                                  "binaryOp": {
+                                                    "loc": {
+                                                      "line": 3,
+                                                      "col": 39
+                                                    },
+                                                    "op": "mul",
+                                                    "lhs": {
+                                                      "identifier": {
+                                                        "loc": {
+                                                          "line": 3,
+                                                          "col": 33
+                                                        },
+                                                        "kind": {
+                                                          "ident": "count"
+                                                        }
+                                                      }
+                                                    },
+                                                    "rhs": {
+                                                      "literal": {
+                                                        "loc": {
+                                                          "line": 3,
+                                                          "col": 41
+                                                        },
+                                                        "kind": {
+                                                          "numberLit": "2"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                "emptyLinesBefore": 0
+                                              }
+                                            ],
+                                            "isStarFn": false
+                                          }
                                         }
-                                      ],
-                                      "isStarFn": false
+                                      },
+                                      "comments": []
                                     }
-                                  }
-                                },
-                                "comments": []
+                                  ],
+                                  "trailing": []
+                                }
                               }
-                            ],
-                            "trailing": []
+                            }
                           }
                         }
                       }
-                    }
+                    },
+                    "mutable": false
                   }
                 }
               }
@@ -173,62 +195,59 @@
                   "col": 5
                 },
                 "kind": {
-                  "useBind": {
-                    "name": "_",
-                    "value": {
-                      "call": {
-                        "loc": {
-                          "line": 4,
-                          "col": 13
-                        },
-                        "kind": {
-                          "call": {
-                            "receiver": null,
-                            "callee": "effect",
-                            "is_builtin": false,
-                            "args": [
-                              {
-                                "label": null,
-                                "value": {
-                                  "function": {
-                                    "loc": {
-                                      "line": 4,
-                                      "col": 20
-                                    },
-                                    "kind": {
-                                      "syntax": "lambda",
-                                      "params": [],
-                                      "body": [
-                                        {
-                                          "expr": {
-                                            "call": {
-                                              "loc": {
-                                                "line": 4,
-                                                "col": 25
-                                              },
-                                              "kind": {
-                                                "call": {
-                                                  "receiver": null,
-                                                  "callee": "cleanup",
-                                                  "is_builtin": false,
-                                                  "args": [],
-                                                  "trailing": []
-                                                }
+                  "inner": {
+                    "call": {
+                      "loc": {
+                        "line": 4,
+                        "col": 9
+                      },
+                      "kind": {
+                        "call": {
+                          "receiver": null,
+                          "callee": "effect",
+                          "is_builtin": false,
+                          "args": [
+                            {
+                              "label": null,
+                              "value": {
+                                "function": {
+                                  "loc": {
+                                    "line": 4,
+                                    "col": 16
+                                  },
+                                  "kind": {
+                                    "syntax": "lambda",
+                                    "params": [],
+                                    "body": [
+                                      {
+                                        "expr": {
+                                          "call": {
+                                            "loc": {
+                                              "line": 4,
+                                              "col": 21
+                                            },
+                                            "kind": {
+                                              "call": {
+                                                "receiver": null,
+                                                "callee": "cleanup",
+                                                "is_builtin": false,
+                                                "args": [],
+                                                "trailing": []
                                               }
                                             }
-                                          },
-                                          "emptyLinesBefore": 0
-                                        }
-                                      ],
-                                      "isStarFn": false
-                                    }
+                                          }
+                                        },
+                                        "emptyLinesBefore": 0
+                                      }
+                                    ],
+                                    "isStarFn": false
                                   }
-                                },
-                                "comments": []
-                              }
-                            ],
-                            "trailing": []
-                          }
+                                }
+                              },
+                              "comments": []
+                            }
+                          ],
+                          "trailing": []
                         }
                       }
                     }

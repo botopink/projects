@@ -240,12 +240,16 @@ pub fn CaseArmOf(comptime phase: Phase) type {
     return struct {
         pattern: Pattern,
         body: ExprOf(phase),
+        /// Optional guard clause: `pattern if <guard> -> body`. The arm only
+        /// matches when the pattern matches AND the guard evaluates to `true`.
+        guard: ?ExprOf(phase) = null,
         /// Number of empty lines before this arm in the source
         emptyLinesBefore: u32 = 0,
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             this.pattern.deinit(allocator);
             this.body.deinit(allocator);
+            if (this.guard) |*g| g.deinit(allocator);
         }
     };
 }
@@ -499,35 +503,21 @@ pub fn BindingExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
-/// Use-hook expressions: `use` inside function bodies (distinct from top-level `ImportDecl` imports)
+/// Use-hook expressions: the `use` prefix operator inside function bodies
+/// (distinct from top-level `ImportDecl` imports).
 ///
-/// Two forms:
-///   `use expr`              — void hook, no binding (e.g. `use effect(cleanup)`)
-///   `use binding = expr`    — hook with binding (e.g. `use {val, set} = state(0)`)
+/// `use` is a prefix operator on a hook call. Binding is handled by the
+/// enclosing `val`/`var`, never by `use` itself:
+///   `use effect { -> cleanup() }`       — void hook (statement position)
+///   `val d = use memo { -> v*2 }`        — value bound by `val`
+///   `val {v, s} = use state(0)`          — destructured by `val`
 pub fn UseHookExprOf(comptime phase: Phase) type {
-    const Kind = union(enum) {
-        /// `use expr` — void hook, no binding
-        useVoid: *ExprOf(phase),
-        /// `use name = expr` — hook with simple name binding
-        useBind: struct {
-            name: []const u8,
-            value: *ExprOf(phase),
-        },
-        /// `use {a, b} = expr` — hook with destructuring binding
-        useBindDestruct: struct {
-            pattern: ParamDestruct,
-            value: *ExprOf(phase),
-        },
+    const Kind = struct {
+        /// The hook call the `use` prefix wraps, e.g. `state(0)` or `memo { … }`.
+        inner: *ExprOf(phase),
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            switch (this.*) {
-                .useVoid => |e| destroyExpr(allocator, e),
-                .useBind => |*b| destroyExpr(allocator, b.value),
-                .useBindDestruct => |*b| {
-                    @constCast(&b.pattern).deinit(allocator);
-                    destroyExpr(allocator, b.value);
-                },
-            }
+            destroyExpr(allocator, this.inner);
         }
     };
 
@@ -568,10 +558,12 @@ pub fn CallExprOf(comptime phase: Phase) type {
         ///   `@sizeOf(T)`                        receiver=null, callee="sizeOf", is_builtin=true
         ///   `@block{ ... }`                     receiver=null, callee="block", is_builtin=true
         ///   `executar { ... } erro: { ... }`    receiver=null, callee="executar", is_builtin=false
-        ///   `precos.forEach { ... }`             receiver="precos", callee="forEach", is_builtin=false
+        ///   `precos.forEach { ... }`             receiver=`precos`, callee="forEach", is_builtin=false
         call: struct {
-            /// null for plain calls; the object for method calls.
-            receiver: ?[]const u8,
+            /// null for plain calls; the receiver expression for method calls.
+            /// An arbitrary expression so method chains (`a().map(f).filter(g)`)
+            /// and zero-arg method calls (`r.isOk()`) are representable.
+            receiver: ?*ExprOf(phase),
             /// Function/method name (without @ prefix for builtins)
             callee: []const u8,
             /// true if this is a builtin call (starts with @ in source)
@@ -590,6 +582,10 @@ pub fn CallExprOf(comptime phase: Phase) type {
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             switch (this.*) {
                 .call => |c| {
+                    if (c.receiver) |recv| {
+                        recv.deinit(allocator);
+                        allocator.destroy(recv);
+                    }
                     for (c.args) |*a| a.deinit(allocator);
                     allocator.free(c.args);
                     for (c.trailing) |*t| t.deinit(allocator);

@@ -11,11 +11,10 @@ val name = fn(c: Color) -> string {
 };
 
 ----- ERROR
-error: type mismatch
+error: non-exhaustive case
   ┌─ :7:5
   │
 7 │     case c {
   │     ^
 
-  expected: exhaustive
-  found:    Color
+  'Color' is missing variant(s): Green, Blue

@@ -188,6 +188,7 @@ pub fn codegenEmit(
     for (outputs) |*ct| {
         switch (ct.outcome) {
             .parseError => continue,
+            .typeError => continue,
             .validationError => |verr| {
                 try results.append(alloc, .{
                     .name = ct.name,
@@ -832,45 +833,49 @@ const Emitter = struct {
             .binding => |b| switch (b.kind) {
                 .localBind => |lb| try self.emitLocalBind(lb.name, lb.value.*),
                 .assign => |a| try self.emitAssign(a),
-                .localBindDestruct => |lb| {
-                    try self.lowerExprIntoX0(lb.value.*);
-                    switch (lb.pattern) {
-                        .names => |n| {
-                            for (n.fields) |fld| {
-                                const scratch = self.cur_arity;
-                                try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
-                                const fail = self.allocLabel();
-                                try self.bodyPrint(
-                                    "    {{get_map_elements, {{f, {d}}}, {{x, {d}}}, {{list, [{{atom, {s}}}, {{x, 0}}]}}}}.\n",
-                                    .{ fail, scratch, fld.field_name },
-                                );
-                                try self.bodyPrint("  {{label, {d}}}.\n", .{fail});
-                                const y_idx = self.next_y;
-                                self.next_y += 1;
-                                try self.reg_map.put(fld.bind_name, .{ .y = y_idx });
-                                try self.bodyPrint("    {{move, {{x, 0}}, {{y, {d}}}}}.\n", .{y_idx});
-                                try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{scratch});
-                            }
-                        },
-                        .tuple_ => |bindings| {
-                            for (bindings, 0..) |name, i| {
-                                try self.bodyPrint(
-                                    "    {{get_tuple_element, {{x, 0}}, {d}, {{x, 1}}}}.\n",
-                                    .{i},
-                                );
-                                const y_idx = self.next_y;
-                                self.next_y += 1;
-                                try self.reg_map.put(name, .{ .y = y_idx });
-                                try self.bodyPrint("    {{move, {{x, 1}}, {{y, {d}}}}}.\n", .{y_idx});
-                            }
-                        },
-                        else => try self.bodyWrite("    %% unsupported destructure pattern\n"),
-                    }
-                },
+                .localBindDestruct => |lb| try self.emitDestructBind(lb.pattern, lb.value.*),
             },
             else => {
                 try self.lowerExprIntoX0(stmt.expr);
             },
+        }
+    }
+
+    /// Lower a destructuring binding (`{a, b} = expr` / `#(a, b) = expr`):
+    /// evaluate `value` into `{x, 0}`, then bind each field into a y-slot.
+    fn emitDestructBind(self: *Emitter, pattern: ast.ParamDestruct, value: ast.Expr) anyerror!void {
+        try self.lowerExprIntoX0(value);
+        switch (pattern) {
+            .names => |n| {
+                for (n.fields) |fld| {
+                    const scratch = self.cur_arity;
+                    try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
+                    const fail = self.allocLabel();
+                    try self.bodyPrint(
+                        "    {{get_map_elements, {{f, {d}}}, {{x, {d}}}, {{list, [{{atom, {s}}}, {{x, 0}}]}}}}.\n",
+                        .{ fail, scratch, fld.field_name },
+                    );
+                    try self.bodyPrint("  {{label, {d}}}.\n", .{fail});
+                    const y_idx = self.next_y;
+                    self.next_y += 1;
+                    try self.reg_map.put(fld.bind_name, .{ .y = y_idx });
+                    try self.bodyPrint("    {{move, {{x, 0}}, {{y, {d}}}}}.\n", .{y_idx});
+                    try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{scratch});
+                }
+            },
+            .tuple_ => |bindings| {
+                for (bindings, 0..) |name, i| {
+                    try self.bodyPrint(
+                        "    {{get_tuple_element, {{x, 0}}, {d}, {{x, 1}}}}.\n",
+                        .{i},
+                    );
+                    const y_idx = self.next_y;
+                    self.next_y += 1;
+                    try self.reg_map.put(name, .{ .y = y_idx });
+                    try self.bodyPrint("    {{move, {{x, 1}}, {{y, {d}}}}}.\n", .{y_idx});
+                }
+            },
+            else => try self.bodyWrite("    %% unsupported destructure pattern\n"),
         }
     }
 
@@ -1031,6 +1036,9 @@ const Emitter = struct {
     /// Lower `e` so its value lives in `{x, 0}`, ready for `return.`.
     fn lowerExprIntoX0(self: *Emitter, e: ast.Expr) anyerror!void {
         switch (e) {
+            // `use` is a transparent prefix: lower the wrapped hook call. The
+            // enclosing `val` moves the result into its y-slot.
+            .useHook => |uh| return self.lowerExprIntoX0(uh.kind.inner.*),
             .identifier => |id| switch (id.kind) {
                 .ident => |n| {
                     if (self.reg_map.get(n)) |reg| {
@@ -1454,50 +1462,63 @@ const Emitter = struct {
             try self.lowerBuiltinCall(cc, mode);
             return;
         }
-        if (cc.receiver) |recv_name| {
-            // A PascalCase receiver that isn't a local binding is a module
-            // reference: `List.map(xs, f)` → a remote call `list:map(xs, f)`
-            // (mirrors the Erlang backend's `isModuleRef`/`erlangModule`). The
-            // receiver names the module, so it is *not* prepended as an argument;
-            // trailing lambdas become trailing fun arguments.
-            if (recv_name.len > 0 and recv_name.len <= 128 and
-                std.ascii.isUpper(recv_name[0]) and !self.reg_map.contains(recv_name))
-            {
-                const total = cc.args.len + cc.trailing.len;
-                const scratch = self.cur_arity;
-                for (cc.args, 0..) |arg, i| {
-                    try self.lowerExprIntoX0(arg.value.*);
-                    try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + i});
+        if (cc.receiver) |recv_expr| {
+            const recv_name: ?[]const u8 = switch (recv_expr.*) {
+                .identifier => |idn| switch (idn.kind) {
+                    .ident => |n| n,
+                    else => null,
+                },
+                else => null,
+            };
+            // Module-qualified remote call: a PascalCase identifier receiver that
+            // isn't a local binding is a module reference: `List.map(xs, f)` →
+            // `list:map(xs, f)` (mirrors the Erlang backend's `isModuleRef`/
+            // `erlangModule`). The receiver names the module, so it is *not*
+            // prepended as an argument; trailing lambdas become fun arguments.
+            if (recv_name) |rn| {
+                if (rn.len > 0 and rn.len <= 128 and
+                    std.ascii.isUpper(rn[0]) and !self.reg_map.contains(rn))
+                {
+                    const total = cc.args.len + cc.trailing.len;
+                    const scratch = self.cur_arity;
+                    for (cc.args, 0..) |arg, i| {
+                        try self.lowerExprIntoX0(arg.value.*);
+                        try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + i});
+                    }
+                    for (cc.trailing, 0..) |trail, j| {
+                        try self.lowerLambda(trail);
+                        try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + cc.args.len + j});
+                    }
+                    for (0..total) |i| {
+                        try self.bodyPrint("    {{move, {{x, {d}}}, {{x, {d}}}}}.\n", .{ scratch + i, i });
+                    }
+                    var mbuf: [128]u8 = undefined;
+                    @memcpy(mbuf[0..rn.len], rn);
+                    mbuf[0] = std.ascii.toLower(mbuf[0]);
+                    const mod = mbuf[0..rn.len];
+                    switch (mode) {
+                        .non_tail => try self.bodyPrint(
+                            "    {{call_ext, {d}, {{extfunc, {s}, {s}, {d}}}}}.\n",
+                            .{ total, mod, cc.callee, total },
+                        ),
+                        .tail => try self.bodyPrint(
+                            "    {{call_ext_last, {d}, {{extfunc, {s}, {s}, {d}}}, {d}}}.\n",
+                            .{ total, mod, cc.callee, total, self.num_y },
+                        ),
+                    }
+                    return;
                 }
-                for (cc.trailing, 0..) |trail, j| {
-                    try self.lowerLambda(trail);
-                    try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + cc.args.len + j});
-                }
-                for (0..total) |i| {
-                    try self.bodyPrint("    {{move, {{x, {d}}}, {{x, {d}}}}}.\n", .{ scratch + i, i });
-                }
-                var mbuf: [128]u8 = undefined;
-                @memcpy(mbuf[0..recv_name.len], recv_name);
-                mbuf[0] = std.ascii.toLower(mbuf[0]);
-                const mod = mbuf[0..recv_name.len];
-                switch (mode) {
-                    .non_tail => try self.bodyPrint(
-                        "    {{call_ext, {d}, {{extfunc, {s}, {s}, {d}}}}}.\n",
-                        .{ total, mod, cc.callee, total },
-                    ),
-                    .tail => try self.bodyPrint(
-                        "    {{call_ext_last, {d}, {{extfunc, {s}, {s}, {d}}}, {d}}}.\n",
-                        .{ total, mod, cc.callee, total, self.num_y },
-                    ),
-                }
-                return;
             }
-            if (self.reg_map.get(recv_name)) |reg| {
-                var rbuf: [64]u8 = undefined;
-                const recv_term = try reg.format(&rbuf);
-                try self.bodyPrint("    {{move, {s}, {{x, 0}}}}.\n", .{recv_term});
+            if (recv_name) |rn| {
+                if (self.reg_map.get(rn)) |reg| {
+                    var rbuf: [64]u8 = undefined;
+                    const recv_term = try reg.format(&rbuf);
+                    try self.bodyPrint("    {{move, {s}, {{x, 0}}}}.\n", .{recv_term});
+                } else {
+                    try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{rn});
+                }
             } else {
-                try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{recv_name});
+                try self.lowerExprIntoX0(recv_expr.*);
             }
             const scratch = self.cur_arity;
             try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
@@ -1634,6 +1655,14 @@ const Emitter = struct {
                 const body = cc.trailing[0];
                 for (body.body) |stmt| try self.emitStmt(stmt);
             }
+            return;
+        }
+        if (std.mem.startsWith(u8, cc.callee, "__bp_")) {
+            // `@Result`/`@Option` method ops are not lowered to BEAM assembly
+            // yet; pass the receiver through so the value still flows downstream.
+            try self.bodyPrint("    %% unsupported on BEAM: {s}\n", .{cc.callee});
+            if (cc.args.len > 0) try self.lowerExprIntoX0(cc.args[0].value.*);
+            if (mode == .tail) try self.emitReturn();
             return;
         }
         try self.bodyPrint("    %% unsupported builtin: @{s} (Fase 3+)\n", .{cc.callee});

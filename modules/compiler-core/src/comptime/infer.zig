@@ -277,12 +277,15 @@ fn validateStructAccessors(env: *Env, s: ast.StructDecl) InferError!void {
 fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
     switch (decl) {
         .val => |v| {
-            const typedExpr = try inferExprTyped(env, v.value.*);
+            const annType: ?*T.Type = if (v.typeAnnotation) |ann| try resolveTypeRef(env, ann) else null;
+            // When binding a lambda to a `fn(...) -> ...` annotation, feed the
+            // annotation into the lambda so its params are typed from context.
+            const typedExpr = if (annType != null and v.value.* == .function)
+                try inferFunctionExprExpected(env, v.value.function, v.value.function.loc, annType)
+            else
+                try inferExprTyped(env, v.value.*);
             const ty = typedExpr.getType();
-            if (v.typeAnnotation) |ann| {
-                const annType = try resolveTypeRef(env, ann);
-                try unifyAt(env, annType, ty, v.value.getLoc());
-            }
+            if (annType) |at| try unifyAt(env, at, ty, v.value.getLoc());
             try env.bind(v.name, ty);
             return .{ .name = v.name, .type_ = ty, .typedExpr = typedExpr, .decl = decl };
         },
@@ -1189,23 +1192,26 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             return env.namedTypeArgs("optional", args);
         },
         .function => |f| {
-            // For function types, resolve params and return type
+            // Build a `.func` type so a `fn(A, B) -> R` annotation unifies with
+            // lambda/anonymous-function values, propagating the annotated param
+            // and return types into the value's fresh type variables.
             const paramTypes = try env.arena.alloc(*T.Type, f.params.len);
             for (f.params, 0..) |p, i| {
                 paramTypes[i] = try resolveTypeRefInContext(env, p, genericMap);
             }
             const returnType = try resolveTypeRefInContext(env, f.returnType.*, genericMap);
-            const args = try env.arena.alloc(*T.Type, f.params.len + 1);
-            for (f.params, 0..) |_, i| args[i] = paramTypes[i];
-            args[f.params.len] = returnType;
-            return env.namedTypeArgs("function", args);
+            return env.funcType(paramTypes, returnType);
         },
         .generic => |b| {
             const args = try env.arena.alloc(*T.Type, b.args.len);
             for (b.args, 0..) |a, i| {
                 args[i] = try resolveTypeRefInContext(env, a, genericMap);
             }
-            return env.namedTypeArgs(b.name, args);
+            // The builtin `@Option<T>` is the canonical form of the optional type
+            // `?T` — normalise it so both share one representation (and one set of
+            // `.map` / `.flatMap` / `.unwrapOr` lowerings).
+            const name = if (b.is_builtin and std.mem.eql(u8, b.name, "Option")) "optional" else b.name;
+            return env.namedTypeArgs(name, args);
         },
         // A comptime typeparam accepts a value of any type at the call site;
         // its constraints are validated separately (see `validateTypeparams`).
@@ -1262,32 +1268,6 @@ fn inferTrailingLambdasTyped(env: *Env, trailing: []const ast.TrailingLambda) In
         };
     }
     return out;
-}
-
-fn patternContainsWildcard(pattern: ast.Pattern) bool {
-    return switch (pattern) {
-        .wildcard => true,
-        .@"or" => |patterns| blk: {
-            for (patterns) |p| {
-                if (patternContainsWildcard(p)) break :blk true;
-            }
-            break :blk false;
-        },
-        .multi => |patterns| blk: {
-            for (patterns) |p| {
-                if (patternContainsWildcard(p)) break :blk true;
-            }
-            break :blk false;
-        },
-        .variant => |v| blk: {
-            if (v.payload != .literals) break :blk false;
-            for (v.payload.literals) |p| {
-                if (patternContainsWildcard(p)) break :blk true;
-            }
-            break :blk false;
-        },
-        else => false,
-    };
 }
 
 fn isEnumVariantNameForSubject(env: *Env, subjectType: *T.Type, candidate: []const u8) bool {
@@ -1404,18 +1384,177 @@ fn bindCaseArmPatternNames(
     try bindPatternNamesForSubject(env, pattern, subjectTy, snapshots);
 }
 
-fn isExhaustivenessCheckedType(env: *Env, ty: *T.Type) bool {
-    const resolved = ty.deref();
-    if (resolved.isNamed("string")) return true;
-    if (resolved.* == .named) {
-        if (env.lookupTypeDef(resolved.named.name)) |td| {
-            return switch (td) {
-                .enum_ => true,
-                else => false,
-            };
-        }
+fn namesContain(list: []const []const u8, name: []const u8) bool {
+    for (list) |n| {
+        if (std.mem.eql(u8, n, name)) return true;
     }
     return false;
+}
+
+/// True when `pattern`, as a top-level case arm, binds the whole subject and so
+/// matches any value of an enum/string domain — i.e. it is a catch-all. A `_`
+/// wildcard, or an identifier that is NOT one of the subject enum's variant
+/// names, both bind unconditionally. An OR pattern is a catch-all if any
+/// alternative is.
+fn patternIsCatchAll(env: *Env, pattern: ast.Pattern, subjectType: *T.Type) bool {
+    return switch (pattern) {
+        .wildcard => true,
+        .ident => |name| !isEnumVariantNameForSubject(env, subjectType, name),
+        .@"or" => |pats| blk: {
+            for (pats) |p| {
+                if (patternIsCatchAll(env, p, subjectType)) break :blk true;
+            }
+            break :blk false;
+        },
+        else => false,
+    };
+}
+
+/// True when a variant pattern's payload matches *every* value of that variant,
+/// so the variant is fully covered. Refined payloads like `Ok(1)` do not; a
+/// payload of only bindings / wildcards (e.g. `Err(_)`, `Rgb(r, g, b)`) does.
+fn variantPayloadIrrefutable(payload: anytype) bool {
+    return switch (payload) {
+        .binding, .fields => true,
+        .literals => |args| blk: {
+            for (args) |a| {
+                const ok = switch (a) {
+                    .wildcard, .ident => true,
+                    else => false,
+                };
+                if (!ok) break :blk false;
+            }
+            break :blk true;
+        },
+    };
+}
+
+/// Append to `covered` every enum variant that `pattern` *fully* covers (an
+/// irrefutable variant match). Refined matches (`Ok(1)`) are skipped so the
+/// variant stays "open".
+fn collectFullyCoveredVariants(
+    env: *Env,
+    pattern: ast.Pattern,
+    subjectType: *T.Type,
+    covered: *std.ArrayListUnmanaged([]const u8),
+) InferError!void {
+    switch (pattern) {
+        .ident => |name| {
+            if (isEnumVariantNameForSubject(env, subjectType, name) and !namesContain(covered.items, name)) {
+                try covered.append(env.arena, name);
+            }
+        },
+        .variant => |v| {
+            if (variantPayloadIrrefutable(v.payload) and !namesContain(covered.items, v.name)) {
+                try covered.append(env.arena, v.name);
+            }
+        },
+        .@"or" => |pats| {
+            for (pats) |p| try collectFullyCoveredVariants(env, p, subjectType, covered);
+        },
+        else => {},
+    }
+}
+
+/// When `pattern` is a *single* irrefutable variant match whose variant is
+/// already covered, return that variant's name (the arm is unreachable). OR
+/// patterns are skipped — one covered alternative does not make the arm dead.
+fn alreadyCoveredVariant(
+    env: *Env,
+    pattern: ast.Pattern,
+    subjectType: *T.Type,
+    covered: []const []const u8,
+) ?[]const u8 {
+    switch (pattern) {
+        .ident => |name| {
+            if (isEnumVariantNameForSubject(env, subjectType, name) and namesContain(covered, name)) return name;
+        },
+        .variant => |v| {
+            if (variantPayloadIrrefutable(v.payload) and namesContain(covered, v.name)) return v.name;
+        },
+        else => {},
+    }
+    return null;
+}
+
+/// Full exhaustiveness + reachability analysis for a `case` on an enum or
+/// string subject. Sets `env.lastError` and returns `error.TypeError` on the
+/// first problem: an unreachable arm, a missing wildcard for an open domain, or
+/// an enum with uncovered variants. Subjects of any other type are not checked.
+fn checkCaseExhaustiveness(
+    env: *Env,
+    subjectType: *T.Type,
+    arms: []const ast.CaseArm,
+    loc: ast.Loc,
+) InferError!void {
+    const resolved = subjectType.deref();
+
+    // Resolve the subject's domain. `string` is open (only a wildcard makes it
+    // exhaustive); an enum has a known finite variant set; anything else is not
+    // exhaustiveness-checked.
+    const isString = resolved.isNamed("string");
+    var typeName: []const u8 = "string";
+    var variantNames: []const []const u8 = &.{};
+    if (!isString) {
+        if (resolved.* != .named) return;
+        typeName = resolved.named.name;
+        const td = env.lookupTypeDef(typeName) orelse return;
+        switch (td) {
+            .enum_ => |en| {
+                const names = try env.arena.alloc([]const u8, en.variants.len);
+                for (en.variants, 0..) |v, i| names[i] = v.name;
+                variantNames = names;
+            },
+            else => return,
+        }
+    }
+
+    var covered: std.ArrayListUnmanaged([]const u8) = .empty;
+    defer covered.deinit(env.arena);
+    var hasCatchAll = false;
+
+    for (arms) |arm| {
+        const guarded = arm.guard != null;
+
+        // Any unguarded arm following an unguarded catch-all can never run.
+        if (hasCatchAll and !guarded) {
+            env.lastError = TypeError.redundantPattern(typeName, "this arm").withLoc(arm.body.getLoc());
+            return error.TypeError;
+        }
+
+        // A guarded arm may fail its guard, so it neither covers a variant for
+        // exhaustiveness nor shadows later arms.
+        if (guarded) continue;
+
+        if (patternIsCatchAll(env, arm.pattern, resolved)) {
+            hasCatchAll = true;
+            continue;
+        }
+
+        if (alreadyCoveredVariant(env, arm.pattern, resolved, covered.items)) |dup| {
+            const desc = try std.fmt.allocPrint(env.arena, "variant '{s}'", .{dup});
+            env.lastError = TypeError.redundantPattern(typeName, desc).withLoc(arm.body.getLoc());
+            return error.TypeError;
+        }
+
+        try collectFullyCoveredVariants(env, arm.pattern, resolved, &covered);
+    }
+
+    if (hasCatchAll) return;
+
+    if (isString) {
+        env.lastError = TypeError.nonExhaustive(typeName, &.{}).withLoc(loc);
+        return error.TypeError;
+    }
+
+    var missing: std.ArrayListUnmanaged([]const u8) = .empty;
+    for (variantNames) |name| {
+        if (!namesContain(covered.items, name)) try missing.append(env.arena, name);
+    }
+    if (missing.items.len > 0) {
+        env.lastError = TypeError.nonExhaustive(typeName, try missing.toOwnedSlice(env.arena)).withLoc(loc);
+        return error.TypeError;
+    }
 }
 
 /// Infer the type of `expr` AND build the fully-annotated `TypedExpr` in one
@@ -1866,6 +2005,17 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
         .localBindDestruct => |lb| {
             const valTyped = try inferExprTyped(env, lb.value.*);
             const valPtr = try makeTypedPtr(env, valTyped);
+            // Destructuring a hook (`val {v, s} = use state(0)`) is lenient: the
+            // hook's Return type `R` need not be a record, so unknown fields bind
+            // to fresh type vars rather than triggering a `notARecord` error.
+            if (isUseHookValue(lb.value)) {
+                try bindUseDestructure(env, lb.pattern, valTyped.getType());
+                return TypedExpr{ .binding = .{ .loc = loc, .type_ = valTyped.getType(), .kind = .{ .localBindDestruct = .{
+                    .pattern = lb.pattern,
+                    .value = valPtr,
+                    .mutable = lb.mutable,
+                } } } };
+            }
             // Bind destructured names into the environment.
             const derefedTy = valTyped.getType().deref();
             switch (lb.pattern) {
@@ -1923,6 +2073,75 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
     };
 }
 
+/// Resolve a builtin method call on a `@Result<R, E>` or `@Option<T>` receiver
+/// (`.map` / `.flatMap` / `.unwrapOr` / `.isOk` / `.isError`).
+///
+/// Returns the typed call node (with the correct result type) and records a
+/// lowering decision in `env.method_lowerings` keyed by `loc`, so the AST
+/// transform can rewrite it into a `__bp_<domain>_<op>(receiver, arg)` builtin
+/// call. Returns `null` when the receiver is not a Result/Option or the method
+/// is unknown — the caller then falls back to permissive method typing.
+fn inferResultOptionMethod(
+    env: *Env,
+    recvPtr: *ast.TypedExpr,
+    callee: []const u8,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+    loc: ast.Loc,
+) InferError!?ast.TypedExpr {
+    const recvTy = recvPtr.getType().deref();
+    if (recvTy.* != .named) return null;
+    const named = recvTy.named;
+    const isResult = std.mem.eql(u8, named.name, "Result");
+    const isOption = std.mem.eql(u8, named.name, "optional");
+    if (!isResult and !isOption) return null;
+
+    const op: envMod.MethodLowering.Op =
+        if (std.mem.eql(u8, callee, "map")) .map else if (std.mem.eql(u8, callee, "flatMap")) .flatMap else if (std.mem.eql(u8, callee, "unwrapOr")) .unwrapOr else if (isResult and std.mem.eql(u8, callee, "isOk")) .isOk else if (isResult and std.mem.eql(u8, callee, "isError")) .isError else return null;
+
+    // The success-payload type: `R` for `Result<R, E>`, `T` for `Option<T>`.
+    const okTy: *T.Type = if (named.args.len >= 1) named.args[0] else try env.freshVar();
+    const errTy: *T.Type = if (isResult and named.args.len >= 2) named.args[1] else try env.freshVar();
+
+    // The functional / default argument arrives as the first positional arg.
+    const arg0: ?*T.Type = if (typedArgs.len >= 1) typedArgs[0].value.getType() else null;
+
+    const retType: *T.Type = switch (op) {
+        .map => blk: {
+            const r2 = try env.freshVar();
+            if (arg0) |a| try unifyAt(env, a, try env.funcType(&.{okTy}, r2), loc);
+            break :blk if (isResult)
+                try env.namedTypeArgs("Result", &.{ r2, errTy })
+            else
+                try env.namedTypeArgs("optional", &.{r2});
+        },
+        .flatMap => blk: {
+            const r2 = try env.freshVar();
+            const resTy = if (isResult)
+                try env.namedTypeArgs("Result", &.{ r2, errTy })
+            else
+                try env.namedTypeArgs("optional", &.{r2});
+            if (arg0) |a| try unifyAt(env, a, try env.funcType(&.{okTy}, resTy), loc);
+            break :blk resTy;
+        },
+        .unwrapOr => blk: {
+            if (arg0) |a| try unifyAt(env, a, okTy, loc);
+            break :blk okTy;
+        },
+        .isOk, .isError => try env.namedType("bool"),
+    };
+
+    try env.method_lowerings.put(loc, .{ .domain = if (isResult) .result else .option, .op = op });
+
+    return ast.TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
+        .receiver = recvPtr,
+        .callee = callee,
+        .is_builtin = false,
+        .args = typedArgs,
+        .trailing = typedTrailing,
+    } } } };
+}
+
 /// Infer type for `use`-hook expressions (@Context F7).
 ///
 /// The enclosing function's return type decides whether `use` is allowed and which
@@ -1938,31 +2157,19 @@ fn inferUseHookExpr(env: *Env, uh: ast.UseHookExprOf(.untyped), loc: ast.Loc) In
         return error.TypeError;
     }
 
-    return switch (uh.kind) {
-        .useVoid => |v| blk: {
-            const valTyped = try inferExprTyped(env, v.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            try validateUseBase(env, valTyped.getType(), fc, loc);
-            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .useVoid = valPtr } } };
-        },
-        .useBind => |b| blk: {
-            const valTyped = try inferExprTyped(env, b.value.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            try validateUseBase(env, valTyped.getType(), fc, loc);
-            const srcTy = bindingSourceType(valTyped.getType());
-            // `use _ = expr` discards the result (void hook); no binding to introduce.
-            if (!std.mem.eql(u8, b.name, "_")) try env.bind(b.name, srcTy);
-            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = srcTy, .kind = .{ .useBind = .{ .name = b.name, .value = valPtr } } } };
-        },
-        .useBindDestruct => |b| blk: {
-            const valTyped = try inferExprTyped(env, b.value.*);
-            const valPtr = try makeTypedPtr(env, valTyped);
-            try validateUseBase(env, valTyped.getType(), fc, loc);
-            const srcTy = bindingSourceType(valTyped.getType());
-            try bindUseDestructure(env, b.pattern, srcTy);
-            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = srcTy, .kind = .{ .useBindDestruct = .{ .pattern = b.pattern, .value = valPtr } } } };
-        },
-    };
+    // `use <hookcall>` — infer the wrapped call, check it yields the right
+    // ContextBase, and expose its Return type `R` as the prefix's type. Any
+    // binding/destructuring is performed by the enclosing `val`/`var`.
+    const valTyped = try inferExprTyped(env, uh.kind.inner.*);
+    const valPtr = try makeTypedPtr(env, valTyped);
+    try validateUseBase(env, valTyped.getType(), fc, loc);
+    const srcTy = bindingSourceType(valTyped.getType());
+    return TypedExpr{ .useHook = .{ .loc = loc, .type_ = srcTy, .kind = .{ .inner = valPtr } } };
+}
+
+/// True when a binding's value is a `use`-hook prefix expression.
+fn isUseHookValue(value: *const ast.ExprOf(.untyped)) bool {
+    return value.* == .useHook;
 }
 
 /// Verify a `use` expression returns `@Context<B, _>` whose `B` matches the
@@ -2010,6 +2217,12 @@ fn bindUseDestructure(env: *Env, pattern: ast.ParamDestruct, srcTy: *T.Type) Inf
 fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
     return switch (c.kind) {
         .call => |call| {
+            // Method calls carry a receiver expression — infer it first.
+            const typedReceiver: ?*ast.TypedExpr = if (call.receiver) |recvExpr|
+                try makeTypedPtr(env, try inferExprTyped(env, recvExpr.*))
+            else
+                null;
+
             const typedArgs = try env.arena.alloc(ast.CallArgOf(.typed), call.args.len);
             for (call.args, 0..) |arg, i| {
                 const val = try inferExprTyped(env, arg.value.*);
@@ -2020,13 +2233,65 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
             if (call.is_builtin) {
                 const retType = try inferBuiltinCallReturnType(env, call.callee, typedArgs, typedTrailing);
                 return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
-                    .receiver = call.receiver,
+                    .receiver = null,
                     .callee = call.callee,
                     .is_builtin = call.is_builtin,
                     .args = typedArgs,
                     .trailing = typedTrailing,
                 } } } };
             }
+
+            if (typedReceiver) |recvPtr| {
+                // Qualified constructor / static call: `EnumType.Variant(args)`.
+                // The receiver names a type definition, so the callee is a global
+                // constructor binding (not a method) — resolve it the same way as
+                // a plain call and keep the receiver for codegen (`Color.Rgb(..)`).
+                if (call.receiver) |re| {
+                    if (re.* == .identifier and re.*.identifier.kind == .ident and
+                        env.lookupTypeDef(re.*.identifier.kind.ident) != null)
+                    {
+                        if (env.lookup(call.callee)) |calleeType| {
+                            const resolved = calleeType.deref();
+                            const retType: *T.Type = switch (resolved.*) {
+                                .func => |f| blk: {
+                                    if (f.params.len == typedArgs.len) {
+                                        for (typedArgs, f.params) |ta, p|
+                                            try unifyAt(env, p, ta.value.getType(), ta.value.getLoc());
+                                    }
+                                    break :blk f.ret;
+                                },
+                                .named => resolved,
+                                else => try env.freshVar(),
+                            };
+                            return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
+                                .receiver = recvPtr,
+                                .callee = call.callee,
+                                .is_builtin = false,
+                                .args = typedArgs,
+                                .trailing = typedTrailing,
+                            } } } };
+                        }
+                    }
+                }
+
+                // Builtin `@Result` / `@Option` methods — type-check and record
+                // the lowering decision.
+                if (try inferResultOptionMethod(env, recvPtr, call.callee, typedArgs, typedTrailing, loc)) |dispatched| {
+                    return dispatched;
+                }
+
+                // Other method calls (struct getters, activated extensions) are
+                // handled by sibling work — type them permissively as a fresh var
+                // so they don't error here.
+                return TypedExpr{ .call = .{ .loc = loc, .type_ = try env.freshVar(), .kind = .{ .call = .{
+                    .receiver = recvPtr,
+                    .callee = call.callee,
+                    .is_builtin = false,
+                    .args = typedArgs,
+                    .trailing = typedTrailing,
+                } } } };
+            }
+
             const calleeType = if (env.lookup(call.callee)) |ty| ty else {
                 env.lastError = TypeError.unboundVariable(call.callee).withLoc(loc);
                 return error.TypeError;
@@ -2099,7 +2364,7 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                 else => try env.freshVar(),
             };
             return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
-                .receiver = call.receiver,
+                .receiver = null,
                 .callee = call.callee,
                 .is_builtin = call.is_builtin,
                 .args = typedArgs,
@@ -2137,7 +2402,7 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                 }
                 const typedTrailing = try inferTrailingLambdasTyped(env, call.trailing);
                 const rhsNode = TypedExpr{ .call = .{ .loc = p.rhs.*.getLoc(), .type_ = retType, .kind = .{ .call = .{
-                    .receiver = call.receiver,
+                    .receiver = null,
                     .callee = call.callee,
                     .is_builtin = call.is_builtin,
                     .args = typedCallArgs,
@@ -2163,6 +2428,16 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
 
 /// Infer type for function definition expressions (lambdas and anonymous functions)
 fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
+    return inferFunctionExprExpected(env, func, loc, null);
+}
+
+/// Infer a lambda / anonymous-function expression. When `expected` is a
+/// function type (e.g. from a `val f: fn(A, B) -> R = ...` annotation, or a
+/// `fn`-typed parameter), the lambda's parameters are bound to the expected
+/// parameter types *before* the body is inferred — so the body can resolve
+/// member calls and operators against the annotated types — and the body's
+/// result is unified with the expected return type.
+fn inferFunctionExprExpected(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc, expected: ?*T.Type) InferError!TypedExpr {
     // A nested function expression has no declared return type, so `throw`
     // inside it is not checked against the enclosing fn's `E`.
     const savedThrowCtx = env.throwContext;
@@ -2188,13 +2463,27 @@ fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc
     else
         null;
 
+    // Pull expected param/return types out of `expected`, but only when it is a
+    // function type whose arity matches this lambda. This lets `val f: fn(A, B)
+    // -> R = { a, b -> ... }` bind the params to A/B before the body is inferred.
+    var expParams: ?[]*T.Type = null;
+    var expRet: ?*T.Type = null;
+    if (expected) |e| {
+        const d = e.deref();
+        if (d.* == .func and d.func.params.len == fk.params.len) {
+            expParams = d.func.params;
+            expRet = d.func.ret;
+        }
+    }
+
     const params = try env.arena.alloc(*T.Type, fk.params.len);
     for (fk.params, 0..) |p, i| {
-        params[i] = try env.freshVar();
+        params[i] = if (expParams) |ep| ep[i] else try env.freshVar();
         try env.bind(p, params[i]);
     }
     const bodyTyped = try inferStmtsTyped(env, fk.body);
     const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
+    if (expRet) |er| try unifyAt(env, retType, er, loc);
     const funcType = try env.funcType(params, retType);
     return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{
         .syntax = fk.syntax,
@@ -2260,20 +2549,26 @@ fn inferCollectionExpr(env: *Env, col: ast.CollectionExprOf(.untyped), loc: ast.
                 typedSubjects[i] = try inferExprTyped(env, subj);
             }
 
-            if (typedSubjects.len == 1 and c.arms.len == 1 and !patternContainsWildcard(c.arms[0].pattern)) {
-                if (isExhaustivenessCheckedType(env, typedSubjects[0].getType())) {
-                    env.lastError = TypeError.typeMismatch(
-                        try env.namedType("exhaustive"),
-                        typedSubjects[0].getType(),
-                    ).withLoc(loc);
-                    return error.TypeError;
-                }
-            }
             const typedArms = try env.arena.alloc(ast.CaseArmOf(.typed), c.arms.len);
             for (c.arms, 0..) |arm, i| {
                 var snapshots: std.ArrayListUnmanaged(PatternBindingSnapshot) = .empty;
                 defer snapshots.deinit(env.arena);
                 try bindCaseArmPatternNames(env, arm.pattern, typedSubjects, &snapshots);
+
+                // A guard clause must type-check to a boolean, with the
+                // pattern's bindings in scope.
+                var guardTyped: ?ast.TypedExpr = null;
+                if (arm.guard) |g| {
+                    const gt = inferExprTyped(env, g) catch |err| {
+                        try restorePatternBindings(env, snapshots.items);
+                        return err;
+                    };
+                    unifyAt(env, gt.getType(), try env.namedType("bool"), g.getLoc()) catch |err| {
+                        try restorePatternBindings(env, snapshots.items);
+                        return err;
+                    };
+                    guardTyped = gt;
+                }
 
                 const bodyTyped = inferExprTyped(env, arm.body) catch |err| {
                     try restorePatternBindings(env, snapshots.items);
@@ -2283,8 +2578,15 @@ fn inferCollectionExpr(env: *Env, col: ast.CollectionExprOf(.untyped), loc: ast.
                 typedArms[i] = .{
                     .pattern = arm.pattern,
                     .body = bodyTyped,
+                    .guard = guardTyped,
                     .emptyLinesBefore = arm.emptyLinesBefore,
                 };
+            }
+
+            // A single-subject `case` on an enum or string must cover every
+            // possibility (or carry a wildcard), and no arm may be unreachable.
+            if (typedSubjects.len == 1) {
+                try checkCaseExhaustiveness(env, typedSubjects[0].getType(), c.arms, loc);
             }
             return TypedExpr{ .collection = .{ .loc = loc, .type_ = try env.freshVar(), .kind = .{ .case = .{
                 .subjects = typedSubjects,

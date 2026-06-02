@@ -25,13 +25,13 @@ The server currently handles `initialize` / `shutdown` plus these
 
 | Capability | Notes |
 |---|---|
-| `publishDiagnostics` | Driven by `feedback.zig`; clears stale messages between compiles; sends `$/progress` begin/end |
+| `publishDiagnostics` | Driven by `feedback.zig`; clears stale messages between compiles; sends `$/progress` begin/end. Surfaces parse errors, comptime-validation errors, **and located type-inference errors** (the `typeError` outcome) |
 | `formatting` | Calls `botopink.format` — same code path as `botopink format` |
 | `hover` | Full signature (fn with params/return, record with fields, enum with variants) + `///` doc comments |
-| `definition` | Jumps to the declaration of the symbol |
+| `definition` | Jumps to the declaration of the symbol; on a local miss, resolves **imported symbols** to their `pub` declaration in another module (`definitionInModules`, candidate sources gathered from the project index) |
 | `typeDefinition` | Jumps to the type declaration (record/struct/enum) of the symbol |
 | `documentSymbol` | Hierarchical outline: enum variants, struct/record fields, methods nested under parent |
-| `completion` | Identifiers + dot-completion of members (trigger `.`) + labeled args + type-aware sorting + module name completion (inside `from "…"`) |
+| `completion` | Identifiers + dot-completion of members (trigger `.`) — fields/methods of a value receiver **and** variants/fields of a type-name receiver (`Status.`, `Point.`) — + labeled args + type-aware sorting + module name completion (inside `from "…"`) |
 | `references` | Lists references in current file + re-lexes external files for exact positions via project index |
 | `rename` | Cross-module rename with `prepareRename` validation (multi-file WorkspaceEdit, rejects keywords/literals) |
 | `signatureHelp` | Active parameter highlighting on function calls (trigger `(`, retrigger `,` `:`) |
@@ -62,6 +62,8 @@ the `rootUri` received during `initialize`, skipping hidden dirs,
 - **Add missing import** code action — suggests `import { X } from "module"`
 - **Module name completion** — inside `import { … } from "…"` strings
 - **Cross-module references** — finds symbol declarations in other files
+- **Go-to-definition on imported symbols** — supplies the candidate module sources that
+  `definitionInModules` scans for a matching `pub` declaration
 
 The index is rebuilt lazily on first access after `didChange` invalidation.
 No file watchers are needed — invalidation happens on every content change.

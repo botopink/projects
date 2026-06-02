@@ -2,10 +2,35 @@
 
 All notable changes to the botopink compiler workspace are documented in this file.
 
+## Unreleased
+
+### Added
+
+- **`@Result` / `@Option` method API** (stdlib)
+  - `@Result<R, E>`: `.map`, `.flatMap`, `.unwrapOr`, `.isOk`, `.isError`.
+  - `@Option<T>` (the canonical spelling of `?T`): `.map`, `.flatMap`, `.unwrapOr`.
+  - Resolved by type inference and lowered inline per backend: `commonJS` and
+    `erlang` emit the full form (`Ok`/`Error` tag match, option presence check);
+    `beam` and `wasm` emit a documented stub.
+  - Documented in `modules/stdlib/src/builtins.d.bp`.
+- **Method calls on expressions** — `CallExpr.receiver` is now an expression, so
+  method chains (`a().map(f).unwrapOr(0)`) and zero-arg method calls (`r.isOk()`)
+  parse and type-check.
+
 ## v0.0.13-beta (May 2026)
 
 ### Highlights
 
+- **`use` hook codegen (F8)**
+  - `use` is now a prefix operator (`val {v, s} = use state(0)`); the AST node
+    collapsed to `Expr.useHook { inner }` and binding moved to `val`/`var`.
+  - CommonJS lowers hooks to React: `state`→`useState`, `memo`→`useMemo`,
+    `effect`→`useEffect` (via the `"use"+Capitalize` convention), with an
+    inferred dependency array for `memo`/`effect`. Erlang/BEAM/WAT lower `use`
+    transparently into the binding's slot.
+  - Phantom `@Context` base structs emit no runtime code; the `.d.ts` erases
+    `@Context<B, R>` to its Return type `R`.
+  - Parser fix: no-param trailing lambdas `{ -> … }` now consume their arrow.
 - **`try` / `catch` lower to `Ok`/`Error` pattern matching**
   - Across all four backends (commonJS, erlang, beam, wasm), `try`/`catch` now
     lower to a pattern match on the `@Result` tag instead of host exceptions

@@ -550,22 +550,7 @@ pub const Formatter = struct {
                     break :blk doc;
                 },
             },
-            .useHook => |uh| switch (uh.kind) {
-                .useVoid => |v| this.concat(try this.text("use "), try this.fmtExpr(v.*)),
-                .useBind => |b| this.concatAll(&.{
-                    try this.text("use "),
-                    try this.text(b.name),
-                    try this.text(" = "),
-                    try this.fmtExpr(b.value.*),
-                }),
-                .useBindDestruct => |b| blk: {
-                    var doc: *const Doc = try this.text("use ");
-                    doc = try this.concat(doc, try this.fmtParamDestruct(b.pattern));
-                    doc = try this.concat(doc, try this.text(" = "));
-                    doc = try this.concat(doc, try this.fmtExpr(b.value.*));
-                    break :blk doc;
-                },
-            },
+            .useHook => |uh| this.concat(try this.text("use "), try this.fmtExpr(uh.kind.inner.*)),
             .function => |func| switch (func.kind.syntax) {
                 .lambda => try this.fmtLambda(func.kind.params, func.kind.body),
                 .fnExpr => try this.fmtFnExpr(func.kind.params, func.kind.body, func.kind.isStarFn),
@@ -927,7 +912,11 @@ pub const Formatter = struct {
 
         const is_builtin = if (@hasField(@TypeOf(c), "is_builtin")) c.is_builtin else false;
         const callee: *const Doc = if (c.receiver) |recv|
-            try this.text(try std.fmt.allocPrint(this.arena, "{s}.{s}", .{ recv, c.callee }))
+            try this.concatAll(&.{
+                try this.fmtExpr(recv.*),
+                try this.text("."),
+                try this.text(c.callee),
+            })
         else
             try this.text(if (is_builtin) try std.fmt.allocPrint(this.arena, "@{s}", .{c.callee}) else c.callee);
 
@@ -1124,8 +1113,13 @@ pub const Formatter = struct {
                 // Regular separator
                 try armParts.append(this.arena, this.hardline());
             }
+            const guardDoc: *const Doc = if (arm.guard) |g| try this.concatAll(&.{
+                try this.text(" if "),
+                try this.fmtExpr(g),
+            }) else this.nil();
             try armParts.append(this.arena, try this.concatAll(&.{
                 try this.fmtPattern(arm.pattern),
+                guardDoc,
                 try this.text(" -> "),
                 try this.fmtExpr(arm.body),
                 try this.text(";"),

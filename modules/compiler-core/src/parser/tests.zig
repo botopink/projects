@@ -647,26 +647,26 @@ test "parser: anonymous extend rejected" {
 
 // ── use hooks in function body ───────────────────────────────────────────────
 
-test "parser: use void hook (discard with _)" {
+test "parser: use void hook" {
     try assertParser(std.testing.allocator, @src(),
         \\fn App() {
-        \\    use _ = effect({ -> cleanup() });
+        \\    use effect({ -> cleanup() });
         \\}
     );
 }
 
-test "parser: use simple binding hook" {
+test "parser: use prefix in val binding" {
     try assertParser(std.testing.allocator, @src(),
         \\fn App() {
-        \\    use doubled = memo({ -> count * 2 });
+        \\    val doubled = use memo({ -> count * 2 });
         \\}
     );
 }
 
-test "parser: use destructuring hook" {
+test "parser: use prefix with destructuring val" {
     try assertParser(std.testing.allocator, @src(),
         \\fn App() {
-        \\    use {count, setCount} = state(0);
+        \\    val {count, setCount} = use state(0);
         \\}
     );
 }
@@ -674,9 +674,9 @@ test "parser: use destructuring hook" {
 test "parser: use multiple hooks in function" {
     try assertParser(std.testing.allocator, @src(),
         \\fn Dashboard() {
-        \\    use {count, setCount} = state(0);
-        \\    use doubled = memo({ -> count * 2 });
-        \\    use _ = effect({ -> cleanup() });
+        \\    val {count, setCount} = use state(0);
+        \\    val doubled = use memo({ -> count * 2 });
+        \\    use effect({ -> cleanup() });
         \\}
     );
 }
@@ -695,7 +695,7 @@ test "parser error: use after return (static prefix violation)" {
     ,
         \\fn App() {
         \\    return 1;
-        \\    use count = state(0);
+        \\    use state(0);
         \\}
     );
 }
@@ -1248,6 +1248,20 @@ test "parser: case ---- OR patterns" {
         \\        case n {
         \\            2 | 4 | 6 -> "even";
         \\            _ -> "other";
+        \\        };
+        \\    }
+        \\}
+    );
+}
+
+test "parser: case ---- guard clauses" {
+    try assertParser(std.testing.allocator, @src(),
+        \\val X = implement Foo for Bar {
+        \\    fn run(self: Self) {
+        \\        case n {
+        \\            x if x > 0 -> "positive";
+        \\            0 -> "zero";
+        \\            _ -> "negative";
         \\        };
         \\    }
         \\}

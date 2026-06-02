@@ -122,6 +122,20 @@ pub const TypeErrorKind = union(enum) {
     },
     /// `try` / `catch` applied to a value whose type is not `@Result<D, E>`.
     tryOnNonResult: *T.Type,
+    /// A `case` expression does not cover every possibility of its subject.
+    /// `missing` lists the uncovered enum variants; it is empty for open
+    /// domains (e.g. `string`), where a wildcard `_` arm is required instead.
+    nonExhaustive: struct {
+        typeName: []const u8,
+        missing: []const []const u8,
+    },
+    /// A `case` arm can never match because an earlier arm (a wildcard, a
+    /// whole-value binding, or the same variant) already covers it.
+    redundantPattern: struct {
+        typeName: []const u8,
+        /// Short description of the unreachable arm (e.g. `"variant 'Red'"`).
+        description: []const u8,
+    },
     /// A rule-specific diagnostic with a ready-made message (and optional hint).
     /// Used for validations that don't map onto the structured kinds above
     /// (e.g. async/generator rules around `*fn` / `await` / `yield`).
@@ -215,10 +229,71 @@ pub const TypeError = struct {
         return .{ .kind = .{ .tryOnNonResult = ty } };
     }
 
-    pub fn custom(message: []const u8, hint: ?[]const u8) TypeError {
-        return .{ .kind = .{ .custom = .{ .message = message, .hint = hint } } };
+    pub fn nonExhaustive(typeName: []const u8, missing: []const []const u8) TypeError {
+        return .{ .kind = .{ .nonExhaustive = .{ .typeName = typeName, .missing = missing } } };
+    }
+
+    pub fn redundantPattern(typeName: []const u8, description: []const u8) TypeError {
+        return .{ .kind = .{ .redundantPattern = .{ .typeName = typeName, .description = description } } };
+    }
+
+    pub fn custom(msg: []const u8, hint: ?[]const u8) TypeError {
+        return .{ .kind = .{ .custom = .{ .message = msg, .hint = hint } } };
+    }
+
+    /// Render a concise, human-readable message for this error. Caller owns the
+    /// returned slice. Used by `botopink check` and the language server.
+    pub fn message(this: TypeError, gpa: std.mem.Allocator) ![]u8 {
+        return switch (this.kind) {
+            .typeMismatch => |m| std.fmt.allocPrint(gpa, "type mismatch: expected {s}, got {s}", .{ typeLabel(m.expected), typeLabel(m.got) }),
+            .unboundVariable => |n| std.fmt.allocPrint(gpa, "unbound variable '{s}'", .{n}),
+            .arityMismatch => |a| std.fmt.allocPrint(gpa, "'{s}' expects {d} argument(s), got {d}", .{ a.name, a.expected, a.got }),
+            .unknownField => |u| std.fmt.allocPrint(gpa, "unknown field '{s}' on type '{s}'", .{ u.field, u.typeName }),
+            .notARecord => |n| std.fmt.allocPrint(gpa, "type '{s}' is not a record or struct", .{n}),
+            .recursiveType => std.fmt.allocPrint(gpa, "recursive type detected", .{}),
+            .unknownTypeName => |n| std.fmt.allocPrint(gpa, "unknown type '{s}'", .{n}),
+            .missingField => |m| std.fmt.allocPrint(gpa, "missing required field '{s}' on type '{s}'", .{ m.field, m.typeName }),
+            .useNotAllowed => |r| std.fmt.allocPrint(gpa, "`use` not allowed: function returns '{s}' which does not implement @Context", .{r}),
+            .useNotContext => |e| std.fmt.allocPrint(gpa, "`use` requires @Context: '{s}' does not implement @Context", .{e}),
+            .contextMismatch => |m| std.fmt.allocPrint(gpa, "ContextBase mismatch: function returns @Context<{s}, _> but `use` returns @Context<{s}, _>", .{ m.fnBase, m.useBase }),
+            .throwWithoutResult => std.fmt.allocPrint(gpa, "'throw' requires the enclosing fn to return '@Result<D, E>'", .{}),
+            .missingMethod => |m| std.fmt.allocPrint(gpa, "'{s}' does not implement '{s}' required by interface '{s}'", .{ m.typeName, m.method, m.interfaceName }),
+            .unknownMethod => |m| std.fmt.allocPrint(gpa, "'{s}' is not declared in any interface implemented for '{s}'", .{ m.method, m.typeName }),
+            .unknownInterface => |u| std.fmt.allocPrint(gpa, "'{s}' is not an interface implemented here (method '{s}')", .{ u.qualifier, u.method }),
+            .ambiguousMethod => |a| std.fmt.allocPrint(gpa, "'{s}' is declared by both '{s}' and '{s}' — qualify it", .{ a.method, a.interfaceA, a.interfaceB }),
+            .typeparamConstraint => |c| std.fmt.allocPrint(gpa, "'{s}' has type '{s}', which does not satisfy its typeparam constraint", .{ c.paramName, typeLabel(c.got) }),
+            .tryOnNonResult => |ty| std.fmt.allocPrint(gpa, "`try` requires a @Result<D, E> value, found '{s}'", .{typeLabel(ty)}),
+            .nonExhaustive => |n| nonExhaustiveMessage(gpa, n),
+            .redundantPattern => |r| std.fmt.allocPrint(gpa, "unreachable `case` arm ({s}): {s} is already covered by an earlier arm", .{ r.typeName, r.description }),
+            .custom => |c| std.fmt.allocPrint(gpa, "{s}", .{c.message}),
+        };
     }
 };
+
+/// Build the `nonExhaustive` message: either "requires a wildcard" (open
+/// domain) or "missing variants: A, B" (enum). Caller owns the result.
+fn nonExhaustiveMessage(gpa: std.mem.Allocator, n: anytype) ![]u8 {
+    if (n.missing.len == 0) {
+        return std.fmt.allocPrint(gpa, "non-exhaustive `case`: '{s}' has no wildcard `_` arm", .{n.typeName});
+    }
+    var list: std.ArrayList(u8) = .empty;
+    defer list.deinit(gpa);
+    for (n.missing, 0..) |name, i| {
+        if (i > 0) try list.appendSlice(gpa, ", ");
+        try list.appendSlice(gpa, name);
+    }
+    return std.fmt.allocPrint(gpa, "non-exhaustive `case` on '{s}': missing variant(s) {s}", .{ n.typeName, list.items });
+}
+
+/// Best-effort short label for a type, used in error messages.
+fn typeLabel(ty: *T.Type) []const u8 {
+    return switch (ty.deref().*) {
+        .named => |n| n.name,
+        .func => "function",
+        .union_ => "union",
+        .typeVar => "_",
+    };
+}
 
 // ── Comptime validation ───────────────────────────────────────────────────────
 
