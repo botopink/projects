@@ -28,7 +28,7 @@ compiler-core/
 zig build               # compile
 zig build test          # run all tests
 zig build run           # run CLI stub (main.zig)
-zig build test -- --test-filter "use decl"
+zig build test -- --test-filter "import decl"
 ```
 
 ## High-level pipeline

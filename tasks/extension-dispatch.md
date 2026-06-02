@@ -2,8 +2,13 @@
 
 **Branch**: `feat/extension-dispatch`
 **Phase**: F6
-**Depends on**: `feat/import-rework` (activation `*`) + `feat/implement-extend-decls` (Impl/ExtendDecl) — **merge first**
-**Status**: blocked (waiting on merges)
+**Depends on**: `feat/import-rework` (activation `*`) + `feat/implement-extend-decls` (Impl/ExtendDecl) — ✅ both in `feat`
+**Status**: ✅ done — merged on top of `feat`. Inference (`registerExtensions` +
+`resolveReceiverCall` in `comptime/infer.zig`), dispatch tables in `comptime/env.zig`,
+and CommonJS external-dispatch codegen (namespace objects + call-site rewrite). Notes:
+impl-vs-interface coverage is left to `validateProgram` (no duplicate check here);
+Erlang/BEAM/WAT/TS handle the new decls structurally — their call-site external
+rewrite is follow-up.
 
 ## Model (Rust/C# — Model Y)
 

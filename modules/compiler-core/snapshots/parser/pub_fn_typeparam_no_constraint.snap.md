@@ -4,6 +4,8 @@
     {
       "fn": {
         "isPub": true,
+        "isStarFn": false,
+        "label": null,
         "name": "wrap",
         "docComment": null,
         "comment": null,
@@ -14,7 +16,7 @@
           {
             "name": "T",
             "typeRef": {
-              "named": "typeparam"
+              "typeparam": []
             },
             "typeName": "",
             "modifier": "comptime",

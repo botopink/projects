@@ -1,6 +1,6 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-fn fetch() -> i32 {
+fn fetch() -> @Result<i32, string> {
     @todo();
 }
 fn process() -> i32 {
@@ -17,7 +17,9 @@ function fetch() {
 }
 
 function process() {
-    const r = fetch();
+    const _try0 = fetch();
+    if (_try0.tag === "Error") return _try0;
+    const r = _try0.result;
     console.log(r);
     return r;
 }

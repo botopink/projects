@@ -34,11 +34,37 @@ fn process() -> i32 {
     unreachable
   )
   (func $process (result i32)
+    (local $_try0 i32)
+    (local $_try1 i32)
     (local $a i32)
     (local $b i32)
     call $inner
+    local.set $_try0
+    local.get $_try0
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if (result i32)
+      (then
+    i32.const 0
+      )
+      (else
+    local.get $_try0
+    i32.load offset=4 ;; Ok payload
+      )
+    )
     local.set $a
     call $outer
+    local.set $_try1
+    local.get $_try1
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if (result i32)
+      (then
+    local.get $a
+      )
+      (else
+    local.get $_try1
+    i32.load offset=4 ;; Ok payload
+      )
+    )
     local.set $b
     local.get $a
     call $__print_i32

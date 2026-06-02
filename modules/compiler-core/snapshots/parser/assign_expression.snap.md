@@ -4,6 +4,8 @@
     {
       "fn": {
         "isPub": false,
+        "isStarFn": false,
+        "label": null,
         "name": "f",
         "docComment": null,
         "comment": null,
@@ -60,28 +62,26 @@
                           "line": 3,
                           "col": 19
                         },
-                        "kind": {
-                          "op": "add",
-                          "lhs": {
-                            "identifier": {
-                              "loc": {
-                                "line": 3,
-                                "col": 13
-                              },
-                              "kind": {
-                                "ident": "total"
-                              }
+                        "op": "add",
+                        "lhs": {
+                          "identifier": {
+                            "loc": {
+                              "line": 3,
+                              "col": 13
+                            },
+                            "kind": {
+                              "ident": "total"
                             }
-                          },
-                          "rhs": {
-                            "literal": {
-                              "loc": {
-                                "line": 3,
-                                "col": 21
-                              },
-                              "kind": {
-                                "numberLit": "1"
-                              }
+                          }
+                        },
+                        "rhs": {
+                          "literal": {
+                            "loc": {
+                              "line": 3,
+                              "col": 21
+                            },
+                            "kind": {
+                              "numberLit": "1"
                             }
                           }
                         }

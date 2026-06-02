@@ -31,8 +31,12 @@ function step2(x) {
 }
 
 function pipeline() {
-    const a = step1();
-    const b = step2(a);
+    const _try0 = step1();
+    if (_try0.tag === "Error") return _try0;
+    const a = _try0.result;
+    const _try1 = step2(a);
+    if (_try1.tag === "Error") return _try1;
+    const b = _try1.result;
     return b;
 }
 ```

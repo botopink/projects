@@ -3,9 +3,7 @@ const std = @import("std");
 /// Compilation phase tag ---- distinguishes AST nodes before and after type inference.
 pub const Phase = enum { untyped, typed };
 
-// ── use decl ──────────────────────────────────────────────────────────────────
-
-pub const Source = *Expr;
+// ── import decl ───────────────────────────────────────────────────────────────
 
 pub const CommentKind = union(enum) {
     /// `// ...` — regular inline comment (non-documenting)
@@ -28,47 +26,30 @@ pub const Comment = struct {
 };
 pub const ImportPath = struct {
     segments: []const []const u8,
-    /// `X*` activation marker — activates an `implement`/`extend` symbol for
-    /// static extension dispatch in this file. Plain (non-`*`) imports bring the
-    /// name into scope but do not enable `obj.method()` resolution for it.
+    /// Trailing `*` — activates dispatch of the symbol's methods (impl or extend).
     activate: bool = false,
-    /// `X as Y` local rename; null when the name is imported under its own name.
+    /// `as` rename of the final binding (`std.List as L`); null when absent.
     alias: ?[]const u8 = null,
 
+    /// Final bound name: the alias when present, else the last path segment.
     pub fn name(this: ImportPath) []const u8 {
-        return this.segments[this.segments.len - 1];
-    }
-
-    /// The name this path binds locally: the alias if present, else the last segment.
-    pub fn localName(this: ImportPath) []const u8 {
-        return this.alias orelse this.name();
+        return this.alias orelse this.segments[this.segments.len - 1];
     }
 };
 
-/// `import { A, X*, B as C } from "module";` (or root form `import { A };`).
-/// Distinct from the legacy `use { … } = @module(…)` form: an `ImportDecl`
-/// carries per-name activation markers used by static extension dispatch.
+/// Where an `import { … }` resolves from.
+pub const ImportSource = union(enum) {
+    /// `import { … };` — resolves from the current project root.
+    root,
+    /// `import { … } from "name";` — resolves from a named dependency.
+    module: []const u8,
+};
+
 pub const ImportDecl = struct {
     imports: []const ImportPath,
-    /// Module string from `from "module"`; null for root imports.
-    module: ?[]const u8 = null,
-    isPub: bool = false,
-    /// `///` documentation comment (multi-line joined with `\n`)
-    docComment: ?[]const u8 = null,
-    /// `//` regular comment (last one before the declaration)
-    comment: ?[]const u8 = null,
-    /// `////` module-level documentation
-    moduleComment: ?[]const u8 = null,
-
-    pub fn deinit(this: *ImportDecl, allocator: std.mem.Allocator) void {
-        for (this.imports) |imp| allocator.free(imp.segments);
-        allocator.free(this.imports);
-    }
-};
-
-pub const UseDecl = struct {
-    imports: []const ImportPath,
-    source: Source,
+    source: ImportSource,
+    /// Fallback activation statement `X*;` — no real import, only activation.
+    activationOnly: bool = false,
     /// `///` documentation comment (multi-line joined with `\n`)
     docComment: ?[]const u8 = null,
     /// `//` regular comment (last one before the declaration)
@@ -146,7 +127,7 @@ pub fn ExprOf(comptime phase: Phase) type {
         unaryOp: UnaryOpExprOf(phase),
         jump: MakeExpr(phase, JumpExprOf(phase)),
         branch: MakeExpr(phase, BranchExprOf(phase)),
-        loop: MakeExpr(phase, LoopExprOf(phase)),
+        loop: LoopExprOf(phase),
         binding: BindingExprOf(phase),
         useHook: UseHookExprOf(phase),
         call: CallExprOf(phase),
@@ -296,9 +277,13 @@ pub fn IdentifierExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
-/// Binary operations: all binary operators
+/// Binary operations: all binary operators.
+/// Flattened: `op`/`lhs`/`rhs` live directly on the node (no `.kind` indirection).
 pub fn BinOpExprOf(comptime phase: Phase) type {
-    const Kind = struct {
+    return struct {
+        loc: Loc,
+        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
+            if (phase == .typed) undefined else {},
         /// Binary operator type
         op: enum {
             lt, // `<`
@@ -323,13 +308,15 @@ pub fn BinOpExprOf(comptime phase: Phase) type {
             destroyExpr(allocator, this.rhs);
         }
     };
-
-    return MakeExpr(phase, Kind);
 }
 
-/// Unary operations: unary operators
+/// Unary operations: unary operators.
+/// Flattened: `op`/`expr` live directly on the node (no `.kind` indirection).
 pub fn UnaryOpExprOf(comptime phase: Phase) type {
-    const Kind = struct {
+    return struct {
+        loc: Loc,
+        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
+            if (phase == .typed) undefined else {},
         /// Unary operator type
         op: enum {
             neg, // `-` negation
@@ -341,8 +328,6 @@ pub fn UnaryOpExprOf(comptime phase: Phase) type {
             destroyExpr(allocator, this.expr);
         }
     };
-
-    return MakeExpr(phase, Kind);
 }
 
 /// Jump expressions: simple control flow jumps (return, break, continue, throw, yield, try)
@@ -354,17 +339,28 @@ pub fn JumpExprOf(comptime phase: Phase) type {
         throw_: ?*ExprOf(phase),
         /// `try expr` — propagate error union failure upward
         try_: ?*ExprOf(phase),
+        /// `await expr` — suspend until the `@Future` operand resolves; result is its `T`
+        await_: *ExprOf(phase),
         /// `break [expr]` ---- exit a block/loop early; expr=null means bare `break`
         @"break": ?*ExprOf(phase),
         /// `continue` ---- skip the rest of this loop iteration
         @"continue",
-        /// `yield expr` ---- accumulate `expr` into a loop's result list; loop continues
-        yield: ?*ExprOf(phase),
+        /// `yield [:label] expr` ---- in a generator (`*fn`), suspend emitting `expr`;
+        /// in a plain loop, accumulate `expr` into the loop's result list. The optional
+        /// `:label` disambiguates which generator/loop scope the yield targets.
+        yield: struct {
+            label: ?[]const u8 = null,
+            value: ?*ExprOf(phase),
+        },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             switch (this.*) {
-                inline .@"return", .throw_, .try_, .@"break", .yield => |e| {
+                inline .@"return", .throw_, .try_, .@"break" => |e| {
                     if (e) |expr| destroyExpr(allocator, expr);
+                },
+                .await_ => |e| destroyExpr(allocator, e),
+                .yield => |y| {
+                    if (y.value) |expr| destroyExpr(allocator, expr);
                 },
                 .@"continue" => {},
             }
@@ -409,14 +405,22 @@ pub fn BranchExprOf(comptime phase: Phase) type {
     };
 }
 
-/// Loop expressions: iteration constructs
+/// Loop expressions: iteration constructs.
+/// Flattened: loop fields live directly on the node (no `.kind` indirection).
 pub fn LoopExprOf(comptime phase: Phase) type {
     return struct {
+        loc: Loc,
+        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
+            if (phase == .typed) undefined else {},
         /// `loop (iter) { params -> body }` or `loop (iter, 0..) { item, i -> body }`
         iter: *ExprOf(phase),
         indexRange: ?*ExprOf(phase),
         params: []const []const u8,
         body: []StmtOf(phase),
+        /// `loop await (iter) { ... }` ---- iterate an `@AsyncIterator`, awaiting each item.
+        awaitLoop: bool = false,
+        /// Optional loop label (`loop :acc (iter) { ... }`) for `yield :label` disambiguation.
+        label: ?[]const u8 = null,
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             destroyExpr(allocator, this.iter);
@@ -495,7 +499,7 @@ pub fn BindingExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
-/// Use-hook expressions: `use` inside function bodies (distinct from top-level `UseDecl` imports)
+/// Use-hook expressions: `use` inside function bodies (distinct from top-level `ImportDecl` imports)
 ///
 /// Two forms:
 ///   `use expr`              — void hook, no binding (e.g. `use effect(cleanup)`)
@@ -530,35 +534,24 @@ pub fn UseHookExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
-/// Function definition expressions: lambdas and anonymous functions
+/// Function definition expressions: lambdas and anonymous functions.
+/// Both share the same shape (`params`/`body`); `syntax` records which surface
+/// form produced the node so consumers can emit the right syntax.
 pub fn FunctionExprOf(comptime phase: Phase) type {
-    const Kind = union(enum) {
-        /// A lambda expression: `{ a, b -> stmts }` or `{ stmts }` (no params).
-        lambda: struct {
-            /// Parameter names (inferred types). Empty for no-param lambdas.
-            params: []const []const u8,
-            body: []StmtOf(phase),
-        },
-        /// An anonymous function expression: `fn(a, b) { stmts }`
-        fnExpr: struct {
-            /// Parameter names.
-            params: []const []const u8,
-            body: []StmtOf(phase),
-        },
+    const Kind = struct {
+        /// Surface syntax: `{ a, b -> stmts }` lambda vs `fn(a, b) { stmts }`.
+        syntax: enum { lambda, fnExpr },
+        /// Parameter names (inferred types). Empty for no-param functions.
+        params: []const []const u8,
+        body: []StmtOf(phase),
+        /// `*fn(...) { ... }` — async/generator function expression (return impl
+        /// `@Future`/`@Iterator`). Only meaningful when `syntax == .fnExpr`.
+        isStarFn: bool = false,
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            switch (this.*) {
-                .lambda => |l| {
-                    allocator.free(l.params);
-                    for (l.body) |*s| s.deinit(allocator);
-                    allocator.free(l.body);
-                },
-                .fnExpr => |f| {
-                    allocator.free(f.params);
-                    for (f.body) |*s| s.deinit(allocator);
-                    allocator.free(f.body);
-                },
-            }
+            allocator.free(this.params);
+            for (this.body) |*s| s.deinit(allocator);
+            allocator.free(this.body);
         }
     };
 
@@ -780,20 +773,18 @@ pub const Pattern = union(enum) {
     wildcard,
     /// enum variant or variable binding: `Red`, `x`, `total`
     ident: []const u8,
-    /// enum variant with whole-payload binding: `Ok ok` (bind entire payload to `ok`)
-    variantBinding: struct {
+    /// enum variant with a payload: `Ok ok`, `Rgb(r, g, b)`, `Ok(1)`.
+    /// The `name` is the variant; `payload` records how its contents are matched.
+    variant: struct {
         name: []const u8,
-        binding: []const u8,
-    },
-    /// enum variant with bound fields: `Rgb(r, g, b)`
-    variantFields: struct {
-        name: []const u8,
-        bindings: []const []const u8,
-    },
-    /// enum variant with literal arguments: `Ok(1)`, `Error("not found")`
-    variantLiterals: struct {
-        name: []const u8,
-        args: []Pattern,
+        payload: union(enum) {
+            /// whole-payload binding: `Ok ok` (bind entire payload to `ok`)
+            binding: []const u8,
+            /// bound fields: `Rgb(r, g, b)`
+            fields: []const []const u8,
+            /// literal / nested-pattern arguments: `Ok(1)`, `Error("not found")`
+            literals: []Pattern,
+        },
     },
     /// Number literal: `42`
     numberLit: []const u8,
@@ -814,10 +805,13 @@ pub const Pattern = union(enum) {
 
     pub fn deinit(this: *Pattern, allocator: std.mem.Allocator) void {
         switch (this.*) {
-            .variantFields => |vf| allocator.free(vf.bindings),
-            .variantLiterals => |vl| {
-                for (vl.args) |*p| p.deinit(allocator);
-                allocator.free(vl.args);
+            .variant => |*v| switch (v.payload) {
+                .fields => |f| allocator.free(f),
+                .literals => |args| {
+                    for (args) |*p| p.deinit(allocator);
+                    allocator.free(args);
+                },
+                .binding => {},
             },
             .list => |l| allocator.free(l.elems),
             .@"or" => |pats| {
@@ -1200,6 +1194,10 @@ pub const TypeRef = union(enum) {
     function: struct { params: []TypeRef, returnType: *TypeRef },
     /// Generic type: `@Result<D, E>` (builtin) or `MyType<T>` (user-defined). Owns the argument types.
     generic: struct { name: []const u8, args: []TypeRef, is_builtin: bool },
+    /// Comptime type parameter: `typeparam` or `typeparam string | int | bool`.
+    /// `constraints` is the `|`-separated list of accepted types; an empty slice
+    /// means the typeparam is unconstrained and accepts any type. Owns the constraints.
+    typeparam: []TypeRef,
 
     pub fn deinit(this: *TypeRef, allocator: std.mem.Allocator) void {
         switch (this.*) {
@@ -1225,6 +1223,10 @@ pub const TypeRef = union(enum) {
             .generic => |b| {
                 for (b.args) |*a| a.deinit(allocator);
                 allocator.free(b.args);
+            },
+            .typeparam => |constraints| {
+                for (constraints) |*c| c.deinit(allocator);
+                allocator.free(constraints);
             },
         }
     }
@@ -1257,12 +1259,7 @@ pub const DeclKind = union(enum) {
     record: RecordDecl,
     implement: ImplementDecl,
     extend: ExtendDecl,
-    use: UseDecl,
-    /// `import { A, X* } from "module";` — see `ImportDecl`.
-    import: ImportDecl,
-    /// A bare `Name*;` statement that activates an impl/extend symbol already in
-    /// scope for static extension dispatch in this file.
-    activate: struct { name: []const u8, loc: Loc },
+    use: ImportDecl,
     interface: InterfaceDecl,
     delegate: DelegateDecl,
     @"struct": StructDecl,
@@ -1280,17 +1277,13 @@ pub const DeclKind = union(enum) {
             .use => |*u| {
                 for (u.imports) |imp| allocator.free(imp.segments);
                 allocator.free(u.imports);
-                u.source.deinit(allocator);
-                allocator.destroy(u.source);
             },
-            .import => |*i| i.deinit(allocator),
-            .activate => {},
             .interface => |*t| t.deinit(allocator),
             .delegate => |*d| d.deinit(allocator),
             .@"struct" => |*s| s.deinit(allocator),
             .record => |*r| r.deinit(allocator),
             .implement => |*i| i.deinit(allocator),
-            .extend => |*e| e.deinit(allocator),
+            .extend => |*x| x.deinit(allocator),
             .@"enum" => |*e| e.deinit(allocator),
             .@"fn" => |*f| f.deinit(allocator),
             .val => |*v| v.deinit(allocator),
@@ -1314,6 +1307,12 @@ pub const Program = struct {
 /// `isPub` is false for module-private functions.
 pub const FnDecl = struct {
     isPub: bool,
+    /// `*fn` ---- the return type implements `@Future<_>` or `@Iterator<_>`
+    /// (async function / generator). Enables `await` and `yield` in the body.
+    isStarFn: bool = false,
+    /// Optional generator label declared after the return type (`*fn f() -> @Iterator<T> :gen`),
+    /// used to disambiguate `yield :label` from an enclosing loop's accumulator.
+    label: ?[]const u8 = null,
     name: []const u8,
     docComment: ?[]const u8 = null,
     /// `//` regular comment (last one before the declaration)
@@ -1412,10 +1411,15 @@ pub const ImplementMethod = struct {
     }
 };
 
-/// `val Name = implement interface1, interface2 for TargetType { fn ... }`
-/// or `val Name<T> = implement Container<T> for MyType { fn ... }`
+/// Named trait implementation. Two surface forms, both always named:
+///   shorthand: `pub? Name implement interface1, interface2 for TargetType { fn ... }`
+///   explicit:  `pub? val Name = implement interface1, interface2 for TargetType { fn ... }`
 pub const ImplementDecl = struct {
     name: []const u8,
+    isPub: bool = false,
+    /// true when written in shorthand form (`Name implement …`), false for the
+    /// explicit `val Name = implement …` form. Used by the formatter to round-trip.
+    shorthand: bool = false,
     /// Generic type parameters on the implement block, e.g. `<T>`.
     genericParams: []GenericParam = &.{},
     docComment: ?[]const u8 = null,
@@ -1437,16 +1441,17 @@ pub const ImplementDecl = struct {
     }
 };
 
-// ── extend decl ─────────────────────────────────────────────────────────────────
-
-/// `val Name = extend TargetType { fn ... }`
-///
-/// Like `implement` but interface-free: an `extend` adds inherent-looking
-/// methods to an existing type without declaring conformance to any interface.
-/// `Name` is the symbol used to activate the extension (`Name*`) and to make a
-/// qualified call (`Name.method(obj)`).
+/// Named extension without a trait. Two surface forms, both always named:
+///   shorthand: `pub? Name extend TargetType { fn ... }`
+///   explicit:  `pub? val Name = extend TargetType { fn ... }`
+/// Reuses `ImplementMethod` for its method bodies (extensions are never qualified,
+/// so `qualifier` is always null).
 pub const ExtendDecl = struct {
     name: []const u8,
+    isPub: bool = false,
+    /// true when written in shorthand form (`Name extend …`), false for the
+    /// explicit `val Name = extend …` form. Used by the formatter to round-trip.
+    shorthand: bool = false,
     /// Generic type parameters on the extend block, e.g. `<T>`.
     genericParams: []GenericParam = &.{},
     docComment: ?[]const u8 = null,
@@ -1454,7 +1459,7 @@ pub const ExtendDecl = struct {
     comment: ?[]const u8 = null,
     /// `////` module-level documentation
     moduleComment: ?[]const u8 = null,
-    /// The type this extend is for, e.g. "Pato".
+    /// The type this extension adds methods to, e.g. "Pato".
     target: []const u8,
     methods: []ImplementMethod,
 

@@ -53,6 +53,39 @@ Inference is **Hindley-Milner with let-polymorphism**:
    annotated with concrete types at exit.
 3. Errors are reported as `TypeError` (see `error.zig`) carrying a source
    range, a primary message, and an optional hint.
+4. A final **semantic-validation** pass (`validateProgram`) runs after the HM
+   walk in both `inferProgram` and `inferProgramTyped`. It checks standalone
+   `implement … for …` blocks against the interfaces they claim to satisfy and
+   verifies struct getters/setters agree with their backing field's type:
+
+   | Error kind | Raised when |
+   |---|---|
+   | `missingMethod` | an implemented interface's abstract method has no impl |
+   | `unknownMethod` | an impl method matches no implemented interface |
+   | `unknownInterface` | a `Iface.method` qualifier is not an implemented interface |
+   | `ambiguousMethod` | an unqualified method name is declared by ≥2 interfaces |
+   | `typeMismatch` | a getter return / setter value type disagrees with the field |
+
+   Interfaces not declared in the current program (e.g. stdlib interfaces) are
+   skipped — their method sets are not visible at this point.
+
+## Throw checking
+
+`infer.zig` validates that every `throw` agrees with the enclosing function's
+declared return type. `Env.throwContext` (`env.zig`) carries the rule for the
+body currently being walked:
+
+| Return type of enclosing fn | `throwContext` | `throw` behaviour |
+|---|---|---|
+| `@Result<D, E>` (builtin) | `.result E` | thrown value must unify with `E` |
+| any other declared type | `.plain` | `throw` is rejected (`throwWithoutResult`) |
+| none declared (or a lambda) | `.unchecked` | `throw` is left unchecked (e.g. `catch throw …`) |
+
+`inferFnDecl` sets `throwContext` from the function's `returnType` and restores
+it on exit; `inferFunctionExpr` resets it to `.unchecked` so a `throw` inside a
+nested lambda is **not** checked against the outer function's `E`. The check
+itself lives in `inferJumpExpr`'s `throw_` arm, which `unify(expected E, thrown)`
+so the diagnostic reads `expected: E` / `found: <thrown>`.
 
 ## Transform pass — the heart of comptime
 

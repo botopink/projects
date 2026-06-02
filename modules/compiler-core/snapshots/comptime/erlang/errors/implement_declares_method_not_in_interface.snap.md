@@ -13,6 +13,6 @@ val PatoNada = implement Swimmer for Pato {
 }
 
 ----- ERROR
-error: method not in interface
+error: unknown method
 
-  'PatoNada' declares method 'fly' not found in interface 'Swimmer'
+  'fly' is not declared in any interface implemented for 'Pato'

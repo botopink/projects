@@ -21,8 +21,24 @@ fn safe() -> i32 {
     unreachable
   )
   (func $safe (result i32)
+    (local $_try0 i32)
     (local $r i32)
     call $fetch
+    local.set $_try0
+    local.get $_try0
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if (result i32)
+      (then
+    i32.const 0
+    i32.const 1
+    i32.sub
+    return
+      )
+      (else
+    local.get $_try0
+    i32.load offset=4 ;; Ok payload
+      )
+    )
     local.set $r
     local.get $r
     return

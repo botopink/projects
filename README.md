@@ -91,12 +91,13 @@ zig build run       # compile and run the botopink CLI
 - Optional types `?T`, array types `T[]`, tuple types `#(T1,T2)` in type annotations
 - `@Result(D, E)` builtin type — `Ok(data)` / `Error(error)` enum for error handling
 - Array literals `[e1, e2, ...]`, tuple literals `#(e1, e2, ...)`
-- `try expr [catch handler]` — `@Result` unwrapping with optional inline error handler
+- `try expr [catch handler]` — `@Result` unwrapping with optional inline error handler; lowers to `Ok`/`Error` **pattern matching** (never host try/catch). `try` on a non-`@Result` value is a compile-time error
 - `catch` as universal tail operator for error propagation
+- `throw` type checking — the thrown value must match the `E` of the enclosing fn's `@Result<D, E>`
 - `if (expr) { binding -> body }` — null-check with value binding
 - `val/var name [: TypeRef] = expr` — optional type annotation on local bindings
 - **Mandatory type annotations on function parameters**: `fn f(x: i32)` — required
-- Parameter modifiers: `comptime`, `syntax`; type params via `comptime T: typeparam`
+- Parameter modifiers: `comptime`, `syntax`; type params via `comptime T: typeparam`, optionally constrained: `comptime T: typeparam string | int`
 - Pattern matching: `case expr { pattern -> body; ... }` with OR patterns, list patterns, wildcard
 - Structured parse error reporting with position and context
 - **Allocator never stored** — `Parser.init(tokens)` receives no allocator

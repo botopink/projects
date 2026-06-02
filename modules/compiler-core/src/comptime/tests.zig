@@ -200,8 +200,17 @@ fn renderTypeError(
         .methodNotActive => "method not active",
         .ambiguousExtension => "ambiguous extension method",
         .notAnExtension => "not an extension symbol",
-        .extensionMethodNotInInterface => "method not in interface",
-        .extensionMissingMethod => "missing interface method",
+        .useNotAllowed => "`use` not allowed",
+        .useNotContext => "`use` requires @Context",
+        .contextMismatch => "ContextBase mismatch",
+        .throwWithoutResult => "throw outside @Result",
+        .missingMethod => "missing interface method",
+        .unknownMethod => "unknown method",
+        .unknownInterface => "unknown interface",
+        .ambiguousMethod => "ambiguous method",
+        .typeparamConstraint => "typeparam constraint not satisfied",
+        .tryOnNonResult => "try on non-Result",
+        .custom => |c| c.message,
     };
     try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "error: {s}\n", .{title}));
 
@@ -304,19 +313,82 @@ fn renderTypeError(
                 .{name},
             ));
         },
-        .extensionMethodNotInInterface => |e| {
+        .useNotAllowed => |returnType| {
             try out.appendSlice(allocator, try std.fmt.allocPrint(
                 tmp,
-                "\n  '{s}' declares method '{s}' not found in interface '{s}'\n",
-                .{ e.implName, e.method, e.interface },
+                "\n  function returns `{s}` which does not implement @Context\n",
+                .{returnType},
             ));
         },
-        .extensionMissingMethod => |e| {
+        .useNotContext => |exprType| {
             try out.appendSlice(allocator, try std.fmt.allocPrint(
                 tmp,
-                "\n  '{s}' is missing method '{s}' required by interface '{s}'\n",
-                .{ e.implName, e.method, e.interface },
+                "\n  `{s}` does not implement @Context — `use` requires @Context<_, _>\n",
+                .{exprType},
             ));
+        },
+        .contextMismatch => |m| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  function returns @Context<{s}, _>\n  but the `use` expression returns @Context<{s}, _>\n",
+                .{ m.fnBase, m.useBase },
+            ));
+        },
+        .throwWithoutResult => {
+            try out.appendSlice(allocator, "\n  'throw' requires the enclosing fn to return '@Result<D, E>'\n");
+        },
+        .missingMethod => |m| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' does not implement '{s}' required by interface '{s}'\n",
+                .{ m.typeName, m.method, m.interfaceName },
+            ));
+        },
+        .unknownMethod => |m| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' is not declared in any interface implemented for '{s}'\n",
+                .{ m.method, m.typeName },
+            ));
+        },
+        .unknownInterface => |u| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' is not an interface implemented here (method '{s}')\n",
+                .{ u.qualifier, u.method },
+            ));
+        },
+        .ambiguousMethod => |a| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' is declared by both '{s}' and '{s}' — qualify it\n",
+                .{ a.method, a.interfaceA, a.interfaceB },
+            ));
+        },
+        .typeparamConstraint => |c| {
+            const gotName = try snapshot.typeNameOf(tmp, c.got);
+            var list: std.ArrayList(u8) = .empty;
+            for (c.constraints, 0..) |name, i| {
+                if (i > 0) try list.appendSlice(tmp, ", ");
+                try list.appendSlice(tmp, name);
+            }
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' has type '{s}', which does not satisfy 'typeparam {s}'\n",
+                .{ c.paramName, gotName, list.items },
+            ));
+        },
+        .tryOnNonResult => |ty| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  `try` requires a @Result<D, E> value, found '{s}'\n",
+                .{try snapshot.typeNameOf(tmp, ty)},
+            ));
+        },
+        .custom => |c| {
+            if (c.hint) |h| {
+                try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "\n  hint: {s}\n", .{h}));
+            }
         },
     }
 
@@ -364,6 +436,83 @@ fn assertTypeErrorSnap(
         const snap_slug = try std.fmt.bufPrint(&snap_buf, "comptime/{s}/errors/{s}", .{ runtime, base_slug });
         try snapMod.checkText(allocator, snap_slug, desc);
     }
+}
+
+/// Parse `src` and assert inference succeeds (no type error). Inference-only:
+/// no codegen runs, which keeps capability checks (e.g. @Context `use`,
+/// typeparam constraints) isolated from backend concerns.
+fn assertInfersOk(
+    allocator: std.mem.Allocator,
+    src: []const u8,
+) !void {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var lx = Lexer.init(src);
+    const tokens = try lx.scanAll(alloc);
+    defer lx.deinit(alloc);
+    var p = Parser.init(tokens);
+    var program = try p.parse(alloc);
+    defer program.deinit(alloc);
+
+    var env = Env.init(alloc);
+    defer env.deinit();
+    try env.registerBuiltins();
+    try comptimeMod.registerStdlib(&env, allocator);
+    try env.bind("true", try env.namedType("bool"));
+    try env.bind("false", try env.namedType("bool"));
+
+    _ = inferMod.inferProgram(&env, program) catch |err| {
+        if (env.lastError) |te| {
+            const desc = try renderTypeError(allocator, src, te);
+            defer allocator.free(desc);
+            std.debug.print("\nunexpected type error:\n{s}\n", .{desc});
+        }
+        return err;
+    };
+}
+
+// ── typeparam constraint inference ──────────────────────────────────────────────
+
+test "infer: typeparam ---- arg satisfies single constraint" {
+    try assertInfersOk(std.testing.allocator,
+        \\fn render(comptime tag: typeparam string, props: i32) -> i32 {
+        \\    return props;
+        \\}
+        \\val a = render("div", 1);
+    );
+}
+
+test "infer: typeparam ---- arg satisfies one of multiple constraints" {
+    try assertInfersOk(std.testing.allocator,
+        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\    return x;
+        \\}
+        \\val s = coerce("s", 0);
+        \\val i = coerce(7, 0);
+        \\val b = coerce(true, 0);
+    );
+}
+
+test "infer: typeparam ---- no constraint accepts any type" {
+    try assertInfersOk(std.testing.allocator,
+        \\fn id(comptime t: typeparam, x: i32) -> i32 {
+        \\    return x;
+        \\}
+        \\val a = id("s", 0);
+        \\val b = id(3.14, 0);
+        \\val c = id(true, 0);
+    );
+}
+
+test "infer error: typeparam ---- arg violates constraint" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\    return x;
+        \\}
+        \\val bad = coerce(3.14, 0);
+    );
 }
 
 // ── inference tests ───────────────────────────────────────────────────────────
@@ -797,6 +946,93 @@ test "infer: implement two interfaces with qualified methods" {
     );
 }
 
+// ── Phase 3: implement / interface semantic validation (errors) ──────────────
+
+test "infer error: implement missing a required interface method" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Drawable = interface {
+        \\    fn draw(self: Self),
+        \\    fn erase(self: Self),
+        \\};
+        \\val Circle = record { radius: f64 };
+        \\val CircleDrawing = implement Drawable for Circle {
+        \\    fn draw(self: Self) {
+        \\        @print("draw");
+        \\    }
+        \\};
+    );
+}
+
+test "infer error: implement method not declared in the interface" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Drawable = interface {
+        \\    fn draw(self: Self),
+        \\};
+        \\val Circle = record { radius: f64 };
+        \\val CircleDrawing = implement Drawable for Circle {
+        \\    fn draw(self: Self) {
+        \\        @print("draw");
+        \\    }
+        \\    fn explode(self: Self) {
+        \\        @print("boom");
+        \\    }
+        \\};
+    );
+}
+
+test "infer error: implement qualified prefix is not a declared interface" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Drawable = interface {
+        \\    fn draw(self: Self),
+        \\};
+        \\val Circle = record { radius: f64 };
+        \\val CircleDrawing = implement Drawable for Circle {
+        \\    fn Renderable.draw(self: Self) {
+        \\        @print("draw");
+        \\    }
+        \\};
+    );
+}
+
+test "infer error: duplicate method across interfaces without qualification" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val UsbCharger = interface {
+        \\    fn connect(self: Self),
+        \\};
+        \\val SolarCharger = interface {
+        \\    fn connect(self: Self),
+        \\};
+        \\val Camera = record { battery: i32 };
+        \\val CameraCharger = implement UsbCharger, SolarCharger for Camera {
+        \\    fn connect(self: Self) {
+        \\        @print("connect");
+        \\    }
+        \\};
+    );
+}
+
+test "infer error: getter return type mismatch with field type" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Account = struct {
+        \\    balance: i32 = 0,
+        \\    get balance(self: Self) -> string {
+        \\        return "nope";
+        \\    }
+        \\};
+    );
+}
+
+test "infer error: setter value type mismatch with field type" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Account = struct {
+        \\    balance: i32 = 0,
+        \\    set balance(self: Self, value: string) {
+        \\        self.balance = value;
+        \\    }
+        \\};
+    );
+}
+
 // ── logical operators ────────────────────────────────────────────────────────
 
 test "infer: logical and returns bool" {
@@ -1142,7 +1378,7 @@ test "types: tuple literal with mixed types" {
     );
 }
 
-// ── assertTypeAst: multi-module (use … = @root()) ────────────────────────────
+// ── assertTypeAst: multi-module (import … from "name") ───────────────────────
 
 test "assertTypeAst: single module ---- basic val bindings" {
     try assertComptimeAst(std.testing.allocator, @src(), &.{
@@ -1159,7 +1395,7 @@ test "assertTypeAst: import single val from dependency module" {
         \\pub val MAX = 100;
         },
         .{ .path = "", .source =
-        \\use {MAX} = @root()
+        \\import {MAX} from "constants";
         \\val limit = MAX;
         },
     });
@@ -1172,7 +1408,7 @@ test "assertTypeAst: import multiple vals from dependency module" {
         \\pub val port = 8080;
         },
         .{ .path = "", .source =
-        \\use {host, port} = @root()
+        \\import {host, port} from "config";
         \\val addr = host;
         \\val p = port;
         },
@@ -1187,7 +1423,7 @@ test "assertTypeAst: import fn from dependency module" {
         \\}
         },
         .{ .path = "", .source =
-        \\use {double} = @root()
+        \\import {double} from "math";
         \\val result = double(21);
         },
     });
@@ -1199,11 +1435,11 @@ test "assertTypeAst: three-level chain ---- a imports b, b imports c" {
         \\pub val VERSION = 1;
         },
         .{ .path = "mid", .source =
-        \\use {VERSION} = @root()
+        \\import {VERSION} from "base";
         \\pub val MAJOR = VERSION;
         },
         .{ .path = "", .source =
-        \\use {MAJOR} = @root()
+        \\import {MAJOR} from "mid";
         \\val v = MAJOR;
         },
     });
@@ -1211,7 +1447,7 @@ test "assertTypeAst: three-level chain ---- a imports b, b imports c" {
 
 test "infer error: import of val ---- unbound variable" {
     try assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\use {SECRET} = @root()
+        \\import {SECRET};
         \\val x = SECRET;
     );
 }
@@ -1347,7 +1583,7 @@ test "assertTypeAst: import record constructor from dependency" {
         \\record Point { x: i32, y: i32 }
         },
         .{ .path = "", .source =
-        \\use {Point} = @root()
+        \\import {Point} from "models";
         \\val origin = Point(0, 0);
         },
     });
@@ -1435,7 +1671,7 @@ test "infer: null-check binding ---- if (x) { e -> } body ignores binding" {
 
 test "infer: try expression ---- result type unified with return" {
     try assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> i32 {
+        \\fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn process() -> i32 {
@@ -1448,7 +1684,7 @@ test "infer: try expression ---- result type unified with return" {
 
 test "infer: try-catch ---- handler provides fallback" {
     try assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> i32 {
+        \\fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn safe() -> i32 {
@@ -1456,6 +1692,18 @@ test "infer: try-catch ---- handler provides fallback" {
         \\    return r;
         \\}
         \\val x = safe();
+    );
+}
+
+test "infer error: try ---- on non-Result type" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn fetch() -> i32 {
+        \\    return 42;
+        \\}
+        \\fn process() -> i32 {
+        \\    val r = try fetch();
+        \\    return r;
+        \\}
     );
 }
 
@@ -2031,6 +2279,86 @@ test "@Result: multiple catch with different types" {
     );
 }
 
+// ── throw type checking ───────────────────────────────────────────────────────
+//
+// The value thrown by `throw` must match the `E` of the enclosing function's
+// `@Result<D, E>` return type. Functions with no declared return type leave
+// `throw` unchecked (e.g. `catch throw …`); functions with a declared,
+// non-`@Result` return type reject `throw` entirely.
+
+test "throw check: string matches declared E = string" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\fn parse(s: string) -> @Result<i32, string> {
+        \\    if (s == "") {
+        \\        throw "empty input";
+        \\    }
+        \\    return 0;
+        \\}
+    );
+}
+
+test "throw check: record matches declared E = ErrorRecord" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\record AppError { code: i32, msg: string }
+        \\fn load() -> @Result<string, AppError> {
+        \\    throw AppError(code: 500, msg: "boom");
+        \\}
+    );
+}
+
+test "throw check: throw inside catch handler checks enclosing fn E" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\fn fetch() -> @Result<i32, string> {
+        \\    throw "primary";
+        \\}
+        \\fn process() -> @Result<i32, string> {
+        \\    val r = try fetch() catch throw "secondary";
+        \\    return r;
+        \\}
+    );
+}
+
+test "throw check: multiple throw sites all match E" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\fn validate(n: i32) -> @Result<i32, string> {
+        \\    if (n < 0) {
+        \\        throw "negative";
+        \\    }
+        \\    if (n > 100) {
+        \\        throw "too big";
+        \\    }
+        \\    return n;
+        \\}
+    );
+}
+
+test "throw check: throw inside nested fn does not check outer fn E" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\fn outer() -> @Result<i32, string> {
+        \\    val cb = fn() {
+        \\        throw 404;
+        \\    };
+        \\    throw "outer error";
+        \\}
+    );
+}
+
+test "throw check error: type mismatch i32 thrown but E = string" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn parse(s: string) -> @Result<i32, string> {
+        \\    throw 404;
+        \\}
+    );
+}
+
+test "throw check error: throw without enclosing Result return type" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn run() -> i32 {
+        \\    throw "x";
+        \\}
+    );
+}
+
 // ── @print ─────��─────────────────────────────────────────────────────────────
 
 test "@print: single string argument infers void" {
@@ -2074,6 +2402,175 @@ test "@print: string interpolation argument" {
     try assertComptimeAstSingle(std.testing.allocator, @src(),
         \\fn greet(name: string) {
         \\    @print("Hello, " + name + "!");
+        \\}
+    );
+}
+
+// ── @Context<B, R> capability inference (F7) ────────────────────────────────────
+
+test "context: use with binding in @Context fn passes" {
+    try assertInfersOk(std.testing.allocator,
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn useThing() -> @Context<Element, i32> {
+        \\    use x = state(0);
+        \\    state(0);
+        \\}
+    );
+}
+
+test "context: use void hook with discard binding passes" {
+    try assertInfersOk(std.testing.allocator,
+        \\fn effect(cb: i32) -> @Context<Element, i32> {
+        \\    cb;
+        \\}
+        \\fn comp() -> @Context<Element, i32> {
+        \\    use _ = effect(0);
+        \\    effect(0);
+        \\}
+    );
+}
+
+test "context: struct implement @Context resolved via inline impl passes" {
+    try assertInfersOk(std.testing.allocator,
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn Counter() -> Element {
+        \\    use n = state(0);
+        \\    Element();
+        \\}
+    );
+}
+
+test "context: custom hook propagates ContextBase transitively passes" {
+    try assertInfersOk(std.testing.allocator,
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\val AuthState = struct implement @Context<Element, AuthState> {
+        \\    loggedIn: bool
+        \\}
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn useAuth() -> AuthState {
+        \\    use t = state(0);
+        \\    AuthState(loggedIn: true);
+        \\}
+        \\fn Dashboard() -> Element {
+        \\    use {loggedIn} = useAuth();
+        \\    Element();
+        \\}
+    );
+}
+
+test "context error: use in fn returning string" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn bad() -> string {
+        \\    use x = state(0);
+        \\    "hi";
+        \\}
+    );
+}
+
+test "context error: ContextBase mismatch Element vs Http" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn connection() -> @Context<Http, i32> {
+        \\    0;
+        \\}
+        \\fn bad() -> @Context<Element, i32> {
+        \\    use c = connection();
+        \\    state(0);
+        \\}
+    );
+}
+
+test "context error: struct without @Context impl used with use" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Plain = struct { x: i32 }
+        \\fn make() -> Plain {
+        \\    Plain(x: 0);
+        \\}
+        \\fn comp() -> @Context<Element, i32> {
+        \\    use p = make();
+        \\    0;
+        \\}
+    );
+}
+
+// ── async / generators (*fn, await, yield, loop await) ────────────────────────
+
+test "infer: star fn ---- async returns @Future is valid" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\*fn fetch(x: i32) -> @Future<i32> {
+        \\    return x;
+        \\}
+    );
+}
+
+test "infer: star fn ---- generator returns @Iterator is valid" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\*fn gen() -> @Iterator<i32> {
+        \\    yield 1;
+        \\}
+    );
+}
+
+test "infer error: star fn returning a non-async type" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\*fn bad() -> string {
+        \\    return "x";
+        \\}
+    );
+}
+
+test "infer error: normal fn returning @Future must be star fn" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn bad() -> @Future<i32> {
+        \\    return 0;
+        \\}
+    );
+}
+
+test "infer error: await outside a star fn" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn notAsync() -> i32 {
+        \\    val x = await ready();
+        \\    return x;
+        \\}
+    );
+}
+
+test "infer error: await on a non-@Future value" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\*fn bad() -> @Future<i32> {
+        \\    val x = await 5;
+        \\    return x;
+        \\}
+    );
+}
+
+test "infer error: yield targets an unknown label" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\*fn gen() -> @Iterator<i32> {
+        \\    yield :nope 1;
+        \\}
+    );
+}
+
+test "infer error: loop await on a non-async-iterable" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\*fn bad() -> @Future<i32> {
+        \\    loop await (5) { x ->
+        \\        ping(x);
+        \\    }
         \\}
     );
 }

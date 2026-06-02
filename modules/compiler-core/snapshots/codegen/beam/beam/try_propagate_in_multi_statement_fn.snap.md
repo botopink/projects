@@ -19,7 +19,7 @@ fn pipeline() -> @Result<i32, IoError> {
 {module, main}.
 {exports, []}.
 {attributes, []}.
-{labels, 8}.
+{labels, 12}.
 
 {function, step1, 0, 3}.
   {label, 2}.
@@ -52,9 +52,23 @@ fn pipeline() -> @Result<i32, IoError> {
   {label, 7}.
     {allocate, 2, 0}.
     {call, 0, {f, 3}}.
+    {test, is_tagged_tuple, {f, 8}, {x, 0}, 2, {atom, ok}}.
+    {get_tuple_element, {x, 0}, 1, {x, 0}}.
+    {jump, {f, 9}}.
+  {label, 8}.
+    {deallocate, 2}.
+    return.
+  {label, 9}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
     {call, 1, {f, 5}}.
+    {test, is_tagged_tuple, {f, 10}, {x, 0}, 2, {atom, ok}}.
+    {get_tuple_element, {x, 0}, 1, {x, 0}}.
+    {jump, {f, 11}}.
+  {label, 10}.
+    {deallocate, 2}.
+    return.
+  {label, 11}.
     {move, {x, 0}, {y, 1}}.
     {move, {y, 1}, {x, 0}}.
     {deallocate, 2}.
