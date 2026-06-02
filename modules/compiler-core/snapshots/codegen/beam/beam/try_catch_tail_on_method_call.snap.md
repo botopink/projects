@@ -27,8 +27,7 @@ fn run(p: Parser) -> i32 {
     {allocate, 0, 1}.
     {move, {literal, <<"bad input">>}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
-    {move, {x, 1}, {x, 0}}.
-    %% unresolved local call: ParseError/1
+    {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, msg}, {x, 1}]}}.
     {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
 
 {function, run, 1, 5}.

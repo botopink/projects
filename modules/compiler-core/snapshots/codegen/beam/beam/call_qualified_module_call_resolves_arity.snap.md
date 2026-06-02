@@ -21,19 +21,14 @@ record Pipeline {
     {func_info, {atom, main}, {atom, 'Pipeline_run'}, 2}.
   {label, 3}.
     {allocate, 0, 2}.
-    {move, {atom, List}, {x, 0}}.
-    {move, {x, 0}, {x, 2}}.
     {get_map_elements, {f, 4}, {x, 0}, {list, [{atom, items}, {x, 0}]}}.
   {label, 4}.
-    {move, {x, 0}, {x, 3}}.
+    {move, {x, 0}, {x, 2}}.
     {move, {x, 1}, {x, 0}}.
-    {move, {x, 0}, {x, 4}}.
+    {move, {x, 0}, {x, 3}}.
     {move, {x, 2}, {x, 0}}.
     {move, {x, 3}, {x, 1}}.
-    {move, {x, 4}, {x, 2}}.
-    %% unresolved method call: map/3
-    {deallocate, 0}.
-    return.
+    {call_ext_last, 2, {extfunc, list, map, 2}, 0}.
 ```
 
 ----- RUN LOG -----

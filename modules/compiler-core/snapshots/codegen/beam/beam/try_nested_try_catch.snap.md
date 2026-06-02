@@ -29,9 +29,8 @@ fn process() -> i32 {
   {label, 3}.
     {allocate, 0, 0}.
     {move, {literal, <<"conn refused">>}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    %% unresolved local call: DbError/1
+    {move, {x, 0}, {x, 1}}.
+    {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, msg}, {x, 1}]}}.
     {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
 
 {function, outer, 0, 5}.
@@ -41,9 +40,8 @@ fn process() -> i32 {
   {label, 5}.
     {allocate, 0, 0}.
     {move, {literal, <<"timeout">>}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    %% unresolved local call: DbError/1
+    {move, {x, 0}, {x, 1}}.
+    {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, msg}, {x, 1}]}}.
     {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
 
 {function, process, 0, 7}.

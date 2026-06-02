@@ -39,7 +39,7 @@ fn Counter() -> Element {
     {move, {x, 1}, {y, 0}}.
     {get_tuple_element, {x, 0}, 1, {x, 1}}.
     {move, {x, 1}, {y, 1}}.
-    %% unresolved local call: Element/0
+    {move, {literal, #{}}, {x, 0}}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 1}.
     return.

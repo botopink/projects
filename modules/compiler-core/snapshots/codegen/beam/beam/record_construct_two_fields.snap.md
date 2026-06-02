@@ -20,8 +20,10 @@ fn make() -> Point {
   {label, 3}.
     {allocate, 0, 0}.
     {move, {integer, 3}, {x, 0}}.
-    {move, {integer, 4}, {x, 1}}.
-    %% unresolved local call: Point/2
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 4}, {x, 0}}.
+    {move, {x, 0}, {x, 2}}.
+    {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 3, {list, [{atom, x}, {x, 1}, {atom, y}, {x, 2}]}}.
     {deallocate, 0}.
     return.
 ```

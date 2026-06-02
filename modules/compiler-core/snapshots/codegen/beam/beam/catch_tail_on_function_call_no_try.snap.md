@@ -23,7 +23,8 @@ fn safe() -> i32 {
   {label, 3}.
     {allocate, 0, 0}.
     {move, {integer, 5}, {x, 0}}.
-    %% unresolved local call: RiskError/1
+    {move, {x, 0}, {x, 1}}.
+    {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, level}, {x, 1}]}}.
     {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
 
 {function, safe, 0, 5}.

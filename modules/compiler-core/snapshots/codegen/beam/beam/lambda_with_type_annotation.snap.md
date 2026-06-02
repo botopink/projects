@@ -23,10 +23,11 @@ fn main() -> string {
     {allocate, 1, 0}.
     {make_fun2, {f, 9}, 0, 0, 0}.
     {move, {x, 0}, {y, 0}}.
+    {move, {y, 0}, {x, 1}}.
     {move, {literal, <<"hello">>}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
-    %% unresolved local call: func/1
+    {call_fun, 1}.
     {deallocate, 1}.
     return.
 

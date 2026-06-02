@@ -22,12 +22,11 @@ fn validate(x: i32) {
   {label, 3}.
     {allocate, 0, 1}.
     {test, is_lt, {f, 4}, [{x, 0}, {integer, 0}]}.
-    {move, {integer, 400}, {x, 1}}.
+    {move, {integer, 400}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"negative">>}, {x, 0}}.
     {move, {x, 0}, {x, 2}}.
-    {move, {x, 1}, {x, 0}}.
-    {move, {x, 2}, {x, 1}}.
-    %% unresolved local call: AppError/2
+    {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 3, {list, [{atom, code}, {x, 1}, {atom, msg}, {x, 2}]}}.
     {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
     {jump, {f, 5}}.
   {label, 4}.

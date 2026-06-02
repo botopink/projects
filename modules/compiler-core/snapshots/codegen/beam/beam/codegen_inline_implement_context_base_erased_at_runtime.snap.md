@@ -19,7 +19,7 @@ fn render() -> Element {
     {func_info, {atom, main}, {atom, render}, 0}.
   {label, 3}.
     {allocate, 0, 0}.
-    %% unresolved local call: Element/0
+    {move, {literal, #{}}, {x, 0}}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 0}.
     return.

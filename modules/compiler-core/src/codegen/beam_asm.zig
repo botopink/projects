@@ -1470,6 +1470,55 @@ const Emitter = struct {
                 },
                 else => null,
             };
+            // Module-qualified remote call: a PascalCase identifier receiver that
+            // isn't a local binding is a module reference: `List.map(xs, f)` →
+            // `list:map(xs, f)` (mirrors the Erlang backend's `isModuleRef`/
+            // `erlangModule`). The receiver names the module, so it is *not*
+            // prepended as an argument; trailing lambdas become fun arguments.
+            if (recv_name) |rn| {
+                if (rn.len > 0 and rn.len <= 128 and
+                    std.ascii.isUpper(rn[0]) and !self.reg_map.contains(rn))
+                {
+                    // `Type.Variant(…)` — a PascalCase callee on a PascalCase
+                    // type receiver is an enum variant constructor, not a module
+                    // call → tagged tuple `{Variant, payload…}` (matches the tag
+                    // tested by `is_tagged_tuple`). A lowercase callee (`List.map`)
+                    // is a module-qualified remote call.
+                    if (cc.callee.len > 0 and std.ascii.isUpper(cc.callee[0])) {
+                        try self.lowerTaggedTuple(cc.callee, cc.args);
+                        if (mode == .tail) try self.emitReturn();
+                        return;
+                    }
+                    const total = cc.args.len + cc.trailing.len;
+                    const scratch = self.cur_arity;
+                    for (cc.args, 0..) |arg, i| {
+                        try self.lowerExprIntoX0(arg.value.*);
+                        try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + i});
+                    }
+                    for (cc.trailing, 0..) |trail, j| {
+                        try self.lowerLambda(trail);
+                        try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + cc.args.len + j});
+                    }
+                    for (0..total) |i| {
+                        try self.bodyPrint("    {{move, {{x, {d}}}, {{x, {d}}}}}.\n", .{ scratch + i, i });
+                    }
+                    var mbuf: [128]u8 = undefined;
+                    @memcpy(mbuf[0..rn.len], rn);
+                    mbuf[0] = std.ascii.toLower(mbuf[0]);
+                    const mod = mbuf[0..rn.len];
+                    switch (mode) {
+                        .non_tail => try self.bodyPrint(
+                            "    {{call_ext, {d}, {{extfunc, {s}, {s}, {d}}}}}.\n",
+                            .{ total, mod, cc.callee, total },
+                        ),
+                        .tail => try self.bodyPrint(
+                            "    {{call_ext_last, {d}, {{extfunc, {s}, {s}, {d}}}, {d}}}.\n",
+                            .{ total, mod, cc.callee, total, self.num_y },
+                        ),
+                    }
+                    return;
+                }
+            }
             if (recv_name) |rn| {
                 if (self.reg_map.get(rn)) |reg| {
                     var rbuf: [64]u8 = undefined;
@@ -1512,21 +1561,102 @@ const Emitter = struct {
         }
 
         const arity = cc.args.len;
-        try self.materializeCallArgs(cc.args);
 
-        const labels = self.fnLabelsFor(cc.callee, arity) catch {
-            try self.bodyPrint("    %% unresolved local call: {s}/{d}\n", .{ cc.callee, arity });
+        // A top-level function resolves to a reserved label pair → direct call.
+        if (self.fnLabelsFor(cc.callee, arity)) |labels| {
+            try self.materializeCallArgs(cc.args);
+            switch (mode) {
+                .non_tail => try self.bodyPrint("    {{call, {d}, {{f, {d}}}}}.\n", .{ arity, labels.entry }),
+                .tail => try self.bodyPrint("    {{call_last, {d}, {{f, {d}}}, {d}}}.\n", .{ arity, labels.entry, self.num_y }),
+            }
+            return;
+        } else |_| {}
+
+        // Otherwise, a name bound to a local (a `syntax fn` parameter or a
+        // `val f = {x -> …}`) holds a fun and is applied via `call_fun`. The fun
+        // must be loaded into `{x, arity}` *before* materializing the args — an
+        // argument may target the very register the fun currently occupies (a
+        // fun parameter in `{x, 0}` and a 1-arg call whose arg also lands there).
+        if (self.reg_map.get(cc.callee)) |reg| {
+            var rbuf: [64]u8 = undefined;
+            const fun_term = try reg.format(&rbuf);
+            try self.bodyPrint("    {{move, {s}, {{x, {d}}}}}.\n", .{ fun_term, arity });
+            try self.materializeCallArgs(cc.args);
+            try self.bodyPrint("    {{call_fun, {d}}}.\n", .{arity});
             if (mode == .tail) try self.emitReturn();
             return;
-        };
-        switch (mode) {
-            .non_tail => {
-                try self.bodyPrint("    {{call, {d}, {{f, {d}}}}}.\n", .{ arity, labels.entry });
-            },
-            .tail => {
-                try self.bodyPrint("    {{call_last, {d}, {{f, {d}}}, {d}}}.\n", .{ arity, labels.entry, self.num_y });
-            },
         }
+
+        // A PascalCase callee with named arguments that resolves to neither a
+        // function nor a local is a record/struct constructor: `AppError(code:
+        // 400, msg: "x")` → a map `#{code => 400, msg => <<"x">>}`. Records are
+        // maps; field reads use `get_map_elements` with the same atom keys.
+        if (cc.callee.len > 0 and std.ascii.isUpper(cc.callee[0]) and allNamed(cc.args)) {
+            try self.lowerRecordConstruct(cc.args);
+            if (mode == .tail) try self.emitReturn();
+            return;
+        }
+
+        try self.materializeCallArgs(cc.args);
+        try self.bodyPrint("    %% unresolved local call: {s}/{d}\n", .{ cc.callee, arity });
+        if (mode == .tail) try self.emitReturn();
+    }
+
+    /// True when every argument is named (`field: value`) — the shape of a
+    /// record/struct constructor call. An empty argument list also qualifies
+    /// (a zero-field record `Empty()`).
+    fn allNamed(args: anytype) bool {
+        for (args) |arg| {
+            if (arg.label == null) return false;
+        }
+        return true;
+    }
+
+    /// Build a record/struct as an Erlang map via `put_map_assoc`. Each field
+    /// value is evaluated into a scratch register, then the map is assembled
+    /// with the field names as atom keys. Result in `{x, 0}`.
+    fn lowerRecordConstruct(self: *Emitter, args: anytype) anyerror!void {
+        const n = args.len;
+        if (n == 0) {
+            try self.bodyWrite("    {move, {literal, #{}}, {x, 0}}.\n");
+            return;
+        }
+        // Scratch slots start at `max(cur_arity, 1)` — never `{x, 0}`, which each
+        // `lowerExprIntoX0` overwrites; storing a value there would clobber it as
+        // soon as the next field is evaluated.
+        const scratch = @max(self.cur_arity, 1);
+        for (args, 0..) |arg, i| {
+            try self.lowerExprIntoX0(arg.value.*);
+            try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + i});
+        }
+        try self.bodyPrint(
+            "    {{put_map_assoc, {{f, 0}}, {{literal, #{{}}}}, {{x, 0}}, {d}, {{list, [",
+            .{scratch + n},
+        );
+        for (args, 0..) |arg, i| {
+            if (i > 0) try self.bodyWrite(", ");
+            try self.bodyPrint("{{atom, {s}}}, {{x, {d}}}", .{ arg.label.?, scratch + i });
+        }
+        try self.bodyWrite("]}}.\n");
+    }
+
+    /// Build a tagged tuple `{Tag, Field0, …}` from an enum variant constructor
+    /// `Shape.Circle(r: 5)` → `{Circle, 5}`. The tag atom matches the one tested
+    /// by `is_tagged_tuple` when the variant is pattern-matched. Result in `{x, 0}`.
+    fn lowerTaggedTuple(self: *Emitter, tag: []const u8, args: anytype) anyerror!void {
+        const n = args.len;
+        const scratch = @max(self.cur_arity, 1);
+        for (args, 0..) |arg, i| {
+            try self.lowerExprIntoX0(arg.value.*);
+            try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + i});
+        }
+        // A tuple of `n + 1` elements (tag + fields) needs `n + 2` heap words.
+        try self.bodyPrint("    {{test_heap, {d}, {d}}}.\n", .{ n + 2, scratch + n });
+        try self.bodyPrint("    {{put_tuple2, {{x, 0}}, {{list, [{{atom, {s}}}", .{tag});
+        for (0..n) |i| {
+            try self.bodyPrint(", {{x, {d}}}", .{scratch + i});
+        }
+        try self.bodyWrite("]}}.\n");
     }
 
     /// Builtins (`@print`, `@todo`, …) map to specific BEAM call_ext targets.

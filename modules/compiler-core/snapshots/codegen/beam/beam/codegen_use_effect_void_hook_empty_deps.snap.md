@@ -51,7 +51,7 @@ fn Widget() -> Element {
     {make_fun2, {f, 9}, 0, 0, 0}.
     {move, {x, 0}, {x, 0}}.
     {call, 0, {f, 5}}.
-    %% unresolved local call: Element/0
+    {move, {literal, #{}}, {x, 0}}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 0}.
     return.

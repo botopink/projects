@@ -64,7 +64,7 @@ fn Counter() -> Element {
     {move, {x, 0}, {x, 0}}.
     {call, 0, {f, 5}}.
     {move, {x, 0}, {y, 2}}.
-    %% unresolved local call: Element/0
+    {move, {literal, #{}}, {x, 0}}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 2}.
     return.

@@ -23,9 +23,10 @@ fn main() -> i32 {
     {allocate, 1, 0}.
     {make_fun2, {f, 9}, 0, 0, 0}.
     {move, {x, 0}, {y, 0}}.
+    {move, {y, 0}, {x, 2}}.
     {move, {integer, 10}, {x, 0}}.
     {move, {integer, 20}, {x, 1}}.
-    %% unresolved local call: add/2
+    {call_fun, 2}.
     {deallocate, 1}.
     return.
 
