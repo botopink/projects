@@ -26,6 +26,7 @@ Complete examples and language features organized by topic. Most examples map to
 - [Implement](#implement)
 - [Destructuring](#destructuring)
 - [Arrays and Tuples](#arrays-and-tuples)
+- [Result & Option methods](#result--option-methods)
 
 ---
 
@@ -41,6 +42,10 @@ This reference was updated after reviewing the latest commit series:
 - Import syntax: `import { X };` resolves from the project root; `import { X } from "name";` resolves from a named dependency. A trailing `*` on an item activates method dispatch, `as` renames the final binding, and a bare `X*;` statement activates an already-visible symbol.
 - `Expr.useHook` added to the AST for `use` hooks inside function bodies (distinct from top-level `ImportDecl` imports).
 - Generic type syntax: `@Result<D, E>` with `is_builtin` flag (replaces old `@Result(D, E)` parenthesis syntax).
+- `@Result` / `@Option` carry builtin methods (`.map`, `.flatMap`, `.unwrapOr`,
+  plus `.isOk` / `.isError` for Result) — see [Result & Option methods](#result--option-methods).
+- Method calls accept an expression receiver, so chains
+  (`a().map(f).unwrapOr(0)`) and zero-arg method calls (`r.isOk()`) are valid.
 - Four comptime runtimes: `node`, `erlang`, `beam` (BEAM via erlang), `wasm` (WAT via wasmtime).
 - Codegen snapshot directories renamed: `beam_asm` → `beam`, `wat` → `wasm`.
 
@@ -1579,3 +1584,50 @@ fn emitBinaryOp(self: *Emitter, op: []const u8, lhs: *ast.Expr, rhs: *ast.Expr) 
 - `reportReservedWordError()` — centralized reserved word error creation
 
 **Total savings:** ~122 lines of repetitive code eliminated.
+
+---
+
+## Result & Option methods
+
+`@Result<R, E>` and `@Option<T>` carry a small builtin method API. The methods
+are resolved by type inference and lowered inline by each codegen backend — they
+are not runtime library functions. `@Option<T>` is the canonical spelling of the
+optional type `?T`; both share one representation and the same method set.
+
+### `@Result<R, E>`
+
+| Method | Signature | Behaviour |
+|---|---|---|
+| `map`      | `fn(R) -> R2` → `@Result<R2, E>`          | Apply to the `Ok` payload; an `Error` is propagated untouched. |
+| `flatMap`  | `fn(R) -> @Result<R2, E>` → `@Result<R2, E>` | Like `map`, but the function returns a Result (no nesting). |
+| `unwrapOr` | `(default: R) -> R`                       | The `Ok` payload, or `default` on `Error`. |
+| `isOk`     | `() -> bool`                              | `true` when the receiver is `Ok`. |
+| `isError`  | `() -> bool`                              | `true` when the receiver is `Error`. |
+
+### `@Option<T>`
+
+| Method | Signature | Behaviour |
+|---|---|---|
+| `map`      | `fn(T) -> T2` → `@Option<T2>`             | Apply to the present value; absence is propagated. |
+| `flatMap`  | `fn(T) -> @Option<T2>` → `@Option<T2>`    | Like `map`, but the function returns an Option. |
+| `unwrapOr` | `(default: T) -> T`                       | The present value, or `default` when absent. |
+
+### Example
+
+```botopink
+fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+fn validate(n: i32) -> @Result<i32, string> { @todo(); }
+
+fn main() {
+    val age = parseAge("42")
+        .map({ n -> n + 1 })            // @Result<i32, string>
+        .flatMap({ n -> validate(n) })  // @Result<i32, string>
+        .unwrapOr(0);                   // i32
+
+    val ok = parseAge("42").isOk();     // bool
+}
+```
+
+**Codegen coverage:** `commonJS` and `erlang` emit the full inline form (a tag
+match for Result, a presence check for Option). `beam` and `wasm` emit a
+documented stub — these targets have no Result runtime representation yet.

@@ -26,11 +26,21 @@
                   "call": {
                     "loc": {
                       "line": 3,
-                      "col": 9
+                      "col": 16
                     },
                     "kind": {
                       "call": {
-                        "receiver": "precos",
+                        "receiver": {
+                          "identifier": {
+                            "loc": {
+                              "line": 3,
+                              "col": 9
+                            },
+                            "kind": {
+                              "ident": "precos"
+                            }
+                          }
+                        },
                         "callee": "forEach",
                         "is_builtin": false,
                         "args": [],

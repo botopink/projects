@@ -605,7 +605,7 @@ const Emitter = struct {
     fn callKind(self: *Emitter, cc: anytype) CallKind {
         if (cc.is_builtin) return .builtin;
         if (self.records.contains(cc.callee)) return .record_ctor;
-        if (cc.receiver) |rcv| {
+        if (receiverName(cc)) |rcv| {
             if (self.enums.contains(rcv)) return .enum_ctor;
         } else if (cc.callee.len > 0 and std.ascii.isUpper(cc.callee[0])) {
             // `Variant(...)` with no receiver: an enum payload constructor when
@@ -615,6 +615,20 @@ const Emitter = struct {
             }
         }
         return .plain;
+    }
+
+    /// The receiver of a qualified call, when it is a plain identifier
+    /// (`Color.Rgb(…)` → `"Color"`). The call `receiver` is an expression
+    /// pointer, so anything more complex yields null.
+    fn receiverName(cc: anytype) ?[]const u8 {
+        const recv = cc.receiver orelse return null;
+        return switch (recv.*) {
+            .identifier => |rid| switch (rid.kind) {
+                .ident => |n| n,
+                else => null,
+            },
+            else => null,
+        };
     }
 
     const FoundVariant = struct { variants: []const ast.EnumVariant, tag: u32, variant: ast.EnumVariant };
@@ -937,7 +951,7 @@ const Emitter = struct {
                     .builtin => try self.lowerBuiltin(cc),
                     .record_ctor => try self.lowerRecordCtor(cc, self.records.get(cc.callee).?),
                     .enum_ctor => {
-                        if (cc.receiver) |rcv| {
+                        if (receiverName(cc)) |rcv| {
                             const variants = self.enums.get(rcv).?;
                             for (variants, 0..) |v, i| {
                                 if (std.mem.eql(u8, v.name, cc.callee)) {

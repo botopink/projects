@@ -604,6 +604,46 @@ const Emitter = struct {
         try this.w(")");
     }
 
+    /// Emit the inline Erlang form for a lowered `@Result`/`@Option` method op.
+    /// `args[0]` is the receiver; `args[1]` (when present) the fn/default value.
+    /// A fun binds the receiver once (so chains don't re-evaluate it). Result
+    /// values use the `{tag, 'Ok'|'Error', Payload}` shape; absent options are
+    /// `undefined`.
+    fn emitResultOptionOp(this: *Emitter, callee: []const u8, args: []const ast.CallArg) anyerror!void {
+        const recv = args[0].value;
+        const arg1: ?*ast.Expr = if (args.len > 1) args[1].value else null;
+
+        if (std.mem.eql(u8, callee, "__bp_result_map")) {
+            try this.w("(fun(R) -> case R of {tag, 'Ok', V} -> {tag, 'Ok', (");
+            if (arg1) |a| try this.emitExpr(a.*);
+            try this.w(")(V)}; _ -> R end end)(");
+        } else if (std.mem.eql(u8, callee, "__bp_result_flatMap")) {
+            try this.w("(fun(R) -> case R of {tag, 'Ok', V} -> (");
+            if (arg1) |a| try this.emitExpr(a.*);
+            try this.w(")(V); _ -> R end end)(");
+        } else if (std.mem.eql(u8, callee, "__bp_result_unwrapOr")) {
+            try this.w("(fun(R) -> case R of {tag, 'Ok', V} -> V; _ -> (");
+            if (arg1) |a| try this.emitExpr(a.*);
+            try this.w(") end end)(");
+        } else if (std.mem.eql(u8, callee, "__bp_result_isOk")) {
+            try this.w("(fun(R) -> case R of {tag, 'Ok', _} -> true; _ -> false end end)(");
+        } else if (std.mem.eql(u8, callee, "__bp_result_isError")) {
+            try this.w("(fun(R) -> case R of {tag, 'Error', _} -> true; _ -> false end end)(");
+        } else if (std.mem.eql(u8, callee, "__bp_option_map") or std.mem.eql(u8, callee, "__bp_option_flatMap")) {
+            try this.w("(fun(O) -> case O of undefined -> undefined; V -> (");
+            if (arg1) |a| try this.emitExpr(a.*);
+            try this.w(")(V) end end)(");
+        } else if (std.mem.eql(u8, callee, "__bp_option_unwrapOr")) {
+            try this.w("(fun(O) -> case O of undefined -> (");
+            if (arg1) |a| try this.emitExpr(a.*);
+            try this.w("); V -> V end end)(");
+        } else {
+            return;
+        }
+        try this.emitExpr(recv.*);
+        try this.w(")");
+    }
+
     fn emitExpr(this: *Emitter, e: ast.Expr) anyerror!void {
         switch (e) {
             .literal => |lit| switch (lit.kind) {
@@ -764,6 +804,10 @@ const Emitter = struct {
                                 return error.InvalidArgs;
                             }
                         }
+                        if (std.mem.startsWith(u8, cc.callee, "__bp_")) {
+                            try this.emitResultOptionOp(cc.callee, cc.args);
+                            return;
+                        }
                         try this.fmt("{s}(", .{cc.callee});
                         var first = true;
                         for (cc.args) |arg| {
@@ -794,17 +838,25 @@ const Emitter = struct {
                         try this.w(")");
                     } else {
                         if (cc.receiver) |recv| {
-                            if (isModuleRef(recv)) {
-                                // Module-qualified call: `List.map(xs, f)` → a remote
-                                // call `list:map(Xs, F)`. The module name is lowercased
-                                // to a valid atom; arity is implicit from the arg count
-                                // (args + trailing lambdas).
-                                const mod = try erlangModule(this.alloc, recv);
+                            // A PascalCase identifier receiver is a module-qualified
+                            // call: `List.map(xs, f)` → a remote call `list:map(Xs, F)`.
+                            // The module name is lowercased to a valid atom; arity is
+                            // implicit from the arg count (args + trailing lambdas).
+                            const mod_name: ?[]const u8 = switch (recv.*) {
+                                .identifier => |id| switch (id.kind) {
+                                    .ident => |n| if (isModuleRef(n)) n else null,
+                                    else => null,
+                                },
+                                else => null,
+                            };
+                            if (mod_name) |name| {
+                                const mod = try erlangModule(this.alloc, name);
                                 defer this.alloc.free(mod);
                                 try this.fmt("{s}:{s}(", .{ mod, cc.callee });
                             } else {
                                 // Method call on a value receiver.
-                                try this.fmt("{s}:{s}(", .{ recv, cc.callee });
+                                try this.emitExpr(recv.*);
+                                try this.fmt(":{s}(", .{cc.callee});
                             }
                         } else {
                             try this.fmt("{s}(", .{cc.callee});

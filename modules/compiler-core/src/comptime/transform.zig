@@ -11,10 +11,17 @@
 const std = @import("std");
 const ast = @import("../ast.zig");
 const specialize = @import("./specialize.zig");
+const envMod = @import("./env.zig");
+
+/// Map of `@Result`/`@Option` method-call sites (by source loc) to their
+/// type-directed lowering, produced by inference.
+pub const MethodLowerings = std.AutoHashMap(ast.Loc, envMod.MethodLowering);
 
 /// Aggregator: collects specialization info during scan/rewrite phases.
 const Aggregator = struct {
     spec_cache: specialize.SpecCache,
+    /// Builtin `@Result`/`@Option` method lowerings keyed by call loc.
+    method_lowerings: *const MethodLowerings,
     /// fn_name → total calls with comptime params found during rewrite.
     total_calls: std.StringHashMap(usize),
     /// fn_name → calls that were actually rewritten to specialized names.
@@ -24,9 +31,10 @@ const Aggregator = struct {
     /// val_name → ct_id mapping (e.g. "pi" → "ct_0")
     val_ct_map: std.StringHashMap([]const u8),
 
-    fn init(allocator: std.mem.Allocator, comptime_vals: std.StringHashMap([]const u8)) Aggregator {
+    fn init(allocator: std.mem.Allocator, comptime_vals: std.StringHashMap([]const u8), method_lowerings: *const MethodLowerings) Aggregator {
         return .{
             .spec_cache = specialize.SpecCache.init(allocator),
+            .method_lowerings = method_lowerings,
             .total_calls = std.StringHashMap(usize).init(allocator),
             .specialized_calls = std.StringHashMap(usize).init(allocator),
             .comptime_vals = comptime_vals,
@@ -79,8 +87,9 @@ pub fn transform(
     fn_decls: std.StringHashMap(ast.FnDecl),
     comptime_arrays: std.StringHashMap([]const ast.TypedExpr),
     comptime_vals: std.StringHashMap([]const u8),
+    method_lowerings: *const MethodLowerings,
 ) !ast.Program {
-    var agg = Aggregator.init(allocator, comptime_vals);
+    var agg = Aggregator.init(allocator, comptime_vals, method_lowerings);
     defer agg.deinit(allocator);
 
     // Phase 1: Scan and specialize.
@@ -240,6 +249,8 @@ fn scanExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_
     switch (expr) {
         .call => |c| switch (c.kind) {
             .call => |call| {
+                // Method receivers may themselves contain comptime calls.
+                if (call.receiver) |r| scanExpr(agg, fn_decls, comptime_arrays, r.*) catch return ScanError.OutOfMemory;
                 // Builtin calls don't need specialization
                 if (call.is_builtin) {
                     for (call.args) |arg| scanExpr(agg, fn_decls, comptime_arrays, arg.value.*) catch return ScanError.OutOfMemory;
@@ -339,10 +350,57 @@ fn scanExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_
 
 // ── Rewrite pass ─────────────────────────────────────────────────────────────
 
+/// If `expr_ptr` is a `@Result`/`@Option` method call recorded by inference,
+/// rewrite it in place into a `__bp_<domain>_<op>(receiver, args...)` builtin
+/// call (receiver becomes the first positional arg) and return true. Each
+/// codegen backend lowers the `__bp_*` callee to its native Result/Option form.
+fn tryLowerMethodCall(agg: *Aggregator, expr_ptr: *ast.Expr) ScanError!bool {
+    if (expr_ptr.* != .call) return false;
+    if (expr_ptr.call.kind != .call) return false;
+    const cc = expr_ptr.call.kind.call;
+    const recv = cc.receiver orelse return false;
+    const loc = expr_ptr.call.loc;
+    const lowering = agg.method_lowerings.get(loc) orelse return false;
+
+    const arena = agg.spec_cache.arena;
+    const domain = switch (lowering.domain) {
+        .result => "result",
+        .option => "option",
+    };
+    const opName = switch (lowering.op) {
+        .map => "map",
+        .flatMap => "flatMap",
+        .unwrapOr => "unwrapOr",
+        .isOk => "isOk",
+        .isError => "isError",
+    };
+    const callee = std.fmt.allocPrint(arena, "__bp_{s}_{s}", .{ domain, opName }) catch return ScanError.OutOfMemory;
+
+    var new_args = arena.alloc(ast.CallArg, cc.args.len + 1) catch return ScanError.OutOfMemory;
+    new_args[0] = .{ .label = null, .value = recv, .comments = &.{} };
+    for (cc.args, 0..) |a, i| new_args[i + 1] = a;
+
+    expr_ptr.* = ast.Expr{ .call = .{ .loc = loc, .kind = .{ .call = .{
+        .receiver = null,
+        .callee = callee,
+        .is_builtin = true,
+        .args = new_args,
+        .trailing = cc.trailing,
+    } } } };
+    return true;
+}
+
 fn rewriteStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_arrays: std.StringHashMap([]const ast.TypedExpr), stmt: *ast.Stmt) ScanError!void {
     switch (stmt.expr) {
         .call => |*c| switch (c.kind) {
-            .call => rewriteCall(agg, fn_decls, comptime_arrays, &c.kind.call) catch return ScanError.OutOfMemory,
+            .call => {
+                if (try tryLowerMethodCall(agg, &stmt.expr)) {
+                    for (stmt.expr.call.kind.call.args) |*arg| rewriteExpr(agg, fn_decls, comptime_arrays, arg.value) catch return ScanError.OutOfMemory;
+                } else {
+                    if (c.kind.call.receiver) |r| rewriteExpr(agg, fn_decls, comptime_arrays, r) catch return ScanError.OutOfMemory;
+                    rewriteCall(agg, fn_decls, comptime_arrays, &c.kind.call) catch return ScanError.OutOfMemory;
+                }
+            },
             else => {},
         },
         .binding => |*b| switch (b.kind) {
@@ -384,7 +442,14 @@ fn rewriteStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
 fn rewriteExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_arrays: std.StringHashMap([]const ast.TypedExpr), expr_ptr: *ast.Expr) ScanError!void {
     switch (expr_ptr.*) {
         .call => |*c| switch (c.kind) {
-            .call => rewriteCall(agg, fn_decls, comptime_arrays, &c.kind.call) catch return ScanError.OutOfMemory,
+            .call => {
+                if (try tryLowerMethodCall(agg, expr_ptr)) {
+                    for (expr_ptr.call.kind.call.args) |*arg| rewriteExpr(agg, fn_decls, comptime_arrays, arg.value) catch return ScanError.OutOfMemory;
+                } else {
+                    if (c.kind.call.receiver) |r| rewriteExpr(agg, fn_decls, comptime_arrays, r) catch return ScanError.OutOfMemory;
+                    rewriteCall(agg, fn_decls, comptime_arrays, &c.kind.call) catch return ScanError.OutOfMemory;
+                }
+            },
             .pipeline => |p| {
                 rewriteExpr(agg, fn_decls, comptime_arrays, p.lhs) catch return ScanError.OutOfMemory;
                 rewriteExpr(agg, fn_decls, comptime_arrays, p.rhs) catch return ScanError.OutOfMemory;

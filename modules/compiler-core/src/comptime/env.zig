@@ -146,6 +146,18 @@ pub const StarFnCtx = struct {
 ///
 /// Owns no memory itself ---- all allocations go through `arena`.
 /// Deinit only frees the hash map metadata; the arena frees everything else.
+/// A type-directed lowering decision for a builtin method call (`@Result` /
+/// `@Option` methods like `.map` / `.unwrapOr`). Recorded by inference, keyed by
+/// the call's source `Loc`, and consumed by the AST transform pass which rewrites
+/// the untyped call node into a `__bp_<domain>_<op>(receiver, args...)` builtin
+/// call that each codegen backend lowers to its native form.
+pub const MethodLowering = struct {
+    pub const Domain = enum { result, option };
+    pub const Op = enum { map, flatMap, unwrapOr, isOk, isError };
+    domain: Domain,
+    op: Op,
+};
+
 pub const Env = struct {
     /// Arena allocator ---- all Type and TypeCell nodes are allocated here.
     arena: std.mem.Allocator,
@@ -164,6 +176,9 @@ pub const Env = struct {
     level: usize,
     /// The most recent type error (set before returning `error.TypeError`).
     lastError: ?@import("error.zig").TypeError,
+    /// Builtin `@Result`/`@Option` method calls discovered during inference,
+    /// keyed by the call's source location. Drives the AST transform lowering.
+    method_lowerings: std.AutoHashMap(ast.Loc, MethodLowering),
     /// Capability scope of the function body currently being inferred (null at top level).
     fnContext: ?FnContext = null,
     /// How `throw` is checked in the function body currently being inferred.
@@ -184,6 +199,7 @@ pub const Env = struct {
             .nextTypeId = 0,
             .level = 0,
             .lastError = null,
+            .method_lowerings = std.AutoHashMap(ast.Loc, MethodLowering).init(arena),
             .fnContext = null,
             .throwContext = .unchecked,
             .starFn = null,
@@ -202,6 +218,7 @@ pub const Env = struct {
     pub fn deinit(self: *Env) void {
         self.bindings.deinit();
         self.typeDefs.deinit();
+        self.method_lowerings.deinit();
         self.fnTypeparams.deinit();
     }
 
@@ -226,7 +243,7 @@ pub const Env = struct {
     }
 
     /// Allocate a named type with the given type arguments (args are copied).
-    pub fn namedTypeArgs(self: *Env, name: []const u8, args: []*T.Type) !*T.Type {
+    pub fn namedTypeArgs(self: *Env, name: []const u8, args: []const *T.Type) !*T.Type {
         const argsCopy = try self.arena.dupe(*T.Type, args);
         const ty = try self.arena.create(T.Type);
         ty.* = .{ .named = .{ .name = name, .args = argsCopy } };
@@ -241,7 +258,7 @@ pub const Env = struct {
     }
 
     /// Allocate a function type (params slice is copied).
-    pub fn funcType(self: *Env, params: []*T.Type, ret: *T.Type) !*T.Type {
+    pub fn funcType(self: *Env, params: []const *T.Type, ret: *T.Type) !*T.Type {
         const paramsCopy = try self.arena.dupe(*T.Type, params);
         const ty = try self.arena.create(T.Type);
         ty.* = .{ .func = .{ .params = paramsCopy, .ret = ret } };

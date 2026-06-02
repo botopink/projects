@@ -626,7 +626,7 @@ pub const Parser = struct {
     /// Builds a `call` expression node (no boxing needed — `args`/`trailing` are already slices).
     fn makeCall(
         tok: Token,
-        receiver: ?[]const u8,
+        receiver: ?*Expr,
         callee: []const u8,
         is_builtin: bool,
         args: []CallArg,
@@ -2586,46 +2586,20 @@ pub const Parser = struct {
             }
         }
 
-        // ── call expressions: ident(...) {...}, ident {...}, recv.method(...) {...} ──
+        // ── call expressions & method chains ──
+        //   ident(...) {...}, ident {...}, recv.method(...) {...},
+        //   zero-arg method calls `r.isOk()`, and chains `a(x).map(f).filter(g)`.
         if (this.check(.identifier)) {
             const saved = this.current;
             const firstTok = this.advance();
 
-            // Method call: first.method(args...) trailing...
-            //          or: first.method trailing...
-            if (this.match(.dot)) {
-                // Accept both identifier and numberLiteral for tuple access
-                const methodTok: Token = if (this.check(.numberLiteral))
-                    this.advance()
-                else
-                    try this.consume(.identifier);
+            // Establish the chain base: a plain call `ident(args)`, a trailing
+            // lambda call `ident { ... }`, or (provisionally) the bare identifier
+            // — the latter only becomes a real node once a `.method(...)` follows.
+            var base: Expr = Expr{ .identifier = .{ .loc = locFromToken(firstTok), .kind = .{ .ident = firstTok.lexeme } } };
+            var baseIsCall = false;
 
-                var args: []CallArg = &.{};
-                if (this.check(.leftParenthesis)) {
-                    args = try this.parseCallArgs(alloc);
-                }
-                errdefer {
-                    for (args) |*a| a.deinit(alloc);
-                    alloc.free(args);
-                }
-
-                const trailing = if (this.noTrailingLambda) try alloc.alloc(TrailingLambda, 0) else try this.parseTrailingLambdas(alloc);
-                errdefer {
-                    for (trailing) |*t| t.deinit(alloc);
-                    alloc.free(trailing);
-                }
-
-                if (args.len > 0 or trailing.len > 0) {
-                    return this.wrapCatch(alloc, makeCall(firstTok, firstTok.lexeme, methodTok.lexeme, false, args, trailing));
-                }
-
-                // No args or trailing lambdas.
-                // Fall back so parsePrimary handles field access: self.field or Color.Red
-                this.current = saved;
-            }
-
-            // Plain call: ident(args...) trailing...
-            else if (this.check(.leftParenthesis)) {
+            if (this.check(.leftParenthesis)) {
                 const args = try this.parseCallArgs(alloc);
                 errdefer {
                     for (args) |*a| a.deinit(alloc);
@@ -2636,26 +2610,86 @@ pub const Parser = struct {
                     for (trailing) |*t| t.deinit(alloc);
                     alloc.free(trailing);
                 }
-                return this.wrapCatch(alloc, makeCall(firstTok, null, firstTok.lexeme, false, args, trailing));
+                base = Expr{ .call = .{ .loc = locFromToken(firstTok), .kind = .{ .call = .{
+                    .receiver = null,
+                    .callee = firstTok.lexeme,
+                    .is_builtin = false,
+                    .args = args,
+                    .trailing = trailing,
+                } } } };
+                baseIsCall = true;
+            } else if (!this.noTrailingLambda and (this.check(.leftBrace) or this.checkLabeledTrailingLambda())) {
+                const trailing = try this.parseTrailingLambdas(alloc);
+                if (trailing.len > 0) {
+                    base = Expr{ .call = .{ .loc = locFromToken(firstTok), .kind = .{ .call = .{
+                        .receiver = null,
+                        .callee = firstTok.lexeme,
+                        .is_builtin = false,
+                        .args = &.{},
+                        .trailing = trailing,
+                    } } } };
+                    baseIsCall = true;
+                } else {
+                    alloc.free(trailing);
+                    this.current = saved;
+                    return this.wrapCatch(alloc, try this.parsePipelineExpr(alloc));
+                }
             }
 
-            // Call with only trailing lambdas: ident { ... } label: { ... }
-            // (only when not in noTrailingLambda mode)
-            else if (!this.noTrailingLambda and (this.check(.leftBrace) or this.checkLabeledTrailingLambda())) {
-                const trailing = try this.parseTrailingLambdas(alloc);
+            // Postfix chain: consume `.method(args)` / `.method { ... }` links.
+            // A `.member` with no `(`/trailing is a pure field-access link — roll
+            // it back and let `parsePrimary` own `a.b.c` so those snapshots stay
+            // identical.
+            var sawMethodCall = false;
+            while (this.check(.dot)) {
+                const dotSaved = this.current;
+                _ = this.advance(); // '.'
+                const methodTok: Token = if (this.check(.numberLiteral))
+                    this.advance()
+                else
+                    this.consume(.identifier) catch {
+                        this.current = dotSaved;
+                        break;
+                    };
+
+                const hasParen = this.check(.leftParenthesis);
+                const hasTrailing = !this.noTrailingLambda and (this.check(.leftBrace) or this.checkLabeledTrailingLambda());
+                if (!hasParen and !hasTrailing) {
+                    // Field-access link without a call — not our job.
+                    this.current = dotSaved;
+                    break;
+                }
+
+                var args: []CallArg = &.{};
+                if (hasParen) args = try this.parseCallArgs(alloc);
+                errdefer {
+                    for (args) |*a| a.deinit(alloc);
+                    alloc.free(args);
+                }
+                const trailing = if (this.noTrailingLambda) try alloc.alloc(TrailingLambda, 0) else try this.parseTrailingLambdas(alloc);
                 errdefer {
                     for (trailing) |*t| t.deinit(alloc);
                     alloc.free(trailing);
                 }
-                if (trailing.len > 0) {
-                    return this.wrapCatch(alloc, makeCall(firstTok, null, firstTok.lexeme, false, &.{}, trailing));
-                }
-                for (trailing) |*t| t.deinit(alloc);
-                alloc.free(trailing);
-                this.current = saved;
-            } else {
-                this.current = saved;
+                const recvPtr = try this.boxExpr(alloc, base);
+                // Use the method token's loc so each chain link has a distinct
+                // location (the type-directed method lowering is keyed by loc).
+                base = Expr{ .call = .{ .loc = locFromToken(methodTok), .kind = .{ .call = .{
+                    .receiver = recvPtr,
+                    .callee = methodTok.lexeme,
+                    .is_builtin = false,
+                    .args = args,
+                    .trailing = trailing,
+                } } } };
+                sawMethodCall = true;
             }
+
+            if (baseIsCall or sawMethodCall) {
+                return this.wrapCatch(alloc, base);
+            }
+
+            // Bare identifier with no call/chain — let parsePrimary handle it.
+            this.current = saved;
         }
 
         return this.wrapCatch(alloc, try this.parsePipelineExpr(alloc));
@@ -2893,7 +2927,8 @@ pub const Parser = struct {
                             for (trailing) |*t| t.deinit(alloc);
                             alloc.free(trailing);
                         }
-                        break :rhs_blk makeCall(nameTok, nameTok.lexeme, methodTok.lexeme, false, args, trailing);
+                        const recvPtr = try this.boxExpr(alloc, Expr{ .identifier = .{ .loc = locFromToken(nameTok), .kind = .{ .ident = nameTok.lexeme } } });
+                        break :rhs_blk makeCall(nameTok, recvPtr, methodTok.lexeme, false, args, trailing);
                     } else {
                         this.current = saved;
                     }

@@ -1461,13 +1461,24 @@ const Emitter = struct {
             try self.lowerBuiltinCall(cc, mode);
             return;
         }
-        if (cc.receiver) |recv_name| {
-            if (self.reg_map.get(recv_name)) |reg| {
-                var rbuf: [64]u8 = undefined;
-                const recv_term = try reg.format(&rbuf);
-                try self.bodyPrint("    {{move, {s}, {{x, 0}}}}.\n", .{recv_term});
+        if (cc.receiver) |recv_expr| {
+            const recv_name: ?[]const u8 = switch (recv_expr.*) {
+                .identifier => |idn| switch (idn.kind) {
+                    .ident => |n| n,
+                    else => null,
+                },
+                else => null,
+            };
+            if (recv_name) |rn| {
+                if (self.reg_map.get(rn)) |reg| {
+                    var rbuf: [64]u8 = undefined;
+                    const recv_term = try reg.format(&rbuf);
+                    try self.bodyPrint("    {{move, {s}, {{x, 0}}}}.\n", .{recv_term});
+                } else {
+                    try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{rn});
+                }
             } else {
-                try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{recv_name});
+                try self.lowerExprIntoX0(recv_expr.*);
             }
             const scratch = self.cur_arity;
             try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
@@ -1545,6 +1556,14 @@ const Emitter = struct {
                 const body = cc.trailing[0];
                 for (body.body) |stmt| try self.emitStmt(stmt);
             }
+            return;
+        }
+        if (std.mem.startsWith(u8, cc.callee, "__bp_")) {
+            // `@Result`/`@Option` method ops are not lowered to BEAM assembly
+            // yet; pass the receiver through so the value still flows downstream.
+            try self.bodyPrint("    %% unsupported on BEAM: {s}\n", .{cc.callee});
+            if (cc.args.len > 0) try self.lowerExprIntoX0(cc.args[0].value.*);
+            if (mode == .tail) try self.emitReturn();
             return;
         }
         try self.bodyPrint("    %% unsupported builtin: @{s} (Fase 3+)\n", .{cc.callee});

@@ -38,11 +38,21 @@
                   "call": {
                     "loc": {
                       "line": 3,
-                      "col": 9
+                      "col": 17
                     },
                     "kind": {
                       "call": {
-                        "receiver": "Console",
+                        "receiver": {
+                          "identifier": {
+                            "loc": {
+                              "line": 3,
+                              "col": 9
+                            },
+                            "kind": {
+                              "ident": "Console"
+                            }
+                          }
+                        },
                         "callee": "WriteLine",
                         "is_builtin": false,
                         "args": [
@@ -126,11 +136,21 @@
                   "call": {
                     "loc": {
                       "line": 6,
-                      "col": 9
+                      "col": 17
                     },
                     "kind": {
                       "call": {
-                        "receiver": "Console",
+                        "receiver": {
+                          "identifier": {
+                            "loc": {
+                              "line": 6,
+                              "col": 9
+                            },
+                            "kind": {
+                              "ident": "Console"
+                            }
+                          }
+                        },
                         "callee": "WriteLine",
                         "is_builtin": false,
                         "args": [
