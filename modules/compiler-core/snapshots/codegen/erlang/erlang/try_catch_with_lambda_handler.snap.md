@@ -20,14 +20,13 @@ fetch() ->
     erlang:throw(FetchError(<<"/api">>)).
 
 safe() ->
-    R = try
-        fetch()
-catch
-        _Err ->
+    R = case fetch() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
             fun(E) ->
                 0
-            end(_Err)
-end,
+            end(_TryE0)
+    end,
     R.
 ```
 

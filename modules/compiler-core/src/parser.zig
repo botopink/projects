@@ -2492,7 +2492,8 @@ pub const Parser = struct {
             var label: ?[]const u8 = null;
             if (this.check(.colon)) {
                 _ = this.advance();
-                label = (try this.consume(.identifier)).lexeme;
+                const labelTok = try this.consume(.identifier);
+                label = labelTok.lexeme;
             }
             const inner = try this.parseBinaryExpr(alloc, prec.equality);
             const innerPtr = try this.boxExpr(alloc, inner);

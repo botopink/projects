@@ -20,12 +20,11 @@ getA() ->
     erlang:throw(CalcError(<<"overflow">>)).
 
 compute() ->
-    R = try
-        getA()
-catch
-        _Err ->
-            0(_Err)
-end,
+    R = case getA() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
+            0
+    end,
     R.
 ```
 

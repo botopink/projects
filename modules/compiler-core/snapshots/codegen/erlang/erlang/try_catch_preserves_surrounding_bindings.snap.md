@@ -24,12 +24,11 @@ load() ->
 
 process() ->
     Prefix = 10,
-    Data = try
-        load()
-catch
-        _Err ->
-            0(_Err)
-end,
+    Data = case load() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
+            0
+    end,
     Suffix = 20,
     io:format("~p~n", [Prefix, Data, Suffix]),
     ((Prefix + Data) + Suffix).

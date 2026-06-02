@@ -4,6 +4,8 @@
     {
       "fn": {
         "isPub": false,
+        "isStarFn": false,
+        "label": null,
         "name": "App",
         "docComment": null,
         "comment": null,
@@ -65,7 +67,8 @@
                                         },
                                         "emptyLinesBefore": 0
                                       }
-                                    ]
+                                    ],
+                                    "isStarFn": false
                                   }
                                 }
                               },

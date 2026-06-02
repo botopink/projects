@@ -135,6 +135,7 @@ snapshots/                                     → workspace-level smoke snapsho
 
 | Commit | Summary |
 |---|---|
+| `611275f` | feat: lower try/catch to `Ok`/`Error` pattern matching across all backends (+ `tryOnNonResult` inference error) |
 | `a42d948` | feat: add `Expr.useHook` AST variant for use-hooks in function bodies |
 | `1888bfb` | feat: reject old `from "mod"` import syntax with migration hint |
 | `65f990d` | feat: use syntax migration `from "mod"` → `= @root()` / `= @module()` |

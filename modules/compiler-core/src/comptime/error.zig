@@ -120,6 +120,8 @@ pub const TypeErrorKind = union(enum) {
         /// The accepted constraint type names.
         constraints: []const []const u8,
     },
+    /// `try` / `catch` applied to a value whose type is not `@Result<D, E>`.
+    tryOnNonResult: *T.Type,
     /// A rule-specific diagnostic with a ready-made message (and optional hint).
     /// Used for validations that don't map onto the structured kinds above
     /// (e.g. async/generator rules around `*fn` / `await` / `yield`).
@@ -207,6 +209,10 @@ pub const TypeError = struct {
 
     pub fn typeparamConstraint(paramName: []const u8, got: *T.Type, constraints: []const []const u8) TypeError {
         return .{ .kind = .{ .typeparamConstraint = .{ .paramName = paramName, .got = got, .constraints = constraints } } };
+    }
+
+    pub fn tryOnNonResult(ty: *T.Type) TypeError {
+        return .{ .kind = .{ .tryOnNonResult = ty } };
     }
 
     pub fn custom(message: []const u8, hint: ?[]const u8) TypeError {

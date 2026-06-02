@@ -36,54 +36,52 @@
                   "line": 2,
                   "col": 5
                 },
-                "kind": {
-                  "iter": {
-                    "identifier": {
-                      "loc": {
-                        "line": 2,
-                        "col": 11
-                      },
-                      "kind": {
-                        "ident": "items"
-                      }
+                "iter": {
+                  "identifier": {
+                    "loc": {
+                      "line": 2,
+                      "col": 11
+                    },
+                    "kind": {
+                      "ident": "items"
                     }
-                  },
-                  "indexRange": null,
-                  "params": [
-                    "item"
-                  ],
-                  "body": [
-                    {
-                      "expr": {
-                        "jump": {
-                          "loc": {
-                            "line": 3,
-                            "col": 9
-                          },
-                          "kind": {
-                            "yield": {
-                              "label": null,
-                              "value": {
-                                "identifier": {
-                                  "loc": {
-                                    "line": 3,
-                                    "col": 15
-                                  },
-                                  "kind": {
-                                    "ident": "item"
-                                  }
+                  }
+                },
+                "indexRange": null,
+                "params": [
+                  "item"
+                ],
+                "body": [
+                  {
+                    "expr": {
+                      "jump": {
+                        "loc": {
+                          "line": 3,
+                          "col": 9
+                        },
+                        "kind": {
+                          "yield": {
+                            "label": null,
+                            "value": {
+                              "identifier": {
+                                "loc": {
+                                  "line": 3,
+                                  "col": 15
+                                },
+                                "kind": {
+                                  "ident": "item"
                                 }
                               }
                             }
                           }
                         }
-                      },
-                      "emptyLinesBefore": 0
-                    }
-                  ],
-                  "awaitLoop": false,
-                  "label": null
-                }
+                      }
+                    },
+                    "emptyLinesBefore": 0
+                  }
+                ],
+                "awaitLoop": false,
+                "label": null
               }
             },
             "emptyLinesBefore": 0

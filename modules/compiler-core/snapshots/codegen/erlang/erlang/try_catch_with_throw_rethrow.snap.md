@@ -20,12 +20,11 @@ fetch() ->
     erlang:throw(ApiError(<<"not found">>)).
 
 strict() ->
-    R = try
-        fetch()
-catch
-        _Err ->
+    R = case fetch() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
             erlang:throw(<<"fetch failed">>)
-end,
+    end,
     R.
 ```
 

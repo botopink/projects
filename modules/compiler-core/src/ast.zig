@@ -530,7 +530,7 @@ pub fn FunctionExprOf(comptime phase: Phase) type {
         /// Parameter names (inferred types). Empty for no-param functions.
         params: []const []const u8,
         body: []StmtOf(phase),
-        /// `*fn(...)` ---- async/generator function expression (return impl
+        /// `*fn(...) { ... }` — async/generator function expression (return impl
         /// `@Future`/`@Iterator`). Only meaningful when `syntax == .fnExpr`.
         isStarFn: bool = false,
 

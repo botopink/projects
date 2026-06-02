@@ -51,25 +51,23 @@ fn loadUser() {
     {func_info, {atom, main}, {atom, loadUser}, 0}.
   {label, 7}.
     {allocate, 2, 0}.
-    {try, {y, 0}, {f, 8}}.
     {call, 0, {f, 3}}.
-    {try_end, {y, 0}}.
+    {test, is_tagged_tuple, {f, 8}, {x, 0}, 2, {atom, ok}}.
+    {get_tuple_element, {x, 0}, 1, {x, 0}}.
     {jump, {f, 9}}.
   {label, 8}.
-    {try_case, {y, 0}}.
     {move, {literal, <<"anonymous">>}, {x, 0}}.
   {label, 9}.
-    {move, {x, 0}, {y, 1}}.
-    {try, {y, 2}, {f, 10}}.
+    {move, {x, 0}, {y, 0}}.
     {call, 0, {f, 5}}.
-    {try_end, {y, 2}}.
+    {test, is_tagged_tuple, {f, 10}, {x, 0}, 2, {atom, ok}}.
+    {get_tuple_element, {x, 0}, 1, {x, 0}}.
     {jump, {f, 11}}.
   {label, 10}.
-    {try_case, {y, 2}}.
     {move, {integer, 0}, {x, 0}}.
   {label, 11}.
-    {move, {x, 0}, {y, 3}}.
-    {move, {y, 1}, {x, 0}}.
+    {move, {x, 0}, {y, 1}}.
+    {move, {y, 0}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"~p~n">>}, {x, 0}}.
     {test_heap, 2, 2}.

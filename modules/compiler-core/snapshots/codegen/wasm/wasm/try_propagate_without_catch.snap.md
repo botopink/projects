@@ -1,6 +1,6 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-fn fetch() -> i32 {
+fn fetch() -> @Result<i32, string> {
     @todo();
 }
 fn process() -> i32 {
@@ -20,8 +20,20 @@ fn process() -> i32 {
     unreachable
   )
   (func $process (result i32)
+    (local $_try0 i32)
     (local $r i32)
     call $fetch
+    local.set $_try0
+    local.get $_try0
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if
+      (then
+    local.get $_try0
+    return ;; propagate Error
+      )
+    )
+    local.get $_try0
+    i32.load offset=4 ;; Ok payload
     local.set $r
     local.get $r
     call $__print_i32

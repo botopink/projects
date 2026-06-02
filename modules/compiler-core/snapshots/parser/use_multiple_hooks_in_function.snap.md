@@ -164,7 +164,8 @@
                                                 },
                                                 "emptyLinesBefore": 0
                                               }
-                                            ]
+                                            ],
+                                            "isStarFn": false
                                           }
                                         }
                                       },
@@ -238,7 +239,8 @@
                                         },
                                         "emptyLinesBefore": 0
                                       }
-                                    ]
+                                    ],
+                                    "isStarFn": false
                                   }
                                 }
                               },

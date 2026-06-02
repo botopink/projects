@@ -26,12 +26,25 @@ fn process() -> i32 {
     unreachable
   )
   (func $process (result i32)
+    (local $_try0 i32)
     (local $prefix i32)
     (local $data i32)
     (local $suffix i32)
     i32.const 10
     local.set $prefix
     call $load
+    local.set $_try0
+    local.get $_try0
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if (result i32)
+      (then
+    i32.const 0
+      )
+      (else
+    local.get $_try0
+    i32.load offset=4 ;; Ok payload
+      )
+    )
     local.set $data
     i32.const 20
     local.set $suffix

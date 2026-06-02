@@ -23,7 +23,9 @@ function fetch() {
 }
 
 function safe() {
-    const r = (() => { try { return fetch(); } catch(_e) { return (-1); } })();
+    const _try0 = fetch();
+    if (_try0.tag === "Error") { return (-1); }
+    const r = _try0.result;
     return r;
 }
 ```

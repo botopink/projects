@@ -206,6 +206,7 @@ fn renderTypeError(
         .unknownInterface => "unknown interface",
         .ambiguousMethod => "ambiguous method",
         .typeparamConstraint => "typeparam constraint not satisfied",
+        .tryOnNonResult => "try on non-Result",
         .custom => |c| c.message,
     };
     try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "error: {s}\n", .{title}));
@@ -351,6 +352,13 @@ fn renderTypeError(
                 tmp,
                 "\n  '{s}' has type '{s}', which does not satisfy 'typeparam {s}'\n",
                 .{ c.paramName, gotName, list.items },
+            ));
+        },
+        .tryOnNonResult => |ty| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  `try` requires a @Result<D, E> value, found '{s}'\n",
+                .{try snapshot.typeNameOf(tmp, ty)},
             ));
         },
         .custom => |c| {
@@ -1525,7 +1533,7 @@ test "infer: null-check binding ---- if (x) { e -> } body ignores binding" {
 
 test "infer: try expression ---- result type unified with return" {
     try assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> i32 {
+        \\fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn process() -> i32 {
@@ -1538,7 +1546,7 @@ test "infer: try expression ---- result type unified with return" {
 
 test "infer: try-catch ---- handler provides fallback" {
     try assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> i32 {
+        \\fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn safe() -> i32 {
@@ -1546,6 +1554,18 @@ test "infer: try-catch ---- handler provides fallback" {
         \\    return r;
         \\}
         \\val x = safe();
+    );
+}
+
+test "infer error: try ---- on non-Result type" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn fetch() -> i32 {
+        \\    return 42;
+        \\}
+        \\fn process() -> i32 {
+        \\    val r = try fetch();
+        \\    return r;
+        \\}
     );
 }
 

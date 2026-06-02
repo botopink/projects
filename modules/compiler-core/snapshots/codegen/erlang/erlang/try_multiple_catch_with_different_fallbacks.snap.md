@@ -27,18 +27,16 @@ fetchAge() ->
     erlang:throw(UserError(<<"age missing">>)).
 
 loadUser() ->
-    Name = try
-        fetchName()
-catch
-        _Err ->
-            <<"anonymous">>(_Err)
-end,
-    Age = try
-        fetchAge()
-catch
-        _Err ->
-            0(_Err)
-end,
+    Name = case fetchName() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
+            <<"anonymous">>
+    end,
+    Age = case fetchAge() of
+        {ok, TryV1} -> TryV1;
+        {error, _TryE1} ->
+            0
+    end,
     io:format("~p~n", [Name, Age]).
 ```
 

@@ -1,6 +1,6 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-fn fetch() -> i32 {
+fn fetch() -> @Result<i32, string> {
     @todo();
 }
 fn process() -> i32 {
@@ -15,7 +15,7 @@ fn process() -> i32 {
 {module, main}.
 {exports, []}.
 {attributes, []}.
-{labels, 6}.
+{labels, 8}.
 
 {function, fetch, 0, 3}.
   {label, 2}.
@@ -36,6 +36,13 @@ fn process() -> i32 {
   {label, 5}.
     {allocate, 1, 0}.
     {call, 0, {f, 3}}.
+    {test, is_tagged_tuple, {f, 6}, {x, 0}, 2, {atom, ok}}.
+    {get_tuple_element, {x, 0}, 1, {x, 0}}.
+    {jump, {f, 7}}.
+  {label, 6}.
+    {deallocate, 1}.
+    return.
+  {label, 7}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.

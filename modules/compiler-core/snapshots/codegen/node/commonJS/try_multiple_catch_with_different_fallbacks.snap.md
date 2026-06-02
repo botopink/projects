@@ -31,8 +31,10 @@ function fetchAge() {
 }
 
 function loadUser() {
-    const name = (() => { try { return fetchName(); } catch(_e) { return ("anonymous")(_e); } })();
-    const age = (() => { try { return fetchAge(); } catch(_e) { return (0)(_e); } })();
+    const _try0 = fetchName();
+    const name = _try0.tag === "Error" ? ("anonymous") : _try0.result;
+    const _try1 = fetchAge();
+    const age = _try1.tag === "Error" ? (0) : _try1.result;
     console.log(name, age);
 }
 ```

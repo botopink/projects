@@ -347,6 +347,7 @@ const Emitter = struct {
     cur_result: []const u8 = "i32",
     locals: std.StringHashMap([]const u8),
     case_depth: u32 = 0,
+    try_seq: u32 = 0,
 
     data_segments: std.ArrayListUnmanaged(DataSeg) = .empty,
     next_data_offset: u32 = 256,
@@ -378,6 +379,7 @@ const Emitter = struct {
         self.locals.clearRetainingCapacity();
         self.cur_result = result_type;
         self.case_depth = 0;
+        self.try_seq = 0;
     }
 
     fn internString(self: *Emitter, s: []const u8) !DataSeg {
@@ -423,9 +425,47 @@ const Emitter = struct {
             try self.fmt(" (result {s})", .{result_type});
         }
         try self.w("\n");
+        const try_count = countTrys(f.body);
+        for (0..try_count) |i| {
+            try self.fmt("    (local $_try{d} i32)\n", .{i});
+        }
         try self.emitLocalDecls(f.body);
         try self.emitBody(f.body, result_type);
         try self.w("  )\n");
+    }
+
+    /// Count `try`/`try…catch` nodes so a scratch pointer local can be declared
+    /// for each (WAT locals must be declared up-front, before the body).
+    fn countTrys(body: []const ast.Stmt) u32 {
+        var n: u32 = 0;
+        for (body) |stmt| n += countTrysExpr(stmt.expr);
+        return n;
+    }
+
+    fn countTrysExpr(e: ast.Expr) u32 {
+        return switch (e) {
+            .jump => |j| switch (j.kind) {
+                .try_ => |t| 1 + (if (t) |i| countTrysExpr(i.*) else 0),
+                .@"return", .throw_, .@"break" => |v| if (v) |i| countTrysExpr(i.*) else 0,
+                .yield => |y| if (y.value) |i| countTrysExpr(i.*) else 0,
+                .await_ => |a| countTrysExpr(a.*),
+                else => 0,
+            },
+            .branch => |b| switch (b.kind) {
+                .tryCatch => |tc| 1 + countTrysExpr(tc.expr.*) + countTrysExpr(tc.handler.*),
+                .if_ => |i| blk: {
+                    var n = countTrysExpr(i.cond.*) + countTrys(i.then_);
+                    if (i.else_) |els| n += countTrys(els);
+                    break :blk n;
+                },
+            },
+            .binding => |b| switch (b.kind) {
+                .localBind => |lb| countTrysExpr(lb.value.*),
+                .localBindDestruct => |lb| countTrysExpr(lb.value.*),
+                .assign => |a| countTrysExpr(a.value.*),
+            },
+            else => 0,
+        };
     }
 
     fn emitLocalDecls(self: *Emitter, body: []const ast.Stmt) anyerror!void {
@@ -523,7 +563,7 @@ const Emitter = struct {
                     try self.w("    unreachable\n");
                 },
                 .try_ => |val| {
-                    if (val) |v| try self.lowerExpr(v.*);
+                    if (val) |v| try self.lowerTryPropagate(v.*);
                 },
                 .await_ => |av| try self.lowerExpr(av.*),
                 .@"break" => |val| {
@@ -657,7 +697,7 @@ const Emitter = struct {
             },
             .branch => |b| switch (b.kind) {
                 .if_ => |i| try self.lowerIfExpr(i),
-                .tryCatch => |tc| try self.lowerExpr(tc.expr.*),
+                .tryCatch => |tc| try self.lowerTryCatch(tc),
             },
             .collection => |col| switch (col.kind) {
                 .grouped => |inner| try self.lowerExpr(inner.*),
@@ -676,7 +716,7 @@ const Emitter = struct {
                     try self.w("    unreachable\n");
                 },
                 .try_ => |val| {
-                    if (val) |v| try self.lowerExpr(v.*);
+                    if (val) |v| try self.lowerTryPropagate(v.*);
                 },
                 .await_ => |av| try self.lowerExpr(av.*),
                 .@"break" => |val| {
@@ -692,6 +732,50 @@ const Emitter = struct {
             .loop => |lp| try self.lowerLoop(lp),
             else => try self.fmt("    ;; unsupported expr: {s}\n", .{@tagName(e)}),
         }
+    }
+
+    // A `@Result` lives in linear memory as a pointer: the tag is the `i32` at
+    // `[ptr]` (0 = Ok, non-zero = Error) and the payload is the `i32` at `[ptr+4]`.
+    // `try`/`catch` branch on that tag with `if`/`else` — never host exceptions.
+
+    /// `try expr catch handler` → load the tag; Ok yields `[ptr+4]`, Error runs
+    /// the handler. Leaves the resulting value on the stack.
+    fn lowerTryCatch(self: *Emitter, tc: anytype) anyerror!void {
+        const n = self.try_seq;
+        self.try_seq += 1;
+        try self.lowerExpr(tc.expr.*);
+        try self.fmt("    local.set $_try{d}\n", .{n});
+        try self.fmt("    local.get $_try{d}\n", .{n});
+        try self.w("    i32.load ;; Result tag (0 = Ok, non-zero = Error)\n");
+        try self.fmt("    (if (result {s})\n", .{self.cur_result});
+        try self.w("      (then\n");
+        try self.lowerExpr(tc.handler.*);
+        try self.w("      )\n");
+        try self.w("      (else\n");
+        try self.fmt("    local.get $_try{d}\n", .{n});
+        try self.w("    i32.load offset=4 ;; Ok payload\n");
+        try self.w("      )\n");
+        try self.w("    )\n");
+    }
+
+    /// `try expr` (no catch) → unwrap the Ok payload, or `return` the Result
+    /// pointer unchanged to propagate the Error variant up. Leaves the unwrapped
+    /// Ok payload on the stack.
+    fn lowerTryPropagate(self: *Emitter, inner: ast.Expr) anyerror!void {
+        const n = self.try_seq;
+        self.try_seq += 1;
+        try self.lowerExpr(inner);
+        try self.fmt("    local.set $_try{d}\n", .{n});
+        try self.fmt("    local.get $_try{d}\n", .{n});
+        try self.w("    i32.load ;; Result tag (0 = Ok, non-zero = Error)\n");
+        try self.w("    (if\n");
+        try self.w("      (then\n");
+        try self.fmt("    local.get $_try{d}\n", .{n});
+        try self.w("    return ;; propagate Error\n");
+        try self.w("      )\n");
+        try self.w("    )\n");
+        try self.fmt("    local.get $_try{d}\n", .{n});
+        try self.w("    i32.load offset=4 ;; Ok payload\n");
     }
 
     fn lowerBuiltin(self: *Emitter, cc: anytype) anyerror!void {

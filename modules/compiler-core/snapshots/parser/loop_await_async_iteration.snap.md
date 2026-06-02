@@ -46,63 +46,61 @@
                   "line": 2,
                   "col": 5
                 },
-                "kind": {
-                  "iter": {
-                    "identifier": {
-                      "loc": {
-                        "line": 2,
-                        "col": 17
-                      },
-                      "kind": {
-                        "ident": "items"
-                      }
+                "iter": {
+                  "identifier": {
+                    "loc": {
+                      "line": 2,
+                      "col": 17
+                    },
+                    "kind": {
+                      "ident": "items"
                     }
-                  },
-                  "indexRange": null,
-                  "params": [
-                    "item"
-                  ],
-                  "body": [
-                    {
-                      "expr": {
-                        "call": {
-                          "loc": {
-                            "line": 3,
-                            "col": 9
-                          },
-                          "kind": {
-                            "call": {
-                              "receiver": null,
-                              "callee": "handle",
-                              "is_builtin": false,
-                              "args": [
-                                {
-                                  "label": null,
-                                  "value": {
-                                    "identifier": {
-                                      "loc": {
-                                        "line": 3,
-                                        "col": 16
-                                      },
-                                      "kind": {
-                                        "ident": "item"
-                                      }
+                  }
+                },
+                "indexRange": null,
+                "params": [
+                  "item"
+                ],
+                "body": [
+                  {
+                    "expr": {
+                      "call": {
+                        "loc": {
+                          "line": 3,
+                          "col": 9
+                        },
+                        "kind": {
+                          "call": {
+                            "receiver": null,
+                            "callee": "handle",
+                            "is_builtin": false,
+                            "args": [
+                              {
+                                "label": null,
+                                "value": {
+                                  "identifier": {
+                                    "loc": {
+                                      "line": 3,
+                                      "col": 16
+                                    },
+                                    "kind": {
+                                      "ident": "item"
                                     }
-                                  },
-                                  "comments": []
-                                }
-                              ],
-                              "trailing": []
-                            }
+                                  }
+                                },
+                                "comments": []
+                              }
+                            ],
+                            "trailing": []
                           }
                         }
-                      },
-                      "emptyLinesBefore": 0
-                    }
-                  ],
-                  "awaitLoop": true,
-                  "label": null
-                }
+                      }
+                    },
+                    "emptyLinesBefore": 0
+                  }
+                ],
+                "awaitLoop": true,
+                "label": null
               }
             },
             "emptyLinesBefore": 0

@@ -1107,6 +1107,17 @@ fn unwrapResultType(ty: *T.Type) ?*T.Type {
     };
 }
 
+/// Unwrap the Ok type of a `@Result<D, E>` operand for `try`/`catch`.
+/// A still-unresolved type variable is allowed (its `Result`-ness is unknown);
+/// any other concrete non-Result type is a compile-time error.
+fn tryUnwrapOrError(env: *Env, rawTy: *T.Type, loc: ast.Loc) InferError!*T.Type {
+    if (unwrapResultType(rawTy)) |ty| return ty;
+    const d = rawTy.deref();
+    if (d.* == .typeVar) return rawTy;
+    env.lastError = TypeError.tryOnNonResult(d).withLoc(loc);
+    return InferError.TypeError;
+}
+
 /// `@Future<T>` -> `T`. Returns null when `ty` is not a `Future`.
 fn unwrapFutureType(ty: *T.Type) ?*T.Type {
     const t = ty.deref();
@@ -1637,7 +1648,7 @@ fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)),
         .try_ => |e| {
             const valPtr: ?*TypedExpr = if (e) |ev| try makeTypedPtr(env, try inferExprTyped(env, ev.*)) else null;
             const rawTy = if (valPtr) |vp| vp.getType() else try env.freshVar();
-            const ty = unwrapResultType(rawTy) orelse rawTy;
+            const ty = try tryUnwrapOrError(env, rawTy, loc);
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = ty, .kind = .{ .try_ = valPtr } } };
         },
         .@"break" => |e| {
@@ -1742,7 +1753,7 @@ fn inferBranchExpr(env: *Env, b: ast.MakeExpr(.untyped, ast.BranchExprOf(.untype
             const handlerTyped = try inferExprTyped(env, tc.handler.*);
             const handlerPtr = try makeTypedPtr(env, handlerTyped);
             const rawTy = exprTyped.getType();
-            const resultTy = unwrapResultType(rawTy) orelse rawTy;
+            const resultTy = try tryUnwrapOrError(env, rawTy, loc);
             const handlerTy = handlerTyped.getType().deref();
             const effectiveTy = switch (handlerTy.*) {
                 .func => |f| f.ret,
@@ -2157,8 +2168,8 @@ fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc
     env.throwContext = .unchecked;
     defer env.throwContext = savedThrowCtx;
 
-    // It also gets its own async/label scope: it does not inherit the enclosing
-    // `*fn`'s `await`/`yield`/label context.
+    // A nested function gets its own async/label scope: it does not inherit the
+    // enclosing `*fn`'s `await`/`yield`/label context.
     const prevStarFn = env.starFn;
     const prevLabelsLen = env.labelStack.items.len;
     defer {
@@ -2169,7 +2180,8 @@ fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc
 
     const fk = func.kind;
     // An anonymous `*fn(...)` has no declared return type, so we permit both
-    // `await` and `yield` (item type unknown ⇒ no unification).
+    // `await` and `yield` (item type unknown ⇒ no unification). Lambdas and plain
+    // `fn` expressions clear the async context.
     env.starFn = if (fk.syntax == .fnExpr and fk.isStarFn)
         .{ .allowsAwait = true, .iterItem = null }
     else
