@@ -54,28 +54,26 @@
                                                   "line": 2,
                                                   "col": 35
                                                 },
-                                                "kind": {
-                                                  "op": "mul",
-                                                  "lhs": {
-                                                    "identifier": {
-                                                      "loc": {
-                                                        "line": 2,
-                                                        "col": 29
-                                                      },
-                                                      "kind": {
-                                                        "ident": "count"
-                                                      }
+                                                "op": "mul",
+                                                "lhs": {
+                                                  "identifier": {
+                                                    "loc": {
+                                                      "line": 2,
+                                                      "col": 29
+                                                    },
+                                                    "kind": {
+                                                      "ident": "count"
                                                     }
-                                                  },
-                                                  "rhs": {
-                                                    "literal": {
-                                                      "loc": {
-                                                        "line": 2,
-                                                        "col": 37
-                                                      },
-                                                      "kind": {
-                                                        "numberLit": "2"
-                                                      }
+                                                  }
+                                                },
+                                                "rhs": {
+                                                  "literal": {
+                                                    "loc": {
+                                                      "line": 2,
+                                                      "col": 37
+                                                    },
+                                                    "kind": {
+                                                      "numberLit": "2"
                                                     }
                                                   }
                                                 }

@@ -164,12 +164,12 @@ fn validateComptimeExpr(expr: ast.Expr) ?ComptimeError {
             .numberLit, .stringLit => return null,
             else => return ComptimeError{ .ident = @tagName(l.kind), .loc = l.loc },
         },
-        .binaryOp => |b| switch (b.kind.op) {
+        .binaryOp => |b| switch (b.op) {
             .add, .sub, .mul, .div, .mod, .lt, .gt, .lte, .gte, .eq, .ne => {
-                if (validateComptimeExpr(b.kind.lhs.*)) |err| return err;
-                return validateComptimeExpr(b.kind.rhs.*);
+                if (validateComptimeExpr(b.lhs.*)) |err| return err;
+                return validateComptimeExpr(b.rhs.*);
             },
-            else => return ComptimeError{ .ident = @tagName(b.kind.op), .loc = b.loc },
+            else => return ComptimeError{ .ident = @tagName(b.op), .loc = b.loc },
         },
         .call => |c| switch (c.kind) {
             .pipeline => |p| {

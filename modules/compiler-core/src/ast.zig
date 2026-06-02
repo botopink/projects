@@ -114,7 +114,7 @@ pub fn ExprOf(comptime phase: Phase) type {
         unaryOp: UnaryOpExprOf(phase),
         jump: MakeExpr(phase, JumpExprOf(phase)),
         branch: MakeExpr(phase, BranchExprOf(phase)),
-        loop: MakeExpr(phase, LoopExprOf(phase)),
+        loop: LoopExprOf(phase),
         binding: BindingExprOf(phase),
         useHook: UseHookExprOf(phase),
         call: CallExprOf(phase),
@@ -264,9 +264,13 @@ pub fn IdentifierExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
-/// Binary operations: all binary operators
+/// Binary operations: all binary operators.
+/// Flattened: `op`/`lhs`/`rhs` live directly on the node (no `.kind` indirection).
 pub fn BinOpExprOf(comptime phase: Phase) type {
-    const Kind = struct {
+    return struct {
+        loc: Loc,
+        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
+            if (phase == .typed) undefined else {},
         /// Binary operator type
         op: enum {
             lt, // `<`
@@ -291,13 +295,15 @@ pub fn BinOpExprOf(comptime phase: Phase) type {
             destroyExpr(allocator, this.rhs);
         }
     };
-
-    return MakeExpr(phase, Kind);
 }
 
-/// Unary operations: unary operators
+/// Unary operations: unary operators.
+/// Flattened: `op`/`expr` live directly on the node (no `.kind` indirection).
 pub fn UnaryOpExprOf(comptime phase: Phase) type {
-    const Kind = struct {
+    return struct {
+        loc: Loc,
+        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
+            if (phase == .typed) undefined else {},
         /// Unary operator type
         op: enum {
             neg, // `-` negation
@@ -309,8 +315,6 @@ pub fn UnaryOpExprOf(comptime phase: Phase) type {
             destroyExpr(allocator, this.expr);
         }
     };
-
-    return MakeExpr(phase, Kind);
 }
 
 /// Jump expressions: simple control flow jumps (return, break, continue, throw, yield, try)
@@ -377,9 +381,13 @@ pub fn BranchExprOf(comptime phase: Phase) type {
     };
 }
 
-/// Loop expressions: iteration constructs
+/// Loop expressions: iteration constructs.
+/// Flattened: loop fields live directly on the node (no `.kind` indirection).
 pub fn LoopExprOf(comptime phase: Phase) type {
     return struct {
+        loc: Loc,
+        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
+            if (phase == .typed) undefined else {},
         /// `loop (iter) { params -> body }` or `loop (iter, 0..) { item, i -> body }`
         iter: *ExprOf(phase),
         indexRange: ?*ExprOf(phase),

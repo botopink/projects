@@ -1107,13 +1107,13 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
 
 /// Infer type for binary operation expressions
 fn inferBinaryOpExpr(env: *Env, binop: ast.BinOpExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    const lhsTyped = try inferExprTyped(env, binop.kind.lhs.*);
-    const rhsTyped = try inferExprTyped(env, binop.kind.rhs.*);
+    const lhsTyped = try inferExprTyped(env, binop.lhs.*);
+    const rhsTyped = try inferExprTyped(env, binop.rhs.*);
     const lhsPtr = try makeTypedPtr(env, lhsTyped);
     const rhsPtr = try makeTypedPtr(env, rhsTyped);
 
     // Determine result type based on operator
-    const resultType: *T.Type = switch (binop.kind.op) {
+    const resultType: *T.Type = switch (binop.op) {
         .lt, .gt, .lte, .gte, .eq, .ne => try env.namedType("bool"),
         .@"and", .@"or" => blk: {
             try unifyAt(env, lhsTyped.getType(), try env.namedType("bool"), loc);
@@ -1140,23 +1140,25 @@ fn inferBinaryOpExpr(env: *Env, binop: ast.BinOpExprOf(.untyped), loc: ast.Loc) 
             break :blk lhsTy;
         },
     };
-    return TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{
-        .op = binop.kind.op,
+    return TypedExpr{ .binaryOp = .{
+        .loc = loc,
+        .type_ = resultType,
+        .op = binop.op,
         .lhs = lhsPtr,
         .rhs = rhsPtr,
-    } } };
+    } };
 }
 
 /// Infer type for unary operation expressions
 fn inferUnaryOpExpr(env: *Env, unaryop: ast.UnaryOpExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    const operandTyped = try inferExprTyped(env, unaryop.kind.expr.*);
+    const operandTyped = try inferExprTyped(env, unaryop.expr.*);
     const operandPtr = try makeTypedPtr(env, operandTyped);
-    return switch (unaryop.kind.op) {
+    return switch (unaryop.op) {
         .not => blk: {
             try unifyAt(env, operandTyped.getType(), try env.namedType("bool"), loc);
-            break :blk TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = try env.namedType("bool"), .kind = .{ .op = .not, .expr = operandPtr } } };
+            break :blk TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = try env.namedType("bool"), .op = .not, .expr = operandPtr } };
         },
-        .neg => TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = operandTyped.getType(), .kind = .{ .op = .neg, .expr = operandPtr } } },
+        .neg => TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = operandTyped.getType(), .op = .neg, .expr = operandPtr } },
     };
 }
 
@@ -1256,24 +1258,26 @@ fn inferBranchExpr(env: *Env, b: ast.MakeExpr(.untyped, ast.BranchExprOf(.untype
 }
 
 /// Infer type for loop expressions
-fn inferLoopExpr(env: *Env, lp: ast.MakeExpr(.untyped, ast.LoopExprOf(.untyped)), loc: ast.Loc) InferError!TypedExpr {
-    const iterTyped = try inferExprTyped(env, lp.kind.iter.*);
+fn inferLoopExpr(env: *Env, lp: ast.LoopExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
+    const iterTyped = try inferExprTyped(env, lp.iter.*);
     const iterPtr = try makeTypedPtr(env, iterTyped);
-    const indexRangePtr = if (lp.kind.indexRange) |ir| try makeTypedPtr(env, try inferExprTyped(env, ir.*)) else null;
+    const indexRangePtr = if (lp.indexRange) |ir| try makeTypedPtr(env, try inferExprTyped(env, ir.*)) else null;
 
-    for (lp.kind.params) |p| {
+    for (lp.params) |p| {
         try env.bind(p, try env.freshVar());
     }
 
-    const typedBody = try inferStmtsTyped(env, lp.kind.body);
+    const typedBody = try inferStmtsTyped(env, lp.body);
     const loopArrayArgs = try env.arena.alloc(*T.Type, 1);
     loopArrayArgs[0] = try env.freshVar();
-    return TypedExpr{ .loop = .{ .loc = loc, .type_ = try env.namedTypeArgs("array", loopArrayArgs), .kind = .{
+    return TypedExpr{ .loop = .{
+        .loc = loc,
+        .type_ = try env.namedTypeArgs("array", loopArrayArgs),
         .iter = iterPtr,
         .indexRange = indexRangePtr,
-        .params = lp.kind.params,
+        .params = lp.params,
         .body = typedBody,
-    } } };
+    } };
 }
 
 /// Infer type for binding expressions (variable declarations and assignments)

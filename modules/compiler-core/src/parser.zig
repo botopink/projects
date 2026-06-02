@@ -22,7 +22,7 @@ pub const Expr = ast.Expr;
 pub const CollectionExpr = ast.CollectionExpr;
 pub const JumpExpr = ast.JumpExpr;
 pub const BranchExpr = ast.BranchExpr;
-pub const LoopExpr = ast.MakeExpr(.untyped, ast.LoopExprOf(.untyped));
+pub const LoopExpr = ast.LoopExprOf(.untyped);
 pub const FunctionExpr = ast.FunctionExpr;
 pub const Loc = ast.Loc;
 pub const RecordDecl = ast.RecordDecl;
@@ -526,13 +526,13 @@ pub const Parser = struct {
     }
 
     /// The binary-operator enum carried by `binaryOp` expressions.
-    const BinOp = @FieldType(@FieldType(ast.BinOpExpr, "kind"), "op");
+    const BinOp = @FieldType(ast.BinOpExpr, "op");
 
     /// Builds a `binaryOp` expression, boxing both operands.
     fn makeBinOp(this: *This, alloc: std.mem.Allocator, op: BinOp, opTok: Token, lhs: Expr, rhs: Expr) ParseError!Expr {
         const lhsPtr = try this.boxExpr(alloc, lhs);
         const rhsPtr = try this.boxExpr(alloc, rhs);
-        return Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = op, .lhs = lhsPtr, .rhs = rhsPtr } } };
+        return Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .op = op, .lhs = lhsPtr, .rhs = rhsPtr } };
     }
 
     /// Builds a `call` expression node (no boxing needed — `args`/`trailing` are already slices).
@@ -2826,7 +2826,7 @@ pub const Parser = struct {
             const opTok = this.advance();
             const operand = try this.parsePrimary(alloc);
             const operandPtr = try this.boxExpr(alloc, operand);
-            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .neg, .expr = operandPtr } } };
+            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .op = .neg, .expr = operandPtr } };
         }
 
         // { params? -> body } ---- lambda expression (standalone or trailing)
@@ -2900,7 +2900,7 @@ pub const Parser = struct {
             const opTok = this.advance();
             const operand = try this.parsePrimary(alloc);
             const operandPtr = try this.boxExpr(alloc, operand);
-            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .not, .expr = operandPtr } } };
+            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .op = .not, .expr = operandPtr } };
         }
 
         // @name(args...) ---- built-in function call (same as regular calls, just with @ prefix)
@@ -3522,12 +3522,10 @@ pub const Parser = struct {
 
         return .{
             .loc = locFromToken(loopTok),
-            .kind = .{
-                .iter = iterPtr,
-                .indexRange = indexPtr,
-                .params = try params.toOwnedSlice(alloc),
-                .body = body,
-            },
+            .iter = iterPtr,
+            .indexRange = indexPtr,
+            .params = try params.toOwnedSlice(alloc),
+            .body = body,
         };
     }
 

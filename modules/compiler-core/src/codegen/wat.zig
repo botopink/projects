@@ -614,11 +614,11 @@ const Emitter = struct {
                 .dotIdent => try self.w("    i32.const 0 ;; enum variant\n"),
                 .identAccess => try self.w("    i32.const 0 ;; field access\n"),
             },
-            .binaryOp => |bin| try self.lowerBinOp(bin.kind.op, bin.kind.lhs.*, bin.kind.rhs.*),
-            .unaryOp => |un| switch (un.kind.op) {
-                .neg => try self.lowerNeg(un.kind.expr.*),
+            .binaryOp => |bin| try self.lowerBinOp(bin.op, bin.lhs.*, bin.rhs.*),
+            .unaryOp => |un| switch (un.op) {
+                .neg => try self.lowerNeg(un.expr.*),
                 .not => {
-                    try self.lowerExpr(un.kind.expr.*);
+                    try self.lowerExpr(un.expr.*);
                     try self.w("    i32.eqz\n");
                 },
             },
@@ -824,10 +824,10 @@ const Emitter = struct {
     }
 
     fn lowerLoop(self: *Emitter, lp: anytype) anyerror!void {
-        switch (lp.kind.iter.*) {
+        switch (lp.iter.*) {
             .collection => |col| switch (col.kind) {
                 .range => |r| {
-                    try self.lowerRangeLoop(lp.kind.params, lp.kind.body, r);
+                    try self.lowerRangeLoop(lp.params, lp.body, r);
                     return;
                 },
                 else => {},
@@ -951,11 +951,11 @@ fn exprNumType(e: ast.Expr) []const u8 {
             .numberLit => |n| numLitType(n),
             else => "i32",
         },
-        .unaryOp => |un| switch (un.kind.op) {
-            .neg => exprNumType(un.kind.expr.*),
+        .unaryOp => |un| switch (un.op) {
+            .neg => exprNumType(un.expr.*),
             else => "i32",
         },
-        .binaryOp => |bin| exprNumType(bin.kind.lhs.*),
+        .binaryOp => |bin| exprNumType(bin.lhs.*),
         .collection => |col| switch (col.kind) {
             .grouped => |inner| exprNumType(inner.*),
             else => "i32",

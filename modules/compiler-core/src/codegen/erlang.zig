@@ -446,31 +446,31 @@ const Emitter = struct {
                 .dotIdent => |n| try this.fmt("{s}", .{n}),
             },
 
-            .binaryOp => |bin| switch (bin.kind.op) {
-                .add => try this.emitBinaryOp("+", bin.kind.lhs, bin.kind.rhs),
-                .sub => try this.emitBinaryOp("-", bin.kind.lhs, bin.kind.rhs),
-                .mul => try this.emitBinaryOp("*", bin.kind.lhs, bin.kind.rhs),
-                .div => try this.emitBinaryOp("div", bin.kind.lhs, bin.kind.rhs),
-                .mod => try this.emitBinaryOp("rem", bin.kind.lhs, bin.kind.rhs),
-                .lt => try this.emitBinaryOp("<", bin.kind.lhs, bin.kind.rhs),
-                .gt => try this.emitBinaryOp(">", bin.kind.lhs, bin.kind.rhs),
-                .lte => try this.emitBinaryOp("=<", bin.kind.lhs, bin.kind.rhs),
-                .gte => try this.emitBinaryOp(">=", bin.kind.lhs, bin.kind.rhs),
-                .eq => try this.emitBinaryOp("=:=", bin.kind.lhs, bin.kind.rhs),
-                .ne => try this.emitBinaryOp("=/=", bin.kind.lhs, bin.kind.rhs),
-                .@"and" => try this.emitBinaryOp("and", bin.kind.lhs, bin.kind.rhs),
-                .@"or" => try this.emitBinaryOp("or", bin.kind.lhs, bin.kind.rhs),
+            .binaryOp => |bin| switch (bin.op) {
+                .add => try this.emitBinaryOp("+", bin.lhs, bin.rhs),
+                .sub => try this.emitBinaryOp("-", bin.lhs, bin.rhs),
+                .mul => try this.emitBinaryOp("*", bin.lhs, bin.rhs),
+                .div => try this.emitBinaryOp("div", bin.lhs, bin.rhs),
+                .mod => try this.emitBinaryOp("rem", bin.lhs, bin.rhs),
+                .lt => try this.emitBinaryOp("<", bin.lhs, bin.rhs),
+                .gt => try this.emitBinaryOp(">", bin.lhs, bin.rhs),
+                .lte => try this.emitBinaryOp("=<", bin.lhs, bin.rhs),
+                .gte => try this.emitBinaryOp(">=", bin.lhs, bin.rhs),
+                .eq => try this.emitBinaryOp("=:=", bin.lhs, bin.rhs),
+                .ne => try this.emitBinaryOp("=/=", bin.lhs, bin.rhs),
+                .@"and" => try this.emitBinaryOp("and", bin.lhs, bin.rhs),
+                .@"or" => try this.emitBinaryOp("or", bin.lhs, bin.rhs),
             },
 
-            .unaryOp => |un| switch (un.kind.op) {
+            .unaryOp => |un| switch (un.op) {
                 .not => {
                     try this.w("(not ");
-                    try this.emitExpr(un.kind.expr.*);
+                    try this.emitExpr(un.expr.*);
                     try this.w(")");
                 },
                 .neg => {
                     try this.w("(-");
-                    try this.emitExpr(un.kind.expr.*);
+                    try this.emitExpr(un.expr.*);
                     try this.w(")");
                 },
             },
@@ -810,7 +810,7 @@ const Emitter = struct {
 
             .loop => |lp| {
                 const has_yield = blk: {
-                    for (lp.kind.body) |stmt| {
+                    for (lp.body) |stmt| {
                         if (switch (stmt.expr) {
                             .jump => |j| j.kind == .yield,
                             else => false,
@@ -820,7 +820,7 @@ const Emitter = struct {
                 };
                 const fun_kw = if (has_yield) "lists:map" else "lists:foreach";
                 try this.fmt("{s}(fun(", .{fun_kw});
-                for (lp.kind.params, 0..) |p, i| {
+                for (lp.params, 0..) |p, i| {
                     if (i > 0) try this.w(", ");
                     const vname = try erlangVar(this.alloc, p);
                     defer this.alloc.free(vname);
@@ -830,12 +830,12 @@ const Emitter = struct {
                 const fun_body_indent = this.indent + 1;
                 const saved2 = this.indent;
                 this.indent = fun_body_indent;
-                try this.emitBody(lp.kind.body);
+                try this.emitBody(lp.body);
                 this.indent = saved2;
                 try this.w("\n");
                 try this.writeIndent();
                 try this.w("end, ");
-                try this.emitExpr(lp.kind.iter.*);
+                try this.emitExpr(lp.iter.*);
                 try this.w(")");
             },
 

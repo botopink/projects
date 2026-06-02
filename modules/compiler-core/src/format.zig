@@ -377,8 +377,8 @@ pub const Formatter = struct {
                 }),
             },
             .binaryOp => |bin| this.fmtBinop(
-                bin.kind.lhs.*,
-                switch (bin.kind.op) {
+                bin.lhs.*,
+                switch (bin.op) {
                     .add => " + ",
                     .sub => " - ",
                     .mul => " * ",
@@ -393,11 +393,11 @@ pub const Formatter = struct {
                     .@"and" => " && ",
                     .@"or" => " || ",
                 },
-                bin.kind.rhs.*,
+                bin.rhs.*,
             ),
-            .unaryOp => |un| switch (un.kind.op) {
-                .not => this.concat(try this.text("!"), try this.fmtExpr(un.kind.expr.*)),
-                .neg => this.concat(try this.text("-"), try this.fmtExpr(un.kind.expr.*)),
+            .unaryOp => |un| switch (un.op) {
+                .not => this.concat(try this.text("!"), try this.fmtExpr(un.expr.*)),
+                .neg => this.concat(try this.text("-"), try this.fmtExpr(un.expr.*)),
             },
             .jump => |j| switch (j.kind) {
                 .@"return" => |e| if (e) |ep| this.concat(try this.text("return "), try this.fmtExpr(ep.*)) else this.text("return"),
@@ -485,18 +485,18 @@ pub const Formatter = struct {
             },
             .loop => |lp| blk: {
                 var doc: *const Doc = try this.text("loop (");
-                doc = try this.concat(doc, try this.fmtExpr(lp.kind.iter.*));
-                if (lp.kind.indexRange) |ir| {
+                doc = try this.concat(doc, try this.fmtExpr(lp.iter.*));
+                if (lp.indexRange) |ir| {
                     doc = try this.concat(doc, try this.text(", "));
                     doc = try this.concat(doc, try this.fmtExpr(ir.*));
                 }
                 doc = try this.concat(doc, try this.text(") {"));
-                for (lp.kind.params, 0..) |p, i| {
+                for (lp.params, 0..) |p, i| {
                     doc = try this.concat(doc, if (i == 0) try this.text(" ") else try this.text(", "));
                     doc = try this.concat(doc, try this.text(p));
                 }
                 doc = try this.concat(doc, try this.text(" ->"));
-                for (lp.kind.body) |stmt| {
+                for (lp.body) |stmt| {
                     doc = try this.concat(doc, try this.surroundBreak("", try this.fmtExpr(stmt.expr), ""));
                 }
                 doc = try this.concat(doc, try this.text("}"));

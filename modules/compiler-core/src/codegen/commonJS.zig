@@ -842,31 +842,31 @@ const Emitter = struct {
                 },
             },
 
-            .binaryOp => |bin| switch (bin.kind.op) {
-                .add => try self.emitBinaryOp("+", bin.kind.lhs, bin.kind.rhs),
-                .sub => try self.emitBinaryOp("-", bin.kind.lhs, bin.kind.rhs),
-                .mul => try self.emitBinaryOp("*", bin.kind.lhs, bin.kind.rhs),
-                .div => try self.emitBinaryOp("/", bin.kind.lhs, bin.kind.rhs),
-                .mod => try self.emitBinaryOp("%", bin.kind.lhs, bin.kind.rhs),
-                .lt => try self.emitBinaryOp("<", bin.kind.lhs, bin.kind.rhs),
-                .gt => try self.emitBinaryOp(">", bin.kind.lhs, bin.kind.rhs),
-                .lte => try self.emitBinaryOp("<=", bin.kind.lhs, bin.kind.rhs),
-                .gte => try self.emitBinaryOp(">=", bin.kind.lhs, bin.kind.rhs),
-                .eq => try self.emitBinaryOp("===", bin.kind.lhs, bin.kind.rhs),
-                .ne => try self.emitBinaryOp("!==", bin.kind.lhs, bin.kind.rhs),
-                .@"and" => try self.emitBinaryOp("&&", bin.kind.lhs, bin.kind.rhs),
-                .@"or" => try self.emitBinaryOp("||", bin.kind.lhs, bin.kind.rhs),
+            .binaryOp => |bin| switch (bin.op) {
+                .add => try self.emitBinaryOp("+", bin.lhs, bin.rhs),
+                .sub => try self.emitBinaryOp("-", bin.lhs, bin.rhs),
+                .mul => try self.emitBinaryOp("*", bin.lhs, bin.rhs),
+                .div => try self.emitBinaryOp("/", bin.lhs, bin.rhs),
+                .mod => try self.emitBinaryOp("%", bin.lhs, bin.rhs),
+                .lt => try self.emitBinaryOp("<", bin.lhs, bin.rhs),
+                .gt => try self.emitBinaryOp(">", bin.lhs, bin.rhs),
+                .lte => try self.emitBinaryOp("<=", bin.lhs, bin.rhs),
+                .gte => try self.emitBinaryOp(">=", bin.lhs, bin.rhs),
+                .eq => try self.emitBinaryOp("===", bin.lhs, bin.rhs),
+                .ne => try self.emitBinaryOp("!==", bin.lhs, bin.rhs),
+                .@"and" => try self.emitBinaryOp("&&", bin.lhs, bin.rhs),
+                .@"or" => try self.emitBinaryOp("||", bin.lhs, bin.rhs),
             },
 
-            .unaryOp => |un| switch (un.kind.op) {
+            .unaryOp => |un| switch (un.op) {
                 .not => {
                     try self.w("(!");
-                    try self.emitExpr(un.kind.expr.*);
+                    try self.emitExpr(un.expr.*);
                     try self.w(")");
                 },
                 .neg => {
                     try self.w("(-");
-                    try self.emitExpr(un.kind.expr.*);
+                    try self.emitExpr(un.expr.*);
                     try self.w(")");
                 },
             },
@@ -982,7 +982,7 @@ const Emitter = struct {
 
             .loop => |lp| {
                 const has_yield = blk: {
-                    for (lp.kind.body) |stmt| {
+                    for (lp.body) |stmt| {
                         if (switch (stmt.expr) {
                             .jump => |j| j.kind == .yield,
                             else => false,
@@ -992,14 +992,14 @@ const Emitter = struct {
                 };
 
                 if (has_yield) {
-                    try self.emitExpr(lp.kind.iter.*);
+                    try self.emitExpr(lp.iter.*);
                     try self.w(".map((");
-                    for (lp.kind.params, 0..) |p, i| {
+                    for (lp.params, 0..) |p, i| {
                         if (i > 0) try self.w(", ");
                         try self.w(p);
                     }
                     try self.w(") => {\n");
-                    for (lp.kind.body) |stmt| {
+                    for (lp.body) |stmt| {
                         const isYield = switch (stmt.expr) {
                             .jump => |j| j.kind == .yield,
                             else => false,
@@ -1020,14 +1020,14 @@ const Emitter = struct {
                     try self.w("})");
                 } else {
                     try self.w("for (const [");
-                    for (lp.kind.params, 0..) |p, i| {
+                    for (lp.params, 0..) |p, i| {
                         if (i > 0) try self.w(", ");
                         try self.w(p);
                     }
                     try self.w("] of Object.entries(");
-                    try self.emitExpr(lp.kind.iter.*);
+                    try self.emitExpr(lp.iter.*);
                     try self.w(")) {\n");
-                    for (lp.kind.body) |stmt| {
+                    for (lp.body) |stmt| {
                         try self.w("    ");
                         try self.emitStmt(stmt);
                         try self.w("\n");
