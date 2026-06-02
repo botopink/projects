@@ -135,6 +135,25 @@ fn expectParseError(
     }
 }
 
+/// Asserts that `src` fails to parse (any parse error), without pinning the
+/// exact rendered diagnostic. Useful for syntax rules whose message text is
+/// not the focus of the test.
+fn expectParseFails(allocator: std.mem.Allocator, src: []const u8) !void {
+    var l = lexerMod.Lexer.init(src);
+    const tokens = l.scanAll(allocator) catch {
+        l.deinit(allocator);
+        return; // a lexical error also counts as "does not parse"
+    };
+    defer l.deinit(allocator);
+
+    var p = parserMod.Parser.initWithSource(tokens, src);
+    if (p.parse(allocator)) |*prog| {
+        var owned = prog.*;
+        owned.deinit(allocator);
+        return error.TestExpectedParseError;
+    } else |_| {}
+}
+
 /// Compares `expected` with `actual` line by line and prints a readable diff
 /// if they diverge.
 fn expectEqualOutput(
@@ -1813,4 +1832,101 @@ test "parser: assert pattern ---- with list and rest" {
         \\    val assert [first, second, ..rest] = items catch [];
         \\}
     );
+}
+
+// ── async / generators / iterators ────────────────────────────────────────────
+
+test "parser: star fn ---- async declaration" {
+    try assertParser(std.testing.allocator, @src(),
+        \\*fn fetch(url: string) -> @Future<Response> {
+        \\    return download(url);
+        \\}
+    );
+}
+
+test "parser: star fn ---- generator declaration" {
+    try assertParser(std.testing.allocator, @src(),
+        \\*fn fib() -> @Iterator<Int> {
+        \\    yield 1;
+        \\}
+    );
+}
+
+test "parser: star fn ---- async generator declaration" {
+    try assertParser(std.testing.allocator, @src(),
+        \\pub *fn stream() -> @AsyncIterator<Int, Error> {
+        \\    yield 1;
+        \\}
+    );
+}
+
+test "parser: star fn ---- label after return type" {
+    try assertParser(std.testing.allocator, @src(),
+        \\*fn gen() -> @Iterator<Int> :gen {
+        \\    yield :gen 1;
+        \\}
+    );
+}
+
+test "parser: star fn ---- anonymous expression" {
+    try assertParser(std.testing.allocator, @src(),
+        \\val producer = *fn(n) {
+        \\    yield n;
+        \\};
+    );
+}
+
+test "parser: await ---- prefix expression" {
+    try assertParser(std.testing.allocator, @src(),
+        \\*fn run() -> @Future<Int> {
+        \\    val x = await fetch(url);
+        \\    return x;
+        \\}
+    );
+}
+
+test "parser: await ---- chained with try" {
+    try assertParser(std.testing.allocator, @src(),
+        \\*fn run() -> @Future<Int> {
+        \\    val x = try await fetch(url);
+        \\    return x;
+        \\}
+    );
+}
+
+test "parser: loop await ---- async iteration" {
+    try assertParser(std.testing.allocator, @src(),
+        \\*fn consume(items: Int[]) -> @Future<Int> {
+        \\    loop await (items) { item ->
+        \\        handle(item);
+        \\    }
+        \\}
+    );
+}
+
+test "parser: loop ---- with label" {
+    try assertParser(std.testing.allocator, @src(),
+        \\fn collect(items: Int[]) {
+        \\    loop :acc (items) { item ->
+        \\        yield :acc item;
+        \\    }
+        \\}
+    );
+}
+
+test "parser: yield ---- without label" {
+    try assertParser(std.testing.allocator, @src(),
+        \\fn collect(items: Int[]) {
+        \\    loop (items) { item ->
+        \\        yield item;
+        \\    }
+        \\}
+    );
+}
+
+// ── async error cases ─────────────────────────────────────────────────────────
+
+test "parser: star fn ---- error when body omitted" {
+    // `*fn` is sugar for an async/generator function and must have a body.
+    try expectParseFails(std.testing.allocator, "*fn fetch() -> @Future<Int>;");
 }

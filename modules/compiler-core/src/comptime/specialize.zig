@@ -214,6 +214,7 @@ fn transformBody(
                 .@"return" => try out.append(arena, stmt),
                 .throw_ => try out.append(arena, stmt),
                 .try_ => try out.append(arena, stmt),
+                .await_ => try out.append(arena, stmt),
                 .@"break" => try out.append(arena, stmt),
                 .yield => try out.append(arena, stmt),
                 .@"continue" => try out.append(arena, stmt),
@@ -458,8 +459,9 @@ fn identInExpr(expr: anytype, name: []const u8) bool {
             .@"return" => |r| if (r) |rp| identInExpr(rp.*, name) else false,
             .throw_ => |t| if (t) |tp| identInExpr(tp.*, name) else false,
             .try_ => |t| if (t) |tp| identInExpr(tp.*, name) else false,
+            .await_ => |ae| identInExpr(ae.*, name),
             .@"break" => |b| if (b) |bp| identInExpr(bp.*, name) else false,
-            .yield => |y| if (y) |yp| identInExpr(yp.*, name) else false,
+            .yield => |y| if (y.value) |yp| identInExpr(yp.*, name) else false,
             .@"continue" => false,
         },
         .branch => |br| switch (br.kind) {

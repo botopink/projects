@@ -206,6 +206,7 @@ fn renderTypeError(
         .unknownInterface => "unknown interface",
         .ambiguousMethod => "ambiguous method",
         .typeparamConstraint => "typeparam constraint not satisfied",
+        .custom => |c| c.message,
     };
     try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "error: {s}\n", .{title}));
 
@@ -351,6 +352,11 @@ fn renderTypeError(
                 "\n  '{s}' has type '{s}', which does not satisfy 'typeparam {s}'\n",
                 .{ c.paramName, gotName, list.items },
             ));
+        },
+        .custom => |c| {
+            if (c.hint) |h| {
+                try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "\n  hint: {s}\n", .{h}));
+            }
         },
     }
 
@@ -2337,6 +2343,76 @@ test "context error: struct without @Context impl used with use" {
         \\fn comp() -> @Context<Element, i32> {
         \\    use p = make();
         \\    0;
+        \\}
+    );
+}
+
+// ── async / generators (*fn, await, yield, loop await) ────────────────────────
+
+test "infer: star fn ---- async returns @Future is valid" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\*fn fetch(x: i32) -> @Future<i32> {
+        \\    return x;
+        \\}
+    );
+}
+
+test "infer: star fn ---- generator returns @Iterator is valid" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\*fn gen() -> @Iterator<i32> {
+        \\    yield 1;
+        \\}
+    );
+}
+
+test "infer error: star fn returning a non-async type" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\*fn bad() -> string {
+        \\    return "x";
+        \\}
+    );
+}
+
+test "infer error: normal fn returning @Future must be star fn" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn bad() -> @Future<i32> {
+        \\    return 0;
+        \\}
+    );
+}
+
+test "infer error: await outside a star fn" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn notAsync() -> i32 {
+        \\    val x = await ready();
+        \\    return x;
+        \\}
+    );
+}
+
+test "infer error: await on a non-@Future value" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\*fn bad() -> @Future<i32> {
+        \\    val x = await 5;
+        \\    return x;
+        \\}
+    );
+}
+
+test "infer error: yield targets an unknown label" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\*fn gen() -> @Iterator<i32> {
+        \\    yield :nope 1;
+        \\}
+    );
+}
+
+test "infer error: loop await on a non-async-iterable" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\*fn bad() -> @Future<i32> {
+        \\    loop await (5) { x ->
+        \\        ping(x);
+        \\    }
         \\}
     );
 }
