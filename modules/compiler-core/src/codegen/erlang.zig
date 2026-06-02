@@ -892,8 +892,9 @@ const Emitter = struct {
                     try this.w(")");
                 },
                 .try_ => |t| if (t) |val| try this.emitExpr(val.*),
+                .await_ => |av| try this.emitExpr(av.*),
                 .@"break" => |b| if (b) |bp| try this.emitExpr(bp.*),
-                .yield => |y| if (y) |val| try this.emitExpr(val.*),
+                .yield => |y| if (y.value) |val| try this.emitExpr(val.*),
                 .@"continue" => try this.w("%% continue"),
             },
 

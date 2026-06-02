@@ -406,6 +406,21 @@ const Emitter = struct {
                     try self.w(" } | { tag: \"Error\"; error: ");
                     try self.emitTypeRef(b.args[1]);
                     try self.w(" }");
+                } else if (std.mem.eql(u8, b.name, "Future") and b.args.len >= 1) {
+                    // `@Future<T>` → `Promise<T>`
+                    try self.w("Promise<");
+                    try self.emitTypeRef(b.args[0]);
+                    try self.w(">");
+                } else if (std.mem.eql(u8, b.name, "Iterator") and b.args.len >= 1) {
+                    // `@Iterator<T>` → `IterableIterator<T>`
+                    try self.w("IterableIterator<");
+                    try self.emitTypeRef(b.args[0]);
+                    try self.w(">");
+                } else if (std.mem.eql(u8, b.name, "AsyncIterator") and b.args.len >= 1) {
+                    // `@AsyncIterator<T, E>` → `AsyncIterableIterator<T>` (TS tracks only the item type)
+                    try self.w("AsyncIterableIterator<");
+                    try self.emitTypeRef(b.args[0]);
+                    try self.w(">");
                 } else {
                     try self.w(b.name);
                     try self.w("<");

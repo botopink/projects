@@ -403,11 +403,22 @@ pub const Formatter = struct {
                 .@"return" => |e| if (e) |ep| this.concat(try this.text("return "), try this.fmtExpr(ep.*)) else this.text("return"),
                 .throw_ => |e| if (e) |ep| this.concat(try this.text("throw "), try this.fmtExpr(ep.*)) else this.text("throw"),
                 .try_ => |e| if (e) |ep| this.concat(try this.text("try "), try this.fmtExpr(ep.*)) else this.text("try"),
+                .await_ => |e| this.concat(try this.text("await "), try this.fmtExpr(e.*)),
                 .@"break" => |e| if (e) |ep|
                     this.concat(try this.text("break "), try this.fmtExpr(ep.*))
                 else
                     this.text("break"),
-                .yield => |e| if (e) |ep| this.concat(try this.text("yield "), try this.fmtExpr(ep.*)) else this.text("yield"),
+                .yield => |y| blk: {
+                    const kw = if (y.label) |lbl|
+                        try this.text(try std.fmt.allocPrint(this.arena, "yield :{s}", .{lbl}))
+                    else
+                        try this.text("yield");
+                    if (y.value) |ep| {
+                        const head = try this.concat(kw, try this.text(" "));
+                        break :blk this.concat(head, try this.fmtExpr(ep.*));
+                    }
+                    break :blk kw;
+                },
                 .@"continue" => this.text("continue"),
             },
             .branch => |br| switch (br.kind) {
@@ -484,7 +495,14 @@ pub const Formatter = struct {
                 },
             },
             .loop => |lp| blk: {
-                var doc: *const Doc = try this.text("loop (");
+                // `loop [await] [:label] (...)`
+                var head: []const u8 = "loop ";
+                if (lp.awaitLoop) head = "loop await ";
+                var doc: *const Doc = try this.text(head);
+                if (lp.label) |lbl| {
+                    doc = try this.concat(doc, try this.text(try std.fmt.allocPrint(this.arena, ":{s} ", .{lbl})));
+                }
+                doc = try this.concat(doc, try this.text("("));
                 doc = try this.concat(doc, try this.fmtExpr(lp.iter.*));
                 if (lp.indexRange) |ir| {
                     doc = try this.concat(doc, try this.text(", "));
@@ -550,7 +568,7 @@ pub const Formatter = struct {
             },
             .function => |func| switch (func.kind.syntax) {
                 .lambda => try this.fmtLambda(func.kind.params, func.kind.body),
-                .fnExpr => try this.fmtFnExpr(func.kind.params, func.kind.body),
+                .fnExpr => try this.fmtFnExpr(func.kind.params, func.kind.body, func.kind.isStarFn),
             },
             .call => |c| switch (c.kind) {
                 .call => |cc| try this.fmtCall(cc),
@@ -1052,7 +1070,8 @@ pub const Formatter = struct {
         }));
     }
 
-    fn fmtFnExpr(this: *Formatter, params: []const []const u8, body: []ast.Stmt) !*const Doc {
+    fn fmtFnExpr(this: *Formatter, params: []const []const u8, body: []ast.Stmt, isStarFn: bool) !*const Doc {
+        const fnKw: []const u8 = if (isStarFn) "*fn" else "fn";
         var items: std.ArrayList(*const Doc) = .empty;
         defer items.deinit(this.arena);
         for (body, 0..) |s, i| {
@@ -1073,18 +1092,18 @@ pub const Formatter = struct {
 
         if (params.len == 0) {
             return this.concatAll(&.{
-                try this.text("fn() "),
+                try this.text(try std.fmt.allocPrint(this.arena, "{s}() ", .{fnKw})),
                 try this.surroundBreak("{", inner, "}"),
             });
         }
 
-        // `fn(a, b) { ... }`
+        // `fn(a, b) { ... }` / `*fn(a, b) { ... }`
         var paramDocs = try this.arena.alloc(*const Doc, params.len);
         for (params, 0..) |p, i| paramDocs[i] = try this.text(p);
         const paramList = try this.join(paramDocs, try this.text(", "));
 
         return this.forceBreak(try this.concatAll(&.{
-            try this.text("fn("),
+            try this.text(try std.fmt.allocPrint(this.arena, "{s}(", .{fnKw})),
             paramList,
             try this.text(") "),
             try this.surroundBreak("{", inner, "}"),
@@ -1847,18 +1866,25 @@ pub const Formatter = struct {
     }
 
     fn fmtFnDecl(this: *Formatter, f: ast.FnDecl) !*const Doc {
-        const pubPrefix: *const Doc = if (f.isPub)
-            try this.text("pub fn ")
+        // `[pub] [*]fn ` — the `*` marks an async/generator function.
+        const star: []const u8 = if (f.isStarFn) "*" else "";
+        const pubKw: []const u8 = if (f.isPub) "pub " else "";
+        const prefix = try this.text(try std.fmt.allocPrint(this.arena, "{s}{s}fn ", .{ pubKw, star }));
+
+        // Optional generator label after the return type: ` :gen`.
+        const labelDoc: *const Doc = if (f.label) |lbl|
+            try this.text(try std.fmt.allocPrint(this.arena, " :{s}", .{lbl}))
         else
-            try this.text("fn ");
+            this.nil();
 
         return this.concatAll(&.{
             try this.fmtAnnotations(f.annotations),
-            pubPrefix,
+            prefix,
             try this.text(f.name),
             try this.fmtGenericParams(f.genericParams),
             try this.fmtParams(f.params),
             try this.fmtReturnTypeRef(f.returnType),
+            labelDoc,
             try this.text(" "),
             try this.fmtBody(f.body),
         });

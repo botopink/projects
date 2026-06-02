@@ -807,8 +807,8 @@ const Emitter = struct {
                     }
                     if (self.in_loop_lambda) try self.emitReturn();
                 },
-                .yield => |val| {
-                    if (val) |v| {
+                .yield => |y| {
+                    if (y.value) |v| {
                         try self.lowerExprIntoX0(v.*);
                     }
                     try self.emitReturn();

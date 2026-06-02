@@ -440,7 +440,9 @@ const Emitter = struct {
         return switch (e) {
             .jump => |j| switch (j.kind) {
                 .try_ => |t| 1 + (if (t) |i| countTrysExpr(i.*) else 0),
-                .@"return", .throw_, .@"break", .yield => |v| if (v) |i| countTrysExpr(i.*) else 0,
+                .@"return", .throw_, .@"break" => |v| if (v) |i| countTrysExpr(i.*) else 0,
+                .yield => |y| if (y.value) |i| countTrysExpr(i.*) else 0,
+                .await_ => |a| countTrysExpr(a.*),
                 else => 0,
             },
             .branch => |b| switch (b.kind) {
@@ -557,11 +559,12 @@ const Emitter = struct {
                 .try_ => |val| {
                     if (val) |v| try self.lowerTryPropagate(v.*);
                 },
+                .await_ => |av| try self.lowerExpr(av.*),
                 .@"break" => |val| {
                     if (val) |v| try self.lowerExpr(v.*);
                 },
-                .yield => |val| {
-                    if (val) |v| try self.lowerExpr(v.*);
+                .yield => |y| {
+                    if (y.value) |v| try self.lowerExpr(v.*);
                 },
                 .@"continue" => {},
             },
@@ -706,11 +709,12 @@ const Emitter = struct {
                 .try_ => |val| {
                     if (val) |v| try self.lowerTryPropagate(v.*);
                 },
+                .await_ => |av| try self.lowerExpr(av.*),
                 .@"break" => |val| {
                     if (val) |v| try self.lowerExpr(v.*);
                 },
-                .yield => |val| {
-                    if (val) |v| try self.lowerExpr(v.*);
+                .yield => |y| {
+                    if (y.value) |v| try self.lowerExpr(v.*);
                 },
                 else => try self.fmt("    ;; unsupported jump: {s}\n", .{@tagName(j.kind)}),
             },

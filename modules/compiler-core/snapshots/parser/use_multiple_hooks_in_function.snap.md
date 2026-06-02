@@ -4,6 +4,8 @@
     {
       "fn": {
         "isPub": false,
+        "isStarFn": false,
+        "label": null,
         "name": "Dashboard",
         "docComment": null,
         "comment": null,
@@ -144,7 +146,8 @@
                                           },
                                           "emptyLinesBefore": 0
                                         }
-                                      ]
+                                      ],
+                                      "isStarFn": false
                                     }
                                   }
                                 },
@@ -216,7 +219,8 @@
                                           },
                                           "emptyLinesBefore": 0
                                         }
-                                      ]
+                                      ],
+                                      "isStarFn": false
                                     }
                                   }
                                 },
