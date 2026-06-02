@@ -1,6 +1,124 @@
 # TODO — Botopink Compiler
 
+> Modelo de sintaxe `import` / `use` / `implement` / `extend` detalhado em **`plano.md`**.
+> Esta seção mapeia o trabalho em branches paralelas e pontos de merge.
+
+## Plano de Branches — execução paralela
+
+Objetivo: rodar em paralelo tudo que **não** tem dependência cruzada, e isolar os
+pontos de convergência que exigem merge antes de começar.
+
+### Workstreams independentes (branches paralelas — sem dependência entre si)
+
+| Branch | Conteúdo | Plano | Toca |
+|---|---|---|---|
+| `feat/import-rework` | `import {A, X*} [from "m"]` (reverte `@root()`/`@module()`) | F0→F1→F2 | ast/parser/format import, snapshots import |
+| `feat/use-await-prefix` | `use`/`await` operadores prefixos | F3 | ast Expr, parser expr, format |
+| `feat/implement-extend-decls` | `implement` shorthand nomeado + `extend` decl | F4+F5 | lexer (token `extend`), ast/parser decls |
+| `feat/beam-asm` | BEAM ASM Fases 3–9 | — | beam_asm.zig |
+| `feat/wat-features` | WAT destructure/pipeline/strings/enum/try | — | wat.zig |
+| `feat/erlang-gaps` | list/constructor patterns, arity | — | erlang.zig |
+| `feat/typeparam` | typeparam constraints `\| `-separated | — | parser, infer |
+| `feat/throw-check` | throw type checking vs `E` | — | infer |
+| `feat/trycatch-lowering` | try/catch → pattern match (4 targets) | — | codegens |
+| `feat/stdlib-result` | `@Result`/`@Option` map/flatMap/unwrapOr | — | builtins.d.bp |
+
+Dentro de `feat/import-rework` a cadeia F0→F1→F2 é sequencial, mas a **branch inteira**
+é isolada das demais. F4 e F5 são paralelas entre si dentro de `feat/implement-extend-decls`.
+
+### Pontos de convergência (exigem merge antes de iniciar)
+
+| Branch | Plano | Depende de (merge prévio) |
+|---|---|---|
+| `feat/extension-dispatch` | F6 — static extension dispatch | `feat/import-rework` (ativação `*`) + `feat/implement-extend-decls` (Impl/ExtendDecl) |
+| `feat/context-inference` | F7 — inference `@Context` | `feat/use-await-prefix` (usePrefix) + F6 (tabelas de tipo) |
+| `feat/hook-codegen` | F8 — codegen dos hooks | F7 |
+
+### DAG
+
+```
+feat/import-rework ─┐
+                    ├─► feat/extension-dispatch ─► feat/context-inference ─► feat/hook-codegen
+feat/implement-extend-decls ─┘                              ▲
+feat/use-await-prefix ─────────────────────────────────────┘
+
+feat/beam-asm · feat/wat-features · feat/erlang-gaps · feat/typeparam ·
+feat/throw-check · feat/trycatch-lowering · feat/stdlib-result
+   └── totalmente paralelas, nenhum merge com as de cima
+```
+
+### Roadmap por feature (nome + etapas)
+
+**`feat/import-rework`** — sintaxe `import {A, X*} [from "module"]` (plano F0→F1→F2)
+1. AST: `ImportPath { segments, activate, alias }` + `ImportSource = { root, module }`; remover `Source: *Expr`
+2. Parser: `import {…};` (root) / `import {…} from "name";`; remover `= @root()`/`= @module()`
+3. Parser: suffix `*` (ativação) + dotted path + `as` por item — ordem `path "*"? ("as" id)?`
+4. Parser: statement fallback `X*;`
+5. Format/print: emitir `import {…} [from "name"];` com `*`/`as`
+6. Snapshots: reescrever `use_*` de import → `import_*`
+7. Docs: `docs.md` / `examples.md` / AGENTS.md
+
+**`feat/use-await-prefix`** — `use`/`await` como operadores prefixos (plano F3)
+1. AST: `Expr.usePrefix { inner }` + `Expr.awaitPrefix { inner }`; reformular `Expr.useHook` (destructure sai)
+2. Parser: `use <expr>` e `await <expr>` como prefix (igual `try`)
+3. Parser: revalidar prefix estático do `use` sobre o novo nó
+4. Format/print: emitir `use expr` / `await expr` (binding fica no `val`/`var`)
+5. Snapshots: `use_prefix_in_binding`, `use_prefix_void_statement`, `use_prefix_tuple_binding`
+
+**`feat/implement-extend-decls`** — decls nomeadas (plano F4+F5)
+1. Lexer: token `extend` (distinto de `extends`) + `identifierType`
+2. AST: `ImplementDecl { name, isPub, trait, target, methods }` (name obrigatório) + `ExtendDecl { name, isPub, target, methods }` + `Decl.extend`
+3. Parser: `pub? Name implement Trait for Type {}` / `pub? Name extend Type {}`; erro se anônima
+4. Format/print: preservar shorthand vs explícita
+5. Snapshots: `implement_shorthand_named`, `implement_anonymous_rejected`, `extend_shorthand_named`, `extend_anonymous_rejected`
+
+**`feat/extension-dispatch`** — static extension dispatch (plano F6) · *após import-rework + implement-extend-decls*
+1. Inference: conjunto de ativações por arquivo (`X*` no import + `X*;`)
+2. Inference: tabelas `(trait, target) -> []Impl` e `target -> []Extend`
+3. Inference: resolver `obj.m()` por inerente → ativado → erro/qualificado; ambiguidade → erro
+4. Inference: validar impl vs interface (método extra/faltando)
+5. Codegen: external dispatch `obj.m()` → `Sym.m(obj)` (CommonJS, Erlang, BEAM, WAT, TS)
+
+**`feat/context-inference`** — inference `@Context` (plano F7) · *após use-await-prefix + extension-dispatch*
+1. Extrair ContextBase do return type da fn
+2. Validar cada `use` com mesmo ContextBase; erro se retorno não impl `@Context`
+3. Validação transitiva de custom hooks
+
+**`feat/hook-codegen`** — codegen dos hooks (plano F8) · *após context-inference*
+1. CommonJS: `use state()/memo()/effect()` → `useState/useMemo/useEffect` (deps inferidas)
+2. Mapeamento de nome do hook (ver P1)
+3. Erlang/BEAM/WAT: hook → slot de state / offset memória linear
+
+**Backlog paralelo (já detalhado nas seções abaixo)**
+- `feat/beam-asm` — BEAM ASM Fases 3–9
+- `feat/wat-features` — destructure, pipeline, strings, enum, try/catch
+- `feat/erlang-gaps` — list/constructor patterns, arity
+- `feat/typeparam` — typeparam constraints
+- `feat/throw-check` — throw type checking
+- `feat/trycatch-lowering` — try/catch → pattern match
+- `feat/stdlib-result` — `@Result`/`@Option` API
+
+### Cuidado — AST & Parser Simplification (seção própria abaixo)
+
+Toca quase todos os consumidores do AST → alto risco de conflito de merge se rodar
+em paralelo. Estratégia: rodar **sozinha**, em base limpa, **antes** de abrir as branches
+acima, **ou** depois de todas mergeadas. Nunca em paralelo com as demais.
+
+### Notas de sincronização
+
+- `feat/import-rework` **reverte** os commits `65f990d`/`1888bfb` (migração para `@root()`/
+  `@module()`). Confirmar o revert antes de iniciar — ver F0 no `plano.md`.
+- O AST `Expr.useHook` (commit `a42d948`) será **reformulado** em `Expr.usePrefix` na
+  `feat/use-await-prefix` (F3) — o destructure passa a vir do `val`/`var`.
+
+---
+
 ## Design — `@Context<ContextBase, Return>` + `@Future<Return>`
+
+> **Sintaxe atualizada** (ver `plano.md`): imports usam `import {A, X*} [from "m"]`
+> (não `use { } = @root()`); hooks usam `use` como operador prefixo
+> (`val {v,s} = use state(0)`, `use effect()`); ativação de extension via suffix `*` no import.
+> As regras de capacidade abaixo (`@Context`/`@Future` no retorno) seguem válidas.
 
 ### Regra central
 
@@ -74,7 +192,7 @@ use {std.List as L} = @root()        // binding: L
 ### `use` sem binding (void)
 
 ```bp
-use effect({ -> cleanup() })         // @Context<_, void> — sem = necessário
+use _ = effect({ -> cleanup() })     // @Context<_, void> — `_` descarta resultado
 use {val, set} = state(0)            // @Context<_, T> — binding obrigatório
 ```
 
@@ -214,39 +332,41 @@ error: `fn` cannot return @Future directly
 
 ## Pending — @Context Implementation
 
-`@Context<B, R>` é uma interface builtin (como `@Result<D, E>`).
-Duas formas de implementar:
-- **Inline**: `val X = struct implement @Context<B, R> { }` — curta, caso comum
-- **Separada**: `val Y = implement @Context<B, R> for X { }` — para tipo já existente
+> **Revisão pós-`plano.md`**: o conceito (`@Context<B,R>` builtin, capacidade gated
+> pelo retorno) continua válido. O que **mudou**: o hook deixa de ser statement
+> `use {a,b} = expr` e vira **operador prefixo** `val {a,b} = use expr` (F3). A inline
+> `struct implement I {}` permanece; a forma `implement I for T {}` agora é **sempre
+> nomeada** (F4) e existe também `extend T {}` sem trait (F5).
+> Mapeamento para branches: Fase 1/2 ↦ `feat/use-await-prefix` (F3) + `feat/implement-extend-decls` (F4/F5);
+> Fase 3 ↦ `feat/context-inference` (F7); Fase 4 ↦ `feat/hook-codegen` (F8).
 
-### Fase 1: AST
+### Fase 1: AST — ✅ feito, ⚠️ parte será reformulada (F3)
 
-- [x] `interface` keyword/declaração no AST — já existia
-- [x] `Expr.useHook` variant para `use` como hook no body (distinto de `UseDecl` de imports)
-- [x] `TypeRef.generic` com `is_builtin` já representa `@Context<B, R>`
-- [x] Adicionar `implement: []TypeRef` ao `StructDecl`/`EnumDecl`/`RecordDecl` para `struct implement I1, I2 { }`
+- [x] `interface` keyword/declaração no AST — já existia · **ainda vale**
+- [x] ~~`Expr.useHook` variant~~ — **será reformulado** em `Expr.usePrefix` (F3): destructure sai do nó e vem do `val`/`var`
+- [x] `TypeRef.generic` com `is_builtin` representa `@Context<B, R>` · **ainda vale**
+- [x] `implement: []TypeRef` em `StructDecl`/`EnumDecl`/`RecordDecl` (inline implement) · **ainda vale**
 
-### Fase 2: Parser
+### Fase 2: Parser — ✅ feito, ⚠️ hooks serão reformulados (F3)
 
-- [ ] Parsear `struct implement Interface1, Interface2 { }` — lista de TypeRef após `implement` keyword
-- [ ] Parsear `enum implement Interface { }` e `record(...) implement Interface { }` — mesma regra
-- [ ] Parsear `use expr` (sem `=`) para hooks void (`parser.zig`)
-- [ ] Parsear `use binding = expr` como hook no body (diferente de `use {imports} = source` no top-level por posição)
-- [ ] Validar prefix estático: emitir erro se `use` aparece após branch/return
+- [x] Parsear `struct implement I1, I2 { }` (inline) · **ainda vale**
+- [x] Parsear `enum implement I { }`, `record(...) implement I { }` · **ainda vale**
+- [x] ~~Parsear `use _ = expr` / `use name = expr` / `use {a,b} = expr` como statement~~ — **substituído** por `use` prefixo + binding `val`/`var` (F3)
+- [x] Validar prefix estático do `use` · **ainda vale** (re-aplicar ao `usePrefix`)
 
-### Fase 3: Type Inference
+### Fase 3: Type Inference — ↦ branch `feat/context-inference` (F7)
 
-- [ ] Definir `@Context<B, R>` como interface builtin em `builtins.d.bp`
-- [ ] Resolver `implement` (inline e separado) — registrar que T impl @Context
+- [x] Definir `@Context<B, R>` como interface builtin em `builtins.d.bp` · **ainda vale**
+- [x] Resolver `implement` (inline) — registrar impl no TypeDef · **ainda vale**
 - [ ] Ao entrar em fn body: extrair ContextBase do return type se impl `@Context`
 - [ ] Ao encontrar `use`: verificar que a expressão retorna `@Context<B, _>` com B == ContextBase da fn
 - [ ] Erro se `use` em fn cujo retorno não impl `@Context`
 - [ ] Erro se ContextBase do `use` diverge do ContextBase da fn
 - [ ] Validação transitiva: custom hooks propagam ContextBase via return type
 
-### Fase 4: Codegen
+### Fase 4: Codegen — ↦ branch `feat/hook-codegen` (F8)
 
-- [ ] CommonJS: `use {v, s} = state(0)` → `const [v, s] = useState(0)` — mapping framework-specific
+- [ ] CommonJS: `val {v, s} = use state(0)` → `const {v, s} = useState(0)` — mapping framework-specific (ver P1 no plano)
 - [ ] CommonJS: `use expr` (void) → `useEffect(...)` etc.
 - [ ] Erlang: `use` → slot no process dictionary ou gen_server state
 - [ ] BEAM ASM: `use` → hook slot management
@@ -256,7 +376,7 @@ Duas formas de implementar:
 
 ### Fase 5: Formatter + LSP
 
-- [ ] Formatter: emitir `use binding = expr` e `use expr` (void)
+- [ ] Formatter: emitir `val binding = use expr` e `use expr` (void)
 - [ ] LSP hover: mostrar ContextBase da fn e tipo do hook
 - [ ] LSP error: mostrar ContextBase mismatch inline
 - [ ] LSP autocomplete: sugerir hooks compatíveis com ContextBase da fn
@@ -264,83 +384,88 @@ Duas formas de implementar:
 ### Cenários de teste
 
 ```
-parser ---- struct implement @Context<B, R> { } (inline implement)
-parser ---- struct implement A, B { } (multiple inline interfaces)
-parser ---- enum implement @Context<B, R> { } (inline implement on enum)
-parser ---- record(...) implement @Context<B, R> { } (inline implement on record)
-parser ---- use expr (void hook, no binding)
-parser ---- use name = expr (hook with simple binding)
-parser ---- use {a, b} = expr (hook with destructuring)
-parser ---- use after if branch (error: not in static prefix)
-parser ---- use after early return (error: not in static prefix)
-context ---- use in fn -> @Context<Element, _> (pass)
-context ---- use in fn -> string (error: not @Context)
-context ---- ContextBase mismatch Element vs Http (error)
-context ---- use without binding for void hook (pass)
-context ---- use with binding for non-void hook (pass)
-context ---- custom hook propagates ContextBase transitively (pass)
-context ---- struct implement @Context — resolved via inline impl (pass)
-context ---- implement @Context for struct — resolved via separate impl (pass)
-context ---- struct missing @Context impl but used with use (error)
-codegen ---- inline implement erased at runtime (no code for phantom)
-codegen ---- separate implement erased at runtime (no code for phantom)
+parser ---- struct implement @Context<B, R> { } (inline implement)        [ainda vale]
+parser ---- struct implement A, B { } (multiple inline interfaces)         [ainda vale]
+parser ---- enum implement @Context<B, R> { } (inline implement on enum)   [ainda vale]
+parser ---- record(...) implement @Context<B, R> { } (inline)              [ainda vale]
+parser ---- use expr (void hook, statement)                                [F3 — prefixo]
+parser ---- val name = use expr (hook prefixo, binding simples)            [F3]
+parser ---- val {a, b} = use expr (hook prefixo, destructure no val)       [F3]
+parser ---- val [a, b] = use expr (hook prefixo, tuple no val)             [F3 — grátis]
+parser ---- use after if branch (error: not in static prefix)              [F3]
+parser ---- use after early return (error: not in static prefix)           [F3]
+context ---- use in fn -> @Context<Element, _> (pass)                      [F7]
+context ---- use in fn -> string (error: not @Context)                     [F7]
+context ---- ContextBase mismatch Element vs Http (error)                  [F7]
+context ---- use without binding for void hook (pass)                      [F7]
+context ---- use with binding for non-void hook (pass)                     [F7]
+context ---- custom hook propagates ContextBase transitively (pass)        [F7]
+context ---- struct implement @Context — resolved via inline impl (pass)   [F7]
+context ---- struct missing @Context impl but used with use (error)        [F7]
+codegen ---- inline implement erased at runtime (no code for phantom)      [F8]
 ```
 
 ---
 
-## Pending — Use Syntax: `from "mod"` → `= @root()` / `= @module("name")`
+## Pending — Import Syntax → `import {A, X*} [from "module"]`
 
-### Fases completas (AST ✓, Lexer ✓, Parser ✓, Formatter ✓, Tests parciais ✓)
+> **SUPERA a abordagem `@root()`/`@module()`.** A branch `feat/import-rework` (plano F0)
+> **reverte** os commits `65f990d`/`1888bfb` e adota `import {A, X*} [from "module"]`:
+> `import {X};` resolve da raiz, `import {X} from "m";` de dependência nomeada, suffix `*`
+> ativa dispatch de extension. Os itens de **resolução** abaixo (dotted path, codegen,
+> LSP) continuam necessários — só trocam o gatilho de `@root()`/`@module()` para `import`/`from`.
+> Mapeamento: F0/F1/F2 ↦ `feat/import-rework`.
 
-Detalhes das fases completas no histórico de commits.
+### Superado (a forma `@root()`/`@module()` sai de cena)
 
-### Fase restante: Parser error
+- [x] ~~Rejeitar `use { X } from "mod"` com hint para `= @root()`~~ — **revertido**: a sintaxe alvo volta a ser `import {…} from "mod"` (F0). O hint antigo deixa de fazer sentido.
+- AST `Source: *Expr` apontando p/ `@root()`/`@module()` → trocar por `ImportSource = { root, module }` (F0).
 
-- [x] Rejeitar sintaxe antiga `use { X } from "mod"` com hint para usar `= @root()` / `= @module("name")`
+### Ainda faz sentido — resolução (↦ branch `feat/import-rework` + integração)
 
-### Fase restante: Type Inference / Comptime
-
-- [ ] `resolveImports`: resolver `@root()` como caminho para o módulo raiz do projeto (`comptime.zig` / `infer.zig`)
-- [ ] `resolveImports`: resolver `@module("name")` como caminho para dependência nomeada
+- [ ] `resolveImports`: resolver `import {X};` (sem `from`) como módulo raiz do projeto (`comptime.zig`/`infer.zig`)
+- [ ] `resolveImports`: resolver `import {X} from "name";` como dependência nomeada
 - [ ] Resolver dotted paths: `std.List` navega submodules/exports aninhados
-- [ ] Definir semântica exata de `@root()` vs `@module("name")`
+- [ ] Definir semântica de raiz implícita vs `from "name"` (ver P5 no plano: relativo a subpasta?)
 
-### Fase restante: Codegen
+### Ainda faz sentido — codegen (com a nova sintaxe)
 
-- [ ] CommonJS: `use {std.List} = @root()` → `const { List } = require("./std");` (`commonJS.zig`)
+- [ ] CommonJS: `import {std.List};` → `const { List } = require("./std");` (`commonJS.zig`)
 - [ ] CommonJS: dotted path `std.List` → destructuring aninhado ou qualified access
-- [ ] Erlang: `use {std.List} = @root()` → `-import(std, [list/0]).` (`erlang.zig`)
-- [ ] TypeScript: `use {std.List} = @root()` → `import { List } from "./std";` (`typescript.zig`)
-- [ ] BEAM ASM: atualizar se necessário (`beam_asm.zig`)
-- [ ] WAT: atualizar se necessário (`wat.zig`)
+- [ ] Erlang: `import {std.List};` → `-import(std, [list/0]).` (`erlang.zig`)
+- [ ] TypeScript: `import {std.List};` → `import { List } from "./std";` (`typescript.zig`)
+- [ ] BEAM ASM / WAT: atualizar se necessário
 
-### Fase restante: Language Server
+### Ainda faz sentido — Language Server
 
-- [ ] LSP folding: atualizar detecção de blocos `use` consecutivos (`engine.zig`)
-- [ ] LSP unused imports: atualizar scan para nova sintaxe (`engine.zig`)
-- [ ] LSP go-to-definition: resolver `@root()` / `@module("name")` para arquivo/módulo correto
+- [ ] LSP folding: detecção de blocos `import` consecutivos (`engine.zig`)
+- [ ] LSP unused imports: scan para a nova sintaxe `import {…}` (`engine.zig`)
+- [ ] LSP go-to-definition: resolver `import`/`from "name"` para arquivo/módulo
 
-### Fase restante: Docs
+### Ainda faz sentido — Docs
 
-- [ ] Atualizar `docs.md` com nova sintaxe de imports
-- [ ] Atualizar `examples.md` com exemplos usando `@root()` / `@module("name")`
-- [ ] Atualizar AGENTS.md com mudança de sintaxe
+- [ ] Atualizar `docs.md` com sintaxe `import {A, X*} [from "module"]`
+- [ ] Atualizar `examples.md` com exemplos usando `import`/`from` e ativação `*`
+- [ ] Atualizar AGENTS.md com a mudança de sintaxe
 
-### Cenários de teste pendentes
+### Cenários de teste pendentes (sintaxe `import`/`from`)
 
 ```
-parser ---- rejected old syntax from "mod" (error with hint) ✓
-comptime ---- import single val from @root() dependency
-comptime ---- import multiple vals from @root() dependency
-comptime ---- import fn from @module("name") dependency
-comptime ---- three-level chain a imports b via @root(), b imports c via @module("x")
+parser ---- import {X};                                            (F0/F1)
+parser ---- import {X} from "module";                              (F0/F1)
+parser ---- import {A, X*} (ativação suffix)                       (F1)
+parser ---- import {std.List as L} (dotted + alias)                (F1)
+comptime ---- import single val, raiz implícita                    (F6 resolve)
+comptime ---- import multiple vals, raiz implícita
+comptime ---- import fn from "name" dependency
+comptime ---- three-level chain a→b (raiz) → c (from "x")
 comptime ---- dotted path std.List resolves nested export
 comptime ---- unresolved segment (error)
-comptime ---- @root() vs @module("name") correct module resolution
-codegen ---- single import @root() (CommonJS: require, Erlang: -import, TS: import)
+comptime ---- raiz implícita vs from "name" resolução correta
+codegen ---- single import (CommonJS: require, Erlang: -import, TS: import)
 codegen ---- dotted path std.List (CommonJS: nested destructure, Erlang: qualified, TS: import)
-codegen ---- multi-module pub fn import with @root()
-codegen ---- multi-module pub val import with @module("name")
+codegen ---- multi-module pub fn import
+codegen ---- multi-module pub val import from "name"
 ```
 
 ---
@@ -611,15 +736,15 @@ try ---- try on non-Result type (comptime error)
 
 ### Fase 1: Parser tests
 
-- [ ] Interface with field + abstract method + default method (full Drawable spec)
-- [ ] Interface with multiple abstract methods (Canvas spec)
-- [ ] Struct with private field + getter + setter (with throw) + method
-- [ ] Record with fields + method (toString pattern)
-- [ ] Implement single interface with method body (separada: `implement I for T {}`)
-- [ ] Implement multiple interfaces with qualified method disambiguation (separada)
-- [ ] Struct with inline implement (`struct implement I1, I2 {}`)
-- [ ] Enum with inline implement (`enum implement I {}`)
-- [ ] Record with inline implement (`record(...) implement I {}`)
+- [x] Interface with field + abstract method + default method (full Drawable spec)
+- [x] Interface with multiple abstract methods (Canvas spec)
+- [x] Struct with private field + getter + setter (with throw) + method
+- [x] Record with fields + method (toString pattern)
+- [x] Implement single interface with method body (separada: `implement I for T {}`)
+- [x] Implement multiple interfaces with qualified method disambiguation (separada)
+- [x] Struct with inline implement (`struct implement I1, I2 {}`)
+- [x] Enum with inline implement (`enum implement I {}`)
+- [x] Record with inline implement (`record(...) implement I {}`)
 
 ### Fase 2: Comptime / Inference tests
 
