@@ -60,6 +60,15 @@ então "consertá-las" para satisfazer o golden produziria codegen incorreto sem
 - **`%% unsupported expr in tail position: jump`** (1×) — lowering de `*fn` async/`await`
   para BEAM (recurso recém-adicionado, ainda stub-level — até `fetch` com `return x`
   está incompleto). Recurso multi-backend separado.
+- **`%% unsupported on BEAM: __bp_result_*` / `__bp_option_*`** (~14×) — métodos
+  `@Result`/`@Option` (`map`/`flatMap`/`unwrapOr`/`isOk`/`isError`), trazidos pelo
+  merge do feature `stdlib-result` em `feat`. O Erlang os emite com a representação
+  `{tag, 'Ok', V}`/`{tag, 'Error', E}` (3-tupla) + aplicação de fun. **Deferido no BEAM
+  de propósito**: o BEAM ainda não constrói valores `@Result` (os testes usam `@todo()`
+  como stub; não há lowering de construtor `Ok`/`Error`, e o try/catch usa outra
+  representação — `{ok,_}`/`{error,_}` 2-tupla). Implementar os métodos sem a construção
+  estabelecida produziria asm especulativo/incorreto sem validação runtime. Requer
+  primeiro fixar a representação de `@Result` no BEAM, depois espelhar `emitResultOptionOp`.
 
 ### Fase 9 — polish (pendente)
 - Alocação de registradores mais inteligente (eliminar `{move, {x,0}, {x,0}}` redundantes).
