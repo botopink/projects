@@ -907,6 +907,47 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     env.throwContext = throwCtx;
     defer env.throwContext = savedThrowCtx;
 
+    // ── `*fn` validation + async/generator context ──────────────────────────
+    // A `*fn` must return `@Future<_>` / `@Iterator<_>` / `@AsyncIterator<_, _>`;
+    // a normal `fn` must NOT (it would have to be a `*fn`).
+    const asyncKind = classifyAsyncReturn(retType);
+    const fnLoc: ?ast.Loc = if (f.body.len > 0) f.body[0].expr.getLoc() else null;
+    if (f.isStarFn and asyncKind == .none) {
+        var e = TypeError.custom(
+            "a `*fn` must return `@Future<_>`, `@Iterator<_>` or `@AsyncIterator<_, _>`",
+            "Drop the `*` if this is a plain function, or change the return type.",
+        );
+        if (fnLoc) |l| e = e.withLoc(l);
+        env.lastError = e;
+        return error.TypeError;
+    }
+    if (!f.isStarFn and asyncKind != .none) {
+        var e = TypeError.custom(
+            "a function returning `@Future`/`@Iterator`/`@AsyncIterator` must be declared `*fn`",
+            "Prefix the function with `*` to make it async/generator.",
+        );
+        if (fnLoc) |l| e = e.withLoc(l);
+        env.lastError = e;
+        return error.TypeError;
+    }
+
+    // Establish the `*fn` context (saved/restored around the body) so nested
+    // `await`/`yield` validate against this function, not an enclosing one.
+    const prevStarFn = env.starFn;
+    const prevLabelsLen = env.labelStack.items.len;
+    defer {
+        env.starFn = prevStarFn;
+        env.labelStack.shrinkRetainingCapacity(prevLabelsLen);
+    }
+    if (f.isStarFn) {
+        env.starFn = starCtxFromReturn(retType, asyncKind);
+        if (f.label) |lbl| try env.labelStack.append(env.arena, lbl);
+    } else {
+        // A normal function body sees no async context and no outer labels.
+        env.starFn = null;
+        env.labelStack.shrinkRetainingCapacity(0);
+    }
+
     // Infer body (for type checking; we ignore the result for now).
     for (f.body) |stmt| {
         _ = try inferExpr(env, stmt.expr);
@@ -917,6 +958,39 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     }
 
     return env.funcType(paramTypes, retType);
+}
+
+const AsyncReturnKind = enum { none, future, iterator, asyncIterator };
+
+/// Classify a resolved return type as `@Future` / `@Iterator` / `@AsyncIterator`.
+fn classifyAsyncReturn(ty: *T.Type) AsyncReturnKind {
+    const t = ty.deref();
+    return switch (t.*) {
+        .named => |n| if (std.mem.eql(u8, n.name, "Future"))
+            .future
+        else if (std.mem.eql(u8, n.name, "Iterator"))
+            .iterator
+        else if (std.mem.eql(u8, n.name, "AsyncIterator"))
+            .asyncIterator
+        else
+            .none,
+        else => .none,
+    };
+}
+
+/// Build the `*fn` body context from its (already classified) return type.
+fn starCtxFromReturn(ty: *T.Type, kind: AsyncReturnKind) envMod.StarFnCtx {
+    const t = ty.deref();
+    const item: ?*T.Type = switch (t.*) {
+        .named => |n| if (n.args.len >= 1) n.args[0] else null,
+        else => null,
+    };
+    return switch (kind) {
+        .future => .{ .allowsAwait = true, .iterItem = null },
+        .iterator => .{ .allowsAwait = false, .iterItem = item },
+        .asyncIterator => .{ .allowsAwait = true, .iterItem = item },
+        .none => .{ .allowsAwait = false, .iterItem = null },
+    };
 }
 
 // ── expression inference ──────────────────────────────────────────────────────
@@ -1582,15 +1656,49 @@ fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)),
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .@"break" = typedPtr } } };
         },
         .await_ => |e| {
+            // `await` is only valid inside an async `*fn` (returns `@Future`/`@AsyncIterator`).
+            if (env.starFn == null or !env.starFn.?.allowsAwait) {
+                env.lastError = TypeError.custom(
+                    "`await` can only be used inside an async `*fn`",
+                    "Mark the enclosing function `*fn` with a `@Future`/`@AsyncIterator` return type.",
+                ).withLoc(loc);
+                return error.TypeError;
+            }
             const valPtr = try makeTypedPtr(env, try inferExprTyped(env, e.*));
             const rawTy = valPtr.getType();
-            // `await @Future<T>` yields `T`; fall back to the operand type otherwise.
+            // `await @Future<T>` yields `T`. A resolved non-`@Future` named type is
+            // an error; an unresolved type variable stays lenient.
+            const deref = rawTy.deref();
+            if (deref.* == .named and !std.mem.eql(u8, deref.named.name, "Future")) {
+                env.lastError = TypeError.custom(
+                    "`await` expects a `@Future<_>` value",
+                    null,
+                ).withLoc(loc);
+                return error.TypeError;
+            }
             const ty = unwrapFutureType(rawTy) orelse rawTy;
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = ty, .kind = .{ .await_ = valPtr } } };
         },
         .@"continue" => TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .@"continue" } },
         .yield => |y| {
+            // A `:label` must name an enclosing labelled `*fn`/loop.
+            if (y.label) |lbl| {
+                if (!env.hasLabel(lbl)) {
+                    env.lastError = TypeError.custom(
+                        "`yield` targets an unknown label",
+                        "Label a `*fn` (`-> @Iterator<T> :name`) or a `loop :name (...)`.",
+                    ).withLoc(loc);
+                    return error.TypeError;
+                }
+            }
             const typedPtr: ?*TypedExpr = if (y.value) |expr| try makeTypedPtr(env, try inferExprTyped(env, expr.*)) else null;
+            // Inside a `*fn` generator, each yielded value unifies with the
+            // iterator item type `T` of `@Iterator<T>` / `@AsyncIterator<T, _>`.
+            if (env.starFn) |ctx| {
+                if (ctx.iterItem) |item| {
+                    if (typedPtr) |vp| try unifyAt(env, vp.getType(), item, loc);
+                }
+            }
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .yield = .{ .label = y.label, .value = typedPtr } } } };
         },
     };
@@ -1668,9 +1776,37 @@ fn inferLoopExpr(env: *Env, lp: ast.LoopExprOf(.untyped), loc: ast.Loc) InferErr
     const iterPtr = try makeTypedPtr(env, iterTyped);
     const indexRangePtr = if (lp.indexRange) |ir| try makeTypedPtr(env, try inferExprTyped(env, ir.*)) else null;
 
-    for (lp.params) |p| {
-        try env.bind(p, try env.freshVar());
+    // `loop await (iter)` requires an async context and an `@AsyncIterator<T, E>`
+    // iterable; the loop param binds to the item type `T`.
+    var awaitItem: ?*T.Type = null;
+    if (lp.awaitLoop) {
+        if (env.starFn == null or !env.starFn.?.allowsAwait) {
+            env.lastError = TypeError.custom(
+                "`loop await` can only be used inside an async `*fn`",
+                "Mark the enclosing function `*fn` with a `@Future`/`@AsyncIterator` return type.",
+            ).withLoc(loc);
+            return error.TypeError;
+        }
+        const iterTy = iterTyped.getType().deref();
+        if (iterTy.* == .named and std.mem.eql(u8, iterTy.named.name, "AsyncIterator") and iterTy.named.args.len >= 1) {
+            awaitItem = iterTy.named.args[0];
+        } else if (iterTy.* != .typeVar) {
+            env.lastError = TypeError.custom(
+                "`loop await` expects an `@AsyncIterator<T, E>` value",
+                null,
+            ).withLoc(loc);
+            return error.TypeError;
+        }
     }
+
+    for (lp.params) |p| {
+        try env.bind(p, awaitItem orelse try env.freshVar());
+    }
+
+    // A `loop :label (...)` adds its label to scope for `yield :label` inside it.
+    const prevLabelsLen = env.labelStack.items.len;
+    defer env.labelStack.shrinkRetainingCapacity(prevLabelsLen);
+    if (lp.label) |lbl| try env.labelStack.append(env.arena, lbl);
 
     const typedBody = try inferStmtsTyped(env, lp.body);
     const loopArrayArgs = try env.arena.alloc(*T.Type, 1);
@@ -1682,6 +1818,8 @@ fn inferLoopExpr(env: *Env, lp: ast.LoopExprOf(.untyped), loc: ast.Loc) InferErr
         .indexRange = indexRangePtr,
         .params = lp.params,
         .body = typedBody,
+        .awaitLoop = lp.awaitLoop,
+        .label = lp.label,
     } };
 }
 
@@ -2030,7 +2168,26 @@ fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc
     const savedThrowCtx = env.throwContext;
     env.throwContext = .unchecked;
     defer env.throwContext = savedThrowCtx;
+
+    // A nested function gets its own async/label scope: it does not inherit the
+    // enclosing `*fn`'s `await`/`yield`/label context.
+    const prevStarFn = env.starFn;
+    const prevLabelsLen = env.labelStack.items.len;
+    defer {
+        env.starFn = prevStarFn;
+        env.labelStack.shrinkRetainingCapacity(prevLabelsLen);
+    }
+    env.labelStack.shrinkRetainingCapacity(0);
+
     const fk = func.kind;
+    // An anonymous `*fn(...)` has no declared return type, so we permit both
+    // `await` and `yield` (item type unknown ⇒ no unification). Lambdas and plain
+    // `fn` expressions clear the async context.
+    env.starFn = if (fk.syntax == .fnExpr and fk.isStarFn)
+        .{ .allowsAwait = true, .iterItem = null }
+    else
+        null;
+
     const params = try env.arena.alloc(*T.Type, fk.params.len);
     for (fk.params, 0..) |p, i| {
         params[i] = try env.freshVar();
@@ -2043,6 +2200,7 @@ fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc
         .syntax = fk.syntax,
         .params = fk.params,
         .body = bodyTyped,
+        .isStarFn = fk.isStarFn,
     } } };
 }
 
