@@ -313,9 +313,31 @@ pub const Parser = struct {
 
     // ── block parsing ──────────────────────────────────────────────────────
 
-    /// Parse `{ expr; expr; ... }` — a brace-delimited block of semicolon-separated expressions.
-    /// The opening `{` must already be the current token.
-    fn parseStmtListInBraces(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
+    /// How a `{ ... }` block enforces statement-terminating semicolons.
+    const SemicolonPolicy = enum {
+        /// Every statement must end with `;`.
+        required,
+        /// `;` is consumed if present but never required.
+        optional,
+        /// `;` required except for the last statement before `}`.
+        requiredExceptLast,
+    };
+
+    /// Knobs controlling the single `parseBlock` implementation. All fields are
+    /// comptime-known per call so unused branches are pruned.
+    const BlockParseOptions = struct {
+        /// Record `emptyLinesBefore` on each statement (formatter fidelity).
+        trackEmptyLines: bool = false,
+        /// Preserve `//`/`///`/`////` comment tokens as comment-literal statements.
+        handleComments: bool = false,
+        semicolonPolicy: SemicolonPolicy = .required,
+        /// Reject a `use` hook that appears after a branch/return (static-prefix rule).
+        useAfterBranchGuard: bool = false,
+    };
+
+    /// Parse `{ stmt; stmt; ... }`. The opening `{` must be the current token.
+    /// Unifies every brace-delimited block in the parser via `BlockParseOptions`.
+    fn parseBlock(this: *This, alloc: std.mem.Allocator, comptime opts: BlockParseOptions) ParseError![]Stmt {
         _ = try this.consume(.leftBrace);
         var stmts: std.ArrayList(Stmt) = .empty;
         errdefer {
@@ -323,38 +345,55 @@ pub const Parser = struct {
             stmts.deinit(alloc);
         }
         var seenBranch = false;
+        _ = &seenBranch; // used only when useAfterBranchGuard is set
         while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            // Compute empty lines before this item using token line numbers
-            const prevLine = if (this.current > 0) this.tokens[this.current - 1].line else 1;
-            const currLine = this.peek().line;
-            const emptyLinesBefore: u32 = if (currLine > prevLine + 1) @intCast(currLine - prevLine - 1) else 0;
+            const emptyLinesBefore: u32 = if (opts.trackEmptyLines) blk: {
+                const prevLine = if (this.current > 0) this.tokens[this.current - 1].line else 1;
+                const currLine = this.peek().line;
+                break :blk if (currLine > prevLine + 1) @intCast(currLine - prevLine - 1) else 0;
+            } else 0;
 
-            if (try this.tryParseCommentStmt(alloc, &stmts, emptyLinesBefore)) continue;
+            if (opts.handleComments and try this.tryParseCommentStmt(alloc, &stmts, emptyLinesBefore)) continue;
 
-            if (seenBranch and this.check(.use)) {
-                const tok = this.peek();
-                this.parseError = .{
-                    .kind = .useAfterBranch,
-                    .start = tok.col - 1,
-                    .end = tok.col - 1 + tok.lexeme.len,
-                    .lexeme = tok.lexeme,
-                    .line = tok.line,
-                    .col = tok.col,
-                };
-                return ParseError.UnexpectedToken;
+            if (opts.useAfterBranchGuard) {
+                if (seenBranch and this.check(.use)) {
+                    const tok = this.peek();
+                    this.parseError = .{
+                        .kind = .useAfterBranch,
+                        .start = tok.col - 1,
+                        .end = tok.col - 1 + tok.lexeme.len,
+                        .lexeme = tok.lexeme,
+                        .line = tok.line,
+                        .col = tok.col,
+                    };
+                    return ParseError.UnexpectedToken;
+                }
+                if (this.check(.@"if") or this.check(.@"return") or this.check(.loop) or this.check(.case))
+                    seenBranch = true;
             }
 
-            if (this.check(.@"if") or this.check(.@"return") or this.check(.loop) or this.check(.case))
-                seenBranch = true;
-
             const expr = try this.parseExpr(alloc);
-            if (!this.match(.semicolon) and !this.check(.rightBrace)) {
-                return ParseError.UnexpectedToken;
+            switch (opts.semicolonPolicy) {
+                .required => _ = try this.consume(.semicolon),
+                .optional => _ = this.match(.semicolon),
+                .requiredExceptLast => if (!this.match(.semicolon) and !this.check(.rightBrace))
+                    return ParseError.UnexpectedToken,
             }
             try stmts.append(alloc, .{ .expr = expr, .emptyLinesBefore = emptyLinesBefore });
         }
         _ = try this.consume(.rightBrace);
         return stmts.toOwnedSlice(alloc);
+    }
+
+    /// Parse `{ expr; expr; ... }` — a brace-delimited block of semicolon-separated expressions.
+    /// The opening `{` must already be the current token.
+    fn parseStmtListInBraces(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
+        return this.parseBlock(alloc, .{
+            .trackEmptyLines = true,
+            .handleComments = true,
+            .semicolonPolicy = .requiredExceptLast,
+            .useAfterBranchGuard = true,
+        });
     }
 
     /// Parse either `{ expr; ... }` or a single `expr`.
@@ -377,20 +416,7 @@ pub const Parser = struct {
     /// Parse a block where the last expression doesn't require a semicolon.
     /// Used for catch handlers where `{ throw Error(...) }` is valid.
     fn parseBlockWithOptionalTrailingSemicolon(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
-        _ = try this.consume(.leftBrace);
-        var stmts: std.ArrayList(Stmt) = .empty;
-        errdefer {
-            for (stmts.items) |*s| s.deinit(alloc);
-            stmts.deinit(alloc);
-        }
-        while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            const expr = try this.parseExpr(alloc);
-            // Try to consume semicolon, but don't fail if it's the last expression
-            _ = this.match(.semicolon);
-            try stmts.append(alloc, .{ .expr = expr, .emptyLinesBefore = 0 });
-        }
-        _ = try this.consume(.rightBrace);
-        return stmts.toOwnedSlice(alloc);
+        return this.parseBlock(alloc, .{ .semicolonPolicy = .optional });
     }
 
     // ── shared body / param helpers ───────────────────────────────────────────
@@ -398,38 +424,13 @@ pub const Parser = struct {
     /// Parses `{ stmt; ... }` preserving comment nodes as literal expressions.
     /// Used in fn/method bodies where source comments must be kept.
     fn parseMethodBodyStmts(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
-        _ = try this.consume(.leftBrace);
-        var stmts: std.ArrayList(Stmt) = .empty;
-        errdefer {
-            for (stmts.items) |*s| s.deinit(alloc);
-            stmts.deinit(alloc);
-        }
-        while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            if (try this.tryParseCommentStmt(alloc, &stmts, 0)) continue;
-            const expr = try this.parseExpr(alloc);
-            _ = try this.consume(.semicolon);
-            try stmts.append(alloc, .{ .expr = expr });
-        }
-        _ = try this.consume(.rightBrace);
-        return stmts.toOwnedSlice(alloc);
+        return this.parseBlock(alloc, .{ .handleComments = true });
     }
 
     /// Parses `{ stmt; ... }` without special comment handling.
     /// Used in implement methods, getters, setters, and interface default bodies.
     fn parseSimpleBodyStmts(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
-        _ = try this.consume(.leftBrace);
-        var stmts: std.ArrayList(Stmt) = .empty;
-        errdefer {
-            for (stmts.items) |*s| s.deinit(alloc);
-            stmts.deinit(alloc);
-        }
-        while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            const expr = try this.parseExpr(alloc);
-            _ = try this.consume(.semicolon);
-            try stmts.append(alloc, .{ .expr = expr });
-        }
-        _ = try this.consume(.rightBrace);
-        return stmts.toOwnedSlice(alloc);
+        return this.parseBlock(alloc, .{});
     }
 
     /// Parses `param, param, ...` up to and including `)`.
