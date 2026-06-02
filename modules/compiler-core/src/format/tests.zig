@@ -2022,3 +2022,30 @@ test "format: assert pattern ---- with list and rest" {
         \\}
     );
 }
+
+// ── async / generators (*fn, await, yield :label) ─────────────────────────────
+
+test "format: star fn ---- async function" {
+    try assertFormat(std.testing.allocator,
+        \\*fn fetch(url: string) -> @Future<Response> {
+        \\    return download(url);
+        \\}
+    );
+}
+
+test "format: star fn ---- generator with label" {
+    try assertFormat(std.testing.allocator,
+        \\*fn gen() -> @Iterator<Int> :gen {
+        \\    yield :gen 1;
+        \\}
+    );
+}
+
+test "format: await ---- prefix expression" {
+    try assertFormat(std.testing.allocator,
+        \\*fn run() -> @Future<Int> {
+        \\    val x = await load(url);
+        \\    return x;
+        \\}
+    );
+}

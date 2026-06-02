@@ -693,6 +693,31 @@ fn unwrapResultType(ty: *T.Type) ?*T.Type {
     };
 }
 
+/// `@Future<T>` -> `T`. Returns null when `ty` is not a `Future`.
+fn unwrapFutureType(ty: *T.Type) ?*T.Type {
+    const t = ty.deref();
+    return switch (t.*) {
+        .named => |n| if (std.mem.eql(u8, n.name, "Future") and n.args.len >= 1)
+            n.args[0]
+        else
+            null,
+        else => null,
+    };
+}
+
+/// `@Iterator<T>` / `@AsyncIterator<T, E>` -> `T`. Returns null when `ty` is not an iterator.
+fn unwrapIteratorType(ty: *T.Type) ?*T.Type {
+    const t = ty.deref();
+    return switch (t.*) {
+        .named => |n| if ((std.mem.eql(u8, n.name, "Iterator") or
+            std.mem.eql(u8, n.name, "AsyncIterator")) and n.args.len >= 1)
+            n.args[0]
+        else
+            null,
+        else => null,
+    };
+}
+
 /// Shallow structural equality check ---- used by case-arm deduplication.
 /// Does NOT unify type variables; treats any typeVar as distinct from a named type.
 fn typesSameShape(a: *T.Type, b: *T.Type) bool {
@@ -1181,10 +1206,17 @@ fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)),
             const typedPtr: ?*TypedExpr = if (e) |expr| try makeTypedPtr(env, try inferExprTyped(env, expr.*)) else null;
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .@"break" = typedPtr } } };
         },
+        .await_ => |e| {
+            const valPtr = try makeTypedPtr(env, try inferExprTyped(env, e.*));
+            const rawTy = valPtr.getType();
+            // `await @Future<T>` yields `T`; fall back to the operand type otherwise.
+            const ty = unwrapFutureType(rawTy) orelse rawTy;
+            return TypedExpr{ .jump = .{ .loc = loc, .type_ = ty, .kind = .{ .await_ = valPtr } } };
+        },
         .@"continue" => TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .@"continue" } },
-        .yield => |e| {
-            const typedPtr: ?*TypedExpr = if (e) |expr| try makeTypedPtr(env, try inferExprTyped(env, expr.*)) else null;
-            return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .yield = typedPtr } } };
+        .yield => |y| {
+            const typedPtr: ?*TypedExpr = if (y.value) |expr| try makeTypedPtr(env, try inferExprTyped(env, expr.*)) else null;
+            return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .yield = .{ .label = y.label, .value = typedPtr } } } };
         },
     };
 }

@@ -519,11 +519,12 @@ const Emitter = struct {
                 .try_ => |val| {
                     if (val) |v| try self.lowerExpr(v.*);
                 },
+                .await_ => |av| try self.lowerExpr(av.*),
                 .@"break" => |val| {
                     if (val) |v| try self.lowerExpr(v.*);
                 },
-                .yield => |val| {
-                    if (val) |v| try self.lowerExpr(v.*);
+                .yield => |y| {
+                    if (y.value) |v| try self.lowerExpr(v.*);
                 },
                 .@"continue" => {},
             },
@@ -668,11 +669,12 @@ const Emitter = struct {
                 .try_ => |val| {
                     if (val) |v| try self.lowerExpr(v.*);
                 },
+                .await_ => |av| try self.lowerExpr(av.*),
                 .@"break" => |val| {
                     if (val) |v| try self.lowerExpr(v.*);
                 },
-                .yield => |val| {
-                    if (val) |v| try self.lowerExpr(v.*);
+                .yield => |y| {
+                    if (y.value) |v| try self.lowerExpr(v.*);
                 },
                 else => try self.fmt("    ;; unsupported jump: {s}\n", .{@tagName(j.kind)}),
             },

@@ -349,6 +349,58 @@ test "js: fn ---- with local binding" {
     );
 }
 
+// ── async / generators (*fn) ──────────────────────────────────────────────────
+
+// `*fn -> @Future<_>` lowers to a JS `async function`; `await` to `await`.
+test "js: star fn ---- async function with await" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\*fn fetch(x: i32) -> @Future<i32> {
+        \\    return x;
+        \\}
+        \\*fn loadTwice(x: i32) -> @Future<i32> {
+        \\    val a = await fetch(x);
+        \\    return a + a;
+        \\}
+    );
+}
+
+// `*fn -> @Iterator<_>` lowers to a JS `function*`; `yield` to `yield`.
+test "js: star fn ---- generator with yield" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\*fn counter() -> @Iterator<i32> {
+        \\    yield 1;
+        \\    yield 2;
+        \\    yield 3;
+        \\}
+    );
+}
+
+// `*fn -> @AsyncIterator<_, _>` lowers to a JS `async function*`.
+test "js: star fn ---- async generator" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\*fn stream() -> @AsyncIterator<i32, string> {
+        \\    yield 1;
+        \\    yield 2;
+        \\}
+    );
+}
+
+// `pub *fn` exports drive the `.d.ts`: @Future→Promise, @Iterator→IterableIterator,
+// @AsyncIterator→AsyncIterableIterator.
+test "js: star fn ---- pub typedefs" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\pub *fn loadOne(x: i32) -> @Future<i32> {
+        \\    return x;
+        \\}
+        \\pub *fn count() -> @Iterator<i32> {
+        \\    yield 1;
+        \\}
+        \\pub *fn pulses() -> @AsyncIterator<i32, string> {
+        \\    yield 1;
+        \\}
+    );
+}
+
 // ── struct declarations ───────────────────────────────────────────────────────
 
 // Tests struct with private field, method, and getter

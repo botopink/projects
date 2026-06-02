@@ -179,7 +179,7 @@ pub const Parser = struct {
                 const d = try this.parseUseDecl(alloc);
                 _ = this.match(.semicolon);
                 break :blk .{ .use = d };
-            } else if (this.checkShorthand(.@"fn")) blk: {
+            } else if (this.checkShorthand(.@"fn") or this.checkStarFn()) blk: {
                 const d = try this.parseFnDecl(alloc);
                 _ = this.match(.semicolon);
                 break :blk .{ .@"fn" = d };
@@ -221,7 +221,7 @@ pub const Parser = struct {
                 const isPub = tok == .@"pub";
                 const eff = if (isPub) this.peekAt(annEnd + 1).kind else tok;
                 const decl: DeclKind = switch (eff) {
-                    .@"fn" => DeclKind{ .@"fn" = try this.parseFnDecl(alloc) },
+                    .@"fn", .star => DeclKind{ .@"fn" = try this.parseFnDecl(alloc) },
                     .@"struct" => DeclKind{ .@"struct" = try this.parseShorthandStructDecl(alloc) },
                     .@"enum" => DeclKind{ .@"enum" = try this.parseShorthandEnumDecl(alloc) },
                     .record => DeclKind{ .record = try this.parseShorthandRecordDecl(alloc) },
@@ -291,6 +291,13 @@ pub const Parser = struct {
     /// true if the current token is `kind`, or `pub` followed by `kind`.
     inline fn checkShorthand(this: *This, kind: TokenKind) bool {
         return this.check(kind) or (this.check(.@"pub") and this.peekAt(1).kind == kind);
+    }
+
+    /// true if a `*fn` (async/generator) declaration is next: `*fn` or `pub *fn`.
+    inline fn checkStarFn(this: *This) bool {
+        if (this.check(.star)) return this.peekAt(1).kind == .@"fn";
+        if (this.check(.@"pub")) return this.peekAt(1).kind == .star and this.peekAt(2).kind == .@"fn";
+        return false;
     }
 
     /// true if a shorthand delegate (`declare fn` or `pub declare fn`) is next.
@@ -891,9 +898,12 @@ pub const Parser = struct {
             alloc.free(annotations);
         }
         const isPub = this.match(.@"pub");
+        // `*fn` — async / generator marker. The leading `*` makes the function
+        // return an `@Future`/`@Iterator` and enables `await`/`yield` in the body.
+        const isStarFn = this.match(.star);
         _ = try this.consume(.@"fn");
         const name = (try this.consume(.identifier)).lexeme;
-        return this.parseFnBody(alloc, name, isPub, annotations);
+        return this.parseFnBody(alloc, name, isPub, annotations, isStarFn);
     }
 
     /// `val name = #[...] fn(params) -> R { body }` — val-form annotated function.
@@ -911,8 +921,9 @@ pub const Parser = struct {
             for (annotations) |*ann| ann.deinit(alloc);
             alloc.free(annotations);
         }
+        const isStarFn = this.match(.star);
         _ = try this.consume(.@"fn");
-        return this.parseFnBody(alloc, name, isPub, annotations);
+        return this.parseFnBody(alloc, name, isPub, annotations, isStarFn);
     }
 
     fn parseFnBody(
@@ -921,6 +932,7 @@ pub const Parser = struct {
         name: []const u8,
         isPub: bool,
         annotations: []Annotation,
+        isStarFn: bool,
     ) ParseError!FnDecl {
         const genericParams = try this.parseGenericParams(alloc);
         errdefer alloc.free(genericParams);
@@ -938,10 +950,34 @@ pub const Parser = struct {
         }
         errdefer if (returnType) |*rt| rt.deinit(alloc);
 
+        // Optional generator label after the return type: `-> @Iterator<T> :gen`.
+        var label: ?[]const u8 = null;
+        if (this.check(.colon)) {
+            _ = this.advance();
+            label = (try this.consume(.identifier)).lexeme;
+        }
+
+        // A `*fn` must have a body — `*fn` is sugar for an async/generator
+        // function, not a declaration. (Bodyless functions use `declare fn`.)
+        if (isStarFn and !this.check(.leftBrace)) {
+            const tok = this.peek();
+            this.parseError = .{
+                .kind = .unexpectedToken,
+                .start = tok.col - 1,
+                .end = tok.col - 1 + tok.lexeme.len,
+                .lexeme = tok.lexeme,
+                .line = tok.line,
+                .col = tok.col,
+            };
+            return ParseError.UnexpectedToken;
+        }
+
         const body = try this.parseStmtListInBraces(alloc);
 
         return FnDecl{
             .isPub = isPub,
+            .isStarFn = isStarFn,
+            .label = label,
             .name = name,
             .annotations = annotations,
             .genericParams = genericParams,
@@ -2217,6 +2253,14 @@ pub const Parser = struct {
             return Expr{ .jump = .{ .loc = locFromToken(tryTok), .kind = .{ .try_ = innerPtr } } };
         }
 
+        // await expr — suspend on a `@Future`; result is the resolved value (like `try`).
+        if (this.check(.await)) {
+            const awaitTok = this.advance();
+            const inner = try this.parseExpr(alloc);
+            const innerPtr = try this.boxExpr(alloc, inner);
+            return Expr{ .jump = .{ .loc = locFromToken(awaitTok), .kind = .{ .await_ = innerPtr } } };
+        }
+
         // if (cond) { [binding ->] stmt; } [else { stmt; }]
         // OR: if (cond) expr [else expr]
         if (this.check(.@"if")) {
@@ -2320,14 +2364,21 @@ pub const Parser = struct {
             return Expr{ .jump = .{ .loc = locFromToken(breakTok), .kind = .{ .@"break" = innerPtr } } };
         }
 
-        // yield expr
+        // yield [:label] expr
         if (this.check(.yield)) {
             const yieldTok = this.advance();
+            // Optional `:label` disambiguating the target generator/loop scope.
+            var label: ?[]const u8 = null;
+            if (this.check(.colon)) {
+                _ = this.advance();
+                const labelTok = try this.consume(.identifier);
+                label = labelTok.lexeme;
+            }
             var inner = try this.parseEqExpr(alloc);
             errdefer inner.deinit(alloc);
             const innerPtr = try alloc.create(Expr);
             innerPtr.* = inner;
-            return Expr{ .jump = .{ .loc = locFromToken(yieldTok), .kind = .{ .yield = innerPtr } } };
+            return Expr{ .jump = .{ .loc = locFromToken(yieldTok), .kind = .{ .yield = .{ .label = label, .value = innerPtr } } } };
         }
 
         // continue
@@ -3069,8 +3120,9 @@ pub const Parser = struct {
             return Expr{ .identifier = .{ .loc = locFromToken(tok), .kind = .{ .ident = "Self" } } };
         }
 
-        // fn(params) { body } ---- anonymous function expression
-        if (this.check(.@"fn")) {
+        // fn(params) { body } / *fn(params) { body } ---- anonymous function expression
+        if (this.check(.@"fn") or (this.check(.star) and this.peekAt(1).kind == .@"fn")) {
+            const isStarFn = this.match(.star);
             const fnTok = this.advance();
             _ = try this.consume(.leftParenthesis);
             var params: std.ArrayList([]const u8) = .empty;
@@ -3084,6 +3136,7 @@ pub const Parser = struct {
             return Expr{ .function = .{ .loc = locFromToken(fnTok), .kind = .{ .fnExpr = .{
                 .params = try params.toOwnedSlice(alloc),
                 .body = body,
+                .isStarFn = isStarFn,
             } } } };
         }
 
@@ -3611,6 +3664,17 @@ pub const Parser = struct {
     ///   `loop (start..) { i -> body }`
     fn parseLoopExpr(this: *This, alloc: std.mem.Allocator) ParseError!LoopExpr {
         const loopTok = this.advance(); // consume 'loop'
+
+        // `loop await (iter)` — iterate an `@AsyncIterator`, awaiting each item.
+        const awaitLoop = this.match(.await);
+
+        // Optional loop label: `loop :acc (iter) { ... }`.
+        var label: ?[]const u8 = null;
+        if (this.check(.colon)) {
+            _ = this.advance();
+            label = (try this.consume(.identifier)).lexeme;
+        }
+
         _ = try this.consume(.leftParenthesis);
 
         // Parse primary iterator expression (may be a range or identifier)
@@ -3659,6 +3723,8 @@ pub const Parser = struct {
                 .indexRange = indexPtr,
                 .params = try params.toOwnedSlice(alloc),
                 .body = body,
+                .awaitLoop = awaitLoop,
+                .label = label,
             },
         };
     }

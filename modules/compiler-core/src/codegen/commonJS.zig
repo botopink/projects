@@ -357,8 +357,46 @@ const Emitter = struct {
         try self.w(";");
     }
 
+    /// JS function keyword for a botopink function, honoring the `*fn` marker.
+    ///   `*fn -> @Future<_>`        → `async function`
+    ///   `*fn -> @Iterator<_>`      → `function*`
+    ///   `*fn -> @AsyncIterator<_>` → `async function*`
+    /// A bare `*fn` with no recognized return type falls back to `function*`
+    /// when its body yields, else `async function`.
+    fn fnKeyword(f: ast.FnDecl) []const u8 {
+        if (!f.isStarFn) return "function";
+        const kind = starFnKind(f);
+        return switch (kind) {
+            .async_ => "async function",
+            .generator => "function*",
+            .asyncGenerator => "async function*",
+        };
+    }
+
+    const StarFnKind = enum { async_, generator, asyncGenerator };
+
+    fn starFnKind(f: ast.FnDecl) StarFnKind {
+        if (f.returnType) |rt| {
+            if (rt == .generic and rt.generic.is_builtin) {
+                const n = rt.generic.name;
+                if (std.mem.eql(u8, n, "Future")) return .async_;
+                if (std.mem.eql(u8, n, "Iterator")) return .generator;
+                if (std.mem.eql(u8, n, "AsyncIterator")) return .asyncGenerator;
+            }
+        }
+        // No explicit @Future/@Iterator return type: infer from the body.
+        return if (bodyHasYield(f.body)) .generator else .async_;
+    }
+
+    fn bodyHasYield(body: []const ast.Stmt) bool {
+        for (body) |stmt| {
+            if (stmt.expr == .jump and stmt.expr.jump.kind == .yield) return true;
+        }
+        return false;
+    }
+
     fn emitFn(self: *Emitter, f: ast.FnDecl) !void {
-        try self.fmt("function {s}(", .{f.name});
+        try self.fmt("{s} {s}(", .{ fnKeyword(f), f.name });
         try self.emitParams(f.params);
         try self.w(") {\n");
         const prev_fn_indent = self.current_indent;
@@ -885,13 +923,24 @@ const Emitter = struct {
                     try self.w("throw");
                 },
                 .try_ => |t| if (t) |val| try self.emitExpr(val.*),
+                .await_ => |av| {
+                    try self.w("await ");
+                    try self.emitExpr(av.*);
+                },
                 .@"break" => |b| if (b) |val| {
                     try self.w("return ");
                     try self.emitExpr(val.*);
                 } else {
                     try self.w("return");
                 },
-                .yield => |y| if (y) |val| try self.emitExpr(val.*),
+                .yield => |y| if (y.value) |val| {
+                    // Generator `yield` (loop-accumulator yields are lowered at the
+                    // `.loop` site, so reaching here means a `*fn` generator body).
+                    try self.w("yield ");
+                    try self.emitExpr(val.*);
+                } else {
+                    try self.w("yield");
+                },
                 .@"continue" => try self.w("continue"),
             },
 
@@ -1005,7 +1054,7 @@ const Emitter = struct {
                             else => false,
                         };
                         if (isYield) {
-                            const yield_val = stmt.expr.jump.kind.yield;
+                            const yield_val = stmt.expr.jump.kind.yield.value;
                             if (yield_val) |val| {
                                 try self.w("    return ");
                                 try self.emitExpr(val.*);

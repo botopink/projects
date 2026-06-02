@@ -4,6 +4,8 @@
     {
       "fn": {
         "isPub": false,
+        "isStarFn": false,
+        "label": null,
         "name": "Dashboard",
         "docComment": null,
         "comment": null,

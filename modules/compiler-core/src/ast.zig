@@ -322,17 +322,28 @@ pub fn JumpExprOf(comptime phase: Phase) type {
         throw_: ?*ExprOf(phase),
         /// `try expr` — propagate error union failure upward
         try_: ?*ExprOf(phase),
+        /// `await expr` — suspend until the `@Future` operand resolves; result is its `T`
+        await_: *ExprOf(phase),
         /// `break [expr]` ---- exit a block/loop early; expr=null means bare `break`
         @"break": ?*ExprOf(phase),
         /// `continue` ---- skip the rest of this loop iteration
         @"continue",
-        /// `yield expr` ---- accumulate `expr` into a loop's result list; loop continues
-        yield: ?*ExprOf(phase),
+        /// `yield [:label] expr` ---- in a generator (`*fn`), suspend emitting `expr`;
+        /// in a plain loop, accumulate `expr` into the loop's result list. The optional
+        /// `:label` disambiguates which generator/loop scope the yield targets.
+        yield: struct {
+            label: ?[]const u8 = null,
+            value: ?*ExprOf(phase),
+        },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             switch (this.*) {
-                inline .@"return", .throw_, .try_, .@"break", .yield => |e| {
+                inline .@"return", .throw_, .try_, .@"break" => |e| {
                     if (e) |expr| destroyExpr(allocator, expr);
+                },
+                .await_ => |e| destroyExpr(allocator, e),
+                .yield => |y| {
+                    if (y.value) |expr| destroyExpr(allocator, expr);
                 },
                 .@"continue" => {},
             }
@@ -385,6 +396,10 @@ pub fn LoopExprOf(comptime phase: Phase) type {
         indexRange: ?*ExprOf(phase),
         params: []const []const u8,
         body: []StmtOf(phase),
+        /// `loop await (iter) { ... }` ---- iterate an `@AsyncIterator`, awaiting each item.
+        awaitLoop: bool = false,
+        /// Optional loop label (`loop :acc (iter) { ... }`) for `yield :label` disambiguation.
+        label: ?[]const u8 = null,
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             destroyExpr(allocator, this.iter);
@@ -507,11 +522,13 @@ pub fn FunctionExprOf(comptime phase: Phase) type {
             params: []const []const u8,
             body: []StmtOf(phase),
         },
-        /// An anonymous function expression: `fn(a, b) { stmts }`
+        /// An anonymous function expression: `fn(a, b) { stmts }` or `*fn(a, b) { stmts }`
         fnExpr: struct {
             /// Parameter names.
             params: []const []const u8,
             body: []StmtOf(phase),
+            /// `*fn` ---- async/generator function expression (return impl `@Future`/`@Iterator`).
+            isStarFn: bool = false,
         },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
@@ -1273,6 +1290,12 @@ pub const Program = struct {
 /// `isPub` is false for module-private functions.
 pub const FnDecl = struct {
     isPub: bool,
+    /// `*fn` ---- the return type implements `@Future<_>` or `@Iterator<_>`
+    /// (async function / generator). Enables `await` and `yield` in the body.
+    isStarFn: bool = false,
+    /// Optional generator label declared after the return type (`*fn f() -> @Iterator<T> :gen`),
+    /// used to disambiguate `yield :label` from an enclosing loop's accumulator.
+    label: ?[]const u8 = null,
     name: []const u8,
     docComment: ?[]const u8 = null,
     /// `//` regular comment (last one before the declaration)
