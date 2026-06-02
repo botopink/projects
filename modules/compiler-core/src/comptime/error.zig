@@ -122,6 +122,20 @@ pub const TypeErrorKind = union(enum) {
     },
     /// `try` / `catch` applied to a value whose type is not `@Result<D, E>`.
     tryOnNonResult: *T.Type,
+    /// A `case` expression does not cover every possibility of its subject.
+    /// `missing` lists the uncovered enum variants; it is empty for open
+    /// domains (e.g. `string`), where a wildcard `_` arm is required instead.
+    nonExhaustive: struct {
+        typeName: []const u8,
+        missing: []const []const u8,
+    },
+    /// A `case` arm can never match because an earlier arm (a wildcard, a
+    /// whole-value binding, or the same variant) already covers it.
+    redundantPattern: struct {
+        typeName: []const u8,
+        /// Short description of the unreachable arm (e.g. `"variant 'Red'"`).
+        description: []const u8,
+    },
     /// A rule-specific diagnostic with a ready-made message (and optional hint).
     /// Used for validations that don't map onto the structured kinds above
     /// (e.g. async/generator rules around `*fn` / `await` / `yield`).
@@ -215,6 +229,14 @@ pub const TypeError = struct {
         return .{ .kind = .{ .tryOnNonResult = ty } };
     }
 
+    pub fn nonExhaustive(typeName: []const u8, missing: []const []const u8) TypeError {
+        return .{ .kind = .{ .nonExhaustive = .{ .typeName = typeName, .missing = missing } } };
+    }
+
+    pub fn redundantPattern(typeName: []const u8, description: []const u8) TypeError {
+        return .{ .kind = .{ .redundantPattern = .{ .typeName = typeName, .description = description } } };
+    }
+
     pub fn custom(msg: []const u8, hint: ?[]const u8) TypeError {
         return .{ .kind = .{ .custom = .{ .message = msg, .hint = hint } } };
     }
@@ -241,10 +263,27 @@ pub const TypeError = struct {
             .ambiguousMethod => |a| std.fmt.allocPrint(gpa, "'{s}' is declared by both '{s}' and '{s}' — qualify it", .{ a.method, a.interfaceA, a.interfaceB }),
             .typeparamConstraint => |c| std.fmt.allocPrint(gpa, "'{s}' has type '{s}', which does not satisfy its typeparam constraint", .{ c.paramName, typeLabel(c.got) }),
             .tryOnNonResult => |ty| std.fmt.allocPrint(gpa, "`try` requires a @Result<D, E> value, found '{s}'", .{typeLabel(ty)}),
+            .nonExhaustive => |n| nonExhaustiveMessage(gpa, n),
+            .redundantPattern => |r| std.fmt.allocPrint(gpa, "unreachable `case` arm ({s}): {s} is already covered by an earlier arm", .{ r.typeName, r.description }),
             .custom => |c| std.fmt.allocPrint(gpa, "{s}", .{c.message}),
         };
     }
 };
+
+/// Build the `nonExhaustive` message: either "requires a wildcard" (open
+/// domain) or "missing variants: A, B" (enum). Caller owns the result.
+fn nonExhaustiveMessage(gpa: std.mem.Allocator, n: anytype) ![]u8 {
+    if (n.missing.len == 0) {
+        return std.fmt.allocPrint(gpa, "non-exhaustive `case`: '{s}' has no wildcard `_` arm", .{n.typeName});
+    }
+    var list: std.ArrayList(u8) = .empty;
+    defer list.deinit(gpa);
+    for (n.missing, 0..) |name, i| {
+        if (i > 0) try list.appendSlice(gpa, ", ");
+        try list.appendSlice(gpa, name);
+    }
+    return std.fmt.allocPrint(gpa, "non-exhaustive `case` on '{s}': missing variant(s) {s}", .{ n.typeName, list.items });
+}
 
 /// Best-effort short label for a type, used in error messages.
 fn typeLabel(ty: *T.Type) []const u8 {

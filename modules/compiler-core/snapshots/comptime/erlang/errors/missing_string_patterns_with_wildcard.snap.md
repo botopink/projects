@@ -6,11 +6,10 @@ val categorize = fn(s: string) -> string {
 };
 
 ----- ERROR
-error: type mismatch
+error: non-exhaustive case
   ┌─ :2:5
   │
 2 │     case s {
   │     ^
 
-  expected: exhaustive
-  found:    string
+  `string` has no wildcard `_` arm; it cannot be matched exhaustively

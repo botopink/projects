@@ -207,6 +207,8 @@ fn renderTypeError(
         .ambiguousMethod => "ambiguous method",
         .typeparamConstraint => "typeparam constraint not satisfied",
         .tryOnNonResult => "try on non-Result",
+        .nonExhaustive => "non-exhaustive case",
+        .redundantPattern => "unreachable case arm",
         .custom => |c| c.message,
     };
     try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "error: {s}\n", .{title}));
@@ -359,6 +361,33 @@ fn renderTypeError(
                 tmp,
                 "\n  `try` requires a @Result<D, E> value, found '{s}'\n",
                 .{try snapshot.typeNameOf(tmp, ty)},
+            ));
+        },
+        .nonExhaustive => |n| {
+            if (n.missing.len == 0) {
+                try out.appendSlice(allocator, try std.fmt.allocPrint(
+                    tmp,
+                    "\n  `{s}` has no wildcard `_` arm; it cannot be matched exhaustively\n",
+                    .{n.typeName},
+                ));
+            } else {
+                var list: std.ArrayList(u8) = .empty;
+                for (n.missing, 0..) |name, i| {
+                    if (i > 0) try list.appendSlice(tmp, ", ");
+                    try list.appendSlice(tmp, name);
+                }
+                try out.appendSlice(allocator, try std.fmt.allocPrint(
+                    tmp,
+                    "\n  '{s}' is missing variant(s): {s}\n",
+                    .{ n.typeName, list.items },
+                ));
+            }
+        },
+        .redundantPattern => |r| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  {s} is already covered by an earlier arm ('{s}')\n",
+                .{ r.description, r.typeName },
             ));
         },
         .custom => |c| {
@@ -1986,6 +2015,74 @@ test "exhaustiveness: nested pattern matching" {
         \\    case r {
         \\        Ok(v) -> v,
         \\        Err(_) -> default,
+        \\    }
+        \\};
+    );
+}
+
+test "exhaustiveness: or-pattern covers multiple variants" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\val Color = enum {
+        \\    Red,
+        \\    Green,
+        \\    Blue,
+        \\};
+        \\val warm = fn(c: Color) -> bool {
+        \\    case c {
+        \\        Red | Green -> true;
+        \\        Blue -> false;
+        \\    }
+        \\};
+    );
+}
+
+test "exhaustiveness: guarded arm does not cover its variant" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Color = enum {
+        \\    Red,
+        \\    Green,
+        \\    Blue,
+        \\};
+        \\val name = fn(c: Color) -> string {
+        \\    case c {
+        \\        Red -> "red";
+        \\        Green -> "green";
+        \\        Blue if false -> "blue";
+        \\    }
+        \\};
+    );
+}
+
+test "exhaustiveness error: unreachable arm after wildcard" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Color = enum {
+        \\    Red,
+        \\    Green,
+        \\    Blue,
+        \\};
+        \\val name = fn(c: Color) -> string {
+        \\    case c {
+        \\        Red -> "red";
+        \\        _ -> "other";
+        \\        Blue -> "blue";
+        \\    }
+        \\};
+    );
+}
+
+test "exhaustiveness error: duplicate variant arm" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Color = enum {
+        \\    Red,
+        \\    Green,
+        \\    Blue,
+        \\};
+        \\val name = fn(c: Color) -> string {
+        \\    case c {
+        \\        Red -> "red";
+        \\        Green -> "green";
+        \\        Red -> "again";
+        \\        Blue -> "blue";
         \\    }
         \\};
     );

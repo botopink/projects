@@ -1266,32 +1266,6 @@ fn inferTrailingLambdasTyped(env: *Env, trailing: []const ast.TrailingLambda) In
     return out;
 }
 
-fn patternContainsWildcard(pattern: ast.Pattern) bool {
-    return switch (pattern) {
-        .wildcard => true,
-        .@"or" => |patterns| blk: {
-            for (patterns) |p| {
-                if (patternContainsWildcard(p)) break :blk true;
-            }
-            break :blk false;
-        },
-        .multi => |patterns| blk: {
-            for (patterns) |p| {
-                if (patternContainsWildcard(p)) break :blk true;
-            }
-            break :blk false;
-        },
-        .variant => |v| blk: {
-            if (v.payload != .literals) break :blk false;
-            for (v.payload.literals) |p| {
-                if (patternContainsWildcard(p)) break :blk true;
-            }
-            break :blk false;
-        },
-        else => false,
-    };
-}
-
 fn isEnumVariantNameForSubject(env: *Env, subjectType: *T.Type, candidate: []const u8) bool {
     const ty = subjectType.deref();
     if (ty.* != .named) return false;
@@ -1406,18 +1380,177 @@ fn bindCaseArmPatternNames(
     try bindPatternNamesForSubject(env, pattern, subjectTy, snapshots);
 }
 
-fn isExhaustivenessCheckedType(env: *Env, ty: *T.Type) bool {
-    const resolved = ty.deref();
-    if (resolved.isNamed("string")) return true;
-    if (resolved.* == .named) {
-        if (env.lookupTypeDef(resolved.named.name)) |td| {
-            return switch (td) {
-                .enum_ => true,
-                else => false,
-            };
-        }
+fn namesContain(list: []const []const u8, name: []const u8) bool {
+    for (list) |n| {
+        if (std.mem.eql(u8, n, name)) return true;
     }
     return false;
+}
+
+/// True when `pattern`, as a top-level case arm, binds the whole subject and so
+/// matches any value of an enum/string domain — i.e. it is a catch-all. A `_`
+/// wildcard, or an identifier that is NOT one of the subject enum's variant
+/// names, both bind unconditionally. An OR pattern is a catch-all if any
+/// alternative is.
+fn patternIsCatchAll(env: *Env, pattern: ast.Pattern, subjectType: *T.Type) bool {
+    return switch (pattern) {
+        .wildcard => true,
+        .ident => |name| !isEnumVariantNameForSubject(env, subjectType, name),
+        .@"or" => |pats| blk: {
+            for (pats) |p| {
+                if (patternIsCatchAll(env, p, subjectType)) break :blk true;
+            }
+            break :blk false;
+        },
+        else => false,
+    };
+}
+
+/// True when a variant pattern's payload matches *every* value of that variant,
+/// so the variant is fully covered. Refined payloads like `Ok(1)` do not; a
+/// payload of only bindings / wildcards (e.g. `Err(_)`, `Rgb(r, g, b)`) does.
+fn variantPayloadIrrefutable(payload: anytype) bool {
+    return switch (payload) {
+        .binding, .fields => true,
+        .literals => |args| blk: {
+            for (args) |a| {
+                const ok = switch (a) {
+                    .wildcard, .ident => true,
+                    else => false,
+                };
+                if (!ok) break :blk false;
+            }
+            break :blk true;
+        },
+    };
+}
+
+/// Append to `covered` every enum variant that `pattern` *fully* covers (an
+/// irrefutable variant match). Refined matches (`Ok(1)`) are skipped so the
+/// variant stays "open".
+fn collectFullyCoveredVariants(
+    env: *Env,
+    pattern: ast.Pattern,
+    subjectType: *T.Type,
+    covered: *std.ArrayListUnmanaged([]const u8),
+) InferError!void {
+    switch (pattern) {
+        .ident => |name| {
+            if (isEnumVariantNameForSubject(env, subjectType, name) and !namesContain(covered.items, name)) {
+                try covered.append(env.arena, name);
+            }
+        },
+        .variant => |v| {
+            if (variantPayloadIrrefutable(v.payload) and !namesContain(covered.items, v.name)) {
+                try covered.append(env.arena, v.name);
+            }
+        },
+        .@"or" => |pats| {
+            for (pats) |p| try collectFullyCoveredVariants(env, p, subjectType, covered);
+        },
+        else => {},
+    }
+}
+
+/// When `pattern` is a *single* irrefutable variant match whose variant is
+/// already covered, return that variant's name (the arm is unreachable). OR
+/// patterns are skipped — one covered alternative does not make the arm dead.
+fn alreadyCoveredVariant(
+    env: *Env,
+    pattern: ast.Pattern,
+    subjectType: *T.Type,
+    covered: []const []const u8,
+) ?[]const u8 {
+    switch (pattern) {
+        .ident => |name| {
+            if (isEnumVariantNameForSubject(env, subjectType, name) and namesContain(covered, name)) return name;
+        },
+        .variant => |v| {
+            if (variantPayloadIrrefutable(v.payload) and namesContain(covered, v.name)) return v.name;
+        },
+        else => {},
+    }
+    return null;
+}
+
+/// Full exhaustiveness + reachability analysis for a `case` on an enum or
+/// string subject. Sets `env.lastError` and returns `error.TypeError` on the
+/// first problem: an unreachable arm, a missing wildcard for an open domain, or
+/// an enum with uncovered variants. Subjects of any other type are not checked.
+fn checkCaseExhaustiveness(
+    env: *Env,
+    subjectType: *T.Type,
+    arms: []const ast.CaseArm,
+    loc: ast.Loc,
+) InferError!void {
+    const resolved = subjectType.deref();
+
+    // Resolve the subject's domain. `string` is open (only a wildcard makes it
+    // exhaustive); an enum has a known finite variant set; anything else is not
+    // exhaustiveness-checked.
+    const isString = resolved.isNamed("string");
+    var typeName: []const u8 = "string";
+    var variantNames: []const []const u8 = &.{};
+    if (!isString) {
+        if (resolved.* != .named) return;
+        typeName = resolved.named.name;
+        const td = env.lookupTypeDef(typeName) orelse return;
+        switch (td) {
+            .enum_ => |en| {
+                const names = try env.arena.alloc([]const u8, en.variants.len);
+                for (en.variants, 0..) |v, i| names[i] = v.name;
+                variantNames = names;
+            },
+            else => return,
+        }
+    }
+
+    var covered: std.ArrayListUnmanaged([]const u8) = .empty;
+    defer covered.deinit(env.arena);
+    var hasCatchAll = false;
+
+    for (arms) |arm| {
+        const guarded = arm.guard != null;
+
+        // Any unguarded arm following an unguarded catch-all can never run.
+        if (hasCatchAll and !guarded) {
+            env.lastError = TypeError.redundantPattern(typeName, "this arm").withLoc(arm.body.getLoc());
+            return error.TypeError;
+        }
+
+        // A guarded arm may fail its guard, so it neither covers a variant for
+        // exhaustiveness nor shadows later arms.
+        if (guarded) continue;
+
+        if (patternIsCatchAll(env, arm.pattern, resolved)) {
+            hasCatchAll = true;
+            continue;
+        }
+
+        if (alreadyCoveredVariant(env, arm.pattern, resolved, covered.items)) |dup| {
+            const desc = try std.fmt.allocPrint(env.arena, "variant '{s}'", .{dup});
+            env.lastError = TypeError.redundantPattern(typeName, desc).withLoc(arm.body.getLoc());
+            return error.TypeError;
+        }
+
+        try collectFullyCoveredVariants(env, arm.pattern, resolved, &covered);
+    }
+
+    if (hasCatchAll) return;
+
+    if (isString) {
+        env.lastError = TypeError.nonExhaustive(typeName, &.{}).withLoc(loc);
+        return error.TypeError;
+    }
+
+    var missing: std.ArrayListUnmanaged([]const u8) = .empty;
+    for (variantNames) |name| {
+        if (!namesContain(covered.items, name)) try missing.append(env.arena, name);
+    }
+    if (missing.items.len > 0) {
+        env.lastError = TypeError.nonExhaustive(typeName, try missing.toOwnedSlice(env.arena)).withLoc(loc);
+        return error.TypeError;
+    }
 }
 
 /// Infer the type of `expr` AND build the fully-annotated `TypedExpr` in one
@@ -2286,15 +2419,6 @@ fn inferCollectionExpr(env: *Env, col: ast.CollectionExprOf(.untyped), loc: ast.
                 typedSubjects[i] = try inferExprTyped(env, subj);
             }
 
-            if (typedSubjects.len == 1 and c.arms.len == 1 and !patternContainsWildcard(c.arms[0].pattern)) {
-                if (isExhaustivenessCheckedType(env, typedSubjects[0].getType())) {
-                    env.lastError = TypeError.typeMismatch(
-                        try env.namedType("exhaustive"),
-                        typedSubjects[0].getType(),
-                    ).withLoc(loc);
-                    return error.TypeError;
-                }
-            }
             const typedArms = try env.arena.alloc(ast.CaseArmOf(.typed), c.arms.len);
             for (c.arms, 0..) |arm, i| {
                 var snapshots: std.ArrayListUnmanaged(PatternBindingSnapshot) = .empty;
@@ -2327,6 +2451,12 @@ fn inferCollectionExpr(env: *Env, col: ast.CollectionExprOf(.untyped), loc: ast.
                     .guard = guardTyped,
                     .emptyLinesBefore = arm.emptyLinesBefore,
                 };
+            }
+
+            // A single-subject `case` on an enum or string must cover every
+            // possibility (or carry a wildcard), and no arm may be unreachable.
+            if (typedSubjects.len == 1) {
+                try checkCaseExhaustiveness(env, typedSubjects[0].getType(), c.arms, loc);
             }
             return TypedExpr{ .collection = .{ .loc = loc, .type_ = try env.freshVar(), .kind = .{ .case = .{
                 .subjects = typedSubjects,

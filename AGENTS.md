@@ -64,8 +64,8 @@ modules/compiler-core/                         → main compiler library (lex �
       │   ├── wasm/wasm/                       → 162 WASM Text outputs
       │   └── errors/                          → codegen-time error rendering (4 targets × 1)
       ├── comptime/                            → inference + evaluation snapshots (per backend)
-      │   ├── erlang/{,errors/}                → success (136) + errors (41)
-      │   └── node/{,errors/}                  → success (136) + errors (41)
+      │   ├── erlang/{,errors/}                → success (137) + errors (44)
+      │   └── node/{,errors/}                  → success (137) + errors (44)
       └── parser/                              → 174 AST golden snapshots
 modules/language-server/                       → `botopink-lsp` LSP server
   ├── src/                                     → JSON-RPC server + feature engine
