@@ -703,6 +703,26 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     env.fnContext = try contextInfoFromReturn(env, f.returnType);
     defer env.fnContext = savedFnCtx;
 
+    // Determine how `throw` is checked inside this body:
+    //   - no declared return type  → unchecked (lenient: e.g. `catch throw …`)
+    //   - `@Result<D, E>` return   → thrown value must match `E`
+    //   - any other return type    → `throw` is illegal
+    var throwCtx: envMod.ThrowContext = .unchecked;
+    if (f.returnType) |rt| {
+        throwCtx = .plain;
+        if (rt == .generic and rt.generic.is_builtin and
+            std.mem.eql(u8, rt.generic.name, "Result"))
+        {
+            const rtDeref = retType.deref();
+            if (rtDeref.* == .named and rtDeref.named.args.len >= 2) {
+                throwCtx = .{ .result = rtDeref.named.args[1] };
+            }
+        }
+    }
+    const savedThrowCtx = env.throwContext;
+    env.throwContext = throwCtx;
+    defer env.throwContext = savedThrowCtx;
+
     // Infer body (for type checking; we ignore the result for now).
     for (f.body) |stmt| {
         _ = try inferExpr(env, stmt.expr);
@@ -1260,6 +1280,21 @@ fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)),
         },
         .throw_ => |e| {
             const valPtr: ?*TypedExpr = if (e) |ev| try makeTypedPtr(env, try inferExprTyped(env, ev.*)) else null;
+            // Validate the thrown value against the enclosing fn's error type.
+            switch (env.throwContext) {
+                .result => |errType| {
+                    if (valPtr) |vp| {
+                        // Order matters: `errType` is the expected `E`, the thrown
+                        // value is what we got — so unify(expected, got).
+                        try unifyAt(env, errType, vp.getType(), loc);
+                    }
+                },
+                .plain => {
+                    env.lastError = TypeError.throwWithoutResult().withLoc(loc);
+                    return error.TypeError;
+                },
+                .unchecked => {},
+            }
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .throw_ = valPtr } } };
         },
         .try_ => |e| {
@@ -1702,6 +1737,11 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
 
 /// Infer type for function definition expressions (lambdas and anonymous functions)
 fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
+    // A nested function expression has no declared return type, so `throw`
+    // inside it is not checked against the enclosing fn's `E`.
+    const savedThrowCtx = env.throwContext;
+    env.throwContext = .unchecked;
+    defer env.throwContext = savedThrowCtx;
     const fk = func.kind;
     const params = try env.arena.alloc(*T.Type, fk.params.len);
     for (fk.params, 0..) |p, i| {

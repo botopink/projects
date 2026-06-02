@@ -667,10 +667,10 @@ inference ---- comptime arg with no constraint accepts any type (pass)
 codegen ---- constrained typeparam specializes correctly
 ```
 
-### Throw type checking
+### Throw type checking — done
 
-- [ ] Verify thrown value matches `E` of enclosing `@Result<D, E>` return
-- [ ] Error message: mismatch between thrown type and declared `E`
+- [x] Verify thrown value matches `E` of enclosing `@Result<D, E>` return
+- [x] Error message: mismatch between thrown type and declared `E`
 
 ```
 throw ---- string matches declared E = string (pass)

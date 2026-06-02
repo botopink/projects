@@ -200,6 +200,7 @@ fn renderTypeError(
         .useNotAllowed => "`use` not allowed",
         .useNotContext => "`use` requires @Context",
         .contextMismatch => "ContextBase mismatch",
+        .throwWithoutResult => "throw outside @Result",
     };
     try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "error: {s}\n", .{title}));
 
@@ -301,6 +302,9 @@ fn renderTypeError(
                 "\n  function returns @Context<{s}, _>\n  but the `use` expression returns @Context<{s}, _>\n",
                 .{ m.fnBase, m.useBase },
             ));
+        },
+        .throwWithoutResult => {
+            try out.appendSlice(allocator, "\n  'throw' requires the enclosing fn to return '@Result<D, E>'\n");
         },
     }
 
@@ -1928,6 +1932,86 @@ test "@Result: multiple catch with different types" {
         \\fn loadUser() {
         \\    val name = try getName() catch "anon";
         \\    val age = try getAge() catch 0;
+        \\}
+    );
+}
+
+// ── throw type checking ───────────────────────────────────────────────────────
+//
+// The value thrown by `throw` must match the `E` of the enclosing function's
+// `@Result<D, E>` return type. Functions with no declared return type leave
+// `throw` unchecked (e.g. `catch throw …`); functions with a declared,
+// non-`@Result` return type reject `throw` entirely.
+
+test "throw check: string matches declared E = string" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\fn parse(s: string) -> @Result<i32, string> {
+        \\    if (s == "") {
+        \\        throw "empty input";
+        \\    }
+        \\    return 0;
+        \\}
+    );
+}
+
+test "throw check: record matches declared E = ErrorRecord" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\record AppError { code: i32, msg: string }
+        \\fn load() -> @Result<string, AppError> {
+        \\    throw AppError(code: 500, msg: "boom");
+        \\}
+    );
+}
+
+test "throw check: throw inside catch handler checks enclosing fn E" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\fn fetch() -> @Result<i32, string> {
+        \\    throw "primary";
+        \\}
+        \\fn process() -> @Result<i32, string> {
+        \\    val r = try fetch() catch throw "secondary";
+        \\    return r;
+        \\}
+    );
+}
+
+test "throw check: multiple throw sites all match E" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\fn validate(n: i32) -> @Result<i32, string> {
+        \\    if (n < 0) {
+        \\        throw "negative";
+        \\    }
+        \\    if (n > 100) {
+        \\        throw "too big";
+        \\    }
+        \\    return n;
+        \\}
+    );
+}
+
+test "throw check: throw inside nested fn does not check outer fn E" {
+    try assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\fn outer() -> @Result<i32, string> {
+        \\    val cb = fn() {
+        \\        throw 404;
+        \\    };
+        \\    throw "outer error";
+        \\}
+    );
+}
+
+test "throw check error: type mismatch i32 thrown but E = string" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn parse(s: string) -> @Result<i32, string> {
+        \\    throw 404;
+        \\}
+    );
+}
+
+test "throw check error: throw without enclosing Result return type" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn run() -> i32 {
+        \\    throw "x";
         \\}
     );
 }

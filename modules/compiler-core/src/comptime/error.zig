@@ -87,6 +87,8 @@ pub const TypeErrorKind = union(enum) {
         fnBase: []const u8,
         useBase: []const u8,
     },
+    /// `throw` used in a function whose return type is not `@Result<D, E>`.
+    throwWithoutResult,
 };
 
 /// A type error with its source location.
@@ -143,6 +145,10 @@ pub const TypeError = struct {
 
     pub fn contextMismatch(fnBase: []const u8, useBase: []const u8) TypeError {
         return .{ .kind = .{ .contextMismatch = .{ .fnBase = fnBase, .useBase = useBase } } };
+    }
+
+    pub fn throwWithoutResult() TypeError {
+        return .{ .kind = .throwWithoutResult };
     }
 };
 
