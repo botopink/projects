@@ -180,7 +180,7 @@ fn transformBody(
     for (original_body) |stmt| {
         switch (stmt.expr) {
             .loop => |lp| {
-                const iter_name: ?[]const u8 = switch (lp.kind.iter.*) {
+                const iter_name: ?[]const u8 = switch (lp.iter.*) {
                     .identifier => |id| if (id.kind == .ident) id.kind.ident else null,
                     else => null,
                 };
@@ -199,8 +199,8 @@ fn transformBody(
                         try transformBodyWithLoopCtx(
                             arena,
                             &out,
-                            lp.kind.body,
-                            lp.kind.params,
+                            lp.body,
+                            lp.params,
                             elem_val,
                             ct_arg_map,
                         );
@@ -304,7 +304,7 @@ fn tryFoldCaseAssign(
             .numberLit => |n| std.mem.eql(u8, n, subject_val),
             .wildcard => true,
             .ident => |i| std.mem.eql(u8, i, subject_val),
-            else => continue, // variantFields, list, or-pattern — not foldable
+            else => continue, // variant, list, or-pattern — not foldable
         };
         if (matched) {
             // Shallow-copy the matched arm body expression into the spec arena.
@@ -353,9 +353,9 @@ fn evalEqCondition(
 ) ?bool {
     switch (cond) {
         .binaryOp => |bin| {
-            if (bin.kind.op != .eq) return null;
-            const lv = resolveToStr(bin.kind.lhs.*, loop_params, elem_val, ct_arg_map) orelse return null;
-            const rv = resolveToStr(bin.kind.rhs.*, loop_params, elem_val, ct_arg_map) orelse return null;
+            if (bin.op != .eq) return null;
+            const lv = resolveToStr(bin.lhs.*, loop_params, elem_val, ct_arg_map) orelse return null;
+            const rv = resolveToStr(bin.rhs.*, loop_params, elem_val, ct_arg_map) orelse return null;
             return std.mem.eql(u8, lv, rv);
         },
         else => return null,
@@ -399,7 +399,7 @@ fn bodyNeedsParamConst(
     for (body) |stmt| {
         switch (stmt.expr) {
             .loop => |lp| {
-                const is_ct_loop = switch (lp.kind.iter.*) {
+                const is_ct_loop = switch (lp.iter.*) {
                     .identifier => |id| if (id.kind == .ident)
                         comptime_arrays.get(id.kind.ident) != null
                     else
@@ -407,8 +407,8 @@ fn bodyNeedsParamConst(
                     else => false,
                 };
                 if (is_ct_loop) continue; // handled by unrolling — skip
-                if (identInExpr(lp.kind.iter.*, param_name)) return true;
-                for (lp.kind.body) |bs| if (identInExpr(bs.expr, param_name)) return true;
+                if (identInExpr(lp.iter.*, param_name)) return true;
+                for (lp.body) |bs| if (identInExpr(bs.expr, param_name)) return true;
             },
             .branch => if (identInExpr(stmt.expr, param_name)) return true,
             .jump => |j| switch (j.kind) {
@@ -427,7 +427,7 @@ fn identInExpr(expr: anytype, name: []const u8) bool {
             std.mem.eql(u8, id.kind.ident, name)
         else
             false,
-        .binaryOp => |bin| identInExpr(bin.kind.lhs.*, name) or identInExpr(bin.kind.rhs.*, name),
+        .binaryOp => |bin| identInExpr(bin.lhs.*, name) or identInExpr(bin.rhs.*, name),
         .call => |c| switch (c.kind) {
             .pipeline => |p| identInExpr(p.lhs.*, name) or identInExpr(p.rhs.*, name),
             .call => |cc| blk: {
@@ -474,20 +474,14 @@ fn identInExpr(expr: anytype, name: []const u8) bool {
             },
         },
         .loop => |lp| blk: {
-            if (identInExpr(lp.kind.iter.*, name)) break :blk true;
-            if (lp.kind.indexRange) |idx| if (identInExpr(idx.*, name)) break :blk true;
-            for (lp.kind.body) |s| if (identInExpr(s.expr, name)) break :blk true;
+            if (identInExpr(lp.iter.*, name)) break :blk true;
+            if (lp.indexRange) |idx| if (identInExpr(idx.*, name)) break :blk true;
+            for (lp.body) |s| if (identInExpr(s.expr, name)) break :blk true;
             break :blk false;
         },
-        .function => |f| switch (f.kind) {
-            .lambda => |l| blk: {
-                for (l.body) |s| if (identInExpr(s.expr, name)) break :blk true;
-                break :blk false;
-            },
-            .fnExpr => |fn_expr| blk: {
-                for (fn_expr.body) |s| if (identInExpr(s.expr, name)) break :blk true;
-                break :blk false;
-            },
+        .function => |f| blk: {
+            for (f.kind.body) |s| if (identInExpr(s.expr, name)) break :blk true;
+            break :blk false;
         },
         .collection => |c| switch (c.kind) {
             .grouped => |g| identInExpr(g.*, name),
@@ -533,6 +527,6 @@ fn identInExpr(expr: anytype, name: []const u8) bool {
         .literal => |lit| switch (lit.kind) {
             .stringLit, .numberLit, .null_, .comment => false,
         },
-        .unaryOp => |un| identInExpr(un.kind.expr.*, name),
+        .unaryOp => |un| identInExpr(un.expr.*, name),
     };
 }

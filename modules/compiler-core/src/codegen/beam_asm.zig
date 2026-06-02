@@ -969,7 +969,7 @@ const Emitter = struct {
     fn lowerComparisonAsTest(self: *Emitter, cond: ast.Expr, fail_label: u32) anyerror!bool {
         switch (cond) {
             .binaryOp => |bin| {
-                const opcode: ?[]const u8 = switch (bin.kind.op) {
+                const opcode: ?[]const u8 = switch (bin.op) {
                     .lt => "is_lt",
                     .gt => "is_gt",
                     .lte => "is_le",
@@ -982,8 +982,8 @@ const Emitter = struct {
 
                 var lhs_buf: [64]u8 = undefined;
                 var rhs_buf: [64]u8 = undefined;
-                const lhs_simple = try self.simpleTerm(bin.kind.lhs.*, &lhs_buf);
-                const rhs_simple = try self.simpleTerm(bin.kind.rhs.*, &rhs_buf);
+                const lhs_simple = try self.simpleTerm(bin.lhs.*, &lhs_buf);
+                const rhs_simple = try self.simpleTerm(bin.rhs.*, &rhs_buf);
 
                 var lhs_final: []const u8 = undefined;
                 var rhs_final: []const u8 = undefined;
@@ -998,14 +998,14 @@ const Emitter = struct {
                     if (lhs_simple) |ls| {
                         try self.bodyPrint("    {{move, {s}, {{x, {d}}}}}.\n", .{ ls, scratch });
                     } else {
-                        try self.lowerExprIntoX0(bin.kind.lhs.*);
+                        try self.lowerExprIntoX0(bin.lhs.*);
                         if (scratch != 0) try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
                     }
                     lhs_final = try std.fmt.bufPrint(&lhs_final_buf, "{{x, {d}}}", .{scratch});
                     if (rhs_simple) |rs| {
                         rhs_final = rs;
                     } else {
-                        try self.lowerExprIntoX0(bin.kind.rhs.*);
+                        try self.lowerExprIntoX0(bin.rhs.*);
                         rhs_final = try std.fmt.bufPrint(&rhs_final_buf, "{{x, 0}}", .{});
                     }
                 }
@@ -1076,13 +1076,13 @@ const Emitter = struct {
                 try self.lowerArith(e, 0);
                 return;
             },
-            .unaryOp => |un| switch (un.kind.op) {
+            .unaryOp => |un| switch (un.op) {
                 .neg => {
-                    try self.lowerNeg(un.kind.expr.*, 0);
+                    try self.lowerNeg(un.expr.*, 0);
                     return;
                 },
                 .not => {
-                    try self.lowerNot(un.kind.expr.*, 0);
+                    try self.lowerNot(un.expr.*, 0);
                     return;
                 },
             },
@@ -1149,12 +1149,12 @@ const Emitter = struct {
                 try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
                 return;
             },
-            .function => |f| switch (f.kind) {
-                .lambda => |lam| {
-                    try self.lowerLambda(lam);
+            .function => |f| switch (f.kind.syntax) {
+                .lambda => {
+                    try self.lowerLambda(f.kind);
                     return;
                 },
-                else => {
+                .fnExpr => {
                     try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
                     return;
                 },
@@ -1254,7 +1254,7 @@ const Emitter = struct {
     /// lands in `{x, dest}`.
     fn lowerArith(self: *Emitter, e: ast.Expr, dest: u32) anyerror!void {
         switch (e) {
-            .binaryOp => |bin| switch (bin.kind.op) {
+            .binaryOp => |bin| switch (bin.op) {
                 .add, .sub, .mul, .div, .mod => try self.lowerArithGcBif(bin, dest),
                 .lt, .gt, .lte, .gte, .eq, .ne => try self.lowerCmpAsValue(bin, dest),
                 .@"and" => try self.lowerAndAsValue(bin, dest),
@@ -1267,7 +1267,7 @@ const Emitter = struct {
     /// Arithmetic via `gc_bif`. Handles non-simple operands by materializing
     /// them into scratch x-registers above `cur_arity`.
     fn lowerArithGcBif(self: *Emitter, bin: anytype, dest: u32) anyerror!void {
-        const bif: []const u8 = switch (bin.kind.op) {
+        const bif: []const u8 = switch (bin.op) {
             .add => "'+'",
             .sub => "'-'",
             .mul => "'*'",
@@ -1277,8 +1277,8 @@ const Emitter = struct {
         };
         var lhs_buf: [64]u8 = undefined;
         var rhs_buf: [64]u8 = undefined;
-        const lhs_simple = try self.simpleTerm(bin.kind.lhs.*, &lhs_buf);
-        const rhs_simple = try self.simpleTerm(bin.kind.rhs.*, &rhs_buf);
+        const lhs_simple = try self.simpleTerm(bin.lhs.*, &lhs_buf);
+        const rhs_simple = try self.simpleTerm(bin.rhs.*, &rhs_buf);
 
         if (lhs_simple != null and rhs_simple != null) {
             try self.bodyPrint(
@@ -1292,14 +1292,14 @@ const Emitter = struct {
         if (lhs_simple) |ls| {
             try self.bodyPrint("    {{move, {s}, {{x, {d}}}}}.\n", .{ ls, scratch });
         } else {
-            try self.lowerExprIntoX0(bin.kind.lhs.*);
+            try self.lowerExprIntoX0(bin.lhs.*);
             if (scratch != 0)
                 try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
         }
 
         var rhs_final_buf: [64]u8 = undefined;
         const rhs_final: []const u8 = if (rhs_simple) |rs| rs else blk: {
-            try self.lowerExprIntoX0(bin.kind.rhs.*);
+            try self.lowerExprIntoX0(bin.rhs.*);
             break :blk try std.fmt.bufPrint(&rhs_final_buf, "{{x, 0}}", .{});
         };
 
@@ -1315,7 +1315,7 @@ const Emitter = struct {
     /// Lower a comparison (`<`, `>`, `==`, …) as a value: emits a `{test, …}`
     /// then branches to produce `{atom, true}` or `{atom, false}` in `{x, dest}`.
     fn lowerCmpAsValue(self: *Emitter, bin: anytype, dest: u32) anyerror!void {
-        const opcode: []const u8 = switch (bin.kind.op) {
+        const opcode: []const u8 = switch (bin.op) {
             .lt => "is_lt",
             .gt => "is_gt",
             .lte => "is_le",
@@ -1327,8 +1327,8 @@ const Emitter = struct {
 
         var lhs_buf: [64]u8 = undefined;
         var rhs_buf: [64]u8 = undefined;
-        const lhs_simple = try self.simpleTerm(bin.kind.lhs.*, &lhs_buf);
-        const rhs_simple = try self.simpleTerm(bin.kind.rhs.*, &rhs_buf);
+        const lhs_simple = try self.simpleTerm(bin.lhs.*, &lhs_buf);
+        const rhs_simple = try self.simpleTerm(bin.rhs.*, &rhs_buf);
 
         var lhs_final_buf: [64]u8 = undefined;
         var rhs_final_buf: [64]u8 = undefined;
@@ -1343,7 +1343,7 @@ const Emitter = struct {
             if (lhs_simple) |ls| {
                 try self.bodyPrint("    {{move, {s}, {{x, {d}}}}}.\n", .{ ls, scratch });
             } else {
-                try self.lowerExprIntoX0(bin.kind.lhs.*);
+                try self.lowerExprIntoX0(bin.lhs.*);
                 if (scratch != 0) try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
             }
             lhs_final = try std.fmt.bufPrint(&lhs_final_buf, "{{x, {d}}}", .{scratch});
@@ -1351,7 +1351,7 @@ const Emitter = struct {
             if (rhs_simple) |rs| {
                 rhs_final = rs;
             } else {
-                try self.lowerExprIntoX0(bin.kind.rhs.*);
+                try self.lowerExprIntoX0(bin.rhs.*);
                 rhs_final = try std.fmt.bufPrint(&rhs_final_buf, "{{x, 0}}", .{});
             }
         }
@@ -1369,18 +1369,18 @@ const Emitter = struct {
     /// `a && b` → short-circuit: test `a`, if false → false, else evaluate `b`.
     fn lowerAndAsValue(self: *Emitter, bin: anytype, dest: u32) anyerror!void {
         var lhs_buf: [64]u8 = undefined;
-        const lhs_simple = try self.simpleTerm(bin.kind.lhs.*, &lhs_buf);
+        const lhs_simple = try self.simpleTerm(bin.lhs.*, &lhs_buf);
         var lhs_final_buf: [64]u8 = undefined;
         const lhs_final: []const u8 = if (lhs_simple) |ls| ls else blk: {
             const scratch = self.cur_arity;
-            try self.lowerExprIntoX0(bin.kind.lhs.*);
+            try self.lowerExprIntoX0(bin.lhs.*);
             if (scratch != 0) try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
             break :blk try std.fmt.bufPrint(&lhs_final_buf, "{{x, {d}}}", .{scratch});
         };
         const false_label = self.allocLabel();
         const end_label = self.allocLabel();
         try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{s}, {{atom, true}}]}}.\n", .{ false_label, lhs_final });
-        try self.lowerExprIntoX0(bin.kind.rhs.*);
+        try self.lowerExprIntoX0(bin.rhs.*);
         if (dest != 0) try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{dest});
         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
         try self.bodyPrint("  {{label, {d}}}.\n", .{false_label});
@@ -1391,18 +1391,18 @@ const Emitter = struct {
     /// `a || b` → short-circuit: test `a`, if true → true, else evaluate `b`.
     fn lowerOrAsValue(self: *Emitter, bin: anytype, dest: u32) anyerror!void {
         var lhs_buf: [64]u8 = undefined;
-        const lhs_simple = try self.simpleTerm(bin.kind.lhs.*, &lhs_buf);
+        const lhs_simple = try self.simpleTerm(bin.lhs.*, &lhs_buf);
         var lhs_final_buf: [64]u8 = undefined;
         const lhs_final: []const u8 = if (lhs_simple) |ls| ls else blk: {
             const scratch = self.cur_arity;
-            try self.lowerExprIntoX0(bin.kind.lhs.*);
+            try self.lowerExprIntoX0(bin.lhs.*);
             if (scratch != 0) try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
             break :blk try std.fmt.bufPrint(&lhs_final_buf, "{{x, {d}}}", .{scratch});
         };
         const true_label = self.allocLabel();
         const end_label = self.allocLabel();
         try self.bodyPrint("    {{test, is_ne_exact, {{f, {d}}}, [{s}, {{atom, true}}]}}.\n", .{ true_label, lhs_final });
-        try self.lowerExprIntoX0(bin.kind.rhs.*);
+        try self.lowerExprIntoX0(bin.rhs.*);
         if (dest != 0) try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{dest});
         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
         try self.bodyPrint("  {{label, {d}}}.\n", .{true_label});
@@ -1678,32 +1678,39 @@ const Emitter = struct {
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
                     try self.bodyPrint("  {{label, {d}}}.\n", .{next});
                 },
-                .variantFields => |vf| {
-                    const next = self.allocLabel();
-                    try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, {d}, {{atom, {s}}}}}.\n", .{ next, vf.bindings.len + 1, vf.name });
-                    for (vf.bindings, 0..) |bname, i| {
-                        try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, {d}, {{x, 1}}}}.\n", .{i + 1});
+                .variant => |v| switch (v.payload) {
+                    .fields => |fields| {
+                        const next = self.allocLabel();
+                        try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, {d}, {{atom, {s}}}}}.\n", .{ next, fields.len + 1, v.name });
+                        for (fields, 0..) |bname, i| {
+                            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, {d}, {{x, 1}}}}.\n", .{i + 1});
+                            const y_idx = self.next_y;
+                            self.next_y += 1;
+                            try self.reg_map.put(bname, .{ .y = y_idx });
+                            try self.bodyPrint("    {{move, {{x, 1}}, {{y, {d}}}}}.\n", .{y_idx});
+                        }
+                        try self.lowerExprIntoX0(arm.body);
+                        try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                        try self.bodyPrint("  {{label, {d}}}.\n", .{next});
+                    },
+                    .binding => |binding| {
+                        const next = self.allocLabel();
+                        try self.bodyPrint("    {{test, is_tuple, {{f, {d}}}, [{{x, 0}}]}}.\n", .{next});
+                        try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 0, {{x, 1}}}}.\n", .{});
+                        try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 1}}, {{atom, {s}}}]}}.\n", .{ next, v.name });
                         const y_idx = self.next_y;
                         self.next_y += 1;
-                        try self.reg_map.put(bname, .{ .y = y_idx });
-                        try self.bodyPrint("    {{move, {{x, 1}}, {{y, {d}}}}}.\n", .{y_idx});
-                    }
-                    try self.lowerExprIntoX0(arm.body);
-                    try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
-                    try self.bodyPrint("  {{label, {d}}}.\n", .{next});
-                },
-                .variantBinding => |vb| {
-                    const next = self.allocLabel();
-                    try self.bodyPrint("    {{test, is_tuple, {{f, {d}}}, [{{x, 0}}]}}.\n", .{next});
-                    try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 0, {{x, 1}}}}.\n", .{});
-                    try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 1}}, {{atom, {s}}}]}}.\n", .{ next, vb.name });
-                    const y_idx = self.next_y;
-                    self.next_y += 1;
-                    try self.reg_map.put(vb.binding, .{ .y = y_idx });
-                    try self.bodyPrint("    {{move, {{x, 0}}, {{y, {d}}}}}.\n", .{y_idx});
-                    try self.lowerExprIntoX0(arm.body);
-                    try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
-                    try self.bodyPrint("  {{label, {d}}}.\n", .{next});
+                        try self.reg_map.put(binding, .{ .y = y_idx });
+                        try self.bodyPrint("    {{move, {{x, 0}}, {{y, {d}}}}}.\n", .{y_idx});
+                        try self.lowerExprIntoX0(arm.body);
+                        try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                        try self.bodyPrint("  {{label, {d}}}.\n", .{next});
+                    },
+                    .literals => {
+                        // Literal-argument variants are not lowered specially yet.
+                        try self.lowerExprIntoX0(arm.body);
+                        try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                    },
                 },
                 .list => |lst| {
                     const next = self.allocLabel();
@@ -1759,10 +1766,6 @@ const Emitter = struct {
                     try self.lowerExprIntoX0(arm.body);
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
                     try self.bodyPrint("  {{label, {d}}}.\n", .{next});
-                },
-                else => {
-                    try self.lowerExprIntoX0(arm.body);
-                    try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
                 },
             }
         }
@@ -1926,11 +1929,11 @@ const Emitter = struct {
     }
 
     fn lowerLoop(self: *Emitter, lp: anytype) anyerror!void {
-        const has_map = hasYieldOrBreakValue(lp.kind.body);
+        const has_map = hasYieldOrBreakValue(lp.body);
 
         const idx = self.lambda_count;
         self.lambda_count += 1;
-        const arity: u32 = @intCast(lp.kind.params.len);
+        const arity: u32 = @intCast(lp.params.len);
 
         var name_buf: [256]u8 = undefined;
         const fun_name = try std.fmt.bufPrint(&name_buf, "'-{s}/{d}-fun-{d}-'", .{ self.cur_fn_name, self.cur_arity, idx });
@@ -1951,11 +1954,11 @@ const Emitter = struct {
 
         self.next_y = 0;
         self.cur_arity = arity;
-        self.num_y = self.precountLocals(lp.kind.body);
+        self.num_y = self.precountLocals(lp.body);
         self.in_loop_lambda = true;
 
         var x: u32 = 0;
-        for (lp.kind.params) |p| {
+        for (lp.params) |p| {
             try self.reg_map.put(p, .{ .x = x });
             x += 1;
         }
@@ -1968,7 +1971,7 @@ const Emitter = struct {
         try self.bodyPrint("  {{label, {d}}}.\n", .{labels.entry});
         try self.bodyPrint("    {{allocate, {d}, {d}}}.\n", .{ self.num_y, arity });
 
-        try self.emitBody(lp.kind.body);
+        try self.emitBody(lp.body);
 
         self.reg_map.deinit();
         self.reg_map = saved_reg_map;
@@ -1985,7 +1988,7 @@ const Emitter = struct {
 
         const scratch = self.cur_arity;
         try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
-        try self.lowerExprIntoX0(lp.kind.iter.*);
+        try self.lowerExprIntoX0(lp.iter.*);
         try self.bodyPrint("    {{move, {{x, 0}}, {{x, 1}}}}.\n", .{});
         try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{scratch});
 
@@ -2041,8 +2044,8 @@ const Emitter = struct {
                 .null_ => return try std.fmt.bufPrint(buf, "{{atom, nil}}", .{}),
                 else => return null,
             },
-            .unaryOp => |un| switch (un.kind.op) {
-                .neg => switch (un.kind.expr.*) {
+            .unaryOp => |un| switch (un.op) {
+                .neg => switch (un.expr.*) {
                     .literal => |lit| switch (lit.kind) {
                         .numberLit => |n| return try formatNegNumberInto(buf, n),
                         else => return null,

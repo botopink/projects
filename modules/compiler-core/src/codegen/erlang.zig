@@ -466,31 +466,31 @@ const Emitter = struct {
                 .dotIdent => |n| try this.fmt("{s}", .{n}),
             },
 
-            .binaryOp => |bin| switch (bin.kind.op) {
-                .add => try this.emitBinaryOp("+", bin.kind.lhs, bin.kind.rhs),
-                .sub => try this.emitBinaryOp("-", bin.kind.lhs, bin.kind.rhs),
-                .mul => try this.emitBinaryOp("*", bin.kind.lhs, bin.kind.rhs),
-                .div => try this.emitBinaryOp("div", bin.kind.lhs, bin.kind.rhs),
-                .mod => try this.emitBinaryOp("rem", bin.kind.lhs, bin.kind.rhs),
-                .lt => try this.emitBinaryOp("<", bin.kind.lhs, bin.kind.rhs),
-                .gt => try this.emitBinaryOp(">", bin.kind.lhs, bin.kind.rhs),
-                .lte => try this.emitBinaryOp("=<", bin.kind.lhs, bin.kind.rhs),
-                .gte => try this.emitBinaryOp(">=", bin.kind.lhs, bin.kind.rhs),
-                .eq => try this.emitBinaryOp("=:=", bin.kind.lhs, bin.kind.rhs),
-                .ne => try this.emitBinaryOp("=/=", bin.kind.lhs, bin.kind.rhs),
-                .@"and" => try this.emitBinaryOp("and", bin.kind.lhs, bin.kind.rhs),
-                .@"or" => try this.emitBinaryOp("or", bin.kind.lhs, bin.kind.rhs),
+            .binaryOp => |bin| switch (bin.op) {
+                .add => try this.emitBinaryOp("+", bin.lhs, bin.rhs),
+                .sub => try this.emitBinaryOp("-", bin.lhs, bin.rhs),
+                .mul => try this.emitBinaryOp("*", bin.lhs, bin.rhs),
+                .div => try this.emitBinaryOp("div", bin.lhs, bin.rhs),
+                .mod => try this.emitBinaryOp("rem", bin.lhs, bin.rhs),
+                .lt => try this.emitBinaryOp("<", bin.lhs, bin.rhs),
+                .gt => try this.emitBinaryOp(">", bin.lhs, bin.rhs),
+                .lte => try this.emitBinaryOp("=<", bin.lhs, bin.rhs),
+                .gte => try this.emitBinaryOp(">=", bin.lhs, bin.rhs),
+                .eq => try this.emitBinaryOp("=:=", bin.lhs, bin.rhs),
+                .ne => try this.emitBinaryOp("=/=", bin.lhs, bin.rhs),
+                .@"and" => try this.emitBinaryOp("and", bin.lhs, bin.rhs),
+                .@"or" => try this.emitBinaryOp("or", bin.lhs, bin.rhs),
             },
 
-            .unaryOp => |un| switch (un.kind.op) {
+            .unaryOp => |un| switch (un.op) {
                 .not => {
                     try this.w("(not ");
-                    try this.emitExpr(un.kind.expr.*);
+                    try this.emitExpr(un.expr.*);
                     try this.w(")");
                 },
                 .neg => {
                     try this.w("(-");
-                    try this.emitExpr(un.kind.expr.*);
+                    try this.emitExpr(un.expr.*);
                     try this.w(")");
                 },
             },
@@ -673,42 +673,22 @@ const Emitter = struct {
                 },
             },
 
-            .function => |func| switch (func.kind) {
-                .lambda => |l| {
-                    try this.w("fun(");
-                    for (l.params, 0..) |p, i| {
-                        if (i > 0) try this.w(", ");
-                        const vname = try erlangVar(this.alloc, p);
-                        defer this.alloc.free(vname);
-                        try this.w(vname);
-                    }
-                    try this.w(") ->\n");
-                    const lam_saved = this.indent;
-                    this.indent = this.indent + 1;
-                    try this.emitBody(l.body);
-                    this.indent = lam_saved;
-                    try this.w("\n");
-                    try this.writeIndent();
-                    try this.w("end");
-                },
-
-                .fnExpr => |f| {
-                    try this.w("fun(");
-                    for (f.params, 0..) |p, i| {
-                        if (i > 0) try this.w(", ");
-                        const vname = try erlangVar(this.alloc, p);
-                        defer this.alloc.free(vname);
-                        try this.w(vname);
-                    }
-                    try this.w(") ->\n");
-                    const lam_saved = this.indent;
-                    this.indent = this.indent + 1;
-                    try this.emitBody(f.body);
-                    this.indent = lam_saved;
-                    try this.w("\n");
-                    try this.writeIndent();
-                    try this.w("end");
-                },
+            .function => |func| {
+                try this.w("fun(");
+                for (func.kind.params, 0..) |p, i| {
+                    if (i > 0) try this.w(", ");
+                    const vname = try erlangVar(this.alloc, p);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                }
+                try this.w(") ->\n");
+                const lam_saved = this.indent;
+                this.indent = this.indent + 1;
+                try this.emitBody(func.kind.body);
+                this.indent = lam_saved;
+                try this.w("\n");
+                try this.writeIndent();
+                try this.w("end");
             },
 
             .collection => |col| switch (col.kind) {
@@ -841,7 +821,7 @@ const Emitter = struct {
 
             .loop => |lp| {
                 const has_yield = blk: {
-                    for (lp.kind.body) |stmt| {
+                    for (lp.body) |stmt| {
                         if (switch (stmt.expr) {
                             .jump => |j| j.kind == .yield,
                             else => false,
@@ -851,7 +831,7 @@ const Emitter = struct {
                 };
                 const fun_kw = if (has_yield) "lists:map" else "lists:foreach";
                 try this.fmt("{s}(fun(", .{fun_kw});
-                for (lp.kind.params, 0..) |p, i| {
+                for (lp.params, 0..) |p, i| {
                     if (i > 0) try this.w(", ");
                     const vname = try erlangVar(this.alloc, p);
                     defer this.alloc.free(vname);
@@ -861,12 +841,12 @@ const Emitter = struct {
                 const fun_body_indent = this.indent + 1;
                 const saved2 = this.indent;
                 this.indent = fun_body_indent;
-                try this.emitBody(lp.kind.body);
+                try this.emitBody(lp.body);
                 this.indent = saved2;
                 try this.w("\n");
                 try this.writeIndent();
                 try this.w("end, ");
-                try this.emitExpr(lp.kind.iter.*);
+                try this.emitExpr(lp.iter.*);
                 try this.w(")");
             },
 
@@ -1046,28 +1026,30 @@ const Emitter = struct {
             .ident => |n| try this.w(n), // enum variant → atom
             .numberLit => |n| try this.w(n),
             .stringLit => |s| try this.emitBinary(s),
-            .variantBinding => |vb| {
-                const vname = try erlangVar(this.alloc, vb.binding);
-                defer this.alloc.free(vname);
-                try this.fmt("{{tag, {s}, {s}}}", .{ vb.name, vname });
-            },
-            .variantFields => |vf| {
-                try this.fmt("{{tag, {s}", .{vf.name});
-                for (vf.bindings) |bb| {
-                    try this.w(", ");
-                    const vname = try erlangVar(this.alloc, bb);
+            .variant => |v| switch (v.payload) {
+                .binding => |binding| {
+                    const vname = try erlangVar(this.alloc, binding);
                     defer this.alloc.free(vname);
-                    try this.w(vname);
-                }
-                try this.w("}");
-            },
-            .variantLiterals => |vl| {
-                try this.fmt("{{tag, {s}", .{vl.name});
-                for (vl.args) |arg| {
-                    try this.w(", ");
-                    try this.emitPattern(arg);
-                }
-                try this.w("}");
+                    try this.fmt("{{tag, {s}, {s}}}", .{ v.name, vname });
+                },
+                .fields => |fields| {
+                    try this.fmt("{{tag, {s}", .{v.name});
+                    for (fields) |bb| {
+                        try this.w(", ");
+                        const vname = try erlangVar(this.alloc, bb);
+                        defer this.alloc.free(vname);
+                        try this.w(vname);
+                    }
+                    try this.w("}");
+                },
+                .literals => |args| {
+                    try this.fmt("{{tag, {s}", .{v.name});
+                    for (args) |arg| {
+                        try this.w(", ");
+                        try this.emitPattern(arg);
+                    }
+                    try this.w("}");
+                },
             },
             .list => |lp| {
                 if (lp.spread) |sp| {
@@ -1129,12 +1111,12 @@ const Emitter = struct {
 
     fn emitCaseBody(this: *Emitter, body: ast.Expr) !void {
         switch (body) {
-            .function => |func| switch (func.kind) {
-                .lambda => |l| {
+            .function => |func| switch (func.kind.syntax) {
+                .lambda => {
                     // Multi-statement block: emitBody handles indentation via this.indent
-                    try this.emitBody(l.body);
+                    try this.emitBody(func.kind.body);
                 },
-                else => {
+                .fnExpr => {
                     // Single expression: emit with current indentation
                     try this.writeIndent();
                     try this.emitExpr(body);

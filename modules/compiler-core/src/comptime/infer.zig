@@ -911,8 +911,9 @@ fn patternContainsWildcard(pattern: ast.Pattern) bool {
             }
             break :blk false;
         },
-        .variantLiterals => |vl| blk: {
-            for (vl.args) |p| {
+        .variant => |v| blk: {
+            if (v.payload != .literals) break :blk false;
+            for (v.payload.literals) |p| {
                 if (patternContainsWildcard(p)) break :blk true;
             }
             break :blk false;
@@ -984,18 +985,20 @@ fn bindPatternNamesForSubject(
             if (isEnumVariantNameForSubject(env, subjectType, name)) return;
             try saveAndBindPatternName(env, snapshots, name, try env.freshVar());
         },
-        .variantBinding => |vb| {
-            try saveAndBindPatternName(env, snapshots, vb.binding, try env.freshVar());
-        },
-        .variantFields => |vf| {
-            for (vf.bindings) |binding| {
+        .variant => |v| switch (v.payload) {
+            .binding => |binding| {
                 try saveAndBindPatternName(env, snapshots, binding, try env.freshVar());
-            }
-        },
-        .variantLiterals => |vl| {
-            for (vl.args) |arg| {
-                try bindPatternNamesForSubject(env, arg, try env.freshVar(), snapshots);
-            }
+            },
+            .fields => |fields| {
+                for (fields) |binding| {
+                    try saveAndBindPatternName(env, snapshots, binding, try env.freshVar());
+                }
+            },
+            .literals => |args| {
+                for (args) |arg| {
+                    try bindPatternNamesForSubject(env, arg, try env.freshVar(), snapshots);
+                }
+            },
         },
         .list => |lst| {
             for (lst.elems) |elem| {
@@ -1193,13 +1196,13 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
 
 /// Infer type for binary operation expressions
 fn inferBinaryOpExpr(env: *Env, binop: ast.BinOpExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    const lhsTyped = try inferExprTyped(env, binop.kind.lhs.*);
-    const rhsTyped = try inferExprTyped(env, binop.kind.rhs.*);
+    const lhsTyped = try inferExprTyped(env, binop.lhs.*);
+    const rhsTyped = try inferExprTyped(env, binop.rhs.*);
     const lhsPtr = try makeTypedPtr(env, lhsTyped);
     const rhsPtr = try makeTypedPtr(env, rhsTyped);
 
     // Determine result type based on operator
-    const resultType: *T.Type = switch (binop.kind.op) {
+    const resultType: *T.Type = switch (binop.op) {
         .lt, .gt, .lte, .gte, .eq, .ne => try env.namedType("bool"),
         .@"and", .@"or" => blk: {
             try unifyAt(env, lhsTyped.getType(), try env.namedType("bool"), loc);
@@ -1226,23 +1229,25 @@ fn inferBinaryOpExpr(env: *Env, binop: ast.BinOpExprOf(.untyped), loc: ast.Loc) 
             break :blk lhsTy;
         },
     };
-    return TypedExpr{ .binaryOp = .{ .loc = loc, .type_ = resultType, .kind = .{
-        .op = binop.kind.op,
+    return TypedExpr{ .binaryOp = .{
+        .loc = loc,
+        .type_ = resultType,
+        .op = binop.op,
         .lhs = lhsPtr,
         .rhs = rhsPtr,
-    } } };
+    } };
 }
 
 /// Infer type for unary operation expressions
 fn inferUnaryOpExpr(env: *Env, unaryop: ast.UnaryOpExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    const operandTyped = try inferExprTyped(env, unaryop.kind.expr.*);
+    const operandTyped = try inferExprTyped(env, unaryop.expr.*);
     const operandPtr = try makeTypedPtr(env, operandTyped);
-    return switch (unaryop.kind.op) {
+    return switch (unaryop.op) {
         .not => blk: {
             try unifyAt(env, operandTyped.getType(), try env.namedType("bool"), loc);
-            break :blk TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = try env.namedType("bool"), .kind = .{ .op = .not, .expr = operandPtr } } };
+            break :blk TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = try env.namedType("bool"), .op = .not, .expr = operandPtr } };
         },
-        .neg => TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = operandTyped.getType(), .kind = .{ .op = .neg, .expr = operandPtr } } },
+        .neg => TypedExpr{ .unaryOp = .{ .loc = loc, .type_ = operandTyped.getType(), .op = .neg, .expr = operandPtr } },
     };
 }
 
@@ -1342,24 +1347,26 @@ fn inferBranchExpr(env: *Env, b: ast.MakeExpr(.untyped, ast.BranchExprOf(.untype
 }
 
 /// Infer type for loop expressions
-fn inferLoopExpr(env: *Env, lp: ast.MakeExpr(.untyped, ast.LoopExprOf(.untyped)), loc: ast.Loc) InferError!TypedExpr {
-    const iterTyped = try inferExprTyped(env, lp.kind.iter.*);
+fn inferLoopExpr(env: *Env, lp: ast.LoopExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
+    const iterTyped = try inferExprTyped(env, lp.iter.*);
     const iterPtr = try makeTypedPtr(env, iterTyped);
-    const indexRangePtr = if (lp.kind.indexRange) |ir| try makeTypedPtr(env, try inferExprTyped(env, ir.*)) else null;
+    const indexRangePtr = if (lp.indexRange) |ir| try makeTypedPtr(env, try inferExprTyped(env, ir.*)) else null;
 
-    for (lp.kind.params) |p| {
+    for (lp.params) |p| {
         try env.bind(p, try env.freshVar());
     }
 
-    const typedBody = try inferStmtsTyped(env, lp.kind.body);
+    const typedBody = try inferStmtsTyped(env, lp.body);
     const loopArrayArgs = try env.arena.alloc(*T.Type, 1);
     loopArrayArgs[0] = try env.freshVar();
-    return TypedExpr{ .loop = .{ .loc = loc, .type_ = try env.namedTypeArgs("array", loopArrayArgs), .kind = .{
+    return TypedExpr{ .loop = .{
+        .loc = loc,
+        .type_ = try env.namedTypeArgs("array", loopArrayArgs),
         .iter = iterPtr,
         .indexRange = indexRangePtr,
-        .params = lp.kind.params,
+        .params = lp.params,
         .body = typedBody,
-    } } };
+    } };
 }
 
 /// Infer type for binding expressions (variable declarations and assignments)
@@ -1441,14 +1448,14 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
                     // Bind pattern variable names to fresh type vars.
                     switch (pat) {
                         .ident => |name| try env.bind(name, try env.freshVar()),
-                        .variantFields => |vf| for (vf.bindings) |binding| try env.bind(binding, try env.freshVar()),
+                        .variant => |v| if (v.payload == .fields) for (v.payload.fields) |binding| try env.bind(binding, try env.freshVar()),
                         else => {},
                     }
                 },
                 .ctor => |pat| {
                     switch (pat) {
                         .ident => |name| try env.bind(name, try env.freshVar()),
-                        .variantFields => |vf| for (vf.bindings) |binding| try env.bind(binding, try env.freshVar()),
+                        .variant => |v| if (v.payload == .fields) for (v.payload.fields) |binding| try env.bind(binding, try env.freshVar()),
                         else => {},
                     }
                 },
@@ -1695,37 +1702,20 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
 
 /// Infer type for function definition expressions (lambdas and anonymous functions)
 fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    return switch (func.kind) {
-        .lambda => |l| {
-            const params = try env.arena.alloc(*T.Type, l.params.len);
-            for (l.params, 0..) |p, i| {
-                params[i] = try env.freshVar();
-                try env.bind(p, params[i]);
-            }
-            const bodyTyped = try inferStmtsTyped(env, l.body);
-            const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
-            const funcType = try env.funcType(params, retType);
-            return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{ .lambda = .{
-                .params = l.params,
-                .body = bodyTyped,
-            } } } };
-        },
-
-        .fnExpr => |f| {
-            const params = try env.arena.alloc(*T.Type, f.params.len);
-            for (f.params, 0..) |p, i| {
-                params[i] = try env.freshVar();
-                try env.bind(p, params[i]);
-            }
-            const bodyTyped = try inferStmtsTyped(env, f.body);
-            const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
-            const funcType = try env.funcType(params, retType);
-            return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{ .fnExpr = .{
-                .params = f.params,
-                .body = bodyTyped,
-            } } } };
-        },
-    };
+    const fk = func.kind;
+    const params = try env.arena.alloc(*T.Type, fk.params.len);
+    for (fk.params, 0..) |p, i| {
+        params[i] = try env.freshVar();
+        try env.bind(p, params[i]);
+    }
+    const bodyTyped = try inferStmtsTyped(env, fk.body);
+    const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
+    const funcType = try env.funcType(params, retType);
+    return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{
+        .syntax = fk.syntax,
+        .params = fk.params,
+        .body = bodyTyped,
+    } } };
 }
 
 /// Infer type for collection expressions (arrays, tuples, ranges, case, block, grouped)

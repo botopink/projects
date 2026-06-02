@@ -575,19 +575,30 @@ const Emitter = struct {
         switch (pat) {
             .wildcard => try self.w("_"),
             .ident => |name| try self.w(name),
-            .variantBinding => |vb| {
-                try self.w(vb.name);
-                try self.w(" ");
-                try self.w(vb.binding);
-            },
-            .variantFields => |vf| {
-                try self.w(vf.name);
-                try self.w("(");
-                for (vf.bindings, 0..) |b, i| {
-                    if (i > 0) try self.w(", ");
-                    try self.w(b);
-                }
-                try self.w(")");
+            .variant => |v| switch (v.payload) {
+                .binding => |binding| {
+                    try self.w(v.name);
+                    try self.w(" ");
+                    try self.w(binding);
+                },
+                .fields => |fields| {
+                    try self.w(v.name);
+                    try self.w("(");
+                    for (fields, 0..) |b, i| {
+                        if (i > 0) try self.w(", ");
+                        try self.w(b);
+                    }
+                    try self.w(")");
+                },
+                .literals => |args| {
+                    try self.w(v.name);
+                    try self.w("(");
+                    for (args, 0..) |arg, i| {
+                        if (i > 0) try self.w(", ");
+                        try self.emitPattern(arg);
+                    }
+                    try self.w(")");
+                },
             },
             .numberLit => |n| try self.w(n),
             .stringLit => |s| try self.fmt("\"{s}\"", .{s}),
@@ -609,15 +620,6 @@ const Emitter = struct {
                     if (i > 0) try self.w(" | ");
                     try self.emitPattern(p);
                 }
-            },
-            .variantLiterals => |vl| {
-                try self.w(vl.name);
-                try self.w("(");
-                for (vl.args, 0..) |arg, i| {
-                    if (i > 0) try self.w(", ");
-                    try self.emitPattern(arg);
-                }
-                try self.w(")");
             },
             .multi => |pats| {
                 for (pats, 0..) |p, i| {
@@ -644,13 +646,11 @@ const Emitter = struct {
                 // Identifier pattern - check if value is truthy and has the right type
                 try self.fmt("({s} !== null && {s} !== undefined)", .{ value, value });
             },
-            .variantFields => |vf| {
+            .variant => |v| switch (v.payload) {
                 // Check if value is an instance of the variant type
-                try self.fmt("({s} instanceof {s})", .{ value, vf.name });
-            },
-            .variantBinding => |vb| {
-                // Check if value is an instance of the variant type
-                try self.fmt("({s} instanceof {s})", .{ value, vb.name });
+                .binding, .fields => try self.fmt("({s} instanceof {s})", .{ value, v.name }),
+                // Literal-argument variants fall back to the generic check below.
+                .literals => try self.w("true"),
             },
             .numberLit => |n| {
                 try self.fmt("({s} === {s})", .{ value, n });
@@ -844,31 +844,31 @@ const Emitter = struct {
                 },
             },
 
-            .binaryOp => |bin| switch (bin.kind.op) {
-                .add => try self.emitBinaryOp("+", bin.kind.lhs, bin.kind.rhs),
-                .sub => try self.emitBinaryOp("-", bin.kind.lhs, bin.kind.rhs),
-                .mul => try self.emitBinaryOp("*", bin.kind.lhs, bin.kind.rhs),
-                .div => try self.emitBinaryOp("/", bin.kind.lhs, bin.kind.rhs),
-                .mod => try self.emitBinaryOp("%", bin.kind.lhs, bin.kind.rhs),
-                .lt => try self.emitBinaryOp("<", bin.kind.lhs, bin.kind.rhs),
-                .gt => try self.emitBinaryOp(">", bin.kind.lhs, bin.kind.rhs),
-                .lte => try self.emitBinaryOp("<=", bin.kind.lhs, bin.kind.rhs),
-                .gte => try self.emitBinaryOp(">=", bin.kind.lhs, bin.kind.rhs),
-                .eq => try self.emitBinaryOp("===", bin.kind.lhs, bin.kind.rhs),
-                .ne => try self.emitBinaryOp("!==", bin.kind.lhs, bin.kind.rhs),
-                .@"and" => try self.emitBinaryOp("&&", bin.kind.lhs, bin.kind.rhs),
-                .@"or" => try self.emitBinaryOp("||", bin.kind.lhs, bin.kind.rhs),
+            .binaryOp => |bin| switch (bin.op) {
+                .add => try self.emitBinaryOp("+", bin.lhs, bin.rhs),
+                .sub => try self.emitBinaryOp("-", bin.lhs, bin.rhs),
+                .mul => try self.emitBinaryOp("*", bin.lhs, bin.rhs),
+                .div => try self.emitBinaryOp("/", bin.lhs, bin.rhs),
+                .mod => try self.emitBinaryOp("%", bin.lhs, bin.rhs),
+                .lt => try self.emitBinaryOp("<", bin.lhs, bin.rhs),
+                .gt => try self.emitBinaryOp(">", bin.lhs, bin.rhs),
+                .lte => try self.emitBinaryOp("<=", bin.lhs, bin.rhs),
+                .gte => try self.emitBinaryOp(">=", bin.lhs, bin.rhs),
+                .eq => try self.emitBinaryOp("===", bin.lhs, bin.rhs),
+                .ne => try self.emitBinaryOp("!==", bin.lhs, bin.rhs),
+                .@"and" => try self.emitBinaryOp("&&", bin.lhs, bin.rhs),
+                .@"or" => try self.emitBinaryOp("||", bin.lhs, bin.rhs),
             },
 
-            .unaryOp => |un| switch (un.kind.op) {
+            .unaryOp => |un| switch (un.op) {
                 .not => {
                     try self.w("(!");
-                    try self.emitExpr(un.kind.expr.*);
+                    try self.emitExpr(un.expr.*);
                     try self.w(")");
                 },
                 .neg => {
                     try self.w("(-");
-                    try self.emitExpr(un.kind.expr.*);
+                    try self.emitExpr(un.expr.*);
                     try self.w(")");
                 },
             },
@@ -984,7 +984,7 @@ const Emitter = struct {
 
             .loop => |lp| {
                 const has_yield = blk: {
-                    for (lp.kind.body) |stmt| {
+                    for (lp.body) |stmt| {
                         if (switch (stmt.expr) {
                             .jump => |j| j.kind == .yield,
                             else => false,
@@ -994,14 +994,14 @@ const Emitter = struct {
                 };
 
                 if (has_yield) {
-                    try self.emitExpr(lp.kind.iter.*);
+                    try self.emitExpr(lp.iter.*);
                     try self.w(".map((");
-                    for (lp.kind.params, 0..) |p, i| {
+                    for (lp.params, 0..) |p, i| {
                         if (i > 0) try self.w(", ");
                         try self.w(p);
                     }
                     try self.w(") => {\n");
-                    for (lp.kind.body) |stmt| {
+                    for (lp.body) |stmt| {
                         const isYield = switch (stmt.expr) {
                             .jump => |j| j.kind == .yield,
                             else => false,
@@ -1022,14 +1022,14 @@ const Emitter = struct {
                     try self.w("})");
                 } else {
                     try self.w("for (const [");
-                    for (lp.kind.params, 0..) |p, i| {
+                    for (lp.params, 0..) |p, i| {
                         if (i > 0) try self.w(", ");
                         try self.w(p);
                     }
                     try self.w("] of Object.entries(");
-                    try self.emitExpr(lp.kind.iter.*);
+                    try self.emitExpr(lp.iter.*);
                     try self.w(")) {\n");
-                    for (lp.kind.body) |stmt| {
+                    for (lp.body) |stmt| {
                         try self.w("    ");
                         try self.emitStmt(stmt);
                         try self.w("\n");
@@ -1229,35 +1229,19 @@ const Emitter = struct {
                 },
             },
 
-            .function => |f| switch (f.kind) {
-                .lambda => |l| {
-                    try self.w("(");
-                    for (l.params, 0..) |p, i| {
-                        if (i > 0) try self.w(", ");
-                        try self.w(p);
-                    }
-                    try self.w(") => {\n");
-                    for (l.body) |st| {
-                        try self.w("    ");
-                        try self.emitStmt(st);
-                        try self.w("\n");
-                    }
-                    try self.w("}");
-                },
-                .fnExpr => |fn_expr| {
-                    try self.w("(");
-                    for (fn_expr.params, 0..) |p, i| {
-                        if (i > 0) try self.w(", ");
-                        try self.w(p);
-                    }
-                    try self.w(") => {\n");
-                    for (fn_expr.body) |st| {
-                        try self.w("    ");
-                        try self.emitStmt(st);
-                        try self.w("\n");
-                    }
-                    try self.w("}");
-                },
+            .function => |f| {
+                try self.w("(");
+                for (f.kind.params, 0..) |p, i| {
+                    if (i > 0) try self.w(", ");
+                    try self.w(p);
+                }
+                try self.w(") => {\n");
+                for (f.kind.body) |st| {
+                    try self.w("    ");
+                    try self.emitStmt(st);
+                    try self.w("\n");
+                }
+                try self.w("}");
             },
 
             .collection => |col| switch (col.kind) {
@@ -1354,17 +1338,17 @@ const Emitter = struct {
 
     fn isLambdaBlock(e: ast.Expr) bool {
         return switch (e) {
-            .function => |f| f.kind == .lambda,
+            .function => |f| f.kind.syntax == .lambda,
             else => false,
         };
     }
 
     fn emitCaseBody(self: *Emitter, body: ast.Expr, b: *JsBuilder) !void {
         if (switch (body) {
-            .function => |f| f.kind == .lambda,
+            .function => |f| f.kind.syntax == .lambda,
             else => false,
         }) {
-            const l = body.function.kind.lambda;
+            const l = body.function.kind;
             self.current_indent = b.indent_level;
             for (l.body) |st| {
                 b.writeIndent();
@@ -1481,53 +1465,26 @@ const Emitter = struct {
                     }
                 },
 
-                .variantBinding => |vb| {
-                    b.fmtLine("if (_s.tag === \"{s}\") {{", .{vb.name});
+                .variant => |v| {
+                    b.fmtLine("if (_s.tag === \"{s}\") {{", .{v.name});
                     b.newline();
                     b.indent();
-                    b.fmtLine("const {s} = _s;", .{vb.binding});
-                    b.newline();
-                    if (isLambdaBlock(arm.body)) {
-                        try self.emitCaseBody(arm.body, &b);
-                    } else {
-                        b.line("return ");
-                        try self.emitExpr(arm.body);
-                        b.raw(";");
-                        b.newline();
+                    switch (v.payload) {
+                        .binding => |binding| {
+                            b.fmtLine("const {s} = _s;", .{binding});
+                            b.newline();
+                        },
+                        .fields => |fields| if (fields.len > 0) {
+                            b.line("const { ");
+                            for (fields, 0..) |bb, bi| {
+                                if (bi > 0) b.raw(", ");
+                                b.raw(bb);
+                            }
+                            b.raw(" } = _s;");
+                            b.newline();
+                        },
+                        .literals => {},
                     }
-                    b.close();
-                    b.newline();
-                },
-
-                .variantFields => |vf| {
-                    b.fmtLine("if (_s.tag === \"{s}\") {{", .{vf.name});
-                    b.newline();
-                    b.indent();
-                    if (vf.bindings.len > 0) {
-                        b.line("const { ");
-                        for (vf.bindings, 0..) |bb, bi| {
-                            if (bi > 0) b.raw(", ");
-                            b.raw(bb);
-                        }
-                        b.raw(" } = _s;");
-                        b.newline();
-                    }
-                    if (isLambdaBlock(arm.body)) {
-                        try self.emitCaseBody(arm.body, &b);
-                    } else {
-                        b.line("return ");
-                        try self.emitExpr(arm.body);
-                        b.raw(";");
-                        b.newline();
-                    }
-                    b.close();
-                    b.newline();
-                },
-
-                .variantLiterals => |vl| {
-                    b.fmtLine("if (_s.tag === \"{s}\") {{", .{vl.name});
-                    b.newline();
-                    b.indent();
                     if (isLambdaBlock(arm.body)) {
                         try self.emitCaseBody(arm.body, &b);
                     } else {

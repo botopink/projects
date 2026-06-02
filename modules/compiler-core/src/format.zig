@@ -377,8 +377,8 @@ pub const Formatter = struct {
                 }),
             },
             .binaryOp => |bin| this.fmtBinop(
-                bin.kind.lhs.*,
-                switch (bin.kind.op) {
+                bin.lhs.*,
+                switch (bin.op) {
                     .add => " + ",
                     .sub => " - ",
                     .mul => " * ",
@@ -393,11 +393,11 @@ pub const Formatter = struct {
                     .@"and" => " && ",
                     .@"or" => " || ",
                 },
-                bin.kind.rhs.*,
+                bin.rhs.*,
             ),
-            .unaryOp => |un| switch (un.kind.op) {
-                .not => this.concat(try this.text("!"), try this.fmtExpr(un.kind.expr.*)),
-                .neg => this.concat(try this.text("-"), try this.fmtExpr(un.kind.expr.*)),
+            .unaryOp => |un| switch (un.op) {
+                .not => this.concat(try this.text("!"), try this.fmtExpr(un.expr.*)),
+                .neg => this.concat(try this.text("-"), try this.fmtExpr(un.expr.*)),
             },
             .jump => |j| switch (j.kind) {
                 .@"return" => |e| if (e) |ep| this.concat(try this.text("return "), try this.fmtExpr(ep.*)) else this.text("return"),
@@ -485,18 +485,18 @@ pub const Formatter = struct {
             },
             .loop => |lp| blk: {
                 var doc: *const Doc = try this.text("loop (");
-                doc = try this.concat(doc, try this.fmtExpr(lp.kind.iter.*));
-                if (lp.kind.indexRange) |ir| {
+                doc = try this.concat(doc, try this.fmtExpr(lp.iter.*));
+                if (lp.indexRange) |ir| {
                     doc = try this.concat(doc, try this.text(", "));
                     doc = try this.concat(doc, try this.fmtExpr(ir.*));
                 }
                 doc = try this.concat(doc, try this.text(") {"));
-                for (lp.kind.params, 0..) |p, i| {
+                for (lp.params, 0..) |p, i| {
                     doc = try this.concat(doc, if (i == 0) try this.text(" ") else try this.text(", "));
                     doc = try this.concat(doc, try this.text(p));
                 }
                 doc = try this.concat(doc, try this.text(" ->"));
-                for (lp.kind.body) |stmt| {
+                for (lp.body) |stmt| {
                     doc = try this.concat(doc, try this.surroundBreak("", try this.fmtExpr(stmt.expr), ""));
                 }
                 doc = try this.concat(doc, try this.text("}"));
@@ -548,9 +548,9 @@ pub const Formatter = struct {
                     break :blk doc;
                 },
             },
-            .function => |func| switch (func.kind) {
-                .lambda => |l| try this.fmtLambda(l.params, l.body),
-                .fnExpr => |f| try this.fmtFnExpr(f.params, f.body),
+            .function => |func| switch (func.kind.syntax) {
+                .lambda => try this.fmtLambda(func.kind.params, func.kind.body),
+                .fnExpr => try this.fmtFnExpr(func.kind.params, func.kind.body),
             },
             .call => |c| switch (c.kind) {
                 .call => |cc| try this.fmtCall(cc),
@@ -1182,27 +1182,29 @@ pub const Formatter = struct {
                 }
             },
 
-            .variantBinding => |vb| {
-                return this.concat(
-                    try this.text(vb.name),
-                    try this.concat(try this.text(" "), try this.text(vb.binding)),
-                );
-            },
-            .variantFields => |vf| {
-                var items = try this.arena.alloc(*const Doc, vf.bindings.len);
-                for (vf.bindings, 0..) |b, i| items[i] = try this.text(b);
-                return this.concat(
-                    try this.text(vf.name),
-                    try this.commaList("(", items, ")"),
-                );
-            },
-            .variantLiterals => |vl| {
-                var items = try this.arena.alloc(*const Doc, vl.args.len);
-                for (vl.args, 0..) |arg, i| items[i] = try this.fmtPattern(arg);
-                return this.concat(
-                    try this.text(vl.name),
-                    try this.commaList("(", items, ")"),
-                );
+            .variant => |v| switch (v.payload) {
+                .binding => |binding| {
+                    return this.concat(
+                        try this.text(v.name),
+                        try this.concat(try this.text(" "), try this.text(binding)),
+                    );
+                },
+                .fields => |fields| {
+                    var items = try this.arena.alloc(*const Doc, fields.len);
+                    for (fields, 0..) |b, i| items[i] = try this.text(b);
+                    return this.concat(
+                        try this.text(v.name),
+                        try this.commaList("(", items, ")"),
+                    );
+                },
+                .literals => |args| {
+                    var items = try this.arena.alloc(*const Doc, args.len);
+                    for (args, 0..) |arg, i| items[i] = try this.fmtPattern(arg);
+                    return this.concat(
+                        try this.text(v.name),
+                        try this.commaList("(", items, ")"),
+                    );
+                },
             },
 
             .list => |l| {

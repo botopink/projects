@@ -114,9 +114,9 @@ fn renderExprValue(allocator: std.mem.Allocator, te: ast.TypedExpr) ![]const u8 
             .comment => return allocator.dupe(u8, "null"),
         },
         .binaryOp => |b| {
-            const lhs = try evalConstInt(b.kind.lhs.*);
-            const rhs = try evalConstInt(b.kind.rhs.*);
-            const result: i64 = switch (b.kind.op) {
+            const lhs = try evalConstInt(b.lhs.*);
+            const rhs = try evalConstInt(b.rhs.*);
+            const result: i64 = switch (b.op) {
                 .add => lhs + rhs,
                 .sub => lhs - rhs,
                 .mul => lhs * rhs,
@@ -158,9 +158,9 @@ fn evalConstInt(te: ast.TypedExpr) !i64 {
             else => return 0,
         },
         .binaryOp => |b| {
-            const lhs = try evalConstInt(b.kind.lhs.*);
-            const rhs = try evalConstInt(b.kind.rhs.*);
-            return switch (b.kind.op) {
+            const lhs = try evalConstInt(b.lhs.*);
+            const rhs = try evalConstInt(b.rhs.*);
+            return switch (b.op) {
                 .add => lhs + rhs,
                 .sub => lhs - rhs,
                 .mul => lhs * rhs,

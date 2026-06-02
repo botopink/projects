@@ -23,11 +23,13 @@
                 "kind": {
                   "assertPattern": {
                     "pattern": {
-                      "variantFields": {
+                      "variant": {
                         "name": "Ok",
-                        "bindings": [
-                          "value"
-                        ]
+                        "payload": {
+                          "fields": [
+                            "value"
+                          ]
+                        }
                       }
                     },
                     "expr": {

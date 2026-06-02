@@ -22,7 +22,7 @@ pub const Expr = ast.Expr;
 pub const CollectionExpr = ast.CollectionExpr;
 pub const JumpExpr = ast.JumpExpr;
 pub const BranchExpr = ast.BranchExpr;
-pub const LoopExpr = ast.MakeExpr(.untyped, ast.LoopExprOf(.untyped));
+pub const LoopExpr = ast.LoopExprOf(.untyped);
 pub const FunctionExpr = ast.FunctionExpr;
 pub const Loc = ast.Loc;
 pub const RecordDecl = ast.RecordDecl;
@@ -341,9 +341,31 @@ pub const Parser = struct {
 
     // ── block parsing ──────────────────────────────────────────────────────
 
-    /// Parse `{ expr; expr; ... }` — a brace-delimited block of semicolon-separated expressions.
-    /// The opening `{` must already be the current token.
-    fn parseStmtListInBraces(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
+    /// How a `{ ... }` block enforces statement-terminating semicolons.
+    const SemicolonPolicy = enum {
+        /// Every statement must end with `;`.
+        required,
+        /// `;` is consumed if present but never required.
+        optional,
+        /// `;` required except for the last statement before `}`.
+        requiredExceptLast,
+    };
+
+    /// Knobs controlling the single `parseBlock` implementation. All fields are
+    /// comptime-known per call so unused branches are pruned.
+    const BlockParseOptions = struct {
+        /// Record `emptyLinesBefore` on each statement (formatter fidelity).
+        trackEmptyLines: bool = false,
+        /// Preserve `//`/`///`/`////` comment tokens as comment-literal statements.
+        handleComments: bool = false,
+        semicolonPolicy: SemicolonPolicy = .required,
+        /// Reject a `use` hook that appears after a branch/return (static-prefix rule).
+        useAfterBranchGuard: bool = false,
+    };
+
+    /// Parse `{ stmt; stmt; ... }`. The opening `{` must be the current token.
+    /// Unifies every brace-delimited block in the parser via `BlockParseOptions`.
+    fn parseBlock(this: *This, alloc: std.mem.Allocator, comptime opts: BlockParseOptions) ParseError![]Stmt {
         _ = try this.consume(.leftBrace);
         var stmts: std.ArrayList(Stmt) = .empty;
         errdefer {
@@ -351,49 +373,55 @@ pub const Parser = struct {
             stmts.deinit(alloc);
         }
         var seenBranch = false;
+        _ = &seenBranch; // used only when useAfterBranchGuard is set
         while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            // Compute empty lines before this item using token line numbers
-            const prevLine = if (this.current > 0) this.tokens[this.current - 1].line else 1;
-            const currLine = this.peek().line;
-            const emptyLinesBefore: u32 = if (currLine > prevLine + 1) @intCast(currLine - prevLine - 1) else 0;
+            const emptyLinesBefore: u32 = if (opts.trackEmptyLines) blk: {
+                const prevLine = if (this.current > 0) this.tokens[this.current - 1].line else 1;
+                const currLine = this.peek().line;
+                break :blk if (currLine > prevLine + 1) @intCast(currLine - prevLine - 1) else 0;
+            } else 0;
 
-            if (this.check(.commentNormal) or this.check(.commentDoc) or this.check(.commentModule)) {
-                const tok = this.advance();
-                const kind: ast.CommentKind = if (tok.kind == .commentDoc)
-                    .{ .doc = "" }
-                else if (tok.kind == .commentModule)
-                    .{ .module = "" }
-                else
-                    .{ .normal = "" };
-                const text = try alloc.dupe(u8, commentText(tok.lexeme));
-                try stmts.append(alloc, .{ .expr = Expr{ .literal = .{ .loc = locFromToken(tok), .kind = .{ .comment = .{ .kind = kind, .text = text } } } }, .emptyLinesBefore = emptyLinesBefore });
-                continue;
+            if (opts.handleComments and try this.tryParseCommentStmt(alloc, &stmts, emptyLinesBefore)) continue;
+
+            if (opts.useAfterBranchGuard) {
+                if (seenBranch and this.check(.use)) {
+                    const tok = this.peek();
+                    this.parseError = .{
+                        .kind = .useAfterBranch,
+                        .start = tok.col - 1,
+                        .end = tok.col - 1 + tok.lexeme.len,
+                        .lexeme = tok.lexeme,
+                        .line = tok.line,
+                        .col = tok.col,
+                    };
+                    return ParseError.UnexpectedToken;
+                }
+                if (this.check(.@"if") or this.check(.@"return") or this.check(.loop) or this.check(.case))
+                    seenBranch = true;
             }
-
-            if (seenBranch and this.check(.use)) {
-                const tok = this.peek();
-                this.parseError = .{
-                    .kind = .useAfterBranch,
-                    .start = tok.col - 1,
-                    .end = tok.col - 1 + tok.lexeme.len,
-                    .lexeme = tok.lexeme,
-                    .line = tok.line,
-                    .col = tok.col,
-                };
-                return ParseError.UnexpectedToken;
-            }
-
-            if (this.check(.@"if") or this.check(.@"return") or this.check(.loop) or this.check(.case))
-                seenBranch = true;
 
             const expr = try this.parseExpr(alloc);
-            if (!this.match(.semicolon) and !this.check(.rightBrace)) {
-                return ParseError.UnexpectedToken;
+            switch (opts.semicolonPolicy) {
+                .required => _ = try this.consume(.semicolon),
+                .optional => _ = this.match(.semicolon),
+                .requiredExceptLast => if (!this.match(.semicolon) and !this.check(.rightBrace))
+                    return ParseError.UnexpectedToken,
             }
             try stmts.append(alloc, .{ .expr = expr, .emptyLinesBefore = emptyLinesBefore });
         }
         _ = try this.consume(.rightBrace);
         return stmts.toOwnedSlice(alloc);
+    }
+
+    /// Parse `{ expr; expr; ... }` — a brace-delimited block of semicolon-separated expressions.
+    /// The opening `{` must already be the current token.
+    fn parseStmtListInBraces(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
+        return this.parseBlock(alloc, .{
+            .trackEmptyLines = true,
+            .handleComments = true,
+            .semicolonPolicy = .requiredExceptLast,
+            .useAfterBranchGuard = true,
+        });
     }
 
     /// Parse either `{ expr; ... }` or a single `expr`.
@@ -416,20 +444,7 @@ pub const Parser = struct {
     /// Parse a block where the last expression doesn't require a semicolon.
     /// Used for catch handlers where `{ throw Error(...) }` is valid.
     fn parseBlockWithOptionalTrailingSemicolon(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
-        _ = try this.consume(.leftBrace);
-        var stmts: std.ArrayList(Stmt) = .empty;
-        errdefer {
-            for (stmts.items) |*s| s.deinit(alloc);
-            stmts.deinit(alloc);
-        }
-        while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            const expr = try this.parseExpr(alloc);
-            // Try to consume semicolon, but don't fail if it's the last expression
-            _ = this.match(.semicolon);
-            try stmts.append(alloc, .{ .expr = expr, .emptyLinesBefore = 0 });
-        }
-        _ = try this.consume(.rightBrace);
-        return stmts.toOwnedSlice(alloc);
+        return this.parseBlock(alloc, .{ .semicolonPolicy = .optional });
     }
 
     // ── shared body / param helpers ───────────────────────────────────────────
@@ -437,52 +452,13 @@ pub const Parser = struct {
     /// Parses `{ stmt; ... }` preserving comment nodes as literal expressions.
     /// Used in fn/method bodies where source comments must be kept.
     fn parseMethodBodyStmts(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
-        _ = try this.consume(.leftBrace);
-        var stmts: std.ArrayList(Stmt) = .empty;
-        errdefer {
-            for (stmts.items) |*s| s.deinit(alloc);
-            stmts.deinit(alloc);
-        }
-        while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            if (this.check(.commentNormal) or this.check(.commentDoc) or this.check(.commentModule)) {
-                const tok = this.advance();
-                const kind: ast.CommentKind = if (tok.kind == .commentDoc)
-                    .{ .doc = "" }
-                else if (tok.kind == .commentModule)
-                    .{ .module = "" }
-                else
-                    .{ .normal = "" };
-                const text = try alloc.dupe(u8, commentText(tok.lexeme));
-                try stmts.append(alloc, .{ .expr = Expr{ .literal = .{
-                    .loc = locFromToken(tok),
-                    .kind = .{ .comment = .{ .kind = kind, .text = text } },
-                } } });
-                continue;
-            }
-            const expr = try this.parseExpr(alloc);
-            _ = try this.consume(.semicolon);
-            try stmts.append(alloc, .{ .expr = expr });
-        }
-        _ = try this.consume(.rightBrace);
-        return stmts.toOwnedSlice(alloc);
+        return this.parseBlock(alloc, .{ .handleComments = true });
     }
 
     /// Parses `{ stmt; ... }` without special comment handling.
     /// Used in implement methods, getters, setters, and interface default bodies.
     fn parseSimpleBodyStmts(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
-        _ = try this.consume(.leftBrace);
-        var stmts: std.ArrayList(Stmt) = .empty;
-        errdefer {
-            for (stmts.items) |*s| s.deinit(alloc);
-            stmts.deinit(alloc);
-        }
-        while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            const expr = try this.parseExpr(alloc);
-            _ = try this.consume(.semicolon);
-            try stmts.append(alloc, .{ .expr = expr });
-        }
-        _ = try this.consume(.rightBrace);
-        return stmts.toOwnedSlice(alloc);
+        return this.parseBlock(alloc, .{});
     }
 
     /// Parses `param, param, ...` up to and including `)`.
@@ -567,6 +543,47 @@ pub const Parser = struct {
         return list.toOwnedSlice(alloc);
     }
 
+    /// The shared opening of a type/interface declaration: visibility, name and
+    /// annotations. The keyword that introduces the construct (and the trailing
+    /// generic params / body) are parsed by the caller.
+    const DeclPreamble = struct {
+        isPub: bool,
+        name: []const u8,
+        annotations: []Annotation,
+    };
+
+    /// Frees an owned annotation slice (used on declaration parse-error paths).
+    fn freeAnnotations(alloc: std.mem.Allocator, annotations: []Annotation) void {
+        for (annotations) |*a| a.deinit(alloc);
+        alloc.free(annotations);
+    }
+
+    /// Parses the shared preamble of a declaration up to and including `keyword`.
+    /// Two surface forms are supported:
+    ///   - val-form (`shorthand == false`):  `[pub] val Name = #[...] <keyword>`
+    ///   - shorthand (`shorthand == true`):   `#[...] [pub] <keyword> Name`
+    /// On error the parsed annotations are freed.
+    fn parseDeclPreamble(this: *This, alloc: std.mem.Allocator, keyword: TokenKind, shorthand: bool) ParseError!DeclPreamble {
+        if (shorthand) {
+            const annotations = try this.parseAnnotations(alloc);
+            errdefer freeAnnotations(alloc, annotations);
+            const isPub = this.match(.@"pub");
+            _ = try this.consume(keyword);
+            const name = (try this.consume(.identifier)).lexeme;
+            _ = this.tryParseId();
+            return .{ .isPub = isPub, .name = name, .annotations = annotations };
+        }
+        const isPub = this.match(.@"pub");
+        _ = try this.consume(.val);
+        const name = (try this.consume(.identifier)).lexeme;
+        _ = this.tryParseId();
+        _ = try this.consume(.equal);
+        const annotations = try this.parseAnnotations(alloc);
+        errdefer freeAnnotations(alloc, annotations);
+        _ = try this.consume(keyword);
+        return .{ .isPub = isPub, .name = name, .annotations = annotations };
+    }
+
     // ── expression helper ─────────────────────────────────────────────────────
 
     /// Creates a heap-allocated copy of an expression.
@@ -575,6 +592,60 @@ pub const Parser = struct {
         const ptr = try alloc.create(Expr);
         ptr.* = expr;
         return ptr;
+    }
+
+    /// The binary-operator enum carried by `binaryOp` expressions.
+    const BinOp = @FieldType(ast.BinOpExpr, "op");
+
+    /// Builds a `binaryOp` expression, boxing both operands.
+    fn makeBinOp(this: *This, alloc: std.mem.Allocator, op: BinOp, opTok: Token, lhs: Expr, rhs: Expr) ParseError!Expr {
+        const lhsPtr = try this.boxExpr(alloc, lhs);
+        const rhsPtr = try this.boxExpr(alloc, rhs);
+        return Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .op = op, .lhs = lhsPtr, .rhs = rhsPtr } };
+    }
+
+    /// Builds a `call` expression node (no boxing needed — `args`/`trailing` are already slices).
+    fn makeCall(
+        tok: Token,
+        receiver: ?[]const u8,
+        callee: []const u8,
+        is_builtin: bool,
+        args: []CallArg,
+        trailing: []TrailingLambda,
+    ) Expr {
+        return Expr{ .call = .{ .loc = locFromToken(tok), .kind = .{ .call = .{
+            .receiver = receiver,
+            .callee = callee,
+            .is_builtin = is_builtin,
+            .args = args,
+            .trailing = trailing,
+        } } } };
+    }
+
+    /// Builds a `jump` expression (`return`/`throw`/`try`/`break`/`yield`), boxing `inner` when present.
+    fn makeJump(this: *This, alloc: std.mem.Allocator, tok: Token, comptime variant: std.meta.Tag(JumpExpr), inner: ?Expr) ParseError!Expr {
+        const innerPtr: ?*Expr = if (inner) |e| try this.boxExpr(alloc, e) else null;
+        return Expr{ .jump = .{ .loc = locFromToken(tok), .kind = @unionInit(JumpExpr, @tagName(variant), innerPtr) } };
+    }
+
+    /// If the current token is a comment, consumes it and appends it as a comment
+    /// literal statement to `stmts`, returning true. Otherwise returns false.
+    /// `emptyLinesBefore` is recorded on the appended statement.
+    fn tryParseCommentStmt(this: *This, alloc: std.mem.Allocator, stmts: *std.ArrayList(Stmt), emptyLinesBefore: u32) ParseError!bool {
+        if (!this.check(.commentNormal) and !this.check(.commentDoc) and !this.check(.commentModule)) return false;
+        const tok = this.advance();
+        const kind: ast.CommentKind = if (tok.kind == .commentDoc)
+            .{ .doc = "" }
+        else if (tok.kind == .commentModule)
+            .{ .module = "" }
+        else
+            .{ .normal = "" };
+        const text = try alloc.dupe(u8, commentText(tok.lexeme));
+        try stmts.append(alloc, .{
+            .expr = Expr{ .literal = .{ .loc = locFromToken(tok), .kind = .{ .comment = .{ .kind = kind, .text = text } } } },
+            .emptyLinesBefore = emptyLinesBefore,
+        });
+        return true;
     }
 
     /// If `noTailCatch` is false and the next token is `catch`, wraps `expr` in a tryCatch node.
@@ -880,8 +951,7 @@ pub const Parser = struct {
         }
         _ = try this.consume(.equal);
         const expr_val = try this.parseExpr(alloc);
-        const source = try alloc.create(Expr);
-        source.* = expr_val;
+        const source = try this.boxExpr(alloc, expr_val);
         return UseDecl{ .imports = imports, .source = source };
     }
 
@@ -1025,35 +1095,19 @@ pub const Parser = struct {
     // ── interface decl ───────────────────────────────────────────────────────────
 
     fn parseInterfaceDecl(this: *This, alloc: std.mem.Allocator) ParseError!InterfaceDecl {
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.val);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        _ = try this.consume(.equal);
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        _ = try this.consume(.interface);
-        // optional: `extends T1, T2, T3` after `interface`
+        // val-form: the `extends` clause (if any) follows the `interface` keyword.
+        const p = try this.parseDeclPreamble(alloc, .interface, false);
+        errdefer freeAnnotations(alloc, p.annotations);
         const extendsSlice = try this.parseExtendsClause(alloc);
-        return this.parseInterfaceBody(alloc, name, extendsSlice, annotations, isPub);
+        return this.parseInterfaceBody(alloc, p.name, extendsSlice, p.annotations, p.isPub);
     }
 
     fn parseShorthandInterfaceDecl(this: *This, alloc: std.mem.Allocator) ParseError!InterfaceDecl {
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.interface);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        // optional: `extends T1, T2, T3` after name
+        // shorthand: the `extends` clause (if any) follows the interface name.
+        const p = try this.parseDeclPreamble(alloc, .interface, true);
+        errdefer freeAnnotations(alloc, p.annotations);
         const extendsSlice = try this.parseExtendsClause(alloc);
-        return this.parseInterfaceBody(alloc, name, extendsSlice, annotations, isPub);
+        return this.parseInterfaceBody(alloc, p.name, extendsSlice, p.annotations, p.isPub);
     }
 
     /// Parses an optional `extends T1, T2, T3` clause.
@@ -1214,31 +1268,15 @@ pub const Parser = struct {
     // ── struct decl ───────────────────────────────────────────────────────────
 
     fn parseStructDecl(this: *This, alloc: std.mem.Allocator) ParseError!StructDecl {
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.val);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        _ = try this.consume(.equal);
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        _ = try this.consume(.@"struct");
-        return this.parseStructBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .@"struct", false);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseStructBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseShorthandStructDecl(this: *This, alloc: std.mem.Allocator) ParseError!StructDecl {
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.@"struct");
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        return this.parseStructBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .@"struct", true);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseStructBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!StructDecl {
@@ -1362,31 +1400,15 @@ pub const Parser = struct {
     // ── record decl ──────────────────────────────────────────────────────────
 
     fn parseRecordDecl(this: *This, alloc: std.mem.Allocator) ParseError!RecordDecl {
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.val);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        _ = try this.consume(.equal);
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        _ = try this.consume(.record);
-        return this.parseRecordBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .record, false);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseRecordBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseShorthandRecordDecl(this: *This, alloc: std.mem.Allocator) ParseError!RecordDecl {
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.record);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        return this.parseRecordBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .record, true);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseRecordBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!RecordDecl {
@@ -1438,7 +1460,7 @@ pub const Parser = struct {
                 errdefer fieldType.deinit(alloc);
                 var defaultExpr: ?Expr = null;
                 if (this.match(.equal)) {
-                    defaultExpr = try this.parseEqExpr(alloc);
+                    defaultExpr = try this.parseBinaryExpr(alloc, prec.equality);
                 }
                 trailingComma = this.match(.comma);
                 try fields.append(alloc, .{ .name = fieldName, .typeRef = fieldType, .default = defaultExpr });
@@ -1639,31 +1661,15 @@ pub const Parser = struct {
     // ── enum decl ─────────────────────────────────────────────────────────────
 
     fn parseEnumDecl(this: *This, alloc: std.mem.Allocator) ParseError!EnumDecl {
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.val);
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        _ = try this.consume(.equal);
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        _ = try this.consume(.@"enum");
-        return this.parseEnumBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .@"enum", false);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseEnumBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseShorthandEnumDecl(this: *This, alloc: std.mem.Allocator) ParseError!EnumDecl {
-        const annotations = try this.parseAnnotations(alloc);
-        errdefer {
-            for (annotations) |*a| a.deinit(alloc);
-            alloc.free(annotations);
-        }
-        const isPub = this.match(.@"pub");
-        _ = try this.consume(.@"enum");
-        const name = (try this.consume(.identifier)).lexeme;
-        _ = this.tryParseId();
-        return this.parseEnumBody(alloc, name, annotations, isPub);
+        const p = try this.parseDeclPreamble(alloc, .@"enum", true);
+        errdefer freeAnnotations(alloc, p.annotations);
+        return this.parseEnumBody(alloc, p.name, p.annotations, p.isPub);
     }
 
     fn parseEnumBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!EnumDecl {
@@ -1761,13 +1767,13 @@ pub const Parser = struct {
         if (this.check(.leftParenthesis)) {
             // Single subject wrapped in parens (e.g. tuple)
             _ = this.advance(); // consume '('
-            const e = try this.parseEqExpr(alloc);
+            const e = try this.parseBinaryExpr(alloc, prec.equality);
             _ = try this.consume(.rightParenthesis);
             try subjects.append(alloc, e);
         } else {
             // Multiple subjects separated by commas
             while (!this.check(.leftBrace) and !this.check(.endOfFile)) {
-                try subjects.append(alloc, try this.parseEqExpr(alloc));
+                try subjects.append(alloc, try this.parseBinaryExpr(alloc, prec.equality));
                 if (!this.match(.comma)) break;
             }
         }
@@ -1836,10 +1842,11 @@ pub const Parser = struct {
                 }
                 _ = try this.consume(.rightBrace);
                 var emptyParams: std.ArrayList([]const u8) = .empty;
-                break :blk Expr{ .function = .{ .loc = locFromToken(braceTok), .kind = .{ .lambda = .{
+                break :blk Expr{ .function = .{ .loc = locFromToken(braceTok), .kind = .{
+                    .syntax = .lambda,
                     .params = try emptyParams.toOwnedSlice(alloc),
                     .body = try blockStmts.toOwnedSlice(alloc),
-                } } } };
+                } } };
             } else try this.parseExpr(alloc);
             // Accept both semicolon and comma as arm terminators
             if (!this.match(.semicolon)) {
@@ -1919,7 +1926,7 @@ pub const Parser = struct {
             if (this.check(.leftParenthesis)) {
                 _ = this.advance(); // consume '('
 
-                // Determine if this is variantFields (identifiers) or variantLiterals (literals or patterns)
+                // Determine the variant payload: `fields` (identifiers) or `literals` (literals or patterns)
                 var isLiterals = false;
                 const lookahead = this.tokens[this.current];
                 if (lookahead.kind != .rightParenthesis) {
@@ -1935,7 +1942,7 @@ pub const Parser = struct {
                 }
 
                 if (isLiterals) {
-                    // Parse as variantLiterals (can contain nested patterns)
+                    // `literals` payload (can contain nested patterns)
                     var args: std.ArrayList(Pattern) = .empty;
                     errdefer {
                         for (args.items) |*a| a.deinit(alloc);
@@ -1949,12 +1956,12 @@ pub const Parser = struct {
                     }
                     _ = try this.consume(.rightParenthesis);
 
-                    return Pattern{ .variantLiterals = .{
+                    return Pattern{ .variant = .{
                         .name = name,
-                        .args = try args.toOwnedSlice(alloc),
+                        .payload = .{ .literals = try args.toOwnedSlice(alloc) },
                     } };
                 } else {
-                    // Parse as variantFields (existing logic)
+                    // `fields` payload (existing logic)
                     var bindings: std.ArrayList([]const u8) = .empty;
                     errdefer bindings.deinit(alloc);
 
@@ -1965,9 +1972,9 @@ pub const Parser = struct {
                     }
                     _ = try this.consume(.rightParenthesis);
 
-                    return Pattern{ .variantFields = .{
+                    return Pattern{ .variant = .{
                         .name = name,
-                        .bindings = try bindings.toOwnedSlice(alloc),
+                        .payload = .{ .fields = try bindings.toOwnedSlice(alloc) },
                     } };
                 }
             }
@@ -1975,9 +1982,9 @@ pub const Parser = struct {
             // `Variant binding` pattern: `Ok ok` — two identifiers, bind whole payload
             if (this.check(.identifier)) {
                 const binding = this.advance().lexeme;
-                return Pattern{ .variantBinding = .{
+                return Pattern{ .variant = .{
                     .name = name,
-                    .binding = binding,
+                    .payload = .{ .binding = binding },
                 } };
             }
 
@@ -2258,8 +2265,7 @@ pub const Parser = struct {
             const throwTok = this.advance();
             _ = this.match(.new); // skip optional `new` keyword
             const inner = try this.parseExpr(alloc);
-            const innerPtr = try this.boxExpr(alloc, inner);
-            return Expr{ .jump = .{ .loc = locFromToken(throwTok), .kind = .{ .throw_ = innerPtr } } };
+            return this.makeJump(alloc, throwTok, .throw_, inner);
         }
 
         // use hook: `use expr` | `use name = expr` | `use {a, b} = expr`
@@ -2340,7 +2346,7 @@ pub const Parser = struct {
             const ifTok = this.advance();
 
             _ = try this.consume(.leftParenthesis);
-            const cond = try this.parseEqExpr(alloc);
+            const cond = try this.parseBinaryExpr(alloc, prec.equality);
             errdefer @constCast(&cond).deinit(alloc);
             _ = try this.consume(.rightParenthesis);
             const condPtr = try this.boxExpr(alloc, cond);
@@ -2397,9 +2403,7 @@ pub const Parser = struct {
         if (this.check(.@"return")) {
             const retTok = this.advance();
             const inner = try this.parseExpr(alloc);
-            const innerPtr = try alloc.create(Expr);
-            innerPtr.* = inner;
-            return Expr{ .jump = .{ .loc = locFromToken(retTok), .kind = .{ .@"return" = innerPtr } } };
+            return this.makeJump(alloc, retTok, .@"return", inner);
         }
 
         // case expr { arm* }
@@ -2414,10 +2418,8 @@ pub const Parser = struct {
                 const body = try this.parseStmtListInBraces(alloc);
                 return Expr{ .comptime_ = .{ .loc = locFromToken(comptimeTok), .kind = .{ .comptimeBlock = .{ .body = body } } } };
             } else {
-                var inner = try this.parseEqExpr(alloc);
-                errdefer inner.deinit(alloc);
-                const innerPtr = try alloc.create(Expr);
-                innerPtr.* = inner;
+                const inner = try this.parseBinaryExpr(alloc, prec.equality);
+                const innerPtr = try this.boxExpr(alloc, inner);
                 return Expr{ .comptime_ = .{ .loc = locFromToken(comptimeTok), .kind = .{ .comptimeExpr = innerPtr } } };
             }
         }
@@ -2428,23 +2430,17 @@ pub const Parser = struct {
             // break with no expression (e.g. bare `break` inside a loop)
             const isEnd = this.check(.rightBrace) or this.check(.endOfFile) or this.check(.newLine) or this.check(.semicolon);
             if (isEnd) {
-                return Expr{ .jump = .{ .loc = locFromToken(breakTok), .kind = .{ .@"break" = null } } };
+                return this.makeJump(alloc, breakTok, .@"break", null);
             }
-            var inner = try this.parseExpr(alloc);
-            errdefer inner.deinit(alloc);
-            const innerPtr = try alloc.create(Expr);
-            innerPtr.* = inner;
-            return Expr{ .jump = .{ .loc = locFromToken(breakTok), .kind = .{ .@"break" = innerPtr } } };
+            const inner = try this.parseExpr(alloc);
+            return this.makeJump(alloc, breakTok, .@"break", inner);
         }
 
         // yield expr
         if (this.check(.yield)) {
             const yieldTok = this.advance();
-            var inner = try this.parseEqExpr(alloc);
-            errdefer inner.deinit(alloc);
-            const innerPtr = try alloc.create(Expr);
-            innerPtr.* = inner;
-            return Expr{ .jump = .{ .loc = locFromToken(yieldTok), .kind = .{ .yield = innerPtr } } };
+            const inner = try this.parseBinaryExpr(alloc, prec.equality);
+            return this.makeJump(alloc, yieldTok, .yield, inner);
         }
 
         // continue
@@ -2489,8 +2485,7 @@ pub const Parser = struct {
             // Simple assignment: ident += expr (no field access)
             if (this.match(.plusEqual)) {
                 const valExpr = try this.parseExpr(alloc);
-                const valPtr = try alloc.create(Expr);
-                valPtr.* = valExpr;
+                const valPtr = try this.boxExpr(alloc, valExpr);
                 return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .assign = .{
                     .target = .{ .name = first.lexeme },
                     .op = .plusAssign,
@@ -2507,11 +2502,9 @@ pub const Parser = struct {
                     try this.consume(.identifier);
 
                 if (this.match(.equal)) {
-                    const valExpr = try this.parseEqExpr(alloc);
-                    const valPtr = try alloc.create(Expr);
-                    valPtr.* = valExpr;
-                    const recvPtr = try alloc.create(Expr);
-                    recvPtr.* = Expr{ .identifier = .{ .loc = locFromToken(first), .kind = .{ .ident = first.lexeme } } };
+                    const valExpr = try this.parseBinaryExpr(alloc, prec.equality);
+                    const valPtr = try this.boxExpr(alloc, valExpr);
+                    const recvPtr = try this.boxExpr(alloc, Expr{ .identifier = .{ .loc = locFromToken(first), .kind = .{ .ident = first.lexeme } } });
                     return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .assign = .{
                         .target = .{ .fieldAccess = .{ .receiver = recvPtr, .field = fieldTok.lexeme } },
                         .op = .assign,
@@ -2520,11 +2513,9 @@ pub const Parser = struct {
                 }
 
                 if (this.match(.plusEqual)) {
-                    const valExpr = try this.parseEqExpr(alloc);
-                    const valPtr = try alloc.create(Expr);
-                    valPtr.* = valExpr;
-                    const recvPtr = try alloc.create(Expr);
-                    recvPtr.* = Expr{ .identifier = .{ .loc = locFromToken(first), .kind = .{ .ident = first.lexeme } } };
+                    const valExpr = try this.parseBinaryExpr(alloc, prec.equality);
+                    const valPtr = try this.boxExpr(alloc, valExpr);
+                    const recvPtr = try this.boxExpr(alloc, Expr{ .identifier = .{ .loc = locFromToken(first), .kind = .{ .ident = first.lexeme } } });
                     return Expr{ .binding = .{ .loc = locFromToken(first), .kind = .{ .assign = .{
                         .target = .{ .fieldAccess = .{ .receiver = recvPtr, .field = fieldTok.lexeme } },
                         .op = .plusAssign,
@@ -2568,16 +2559,7 @@ pub const Parser = struct {
                 }
 
                 if (args.len > 0 or trailing.len > 0) {
-                    return this.wrapCatch(alloc, Expr{ .call = .{
-                        .loc = locFromToken(firstTok),
-                        .kind = .{ .call = .{
-                            .receiver = firstTok.lexeme,
-                            .callee = methodTok.lexeme,
-                            .is_builtin = false,
-                            .args = args,
-                            .trailing = trailing,
-                        } },
-                    } });
+                    return this.wrapCatch(alloc, makeCall(firstTok, firstTok.lexeme, methodTok.lexeme, false, args, trailing));
                 }
 
                 // No args or trailing lambdas.
@@ -2597,13 +2579,7 @@ pub const Parser = struct {
                     for (trailing) |*t| t.deinit(alloc);
                     alloc.free(trailing);
                 }
-                return this.wrapCatch(alloc, Expr{ .call = .{ .loc = locFromToken(firstTok), .kind = .{ .call = .{
-                    .receiver = null,
-                    .callee = firstTok.lexeme,
-                    .is_builtin = false,
-                    .args = args,
-                    .trailing = trailing,
-                } } } });
+                return this.wrapCatch(alloc, makeCall(firstTok, null, firstTok.lexeme, false, args, trailing));
             }
 
             // Call with only trailing lambdas: ident { ... } label: { ... }
@@ -2615,13 +2591,7 @@ pub const Parser = struct {
                     alloc.free(trailing);
                 }
                 if (trailing.len > 0) {
-                    return this.wrapCatch(alloc, Expr{ .call = .{ .loc = locFromToken(firstTok), .kind = .{ .call = .{
-                        .receiver = null,
-                        .callee = firstTok.lexeme,
-                        .is_builtin = false,
-                        .args = &.{},
-                        .trailing = trailing,
-                    } } } });
+                    return this.wrapCatch(alloc, makeCall(firstTok, null, firstTok.lexeme, false, &.{}, trailing));
                 }
                 for (trailing) |*t| t.deinit(alloc);
                 alloc.free(trailing);
@@ -2780,7 +2750,7 @@ pub const Parser = struct {
                 _ = try this.consume(.equal);
                 const valPtr = try this.boxExpr(alloc, try this.parseExpr(alloc));
                 return Expr{ .binding = .{ .loc = locFromToken(bindTok), .kind = .{ .localBindDestruct = .{
-                    .pattern = .{ .ctor = .{ .variantLiterals = .{ .name = ctorName, .args = try args.toOwnedSlice(alloc) } } },
+                    .pattern = .{ .ctor = .{ .variant = .{ .name = ctorName, .payload = .{ .literals = try args.toOwnedSlice(alloc) } } } },
                     .value = valPtr,
                     .mutable = mutable,
                 } } } };
@@ -2809,7 +2779,7 @@ pub const Parser = struct {
     }
 
     fn parsePipelineExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseOrExpr(alloc);
+        var lhs = try this.parseBinaryExpr(alloc, prec.lowest);
 
         while (true) {
             // Collect any comment that appears before the `|>` operator
@@ -2850,13 +2820,7 @@ pub const Parser = struct {
                             for (trailing) |*t| t.deinit(alloc);
                             alloc.free(trailing);
                         }
-                        break :rhs_blk Expr{ .call = .{ .loc = locFromToken(nameTok), .kind = .{ .call = .{
-                            .receiver = null,
-                            .callee = nameTok.lexeme,
-                            .is_builtin = false,
-                            .args = args,
-                            .trailing = trailing,
-                        } } } };
+                        break :rhs_blk makeCall(nameTok, null, nameTok.lexeme, false, args, trailing);
                     } else if (this.match(.dot)) {
                         const methodTok = try this.consume(.identifier);
                         var args: []CallArg = &.{};
@@ -2872,89 +2836,69 @@ pub const Parser = struct {
                             for (trailing) |*t| t.deinit(alloc);
                             alloc.free(trailing);
                         }
-                        break :rhs_blk Expr{ .call = .{ .loc = locFromToken(nameTok), .kind = .{ .call = .{
-                            .receiver = nameTok.lexeme,
-                            .is_builtin = false,
-                            .callee = methodTok.lexeme,
-                            .args = args,
-                            .trailing = trailing,
-                        } } } };
+                        break :rhs_blk makeCall(nameTok, nameTok.lexeme, methodTok.lexeme, false, args, trailing);
                     } else {
                         this.current = saved;
                     }
                 }
-                break :rhs_blk try this.parseOrExpr(alloc);
+                break :rhs_blk try this.parseBinaryExpr(alloc, prec.lowest);
             };
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
+            const lhsPtr = try this.boxExpr(alloc, lhs);
+            const rhsPtr = try this.boxExpr(alloc, rhs);
             lhs = Expr{ .call = .{ .loc = locFromToken(opTok), .kind = .{ .pipeline = .{ .lhs = lhsPtr, .rhs = rhsPtr, .comment = pipeComment } } } };
         }
 
         return lhs;
     }
 
-    fn parseOrExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseAndExpr(alloc);
+    /// One operator token and the AST op it maps to, at a given precedence level.
+    const PrecedenceOp = struct { tok: TokenKind, op: BinOp };
 
-        while (this.match(.verticalBarVerticalBar)) {
+    /// One precedence level: the operators it recognises (left-associative) plus
+    /// whether it enforces the `opNakedRight` rule (a compare op with no RHS value).
+    const PrecedenceLevel = struct { ops: []const PrecedenceOp, nakedRightCheck: bool = false };
+
+    /// Binary-operator precedence, lowest level first. `parseBinaryExpr` walks this
+    /// table recursively; level == len delegates to `parsePrimary`.
+    const precedence_table = [_]PrecedenceLevel{
+        .{ .ops = &.{.{ .tok = .verticalBarVerticalBar, .op = .@"or" }} },
+        .{ .ops = &.{.{ .tok = .amperAmper, .op = .@"and" }} },
+        .{ .ops = &.{ .{ .tok = .equalEqual, .op = .eq }, .{ .tok = .notEqual, .op = .ne } } },
+        .{ .ops = &.{
+            .{ .tok = .lessThan, .op = .lt },
+            .{ .tok = .greaterThan, .op = .gt },
+            .{ .tok = .lessThanEqual, .op = .lte },
+            .{ .tok = .greaterThanEqual, .op = .gte },
+        }, .nakedRightCheck = true },
+        .{ .ops = &.{ .{ .tok = .plus, .op = .add }, .{ .tok = .minus, .op = .sub } } },
+        .{ .ops = &.{
+            .{ .tok = .star, .op = .mul },
+            .{ .tok = .slash, .op = .div },
+            .{ .tok = .percent, .op = .mod },
+        } },
+    };
+
+    /// Precedence-level entry points used by callers outside `parseBinaryExpr`.
+    const prec = struct {
+        /// `||` — the loosest binary level (full binary expression).
+        const lowest: usize = 0;
+        /// `==`/`!=` and tighter — the entry point for operand positions where
+        /// `||`/`&&` are not accepted (if-conditions, yields, ranges, assignments…).
+        const equality: usize = 2;
+    };
+
+    /// Left-associative precedence-climbing parser driven by `precedence_table`.
+    fn parseBinaryExpr(this: *This, alloc: std.mem.Allocator, comptime level: usize) ParseError!Expr {
+        if (level == precedence_table.len) return this.parsePrimary(alloc);
+        const entry = precedence_table[level];
+
+        var lhs = try this.parseBinaryExpr(alloc, level + 1);
+        while (true) {
+            const op: BinOp = inline for (entry.ops) |o| {
+                if (this.match(o.tok)) break o.op;
+            } else break;
             const opTok = this.tokens[this.current - 1];
-            const rhs = try this.parseAndExpr(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .@"or", .lhs = lhsPtr, .rhs = rhsPtr } } };
-        }
-
-        return lhs;
-    }
-
-    fn parseAndExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseEqExpr(alloc);
-
-        while (this.match(.amperAmper)) {
-            const opTok = this.tokens[this.current - 1];
-            const rhs = try this.parseEqExpr(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .@"and", .lhs = lhsPtr, .rhs = rhsPtr } } };
-        }
-
-        return lhs;
-    }
-
-    fn parseEqExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseCompareExpr(alloc);
-
-        while (this.match(.equalEqual) or this.match(.notEqual)) {
-            const opTok = this.tokens[this.current - 1];
-            const rhs = try this.parseCompareExpr(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
-                .op = if (opTok.kind == .equalEqual) .eq else .ne,
-                .lhs = lhsPtr,
-                .rhs = rhsPtr,
-            } } };
-        }
-
-        return lhs;
-    }
-
-    fn parseCompareExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseAddExpr(alloc);
-
-        while (this.match(.lessThan) or this.match(.greaterThan) or
-            this.match(.lessThanEqual) or this.match(.greaterThanEqual))
-        {
-            const opTok = this.tokens[this.current - 1];
-            if (this.check(.val) or this.check(.endOfFile)) {
+            if (entry.nakedRightCheck and (this.check(.val) or this.check(.endOfFile))) {
                 this.parseError = .{
                     .kind = .opNakedRight,
                     .start = opTok.col - 1,
@@ -2965,69 +2909,9 @@ pub const Parser = struct {
                 };
                 return ParseError.UnexpectedToken;
             }
-            const rhs = try this.parseAddExpr(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
-                .op = switch (opTok.kind) {
-                    .lessThan => .lt,
-                    .greaterThan => .gt,
-                    .lessThanEqual => .lte,
-                    .greaterThanEqual => .gte,
-                    else => unreachable,
-                },
-                .lhs = lhsPtr,
-                .rhs = rhsPtr,
-            } } };
+            const rhs = try this.parseBinaryExpr(alloc, level + 1);
+            lhs = try this.makeBinOp(alloc, op, opTok, lhs, rhs);
         }
-
-        return lhs;
-    }
-
-    fn parseAddExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parseMulExpr(alloc);
-
-        while (this.match(.plus) or this.match(.minus)) {
-            const opTok = this.tokens[this.current - 1];
-            const rhs = try this.parseMulExpr(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
-                .op = if (opTok.kind == .plus) .add else .sub,
-                .lhs = lhsPtr,
-                .rhs = rhsPtr,
-            } } };
-        }
-
-        return lhs;
-    }
-
-    fn parseMulExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var lhs = try this.parsePrimary(alloc);
-
-        while (this.match(.star) or this.match(.slash) or this.match(.percent)) {
-            const opTok = this.tokens[this.current - 1];
-            const rhs = try this.parsePrimary(alloc);
-            const lhsPtr = try alloc.create(Expr);
-            lhsPtr.* = lhs;
-            const rhsPtr = try alloc.create(Expr);
-            rhsPtr.* = rhs;
-            lhs = Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .kind = .{
-                .op = switch (opTok.kind) {
-                    .star => .mul,
-                    .slash => .div,
-                    .percent => .mod,
-                    else => unreachable,
-                },
-                .lhs = lhsPtr,
-                .rhs = rhsPtr,
-            } } };
-        }
-
         return lhs;
     }
 
@@ -3036,9 +2920,8 @@ pub const Parser = struct {
         if (this.check(.minus)) {
             const opTok = this.advance();
             const operand = try this.parsePrimary(alloc);
-            const operandPtr = try alloc.create(Expr);
-            operandPtr.* = operand;
-            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .neg, .expr = operandPtr } } };
+            const operandPtr = try this.boxExpr(alloc, operand);
+            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .op = .neg, .expr = operandPtr } };
         }
 
         // { params? -> body } ---- lambda expression (standalone or trailing)
@@ -3097,10 +2980,11 @@ pub const Parser = struct {
                 }
                 _ = try this.consume(.rightBrace);
 
-                return Expr{ .function = .{ .loc = locFromToken(braceTok), .kind = .{ .lambda = .{
+                return Expr{ .function = .{ .loc = locFromToken(braceTok), .kind = .{
+                    .syntax = .lambda,
                     .params = try paramList.toOwnedSlice(alloc),
                     .body = try stmts.toOwnedSlice(alloc),
-                } } } };
+                } } };
             } else {
                 // { } without -> is not allowed (use @block builtin instead)
                 return ParseError.UnexpectedToken;
@@ -3111,9 +2995,8 @@ pub const Parser = struct {
         if (this.check(.bang)) {
             const opTok = this.advance();
             const operand = try this.parsePrimary(alloc);
-            const operandPtr = try alloc.create(Expr);
-            operandPtr.* = operand;
-            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .kind = .{ .op = .not, .expr = operandPtr } } };
+            const operandPtr = try this.boxExpr(alloc, operand);
+            return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .op = .not, .expr = operandPtr } };
         }
 
         // @name(args...) ---- built-in function call (same as regular calls, just with @ prefix)
@@ -3128,16 +3011,7 @@ pub const Parser = struct {
                     for (trailing) |*t| t.deinit(alloc);
                     alloc.free(trailing);
                 }
-                return Expr{ .call = .{
-                    .loc = locFromToken(nameTok),
-                    .kind = .{ .call = .{
-                        .receiver = null,
-                        .callee = callee,
-                        .is_builtin = true,
-                        .args = &.{},
-                        .trailing = trailing,
-                    } },
-                } };
+                return makeCall(nameTok, null, callee, true, &.{}, trailing);
             }
 
             // Regular @name(args...) syntax
@@ -3154,16 +3028,7 @@ pub const Parser = struct {
                 alloc.free(trailing);
             }
 
-            return Expr{ .call = .{
-                .loc = locFromToken(nameTok),
-                .kind = .{ .call = .{
-                    .receiver = null,
-                    .callee = nameTok.lexeme[1..],
-                    .is_builtin = true,
-                    .args = args,
-                    .trailing = trailing,
-                } },
-            } };
+            return makeCall(nameTok, null, nameTok.lexeme[1..], true, args, trailing);
         }
 
         if (this.check(.stringLiteral)) {
@@ -3198,10 +3063,11 @@ pub const Parser = struct {
             }
             _ = try this.consume(.rightParenthesis);
             const body = try this.parseStmtListInBraces(alloc);
-            return Expr{ .function = .{ .loc = locFromToken(fnTok), .kind = .{ .fnExpr = .{
+            return Expr{ .function = .{ .loc = locFromToken(fnTok), .kind = .{
+                .syntax = .fnExpr,
                 .params = try params.toOwnedSlice(alloc),
                 .body = body,
-            } } } };
+            } } };
         }
 
         if (this.check(.null)) {
@@ -3236,8 +3102,7 @@ pub const Parser = struct {
                     this.advance()
                 else
                     try this.consume(.identifier);
-                const recvPtr = try alloc.create(Expr);
-                recvPtr.* = base;
+                const recvPtr = try this.boxExpr(alloc, base);
                 base = Expr{ .identifier = .{ .loc = locFromToken(tok), .kind = .{ .identAccess = .{
                     .receiver = recvPtr,
                     .member = fieldTok.lexeme,
@@ -3263,8 +3128,7 @@ pub const Parser = struct {
             const parenTok = this.advance();
             const inner = try this.parseExpr(alloc);
             _ = try this.consume(.rightParenthesis);
-            const innerPtr = try alloc.create(ast.Expr);
-            innerPtr.* = inner;
+            const innerPtr = try this.boxExpr(alloc, inner);
             return Expr{ .collection = .{ .loc = locFromToken(parenTok), .kind = .{ .grouped = innerPtr } } };
         }
 
@@ -3369,8 +3233,7 @@ pub const Parser = struct {
                     spread = this.advance().lexeme;
                 } else if (!this.check(.rightSquareBracket) and !this.check(.endOfFile) and !this.check(.comma)) {
                     const se = try this.parseExpr(alloc);
-                    spreadExpr = try alloc.create(Expr);
-                    spreadExpr.?.* = se;
+                    spreadExpr = try this.boxExpr(alloc, se);
                 } else {
                     spread = "";
                 }
@@ -3448,18 +3311,7 @@ pub const Parser = struct {
         }
 
         while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            if (this.check(.commentNormal) or this.check(.commentDoc) or this.check(.commentModule)) {
-                const tok = this.advance();
-                const kind: ast.CommentKind = if (tok.kind == .commentDoc)
-                    .{ .doc = "" }
-                else if (tok.kind == .commentModule)
-                    .{ .module = "" }
-                else
-                    .{ .normal = "" };
-                const text = try alloc.dupe(u8, commentText(tok.lexeme));
-                try stmts.append(alloc, .{ .expr = Expr{ .literal = .{ .loc = locFromToken(tok), .kind = .{ .comment = .{ .kind = kind, .text = text } } } } });
-                continue;
-            }
+            if (try this.tryParseCommentStmt(alloc, &stmts, 0)) continue;
             const expr = try this.parseExpr(alloc);
             _ = try this.consume(.semicolon);
             try stmts.append(alloc, .{ .expr = expr });
@@ -3564,10 +3416,9 @@ pub const Parser = struct {
         return .{
             .loc = locFromToken(startTok),
             .kind = .{
-                .lambda = .{
-                    .params = try paramList.toOwnedSlice(alloc),
-                    .body = try stmts.toOwnedSlice(alloc),
-                },
+                .syntax = .lambda,
+                .params = try paramList.toOwnedSlice(alloc),
+                .body = try stmts.toOwnedSlice(alloc),
             },
         };
     }
@@ -3592,8 +3443,7 @@ pub const Parser = struct {
             // Spread argument used by record/variant update calls, e.g. `Ctor(..base, x: 1)`.
             if (this.match(.dotDot)) {
                 const valExpr = try this.parseExpr(alloc);
-                const valPtr = try alloc.create(Expr);
-                valPtr.* = valExpr;
+                const valPtr = try this.boxExpr(alloc, valExpr);
                 const commentsSlice = try argComments.toOwnedSlice(alloc);
                 try args.append(alloc, .{ .label = "..", .value = valPtr, .comments = commentsSlice });
                 if (!this.match(.comma)) break;
@@ -3615,8 +3465,7 @@ pub const Parser = struct {
             };
 
             const valExpr = try this.parseExpr(alloc);
-            const valPtr = try alloc.create(Expr);
-            valPtr.* = valExpr;
+            const valPtr = try this.boxExpr(alloc, valExpr);
             const commentsSlice = try argComments.toOwnedSlice(alloc);
             try args.append(alloc, .{ .label = label, .value = valPtr, .comments = commentsSlice });
 
@@ -3732,15 +3581,13 @@ pub const Parser = struct {
 
         // Parse primary iterator expression (may be a range or identifier)
         const iterExpr = try this.parseRangeExpr(alloc);
-        const iterPtr = try alloc.create(Expr);
-        iterPtr.* = iterExpr;
+        const iterPtr = try this.boxExpr(alloc, iterExpr);
 
         // Optional index range: `loop (iter, 0..)`
         var indexPtr: ?*Expr = null;
         if (this.match(.comma)) {
             const idxExpr = try this.parseRangeExpr(alloc);
-            indexPtr = try alloc.create(Expr);
-            indexPtr.?.* = idxExpr;
+            indexPtr = try this.boxExpr(alloc, idxExpr);
         }
 
         _ = try this.consume(.rightParenthesis);
@@ -3771,32 +3618,27 @@ pub const Parser = struct {
 
         return .{
             .loc = locFromToken(loopTok),
-            .kind = .{
-                .iter = iterPtr,
-                .indexRange = indexPtr,
-                .params = try params.toOwnedSlice(alloc),
-                .body = body,
-            },
+            .iter = iterPtr,
+            .indexRange = indexPtr,
+            .params = try params.toOwnedSlice(alloc),
+            .body = body,
         };
     }
 
     /// Parses a range expression `expr..` or `expr..expr`, or falls back to
     /// a plain `parseEqExpr` if `..` is not present.
     fn parseRangeExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
-        var start = try this.parseEqExpr(alloc);
+        var start = try this.parseBinaryExpr(alloc, prec.equality);
         errdefer start.deinit(alloc);
         if (!this.check(.dotDot)) return start;
         const dotTok = this.advance(); // consume '..'
-        const startPtr = try alloc.create(Expr);
-        startPtr.* = start;
+        const startPtr = try this.boxExpr(alloc, start);
         // Optional end: `0..10` vs `0..`
         const hasEnd = !this.check(.rightParenthesis) and !this.check(.comma) and
             !this.check(.endOfFile);
         if (hasEnd) {
-            var end = try this.parseEqExpr(alloc);
-            errdefer end.deinit(alloc);
-            const endPtr = try alloc.create(Expr);
-            endPtr.* = end;
+            const end = try this.parseBinaryExpr(alloc, prec.equality);
+            const endPtr = try this.boxExpr(alloc, end);
             return Expr{ .collection = .{ .loc = locFromToken(dotTok), .kind = .{ .range = .{ .start = startPtr, .end = endPtr } } } };
         }
         return Expr{ .collection = .{ .loc = locFromToken(dotTok), .kind = .{ .range = .{ .start = startPtr, .end = null } } } };

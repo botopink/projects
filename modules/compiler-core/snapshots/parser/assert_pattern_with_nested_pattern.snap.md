@@ -23,20 +23,22 @@
                 "kind": {
                   "assertPattern": {
                     "pattern": {
-                      "variantLiterals": {
+                      "variant": {
                         "name": "Ok",
-                        "args": [
-                          {
-                            "list": {
-                              "elems": [
-                                {
-                                  "bind": "first"
-                                }
-                              ],
-                              "spread": ""
+                        "payload": {
+                          "literals": [
+                            {
+                              "list": {
+                                "elems": [
+                                  {
+                                    "bind": "first"
+                                  }
+                                ],
+                                "spread": ""
+                              }
                             }
-                          }
-                        ]
+                          ]
+                        }
                       }
                     },
                     "expr": {

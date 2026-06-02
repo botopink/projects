@@ -114,7 +114,7 @@ pub fn ExprOf(comptime phase: Phase) type {
         unaryOp: UnaryOpExprOf(phase),
         jump: MakeExpr(phase, JumpExprOf(phase)),
         branch: MakeExpr(phase, BranchExprOf(phase)),
-        loop: MakeExpr(phase, LoopExprOf(phase)),
+        loop: LoopExprOf(phase),
         binding: BindingExprOf(phase),
         useHook: UseHookExprOf(phase),
         call: CallExprOf(phase),
@@ -264,9 +264,13 @@ pub fn IdentifierExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
-/// Binary operations: all binary operators
+/// Binary operations: all binary operators.
+/// Flattened: `op`/`lhs`/`rhs` live directly on the node (no `.kind` indirection).
 pub fn BinOpExprOf(comptime phase: Phase) type {
-    const Kind = struct {
+    return struct {
+        loc: Loc,
+        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
+            if (phase == .typed) undefined else {},
         /// Binary operator type
         op: enum {
             lt, // `<`
@@ -291,13 +295,15 @@ pub fn BinOpExprOf(comptime phase: Phase) type {
             destroyExpr(allocator, this.rhs);
         }
     };
-
-    return MakeExpr(phase, Kind);
 }
 
-/// Unary operations: unary operators
+/// Unary operations: unary operators.
+/// Flattened: `op`/`expr` live directly on the node (no `.kind` indirection).
 pub fn UnaryOpExprOf(comptime phase: Phase) type {
-    const Kind = struct {
+    return struct {
+        loc: Loc,
+        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
+            if (phase == .typed) undefined else {},
         /// Unary operator type
         op: enum {
             neg, // `-` negation
@@ -309,8 +315,6 @@ pub fn UnaryOpExprOf(comptime phase: Phase) type {
             destroyExpr(allocator, this.expr);
         }
     };
-
-    return MakeExpr(phase, Kind);
 }
 
 /// Jump expressions: simple control flow jumps (return, break, continue, throw, yield, try)
@@ -377,9 +381,13 @@ pub fn BranchExprOf(comptime phase: Phase) type {
     };
 }
 
-/// Loop expressions: iteration constructs
+/// Loop expressions: iteration constructs.
+/// Flattened: loop fields live directly on the node (no `.kind` indirection).
 pub fn LoopExprOf(comptime phase: Phase) type {
     return struct {
+        loc: Loc,
+        type_: if (phase == .typed) *@import("./comptime/types.zig").Type else void =
+            if (phase == .typed) undefined else {},
         /// `loop (iter) { params -> body }` or `loop (iter, 0..) { item, i -> body }`
         iter: *ExprOf(phase),
         indexRange: ?*ExprOf(phase),
@@ -498,35 +506,21 @@ pub fn UseHookExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
-/// Function definition expressions: lambdas and anonymous functions
+/// Function definition expressions: lambdas and anonymous functions.
+/// Both share the same shape (`params`/`body`); `syntax` records which surface
+/// form produced the node so consumers can emit the right syntax.
 pub fn FunctionExprOf(comptime phase: Phase) type {
-    const Kind = union(enum) {
-        /// A lambda expression: `{ a, b -> stmts }` or `{ stmts }` (no params).
-        lambda: struct {
-            /// Parameter names (inferred types). Empty for no-param lambdas.
-            params: []const []const u8,
-            body: []StmtOf(phase),
-        },
-        /// An anonymous function expression: `fn(a, b) { stmts }`
-        fnExpr: struct {
-            /// Parameter names.
-            params: []const []const u8,
-            body: []StmtOf(phase),
-        },
+    const Kind = struct {
+        /// Surface syntax: `{ a, b -> stmts }` lambda vs `fn(a, b) { stmts }`.
+        syntax: enum { lambda, fnExpr },
+        /// Parameter names (inferred types). Empty for no-param functions.
+        params: []const []const u8,
+        body: []StmtOf(phase),
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            switch (this.*) {
-                .lambda => |l| {
-                    allocator.free(l.params);
-                    for (l.body) |*s| s.deinit(allocator);
-                    allocator.free(l.body);
-                },
-                .fnExpr => |f| {
-                    allocator.free(f.params);
-                    for (f.body) |*s| s.deinit(allocator);
-                    allocator.free(f.body);
-                },
-            }
+            allocator.free(this.params);
+            for (this.body) |*s| s.deinit(allocator);
+            allocator.free(this.body);
         }
     };
 
@@ -748,20 +742,18 @@ pub const Pattern = union(enum) {
     wildcard,
     /// enum variant or variable binding: `Red`, `x`, `total`
     ident: []const u8,
-    /// enum variant with whole-payload binding: `Ok ok` (bind entire payload to `ok`)
-    variantBinding: struct {
+    /// enum variant with a payload: `Ok ok`, `Rgb(r, g, b)`, `Ok(1)`.
+    /// The `name` is the variant; `payload` records how its contents are matched.
+    variant: struct {
         name: []const u8,
-        binding: []const u8,
-    },
-    /// enum variant with bound fields: `Rgb(r, g, b)`
-    variantFields: struct {
-        name: []const u8,
-        bindings: []const []const u8,
-    },
-    /// enum variant with literal arguments: `Ok(1)`, `Error("not found")`
-    variantLiterals: struct {
-        name: []const u8,
-        args: []Pattern,
+        payload: union(enum) {
+            /// whole-payload binding: `Ok ok` (bind entire payload to `ok`)
+            binding: []const u8,
+            /// bound fields: `Rgb(r, g, b)`
+            fields: []const []const u8,
+            /// literal / nested-pattern arguments: `Ok(1)`, `Error("not found")`
+            literals: []Pattern,
+        },
     },
     /// Number literal: `42`
     numberLit: []const u8,
@@ -782,10 +774,13 @@ pub const Pattern = union(enum) {
 
     pub fn deinit(this: *Pattern, allocator: std.mem.Allocator) void {
         switch (this.*) {
-            .variantFields => |vf| allocator.free(vf.bindings),
-            .variantLiterals => |vl| {
-                for (vl.args) |*p| p.deinit(allocator);
-                allocator.free(vl.args);
+            .variant => |*v| switch (v.payload) {
+                .fields => |f| allocator.free(f),
+                .literals => |args| {
+                    for (args) |*p| p.deinit(allocator);
+                    allocator.free(args);
+                },
+                .binding => {},
             },
             .list => |l| allocator.free(l.elems),
             .@"or" => |pats| {

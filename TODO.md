@@ -1,51 +1,47 @@
-# TODO — Botopink Compiler
+# AST & Parser Simplification
 
-> Modelo de sintaxe `import` / `use` / `implement` / `extend` detalhado em **`plano.md`**.
-> Esta seção mapeia o trabalho em branches paralelas e pontos de merge.
+**Branch**: `feat/ast-simplification`
+**Depends on**: nothing — but **do NOT parallelize** with other branches
+**Status**: pending
 
-## Plano de Branches — execução paralela
+> ⚠️ Touches almost every AST consumer (`format.zig`, `infer.zig`, `transform.zig`,
+> `beam_asm.zig`, `wat.zig`, `erlang.zig`, `typescript.zig`, `print.zig`). High merge-conflict
+> risk. Run it **alone**, on a clean base, **before** opening the other branches **or**
+> after they are all merged. Never in parallel.
 
-Objetivo: rodar em paralelo tudo que **não** tem dependência cruzada, e isolar os
-pontos de convergência que exigem merge antes de começar.
+**Files**: `ast.zig` (~1360 lines), `parser.zig` (~3630 lines)
 
-### Workstreams independentes (branches paralelas — sem dependência entre si)
+## Steps
 
-| Branch | Conteúdo | Plano | Toca |
-|---|---|---|---|
-| `feat/import-rework` | `import {A, X*} [from "m"]` (reverte `@root()`/`@module()`) | F0→F1→F2 | ast/parser/format import, snapshots import |
-| `feat/use-await-prefix` | `use`/`await` operadores prefixos | F3 | ast Expr, parser expr, format |
-| `feat/implement-extend-decls` | `implement` shorthand nomeado + `extend` decl | F4+F5 | lexer (token `extend`), ast/parser decls |
-| `feat/beam-asm` | BEAM ASM Fases 3–9 | — | beam_asm.zig |
-| `feat/wat-features` | WAT destructure/pipeline/strings/enum/try | — | wat.zig |
-| `feat/erlang-gaps` | list/constructor patterns, arity | — | erlang.zig |
-| `feat/typeparam` | typeparam constraints `\| `-separated | — | parser, infer |
-| `feat/throw-check` | throw type checking vs `E` | — | infer |
-| `feat/trycatch-lowering` | try/catch → pattern match (4 targets) | — | codegens |
-| `feat/stdlib-result` | `@Result`/`@Option` map/flatMap/unwrapOr | — | builtins.d.bp |
+### Phase 1 — construction helpers (parser.zig only)
+1. Replace 27 `alloc.create(Expr); ptr.* = expr` with `boxExpr()`
+2. `makeBinOp(alloc, op, opTok, lhs, rhs)`
+3. `makeCall(tok, receiver, callee, is_builtin, args, trailing)` — 11 sites
+4. `makeJump(tok, comptime variant, inner)` — unifies return/throw/try/break/yield
+5. `tryParseCommentStmt(alloc)` — extract the duplicated pattern (3-4 occurrences)
 
-Dentro de `feat/import-rework` a cadeia F0→F1→F2 é sequencial, mas a **branch inteira**
-é isolada das demais. F4 e F5 são paralelas entre si dentro de `feat/implement-extend-decls`.
+### Phase 2 — unify block parsing (parser.zig only)
+6. `BlockParseOptions { trackEmptyLines, handleComments, semicolonPolicy }`
+7. `parseBlock(alloc, opts)` unifying the 5 methods
+8. Keep `parseBlockOrExpr` as a thin wrapper; remove the 5 old ones
 
-### Pontos de convergência (exigem merge antes de iniciar)
+### Phase 3 — unify binary operators (parser.zig only)
+9. `precedence_table` (level → tokens + op enum)
+10. recursive `parseBinaryExpr(alloc, comptime level)`
+11. Remove `parseOrExpr`/`parseAndExpr`/`parseEqExpr`/`parseCompareExpr`/`parseAddExpr`/`parseMulExpr`
 
-| Branch | Plano | Depende de (merge prévio) |
-|---|---|---|
-| `feat/extension-dispatch` | F6 — static extension dispatch | `feat/import-rework` (ativação `*`) + `feat/implement-extend-decls` (Impl/ExtendDecl) |
-| `feat/context-inference` | F7 — inference `@Context` | `feat/use-await-prefix` (usePrefix) + F6 (tabelas de tipo) |
-| `feat/hook-codegen` | F8 — codegen dos hooks | F7 |
+### Phase 4 — flatten AST (ast.zig + consumers)
+12. Flatten `BinOpExprOf`/`UnaryOpExprOf`/`LoopExprOf` (fields directly on the struct)
+13. Migrate consumers (search-and-replace) + update `deinit`
 
-### DAG
+### Phase 5 — merge lambda/fnExpr (ast.zig + consumers)
+14. `FunctionExprOf` → struct `{ syntax: enum { lambda, fnExpr }, params, body }`
 
-```
-feat/import-rework ─┐
-                    ├─► feat/extension-dispatch ─► feat/context-inference ─► feat/hook-codegen
-feat/implement-extend-decls ─┘                              ▲
-feat/use-await-prefix ─────────────────────────────────────┘
+### Phase 6 — unify declaration preamble (parser.zig only)
+15. `DeclPreamble` + `parseDeclPreamble` for the 10 decl methods
 
-feat/beam-asm · feat/wat-features · feat/erlang-gaps · feat/typeparam ·
-feat/throw-check · feat/trycatch-lowering · feat/stdlib-result
-   └── totalmente paralelas, nenhum merge com as de cima
-```
+### Phase 7 (optional) — merge pattern variants
+16. `variantBinding`/`variantFields`/`variantLiterals` → `variant` with payload union (14 sites)
 
 ### Roadmap por feature (nome + etapas)
 
