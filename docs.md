@@ -282,6 +282,41 @@ function safe() {
 }
 ```
 
+### Throw type checking
+
+The value of a `throw` must match the `E` of the enclosing function's
+`@Result<D, E>` return type:
+
+```botopink
+fn parse(s: string) -> @Result<i32, string> {
+    if (s == "") {
+        throw "empty input";   // ✓ "empty input": string == E
+    }
+    return 0;
+}
+```
+
+A mismatch is a compile-time error:
+
+```botopink
+fn parse(s: string) -> @Result<i32, string> {
+    throw 404;   // ✗ error: i32 thrown, but E = string
+}
+```
+
+`throw` is only valid when the enclosing function returns `@Result<D, E>`. A
+function with a different declared return type rejects it:
+
+```botopink
+fn run() -> i32 {
+    throw "x";   // ✗ error: throw requires the fn to return @Result<D, E>
+}
+```
+
+Functions with **no** declared return type leave `throw` unchecked (this is
+what makes `val x = try f() catch throw err;` legal), and a `throw` inside a
+nested lambda is checked against that lambda, never the outer function's `E`.
+
 ---
 
 ## Null Safety

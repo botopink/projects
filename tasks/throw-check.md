@@ -2,7 +2,7 @@
 
 **Branch**: `feat/throw-check`
 **Depends on**: nothing (independent)
-**Status**: pending
+**Status**: done (implemented & tested)
 
 ## Goal
 
