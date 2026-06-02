@@ -28,8 +28,7 @@ fn process() -> i32 {
     {allocate, 0, 0}.
     {move, {literal, <<"not found">>}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    %% unresolved local call: LoadError/1
+    {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 1, {list, [{atom, msg}, {x, 0}]}}.
     {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
 
 {function, process, 0, 5}.

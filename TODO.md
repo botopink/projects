@@ -22,6 +22,11 @@
 >   do backend Erlang. Trailing lambdas (`List.map(xs) { x -> … }`) passam a ser
 >   materializadas como fun-argumentos (antes eram descartadas). Validado com
 >   `erlc +from_asm` (`lists:map/2 = [3,6,9]`).
+> - **Construtores de record/struct**: `AppError(code: 400, msg: "x")` → map
+>   `{put_map_assoc, {f,0}, {literal, #{}}, {x,0}, Live, {list, [{atom, code}, V1,
+>   {atom, msg}, V2]}}` (records são maps; leitura via `get_map_elements`). Cada
+>   valor de campo é materializado num registrador scratch. Validado com
+>   `erlc +from_asm` (`#{code => 400, msg => <<"negative">>}`). Resolveu 11 snapshots.
 
 ## Steps
 
@@ -34,17 +39,31 @@
 - [~] **Fase 8**: try/catch — `is_tagged_tuple` em `{ok,_}`/`{error,_}`, expr + stmt (já em `feat`)
 - [ ] **Fase 9**: polish — alocação de registradores, TCO, eliminação de dead code
 
-## Lacunas conhecidas (fora do escopo desta task)
+## Lacunas conhecidas (6 marcadores restantes — gaps cross-backend / recursos separados)
 
-- **Construtores PascalCase** (`Error(...)`, `ApiError(msg: …)`, etc.) emitem
-  `%% unresolved local call`. É uma lacuna **cross-backend** — o próprio backend
-  Erlang emite `ApiError(<<"…">>)` quebrado. Exige lowering de construtor (tagged
-  tuple / map) no transform ou em todos os backends, não só no `beam_asm.zig`.
-- **`console.log(...)`** (`%% unresolved method call: log`) — `console` não é um
-  módulo botopink; dispatch de método de valor.
-- **`import` de fn de outro módulo** (`double/1`) — resolução de import.
-- **`%% assign to unknown`** e **`%% unsupported expr in tail position: jump`** —
-  pertencem à Fase 9 (polish).
+Investigadas e deixadas de fora deliberadamente: nenhuma é uma correção limpa e
+verificável só no `beam_asm.zig`, e os snapshots beam não são executados (golden-file),
+então "consertá-las" para satisfazer o golden produziria codegen incorreto sem validação.
+
+- **`new Error("…")`** (`%% unresolved local call: Error`) — `Error` builtin com arg
+  posicional. Gap **cross-backend**: o backend Erlang também emite `Error(<<"…">>)`
+  quebrado. Semântica de `new Error` indefinida nos dois alvos.
+- **`console.log(...)`** (`%% unresolved method call: log`) — global ambíguo. O Erlang
+  emite `console:log(...)` (remoto, sem módulo `console` em runtime — também quebrado).
+  Espelhar mudaria o caminho value-method (prepend de receiver, correto p/ métodos).
+- **`import {double} from "math"; double(21)`** (`%% unresolved local call: double`) —
+  gap **cross-backend**: o Erlang emite `double(21)` local (quebrado), sem `math:`. O
+  nó de chamada não carrega o módulo de origem; exige tabela de imports (infra ausente).
+- **`%% assign to unknown variable: output`** (2×) — mutação de variável capturada por
+  closure dentro de `lists:foreach`. Impedância semântica fundamental: closures Erlang
+  são imutáveis. Exigiria lowering por `foldl`/acumulador ou process dictionary.
+- **`%% unsupported expr in tail position: jump`** (1×) — lowering de `*fn` async/`await`
+  para BEAM (recurso recém-adicionado, ainda stub-level — até `fetch` com `return x`
+  está incompleto). Recurso multi-backend separado.
+
+### Fase 9 — polish (pendente)
+- Alocação de registradores mais inteligente (eliminar `{move, {x,0}, {x,0}}` redundantes).
+- TCO já parcial (`call_last`/`call_only`/`call_ext_last`); falta dead-code após return.
 
 ## Examples
 

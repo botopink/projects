@@ -1556,9 +1556,54 @@ const Emitter = struct {
             return;
         }
 
+        // A PascalCase callee with named arguments that resolves to neither a
+        // function nor a local is a record/struct constructor: `AppError(code:
+        // 400, msg: "x")` → a map `#{code => 400, msg => <<"x">>}`. Records are
+        // maps; field reads use `get_map_elements` with the same atom keys.
+        if (cc.callee.len > 0 and std.ascii.isUpper(cc.callee[0]) and allNamed(cc.args)) {
+            try self.lowerRecordConstruct(cc.args);
+            if (mode == .tail) try self.emitReturn();
+            return;
+        }
+
         try self.materializeCallArgs(cc.args);
         try self.bodyPrint("    %% unresolved local call: {s}/{d}\n", .{ cc.callee, arity });
         if (mode == .tail) try self.emitReturn();
+    }
+
+    /// True when every argument is named (`field: value`) — the shape of a
+    /// record/struct constructor call. An empty argument list also qualifies
+    /// (a zero-field record `Empty()`).
+    fn allNamed(args: anytype) bool {
+        for (args) |arg| {
+            if (arg.label == null) return false;
+        }
+        return true;
+    }
+
+    /// Build a record/struct as an Erlang map via `put_map_assoc`. Each field
+    /// value is evaluated into a scratch register, then the map is assembled
+    /// with the field names as atom keys. Result in `{x, 0}`.
+    fn lowerRecordConstruct(self: *Emitter, args: anytype) anyerror!void {
+        const n = args.len;
+        if (n == 0) {
+            try self.bodyWrite("    {move, {literal, #{}}, {x, 0}}.\n");
+            return;
+        }
+        const scratch = self.cur_arity;
+        for (args, 0..) |arg, i| {
+            try self.lowerExprIntoX0(arg.value.*);
+            try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + i});
+        }
+        try self.bodyPrint(
+            "    {{put_map_assoc, {{f, 0}}, {{literal, #{{}}}}, {{x, 0}}, {d}, {{list, [",
+            .{scratch + n},
+        );
+        for (args, 0..) |arg, i| {
+            if (i > 0) try self.bodyWrite(", ");
+            try self.bodyPrint("{{atom, {s}}}, {{x, {d}}}", .{ arg.label.?, scratch + i });
+        }
+        try self.bodyWrite("]}}.\n");
     }
 
     /// Builtins (`@print`, `@todo`, …) map to specific BEAM call_ext targets.
