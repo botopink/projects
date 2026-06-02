@@ -1,9 +1,14 @@
 # Stdlib — `@Result` / `@Option`
 
-**Branch**: `feat/stdlib-result`
+**Branch**: `task/stdlib-result`
 **Depends on**: nothing (independent)
-**Status**: done
+**Status**: done (não integrada em `feat`)
 **File**: `builtins.d.bp`
+
+> **Situação (2026-06-02): 🟡 implementada nesta branch (`5f279b5`), ainda NÃO mesclada em `feat`.**
+> CommonJS e Erlang emitem a forma inline correta; **BEAM e WASM emitem stub** (sem runtime
+> de `Result`/`Option` ainda). `feat` == `origin/feat` == `3746eae`; falta integrar (a antiga
+> worktree de integração `_integrate-stdlib-result` foi descartada — a feature segue preservada aqui).
 
 ## Steps
 
