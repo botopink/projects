@@ -1,6 +1,6 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-use { foo, bar } = @root()
+import { foo, bar };
 ```
 
 ----- BEAM ASSEMBLY -- main.S

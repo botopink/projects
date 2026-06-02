@@ -1342,24 +1342,38 @@ pub const Formatter = struct {
         };
     }
 
-    fn fmtUse(this: *Formatter, u: ast.UseDecl) !*const Doc {
+    /// One import item: `a.b.C` + optional `*` + optional ` as Q`.
+    fn fmtImportItem(this: *Formatter, imp: ast.ImportPath) !*const Doc {
+        var seg_docs = try this.arena.alloc(*const Doc, imp.segments.len * 2 - 1);
+        for (imp.segments, 0..) |seg, j| {
+            if (j > 0) seg_docs[j * 2 - 1] = try this.text(".");
+            seg_docs[j * 2] = try this.text(seg);
+        }
+        var doc = try this.concatAll(seg_docs);
+        if (imp.activate) doc = try this.concat(doc, try this.text("*"));
+        if (imp.alias) |a| doc = try this.concat(doc, try this.text(
+            try std.fmt.allocPrint(this.arena, " as {s}", .{a}),
+        ));
+        return doc;
+    }
+
+    fn fmtUse(this: *Formatter, u: ast.ImportDecl) !*const Doc {
+        // Fallback activation statement `X*;` — a single activated item, no braces.
+        if (u.activationOnly) return this.fmtImportItem(u.imports[0]);
+
         var items = try this.arena.alloc(*const Doc, u.imports.len);
         for (u.imports, 0..) |imp, i| {
-            var seg_docs = try this.arena.alloc(*const Doc, imp.segments.len * 2 - 1);
-            for (imp.segments, 0..) |seg, j| {
-                if (j > 0) seg_docs[j * 2 - 1] = try this.text(".");
-                seg_docs[j * 2] = try this.text(seg);
-            }
-            items[i] = try this.concatAll(seg_docs);
+            items[i] = try this.fmtImportItem(imp);
         }
         const importsDoc = try this.commaList("{", items, "}");
-        const sourceDoc = try this.fmtExpr(u.source.*);
-        return this.concatAll(&.{
-            try this.text("use "),
-            importsDoc,
-            try this.text(" = "),
-            sourceDoc,
-        });
+        const head = try this.concatAll(&.{ try this.text("import "), importsDoc });
+        return switch (u.source) {
+            .root => head,
+            .module => |name| this.concatAll(&.{
+                head,
+                try this.text(try std.fmt.allocPrint(this.arena, " from \"{s}\"", .{name})),
+            }),
+        };
     }
 
     fn fmtDelegate(this: *Formatter, d: ast.DelegateDecl) !*const Doc {

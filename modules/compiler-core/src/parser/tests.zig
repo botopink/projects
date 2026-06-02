@@ -181,52 +181,67 @@ test "parser: whitespace-only source" {
     try assertParser(std.testing.allocator, @src(), "   \t\n  ");
 }
 
-// ── use decl ─────────────────────────────────────────────────────────────────
+// ── import decl (F0) ──────────────────────────────────────────────────────────
 
-test "parser: use {} = @root() (empty imports)" {
-    try assertParser(std.testing.allocator, @src(), "use {} = @root()");
+test "parser: import from root" {
+    try assertParser(std.testing.allocator, @src(), "import {X};");
 }
 
-test "parser: use {foo} = @root()" {
-    try assertParser(std.testing.allocator, @src(), "use {foo} = @root()");
+test "parser: import from module" {
+    try assertParser(std.testing.allocator, @src(), "import {X} from \"module\";");
 }
 
-test "parser: use {alpha, beta, gamma} = @root()" {
-    try assertParser(std.testing.allocator, @src(), "use {alpha, beta, gamma} = @root()");
+test "parser: import empty" {
+    try assertParser(std.testing.allocator, @src(), "import {};");
 }
 
-test "parser: trailing comma in import list" {
-    try assertParser(std.testing.allocator, @src(), "use {a, b,} = @root()");
+test "parser: import multiple names" {
+    try assertParser(std.testing.allocator, @src(), "import {alpha, beta, gamma};");
 }
 
-test "parser: use {x} = @module()" {
-    try assertParser(std.testing.allocator, @src(), "use {x} = @module()");
+test "parser: import trailing comma" {
+    try assertParser(std.testing.allocator, @src(), "import {a, b,};");
 }
 
-// ── use: dotted paths ────────────────────────────────────────────────────────
-
-test "parser: use {X.x1.x2.X3} = @root()" {
-    try assertParser(std.testing.allocator, @src(), "use {X.x1.x2.X3} = @root()");
+test "parser: import dotted path" {
+    try assertParser(std.testing.allocator, @src(), "import {X.x1.x2.X3};");
 }
 
-test "parser: use {A, B.c.D} = @module()" {
-    try assertParser(std.testing.allocator, @src(), "use {A, B.c.D} = @module()");
+// ── import: activation suffix + dotted + alias (F1) ──────────────────────────
+
+test "parser: import activate suffix" {
+    try assertParser(std.testing.allocator, @src(), "import {A, X*};");
 }
 
-// ── use: multiple declarations ────────────────────────────────────────────────
+test "parser: import dotted activate" {
+    try assertParser(std.testing.allocator, @src(), "import {ducks.PatoNada*} from \"ducks\";");
+}
 
-test "parser: two use declarations" {
+test "parser: import activate with alias" {
+    try assertParser(std.testing.allocator, @src(), "import {std.List as L, X* as Q};");
+}
+
+test "parser: import mixed plain and activate" {
+    try assertParser(std.testing.allocator, @src(), "import {Pato, PatoNada*, PatoVoa* as Voa, std.List as L} from \"ducks\";");
+}
+
+// ── activation fallback statement (F2) ───────────────────────────────────────
+
+test "parser: activate statement" {
+    try assertParser(std.testing.allocator, @src(), "X*;");
+}
+
+test "parser: activate dotted statement" {
+    try assertParser(std.testing.allocator, @src(), "ducks.PatoExtra*;");
+}
+
+// ── import: multiple declarations ────────────────────────────────────────────
+
+test "parser: multiple import declarations" {
     try assertParser(std.testing.allocator, @src(),
-        \\use {a} = @root()
-        \\use {b, c} = @module()
-    );
-}
-
-test "parser: mixed @root and @module declarations" {
-    try assertParser(std.testing.allocator, @src(),
-        \\use {x} = @root()
-        \\use {y} = @module()
-        \\use {z.W} = @root()
+        \\import {a};
+        \\import {b, c} from "dep";
+        \\import {z.W};
     );
 }
 
@@ -656,22 +671,6 @@ test "parser error: removed error union syntax T!E" {
         \\
         \\
     , "fn foo() -> i32!Error { }");
-}
-
-test "parser error: removed from syntax use {X} from \"mod\"" {
-    try expectParseError(std.testing.allocator,
-        \\error: Import syntax `from "mod"` has been removed
-        \\ --> <test>:1:12
-        \\  |
-        \\1 | use {List} from "std"
-        \\  |            ^^^^ Import syntax `from "mod"` has been removed
-        \\  |
-        \\  = hint: Use `= @root()` or `= @module("name")` instead, e.g. `use {List} = @root()`
-        \\
-        \\
-    ,
-        \\use {List} from "std"
-    );
 }
 
 // ── validateListSpread ────────────────────────────────────────────────────────

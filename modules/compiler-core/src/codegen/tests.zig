@@ -132,7 +132,7 @@ fn freshEnv(arena_alloc: std.mem.Allocator, gpa: Allocator) !comptimeMod.Env_ {
 ///
 /// All modules are inferred in order in isolated envs. Only `pub` declarations
 /// from each dependency module are exported to the registry and available for
-/// `use {X} = @root()` imports.
+/// `import {X} from "name";` imports.
 ///
 /// JS is generated for **every** module. The snapshot shows each module's
 /// source under its own `----- SOURCE CODE -- name.bp` header, a single
@@ -663,9 +663,9 @@ test "js: interface ---- emits comment" {
 // ── use → import ──────────────────────────────────────────────────────────────
 
 // Tests named imports from module
-test "js: use ---- named imports" {
+test "js: import ---- named imports" {
     try assertJsSingle(std.testing.allocator, @src(),
-        \\use { foo, bar } = @root()
+        \\import { foo, bar };
     );
 }
 
@@ -1065,7 +1065,7 @@ test "js: enum ---- shorthand declaration without val Name =" {
 
 // ── multi-module import/export ────────────────────────────────────────────────
 
-test "js: use ---- multi-module pub fn import" {
+test "js: import ---- multi-module pub fn import" {
     try assertJs(std.testing.allocator, @src(), &.{
         .{ .path = "math", .source =
         \\pub fn double(x: i32) -> i32 {
@@ -1073,20 +1073,20 @@ test "js: use ---- multi-module pub fn import" {
         \\}
         },
         .{ .path = "", .source =
-        \\use {double} = @root()
+        \\import {double} from "math";
         \\val result = double(21);
         },
     });
 }
 
-test "js: use ---- multi-module pub val import" {
+test "js: import ---- multi-module pub val import" {
     try assertJs(std.testing.allocator, @src(), &.{
         .{ .path = "config", .source =
         \\pub val PORT = 8080;
         \\pub val HOST = "localhost";
         },
         .{ .path = "", .source =
-        \\use {PORT, HOST} = @root()
+        \\import {PORT, HOST} from "config";
         \\val addr = HOST;
         \\val port = PORT;
         },

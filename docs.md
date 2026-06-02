@@ -38,8 +38,8 @@ This reference was updated after reviewing the latest commit series:
 
 - The active expression model is now grouped into AST families:
   `literal`, `identifier`, `binaryOp`, `unaryOp`, `jump`, `branch`, `loop`, `binding`, `useHook`, `call`, `function`, `collection`, `comptime_`.
-- Import syntax migrated: `use { X } from "mod"` replaced by `use { X } = @root()` / `use { X } = @module("name")`. The old `from "mod"` syntax is rejected with a migration hint.
-- `Expr.useHook` added to the AST for `use` hooks inside function bodies (distinct from top-level `UseDecl` imports).
+- Import syntax: `import { X };` resolves from the project root; `import { X } from "name";` resolves from a named dependency. A trailing `*` on an item activates method dispatch, `as` renames the final binding, and a bare `X*;` statement activates an already-visible symbol.
+- `Expr.useHook` added to the AST for `use` hooks inside function bodies (distinct from top-level `ImportDecl` imports).
 - Generic type syntax: `@Result<D, E>` with `is_builtin` flag (replaces old `@Result(D, E)` parenthesis syntax).
 - Four comptime runtimes: `node`, `erlang`, `beam` (BEAM via erlang), `wasm` (WAT via wasmtime).
 - Codegen snapshot directories renamed: `beam_asm` → `beam`, `wat` → `wasm`.
@@ -52,21 +52,38 @@ Examples in this file describe language behavior. Exact snapshot file names may 
 
 ## Imports
 
+```
+import   ::=  "import" "{" item ("," item)* "}" from? ";"
+from     ::=  "from" string
+item     ::=  dottedPath "*"? ("as" ident)?
+```
+
+- no `from` → resolves from the project root
+- `from "name"` → resolves from the named dependency
+- trailing `*` on an item → activates dispatch of that symbol's methods (impl or extend)
+- a bare name (no `*`) → brings the name only; `obj.m()` does **not** resolve, only qualified `Sym.m(obj)`
+- `as` renames the final binding
+
 ### Named imports from project root
 
 ```botopink
-use { foo, bar } = @root();
+import { foo, bar };
 ```
 
 **Generates:**
 ```javascript
-const { foo, bar } = require("./mylib.js");
+const { foo, bar } = require("./module");
 ```
 
 ### Named imports from external module
 
 ```botopink
-use { fetch, Response } = @module("http");
+import { fetch, Response } from "http";
+```
+
+**Generates:**
+```javascript
+const { fetch, Response } = require("http");
 ```
 
 ### Multi-module public function import
@@ -78,7 +95,7 @@ pub fn double(x: i32) -> i32 {
 }
 
 // main.bp
-use { double } = @root();
+import { double } from "math";
 val result = double(21);
 ```
 
@@ -90,7 +107,7 @@ pub val PORT = 8080;
 pub val HOST = "localhost";
 
 // main.bp
-use { PORT, HOST } = @root();
+import { PORT, HOST } from "config";
 val addr = HOST;
 val port = PORT;
 ```
@@ -98,15 +115,21 @@ val port = PORT;
 ### Dotted path imports
 
 ```botopink
-use { std.List, std.Map } = @root();
+import { std.List, std.Map };
 ```
 
-### Old syntax (rejected)
+### Activation suffix, alias, and fallback statement
 
 ```botopink
-// ERROR: old syntax rejected with migration hint
-use { foo } from "mylib";
-// hint: replace with `use { foo } = @root()` or `use { foo } = @module("mylib")`
+import { Pato, PatoNada*, PatoVoa* as Voa, std.List as L } from "ducks";
+
+val p = new Pato();          // Pato: name only
+p.swim();                    // PatoNada*: active dispatch
+Voa.move(p);                 // PatoVoa imported as Voa, qualified
+val xs = L.of(1, 2, 3);      // std.List as L
+
+// Activate an already-visible symbol without re-importing it:
+PatoExtra*;
 ```
 
 ---

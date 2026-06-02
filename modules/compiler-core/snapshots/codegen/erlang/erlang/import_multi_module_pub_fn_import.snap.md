@@ -20,7 +20,7 @@ double(X) ->
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-use {double} = @root()
+import {double} from "math";
 val result = double(21);
 ```
 
@@ -28,7 +28,7 @@ val result = double(21);
 ```erlang
 -module(main).
 
-%% use double
+%% import double
 
 result() ->
     double(21).
