@@ -344,21 +344,19 @@ fn getExprLoc(expr: ast.Expr) ast.Loc {
 fn buildCaseArm(allocator: std.mem.Allocator, body: ast.TypedExpr) !CaseArm {
     const retType = try typeNameOf(allocator, body.getType());
     if (body == .function) {
-        switch (body.function.kind) {
-            .lambda => |lam| if (lam.params.len == 0) {
-                var items: std.ArrayList(StmtType) = .empty;
-                defer items.deinit(allocator);
-                for (lam.body) |stmt| {
-                    const stmt_type = getTypedExprType(stmt.expr);
-                    try items.append(allocator, .{ .return_type = try typeNameOf(allocator, stmt_type) });
-                }
-                return CaseArm{
-                    .ast = "block",
-                    .body = try allocator.dupe(StmtType, items.items),
-                    .return_type = retType,
-                };
-            },
-            else => {},
+        const fk = body.function.kind;
+        if (fk.syntax == .lambda and fk.params.len == 0) {
+            var items: std.ArrayList(StmtType) = .empty;
+            defer items.deinit(allocator);
+            for (fk.body) |stmt| {
+                const stmt_type = getTypedExprType(stmt.expr);
+                try items.append(allocator, .{ .return_type = try typeNameOf(allocator, stmt_type) });
+            }
+            return CaseArm{
+                .ast = "block",
+                .body = try allocator.dupe(StmtType, items.items),
+                .return_type = retType,
+            };
         }
     }
     return CaseArm{ .ast = "value", .body = null, .return_type = retType };

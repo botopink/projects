@@ -642,42 +642,22 @@ const Emitter = struct {
                 },
             },
 
-            .function => |func| switch (func.kind) {
-                .lambda => |l| {
-                    try this.w("fun(");
-                    for (l.params, 0..) |p, i| {
-                        if (i > 0) try this.w(", ");
-                        const vname = try erlangVar(this.alloc, p);
-                        defer this.alloc.free(vname);
-                        try this.w(vname);
-                    }
-                    try this.w(") ->\n");
-                    const lam_saved = this.indent;
-                    this.indent = this.indent + 1;
-                    try this.emitBody(l.body);
-                    this.indent = lam_saved;
-                    try this.w("\n");
-                    try this.writeIndent();
-                    try this.w("end");
-                },
-
-                .fnExpr => |f| {
-                    try this.w("fun(");
-                    for (f.params, 0..) |p, i| {
-                        if (i > 0) try this.w(", ");
-                        const vname = try erlangVar(this.alloc, p);
-                        defer this.alloc.free(vname);
-                        try this.w(vname);
-                    }
-                    try this.w(") ->\n");
-                    const lam_saved = this.indent;
-                    this.indent = this.indent + 1;
-                    try this.emitBody(f.body);
-                    this.indent = lam_saved;
-                    try this.w("\n");
-                    try this.writeIndent();
-                    try this.w("end");
-                },
+            .function => |func| {
+                try this.w("fun(");
+                for (func.kind.params, 0..) |p, i| {
+                    if (i > 0) try this.w(", ");
+                    const vname = try erlangVar(this.alloc, p);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                }
+                try this.w(") ->\n");
+                const lam_saved = this.indent;
+                this.indent = this.indent + 1;
+                try this.emitBody(func.kind.body);
+                this.indent = lam_saved;
+                try this.w("\n");
+                try this.writeIndent();
+                try this.w("end");
             },
 
             .collection => |col| switch (col.kind) {
@@ -1098,12 +1078,12 @@ const Emitter = struct {
 
     fn emitCaseBody(this: *Emitter, body: ast.Expr) !void {
         switch (body) {
-            .function => |func| switch (func.kind) {
-                .lambda => |l| {
+            .function => |func| switch (func.kind.syntax) {
+                .lambda => {
                     // Multi-statement block: emitBody handles indentation via this.indent
-                    try this.emitBody(l.body);
+                    try this.emitBody(func.kind.body);
                 },
-                else => {
+                .fnExpr => {
                     // Single expression: emit with current indentation
                     try this.writeIndent();
                     try this.emitExpr(body);

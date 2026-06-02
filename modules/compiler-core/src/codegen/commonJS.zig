@@ -1227,35 +1227,19 @@ const Emitter = struct {
                 },
             },
 
-            .function => |f| switch (f.kind) {
-                .lambda => |l| {
-                    try self.w("(");
-                    for (l.params, 0..) |p, i| {
-                        if (i > 0) try self.w(", ");
-                        try self.w(p);
-                    }
-                    try self.w(") => {\n");
-                    for (l.body) |st| {
-                        try self.w("    ");
-                        try self.emitStmt(st);
-                        try self.w("\n");
-                    }
-                    try self.w("}");
-                },
-                .fnExpr => |fn_expr| {
-                    try self.w("(");
-                    for (fn_expr.params, 0..) |p, i| {
-                        if (i > 0) try self.w(", ");
-                        try self.w(p);
-                    }
-                    try self.w(") => {\n");
-                    for (fn_expr.body) |st| {
-                        try self.w("    ");
-                        try self.emitStmt(st);
-                        try self.w("\n");
-                    }
-                    try self.w("}");
-                },
+            .function => |f| {
+                try self.w("(");
+                for (f.kind.params, 0..) |p, i| {
+                    if (i > 0) try self.w(", ");
+                    try self.w(p);
+                }
+                try self.w(") => {\n");
+                for (f.kind.body) |st| {
+                    try self.w("    ");
+                    try self.emitStmt(st);
+                    try self.w("\n");
+                }
+                try self.w("}");
             },
 
             .collection => |col| switch (col.kind) {
@@ -1352,17 +1336,17 @@ const Emitter = struct {
 
     fn isLambdaBlock(e: ast.Expr) bool {
         return switch (e) {
-            .function => |f| f.kind == .lambda,
+            .function => |f| f.kind.syntax == .lambda,
             else => false,
         };
     }
 
     fn emitCaseBody(self: *Emitter, body: ast.Expr, b: *JsBuilder) !void {
         if (switch (body) {
-            .function => |f| f.kind == .lambda,
+            .function => |f| f.kind.syntax == .lambda,
             else => false,
         }) {
-            const l = body.function.kind.lambda;
+            const l = body.function.kind;
             self.current_indent = b.indent_level;
             for (l.body) |st| {
                 b.writeIndent();

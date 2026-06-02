@@ -548,9 +548,9 @@ pub const Formatter = struct {
                     break :blk doc;
                 },
             },
-            .function => |func| switch (func.kind) {
-                .lambda => |l| try this.fmtLambda(l.params, l.body),
-                .fnExpr => |f| try this.fmtFnExpr(f.params, f.body),
+            .function => |func| switch (func.kind.syntax) {
+                .lambda => try this.fmtLambda(func.kind.params, func.kind.body),
+                .fnExpr => try this.fmtFnExpr(func.kind.params, func.kind.body),
             },
             .call => |c| switch (c.kind) {
                 .call => |cc| try this.fmtCall(cc),

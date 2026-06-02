@@ -1530,37 +1530,20 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
 
 /// Infer type for function definition expressions (lambdas and anonymous functions)
 fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    return switch (func.kind) {
-        .lambda => |l| {
-            const params = try env.arena.alloc(*T.Type, l.params.len);
-            for (l.params, 0..) |p, i| {
-                params[i] = try env.freshVar();
-                try env.bind(p, params[i]);
-            }
-            const bodyTyped = try inferStmtsTyped(env, l.body);
-            const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
-            const funcType = try env.funcType(params, retType);
-            return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{ .lambda = .{
-                .params = l.params,
-                .body = bodyTyped,
-            } } } };
-        },
-
-        .fnExpr => |f| {
-            const params = try env.arena.alloc(*T.Type, f.params.len);
-            for (f.params, 0..) |p, i| {
-                params[i] = try env.freshVar();
-                try env.bind(p, params[i]);
-            }
-            const bodyTyped = try inferStmtsTyped(env, f.body);
-            const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
-            const funcType = try env.funcType(params, retType);
-            return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{ .fnExpr = .{
-                .params = f.params,
-                .body = bodyTyped,
-            } } } };
-        },
-    };
+    const fk = func.kind;
+    const params = try env.arena.alloc(*T.Type, fk.params.len);
+    for (fk.params, 0..) |p, i| {
+        params[i] = try env.freshVar();
+        try env.bind(p, params[i]);
+    }
+    const bodyTyped = try inferStmtsTyped(env, fk.body);
+    const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
+    const funcType = try env.funcType(params, retType);
+    return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{
+        .syntax = fk.syntax,
+        .params = fk.params,
+        .body = bodyTyped,
+    } } };
 }
 
 /// Infer type for collection expressions (arrays, tuples, ranges, case, block, grouped)

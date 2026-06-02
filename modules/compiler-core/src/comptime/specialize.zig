@@ -479,15 +479,9 @@ fn identInExpr(expr: anytype, name: []const u8) bool {
             for (lp.body) |s| if (identInExpr(s.expr, name)) break :blk true;
             break :blk false;
         },
-        .function => |f| switch (f.kind) {
-            .lambda => |l| blk: {
-                for (l.body) |s| if (identInExpr(s.expr, name)) break :blk true;
-                break :blk false;
-            },
-            .fnExpr => |fn_expr| blk: {
-                for (fn_expr.body) |s| if (identInExpr(s.expr, name)) break :blk true;
-                break :blk false;
-            },
+        .function => |f| blk: {
+            for (f.kind.body) |s| if (identInExpr(s.expr, name)) break :blk true;
+            break :blk false;
         },
         .collection => |c| switch (c.kind) {
             .grouped => |g| identInExpr(g.*, name),

@@ -318,13 +318,8 @@ fn scanExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_
             },
             else => {},
         },
-        .function => |func| switch (func.kind) {
-            .lambda => |l| {
-                for (l.body) |s| scanExpr(agg, fn_decls, comptime_arrays, s.expr) catch return ScanError.OutOfMemory;
-            },
-            .fnExpr => |f| {
-                for (f.body) |s| scanExpr(agg, fn_decls, comptime_arrays, s.expr) catch return ScanError.OutOfMemory;
-            },
+        .function => |func| {
+            for (func.kind.body) |s| scanExpr(agg, fn_decls, comptime_arrays, s.expr) catch return ScanError.OutOfMemory;
         },
         .identifier => |id| switch (id.kind) {
             .identAccess => |ia| scanExpr(agg, fn_decls, comptime_arrays, ia.receiver.*) catch return ScanError.OutOfMemory,
@@ -444,13 +439,8 @@ fn rewriteExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
             },
             else => {},
         },
-        .function => |*func| switch (func.kind) {
-            .lambda => |l| {
-                for (l.body) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
-            },
-            .fnExpr => |f| {
-                for (f.body) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
-            },
+        .function => |*func| {
+            for (func.kind.body) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
         },
         .identifier => |*id| switch (id.kind) {
             .identAccess => |ia| rewriteExpr(agg, fn_decls, comptime_arrays, ia.receiver) catch return ScanError.OutOfMemory,

@@ -44,45 +44,44 @@
                                       "col": 24
                                     },
                                     "kind": {
-                                      "lambda": {
-                                        "params": [],
-                                        "body": [
-                                          {
-                                            "expr": {
-                                              "binaryOp": {
-                                                "loc": {
-                                                  "line": 2,
-                                                  "col": 35
-                                                },
-                                                "op": "mul",
-                                                "lhs": {
-                                                  "identifier": {
-                                                    "loc": {
-                                                      "line": 2,
-                                                      "col": 29
-                                                    },
-                                                    "kind": {
-                                                      "ident": "count"
-                                                    }
+                                      "syntax": "lambda",
+                                      "params": [],
+                                      "body": [
+                                        {
+                                          "expr": {
+                                            "binaryOp": {
+                                              "loc": {
+                                                "line": 2,
+                                                "col": 35
+                                              },
+                                              "op": "mul",
+                                              "lhs": {
+                                                "identifier": {
+                                                  "loc": {
+                                                    "line": 2,
+                                                    "col": 29
+                                                  },
+                                                  "kind": {
+                                                    "ident": "count"
                                                   }
-                                                },
-                                                "rhs": {
-                                                  "literal": {
-                                                    "loc": {
-                                                      "line": 2,
-                                                      "col": 37
-                                                    },
-                                                    "kind": {
-                                                      "numberLit": "2"
-                                                    }
+                                                }
+                                              },
+                                              "rhs": {
+                                                "literal": {
+                                                  "loc": {
+                                                    "line": 2,
+                                                    "col": 37
+                                                  },
+                                                  "kind": {
+                                                    "numberLit": "2"
                                                   }
                                                 }
                                               }
-                                            },
-                                            "emptyLinesBefore": 0
-                                          }
-                                        ]
-                                      }
+                                            }
+                                          },
+                                          "emptyLinesBefore": 0
+                                        }
+                                      ]
                                     }
                                   }
                                 },

@@ -107,45 +107,44 @@
                                       "col": 24
                                     },
                                     "kind": {
-                                      "lambda": {
-                                        "params": [],
-                                        "body": [
-                                          {
-                                            "expr": {
-                                              "binaryOp": {
-                                                "loc": {
-                                                  "line": 3,
-                                                  "col": 35
-                                                },
-                                                "op": "mul",
-                                                "lhs": {
-                                                  "identifier": {
-                                                    "loc": {
-                                                      "line": 3,
-                                                      "col": 29
-                                                    },
-                                                    "kind": {
-                                                      "ident": "count"
-                                                    }
+                                      "syntax": "lambda",
+                                      "params": [],
+                                      "body": [
+                                        {
+                                          "expr": {
+                                            "binaryOp": {
+                                              "loc": {
+                                                "line": 3,
+                                                "col": 35
+                                              },
+                                              "op": "mul",
+                                              "lhs": {
+                                                "identifier": {
+                                                  "loc": {
+                                                    "line": 3,
+                                                    "col": 29
+                                                  },
+                                                  "kind": {
+                                                    "ident": "count"
                                                   }
-                                                },
-                                                "rhs": {
-                                                  "literal": {
-                                                    "loc": {
-                                                      "line": 3,
-                                                      "col": 37
-                                                    },
-                                                    "kind": {
-                                                      "numberLit": "2"
-                                                    }
+                                                }
+                                              },
+                                              "rhs": {
+                                                "literal": {
+                                                  "loc": {
+                                                    "line": 3,
+                                                    "col": 37
+                                                  },
+                                                  "kind": {
+                                                    "numberLit": "2"
                                                   }
                                                 }
                                               }
-                                            },
-                                            "emptyLinesBefore": 0
-                                          }
-                                        ]
-                                      }
+                                            }
+                                          },
+                                          "emptyLinesBefore": 0
+                                        }
+                                      ]
                                     }
                                   }
                                 },
@@ -194,31 +193,30 @@
                                       "col": 20
                                     },
                                     "kind": {
-                                      "lambda": {
-                                        "params": [],
-                                        "body": [
-                                          {
-                                            "expr": {
-                                              "call": {
-                                                "loc": {
-                                                  "line": 4,
-                                                  "col": 25
-                                                },
-                                                "kind": {
-                                                  "call": {
-                                                    "receiver": null,
-                                                    "callee": "cleanup",
-                                                    "is_builtin": false,
-                                                    "args": [],
-                                                    "trailing": []
-                                                  }
+                                      "syntax": "lambda",
+                                      "params": [],
+                                      "body": [
+                                        {
+                                          "expr": {
+                                            "call": {
+                                              "loc": {
+                                                "line": 4,
+                                                "col": 25
+                                              },
+                                              "kind": {
+                                                "call": {
+                                                  "receiver": null,
+                                                  "callee": "cleanup",
+                                                  "is_builtin": false,
+                                                  "args": [],
+                                                  "trailing": []
                                                 }
                                               }
-                                            },
-                                            "emptyLinesBefore": 0
-                                          }
-                                        ]
-                                      }
+                                            }
+                                          },
+                                          "emptyLinesBefore": 0
+                                        }
+                                      ]
                                     }
                                   }
                                 },

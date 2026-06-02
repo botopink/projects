@@ -1148,12 +1148,12 @@ const Emitter = struct {
                 try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
                 return;
             },
-            .function => |f| switch (f.kind) {
-                .lambda => |lam| {
-                    try self.lowerLambda(lam);
+            .function => |f| switch (f.kind.syntax) {
+                .lambda => {
+                    try self.lowerLambda(f.kind);
                     return;
                 },
-                else => {
+                .fnExpr => {
                     try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
                     return;
                 },

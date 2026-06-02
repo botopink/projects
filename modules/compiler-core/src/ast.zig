@@ -506,35 +506,21 @@ pub fn UseHookExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
-/// Function definition expressions: lambdas and anonymous functions
+/// Function definition expressions: lambdas and anonymous functions.
+/// Both share the same shape (`params`/`body`); `syntax` records which surface
+/// form produced the node so consumers can emit the right syntax.
 pub fn FunctionExprOf(comptime phase: Phase) type {
-    const Kind = union(enum) {
-        /// A lambda expression: `{ a, b -> stmts }` or `{ stmts }` (no params).
-        lambda: struct {
-            /// Parameter names (inferred types). Empty for no-param lambdas.
-            params: []const []const u8,
-            body: []StmtOf(phase),
-        },
-        /// An anonymous function expression: `fn(a, b) { stmts }`
-        fnExpr: struct {
-            /// Parameter names.
-            params: []const []const u8,
-            body: []StmtOf(phase),
-        },
+    const Kind = struct {
+        /// Surface syntax: `{ a, b -> stmts }` lambda vs `fn(a, b) { stmts }`.
+        syntax: enum { lambda, fnExpr },
+        /// Parameter names (inferred types). Empty for no-param functions.
+        params: []const []const u8,
+        body: []StmtOf(phase),
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
-            switch (this.*) {
-                .lambda => |l| {
-                    allocator.free(l.params);
-                    for (l.body) |*s| s.deinit(allocator);
-                    allocator.free(l.body);
-                },
-                .fnExpr => |f| {
-                    allocator.free(f.params);
-                    for (f.body) |*s| s.deinit(allocator);
-                    allocator.free(f.body);
-                },
-            }
+            allocator.free(this.params);
+            for (this.body) |*s| s.deinit(allocator);
+            allocator.free(this.body);
         }
     };
 

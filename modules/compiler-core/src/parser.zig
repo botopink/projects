@@ -1748,10 +1748,11 @@ pub const Parser = struct {
                 }
                 _ = try this.consume(.rightBrace);
                 var emptyParams: std.ArrayList([]const u8) = .empty;
-                break :blk Expr{ .function = .{ .loc = locFromToken(braceTok), .kind = .{ .lambda = .{
+                break :blk Expr{ .function = .{ .loc = locFromToken(braceTok), .kind = .{
+                    .syntax = .lambda,
                     .params = try emptyParams.toOwnedSlice(alloc),
                     .body = try blockStmts.toOwnedSlice(alloc),
-                } } } };
+                } } };
             } else try this.parseExpr(alloc);
             // Accept both semicolon and comma as arm terminators
             if (!this.match(.semicolon)) {
@@ -2885,10 +2886,11 @@ pub const Parser = struct {
                 }
                 _ = try this.consume(.rightBrace);
 
-                return Expr{ .function = .{ .loc = locFromToken(braceTok), .kind = .{ .lambda = .{
+                return Expr{ .function = .{ .loc = locFromToken(braceTok), .kind = .{
+                    .syntax = .lambda,
                     .params = try paramList.toOwnedSlice(alloc),
                     .body = try stmts.toOwnedSlice(alloc),
-                } } } };
+                } } };
             } else {
                 // { } without -> is not allowed (use @block builtin instead)
                 return ParseError.UnexpectedToken;
@@ -2967,10 +2969,11 @@ pub const Parser = struct {
             }
             _ = try this.consume(.rightParenthesis);
             const body = try this.parseStmtListInBraces(alloc);
-            return Expr{ .function = .{ .loc = locFromToken(fnTok), .kind = .{ .fnExpr = .{
+            return Expr{ .function = .{ .loc = locFromToken(fnTok), .kind = .{
+                .syntax = .fnExpr,
                 .params = try params.toOwnedSlice(alloc),
                 .body = body,
-            } } } };
+            } } };
         }
 
         if (this.check(.null)) {
@@ -3319,10 +3322,9 @@ pub const Parser = struct {
         return .{
             .loc = locFromToken(startTok),
             .kind = .{
-                .lambda = .{
-                    .params = try paramList.toOwnedSlice(alloc),
-                    .body = try stmts.toOwnedSlice(alloc),
-                },
+                .syntax = .lambda,
+                .params = try paramList.toOwnedSlice(alloc),
+                .body = try stmts.toOwnedSlice(alloc),
             },
         };
     }
