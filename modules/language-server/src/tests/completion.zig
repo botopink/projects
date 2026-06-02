@@ -404,6 +404,79 @@ test "completion: empty bindings returns empty list" {
     try snap.assertCompletion(gpa, "completion_empty_bindings", source, cursor, items);
 }
 
+// ── C9 — dot-completion: campos de struct ─────────────────────────────────────
+//
+// TODO "lsp ---- autocomplete for struct/record field".
+
+test "completion: dot completes record fields" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\val Point = record { x: f64, y: f64 };
+        \\val origin = Point(x: 0.0, y: 0.0);
+        \\val gx = origin.x;
+    ;
+
+    var c = try h.compile(gpa, source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    // "val gx = origin." → o ponto fica na col 15; cursor logo após (col 16).
+    const cursor = h.pos(2, 16);
+    const items = try engine.completion(gpa, source, cursor, bindings);
+    defer {
+        for (items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        gpa.free(items);
+    }
+
+    var has_x = false;
+    var has_y = false;
+    for (items) |it| {
+        if (std.mem.eql(u8, it.label, "x")) has_x = true;
+        if (std.mem.eql(u8, it.label, "y")) has_y = true;
+    }
+    try std.testing.expect(has_x and has_y);
+    try snap.assertCompletion(gpa, "completion_dot_record_fields", source, cursor, items);
+}
+
+// ── C10 — dot-completion: variantes de enum ───────────────────────────────────
+//
+// TODO "lsp ---- autocomplete for enum variant".
+
+test "completion: dot completes enum variants" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\val Status = enum { Active, Inactive };
+        \\val s = Status.Active;
+    ;
+
+    var c = try h.compile(gpa, source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    // "val s = Status." → o ponto fica na col 14; cursor logo após (col 15).
+    const cursor = h.pos(1, 15);
+    const items = try engine.completion(gpa, source, cursor, bindings);
+    defer {
+        for (items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        gpa.free(items);
+    }
+
+    var has_active = false;
+    var has_inactive = false;
+    for (items) |it| {
+        if (std.mem.eql(u8, it.label, "Active")) has_active = true;
+        if (std.mem.eql(u8, it.label, "Inactive")) has_inactive = true;
+    }
+    try std.testing.expect(has_active and has_inactive);
+    try snap.assertCompletion(gpa, "completion_dot_enum_variants", source, cursor, items);
+}
+
 // ── iterator method completion (*fn generators) ───────────────────────────────
 
 test "completion: iterator receiver offers next/iter/map" {

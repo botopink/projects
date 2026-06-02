@@ -7,6 +7,8 @@ val Color = enum {
 val name = fn(c: Color) -> string {
     case c {
         Red -> "red";
+        Green -> "green";
+        Blue if false -> "blue";
     }
 };
 
@@ -17,4 +19,4 @@ error: non-exhaustive case
 7 │     case c {
   │     ^
 
-  'Color' is missing variant(s): Green, Blue
+  'Color' is missing variant(s): Blue

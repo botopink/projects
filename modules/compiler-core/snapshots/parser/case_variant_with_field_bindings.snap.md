@@ -83,6 +83,7 @@
                                 }
                               }
                             },
+                            "guard": null,
                             "emptyLinesBefore": 0
                           },
                           {
@@ -109,6 +110,7 @@
                                 }
                               }
                             },
+                            "guard": null,
                             "emptyLinesBefore": 0
                           }
                         ],

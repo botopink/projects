@@ -129,3 +129,60 @@ test "definition: cursor on enum usage jumps to enum declaration" {
 
     try snap.assertDefinition(gpa, "definition_enum_usage", source, h.pos(1, 8), result);
 }
+
+// ── DG7 — símbolo importado salta para outro módulo ───────────────────────────
+//
+// TODO "lsp ---- go-to-definition on imported symbol".
+
+test "definition: imported symbol jumps to defining module" {
+    const gpa = std.testing.allocator;
+    const main_src =
+        \\use {double} = @root()
+        \\val r = double(21);
+    ;
+    const math_uri = "file:///math.bp";
+    const math_src =
+        \\pub fn double(x: i32) -> i32 {
+        \\    return x * 2;
+        \\}
+    ;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), main_src);
+
+    // 'double' na segunda linha: "val r = double(21);" — col 8
+    const others = [_]engine.ModuleSource{.{ .uri = math_uri, .source = math_src }};
+    const result = try engine.definitionInModules(gpa, h.TEST_URI, main_src, h.pos(1, 8), tokens, &others);
+    defer if (result) |loc| gpa.free(loc.uri);
+
+    try std.testing.expect(result != null);
+    try std.testing.expect(std.mem.eql(u8, result.?.uri, math_uri));
+    try snap.assertDefinition(gpa, "definition_imported_symbol", main_src, h.pos(1, 8), result);
+}
+
+test "definition: local declaration preferred over imported" {
+    const gpa = std.testing.allocator;
+    const main_src =
+        \\fn double(x: i32) -> i32 { return x + x; }
+        \\val r = double(21);
+    ;
+    const other_src =
+        \\pub fn double(x: i32) -> i32 {
+        \\    return x * 2;
+        \\}
+    ;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), main_src);
+
+    const others = [_]engine.ModuleSource{.{ .uri = "file:///other.bp", .source = other_src }};
+    const result = try engine.definitionInModules(gpa, h.TEST_URI, main_src, h.pos(1, 8), tokens, &others);
+    defer if (result) |loc| gpa.free(loc.uri);
+
+    // The local `double` (line 0) wins over the imported one.
+    try std.testing.expect(result != null);
+    try std.testing.expect(std.mem.eql(u8, result.?.uri, h.TEST_URI));
+    try std.testing.expectEqual(@as(u32, 0), result.?.range.start.line);
+}

@@ -83,6 +83,24 @@ other targets treat `use` as a transparent prefix (bind the call result into a
 slot). Phantom `@Context` base structs (`struct implement @Context { }`, no
 members) are erased — see `codegen/AGENTS.md`.
 
+## `case` exhaustiveness + reachability
+
+A single-subject `case` on an **enum** or **string** subject is checked by
+`checkCaseExhaustiveness` in `infer.zig` (run after the arms are typed):
+
+- **Coverage** — each unguarded arm fully covers a variant when it is a bare
+  variant ident (`Red`), or a `Variant(payload)` whose payload is irrefutable
+  (only bindings / wildcards, e.g. `Err(_)`, `Rgb(r, g, b)`). Refined payloads
+  (`Ok(1)`) do **not** cover the variant. OR-patterns cover each alternative.
+- **Catch-all** — `_`, or an identifier that is not a variant name, binds the
+  whole subject. A `string` subject is an open domain: only a catch-all makes it
+  exhaustive.
+- **Guards** — a guarded arm may fail its guard, so it neither covers a variant
+  nor shadows later arms.
+- **Diagnostics** — `nonExhaustive` (lists the missing enum variants, or asks
+  for a wildcard on an open domain) and `redundantPattern` (an arm after a
+  catch-all, or a repeated variant, is unreachable).
+
 ## Children
 
 - [`runtime/AGENTS.md`](runtime/AGENTS.md) — Node.js + Erlang external eval.

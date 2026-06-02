@@ -1254,6 +1254,20 @@ test "parser: case ---- OR patterns" {
     );
 }
 
+test "parser: case ---- guard clauses" {
+    try assertParser(std.testing.allocator, @src(),
+        \\val X = implement Foo for Bar {
+        \\    fn run(self: Self) {
+        \\        case n {
+        \\            x if x > 0 -> "positive";
+        \\            0 -> "zero";
+        \\            _ -> "negative";
+        \\        };
+        \\    }
+        \\}
+    );
+}
+
 test "parser: val local binding with case expression" {
     try assertParser(std.testing.allocator, @src(),
         \\val X = implement Foo for Bar {

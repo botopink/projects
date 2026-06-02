@@ -819,6 +819,52 @@ function describe() {
 }
 ```
 
+### Guard clauses
+
+A case arm may carry a guard: `pattern if <condition> -> body`. The arm matches
+only when the pattern matches **and** the guard (which must be a `bool`)
+evaluates to `true`; otherwise control falls through to the next arm. An
+identifier pattern used with a guard binds the subject so the guard can test it.
+
+```botopink
+fn classify(n: i32) -> string {
+    return case n {
+        x if x > 0 -> "positive";
+        0          -> "zero";
+        _          -> "negative";
+    };
+}
+```
+
+**Generates:**
+```javascript
+function classify(n) {
+    return (() => {
+        const _s = n;
+        {
+            const x = _s;
+            if ((x > 0)) return "positive";
+        }
+        if (_s === 0) return "zero";
+        return "negative";
+    })();
+}
+```
+
+### Nested patterns
+
+Constructor patterns nest, so a payload can be matched structurally:
+
+```botopink
+fn unwrap(r: @Result<@Option<i32>, string>) -> i32 {
+    return case r {
+        Ok(Some(n)) -> n;
+        Ok(None)    -> 0;
+        Error(_)    -> -1;
+    };
+}
+```
+
 ---
 
 ## Loops
@@ -942,6 +988,17 @@ function main() {
         return 0;
     });
 }
+```
+
+### Lambda with a full type annotation
+
+When a `val` is annotated with a function type `fn(A, B) -> R`, the annotation
+flows into the lambda: each parameter is typed from the annotation before the
+body is checked, and the body's result is unified with the declared return type.
+
+```botopink
+val add: fn(i32, i32) -> i32 = { a, b -> a + b };
+val result = add(2, 3);
 ```
 
 ---

@@ -64,6 +64,16 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io) !u8 {
                 defer gpa.free(rendered);
                 std.debug.print("{s}", .{rendered});
             },
+            .typeError => |te| {
+                had_error = true;
+                const msg = te.message(gpa) catch continue;
+                defer gpa.free(msg);
+                if (te.loc) |loc| {
+                    std.debug.print("error: {s} at {s}:{d}:{d}\n", .{ msg, o.name, loc.line, loc.col });
+                } else {
+                    std.debug.print("error: {s} in {s}\n", .{ msg, o.name });
+                }
+            },
         }
     }
 

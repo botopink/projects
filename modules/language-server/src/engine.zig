@@ -301,19 +301,23 @@ fn appendTypeRef(gpa: std.mem.Allocator, buf: *std.ArrayList(u8), tr: ast.TypeRe
 
 // ── Go to Definition ──────────────────────────────────────────────────────────
 
-/// Returns the location of the declaration for the symbol under the cursor.
-/// The returned `uri` is owned by the caller.
-pub fn definition(
-    gpa: std.mem.Allocator,
+/// A borrowed view of one module's source, used for cross-module lookups.
+pub const ModuleSource = struct {
     uri: []const u8,
     source: []const u8,
-    pos: proto.Position,
-    tokens: []const Token,
-) !?proto.Location {
-    const name = identAt(source, pos) orelse return null;
+};
 
-    // Find the identifier token that is the name in a declaration:
-    // look for a keyword (val/fn/record/struct/enum/interface) followed by an identifier with the given name.
+/// Scan `tokens` for the name token of a declaration named `name` and return a
+/// Location pointing at it. When `require_pub` is set, the declaration must be
+/// preceded by a `pub` keyword (used when resolving symbols imported from
+/// another module — only exported declarations are reachable).
+fn findDeclLocation(
+    gpa: std.mem.Allocator,
+    uri: []const u8,
+    name: []const u8,
+    tokens: []const Token,
+    require_pub: bool,
+) !?proto.Location {
     const decl_values = [_]TokenKind{ .val, .@"fn", .record, .@"struct", .@"enum", .interface };
     var i: usize = 0;
     while (i < tokens.len) : (i += 1) {
@@ -326,6 +330,11 @@ pub fn definition(
             }
         }
         if (!is_decl_kw) continue;
+
+        if (require_pub) {
+            // The token immediately before the decl keyword must be `pub`.
+            if (i == 0 or tokens[i - 1].kind != .@"pub") continue;
+        }
 
         // Next non-trivial token should be the name identifier
         var j = i + 1;
@@ -342,6 +351,48 @@ pub fn definition(
             .uri = try gpa.dupe(u8, uri),
             .range = .{ .start = start, .end = end },
         };
+    }
+    return null;
+}
+
+/// Returns the location of the declaration for the symbol under the cursor.
+/// The returned `uri` is owned by the caller.
+pub fn definition(
+    gpa: std.mem.Allocator,
+    uri: []const u8,
+    source: []const u8,
+    pos: proto.Position,
+    tokens: []const Token,
+) !?proto.Location {
+    const name = identAt(source, pos) orelse return null;
+    return findDeclLocation(gpa, uri, name, tokens, false);
+}
+
+/// Like `definition`, but when the symbol is not declared in the current file
+/// (e.g. it was brought in via `use { X } = @root()` / `import { X }`), search
+/// the other modules' `pub` declarations and jump there. The returned `uri` is
+/// owned by the caller.
+pub fn definitionInModules(
+    gpa: std.mem.Allocator,
+    uri: []const u8,
+    source: []const u8,
+    pos: proto.Position,
+    tokens: []const Token,
+    others: []const ModuleSource,
+) !?proto.Location {
+    const name = identAt(source, pos) orelse return null;
+
+    // Prefer a local declaration in the current file.
+    if (try findDeclLocation(gpa, uri, name, tokens, false)) |loc| return loc;
+
+    // Otherwise resolve to an exported declaration in another module.
+    for (others) |m| {
+        if (std.mem.eql(u8, m.uri, uri)) continue;
+        var arena = std.heap.ArenaAllocator.init(gpa);
+        defer arena.deinit();
+        var lexer = Lexer.init(m.source);
+        const mod_tokens = lexer.scanAll(arena.allocator()) catch continue;
+        if (try findDeclLocation(gpa, m.uri, name, mod_tokens, true)) |loc| return loc;
     }
     return null;
 }
@@ -1860,17 +1911,25 @@ fn dotCompletion(
         items.deinit(gpa);
     }
 
-    // Find the type of the receiver.
+    // Case 1 — the receiver names a type declaration directly
+    // (`Status.`, `Point.`): complete its variants / fields / methods.
+    for (bindings) |b| {
+        if (!std.mem.eql(u8, b.name, receiver_name)) continue;
+        if (isTypeDecl(b.decl)) {
+            try appendDeclMembers(gpa, &items, b.decl);
+            return items.toOwnedSlice(gpa);
+        }
+    }
+
+    // Case 2 — the receiver is a value (`origin.`): resolve its named type,
+    // then complete that type's members.
     var receiver_type_name: ?[]const u8 = null;
     for (bindings) |b| {
         if (!std.mem.eql(u8, b.name, receiver_name)) continue;
         const t = b.type_.deref();
-        if (t.* == .named) {
-            receiver_type_name = t.named.name;
-        }
+        if (t.* == .named) receiver_type_name = t.named.name;
         break;
     }
-
     // Iterator receivers (`@Iterator` / `@AsyncIterator`) expose the iteration
     // protocol: `next()`, `iter()` and `map()`.
     if (receiver_type_name) |rtn| {
@@ -1887,96 +1946,84 @@ fn dotCompletion(
         }
     }
 
-    const type_name = receiver_type_name orelse {
-        // Receiver might be a type name itself (e.g., `Status.Active`).
-        // Check if any binding has that name as a type declaration.
+    if (receiver_type_name) |type_name| {
         for (bindings) |b| {
-            if (!std.mem.eql(u8, b.name, receiver_name)) continue;
-            switch (b.decl) {
-                .@"enum" => |e| {
-                    for (e.variants) |v| {
-                        try items.append(gpa, .{
-                            .label = try gpa.dupe(u8, v.name),
-                            .kind = proto.CompletionItemKind.EnumMember,
-                            .detail = null,
-                        });
-                    }
-                },
-                else => {},
-            }
+            if (!std.mem.eql(u8, b.name, type_name)) continue;
+            if (isTypeDecl(b.decl)) try appendDeclMembers(gpa, &items, b.decl);
             break;
         }
-        return items.toOwnedSlice(gpa);
-    };
-
-    // Find the type declaration and list its members.
-    for (bindings) |b| {
-        if (!std.mem.eql(u8, b.name, type_name)) continue;
-        switch (b.decl) {
-            .record => |r| {
-                for (r.fields) |field| {
-                    try items.append(gpa, .{
-                        .label = try gpa.dupe(u8, field.name),
-                        .kind = proto.CompletionItemKind.Field,
-                        .detail = null,
-                    });
-                }
-                for (r.methods) |method| {
-                    try items.append(gpa, .{
-                        .label = try gpa.dupe(u8, method.name),
-                        .kind = proto.CompletionItemKind.Method,
-                        .detail = null,
-                    });
-                }
-            },
-            .@"struct" => |s| {
-                for (s.members) |member| {
-                    switch (member) {
-                        .field => |field| try items.append(gpa, .{
-                            .label = try gpa.dupe(u8, field.name),
-                            .kind = proto.CompletionItemKind.Field,
-                            .detail = null,
-                        }),
-                        .method => |method| try items.append(gpa, .{
-                            .label = try gpa.dupe(u8, method.name),
-                            .kind = proto.CompletionItemKind.Method,
-                            .detail = null,
-                        }),
-                        .getter => |getter| try items.append(gpa, .{
-                            .label = try gpa.dupe(u8, getter.name),
-                            .kind = proto.CompletionItemKind.Property,
-                            .detail = null,
-                        }),
-                        .setter => |setter| try items.append(gpa, .{
-                            .label = try gpa.dupe(u8, setter.name),
-                            .kind = proto.CompletionItemKind.Property,
-                            .detail = null,
-                        }),
-                    }
-                }
-            },
-            .@"enum" => |e| {
-                for (e.variants) |v| {
-                    try items.append(gpa, .{
-                        .label = try gpa.dupe(u8, v.name),
-                        .kind = proto.CompletionItemKind.EnumMember,
-                        .detail = null,
-                    });
-                }
-                for (e.methods) |method| {
-                    try items.append(gpa, .{
-                        .label = try gpa.dupe(u8, method.name),
-                        .kind = proto.CompletionItemKind.Method,
-                        .detail = null,
-                    });
-                }
-            },
-            else => {},
-        }
-        break;
     }
 
     return items.toOwnedSlice(gpa);
+}
+
+/// True when `decl` is a record / struct / enum type declaration whose members
+/// can be completed after a `.`.
+fn isTypeDecl(decl: anytype) bool {
+    return switch (decl) {
+        .record, .@"struct", .@"enum" => true,
+        else => false,
+    };
+}
+
+/// Append the completable members of a type declaration: record fields/methods,
+/// struct fields/methods/getters/setters, or enum variants/methods.
+fn appendDeclMembers(
+    gpa: std.mem.Allocator,
+    items: *std.ArrayList(proto.CompletionItem),
+    decl: anytype,
+) !void {
+    switch (decl) {
+        .record => |r| {
+            for (r.fields) |field| try items.append(gpa, .{
+                .label = try gpa.dupe(u8, field.name),
+                .kind = proto.CompletionItemKind.Field,
+                .detail = null,
+            });
+            for (r.methods) |method| try items.append(gpa, .{
+                .label = try gpa.dupe(u8, method.name),
+                .kind = proto.CompletionItemKind.Method,
+                .detail = null,
+            });
+        },
+        .@"struct" => |s| {
+            for (s.members) |member| switch (member) {
+                .field => |field| try items.append(gpa, .{
+                    .label = try gpa.dupe(u8, field.name),
+                    .kind = proto.CompletionItemKind.Field,
+                    .detail = null,
+                }),
+                .method => |method| try items.append(gpa, .{
+                    .label = try gpa.dupe(u8, method.name),
+                    .kind = proto.CompletionItemKind.Method,
+                    .detail = null,
+                }),
+                .getter => |getter| try items.append(gpa, .{
+                    .label = try gpa.dupe(u8, getter.name),
+                    .kind = proto.CompletionItemKind.Property,
+                    .detail = null,
+                }),
+                .setter => |setter| try items.append(gpa, .{
+                    .label = try gpa.dupe(u8, setter.name),
+                    .kind = proto.CompletionItemKind.Property,
+                    .detail = null,
+                }),
+            };
+        },
+        .@"enum" => |e| {
+            for (e.variants) |v| try items.append(gpa, .{
+                .label = try gpa.dupe(u8, v.name),
+                .kind = proto.CompletionItemKind.EnumMember,
+                .detail = null,
+            });
+            for (e.methods) |method| try items.append(gpa, .{
+                .label = try gpa.dupe(u8, method.name),
+                .kind = proto.CompletionItemKind.Method,
+                .detail = null,
+            });
+        },
+        else => {},
+    }
 }
 
 /// Returns true if `offset` (byte index into `source`) falls inside a

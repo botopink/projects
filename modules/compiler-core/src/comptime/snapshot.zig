@@ -639,6 +639,7 @@ pub fn buildSnapshot(allocator: std.mem.Allocator, output: comptimeMod.ComptimeO
             try buf.appendSlice(allocator, "\n```\n\n");
         },
         .validationError => {},
+        .typeError => {},
         .parseError => {},
     }
 

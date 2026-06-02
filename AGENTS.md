@@ -64,13 +64,13 @@ modules/compiler-core/                         → main compiler library (lex �
       │   ├── wasm/wasm/                       → 162 WASM Text outputs
       │   └── errors/                          → codegen-time error rendering (4 targets × 1)
       ├── comptime/                            → inference + evaluation snapshots (per backend)
-      │   ├── erlang/{,errors/}                → success (129) + errors (28)
-      │   └── node/{,errors/}                  → success (129) + errors (28)
-      └── parser/                              → 139 AST golden snapshots
+      │   ├── erlang/{,errors/}                → success (137) + errors (44)
+      │   └── node/{,errors/}                  → success (137) + errors (44)
+      └── parser/                              → 174 AST golden snapshots
 modules/language-server/                       → `botopink-lsp` LSP server
   ├── src/                                     → JSON-RPC server + feature engine
   │   └── tests/                               → LSP feature test harness (15 feature files)
-  └── snapshots/lsp/                           → 66 LSP feature snapshots
+  └── snapshots/lsp/                           → 70 LSP feature snapshots
 modules/stdlib/                                → embedded .bp standard library
   └── src/                                     → prelude.zig + primitives/array/string.bp + builtins.d.bp
 modules/vscode-extension/                      → VS Code extension (TypeScript)

@@ -2553,3 +2553,93 @@ test "js: builtin ---- @print return value void" {
         \\}
     );
 }
+
+// ── case guard clauses (commonJS target only) ────────────────────────────────
+//
+// Guards are lowered for the commonJS target; emission for erlang/beam/wasm is
+// part of those targets' own roadmaps, so these tests assert the JS directly
+// instead of going through the all-target snapshot harness.
+
+/// Generate commonJS only and assert each needle appears in the emitted JS.
+fn assertJsContains(allocator: Allocator, src: []const u8, needles: []const []const u8) !void {
+    const io = std.testing.io;
+    var outputs = try codegen.generate(
+        allocator,
+        &.{.{ .path = "", .source = src }},
+        io,
+        configs[0], // commonJS / node
+    );
+    defer {
+        for (outputs.items) |*o| o.result.deinit(allocator);
+        outputs.deinit(allocator);
+    }
+    try std.testing.expect(outputs.items.len > 0);
+    const js = outputs.items[outputs.items.len - 1].result.js;
+    for (needles) |needle| {
+        if (std.mem.indexOf(u8, js, needle) == null) {
+            std.debug.print(
+                "\n=== generated JS ===\n{s}\n=== missing needle: {s} ===\n",
+                .{ js, needle },
+            );
+            return error.NeedleNotFound;
+        }
+    }
+}
+
+test "js: case ---- guard clause on bound identifier" {
+    try assertJsContains(std.testing.allocator,
+        \\fn classify(n: i32) -> string {
+        \\    return case n {
+        \\        x if x > 0 -> "positive";
+        \\        0 -> "zero";
+        \\        _ -> "negative";
+        \\    };
+        \\}
+    , &.{
+        "const x = _s;",
+        "if ((x > 0)) return \"positive\";",
+        "if (_s === 0) return \"zero\";",
+        "return \"negative\";",
+    });
+}
+
+test "js: lambda ---- full type annotation infers params" {
+    // Before the `fn(...) -> ...` annotation was lowered to a `.func` type,
+    // this failed to type-check (named-vs-func mismatch). It must now compile,
+    // with `a`/`b` inferred as `i32` from the annotation.
+    try assertJsContains(std.testing.allocator,
+        \\val add: fn(i32, i32) -> i32 = { a, b -> a + b };
+        \\val result = add(2, 3);
+    , &.{
+        "add(2, 3)",
+    });
+}
+
+test "js: lambda ---- string-typed annotation infers params" {
+    // A different element type proves the annotation (not just `+` defaulting)
+    // drives param typing: `a`/`b` are `string` and the body concatenates them.
+    try assertJsContains(std.testing.allocator,
+        \\val join: fn(string, string) -> string = { a, b -> a + b };
+        \\val r = join("x", "y");
+    , &.{
+        "join(",
+    });
+}
+
+test "js: case ---- guard clause on variant fields" {
+    try assertJsContains(std.testing.allocator,
+        \\val Shape = enum {
+        \\    Circle(r: i32),
+        \\    Square(s: i32),
+        \\}
+        \\fn big(sh: Shape) -> string {
+        \\    return case sh {
+        \\        Circle(r) if r > 10 -> "big circle";
+        \\        _ -> "other";
+        \\    };
+        \\}
+    , &.{
+        "if (_s.tag === \"Circle\") {",
+        "if ((r > 10)) return \"big circle\";",
+    });
+}
