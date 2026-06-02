@@ -1239,8 +1239,8 @@ const Emitter = struct {
         }
     }
 
-    fn emitUse(this: *Emitter, u: ast.UseDecl) !void {
-        try this.w("%% use ");
+    fn emitUse(this: *Emitter, u: ast.ImportDecl) !void {
+        try this.w(if (u.activationOnly) "%% activate " else "%% import ");
         for (u.imports, 0..) |imp, i| {
             if (i > 0) try this.w(", ");
             try this.w(imp.name());

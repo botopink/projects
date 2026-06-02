@@ -1157,7 +1157,7 @@ test "types: tuple literal with mixed types" {
     );
 }
 
-// ── assertTypeAst: multi-module (use … = @root()) ────────────────────────────
+// ── assertTypeAst: multi-module (import … from "name") ───────────────────────
 
 test "assertTypeAst: single module ---- basic val bindings" {
     try assertComptimeAst(std.testing.allocator, @src(), &.{
@@ -1174,7 +1174,7 @@ test "assertTypeAst: import single val from dependency module" {
         \\pub val MAX = 100;
         },
         .{ .path = "", .source =
-        \\use {MAX} = @root()
+        \\import {MAX} from "constants";
         \\val limit = MAX;
         },
     });
@@ -1187,7 +1187,7 @@ test "assertTypeAst: import multiple vals from dependency module" {
         \\pub val port = 8080;
         },
         .{ .path = "", .source =
-        \\use {host, port} = @root()
+        \\import {host, port} from "config";
         \\val addr = host;
         \\val p = port;
         },
@@ -1202,7 +1202,7 @@ test "assertTypeAst: import fn from dependency module" {
         \\}
         },
         .{ .path = "", .source =
-        \\use {double} = @root()
+        \\import {double} from "math";
         \\val result = double(21);
         },
     });
@@ -1214,11 +1214,11 @@ test "assertTypeAst: three-level chain ---- a imports b, b imports c" {
         \\pub val VERSION = 1;
         },
         .{ .path = "mid", .source =
-        \\use {VERSION} = @root()
+        \\import {VERSION} from "base";
         \\pub val MAJOR = VERSION;
         },
         .{ .path = "", .source =
-        \\use {MAJOR} = @root()
+        \\import {MAJOR} from "mid";
         \\val v = MAJOR;
         },
     });
@@ -1226,7 +1226,7 @@ test "assertTypeAst: three-level chain ---- a imports b, b imports c" {
 
 test "infer error: import of val ---- unbound variable" {
     try assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\use {SECRET} = @root()
+        \\import {SECRET};
         \\val x = SECRET;
     );
 }
@@ -1248,7 +1248,7 @@ test "assertTypeAst: import record constructor from dependency" {
         \\record Point { x: i32, y: i32 }
         },
         .{ .path = "", .source =
-        \\use {Point} = @root()
+        \\import {Point} from "models";
         \\val origin = Point(0, 0);
         },
     });

@@ -1,11 +1,11 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-use { foo, bar } = @root()
+import { foo, bar };
 ```
 
 ----- JAVASCRIPT -- main.js
 ```javascript
-const { foo, bar } = @root();
+const { foo, bar } = require("./module");
 ```
 
 ----- TYPESCRIPT TYPEDEF -- main.d.ts

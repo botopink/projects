@@ -265,13 +265,20 @@ const Emitter = struct {
         }
     }
 
-    fn emitUse(self: *Emitter, u: ast.UseDecl) !void {
+    fn emitUse(self: *Emitter, u: ast.ImportDecl) !void {
+        // Fallback activation `X*;` has no type binding — emit nothing.
+        if (u.activationOnly) return;
         try self.w("import { ");
         for (u.imports, 0..) |imp, i| {
             if (i > 0) try self.w(", ");
             try self.w(imp.name());
         }
-        try self.w(" } from \"./module\";\n");
+        try self.w(" } from \"");
+        switch (u.source) {
+            .root => try self.w("./module"),
+            .module => |name| try self.w(name),
+        }
+        try self.w("\";\n");
     }
 
     fn emitDelegate(self: *Emitter, d: ast.DelegateDecl) !void {

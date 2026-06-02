@@ -548,15 +548,20 @@ const Emitter = struct {
         }
     }
 
-    fn emitUse(self: *Emitter, u: ast.UseDecl) !void {
+    fn emitUse(self: *Emitter, u: ast.ImportDecl) !void {
+        // Fallback activation `X*;` has no runtime binding — emit nothing.
+        if (u.activationOnly) return;
         try self.w("const { ");
         for (u.imports, 0..) |imp, i| {
             if (i > 0) try self.w(", ");
             try self.w(imp.name());
         }
-        try self.w(" } = ");
-        try self.emitExpr(u.source.*);
-        try self.w(";");
+        try self.w(" } = require(\"");
+        switch (u.source) {
+            .root => try self.w("./module"),
+            .module => |name| try self.w(name),
+        }
+        try self.w("\");");
     }
 
     // ── params ────────────────────────────────────────────────────────────────

@@ -59,8 +59,8 @@ don't perform any analysis. Feature logic only happens in `engine.zig`.
 the `rootUri` received during `initialize`, skipping hidden dirs,
 `node_modules`, and `zig-cache`. The index powers:
 
-- **Add missing import** code action — suggests `use { X } from "module"`
-- **Module name completion** — inside `use ... from "…"` strings
+- **Add missing import** code action — suggests `import { X } from "module"`
+- **Module name completion** — inside `import { … } from "…"` strings
 - **Cross-module references** — finds symbol declarations in other files
 
 The index is rebuilt lazily on first access after `didChange` invalidation.

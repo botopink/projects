@@ -3,9 +3,7 @@ const std = @import("std");
 /// Compilation phase tag ---- distinguishes AST nodes before and after type inference.
 pub const Phase = enum { untyped, typed };
 
-// ── use decl ──────────────────────────────────────────────────────────────────
-
-pub const Source = *Expr;
+// ── import decl ───────────────────────────────────────────────────────────────
 
 pub const CommentKind = union(enum) {
     /// `// ...` — regular inline comment (non-documenting)
@@ -28,15 +26,30 @@ pub const Comment = struct {
 };
 pub const ImportPath = struct {
     segments: []const []const u8,
+    /// Trailing `*` — activates dispatch of the symbol's methods (impl or extend).
+    activate: bool = false,
+    /// `as` rename of the final binding (`std.List as L`); null when absent.
+    alias: ?[]const u8 = null,
 
+    /// Final bound name: the alias when present, else the last path segment.
     pub fn name(this: ImportPath) []const u8 {
-        return this.segments[this.segments.len - 1];
+        return this.alias orelse this.segments[this.segments.len - 1];
     }
 };
 
-pub const UseDecl = struct {
+/// Where an `import { … }` resolves from.
+pub const ImportSource = union(enum) {
+    /// `import { … };` — resolves from the current project root.
+    root,
+    /// `import { … } from "name";` — resolves from a named dependency.
+    module: []const u8,
+};
+
+pub const ImportDecl = struct {
     imports: []const ImportPath,
-    source: Source,
+    source: ImportSource,
+    /// Fallback activation statement `X*;` — no real import, only activation.
+    activationOnly: bool = false,
     /// `///` documentation comment (multi-line joined with `\n`)
     docComment: ?[]const u8 = null,
     /// `//` regular comment (last one before the declaration)
@@ -471,7 +484,7 @@ pub fn BindingExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
-/// Use-hook expressions: `use` inside function bodies (distinct from top-level `UseDecl` imports)
+/// Use-hook expressions: `use` inside function bodies (distinct from top-level `ImportDecl` imports)
 ///
 /// Two forms:
 ///   `use expr`              — void hook, no binding (e.g. `use effect(cleanup)`)
@@ -1220,7 +1233,7 @@ pub const DeclKind = union(enum) {
     record: RecordDecl,
     implement: ImplementDecl,
     extend: ExtendDecl,
-    use: UseDecl,
+    use: ImportDecl,
     interface: InterfaceDecl,
     delegate: DelegateDecl,
     @"struct": StructDecl,
@@ -1238,8 +1251,6 @@ pub const DeclKind = union(enum) {
             .use => |*u| {
                 for (u.imports) |imp| allocator.free(imp.segments);
                 allocator.free(u.imports);
-                u.source.deinit(allocator);
-                allocator.destroy(u.source);
             },
             .interface => |*t| t.deinit(allocator),
             .delegate => |*d| d.deinit(allocator),

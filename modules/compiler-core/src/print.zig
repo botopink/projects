@@ -62,10 +62,6 @@ pub fn errorMessages(info: ParseErrorInfo) ErrorMessages {
             .message = "Builtin type syntax `@Result(D, E)` has been removed",
             .hint = "Use `@Result<D, E>` instead",
         },
-        .removedFromSyntax => .{
-            .message = "Import syntax `from \"mod\"` has been removed",
-            .hint = "Use `= @root()` or `= @module(\"name\")` instead, e.g. `use {List} = @root()`",
-        },
         .useAfterBranch => .{
             .message = "`use` must be in static prefix",
             .hint = "Move all `use` statements to the top of the function body, before any `if`, `case`, `loop`, or `return`",

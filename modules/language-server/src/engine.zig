@@ -755,17 +755,17 @@ pub fn foldingRanges(
         }
     }
 
-    // Track consecutive `use` imports as a foldable region.
+    // Track consecutive `import` statements as a foldable region.
     _ = source;
     i = 0;
     var import_start: ?usize = null;
     var import_end_line: u32 = 0;
     while (i < tokens.len) : (i += 1) {
-        if (tokens[i].kind == .use) {
+        if (tokens[i].kind == .import) {
             if (import_start == null) {
                 import_start = @intCast(tokens[i].line -| 1);
             }
-            // Scan to the end of this `use` statement (semicolon).
+            // Scan to the end of this `import` statement (semicolon).
             while (i < tokens.len and tokens[i].kind != .semicolon) : (i += 1) {}
             if (i < tokens.len) {
                 import_end_line = @intCast(tokens[i].line -| 1);
@@ -953,10 +953,10 @@ fn addRemoveUnusedImportActions(
     range: proto.Range,
     tokens: []const Token,
 ) !void {
-    // Scan for `use { name1, name2 } from "module";` patterns.
+    // Scan for `import { name1, name2 } from "module";` patterns.
     var i: usize = 0;
     while (i < tokens.len) : (i += 1) {
-        if (tokens[i].kind != .use) continue;
+        if (tokens[i].kind != .import) continue;
 
         const use_tok = tokens[i];
         const use_line: u32 = @intCast(use_tok.line -| 1);
@@ -1212,8 +1212,8 @@ fn addMissingImportActions(
 
         const title = std.fmt.allocPrint(gpa, "Import '{s}' from \"{s}\"", .{ tok.lexeme, sym.module_name }) catch continue;
 
-        // Build the import statement: `use { name } from "module";\n`
-        const import_text = std.fmt.allocPrint(gpa, "use {{ {s} }} from \"{s}\";\n", .{ tok.lexeme, sym.module_name }) catch continue;
+        // Build the import statement: `import { name } from "module";\n`
+        const import_text = std.fmt.allocPrint(gpa, "import {{ {s} }} from \"{s}\";\n", .{ tok.lexeme, sym.module_name }) catch continue;
 
         // Insert at the top of the file (line 0, char 0).
         const edit_slice = gpa.alloc(proto.TextEdit, 1) catch continue;

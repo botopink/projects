@@ -1,8 +1,8 @@
 ----- SOURCE
 ```botopink
-use { foo } from "a";
-use { bar } from "b";
-use { baz } from "c";
+import { foo } from "a";
+import { bar } from "b";
+import { baz } from "c";
 val x = 1;
 ```
 

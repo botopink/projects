@@ -1,5 +1,5 @@
 ----- SOURCE CODE
-use {SECRET} = @root()
+import {SECRET};
 val x = SECRET;
 
 ----- ERROR

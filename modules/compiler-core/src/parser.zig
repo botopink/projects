@@ -6,7 +6,8 @@ const lexer = @import("lexer.zig");
 pub const Token = token.Token;
 pub const TokenKind = token.TokenKind;
 
-pub const UseDecl = ast.UseDecl;
+pub const ImportDecl = ast.ImportDecl;
+pub const ImportSource = ast.ImportSource;
 pub const ImportPath = ast.ImportPath;
 pub const InterfaceDecl = ast.InterfaceDecl;
 pub const InterfaceField = ast.InterfaceField;
@@ -72,8 +73,6 @@ pub const ParseErrorType = enum {
     removedErrorUnion,
     /// Removed builtin type syntax `@Result(D, E)` (use `@Result<D, E>` instead)
     removedBuiltinType,
-    /// Removed `from` import syntax (use `= @root()` / `= @module("name")` instead)
-    removedFromSyntax,
     /// `use` hook after branch/return (must be in static prefix)
     useAfterBranch,
     /// Anonymous `implement`/`extend` block (the name is required)
@@ -178,8 +177,12 @@ pub const Parser = struct {
             decls.deinit(alloc);
         }
         while (!this.check(.endOfFile)) {
-            const decl: DeclKind = if (this.check(.use)) blk: {
-                const d = try this.parseUseDecl(alloc);
+            const decl: DeclKind = if (this.check(.import)) blk: {
+                const d = try this.parseImportDecl(alloc);
+                _ = this.match(.semicolon);
+                break :blk .{ .use = d };
+            } else if (this.isActivationStmt()) blk: {
+                const d = try this.parseActivationStmt(alloc);
                 _ = this.match(.semicolon);
                 break :blk .{ .use = d };
             } else if (this.checkShorthand(.@"fn")) blk: {
@@ -926,10 +929,11 @@ pub const Parser = struct {
         return ref;
     }
 
-    // ── use decl ─────────────────────────────────────────────────────────────
+    // ── import decl ──────────────────────────────────────────────────────────
 
-    fn parseUseDecl(this: *This, alloc: std.mem.Allocator) ParseError!UseDecl {
-        _ = try this.consume(.use);
+    /// `import { item, ... } [from "name"];`
+    fn parseImportDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImportDecl {
+        _ = try this.consume(.import);
         _ = try this.consume(.leftBrace);
         const imports = try this.parseImportList(alloc);
         errdefer {
@@ -937,22 +941,21 @@ pub const Parser = struct {
             alloc.free(imports);
         }
         _ = try this.consume(.rightBrace);
-        if (this.check(.from)) {
-            const tok = this.peek();
-            this.parseError = .{
-                .kind = .removedFromSyntax,
-                .start = tok.col - 1,
-                .end = tok.col - 1 + tok.lexeme.len,
-                .lexeme = tok.lexeme,
-                .line = tok.line,
-                .col = tok.col,
-            };
-            return ParseError.UnexpectedToken;
-        }
-        _ = try this.consume(.equal);
-        const expr_val = try this.parseExpr(alloc);
-        const source = try this.boxExpr(alloc, expr_val);
-        return UseDecl{ .imports = imports, .source = source };
+        const source: ImportSource = if (this.match(.from)) blk: {
+            const tok = try this.consume(.stringLiteral);
+            break :blk .{ .module = tok.lexeme[1 .. tok.lexeme.len - 1] };
+        } else .root;
+        return ImportDecl{ .imports = imports, .source = source };
+    }
+
+    /// Fallback activation statement `dottedPath "*" ";"` — activates an
+    /// already-visible symbol without re-importing it.
+    fn parseActivationStmt(this: *This, alloc: std.mem.Allocator) ParseError!ImportDecl {
+        const path = try this.parseImportItem(alloc);
+        errdefer alloc.free(path.segments);
+        const imports = try alloc.alloc(ImportPath, 1);
+        imports[0] = path;
+        return ImportDecl{ .imports = imports, .source = .root, .activationOnly = true };
     }
 
     fn parseImportList(this: *This, alloc: std.mem.Allocator) ParseError![]const ImportPath {
@@ -962,22 +965,43 @@ pub const Parser = struct {
             paths.deinit(alloc);
         }
         if (!this.check(.identifier)) return paths.toOwnedSlice(alloc);
-        try paths.append(alloc, try this.parseDottedPath(alloc));
+        try paths.append(alloc, try this.parseImportItem(alloc));
         while (this.match(.comma)) {
             if (this.check(.rightBrace)) break;
-            try paths.append(alloc, try this.parseDottedPath(alloc));
+            try paths.append(alloc, try this.parseImportItem(alloc));
         }
         return paths.toOwnedSlice(alloc);
     }
 
-    fn parseDottedPath(this: *This, alloc: std.mem.Allocator) ParseError!ImportPath {
+    /// `dottedPath "*"? ("as" ident)?` — one import item.
+    fn parseImportItem(this: *This, alloc: std.mem.Allocator) ParseError!ImportPath {
         var segs: std.ArrayList([]const u8) = .empty;
         errdefer segs.deinit(alloc);
         try segs.append(alloc, (try this.consume(.identifier)).lexeme);
         while (this.match(.dot)) {
             try segs.append(alloc, (try this.consume(.identifier)).lexeme);
         }
-        return ImportPath{ .segments = try segs.toOwnedSlice(alloc) };
+        const activate = this.match(.star);
+        const alias: ?[]const u8 = if (this.match(.as))
+            (try this.consume(.identifier)).lexeme
+        else
+            null;
+        return ImportPath{
+            .segments = try segs.toOwnedSlice(alloc),
+            .activate = activate,
+            .alias = alias,
+        };
+    }
+
+    /// Lookahead for a top-level activation statement: `ident ("." ident)* "*"`.
+    fn isActivationStmt(this: *This) bool {
+        if (!this.check(.identifier)) return false;
+        var offset: usize = 1;
+        while (this.peekAt(offset).kind == .dot) {
+            if (this.peekAt(offset + 1).kind != .identifier) return false;
+            offset += 2;
+        }
+        return this.peekAt(offset).kind == .star;
     }
 
     // ── fn decl ───────────────────────────────────────────────────────────────────
