@@ -909,7 +909,11 @@ pub const Formatter = struct {
 
         const is_builtin = if (@hasField(@TypeOf(c), "is_builtin")) c.is_builtin else false;
         const callee: *const Doc = if (c.receiver) |recv|
-            try this.text(try std.fmt.allocPrint(this.arena, "{s}.{s}", .{ recv, c.callee }))
+            try this.concatAll(&.{
+                try this.fmtExpr(recv.*),
+                try this.text("."),
+                try this.text(c.callee),
+            })
         else
             try this.text(if (is_builtin) try std.fmt.allocPrint(this.arena, "@{s}", .{c.callee}) else c.callee);
 

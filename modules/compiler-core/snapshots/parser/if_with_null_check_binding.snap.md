@@ -68,11 +68,21 @@
                           "call": {
                             "loc": {
                               "line": 4,
-                              "col": 9
+                              "col": 17
                             },
                             "kind": {
                               "call": {
-                                "receiver": "console",
+                                "receiver": {
+                                  "identifier": {
+                                    "loc": {
+                                      "line": 4,
+                                      "col": 9
+                                    },
+                                    "kind": {
+                                      "ident": "console"
+                                    }
+                                  }
+                                },
                                 "callee": "log",
                                 "is_builtin": false,
                                 "args": [

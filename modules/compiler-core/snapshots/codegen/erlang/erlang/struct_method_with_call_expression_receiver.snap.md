@@ -24,7 +24,7 @@ setPrefix(P) ->
     %% field assignment is not directly supported in Erlang.
 
 log(Msg) ->
-    console:log(Self__prefix, Msg).
+    Console:log(Self__prefix, Msg).
 ```
 
 ----- RUN LOG -----

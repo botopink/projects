@@ -2101,6 +2101,86 @@ test "js: try ---- catch tail on method call" {
     );
 }
 
+// ── stdlib: @Result / @Option methods ─────────────────────────────────────────
+//
+// `.map` / `.flatMap` / `.unwrapOr` / `.isOk` / `.isError` are resolved by type
+// inference and lowered inline by each codegen backend (a value is matched on
+// its `Ok`/`Error` tag, or an option on presence). The lowered shape itself
+// encodes the semantics: `map`/`flatMap` only run the function on `Ok`/present
+// and propagate `Error`/absence untouched.
+
+// Result.map transforms the Ok payload and propagates Error intact.
+test "js: stdlib ---- Result.map transforms Ok, propagates Error intact" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\fn main() {
+        \\    val r = parseAge("42").map({ n -> n + 1 });
+        \\}
+    );
+}
+
+// Result.flatMap chains a fallible step without nesting the Result.
+test "js: stdlib ---- Result.flatMap chains and flattens" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\fn validate(n: i32) -> @Result<i32, string> { @todo(); }
+        \\fn main() {
+        \\    val r = parseAge("42").flatMap({ n -> validate(n) });
+        \\}
+    );
+}
+
+// Result.unwrapOr returns the Ok payload, or the default on Error.
+test "js: stdlib ---- Result.unwrapOr returns data on Ok, default on Error" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\fn main() {
+        \\    val n = parseAge("42").unwrapOr(0);
+        \\}
+    );
+}
+
+// Result.isOk / isError are boolean tag predicates.
+test "js: stdlib ---- Result.isOk and isError predicates" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\fn main() {
+        \\    val r = parseAge("42");
+        \\    val ok = r.isOk();
+        \\    val bad = r.isError();
+        \\}
+    );
+}
+
+// Option mirrors the Result API: map / flatMap / unwrapOr.
+test "js: stdlib ---- Option map, flatMap and unwrapOr mirror Result" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\record Person { name: string }
+        \\fn firstName(p: Person) -> @Option<string> { @todo(); }
+        \\fn shout(s: string) -> @Option<string> { @todo(); }
+        \\fn greet(p: Person) -> string {
+        \\    return firstName(p)
+        \\        .map({ n -> "Hello " + n })
+        \\        .flatMap({ n -> shout(n) })
+        \\        .unwrapOr("Hello stranger");
+        \\}
+    );
+}
+
+// A full map().flatMap().unwrapOr() chain type-checks and lowers end to end.
+test "js: stdlib ---- chain map flatMap unwrapOr types correctly" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\fn validate(n: i32) -> @Result<i32, string> { @todo(); }
+        \\fn main() {
+        \\    val r = parseAge("42")
+        \\        .map({ n -> n + 1 })
+        \\        .flatMap({ n -> validate(n) })
+        \\        .unwrapOr(0);
+        \\}
+    );
+}
+
 test "js: throw ---- string literal" {
     try assertJsSingle(std.testing.allocator, @src(),
         \\fn fail() {

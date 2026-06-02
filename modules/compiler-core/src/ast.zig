@@ -543,10 +543,12 @@ pub fn CallExprOf(comptime phase: Phase) type {
         ///   `@sizeOf(T)`                        receiver=null, callee="sizeOf", is_builtin=true
         ///   `@block{ ... }`                     receiver=null, callee="block", is_builtin=true
         ///   `executar { ... } erro: { ... }`    receiver=null, callee="executar", is_builtin=false
-        ///   `precos.forEach { ... }`             receiver="precos", callee="forEach", is_builtin=false
+        ///   `precos.forEach { ... }`             receiver=`precos`, callee="forEach", is_builtin=false
         call: struct {
-            /// null for plain calls; the object for method calls.
-            receiver: ?[]const u8,
+            /// null for plain calls; the receiver expression for method calls.
+            /// An arbitrary expression so method chains (`a().map(f).filter(g)`)
+            /// and zero-arg method calls (`r.isOk()`) are representable.
+            receiver: ?*ExprOf(phase),
             /// Function/method name (without @ prefix for builtins)
             callee: []const u8,
             /// true if this is a builtin call (starts with @ in source)
@@ -565,6 +567,10 @@ pub fn CallExprOf(comptime phase: Phase) type {
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             switch (this.*) {
                 .call => |c| {
+                    if (c.receiver) |recv| {
+                        recv.deinit(allocator);
+                        allocator.destroy(recv);
+                    }
                     for (c.args) |*a| a.deinit(allocator);
                     allocator.free(c.args);
                     for (c.trailing) |*t| t.deinit(allocator);

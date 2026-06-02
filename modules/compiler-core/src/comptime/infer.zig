@@ -755,7 +755,11 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             for (b.args, 0..) |a, i| {
                 args[i] = try resolveTypeRefInContext(env, a, genericMap);
             }
-            return env.namedTypeArgs(b.name, args);
+            // The builtin `@Option<T>` is the canonical form of the optional type
+            // `?T` — normalise it so both share one representation (and one set of
+            // `.map` / `.flatMap` / `.unwrapOr` lowerings).
+            const name = if (b.is_builtin and std.mem.eql(u8, b.name, "Option")) "optional" else b.name;
+            return env.namedTypeArgs(name, args);
         },
     }
 }
@@ -1376,10 +1380,85 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
     };
 }
 
+/// Resolve a builtin method call on a `@Result<R, E>` or `@Option<T>` receiver
+/// (`.map` / `.flatMap` / `.unwrapOr` / `.isOk` / `.isError`).
+///
+/// Returns the typed call node (with the correct result type) and records a
+/// lowering decision in `env.method_lowerings` keyed by `loc`, so the AST
+/// transform can rewrite it into a `__bp_<domain>_<op>(receiver, arg)` builtin
+/// call. Returns `null` when the receiver is not a Result/Option or the method
+/// is unknown — the caller then falls back to permissive method typing.
+fn inferResultOptionMethod(
+    env: *Env,
+    recvPtr: *ast.TypedExpr,
+    callee: []const u8,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+    loc: ast.Loc,
+) InferError!?ast.TypedExpr {
+    const recvTy = recvPtr.getType().deref();
+    if (recvTy.* != .named) return null;
+    const named = recvTy.named;
+    const isResult = std.mem.eql(u8, named.name, "Result");
+    const isOption = std.mem.eql(u8, named.name, "optional");
+    if (!isResult and !isOption) return null;
+
+    const op: envMod.MethodLowering.Op =
+        if (std.mem.eql(u8, callee, "map")) .map else if (std.mem.eql(u8, callee, "flatMap")) .flatMap else if (std.mem.eql(u8, callee, "unwrapOr")) .unwrapOr else if (isResult and std.mem.eql(u8, callee, "isOk")) .isOk else if (isResult and std.mem.eql(u8, callee, "isError")) .isError else return null;
+
+    // The success-payload type: `R` for `Result<R, E>`, `T` for `Option<T>`.
+    const okTy: *T.Type = if (named.args.len >= 1) named.args[0] else try env.freshVar();
+    const errTy: *T.Type = if (isResult and named.args.len >= 2) named.args[1] else try env.freshVar();
+
+    // The functional / default argument arrives as the first positional arg.
+    const arg0: ?*T.Type = if (typedArgs.len >= 1) typedArgs[0].value.getType() else null;
+
+    const retType: *T.Type = switch (op) {
+        .map => blk: {
+            const r2 = try env.freshVar();
+            if (arg0) |a| try unifyAt(env, a, try env.funcType(&.{okTy}, r2), loc);
+            break :blk if (isResult)
+                try env.namedTypeArgs("Result", &.{ r2, errTy })
+            else
+                try env.namedTypeArgs("optional", &.{r2});
+        },
+        .flatMap => blk: {
+            const r2 = try env.freshVar();
+            const resTy = if (isResult)
+                try env.namedTypeArgs("Result", &.{ r2, errTy })
+            else
+                try env.namedTypeArgs("optional", &.{r2});
+            if (arg0) |a| try unifyAt(env, a, try env.funcType(&.{okTy}, resTy), loc);
+            break :blk resTy;
+        },
+        .unwrapOr => blk: {
+            if (arg0) |a| try unifyAt(env, a, okTy, loc);
+            break :blk okTy;
+        },
+        .isOk, .isError => try env.namedType("bool"),
+    };
+
+    try env.method_lowerings.put(loc, .{ .domain = if (isResult) .result else .option, .op = op });
+
+    return ast.TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
+        .receiver = recvPtr,
+        .callee = callee,
+        .is_builtin = false,
+        .args = typedArgs,
+        .trailing = typedTrailing,
+    } } } };
+}
+
 /// Infer type for call expressions (function/method invocations and pipelines)
 fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
     return switch (c.kind) {
         .call => |call| {
+            // Method calls carry a receiver expression — infer it first.
+            const typedReceiver: ?*ast.TypedExpr = if (call.receiver) |recvExpr|
+                try makeTypedPtr(env, try inferExprTyped(env, recvExpr.*))
+            else
+                null;
+
             const typedArgs = try env.arena.alloc(ast.CallArgOf(.typed), call.args.len);
             for (call.args, 0..) |arg, i| {
                 const val = try inferExprTyped(env, arg.value.*);
@@ -1390,13 +1469,65 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
             if (call.is_builtin) {
                 const retType = try inferBuiltinCallReturnType(env, call.callee, typedArgs, typedTrailing);
                 return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
-                    .receiver = call.receiver,
+                    .receiver = null,
                     .callee = call.callee,
                     .is_builtin = call.is_builtin,
                     .args = typedArgs,
                     .trailing = typedTrailing,
                 } } } };
             }
+
+            if (typedReceiver) |recvPtr| {
+                // Qualified constructor / static call: `EnumType.Variant(args)`.
+                // The receiver names a type definition, so the callee is a global
+                // constructor binding (not a method) — resolve it the same way as
+                // a plain call and keep the receiver for codegen (`Color.Rgb(..)`).
+                if (call.receiver) |re| {
+                    if (re.* == .identifier and re.*.identifier.kind == .ident and
+                        env.lookupTypeDef(re.*.identifier.kind.ident) != null)
+                    {
+                        if (env.lookup(call.callee)) |calleeType| {
+                            const resolved = calleeType.deref();
+                            const retType: *T.Type = switch (resolved.*) {
+                                .func => |f| blk: {
+                                    if (f.params.len == typedArgs.len) {
+                                        for (typedArgs, f.params) |ta, p|
+                                            try unifyAt(env, p, ta.value.getType(), ta.value.getLoc());
+                                    }
+                                    break :blk f.ret;
+                                },
+                                .named => resolved,
+                                else => try env.freshVar(),
+                            };
+                            return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
+                                .receiver = recvPtr,
+                                .callee = call.callee,
+                                .is_builtin = false,
+                                .args = typedArgs,
+                                .trailing = typedTrailing,
+                            } } } };
+                        }
+                    }
+                }
+
+                // Builtin `@Result` / `@Option` methods — type-check and record
+                // the lowering decision.
+                if (try inferResultOptionMethod(env, recvPtr, call.callee, typedArgs, typedTrailing, loc)) |dispatched| {
+                    return dispatched;
+                }
+
+                // Other method calls (struct getters, activated extensions) are
+                // handled by sibling work — type them permissively as a fresh var
+                // so they don't error here.
+                return TypedExpr{ .call = .{ .loc = loc, .type_ = try env.freshVar(), .kind = .{ .call = .{
+                    .receiver = recvPtr,
+                    .callee = call.callee,
+                    .is_builtin = false,
+                    .args = typedArgs,
+                    .trailing = typedTrailing,
+                } } } };
+            }
+
             const calleeType = if (env.lookup(call.callee)) |ty| ty else {
                 env.lastError = TypeError.unboundVariable(call.callee).withLoc(loc);
                 return error.TypeError;
@@ -1462,7 +1593,7 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                 else => try env.freshVar(),
             };
             return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
-                .receiver = call.receiver,
+                .receiver = null,
                 .callee = call.callee,
                 .is_builtin = call.is_builtin,
                 .args = typedArgs,
@@ -1500,7 +1631,7 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                 }
                 const typedTrailing = try inferTrailingLambdasTyped(env, call.trailing);
                 const rhsNode = TypedExpr{ .call = .{ .loc = p.rhs.*.getLoc(), .type_ = retType, .kind = .{ .call = .{
-                    .receiver = call.receiver,
+                    .receiver = null,
                     .callee = call.callee,
                     .is_builtin = call.is_builtin,
                     .args = typedCallArgs,

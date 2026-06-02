@@ -65,11 +65,21 @@
                   "call": {
                     "loc": {
                       "line": 5,
-                      "col": 9
+                      "col": 17
                     },
                     "kind": {
                       "call": {
-                        "receiver": "Console",
+                        "receiver": {
+                          "identifier": {
+                            "loc": {
+                              "line": 5,
+                              "col": 9
+                            },
+                            "kind": {
+                              "ident": "Console"
+                            }
+                          }
+                        },
                         "callee": "WriteLine",
                         "is_builtin": false,
                         "args": [
