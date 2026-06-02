@@ -53,6 +53,21 @@ Inference is **Hindley-Milner with let-polymorphism**:
    annotated with concrete types at exit.
 3. Errors are reported as `TypeError` (see `error.zig`) carrying a source
    range, a primary message, and an optional hint.
+4. A final **semantic-validation** pass (`validateProgram`) runs after the HM
+   walk in both `inferProgram` and `inferProgramTyped`. It checks standalone
+   `implement … for …` blocks against the interfaces they claim to satisfy and
+   verifies struct getters/setters agree with their backing field's type:
+
+   | Error kind | Raised when |
+   |---|---|
+   | `missingMethod` | an implemented interface's abstract method has no impl |
+   | `unknownMethod` | an impl method matches no implemented interface |
+   | `unknownInterface` | a `Iface.method` qualifier is not an implemented interface |
+   | `ambiguousMethod` | an unqualified method name is declared by ≥2 interfaces |
+   | `typeMismatch` | a getter return / setter value type disagrees with the field |
+
+   Interfaces not declared in the current program (e.g. stdlib interfaces) are
+   skipped — their method sets are not visible at this point.
 
 ## Transform pass — the heart of comptime
 

@@ -76,6 +76,28 @@ pub const TypeErrorKind = union(enum) {
         typeName: []const u8,
         field: []const u8,
     },
+    /// An `implement` block does not provide a method required by an interface.
+    missingMethod: struct {
+        typeName: []const u8,
+        interfaceName: []const u8,
+        method: []const u8,
+    },
+    /// An `implement` block declares a method not present in any implemented interface.
+    unknownMethod: struct {
+        typeName: []const u8,
+        method: []const u8,
+    },
+    /// A qualified method's interface prefix is not one of the implemented interfaces.
+    unknownInterface: struct {
+        qualifier: []const u8,
+        method: []const u8,
+    },
+    /// An unqualified method name is declared by more than one implemented interface.
+    ambiguousMethod: struct {
+        method: []const u8,
+        interfaceA: []const u8,
+        interfaceB: []const u8,
+    },
 };
 
 /// A type error with its source location.
@@ -120,6 +142,22 @@ pub const TypeError = struct {
 
     pub fn missingField(typeName: []const u8, field: []const u8) TypeError {
         return .{ .kind = .{ .missingField = .{ .typeName = typeName, .field = field } } };
+    }
+
+    pub fn missingMethod(typeName: []const u8, interfaceName: []const u8, method: []const u8) TypeError {
+        return .{ .kind = .{ .missingMethod = .{ .typeName = typeName, .interfaceName = interfaceName, .method = method } } };
+    }
+
+    pub fn unknownMethod(typeName: []const u8, method: []const u8) TypeError {
+        return .{ .kind = .{ .unknownMethod = .{ .typeName = typeName, .method = method } } };
+    }
+
+    pub fn unknownInterface(qualifier: []const u8, method: []const u8) TypeError {
+        return .{ .kind = .{ .unknownInterface = .{ .qualifier = qualifier, .method = method } } };
+    }
+
+    pub fn ambiguousMethod(method: []const u8, interfaceA: []const u8, interfaceB: []const u8) TypeError {
+        return .{ .kind = .{ .ambiguousMethod = .{ .method = method, .interfaceA = interfaceA, .interfaceB = interfaceB } } };
     }
 };
 

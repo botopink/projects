@@ -64,6 +64,10 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
             try list.append(env.arena, b);
         }
     }
+
+    // Pass 3: semantic validation of `implement` blocks and struct accessors.
+    try validateProgram(env, program);
+
     return list.toOwnedSlice(env.arena);
 }
 
@@ -101,7 +105,166 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
             },
         }
     }
+
+    // Semantic validation of `implement` blocks and struct accessors.
+    try validateProgram(env, program);
+
     return list.toOwnedSlice(env.arena);
+}
+
+// ── pass 3: semantic validation ───────────────────────────────────────────────
+
+/// Validate `implement` blocks against the interfaces they claim to satisfy and
+/// check that struct getters/setters agree with their backing field's type.
+///
+/// Runs after type registration so user-defined interface and field types are
+/// already known. Only the standalone `implement … for …` form is checked for
+/// method coverage; inline `struct/enum/record implement` clauses carry no method
+/// bodies of their own here. Interfaces that are not declared in this program
+/// (e.g. stdlib interfaces) are skipped — their method sets are not visible.
+fn validateProgram(env: *Env, program: ast.Program) InferError!void {
+    var interfaces = std.StringHashMap(ast.InterfaceDecl).init(env.arena);
+    defer interfaces.deinit();
+    for (program.decls) |decl| switch (decl) {
+        .interface => |d| try interfaces.put(d.name, d),
+        else => {},
+    };
+
+    for (program.decls) |decl| switch (decl) {
+        .implement => |impl| try validateImplement(env, impl, interfaces),
+        .@"struct" => |s| try validateStructAccessors(env, s),
+        else => {},
+    };
+}
+
+/// True when interface `d` declares a method named `name` (abstract or default).
+fn interfaceHasMethod(d: ast.InterfaceDecl, name: []const u8) bool {
+    for (d.methods) |m| {
+        if (std.mem.eql(u8, m.name, name)) return true;
+    }
+    return false;
+}
+
+/// True when `name` is one of the interfaces this implement block declares.
+fn implementsInterface(impl: ast.ImplementDecl, name: []const u8) bool {
+    for (impl.interfaces) |iname| {
+        if (std.mem.eql(u8, iname, name)) return true;
+    }
+    return false;
+}
+
+fn validateImplement(
+    env: *Env,
+    impl: ast.ImplementDecl,
+    interfaces: std.StringHashMap(ast.InterfaceDecl),
+) InferError!void {
+    // Per-method checks: qualifier validity, method existence, ambiguity.
+    for (impl.methods) |m| {
+        if (m.qualifier) |q| {
+            // The qualifier must name an interface this block implements.
+            if (!implementsInterface(impl, q)) {
+                env.lastError = TypeError.unknownInterface(q, m.name);
+                return error.TypeError;
+            }
+            // If the interface is visible, it must declare the method.
+            if (interfaces.get(q)) |d| {
+                if (!interfaceHasMethod(d, m.name)) {
+                    env.lastError = TypeError.unknownMethod(impl.target, m.name);
+                    return error.TypeError;
+                }
+            }
+        } else {
+            // Unqualified: find which implemented interfaces declare this method.
+            var first: ?[]const u8 = null;
+            var second: ?[]const u8 = null;
+            for (impl.interfaces) |iname| {
+                const d = interfaces.get(iname) orelse continue;
+                if (!interfaceHasMethod(d, m.name)) continue;
+                if (first == null) {
+                    first = iname;
+                } else if (second == null) {
+                    second = iname;
+                }
+            }
+            if (first == null) {
+                env.lastError = TypeError.unknownMethod(impl.target, m.name);
+                return error.TypeError;
+            }
+            if (second) |snd| {
+                env.lastError = TypeError.ambiguousMethod(m.name, first.?, snd);
+                return error.TypeError;
+            }
+        }
+    }
+
+    // Coverage: every abstract method of every implemented interface must be met.
+    for (impl.interfaces) |iname| {
+        const d = interfaces.get(iname) orelse continue;
+        for (d.methods) |am| {
+            if (am.body != null) continue; // default method — implementing it is optional
+            var covered = false;
+            for (impl.methods) |m| {
+                if (!std.mem.eql(u8, m.name, am.name)) continue;
+                if (m.qualifier) |q| {
+                    if (std.mem.eql(u8, q, iname)) {
+                        covered = true;
+                        break;
+                    }
+                } else {
+                    covered = true;
+                    break;
+                }
+            }
+            if (!covered) {
+                env.lastError = TypeError.missingMethod(impl.target, iname, am.name);
+                return error.TypeError;
+            }
+        }
+    }
+}
+
+/// Resolve the declared type of struct field `name`, or null when there is no
+/// field with that name (e.g. a computed getter that backs no field).
+fn structFieldType(
+    env: *Env,
+    s: ast.StructDecl,
+    genericMap: std.StringHashMap(*T.Type),
+    name: []const u8,
+) InferError!?*T.Type {
+    for (s.members) |m| switch (m) {
+        .field => |f| if (std.mem.eql(u8, f.name, name)) {
+            return try env.resolveTypeName(f.typeName, genericMap);
+        },
+        else => {},
+    };
+    return null;
+}
+
+/// Check that each getter/setter named after a field agrees with that field's
+/// type: a getter must return the field type, a setter must accept it.
+fn validateStructAccessors(env: *Env, s: ast.StructDecl) InferError!void {
+    var genericMap = std.StringHashMap(*T.Type).init(env.arena);
+    defer genericMap.deinit();
+    for (s.genericParams) |gp| {
+        try genericMap.put(gp.name, try env.freshVar());
+    }
+
+    for (s.members) |m| switch (m) {
+        .getter => |g| {
+            const fieldTy = (try structFieldType(env, s, genericMap, g.name)) orelse continue;
+            const retTy = try env.resolveTypeName(g.returnType, genericMap);
+            try unify(env, fieldTy, retTy);
+        },
+        .setter => |st| {
+            const fieldTy = (try structFieldType(env, s, genericMap, st.name)) orelse continue;
+            // The value parameter follows `self`; skip malformed setters.
+            if (st.params.len < 2) continue;
+            const valueParam = st.params[st.params.len - 1];
+            const valueTy = try resolveTypeRefInContext(env, valueParam.typeRef, genericMap);
+            try unify(env, fieldTy, valueTy);
+        },
+        else => {},
+    };
 }
 
 // ── stdlib preload ────────────────────────────────────────────────────────────

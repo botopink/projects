@@ -197,6 +197,10 @@ fn renderTypeError(
         .recursiveType => "recursive type",
         .unknownTypeName => "unknown type",
         .missingField => "missing field",
+        .missingMethod => "missing interface method",
+        .unknownMethod => "unknown method",
+        .unknownInterface => "unknown interface",
+        .ambiguousMethod => "ambiguous method",
     };
     try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "error: {s}\n", .{title}));
 
@@ -276,6 +280,34 @@ fn renderTypeError(
                 tmp,
                 "\n  '{s}' requires field '{s}'\n",
                 .{ f.typeName, f.field },
+            ));
+        },
+        .missingMethod => |m| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' does not implement '{s}' required by interface '{s}'\n",
+                .{ m.typeName, m.method, m.interfaceName },
+            ));
+        },
+        .unknownMethod => |m| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' is not declared in any interface implemented for '{s}'\n",
+                .{ m.method, m.typeName },
+            ));
+        },
+        .unknownInterface => |u| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' is not an interface implemented here (method '{s}')\n",
+                .{ u.qualifier, u.method },
+            ));
+        },
+        .ambiguousMethod => |a| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' is declared by both '{s}' and '{s}' — qualify it\n",
+                .{ a.method, a.interfaceA, a.interfaceB },
             ));
         },
     }
@@ -752,6 +784,93 @@ test "infer: implement two interfaces with qualified methods" {
         \\    }
         \\    fn SolarCharger.Connect(self: Self) {
         \\        @print("Connected via Solar");
+        \\    }
+        \\};
+    );
+}
+
+// ── Phase 3: implement / interface semantic validation (errors) ──────────────
+
+test "infer error: implement missing a required interface method" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Drawable = interface {
+        \\    fn draw(self: Self),
+        \\    fn erase(self: Self),
+        \\};
+        \\val Circle = record { radius: f64 };
+        \\val CircleDrawing = implement Drawable for Circle {
+        \\    fn draw(self: Self) {
+        \\        @print("draw");
+        \\    }
+        \\};
+    );
+}
+
+test "infer error: implement method not declared in the interface" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Drawable = interface {
+        \\    fn draw(self: Self),
+        \\};
+        \\val Circle = record { radius: f64 };
+        \\val CircleDrawing = implement Drawable for Circle {
+        \\    fn draw(self: Self) {
+        \\        @print("draw");
+        \\    }
+        \\    fn explode(self: Self) {
+        \\        @print("boom");
+        \\    }
+        \\};
+    );
+}
+
+test "infer error: implement qualified prefix is not a declared interface" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Drawable = interface {
+        \\    fn draw(self: Self),
+        \\};
+        \\val Circle = record { radius: f64 };
+        \\val CircleDrawing = implement Drawable for Circle {
+        \\    fn Renderable.draw(self: Self) {
+        \\        @print("draw");
+        \\    }
+        \\};
+    );
+}
+
+test "infer error: duplicate method across interfaces without qualification" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val UsbCharger = interface {
+        \\    fn connect(self: Self),
+        \\};
+        \\val SolarCharger = interface {
+        \\    fn connect(self: Self),
+        \\};
+        \\val Camera = record { battery: i32 };
+        \\val CameraCharger = implement UsbCharger, SolarCharger for Camera {
+        \\    fn connect(self: Self) {
+        \\        @print("connect");
+        \\    }
+        \\};
+    );
+}
+
+test "infer error: getter return type mismatch with field type" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Account = struct {
+        \\    balance: i32 = 0,
+        \\    get balance(self: Self) -> string {
+        \\        return "nope";
+        \\    }
+        \\};
+    );
+}
+
+test "infer error: setter value type mismatch with field type" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Account = struct {
+        \\    balance: i32 = 0,
+        \\    set balance(self: Self, value: string) {
+        \\        self.balance = value;
         \\    }
         \\};
     );
