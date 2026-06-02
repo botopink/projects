@@ -76,6 +76,13 @@ pub const TypeErrorKind = union(enum) {
         typeName: []const u8,
         field: []const u8,
     },
+    /// A rule-specific diagnostic with a ready-made message (and optional hint).
+    /// Used for validations that don't map onto the structured kinds above
+    /// (e.g. async/generator rules around `*fn` / `await` / `yield`).
+    custom: struct {
+        message: []const u8,
+        hint: ?[]const u8 = null,
+    },
 };
 
 /// A type error with its source location.
@@ -120,6 +127,10 @@ pub const TypeError = struct {
 
     pub fn missingField(typeName: []const u8, field: []const u8) TypeError {
         return .{ .kind = .{ .missingField = .{ .typeName = typeName, .field = field } } };
+    }
+
+    pub fn custom(message: []const u8, hint: ?[]const u8) TypeError {
+        return .{ .kind = .{ .custom = .{ .message = message, .hint = hint } } };
     }
 };
 

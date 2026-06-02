@@ -71,6 +71,18 @@ pub const TypeDef = union(enum) {
 
 // ── environment ───────────────────────────────────────────────────────────────
 
+/// Context active while inferring the body of a `*fn` (async / generator).
+/// Drives validation of `await` and `yield`; `null` inside normal functions
+/// and at the top level.
+pub const StarFnCtx = struct {
+    /// `await` is permitted here — async function (`@Future`) or async
+    /// generator (`@AsyncIterator`).
+    allowsAwait: bool,
+    /// `@Iterator<T>` / `@AsyncIterator<T, _>` item type that `yield` values
+    /// must unify with; `null` for a pure async function (`@Future`).
+    iterItem: ?*T.Type,
+};
+
 /// The type-checking environment.
 ///
 /// Owns no memory itself ---- all allocations go through `arena`.
@@ -90,6 +102,11 @@ pub const Env = struct {
     level: usize,
     /// The most recent type error (set before returning `error.TypeError`).
     lastError: ?@import("error.zig").TypeError,
+    /// Active `*fn` context while inferring its body (for `await`/`yield` rules).
+    starFn: ?StarFnCtx = null,
+    /// Labels currently in scope (`*fn` label + enclosing loop labels), used to
+    /// validate `yield :label` / `break :label`. Pushed/popped as scopes nest.
+    labelStack: std.ArrayListUnmanaged([]const u8) = .empty,
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
@@ -100,7 +117,17 @@ pub const Env = struct {
             .nextTypeId = 0,
             .level = 0,
             .lastError = null,
+            .starFn = null,
+            .labelStack = .empty,
         };
+    }
+
+    /// True when `label` is in scope for a `yield`/`break` target.
+    pub fn hasLabel(self: *Env, label: []const u8) bool {
+        for (self.labelStack.items) |l| {
+            if (std.mem.eql(u8, l, label)) return true;
+        }
+        return false;
     }
 
     pub fn deinit(self: *Env) void {
