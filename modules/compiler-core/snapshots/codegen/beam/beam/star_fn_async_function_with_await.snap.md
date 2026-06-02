@@ -16,6 +16,7 @@
 {attributes, []}.
 {labels, 6}.
 
+%% *fn (async/generator) — eager lowering
 {function, fetch, 1, 3}.
   {label, 2}.
     {line, [{location, "main.erl", 1}]}.
@@ -25,6 +26,7 @@
     {deallocate, 0}.
     return.
 
+%% *fn (async/generator) — eager lowering
 {function, loadTwice, 1, 5}.
   {label, 4}.
     {line, [{location, "main.erl", 2}]}.

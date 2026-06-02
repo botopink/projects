@@ -14,10 +14,12 @@
 (module
   (memory (export "memory") 1)
   (global $__heap_ptr (mut i32) (i32.const 256))
+  ;; *fn (async/generator) — eager lowering
   (func $fetch (param $x i32) (result i32)
     local.get $x
     return
   )
+  ;; *fn (async/generator) — eager lowering
   (func $loadTwice (param $x i32) (result i32)
     (local $a i32)
     local.get $x

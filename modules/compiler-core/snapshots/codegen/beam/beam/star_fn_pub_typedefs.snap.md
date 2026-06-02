@@ -18,6 +18,7 @@ pub *fn pulses() -> @AsyncIterator<i32, string> {
 {attributes, []}.
 {labels, 8}.
 
+%% *fn (async/generator) — eager lowering
 {function, loadOne, 1, 3}.
   {label, 2}.
     {line, [{location, "main.erl", 1}]}.
@@ -27,6 +28,7 @@ pub *fn pulses() -> @AsyncIterator<i32, string> {
     {deallocate, 0}.
     return.
 
+%% *fn (async/generator) — eager lowering
 {function, count, 0, 5}.
   {label, 4}.
     {line, [{location, "main.erl", 2}]}.
@@ -37,6 +39,7 @@ pub *fn pulses() -> @AsyncIterator<i32, string> {
     {deallocate, 0}.
     return.
 
+%% *fn (async/generator) — eager lowering
 {function, pulses, 0, 7}.
   {label, 6}.
     {line, [{location, "main.erl", 3}]}.

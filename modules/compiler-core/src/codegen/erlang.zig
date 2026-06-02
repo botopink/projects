@@ -268,7 +268,22 @@ const Emitter = struct {
 
     // ── fn ────────────────────────────────────────────────────────────────────
 
+    /// True when the body is a flat sequence of `yield` statements (a simple
+    /// finite generator that lowers to an eager Erlang list).
+    fn isPlainYieldGenerator(f: ast.FnDecl) bool {
+        if (!f.isStarFn or f.body.len == 0) return false;
+        for (f.body) |stmt| {
+            if (!(stmt.expr == .jump and stmt.expr.jump.kind == .yield)) return false;
+        }
+        return true;
+    }
+
     fn emitFn(this: *Emitter, f: ast.FnDecl) !void {
+        // `*fn` is async/generator. Erlang is eager: a `@Future<T>` resolves to
+        // `T` (so `await` is identity) and a finite `@Iterator<T>` is a list.
+        if (f.isStarFn) {
+            try this.fmt("%% *fn (async/generator) — eager lowering\n", .{});
+        }
         try this.w(f.name);
         try this.w("(");
         var first = true;
@@ -314,7 +329,18 @@ const Emitter = struct {
         try this.w(") ->\n");
         const saved = this.indent;
         this.indent = 1;
-        try this.emitBody(f.body);
+        if (isPlainYieldGenerator(f)) {
+            // Finite generator → eager list of yielded items: `[V1, V2, ...]`.
+            try this.writeIndent();
+            try this.w("[");
+            for (f.body, 0..) |stmt, i| {
+                if (i > 0) try this.w(", ");
+                if (stmt.expr.jump.kind.yield.value) |val| try this.emitExpr(val.*);
+            }
+            try this.w("]");
+        } else {
+            try this.emitBody(f.body);
+        }
         this.indent = saved;
         try this.w(".\n");
     }

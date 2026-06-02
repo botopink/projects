@@ -13,9 +13,11 @@
 ```erlang
 -module(main).
 
+%% *fn (async/generator) — eager lowering
 fetch(X) ->
     X.
 
+%% *fn (async/generator) — eager lowering
 loadTwice(X) ->
     A = fetch(X),
     (A + A).

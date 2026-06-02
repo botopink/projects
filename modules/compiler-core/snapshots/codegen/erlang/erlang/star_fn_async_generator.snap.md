@@ -10,9 +10,9 @@
 ```erlang
 -module(main).
 
+%% *fn (async/generator) — eager lowering
 stream() ->
-    1,
-    2.
+    [1, 2].
 ```
 
 ----- RUN LOG -----

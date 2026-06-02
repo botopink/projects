@@ -11,10 +11,9 @@
 ```erlang
 -module(main).
 
+%% *fn (async/generator) — eager lowering
 counter() ->
-    1,
-    2,
-    3.
+    [1, 2, 3].
 ```
 
 ----- RUN LOG -----
