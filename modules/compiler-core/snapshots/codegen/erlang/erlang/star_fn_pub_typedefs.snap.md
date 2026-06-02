@@ -16,14 +16,17 @@ pub *fn pulses() -> @AsyncIterator<i32, string> {
 -module(main).
 -export([loadOne/1, count/0, pulses/0]).
 
+%% *fn (async/generator) — eager lowering
 loadOne(X) ->
     X.
 
+%% *fn (async/generator) — eager lowering
 count() ->
-    1.
+    [1].
 
+%% *fn (async/generator) — eager lowering
 pulses() ->
-    1.
+    [1].
 ```
 
 ----- RUN LOG -----

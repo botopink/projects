@@ -495,6 +495,12 @@ const Emitter = struct {
         }
 
         try self.bodyWrite("\n");
+        // `*fn` is async/generator. The BEAM model is processes + message passing
+        // (spawn/receive); this backend currently emits the eager body, with full
+        // process-based lowering left as future work.
+        if (f.isStarFn) {
+            try self.bodyWrite("%% *fn (async/generator) — eager lowering\n");
+        }
         try self.bodyPrint("{{function, {s}, {d}, {d}}}.\n", .{ f.name, arity, entry_label });
         try self.bodyPrint("  {{label, {d}}}.\n", .{func_info_label});
         try self.bodyPrint("    {{line, [{{location, \"{s}.erl\", {d}}}]}}.\n", .{ self.module_name, self.cur_line });

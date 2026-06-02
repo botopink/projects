@@ -14,6 +14,7 @@
 {attributes, []}.
 {labels, 4}.
 
+%% *fn (async/generator) — eager lowering
 {function, counter, 0, 3}.
   {label, 2}.
     {line, [{location, "main.erl", 1}]}.
