@@ -32,6 +32,8 @@ pub const TypeDef = union(enum) {
         genericParams: []const []const u8,
         fields: []FieldDef,
         implements: []const []const u8 = &.{},
+        /// ContextBase name when this type implements `@Context<B, R>` inline; null otherwise.
+        contextBase: ?[]const u8 = null,
     };
 
     pub const Struct = struct {
@@ -40,6 +42,8 @@ pub const TypeDef = union(enum) {
         genericParams: []const []const u8,
         fields: []FieldDef,
         implements: []const []const u8 = &.{},
+        /// ContextBase name when this type implements `@Context<B, R>` inline; null otherwise.
+        contextBase: ?[]const u8 = null,
     };
 
     pub const Enum = struct {
@@ -48,7 +52,19 @@ pub const TypeDef = union(enum) {
         genericParams: []const []const u8,
         variants: []VariantDef,
         implements: []const []const u8 = &.{},
+        /// ContextBase name when this type implements `@Context<B, R>` inline; null otherwise.
+        contextBase: ?[]const u8 = null,
     };
+
+    /// The `ContextBase` of this type when it implements `@Context<B, R>` inline.
+    /// Returns null for types that do not implement `@Context`.
+    pub fn contextBase(self: TypeDef) ?[]const u8 {
+        return switch (self) {
+            .record => |r| r.contextBase,
+            .struct_ => |s| s.contextBase,
+            .enum_ => |e| e.contextBase,
+        };
+    }
 
     /// Return the fields slice for record or struct types; null for enums.
     pub fn fields(self: TypeDef) ?[]FieldDef {
@@ -67,6 +83,23 @@ pub const TypeDef = union(enum) {
         }
         return null;
     }
+};
+
+// ── @Context capability scope ───────────────────────────────────────────────────
+
+/// Capability information about the function body currently being inferred.
+///
+/// The function's return type decides whether `use` is allowed inside the body:
+/// the return must implement `@Context<ContextBase, Return>`. All `use` calls in
+/// the body must agree on the same `ContextBase`. `null` on the environment means
+/// no function body is currently being inferred (top-level position).
+pub const FnContext = struct {
+    /// True when the function's return type implements `@Context<_, _>`.
+    implementsContext: bool,
+    /// The `ContextBase` name when `implementsContext` is true; null otherwise.
+    base: ?[]const u8 = null,
+    /// Rendered return type, used in the "`use` not allowed" diagnostic.
+    returnDisplay: []const u8 = "void",
 };
 
 // ── environment ───────────────────────────────────────────────────────────────
@@ -90,6 +123,8 @@ pub const Env = struct {
     level: usize,
     /// The most recent type error (set before returning `error.TypeError`).
     lastError: ?@import("error.zig").TypeError,
+    /// Capability scope of the function body currently being inferred (null at top level).
+    fnContext: ?FnContext = null,
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
@@ -100,6 +135,7 @@ pub const Env = struct {
             .nextTypeId = 0,
             .level = 0,
             .lastError = null,
+            .fnContext = null,
         };
     }
 

@@ -79,10 +79,14 @@ feat/throw-check · feat/trycatch-lowering · feat/stdlib-result
 4. Inference: validar impl vs interface (método extra/faltando)
 5. Codegen: external dispatch `obj.m()` → `Sym.m(obj)` (CommonJS, Erlang, BEAM, WAT, TS)
 
-**`feat/context-inference`** — inference `@Context` (plano F7) · *após use-await-prefix + extension-dispatch*
-1. Extrair ContextBase do return type da fn
-2. Validar cada `use` com mesmo ContextBase; erro se retorno não impl `@Context`
-3. Validação transitiva de custom hooks
+**`feat/context-inference`** — inference `@Context` (plano F7) · ✅ implementado sobre o `useHook` AST atual
+1. ✅ Extrair ContextBase do return type da fn
+2. ✅ Validar cada `use` com mesmo ContextBase; erro se retorno não impl `@Context`
+3. ✅ Validação transitiva de custom hooks
+
+> Implementado contra o `Expr.useHook` existente (statement), não o `usePrefix` (F3,
+> ainda não mergeado). Quando `feat/use-await-prefix` entrar, portar `inferUseHookExpr`
+> para o nó prefixo — a extração/validação de ContextBase (`env.zig`/`infer.zig`) não muda.
 
 **`feat/hook-codegen`** — codegen dos hooks (plano F8) · *após context-inference*
 1. CommonJS: `use state()/memo()/effect()` → `useState/useMemo/useEffect` (deps inferidas)
@@ -358,11 +362,11 @@ error: `fn` cannot return @Future directly
 
 - [x] Definir `@Context<B, R>` como interface builtin em `builtins.d.bp` · **ainda vale**
 - [x] Resolver `implement` (inline) — registrar impl no TypeDef · **ainda vale**
-- [ ] Ao entrar em fn body: extrair ContextBase do return type se impl `@Context`
-- [ ] Ao encontrar `use`: verificar que a expressão retorna `@Context<B, _>` com B == ContextBase da fn
-- [ ] Erro se `use` em fn cujo retorno não impl `@Context`
-- [ ] Erro se ContextBase do `use` diverge do ContextBase da fn
-- [ ] Validação transitiva: custom hooks propagam ContextBase via return type
+- [x] Ao entrar em fn body: extrair ContextBase do return type se impl `@Context` (`infer.zig` → `env.fnContext*`)
+- [x] Ao encontrar `use`: verificar que a expressão retorna `@Context<B, _>` com B == ContextBase da fn
+- [x] Erro se `use` em fn cujo retorno não impl `@Context` (`useNotAllowed`)
+- [x] Erro se ContextBase do `use` diverge do ContextBase da fn (`contextBaseMismatch`)
+- [x] Validação transitiva: custom hooks propagam ContextBase via return type (`TypeDef.contextBase`)
 
 ### Fase 4: Codegen — ↦ branch `feat/hook-codegen` (F8)
 
@@ -394,14 +398,14 @@ parser ---- val {a, b} = use expr (hook prefixo, destructure no val)       [F3]
 parser ---- val [a, b] = use expr (hook prefixo, tuple no val)             [F3 — grátis]
 parser ---- use after if branch (error: not in static prefix)              [F3]
 parser ---- use after early return (error: not in static prefix)           [F3]
-context ---- use in fn -> @Context<Element, _> (pass)                      [F7]
-context ---- use in fn -> string (error: not @Context)                     [F7]
-context ---- ContextBase mismatch Element vs Http (error)                  [F7]
-context ---- use without binding for void hook (pass)                      [F7]
-context ---- use with binding for non-void hook (pass)                     [F7]
-context ---- custom hook propagates ContextBase transitively (pass)        [F7]
-context ---- struct implement @Context — resolved via inline impl (pass)   [F7]
-context ---- struct missing @Context impl but used with use (error)        [F7]
+context ---- use in fn -> @Context<Element, _> (pass)                      [F7] ✅
+context ---- use in fn -> string (error: not @Context)                     [F7] ✅
+context ---- ContextBase mismatch Element vs Http (error)                  [F7] ✅
+context ---- use without binding for void hook (pass)                      [F7] ✅
+context ---- use with binding for non-void hook (pass)                     [F7] ✅
+context ---- custom hook propagates ContextBase transitively (pass)        [F7] ✅
+context ---- struct implement @Context — resolved via inline impl (pass)   [F7] ✅
+context ---- struct missing @Context impl but used with use (error)        [F7] ✅
 codegen ---- inline implement erased at runtime (no code for phantom)      [F8]
 ```
 

@@ -197,6 +197,9 @@ fn renderTypeError(
         .recursiveType => "recursive type",
         .unknownTypeName => "unknown type",
         .missingField => "missing field",
+        .useNotAllowed => "`use` not allowed",
+        .useNotContext => "`use` requires @Context",
+        .contextMismatch => "ContextBase mismatch",
     };
     try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "error: {s}\n", .{title}));
 
@@ -278,6 +281,27 @@ fn renderTypeError(
                 .{ f.typeName, f.field },
             ));
         },
+        .useNotAllowed => |returnType| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  function returns `{s}` which does not implement @Context\n",
+                .{returnType},
+            ));
+        },
+        .useNotContext => |exprType| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  `{s}` does not implement @Context — `use` requires @Context<_, _>\n",
+                .{exprType},
+            ));
+        },
+        .contextMismatch => |m| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  function returns @Context<{s}, _>\n  but the `use` expression returns @Context<{s}, _>\n",
+                .{ m.fnBase, m.useBase },
+            ));
+        },
     }
 
     return try out.toOwnedSlice(allocator);
@@ -324,6 +348,37 @@ fn assertTypeErrorSnap(
         const snap_slug = try std.fmt.bufPrint(&snap_buf, "comptime/{s}/errors/{s}", .{ runtime, base_slug });
         try snapMod.checkText(allocator, snap_slug, desc);
     }
+}
+
+/// Parse `src` and assert inference succeeds (no type error). Inference-only:
+/// no codegen runs, which keeps capability checks (e.g. @Context `use`) isolated
+/// from backend concerns.
+fn assertInfersOk(
+    allocator: std.mem.Allocator,
+    src: []const u8,
+) !void {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var lx = Lexer.init(src);
+    const tokens = try lx.scanAll(alloc);
+    defer lx.deinit(alloc);
+    var p = Parser.init(tokens);
+    var program = try p.parse(alloc);
+    defer program.deinit(alloc);
+
+    var env = Env.init(alloc);
+    defer env.deinit();
+    try env.registerBuiltins();
+    try comptimeMod.registerStdlib(&env, allocator);
+    try env.bind("true", try env.namedType("bool"));
+    try env.bind("false", try env.namedType("bool"));
+
+    _ = inferMod.inferProgram(&env, program) catch |err| {
+        if (env.lastError) |e| std.debug.print("unexpected type error: {s}\n", .{@tagName(e.kind)});
+        return err;
+    };
 }
 
 // ── inference tests ───────────────────────────────────────────────────────────
@@ -1920,6 +1975,105 @@ test "@print: string interpolation argument" {
     try assertComptimeAstSingle(std.testing.allocator, @src(),
         \\fn greet(name: string) {
         \\    @print("Hello, " + name + "!");
+        \\}
+    );
+}
+
+// ── @Context<B, R> capability inference (F7) ────────────────────────────────────
+
+test "context: use with binding in @Context fn passes" {
+    try assertInfersOk(std.testing.allocator,
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn useThing() -> @Context<Element, i32> {
+        \\    use x = state(0);
+        \\    state(0);
+        \\}
+    );
+}
+
+test "context: use void hook with discard binding passes" {
+    try assertInfersOk(std.testing.allocator,
+        \\fn effect(cb: i32) -> @Context<Element, i32> {
+        \\    cb;
+        \\}
+        \\fn comp() -> @Context<Element, i32> {
+        \\    use _ = effect(0);
+        \\    effect(0);
+        \\}
+    );
+}
+
+test "context: struct implement @Context resolved via inline impl passes" {
+    try assertInfersOk(std.testing.allocator,
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn Counter() -> Element {
+        \\    use n = state(0);
+        \\    Element();
+        \\}
+    );
+}
+
+test "context: custom hook propagates ContextBase transitively passes" {
+    try assertInfersOk(std.testing.allocator,
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\val AuthState = struct implement @Context<Element, AuthState> {
+        \\    loggedIn: bool
+        \\}
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn useAuth() -> AuthState {
+        \\    use t = state(0);
+        \\    AuthState(loggedIn: true);
+        \\}
+        \\fn Dashboard() -> Element {
+        \\    use {loggedIn} = useAuth();
+        \\    Element();
+        \\}
+    );
+}
+
+test "context error: use in fn returning string" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn bad() -> string {
+        \\    use x = state(0);
+        \\    "hi";
+        \\}
+    );
+}
+
+test "context error: ContextBase mismatch Element vs Http" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn state(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn connection() -> @Context<Http, i32> {
+        \\    0;
+        \\}
+        \\fn bad() -> @Context<Element, i32> {
+        \\    use c = connection();
+        \\    state(0);
+        \\}
+    );
+}
+
+test "context error: struct without @Context impl used with use" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val Plain = struct { x: i32 }
+        \\fn make() -> Plain {
+        \\    Plain(x: 0);
+        \\}
+        \\fn comp() -> @Context<Element, i32> {
+        \\    use p = make();
+        \\    0;
         \\}
     );
 }
