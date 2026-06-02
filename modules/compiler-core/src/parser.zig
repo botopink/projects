@@ -1702,6 +1702,9 @@ pub const Parser = struct {
                 }
                 break :blk .{ .multi = try pats.toOwnedSlice(alloc) };
             } else firstPat;
+            // Optional guard clause: `pattern if <expr> -> body`.
+            const guard: ?Expr = if (this.match(.@"if")) try this.parseExpr(alloc) else null;
+            errdefer if (guard) |*g| @constCast(g).deinit(alloc);
             _ = try this.consume(.rightArrow);
             // A `{` starts a block arm body (zero-param lambda with semicolon-separated stmts).
             const body = if (this.check(.leftBrace)) blk: {
@@ -1728,7 +1731,7 @@ pub const Parser = struct {
             if (!this.match(.semicolon)) {
                 _ = this.match(.comma); // fallback to comma
             }
-            try arms.append(alloc, .{ .pattern = pattern, .body = body, .emptyLinesBefore = emptyLinesBefore });
+            try arms.append(alloc, .{ .pattern = pattern, .body = body, .guard = guard, .emptyLinesBefore = emptyLinesBefore });
         }
 
         _ = try this.consume(.rightBrace);

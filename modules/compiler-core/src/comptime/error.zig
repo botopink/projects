@@ -121,7 +121,32 @@ pub const TypeError = struct {
     pub fn missingField(typeName: []const u8, field: []const u8) TypeError {
         return .{ .kind = .{ .missingField = .{ .typeName = typeName, .field = field } } };
     }
+
+    /// Render a concise, human-readable message for this error. Caller owns the
+    /// returned slice. Used by `botopink check` and the language server.
+    pub fn message(this: TypeError, gpa: std.mem.Allocator) ![]u8 {
+        return switch (this.kind) {
+            .typeMismatch => |m| std.fmt.allocPrint(gpa, "type mismatch: expected {s}, got {s}", .{ typeLabel(m.expected), typeLabel(m.got) }),
+            .unboundVariable => |n| std.fmt.allocPrint(gpa, "unbound variable '{s}'", .{n}),
+            .arityMismatch => |a| std.fmt.allocPrint(gpa, "'{s}' expects {d} argument(s), got {d}", .{ a.name, a.expected, a.got }),
+            .unknownField => |u| std.fmt.allocPrint(gpa, "unknown field '{s}' on type '{s}'", .{ u.field, u.typeName }),
+            .notARecord => |n| std.fmt.allocPrint(gpa, "type '{s}' is not a record or struct", .{n}),
+            .recursiveType => std.fmt.allocPrint(gpa, "recursive type detected", .{}),
+            .unknownTypeName => |n| std.fmt.allocPrint(gpa, "unknown type '{s}'", .{n}),
+            .missingField => |m| std.fmt.allocPrint(gpa, "missing required field '{s}' on type '{s}'", .{ m.field, m.typeName }),
+        };
+    }
 };
+
+/// Best-effort short label for a type, used in error messages.
+fn typeLabel(ty: *T.Type) []const u8 {
+    return switch (ty.deref().*) {
+        .named => |n| n.name,
+        .func => "function",
+        .union_ => "union",
+        .typeVar => "_",
+    };
+}
 
 // ── Comptime validation ───────────────────────────────────────────────────────
 

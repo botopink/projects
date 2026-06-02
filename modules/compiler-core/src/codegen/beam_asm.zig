@@ -187,6 +187,7 @@ pub fn codegenEmit(
     for (outputs) |*ct| {
         switch (ct.outcome) {
             .parseError => continue,
+            .typeError => continue,
             .validationError => |verr| {
                 try results.append(alloc, .{
                     .name = ct.name,

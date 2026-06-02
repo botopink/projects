@@ -24,6 +24,7 @@ pub fn codegenEmit(
     for (outputs) |*ct| {
         switch (ct.outcome) {
             .parseError => continue,
+            .typeError => continue,
             .validationError => |verr| {
                 try results.append(alloc, .{
                     .name = ct.name,
@@ -1420,6 +1421,42 @@ const Emitter = struct {
         }
     }
 
+    /// Emit `return <body>;` for a matched arm, gated by the arm's guard when
+    /// present: `if (<guard>) return <body>;`.
+    fn emitGuardedReturn(self: *Emitter, b: *JsBuilder, arm: ast.CaseArm) !void {
+        if (arm.guard) |g| {
+            b.line("if (");
+            try self.emitExpr(g);
+            b.raw(") return ");
+        } else {
+            b.line("return ");
+        }
+        try self.emitExpr(arm.body);
+        b.raw(";");
+        b.newline();
+    }
+
+    /// Emit a matched arm body — either a `return <expr>;` or an inlined lambda
+    /// block — gated by the arm's guard when present.
+    fn emitMatchedBody(self: *Emitter, b: *JsBuilder, arm: ast.CaseArm) !void {
+        if (isLambdaBlock(arm.body)) {
+            if (arm.guard) |g| {
+                b.line("if (");
+                try self.emitExpr(g);
+                b.raw(") {");
+                b.newline();
+                b.indent();
+                try self.emitCaseBody(arm.body, b);
+                b.close();
+                b.newline();
+            } else {
+                try self.emitCaseBody(arm.body, b);
+            }
+        } else {
+            try self.emitGuardedReturn(b, arm);
+        }
+    }
+
     fn emitCase(
         self: *Emitter,
         subjects: []ast.Expr,
@@ -1450,7 +1487,9 @@ const Emitter = struct {
         for (arms) |arm| {
             switch (arm.pattern) {
                 .wildcard => {
-                    if (isLambdaBlock(arm.body)) {
+                    if (arm.guard != null) {
+                        try self.emitMatchedBody(&b, arm);
+                    } else if (isLambdaBlock(arm.body)) {
                         b.open("");
                         try self.emitCaseBody(arm.body, &b);
                         b.close();
@@ -1464,18 +1503,35 @@ const Emitter = struct {
                 },
 
                 .ident, .numberLit, .stringLit, .@"or", .multi => {
-                    const cond = try self.buildCondStr(arm.pattern);
-                    defer self.alloc.free(cond);
-                    if (isLambdaBlock(arm.body)) {
+                    if (arm.pattern == .ident and arm.guard != null) {
+                        // A guarded identifier binds the subject, then tests the guard.
+                        b.open("");
+                        b.fmtLine("const {s} = _s;", .{arm.pattern.ident});
+                        b.newline();
+                        try self.emitMatchedBody(&b, arm);
+                        b.close();
+                        b.newline();
+                    } else if (arm.guard != null) {
+                        const cond = try self.buildCondStr(arm.pattern);
+                        defer self.alloc.free(cond);
                         b.open(cond);
-                        try self.emitCaseBody(arm.body, &b);
+                        try self.emitMatchedBody(&b, arm);
                         b.close();
                         b.newline();
                     } else {
-                        b.fmtLine("if ({s}) return ", .{cond});
-                        try self.emitExpr(arm.body);
-                        b.raw(";");
-                        b.newline();
+                        const cond = try self.buildCondStr(arm.pattern);
+                        defer self.alloc.free(cond);
+                        if (isLambdaBlock(arm.body)) {
+                            b.open(cond);
+                            try self.emitCaseBody(arm.body, &b);
+                            b.close();
+                            b.newline();
+                        } else {
+                            b.fmtLine("if ({s}) return ", .{cond});
+                            try self.emitExpr(arm.body);
+                            b.raw(";");
+                            b.newline();
+                        }
                     }
                 },
 
@@ -1485,14 +1541,7 @@ const Emitter = struct {
                     b.indent();
                     b.fmtLine("const {s} = _s;", .{vb.binding});
                     b.newline();
-                    if (isLambdaBlock(arm.body)) {
-                        try self.emitCaseBody(arm.body, &b);
-                    } else {
-                        b.line("return ");
-                        try self.emitExpr(arm.body);
-                        b.raw(";");
-                        b.newline();
-                    }
+                    try self.emitMatchedBody(&b, arm);
                     b.close();
                     b.newline();
                 },
@@ -1510,14 +1559,7 @@ const Emitter = struct {
                         b.raw(" } = _s;");
                         b.newline();
                     }
-                    if (isLambdaBlock(arm.body)) {
-                        try self.emitCaseBody(arm.body, &b);
-                    } else {
-                        b.line("return ");
-                        try self.emitExpr(arm.body);
-                        b.raw(";");
-                        b.newline();
-                    }
+                    try self.emitMatchedBody(&b, arm);
                     b.close();
                     b.newline();
                 },
@@ -1526,14 +1568,7 @@ const Emitter = struct {
                     b.fmtLine("if (_s.tag === \"{s}\") {{", .{vl.name});
                     b.newline();
                     b.indent();
-                    if (isLambdaBlock(arm.body)) {
-                        try self.emitCaseBody(arm.body, &b);
-                    } else {
-                        b.line("return ");
-                        try self.emitExpr(arm.body);
-                        b.raw(";");
-                        b.newline();
-                    }
+                    try self.emitMatchedBody(&b, arm);
                     b.close();
                     b.newline();
                 },

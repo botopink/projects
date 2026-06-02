@@ -292,7 +292,38 @@ pub const Server = struct {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
 
+        // First try a declaration in the current file.
         if (try engine.definition(self.gpa, uri, source, pos, tokens)) |loc| {
+            defer self.gpa.free(loc.uri);
+            return messages.writeResponse(self.io, self.gpa, msg.id(), loc);
+        }
+
+        // On a local miss, resolve imported symbols against other modules.
+        self.index.ensureIndexed();
+        const syms = self.index.getAllSymbols();
+        var others: std.ArrayList(engine.ModuleSource) = .empty;
+        defer {
+            for (others.items) |m| self.gpa.free(m.source);
+            others.deinit(self.gpa);
+        }
+        for (syms) |sym| {
+            if (std.mem.eql(u8, sym.uri, uri)) continue;
+            var dup = false;
+            for (others.items) |o| {
+                if (std.mem.eql(u8, o.uri, sym.uri)) {
+                    dup = true;
+                    break;
+                }
+            }
+            if (dup) continue;
+            const msrc = self.files.read(self.gpa, self.io, sym.uri) catch continue;
+            others.append(self.gpa, .{ .uri = sym.uri, .source = msrc }) catch {
+                self.gpa.free(msrc);
+                continue;
+            };
+        }
+
+        if (try engine.definitionInModules(self.gpa, uri, source, pos, tokens, others.items)) |loc| {
             defer self.gpa.free(loc.uri);
             try messages.writeResponse(self.io, self.gpa, msg.id(), loc);
         } else {

@@ -107,3 +107,30 @@ test "diagnostics: annotated function compiles without errors" {
     defer c.deinit(gpa);
     try std.testing.expect(c.isOk());
 }
+
+// ── D9 — erro de tipo vira diagnóstico (squiggle) ─────────────────────────────
+//
+// TODO "lsp ---- diagnostic squiggle on type error".
+
+test "diagnostics: type mismatch surfaces a located typeError" {
+    const gpa = std.testing.allocator;
+    var c = try h.compile(gpa,
+        \\val x: i32 = "hello";
+    );
+    defer c.deinit(gpa);
+
+    // A type error means there is no successful (.ok) output.
+    try std.testing.expect(!c.isOk());
+
+    var found = false;
+    for (c.result.session.outputs.items) |o| {
+        if (o.outcome == .typeError) {
+            found = true;
+            try std.testing.expect(o.outcome.typeError.loc != null);
+            const msg = try o.outcome.typeError.message(gpa);
+            defer gpa.free(msg);
+            try std.testing.expect(std.mem.indexOf(u8, msg, "mismatch") != null);
+        }
+    }
+    try std.testing.expect(found);
+}

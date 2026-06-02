@@ -70,6 +70,19 @@ pub const CompileResult = struct {
             switch (output.outcome) {
                 .ok => {},
                 .parseError => {},
+                .typeError => |te| {
+                    const line = if (te.loc) |l| l.line else 1;
+                    const col = if (te.loc) |l| l.col else 1;
+                    const start = lsp_types.locToPosition(line, col);
+                    const end = lsp_types.locToPosition(line, col + 1);
+                    const msg = try te.message(gpa);
+                    try diags.append(gpa, .{
+                        .range = .{ .start = start, .end = end },
+                        .severity = proto.DiagnosticSeverity.Error,
+                        .message = msg,
+                        .source = "botopink",
+                    });
+                },
                 .validationError => |err| {
                     // ComptimeError tem .loc: ast.Loc (1-based line/col)
                     const start = lsp_types.locToPosition(err.loc.line, err.loc.col);

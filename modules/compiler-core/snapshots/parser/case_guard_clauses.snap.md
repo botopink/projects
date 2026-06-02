@@ -55,26 +55,66 @@
                         "arms": [
                           {
                             "pattern": {
-                              "or": [
-                                {
-                                  "numberLit": "2"
-                                },
-                                {
-                                  "numberLit": "4"
-                                },
-                                {
-                                  "numberLit": "6"
-                                }
-                              ]
+                              "ident": "x"
                             },
                             "body": {
                               "literal": {
                                 "loc": {
                                   "line": 4,
-                                  "col": 26
+                                  "col": 27
                                 },
                                 "kind": {
-                                  "stringLit": "even"
+                                  "stringLit": "positive"
+                                }
+                              }
+                            },
+                            "guard": {
+                              "binaryOp": {
+                                "loc": {
+                                  "line": 4,
+                                  "col": 20
+                                },
+                                "kind": {
+                                  "op": "gt",
+                                  "lhs": {
+                                    "identifier": {
+                                      "loc": {
+                                        "line": 4,
+                                        "col": 18
+                                      },
+                                      "kind": {
+                                        "ident": "x"
+                                      }
+                                    }
+                                  },
+                                  "rhs": {
+                                    "literal": {
+                                      "loc": {
+                                        "line": 4,
+                                        "col": 22
+                                      },
+                                      "kind": {
+                                        "numberLit": "0"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "emptyLinesBefore": 0
+                          },
+                          {
+                            "pattern": {
+                              "numberLit": "0"
+                            },
+                            "body": {
+                              "literal": {
+                                "loc": {
+                                  "line": 5,
+                                  "col": 18
+                                },
+                                "kind": {
+                                  "stringLit": "zero"
                                 }
                               }
                             },
@@ -88,11 +128,11 @@
                             "body": {
                               "literal": {
                                 "loc": {
-                                  "line": 5,
+                                  "line": 6,
                                   "col": 18
                                 },
                                 "kind": {
-                                  "stringLit": "other"
+                                  "stringLit": "negative"
                                 }
                               }
                             },

@@ -1105,8 +1105,13 @@ pub const Formatter = struct {
                 // Regular separator
                 try armParts.append(this.arena, this.hardline());
             }
+            const guardDoc: *const Doc = if (arm.guard) |g| try this.concatAll(&.{
+                try this.text(" if "),
+                try this.fmtExpr(g),
+            }) else this.nil();
             try armParts.append(this.arena, try this.concatAll(&.{
                 try this.fmtPattern(arm.pattern),
+                guardDoc,
                 try this.text(" -> "),
                 try this.fmtExpr(arm.body),
                 try this.text(";"),

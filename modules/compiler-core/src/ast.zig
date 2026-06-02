@@ -227,12 +227,16 @@ pub fn CaseArmOf(comptime phase: Phase) type {
     return struct {
         pattern: Pattern,
         body: ExprOf(phase),
+        /// Optional guard clause: `pattern if <guard> -> body`. The arm only
+        /// matches when the pattern matches AND the guard evaluates to `true`.
+        guard: ?ExprOf(phase) = null,
         /// Number of empty lines before this arm in the source
         emptyLinesBefore: u32 = 0,
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             this.pattern.deinit(allocator);
             this.body.deinit(allocator);
+            if (this.guard) |*g| g.deinit(allocator);
         }
     };
 }

@@ -66,11 +66,11 @@ modules/compiler-core/                         → main compiler library (lex �
       ├── comptime/                            → inference + evaluation snapshots (per backend)
       │   ├── erlang/{,errors/}                → success (145) + errors (22)
       │   └── node/{,errors/}                  → success (145) + errors (22)
-      └── parser/                              → 139 AST golden snapshots
+      └── parser/                              → 154 AST golden snapshots
 modules/language-server/                       → `botopink-lsp` LSP server
   ├── src/                                     → JSON-RPC server + feature engine
   │   └── tests/                               → LSP feature test harness (15 feature files)
-  └── snapshots/lsp/                           → 66 LSP feature snapshots
+  └── snapshots/lsp/                           → 69 LSP feature snapshots
 modules/stdlib/                                → embedded .bp standard library
   └── src/                                     → prelude.zig + primitives/array/string.bp + builtins.d.bp
 modules/vscode-extension/                      → VS Code extension (TypeScript)

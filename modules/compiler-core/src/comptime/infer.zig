@@ -114,12 +114,15 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
 fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
     switch (decl) {
         .val => |v| {
-            const typedExpr = try inferExprTyped(env, v.value.*);
+            const annType: ?*T.Type = if (v.typeAnnotation) |ann| try resolveTypeRef(env, ann) else null;
+            // When binding a lambda to a `fn(...) -> ...` annotation, feed the
+            // annotation into the lambda so its params are typed from context.
+            const typedExpr = if (annType != null and v.value.* == .function)
+                try inferFunctionExprExpected(env, v.value.function, v.value.function.loc, annType)
+            else
+                try inferExprTyped(env, v.value.*);
             const ty = typedExpr.getType();
-            if (v.typeAnnotation) |ann| {
-                const annType = try resolveTypeRef(env, ann);
-                try unifyAt(env, annType, ty, v.value.getLoc());
-            }
+            if (annType) |at| try unifyAt(env, at, ty, v.value.getLoc());
             try env.bind(v.name, ty);
             return .{ .name = v.name, .type_ = ty, .typedExpr = typedExpr, .decl = decl };
         },
@@ -739,16 +742,15 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             return env.namedTypeArgs("optional", args);
         },
         .function => |f| {
-            // For function types, resolve params and return type
+            // Build a `.func` type so a `fn(A, B) -> R` annotation unifies with
+            // lambda/anonymous-function values, propagating the annotated param
+            // and return types into the value's fresh type variables.
             const paramTypes = try env.arena.alloc(*T.Type, f.params.len);
             for (f.params, 0..) |p, i| {
                 paramTypes[i] = try resolveTypeRefInContext(env, p, genericMap);
             }
             const returnType = try resolveTypeRefInContext(env, f.returnType.*, genericMap);
-            const args = try env.arena.alloc(*T.Type, f.params.len + 1);
-            for (f.params, 0..) |_, i| args[i] = paramTypes[i];
-            args[f.params.len] = returnType;
-            return env.namedTypeArgs("function", args);
+            return env.funcType(paramTypes, returnType);
         },
         .generic => |b| {
             const args = try env.arena.alloc(*T.Type, b.args.len);
@@ -1526,36 +1528,55 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
 
 /// Infer type for function definition expressions (lambdas and anonymous functions)
 fn inferFunctionExpr(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
-    return switch (func.kind) {
-        .lambda => |l| {
-            const params = try env.arena.alloc(*T.Type, l.params.len);
-            for (l.params, 0..) |p, i| {
-                params[i] = try env.freshVar();
-                try env.bind(p, params[i]);
-            }
-            const bodyTyped = try inferStmtsTyped(env, l.body);
-            const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
-            const funcType = try env.funcType(params, retType);
-            return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{ .lambda = .{
-                .params = l.params,
-                .body = bodyTyped,
-            } } } };
-        },
+    return inferFunctionExprExpected(env, func, loc, null);
+}
 
-        .fnExpr => |f| {
-            const params = try env.arena.alloc(*T.Type, f.params.len);
-            for (f.params, 0..) |p, i| {
-                params[i] = try env.freshVar();
-                try env.bind(p, params[i]);
-            }
-            const bodyTyped = try inferStmtsTyped(env, f.body);
-            const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
-            const funcType = try env.funcType(params, retType);
-            return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{ .fnExpr = .{
-                .params = f.params,
-                .body = bodyTyped,
-            } } } };
-        },
+/// Infer a lambda / anonymous-function expression. When `expected` is a
+/// function type (e.g. from a `val f: fn(A, B) -> R = ...` annotation, or a
+/// `fn`-typed parameter), the lambda's parameters are bound to the expected
+/// parameter types *before* the body is inferred — so the body can resolve
+/// member calls and operators against the annotated types — and the body's
+/// result is unified with the expected return type.
+fn inferFunctionExprExpected(env: *Env, func: ast.FunctionExprOf(.untyped), loc: ast.Loc, expected: ?*T.Type) InferError!TypedExpr {
+    const paramNames = switch (func.kind) {
+        .lambda => |l| l.params,
+        .fnExpr => |f| f.params,
+    };
+    const bodyStmts = switch (func.kind) {
+        .lambda => |l| l.body,
+        .fnExpr => |f| f.body,
+    };
+
+    // Pull expected param/return types out of `expected`, but only when it is a
+    // function type whose arity matches this lambda.
+    var expParams: ?[]*T.Type = null;
+    var expRet: ?*T.Type = null;
+    if (expected) |e| {
+        const d = e.deref();
+        if (d.* == .func and d.func.params.len == paramNames.len) {
+            expParams = d.func.params;
+            expRet = d.func.ret;
+        }
+    }
+
+    const params = try env.arena.alloc(*T.Type, paramNames.len);
+    for (paramNames, 0..) |p, i| {
+        params[i] = if (expParams) |ep| ep[i] else try env.freshVar();
+        try env.bind(p, params[i]);
+    }
+    const bodyTyped = try inferStmtsTyped(env, bodyStmts);
+    const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
+    if (expRet) |er| try unifyAt(env, retType, er, loc);
+    const funcType = try env.funcType(params, retType);
+    return switch (func.kind) {
+        .lambda => TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{ .lambda = .{
+            .params = paramNames,
+            .body = bodyTyped,
+        } } } },
+        .fnExpr => TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{ .fnExpr = .{
+            .params = paramNames,
+            .body = bodyTyped,
+        } } } },
     };
 }
 
@@ -1630,6 +1651,21 @@ fn inferCollectionExpr(env: *Env, col: ast.CollectionExprOf(.untyped), loc: ast.
                 defer snapshots.deinit(env.arena);
                 try bindCaseArmPatternNames(env, arm.pattern, typedSubjects, &snapshots);
 
+                // A guard clause must type-check to a boolean, with the
+                // pattern's bindings in scope.
+                var guardTyped: ?ast.TypedExpr = null;
+                if (arm.guard) |g| {
+                    const gt = inferExprTyped(env, g) catch |err| {
+                        try restorePatternBindings(env, snapshots.items);
+                        return err;
+                    };
+                    unifyAt(env, gt.getType(), try env.namedType("bool"), g.getLoc()) catch |err| {
+                        try restorePatternBindings(env, snapshots.items);
+                        return err;
+                    };
+                    guardTyped = gt;
+                }
+
                 const bodyTyped = inferExprTyped(env, arm.body) catch |err| {
                     try restorePatternBindings(env, snapshots.items);
                     return err;
@@ -1638,6 +1674,7 @@ fn inferCollectionExpr(env: *Env, col: ast.CollectionExprOf(.untyped), loc: ast.
                 typedArms[i] = .{
                     .pattern = arm.pattern,
                     .body = bodyTyped,
+                    .guard = guardTyped,
                     .emptyLinesBefore = arm.emptyLinesBefore,
                 };
             }

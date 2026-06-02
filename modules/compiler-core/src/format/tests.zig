@@ -391,6 +391,38 @@ test "format: pub fn ---- typeparam no constraint" {
     );
 }
 
+// ── generics / comptime constraints / @Context ────────────────────────────────
+
+test "format: generic ---- @Result<D, E> in signature" {
+    try assertFormat(std.testing.allocator,
+        \\pub fn parse(s: string) -> @Result<i32, string> {
+        \\    todo;
+        \\}
+    );
+}
+
+test "format: generic ---- nested @Option in @Result" {
+    try assertFormat(std.testing.allocator,
+        \\pub fn lookup(k: string) -> @Result<@Option<i32>, string> {
+        \\    todo;
+        \\}
+    );
+}
+
+test "format: pub fn ---- comptime param with generic constraint" {
+    try assertFormat(std.testing.allocator,
+        \\pub fn run(comptime ctx: @Context<i32, string>) {
+        \\    todo;
+        \\}
+    );
+}
+
+test "format: struct ---- inline implement @Context<B, R>" {
+    try assertFormat(std.testing.allocator,
+        \\val Handler = struct implement @Context<i32, string> { state: i32 };
+    );
+}
+
 // ── case expressions ──────────────────────────────────────────────────────────
 
 test "format: case ---- wildcard and ident" {
@@ -441,6 +473,20 @@ test "format: case ---- OR patterns" {
         \\            0 | 2 | 4 | 6 | 8 -> "even digit";
         \\            1 | 3 | 5 | 7 | 9 -> "odd digit";
         \\            _ -> "not a digit";
+        \\        };
+        \\    }
+        \\};
+    );
+}
+
+test "format: case ---- guard clauses" {
+    try assertFormat(std.testing.allocator,
+        \\val X = implement Foo for Bar {
+        \\    fn run(self: Self) {
+        \\        case n {
+        \\            x if x > 0 -> "positive";
+        \\            0 -> "zero";
+        \\            _ -> "negative";
         \\        };
         \\    }
         \\};

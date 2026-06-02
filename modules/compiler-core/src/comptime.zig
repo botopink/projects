@@ -19,6 +19,7 @@ const validation = @import("./comptime/error.zig");
 
 /// Re-exported so callers only need to import `comptime.zig`.
 pub const ComptimeError = validation.ComptimeError;
+pub const TypeError = validation.TypeError;
 pub const TypedBinding = infer.TypedBinding;
 pub const Type = T.Type;
 pub const Env_ = Env; // alias: use `comptimeMod.Env` in callers
@@ -40,6 +41,9 @@ pub const ComptimeOutput = struct {
     pub const Outcome = union(enum) {
         ok: OkData,
         validationError: ComptimeError,
+        /// Type inference failed (e.g. a type mismatch). Carries the located
+        /// error so editors can render a diagnostic squiggle.
+        typeError: TypeError,
         /// Source failed to parse (e.g. incomplete input during LSP editing).
         parseError: void,
     };
@@ -79,6 +83,7 @@ const AnalysisResult = union(enum) {
     validationError: struct {
         info: ComptimeError,
     },
+    typeError: TypeError,
     parseError: void,
 };
 
@@ -104,7 +109,14 @@ fn analyzeModule(
     }
 
     try resolveImports(&env, program, registry);
-    const bindings = try infer.inferProgramTyped(&env, program);
+    const bindings = infer.inferProgramTyped(&env, program) catch |err| switch (err) {
+        error.TypeError => {
+            const te = env.lastError orelse validation.TypeError{ .kind = .{ .unboundVariable = "" } };
+            env.deinit();
+            return .{ .typeError = te };
+        },
+        else => return err,
+    };
     return .{ .success = .{ .bindings = bindings, .env = env, .program = program } };
 }
 
@@ -251,6 +263,13 @@ pub fn compileTypesOnly(
                     .outcome = .{ .validationError = verr.info },
                 });
             },
+            .typeError => |te| {
+                try session.outputs.append(allocator, .{
+                    .name = name,
+                    .src = mod.source,
+                    .outcome = .{ .typeError = te },
+                });
+            },
             .success => |succ| {
                 if (idx < modules.len - 1) {
                     var env = succ.env;
@@ -335,6 +354,13 @@ pub fn compile(
                     .name = name,
                     .src = mod.source,
                     .outcome = .{ .validationError = verr.info },
+                });
+            },
+            .typeError => |te| {
+                try session.outputs.append(allocator, .{
+                    .name = name,
+                    .src = mod.source,
+                    .outcome = .{ .typeError = te },
                 });
             },
             .success => |succ| {
