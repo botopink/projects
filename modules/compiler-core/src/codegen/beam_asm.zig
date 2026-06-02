@@ -13,9 +13,10 @@
 ///     call is the tail of a `return`;
 ///   - `@todo()` builtin lowered to `erlang:error(undef)`.
 ///
-/// Anything else emits `%% unsupported: <kind>` and is skipped — upcoming
-/// fases (see `/TODO.md`) lower strings, records, closures, pattern matching,
-/// loops, and error handling.
+/// Subsequent fases (3–8) lowered strings/`@print`, records/structs, enums as
+/// tagged tuples, closures (`make_fun2`), case/pattern matching, loops, ranges
+/// (`lists:seq/2`), and try/catch (`{try, …}` / `{try_end, …}` / `{try_case,
+/// …}`). Anything still unhandled emits `%% unsupported: <kind>` and is skipped.
 const std = @import("std");
 const comptimeMod = @import("../comptime.zig");
 const moduleOutput = @import("./moduleOutput.zig");
@@ -819,7 +820,7 @@ const Emitter = struct {
             },
             .branch => |b| switch (b.kind) {
                 .if_ => |i| try self.emitIf(i),
-                .tryCatch => try self.bodyWrite("    %% unsupported: try/catch (Fase 8)\n"),
+                .tryCatch => |tc| try self.lowerTryCatch(tc),
             },
             .binding => |b| switch (b.kind) {
                 .localBind => |lb| try self.emitLocalBind(lb.name, lb.value.*),
@@ -1121,9 +1122,8 @@ const Emitter = struct {
                     try self.lowerCase(c.subjects, c.arms);
                     return;
                 },
-                .range => {
-                    try self.bodyWrite("    %% unsupported: range (Fase 7)\n");
-                    try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
+                .range => |r| {
+                    try self.lowerRange(r);
                     return;
                 },
             },
@@ -1839,6 +1839,29 @@ const Emitter = struct {
         try self.bodyPrint("    {{try_case, {{y, {d}}}}}.\n", .{y_idx});
         try self.lowerExprIntoX0(tc.handler.*);
         try self.bodyPrint("  {{label, {d}}}.\n", .{end_label});
+    }
+
+    /// Lower `start..end` → `lists:seq(Start, End)`. An open-ended range
+    /// (`start..`) mirrors the Erlang backend and passes the atom `infinity`
+    /// as the upper bound. Result list lands in `{x, 0}`.
+    fn lowerRange(self: *Emitter, r: anytype) anyerror!void {
+        // Materialize both bounds into scratch x-registers above the live
+        // argument floor so neither clobbers the other while evaluating.
+        const base = self.cur_arity;
+
+        try self.lowerExprIntoX0(r.start.*);
+        try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{base});
+
+        if (r.end) |end| {
+            try self.lowerExprIntoX0(end.*);
+            try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{base + 1});
+        } else {
+            try self.bodyPrint("    {{move, {{atom, infinity}}, {{x, {d}}}}}.\n", .{base + 1});
+        }
+
+        try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{base});
+        try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 1}}}}.\n", .{base + 1});
+        try self.bodyWrite("    {call_ext, 2, {extfunc, lists, seq, 2}}.\n");
     }
 
     /// Lower `lhs |> rhs`: evaluate lhs, then call rhs as function with result.
