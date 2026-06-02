@@ -25,7 +25,7 @@ ast-simplification — isolated in time (alone, before or after everything)
 | [use-await-prefix.md](use-await-prefix.md) | `feat/use-await-prefix` | F3 | — | pending |
 | [implement-extend-decls.md](implement-extend-decls.md) | `feat/implement-extend-decls` | F4–F5 | — | done |
 | [extension-dispatch.md](extension-dispatch.md) | `feat/extension-dispatch` | F6 | import-rework + implement-extend-decls | blocked |
-| [context-inference.md](context-inference.md) | `feat/context-inference` | F7 | use-await-prefix + extension-dispatch | blocked |
+| [context-inference.md](context-inference.md) | `feat/context-inference` | F7 | use-await-prefix + extension-dispatch | ✅ implemented (branch `task/context-inference`, built on current `useHook` AST) |
 | [hook-codegen.md](hook-codegen.md) | `feat/hook-codegen` | F8 | context-inference | blocked |
 
 ## Parallel backlog (independent)

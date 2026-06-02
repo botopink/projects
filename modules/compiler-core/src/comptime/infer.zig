@@ -186,6 +186,80 @@ fn extractImplementNames(arena: std.mem.Allocator, impls: []const ast.TypeRef) !
     return names;
 }
 
+/// Render a `TypeRef` to its source-level string form (heap-allocated in `arena`).
+fn typeRefToString(arena: std.mem.Allocator, ref: ast.TypeRef) ![]const u8 {
+    var buf: std.ArrayListUnmanaged(u8) = .empty;
+    try appendTypeRefStr(&buf, arena, ref);
+    return buf.toOwnedSlice(arena);
+}
+
+/// If any of `impls` is `@Context<B, R>`, return the rendered `ContextBase` (`B`).
+/// Returns null when the type does not implement `@Context`.
+fn contextBaseFromImplements(arena: std.mem.Allocator, impls: []const ast.TypeRef) !?[]const u8 {
+    for (impls) |im| {
+        switch (im) {
+            .generic => |g| if (std.mem.eql(u8, g.name, "Context")) {
+                if (g.args.len >= 1) return try typeRefToString(arena, g.args[0]);
+                return null;
+            },
+            else => {},
+        }
+    }
+    return null;
+}
+
+/// Derive the `@Context` capability of a function from its declared return type.
+/// A return type implements `@Context` either directly (`@Context<B, R>`) or via a
+/// named type whose inline `implement` clause lists `@Context<B, R>`.
+fn contextInfoFromReturn(env: *Env, retType: ?ast.TypeRef) InferError!envMod.FnContext {
+    const display = if (retType) |rt| try typeRefToString(env.arena, rt) else "void";
+    if (retType) |rt| switch (rt) {
+        .generic => |g| if (std.mem.eql(u8, g.name, "Context")) {
+            const base = if (g.args.len >= 1) try typeRefToString(env.arena, g.args[0]) else null;
+            return .{ .implementsContext = true, .base = base, .returnDisplay = display };
+        },
+        .named => |n| if (env.lookupTypeDef(n)) |td| {
+            if (td.contextBase()) |b| return .{ .implementsContext = true, .base = b, .returnDisplay = display };
+        },
+        else => {},
+    };
+    return .{ .implementsContext = false, .base = null, .returnDisplay = display };
+}
+
+/// The display name of a `ContextBase` type (a phantom, typically a plain named type).
+fn baseNameOfType(ty: *T.Type) ?[]const u8 {
+    return switch (ty.deref().*) {
+        .named => |n| n.name,
+        else => null,
+    };
+}
+
+/// The `ContextBase` of an inferred type, if it implements `@Context`.
+/// Handles both `@Context<B, R>` directly and named types implementing it inline.
+fn contextBaseOfType(env: *Env, ty: *T.Type) ?[]const u8 {
+    const t = ty.deref();
+    return switch (t.*) {
+        .named => |n| blk: {
+            if (std.mem.eql(u8, n.name, "Context")) {
+                break :blk if (n.args.len >= 1) baseNameOfType(n.args[0]) else null;
+            }
+            if (env.lookupTypeDef(n.name)) |td| break :blk td.contextBase();
+            break :blk null;
+        },
+        else => null,
+    };
+}
+
+/// The type a `use` binding destructures from: the `Return` (`R`) of `@Context<B, R>`
+/// when the hook's type is `@Context`, or the type itself for a named context type.
+fn bindingSourceType(ty: *T.Type) *T.Type {
+    const t = ty.deref();
+    return switch (t.*) {
+        .named => |n| if (std.mem.eql(u8, n.name, "Context") and n.args.len >= 2) n.args[1] else ty,
+        else => ty,
+    };
+}
+
 fn registerRecord(env: *Env, r: ast.RecordDecl) InferError!void {
     // Build generic param map: each param name → fresh generic type var.
     var genericMap = std.StringHashMap(*T.Type).init(env.arena);
@@ -209,12 +283,14 @@ fn registerRecord(env: *Env, r: ast.RecordDecl) InferError!void {
     // Register the type definition.
     const typeId = env.allocTypeId();
     const implNames = try extractImplementNames(env.arena, r.implement);
+    const ctxBase = try contextBaseFromImplements(env.arena, r.implement);
     try env.registerTypeDef(r.name, .{ .record = .{
         .name = r.name,
         .id = typeId,
         .genericParams = genericIds,
         .fields = fields,
         .implements = implNames,
+        .contextBase = ctxBase,
     } });
 
     // Build constructor function type: `fn(T1, T2, ...) -> RecordName<A,B,...>`.
@@ -261,12 +337,14 @@ fn registerStruct(env: *Env, s: ast.StructDecl) InferError!void {
 
     const structTypeId = env.allocTypeId();
     const implNames = try extractImplementNames(env.arena, s.implement);
+    const ctxBase = try contextBaseFromImplements(env.arena, s.implement);
     try env.registerTypeDef(s.name, .{ .struct_ = .{
         .name = s.name,
         .id = structTypeId,
         .genericParams = genericIds,
         .fields = fields,
         .implements = implNames,
+        .contextBase = ctxBase,
     } });
 
     var paramTypes = try env.arena.alloc(*T.Type, fields.len);
@@ -311,12 +389,14 @@ fn registerEnum(env: *Env, e: ast.EnumDecl) InferError!void {
 
     const enumTypeId = env.allocTypeId();
     const implNames = try extractImplementNames(env.arena, e.implement);
+    const ctxBase = try contextBaseFromImplements(env.arena, e.implement);
     try env.registerTypeDef(e.name, .{ .enum_ = .{
         .name = e.name,
         .id = enumTypeId,
         .genericParams = genericIds,
         .variants = variants,
         .implements = implNames,
+        .contextBase = ctxBase,
     } });
     // Bind the enum name itself so `inferDecl` can look it up.
     try env.bind(e.name, try env.namedType(e.name));
@@ -616,6 +696,12 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
         try resolveTypeRefInContext(env, rt, genericMap)
     else
         try env.namedType("void");
+
+    // The return type decides whether `use` is allowed in the body and which
+    // ContextBase every `use` must agree on (@Context F7). Scope it to the body.
+    const savedFnCtx = env.fnContext;
+    env.fnContext = try contextInfoFromReturn(env, f.returnType);
+    defer env.fnContext = savedFnCtx;
 
     // Infer body (for type checking; we ignore the result for now).
     for (f.body) |stmt| {
@@ -986,8 +1072,8 @@ pub fn inferExprTyped(env: *Env, expr: ast.Expr) InferError!TypedExpr {
         // ── binding expressions ────────────────────────────────────────────────
         .binding => |b| inferBindingExpr(env, b, b.loc),
 
-        // ── use-hook expressions (@Context Fase 3) ────────────────────────────
-        .useHook => return InferError.TypeError,
+        // ── use-hook expressions (@Context F7) ────────────────────────────────
+        .useHook => |uh| inferUseHookExpr(env, uh, uh.loc),
 
         // ── call expressions ───────────────────────────────────────────────────
         .call => |c| inferCallExpr(env, c, c.loc),
@@ -1374,6 +1460,89 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
             } } } };
         },
     };
+}
+
+/// Infer type for `use`-hook expressions (@Context F7).
+///
+/// The enclosing function's return type decides whether `use` is allowed and which
+/// ContextBase the hook expression must agree on. The capability was recorded in
+/// `env.fnContext` by `inferFnDecl` before the body was visited.
+fn inferUseHookExpr(env: *Env, uh: ast.UseHookExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
+    const fc = env.fnContext orelse {
+        env.lastError = TypeError.useNotAllowed("void").withLoc(loc);
+        return error.TypeError;
+    };
+    if (!fc.implementsContext) {
+        env.lastError = TypeError.useNotAllowed(fc.returnDisplay).withLoc(loc);
+        return error.TypeError;
+    }
+
+    return switch (uh.kind) {
+        .useVoid => |v| blk: {
+            const valTyped = try inferExprTyped(env, v.*);
+            const valPtr = try makeTypedPtr(env, valTyped);
+            try validateUseBase(env, valTyped.getType(), fc, loc);
+            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .useVoid = valPtr } } };
+        },
+        .useBind => |b| blk: {
+            const valTyped = try inferExprTyped(env, b.value.*);
+            const valPtr = try makeTypedPtr(env, valTyped);
+            try validateUseBase(env, valTyped.getType(), fc, loc);
+            const srcTy = bindingSourceType(valTyped.getType());
+            // `use _ = expr` discards the result (void hook); no binding to introduce.
+            if (!std.mem.eql(u8, b.name, "_")) try env.bind(b.name, srcTy);
+            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = srcTy, .kind = .{ .useBind = .{ .name = b.name, .value = valPtr } } } };
+        },
+        .useBindDestruct => |b| blk: {
+            const valTyped = try inferExprTyped(env, b.value.*);
+            const valPtr = try makeTypedPtr(env, valTyped);
+            try validateUseBase(env, valTyped.getType(), fc, loc);
+            const srcTy = bindingSourceType(valTyped.getType());
+            try bindUseDestructure(env, b.pattern, srcTy);
+            break :blk TypedExpr{ .useHook = .{ .loc = loc, .type_ = srcTy, .kind = .{ .useBindDestruct = .{ .pattern = b.pattern, .value = valPtr } } } };
+        },
+    };
+}
+
+/// Verify a `use` expression returns `@Context<B, _>` whose `B` matches the
+/// enclosing function's ContextBase.
+fn validateUseBase(env: *Env, valTy: *T.Type, fc: envMod.FnContext, loc: ast.Loc) InferError!void {
+    const useBase = contextBaseOfType(env, valTy) orelse {
+        const disp = baseNameOfType(valTy) orelse "value";
+        env.lastError = TypeError.useNotContext(disp).withLoc(loc);
+        return error.TypeError;
+    };
+    const fnBase = fc.base orelse return; // implements @Context but base unconstrained
+    if (!std.mem.eql(u8, fnBase, useBase)) {
+        env.lastError = TypeError.contextMismatch(fnBase, useBase).withLoc(loc);
+        return error.TypeError;
+    }
+}
+
+/// Bind the names introduced by a destructuring `use { ... } = expr` against the
+/// hook's Return type. Falls back to fresh type vars when fields are unknown.
+fn bindUseDestructure(env: *Env, pattern: ast.ParamDestruct, srcTy: *T.Type) InferError!void {
+    const derefed = srcTy.deref();
+    switch (pattern) {
+        .names => |n| {
+            const typeName: []const u8 = switch (derefed.*) {
+                .named => |nm| nm.name,
+                else => "",
+            };
+            const maybeDef = env.typeDefs.get(typeName);
+            for (n.fields) |fld| {
+                const fieldTy = if (maybeDef) |td|
+                    if (td.findField(fld.field_name)) |f| f.type_ else try env.freshVar()
+                else
+                    try env.freshVar();
+                try env.bind(fld.bind_name, fieldTy);
+            }
+        },
+        .tuple_ => |t| {
+            for (t) |nm| try env.bind(nm, try env.freshVar());
+        },
+        .list, .ctor => {},
+    }
 }
 
 /// Infer type for call expressions (function/method invocations and pipelines)

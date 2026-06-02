@@ -34,7 +34,7 @@ comptime/
 | File | Role |
 |---|---|
 | `types.zig` | All type representations as `union(enum)`. |
-| `env.zig` | Type environment — pushes/pops scopes, loads builtins + stdlib. |
+| `env.zig` | Type environment — scopes, builtins + stdlib, `TypeDef.contextBase`, `FnContext`. |
 | `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. |
 | `unify.zig` | Unification with substitution + occurs check. |
 | `error.zig` | Structured type errors with source ranges and hints. |
@@ -51,6 +51,26 @@ comptime/
 try assertTypes(alloc, source, &.{ .{ "x", "i32" }, .{ "f", "fn(i32) i32" } });
 try assertTypeErrorSnap(alloc, @src(), source);
 ```
+
+## `@Context<B, R>` capability inference (F7)
+
+`use` inside a function body is gated by the function's **return type**:
+
+- The return must implement `@Context<ContextBase, Return>` — either directly
+  (`fn f() -> @Context<Element, R>`) or via a named type whose inline
+  `implement` clause lists `@Context<…>` (`struct implement @Context<Element, R>`).
+- Every `use` expression in the body must itself return `@Context<B, _>` with the
+  **same** `ContextBase` as the function. Validation is transitive through custom
+  hooks (a hook's return type carries its `ContextBase`).
+
+Wiring in `infer.zig`:
+
+- Registration computes `TypeDef.contextBase` from a decl's `implement` clause
+  (`contextBaseFromImplements`).
+- `inferFnDecl` records the body's capability in `env.fnContext`
+  (`contextInfoFromReturn`) and restores it afterwards.
+- `inferUseHookExpr` checks `env.fnContext` then `validateUseBase` (compares
+  ContextBases). Diagnostics: `useNotAllowed`, `useNotContext`, `contextMismatch`.
 
 ## Children
 

@@ -76,6 +76,17 @@ pub const TypeErrorKind = union(enum) {
         typeName: []const u8,
         field: []const u8,
     },
+    /// `use` appeared in a function whose return type does not implement `@Context`.
+    /// Payload is the rendered return type (e.g. `"string"`, `"void"`).
+    useNotAllowed: []const u8,
+    /// The expression used with `use` does not implement `@Context`.
+    /// Payload is the rendered expression type.
+    useNotContext: []const u8,
+    /// A `use` expression's ContextBase diverges from the function's ContextBase.
+    contextMismatch: struct {
+        fnBase: []const u8,
+        useBase: []const u8,
+    },
 };
 
 /// A type error with its source location.
@@ -120,6 +131,18 @@ pub const TypeError = struct {
 
     pub fn missingField(typeName: []const u8, field: []const u8) TypeError {
         return .{ .kind = .{ .missingField = .{ .typeName = typeName, .field = field } } };
+    }
+
+    pub fn useNotAllowed(returnType: []const u8) TypeError {
+        return .{ .kind = .{ .useNotAllowed = returnType } };
+    }
+
+    pub fn useNotContext(exprType: []const u8) TypeError {
+        return .{ .kind = .{ .useNotContext = exprType } };
+    }
+
+    pub fn contextMismatch(fnBase: []const u8, useBase: []const u8) TypeError {
+        return .{ .kind = .{ .contextMismatch = .{ .fnBase = fnBase, .useBase = useBase } } };
     }
 };
 
