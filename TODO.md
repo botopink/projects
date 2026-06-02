@@ -2,8 +2,14 @@
 
 **Branch**: `feat/extension-dispatch`
 **Phase**: F6
-**Depends on**: `feat/import-rework` (activation `*`) + `feat/implement-extend-decls` (Impl/ExtendDecl) — **merge first**
-**Status**: blocked (waiting on merges)
+**Depends on**: `feat/import-rework` (activation `*`) + `feat/implement-extend-decls` (Impl/ExtendDecl) — ✅ ambas já em `feat`
+
+> **Situação (2026-06-02): 🟡 implementada (F6) nesta branch, ainda NÃO mesclada em `feat`.**
+> Commit `fb43ef2`. Inferência completa + codegen CommonJS; reescrita de call-site
+> Erlang/BEAM/WAT/TS é follow-up. As dependências já estão em `feat` (`3746eae`);
+> falta integrar esta branch (atenção: a suíte de snapshots não está ligada ao
+> `zig build test` aqui — root = `root.zig`).
+**Status**: implemented ✅ (não integrada em `feat`)
 
 ## Model (Rust/C# — Model Y)
 
