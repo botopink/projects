@@ -24,12 +24,11 @@ parse() ->
     erlang:throw(ParseError(<<"bad input">>)).
 
 run(P) ->
-    Result = try
-        P:parse()
-catch
-        _Err ->
-            0(_Err)
-end,
+    Result = case P:parse() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
+            0
+    end,
     Result.
 ```
 

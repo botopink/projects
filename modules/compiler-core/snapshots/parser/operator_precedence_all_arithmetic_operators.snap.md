@@ -28,99 +28,78 @@
                       "line": 3,
                       "col": 15
                     },
-                    "kind": {
-                      "op": "sub",
-                      "lhs": {
-                        "binaryOp": {
-                          "loc": {
-                            "line": 3,
-                            "col": 11
-                          },
-                          "kind": {
-                            "op": "add",
-                            "lhs": {
-                              "identifier": {
-                                "loc": {
-                                  "line": 3,
-                                  "col": 9
-                                },
-                                "kind": {
-                                  "ident": "a"
-                                }
-                              }
+                    "op": "sub",
+                    "lhs": {
+                      "binaryOp": {
+                        "loc": {
+                          "line": 3,
+                          "col": 11
+                        },
+                        "op": "add",
+                        "lhs": {
+                          "identifier": {
+                            "loc": {
+                              "line": 3,
+                              "col": 9
                             },
-                            "rhs": {
-                              "identifier": {
-                                "loc": {
-                                  "line": 3,
-                                  "col": 13
-                                },
-                                "kind": {
-                                  "ident": "b"
-                                }
-                              }
+                            "kind": {
+                              "ident": "a"
+                            }
+                          }
+                        },
+                        "rhs": {
+                          "identifier": {
+                            "loc": {
+                              "line": 3,
+                              "col": 13
+                            },
+                            "kind": {
+                              "ident": "b"
                             }
                           }
                         }
-                      },
-                      "rhs": {
-                        "binaryOp": {
-                          "loc": {
-                            "line": 3,
-                            "col": 27
-                          },
-                          "kind": {
-                            "op": "mod",
+                      }
+                    },
+                    "rhs": {
+                      "binaryOp": {
+                        "loc": {
+                          "line": 3,
+                          "col": 27
+                        },
+                        "op": "mod",
+                        "lhs": {
+                          "binaryOp": {
+                            "loc": {
+                              "line": 3,
+                              "col": 23
+                            },
+                            "op": "div",
                             "lhs": {
                               "binaryOp": {
                                 "loc": {
                                   "line": 3,
-                                  "col": 23
+                                  "col": 19
                                 },
-                                "kind": {
-                                  "op": "div",
-                                  "lhs": {
-                                    "binaryOp": {
-                                      "loc": {
-                                        "line": 3,
-                                        "col": 19
-                                      },
-                                      "kind": {
-                                        "op": "mul",
-                                        "lhs": {
-                                          "identifier": {
-                                            "loc": {
-                                              "line": 3,
-                                              "col": 17
-                                            },
-                                            "kind": {
-                                              "ident": "c"
-                                            }
-                                          }
-                                        },
-                                        "rhs": {
-                                          "identifier": {
-                                            "loc": {
-                                              "line": 3,
-                                              "col": 21
-                                            },
-                                            "kind": {
-                                              "ident": "d"
-                                            }
-                                          }
-                                        }
-                                      }
+                                "op": "mul",
+                                "lhs": {
+                                  "identifier": {
+                                    "loc": {
+                                      "line": 3,
+                                      "col": 17
+                                    },
+                                    "kind": {
+                                      "ident": "c"
                                     }
-                                  },
-                                  "rhs": {
-                                    "identifier": {
-                                      "loc": {
-                                        "line": 3,
-                                        "col": 25
-                                      },
-                                      "kind": {
-                                        "ident": "e"
-                                      }
+                                  }
+                                },
+                                "rhs": {
+                                  "identifier": {
+                                    "loc": {
+                                      "line": 3,
+                                      "col": 21
+                                    },
+                                    "kind": {
+                                      "ident": "d"
                                     }
                                   }
                                 }
@@ -130,12 +109,23 @@
                               "identifier": {
                                 "loc": {
                                   "line": 3,
-                                  "col": 29
+                                  "col": 25
                                 },
                                 "kind": {
-                                  "ident": "f"
+                                  "ident": "e"
                                 }
                               }
+                            }
+                          }
+                        },
+                        "rhs": {
+                          "identifier": {
+                            "loc": {
+                              "line": 3,
+                              "col": 29
+                            },
+                            "kind": {
+                              "ident": "f"
                             }
                           }
                         }

@@ -4,6 +4,8 @@
     {
       "implement": {
         "name": "Myimplement",
+        "isPub": false,
+        "shorthand": false,
         "genericParams": [],
         "docComment": null,
         "comment": null,

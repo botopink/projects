@@ -28,7 +28,8 @@ class Parser {
 }
 
 function run(p) {
-    const result = (() => { try { return p.parse(); } catch(_e) { return (0)(_e); } })();
+    const _try0 = p.parse();
+    const result = _try0.tag === "Error" ? (0) : _try0.result;
     return result;
 }
 ```

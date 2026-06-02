@@ -4,6 +4,8 @@
     {
       "implement": {
         "name": "X",
+        "isPub": false,
+        "shorthand": false,
         "genericParams": [],
         "docComment": null,
         "comment": null,
@@ -85,13 +87,15 @@
                           },
                           {
                             "pattern": {
-                              "variantFields": {
+                              "variant": {
                                 "name": "Rgb",
-                                "bindings": [
-                                  "r",
-                                  "g",
-                                  "b"
-                                ]
+                                "payload": {
+                                  "fields": [
+                                    "r",
+                                    "g",
+                                    "b"
+                                  ]
+                                }
                               }
                             },
                             "body": {

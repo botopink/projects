@@ -4,6 +4,8 @@
     {
       "fn": {
         "isPub": false,
+        "isStarFn": false,
+        "label": null,
         "name": "App",
         "docComment": null,
         "comment": null,
@@ -44,31 +46,31 @@
                                       "col": 20
                                     },
                                     "kind": {
-                                      "lambda": {
-                                        "params": [],
-                                        "body": [
-                                          {
-                                            "expr": {
-                                              "call": {
-                                                "loc": {
-                                                  "line": 2,
-                                                  "col": 25
-                                                },
-                                                "kind": {
-                                                  "call": {
-                                                    "receiver": null,
-                                                    "callee": "cleanup",
-                                                    "is_builtin": false,
-                                                    "args": [],
-                                                    "trailing": []
-                                                  }
+                                      "syntax": "lambda",
+                                      "params": [],
+                                      "body": [
+                                        {
+                                          "expr": {
+                                            "call": {
+                                              "loc": {
+                                                "line": 2,
+                                                "col": 25
+                                              },
+                                              "kind": {
+                                                "call": {
+                                                  "receiver": null,
+                                                  "callee": "cleanup",
+                                                  "is_builtin": false,
+                                                  "args": [],
+                                                  "trailing": []
                                                 }
                                               }
-                                            },
-                                            "emptyLinesBefore": 0
-                                          }
-                                        ]
-                                      }
+                                            }
+                                          },
+                                          "emptyLinesBefore": 0
+                                        }
+                                      ],
+                                      "isStarFn": false
                                     }
                                   }
                                 },

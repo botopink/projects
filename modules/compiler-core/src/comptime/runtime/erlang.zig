@@ -59,8 +59,8 @@ fn buildScript(allocator: std.mem.Allocator, entries: []const eval.ComptimeEntry
 fn isStringExpr(te: ast.TypedExpr) bool {
     return switch (te) {
         .literal => |lit| lit.kind == .stringLit,
-        .binaryOp => |b| if (b.kind.op == .add)
-            isStringExpr(b.kind.lhs.*) or isStringExpr(b.kind.rhs.*)
+        .binaryOp => |b| if (b.op == .add)
+            isStringExpr(b.lhs.*) or isStringExpr(b.rhs.*)
         else
             false,
         .comptime_ => |ct| switch (ct.kind) {
@@ -99,41 +99,41 @@ fn writeExprErl(bw: anytype, allocator: std.mem.Allocator, te: ast.TypedExpr) !v
             },
             .null_ => try bw.writeAll("undefined"),
         },
-        .binaryOp => |b| switch (b.kind.op) {
+        .binaryOp => |b| switch (b.op) {
             .add => {
-                const is_string_op = isStringExpr(b.kind.lhs.*) or isStringExpr(b.kind.rhs.*);
+                const is_string_op = isStringExpr(b.lhs.*) or isStringExpr(b.rhs.*);
                 try bw.writeByte('(');
-                try writeExprErl(bw, allocator, b.kind.lhs.*);
+                try writeExprErl(bw, allocator, b.lhs.*);
                 try bw.writeAll(if (is_string_op) " ++ " else " + ");
-                try writeExprErl(bw, allocator, b.kind.rhs.*);
+                try writeExprErl(bw, allocator, b.rhs.*);
                 try bw.writeByte(')');
             },
             .sub => {
                 try bw.writeByte('(');
-                try writeExprErl(bw, allocator, b.kind.lhs.*);
+                try writeExprErl(bw, allocator, b.lhs.*);
                 try bw.writeAll(" - ");
-                try writeExprErl(bw, allocator, b.kind.rhs.*);
+                try writeExprErl(bw, allocator, b.rhs.*);
                 try bw.writeByte(')');
             },
             .mul => {
                 try bw.writeByte('(');
-                try writeExprErl(bw, allocator, b.kind.lhs.*);
+                try writeExprErl(bw, allocator, b.lhs.*);
                 try bw.writeAll(" * ");
-                try writeExprErl(bw, allocator, b.kind.rhs.*);
+                try writeExprErl(bw, allocator, b.rhs.*);
                 try bw.writeByte(')');
             },
             .div => {
                 try bw.writeByte('(');
-                try writeExprErl(bw, allocator, b.kind.lhs.*);
+                try writeExprErl(bw, allocator, b.lhs.*);
                 try bw.writeAll(" div ");
-                try writeExprErl(bw, allocator, b.kind.rhs.*);
+                try writeExprErl(bw, allocator, b.rhs.*);
                 try bw.writeByte(')');
             },
             .mod => {
                 try bw.writeByte('(');
-                try writeExprErl(bw, allocator, b.kind.lhs.*);
+                try writeExprErl(bw, allocator, b.lhs.*);
                 try bw.writeAll(" rem ");
-                try writeExprErl(bw, allocator, b.kind.rhs.*);
+                try writeExprErl(bw, allocator, b.rhs.*);
                 try bw.writeByte(')');
             },
             else => try bw.writeAll("undefined"),

@@ -1,8 +1,8 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
 record Error { msg: string }
-fn fetch() -> #(i32, i32) {
-    return #(1, 2);
+fn fetch() -> @Result<#(i32, i32), Error> {
+    throw Error(msg: "boom");
 }
 fn f() {
     val #(a, b) = try fetch() catch throw Error(msg: "failed");
@@ -18,11 +18,13 @@ class Error {
 }
 
 function fetch() {
-    return [1, 2];
+    throw Error("boom");
 }
 
 function f() {
-    const [ a, b ] = (() => { try { return fetch(); } catch(_e) { throw Error("failed"); } })();
+    const _try0 = fetch();
+    if (_try0.tag === "Error") { throw Error("failed"); }
+    const [ a, b ] = _try0.result;
 }
 ```
 

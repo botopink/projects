@@ -76,6 +76,59 @@ pub const TypeErrorKind = union(enum) {
         typeName: []const u8,
         field: []const u8,
     },
+    /// `use` appeared in a function whose return type does not implement `@Context`.
+    /// Payload is the rendered return type (e.g. `"string"`, `"void"`).
+    useNotAllowed: []const u8,
+    /// The expression used with `use` does not implement `@Context`.
+    /// Payload is the rendered expression type.
+    useNotContext: []const u8,
+    /// A `use` expression's ContextBase diverges from the function's ContextBase.
+    contextMismatch: struct {
+        fnBase: []const u8,
+        useBase: []const u8,
+    },
+    /// `throw` used in a function whose return type is not `@Result<D, E>`.
+    throwWithoutResult,
+    /// An `implement` block does not provide a method required by an interface.
+    missingMethod: struct {
+        typeName: []const u8,
+        interfaceName: []const u8,
+        method: []const u8,
+    },
+    /// An `implement` block declares a method not present in any implemented interface.
+    unknownMethod: struct {
+        typeName: []const u8,
+        method: []const u8,
+    },
+    /// A qualified method's interface prefix is not one of the implemented interfaces.
+    unknownInterface: struct {
+        qualifier: []const u8,
+        method: []const u8,
+    },
+    /// An unqualified method name is declared by more than one implemented interface.
+    ambiguousMethod: struct {
+        method: []const u8,
+        interfaceA: []const u8,
+        interfaceB: []const u8,
+    },
+    /// A comptime `typeparam` argument's type is not among the declared constraints.
+    typeparamConstraint: struct {
+        /// The constrained parameter's name.
+        paramName: []const u8,
+        /// The offending argument's type.
+        got: *T.Type,
+        /// The accepted constraint type names.
+        constraints: []const []const u8,
+    },
+    /// `try` / `catch` applied to a value whose type is not `@Result<D, E>`.
+    tryOnNonResult: *T.Type,
+    /// A rule-specific diagnostic with a ready-made message (and optional hint).
+    /// Used for validations that don't map onto the structured kinds above
+    /// (e.g. async/generator rules around `*fn` / `await` / `yield`).
+    custom: struct {
+        message: []const u8,
+        hint: ?[]const u8 = null,
+    },
 };
 
 /// A type error with its source location.
@@ -121,6 +174,50 @@ pub const TypeError = struct {
     pub fn missingField(typeName: []const u8, field: []const u8) TypeError {
         return .{ .kind = .{ .missingField = .{ .typeName = typeName, .field = field } } };
     }
+
+    pub fn useNotAllowed(returnType: []const u8) TypeError {
+        return .{ .kind = .{ .useNotAllowed = returnType } };
+    }
+
+    pub fn useNotContext(exprType: []const u8) TypeError {
+        return .{ .kind = .{ .useNotContext = exprType } };
+    }
+
+    pub fn contextMismatch(fnBase: []const u8, useBase: []const u8) TypeError {
+        return .{ .kind = .{ .contextMismatch = .{ .fnBase = fnBase, .useBase = useBase } } };
+    }
+
+    pub fn throwWithoutResult() TypeError {
+        return .{ .kind = .throwWithoutResult };
+    }
+
+    pub fn missingMethod(typeName: []const u8, interfaceName: []const u8, method: []const u8) TypeError {
+        return .{ .kind = .{ .missingMethod = .{ .typeName = typeName, .interfaceName = interfaceName, .method = method } } };
+    }
+
+    pub fn unknownMethod(typeName: []const u8, method: []const u8) TypeError {
+        return .{ .kind = .{ .unknownMethod = .{ .typeName = typeName, .method = method } } };
+    }
+
+    pub fn unknownInterface(qualifier: []const u8, method: []const u8) TypeError {
+        return .{ .kind = .{ .unknownInterface = .{ .qualifier = qualifier, .method = method } } };
+    }
+
+    pub fn ambiguousMethod(method: []const u8, interfaceA: []const u8, interfaceB: []const u8) TypeError {
+        return .{ .kind = .{ .ambiguousMethod = .{ .method = method, .interfaceA = interfaceA, .interfaceB = interfaceB } } };
+    }
+
+    pub fn typeparamConstraint(paramName: []const u8, got: *T.Type, constraints: []const []const u8) TypeError {
+        return .{ .kind = .{ .typeparamConstraint = .{ .paramName = paramName, .got = got, .constraints = constraints } } };
+    }
+
+    pub fn tryOnNonResult(ty: *T.Type) TypeError {
+        return .{ .kind = .{ .tryOnNonResult = ty } };
+    }
+
+    pub fn custom(message: []const u8, hint: ?[]const u8) TypeError {
+        return .{ .kind = .{ .custom = .{ .message = message, .hint = hint } } };
+    }
 };
 
 // ── Comptime validation ───────────────────────────────────────────────────────
@@ -164,12 +261,12 @@ fn validateComptimeExpr(expr: ast.Expr) ?ComptimeError {
             .numberLit, .stringLit => return null,
             else => return ComptimeError{ .ident = @tagName(l.kind), .loc = l.loc },
         },
-        .binaryOp => |b| switch (b.kind.op) {
+        .binaryOp => |b| switch (b.op) {
             .add, .sub, .mul, .div, .mod, .lt, .gt, .lte, .gte, .eq, .ne => {
-                if (validateComptimeExpr(b.kind.lhs.*)) |err| return err;
-                return validateComptimeExpr(b.kind.rhs.*);
+                if (validateComptimeExpr(b.lhs.*)) |err| return err;
+                return validateComptimeExpr(b.rhs.*);
             },
-            else => return ComptimeError{ .ident = @tagName(b.kind.op), .loc = b.loc },
+            else => return ComptimeError{ .ident = @tagName(b.op), .loc = b.loc },
         },
         .call => |c| switch (c.kind) {
             .pipeline => |p| {

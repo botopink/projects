@@ -39,8 +39,8 @@ This reference was updated after reviewing the latest commit series:
 
 - The active expression model is now grouped into AST families:
   `literal`, `identifier`, `binaryOp`, `unaryOp`, `jump`, `branch`, `loop`, `binding`, `useHook`, `call`, `function`, `collection`, `comptime_`.
-- Import syntax migrated: `use { X } from "mod"` replaced by `use { X } = @root()` / `use { X } = @module("name")`. The old `from "mod"` syntax is rejected with a migration hint.
-- `Expr.useHook` added to the AST for `use` hooks inside function bodies (distinct from top-level `UseDecl` imports).
+- Import syntax: `import { X };` resolves from the project root; `import { X } from "name";` resolves from a named dependency. A trailing `*` on an item activates method dispatch, `as` renames the final binding, and a bare `X*;` statement activates an already-visible symbol.
+- `Expr.useHook` added to the AST for `use` hooks inside function bodies (distinct from top-level `ImportDecl` imports).
 - Generic type syntax: `@Result<D, E>` with `is_builtin` flag (replaces old `@Result(D, E)` parenthesis syntax).
 - `@Result` / `@Option` carry builtin methods (`.map`, `.flatMap`, `.unwrapOr`,
   plus `.isOk` / `.isError` for Result) — see [Result & Option methods](#result--option-methods).
@@ -57,21 +57,38 @@ Examples in this file describe language behavior. Exact snapshot file names may 
 
 ## Imports
 
+```
+import   ::=  "import" "{" item ("," item)* "}" from? ";"
+from     ::=  "from" string
+item     ::=  dottedPath "*"? ("as" ident)?
+```
+
+- no `from` → resolves from the project root
+- `from "name"` → resolves from the named dependency
+- trailing `*` on an item → activates dispatch of that symbol's methods (impl or extend)
+- a bare name (no `*`) → brings the name only; `obj.m()` does **not** resolve, only qualified `Sym.m(obj)`
+- `as` renames the final binding
+
 ### Named imports from project root
 
 ```botopink
-use { foo, bar } = @root();
+import { foo, bar };
 ```
 
 **Generates:**
 ```javascript
-const { foo, bar } = require("./mylib.js");
+const { foo, bar } = require("./module");
 ```
 
 ### Named imports from external module
 
 ```botopink
-use { fetch, Response } = @module("http");
+import { fetch, Response } from "http";
+```
+
+**Generates:**
+```javascript
+const { fetch, Response } = require("http");
 ```
 
 ### Multi-module public function import
@@ -83,7 +100,7 @@ pub fn double(x: i32) -> i32 {
 }
 
 // main.bp
-use { double } = @root();
+import { double } from "math";
 val result = double(21);
 ```
 
@@ -95,7 +112,7 @@ pub val PORT = 8080;
 pub val HOST = "localhost";
 
 // main.bp
-use { PORT, HOST } = @root();
+import { PORT, HOST } from "config";
 val addr = HOST;
 val port = PORT;
 ```
@@ -103,15 +120,21 @@ val port = PORT;
 ### Dotted path imports
 
 ```botopink
-use { std.List, std.Map } = @root();
+import { std.List, std.Map };
 ```
 
-### Old syntax (rejected)
+### Activation suffix, alias, and fallback statement
 
 ```botopink
-// ERROR: old syntax rejected with migration hint
-use { foo } from "mylib";
-// hint: replace with `use { foo } = @root()` or `use { foo } = @module("mylib")`
+import { Pato, PatoNada*, PatoVoa* as Voa, std.List as L } from "ducks";
+
+val p = new Pato();          // Pato: name only
+p.swim();                    // PatoNada*: active dispatch
+Voa.move(p);                 // PatoVoa imported as Voa, qualified
+val xs = L.of(1, 2, 3);      // std.List as L
+
+// Activate an already-visible symbol without re-importing it:
+PatoExtra*;
 ```
 
 ---
@@ -247,10 +270,21 @@ fn describe(n: i32) -> string {
 
 ## Error Handling
 
+`try` / `catch` operate on `@Result<D, E>` values and lower to **pattern
+matching on the `Ok` / `Error` tag** — never to host (JS/Erlang) exceptions.
+Applying `try` to a non-`@Result` value is a compile-time error.
+
+A `@Result` is a tagged value: `{ tag: "Ok", result }` / `{ tag: "Error", error }`
+in JavaScript, `{ok, V}` / `{error, E}` in Erlang and BEAM, and a linear-memory
+pointer (tag `i32` at `[ptr]`, payload at `[ptr+4]`) in WebAssembly.
+
 ### Propagate without catch
 
+`try expr` unwraps the `Ok` value; on `Error` it returns the error variant from
+the enclosing function (propagation).
+
 ```botopink
-fn fetch() -> i32 {
+fn fetch() -> @Result<i32, string> {
     todo;
 }
 fn process() -> i32 {
@@ -259,18 +293,23 @@ fn process() -> i32 {
 }
 ```
 
-**Generates:**
+**Generates (CommonJS):**
 ```javascript
 function process() {
-    const r = fetch();
+    const _try0 = fetch();
+    if (_try0.tag === "Error") return _try0;
+    const r = _try0.result;
     return r;
 }
 ```
 
 ### With inline catch handler
 
+`try expr catch fallback` replaces an `Error` with a fallback value. A lambda
+handler (`catch fn(e) { … }`) receives the unwrapped error.
+
 ```botopink
-fn fetch() -> i32 {
+fn fetch() -> @Result<i32, string> {
     todo;
 }
 fn safe() -> i32 {
@@ -279,13 +318,60 @@ fn safe() -> i32 {
 }
 ```
 
-**Generates:**
+**Generates (CommonJS):**
 ```javascript
 function safe() {
-    const r = (() => { try { return fetch(); } catch(_e) { return (0)(_e); } })();
+    const _try0 = fetch();
+    const r = _try0.tag === "Error" ? (0) : _try0.result;
     return r;
 }
 ```
+
+**Generates (Erlang):**
+```erlang
+safe() ->
+    R = case fetch() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
+            0
+    end,
+    R.
+```
+
+### Throw type checking
+
+The value of a `throw` must match the `E` of the enclosing function's
+`@Result<D, E>` return type:
+
+```botopink
+fn parse(s: string) -> @Result<i32, string> {
+    if (s == "") {
+        throw "empty input";   // ✓ "empty input": string == E
+    }
+    return 0;
+}
+```
+
+A mismatch is a compile-time error:
+
+```botopink
+fn parse(s: string) -> @Result<i32, string> {
+    throw 404;   // ✗ error: i32 thrown, but E = string
+}
+```
+
+`throw` is only valid when the enclosing function returns `@Result<D, E>`. A
+function with a different declared return type rejects it:
+
+```botopink
+fn run() -> i32 {
+    throw "x";   // ✗ error: throw requires the fn to return @Result<D, E>
+}
+```
+
+Functions with **no** declared return type leave `throw` unchecked (this is
+what makes `val x = try f() catch throw err;` legal), and a `throw` inside a
+nested lambda is checked against that lambda, never the outer function's `E`.
 
 ---
 

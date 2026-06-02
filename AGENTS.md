@@ -64,8 +64,8 @@ modules/compiler-core/                         → main compiler library (lex �
       │   ├── wasm/wasm/                       → 162 WASM Text outputs
       │   └── errors/                          → codegen-time error rendering (4 targets × 1)
       ├── comptime/                            → inference + evaluation snapshots (per backend)
-      │   ├── erlang/{,errors/}                → success (145) + errors (22)
-      │   └── node/{,errors/}                  → success (145) + errors (22)
+      │   ├── erlang/{,errors/}                → success (129) + errors (28)
+      │   └── node/{,errors/}                  → success (129) + errors (28)
       └── parser/                              → 139 AST golden snapshots
 modules/language-server/                       → `botopink-lsp` LSP server
   ├── src/                                     → JSON-RPC server + feature engine
@@ -135,6 +135,7 @@ snapshots/                                     → workspace-level smoke snapsho
 
 | Commit | Summary |
 |---|---|
+| `611275f` | feat: lower try/catch to `Ok`/`Error` pattern matching across all backends (+ `tryOnNonResult` inference error) |
 | `a42d948` | feat: add `Expr.useHook` AST variant for use-hooks in function bodies |
 | `1888bfb` | feat: reject old `from "mod"` import syntax with migration hint |
 | `65f990d` | feat: use syntax migration `from "mod"` → `= @root()` / `= @module()` |

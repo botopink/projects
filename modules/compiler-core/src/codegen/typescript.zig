@@ -44,6 +44,8 @@ const Emitter = struct {
             .@"enum" => |e| try self.emitEnum(e),
             .interface => |i| try self.emitInterface(i),
             .implement => |im| try self.emitImplement(im),
+            // `extend` dispatch/codegen is handled in a later phase (extension-dispatch).
+            .extend => {},
             .use => |u| try self.emitUse(u),
             .delegate => |d| try self.emitDelegate(d),
             .comment => {},
@@ -263,13 +265,20 @@ const Emitter = struct {
         }
     }
 
-    fn emitUse(self: *Emitter, u: ast.UseDecl) !void {
+    fn emitUse(self: *Emitter, u: ast.ImportDecl) !void {
+        // Fallback activation `X*;` has no type binding — emit nothing.
+        if (u.activationOnly) return;
         try self.w("import { ");
         for (u.imports, 0..) |imp, i| {
             if (i > 0) try self.w(", ");
             try self.w(imp.name());
         }
-        try self.w(" } from \"./module\";\n");
+        try self.w(" } from \"");
+        switch (u.source) {
+            .root => try self.w("./module"),
+            .module => |name| try self.w(name),
+        }
+        try self.w("\";\n");
     }
 
     fn emitDelegate(self: *Emitter, d: ast.DelegateDecl) !void {
@@ -397,6 +406,21 @@ const Emitter = struct {
                     try self.w(" } | { tag: \"Error\"; error: ");
                     try self.emitTypeRef(b.args[1]);
                     try self.w(" }");
+                } else if (std.mem.eql(u8, b.name, "Future") and b.args.len >= 1) {
+                    // `@Future<T>` → `Promise<T>`
+                    try self.w("Promise<");
+                    try self.emitTypeRef(b.args[0]);
+                    try self.w(">");
+                } else if (std.mem.eql(u8, b.name, "Iterator") and b.args.len >= 1) {
+                    // `@Iterator<T>` → `IterableIterator<T>`
+                    try self.w("IterableIterator<");
+                    try self.emitTypeRef(b.args[0]);
+                    try self.w(">");
+                } else if (std.mem.eql(u8, b.name, "AsyncIterator") and b.args.len >= 1) {
+                    // `@AsyncIterator<T, E>` → `AsyncIterableIterator<T>` (TS tracks only the item type)
+                    try self.w("AsyncIterableIterator<");
+                    try self.emitTypeRef(b.args[0]);
+                    try self.w(">");
                 } else {
                     try self.w(b.name);
                     try self.w("<");
@@ -407,6 +431,8 @@ const Emitter = struct {
                     try self.w(">");
                 }
             },
+            // A comptime typeparam is erased after specialization; surface it as `any`.
+            .typeparam => try self.w("any"),
         }
     }
 

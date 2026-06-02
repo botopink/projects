@@ -28,18 +28,16 @@ outer() ->
     erlang:throw(DbError(<<"timeout">>)).
 
 process() ->
-    A = try
-        inner()
-catch
-        _Err ->
-            0(_Err)
-end,
-    B = try
-        outer()
-catch
-        _Err ->
-            A(_Err)
-end,
+    A = case inner() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
+            0
+    end,
+    B = case outer() of
+        {ok, TryV1} -> TryV1;
+        {error, _TryE1} ->
+            A
+    end,
     io:format("~p~n", [A, B]),
     (A + B).
 ```

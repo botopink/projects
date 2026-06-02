@@ -19,8 +19,8 @@ parser/
 ## Testing pattern
 
 ```zig
-test "use decl" {
-    try assertParser(std.testing.allocator, @src(), "use std.{print}");
+test "import decl" {
+    try assertParser(std.testing.allocator, @src(), "import {std.List as L, X*};");
 }
 ```
 

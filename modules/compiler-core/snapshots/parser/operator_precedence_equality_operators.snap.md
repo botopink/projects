@@ -28,28 +28,26 @@
                       "line": 3,
                       "col": 11
                     },
-                    "kind": {
-                      "op": "eq",
-                      "lhs": {
-                        "identifier": {
-                          "loc": {
-                            "line": 3,
-                            "col": 9
-                          },
-                          "kind": {
-                            "ident": "a"
-                          }
+                    "op": "eq",
+                    "lhs": {
+                      "identifier": {
+                        "loc": {
+                          "line": 3,
+                          "col": 9
+                        },
+                        "kind": {
+                          "ident": "a"
                         }
-                      },
-                      "rhs": {
-                        "identifier": {
-                          "loc": {
-                            "line": 3,
-                            "col": 14
-                          },
-                          "kind": {
-                            "ident": "b"
-                          }
+                      }
+                    },
+                    "rhs": {
+                      "identifier": {
+                        "loc": {
+                          "line": 3,
+                          "col": 14
+                        },
+                        "kind": {
+                          "ident": "b"
                         }
                       }
                     }
@@ -64,28 +62,26 @@
                       "line": 4,
                       "col": 11
                     },
-                    "kind": {
-                      "op": "ne",
-                      "lhs": {
-                        "identifier": {
-                          "loc": {
-                            "line": 4,
-                            "col": 9
-                          },
-                          "kind": {
-                            "ident": "a"
-                          }
+                    "op": "ne",
+                    "lhs": {
+                      "identifier": {
+                        "loc": {
+                          "line": 4,
+                          "col": 9
+                        },
+                        "kind": {
+                          "ident": "a"
                         }
-                      },
-                      "rhs": {
-                        "identifier": {
-                          "loc": {
-                            "line": 4,
-                            "col": 14
-                          },
-                          "kind": {
-                            "ident": "b"
-                          }
+                      }
+                    },
+                    "rhs": {
+                      "identifier": {
+                        "loc": {
+                          "line": 4,
+                          "col": 14
+                        },
+                        "kind": {
+                          "ident": "b"
                         }
                       }
                     }

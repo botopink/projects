@@ -23,7 +23,9 @@ function fetch() {
 }
 
 function strict() {
-    const r = (() => { try { return fetch(); } catch(_e) { throw "fetch failed"; } })();
+    const _try0 = fetch();
+    if (_try0.tag === "Error") { throw "fetch failed"; }
+    const r = _try0.result;
     return r;
 }
 ```

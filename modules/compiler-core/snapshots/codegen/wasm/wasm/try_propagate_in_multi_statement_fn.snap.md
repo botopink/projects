@@ -32,12 +32,36 @@ fn pipeline() -> @Result<i32, IoError> {
     unreachable
   )
   (func $pipeline (result i32)
+    (local $_try0 i32)
+    (local $_try1 i32)
     (local $a i32)
     (local $b i32)
     call $step1
+    local.set $_try0
+    local.get $_try0
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if
+      (then
+    local.get $_try0
+    return ;; propagate Error
+      )
+    )
+    local.get $_try0
+    i32.load offset=4 ;; Ok payload
     local.set $a
     local.get $a
     call $step2
+    local.set $_try1
+    local.get $_try1
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if
+      (then
+    local.get $_try1
+    return ;; propagate Error
+      )
+    )
+    local.get $_try1
+    i32.load offset=4 ;; Ok payload
     local.set $b
     local.get $b
     return

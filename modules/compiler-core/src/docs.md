@@ -95,7 +95,9 @@ lex ──► parse ──► infer ──► transform (Aggregator) ──► c
   - `parseCommaSeparatedIdentifiers(alloc, stopAt)`.
   - `reportReservedWordError()` — centralised reserved-word error.
 - **Type annotations** always use `TypeRef` (`named`, `array`, `tuple_`,
-  `optional`, `function`).
+  `optional`, `function`, `generic`, `typeparam`). `typeparam` carries the
+  optional `|`-separated constraint list of a `comptime …: typeparam` parameter
+  (empty = unconstrained).
 - **Formatter** must round-trip: `format(parse(src))` must re-parse to an
   equivalent AST, and a second `format` pass must produce identical text.
 

@@ -44,7 +44,7 @@ pub fn compile(gpa: std.mem.Allocator, source: []const u8) !CompileHandle {
 /// Exemplo:
 /// ```zig
 /// const dep_src = "pub fn greet() -> string { return \"hi\"; }";
-/// const main_src = "use { greet } from \"file:///dep_0.bp\"; val x = greet();";
+/// const main_src = "import { greet } from \"file:///dep_0.bp\"; val x = greet();";
 /// var c = try h.compileMulti(gpa, &.{
 ///     .{ .uri = "file:///dep_0.bp", .source = dep_src },
 ///     .{ .uri = TEST_URI,           .source = main_src },

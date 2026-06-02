@@ -21,7 +21,8 @@ fn loadUser() {
   (memory (export "memory") 1)
   (data (i32.const 256) "name missing")
   (data (i32.const 268) "age missing")
-  (global $__heap_ptr (mut i32) (i32.const 280))
+  (data (i32.const 280) "anonymous")
+  (global $__heap_ptr (mut i32) (i32.const 292))
   (func $fetchName (result i32)
     i32.const 256
     call $UserError
@@ -33,11 +34,37 @@ fn loadUser() {
     unreachable
   )
   (func $loadUser
+    (local $_try0 i32)
+    (local $_try1 i32)
     (local $name i32)
     (local $age i32)
     call $fetchName
+    local.set $_try0
+    local.get $_try0
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if (result i32)
+      (then
+    i32.const 280
+      )
+      (else
+    local.get $_try0
+    i32.load offset=4 ;; Ok payload
+      )
+    )
     local.set $name
     call $fetchAge
+    local.set $_try1
+    local.get $_try1
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if (result i32)
+      (then
+    i32.const 0
+      )
+      (else
+    local.get $_try1
+    i32.load offset=4 ;; Ok payload
+      )
+    )
     local.set $age
     local.get $name
     call $__print_i32

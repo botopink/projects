@@ -32,6 +32,8 @@ pub const TypeDef = union(enum) {
         genericParams: []const []const u8,
         fields: []FieldDef,
         implements: []const []const u8 = &.{},
+        /// ContextBase name when this type implements `@Context<B, R>` inline; null otherwise.
+        contextBase: ?[]const u8 = null,
     };
 
     pub const Struct = struct {
@@ -40,6 +42,8 @@ pub const TypeDef = union(enum) {
         genericParams: []const []const u8,
         fields: []FieldDef,
         implements: []const []const u8 = &.{},
+        /// ContextBase name when this type implements `@Context<B, R>` inline; null otherwise.
+        contextBase: ?[]const u8 = null,
     };
 
     pub const Enum = struct {
@@ -48,7 +52,19 @@ pub const TypeDef = union(enum) {
         genericParams: []const []const u8,
         variants: []VariantDef,
         implements: []const []const u8 = &.{},
+        /// ContextBase name when this type implements `@Context<B, R>` inline; null otherwise.
+        contextBase: ?[]const u8 = null,
     };
+
+    /// The `ContextBase` of this type when it implements `@Context<B, R>` inline.
+    /// Returns null for types that do not implement `@Context`.
+    pub fn contextBase(self: TypeDef) ?[]const u8 {
+        return switch (self) {
+            .record => |r| r.contextBase,
+            .struct_ => |s| s.contextBase,
+            .enum_ => |e| e.contextBase,
+        };
+    }
 
     /// Return the fields slice for record or struct types; null for enums.
     pub fn fields(self: TypeDef) ?[]FieldDef {
@@ -69,7 +85,62 @@ pub const TypeDef = union(enum) {
     }
 };
 
+// ── @Context capability scope ───────────────────────────────────────────────────
+
+/// Capability information about the function body currently being inferred.
+///
+/// The function's return type decides whether `use` is allowed inside the body:
+/// the return must implement `@Context<ContextBase, Return>`. All `use` calls in
+/// the body must agree on the same `ContextBase`. `null` on the environment means
+/// no function body is currently being inferred (top-level position).
+pub const FnContext = struct {
+    /// True when the function's return type implements `@Context<_, _>`.
+    implementsContext: bool,
+    /// The `ContextBase` name when `implementsContext` is true; null otherwise.
+    base: ?[]const u8 = null,
+    /// Rendered return type, used in the "`use` not allowed" diagnostic.
+    returnDisplay: []const u8 = "void",
+};
+
+/// How `throw` should be type-checked in the current function scope.
+///
+/// Set by `inferFnDecl` when entering a named function body and reset to
+/// `.unchecked` inside nested function expressions (lambdas have no declared
+/// return type). `inferJumpExpr` reads it to validate `throw` statements.
+pub const ThrowContext = union(enum) {
+    /// No declared return type (top-level or lambda) — `throw` is left unchecked.
+    unchecked,
+    /// Enclosing fn returns `@Result<D, E>` — a thrown value must unify with `E`.
+    result: *T.Type,
+    /// Enclosing fn has a declared non-`@Result` return type — `throw` is illegal.
+    plain,
+};
+
+/// Constraint metadata for one `comptime ...: typeparam` parameter of a function.
+/// Recorded at fn-declaration time and consulted at each call site.
+pub const TypeparamConstraint = struct {
+    /// Index of this parameter in the function's parameter list.
+    paramIndex: usize,
+    /// The parameter's name (for diagnostics).
+    paramName: []const u8,
+    /// Accepted type names (e.g. `string`, `int`, `bool`). Empty means
+    /// the typeparam is unconstrained and accepts a value of any type.
+    names: []const []const u8,
+};
+
 // ── environment ───────────────────────────────────────────────────────────────
+
+/// Context active while inferring the body of a `*fn` (async / generator).
+/// Drives validation of `await` and `yield`; `null` inside normal functions
+/// and at the top level.
+pub const StarFnCtx = struct {
+    /// `await` is permitted here — async function (`@Future`) or async
+    /// generator (`@AsyncIterator`).
+    allowsAwait: bool,
+    /// `@Iterator<T>` / `@AsyncIterator<T, _>` item type that `yield` values
+    /// must unify with; `null` for a pure async function (`@Future`).
+    iterItem: ?*T.Type,
+};
 
 /// The type-checking environment.
 ///
@@ -94,6 +165,9 @@ pub const Env = struct {
     bindings: std.StringHashMap(*T.Type),
     /// Registered type definitions: type name → TypeDef.
     typeDefs: std.StringHashMap(TypeDef),
+    /// Per-function typeparam constraints: function name → constraint list.
+    /// Only functions with at least one `typeparam` parameter appear here.
+    fnTypeparams: std.StringHashMap([]const TypeparamConstraint),
     /// Monotonically increasing counter for fresh type variable IDs.
     nextId: T.TypeId,
     /// Monotonically increasing counter for type definition IDs (record$$0, struct$$1, ...).
@@ -105,24 +179,47 @@ pub const Env = struct {
     /// Builtin `@Result`/`@Option` method calls discovered during inference,
     /// keyed by the call's source location. Drives the AST transform lowering.
     method_lowerings: std.AutoHashMap(ast.Loc, MethodLowering),
+    /// Capability scope of the function body currently being inferred (null at top level).
+    fnContext: ?FnContext = null,
+    /// How `throw` is checked in the function body currently being inferred.
+    throwContext: ThrowContext = .unchecked,
+    /// Active `*fn` context while inferring its body (for `await`/`yield` rules).
+    starFn: ?StarFnCtx = null,
+    /// Labels currently in scope (`*fn` label + enclosing loop labels), used to
+    /// validate `yield :label` / `break :label`. Pushed/popped as scopes nest.
+    labelStack: std.ArrayListUnmanaged([]const u8) = .empty,
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
             .arena = arena,
             .bindings = std.StringHashMap(*T.Type).init(arena),
             .typeDefs = std.StringHashMap(TypeDef).init(arena),
+            .fnTypeparams = std.StringHashMap([]const TypeparamConstraint).init(arena),
             .nextId = 0,
             .nextTypeId = 0,
             .level = 0,
             .lastError = null,
             .method_lowerings = std.AutoHashMap(ast.Loc, MethodLowering).init(arena),
+            .fnContext = null,
+            .throwContext = .unchecked,
+            .starFn = null,
+            .labelStack = .empty,
         };
+    }
+
+    /// True when `label` is in scope for a `yield`/`break` target.
+    pub fn hasLabel(self: *Env, label: []const u8) bool {
+        for (self.labelStack.items) |l| {
+            if (std.mem.eql(u8, l, label)) return true;
+        }
+        return false;
     }
 
     pub fn deinit(self: *Env) void {
         self.bindings.deinit();
         self.typeDefs.deinit();
         self.method_lowerings.deinit();
+        self.fnTypeparams.deinit();
     }
 
     // ── type constructors ─────────────────────────────────────────────────────
@@ -180,6 +277,16 @@ pub const Env = struct {
 
     pub fn lookupTypeDef(self: *Env, name: []const u8) ?TypeDef {
         return self.typeDefs.get(name);
+    }
+
+    /// Record the typeparam constraints for a function (keyed by name).
+    pub fn registerTypeparams(self: *Env, name: []const u8, constraints: []const TypeparamConstraint) !void {
+        try self.fnTypeparams.put(name, constraints);
+    }
+
+    /// Look up the typeparam constraints for a function, or null if it has none.
+    pub fn lookupTypeparams(self: *Env, name: []const u8) ?[]const TypeparamConstraint {
+        return self.fnTypeparams.get(name);
     }
 
     pub fn registerTypeDef(self: *Env, name: []const u8, def: TypeDef) !void {

@@ -1,6 +1,6 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-fn fetch() -> i32 {
+fn fetch() -> @Result<i32, string> {
     @todo();
 }
 fn safe() -> i32 {
@@ -35,22 +35,21 @@ fn safe() -> i32 {
     {func_info, {atom, main}, {atom, safe}, 0}.
   {label, 5}.
     {allocate, 1, 0}.
-    {try, {y, 0}, {f, 6}}.
     {call, 0, {f, 3}}.
-    {try_end, {y, 0}}.
+    {test, is_tagged_tuple, {f, 6}, {x, 0}, 2, {atom, ok}}.
+    {get_tuple_element, {x, 0}, 1, {x, 0}}.
     {jump, {f, 7}}.
   {label, 6}.
-    {try_case, {y, 0}}.
     {move, {integer, 0}, {x, 0}}.
   {label, 7}.
-    {move, {x, 0}, {y, 1}}.
-    {move, {y, 1}, {x, 0}}.
+    {move, {x, 0}, {y, 0}}.
+    {move, {y, 0}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"~p~n">>}, {x, 0}}.
     {test_heap, 2, 2}.
     {put_list, {x, 1}, nil, {x, 1}}.
     {call_ext, 2, {extfunc, io, format, 2}}.
-    {move, {y, 1}, {x, 0}}.
+    {move, {y, 0}, {x, 0}}.
     {deallocate, 1}.
     return.
 ```
