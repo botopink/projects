@@ -1272,6 +1272,7 @@ pub const Formatter = struct {
                 .record => |v| v.docComment,
                 .@"enum" => |v| v.docComment,
                 .implement => |v| v.docComment,
+                .extend => |v| v.docComment,
                 .@"fn" => |v| v.docComment,
                 .val => |v| v.docComment,
                 .comment => null,
@@ -1285,7 +1286,7 @@ pub const Formatter = struct {
                 .record => true,
                 .@"enum" => true,
                 .interface => true,
-                .use, .delegate, .implement => true,
+                .use, .delegate, .implement, .extend => true,
                 .comment => false,
             };
             const declWithSemi = if (needsSemi)
@@ -1333,6 +1334,7 @@ pub const Formatter = struct {
             .record => |r| this.fmtRecord(r),
             .@"enum" => |e| this.fmtEnum(e),
             .implement => |impl| this.fmtImplement(impl),
+            .extend => |ext| this.fmtExtend(ext),
             .@"fn" => |f| this.fmtFnDecl(f),
             .val => |v| this.fmtValDecl(v),
             .comment => |c| blk: {
@@ -1758,14 +1760,56 @@ pub const Formatter = struct {
             break :blk try this.surroundBreak("{", inner, "}");
         };
 
+        const pubPrefix = if (impl.isPub) try this.text("pub ") else try this.text("");
+        // shorthand: `Name implement … for T { … }`
+        // explicit:  `val Name = implement … for T { … }`
+        const keyword = if (impl.shorthand)
+            try this.text(" implement ")
+        else
+            try this.text(" = implement ");
+        const namePrefix = if (impl.shorthand) try this.text("") else try this.text("val ");
+
         return this.concatAll(&.{
-            try this.text("val "),
+            pubPrefix,
+            namePrefix,
             try this.text(impl.name),
             try this.fmtGenericParams(impl.genericParams),
-            try this.text(" = implement "),
+            keyword,
             ifacesDoc,
             try this.text(" for "),
             try this.text(impl.target),
+            try this.text(" "),
+            body,
+        });
+    }
+
+    fn fmtExtend(this: *Formatter, ext: ast.ExtendDecl) !*const Doc {
+        var methodDocs = try this.arena.alloc(*const Doc, ext.methods.len);
+        for (ext.methods, 0..) |m, i| methodDocs[i] = try this.fmtImplementMethod(m);
+
+        const body = if (methodDocs.len == 0)
+            try this.text("{}")
+        else blk: {
+            const inner = try this.join(methodDocs, this.hardline());
+            break :blk try this.surroundBreak("{", inner, "}");
+        };
+
+        const pubPrefix = if (ext.isPub) try this.text("pub ") else try this.text("");
+        // shorthand: `Name extend T { … }`
+        // explicit:  `val Name = extend T { … }`
+        const keyword = if (ext.shorthand)
+            try this.text(" extend ")
+        else
+            try this.text(" = extend ");
+        const namePrefix = if (ext.shorthand) try this.text("") else try this.text("val ");
+
+        return this.concatAll(&.{
+            pubPrefix,
+            namePrefix,
+            try this.text(ext.name),
+            try this.fmtGenericParams(ext.genericParams),
+            keyword,
+            try this.text(ext.target),
             try this.text(" "),
             body,
         });

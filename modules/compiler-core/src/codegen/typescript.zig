@@ -44,6 +44,8 @@ const Emitter = struct {
             .@"enum" => |e| try self.emitEnum(e),
             .interface => |i| try self.emitInterface(i),
             .implement => |im| try self.emitImplement(im),
+            // `extend` dispatch/codegen is handled in a later phase (extension-dispatch).
+            .extend => {},
             .use => |u| try self.emitUse(u),
             .delegate => |d| try self.emitDelegate(d),
             .comment => {},

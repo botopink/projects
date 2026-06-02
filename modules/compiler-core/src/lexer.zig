@@ -597,6 +597,7 @@ pub const Lexer = struct {
         if (std.mem.eql(u8, text, "echo")) return .echo;
         if (std.mem.eql(u8, text, "else")) return .@"else";
         if (std.mem.eql(u8, text, "enum")) return .@"enum";
+        if (std.mem.eql(u8, text, "extend")) return .extend;
         if (std.mem.eql(u8, text, "extends")) return .extends;
         if (std.mem.eql(u8, text, "fn")) return .@"fn";
         if (std.mem.eql(u8, text, "for")) return .@"for";

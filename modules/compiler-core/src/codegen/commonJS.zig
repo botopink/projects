@@ -217,6 +217,8 @@ pub fn emitProgram(
                 try aw.writer.writeByte('\n');
                 firstEmitted = false;
             },
+            // `extend` dispatch/codegen is handled in a later phase (extension-dispatch).
+            .extend => {},
             .use => |u| {
                 if (!firstEmitted) try aw.writer.writeByte('\n');
                 try em.emitUse(u);

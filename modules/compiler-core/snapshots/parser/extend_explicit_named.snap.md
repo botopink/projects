@@ -2,22 +2,19 @@
 {
   "decls": [
     {
-      "implement": {
-        "name": "Myimplement",
+      "extend": {
+        "name": "PatoExtra",
         "isPub": false,
         "shorthand": false,
         "genericParams": [],
         "docComment": null,
         "comment": null,
         "moduleComment": null,
-        "interfaces": [
-          "Drawable"
-        ],
-        "target": "Circle",
+        "target": "Pato",
         "methods": [
           {
             "qualifier": null,
-            "name": "draw",
+            "name": "quack",
             "params": [
               {
                 "name": "self",
