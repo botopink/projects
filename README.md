@@ -93,6 +93,7 @@ zig build run       # compile and run the botopink CLI
 - Array literals `[e1, e2, ...]`, tuple literals `#(e1, e2, ...)`
 - `try expr [catch handler]` — `@Result` unwrapping with optional inline error handler
 - `catch` as universal tail operator for error propagation
+- `throw` type checking — the thrown value must match the `E` of the enclosing fn's `@Result<D, E>`
 - `if (expr) { binding -> body }` — null-check with value binding
 - `val/var name [: TypeRef] = expr` — optional type annotation on local bindings
 - **Mandatory type annotations on function parameters**: `fn f(x: i32)` — required

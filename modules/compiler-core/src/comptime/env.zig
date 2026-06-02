@@ -69,6 +69,20 @@ pub const TypeDef = union(enum) {
     }
 };
 
+/// How `throw` should be type-checked in the current function scope.
+///
+/// Set by `inferFnDecl` when entering a named function body and reset to
+/// `.unchecked` inside nested function expressions (lambdas have no declared
+/// return type). `inferJumpExpr` reads it to validate `throw` statements.
+pub const ThrowContext = union(enum) {
+    /// No declared return type (top-level or lambda) — `throw` is left unchecked.
+    unchecked,
+    /// Enclosing fn returns `@Result<D, E>` — a thrown value must unify with `E`.
+    result: *T.Type,
+    /// Enclosing fn has a declared non-`@Result` return type — `throw` is illegal.
+    plain,
+};
+
 // ── environment ───────────────────────────────────────────────────────────────
 
 /// The type-checking environment.
@@ -90,6 +104,8 @@ pub const Env = struct {
     level: usize,
     /// The most recent type error (set before returning `error.TypeError`).
     lastError: ?@import("error.zig").TypeError,
+    /// How `throw` is checked in the function body currently being inferred.
+    throwContext: ThrowContext,
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
@@ -100,6 +116,7 @@ pub const Env = struct {
             .nextTypeId = 0,
             .level = 0,
             .lastError = null,
+            .throwContext = .unchecked,
         };
     }
 

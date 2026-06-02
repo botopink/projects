@@ -54,6 +54,24 @@ Inference is **Hindley-Milner with let-polymorphism**:
 3. Errors are reported as `TypeError` (see `error.zig`) carrying a source
    range, a primary message, and an optional hint.
 
+## Throw checking
+
+`infer.zig` validates that every `throw` agrees with the enclosing function's
+declared return type. `Env.throwContext` (`env.zig`) carries the rule for the
+body currently being walked:
+
+| Return type of enclosing fn | `throwContext` | `throw` behaviour |
+|---|---|---|
+| `@Result<D, E>` (builtin) | `.result E` | thrown value must unify with `E` |
+| any other declared type | `.plain` | `throw` is rejected (`throwWithoutResult`) |
+| none declared (or a lambda) | `.unchecked` | `throw` is left unchecked (e.g. `catch throw …`) |
+
+`inferFnDecl` sets `throwContext` from the function's `returnType` and restores
+it on exit; `inferFunctionExpr` resets it to `.unchecked` so a `throw` inside a
+nested lambda is **not** checked against the outer function's `E`. The check
+itself lives in `inferJumpExpr`'s `throw_` arm, which `unify(expected E, thrown)`
+so the diagnostic reads `expected: E` / `found: <thrown>`.
+
 ## Transform pass — the heart of comptime
 
 ```text

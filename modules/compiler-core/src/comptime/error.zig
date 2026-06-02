@@ -76,6 +76,8 @@ pub const TypeErrorKind = union(enum) {
         typeName: []const u8,
         field: []const u8,
     },
+    /// `throw` used in a function whose return type is not `@Result<D, E>`.
+    throwWithoutResult,
 };
 
 /// A type error with its source location.
@@ -120,6 +122,10 @@ pub const TypeError = struct {
 
     pub fn missingField(typeName: []const u8, field: []const u8) TypeError {
         return .{ .kind = .{ .missingField = .{ .typeName = typeName, .field = field } } };
+    }
+
+    pub fn throwWithoutResult() TypeError {
+        return .{ .kind = .throwWithoutResult };
     }
 };
 
