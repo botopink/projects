@@ -21,7 +21,23 @@ fn main() {
     return
   )
   (func $main
-    i32.const 0 ;; array
+    (local $__mem0 i32)
+    global.get $__heap_ptr
+    local.set $__mem0
+    global.get $__heap_ptr
+    i32.const 12
+    i32.add
+    global.set $__heap_ptr
+    local.get $__mem0
+    i32.const 1
+    i32.store
+    local.get $__mem0
+    i32.const 2
+    i32.store offset=4
+    local.get $__mem0
+    i32.const 3
+    i32.store offset=8
+    local.get $__mem0
     call $doubles
     call $__print_i32
   )

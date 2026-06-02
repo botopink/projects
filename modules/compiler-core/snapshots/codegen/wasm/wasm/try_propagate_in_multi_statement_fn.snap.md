@@ -22,13 +22,31 @@ fn pipeline() -> @Result<i32, IoError> {
   (data (i32.const 264) "/out")
   (global $__heap_ptr (mut i32) (i32.const 268))
   (func $step1 (result i32)
+    (local $__mem0 i32)
+    global.get $__heap_ptr
+    local.set $__mem0
+    global.get $__heap_ptr
+    i32.const 4
+    i32.add
+    global.set $__heap_ptr
+    local.get $__mem0
     i32.const 256
-    call $IoError
+    i32.store
+    local.get $__mem0
     unreachable
   )
   (func $step2 (param $x i32) (result i32)
+    (local $__mem0 i32)
+    global.get $__heap_ptr
+    local.set $__mem0
+    global.get $__heap_ptr
+    i32.const 4
+    i32.add
+    global.set $__heap_ptr
+    local.get $__mem0
     i32.const 264
-    call $IoError
+    i32.store
+    local.get $__mem0
     unreachable
   )
   (func $pipeline (result i32)

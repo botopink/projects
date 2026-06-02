@@ -25,9 +25,12 @@ fn Widget() -> Element {
     i32.const 0
   )
   (func $Widget (result i32)
+    (local $__mem0 i32)
     call $effect
     drop
-    call $Element
+    global.get $__heap_ptr
+    local.set $__mem0
+    local.get $__mem0
   )
 )
 ```

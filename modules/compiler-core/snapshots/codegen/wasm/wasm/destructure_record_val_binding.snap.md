@@ -15,10 +15,16 @@ fn describe(p: Point) -> i32 {
   (memory (export "memory") 1)
   (global $__heap_ptr (mut i32) (i32.const 256))
   (func $describe (param $p i32) (result i32)
+    (local $__mem0 i32)
     (local $x i32)
     (local $y i32)
     local.get $p
+    local.set $__mem0
+    local.get $__mem0
+    i32.load
     local.set $x
+    local.get $__mem0
+    i32.load offset=4
     local.set $y
     local.get $x
     call $__print_i32

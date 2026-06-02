@@ -17,8 +17,17 @@ fn safe() -> i32 {
   (data (i32.const 256) "/api")
   (global $__heap_ptr (mut i32) (i32.const 260))
   (func $fetch (result i32)
+    (local $__mem0 i32)
+    global.get $__heap_ptr
+    local.set $__mem0
+    global.get $__heap_ptr
+    i32.const 4
+    i32.add
+    global.set $__heap_ptr
+    local.get $__mem0
     i32.const 256
-    call $FetchError
+    i32.store
+    local.get $__mem0
     unreachable
   )
   (func $safe (result i32)

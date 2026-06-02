@@ -113,6 +113,7 @@ fn emitWat(
 
     var em = Emitter.init(alloc, &fn_buf.writer, comptime_vals);
     defer em.deinit();
+    try em.registerTypes(program);
 
     var has_main_0 = false;
     for (program.decls) |decl| switch (decl) {
@@ -333,6 +334,75 @@ fn emitWat(
         );
     }
 
+    if (em.uses_str_concat) {
+        try aw.writer.writeAll(
+            \\  (func $__str_concat (param $a i32) (param $alen i32) (param $b i32) (param $blen i32) (result i32)
+            \\    (local $base i32)
+            \\    global.get $__heap_ptr
+            \\    local.set $base
+            \\    global.get $__heap_ptr
+            \\    local.get $alen
+            \\    local.get $blen
+            \\    i32.add
+            \\    i32.add
+            \\    global.set $__heap_ptr
+            \\    local.get $base
+            \\    local.get $a
+            \\    local.get $alen
+            \\    memory.copy
+            \\    local.get $base
+            \\    local.get $alen
+            \\    i32.add
+            \\    local.get $b
+            \\    local.get $blen
+            \\    memory.copy
+            \\    local.get $base
+            \\  )
+            \\
+        );
+    }
+
+    if (em.uses_str_eq) {
+        try aw.writer.writeAll(
+            \\  (func $__str_eq (param $a i32) (param $alen i32) (param $b i32) (param $blen i32) (result i32)
+            \\    (local $i i32)
+            \\    local.get $alen
+            \\    local.get $blen
+            \\    i32.ne
+            \\    (if
+            \\      (then i32.const 0 return)
+            \\    )
+            \\    (block $done
+            \\      (loop $cmp
+            \\        local.get $i
+            \\        local.get $alen
+            \\        i32.ge_u
+            \\        br_if $done
+            \\        local.get $a
+            \\        local.get $i
+            \\        i32.add
+            \\        i32.load8_u
+            \\        local.get $b
+            \\        local.get $i
+            \\        i32.add
+            \\        i32.load8_u
+            \\        i32.ne
+            \\        (if
+            \\          (then i32.const 0 return)
+            \\        )
+            \\        local.get $i
+            \\        i32.const 1
+            \\        i32.add
+            \\        local.set $i
+            \\        br $cmp
+            \\      )
+            \\    )
+            \\    i32.const 1
+            \\  )
+            \\
+        );
+    }
+
     try aw.writer.writeAll(")\n");
 
     return aw.toOwnedSlice();
@@ -349,10 +419,25 @@ const Emitter = struct {
     locals: std.StringHashMap([]const u8),
     case_depth: u32 = 0,
     try_seq: u32 = 0,
+    /// Sequence counter for the `$__mem{n}` scratch pointers used when building
+    /// or destructuring aggregates (tuples, arrays, records, enum payloads).
+    mem_seq: u32 = 0,
+
+    // ── type registry (codegen is untyped, so we recover record/enum layout
+    //    from the declarations to lower construction/access by memory offset) ──
+    /// record/struct name → ordered field names (slots are 4 bytes each).
+    records: std.StringHashMap([]const []const u8),
+    /// enum name → variants (tag = declaration index; payload fields follow).
+    enums: std.StringHashMap([]const ast.EnumVariant),
+    /// Arena backing the slices stored in `records` (field-name strings alias
+    /// the AST and are not copied).
+    reg_arena: std.heap.ArenaAllocator,
 
     data_segments: std.ArrayListUnmanaged(DataSeg) = .empty,
     next_data_offset: u32 = 256,
     uses_print: bool = false,
+    uses_str_concat: bool = false,
+    uses_str_eq: bool = false,
 
     fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8)) Emitter {
         return .{
@@ -360,12 +445,50 @@ const Emitter = struct {
             .out = out,
             .cv = cv,
             .locals = std.StringHashMap([]const u8).init(alloc),
+            .records = std.StringHashMap([]const []const u8).init(alloc),
+            .enums = std.StringHashMap([]const ast.EnumVariant).init(alloc),
+            .reg_arena = std.heap.ArenaAllocator.init(alloc),
         };
     }
 
     fn deinit(self: *Emitter) void {
         self.locals.deinit();
+        self.records.deinit();
+        self.enums.deinit();
+        self.reg_arena.deinit();
         self.data_segments.deinit(self.alloc);
+    }
+
+    /// Populate `records`/`enums` from the program's type declarations so that
+    /// construction calls can be distinguished from ordinary function calls.
+    fn registerTypes(self: *Emitter, program: ast.Program) !void {
+        const ra = self.reg_arena.allocator();
+        for (program.decls) |decl| switch (decl) {
+            .record => |r| {
+                const names = try ra.alloc([]const u8, r.fields.len);
+                for (r.fields, 0..) |f, i| names[i] = f.name;
+                try self.records.put(r.name, names);
+            },
+            .@"struct" => |s| {
+                var count: usize = 0;
+                for (s.members) |m| switch (m) {
+                    .field => count += 1,
+                    else => {},
+                };
+                const names = try ra.alloc([]const u8, count);
+                var i: usize = 0;
+                for (s.members) |m| switch (m) {
+                    .field => |f| {
+                        names[i] = f.name;
+                        i += 1;
+                    },
+                    else => {},
+                };
+                try self.records.put(s.name, names);
+            },
+            .@"enum" => |e| try self.enums.put(e.name, e.variants),
+            else => {},
+        };
     }
 
     fn w(self: *Emitter, s: []const u8) !void {
@@ -381,6 +504,7 @@ const Emitter = struct {
         self.cur_result = result_type;
         self.case_depth = 0;
         self.try_seq = 0;
+        self.mem_seq = 0;
     }
 
     fn internString(self: *Emitter, s: []const u8) !DataSeg {
@@ -430,6 +554,10 @@ const Emitter = struct {
         for (0..try_count) |i| {
             try self.fmt("    (local $_try{d} i32)\n", .{i});
         }
+        const mem_count = self.countMems(f.body);
+        for (0..mem_count) |i| {
+            try self.fmt("    (local $__mem{d} i32)\n", .{i});
+        }
         try self.emitLocalDecls(f.body);
         try self.emitBody(f.body, result_type);
         try self.w("  )\n");
@@ -465,6 +593,137 @@ const Emitter = struct {
                 .localBindDestruct => |lb| countTrysExpr(lb.value.*),
                 .assign => |a| countTrysExpr(a.value.*),
             },
+            else => 0,
+        };
+    }
+
+    /// What a `.call` lowers to. Construction calls need a `$__mem` scratch
+    /// pointer; plain calls and builtins do not. Used identically by
+    /// `countMems` (to size the scratch pool) and `lowerExpr` (to consume it),
+    /// so the count and usage stay in lock-step.
+    const CallKind = enum { builtin, record_ctor, enum_ctor, plain };
+
+    fn callKind(self: *Emitter, cc: anytype) CallKind {
+        if (cc.is_builtin) return .builtin;
+        if (self.records.contains(cc.callee)) return .record_ctor;
+        if (receiverName(cc)) |rcv| {
+            if (self.enums.contains(rcv)) return .enum_ctor;
+        } else if (cc.callee.len > 0 and std.ascii.isUpper(cc.callee[0])) {
+            // `Variant(...)` with no receiver: an enum payload constructor when
+            // the (capitalised) name uniquely names a payload-bearing variant.
+            if (self.findVariant(cc.callee)) |fv| {
+                if (fv.variant.fields.len > 0) return .enum_ctor;
+            }
+        }
+        return .plain;
+    }
+
+    /// The receiver of a qualified call, when it is a plain identifier
+    /// (`Color.Rgb(…)` → `"Color"`). The call `receiver` is an expression
+    /// pointer, so anything more complex yields null.
+    fn receiverName(cc: anytype) ?[]const u8 {
+        const recv = cc.receiver orelse return null;
+        return switch (recv.*) {
+            .identifier => |rid| switch (rid.kind) {
+                .ident => |n| n,
+                else => null,
+            },
+            else => null,
+        };
+    }
+
+    const FoundVariant = struct { variants: []const ast.EnumVariant, tag: u32, variant: ast.EnumVariant };
+
+    /// Search every enum for a variant named `name`. First match wins.
+    fn findVariant(self: *Emitter, name: []const u8) ?FoundVariant {
+        var it = self.enums.iterator();
+        while (it.next()) |entry| {
+            for (entry.value_ptr.*, 0..) |v, i| {
+                if (std.mem.eql(u8, v.name, name))
+                    return .{ .variants = entry.value_ptr.*, .tag = @intCast(i), .variant = v };
+            }
+        }
+        return null;
+    }
+
+    /// Count the `$__mem` scratch pointers a function body needs: one per
+    /// aggregate construction (tuple/array/record/enum-payload) and one per
+    /// destructuring binding.
+    fn countMems(self: *Emitter, body: []const ast.Stmt) u32 {
+        var n: u32 = 0;
+        for (body) |stmt| {
+            switch (stmt.expr) {
+                .binding => |b| switch (b.kind) {
+                    .localBind => |lb| n += self.countMemsExpr(lb.value.*),
+                    .assign => |a| n += self.countMemsExpr(a.value.*),
+                    .localBindDestruct => |lb| n += 1 + self.countMemsExpr(lb.value.*),
+                },
+                else => n += self.countMemsExpr(stmt.expr),
+            }
+        }
+        return n;
+    }
+
+    fn countMemsExpr(self: *Emitter, e: ast.Expr) u32 {
+        return switch (e) {
+            .identifier => |id| switch (id.kind) {
+                .identAccess => |ia| self.countMemsExpr(ia.receiver.*),
+                else => 0,
+            },
+            .binaryOp => |bin| self.countMemsExpr(bin.lhs.*) + self.countMemsExpr(bin.rhs.*),
+            .unaryOp => |un| self.countMemsExpr(un.expr.*),
+            .call => |c| switch (c.kind) {
+                .call => |cc| blk: {
+                    var n: u32 = switch (self.callKind(cc)) {
+                        .record_ctor, .enum_ctor => 1,
+                        else => 0,
+                    };
+                    for (cc.args) |arg| n += self.countMemsExpr(arg.value.*);
+                    for (cc.trailing) |t| n += self.countMems(t.body);
+                    break :blk n;
+                },
+                .pipeline => |pl| self.countMemsExpr(pl.lhs.*) + self.countMemsExpr(pl.rhs.*),
+            },
+            .branch => |b| switch (b.kind) {
+                .if_ => |i| blk: {
+                    var n = self.countMemsExpr(i.cond.*) + self.countMems(i.then_);
+                    if (i.else_) |els| n += self.countMems(els);
+                    break :blk n;
+                },
+                .tryCatch => |tc| self.countMemsExpr(tc.expr.*) + self.countMemsExpr(tc.handler.*),
+            },
+            .collection => |col| switch (col.kind) {
+                .grouped => |inner| self.countMemsExpr(inner.*),
+                .case => |c| blk: {
+                    var n: u32 = 0;
+                    for (c.subjects) |s| n += self.countMemsExpr(s);
+                    for (c.arms) |arm| n += self.countMemsExpr(arm.body);
+                    break :blk n;
+                },
+                .tupleLit => |tl| blk: {
+                    var n: u32 = 1;
+                    for (tl.elems) |el| n += self.countMemsExpr(el);
+                    break :blk n;
+                },
+                .arrayLit => |al| blk: {
+                    var n: u32 = 1;
+                    for (al.elems) |el| n += self.countMemsExpr(el);
+                    break :blk n;
+                },
+                .range => |r| blk: {
+                    var n = self.countMemsExpr(r.start.*);
+                    if (r.end) |end| n += self.countMemsExpr(end.*);
+                    break :blk n;
+                },
+            },
+            .jump => |j| switch (j.kind) {
+                .@"return", .throw_, .@"break" => |v| if (v) |i| self.countMemsExpr(i.*) else 0,
+                .try_ => |v| if (v) |i| self.countMemsExpr(i.*) else 0,
+                .yield => |y| if (y.value) |i| self.countMemsExpr(i.*) else 0,
+                .await_ => |a| self.countMemsExpr(a.*),
+                else => 0,
+            },
+            .loop => |lp| self.countMemsExpr(lp.iter.*) + self.countMems(lp.body),
             else => 0,
         };
     }
@@ -606,18 +865,25 @@ const Emitter = struct {
                     .fieldAccess => try self.w("    ;; field assign (needs linear memory)\n"),
                 },
                 .localBindDestruct => |lb| {
+                    // The value is a pointer to a contiguous run of 4-byte slots
+                    // (tuple or record). Load each slot at its offset, in the
+                    // order the names appear in the pattern.
+                    const k = self.nextMem();
                     try self.lowerExpr(lb.value.*);
+                    try self.fmt("    local.set $__mem{d}\n", .{k});
                     switch (lb.pattern) {
                         .names => |n| {
-                            for (n.fields) |fld| {
+                            for (n.fields, 0..) |fld, i| {
+                                try self.fmt("    local.get $__mem{d}\n", .{k});
+                                try self.emitLoadOffset(@intCast(i * 4));
                                 try self.fmt("    local.set ${s}\n", .{fld.bind_name});
                             }
                         },
                         .tuple_ => |bindings| {
-                            var i: usize = bindings.len;
-                            while (i > 0) {
-                                i -= 1;
-                                try self.fmt("    local.set ${s}\n", .{bindings[i]});
+                            for (bindings, 0..) |name, i| {
+                                try self.fmt("    local.get $__mem{d}\n", .{k});
+                                try self.emitLoadOffset(@intCast(i * 4));
+                                try self.fmt("    local.set ${s}\n", .{name});
                             }
                         },
                         else => try self.w("    ;; unsupported destructure pattern\n"),
@@ -662,8 +928,16 @@ const Emitter = struct {
                         try self.fmt("    global.get ${s}\n", .{n});
                     }
                 },
-                .dotIdent => try self.w("    i32.const 0 ;; enum variant\n"),
-                .identAccess => try self.w("    i32.const 0 ;; field access\n"),
+                .dotIdent => |name| {
+                    // `.Variant` — type inferred from context. Emit the variant
+                    // tag if the name uniquely identifies a unit variant.
+                    if (self.findVariant(name)) |fv| {
+                        try self.fmt("    i32.const {d} ;; .{s}\n", .{ fv.tag, name });
+                    } else {
+                        try self.fmt("    i32.const 0 ;; .{s}\n", .{name});
+                    }
+                },
+                .identAccess => |ia| try self.lowerIdentAccess(ia),
             },
             .binaryOp => |bin| try self.lowerBinOp(bin.op, bin.lhs.*, bin.rhs.*),
             .unaryOp => |un| switch (un.op) {
@@ -674,13 +948,27 @@ const Emitter = struct {
                 },
             },
             .call => |c| switch (c.kind) {
-                .call => |cc| {
-                    if (cc.is_builtin) {
-                        try self.lowerBuiltin(cc);
-                        return;
-                    }
-                    for (cc.args) |arg| try self.lowerExpr(arg.value.*);
-                    try self.fmt("    call ${s}\n", .{cc.callee});
+                .call => |cc| switch (self.callKind(cc)) {
+                    .builtin => try self.lowerBuiltin(cc),
+                    .record_ctor => try self.lowerRecordCtor(cc, self.records.get(cc.callee).?),
+                    .enum_ctor => {
+                        if (receiverName(cc)) |rcv| {
+                            const variants = self.enums.get(rcv).?;
+                            for (variants, 0..) |v, i| {
+                                if (std.mem.eql(u8, v.name, cc.callee)) {
+                                    try self.lowerEnumCtor(cc, @intCast(i), v);
+                                    return;
+                                }
+                            }
+                            try self.w("    i32.const 0 ;; unknown variant\n");
+                        } else if (self.findVariant(cc.callee)) |fv| {
+                            try self.lowerEnumCtor(cc, fv.tag, fv.variant);
+                        }
+                    },
+                    .plain => {
+                        for (cc.args) |arg| try self.lowerExpr(arg.value.*);
+                        try self.fmt("    call ${s}\n", .{cc.callee});
+                    },
                 },
                 .pipeline => |pl| {
                     try self.lowerExpr(pl.lhs.*);
@@ -909,14 +1197,205 @@ const Emitter = struct {
         }
     }
 
+    // ── aggregates in linear memory ───────────────────────────────────────────
+    //
+    // Tuples, arrays, records and enum payloads are laid out as a contiguous run
+    // of 4-byte slots in the bump-allocated heap. Construction leaves a pointer
+    // to the first slot on the stack; element/field access loads from a fixed
+    // offset. `$__mem{n}` scratch locals hold the base pointer while the slots
+    // are filled (WAT has no `dup`, so the base must be reloaded per slot).
+
+    /// Reserve the next `$__mem` scratch index without emitting anything.
+    fn nextMem(self: *Emitter) u32 {
+        const k = self.mem_seq;
+        self.mem_seq += 1;
+        return k;
+    }
+
+    /// Bump the heap by `nbytes`, stash the base pointer in a fresh `$__mem{k}`
+    /// scratch local, and return `k`.
+    fn allocSlots(self: *Emitter, nbytes: u32) !u32 {
+        const k = self.nextMem();
+        try self.w("    global.get $__heap_ptr\n");
+        try self.fmt("    local.set $__mem{d}\n", .{k});
+        if (nbytes > 0) {
+            try self.w("    global.get $__heap_ptr\n");
+            try self.fmt("    i32.const {d}\n", .{nbytes});
+            try self.w("    i32.add\n");
+            try self.w("    global.set $__heap_ptr\n");
+        }
+        return k;
+    }
+
+    fn storeSlotExpr(self: *Emitter, k: u32, offset: u32, value: ast.Expr) !void {
+        try self.fmt("    local.get $__mem{d}\n", .{k});
+        try self.lowerExpr(value);
+        if (offset == 0)
+            try self.w("    i32.store\n")
+        else
+            try self.fmt("    i32.store offset={d}\n", .{offset});
+    }
+
+    fn storeSlotConst(self: *Emitter, k: u32, offset: u32, value: i64) !void {
+        try self.fmt("    local.get $__mem{d}\n", .{k});
+        try self.fmt("    i32.const {d}\n", .{value});
+        if (offset == 0)
+            try self.w("    i32.store\n")
+        else
+            try self.fmt("    i32.store offset={d}\n", .{offset});
+    }
+
+    fn loadBase(self: *Emitter, k: u32) !void {
+        try self.fmt("    local.get $__mem{d}\n", .{k});
+    }
+
+    /// Emit `i32.load` (offset 0) or `i32.load offset=N`. Expects the base
+    /// pointer on the stack.
+    fn emitLoadOffset(self: *Emitter, offset: u32) !void {
+        if (offset == 0)
+            try self.w("    i32.load\n")
+        else
+            try self.fmt("    i32.load offset={d}\n", .{offset});
+    }
+
     fn lowerTupleLit(self: *Emitter, tl: anytype) anyerror!void {
-        _ = tl;
-        try self.w("    i32.const 0 ;; tuple\n");
+        const k = try self.allocSlots(@intCast(tl.elems.len * 4));
+        for (tl.elems, 0..) |el, i| try self.storeSlotExpr(k, @intCast(i * 4), el);
+        try self.loadBase(k);
     }
 
     fn lowerArrayLit(self: *Emitter, al: anytype) anyerror!void {
-        _ = al;
-        try self.w("    i32.const 0 ;; array\n");
+        if (al.spread != null) try self.w("    ;; note: array spread not lowered\n");
+        const k = try self.allocSlots(@intCast(al.elems.len * 4));
+        for (al.elems, 0..) |el, i| try self.storeSlotExpr(k, @intCast(i * 4), el);
+        try self.loadBase(k);
+    }
+
+    /// `Rec(a: 1, b: 2)` → contiguous slots in declaration order. Named args are
+    /// matched to fields by label; otherwise positional order is used.
+    fn lowerRecordCtor(self: *Emitter, cc: anytype, fields: []const []const u8) anyerror!void {
+        const k = try self.allocSlots(@intCast(fields.len * 4));
+        for (fields, 0..) |fname, i| {
+            const off: u32 = @intCast(i * 4);
+            if (self.argForField(cc.args, fname, i)) |arg| {
+                try self.storeSlotExpr(k, off, arg.value.*);
+            } else {
+                try self.storeSlotConst(k, off, 0);
+            }
+        }
+        try self.loadBase(k);
+    }
+
+    /// Pick the call argument that fills field `fname` (declaration index `idx`):
+    /// the labelled arg whose label matches, else the positional arg at `idx`.
+    fn argForField(self: *Emitter, args: anytype, fname: []const u8, idx: usize) ?@TypeOf(args[0]) {
+        _ = self;
+        for (args) |arg| {
+            if (arg.label) |lbl| {
+                if (std.mem.eql(u8, lbl, fname)) return arg;
+            }
+        }
+        // No matching label — fall back to positional (skipping `..spread`).
+        if (idx < args.len and args[idx].label == null) return args[idx];
+        return null;
+    }
+
+    /// `Color.Rgb(r: 1, g: 2, b: 3)` → `[tag, r, g, b]`. The tag (variant index)
+    /// lives at offset 0; payload fields follow at 4, 8, ...
+    fn lowerEnumCtor(self: *Emitter, cc: anytype, tag: u32, variant: ast.EnumVariant) anyerror!void {
+        const nslots = 1 + variant.fields.len;
+        const k = try self.allocSlots(@intCast(nslots * 4));
+        try self.storeSlotConst(k, 0, tag);
+        for (variant.fields, 0..) |vf, i| {
+            const off: u32 = @intCast((i + 1) * 4);
+            if (self.argForField(cc.args, vf.name, i)) |arg| {
+                try self.storeSlotExpr(k, off, arg.value.*);
+            } else {
+                try self.storeSlotConst(k, off, 0);
+            }
+        }
+        try self.loadBase(k);
+    }
+
+    /// `recv.member` — tuple element (`t._0`), qualified enum unit variant
+    /// (`Color.Red`), or an as-yet-unsupported record field access.
+    fn lowerIdentAccess(self: *Emitter, ia: anytype) anyerror!void {
+        // Tuple element access: `_0`, `_1`, ... → load at `index * 4`.
+        if (tupleIndex(ia.member)) |idx| {
+            try self.lowerExpr(ia.receiver.*);
+            try self.emitLoadOffset(idx * 4);
+            return;
+        }
+        // Qualified enum unit variant: `Color.Red` → variant tag.
+        switch (ia.receiver.*) {
+            .identifier => |rid| switch (rid.kind) {
+                .ident => |ename| {
+                    if (self.enums.get(ename)) |variants| {
+                        for (variants, 0..) |v, i| {
+                            if (std.mem.eql(u8, v.name, ia.member)) {
+                                try self.fmt("    i32.const {d} ;; {s}.{s}\n", .{ i, ename, ia.member });
+                                return;
+                            }
+                        }
+                    }
+                },
+                else => {},
+            },
+            else => {},
+        }
+        try self.fmt("    i32.const 0 ;; field access .{s}\n", .{ia.member});
+    }
+
+    /// Returns N for a tuple-accessor member of the form `_N` (e.g. `_0`).
+    fn tupleIndex(member: []const u8) ?u32 {
+        if (member.len < 2 or member[0] != '_') return null;
+        var n: u32 = 0;
+        for (member[1..]) |c| {
+            if (!std.ascii.isDigit(c)) return null;
+            n = n * 10 + (c - '0');
+        }
+        return n;
+    }
+
+    // ── strings in linear memory ──────────────────────────────────────────────
+    //
+    // String literals are interned in the data section as raw bytes; a value is
+    // just the byte offset (length is known at compile time). Concatenation and
+    // comparison of literals lower to helper calls with the offsets/lengths as
+    // constants, demonstrating linear-memory `memory.copy` and a byte-compare
+    // loop respectively.
+
+    fn isStrLit(e: ast.Expr) ?[]const u8 {
+        return switch (e) {
+            .literal => |lit| switch (lit.kind) {
+                .stringLit => |s| s,
+                else => null,
+            },
+            else => null,
+        };
+    }
+
+    fn lowerStrConcat(self: *Emitter, a: []const u8, b: []const u8) anyerror!void {
+        self.uses_str_concat = true;
+        const sa = try self.internString(a);
+        const sb = try self.internString(b);
+        try self.fmt("    i32.const {d} ;; \"{s}\" ptr\n", .{ sa.offset, a });
+        try self.fmt("    i32.const {d} ;; \"{s}\" len\n", .{ sa.len, a });
+        try self.fmt("    i32.const {d} ;; \"{s}\" ptr\n", .{ sb.offset, b });
+        try self.fmt("    i32.const {d} ;; \"{s}\" len\n", .{ sb.len, b });
+        try self.w("    call $__str_concat\n");
+    }
+
+    fn lowerStrEq(self: *Emitter, a: []const u8, b: []const u8, negate: bool) anyerror!void {
+        self.uses_str_eq = true;
+        const sa = try self.internString(a);
+        const sb = try self.internString(b);
+        try self.fmt("    i32.const {d}\n", .{sa.offset});
+        try self.fmt("    i32.const {d}\n", .{sa.len});
+        try self.fmt("    i32.const {d}\n", .{sb.offset});
+        try self.fmt("    i32.const {d}\n", .{sb.len});
+        try self.w("    call $__str_eq\n");
+        if (negate) try self.w("    i32.eqz\n");
     }
 
     fn lowerLoop(self: *Emitter, lp: anytype) anyerror!void {
@@ -968,10 +1447,18 @@ const Emitter = struct {
     }
 
     fn lowerBinOp(self: *Emitter, op: anytype, lhs: ast.Expr, rhs: ast.Expr) !void {
+        const Op = @TypeOf(op);
+        // String literal operands: concatenation and comparison run through
+        // linear-memory helpers rather than the numeric ALU.
+        if (isStrLit(lhs)) |a| if (isStrLit(rhs)) |b| switch (op) {
+            Op.add => return self.lowerStrConcat(a, b),
+            Op.eq => return self.lowerStrEq(a, b, false),
+            Op.ne => return self.lowerStrEq(a, b, true),
+            else => {},
+        };
         try self.lowerExpr(lhs);
         try self.lowerExpr(rhs);
         const t = exprNumType(lhs);
-        const Op = @TypeOf(op);
         const opname: ?[]const u8 = switch (op) {
             Op.add => "add",
             Op.sub => "sub",

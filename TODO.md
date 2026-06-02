@@ -1,46 +1,67 @@
-# Hook codegen (`use`)
+# WAT — remaining features
 
-**Branch**: `task/hook-codegen`
-**Phase**: F8
-**Depends on**: `feat/context-inference` (F7) — ✅ já mesclada em `feat`
+**Branch**: `task/wat-features`
+**Depends on**: nothing (independent)
+**Status**: in progress
+**File**: `wat.zig`
 
-> **Situação (2026-06-02): ✅ integrada com `feat` nesta branch.**
-> Commit `26ee8a5` ("feat(codegen): lower `use` hooks (F8) — React hooks, phantom erasure")
-> + merge de `origin/feat` (`3746eae`) resolvido (conflitos com o trabalho async/try-catch
-> já em `feat`). `zig build` e `zig build test` verdes; snapshots regenerados para a
-> serialização atual (`isStarFn`/`label`).
+> **Situação (2026-06-02):** branch atualizada sobre `feat`. O `feat` já trazia
+> try/catch (tag-based if/else), pipeline (`a |> f` → `call $f`) e destructure
+> parcial (`local.set` por campo). Esta task completa os itens restantes em
+> `wat.zig`: destructure real por offset, string concat/compare via memória
+> linear e representação de enum/record como tagged structs.
 
 ## Steps
 
-### CommonJS (alvo React-like) — ✅ feito
-- [x] `val {v, s} = use state(0)` → `const {v, s} = useState(0)`
-- [x] `val [v, s] = use state(0)` → `const [v, s] = useState(0)`
-- [x] `val d = use memo({ -> v*2 })` → `const d = useMemo(() => v*2, [v])` (deps inferidas)
-- [x] `use effect({ -> cleanup() })` → `useEffect(() => cleanup(), [])`
-- [x] Mapeamento de nome de hook (`state` → `useState`) — convenção `"use" + Capitalize` (ver P1)
+- [x] Destructure patterns (record, tuple) — load por offset a partir do ptr
+- [x] Pipeline operator lowering (já em `feat`)
+- [x] String operations (concat, compare) via linear memory
+- [x] Enum/record representation in linear memory (tagged structs)
+- [x] try/catch → tag-based if/else (já em `feat` via `trycatch-lowering`)
 
-### TypeScript `.d.ts` — ✅ feito
-- [x] Emitir os tipos de interface `@Context` no `.d.ts`
-- [x] ContextBase apagado (phantom) — nenhum código emitido para o tipo fantasma
+## Examples
 
-### Erlang / BEAM / WAT — ⏳ follow-up
-- [ ] Erlang: `use` → slot no process dictionary ou estado de gen_server
-- [ ] BEAM ASM: `use` → gerência de slot de hook
-- [ ] WAT: `use` → load/store em offset fixo na memória linear
+### Record destructure
+```bp
+record Point { x: i32, y: i32 }
+fn sumXY(p: Point) -> i32 {
+    val { x, y } = p;
+    return x + y;
+}
+```
+```wat
+;; x = i32.load offset=0 ; y = i32.load offset=4
+(i32.add (i32.load (local.get $p)) (i32.load offset=4 (local.get $p)))
+```
 
-> O foco da branch é o alvo CommonJS (React) + erasure do inline implement; o gerenciamento
-> de estado de `use` em Erlang/BEAM/WAT permanece como trabalho futuro.
+### String concat via linear memory
+```bp
+fn name() -> string {
+    return "a" + "b";
+}
+```
+```wat
+;; copy bytes of "a" and "b" into a new region; return (ptr, len)
+```
+
+### Pipeline operator
+```bp
+fn double(x: i32) -> i32 { return x * 2; }
+fn run() -> i32 {
+    return 21 |> double;
+}
+```
 
 ## Test scenarios
 
 ```
-codegen ---- val {v,s} = use state(0) → const {v,s} = useState(0)        ✅
-codegen ---- val [v,s] = use state(0) → const [v,s] = useState(0)        ✅
-codegen ---- val d = use memo(...) → const d = useMemo(..., [deps])      ✅
-codegen ---- use effect() → useEffect(() => …, [])                       ✅
-codegen ---- inline implement apagado em runtime (sem código p/ phantom)  ✅
+wasm ---- destructure record → i32.load per offset
+wasm ---- destructure tuple → sequential loads
+wasm ---- pipeline a |> f → call f(a)
+wasm ---- chained pipeline a |> f |> g → g(f(a))
+wasm ---- string concat → alloc + memory.copy, returns (ptr,len)
+wasm ---- string compare → byte loop in linear memory
+wasm ---- enum payload → tagged struct (i32 tag + fields) in memory
+wasm ---- record 2 fields → contiguous layout, store per offset
+wasm ---- try/catch → if/else on the Ok/Error tag
 ```
-
-## Open point
-- **P1**: nome de hook específico de framework. `state` → `useState` via convenção
-  (`"use" + Capitalize`) ou tabela de config?
