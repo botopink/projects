@@ -832,45 +832,49 @@ const Emitter = struct {
             .binding => |b| switch (b.kind) {
                 .localBind => |lb| try self.emitLocalBind(lb.name, lb.value.*),
                 .assign => |a| try self.emitAssign(a),
-                .localBindDestruct => |lb| {
-                    try self.lowerExprIntoX0(lb.value.*);
-                    switch (lb.pattern) {
-                        .names => |n| {
-                            for (n.fields) |fld| {
-                                const scratch = self.cur_arity;
-                                try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
-                                const fail = self.allocLabel();
-                                try self.bodyPrint(
-                                    "    {{get_map_elements, {{f, {d}}}, {{x, {d}}}, {{list, [{{atom, {s}}}, {{x, 0}}]}}}}.\n",
-                                    .{ fail, scratch, fld.field_name },
-                                );
-                                try self.bodyPrint("  {{label, {d}}}.\n", .{fail});
-                                const y_idx = self.next_y;
-                                self.next_y += 1;
-                                try self.reg_map.put(fld.bind_name, .{ .y = y_idx });
-                                try self.bodyPrint("    {{move, {{x, 0}}, {{y, {d}}}}}.\n", .{y_idx});
-                                try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{scratch});
-                            }
-                        },
-                        .tuple_ => |bindings| {
-                            for (bindings, 0..) |name, i| {
-                                try self.bodyPrint(
-                                    "    {{get_tuple_element, {{x, 0}}, {d}, {{x, 1}}}}.\n",
-                                    .{i},
-                                );
-                                const y_idx = self.next_y;
-                                self.next_y += 1;
-                                try self.reg_map.put(name, .{ .y = y_idx });
-                                try self.bodyPrint("    {{move, {{x, 1}}, {{y, {d}}}}}.\n", .{y_idx});
-                            }
-                        },
-                        else => try self.bodyWrite("    %% unsupported destructure pattern\n"),
-                    }
-                },
+                .localBindDestruct => |lb| try self.emitDestructBind(lb.pattern, lb.value.*),
             },
             else => {
                 try self.lowerExprIntoX0(stmt.expr);
             },
+        }
+    }
+
+    /// Lower a destructuring binding (`{a, b} = expr` / `#(a, b) = expr`):
+    /// evaluate `value` into `{x, 0}`, then bind each field into a y-slot.
+    fn emitDestructBind(self: *Emitter, pattern: ast.ParamDestruct, value: ast.Expr) anyerror!void {
+        try self.lowerExprIntoX0(value);
+        switch (pattern) {
+            .names => |n| {
+                for (n.fields) |fld| {
+                    const scratch = self.cur_arity;
+                    try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
+                    const fail = self.allocLabel();
+                    try self.bodyPrint(
+                        "    {{get_map_elements, {{f, {d}}}, {{x, {d}}}, {{list, [{{atom, {s}}}, {{x, 0}}]}}}}.\n",
+                        .{ fail, scratch, fld.field_name },
+                    );
+                    try self.bodyPrint("  {{label, {d}}}.\n", .{fail});
+                    const y_idx = self.next_y;
+                    self.next_y += 1;
+                    try self.reg_map.put(fld.bind_name, .{ .y = y_idx });
+                    try self.bodyPrint("    {{move, {{x, 0}}, {{y, {d}}}}}.\n", .{y_idx});
+                    try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{scratch});
+                }
+            },
+            .tuple_ => |bindings| {
+                for (bindings, 0..) |name, i| {
+                    try self.bodyPrint(
+                        "    {{get_tuple_element, {{x, 0}}, {d}, {{x, 1}}}}.\n",
+                        .{i},
+                    );
+                    const y_idx = self.next_y;
+                    self.next_y += 1;
+                    try self.reg_map.put(name, .{ .y = y_idx });
+                    try self.bodyPrint("    {{move, {{x, 1}}, {{y, {d}}}}}.\n", .{y_idx});
+                }
+            },
+            else => try self.bodyWrite("    %% unsupported destructure pattern\n"),
         }
     }
 
@@ -1031,6 +1035,9 @@ const Emitter = struct {
     /// Lower `e` so its value lives in `{x, 0}`, ready for `return.`.
     fn lowerExprIntoX0(self: *Emitter, e: ast.Expr) anyerror!void {
         switch (e) {
+            // `use` is a transparent prefix: lower the wrapped hook call. The
+            // enclosing `val` moves the result into its y-slot.
+            .useHook => |uh| return self.lowerExprIntoX0(uh.kind.inner.*),
             .identifier => |id| switch (id.kind) {
                 .ident => |n| {
                     if (self.reg_map.get(n)) |reg| {

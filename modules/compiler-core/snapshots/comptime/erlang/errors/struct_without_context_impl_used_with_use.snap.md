@@ -4,15 +4,15 @@ fn make() -> Plain {
     Plain(x: 0);
 }
 fn comp() -> @Context<Element, i32> {
-    use p = make();
+    val p = use make();
     0;
 }
 
 ----- ERROR
 error: `use` requires @Context
-  ┌─ :6:5
+  ┌─ :6:13
   │
-6 │     use p = make();
-  │     ^
+6 │     val p = use make();
+  │             ^
 
   `Plain` does not implement @Context — `use` requires @Context<_, _>

@@ -21,6 +21,16 @@ All notable changes to the botopink compiler workspace are documented in this fi
 
 ### Highlights
 
+- **`use` hook codegen (F8)**
+  - `use` is now a prefix operator (`val {v, s} = use state(0)`); the AST node
+    collapsed to `Expr.useHook { inner }` and binding moved to `val`/`var`.
+  - CommonJS lowers hooks to React: `state`→`useState`, `memo`→`useMemo`,
+    `effect`→`useEffect` (via the `"use"+Capitalize` convention), with an
+    inferred dependency array for `memo`/`effect`. Erlang/BEAM/WAT lower `use`
+    transparently into the binding's slot.
+  - Phantom `@Context` base structs emit no runtime code; the `.d.ts` erases
+    `@Context<B, R>` to its Return type `R`.
+  - Parser fix: no-param trailing lambdas `{ -> … }` now consume their arrow.
 - **`try` / `catch` lower to `Ok`/`Error` pattern matching**
   - Across all four backends (commonJS, erlang, beam, wasm), `try`/`catch` now
     lower to a pattern match on the `@Result` tag instead of host exceptions
