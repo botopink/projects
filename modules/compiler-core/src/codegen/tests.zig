@@ -824,8 +824,8 @@ test "js: destructure ---- tuple with long names" {
 test "js: destructure ---- tuple with try-catch" {
     try assertJsSingle(std.testing.allocator, @src(),
         \\record Error { msg: string }
-        \\fn fetch() -> #(i32, i32) {
-        \\    return #(1, 2);
+        \\fn fetch() -> @Result<#(i32, i32), Error> {
+        \\    throw Error(msg: "boom");
         \\}
         \\fn f() {
         \\    val #(a, b) = try fetch() catch throw Error(msg: "failed");
@@ -880,7 +880,7 @@ test "js: if ---- conditional with else branch" {
 // Tests try without catch propagates error
 test "js: try ---- propagate without catch" {
     try assertJsSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> i32 {
+        \\fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn process() -> i32 {
@@ -894,7 +894,7 @@ test "js: try ---- propagate without catch" {
 // Tests try with inline catch handler
 test "js: try ---- with inline catch handler" {
     try assertJsSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> i32 {
+        \\fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn safe() -> i32 {

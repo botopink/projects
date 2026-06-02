@@ -6,6 +6,17 @@ All notable changes to the botopink compiler workspace are documented in this fi
 
 ### Highlights
 
+- **`try` / `catch` lower to `Ok`/`Error` pattern matching**
+  - Across all four backends (commonJS, erlang, beam, wasm), `try`/`catch` now
+    lower to a pattern match on the `@Result` tag instead of host exceptions
+    (no JS `try/catch`, no Erlang `try…catch`, no BEAM `try`/`try_case`).
+  - `try expr` propagates the `Error` variant via an early return (Erlang nests
+    the remainder of the body inside the `{ok, V}` arm); `try expr catch h`
+    keeps the `Ok` value or applies the handler (lambda handlers receive the
+    unwrapped error).
+  - Applying `try`/`catch` to a non-`@Result` value is now a compile-time error
+    (`try on non-Result`).
+
 - **Expression-flow refactor across compiler-core** (`b86c5de`)
   - `ast.ExprOf(phase)` now uses categorized families:
     `literal`, `identifier`, `binaryOp`, `unaryOp`, `jump`, `branch`, `loop`, `binding`, `call`, `function`, `collection`, `comptime_`.

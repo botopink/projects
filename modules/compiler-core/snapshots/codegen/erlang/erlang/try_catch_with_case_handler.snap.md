@@ -22,12 +22,11 @@ fetch() ->
     erlang:throw(ErrorKind_NotFound).
 
 handle() ->
-    R = try
-        fetch()
-catch
-        _Err ->
-            0(_Err)
-end,
+    R = case fetch() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
+            0
+    end,
     R.
 ```
 

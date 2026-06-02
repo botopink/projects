@@ -76,6 +76,8 @@ pub const TypeErrorKind = union(enum) {
         typeName: []const u8,
         field: []const u8,
     },
+    /// `try` / `catch` applied to a value whose type is not `@Result<D, E>`.
+    tryOnNonResult: *T.Type,
 };
 
 /// A type error with its source location.
@@ -120,6 +122,10 @@ pub const TypeError = struct {
 
     pub fn missingField(typeName: []const u8, field: []const u8) TypeError {
         return .{ .kind = .{ .missingField = .{ .typeName = typeName, .field = field } } };
+    }
+
+    pub fn tryOnNonResult(ty: *T.Type) TypeError {
+        return .{ .kind = .{ .tryOnNonResult = ty } };
     }
 };
 

@@ -242,10 +242,21 @@ fn describe(n: i32) -> string {
 
 ## Error Handling
 
+`try` / `catch` operate on `@Result<D, E>` values and lower to **pattern
+matching on the `Ok` / `Error` tag** — never to host (JS/Erlang) exceptions.
+Applying `try` to a non-`@Result` value is a compile-time error.
+
+A `@Result` is a tagged value: `{ tag: "Ok", result }` / `{ tag: "Error", error }`
+in JavaScript, `{ok, V}` / `{error, E}` in Erlang and BEAM, and a linear-memory
+pointer (tag `i32` at `[ptr]`, payload at `[ptr+4]`) in WebAssembly.
+
 ### Propagate without catch
 
+`try expr` unwraps the `Ok` value; on `Error` it returns the error variant from
+the enclosing function (propagation).
+
 ```botopink
-fn fetch() -> i32 {
+fn fetch() -> @Result<i32, string> {
     todo;
 }
 fn process() -> i32 {
@@ -254,18 +265,23 @@ fn process() -> i32 {
 }
 ```
 
-**Generates:**
+**Generates (CommonJS):**
 ```javascript
 function process() {
-    const r = fetch();
+    const _try0 = fetch();
+    if (_try0.tag === "Error") return _try0;
+    const r = _try0.result;
     return r;
 }
 ```
 
 ### With inline catch handler
 
+`try expr catch fallback` replaces an `Error` with a fallback value. A lambda
+handler (`catch fn(e) { … }`) receives the unwrapped error.
+
 ```botopink
-fn fetch() -> i32 {
+fn fetch() -> @Result<i32, string> {
     todo;
 }
 fn safe() -> i32 {
@@ -274,12 +290,24 @@ fn safe() -> i32 {
 }
 ```
 
-**Generates:**
+**Generates (CommonJS):**
 ```javascript
 function safe() {
-    const r = (() => { try { return fetch(); } catch(_e) { return (0)(_e); } })();
+    const _try0 = fetch();
+    const r = _try0.tag === "Error" ? (0) : _try0.result;
     return r;
 }
+```
+
+**Generates (Erlang):**
+```erlang
+safe() ->
+    R = case fetch() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
+            0
+    end,
+    R.
 ```
 
 ---

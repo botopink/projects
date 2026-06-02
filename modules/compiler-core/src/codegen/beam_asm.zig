@@ -819,7 +819,7 @@ const Emitter = struct {
             },
             .branch => |b| switch (b.kind) {
                 .if_ => |i| try self.emitIf(i),
-                .tryCatch => try self.bodyWrite("    %% unsupported: try/catch (Fase 8)\n"),
+                .tryCatch => |tc| try self.lowerTryCatch(tc),
             },
             .binding => |b| switch (b.kind) {
                 .localBind => |lb| try self.emitLocalBind(lb.name, lb.value.*),
@@ -1139,7 +1139,19 @@ const Emitter = struct {
                     return;
                 },
                 .try_ => |val| {
-                    if (val) |v| try self.lowerExprIntoX0(v.*);
+                    // `try expr` (no catch): unwrap `{ok, V}`, or early-return the
+                    // `{error, E}` tuple to propagate it up.
+                    if (val) |v| {
+                        try self.lowerExprIntoX0(v.*);
+                        const err_label = self.allocLabel();
+                        const cont_label = self.allocLabel();
+                        try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, 2, {{atom, ok}}}}.\n", .{err_label});
+                        try self.bodyWrite("    {get_tuple_element, {x, 0}, 1, {x, 0}}.\n");
+                        try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{cont_label});
+                        try self.bodyPrint("  {{label, {d}}}.\n", .{err_label});
+                        try self.emitReturn();
+                        try self.bodyPrint("  {{label, {d}}}.\n", .{cont_label});
+                    }
                     return;
                 },
                 else => {},
@@ -1824,19 +1836,21 @@ const Emitter = struct {
     }
 
     /// Lower `try expr catch handler` → BEAM try/catch block.
+    /// `try expr catch handler` → match the Result tuple `{ok, V}` / `{error, E}`
+    /// with `is_tagged_tuple` (never BEAM try/catch). Ok unwraps element 1; Error
+    /// runs the handler.
     fn lowerTryCatch(self: *Emitter, tc: anytype) anyerror!void {
-        const y_idx = self.next_y;
-        self.next_y += 1;
-        const catch_label = self.allocLabel();
+        try self.lowerExprIntoX0(tc.expr.*);
+
+        const err_label = self.allocLabel();
         const end_label = self.allocLabel();
 
-        try self.bodyPrint("    {{try, {{y, {d}}}, {{f, {d}}}}}.\n", .{ y_idx, catch_label });
-        try self.lowerExprIntoX0(tc.expr.*);
-        try self.bodyPrint("    {{try_end, {{y, {d}}}}}.\n", .{y_idx});
+        // {ok, V}: fall through and unwrap; otherwise jump to the Error branch.
+        try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, 2, {{atom, ok}}}}.\n", .{err_label});
+        try self.bodyWrite("    {get_tuple_element, {x, 0}, 1, {x, 0}}.\n");
         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
 
-        try self.bodyPrint("  {{label, {d}}}.\n", .{catch_label});
-        try self.bodyPrint("    {{try_case, {{y, {d}}}}}.\n", .{y_idx});
+        try self.bodyPrint("  {{label, {d}}}.\n", .{err_label});
         try self.lowerExprIntoX0(tc.handler.*);
         try self.bodyPrint("  {{label, {d}}}.\n", .{end_label});
     }

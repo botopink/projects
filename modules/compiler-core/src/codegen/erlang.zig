@@ -218,6 +218,7 @@ const Emitter = struct {
     out: *std.Io.Writer,
     cv: std.StringHashMap([]const u8),
     indent: usize = 0,
+    try_seq: usize = 0,
     alloc: std.mem.Allocator,
 
     fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8)) Emitter {
@@ -314,9 +315,22 @@ const Emitter = struct {
         try this.w(") ->\n");
         const saved = this.indent;
         this.indent = 1;
+        this.try_seq = 0;
         try this.emitBody(f.body);
         this.indent = saved;
         try this.w(".\n");
+    }
+
+    /// `try expr` (no catch) at body position → propagate `{error, E}` by nesting
+    /// the rest of the body inside the `{ok, V}` arm. Returns the inner expr.
+    fn propagateTryInner(e: ast.Expr) ?ast.Expr {
+        return switch (e) {
+            .jump => |j| switch (j.kind) {
+                .try_ => |t| if (t) |i| i.* else null,
+                else => null,
+            },
+            else => null,
+        };
     }
 
     // ── body (comma-separated stmts; does NOT emit trailing newline) ──────────
@@ -326,11 +340,138 @@ const Emitter = struct {
     //   fun end → "\nINDENT end"
 
     fn emitBody(this: *Emitter, body: []const ast.Stmt) !void {
-        for (body, 0..) |stmt, i| {
+        try this.emitBodyFrom(body, 0);
+    }
+
+    /// Emit statements `body[start..]`. A `try` without `catch` short-circuits:
+    /// it lowers to `case Inner of {ok, V} -> <rest>; {error, E} -> {error, E} end`,
+    /// nesting every following statement inside the Ok arm (Erlang has no early
+    /// return), so the Error variant propagates up as the function's value.
+    fn emitBodyFrom(this: *Emitter, body: []const ast.Stmt, start: usize) anyerror!void {
+        var i = start;
+        while (i < body.len) : (i += 1) {
+            const stmt = body[i];
             const is_last = (i == body.len - 1);
+
+            // Detect `[val name =] try inner` (no catch) at this position.
+            const prop: ?struct { inner: ast.Expr, head: TryHead } = switch (stmt.expr) {
+                .binding => |b| switch (b.kind) {
+                    .localBind => |lb| if (propagateTryInner(lb.value.*)) |inner|
+                        .{ .inner = inner, .head = .{ .name = lb.name } }
+                    else
+                        null,
+                    .localBindDestruct => |lb| if (propagateTryInner(lb.value.*)) |inner|
+                        .{ .inner = inner, .head = .{ .destruct = lb.pattern } }
+                    else
+                        null,
+                    else => null,
+                },
+                .jump => |j| switch (j.kind) {
+                    .try_ => |t| if (t) |inner|
+                        .{ .inner = inner.*, .head = .none }
+                    else
+                        null,
+                    .@"return" => |r| if (r) |rv| if (propagateTryInner(rv.*)) |inner|
+                        .{ .inner = inner, .head = .none }
+                    else
+                        null else null,
+                    else => null,
+                },
+                else => null,
+            };
+
+            if (prop) |p| {
+                try this.writeIndent();
+                try this.emitPropagateTry(body, i, p.inner, p.head);
+                return; // remaining statements are nested inside the Ok arm
+            }
+
             try this.writeIndent();
             try this.emitBodyStmt(stmt, is_last);
             if (!is_last) try this.w(",\n");
+        }
+    }
+
+    const TryHead = union(enum) {
+        name: []const u8,
+        destruct: ast.ParamDestruct,
+        none,
+    };
+
+    /// Emit the propagating `case` for a `try` at `body[i]`, nesting `body[i+1..]`
+    /// inside the `{ok, _}` arm.
+    fn emitPropagateTry(this: *Emitter, body: []const ast.Stmt, i: usize, inner: ast.Expr, head: TryHead) !void {
+        const n = this.try_seq;
+        this.try_seq += 1;
+
+        try this.w("case ");
+        try this.emitExpr(inner);
+        try this.w(" of\n");
+        this.indent += 1;
+        try this.writeIndent();
+
+        // {ok, <bind>} ->
+        try this.w("{ok, ");
+        switch (head) {
+            .name => |nm| {
+                const vname = try erlangVar(this.alloc, nm);
+                defer this.alloc.free(vname);
+                try this.w(vname);
+            },
+            .destruct => |pat| try this.emitDestructPattern(pat),
+            .none => try this.fmt("_TryV{d}", .{n}),
+        }
+        try this.w("} ->\n");
+
+        this.indent += 1;
+        if (i + 1 < body.len) {
+            try this.emitBodyFrom(body, i + 1);
+        } else {
+            // No continuation: the Ok value is the function's result.
+            try this.writeIndent();
+            switch (head) {
+                .name => |nm| {
+                    const vname = try erlangVar(this.alloc, nm);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                },
+                else => try this.fmt("_TryV{d}", .{n}),
+            }
+        }
+        this.indent -= 1;
+        try this.w(";\n");
+        try this.writeIndent();
+        try this.fmt("{{error, _TryE{d}}} -> {{error, _TryE{d}}}\n", .{ n, n });
+        this.indent -= 1;
+        try this.writeIndent();
+        try this.w("end");
+    }
+
+    /// Render a destructuring pattern (tuple/record names) as an Erlang pattern.
+    fn emitDestructPattern(this: *Emitter, pattern: ast.ParamDestruct) !void {
+        switch (pattern) {
+            .names => |n| {
+                try this.w("{");
+                for (n.fields, 0..) |fld, k| {
+                    if (k > 0) try this.w(", ");
+                    const vname = try erlangVar(this.alloc, fld.bind_name);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                }
+                if (n.hasSpread) try this.w(", _");
+                try this.w("}");
+            },
+            .tuple_ => |t| {
+                try this.w("{");
+                for (t, 0..) |nm, k| {
+                    if (k > 0) try this.w(", ");
+                    const vname = try erlangVar(this.alloc, nm);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                }
+                try this.w("}");
+            },
+            .list, .ctor => try this.w("_"),
         }
     }
 
@@ -782,29 +923,43 @@ const Emitter = struct {
                     try this.w("end");
                 },
                 .tryCatch => |tc| {
-                    const handlerIsStatement = switch (tc.handler.*) {
-                        .jump => |j| j.kind == .throw_ or j.kind == .@"return",
+                    // `try expr catch handler` → pattern match on the Result tag.
+                    //   case Expr of {ok, V} -> V; {error, E} -> Handler end
+                    const handler = tc.handler.*;
+                    const is_jump = switch (handler) {
+                        .jump => |j| switch (j.kind) {
+                            .throw_, .@"return", .@"break", .@"continue", .yield => true,
+                            else => false,
+                        },
                         else => false,
                     };
-                    try this.w("try\n");
-                    this.indent += 1;
-                    try this.writeIndent();
+                    const is_fun = switch (handler) {
+                        .function => true,
+                        else => false,
+                    };
+                    const n = this.try_seq;
+                    this.try_seq += 1;
+
+                    try this.w("case ");
                     try this.emitExpr(tc.expr.*);
-                    this.indent -= 1;
-                    try this.w("\ncatch\n");
+                    try this.w(" of\n");
                     this.indent += 1;
                     try this.writeIndent();
-                    try this.w("_Err ->\n");
+                    try this.fmt("{{ok, TryV{d}}} -> TryV{d};\n", .{ n, n });
+                    try this.writeIndent();
+                    try this.fmt("{{error, _TryE{d}}} ->\n", .{n});
                     this.indent += 1;
                     try this.writeIndent();
-                    if (handlerIsStatement) {
-                        try this.emitExpr(tc.handler.*);
-                    } else {
-                        try this.emitExpr(tc.handler.*);
-                        try this.w("(_Err)");
+                    try this.emitExpr(handler);
+                    if (is_fun) {
+                        try this.fmt("(_TryE{d})", .{n});
+                    } else if (is_jump) {
+                        // handler already emitted its own control-flow expression
                     }
                     this.indent -= 2;
-                    try this.w("\nend");
+                    try this.w("\n");
+                    try this.writeIndent();
+                    try this.w("end");
                 },
             },
 

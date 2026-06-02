@@ -27,7 +27,8 @@ function load() {
 
 function process() {
     const prefix = 10;
-    const data = (() => { try { return load(); } catch(_e) { return (0)(_e); } })();
+    const _try0 = load();
+    const data = _try0.tag === "Error" ? (0) : _try0.result;
     const suffix = 20;
     console.log(prefix, data, suffix);
     return ((prefix + data) + suffix);

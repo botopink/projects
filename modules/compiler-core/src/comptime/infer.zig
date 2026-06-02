@@ -693,6 +693,17 @@ fn unwrapResultType(ty: *T.Type) ?*T.Type {
     };
 }
 
+/// Unwrap the Ok type of a `@Result<D, E>` operand for `try`/`catch`.
+/// A still-unresolved type variable is allowed (its `Result`-ness is unknown);
+/// any other concrete non-Result type is a compile-time error.
+fn tryUnwrapOrError(env: *Env, rawTy: *T.Type, loc: ast.Loc) InferError!*T.Type {
+    if (unwrapResultType(rawTy)) |ty| return ty;
+    const d = rawTy.deref();
+    if (d.* == .typeVar) return rawTy;
+    env.lastError = TypeError.tryOnNonResult(d).withLoc(loc);
+    return InferError.TypeError;
+}
+
 /// Shallow structural equality check ---- used by case-arm deduplication.
 /// Does NOT unify type variables; treats any typeVar as distinct from a named type.
 fn typesSameShape(a: *T.Type, b: *T.Type) bool {
@@ -1174,7 +1185,7 @@ fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)),
         .try_ => |e| {
             const valPtr: ?*TypedExpr = if (e) |ev| try makeTypedPtr(env, try inferExprTyped(env, ev.*)) else null;
             const rawTy = if (valPtr) |vp| vp.getType() else try env.freshVar();
-            const ty = unwrapResultType(rawTy) orelse rawTy;
+            const ty = try tryUnwrapOrError(env, rawTy, loc);
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = ty, .kind = .{ .try_ = valPtr } } };
         },
         .@"break" => |e| {
@@ -1238,7 +1249,7 @@ fn inferBranchExpr(env: *Env, b: ast.MakeExpr(.untyped, ast.BranchExprOf(.untype
             const handlerTyped = try inferExprTyped(env, tc.handler.*);
             const handlerPtr = try makeTypedPtr(env, handlerTyped);
             const rawTy = exprTyped.getType();
-            const resultTy = unwrapResultType(rawTy) orelse rawTy;
+            const resultTy = try tryUnwrapOrError(env, rawTy, loc);
             const handlerTy = handlerTyped.getType().deref();
             const effectiveTy = switch (handlerTy.*) {
                 .func => |f| f.ret,

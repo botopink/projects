@@ -1,6 +1,6 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-fn fetch() -> i32 {
+fn fetch() -> @Result<i32, string> {
     @todo();
 }
 fn safe() -> i32 {
@@ -18,12 +18,11 @@ fetch() ->
     erlang:error({todo, "not implemented"}).
 
 safe() ->
-    R = try
-        fetch()
-catch
-        _Err ->
-            0(_Err)
-end,
+    R = case fetch() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
+            0
+    end,
     io:format("~p~n", [R]),
     R.
 ```

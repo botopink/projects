@@ -22,7 +22,8 @@ function fetch() {
 }
 
 function handle() {
-    const r = (() => { try { return fetch(); } catch(_e) { return (0)(_e); } })();
+    const _try0 = fetch();
+    const r = _try0.tag === "Error" ? (0) : _try0.result;
     return r;
 }
 ```

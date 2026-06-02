@@ -318,10 +318,74 @@ const JsBuilder = struct {
     }
 };
 
+/// How `try`/`catch` is shaped once classified — drives statement-level lowering
+/// to `.tag === "Error"` pattern matching (never JS try/catch).
+const TryForm = union(enum) {
+    /// `try expr` (no catch) — propagate the Error variant up via early `return`.
+    propagate: ast.Expr,
+    /// `try expr catch <value>` — on Error use a fallback value, or call a lambda
+    /// handler with the unwrapped error (`is_lambda`).
+    catchValue: struct { inner: ast.Expr, handler: ast.Expr, is_lambda: bool },
+    /// `try expr catch <return|throw|break|continue ...>` — on Error run a jump stmt.
+    catchJump: struct { inner: ast.Expr, handler: ast.Expr },
+
+    fn inner(self: TryForm) ast.Expr {
+        return switch (self) {
+            .propagate => |e| e,
+            .catchValue => |cv| cv.inner,
+            .catchJump => |cj| cj.inner,
+        };
+    }
+};
+
+/// Where the unwrapped (Ok) value of a `try` should land at statement position.
+const TryHead = union(enum) {
+    decl: struct { kw: []const u8, name: []const u8 },
+    destruct: struct { mutable: bool, pattern: ast.ParamDestruct },
+    ret,
+    discard,
+};
+
+/// A handler that transfers control (`return`/`throw`/`break`/`continue`) is a
+/// statement, not a value, so it cannot sit inside a `?:` ternary.
+fn isJumpHandler(h: ast.Expr) bool {
+    return switch (h) {
+        .jump => |hj| switch (hj.kind) {
+            .@"return", .throw_, .@"break", .@"continue", .yield => true,
+            .try_ => false,
+        },
+        else => false,
+    };
+}
+
+/// Recognise the try/catch shape of `e`, or null when it is not a try/catch.
+fn classifyTry(e: ast.Expr) ?TryForm {
+    switch (e) {
+        .jump => |j| switch (j.kind) {
+            .try_ => |t| return if (t) |i| TryForm{ .propagate = i.* } else null,
+            else => return null,
+        },
+        .branch => |br| switch (br.kind) {
+            .tryCatch => |tc| {
+                const h = tc.handler.*;
+                if (isJumpHandler(h)) return TryForm{ .catchJump = .{ .inner = tc.expr.*, .handler = h } };
+                const is_lambda = switch (h) {
+                    .function => true,
+                    else => false,
+                };
+                return TryForm{ .catchValue = .{ .inner = tc.expr.*, .handler = h, .is_lambda = is_lambda } };
+            },
+            else => return null,
+        },
+        else => return null,
+    }
+}
+
 const Emitter = struct {
     out: *std.Io.Writer,
     cv: std.StringHashMap([]const u8),
     current_indent: usize = 0,
+    try_seq: usize = 0,
     alloc: std.mem.Allocator,
 
     fn emitterInit(
@@ -358,6 +422,7 @@ const Emitter = struct {
     }
 
     fn emitFn(self: *Emitter, f: ast.FnDecl) !void {
+        self.try_seq = 0;
         try self.fmt("function {s}(", .{f.name});
         try self.emitParams(f.params);
         try self.w(") {\n");
@@ -710,41 +775,24 @@ const Emitter = struct {
         switch (e) {
             .binding => |b| switch (b.kind) {
                 .localBind => |lb| {
+                    if (classifyTry(lb.value.*)) |form| {
+                        const kw: []const u8 = if (lb.mutable) "let" else "const";
+                        try self.emitTryStmt(form, .{ .decl = .{ .kw = kw, .name = lb.name } });
+                        return;
+                    }
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
                     try self.fmt("{s} {s} = ", .{ kw, lb.name });
                     try self.emitExpr(lb.value.*);
                     try self.w(";");
                 },
                 .localBindDestruct => |lb| {
+                    if (classifyTry(lb.value.*)) |form| {
+                        try self.emitTryStmt(form, .{ .destruct = .{ .mutable = lb.mutable, .pattern = lb.pattern } });
+                        return;
+                    }
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
                     try self.fmt("{s} ", .{kw});
-                    switch (lb.pattern) {
-                        .names => |*n| {
-                            try self.w("{ ");
-                            for (n.fields, 0..) |nm, i| {
-                                if (i > 0) try self.w(", ");
-                                try self.w(nm.bind_name);
-                            }
-                            if (n.hasSpread) try self.w(", ...");
-                            try self.w(" } = ");
-                        },
-                        .tuple_ => |t| {
-                            try self.w("[ ");
-                            for (t, 0..) |nm, i| {
-                                if (i > 0) try self.w(", ");
-                                try self.w(nm);
-                            }
-                            try self.w(" ] = ");
-                        },
-                        .list => |pat| {
-                            try self.emitPattern(pat);
-                            try self.w(" = ");
-                        },
-                        .ctor => |pat| {
-                            try self.emitPattern(pat);
-                            try self.w(" = ");
-                        },
-                    }
+                    try self.emitDestructHead(lb.pattern);
                     try self.emitExpr(lb.value.*);
                     try self.w(";");
                 },
@@ -757,6 +805,10 @@ const Emitter = struct {
             .jump => |j| switch (j.kind) {
                 .@"return" => |r| {
                     if (r) |rp| {
+                        if (classifyTry(rp.*)) |form| {
+                            try self.emitTryStmt(form, .ret);
+                            return;
+                        }
                         try self.w("return ");
                         try self.emitExpr(rp.*);
                     } else {
@@ -765,15 +817,127 @@ const Emitter = struct {
                     try self.w(";");
                 },
                 else => {
+                    if (classifyTry(e)) |form| {
+                        try self.emitTryStmt(form, .discard);
+                        return;
+                    }
                     try self.emitExpr(e);
                     try self.w(";");
                 },
             },
             else => {
+                if (classifyTry(e)) |form| {
+                    try self.emitTryStmt(form, .discard);
+                    return;
+                }
                 try self.emitExpr(e);
                 try self.w(";");
             },
         }
+    }
+
+    /// Write the destructuring head (`{ a, b } = ` / `[ a, b ] = ` / pattern + ` = `)
+    /// for a `localBindDestruct`. The `const`/`let` keyword is written by the caller.
+    fn emitDestructHead(self: *Emitter, pattern: ast.ParamDestruct) !void {
+        switch (pattern) {
+            .names => |n| {
+                try self.w("{ ");
+                for (n.fields, 0..) |nm, i| {
+                    if (i > 0) try self.w(", ");
+                    try self.w(nm.bind_name);
+                }
+                if (n.hasSpread) try self.w(", ...");
+                try self.w(" } = ");
+            },
+            .tuple_ => |t| {
+                try self.w("[ ");
+                for (t, 0..) |nm, i| {
+                    if (i > 0) try self.w(", ");
+                    try self.w(nm);
+                }
+                try self.w(" ] = ");
+            },
+            .list => |pat| {
+                try self.emitPattern(pat);
+                try self.w(" = ");
+            },
+            .ctor => |pat| {
+                try self.emitPattern(pat);
+                try self.w(" = ");
+            },
+        }
+    }
+
+    /// Newline + current indentation, for continuation lines of a multi-line
+    /// statement (the leading indent of the first line is written by the caller).
+    fn contLine(self: *Emitter) !void {
+        try self.w("\n");
+        for (0..self.current_indent) |_| try self.w("    ");
+    }
+
+    /// Write the binding head that receives the unwrapped Ok value.
+    /// Returns false for `.discard` (no value should be written).
+    fn writeTryHead(self: *Emitter, head: TryHead) !bool {
+        switch (head) {
+            .decl => |d| {
+                try self.fmt("{s} {s} = ", .{ d.kw, d.name });
+                return true;
+            },
+            .destruct => |d| {
+                const kw: []const u8 = if (d.mutable) "let" else "const";
+                try self.fmt("{s} ", .{kw});
+                try self.emitDestructHead(d.pattern);
+                return true;
+            },
+            .ret => {
+                try self.w("return ");
+                return true;
+            },
+            .discard => return false,
+        }
+    }
+
+    /// Lower a `try`/`catch` at statement position to `.tag === "Error"` pattern
+    /// matching — never JS try/catch. `head` says where the Ok value lands.
+    fn emitTryStmt(self: *Emitter, form: TryForm, head: TryHead) !void {
+        const n = self.try_seq;
+        self.try_seq += 1;
+
+        try self.fmt("const _try{d} = ", .{n});
+        try self.emitExpr(form.inner());
+        try self.w(";");
+
+        switch (form) {
+            .catchValue => |cv| {
+                try self.contLine();
+                _ = try self.writeTryHead(head);
+                try self.fmt("_try{d}.tag === \"Error\" ? (", .{n});
+                try self.emitExpr(cv.handler);
+                try self.w(")");
+                if (cv.is_lambda) try self.fmt("(_try{d}.error)", .{n});
+                try self.fmt(" : _try{d}.result;", .{n});
+            },
+            .propagate => {
+                try self.contLine();
+                try self.fmt("if (_try{d}.tag === \"Error\") return _try{d};", .{ n, n });
+                try self.writeTryValueLine(head, n);
+            },
+            .catchJump => |cj| {
+                try self.contLine();
+                try self.fmt("if (_try{d}.tag === \"Error\") {{ ", .{n});
+                try self.emitExpr(cj.handler);
+                try self.w("; }");
+                try self.writeTryValueLine(head, n);
+            },
+        }
+    }
+
+    /// Emit `<head>_tryN.result;` on its own line, unless the value is discarded.
+    fn writeTryValueLine(self: *Emitter, head: TryHead, n: usize) !void {
+        if (head == .discard) return;
+        try self.contLine();
+        _ = try self.writeTryHead(head);
+        try self.fmt("_try{d}.result;", .{n});
     }
 
     /// Emit the last stmt of an if-branch as a value expression.
@@ -884,7 +1048,16 @@ const Emitter = struct {
                 } else {
                     try self.w("throw");
                 },
-                .try_ => |t| if (t) |val| try self.emitExpr(val.*),
+                .try_ => |t| if (t) |val| {
+                    // Nested `try` in expression position: unwrap Ok, propagate Error
+                    // out of the surrounding IIFE. (Statement position is lowered in
+                    // emitStmt to a real enclosing-function `return`.)
+                    const n = self.try_seq;
+                    self.try_seq += 1;
+                    try self.fmt("(() => {{ const _try{d} = ", .{n});
+                    try self.emitExpr(val.*);
+                    try self.fmt("; if (_try{d}.tag === \"Error\") return _try{d}; return _try{d}.result; }})()", .{ n, n, n });
+                },
                 .@"break" => |b| if (b) |val| {
                     try self.w("return ");
                     try self.emitExpr(val.*);
@@ -961,22 +1134,28 @@ const Emitter = struct {
                     }
                 },
                 .tryCatch => |tc| {
-                    const handlerIsStatement = switch (tc.handler.*) {
-                        .jump => |j| j.kind == .throw_ or j.kind == .@"return",
-                        else => false,
-                    };
-                    try self.w("(() => { try { return ");
+                    // `try expr catch handler` in expression position → pattern match
+                    // on the Result tag inside an IIFE (never JS try/catch).
+                    const handler = tc.handler.*;
+                    const n = self.try_seq;
+                    self.try_seq += 1;
+                    try self.fmt("(() => {{ const _try{d} = ", .{n});
                     try self.emitExpr(tc.expr.*);
-                    try self.w("; } catch(_e) { ");
-                    if (handlerIsStatement) {
-                        try self.emitExpr(tc.handler.*);
-                        try self.w(";");
+                    try self.fmt("; if (_try{d}.tag === \"Error\") {{ ", .{n});
+                    if (isJumpHandler(handler)) {
+                        try self.emitExpr(handler);
+                        try self.w("; ");
                     } else {
                         try self.w("return (");
-                        try self.emitExpr(tc.handler.*);
-                        try self.w(")(_e);");
+                        try self.emitExpr(handler);
+                        try self.w(")");
+                        switch (handler) {
+                            .function => try self.fmt("(_try{d}.error)", .{n}),
+                            else => {},
+                        }
+                        try self.w("; ");
                     }
-                    try self.w(" } })()");
+                    try self.fmt("}} return _try{d}.result; }})()", .{n});
                 },
             },
 

@@ -31,10 +31,10 @@ codegen/
 |---|---|
 | `config.zig` | `Config`, `TargetSource` (`commonJS` \| `erlang` \| `beam` \| `wasm`), `ComptimeRuntime`, `TypeDefLang` |
 | `moduleOutput.zig` | `Module`, `ModuleOutput`, `GenerateResult` — shared between targets |
-| `commonJS.zig` | CommonJS emitter — iterates already-transformed AST |
-| `erlang.zig` | Erlang emitter — same shape as `commonJS.zig` |
-| `beam_asm.zig` | BEAM Assembly `.S` emitter — **0 unsupported across 162 snapshots.** Full coverage: numerics, locals, calls, decl methods, booleans, assign, throw, strings, `@print`, field access/assign, arrays, tuples, lambdas (`make_fun2`), case (all patterns), try/catch, pipeline, method calls, loops (stub). `erlc +from_asm` validated |
-| `wat.zig` | WebAssembly Text `.wat` emitter — **0 unsupported across 162 snapshots.** Full coverage: numerics, locals, calls, assign, `!x`, null, `@todo`/`@panic`, globals, `_botopink_main`, case/pipeline/tryCatch/destructuring/lambdas/loops/strings as numeric stubs, `@print` as nop. `wasmtime` runner |
+| `commonJS.zig` | CommonJS emitter — iterates already-transformed AST. `try`/`catch` lower to `Ok`/`Error` **tag pattern matching** (statement-level for propagation; see [`./docs.md`](docs.md)) |
+| `erlang.zig` | Erlang emitter — same shape as `commonJS.zig`. `try`/`catch` → `case … of {ok, V} -> …; {error, E} -> … end`; propagation nests the body tail in the `{ok, V}` arm |
+| `beam_asm.zig` | BEAM Assembly `.S` emitter — **0 unsupported across 162 snapshots.** Full coverage: numerics, locals, calls, decl methods, booleans, assign, throw, strings, `@print`, field access/assign, arrays, tuples, lambdas (`make_fun2`), case (all patterns), try/catch (`is_tagged_tuple` on `{ok,_}`/`{error,_}`), pipeline, method calls, loops (stub). `erlc +from_asm` validated |
+| `wat.zig` | WebAssembly Text `.wat` emitter — **0 unsupported across 162 snapshots.** Full coverage: numerics, locals, calls, assign, `!x`, null, `@todo`/`@panic`, globals, `_botopink_main`, case/pipeline/destructuring/lambdas/loops/strings as numeric stubs, `@print` as nop. `try`/`catch` → `if` on the tag `i32` (payload at `offset=4`) in linear memory. `wasmtime` runner |
 | `typescript.zig` | `.d.ts` typedef generator (optional secondary output) |
 | `runtime.zig` | Test-side runtime helpers (executes generated code) |
 | `snapshot.zig` / `tests.zig` | Codegen test harness |
