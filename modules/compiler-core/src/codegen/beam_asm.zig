@@ -1455,6 +1455,43 @@ const Emitter = struct {
             return;
         }
         if (cc.receiver) |recv_name| {
+            // A PascalCase receiver that isn't a local binding is a module
+            // reference: `List.map(xs, f)` → a remote call `list:map(xs, f)`
+            // (mirrors the Erlang backend's `isModuleRef`/`erlangModule`). The
+            // receiver names the module, so it is *not* prepended as an argument;
+            // trailing lambdas become trailing fun arguments.
+            if (recv_name.len > 0 and recv_name.len <= 128 and
+                std.ascii.isUpper(recv_name[0]) and !self.reg_map.contains(recv_name))
+            {
+                const total = cc.args.len + cc.trailing.len;
+                const scratch = self.cur_arity;
+                for (cc.args, 0..) |arg, i| {
+                    try self.lowerExprIntoX0(arg.value.*);
+                    try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + i});
+                }
+                for (cc.trailing, 0..) |trail, j| {
+                    try self.lowerLambda(trail);
+                    try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + cc.args.len + j});
+                }
+                for (0..total) |i| {
+                    try self.bodyPrint("    {{move, {{x, {d}}}, {{x, {d}}}}}.\n", .{ scratch + i, i });
+                }
+                var mbuf: [128]u8 = undefined;
+                @memcpy(mbuf[0..recv_name.len], recv_name);
+                mbuf[0] = std.ascii.toLower(mbuf[0]);
+                const mod = mbuf[0..recv_name.len];
+                switch (mode) {
+                    .non_tail => try self.bodyPrint(
+                        "    {{call_ext, {d}, {{extfunc, {s}, {s}, {d}}}}}.\n",
+                        .{ total, mod, cc.callee, total },
+                    ),
+                    .tail => try self.bodyPrint(
+                        "    {{call_ext_last, {d}, {{extfunc, {s}, {s}, {d}}}, {d}}}.\n",
+                        .{ total, mod, cc.callee, total, self.num_y },
+                    ),
+                }
+                return;
+            }
             if (self.reg_map.get(recv_name)) |reg| {
                 var rbuf: [64]u8 = undefined;
                 const recv_term = try reg.format(&rbuf);
@@ -1493,21 +1530,35 @@ const Emitter = struct {
         }
 
         const arity = cc.args.len;
-        try self.materializeCallArgs(cc.args);
 
-        const labels = self.fnLabelsFor(cc.callee, arity) catch {
-            try self.bodyPrint("    %% unresolved local call: {s}/{d}\n", .{ cc.callee, arity });
+        // A top-level function resolves to a reserved label pair → direct call.
+        if (self.fnLabelsFor(cc.callee, arity)) |labels| {
+            try self.materializeCallArgs(cc.args);
+            switch (mode) {
+                .non_tail => try self.bodyPrint("    {{call, {d}, {{f, {d}}}}}.\n", .{ arity, labels.entry }),
+                .tail => try self.bodyPrint("    {{call_last, {d}, {{f, {d}}}, {d}}}.\n", .{ arity, labels.entry, self.num_y }),
+            }
+            return;
+        } else |_| {}
+
+        // Otherwise, a name bound to a local (a `syntax fn` parameter or a
+        // `val f = {x -> …}`) holds a fun and is applied via `call_fun`. The fun
+        // must be loaded into `{x, arity}` *before* materializing the args — an
+        // argument may target the very register the fun currently occupies (a
+        // fun parameter in `{x, 0}` and a 1-arg call whose arg also lands there).
+        if (self.reg_map.get(cc.callee)) |reg| {
+            var rbuf: [64]u8 = undefined;
+            const fun_term = try reg.format(&rbuf);
+            try self.bodyPrint("    {{move, {s}, {{x, {d}}}}}.\n", .{ fun_term, arity });
+            try self.materializeCallArgs(cc.args);
+            try self.bodyPrint("    {{call_fun, {d}}}.\n", .{arity});
             if (mode == .tail) try self.emitReturn();
             return;
-        };
-        switch (mode) {
-            .non_tail => {
-                try self.bodyPrint("    {{call, {d}, {{f, {d}}}}}.\n", .{ arity, labels.entry });
-            },
-            .tail => {
-                try self.bodyPrint("    {{call_last, {d}, {{f, {d}}}, {d}}}.\n", .{ arity, labels.entry, self.num_y });
-            },
         }
+
+        try self.materializeCallArgs(cc.args);
+        try self.bodyPrint("    %% unresolved local call: {s}/{d}\n", .{ cc.callee, arity });
+        if (mode == .tail) try self.emitReturn();
     }
 
     /// Builtins (`@print`, `@todo`, …) map to specific BEAM call_ext targets.

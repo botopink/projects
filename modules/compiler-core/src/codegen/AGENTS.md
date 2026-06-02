@@ -33,7 +33,7 @@ codegen/
 | `moduleOutput.zig` | `Module`, `ModuleOutput`, `GenerateResult` — shared between targets |
 | `commonJS.zig` | CommonJS emitter — iterates already-transformed AST. `try`/`catch` lower to `Ok`/`Error` **tag pattern matching** (statement-level for propagation; see [`./docs.md`](docs.md)) |
 | `erlang.zig` | Erlang emitter — same shape as `commonJS.zig`. Case arms lower list patterns (`[]`/`[X]`/`[First \| Rest]`) and constructor patterns (unit → atom, payload → `{tag, …}` tuple); module-qualified calls (`List.map(…)`) emit remote calls `list:map(…)` with the PascalCase receiver lowercased to a valid module atom. `try`/`catch` → `case … of {ok, V} -> …; {error, E} -> … end`; propagation nests the body tail in the `{ok, V}` arm |
-| `beam_asm.zig` | BEAM Assembly `.S` emitter — **0 unsupported across 164 snapshots.** Full coverage: numerics, locals, calls, decl methods, booleans, assign, throw, strings, `@print`, field access/assign, arrays, tuples, lambdas (`make_fun2`), case (all patterns), try/catch (`is_tagged_tuple` on `{ok,_}`/`{error,_}`, expr + stmt), ranges (`lists:seq/2`), pipeline, method calls, loops. `erlc +from_asm` validated |
+| `beam_asm.zig` | BEAM Assembly `.S` emitter. Full coverage: numerics, locals, calls, decl methods, booleans, assign, throw, strings, `@print`, field access/assign, arrays, tuples, lambdas (`make_fun2`), **fun application (`call_fun`)** for local-bound (`val f = {…}`) and `syntax fn` parameters, case (all patterns), try/catch (`is_tagged_tuple` on `{ok,_}`/`{error,_}`, expr + stmt), ranges (`lists:seq/2`), pipeline, method calls, **module-qualified remote calls** (`List.map(…)` → `{call_ext, N, {extfunc, list, map, N}}` / `call_ext_last` in tail, with trailing lambdas materialized as fun arguments), loops. `erlc +from_asm` validated. Known gaps (emit `%% unresolved`/`%% unsupported` comments): PascalCase constructors (`Error(…)` — cross-backend gap, Erlang backend also broken), `console.log` value-method, cross-module fn imports, Fase 9 polish (register allocation / tail-call dead code) |
 | `wat.zig` | WebAssembly Text `.wat` emitter — **0 unsupported across 164 snapshots.** Full coverage: numerics, locals, calls, assign, `!x`, null, `@todo`/`@panic`, globals, `_botopink_main`, case/pipeline/destructuring/lambdas/loops/strings as numeric stubs, `@print` as nop. `try`/`catch` → `if` on the tag `i32` (payload at `offset=4`) in linear memory. `wasmtime` runner |
 | `typescript.zig` | `.d.ts` typedef generator (optional secondary output) |
 | `runtime.zig` | Test-side runtime helpers (executes generated code) |
@@ -53,10 +53,11 @@ codegen/
   `erlangModule`); a lowercase receiver is treated as a value method call and
   left as-is (`isModuleRef` distinguishes them). Arity is the argument count
   (args + trailing lambdas).
-- BEAM ASM and WAT backends are complete (0 unsupported across 164
-  snapshots each). They reuse the existing comptime runtimes (`erlang`
-  for BEAM, `node` for WASM). See [`/TODO.md`](../../../../TODO.md) for
-  optional future improvements.
+- BEAM ASM and WAT backends cover the language broadly and reuse the
+  existing comptime runtimes (`erlang` for BEAM, `node` for WASM). BEAM ASM
+  still emits `%% unresolved`/`%% unsupported` comments for a few cases
+  (PascalCase constructors, `console.log`, cross-module imports, Fase 9
+  polish) — see the `beam_asm.zig` row above and [`/TODO.md`](../../../../TODO.md).
 
 For the `.bp` → target translation gallery see
 [`./examples.md`](examples.md); for the full API surface and snapshot

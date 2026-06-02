@@ -18,8 +18,9 @@ fn apply(f: syntax fn(x: i32) -> i32) -> i32 {
     {func_info, {atom, main}, {atom, apply}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
+    {move, {x, 0}, {x, 1}}.
     {move, {integer, 10}, {x, 0}}.
-    %% unresolved local call: f/1
+    {call_fun, 1}.
     {deallocate, 0}.
     return.
 ```
