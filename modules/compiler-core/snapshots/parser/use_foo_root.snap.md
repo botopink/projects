@@ -7,7 +7,9 @@
           {
             "segments": [
               "foo"
-            ]
+            ],
+            "activate": false,
+            "alias": null
           }
         ],
         "source": {

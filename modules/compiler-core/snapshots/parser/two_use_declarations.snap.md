@@ -7,7 +7,9 @@
           {
             "segments": [
               "a"
-            ]
+            ],
+            "activate": false,
+            "alias": null
           }
         ],
         "source": {
@@ -38,12 +40,16 @@
           {
             "segments": [
               "b"
-            ]
+            ],
+            "activate": false,
+            "alias": null
           },
           {
             "segments": [
               "c"
-            ]
+            ],
+            "activate": false,
+            "alias": null
           }
         ],
         "source": {

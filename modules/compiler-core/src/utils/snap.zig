@@ -87,11 +87,13 @@ fn compareOrCreate(allocator: std.mem.Allocator, snapPath: []const u8, got: []co
 
     std.debug.print("\nsnap mismatch: {s}\n", .{snapPath});
     {
-        // Only attempt JSON diff if both expected and actual look like JSON
-        const looks_like_json = std.mem.trim(u8, expected, " \n\r\t").len > 0 and
-            std.mem.trim(u8, expected, " \n\r\t")[0] == '[' or
-            std.mem.trim(u8, expected, " \n\r\t")[0] == '{';
-        
+        // Only attempt JSON diff if the expected snapshot looks like JSON.
+        // Guard the index: a previously-empty snapshot trims to a zero-length
+        // slice, and indexing `[0]` on it would panic.
+        const expected_trimmed = std.mem.trim(u8, expected, " \n\r\t");
+        const looks_like_json = expected_trimmed.len > 0 and
+            (expected_trimmed[0] == '[' or expected_trimmed[0] == '{');
+
         if (looks_like_json) {
             var aw: std.Io.Writer.Allocating = .init(allocator);
             defer aw.deinit();

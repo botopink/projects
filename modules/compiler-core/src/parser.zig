@@ -7,6 +7,8 @@ pub const Token = token.Token;
 pub const TokenKind = token.TokenKind;
 
 pub const UseDecl = ast.UseDecl;
+pub const ImportDecl = ast.ImportDecl;
+pub const ExtendDecl = ast.ExtendDecl;
 pub const ImportPath = ast.ImportPath;
 pub const InterfaceDecl = ast.InterfaceDecl;
 pub const InterfaceField = ast.InterfaceField;
@@ -179,6 +181,16 @@ pub const Parser = struct {
                 const d = try this.parseUseDecl(alloc);
                 _ = this.match(.semicolon);
                 break :blk .{ .use = d };
+            } else if (this.checkShorthand(.import)) blk: {
+                const d = try this.parseImportDecl(alloc);
+                _ = this.match(.semicolon);
+                break :blk .{ .import = d };
+            } else if (this.check(.identifier) and this.peekAt(1).kind == .star and this.peekAt(2).kind == .semicolon) blk: {
+                // Bare `Name*;` activation statement.
+                const tok = try this.consume(.identifier);
+                _ = try this.consume(.star);
+                _ = this.match(.semicolon);
+                break :blk .{ .activate = .{ .name = tok.lexeme, .loc = locFromToken(tok) } };
             } else if (this.checkShorthand(.@"fn")) blk: {
                 const d = try this.parseFnDecl(alloc);
                 _ = this.match(.semicolon);
@@ -277,6 +289,7 @@ pub const Parser = struct {
             .@"struct" => .{ .@"struct" = try this.parseStructDecl(alloc) },
             .record => .{ .record = try this.parseRecordDecl(alloc) },
             .implement => .{ .implement = try this.parseImplementDecl(alloc) },
+            .extend => .{ .extend = try this.parseExtendDecl(alloc) },
             .@"enum" => .{ .@"enum" = try this.parseEnumDecl(alloc) },
             .declare => .{ .delegate = try this.parseDelegateDecl(alloc) },
             .interface => if (bodyNext == .@"fn")
@@ -879,7 +892,14 @@ pub const Parser = struct {
         while (this.match(.dot)) {
             try segs.append(alloc, (try this.consume(.identifier)).lexeme);
         }
-        return ImportPath{ .segments = try segs.toOwnedSlice(alloc) };
+        // Optional `*` activation marker for static extension dispatch.
+        const activate = this.match(.star);
+        // Optional `as Alias` local rename.
+        var alias: ?[]const u8 = null;
+        if (this.match(.as)) {
+            alias = (try this.consume(.identifier)).lexeme;
+        }
+        return ImportPath{ .segments = try segs.toOwnedSlice(alloc), .activate = activate, .alias = alias };
     }
 
     // ── fn decl ───────────────────────────────────────────────────────────────────
@@ -1517,6 +1537,67 @@ pub const Parser = struct {
             .params = params,
             .body = body,
         };
+    }
+
+    // ── extend decl ───────────────────────────────────────────────────────────────
+
+    /// `[pub] val Name [<T>] = extend Target { fn ... }`
+    fn parseExtendDecl(this: *This, alloc: std.mem.Allocator) ParseError!ExtendDecl {
+        _ = this.match(.@"pub");
+        _ = try this.consume(.val);
+        const name = (try this.consume(.identifier)).lexeme;
+        const genericParams = try this.parseGenericParams(alloc);
+        errdefer alloc.free(genericParams);
+        _ = try this.consume(.equal);
+        _ = try this.consume(.extend);
+
+        const target = (try this.consume(.identifier)).lexeme;
+
+        _ = try this.consume(.leftBrace);
+        var methods: std.ArrayList(ImplementMethod) = .empty;
+        errdefer {
+            for (methods.items) |*m| m.deinit(alloc);
+            methods.deinit(alloc);
+        }
+
+        while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
+            if (this.check(.@"fn")) {
+                const method = try this.parseImplementMethod(alloc);
+                try methods.append(alloc, method);
+            } else {
+                return ParseError.UnexpectedToken;
+            }
+        }
+        _ = try this.consume(.rightBrace);
+
+        return ExtendDecl{
+            .name = name,
+            .genericParams = genericParams,
+            .target = target,
+            .methods = try methods.toOwnedSlice(alloc),
+        };
+    }
+
+    // ── import decl ───────────────────────────────────────────────────────────────
+
+    /// `[pub] import { A, X*, B as C } [from "module"];`
+    fn parseImportDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImportDecl {
+        const isPub = this.match(.@"pub");
+        _ = try this.consume(.import);
+        _ = try this.consume(.leftBrace);
+        const imports = try this.parseImportList(alloc);
+        errdefer {
+            for (imports) |imp| alloc.free(imp.segments);
+            alloc.free(imports);
+        }
+        _ = try this.consume(.rightBrace);
+
+        var module: ?[]const u8 = null;
+        if (this.match(.from)) {
+            module = (try this.consume(.stringLiteral)).lexeme;
+        }
+
+        return ImportDecl{ .imports = imports, .module = module, .isPub = isPub };
     }
 
     // ── enum decl ─────────────────────────────────────────────────────────────
@@ -2436,7 +2517,9 @@ pub const Parser = struct {
                     try this.consume(.identifier);
 
                 var args: []CallArg = &.{};
+                var had_parens = false;
                 if (this.check(.leftParenthesis)) {
+                    had_parens = true;
                     args = try this.parseCallArgs(alloc);
                 }
                 errdefer {
@@ -2450,7 +2533,9 @@ pub const Parser = struct {
                     alloc.free(trailing);
                 }
 
-                if (args.len > 0 or trailing.len > 0) {
+                // A trailing `()` (even with no args) marks a method call, e.g.
+                // `donald.swim()`. Without parens it is field access (`Color.Red`).
+                if (had_parens or args.len > 0 or trailing.len > 0) {
                     return this.wrapCatch(alloc, Expr{ .call = .{
                         .loc = locFromToken(firstTok),
                         .kind = .{ .call = .{

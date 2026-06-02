@@ -57,6 +57,7 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     for (program.decls) |decl| {
         try registerTypeDecl(env, decl);
     }
+    try registerExtensions(env, program);
 
     // Pass 2: infer value-producing declarations in order.
     for (program.decls) |decl| {
@@ -75,6 +76,7 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
     for (program.decls) |decl| {
         try registerTypeDecl(env, decl);
     }
+    try registerExtensions(env, program);
     for (program.decls) |decl| {
         switch (decl) {
             // `resolveImports` (called before inference in comptime.zig) already
@@ -170,6 +172,128 @@ fn registerTypeDecl(env: *Env, decl: ast.DeclKind) InferError!void {
         .@"struct" => |s| try registerStruct(env, s),
         .@"enum" => |e| try registerEnum(env, e),
         else => {},
+    }
+}
+
+/// Pre-pass for static extension dispatch: record inherent methods, register
+/// named `implement`/`extend` blocks, collect activations, and validate
+/// `implement` blocks against their interfaces.
+///
+/// Runs after type-definition registration (pass 1) and before expression
+/// inference (pass 2) so `obj.method()` resolution sees the full picture.
+fn registerExtensions(env: *Env, program: ast.Program) InferError!void {
+    // Build interface name → method set for impl-vs-interface validation.
+    var ifaceMethods = std.StringHashMap(std.StringHashMap(ast.InterfaceMethod)).init(env.arena);
+    defer {
+        var it = ifaceMethods.valueIterator();
+        while (it.next()) |m| m.deinit();
+        ifaceMethods.deinit();
+    }
+    for (program.decls) |decl| {
+        if (decl == .interface) {
+            const d = decl.interface;
+            var set = std.StringHashMap(ast.InterfaceMethod).init(env.arena);
+            for (d.methods) |m| try set.put(m.name, m);
+            try ifaceMethods.put(d.name, set);
+        }
+    }
+
+    // Inherent methods + extension entries.
+    for (program.decls) |decl| {
+        switch (decl) {
+            .@"struct" => |s| for (s.members) |m| switch (m) {
+                .method => |im| try env.addInherentMethod(s.name, im.name),
+                else => {},
+            },
+            .record => |r| for (r.methods) |im| try env.addInherentMethod(r.name, im.name),
+            .@"enum" => |e| for (e.methods) |im| try env.addInherentMethod(e.name, im.name),
+            .implement => |im| {
+                try env.extensions.put(im.name, .{
+                    .name = im.name,
+                    .target = im.target,
+                    .isExtend = false,
+                    .interfaces = im.interfaces,
+                    .methods = try collectImplMethodNames(env, im.methods),
+                });
+                try validateImplInterfaces(env, im, ifaceMethods);
+            },
+            .extend => |ex| try env.extensions.put(ex.name, .{
+                .name = ex.name,
+                .target = ex.target,
+                .isExtend = true,
+                .methods = try collectImplMethodNames(env, ex.methods),
+            }),
+            else => {},
+        }
+    }
+
+    // Activations: `name*` imports and bare `name*;` statements.
+    for (program.decls) |decl| {
+        switch (decl) {
+            .import => |id| for (id.imports) |imp| {
+                if (imp.activate) try env.activations.put(imp.localName(), {});
+            },
+            .use => |u| for (u.imports) |imp| {
+                if (imp.activate) try env.activations.put(imp.localName(), {});
+            },
+            .activate => |a| {
+                // A bare `name*;` must name a locally-known impl/extend symbol.
+                if (!env.extensions.contains(a.name)) {
+                    env.lastError = TypeError.notAnExtension(a.name).withLoc(a.loc);
+                    return error.TypeError;
+                }
+                try env.activations.put(a.name, {});
+            },
+            else => {},
+        }
+    }
+}
+
+fn collectImplMethodNames(env: *Env, methods: []const ast.ImplementMethod) ![]const []const u8 {
+    var names = try env.arena.alloc([]const u8, methods.len);
+    for (methods, 0..) |m, i| names[i] = m.name;
+    return names;
+}
+
+/// Validate that an `implement` block's methods match its interface(s): every
+/// declared method must exist in some interface, and every abstract interface
+/// method must be implemented. Skipped for interfaces not defined in this file.
+fn validateImplInterfaces(
+    env: *Env,
+    im: ast.ImplementDecl,
+    ifaceMethods: std.StringHashMap(std.StringHashMap(ast.InterfaceMethod)),
+) InferError!void {
+    // Extra method check: each impl method must belong to one of the interfaces.
+    for (im.methods) |m| {
+        var found = false;
+        var anyKnown = false;
+        for (im.interfaces) |iface| {
+            const set = ifaceMethods.get(iface) orelse continue;
+            anyKnown = true;
+            if (set.contains(m.name)) found = true;
+        }
+        if (anyKnown and !found) {
+            env.lastError = TypeError.extensionMethodNotInInterface(im.name, m.name, im.interfaces[0]);
+            return error.TypeError;
+        }
+    }
+    // Missing method check: each abstract interface method must be implemented.
+    for (im.interfaces) |iface| {
+        const set = ifaceMethods.get(iface) orelse continue;
+        var it = set.iterator();
+        while (it.next()) |entry| {
+            const method = entry.value_ptr.*;
+            // Default methods (with a body) need not be implemented.
+            if (method.body != null) continue;
+            var implemented = false;
+            for (im.methods) |m| {
+                if (std.mem.eql(u8, m.name, method.name)) implemented = true;
+            }
+            if (!implemented) {
+                env.lastError = TypeError.extensionMissingMethod(im.name, method.name, iface);
+                return error.TypeError;
+            }
+        }
     }
 }
 
@@ -1376,6 +1500,108 @@ fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) Inf
     };
 }
 
+fn containsStr(haystack: []const []const u8, needle: []const u8) bool {
+    for (haystack) |s| if (std.mem.eql(u8, s, needle)) return true;
+    return false;
+}
+
+/// The nominal type name of `ty`, or null if `ty` is not a named type.
+fn nominalName(ty: *T.Type) ?[]const u8 {
+    const d = ty.deref();
+    return switch (d.*) {
+        .named => |n| n.name,
+        else => null,
+    };
+}
+
+/// Build a typed method-call node, preserving the surface `recv.callee(args)`
+/// shape. External dispatch (rewriting to `Sym.callee(recv, args)`) is recorded
+/// separately in `env.dispatchRewrites` and applied by the transform pass.
+fn makeMethodCall(
+    env: *Env,
+    recv: []const u8,
+    callee: []const u8,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+    loc: ast.Loc,
+) InferError!TypedExpr {
+    const retType = try env.freshVar();
+    return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
+        .receiver = recv,
+        .callee = callee,
+        .is_builtin = false,
+        .args = typedArgs,
+        .trailing = typedTrailing,
+    } } } };
+}
+
+/// Resolve `recv.callee(args)` against inherent methods and activated extensions.
+///
+/// Returns the typed call on success, or null when there is no method/extension
+/// match (the caller then falls back to a plain callee lookup). Raises
+/// `error.TypeError` for the diagnostic cases: not-active, and ambiguity.
+fn resolveReceiverCall(
+    env: *Env,
+    recv: []const u8,
+    callee: []const u8,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+    loc: ast.Loc,
+) InferError!?TypedExpr {
+    // (a) Qualified call: receiver is an extension symbol, e.g. `PatoNada.swim(donald)`.
+    //     Qualified calls resolve without activation.
+    if (env.extensions.get(recv)) |ext| {
+        if (!containsStr(ext.methods, callee)) return null;
+        return try makeMethodCall(env, recv, callee, typedArgs, typedTrailing, loc);
+    }
+
+    // (b) Instance call: `recv` is a value; dispatch on its nominal type.
+    const recvType = env.lookup(recv) orelse return null;
+    const typeName = nominalName(recvType) orelse return null;
+
+    // Rule 1 — inherent method (declared on the type or inline `implement`).
+    if (env.hasInherentMethod(typeName, callee)) {
+        return try makeMethodCall(env, recv, callee, typedArgs, typedTrailing, loc);
+    }
+
+    // Rule 2 — activated `implement`/`extend` providing `callee` for this type.
+    var activatedSym: ?[]const u8 = null;
+    var ambiguousWith: ?[]const u8 = null;
+    var inactiveSym: ?[]const u8 = null;
+    var it = env.extensions.valueIterator();
+    while (it.next()) |ext| {
+        if (!std.mem.eql(u8, ext.target, typeName)) continue;
+        if (!containsStr(ext.methods, callee)) continue;
+        if (env.isActivated(ext.name)) {
+            if (activatedSym == null) {
+                activatedSym = ext.name;
+            } else if (ambiguousWith == null) {
+                ambiguousWith = ext.name;
+            }
+        } else if (inactiveSym == null) {
+            inactiveSym = ext.name;
+        }
+    }
+
+    if (activatedSym) |sym| {
+        if (ambiguousWith) |other| {
+            env.lastError = TypeError.ambiguousExtension(typeName, callee, sym, other).withLoc(loc);
+            return error.TypeError;
+        }
+        // External dispatch: lower `recv.callee(args)` → `sym.callee(recv, args)`.
+        try env.dispatchRewrites.put(loc, sym);
+        return try makeMethodCall(env, recv, callee, typedArgs, typedTrailing, loc);
+    }
+
+    // Rule 3 — method exists but no activation: error with an activation hint.
+    if (inactiveSym) |sym| {
+        env.lastError = TypeError.methodNotActive(typeName, callee, sym).withLoc(loc);
+        return error.TypeError;
+    }
+
+    return null;
+}
+
 /// Infer type for call expressions (function/method invocations and pipelines)
 fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
     return switch (c.kind) {
@@ -1396,6 +1622,15 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     .args = typedArgs,
                     .trailing = typedTrailing,
                 } } } };
+            }
+            // Static extension dispatch: `obj.method(args)` resolved via inherent
+            // methods, activated `implement`/`extend` blocks, or a qualified call
+            // `Sym.method(obj)`. Returns null to fall through to a plain callee
+            // lookup (e.g. a free function used in receiver position).
+            if (call.receiver) |recv| {
+                if (try resolveReceiverCall(env, recv, call.callee, typedArgs, typedTrailing, loc)) |te| {
+                    return te;
+                }
             }
             const calleeType = if (env.lookup(call.callee)) |ty| ty else {
                 env.lastError = TypeError.unboundVariable(call.callee).withLoc(loc);

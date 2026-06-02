@@ -28,9 +28,41 @@ pub const Comment = struct {
 };
 pub const ImportPath = struct {
     segments: []const []const u8,
+    /// `X*` activation marker — activates an `implement`/`extend` symbol for
+    /// static extension dispatch in this file. Plain (non-`*`) imports bring the
+    /// name into scope but do not enable `obj.method()` resolution for it.
+    activate: bool = false,
+    /// `X as Y` local rename; null when the name is imported under its own name.
+    alias: ?[]const u8 = null,
 
     pub fn name(this: ImportPath) []const u8 {
         return this.segments[this.segments.len - 1];
+    }
+
+    /// The name this path binds locally: the alias if present, else the last segment.
+    pub fn localName(this: ImportPath) []const u8 {
+        return this.alias orelse this.name();
+    }
+};
+
+/// `import { A, X*, B as C } from "module";` (or root form `import { A };`).
+/// Distinct from the legacy `use { … } = @module(…)` form: an `ImportDecl`
+/// carries per-name activation markers used by static extension dispatch.
+pub const ImportDecl = struct {
+    imports: []const ImportPath,
+    /// Module string from `from "module"`; null for root imports.
+    module: ?[]const u8 = null,
+    isPub: bool = false,
+    /// `///` documentation comment (multi-line joined with `\n`)
+    docComment: ?[]const u8 = null,
+    /// `//` regular comment (last one before the declaration)
+    comment: ?[]const u8 = null,
+    /// `////` module-level documentation
+    moduleComment: ?[]const u8 = null,
+
+    pub fn deinit(this: *ImportDecl, allocator: std.mem.Allocator) void {
+        for (this.imports) |imp| allocator.free(imp.segments);
+        allocator.free(this.imports);
     }
 };
 
@@ -1224,7 +1256,13 @@ pub const ValDecl = struct {
 pub const DeclKind = union(enum) {
     record: RecordDecl,
     implement: ImplementDecl,
+    extend: ExtendDecl,
     use: UseDecl,
+    /// `import { A, X* } from "module";` — see `ImportDecl`.
+    import: ImportDecl,
+    /// A bare `Name*;` statement that activates an impl/extend symbol already in
+    /// scope for static extension dispatch in this file.
+    activate: struct { name: []const u8, loc: Loc },
     interface: InterfaceDecl,
     delegate: DelegateDecl,
     @"struct": StructDecl,
@@ -1245,11 +1283,14 @@ pub const DeclKind = union(enum) {
                 u.source.deinit(allocator);
                 allocator.destroy(u.source);
             },
+            .import => |*i| i.deinit(allocator),
+            .activate => {},
             .interface => |*t| t.deinit(allocator),
             .delegate => |*d| d.deinit(allocator),
             .@"struct" => |*s| s.deinit(allocator),
             .record => |*r| r.deinit(allocator),
             .implement => |*i| i.deinit(allocator),
+            .extend => |*e| e.deinit(allocator),
             .@"enum" => |*e| e.deinit(allocator),
             .@"fn" => |*f| f.deinit(allocator),
             .val => |*v| v.deinit(allocator),
@@ -1391,6 +1432,34 @@ pub const ImplementDecl = struct {
     pub fn deinit(this: *ImplementDecl, allocator: std.mem.Allocator) void {
         allocator.free(this.genericParams);
         allocator.free(this.interfaces);
+        for (this.methods) |*m| m.deinit(allocator);
+        allocator.free(this.methods);
+    }
+};
+
+// ── extend decl ─────────────────────────────────────────────────────────────────
+
+/// `val Name = extend TargetType { fn ... }`
+///
+/// Like `implement` but interface-free: an `extend` adds inherent-looking
+/// methods to an existing type without declaring conformance to any interface.
+/// `Name` is the symbol used to activate the extension (`Name*`) and to make a
+/// qualified call (`Name.method(obj)`).
+pub const ExtendDecl = struct {
+    name: []const u8,
+    /// Generic type parameters on the extend block, e.g. `<T>`.
+    genericParams: []GenericParam = &.{},
+    docComment: ?[]const u8 = null,
+    /// `//` regular comment (last one before the declaration)
+    comment: ?[]const u8 = null,
+    /// `////` module-level documentation
+    moduleComment: ?[]const u8 = null,
+    /// The type this extend is for, e.g. "Pato".
+    target: []const u8,
+    methods: []ImplementMethod,
+
+    pub fn deinit(this: *ExtendDecl, allocator: std.mem.Allocator) void {
+        allocator.free(this.genericParams);
         for (this.methods) |*m| m.deinit(allocator);
         allocator.free(this.methods);
     }

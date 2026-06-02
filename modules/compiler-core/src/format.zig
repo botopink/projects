@@ -1272,6 +1272,9 @@ pub const Formatter = struct {
                 .record => |v| v.docComment,
                 .@"enum" => |v| v.docComment,
                 .implement => |v| v.docComment,
+                .extend => |v| v.docComment,
+                .import => |v| v.docComment,
+                .activate => null,
                 .@"fn" => |v| v.docComment,
                 .val => |v| v.docComment,
                 .comment => null,
@@ -1286,6 +1289,7 @@ pub const Formatter = struct {
                 .@"enum" => true,
                 .interface => true,
                 .use, .delegate, .implement => true,
+                .extend, .import, .activate => true,
                 .comment => false,
             };
             const declWithSemi = if (needsSemi)
@@ -1333,6 +1337,9 @@ pub const Formatter = struct {
             .record => |r| this.fmtRecord(r),
             .@"enum" => |e| this.fmtEnum(e),
             .implement => |impl| this.fmtImplement(impl),
+            .extend => |ext| this.fmtExtend(ext),
+            .import => |im| this.fmtImport(im),
+            .activate => |a| this.text(try std.fmt.allocPrint(this.arena, "{s}*", .{a.name})),
             .@"fn" => |f| this.fmtFnDecl(f),
             .val => |v| this.fmtValDecl(v),
             .comment => |c| blk: {
@@ -1769,6 +1776,56 @@ pub const Formatter = struct {
             try this.text(" "),
             body,
         });
+    }
+
+    fn fmtExtend(this: *Formatter, ext: ast.ExtendDecl) !*const Doc {
+        var methodDocs = try this.arena.alloc(*const Doc, ext.methods.len);
+        for (ext.methods, 0..) |m, i| methodDocs[i] = try this.fmtImplementMethod(m);
+
+        const body = if (methodDocs.len == 0)
+            try this.text("{}")
+        else blk: {
+            const inner = try this.join(methodDocs, this.hardline());
+            break :blk try this.surroundBreak("{", inner, "}");
+        };
+
+        return this.concatAll(&.{
+            try this.text("val "),
+            try this.text(ext.name),
+            try this.fmtGenericParams(ext.genericParams),
+            try this.text(" = extend "),
+            try this.text(ext.target),
+            try this.text(" "),
+            body,
+        });
+    }
+
+    fn fmtImport(this: *Formatter, im: ast.ImportDecl) !*const Doc {
+        var items = try this.arena.alloc(*const Doc, im.imports.len);
+        for (im.imports, 0..) |imp, i| {
+            var seg_docs = try this.arena.alloc(*const Doc, imp.segments.len * 2 - 1);
+            for (imp.segments, 0..) |seg, j| {
+                if (j > 0) seg_docs[j * 2 - 1] = try this.text(".");
+                seg_docs[j * 2] = try this.text(seg);
+            }
+            var pathDoc = try this.concatAll(seg_docs);
+            if (imp.activate) pathDoc = try this.concat(pathDoc, try this.text("*"));
+            if (imp.alias) |alias| {
+                pathDoc = try this.concatAll(&.{ pathDoc, try this.text(" as "), try this.text(alias) });
+            }
+            items[i] = pathDoc;
+        }
+        const importsDoc = try this.commaList("{", items, "}");
+        const prefix: *const Doc = if (im.isPub) try this.text("pub import ") else try this.text("import ");
+        if (im.module) |module| {
+            return this.concatAll(&.{
+                prefix,
+                importsDoc,
+                try this.text(" from "),
+                try this.text(module),
+            });
+        }
+        return this.concatAll(&.{ prefix, importsDoc });
     }
 
     fn fmtImplementMethod(this: *Formatter, m: ast.ImplementMethod) !*const Doc {

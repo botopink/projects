@@ -70,6 +70,7 @@ pub const TokenKind = enum {
     echo,
     @"else",
     @"enum",
+    extend,
     extends,
     @"fn",
     @"for",

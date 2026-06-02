@@ -23,8 +23,10 @@ class Person {
 }
 
 // implement Printable for Person
-Person.prototype.print = function() {
-    return this.name;
+const PersonPrintable = {
+    print(self) {
+        return self.name;
+    },
 };
 ```
 

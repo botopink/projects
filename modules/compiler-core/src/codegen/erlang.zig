@@ -168,6 +168,10 @@ fn emitErlang(
             .@"enum" => |e| try em.emitEnum(e),
             .interface => |i| try em.emitInterface(i),
             .implement => |im| try em.emitImplement(im),
+            .extend => |ex| try em.emitExtend(ex),
+            .import => |im| try em.emitImport(im),
+            // Activation statements (`Name*;`) are compile-time only.
+            .activate => {},
             .use => |u| try em.emitUse(u),
             .delegate => |d| try aw.writer.print("%% delegate {s}\n", .{d.name}),
             .comment => |c| {
@@ -1224,6 +1228,32 @@ const Emitter = struct {
                 .body = m.body,
             });
         }
+    }
+
+    fn emitExtend(this: *Emitter, ex: ast.ExtendDecl) !void {
+        try this.fmt("%% extend {s}\n", .{ex.target});
+        for (ex.methods) |m| {
+            try this.w("\n");
+            try this.emitFn(.{
+                .isPub = false,
+                .name = m.name,
+                .annotations = &.{},
+                .genericParams = &.{},
+                .params = m.params,
+                .returnType = null,
+                .body = m.body,
+            });
+        }
+    }
+
+    fn emitImport(this: *Emitter, im: ast.ImportDecl) !void {
+        try this.w("%% import ");
+        for (im.imports, 0..) |imp, i| {
+            if (i > 0) try this.w(", ");
+            try this.w(imp.localName());
+        }
+        if (im.module) |module| try this.fmt(" from {s}", .{module});
+        try this.w("\n");
     }
 
     fn emitUse(this: *Emitter, u: ast.UseDecl) !void {

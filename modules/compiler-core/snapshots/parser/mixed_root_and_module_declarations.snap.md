@@ -7,7 +7,9 @@
           {
             "segments": [
               "x"
-            ]
+            ],
+            "activate": false,
+            "alias": null
           }
         ],
         "source": {
@@ -38,7 +40,9 @@
           {
             "segments": [
               "y"
-            ]
+            ],
+            "activate": false,
+            "alias": null
           }
         ],
         "source": {
@@ -70,7 +74,9 @@
             "segments": [
               "z",
               "W"
-            ]
+            ],
+            "activate": false,
+            "alias": null
           }
         ],
         "source": {

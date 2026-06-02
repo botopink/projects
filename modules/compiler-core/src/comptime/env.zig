@@ -69,6 +69,24 @@ pub const TypeDef = union(enum) {
     }
 };
 
+// ── static extension dispatch ───────────────────────────────────────────────────
+
+/// A named `implement … for T` or `extend T` block, registered for static
+/// extension dispatch. `obj.method()` resolves to one of these only when the
+/// entry's `name` has been activated (`name*` in an import, or a bare `name*;`).
+pub const ExtEntry = struct {
+    /// The activation symbol, e.g. "PatoNada".
+    name: []const u8,
+    /// The type this block extends, e.g. "Pato".
+    target: []const u8,
+    /// true for `extend`, false for `implement`.
+    isExtend: bool,
+    /// Interfaces named in an `implement` block (empty for `extend`).
+    interfaces: []const []const u8 = &.{},
+    /// Method names declared in the block.
+    methods: []const []const u8,
+};
+
 // ── environment ───────────────────────────────────────────────────────────────
 
 /// The type-checking environment.
@@ -90,6 +108,18 @@ pub const Env = struct {
     level: usize,
     /// The most recent type error (set before returning `error.TypeError`).
     lastError: ?@import("error.zig").TypeError,
+    /// Registered `implement`/`extend` blocks, keyed by activation symbol name.
+    extensions: std.StringHashMap(ExtEntry),
+    /// Activation set: symbols enabled for extension dispatch in this file
+    /// (`name*` imports and bare `name*;` statements).
+    activations: std.StringHashMap(void),
+    /// Inherent methods declared directly on a type (struct/record/enum bodies
+    /// and inline `implement`), keyed by type name → set of method names.
+    inherentMethods: std.StringHashMap(std.StringHashMap(void)),
+    /// Resolved external-dispatch rewrites: call-site location → extension symbol
+    /// to qualify with. Consumed by the transform pass to lower `obj.m(args)` to
+    /// `Sym.m(obj, args)` without monkey-patching.
+    dispatchRewrites: std.AutoHashMap(ast.Loc, []const u8),
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
@@ -100,12 +130,41 @@ pub const Env = struct {
             .nextTypeId = 0,
             .level = 0,
             .lastError = null,
+            .extensions = std.StringHashMap(ExtEntry).init(arena),
+            .activations = std.StringHashMap(void).init(arena),
+            .inherentMethods = std.StringHashMap(std.StringHashMap(void)).init(arena),
+            .dispatchRewrites = std.AutoHashMap(ast.Loc, []const u8).init(arena),
         };
     }
 
     pub fn deinit(self: *Env) void {
         self.bindings.deinit();
         self.typeDefs.deinit();
+        self.extensions.deinit();
+        self.activations.deinit();
+        var it = self.inherentMethods.valueIterator();
+        while (it.next()) |set| set.deinit();
+        self.inherentMethods.deinit();
+        self.dispatchRewrites.deinit();
+    }
+
+    // ── extension dispatch helpers ────────────────────────────────────────────
+
+    /// Record that `typeName` has an inherent method `method`.
+    pub fn addInherentMethod(self: *Env, typeName: []const u8, method: []const u8) !void {
+        const gop = try self.inherentMethods.getOrPut(typeName);
+        if (!gop.found_existing) gop.value_ptr.* = std.StringHashMap(void).init(self.arena);
+        try gop.value_ptr.put(method, {});
+    }
+
+    /// True if `typeName` declares an inherent method `method`.
+    pub fn hasInherentMethod(self: *Env, typeName: []const u8, method: []const u8) bool {
+        const set = self.inherentMethods.get(typeName) orelse return false;
+        return set.contains(method);
+    }
+
+    pub fn isActivated(self: *Env, name: []const u8) bool {
+        return self.activations.contains(name);
     }
 
     // ── type constructors ─────────────────────────────────────────────────────

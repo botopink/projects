@@ -129,7 +129,7 @@ fn emitWat(
             }
         },
         .comment => |c| try fn_buf.writer.print("  ;; {s}\n", .{c.text}),
-        .record, .@"struct", .@"enum", .implement, .interface, .delegate, .use => {},
+        .record, .@"struct", .@"enum", .implement, .extend, .interface, .delegate, .use, .import, .activate => {},
     };
 
     if (has_main_0) try em.emitEntrypointWrapper();

@@ -36,7 +36,7 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals);
+                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites);
 
                 // Generate TypeScript typedefs if configured.
                 const typedef: ?[]u8 = if (config.typeDefLanguage) |_|
@@ -65,8 +65,9 @@ fn emitJs(
     alloc: std.mem.Allocator,
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
 ) ![]u8 {
-    return try emitProgram(alloc, program, comptime_vals);
+    return try emitProgram(alloc, program, comptime_vals, rewrites);
 }
 
 fn emitTypeDef(
@@ -105,10 +106,11 @@ pub fn emitProgram(
     alloc: std.mem.Allocator,
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
 ) ![]u8 {
     var aw: std.Io.Writer.Allocating = .init(alloc);
     defer aw.deinit();
-    var em = Emitter.emitterInit(alloc, &aw.writer, comptime_vals);
+    var em = Emitter.emitterInit(alloc, &aw.writer, comptime_vals, rewrites);
     defer em.deinit();
 
     // Track which val names are comptime-only (consumed at compile time).
@@ -217,6 +219,20 @@ pub fn emitProgram(
                 try aw.writer.writeByte('\n');
                 firstEmitted = false;
             },
+            .extend => |ex| {
+                if (!firstEmitted) try aw.writer.writeByte('\n');
+                try em.emitExtend(ex);
+                try aw.writer.writeByte('\n');
+                firstEmitted = false;
+            },
+            .import => |im| {
+                if (!firstEmitted) try aw.writer.writeByte('\n');
+                try em.emitImport(im);
+                try aw.writer.writeByte('\n');
+                firstEmitted = false;
+            },
+            // Activation statements (`Name*;`) are compile-time only.
+            .activate => {},
             .use => |u| {
                 if (!firstEmitted) try aw.writer.writeByte('\n');
                 try em.emitUse(u);
@@ -323,16 +339,23 @@ const Emitter = struct {
     cv: std.StringHashMap([]const u8),
     current_indent: usize = 0,
     alloc: std.mem.Allocator,
+    /// Static extension dispatch: call-site loc → activated extension symbol.
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    /// When true, `self.x` lowers to `self.x` (extension methods take `self` as a
+    /// real first parameter) instead of the prototype-method `this.x`.
+    self_is_param: bool = false,
 
     fn emitterInit(
         alloc: std.mem.Allocator,
         out: *std.Io.Writer,
         cv: std.StringHashMap([]const u8),
+        rewrites: std.AutoHashMap(ast.Loc, []const u8),
     ) Emitter {
         return Emitter{
             .out = out,
             .cv = cv,
             .alloc = alloc,
+            .rewrites = rewrites,
         };
     }
 
@@ -517,32 +540,67 @@ const Emitter = struct {
         }
     }
 
+    /// External dispatch: an `implement … for T` block is emitted as a namespace
+    /// object whose methods take the receiver as an explicit `self` parameter, so
+    /// `obj.m()` can be lowered to `Sym.m(obj)` without patching `T.prototype`.
     fn emitImplement(self: *Emitter, im: ast.ImplementDecl) !void {
         try self.w("// implement ");
         for (im.interfaces, 0..) |iface, i| {
             if (i > 0) try self.w(", ");
             try self.w(iface);
         }
-        try self.fmt(" for {s}", .{im.target});
-        for (im.methods) |m| {
-            try self.w("\n");
-            try self.fmt("{s}.prototype.{s} = function(", .{ im.target, m.name });
+        try self.fmt(" for {s}\n", .{im.target});
+        try self.emitExtensionNamespace(im.name, im.methods);
+    }
+
+    /// External dispatch: an `extend T` block emitted as a namespace object.
+    fn emitExtend(self: *Emitter, ex: ast.ExtendDecl) !void {
+        try self.fmt("// extend {s}\n", .{ex.target});
+        try self.emitExtensionNamespace(ex.name, ex.methods);
+    }
+
+    fn emitExtensionNamespace(self: *Emitter, name: []const u8, methods: []const ast.ImplementMethod) !void {
+        try self.fmt("const {s} = {{", .{name});
+        const prev_self = self.self_is_param;
+        self.self_is_param = true;
+        defer self.self_is_param = prev_self;
+        for (methods) |m| {
+            try self.fmt("\n    {s}(", .{m.name});
             var first = true;
             for (m.params) |p| {
-                if (std.mem.eql(u8, p.name, "self")) continue;
                 if (!first) try self.w(", ");
                 try self.emitParam(p);
                 first = false;
             }
             try self.w(") {\n");
-            self.current_indent = 1;
+            self.current_indent = 2;
             for (m.body) |st| {
-                try self.w("    ");
+                try self.w("        ");
                 try self.emitStmt(st);
                 try self.w("\n");
             }
             self.current_indent = 0;
-            try self.w("};");
+            try self.w("    },");
+        }
+        try self.w("\n};");
+    }
+
+    fn emitImport(self: *Emitter, im: ast.ImportDecl) !void {
+        if (im.module) |module| {
+            try self.w("const { ");
+            for (im.imports, 0..) |imp, i| {
+                if (i > 0) try self.w(", ");
+                try self.w(imp.localName());
+            }
+            try self.fmt(" }} = require({s});", .{module});
+        } else {
+            // Root import: names already in scope; record as a comment.
+            try self.w("// import { ");
+            for (im.imports, 0..) |imp, i| {
+                if (i > 0) try self.w(", ");
+                try self.w(imp.localName());
+            }
+            try self.w(" }");
         }
     }
 
@@ -834,7 +892,11 @@ const Emitter = struct {
                         else => false,
                     };
                     if (isSelf) {
-                        try self.fmt("this.{s}", .{ia.member});
+                        if (self.self_is_param) {
+                            try self.fmt("self.{s}", .{ia.member});
+                        } else {
+                            try self.fmt("this.{s}", .{ia.member});
+                        }
                         return;
                     }
                     try self.emitExpr(ia.receiver.*);
@@ -1163,12 +1225,20 @@ const Emitter = struct {
                             try self.w(")");
                         }
                     } else {
+                        var first = true;
                         if (cc.receiver) |recv| {
-                            try self.fmt("{s}.{s}(", .{ recv, cc.callee });
+                            // Static extension dispatch: lower `recv.m(args)` to
+                            // `Sym.m(recv, args)` at activated call sites.
+                            if (self.rewrites.get(c.loc)) |sym| {
+                                try self.fmt("{s}.{s}(", .{ sym, cc.callee });
+                                try self.w(recv);
+                                first = false;
+                            } else {
+                                try self.fmt("{s}.{s}(", .{ recv, cc.callee });
+                            }
                         } else {
                             try self.fmt("{s}(", .{cc.callee});
                         }
-                        var first = true;
                         for (cc.args) |arg| {
                             if (!first) try self.w(", ");
                             try self.emitExpr(arg.value.*);
@@ -1392,7 +1462,7 @@ const Emitter = struct {
             .numberLit => |n| try buf.writer.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try buf.writer.writeAll("_s === ");
-                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv };
+                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try buf.writer.print("_s === \"{s}\"", .{n}),
@@ -1412,7 +1482,7 @@ const Emitter = struct {
             .numberLit => |n| try wr.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try wr.writeAll("_s === ");
-                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv };
+                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try wr.print("_s === \"{s}\"", .{n}),

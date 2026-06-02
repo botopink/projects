@@ -44,7 +44,10 @@ const Emitter = struct {
             .@"enum" => |e| try self.emitEnum(e),
             .interface => |i| try self.emitInterface(i),
             .implement => |im| try self.emitImplement(im),
+            .extend => {},
             .use => |u| try self.emitUse(u),
+            .import => {},
+            .activate => {},
             .delegate => |d| try self.emitDelegate(d),
             .comment => {},
         }

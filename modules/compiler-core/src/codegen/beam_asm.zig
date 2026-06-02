@@ -317,11 +317,15 @@ fn emitBeamAsm(
             .@"struct" => |s| try em.emitStruct(s),
             .@"enum" => |e| try em.emitEnum(e),
             .implement => |im| try em.emitImplement(im),
-            // Purely abstract decls (interface/delegate) and module-graph
-            // metadata (use) don't lower to runtime code — silently skip.
-            .interface, .delegate, .use => {},
+            .extend => |ex| try em.emitExtend(ex),
+            // Purely abstract decls (interface/delegate), module-graph metadata
+            // (use/import), and compile-time activations don't lower to runtime
+            // code — silently skip.
+            .interface, .delegate, .use, .import, .activate => {},
         }
     }
+
+    // (extend blocks lower like implement: methods become module functions)
 
     if (has_main_0) {
         try em.emitEntrypointWrappers();
@@ -586,6 +590,13 @@ const Emitter = struct {
     fn emitImplement(self: *Emitter, im: ast.ImplementDecl) !void {
         for (im.methods) |m| {
             const qualifier = m.qualifier orelse im.target;
+            try self.emitImplementMethod(qualifier, m);
+        }
+    }
+
+    fn emitExtend(self: *Emitter, ex: ast.ExtendDecl) !void {
+        for (ex.methods) |m| {
+            const qualifier = m.qualifier orelse ex.target;
             try self.emitImplementMethod(qualifier, m);
         }
     }

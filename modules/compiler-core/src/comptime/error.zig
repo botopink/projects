@@ -76,6 +76,36 @@ pub const TypeErrorKind = union(enum) {
         typeName: []const u8,
         field: []const u8,
     },
+    /// `obj.method()` where an `implement`/`extend` provides `method` for the
+    /// receiver type but its symbol has not been activated. `hintSym` is the
+    /// symbol to activate (`hintSym*`).
+    methodNotActive: struct {
+        typeName: []const u8,
+        method: []const u8,
+        hintSym: []const u8,
+    },
+    /// `obj.method()` resolves to two or more activated extensions; the call must
+    /// be qualified (`symA.method(obj)`).
+    ambiguousExtension: struct {
+        typeName: []const u8,
+        method: []const u8,
+        symA: []const u8,
+        symB: []const u8,
+    },
+    /// `name*` where `name` does not name an `implement`/`extend` symbol.
+    notAnExtension: []const u8,
+    /// An `implement` block declares a method not present in its interface.
+    extensionMethodNotInInterface: struct {
+        implName: []const u8,
+        method: []const u8,
+        interface: []const u8,
+    },
+    /// An `implement` block is missing a method required by its interface.
+    extensionMissingMethod: struct {
+        implName: []const u8,
+        method: []const u8,
+        interface: []const u8,
+    },
 };
 
 /// A type error with its source location.
@@ -120,6 +150,26 @@ pub const TypeError = struct {
 
     pub fn missingField(typeName: []const u8, field: []const u8) TypeError {
         return .{ .kind = .{ .missingField = .{ .typeName = typeName, .field = field } } };
+    }
+
+    pub fn methodNotActive(typeName: []const u8, method: []const u8, hintSym: []const u8) TypeError {
+        return .{ .kind = .{ .methodNotActive = .{ .typeName = typeName, .method = method, .hintSym = hintSym } } };
+    }
+
+    pub fn ambiguousExtension(typeName: []const u8, method: []const u8, symA: []const u8, symB: []const u8) TypeError {
+        return .{ .kind = .{ .ambiguousExtension = .{ .typeName = typeName, .method = method, .symA = symA, .symB = symB } } };
+    }
+
+    pub fn notAnExtension(name: []const u8) TypeError {
+        return .{ .kind = .{ .notAnExtension = name } };
+    }
+
+    pub fn extensionMethodNotInInterface(implName: []const u8, method: []const u8, interface: []const u8) TypeError {
+        return .{ .kind = .{ .extensionMethodNotInInterface = .{ .implName = implName, .method = method, .interface = interface } } };
+    }
+
+    pub fn extensionMissingMethod(implName: []const u8, method: []const u8, interface: []const u8) TypeError {
+        return .{ .kind = .{ .extensionMissingMethod = .{ .implName = implName, .method = method, .interface = interface } } };
     }
 };
 

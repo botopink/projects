@@ -34,8 +34,8 @@ comptime/
 | File | Role |
 |---|---|
 | `types.zig` | All type representations as `union(enum)`. |
-| `env.zig` | Type environment — pushes/pops scopes, loads builtins + stdlib. |
-| `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. |
+| `env.zig` | Type environment — scopes, builtins + stdlib, and static-extension-dispatch tables (`extensions`, `activations`, `inherentMethods`, `dispatchRewrites`). |
+| `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. `registerExtensions` pre-pass + `resolveReceiverCall` implement F6 static extension dispatch. |
 | `unify.zig` | Unification with substitution + occurs check. |
 | `error.zig` | Structured type errors with source ranges and hints. |
 | `eval.zig` | Builds eval scripts, calls runtime, parses JSON results. |

@@ -7,14 +7,18 @@
           {
             "segments": [
               "A"
-            ]
+            ],
+            "activate": false,
+            "alias": null
           },
           {
             "segments": [
               "B",
               "c",
               "D"
-            ]
+            ],
+            "activate": false,
+            "alias": null
           }
         ],
         "source": {
