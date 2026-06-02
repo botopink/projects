@@ -131,6 +131,88 @@ snapshots/                                     → workspace-level smoke snapsho
 - Pipeline `|>` is left-associative — preserve stable formatting across
   cycles.
 
+## Parallel tasks (git worktrees)
+
+Independent features are developed in parallel, one **git worktree per task**
+under `.tasks/<name>/`, each on its own `task/<name>` branch. `feat` is the
+integration branch (it receives the merges); `main` is **not** — it diverges
+and lacks the task base. Always branch off `feat`, and run all remote git
+operations over **SSH** (`git@github.com:botopink/botopink-lang.git`).
+
+### Create a task
+
+```bash
+# from the main worktree (on feat), one per independent feature:
+git worktree add .tasks/<name> -b task/<name> feat
+```
+
+Pick names that touch **disjoint files** where possible so tasks run without
+blocking each other; when two tasks share a backend file (e.g. `beam_asm.zig`
+or `wat.zig`), note the collision in both TODO.md files so integration expects
+the conflict.
+
+### Feed a task — `TODO.md` is the per-task spec
+
+Each worktree carries its own `.tasks/<name>/TODO.md`, distinct from this root
+roadmap. Keep it short — it states **only what the task will do**:
+
+```markdown
+# <name>
+
+**Branch**: `task/<name>` (born from `feat` <short-sha>)
+**Depends on**: <prereq already in feat, or "nothing">
+**Files**: <target source files>
+
+## What this task will do
+- [ ] <step>
+- [ ] <step>
+- [ ] Snapshots per backend / feature
+
+## On completion (commit → update remote `feat` → delete task)
+<the three steps below>
+```
+
+Tool paths (Read/Edit/Write) must target the worktree
+(`.../botopink-lang/.tasks/<name>/...`), never the main repo — it is easy to
+edit the wrong tree. Do not `cd` into the main repo in Bash; the hook resets
+cwd to the worktree.
+
+### On completion — commit, update remote feature, delete the task
+
+1. **Commit** inside the worktree (no `cd`): `git add -A && git commit -m "…"`.
+   A **pre-commit hook runs `zig fmt` + `zig build` + `zig build test`** — the
+   commit only lands if it compiles and tests pass. Do not use `--no-verify`.
+2. **Update the remote feature** (integrate into `feat`, over SSH). The main
+   `feat` worktree is often dirty with other WIP, so integrate via a throwaway
+   worktree based on the remote:
+   ```bash
+   git fetch origin feat
+   git worktree add .tasks/_integrate-<name> -b integrate/<name> origin/feat
+   #   in it:  git merge --no-ff task/<name>  →  resolve  →  zig build test
+   git push origin integrate/<name>:feat      # fast-forward, never --force
+   ```
+   `feat` refactors the AST fast; an old task merge conflicts in
+   `infer.zig` / `env.zig` / `error.zig` / `tests.zig`. Take `feat`'s version
+   and re-apply the task edits on the new AST rather than stitching markers.
+   Task `.snap.md` files were generated on the old base — delete the task's and
+   regenerate by running `zig build test` under `feat` (missing snapshots are
+   recreated).
+3. **Delete the task** once integrated:
+   ```bash
+   git worktree remove .tasks/<name> && git worktree remove .tasks/_integrate-<name>
+   git branch -d task/<name> integrate/<name>
+   git worktree prune
+   ```
+
+### Open parallel tasks
+
+| Worktree (`.tasks/`) | Branch | Scope (see its TODO.md) |
+|---|---|---|
+| `ext-dispatch-backends` | `task/ext-dispatch-backends` | extension-dispatch call-site rewrite for Erlang/BEAM/WAT/TS |
+| `result-runtime` | `task/result-runtime` | real `@Result`/`@Option` runtime in BEAM/WASM (today: stubs) |
+| `wat-features` | `task/wat-features-impl` | WAT destructure, pipeline, string ops, linear-memory layout, tag-based try/catch |
+| `beam-asm-finish` | `task/beam-asm-finish` | BEAM phases 7–9: full ranges, full try/catch, polish, guards |
+
 ## Recent commit context
 
 | Commit | Summary |
