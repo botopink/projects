@@ -3,8 +3,8 @@
   "decls": [
     {
       "fn": {
-        "isPub": true,
-        "name": "wrap",
+        "isPub": false,
+        "name": "render",
         "docComment": null,
         "comment": null,
         "moduleComment": null,
@@ -12,19 +12,34 @@
         "genericParams": [],
         "params": [
           {
-            "name": "T",
+            "name": "tag",
             "typeRef": {
-              "typeparam": []
+              "typeparam": [
+                {
+                  "named": "string"
+                }
+              ]
             },
             "typeName": "",
             "modifier": "comptime",
             "fnType": null,
             "destruct": null,
             "defaultVal": null
+          },
+          {
+            "name": "props",
+            "typeRef": {
+              "named": "i32"
+            },
+            "typeName": "",
+            "modifier": "none",
+            "fnType": null,
+            "destruct": null,
+            "defaultVal": null
           }
         ],
         "returnType": {
-          "named": "type"
+          "named": "string"
         },
         "body": [
           {

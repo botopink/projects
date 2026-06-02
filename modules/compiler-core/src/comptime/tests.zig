@@ -201,6 +201,7 @@ fn renderTypeError(
         .useNotContext => "`use` requires @Context",
         .contextMismatch => "ContextBase mismatch",
         .throwWithoutResult => "throw outside @Result",
+        .typeparamConstraint => "typeparam constraint not satisfied",
     };
     try out.appendSlice(allocator, try std.fmt.allocPrint(tmp, "error: {s}\n", .{title}));
 
@@ -306,6 +307,19 @@ fn renderTypeError(
         .throwWithoutResult => {
             try out.appendSlice(allocator, "\n  'throw' requires the enclosing fn to return '@Result<D, E>'\n");
         },
+        .typeparamConstraint => |c| {
+            const gotName = try snapshot.typeNameOf(tmp, c.got);
+            var list: std.ArrayList(u8) = .empty;
+            for (c.constraints, 0..) |name, i| {
+                if (i > 0) try list.appendSlice(tmp, ", ");
+                try list.appendSlice(tmp, name);
+            }
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  '{s}' has type '{s}', which does not satisfy 'typeparam {s}'\n",
+                .{ c.paramName, gotName, list.items },
+            ));
+        },
     }
 
     return try out.toOwnedSlice(allocator);
@@ -355,8 +369,8 @@ fn assertTypeErrorSnap(
 }
 
 /// Parse `src` and assert inference succeeds (no type error). Inference-only:
-/// no codegen runs, which keeps capability checks (e.g. @Context `use`) isolated
-/// from backend concerns.
+/// no codegen runs, which keeps capability checks (e.g. @Context `use`,
+/// typeparam constraints) isolated from backend concerns.
 fn assertInfersOk(
     allocator: std.mem.Allocator,
     src: []const u8,
@@ -380,9 +394,55 @@ fn assertInfersOk(
     try env.bind("false", try env.namedType("bool"));
 
     _ = inferMod.inferProgram(&env, program) catch |err| {
-        if (env.lastError) |e| std.debug.print("unexpected type error: {s}\n", .{@tagName(e.kind)});
+        if (env.lastError) |te| {
+            const desc = try renderTypeError(allocator, src, te);
+            defer allocator.free(desc);
+            std.debug.print("\nunexpected type error:\n{s}\n", .{desc});
+        }
         return err;
     };
+}
+
+// ── typeparam constraint inference ──────────────────────────────────────────────
+
+test "infer: typeparam ---- arg satisfies single constraint" {
+    try assertInfersOk(std.testing.allocator,
+        \\fn render(comptime tag: typeparam string, props: i32) -> i32 {
+        \\    return props;
+        \\}
+        \\val a = render("div", 1);
+    );
+}
+
+test "infer: typeparam ---- arg satisfies one of multiple constraints" {
+    try assertInfersOk(std.testing.allocator,
+        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\    return x;
+        \\}
+        \\val s = coerce("s", 0);
+        \\val i = coerce(7, 0);
+        \\val b = coerce(true, 0);
+    );
+}
+
+test "infer: typeparam ---- no constraint accepts any type" {
+    try assertInfersOk(std.testing.allocator,
+        \\fn id(comptime t: typeparam, x: i32) -> i32 {
+        \\    return x;
+        \\}
+        \\val a = id("s", 0);
+        \\val b = id(3.14, 0);
+        \\val c = id(true, 0);
+    );
+}
+
+test "infer error: typeparam ---- arg violates constraint" {
+    try assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\    return x;
+        \\}
+        \\val bad = coerce(3.14, 0);
+    );
 }
 
 // ── inference tests ───────────────────────────────────────────────────────────

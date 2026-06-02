@@ -256,6 +256,13 @@ fn appendTypeRef(gpa: std.mem.Allocator, buf: *std.ArrayList(u8), tr: ast.TypeRe
             }
             try buf.append(gpa, '>');
         },
+        .typeparam => |constraints| {
+            try buf.appendSlice(gpa, "typeparam");
+            for (constraints, 0..) |c, i| {
+                try buf.appendSlice(gpa, if (i == 0) " " else " | ");
+                try appendTypeRef(gpa, buf, c);
+            }
+        },
     }
 }
 

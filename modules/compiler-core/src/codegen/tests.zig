@@ -1276,6 +1276,23 @@ test "js: comptime specialization ---- comptime val used as specialization argum
     );
 }
 
+// Verifies that a comptime parameter annotated with a constrained `typeparam`
+// specializes per distinct value exactly like a plain comptime param: "s" and 7
+// produce separate specializations, and the repeated "s" reuses the first one.
+test "js: comptime specialization ---- constrained typeparam specializes per value" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\    return x;
+        \\}
+        \\
+        \\fn main() {
+        \\    val a = coerce("s", 1);
+        \\    val b = coerce(7, 2);
+        \\    val c = coerce("s", 3);
+        \\}
+    );
+}
+
 // ── comptime: loop unrolling and static branch folding ─────────────────────────
 //
 // When a `loop` iterates over a comptime array, the compiler fully unrolls the

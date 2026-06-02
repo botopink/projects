@@ -156,6 +156,15 @@ pub const Parser = struct {
         };
     }
 
+    /// True when `kind` can begin a type reference. Used to decide whether a
+    /// `typeparam` keyword is followed by a constraint list or stands alone.
+    fn startsTypeRef(kind: TokenKind) bool {
+        return switch (kind) {
+            .identifier, .builtinIdent, .questionMark, .hash, .@"fn", .type, .selfType => true,
+            else => false,
+        };
+    }
+
     /// Initializes with the original source for richer error messages.
     pub fn initWithSource(tokens: []const Token, source: []const u8) Parser {
         return .{
@@ -899,6 +908,24 @@ pub const Parser = struct {
             _ = try this.consume(.greaterThan);
             return ast.TypeRef{ .generic = .{ .name = name, .args = try args.toOwnedSlice(alloc), .is_builtin = true } };
         }
+        // typeparam [Constraint (| Constraint)*] — comptime type parameter with
+        // an optional `|`-separated constraint list. `typeparam` alone is unconstrained.
+        if (this.check(.identifier) and std.mem.eql(u8, this.peek().lexeme, "typeparam")) {
+            _ = this.advance(); // consume 'typeparam'
+            var constraints: std.ArrayList(ast.TypeRef) = .empty;
+            errdefer {
+                for (constraints.items) |*c| c.deinit(alloc);
+                constraints.deinit(alloc);
+            }
+            if (startsTypeRef(this.peek().kind)) {
+                while (true) {
+                    try constraints.append(alloc, try this.parseTypeRef(alloc));
+                    if (!this.match(.verticalBar)) break;
+                }
+            }
+            return ast.TypeRef{ .typeparam = try constraints.toOwnedSlice(alloc) };
+        }
+
         // Plain named type, possibly followed by <T1, T2> and/or []
         const nameTok = try this.consumeTypeName();
         var ref: ast.TypeRef = undefined;

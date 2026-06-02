@@ -1919,6 +1919,15 @@ pub const Formatter = struct {
                         try this.text(">"),
                     });
             },
+            .typeparam => |constraints| blk: {
+                if (constraints.len == 0) break :blk this.text("typeparam");
+                var docs = try this.arena.alloc(*const Doc, constraints.len);
+                for (constraints, 0..) |c, i| docs[i] = try this.fmtTypeRef(c);
+                break :blk this.concat(
+                    try this.text("typeparam "),
+                    try this.join(docs, try this.text(" | ")),
+                );
+            },
         };
     }
 
