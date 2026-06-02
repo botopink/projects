@@ -20,12 +20,11 @@ fetch() ->
     erlang:throw(NetError(500)).
 
 safe() ->
-    R = try
-        fetch()
-catch
-        _Err ->
+    R = case fetch() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
             (-1)
-end,
+    end,
     R.
 ```
 

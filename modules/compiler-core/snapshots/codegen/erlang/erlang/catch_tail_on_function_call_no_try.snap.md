@@ -19,12 +19,11 @@ risky() ->
     erlang:throw(RiskError(5)).
 
 safe() ->
-    try
-        risky()
-catch
-        _Err ->
-            (-1)(_Err)
-end.
+    case risky() of
+        {ok, TryV0} -> TryV0;
+        {error, _TryE0} ->
+            (-1)
+    end.
 ```
 
 ----- RUN LOG -----

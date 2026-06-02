@@ -98,6 +98,8 @@ pub const TypeErrorKind = union(enum) {
         /// The accepted constraint type names.
         constraints: []const []const u8,
     },
+    /// `try` / `catch` applied to a value whose type is not `@Result<D, E>`.
+    tryOnNonResult: *T.Type,
 };
 
 /// A type error with its source location.
@@ -162,6 +164,10 @@ pub const TypeError = struct {
 
     pub fn typeparamConstraint(paramName: []const u8, got: *T.Type, constraints: []const []const u8) TypeError {
         return .{ .kind = .{ .typeparamConstraint = .{ .paramName = paramName, .got = got, .constraints = constraints } } };
+    }
+
+    pub fn tryOnNonResult(ty: *T.Type) TypeError {
+        return .{ .kind = .{ .tryOnNonResult = ty } };
     }
 };
 
