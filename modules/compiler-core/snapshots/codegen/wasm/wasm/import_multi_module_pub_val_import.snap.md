@@ -8,8 +8,8 @@ pub val HOST = "localhost";
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "localhost")
-  (global $__heap_ptr (mut i32) (i32.const 268))
+  (data (i32.const 256) "\09\00\00\00localhost")
+  (global $__heap_ptr (mut i32) (i32.const 272))
   (global $PORT (export "PORT") i32 (i32.const 8080))
   (global $HOST (mut i32) (i32.const 256))
 )

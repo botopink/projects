@@ -12,8 +12,8 @@ fn sign(n: i32) -> string {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 256) "positive")
-  (global $__heap_ptr (mut i32) (i32.const 264))
+  (data (i32.const 256) "\08\00\00\00positive")
+  (global $__heap_ptr (mut i32) (i32.const 268))
   (func $sign (param $n i32) (result i32)
     (local $r i32)
     local.get $n

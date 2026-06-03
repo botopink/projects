@@ -17,8 +17,8 @@ fn process(x: i32) -> string {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "non-zero")
-  (global $__heap_ptr (mut i32) (i32.const 264))
+  (data (i32.const 256) "\08\00\00\00non-zero")
+  (global $__heap_ptr (mut i32) (i32.const 268))
   (func $process (param $x i32) (result i32)
     local.get $x
     (local $__case_0 i32)

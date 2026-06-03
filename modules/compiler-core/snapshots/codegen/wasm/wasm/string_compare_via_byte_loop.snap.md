@@ -9,13 +9,13 @@ fn sameWord() -> bool {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "foo")
-  (data (i32.const 260) "bar")
-  (global $__heap_ptr (mut i32) (i32.const 264))
+  (data (i32.const 256) "\03\00\00\00foo")
+  (data (i32.const 264) "\03\00\00\00bar")
+  (global $__heap_ptr (mut i32) (i32.const 272))
   (func $sameWord (result i32)
     i32.const 256
     i32.const 3
-    i32.const 260
+    i32.const 264
     i32.const 3
     call $__str_eq
     return
@@ -37,11 +37,11 @@ fn sameWord() -> bool {
         local.get $a
         local.get $i
         i32.add
-        i32.load8_u
+        i32.load8_u offset=4
         local.get $b
         local.get $i
         i32.add
-        i32.load8_u
+        i32.load8_u offset=4
         i32.ne
         (if
           (then i32.const 0 return)

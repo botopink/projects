@@ -12,8 +12,8 @@ fn validate(x: i32) {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "negative")
-  (global $__heap_ptr (mut i32) (i32.const 264))
+  (data (i32.const 256) "\08\00\00\00negative")
+  (global $__heap_ptr (mut i32) (i32.const 268))
   (func $validate (param $x i32)
     (local $__mem0 i32)
     local.get $x

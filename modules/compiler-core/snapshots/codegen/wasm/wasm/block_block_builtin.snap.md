@@ -15,9 +15,9 @@ fn main() -> string {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "Alto")
-  (data (i32.const 260) "Baixo")
-  (global $__heap_ptr (mut i32) (i32.const 268))
+  (data (i32.const 256) "\04\00\00\00Alto")
+  (data (i32.const 264) "\05\00\00\00Baixo")
+  (global $__heap_ptr (mut i32) (i32.const 276))
   (func $main (result i32)
     (local $input i32)
     (local $status i32)
@@ -40,7 +40,7 @@ fn main() -> string {
       )
     )
     drop
-    i32.const 260
+    i32.const 264
     return
     local.set $status
     local.get $status

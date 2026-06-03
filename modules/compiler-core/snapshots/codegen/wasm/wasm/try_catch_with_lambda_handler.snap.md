@@ -14,8 +14,8 @@ fn safe() -> i32 {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "/api")
-  (global $__heap_ptr (mut i32) (i32.const 260))
+  (data (i32.const 256) "\04\00\00\00/api")
+  (global $__heap_ptr (mut i32) (i32.const 264))
   (func $fetch (result i32)
     (local $__mem0 i32)
     global.get $__heap_ptr

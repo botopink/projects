@@ -16,10 +16,10 @@ fn classify(n: i32) -> string {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 256) "zero")
-  (data (i32.const 260) "one")
-  (data (i32.const 264) "many")
-  (global $__heap_ptr (mut i32) (i32.const 268))
+  (data (i32.const 256) "\04\00\00\00zero")
+  (data (i32.const 264) "\03\00\00\00one")
+  (data (i32.const 272) "\04\00\00\00many")
+  (global $__heap_ptr (mut i32) (i32.const 280))
   (func $classify (param $n i32) (result i32)
     (local $result i32)
     local.get $n
@@ -38,10 +38,10 @@ fn classify(n: i32) -> string {
     i32.eq
     (if (result i32)
       (then
-    i32.const 260
+    i32.const 264
       )
       (else
-    i32.const 264
+    i32.const 272
       )
     )
       )

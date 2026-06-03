@@ -13,9 +13,9 @@ fn f() {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "boom")
-  (data (i32.const 260) "failed")
-  (global $__heap_ptr (mut i32) (i32.const 268))
+  (data (i32.const 256) "\04\00\00\00boom")
+  (data (i32.const 264) "\06\00\00\00failed")
+  (global $__heap_ptr (mut i32) (i32.const 276))
   (func $fetch (result i32)
     (local $__mem0 i32)
     global.get $__heap_ptr
@@ -49,7 +49,7 @@ fn f() {
     i32.add
     global.set $__heap_ptr
     local.get $__mem1
-    i32.const 260
+    i32.const 264
     i32.store
     local.get $__mem1
     unreachable

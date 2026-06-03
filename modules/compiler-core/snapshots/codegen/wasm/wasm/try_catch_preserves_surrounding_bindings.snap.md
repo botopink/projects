@@ -18,8 +18,8 @@ fn process() -> i32 {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 256) "not found")
-  (global $__heap_ptr (mut i32) (i32.const 268))
+  (data (i32.const 256) "\09\00\00\00not found")
+  (global $__heap_ptr (mut i32) (i32.const 272))
   (func $load (result i32)
     (local $__mem0 i32)
     global.get $__heap_ptr

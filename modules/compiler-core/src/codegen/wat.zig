@@ -4,9 +4,9 @@
 ///
 /// Covers: numeric fn decls, arithmetic, comparisons, if/else, return,
 /// top-level val as globals, fn main/0 wrapper, linear memory with bump
-/// allocator, string data section, @print via WASI fd_write, case via
-/// if-chain, loops via block/loop/br_if, tuples/arrays in memory,
-/// lambdas as i32 indices.
+/// allocator, length-prefixed strings (`.len`/`.slice`/concat/compare),
+/// @print via WASI fd_write, case via if-chain, loops via block/loop/br_if,
+/// tuples/arrays in memory, lambdas as i32 indices.
 const std = @import("std");
 const comptimeMod = @import("../comptime.zig");
 const moduleOutput = @import("./moduleOutput.zig");
@@ -152,6 +152,14 @@ fn emitWat(
         try aw.writer.writeAll("  (data (i32.const ");
         try aw.writer.print("{d}", .{seg.offset});
         try aw.writer.writeAll(") \"");
+        // 4-byte little-endian length prefix, then the raw bytes.
+        const lenbytes = [4]u8{
+            @truncate(seg.len),
+            @truncate(seg.len >> 8),
+            @truncate(seg.len >> 16),
+            @truncate(seg.len >> 24),
+        };
+        for (lenbytes) |lc| try aw.writer.print("\\{x:0>2}", .{lc});
         for (seg.content) |c| switch (c) {
             '\n' => try aw.writer.writeAll("\\n"),
             '"' => try aw.writer.writeAll("\\\""),
@@ -340,20 +348,39 @@ fn emitWat(
             \\    (local $base i32)
             \\    global.get $__heap_ptr
             \\    local.set $base
+            \\    ;; bump heap by 4 (length prefix) + alen + blen
             \\    global.get $__heap_ptr
+            \\    i32.const 4
             \\    local.get $alen
+            \\    i32.add
             \\    local.get $blen
             \\    i32.add
             \\    i32.add
             \\    global.set $__heap_ptr
+            \\    ;; store combined length prefix
             \\    local.get $base
+            \\    local.get $alen
+            \\    local.get $blen
+            \\    i32.add
+            \\    i32.store
+            \\    ;; copy a's bytes: base+4 <- a+4
+            \\    local.get $base
+            \\    i32.const 4
+            \\    i32.add
             \\    local.get $a
+            \\    i32.const 4
+            \\    i32.add
             \\    local.get $alen
             \\    memory.copy
+            \\    ;; copy b's bytes: base+4+alen <- b+4
             \\    local.get $base
+            \\    i32.const 4
+            \\    i32.add
             \\    local.get $alen
             \\    i32.add
             \\    local.get $b
+            \\    i32.const 4
+            \\    i32.add
             \\    local.get $blen
             \\    memory.copy
             \\    local.get $base
@@ -381,11 +408,11 @@ fn emitWat(
             \\        local.get $a
             \\        local.get $i
             \\        i32.add
-            \\        i32.load8_u
+            \\        i32.load8_u offset=4
             \\        local.get $b
             \\        local.get $i
             \\        i32.add
-            \\        i32.load8_u
+            \\        i32.load8_u offset=4
             \\        i32.ne
             \\        (if
             \\          (then i32.const 0 return)
@@ -398,6 +425,44 @@ fn emitWat(
             \\      )
             \\    )
             \\    i32.const 1
+            \\  )
+            \\
+        );
+    }
+
+    if (em.uses_str_slice) {
+        try aw.writer.writeAll(
+            \\  (func $__str_slice (param $src i32) (param $start i32) (param $end i32) (result i32)
+            \\    (local $newlen i32) (local $dst i32)
+            \\    local.get $end
+            \\    local.get $start
+            \\    i32.sub
+            \\    local.set $newlen
+            \\    global.get $__heap_ptr
+            \\    local.set $dst
+            \\    ;; bump heap by 4 (length prefix) + newlen
+            \\    global.get $__heap_ptr
+            \\    i32.const 4
+            \\    local.get $newlen
+            \\    i32.add
+            \\    i32.add
+            \\    global.set $__heap_ptr
+            \\    ;; store length prefix
+            \\    local.get $dst
+            \\    local.get $newlen
+            \\    i32.store
+            \\    ;; copy bytes: dst+4 <- src+4+start
+            \\    local.get $dst
+            \\    i32.const 4
+            \\    i32.add
+            \\    local.get $src
+            \\    i32.const 4
+            \\    i32.add
+            \\    local.get $start
+            \\    i32.add
+            \\    local.get $newlen
+            \\    memory.copy
+            \\    local.get $dst
             \\  )
             \\
         );
@@ -438,6 +503,7 @@ const Emitter = struct {
     uses_print: bool = false,
     uses_str_concat: bool = false,
     uses_str_eq: bool = false,
+    uses_str_slice: bool = false,
 
     fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8)) Emitter {
         return .{
@@ -511,12 +577,16 @@ const Emitter = struct {
         for (self.data_segments.items) |seg| {
             if (seg.len == s.len and std.mem.eql(u8, seg.content, s)) return seg;
         }
+        // Strings are length-prefixed: the value is a pointer to a 4-byte i32
+        // length word, immediately followed by the raw bytes (at `offset + 4`).
+        // This lets `.len`/`.slice` and concat operate on runtime strings without
+        // carrying the length in a separate register.
         const seg = DataSeg{
             .offset = self.next_data_offset,
             .len = @intCast(s.len),
             .content = s,
         };
-        self.next_data_offset += @intCast(s.len);
+        self.next_data_offset += 4 + @as(u32, @intCast(s.len));
         if (self.next_data_offset % 4 != 0)
             self.next_data_offset += 4 - (self.next_data_offset % 4);
         try self.data_segments.append(self.alloc, seg);
@@ -948,7 +1018,7 @@ const Emitter = struct {
                 },
             },
             .call => |c| switch (c.kind) {
-                .call => |cc| switch (self.callKind(cc)) {
+                .call => |cc| if (isStrSlice(cc)) try self.lowerStrSlice(cc) else switch (self.callKind(cc)) {
                     .builtin => try self.lowerBuiltin(cc),
                     .record_ctor => try self.lowerRecordCtor(cc, self.records.get(cc.callee).?),
                     .enum_ctor => {
@@ -1089,10 +1159,12 @@ const Emitter = struct {
                 switch (arg) {
                     .literal => |lit| switch (lit.kind) {
                         .stringLit => |s| {
+                            // Strings are length-prefixed; the printable bytes
+                            // begin at `offset + 4` (past the i32 length word).
                             const nl = try self.internString(s);
-                            try self.emitFdWriteString(nl.offset, nl.len);
+                            try self.emitFdWriteString(nl.offset + 4, nl.len);
                             const newline = try self.internString("\n");
-                            try self.emitFdWriteString(newline.offset, newline.len);
+                            try self.emitFdWriteString(newline.offset + 4, newline.len);
                             return;
                         },
                         else => {},
@@ -1320,6 +1392,14 @@ const Emitter = struct {
     /// `recv.member` — tuple element (`t._0`), qualified enum unit variant
     /// (`Color.Red`), or an as-yet-unsupported record field access.
     fn lowerIdentAccess(self: *Emitter, ia: anytype) anyerror!void {
+        // `.len` on a string → load the length prefix. Strings are
+        // length-prefixed buffers, so the value points at the i32 length word.
+        // Codegen is untyped; `.len` is assumed to mean string length here.
+        if (std.mem.eql(u8, ia.member, "len")) {
+            try self.lowerExpr(ia.receiver.*);
+            try self.w("    i32.load ;; string length\n");
+            return;
+        }
         // Tuple element access: `_0`, `_1`, ... → load at `index * 4`.
         if (tupleIndex(ia.member)) |idx| {
             try self.lowerExpr(ia.receiver.*);
@@ -1359,11 +1439,16 @@ const Emitter = struct {
 
     // ── strings in linear memory ──────────────────────────────────────────────
     //
-    // String literals are interned in the data section as raw bytes; a value is
-    // just the byte offset (length is known at compile time). Concatenation and
-    // comparison of literals lower to helper calls with the offsets/lengths as
-    // constants, demonstrating linear-memory `memory.copy` and a byte-compare
-    // loop respectively.
+    // Strings are length-prefixed buffers: a value is a pointer to a 4-byte i32
+    // length word immediately followed by the raw bytes. Literals are interned in
+    // the data section with this layout; `.len` loads the prefix and `.slice`
+    // copies a sub-range into a fresh prefixed buffer, so length travels with the
+    // string at runtime (it no longer has to be a compile-time constant).
+    // Concatenation and comparison of literals lower to helper calls (offsets +
+    // compile-time lengths), demonstrating `memory.copy` and a byte-compare loop;
+    // the concat result is itself a valid prefixed string, so `.len`/`.slice`
+    // compose on it. Concat/compare of non-literal operands is not detected here
+    // (codegen is untyped, so `a + b` on string variables lowers as numeric add).
 
     fn isStrLit(e: ast.Expr) ?[]const u8 {
         return switch (e) {
@@ -1384,6 +1469,32 @@ const Emitter = struct {
         try self.fmt("    i32.const {d} ;; \"{s}\" ptr\n", .{ sb.offset, b });
         try self.fmt("    i32.const {d} ;; \"{s}\" len\n", .{ sb.len, b });
         try self.w("    call $__str_concat\n");
+    }
+
+    /// A `recv.slice(...)` method call. Codegen is untyped, so a `slice` with a
+    /// receiver (and not a builtin) is treated as a string slice.
+    fn isStrSlice(cc: anytype) bool {
+        return cc.receiver != null and !cc.is_builtin and std.mem.eql(u8, cc.callee, "slice");
+    }
+
+    /// `s.slice(start, end)` → a fresh length-prefixed buffer holding the bytes
+    /// `[start, end)` of the receiver. A missing `end` slices to the source's
+    /// length. Leaves a pointer to the new string on the stack.
+    fn lowerStrSlice(self: *Emitter, cc: anytype) anyerror!void {
+        self.uses_str_slice = true;
+        try self.lowerExpr(cc.receiver.?.*);
+        if (cc.args.len > 0)
+            try self.lowerExpr(cc.args[0].value.*)
+        else
+            try self.w("    i32.const 0\n");
+        if (cc.args.len > 1) {
+            try self.lowerExpr(cc.args[1].value.*);
+        } else {
+            // No end argument: slice to the end (load the source length prefix).
+            try self.lowerExpr(cc.receiver.?.*);
+            try self.w("    i32.load ;; source length\n");
+        }
+        try self.w("    call $__str_slice\n");
     }
 
     fn lowerStrEq(self: *Emitter, a: []const u8, b: []const u8, negate: bool) anyerror!void {
