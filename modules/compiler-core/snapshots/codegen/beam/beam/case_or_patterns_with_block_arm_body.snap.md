@@ -42,6 +42,7 @@ val parity = case 5 {
     {func_info, {atom, main}, {atom, '-/0-fun-0-'}, 0}.
   {label, 8}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {literal, <<"odd">>}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.

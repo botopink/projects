@@ -20,6 +20,7 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 3}.
     {allocate, 2, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}]}}.
     {move, {literal, <<"hello">>}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.

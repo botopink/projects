@@ -33,6 +33,7 @@
     {func_info, {atom, main}, {atom, loadTwice}, 1}.
   {label, 5}.
     {allocate, 1, 1}.
+    {init_yregs, {list, [{y, 0}]}}.
     %% unsupported expr in tail position: jump
     {move, {atom, undefined}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.

@@ -22,7 +22,8 @@ fn describe() -> string {
     {line, [{location, "main.erl", 1}]}.
     {func_info, {atom, main}, {atom, describe}, 0}.
   {label, 3}.
-    {allocate, 1, 0}.
+    {allocate, 2, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}]}}.
     {move, nil, {x, 0}}.
     {test_heap, 6, 1}.
     {move, {x, 0}, {x, 0}}.
@@ -52,7 +53,7 @@ fn describe() -> string {
     {jump, {f, 4}}.
   {label, 7}.
   {label, 4}.
-    {deallocate, 1}.
+    {deallocate, 2}.
     return.
 ```
 

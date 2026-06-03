@@ -42,12 +42,13 @@ fn Counter() -> Element {
     {deallocate, 0}.
     return.
 
-{function, Counter, 0, 7}.
+{function, 'Counter', 0, 7}.
   {label, 6}.
     {line, [{location, "main.erl", 3}]}.
-    {func_info, {atom, main}, {atom, Counter}, 0}.
+    {func_info, {atom, main}, {atom, 'Counter'}, 0}.
   {label, 7}.
-    {allocate, 2, 0}.
+    {allocate, 3, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}, {y, 2}]}}.
     {move, {integer, 0}, {x, 0}}.
     {call, 1, {f, 3}}.
     {move, {x, 0}, {x, 0}}.
@@ -66,7 +67,7 @@ fn Counter() -> Element {
     {move, {x, 0}, {y, 2}}.
     {move, {literal, #{}}, {x, 0}}.
     {move, {atom, ok}, {x, 0}}.
-    {deallocate, 2}.
+    {deallocate, 3}.
     return.
 
 {function, '-Counter/0-fun-0-', 0, 11}.

@@ -21,6 +21,7 @@ fn main() -> i32 {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 3}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     {make_fun2, {f, 9}, 0, 0, 0}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 2}}.

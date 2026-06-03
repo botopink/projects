@@ -38,6 +38,7 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 5}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {literal, <<"started">>}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
@@ -69,4 +70,6 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
+<<"started">>
+<<"done">>
 ```

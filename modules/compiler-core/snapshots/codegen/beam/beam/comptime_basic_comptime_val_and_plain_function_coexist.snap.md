@@ -47,6 +47,7 @@ main(_) ->
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 5}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {integer, 21}, {x, 0}}.
     {call, 1, {f, 3}}.
     {move, {x, 0}, {y, 0}}.

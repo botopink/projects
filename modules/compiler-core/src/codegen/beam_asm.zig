@@ -175,25 +175,125 @@ fn collectExtensionExports(
     }
 }
 
-/// Walk a body counting `localBind`s (`val name = ...`) recursively into
-/// nested blocks (if/then/else) so we can pre-allocate y-slots before any
-/// instruction is emitted.
+/// Number of y-slots a destructuring binding consumes — one per bound field
+/// (record `{a, b}`) or tuple element (`#(a, b)`). Mirrors `emitDestructBind`.
+fn destructYSlots(pattern: ast.ParamDestruct) u32 {
+    return switch (pattern) {
+        .names => |n| @intCast(n.fields.len),
+        .tuple_ => |bindings| @intCast(bindings.len),
+        else => 0,
+    };
+}
+
+/// Number of y-slots a case-arm pattern binds — must match exactly what
+/// `lowerCase` allocates via `next_y += 1`, so the function's `{allocate, N, _}`
+/// frame is large enough for every binding (BEAM rejects a `{move, _, {y, k}}`
+/// into an unallocated slot — `{invalid_store, {y, k}}`).
+fn patternYSlots(p: ast.Pattern) u32 {
+    return switch (p) {
+        .wildcard, .numberLit, .stringLit, .@"or" => 0,
+        .ident => |name| if (std.mem.eql(u8, name, "_")) 0 else 1,
+        .variant => |v| switch (v.payload) {
+            .binding => 1,
+            .fields => |f| @intCast(f.len),
+            .literals => 0,
+        },
+        .list => |lst| if (lst.spread) |s| (if (s.len > 0) @as(u32, 1) else 0) else 0,
+        .multi => |pats| blk: {
+            var n: u32 = 0;
+            for (pats) |sp| switch (sp) {
+                .ident => |nm| {
+                    if (!std.mem.eql(u8, nm, "_")) n += 1;
+                },
+                else => {},
+            };
+            break :blk n;
+        },
+    };
+}
+
+/// Count every y-slot a function body consumes before any instruction is
+/// emitted, so `{allocate, N, _}` covers them all. `next_y` is monotonic within
+/// a frame, so this sums *all* bindings across every branch and nested
+/// expression in the same frame: `val` bindings, destructures, and case-arm
+/// pattern bindings. Lambda (`.function`) and loop bodies open their own frames
+/// (the emitter saves/restores `next_y`), so their bindings are intentionally
+/// not counted here.
 fn countLocalsRec(body: []const ast.Stmt, count: *u32) void {
-    for (body) |stmt| switch (stmt.expr) {
+    for (body) |stmt| countLocalsInExpr(stmt.expr, count);
+}
+
+fn countLocalsInExpr(e: ast.Expr, count: *u32) void {
+    switch (e) {
         .binding => |b| switch (b.kind) {
-            .localBind => count.* += 1,
-            .localBindDestruct => count.* += 1, // future: each field
-            else => {},
+            .localBind => |lb| {
+                count.* += 1;
+                countLocalsInExpr(lb.value.*, count);
+            },
+            .localBindDestruct => |lb| {
+                count.* += destructYSlots(lb.pattern);
+                countLocalsInExpr(lb.value.*, count);
+            },
+            .assign => |a| countLocalsInExpr(a.value.*, count),
         },
         .branch => |br| switch (br.kind) {
             .if_ => |i| {
+                countLocalsInExpr(i.cond.*, count);
                 countLocalsRec(i.then_, count);
                 if (i.else_) |els| countLocalsRec(els, count);
             },
+            .tryCatch => |tc| {
+                countLocalsInExpr(tc.expr.*, count);
+                countLocalsInExpr(tc.handler.*, count);
+            },
+        },
+        .jump => |j| switch (j.kind) {
+            .@"return" => |r| if (r) |v| countLocalsInExpr(v.*, count),
+            .throw_ => |v| if (v) |vv| countLocalsInExpr(vv.*, count),
+            .@"break" => |v| if (v) |vv| countLocalsInExpr(vv.*, count),
+            .yield => |y| if (y.value) |v| countLocalsInExpr(v.*, count),
+            .try_ => |v| if (v) |vv| countLocalsInExpr(vv.*, count),
             else => {},
         },
+        .collection => |col| switch (col.kind) {
+            .grouped => |inner| countLocalsInExpr(inner.*, count),
+            .case => |c| {
+                for (c.subjects) |s| countLocalsInExpr(s, count);
+                for (c.arms) |arm| {
+                    count.* += patternYSlots(arm.pattern);
+                    countLocalsInExpr(arm.body, count);
+                }
+            },
+            .arrayLit => |al| {
+                for (al.elems) |el| countLocalsInExpr(el, count);
+                if (al.spreadExpr) |se| countLocalsInExpr(se.*, count);
+            },
+            .tupleLit => |tl| for (tl.elems) |el| countLocalsInExpr(el, count),
+            .range => |r| {
+                countLocalsInExpr(r.start.*, count);
+                if (r.end) |end| countLocalsInExpr(end.*, count);
+            },
+        },
+        .binaryOp => |bin| {
+            countLocalsInExpr(bin.lhs.*, count);
+            countLocalsInExpr(bin.rhs.*, count);
+        },
+        .unaryOp => |un| countLocalsInExpr(un.expr.*, count),
+        .call => |c| switch (c.kind) {
+            .call => |cc| {
+                if (cc.receiver) |r| countLocalsInExpr(r.*, count);
+                for (cc.args) |arg| countLocalsInExpr(arg.value.*, count);
+            },
+            .pipeline => |pl| {
+                countLocalsInExpr(pl.lhs.*, count);
+                countLocalsInExpr(pl.rhs.*, count);
+            },
+        },
+        .useHook => |uh| countLocalsInExpr(uh.kind.inner.*, count),
+        // `.function` (lambda) and `.loop` open their own frames — their inner
+        // bindings don't consume this frame's y-slots.
         else => {},
-    };
+    }
 }
 
 // ── public entry ─────────────────────────────────────────────────────────────
@@ -367,7 +467,8 @@ fn emitBeamAsm(
     try aw.writer.writeAll("{exports, [");
     for (exports.items, 0..) |e, i| {
         if (i > 0) try aw.writer.writeAll(", ");
-        try aw.writer.print("{{{s}, {d}}}", .{ e.name, e.arity });
+        var ename_buf: [256]u8 = undefined;
+        try aw.writer.print("{{{s}, {d}}}", .{ try atomName(e.name, &ename_buf), e.arity });
     }
     try aw.writer.writeAll("]}.\n");
     try aw.writer.writeAll("{attributes, []}.\n");
@@ -564,13 +665,15 @@ const Emitter = struct {
         if (f.isStarFn) {
             try self.bodyWrite("%% *fn (async/generator) — eager lowering\n");
         }
-        try self.bodyPrint("{{function, {s}, {d}, {d}}}.\n", .{ f.name, arity, entry_label });
+        var fn_buf: [256]u8 = undefined;
+        const fn_atom = try atomName(f.name, &fn_buf);
+        try self.bodyPrint("{{function, {s}, {d}, {d}}}.\n", .{ fn_atom, arity, entry_label });
         try self.bodyPrint("  {{label, {d}}}.\n", .{func_info_label});
         try self.bodyPrint("    {{line, [{{location, \"{s}.erl\", {d}}}]}}.\n", .{ self.module_name, self.cur_line });
-        try self.bodyPrint("    {{func_info, {{atom, {s}}}, {{atom, {s}}}, {d}}}.\n", .{ self.module_name, f.name, arity });
+        try self.bodyPrint("    {{func_info, {{atom, {s}}}, {{atom, {s}}}, {d}}}.\n", .{ self.module_name, fn_atom, arity });
         try self.bodyPrint("  {{label, {d}}}.\n", .{entry_label});
 
-        try self.bodyPrint("    {{allocate, {d}, {d}}}.\n", .{ self.num_y, arity });
+        try self.emitFrame(arity);
 
         self.cur_line += 1;
         try self.emitBody(f.body);
@@ -698,7 +801,7 @@ const Emitter = struct {
         try self.bodyPrint("    {{func_info, {{atom, {s}}}, {{atom, {s}}}, {d}}}.\n", .{ self.module_name, mangled, arity });
         try self.bodyPrint("  {{label, {d}}}.\n", .{labels.entry});
 
-        try self.bodyPrint("    {{allocate, {d}, {d}}}.\n", .{ self.num_y, arity });
+        try self.emitFrame(arity);
 
         self.cur_line += 1;
         try self.emitBody(m.body.?);
@@ -726,7 +829,7 @@ const Emitter = struct {
         try self.bodyPrint("    {{func_info, {{atom, {s}}}, {{atom, {s}}}, {d}}}.\n", .{ self.module_name, mangled, arity });
         try self.bodyPrint("  {{label, {d}}}.\n", .{labels.entry});
 
-        try self.bodyPrint("    {{allocate, {d}, {d}}}.\n", .{ self.num_y, arity });
+        try self.emitFrame(arity);
 
         self.cur_line += 1;
         try self.emitBody(m.body);
@@ -750,7 +853,7 @@ const Emitter = struct {
         try self.bodyPrint("    {{line, [{{location, \"{s}.erl\", {d}}}]}}.\n", .{ self.module_name, self.cur_line });
         try self.bodyPrint("    {{func_info, {{atom, {s}}}, {{atom, {s}}}, 1}}.\n", .{ self.module_name, mangled });
         try self.bodyPrint("  {{label, {d}}}.\n", .{labels.entry});
-        try self.bodyPrint("    {{allocate, {d}, 1}}.\n", .{self.num_y});
+        try self.emitFrame(1);
         self.cur_line += 1;
         try self.emitBody(g.body);
     }
@@ -775,7 +878,7 @@ const Emitter = struct {
         try self.bodyPrint("    {{line, [{{location, \"{s}.erl\", {d}}}]}}.\n", .{ self.module_name, self.cur_line });
         try self.bodyPrint("    {{func_info, {{atom, {s}}}, {{atom, {s}}}, {d}}}.\n", .{ self.module_name, mangled, arity });
         try self.bodyPrint("  {{label, {d}}}.\n", .{labels.entry});
-        try self.bodyPrint("    {{allocate, {d}, {d}}}.\n", .{ self.num_y, arity });
+        try self.emitFrame(arity);
         self.cur_line += 1;
         try self.emitBody(s.body);
     }
@@ -810,6 +913,26 @@ const Emitter = struct {
     fn emitReturn(self: *Emitter) !void {
         try self.bodyPrint("    {{deallocate, {d}}}.\n", .{self.num_y});
         try self.bodyWrite("    return.\n");
+    }
+
+    /// Emit the function-prologue `{allocate, NumY, Arity}` for the current
+    /// frame, followed by `{init_yregs, …}` nilling every y-slot when the frame
+    /// has any. BEAM requires each allocated y-slot to hold a valid term before
+    /// the next GC point (a call or `gc_bif`); a slot written only on a later
+    /// branch would otherwise be flagged `{uninitialized_reg, {y, k}}` by the
+    /// loader. (`allocate_zero` was the old shorthand for this but no longer
+    /// assembles on current OTP.)
+    fn emitFrame(self: *Emitter, arity: usize) !void {
+        try self.bodyPrint("    {{allocate, {d}, {d}}}.\n", .{ self.num_y, arity });
+        if (self.num_y > 0) {
+            try self.bodyWrite("    {init_yregs, {list, [");
+            var k: u32 = 0;
+            while (k < self.num_y) : (k += 1) {
+                if (k > 0) try self.bodyWrite(", ");
+                try self.bodyPrint("{{y, {d}}}", .{k});
+            }
+            try self.bodyWrite("]}}.\n");
+        }
     }
 
     // ── entrypoint wrappers when main/0 exists ───────────────────────────────
@@ -1057,16 +1180,7 @@ const Emitter = struct {
     fn lowerComparisonAsTest(self: *Emitter, cond: ast.Expr, fail_label: u32) anyerror!bool {
         switch (cond) {
             .binaryOp => |bin| {
-                const opcode: ?[]const u8 = switch (bin.op) {
-                    .lt => "is_lt",
-                    .gt => "is_gt",
-                    .lte => "is_le",
-                    .gte => "is_ge",
-                    .eq => "is_eq",
-                    .ne => "is_ne_exact",
-                    else => null,
-                };
-                if (opcode == null) return false;
+                const cmp = comparisonTestOp(bin.op) orelse return false;
 
                 var lhs_buf: [64]u8 = undefined;
                 var rhs_buf: [64]u8 = undefined;
@@ -1098,9 +1212,11 @@ const Emitter = struct {
                     }
                 }
 
+                const a = if (cmp.swap) rhs_final else lhs_final;
+                const b = if (cmp.swap) lhs_final else rhs_final;
                 try self.bodyPrint(
                     "    {{test, {s}, {{f, {d}}}, [{s}, {s}]}}.\n",
-                    .{ opcode.?, fail_label, lhs_final, rhs_final },
+                    .{ cmp.opcode, fail_label, a, b },
                 );
                 return true;
             },
@@ -1134,11 +1250,13 @@ const Emitter = struct {
                         try self.bodyPrint("    {{move, {{atom, '{s}'}}, {{x, 0}}}}.\n", .{val});
                         return;
                     }
-                    try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{n});
+                    var nbuf: [256]u8 = undefined;
+                    try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{try atomName(n, &nbuf)});
                     return;
                 },
                 .dotIdent => |d| {
-                    try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{d});
+                    var dbuf: [256]u8 = undefined;
+                    try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{try atomName(d, &dbuf)});
                     return;
                 },
                 .identAccess => |ia| {
@@ -1189,7 +1307,7 @@ const Emitter = struct {
             },
             .branch => |b| switch (b.kind) {
                 .if_ => |i| {
-                    try self.emitTailIf(i);
+                    try self.emitValueIf(i);
                     return;
                 },
                 .tryCatch => |tc| {
@@ -1237,7 +1355,7 @@ const Emitter = struct {
                         try self.lowerExprIntoX0(v.*);
                         const err_label = self.allocLabel();
                         const cont_label = self.allocLabel();
-                        try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, 2, {{atom, ok}}}}.\n", .{err_label});
+                        try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 2, {{atom, ok}}]}}.\n", .{err_label});
                         try self.bodyWrite("    {get_tuple_element, {x, 0}, 1, {x, 0}}.\n");
                         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{cont_label});
                         try self.bodyPrint("  {{label, {d}}}.\n", .{err_label});
@@ -1307,9 +1425,13 @@ const Emitter = struct {
         }
     }
 
-    /// Emit an `if (cmp) then else else` whose value should land in `{x, 0}`
-    /// and immediately return. Each branch ends in `return.` directly.
-    fn emitTailIf(self: *Emitter, i: anytype) anyerror!void {
+    /// Emit an `if (cmp) then else else` as a *value*: the chosen branch's value
+    /// lands in `{x, 0}` and control falls through to a shared end label — no
+    /// `return`/`deallocate`. This is correct whether the `if` feeds a binding
+    /// (`val r = if …`), an argument, a case-arm body, or a following `return`
+    /// (the caller emits the `return`). A branch that itself ends in an explicit
+    /// `return`/jump keeps its own control flow and suppresses the merge jump.
+    fn emitValueIf(self: *Emitter, i: anytype) anyerror!void {
         const else_label = self.allocLabel();
         const lowered = try self.lowerComparisonAsTest(i.cond.*, else_label);
         if (!lowered) {
@@ -1317,40 +1439,40 @@ const Emitter = struct {
             try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 0}}, {{atom, true}}]}}.\n", .{else_label});
         }
 
-        try self.emitTailBody(i.then_);
+        const end_label = self.allocLabel();
+        const then_fell = try self.emitValueBody(i.then_);
+        if (then_fell) try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
 
         try self.bodyPrint("  {{label, {d}}}.\n", .{else_label});
         if (i.else_) |els| {
-            try self.emitTailBody(els);
+            _ = try self.emitValueBody(els);
         } else {
             try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
-            try self.emitReturn();
         }
+        try self.bodyPrint("  {{label, {d}}}.\n", .{end_label});
     }
 
-    /// Emit a body whose last statement is the tail value. The last stmt's
-    /// expression is lowered into `{x, 0}` and followed by `return.`.
-    fn emitTailBody(self: *Emitter, body: []const ast.Stmt) anyerror!void {
+    /// Lower a body whose last statement is its value: all but the last are
+    /// emitted as statements, the last is lowered into `{x, 0}` and control
+    /// falls through. Returns true when it fell through (produced a value),
+    /// false when the last statement was an explicit jump (`return`/`throw`/…)
+    /// that transferred control on its own.
+    fn emitValueBody(self: *Emitter, body: []const ast.Stmt) anyerror!bool {
         if (body.len == 0) {
             try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
-            try self.emitReturn();
-            return;
+            return true;
         }
         for (body[0 .. body.len - 1]) |stmt| try self.emitStmt(stmt);
         const last = body[body.len - 1];
         switch (last.expr) {
-            .jump => |j| switch (j.kind) {
-                .@"return" => |r| {
-                    if (r) |val| try self.lowerExprIntoX0(val.*);
-                    try self.emitReturn();
-                    return;
-                },
-                else => {},
+            .jump => {
+                try self.emitStmt(last);
+                return false;
             },
             else => {},
         }
         try self.lowerExprIntoX0(last.expr);
-        try self.emitReturn();
+        return true;
     }
 
     /// Lower a binaryOp (arithmetic, comparison, or logical) so its value
@@ -1418,15 +1540,7 @@ const Emitter = struct {
     /// Lower a comparison (`<`, `>`, `==`, …) as a value: emits a `{test, …}`
     /// then branches to produce `{atom, true}` or `{atom, false}` in `{x, dest}`.
     fn lowerCmpAsValue(self: *Emitter, bin: anytype, dest: u32) anyerror!void {
-        const opcode: []const u8 = switch (bin.op) {
-            .lt => "is_lt",
-            .gt => "is_gt",
-            .lte => "is_le",
-            .gte => "is_ge",
-            .eq => "is_eq",
-            .ne => "is_ne_exact",
-            else => unreachable,
-        };
+        const cmp = comparisonTestOp(bin.op) orelse unreachable;
 
         var lhs_buf: [64]u8 = undefined;
         var rhs_buf: [64]u8 = undefined;
@@ -1461,7 +1575,9 @@ const Emitter = struct {
 
         const false_label = self.allocLabel();
         const end_label = self.allocLabel();
-        try self.bodyPrint("    {{test, {s}, {{f, {d}}}, [{s}, {s}]}}.\n", .{ opcode, false_label, lhs_final, rhs_final });
+        const a = if (cmp.swap) rhs_final else lhs_final;
+        const b = if (cmp.swap) lhs_final else rhs_final;
+        try self.bodyPrint("    {{test, {s}, {{f, {d}}}, [{s}, {s}]}}.\n", .{ cmp.opcode, false_label, a, b });
         try self.bodyPrint("    {{move, {{atom, true}}, {{x, {d}}}}}.\n", .{dest});
         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
         try self.bodyPrint("  {{label, {d}}}.\n", .{false_label});
@@ -1635,7 +1751,8 @@ const Emitter = struct {
                     const recv_term = try reg.format(&rbuf);
                     try self.bodyPrint("    {{move, {s}, {{x, 0}}}}.\n", .{recv_term});
                 } else {
-                    try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{rn});
+                    var rnbuf: [256]u8 = undefined;
+                    try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{try atomName(rn, &rnbuf)});
                 }
             } else {
                 try self.lowerExprIntoX0(recv_expr.*);
@@ -1807,7 +1924,9 @@ const Emitter = struct {
         }
         // A tuple of `n + 1` elements (tag + fields) needs `n + 2` heap words.
         try self.bodyPrint("    {{test_heap, {d}, {d}}}.\n", .{ n + 2, scratch + n });
-        try self.bodyPrint("    {{put_tuple2, {{x, 0}}, {{list, [{{atom, {s}}}", .{tag});
+        var tag_buf: [256]u8 = undefined;
+        const tag_atom = try atomName(tag, &tag_buf);
+        try self.bodyPrint("    {{put_tuple2, {{x, 0}}, {{list, [{{atom, {s}}}", .{tag_atom});
         for (0..n) |i| {
             try self.bodyPrint(", {{x, {d}}}", .{scratch + i});
         }
@@ -2055,8 +2174,48 @@ const Emitter = struct {
         try self.bodyWrite("]}}.\n");
     }
 
+    /// Bookkeeping for a guarded case arm: the label that restores the subject
+    /// and falls through to the next arm, plus the scratch x-register holding
+    /// the saved subject.
+    const GuardCtx = struct { restore: u32, subj: u32 };
+
+    /// Emit the guard check for an arm whose pattern already matched and whose
+    /// pattern variables are bound. A guard never reads `{x, 0}` directly (it
+    /// only references bound names → y-slots), but lowering it can clobber
+    /// `{x, 0}`, which later arms still need as the subject — so the subject is
+    /// stashed in a scratch register first and `cur_arity` is bumped past it so
+    /// the guard's own scratch use doesn't overwrite it. On a failing guard the
+    /// matcher jumps to `restore` (emitted by `emitGuardPost`), which reloads
+    /// the subject and falls through to the next arm. Returns null (no-op) when
+    /// the arm carries no guard, keeping unguarded arms byte-identical.
+    fn emitGuardPre(self: *Emitter, guard: ?ast.Expr) !?GuardCtx {
+        const g = guard orelse return null;
+        const subj = self.cur_arity;
+        try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{subj});
+        self.cur_arity += 1;
+        const restore = self.allocLabel();
+        const lowered = try self.lowerComparisonAsTest(g, restore);
+        if (!lowered) {
+            try self.lowerExprIntoX0(g);
+            try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 0}}, {{atom, true}}]}}.\n", .{restore});
+        }
+        self.cur_arity -= 1;
+        return GuardCtx{ .restore = restore, .subj = subj };
+    }
+
+    /// Counterpart to `emitGuardPre`: emit the restore block. It must be placed
+    /// after the arm body's `{jump, end}` and immediately before this arm's
+    /// fail label, so the failing-guard path restores the subject and flows
+    /// into the next arm's pattern test.
+    fn emitGuardPost(self: *Emitter, ctx: ?GuardCtx) !void {
+        const c = ctx orelse return;
+        try self.bodyPrint("  {{label, {d}}}.\n", .{c.restore});
+        try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{c.subj});
+    }
+
     /// Lower a `case expr { pat -> body; ... }` into a chain of BEAM test
-    /// instructions with fall-through labels.
+    /// instructions with fall-through labels. Optional `pat if guard -> body`
+    /// guards are honoured via `emitGuardPre`/`emitGuardPost`.
     fn lowerCase(self: *Emitter, subjects: anytype, arms: anytype) anyerror!void {
         if (subjects.len == 0) {
             try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
@@ -2075,8 +2234,10 @@ const Emitter = struct {
                         "    {{test, is_eq, {{f, {d}}}, [{{x, 0}}, {s}]}}.\n",
                         .{ next, term },
                     );
+                    const guard_ctx = try self.emitGuardPre(arm.guard);
                     try self.lowerExprIntoX0(arm.body);
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                    try self.emitGuardPost(guard_ctx);
                     try self.bodyPrint("  {{label, {d}}}.\n", .{next});
                 },
                 .stringLit => |s| {
@@ -2087,26 +2248,39 @@ const Emitter = struct {
                         "    {{test, is_eq, {{f, {d}}}, [{{x, 1}}, {{x, 0}}]}}.\n",
                         .{next},
                     );
+                    // On a match the subject is still in {x, 1} (saved above)
+                    // while {x, 0} holds the string literal from the test. A
+                    // guard stashes {x, 0} as the subject, so restore the real
+                    // subject first; unguarded arms skip this (no churn).
+                    if (arm.guard != null) try self.bodyWrite("    {move, {x, 1}, {x, 0}}.\n");
+                    const guard_ctx = try self.emitGuardPre(arm.guard);
                     try self.lowerExprIntoX0(arm.body);
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                    try self.emitGuardPost(guard_ctx);
                     try self.bodyPrint("  {{label, {d}}}.\n", .{next});
                 },
                 .ident => |name| {
                     if (std.mem.eql(u8, name, "_")) {
+                        const guard_ctx = try self.emitGuardPre(arm.guard);
                         try self.lowerExprIntoX0(arm.body);
                         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                        try self.emitGuardPost(guard_ctx);
                     } else {
                         const y_idx = self.next_y;
                         self.next_y += 1;
                         try self.reg_map.put(name, .{ .y = y_idx });
                         try self.bodyPrint("    {{move, {{x, 0}}, {{y, {d}}}}}.\n", .{y_idx});
+                        const guard_ctx = try self.emitGuardPre(arm.guard);
                         try self.lowerExprIntoX0(arm.body);
                         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                        try self.emitGuardPost(guard_ctx);
                     }
                 },
                 .wildcard => {
+                    const guard_ctx = try self.emitGuardPre(arm.guard);
                     try self.lowerExprIntoX0(arm.body);
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                    try self.emitGuardPost(guard_ctx);
                 },
                 .@"or" => |pats| {
                     const arm_label = self.allocLabel();
@@ -2126,14 +2300,18 @@ const Emitter = struct {
                     const next = self.allocLabel();
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{next});
                     try self.bodyPrint("  {{label, {d}}}.\n", .{arm_label});
+                    const guard_ctx = try self.emitGuardPre(arm.guard);
                     try self.lowerExprIntoX0(arm.body);
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                    try self.emitGuardPost(guard_ctx);
                     try self.bodyPrint("  {{label, {d}}}.\n", .{next});
                 },
                 .variant => |v| switch (v.payload) {
                     .fields => |fields| {
                         const next = self.allocLabel();
-                        try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, {d}, {{atom, {s}}}}}.\n", .{ next, fields.len + 1, v.name });
+                        var vbuf: [256]u8 = undefined;
+                        const vatom = try atomName(v.name, &vbuf);
+                        try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, {d}, {{atom, {s}}}]}}.\n", .{ next, fields.len + 1, vatom });
                         for (fields, 0..) |bname, i| {
                             try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, {d}, {{x, 1}}}}.\n", .{i + 1});
                             const y_idx = self.next_y;
@@ -2141,27 +2319,35 @@ const Emitter = struct {
                             try self.reg_map.put(bname, .{ .y = y_idx });
                             try self.bodyPrint("    {{move, {{x, 1}}, {{y, {d}}}}}.\n", .{y_idx});
                         }
+                        const guard_ctx = try self.emitGuardPre(arm.guard);
                         try self.lowerExprIntoX0(arm.body);
                         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                        try self.emitGuardPost(guard_ctx);
                         try self.bodyPrint("  {{label, {d}}}.\n", .{next});
                     },
                     .binding => |binding| {
                         const next = self.allocLabel();
+                        var vbuf: [256]u8 = undefined;
+                        const vatom = try atomName(v.name, &vbuf);
                         try self.bodyPrint("    {{test, is_tuple, {{f, {d}}}, [{{x, 0}}]}}.\n", .{next});
                         try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 0, {{x, 1}}}}.\n", .{});
-                        try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 1}}, {{atom, {s}}}]}}.\n", .{ next, v.name });
+                        try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 1}}, {{atom, {s}}}]}}.\n", .{ next, vatom });
                         const y_idx = self.next_y;
                         self.next_y += 1;
                         try self.reg_map.put(binding, .{ .y = y_idx });
                         try self.bodyPrint("    {{move, {{x, 0}}, {{y, {d}}}}}.\n", .{y_idx});
+                        const guard_ctx = try self.emitGuardPre(arm.guard);
                         try self.lowerExprIntoX0(arm.body);
                         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                        try self.emitGuardPost(guard_ctx);
                         try self.bodyPrint("  {{label, {d}}}.\n", .{next});
                     },
                     .literals => {
                         // Literal-argument variants are not lowered specially yet.
+                        const guard_ctx = try self.emitGuardPre(arm.guard);
                         try self.lowerExprIntoX0(arm.body);
                         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                        try self.emitGuardPost(guard_ctx);
                     },
                 },
                 .list => |lst| {
@@ -2182,8 +2368,10 @@ const Emitter = struct {
                             }
                         }
                     }
+                    const guard_ctx = try self.emitGuardPre(arm.guard);
                     try self.lowerExprIntoX0(arm.body);
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                    try self.emitGuardPost(guard_ctx);
                     try self.bodyPrint("  {{label, {d}}}.\n", .{next});
                 },
                 .multi => |pats| {
@@ -2215,8 +2403,10 @@ const Emitter = struct {
                             }
                         }
                     }
+                    const guard_ctx = try self.emitGuardPre(arm.guard);
                     try self.lowerExprIntoX0(arm.body);
                     try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
+                    try self.emitGuardPost(guard_ctx);
                     try self.bodyPrint("  {{label, {d}}}.\n", .{next});
                 },
             }
@@ -2287,7 +2477,7 @@ const Emitter = struct {
         try self.bodyPrint("    {{line, [{{location, \"{s}.erl\", {d}}}]}}.\n", .{ self.module_name, self.cur_line });
         try self.bodyPrint("    {{func_info, {{atom, {s}}}, {{atom, {s}}}, {d}}}.\n", .{ self.module_name, fun_name, arity });
         try self.bodyPrint("  {{label, {d}}}.\n", .{labels.entry});
-        try self.bodyPrint("    {{allocate, {d}, {d}}}.\n", .{ self.num_y, arity });
+        try self.emitFrame(arity);
         try self.emitLambdaBody(lam.body);
 
         self.reg_map.deinit();
@@ -2314,7 +2504,7 @@ const Emitter = struct {
         const end_label = self.allocLabel();
 
         // {ok, V}: fall through and unwrap; otherwise jump to the Error branch.
-        try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, 2, {{atom, ok}}}}.\n", .{err_label});
+        try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 2, {{atom, ok}}]}}.\n", .{err_label});
         try self.bodyWrite("    {get_tuple_element, {x, 0}, 1, {x, 0}}.\n");
         try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_label});
 
@@ -2447,7 +2637,7 @@ const Emitter = struct {
         try self.bodyPrint("    {{line, [{{location, \"{s}.erl\", {d}}}]}}.\n", .{ self.module_name, self.cur_line });
         try self.bodyPrint("    {{func_info, {{atom, {s}}}, {{atom, {s}}}, {d}}}.\n", .{ self.module_name, fun_name, arity });
         try self.bodyPrint("  {{label, {d}}}.\n", .{labels.entry});
-        try self.bodyPrint("    {{allocate, {d}, {d}}}.\n", .{ self.num_y, arity });
+        try self.emitFrame(arity);
 
         try self.emitBody(lp.body);
 
@@ -2536,6 +2726,66 @@ const Emitter = struct {
         }
     }
 };
+
+/// True when `name` is a valid *unquoted* Erlang atom: a lowercase letter
+/// followed by letters, digits, `_` or `@`. Anything else must be single-quoted
+/// in the `.S` term syntax — notably PascalCase enum tags (`Circle`), which the
+/// assembler would otherwise parse as an Erlang *variable* (`{atom, Circle}` →
+/// `bad term`).
+fn isUnquotedAtom(name: []const u8) bool {
+    if (name.len == 0) return false;
+    if (!(name[0] >= 'a' and name[0] <= 'z')) return false;
+    for (name[1..]) |c| {
+        if (!(std.ascii.isAlphanumeric(c) or c == '_' or c == '@')) return false;
+    }
+    return true;
+}
+
+/// Render `name` as the inner text of an `{atom, _}` term, single-quoting and
+/// escaping it when it isn't a valid unquoted atom. Lowercase names pass through
+/// unchanged (so `{atom, ok}` stays `ok`). `buf` must be large enough for the
+/// quotes and any escaped characters (2*name.len + 2).
+fn atomName(name: []const u8, buf: []u8) ![]const u8 {
+    // Already single-quoted (e.g. a pre-mangled `'Owner_method'`) — leave as-is
+    // so we don't double-quote it.
+    if (name.len > 0 and name[0] == '\'') return name;
+    if (isUnquotedAtom(name)) return name;
+    var i: usize = 0;
+    buf[i] = '\'';
+    i += 1;
+    for (name) |c| {
+        if (c == '\'' or c == '\\') {
+            buf[i] = '\\';
+            i += 1;
+        }
+        buf[i] = c;
+        i += 1;
+    }
+    buf[i] = '\'';
+    i += 1;
+    return buf[0..i];
+}
+
+/// A comparison lowered to a BEAM `test` instruction: the opcode plus whether
+/// the operands must be swapped.
+const CmpTest = struct { opcode: []const u8, swap: bool };
+
+/// Map a comparison operator to a *valid* BEAM test instruction. BEAM provides
+/// only `is_lt` and `is_ge` for ordering — there is no `is_gt`/`is_le` opcode
+/// (`beam_opcodes:opcode(is_gt, _)` fails to assemble), so `>` and `<=` are
+/// emitted as `is_lt`/`is_ge` with the operands swapped. Returns null for
+/// operators that are not comparisons.
+fn comparisonTestOp(op: anytype) ?CmpTest {
+    return switch (op) {
+        .lt => .{ .opcode = "is_lt", .swap = false },
+        .gt => .{ .opcode = "is_lt", .swap = true },
+        .lte => .{ .opcode = "is_ge", .swap = true },
+        .gte => .{ .opcode = "is_ge", .swap = false },
+        .eq => .{ .opcode = "is_eq", .swap = false },
+        .ne => .{ .opcode = "is_ne_exact", .swap = false },
+        else => null,
+    };
+}
 
 /// Render a numeric literal into `buf`. Returns the populated slice.
 fn formatNumberInto(buf: []u8, n: []const u8) ![]const u8 {

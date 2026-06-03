@@ -24,6 +24,7 @@ fn greet(lang: string) -> string {
     {func_info, {atom, main}, {atom, greet}, 1}.
   {label, 3}.
     {allocate, 1, 1}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"en">>}, {x, 0}}.
     {test, is_eq, {f, 5}, [{x, 1}, {x, 0}]}.

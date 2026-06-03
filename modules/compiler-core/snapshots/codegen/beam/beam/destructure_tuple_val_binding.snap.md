@@ -18,7 +18,8 @@ fn extract() {
     {line, [{location, "main.erl", 1}]}.
     {func_info, {atom, main}, {atom, extract}, 0}.
   {label, 3}.
-    {allocate, 1, 0}.
+    {allocate, 2, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}]}}.
     {move, {integer, 12}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {literal, <<"hello">>}, {x, 0}}.
@@ -36,7 +37,7 @@ fn extract() {
     {put_list, {x, 1}, nil, {x, 1}}.
     {call_ext, 2, {extfunc, io, format, 2}}.
     {move, {atom, ok}, {x, 0}}.
-    {deallocate, 1}.
+    {deallocate, 2}.
     return.
 ```
 

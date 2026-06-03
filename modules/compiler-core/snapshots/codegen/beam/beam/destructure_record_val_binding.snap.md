@@ -20,7 +20,8 @@ fn describe(p: Point) -> i32 {
     {line, [{location, "main.erl", 1}]}.
     {func_info, {atom, main}, {atom, describe}, 1}.
   {label, 3}.
-    {allocate, 1, 1}.
+    {allocate, 2, 1}.
+    {init_yregs, {list, [{y, 0}, {y, 1}]}}.
     {move, {x, 0}, {x, 1}}.
     {get_map_elements, {f, 4}, {x, 1}, {list, [{atom, x}, {x, 0}]}}.
   {label, 4}.
@@ -38,7 +39,7 @@ fn describe(p: Point) -> i32 {
     {put_list, {x, 1}, nil, {x, 1}}.
     {call_ext, 2, {extfunc, io, format, 2}}.
     {move, {y, 0}, {x, 0}}.
-    {deallocate, 1}.
+    {deallocate, 2}.
     return.
 ```
 

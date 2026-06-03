@@ -83,7 +83,7 @@ fn main() {
     {func_info, {atom, main}, {atom, '-find/1-fun-0-'}, 1}.
   {label, 11}.
     {allocate, 0, 1}.
-    {test, is_gt, {f, 12}, [{x, 0}, {integer, 10}]}.
+    {test, is_lt, {f, 12}, [{integer, 10}, {x, 0}]}.
     {deallocate, 0}.
     return.
     {jump, {f, 13}}.

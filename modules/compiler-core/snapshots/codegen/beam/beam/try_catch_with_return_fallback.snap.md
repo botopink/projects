@@ -34,8 +34,9 @@ fn safe() -> i32 {
     {func_info, {atom, main}, {atom, safe}, 0}.
   {label, 5}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     {call, 0, {f, 3}}.
-    {test, is_tagged_tuple, {f, 6}, {x, 0}, 2, {atom, ok}}.
+    {test, is_tagged_tuple, {f, 6}, [{x, 0}, 2, {atom, ok}]}.
     {get_tuple_element, {x, 0}, 1, {x, 0}}.
     {jump, {f, 7}}.
   {label, 6}.

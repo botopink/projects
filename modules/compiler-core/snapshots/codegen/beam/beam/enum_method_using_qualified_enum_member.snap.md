@@ -23,7 +23,8 @@ val Status = enum {
     {func_info, {atom, main}, {atom, 'Status_isDefault'}, 1}.
   {label, 3}.
     {allocate, 1, 1}.
-    {move, {atom, Status}, {x, 0}}.
+    {init_yregs, {list, [{y, 0}]}}.
+    {move, {atom, 'Status'}, {x, 0}}.
     {get_map_elements, {f, 4}, {x, 0}, {list, [{atom, Active}, {x, 0}]}}.
   {label, 4}.
     {move, {x, 0}, {y, 0}}.

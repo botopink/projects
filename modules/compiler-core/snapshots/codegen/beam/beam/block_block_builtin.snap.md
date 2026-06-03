@@ -24,11 +24,12 @@ fn main() -> string {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 3}.
     {allocate, 2, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}]}}.
     {move, {integer, 42}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {gc_bif, '*', {f, 0}, 0, [{y, 0}, {integer, 2}], {x, 0}}.
     {move, {x, 0}, {y, 1}}.
-    {test, is_gt, {f, 8}, [{y, 1}, {integer, 100}]}.
+    {test, is_lt, {f, 8}, [{integer, 100}, {y, 1}]}.
     {move, {literal, <<"Alto">>}, {x, 0}}.
     {deallocate, 2}.
     return.

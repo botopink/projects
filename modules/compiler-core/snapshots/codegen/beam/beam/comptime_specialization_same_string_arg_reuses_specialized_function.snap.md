@@ -24,6 +24,7 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 3}.
     {allocate, 3, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}, {y, 2}]}}.
     {move, {literal, <<"Sistema iniciado">>}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
@@ -43,12 +44,13 @@ fn main() {
     {deallocate, 3}.
     return.
 
-{function, build_$0, 1, 5}.
+{function, 'build_$0', 1, 5}.
   {label, 4}.
     {line, [{location, "main.erl", 2}]}.
-    {func_info, {atom, main}, {atom, build_$0}, 1}.
+    {func_info, {atom, main}, {atom, 'build_$0'}, 1}.
   {label, 5}.
     {allocate, 1, 1}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {literal, <<"INFO">>}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 1}}.
@@ -59,12 +61,13 @@ fn main() {
     {deallocate, 1}.
     return.
 
-{function, build_$1, 1, 7}.
+{function, 'build_$1', 1, 7}.
   {label, 6}.
     {line, [{location, "main.erl", 3}]}.
-    {func_info, {atom, main}, {atom, build_$1}, 1}.
+    {func_info, {atom, main}, {atom, 'build_$1'}, 1}.
   {label, 7}.
     {allocate, 1, 1}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {literal, <<"WARN">>}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 1}}.

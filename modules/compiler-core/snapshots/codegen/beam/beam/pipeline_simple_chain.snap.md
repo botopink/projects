@@ -43,6 +43,7 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 7}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {integer, 1}, {x, 0}}.
     {call, 1, {f, 3}}.
     {call, 1, {f, 5}}.
@@ -74,4 +75,5 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
+3
 ```

@@ -42,7 +42,7 @@ fn countUp(x: i32) {
     {func_info, {atom, main}, {atom, '-countUp/1-fun-0-'}, 1}.
   {label, 5}.
     {allocate, 0, 1}.
-    {test, is_gt, {f, 6}, [{x, 0}, {integer, 100}]}.
+    {test, is_lt, {f, 6}, [{integer, 100}, {x, 0}]}.
     {deallocate, 0}.
     return.
     {jump, {f, 7}}.

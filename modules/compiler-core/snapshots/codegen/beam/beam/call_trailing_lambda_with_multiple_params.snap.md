@@ -35,6 +35,7 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 5}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     {make_fun2, {f, 11}, 0, 0, 0}.
     {move, {x, 0}, {x, 0}}.
     {move, {integer, 2}, {x, 0}}.

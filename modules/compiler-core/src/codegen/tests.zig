@@ -2821,3 +2821,34 @@ test "js: case ---- guard clause on variant fields" {
         "if ((r > 10)) return \"big circle\";",
     });
 }
+
+// All-target snapshots for case guard clauses. The BEAM backend lowers a guard
+// after the pattern's variables are bound: on a failing guard it restores the
+// subject and falls through to the next arm (see `emitGuardPre`/`emitGuardPost`
+// in `beam_asm.zig`). commonJS/erlang/wasm capture their own current behaviour.
+test "case guard ---- bound identifier numeric guard" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn classify(n: i32) -> string {
+        \\    return case n {
+        \\        x if x > 0 -> "positive";
+        \\        0 -> "zero";
+        \\        _ -> "negative";
+        \\    };
+        \\}
+    );
+}
+
+test "case guard ---- variant field guard" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Shape = enum {
+        \\    Circle(r: i32),
+        \\    Square(s: i32),
+        \\}
+        \\fn big(sh: Shape) -> string {
+        \\    return case sh {
+        \\        Circle(r) if r > 10 -> "big circle";
+        \\        _ -> "other";
+        \\    };
+        \\}
+    );
+}

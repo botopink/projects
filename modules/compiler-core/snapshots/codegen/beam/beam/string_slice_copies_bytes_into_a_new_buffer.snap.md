@@ -19,6 +19,7 @@ fn first3() -> string {
     {func_info, {atom, main}, {atom, first3}, 0}.
   {label, 3}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {literal, <<"hello">>}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
