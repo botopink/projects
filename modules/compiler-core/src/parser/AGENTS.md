@@ -34,6 +34,7 @@ parser/
 ├── docs.md        ← parser strategy, helpers, error policy
 ├── examples.md    ← `.bp` declarations / expressions / statements
 ├── types.zig      ← type-ref sub-grammar: parseTypeRef/BaseTypeRef/GenericParams/ImplementClause
+├── patterns.zig   ← case/pattern sub-grammar: parseCaseExpr/parsePattern/SimplePattern/ListPattern
 ├── tests.zig      ← barrel: aggregates tests/<feature>.zig for test_root.zig
 └── tests/         ← parser tests, split by feature
     ├── helpers.zig       ← shared harness (`assertParser`/`expectParseError`/…)

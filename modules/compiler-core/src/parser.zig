@@ -7,6 +7,7 @@ const lexer = @import("lexer.zig");
 // functions on `*Parser`; the `Parser` struct below re-exports them as thin
 // aliases so `this.parseX()` keeps resolving at every call site.
 const types = @import("parser/types.zig");
+const patterns = @import("parser/patterns.zig");
 
 pub const Token = token.Token;
 pub const TokenKind = token.TokenKind;
@@ -279,7 +280,7 @@ pub const Parser = struct {
 
     /// Dispatches `val [pub] Name = <kind> ...` to the appropriate sub-parser.
     /// Uses pure lookahead ---- no state mutation.
-    fn parseValForm(this: *This, alloc: std.mem.Allocator) ParseError!DeclKind {
+    pub fn parseValForm(this: *This, alloc: std.mem.Allocator) ParseError!DeclKind {
         // Check if we have `val Name : Type = Value` (type annotation) or `val Name = Value`
         var offset: usize = 0;
         if (this.peekAt(offset).kind == .@"pub") offset += 1; // optional pub
@@ -317,27 +318,27 @@ pub const Parser = struct {
     }
 
     /// true if the current token is `kind`, or `pub` followed by `kind`.
-    inline fn checkShorthand(this: *This, kind: TokenKind) bool {
+    pub inline fn checkShorthand(this: *This, kind: TokenKind) bool {
         return this.check(kind) or (this.check(.@"pub") and this.peekAt(1).kind == kind);
     }
 
     /// true for a named shorthand decl `Name <kind> …` or `pub Name <kind> …`,
     /// used to detect `Name implement …` / `Name extend …`.
-    inline fn checkNamedDecl(this: *This, kind: TokenKind) bool {
+    pub inline fn checkNamedDecl(this: *This, kind: TokenKind) bool {
         if (this.check(.identifier)) return this.peekAt(1).kind == kind;
         if (this.check(.@"pub")) return this.peekAt(1).kind == .identifier and this.peekAt(2).kind == kind;
         return false;
     }
 
     /// true if a `*fn` (async/generator) declaration is next: `*fn` or `pub *fn`.
-    inline fn checkStarFn(this: *This) bool {
+    pub inline fn checkStarFn(this: *This) bool {
         if (this.check(.star)) return this.peekAt(1).kind == .@"fn";
         if (this.check(.@"pub")) return this.peekAt(1).kind == .star and this.peekAt(2).kind == .@"fn";
         return false;
     }
 
     /// true if a shorthand delegate (`declare fn` or `pub declare fn`) is next.
-    inline fn checkShorthandDelegate(this: *This) bool {
+    pub inline fn checkShorthandDelegate(this: *This) bool {
         if (this.check(.declare)) return this.peekAt(1).kind == .@"fn";
         if (this.check(.@"pub")) return this.peekAt(1).kind == .declare and this.peekAt(2).kind == .@"fn";
         return false;
@@ -345,7 +346,7 @@ pub const Parser = struct {
 
     /// Returns the lookahead offset of the token that follows `[pub] val Name =`.
     /// Does not consume any tokens.
-    inline fn valBodyOffset(this: *This) usize {
+    pub inline fn valBodyOffset(this: *This) usize {
         var offset: usize = 0;
         if (this.peekAt(offset).kind == .@"pub") offset += 1; // optional pub
         offset += 1; // val
@@ -706,7 +707,7 @@ pub const Parser = struct {
 
     // ── val decl ─────────────────────────────────────────────────────────────
 
-    fn parseValDecl(this: *This, alloc: std.mem.Allocator) ParseError!ValDecl {
+    pub fn parseValDecl(this: *This, alloc: std.mem.Allocator) ParseError!ValDecl {
         const isPub = this.match(.@"pub");
         _ = try this.consume(.val);
 
@@ -811,7 +812,7 @@ pub const Parser = struct {
     // ── import decl ──────────────────────────────────────────────────────────
 
     /// `import { item, ... } [from "name"];`
-    fn parseImportDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImportDecl {
+    pub fn parseImportDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImportDecl {
         _ = try this.consume(.import);
         _ = try this.consume(.leftBrace);
         const imports = try this.parseImportList(alloc);
@@ -829,7 +830,7 @@ pub const Parser = struct {
 
     /// Fallback activation statement `dottedPath "*" ";"` — activates an
     /// already-visible symbol without re-importing it.
-    fn parseActivationStmt(this: *This, alloc: std.mem.Allocator) ParseError!ImportDecl {
+    pub fn parseActivationStmt(this: *This, alloc: std.mem.Allocator) ParseError!ImportDecl {
         const path = try this.parseImportItem(alloc);
         errdefer alloc.free(path.segments);
         const imports = try alloc.alloc(ImportPath, 1);
@@ -837,7 +838,7 @@ pub const Parser = struct {
         return ImportDecl{ .imports = imports, .source = .root, .activationOnly = true };
     }
 
-    fn parseImportList(this: *This, alloc: std.mem.Allocator) ParseError![]const ImportPath {
+    pub fn parseImportList(this: *This, alloc: std.mem.Allocator) ParseError![]const ImportPath {
         var paths: std.ArrayList(ImportPath) = .empty;
         errdefer {
             for (paths.items) |p| alloc.free(p.segments);
@@ -853,7 +854,7 @@ pub const Parser = struct {
     }
 
     /// `dottedPath "*"? ("as" ident)?` — one import item.
-    fn parseImportItem(this: *This, alloc: std.mem.Allocator) ParseError!ImportPath {
+    pub fn parseImportItem(this: *This, alloc: std.mem.Allocator) ParseError!ImportPath {
         var segs: std.ArrayList([]const u8) = .empty;
         errdefer segs.deinit(alloc);
         try segs.append(alloc, (try this.consume(.identifier)).lexeme);
@@ -873,7 +874,7 @@ pub const Parser = struct {
     }
 
     /// Lookahead for a top-level activation statement: `ident ("." ident)* "*"`.
-    fn isActivationStmt(this: *This) bool {
+    pub fn isActivationStmt(this: *This) bool {
         if (!this.check(.identifier)) return false;
         var offset: usize = 1;
         while (this.peekAt(offset).kind == .dot) {
@@ -885,7 +886,7 @@ pub const Parser = struct {
 
     // ── fn decl ───────────────────────────────────────────────────────────────────
 
-    fn parseFnDecl(this: *This, alloc: std.mem.Allocator) ParseError!FnDecl {
+    pub fn parseFnDecl(this: *This, alloc: std.mem.Allocator) ParseError!FnDecl {
         const annotations = try this.parseAnnotations(alloc);
         errdefer {
             for (annotations) |*ann| ann.deinit(alloc);
@@ -901,7 +902,7 @@ pub const Parser = struct {
     }
 
     /// `val name = #[...] fn(params) -> R { body }` — val-form annotated function.
-    fn parseFnDeclFromVal(this: *This, alloc: std.mem.Allocator) ParseError!FnDecl {
+    pub fn parseFnDeclFromVal(this: *This, alloc: std.mem.Allocator) ParseError!FnDecl {
         const isPub = this.match(.@"pub");
         _ = try this.consume(.val);
         const nameTok: Token = if (this.check(.identifier) or this.check(.@"test"))
@@ -920,7 +921,7 @@ pub const Parser = struct {
         return this.parseFnBody(alloc, name, isPub, annotations, isStarFn);
     }
 
-    fn parseFnBody(
+    pub fn parseFnBody(
         this: *This,
         alloc: std.mem.Allocator,
         name: []const u8,
@@ -984,7 +985,7 @@ pub const Parser = struct {
     // ── delegate decl ────────────────────────────────────────────────────────────
 
     /// `val log = declare fn(self: Self) -> R`
-    fn parseDelegateDecl(this: *This, alloc: std.mem.Allocator) ParseError!DelegateDecl {
+    pub fn parseDelegateDecl(this: *This, alloc: std.mem.Allocator) ParseError!DelegateDecl {
         const isPub = this.match(.@"pub");
         _ = try this.consume(.val);
         const name = (try this.consume(.identifier)).lexeme;
@@ -995,7 +996,7 @@ pub const Parser = struct {
     }
 
     /// `[pub] declare fn log(self: Self) -> R`
-    fn parseShorthandDelegateDecl(this: *This, alloc: std.mem.Allocator) ParseError!DelegateDecl {
+    pub fn parseShorthandDelegateDecl(this: *This, alloc: std.mem.Allocator) ParseError!DelegateDecl {
         const isPub = this.match(.@"pub");
         _ = try this.consume(.declare);
         _ = try this.consume(.@"fn");
@@ -1003,7 +1004,7 @@ pub const Parser = struct {
         return this.parseDelegateParams(alloc, name, isPub);
     }
 
-    fn parseDelegateParams(this: *This, alloc: std.mem.Allocator, name: []const u8, isPub: bool) ParseError!DelegateDecl {
+    pub fn parseDelegateParams(this: *This, alloc: std.mem.Allocator, name: []const u8, isPub: bool) ParseError!DelegateDecl {
         _ = try this.consume(.leftParenthesis);
         const params = try this.parseParamList(alloc);
         errdefer {
@@ -1026,7 +1027,7 @@ pub const Parser = struct {
 
     // ── interface decl ───────────────────────────────────────────────────────────
 
-    fn parseInterfaceDecl(this: *This, alloc: std.mem.Allocator) ParseError!InterfaceDecl {
+    pub fn parseInterfaceDecl(this: *This, alloc: std.mem.Allocator) ParseError!InterfaceDecl {
         // val-form: the `extends` clause (if any) follows the `interface` keyword.
         const p = try this.parseDeclPreamble(alloc, .interface, false);
         errdefer freeAnnotations(alloc, p.annotations);
@@ -1034,7 +1035,7 @@ pub const Parser = struct {
         return this.parseInterfaceBody(alloc, p.name, extendsSlice, p.annotations, p.isPub);
     }
 
-    fn parseShorthandInterfaceDecl(this: *This, alloc: std.mem.Allocator) ParseError!InterfaceDecl {
+    pub fn parseShorthandInterfaceDecl(this: *This, alloc: std.mem.Allocator) ParseError!InterfaceDecl {
         // shorthand: the `extends` clause (if any) follows the interface name.
         const p = try this.parseDeclPreamble(alloc, .interface, true);
         errdefer freeAnnotations(alloc, p.annotations);
@@ -1044,7 +1045,7 @@ pub const Parser = struct {
 
     /// Parses an optional `extends T1, T2, T3` clause.
     /// Returns an owned slice (may be empty). The caller owns the memory.
-    fn parseExtendsClause(this: *This, alloc: std.mem.Allocator) ParseError![]const []const u8 {
+    pub fn parseExtendsClause(this: *This, alloc: std.mem.Allocator) ParseError![]const []const u8 {
         if (!this.match(.extends)) return &.{};
         var list: std.ArrayList([]const u8) = .empty;
         errdefer list.deinit(alloc);
@@ -1055,7 +1056,7 @@ pub const Parser = struct {
         return list.toOwnedSlice(alloc);
     }
 
-    fn parseInterfaceBody(this: *This, alloc: std.mem.Allocator, name: []const u8, extendsSlice: []const []const u8, annotations: []Annotation, isPub: bool) ParseError!InterfaceDecl {
+    pub fn parseInterfaceBody(this: *This, alloc: std.mem.Allocator, name: []const u8, extendsSlice: []const []const u8, annotations: []Annotation, isPub: bool) ParseError!InterfaceDecl {
         const genericParams = try this.parseGenericParams(alloc);
         errdefer alloc.free(genericParams);
         _ = try this.consume(.leftBrace);
@@ -1104,7 +1105,7 @@ pub const Parser = struct {
         };
     }
 
-    fn parseInterfaceMethod(this: *This, alloc: std.mem.Allocator, is_default: bool) ParseError!InterfaceMethod {
+    pub fn parseInterfaceMethod(this: *This, alloc: std.mem.Allocator, is_default: bool) ParseError!InterfaceMethod {
         _ = try this.consume(.@"fn");
         const name = (try this.consume(.identifier)).lexeme;
 
@@ -1150,7 +1151,7 @@ pub const Parser = struct {
     /// Parse a method inside a struct, record, or enum body.
     /// `is_declare fn ` → abstract slot (no body, `is_declare = true`).
     /// Plain `fn` → always requires a body.
-    fn parseMethodDecl(this: *This, alloc: std.mem.Allocator, is_declare: bool, isPub: bool) ParseError!InterfaceMethod {
+    pub fn parseMethodDecl(this: *This, alloc: std.mem.Allocator, is_declare: bool, isPub: bool) ParseError!InterfaceMethod {
         _ = try this.consume(.@"fn");
         const name = (try this.consume(.identifier)).lexeme;
 
@@ -1199,19 +1200,19 @@ pub const Parser = struct {
 
     // ── struct decl ───────────────────────────────────────────────────────────
 
-    fn parseStructDecl(this: *This, alloc: std.mem.Allocator) ParseError!StructDecl {
+    pub fn parseStructDecl(this: *This, alloc: std.mem.Allocator) ParseError!StructDecl {
         const p = try this.parseDeclPreamble(alloc, .@"struct", false);
         errdefer freeAnnotations(alloc, p.annotations);
         return this.parseStructBody(alloc, p.name, p.annotations, p.isPub);
     }
 
-    fn parseShorthandStructDecl(this: *This, alloc: std.mem.Allocator) ParseError!StructDecl {
+    pub fn parseShorthandStructDecl(this: *This, alloc: std.mem.Allocator) ParseError!StructDecl {
         const p = try this.parseDeclPreamble(alloc, .@"struct", true);
         errdefer freeAnnotations(alloc, p.annotations);
         return this.parseStructBody(alloc, p.name, p.annotations, p.isPub);
     }
 
-    fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!StructDecl {
+    pub fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!StructDecl {
         const genericParams = try this.parseGenericParams(alloc);
         errdefer alloc.free(genericParams);
         const implementList = try this.parseImplementClause(alloc);
@@ -1293,7 +1294,7 @@ pub const Parser = struct {
         };
     }
 
-    fn parseStructGetter(this: *This, alloc: std.mem.Allocator) ParseError!StructGetter {
+    pub fn parseStructGetter(this: *This, alloc: std.mem.Allocator) ParseError!StructGetter {
         _ = try this.consume(.get);
         const name = (try this.consume(.identifier)).lexeme;
         _ = try this.consume(.leftParenthesis);
@@ -1312,7 +1313,7 @@ pub const Parser = struct {
         };
     }
 
-    fn parseStructSetter(this: *This, alloc: std.mem.Allocator) ParseError!StructSetter {
+    pub fn parseStructSetter(this: *This, alloc: std.mem.Allocator) ParseError!StructSetter {
         _ = try this.consume(.set);
         const name = (try this.consume(.identifier)).lexeme;
         _ = try this.consume(.leftParenthesis);
@@ -1331,19 +1332,19 @@ pub const Parser = struct {
 
     // ── record decl ──────────────────────────────────────────────────────────
 
-    fn parseRecordDecl(this: *This, alloc: std.mem.Allocator) ParseError!RecordDecl {
+    pub fn parseRecordDecl(this: *This, alloc: std.mem.Allocator) ParseError!RecordDecl {
         const p = try this.parseDeclPreamble(alloc, .record, false);
         errdefer freeAnnotations(alloc, p.annotations);
         return this.parseRecordBody(alloc, p.name, p.annotations, p.isPub);
     }
 
-    fn parseShorthandRecordDecl(this: *This, alloc: std.mem.Allocator) ParseError!RecordDecl {
+    pub fn parseShorthandRecordDecl(this: *This, alloc: std.mem.Allocator) ParseError!RecordDecl {
         const p = try this.parseDeclPreamble(alloc, .record, true);
         errdefer freeAnnotations(alloc, p.annotations);
         return this.parseRecordBody(alloc, p.name, p.annotations, p.isPub);
     }
 
-    fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!RecordDecl {
+    pub fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!RecordDecl {
         const genericParams = try this.parseGenericParams(alloc);
         errdefer alloc.free(genericParams);
         const implementList = try this.parseImplementClause(alloc);
@@ -1418,7 +1419,7 @@ pub const Parser = struct {
     // ── implement decl ────────────────────────────────────────────────────────────
 
     /// Explicit form: `pub? val Name = implement Iface, … for Type { fn … }`.
-    fn parseImplementDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImplementDecl {
+    pub fn parseImplementDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImplementDecl {
         const isPub = this.match(.@"pub");
         _ = try this.consume(.val);
         const name = (try this.consume(.identifier)).lexeme;
@@ -1429,7 +1430,7 @@ pub const Parser = struct {
     }
 
     /// Shorthand form: `pub? Name implement Iface, … for Type { fn … }`.
-    fn parseShorthandImplementDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImplementDecl {
+    pub fn parseShorthandImplementDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImplementDecl {
         const isPub = this.match(.@"pub");
         const name = (try this.consume(.identifier)).lexeme;
         const genericParams = try this.parseGenericParams(alloc);
@@ -1439,7 +1440,7 @@ pub const Parser = struct {
 
     /// Parses `implement Iface, … for Type { fn … }` starting at the `implement`
     /// keyword. The name / pub / generic params / form were consumed by the caller.
-    fn parseImplementBody(
+    pub fn parseImplementBody(
         this: *This,
         alloc: std.mem.Allocator,
         name: []const u8,
@@ -1478,7 +1479,7 @@ pub const Parser = struct {
     }
 
     /// Explicit form: `pub? val Name = extend Type { fn … }`.
-    fn parseExtendDecl(this: *This, alloc: std.mem.Allocator) ParseError!ExtendDecl {
+    pub fn parseExtendDecl(this: *This, alloc: std.mem.Allocator) ParseError!ExtendDecl {
         const isPub = this.match(.@"pub");
         _ = try this.consume(.val);
         const name = (try this.consume(.identifier)).lexeme;
@@ -1489,7 +1490,7 @@ pub const Parser = struct {
     }
 
     /// Shorthand form: `pub? Name extend Type { fn … }`.
-    fn parseShorthandExtendDecl(this: *This, alloc: std.mem.Allocator) ParseError!ExtendDecl {
+    pub fn parseShorthandExtendDecl(this: *This, alloc: std.mem.Allocator) ParseError!ExtendDecl {
         const isPub = this.match(.@"pub");
         const name = (try this.consume(.identifier)).lexeme;
         const genericParams = try this.parseGenericParams(alloc);
@@ -1498,7 +1499,7 @@ pub const Parser = struct {
     }
 
     /// Parses `extend Type { fn … }` starting at the `extend` keyword.
-    fn parseExtendBody(
+    pub fn parseExtendBody(
         this: *This,
         alloc: std.mem.Allocator,
         name: []const u8,
@@ -1520,7 +1521,7 @@ pub const Parser = struct {
     }
 
     /// Parses a `{ fn … fn … }` block of method bodies shared by implement/extend.
-    fn parseImplementMethods(this: *This, alloc: std.mem.Allocator) ParseError![]ImplementMethod {
+    pub fn parseImplementMethods(this: *This, alloc: std.mem.Allocator) ParseError![]ImplementMethod {
         _ = try this.consume(.leftBrace);
         var methods: std.ArrayList(ImplementMethod) = .empty;
         errdefer {
@@ -1554,7 +1555,7 @@ pub const Parser = struct {
         };
     }
 
-    fn parseImplementMethod(this: *This, alloc: std.mem.Allocator) ParseError!ImplementMethod {
+    pub fn parseImplementMethod(this: *This, alloc: std.mem.Allocator) ParseError!ImplementMethod {
         _ = try this.consume(.@"fn");
 
         const first = (try this.consume(.identifier)).lexeme;
@@ -1592,19 +1593,19 @@ pub const Parser = struct {
 
     // ── enum decl ─────────────────────────────────────────────────────────────
 
-    fn parseEnumDecl(this: *This, alloc: std.mem.Allocator) ParseError!EnumDecl {
+    pub fn parseEnumDecl(this: *This, alloc: std.mem.Allocator) ParseError!EnumDecl {
         const p = try this.parseDeclPreamble(alloc, .@"enum", false);
         errdefer freeAnnotations(alloc, p.annotations);
         return this.parseEnumBody(alloc, p.name, p.annotations, p.isPub);
     }
 
-    fn parseShorthandEnumDecl(this: *This, alloc: std.mem.Allocator) ParseError!EnumDecl {
+    pub fn parseShorthandEnumDecl(this: *This, alloc: std.mem.Allocator) ParseError!EnumDecl {
         const p = try this.parseDeclPreamble(alloc, .@"enum", true);
         errdefer freeAnnotations(alloc, p.annotations);
         return this.parseEnumBody(alloc, p.name, p.annotations, p.isPub);
     }
 
-    fn parseEnumBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!EnumDecl {
+    pub fn parseEnumBody(this: *This, alloc: std.mem.Allocator, name: []const u8, annotations: []Annotation, isPub: bool) ParseError!EnumDecl {
         const genericParams = try this.parseGenericParams(alloc);
         errdefer alloc.free(genericParams);
         const implementList = try this.parseImplementClause(alloc);
@@ -1685,288 +1686,13 @@ pub const Parser = struct {
 
     // ── case / pattern matching ────────────────────────────────────────────────
 
-    fn parseCaseExpr(this: *This, alloc: std.mem.Allocator) ParseError!CollectionExpr {
-        const caseTok = try this.consume(.case);
+    pub const parseCaseExpr = patterns.parseCaseExpr;
 
-        // Subjects: either `(expr)` for single (possibly tuple) subject,
-        // or comma-separated expressions for multiple subjects.
-        var subjects: std.ArrayList(Expr) = .empty;
-        errdefer {
-            for (subjects.items) |*s| s.deinit(alloc);
-            subjects.deinit(alloc);
-        }
+    pub const parsePattern = patterns.parsePattern;
 
-        if (this.check(.leftParenthesis)) {
-            // Single subject wrapped in parens (e.g. tuple)
-            _ = this.advance(); // consume '('
-            const e = try this.parseBinaryExpr(alloc, prec.equality);
-            _ = try this.consume(.rightParenthesis);
-            try subjects.append(alloc, e);
-        } else {
-            // Multiple subjects separated by commas
-            while (!this.check(.leftBrace) and !this.check(.endOfFile)) {
-                try subjects.append(alloc, try this.parseBinaryExpr(alloc, prec.equality));
-                if (!this.match(.comma)) break;
-            }
-        }
+    pub const parseSimplePattern = patterns.parseSimplePattern;
 
-        _ = try this.consume(.leftBrace);
-
-        var arms: std.ArrayList(CaseArm) = .empty;
-        errdefer {
-            for (arms.items) |*a| a.deinit(alloc);
-            arms.deinit(alloc);
-        }
-
-        var trailingComments: std.ArrayList([]const u8) = .empty;
-        errdefer {
-            for (trailingComments.items) |c| alloc.free(c);
-            trailingComments.deinit(alloc);
-        }
-
-        while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            // Use token line numbers to detect empty lines between arms
-            const prevLine = if (this.current > 0) this.tokens[this.current - 1].line else 1;
-            const currLine = this.peek().line;
-            const emptyLinesBefore: u32 = if (arms.items.len > 0 and currLine > prevLine + 1)
-                @intCast(currLine - prevLine - 1)
-            else
-                0;
-
-            // Handle comments inside the case block (trailing after last arm)
-            if (this.isComment()) {
-                while (this.isComment()) {
-                    const cTok = this.advance();
-                    try trailingComments.append(alloc, try alloc.dupe(u8, commentText(cTok.lexeme)));
-                }
-                continue;
-            }
-            if (this.check(.rightBrace)) break;
-
-            const firstPat = try this.parsePattern(alloc);
-            const pattern: ast.Pattern = if (this.match(.comma)) blk: {
-                var pats: std.ArrayList(ast.Pattern) = .empty;
-                errdefer {
-                    for (pats.items) |*p| p.deinit(alloc);
-                    pats.deinit(alloc);
-                }
-                try pats.append(alloc, firstPat);
-                while (true) {
-                    try pats.append(alloc, try this.parsePattern(alloc));
-                    if (!this.match(.comma)) break;
-                }
-                break :blk .{ .multi = try pats.toOwnedSlice(alloc) };
-            } else firstPat;
-            // Optional guard clause: `pattern if <expr> -> body`.
-            const guard: ?Expr = if (this.match(.@"if")) try this.parseExpr(alloc) else null;
-            errdefer if (guard) |*g| @constCast(g).deinit(alloc);
-            _ = try this.consume(.rightArrow);
-            // A `{` starts a block arm body (zero-param lambda with semicolon-separated stmts).
-            const body = if (this.check(.leftBrace)) blk: {
-                const braceTok = this.advance();
-                // Body is already-consumed `{ stmt; ... }` — wrap as zero-param lambda
-                var blockStmts: std.ArrayList(Stmt) = .empty;
-                errdefer {
-                    for (blockStmts.items) |*s| s.deinit(alloc);
-                    blockStmts.deinit(alloc);
-                }
-                while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-                    const e = try this.parseExpr(alloc);
-                    _ = try this.consume(.semicolon);
-                    try blockStmts.append(alloc, .{ .expr = e });
-                }
-                _ = try this.consume(.rightBrace);
-                var emptyParams: std.ArrayList([]const u8) = .empty;
-                break :blk Expr{ .function = .{ .loc = locFromToken(braceTok), .kind = .{
-                    .syntax = .lambda,
-                    .params = try emptyParams.toOwnedSlice(alloc),
-                    .body = try blockStmts.toOwnedSlice(alloc),
-                } } };
-            } else try this.parseExpr(alloc);
-            // Accept both semicolon and comma as arm terminators
-            if (!this.match(.semicolon)) {
-                _ = this.match(.comma); // fallback to comma
-            }
-            try arms.append(alloc, .{ .pattern = pattern, .body = body, .guard = guard, .emptyLinesBefore = emptyLinesBefore });
-        }
-
-        _ = try this.consume(.rightBrace);
-
-        return .{
-            .loc = locFromToken(caseTok),
-            .kind = .{
-                .case = .{
-                    .subjects = try subjects.toOwnedSlice(alloc),
-                    .arms = try arms.toOwnedSlice(alloc),
-                    .trailingComments = try trailingComments.toOwnedSlice(alloc),
-                },
-            },
-        };
-    }
-
-    /// Parses a full pattern, including OR chains: `a | b | c`
-    fn parsePattern(this: *This, alloc: std.mem.Allocator) ParseError!Pattern {
-        const first = try this.parseSimplePattern(alloc);
-
-        if (!this.check(.verticalBar)) return first;
-
-        // OR pattern: collect alternatives
-        var alts: std.ArrayList(Pattern) = .empty;
-        errdefer {
-            for (alts.items) |*p| p.deinit(alloc);
-            alts.deinit(alloc);
-        }
-        try alts.append(alloc, first);
-        while (this.match(.verticalBar)) {
-            const next = try this.parseSimplePattern(alloc);
-            try alts.append(alloc, next);
-        }
-        return Pattern{ .@"or" = try alts.toOwnedSlice(alloc) };
-    }
-
-    /// Parses a single (non-OR) pattern.
-    fn parseSimplePattern(this: *This, alloc: std.mem.Allocator) ParseError!Pattern {
-        // `_` ---- wildcard
-        if (this.check(.underscore)) {
-            _ = this.advance();
-            return Pattern.wildcard;
-        }
-
-        // Number literal: `42`
-        if (this.check(.numberLiteral)) {
-            return Pattern{ .numberLit = this.advance().lexeme };
-        }
-
-        // String literal: `"hello"` or `"""..."""`
-        if (this.check(.stringLiteral)) {
-            const tok = this.advance();
-            return Pattern{ .stringLit = tok.lexeme[1 .. tok.lexeme.len - 1] };
-        }
-        if (this.check(.multilineStringLiteral)) {
-            const tok = this.advance();
-            // Remove the triple quotes from both ends
-            return Pattern{ .stringLit = tok.lexeme[3 .. tok.lexeme.len - 3] };
-        }
-
-        // List pattern: `[...]`
-        if (this.check(.leftSquareBracket)) {
-            return try this.parseListPattern(alloc);
-        }
-
-        // identifier: variant name or binding variable
-        if (this.check(.identifier)) {
-            const name = this.advance().lexeme;
-
-            // Variant with bound fields: `Rgb(r, g, b)` or literals: `Ok(1)`
-            if (this.check(.leftParenthesis)) {
-                _ = this.advance(); // consume '('
-
-                // Determine the variant payload: `fields` (identifiers) or `literals` (literals or patterns)
-                var isLiterals = false;
-                const lookahead = this.tokens[this.current];
-                if (lookahead.kind != .rightParenthesis) {
-                    // Check if it's a literal (number, string) or a pattern (underscore, list, etc.)
-                    if (lookahead.kind == .numberLiteral or
-                        lookahead.kind == .stringLiteral or
-                        lookahead.kind == .multilineStringLiteral or
-                        lookahead.kind == .underscore or
-                        lookahead.kind == .leftSquareBracket)
-                    {
-                        isLiterals = true;
-                    }
-                }
-
-                if (isLiterals) {
-                    // `literals` payload (can contain nested patterns)
-                    var args: std.ArrayList(Pattern) = .empty;
-                    errdefer {
-                        for (args.items) |*a| a.deinit(alloc);
-                        args.deinit(alloc);
-                    }
-
-                    while (!this.check(.rightParenthesis) and !this.check(.endOfFile)) {
-                        const pattern = try this.parseSimplePattern(alloc);
-                        try args.append(alloc, pattern);
-                        if (!this.match(.comma)) break;
-                    }
-                    _ = try this.consume(.rightParenthesis);
-
-                    return Pattern{ .variant = .{
-                        .name = name,
-                        .payload = .{ .literals = try args.toOwnedSlice(alloc) },
-                    } };
-                } else {
-                    // `fields` payload (existing logic)
-                    var bindings: std.ArrayList([]const u8) = .empty;
-                    errdefer bindings.deinit(alloc);
-
-                    while (!this.check(.rightParenthesis) and !this.check(.endOfFile)) {
-                        const bind = (try this.consume(.identifier)).lexeme;
-                        try bindings.append(alloc, bind);
-                        if (!this.match(.comma)) break;
-                    }
-                    _ = try this.consume(.rightParenthesis);
-
-                    return Pattern{ .variant = .{
-                        .name = name,
-                        .payload = .{ .fields = try bindings.toOwnedSlice(alloc) },
-                    } };
-                }
-            }
-
-            // `Variant binding` pattern: `Ok ok` — two identifiers, bind whole payload
-            if (this.check(.identifier)) {
-                const binding = this.advance().lexeme;
-                return Pattern{ .variant = .{
-                    .name = name,
-                    .payload = .{ .binding = binding },
-                } };
-            }
-
-            return Pattern{ .ident = name };
-        }
-
-        return ParseError.UnexpectedToken;
-    }
-
-    /// Parses a list pattern: `[]`, `[1]`, `[4, ..]`, `[_, _]`, `[first, ..rest]`
-    fn parseListPattern(this: *This, alloc: std.mem.Allocator) ParseError!Pattern {
-        _ = try this.consume(.leftSquareBracket);
-
-        var elems: std.ArrayList(ListPatternElem) = .empty;
-        errdefer elems.deinit(alloc);
-        var spread: ?[]const u8 = null;
-
-        while (!this.check(.rightSquareBracket) and !this.check(.endOfFile)) {
-            // `..` or `..rest`
-            if (this.match(.dotDot)) {
-                spread = if (this.check(.identifier)) this.advance().lexeme else "";
-                break;
-            }
-
-            const elem: ListPatternElem =
-                if (this.check(.underscore)) blk: {
-                    _ = this.advance();
-                    break :blk .wildcard;
-                } else if (this.check(.numberLiteral)) blk: {
-                    break :blk .{ .numberLit = this.advance().lexeme };
-                } else if (this.check(.identifier)) blk: {
-                    break :blk .{ .bind = this.advance().lexeme };
-                } else {
-                    return ParseError.UnexpectedToken;
-                };
-
-            try elems.append(alloc, elem);
-            if (!this.match(.comma)) break;
-        }
-
-        _ = try this.consume(.rightSquareBracket);
-
-        return Pattern{ .list = .{
-            .elems = try elems.toOwnedSlice(alloc),
-            .spread = spread,
-        } };
-    }
+    pub const parseListPattern = patterns.parseListPattern;
 
     // ── comment helpers ───────────────────────────────────────────────────────
 
@@ -2135,7 +1861,7 @@ pub const Parser = struct {
 
     // ── expression parser ──────────────────────────────────────────────────────
 
-    fn parseExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
+    pub fn parseExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         // ── Detect: identifier = expr or identifier : Type = expr ────────────
         if (this.check(.identifier)) {
             const saved = this.current;
@@ -2517,7 +2243,7 @@ pub const Parser = struct {
 
     /// `val/var name = expr` or any destructuring variant.
     /// Call when current token is `val` or `var`.
-    fn parseLocalBindExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
+    pub fn parseLocalBindExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         const mutable = this.peek().kind == .@"var";
         const bindTok = this.advance(); // consume 'val' or 'var'
 
@@ -2689,7 +2415,7 @@ pub const Parser = struct {
         } } } };
     }
 
-    fn parsePipelineExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
+    pub fn parsePipelineExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         var lhs = try this.parseBinaryExpr(alloc, prec.lowest);
 
         while (true) {
@@ -2791,16 +2517,16 @@ pub const Parser = struct {
     };
 
     /// Precedence-level entry points used by callers outside `parseBinaryExpr`.
-    const prec = struct {
+    pub const prec = struct {
         /// `||` — the loosest binary level (full binary expression).
-        const lowest: usize = 0;
+        pub const lowest: usize = 0;
         /// `==`/`!=` and tighter — the entry point for operand positions where
         /// `||`/`&&` are not accepted (if-conditions, yields, ranges, assignments…).
-        const equality: usize = 2;
+        pub const equality: usize = 2;
     };
 
     /// Left-associative precedence-climbing parser driven by `precedence_table`.
-    fn parseBinaryExpr(this: *This, alloc: std.mem.Allocator, comptime level: usize) ParseError!Expr {
+    pub fn parseBinaryExpr(this: *This, alloc: std.mem.Allocator, comptime level: usize) ParseError!Expr {
         if (level == precedence_table.len) return this.parsePrimary(alloc);
         const entry = precedence_table[level];
 
@@ -2827,7 +2553,7 @@ pub const Parser = struct {
         return lhs;
     }
 
-    fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
+    pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         // Unary `-` — negation of any expression (-x, -123, -(a+b), etc.)
         if (this.check(.minus)) {
             const opTok = this.advance();
@@ -3052,7 +2778,7 @@ pub const Parser = struct {
     // ── collection literal helpers ────────────────────────────────────────────
 
     /// `#(e1, e2, ...)` ---- tuple literal.  Call when current token is `#`.
-    fn parseTupleLitExpr(this: *This, alloc: std.mem.Allocator) ParseError!CollectionExpr {
+    pub fn parseTupleLitExpr(this: *This, alloc: std.mem.Allocator) ParseError!CollectionExpr {
         const tupleTok = this.advance(); // '#'
         _ = this.advance(); // '('
         var elems: std.ArrayList(Expr) = .empty;
@@ -3110,7 +2836,7 @@ pub const Parser = struct {
     }
 
     /// `[e1, e2, ...]` or `[e1, ..rest]` ---- array literal.  Call when current token is `[`.
-    fn parseArrayLitExpr(this: *This, alloc: std.mem.Allocator) ParseError!CollectionExpr {
+    pub fn parseArrayLitExpr(this: *This, alloc: std.mem.Allocator) ParseError!CollectionExpr {
         const bracketTok = this.advance(); // '['
         var elems: std.ArrayList(Expr) = .empty;
         errdefer {
@@ -3215,7 +2941,7 @@ pub const Parser = struct {
     // ── lambda / call helpers ─────────────────────────────────────────────────
 
     /// Parses a block expression: `{ stmt; stmt; ... }`
-    fn parseBlockExpr(this: *This, alloc: std.mem.Allocator) ParseError!CollectionExpr {
+    pub fn parseBlockExpr(this: *This, alloc: std.mem.Allocator) ParseError!CollectionExpr {
         const braceTok = try this.consume(.leftBrace);
 
         var stmts: std.ArrayList(Stmt) = .empty;
@@ -3243,7 +2969,7 @@ pub const Parser = struct {
     }
 
     /// Returns true if the current token is any kind of comment.
-    fn isComment(this: *const This) bool {
+    pub fn isComment(this: *const This) bool {
         const toks = this.tokens;
         if (this.current >= toks.len) return false;
         const k = toks[this.current].kind;
@@ -3253,7 +2979,7 @@ pub const Parser = struct {
     /// Returns true if the upcoming tokens look like a lambda parameter list:
     /// `ident (,ident)* ->`.
     /// Does not consume any tokens.
-    fn hasLambdaParams(this: *const This) bool {
+    pub fn hasLambdaParams(this: *const This) bool {
         var i = this.current;
         const toks = this.tokens;
         if (i >= toks.len or toks[i].kind != .identifier) return false;
@@ -3269,7 +2995,7 @@ pub const Parser = struct {
     /// Returns true if the upcoming tokens (after current) look like a lambda body:
     /// `{ ident (,ident)* -> ... }` or `{ -> ... }`.
     /// Used when current token is `{` to check if this is a lambda vs block.
-    fn hasLambdaBodyAhead(this: *const This) bool {
+    pub fn hasLambdaBodyAhead(this: *const This) bool {
         var i = this.current + 1; // Skip the current `{`
         const toks = this.tokens;
         if (i >= toks.len) return false;
@@ -3289,7 +3015,7 @@ pub const Parser = struct {
     }
 
     /// Returns true if the upcoming tokens are `ident : {` ---- a labeled trailing lambda.
-    fn checkLabeledTrailingLambda(this: *const This) bool {
+    pub fn checkLabeledTrailingLambda(this: *const This) bool {
         const i = this.current;
         const toks = this.tokens;
         return i + 2 < toks.len and
@@ -3300,7 +3026,7 @@ pub const Parser = struct {
 
     /// Parses the body of a lambda after `{` has been consumed.
     /// Grammar: `(ident (, ident)* ->)? stmt* }`
-    fn parseLambdaBody(this: *This, alloc: std.mem.Allocator) ParseError!FunctionExpr {
+    pub fn parseLambdaBody(this: *This, alloc: std.mem.Allocator) ParseError!FunctionExpr {
         const startTok = this.peek();
         // Detect and parse optional parameter list
         var paramList: std.ArrayList([]const u8) = .empty;
@@ -3337,7 +3063,7 @@ pub const Parser = struct {
         };
     }
 
-    fn parseCallArgs(this: *This, alloc: std.mem.Allocator) ParseError![]CallArg {
+    pub fn parseCallArgs(this: *This, alloc: std.mem.Allocator) ParseError![]CallArg {
         _ = try this.consume(.leftParenthesis);
         var args: std.ArrayList(CallArg) = .empty;
         errdefer {
@@ -3392,7 +3118,7 @@ pub const Parser = struct {
 
     /// Parses zero or more trailing lambda blocks:
     ///   `{ params? -> body }`  or  `label: { params? -> body }`
-    fn parseTrailingLambdas(this: *This, alloc: std.mem.Allocator) ParseError![]TrailingLambda {
+    pub fn parseTrailingLambdas(this: *This, alloc: std.mem.Allocator) ParseError![]TrailingLambda {
         var lambdas: std.ArrayList(TrailingLambda) = .empty;
         errdefer {
             for (lambdas.items) |*t| t.deinit(alloc);
@@ -3492,7 +3218,7 @@ pub const Parser = struct {
     ///   `loop (iter, 0..) { item, i -> body }`
     ///   `loop (start..end) { i -> body }`
     ///   `loop (start..) { i -> body }`
-    fn parseLoopExpr(this: *This, alloc: std.mem.Allocator) ParseError!LoopExpr {
+    pub fn parseLoopExpr(this: *This, alloc: std.mem.Allocator) ParseError!LoopExpr {
         const loopTok = this.advance(); // consume 'loop'
 
         // `loop await (iter)` — iterate an `@AsyncIterator`, awaiting each item.
@@ -3557,7 +3283,7 @@ pub const Parser = struct {
 
     /// Parses a range expression `expr..` or `expr..expr`, or falls back to
     /// a plain `parseEqExpr` if `..` is not present.
-    fn parseRangeExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
+    pub fn parseRangeExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         var start = try this.parseBinaryExpr(alloc, prec.equality);
         errdefer start.deinit(alloc);
         if (!this.check(.dotDot)) return start;
