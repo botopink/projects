@@ -79,7 +79,7 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const code = try emitErlang(alloc, ct.name, ok.transformed, ok.comptime_vals);
+                const code = try emitErlang(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites);
                 try results.append(alloc, .{
                     .name = ct.name,
                     .src = ct.src,
@@ -103,11 +103,17 @@ fn emitErlang(
     module_name: []const u8,
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
 ) ![]u8 {
     var aw: std.Io.Writer.Allocating = .init(alloc);
     defer aw.deinit();
 
-    var em = Emitter.init(alloc, &aw.writer, comptime_vals);
+    var em = Emitter.init(alloc, &aw.writer, comptime_vals, rewrites);
+    // Names of `implement`/`extend` blocks — a PascalCase call receiver that
+    // matches one is a qualified extension call (`PatoNada.swim(d)`), lowered
+    // to the bare local function `swim(d)` rather than a remote module call.
+    try em.collectExtensionNames(program);
+    defer em.ext_names.deinit();
     var top_runtime_vals: std.ArrayListUnmanaged(ast.ValDecl) = .empty;
     defer top_runtime_vals.deinit(alloc);
     var has_main_0 = false;
@@ -169,8 +175,7 @@ fn emitErlang(
             .@"enum" => |e| try em.emitEnum(e),
             .interface => |i| try em.emitInterface(i),
             .implement => |im| try em.emitImplement(im),
-            // `extend` dispatch/codegen is handled in a later phase (extension-dispatch).
-            .extend => {},
+            .extend => |ex| try em.emitExtend(ex),
             .use => |u| try em.emitUse(u),
             .delegate => |d| try aw.writer.print("%% delegate {s}\n", .{d.name}),
             .comment => |c| {
@@ -241,9 +246,31 @@ const Emitter = struct {
     indent: usize = 0,
     try_seq: usize = 0,
     alloc: std.mem.Allocator,
+    /// Static extension dispatch (F6): call-site loc → activated extension symbol.
+    /// At these sites `recv.m(args)` lowers to the bare local function `m(Recv, args)`.
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    /// Set of `implement`/`extend` block names (for qualified-call dispatch).
+    ext_names: std.StringHashMap(void),
+    /// When true, `emitFn` keeps the `self` parameter (extension methods take
+    /// the receiver as an explicit first argument; ordinary fns drop `self`).
+    keep_self: bool = false,
 
-    fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8)) Emitter {
-        return .{ .out = out, .cv = cv, .alloc = alloc };
+    fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8), rewrites: std.AutoHashMap(ast.Loc, []const u8)) Emitter {
+        return .{
+            .out = out,
+            .cv = cv,
+            .alloc = alloc,
+            .rewrites = rewrites,
+            .ext_names = std.StringHashMap(void).init(alloc),
+        };
+    }
+
+    fn collectExtensionNames(this: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .implement => |im| try this.ext_names.put(im.name, {}),
+            .extend => |ex| try this.ext_names.put(ex.name, {}),
+            else => {},
+        };
     }
 
     fn w(this: *Emitter, s: []const u8) !void {
@@ -340,7 +367,7 @@ const Emitter = struct {
                     .list => {}, // List pattern — placeholder
                     .ctor => {}, // Constructor pattern — placeholder
                 }
-            } else if (!std.mem.eql(u8, p.name, "self")) {
+            } else if (this.keep_self or !std.mem.eql(u8, p.name, "self")) {
                 if (!first) try this.w(", ");
                 const vname = try erlangVar(this.alloc, p.name);
                 defer this.alloc.free(vname);
@@ -838,11 +865,12 @@ const Emitter = struct {
                         }
                         try this.w(")");
                     } else {
+                        // `recv_arg_emitted` tracks whether the receiver was
+                        // already written as the first positional argument
+                        // (activated extension dispatch) so the argument loop
+                        // knows to prefix a comma.
+                        var recv_arg_emitted = false;
                         if (cc.receiver) |recv| {
-                            // A PascalCase identifier receiver is a module-qualified
-                            // call: `List.map(xs, f)` → a remote call `list:map(Xs, F)`.
-                            // The module name is lowercased to a valid atom; arity is
-                            // implicit from the arg count (args + trailing lambdas).
                             const mod_name: ?[]const u8 = switch (recv.*) {
                                 .identifier => |id| switch (id.kind) {
                                     .ident => |n| if (isModuleRef(n)) n else null,
@@ -850,7 +878,23 @@ const Emitter = struct {
                                 },
                                 else => null,
                             };
-                            if (mod_name) |name| {
+                            if (this.rewrites.get(c.loc)) |_| {
+                                // Activated extension dispatch: `recv.m(args)` →
+                                // `m(Recv, args)`, a bare local call to the
+                                // function emitted by `emitExtensionMethods`.
+                                try this.fmt("{s}(", .{cc.callee});
+                                try this.emitExpr(recv.*);
+                                recv_arg_emitted = true;
+                            } else if (mod_name != null and this.ext_names.contains(mod_name.?)) {
+                                // Qualified extension call `Sym.m(obj)`: the
+                                // receiver names the extension block, so it is
+                                // not a module — call the bare local `m(obj)`.
+                                try this.fmt("{s}(", .{cc.callee});
+                            } else if (mod_name) |name| {
+                                // A PascalCase identifier receiver is a module-qualified
+                                // call: `List.map(xs, f)` → a remote call `list:map(Xs, F)`.
+                                // The module name is lowercased to a valid atom; arity is
+                                // implicit from the arg count (args + trailing lambdas).
                                 const mod = try erlangModule(this.alloc, name);
                                 defer this.alloc.free(mod);
                                 try this.fmt("{s}:{s}(", .{ mod, cc.callee });
@@ -862,7 +906,7 @@ const Emitter = struct {
                         } else {
                             try this.fmt("{s}(", .{cc.callee});
                         }
-                        var first = true;
+                        var first = !recv_arg_emitted;
                         for (cc.args) |arg| {
                             if (!first) try this.w(", ");
                             try this.emitExpr(arg.value.*);
@@ -1463,7 +1507,22 @@ const Emitter = struct {
             try this.w(iface);
         }
         try this.fmt(" for {s}\n", .{im.target});
-        for (im.methods) |m| {
+        try this.emitExtensionMethods(im.methods);
+    }
+
+    fn emitExtend(this: *Emitter, ex: ast.ExtendDecl) !void {
+        try this.fmt("%% extend {s}\n", .{ex.target});
+        try this.emitExtensionMethods(ex.methods);
+    }
+
+    /// Extension methods (from `implement`/`extend`) are emitted as bare
+    /// top-level functions that take the receiver as their first param, so an
+    /// activated `recv.m(args)` dispatch can call `m(Recv, args)` directly.
+    fn emitExtensionMethods(this: *Emitter, methods: []const ast.ImplementMethod) !void {
+        const saved_keep_self = this.keep_self;
+        this.keep_self = true;
+        defer this.keep_self = saved_keep_self;
+        for (methods) |m| {
             try this.w("\n");
             try this.emitFn(.{
                 .isPub = false,

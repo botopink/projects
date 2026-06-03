@@ -21,7 +21,7 @@ val PersonPrintable = implement Printable for Person {
 
 %% implement Printable for Person
 
-print() ->
+print(Self) ->
     Self_name.
 ```
 
