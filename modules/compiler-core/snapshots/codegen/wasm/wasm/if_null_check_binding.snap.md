@@ -12,8 +12,8 @@ fn getName(name: ?string) -> string {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "unknown")
-  (global $__heap_ptr (mut i32) (i32.const 264))
+  (data (i32.const 256) "\07\00\00\00unknown")
+  (global $__heap_ptr (mut i32) (i32.const 268))
   (func $getName (param $name i32) (result i32)
     local.get $name
     (if (result i32)

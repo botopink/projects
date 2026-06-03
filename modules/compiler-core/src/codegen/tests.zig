@@ -1963,6 +1963,53 @@ test "wat: string compare via byte loop" {
     );
 }
 
+test "wat: string len reads length prefix" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn n() -> i32 {
+        \\    val s = "hello";
+        \\    return s.len;
+        \\}
+    );
+}
+
+test "wat: string slice copies bytes into a new buffer" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn first3() -> string {
+        \\    val s = "hello";
+        \\    return s.slice(0, 3);
+        \\}
+    );
+}
+
+test "wat: string slice without end arg slices to source length" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val s = "hello";
+        \\    val tail = s.slice(2);
+        \\    @print(tail.len);
+        \\}
+    );
+}
+
+test "wat: string len participates in arithmetic" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val s = "hello";
+        \\    @print(s.len + 1);
+        \\}
+    );
+}
+
+test "wat: string slice result length is readable" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val s = "abcdef";
+        \\    val mid = s.slice(1, 5);
+        \\    @print(mid.len);
+        \\}
+    );
+}
+
 // ── break / continue / yield ──────────────────────────────────────────────────
 
 test "js: loop ---- break with value" {

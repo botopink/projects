@@ -15,9 +15,9 @@ fn classify(day: i32) -> string {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 256) "weekend")
-  (data (i32.const 264) "weekday")
-  (global $__heap_ptr (mut i32) (i32.const 272))
+  (data (i32.const 256) "\07\00\00\00weekend")
+  (data (i32.const 268) "\07\00\00\00weekday")
+  (global $__heap_ptr (mut i32) (i32.const 280))
   (func $classify (param $day i32) (result i32)
     (local $kind i32)
     local.get $day
@@ -37,7 +37,7 @@ fn classify(day: i32) -> string {
     i32.const 256
       )
       (else
-    i32.const 264
+    i32.const 268
       )
     )
     local.set $kind

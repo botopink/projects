@@ -15,9 +15,9 @@ fn main() {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 256) "started")
-  (data (i32.const 264) "done")
-  (global $__heap_ptr (mut i32) (i32.const 268))
+  (data (i32.const 256) "\07\00\00\00started")
+  (data (i32.const 268) "\04\00\00\00done")
+  (global $__heap_ptr (mut i32) (i32.const 276))
   (func $log (param $msg i32)
     local.get $msg
     call $__print_i32
@@ -29,7 +29,7 @@ fn main() {
     drop
     i32.const 42
     local.set $x
-    i32.const 264
+    i32.const 268
     call $log
   )
   (func $_botopink_main (export "_botopink_main") (export "_start")

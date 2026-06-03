@@ -22,9 +22,9 @@ fn main() {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "calc")
-  (data (i32.const 260) "noop")
-  (global $__heap_ptr (mut i32) (i32.const 264))
+  (data (i32.const 256) "\04\00\00\00calc")
+  (data (i32.const 264) "\04\00\00\00noop")
+  (global $__heap_ptr (mut i32) (i32.const 272))
   (func $main
     (local $r1 i32)
     (local $r2 i32)
@@ -50,7 +50,7 @@ fn main() {
   (func $execute_$1 (param $input i32)
     (local $slug i32)
     (local $output i32)
-    i32.const 260
+    i32.const 264
     local.set $slug
     i32.const 0
     local.set $output

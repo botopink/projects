@@ -18,9 +18,9 @@ fn pipeline() -> @Result<i32, IoError> {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "/data")
-  (data (i32.const 264) "/out")
-  (global $__heap_ptr (mut i32) (i32.const 268))
+  (data (i32.const 256) "\05\00\00\00/data")
+  (data (i32.const 268) "\04\00\00\00/out")
+  (global $__heap_ptr (mut i32) (i32.const 276))
   (func $step1 (result i32)
     (local $__mem0 i32)
     global.get $__heap_ptr
@@ -44,7 +44,7 @@ fn pipeline() -> @Result<i32, IoError> {
     i32.add
     global.set $__heap_ptr
     local.get $__mem0
-    i32.const 264
+    i32.const 268
     i32.store
     local.get $__mem0
     unreachable

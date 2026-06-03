@@ -12,8 +12,8 @@ fn main() {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "42")
-  (global $__heap_ptr (mut i32) (i32.const 260))
+  (data (i32.const 256) "\02\00\00\0042")
+  (global $__heap_ptr (mut i32) (i32.const 264))
   (func $parseAge (param $s i32) (result i32)
     unreachable
   )

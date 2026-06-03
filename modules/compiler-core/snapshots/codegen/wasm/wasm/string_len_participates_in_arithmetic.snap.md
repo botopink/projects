@@ -1,13 +1,8 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-fn greet(lang: string) -> string {
-    val msg = case lang {
-        "en" -> "hello";
-        "pt" -> "ola";
-        _ -> "hi";
-    };
-    @print(msg);
-    return msg;
+fn main() {
+    val s = "hello";
+    @print(s.len + 1);
 }
 ```
 
@@ -18,20 +13,18 @@ fn greet(lang: string) -> string {
   (memory (export "memory") 1)
   (data (i32.const 256) "\05\00\00\00hello")
   (global $__heap_ptr (mut i32) (i32.const 268))
-  (func $greet (param $lang i32) (result i32)
-    (local $msg i32)
-    local.get $lang
-    (local $__case_0 i32)
-    local.set $__case_0
-    local.get $__case_0
-    drop
+  (func $main
+    (local $s i32)
     i32.const 256
-    local.set $msg
-    local.get $msg
+    local.set $s
+    local.get $s
+    i32.load ;; string length
+    i32.const 1
+    i32.add
     call $__print_i32
-    drop
-    local.get $msg
-    return
+  )
+  (func $_botopink_main (export "_botopink_main") (export "_start")
+    (call $main)
   )
   (func $__print_i32 (param $n i32)
     (local $buf i32) (local $len i32) (local $neg i32) (local $d i32)
@@ -195,4 +188,5 @@ fn greet(lang: string) -> string {
 
 ----- RUN LOG -----
 ```logs
+6
 ```

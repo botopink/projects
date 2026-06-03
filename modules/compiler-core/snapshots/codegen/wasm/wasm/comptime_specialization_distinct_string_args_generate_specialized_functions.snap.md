@@ -15,13 +15,13 @@ fn main() {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "Sistema iniciado")
-  (data (i32.const 272) "Memória alta")
-  (data (i32.const 288) "Log replicado")
-  (data (i32.const 304) "INFO")
-  (data (i32.const 308) ": ")
-  (data (i32.const 312) "WARN")
-  (global $__heap_ptr (mut i32) (i32.const 316))
+  (data (i32.const 256) "\10\00\00\00Sistema iniciado")
+  (data (i32.const 276) "\0d\00\00\00Memória alta")
+  (data (i32.const 296) "\0d\00\00\00Log replicado")
+  (data (i32.const 316) "\04\00\00\00INFO")
+  (data (i32.const 324) "\02\00\00\00: ")
+  (data (i32.const 332) "\04\00\00\00WARN")
+  (global $__heap_ptr (mut i32) (i32.const 340))
   (func $main
     (local $r1 i32)
     (local $r2 i32)
@@ -29,19 +29,19 @@ fn main() {
     i32.const 256
     call $build_$0
     local.set $r1
-    i32.const 272
+    i32.const 276
     call $build_$1
     local.set $r2
-    i32.const 288
+    i32.const 296
     call $build_$0
     local.set $r3
   )
   (func $build_$0 (param $name i32)
     (local $prefix i32)
-    i32.const 304
+    i32.const 316
     local.set $prefix
     local.get $prefix
-    i32.const 308
+    i32.const 324
     i32.add
     local.get $name
     i32.add
@@ -49,10 +49,10 @@ fn main() {
   )
   (func $build_$1 (param $name i32)
     (local $prefix i32)
-    i32.const 312
+    i32.const 332
     local.set $prefix
     local.get $prefix
-    i32.const 308
+    i32.const 324
     i32.add
     local.get $name
     i32.add

@@ -1,13 +1,9 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-fn greet(lang: string) -> string {
-    val msg = case lang {
-        "en" -> "hello";
-        "pt" -> "ola";
-        _ -> "hi";
-    };
-    @print(msg);
-    return msg;
+fn main() {
+    val s = "abcdef";
+    val mid = s.slice(1, 5);
+    @print(mid.len);
 }
 ```
 
@@ -16,22 +12,24 @@ fn greet(lang: string) -> string {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 256) "\05\00\00\00hello")
+  (data (i32.const 256) "\06\00\00\00abcdef")
   (global $__heap_ptr (mut i32) (i32.const 268))
-  (func $greet (param $lang i32) (result i32)
-    (local $msg i32)
-    local.get $lang
-    (local $__case_0 i32)
-    local.set $__case_0
-    local.get $__case_0
-    drop
+  (func $main
+    (local $s i32)
+    (local $mid i32)
     i32.const 256
-    local.set $msg
-    local.get $msg
+    local.set $s
+    local.get $s
+    i32.const 1
+    i32.const 5
+    call $__str_slice
+    local.set $mid
+    local.get $mid
+    i32.load ;; string length
     call $__print_i32
-    drop
-    local.get $msg
-    return
+  )
+  (func $_botopink_main (export "_botopink_main") (export "_start")
+    (call $main)
   )
   (func $__print_i32 (param $n i32)
     (local $buf i32) (local $len i32) (local $neg i32) (local $d i32)
@@ -190,9 +188,42 @@ fn greet(lang: string) -> string {
       )
     )
   )
+  (func $__str_slice (param $src i32) (param $start i32) (param $end i32) (result i32)
+    (local $newlen i32) (local $dst i32)
+    local.get $end
+    local.get $start
+    i32.sub
+    local.set $newlen
+    global.get $__heap_ptr
+    local.set $dst
+    ;; bump heap by 4 (length prefix) + newlen
+    global.get $__heap_ptr
+    i32.const 4
+    local.get $newlen
+    i32.add
+    i32.add
+    global.set $__heap_ptr
+    ;; store length prefix
+    local.get $dst
+    local.get $newlen
+    i32.store
+    ;; copy bytes: dst+4 <- src+4+start
+    local.get $dst
+    i32.const 4
+    i32.add
+    local.get $src
+    i32.const 4
+    i32.add
+    local.get $start
+    i32.add
+    local.get $newlen
+    memory.copy
+    local.get $dst
+  )
 )
 ```
 
 ----- RUN LOG -----
 ```logs
+4
 ```

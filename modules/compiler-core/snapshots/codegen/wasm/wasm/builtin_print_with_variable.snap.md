@@ -11,14 +11,14 @@ fn main() {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 256) "world")
-  (data (i32.const 264) "Hello, ")
-  (global $__heap_ptr (mut i32) (i32.const 272))
+  (data (i32.const 256) "\05\00\00\00world")
+  (data (i32.const 268) "\07\00\00\00Hello, ")
+  (global $__heap_ptr (mut i32) (i32.const 280))
   (func $main
     (local $name i32)
     i32.const 256
     local.set $name
-    i32.const 264
+    i32.const 268
     local.get $name
     i32.add
     call $__print_i32
@@ -188,5 +188,5 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
-520
+524
 ```

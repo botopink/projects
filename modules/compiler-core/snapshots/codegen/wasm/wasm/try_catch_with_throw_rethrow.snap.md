@@ -14,9 +14,9 @@ fn strict() -> @Result<i32, string> {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (data (i32.const 256) "not found")
-  (data (i32.const 268) "fetch failed")
-  (global $__heap_ptr (mut i32) (i32.const 280))
+  (data (i32.const 256) "\09\00\00\00not found")
+  (data (i32.const 272) "\0c\00\00\00fetch failed")
+  (global $__heap_ptr (mut i32) (i32.const 288))
   (func $fetch (result i32)
     (local $__mem0 i32)
     global.get $__heap_ptr
@@ -40,7 +40,7 @@ fn strict() -> @Result<i32, string> {
     i32.load ;; Result tag (0 = Ok, non-zero = Error)
     (if (result i32)
       (then
-    i32.const 268
+    i32.const 272
     unreachable
       )
       (else

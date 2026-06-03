@@ -18,7 +18,7 @@ codegen/
 ├── commonJS.zig      ← CommonJS emitter (blind: iterates transformed AST)
 ├── erlang.zig        ← Erlang emitter (blind)
 ├── beam_asm.zig      ← BEAM Assembly `.S` emitter (broad coverage; a few cross-backend gaps remain — see row below)
-├── wat.zig           ← WebAssembly Text `.wat` emitter (complete — 0 unsupported across 164 snapshots)
+├── wat.zig           ← WebAssembly Text `.wat` emitter (length-prefixed strings w/ `.len`/`.slice`; lambdas/array-loops/stdlib-Result methods are deferred gaps)
 ├── typescript.zig    ← TypeScript `.d.ts` typedef generator
 ├── runtime.zig       ← runtime helpers used when executing generated JS/Erlang in tests
 ├── snapshot.zig      ← snapshot helpers for codegen tests

@@ -11,8 +11,8 @@ fn extract() {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 256) "hello")
-  (global $__heap_ptr (mut i32) (i32.const 264))
+  (data (i32.const 256) "\05\00\00\00hello")
+  (global $__heap_ptr (mut i32) (i32.const 268))
   (func $extract
     (local $__mem0 i32)
     (local $__mem1 i32)

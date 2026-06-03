@@ -19,10 +19,10 @@ fn loadUser() {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 256) "name missing")
-  (data (i32.const 268) "age missing")
-  (data (i32.const 280) "anonymous")
-  (global $__heap_ptr (mut i32) (i32.const 292))
+  (data (i32.const 256) "\0c\00\00\00name missing")
+  (data (i32.const 272) "\0b\00\00\00age missing")
+  (data (i32.const 288) "\09\00\00\00anonymous")
+  (global $__heap_ptr (mut i32) (i32.const 304))
   (func $fetchName (result i32)
     (local $__mem0 i32)
     global.get $__heap_ptr
@@ -46,7 +46,7 @@ fn loadUser() {
     i32.add
     global.set $__heap_ptr
     local.get $__mem0
-    i32.const 268
+    i32.const 272
     i32.store
     local.get $__mem0
     unreachable
@@ -62,7 +62,7 @@ fn loadUser() {
     i32.load ;; Result tag (0 = Ok, non-zero = Error)
     (if (result i32)
       (then
-    i32.const 280
+    i32.const 288
       )
       (else
     local.get $_try0

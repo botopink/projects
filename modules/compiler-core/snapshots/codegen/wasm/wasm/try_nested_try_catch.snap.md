@@ -20,9 +20,9 @@ fn process() -> i32 {
 (module
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 256) "conn refused")
-  (data (i32.const 268) "timeout")
-  (global $__heap_ptr (mut i32) (i32.const 276))
+  (data (i32.const 256) "\0c\00\00\00conn refused")
+  (data (i32.const 272) "\07\00\00\00timeout")
+  (global $__heap_ptr (mut i32) (i32.const 284))
   (func $inner (result i32)
     (local $__mem0 i32)
     global.get $__heap_ptr
@@ -46,7 +46,7 @@ fn process() -> i32 {
     i32.add
     global.set $__heap_ptr
     local.get $__mem0
-    i32.const 268
+    i32.const 272
     i32.store
     local.get $__mem0
     unreachable
