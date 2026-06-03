@@ -22,7 +22,8 @@ fn main() -> string {
   {label, 3}.
     {allocate, 1, 0}.
     {init_yregs, {list, [{y, 0}]}}.
-    {make_fun2, {f, 9}, 0, 0, 0}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
+    {make_fun3, {f, 9}, 0, 0, {x, 0}, {list, []}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 1}}.
     {move, {literal, <<"hello">>}, {x, 0}}.

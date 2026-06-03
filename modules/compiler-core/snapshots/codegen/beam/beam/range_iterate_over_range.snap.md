@@ -20,7 +20,8 @@ fn sumTo(n: i32) -> i32 {
     {func_info, {atom, main}, {atom, sumTo}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
-    {make_fun2, {f, 5}, 0, 0, 0}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 1}.
+    {make_fun3, {f, 5}, 0, 0, {x, 0}, {list, []}}.
     {move, {x, 0}, {x, 1}}.
     {move, {integer, 0}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.

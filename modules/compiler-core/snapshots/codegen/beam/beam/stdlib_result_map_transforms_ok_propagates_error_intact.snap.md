@@ -36,17 +36,18 @@ fn main() {
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {call, 1, {f, 3}}.
-    {test, is_tagged_tuple, {f, 10}, {x, 0}, 3, {atom, tag}}.
+    {test, is_tagged_tuple, {f, 10}, [{x, 0}, 3, {atom, tag}]}.
     {get_tuple_element, {x, 0}, 1, {x, 1}}.
     {test, is_eq, {f, 10}, [{x, 1}, {atom, 'Ok'}]}.
     {get_tuple_element, {x, 0}, 2, {x, 2}}.
-    {make_fun2, {f, 13}, 0, 0, 0}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 3}.
+    {make_fun3, {f, 13}, 0, 0, {x, 0}, {list, []}}.
     {move, {x, 0}, {x, 1}}.
     {move, {x, 2}, {x, 0}}.
     {call_fun, 1}.
-    {move, {x, 0}, {x, 2}}.
-    {test_heap, 4, 3}.
-    {put_tuple2, {x, 0}, {list, [{atom, tag}, {atom, 'Ok'}, {x, 2}]}}.
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, 4, 2}.
+    {put_tuple2, {x, 0}, {list, [{atom, tag}, {atom, 'Ok'}, {x, 1}]}}.
     {jump, {f, 11}}.
   {label, 10}.
   {label, 11}.

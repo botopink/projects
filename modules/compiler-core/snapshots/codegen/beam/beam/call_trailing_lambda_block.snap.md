@@ -35,7 +35,8 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 5}.
     {allocate, 0, 0}.
-    {make_fun2, {f, 11}, 0, 0, 0}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
+    {make_fun3, {f, 11}, 0, 0, {x, 0}, {list, []}}.
     {move, {x, 0}, {x, 0}}.
     {call, 0, {f, 3}}.
     {move, {atom, ok}, {x, 0}}.
