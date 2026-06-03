@@ -1690,14 +1690,136 @@ const Emitter = struct {
             return;
         }
         if (std.mem.startsWith(u8, cc.callee, "__bp_")) {
-            // `@Result`/`@Option` method ops are not lowered to BEAM assembly
-            // yet; pass the receiver through so the value still flows downstream.
-            try self.bodyPrint("    %% unsupported on BEAM: {s}\n", .{cc.callee});
-            if (cc.args.len > 0) try self.lowerExprIntoX0(cc.args[0].value.*);
+            try self.lowerResultOptionOp(cc.callee, cc.args);
             if (mode == .tail) try self.emitReturn();
             return;
         }
         try self.bodyPrint("    %% unsupported builtin: @{s} (Fase 3+)\n", .{cc.callee});
+    }
+
+    /// Lower a `__bp_<domain>_<op>(receiver, arg?)` Result/Option method op into
+    /// BEAM assembly. The value shapes mirror the Erlang backend so values
+    /// interoperate: a `@Result` is the tagged 3-tuple `{tag, 'Ok'|'Error',
+    /// Payload}` (element 0 is the atom `tag`, element 1 the discriminator), and
+    /// a `@Option` is the bare payload or the atom `undefined` for absence.
+    /// `args[0]` is the receiver; `args[1]` (when present) the fn/default. The
+    /// result lands in `{x, 0}`.
+    ///
+    /// Register budget: `{x, 0}` carries the receiver/result; the discriminator
+    /// goes to `{x, cur_arity + 1}` and a payload stash to `{x, cur_arity + 2}`.
+    /// `map`/`flatMap` apply the fn via `call_fun` (which clobbers the
+    /// caller-saved x-registers), so the payload is staged in the stash slot and
+    /// loaded into `{x, 0}` immediately before the call.
+    fn lowerResultOptionOp(self: *Emitter, callee: []const u8, args: anytype) anyerror!void {
+        const recv = args[0].value;
+        const arg1: ?*ast.Expr = if (args.len > 1) args[1].value else null;
+        const disc = self.cur_arity + 1;
+        const pstash = self.cur_arity + 2;
+
+        const is_result_map = std.mem.eql(u8, callee, "__bp_result_map");
+        if (is_result_map or std.mem.eql(u8, callee, "__bp_result_flatMap")) {
+            const else_l = self.allocLabel();
+            const end_l = self.allocLabel();
+            try self.lowerExprIntoX0(recv.*);
+            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, 3, {{atom, tag}}}}.\n", .{else_l});
+            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 1, {{x, {d}}}}}.\n", .{disc});
+            try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, {d}}}, {{atom, 'Ok'}}]}}.\n", .{ else_l, disc });
+            // Ok: extract the payload, apply the fn to it.
+            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 2, {{x, {d}}}}}.\n", .{pstash});
+            try self.lowerFnInto0(arg1);
+            try self.bodyWrite("    {move, {x, 0}, {x, 1}}.\n");
+            try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{pstash});
+            try self.bodyWrite("    {call_fun, 1}.\n");
+            if (is_result_map) {
+                // `map` rewraps the result as `{tag, 'Ok', Result}`; `flatMap`
+                // expects the fn to already return a `@Result`, so it passes through.
+                try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{pstash});
+                try self.bodyPrint("    {{test_heap, 4, {d}}}.\n", .{pstash + 1});
+                try self.bodyPrint("    {{put_tuple2, {{x, 0}}, {{list, [{{atom, tag}}, {{atom, 'Ok'}}, {{x, {d}}}]}}}}.\n", .{pstash});
+            }
+            try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
+            // Not Ok: the Error tuple is still in `{x, 0}` — propagate untouched.
+            try self.bodyPrint("  {{label, {d}}}.\n", .{else_l});
+            try self.bodyPrint("  {{label, {d}}}.\n", .{end_l});
+            return;
+        }
+
+        if (std.mem.eql(u8, callee, "__bp_result_unwrapOr")) {
+            const else_l = self.allocLabel();
+            const end_l = self.allocLabel();
+            try self.lowerExprIntoX0(recv.*);
+            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, 3, {{atom, tag}}}}.\n", .{else_l});
+            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 1, {{x, {d}}}}}.\n", .{disc});
+            try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, {d}}}, {{atom, 'Ok'}}]}}.\n", .{ else_l, disc });
+            try self.bodyWrite("    {get_tuple_element, {x, 0}, 2, {x, 0}}.\n");
+            try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
+            try self.bodyPrint("  {{label, {d}}}.\n", .{else_l});
+            try self.lowerFnInto0(arg1);
+            try self.bodyPrint("  {{label, {d}}}.\n", .{end_l});
+            return;
+        }
+
+        if (std.mem.eql(u8, callee, "__bp_result_isOk") or std.mem.eql(u8, callee, "__bp_result_isError")) {
+            const want: []const u8 = if (std.mem.eql(u8, callee, "__bp_result_isOk")) "'Ok'" else "'Error'";
+            const false_l = self.allocLabel();
+            const end_l = self.allocLabel();
+            try self.lowerExprIntoX0(recv.*);
+            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, 3, {{atom, tag}}}}.\n", .{false_l});
+            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 1, {{x, {d}}}}}.\n", .{disc});
+            try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, {d}}}, {{atom, {s}}}]}}.\n", .{ false_l, disc, want });
+            try self.bodyWrite("    {move, {atom, true}, {x, 0}}.\n");
+            try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
+            try self.bodyPrint("  {{label, {d}}}.\n", .{false_l});
+            try self.bodyWrite("    {move, {atom, false}, {x, 0}}.\n");
+            try self.bodyPrint("  {{label, {d}}}.\n", .{end_l});
+            return;
+        }
+
+        if (std.mem.eql(u8, callee, "__bp_option_map") or std.mem.eql(u8, callee, "__bp_option_flatMap")) {
+            // A present option is the bare value; `undefined` marks absence.
+            // Both `map` and `flatMap` simply apply the fn to a present value.
+            const present_l = self.allocLabel();
+            const end_l = self.allocLabel();
+            try self.lowerExprIntoX0(recv.*);
+            try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 0}}, {{atom, undefined}}]}}.\n", .{present_l});
+            // None: `{x, 0}` already holds `undefined`.
+            try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
+            try self.bodyPrint("  {{label, {d}}}.\n", .{present_l});
+            try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{pstash});
+            try self.lowerFnInto0(arg1);
+            try self.bodyWrite("    {move, {x, 0}, {x, 1}}.\n");
+            try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{pstash});
+            try self.bodyWrite("    {call_fun, 1}.\n");
+            try self.bodyPrint("  {{label, {d}}}.\n", .{end_l});
+            return;
+        }
+
+        if (std.mem.eql(u8, callee, "__bp_option_unwrapOr")) {
+            const present_l = self.allocLabel();
+            const end_l = self.allocLabel();
+            try self.lowerExprIntoX0(recv.*);
+            try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 0}}, {{atom, undefined}}]}}.\n", .{present_l});
+            // None: evaluate the default into `{x, 0}`.
+            try self.lowerFnInto0(arg1);
+            try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
+            try self.bodyPrint("  {{label, {d}}}.\n", .{present_l});
+            // Present: `{x, 0}` already holds the value.
+            try self.bodyPrint("  {{label, {d}}}.\n", .{end_l});
+            return;
+        }
+
+        try self.bodyPrint("    %% unsupported Result/Option op: {s}\n", .{callee});
+    }
+
+    /// Lower the fn/default argument of a Result/Option op into `{x, 0}`. A
+    /// missing argument (shouldn't happen for the ops that read one) falls back
+    /// to `undefined`.
+    fn lowerFnInto0(self: *Emitter, arg: ?*ast.Expr) anyerror!void {
+        if (arg) |a| {
+            try self.lowerExprIntoX0(a.*);
+        } else {
+            try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
+        }
     }
 
     /// Lay out call arguments into `{x, 0}..{x, arity-1}`. Currently expects
@@ -1947,6 +2069,30 @@ const Emitter = struct {
         try self.bodyPrint("  {{label, {d}}}.\n", .{end_label});
     }
 
+    /// Emit a lambda body. When the final statement is a bare value-producing
+    /// expression (`{ n -> n + 1 }`), it is the closure's return value: lower it
+    /// into `{x, 0}` and return. Plain `emitBody` would instead append a `move
+    /// ok` fallback and discard that value, which makes closures passed to
+    /// `@Result`/`@Option` `map`/`flatMap` useless. Any other tail (an explicit
+    /// `return`, a `yield`/`break`, an `if`/`case`, …) keeps `emitBody`'s
+    /// behavior so loop and block lambdas are unaffected.
+    fn emitLambdaBody(self: *Emitter, body: []const ast.Stmt) anyerror!void {
+        if (body.len > 0) {
+            const last = body[body.len - 1].expr;
+            const is_value_tail = switch (last) {
+                .literal, .identifier, .binaryOp, .unaryOp, .call, .useHook => true,
+                else => false,
+            };
+            if (is_value_tail) {
+                for (body[0 .. body.len - 1]) |stmt| try self.emitStmt(stmt);
+                try self.lowerExprIntoX0(last);
+                try self.emitReturn();
+                return;
+            }
+        }
+        try self.emitBody(body);
+    }
+
     /// Lower a lambda `{ params -> body }` into a deferred BEAM function and
     /// emit `{make_fun2, ...}` at the call site. Result in `{x, 0}`.
     fn lowerLambda(self: *Emitter, lam: anytype) anyerror!void {
@@ -1987,7 +2133,7 @@ const Emitter = struct {
         try self.bodyPrint("    {{func_info, {{atom, {s}}}, {{atom, {s}}}, {d}}}.\n", .{ self.module_name, fun_name, arity });
         try self.bodyPrint("  {{label, {d}}}.\n", .{labels.entry});
         try self.bodyPrint("    {{allocate, {d}, {d}}}.\n", .{ self.num_y, arity });
-        try self.emitBody(lam.body);
+        try self.emitLambdaBody(lam.body);
 
         self.reg_map.deinit();
         self.reg_map = saved_reg_map;

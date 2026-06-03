@@ -12,7 +12,7 @@ fn main() {
 {module, main}.
 {exports, [{'_botopink_main', 0}, {main, 1}]}.
 {attributes, []}.
-{labels, 12}.
+{labels, 16}.
 
 {function, parseAge, 1, 3}.
   {label, 2}.
@@ -44,11 +44,21 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 7}.
     {allocate, 1, 0}.
-    %% unsupported on BEAM: __bp_result_flatMap
     {move, {literal, <<"42">>}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {call, 1, {f, 3}}.
+    {test, is_tagged_tuple, {f, 12}, {x, 0}, 3, {atom, tag}}.
+    {get_tuple_element, {x, 0}, 1, {x, 1}}.
+    {test, is_eq, {f, 12}, [{x, 1}, {atom, 'Ok'}]}.
+    {get_tuple_element, {x, 0}, 2, {x, 2}}.
+    {make_fun2, {f, 15}, 0, 0, 0}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {x, 2}, {x, 0}}.
+    {call_fun, 1}.
+    {jump, {f, 13}}.
+  {label, 12}.
+  {label, 13}.
     {move, {x, 0}, {y, 0}}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 1}.
@@ -67,6 +77,17 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 1}.
   {label, 11}.
     {call_only, 0, {f, 9}}.
+
+{function, '-main/0-fun-0-', 1, 15}.
+  {label, 14}.
+    {line, [{location, "main.erl", 4}]}.
+    {func_info, {atom, main}, {atom, '-main/0-fun-0-'}, 1}.
+  {label, 15}.
+    {allocate, 0, 1}.
+    {move, {x, 0}, {x, 0}}.
+    {call, 1, {f, 5}}.
+    {deallocate, 0}.
+    return.
 ```
 
 ----- RUN LOG -----

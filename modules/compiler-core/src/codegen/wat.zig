@@ -419,6 +419,10 @@ const Emitter = struct {
     locals: std.StringHashMap([]const u8),
     case_depth: u32 = 0,
     try_seq: u32 = 0,
+    /// Sequence counter for the `$_res{n}` scratch pointers a Result/Option
+    /// method op uses to hold its receiver (and, for `map`, the rewrapped
+    /// result) while the tag/payload are read out.
+    res_seq: u32 = 0,
     /// Sequence counter for the `$__mem{n}` scratch pointers used when building
     /// or destructuring aggregates (tuples, arrays, records, enum payloads).
     mem_seq: u32 = 0,
@@ -505,6 +509,7 @@ const Emitter = struct {
         self.case_depth = 0;
         self.try_seq = 0;
         self.mem_seq = 0;
+        self.res_seq = 0;
     }
 
     fn internString(self: *Emitter, s: []const u8) !DataSeg {
@@ -1104,7 +1109,205 @@ const Emitter = struct {
             }
             return;
         }
+        if (std.mem.startsWith(u8, cc.callee, "__bp_")) {
+            try self.lowerResultOptionOp(cc.callee, cc.args);
+            return;
+        }
         try self.w("    ;; builtin stub\n");
+    }
+
+    /// Reserve and declare the next `$_res{n}` scratch pointer local. Declared
+    /// inline (like the `$__case` locals) since the count isn't known up front.
+    fn declRes(self: *Emitter) !u32 {
+        const k = self.res_seq;
+        self.res_seq += 1;
+        try self.fmt("    (local $_res{d} i32)\n", .{k});
+        return k;
+    }
+
+    /// True when `arg` is a literal lambda (`{ x -> ... }`), the only fn form a
+    /// higher-order Result/Option op can inline on WASM (there is no first-class
+    /// closure value in this backend — `.function` otherwise lowers to `0`).
+    fn lambdaArg(arg: ?*ast.Expr) ?*ast.Expr {
+        const a = arg orelse return null;
+        if (a.* != .function) return null;
+        if (a.function.kind.syntax != .lambda) return null;
+        return a;
+    }
+
+    /// Bind a single-param lambda's parameter to a value held in `src` (a local
+    /// name), declaring the parameter local on first use. A zero-param lambda
+    /// ignores the value.
+    fn bindLambdaParam(self: *Emitter, lam: anytype, src: []const u8) !void {
+        if (lam.params.len == 0) return;
+        const p = lam.params[0];
+        if (!self.locals.contains(p)) {
+            try self.locals.put(p, "i32");
+            try self.fmt("    (local ${s} i32)\n", .{p});
+        }
+        try self.fmt("    local.get ${s}\n", .{src});
+        try self.fmt("    local.set ${s}\n", .{p});
+    }
+
+    /// Inline a lambda body, leaving its tail value on the stack. An explicit
+    /// `return` tail is unwrapped to its value (a bare `return` opcode would
+    /// exit the *enclosing* function, not the inlined closure).
+    fn inlineLambdaBody(self: *Emitter, body: []const ast.Stmt) anyerror!void {
+        if (body.len == 0) {
+            try self.w("    i32.const 0\n");
+            return;
+        }
+        for (body[0 .. body.len - 1]) |s| try self.emitStmt(s, false);
+        const last = body[body.len - 1];
+        switch (last.expr) {
+            .jump => |j| switch (j.kind) {
+                .@"return" => |r| {
+                    if (r) |v| try self.lowerExpr(v.*) else try self.w("    i32.const 0\n");
+                    return;
+                },
+                else => {},
+            },
+            else => {},
+        }
+        try self.emitStmt(last, true);
+    }
+
+    /// Lower a `__bp_<domain>_<op>(receiver, arg?)` Result/Option method op.
+    /// A `@Result` is a pointer to two `i32` slots — `[ptr]` is the tag (0 = Ok,
+    /// non-zero = Error), `[ptr+4]` the payload — matching `try`/`catch`. A
+    /// `@Option` is the bare value, with `0` standing for absence. `map`/`flatMap`
+    /// inline the closure body (there are no first-class funs here); the other
+    /// ops are pure tag tests / payload loads.
+    fn lowerResultOptionOp(self: *Emitter, callee: []const u8, args: anytype) anyerror!void {
+        const recv = args[0].value;
+        const arg1: ?*ast.Expr = if (args.len > 1) args[1].value else null;
+
+        if (std.mem.eql(u8, callee, "__bp_result_map") or std.mem.eql(u8, callee, "__bp_result_flatMap")) {
+            const is_map = std.mem.eql(u8, callee, "__bp_result_map");
+            const le = lambdaArg(arg1) orelse {
+                try self.w("    ;; map/flatMap needs a literal closure on WASM — receiver passed through\n");
+                try self.lowerExpr(recv.*);
+                return;
+            };
+            const lam = le.function.kind;
+            const a = try self.declRes();
+            var pbuf: [24]u8 = undefined;
+            const aname = try std.fmt.bufPrint(&pbuf, "_res{d}", .{a});
+            try self.lowerExpr(recv.*);
+            try self.fmt("    local.set $_res{d}\n", .{a});
+            try self.fmt("    local.get $_res{d}\n", .{a});
+            try self.w("    i32.load ;; Result tag (0 = Ok, non-zero = Error)\n");
+            try self.w("    (if (result i32)\n");
+            try self.w("      (then\n");
+            try self.fmt("    local.get $_res{d} ;; Error — propagate unchanged\n", .{a});
+            try self.w("      )\n");
+            try self.w("      (else\n");
+            // Ok: bind the closure param to the payload, then apply it.
+            try self.fmt("    local.get $_res{d}\n", .{a});
+            try self.w("    i32.load offset=4 ;; Ok payload\n");
+            try self.fmt("    local.set $_res{d}\n", .{a});
+            try self.bindLambdaParam(lam, aname);
+            if (is_map) {
+                // Rewrap the mapped value as a fresh `{ tag: 0, payload }` Result.
+                const b = try self.declRes();
+                try self.w("    global.get $__heap_ptr\n");
+                try self.fmt("    local.set $_res{d}\n", .{b});
+                try self.w("    global.get $__heap_ptr\n");
+                try self.w("    i32.const 8\n");
+                try self.w("    i32.add\n");
+                try self.w("    global.set $__heap_ptr\n");
+                try self.fmt("    local.get $_res{d}\n", .{b});
+                try self.w("    i32.const 0\n");
+                try self.w("    i32.store ;; Ok tag\n");
+                try self.fmt("    local.get $_res{d}\n", .{b});
+                try self.inlineLambdaBody(lam.body);
+                try self.w("    i32.store offset=4 ;; mapped payload\n");
+                try self.fmt("    local.get $_res{d}\n", .{b});
+            } else {
+                // flatMap: the closure already yields a `@Result` pointer.
+                try self.inlineLambdaBody(lam.body);
+            }
+            try self.w("      )\n");
+            try self.w("    )\n");
+            return;
+        }
+
+        if (std.mem.eql(u8, callee, "__bp_result_unwrapOr")) {
+            const a = try self.declRes();
+            try self.lowerExpr(recv.*);
+            try self.fmt("    local.set $_res{d}\n", .{a});
+            try self.fmt("    local.get $_res{d}\n", .{a});
+            try self.w("    i32.load ;; Result tag (0 = Ok, non-zero = Error)\n");
+            try self.w("    (if (result i32)\n");
+            try self.w("      (then\n");
+            if (arg1) |d| try self.lowerExpr(d.*) else try self.w("    i32.const 0\n");
+            try self.w("      )\n");
+            try self.w("      (else\n");
+            try self.fmt("    local.get $_res{d}\n", .{a});
+            try self.w("    i32.load offset=4 ;; Ok payload\n");
+            try self.w("      )\n");
+            try self.w("    )\n");
+            return;
+        }
+
+        if (std.mem.eql(u8, callee, "__bp_result_isOk")) {
+            try self.lowerExpr(recv.*);
+            try self.w("    i32.load ;; Result tag\n");
+            try self.w("    i32.eqz ;; isOk = (tag == 0)\n");
+            return;
+        }
+
+        if (std.mem.eql(u8, callee, "__bp_result_isError")) {
+            try self.lowerExpr(recv.*);
+            try self.w("    i32.load ;; Result tag\n");
+            try self.w("    i32.const 0\n");
+            try self.w("    i32.ne ;; isError = (tag != 0)\n");
+            return;
+        }
+
+        if (std.mem.eql(u8, callee, "__bp_option_map") or std.mem.eql(u8, callee, "__bp_option_flatMap")) {
+            const le = lambdaArg(arg1) orelse {
+                try self.w("    ;; map/flatMap needs a literal closure on WASM — receiver passed through\n");
+                try self.lowerExpr(recv.*);
+                return;
+            };
+            const lam = le.function.kind;
+            const a = try self.declRes();
+            var pbuf: [24]u8 = undefined;
+            const aname = try std.fmt.bufPrint(&pbuf, "_res{d}", .{a});
+            try self.lowerExpr(recv.*);
+            try self.fmt("    local.set $_res{d}\n", .{a});
+            try self.fmt("    local.get $_res{d} ;; Option (0 = None, else Some payload)\n", .{a});
+            try self.w("    (if (result i32)\n");
+            try self.w("      (then\n");
+            // Some: apply the closure to the present value.
+            try self.bindLambdaParam(lam, aname);
+            try self.inlineLambdaBody(lam.body);
+            try self.w("      )\n");
+            try self.w("      (else\n");
+            try self.w("    i32.const 0 ;; None — propagate absence\n");
+            try self.w("      )\n");
+            try self.w("    )\n");
+            return;
+        }
+
+        if (std.mem.eql(u8, callee, "__bp_option_unwrapOr")) {
+            const a = try self.declRes();
+            try self.lowerExpr(recv.*);
+            try self.fmt("    local.set $_res{d}\n", .{a});
+            try self.fmt("    local.get $_res{d} ;; Option (0 = None, else Some payload)\n", .{a});
+            try self.w("    (if (result i32)\n");
+            try self.w("      (then\n");
+            try self.fmt("    local.get $_res{d} ;; Some — present value\n", .{a});
+            try self.w("      )\n");
+            try self.w("      (else\n");
+            if (arg1) |d| try self.lowerExpr(d.*) else try self.w("    i32.const 0\n");
+            try self.w("      )\n");
+            try self.w("    )\n");
+            return;
+        }
+
+        try self.fmt("    ;; unsupported Result/Option op: {s}\n", .{callee});
     }
 
     fn emitFdWriteString(self: *Emitter, offset: u32, len: u32) !void {

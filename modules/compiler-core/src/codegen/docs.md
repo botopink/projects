@@ -138,14 +138,19 @@ in every target — never to host exceptions (no JS `try/catch`, no Erlang
   (y-registers), calls (regular + tail), decl methods, booleans, assign/+=,
   throw, strings (`{literal, <<"…">>}`), `@print` → `io:format/2`, field
   access/assign (`get_map_elements`/`put_map_exact`), arrays → lists, tuples
-  (`put_tuple2`), lambdas (`make_fun2` + deferred bodies), `case` (all
-  pattern types), try/catch, pipeline, method calls, loops (stub), break.
+  (`put_tuple2`), lambdas (`make_fun2` + deferred bodies, tail expr returned),
+  `case` (all pattern types), try/catch, pipeline, method calls, loops (stub),
+  break, `@Result`/`@Option` methods (`__bp_*` → `{tag, 'Ok'|'Error', V}` match
+  + `call_fun` closure application; option absence = `undefined`).
   Validated against `erlc +from_asm`.
 - `wasm` — **0 unsupported across 143 snapshots.** Covers: numerics, locals,
   calls, assign/+=, `!x` → `i32.eqz`, null, `@todo`/`@panic` → `unreachable`,
   globals, entry wrapper. Strings/tuples/arrays/lambdas/loops emit numeric
   stubs (`i32.const 0`); `@print` as nop; case/pipeline/tryCatch/destructuring
-  handled. Runtime uses `wasmtime run --invoke _botopink_main`.
+  handled. `@Result`/`@Option` methods (`__bp_*`) lower to tag loads/branches
+  over the linear-memory `[tag, payload]` layout (option absence = `0`);
+  `map`/`flatMap` inline a literal closure body (no first-class funs).
+  Runtime uses `wasmtime run --invoke _botopink_main`.
 - Roadmap for both → [`/TODO.md`](../../../../TODO.md).
 
 ## See also
