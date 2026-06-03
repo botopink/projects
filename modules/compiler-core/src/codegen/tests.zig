@@ -722,6 +722,83 @@ test "js: implement ---- attaches methods to prototype" {
     );
 }
 
+// ── static extension dispatch (F6) ─────────────────────────────────────────────
+
+// Inherent record method dispatch — no rewrite entry; the call resolves to the
+// type's own method (baseline against the extension cases below).
+test "js: dispatch ---- inherent record method call" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\record Contador {
+        \\    n: i32,
+        \\    fn atual(self: Self) {
+        \\        return self.n;
+        \\    }
+        \\}
+        \\fn main() {
+        \\    val c = Contador(5);
+        \\    @print(c.atual());
+        \\}
+    );
+}
+
+// Activated extension dispatch — `donald.swim()` lowers to the extension
+// method with the receiver passed as the first argument.
+test "js: dispatch ---- activated extension method call" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\record Pato { id: i32 }
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\PatoNada*;
+        \\fn main() {
+        \\    val donald = Pato(2);
+        \\    @print(donald.swim());
+        \\}
+    );
+}
+
+// Qualified extension dispatch — `PatoNada.swim(donald)` needs no activation;
+// the receiver names the extension block, not a module.
+test "js: dispatch ---- qualified extension method call" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\record Pato { id: i32 }
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\fn main() {
+        \\    val donald = Pato(3);
+        \\    @print(PatoNada.swim(donald));
+        \\}
+    );
+}
+
+// Activated `extend` dispatch — same lowering for a trait-less extension block.
+test "js: dispatch ---- activated extend method call" {
+    try assertJsSingle(std.testing.allocator, @src(),
+        \\record Pato { id: i32 }
+        \\val PatoVoa = extend Pato {
+        \\    fn fly(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\PatoVoa*;
+        \\fn main() {
+        \\    val donald = Pato(7);
+        \\    @print(donald.fly());
+        \\}
+    );
+}
+
 // ── delegate declaration ──────────────────────────────────────────────────────
 
 // Tests delegate emits comment

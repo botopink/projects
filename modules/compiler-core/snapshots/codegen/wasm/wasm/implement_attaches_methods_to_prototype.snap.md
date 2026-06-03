@@ -16,6 +16,10 @@ val PersonPrintable = implement Printable for Person {
 (module
   (memory (export "memory") 1)
   (global $__heap_ptr (mut i32) (i32.const 256))
+  (func $Person_print (param $self i32) (result i32)
+    i32.const 0 ;; field access .name
+    return
+  )
 )
 ```
 
