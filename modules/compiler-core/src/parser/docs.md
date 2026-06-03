@@ -3,31 +3,43 @@
 > Path: `modules/compiler-core/src/parser/`
 > Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md) · Examples: [`./examples.md`](examples.md)
 
-The parser implementation itself is at `../parser.zig` (3600+ lines of
-recursive descent). This directory holds the test harness; the snapshots
-live at [`../../snapshots/parser/`](../../snapshots/parser/AGENTS.md).
+The `Parser` struct (state, token cursor, shared block/annotation/param helpers)
+lives at `../parser.zig`; the recursive-descent grammar is split into sibling
+modules here by sub-grammar (`types`/`patterns`/`decls`/`exprs`), each a set of
+free functions on `*Parser` re-exported by `parser.zig` as thin `pub const`
+aliases (see [`./AGENTS.md`](AGENTS.md) for the convention). This directory also
+holds the test harness; snapshots live at
+[`../../snapshots/parser/`](../../snapshots/parser/AGENTS.md).
 
 ## Tree
 
 ```text
 parser/
+├── types.zig      ← type-ref sub-grammar
+├── patterns.zig   ← case/pattern sub-grammar
+├── decls.zig      ← declaration sub-grammar (+ params)
+├── exprs.zig      ← expression sub-grammar (precedence climbing)
 └── tests.zig      ← `assertParser` / `expectParseError` snapshot tests
 ```
 
 ## Strategy: hand-written recursive descent
 
-There is no parser generator. Each grammar rule is a Zig method on
-`Parser`, named after the rule:
+There is no parser generator. Each grammar rule is a function on `*Parser`,
+named after the rule. Rules called as `this.parseX(alloc)` resolve whether they
+live in `parser.zig` or in a sub-grammar module (`types`/`patterns`/`decls`/
+`exprs`) — the latter are re-exported as `pub const parseX = exprs.parseX;`
+aliases, so call sites don't care where a rule lives:
 
-- `parseProgram` → top-level decls
-- `parseDecl` → fn / record / enum / val / use
-- `parseExpr` → expression entry (precedence climbs)
-- `parsePrimary` → literals, identifiers, parens, unary, …
-- `parseStmt` → stmt-statement vs expr-statement
+- `parse` → top-level decls (in `parser.zig`)
+- decl rules (`parseFnDecl`/`parseRecordDecl`/`parseEnumDecl`/…) → `decls.zig`
+- `parseExpr` / `parsePrimary` → expression entry & primaries → `exprs.zig`
+- `parseCaseExpr` / `parsePattern` → `patterns.zig`
+- `parseTypeRef` → `types.zig`
 
-Precedence is encoded in the call chain (`parseExpr` → `parsePipeline` →
-`parseLogicalOr` → … → `parseUnary` → `parsePrimary`). To add a new
-operator, slot a new method into the chain at the correct precedence.
+Precedence is encoded in `exprs.zig`'s `precedence_table` (driven by the
+precedence-climbing `parseBinaryExpr`); the named entry points `prec.lowest` /
+`prec.equality` stay public on `Parser` for callers in other sub-grammars. To
+add a new operator, add a row to `precedence_table` at the correct level.
 
 ## Helper functions
 

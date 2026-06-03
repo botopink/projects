@@ -19,7 +19,7 @@ src/
 ├── module.zig            ← `Module` struct — input module representation
 ├── ast.zig               ← AST node types (categorised)
 ├── lexer.zig             ← Lexer (delegates to lexer/token.zig)
-├── parser.zig            ← Recursive-descent parser
+├── parser.zig            ← Parser struct + token cursor + shared helpers (sub-grammars in parser/)
 ├── format.zig            ← Wadler-Lindig pretty printer (round-trip stable)
 ├── print.zig             ← rustc-style diagnostics renderer
 ├── comptime.zig          ← Target-agnostic comptime façade
@@ -28,7 +28,7 @@ src/
 ├── comptime/             ← HM inference + transform — see comptime/AGENTS.md
 │   └── runtime/          ← External eval scripts (Node.js + Erlang)
 ├── lexer/                ← Token struct + lexer snapshot tests
-├── parser/               ← Parser snapshot tests
+├── parser/               ← Parser sub-grammars (types/patterns/decls/exprs) + snapshot tests
 ├── format/               ← Formatter snapshot tests
 └── utils/                ← Snapshot/JSON helpers
 ```
@@ -40,7 +40,7 @@ src/
 | `root.zig` | Library entry — re-exports public API | — |
 | `ast.zig` | All AST node types | [`./docs.md`](docs.md) |
 | `lexer.zig` | Lexer façade → `lexer/token.zig` | [`lexer/docs.md`](lexer/docs.md) |
-| `parser.zig` | Recursive-descent parser | [`parser/docs.md`](parser/docs.md) |
+| `parser.zig` | Parser struct + cursor + shared helpers; sub-grammars in [`parser/`](parser/AGENTS.md) | [`parser/docs.md`](parser/docs.md) |
 | `comptime.zig` | Comptime façade — `ComptimeSession`, `compile`, `evaluateComptime` | [`comptime/docs.md`](comptime/docs.md) |
 | `format.zig` | Wadler-Lindig formatter | [`format/docs.md`](format/docs.md) |
 | `print.zig` | rustc-style error renderer | — |
