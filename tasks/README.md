@@ -42,6 +42,8 @@ ast-simplification — isolated in time (alone, before or after everything)
 | [stdlib-result.md](stdlib-result.md) | `feat/stdlib-result` | pending |
 | [interface-coverage.md](interface-coverage.md) | `feat/interface-coverage` | pending (Phase 1 done) |
 | [tooling.md](tooling.md) | `feat/tooling` | pending |
+| [test-reorg.md](test-reorg.md) | `feat/test-reorg` | pending (pure test move — split monolithic `tests.zig` per stage) |
+| [parser-split.md](parser-split.md) | `feat/parser-split` | pending (pure refactor — split 3824-line `parser.zig` by sub-grammar; coordinate dir with test-reorg) |
 | [ast-simplification.md](ast-simplification.md) | `feat/ast-simplification` | pending ⚠️ do not parallelize |
 
 ## Suggested order
