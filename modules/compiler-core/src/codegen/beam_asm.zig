@@ -146,8 +146,29 @@ fn collectImplementExports(
     owned: *std.ArrayListUnmanaged([]u8),
     im: ast.ImplementDecl,
 ) !void {
-    for (im.methods) |m| {
-        const qualifier = m.qualifier orelse im.target;
+    try collectExtensionExports(alloc, exports, owned, im.target, im.methods);
+}
+
+fn collectExtendExports(
+    alloc: std.mem.Allocator,
+    exports: *std.ArrayListUnmanaged(ExportEntry),
+    owned: *std.ArrayListUnmanaged([]u8),
+    ex: ast.ExtendDecl,
+) !void {
+    try collectExtensionExports(alloc, exports, owned, ex.target, ex.methods);
+}
+
+/// Export every extension method as `'<qualifier>_<method>'/arity`. The
+/// qualifier defaults to the target type (matching `emitImplementMethod`).
+fn collectExtensionExports(
+    alloc: std.mem.Allocator,
+    exports: *std.ArrayListUnmanaged(ExportEntry),
+    owned: *std.ArrayListUnmanaged([]u8),
+    target: []const u8,
+    methods: []const ast.ImplementMethod,
+) !void {
+    for (methods) |m| {
+        const qualifier = m.qualifier orelse target;
         const mangled = try std.fmt.allocPrint(alloc, "'{s}_{s}'", .{ qualifier, m.name });
         try owned.append(alloc, mangled);
         try exports.append(alloc, .{ .name = mangled, .arity = implementMethodArity(m) });
@@ -201,7 +222,7 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const code = try emitBeamAsm(alloc, ct.name, ok.transformed, ok.comptime_vals);
+                const code = try emitBeamAsm(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites);
                 try results.append(alloc, .{
                     .name = ct.name,
                     .src = ct.src,
@@ -227,6 +248,7 @@ fn emitBeamAsm(
     module_name: []const u8,
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
 ) ![]u8 {
     // Three passes:
     //   1. assign entry labels to every fn/top-val so wrappers can refer to
@@ -241,8 +263,12 @@ fn emitBeamAsm(
     var body_buf: std.Io.Writer.Allocating = .init(alloc);
     defer body_buf.deinit();
 
-    var em = Emitter.init(alloc, module_name, &body_buf.writer, comptime_vals);
+    var em = Emitter.init(alloc, module_name, &body_buf.writer, comptime_vals, rewrites);
     defer em.deinit();
+
+    // Map each `implement`/`extend` block name to its target type + methods so
+    // dispatch sites can resolve the mangled `'<target>_<method>'` callee.
+    try em.collectExtensions(program);
 
     // Detect main/0 entrypoint (drives wrapper emission).
     var has_main_0 = false;
@@ -267,6 +293,7 @@ fn emitBeamAsm(
             .@"struct" => |s| try em.reserveStructMembers(s),
             .@"enum" => |e| try em.reserveEnumMethods(e),
             .implement => |im| try em.reserveImplementMethods(im),
+            .extend => |ex| try em.reserveExtendMethods(ex),
             else => {},
         }
     }
@@ -298,6 +325,7 @@ fn emitBeamAsm(
             .@"struct" => |s| try collectStructExports(alloc, &exports, &owned_export_names, s),
             .@"enum" => |e| try collectMethodExports(alloc, &exports, &owned_export_names, e.name, e.methods),
             .implement => |im| try collectImplementExports(alloc, &exports, &owned_export_names, im),
+            .extend => |ex| try collectExtendExports(alloc, &exports, &owned_export_names, ex),
             else => {},
         }
     }
@@ -319,10 +347,10 @@ fn emitBeamAsm(
             .@"struct" => |s| try em.emitStruct(s),
             .@"enum" => |e| try em.emitEnum(e),
             .implement => |im| try em.emitImplement(im),
+            .extend => |ex| try em.emitExtend(ex),
             // Purely abstract decls (interface/delegate) and module-graph
             // metadata (use) don't lower to runtime code — silently skip.
-            // `extend` codegen is handled in a later phase (extension-dispatch).
-            .interface, .delegate, .use, .extend => {},
+            .interface, .delegate, .use => {},
         }
     }
 
@@ -408,8 +436,16 @@ const Emitter = struct {
     deferred_lambdas: std.ArrayListUnmanaged([]u8) = .empty,
     /// True when emitting a loop body lambda — makes break emit return.
     in_loop_lambda: bool = false,
+    /// Static extension dispatch (F6): call-site loc → activated extension symbol.
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    /// Extension block name → target type + methods, for resolving the mangled
+    /// `'<target>_<method>'` callee at activated and qualified dispatch sites.
+    ext_by_name: std.StringHashMap(ExtInfo),
 
-    fn init(alloc: std.mem.Allocator, module_name: []const u8, out: *std.Io.Writer, cv: std.StringHashMap([]const u8)) Emitter {
+    /// Target type and methods of an `implement`/`extend` block.
+    const ExtInfo = struct { target: []const u8, methods: []const ast.ImplementMethod };
+
+    fn init(alloc: std.mem.Allocator, module_name: []const u8, out: *std.Io.Writer, cv: std.StringHashMap([]const u8), rewrites: std.AutoHashMap(ast.Loc, []const u8)) Emitter {
         return .{
             .alloc = alloc,
             .module_name = module_name,
@@ -417,6 +453,8 @@ const Emitter = struct {
             .cv = cv,
             .fn_labels = std.StringHashMap(FnLabels).init(alloc),
             .reg_map = std.StringHashMap(Reg).init(alloc),
+            .rewrites = rewrites,
+            .ext_by_name = std.StringHashMap(ExtInfo).init(alloc),
         };
     }
 
@@ -427,6 +465,30 @@ const Emitter = struct {
         self.reg_map.deinit();
         for (self.deferred_lambdas.items) |s| self.alloc.free(s);
         self.deferred_lambdas.deinit(self.alloc);
+        self.ext_by_name.deinit();
+    }
+
+    fn collectExtensions(self: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .implement => |im| try self.ext_by_name.put(im.name, .{ .target = im.target, .methods = im.methods }),
+            .extend => |ex| try self.ext_by_name.put(ex.name, .{ .target = ex.target, .methods = ex.methods }),
+            else => {},
+        };
+    }
+
+    /// Mangled `'<qualifier>_<method>'` name for a dispatch site, written into
+    /// `buf`. `sym` is the extension block name from `rewrites`/the receiver;
+    /// the qualifier defaults to the target type (matching `emitImplementMethod`).
+    fn extMangledName(self: *Emitter, buf: []u8, sym: []const u8, method: []const u8) ?[]const u8 {
+        const info = self.ext_by_name.get(sym) orelse return null;
+        var qualifier = info.target;
+        for (info.methods) |m| {
+            if (std.mem.eql(u8, m.name, method)) {
+                qualifier = m.qualifier orelse info.target;
+                break;
+            }
+        }
+        return std.fmt.bufPrint(buf, "'{s}_{s}'", .{ qualifier, method }) catch null;
     }
 
     fn allocLabel(self: *Emitter) u32 {
@@ -558,8 +620,16 @@ const Emitter = struct {
     }
 
     fn reserveImplementMethods(self: *Emitter, im: ast.ImplementDecl) !void {
-        for (im.methods) |m| {
-            const qualifier = m.qualifier orelse im.target;
+        try self.reserveExtensionMethods(im.target, im.methods);
+    }
+
+    fn reserveExtendMethods(self: *Emitter, ex: ast.ExtendDecl) !void {
+        try self.reserveExtensionMethods(ex.target, ex.methods);
+    }
+
+    fn reserveExtensionMethods(self: *Emitter, target: []const u8, methods: []const ast.ImplementMethod) !void {
+        for (methods) |m| {
+            const qualifier = m.qualifier orelse target;
             var buf: [256]u8 = undefined;
             const mangled = try std.fmt.bufPrint(&buf, "'{s}_{s}'", .{ qualifier, m.name });
             try self.reserveFn(mangled, implementMethodArity(m));
@@ -595,6 +665,13 @@ const Emitter = struct {
     fn emitImplement(self: *Emitter, im: ast.ImplementDecl) !void {
         for (im.methods) |m| {
             const qualifier = m.qualifier orelse im.target;
+            try self.emitImplementMethod(qualifier, m);
+        }
+    }
+
+    fn emitExtend(self: *Emitter, ex: ast.ExtendDecl) !void {
+        for (ex.methods) |m| {
+            const qualifier = m.qualifier orelse ex.target;
             try self.emitImplementMethod(qualifier, m);
         }
     }
@@ -789,7 +866,7 @@ const Emitter = struct {
                         switch (val.*) {
                             .call => |c| switch (c.kind) {
                                 .call => |cc| {
-                                    try self.lowerCall(cc, .tail, 0);
+                                    try self.lowerCall(cc, .tail, c.loc);
                                     return;
                                 },
                                 else => {},
@@ -1102,7 +1179,7 @@ const Emitter = struct {
             },
             .call => |c| switch (c.kind) {
                 .call => |cc| {
-                    try self.lowerCall(cc, .non_tail, 0);
+                    try self.lowerCall(cc, .non_tail, c.loc);
                     return;
                 },
                 .pipeline => |pl| {
@@ -1457,7 +1534,7 @@ const Emitter = struct {
 
     /// Lower a `call.call` form into BEAM assembly. Evaluates each arg into
     /// `{x, i}`, then emits the appropriate call opcode.
-    fn lowerCall(self: *Emitter, cc: anytype, mode: CallMode, _: u32) anyerror!void {
+    fn lowerCall(self: *Emitter, cc: anytype, mode: CallMode, loc: ast.Loc) anyerror!void {
         if (cc.is_builtin) {
             try self.lowerBuiltinCall(cc, mode);
             return;
@@ -1470,6 +1547,39 @@ const Emitter = struct {
                 },
                 else => null,
             };
+            // Static extension dispatch (F6).
+            //
+            // Activated: `recv.m(args)` carries a `rewrites` entry → call the
+            // mangled `'<target>_m'(recv, args)` with the receiver prepended.
+            if (self.rewrites.get(loc)) |sym| {
+                var nbuf: [256]u8 = undefined;
+                if (self.extMangledName(&nbuf, sym, cc.callee)) |mangled| {
+                    try self.lowerExtCall(mangled, recv_expr, cc.args, mode);
+                    return;
+                }
+            }
+            // Qualified: `Sym.m(obj, args)` where `Sym` is an extension block
+            // name → call `'<target>_m'(obj, args)`. The receiver names the
+            // block (not a module / not an argument); `obj` is already arg 0.
+            if (recv_name) |rn| {
+                if (self.ext_by_name.contains(rn)) {
+                    var nbuf: [256]u8 = undefined;
+                    if (self.extMangledName(&nbuf, rn, cc.callee)) |mangled| {
+                        const arity = cc.args.len;
+                        try self.materializeCallArgs(cc.args);
+                        const labels = self.fnLabelsFor(mangled, arity) catch {
+                            try self.bodyPrint("    %% unresolved extension call: {s}/{d}\n", .{ mangled, arity });
+                            if (mode == .tail) try self.emitReturn();
+                            return;
+                        };
+                        switch (mode) {
+                            .non_tail => try self.bodyPrint("    {{call, {d}, {{f, {d}}}}}.\n", .{ arity, labels.entry }),
+                            .tail => try self.bodyPrint("    {{call_last, {d}, {{f, {d}}}, {d}}}.\n", .{ arity, labels.entry, self.num_y }),
+                        }
+                        return;
+                    }
+                }
+            }
             // Module-qualified remote call: a PascalCase identifier receiver that
             // isn't a local binding is a module reference: `List.map(xs, f)` →
             // `list:map(xs, f)` (mirrors the Erlang backend's `isModuleRef`/
@@ -1600,6 +1710,51 @@ const Emitter = struct {
         try self.materializeCallArgs(cc.args);
         try self.bodyPrint("    %% unresolved local call: {s}/{d}\n", .{ cc.callee, arity });
         if (mode == .tail) try self.emitReturn();
+    }
+
+    /// Activated extension dispatch: lower the receiver into `{x, 0}` and the
+    /// args into `{x, 1..}`, then call the mangled `'<target>_<method>'`
+    /// function with the receiver prepended (arity = 1 + args). Mirrors the
+    /// value-receiver method-call shuffle but resolves the mangled callee.
+    fn lowerExtCall(self: *Emitter, mangled: []const u8, recv_expr: anytype, args: anytype, mode: CallMode) anyerror!void {
+        const recv_name: ?[]const u8 = switch (recv_expr.*) {
+            .identifier => |idn| switch (idn.kind) {
+                .ident => |n| n,
+                else => null,
+            },
+            else => null,
+        };
+        if (recv_name) |rn| {
+            if (self.reg_map.get(rn)) |reg| {
+                var rbuf: [64]u8 = undefined;
+                const recv_term = try reg.format(&rbuf);
+                try self.bodyPrint("    {{move, {s}, {{x, 0}}}}.\n", .{recv_term});
+            } else {
+                try self.bodyPrint("    {{move, {{atom, {s}}}, {{x, 0}}}}.\n", .{rn});
+            }
+        } else {
+            try self.lowerExprIntoX0(recv_expr.*);
+        }
+        const scratch = self.cur_arity;
+        try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
+        for (args, 0..) |arg, i| {
+            try self.lowerExprIntoX0(arg.value.*);
+            try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + 1 + i});
+        }
+        try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{scratch});
+        for (0..args.len) |i| {
+            try self.bodyPrint("    {{move, {{x, {d}}}, {{x, {d}}}}}.\n", .{ scratch + 1 + i, 1 + i });
+        }
+        const total_arity = 1 + args.len;
+        const labels = self.fnLabelsFor(mangled, total_arity) catch {
+            try self.bodyPrint("    %% unresolved extension call: {s}/{d}\n", .{ mangled, total_arity });
+            if (mode == .tail) try self.emitReturn();
+            return;
+        };
+        switch (mode) {
+            .non_tail => try self.bodyPrint("    {{call, {d}, {{f, {d}}}}}.\n", .{ total_arity, labels.entry }),
+            .tail => try self.bodyPrint("    {{call_last, {d}, {{f, {d}}}, {d}}}.\n", .{ total_arity, labels.entry, self.num_y }),
+        }
     }
 
     /// True when every argument is named (`field: value`) — the shape of a

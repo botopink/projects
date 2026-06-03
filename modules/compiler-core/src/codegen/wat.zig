@@ -79,7 +79,7 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const code = try emitWat(alloc, ct.name, ok.transformed, ok.comptime_vals);
+                const code = try emitWat(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites);
                 try results.append(alloc, .{
                     .name = ct.name,
                     .src = ct.src,
@@ -105,15 +105,17 @@ fn emitWat(
     module_name: []const u8,
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
 ) ![]u8 {
     _ = module_name;
 
     var fn_buf: std.Io.Writer.Allocating = .init(alloc);
     defer fn_buf.deinit();
 
-    var em = Emitter.init(alloc, &fn_buf.writer, comptime_vals);
+    var em = Emitter.init(alloc, &fn_buf.writer, comptime_vals, rewrites);
     defer em.deinit();
     try em.registerTypes(program);
+    try em.collectExtensions(program);
 
     var has_main_0 = false;
     for (program.decls) |decl| switch (decl) {
@@ -131,7 +133,11 @@ fn emitWat(
             }
         },
         .comment => |c| try fn_buf.writer.print("  ;; {s}\n", .{c.text}),
-        .record, .@"struct", .@"enum", .implement, .extend, .interface, .delegate, .use => {},
+        // Extension methods lower to linear-memory functions named
+        // `$<target>_<method>` so activated/qualified dispatch can `call` them.
+        .implement => |im| try em.emitExtensionMethods(im.target, im.methods),
+        .extend => |ex| try em.emitExtensionMethods(ex.target, ex.methods),
+        .record, .@"struct", .@"enum", .interface, .delegate, .use => {},
     };
 
     if (has_main_0) try em.emitEntrypointWrapper();
@@ -443,7 +449,15 @@ const Emitter = struct {
     uses_str_concat: bool = false,
     uses_str_eq: bool = false,
 
-    fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8)) Emitter {
+    /// Static extension dispatch (F6): call-site loc → activated extension symbol.
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    /// Extension block name → target type + methods (for resolving the mangled
+    /// `$<target>_<method>` callee at activated and qualified dispatch sites).
+    ext_by_name: std.StringHashMap(ExtInfo),
+
+    const ExtInfo = struct { target: []const u8, methods: []const ast.ImplementMethod };
+
+    fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8), rewrites: std.AutoHashMap(ast.Loc, []const u8)) Emitter {
         return .{
             .alloc = alloc,
             .out = out,
@@ -452,6 +466,8 @@ const Emitter = struct {
             .records = std.StringHashMap([]const []const u8).init(alloc),
             .enums = std.StringHashMap([]const ast.EnumVariant).init(alloc),
             .reg_arena = std.heap.ArenaAllocator.init(alloc),
+            .rewrites = rewrites,
+            .ext_by_name = std.StringHashMap(ExtInfo).init(alloc),
         };
     }
 
@@ -461,6 +477,30 @@ const Emitter = struct {
         self.enums.deinit();
         self.reg_arena.deinit();
         self.data_segments.deinit(self.alloc);
+        self.ext_by_name.deinit();
+    }
+
+    fn collectExtensions(self: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .implement => |im| try self.ext_by_name.put(im.name, .{ .target = im.target, .methods = im.methods }),
+            .extend => |ex| try self.ext_by_name.put(ex.name, .{ .target = ex.target, .methods = ex.methods }),
+            else => {},
+        };
+    }
+
+    /// Mangled `$<target>_<method>` name for a dispatch site (without the `$`),
+    /// written into `buf`. `sym` is the extension block name; the qualifier
+    /// defaults to the target type (matching `emitExtensionMethods`).
+    fn extMangledName(self: *Emitter, buf: []u8, sym: []const u8, method: []const u8) ?[]const u8 {
+        const info = self.ext_by_name.get(sym) orelse return null;
+        var qualifier = info.target;
+        for (info.methods) |m| {
+            if (std.mem.eql(u8, m.name, method)) {
+                qualifier = m.qualifier orelse info.target;
+                break;
+            }
+        }
+        return std.fmt.bufPrint(buf, "{s}_{s}", .{ qualifier, method }) catch null;
     }
 
     /// Populate `records`/`enums` from the program's type declarations so that
@@ -566,6 +606,63 @@ const Emitter = struct {
         try self.emitLocalDecls(f.body);
         try self.emitBody(f.body, result_type);
         try self.w("  )\n");
+    }
+
+    /// Emit each `implement`/`extend` method as a linear-memory function
+    /// `$<target>_<method>`. Unlike `emitFn`, the receiver `self` is kept as a
+    /// real `i32` param (records/structs are heap pointers) so an activated
+    /// `recv.m(args)` dispatch can pass it. Codegen is untyped and method
+    /// bodies carry no return type, so params/result default to `i32`; a method
+    /// whose body yields no value is emitted without a result.
+    fn emitExtensionMethods(self: *Emitter, target: []const u8, methods: []const ast.ImplementMethod) !void {
+        for (methods) |m| {
+            const has_result = bodyYieldsValue(m.body);
+            self.resetFnState("i32");
+            const qualifier = m.qualifier orelse target;
+            try self.fmt("  (func ${s}_{s}", .{ qualifier, m.name });
+            for (m.params) |p| {
+                try self.locals.put(p.name, "i32");
+                try self.fmt(" (param ${s} i32)", .{p.name});
+            }
+            if (has_result) try self.w(" (result i32)");
+            try self.w("\n");
+            const try_count = countTrys(m.body);
+            for (0..try_count) |i| {
+                try self.fmt("    (local $_try{d} i32)\n", .{i});
+            }
+            const mem_count = self.countMems(m.body);
+            for (0..mem_count) |i| {
+                try self.fmt("    (local $__mem{d} i32)\n", .{i});
+            }
+            try self.emitLocalDecls(m.body);
+            try self.emitBody(m.body, "i32");
+            try self.w("  )\n");
+        }
+    }
+
+    /// True when a method body's final statement produces a value (so the WAT
+    /// function needs a `(result i32)`). Void-tailed bodies (a bare `@print`,
+    /// a valueless `return`, or an empty body) yield nothing.
+    fn bodyYieldsValue(body: []const ast.Stmt) bool {
+        if (body.len == 0) return false;
+        const last = body[body.len - 1].expr;
+        return switch (last) {
+            .jump => |j| switch (j.kind) {
+                .@"return" => |r| r != null,
+                .yield => |y| y.value != null,
+                .await_ => true,
+                else => false,
+            },
+            .call => |c| switch (c.kind) {
+                .call => |cc| !(cc.is_builtin and
+                    (std.mem.eql(u8, cc.callee, "print") or
+                        std.mem.eql(u8, cc.callee, "todo") or
+                        std.mem.eql(u8, cc.callee, "panic"))),
+                .pipeline => true,
+            },
+            .binding => false,
+            else => true,
+        };
     }
 
     /// Count `try`/`try…catch` nodes so a scratch pointer local can be declared
@@ -953,27 +1050,33 @@ const Emitter = struct {
                 },
             },
             .call => |c| switch (c.kind) {
-                .call => |cc| switch (self.callKind(cc)) {
-                    .builtin => try self.lowerBuiltin(cc),
-                    .record_ctor => try self.lowerRecordCtor(cc, self.records.get(cc.callee).?),
-                    .enum_ctor => {
-                        if (receiverName(cc)) |rcv| {
-                            const variants = self.enums.get(rcv).?;
-                            for (variants, 0..) |v, i| {
-                                if (std.mem.eql(u8, v.name, cc.callee)) {
-                                    try self.lowerEnumCtor(cc, @intCast(i), v);
-                                    return;
+                .call => |cc| {
+                    // Static extension dispatch (F6) — resolve to the mangled
+                    // linear-memory function `$<target>_<method>` before the
+                    // ordinary call-kind handling.
+                    if (try self.lowerDispatchCall(cc, c.loc)) return;
+                    switch (self.callKind(cc)) {
+                        .builtin => try self.lowerBuiltin(cc),
+                        .record_ctor => try self.lowerRecordCtor(cc, self.records.get(cc.callee).?),
+                        .enum_ctor => {
+                            if (receiverName(cc)) |rcv| {
+                                const variants = self.enums.get(rcv).?;
+                                for (variants, 0..) |v, i| {
+                                    if (std.mem.eql(u8, v.name, cc.callee)) {
+                                        try self.lowerEnumCtor(cc, @intCast(i), v);
+                                        return;
+                                    }
                                 }
+                                try self.w("    i32.const 0 ;; unknown variant\n");
+                            } else if (self.findVariant(cc.callee)) |fv| {
+                                try self.lowerEnumCtor(cc, fv.tag, fv.variant);
                             }
-                            try self.w("    i32.const 0 ;; unknown variant\n");
-                        } else if (self.findVariant(cc.callee)) |fv| {
-                            try self.lowerEnumCtor(cc, fv.tag, fv.variant);
-                        }
-                    },
-                    .plain => {
-                        for (cc.args) |arg| try self.lowerExpr(arg.value.*);
-                        try self.fmt("    call ${s}\n", .{cc.callee});
-                    },
+                        },
+                        .plain => {
+                            for (cc.args) |arg| try self.lowerExpr(arg.value.*);
+                            try self.fmt("    call ${s}\n", .{cc.callee});
+                        },
+                    }
                 },
                 .pipeline => |pl| {
                     try self.lowerExpr(pl.lhs.*);
@@ -1476,6 +1579,32 @@ const Emitter = struct {
 
     /// `Rec(a: 1, b: 2)` → contiguous slots in declaration order. Named args are
     /// matched to fields by label; otherwise positional order is used.
+    /// Static extension dispatch (F6). Returns true when `cc` is an activated
+    /// or qualified extension call and was lowered to `call $<target>_<method>`.
+    fn lowerDispatchCall(self: *Emitter, cc: anytype, loc: ast.Loc) anyerror!bool {
+        var nbuf: [256]u8 = undefined;
+        // Activated: `recv.m(args)` carries a rewrite entry → push the receiver
+        // as the first argument, then the explicit args.
+        if (self.rewrites.get(loc)) |sym| {
+            const mangled = self.extMangledName(&nbuf, sym, cc.callee) orelse return false;
+            if (cc.receiver) |recv| try self.lowerExpr(recv.*);
+            for (cc.args) |arg| try self.lowerExpr(arg.value.*);
+            try self.fmt("    call ${s}\n", .{mangled});
+            return true;
+        }
+        // Qualified: `Sym.m(obj, args)` where `Sym` names an extension block —
+        // the object is already arg 0, so only the args are pushed.
+        if (receiverName(cc)) |rn| {
+            if (self.ext_by_name.contains(rn)) {
+                const mangled = self.extMangledName(&nbuf, rn, cc.callee) orelse return false;
+                for (cc.args) |arg| try self.lowerExpr(arg.value.*);
+                try self.fmt("    call ${s}\n", .{mangled});
+                return true;
+            }
+        }
+        return false;
+    }
+
     fn lowerRecordCtor(self: *Emitter, cc: anytype, fields: []const []const u8) anyerror!void {
         const k = try self.allocSlots(@intCast(fields.len * 4));
         for (fields, 0..) |fname, i| {
