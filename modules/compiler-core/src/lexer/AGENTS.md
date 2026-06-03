@@ -14,7 +14,15 @@ lexer/
 ├── docs.md        ← tokenizer reference (invariants, error policy)
 ├── examples.md    ← `.bp` token syntax (numbers, strings, identifiers)
 ├── token.zig      ← TokenKind enum + Token struct (lexeme + line/col)
-└── tests.zig      ← lexer snapshot tests
+├── tests.zig      ← barrel: aggregates tests/<feature>.zig for test_root.zig
+└── tests/         ← lexer tests, split by feature
+    ├── helpers.zig    ← shared harness (`pub fn assertTokens`, imports)
+    ├── basics.zig     ← empty/whitespace/identifier/number basics
+    ├── recognizes.zig ← single-token recognition
+    ├── tokenizes.zig  ← multi-token sequences
+    ├── strings.zig    ← string literals, escapes, unicode
+    ├── keywords.zig   ← reserved words, self/Self, semicolons
+    └── errors.zig     ← error tokens & cross-stage error-message units
 ```
 
 ## `Token`

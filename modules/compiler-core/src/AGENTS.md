@@ -15,7 +15,7 @@ src/
 ├── docs.md               ← detailed architecture: façade pattern, pipeline, conventions
 ├── root.zig              ← public library entry (re-exports the public API)
 ├── main.zig              ← minimal CLI stub used by `zig build run`
-├── test_root.zig         ← aggregates all test files
+├── test_root.zig         ← aggregates each stage's tests.zig barrel
 ├── module.zig            ← `Module` struct — input module representation
 ├── ast.zig               ← AST node types (categorised)
 ├── lexer.zig             ← Lexer (delegates to lexer/token.zig)
@@ -68,6 +68,14 @@ src/
 - **Type annotations** always use `TypeRef`.
 - **Formatter** must round-trip: `format(parse(src))` must re-parse to an
   equivalent AST.
+- **Test layout** — each stage keeps its tests in `<stage>/tests/<feature>.zig`
+  (mirrors `language-server/src/tests/`), aggregated by a thin `<stage>/tests.zig`
+  barrel (`test { _ = @import("tests/<feature>.zig"); … }`) that `test_root.zig`
+  imports. The shared harness lives in `<stage>/tests/helpers.zig` (a pure
+  `pub fn`/data module, no `test {}`); feature files do `const h = @import("helpers.zig");`.
+  Snapshot paths derive from the **test name**, never the file — so a test block
+  may move between feature files freely, but its `test "<stage>: <name>"` string
+  must never be renamed.
 
 For pipeline details, façade pattern rationale, and current-release
 highlights see [`./docs.md`](docs.md).

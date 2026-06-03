@@ -22,7 +22,17 @@ codegen/
 ├── typescript.zig    ← TypeScript `.d.ts` typedef generator
 ├── runtime.zig       ← runtime helpers used when executing generated JS/Erlang in tests
 ├── snapshot.zig      ← snapshot helpers for codegen tests
-└── tests.zig         ← `assertJs`, `assertJsSingle`, `assertJsError`, …
+├── tests.zig         ← barrel: aggregates tests/<feature>.zig for test_root.zig
+└── tests/            ← codegen tests, split by feature
+    ├── helpers.zig         ← shared harness (`assertJs`/`assertJsError`/`configs`/…)
+    ├── js_values.zig       ← val/fn/call/operators/assign/self/comments
+    ├── js_aggregates.zig   ← array/tuple/struct/record
+    ├── js_control_flow.zig ← case/loop/if/try/throw/catch
+    ├── js_comptime.zig     ← comptime folding/specialization/validation
+    ├── js_builtins.zig     ← builtin/stdlib/assert
+    ├── js_dispatch.zig     ← extension dispatch (implement/interface/delegate)
+    ├── js_features.zig     ← lambda/enum/destructure/star/import/range/pipeline/hooks
+    └── wat.zig             ← WAT backend codegen
 ```
 
 ## Files
@@ -37,7 +47,8 @@ codegen/
 | `wat.zig` | WebAssembly Text `.wat` emitter. Full coverage: numerics, locals, calls, assign, `!x`, null, `@todo`/`@panic`, globals, `_botopink_main`, case, pipeline (`a \|> f` → `call $f`), lambdas, loops, `@print` via WASI `fd_write`. **Aggregates in linear memory** — tuples/arrays/records/enum payloads are contiguous 4-byte slots in the bump heap (a type registry built from `record`/`struct`/`enum` decls distinguishes construction calls from function calls, since codegen is untyped); construction stashes the base in a `$__mem{n}` scratch local, destructuring and `t._N` access load by `offset`; enum payloads are `[tag, …fields]`. **Strings** — literal `+` → `$__str_concat` (`memory.copy`), literal `==`/`!=` → `$__str_eq` (byte loop). `try`/`catch` → `if` on the tag `i32` (payload at `offset=4`). **Static extension dispatch (F6)**: `implement`/`extend` methods emit as linear-memory functions `$<target>_<method>` keeping `self` as a real `i32` param (`emitExtensionMethods`); activated `recv.m(args)` (via `dispatch_rewrites`) and qualified `Sym.m(obj)` lower to `call $<target>_m` pushing the receiver (`lowerDispatchCall`). Caveat: named record-field access inside method bodies is still unsupported (`self.id` → `i32.const 0`), a pre-existing WAT gap affecting all methods, not dispatch. **`@Result`/`@Option` methods** (`__bp_result_*`/`__bp_option_*` → `lowerResultOptionOp`: a `@Result` is a pointer to `[tag, payload]` (tag `0` = Ok, like `try`/`catch`), a `@Option` the bare value with `0` = None; `map`/`flatMap` **inline the closure body** — there are no first-class funs here, so a literal lambda's param binds to a `$_res{n}` local and `map` rewraps via a fresh heap slot; `unwrapOr`/`isOk`/`isError` are tag loads/branches). `wasmtime` runner |
 | `typescript.zig` | `.d.ts` typedef generator (optional secondary output). Extension dispatch (F6) needs no call-site rewrite here: `.d.ts` is type-only and `implement`/`extend` blocks are invisible to the binding list, so there are no method-call sites to lower |
 | `runtime.zig` | Test-side runtime helpers (executes generated code) |
-| `snapshot.zig` / `tests.zig` | Codegen test harness |
+| `snapshot.zig` | Codegen snapshot harness |
+| `tests.zig` | Barrel aggregating `tests/<feature>.zig`; harness in `tests/helpers.zig` (`assertJs`, `assertJsSingle`, `assertJsError`, `configs`) |
 
 ## Quick-reference rules
 

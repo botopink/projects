@@ -13,7 +13,16 @@ format/
 ├── AGENTS.md     ← you are here
 ├── docs.md       ← round-trip contract + formatting rules
 ├── examples.md   ← `botopink format` before/after pairs
-└── tests.zig     ← round-trip snapshot tests
+├── tests.zig     ← barrel: aggregates tests/<feature>.zig for test_root.zig
+└── tests/        ← format tests, split by feature
+    ├── helpers.zig      ← shared harness (`assertFormat`/`assertIdempotent`)
+    ├── imports.zig      ← import formatting
+    ├── declarations.zig ← struct/interface/implement/fn/const/val/let/pub
+    ├── expressions.zig  ← binary/call/access/lambda/precedence/pipeline
+    ├── literals.zig     ← list/tuple/array/float/int/string literals
+    ├── patterns.zig     ← case / pattern / assert
+    ├── comments.zig     ← comments / doc / todo
+    └── idempotent.zig   ← idempotent round-trips
 ```
 
 ## Round-trip contract
