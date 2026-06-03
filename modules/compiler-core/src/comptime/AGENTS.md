@@ -25,7 +25,17 @@ comptime/
 ├── specialize.zig     ← `SpecializedFn`, `SpecCache`, `specialize()`
 ├── transform.zig      ← `Aggregator` — drives the full transform pass
 ├── snapshot.zig       ← comptime snapshot helpers
-├── tests.zig          ← `assertTypes`, `assertTypeErrorSnap`, …
+├── tests.zig          ← barrel: aggregates tests/<feature>.zig for test_root.zig
+├── tests/             ← comptime tests, split by feature
+│   ├── helpers.zig        ← shared harness (`assertComptimeAst`, `assertTypeErrorSnap`, …)
+│   ├── infer_exprs.zig    ← literal/binary/case/control-flow inference
+│   ├── infer_decls.zig    ← pub fn/record/struct/interface/implement inference
+│   ├── infer_generics.zig ← typeparam & generic inference
+│   ├── infer_errors.zig   ← inference type errors (`infer error: …`)
+│   ├── types.zig          ← types / type_unification
+│   ├── variants.zig       ← variant/record-update/pattern/@print/AST probes
+│   ├── exhaustiveness.zig ← case exhaustiveness (+errors)
+│   └── effects.zig        ← throw/context/@Result effect checking
 └── runtime/           ← Node.js + Erlang eval backends — see runtime/AGENTS.md
 ```
 
@@ -43,7 +53,7 @@ comptime/
 | `specialize.zig` | Pure AST specialization — unroll loops, fold static if/case. |
 | `transform.zig` | `Aggregator` — drives specialize + rewrite + inline + dead-code. |
 | `snapshot.zig` | Snapshot helpers. |
-| `tests.zig` | Test entry points (`assertTypes`, `assertTypeErrorSnap`). |
+| `tests.zig` | Barrel aggregating `tests/<feature>.zig`; harness in `tests/helpers.zig`. |
 
 ## Quick-reference testing helpers
 
