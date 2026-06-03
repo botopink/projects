@@ -527,6 +527,10 @@ const Emitter = struct {
     num_y: u32 = 0,
     /// Per-function: arity in x-registers (live registers floor for gc_bif).
     cur_arity: u32 = 0,
+    /// Live-register floor for `make_fun3`'s `test_heap`: raised while a scratch
+    /// x-register holds a value that must survive an inline closure allocation
+    /// (e.g. the stashed `@Result` payload in `lowerResultOptionOp`).
+    min_live: u32 = 0,
     /// Per-function: bumps the source-location placeholder.
     cur_line: u32 = 1,
     /// Module-wide lambda counter for generating unique fun names.
@@ -1372,7 +1376,7 @@ const Emitter = struct {
             },
             .function => |f| switch (f.kind.syntax) {
                 .lambda => {
-                    try self.lowerLambda(f.kind);
+                    try self.lowerLambda(f.kind, self.cur_arity);
                     return;
                 },
                 .fnExpr => {
@@ -1722,7 +1726,10 @@ const Emitter = struct {
                         try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + i});
                     }
                     for (cc.trailing, 0..) |trail, j| {
-                        try self.lowerLambda(trail);
+                        // Positional args sit in scratch..scratch+args.len-1 and
+                        // earlier trailing funs in the slots after — all must
+                        // survive the closure's test_heap.
+                        try self.lowerLambda(trail, @intCast(scratch + cc.args.len + j));
                         try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch + cc.args.len + j});
                     }
                     for (0..total) |i| {
@@ -1781,7 +1788,7 @@ const Emitter = struct {
         }
         if (cc.trailing.len > 0) {
             for (cc.trailing) |trail| {
-                try self.lowerLambda(trail);
+                try self.lowerLambda(trail, self.cur_arity);
                 const scratch = self.cur_arity;
                 try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
             }
@@ -1995,21 +2002,28 @@ const Emitter = struct {
             const else_l = self.allocLabel();
             const end_l = self.allocLabel();
             try self.lowerExprIntoX0(recv.*);
-            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, 3, {{atom, tag}}}}.\n", .{else_l});
+            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 3, {{atom, tag}}]}}.\n", .{else_l});
             try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 1, {{x, {d}}}}}.\n", .{disc});
             try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, {d}}}, {{atom, 'Ok'}}]}}.\n", .{ else_l, disc });
-            // Ok: extract the payload, apply the fn to it.
+            // Ok: extract the payload, apply the fn to it. The payload sits in
+            // `{x, pstash}` and must survive the closure's `test_heap`, so raise
+            // the make_fun3 live floor across the fn lowering.
             try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 2, {{x, {d}}}}}.\n", .{pstash});
+            self.min_live = pstash + 1;
             try self.lowerFnInto0(arg1);
+            self.min_live = 0;
             try self.bodyWrite("    {move, {x, 0}, {x, 1}}.\n");
             try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{pstash});
             try self.bodyWrite("    {call_fun, 1}.\n");
             if (is_result_map) {
                 // `map` rewraps the result as `{tag, 'Ok', Result}`; `flatMap`
                 // expects the fn to already return a `@Result`, so it passes through.
-                try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{pstash});
-                try self.bodyPrint("    {{test_heap, 4, {d}}}.\n", .{pstash + 1});
-                try self.bodyPrint("    {{put_tuple2, {{x, 0}}, {{list, [{{atom, tag}}, {{atom, 'Ok'}}, {{x, {d}}}]}}}}.\n", .{pstash});
+                // Stash the result in `disc` (`{x, cur_arity+1}`) — contiguous with
+                // `{x, 0}` — so the rewrap `test_heap` Live count covers only live
+                // registers (`x1` above it is dead after `call_fun`).
+                try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{disc});
+                try self.bodyPrint("    {{test_heap, 4, {d}}}.\n", .{disc + 1});
+                try self.bodyPrint("    {{put_tuple2, {{x, 0}}, {{list, [{{atom, tag}}, {{atom, 'Ok'}}, {{x, {d}}}]}}}}.\n", .{disc});
             }
             try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
             // Not Ok: the Error tuple is still in `{x, 0}` — propagate untouched.
@@ -2022,7 +2036,7 @@ const Emitter = struct {
             const else_l = self.allocLabel();
             const end_l = self.allocLabel();
             try self.lowerExprIntoX0(recv.*);
-            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, 3, {{atom, tag}}}}.\n", .{else_l});
+            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 3, {{atom, tag}}]}}.\n", .{else_l});
             try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 1, {{x, {d}}}}}.\n", .{disc});
             try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, {d}}}, {{atom, 'Ok'}}]}}.\n", .{ else_l, disc });
             try self.bodyWrite("    {get_tuple_element, {x, 0}, 2, {x, 0}}.\n");
@@ -2038,7 +2052,7 @@ const Emitter = struct {
             const false_l = self.allocLabel();
             const end_l = self.allocLabel();
             try self.lowerExprIntoX0(recv.*);
-            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, {{x, 0}}, 3, {{atom, tag}}}}.\n", .{false_l});
+            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 3, {{atom, tag}}]}}.\n", .{false_l});
             try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 1, {{x, {d}}}}}.\n", .{disc});
             try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, {d}}}, {{atom, {s}}}]}}.\n", .{ false_l, disc, want });
             try self.bodyWrite("    {move, {atom, true}, {x, 0}}.\n");
@@ -2438,9 +2452,24 @@ const Emitter = struct {
         try self.emitBody(body);
     }
 
+    /// Emit a closure value into `{x, 0}` for the fun at `entry_label`:
+    /// a `test_heap` reserving one fun cell (preserving `live` x-registers
+    /// across the possible GC) followed by `make_fun3`. `make_fun2` is rejected
+    /// by current OTP's `+from_asm` (`unknown_instruction`); `make_fun3` carries
+    /// the destination register and a free-var list — empty here, since captures
+    /// aren't supported (lambda bodies only see their own params), so `NumFree`
+    /// is 0. Omitting the preceding `test_heap` fails the loader with
+    /// `{heap_overflow, …, {wanted, {1, funs}}}`.
+    fn emitMakeFun(self: *Emitter, entry_label: u32, live: u32) !void {
+        try self.bodyPrint("    {{test_heap, {{alloc, [{{words, 0}}, {{floats, 0}}, {{funs, 1}}]}}, {d}}}.\n", .{@max(live, self.min_live)});
+        try self.bodyPrint("    {{make_fun3, {{f, {d}}}, 0, 0, {{x, 0}}, {{list, []}}}}.\n", .{entry_label});
+    }
+
     /// Lower a lambda `{ params -> body }` into a deferred BEAM function and
-    /// emit `{make_fun2, ...}` at the call site. Result in `{x, 0}`.
-    fn lowerLambda(self: *Emitter, lam: anytype) anyerror!void {
+    /// emit the closure value at the call site (`emitMakeFun`). Result in
+    /// `{x, 0}`. `live` is the number of x-registers the caller needs preserved
+    /// across the closure's `test_heap` (args already materialised + params).
+    fn lowerLambda(self: *Emitter, lam: anytype, live: u32) anyerror!void {
         const idx = self.lambda_count;
         self.lambda_count += 1;
         const arity: u32 = @intCast(lam.params.len);
@@ -2490,7 +2519,7 @@ const Emitter = struct {
         try self.deferred_lambdas.append(self.alloc, try lam_buf.toOwnedSlice());
         lam_buf.deinit();
 
-        try self.bodyPrint("    {{make_fun2, {{f, {d}}}, {d}, 0, 0}}.\n", .{ labels.entry, idx });
+        try self.emitMakeFun(labels.entry, live);
     }
 
     /// Lower `try expr catch handler` → BEAM try/catch block.
@@ -2652,7 +2681,9 @@ const Emitter = struct {
         try self.deferred_lambdas.append(self.alloc, try lam_buf.toOwnedSlice());
         lam_buf.deinit();
 
-        try self.bodyPrint("    {{make_fun2, {{f, {d}}}, {d}, 0, 0}}.\n", .{ labels.entry, idx });
+        // The loop body fun is built before the iterator is materialised, so
+        // only the enclosing params/locals (`cur_arity`) are live here.
+        try self.emitMakeFun(labels.entry, self.cur_arity);
 
         const scratch = self.cur_arity;
         try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});

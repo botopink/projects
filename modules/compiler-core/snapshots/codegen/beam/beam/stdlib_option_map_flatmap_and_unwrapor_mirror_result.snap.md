@@ -54,7 +54,8 @@ fn greet(p: Person) -> string {
     {jump, {f, 13}}.
   {label, 12}.
     {move, {x, 0}, {x, 3}}.
-    {make_fun2, {f, 15}, 0, 0, 0}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 1}.
+    {make_fun3, {f, 15}, 0, 0, {x, 0}, {list, []}}.
     {move, {x, 0}, {x, 1}}.
     {move, {x, 3}, {x, 0}}.
     {call_fun, 1}.
@@ -63,7 +64,8 @@ fn greet(p: Person) -> string {
     {jump, {f, 11}}.
   {label, 10}.
     {move, {x, 0}, {x, 3}}.
-    {make_fun2, {f, 17}, 1, 0, 0}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 1}.
+    {make_fun3, {f, 17}, 0, 0, {x, 0}, {list, []}}.
     {move, {x, 0}, {x, 1}}.
     {move, {x, 3}, {x, 0}}.
     {call_fun, 1}.

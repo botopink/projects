@@ -25,7 +25,8 @@ val result = case 42 {
   {label, 3}.
     {move, {integer, 42}, {x, 0}}.
     {test, is_eq, {f, 5}, [{x, 0}, {integer, 0}]}.
-    {make_fun2, {f, 7}, 0, 0, 0}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
+    {make_fun3, {f, 7}, 0, 0, {x, 0}, {list, []}}.
     {jump, {f, 4}}.
   {label, 5}.
     {move, {integer, 1}, {x, 0}}.

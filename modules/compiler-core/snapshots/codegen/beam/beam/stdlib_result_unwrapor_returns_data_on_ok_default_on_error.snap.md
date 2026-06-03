@@ -36,7 +36,7 @@ fn main() {
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {call, 1, {f, 3}}.
-    {test, is_tagged_tuple, {f, 10}, {x, 0}, 3, {atom, tag}}.
+    {test, is_tagged_tuple, {f, 10}, [{x, 0}, 3, {atom, tag}]}.
     {get_tuple_element, {x, 0}, 1, {x, 1}}.
     {test, is_eq, {f, 10}, [{x, 1}, {atom, 'Ok'}]}.
     {get_tuple_element, {x, 0}, 2, {x, 0}}.

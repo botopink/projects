@@ -30,7 +30,8 @@ val parity = case 5 {
     {move, {literal, <<"even">>}, {x, 0}}.
     {jump, {f, 4}}.
   {label, 6}.
-    {make_fun2, {f, 8}, 0, 0, 0}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
+    {make_fun3, {f, 8}, 0, 0, {x, 0}, {list, []}}.
     {jump, {f, 4}}.
   {label, 4}.
     {deallocate, 0}.
