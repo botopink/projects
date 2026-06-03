@@ -13,7 +13,7 @@ fn main() {
 {module, main}.
 {exports, [{'_botopink_main', 0}, {main, 1}]}.
 {attributes, []}.
-{labels, 10}.
+{labels, 14}.
 
 {function, parseAge, 1, 3}.
   {label, 2}.
@@ -38,11 +38,25 @@ fn main() {
     {move, {x, 0}, {x, 0}}.
     {call, 1, {f, 3}}.
     {move, {x, 0}, {y, 0}}.
-    %% unsupported on BEAM: __bp_result_isOk
     {move, {y, 0}, {x, 0}}.
+    {test, is_tagged_tuple, {f, 10}, {x, 0}, 3, {atom, tag}}.
+    {get_tuple_element, {x, 0}, 1, {x, 1}}.
+    {test, is_eq, {f, 10}, [{x, 1}, {atom, 'Ok'}]}.
+    {move, {atom, true}, {x, 0}}.
+    {jump, {f, 11}}.
+  {label, 10}.
+    {move, {atom, false}, {x, 0}}.
+  {label, 11}.
     {move, {x, 0}, {y, 1}}.
-    %% unsupported on BEAM: __bp_result_isError
     {move, {y, 0}, {x, 0}}.
+    {test, is_tagged_tuple, {f, 12}, {x, 0}, 3, {atom, tag}}.
+    {get_tuple_element, {x, 0}, 1, {x, 1}}.
+    {test, is_eq, {f, 12}, [{x, 1}, {atom, 'Error'}]}.
+    {move, {atom, true}, {x, 0}}.
+    {jump, {f, 13}}.
+  {label, 12}.
+    {move, {atom, false}, {x, 0}}.
+  {label, 13}.
     {move, {x, 0}, {y, 2}}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 3}.

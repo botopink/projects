@@ -11,7 +11,7 @@ fn main() {
 {module, main}.
 {exports, [{'_botopink_main', 0}, {main, 1}]}.
 {attributes, []}.
-{labels, 10}.
+{labels, 12}.
 
 {function, parseAge, 1, 3}.
   {label, 2}.
@@ -31,11 +31,18 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 5}.
     {allocate, 1, 0}.
-    %% unsupported on BEAM: __bp_result_unwrapOr
     {move, {literal, <<"42">>}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {call, 1, {f, 3}}.
+    {test, is_tagged_tuple, {f, 10}, {x, 0}, 3, {atom, tag}}.
+    {get_tuple_element, {x, 0}, 1, {x, 1}}.
+    {test, is_eq, {f, 10}, [{x, 1}, {atom, 'Ok'}]}.
+    {get_tuple_element, {x, 0}, 2, {x, 0}}.
+    {jump, {f, 11}}.
+  {label, 10}.
+    {move, {integer, 0}, {x, 0}}.
+  {label, 11}.
     {move, {x, 0}, {y, 0}}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 1}.
