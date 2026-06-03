@@ -3,6 +3,11 @@ const token = @import("./lexer/token.zig");
 const ast = @import("ast.zig");
 const lexer = @import("lexer.zig");
 
+// Sub-grammar implementations split out of this file. Each module holds free
+// functions on `*Parser`; the `Parser` struct below re-exports them as thin
+// aliases so `this.parseX()` keeps resolving at every call site.
+const types = @import("parser/types.zig");
+
 pub const Token = token.Token;
 pub const TokenKind = token.TokenKind;
 
@@ -130,7 +135,7 @@ pub const Parser = struct {
 
     /// Returns the next ID counter for a declaration type.
     /// The caller stores this as a u32; formatting happens in the formatter.
-    fn nextId(this: *This, comptime kind: []const u8) u32 {
+    pub fn nextId(this: *This, comptime kind: []const u8) u32 {
         const counter = &@field(this.id_counters, kind);
         counter.* += 1;
         return counter.*;
@@ -138,7 +143,7 @@ pub const Parser = struct {
 
     /// Consumes an optional `@type_NNNN` ID token after the declaration name.
     /// Always returns 0 when absent (IDs are parser-generated on first parse).
-    fn tryParseId(this: *This) u32 {
+    pub fn tryParseId(this: *This) u32 {
         if (this.check(.at)) {
             _ = this.advance(); // skip @
             if (this.check(.identifier)) {
@@ -149,19 +154,10 @@ pub const Parser = struct {
     }
 
     /// Creates a Loc from a Token's line and column.
-    fn locFromToken(tok: Token) Loc {
+    pub fn locFromToken(tok: Token) Loc {
         return .{
             .line = tok.line,
             .col = tok.col,
-        };
-    }
-
-    /// True when `kind` can begin a type reference. Used to decide whether a
-    /// `typeparam` keyword is followed by a constraint list or stands alone.
-    fn startsTypeRef(kind: TokenKind) bool {
-        return switch (kind) {
-            .identifier, .builtinIdent, .questionMark, .hash, .@"fn", .type, .selfType => true,
-            else => false,
         };
     }
 
@@ -384,7 +380,7 @@ pub const Parser = struct {
 
     /// Parse `{ stmt; stmt; ... }`. The opening `{` must be the current token.
     /// Unifies every brace-delimited block in the parser via `BlockParseOptions`.
-    fn parseBlock(this: *This, alloc: std.mem.Allocator, comptime opts: BlockParseOptions) ParseError![]Stmt {
+    pub fn parseBlock(this: *This, alloc: std.mem.Allocator, comptime opts: BlockParseOptions) ParseError![]Stmt {
         _ = try this.consume(.leftBrace);
         var stmts: std.ArrayList(Stmt) = .empty;
         errdefer {
@@ -434,7 +430,7 @@ pub const Parser = struct {
 
     /// Parse `{ expr; expr; ... }` — a brace-delimited block of semicolon-separated expressions.
     /// The opening `{` must already be the current token.
-    fn parseStmtListInBraces(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
+    pub fn parseStmtListInBraces(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
         return this.parseBlock(alloc, .{
             .trackEmptyLines = true,
             .handleComments = true,
@@ -446,7 +442,7 @@ pub const Parser = struct {
     /// Parse either `{ expr; ... }` or a single `expr`.
     /// Used by `if`, `catch`, and any place that accepts a block or bare expression.
     /// Does NOT require semicolon after the bare expression.
-    fn parseBlockOrExpr(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
+    pub fn parseBlockOrExpr(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
         if (this.check(.leftBrace)) {
             return this.parseStmtListInBraces(alloc);
         }
@@ -462,7 +458,7 @@ pub const Parser = struct {
 
     /// Parse a block where the last expression doesn't require a semicolon.
     /// Used for catch handlers where `{ throw Error(...) }` is valid.
-    fn parseBlockWithOptionalTrailingSemicolon(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
+    pub fn parseBlockWithOptionalTrailingSemicolon(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
         return this.parseBlock(alloc, .{ .semicolonPolicy = .optional });
     }
 
@@ -470,19 +466,19 @@ pub const Parser = struct {
 
     /// Parses `{ stmt; ... }` preserving comment nodes as literal expressions.
     /// Used in fn/method bodies where source comments must be kept.
-    fn parseMethodBodyStmts(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
+    pub fn parseMethodBodyStmts(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
         return this.parseBlock(alloc, .{ .handleComments = true });
     }
 
     /// Parses `{ stmt; ... }` without special comment handling.
     /// Used in implement methods, getters, setters, and interface default bodies.
-    fn parseSimpleBodyStmts(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
+    pub fn parseSimpleBodyStmts(this: *This, alloc: std.mem.Allocator) ParseError![]Stmt {
         return this.parseBlock(alloc, .{});
     }
 
     /// Parses `param, param, ...` up to and including `)`.
     /// The caller must have already consumed the opening `(`.
-    fn parseParamList(this: *This, alloc: std.mem.Allocator) ParseError![]Param {
+    pub fn parseParamList(this: *This, alloc: std.mem.Allocator) ParseError![]Param {
         var params: std.ArrayList(Param) = .empty;
         errdefer {
             for (params.items) |*p| p.deinit(alloc);
@@ -499,7 +495,7 @@ pub const Parser = struct {
 
     /// Skips zero or more `#[name(args...)]` sequences from `offset` and returns
     /// the position of the first non-annotation token.  Pure lookahead.
-    fn skipAnnotationsLookaheadFrom(this: *This, offset: usize) usize {
+    pub fn skipAnnotationsLookaheadFrom(this: *This, offset: usize) usize {
         var o = offset;
         while (this.peekAt(o).kind == .hash and this.peekAt(o + 1).kind == .leftSquareBracket) {
             o += 2; // skip `#` and `[`
@@ -523,7 +519,7 @@ pub const Parser = struct {
 
     /// Parses zero or more `#[name(arg, arg)]` annotations at the current position.
     /// Returns an owned slice (empty when no annotations are present).
-    fn parseAnnotations(this: *This, alloc: std.mem.Allocator) ParseError![]Annotation {
+    pub fn parseAnnotations(this: *This, alloc: std.mem.Allocator) ParseError![]Annotation {
         var list: std.ArrayList(Annotation) = .empty;
         errdefer {
             for (list.items) |*ann| ann.deinit(alloc);
@@ -572,7 +568,7 @@ pub const Parser = struct {
     };
 
     /// Frees an owned annotation slice (used on declaration parse-error paths).
-    fn freeAnnotations(alloc: std.mem.Allocator, annotations: []Annotation) void {
+    pub fn freeAnnotations(alloc: std.mem.Allocator, annotations: []Annotation) void {
         for (annotations) |*a| a.deinit(alloc);
         alloc.free(annotations);
     }
@@ -582,7 +578,7 @@ pub const Parser = struct {
     ///   - val-form (`shorthand == false`):  `[pub] val Name = #[...] <keyword>`
     ///   - shorthand (`shorthand == true`):   `#[...] [pub] <keyword> Name`
     /// On error the parsed annotations are freed.
-    fn parseDeclPreamble(this: *This, alloc: std.mem.Allocator, keyword: TokenKind, shorthand: bool) ParseError!DeclPreamble {
+    pub fn parseDeclPreamble(this: *This, alloc: std.mem.Allocator, keyword: TokenKind, shorthand: bool) ParseError!DeclPreamble {
         if (shorthand) {
             const annotations = try this.parseAnnotations(alloc);
             errdefer freeAnnotations(alloc, annotations);
@@ -606,7 +602,7 @@ pub const Parser = struct {
     // ── expression helper ─────────────────────────────────────────────────────
 
     /// Creates a heap-allocated copy of an expression.
-    fn boxExpr(this: *This, alloc: std.mem.Allocator, expr: Expr) ParseError!*Expr {
+    pub fn boxExpr(this: *This, alloc: std.mem.Allocator, expr: Expr) ParseError!*Expr {
         _ = this;
         const ptr = try alloc.create(Expr);
         ptr.* = expr;
@@ -617,14 +613,14 @@ pub const Parser = struct {
     const BinOp = @FieldType(ast.BinOpExpr, "op");
 
     /// Builds a `binaryOp` expression, boxing both operands.
-    fn makeBinOp(this: *This, alloc: std.mem.Allocator, op: BinOp, opTok: Token, lhs: Expr, rhs: Expr) ParseError!Expr {
+    pub fn makeBinOp(this: *This, alloc: std.mem.Allocator, op: BinOp, opTok: Token, lhs: Expr, rhs: Expr) ParseError!Expr {
         const lhsPtr = try this.boxExpr(alloc, lhs);
         const rhsPtr = try this.boxExpr(alloc, rhs);
         return Expr{ .binaryOp = .{ .loc = locFromToken(opTok), .op = op, .lhs = lhsPtr, .rhs = rhsPtr } };
     }
 
     /// Builds a `call` expression node (no boxing needed — `args`/`trailing` are already slices).
-    fn makeCall(
+    pub fn makeCall(
         tok: Token,
         receiver: ?*Expr,
         callee: []const u8,
@@ -642,7 +638,7 @@ pub const Parser = struct {
     }
 
     /// Builds a `jump` expression (`return`/`throw`/`try`/`break`/`yield`), boxing `inner` when present.
-    fn makeJump(this: *This, alloc: std.mem.Allocator, tok: Token, comptime variant: std.meta.Tag(JumpExpr), inner: ?Expr) ParseError!Expr {
+    pub fn makeJump(this: *This, alloc: std.mem.Allocator, tok: Token, comptime variant: std.meta.Tag(JumpExpr), inner: ?Expr) ParseError!Expr {
         const innerPtr: ?*Expr = if (inner) |e| try this.boxExpr(alloc, e) else null;
         return Expr{ .jump = .{ .loc = locFromToken(tok), .kind = @unionInit(JumpExpr, @tagName(variant), innerPtr) } };
     }
@@ -650,7 +646,7 @@ pub const Parser = struct {
     /// If the current token is a comment, consumes it and appends it as a comment
     /// literal statement to `stmts`, returning true. Otherwise returns false.
     /// `emptyLinesBefore` is recorded on the appended statement.
-    fn tryParseCommentStmt(this: *This, alloc: std.mem.Allocator, stmts: *std.ArrayList(Stmt), emptyLinesBefore: u32) ParseError!bool {
+    pub fn tryParseCommentStmt(this: *This, alloc: std.mem.Allocator, stmts: *std.ArrayList(Stmt), emptyLinesBefore: u32) ParseError!bool {
         if (!this.check(.commentNormal) and !this.check(.commentDoc) and !this.check(.commentModule)) return false;
         const tok = this.advance();
         const kind: ast.CommentKind = if (tok.kind == .commentDoc)
@@ -669,7 +665,7 @@ pub const Parser = struct {
 
     /// If `noTailCatch` is false and the next token is `catch`, wraps `expr` in a tryCatch node.
     /// Otherwise returns `expr` unchanged. Used to apply `catch` as a tail operator.
-    fn wrapCatch(this: *This, alloc: std.mem.Allocator, expr: Expr) ParseError!Expr {
+    pub fn wrapCatch(this: *This, alloc: std.mem.Allocator, expr: Expr) ParseError!Expr {
         if (!this.noTailCatch and this.match(.@"catch")) {
             const catchTok = this.tokens[this.current - 1];
             const handler = try this.parseExpr(alloc);
@@ -681,7 +677,7 @@ pub const Parser = struct {
     }
 
     /// Parses comma-separated identifiers (e.g., `extends T1, T2, T3` or `use { a, b, c }`).
-    fn parseCommaSeparatedIdentifiers(this: *This, alloc: std.mem.Allocator, stopAt: ?TokenKind) ParseError![]const []const u8 {
+    pub fn parseCommaSeparatedIdentifiers(this: *This, alloc: std.mem.Allocator, stopAt: ?TokenKind) ParseError![]const []const u8 {
         var list: std.ArrayList([]const u8) = .empty;
         errdefer list.deinit(alloc);
         if (!this.check(.identifier)) return list.toOwnedSlice(alloc);
@@ -695,7 +691,7 @@ pub const Parser = struct {
     }
 
     /// Reports a reserved word error for the current token.
-    fn reportReservedWordError(this: *This) void {
+    pub fn reportReservedWordError(this: *This) void {
         const tok = this.peek();
         this.parseError = .{
             .kind = .reservedWord,
@@ -808,160 +804,9 @@ pub const Parser = struct {
         return ValDecl{ .name = name, .isPub = isPub, .typeAnnotation = typeAnnotation, .value = value_ptr };
     }
 
-    /// Parses a full type reference.
-    fn parseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.TypeRef {
-        const ref = try this.parseBaseTypeRef(alloc);
-        if (this.check(.bang)) {
-            const tok = this.peek();
-            this.parseError = .{
-                .kind = .removedErrorUnion,
-                .start = tok.col - 1,
-                .end = tok.col - 1 + tok.lexeme.len,
-                .lexeme = tok.lexeme,
-                .line = tok.line,
-                .col = tok.col,
-            };
-            return ParseError.UnexpectedToken;
-        }
-        return ref;
-    }
+    pub const parseTypeRef = types.parseTypeRef;
 
-    /// Parses a base type ref: `?T`, `#(T1,T2)`, plain name with optional `[]` wraps.
-    fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.TypeRef {
-        // ?T ---- optional type
-        if (this.match(.questionMark)) {
-            var inner = try this.parseBaseTypeRef(alloc);
-            errdefer inner.deinit(alloc);
-            const innerPtr = try alloc.create(ast.TypeRef);
-            innerPtr.* = inner;
-            return ast.TypeRef{ .optional = innerPtr };
-        }
-        // #(T1, T2, ...) ---- tuple type
-        if (this.check(.hash) and this.peekAt(1).kind == .leftParenthesis) {
-            _ = this.advance(); // consume '#'
-            _ = this.advance(); // consume '('
-            var elems: std.ArrayList(ast.TypeRef) = .empty;
-            errdefer {
-                for (elems.items) |*e| e.deinit(alloc);
-                elems.deinit(alloc);
-            }
-            while (!this.check(.rightParenthesis) and !this.check(.endOfFile)) {
-                try elems.append(alloc, try this.parseTypeRef(alloc));
-                if (!this.match(.comma)) break;
-            }
-            _ = try this.consume(.rightParenthesis);
-            return ast.TypeRef{ .tuple_ = try elems.toOwnedSlice(alloc) };
-        }
-        // fn(T1, T2) -> R ---- function type
-        if (this.check(.@"fn") and this.peekAt(1).kind == .leftParenthesis) {
-            _ = try this.consume(.@"fn"); // consume 'fn'
-            _ = try this.consume(.leftParenthesis); // consume '('
-
-            var params: std.ArrayList(ast.TypeRef) = .empty;
-            errdefer {
-                for (params.items) |*p| p.deinit(alloc);
-                params.deinit(alloc);
-            }
-
-            while (!this.check(.rightParenthesis) and !this.check(.endOfFile)) {
-                try params.append(alloc, try this.parseTypeRef(alloc));
-                if (!this.match(.comma)) break;
-            }
-            _ = try this.consume(.rightParenthesis); // consume ')'
-
-            // Parse optional return type -> R (defaults to void if omitted)
-            var returnType: ast.TypeRef = undefined;
-            if (this.match(.rightArrow)) {
-                returnType = try this.parseTypeRef(alloc);
-            } else {
-                // Default to void return type
-                returnType = ast.TypeRef{ .named = "void" };
-            }
-
-            const paramsSlice = try params.toOwnedSlice(alloc);
-            const returnPtr = try alloc.create(ast.TypeRef);
-            returnPtr.* = returnType;
-
-            return ast.TypeRef{ .function = .{
-                .params = paramsSlice,
-                .returnType = returnPtr,
-            } };
-        }
-        // @Name<T1, T2> — builtin type constructor
-        if (this.check(.builtinIdent)) {
-            const tok = this.advance();
-            const name = tok.lexeme[1..];
-            if (this.check(.leftParenthesis)) {
-                this.parseError = .{
-                    .kind = .removedBuiltinType,
-                    .start = tok.col - 1,
-                    .end = tok.col - 1 + tok.lexeme.len,
-                    .lexeme = tok.lexeme,
-                    .line = tok.line,
-                    .col = tok.col,
-                };
-                return ParseError.UnexpectedToken;
-            }
-            _ = try this.consume(.lessThan);
-            var args: std.ArrayList(ast.TypeRef) = .empty;
-            errdefer {
-                for (args.items) |*a| a.deinit(alloc);
-                args.deinit(alloc);
-            }
-            while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
-                try args.append(alloc, try this.parseTypeRef(alloc));
-                if (!this.match(.comma)) break;
-            }
-            _ = try this.consume(.greaterThan);
-            return ast.TypeRef{ .generic = .{ .name = name, .args = try args.toOwnedSlice(alloc), .is_builtin = true } };
-        }
-        // typeparam [Constraint (| Constraint)*] — comptime type parameter with
-        // an optional `|`-separated constraint list. `typeparam` alone is unconstrained.
-        if (this.check(.identifier) and std.mem.eql(u8, this.peek().lexeme, "typeparam")) {
-            _ = this.advance(); // consume 'typeparam'
-            var constraints: std.ArrayList(ast.TypeRef) = .empty;
-            errdefer {
-                for (constraints.items) |*c| c.deinit(alloc);
-                constraints.deinit(alloc);
-            }
-            if (startsTypeRef(this.peek().kind)) {
-                while (true) {
-                    try constraints.append(alloc, try this.parseTypeRef(alloc));
-                    if (!this.match(.verticalBar)) break;
-                }
-            }
-            return ast.TypeRef{ .typeparam = try constraints.toOwnedSlice(alloc) };
-        }
-
-        // Plain named type, possibly followed by <T1, T2> and/or []
-        const nameTok = try this.consumeTypeName();
-        var ref: ast.TypeRef = undefined;
-        if (this.check(.lessThan)) {
-            _ = this.advance();
-            var args: std.ArrayList(ast.TypeRef) = .empty;
-            errdefer {
-                for (args.items) |*a| a.deinit(alloc);
-                args.deinit(alloc);
-            }
-            while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
-                try args.append(alloc, try this.parseTypeRef(alloc));
-                if (!this.match(.comma)) break;
-            }
-            _ = try this.consume(.greaterThan);
-            ref = ast.TypeRef{ .generic = .{ .name = nameTok.lexeme, .args = try args.toOwnedSlice(alloc), .is_builtin = false } };
-        } else {
-            ref = ast.TypeRef{ .named = nameTok.lexeme };
-        }
-        // T[] — zero or more array wraps
-        while (this.check(.leftSquareBracket) and this.peekAt(1).kind == .rightSquareBracket) {
-            _ = this.advance(); // [
-            _ = this.advance(); // ]
-            const elem = try alloc.create(ast.TypeRef);
-            elem.* = ref;
-            ref = ast.TypeRef{ .array = elem };
-        }
-        return ref;
-    }
+    pub const parseBaseTypeRef = types.parseBaseTypeRef;
 
     // ── import decl ──────────────────────────────────────────────────────────
 
@@ -1696,7 +1541,7 @@ pub const Parser = struct {
     }
 
     /// Reports an anonymous-implement/extend error for the current token.
-    fn reportAnonImplExtendError(this: *This) void {
+    pub fn reportAnonImplExtendError(this: *This) void {
         const tok = this.peek();
         this.parseError = .{
             .kind = .anonymousImplExtend,
@@ -2126,7 +1971,7 @@ pub const Parser = struct {
     // ── comment helpers ───────────────────────────────────────────────────────
 
     /// Strip the leading `//`, `///`, or `////` prefix (and optional space) from a comment lexeme.
-    fn commentText(lexeme: []const u8) []const u8 {
+    pub fn commentText(lexeme: []const u8) []const u8 {
         var start: usize = 0;
         while (start < lexeme.len and start < 4 and lexeme[start] == '/') start += 1;
         if (start < lexeme.len and lexeme[start] == ' ') start += 1;
@@ -2135,13 +1980,13 @@ pub const Parser = struct {
 
     // ── param / type name helpers ─────────────────────────────────────────────
 
-    fn consumeParamName(this: *This) ParseError!Token {
+    pub fn consumeParamName(this: *This) ParseError!Token {
         if (this.check(.identifier)) return this.advance();
         return ParseError.UnexpectedToken;
     }
 
     /// Parses a plain type name token: `Self`, `type`, `null`, or any `identifier`.
-    fn consumeTypeName(this: *This) ParseError!Token {
+    pub fn consumeTypeName(this: *This) ParseError!Token {
         if (this.check(.selfType)) return this.advance();
         if (this.check(.type)) return this.advance();
         if (this.check(.identifier)) return this.advance();
@@ -2150,37 +1995,9 @@ pub const Parser = struct {
         return ParseError.UnexpectedToken;
     }
 
-    /// Parses an optional generic parameter list `<T, R, ...>`.
-    /// Returns an empty slice if there is no `<` at the current position.
-    fn parseGenericParams(this: *This, alloc: std.mem.Allocator) ParseError![]GenericParam {
-        var list: std.ArrayList(GenericParam) = .empty;
-        errdefer list.deinit(alloc);
+    pub const parseGenericParams = types.parseGenericParams;
 
-        if (!this.match(.lessThan)) return list.toOwnedSlice(alloc);
-
-        while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
-            const name = (try this.consume(.identifier)).lexeme;
-            try list.append(alloc, .{ .name = name });
-            if (!this.match(.comma)) break;
-        }
-        _ = try this.consume(.greaterThan);
-        return list.toOwnedSlice(alloc);
-    }
-
-    fn parseImplementClause(this: *This, alloc: std.mem.Allocator) ParseError![]TypeRef {
-        var list: std.ArrayList(TypeRef) = .empty;
-        errdefer {
-            for (list.items) |*t| t.deinit(alloc);
-            list.deinit(alloc);
-        }
-        if (!this.match(.implement)) return list.toOwnedSlice(alloc);
-        try list.append(alloc, try this.parseTypeRef(alloc));
-        while (this.match(.comma)) {
-            if (this.check(.leftBrace)) break;
-            try list.append(alloc, try this.parseTypeRef(alloc));
-        }
-        return list.toOwnedSlice(alloc);
-    }
+    pub const parseImplementClause = types.parseImplementClause;
 
     /// Parses a single function/method parameter with optional modifier.
     ///
@@ -2197,7 +2014,7 @@ pub const Parser = struct {
     ///   - after the name:   `name comptime : type`  (inline style)
     ///
     /// The post-colon `syntax` keyword overrides the modifier to `.syntax`.
-    fn parseParam(this: *This, alloc: std.mem.Allocator) ParseError!Param {
+    pub fn parseParam(this: *This, alloc: std.mem.Allocator) ParseError!Param {
         // ── record destructuring: { name, age }: Type or { name, .. }: Type or { c: the_c }: Type ──
         if (this.check(.leftBrace)) {
             _ = this.advance(); // consume '{'
@@ -3632,41 +3449,41 @@ pub const Parser = struct {
 
     // ── primitives ────────────────────────────────────────────────────────────
 
-    fn consume(this: *This, kind: TokenKind) ParseError!Token {
+    pub fn consume(this: *This, kind: TokenKind) ParseError!Token {
         if (this.check(kind)) return this.advance();
         // parseError may not be set here; the top-level caller must populate
         // it before propagating if rich error context is needed.
         return ParseError.UnexpectedToken;
     }
 
-    fn match(this: *This, kind: TokenKind) bool {
+    pub fn match(this: *This, kind: TokenKind) bool {
         if (!this.check(kind)) return false;
         _ = this.advance();
         return true;
     }
 
-    fn check(this: *This, kind: TokenKind) bool {
+    pub fn check(this: *This, kind: TokenKind) bool {
         return this.peek().kind == kind;
     }
 
-    fn advance(this: *This) Token {
+    pub fn advance(this: *This) Token {
         const t = this.tokens[this.current];
         if (t.kind != .endOfFile) this.current += 1;
         return t;
     }
 
-    fn peek(this: *This) Token {
+    pub fn peek(this: *This) Token {
         return this.tokens[this.current];
     }
 
-    fn peekAt(this: *This, offset: usize) Token {
+    pub fn peekAt(this: *This, offset: usize) Token {
         const i = this.current + offset;
         return if (i < this.tokens.len) this.tokens[i] else this.tokens[this.tokens.len - 1];
     }
 
     // ── reserved word detection helpers ──────────────────────────────────────
 
-    fn isReservedWord(kind: TokenKind) bool {
+    pub fn isReservedWord(kind: TokenKind) bool {
         return lexer.isReservedWord(kind);
     }
 

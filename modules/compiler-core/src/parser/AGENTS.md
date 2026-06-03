@@ -4,7 +4,27 @@
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 > Docs: [`./docs.md`](docs.md) · Examples: [`./examples.md`](examples.md)
 
-Parser tests. The parser implementation itself is at `../parser.zig`.
+Parser sub-grammars + tests. The `Parser` struct (state, token cursor, shared
+helpers) lives at `../parser.zig`; each weakly-coupled sub-grammar is split into
+a sibling module here.
+
+## Free-function-on-`*Parser` convention
+
+`usingnamespace` was removed in Zig 0.15, so the split uses free functions on
+`*Parser` instead of methods. Each sibling module declares
+`pub fn parseX(this: *Parser, …)` and `parser.zig` re-exports it as a thin alias:
+
+```zig
+// in parser.zig, inside the Parser struct:
+pub const parseTypeRef = types.parseTypeRef;
+```
+
+That alias keeps method-call syntax (`this.parseTypeRef(alloc)`) resolving at
+every call site — internal and external (LSP, codegen, `parse`) — with zero
+churn. The `Parser` struct + all state + the token cursor stay **only** in
+`parser.zig`; sibling modules `@import("../parser.zig")` and alias the types /
+shared static helpers they reference. The `parser.zig` ↔ `parser/*.zig` import
+cycle is fine because no struct-layout depends on it.
 
 ## Tree
 
@@ -13,6 +33,7 @@ parser/
 ├── AGENTS.md      ← you are here
 ├── docs.md        ← parser strategy, helpers, error policy
 ├── examples.md    ← `.bp` declarations / expressions / statements
+├── types.zig      ← type-ref sub-grammar: parseTypeRef/BaseTypeRef/GenericParams/ImplementClause
 ├── tests.zig      ← barrel: aggregates tests/<feature>.zig for test_root.zig
 └── tests/         ← parser tests, split by feature
     ├── helpers.zig       ← shared harness (`assertParser`/`expectParseError`/…)
