@@ -24,9 +24,14 @@ fn main() {
     i32.const 256
     call $parseAge
     local.set $r
-    ;; builtin stub
+    local.get $r
+    i32.load ;; Result tag
+    i32.eqz ;; isOk = (tag == 0)
     local.set $ok
-    ;; builtin stub
+    local.get $r
+    i32.load ;; Result tag
+    i32.const 0
+    i32.ne ;; isError = (tag != 0)
     local.set $bad
   )
   (func $_botopink_main (export "_botopink_main") (export "_start")

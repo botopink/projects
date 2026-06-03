@@ -10,13 +10,28 @@ fn main() {
 ```wasm
 (module
   (memory (export "memory") 1)
-  (global $__heap_ptr (mut i32) (i32.const 256))
+  (data (i32.const 256) "\02\00\00\0042")
+  (global $__heap_ptr (mut i32) (i32.const 264))
   (func $parseAge (param $s i32) (result i32)
     unreachable
   )
   (func $main
     (local $n i32)
-    ;; builtin stub
+    (local $_res0 i32)
+    i32.const 256
+    call $parseAge
+    local.set $_res0
+    local.get $_res0
+    i32.load ;; Result tag (0 = Ok, non-zero = Error)
+    (if (result i32)
+      (then
+    i32.const 0
+      )
+      (else
+    local.get $_res0
+    i32.load offset=4 ;; Ok payload
+      )
+    )
     local.set $n
   )
   (func $_botopink_main (export "_botopink_main") (export "_start")

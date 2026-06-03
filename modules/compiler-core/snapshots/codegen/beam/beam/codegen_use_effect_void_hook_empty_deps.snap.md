@@ -63,7 +63,6 @@ fn Widget() -> Element {
   {label, 9}.
     {allocate, 0, 0}.
     {call, 0, {f, 3}}.
-    {move, {atom, ok}, {x, 0}}.
     {deallocate, 0}.
     return.
 ```
