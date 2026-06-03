@@ -27,6 +27,7 @@ botopink-lang/
 │   ├── std/                   ← standard library (prelude loaded at infer time)
 │   ├── server/                ← server-side interfaces (scaffold)
 │   └── client/                ← client-side interfaces (scaffold)
+├── tasks/                     ← versioned spec sets (roadmap) — see tasks/AGENTS.md
 ├── examples/                  ← .bp example programs
 └── snapshots/                 ← workspace-level codegen snapshots
     └── codegen/{erlang,node}/ ← target-specific smoke outputs (commonJS, erlang)
@@ -43,52 +44,15 @@ zig build run       # run the CLI entry point
 Per-package commands live in each package's `build.zig` — see
 [`modules/AGENTS.md`](modules/AGENTS.md).
 
-## AGENTS index — what each directory contains
+## AGENTS index
 
-```text
-.                                              → workspace overview, conventions, AGENTS index
-modules/                                       → all Zig packages
-modules/compiler-cli/                          → `botopink` CLI executable
-  └── src/                                     → argv parser + command dispatch
-      └── cli/                                 → per-subcommand impls (build, run, check, format, new, clean)
-modules/compiler-core/                         → main compiler library (lex → codegen)
-  └── src/                                     → compiler stages (façades)
-      ├── codegen/                             → per-target emitters (commonJS, erlang, beam, wasm, typescript)
-      ├── comptime/                            → HM inference, unification, Aggregator transform
-      │   └── runtime/                         → Node.js + Erlang external comptime eval backends
-      ├── format/                              → formatter snapshot tests (round-trip stable)
-      ├── lexer/                               → Token struct + lexer snapshot tests
-      ├── parser/                              → parser snapshot tests (recursive descent)
-      └── utils/                               → shared snap/pretty/json_diff helpers
-  └── snapshots/                               → .snap.md fixtures: parser / codegen / comptime
-      ├── codegen/                             → target output + error rendering
-      │   ├── erlang/erlang/                   → 162 Erlang outputs
-      │   ├── beam/beam/                       → 162 BEAM Assembly outputs
-      │   ├── node/commonJS/                   → 162 CommonJS outputs
-      │   ├── wasm/wasm/                       → 162 WASM Text outputs
-      │   └── errors/                          → codegen-time error rendering (4 targets × 1)
-      ├── comptime/                            → inference + evaluation snapshots (per backend)
-      │   ├── erlang/{,errors/}                → success (137) + errors (44)
-      │   └── node/{,errors/}                  → success (137) + errors (44)
-      └── parser/                              → 174 AST golden snapshots
-modules/language-server/                       → `botopink-lsp` LSP server
-  ├── src/                                     → JSON-RPC server + feature engine
-  │   └── tests/                               → LSP feature test harness (15 feature files)
-  └── snapshots/lsp/                           → 70 LSP feature snapshots
-modules/vscode-extension/                      → VS Code extension (TypeScript)
-  ├── syntaxes/                                → TextMate grammar + markdown injection
-  └── src/                                     → extension.ts (LSP client launcher)
-libs/                                          → .bp libraries (see libs/AGENTS.md)
-  ├── std/                                     → embedded standard library (prelude + interfaces)
-  │   └── src/                                 → prelude.zig + primitives/array/string.bp + builtins.d.bp
-  ├── server/                                  → server-side interfaces (scaffold)
-  └── client/                                  → client-side interfaces (scaffold)
-examples/                                      → .bp example programs
-snapshots/                                     → workspace-level smoke snapshots
-  └── codegen/                                 → 1 .bp scenario mirrored across targets
-      ├── erlang/erlang/                       → 1 Erlang snapshot
-      └── node/commonJS/                       → 1 CommonJS snapshot
-```
+Each directory ships its own `AGENTS.md` that **owns** its tree, file list and
+conventions — read the closest one, then walk up. This root file does **not**
+mirror those trees (that would drift); the two tables below are the index into the
+deeper design/example docs. Entry points: [`modules/AGENTS.md`](modules/AGENTS.md),
+[`libs/AGENTS.md`](libs/AGENTS.md), and — for the spec/roadmap layer —
+[`tasks/AGENTS.md`](tasks/AGENTS.md). Snapshot counts and similar volatile figures
+live in the owning leaf, never here.
 
 ## Where deep content lives
 
@@ -127,7 +91,15 @@ snapshots/                                     → workspace-level smoke snapsho
 - **`README.md` and `docs.md` (language reference) must also stay in sync.**
   When a language feature, CLI flag, syntax form, or compiler-visible
   behaviour changes, update both files alongside the code.
-- **English only** in source, comments, commits, AGENTS.md docs.
+- **English only** — everything: source, comments, commits, and all docs,
+  including planning/status files (`tasks/**/plan.md`, `status.md`, specs) and
+  filenames.
+- **Neutrality.** Knowledge (specs, templates, scripts) lives in neutral,
+  version-controlled folders so any agent can use it; `AGENTS.md` is the open
+  portability anchor. Tool-specific dirs (`.claude/`, `.cursor/`, …) may hold
+  *triggers* that point to this content, never a source of truth.
+- **One fact, one source.** Each fact lives in a single file; the others link or
+  derive. The spec/roadmap layer's contract is [`tasks/AGENTS.md`](tasks/AGENTS.md).
 - `Parser.init(tokens)` and `Lexer.init(source)` do **not** store an
   allocator — it is always passed as `alloc: std.mem.Allocator` to the
   method that needs it.
@@ -142,6 +114,10 @@ snapshots/                                     → workspace-level smoke snapsho
   cycles.
 
 ## Parallel tasks (git worktrees)
+
+> The spec/roadmap model (sets, specs, the 5-phase workflow, slug rule, trust
+> order) lives in [`tasks/AGENTS.md`](tasks/AGENTS.md). This section owns only the
+> **exact git mechanics** that contract points back to.
 
 Independent features are developed in parallel, one **git worktree per task**
 under `.tasks/<name>/`, each on its own `task/<name>` branch. `feat` is the
@@ -161,26 +137,11 @@ blocking each other; when two tasks share a backend file (e.g. `beam_asm.zig`
 or `wat.zig`), note the collision in both TODO.md files so integration expects
 the conflict.
 
-### Feed a task — `TODO.md` is the per-task spec
+### Feed a task — `TODO.md` is the per-task execution checklist
 
-Each worktree carries its own `.tasks/<name>/TODO.md`, distinct from this root
-roadmap. Keep it short — it states **only what the task will do**:
-
-```markdown
-# <name>
-
-**Branch**: `task/<name>` (born from `feat` <short-sha>)
-**Depends on**: <prereq already in feat, or "nothing">
-**Files**: <target source files>
-
-## What this task will do
-- [ ] <step>
-- [ ] <step>
-- [ ] Snapshots per backend / feature
-
-## On completion (commit → update remote `feat` → delete task)
-<the three steps below>
-```
+Each worktree carries its own `.tasks/<name>/TODO.md` (the live execution state,
+seeded from the spec's steps). Its shape and the spec→worktree→completion flow are
+defined in [`tasks/AGENTS.md`](tasks/AGENTS.md).
 
 Tool paths (Read/Edit/Write) must target the worktree
 (`.../botopink-lang/.tasks/<name>/...`), never the main repo — it is easy to
@@ -216,12 +177,8 @@ cwd to the worktree.
 
 ### Open parallel tasks
 
-| Worktree (`.tasks/`) | Branch | Scope (see its TODO.md) |
-|---|---|---|
-| `ext-dispatch-backends` | `task/ext-dispatch-backends` | extension-dispatch call-site rewrite for Erlang/BEAM/WAT/TS |
-| `result-runtime` | `task/result-runtime` | real `@Result`/`@Option` runtime in BEAM/WASM (today: stubs) |
-| `wat-features` | `task/wat-features-impl` | WAT destructure, pipeline, string ops, linear-memory layout, tag-based try/catch |
-| `beam-asm-finish` | `task/beam-asm-finish` | BEAM phases 7–9: full ranges, full try/catch, polish, guards |
+The live set of in-flight tasks lives in the active spec set's `status.md`
+(see [`tasks/AGENTS.md`](tasks/AGENTS.md)) — not duplicated here.
 
 ## Recent commit context
 
