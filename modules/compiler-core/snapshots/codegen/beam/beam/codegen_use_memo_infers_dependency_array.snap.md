@@ -61,7 +61,8 @@ fn Counter() -> Element {
   {label, 9}.
     {move, {x, 0}, {y, 1}}.
     {move, {x, 0}, {x, 0}}.
-    {make_fun2, {f, 11}, 0, 0, 0}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
+    {make_fun3, {f, 11}, 0, 0, {x, 0}, {list, []}}.
     {move, {x, 0}, {x, 0}}.
     {call, 0, {f, 5}}.
     {move, {x, 0}, {y, 2}}.
