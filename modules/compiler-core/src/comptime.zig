@@ -172,7 +172,7 @@ fn registerExports(
 
 /// Parse stdlib prelude modules and register their inferred types into `env`.
 pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
-    const prelude = @import("stdlib_prelude");
+    const prelude = @import("std_prelude");
     const sources = [_][]const u8{
         prelude.primitives,
         prelude.array,

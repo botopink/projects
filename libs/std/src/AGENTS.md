@@ -1,6 +1,6 @@
-# stdlib/src
+# std/src
 
-> Path: `modules/stdlib/src/`
+> Path: `libs/std/src/`
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 > Docs: [`./docs.md`](docs.md) · Examples: [`./examples.md`](examples.md)
 

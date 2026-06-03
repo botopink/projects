@@ -28,8 +28,8 @@ pub fn build(b: *std.Build) void {
     // to our consumers. We must give it a name because a Zig package can expose
     // multiple modules and consumers will need to be able to specify which
     // module they want to access.
-    const stdlib_prelude = b.addModule("stdlib_prelude", .{
-        .root_source_file = b.path("../stdlib/src/prelude.zig"),
+    const std_prelude = b.addModule("std_prelude", .{
+        .root_source_file = b.path("../../libs/std/src/prelude.zig"),
         .target = target,
     });
 
@@ -45,7 +45,7 @@ pub fn build(b: *std.Build) void {
         // which requires us to specify a target.
         .target = target,
         .imports = &.{
-            .{ .name = "stdlib_prelude", .module = stdlib_prelude },
+            .{ .name = "std_prelude", .module = std_prelude },
         },
     });
 

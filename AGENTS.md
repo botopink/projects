@@ -22,8 +22,12 @@ botopink-lang/
 │   ├── compiler-cli/          ← `botopink` CLI
 │   ├── compiler-core/         ← lexer, parser, AST, infer, comptime, codegen
 │   ├── language-server/       ← `botopink-lsp` LSP server
-│   ├── stdlib/                ← .bp stdlib declarations (loaded at infer time)
 │   └── vscode-extension/     ← VS Code extension (syntax + LSP client)
+├── libs/                      ← .bp libraries — see libs/AGENTS.md
+│   ├── std/                   ← standard library (prelude loaded at infer time)
+│   ├── server/                ← server-side interfaces (scaffold)
+│   └── client/                ← client-side interfaces (scaffold)
+├── examples/                  ← .bp example programs
 └── snapshots/                 ← workspace-level codegen snapshots
     └── codegen/{erlang,node}/ ← target-specific smoke outputs (commonJS, erlang)
 ```
@@ -71,11 +75,15 @@ modules/language-server/                       → `botopink-lsp` LSP server
   ├── src/                                     → JSON-RPC server + feature engine
   │   └── tests/                               → LSP feature test harness (15 feature files)
   └── snapshots/lsp/                           → 70 LSP feature snapshots
-modules/stdlib/                                → embedded .bp standard library
-  └── src/                                     → prelude.zig + primitives/array/string.bp + builtins.d.bp
 modules/vscode-extension/                      → VS Code extension (TypeScript)
   ├── syntaxes/                                → TextMate grammar + markdown injection
   └── src/                                     → extension.ts (LSP client launcher)
+libs/                                          → .bp libraries (see libs/AGENTS.md)
+  ├── std/                                     → embedded standard library (prelude + interfaces)
+  │   └── src/                                 → prelude.zig + primitives/array/string.bp + builtins.d.bp
+  ├── server/                                  → server-side interfaces (scaffold)
+  └── client/                                  → client-side interfaces (scaffold)
+examples/                                      → .bp example programs
 snapshots/                                     → workspace-level smoke snapshots
   └── codegen/                                 → 1 .bp scenario mirrored across targets
       ├── erlang/erlang/                       → 1 Erlang snapshot
@@ -92,7 +100,8 @@ snapshots/                                     → workspace-level smoke snapsho
 | HM inference + Aggregator transform | [`modules/compiler-core/src/comptime/docs.md`](modules/compiler-core/src/comptime/docs.md) |
 | CLI lifecycle | [`modules/compiler-cli/docs.md`](modules/compiler-cli/docs.md) |
 | LSP layered design | [`modules/language-server/docs.md`](modules/language-server/docs.md) |
-| Stdlib loading + interface conventions | [`modules/stdlib/docs.md`](modules/stdlib/docs.md) |
+| Stdlib loading + interface conventions | [`libs/std/docs.md`](libs/std/docs.md) |
+| `.bp` libraries group (std/server/client) | [`libs/AGENTS.md`](libs/AGENTS.md) |
 | VS Code extension design + LSP wiring | [`modules/vscode-extension/docs.md`](modules/vscode-extension/docs.md) |
 | `.bp` language reference (user-facing) | [`docs.md`](docs.md) |
 
@@ -106,7 +115,8 @@ snapshots/                                     → workspace-level smoke snapsho
 | `.bp` source → JS / Erlang side-by-side | [`modules/compiler-core/src/codegen/examples.md`](modules/compiler-core/src/codegen/examples.md) |
 | `comptime` usage in `.bp` | [`modules/compiler-core/src/comptime/examples.md`](modules/compiler-core/src/comptime/examples.md) |
 | `botopink format` before/after | [`modules/compiler-core/src/format/examples.md`](modules/compiler-core/src/format/examples.md) |
-| Using the stdlib (Array, String, builtins) | [`modules/stdlib/src/examples.md`](modules/stdlib/src/examples.md) |
+| Using the stdlib (Array, String, builtins) | [`libs/std/src/examples.md`](libs/std/src/examples.md) |
+| Minimal runnable `.bp` program | [`examples/hello.bp`](examples/hello.bp) |
 
 ## Conventions
 

@@ -9,10 +9,10 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // ── stdlib prelude ────────────────────────────────────────────────────────
+    // ── std prelude ───────────────────────────────────────────────────────────
 
-    const stdlib_prelude = b.addModule("stdlib_prelude", .{
-        .root_source_file = b.path("modules/stdlib/src/prelude.zig"),
+    const std_prelude = b.addModule("std_prelude", .{
+        .root_source_file = b.path("libs/std/src/prelude.zig"),
         .target = target,
     });
 
@@ -22,7 +22,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("modules/compiler-core/src/root.zig"),
         .target = target,
         .imports = &.{
-            .{ .name = "stdlib_prelude", .module = stdlib_prelude },
+            .{ .name = "std_prelude", .module = std_prelude },
         },
     });
 
@@ -32,7 +32,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("modules/compiler-core/src/test_root.zig"),
         .target = target,
         .imports = &.{
-            .{ .name = "stdlib_prelude", .module = stdlib_prelude },
+            .{ .name = "std_prelude", .module = std_prelude },
         },
     });
 

@@ -1,6 +1,6 @@
-# stdlib/src — registry & per-file roles
+# std/src — registry & per-file roles
 
-> Path: `modules/stdlib/src/`
+> Path: `libs/std/src/`
 > Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md) · Examples: [`./examples.md`](examples.md)
 > Parent: [`../docs.md`](../docs.md)
 
@@ -94,4 +94,4 @@ binaries + `string` module functions.
 
 - Stdlib usage in user code → [`./examples.md`](examples.md).
 - Wider stdlib design → [`../docs.md`](../docs.md).
-- Type-env wiring → [`../../compiler-core/src/comptime/docs.md`](../../compiler-core/src/comptime/docs.md).
+- Type-env wiring → [`../../../modules/compiler-core/src/comptime/docs.md`](../../../modules/compiler-core/src/comptime/docs.md).

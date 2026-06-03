@@ -5,6 +5,8 @@
 > Docs: [`./docs.md`](docs.md)
 
 All Zig packages live here. Each package ships its own `build.zig` and `AGENTS.md`.
+The `.bp` libraries (stdlib, server, client) now live at the repo root under
+[`../libs/`](../libs/AGENTS.md).
 
 ## Tree
 
@@ -25,9 +27,6 @@ modules/
 │   ├── build.zig.zon
 │   ├── src/                 ← JSON-RPC server + LSP features + tests
 │   └── snapshots/lsp/       ← LSP feature snapshots
-├── stdlib/                  ← .bp standard-library declarations
-│   ├── botopink.json
-│   └── src/                 ← prelude.zig + *.bp interface files
 └── vscode-extension/        ← VS Code extension (syntax + LSP client)
     ├── package.json
     ├── language-configuration.json
@@ -41,9 +40,8 @@ modules/
 | Package | Output | Depends on | AGENTS |
 |---|---|---|---|
 | `compiler-cli/` | `botopink` executable | `compiler-core` | [link](compiler-cli/AGENTS.md) |
-| `compiler-core/` | library (lexer → codegen) | `stdlib` | [link](compiler-core/AGENTS.md) |
+| `compiler-core/` | library (lexer → codegen) | [`libs/std`](../libs/std/AGENTS.md) | [link](compiler-core/AGENTS.md) |
 | `language-server/` | `botopink-lsp` executable | `compiler-core` | [link](language-server/AGENTS.md) |
-| `stdlib/` | embedded `.bp` source strings | — | [link](stdlib/AGENTS.md) |
 | `vscode-extension/` | VS Code `.vsix` extension | `language-server` (runtime) | [link](vscode-extension/AGENTS.md) |
 
 ## Per-package commands
