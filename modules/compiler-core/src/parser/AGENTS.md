@@ -13,7 +13,14 @@ parser/
 ├── AGENTS.md      ← you are here
 ├── docs.md        ← parser strategy, helpers, error policy
 ├── examples.md    ← `.bp` declarations / expressions / statements
-└── tests.zig      ← `assertParser` / `expectParseError` snapshot tests
+├── tests.zig      ← barrel: aggregates tests/<feature>.zig for test_root.zig
+└── tests/         ← parser tests, split by feature
+    ├── helpers.zig       ← shared harness (`assertParser`/`expectParseError`/…)
+    ├── imports.zig       ← import/activate/delegate/star declarations
+    ├── declarations.zig  ← struct/record/enum/interface/implement, val/pub/fn
+    ├── expressions.zig   ← operator/lambda/array/tuple/case/builtin/control-flow
+    ├── destructuring.zig ← destructure/shorthand/assign
+    └── errors.zig        ← parse errors & cross-stage error-message units
 ```
 
 ## Testing pattern
