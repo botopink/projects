@@ -13,16 +13,18 @@ shared across the workspace.
 ```text
 modules/
 ├── compiler-cli/        → `botopink` CLI       (depends on compiler-core)
-├── compiler-core/       → main compiler lib    (depends on stdlib)
-├── language-server/     → `botopink-lsp`       (depends on compiler-core)
-└── stdlib/              → embedded .bp prelude (no Zig deps)
+├── compiler-core/       → main compiler lib    (depends on libs/std)
+└── language-server/     → `botopink-lsp`       (depends on compiler-core)
 ```
+
+The `.bp` libraries (`std`, `server`, `client`) live at the repo root under
+[`../libs/`](../libs/AGENTS.md); `compiler-core` embeds `libs/std`'s prelude.
 
 ## Dependency graph
 
 ```text
                 ┌──────────────────┐
-                │  stdlib (.bp)    │
+                │ libs/std (.bp)   │
                 └────────▲─────────┘
                          │ @embedFile + Env registration
                 ┌────────┴─────────┐
@@ -44,9 +46,9 @@ modules/
 - **`language-server`** does the same as the CLI but over JSON-RPC. It funnels
   every call through a thin local `compiler.zig` wrapper so the protocol layer
   stays decoupled from the compiler.
-- **`stdlib`** is data, not Zig code. Each `.bp` file is `@embedFile`'d via
-  `stdlib/src/prelude.zig` and pulled into the inference `Env` before each
-  pass.
+- **`libs/std`** is data, not Zig code. Each `.bp` file is `@embedFile`'d via
+  `libs/std/src/prelude.zig` and pulled into the inference `Env` before each
+  pass. It lives at the repo root, not under `modules/`.
 
 ## Per-package commands
 

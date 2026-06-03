@@ -1,8 +1,8 @@
-# stdlib — embedded standard library
+# std — embedded standard library
 
-> Path: `modules/stdlib/`
+> Path: `libs/std/`
 > Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md) · Examples: [`src/examples.md`](src/examples.md)
-> Parent: [`../docs.md`](../docs.md)
+> Parent: [`../AGENTS.md`](../AGENTS.md)
 
 The botopink standard library. Declarations are written in `.bp`, embedded
 as compile-time strings via `@embedFile`, and registered into the
@@ -11,7 +11,7 @@ type-inference `Env` before each pass.
 ## Tree
 
 ```text
-stdlib/
+std/
 ├── botopink.json      ← package metadata
 └── src/               ← .bp source files + prelude.zig
     ├── prelude.zig    ← @embedFile of every .bp into Zig const strings
@@ -24,7 +24,7 @@ stdlib/
 ## How the stdlib reaches the compiler
 
 ```text
-stdlib/src/prelude.zig       (@embedFile bundles)
+std/src/prelude.zig          (@embedFile bundles)
             │
             ▼
 compiler-core/src/comptime/env.zig
@@ -38,7 +38,7 @@ compiler-core/src/comptime/env.zig
 
 `compiler-core/src/comptime/env.zig` calls
 `inferMod.registerStdlib(&env, gpa)` before each inference pass. That
-helper imports `stdlib.prelude` and registers every embedded `.bp` string
+helper imports the `std_prelude` Zig module and registers every embedded `.bp` string
 into the type environment. By the time user code is type-checked the
 stdlib is already in scope.
 
@@ -51,7 +51,7 @@ keeps the compiler's surface stable across targets while letting each
 backend emit idiomatic code.
 
 ```text
-// stdlib/src/array.d.bp
+// std/src/array.d.bp
 interface Array<T> {
     fn length(): i32,
     fn at(i: i32): T,
@@ -85,6 +85,6 @@ Concrete usage snippets: [`src/examples.md`](src/examples.md).
 
 - The Zig wiring → [`src/docs.md`](src/docs.md).
 - How HM inference uses these declarations →
-  [`../compiler-core/src/comptime/docs.md`](../compiler-core/src/comptime/docs.md).
+  [`../../modules/compiler-core/src/comptime/docs.md`](../../modules/compiler-core/src/comptime/docs.md).
 - Codegen translates stdlib calls per target →
-  [`../compiler-core/src/codegen/docs.md`](../compiler-core/src/codegen/docs.md).
+  [`../../modules/compiler-core/src/codegen/docs.md`](../../modules/compiler-core/src/codegen/docs.md).

@@ -1,6 +1,6 @@
-# stdlib
+# std
 
-> Path: `modules/stdlib/`
+> Path: `libs/std/`
 > Parent: [`../AGENTS.md`](../AGENTS.md) · Root: [`../../AGENTS.md`](../../AGENTS.md)
 > Docs: [`./docs.md`](docs.md) · Examples: [`src/examples.md`](src/examples.md)
 
@@ -11,7 +11,7 @@ inference.
 ## Tree
 
 ```text
-stdlib/
+std/
 ├── AGENTS.md          ← you are here
 ├── docs.md            ← how the stdlib reaches the compiler + conventions
 ├── botopink.json      ← package metadata
@@ -26,13 +26,13 @@ stdlib/
 ## Wiring
 
 `comptime/env.zig` calls `inferMod.registerStdlib(&env, gpa)` before each
-inference pass. That helper imports `stdlib.prelude` and registers every
-embedded `.bp` string into the type `Env`.
+inference pass. That helper imports the `std_prelude` Zig module and registers
+every embedded `.bp` string into the type `Env`.
 
 ## Conventions
 
 - Keep stdlib signatures backward-compatible whenever possible.
 - Any rename or removal must be reflected in the codegen/comptime snapshots
-  under [`../compiler-core/snapshots/`](../compiler-core/snapshots/AGENTS.md).
+  under [`../../modules/compiler-core/snapshots/`](../../modules/compiler-core/snapshots/AGENTS.md).
 - When adding a new `.bp` file, also add a matching `@embedFile` constant in
   `src/prelude.zig`.

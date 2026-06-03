@@ -12,7 +12,7 @@ All notable changes to the botopink compiler workspace are documented in this fi
   - Resolved by type inference and lowered inline per backend: `commonJS` and
     `erlang` emit the full form (`Ok`/`Error` tag match, option presence check);
     `beam` and `wasm` emit a documented stub.
-  - Documented in `modules/stdlib/src/builtins.d.bp`.
+  - Documented in `libs/std/src/builtins.d.bp`.
 - **Method calls on expressions** — `CallExpr.receiver` is now an expression, so
   method chains (`a().map(f).unwrapOr(0)`) and zero-arg method calls (`r.isOk()`)
   parse and type-check.
