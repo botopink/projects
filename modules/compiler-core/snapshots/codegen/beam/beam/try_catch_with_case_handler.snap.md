@@ -23,7 +23,7 @@ fn handle() -> i32 {
     {func_info, {atom, main}, {atom, fetch}, 0}.
   {label, 3}.
     {allocate, 0, 0}.
-    {move, {atom, ErrorKind}, {x, 0}}.
+    {move, {atom, 'ErrorKind'}, {x, 0}}.
     {get_map_elements, {f, 6}, {x, 0}, {list, [{atom, NotFound}, {x, 0}]}}.
   {label, 6}.
     {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
@@ -34,8 +34,9 @@ fn handle() -> i32 {
     {func_info, {atom, main}, {atom, handle}, 0}.
   {label, 5}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     {call, 0, {f, 3}}.
-    {test, is_tagged_tuple, {f, 7}, {x, 0}, 2, {atom, ok}}.
+    {test, is_tagged_tuple, {f, 7}, [{x, 0}, 2, {atom, ok}]}.
     {get_tuple_element, {x, 0}, 1, {x, 0}}.
     {jump, {f, 8}}.
   {label, 7}.

@@ -36,11 +36,12 @@ fn run(p: Parser) -> i32 {
     {func_info, {atom, main}, {atom, run}, 1}.
   {label, 5}.
     {allocate, 1, 1}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
     {move, {x, 1}, {x, 0}}.
     %% unresolved method call: parse/1
-    {test, is_tagged_tuple, {f, 6}, {x, 0}, 2, {atom, ok}}.
+    {test, is_tagged_tuple, {f, 6}, [{x, 0}, 2, {atom, ok}]}.
     {get_tuple_element, {x, 0}, 1, {x, 0}}.
     {jump, {f, 7}}.
   {label, 6}.

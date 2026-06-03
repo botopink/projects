@@ -44,6 +44,7 @@ main(_) ->
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 3}.
     {allocate, 2, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}]}}.
     {move, {integer, 10}, {x, 0}}.
     {call, 1, {f, 5}}.
     {move, {x, 0}, {y, 0}}.
@@ -54,12 +55,13 @@ main(_) ->
     {deallocate, 2}.
     return.
 
-{function, execute_$0, 1, 5}.
+{function, 'execute_$0', 1, 5}.
   {label, 4}.
     {line, [{location, "main.erl", 2}]}.
-    {func_info, {atom, main}, {atom, execute_$0}, 1}.
+    {func_info, {atom, main}, {atom, 'execute_$0'}, 1}.
   {label, 5}.
     {allocate, 1, 1}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {integer, 0}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {gc_bif, '*', {f, 0}, 1, [{x, 0}, {integer, 2}], {x, 0}}.
@@ -68,12 +70,13 @@ main(_) ->
     {deallocate, 1}.
     return.
 
-{function, execute_$1, 1, 7}.
+{function, 'execute_$1', 1, 7}.
   {label, 6}.
     {line, [{location, "main.erl", 3}]}.
-    {func_info, {atom, main}, {atom, execute_$1}, 1}.
+    {func_info, {atom, main}, {atom, 'execute_$1'}, 1}.
   {label, 7}.
     {allocate, 1, 1}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {integer, 0}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {gc_bif, '*', {f, 0}, 1, [{x, 0}, {integer, 2}], {x, 0}}.

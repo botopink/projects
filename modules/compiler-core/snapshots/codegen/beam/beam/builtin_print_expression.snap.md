@@ -19,6 +19,7 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 3}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     {move, {integer, 10}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {gc_bif, '*', {f, 0}, 0, [{y, 0}, {integer, 2}], {x, 0}}.

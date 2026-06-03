@@ -47,6 +47,7 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 7}.
     {allocate, 1, 0}.
+    {init_yregs, {list, [{y, 0}]}}.
     %% unsupported on BEAM: __bp_result_unwrapOr
     %% unsupported on BEAM: __bp_result_flatMap
     %% unsupported on BEAM: __bp_result_map

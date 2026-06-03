@@ -32,9 +32,10 @@ fn f() {
     {line, [{location, "main.erl", 2}]}.
     {func_info, {atom, main}, {atom, f}, 0}.
   {label, 5}.
-    {allocate, 1, 0}.
+    {allocate, 2, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}]}}.
     {call, 0, {f, 3}}.
-    {test, is_tagged_tuple, {f, 6}, {x, 0}, 2, {atom, ok}}.
+    {test, is_tagged_tuple, {f, 6}, [{x, 0}, 2, {atom, ok}]}.
     {get_tuple_element, {x, 0}, 1, {x, 0}}.
     {jump, {f, 7}}.
   {label, 6}.
@@ -48,7 +49,7 @@ fn f() {
     {get_tuple_element, {x, 0}, 1, {x, 1}}.
     {move, {x, 1}, {y, 1}}.
     {move, {atom, ok}, {x, 0}}.
-    {deallocate, 1}.
+    {deallocate, 2}.
     return.
 ```
 

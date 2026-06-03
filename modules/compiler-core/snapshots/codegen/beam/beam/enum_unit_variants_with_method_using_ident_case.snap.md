@@ -29,7 +29,8 @@ val HttpMethod = enum {
     {line, [{location, "main.erl", 1}]}.
     {func_info, {atom, main}, {atom, 'HttpMethod_name'}, 1}.
   {label, 3}.
-    {allocate, 1, 1}.
+    {allocate, 4, 1}.
+    {init_yregs, {list, [{y, 0}, {y, 1}, {y, 2}, {y, 3}]}}.
     {move, {x, 0}, {y, 0}}.
     {move, {literal, <<"GET">>}, {x, 0}}.
     {jump, {f, 4}}.
@@ -44,7 +45,7 @@ val HttpMethod = enum {
   {label, 4}.
     {move, {x, 0}, {y, 3}}.
     {move, {y, 3}, {x, 0}}.
-    {deallocate, 1}.
+    {deallocate, 4}.
     return.
 ```
 

@@ -33,6 +33,7 @@ fn main() {
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 5}.
     {allocate, 3, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}, {y, 2}]}}.
     {move, {literal, <<"42">>}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.

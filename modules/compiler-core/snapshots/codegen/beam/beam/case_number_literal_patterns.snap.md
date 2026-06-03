@@ -24,6 +24,7 @@ fn classify(n: i32) -> string {
     {func_info, {atom, main}, {atom, classify}, 1}.
   {label, 3}.
     {allocate, 1, 1}.
+    {init_yregs, {list, [{y, 0}]}}.
     {test, is_eq, {f, 5}, [{x, 0}, {integer, 0}]}.
     {move, {literal, <<"zero">>}, {x, 0}}.
     {jump, {f, 4}}.

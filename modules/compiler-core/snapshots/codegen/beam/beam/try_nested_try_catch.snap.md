@@ -50,8 +50,9 @@ fn process() -> i32 {
     {func_info, {atom, main}, {atom, process}, 0}.
   {label, 7}.
     {allocate, 2, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}]}}.
     {call, 0, {f, 3}}.
-    {test, is_tagged_tuple, {f, 8}, {x, 0}, 2, {atom, ok}}.
+    {test, is_tagged_tuple, {f, 8}, [{x, 0}, 2, {atom, ok}]}.
     {get_tuple_element, {x, 0}, 1, {x, 0}}.
     {jump, {f, 9}}.
   {label, 8}.
@@ -59,7 +60,7 @@ fn process() -> i32 {
   {label, 9}.
     {move, {x, 0}, {y, 0}}.
     {call, 0, {f, 5}}.
-    {test, is_tagged_tuple, {f, 10}, {x, 0}, 2, {atom, ok}}.
+    {test, is_tagged_tuple, {f, 10}, [{x, 0}, 2, {atom, ok}]}.
     {get_tuple_element, {x, 0}, 1, {x, 0}}.
     {jump, {f, 11}}.
   {label, 10}.

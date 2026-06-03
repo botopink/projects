@@ -26,7 +26,8 @@ val Color = enum {
     {line, [{location, "main.erl", 1}]}.
     {func_info, {atom, main}, {atom, 'Color_name'}, 0}.
   {label, 3}.
-    {allocate, 0, 0}.
+    {allocate, 3, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}, {y, 2}]}}.
     {move, {atom, self}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {move, {literal, <<"red">>}, {x, 0}}.
@@ -39,7 +40,7 @@ val Color = enum {
     {jump, {f, 4}}.
   {label, 4}.
     {move, {atom, ok}, {x, 0}}.
-    {deallocate, 0}.
+    {deallocate, 3}.
     return.
 ```
 

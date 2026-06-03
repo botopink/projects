@@ -15,7 +15,7 @@ fn main() {
 {module, main}.
 {exports, [{'_botopink_main', 0}, {main, 1}]}.
 {attributes, []}.
-{labels, 11}.
+{labels, 12}.
 
 {function, abs, 1, 3}.
   {label, 2}.
@@ -23,13 +23,12 @@ fn main() {
     {func_info, {atom, main}, {atom, abs}, 1}.
   {label, 3}.
     {allocate, 1, 1}.
+    {init_yregs, {list, [{y, 0}]}}.
     {test, is_lt, {f, 10}, [{x, 0}, {integer, 0}]}.
     {gc_bif, '-', {f, 0}, 1, [{integer, 0}, {x, 0}], {x, 0}}.
-    {deallocate, 1}.
-    return.
+    {jump, {f, 11}}.
   {label, 10}.
-    {deallocate, 1}.
-    return.
+  {label, 11}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
     {deallocate, 1}.
@@ -76,4 +75,6 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
+5
+3
 ```

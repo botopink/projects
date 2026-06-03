@@ -35,14 +35,15 @@ fn extract_coordinates() {
     {line, [{location, "main.erl", 2}]}.
     {func_info, {atom, main}, {atom, extract_coordinates}, 0}.
   {label, 5}.
-    {allocate, 1, 0}.
+    {allocate, 2, 0}.
+    {init_yregs, {list, [{y, 0}, {y, 1}]}}.
     {call, 0, {f, 3}}.
     {get_tuple_element, {x, 0}, 0, {x, 1}}.
     {move, {x, 1}, {y, 0}}.
     {get_tuple_element, {x, 0}, 1, {x, 1}}.
     {move, {x, 1}, {y, 1}}.
     {move, {atom, ok}, {x, 0}}.
-    {deallocate, 1}.
+    {deallocate, 2}.
     return.
 ```
 

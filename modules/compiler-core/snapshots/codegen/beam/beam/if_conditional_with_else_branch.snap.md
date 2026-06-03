@@ -14,7 +14,7 @@ fn main() {
 {module, main}.
 {exports, [{'_botopink_main', 0}, {main, 1}]}.
 {attributes, []}.
-{labels, 11}.
+{labels, 12}.
 
 {function, describe, 1, 3}.
   {label, 2}.
@@ -22,14 +22,12 @@ fn main() {
     {func_info, {atom, main}, {atom, describe}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
-    {test, is_gt, {f, 10}, [{x, 0}, {integer, 0}]}.
+    {test, is_lt, {f, 10}, [{integer, 0}, {x, 0}]}.
     {move, {literal, <<"positive">>}, {x, 0}}.
-    {deallocate, 0}.
-    return.
+    {jump, {f, 11}}.
   {label, 10}.
     {move, {literal, <<"non-positive">>}, {x, 0}}.
-    {deallocate, 0}.
-    return.
+  {label, 11}.
     {deallocate, 0}.
     return.
 
@@ -74,4 +72,6 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
+<<"positive">>
+<<"non-positive">>
 ```

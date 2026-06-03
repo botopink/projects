@@ -42,10 +42,10 @@ fn Widget() -> Element {
     {deallocate, 0}.
     return.
 
-{function, Widget, 0, 7}.
+{function, 'Widget', 0, 7}.
   {label, 6}.
     {line, [{location, "main.erl", 3}]}.
-    {func_info, {atom, main}, {atom, Widget}, 0}.
+    {func_info, {atom, main}, {atom, 'Widget'}, 0}.
   {label, 7}.
     {allocate, 0, 0}.
     {make_fun2, {f, 9}, 0, 0, 0}.

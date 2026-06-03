@@ -53,7 +53,7 @@ val port = PORT;
     {line, [{location, "main.erl", 1}]}.
     {func_info, {atom, main}, {atom, addr}, 0}.
   {label, 3}.
-    {move, {atom, HOST}, {x, 0}}.
+    {move, {atom, 'HOST'}, {x, 0}}.
     {deallocate, 0}.
     return.
 
@@ -62,7 +62,7 @@ val port = PORT;
     {line, [{location, "main.erl", 2}]}.
     {func_info, {atom, main}, {atom, port}, 0}.
   {label, 5}.
-    {move, {atom, PORT}, {x, 0}}.
+    {move, {atom, 'PORT'}, {x, 0}}.
     {deallocate, 0}.
     return.
 ```

@@ -23,6 +23,7 @@ fn classify(day: i32) -> string {
     {func_info, {atom, main}, {atom, classify}, 1}.
   {label, 3}.
     {allocate, 1, 1}.
+    {init_yregs, {list, [{y, 0}]}}.
     {test, is_ne_exact, {f, 5}, [{x, 0}, {integer, 6}]}.
     {test, is_ne_exact, {f, 5}, [{x, 0}, {integer, 7}]}.
     {jump, {f, 6}}.

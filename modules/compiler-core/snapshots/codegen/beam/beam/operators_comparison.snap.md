@@ -22,7 +22,7 @@ fn main() {
     {func_info, {atom, main}, {atom, isPositive}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
-    {test, is_gt, {f, 10}, [{x, 0}, {integer, 0}]}.
+    {test, is_lt, {f, 10}, [{integer, 0}, {x, 0}]}.
     {move, {atom, true}, {x, 0}}.
     {jump, {f, 11}}.
   {label, 10}.
@@ -72,4 +72,6 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
+true
+false
 ```
