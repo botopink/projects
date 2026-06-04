@@ -21,6 +21,7 @@ const run_cmd = @import("./cli/run.zig");
 const format_cmd = @import("./cli/format_cmd.zig");
 const new_cmd = @import("./cli/new.zig");
 const clean_cmd = @import("./cli/clean.zig");
+const test_cmd = @import("./cli/test_cmd.zig");
 const cfg = @import("./cli/config.zig");
 
 // ── Version ───────────────────────────────────────────────────────────────────
@@ -38,6 +39,7 @@ const HELP =
     \\Commands:
     \\  build    Compile the project to the configured target
     \\  run      Compile and run the project
+    \\  test     Compile and run every test block in the project
     \\  check    Type-check without generating code
     \\  format   Format source files
     \\  new      Create a new botopink project
@@ -54,6 +56,10 @@ const HELP =
     \\  --target <commonJS|erlang|beam|wasm>   Override the codegen target
     \\  --module <name>              Entry-point module (default: main)
     \\  --                           Pass remaining args to the program
+    \\
+    \\Options for `test`:
+    \\  --target <commonJS>          Override the codegen target (only commonJS runs tests yet)
+    \\  --filter <substr>            Only run tests whose name contains the substring
     \\
     \\Options for `format`:
     \\  --check                      Exit 1 if any file would be reformatted
@@ -110,6 +116,10 @@ fn dispatch(init: std.process.Init) !u8 {
 
     if (std.mem.eql(u8, cmd, "run")) {
         return run_cmd.run(gpa, io, try parseRunOpts(gpa, args[2..]));
+    }
+
+    if (std.mem.eql(u8, cmd, "test")) {
+        return test_cmd.run(gpa, io, try parseTestOpts(args[2..]));
     }
 
     if (std.mem.eql(u8, cmd, "format") or std.mem.eql(u8, cmd, "fmt")) {
@@ -178,6 +188,24 @@ fn parseRunOpts(gpa: std.mem.Allocator, args: []const [:0]const u8) !run_cmd.Opt
         }
     }
     opts.extra_args = try extra.toOwnedSlice(gpa);
+    return opts;
+}
+
+fn parseTestOpts(args: []const [:0]const u8) !test_cmd.Options {
+    var opts: test_cmd.Options = .{};
+    var i: usize = 0;
+    while (i < args.len) : (i += 1) {
+        const a = args[i];
+        if (std.mem.eql(u8, a, "--target")) {
+            i += 1;
+            if (i >= args.len) return error.MissingArgument;
+            opts.target = cfg.Target.fromString(args[i]) orelse return error.InvalidTarget;
+        } else if (std.mem.eql(u8, a, "--filter")) {
+            i += 1;
+            if (i >= args.len) return error.MissingArgument;
+            opts.filter = args[i];
+        }
+    }
     return opts;
 }
 

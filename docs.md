@@ -1722,6 +1722,21 @@ testDecl ::= "test" string? block
 - Test blocks are **excluded** from normal `build`/`run` output; they are only
   compiled under `botopink test`.
 
-**Status:** parser/AST/formatter landed. Runner codegen and the
-`botopink test` subcommand are pending phases of the `test-blocks` spec
-(`tasks/v0.beta.2/specs/test-blocks.md`).
+Running:
+
+```bash
+botopink test                    # compile + run every test block in the project
+botopink test --filter "split"   # only tests whose name contains the substring
+```
+
+```text
+running 3 tests
+  ok   addition works
+  FAIL map doubles  (map should double each element)  at main.bp:12
+  ok   test_2
+2 passed, 1 failed
+```
+
+**Status:** parser/AST/formatter/inference landed; `botopink test` runs on the
+`commonJS` target (node). Erlang (eunit-style) and WASM runners are pending
+phases of the `test-blocks` spec (`tasks/v0.beta.2/specs/test-blocks.md`).

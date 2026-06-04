@@ -427,15 +427,30 @@ pub fn parseExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
             sawMethodCall = true;
         }
 
-        if (baseIsCall or sawMethodCall) {
+        if ((baseIsCall or sawMethodCall) and !isBinaryOpNext(this)) {
             return this.wrapCatch(alloc, base);
         }
 
-        // Bare identifier with no call/chain — let parsePrimary handle it.
+        // Either a bare identifier with no call/chain, or a call chain
+        // followed by a binary operator (`add(1, 2) == 5`, `f() + 1`) — the
+        // call is an operand, not the whole expression. Roll back and let the
+        // precedence climber (whose parsePrimary parses call chains) own it.
+        base.deinit(alloc);
         this.current = saved;
     }
 
     return this.wrapCatch(alloc, try this.parsePipelineExpr(alloc));
+}
+
+/// True when the current token is a binary operator from `precedence_table`.
+fn isBinaryOpNext(this: *This) bool {
+    const kind = this.peek().kind;
+    inline for (precedence_table) |lvl| {
+        inline for (lvl.ops) |o| {
+            if (kind == o.tok) return true;
+        }
+    }
+    return false;
 }
 
 /// `val/var name = expr` or any destructuring variant.
@@ -895,7 +910,19 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         const tok = this.advance();
         var base: Expr = Expr{ .identifier = .{ .loc = locFromToken(tok), .kind = .{ .ident = tok.lexeme } } };
 
-        // Loop for chained field access: a.b.c.d
+        // `ident(args)` — a call in operand position (e.g. `add(1, 2) == 3`).
+        // Trailing lambdas are not consumed here: in a binary operand a `{`
+        // belongs to the enclosing construct (if/case/loop bodies).
+        if (this.check(.leftParenthesis)) {
+            const args = try this.parseCallArgs(alloc);
+            errdefer {
+                for (args) |*a| a.deinit(alloc);
+                alloc.free(args);
+            }
+            base = makeCall(tok, null, tok.lexeme, false, args, try alloc.alloc(TrailingLambda, 0));
+        }
+
+        // Loop for chained links: `.field` access or `.method(args)` calls.
         while (this.check(.dot)) {
             _ = this.advance();
             // Accept both identifier and numberLiteral for tuple access
@@ -903,11 +930,23 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
                 this.advance()
             else
                 try this.consume(.identifier);
-            const recvPtr = try this.boxExpr(alloc, base);
-            base = Expr{ .identifier = .{ .loc = locFromToken(tok), .kind = .{ .identAccess = .{
-                .receiver = recvPtr,
-                .member = fieldTok.lexeme,
-            } } } };
+            if (this.check(.leftParenthesis)) {
+                const args = try this.parseCallArgs(alloc);
+                errdefer {
+                    for (args) |*a| a.deinit(alloc);
+                    alloc.free(args);
+                }
+                const recvPtr = try this.boxExpr(alloc, base);
+                // Method-call links use the method token's loc so each chain
+                // link has a distinct location (method lowering is loc-keyed).
+                base = makeCall(fieldTok, recvPtr, fieldTok.lexeme, false, args, try alloc.alloc(TrailingLambda, 0));
+            } else {
+                const recvPtr = try this.boxExpr(alloc, base);
+                base = Expr{ .identifier = .{ .loc = locFromToken(tok), .kind = .{ .identAccess = .{
+                    .receiver = recvPtr,
+                    .member = fieldTok.lexeme,
+                } } } };
+            }
         }
         return base;
     }

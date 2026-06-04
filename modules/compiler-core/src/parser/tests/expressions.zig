@@ -579,3 +579,29 @@ test "parser: yield ---- without label" {
         \\}
     );
 }
+
+test "parser: call as binary operand" {
+    // A call chain followed by a binary operator is an operand, not the
+    // whole expression: `add(1, 2) == 3`.
+    try h.assertParser(std.testing.allocator, @src(),
+        \\fn add(a: i32, b: i32) -> i32 { return a + b; }
+        \\val x = add(1, 2) == 3;
+    );
+}
+
+test "parser: method chain as binary operand" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\fn f() {
+        \\    val ok = obj.value(1).count() > 0;
+        \\}
+    );
+}
+
+test "parser: assert on call equality" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\fn add(a: i32, b: i32) -> i32 { return a + b; }
+        \\fn main() {
+        \\    assert add(1, 2) == 3, "sum";
+        \\}
+    );
+}

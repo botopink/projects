@@ -38,7 +38,7 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites);
+                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, config.test_mode, ct.name);
 
                 // Generate TypeScript typedefs if configured.
                 const typedef: ?[]u8 = if (config.typeDefLanguage) |_|
@@ -68,8 +68,10 @@ fn emitJs(
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    test_mode: bool,
+    module_name: []const u8,
 ) ![]u8 {
-    return try emitProgram(alloc, program, comptime_vals, rewrites);
+    return try emitProgramOpts(alloc, program, comptime_vals, rewrites, test_mode, module_name);
 }
 
 fn emitTypeDef(
@@ -135,10 +137,32 @@ pub fn emitProgram(
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
 ) ![]u8 {
+    return emitProgramOpts(alloc, program, comptime_vals, rewrites, false, "main");
+}
+
+/// Like `emitProgram`, but with test-mode emission control. In test mode,
+/// `test { … }` decls emit as `__bp_test_N` functions plus a registry +
+/// runner, `assert` lowers to the throwing `__bp_assert` helper, and
+/// `fn main/0` is not auto-invoked.
+pub fn emitProgramOpts(
+    alloc: std.mem.Allocator,
+    program: ast.Program,
+    comptime_vals: std.StringHashMap([]const u8),
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    test_mode: bool,
+    module_name: []const u8,
+) ![]u8 {
     var aw: std.Io.Writer.Allocating = .init(alloc);
     defer aw.deinit();
     var em = Emitter.emitterInit(alloc, &aw.writer, comptime_vals, rewrites);
     defer em.deinit();
+    em.test_mode = test_mode;
+    em.module_name = module_name;
+
+    // Test registry entries collected while emitting decls (test mode only).
+    const TestEntry = struct { name: ?[]const u8, line: usize, idx: usize };
+    var test_entries: std.ArrayListUnmanaged(TestEntry) = .empty;
+    defer test_entries.deinit(alloc);
 
     // Track which val names are comptime-only (consumed at compile time).
     var comptime_only = std.StringHashMap(void).init(alloc);
@@ -186,6 +210,21 @@ pub fn emitProgram(
             },
             else => {},
         }
+    }
+
+    // Test-mode preamble: a throwing assert helper the runner can catch.
+    if (test_mode) {
+        try aw.writer.writeAll(
+            \\function __bp_assert(cond, msg, loc) {
+            \\    if (!cond) {
+            \\        const e = new Error(msg || "assertion failed");
+            \\        e.__bp_assert_loc = loc;
+            \\        throw e;
+            \\    }
+            \\}
+            \\
+        );
+        try aw.writer.writeByte('\n');
     }
 
     // Emit declarations from the transformed program.
@@ -267,8 +306,17 @@ pub fn emitProgram(
                 try aw.writer.writeByte('\n');
                 firstEmitted = false;
             },
-            // Test blocks are only compiled under `botopink test` — skip.
-            .@"test" => {},
+            // Test blocks are only compiled under `botopink test`; in normal
+            // builds they are skipped entirely.
+            .@"test" => |t| {
+                if (!test_mode) continue;
+                const idx = test_entries.items.len;
+                try test_entries.append(alloc, .{ .name = t.name, .line = t.loc.line, .idx = idx });
+                if (!firstEmitted) try aw.writer.writeByte('\n');
+                try em.emitTestFn(t, idx);
+                try aw.writer.writeByte('\n');
+                firstEmitted = false;
+            },
             .comment => |c| {
                 if (!firstEmitted) try aw.writer.writeByte('\n');
                 if (c.is_doc) {
@@ -284,11 +332,48 @@ pub fn emitProgram(
         }
     }
 
-    // Auto-invoke entry point when `fn main/0` is defined.
-    if (has_main_0) {
+    // Auto-invoke entry point when `fn main/0` is defined (never in test mode).
+    if (has_main_0 and !test_mode) {
         if (!firstEmitted) try aw.writer.writeByte('\n');
         try aw.writer.writeAll("function _botopink_main() {\n    main();\n}\n");
         try aw.writer.writeAll("_botopink_main();\n");
+    }
+
+    // Test mode: emit the registry + runner entry.
+    if (test_mode and test_entries.items.len > 0) {
+        if (!firstEmitted) try aw.writer.writeByte('\n');
+        try aw.writer.writeAll("const __bp_tests = [\n");
+        for (test_entries.items) |t| {
+            if (t.name) |n| {
+                try aw.writer.print("    {{ name: \"{s}\", fn: __bp_test_{d}, loc: \"{s}.bp:{d}\" }},\n", .{ n, t.idx, module_name, t.line });
+            } else {
+                try aw.writer.print("    {{ name: \"test_{d}\", fn: __bp_test_{d}, loc: \"{s}.bp:{d}\" }},\n", .{ t.idx, t.idx, module_name, t.line });
+            }
+        }
+        try aw.writer.writeAll("];\n");
+        try aw.writer.writeAll(
+            \\function __bp_run_tests() {
+            \\    const filter = process.argv[2] || null;
+            \\    const tests = filter ? __bp_tests.filter((t) => t.name.includes(filter)) : __bp_tests;
+            \\    console.log("running " + tests.length + " tests");
+            \\    let passed = 0, failed = 0;
+            \\    for (const t of tests) {
+            \\        try {
+            \\            t.fn();
+            \\            console.log("  ok   " + t.name);
+            \\            passed++;
+            \\        } catch (e) {
+            \\            const loc = e.__bp_assert_loc || t.loc;
+            \\            console.log("  FAIL " + t.name + "  (" + e.message + ")  at " + loc);
+            \\            failed++;
+            \\        }
+            \\    }
+            \\    console.log(passed + " passed, " + failed + " failed");
+            \\    if (failed > 0) process.exit(1);
+            \\}
+            \\__bp_run_tests();
+            \\
+        );
     }
 
     return aw.toOwnedSlice();
@@ -436,6 +521,12 @@ const Emitter = struct {
     /// source order. Used to infer the dependency array of `useMemo`/`useEffect`:
     /// a hook's lambda dep list is the reactive names it references.
     hook_state: std.ArrayListUnmanaged([]const u8) = .empty,
+    /// `botopink test` compilation: `assert` lowers to the throwing
+    /// `__bp_assert` helper instead of `console.assert`.
+    test_mode: bool = false,
+    /// Module name, used for `<module>.bp:<line>` source locations in
+    /// test-mode assert failures.
+    module_name: []const u8 = "main",
 
     fn emitterInit(
         alloc: std.mem.Allocator,
@@ -527,6 +618,23 @@ const Emitter = struct {
         self.current_indent = prev_fn_indent;
         try self.w("}");
         if (f.isPub) try self.fmt("\nexports.{s} = {s};", .{ f.name, f.name });
+    }
+
+    /// Emit a `test { … }` body as `function __bp_test_<idx>() { … }`.
+    /// Same body emission as `emitFn` — no params, never exported.
+    fn emitTestFn(self: *Emitter, t: ast.TestDecl, idx: usize) !void {
+        self.try_seq = 0;
+        try self.fmt("function __bp_test_{d}() {{\n", .{idx});
+        const prev_fn_indent = self.current_indent;
+        self.current_indent = 1;
+        self.hook_state.clearRetainingCapacity();
+        for (t.body) |s| {
+            try self.w("    ");
+            try self.emitStmt(s);
+            try self.w("\n");
+        }
+        self.current_indent = prev_fn_indent;
+        try self.w("}");
     }
 
     fn emitStruct(self: *Emitter, s: ast.StructDecl) !void {
@@ -1807,13 +1915,27 @@ const Emitter = struct {
                     }
                 },
                 .assert => |a| {
-                    try self.w("console.assert(");
-                    try self.emitExpr(a.condition.*);
-                    if (a.message) |msg| {
+                    if (self.test_mode) {
+                        // Throwing helper — the test runner catches per test,
+                        // records the failure, and continues.
+                        try self.w("__bp_assert(");
+                        try self.emitExpr(a.condition.*);
                         try self.w(", ");
-                        try self.emitExpr(msg.*);
+                        if (a.message) |msg| {
+                            try self.emitExpr(msg.*);
+                        } else {
+                            try self.w("null");
+                        }
+                        try self.fmt(", \"{s}.bp:{d}\")", .{ self.module_name, ct.loc.line });
+                    } else {
+                        try self.w("console.assert(");
+                        try self.emitExpr(a.condition.*);
+                        if (a.message) |msg| {
+                            try self.w(", ");
+                            try self.emitExpr(msg.*);
+                        }
+                        try self.w(")");
                     }
-                    try self.w(")");
                 },
                 .assertPattern => |ap| {
                     try self.w("(() => { ");

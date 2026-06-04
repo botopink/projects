@@ -35,9 +35,9 @@ testDecl ::= "test" string? block
 > `parser/exprs.zig:253`). Canonical style is keyword form, not `assert(...)`.
 > F1 should adapt the existing assert (runtime lowering + failure recording)
 > rather than add a new builtin in `builtins.d.bp`.
-- [ ] Review existing `comptime_.assert` semantics (comptime-only? runtime?) across backends
+- [x] Review existing `comptime_.assert` semantics: runtime lowering exists per backend (JS `console.assert`, Erlang `true = (...)`); kept for normal builds
 - [x] Inference: `cond: bool` (unified in `infer.zig` `.assert` case; snapshot `comptime/*/errors/assert_requires_bool`); usable broadly (Zig-style), only `test` blocks collected by runner
-- [ ] Lowering: `assert c` inside a `test` body → runtime check that records a failure (with `src` loc) instead of a hard panic, so the runner can continue
+- [x] Lowering (commonJS test mode): `assert c[, m]` → `__bp_assert(c, m, "<module>.bp:<line>")` which throws; the runner catches per test, records the failure, and continues
 
 ### F2 — inference / validation — DONE (duplicate-name warning deferred)
 - [x] A `test` body type-checks like a `fn` body returning void (`inferTestDecl` in both `inferDecl` and `inferDeclTyped` paths; snapshots `comptime/*/errors/test_body_type_error`)
@@ -46,17 +46,25 @@ testDecl ::= "test" string? block
 - [x] Tests excluded from normal `build`/`run` output (codegen skips — F0)
 
 ### F3 — codegen + runner (phase by backend)
-- [ ] Collect all `TestDecl`s into a generated registry per target
-- [ ] **CommonJS/node** first: emit each test as a function + runner entry; `botopink test` executes via node
+- [x] Collect all `TestDecl`s into a generated registry per target (`__bp_tests` array; `Config.test_mode` flag)
+- [x] **CommonJS/node** first: each test emits as `__bp_test_N()` + `__bp_run_tests()` runner; `main/0` not auto-invoked in test mode
 - [ ] **Erlang/BEAM**: emit eunit-style test functions
-- [ ] **WASM**: emit + run via the WASI harness (or mark deferred)
-- [ ] Snapshots: `codegen/node/test_runner`, `codegen/erlang/test_runner`
+- [ ] **WASM**: emit + run via the WASI harness (deferred)
+- [x] Snapshot: `codegen/node/commonJS/test_runner` (+ normal-build exclusion check)
+- [ ] Snapshot: `codegen/erlang/test_runner` (with the Erlang runner)
 
-### F4 — `botopink test` CLI + reporting
-- [ ] New subcommand in `modules/compiler-cli/src/cli/` (alongside build/run/check/format)
-- [ ] Compile in test mode, run, collect pass/fail
-- [ ] Report: name, pass/fail, failure message + source loc, summary counts
-- [ ] `--filter <substr>` to select tests by name
+### F4 — `botopink test` CLI + reporting — DONE (commonJS)
+- [x] New subcommand `modules/compiler-cli/src/cli/test_cmd.zig` (artifacts → `.botopinkbuild/test-out/`)
+- [x] Compile in test mode, run via node, aggregate exit codes per module
+- [x] Report: name, pass/fail, failure message + source loc, summary counts; exit 1 on any failure
+- [x] `--filter <substr>` to select tests by name (passed to the runner via argv)
+
+### Bonus — parser: calls as binary operands (pre-existing gap, required by tests)
+- [x] `f(args) == x` / `f(args) + 1` etc. failed to parse anywhere (also on `feat`).
+      Fixed: `parsePrimary` now parses `ident(args)` calls + `.method(args)` chain links,
+      and `parseExpr`'s call-chain shortcut rolls back when a binary operator follows
+      (`isBinaryOpNext`). Snapshots: `parser/call_as_binary_operand`,
+      `parser/method_chain_as_binary_operand`, `parser/assert_on_call_equality`.
 
 ### test-blocks scenarios
 ```
