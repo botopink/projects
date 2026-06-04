@@ -158,6 +158,7 @@ pub fn emitProgramOpts(
     defer em.deinit();
     em.test_mode = test_mode;
     em.module_name = module_name;
+    try em.collectExternals(program);
 
     // Test registry entries collected while emitting decls (test mode only).
     const TestEntry = struct { name: ?[]const u8, line: usize, idx: usize };
@@ -251,7 +252,21 @@ pub fn emitProgramOpts(
             },
             .@"fn" => |f| {
                 if (!firstEmitted) try aw.writer.writeByte('\n');
-                try em.emitFn(f);
+                if (f.isExternal()) {
+                    // FFI declaration — import the host symbol under the fn name.
+                    if (em.externals.get(f.name)) |ref| {
+                        if (std.mem.eql(u8, ref.symbol, f.name)) {
+                            try em.fmt("const {{ {s} }} = require(\"{s}\");", .{ ref.symbol, ref.module });
+                        } else {
+                            try em.fmt("const {{ {s}: {s} }} = require(\"{s}\");", .{ ref.symbol, f.name, ref.module });
+                        }
+                        if (f.isPub) try em.fmt("\nexports.{s} = {s};", .{ f.name, f.name });
+                    } else {
+                        try em.fmt("// external fn {s} (no node target)", .{f.name});
+                    }
+                } else {
+                    try em.emitFn(f);
+                }
                 try aw.writer.writeByte('\n');
                 firstEmitted = false;
             },
@@ -527,6 +542,11 @@ const Emitter = struct {
     /// Module name, used for `<module>.bp:<line>` source locations in
     /// test-mode assert failures.
     module_name: []const u8 = "main",
+    /// `@[external(node, "module", "symbol")]` fns: name → host import.
+    /// The decl lowers to `const { symbol: name } = require("module");`.
+    externals: std.StringHashMap(ast.ExternalRef),
+    /// `@[external(…)]` fns with no `node` target — calling one is an error.
+    externals_missing: std.StringHashMap(void),
 
     fn emitterInit(
         alloc: std.mem.Allocator,
@@ -539,11 +559,32 @@ const Emitter = struct {
             .cv = cv,
             .alloc = alloc,
             .rewrites = rewrites,
+            .externals = std.StringHashMap(ast.ExternalRef).init(alloc),
+            .externals_missing = std.StringHashMap(void).init(alloc),
         };
     }
 
     fn deinit(self: *Emitter) void {
         self.hook_state.deinit(self.alloc);
+        self.externals.deinit();
+        self.externals_missing.deinit();
+    }
+
+    /// Indexes every `@[external(…)]` fn by name: with a `node` target it goes
+    /// to `externals`; without one it goes to `externals_missing` (so a call
+    /// can fail with a clear error instead of an undefined identifier).
+    fn collectExternals(self: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .@"fn" => |f| {
+                if (!f.isExternal()) continue;
+                if (f.externalFor("node")) |ref| {
+                    try self.externals.put(f.name, ref);
+                } else {
+                    try self.externals_missing.put(f.name, {});
+                }
+            },
+            else => {},
+        };
     }
 
     fn w(self: *Emitter, s: []const u8) !void {
@@ -1796,6 +1837,10 @@ const Emitter = struct {
                                 try self.emitExpr(recv.*);
                                 try self.fmt(".{s}(", .{cc.callee});
                             }
+                        } else if (self.externals_missing.contains(cc.callee)) {
+                            // External fn with no `node` target — no symbol to
+                            // call on this backend.
+                            return error.MissingExternalTarget;
                         } else {
                             try self.fmt("{s}(", .{cc.callee});
                         }
@@ -2025,7 +2070,7 @@ const Emitter = struct {
             .numberLit => |n| try buf.writer.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try buf.writer.writeAll("_s === ");
-                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites };
+                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try buf.writer.print("_s === \"{s}\"", .{n}),
@@ -2045,7 +2090,7 @@ const Emitter = struct {
             .numberLit => |n| try wr.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try wr.writeAll("_s === ");
-                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites };
+                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try wr.print("_s === \"{s}\"", .{n}),

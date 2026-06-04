@@ -12,9 +12,23 @@ pub fn build(b: *std.Build) void {
     // ── std prelude ───────────────────────────────────────────────────────────
 
     const std_prelude = b.addModule("std_prelude", .{
-        .root_source_file = b.path("libs/std/src/prelude.zig"),
+        .root_source_file = b.path("modules/compiler-core/src/comptime/stdlib/prelude.zig"),
         .target = target,
     });
+
+    // The stdlib .bp/.d.bp sources live under libs/std/src/ (outside the
+    // std_prelude module root), so each file is exposed as an anonymous
+    // import that prelude.zig embeds by name. One entry per stdlib module.
+    const std_bp_files = [_][]const u8{
+        "primitives.d.bp",
+        "array.d.bp",
+        "string.d.bp",
+    };
+    for (std_bp_files) |f| {
+        std_prelude.addAnonymousImport(f, .{
+            .root_source_file = b.path(b.fmt("libs/std/src/{s}", .{f})),
+        });
+    }
 
     // ── compiler-core (library) ───────────────────────────────────────────────
 

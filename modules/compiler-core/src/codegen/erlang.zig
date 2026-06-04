@@ -127,6 +127,9 @@ fn emitErlang(
     // to the bare local function `swim(d)` rather than a remote module call.
     try em.collectExtensionNames(program);
     defer em.ext_names.deinit();
+    try em.collectExternals(program);
+    defer em.externals.deinit();
+    defer em.externals_missing.deinit();
     var top_runtime_vals: std.ArrayListUnmanaged(ast.ValDecl) = .empty;
     defer top_runtime_vals.deinit(alloc);
     var has_main_0 = false;
@@ -152,7 +155,8 @@ fn emitErlang(
     defer pub_fns.deinit(alloc);
     for (program.decls) |decl| {
         switch (decl) {
-            .@"fn" => |f| if (f.isPub) try pub_fns.append(alloc, f),
+            // External fns emit no local definition — nothing to export.
+            .@"fn" => |f| if (f.isPub and !f.isExternal()) try pub_fns.append(alloc, f),
             else => {},
         }
     }
@@ -187,7 +191,18 @@ fn emitErlang(
                     try em.emitTopVal(v, comptime_vals);
                 }
             },
-            .@"fn" => |f| try em.emitFn(f),
+            .@"fn" => |f| {
+                if (f.isExternal()) {
+                    // FFI declaration — calls lower to the remote target directly.
+                    if (em.externals.get(f.name)) |ref| {
+                        try aw.writer.print("%% external fn {s} -> {s}:{s}\n", .{ f.name, ref.module, ref.symbol });
+                    } else {
+                        try aw.writer.print("%% external fn {s} (no erlang target)\n", .{f.name});
+                    }
+                } else {
+                    try em.emitFn(f);
+                }
+            },
             .@"struct" => |s| try em.emitStruct(s),
             .record => |r| try em.emitRecord(r),
             .@"enum" => |e| try em.emitEnum(e),
@@ -331,6 +346,11 @@ const Emitter = struct {
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
     /// Set of `implement`/`extend` block names (for qualified-call dispatch).
     ext_names: std.StringHashMap(void),
+    /// `@[external(erlang, "module", "symbol")]` fns: name → remote target.
+    /// Calls lower to `module:symbol(Args)`; the decl itself emits nothing.
+    externals: std.StringHashMap(ast.ExternalRef),
+    /// `@[external(…)]` fns with no `erlang` target — calling one is an error.
+    externals_missing: std.StringHashMap(void),
     /// When true, `emitFn` keeps the `self` parameter (extension methods take
     /// the receiver as an explicit first argument; ordinary fns drop `self`).
     keep_self: bool = false,
@@ -348,6 +368,8 @@ const Emitter = struct {
             .alloc = alloc,
             .rewrites = rewrites,
             .ext_names = std.StringHashMap(void).init(alloc),
+            .externals = std.StringHashMap(ast.ExternalRef).init(alloc),
+            .externals_missing = std.StringHashMap(void).init(alloc),
         };
     }
 
@@ -355,6 +377,23 @@ const Emitter = struct {
         for (program.decls) |decl| switch (decl) {
             .implement => |im| try this.ext_names.put(im.name, {}),
             .extend => |ex| try this.ext_names.put(ex.name, {}),
+            else => {},
+        };
+    }
+
+    /// Indexes every `@[external(…)]` fn by name: with an `erlang` target it
+    /// goes to `externals`; without one it goes to `externals_missing` (so a
+    /// call can fail with a clear error instead of an undefined function).
+    fn collectExternals(this: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .@"fn" => |f| {
+                if (!f.isExternal()) continue;
+                if (f.externalFor("erlang")) |ref| {
+                    try this.externals.put(f.name, ref);
+                } else {
+                    try this.externals_missing.put(f.name, {});
+                }
+            },
             else => {},
         };
     }
@@ -1007,6 +1046,14 @@ const Emitter = struct {
                                 try this.emitExpr(recv.*);
                                 try this.fmt(":{s}(", .{cc.callee});
                             }
+                        } else if (this.externals.get(cc.callee)) |ref| {
+                            // `@[external(erlang, "module", "symbol")]` fn:
+                            // the call lowers to the remote `module:symbol(…)`.
+                            try this.fmt("{s}:{s}(", .{ ref.module, ref.symbol });
+                        } else if (this.externals_missing.contains(cc.callee)) {
+                            // External fn with no `erlang` target — no symbol
+                            // to call on this backend.
+                            return error.MissingExternalTarget;
                         } else {
                             try this.fmt("{s}(", .{cc.callee});
                         }

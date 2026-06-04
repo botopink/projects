@@ -47,7 +47,7 @@ The `.bp` libraries (`std`, `server`, `client`) live at the repo root under
   every call through a thin local `compiler.zig` wrapper so the protocol layer
   stays decoupled from the compiler.
 - **`libs/std`** is data, not Zig code. Each `.bp` file is `@embedFile`'d via
-  `libs/std/src/prelude.zig` and pulled into the inference `Env` before each
+  `modules/compiler-core/src/comptime/stdlib/prelude.zig` and pulled into the inference `Env` before each
   pass. It lives at the repo root, not under `modules/`.
 
 ## Per-package commands

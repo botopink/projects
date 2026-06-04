@@ -25,6 +25,8 @@ comptime/
 ├── specialize.zig     ← `SpecializedFn`, `SpecCache`, `specialize()`
 ├── transform.zig      ← `Aggregator` — drives the full transform pass
 ├── snapshot.zig       ← comptime snapshot helpers
+├── stdlib/            ← std prelude loader — see stdlib/AGENTS.md
+│   └── prelude.zig        ← @embedFile of libs/std/src/*.bp (std_prelude module root)
 ├── tests.zig          ← barrel: aggregates tests/<feature>.zig for test_root.zig
 ├── tests/             ← comptime tests, split by feature
 │   ├── helpers.zig        ← shared harness (`assertComptimeAst`, `assertTypeErrorSnap`, …)
