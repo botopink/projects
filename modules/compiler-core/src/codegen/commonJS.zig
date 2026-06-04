@@ -371,7 +371,7 @@ pub fn emitProgramOpts(
             \\    console.log(passed + " passed, " + failed + " failed");
             \\    if (failed > 0) process.exit(1);
             \\}
-            \\__bp_run_tests();
+            \\if (require.main === module) __bp_run_tests();
             \\
         );
     }
@@ -551,6 +551,22 @@ const Emitter = struct {
     }
     fn fmt(self: *Emitter, comptime f: []const u8, args: anytype) !void {
         try self.out.print(f, args);
+    }
+
+    /// True when a lambda's final statement is a plain value expression that
+    /// should be implicitly returned (JS arrow blocks don't auto-return).
+    /// Jumps (return/throw/break), bindings, branches, and loops are
+    /// statements — never prefixed with `return`.
+    fn isImplicitReturnExpr(e: ast.Expr) bool {
+        return switch (e) {
+            .literal, .identifier, .binaryOp, .unaryOp, .call, .collection, .function => true,
+            .comptime_ => |ct| switch (ct.kind) {
+                // `assert`/pattern-assert are statements, the rest are values.
+                .assert, .assertPattern => false,
+                else => true,
+            },
+            .jump, .branch, .loop, .binding, .useHook => false,
+        };
     }
 
     fn emitValDecl(self: *Emitter, v: ast.ValDecl) !void {
@@ -1797,8 +1813,10 @@ const Emitter = struct {
                                 try self.w(p);
                             }
                             try self.w(") => {\n");
-                            for (tl.body) |st| {
+                            for (tl.body, 0..) |st, si| {
                                 try self.w("    ");
+                                // Tail value expression is the lambda's result.
+                                if (si == tl.body.len - 1 and isImplicitReturnExpr(st.expr)) try self.w("return ");
                                 try self.emitStmt(st);
                                 try self.w("\n");
                             }
@@ -1848,8 +1866,11 @@ const Emitter = struct {
                     try self.w(p);
                 }
                 try self.w(") => {\n");
-                for (f.kind.body) |st| {
+                for (f.kind.body, 0..) |st, si| {
                     try self.w("    ");
+                    // A bare value expression in tail position is the lambda's
+                    // result — JS arrow blocks don't auto-return it.
+                    if (si == f.kind.body.len - 1 and isImplicitReturnExpr(st.expr)) try self.w("return ");
                     try self.emitStmt(st);
                     try self.w("\n");
                 }

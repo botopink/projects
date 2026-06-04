@@ -14,7 +14,7 @@ function parseAge(s) {
 
 function main() {
     const r = ((_r) => _r.tag === "Ok" ? { tag: "Ok", result: ((n) => {
-    (n + 1);
+    return (n + 1);
 })(_r.result) } : _r)(parseAge("42"));
 }
 

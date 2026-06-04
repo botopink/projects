@@ -15,13 +15,23 @@ std/
 ├── AGENTS.md          ← you are here
 ├── docs.md            ← how the stdlib reaches the compiler + conventions
 ├── botopink.json      ← package metadata
-└── src/               ← .bp source files + prelude.zig — see src/AGENTS.md
-    ├── prelude.zig    ← @embedFile of every .bp into Zig const strings
-    ├── primitives.d.bp  ← I32/U32/I64/U64/F32/F64/Bool interfaces
-    ├── array.d.bp       ← generic Array<T> interface
-    ├── string.d.bp      ← String interface
-    └── builtins.d.bp    ← compiler/runtime builtins (typeOf, sizeOf, panic, …)
+├── src/               ← .bp source files + prelude.zig — see src/AGENTS.md
+│   ├── prelude.zig    ← @embedFile of every .bp into Zig const strings
+│   ├── primitives.d.bp  ← I32/U32/I64/U64/F32/F64/Bool interfaces
+│   ├── array.d.bp       ← generic Array<T> interface
+│   ├── string.d.bp      ← String interface
+│   └── builtins.d.bp    ← compiler/runtime builtins (typeOf, sizeOf, panic, …)
+└── test/              ← `.bp` test suite run by `botopink test` — see test/AGENTS.md
+    ├── array_test.bp    ← builtin Array<T> behaviour
+    └── string_test.bp   ← builtin String behaviour
 ```
+
+## Testing
+
+`cd libs/std && botopink test` compiles `src/` + `test/` in test mode and
+runs every `test { … }` block (declaration `*.d.bp` files are excluded from
+compilation — they are type surface only). Coverage status and the gaps that
+block fuller suites are catalogued in [`test/AGENTS.md`](test/AGENTS.md).
 
 ## Wiring
 

@@ -10,6 +10,10 @@ const Module = bp.Module;
 const EXTS = [_][]const u8{ ".bp", ".botopink" };
 
 fn hasSourceExt(name: []const u8) bool {
+    // Declaration modules (`*.d.bp`) are type surface only — they declare
+    // ambient builtins (bodyless `fn`), use declaration-file syntax the
+    // regular pipeline rejects, and are embedded by the compiler separately.
+    if (std.mem.endsWith(u8, name, ".d.bp")) return false;
     for (EXTS) |ext| {
         if (std.mem.endsWith(u8, name, ext)) return true;
     }

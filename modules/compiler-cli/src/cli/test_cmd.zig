@@ -47,12 +47,18 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
         return 1;
     }
 
-    // Scan source files.
-    const modules = try scanner.scanSources(gpa, io, "src");
-    defer scanner.freeModules(gpa, modules);
+    // Scan source files: `src/` (inline test blocks) plus `test/` (separate
+    // `*_test.bp` suites). Test modules come last so `src/` exports are
+    // already registered when they compile.
+    const src_modules = try scanner.scanSources(gpa, io, "src");
+    defer scanner.freeModules(gpa, src_modules);
+    const test_modules = try scanner.scanSources(gpa, io, "test");
+    defer scanner.freeModules(gpa, test_modules);
+
+    const modules = try std.mem.concat(arena, bp.Module, &.{ src_modules, test_modules });
 
     if (modules.len == 0) {
-        reporter.errMsg("no source files found in src/");
+        reporter.errMsg("no source files found in src/ or test/");
         reporter.hintMsg("create a .bp file, e.g. src/main.bp");
         return 1;
     }
@@ -89,11 +95,52 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
     }
     if (had_error) return 1;
 
-    // Write test artifacts and run each module that contains tests.
+    // Modules with parse/type errors produce no output at all — surface that
+    // instead of silently skipping their tests.
+    if (outputs.items.len < modules.len) {
+        const msg = try std.fmt.allocPrint(
+            arena,
+            "{d} module(s) failed to compile — run `botopink check` for diagnostics",
+            .{modules.len - outputs.items.len},
+        );
+        reporter.errMsg(msg);
+        return 1;
+    }
+
+    // Write every module's test-mode artifact (test modules `require` their
+    // sibling modules), then run each module that contains tests.
     std.Io.Dir.cwd().createDirPath(io, TEST_OUT_DIR) catch |err| switch (err) {
         error.PathAlreadyExists => {},
         else => return err,
     };
+
+    for (outputs.items) |o| {
+        const sub_path = try std.fmt.allocPrint(arena, TEST_OUT_DIR ++ "/{s}.js", .{o.name});
+        if (std.fs.path.dirname(sub_path)) |parent| {
+            std.Io.Dir.cwd().createDirPath(io, parent) catch |err| switch (err) {
+                error.PathAlreadyExists => {},
+                else => return err,
+            };
+        }
+        try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = sub_path, .data = o.result.js });
+    }
+
+    // Root-source imports (`import {x};`) emit `require("./module")` — write a
+    // `module.js` aggregator that merges every module's exports. Runners only
+    // execute as the entry module (`require.main === module`), so requiring a
+    // sibling never re-runs its tests.
+    {
+        var agg = std.ArrayListUnmanaged(u8).empty;
+        defer agg.deinit(arena);
+        try agg.appendSlice(arena, "module.exports = Object.assign({}");
+        for (outputs.items) |o| {
+            try agg.appendSlice(arena, ", require(\"./");
+            try agg.appendSlice(arena, o.name);
+            try agg.appendSlice(arena, ".js\")");
+        }
+        try agg.appendSlice(arena, ");\n");
+        try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = TEST_OUT_DIR ++ "/module.js", .data = agg.items });
+    }
 
     var any_tests = false;
     var exit_code: u8 = 0;
@@ -103,13 +150,6 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
         any_tests = true;
 
         const sub_path = try std.fmt.allocPrint(arena, TEST_OUT_DIR ++ "/{s}.js", .{o.name});
-        if (std.fs.path.dirname(sub_path)) |parent| {
-            std.Io.Dir.cwd().createDirPath(io, parent) catch |err| switch (err) {
-                error.PathAlreadyExists => {},
-                else => return err,
-            };
-        }
-        try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = sub_path, .data = o.result.js });
 
         var argv = std.ArrayListUnmanaged([]const u8).empty;
         defer argv.deinit(arena);

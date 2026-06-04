@@ -427,14 +427,15 @@ pub fn parseExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
             sawMethodCall = true;
         }
 
-        if ((baseIsCall or sawMethodCall) and !isBinaryOpNext(this)) {
+        if ((baseIsCall or sawMethodCall) and !isBinaryOpNext(this) and !this.check(.dot)) {
             return this.wrapCatch(alloc, base);
         }
 
         // Either a bare identifier with no call/chain, or a call chain
-        // followed by a binary operator (`add(1, 2) == 5`, `f() + 1`) — the
-        // call is an operand, not the whole expression. Roll back and let the
-        // precedence climber (whose parsePrimary parses call chains) own it.
+        // followed by a binary operator (`add(1, 2) == 5`, `f() + 1`) or a
+        // field-access link (`s.split(",").length`) — the call is an operand,
+        // not the whole expression. Roll back and let the precedence climber
+        // (whose parsePrimary parses call chains) own it.
         base.deinit(alloc);
         this.current = saved;
     }

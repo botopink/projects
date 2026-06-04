@@ -95,10 +95,12 @@ and run by `botopink test`. Modeled on the Zig stdlib (test blocks next to funct
 No memory/allocator/pointer tests (bp doesn't manage memory) — gaps go to
 `tasks/v0.beta.2/specs/zig-feature-gaps.md`.
 
-### F0 — suite layout + discovery
-- [ ] Decide inline-vs-separate; impl modules MAY carry inline `test` blocks, declaration modules (`*.d.bp`) get separate `libs/std/test/<module>_test.bp`
-- [ ] Confirm `botopink test` discovers stdlib tests (depends on Part 1 F4)
-- [ ] Add `libs/std/test/AGENTS.md` describing the suite (one file per module)
+### F0 — suite layout + discovery — DONE
+- [x] Decided: impl modules MAY carry inline `test` blocks; declaration modules (`*.d.bp`) get separate `libs/std/test/<module>_test.bp`
+- [x] `botopink test` discovers `test/` in addition to `src/` (test modules compile last so `src/` exports resolve); `*.d.bp` declaration files excluded from compilation (scanner)
+- [x] Cross-module imports work in the runner: `module.js` aggregator merges all module exports; runners execute only as the entry module (`require.main === module`)
+- [x] Added `libs/std/test/AGENTS.md` (layout, running, coverage status, gaps)
+- [x] First green suites: `libs/std/test/string_test.bp` (3 tests) + `array_test.bp` (6 tests) — 9/9 pass via `cd libs/std && botopink test`
 
 ### F1 — effect types: `option` + `result`
 - [ ] `option_test.bp`: `map`, `then`, `unwrap`, `or`, `is_some`/`is_none`
@@ -134,12 +136,35 @@ cli ---- inline_tests_in_impl_modules_run        (Zig-style co-located test bloc
 
 ---
 
+## Discovered gaps (catalogued for follow-up specs)
+
+1. **Snake_case builtin methods have no JS name mapping** — the blind commonJS
+   emitter writes `s.to_upper()` verbatim; only methods whose botopink name
+   matches the JS native (`split`, `trim`, `slice`, `join`, `reverse`,
+   `indexOf`, `at`, `map`, `filter`) work. Blocks most of `string_test.bp`.
+   Needs typed-value method dispatch (loc-keyed rewrites, like F6 extension
+   dispatch) — stdlib/method-lowering work, not test-blocks.
+2. **Literal method receivers don't parse** — `"a,b".split(",")` is a parse
+   error (also on `feat`); receivers must be `val`-bound identifiers.
+3. **Structural `==` on arrays** — lowers to JS `===` (reference equality);
+   suites compare via `.join(...)`. Surfaces the `expect().to_equal()` need
+   noted in both specs.
+4. **`fn main/0` defined in a `test/` module** would collide with `src/main`
+   module names — convention: `test/` files are `*_test.bp`, no main.
+
+## Fixed along the way (pre-existing, reproduced on `feat`)
+
+- Parser: calls/method-chains as binary operands (`f(x) == 3`,
+  `s.split(",").length == 2`) — see Part 1 bonus.
+- commonJS codegen: lambda tail expressions now `return` their value
+  (`ns.map({ x -> x * x })` produced `undefined` before); 4 Result/Option
+  snapshots re-baselined with the corrected output.
+
 ## Notes
 
-- Part 2 also depends on `stdlib-gleam` modules existing — sequence each module's tests
-  behind (or alongside) its implementation; skip modules not yet implemented and note them.
-- `assert` failing must **not** abort the run — record + continue so the runner reports all results.
-- Equality assertions rely on structural `==` for arrays/records; if missing, surface an
-  `expect().to_equal()` need in both specs.
+- Part 2 modules (`list`, `dict`, `option`, `result`, `iterator`, …) depend on
+  `stdlib-gleam` existing — F1–F5 of stdlib-tests remain blocked on it; write
+  each module's tests alongside its implementation.
+- `assert` failing must **not** abort the run — record + continue so the runner reports all results. (Done: per-test catch in the runner.)
 - Pre-commit runs `zig build` + tests — keep the tree green per commit.
 - Everything in English, including this file.

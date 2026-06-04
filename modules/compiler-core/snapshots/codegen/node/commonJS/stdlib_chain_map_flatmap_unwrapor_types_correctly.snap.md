@@ -22,9 +22,9 @@ function validate(n) {
 
 function main() {
     const r = ((_r) => _r.tag === "Ok" ? _r.result : (0))(((_r) => _r.tag === "Ok" ? ((n) => {
-    validate(n);
+    return validate(n);
 })(_r.result) : _r)(((_r) => _r.tag === "Ok" ? { tag: "Ok", result: ((n) => {
-    (n + 1);
+    return (n + 1);
 })(_r.result) } : _r)(parseAge("42"))));
 }
 

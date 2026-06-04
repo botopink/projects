@@ -60,7 +60,7 @@ function __bp_run_tests() {
     console.log(passed + " passed, " + failed + " failed");
     if (failed > 0) process.exit(1);
 }
-__bp_run_tests();
+if (require.main === module) __bp_run_tests();
 ```
 
 ----- TYPESCRIPT TYPEDEF -- main.d.ts
