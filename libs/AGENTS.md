@@ -25,7 +25,7 @@ libs/
 
 | Package | Provides | Embedded in compiler? | AGENTS |
 |---|---|---|---|
-| `std/` | builtin types, primitives, Array/String, builtins — loaded into the type `Env` at infer time | yes (`libs/std/src/prelude.zig`, wired in root `build.zig`) | [link](std/AGENTS.md) |
+| `std/` | builtin types, primitives, Array/String, builtins — loaded into the type `Env` at infer time | yes (`modules/compiler-core/src/comptime/stdlib/prelude.zig`, wired in root `build.zig`) | [link](std/AGENTS.md) |
 | `server/` | HTTP/socket server-side interfaces | no — inert scaffold | [link](server/AGENTS.md) |
 | `client/` | HTTP client / request interfaces | no — inert scaffold | [link](client/AGENTS.md) |
 
@@ -33,9 +33,11 @@ libs/
 
 - `.bp` declarations stay declarative — interface/method **signatures only**, no
   bodies. Codegen supplies implementations per target.
-- Only `std` is embedded today. `server`/`client` are scaffolds: they carry no
-  `prelude.zig` and are not wired into `build.zig`. Embedding a new lib into
-  stdlib loading / the type `Env` is a deliberate, separate task.
+- Only `std` is embedded today. `server`/`client` are scaffolds: they are not
+  wired into `build.zig` / the compiler-core prelude loader. Embedding a new
+  lib into stdlib loading / the type `Env` is a deliberate, separate task.
+- Packages are `.bp`-only — no Zig under `libs/`. The embed/loader glue lives
+  in `modules/compiler-core/src/comptime/stdlib/prelude.zig`.
 - Every directory ships its own `AGENTS.md`; update it in the same change that
   touches the directory's layout or contents.
 

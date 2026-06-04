@@ -4,32 +4,34 @@
 > Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md) · Examples: [`./examples.md`](examples.md)
 > Parent: [`../docs.md`](../docs.md)
 
-Single registry directory: `prelude.zig` exposes every `.bp` file as a
-compile-time string consumed by `compiler-core`'s type inference. Adding a
-new stdlib module = drop a `.bp` here + one line in `prelude.zig`.
+Single registry directory holding the `.bp`/`.d.bp` sources (no Zig). The
+loader `modules/compiler-core/src/comptime/stdlib/prelude.zig` exposes every
+`.bp` file as a compile-time string consumed by `compiler-core`'s type
+inference. Adding a new stdlib module = drop a `.bp` here + one line in the
+root `build.zig` (`std_bp_files`) + one line in `prelude.zig`.
 
 ## Tree
 
 ```text
 src/
-├── prelude.zig        ← @embedFile of every .bp file
 ├── primitives.d.bp      ← numeric + bool interfaces
 ├── array.d.bp           ← generic Array<T> interface
 ├── string.d.bp          ← String interface methods
 └── builtins.d.bp        ← @typeOf / @sizeOf / @panic / @typeName / …
 ```
 
-## `prelude.zig` shape
+## `prelude.zig` shape (in compiler-core)
 
 ```zig
+// modules/compiler-core/src/comptime/stdlib/prelude.zig
 pub const primitives = @embedFile("primitives.d.bp");
 pub const array      = @embedFile("array.d.bp");
 pub const string     = @embedFile("string.d.bp");
-pub const builtins   = @embedFile("builtins.d.bp");
 ```
 
-That's the entire file — one `pub const` per `.bp`. Adding a `.bp` means
-adding exactly one line here.
+One `pub const` per `.bp`. Each name resolves through an anonymous import
+declared in the root `build.zig` (`std_bp_files` → `addAnonymousImport`),
+because the `.bp` sources live outside the `std_prelude` module root.
 
 ## Per-file roles
 
@@ -73,12 +75,14 @@ binaries + `string` module functions.
 ## Adding a stdlib module — step-by-step
 
 1. Create `src/<name>.bp` with `interface <Name> { … }` declarations.
-2. Add `pub const <name> = @embedFile("<name>.bp");` to `prelude.zig`.
-3. Run `zig build test` from `modules/compiler-core/` — expect snapshot
+2. Add `"<name>.bp"` to `std_bp_files` in the root `build.zig`.
+3. Add `pub const <name> = @embedFile("<name>.bp");` to
+   `modules/compiler-core/src/comptime/stdlib/prelude.zig`.
+4. Run `zig build test` from `modules/compiler-core/` — expect snapshot
    churn under `snapshots/comptime/` (the type env now contains a new
    binding).
-4. Promote the `.snap.md.new` files after reviewing the diffs.
-5. If the new module is user-facing, mention it in the language
+5. Promote the `.snap.md.new` files after reviewing the diffs.
+6. If the new module is user-facing, mention it in the language
    reference [`../../../docs.md`](../../../docs.md).
 
 ## Conventions

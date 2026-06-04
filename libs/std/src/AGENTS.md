@@ -4,8 +4,11 @@
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 > Docs: [`./docs.md`](docs.md) · Examples: [`./examples.md`](examples.md)
 
-Source for the embedded stdlib. `prelude.zig` exposes each `.bp` file as a
-compile-time string consumed by `compiler-core`'s type inference.
+Source for the embedded stdlib — **`.bp`/`.d.bp` only, no Zig**. The loader
+(`prelude.zig`) lives in `modules/compiler-core/src/comptime/stdlib/` and
+exposes each `.bp` file as a compile-time string consumed by `compiler-core`'s
+type inference; the root `build.zig` (`std_bp_files`) maps each file into that
+module as an anonymous import.
 
 ## Tree
 
@@ -14,7 +17,6 @@ src/
 ├── AGENTS.md          ← you are here
 ├── docs.md            ← registry + per-file roles
 ├── examples.md        ← stdlib usage in `.bp` (Array, String, builtins)
-├── prelude.zig        ← @embedFile of the wired .bp files (primitives, array, string)
 ├── primitives.d.bp      ← numeric + bool interfaces
 ├── array.d.bp           ← generic Array<T> interface
 ├── string.d.bp          ← String interface methods
@@ -25,7 +27,6 @@ src/
 
 | File | Role |
 |---|---|
-| `prelude.zig` | Zig module that re-exports every `.bp` source as a `pub const` string via `@embedFile`. |
 | `primitives.d.bp` | `interface I32 { … }`, `interface U32 { … }`, …, `interface Bool { … }`. |
 | `array.d.bp` | `interface Array<T>` — `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter`. |
 | `string.d.bp` | `interface String` — `len`, `split`, `to_upper/lower`, `contains`, `starts_with`, `ends_with`, `trim*`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
@@ -35,7 +36,9 @@ src/
 
 - Keep declarations stable and additive — renames force snapshot churn across
   every codegen/comptime suite.
-- When adding a `.bp` file: also add a `pub const <name> = @embedFile("<name>.bp");`
-  line to `prelude.zig`, otherwise inference will not see it.
+- When adding a `.bp` file: add it to `std_bp_files` in the root `build.zig`
+  **and** add a `pub const <name> = @embedFile("<name>.bp");` line to
+  `modules/compiler-core/src/comptime/stdlib/prelude.zig`, otherwise inference
+  will not see it.
 - Interface declarations must stay declarative (no method bodies) — they're
   consumed by the type checker, not codegen.
