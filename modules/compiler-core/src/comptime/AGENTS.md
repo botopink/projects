@@ -32,7 +32,7 @@ comptime/
 │   ├── helpers.zig        ← shared harness (`assertComptimeAst`, `assertTypeErrorSnap`, …)
 │   ├── infer_exprs.zig    ← literal/binary/case/control-flow inference
 │   ├── infer_decls.zig    ← pub fn/record/struct/interface/implement/test-block inference
-│   ├── infer_generics.zig ← typeparam & generic inference
+│   ├── infer_generics.zig ← type meta-kind & generic inference
 │   ├── infer_errors.zig   ← inference type errors (`infer error: …`)
 │   ├── types.zig          ← types / type_unification
 │   ├── variants.zig       ← variant/record-update/pattern/@print/AST probes

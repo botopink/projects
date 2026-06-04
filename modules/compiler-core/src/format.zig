@@ -1955,11 +1955,11 @@ pub const Formatter = struct {
                     });
             },
             .typeparam => |constraints| blk: {
-                if (constraints.len == 0) break :blk this.text("typeparam");
+                if (constraints.len == 0) break :blk this.text("type");
                 var docs = try this.arena.alloc(*const Doc, constraints.len);
                 for (constraints, 0..) |c, i| docs[i] = try this.fmtTypeRef(c);
                 break :blk this.concat(
-                    try this.text("typeparam "),
+                    try this.text("type "),
                     try this.join(docs, try this.text(" | ")),
                 );
             },

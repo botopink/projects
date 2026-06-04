@@ -97,7 +97,7 @@ zig build run       # compile and run the botopink CLI
 - `if (expr) { binding -> body }` — null-check with value binding
 - `val/var name [: TypeRef] = expr` — optional type annotation on local bindings
 - **Mandatory type annotations on function parameters**: `fn f(x: i32)` — required
-- Parameter modifiers: `comptime`, `syntax`; type params via `comptime T: typeparam`, optionally constrained: `comptime T: typeparam string | int`
+- Parameter modifiers: `comptime`, `syntax`; type params via `comptime T: type`, optionally constrained: `comptime T: type string | int`
 - Pattern matching: `case expr { pattern -> body; ... }` with OR patterns, list patterns, wildcard
 - Structured parse error reporting with position and context
 - **Allocator never stored** — `Parser.init(tokens)` receives no allocator

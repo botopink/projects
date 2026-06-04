@@ -26,7 +26,7 @@
           }
         ],
         "returnType": {
-          "named": "type"
+          "typeparam": []
         },
         "body": [
           {

@@ -128,9 +128,9 @@ test "js: comptime specialization ---- comptime val used as specialization argum
     );
 }
 
-test "js: comptime specialization ---- constrained typeparam specializes per value" {
+test "js: comptime specialization ---- constrained type meta-kind specializes per value" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\fn coerce(comptime v: type string | int | bool, x: i32) -> i32 {
         \\    return x;
         \\}
         \\

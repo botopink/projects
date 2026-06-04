@@ -291,25 +291,25 @@ test "format: pub fn ---- syntax fn type param" {
     );
 }
 
-test "format: pub fn ---- typeparam no constraint" {
+test "format: pub fn ---- type meta-kind no constraint" {
     try h.assertFormat(std.testing.allocator,
-        \\pub fn wrap(comptime T: typeparam) -> type {
+        \\pub fn wrap(comptime T: type) -> type {
         \\    todo;
         \\}
     );
 }
 
-test "format: pub fn ---- typeparam single constraint" {
+test "format: pub fn ---- type meta-kind single constraint" {
     try h.assertFormat(std.testing.allocator,
-        \\fn render(comptime tag: typeparam string, props: i32) -> string {
+        \\fn render(comptime tag: type string, props: i32) -> string {
         \\    todo;
         \\}
     );
 }
 
-test "format: pub fn ---- typeparam multiple pipe constraints" {
+test "format: pub fn ---- type meta-kind multiple pipe constraints" {
     try h.assertFormat(std.testing.allocator,
-        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\fn coerce(comptime v: type string | int | bool, x: i32) -> i32 {
         \\    todo;
         \\}
     );

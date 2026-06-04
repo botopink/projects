@@ -13,10 +13,10 @@ const TypeRef = parser.TypeRef;
 const GenericParam = parser.GenericParam;
 
 /// True when `kind` can begin a type reference. Used to decide whether a
-/// `typeparam` keyword is followed by a constraint list or stands alone.
+/// `type` meta-kind keyword is followed by a constraint list or stands alone.
 fn startsTypeRef(kind: TokenKind) bool {
     return switch (kind) {
-        .identifier, .builtinIdent, .questionMark, .hash, .@"fn", .type, .selfType => true,
+        .identifier, .builtinIdent, .questionMark, .hash, .@"fn", .selfType => true,
         else => false,
     };
 }
@@ -128,10 +128,10 @@ pub fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.Ty
         _ = try this.consume(.greaterThan);
         return ast.TypeRef{ .generic = .{ .name = name, .args = try args.toOwnedSlice(alloc), .is_builtin = true } };
     }
-    // typeparam [Constraint (| Constraint)*] — comptime type parameter with
-    // an optional `|`-separated constraint list. `typeparam` alone is unconstrained.
-    if (this.check(.identifier) and std.mem.eql(u8, this.peek().lexeme, "typeparam")) {
-        _ = this.advance(); // consume 'typeparam'
+    // type [Constraint (| Constraint)*] — comptime type parameter (meta-kind)
+    // with an optional `|`-separated constraint list. `type` alone is unconstrained.
+    if (this.check(.type)) {
+        _ = this.advance(); // consume 'type'
         var constraints: std.ArrayList(ast.TypeRef) = .empty;
         errdefer {
             for (constraints.items) |*c| c.deinit(alloc);

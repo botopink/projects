@@ -2,11 +2,11 @@
 // ── type reflection ───────────────────────────────────────────────────────────
 
 fn typeOf<T>(val: T) type
-fn typeName(comptime T: typeparam) string
-fn sizeOf(comptime T: typeparam) i32
-fn alignOf(comptime T: typeparam) i32
-fn hasField(comptime T: typeparam, comptime name: string) bool
-fn hasDecl(comptime T: typeparam, comptime name: string) bool
+fn typeName(comptime T: type) string
+fn sizeOf(comptime T: type) i32
+fn alignOf(comptime T: type) i32
+fn hasField(comptime T: type, comptime name: string) bool
+fn hasDecl(comptime T: type, comptime name: string) bool
 fn field<T, F>(obj: T, comptime name: string) F
 fn tagName<T>(val: T) string
 
@@ -15,7 +15,7 @@ fn tagName<T>(val: T) string
 fn min<T>(a: T, b: T) T
 fn max<T>(a: T, b: T) T
 fn abs<T>(val: T) T
-fn as(comptime T: typeparam, val: T) T
+fn as(comptime T: type, val: T) T
 
 // ── result type ──────────────────────────────────────────────────────────────
 

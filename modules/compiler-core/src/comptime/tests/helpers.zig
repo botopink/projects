@@ -183,7 +183,7 @@ pub fn renderTypeError(
         .unknownMethod => "unknown method",
         .unknownInterface => "unknown interface",
         .ambiguousMethod => "ambiguous method",
-        .typeparamConstraint => "typeparam constraint not satisfied",
+        .typeparamConstraint => "type constraint not satisfied",
         .tryOnNonResult => "try on non-Result",
         .nonExhaustive => "non-exhaustive case",
         .redundantPattern => "unreachable case arm",
@@ -351,7 +351,7 @@ pub fn renderTypeError(
             }
             try out.appendSlice(allocator, try std.fmt.allocPrint(
                 tmp,
-                "\n  '{s}' has type '{s}', which does not satisfy 'typeparam {s}'\n",
+                "\n  '{s}' has type '{s}', which does not satisfy 'type {s}'\n",
                 .{ c.paramName, gotName, list.items },
             ));
         },

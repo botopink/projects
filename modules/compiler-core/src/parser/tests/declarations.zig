@@ -568,25 +568,25 @@ test "parser: pub fn ---- syntax fn type param returning bool" {
     );
 }
 
-test "parser: pub fn ---- typeparam no constraint" {
+test "parser: pub fn ---- type meta-kind no constraint" {
     try h.assertParser(std.testing.allocator, @src(),
-        \\pub fn wrap(comptime T: typeparam) -> type {
+        \\pub fn wrap(comptime T: type) -> type {
         \\    @todo();
         \\}
     );
 }
 
-test "parser: pub fn ---- typeparam single constraint" {
+test "parser: pub fn ---- type meta-kind single constraint" {
     try h.assertParser(std.testing.allocator, @src(),
-        \\fn render(comptime tag: typeparam string, props: i32) -> string {
+        \\fn render(comptime tag: type string, props: i32) -> string {
         \\    @todo();
         \\}
     );
 }
 
-test "parser: pub fn ---- typeparam multiple pipe constraints" {
+test "parser: pub fn ---- type meta-kind multiple pipe constraints" {
     try h.assertParser(std.testing.allocator, @src(),
-        \\fn coerce(comptime v: typeparam string | int | bool, x: i32) -> i32 {
+        \\fn coerce(comptime v: type string | int | bool, x: i32) -> i32 {
         \\    @todo();
         \\}
     );
