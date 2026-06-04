@@ -10,10 +10,12 @@ Snapshots for comptime evaluation + type/validation errors.
 ```text
 comptime/
 ├── AGENTS.md
-├── erlang/             ← success snapshots (115)
-│   └── errors/         ← type/validation errors (22)
-└── node/               ← success snapshots (115)
-    └── errors/         ← type/validation errors (22)
+├── erlang/             ← success snapshots
+│   └── errors/         ← type/validation errors
+├── node/               ← success snapshots
+│   └── errors/         ← type/validation errors
+├── beam/               ← success snapshots
+└── wasm/               ← success snapshots
 ```
 
-`erlang/` and `node/` must keep matching file names for every shared scenario.
+All targets must keep matching file names for every shared scenario.

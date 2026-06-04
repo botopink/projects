@@ -45,7 +45,6 @@ cli/
 
 ## Conventions
 
-- Allocator parameters are named `alloc` (never `allocator`).
 - Source discovery (`scanner.zig`) must remain deterministic — sort by path.
 - All errors and hints must go through `reporter.zig` so output style stays
   consistent (`error: …` / `hint: …`).

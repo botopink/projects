@@ -58,7 +58,6 @@ codegen/
 - `fn main()` triggers an entry-point wrapper (`_botopink_main()` in JS;
   quoted `'_botopink_main'/0` atom in Erlang). The Erlang atom **must**
   be quoted because plain atoms can't start with `_`.
-- All public functions use `alloc: std.mem.Allocator` (not `allocator`).
 - Erlang module-qualified calls: a PascalCase receiver (`List`) is a module
   reference → emitted as a remote call `list:map(…)` (lowercased via
   `erlangModule`); a lowercase receiver is treated as a value method call and

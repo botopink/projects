@@ -10,13 +10,15 @@ Snapshots for codegen output and codegen-time error rendering.
 ```text
 codegen/
 ├── AGENTS.md
-├── erlang/erlang/         ← Erlang outputs   (164 .snap.md)
-├── node/commonJS/         ← CommonJS outputs (164 .snap.md)
-├── beam/beam/             ← BEAM assembly    (164 .snap.md)
-├── wasm/wasm/             ← WASM text        (164 .snap.md)
+├── erlang/erlang/         ← Erlang outputs (one .snap.md per scenario)
+├── node/commonJS/         ← CommonJS outputs
+├── beam/beam/             ← BEAM assembly
+├── wasm/wasm/             ← WASM text
 └── errors/                ← codegen-time error rendering
-    ├── erlang/erlang/     ← (1 .snap.md)
-    └── node/commonJS/     ← (1 .snap.md)
+    ├── erlang/erlang/
+    ├── node/commonJS/
+    ├── beam/beam/
+    └── wasm/wasm/
 ```
 
 Each scenario in `codegen/tests.zig` emits one snapshot per target, so keep

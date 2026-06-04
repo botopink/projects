@@ -20,7 +20,7 @@ language-server/
 │   ├── docs.md
 │   └── project_index.zig ← project-level pub symbol index
 └── snapshots/
-    └── lsp/           ← 66 LSP feature snapshots
+    └── lsp/           ← LSP feature snapshots
         └── AGENTS.md
 ```
 

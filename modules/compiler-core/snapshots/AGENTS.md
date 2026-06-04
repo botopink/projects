@@ -10,7 +10,7 @@ Golden snapshots consumed by compiler-core tests.
 ```text
 snapshots/
 ├── AGENTS.md
-├── parser/             ← 140 AST snapshots                     → parser/AGENTS.md
+├── parser/             ← AST snapshots                          → parser/AGENTS.md
 ├── codegen/            ← target output + error snapshots       → codegen/AGENTS.md
 └── comptime/           ← inference / evaluation snapshots      → comptime/AGENTS.md
 ```

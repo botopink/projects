@@ -17,7 +17,7 @@ comptime/
 ├── examples.md        ← comptime usage in `.bp` source
 ├── types.zig          ← core Type union(enum)
 ├── env.zig            ← Env (binding name → *Type) + builtins/stdlib loading
-├── infer.zig          ← `inferProgramTyped` (1672 lines) — HM walk
+├── infer.zig          ← `inferProgramTyped` — HM walk
 ├── unify.zig          ← type-variable unification + occurs check
 ├── error.zig          ← structured TypeError with source ranges + hints
 ├── eval.zig           ← evaluation driver (delegates to runtime/)

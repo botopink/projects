@@ -4,7 +4,7 @@
 **Depends on**: nothing
 **Files**: AGENTS.md, tasks/AGENTS.md, tasks/_TEMPLATE.md, tasks/v0.beta.*/**, all distributed `*/AGENTS.md`, scripts/
 **Touches docs**: AGENTS.md (root), tasks/AGENTS.md, every distributed `AGENTS.md` it trims
-**Status**: partial (F0/F1/F3 done; F2 leaf-audit + F4 scripts pending — see status.md)
+**Status**: done (F0–F4 — see status.md)
 
 > Markdown-only refactor — no compiler code changes. The goal is to apply the
 > agreed model (one fact → one source; authored vs derived; the 3 layers) to the
@@ -43,19 +43,23 @@ scripts/
 - [x] Record neutrality (D5) + "one fact, one source" in the conventions section
 - [x] Add `tasks/` to the repo tree + link `tasks/AGENTS.md`; trim the duplicated worktree prose + stale "Open parallel tasks" table
 
-### F2 — de-duplicate distributed `AGENTS.md` (D2) — partial
+### F2 — de-duplicate distributed `AGENTS.md` (D2) ✅
 - [x] Root file de-duplicated (the main offender — it mirrored every subtree)
-- [ ] Audit the remaining ~40 leaf `AGENTS.md`; each owns its detail, drops facts copied from root
-- [ ] Ensure every directory with code has an `AGENTS.md` reachable from its parent
+- [x] Audit the remaining ~40 leaf `AGENTS.md`; each owns its detail, drops facts copied from root
+      (volatile counters removed; stale trees fixed; duplicated `alloc` convention dropped;
+      vestigial top-level `snapshots/` tree — empty placeholders — deleted)
+- [x] Ensure every directory with code has an `AGENTS.md` reachable from its parent
+      (added 5 minimal ones for `compiler-core/src/*/tests/`)
 
 ### F3 — authored vs derived in sets (D2 / O5) ✅
 - [x] Set `README.md` carries no live Status column — links to `status.md` (applied to beta.1 + beta.2)
 - [x] Mark `status.md` as the single state source (header note; generated rollup is F4)
 - [x] The README DAG is structure-only; live state stays in `status.md`
 
-### F4 — health tooling (optional, deferred)
-- [ ] `scripts/doc-health.sh`: fail on orphan `AGENTS.md`, broken relative links, duplicated trees
-- [ ] `scripts/status.sh`: regenerate `status.md` from `git` + `.tasks/*/TODO.md`
+### F4 — health tooling ✅
+- [x] `scripts/doc-health.sh`: fail on orphan source dirs, broken relative links, volatile counters
+- [x] `scripts/status.sh <set>`: print the `status.md` rollup table from spec headers,
+      `task/<slug>` branches and `.tasks/<slug>/TODO.md` checkboxes (prints to stdout; redirect into the set)
 
 ## Test scenarios
 

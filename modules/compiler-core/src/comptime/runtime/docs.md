@@ -1,7 +1,7 @@
 # compiler-core/src/comptime/runtime — external eval backends
 
 > Path: `modules/compiler-core/src/comptime/runtime/`
-> Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md) · Examples: [`./examples.md`](examples.md)
+> Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md)
 
 Comptime evaluation is delegated to external runtimes. Each backend writes
 a small script in the target language, executes it, and parses the JSON
@@ -70,7 +70,7 @@ slightly more disk churn.
 
 ## Adding a new backend
 
-End-to-end recipe: [`./examples.md`](examples.md). At minimum:
+At minimum:
 
 1. Create `runtime/<name>.zig` and mirror the `run(...)` signature exactly.
 2. Generate a script that prints JSON to stdout.

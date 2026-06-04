@@ -3,15 +3,14 @@
 > Path: `modules/language-server/snapshots/lsp/`
 > Parent: [`../AGENTS.md`](../AGENTS.md) · Tests: [`../../src/tests/AGENTS.md`](../../src/tests/AGENTS.md)
 
-Golden snapshots for every LSP feature. **66 files** organised by feature
-prefix.
+Golden snapshots for every LSP feature, organised by feature prefix.
 
 ## Tree
 
 ```text
 lsp/
 ├── AGENTS.md
-└── *.snap.md      ← 66 LSP feature fixtures (grouped by prefix below)
+└── *.snap.md      ← LSP feature fixtures (grouped by prefix below)
 ```
 
 ## File naming

@@ -14,11 +14,11 @@ src/
 ├── AGENTS.md          ← you are here
 ├── docs.md            ← registry + per-file roles
 ├── examples.md        ← stdlib usage in `.bp` (Array, String, builtins)
-├── prelude.zig        ← @embedFile of every .bp file
+├── prelude.zig        ← @embedFile of the wired .bp files (primitives, array, string)
 ├── primitives.d.bp      ← numeric + bool interfaces
 ├── array.d.bp           ← generic Array<T> interface
 ├── string.d.bp          ← String interface methods
-└── builtins.d.bp        ← @typeOf / @sizeOf / @panic / @typeName / …
+└── builtins.d.bp        ← @typeOf / @sizeOf / @panic / … (NOT embedded yet — see below)
 ```
 
 ## Files
@@ -29,7 +29,7 @@ src/
 | `primitives.d.bp` | `interface I32 { … }`, `interface U32 { … }`, …, `interface Bool { … }`. |
 | `array.d.bp` | `interface Array<T>` — `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter`. |
 | `string.d.bp` | `interface String` — `len`, `split`, `to_upper/lower`, `contains`, `starts_with`, `ends_with`, `trim*`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
-| `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`). |
+| `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`). **Not embedded by `prelude.zig` yet** — builtins are currently registered programmatically in `compiler-core`'s `comptime/env.zig` (`registerBuiltins`); wiring this file is part of the `stdlib-gleam` spec (`tasks/v0.beta.2/specs/stdlib-gleam.md`). |
 
 ## Conventions
 

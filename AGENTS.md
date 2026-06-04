@@ -29,9 +29,11 @@ botopink-lang/
 │   └── client/                ← client-side interfaces (scaffold)
 ├── tasks/                     ← versioned spec sets (roadmap) — see tasks/AGENTS.md
 ├── examples/                  ← .bp example programs
-└── snapshots/                 ← workspace-level codegen snapshots
-    └── codegen/{erlang,node}/ ← target-specific smoke outputs (commonJS, erlang)
+└── scripts/                   ← maintenance scripts (doc-health, status rollup) — see scripts/AGENTS.md
 ```
+
+Golden snapshots live inside the owning package (`modules/compiler-core/snapshots/`,
+`modules/language-server/snapshots/`) — `zig build test` runs with the package as cwd.
 
 ## Workspace commands
 

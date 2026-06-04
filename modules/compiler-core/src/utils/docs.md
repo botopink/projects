@@ -58,7 +58,7 @@ every fixture in one large commit.
 ## Why these helpers are in `compiler-core/src/`
 
 They were originally specific to the parser tests, but the language-server
-test harness now reuses them ([`../../../../language-server/src/tests/`](../../../../language-server/src/tests/AGENTS.md)).
+test harness now reuses them ([`../../../language-server/src/tests/`](../../../language-server/src/tests/AGENTS.md)).
 Keeping them in compiler-core avoids a circular dep — the LSP depends on
 compiler-core but not the other way around.
 
@@ -70,4 +70,4 @@ compiler-core but not the other way around.
   - [`../codegen/AGENTS.md`](../codegen/AGENTS.md)
   - [`../comptime/AGENTS.md`](../comptime/AGENTS.md)
 - LSP test suite that reuses them:
-  - [`../../../../language-server/src/tests/AGENTS.md`](../../../../language-server/src/tests/AGENTS.md)
+  - [`../../../language-server/src/tests/AGENTS.md`](../../../language-server/src/tests/AGENTS.md)

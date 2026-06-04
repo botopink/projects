@@ -15,9 +15,9 @@
 
 ## 0. Plan state
 
-- **Current phase:** executing `docs-refactor` on branch `feat` directly (F0/F1/F3 done); 5 specs defined.
-- **Last updated:** 2026-06-03.
-- **Next milestone:** commit this work; then docs-refactor F2 (leaf audit) + F4 (scripts), or start the next-wave worktree (`stdlib-gleam`).
+- **Current phase:** `docs-refactor` **done** (F0–F4) on branch `feat`; 5 specs defined.
+- **Last updated:** 2026-06-04.
+- **Next milestone:** start the Wave-1 worktree (`stdlib-gleam`) and/or run the `zig-feature-gaps` analysis; `test-blocks` waits for stdlib-gleam (front-end collision) — note its worktree is already pre-seeded (`.tasks/test-blocks`, 0/41).
 
 ---
 
@@ -45,7 +45,7 @@
 - [ ] **v0.beta.2 feature list?** A set is a **batch label, not a sequential phase** — the unit of independence is the *task* (one spec = one worktree = one branch off `feat`), so tasks run in parallel and never wait on each other unless a real `Depends on` says so (default `nothing`; the DAG only draws the rare exception). So this is not "pick one theme" — it's "list the independent features to tackle"; each becomes its own spec in `specs/`. The README title is just an optional umbrella name.
 - [ ] **Spec granularity**: same as beta.1 (verbose, self-contained) or lean (header + checklist + scenarios)? Leaning toward matching beta.1 for consistency.
 - [ ] Does the `Touches docs:` header field work? (closes the spec → Layer 1 loop).
-- [ ] Worth a `scripts/doc-health.sh` (orphan AGENTS files / broken links / duplicated trees) to run as a CI check?
+- [x] Worth a `scripts/doc-health.sh`? → yes, built (docs-refactor F4); wiring it into CI is still open.
 
 ---
 
@@ -56,7 +56,7 @@
 3. [x] Trim root `AGENTS.md` to an index (applies D2) + record D5/neutrality in the conventions; link to `tasks/AGENTS.md`. (docs-refactor F1)
 4. [ ] Fill `tasks/v0.beta.2/README.md` (umbrella name + DAG + table) once the feature list (§2) is known.
 5. [ ] Define features one at a time → one `specs/<slug>.md` from the template.
-6. [ ] (optional) `scripts/status.sh` to regenerate `status.md` as a derived rollup.
+6. [x] `scripts/status.sh` to regenerate `status.md` as a derived rollup (docs-refactor F4).
 
 ---
 
@@ -139,3 +139,4 @@ Five phases across the 3 layers. Each phase names **who writes what** and the **
 - **2026-06-03** — Wave plan agreed (run on `feat` directly, no worktree, per user): docs-refactor + zig-feature-gaps + one of {stdlib-gleam, test-blocks} in parallel; never stdlib-gleam ⨯ test-blocks together (both rewrite the compiler front-end + builtins.d.bp); stdlib-tests last (deps).
 - **2026-06-03** — Executed `docs-refactor` F1 + F3 on `feat`: root `AGENTS.md` trimmed to an index (removed the duplicated "AGENTS index" subtree + volatile counters; added `tasks/` + neutrality/one-fact conventions; trimmed worktree prose + dropped the stale "Open parallel tasks" table). beta.1 README rewritten without Status columns → links `status.md`; `status.md` marked single source of truth. F2 leaf-audit + F4 scripts deferred. Committing all session work.
 - **2026-06-03** — User clarified ownership levels → recorded as D10: three levels — (A) **universal** rules in `tasks/AGENTS.md` + `tasks/_TEMPLATE.md` (apply to every version), (B) **set-specific** in `tasks/v0.beta.N/` (README/plan/status — this batch only), (C) **feature-specific** in `tasks/v0.beta.N/specs/<slug>.md` (one feature). Implication: D1–D9 are level-A and belong in `tasks/AGENTS.md`; they sit in this `plan.md` only as staging until that file exists. Creating `tasks/AGENTS.md` = migrating D1–D9 out of here, leaving `plan.md` with beta.2-only reasoning.
+- **2026-06-04** — Finished `docs-refactor` F2 + F4 on `feat`. F2 (4 parallel audit agents over the ~40 leaf `AGENTS.md`): removed every volatile counter (snapshot/fixture/line counts), fixed trees that omitted real `beam/`/`wasm/` dirs, dropped the duplicated `alloc` convention (root owns it), corrected the `libs/std/src` claim that `builtins.d.bp` is embedded (it is registered programmatically in `env.zig` — wiring it = stdlib-gleam), deleted the vestigial top-level `snapshots/` tree (0-byte placeholders; build writes only under `modules/compiler-core/`), added 5 minimal `AGENTS.md` for `compiler-core/src/*/tests/`, translated `build.zig` comments to English. F4: `scripts/doc-health.sh` (orphan dirs / broken links / volatile counters — found+fixed 4 real broken links on first run) + `scripts/status.sh <set>` (derived rollup; first run revealed the pre-seeded `.tasks/test-blocks` worktree). Created `tasks/v0.beta.2/status.md`. docs-refactor: **done**.
