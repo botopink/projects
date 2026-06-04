@@ -66,6 +66,16 @@ loader relocated `libs/std/src/prelude.zig` → `modules/compiler-core/src/compt
       + `external_import_binds_symbol` (all 4 targets snapshotted)
 
 ## F2 — `option` + `result` (effect types over built-ins)
+> **OPEN DECISION (blocks F2)** — calling convention for stdlib modules.
+> `import {option}; option.map(x, f)` needs stdlib module namespacing in
+> inference, which does not exist yet (`registerStdlib` flattens everything
+> into one global env). Options on the table:
+> 1. real namespace: module→exports table in inference (correct, more work)
+> 2. flat prefix: register `option.map` as a qualified/prefixed global binding
+>    and reuse erlang's PascalCase lowering (`List.map` → `list:map`)
+> 3. methods on types: `xs.map(f)` via extension dispatch instead of Gleam-style
+>    `list.map(xs, f)`
+
 - [ ] `option.bp`: `map`, `then` (flat_map), `unwrap`, `or`, `is_some`, `is_none`, `to_result`
 - [ ] `result.bp`: `map`, `map_error`, `then`, `unwrap`, `unwrap_error`, `or`, `is_ok`, `from_option`
 - Note: build on the EXISTING `@Option`/`@Result` method work (`map`/`flatMap`/`unwrapOr`
