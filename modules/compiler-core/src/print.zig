@@ -66,6 +66,10 @@ pub fn errorMessages(info: ParseErrorInfo) ErrorMessages {
             .message = "`use` must be in static prefix",
             .hint = "Move all `use` statements to the top of the function body, before any `if`, `case`, `loop`, or `return`",
         },
+        .badInterpolation => .{
+            .message = "Malformed `${…}` interpolation in string",
+            .hint = "Each `${…}` must contain one complete expression, e.g. \"hi ${name}\"; escape a literal dollar with `\\${`",
+        },
         .anonymousImplExtend => .{
             .message = "An `implement`/`extend` block must be named",
             .hint = "Give it a name, e.g. `Name implement Trait for Type { … }` or `Name extend Type { … }`",

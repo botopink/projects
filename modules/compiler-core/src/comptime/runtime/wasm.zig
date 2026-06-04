@@ -112,6 +112,8 @@ fn renderExprValue(allocator: std.mem.Allocator, te: ast.TypedExpr) ![]const u8 
             },
             .null_ => return allocator.dupe(u8, "null"),
             .comment => return allocator.dupe(u8, "null"),
+            // Desugared to a `+` chain during inference; never reaches eval.
+            .stringTemplate => unreachable,
         },
         .binaryOp => |b| {
             const lhs = try evalConstInt(b.lhs.*);

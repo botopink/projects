@@ -605,3 +605,35 @@ test "parser: assert on call equality" {
         \\}
     );
 }
+
+test "parser: string ---- interpolation parts" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\val s = "a ${x} b";
+    );
+}
+
+test "parser: string ---- interpolation expression hole" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\val s = "sum ${1 + 2}!";
+    );
+}
+
+test "parser: string ---- interpolation escaped dollar stays literal" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\val s = "price \${USD}";
+    );
+}
+
+test "parser: string ---- multiline interpolation" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\val s = """
+        \\hello ${name}
+        \\""";
+    );
+}
+
+test "parser: string ---- interpolation nested string in hole" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\val s = "v=${pick("a", key)}";
+    );
+}

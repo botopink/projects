@@ -1270,6 +1270,8 @@ const Emitter = struct {
                 },
             },
             .literal => |lit| switch (lit.kind) {
+                // Desugared to a `+` chain by the transform pass; never reaches codegen.
+                .stringTemplate => unreachable,
                 .numberLit => |n| {
                     var buf: [64]u8 = undefined;
                     const term = try formatNumberInto(&buf, n);

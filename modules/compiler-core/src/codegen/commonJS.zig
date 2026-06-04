@@ -1440,6 +1440,8 @@ const Emitter = struct {
         switch (e) {
             .literal => |lit| switch (lit.kind) {
                 .stringLit => |s| try self.emitJsonString(s),
+                // Desugared to a `+` chain by the transform pass; never reaches codegen.
+                .stringTemplate => unreachable,
                 .numberLit => |n| try self.w(n),
                 .null_ => try self.w("null"),
                 .comment => |c| {

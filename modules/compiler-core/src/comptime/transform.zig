@@ -247,6 +247,16 @@ fn scanStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_
 
 fn scanExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_arrays: std.StringHashMap([]const ast.TypedExpr), expr: anytype) ScanError!void {
     switch (expr) {
+        .literal => |lit| switch (lit.kind) {
+            .stringTemplate => |t| {
+                // Interpolation holes may contain comptime calls to specialize.
+                for (t.parts) |p| switch (p) {
+                    .text => {},
+                    .expr => |hole| scanExpr(agg, fn_decls, comptime_arrays, hole.*) catch return ScanError.OutOfMemory,
+                };
+            },
+            else => {},
+        },
         .call => |c| switch (c.kind) {
             .call => |call| {
                 // Method receivers may themselves contain comptime calls.
@@ -518,6 +528,44 @@ fn rewriteExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
             .comptimeExpr => |inner| rewriteExpr(agg, fn_decls, comptime_arrays, inner) catch return ScanError.OutOfMemory,
             .comptimeBlock => |cb| {
                 for (cb.body) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
+            },
+            else => {},
+        },
+        .literal => |*lit| switch (lit.kind) {
+            .stringTemplate => |t| {
+                // Desugar `"a ${x} b"` into the `+` chain `"a " + x + " b"` so
+                // every backend emits it exactly like written-out string
+                // concatenation (the typed/eval path desugars in infer).
+                const arena = agg.spec_cache.arena;
+                const loc = lit.loc;
+                var acc: ?*ast.Expr = null;
+                if (t.parts.len > 0 and t.parts[0] == .expr) {
+                    // Force a string-typed result when the template starts with a hole.
+                    const empty = arena.create(ast.Expr) catch return ScanError.OutOfMemory;
+                    empty.* = .{ .literal = .{ .loc = loc, .kind = .{ .stringLit = "" } } };
+                    acc = empty;
+                }
+                for (t.parts) |p| {
+                    const operand: *ast.Expr = switch (p) {
+                        .text => |txt| blk: {
+                            const e = arena.create(ast.Expr) catch return ScanError.OutOfMemory;
+                            e.* = .{ .literal = .{ .loc = loc, .kind = .{ .stringLit = txt } } };
+                            break :blk e;
+                        },
+                        .expr => |e| blk: {
+                            rewriteExpr(agg, fn_decls, comptime_arrays, e) catch return ScanError.OutOfMemory;
+                            break :blk e;
+                        },
+                    };
+                    if (acc) |lhs| {
+                        const bin = arena.create(ast.Expr) catch return ScanError.OutOfMemory;
+                        bin.* = .{ .binaryOp = .{ .loc = loc, .op = .add, .lhs = lhs, .rhs = operand } };
+                        acc = bin;
+                    } else {
+                        acc = operand;
+                    }
+                }
+                expr_ptr.* = acc.?.*;
             },
             else => {},
         },

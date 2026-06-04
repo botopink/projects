@@ -98,6 +98,8 @@ fn writeExprErl(bw: anytype, allocator: std.mem.Allocator, te: ast.TypedExpr) !v
                 try bw.writeAll(c.text);
             },
             .null_ => try bw.writeAll("undefined"),
+            // Desugared to a `+` chain during inference; never reaches eval.
+            .stringTemplate => unreachable,
         },
         .binaryOp => |b| switch (b.op) {
             .add => {

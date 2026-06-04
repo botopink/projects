@@ -270,15 +270,50 @@ pub const Lexer = struct {
 
     // ── string scanning with escape validation ───────────────────────────────
 
+    /// Skips a `${…}` interpolation inside a string literal: consumes the
+    /// `${`, then everything up to the matching `}` (brace-depth aware, and
+    /// nested single-line strings are skipped so their `"` does not terminate
+    /// the enclosing literal). The interpolated source stays inside the
+    /// string token's lexeme; the parser re-scans it into a `stringTemplate`.
+    fn scanInterpolation(self: *Lexer) LexerError!void {
+        _ = self.advance(); // consume '$'
+        _ = self.advance(); // consume '{'
+        var depth: usize = 1;
+        while (!self.isAtEnd() and depth > 0) {
+            const ch = self.peek();
+            if (ch == '\n') self.line += 1;
+            if (ch == '{') {
+                depth += 1;
+            } else if (ch == '}') {
+                depth -= 1;
+            } else if (ch == '"') {
+                _ = self.advance(); // opening '"'
+                while (!self.isAtEnd() and self.peek() != '"') {
+                    if (self.peek() == '\n') self.line += 1;
+                    if (self.peek() == '\\') _ = self.advance();
+                    if (self.isAtEnd()) return LexerError.UnterminatedString;
+                    _ = self.advance();
+                }
+                if (self.isAtEnd()) return LexerError.UnterminatedString;
+            }
+            _ = self.advance();
+        }
+        if (depth != 0) return LexerError.UnterminatedString;
+    }
+
     fn scanString(self: *Lexer, allocator: std.mem.Allocator) LexerError!void {
         while (!self.isAtEnd() and self.peek() != '"') {
+            if (self.peek() == '$' and self.peekNext() == '{') {
+                try self.scanInterpolation();
+                continue;
+            }
             if (self.peek() == '\n') self.line += 1;
             if (self.peek() == '\\') {
                 _ = self.advance(); // consume '\'
                 if (self.isAtEnd()) return LexerError.UnterminatedString;
                 const esc = self.advance();
                 switch (esc) {
-                    'n', 'r', 't', '\\', '"', '0' => {}, // valid escapes
+                    'n', 'r', 't', '\\', '"', '0', '$' => {}, // valid escapes
                     'u' => try self.scanUnicodeEscape(),
                     else => {
                         self.lexError = .{
@@ -313,13 +348,17 @@ pub const Lexer = struct {
                 return;
             }
 
+            if (self.peek() == '$' and self.peekNext() == '{') {
+                try self.scanInterpolation();
+                continue;
+            }
             if (self.peek() == '\n') self.line += 1;
             if (self.peek() == '\\') {
                 _ = self.advance(); // consume '\'
                 if (self.isAtEnd()) return LexerError.UnterminatedString;
                 const esc = self.advance();
                 switch (esc) {
-                    'n', 'r', 't', '\\', '"', '0' => {}, // valid escapes
+                    'n', 'r', 't', '\\', '"', '0', '$' => {}, // valid escapes
                     'u' => try self.scanUnicodeEscape(),
                     else => {
                         self.lexError = .{

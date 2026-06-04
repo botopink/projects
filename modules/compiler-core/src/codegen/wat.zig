@@ -1090,6 +1090,8 @@ const Emitter = struct {
                     const seg = try self.internString(s);
                     try self.fmt("    i32.const {d}\n", .{seg.offset});
                 },
+                // Desugared to a `+` chain by the transform pass; never reaches codegen.
+                .stringTemplate => unreachable,
                 .comment => {},
             },
             .identifier => |id| switch (id.kind) {

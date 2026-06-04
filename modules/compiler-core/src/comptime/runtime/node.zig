@@ -68,6 +68,8 @@ fn writeExprJs(bw: anytype, allocator: std.mem.Allocator, te: ast.TypedExpr) !vo
                 try bw.writeAll(c.text);
             },
             .null_ => try bw.writeAll("null"),
+            // Desugared to a `+` chain during inference; never reaches eval.
+            .stringTemplate => unreachable,
         },
         .binaryOp => |b| switch (b.op) {
             .add => {

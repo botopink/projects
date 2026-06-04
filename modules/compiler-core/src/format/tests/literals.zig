@@ -273,3 +273,15 @@ test "format: array ---- prepend with identifier" {
         \\val list = [1, 2, ..rest];
     );
 }
+
+test "format: string ---- interpolation round-trip" {
+    try h.assertFormat(std.testing.allocator,
+        \\val s = "a ${x} b";
+    );
+}
+
+test "format: string ---- interpolation with expression" {
+    try h.assertFormat(std.testing.allocator,
+        \\val s = "sum ${1 + 2}!";
+    );
+}

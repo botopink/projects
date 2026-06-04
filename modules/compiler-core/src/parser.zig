@@ -83,6 +83,8 @@ pub const ParseErrorType = enum {
     removedBuiltinType,
     /// `use` hook after branch/return (must be in static prefix)
     useAfterBranch,
+    /// Malformed `${…}` string interpolation (unterminated or invalid expression)
+    badInterpolation,
     /// Anonymous `implement`/`extend` block (the name is required)
     anonymousImplExtend,
 };

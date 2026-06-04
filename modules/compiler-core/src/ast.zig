@@ -88,11 +88,29 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: anytype) void {
     allocator.destroy(expr);
 }
 
+/// One segment of a `stringTemplate` literal: raw text or a `${…}` hole.
+pub fn StringTemplatePartOf(comptime phase: Phase) type {
+    return union(enum) {
+        /// Raw text between interpolations (escape sequences still unprocessed).
+        text: []const u8,
+        /// An interpolated `${expr}` hole.
+        expr: *ExprOf(phase),
+    };
+}
+
 /// Literal expressions: constant values and comments
 pub fn LiteralExprOf(comptime phase: Phase) type {
     const Kind = union(enum) {
         /// A string literal value, e.g. `"hello"`
         stringLit: []const u8,
+        /// A string literal containing `${…}` interpolations, e.g. `"a ${x} b"`.
+        /// Parts alternate raw text and interpolated expressions in source order.
+        /// Lowered to a `+` concatenation chain before codegen (see transform).
+        stringTemplate: struct {
+            /// true when the source literal was a `"""…"""` multiline string
+            multiline: bool,
+            parts: []StringTemplatePartOf(phase),
+        },
         /// A number literal, e.g. `0`
         numberLit: []const u8,
         /// `null` literal
@@ -107,6 +125,13 @@ pub fn LiteralExprOf(comptime phase: Phase) type {
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             switch (this.*) {
                 .stringLit, .numberLit, .null_ => {},
+                .stringTemplate => |t| {
+                    for (t.parts) |*p| switch (p.*) {
+                        .text => {},
+                        .expr => |e| destroyExpr(allocator, e),
+                    };
+                    allocator.free(t.parts);
+                },
                 .comment => |c| allocator.free(c.text),
             }
         }

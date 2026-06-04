@@ -5,9 +5,11 @@ const std = @import("std");
 const parser = @import("../parser.zig");
 const ast = @import("../ast.zig");
 const token = @import("../lexer/token.zig");
+const lexer = @import("../lexer.zig");
 
 const This = parser.Parser;
 const ParseError = parser.ParseError;
+const ParseErrorInfo = parser.ParseErrorInfo;
 const Expr = parser.Expr;
 const CollectionExpr = parser.CollectionExpr;
 const JumpExpr = parser.JumpExpr;
@@ -848,12 +850,12 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
 
     if (this.check(.stringLiteral)) {
         const tok = this.advance();
-        return Expr{ .literal = .{ .loc = locFromToken(tok), .kind = .{ .stringLit = tok.lexeme[1 .. tok.lexeme.len - 1] } } };
+        return makeStringExpr(this, alloc, tok, tok.lexeme[1 .. tok.lexeme.len - 1], false);
     }
     if (this.check(.multilineStringLiteral)) {
         const tok = this.advance();
         // Remove the triple quotes from both ends
-        return Expr{ .literal = .{ .loc = locFromToken(tok), .kind = .{ .stringLit = tok.lexeme[3 .. tok.lexeme.len - 3] } } };
+        return makeStringExpr(this, alloc, tok, tok.lexeme[3 .. tok.lexeme.len - 3], true);
     }
 
     if (this.check(.numberLiteral)) {
@@ -1455,4 +1457,119 @@ pub fn parseRangeExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         return Expr{ .collection = .{ .loc = locFromToken(dotTok), .kind = .{ .range = .{ .start = startPtr, .end = endPtr } } } };
     }
     return Expr{ .collection = .{ .loc = locFromToken(dotTok), .kind = .{ .range = .{ .start = startPtr, .end = null } } } };
+}
+
+// ── string interpolation (`${…}`) ───────────────────────────────────────────
+
+/// Index of the next unescaped `${` at/after `from`, or null.
+fn findInterpStart(s: []const u8, from: usize) ?usize {
+    var i = from;
+    while (i + 1 < s.len) {
+        if (s[i] == '\\') {
+            i += 2;
+            continue;
+        }
+        if (s[i] == '$' and s[i + 1] == '{') return i;
+        i += 1;
+    }
+    return null;
+}
+
+/// Index of the `}` matching the `{` at `open` (brace-depth and nested-string
+/// aware — mirrors `Lexer.scanInterpolation`), or null when unterminated.
+fn findInterpEnd(s: []const u8, open: usize) ?usize {
+    var depth: usize = 1;
+    var i = open + 1;
+    while (i < s.len) {
+        const c = s[i];
+        if (c == '{') {
+            depth += 1;
+        } else if (c == '}') {
+            depth -= 1;
+            if (depth == 0) return i;
+        } else if (c == '"') {
+            i += 1;
+            while (i < s.len and s[i] != '"') {
+                if (s[i] == '\\') i += 1;
+                i += 1;
+            }
+            if (i >= s.len) return null;
+        }
+        i += 1;
+    }
+    return null;
+}
+
+/// Builds either a plain `stringLit` or, when the content contains `${…}`
+/// interpolations, a `stringTemplate` whose holes are parsed expressions.
+/// Hole sources are sub-lexed/sub-parsed in place; their locs are relative
+/// to the hole slice (good enough until F6 maps spans into the template).
+fn makeStringExpr(this: *This, alloc: std.mem.Allocator, tok: Token, content: []const u8, multiline: bool) ParseError!Expr {
+    const loc = locFromToken(tok);
+    if (findInterpStart(content, 0) == null)
+        return Expr{ .literal = .{ .loc = loc, .kind = .{ .stringLit = content } } };
+
+    const badInterp = ParseErrorInfo{
+        .kind = .badInterpolation,
+        .start = tok.col - 1,
+        .end = tok.col - 1 + tok.lexeme.len,
+        .lexeme = tok.lexeme,
+        .line = tok.line,
+        .col = tok.col,
+    };
+
+    var parts: std.ArrayList(ast.StringTemplatePartOf(.untyped)) = .empty;
+    errdefer {
+        for (parts.items) |*p| switch (p.*) {
+            .text => {},
+            .expr => |e| {
+                e.deinit(alloc);
+                alloc.destroy(e);
+            },
+        };
+        parts.deinit(alloc);
+    }
+
+    var cursor: usize = 0;
+    while (findInterpStart(content, cursor)) |start| {
+        if (start > cursor)
+            try parts.append(alloc, .{ .text = content[cursor..start] });
+
+        const close = findInterpEnd(content, start + 1) orelse {
+            this.parseError = badInterp;
+            return ParseError.UnexpectedToken;
+        };
+        const holeSrc = content[start + 2 .. close];
+
+        var sublex = lexer.Lexer.init(holeSrc);
+        defer sublex.deinit(alloc);
+        const holeTokens = sublex.scanAll(alloc) catch {
+            this.parseError = badInterp;
+            return ParseError.UnexpectedToken;
+        };
+        var sub = parser.Parser.init(holeTokens);
+        const holePtr = try alloc.create(Expr);
+        errdefer alloc.destroy(holePtr);
+        holePtr.* = sub.parseExpr(alloc) catch |err| switch (err) {
+            ParseError.OutOfMemory => return err,
+            else => {
+                this.parseError = sub.parseError orelse badInterp;
+                return ParseError.UnexpectedToken;
+            },
+        };
+        if (!sub.check(.endOfFile)) {
+            holePtr.deinit(alloc); // box itself is freed by the errdefer above
+            this.parseError = badInterp;
+            return ParseError.UnexpectedToken;
+        }
+        try parts.append(alloc, .{ .expr = holePtr });
+        cursor = close + 1;
+    }
+    if (cursor < content.len)
+        try parts.append(alloc, .{ .text = content[cursor..] });
+
+    return Expr{ .literal = .{ .loc = loc, .kind = .{ .stringTemplate = .{
+        .multiline = multiline,
+        .parts = try parts.toOwnedSlice(alloc),
+    } } } };
 }

@@ -22,12 +22,24 @@
       type `type`) — a fn returning a type, consistent with the spec
 
 ## F1 — string interpolation `${…}`
-- [ ] Lexer: scan `${` inside `stringLiteral` and `multilineStringLiteral`; emit part streams
-- [ ] AST: `stringTemplate { parts: []Part }` where Part = text | expr
-- [ ] Infer: interp parts are `string`-only (explicit conversion required)
-- [ ] Codegen: lower to concat per backend (commonJS, erlang, beam_asm, typescript)
-- [ ] Escape: `\${` produces literal `${`
-- [ ] Formatter + snapshots: `parser/string_interp`, `codegen/*/string_interp`
+- [x] Lexer: `scanInterpolation` keeps `${…}` inside the string token (brace-depth
+      + nested-string aware) — single token, NOT part streams; the parser re-scans
+- [x] AST: `LiteralExprOf.Kind.stringTemplate { multiline, parts: []StringTemplatePartOf }`
+- [x] Parser: `makeStringExpr` splits content, sub-lexes/sub-parses each hole
+      (hole locs are slice-relative until F6 span mapping); `badInterpolation`
+      parse error + print.zig message
+- [x] Infer: desugars to a `+` concatenation chain (typed AST never holds the
+      node) — NOTE deviation from spec: holes follow `+` coercion semantics
+      (`"n=${1}"` works), not string-only; consistent with the language's `+`
+- [x] Codegen: desugared to the same `+` chain in transform's rewriteExpr (codegen
+      is untyped and runs on transform output) — all 5 backends untouched;
+      `.stringTemplate => unreachable` guards in codegen×4 + eval runtimes×3
+- [x] Escape: `\$` added to valid escapes; `\${` stays literal (parser skips it)
+- [x] Formatter reconstructs the original template form (round-trip tested)
+- [x] Snapshots: 5× `parser/string_interpolation_*`, 4× `codegen/*/string_interpolation_lowers_to_concat`
+- [x] DISCOVERED GAP (pre-existing, not interp-specific): erlang/beam backends emit
+      `<<"a">> + B` for string `+` — invalid Erlang, runtime output empty. Same for
+      hand-written concat; needs a string-concat lowering in those backends (separate fix)
 
 ## F2 — `expr` type form
 - [ ] Parser (type grammar): `expr typeExpr?` in any type position; bare `expr` only in return/inference positions

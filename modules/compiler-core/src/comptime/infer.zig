@@ -1750,6 +1750,37 @@ pub fn inferExprTyped(env: *Env, expr: ast.Expr) InferError!TypedExpr {
 fn inferLiteralExpr(env: *Env, lit: ast.LiteralExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
     return switch (lit.kind) {
         .stringLit => |s| TypedExpr{ .literal = .{ .loc = loc, .type_ = try env.namedType("string"), .kind = .{ .stringLit = s } } },
+        .stringTemplate => |t| {
+            // Desugar `"a ${x} b"` into the concatenation chain `"a " + x + " b"`
+            // (same semantics as written-out string `+`, incl. coercion). The
+            // typed AST therefore never contains a stringTemplate node, so
+            // transform/eval/codegen stay untouched.
+            var acc: ?*ast.Expr = null;
+            if (t.parts.len > 0 and t.parts[0] == .expr) {
+                // Force a string-typed result when the template starts with a hole.
+                const empty = try env.arena.create(ast.Expr);
+                empty.* = .{ .literal = .{ .loc = loc, .kind = .{ .stringLit = "" } } };
+                acc = empty;
+            }
+            for (t.parts) |p| {
+                const operand: *ast.Expr = switch (p) {
+                    .text => |txt| blk: {
+                        const e = try env.arena.create(ast.Expr);
+                        e.* = .{ .literal = .{ .loc = loc, .kind = .{ .stringLit = txt } } };
+                        break :blk e;
+                    },
+                    .expr => |e| e,
+                };
+                if (acc) |lhs| {
+                    const bin = try env.arena.create(ast.Expr);
+                    bin.* = .{ .binaryOp = .{ .loc = loc, .op = .add, .lhs = lhs, .rhs = operand } };
+                    acc = bin;
+                } else {
+                    acc = operand;
+                }
+            }
+            return inferExprTyped(env, acc.?.*);
+        },
         .numberLit => |n| blk: {
             const isFloat = std.mem.indexOfScalar(u8, n, '.') != null;
             break :blk TypedExpr{ .literal = .{ .loc = loc, .type_ = try env.namedType(if (isFloat) "f64" else "i32"), .kind = .{ .numberLit = n } } };

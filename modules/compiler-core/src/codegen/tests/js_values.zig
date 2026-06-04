@@ -307,3 +307,12 @@ test "js: block ---- @block builtin" {
         \\}
     );
 }
+
+test "js: string ---- interpolation lowers to concat" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val name = "world";
+        \\    @print("hi ${name}!");
+        \\}
+    );
+}

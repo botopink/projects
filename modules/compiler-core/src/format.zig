@@ -354,6 +354,21 @@ pub const Formatter = struct {
                         break :blk this.text(try std.fmt.allocPrint(this.arena, "\"{s}\"", .{s}));
                     }
                 },
+                .stringTemplate => |t| blk: {
+                    const quote: []const u8 = if (t.multiline) "\"\"\"" else "\"";
+                    var doc = try this.text(quote);
+                    for (t.parts) |p| switch (p) {
+                        .text => |txt| {
+                            doc = try this.concat(doc, try this.text(txt));
+                        },
+                        .expr => |e| {
+                            doc = try this.concat(doc, try this.text("${"));
+                            doc = try this.concat(doc, try this.fmtExpr(e.*));
+                            doc = try this.concat(doc, try this.text("}"));
+                        },
+                    };
+                    break :blk this.concat(doc, try this.text(quote));
+                },
                 .numberLit => |n| this.text(n),
                 .null_ => this.text("null"),
                 .comment => |c| blk: {

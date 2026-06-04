@@ -822,6 +822,8 @@ const Emitter = struct {
                     try this.fmt("{s} {s}", .{ prefix, c.text });
                 },
                 .stringLit => |s| try this.emitBinary(s),
+                // Desugared to a `+` chain by the transform pass; never reaches codegen.
+                .stringTemplate => unreachable,
                 .null_ => try this.w("undefined"),
             },
 
