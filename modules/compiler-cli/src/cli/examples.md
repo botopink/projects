@@ -99,8 +99,8 @@ records the failure and the runner continues with the next test.
 botopink test --filter "addition"   # only tests whose name contains "addition"
 ```
 
-Currently only the `commonJS` target runs tests (node); Erlang/WASM runners
-are pending phases of the `test-blocks` spec.
+The `commonJS` (node) and `erlang` (escript) targets run tests; the WASM
+runner is a pending phase of the `test-blocks` spec.
 
 ## `botopink format`
 

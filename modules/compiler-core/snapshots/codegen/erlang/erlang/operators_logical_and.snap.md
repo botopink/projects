@@ -17,7 +17,7 @@ both(A, B) ->
     (A and B).
 
 main() ->
-    io:format("~p~n", [both(True, False)]).
+    io:format("~p~n", [both(true, false)]).
 
 '_botopink_main'() ->
     main().
@@ -28,4 +28,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+false
 ```

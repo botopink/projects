@@ -32,7 +32,7 @@ cli/
 | `build.zig` | `botopink build` | Driver — calls into compiler-core codegen. |
 | `check.zig` | `botopink check` | Same pipeline as `build`, stops after type infer. |
 | `run.zig` | `botopink run` | After `build`, exec target via `comptime/runtime` helpers. |
-| `test_cmd.zig` | `botopink test [--filter <substr>]` | Compiles with `test_mode = true` (test blocks emit as a registry + runner; `main/0` not auto-invoked), writes to `.botopinkbuild/test-out/`, runs each test-containing module via node. commonJS target only (Erlang/WASM pending). |
+| `test_cmd.zig` | `botopink test [--filter <substr>]` | Compiles with `test_mode = true` (test blocks emit as a registry + runner; `main/0` not auto-invoked), writes to `.botopinkbuild/test-out/`, runs each test-containing module via node (commonJS) or escript (erlang). WASM pending. |
 | `format_cmd.zig` | `botopink format [--check]` | Round-trip stable formatting. |
 | `new.zig` | `botopink new <name>` | Drops a project template. |
 | `clean.zig` | `botopink clean` | Removes generated artifacts. |

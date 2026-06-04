@@ -239,35 +239,37 @@ pub fn assertJsSingle(allocator: Allocator, comptime loc: std.builtin.SourceLoca
     return assertJs(allocator, loc, &.{.{ .path = "", .source = src }});
 }
 
-/// Snapshot a single module compiled in **test mode** (commonJS/node only):
-/// `test { … }` blocks emit as `__bp_test_N` functions plus a registry +
-/// runner entry, and `assert` lowers to the throwing `__bp_assert` helper.
+/// Snapshot a single module compiled in **test mode** (commonJS + erlang):
+/// `test { … }` blocks emit as test functions plus a registry + runner
+/// entry, and `assert` lowers to a recoverable per-test failure.
 pub fn assertJsTestMode(allocator: Allocator, comptime loc: std.builtin.SourceLocation, src: []const u8) !void {
     const io = std.testing.io;
     const build_root_path = comptime buildRootPathFromSrc(loc);
 
-    var cfg = configs[0]; // commonJS / node
-    cfg.build_root = build_root_path;
-    cfg.test_mode = true;
+    for (configs[0..2]) |c| { // commonJS/node + erlang
+        var cfg = c;
+        cfg.build_root = build_root_path;
+        cfg.test_mode = true;
 
-    var outputs = try codegen.generate(allocator, &.{.{ .path = "", .source = src }}, io, cfg);
-    defer {
-        for (outputs.items) |*o| o.result.deinit(allocator);
-        outputs.deinit(allocator);
+        var outputs = try codegen.generate(allocator, &.{.{ .path = "", .source = src }}, io, cfg);
+        defer {
+            for (outputs.items) |*o| o.result.deinit(allocator);
+            outputs.deinit(allocator);
+        }
+
+        var snapOutputs = std.ArrayList(snap.SnapInput).empty;
+        defer snapOutputs.deinit(allocator);
+        for (outputs.items) |o| {
+            try snapOutputs.append(allocator, .{
+                .name = o.name,
+                .src = o.src,
+                .result = o.result,
+            });
+        }
+
+        const slug = comptime slugFromSrc(loc);
+        try snap.assertCodegen(allocator, slug, snapOutputs.items, cfg);
     }
-
-    var snapOutputs = std.ArrayList(snap.SnapInput).empty;
-    defer snapOutputs.deinit(allocator);
-    for (outputs.items) |o| {
-        try snapOutputs.append(allocator, .{
-            .name = o.name,
-            .src = o.src,
-            .result = o.result,
-        });
-    }
-
-    const slug = comptime slugFromSrc(loc);
-    try snap.assertCodegen(allocator, slug, snapOutputs.items, cfg);
 }
 
 pub fn assertJsContains(allocator: Allocator, src: []const u8, needles: []const []const u8) !void {

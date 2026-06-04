@@ -10,7 +10,7 @@ fn f() {
 -module(main).
 
 f() ->
-    true = (False).
+    true = (false).
 ```
 
 ----- RUN LOG -----

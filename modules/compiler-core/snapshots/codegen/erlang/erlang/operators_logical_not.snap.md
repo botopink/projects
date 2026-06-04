@@ -17,7 +17,7 @@ negate(V) ->
     (not V).
 
 main() ->
-    io:format("~p~n", [negate(True)]).
+    io:format("~p~n", [negate(true)]).
 
 '_botopink_main'() ->
     main().
@@ -28,4 +28,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+false
 ```

@@ -41,8 +41,8 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
     };
 
     const target = opts.target orelse proj.parsedTarget();
-    if (target != .commonJS) {
-        reporter.errMsg("`botopink test` currently supports only the commonJS target");
+    if (target != .commonJS and target != .erlang) {
+        reporter.errMsg("`botopink test` currently supports only the commonJS and erlang targets");
         reporter.hintMsg("run with `--target commonJS` or set \"target\": \"commonJS\" in botopink.json");
         return 1;
     }
@@ -67,8 +67,16 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
 
     // Build codegen config in test mode.
     const cfg = bp.codegen.Config{
-        .targetSource = .commonJS,
-        .comptimeRuntime = .node,
+        .targetSource = switch (target) {
+            .commonJS => .commonJS,
+            .erlang => .erlang,
+            else => unreachable, // guarded above
+        },
+        .comptimeRuntime = switch (target) {
+            .commonJS => .node,
+            .erlang => .erlang,
+            else => unreachable,
+        },
         .build_root = ".botopinkbuild",
         .test_mode = true,
     };
@@ -108,14 +116,25 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
     }
 
     // Write every module's test-mode artifact (test modules `require` their
-    // sibling modules), then run each module that contains tests.
+    // sibling modules on commonJS), then run each module that contains tests.
     std.Io.Dir.cwd().createDirPath(io, TEST_OUT_DIR) catch |err| switch (err) {
         error.PathAlreadyExists => {},
         else => return err,
     };
 
+    const ext: []const u8 = switch (target) {
+        .commonJS => ".js",
+        .erlang => ".erl",
+        else => unreachable,
+    };
+    const runner: []const u8 = switch (target) {
+        .commonJS => "node",
+        .erlang => "escript",
+        else => unreachable,
+    };
+
     for (outputs.items) |o| {
-        const sub_path = try std.fmt.allocPrint(arena, TEST_OUT_DIR ++ "/{s}.js", .{o.name});
+        const sub_path = try std.fmt.allocPrint(arena, TEST_OUT_DIR ++ "/{s}{s}", .{ o.name, ext });
         if (std.fs.path.dirname(sub_path)) |parent| {
             std.Io.Dir.cwd().createDirPath(io, parent) catch |err| switch (err) {
                 error.PathAlreadyExists => {},
@@ -125,11 +144,11 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
         try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = sub_path, .data = o.result.js });
     }
 
-    // Root-source imports (`import {x};`) emit `require("./module")` — write a
-    // `module.js` aggregator that merges every module's exports. Runners only
-    // execute as the entry module (`require.main === module`), so requiring a
-    // sibling never re-runs its tests.
-    {
+    // commonJS: root-source imports (`import {x};`) emit `require("./module")`
+    // — write a `module.js` aggregator that merges every module's exports.
+    // Runners only execute as the entry module (`require.main === module`),
+    // so requiring a sibling never re-runs its tests.
+    if (target == .commonJS) {
         var agg = std.ArrayListUnmanaged(u8).empty;
         defer agg.deinit(arena);
         try agg.appendSlice(arena, "module.exports = Object.assign({}");
@@ -149,17 +168,17 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
         if (std.mem.indexOf(u8, o.result.js, "__bp_run_tests") == null) continue;
         any_tests = true;
 
-        const sub_path = try std.fmt.allocPrint(arena, TEST_OUT_DIR ++ "/{s}.js", .{o.name});
+        const sub_path = try std.fmt.allocPrint(arena, TEST_OUT_DIR ++ "/{s}{s}", .{ o.name, ext });
 
         var argv = std.ArrayListUnmanaged([]const u8).empty;
         defer argv.deinit(arena);
-        try argv.append(arena, "node");
+        try argv.append(arena, runner);
         try argv.append(arena, sub_path);
         if (opts.filter) |f| try argv.append(arena, f);
 
         // Spawn and wait — stdio is inherited so the runner reports directly.
         var child = std.process.spawn(io, .{ .argv = argv.items }) catch |err| {
-            const msg = try std.fmt.allocPrint(arena, "failed to spawn 'node': {s}", .{@errorName(err)});
+            const msg = try std.fmt.allocPrint(arena, "failed to spawn '{s}': {s}", .{ runner, @errorName(err) });
             reporter.errMsg(msg);
             return 1;
         };

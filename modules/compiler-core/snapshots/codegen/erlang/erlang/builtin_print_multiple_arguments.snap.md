@@ -11,7 +11,7 @@ fn main() {
 -export(['_botopink_main'/0, main/1]).
 
 main() ->
-    io:format("~p~n", [<<"Hello">>, 42, True]).
+    io:format("~p~n", [<<"Hello">>, 42, true]).
 
 '_botopink_main'() ->
     main().

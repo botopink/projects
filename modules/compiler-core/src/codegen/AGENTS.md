@@ -8,8 +8,12 @@ Per-target codegen backends. The public façade lives at `../codegen.zig`.
 
 Top-level `test { … }` declarations (`DeclKind.@"test"`) are **skipped by every
 backend** in normal `build`/`run` output — they are only collected and emitted
-under `botopink test` (runner emission is a pending phase of the `test-blocks`
-spec).
+under `botopink test` (`Config.test_mode`): commonJS emits `__bp_test_N`
+functions + a `__bp_tests` registry + `__bp_run_tests()` runner; erlang emits
+`'__bp_test_N'/0` functions + a `'__bp_run_tests'/1` runner + `main/1` escript
+entry. In test mode `assert` lowers to a recoverable per-test failure
+(JS: throwing `__bp_assert`; Erlang: `erlang:error({bp_assert, Msg, Loc})`)
+and `fn main/0` is not auto-invoked. WASM runner pending.
 
 ## Tree
 

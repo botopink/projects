@@ -48,10 +48,10 @@ testDecl ::= "test" string? block
 ### F3 — codegen + runner (phase by backend)
 - [x] Collect all `TestDecl`s into a generated registry per target (`__bp_tests` array; `Config.test_mode` flag)
 - [x] **CommonJS/node** first: each test emits as `__bp_test_N()` + `__bp_run_tests()` runner; `main/0` not auto-invoked in test mode
-- [ ] **Erlang/BEAM**: emit eunit-style test functions
+- [x] **Erlang/BEAM**: tests emit as `'__bp_test_N'/0` functions + `'__bp_run_tests'/1` runner + `main/1` escript entry; `assert` lowers to a caught `erlang:error({bp_assert, Msg, Loc})`; verified green/fail/filter via `botopink test --target erlang`
 - [ ] **WASM**: emit + run via the WASI harness (deferred)
 - [x] Snapshot: `codegen/node/commonJS/test_runner` (+ normal-build exclusion check)
-- [ ] Snapshot: `codegen/erlang/test_runner` (with the Erlang runner)
+- [x] Snapshot: `codegen/erlang/erlang/test_runner`
 
 ### F4 — `botopink test` CLI + reporting — DONE (commonJS)
 - [x] New subcommand `modules/compiler-cli/src/cli/test_cmd.zig` (artifacts → `.botopinkbuild/test-out/`)
@@ -159,6 +159,9 @@ cli ---- inline_tests_in_impl_modules_run        (Zig-style co-located test bloc
 - commonJS codegen: lambda tail expressions now `return` their value
   (`ns.map({ x -> x * x })` produced `undefined` before); 4 Result/Option
   snapshots re-baselined with the corrected output.
+- erlang codegen: `true`/`false` identifiers emitted as unbound `True`/`False`
+  variables — now stay lowercase atoms; 5 erlang snapshots re-baselined
+  (run logs now show real output instead of crashes).
 
 ## Notes
 

@@ -1738,5 +1738,5 @@ running 3 tests
 ```
 
 **Status:** parser/AST/formatter/inference landed; `botopink test` runs on the
-`commonJS` target (node). Erlang (eunit-style) and WASM runners are pending
-phases of the `test-blocks` spec (`tasks/v0.beta.2/specs/test-blocks.md`).
+`commonJS` (node) and `erlang` (escript) targets. The WASM runner is a pending
+phase of the `test-blocks` spec (`tasks/v0.beta.2/specs/test-blocks.md`).
