@@ -25,3 +25,4 @@ modules/compiler-core/main.S
 
 # per-task git worktrees
 .tasks/
+.tmp-exec-*/

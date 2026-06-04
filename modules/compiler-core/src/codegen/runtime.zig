@@ -10,6 +10,18 @@ fn isProcessSuccess(term: std.process.Child.Term) bool {
     };
 }
 
+/// Tests may run concurrently (and several test binaries share this cwd), so
+/// every execution gets its own scratch directory — fixed filenames like
+/// `main.erl`/`main.beam` would otherwise race and lose runtime output.
+fn makeScratchDir(io: anytype, buf: *[64]u8) ![]const u8 {
+    var rand_bytes: [8]u8 = undefined;
+    io.random(&rand_bytes);
+    const id = std.mem.readInt(u64, &rand_bytes, .little);
+    const tmp_dir = std.fmt.bufPrint(buf, ".tmp-exec-{x}", .{id}) catch unreachable;
+    try std.Io.Dir.cwd().createDirPath(io, tmp_dir);
+    return tmp_dir;
+}
+
 fn combineOutput(allocator: std.mem.Allocator, stdout: []const u8, stderr: []const u8) ![]u8 {
     var output: std.ArrayListUnmanaged(u8) = .empty;
     try output.appendSlice(allocator, stdout);
@@ -22,12 +34,16 @@ fn combineOutput(allocator: std.mem.Allocator, stdout: []const u8, stderr: []con
 
 /// Execute JavaScript code using Node.js and capture stdout/stderr.
 pub fn executeJavaScript(allocator: std.mem.Allocator, js_code: []const u8, io: anytype) ![]u8 {
-    // Write code to a temporary file
-    const tmp_path = "tmp_run.js";
+    // Write code to a temporary file in a per-execution scratch dir
+    var dir_buf: [64]u8 = undefined;
+    const tmp_dir = try makeScratchDir(io, &dir_buf);
+    defer std.Io.Dir.cwd().deleteTree(io, tmp_dir) catch {};
+
+    const tmp_path = try std.fmt.allocPrint(allocator, "{s}/tmp_run.js", .{tmp_dir});
+    defer allocator.free(tmp_path);
     {
         try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = tmp_path, .data = js_code });
     }
-    defer std.Io.Dir.cwd().deleteFile(io, tmp_path) catch {};
 
     // Execute with Node.js
     const result = std.process.run(allocator, io, .{ .argv = &.{ "node", tmp_path } }) catch |err| switch (err) {
@@ -45,26 +61,25 @@ pub fn executeJavaScript(allocator: std.mem.Allocator, js_code: []const u8, io: 
 
 /// Execute Erlang code and capture stdout/stderr.
 pub fn executeErlang(allocator: std.mem.Allocator, erl_code: []const u8, module_name: []const u8, io: anytype) ![]u8 {
-    // Create temporary .erl file
-    const erl_filename = try std.fmt.allocPrint(allocator, "{s}.erl", .{module_name});
+    // Create temporary .erl file in a per-execution scratch dir
+    var dir_buf: [64]u8 = undefined;
+    const tmp_dir = try makeScratchDir(io, &dir_buf);
+    defer std.Io.Dir.cwd().deleteTree(io, tmp_dir) catch {};
+
+    const erl_filename = try std.fmt.allocPrint(allocator, "{s}/{s}.erl", .{ tmp_dir, module_name });
     defer allocator.free(erl_filename);
 
     {
         try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = erl_filename, .data = erl_code });
     }
-    defer std.Io.Dir.cwd().deleteFile(io, erl_filename) catch {};
 
     // Compile the Erlang module
-    const beam_filename = try std.fmt.allocPrint(allocator, "{s}.beam", .{module_name});
-    defer allocator.free(beam_filename);
-
-    const compile_result = std.process.run(allocator, io, .{ .argv = &.{ "erlc", erl_filename } }) catch |err| switch (err) {
+    const compile_result = std.process.run(allocator, io, .{ .argv = &.{ "erlc", "-o", tmp_dir, erl_filename } }) catch |err| switch (err) {
         error.FileNotFound => return allocator.dupe(u8, ""),
         else => return err,
     };
     defer allocator.free(compile_result.stdout);
     defer allocator.free(compile_result.stderr);
-    defer std.Io.Dir.cwd().deleteFile(io, beam_filename) catch {};
     if (!isProcessSuccess(compile_result.term)) {
         return allocator.dupe(u8, "");
     }
@@ -75,7 +90,7 @@ pub fn executeErlang(allocator: std.mem.Allocator, erl_code: []const u8, module_
     }
 
     const exec_result = std.process.run(allocator, io, .{
-        .argv = &.{ "erl", "-noshell", "-pa", ".", "-s", module_name, "_botopink_main", "-s", "init", "stop" },
+        .argv = &.{ "erl", "-noinput", "-pa", tmp_dir, "-s", module_name, "_botopink_main", "-s", "init", "stop" },
     }) catch |err| switch (err) {
         error.FileNotFound => return allocator.dupe(u8, ""),
         else => return err,
@@ -100,19 +115,18 @@ pub fn executeErlang(allocator: std.mem.Allocator, erl_code: []const u8, module_
 /// or runtime error) returns an empty string so the test still produces a
 /// readable snapshot.
 pub fn executeBeamAsm(allocator: std.mem.Allocator, asm_code: []const u8, module_name: []const u8, io: anytype) ![]u8 {
-    const asm_filename = try std.fmt.allocPrint(allocator, "{s}.S", .{module_name});
+    var dir_buf: [64]u8 = undefined;
+    const tmp_dir = try makeScratchDir(io, &dir_buf);
+    defer std.Io.Dir.cwd().deleteTree(io, tmp_dir) catch {};
+
+    const asm_filename = try std.fmt.allocPrint(allocator, "{s}/{s}.S", .{ tmp_dir, module_name });
     defer allocator.free(asm_filename);
 
     {
         try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = asm_filename, .data = asm_code });
     }
-    defer std.Io.Dir.cwd().deleteFile(io, asm_filename) catch {};
 
-    const beam_filename = try std.fmt.allocPrint(allocator, "{s}.beam", .{module_name});
-    defer allocator.free(beam_filename);
-    defer std.Io.Dir.cwd().deleteFile(io, beam_filename) catch {};
-
-    const assemble_result = std.process.run(allocator, io, .{ .argv = &.{ "erlc", "+from_asm", asm_filename } }) catch |err| switch (err) {
+    const assemble_result = std.process.run(allocator, io, .{ .argv = &.{ "erlc", "+from_asm", "-o", tmp_dir, asm_filename } }) catch |err| switch (err) {
         error.FileNotFound => return allocator.dupe(u8, ""),
         else => return err,
     };
@@ -128,7 +142,7 @@ pub fn executeBeamAsm(allocator: std.mem.Allocator, asm_code: []const u8, module
     }
 
     const exec_result = std.process.run(allocator, io, .{
-        .argv = &.{ "erl", "-noshell", "-pa", ".", "-s", module_name, "_botopink_main", "-s", "init", "stop" },
+        .argv = &.{ "erl", "-noinput", "-pa", tmp_dir, "-s", module_name, "_botopink_main", "-s", "init", "stop" },
     }) catch |err| switch (err) {
         error.FileNotFound => return allocator.dupe(u8, ""),
         else => return err,
@@ -146,13 +160,16 @@ pub fn executeBeamAsm(allocator: std.mem.Allocator, asm_code: []const u8, module
 /// Returns empty string if `wasmtime` is absent or the module has no
 /// `_botopink_main` export.
 pub fn executeWat(allocator: std.mem.Allocator, wat_code: []const u8, module_name: []const u8, io: anytype) ![]u8 {
-    const wat_filename = try std.fmt.allocPrint(allocator, "{s}.wat", .{module_name});
+    var dir_buf: [64]u8 = undefined;
+    const tmp_dir = try makeScratchDir(io, &dir_buf);
+    defer std.Io.Dir.cwd().deleteTree(io, tmp_dir) catch {};
+
+    const wat_filename = try std.fmt.allocPrint(allocator, "{s}/{s}.wat", .{ tmp_dir, module_name });
     defer allocator.free(wat_filename);
 
     {
         try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = wat_filename, .data = wat_code });
     }
-    defer std.Io.Dir.cwd().deleteFile(io, wat_filename) catch {};
 
     if (std.mem.indexOf(u8, wat_code, "_botopink_main") == null) {
         return allocator.dupe(u8, "");
