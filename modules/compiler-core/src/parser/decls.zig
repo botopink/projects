@@ -1134,7 +1134,8 @@ pub fn parseParam(this: *This, alloc: std.mem.Allocator) ParseError!Param {
     }
 
     // ── regular param: name ['comptime'] ':' ['syntax'] type_expr ───────────
-    const name = (try this.consumeParamName()).lexeme;
+    const nameTok = try this.consumeParamName();
+    const name = nameTok.lexeme;
     // Optional post-name, pre-colon modifier.
     var modifier: ParamModifier = .none;
     if (this.match(.@"comptime")) modifier = .@"comptime";
@@ -1178,6 +1179,20 @@ pub fn parseParam(this: *This, alloc: std.mem.Allocator) ParseError!Param {
     }
 
     // ── plain type (use full TypeRef to support arrays, optionals, etc.) ─
-    const typeRef = try this.parseTypeRef(alloc);
+    var typeRef = try this.parseTypeRef(alloc);
+    // Meta-kind params (`type`, `expr T`) only exist at compile time — require
+    // the `comptime` modifier so the binding-time is visible in the signature.
+    if ((typeRef == .typeparam or typeRef == .expr) and modifier != .@"comptime") {
+        typeRef.deinit(alloc);
+        this.parseError = .{
+            .kind = .metaKindRequiresComptime,
+            .start = nameTok.col - 1,
+            .end = nameTok.col - 1 + nameTok.lexeme.len,
+            .lexeme = nameTok.lexeme,
+            .line = nameTok.line,
+            .col = nameTok.col,
+        };
+        return ParseError.UnexpectedToken;
+    }
     return Param{ .name = name, .typeRef = typeRef, .modifier = modifier };
 }

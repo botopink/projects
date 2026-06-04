@@ -650,3 +650,27 @@ test "parser: test rejects in fn body" {
         \\}
     );
 }
+
+test "parser: expr meta-kind ---- param and bounded return" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\pub fn html(comptime template: expr string) -> expr Component {
+        \\    @todo();
+        \\}
+    );
+}
+
+test "parser: expr meta-kind ---- bare return" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\fn yaml(comptime template: expr string) -> expr {
+        \\    @todo();
+        \\}
+    );
+}
+
+test "parser: expr meta-kind ---- generic argument position" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\fn collect(comptime parts: array<expr Element>) -> expr {
+        \\    @todo();
+        \\}
+    );
+}

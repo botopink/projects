@@ -85,6 +85,8 @@ pub const ParseErrorType = enum {
     useAfterBranch,
     /// Malformed `${…}` string interpolation (unterminated or invalid expression)
     badInterpolation,
+    /// Meta-kind parameter (`type` / `expr T`) without the `comptime` modifier
+    metaKindRequiresComptime,
     /// Anonymous `implement`/`extend` block (the name is required)
     anonymousImplExtend,
 };

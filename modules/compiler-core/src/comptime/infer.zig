@@ -854,6 +854,13 @@ fn appendTypeRefStr(buf: *std.ArrayListUnmanaged(u8), allocator: std.mem.Allocat
                 try appendTypeRefStr(buf, allocator, c);
             }
         },
+        .expr => |inner| {
+            try buf.appendSlice(allocator, "expr");
+            if (inner) |t| {
+                try buf.append(allocator, ' ');
+                try appendTypeRefStr(buf, allocator, t.*);
+            }
+        },
     }
 }
 
@@ -1362,6 +1369,14 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
         // its constraints are validated separately (see `validateTypeparams`).
         // Resolve to a fresh variable so unification against it never fails.
         .typeparam => return env.freshVar(),
+        .expr => |inner| {
+            // `expr T` is encoded like `optional`/`array`: a named type with one
+            // arg, so structural unification gives `expr T ~ expr U iff T ~ U`.
+            // Bare `expr` gets a fresh var, resolved at call-site expansion (F6).
+            const args = try env.arena.alloc(*T.Type, 1);
+            args[0] = if (inner) |t| try resolveTypeRefInContext(env, t.*, genericMap) else try env.freshVar();
+            return env.namedTypeArgs("expr", args);
+        },
     }
 }
 

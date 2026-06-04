@@ -128,6 +128,19 @@ pub fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.Ty
         _ = try this.consume(.greaterThan);
         return ast.TypeRef{ .generic = .{ .name = name, .args = try args.toOwnedSlice(alloc), .is_builtin = true } };
     }
+    // expr [T] — expression meta-kind: code of type `T` (unevaluated input or
+    // spliceable output). Bare `expr` defers the type to call-site expansion.
+    // Contextual keyword: only recognized in type position.
+    if (this.check(.identifier) and std.mem.eql(u8, this.peek().lexeme, "expr")) {
+        _ = this.advance(); // consume 'expr'
+        if (startsTypeRef(this.peek().kind)) {
+            const inner = try alloc.create(ast.TypeRef);
+            errdefer alloc.destroy(inner);
+            inner.* = try this.parseTypeRef(alloc);
+            return ast.TypeRef{ .expr = inner };
+        }
+        return ast.TypeRef{ .expr = null };
+    }
     // type [Constraint (| Constraint)*] — comptime type parameter (meta-kind)
     // with an optional `|`-separated constraint list. `type` alone is unconstrained.
     if (this.check(.type)) {

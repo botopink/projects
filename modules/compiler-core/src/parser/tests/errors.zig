@@ -228,3 +228,21 @@ test "lexer: lexicalErrorMessage for InvalidUnicodeEscape InvalidCodepoint" {
             std.mem.indexOf(u8, msg, "Codepoint") != null,
     );
 }
+
+test "parser error: expr param without comptime modifier" {
+    try h.expectParseError(std.testing.allocator,
+        \\error: A `type`/`expr` parameter must be marked `comptime`
+        \\ --> <test>:1:9
+        \\  |
+        \\1 | fn html(template: expr string) -> expr Component {
+        \\  |         ^^^^^^^^ A `type`/`expr` parameter must be marked `comptime`
+        \\  |
+        \\  = hint: Meta-kinds only exist at compile time, e.g. `fn f(comptime T: type)` or `fn html(comptime template: expr string)`
+        \\
+        \\
+    ,
+        \\fn html(template: expr string) -> expr Component {
+        \\    @todo();
+        \\}
+    );
+}

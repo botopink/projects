@@ -124,3 +124,14 @@ test "infer: generic interface Container<T>" {
         \\}
     );
 }
+
+test "infer: expr meta-kind ---- declaration with bounded return typechecks" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\pub fn identity(comptime template: expr string) -> expr string {
+        \\    return template;
+        \\}
+        \\fn main() {
+        \\    @print("ok");
+        \\}
+    );
+}

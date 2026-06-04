@@ -1978,6 +1978,13 @@ pub const Formatter = struct {
                     try this.join(docs, try this.text(" | ")),
                 );
             },
+            .expr => |inner| blk: {
+                if (inner) |t| break :blk this.concat(
+                    try this.text("expr "),
+                    try this.fmtTypeRef(t.*),
+                );
+                break :blk this.text("expr");
+            },
         };
     }
 

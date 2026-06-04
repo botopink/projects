@@ -537,3 +537,19 @@ test "format: test ---- named block with assert message" {
         \\}
     );
 }
+
+test "format: expr meta-kind ---- round-trip" {
+    try h.assertFormat(std.testing.allocator,
+        \\pub fn html(comptime template: expr string) -> expr Component {
+        \\    @todo();
+        \\}
+    );
+}
+
+test "format: expr meta-kind ---- bare return round-trip" {
+    try h.assertFormat(std.testing.allocator,
+        \\fn yaml(comptime template: expr string) -> expr {
+        \\    @todo();
+        \\}
+    );
+}

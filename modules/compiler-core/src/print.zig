@@ -66,6 +66,10 @@ pub fn errorMessages(info: ParseErrorInfo) ErrorMessages {
             .message = "`use` must be in static prefix",
             .hint = "Move all `use` statements to the top of the function body, before any `if`, `case`, `loop`, or `return`",
         },
+        .metaKindRequiresComptime => .{
+            .message = "A `type`/`expr` parameter must be marked `comptime`",
+            .hint = "Meta-kinds only exist at compile time, e.g. `fn f(comptime T: type)` or `fn html(comptime template: expr string)`",
+        },
         .badInterpolation => .{
             .message = "Malformed `${…}` interpolation in string",
             .hint = "Each `${…}` must contain one complete expression, e.g. \"hi ${name}\"; escape a literal dollar with `\\${`",

@@ -1233,7 +1233,12 @@ pub const TypeRef = union(enum) {
     /// Comptime type parameter: `typeparam` or `typeparam string | int | bool`.
     /// `constraints` is the `|`-separated list of accepted types; an empty slice
     /// means the typeparam is unconstrained and accepts any type. Owns the constraints.
+    /// Surface syntax (post-F0): `type` / `type string | int | bool`.
     typeparam: []TypeRef,
+    /// Expression meta-kind: `expr T` is an expression of type `T` (unevaluated
+    /// input or spliceable output); bare `expr` (null) defers the type until the
+    /// call-site expansion. Owns the inner type when present.
+    expr: ?*TypeRef,
 
     pub fn deinit(this: *TypeRef, allocator: std.mem.Allocator) void {
         switch (this.*) {
@@ -1263,6 +1268,10 @@ pub const TypeRef = union(enum) {
             .typeparam => |constraints| {
                 for (constraints) |*c| c.deinit(allocator);
                 allocator.free(constraints);
+            },
+            .expr => |inner| if (inner) |t| {
+                t.deinit(allocator);
+                allocator.destroy(t);
             },
         }
     }

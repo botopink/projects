@@ -42,11 +42,21 @@
       hand-written concat; needs a string-concat lowering in those backends (separate fix)
 
 ## F2 — `expr` type form
-- [ ] Parser (type grammar): `expr typeExpr?` in any type position; bare `expr` only in return/inference positions
-- [ ] `comptime/types.zig`: new TypeKind `exprOf(?inner)` (type form, not a named builtin)
-- [ ] Unify: `expr T ~ expr U` iff `T ~ U`; bare `expr` as deferred variable
-- [ ] Meta-kind params require `comptime` modifier (parser error otherwise)
-- [ ] Snapshots: `parser/expr_type_positions`, `comptime/expr_unify`
+- [x] Parser: `TypeRef.expr: ?*TypeRef` — contextual keyword `expr [T]` in any type
+      position (param, return, generic arg); bare `expr` = null inner. NOTE
+      deviation: parser is position-permissive; the bare-expr positional
+      restriction will be a semantic check when expansion lands (F6)
+- [x] Types: encoded as named type `"expr"` with one arg (same idiom as
+      `optional`/`array`) — structural unification gives `expr T ~ expr U iff
+      T ~ U` for free; bare `expr` resolves its arg to a fresh var (defers to F6)
+- [x] Unify: covered by named-type structural unification (infer test: identity
+      fn returning its `expr string` param against an `expr string` bound)
+- [x] Meta-kind params (`type`/`expr`) without `comptime` → new parse error
+      `metaKindRequiresComptime` (message + hint in print.zig, error test)
+- [x] Formatter + LSP hover render `expr [T]`; typescript codegen erases to `any`
+- [x] Snapshots: 3× `parser/expr_meta_kind_*`; format round-trips; infer test
+- [x] DISCOVERED QUIRK (pre-existing): `echo` cannot be used as a fn name —
+      parse error; not in the keyword list, needs investigation (separate fix)
 
 ## F3 — tagged-call sugar
 - [ ] Parser: postfixExpr + immediate string/multiline literal ⇒ call with one arg
