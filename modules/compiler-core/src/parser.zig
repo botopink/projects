@@ -236,7 +236,9 @@ pub const Parser = struct {
                 // Optional semicolon after top-level val declaration
                 _ = this.match(.semicolon);
                 break :blk decl;
-            } else if (this.check(.hash)) blk: {
+            } else if (this.check(.hash) or
+                (this.check(.at) and this.peekAt(1).kind == .leftSquareBracket))
+            blk: {
                 // Annotations precede the declaration — peek past them to find the keyword.
                 const annEnd = this.skipAnnotationsLookaheadFrom(0);
                 const tok = this.peekAt(annEnd).kind;
@@ -481,31 +483,31 @@ pub const Parser = struct {
 
     pub const parseParamList = decl_grammar.parseParamList;
 
-    /// Skips zero or more `#[name(args...)]` sequences from `offset` and returns
-    /// the position of the first non-annotation token.  Pure lookahead.
+    /// Skips zero or more `#[name(args...)]` / `@[call, call]` annotation blocks
+    /// from `offset` and returns the position of the first non-annotation token.
+    /// Pure lookahead.
     pub fn skipAnnotationsLookaheadFrom(this: *This, offset: usize) usize {
         var o = offset;
-        while (this.peekAt(o).kind == .hash and this.peekAt(o + 1).kind == .leftSquareBracket) {
-            o += 2; // skip `#` and `[`
-            o += 1; // skip annotation name
-            if (this.peekAt(o).kind == .leftParenthesis) {
-                o += 1; // skip `(`
-                var depth: usize = 1;
-                while (depth > 0 and this.peekAt(o).kind != .endOfFile) {
-                    switch (this.peekAt(o).kind) {
-                        .leftParenthesis => depth += 1,
-                        .rightParenthesis => depth -= 1,
-                        else => {},
-                    }
-                    o += 1;
+        while ((this.peekAt(o).kind == .hash or this.peekAt(o).kind == .at) and
+            this.peekAt(o + 1).kind == .leftSquareBracket)
+        {
+            o += 2; // skip `#`/`@` and `[`
+            var depth: usize = 1;
+            while (depth > 0 and this.peekAt(o).kind != .endOfFile) {
+                switch (this.peekAt(o).kind) {
+                    .leftSquareBracket => depth += 1,
+                    .rightSquareBracket => depth -= 1,
+                    else => {},
                 }
+                o += 1;
             }
-            o += 1; // skip `]`
         }
         return o;
     }
 
-    /// Parses zero or more `#[name(arg, arg)]` annotations at the current position.
+    /// Parses zero or more annotation blocks at the current position. Two forms:
+    /// `#[name(arg, arg)]` — one annotation per block;
+    /// `@[name(…), name(…)]` — one or more builtin-call annotations per block.
     /// Returns an owned slice (empty when no annotations are present).
     pub fn parseAnnotations(this: *This, alloc: std.mem.Allocator) ParseError![]Annotation {
         var list: std.ArrayList(Annotation) = .empty;
@@ -513,37 +515,47 @@ pub const Parser = struct {
             for (list.items) |*ann| ann.deinit(alloc);
             list.deinit(alloc);
         }
-        while (this.check(.hash) and this.peekAt(1).kind == .leftSquareBracket) {
-            _ = try this.consume(.hash);
+        while ((this.check(.hash) or this.check(.at)) and this.peekAt(1).kind == .leftSquareBracket) {
+            const isAtBlock = this.check(.at);
+            _ = this.advance(); // `#` or `@`
             _ = try this.consume(.leftSquareBracket);
-            // Accept any word (identifier or reserved word) as the annotation name.
-            const nameTok = this.peek();
-            if (nameTok.kind != .identifier and !isReservedWord(nameTok.kind)) return ParseError.UnexpectedToken;
-            const name = this.advance().lexeme;
-            var args: std.ArrayList([]const u8) = .empty;
-            errdefer args.deinit(alloc);
-            if (this.match(.leftParenthesis)) {
-                while (!this.check(.rightParenthesis) and !this.check(.endOfFile)) {
-                    if (this.check(.dot) and this.peekAt(1).kind == .identifier) {
-                        // `.erlang` — adjacent source bytes form a single lexeme
-                        const dot = try this.consume(.dot);
-                        const ident = try this.consume(.identifier);
-                        try args.append(alloc, dot.lexeme.ptr[0 .. dot.lexeme.len + ident.lexeme.len]);
-                    } else {
-                        const tok = this.advance();
-                        try args.append(alloc, tok.lexeme);
-                    }
-                    if (!this.match(.comma)) break;
-                }
-                _ = try this.consume(.rightParenthesis);
+            while (true) {
+                try list.append(alloc, try this.parseAnnotationCall(alloc));
+                // Only the `@[ … ]` block holds a comma-separated call list.
+                if (!(isAtBlock and this.match(.comma))) break;
             }
             _ = try this.consume(.rightSquareBracket);
-            try list.append(alloc, Annotation{
-                .name = name,
-                .args = try args.toOwnedSlice(alloc),
-            });
         }
         return list.toOwnedSlice(alloc);
+    }
+
+    /// Parses a single `name` or `name(arg, arg)` annotation call.
+    fn parseAnnotationCall(this: *This, alloc: std.mem.Allocator) ParseError!Annotation {
+        // Accept any word (identifier or reserved word) as the annotation name.
+        const nameTok = this.peek();
+        if (nameTok.kind != .identifier and !isReservedWord(nameTok.kind)) return ParseError.UnexpectedToken;
+        const name = this.advance().lexeme;
+        var args: std.ArrayList([]const u8) = .empty;
+        errdefer args.deinit(alloc);
+        if (this.match(.leftParenthesis)) {
+            while (!this.check(.rightParenthesis) and !this.check(.endOfFile)) {
+                if (this.check(.dot) and this.peekAt(1).kind == .identifier) {
+                    // `.erlang` — adjacent source bytes form a single lexeme
+                    const dot = try this.consume(.dot);
+                    const ident = try this.consume(.identifier);
+                    try args.append(alloc, dot.lexeme.ptr[0 .. dot.lexeme.len + ident.lexeme.len]);
+                } else {
+                    const tok = this.advance();
+                    try args.append(alloc, tok.lexeme);
+                }
+                if (!this.match(.comma)) break;
+            }
+            _ = try this.consume(.rightParenthesis);
+        }
+        return Annotation{
+            .name = name,
+            .args = try args.toOwnedSlice(alloc),
+        };
     }
 
     /// The shared opening of a type/interface declaration: visibility, name and

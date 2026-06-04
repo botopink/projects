@@ -341,3 +341,17 @@ test "infer error: loop await on a non-async-iterable" {
         \\}
     );
 }
+
+test "infer error: external ---- builtin typechecks args" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\@[external(python, "string", "length")]
+        \\pub fn str_length(s: string) -> i32
+    );
+}
+
+test "infer error: external ---- wrong arity" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\@[external(erlang, "string")]
+        \\pub fn str_length(s: string) -> i32
+    );
+}

@@ -43,17 +43,27 @@ loader relocated `libs/std/src/prelude.zig` → `modules/compiler-core/src/compt
 ## F1 — annotation syntax `@[…]` + `external` builtin (FFI primitive; prerequisite for decl modules)
 `@external` is NOT a parser keyword — it is a builtin function declared in
 `builtins.d.bp`, invoked inside generic annotation syntax `@[ … ]` above a declaration.
-- [ ] Builtins: declare in `builtins.d.bp`:
+- [x] Builtins: declared in `builtins.d.bp` (documentation — the file is not yet
+      embedded; validation is programmatic in `comptime/infer.zig`):
       `enum Target { node, typescript, erlang, beam, wasm }` +
       `fn external(target: Target, module: string, symbol: string)`
-- [ ] Lexer/parser: annotation block `@[ <builtin-call> ("," <builtin-call>)* ]`
-      placed above any declaration; an annotation is a normal builtin-function call
-- [ ] AST: `decl.annotations: []Annotation { name, args }` (generic — not external-specific)
-- [ ] Inference: type-check each annotation against its builtin signature in
-      `builtins.d.bp`; a `pub fn` annotated with `external` needs no body
-- [ ] Codegen: read `external` annotations off the decl; each backend emits a call to
-      its target's symbol (Erlang `module:symbol`, JS `import {symbol} from module`);
-      error if the active target has no `external` for that fn
+- [x] Lexer/parser: annotation block `@[ <builtin-call> ("," <builtin-call>)* ]`
+      (no lexer change needed — `.at` + `.leftSquareBracket`; `parseAnnotations`
+      handles both `#[…]` and `@[…]`; `skipAnnotationsLookaheadFrom` + top-level
+      dispatch extended; `parseFnBody` allows bodyless fn when `external` present)
+- [x] AST: reuses existing `decl.annotations: []Annotation { name, args }`;
+      added `FnDecl.isExternal()` / `FnDecl.externalFor(target)` + `ast.ExternalRef`
+- [x] Inference: `validateExternalAnnotation` (arity 3, target ∈ Target,
+      module/symbol string literals); bodyless external fn typed from signature
+- [x] Codegen: erlang lowers calls to remote `module:symbol(Args)` (decl emits
+      nothing, excluded from export); commonJS emits
+      `const { symbol: name } = require("module")` (+ `exports.name` for pub);
+      no matching target → `error.MissingExternalTarget` at the call site;
+      beam/wasm untouched for now (external fn emits as empty local fn — F6 scope)
+- [x] Tests: parser `annotation_block_at_bracket` (+ decl-then-next-decl),
+      comptime `external_builtin_typechecks_args` + `external_wrong_arity` +
+      `external_fn_no_body_typechecks`, codegen `external_call_emits_module_symbol`
+      + `external_import_binds_symbol` (all 4 targets snapshotted)
 
 ## F2 — `option` + `result` (effect types over built-ins)
 - [ ] `option.bp`: `map`, `then` (flat_map), `unwrap`, `or`, `is_some`, `is_none`, `to_result`

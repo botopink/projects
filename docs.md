@@ -27,6 +27,7 @@ Complete examples and language features organized by topic. Most examples map to
 - [Destructuring](#destructuring)
 - [Arrays and Tuples](#arrays-and-tuples)
 - [Result & Option methods](#result--option-methods)
+- [Annotations & `external`](#annotations--external)
 
 ---
 
@@ -1688,3 +1689,33 @@ fn main() {
 **Codegen coverage:** `commonJS` and `erlang` emit the full inline form (a tag
 match for Result, a presence check for Option). `beam` and `wasm` emit a
 documented stub — these targets have no Result runtime representation yet.
+
+---
+
+## Annotations & `external`
+
+A declaration may be preceded by an **annotation block** `@[ … ]` holding one
+or more comma-separated builtin-function calls. Annotations are not parser
+keywords — each entry is a normal builtin call type-checked against its
+signature in `builtins.d.bp` (the older single-annotation form `#[name(args)]`
+is still accepted):
+
+```botopink
+@[external(erlang, "string", "length"),
+  external(node, "./gleam_stdlib.mjs", "string_length")]
+pub fn str_length(s: string) -> i32
+```
+
+### `external(target: Target, module: string, symbol: string)`
+
+`external` is the FFI primitive: it binds a function to a host symbol per
+compilation target. `Target` is `enum { node, typescript, erlang, beam, wasm }`.
+
+- A `pub fn` annotated with `external` needs **no body** — it is typed from
+  the signature alone (like a `.d.bp` declaration).
+- Each backend lowers calls to its target's symbol:
+  - Erlang: `str_length(s)` → `string:length(S)`
+  - Node/CommonJS: emits `const { string_length: str_length } = require("./gleam_stdlib.mjs");`
+    and calls `str_length(s)`
+- Calling an external fn on a backend with **no matching target** is a
+  codegen error (`MissingExternalTarget`).

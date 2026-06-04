@@ -980,7 +980,8 @@ pub const DelegateDecl = struct {
     }
 };
 
-/// A single annotation applied to a declaration: `#[name]` or `#[name(arg1, arg2)]`.
+/// A single annotation applied to a declaration: `#[name]` or `#[name(arg1, arg2)]`,
+/// or one builtin call of an `@[call, call]` annotation block.
 pub const Annotation = struct {
     name: []const u8,
     /// Raw argument lexemes (may span adjacent source tokens, e.g. `.erlang`).
@@ -990,6 +991,20 @@ pub const Annotation = struct {
         allocator.free(this.args);
     }
 };
+
+/// The host `(module, symbol)` pair of one `external(target, module, symbol)`
+/// annotation, with the string-literal quotes stripped.
+pub const ExternalRef = struct {
+    module: []const u8,
+    symbol: []const u8,
+};
+
+/// Strips the surrounding quotes off a string-literal annotation argument.
+fn unquoteAnnotationArg(arg: []const u8) []const u8 {
+    if (arg.len >= 2 and arg[0] == '"' and arg[arg.len - 1] == '"')
+        return arg[1 .. arg.len - 1];
+    return arg;
+}
 
 /// `val Name = interface { ... }`  or  `val Name = interface <T> { ... }`
 pub const InterfaceDecl = struct {
@@ -1322,6 +1337,31 @@ pub const FnDecl = struct {
     /// null when the return type is omitted (void-returning functions).
     returnType: ?TypeRef,
     body: []Stmt,
+
+    /// True when the fn is an `@[external(…)]` FFI declaration (bodyless;
+    /// each codegen backend lowers calls to its target's symbol).
+    pub fn isExternal(this: FnDecl) bool {
+        for (this.annotations) |a| {
+            if (std.mem.eql(u8, a.name, "external")) return true;
+        }
+        return false;
+    }
+
+    /// The `(module, symbol)` of the `external` annotation matching `target`
+    /// (e.g. "erlang", "node"), or null when no annotation targets it.
+    pub fn externalFor(this: FnDecl, target: []const u8) ?ExternalRef {
+        for (this.annotations) |a| {
+            if (!std.mem.eql(u8, a.name, "external")) continue;
+            if (a.args.len != 3) continue;
+            const t = std.mem.trimStart(u8, a.args[0], ".");
+            if (!std.mem.eql(u8, t, target)) continue;
+            return .{
+                .module = unquoteAnnotationArg(a.args[1]),
+                .symbol = unquoteAnnotationArg(a.args[2]),
+            };
+        }
+        return null;
+    }
 
     pub fn deinit(this: *FnDecl, allocator: std.mem.Allocator) void {
         for (this.annotations) |*ann| ann.deinit(allocator);

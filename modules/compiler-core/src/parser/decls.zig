@@ -270,6 +270,14 @@ pub fn parseFnDeclFromVal(this: *This, alloc: std.mem.Allocator) ParseError!FnDe
     return this.parseFnBody(alloc, name, isPub, annotations, isStarFn);
 }
 
+/// True when one of the annotations is the `external` builtin (FFI marker).
+fn hasExternalAnnotation(annotations: []const Annotation) bool {
+    for (annotations) |a| {
+        if (std.mem.eql(u8, a.name, "external")) return true;
+    }
+    return false;
+}
+
 pub fn parseFnBody(
     this: *This,
     alloc: std.mem.Allocator,
@@ -314,6 +322,22 @@ pub fn parseFnBody(
             .col = tok.col,
         };
         return ParseError.UnexpectedToken;
+    }
+
+    // An `@[external(…)]`-annotated fn may omit its body — it is typed from
+    // the signature alone and lowered to the target's symbol by codegen.
+    if (!this.check(.leftBrace) and hasExternalAnnotation(annotations)) {
+        return FnDecl{
+            .isPub = isPub,
+            .isStarFn = isStarFn,
+            .label = label,
+            .name = name,
+            .annotations = annotations,
+            .genericParams = genericParams,
+            .params = params,
+            .returnType = returnType,
+            .body = &.{},
+        };
     }
 
     const body = try this.parseStmtListInBraces(alloc);

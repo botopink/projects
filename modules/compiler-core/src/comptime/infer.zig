@@ -891,7 +891,49 @@ fn inferDecl(env: *Env, decl: ast.DeclKind) InferError!?Binding {
     }
 }
 
+/// Targets accepted by the `external` annotation builtin — must match
+/// `enum Target { node, typescript, erlang, beam, wasm }` in builtins.d.bp.
+const external_targets = [_][]const u8{ "node", "typescript", "erlang", "beam", "wasm" };
+
+/// Type-checks one `external(target, module, symbol)` annotation against its
+/// builtin signature (builtins.d.bp): `fn external(target: Target, module: string, symbol: string)`.
+fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) InferError!void {
+    const fnLoc: ?ast.Loc = if (f.body.len > 0) f.body[0].expr.getLoc() else null;
+    const fail = struct {
+        fn fail(e_: *Env, loc: ?ast.Loc, msg: []const u8, hint: []const u8) InferError {
+            var e = TypeError.custom(msg, hint);
+            if (loc) |l| e = e.withLoc(l);
+            e_.lastError = e;
+            return error.TypeError;
+        }
+    }.fail;
+    if (a.args.len != 3) {
+        return fail(env, fnLoc, "`external` expects exactly 3 arguments: external(target: Target, module: string, symbol: string)", "Example: @[external(erlang, \"string\", \"length\")]");
+    }
+    // arg0: a `Target` enum member (a bare identifier, optionally `.target`).
+    const target = std.mem.trimStart(u8, a.args[0], ".");
+    const known = for (external_targets) |t| {
+        if (std.mem.eql(u8, t, target)) break true;
+    } else false;
+    if (!known) {
+        return fail(env, fnLoc, "`external` target must be a Target member: node, typescript, erlang, beam or wasm", "Example: @[external(erlang, \"string\", \"length\")]");
+    }
+    // arg1/arg2: string literals naming the host module and symbol.
+    for (a.args[1..]) |arg| {
+        if (arg.len < 2 or arg[0] != '"') {
+            return fail(env, fnLoc, "`external` module and symbol must be string literals", "Example: @[external(node, \"./gleam_stdlib.mjs\", \"string_length\")]");
+        }
+    }
+}
+
 fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
+    // ── `@[external(…)]` annotation validation (F1) ─────────────────────────
+    for (f.annotations) |a| {
+        if (std.mem.eql(u8, a.name, "external")) {
+            try validateExternalAnnotation(env, f, a);
+        }
+    }
+
     // Build generic map.
     var genericMap = std.StringHashMap(*T.Type).init(env.arena);
     defer genericMap.deinit();
