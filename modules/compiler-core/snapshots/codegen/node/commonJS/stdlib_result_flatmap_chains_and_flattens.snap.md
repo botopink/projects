@@ -19,7 +19,7 @@ function validate(n) {
 
 function main() {
     const r = ((_r) => _r.tag === "Ok" ? ((n) => {
-    validate(n);
+    return validate(n);
 })(_r.result) : _r)(parseAge("42"));
 }
 

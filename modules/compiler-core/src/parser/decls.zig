@@ -331,6 +331,23 @@ pub fn parseFnBody(
     };
 }
 
+/// `test { body }` / `test "name" { body }` — top-level test declaration.
+/// The optional string literal names the test; the body is a normal stmt block.
+pub fn parseTestDecl(this: *This, alloc: std.mem.Allocator) ParseError!ast.TestDecl {
+    const testTok = try this.consume(.@"test");
+    var name: ?[]const u8 = null;
+    if (this.check(.stringLiteral)) {
+        const tok = this.advance();
+        name = tok.lexeme[1 .. tok.lexeme.len - 1];
+    }
+    const body = try this.parseStmtListInBraces(alloc);
+    return ast.TestDecl{
+        .name = name,
+        .loc = locFromToken(testTok),
+        .body = body,
+    };
+}
+
 /// `val log = declare fn(self: Self) -> R`
 pub fn parseDelegateDecl(this: *This, alloc: std.mem.Allocator) ParseError!DelegateDecl {
     const isPub = this.match(.@"pub");

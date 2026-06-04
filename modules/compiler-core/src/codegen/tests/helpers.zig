@@ -239,6 +239,39 @@ pub fn assertJsSingle(allocator: Allocator, comptime loc: std.builtin.SourceLoca
     return assertJs(allocator, loc, &.{.{ .path = "", .source = src }});
 }
 
+/// Snapshot a single module compiled in **test mode** (commonJS + erlang):
+/// `test { … }` blocks emit as test functions plus a registry + runner
+/// entry, and `assert` lowers to a recoverable per-test failure.
+pub fn assertJsTestMode(allocator: Allocator, comptime loc: std.builtin.SourceLocation, src: []const u8) !void {
+    const io = std.testing.io;
+    const build_root_path = comptime buildRootPathFromSrc(loc);
+
+    for (configs[0..2]) |c| { // commonJS/node + erlang
+        var cfg = c;
+        cfg.build_root = build_root_path;
+        cfg.test_mode = true;
+
+        var outputs = try codegen.generate(allocator, &.{.{ .path = "", .source = src }}, io, cfg);
+        defer {
+            for (outputs.items) |*o| o.result.deinit(allocator);
+            outputs.deinit(allocator);
+        }
+
+        var snapOutputs = std.ArrayList(snap.SnapInput).empty;
+        defer snapOutputs.deinit(allocator);
+        for (outputs.items) |o| {
+            try snapOutputs.append(allocator, .{
+                .name = o.name,
+                .src = o.src,
+                .result = o.result,
+            });
+        }
+
+        const slug = comptime slugFromSrc(loc);
+        try snap.assertCodegen(allocator, slug, snapOutputs.items, cfg);
+    }
+}
+
 pub fn assertJsContains(allocator: Allocator, src: []const u8, needles: []const []const u8) !void {
     const io = std.testing.io;
     var outputs = try codegen.generate(
@@ -260,6 +293,32 @@ pub fn assertJsContains(allocator: Allocator, src: []const u8, needles: []const 
                 .{ js, needle },
             );
             return error.NeedleNotFound;
+        }
+    }
+}
+
+/// Asserts that none of `needles` appear in the generated commonJS output.
+pub fn assertJsNotContains(allocator: Allocator, src: []const u8, needles: []const []const u8) !void {
+    const io = std.testing.io;
+    var outputs = try codegen.generate(
+        allocator,
+        &.{.{ .path = "", .source = src }},
+        io,
+        configs[0], // commonJS / node
+    );
+    defer {
+        for (outputs.items) |*o| o.result.deinit(allocator);
+        outputs.deinit(allocator);
+    }
+    try std.testing.expect(outputs.items.len > 0);
+    const js = outputs.items[outputs.items.len - 1].result.js;
+    for (needles) |needle| {
+        if (std.mem.indexOf(u8, js, needle) != null) {
+            std.debug.print(
+                "\n=== generated JS ===\n{s}\n=== unexpected needle: {s} ===\n",
+                .{ js, needle },
+            );
+            return error.UnexpectedNeedle;
         }
     }
 }

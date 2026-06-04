@@ -60,7 +60,6 @@ pub fn codegenEmit(
     outputs: []ComptimeOutput,
     config: configMod.Config,
 ) !std.ArrayListUnmanaged(ModuleOutput) {
-    _ = config;
     var results: std.ArrayListUnmanaged(ModuleOutput) = .empty;
 
     for (outputs) |*ct| {
@@ -79,7 +78,7 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const code = try emitErlang(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites);
+                const code = try emitErlang(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, config.test_mode);
                 try results.append(alloc, .{
                     .name = ct.name,
                     .src = ct.src,
@@ -104,11 +103,25 @@ fn emitErlang(
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    test_mode: bool,
 ) ![]u8 {
     var aw: std.Io.Writer.Allocating = .init(alloc);
     defer aw.deinit();
 
     var em = Emitter.init(alloc, &aw.writer, comptime_vals, rewrites);
+    em.test_mode = test_mode;
+    em.module_name = module_name;
+
+    // Test registry entries collected while emitting decls (test mode only).
+    const TestEntry = struct { name: ?[]const u8, line: usize, idx: usize };
+    var test_entries: std.ArrayListUnmanaged(TestEntry) = .empty;
+    defer test_entries.deinit(alloc);
+    var test_count: usize = 0;
+    if (test_mode) {
+        for (program.decls) |decl| {
+            if (decl == .@"test") test_count += 1;
+        }
+    }
     // Names of `implement`/`extend` blocks — a PascalCase call receiver that
     // matches one is a qualified extension call (`PatoNada.swim(d)`), lowered
     // to the bare local function `swim(d)` rather than a remote module call.
@@ -128,7 +141,8 @@ fn emitErlang(
             else => {},
         }
     }
-    const emit_entrypoint_wrapper = has_main_0;
+    // Test mode never auto-runs `main/0` — the escript entry is the test runner.
+    const emit_entrypoint_wrapper = has_main_0 and !test_mode;
 
     // Module header
     try aw.writer.print("-module({s}).\n", .{module_name});
@@ -146,6 +160,10 @@ fn emitErlang(
     // `main/1` is the escript entry point — escript calls it with the argv list.
     if (emit_entrypoint_wrapper) {
         try aw.writer.writeAll("-export(['_botopink_main'/0, main/1]).\n");
+    }
+    // Test runner escript entry point.
+    if (test_mode and test_count > 0) {
+        try aw.writer.writeAll("-export([main/1]).\n");
     }
 
     // Export other public functions
@@ -178,6 +196,14 @@ fn emitErlang(
             .extend => |ex| try em.emitExtend(ex),
             .use => |u| try em.emitUse(u),
             .delegate => |d| try aw.writer.print("%% delegate {s}\n", .{d.name}),
+            // Test blocks are only compiled under `botopink test`; in normal
+            // builds they are skipped entirely.
+            .@"test" => |t| {
+                if (!test_mode) continue;
+                const idx = test_entries.items.len;
+                try test_entries.append(alloc, .{ .name = t.name, .line = t.loc.line, .idx = idx });
+                try em.emitTestFn(t, idx);
+            },
             .comment => |c| {
                 const prefix = if (c.is_doc) "%%" else if (c.is_module) "%%%" else "%";
                 try aw.writer.print("{s} {s}\n", .{ prefix, c.text });
@@ -204,6 +230,60 @@ fn emitErlang(
         try aw.writer.writeByte('\n');
         try aw.writer.writeAll("main(_Args) ->\n");
         try aw.writer.writeAll("    '_botopink_main'().\n");
+    }
+
+    // Test mode: emit the registry + runner + escript entry.
+    if (test_mode and test_entries.items.len > 0) {
+        try aw.writer.writeByte('\n');
+        try aw.writer.writeAll(
+            \\'__bp_run_one'({Name, Fun, Loc}) ->
+            \\    try
+            \\        Fun(),
+            \\        io:format("  ok   ~s~n", [Name]),
+            \\        ok
+            \\    catch
+            \\        error:{bp_assert, Msg, ALoc} ->
+            \\            io:format("  FAIL ~s  (~s)  at ~s~n", [Name, Msg, ALoc]),
+            \\            fail;
+            \\        Class:Reason ->
+            \\            io:format("  FAIL ~s  (~p:~p)  at ~s~n", [Name, Class, Reason, Loc]),
+            \\            fail
+            \\    end.
+            \\
+            \\'__bp_run_tests'(Filter) ->
+            \\    Tests = [
+            \\
+        );
+        for (test_entries.items, 0..) |t, i| {
+            if (i > 0) try aw.writer.writeAll(",\n");
+            if (t.name) |n| {
+                try aw.writer.print("        {{<<\"{s}\">>, fun '__bp_test_{d}'/0, <<\"{s}.bp:{d}\">>}}", .{ n, t.idx, module_name, t.line });
+            } else {
+                try aw.writer.print("        {{<<\"test_{d}\">>, fun '__bp_test_{d}'/0, <<\"{s}.bp:{d}\">>}}", .{ t.idx, t.idx, module_name, t.line });
+            }
+        }
+        try aw.writer.writeAll(
+            \\
+            \\    ],
+            \\    Selected = case Filter of
+            \\        none -> Tests;
+            \\        _ -> [T || {N, _, _} = T <- Tests, binary:match(N, Filter) =/= nomatch]
+            \\    end,
+            \\    io:format("running ~p tests~n", [length(Selected)]),
+            \\    Results = ['__bp_run_one'(T) || T <- Selected],
+            \\    Failed = length([R || R <- Results, R =:= fail]),
+            \\    Passed = length(Results) - Failed,
+            \\    io:format("~p passed, ~p failed~n", [Passed, Failed]),
+            \\    case Failed > 0 of true -> halt(1); false -> ok end.
+            \\
+            \\main(Args) ->
+            \\    Filter = case Args of
+            \\        [F | _] -> list_to_binary(F);
+            \\        _ -> none
+            \\    end,
+            \\    '__bp_run_tests'(Filter).
+            \\
+        );
     }
 
     return aw.toOwnedSlice();
@@ -254,6 +334,12 @@ const Emitter = struct {
     /// When true, `emitFn` keeps the `self` parameter (extension methods take
     /// the receiver as an explicit first argument; ordinary fns drop `self`).
     keep_self: bool = false,
+    /// `botopink test` compilation: `assert` lowers to a `bp_assert` error the
+    /// test runner catches per test instead of a hard `true = (...)` badmatch.
+    test_mode: bool = false,
+    /// Module name, used for `<module>.bp:<line>` source locations in
+    /// test-mode assert failures.
+    module_name: []const u8 = "main",
 
     fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8), rewrites: std.AutoHashMap(ast.Loc, []const u8)) Emitter {
         return .{
@@ -391,6 +477,18 @@ const Emitter = struct {
         } else {
             try this.emitBody(f.body);
         }
+        this.indent = saved;
+        try this.w(".\n");
+    }
+
+    /// Emit a `test { … }` body as `'__bp_test_<idx>'() -> Body.`
+    /// Same body emission as `emitFn` — no params, exported via the runner.
+    fn emitTestFn(this: *Emitter, t: ast.TestDecl, idx: usize) !void {
+        try this.fmt("'__bp_test_{d}'() ->\n", .{idx});
+        const saved = this.indent;
+        this.indent = 1;
+        this.try_seq = 0;
+        try this.emitBody(t.body);
         this.indent = saved;
         try this.w(".\n");
     }
@@ -690,9 +788,15 @@ const Emitter = struct {
 
             .identifier => |id| switch (id.kind) {
                 .ident => |n| {
-                    const vname = try erlangVar(this.alloc, n);
-                    defer this.alloc.free(vname);
-                    try this.w(vname);
+                    // Boolean literals are env-bound identifiers in botopink —
+                    // they must stay lowercase atoms, never `True`/`False` vars.
+                    if (std.mem.eql(u8, n, "true") or std.mem.eql(u8, n, "false")) {
+                        try this.w(n);
+                    } else {
+                        const vname = try erlangVar(this.alloc, n);
+                        defer this.alloc.free(vname);
+                        try this.w(vname);
+                    }
                 },
                 .identAccess => |ia| {
                     try this.emitExpr(ia.receiver.*);
@@ -1205,10 +1309,24 @@ const Emitter = struct {
                     }
                 },
                 .assert => |a| {
-                    // Erlang doesn't have built-in assert, so we use pattern matching
-                    try this.w("true = (");
-                    try this.emitExpr(a.condition.*);
-                    try this.w(")");
+                    if (this.test_mode) {
+                        // Raise a tagged error the test runner catches per
+                        // test (records the failure and continues).
+                        try this.w("case (");
+                        try this.emitExpr(a.condition.*);
+                        try this.w(") of true -> ok; _ -> erlang:error({bp_assert, ");
+                        if (a.message) |msg| {
+                            try this.emitExpr(msg.*);
+                        } else {
+                            try this.w("<<\"assertion failed\">>");
+                        }
+                        try this.fmt(", <<\"{s}.bp:{d}\">>}}) end", .{ this.module_name, ct.loc.line });
+                    } else {
+                        // Erlang doesn't have built-in assert, so we use pattern matching
+                        try this.w("true = (");
+                        try this.emitExpr(a.condition.*);
+                        try this.w(")");
+                    }
                 },
                 .assertPattern => |ap| {
                     // Use Erlang's native pattern matching with case expressions

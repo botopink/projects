@@ -77,6 +77,31 @@ botopink run
 For Erlang it invokes `escript out/main.erl` (or `erl -noshell ...` when the
 project compiles to `.beam`).
 
+## `botopink test`
+
+Compile in test mode, then run every `test { … }` block in the project.
+Test artifacts go to `.botopinkbuild/test-out/` (the normal `out/` build is
+untouched); `fn main/0` is not auto-invoked.
+
+```bash
+botopink test
+# running 3 tests
+#   ok   addition works
+#   FAIL map doubles  (map should double each element)  at main.bp:12
+#   ok   test_2
+# 2 passed, 1 failed
+```
+
+Exit code `0` when every test passes, `1` otherwise. A failing `assert`
+records the failure and the runner continues with the next test.
+
+```bash
+botopink test --filter "addition"   # only tests whose name contains "addition"
+```
+
+The `commonJS` (node) and `erlang` (escript) targets run tests; the WASM
+runner is a pending phase of the `test-blocks` spec.
+
 ## `botopink format`
 
 Format every `.bp` file in `src/` in place:
@@ -121,6 +146,7 @@ botopink --help
 #   build [--target X]  compile to target
 #   check               type-check only
 #   run                 build then execute
+#   test [--filter X]   compile in test mode + run test blocks
 #   format [--check]    pretty-print .bp files
 #   clean               remove out/ and .botopinkbuild/
 ```
@@ -130,7 +156,7 @@ botopink --help
 | Goal | Commands |
 |---|---|
 | Bootstrap a new project | `botopink new app && cd app && botopink run` |
-| CI: lint + check | `botopink format --check && botopink check` |
+| CI: lint + check + tests | `botopink format --check && botopink check && botopink test` |
 | Swap target | edit `botopink.json` → `"target": "erlang"` → `botopink build` |
 | Reset everything | `botopink clean && botopink build` |
 

@@ -271,3 +271,38 @@ test "js: builtin ---- @print return value void" {
         \\}
     );
 }
+
+test "codegen: test runner" {
+    try h.assertJsTestMode(std.testing.allocator, @src(),
+        \\fn add(a: i32, b: i32) -> i32 {
+        \\    return a + b;
+        \\}
+        \\
+        \\test "addition works" {
+        \\    val r = add(2, 3);
+        \\    assert r == 5;
+        \\}
+        \\
+        \\test {
+        \\    assert true;
+        \\}
+    );
+}
+
+test "codegen: test runner excluded from normal build" {
+    const src =
+        \\fn add(a: i32, b: i32) -> i32 {
+        \\    return a + b;
+        \\}
+        \\
+        \\test "addition works" {
+        \\    assert add(2, 3) == 5;
+        \\}
+        \\
+        \\fn main() {
+        \\    @print("hello");
+        \\}
+    ;
+    try h.assertJsContains(std.testing.allocator, src, &.{"function add"});
+    try h.assertJsNotContains(std.testing.allocator, src, &.{ "__bp_test", "__bp_assert", "__bp_run_tests" });
+}

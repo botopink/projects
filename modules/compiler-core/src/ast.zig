@@ -1251,6 +1251,25 @@ pub const ValDecl = struct {
     }
 };
 
+/// Top-level test declaration: `test { body }` or `test "name" { body }`.
+/// Collected and run by `botopink test`; excluded from normal build output.
+pub const TestDecl = struct {
+    /// null for the anonymous form `test { … }`.
+    name: ?[]const u8 = null,
+    docComment: ?[]const u8 = null,
+    /// `//` regular comment (last one before the declaration)
+    comment: ?[]const u8 = null,
+    /// `////` module-level documentation
+    moduleComment: ?[]const u8 = null,
+    loc: Loc = .{ .line = 0, .col = 0 },
+    body: []Stmt,
+
+    pub fn deinit(this: *TestDecl, allocator: std.mem.Allocator) void {
+        for (this.body) |*s| s.deinit(allocator);
+        allocator.free(this.body);
+    }
+};
+
 pub const DeclKind = union(enum) {
     record: RecordDecl,
     implement: ImplementDecl,
@@ -1262,6 +1281,7 @@ pub const DeclKind = union(enum) {
     @"enum": EnumDecl,
     @"fn": FnDecl,
     val: ValDecl,
+    @"test": TestDecl,
     /// A standalone comment at the top level (not attached to any declaration).
     /// `text` is the comment content without the `//` / `///` / `////` prefix.
     /// `is_module` is true for `////` module-level comments.
@@ -1283,6 +1303,7 @@ pub const DeclKind = union(enum) {
             .@"enum" => |*e| e.deinit(allocator),
             .@"fn" => |*f| f.deinit(allocator),
             .val => |*v| v.deinit(allocator),
+            .@"test" => |*t| t.deinit(allocator),
             .comment => {},
         }
     }

@@ -225,6 +225,10 @@ pub const Parser = struct {
                 const d = try this.parseShorthandExtendDecl(alloc);
                 _ = this.match(.semicolon);
                 break :blk .{ .extend = d };
+            } else if (this.check(.@"test")) blk: {
+                const d = try this.parseTestDecl(alloc);
+                _ = this.match(.semicolon);
+                break :blk .{ .@"test" = d };
             } else if (this.check(.loop)) blk: {
                 // top-level loop statement: parsed as a val named "_loop"
                 const e = try this.parseLoopExpr(alloc);
@@ -719,6 +723,10 @@ pub const Parser = struct {
     pub const parseFnDeclFromVal = decl_grammar.parseFnDeclFromVal;
 
     pub const parseFnBody = decl_grammar.parseFnBody;
+
+    // ── test decl ─────────────────────────────────────────────────────────────────
+
+    pub const parseTestDecl = decl_grammar.parseTestDecl;
 
     // ── delegate decl ────────────────────────────────────────────────────────────
 

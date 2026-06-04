@@ -355,3 +355,23 @@ test "infer: star fn ---- generator returns @Iterator is valid" {
         \\}
     );
 }
+
+test "infer: test body typechecks" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn add(a: i32, b: i32) -> i32 {
+        \\    return a + b;
+        \\}
+        \\test "addition works" {
+        \\    val r = add(2, 3);
+        \\    assert r == 5;
+        \\}
+    );
+}
+
+test "infer: anonymous test body typechecks" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\test {
+        \\    assert 1 + 1 == 2;
+        \\}
+    );
+}

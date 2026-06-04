@@ -137,7 +137,7 @@ fn emitWat(
         // `$<target>_<method>` so activated/qualified dispatch can `call` them.
         .implement => |im| try em.emitExtensionMethods(im.target, im.methods),
         .extend => |ex| try em.emitExtensionMethods(ex.target, ex.methods),
-        .record, .@"struct", .@"enum", .interface, .delegate, .use => {},
+        .record, .@"struct", .@"enum", .interface, .delegate, .use, .@"test" => {},
     };
 
     if (has_main_0) try em.emitEntrypointWrapper();

@@ -27,6 +27,7 @@ Complete examples and language features organized by topic. Most examples map to
 - [Destructuring](#destructuring)
 - [Arrays and Tuples](#arrays-and-tuples)
 - [Result & Option methods](#result--option-methods)
+- [Test Blocks](#test-blocks)
 
 ---
 
@@ -1688,3 +1689,54 @@ fn main() {
 **Codegen coverage:** `commonJS` and `erlang` emit the full inline form (a tag
 match for Result, a presence check for Option). `beam` and `wasm` emit a
 documented stub — these targets have no Result runtime representation yet.
+
+## Test Blocks
+
+First-class `test` declarations, modeled on Zig: tests live next to the code,
+are collected at compile time, and run with `botopink test`. Anonymous and
+named forms:
+
+```botopink
+test {
+    assert 1 + 1 == 2;
+}
+
+test "addition works" {
+    val r = 2 + 3;
+    assert r == 5;
+}
+```
+
+Grammar (top-level declaration only — `test` inside a `fn` body is a parse
+error):
+
+```text
+testDecl ::= "test" string? block
+```
+
+- The optional string literal names the test; the anonymous form has none.
+- The body is the same statement block used by `fn` bodies.
+- `assert cond` / `assert cond, "message"` fails the enclosing test. It is the
+  existing expression-level `assert` — usable broadly, but only `test` blocks
+  are collected by the runner.
+- Test blocks are **excluded** from normal `build`/`run` output; they are only
+  compiled under `botopink test`.
+
+Running:
+
+```bash
+botopink test                    # compile + run every test block in the project
+botopink test --filter "split"   # only tests whose name contains the substring
+```
+
+```text
+running 3 tests
+  ok   addition works
+  FAIL map doubles  (map should double each element)  at main.bp:12
+  ok   test_2
+2 passed, 1 failed
+```
+
+**Status:** parser/AST/formatter/inference landed; `botopink test` runs on the
+`commonJS` (node) and `erlang` (escript) targets. The WASM runner is a pending
+phase of the `test-blocks` spec (`tasks/v0.beta.2/specs/test-blocks.md`).

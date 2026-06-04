@@ -597,3 +597,37 @@ test "parser: val with tuple type annotation" {
         \\val t: #(string, string) = #("56454", "85484");
     );
 }
+
+test "parser: test anonymous" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\test {
+        \\    assert 1 + 1 == 2;
+        \\}
+    );
+}
+
+test "parser: test named" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\test "addition works" {
+        \\    val r = 2 + 3;
+        \\    assert r == 5;
+        \\}
+    );
+}
+
+test "parser: test named with message assert" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\test "map doubles" {
+        \\    assert [2, 4, 6] == [2, 4, 6], "map should double each element";
+        \\}
+    );
+}
+
+test "parser: test rejects in fn body" {
+    // `test` is a top-level declaration only.
+    try h.expectParseFails(std.testing.allocator,
+        \\fn run() {
+        \\    test { assert true; }
+        \\}
+    );
+}

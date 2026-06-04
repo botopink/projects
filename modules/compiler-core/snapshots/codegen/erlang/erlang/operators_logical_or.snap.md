@@ -17,7 +17,7 @@ either(A, B) ->
     (A or B).
 
 main() ->
-    io:format("~p~n", [either(False, True)]).
+    io:format("~p~n", [either(false, true)]).
 
 '_botopink_main'() ->
     main().
@@ -28,4 +28,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+true
 ```

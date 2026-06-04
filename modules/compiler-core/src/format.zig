@@ -1290,12 +1290,14 @@ pub const Formatter = struct {
                 .extend => |v| v.docComment,
                 .@"fn" => |v| v.docComment,
                 .val => |v| v.docComment,
+                .@"test" => |v| v.docComment,
                 .comment => null,
             };
             const prefix = try this.fmtDocPrefix(docComment);
             // Add semicolon after declarations that don't have a body
             const needsSemi = switch (d) {
                 .@"fn" => false,
+                .@"test" => false,
                 .val => true,
                 .@"struct" => true,
                 .record => true,
@@ -1352,6 +1354,7 @@ pub const Formatter = struct {
             .extend => |ext| this.fmtExtend(ext),
             .@"fn" => |f| this.fmtFnDecl(f),
             .val => |v| this.fmtValDecl(v),
+            .@"test" => |t| this.fmtTestDecl(t),
             .comment => |c| blk: {
                 const prefix = if (c.is_module) "////" else if (c.is_doc) "///" else "//";
                 break :blk this.text(try std.fmt.allocPrint(this.arena, "{s} {s}", .{ prefix, c.text }));
@@ -1881,6 +1884,18 @@ pub const Formatter = struct {
             labelDoc,
             try this.text(" "),
             try this.fmtBody(f.body),
+        });
+    }
+
+    /// `test { … }` / `test "name" { … }` — top-level test declaration.
+    fn fmtTestDecl(this: *Formatter, t: ast.TestDecl) !*const Doc {
+        const head: *const Doc = if (t.name) |n|
+            try this.text(try std.fmt.allocPrint(this.arena, "test \"{s}\" ", .{n}))
+        else
+            try this.text("test ");
+        return this.concatAll(&.{
+            head,
+            try this.fmtBody(t.body),
         });
     }
 

@@ -29,9 +29,9 @@ function shout(s) {
 
 function greet(p) {
     return ((_o) => _o != null ? _o : ("Hello stranger"))(((_o) => _o != null ? ((n) => {
-    shout(n);
+    return shout(n);
 })(_o) : null)(((_o) => _o != null ? ((n) => {
-    ("Hello " + n);
+    return ("Hello " + n);
 })(_o) : null)(firstName(p))));
 }
 ```
