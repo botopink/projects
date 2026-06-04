@@ -4,7 +4,9 @@
 **Depends on**: nothing
 **Files**: modules/compiler-core/src/{lexer,parser,ast,comptime,format,codegen}/*, modules/compiler-cli/src/cli/* (a `test` subcommand), libs/std/src/builtins.d.bp (assert)
 **Touches docs**: docs.md (language reference: `test`/`assert`), modules/compiler-core/src/parser/{AGENTS.md,examples.md}, modules/compiler-core/src/codegen/AGENTS.md, modules/compiler-cli/src/cli/{AGENTS.md,examples.md}
-**Status**: pending
+**Status**: mostly done (branch task/test-blocks) — F0 front-end, F1 assert,
+F2 inference, F3 runners (commonJS + erlang; WASM deferred), F4 `botopink test`
+CLI all landed. Remaining: WASM runner, optional duplicate-name warning.
 
 > **Goal**: a first-class `test` declaration, like Zig (`test "name" { … }`) and
 > Gleam (test modules) — tests live next to the code, are collected at compile time,

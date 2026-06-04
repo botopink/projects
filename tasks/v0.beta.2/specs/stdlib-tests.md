@@ -4,7 +4,10 @@
 **Depends on**: test-blocks, stdlib-gleam
 **Files**: libs/std/test/**/*.bp and/or co-located `test { … }` inside `libs/std/src/*.bp`
 **Touches docs**: libs/std/AGENTS.md, libs/std/docs.md, libs/std/src/AGENTS.md, libs/std/src/examples.md
-**Status**: pending
+**Status**: F0 done (branch task/test-blocks) — `test/` discovery, layout
+decision, `libs/std/test/` AGENTS.md + first green string/array suites (9/9).
+F1–F5 blocked on `stdlib-gleam` (modules don't exist yet); snake_case builtin
+method mapping also blocks fuller string coverage — see libs/std/test/AGENTS.md.
 
 > **Goal**: a runnable test suite **for the standard library** (`libs/std`), written
 > in `.bp` with the new `test { … }` construct and run by `botopink test`. Modeled on
