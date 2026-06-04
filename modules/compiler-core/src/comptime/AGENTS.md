@@ -29,7 +29,7 @@ comptime/
 ├── tests/             ← comptime tests, split by feature
 │   ├── helpers.zig        ← shared harness (`assertComptimeAst`, `assertTypeErrorSnap`, …)
 │   ├── infer_exprs.zig    ← literal/binary/case/control-flow inference
-│   ├── infer_decls.zig    ← pub fn/record/struct/interface/implement inference
+│   ├── infer_decls.zig    ← pub fn/record/struct/interface/implement/test-block inference
 │   ├── infer_generics.zig ← typeparam & generic inference
 │   ├── infer_errors.zig   ← inference type errors (`infer error: …`)
 │   ├── types.zig          ← types / type_unification
@@ -45,7 +45,7 @@ comptime/
 |---|---|
 | `types.zig` | All type representations as `union(enum)`. |
 | `env.zig` | Type environment — scopes, builtins + stdlib, `TypeDef.contextBase`, `FnContext`, and static-extension-dispatch tables (`extensions`, `activations`, `inherentMethods`, `dispatchRewrites`). |
-| `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. `registerExtensions` pre-pass + `resolveReceiverCall` implement F6 static extension dispatch. Ends with `validateProgram` — `implement`/interface coverage + getter/setter type checks. |
+| `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. `registerExtensions` pre-pass + `resolveReceiverCall` implement F6 static extension dispatch. Ends with `validateProgram` — `implement`/interface coverage + getter/setter type checks. Top-level `test { … }` bodies type-check like void `fn` bodies via `inferTestDecl` (no binding produced); `assert cond` unifies `cond` with `bool`. |
 | `unify.zig` | Unification with substitution + occurs check. |
 | `error.zig` | Structured type errors with source ranges and hints (incl. `missingMethod`/`unknownMethod`/`unknownInterface`/`ambiguousMethod`). |
 | `eval.zig` | Builds eval scripts, calls runtime, parses JSON results. |

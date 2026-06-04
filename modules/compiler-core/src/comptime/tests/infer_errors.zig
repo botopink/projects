@@ -341,3 +341,22 @@ test "infer error: loop await on a non-async-iterable" {
         \\}
     );
 }
+
+test "infer error: assert requires bool" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\test "bad assert" {
+        \\    assert 42;
+        \\}
+    );
+}
+
+test "infer error: test body type error" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn add(a: i32, b: i32) -> i32 {
+        \\    return a + b;
+        \\}
+        \\test "bad call" {
+        \\    val r = add("x", 3);
+        \\}
+    );
+}

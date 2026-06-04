@@ -326,6 +326,11 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
         },
         // Handled in `inferProgramTyped` — each import name is looked up in env.
         .use => return null,
+        // A test block produces no binding, but its body must type-check.
+        .@"test" => |t| {
+            try inferTestDecl(env, t);
+            return null;
+        },
         else => return null,
     }
 }
@@ -886,8 +891,34 @@ fn inferDecl(env: *Env, decl: ast.DeclKind) InferError!?Binding {
             const typeName = try buildInterfaceDeclName(env, d);
             return .{ .name = d.name, .type_ = try env.namedType(typeName) };
         },
+        // A test block produces no binding, but its body must type-check.
+        .@"test" => |t| {
+            try inferTestDecl(env, t);
+            return null;
+        },
         // implement and use don't produce a value binding.
         else => return null,
+    }
+}
+
+/// Type-check a `test { … }` body like a `fn` body returning void: no async
+/// context, no outer loop labels, lenient `throw` checking.
+fn inferTestDecl(env: *Env, t: ast.TestDecl) InferError!void {
+    const savedThrowCtx = env.throwContext;
+    env.throwContext = .unchecked;
+    defer env.throwContext = savedThrowCtx;
+
+    const prevStarFn = env.starFn;
+    const prevLabelsLen = env.labelStack.items.len;
+    defer {
+        env.starFn = prevStarFn;
+        env.labelStack.shrinkRetainingCapacity(prevLabelsLen);
+    }
+    env.starFn = null;
+    env.labelStack.shrinkRetainingCapacity(0);
+
+    for (t.body) |stmt| {
+        _ = try inferExpr(env, stmt.expr);
     }
 }
 
@@ -2813,6 +2844,8 @@ fn inferComptimeExpr(env: *Env, ct: ast.ComptimeExprOf(.untyped), loc: ast.Loc) 
 
         .assert => |a| {
             const condTyped = try inferExprTyped(env, a.condition.*);
+            // The asserted condition must be a bool.
+            try unifyAt(env, try env.namedType("bool"), condTyped.getType(), a.condition.getLoc());
             const condPtr = try makeTypedPtr(env, condTyped);
             const msgPtr = if (a.message) |msg| try makeTypedPtr(env, try inferExprTyped(env, msg.*)) else null;
             return TypedExpr{ .comptime_ = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .assert = .{

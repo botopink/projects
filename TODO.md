@@ -36,14 +36,14 @@ testDecl ::= "test" string? block
 > F1 should adapt the existing assert (runtime lowering + failure recording)
 > rather than add a new builtin in `builtins.d.bp`.
 - [ ] Review existing `comptime_.assert` semantics (comptime-only? runtime?) across backends
-- [ ] Inference: `cond: bool`; usable broadly (Zig-style), only `test` blocks collected by runner
+- [x] Inference: `cond: bool` (unified in `infer.zig` `.assert` case; snapshot `comptime/*/errors/assert_requires_bool`); usable broadly (Zig-style), only `test` blocks collected by runner
 - [ ] Lowering: `assert c` inside a `test` body → runtime check that records a failure (with `src` loc) instead of a hard panic, so the runner can continue
 
-### F2 — inference / validation
-- [ ] A `test` body type-checks like a `fn` body returning `Nil`/void
-- [ ] `test` is a **top-level** declaration only (error inside a fn/block)
-- [ ] Optional: warn on duplicate test names
-- [ ] Tests excluded from normal `build`/`run` output (only compiled under `test`)
+### F2 — inference / validation — DONE (duplicate-name warning deferred)
+- [x] A `test` body type-checks like a `fn` body returning void (`inferTestDecl` in both `inferDecl` and `inferDeclTyped` paths; snapshots `comptime/*/errors/test_body_type_error`)
+- [x] `test` is a **top-level** declaration only (parse error inside fn body — F0)
+- [ ] Optional: warn on duplicate test names (deferred — no warning infra at decl level yet)
+- [x] Tests excluded from normal `build`/`run` output (codegen skips — F0)
 
 ### F3 — codegen + runner (phase by backend)
 - [ ] Collect all `TestDecl`s into a generated registry per target
