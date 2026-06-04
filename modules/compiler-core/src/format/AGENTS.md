@@ -17,7 +17,7 @@ format/
 └── tests/        ← format tests, split by feature
     ├── helpers.zig      ← shared harness (`assertFormat`/`assertIdempotent`)
     ├── imports.zig      ← import formatting
-    ├── declarations.zig ← struct/interface/implement/fn/const/val/let/pub
+    ├── declarations.zig ← struct/interface/implement/fn/const/val/let/pub, test blocks
     ├── expressions.zig  ← binary/call/access/lambda/precedence/pipeline
     ├── literals.zig     ← list/tuple/array/float/int/string literals
     ├── patterns.zig     ← case / pattern / assert
@@ -41,3 +41,4 @@ and running `format` twice in a row must produce identical text.
 | Pipeline `\|>` | Each `\|>` on its own line for long chains |
 | Array literals | trailing comma → multi-line; otherwise inline |
 | Case arms | preserve `emptyLineBefore` as extra blank line |
+| Test blocks | `test { … }` / `test "name" { … }` — no trailing semicolon, body formatted like a `fn` body |

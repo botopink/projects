@@ -267,6 +267,8 @@ pub fn emitProgram(
                 try aw.writer.writeByte('\n');
                 firstEmitted = false;
             },
+            // Test blocks are only compiled under `botopink test` — skip.
+            .@"test" => {},
             .comment => |c| {
                 if (!firstEmitted) try aw.writer.writeByte('\n');
                 if (c.is_doc) {

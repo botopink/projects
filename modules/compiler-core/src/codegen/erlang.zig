@@ -178,6 +178,8 @@ fn emitErlang(
             .extend => |ex| try em.emitExtend(ex),
             .use => |u| try em.emitUse(u),
             .delegate => |d| try aw.writer.print("%% delegate {s}\n", .{d.name}),
+            // Test blocks are only compiled under `botopink test` — skip.
+            .@"test" => {},
             .comment => |c| {
                 const prefix = if (c.is_doc) "%%" else if (c.is_module) "%%%" else "%";
                 try aw.writer.print("{s} {s}\n", .{ prefix, c.text });

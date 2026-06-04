@@ -6,6 +6,11 @@
 
 Per-target codegen backends. The public façade lives at `../codegen.zig`.
 
+Top-level `test { … }` declarations (`DeclKind.@"test"`) are **skipped by every
+backend** in normal `build`/`run` output — they are only collected and emitted
+under `botopink test` (runner emission is a pending phase of the `test-blocks`
+spec).
+
 ## Tree
 
 ```text

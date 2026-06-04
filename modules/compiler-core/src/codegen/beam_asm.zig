@@ -448,9 +448,10 @@ fn emitBeamAsm(
             .@"enum" => |e| try em.emitEnum(e),
             .implement => |im| try em.emitImplement(im),
             .extend => |ex| try em.emitExtend(ex),
-            // Purely abstract decls (interface/delegate) and module-graph
-            // metadata (use) don't lower to runtime code — silently skip.
-            .interface, .delegate, .use => {},
+            // Purely abstract decls (interface/delegate), module-graph
+            // metadata (use), and test blocks (only compiled under
+            // `botopink test`) don't lower to runtime code — silently skip.
+            .interface, .delegate, .use, .@"test" => {},
         }
     }
 

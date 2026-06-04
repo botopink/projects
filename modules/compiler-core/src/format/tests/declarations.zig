@@ -512,3 +512,28 @@ test "format: star fn ---- generator with label" {
         \\}
     );
 }
+
+test "format: test ---- anonymous block" {
+    try h.assertFormat(std.testing.allocator,
+        \\test {
+        \\    assert 1 + 1 == 2;
+        \\}
+    );
+}
+
+test "format: test ---- named block" {
+    try h.assertFormat(std.testing.allocator,
+        \\test "addition works" {
+        \\    val r = 2 + 3;
+        \\    assert r == 5;
+        \\}
+    );
+}
+
+test "format: test ---- named block with assert message" {
+    try h.assertFormat(std.testing.allocator,
+        \\test "map doubles" {
+        \\    assert [2, 4, 6] == [2, 4, 6], "map should double each element";
+        \\}
+    );
+}

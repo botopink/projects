@@ -73,6 +73,22 @@ use std.{print, println};
 use my.module.Counter;
 ```
 
+### `test` block (anonymous / named)
+
+```text
+test {
+    assert 1 + 1 == 2;
+}
+
+test "addition works" {
+    val r = 2 + 3;
+    assert r == 5, "sum should be five";
+}
+```
+
+Top-level only — `test` inside a `fn` body is a parse error. The optional
+string literal names the test; the body is a normal statement block.
+
 ## Expressions
 
 ### Literals & identifiers

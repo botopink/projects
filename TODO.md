@@ -1,53 +1,137 @@
-# beam-asm-closures
+# Task: test-blocks + stdlib-tests
 
-**Branch**: `task/beam-asm-closures` (nasce de `feat` 35d81bb)
-**Arquivos**: `codegen/beam_asm.zig` (+ snapshots `beam/beam/*`)
+**Branch**: task/test-blocks (worktree `.tasks/test-blocks/`)
+**Specs**:
+- `tasks/v0.beta.2/specs/test-blocks.md` (mechanism — no dependencies)
+- `tasks/v0.beta.2/specs/stdlib-tests.md` (suite — depends on test-blocks, stdlib-gleam)
 
-## O que esta task fez
+**Order**: test-blocks first (provides `test { … }` + `assert` + `botopink test`),
+then stdlib-tests (uses the mechanism to cover `libs/std`).
 
-Fechar o **último gap real da Fase 6** do backend BEAM ASM: closures
-executáveis. Antes, lambdas/loops emitiam `make_fun2`, que o `erlc +from_asm`
-**rejeita** nesta OTP (nenhum formato montava). Agora montam e rodam.
+---
 
-- [x] **`emitMakeFun`** — substitui `make_fun2` por
-      `{test_heap, {alloc, [{words,0},{floats,0},{funs,1}]}, Live}` +
-      `{make_fun3, {f,Entry}, 0, 0, {x,0}, {list,[]}}` (o `make_fun3` exige um
-      registrador de destino `{x,0}` — a tentativa anterior falhava sem ele).
-      Usado por `lowerLambda` (standalone, trailing, module-qualified) e
-      `lowerLoop`.
-- [x] **`min_live` floor** — `emitMakeFun` usa `@max(live, self.min_live)`.
-      Em `lowerResultOptionOp` (`map`/`flatMap`), o payload do `@Result` fica
-      stashed em `{x, pstash}` e precisa sobreviver ao `test_heap` da closure;
-      `min_live = pstash+1` mantém-no vivo (senão `{uninitialized_reg,{x,2}}`).
-- [x] **`map` rewrap em `disc`** — o `{tag,'Ok',Result}` pós-`call_fun` stasha
-      o resultado em `{x, disc}` (contíguo a `{x,0}`), não em `{x, pstash}`,
-      para que o `test_heap` do `put_tuple2` cubra só registradores vivos
-      (`x1` acima de `disc` morre após `call_fun` → era `{{x,1},not_live}`).
-- [x] **`is_tagged_tuple` em LISTA** nos 3 sites de `@Result` (`map`/`flatMap`,
-      `unwrapOr`, `isOk`/`isError`) que ainda usavam forma achatada
-      `{x,0}, 3, {atom,tag}` → `[{x,0}, 3, {atom,tag}]` (vinha do merge
-      `result-runtime`; era `unknown_instruction`).
+## Part 1 — test-blocks: `test { … }` / `test "name" { … }` declarations
 
-**Validação**: as 23 snapshots beam afetadas montam com `erlc +from_asm`;
-`map` confirmado end-to-end (`Ok(42).map(n -> n+1)` ⇒ `{tag,'Ok',43}`).
-`zig build test` verde (0 mismatch / 0 falhas).
+Goal: first-class `test` declaration (Zig/Gleam-style). Tests live next to the code,
+are collected at compile time, and run with `botopink test`. Anonymous and named forms.
 
-## Ao concluir (commit → atualizar remote `feat` → excluir task)
+Grammar (top-level declaration):
+```
+testDecl ::= "test" string? block
+```
 
-Vars: `NOME=beam-asm-closures`  ·  `BR=task/beam-asm-closures`
+### F0 — `test` declaration (front-end) — DONE
+- [x] Lexer: `test` keyword token (already existed as a reserved word)
+- [x] Parser: top-level `test string? block` → `TestDecl` (`parser/decls.zig: parseTestDecl`)
+- [x] AST: `TestDecl { name: ?[]const u8, body: []Stmt, loc }` + `DeclKind.@"test"`
+- [x] Formatter: round-trip stable (`fmtTestDecl`; no trailing semicolon)
+- [x] Snapshots: `parser/test_anonymous`, `parser/test_named`, `parser/test_named_with_message_assert`
+- [x] Codegen: all 5 backends (commonJS/erlang/beam_asm/wat/typescript) skip `.@"test"` in normal build
+- [x] Docs: parser/format/codegen AGENTS.md + parser/examples.md + root docs.md (Test Blocks section)
 
-1. **Commit** (dentro do worktree, sem `cd`):
-   `git add -A && git commit -m "feat(beam-asm): <resumo>"`.
-   O pre-commit roda `zig fmt` + `zig build` + `zig build test` — só passa se
-   compila e os testes passam. (Não use `--no-verify`.)
-2. **Atualizar a remote feature** (integrar em `feat`, sempre via **SSH** —
-   `git@github.com:botopink/botopink-lang.git`):
-   - `git fetch origin feat`
-   - num worktree descartável a partir da remote (evita mexer no `feat` sujo):
-     `git worktree add .tasks/_integrate-$NOME -b integrate/$NOME origin/feat`
-   - lá dentro: `git merge --no-ff $BR`, resolver conflitos, rodar `zig build test`
-   - `git push origin integrate/$NOME:feat` (fast-forward, sem `--force`)
-3. **Excluir a task** (limpeza após integrar):
-   - `git worktree remove .tasks/$NOME` e `git worktree remove .tasks/_integrate-$NOME`
-   - `git branch -d $BR integrate/$NOME`
-   - `git worktree prune`
+### F1 — `assert` builtin
+> **Finding (F0):** `assert` already exists as an expression-level *keyword*
+> (`assert cond [, "msg"]` — no call parens; AST: `comptime_.assert` in
+> `parser/exprs.zig:253`). Canonical style is keyword form, not `assert(...)`.
+> F1 should adapt the existing assert (runtime lowering + failure recording)
+> rather than add a new builtin in `builtins.d.bp`.
+- [ ] Review existing `comptime_.assert` semantics (comptime-only? runtime?) across backends
+- [ ] Inference: `cond: bool`; usable broadly (Zig-style), only `test` blocks collected by runner
+- [ ] Lowering: `assert c` inside a `test` body → runtime check that records a failure (with `src` loc) instead of a hard panic, so the runner can continue
+
+### F2 — inference / validation
+- [ ] A `test` body type-checks like a `fn` body returning `Nil`/void
+- [ ] `test` is a **top-level** declaration only (error inside a fn/block)
+- [ ] Optional: warn on duplicate test names
+- [ ] Tests excluded from normal `build`/`run` output (only compiled under `test`)
+
+### F3 — codegen + runner (phase by backend)
+- [ ] Collect all `TestDecl`s into a generated registry per target
+- [ ] **CommonJS/node** first: emit each test as a function + runner entry; `botopink test` executes via node
+- [ ] **Erlang/BEAM**: emit eunit-style test functions
+- [ ] **WASM**: emit + run via the WASI harness (or mark deferred)
+- [ ] Snapshots: `codegen/node/test_runner`, `codegen/erlang/test_runner`
+
+### F4 — `botopink test` CLI + reporting
+- [ ] New subcommand in `modules/compiler-cli/src/cli/` (alongside build/run/check/format)
+- [ ] Compile in test mode, run, collect pass/fail
+- [ ] Report: name, pass/fail, failure message + source loc, summary counts
+- [ ] `--filter <substr>` to select tests by name
+
+### test-blocks scenarios
+```
+parser ---- test_anonymous            (test { … })
+parser ---- test_named                (test "name" { … })
+parser ---- test_rejects_in_fn_body   (top-level only)
+comptime ---- assert_requires_bool
+comptime ---- test_body_typechecks
+format ---- test_roundtrip
+codegen/node ---- test_runner_emits_registry
+codegen/erlang ---- test_runner_eunit
+cli ---- botopink_test_runs_and_reports
+cli ---- botopink_test_filter
+```
+
+### test-blocks docs
+- [ ] docs.md (language reference: `test`/`assert`)
+- [ ] modules/compiler-core/src/parser/{AGENTS.md,examples.md}
+- [ ] modules/compiler-core/src/codegen/AGENTS.md
+- [ ] modules/compiler-cli/src/cli/{AGENTS.md,examples.md}
+
+---
+
+## Part 2 — stdlib-tests: `.bp` test suite for `libs/std`
+
+Goal: runnable test suite for the standard library, written in `.bp` with `test { … }`
+and run by `botopink test`. Modeled on the Zig stdlib (test blocks next to functions).
+No memory/allocator/pointer tests (bp doesn't manage memory) — gaps go to
+`tasks/v0.beta.2/specs/zig-feature-gaps.md`.
+
+### F0 — suite layout + discovery
+- [ ] Decide inline-vs-separate; impl modules MAY carry inline `test` blocks, declaration modules (`*.d.bp`) get separate `libs/std/test/<module>_test.bp`
+- [ ] Confirm `botopink test` discovers stdlib tests (depends on Part 1 F4)
+- [ ] Add `libs/std/test/AGENTS.md` describing the suite (one file per module)
+
+### F1 — effect types: `option` + `result`
+- [ ] `option_test.bp`: `map`, `then`, `unwrap`, `or`, `is_some`/`is_none`
+- [ ] `result_test.bp`: `map`, `map_error`, `then`, `unwrap`, `from_option`
+
+### F2 — `list` (the core module)
+- [ ] `list_test.bp`: `fold`, `map`, `filter`, `reverse`, `take`/`drop`, `zip`, `sort`
+
+### F3 — `dict` + `set`
+- [ ] `dict_test.bp`: `insert`/`get` → `?V`, `delete`, `keys`/`values`, `merge`
+- [ ] `set_test.bp`: `insert`/`contains`, `union`, `intersection`
+
+### F4 — numbers + `string`
+- [ ] `number_test.bp`: `int.parse`, `int.clamp`, `to_float`, `float.round`/`floor`
+- [ ] `string_test.bp`: `split`, `join`, `replace`, `slice`, `starts_with`
+- [ ] `bool_pair_test.bp`: `bool.negate`/`guard`; `pair.first`/`second`/`swap`
+- [ ] `order_test.bp`: `reverse`, `negate`, comparisons
+
+### F5 — `iterator` + `function`
+- [ ] `iterator_test.bp`: `range`, `map`, `filter`, `take`, `to_list`
+- [ ] `function_test.bp`: `identity`, `compose`, `flip`
+
+### stdlib-tests scenarios
+```
+cli ---- botopink_test_runs_stdlib_suite_green   (every module's tests pass)
+cli ---- suite_covers_each_module                (one test file per stdlib module)
+cli ---- inline_tests_in_impl_modules_run        (Zig-style co-located test blocks)
+```
+
+### stdlib-tests docs
+- [ ] libs/std/AGENTS.md, libs/std/docs.md
+- [ ] libs/std/src/AGENTS.md, libs/std/src/examples.md
+
+---
+
+## Notes
+
+- Part 2 also depends on `stdlib-gleam` modules existing — sequence each module's tests
+  behind (or alongside) its implementation; skip modules not yet implemented and note them.
+- `assert` failing must **not** abort the run — record + continue so the runner reports all results.
+- Equality assertions rely on structural `==` for arrays/records; if missing, surface an
+  `expect().to_equal()` need in both specs.
+- Pre-commit runs `zig build` + tests — keep the tree green per commit.
+- Everything in English, including this file.

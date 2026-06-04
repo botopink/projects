@@ -50,7 +50,8 @@ const Emitter = struct {
             .extend => {},
             .use => |u| try self.emitUse(u),
             .delegate => |d| try self.emitDelegate(d),
-            .comment => {},
+            // Test blocks never surface in the public typedef.
+            .@"test", .comment => {},
         }
     }
 
