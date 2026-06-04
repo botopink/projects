@@ -49,6 +49,7 @@
                                     "receiver": null,
                                     "callee": "fetch",
                                     "is_builtin": false,
+                                    "is_tagged": false,
                                     "args": [],
                                     "trailing": []
                                   }
@@ -73,6 +74,7 @@
                                           "receiver": null,
                                           "callee": "Error",
                                           "is_builtin": false,
+                                          "is_tagged": false,
                                           "args": [
                                             {
                                               "label": "msg",

@@ -33,6 +33,7 @@
                         "receiver": null,
                         "callee": "calcular",
                         "is_builtin": false,
+                        "is_tagged": false,
                         "args": [
                           {
                             "label": "fator",

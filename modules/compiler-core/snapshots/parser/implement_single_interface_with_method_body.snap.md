@@ -44,6 +44,7 @@
                         "receiver": null,
                         "callee": "print",
                         "is_builtin": true,
+                        "is_tagged": false,
                         "args": [
                           {
                             "label": null,

@@ -951,6 +951,30 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
                 } } } };
             }
         }
+
+        // Tagged-call sugar: a string literal immediately after a plain
+        // identifier or `a.b` access is a call with that single argument:
+        // `html """<Button/>"""` => `html("""<Button/>""")`.
+        if ((this.check(.stringLiteral) or this.check(.multilineStringLiteral)) and base == .identifier) {
+            switch (base.identifier.kind) {
+                .dotIdent => {}, // `.Red "x"` is not callable — leave for the normal error path
+                else => {
+                    const strTok = this.advance();
+                    const multiline = strTok.kind == .multilineStringLiteral;
+                    const content = if (multiline) strTok.lexeme[3 .. strTok.lexeme.len - 3] else strTok.lexeme[1 .. strTok.lexeme.len - 1];
+                    const strExpr = try makeStringExpr(this, alloc, strTok, content, multiline);
+                    const argPtr = try this.boxExpr(alloc, strExpr);
+                    var args = try alloc.alloc(CallArg, 1);
+                    args[0] = .{ .label = null, .value = argPtr, .comments = &.{} };
+                    base = switch (base.identifier.kind) {
+                        .ident => |name| makeCall(tok, null, name, false, args, try alloc.alloc(TrailingLambda, 0)),
+                        .identAccess => |ia| makeCall(tok, ia.receiver, ia.member, false, args, try alloc.alloc(TrailingLambda, 0)),
+                        .dotIdent => unreachable,
+                    };
+                    base.call.kind.call.is_tagged = true;
+                },
+            }
+        }
         return base;
     }
 

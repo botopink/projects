@@ -20,6 +20,7 @@
                 "receiver": null,
                 "callee": "wrap",
                 "is_builtin": false,
+                "is_tagged": false,
                 "args": [
                   {
                     "label": null,
@@ -63,6 +64,7 @@
                 "receiver": null,
                 "callee": "maxval",
                 "is_builtin": false,
+                "is_tagged": false,
                 "args": [
                   {
                     "label": null,

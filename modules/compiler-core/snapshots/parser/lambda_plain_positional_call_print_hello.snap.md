@@ -33,6 +33,7 @@
                         "receiver": null,
                         "callee": "print",
                         "is_builtin": false,
+                        "is_tagged": false,
                         "args": [
                           {
                             "label": null,

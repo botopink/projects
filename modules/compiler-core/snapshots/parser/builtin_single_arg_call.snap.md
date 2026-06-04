@@ -33,6 +33,7 @@
                         "receiver": null,
                         "callee": "sizeOf",
                         "is_builtin": true,
+                        "is_tagged": false,
                         "args": [
                           {
                             "label": null,
@@ -69,6 +70,7 @@
                         "receiver": null,
                         "callee": "typeName",
                         "is_builtin": true,
+                        "is_tagged": false,
                         "args": [
                           {
                             "label": null,
@@ -105,6 +107,7 @@
                         "receiver": null,
                         "callee": "panic",
                         "is_builtin": true,
+                        "is_tagged": false,
                         "args": [
                           {
                             "label": null,

@@ -637,3 +637,23 @@ test "parser: string ---- interpolation nested string in hole" {
         \\val s = "v=${pick("a", key)}";
     );
 }
+
+test "parser: tagged call ---- single-line string" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\val q = sql "SELECT 1";
+    );
+}
+
+test "parser: tagged call ---- multiline string" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\val component = html """
+        \\<Button label=${title}></Button>
+        \\""";
+    );
+}
+
+test "parser: tagged call ---- method receiver" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\val q = db.sql "SELECT 1";
+    );
+}

@@ -43,6 +43,7 @@
                         },
                         "callee": "forEach",
                         "is_builtin": false,
+                        "is_tagged": false,
                         "args": [],
                         "trailing": [
                           {

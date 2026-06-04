@@ -59,9 +59,14 @@
       parse error; not in the keyword list, needs investigation (separate fix)
 
 ## F3 — tagged-call sugar
-- [ ] Parser: postfixExpr + immediate string/multiline literal ⇒ call with one arg
-- [ ] Formatter: preserve the tagged form
-- [ ] Snapshots: `parser/tagged_call_single`, `parser/tagged_call_multiline`, `format/tagged_call_roundtrip`
+- [x] Parser: string/multiline literal immediately after a plain identifier or
+      `a.b` access ⇒ call with one arg (`is_tagged` flag on the call node;
+      interpolation inside the tagged string works). NOTE V1 limits: not after
+      call results (`f(1) "x"` stays an error) and not in pipeline rhs position
+- [x] Formatter: `is_tagged` single-string calls round-trip without parens
+- [x] Snapshots: `parser/tagged_call_{single_line_string,multiline_string,method_receiver}`,
+      format round-trips (incl. interpolated multiline); 58 existing snapshots
+      regenerated (new `is_tagged` field in call JSON)
 
 ## F4 — unevaluated passing + `std.syntax` + scope snapshot
 - [ ] Capture arg to `comptime p: expr T` unevaluated, with provenance (file, span, scope handle)

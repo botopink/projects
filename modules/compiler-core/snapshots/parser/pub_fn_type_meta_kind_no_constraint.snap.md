@@ -41,6 +41,7 @@
                     "receiver": null,
                     "callee": "todo",
                     "is_builtin": true,
+                    "is_tagged": false,
                     "args": [],
                     "trailing": []
                   }

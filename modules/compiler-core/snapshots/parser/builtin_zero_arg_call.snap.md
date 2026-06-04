@@ -33,6 +33,7 @@
                         "receiver": null,
                         "callee": "src",
                         "is_builtin": true,
+                        "is_tagged": false,
                         "args": [],
                         "trailing": []
                       }

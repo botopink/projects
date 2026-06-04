@@ -34,6 +34,7 @@
                           "receiver": null,
                           "callee": "effect",
                           "is_builtin": false,
+                          "is_tagged": false,
                           "args": [
                             {
                               "label": null,
@@ -59,6 +60,7 @@
                                                 "receiver": null,
                                                 "callee": "cleanup",
                                                 "is_builtin": false,
+                                                "is_tagged": false,
                                                 "args": [],
                                                 "trailing": []
                                               }

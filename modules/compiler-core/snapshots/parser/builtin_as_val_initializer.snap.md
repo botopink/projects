@@ -20,6 +20,7 @@
                 "receiver": null,
                 "callee": "sizeOf",
                 "is_builtin": true,
+                "is_tagged": false,
                 "args": [
                   {
                     "label": null,
@@ -63,6 +64,7 @@
                 "receiver": null,
                 "callee": "typeName",
                 "is_builtin": true,
+                "is_tagged": false,
                 "args": [
                   {
                     "label": null,
@@ -106,6 +108,7 @@
                 "receiver": null,
                 "callee": "src",
                 "is_builtin": true,
+                "is_tagged": false,
                 "args": [],
                 "trailing": []
               }

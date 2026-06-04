@@ -898,6 +898,23 @@ pub const Formatter = struct {
     }
 
     fn fmtCall(this: *Formatter, c: anytype) anyerror!*const Doc {
+        // Tagged-call sugar round-trip: `callee "..."` (single string arg, no parens)
+        const is_tagged = if (@hasField(@TypeOf(c), "is_tagged")) c.is_tagged else false;
+        if (is_tagged and c.args.len == 1 and c.args[0].label == null) {
+            const head: *const Doc = if (c.receiver) |recv|
+                try this.concatAll(&.{
+                    try this.fmtExpr(recv.*),
+                    try this.text("."),
+                    try this.text(c.callee),
+                })
+            else
+                try this.text(c.callee);
+            return this.concatAll(&.{
+                head,
+                try this.text(" "),
+                try this.fmtExpr(c.args[0].value.*),
+            });
+        }
         // Build arg docs interleaving comments
         var items: std.ArrayList(*const Doc) = .empty;
         defer items.deinit(this.arena);

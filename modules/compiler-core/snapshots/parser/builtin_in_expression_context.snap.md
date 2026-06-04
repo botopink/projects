@@ -55,6 +55,7 @@
                               "receiver": null,
                               "callee": "abs",
                               "is_builtin": true,
+                              "is_tagged": false,
                               "args": [
                                 {
                                   "label": null,
@@ -88,6 +89,7 @@
                               "receiver": null,
                               "callee": "abs",
                               "is_builtin": true,
+                              "is_tagged": false,
                               "args": [
                                 {
                                   "label": null,

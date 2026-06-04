@@ -61,6 +61,7 @@
                                         },
                                         "callee": "value",
                                         "is_builtin": false,
+                                        "is_tagged": false,
                                         "args": [
                                           {
                                             "label": null,
@@ -85,6 +86,7 @@
                                 },
                                 "callee": "count",
                                 "is_builtin": false,
+                                "is_tagged": false,
                                 "args": [],
                                 "trailing": []
                               }

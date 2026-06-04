@@ -593,6 +593,10 @@ pub fn CallExprOf(comptime phase: Phase) type {
             callee: []const u8,
             /// true if this is a builtin call (starts with @ in source)
             is_builtin: bool,
+            /// true when written with tagged-call sugar: `callee "..."` /
+            /// `callee """..."""` — a single string-literal argument with no
+            /// parentheses. Formatting preserves the tagged form.
+            is_tagged: bool = false,
             args: []CallArgOf(phase),
             trailing: []TrailingLambdaOf(phase),
         },

@@ -57,6 +57,7 @@
                                   "receiver": null,
                                   "callee": "state",
                                   "is_builtin": false,
+                                  "is_tagged": false,
                                   "args": [
                                     {
                                       "label": null,

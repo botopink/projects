@@ -33,6 +33,7 @@
                         "receiver": null,
                         "callee": "min",
                         "is_builtin": true,
+                        "is_tagged": false,
                         "args": [
                           {
                             "label": null,
@@ -84,6 +85,7 @@
                         "receiver": null,
                         "callee": "max",
                         "is_builtin": true,
+                        "is_tagged": false,
                         "args": [
                           {
                             "label": null,
@@ -135,6 +137,7 @@
                         "receiver": null,
                         "callee": "as",
                         "is_builtin": true,
+                        "is_tagged": false,
                         "args": [
                           {
                             "label": null,

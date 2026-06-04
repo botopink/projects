@@ -66,6 +66,7 @@
                     "receiver": null,
                     "callee": "absolute_value",
                     "is_builtin": false,
+                    "is_tagged": false,
                     "args": [
                       {
                         "label": null,

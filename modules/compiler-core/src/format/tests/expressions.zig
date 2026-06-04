@@ -401,3 +401,17 @@ test "format: await ---- prefix expression" {
         \\}
     );
 }
+
+test "format: tagged call ---- round-trip" {
+    try h.assertFormat(std.testing.allocator,
+        \\val q = sql "SELECT 1";
+    );
+}
+
+test "format: tagged call ---- interpolated multiline round-trip" {
+    try h.assertFormat(std.testing.allocator,
+        \\val component = html """
+        \\<Button label=${title}></Button>
+        \\""";
+    );
+}
