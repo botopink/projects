@@ -336,3 +336,60 @@ test "js: template end to end ---- line string template with hole" {
         \\}
     );
 }
+
+test "js: template end to end ---- cross-module html mirrors the canonical example" {
+    try h.assertJs(std.testing.allocator, @src(), &.{
+        .{
+            .path = "jhonstart",
+            .source =
+            \\pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
+            \\    var acc = "\"\"";
+            \\    loop (q.parts()) { p ->
+            \\        if (p.kind == "Text") {
+            \\            acc = acc + " + \"" + p.text + "\"";
+            \\        };
+            \\        if (p.kind == "Interp") {
+            \\            acc = acc + " + " + p.code;
+            \\        };
+            \\    };
+            \\    return q.build(acc);
+            \\}
+            ,
+        },
+        .{
+            .path = "",
+            .source =
+            \\import {html} from "jhonstart";
+            \\
+            \\val name = "world";
+            \\
+            \\val page = html
+            \\    \\<div>
+            \\    \\  <p>${name}</p>
+            \\    \\  <Page1/>
+            \\    \\</div>
+            \\;
+            \\fn main() {
+            \\    @print(page);
+            \\}
+            ,
+        },
+    });
+}
+
+test "js: template end to end ---- lookup().ref() splices a caller-scope reference" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\val greeting = "ola mundo";
+        \\pub fn pick(comptime q: @Expr<string>) -> @Expr<string> {
+        \\    val hit = q.lookup("greeting");
+        \\    if (hit) { b ->
+        \\        return b.ref();
+        \\    };
+        \\    return q.fail("greeting not found in caller scope");
+        \\}
+        \\val s = pick "x";
+        \\fn main() {
+        \\    @print(s);
+        \\}
+    );
+}

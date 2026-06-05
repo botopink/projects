@@ -184,9 +184,23 @@
       INDEX (not the item) and the 2-param form had [item, i] inverted; now
       `for (const x of xs)` / `for (const [i, x] of xs.entries())` swapped
       to the declared (item, index) order
-- [ ] F6-full remaining: runtime params / mixed signatures, cross-module
-      template fns (registry only exports types today), erlang evaluator
-      parity, `Binding.ref()` end-to-end, hole loc mapping (slice-relative)
+- [x] F6-full slice 3: cross-module template fns — the export registry now
+      carries template FnDecls (`template_registry` in comptime.zig);
+      importing modules register them via `registerImportedTemplateFn`
+      (templateFns + derived exprParams) so their calls expand locally.
+      `Binding.ref()` end-to-end: lookup()/bindings() results expose `ref()`
+      returning the binding's name as code — `lookup("greeting")?.ref()`
+      splices a caller-scope reference (e2e prints the referenced val).
+      Multi-module e2e mirrors the canonical example (`import {html} from
+      "jhonstart"` + `\\` line-string template + `${name}` hole): the main
+      module's emitted JS carries the fully expanded concat. NOTE V1 hygiene
+      caveat (recorded): template-built code re-infers in the CALLER's scope —
+      library helpers it references must be visible there. DISCOVERED GAP
+      (pre-existing, harness-wide): multi-module RUN executes nothing — the
+      JS import emits a bare `require("jhonstart")` specifier (no ./), so
+      cross-module runs crash at require time (separate fix)
+- [ ] F6-full remaining: runtime params / mixed signatures, erlang evaluator
+      parity, hole loc mapping (slice-relative)
 - [ ] Memoize by hash(template text + used-binding signatures) — V1 expansion
       is pure substitution (loc-keying dedupes per site); memoization becomes
       meaningful with the runtime-backed evaluator
@@ -201,8 +215,10 @@
       (separate fix)
 
 ## F7 — canonical examples + docs
-- [ ] `examples/jonhstar/` — minimal `html` component lib — BLOCKED on F6-full
-      (needs runtime-backed template bodies + cross-module template fns)
+- [x] `examples/jonhstar/` — html template lib showcase (jhonstart.bp +
+      main.bp, the user's canonical example verbatim: cross-module import,
+      `\\` line-string template, `${name}` hole, component imports); the
+      working pipeline is locked by the mirroring codegen e2e tests
 - [ ] `examples/yamlconf/` — `yaml` config lib + structural-fit demo — BLOCKED
       on F6-full (needs comptime yaml parsing + anonymous record lifting)
 - [x] docs.md (language reference): new `String Interpolation` and

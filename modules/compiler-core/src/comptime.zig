@@ -94,6 +94,7 @@ fn analyzeModule(
     arena: std.mem.Allocator,
     mod: Module,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    templateRegistry: *const std.StringHashMap(ast.FnDecl),
     templateEvalCtx: ?envMod.TemplateEvalCtx,
 ) !AnalysisResult {
     var env = try infer.freshEnv(arena, std.heap.page_allocator);
@@ -116,7 +117,7 @@ fn analyzeModule(
         return .{ .validationError = .{ .info = err_info } };
     }
 
-    try resolveImports(&env, program, registry);
+    try resolveImports(&env, program, registry, templateRegistry);
     const bindings = infer.inferProgramTyped(&env, program) catch |err| switch (err) {
         error.TypeError => {
             const te = env.lastError orelse validation.TypeError{ .kind = .{ .unboundVariable = "" } };
@@ -189,6 +190,7 @@ fn resolveImports(
     env: *envMod.Env,
     program: anytype,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    templateRegistry: *const std.StringHashMap(ast.FnDecl),
 ) !void {
     for (program.decls) |decl| {
         switch (decl) {
@@ -215,6 +217,11 @@ fn resolveImports(
                             break;
                         }
                     }
+                    // Imported template fns (`-> @Expr<…>`) carry their decl
+                    // across modules so call sites here can expand them.
+                    if (templateRegistry.get(name)) |tfn| {
+                        try infer.registerImportedTemplateFn(env, name, tfn);
+                    }
                 }
             },
             else => {},
@@ -225,6 +232,7 @@ fn resolveImports(
 fn registerExports(
     arena: std.mem.Allocator,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    templateRegistry: *std.StringHashMap(ast.FnDecl),
     path: []const u8,
     bindings: []const infer.TypedBinding,
     env: *envMod.Env,
@@ -240,6 +248,13 @@ fn registerExports(
         if (is_pub) {
             const ty = env.lookup(b.name) orelse b.type_;
             try exports.put(b.name, ty);
+            // Template fns export their declaration too — importing modules
+            // expand their calls at comptime (the decl never reaches codegen).
+            if (b.decl == .@"fn") {
+                if (b.decl.@"fn".returnType) |rt| {
+                    if (rt.isExprType()) try templateRegistry.put(b.name, b.decl.@"fn");
+                }
+            }
         }
     }
     try registry.put(path, exports);
@@ -385,13 +400,14 @@ pub fn compileTypesOnly(
 
     const arena_alloc = session.arena.allocator();
     var registry = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena_alloc);
+    var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
     const all_modules = try expandStdImports(arena_alloc, modules);
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry, null);
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, &template_registry, null);
 
         switch (analysis) {
             .parseError => {
@@ -423,7 +439,7 @@ pub fn compileTypesOnly(
                 }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
-                    try registerExports(arena_alloc, &registry, mod.path, succ.bindings, &env);
+                    try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
                     // NOTE: no env.deinit() here — `env` is a copy whose hashmap
                     // internals are shared with `succ.env`, and the transform
                     // below still reads `succ.env.method_lowerings`. The env is
@@ -493,13 +509,14 @@ pub fn compile(
 
     const arena_alloc = session.arena.allocator();
     var registry = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena_alloc);
+    var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
     const all_modules = try expandStdImports(arena_alloc, modules);
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry, .{
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, &template_registry, .{
             .io = io,
             .build_root = build_root orelse name,
         });
@@ -534,7 +551,7 @@ pub fn compile(
                 }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
-                    try registerExports(arena_alloc, &registry, mod.path, succ.bindings, &env);
+                    try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
                     // NOTE: no env.deinit() here — `env` is a copy whose hashmap
                     // internals are shared with `succ.env`, and the transform
                     // below still reads `succ.env.method_lowerings`. The env is

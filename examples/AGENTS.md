@@ -12,7 +12,10 @@ and do not affect `zig build` / `zig build test`.
 ```text
 examples/
 ├── AGENTS.md          ← you are here
-└── hello.bp           ← smallest runnable program (prints a line)
+├── hello.bp           ← smallest runnable program (prints a line)
+└── jonhstar/          ← expr-templates showcase: comptime html template lib
+    ├── jhonstart.bp       ← `html(comptime q: @Expr<string>)` — parts/build DSL
+    └── main.bp            ← `\\` line-string template with `${name}`, expanded at compile time
 ```
 
 ## Running an example

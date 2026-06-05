@@ -1492,6 +1492,25 @@ fn captureExprArg(
     };
 }
 
+/// Register a template function imported from another module (expr-templates
+/// F6-full): the export registry carries the full `FnDecl` so the importing
+/// module can expand its calls. Derives the `@Expr` param infos the call-site
+/// capture logic needs. NOTE (V1 hygiene caveat, recorded): code the template
+/// builds re-infers in the *caller's* scope — library helpers it references
+/// must be visible there.
+pub fn registerImportedTemplateFn(env: *Env, name: []const u8, decl: ast.FnDecl) !void {
+    try env.templateFns.put(name, decl);
+    var infos: std.ArrayListUnmanaged(envMod.ExprParamInfo) = .empty;
+    for (decl.params, 0..) |p, i| {
+        if (p.typeRef.isExprType()) {
+            try infos.append(env.arena, .{ .paramIndex = i, .paramName = p.name });
+        }
+    }
+    if (infos.items.len > 0) {
+        try env.registerExprParams(name, try infos.toOwnedSlice(env.arena));
+    }
+}
+
 // ── template call-site expansion (expr-templates F6, V1 driver) ───────────────
 
 /// Expand a call to a template function (`-> @Expr<…>`) at the call site.

@@ -75,9 +75,9 @@ const prelude =
     \\        context() { return { source: this.source(), text: d.text, multiline: d.multiline }; },
     \\        lookup(name) {
     \\            const kind = d.scope[name];
-    \\            return kind ? { name, kind } : null;
+    \\            return kind ? { name, kind, ref() { return { __code: name }; } } : null;
     \\        },
-    \\        bindings() { return Object.entries(d.scope).map(([name, kind]) => ({ name, kind })); },
+    \\        bindings() { return Object.entries(d.scope).map(([name, kind]) => ({ name, kind, ref() { return { __code: name }; } })); },
     \\        build(s) { return { __code: String(s) }; },
     \\        fail(message) { __failRaw(message, param, null); },
     \\        failAt(span, message) { __failRaw(message, param, span); },

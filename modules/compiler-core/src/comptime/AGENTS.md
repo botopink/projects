@@ -123,8 +123,13 @@ and drops template fns (never specialized, never emitted). Holed templates
 (slice 2): parts cross into JS as Text/Interp entries — Interp exposes a
 `code` placeholder (`__bp_hole_<param>_<i>`) the DSL embeds in built source;
 `substituteHoles` splices the caller's hole AST back after parse; holed
-captures are not memoized. Remaining limits (recorded): all params must be
-`@Expr` captures; node runtime only.
+captures are not memoized. Cross-module: the export registry carries
+template FnDecls (comptime.zig `template_registry`); imports register them
+via `registerImportedTemplateFn` so calls expand in the importing module
+(template-built code re-infers in the CALLER's scope — V1 hygiene caveat).
+`lookup()`/`bindings()` results expose `ref()` (the binding's name as code).
+Remaining limits (recorded): all params must be `@Expr` captures; node
+runtime only.
 
 ## `@Context<B, R>` capability inference (F7)
 
