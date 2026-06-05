@@ -523,6 +523,19 @@ fn classifyTry(e: ast.Expr) ?TryForm {
     }
 }
 
+/// Emit a single function declaration as plain JS, with no program context
+/// (no comptime vals, no dispatch rewrites). Used by the comptime template
+/// evaluator (`comptime/template_eval.zig`) to run a template fn body in the
+/// node eval runtime — the evaluator's JS prelude supplies the comptime
+/// surface (`__expr`/`__code` and the capture objects' methods).
+pub fn emitFnJs(alloc: std.mem.Allocator, out: *std.Io.Writer, f: ast.FnDecl) !void {
+    const cv = std.StringHashMap([]const u8).init(alloc);
+    const rewrites = std.AutoHashMap(ast.Loc, []const u8).init(alloc);
+    var em = Emitter.emitterInit(alloc, out, cv, rewrites);
+    defer em.deinit();
+    try em.emitFn(f);
+}
+
 const Emitter = struct {
     out: *std.Io.Writer,
     cv: std.StringHashMap([]const u8),
@@ -1879,6 +1892,18 @@ const Emitter = struct {
                             }
                         } else if (std.mem.startsWith(u8, cc.callee, "__bp_")) {
                             try self.emitResultOptionOp(cc.callee, cc.args);
+                        } else if (std.mem.eql(u8, cc.callee, "expr") or std.mem.eql(u8, cc.callee, "code")) {
+                            // `@expr(value)` / `@code(text)` — comptime template
+                            // construction builtins. Only reachable when the
+                            // template evaluator emits a template fn body
+                            // (template fns are dropped before normal codegen);
+                            // its prelude defines `__expr`/`__code`.
+                            try self.fmt("__{s}(", .{cc.callee});
+                            for (cc.args, 0..) |arg, i| {
+                                if (i > 0) try self.w(", ");
+                                try self.emitExpr(arg.value.*);
+                            }
+                            try self.w(")");
                         } else {
                             try self.w("@");
                             try self.w(cc.callee);
@@ -2369,16 +2394,34 @@ const Emitter = struct {
 
     // ── string helper ─────────────────────────────────────────────────────────
 
+    /// Emit a botopink string literal's RAW content as a JS string literal.
+    /// The lexer has already validated every textual escape (`\n`, `\"`,
+    /// `\\`, `\$`, `\u{…}`, …) and the escape set is JS-compatible, so escape
+    /// PAIRS pass through verbatim — re-escaping their backslash would double
+    /// source escapes (`"\n"` would print a literal `\n` at runtime). Only
+    /// real control characters and unescaped quotes (multiline `"""` content)
+    /// need escaping here.
     fn emitJsonString(self: *Emitter, s: []const u8) !void {
         try self.out.writeByte('"');
-        for (s) |c| switch (c) {
-            '"' => try self.out.writeAll("\\\""),
-            '\\' => try self.out.writeAll("\\\\"),
-            '\n' => try self.out.writeAll("\\n"),
-            '\r' => try self.out.writeAll("\\r"),
-            '\t' => try self.out.writeAll("\\t"),
-            else => try self.out.writeByte(c),
-        };
+        var i: usize = 0;
+        while (i < s.len) : (i += 1) {
+            const c = s[i];
+            switch (c) {
+                '\\' => {
+                    // A validated escape — copy the pair verbatim.
+                    try self.out.writeByte('\\');
+                    if (i + 1 < s.len) {
+                        i += 1;
+                        try self.out.writeByte(s[i]);
+                    }
+                },
+                '"' => try self.out.writeAll("\\\""),
+                '\n' => try self.out.writeAll("\\n"),
+                '\r' => try self.out.writeAll("\\r"),
+                '\t' => try self.out.writeAll("\\t"),
+                else => try self.out.writeByte(c),
+            }
+        }
         try self.out.writeByte('"');
     }
 };

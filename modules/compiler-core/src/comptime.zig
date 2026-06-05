@@ -94,10 +94,13 @@ fn analyzeModule(
     arena: std.mem.Allocator,
     mod: Module,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    templateEvalCtx: ?envMod.TemplateEvalCtx,
 ) !AnalysisResult {
     var env = try infer.freshEnv(arena, std.heap.page_allocator);
     // Capture provenance for `expr` templates: which file is being inferred.
     env.modulePath = mod.path;
+    // Runtime-backed template expansion (F6-full) — null in tooling paths.
+    env.templateEval = templateEvalCtx;
 
     var lexer = Lexer.init(mod.source);
     const tokens = try lexer.scanAll(arena);
@@ -384,7 +387,7 @@ pub fn compileTypesOnly(
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry);
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, null);
 
         switch (analysis) {
             .parseError => {
@@ -492,7 +495,10 @@ pub fn compile(
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry);
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, .{
+            .io = io,
+            .build_root = build_root orelse name,
+        });
 
         switch (analysis) {
             .parseError => {

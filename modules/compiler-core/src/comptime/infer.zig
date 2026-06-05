@@ -15,6 +15,8 @@ const Env = @import("env.zig").Env;
 const envMod = @import("env.zig");
 const TypeError = @import("error.zig").TypeError;
 const template = @import("template.zig");
+const templateEval = @import("template_eval.zig");
+const specializeMod = @import("specialize.zig");
 const unify = @import("unify.zig").unify;
 const Lexer = @import("../lexer.zig").Lexer;
 const Parser = @import("../parser.zig").Parser;
@@ -1511,9 +1513,14 @@ fn expandTemplateCall(
     loc: ast.Loc,
 ) InferError!TypedExpr {
     const body = classifyTemplateBody(tfn, captures) orelse {
+        // Not reducible by inspection — run the body in the eval runtime
+        // (F6-full). Tooling paths carry no eval context and keep the error.
+        if (env.templateEval != null) {
+            return expandTemplateCallViaRuntime(env, tfn, captures, retType, loc);
+        }
         env.lastError = TypeError.custom(
             "cannot expand this template function at compile time",
-            "The V1 expansion driver supports bodies of the form `return <@Expr param>`, `return @expr(value)`, or `return @code(\"…\")` with a literal string. Template-method bodies (text/parts/lookup) require the comptime runtime (F6-full).",
+            "The V1 expansion driver supports bodies of the form `return <@Expr param>`, `return @expr(value)`, or `return @code(\"…\")` with a literal string; richer bodies need the eval runtime (full `compile` pipeline).",
         ).withLoc(loc);
         return error.TypeError;
     };
@@ -1529,12 +1536,15 @@ fn expandTemplateCall(
         },
     };
 
-    // Splice + re-check in the caller's environment.
+    return finishExpansion(env, expansion, retType, loc);
+}
+
+/// Splice + re-check the chosen expansion in the caller's environment, verify
+/// a concrete `-> @Expr<T>` bound (an unconstrained generic reveals the type
+/// per call site instead), and record the substitution for the transform pass.
+fn finishExpansion(env: *Env, expansion: *const ast.Expr, retType: *T.Type, loc: ast.Loc) InferError!TypedExpr {
     const typed = try inferExprTyped(env, expansion.*);
 
-    // Bounded `-> @Expr<T>`: verify the splice against the bound. A bare
-    // `-> @Expr` carries an unbound var shared by every call site of this fn —
-    // leave it untouched so each call reveals its own type independently.
     const rDeref = retType.deref();
     if (rDeref.* == .named and std.mem.eql(u8, rDeref.named.name, "Expr") and rDeref.named.args.len == 1) {
         const bound = rDeref.named.args[0];
@@ -1545,6 +1555,145 @@ fn expandTemplateCall(
 
     try env.templateExpansions.put(loc, expansion);
     return typed;
+}
+
+/// Run the template body in the node eval runtime and turn the protocol
+/// result into an expansion (F6-full, slice 1). Limits (recorded follow-ups):
+/// every parameter must be an `@Expr` capture (runtime params have no
+/// comptime value) and captured templates must be hole-free (`${…}` parts
+/// cannot cross into the evaluator yet).
+fn expandTemplateCallViaRuntime(
+    env: *Env,
+    tfn: ast.FnDecl,
+    captures: []const template.CapturedExpr,
+    retType: *T.Type,
+    loc: ast.Loc,
+) InferError!TypedExpr {
+    const ctx = env.templateEval.?;
+
+    if (captures.len != tfn.params.len) {
+        env.lastError = TypeError.custom(
+            "a template function can only take `@Expr` parameters (V1)",
+            "Runtime parameters have no value at compile time — capture everything the template needs as `comptime p: @Expr<…>`.",
+        ).withLoc(loc);
+        return error.TypeError;
+    }
+    for (captures) |cap| {
+        if (cap.text == null) {
+            env.lastError = TypeError.custom(
+                "templates with `${…}` holes cannot cross into the eval runtime yet",
+                "Hole-aware evaluation is a recorded follow-up — keep the template literal contiguous for now.",
+            ).withLoc(cap.loc);
+            return error.TypeError;
+        }
+    }
+
+    // Memoize by callee + capture texts: same template input, same expansion
+    // (the expansion is still re-inferred per call site).
+    const memoKey = blk: {
+        var buf: std.ArrayListUnmanaged(u8) = .empty;
+        buf.appendSlice(env.arena, tfn.name) catch return error.OutOfMemory;
+        for (captures) |cap| {
+            buf.append(env.arena, 0) catch return error.OutOfMemory;
+            buf.appendSlice(env.arena, cap.text.?) catch return error.OutOfMemory;
+        }
+        break :blk buf.toOwnedSlice(env.arena) catch return error.OutOfMemory;
+    };
+    if (env.templateEvalCache.get(memoKey)) |cached| {
+        return finishExpansion(env, cached, retType, loc);
+    }
+
+    const outcome = templateEval.evaluate(env.arena, ctx.io, ctx.build_root, tfn, captures) catch {
+        env.lastError = TypeError.custom(
+            "the template evaluator failed to run",
+            "Template bodies are evaluated by the node runtime at compile time — check that `node` is available.",
+        ).withLoc(loc);
+        return error.TypeError;
+    };
+
+    const expansion: *const ast.Expr = switch (outcome) {
+        .code => |src| parseCodeText(env, src) orelse {
+            env.lastError = TypeError.custom(
+                "the code built by the template does not parse as an expression",
+                "`build(…)`/`@code(…)` output must be a single well-formed botopink expression.",
+            ).withLoc(loc);
+            return error.TypeError;
+        },
+        .capture => |param| captureNodeFor(captures, param) orelse {
+            env.lastError = TypeError.custom(
+                "the template returned an unknown capture",
+                "This is a template-evaluator protocol bug — please report it.",
+            ).withLoc(loc);
+            return error.TypeError;
+        },
+        .value => |v| literalFromJson(env, v, loc) orelse {
+            env.lastError = TypeError.custom(
+                "the template's `@expr(…)` value cannot be lifted as a literal",
+                "V1 lifts numbers, strings, booleans, null, and arrays of those.",
+            ).withLoc(loc);
+            return error.TypeError;
+        },
+        .fail => |f| {
+            const cap: ?*const template.CapturedExpr = blk: {
+                if (f.param) |pn| for (captures) |*c| {
+                    if (std.mem.eql(u8, c.paramName, pn)) break :blk c;
+                };
+                break :blk if (captures.len > 0) &captures[0] else null;
+            };
+            if (cap) |c| {
+                env.lastError = template.failDiagnostic(c, f.span, f.message);
+            } else {
+                env.lastError = TypeError.custom(f.message, "raised by the template function via `fail`/`failAt`").withLoc(loc);
+            }
+            return error.TypeError;
+        },
+        .err => |msg| {
+            env.lastError = TypeError.custom(
+                msg,
+                "Thrown while evaluating the template function's body at compile time.",
+            ).withLoc(loc);
+            return error.TypeError;
+        },
+    };
+
+    env.templateEvalCache.put(memoKey, expansion) catch return error.OutOfMemory;
+    return finishExpansion(env, expansion, retType, loc);
+}
+
+/// Build a literal expression from a JSON value produced by `@expr(…)` in
+/// the eval runtime (V1: numbers, strings, booleans, null, arrays of those).
+fn literalFromJson(env: *Env, v: std.json.Value, loc: ast.Loc) ?*const ast.Expr {
+    const node = env.arena.create(ast.Expr) catch return null;
+    switch (v) {
+        .integer => |n| {
+            const text = std.fmt.allocPrint(env.arena, "{d}", .{n}) catch return null;
+            node.* = .{ .literal = .{ .loc = loc, .kind = .{ .numberLit = text } } };
+        },
+        .float => |f| {
+            const text = std.fmt.allocPrint(env.arena, "{d}", .{f}) catch return null;
+            node.* = .{ .literal = .{ .loc = loc, .kind = .{ .numberLit = text } } };
+        },
+        .string => |str| {
+            const text = env.arena.dupe(u8, str) catch return null;
+            node.* = .{ .literal = .{ .loc = loc, .kind = .{ .stringLit = text } } };
+        },
+        .bool => |b| {
+            node.* = .{ .identifier = .{ .loc = loc, .kind = .{ .ident = if (b) "true" else "false" } } };
+        },
+        .null => {
+            node.* = .{ .literal = .{ .loc = loc, .kind = .null_ } };
+        },
+        .array => |items| {
+            const elems = env.arena.alloc(ast.Expr, items.items.len) catch return null;
+            for (items.items, 0..) |item, i| {
+                const elem = literalFromJson(env, item, loc) orelse return null;
+                elems[i] = elem.*;
+            }
+            node.* = .{ .collection = .{ .loc = loc, .kind = .{ .arrayLit = .{ .elems = elems } } } };
+        },
+        else => return null,
+    }
+    return node;
 }
 
 /// What a V1-expandable template body (`return E`) reduces to. Construction
@@ -1582,6 +1731,12 @@ fn classifyTemplateBody(tfn: ast.FnDecl, captures: []const template.CapturedExpr
             if (!cc.is_builtin or cc.args.len != 1) return null;
             const arg = cc.args[0].value;
             if (std.mem.eql(u8, cc.callee, "expr")) {
+                // A lifted expression must not reference the template's own
+                // parameters — splicing `t` into the caller would leave an
+                // unbound name. Such bodies go to the eval runtime instead.
+                for (tfn.params) |p| {
+                    if (specializeMod.identInExpr(arg.*, p.name)) return null;
+                }
                 return if (isV1Liftable(arg)) .{ .lifted = arg } else null;
             }
             if (std.mem.eql(u8, cc.callee, "code")) {

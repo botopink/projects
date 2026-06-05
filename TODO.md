@@ -154,11 +154,26 @@
       `val c = html """…"""` is `string`, not `expr<string>`)
 - [x] Bare `-> expr`: the shared ret var is left untouched; each call site
       reveals the expansion's own type (`answer()` → i32; `n + 1` checks)
-- [ ] F6-full: runtime-backed evaluation of template bodies (text/parts/
-      lookup/fail via the comptime eval runtime, serialized CapturedExpr +
-      scope handle), partial splice substitution (deep copy), cross-module
-      template fns (registry only exports types today — imported template
-      calls don't expand), `${…}` hole loc mapping (still slice-relative)
+- [x] F6-full slice 1: runtime-backed evaluation of template bodies — new
+      `comptime/template_eval.zig` runs non-V1 bodies in the **node** runtime
+      (host-side comptime, target-independent): captures become JS objects
+      implementing the comptime surface over the `contextJsonAlloc` handle,
+      the body is emitted via the new pub `commonJS.emitFnJs`, and the
+      protocol result (`code`/`value`/`capture`/`fail`/`error`) becomes the
+      expansion (parsed + spliced + re-checked). `env.templateEval` ctx is
+      provided only by the full `compile` pipeline (tooling keeps the V1
+      error); memoized by callee + capture texts. Tests: text()+build(),
+      lookup-miss control flow, @expr of a computed value, fail() mapping
+      into the caller template (loc+message asserted).
+      FIXED pre-existing codegen bug en route: `emitJsonString` re-escaped
+      raw string content, so source escapes doubled at runtime (`"\n"`
+      printed literally) — escape pairs now pass through verbatim.
+      V1-driver guard added: `return @expr(E)` where E references a template
+      param now defers to the runtime (was: spliced an unbound identifier)
+- [ ] F6-full remaining: `${…}` holes across the evaluator (parts with hole
+      handles + splice-back), runtime params / mixed signatures, cross-module
+      template fns (registry only exports types today), erlang evaluator
+      parity, `Binding.ref()` end-to-end, hole loc mapping (slice-relative)
 - [ ] Memoize by hash(template text + used-binding signatures) — V1 expansion
       is pure substitution (loc-keying dedupes per site); memoization becomes
       meaningful with the runtime-backed evaluator

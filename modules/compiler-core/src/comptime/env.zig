@@ -154,6 +154,15 @@ pub const ExprParamInfo = struct {
 /// these calls.
 pub const TemplateOp = enum { value, text, parts, source, context, lookup, bindings, build, fail, failAt, ref };
 
+/// Everything the inference-time template evaluator needs to run a template
+/// body in the external eval runtime (expr-templates F6-full). Null in
+/// tooling paths (`compileTypesOnly` / LSP) — only the full `compile`
+/// pipeline evaluates template bodies.
+pub const TemplateEvalCtx = struct {
+    io: std.Io,
+    build_root: []const u8,
+};
+
 /// Constraint metadata for one `comptime ...: typeparam` parameter of a function.
 /// Recorded at fn-declaration time and consulted at each call site.
 pub const TypeparamConstraint = struct {
@@ -245,6 +254,13 @@ pub const Env = struct {
     /// True while inferring the body of a template function (`-> @Expr<…>`).
     /// Gates the `@expr`/`@code` construction builtins.
     inTemplateFn: bool = false,
+    /// Runtime-backed template evaluation context (F6-full). Null in tooling
+    /// paths — non-V1 template bodies then raise the V1 driver error.
+    templateEval: ?TemplateEvalCtx = null,
+    /// Memoization for runtime-backed expansions: hash(callee + capture
+    /// texts) → the expanded expression. The expansion is still re-inferred
+    /// per call site; only the external evaluation is skipped.
+    templateEvalCache: std.StringHashMap(*const ast.Expr),
     /// Monotonically increasing counter for fresh type variable IDs.
     nextId: T.TypeId,
     /// Monotonically increasing counter for type definition IDs (record$$0, struct$$1, ...).
@@ -306,6 +322,7 @@ pub const Env = struct {
             .templateLowerings = std.AutoHashMap(ast.Loc, TemplateOp).init(arena),
             .templateFns = std.StringHashMap(ast.FnDecl).init(arena),
             .templateExpansions = std.AutoHashMap(ast.Loc, *const ast.Expr).init(arena),
+            .templateEvalCache = std.StringHashMap(*const ast.Expr).init(arena),
             .nextId = 0,
             .nextTypeId = 0,
             .level = 0,
@@ -345,6 +362,7 @@ pub const Env = struct {
         self.templateLowerings.deinit();
         self.templateFns.deinit();
         self.templateExpansions.deinit();
+        self.templateEvalCache.deinit();
         self.extensions.deinit();
         self.activations.deinit();
         var it = self.inherentMethods.valueIterator();

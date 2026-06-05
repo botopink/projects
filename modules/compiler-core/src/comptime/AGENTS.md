@@ -25,6 +25,7 @@ comptime/
 ├── specialize.zig     ← `SpecializedFn`, `SpecCache`, `specialize()`
 ├── transform.zig      ← `Aggregator` — drives the full transform pass
 ├── template.zig       ← `@Expr` templates: CapturedExpr, ScopeSnapshot, fail diagnostics
+├── template_eval.zig  ← runtime-backed template body evaluation (node) — F6-full
 ├── snapshot.zig       ← comptime snapshot helpers
 ├── stdlib/            ← std prelude loader — see stdlib/AGENTS.md
 │   └── prelude.zig        ← @embedFile of libs/std/src/*.bp (std_prelude module root)
@@ -57,6 +58,7 @@ comptime/
 | `specialize.zig` | Pure AST specialization — unroll loops, fold static if/case. |
 | `transform.zig` | `Aggregator` — drives specialize + rewrite + inline + dead-code; lowers `@Result`/`@Option` method calls to `__bp_<domain>_<op>(…)` and `return`/`throw` in `*fn -> @Result` fns to `return __bp_ok(…)`/`return __bp_error(…)` (`tryLowerResultJump`). |
 | `template.zig` | `@Expr` template infrastructure: `CapturedExpr` (an argument bound to a `comptime p: @Expr<T>` param, captured unevaluated with provenance), `ScopeSnapshot` (V1 origin scope: caller's top-level decls + imports, serializable via `toJsonAlloc`), `contextJsonAlloc` (the full second-layer handle), and `mapSpanToLoc`/`failDiagnostic` (rustc-style `fail`/`failAt` diagnostics pointing inside the caller's `"""…"""`). |
+| `template_eval.zig` | F6-full slice 1: runs a non-V1 template body in the **node** eval runtime (host-side comptime, independent of the compile target). Captures become JS objects implementing the comptime surface (`text`/`parts`/`source`/`context`/`lookup`/`bindings`/`build`/`fail`/`failAt`) over the `contextJsonAlloc` handle; the body is emitted as plain JS via `commonJS.emitFnJs`; the script reports one protocol result — `code` (parse + splice), `value` (`@expr` lift → literal), `capture` (param pass-through), `fail` (template diagnostic), `error`. |
 | `snapshot.zig` | Snapshot helpers. |
 | `tests.zig` | Barrel aggregating `tests/<feature>.zig`; harness in `tests/helpers.zig`. |
 
@@ -105,15 +107,21 @@ the caller and captured **unevaluated**. Wiring in `infer.zig` / `env.zig`:
 - `template.failDiagnostic`/`mapSpanToLoc` build the rustc-style diagnostic
   whose span lands inside the caller's `"""…"""` literal.
 
-Call-site expansion (V1 driver): `expandTemplateCall` (inferCallExpr) expands
-template calls during inference — V1 bodies are `return <@Expr param>`
-(pass-through), `return @expr(E)`, or `return @code("…")` with a literal
-string; richer bodies raise a TypeError until the runtime-backed evaluator
-(F6-full) lands. The expansion is re-inferred in the caller's env (splice +
-re-check), unified against a concrete `-> @Expr<T>` bound (an unconstrained
-generic `T` reveals the type per call site), and recorded in `env.templateExpansions`
+Call-site expansion: `expandTemplateCall` (inferCallExpr) expands template
+calls during inference. The V1 classifier reduces `return <@Expr param>`
+(pass-through), `return @expr(E)` (E must not reference the template's own
+params — those go to the runtime), and `return @code("…")` by inspection;
+anything richer runs in the **eval runtime** (`template_eval.zig`) when
+`env.templateEval` is set — `comptime.zig` provides it in the full `compile`
+pipeline only (tooling/LSP keeps the V1 error). Runtime expansions are
+memoized by callee + capture texts (`env.templateEvalCache`). Either way the
+expansion is re-inferred in the caller's env (splice + re-check), unified
+against a concrete `-> @Expr<T>` bound (an unconstrained generic `T` reveals
+the type per call site), and recorded in `env.templateExpansions`
 (loc-keyed); the transform pass substitutes the untyped AST at those locs
-and drops template fns (never specialized, never emitted).
+and drops template fns (never specialized, never emitted). Slice-1 limits
+(recorded): all params must be `@Expr` captures; hole-free templates only;
+node runtime only.
 
 ## `@Context<B, R>` capability inference (F7)
 

@@ -78,6 +78,12 @@ codegen/
   separate-feature cases (`new Error`, `console.log`, cross-module imports,
   mutable closure capture across `lists:foreach`, `*fn` async/`await`, Fase 9
   polish) — see the `beam_asm.zig` row above and [`/TODO.md`](../../../../TODO.md).
+- `commonJS.emitFnJs` is the one **pub** single-fn emission hook — the
+  comptime template evaluator (`comptime/template_eval.zig`) uses it to run
+  template bodies in node. `emitJsonString` copies validated escape PAIRS
+  verbatim (re-escaping the backslash doubled source escapes — `"\n"` used
+  to print a literal `\n`); only real control chars and unescaped quotes
+  (multiline content) are escaped.
 - Expr templates: template fns (`-> @Expr<…>`) are comptime-only — the
   transform pass substitutes every call site with its expansion
   (`env.templateExpansions`, loc-keyed) and drops the declarations, so
