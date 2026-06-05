@@ -1029,6 +1029,12 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
             return error.TypeError;
         }
     }.fail;
+    // RULE: `external` annotations are only valid on `declare fn` declarations
+    // — the host symbol replaces the body, so an annotated plain `fn` (with or
+    // without a body) is malformed.
+    if (!f.isDeclare) {
+        return fail(env, fnLoc, "`@[external(…)]` requires a `declare fn` declaration", "Write `@[external(erlang, \"string\", \"length\")] pub declare fn length(s: string) -> i32;`");
+    }
     if (a.args.len != 3) {
         return fail(env, fnLoc, "`external` expects exactly 3 arguments: external(target: Target, module: string, symbol: string)", "Example: @[external(erlang, \"string\", \"length\")]");
     }

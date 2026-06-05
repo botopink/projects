@@ -139,11 +139,11 @@ fn embedFile(comptime path: string) string
 //
 //   @[external(erlang, "string", "length"),
 //     external(node, "./gleam_stdlib.mjs", "string_length")]
-//   pub fn length(s: string) -> i32
+//   pub declare fn length(s: string) -> i32;
 //
-// A `pub fn` annotated with `external` needs no body — it is typed from the
-// signature alone, and each codegen backend emits a call to the target's
-// symbol (Erlang `module:symbol`, JS `import {symbol} from module`).
+// `external` is only valid on a `declare fn` — the declaration is typed from
+// the signature alone, and each codegen backend emits a call to the target's
+// symbol (Erlang `module:symbol`, JS `require(module).symbol`).
 
 pub enum Target { node, typescript, erlang, beam, wasm }
 

@@ -1390,6 +1390,9 @@ pub const FnDecl = struct {
     /// `*fn` ---- the return type implements `@Future<_>` or `@Iterator<_>`
     /// (async function / generator). Enables `await` and `yield` in the body.
     isStarFn: bool = false,
+    /// `declare fn` ---- a bodyless declaration typed from the signature alone.
+    /// Required for `@[external(…)]` FFI fns (the only valid annotated form).
+    isDeclare: bool = false,
     /// Optional generator label declared after the return type (`*fn f() -> @Iterator<T> :gen`),
     /// used to disambiguate `yield :label` from an enclosing loop's accumulator.
     label: ?[]const u8 = null,

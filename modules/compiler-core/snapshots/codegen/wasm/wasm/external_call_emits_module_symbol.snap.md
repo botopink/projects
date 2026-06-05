@@ -2,7 +2,7 @@
 ```botopink
 @[external(erlang, "string", "length"),
   external(node, "./gleam_stdlib.mjs", "string_length")]
-pub fn str_length(s: string) -> i32
+pub declare fn str_length(s: string) -> i32;
 
 fn main() {
     @print(str_length("hello"));

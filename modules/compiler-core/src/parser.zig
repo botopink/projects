@@ -286,7 +286,9 @@ pub const Parser = struct {
                     .@"enum" => DeclKind{ .@"enum" = try this.parseShorthandEnumDecl(alloc) },
                     .record => DeclKind{ .record = try this.parseShorthandRecordDecl(alloc) },
                     .interface => DeclKind{ .interface = try this.parseShorthandInterfaceDecl(alloc) },
-                    .declare => DeclKind{ .delegate = try this.parseShorthandDelegateDecl(alloc) },
+                    // An ANNOTATED `declare fn` is the FFI declaration form
+                    // (`@[external(…)] pub declare fn …;`), not a delegate.
+                    .declare => DeclKind{ .@"fn" = try this.parseFnDecl(alloc) },
                     else => return ParseError.UnexpectedToken,
                 };
                 // Optional semicolon after top-level declaration
