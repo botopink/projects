@@ -20,7 +20,8 @@ src/
 ├── builtins.d.bp        ← @typeOf / @sizeOf / @panic / @typeName / …
 ├── bool.bp              ← `bool` std module (impl)
 ├── pair.bp              ← `pair` std module (impl — 2-tuples)
-└── order.bp             ← `order` std module (impl — Order enum + type export)
+├── order.bp             ← `order` std module (impl — Order enum + type export)
+└── list.bp              ← `list` std module (impl — over Array<T>)
 ```
 
 ## `prelude.zig` shape (in compiler-core)
@@ -33,6 +34,7 @@ pub const string     = @embedFile("string.d.bp");
 pub const bool_mod   = @embedFile("bool.bp");
 pub const pair       = @embedFile("pair.bp");
 pub const order      = @embedFile("order.bp");
+pub const list       = @embedFile("list.bp");
 ```
 
 One `pub const` per `.bp`. Each name resolves through an anonymous import
@@ -50,6 +52,7 @@ because the `.bp` sources live outside the `std_prelude` module root.
 | `bool.bp` | `bool` module (first `"std"` package module, F2a mechanism) — `pub fn negate`, `nor`, `nand`, `exclusive_or`, `exclusive_nor` over `bool`; pure operators, compiles once for all backends. Imported via `import {bool} from "std"`; `bool.negate(x)` lowers to a per-module output (`out/std/bool.js` / remote `bool:negate/1`). |
 | `pair.bp` | `pair` module (F3) — `pub fn of`, `first`, `second`, `swap`, `map_first`, `map_second`. A pair IS a 2-tuple `#(a, b)` (same as `gleam/pair`) — structural tuples avoid the generic-record instantiation gap (record generics collapse when a module fn re-constructs with swapped params; see the task TODO). Named `of` because `new` is a reserved keyword. |
 | `order.bp` | `order` module (F3) — `pub enum Order { Lt, Eq, Gt }` (type-exported to importers) + `lt`/`eq`/`gt` constructor fns, `to_int`, `reverse`. Importers can `case` over `Order` and use it in annotations; construct via the module fns (bare variant constructors have no local decl in the importing module's codegen). |
+| `list.bp` | `list` module (F4) — `length`, `is_empty`, `contains`, `first`, `rest`, `take`, `drop`, `reverse`, `map`, `filter`, `fold`, `all`, `any` over the builtin `Array<T>`. Transforms delegate to the builtin Array methods; `fold` drives a `var` accumulator through `forEach`. `Array<T>` annotations normalise to the array-literal type (named `array`) so `[1, 2]` unifies with `Array<i32>` params. |
 
 ### `result` / `option` — builtin, not modules
 

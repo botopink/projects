@@ -15,3 +15,4 @@ pub const syntax = @embedFile("syntax.bp");
 pub const bool_mod = @embedFile("bool.bp");
 pub const pair = @embedFile("pair.bp");
 pub const order = @embedFile("order.bp");
+pub const list = @embedFile("list.bp");

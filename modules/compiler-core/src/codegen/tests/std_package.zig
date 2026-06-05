@@ -54,6 +54,21 @@ test "js: std package ---- order enum module with type export" {
     );
 }
 
+test "js: std package ---- list module map filter fold" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\import {list} from "std";
+        \\
+        \\fn main() {
+        \\    val xs = [1, 2, 3, 4];
+        \\    val doubled = list.map(xs, { x -> x * 2 });
+        \\    @print(list.fold(doubled, 0, { acc, x -> acc + x }));
+        \\    @print(list.length(list.filter(xs, { x -> x > 2 })));
+        \\    @print(list.contains(xs, 3));
+        \\    @print(list.take(xs, 2).join(","));
+        \\}
+    );
+}
+
 test "js: std package ---- pair record module qualified calls" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\import {pair} from "std";

@@ -1878,7 +1878,15 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             // iff T ~ U` for free. The generic parameter is mandatory; a type
             // only the expansion knows is an ordinary fn generic
             // (`fn yaml<T>(…) -> @Expr<T>`), resolved via `genericMap` above.
-            const name = if (b.is_builtin and std.mem.eql(u8, b.name, "Option")) "optional" else b.name;
+            // `Array<T>` is the canonical spelling of the array type `T[]` —
+            // normalise it so annotations unify with array-literal inference
+            // (`[1, 2]` infers as named "array").
+            const name = if (b.is_builtin and std.mem.eql(u8, b.name, "Option"))
+                "optional"
+            else if (std.mem.eql(u8, b.name, "Array"))
+                "array"
+            else
+                b.name;
             return env.namedTypeArgs(name, args);
         },
         // A comptime typeparam accepts a value of any type at the call site;

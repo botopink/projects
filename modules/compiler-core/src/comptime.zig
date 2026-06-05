@@ -132,6 +132,7 @@ pub const std_pkg_modules = [_]Module{
     .{ .path = "std/bool", .source = @import("std_prelude").bool_mod },
     .{ .path = "std/pair", .source = @import("std_prelude").pair },
     .{ .path = "std/order", .source = @import("std_prelude").order },
+    .{ .path = "std/list", .source = @import("std_prelude").list },
 };
 
 /// True when `path` is a "std" package registry key (`std/<module>`).

@@ -1,0 +1,58 @@
+//// Gleam-style `list` module (`import {list} from "std";`), inspired by
+//// `gleam/list`, built over the builtin `Array<T>`. Pure logic — transforms
+//// delegate to the builtin Array methods; `fold` drives a mutable
+//// accumulator through `forEach`.
+
+pub fn length<T>(xs: Array<T>) -> i32 {
+    return xs.length;
+}
+
+pub fn is_empty<T>(xs: Array<T>) -> bool {
+    return xs.length == 0;
+}
+
+pub fn contains<T>(xs: Array<T>, x: T) -> bool {
+    return xs.indexOf(x) != -1;
+}
+
+pub fn first<T>(xs: Array<T>) -> ?T {
+    return xs.at(0);
+}
+
+pub fn rest<T>(xs: Array<T>) -> Array<T> {
+    return xs.slice(1, xs.length);
+}
+
+pub fn take<T>(xs: Array<T>, n: i32) -> Array<T> {
+    return xs.slice(0, n);
+}
+
+pub fn drop<T>(xs: Array<T>, n: i32) -> Array<T> {
+    return xs.slice(n, xs.length);
+}
+
+pub fn reverse<T>(xs: Array<T>) -> Array<T> {
+    return xs.reverse();
+}
+
+pub fn map<T, U>(xs: Array<T>, transform: fn(item: T) -> U) -> Array<U> {
+    return xs.map(transform);
+}
+
+pub fn filter<T>(xs: Array<T>, keep: fn(item: T) -> bool) -> Array<T> {
+    return xs.filter(keep);
+}
+
+pub fn fold<T, A>(xs: Array<T>, initial: A, f: fn(acc: A, item: T) -> A) -> A {
+    var acc = initial;
+    xs.forEach({ x -> acc = f(acc, x); });
+    return acc;
+}
+
+pub fn all<T>(xs: Array<T>, pred: fn(item: T) -> bool) -> bool {
+    return xs.filter(pred).length == xs.length;
+}
+
+pub fn any<T>(xs: Array<T>, pred: fn(item: T) -> bool) -> bool {
+    return xs.filter(pred).length != 0;
+}

@@ -448,14 +448,20 @@ like `swap` (`Pair(first: p.second, …)`) unified `A := B` globally. Fixed:
   via the F2a `instantiateType` path; struct ctor return types carry no args
   (field substitution is a no-op for generic structs).
 
-## F4 — `list` (the core module, over `Array<T>`)
-- [ ] Folds: `fold`, `fold_right`, `reduce`
-- [ ] Transform: `map`, `index_map`, `filter`, `filter_map`, `flat_map`, `flatten`
-- [ ] Query: `length`, `is_empty`, `contains`, `find`, `all`, `any`, `count`
-- [ ] Build/slice: `append`, `prepend`, `reverse`, `take`, `drop`, `first`, `rest`, `range`
-- [ ] Combine: `zip`, `unzip`, `intersperse`, `sort` (with `order`)
-- Note: confirm list patterns `[]` / `[x, ..rest]` are accepted by the parser
-  (used in every impl).
+## F4 — `list` (the core module, over `Array<T>`) — v1 DONE
+- [x] `list.bp` v1: `fold` (var accumulator via `forEach`), `map`, `filter`,
+      `length`, `is_empty`, `contains` (indexOf != -1), `first` (`?T`), `rest`,
+      `take`, `drop`, `reverse`, `all`, `any`. E2E green on node
+      (`std_package_list_module_map_filter_fold`: 20 / 2 / true / "1,2").
+- [x] **`Array<T>` annotation normalised to the array-literal type** (named
+      `array`) in `resolveTypeRefInContext` — `[1, 2]` now unifies with
+      `Array<i32>` params (was "expected Array<?>, found i32[]").
+- [ ] v2: `fold_right`, `reduce`, `index_map`, `filter_map`, `flat_map`,
+      `flatten`, `find`, `count`, `append`, `prepend`, `range`, `zip`,
+      `unzip`, `intersperse`, `sort` (with `order`) — several need array
+      concat / list patterns (`[]` / `[x, ..rest]`) confirmed in the parser.
+- Known gap: `xs.map(f)` types against the Array interface (`transform: T -> T`),
+  so cross-type maps (`i32 -> string`) don't type yet through the module.
 
 ## F5 — `dict` + `set`
 - [ ] `dict.bp`: `new`, `get`, `insert`, `delete`, `keys`, `values`, `size`, `merge`, `fold`, `map_values`
