@@ -164,7 +164,15 @@
       (separate fix)
 
 ## F7 — canonical examples + docs
-- [ ] `examples/jonhstar/` — minimal `html` component lib
-- [ ] `examples/yamlconf/` — `yaml` config lib + structural-fit demo
-- [ ] docs.md: meta-kinds, interpolation, tagged calls, `expr { … }`, hygiene, limits
-- [ ] Update every file in the spec's `Touches docs:`
+- [ ] `examples/jonhstar/` — minimal `html` component lib — BLOCKED on F6-full
+      (needs runtime-backed template bodies + cross-module template fns)
+- [ ] `examples/yamlconf/` — `yaml` config lib + structural-fit demo — BLOCKED
+      on F6-full (needs comptime yaml parsing + anonymous record lifting)
+- [x] docs.md (language reference): new `String Interpolation` and
+      `Expr Templates` sections — meta-kinds, tagged calls, capture rule,
+      `std.syntax` surface, `expr { … }`/splices, expansion (bounded/bare/
+      lifting), hygiene & provenance, V1 limits
+- [x] `Touches docs:` — parser/AGENTS.md (exprs.zig row) +
+      parser/examples.md (expr-templates section), comptime/AGENTS.md
+      (F4/F5/F6 sections), codegen/AGENTS.md (template rule + .d.ts gap),
+      libs/std/src/AGENTS.md (syntax.bp)

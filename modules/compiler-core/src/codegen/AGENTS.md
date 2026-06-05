@@ -78,6 +78,14 @@ codegen/
   separate-feature cases (`new Error`, `console.log`, cross-module imports,
   mutable closure capture across `lists:foreach`, `*fn` async/`await`, Fase 9
   polish) — see the `beam_asm.zig` row above and [`/TODO.md`](../../../../TODO.md).
+- Expr templates (expr-templates F6): template fns (`-> expr [T]`) are
+  comptime-only — the transform pass substitutes every call site with its
+  expansion (`env.templateExpansions`, loc-keyed) and drops the declarations,
+  so emitters never see them. The `expr { … }` / `${…}` comptime nodes carry
+  `unreachable` guards in commonJS/erlang (the other backends' `comptime_`
+  switches use `else`). KNOWN GAP: the typescript `.d.ts` emitter still
+  declares template fns and renders `TypeRef.expr` params as empty
+  (`html(template: )`) — needs the same drop + an `expr` rendering.
 - `use` hooks (F8): `use` is a transparent prefix; `val`/`var` does the binding.
   CommonJS maps hooks to React (`state`→`useState`, `memo`→`useMemo`, …) via the
   `use`+Capitalize convention (`writeHookName`); `memo`/`effect`/`callback` get an

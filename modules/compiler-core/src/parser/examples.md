@@ -252,6 +252,31 @@ val a = scale(2.0, 5.0);   // specialised at compile time
 
 Deeper comptime patterns: [`../comptime/examples.md`](../comptime/examples.md).
 
+## Expr templates (meta-kinds, interpolation, tagged calls, `expr { … }`)
+
+```text
+val greeting = "hello ${name}!";          // ${…} interpolation (string template)
+
+fn parse(comptime T: type string | int, raw: string) -> T;   // `type` meta-kind
+
+pub fn html(comptime template: expr string) -> expr string { // `expr` meta-kind
+    return expr { ${template} };          // expr literal + splice hole
+}
+
+val page = html """
+<p>${name}</p>
+""";                                      // tagged call — html("""…""")
+```
+
+- `type` / `expr` are contextual keywords: meta-kinds in type position
+  (`comptime` modifier required on such params); `expr` + `{` in expression
+  position builds a quoted-code literal; plain identifiers elsewhere.
+- `${` is a token (`dollarLeftBrace`) in code position; inside string literals
+  the hole stays in the string token and the parser re-scans it
+  (`stringTemplate` parts).
+- A string literal immediately after an identifier / `a.b` access is a
+  tagged call (`is_tagged` flag on the call node).
+
 ## Complete file
 
 ```text

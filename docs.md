@@ -19,7 +19,9 @@ Complete examples and language features organized by topic. Most examples map to
 - [Pattern Matching](#pattern-matching)
 - [Loops](#loops)
 - [Lambdas](#lambdas)
+- [String Interpolation](#string-interpolation)
 - [Comptime Evaluation](#comptime-evaluation)
+- [Expr Templates](#expr-templates)
 - [Function Specialization](#function-specialization)
 - [Loop Unrolling](#loop-unrolling)
 - [Delegates](#delegates)
@@ -1005,6 +1007,49 @@ val result = add(2, 3);
 
 ---
 
+## String Interpolation
+
+`${…}` holes inside string literals (single-line and `"""…"""` multiline)
+lower to a `+` concatenation chain per backend — interpolation is sugar, not a
+runtime feature.
+
+### Basic interpolation
+
+```botopink
+val name = "world";
+val greeting = "hello ${name}!";
+```
+
+**Generates:**
+```javascript
+const name = "world";
+const greeting = (("hello " + name) + "!");
+```
+
+### Holes follow `+` coercion semantics
+
+A hole accepts anything the language's `+` accepts next to a string —
+`"n=${1}"` works without an explicit conversion.
+
+### Multiline templates
+
+```botopink
+val block = """
+multi ${name}
+line
+""";
+```
+
+### Escaping
+
+`\${` produces a literal `${` (and `\$` is a valid escape):
+
+```botopink
+val price = "price \${USD}";   // → price ${USD}
+```
+
+---
+
 ## Comptime Evaluation
 
 ### Integer addition folds to literal
@@ -1108,6 +1153,143 @@ function main() {
     const r = double(21);
 }
 ```
+
+---
+
+## Expr Templates
+
+Comptime template strings: library functions receive caller source as
+**unevaluated typed expressions**, inspect the caller's scope, and return
+expressions that are **spliced and re-type-checked at the call site** —
+zero-runtime-cost DSLs whose result types the language fully understands
+after expansion.
+
+The feature stands on two **meta-kind** keywords (contextual — plain
+identifiers outside type positions):
+
+| keyword | reads as |
+|---|---|
+| `type` | "this parameter **is a type**" (generic constraint position) |
+| `expr T` / `expr` | "this **is an expression** of `T`" (unevaluated input / spliceable output) |
+
+A parameter whose type is a meta-kind must carry the `comptime` modifier.
+
+### `type` meta-kind (generic constraints)
+
+```botopink
+pub fn parse(comptime T: type string | int, raw: string) -> T;
+fn f(comptime T: type) { … }            // unconstrained
+```
+
+### `expr` type form
+
+`expr T` composes in any type position; bare `expr` defers the type until the
+call-site expansion:
+
+```botopink
+pub fn html(comptime template: expr string) -> expr string;  // bounded
+pub fn yaml(comptime template: expr string) -> expr;         // bare — type revealed per call
+val children: array<expr string> = [];
+```
+
+### Tagged-call sugar
+
+A string literal immediately after an identifier (or `a.b` access) is a call
+with one argument:
+
+```botopink
+html """<Button/>"""        // ⇒ html("""<Button/>""")
+sql "SELECT 1"              // ⇒ sql("SELECT 1")
+```
+
+### Unevaluated capture
+
+An argument bound to a `comptime p: expr T` parameter is type-checked in the
+caller, then captured **unevaluated** with provenance (file, span, origin
+scope). V1 rule: the argument must be a **literal** string at the call site
+(interpolation allowed) — a variable carries no span or scope to capture.
+
+### `std.syntax` data model
+
+`Span`, `Part` (`Text` / `Interp`), `BindingKind`, `Binding` are ordinary
+stdlib types (`libs/std/src/syntax.bp`). The compiler provides comptime-only
+methods on `expr` values, resolved by inference like the `@Result`/`@Option`
+builtins:
+
+```botopink
+fn text(self: expr) -> string                     // raw template source text
+fn parts(self: expr) -> Part[]                    // text/interp alternation
+fn lookup(self: expr, name: string) -> ?Binding   // origin-scope resolution
+fn fail(self: expr, message: string)              // diagnostic at the expr's span
+fn failAt(self: expr, span: Span, message: string)// diagnostic INSIDE the template
+fn ref(self: Binding) -> expr                     // spliceable reference
+```
+
+`lookup`/`fail` resolve against the expression's **origin scope** — a caller
+template resolves in the caller's file (V1: top-level decls + imports; locals
+are not visible). `fail`/`failAt` abort expansion with a rustc-style
+diagnostic pointing inside the `"""…"""` in the caller's file.
+
+### `expr { … }` literal and `${…}` splices
+
+`expr { … }` quotes code, building an `expr T` value; `${e}` splices another
+`expr` value into the quoted code (only valid inside a literal). Identifiers
+inside the literal resolve in the scope where the literal is **written**
+(hygiene by provenance):
+
+```botopink
+pub fn html(comptime template: expr string) -> expr string {
+    return expr { ${template} };
+}
+```
+
+### Call-site expansion
+
+A call to a template function (`-> expr [T]`) is expanded at comptime; the
+expansion replaces the call and is re-type-checked in the caller's context.
+Template functions never reach codegen.
+
+```botopink
+pub fn html(comptime template: expr string) -> expr string {
+    return expr { ${template} };
+}
+val name = "world";
+val page = html """
+<p>${name}</p>
+""";
+```
+
+**Generates:**
+```javascript
+const name = "world";
+const page = (("\n<p>" + name) + "</p>\n");
+```
+
+- **Bounded** `-> expr T`: the expansion is verified against `T`; the call
+  types as `T` (`page` above is `string`, not `expr<string>`).
+- **Bare** `-> expr`: each call site reveals the expansion's own type:
+
+```botopink
+pub fn answer() -> expr {
+    return expr { 42 };
+}
+val n = answer();    // n: i32
+val m = n + 1;       // ok
+```
+
+- **Value lifting**: a comptime value of `T` coerces to `expr T` — a constant
+  *is* an expression (`pub fn port() -> expr { return 8080; }`).
+
+### V1 limits
+
+- The expansion driver handles bodies of the form `return <expr param>`,
+  `return expr { … }` (single expression, whole-body `${param}` hole), or a
+  splice-free expression. Template-method bodies (`text`/`parts`/`lookup`)
+  require the runtime-backed evaluator (planned).
+- Template arguments must be literal strings; template functions are not
+  first-class values; expressions only (no declaration-generating macros).
+- A splice is a primary expression — `${e}(args)` does not parse; cross-module
+  template functions do not expand yet.
 
 ---
 
