@@ -79,6 +79,7 @@
                             },
                             "callee": "to_upper",
                             "is_builtin": false,
+                            "is_tagged": false,
                             "optional": true,
                             "args": [],
                             "trailing": []

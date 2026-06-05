@@ -31,6 +31,7 @@
                 "callee": "sql",
                 "is_builtin": false,
                 "is_tagged": true,
+                "optional": false,
                 "args": [
                   {
                     "label": null,
