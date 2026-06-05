@@ -193,9 +193,15 @@
 > only explicitly. The F4/F6 machinery (capture, scope snapshot, methods,
 > expansion driver) carries over unchanged under the new encoding.
 
-- [x] `TypeRef.expr` removed; `@Expr<E>` / bare `@Expr` parse as the ordinary
-      builtin generic (`<…>` made optional for builtins); encoded as named
-      type `"Expr"` (bare resolves a fresh arg). `TypeRef.isExprType()` helper
+- [x] `TypeRef.expr` removed; `@Expr<E>` parses as the ordinary builtin
+      generic, encoded as named type `"Expr"`. `TypeRef.isExprType()` helper
+- [x] Generic parameter is MANDATORY (user decision): bare `@Expr` is a parse
+      error (builtins require `<…>`); a result type only the expansion knows
+      is an ordinary fn generic — `fn yaml<T>(…) -> @Expr<T>` (unconstrained
+      `T` = revealed per call site; the driver skips the bound unify when the
+      bound derefs to a type var). `interface Expr<E>.build` and
+      `Binding.ref` are generic over their result (`build<R> -> @Expr<R>`);
+      `Part.Interp` holes are `@Expr<string>` (string-template holes)
 - [x] `expr` keyword gone from BOTH positions: type form (F2) and the
       `expr { … }` literal + `${…}` code splice + `dollarLeftBrace` token
       (F5) — `${…}` lives only inside string literals again; `expr` is a

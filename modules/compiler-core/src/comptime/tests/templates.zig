@@ -161,7 +161,7 @@ test "template: expr methods typecheck and record lowerings" {
         \\    template.fail("no component");
         \\    return template;
         \\}
-        \\pub fn mk(b: Binding) -> @Expr {
+        \\pub fn mk<T>(b: Binding) -> @Expr<T> {
         \\    return b.ref();
         \\}
     );
@@ -308,7 +308,7 @@ test "template: bounded expansion is transparent to the caller (F6)" {
     try std.testing.expectEqual(@as(u32, 1), env.templateExpansions.count());
 }
 
-test "template: bare expr reveals the expansion's type per call site (F6)" {
+test "template: generic @Expr<T> return reveals the expansion type per call (F6)" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
@@ -316,15 +316,15 @@ test "template: bare expr reveals the expansion's type per call site (F6)" {
     defer env.deinit();
 
     try inferInto(&env, alloc,
-        \\pub fn answer() -> @Expr {
-        \\    return @expr(42);
+        \\pub fn answer<T>() -> @Expr<T> {
+        \\    return @code("42");
         \\}
         \\val n = answer();
         \\val m = n + 1;
     );
 
-    // `n` carries the expansion's own type — the bare `expr` revealed it,
-    // and `n + 1` typechecked against it.
+    // `n` carries the expansion's own type — the generic `@Expr<T>` return
+    // revealed it, and `n + 1` typechecked against it.
     try std.testing.expectEqualStrings("i32", env.lookup("n").?.deref().named.name);
 }
 
@@ -336,7 +336,7 @@ test "template: explicit value lift via @expr builtin (F6)" {
     defer env.deinit();
 
     try inferInto(&env, alloc,
-        \\pub fn port() -> @Expr {
+        \\pub fn port() -> @Expr<i32> {
         \\    return @expr(8080);
         \\}
         \\val p = port();

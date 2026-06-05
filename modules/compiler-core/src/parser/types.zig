@@ -115,21 +115,20 @@ pub fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.Ty
             };
             return ParseError.UnexpectedToken;
         }
-        // `<…>` is optional: a bare builtin type (`@Expr`) defers its type
-        // argument — e.g. a template fn whose result type is revealed at the
-        // call-site expansion.
+        // Builtin types always take their generic parameters (`@Expr<i32>`,
+        // never bare `@Expr`) — a result type only the expansion knows is
+        // written as an ordinary fn generic: `fn yaml<T>(…) -> @Expr<T>`.
+        _ = try this.consume(.lessThan);
         var args: std.ArrayList(ast.TypeRef) = .empty;
         errdefer {
             for (args.items) |*a| a.deinit(alloc);
             args.deinit(alloc);
         }
-        if (this.match(.lessThan)) {
-            while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
-                try args.append(alloc, try this.parseTypeRef(alloc));
-                if (!this.match(.comma)) break;
-            }
-            _ = try this.consume(.greaterThan);
+        while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
+            try args.append(alloc, try this.parseTypeRef(alloc));
+            if (!this.match(.comma)) break;
         }
+        _ = try this.consume(.greaterThan);
         return ast.TypeRef{ .generic = .{ .name = name, .args = try args.toOwnedSlice(alloc), .is_builtin = true } };
     }
     // type [Constraint (| Constraint)*] — comptime type parameter (meta-kind)

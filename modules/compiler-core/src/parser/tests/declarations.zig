@@ -659,9 +659,9 @@ test "parser: Expr builtin type ---- param and bounded return" {
     );
 }
 
-test "parser: Expr builtin type ---- bare return" {
+test "parser: Expr builtin type ---- generic return" {
     try h.assertParser(std.testing.allocator, @src(),
-        \\fn yaml(comptime template: @Expr<string>) -> @Expr {
+        \\fn yaml<T>(comptime template: @Expr<string>) -> @Expr<T> {
         \\    @todo();
         \\}
     );
@@ -669,7 +669,7 @@ test "parser: Expr builtin type ---- bare return" {
 
 test "parser: Expr builtin type ---- composed type position" {
     try h.assertParser(std.testing.allocator, @src(),
-        \\fn collect(comptime first: ?@Expr<Element>) -> @Expr {
+        \\fn collect<T>(comptime first: ?@Expr<Element>) -> @Expr<T> {
         \\    @todo();
         \\}
     );

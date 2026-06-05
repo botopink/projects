@@ -263,8 +263,12 @@ pub fn html(comptime template: @Expr<string>) -> @Expr<string> { // builtin type
     return template;                      // an @Expr param IS an expr value
 }
 
-fn answer() -> @Expr {                    // bare @Expr — type revealed at expansion
+fn answer() -> @Expr<i32> {               // write the bound when you know it
     return @expr(42);                     // explicit construction (builtin call)
+}
+
+fn conf<T>() -> @Expr<T> {                // generic — type revealed at expansion
+    return @code("8080");                 // (when the signature cannot state it)
 }
 
 val page = html """
@@ -273,10 +277,11 @@ val page = html """
 ```
 
 - `type` is a contextual meta-kind keyword in type position (`comptime`
-  modifier required). `@Expr<E>` / bare `@Expr` is an ordinary **builtin
-  generic type** (the `<…>` is optional only for builtins) — there is no
-  `expr` keyword; code values are constructed only via the `@expr(value)` /
-  `@code(text)` builtins and the `Expr<E>` interface methods (`build`, `ref`).
+  modifier required). `@Expr<E>` is an ordinary **builtin generic type** and
+  always carries its parameter (a type only the expansion knows is a fn
+  generic: `fn yaml<T>(…) -> @Expr<T>`) — there is no `expr` keyword; code
+  values are constructed only via the `@expr(value)` / `@code(text)`
+  builtins and the `Expr<E>` interface methods (`build`, `ref`).
 - Inside string literals the `${…}` hole stays in the string token and the
   parser re-scans it (`stringTemplate` parts).
 - A string literal immediately after an identifier / `a.b` access is a

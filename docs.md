@@ -1181,13 +1181,14 @@ fn f(comptime T: type) { … }            // unconstrained
 
 ### The `@Expr<E>` type
 
-`@Expr<E>` composes in any type position; bare `@Expr` defers the type until
-the call-site expansion. An `@Expr` parameter also requires `comptime`:
+`@Expr<E>` composes in any type position and **always carries its generic
+parameter**. A result type only the expansion knows is an ordinary fn
+generic, solved per call site. An `@Expr` parameter also requires `comptime`:
 
 ```botopink
-pub fn html(comptime template: @Expr<string>) -> @Expr<string>;  // bounded
-pub fn yaml(comptime template: @Expr<string>) -> @Expr;          // bare — revealed per call
-fn pick(comptime first: ?@Expr<Element>) -> @Expr;
+pub fn html(comptime template: @Expr<string>) -> @Expr<string>;     // bounded
+pub fn yaml<T>(comptime template: @Expr<string>) -> @Expr<T>;       // revealed per call
+fn pick<T>(comptime first: ?@Expr<Element>) -> @Expr<T>;
 ```
 
 ### Tagged-call sugar
@@ -1222,7 +1223,7 @@ pub interface Expr<E> {
     fn context(self: Self) -> Context                 // source + text + shape
     fn lookup(self: Self, name: string) -> ?Binding   // origin-scope resolution
     fn bindings(self: Self) -> Binding[]              // enumerate the origin scope
-    fn build(self: Self, source: string) -> @Expr     // parse text into code
+    fn build<R>(self: Self, source: string) -> @Expr<R> // parse text into code
     fn fail(self: Self, message: string)              // diagnostic at the expr's span
     fn failAt(self: Self, span: Span, message: string)// diagnostic INSIDE the template
 }
@@ -1248,15 +1249,16 @@ pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
     return template;
 }
 
-// 2. @expr(value): lift a comptime value as code, explicitly.
-pub fn port() -> @Expr {
+// 2. @expr(value): lift a comptime value as code, explicitly. The bound
+//    is written when the author knows it.
+pub fn port() -> @Expr<i32> {
     return @expr(8080);
 }
 
 // 3. @code(text) / template.build(text): parse generated source text into
 //    code — the workhorse of a second-layer language. `@code` resolves where
 //    it is written; `build` resolves in the template's origin scope.
-pub fn sql(comptime q: @Expr<string>) -> @Expr {
+pub fn sql<T>(comptime q: @Expr<string>) -> @Expr<T> {
     return q.build("runQuery(" + q.text() + ")");
 }
 ```
@@ -1287,13 +1289,15 @@ const page = (("\n<p>" + name) + "</p>\n");
 
 - **Bounded** `-> @Expr<T>`: the expansion is verified against `T`; the call
   types as `T` (`page` above is `string`, not `@Expr<string>`).
-- **Bare** `-> @Expr`: each call site reveals the expansion's own type:
+- **Generic** `-> @Expr<T>` (unconstrained `T`): for when the signature
+  *cannot* state the type — the expansion reveals it per call site (the yaml
+  case):
 
 ```botopink
-pub fn answer() -> @Expr {
-    return @expr(42);
+pub fn conf<T>() -> @Expr<T> {
+    return @code("8080");   // the type comes from the generated code
 }
-val n = answer();    // n: i32
+val n = conf();      // n: i32 — revealed by the expansion
 val m = n + 1;       // ok
 ```
 

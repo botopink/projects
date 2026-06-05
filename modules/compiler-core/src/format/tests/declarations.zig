@@ -546,9 +546,9 @@ test "format: Expr builtin type ---- round-trip" {
     );
 }
 
-test "format: Expr builtin type ---- bare return round-trip" {
+test "format: Expr builtin type ---- generic return round-trip" {
     try h.assertFormat(std.testing.allocator,
-        \\fn yaml(comptime template: @Expr<string>) -> @Expr {
+        \\fn yaml<T>(comptime template: @Expr<string>) -> @Expr<T> {
         \\    @todo();
         \\}
     );

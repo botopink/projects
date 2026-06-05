@@ -11,7 +11,11 @@
         "comment": null,
         "moduleComment": null,
         "annotations": [],
-        "genericParams": [],
+        "genericParams": [
+          {
+            "name": "T"
+          }
+        ],
         "params": [
           {
             "name": "template",
@@ -36,7 +40,11 @@
         "returnType": {
           "generic": {
             "name": "Expr",
-            "args": [],
+            "args": [
+              {
+                "named": "T"
+              }
+            ],
             "is_builtin": true
           }
         },

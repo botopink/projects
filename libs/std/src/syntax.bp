@@ -17,10 +17,11 @@ pub struct Span {
 }
 
 // One segment of a template: raw text, or a `${…}` interpolation hole whose
-// expression was already type-checked in the caller's scope.
+// expression was already type-checked in the caller's scope (string holes —
+// interpolation follows the language's `+` coercion).
 pub enum Part {
     Text(text: string, span: Span),
-    Interp(hole: @Expr, span: Span),
+    Interp(hole: @Expr<string>, span: Span),
 }
 
 // What kind of top-level declaration a scope lookup resolved to.
@@ -82,12 +83,12 @@ pub interface Expr<E> {
     fn context(self: Self) -> Context
     fn lookup(self: Self, name: string) -> ?Binding
     fn bindings(self: Self) -> Binding[]
-    fn build(self: Self, source: string) -> @Expr
+    fn build<R>(self: Self, source: string) -> @Expr<R>
     fn fail(self: Self, message: string)
     fn failAt(self: Self, span: Span, message: string)
 }
 
 // On Binding (compiler-provided, comptime-only):
 //
-//   fn ref(self: Binding) -> @Expr    // spliceable reference to the binding,
-//                                     // in its origin scope
+//   fn ref<R>(self: Binding) -> @Expr<R>   // spliceable reference to the
+//                                           // binding, in its origin scope

@@ -1711,16 +1711,12 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             // The builtin `@Option<T>` is the canonical form of the optional type
             // `?T` — normalise it so both share one representation (and one set of
             // `.map` / `.flatMap` / `.unwrapOr` lowerings).
+            // `@Expr<T>` is encoded like `optional`/`array` — a named type with
+            // one arg, so structural unification gives `@Expr<T> ~ @Expr<U>
+            // iff T ~ U` for free. The generic parameter is mandatory; a type
+            // only the expansion knows is an ordinary fn generic
+            // (`fn yaml<T>(…) -> @Expr<T>`), resolved via `genericMap` above.
             const name = if (b.is_builtin and std.mem.eql(u8, b.name, "Option")) "optional" else b.name;
-            // Bare `@Expr` defers its type argument: resolve it to a fresh var,
-            // revealed at the call-site expansion. `@Expr<T>` is encoded like
-            // `optional`/`array` — a named type with one arg, so structural
-            // unification gives `@Expr<T> ~ @Expr<U> iff T ~ U` for free.
-            if (b.is_builtin and std.mem.eql(u8, b.name, "Expr") and b.args.len == 0) {
-                const exprArgs = try env.arena.alloc(*T.Type, 1);
-                exprArgs[0] = try env.freshVar();
-                return env.namedTypeArgs("Expr", exprArgs);
-            }
             return env.namedTypeArgs(name, args);
         },
         // A comptime typeparam accepts a value of any type at the call site;

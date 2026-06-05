@@ -70,9 +70,11 @@ try assertTypeErrorSnap(alloc, @src(), source);
 ## `@Expr` templates (expr-templates)
 
 `@Expr<E>` is the builtin expression type (encoded as named type `"Expr"`
-with one arg; a bare `@Expr` resolves its arg to a fresh var). There is no
-`expr` keyword — only `type` remains a meta-kind; `@Expr` params require the
-`comptime` modifier via a semantic check in `inferFnDecl`.
+with one arg). The generic parameter is **mandatory** — a result type only
+the expansion knows is an ordinary fn generic (`fn yaml<T>(…) -> @Expr<T>`,
+fresh var per `genericMap`). There is no `expr` keyword — only `type`
+remains a meta-kind; `@Expr` params require the `comptime` modifier via a
+semantic check in `inferFnDecl`.
 
 An argument bound to a `comptime p: @Expr<T>` parameter is type-checked in
 the caller and captured **unevaluated**. Wiring in `infer.zig` / `env.zig`:
@@ -108,8 +110,8 @@ template calls during inference — V1 bodies are `return <@Expr param>`
 (pass-through), `return @expr(E)`, or `return @code("…")` with a literal
 string; richer bodies raise a TypeError until the runtime-backed evaluator
 (F6-full) lands. The expansion is re-inferred in the caller's env (splice +
-re-check), unified against a bounded `-> @Expr<T>` (bare `-> @Expr` reveals
-the type per call site), and recorded in `env.templateExpansions`
+re-check), unified against a concrete `-> @Expr<T>` bound (an unconstrained
+generic `T` reveals the type per call site), and recorded in `env.templateExpansions`
 (loc-keyed); the transform pass substitutes the untyped AST at those locs
 and drops template fns (never specialized, never emitted).
 

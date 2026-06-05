@@ -286,10 +286,10 @@ test "js: template end to end ---- bounded html expansion" {
     );
 }
 
-test "js: template end to end ---- bare expr value lifting" {
+test "js: template end to end ---- generic expr via code builtin" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\pub fn port() -> @Expr {
-        \\    return @expr(8080);
+        \\pub fn port<T>() -> @Expr<T> {
+        \\    return @code("8080");
         \\}
         \\fn main() {
         \\    val p = port() + 1;
