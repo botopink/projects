@@ -92,7 +92,16 @@ caller and captured **unevaluated**. Wiring in `infer.zig` / `env.zig`:
 - `template.failDiagnostic`/`mapSpanToLoc` build the rustc-style diagnostic
   whose span lands inside the caller's `"""…"""` literal.
 
-Call-site expansion, splicing, and memoization are F5/F6 (pending).
+The `expr { … }` quoted-code literal and `${…}` splice holes (F5) are
+`Expr.comptime_` kinds (`exprLiteral`, `splice`; token `dollarLeftBrace`).
+`inferComptimeExpr` types a literal as `expr<T>` of its trailing expression —
+the body is inferred in the scope where the literal is *written* (hygiene by
+provenance) — and a splice as the `U` of its `expr U` operand; splices outside
+a literal are a type error (`env.exprLiteralDepth`). Both nodes exist only at
+comptime: codegen backends guard them `unreachable` (the F6 expansion pass
+replaces them before codegen).
+
+Call-site expansion, value lifting, and memoization are F6 (pending).
 
 ## `@Context<B, R>` capability inference (F7)
 

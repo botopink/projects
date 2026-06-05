@@ -228,6 +228,61 @@ test "infer error: expr argument is typed in the caller against inner T" {
     );
 }
 
+test "template: expr literal types as expr of its body (F5)" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\val greeting = "olá";
+        \\pub fn quoted() -> expr string {
+        \\    return expr { greeting };
+        \\}
+    );
+    // Hygiene V1: `greeting` resolved in the defining scope during inference.
+    const fnTy = env.lookup("quoted").?.deref();
+    const retTy = fnTy.func.ret.deref();
+    try std.testing.expectEqualStrings("expr", retTy.named.name);
+    try std.testing.expectEqualStrings("string", retTy.named.args[0].deref().named.name);
+}
+
+test "infer: splice composes expr values inside an expr literal (F5)" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\pub fn html(comptime template: expr string) -> expr string {
+        \\    return expr { ${template} };
+        \\}
+        \\pub fn wrap(b: Binding) -> expr {
+        \\    return expr { ${b.ref()} };
+        \\}
+    );
+}
+
+test "infer error: splice outside an expr literal (F5)" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\pub fn html(comptime template: expr string) -> expr string {
+        \\    return ${template};
+        \\}
+    );
+}
+
+test "infer error: splice of a non-expr value (F5)" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\pub fn bad(comptime template: expr string) -> expr string {
+        \\    return expr { ${"plain string"} };
+        \\}
+    );
+}
+
+test "infer error: unbound name inside expr literal resolves in defining scope (F5)" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\pub fn quoted() -> expr string {
+        \\    return expr { missing_name };
+        \\}
+    );
+}
+
 test "comptime: template fn with expr param compiles through the pipeline" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
         \\pub fn html(comptime template: expr string) -> expr string {

@@ -102,11 +102,31 @@
       arg V1, caller-side inner-T mismatch), pipeline snap ×4 runtimes
 
 ## F5 — `expr { … }` literal + composition + lifting
-- [ ] Parser: `expr block` in expression position; `${…}` splices inside
-- [ ] Hygiene: literal resolves in the library's scope (provenance rule)
-- [ ] Value lifting: comptime value of `T` coerces to `expr T`
-- [ ] `Binding.ref()` / `Part.Interp` holes splice as caller-scope references
-- [ ] Snapshots: `comptime/expr_literal_splice`, `comptime/value_lifting`, `comptime/hygiene_two_scopes`
+- [x] Parser: new token `${` (`dollarLeftBrace` — `$` was free in code position);
+      `expr { … }` via exact `expr`+`{` juxtaposition in expression position
+      (contextual — `val expr = 1; expr + 2` keeps working); both are
+      `Expr.comptime_` kinds (`exprLiteral { body }`, `splice: *Expr`). NOTE
+      V1 limit: a splice is a *primary* — `${b.ref()}(args)` (call on splice)
+      does not parse; bind it first (`val f = …` at expansion handles the
+      canonical html case in F6)
+- [x] Infer: literal types as `expr<T>` of the trailing expression, body
+      inferred in the *defining* scope (hygiene by provenance — V1 holds by
+      construction; cross-module two-scope proof lands with F6 expansion);
+      splice requires an `expr U` operand and types as `U`; splice outside a
+      literal → custom TypeError (`env.exprLiteralDepth`)
+- [ ] Value lifting: comptime value of `T` coerces to `expr T` — DEFERRED to
+      F6: pre-expansion there is no unification point (fn returns are not
+      unified against declared types today), so lifting is an expansion-time
+      coercion, not a type rule
+- [x] `Binding.ref()` splices inside literals typecheck (`expr { ${b.ref()} }`);
+      actual reference splicing into the caller's scope is the F6 expansion
+- [x] Codegen ×2 (commonJS, erlang): `.exprLiteral/.splice => unreachable`
+      guards (comptime-only; other backends use `else`); transform/specialize
+      walkers recurse the new kinds
+- [x] Snapshots: 3× `parser/expr_literal_*`, format round-trip with splice,
+      infer ok (compose + ref), 3× error snaps (splice outside literal,
+      splice of non-expr, unbound name in defining scope = hygiene V1);
+      `comptime/value_lifting` + full `hygiene_two_scopes` move to F6
 
 ## F6 — call-site expansion + re-typecheck + memoization
 - [ ] Expansion driver in the transform/specialization pass

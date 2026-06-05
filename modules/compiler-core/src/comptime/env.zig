@@ -219,6 +219,9 @@ pub const Env = struct {
     scopeSnapshot: ?*template.ScopeSnapshot = null,
     /// Module path of the file being inferred ("" for main) — capture provenance.
     modulePath: []const u8 = "",
+    /// Nesting depth of `expr { … }` literals while inferring (F5). `${…}`
+    /// splices are only valid at depth > 0.
+    exprLiteralDepth: usize = 0,
     /// Monotonically increasing counter for fresh type variable IDs.
     nextId: T.TypeId,
     /// Monotonically increasing counter for type definition IDs (record$$0, struct$$1, ...).

@@ -746,6 +746,14 @@ pub fn ComptimeExprOf(comptime phase: Phase) type {
             /// catch handler expression (can be throw, return, or a fallback value)
             handler: *ExprOf(phase),
         },
+        /// `expr { … }` ---- quoted-code literal building an `expr` value
+        /// (expr-templates F5). Identifiers inside resolve in the scope where
+        /// the literal is written (hygiene by provenance); `${…}` holes splice
+        /// other `expr` values. Expanded at comptime (F6) — never reaches codegen.
+        exprLiteral: struct { body: []StmtOf(phase) },
+        /// `${e}` ---- a splice hole inside an `expr { … }` literal: `e` is an
+        /// `expr T` value whose code is inserted here at expansion (F5).
+        splice: *ExprOf(phase),
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             switch (this.*) {
@@ -756,6 +764,14 @@ pub fn ComptimeExprOf(comptime phase: Phase) type {
                 .comptimeBlock => |cb| {
                     for (cb.body) |*s| s.deinit(allocator);
                     allocator.free(cb.body);
+                },
+                .exprLiteral => |el| {
+                    for (el.body) |*s| s.deinit(allocator);
+                    allocator.free(el.body);
+                },
+                .splice => |e| {
+                    e.deinit(allocator);
+                    allocator.destroy(e);
                 },
                 .assert => |a| {
                     a.condition.deinit(allocator);

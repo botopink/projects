@@ -3150,6 +3150,40 @@ fn inferComptimeExpr(env: *Env, ct: ast.ComptimeExprOf(.untyped), loc: ast.Loc) 
             } } } };
         },
 
+        .exprLiteral => |el| {
+            // `expr { … }` — quoted-code literal (expr-templates F5). The body
+            // is inferred in the scope where the literal is *written* (hygiene
+            // by provenance: a library's literal resolves in the library); the
+            // literal's own type is `expr<T>` of the body's trailing expression.
+            env.exprLiteralDepth += 1;
+            defer env.exprLiteralDepth -= 1;
+            const typedBody = try inferStmtsTyped(env, el.body);
+            const innerType = if (typedBody.len > 0)
+                typedBody[typedBody.len - 1].expr.getType()
+            else
+                try env.freshVar();
+            return TypedExpr{ .comptime_ = .{ .loc = loc, .type_ = try env.namedTypeArgs("expr", &.{innerType}), .kind = .{ .exprLiteral = .{
+                .body = typedBody,
+            } } } };
+        },
+
+        .splice => |e| {
+            // `${e}` — splice hole: only valid inside an `expr { … }` literal;
+            // `e` must be an `expr U` value and the hole's own type is `U`.
+            if (env.exprLiteralDepth == 0) {
+                env.lastError = TypeError.custom(
+                    "a `${…}` splice is only valid inside an `expr { … }` literal",
+                    "Wrap the surrounding code in `expr { … }` — outside quoted code there is nothing to splice into.",
+                ).withLoc(loc);
+                return error.TypeError;
+            }
+            const typed = try inferExprTyped(env, e.*);
+            const innerTy = try env.freshVar();
+            try unifyAt(env, try env.namedTypeArgs("expr", &.{innerTy}), typed.getType(), e.getLoc());
+            const typedPtr = try makeTypedPtr(env, typed);
+            return TypedExpr{ .comptime_ = .{ .loc = loc, .type_ = innerTy, .kind = .{ .splice = typedPtr } } };
+        },
+
         .assert => |a| {
             const condTyped = try inferExprTyped(env, a.condition.*);
             // The asserted condition must be a bool.

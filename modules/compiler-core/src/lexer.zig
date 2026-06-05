@@ -115,6 +115,16 @@ pub const Lexer = struct {
             '*' => try self.addToken(.star, allocator),
             '#' => try self.addToken(.hash, allocator),
             '?' => try self.addToken(.questionMark, allocator),
+
+            // ── '${' ---- splice hole inside an `expr { … }` literal ──────────
+            '$' => {
+                if (self.matchChar('{')) {
+                    try self.addToken(.dollarLeftBrace, allocator);
+                } else {
+                    return LexerError.UnexpectedCharacter;
+                }
+            },
+
             '@' => {
                 if (!self.isAtEnd() and isAlpha(self.peek())) {
                     while (!self.isAtEnd() and isAlphaNumeric(self.peek())) _ = self.advance();
