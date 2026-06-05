@@ -675,12 +675,11 @@ Execution error: error.FileNotFound```
 import {list} from "std";
 
 fn main() {
-    val xs = [1, 2, 3, 4];
-    val doubled = list.map(xs, { x -> x * 2 });
-    @print(list.fold(doubled, 0, { acc, x -> acc + x }));
-    @print(list.length(list.filter(xs, { x -> x > 2 })));
-    @print(list.contains(xs, 3));
-    @print(list.take(xs, 2).join(","));
+    @print(list.range(1, 5).join(","));
+    @print(list.append([1, 2], [3, 4]).join(","));
+    @print(list.prepend([2, 3], 1).join(","));
+    @print(list.flatten([[1, 2], [3]]).join(","));
+    @print(list.count(list.range(0, 10), { x -> x > 6 }));
 }
 ```
 
@@ -689,108 +688,24 @@ fn main() {
 {module, main}.
 {exports, [{'_botopink_main', 0}, {main, 1}]}.
 {attributes, []}.
-{labels, 16}.
+{labels, 12}.
 
 {function, main, 0, 3}.
   {label, 2}.
     {line, [{location, "main.erl", 1}]}.
     {func_info, {atom, main}, {atom, main}, 0}.
   {label, 3}.
-    {allocate, 2, 0}.
-    {init_yregs, {list, [{y, 0}, {y, 1}]}}.
-    {move, nil, {x, 0}}.
-    {test_heap, 8, 1}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {integer, 4}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {integer, 3}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {integer, 2}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {allocate, 0, 0}.
+    {move, {atom, list}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {integer, 1}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {y, 0}}.
-    {move, {atom, list}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {y, 0}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
-    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
-    {make_fun3, {f, 9}, 0, 0, {x, 0}, {list, []}}.
+    {move, {integer, 5}, {x, 0}}.
     {move, {x, 0}, {x, 2}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 1}, {x, 1}}.
     {move, {x, 2}, {x, 2}}.
-    %% unresolved method call: map/3
-    {move, {x, 0}, {y, 1}}.
-    {move, {atom, list}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {y, 1}, {x, 0}}.
-    {move, {x, 0}, {x, 1}}.
-    {move, {integer, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 2}}.
-    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
-    {make_fun3, {f, 11}, 0, 0, {x, 0}, {list, []}}.
-    {move, {x, 0}, {x, 3}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 1}, {x, 1}}.
-    {move, {x, 2}, {x, 2}}.
-    {move, {x, 3}, {x, 3}}.
-    %% unresolved method call: fold/4
-    {move, {x, 0}, {x, 1}}.
-    {move, {literal, <<"~p~n">>}, {x, 0}}.
-    {test_heap, 2, 2}.
-    {put_list, {x, 1}, nil, {x, 1}}.
-    {call_ext, 2, {extfunc, io, format, 2}}.
-    {move, {atom, list}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {atom, list}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {y, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 1}}.
-    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
-    {make_fun3, {f, 13}, 0, 0, {x, 0}, {list, []}}.
-    {move, {x, 0}, {x, 2}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 1}, {x, 1}}.
-    {move, {x, 2}, {x, 2}}.
-    %% unresolved method call: filter/3
-    {move, {x, 0}, {x, 1}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 1}, {x, 1}}.
-    %% unresolved method call: length/2
-    {move, {x, 0}, {x, 1}}.
-    {move, {literal, <<"~p~n">>}, {x, 0}}.
-    {test_heap, 2, 2}.
-    {put_list, {x, 1}, nil, {x, 1}}.
-    {call_ext, 2, {extfunc, io, format, 2}}.
-    {move, {atom, list}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {y, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 1}}.
-    {move, {integer, 3}, {x, 0}}.
-    {move, {x, 0}, {x, 2}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 1}, {x, 1}}.
-    {move, {x, 2}, {x, 2}}.
-    %% unresolved method call: contains/3
-    {move, {x, 0}, {x, 1}}.
-    {move, {literal, <<"~p~n">>}, {x, 0}}.
-    {test_heap, 2, 2}.
-    {put_list, {x, 1}, nil, {x, 1}}.
-    {call_ext, 2, {extfunc, io, format, 2}}.
-    {move, {atom, list}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {y, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 1}}.
-    {move, {integer, 2}, {x, 0}}.
-    {move, {x, 0}, {x, 2}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 1}, {x, 1}}.
-    {move, {x, 2}, {x, 2}}.
-    %% unresolved method call: take/3
+    %% unresolved method call: range/3
     {move, {x, 0}, {x, 0}}.
     {move, {literal, <<",">>}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
@@ -802,8 +717,132 @@ fn main() {
     {test_heap, 2, 2}.
     {put_list, {x, 1}, nil, {x, 1}}.
     {call_ext, 2, {extfunc, io, format, 2}}.
+    {move, {atom, list}, {x, 0}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, nil, {x, 0}}.
+    {test_heap, 4, 1}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {integer, 2}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {integer, 1}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
+    {move, nil, {x, 0}}.
+    {test_heap, 4, 1}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {integer, 4}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {integer, 3}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 2}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {x, 1}, {x, 1}}.
+    {move, {x, 2}, {x, 2}}.
+    %% unresolved method call: append/3
+    {move, {x, 0}, {x, 0}}.
+    {move, {literal, <<",">>}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {x, 1}, {x, 1}}.
+    %% unresolved method call: join/2
+    {move, {x, 0}, {x, 1}}.
+    {move, {literal, <<"~p~n">>}, {x, 0}}.
+    {test_heap, 2, 2}.
+    {put_list, {x, 1}, nil, {x, 1}}.
+    {call_ext, 2, {extfunc, io, format, 2}}.
+    {move, {atom, list}, {x, 0}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, nil, {x, 0}}.
+    {test_heap, 4, 1}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {integer, 3}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {integer, 2}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 2}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {x, 1}, {x, 1}}.
+    {move, {x, 2}, {x, 2}}.
+    %% unresolved method call: prepend/3
+    {move, {x, 0}, {x, 0}}.
+    {move, {literal, <<",">>}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {x, 1}, {x, 1}}.
+    %% unresolved method call: join/2
+    {move, {x, 0}, {x, 1}}.
+    {move, {literal, <<"~p~n">>}, {x, 0}}.
+    {test_heap, 2, 2}.
+    {put_list, {x, 1}, nil, {x, 1}}.
+    {call_ext, 2, {extfunc, io, format, 2}}.
+    {move, {atom, list}, {x, 0}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, nil, {x, 0}}.
+    {test_heap, 4, 1}.
+    {move, {x, 0}, {x, 0}}.
+    {move, nil, {x, 0}}.
+    {test_heap, 2, 1}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {integer, 3}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, nil, {x, 0}}.
+    {test_heap, 4, 1}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {integer, 2}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {integer, 1}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {x, 1}, {x, 1}}.
+    %% unresolved method call: flatten/2
+    {move, {x, 0}, {x, 0}}.
+    {move, {literal, <<",">>}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {x, 1}, {x, 1}}.
+    %% unresolved method call: join/2
+    {move, {x, 0}, {x, 1}}.
+    {move, {literal, <<"~p~n">>}, {x, 0}}.
+    {test_heap, 2, 2}.
+    {put_list, {x, 1}, nil, {x, 1}}.
+    {call_ext, 2, {extfunc, io, format, 2}}.
+    {move, {atom, list}, {x, 0}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {atom, list}, {x, 0}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {integer, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 10}, {x, 0}}.
+    {move, {x, 0}, {x, 2}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {x, 1}, {x, 1}}.
+    {move, {x, 2}, {x, 2}}.
+    %% unresolved method call: range/3
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
+    {make_fun3, {f, 9}, 0, 0, {x, 0}, {list, []}}.
+    {move, {x, 0}, {x, 2}}.
+    {move, {x, 0}, {x, 0}}.
+    {move, {x, 1}, {x, 1}}.
+    {move, {x, 2}, {x, 2}}.
+    %% unresolved method call: count/3
+    {move, {x, 0}, {x, 1}}.
+    {move, {literal, <<"~p~n">>}, {x, 0}}.
+    {test_heap, 2, 2}.
+    {put_list, {x, 1}, nil, {x, 1}}.
+    {call_ext, 2, {extfunc, io, format, 2}}.
     {move, {atom, ok}, {x, 0}}.
-    {deallocate, 2}.
+    {deallocate, 0}.
     return.
 
 {function, '_botopink_main', 0, 5}.
@@ -826,32 +865,12 @@ fn main() {
     {func_info, {atom, main}, {atom, '-main/0-fun-0-'}, 1}.
   {label, 9}.
     {allocate, 0, 1}.
-    {gc_bif, '*', {f, 0}, 1, [{x, 0}, {integer, 2}], {x, 0}}.
-    {deallocate, 0}.
-    return.
-
-{function, '-main/0-fun-1-', 2, 11}.
-  {label, 10}.
-    {line, [{location, "main.erl", 2}]}.
-    {func_info, {atom, main}, {atom, '-main/0-fun-1-'}, 2}.
-  {label, 11}.
-    {allocate, 0, 2}.
-    {gc_bif, '+', {f, 0}, 2, [{x, 0}, {x, 1}], {x, 0}}.
-    {deallocate, 0}.
-    return.
-
-{function, '-main/0-fun-2-', 1, 13}.
-  {label, 12}.
-    {line, [{location, "main.erl", 2}]}.
-    {func_info, {atom, main}, {atom, '-main/0-fun-2-'}, 1}.
-  {label, 13}.
-    {allocate, 0, 1}.
-    {test, is_lt, {f, 14}, [{integer, 2}, {x, 0}]}.
+    {test, is_lt, {f, 10}, [{integer, 6}, {x, 0}]}.
     {move, {atom, true}, {x, 0}}.
-    {jump, {f, 15}}.
-  {label, 14}.
+    {jump, {f, 11}}.
+  {label, 10}.
     {move, {atom, false}, {x, 0}}.
-  {label, 15}.
+  {label, 11}.
     {deallocate, 0}.
     return.
 ```

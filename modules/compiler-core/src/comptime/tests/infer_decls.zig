@@ -394,7 +394,7 @@ test "infer: std package ---- import binds namespace" {
         \\
         \\fn main() {
         \\    val a: bool = bool.negate(false);
-        \\    val b: bool = bool.exclusive_or(a, true);
+        \\    val b: bool = bool.exclusiveOr(a, true);
         \\}
     );
 }
@@ -409,7 +409,7 @@ test "infer: builtin result namespace ---- qualified calls typecheck" {
         \\fn main() {
         \\    val doubled = result.map(parse(21), { x -> x * 2 });
         \\    val n: i32 = result.unwrap(doubled, 0);
-        \\    val ok: bool = result.is_ok(parse(n));
+        \\    val ok: bool = result.isOk(parse(n));
         \\}
     );
 }

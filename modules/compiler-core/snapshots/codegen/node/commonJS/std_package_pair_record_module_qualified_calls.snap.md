@@ -22,11 +22,11 @@ pub fn swap<A, B>(p: #(A, B)) -> #(B, A) {
     return #(p._1, p._0);
 }
 
-pub fn map_first<A, B, C>(p: #(A, B), transform: fn(value: A) -> C) -> #(C, B) {
+pub fn mapFirst<A, B, C>(p: #(A, B), transform: fn(value: A) -> C) -> #(C, B) {
     return #(transform(p._0), p._1);
 }
 
-pub fn map_second<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) {
+pub fn mapSecond<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) {
     return #(p._0, transform(p._1));
 }
 
@@ -64,15 +64,15 @@ function swap(p) {
 }
 exports.swap = swap;
 
-function map_first(p, transform) {
+function mapFirst(p, transform) {
     return [transform(p[0]), p[1]];
 }
-exports.map_first = map_first;
+exports.mapFirst = mapFirst;
 
-function map_second(p, transform) {
+function mapSecond(p, transform) {
     return [p[0], transform(p[1])];
 }
-exports.map_second = map_second;
+exports.mapSecond = mapSecond;
 ```
 
 ----- TYPESCRIPT TYPEDEF -- std/pair.d.ts
@@ -89,10 +89,10 @@ export declare function second(p: ): B;
 export declare function swap(p: ): [B, A];
 
 
-export declare function map_first(p: , transform: fn): [C, B];
+export declare function mapFirst(p: , transform: fn): [C, B];
 
 
-export declare function map_second(p: , transform: fn): [A, C];
+export declare function mapSecond(p: , transform: fn): [A, C];
 
 ```
 

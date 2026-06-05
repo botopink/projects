@@ -259,12 +259,11 @@ range(Start, Stop) ->
 import {list} from "std";
 
 fn main() {
-    val xs = [1, 2, 3, 4];
-    val doubled = list.map(xs, { x -> x * 2 });
-    @print(list.fold(doubled, 0, { acc, x -> acc + x }));
-    @print(list.length(list.filter(xs, { x -> x > 2 })));
-    @print(list.contains(xs, 3));
-    @print(list.take(xs, 2).join(","));
+    @print(list.range(1, 5).join(","));
+    @print(list.append([1, 2], [3, 4]).join(","));
+    @print(list.prepend([2, 3], 1).join(","));
+    @print(list.flatten([[1, 2], [3]]).join(","));
+    @print(list.count(list.range(0, 10), { x -> x > 6 }));
 }
 ```
 
@@ -276,18 +275,13 @@ fn main() {
 %% import list
 
 main() ->
-    Xs = [1, 2, 3, 4],
-    Doubled = list:map(Xs, fun(X) ->
-        (X * 2)
-    end),
-    io:format("~p~n", [list:fold(Doubled, 0, fun(Acc, X) ->
-        (Acc + X)
-    end)]),
-    io:format("~p~n", [list:length(list:filter(Xs, fun(X) ->
-        (X > 2)
-    end))]),
-    io:format("~p~n", [list:contains(Xs, 3)]),
-    io:format("~p~n", [list:take(Xs, 2):join(<<",">>)]).
+    io:format("~p~n", [list:range(1, 5):join(<<",">>)]),
+    io:format("~p~n", [list:append([1, 2], [3, 4]):join(<<",">>)]),
+    io:format("~p~n", [list:prepend([2, 3], 1):join(<<",">>)]),
+    io:format("~p~n", [list:flatten([[1, 2], [3]]):join(<<",">>)]),
+    io:format("~p~n", [list:count(list:range(0, 10), fun(X) ->
+        (X > 6)
+    end)]).
 
 '_botopink_main'() ->
     main().

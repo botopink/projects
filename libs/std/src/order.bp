@@ -21,7 +21,7 @@ pub fn gt() -> Order {
     return Order.Gt;
 }
 
-pub fn to_int(o: Order) -> i32 {
+pub fn toInt(o: Order) -> i32 {
     val n = case o {
         Lt -> -1;
         Eq -> 0;

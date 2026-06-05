@@ -1,13 +1,13 @@
-//// Gleam-style `list` module (`import {list} from "std";`), inspired by
-//// `gleam/list`, built over the builtin `Array<T>`. Pure logic — transforms
-//// delegate to the builtin Array methods; `fold` drives a mutable
-//// accumulator through `forEach`.
+//// Gleam-inspired `list` module (`import {list} from "std";`), built over
+//// the builtin `Array<T>`. Pure logic — transforms delegate to the builtin
+//// Array methods; `fold` drives a mutable accumulator through `forEach`.
+//// Function names follow the language convention: camelCase.
 
 pub fn length<T>(xs: Array<T>) -> i32 {
     return xs.length;
 }
 
-pub fn is_empty<T>(xs: Array<T>) -> bool {
+pub fn isEmpty<T>(xs: Array<T>) -> bool {
     return xs.length == 0;
 }
 
@@ -56,3 +56,62 @@ pub fn all<T>(xs: Array<T>, pred: fn(item: T) -> bool) -> bool {
 pub fn any<T>(xs: Array<T>, pred: fn(item: T) -> bool) -> bool {
     return xs.filter(pred).length != 0;
 }
+
+pub fn find<T>(xs: Array<T>, pred: fn(item: T) -> bool) -> ?T {
+    return xs.filter(pred).at(0);
+}
+
+pub fn count<T>(xs: Array<T>, pred: fn(item: T) -> bool) -> i32 {
+    return xs.filter(pred).length;
+}
+
+pub fn append<T>(xs: Array<T>, ys: Array<T>) -> Array<T> {
+    var out = [];  // no annotation — body `val: Array<T>` resolves T as a NAMED type (gap)
+    xs.forEach({ x -> out.push(x); });
+    ys.forEach({ y -> out.push(y); });
+    return out;
+}
+
+pub fn prepend<T>(xs: Array<T>, x: T) -> Array<T> {
+    var out = [x];
+    xs.forEach({ item -> out.push(item); });
+    return out;
+}
+
+// Helper (not exported): append every item of `xs` onto `out` in place.
+// Kept top-level — nested trailing lambdas inside a lambda body do not
+// parse yet (catalogued parser gap).
+fn pushAll<T>(out: Array<T>, xs: Array<T>) {
+    xs.forEach({ x -> out.push(x); });
+}
+
+// Inverted condition — a bare `return;` does not parse yet (catalogued
+// parser gap), so the recursion guards by only descending while `start < stop`.
+fn pushRange(out: Array<i32>, start: i32, stop: i32) {
+    if (start < stop) {
+        out.push(start);
+        pushRange(out, start + 1, stop);
+    };
+}
+
+pub fn flatten<T>(xss: Array<Array<T>>) -> Array<T> {
+    var out = [];  // no annotation — body `val: Array<T>` resolves T as a NAMED type (gap)
+    xss.forEach({ inner -> pushAll(out, inner); });
+    return out;
+}
+
+// NOTE: the transform is typed `-> V` (a bare generic) — fn-type returns
+// must be plain names (parser limit, same note as the old option module);
+// `V` unifies with the produced `Array<U>` at the call site.
+pub fn flatMap<T, U, V>(xs: Array<T>, transform: fn(item: T) -> V) -> Array<U> {
+    return flatten(xs.map(transform));
+}
+
+// `range(start, stop)` — half-open `[start, stop)`. NOTE: params are not
+// named `from`/`to` — `from` is a reserved keyword.
+pub fn range(start: i32, stop: i32) -> Array<i32> {
+    var out = [];
+    pushRange(out, start, stop);
+    return out;
+}
+

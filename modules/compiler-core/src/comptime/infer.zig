@@ -1312,6 +1312,11 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
         env.labelStack.shrinkRetainingCapacity(0);
     }
 
+    // Self-recursion: bind the fn's own signature before walking the body so
+    // `pushRange(out, start + 1, stop)` inside `pushRange` resolves. (Mutual
+    // recursion across decls still needs a program-level pre-pass.)
+    try env.bind(f.name, try env.funcType(paramTypes, retType));
+
     // Infer body (for type checking; we ignore the result for now).
     for (f.body) |stmt| {
         _ = try inferExpr(env, stmt.expr);
@@ -2875,7 +2880,7 @@ fn makeMethodCall(
 
 /// Resolve a builtin `result` namespace qualified call (Gleam-style surface):
 /// `result.map(r, f)` / `result.then(r, f)` / `result.unwrap(r, fallback)` /
-/// `result.is_ok(r)` / `result.is_error(r)`. The subject `@Result<R, E>` value
+/// `result.isOk(r)` / `result.isError(r)`. The subject `@Result<R, E>` value
 /// arrives as the first positional argument. Records a `qualified`
 /// MethodLowering at `loc` so the transform rewrites to the same
 /// `__bp_result_<op>(args…)` builtin the method form uses — every backend
@@ -2892,11 +2897,11 @@ fn inferResultNamespaceCall(
         if (std.mem.eql(u8, callee, "map")) break :blk .map;
         if (std.mem.eql(u8, callee, "then")) break :blk .flatMap;
         if (std.mem.eql(u8, callee, "unwrap")) break :blk .unwrapOr;
-        if (std.mem.eql(u8, callee, "is_ok")) break :blk .isOk;
-        if (std.mem.eql(u8, callee, "is_error")) break :blk .isError;
+        if (std.mem.eql(u8, callee, "isOk")) break :blk .isOk;
+        if (std.mem.eql(u8, callee, "isError")) break :blk .isError;
         env.lastError = TypeError.custom(
             "unknown `result` namespace function",
-            "Available: map, then, unwrap, is_ok, is_error.",
+            "Available: map, then, unwrap, isOk, isError.",
         ).withLoc(loc);
         return error.TypeError;
     };
@@ -3303,7 +3308,7 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                 } } } };
             }
             // Builtin `result` namespace: `result.map(r, f)`, `result.unwrap(r, 0)`,
-            // `result.is_ok(r)`… — Gleam-style qualified surface over the built-in
+            // `result.isOk(r)`… — Gleam-style qualified surface over the built-in
             // `@Result` method ops. No import needed (builtin, not a "std" module);
             // a local value binding named `result` shadows the namespace.
             if (call.receiver) |recvExpr| {

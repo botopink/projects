@@ -360,12 +360,11 @@ export declare function range(start: , stop: ): Array<i32>;
 import {list} from "std";
 
 fn main() {
-    val xs = [1, 2, 3, 4];
-    val doubled = list.map(xs, { x -> x * 2 });
-    @print(list.fold(doubled, 0, { acc, x -> acc + x }));
-    @print(list.length(list.filter(xs, { x -> x > 2 })));
-    @print(list.contains(xs, 3));
-    @print(list.take(xs, 2).join(","));
+    @print(list.range(1, 5).join(","));
+    @print(list.append([1, 2], [3, 4]).join(","));
+    @print(list.prepend([2, 3], 1).join(","));
+    @print(list.flatten([[1, 2], [3]]).join(","));
+    @print(list.count(list.range(0, 10), { x -> x > 6 }));
 }
 ```
 
@@ -374,18 +373,13 @@ fn main() {
 const list = require("./std/list.js");
 
 function main() {
-    const xs = [1, 2, 3, 4];
-    const doubled = list.map(xs, (x) => {
-    return (x * 2);
-});
-    console.log(list.fold(doubled, 0, (acc, x) => {
-    return (acc + x);
+    console.log(list.range(1, 5).join(","));
+    console.log(list.append([1, 2], [3, 4]).join(","));
+    console.log(list.prepend([2, 3], 1).join(","));
+    console.log(list.flatten([[1, 2], [3]]).join(","));
+    console.log(list.count(list.range(0, 10), (x) => {
+    return (x > 6);
 }));
-    console.log(list.length(list.filter(xs, (x) => {
-    return (x > 2);
-})));
-    console.log(list.contains(xs, 3));
-    console.log(list.take(xs, 2).join(","));
 }
 
 function _botopink_main() {
@@ -401,8 +395,9 @@ _botopink_main();
 
 ----- RUN LOG -----
 ```logs
-20
-2
-true
-1,2
+1,2,3,4
+1,2,3,4
+1,2,3
+1,2,3
+3
 ```

@@ -23,7 +23,7 @@ pub fn gt() -> Order {
     return Order.Gt;
 }
 
-pub fn to_int(o: Order) -> i32 {
+pub fn toInt(o: Order) -> i32 {
     val n = case o {
         Lt -> -1;
         Eq -> 0;
@@ -46,7 +46,7 @@ pub fn reverse(o: Order) -> Order {
 ----- ERLANG -- std/order.erl
 ```erlang
 -module(order).
--export([lt/0, eq/0, gt/0, to_int/1, reverse/1]).
+-export([lt/0, eq/0, gt/0, toInt/1, reverse/1]).
 
 %%% Gleam-style `order` module (`import {order} from "std";`), inspired by
 
@@ -70,7 +70,7 @@ eq() ->
 gt() ->
     'Gt'.
 
-to_int(O) ->
+toInt(O) ->
     N = case O of
         Lt ->
             (-1);
@@ -111,7 +111,7 @@ fn describe(o: Order) -> string {
 }
 
 fn main() {
-    @print(order.to_int(order.lt()));
+    @print(order.toInt(order.lt()));
     @print(describe(order.reverse(order.lt())));
 }
 ```
@@ -135,7 +135,7 @@ describe(O) ->
     S.
 
 main() ->
-    io:format("~p~n", [order:to_int(order:lt())]),
+    io:format("~p~n", [order:toInt(order:lt())]),
     io:format("~p~n", [describe(order:reverse(order:lt()))]).
 
 '_botopink_main'() ->

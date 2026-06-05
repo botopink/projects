@@ -1,9 +1,10 @@
 ----- SOURCE CODE -- std/bool.bp
 ```botopink
-//// Gleam-style `bool` module (`import {bool} from "std";`), inspired by
-//// `gleam/bool`. Pure-operator logic — no host backing, compiles once for
-//// every backend. First real `"std"` package module (qualified calls lower
-//// to a per-module output: `out/std/bool.js` / remote `bool:negate/1`).
+//// Gleam-inspired `bool` module (`import {bool} from "std";`).
+//// Pure-operator logic — no host backing, compiles once for every backend.
+//// Function names follow the language convention: camelCase.
+//// First real `"std"` package module (qualified calls lower to a per-module
+//// output: `out/std/bool.js` / remote `bool:negate/1`).
 
 pub fn negate(b: bool) -> bool {
     return !b;
@@ -17,11 +18,11 @@ pub fn nand(a: bool, b: bool) -> bool {
     return !(a && b);
 }
 
-pub fn exclusive_or(a: bool, b: bool) -> bool {
+pub fn exclusiveOr(a: bool, b: bool) -> bool {
     return a != b;
 }
 
-pub fn exclusive_nor(a: bool, b: bool) -> bool {
+pub fn exclusiveNor(a: bool, b: bool) -> bool {
     return a == b;
 }
 
@@ -30,13 +31,14 @@ pub fn exclusive_nor(a: bool, b: bool) -> bool {
 ----- BEAM ASSEMBLY -- std/bool.S
 ```erlang
 {module, std/bool}.
-{exports, [{negate, 1}, {nor, 2}, {nand, 2}, {exclusive_or, 2}, {exclusive_nor, 2}]}.
+{exports, [{negate, 1}, {nor, 2}, {nand, 2}, {exclusiveOr, 2}, {exclusiveNor, 2}]}.
 {attributes, []}.
 {labels, 26}.
-%%% Gleam-style `bool` module (`import {bool} from "std";`), inspired by
-%%% `gleam/bool`. Pure-operator logic — no host backing, compiles once for
-%%% every backend. First real `"std"` package module (qualified calls lower
-%%% to a per-module output: `out/std/bool.js` / remote `bool:negate/1`).
+%%% Gleam-inspired `bool` module (`import {bool} from "std";`).
+%%% Pure-operator logic — no host backing, compiles once for every backend.
+%%% Function names follow the language convention: camelCase.
+%%% First real `"std"` package module (qualified calls lower to a per-module
+%%% output: `out/std/bool.js` / remote `bool:negate/1`).
 
 {function, negate, 1, 3}.
   {label, 2}.
@@ -95,10 +97,10 @@ pub fn exclusive_nor(a: bool, b: bool) -> bool {
     {deallocate, 0}.
     return.
 
-{function, exclusive_or, 2, 9}.
+{function, exclusiveOr, 2, 9}.
   {label, 8}.
     {line, [{location, "std/bool.erl", 4}]}.
-    {func_info, {atom, std/bool}, {atom, exclusive_or}, 2}.
+    {func_info, {atom, std/bool}, {atom, exclusiveOr}, 2}.
   {label, 9}.
     {allocate, 0, 2}.
     {test, is_ne_exact, {f, 22}, [{x, 0}, {x, 1}]}.
@@ -110,10 +112,10 @@ pub fn exclusive_nor(a: bool, b: bool) -> bool {
     {deallocate, 0}.
     return.
 
-{function, exclusive_nor, 2, 11}.
+{function, exclusiveNor, 2, 11}.
   {label, 10}.
     {line, [{location, "std/bool.erl", 5}]}.
-    {func_info, {atom, std/bool}, {atom, exclusive_nor}, 2}.
+    {func_info, {atom, std/bool}, {atom, exclusiveNor}, 2}.
   {label, 11}.
     {allocate, 0, 2}.
     {test, is_eq, {f, 24}, [{x, 0}, {x, 1}]}.
@@ -136,7 +138,7 @@ import {bool} from "std";
 
 fn main() {
     val flipped = bool.negate(false);
-    @print(bool.exclusive_or(flipped, false));
+    @print(bool.exclusiveOr(flipped, false));
 }
 ```
 
@@ -171,7 +173,7 @@ fn main() {
     {move, {x, 0}, {x, 0}}.
     {move, {x, 1}, {x, 1}}.
     {move, {x, 2}, {x, 2}}.
-    %% unresolved method call: exclusive_or/3
+    %% unresolved method call: exclusiveOr/3
     {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"~p~n">>}, {x, 0}}.
     {test_heap, 2, 2}.

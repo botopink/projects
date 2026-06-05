@@ -47,7 +47,7 @@ inline form (`commonJS`/`erlang` fully, `beam`/`wasm` as a documented stub).
 
 ### Builtin `result` namespace + `"std"` package modules
 
-`result.map(r, f)` / `then` / `unwrap` / `is_ok` / `is_error` are the
+`result.map(r, f)` / `then` / `unwrap` / `isOk` / `isError` are the
 Gleam-style qualified surface over the same method ops — no import; inference
 (`inferResultNamespaceCall`) records a `qualified` MethodLowering and the
 transform emits `__bp_result_<op>(args…)` without receiver injection. There is

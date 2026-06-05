@@ -22,11 +22,11 @@ pub fn swap<A, B>(p: #(A, B)) -> #(B, A) {
     return #(p._1, p._0);
 }
 
-pub fn map_first<A, B, C>(p: #(A, B), transform: fn(value: A) -> C) -> #(C, B) {
+pub fn mapFirst<A, B, C>(p: #(A, B), transform: fn(value: A) -> C) -> #(C, B) {
     return #(transform(p._0), p._1);
 }
 
-pub fn map_second<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) {
+pub fn mapSecond<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) {
     return #(p._0, transform(p._1));
 }
 
@@ -35,7 +35,7 @@ pub fn map_second<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) 
 ----- ERLANG -- std/pair.erl
 ```erlang
 -module(pair).
--export([of/2, first/1, second/1, swap/1, map_first/2, map_second/2]).
+-export([of/2, first/1, second/1, swap/1, mapFirst/2, mapSecond/2]).
 
 %%% Gleam-style `pair` module (`import {pair} from "std";`), inspired by
 
@@ -59,10 +59,10 @@ second(P) ->
 swap(P) ->
     {element(2, P), element(1, P)}.
 
-map_first(P, Transform) ->
+mapFirst(P, Transform) ->
     {transform(element(1, P)), element(2, P)}.
 
-map_second(P, Transform) ->
+mapSecond(P, Transform) ->
     {element(1, P), transform(element(2, P))}.
 ```
 

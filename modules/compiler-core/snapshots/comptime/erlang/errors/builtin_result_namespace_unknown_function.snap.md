@@ -14,4 +14,4 @@ error: unknown `result` namespace function
 6 │     val x = result.collapse(parse(1));
   │                    ^
 
-  hint: Available: map, then, unwrap, is_ok, is_error.
+  hint: Available: map, then, unwrap, isOk, isError.

@@ -23,7 +23,7 @@ pub fn gt() -> Order {
     return Order.Gt;
 }
 
-pub fn to_int(o: Order) -> i32 {
+pub fn toInt(o: Order) -> i32 {
     val n = case o {
         Lt -> -1;
         Eq -> 0;
@@ -64,7 +64,7 @@ pub fn reverse(o: Order) -> Order {
     i32.const 2 ;; Order.Gt
     return
   )
-  (func $to_int (export "to_int") (param $o i32) (result i32)
+  (func $toInt (export "toInt") (param $o i32) (result i32)
     (local $n i32)
     local.get $o
     (local $__case_0 i32)
@@ -107,7 +107,7 @@ fn describe(o: Order) -> string {
 }
 
 fn main() {
-    @print(order.to_int(order.lt()));
+    @print(order.toInt(order.lt()));
     @print(describe(order.reverse(order.lt())));
 }
 ```
@@ -131,7 +131,7 @@ fn main() {
   )
   (func $main
     call $lt
-    call $to_int
+    call $toInt
     call $__print_i32
     drop
     call $lt

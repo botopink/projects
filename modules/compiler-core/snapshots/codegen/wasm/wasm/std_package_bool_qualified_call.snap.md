@@ -1,9 +1,10 @@
 ----- SOURCE CODE -- std/bool.bp
 ```botopink
-//// Gleam-style `bool` module (`import {bool} from "std";`), inspired by
-//// `gleam/bool`. Pure-operator logic — no host backing, compiles once for
-//// every backend. First real `"std"` package module (qualified calls lower
-//// to a per-module output: `out/std/bool.js` / remote `bool:negate/1`).
+//// Gleam-inspired `bool` module (`import {bool} from "std";`).
+//// Pure-operator logic — no host backing, compiles once for every backend.
+//// Function names follow the language convention: camelCase.
+//// First real `"std"` package module (qualified calls lower to a per-module
+//// output: `out/std/bool.js` / remote `bool:negate/1`).
 
 pub fn negate(b: bool) -> bool {
     return !b;
@@ -17,11 +18,11 @@ pub fn nand(a: bool, b: bool) -> bool {
     return !(a && b);
 }
 
-pub fn exclusive_or(a: bool, b: bool) -> bool {
+pub fn exclusiveOr(a: bool, b: bool) -> bool {
     return a != b;
 }
 
-pub fn exclusive_nor(a: bool, b: bool) -> bool {
+pub fn exclusiveNor(a: bool, b: bool) -> bool {
     return a == b;
 }
 
@@ -32,10 +33,11 @@ pub fn exclusive_nor(a: bool, b: bool) -> bool {
 (module
   (memory (export "memory") 1)
   (global $__heap_ptr (mut i32) (i32.const 256))
-  ;; Gleam-style `bool` module (`import {bool} from "std";`), inspired by
-  ;; `gleam/bool`. Pure-operator logic — no host backing, compiles once for
-  ;; every backend. First real `"std"` package module (qualified calls lower
-  ;; to a per-module output: `out/std/bool.js` / remote `bool:negate/1`).
+  ;; Gleam-inspired `bool` module (`import {bool} from "std";`).
+  ;; Pure-operator logic — no host backing, compiles once for every backend.
+  ;; Function names follow the language convention: camelCase.
+  ;; First real `"std"` package module (qualified calls lower to a per-module
+  ;; output: `out/std/bool.js` / remote `bool:negate/1`).
   (func $negate (export "negate") (param $b i32) (result i32)
     local.get $b
     i32.eqz
@@ -55,13 +57,13 @@ pub fn exclusive_nor(a: bool, b: bool) -> bool {
     i32.eqz
     return
   )
-  (func $exclusive_or (export "exclusive_or") (param $a i32) (param $b i32) (result i32)
+  (func $exclusiveOr (export "exclusiveOr") (param $a i32) (param $b i32) (result i32)
     local.get $a
     local.get $b
     i32.ne
     return
   )
-  (func $exclusive_nor (export "exclusive_nor") (param $a i32) (param $b i32) (result i32)
+  (func $exclusiveNor (export "exclusiveNor") (param $a i32) (param $b i32) (result i32)
     local.get $a
     local.get $b
     i32.eq
@@ -80,7 +82,7 @@ import {bool} from "std";
 
 fn main() {
     val flipped = bool.negate(false);
-    @print(bool.exclusive_or(flipped, false));
+    @print(bool.exclusiveOr(flipped, false));
 }
 ```
 
@@ -97,7 +99,7 @@ fn main() {
     local.set $flipped
     local.get $flipped
     global.get $false
-    call $exclusive_or
+    call $exclusiveOr
     call $__print_i32
   )
   (func $_botopink_main (export "_botopink_main") (export "_start")

@@ -23,7 +23,7 @@ pub fn gt() -> Order {
     return Order.Gt;
 }
 
-pub fn to_int(o: Order) -> i32 {
+pub fn toInt(o: Order) -> i32 {
     val n = case o {
         Lt -> -1;
         Eq -> 0;
@@ -46,7 +46,7 @@ pub fn reverse(o: Order) -> Order {
 ----- BEAM ASSEMBLY -- std/order.S
 ```erlang
 {module, std/order}.
-{exports, [{lt, 0}, {eq, 0}, {gt, 0}, {to_int, 1}, {reverse, 1}]}.
+{exports, [{lt, 0}, {eq, 0}, {gt, 0}, {toInt, 1}, {reverse, 1}]}.
 {attributes, []}.
 {labels, 20}.
 %%% Gleam-style `order` module (`import {order} from "std";`), inspired by
@@ -90,10 +90,10 @@ pub fn reverse(o: Order) -> Order {
     {deallocate, 0}.
     return.
 
-{function, to_int, 1, 9}.
+{function, toInt, 1, 9}.
   {label, 8}.
     {line, [{location, "std/order.erl", 4}]}.
-    {func_info, {atom, std/order}, {atom, to_int}, 1}.
+    {func_info, {atom, std/order}, {atom, toInt}, 1}.
   {label, 9}.
     {allocate, 3, 1}.
     {init_yregs, {list, [{y, 0}, {y, 1}, {y, 2}]}}.
@@ -157,7 +157,7 @@ fn describe(o: Order) -> string {
 }
 
 fn main() {
-    @print(order.to_int(order.lt()));
+    @print(order.toInt(order.lt()));
     @print(describe(order.reverse(order.lt())));
 }
 ```
@@ -205,7 +205,7 @@ fn main() {
     {move, {x, 0}, {x, 1}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 1}, {x, 1}}.
-    %% unresolved method call: to_int/2
+    %% unresolved method call: toInt/2
     {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"~p~n">>}, {x, 0}}.
     {test_heap, 2, 2}.

@@ -122,6 +122,11 @@ pub const Parser = struct {
     noTrailingLambda: bool = false,
     /// When true, `parsePipelineExpr` will not consume a trailing `catch` operator.
     noTailCatch: bool = false,
+    /// One `>` still owed to an enclosing generic-argument list: nested
+    /// generics close with `>>`, which the lexer scans as a single shift
+    /// token (`Array<Array<T>>`). `consumeGenericClose` consumes the `>>`
+    /// for the inner list and credits the second `>` here for the outer one.
+    pending_gt: bool = false,
     /// Auto-incrementing counters for unique IDs per declaration type.
     id_counters: struct {
         interface: u32 = 0,
@@ -138,6 +143,29 @@ pub const Parser = struct {
             .parseError = null,
             .source = null,
         };
+    }
+
+    /// True when the current position closes a generic-argument list:
+    /// a plain `>`, a `>>` (nested close, lexed as one shift token), or a
+    /// `>` still owed from a previously split `>>`.
+    pub fn checkGenericClose(this: *This) bool {
+        return this.pending_gt or this.check(.greaterThan) or this.check(.greaterThanGreaterThan);
+    }
+
+    /// Consume the close of a generic-argument list, splitting `>>` so
+    /// `Array<Array<T>>` parses (the second `>` is credited to the
+    /// enclosing list via `pending_gt`).
+    pub fn consumeGenericClose(this: *This) ParseError!void {
+        if (this.pending_gt) {
+            this.pending_gt = false;
+            return;
+        }
+        if (this.check(.greaterThanGreaterThan)) {
+            _ = this.advance();
+            this.pending_gt = true;
+            return;
+        }
+        _ = try this.consume(.greaterThan);
     }
 
     /// Returns the next ID counter for a declaration type.

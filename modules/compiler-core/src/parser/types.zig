@@ -124,11 +124,11 @@ pub fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.Ty
             for (args.items) |*a| a.deinit(alloc);
             args.deinit(alloc);
         }
-        while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
+        while (!this.checkGenericClose() and !this.check(.endOfFile)) {
             try args.append(alloc, try this.parseTypeRef(alloc));
             if (!this.match(.comma)) break;
         }
-        _ = try this.consume(.greaterThan);
+        try this.consumeGenericClose();
         return ast.TypeRef{ .generic = .{ .name = name, .args = try args.toOwnedSlice(alloc), .is_builtin = true } };
     }
     // type [Constraint (| Constraint)*] — comptime type parameter (meta-kind)
@@ -159,11 +159,11 @@ pub fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.Ty
             for (args.items) |*a| a.deinit(alloc);
             args.deinit(alloc);
         }
-        while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
+        while (!this.checkGenericClose() and !this.check(.endOfFile)) {
             try args.append(alloc, try this.parseTypeRef(alloc));
             if (!this.match(.comma)) break;
         }
-        _ = try this.consume(.greaterThan);
+        try this.consumeGenericClose();
         ref = ast.TypeRef{ .generic = .{ .name = nameTok.lexeme, .args = try args.toOwnedSlice(alloc), .is_builtin = false } };
     } else {
         ref = ast.TypeRef{ .named = nameTok.lexeme };

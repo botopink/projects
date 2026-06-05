@@ -22,11 +22,11 @@ pub fn swap<A, B>(p: #(A, B)) -> #(B, A) {
     return #(p._1, p._0);
 }
 
-pub fn map_first<A, B, C>(p: #(A, B), transform: fn(value: A) -> C) -> #(C, B) {
+pub fn mapFirst<A, B, C>(p: #(A, B), transform: fn(value: A) -> C) -> #(C, B) {
     return #(transform(p._0), p._1);
 }
 
-pub fn map_second<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) {
+pub fn mapSecond<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) {
     return #(p._0, transform(p._1));
 }
 
@@ -35,7 +35,7 @@ pub fn map_second<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) 
 ----- BEAM ASSEMBLY -- std/pair.S
 ```erlang
 {module, std/pair}.
-{exports, [{of, 2}, {first, 1}, {second, 1}, {swap, 1}, {map_first, 2}, {map_second, 2}]}.
+{exports, [{of, 2}, {first, 1}, {second, 1}, {swap, 1}, {mapFirst, 2}, {mapSecond, 2}]}.
 {attributes, []}.
 {labels, 22}.
 %%% Gleam-style `pair` module (`import {pair} from "std";`), inspired by
@@ -97,10 +97,10 @@ pub fn map_second<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) 
     {deallocate, 0}.
     return.
 
-{function, map_first, 2, 11}.
+{function, mapFirst, 2, 11}.
   {label, 10}.
     {line, [{location, "std/pair.erl", 5}]}.
-    {func_info, {atom, std/pair}, {atom, map_first}, 2}.
+    {func_info, {atom, std/pair}, {atom, mapFirst}, 2}.
   {label, 11}.
     {allocate, 0, 2}.
     {move, {x, 1}, {x, 1}}.
@@ -118,10 +118,10 @@ pub fn map_second<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) 
     {deallocate, 0}.
     return.
 
-{function, map_second, 2, 13}.
+{function, mapSecond, 2, 13}.
   {label, 12}.
     {line, [{location, "std/pair.erl", 6}]}.
-    {func_info, {atom, std/pair}, {atom, map_second}, 2}.
+    {func_info, {atom, std/pair}, {atom, mapSecond}, 2}.
   {label, 13}.
     {allocate, 0, 2}.
     {get_map_elements, {f, 20}, {x, 0}, {list, [{atom, _0}, {x, 0}]}}.

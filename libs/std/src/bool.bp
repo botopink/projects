@@ -1,7 +1,8 @@
-//// Gleam-style `bool` module (`import {bool} from "std";`), inspired by
-//// `gleam/bool`. Pure-operator logic — no host backing, compiles once for
-//// every backend. First real `"std"` package module (qualified calls lower
-//// to a per-module output: `out/std/bool.js` / remote `bool:negate/1`).
+//// Gleam-inspired `bool` module (`import {bool} from "std";`).
+//// Pure-operator logic — no host backing, compiles once for every backend.
+//// Function names follow the language convention: camelCase.
+//// First real `"std"` package module (qualified calls lower to a per-module
+//// output: `out/std/bool.js` / remote `bool:negate/1`).
 
 pub fn negate(b: bool) -> bool {
     return !b;
@@ -15,10 +16,10 @@ pub fn nand(a: bool, b: bool) -> bool {
     return !(a && b);
 }
 
-pub fn exclusive_or(a: bool, b: bool) -> bool {
+pub fn exclusiveOr(a: bool, b: bool) -> bool {
     return a != b;
 }
 
-pub fn exclusive_nor(a: bool, b: bool) -> bool {
+pub fn exclusiveNor(a: bool, b: bool) -> bool {
     return a == b;
 }

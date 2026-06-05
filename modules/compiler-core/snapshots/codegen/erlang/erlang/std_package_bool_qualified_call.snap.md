@@ -1,9 +1,10 @@
 ----- SOURCE CODE -- std/bool.bp
 ```botopink
-//// Gleam-style `bool` module (`import {bool} from "std";`), inspired by
-//// `gleam/bool`. Pure-operator logic — no host backing, compiles once for
-//// every backend. First real `"std"` package module (qualified calls lower
-//// to a per-module output: `out/std/bool.js` / remote `bool:negate/1`).
+//// Gleam-inspired `bool` module (`import {bool} from "std";`).
+//// Pure-operator logic — no host backing, compiles once for every backend.
+//// Function names follow the language convention: camelCase.
+//// First real `"std"` package module (qualified calls lower to a per-module
+//// output: `out/std/bool.js` / remote `bool:negate/1`).
 
 pub fn negate(b: bool) -> bool {
     return !b;
@@ -17,11 +18,11 @@ pub fn nand(a: bool, b: bool) -> bool {
     return !(a && b);
 }
 
-pub fn exclusive_or(a: bool, b: bool) -> bool {
+pub fn exclusiveOr(a: bool, b: bool) -> bool {
     return a != b;
 }
 
-pub fn exclusive_nor(a: bool, b: bool) -> bool {
+pub fn exclusiveNor(a: bool, b: bool) -> bool {
     return a == b;
 }
 
@@ -30,15 +31,17 @@ pub fn exclusive_nor(a: bool, b: bool) -> bool {
 ----- ERLANG -- std/bool.erl
 ```erlang
 -module(bool).
--export([negate/1, nor/2, nand/2, exclusive_or/2, exclusive_nor/2]).
+-export([negate/1, nor/2, nand/2, exclusiveOr/2, exclusiveNor/2]).
 
-%%% Gleam-style `bool` module (`import {bool} from "std";`), inspired by
+%%% Gleam-inspired `bool` module (`import {bool} from "std";`).
 
-%%% `gleam/bool`. Pure-operator logic — no host backing, compiles once for
+%%% Pure-operator logic — no host backing, compiles once for every backend.
 
-%%% every backend. First real `"std"` package module (qualified calls lower
+%%% Function names follow the language convention: camelCase.
 
-%%% to a per-module output: `out/std/bool.js` / remote `bool:negate/1`).
+%%% First real `"std"` package module (qualified calls lower to a per-module
+
+%%% output: `out/std/bool.js` / remote `bool:negate/1`).
 
 negate(B) ->
     (not B).
@@ -49,10 +52,10 @@ nor(A, B) ->
 nand(A, B) ->
     (not ((A and B))).
 
-exclusive_or(A, B) ->
+exclusiveOr(A, B) ->
     (A =/= B).
 
-exclusive_nor(A, B) ->
+exclusiveNor(A, B) ->
     (A =:= B).
 ```
 
@@ -66,7 +69,7 @@ import {bool} from "std";
 
 fn main() {
     val flipped = bool.negate(false);
-    @print(bool.exclusive_or(flipped, false));
+    @print(bool.exclusiveOr(flipped, false));
 }
 ```
 
@@ -79,7 +82,7 @@ fn main() {
 
 main() ->
     Flipped = bool:negate(false),
-    io:format("~p~n", [bool:exclusive_or(Flipped, false)]).
+    io:format("~p~n", [bool:exclusiveOr(Flipped, false)]).
 
 '_botopink_main'() ->
     main().

@@ -15,7 +15,7 @@ test "js: std package ---- bool qualified call" {
         \\
         \\fn main() {
         \\    val flipped = bool.negate(false);
-        \\    @print(bool.exclusive_or(flipped, false));
+        \\    @print(bool.exclusiveOr(flipped, false));
         \\}
     );
 }
@@ -48,7 +48,7 @@ test "js: std package ---- order enum module with type export" {
         \\}
         \\
         \\fn main() {
-        \\    @print(order.to_int(order.lt()));
+        \\    @print(order.toInt(order.lt()));
         \\    @print(describe(order.reverse(order.lt())));
         \\}
     );
@@ -65,6 +65,20 @@ test "js: std package ---- list module map filter fold" {
         \\    @print(list.length(list.filter(xs, { x -> x > 2 })));
         \\    @print(list.contains(xs, 3));
         \\    @print(list.take(xs, 2).join(","));
+        \\}
+    );
+}
+
+test "js: std package ---- list module v2 range append flatten" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\import {list} from "std";
+        \\
+        \\fn main() {
+        \\    @print(list.range(1, 5).join(","));
+        \\    @print(list.append([1, 2], [3, 4]).join(","));
+        \\    @print(list.prepend([2, 3], 1).join(","));
+        \\    @print(list.flatten([[1, 2], [3]]).join(","));
+        \\    @print(list.count(list.range(0, 10), { x -> x > 6 }));
         \\}
     );
 }

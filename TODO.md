@@ -456,41 +456,118 @@ like `swap` (`Pair(first: p.second, …)`) unified `A := B` globally. Fixed:
   via the F2a `instantiateType` path; struct ctor return types carry no args
   (field substitution is a no-op for generic structs).
 
-## F4 — `list` (the core module, over `Array<T>`) — v1 DONE
+## Continuation context — feat is at `e557cdb` (2026-06-05, test-blocks merged)
+
+> Sync this branch with feat when convenient (`git merge feat` — careful:
+> uncommitted list.bp work in this worktree; commit/stash first). What landed
+> on feat that matters here:
+>
+> - **Test mechanism is live**: `libs/std/test/` has 7 suites — 32/32 green via
+>   `cd libs/std && botopink test` (array, string, bool, order, pair, option,
+>   result). Inline (Zig-style) `test { … }` blocks work in impl modules —
+>   first one in `src/bool.bp`.
+> - **Compiler fixes that affect std work** (in feat now):
+>   - transform.zig walks `test` bodies + `assert` subexpressions (lowerings
+>     like `__bp_result_*` / `?T` methods now apply inside tests);
+>   - `registerStdlib`'s scratch env binds `true`/`false` — inline tests in
+>     embedded std modules no longer brick the compiler;
+>   - `"std"` package copies never emit test blocks in test mode (no
+>     double-run when a project imports `from "std"`).
+> - **TEST PAIRING RULE (stdlib-tests)**: every F4–F9 module lands in the same
+>   commit as its `libs/std/test/<module>_test.bp` suite (checklist items added
+>   per phase below). `list.bp` (v1) is already missing `list_test.bp` — write
+>   it on the next touch.
+> - **Gaps catalogued** (full list in `tasks/v0.beta.2/specs/stdlib-gleam.md`
+>   "Remaining work" section, updated on feat): erlang escript runner can't
+>   reach `"std"` modules (`error:undef` — needs multi-file load); builtin
+>   method lowering (`.join`/`.split`/…) is commonJS-only; snake_case builtin
+>   methods lack JS name mapping (blocks F7 string coverage); literal method
+>   receivers don't parse; structural `==` on arrays is JS `===` (suites
+>   compare via `.join`).
+> - Suite conventions: test files are `*_test.bp`, never define `main`;
+>   receivers must be `val`-bound; suites verified on commonJS (erlang/wasm
+>   runners pending).
+
+## F4 — `list` (the core module, over `Array<T>`) — v2 DONE (fn-module form, transitional)
 - [x] `list.bp` v1: `fold` (var accumulator via `forEach`), `map`, `filter`,
-      `length`, `is_empty`, `contains` (indexOf != -1), `first` (`?T`), `rest`,
-      `take`, `drop`, `reverse`, `all`, `any`. E2E green on node
-      (`std_package_list_module_map_filter_fold`: 20 / 2 / true / "1,2").
+      `length`, `isEmpty`, `contains` (indexOf != -1), `first` (`?T`), `rest`,
+      `take`, `drop`, `reverse`, `all`, `any`. E2E green on node.
+- [x] v2: `find`, `count`, `append`, `prepend`, `flatten`, `flatMap`, `range`
+      (recursive `pushRange` helper). Local E2E: range/append/prepend/flatten/
+      count all correct. Still pending: `foldRight`, `zip`, `unzip`,
+      `intersperse`, `sort` (with `order`).
+- [x] **NAMING CONVENTION (user, 2026-06-05): camelCase** (`isEmpty`,
+      `flatMap`, `exclusiveOr`, `toInt`, `mapFirst`, `result.isOk`…) — all std
+      modules + the `result` namespace renamed; NOT Gleam snake_case.
 - [x] **`Array<T>` annotation normalised to the array-literal type** (named
-      `array`) in `resolveTypeRefInContext` — `[1, 2]` now unifies with
-      `Array<i32>` params (was "expected Array<?>, found i32[]").
-- [ ] v2: `fold_right`, `reduce`, `index_map`, `filter_map`, `flat_map`,
-      `flatten`, `find`, `count`, `append`, `prepend`, `range`, `zip`,
-      `unzip`, `intersperse`, `sort` (with `order`) — several need array
-      concat / list patterns (`[]` / `[x, ..rest]`) confirmed in the parser.
-- Known gap: `xs.map(f)` types against the Array interface (`transform: T -> T`),
-  so cross-type maps (`i32 -> string`) don't type yet through the module.
+      `array`) in `resolveTypeRefInContext`.
+- [x] Cross-type `list.map` (i32 → string) types fine (earlier note was wrong).
+- [x] `libs/std/test/list_test.bp` — 6 tests green via `botopink test`.
+- [x] Compiler fixes landed this round:
+      - `>>` splits in generic-type close (`Array<Array<T>>` parses;
+        `checkGenericClose`/`consumeGenericClose` + `pending_gt`)
+      - self-recursion: fn signature binds before its own body infers
+- [ ] Compiler gaps catalogued this round:
+      - bare `return;` does not parse
+      - nested trailing lambda inside a lambda body does not parse
+      - `from` is a reserved keyword (cannot be a param name)
+      - fn-type RETURNS must be plain names (`fn(...) -> Array<U>` won't parse)
+      - body `val x: Array<T> = …` resolves `T` as a NAMED type (fn generics
+        not in scope for body annotations) and poisons the signature via
+        unification — std modules avoid body annotations for now
+      - forward references between top-level fns still unsupported (helpers
+        must be declared before use; self-recursion now works)
+
+### F4-next — list as an INTERFACE with default methods (user design, 2026-06-05)
+> ```bp
+> pub interface List<T> {
+>     default fn isEmpty(self: Self) -> bool { return self.length == 0; }
+>     @[external(erlang, "lists", "reverse"),
+>       external(node, "./bp_stdlib.mjs", "list_reverse")]
+>     declare fn reverse(self: Self) -> Array<T>;
+> }
+> ```
+> Surface becomes METHOD calls (`xs.fold(0, f)`); parts host-backed per target
+> via `@[external]`; `extend` doesn't fit (needs name + simple target).
+- [ ] Parser: `@[…]` annotations + `declare fn` members inside interface bodies
+      (default-fn-with-body already parses via the `default` keyword)
+- [ ] RULE (user): `@[external(…)]` is only valid on `declare fn` declarations —
+      enforce in `validateExternalAnnotation`; migrate F1 tests/snapshots from
+      bodyless `pub fn` to `pub declare fn`
+- [ ] Dispatch: `xs.isEmpty()` on a builtin-array receiver resolves the
+      interface default method (loc-keyed lowering like F6) — this is the
+      typed-value method-dispatch work; externals lower per target
+      (erlang remote / node runtime import); node needs a shipped runtime
+      file story (`bp_stdlib.mjs`)
+- [ ] Then fold the fn-module `list.bp` into the interface form
 
 ## F5 — `dict` + `set`
 - [ ] `dict.bp`: `new`, `get`, `insert`, `delete`, `keys`, `values`, `size`, `merge`, `fold`, `map_values`
 - [ ] `set.bp`: `new`, `insert`, `contains`, `delete`, `union`, `intersection`, `to_list` (on top of `dict`)
+- [ ] `libs/std/test/dict_test.bp` (`insert`/`get` → `?V`, `delete`, `keys`/`values`, `merge`)
+      + `set_test.bp` (`insert`/`contains`, `union`, `intersection`)
 
 ## F6 — `int` + `float` (declarations + externals, via F1 `@[external(…)]`)
 - [ ] `int.d.bp`: `parse`, `to_float`, `to_string`, `absolute_value`, `min`, `max`, `clamp`, `power`, `is_even`
 - [ ] `float.d.bp`: `parse`, `round`, `floor`, `ceiling`, `truncate`, `to_string`, `power`, `square_root`
+- [ ] `libs/std/test/number_test.bp` (`int.parse`, `int.clamp`, `to_float`, `float.round`/`floor`)
 
 ## F7 — `string` (+ `string_builder`, via F1 `@[external(…)]`)
 - [ ] Extend `string.d.bp` to Gleam's surface: `length`, `reverse`, `replace`, `split`,
       `join`, `pad_left`, `pad_right`, `slice`, `contains`, `starts_with`, `to_graphemes`
 - [ ] `string_builder.bp`: `new`, `append`, `from_strings`, `to_string` (efficient concat)
+- [ ] Extend `libs/std/test/string_test.bp` (`split`, `join`, `replace`, `slice`,
+      `starts_with`) — needs the snake_case JS name mapping (see gaps above)
 
 ## F8 — `iterator` (lazy sequences)
 - [ ] `iterator.bp`: `from_list`, `map`, `filter`, `take`, `fold`, `to_list`, `range`, `repeat`
 - [ ] Build on botopink's `@Iterator<_>` / `*fn` generators
+- [ ] `libs/std/test/iterator_test.bp` (`range`, `map`, `filter`, `take`, `to_list`)
 
 ## F9 — `function` + `io` (`io` via F1 `@[external(…)]`)
 - [ ] `function.bp`: `identity`, `compose`, `flip`, `const`
 - [ ] `io.d.bp`: `print`, `println`, `debug` (host-backed)
+- [ ] `libs/std/test/function_test.bp` (`identity`, `compose`, `flip`)
 
 ## F10 — extended modules (optional)
 - [ ] `bit_array`, `uri`, `regexp`, `dynamic`, `queue` — scope per demand

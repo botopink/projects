@@ -370,12 +370,11 @@ Execution error: error.FileNotFound```
 import {list} from "std";
 
 fn main() {
-    val xs = [1, 2, 3, 4];
-    val doubled = list.map(xs, { x -> x * 2 });
-    @print(list.fold(doubled, 0, { acc, x -> acc + x }));
-    @print(list.length(list.filter(xs, { x -> x > 2 })));
-    @print(list.contains(xs, 3));
-    @print(list.take(xs, 2).join(","));
+    @print(list.range(1, 5).join(","));
+    @print(list.append([1, 2], [3, 4]).join(","));
+    @print(list.prepend([2, 3], 1).join(","));
+    @print(list.flatten([[1, 2], [3]]).join(","));
+    @print(list.count(list.range(0, 10), { x -> x > 6 }));
 }
 ```
 
@@ -387,52 +386,27 @@ fn main() {
   (data (i32.const 256) "\01\00\00\00,")
   (global $__heap_ptr (mut i32) (i32.const 264))
   (func $main
-    (local $__mem0 i32)
-    (local $xs i32)
-    (local $doubled i32)
-    global.get $__heap_ptr
-    local.set $__mem0
-    global.get $__heap_ptr
-    i32.const 16
-    i32.add
-    global.set $__heap_ptr
-    local.get $__mem0
-    i32.const 1
-    i32.store
-    local.get $__mem0
-    i32.const 2
-    i32.store offset=4
-    local.get $__mem0
-    i32.const 3
-    i32.store offset=8
-    local.get $__mem0
-    i32.const 4
-    i32.store offset=12
-    local.get $__mem0
-    local.set $xs
-    local.get $xs
-    i32.const 0 ;; lambda
-    call $map
-    local.set $doubled
-    local.get $doubled
-    i32.const 0
-    i32.const 0 ;; lambda
-    call $fold
-    call $__print_i32
-    drop
-    local.get $xs
-    i32.const 0 ;; lambda
-    call $filter
-    call $length
-    call $__print_i32
-    drop
-    local.get $xs
-    i32.const 3
-    call $contains
+    i32.const 256
+    call $join
     call $__print_i32
     drop
     i32.const 256
     call $join
+    call $__print_i32
+    drop
+    i32.const 256
+    call $join
+    call $__print_i32
+    drop
+    i32.const 256
+    call $join
+    call $__print_i32
+    drop
+    i32.const 0
+    i32.const 10
+    call $range
+    i32.const 0 ;; lambda
+    call $count
     call $__print_i32
   )
   (func $_botopink_main (export "_botopink_main") (export "_start")

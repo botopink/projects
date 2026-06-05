@@ -1,9 +1,10 @@
 ----- SOURCE CODE -- std/bool.bp
 ```botopink
-//// Gleam-style `bool` module (`import {bool} from "std";`), inspired by
-//// `gleam/bool`. Pure-operator logic — no host backing, compiles once for
-//// every backend. First real `"std"` package module (qualified calls lower
-//// to a per-module output: `out/std/bool.js` / remote `bool:negate/1`).
+//// Gleam-inspired `bool` module (`import {bool} from "std";`).
+//// Pure-operator logic — no host backing, compiles once for every backend.
+//// Function names follow the language convention: camelCase.
+//// First real `"std"` package module (qualified calls lower to a per-module
+//// output: `out/std/bool.js` / remote `bool:negate/1`).
 
 pub fn negate(b: bool) -> bool {
     return !b;
@@ -17,11 +18,11 @@ pub fn nand(a: bool, b: bool) -> bool {
     return !(a && b);
 }
 
-pub fn exclusive_or(a: bool, b: bool) -> bool {
+pub fn exclusiveOr(a: bool, b: bool) -> bool {
     return a != b;
 }
 
-pub fn exclusive_nor(a: bool, b: bool) -> bool {
+pub fn exclusiveNor(a: bool, b: bool) -> bool {
     return a == b;
 }
 
@@ -29,13 +30,15 @@ pub fn exclusive_nor(a: bool, b: bool) -> bool {
 
 ----- JAVASCRIPT -- std/bool.js
 ```javascript
-//// Gleam-style `bool` module (`import {bool} from "std";`), inspired by
+//// Gleam-inspired `bool` module (`import {bool} from "std";`).
 
-//// `gleam/bool`. Pure-operator logic — no host backing, compiles once for
+//// Pure-operator logic — no host backing, compiles once for every backend.
 
-//// every backend. First real `"std"` package module (qualified calls lower
+//// Function names follow the language convention: camelCase.
 
-//// to a per-module output: `out/std/bool.js` / remote `bool:negate/1`).
+//// First real `"std"` package module (qualified calls lower to a per-module
+
+//// output: `out/std/bool.js` / remote `bool:negate/1`).
 
 function negate(b) {
     return (!b);
@@ -52,15 +55,15 @@ function nand(a, b) {
 }
 exports.nand = nand;
 
-function exclusive_or(a, b) {
+function exclusiveOr(a, b) {
     return (a !== b);
 }
-exports.exclusive_or = exclusive_or;
+exports.exclusiveOr = exclusiveOr;
 
-function exclusive_nor(a, b) {
+function exclusiveNor(a, b) {
     return (a === b);
 }
-exports.exclusive_nor = exclusive_nor;
+exports.exclusiveNor = exclusiveNor;
 ```
 
 ----- TYPESCRIPT TYPEDEF -- std/bool.d.ts
@@ -74,10 +77,10 @@ export declare function nor(a: , b: ): bool;
 export declare function nand(a: , b: ): bool;
 
 
-export declare function exclusive_or(a: , b: ): bool;
+export declare function exclusiveOr(a: , b: ): bool;
 
 
-export declare function exclusive_nor(a: , b: ): bool;
+export declare function exclusiveNor(a: , b: ): bool;
 
 ```
 
@@ -91,7 +94,7 @@ import {bool} from "std";
 
 fn main() {
     val flipped = bool.negate(false);
-    @print(bool.exclusive_or(flipped, false));
+    @print(bool.exclusiveOr(flipped, false));
 }
 ```
 
@@ -101,7 +104,7 @@ const bool = require("./std/bool.js");
 
 function main() {
     const flipped = bool.negate(false);
-    console.log(bool.exclusive_or(flipped, false));
+    console.log(bool.exclusiveOr(flipped, false));
 }
 
 function _botopink_main() {

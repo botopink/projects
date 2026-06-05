@@ -44,8 +44,8 @@ pub enum Result<R, E> {
 //   result.map(r, transform)        ≡ r.map(transform)
 //   result.then(r, transform)       ≡ r.flatMap(transform)
 //   result.unwrap(r, fallback)      ≡ r.unwrapOr(fallback)
-//   result.is_ok(r)                 ≡ r.isOk()
-//   result.is_error(r)              ≡ r.isError()
+//   result.isOk(r)                 ≡ r.isOk()
+//   result.isError(r)              ≡ r.isError()
 //
 // A `@Result` value is only constructed by `return`/`throw` inside a
 // `*fn -> @Result<R, E>` fn; the runtime shape is `{ ok: V } | { error: E }` (JS) /

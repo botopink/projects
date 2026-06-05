@@ -23,7 +23,7 @@ pub fn gt() -> Order {
     return Order.Gt;
 }
 
-pub fn to_int(o: Order) -> i32 {
+pub fn toInt(o: Order) -> i32 {
     val n = case o {
         Lt -> -1;
         Eq -> 0;
@@ -74,7 +74,7 @@ function gt() {
 }
 exports.gt = gt;
 
-function to_int(o) {
+function toInt(o) {
     const n = (() => {
         const _s = o;
         if (_s === "Lt") return (-1);
@@ -83,7 +83,7 @@ function to_int(o) {
     })();
     return n;
 }
-exports.to_int = to_int;
+exports.toInt = toInt;
 
 function reverse(o) {
     const r = (() => {
@@ -115,7 +115,7 @@ export declare function eq(): Order;
 export declare function gt(): Order;
 
 
-export declare function to_int(o: ): i32;
+export declare function toInt(o: ): i32;
 
 
 export declare function reverse(o: ): Order;
@@ -140,7 +140,7 @@ fn describe(o: Order) -> string {
 }
 
 fn main() {
-    @print(order.to_int(order.lt()));
+    @print(order.toInt(order.lt()));
     @print(describe(order.reverse(order.lt())));
 }
 ```
@@ -160,7 +160,7 @@ function describe(o) {
 }
 
 function main() {
-    console.log(order.to_int(order.lt()));
+    console.log(order.toInt(order.lt()));
     console.log(describe(order.reverse(order.lt())));
 }
 
