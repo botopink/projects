@@ -152,7 +152,7 @@ pub const ExprParamInfo = struct {
 /// keyed by the call's source `Loc` and consumed by the call-site expansion
 /// pass (F6). Instances only exist at comptime — no codegen backend ever sees
 /// these calls.
-pub const TemplateOp = enum { text, parts, source, context, lookup, bindings, build, fail, failAt, ref };
+pub const TemplateOp = enum { value, text, parts, source, context, lookup, bindings, build, fail, failAt, ref };
 
 /// Constraint metadata for one `comptime ...: typeparam` parameter of a function.
 /// Recorded at fn-declaration time and consulted at each call site.
@@ -227,9 +227,9 @@ pub const Env = struct {
     scopeSnapshot: ?*template.ScopeSnapshot = null,
     /// Module path of the file being inferred ("" for main) — capture provenance.
     modulePath: []const u8 = "",
-    /// Nesting depth of `expr { … }` literals while inferring (F5). `${…}`
-    /// splices are only valid at depth > 0.
-    exprLiteralDepth: usize = 0,
+    /// True while inferring the body of a template function (`-> @Expr<…>`).
+    /// Gates the `@expr`/`@code` construction builtins.
+    inTemplateFn: bool = false,
     /// Monotonically increasing counter for fresh type variable IDs.
     nextId: T.TypeId,
     /// Monotonically increasing counter for type definition IDs (record$$0, struct$$1, ...).

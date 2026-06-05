@@ -218,17 +218,6 @@ pub fn parseExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         }
     }
 
-    // expr { … } — quoted-code literal (expr-templates F5). `expr` stays a
-    // contextual keyword: only the exact juxtaposition `expr` + `{` in
-    // expression position builds a literal (was a parse error before).
-    if (this.check(.identifier) and std.mem.eql(u8, this.peek().lexeme, "expr") and
-        this.peekAt(1).kind == .leftBrace)
-    {
-        const exprTok = this.advance();
-        const body = try this.parseStmtListInBraces(alloc);
-        return Expr{ .comptime_ = .{ .loc = locFromToken(exprTok), .kind = .{ .exprLiteral = .{ .body = body } } } };
-    }
-
     // break [expr]
     if (this.check(.@"break")) {
         const breakTok = this.advance();
@@ -750,17 +739,6 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         const operand = try this.parsePrimary(alloc);
         const operandPtr = try this.boxExpr(alloc, operand);
         return Expr{ .unaryOp = .{ .loc = locFromToken(opTok), .op = .neg, .expr = operandPtr } };
-    }
-
-    // ${e} — splice hole inside an `expr { … }` literal (expr-templates F5).
-    // Parsed anywhere as a primary; inference rejects splices outside an
-    // `expr { … }` literal.
-    if (this.check(.dollarLeftBrace)) {
-        const spliceTok = this.advance();
-        const inner = try this.parseExpr(alloc);
-        const innerPtr = try this.boxExpr(alloc, inner);
-        _ = try this.consume(.rightBrace);
-        return Expr{ .comptime_ = .{ .loc = locFromToken(spliceTok), .kind = .{ .splice = innerPtr } } };
     }
 
     // { params? -> body } ---- lambda expression (standalone or trailing)

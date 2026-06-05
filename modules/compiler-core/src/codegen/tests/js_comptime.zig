@@ -273,8 +273,8 @@ test "js: comptime ---- block with break" {
 
 test "js: template end to end ---- bounded html expansion" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\pub fn html(comptime template: expr string) -> expr string {
-        \\    return expr { ${template} };
+        \\pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
+        \\    return template;
         \\}
         \\val name = "world";
         \\val page = html """
@@ -288,8 +288,8 @@ test "js: template end to end ---- bounded html expansion" {
 
 test "js: template end to end ---- bare expr value lifting" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\pub fn port() -> expr {
-        \\    return expr { 8080 };
+        \\pub fn port() -> @Expr {
+        \\    return @expr(8080);
         \\}
         \\fn main() {
         \\    val p = port() + 1;

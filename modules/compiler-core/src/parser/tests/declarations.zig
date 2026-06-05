@@ -651,25 +651,25 @@ test "parser: test rejects in fn body" {
     );
 }
 
-test "parser: expr meta-kind ---- param and bounded return" {
+test "parser: Expr builtin type ---- param and bounded return" {
     try h.assertParser(std.testing.allocator, @src(),
-        \\pub fn html(comptime template: expr string) -> expr Component {
+        \\pub fn html(comptime template: @Expr<string>) -> @Expr<Component> {
         \\    @todo();
         \\}
     );
 }
 
-test "parser: expr meta-kind ---- bare return" {
+test "parser: Expr builtin type ---- bare return" {
     try h.assertParser(std.testing.allocator, @src(),
-        \\fn yaml(comptime template: expr string) -> expr {
+        \\fn yaml(comptime template: @Expr<string>) -> @Expr {
         \\    @todo();
         \\}
     );
 }
 
-test "parser: expr meta-kind ---- generic argument position" {
+test "parser: Expr builtin type ---- composed type position" {
     try h.assertParser(std.testing.allocator, @src(),
-        \\fn collect(comptime parts: array<expr Element>) -> expr {
+        \\fn collect(comptime first: ?@Expr<Element>) -> @Expr {
         \\    @todo();
         \\}
     );

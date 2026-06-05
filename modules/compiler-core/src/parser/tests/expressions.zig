@@ -658,23 +658,7 @@ test "parser: tagged call ---- method receiver" {
     );
 }
 
-test "parser: expr literal ---- with splices" {
-    try h.assertParser(std.testing.allocator, @src(),
-        \\pub fn html(comptime template: expr string) -> expr string {
-        \\    return expr { ${template} };
-        \\}
-    );
-}
-
-test "parser: expr literal ---- plain body without splices" {
-    try h.assertParser(std.testing.allocator, @src(),
-        \\fn f() -> expr i32 {
-        \\    return expr { 1 + 2 };
-        \\}
-    );
-}
-
-test "parser: expr literal ---- expr stays a plain identifier elsewhere" {
+test "parser: expr stays a plain identifier in expressions" {
     try h.assertParser(std.testing.allocator, @src(),
         \\val expr = 1;
         \\val y = expr + 2;

@@ -41,7 +41,6 @@ pub const TokenKind = enum {
     at, // @
     plusEqual, // +=
     builtinIdent, // @identifier (built-in function names)
-    dollarLeftBrace, // ${  (splice hole inside an `expr { … }` literal)
 
     // ── literals / names ──────────────────────────────────────────────────────
     numberLiteral,

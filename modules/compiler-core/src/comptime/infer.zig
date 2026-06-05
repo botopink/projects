@@ -887,13 +887,6 @@ fn appendTypeRefStr(buf: *std.ArrayListUnmanaged(u8), allocator: std.mem.Allocat
                 try appendTypeRefStr(buf, allocator, c);
             }
         },
-        .expr => |inner| {
-            try buf.appendSlice(allocator, "expr");
-            if (inner) |t| {
-                try buf.append(allocator, ' ');
-                try appendTypeRefStr(buf, allocator, t.*);
-            }
-        },
     }
 }
 
@@ -1021,7 +1014,16 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     // Infer parameter types.
     var paramTypes = try env.arena.alloc(*T.Type, f.params.len);
     for (f.params, 0..) |p, i| {
-        if (p.typeRef == .expr) {
+        if (p.typeRef.isExprType()) {
+            // An `@Expr<…>` parameter only exists at compile time — require the
+            // `comptime` modifier so the binding-time is visible in the signature.
+            if (p.modifier != .@"comptime") {
+                env.lastError = TypeError.custom(
+                    "an `@Expr` parameter requires the `comptime` modifier",
+                    "Write it as `comptime name: @Expr<T>` — template arguments are captured at compile time.",
+                ).withLoc(if (f.body.len > 0) f.body[0].expr.getLoc() else ast.Loc{ .line = 1, .col = 1 });
+                return error.TypeError;
+            }
             try exprParams.append(env.arena, .{ .paramIndex = i, .paramName = p.name });
         }
         if (p.typeRef == .typeparam) {
@@ -1080,6 +1082,12 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     const savedFnCtx = env.fnContext;
     env.fnContext = try contextInfoFromReturn(env, f.returnType);
     defer env.fnContext = savedFnCtx;
+
+    // A `-> @Expr<…>` return marks a template function: its body runs at
+    // comptime, enabling the `@expr`/`@code` construction builtins.
+    const savedInTemplate = env.inTemplateFn;
+    env.inTemplateFn = if (f.returnType) |rt| rt.isExprType() else false;
+    defer env.inTemplateFn = savedInTemplate;
 
     // Determine how `throw` is checked inside this body:
     //   - no declared return type  → unchecked (lenient: e.g. `catch throw …`)
@@ -1156,7 +1164,7 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     // A function returning `expr [T]` is a template function: its calls are
     // expanded at comptime (F6) and the declaration never reaches codegen.
     if (f.returnType) |rt| {
-        if (rt == .expr) try env.templateFns.put(f.name, f);
+        if (rt.isExprType()) try env.templateFns.put(f.name, f);
     }
 
     return env.funcType(paramTypes, retType);
@@ -1317,21 +1325,22 @@ fn captureExprArg(
 
 // ── template call-site expansion (expr-templates F6, V1 driver) ───────────────
 
-/// Expand a call to a template function (`-> expr [T]`) at the call site.
+/// Expand a call to a template function (`-> @Expr<…>`) at the call site.
 ///
 /// The V1 driver expands bodies of the form `return E` where `E` is an
-/// identifier naming an `expr` parameter (the captured template is spliced
-/// in), an `expr { … }` literal whose single expression optionally is a
-/// `${param}` hole, or any splice-free expression (value lifting, rule 3 —
-/// a constant *is* an expression). Richer bodies (template methods, control
-/// flow) need the comptime evaluation runtime — F6-full, not this driver.
+/// identifier naming an `@Expr` parameter (pass-through: the captured
+/// template splices in), `@expr(E)` (explicit value/expression lift), or
+/// `@code("…")` (parse generated source text into code). Construction is
+/// always explicit — there is no implicit value lifting. Richer bodies
+/// (template methods, control flow) need the comptime evaluation runtime —
+/// F6-full, not this driver.
 ///
-/// Splice + re-check (rule 4): the expansion is re-inferred in the *caller's*
-/// environment, then checked against a bounded return (`-> expr T`); a bare
-/// `-> expr` reveals the expansion's own structural type per call site. The
-/// expansion is recorded in `env.templateExpansions` (keyed by call loc) and
-/// substituted into the untyped AST by the transform pass — codegen never
-/// sees the call or the template function.
+/// Splice + re-check: the expansion is re-inferred in the *caller's*
+/// environment, then checked against a bounded return (`-> @Expr<T>`); a
+/// bare `-> @Expr` reveals the expansion's own structural type per call
+/// site. The expansion is recorded in `env.templateExpansions` (keyed by
+/// call loc) and substituted into the untyped AST by the transform pass —
+/// codegen never sees the call or the template function.
 fn expandTemplateCall(
     env: *Env,
     tfn: ast.FnDecl,
@@ -1339,22 +1348,33 @@ fn expandTemplateCall(
     retType: *T.Type,
     loc: ast.Loc,
 ) InferError!TypedExpr {
-    const expansion = expandableBodyExpr(tfn, captures) orelse {
+    const body = classifyTemplateBody(tfn, captures) orelse {
         env.lastError = TypeError.custom(
             "cannot expand this template function at compile time",
-            "The V1 expansion driver supports bodies of the form `return <expr param>`, `return expr { … }` (single expression, `${param}` holes), or a splice-free value. Template-method bodies (text/parts/lookup) require the comptime runtime (F6-full).",
+            "The V1 expansion driver supports bodies of the form `return <@Expr param>`, `return @expr(value)`, or `return @code(\"…\")` with a literal string. Template-method bodies (text/parts/lookup) require the comptime runtime (F6-full).",
         ).withLoc(loc);
         return error.TypeError;
+    };
+
+    const expansion: *const ast.Expr = switch (body) {
+        .capture, .lifted => |node| node,
+        .code => |src| parseCodeText(env, src) orelse {
+            env.lastError = TypeError.custom(
+                "the `@code(…)` text does not parse as an expression",
+                "The string handed to `@code` must be a single well-formed botopink expression.",
+            ).withLoc(loc);
+            return error.TypeError;
+        },
     };
 
     // Splice + re-check in the caller's environment.
     const typed = try inferExprTyped(env, expansion.*);
 
-    // Bounded `-> expr T`: verify the splice against the bound. A bare
-    // `-> expr` carries an unbound var shared by every call site of this fn —
+    // Bounded `-> @Expr<T>`: verify the splice against the bound. A bare
+    // `-> @Expr` carries an unbound var shared by every call site of this fn —
     // leave it untouched so each call reveals its own type independently.
     const rDeref = retType.deref();
-    if (rDeref.* == .named and std.mem.eql(u8, rDeref.named.name, "expr") and rDeref.named.args.len == 1) {
+    if (rDeref.* == .named and std.mem.eql(u8, rDeref.named.name, "Expr") and rDeref.named.args.len == 1) {
         const bound = rDeref.named.args[0];
         if (bound.deref().* != .typeVar) {
             try unifyAt(env, bound, typed.getType(), loc);
@@ -1365,10 +1385,21 @@ fn expandTemplateCall(
     return typed;
 }
 
-/// The single expression a V1-expandable template body reduces to (with a
-/// whole-body `${param}` hole substituted by its capture), or null when the
-/// body is not V1-expandable.
-fn expandableBodyExpr(tfn: ast.FnDecl, captures: []const template.CapturedExpr) ?*const ast.Expr {
+/// What a V1-expandable template body (`return E`) reduces to. Construction
+/// is explicit: no implicit value lifting — a constant only becomes code via
+/// `@expr(…)`, and generated source only via `@code(…)`.
+const TemplateBody = union(enum) {
+    /// `return <expr param>` — the captured argument splices in unchanged.
+    capture: *const ast.Expr,
+    /// `return @expr(E)` — lift the explicit expression as code.
+    lifted: *const ast.Expr,
+    /// `return @code("…")` — parse the source text into code.
+    code: []const u8,
+};
+
+/// Classify a template body for the V1 expansion driver, or null when the
+/// body needs the runtime-backed evaluator (F6-full).
+fn classifyTemplateBody(tfn: ast.FnDecl, captures: []const template.CapturedExpr) ?TemplateBody {
     if (tfn.body.len != 1) return null;
     const stmt = tfn.body[0];
     if (stmt.expr != .jump) return null;
@@ -1376,41 +1407,46 @@ fn expandableBodyExpr(tfn: ast.FnDecl, captures: []const template.CapturedExpr) 
     const ret = stmt.expr.jump.kind.@"return" orelse return null;
 
     switch (ret.*) {
-        // `return expr { … }` — splice the quoted code.
-        .comptime_ => |ct| switch (ct.kind) {
-            .exprLiteral => |el| {
-                if (el.body.len != 1) return null;
-                return expandableQuotedExpr(&el.body[0].expr, captures);
-            },
-            else => return null,
-        },
-        // `return template` — identity: splice the captured literal.
+        // `return template` — pass-through: an @Expr param IS an expr value.
         .identifier => |id| {
             if (id.kind != .ident) return null;
-            if (captureNodeFor(captures, id.kind.ident)) |node| return node;
-            // A library binding lifts as a reference (V1: same-module scope).
-            return ret;
+            const node = captureNodeFor(captures, id.kind.ident) orelse return null;
+            return .{ .capture = node };
         },
-        // Anything splice-free lifts as written (constants are expressions).
-        else => return if (isV1SpliceFree(ret)) ret else null,
+        // `return @expr(E)` / `return @code("…")` — explicit construction.
+        .call => |c| {
+            if (c.kind != .call) return null;
+            const cc = c.kind.call;
+            if (!cc.is_builtin or cc.args.len != 1) return null;
+            const arg = cc.args[0].value;
+            if (std.mem.eql(u8, cc.callee, "expr")) {
+                return if (isV1Liftable(arg)) .{ .lifted = arg } else null;
+            }
+            if (std.mem.eql(u8, cc.callee, "code")) {
+                if (arg.* == .literal and arg.literal.kind == .stringLit) {
+                    return .{ .code = arg.literal.kind.stringLit };
+                }
+                return null;
+            }
+            return null;
+        },
+        else => return null,
     }
 }
 
-/// Resolve the inner expression of a quoted `expr { … }` body: a whole-body
-/// `${param}` hole substitutes its capture; otherwise the expression must be
-/// splice-free (partial substitution needs a deep copy — F6-full).
-fn expandableQuotedExpr(e: *const ast.Expr, captures: []const template.CapturedExpr) ?*const ast.Expr {
-    if (e.* == .comptime_ and e.comptime_.kind == .splice) {
-        const inner = e.comptime_.kind.splice;
-        if (inner.* == .identifier and inner.identifier.kind == .ident) {
-            return captureNodeFor(captures, inner.identifier.kind.ident);
-        }
-        return null;
-    }
-    return if (isV1SpliceFree(e)) e else null;
+/// Parse `@code` source text into an expression (allocated in the env arena).
+/// Null when the text fails to lex/parse as a single expression.
+fn parseCodeText(env: *Env, src: []const u8) ?*const ast.Expr {
+    var lx = Lexer.init(src);
+    const tokens = lx.scanAll(env.arena) catch return null;
+    var p = Parser.init(tokens);
+    const node = env.arena.create(ast.Expr) catch return null;
+    node.* = p.parseExpr(env.arena) catch return null;
+    if (!p.check(.endOfFile)) return null;
+    return node;
 }
 
-/// The captured argument bound to the `expr` parameter named `name`.
+/// The captured argument bound to the `@Expr` parameter named `name`.
 fn captureNodeFor(captures: []const template.CapturedExpr, name: []const u8) ?*const ast.Expr {
     for (captures) |cap| {
         if (std.mem.eql(u8, cap.paramName, name)) return cap.node;
@@ -1418,52 +1454,47 @@ fn captureNodeFor(captures: []const template.CapturedExpr, name: []const u8) ?*c
     return null;
 }
 
-/// True when `e` contains no `${…}` splice and only V1-liftable forms
-/// (literals, identifiers, operators, calls, collections). Control flow is
-/// conservatively not expandable in the V1 driver.
-fn isV1SpliceFree(e: *const ast.Expr) bool {
+/// True when `e` is a V1-liftable expression for `@expr(…)` — literals,
+/// identifiers, operators, calls, collections. Control flow is conservatively
+/// left to the runtime-backed evaluator (F6-full).
+fn isV1Liftable(e: *const ast.Expr) bool {
     return switch (e.*) {
         .comptime_ => |ct| switch (ct.kind) {
-            .splice => false,
-            .exprLiteral => |el| blk: {
-                for (el.body) |*s| if (!isV1SpliceFree(&s.expr)) break :blk false;
-                break :blk true;
-            },
-            .comptimeExpr => |inner| isV1SpliceFree(inner),
+            .comptimeExpr => |inner| isV1Liftable(inner),
             else => false,
         },
         .literal => |lit| switch (lit.kind) {
             .stringTemplate => |t| blk: {
                 for (t.parts) |p| switch (p) {
                     .text => {},
-                    .expr => |hole| if (!isV1SpliceFree(hole)) break :blk false,
+                    .expr => |hole| if (!isV1Liftable(hole)) break :blk false,
                 };
                 break :blk true;
             },
             else => true,
         },
         .identifier => |id| switch (id.kind) {
-            .identAccess => |ia| isV1SpliceFree(ia.receiver),
+            .identAccess => |ia| isV1Liftable(ia.receiver),
             else => true,
         },
-        .binaryOp => |b| isV1SpliceFree(b.lhs) and isV1SpliceFree(b.rhs),
-        .unaryOp => |u| isV1SpliceFree(u.expr),
+        .binaryOp => |b| isV1Liftable(b.lhs) and isV1Liftable(b.rhs),
+        .unaryOp => |u| isV1Liftable(u.expr),
         .call => |c| switch (c.kind) {
             .call => |cc| blk: {
-                if (cc.receiver) |r| if (!isV1SpliceFree(r)) break :blk false;
-                for (cc.args) |a| if (!isV1SpliceFree(a.value)) break :blk false;
+                if (cc.receiver) |r| if (!isV1Liftable(r)) break :blk false;
+                for (cc.args) |a| if (!isV1Liftable(a.value)) break :blk false;
                 break :blk true;
             },
-            .pipeline => |p| isV1SpliceFree(p.lhs) and isV1SpliceFree(p.rhs),
+            .pipeline => |p| isV1Liftable(p.lhs) and isV1Liftable(p.rhs),
         },
         .collection => |col| switch (col.kind) {
-            .grouped => |g| isV1SpliceFree(g),
+            .grouped => |g| isV1Liftable(g),
             .arrayLit => |al| blk: {
-                for (al.elems) |*elem| if (!isV1SpliceFree(elem)) break :blk false;
+                for (al.elems) |*elem| if (!isV1Liftable(elem)) break :blk false;
                 break :blk true;
             },
             .tupleLit => |tl| blk: {
-                for (tl.elems) |*elem| if (!isV1SpliceFree(elem)) break :blk false;
+                for (tl.elems) |*elem| if (!isV1Liftable(elem)) break :blk false;
                 break :blk true;
             },
             else => false,
@@ -1513,6 +1544,32 @@ fn inferBuiltinCallReturnType(
     typedArgs: []ast.CallArgOf(.typed),
     typedTrailing: []ast.TrailingLambdaOf(.typed),
 ) InferError!*T.Type {
+    // ── `@Expr` construction builtins (expr-templates) ───────────────────────
+    // Construction is explicit: `@expr(value)` lifts a comptime value as code
+    // and `@code(text)` parses generated source text. Both only make sense
+    // inside a template function (`-> @Expr<…>`), whose body runs at comptime.
+    if (std.mem.eql(u8, callee, "expr") or std.mem.eql(u8, callee, "code")) {
+        if (!env.inTemplateFn) {
+            var e = TypeError.custom(
+                "`@expr`/`@code` build comptime code — only valid inside a template function",
+                "Declare the enclosing fn with a `-> @Expr<…>` return type.",
+            );
+            if (typedArgs.len >= 1) e = e.withLoc(typedArgs[0].value.getLoc());
+            env.lastError = e;
+            return error.TypeError;
+        }
+        if (std.mem.eql(u8, callee, "expr")) {
+            // `@expr(v)`: the result is an expression OF the value's type.
+            const inner: *T.Type = if (typedArgs.len >= 1) typedArgs[0].value.getType() else try env.freshVar();
+            return env.namedTypeArgs("Expr", &.{inner});
+        }
+        // `@code(text)`: the produced expression's type is revealed at expansion.
+        if (typedArgs.len >= 1) {
+            try unifyAt(env, try env.namedType("string"), typedArgs[0].value.getType(), typedArgs[0].value.getLoc());
+        }
+        return env.namedTypeArgs("Expr", &.{try env.freshVar()});
+    }
+
     if (std.mem.eql(u8, callee, "block")) {
         if (typedTrailing.len > 0) {
             const body = typedTrailing[0].body;
@@ -1655,20 +1712,21 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             // `?T` — normalise it so both share one representation (and one set of
             // `.map` / `.flatMap` / `.unwrapOr` lowerings).
             const name = if (b.is_builtin and std.mem.eql(u8, b.name, "Option")) "optional" else b.name;
+            // Bare `@Expr` defers its type argument: resolve it to a fresh var,
+            // revealed at the call-site expansion. `@Expr<T>` is encoded like
+            // `optional`/`array` — a named type with one arg, so structural
+            // unification gives `@Expr<T> ~ @Expr<U> iff T ~ U` for free.
+            if (b.is_builtin and std.mem.eql(u8, b.name, "Expr") and b.args.len == 0) {
+                const exprArgs = try env.arena.alloc(*T.Type, 1);
+                exprArgs[0] = try env.freshVar();
+                return env.namedTypeArgs("Expr", exprArgs);
+            }
             return env.namedTypeArgs(name, args);
         },
         // A comptime typeparam accepts a value of any type at the call site;
         // its constraints are validated separately (see `validateTypeparams`).
         // Resolve to a fresh variable so unification against it never fails.
         .typeparam => return env.freshVar(),
-        .expr => |inner| {
-            // `expr T` is encoded like `optional`/`array`: a named type with one
-            // arg, so structural unification gives `expr T ~ expr U iff T ~ U`.
-            // Bare `expr` gets a fresh var, resolved at call-site expansion (F6).
-            const args = try env.arena.alloc(*T.Type, 1);
-            args[0] = if (inner) |t| try resolveTypeRefInContext(env, t.*, genericMap) else try env.freshVar();
-            return env.namedTypeArgs("expr", args);
-        },
     }
 }
 
@@ -2694,8 +2752,12 @@ fn inferTemplateMethod(
     var op: envMod.TemplateOp = undefined;
     var retType: *T.Type = undefined;
 
-    if (std.mem.eql(u8, named.name, "expr")) {
-        if (std.mem.eql(u8, callee, "text")) {
+    if (std.mem.eql(u8, named.name, "Expr")) {
+        if (std.mem.eql(u8, callee, "value")) {
+            // The expression's value type slot — what the code evaluates to.
+            op = .value;
+            retType = if (named.args.len >= 1) named.args[0] else try env.freshVar();
+        } else if (std.mem.eql(u8, callee, "text")) {
             op = .text;
             retType = try env.namedType("string");
         } else if (std.mem.eql(u8, callee, "parts")) {
@@ -2719,7 +2781,7 @@ fn inferTemplateMethod(
             // code without quoting (`expr { … }` covers the pattern case).
             op = .build;
             try unifyArg(env, typedArgs, 0, try env.namedType("string"));
-            retType = try env.namedTypeArgs("expr", &.{try env.freshVar()});
+            retType = try env.namedTypeArgs("Expr", &.{try env.freshVar()});
         } else if (std.mem.eql(u8, callee, "lookup")) {
             op = .lookup;
             try unifyArg(env, typedArgs, 0, try env.namedType("string"));
@@ -2739,7 +2801,7 @@ fn inferTemplateMethod(
         if (!std.mem.eql(u8, callee, "ref")) return null;
         op = .ref;
         // A spliceable reference: `expr` of a type revealed at expansion.
-        retType = try env.namedTypeArgs("expr", &.{try env.freshVar()});
+        retType = try env.namedTypeArgs("Expr", &.{try env.freshVar()});
     } else return null;
 
     try env.templateLowerings.put(loc, op);
@@ -3339,40 +3401,6 @@ fn inferComptimeExpr(env: *Env, ct: ast.ComptimeExprOf(.untyped), loc: ast.Loc) 
             return TypedExpr{ .comptime_ = .{ .loc = loc, .type_ = bodyType, .kind = .{ .comptimeBlock = .{
                 .body = typedBody,
             } } } };
-        },
-
-        .exprLiteral => |el| {
-            // `expr { … }` — quoted-code literal (expr-templates F5). The body
-            // is inferred in the scope where the literal is *written* (hygiene
-            // by provenance: a library's literal resolves in the library); the
-            // literal's own type is `expr<T>` of the body's trailing expression.
-            env.exprLiteralDepth += 1;
-            defer env.exprLiteralDepth -= 1;
-            const typedBody = try inferStmtsTyped(env, el.body);
-            const innerType = if (typedBody.len > 0)
-                typedBody[typedBody.len - 1].expr.getType()
-            else
-                try env.freshVar();
-            return TypedExpr{ .comptime_ = .{ .loc = loc, .type_ = try env.namedTypeArgs("expr", &.{innerType}), .kind = .{ .exprLiteral = .{
-                .body = typedBody,
-            } } } };
-        },
-
-        .splice => |e| {
-            // `${e}` — splice hole: only valid inside an `expr { … }` literal;
-            // `e` must be an `expr U` value and the hole's own type is `U`.
-            if (env.exprLiteralDepth == 0) {
-                env.lastError = TypeError.custom(
-                    "a `${…}` splice is only valid inside an `expr { … }` literal",
-                    "Wrap the surrounding code in `expr { … }` — outside quoted code there is nothing to splice into.",
-                ).withLoc(loc);
-                return error.TypeError;
-            }
-            const typed = try inferExprTyped(env, e.*);
-            const innerTy = try env.freshVar();
-            try unifyAt(env, try env.namedTypeArgs("expr", &.{innerTy}), typed.getType(), e.getLoc());
-            const typedPtr = try makeTypedPtr(env, typed);
-            return TypedExpr{ .comptime_ = .{ .loc = loc, .type_ = innerTy, .kind = .{ .splice = typedPtr } } };
         },
 
         .assert => |a| {

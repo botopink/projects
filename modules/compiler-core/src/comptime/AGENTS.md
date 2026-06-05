@@ -24,7 +24,7 @@ comptime/
 ├── render.zig         ← comptime value → target literal
 ├── specialize.zig     ← `SpecializedFn`, `SpecCache`, `specialize()`
 ├── transform.zig      ← `Aggregator` — drives the full transform pass
-├── template.zig       ← `expr` templates: CapturedExpr, ScopeSnapshot, fail diagnostics (F4)
+├── template.zig       ← `@Expr` templates: CapturedExpr, ScopeSnapshot, fail diagnostics
 ├── snapshot.zig       ← comptime snapshot helpers
 ├── stdlib/            ← std prelude loader — see stdlib/AGENTS.md
 │   └── prelude.zig        ← @embedFile of libs/std/src/*.bp (std_prelude module root)
@@ -39,7 +39,7 @@ comptime/
 │   ├── variants.zig       ← variant/record-update/pattern/@print/AST probes
 │   ├── exhaustiveness.zig ← case exhaustiveness (+errors)
 │   ├── effects.zig        ← throw/context/@Result effect checking
-│   └── templates.zig      ← expr capture / scope snapshot / template methods (F4)
+│   └── templates.zig      ← @Expr capture / scope snapshot / methods / expansion
 └── runtime/           ← Node.js + Erlang eval backends — see runtime/AGENTS.md
 ```
 
@@ -56,7 +56,7 @@ comptime/
 | `render.zig` | Converts an evaluated comptime value into a target literal. |
 | `specialize.zig` | Pure AST specialization — unroll loops, fold static if/case. |
 | `transform.zig` | `Aggregator` — drives specialize + rewrite + inline + dead-code. |
-| `template.zig` | `expr` template infrastructure (F4): `CapturedExpr` (an argument bound to a `comptime p: expr T` param, captured unevaluated with provenance), `ScopeSnapshot` (V1 origin scope: caller's top-level decls + imports, serializable via `toJsonAlloc`), and `mapSpanToLoc`/`failDiagnostic` (rustc-style `fail`/`failAt` diagnostics pointing inside the caller's `"""…"""`). |
+| `template.zig` | `@Expr` template infrastructure: `CapturedExpr` (an argument bound to a `comptime p: @Expr<T>` param, captured unevaluated with provenance), `ScopeSnapshot` (V1 origin scope: caller's top-level decls + imports, serializable via `toJsonAlloc`), `contextJsonAlloc` (the full second-layer handle), and `mapSpanToLoc`/`failDiagnostic` (rustc-style `fail`/`failAt` diagnostics pointing inside the caller's `"""…"""`). |
 | `snapshot.zig` | Snapshot helpers. |
 | `tests.zig` | Barrel aggregating `tests/<feature>.zig`; harness in `tests/helpers.zig`. |
 
@@ -67,57 +67,51 @@ try assertTypes(alloc, source, &.{ .{ "x", "i32" }, .{ "f", "fn(i32) i32" } });
 try assertTypeErrorSnap(alloc, @src(), source);
 ```
 
-## `expr` templates (expr-templates F4)
+## `@Expr` templates (expr-templates)
 
-An argument bound to a `comptime p: expr T` parameter is type-checked in the
-caller and captured **unevaluated**. Wiring in `infer.zig` / `env.zig`:
+`@Expr<E>` is the builtin expression type (encoded as named type `"Expr"`
+with one arg; a bare `@Expr` resolves its arg to a fresh var). There is no
+`expr` keyword — only `type` remains a meta-kind; `@Expr` params require the
+`comptime` modifier via a semantic check in `inferFnDecl`.
 
-- `inferFnDecl` records `expr` meta-kind params per function
-  (`env.fnExprParams`, mirroring `fnTypeparams`).
+An argument bound to a `comptime p: @Expr<T>` parameter is type-checked in
+the caller and captured **unevaluated**. Wiring in `infer.zig` / `env.zig`:
+
+- `inferFnDecl` records `@Expr` params per function (`env.fnExprParams`) and
+  registers fns returning `@Expr<…>` as template fns (`env.templateFns`);
+  `env.inTemplateFn` gates the construction builtins while their bodies infer.
 - `buildScopeSnapshot` (start of `inferProgram*`) collects the module's
-  top-level decls + imports into `env.scopeSnapshot` — the V1 origin scope for
-  `lookup` (function locals are not visible).
+  top-level decls + imports into `env.scopeSnapshot` — the V1 origin scope
+  for `lookup`/`bindings` (function locals are not visible).
 - At a call site, `captureExprArg` unifies the argument's type against the
-  *inner* `T` of `expr T` (the argument is an expression *of* `T`), enforces
-  the V1 literal rule (must be a literal string — single or multiline,
-  interpolation allowed), and records a `template.CapturedExpr` in
-  `env.exprCaptures` (keyed by call loc) with text/parts, the opening-line
-  location (the lexer stamps multiline literals with their *closing* line),
-  module path, and the scope snapshot.
-- `inferTemplateMethod` resolves the comptime-only methods `text`/`parts`/
-  `source`/`context`/`lookup`/`bindings`/`build`/`fail`/`failAt` on `expr`
-  receivers and `ref()` on `Binding`, recording `env.templateLowerings`
-  (keyed by call loc) for the expansion pass (F6). The data model (`Span`,
-  `Part`, `Binding`, `Source`, `Context`) is plain stdlib —
-  `libs/std/src/syntax.bp`, preloaded by `registerStdlib`.
-  `template.contextJsonAlloc` serializes a capture's full second-layer
-  context (file/line/col, shape, text, scope) — the handle the
-  runtime-backed evaluator (F6-full) hands to `source()`/`context()`/
-  `bindings()`; `build(source)` is how a DSL emits code as text, parsed in
-  the receiver's origin scope.
+  inner `T` of `@Expr<T>`, enforces the V1 literal rule (must be a literal
+  string), and records a `template.CapturedExpr` in `env.exprCaptures`
+  (keyed by call loc) with text/parts, the opening-line location (the lexer
+  stamps multiline literals with their *closing* line), module path, and the
+  scope snapshot. `template.contextJsonAlloc` serializes the whole handle
+  for the runtime-backed evaluator (F6-full).
+- `inferTemplateMethod` resolves the comptime-only methods on `@Expr`
+  receivers (`value`/`text`/`parts`/`source`/`context`/`lookup`/`bindings`/
+  `build`/`fail`/`failAt`) and `ref()` on `Binding`, recording
+  `env.templateLowerings` (keyed by call loc). The contract is declared as
+  `interface Expr<E>` in `libs/std/src/syntax.bp` (plain stdlib, preloaded
+  by `registerStdlib`), alongside `Span`/`Part`/`Binding`/`Source`/`Context`.
+- Construction is **explicit** — no implicit value lifting. The builtins
+  `@expr(value)` (lift a comptime value as code) and `@code(text)` (parse
+  generated source text) are typed in `inferBuiltinCallReturnType` and only
+  valid inside a template function.
 - `template.failDiagnostic`/`mapSpanToLoc` build the rustc-style diagnostic
   whose span lands inside the caller's `"""…"""` literal.
 
-The `expr { … }` quoted-code literal and `${…}` splice holes (F5) are
-`Expr.comptime_` kinds (`exprLiteral`, `splice`; token `dollarLeftBrace`).
-`inferComptimeExpr` types a literal as `expr<T>` of its trailing expression —
-the body is inferred in the scope where the literal is *written* (hygiene by
-provenance) — and a splice as the `U` of its `expr U` operand; splices outside
-a literal are a type error (`env.exprLiteralDepth`). Both nodes exist only at
-comptime: codegen backends guard them `unreachable` (the expansion pass
-replaces them before codegen).
-
-Call-site expansion (F6, V1 driver): a fn returning `expr [T]` registers in
-`env.templateFns`; `expandTemplateCall` (inferCallExpr) expands its calls
-during inference — V1 bodies are `return <expr param>` (identity splice),
-`return expr { … }` with a whole-body `${param}` hole, or any splice-free
-expression (value lifting); richer bodies raise a TypeError until the
-runtime-backed evaluator (F6-full) lands. The expansion is re-inferred in the
-caller's env (splice + re-check), unified against a bounded `-> expr T`
-(bare `-> expr` reveals the type per call site), and recorded in
-`env.templateExpansions` (loc-keyed); the transform pass substitutes the
-untyped AST at those locs and drops template fns (never specialized, never
-emitted).
+Call-site expansion (V1 driver): `expandTemplateCall` (inferCallExpr) expands
+template calls during inference — V1 bodies are `return <@Expr param>`
+(pass-through), `return @expr(E)`, or `return @code("…")` with a literal
+string; richer bodies raise a TypeError until the runtime-backed evaluator
+(F6-full) lands. The expansion is re-inferred in the caller's env (splice +
+re-check), unified against a bounded `-> @Expr<T>` (bare `-> @Expr` reveals
+the type per call site), and recorded in `env.templateExpansions`
+(loc-keyed); the transform pass substitutes the untyped AST at those locs
+and drops template fns (never specialized, never emitted).
 
 ## `@Context<B, R>` capability inference (F7)
 

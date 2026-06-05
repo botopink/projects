@@ -1,7 +1,7 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-pub fn html(comptime template: expr string) -> expr string {
-    return expr { ${template} };
+pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
+    return template;
 }
 val name = "world";
 val page = html """
@@ -30,7 +30,7 @@ _botopink_main();
 
 ----- TYPESCRIPT TYPEDEF -- main.d.ts
 ```typescript
-export declare function html(template: ): any;
+export declare function html(template: ): Expr<string>;
 
 
 

@@ -1,7 +1,7 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-pub fn port() -> expr {
-    return expr { 8080 };
+pub fn port() -> @Expr {
+    return @expr(8080);
 }
 fn main() {
     val p = port() + 1;
@@ -24,7 +24,7 @@ _botopink_main();
 
 ----- TYPESCRIPT TYPEDEF -- main.d.ts
 ```typescript
-export declare function port(): any;
+export declare function port(): Expr<>;
 
 
 

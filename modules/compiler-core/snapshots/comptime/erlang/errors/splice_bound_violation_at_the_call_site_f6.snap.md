@@ -1,6 +1,6 @@
 ----- SOURCE CODE
-pub fn bad() -> expr i32 {
-    return expr { "not an int" };
+pub fn bad() -> @Expr<i32> {
+    return @expr("not an int");
 }
 val d = bad();
 

@@ -885,27 +885,6 @@ pub const Formatter = struct {
                     doc = try this.concat(doc, try this.fmtExpr(ap.handler.*));
                     break :blk doc;
                 },
-
-                // `expr { … }` quoted-code literal (expr-templates F5).
-                .exprLiteral => |el| blk: {
-                    var items = try this.arena.alloc(*const Doc, el.body.len);
-                    for (el.body, 0..) |s, i| {
-                        const exprDoc = try this.fmtExpr(s.expr);
-                        items[i] = try this.concat(exprDoc, try this.text(";"));
-                    }
-                    const inner = try this.join(items, this.hardline());
-                    break :blk this.concat(
-                        try this.text("expr "),
-                        try this.surroundBreak("{", inner, "}"),
-                    );
-                },
-
-                // `${e}` splice hole inside an `expr { … }` literal (F5).
-                .splice => |se| this.concatAll(&.{
-                    try this.text("${"),
-                    try this.fmtExpr(se.*),
-                    try this.text("}"),
-                }),
             },
         };
     }
@@ -1991,6 +1970,10 @@ pub const Formatter = struct {
                     this.nil()
                 else
                     try this.join(argDocs, try this.text(", "));
+                // A bare builtin type (`@Expr`) round-trips without `<>`.
+                if (b.is_builtin and b.args.len == 0) {
+                    break :blk this.concat(try this.text("@"), try this.text(b.name));
+                }
                 break :blk if (b.is_builtin)
                     this.concatAll(&.{
                         try this.text("@"),
@@ -2015,13 +1998,6 @@ pub const Formatter = struct {
                     try this.text("type "),
                     try this.join(docs, try this.text(" | ")),
                 );
-            },
-            .expr => |inner| blk: {
-                if (inner) |t| break :blk this.concat(
-                    try this.text("expr "),
-                    try this.fmtTypeRef(t.*),
-                );
-                break :blk this.text("expr");
             },
         };
     }

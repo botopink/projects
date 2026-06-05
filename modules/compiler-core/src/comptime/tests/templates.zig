@@ -1,5 +1,5 @@
-//! comptime: `expr` template capture, scope snapshot, template methods, and
-//! `fail`/`failAt` span mapping (expr-templates F4).
+//! comptime: `@Expr` template capture, scope snapshot, template methods,
+//! `fail`/`failAt` span mapping, and call-site expansion (expr-templates).
 
 const std = @import("std");
 const lexerMod = @import("../../lexer.zig");
@@ -57,7 +57,7 @@ test "template: expr param capture ---- plain string arg arrives unevaluated" {
     defer env.deinit();
 
     try inferInto(&env, alloc,
-        \\pub fn sql(comptime q: expr string) -> expr string {
+        \\pub fn sql(comptime q: @Expr<string>) -> @Expr<string> {
         \\    return q;
         \\}
         \\val stmt = sql "SELECT 1";
@@ -84,7 +84,7 @@ test "template: expr param capture ---- multiline template with hole keeps parts
     defer env.deinit();
 
     try inferInto(&env, alloc,
-        \\pub fn html(comptime template: expr string) -> expr string {
+        \\pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
         \\    return template;
         \\}
         \\val c = html """
@@ -115,7 +115,7 @@ test "template: scope snapshot lookup ---- hit and miss" {
         \\pub struct Button {
         \\    label: string,
         \\}
-        \\pub fn html(comptime template: expr string) -> expr string {
+        \\pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
         \\    return template;
         \\}
         \\val c = html """
@@ -148,7 +148,8 @@ test "template: expr methods typecheck and record lowerings" {
     defer env.deinit();
 
     try inferInto(&env, alloc,
-        \\pub fn html(comptime template: expr string, sp: Span) -> expr string {
+        \\pub fn html(comptime template: @Expr<string>, sp: Span) -> @Expr<string> {
+        \\    val v = template.value();
         \\    val t = template.text();
         \\    val ps = template.parts();
         \\    val where = template.source();
@@ -160,12 +161,12 @@ test "template: expr methods typecheck and record lowerings" {
         \\    template.fail("no component");
         \\    return template;
         \\}
-        \\pub fn mk(b: Binding) -> expr {
+        \\pub fn mk(b: Binding) -> @Expr {
         \\    return b.ref();
         \\}
     );
 
-    try std.testing.expectEqual(@as(usize, 10), env.templateLowerings.count());
+    try std.testing.expectEqual(@as(usize, 11), env.templateLowerings.count());
     var counts = std.enums.EnumArray(envMod.TemplateOp, usize).initFill(0);
     var it = env.templateLowerings.valueIterator();
     while (it.next()) |op| counts.set(op.*, counts.get(op.*) + 1);
@@ -182,7 +183,7 @@ test "template: fail span maps into the caller's template" {
     defer env.deinit();
 
     const src =
-        \\pub fn html(comptime template: expr string) -> expr string {
+        \\pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
         \\    return template;
         \\}
         \\val c = html """
@@ -215,7 +216,7 @@ test "template: fail span maps into the caller's template" {
 
 test "infer error: expr argument must be a literal string (V1)" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\pub fn html(comptime template: expr string) -> expr string {
+        \\pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
         \\    return template;
         \\}
         \\val tpl = "<p></p>";
@@ -225,7 +226,7 @@ test "infer error: expr argument must be a literal string (V1)" {
 
 test "infer error: expr argument is typed in the caller against inner T" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\pub fn check(comptime cond: expr bool) -> expr bool {
+        \\pub fn check(comptime cond: @Expr<bool>) -> @Expr<bool> {
         \\    return cond;
         \\}
         \\val c = check("not a bool");
@@ -243,7 +244,7 @@ test "template: context exposes declaration position and scope for second-layer 
         \\pub struct Button {
         \\    label: string,
         \\}
-        \\pub fn dsl(comptime template: expr string) -> expr string {
+        \\pub fn dsl(comptime template: @Expr<string>) -> @Expr<string> {
         \\    return template;
         \\}
         \\val c = dsl """
@@ -261,7 +262,7 @@ test "template: context exposes declaration position and scope for second-layer 
 
 test "infer: context/source/bindings/build methods typecheck against std.syntax" {
     try h.assertInfersOk(std.testing.allocator,
-        \\pub fn dsl(comptime template: expr string) -> expr string {
+        \\pub fn dsl(comptime template: @Expr<string>) -> @Expr<string> {
         \\    val ctx = template.context();
         \\    val file: string = ctx.source.file;
         \\    val line: i32 = ctx.source.line;
@@ -272,64 +273,9 @@ test "infer: context/source/bindings/build methods typecheck against std.syntax"
     );
 }
 
-test "template: expr literal types as expr of its body (F5)" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
-    var env = try freshTestEnv(alloc);
-    defer env.deinit();
-
-    try inferInto(&env, alloc,
-        \\val greeting = "olá";
-        \\pub fn quoted() -> expr string {
-        \\    return expr { greeting };
-        \\}
-    );
-    // Hygiene V1: `greeting` resolved in the defining scope during inference.
-    const fnTy = env.lookup("quoted").?.deref();
-    const retTy = fnTy.func.ret.deref();
-    try std.testing.expectEqualStrings("expr", retTy.named.name);
-    try std.testing.expectEqualStrings("string", retTy.named.args[0].deref().named.name);
-}
-
-test "infer: splice composes expr values inside an expr literal (F5)" {
-    try h.assertInfersOk(std.testing.allocator,
-        \\pub fn html(comptime template: expr string) -> expr string {
-        \\    return expr { ${template} };
-        \\}
-        \\pub fn wrap(b: Binding) -> expr {
-        \\    return expr { ${b.ref()} };
-        \\}
-    );
-}
-
-test "infer error: splice outside an expr literal (F5)" {
-    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\pub fn html(comptime template: expr string) -> expr string {
-        \\    return ${template};
-        \\}
-    );
-}
-
-test "infer error: splice of a non-expr value (F5)" {
-    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\pub fn bad(comptime template: expr string) -> expr string {
-        \\    return expr { ${"plain string"} };
-        \\}
-    );
-}
-
-test "infer error: unbound name inside expr literal resolves in defining scope (F5)" {
-    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\pub fn quoted() -> expr string {
-        \\    return expr { missing_name };
-        \\}
-    );
-}
-
 test "comptime: template fn with expr param compiles through the pipeline" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\pub fn html(comptime template: expr string) -> expr string {
+        \\pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
         \\    return template;
         \\}
         \\val c = html """
@@ -348,8 +294,8 @@ test "template: bounded expansion is transparent to the caller (F6)" {
     defer env.deinit();
 
     try inferInto(&env, alloc,
-        \\pub fn html(comptime template: expr string) -> expr string {
-        \\    return expr { ${template} };
+        \\pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
+        \\    return template;
         \\}
         \\val c = html """
         \\<p>hi</p>
@@ -370,8 +316,8 @@ test "template: bare expr reveals the expansion's type per call site (F6)" {
     defer env.deinit();
 
     try inferInto(&env, alloc,
-        \\pub fn answer() -> expr {
-        \\    return expr { 42 };
+        \\pub fn answer() -> @Expr {
+        \\    return @expr(42);
         \\}
         \\val n = answer();
         \\val m = n + 1;
@@ -382,7 +328,7 @@ test "template: bare expr reveals the expansion's type per call site (F6)" {
     try std.testing.expectEqualStrings("i32", env.lookup("n").?.deref().named.name);
 }
 
-test "template: value lifting ---- a constant is an expression (F6)" {
+test "template: explicit value lift via @expr builtin (F6)" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
@@ -390,8 +336,8 @@ test "template: value lifting ---- a constant is an expression (F6)" {
     defer env.deinit();
 
     try inferInto(&env, alloc,
-        \\pub fn port() -> expr {
-        \\    return 8080;
+        \\pub fn port() -> @Expr {
+        \\    return @expr(8080);
         \\}
         \\val p = port();
     );
@@ -400,8 +346,8 @@ test "template: value lifting ---- a constant is an expression (F6)" {
 
 test "infer error: splice bound violation at the call site (F6)" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\pub fn bad() -> expr i32 {
-        \\    return expr { "not an int" };
+        \\pub fn bad() -> @Expr<i32> {
+        \\    return @expr("not an int");
         \\}
         \\val d = bad();
     );
@@ -409,7 +355,7 @@ test "infer error: splice bound violation at the call site (F6)" {
 
 test "infer error: template body not expandable by the V1 driver (F6)" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\pub fn hard(comptime t: expr string) -> expr string {
+        \\pub fn hard(comptime t: @Expr<string>) -> @Expr<string> {
         \\    val x = t.text();
         \\    return t;
         \\}

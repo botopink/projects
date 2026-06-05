@@ -2024,9 +2024,6 @@ const Emitter = struct {
                     try self.w(";");
                     try self.w(" } })()");
                 },
-                // `expr { … }` / `${…}` exist only at comptime; the call-site
-                // expansion pass (expr-templates F6) replaces them before codegen.
-                .exprLiteral, .splice => unreachable,
             },
         }
     }

@@ -1,5 +1,5 @@
 ----- SOURCE CODE
-pub fn html(comptime template: expr string) -> expr string {
+pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
     return template;
 }
 val c = html """

@@ -1180,9 +1180,10 @@ pub fn parseParam(this: *This, alloc: std.mem.Allocator) ParseError!Param {
 
     // ── plain type (use full TypeRef to support arrays, optionals, etc.) ─
     var typeRef = try this.parseTypeRef(alloc);
-    // Meta-kind params (`type`, `expr T`) only exist at compile time — require
-    // the `comptime` modifier so the binding-time is visible in the signature.
-    if ((typeRef == .typeparam or typeRef == .expr) and modifier != .@"comptime") {
+    // Meta-kind params (`type`) only exist at compile time — require the
+    // `comptime` modifier so the binding-time is visible in the signature.
+    // (`@Expr<…>` params get the same rule as a semantic check in inference.)
+    if (typeRef == .typeparam and modifier != .@"comptime") {
         typeRef.deinit(alloc);
         this.parseError = .{
             .kind = .metaKindRequiresComptime,

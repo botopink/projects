@@ -1164,32 +1164,30 @@ expressions that are **spliced and re-type-checked at the call site** —
 zero-runtime-cost DSLs whose result types the language fully understands
 after expansion.
 
-The feature stands on two **meta-kind** keywords (contextual — plain
-identifiers outside type positions):
-
-| keyword | reads as |
-|---|---|
-| `type` | "this parameter **is a type**" (generic constraint position) |
-| `expr T` / `expr` | "this **is an expression** of `T`" (unevaluated input / spliceable output) |
-
-A parameter whose type is a meta-kind must carry the `comptime` modifier.
+The type surface is the builtin **`@Expr<E>`** (like `@Result`/`@Option`):
+a *type marker* for unevaluated code of type `E`. There is no `expr` keyword
+— `@Expr<E>` marks types, and code values are only **constructed explicitly**
+through builtins.
 
 ### `type` meta-kind (generic constraints)
+
+A parameter whose type is the `type` meta-kind must carry the `comptime`
+modifier:
 
 ```botopink
 pub fn parse(comptime T: type string | int, raw: string) -> T;
 fn f(comptime T: type) { … }            // unconstrained
 ```
 
-### `expr` type form
+### The `@Expr<E>` type
 
-`expr T` composes in any type position; bare `expr` defers the type until the
-call-site expansion:
+`@Expr<E>` composes in any type position; bare `@Expr` defers the type until
+the call-site expansion. An `@Expr` parameter also requires `comptime`:
 
 ```botopink
-pub fn html(comptime template: expr string) -> expr string;  // bounded
-pub fn yaml(comptime template: expr string) -> expr;         // bare — type revealed per call
-val children: array<expr string> = [];
+pub fn html(comptime template: @Expr<string>) -> @Expr<string>;  // bounded
+pub fn yaml(comptime template: @Expr<string>) -> @Expr;          // bare — revealed per call
+fn pick(comptime first: ?@Expr<Element>) -> @Expr;
 ```
 
 ### Tagged-call sugar
@@ -1204,82 +1202,75 @@ sql "SELECT 1"              // ⇒ sql("SELECT 1")
 
 ### Unevaluated capture
 
-An argument bound to a `comptime p: expr T` parameter is type-checked in the
-caller, then captured **unevaluated** with provenance (file, span, origin
+An argument bound to a `comptime p: @Expr<T>` parameter is type-checked in
+the caller, then captured **unevaluated** with provenance (file, span, origin
 scope). V1 rule: the argument must be a **literal** string at the call site
 (interpolation allowed) — a variable carries no span or scope to capture.
 
-### `std.syntax` data model
+### `std.syntax` and `interface Expr<E>`
 
-`Span`, `Part` (`Text` / `Interp`), `BindingKind`, `Binding` are ordinary
-stdlib types (`libs/std/src/syntax.bp`). The compiler provides comptime-only
-methods on `expr` values, resolved by inference like the `@Result`/`@Option`
-builtins:
+The data model (`Span`, `Part`, `BindingKind`, `Binding`, `Source`,
+`Context`) lives in `libs/std/src/syntax.bp` as ordinary types, and the
+comptime-only surface of an `@Expr<E>` value is declared as an interface:
 
 ```botopink
-fn text(self: expr) -> string                     // raw template source text
-fn parts(self: expr) -> Part[]                    // text/interp alternation
-fn source(self: expr) -> Source                   // declaration position (file/line/col)
-fn context(self: expr) -> Context                 // source + text + shape, in one object
-fn lookup(self: expr, name: string) -> ?Binding   // origin-scope resolution
-fn bindings(self: expr) -> Binding[]              // enumerate the origin scope
-fn build(self: expr, source: string) -> expr      // parse text into code (origin scope)
-fn fail(self: expr, message: string)              // diagnostic at the expr's span
-fn failAt(self: expr, span: Span, message: string)// diagnostic INSIDE the template
-fn ref(self: Binding) -> expr                     // spliceable reference
+pub interface Expr<E> {
+    val value: E                                      // the value type slot
+    fn text(self: Self) -> string                     // raw template source text
+    fn parts(self: Self) -> Part[]                    // text/interp alternation
+    fn source(self: Self) -> Source                   // declaration position
+    fn context(self: Self) -> Context                 // source + text + shape
+    fn lookup(self: Self, name: string) -> ?Binding   // origin-scope resolution
+    fn bindings(self: Self) -> Binding[]              // enumerate the origin scope
+    fn build(self: Self, source: string) -> @Expr     // parse text into code
+    fn fail(self: Self, message: string)              // diagnostic at the expr's span
+    fn failAt(self: Self, span: Span, message: string)// diagnostic INSIDE the template
+}
 ```
 
 `context()` is the second-layer entry point: a DSL compiler running inside a
 template function gets where the template was declared (`Source`), its raw
 text, and its shape in one object — input via `text`/`parts`/`lookup`/
-`bindings`, code output via `build`/`ref`/value lifting, diagnostics via
-`fail`/`failAt`.
-
-`lookup`/`bindings`/`build`/`fail` resolve against the expression's **origin
+`bindings`, code output via `build`/`@expr`/`@code`, diagnostics via
+`fail`/`failAt`. These methods resolve against the expression's **origin
 scope** — a caller template resolves in the caller's file (V1: top-level
-decls + imports; locals are not visible). `fail`/`failAt` abort expansion
-with a rustc-style diagnostic pointing inside the `"""…"""` in the caller's
-file.
+decls + imports). `fail`/`failAt` abort expansion with a rustc-style
+diagnostic pointing inside the `"""…"""` in the caller's file.
 
-### Returning code from a template function
+### Constructing code — explicit builtins only
 
-A template function returns an `expr` value. There are four ways to produce
-one — pick the lightest that fits; no wrapping for wrapping's sake:
+A template function returns an `@Expr` value. There is **no implicit
+coercion** — a constant is not silently an expression. Three explicit paths:
 
 ```botopink
-// 1. Pass-through: an expr param IS an expr value — return it directly.
-pub fn html(comptime template: expr string) -> expr string {
+// 1. Pass-through: an @Expr param IS an expr value — return it directly.
+pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
     return template;
 }
 
-// 2. Value lifting: a comptime value of T coerces to expr T —
-//    a constant is an expression.
-pub fn port() -> expr {
-    return 8080;
+// 2. @expr(value): lift a comptime value as code, explicitly.
+pub fn port() -> @Expr {
+    return @expr(8080);
 }
 
-// 3. build(): parse generated source text into code — the workhorse of a
-//    second-layer language (compile the DSL, emit botopink as text).
-pub fn sql(comptime q: expr string) -> expr {
+// 3. @code(text) / template.build(text): parse generated source text into
+//    code — the workhorse of a second-layer language. `@code` resolves where
+//    it is written; `build` resolves in the template's origin scope.
+pub fn sql(comptime q: @Expr<string>) -> @Expr {
     return q.build("runQuery(" + q.text() + ")");
-}
-
-// 4. expr { … } quoting: for fixed code *patterns* with `${…}` holes.
-//    Identifiers inside resolve in the scope where the literal is written
-//    (hygiene by provenance).
-pub fn doubled(comptime n: expr i32) -> expr i32 {
-    return expr { ${n} + ${n} };
 }
 ```
 
+`@expr`/`@code` are only valid inside a template function (`-> @Expr<…>`).
+
 ### Call-site expansion
 
-A call to a template function (`-> expr [T]`) is expanded at comptime; the
+A call to a template function (`-> @Expr<…>`) is expanded at comptime; the
 expansion replaces the call and is re-type-checked in the caller's context.
 Template functions never reach codegen.
 
 ```botopink
-pub fn html(comptime template: expr string) -> expr string {
+pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
     return template;
 }
 val name = "world";
@@ -1294,31 +1285,27 @@ const name = "world";
 const page = (("\n<p>" + name) + "</p>\n");
 ```
 
-- **Bounded** `-> expr T`: the expansion is verified against `T`; the call
-  types as `T` (`page` above is `string`, not `expr<string>`).
-- **Bare** `-> expr`: each call site reveals the expansion's own type:
+- **Bounded** `-> @Expr<T>`: the expansion is verified against `T`; the call
+  types as `T` (`page` above is `string`, not `@Expr<string>`).
+- **Bare** `-> @Expr`: each call site reveals the expansion's own type:
 
 ```botopink
-pub fn answer() -> expr {
-    return expr { 42 };
+pub fn answer() -> @Expr {
+    return @expr(42);
 }
 val n = answer();    // n: i32
 val m = n + 1;       // ok
 ```
 
-- **Value lifting**: a comptime value of `T` coerces to `expr T` — a constant
-  *is* an expression (`pub fn port() -> expr { return 8080; }`).
-
 ### V1 limits
 
-- The expansion driver handles bodies of the form `return <expr param>`,
-  `return expr { … }` (single expression, whole-body `${param}` hole), or a
-  splice-free expression. Template-method bodies (`text`/`parts`/`lookup`)
-  require the runtime-backed evaluator (planned).
+- The expansion driver handles bodies of the form `return <@Expr param>`,
+  `return @expr(value)`, or `return @code("…")` with a literal string.
+  Template-method bodies (`text`/`parts`/`lookup`/`build`) require the
+  runtime-backed evaluator (planned).
 - Template arguments must be literal strings; template functions are not
-  first-class values; expressions only (no declaration-generating macros).
-- A splice is a primary expression — `${e}(args)` does not parse; cross-module
-  template functions do not expand yet.
+  first-class values; expressions only (no declaration-generating macros);
+  cross-module template functions do not expand yet.
 
 ---
 

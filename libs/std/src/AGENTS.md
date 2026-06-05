@@ -20,7 +20,7 @@ src/
 ├── primitives.d.bp      ← numeric + bool interfaces
 ├── array.d.bp           ← generic Array<T> interface
 ├── string.d.bp          ← String interface methods
-├── syntax.bp            ← std.syntax — `expr` template data model (Span/Part/Binding);
+├── syntax.bp            ← std.syntax — `@Expr` template data model + interface Expr<E>;
 │                          plain `.bp` (concrete types, not declaration-only interfaces)
 └── builtins.d.bp        ← @typeOf / @sizeOf / @panic / … (NOT embedded yet — see below)
 ```
@@ -32,7 +32,7 @@ src/
 | `primitives.d.bp` | `interface I32 { … }`, `interface U32 { … }`, …, `interface Bool { … }`. |
 | `array.d.bp` | `interface Array<T>` — `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter`. |
 | `string.d.bp` | `interface String` — `len`, `split`, `to_upper/lower`, `contains`, `starts_with`, `ends_with`, `trim*`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
-| `syntax.bp` | `std.syntax` — data model for `expr` templates (expr-templates F4): `struct Span`, `enum Part { Text, Interp }`, `enum BindingKind`, `struct Binding`, `struct Source` (declaration position), `struct Context` (the full second-layer input: source + text + shape). The compiler-provided extensions on `expr` (`text`/`parts`/`source`/`context`/`lookup`/`bindings`/`build`/`fail`/`failAt`) and `Binding.ref()` are documented here as comments and resolved by inference (`comptime/infer.zig: inferTemplateMethod`), like the `@Result`/`@Option` methods — comptime-only, no codegen. |
+| `syntax.bp` | `std.syntax` — data model for `@Expr` templates: `struct Span`, `enum Part { Text, Interp }`, `enum BindingKind`, `struct Binding`, `struct Source` (declaration position), `struct Context` (the full second-layer input: source + text + shape), and `interface Expr<E>` declaring the comptime-only surface of an `@Expr<E>` value (`value`/`text`/`parts`/`source`/`context`/`lookup`/`bindings`/`build`/`fail`/`failAt`; `Binding.ref()` stays a doc comment). Resolved by inference (`comptime/infer.zig: inferTemplateMethod`), like the `@Result`/`@Option` methods — comptime-only, no codegen. Construction is explicit via the `@expr(value)`/`@code(text)` builtins. |
 | `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`). **Not embedded by `prelude.zig` yet** — builtins are currently registered programmatically in `compiler-core`'s `comptime/env.zig` (`registerBuiltins`); wiring this file is part of the `stdlib-gleam` spec (`tasks/v0.beta.2/specs/stdlib-gleam.md`). Also declares the annotation builtin `external(target: Target, module: string, symbol: string)` + `enum Target { node, typescript, erlang, beam, wasm }` (F1), used inside `@[ … ]` blocks and validated programmatically in `comptime/infer.zig`. |
 
 ## Conventions

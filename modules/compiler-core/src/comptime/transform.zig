@@ -183,10 +183,10 @@ pub fn transform(
                 // Skip — dead code.
                 continue;
             }
-            // Template fns (`-> expr [T]`) are comptime-only: every call was
+            // Template fns (`-> @Expr<…>`) are comptime-only: every call was
             // expanded (or rejected) during inference — never emit them.
             if (fn_decl.returnType) |rt| {
-                if (rt == .expr) continue;
+                if (rt.isExprType()) continue;
             }
         }
         try filtered.append(allocator, decl);
@@ -732,10 +732,10 @@ fn trySpecializeCall(
     args: []const ast.CallArg,
     comptime_arrays: std.StringHashMap([]const ast.TypedExpr),
 ) !bool {
-    // Template fns (`-> expr [T]`) are expanded at their call sites (F6),
+    // Template fns (`-> @Expr<…>`) are expanded at their call sites (F6),
     // never specialized.
     if (fn_decl.returnType) |rt| {
-        if (rt == .expr) return false;
+        if (rt.isExprType()) return false;
     }
     var has_comptime = false;
     for (fn_decl.params) |p| {

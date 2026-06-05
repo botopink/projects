@@ -1,9 +1,11 @@
 
-// ── std.syntax — data model for `expr` templates ──────────────────────────────
+// ── std.syntax — data model for `@Expr` templates ─────────────────────────────
 //
-// Ordinary types consumed by comptime template functions (the `expr`
-// meta-kind). No `@`-builtins are introduced: meta-kinds are type *forms*;
-// the data model below is plain stdlib (expr-templates F4).
+// Ordinary types consumed by comptime template functions. `@Expr<E>` is the
+// builtin expression type (like `@Result`/`@Option`): a **type marker** for
+// unevaluated code of type `E`. Values are only constructed explicitly —
+// `@expr(value)` lifts a comptime value, `@code(text)` parses generated
+// source — never by implicit coercion.
 
 // A region inside a template's text. `start`/`end` are byte offsets into the
 // template (escape sequences unprocessed); `line` is the 1-based line *within
@@ -18,7 +20,7 @@ pub struct Span {
 // expression was already type-checked in the caller's scope.
 pub enum Part {
     Text(text: string, span: Span),
-    Interp(hole: expr, span: Span),
+    Interp(hole: @Expr, span: Span),
 }
 
 // What kind of top-level declaration a scope lookup resolved to.
@@ -56,28 +58,36 @@ pub struct Context {
     multiline: bool,
 }
 
-// ── compiler-provided extensions (comptime-only) ──────────────────────────────
+// The comptime-only surface of an `@Expr<E>` value. The compiler implements
+// these (resolved by type inference, like the `@Result`/`@Option` methods —
+// no runtime dispatch table); the interface documents and types the contract:
 //
-// Like the `@Result`/`@Option` methods, these are resolved by type inference
-// (no runtime dispatch table) and only exist while a template function runs at
-// comptime; they are documented here rather than declared as struct methods:
+//   value    — the expression's value type slot (what the code evaluates to)
+//   text     — raw template source text
+//   parts    — text/interp alternation
+//   source   — declaration position
+//   context  — source + text + shape, in one object
+//   lookup   — origin-scope resolution
+//   bindings — enumerate the origin scope
+//   build    — parse source text into code in the receiver's origin scope
+//              (how a second-layer language emits its output)
+//   fail     — abort expansion; diagnostic at the expr's span
+//   failAt   — abort expansion; diagnostic INSIDE the template, in the
+//              caller's file
+pub interface Expr<E> {
+    val value: E
+    fn text(self: Self) -> string
+    fn parts(self: Self) -> Part[]
+    fn source(self: Self) -> Source
+    fn context(self: Self) -> Context
+    fn lookup(self: Self, name: string) -> ?Binding
+    fn bindings(self: Self) -> Binding[]
+    fn build(self: Self, source: string) -> @Expr
+    fn fail(self: Self, message: string)
+    fn failAt(self: Self, span: Span, message: string)
+}
+
+// On Binding (compiler-provided, comptime-only):
 //
-//   // On any `expr` value:
-//   fn text(self: expr) -> string                     // raw template source text
-//   fn parts(self: expr) -> Part[]                    // text/interp alternation
-//   fn source(self: expr) -> Source                   // declaration position
-//   fn context(self: expr) -> Context                 // source + text + shape
-//   fn lookup(self: expr, name: string) -> ?Binding   // origin-scope resolution
-//   fn bindings(self: expr) -> Binding[]              // enumerate the origin scope
-//   fn build(self: expr, source: string) -> expr      // parse source text into an
-//                                                     // expr in the receiver's
-//                                                     // origin scope (code output
-//                                                     // for second-layer languages)
-//   fn fail(self: expr, message: string)              // abort expansion; diagnostic
-//                                                     // at the expr's span
-//   fn failAt(self: expr, span: Span, message: string)// diagnostic INSIDE the
-//                                                     // template, in the caller's file
-//
-//   // On Binding:
-//   fn ref(self: Binding) -> expr                     // spliceable reference to the
-//                                                     // binding, in its origin scope
+//   fn ref(self: Binding) -> @Expr    // spliceable reference to the binding,
+//                                     // in its origin scope

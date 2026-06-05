@@ -440,8 +440,6 @@ const Emitter = struct {
             },
             // A comptime typeparam is erased after specialization; surface it as `any`.
             .typeparam => try self.w("any"),
-            // Comptime expression meta-kind: erased the same way.
-            .expr => try self.w("any"),
         }
     }
 

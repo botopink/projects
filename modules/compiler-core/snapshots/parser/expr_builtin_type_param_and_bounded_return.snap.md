@@ -3,10 +3,10 @@
   "decls": [
     {
       "fn": {
-        "isPub": false,
+        "isPub": true,
         "isStarFn": false,
         "label": null,
-        "name": "collect",
+        "name": "html",
         "docComment": null,
         "comment": null,
         "moduleComment": null,
@@ -14,18 +14,16 @@
         "genericParams": [],
         "params": [
           {
-            "name": "parts",
+            "name": "template",
             "typeRef": {
               "generic": {
-                "name": "array",
+                "name": "Expr",
                 "args": [
                   {
-                    "expr": {
-                      "named": "Element"
-                    }
+                    "named": "string"
                   }
                 ],
-                "is_builtin": false
+                "is_builtin": true
               }
             },
             "typeName": "",
@@ -36,7 +34,15 @@
           }
         ],
         "returnType": {
-          "expr": null
+          "generic": {
+            "name": "Expr",
+            "args": [
+              {
+                "named": "Component"
+              }
+            ],
+            "is_builtin": true
+          }
         },
         "body": [
           {

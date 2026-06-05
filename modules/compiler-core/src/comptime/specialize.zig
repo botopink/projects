@@ -521,11 +521,6 @@ pub fn identInExpr(expr: anytype, name: []const u8) bool {
                 if (identInExpr(ap.handler.*, name)) break :blk true;
                 break :blk false;
             },
-            .exprLiteral => |el| blk: {
-                for (el.body) |s| if (identInExpr(s.expr, name)) break :blk true;
-                break :blk false;
-            },
-            .splice => |se| identInExpr(se.*, name),
         },
         .literal => |lit| switch (lit.kind) {
             .stringLit, .numberLit, .null_, .comment => false,

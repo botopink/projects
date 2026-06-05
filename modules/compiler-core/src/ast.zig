@@ -746,14 +746,6 @@ pub fn ComptimeExprOf(comptime phase: Phase) type {
             /// catch handler expression (can be throw, return, or a fallback value)
             handler: *ExprOf(phase),
         },
-        /// `expr { … }` ---- quoted-code literal building an `expr` value
-        /// (expr-templates F5). Identifiers inside resolve in the scope where
-        /// the literal is written (hygiene by provenance); `${…}` holes splice
-        /// other `expr` values. Expanded at comptime (F6) — never reaches codegen.
-        exprLiteral: struct { body: []StmtOf(phase) },
-        /// `${e}` ---- a splice hole inside an `expr { … }` literal: `e` is an
-        /// `expr T` value whose code is inserted here at expansion (F5).
-        splice: *ExprOf(phase),
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             switch (this.*) {
@@ -764,14 +756,6 @@ pub fn ComptimeExprOf(comptime phase: Phase) type {
                 .comptimeBlock => |cb| {
                     for (cb.body) |*s| s.deinit(allocator);
                     allocator.free(cb.body);
-                },
-                .exprLiteral => |el| {
-                    for (el.body) |*s| s.deinit(allocator);
-                    allocator.free(el.body);
-                },
-                .splice => |e| {
-                    e.deinit(allocator);
-                    allocator.destroy(e);
                 },
                 .assert => |a| {
                     a.condition.deinit(allocator);
@@ -1255,10 +1239,6 @@ pub const TypeRef = union(enum) {
     /// means the typeparam is unconstrained and accepts any type. Owns the constraints.
     /// Surface syntax (post-F0): `type` / `type string | int | bool`.
     typeparam: []TypeRef,
-    /// Expression meta-kind: `expr T` is an expression of type `T` (unevaluated
-    /// input or spliceable output); bare `expr` (null) defers the type until the
-    /// call-site expansion. Owns the inner type when present.
-    expr: ?*TypeRef,
 
     pub fn deinit(this: *TypeRef, allocator: std.mem.Allocator) void {
         switch (this.*) {
@@ -1289,11 +1269,15 @@ pub const TypeRef = union(enum) {
                 for (constraints) |*c| c.deinit(allocator);
                 allocator.free(constraints);
             },
-            .expr => |inner| if (inner) |t| {
-                t.deinit(allocator);
-                allocator.destroy(t);
-            },
         }
+    }
+
+    /// True when this annotation is the builtin expression type — `@Expr<T>`
+    /// or bare `@Expr` (expr-templates). Parameters of this type are captured
+    /// unevaluated; functions returning it are comptime-expanded templates.
+    pub fn isExprType(this: TypeRef) bool {
+        return this == .generic and this.generic.is_builtin and
+            std.mem.eql(u8, this.generic.name, "Expr");
     }
 };
 

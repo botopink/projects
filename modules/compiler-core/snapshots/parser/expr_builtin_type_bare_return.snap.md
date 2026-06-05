@@ -16,8 +16,14 @@
           {
             "name": "template",
             "typeRef": {
-              "expr": {
-                "named": "string"
+              "generic": {
+                "name": "Expr",
+                "args": [
+                  {
+                    "named": "string"
+                  }
+                ],
+                "is_builtin": true
               }
             },
             "typeName": "",
@@ -28,7 +34,11 @@
           }
         ],
         "returnType": {
-          "expr": null
+          "generic": {
+            "name": "Expr",
+            "args": [],
+            "is_builtin": true
+          }
         },
         "body": [
           {

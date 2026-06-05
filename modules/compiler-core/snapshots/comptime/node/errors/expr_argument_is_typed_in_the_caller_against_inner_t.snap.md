@@ -1,5 +1,5 @@
 ----- SOURCE CODE
-pub fn check(comptime cond: expr bool) -> expr bool {
+pub fn check(comptime cond: @Expr<bool>) -> @Expr<bool> {
     return cond;
 }
 val c = check("not a bool");

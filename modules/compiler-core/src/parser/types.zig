@@ -115,31 +115,22 @@ pub fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.Ty
             };
             return ParseError.UnexpectedToken;
         }
-        _ = try this.consume(.lessThan);
+        // `<…>` is optional: a bare builtin type (`@Expr`) defers its type
+        // argument — e.g. a template fn whose result type is revealed at the
+        // call-site expansion.
         var args: std.ArrayList(ast.TypeRef) = .empty;
         errdefer {
             for (args.items) |*a| a.deinit(alloc);
             args.deinit(alloc);
         }
-        while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
-            try args.append(alloc, try this.parseTypeRef(alloc));
-            if (!this.match(.comma)) break;
+        if (this.match(.lessThan)) {
+            while (!this.check(.greaterThan) and !this.check(.endOfFile)) {
+                try args.append(alloc, try this.parseTypeRef(alloc));
+                if (!this.match(.comma)) break;
+            }
+            _ = try this.consume(.greaterThan);
         }
-        _ = try this.consume(.greaterThan);
         return ast.TypeRef{ .generic = .{ .name = name, .args = try args.toOwnedSlice(alloc), .is_builtin = true } };
-    }
-    // expr [T] — expression meta-kind: code of type `T` (unevaluated input or
-    // spliceable output). Bare `expr` defers the type to call-site expansion.
-    // Contextual keyword: only recognized in type position.
-    if (this.check(.identifier) and std.mem.eql(u8, this.peek().lexeme, "expr")) {
-        _ = this.advance(); // consume 'expr'
-        if (startsTypeRef(this.peek().kind)) {
-            const inner = try alloc.create(ast.TypeRef);
-            errdefer alloc.destroy(inner);
-            inner.* = try this.parseTypeRef(alloc);
-            return ast.TypeRef{ .expr = inner };
-        }
-        return ast.TypeRef{ .expr = null };
     }
     // type [Constraint (| Constraint)*] — comptime type parameter (meta-kind)
     // with an optional `|`-separated constraint list. `type` alone is unconstrained.

@@ -185,3 +185,35 @@
       parser/examples.md (expr-templates section), comptime/AGENTS.md
       (F4/F5/F6 sections), codegen/AGENTS.md (template rule + .d.ts gap),
       libs/std/src/AGENTS.md (syntax.bp)
+
+## F8 — redesign: `@Expr<E>` builtin type (user decision, 2026-06-05)
+
+> Supersedes the F2/F5 *surface*: there is **no `expr` keyword**. `@Expr<E>`
+> (builtin generic, like `@Result`) marks types; code values are constructed
+> only explicitly. The F4/F6 machinery (capture, scope snapshot, methods,
+> expansion driver) carries over unchanged under the new encoding.
+
+- [x] `TypeRef.expr` removed; `@Expr<E>` / bare `@Expr` parse as the ordinary
+      builtin generic (`<…>` made optional for builtins); encoded as named
+      type `"Expr"` (bare resolves a fresh arg). `TypeRef.isExprType()` helper
+- [x] `expr` keyword gone from BOTH positions: type form (F2) and the
+      `expr { … }` literal + `${…}` code splice + `dollarLeftBrace` token
+      (F5) — `${…}` lives only inside string literals again; `expr` is a
+      plain identifier everywhere
+- [x] No implicit value lifting — construction is explicit via new builtins:
+      `@expr(value)` (lift; result `@Expr<typeof value>`) and `@code(text)`
+      (parse source text; result `@Expr<fresh>`), both only valid inside a
+      template fn (`env.inTemplateFn`); `comptime` requirement for `@Expr`
+      params is now a semantic check in `inferFnDecl` (parser keeps it only
+      for the `type` meta-kind)
+- [x] `interface Expr<E>` declared in std.syntax (per user sketch, incl.
+      `val value: E` member — interface bodies accept val fields) typing the
+      comptime surface; `value()` added to TemplateOp/inferTemplateMethod
+- [x] V1 expansion driver re-targeted: `return <@Expr param>` |
+      `return @expr(E)` | `return @code("…")` (sub-parsed at expansion);
+      formatter renders bare builtins without `<>`
+- [x] Tests/snapshots migrated (~30 files); orphans removed; docs.md +
+      parser examples + AGENTS ×4 rewritten
+- [x] DISCOVERED GAPS (pre-existing, separate fixes): nested generics
+      `A<B<C>>` lex `>>` as shift; array suffix `[]` does not apply to
+      `@X<…>` builtins; `.d.ts` renders bare builtin as `Expr<>`

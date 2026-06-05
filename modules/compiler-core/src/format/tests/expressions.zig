@@ -415,13 +415,3 @@ test "format: tagged call ---- interpolated multiline round-trip" {
         \\""";
     );
 }
-
-test "format: expr literal ---- round-trip with splice" {
-    try h.assertFormat(std.testing.allocator,
-        \\pub fn html(comptime template: expr string) -> expr string {
-        \\    return expr {
-        \\        ${template};
-        \\    };
-        \\}
-    );
-}

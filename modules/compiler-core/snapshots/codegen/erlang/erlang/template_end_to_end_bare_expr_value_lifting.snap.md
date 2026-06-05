@@ -1,7 +1,7 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-pub fn port() -> expr {
-    return expr { 8080 };
+pub fn port() -> @Expr {
+    return @expr(8080);
 }
 fn main() {
     val p = port() + 1;
