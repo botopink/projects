@@ -667,7 +667,6 @@ pub const Lexer = struct {
         if (std.mem.eql(u8, text, "default")) return .default;
         if (std.mem.eql(u8, text, "delegate")) return .delegate;
         if (std.mem.eql(u8, text, "derive")) return .derive;
-        if (std.mem.eql(u8, text, "echo")) return .echo;
         if (std.mem.eql(u8, text, "else")) return .@"else";
         if (std.mem.eql(u8, text, "enum")) return .@"enum";
         if (std.mem.eql(u8, text, "extend")) return .extend;
@@ -720,7 +719,6 @@ pub fn isReservedWord(kind: TokenKind) bool {
     return switch (kind) {
         .auto,
         .delegate,
-        .echo,
         .@"else",
         .implement,
         .macro,
@@ -736,7 +734,6 @@ pub fn reservedWordLexeme(kind: TokenKind) []const u8 {
     return switch (kind) {
         .auto => "auto",
         .delegate => "delegate",
-        .echo => "echo",
         .@"else" => "else",
         .implement => "implement",
         .macro => "macro",

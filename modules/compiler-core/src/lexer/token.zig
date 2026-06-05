@@ -71,7 +71,6 @@ pub const TokenKind = enum {
     default,
     delegate,
     derive,
-    echo,
     @"else",
     @"enum",
     extend,

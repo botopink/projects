@@ -723,3 +723,12 @@ test "parser: line string ---- tagged call" {
         \\;
     );
 }
+
+test "parser: echo is a plain identifier (keyword removed)" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\fn echo(msg: string) -> string {
+        \\    return msg;
+        \\}
+        \\val r = echo("hi");
+    );
+}

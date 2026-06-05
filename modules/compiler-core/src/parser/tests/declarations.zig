@@ -351,7 +351,7 @@ test "parser: init has null source" {
 }
 
 test "parser: reserved words are not identifier tokens" {
-    const reservedWords = [_][]const u8{ "auto", "delegate", "echo", "implement", "macro", "derive" };
+    const reservedWords = [_][]const u8{ "auto", "delegate", "implement", "macro", "derive" };
     for (reservedWords) |word| {
         var l = lexerMod.Lexer.init(word);
         const tokens = try l.scanAll(std.testing.allocator);
