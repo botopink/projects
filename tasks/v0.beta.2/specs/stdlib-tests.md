@@ -4,10 +4,14 @@
 **Depends on**: test-blocks, stdlib-gleam
 **Files**: libs/std/test/**/*.bp and/or co-located `test { … }` inside `libs/std/src/*.bp`
 **Touches docs**: libs/std/AGENTS.md, libs/std/docs.md, libs/std/src/AGENTS.md, libs/std/src/examples.md
-**Status**: F0 done (branch task/test-blocks) — `test/` discovery, layout
-decision, `libs/std/test/` AGENTS.md + first green string/array suites (9/9).
-F1–F5 blocked on `stdlib-gleam` (modules don't exist yet); snake_case builtin
-method mapping also blocks fuller string coverage — see libs/std/test/AGENTS.md.
+**Status**: F0 done + F1 done + F4 partial (branch task/test-blocks) — suites
+for option (`?T` methods + `?.`), builtin `result` namespace, and the
+stdlib-gleam F3 modules (bool/order/pair), plus the first inline (Zig-style)
+test in `src/bool.bp`: 32/32 green on commonJS. Remaining suites (list, dict,
+set, int/float, iterator, function) blocked on `stdlib-gleam` F4–F9;
+snake_case builtin method mapping still blocks fuller string coverage; the
+erlang escript runner can't reach `"std"` package modules yet —
+see libs/std/test/AGENTS.md + the worktree TODO.md.
 
 > **Goal**: a runnable test suite **for the standard library** (`libs/std`), written
 > in `.bp` with the new `test { … }` construct and run by `botopink test`. Modeled on

@@ -1,0 +1,26 @@
+//// Tests for the `order` std module (order.bp): constructor fns, `to_int`,
+//// `reverse`, and a `case` over the exported `Order` enum (type export).
+
+import {order} from "std";
+
+test "order to_int" {
+    assert order.to_int(order.lt()) == -1;
+    assert order.to_int(order.eq()) == 0;
+    assert order.to_int(order.gt()) == 1;
+}
+
+test "order reverse" {
+    assert order.to_int(order.reverse(order.lt())) == 1;
+    assert order.to_int(order.reverse(order.gt())) == -1;
+    assert order.to_int(order.reverse(order.eq())) == 0;
+}
+
+test "case over imported Order" {
+    val o = order.reverse(order.lt());
+    val s = case o {
+        Lt -> "less";
+        Gt -> "greater";
+        _ -> "equal";
+    };
+    assert s == "greater";
+}

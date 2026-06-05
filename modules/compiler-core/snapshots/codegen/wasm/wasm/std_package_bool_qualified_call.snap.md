@@ -25,6 +25,13 @@ pub fn exclusive_nor(a: bool, b: bool) -> bool {
     return a == b;
 }
 
+// Zig-style co-located test (stdlib-tests F0: impl modules MAY carry inline
+// `test` blocks; excluded from normal builds, run by `botopink test`).
+test "inline: negate truth table" {
+    assert negate(false);
+    assert !negate(true);
+}
+
 ```
 
 ----- WASM TEXT -- std/bool.wat
@@ -67,6 +74,8 @@ pub fn exclusive_nor(a: bool, b: bool) -> bool {
     i32.eq
     return
   )
+  ;; Zig-style co-located test (stdlib-tests F0: impl modules MAY carry inline
+  ;; `test` blocks; excluded from normal builds, run by `botopink test`).
 )
 ```
 

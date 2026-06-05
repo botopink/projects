@@ -126,6 +126,12 @@ pub fn transform(
                 scanStmt(&agg, fn_decls, comptime_arrays, stmt) catch return error.OutOfMemory;
             }
         }
+        if (decl == .@"test") {
+            const test_decl = decl.@"test";
+            for (test_decl.body) |stmt| {
+                scanStmt(&agg, fn_decls, comptime_arrays, stmt) catch return error.OutOfMemory;
+            }
+        }
         if (decl == .val) {
             const val_decl = decl.val;
             switch (val_decl.value.*) {
@@ -153,6 +159,12 @@ pub fn transform(
         if (decl.* == .@"fn") {
             const fn_decl = &decl.@"fn";
             for (fn_decl.body) |*stmt| {
+                rewriteStmt(&agg, fn_decls, comptime_arrays, stmt) catch return error.OutOfMemory;
+            }
+        }
+        if (decl.* == .@"test") {
+            const test_decl = &decl.@"test";
+            for (test_decl.body) |*stmt| {
                 rewriteStmt(&agg, fn_decls, comptime_arrays, stmt) catch return error.OutOfMemory;
             }
         }
@@ -261,7 +273,7 @@ fn scanStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_
             if (lp.indexRange) |ir| scanExpr(agg, fn_decls, comptime_arrays, ir.*) catch return ScanError.OutOfMemory;
             for (lp.body) |s| scanStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
         },
-        .call, .identifier, .literal => scanExpr(agg, fn_decls, comptime_arrays, stmt.expr) catch return ScanError.OutOfMemory,
+        .call, .identifier, .literal, .comptime_ => scanExpr(agg, fn_decls, comptime_arrays, stmt.expr) catch return ScanError.OutOfMemory,
         else => {},
     }
 }
@@ -373,7 +385,14 @@ fn scanExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_
             .comptimeBlock => |cb| {
                 for (cb.body) |s| scanStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
             },
-            else => {},
+            .assert => |a| {
+                scanExpr(agg, fn_decls, comptime_arrays, a.condition.*) catch return ScanError.OutOfMemory;
+                if (a.message) |msg| scanExpr(agg, fn_decls, comptime_arrays, msg.*) catch return ScanError.OutOfMemory;
+            },
+            .assertPattern => |ap| {
+                scanExpr(agg, fn_decls, comptime_arrays, ap.expr.*) catch return ScanError.OutOfMemory;
+                scanExpr(agg, fn_decls, comptime_arrays, ap.handler.*) catch return ScanError.OutOfMemory;
+            },
         },
         else => {},
     }
@@ -533,6 +552,7 @@ fn rewriteStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
             if (lp.indexRange) |ir| rewriteExpr(agg, fn_decls, comptime_arrays, ir) catch return ScanError.OutOfMemory;
             for (lp.body) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
         },
+        .comptime_ => rewriteExpr(agg, fn_decls, comptime_arrays, &stmt.expr) catch return ScanError.OutOfMemory,
         else => {},
     }
 }
@@ -628,7 +648,14 @@ fn rewriteExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
             .comptimeBlock => |cb| {
                 for (cb.body) |*s| rewriteStmt(agg, fn_decls, comptime_arrays, s) catch return ScanError.OutOfMemory;
             },
-            else => {},
+            .assert => |a| {
+                rewriteExpr(agg, fn_decls, comptime_arrays, a.condition) catch return ScanError.OutOfMemory;
+                if (a.message) |msg| rewriteExpr(agg, fn_decls, comptime_arrays, msg) catch return ScanError.OutOfMemory;
+            },
+            .assertPattern => |ap| {
+                rewriteExpr(agg, fn_decls, comptime_arrays, ap.expr) catch return ScanError.OutOfMemory;
+                rewriteExpr(agg, fn_decls, comptime_arrays, ap.handler) catch return ScanError.OutOfMemory;
+            },
         },
         .literal => |*lit| switch (lit.kind) {
             .stringTemplate => |t| {

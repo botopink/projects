@@ -1,0 +1,31 @@
+//// Tests for the `pair` std module (pair.bp). A pair IS a 2-tuple
+//// `#(a, b)` — structural, generic fns instantiate per call site.
+
+import {pair} from "std";
+
+test "pair of, first, second" {
+    val p = pair.of(1, "one");
+    assert pair.first(p) == 1;
+    assert pair.second(p) == "one";
+}
+
+test "pair swap" {
+    val p = pair.of(1, "one");
+    val q = pair.swap(p);
+    assert pair.first(q) == "one";
+    assert pair.second(q) == 1;
+}
+
+test "pair map_first" {
+    val p = pair.of(2, "x");
+    val a = pair.map_first(p, { n -> n * 10 });
+    assert pair.first(a) == 20;
+    assert pair.second(a) == "x";
+}
+
+test "pair map_second" {
+    val p = pair.of(2, "x");
+    val b = pair.map_second(p, { s -> s + "!" });
+    assert pair.first(b) == 2;
+    assert pair.second(b) == "x!";
+}

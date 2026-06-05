@@ -4,7 +4,13 @@
 **Depends on**: nothing
 **Files**: libs/std/src/*.bp, libs/std/src/*.d.bp (`.bp`-only — no Zig here); **loader relocated** libs/std/src/prelude.zig → modules/compiler-core/src/comptime/stdlib/prelude.zig + build.zig; **F1 (`@external`) also touches the compiler**: modules/compiler-core/src/{lexer,parser,ast,comptime,codegen}/* (new attribute → AST → inference → per-backend emit)
 **Touches docs**: libs/std/AGENTS.md, libs/std/docs.md, libs/std/src/AGENTS.md, libs/std/src/examples.md, docs.md (language reference: `@external`), modules/compiler-core/src/codegen/AGENTS.md
-**Status**: pending
+**Status**: F0–F3 done (merged into `feat`, 2026-06-05) — layout/wiring, `@[…]` +
+`external` builtin, `"std"` package namespacing (`import {bool} from "std"`),
+builtin `result` namespace, unified `@Result` runtime, `*fn` checked-Result rule,
+optional chaining `?.` (v1, commonJS), `bool.bp`/`order.bp`/`pair.bp` + std type
+exports + per-call-site generic record instantiation. **F4–F9 pending** — see
+"Remaining work" below; each remaining module must land WITH its test suite
+(stdlib-tests pairing).
 
 > **Goal**: grow `libs/std` from 4 declaration files into a module set that mirrors
 > Gleam's stdlib (`gleam/list`, `gleam/dict`, `gleam/option`, `gleam/result`,
@@ -286,6 +292,47 @@ comptime ---- external_fn_no_body_typechecks
 codegen/erlang ---- external_call_emits_module_symbol  (string:length/1)
 codegen/node ---- external_call_emits_import           (import {string_length})
 ```
+
+## Remaining work (carried over from the F0–F3 waves + stdlib-tests, 2026-06-05)
+
+The unimplemented phases, in dependency order:
+
+- **F4 — `list`** (the core module, over `Array<T>`): folds, transform, query,
+  build/slice, combine (`sort` needs `order` — done). Pair with `list_test.bp`.
+- **F5 — `dict` + `set`**: pair with `dict_test.bp` / `set_test.bp`.
+- **F6 — `int` + `float`** (declarations + `@[external(…)]` — F1 mechanism done):
+  pair with `number_test.bp`.
+- **F7 — `string` + `string_builder`**: pair with extended `string_test.bp`.
+- **F8 — `iterator`**: pair with `iterator_test.bp`.
+- **F9 — `function` + `io`**: pair with `function_test.bp`.
+- **F10 — extended modules** (optional, per demand).
+
+**Test pairing rule** (from stdlib-tests): every module above lands in the same
+commit as its `libs/std/test/<module>_test.bp` suite (and may carry inline
+Zig-style `test { … }` blocks — the mechanism works, first one in `bool.bp`).
+
+Discovered gaps that block or degrade the remaining phases (catalogued on
+`task/test-blocks` TODO.md; fix within the phase that hits them or split out):
+
+1. **snake_case builtin methods lack a JS name mapping** — the blind commonJS
+   emitter writes `s.to_upper()` verbatim; only methods whose botopink name
+   matches the JS native work. Blocks fuller `string` coverage (F7). Needs
+   typed-value method dispatch (loc-keyed rewrites, like extension dispatch).
+2. **Builtin method lowering is commonJS-only** — `.join`/`.split`/… emit
+   invalid Erlang (syntax errors in `array_test.erl`); beam/wasm untested.
+   Affects every module that leans on builtin methods.
+3. **Erlang test runner can't reach `"std"` package modules** — the escript
+   compiles/loads only the entry module, so `bool:negate(...)` is
+   `error:undef`. Needs multi-file compile/load in the escript harness.
+4. **Literal method receivers don't parse** — `"a,b".split(",")` is a parse
+   error; receivers must be `val`-bound identifiers.
+5. **Structural `==` on arrays** lowers to JS `===` (reference equality) —
+   suites compare via `.join(...)`; motivates `expect().to_equal()`.
+6. **Local generic fns share their type across call sites** (two calls with
+   different types collapse) — std-module fns dodge this via the F2a
+   `instantiateType` path; matters if F4+ helpers call local generics.
+7. **`?.` codegen on erlang/beam/wasm** blocked on the record-field-access gap
+   on those backends (commonJS native `?.` works).
 
 ## Notes
 
