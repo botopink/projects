@@ -78,7 +78,10 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const code = try emitErlang(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, config.test_mode);
+                // `"std"` package copies are dependencies — never emit their
+                // test blocks (mirrors the commonJS rule).
+                const module_test_mode = config.test_mode and !std.mem.startsWith(u8, ct.name, "std/");
+                const code = try emitErlang(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, module_test_mode);
                 try results.append(alloc, .{
                     .name = ct.name,
                     .src = ct.src,

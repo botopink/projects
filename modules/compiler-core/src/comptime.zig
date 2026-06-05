@@ -273,6 +273,10 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         var env2 = Env.init(env.arena);
         defer env2.deinit();
         try env2.registerBuiltins();
+        // `true`/`false` are bound by `freshEnv` for project envs — the scratch
+        // env needs them too (inline `test` bodies in std modules use them).
+        try env2.bind("true", try env2.namedType("bool"));
+        try env2.bind("false", try env2.namedType("bool"));
         for (sources) |src| {
             var lx = Lexer.init(src);
             const tokens = try lx.scanAll(env.arena);

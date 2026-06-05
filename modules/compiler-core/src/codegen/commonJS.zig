@@ -38,7 +38,11 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, config.test_mode, ct.name);
+                // `"std"` package copies are dependencies — never emit their
+                // test blocks (a project's `botopink test` runs only its own
+                // tests; the stdlib's inline tests run from `libs/std` itself).
+                const module_test_mode = config.test_mode and !std.mem.startsWith(u8, ct.name, "std/");
+                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, module_test_mode, ct.name);
 
                 // Generate TypeScript typedefs if configured.
                 const typedef: ?[]u8 = if (config.typeDefLanguage) |_|

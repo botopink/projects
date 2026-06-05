@@ -13,7 +13,9 @@ compilation — they are type surface only).
 - One `<module>_test.bp` file per stdlib module, in this directory.
 - Implementation modules MAY also carry inline `test` blocks next to their
   functions (Zig-style); declaration modules (`*.d.bp`) have no bodies, so
-  their behaviour is tested here against the builtin lowering.
+  their behaviour is tested here against the builtin lowering. First inline
+  test lives in `src/bool.bp`. `"std"` package copies emitted as dependencies
+  of other projects never include test blocks (no double-run).
 
 ## Tree
 

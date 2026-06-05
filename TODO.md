@@ -31,6 +31,12 @@ Leftovers (deferred, not blocking):
 - [x] `test/<module>_test.bp` per module; impl modules may carry inline tests
 - [x] `botopink test` discovers `src/` + `test/`; `*.d.bp` excluded
 - [x] First green suites: `string_test.bp` (3) + `array_test.bp` (6) — 9/9
+- [x] Inline (Zig-style) test in an impl module runs: `bool.bp`
+      `test "inline: negate truth table"`. Two compiler fixes:
+      `registerStdlib`'s scratch env now binds `true`/`false` (embedded std
+      modules with test bodies hit unboundVariable), and `"std"` package
+      copies never emit test blocks in test mode (commonJS + erlang) — a
+      project's `botopink test` runs only its own tests, no double-run.
 
 ### F1 — effect types (UNBLOCKED by stdlib-gleam F2)
 > Revised design: `result` is a **builtin namespace** (no import);
@@ -65,6 +71,16 @@ Leftovers (deferred, not blocking):
       final pass when the suite stabilizes
 
 ---
+
+## Discovered gaps (this session, catalogued)
+
+1. **Erlang test runner can't reach `"std"` package modules** — the escript
+   compiles/loads only the entry module, so `bool:negate(...)` in a test is
+   `error:undef`; self-contained modules (inline test in `bool.bp`) pass.
+   Needs multi-file compile/load in the escript harness (runner work).
+2. **`array_test.erl` / `string_test.erl` syntax errors on erlang** — builtin
+   method lowering (`.join`, `.split`, …) is commonJS-only today (same family
+   as the snake_case JS-mapping gap). Suite stays "verified on commonJS".
 
 ## Known constraints (carry-overs)
 
