@@ -1,0 +1,34 @@
+//// Tests for the builtin `result` namespace (no import — stdlib-gleam F2c):
+//// `map`, `then`, `unwrap`, `is_ok`, `is_error`. Producers follow the F2d
+//// rule: only `*fn -> @Result<D, E>` gets checked-Result treatment.
+
+*fn parse(n: i32) -> @Result<i32, string> {
+    if (n < 0) { throw "negative"; };
+    return n;
+}
+
+test "result.is_ok and is_error" {
+    assert result.is_ok(parse(1));
+    assert result.is_error(parse(-1));
+}
+
+test "result.map transforms ok" {
+    val r = result.map(parse(20), { x -> x * 2 + 2 });
+    assert result.unwrap(r, 0) == 42;
+}
+
+test "result.map propagates error" {
+    val r = result.map(parse(-1), { x -> x * 2 });
+    assert result.is_error(r);
+    assert result.unwrap(r, 7) == 7;
+}
+
+test "result.then chains" {
+    val r = result.then(parse(10), { x -> parse(x + 1) });
+    assert result.unwrap(r, 0) == 11;
+}
+
+test "result.then propagates inner error" {
+    val r = result.then(parse(5), { x -> parse(0 - x) });
+    assert result.is_error(r);
+}

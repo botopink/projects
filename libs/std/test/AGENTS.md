@@ -19,9 +19,14 @@ compilation — they are type surface only).
 
 ```text
 test/
-├── AGENTS.md       ← you are here
-├── array_test.bp   ← builtin Array<T> surface: join/reverse/indexOf/at/map/filter/slice
-└── string_test.bp  ← builtin String surface: split/length/trim/slice
+├── AGENTS.md        ← you are here
+├── array_test.bp    ← builtin Array<T> surface: join/reverse/indexOf/at/map/filter/slice
+├── bool_test.bp     ← bool std module: negate/nor/nand/exclusive_or/exclusive_nor
+├── option_test.bp   ← ?T builtin methods (map/flatMap/unwrapOr) + `?.` chaining
+├── order_test.bp    ← order std module: lt/eq/gt, to_int, reverse, case over Order
+├── pair_test.bp     ← pair std module: of/first/second/swap/map_first/map_second
+├── result_test.bp   ← builtin result namespace: map/then/unwrap/is_ok/is_error
+└── string_test.bp   ← builtin String surface: split/length/trim/slice
 ```
 
 ## Running
@@ -39,6 +44,11 @@ Covered today (lowers correctly on the commonJS target):
 |---|---|
 | `String` | `split`, `.length` (on the split result), `trim`, `slice` |
 | `Array<T>` | `join`, `reverse`, `indexOf`, `at`, `map`, `filter`, `slice` |
+| `?T` (option) | `map`, `flatMap`, `unwrapOr`; `?.` member access (incl. null short-circuit) |
+| `result` namespace | `map`, `then`, `unwrap`, `is_ok`, `is_error` (producer: `*fn -> @Result<D, E>`) |
+| `bool` module | `negate`, `nor`, `nand`, `exclusive_or`, `exclusive_nor` |
+| `order` module | `lt`/`eq`/`gt`, `to_int`, `reverse`, `case` over the exported `Order` enum |
+| `pair` module | `of`, `first`, `second`, `swap`, `map_first`, `map_second` |
 
 **Blocked — snake_case builtin methods lack a JS name mapping** (typed-value
 method dispatch; the blind emitter writes `s.to_upper()` verbatim and JS has
@@ -47,10 +57,10 @@ no such method): `to_upper`, `to_lower`, `contains`, `starts_with`,
 `to_string`, `len()`; Array `push`/`pop`/`forEach` (mutation/effects) are
 also untested. Add their tests when the mapping lands.
 
-**Blocked — modules not yet implemented** (depend on the `stdlib-gleam`
-spec): `list`, `dict`, `set`, `option`, `result`, `order`, `bool`, `pair`,
-`int`/`float` (module form), `iterator`, `function`. The planned one-file-
-per-module layout for them is in `tasks/v0.beta.2/specs/stdlib-tests.md`.
+**Blocked — modules not yet implemented** (depend on `stdlib-gleam` F4–F9):
+`list`, `dict`, `set`, `int`/`float` (module form), `iterator`, `function`.
+The planned one-file-per-module layout for them is in
+`tasks/v0.beta.2/specs/stdlib-tests.md`.
 
 ## Conventions
 
