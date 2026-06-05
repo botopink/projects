@@ -362,3 +362,71 @@ test "infer error: template body not expandable by the V1 driver (F6)" {
         \\val c = hard "SELECT 1";
     );
 }
+
+// ── F6-full: runtime-backed template bodies ───────────────────────────────────
+
+test "comptime: runtime template body ---- text() + build() end to end" {
+    try h.assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\pub fn shout(comptime q: @Expr<string>) -> @Expr<string> {
+        \\    val t = q.text();
+        \\    return q.build("\"" + t + "!\"");
+        \\}
+        \\val s = shout "hey";
+    );
+}
+
+test "comptime: runtime template body ---- lookup miss drives control flow" {
+    try h.assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\pub struct Button {
+        \\    label: string,
+        \\}
+        \\pub fn need(comptime t: @Expr<string>) -> @Expr<string> {
+        \\    val hit = t.lookup("Buttom");
+        \\    if (hit) { b ->
+        \\        return t.fail("should be missing");
+        \\    };
+        \\    return t.build("\"ok\"");
+        \\}
+        \\val r = need "x";
+    );
+}
+
+test "comptime: runtime template body ---- @expr lifts a computed value" {
+    try h.assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\pub fn six(comptime t: @Expr<string>) -> @Expr<i32> {
+        \\    val n = 2 + 4;
+        \\    return @expr(n);
+        \\}
+        \\val n = six "ignored";
+    );
+}
+
+test "template: runtime fail() maps into the caller's template" {
+    const src =
+        \\pub fn lint(comptime q: @Expr<string>) -> @Expr<string> {
+        \\    val t = q.text();
+        \\    q.fail("template rejected: " + t);
+        \\    return q;
+        \\}
+        \\val s = lint "bad";
+    ;
+    const io = std.testing.io;
+    var session = try comptimeMod.compile(
+        std.testing.allocator,
+        &.{.{ .path = "", .source = src }},
+        io,
+        .node,
+        ".botopinkbuild/comptime/runtime_fail_maps_into_template",
+    );
+    defer session.deinit(std.testing.allocator);
+
+    try std.testing.expectEqual(@as(usize, 1), session.outputs.items.len);
+    const outcome = session.outputs.items[0].outcome;
+    try std.testing.expect(outcome == .typeError);
+    const te = outcome.typeError;
+    // The diagnostic points at the template literal in the caller's file.
+    try std.testing.expectEqual(@as(usize, 6), te.loc.?.line);
+    const msg = try te.message(std.testing.allocator);
+    defer std.testing.allocator.free(msg);
+    try std.testing.expectEqualStrings("template rejected: bad", msg);
+}

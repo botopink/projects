@@ -1,0 +1,224 @@
+/// Runtime-backed template evaluation (expr-templates F6-full, slice 1).
+///
+/// When the V1 classifier in `infer.zig` cannot reduce a template body by
+/// inspection, this module *runs* the body: the captures become JS objects
+/// carrying the comptime surface (`text`/`parts`/`source`/`context`/`lookup`/
+/// `bindings`/`build`/`fail`/`failAt`), the template fn is emitted as plain
+/// JS (reusing the commonJS emitter), and the script reports one result:
+///
+///   {"kind":"code","source":"…"}                  ← build() / @code
+///   {"kind":"value","value":<json>}               ← @expr(v)
+///   {"kind":"capture","param":"template"}         ← `return template;`
+///   {"kind":"fail","message","param","span"}      ← fail()/failAt()
+///   {"kind":"error","message"}                    ← anything else thrown
+///
+/// Template evaluation always uses the **node** runtime regardless of the
+/// compile target — it is host-side comptime work, like the existing eval
+/// backends (erlang parity is a recorded follow-up). Tooling paths
+/// (compileTypesOnly / LSP) never reach this module.
+const std = @import("std");
+const ast = @import("../ast.zig");
+const template = @import("./template.zig");
+const commonJS = @import("../codegen/commonJS.zig");
+
+// ── outcome ───────────────────────────────────────────────────────────────────
+
+pub const Outcome = union(enum) {
+    /// Generated source text to parse and splice at the call site.
+    code: []const u8,
+    /// A comptime value to lift as a literal (JSON-encoded).
+    value: std.json.Value,
+    /// Pass-through of the named `@Expr` parameter's capture.
+    capture: []const u8,
+    /// `fail`/`failAt` — abort expansion with a template diagnostic.
+    fail: struct {
+        message: []const u8,
+        param: ?[]const u8,
+        span: ?template.Span,
+    },
+    /// The script itself failed (JS exception, protocol violation, …).
+    err: []const u8,
+};
+
+pub const EvalError = error{ OutOfMemory, EvalFailed } || std.Io.Writer.Error;
+
+// ── JS prelude ────────────────────────────────────────────────────────────────
+
+/// The comptime surface, implemented over the serialized capture handle
+/// (`template.contextJsonAlloc` shape: file/line/col/multiline/text/scope).
+const prelude =
+    \\"use strict";
+    \\function __expr(v) { return { __lift: v }; }
+    \\function __code(s) { return { __code: String(s) }; }
+    \\function Span(start, end, line) { return { start, end, line }; }
+    \\function __failRaw(message, param, span) {
+    \\    throw { __bpfail: { message: String(message), param: param ?? null, span: span ?? null } };
+    \\}
+    \\function __capture(param, d) {
+    \\    return {
+    \\        __cap: param,
+    \\        value() { __failRaw("value() is only available after expansion", param); },
+    \\        text() {
+    \\            if (d.text === null) __failRaw("text() unavailable: template has ${...} holes — use parts()", param);
+    \\            return d.text;
+    \\        },
+    \\        parts() {
+    \\            if (d.text === null) return [];
+    \\            return [{ kind: "Text", text: d.text, span: { start: 0, end: d.text.length, line: 1 } }];
+    \\        },
+    \\        source() { return { file: d.file, line: d.line, col: d.col }; },
+    \\        context() { return { source: this.source(), text: d.text, multiline: d.multiline }; },
+    \\        lookup(name) {
+    \\            const kind = d.scope[name];
+    \\            return kind ? { name, kind } : null;
+    \\        },
+    \\        bindings() { return Object.entries(d.scope).map(([name, kind]) => ({ name, kind })); },
+    \\        build(s) { return { __code: String(s) }; },
+    \\        fail(message) { __failRaw(message, param, null); },
+    \\        failAt(span, message) { __failRaw(message, param, span); },
+    \\    };
+    \\}
+    \\
+;
+
+// ── script builder ────────────────────────────────────────────────────────────
+
+fn buildScript(
+    arena: std.mem.Allocator,
+    tfn: ast.FnDecl,
+    captures: []const template.CapturedExpr,
+) ![]u8 {
+    var aw: std.Io.Writer.Allocating = .init(arena);
+    defer aw.deinit();
+    const bw = &aw.writer;
+
+    try bw.writeAll(prelude);
+
+    // One capture object per `@Expr` parameter, bound to the param's name.
+    for (captures) |*cap| {
+        const ctxJson = try template.contextJsonAlloc(cap, arena);
+        try bw.print("const {s} = __capture(\"{s}\", {s});\n", .{ cap.paramName, cap.paramName, ctxJson });
+    }
+
+    // The template fn body as plain JS (params receive the capture objects).
+    try commonJS.emitFnJs(arena, bw, tfn);
+    try bw.writeAll("\n");
+
+    // Call it and report the protocol result.
+    try bw.print("let __r;\ntry {{\n    const r = {s}(", .{tfn.name});
+    for (captures, 0..) |cap, i| {
+        if (i > 0) try bw.writeAll(", ");
+        try bw.writeAll(cap.paramName);
+    }
+    try bw.writeAll(
+        \\);
+        \\    if (r && r.__code !== undefined) __r = { kind: "code", source: r.__code };
+        \\    else if (r && r.__lift !== undefined) __r = { kind: "value", value: r.__lift };
+        \\    else if (r && r.__cap !== undefined) __r = { kind: "capture", param: r.__cap };
+        \\    else __r = { kind: "error", message: "template returned a plain value — construct code with @expr(...), @code(...), or build(...)" };
+        \\} catch (e) {
+        \\    if (e && e.__bpfail) __r = { kind: "fail", ...e.__bpfail };
+        \\    else __r = { kind: "error", message: String((e && e.message) || e) };
+        \\}
+        \\process.stdout.write(JSON.stringify(__r));
+        \\
+    );
+
+    return aw.toOwnedSlice();
+}
+
+// ── result parsing ────────────────────────────────────────────────────────────
+
+fn parseOutcome(arena: std.mem.Allocator, stdout: []const u8) !Outcome {
+    const parsed = std.json.parseFromSliceLeaky(std.json.Value, arena, stdout, .{}) catch {
+        return .{ .err = try std.fmt.allocPrint(arena, "template evaluator produced no result (output: {s})", .{stdout[0..@min(stdout.len, 200)]}) };
+    };
+    const obj = switch (parsed) {
+        .object => |o| o,
+        else => return .{ .err = "template evaluator produced a non-object result" },
+    };
+    const kind = switch (obj.get("kind") orelse return .{ .err = "missing result kind" }) {
+        .string => |s| s,
+        else => return .{ .err = "missing result kind" },
+    };
+
+    if (std.mem.eql(u8, kind, "code")) {
+        const src = switch (obj.get("source") orelse .null) {
+            .string => |s| s,
+            else => return .{ .err = "code result without source text" },
+        };
+        return .{ .code = src };
+    }
+    if (std.mem.eql(u8, kind, "value")) {
+        return .{ .value = obj.get("value") orelse .null };
+    }
+    if (std.mem.eql(u8, kind, "capture")) {
+        const param = switch (obj.get("param") orelse .null) {
+            .string => |s| s,
+            else => return .{ .err = "capture result without param name" },
+        };
+        return .{ .capture = param };
+    }
+    if (std.mem.eql(u8, kind, "fail")) {
+        const message = switch (obj.get("message") orelse .null) {
+            .string => |s| s,
+            else => "template failed",
+        };
+        const param: ?[]const u8 = switch (obj.get("param") orelse .null) {
+            .string => |s| s,
+            else => null,
+        };
+        const span: ?template.Span = blk: {
+            const sp = switch (obj.get("span") orelse .null) {
+                .object => |o| o,
+                else => break :blk null,
+            };
+            const start = jsonUsize(sp.get("start")) orelse break :blk null;
+            const end = jsonUsize(sp.get("end")) orelse start;
+            const line = jsonUsize(sp.get("line")) orelse 1;
+            break :blk template.Span{ .start = start, .end = end, .line = line };
+        };
+        return .{ .fail = .{ .message = message, .param = param, .span = span } };
+    }
+    const message = switch (obj.get("message") orelse .null) {
+        .string => |s| s,
+        else => "template evaluation failed",
+    };
+    return .{ .err = message };
+}
+
+fn jsonUsize(v: ?std.json.Value) ?usize {
+    const val = v orelse return null;
+    return switch (val) {
+        .integer => |n| if (n >= 0) @intCast(n) else null,
+        .float => |f| if (f >= 0) @intFromFloat(f) else null,
+        else => null,
+    };
+}
+
+// ── entry point ───────────────────────────────────────────────────────────────
+
+/// Run `tfn` with `captures` in the node eval runtime. Everything in the
+/// returned `Outcome` is allocated in `arena` (same lifetime as the
+/// type-check session). The script lands in `<build_root>/template/<fn>/`.
+pub fn evaluate(
+    arena: std.mem.Allocator,
+    io: std.Io,
+    build_root: []const u8,
+    tfn: ast.FnDecl,
+    captures: []const template.CapturedExpr,
+) EvalError!Outcome {
+    const script = buildScript(arena, tfn, captures) catch return error.EvalFailed;
+
+    var dir_buf: [512]u8 = undefined;
+    const tmp_dir = std.fmt.bufPrint(&dir_buf, "{s}/template/{s}", .{ build_root, tfn.name }) catch return error.EvalFailed;
+    var src_buf: [512]u8 = undefined;
+    const src_path = std.fmt.bufPrint(&src_buf, "{s}/main.js", .{tmp_dir}) catch return error.EvalFailed;
+
+    std.Io.Dir.cwd().deleteTree(io, tmp_dir) catch {};
+    std.Io.Dir.cwd().createDirPath(io, tmp_dir) catch return error.EvalFailed;
+    std.Io.Dir.cwd().writeFile(io, .{ .sub_path = src_path, .data = script }) catch return error.EvalFailed;
+
+    const res = std.process.run(arena, io, .{ .argv = &.{ "node", src_path } }) catch return error.EvalFailed;
+    return parseOutcome(arena, res.stdout) catch error.EvalFailed;
+}

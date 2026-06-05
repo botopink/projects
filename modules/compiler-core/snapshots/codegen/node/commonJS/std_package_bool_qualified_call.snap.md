@@ -26,6 +26,13 @@ pub fn exclusiveNor(a: bool, b: bool) -> bool {
     return a == b;
 }
 
+// Zig-style co-located test (stdlib-tests F0: impl modules MAY carry inline
+// `test` blocks; excluded from normal builds, run by `botopink test`).
+test "inline: negate truth table" {
+    assert negate(false);
+    assert !negate(true);
+}
+
 ```
 
 ----- JAVASCRIPT -- std/bool.js
@@ -64,6 +71,10 @@ function exclusiveNor(a, b) {
     return (a === b);
 }
 exports.exclusiveNor = exclusiveNor;
+
+// Zig-style co-located test (stdlib-tests F0: impl modules MAY carry inline
+
+// `test` blocks; excluded from normal builds, run by `botopink test`).
 ```
 
 ----- TYPESCRIPT TYPEDEF -- std/bool.d.ts

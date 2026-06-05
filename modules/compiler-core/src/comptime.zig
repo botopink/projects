@@ -94,10 +94,13 @@ fn analyzeModule(
     arena: std.mem.Allocator,
     mod: Module,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    templateEvalCtx: ?envMod.TemplateEvalCtx,
 ) !AnalysisResult {
     var env = try infer.freshEnv(arena, std.heap.page_allocator);
     // Capture provenance for `expr` templates: which file is being inferred.
     env.modulePath = mod.path;
+    // Runtime-backed template expansion (F6-full) — null in tooling paths.
+    env.templateEval = templateEvalCtx;
 
     var lexer = Lexer.init(mod.source);
     const tokens = try lexer.scanAll(arena);
@@ -274,6 +277,10 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         var env2 = Env.init(env.arena);
         defer env2.deinit();
         try env2.registerBuiltins();
+        // `true`/`false` are bound by `freshEnv` for project envs — the scratch
+        // env needs them too (inline `test` bodies in std modules use them).
+        try env2.bind("true", try env2.namedType("bool"));
+        try env2.bind("false", try env2.namedType("bool"));
         for (sources) |src| {
             var lx = Lexer.init(src);
             const tokens = try lx.scanAll(env.arena);
@@ -384,7 +391,7 @@ pub fn compileTypesOnly(
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry);
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, null);
 
         switch (analysis) {
             .parseError => {
@@ -492,7 +499,10 @@ pub fn compile(
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry);
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, .{
+            .io = io,
+            .build_root = build_root orelse name,
+        });
 
         switch (analysis) {
             .parseError => {

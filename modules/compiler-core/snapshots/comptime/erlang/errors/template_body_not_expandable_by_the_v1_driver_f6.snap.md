@@ -12,4 +12,4 @@ error: cannot expand this template function at compile time
 5 │ val c = hard "SELECT 1";
   │         ^
 
-  hint: The V1 expansion driver supports bodies of the form `return <@Expr param>`, `return @expr(value)`, or `return @code("…")` with a literal string. Template-method bodies (text/parts/lookup) require the comptime runtime (F6-full).
+  hint: The V1 expansion driver supports bodies of the form `return <@Expr param>`, `return @expr(value)`, or `return @code("…")` with a literal string; richer bodies need the eval runtime (full `compile` pipeline).
