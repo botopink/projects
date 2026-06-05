@@ -170,8 +170,21 @@
       printed literally) — escape pairs now pass through verbatim.
       V1-driver guard added: `return @expr(E)` where E references a template
       param now defers to the runtime (was: spliced an unbound identifier)
-- [ ] F6-full remaining: `${…}` holes across the evaluator (parts with hole
-      handles + splice-back), runtime params / mixed signatures, cross-module
+- [x] F6-full slice 2: `${…}` holes across the evaluator — holed captures
+      serialize their parts to the JS side (Text with text+span; Interp with
+      a `code` placeholder `__bp_hole_<param>_<i>`); the DSL embeds the
+      placeholder in built source and `substituteHoles` splices the caller's
+      hole AST back after parse; memoization is gated to hole-free captures
+      (equal text parts at two sites would alias the wrong holes). Canonical
+      e2e: `html """<p>${name}</p>"""` via parts() runs and prints
+      `<p>world</p>`. New `assertCompilesOk` guard in templates tests —
+      snapshot-only assertions accepted error outcomes as SOURCE-only snaps.
+      FIXED pre-existing codegen bug en route: statement-loop lowering used
+      `Object.entries` — the 1-param form bound the loop var to the string
+      INDEX (not the item) and the 2-param form had [item, i] inverted; now
+      `for (const x of xs)` / `for (const [i, x] of xs.entries())` swapped
+      to the declared (item, index) order
+- [ ] F6-full remaining: runtime params / mixed signatures, cross-module
       template fns (registry only exports types today), erlang evaluator
       parity, `Binding.ref()` end-to-end, hole loc mapping (slice-relative)
 - [ ] Memoize by hash(template text + used-binding signatures) — V1 expansion

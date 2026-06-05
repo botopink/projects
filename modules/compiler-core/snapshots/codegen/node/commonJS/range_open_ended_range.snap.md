@@ -12,7 +12,7 @@ fn countUp(x: i32) {
 ----- JAVASCRIPT -- main.js
 ```javascript
 function countUp(x) {
-    for (const [i] of Object.entries(x..)) {
+    for (const i of x..) {
     (() => { if ((i > 100)) { return return; } })();
 };
 }

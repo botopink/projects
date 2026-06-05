@@ -54,7 +54,11 @@ const prelude =
     \\function __failRaw(message, param, span) {
     \\    throw { __bpfail: { message: String(message), param: param ?? null, span: span ?? null } };
     \\}
-    \\function __capture(param, d) {
+    \\// `parts` is null for a hole-free template (synthesized from `text`); a
+    \\// holed template carries explicit parts whose Interp entries expose a
+    \\// `code` placeholder (`__bp_hole_<param>_<i>`) — embedding it in built
+    \\// source splices the caller's hole expression back at expansion.
+    \\function __capture(param, d, parts) {
     \\    return {
     \\        __cap: param,
     \\        value() { __failRaw("value() is only available after expansion", param); },
@@ -63,6 +67,7 @@ const prelude =
     \\            return d.text;
     \\        },
     \\        parts() {
+    \\            if (parts !== null) return parts;
     \\            if (d.text === null) return [];
     \\            return [{ kind: "Text", text: d.text, span: { start: 0, end: d.text.length, line: 1 } }];
     \\        },
@@ -81,6 +86,49 @@ const prelude =
     \\
 ;
 
+/// Serialize a holed capture's `stringTemplate` parts as the JSON array the
+/// prelude's `parts()` returns: Text entries carry their raw text, Interp
+/// entries a `code` placeholder (`__bp_hole_<param>_<i>`) that the built
+/// source embeds and `infer.substituteHoles` replaces with the caller's hole
+/// expression. Spans are template-relative byte offsets (holes are 0-width).
+fn appendPartsJson(
+    buf: *std.ArrayList(u8),
+    arena: std.mem.Allocator,
+    cap: *const template.CapturedExpr,
+) !void {
+    const parts = cap.node.literal.kind.stringTemplate.parts;
+    try buf.append(arena, '[');
+    var offset: usize = 0;
+    var line: usize = 1;
+    var holeIdx: usize = 0;
+    for (parts, 0..) |part, i| {
+        if (i > 0) try buf.append(arena, ',');
+        switch (part) {
+            .text => |txt| {
+                try buf.appendSlice(arena, "{\"kind\":\"Text\",\"text\":");
+                try template.appendJsonString(buf, arena, txt);
+                try appendSpanJson(buf, arena, offset, offset + txt.len, line);
+                offset += txt.len;
+                line += std.mem.count(u8, txt, "\n");
+            },
+            .expr => {
+                try buf.appendSlice(arena, "{\"kind\":\"Interp\",\"code\":");
+                const placeholder = try std.fmt.allocPrint(arena, "\"__bp_hole_{s}_{d}\"", .{ cap.paramName, holeIdx });
+                try buf.appendSlice(arena, placeholder);
+                try appendSpanJson(buf, arena, offset, offset, line);
+                holeIdx += 1;
+            },
+        }
+    }
+    try buf.append(arena, ']');
+}
+
+fn appendSpanJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, start: usize, end: usize, line: usize) !void {
+    var num: [96]u8 = undefined;
+    const span = std.fmt.bufPrint(&num, ",\"span\":{{\"start\":{d},\"end\":{d},\"line\":{d}}}}}", .{ start, end, line }) catch unreachable;
+    try buf.appendSlice(arena, span);
+}
+
 // ── script builder ────────────────────────────────────────────────────────────
 
 fn buildScript(
@@ -97,7 +145,12 @@ fn buildScript(
     // One capture object per `@Expr` parameter, bound to the param's name.
     for (captures) |*cap| {
         const ctxJson = try template.contextJsonAlloc(cap, arena);
-        try bw.print("const {s} = __capture(\"{s}\", {s});\n", .{ cap.paramName, cap.paramName, ctxJson });
+        const partsJson: []const u8 = if (cap.text == null) blk: {
+            var buf: std.ArrayList(u8) = .empty;
+            try appendPartsJson(&buf, arena, cap);
+            break :blk try buf.toOwnedSlice(arena);
+        } else "null";
+        try bw.print("const {s} = __capture(\"{s}\", {s}, {s});\n", .{ cap.paramName, cap.paramName, ctxJson, partsJson });
     }
 
     // The template fn body as plain JS (params receive the capture objects).

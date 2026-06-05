@@ -10,7 +10,7 @@ loop (messages, 0..) { msg, i ->
 ```javascript
 const messages = ["Erro 404", "Sucesso 200", "Aviso 500"];
 
-const _loop = for (const [msg, i] of Object.entries(messages)) {
+const _loop = for (const [i, msg] of (messages).entries()) {
     console.log(msg);
 };
 ```

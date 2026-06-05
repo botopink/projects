@@ -297,3 +297,25 @@ test "js: template end to end ---- generic expr via code builtin" {
         \\}
     );
 }
+
+test "js: template end to end ---- holed html via parts() runs" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
+        \\    var acc = "\"\"";
+        \\    loop (q.parts()) { p ->
+        \\        if (p.kind == "Text") {
+        \\            acc = acc + " + \"" + p.text + "\"";
+        \\        };
+        \\        if (p.kind == "Interp") {
+        \\            acc = acc + " + " + p.code;
+        \\        };
+        \\    };
+        \\    return q.build(acc);
+        \\}
+        \\val name = "world";
+        \\val page = html """<p>${name}</p>""";
+        \\fn main() {
+        \\    @print(page);
+        \\}
+    );
+}

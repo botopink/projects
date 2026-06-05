@@ -30,7 +30,7 @@ function main() {
 function execute_$0(input) {
     const slug = "calc";
     let output = 0;
-    for (const [cmd] of Object.entries(COMMANDS)) {
+    for (const cmd of COMMANDS) {
     (() => { if ((cmd === slug)) { return output = (input * 2); } })();
 };
     return output;
@@ -39,7 +39,7 @@ function execute_$0(input) {
 function execute_$1(input) {
     const slug = "noop";
     let output = 0;
-    for (const [cmd] of Object.entries(COMMANDS)) {
+    for (const cmd of COMMANDS) {
     (() => { if ((cmd === slug)) { return output = (input * 2); } })();
 };
     return output;

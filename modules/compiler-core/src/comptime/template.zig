@@ -136,7 +136,8 @@ pub const CapturedExpr = struct {
 // ── second-layer context ──────────────────────────────────────────────────────
 
 /// Append `s` to `buf` as a JSON string literal (quoted + escaped).
-fn appendJsonString(buf: *std.ArrayList(u8), allocator: std.mem.Allocator, s: []const u8) !void {
+/// Also used by `template_eval.zig` to serialize template parts.
+pub fn appendJsonString(buf: *std.ArrayList(u8), allocator: std.mem.Allocator, s: []const u8) !void {
     try buf.append(allocator, '"');
     for (s) |c| switch (c) {
         '"' => try buf.appendSlice(allocator, "\\\""),
