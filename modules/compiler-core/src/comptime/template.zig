@@ -133,6 +133,64 @@ pub const CapturedExpr = struct {
     scope: ?*ScopeSnapshot,
 };
 
+// ── second-layer context ──────────────────────────────────────────────────────
+
+/// Append `s` to `buf` as a JSON string literal (quoted + escaped).
+fn appendJsonString(buf: *std.ArrayList(u8), allocator: std.mem.Allocator, s: []const u8) !void {
+    try buf.append(allocator, '"');
+    for (s) |c| switch (c) {
+        '"' => try buf.appendSlice(allocator, "\\\""),
+        '\\' => try buf.appendSlice(allocator, "\\\\"),
+        '\n' => try buf.appendSlice(allocator, "\\n"),
+        '\r' => try buf.appendSlice(allocator, "\\r"),
+        '\t' => try buf.appendSlice(allocator, "\\t"),
+        else => if (c < 0x20) {
+            var hex: [6]u8 = undefined;
+            const written = std.fmt.bufPrint(&hex, "\\u{x:0>4}", .{c}) catch unreachable;
+            try buf.appendSlice(allocator, written);
+        } else try buf.append(allocator, c),
+    };
+    try buf.append(allocator, '"');
+}
+
+/// Serialize a capture's second-layer context as one JSON object —
+/// everything a DSL compiler running inside a template function needs:
+/// declaration position (`file`/`line`/`col`), shape (`multiline`), raw
+/// `text` (null when `${…}` holes split it — the parts live on the node),
+/// and the origin `scope`. This is the handle the runtime-backed evaluator
+/// (F6-full) hands to `source()`/`context()`/`bindings()`. Caller owns the
+/// returned slice.
+pub fn contextJsonAlloc(capture: *const CapturedExpr, allocator: std.mem.Allocator) ![]u8 {
+    var buf: std.ArrayList(u8) = .empty;
+    errdefer buf.deinit(allocator);
+
+    var numBuf: [24]u8 = undefined;
+    try buf.appendSlice(allocator, "{\"file\":");
+    try appendJsonString(&buf, allocator, capture.modulePath);
+    try buf.appendSlice(allocator, ",\"line\":");
+    try buf.appendSlice(allocator, std.fmt.bufPrint(&numBuf, "{d}", .{capture.loc.line}) catch unreachable);
+    try buf.appendSlice(allocator, ",\"col\":");
+    try buf.appendSlice(allocator, std.fmt.bufPrint(&numBuf, "{d}", .{capture.loc.col}) catch unreachable);
+    try buf.appendSlice(allocator, ",\"multiline\":");
+    try buf.appendSlice(allocator, if (capture.multiline) "true" else "false");
+    try buf.appendSlice(allocator, ",\"text\":");
+    if (capture.text) |txt| {
+        try appendJsonString(&buf, allocator, txt);
+    } else {
+        try buf.appendSlice(allocator, "null");
+    }
+    try buf.appendSlice(allocator, ",\"scope\":");
+    if (capture.scope) |scope| {
+        const scopeJson = try scope.toJsonAlloc(allocator);
+        defer allocator.free(scopeJson);
+        try buf.appendSlice(allocator, scopeJson);
+    } else {
+        try buf.appendSlice(allocator, "{}");
+    }
+    try buf.append(allocator, '}');
+    return buf.toOwnedSlice(allocator);
+}
+
 // ── span mapping + diagnostics ────────────────────────────────────────────────
 
 /// A template-relative span (the Zig-side shape of `std.syntax.Span`):

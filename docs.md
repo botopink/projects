@@ -1219,27 +1219,56 @@ builtins:
 ```botopink
 fn text(self: expr) -> string                     // raw template source text
 fn parts(self: expr) -> Part[]                    // text/interp alternation
+fn source(self: expr) -> Source                   // declaration position (file/line/col)
+fn context(self: expr) -> Context                 // source + text + shape, in one object
 fn lookup(self: expr, name: string) -> ?Binding   // origin-scope resolution
+fn bindings(self: expr) -> Binding[]              // enumerate the origin scope
+fn build(self: expr, source: string) -> expr      // parse text into code (origin scope)
 fn fail(self: expr, message: string)              // diagnostic at the expr's span
 fn failAt(self: expr, span: Span, message: string)// diagnostic INSIDE the template
 fn ref(self: Binding) -> expr                     // spliceable reference
 ```
 
-`lookup`/`fail` resolve against the expression's **origin scope** — a caller
-template resolves in the caller's file (V1: top-level decls + imports; locals
-are not visible). `fail`/`failAt` abort expansion with a rustc-style
-diagnostic pointing inside the `"""…"""` in the caller's file.
+`context()` is the second-layer entry point: a DSL compiler running inside a
+template function gets where the template was declared (`Source`), its raw
+text, and its shape in one object — input via `text`/`parts`/`lookup`/
+`bindings`, code output via `build`/`ref`/value lifting, diagnostics via
+`fail`/`failAt`.
 
-### `expr { … }` literal and `${…}` splices
+`lookup`/`bindings`/`build`/`fail` resolve against the expression's **origin
+scope** — a caller template resolves in the caller's file (V1: top-level
+decls + imports; locals are not visible). `fail`/`failAt` abort expansion
+with a rustc-style diagnostic pointing inside the `"""…"""` in the caller's
+file.
 
-`expr { … }` quotes code, building an `expr T` value; `${e}` splices another
-`expr` value into the quoted code (only valid inside a literal). Identifiers
-inside the literal resolve in the scope where the literal is **written**
-(hygiene by provenance):
+### Returning code from a template function
+
+A template function returns an `expr` value. There are four ways to produce
+one — pick the lightest that fits; no wrapping for wrapping's sake:
 
 ```botopink
+// 1. Pass-through: an expr param IS an expr value — return it directly.
 pub fn html(comptime template: expr string) -> expr string {
-    return expr { ${template} };
+    return template;
+}
+
+// 2. Value lifting: a comptime value of T coerces to expr T —
+//    a constant is an expression.
+pub fn port() -> expr {
+    return 8080;
+}
+
+// 3. build(): parse generated source text into code — the workhorse of a
+//    second-layer language (compile the DSL, emit botopink as text).
+pub fn sql(comptime q: expr string) -> expr {
+    return q.build("runQuery(" + q.text() + ")");
+}
+
+// 4. expr { … } quoting: for fixed code *patterns* with `${…}` holes.
+//    Identifiers inside resolve in the scope where the literal is written
+//    (hygiene by provenance).
+pub fn doubled(comptime n: expr i32) -> expr i32 {
+    return expr { ${n} + ${n} };
 }
 ```
 
@@ -1251,7 +1280,7 @@ Template functions never reach codegen.
 
 ```botopink
 pub fn html(comptime template: expr string) -> expr string {
-    return expr { ${template} };
+    return template;
 }
 val name = "world";
 val page = html """

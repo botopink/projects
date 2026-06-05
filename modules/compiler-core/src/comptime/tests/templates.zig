@@ -151,7 +151,11 @@ test "template: expr methods typecheck and record lowerings" {
         \\pub fn html(comptime template: expr string, sp: Span) -> expr string {
         \\    val t = template.text();
         \\    val ps = template.parts();
+        \\    val where = template.source();
+        \\    val ctx = template.context();
+        \\    val scope = template.bindings();
         \\    val b = template.lookup("Button");
+        \\    val made = template.build("1 + 2");
         \\    template.failAt(sp, "bad tag");
         \\    template.fail("no component");
         \\    return template;
@@ -161,7 +165,7 @@ test "template: expr methods typecheck and record lowerings" {
         \\}
     );
 
-    try std.testing.expectEqual(@as(usize, 6), env.templateLowerings.count());
+    try std.testing.expectEqual(@as(usize, 10), env.templateLowerings.count());
     var counts = std.enums.EnumArray(envMod.TemplateOp, usize).initFill(0);
     var it = env.templateLowerings.valueIterator();
     while (it.next()) |op| counts.set(op.*, counts.get(op.*) + 1);
@@ -225,6 +229,46 @@ test "infer error: expr argument is typed in the caller against inner T" {
         \\    return cond;
         \\}
         \\val c = check("not a bool");
+    );
+}
+
+test "template: context exposes declaration position and scope for second-layer languages" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\pub struct Button {
+        \\    label: string,
+        \\}
+        \\pub fn dsl(comptime template: expr string) -> expr string {
+        \\    return template;
+        \\}
+        \\val c = dsl """
+        \\<Button/>
+        \\""";
+    );
+
+    const captures = try onlyCaptures(&env);
+    const json = try template.contextJsonAlloc(&captures[0], std.testing.allocator);
+    defer std.testing.allocator.free(json);
+    try std.testing.expectEqualStrings(
+        \\{"file":"","line":7,"col":13,"multiline":true,"text":"\n<Button/>\n","scope":{"Button":"Struct","dsl":"Fn","c":"Val"}}
+    , json);
+}
+
+test "infer: context/source/bindings/build methods typecheck against std.syntax" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\pub fn dsl(comptime template: expr string) -> expr string {
+        \\    val ctx = template.context();
+        \\    val file: string = ctx.source.file;
+        \\    val line: i32 = ctx.source.line;
+        \\    val raw: string = ctx.text;
+        \\    val names = template.bindings();
+        \\    return template.build("file + raw");
+        \\}
     );
 }
 

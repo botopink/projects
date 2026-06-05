@@ -88,6 +88,15 @@
       `@Result`/`@Option` builtins (NOT extension-dispatch blocks; consistent
       with the stdlib method idiom), recorded in `env.templateLowerings`
       (loc-keyed) for F6; `fail`/`failAt` return a fresh var (bottom)
+- [x] Second-layer surface (user feedback, post-F6): `Source` (declaration
+      position) + `Context` (source/text/shape) structs in std.syntax;
+      `source()`/`context()`/`bindings()` extensions expose provenance and
+      the enumerable origin scope; `build(source) -> expr` parses generated
+      text into code in the receiver's origin scope (the DSL "emit" path —
+      `expr { … }` stays for fixed patterns with holes);
+      `template.contextJsonAlloc` serializes the whole handle for the
+      F6-full runtime; docs examples de-emphasize the no-op
+      `return expr { ${template} }` in favor of `return template;`
 - [x] Scope snapshot V1: `buildScopeSnapshot` in `inferProgram*` → new
       `comptime/template.zig` `ScopeSnapshot` (top-level decls + imports,
       decl order, `toJsonAlloc` serializable handle); import kinds derived

@@ -37,6 +37,25 @@ pub struct Binding {
     kind: BindingKind,
 }
 
+// Where an expression was written: the declaration position in the origin
+// file. `file` is the module path ("" for main); `line`/`col` point at the
+// template literal's opening quote (1-based).
+pub struct Source {
+    file: string,
+    line: i32,
+    col: i32,
+}
+
+// Everything a second-layer language (a DSL compiler running inside a
+// template function) needs about its input in one object: where the template
+// was declared, its raw text, and its shape. The origin scope is reached via
+// `lookup`/`bindings`; the segmented view via `parts`.
+pub struct Context {
+    source: Source,
+    text: string,
+    multiline: bool,
+}
+
 // ── compiler-provided extensions (comptime-only) ──────────────────────────────
 //
 // Like the `@Result`/`@Option` methods, these are resolved by type inference
@@ -46,7 +65,14 @@ pub struct Binding {
 //   // On any `expr` value:
 //   fn text(self: expr) -> string                     // raw template source text
 //   fn parts(self: expr) -> Part[]                    // text/interp alternation
+//   fn source(self: expr) -> Source                   // declaration position
+//   fn context(self: expr) -> Context                 // source + text + shape
 //   fn lookup(self: expr, name: string) -> ?Binding   // origin-scope resolution
+//   fn bindings(self: expr) -> Binding[]              // enumerate the origin scope
+//   fn build(self: expr, source: string) -> expr      // parse source text into an
+//                                                     // expr in the receiver's
+//                                                     // origin scope (code output
+//                                                     // for second-layer languages)
 //   fn fail(self: expr, message: string)              // abort expansion; diagnostic
 //                                                     // at the expr's span
 //   fn failAt(self: expr, span: Span, message: string)// diagnostic INSIDE the

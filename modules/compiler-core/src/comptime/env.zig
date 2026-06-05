@@ -147,11 +147,12 @@ pub const ExprParamInfo = struct {
 };
 
 /// A compiler-provided template method resolved by inference (expr-templates
-/// F4): `text`/`parts`/`lookup`/`fail`/`failAt` on an `expr` receiver, plus
-/// `ref` on a `Binding`. Mirrors `MethodLowering`: keyed by the call's source
-/// `Loc` and consumed by the call-site expansion pass (F6). Instances only
-/// exist at comptime — no codegen backend ever sees these calls.
-pub const TemplateOp = enum { text, parts, lookup, fail, failAt, ref };
+/// F4): `text`/`parts`/`source`/`context`/`lookup`/`bindings`/`fail`/`failAt`
+/// on an `expr` receiver, plus `ref` on a `Binding`. Mirrors `MethodLowering`:
+/// keyed by the call's source `Loc` and consumed by the call-site expansion
+/// pass (F6). Instances only exist at comptime — no codegen backend ever sees
+/// these calls.
+pub const TemplateOp = enum { text, parts, source, context, lookup, bindings, build, fail, failAt, ref };
 
 /// Constraint metadata for one `comptime ...: typeparam` parameter of a function.
 /// Recorded at fn-declaration time and consulted at each call site.

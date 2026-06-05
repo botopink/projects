@@ -85,10 +85,16 @@ caller and captured **unevaluated**. Wiring in `infer.zig` / `env.zig`:
   location (the lexer stamps multiline literals with their *closing* line),
   module path, and the scope snapshot.
 - `inferTemplateMethod` resolves the comptime-only methods `text`/`parts`/
-  `lookup`/`fail`/`failAt` on `expr` receivers and `ref()` on `Binding`,
-  recording `env.templateLowerings` (keyed by call loc) for the expansion
-  pass (F6). The data model (`Span`, `Part`, `Binding`) is plain stdlib —
+  `source`/`context`/`lookup`/`bindings`/`build`/`fail`/`failAt` on `expr`
+  receivers and `ref()` on `Binding`, recording `env.templateLowerings`
+  (keyed by call loc) for the expansion pass (F6). The data model (`Span`,
+  `Part`, `Binding`, `Source`, `Context`) is plain stdlib —
   `libs/std/src/syntax.bp`, preloaded by `registerStdlib`.
+  `template.contextJsonAlloc` serializes a capture's full second-layer
+  context (file/line/col, shape, text, scope) — the handle the
+  runtime-backed evaluator (F6-full) hands to `source()`/`context()`/
+  `bindings()`; `build(source)` is how a DSL emits code as text, parsed in
+  the receiver's origin scope.
 - `template.failDiagnostic`/`mapSpanToLoc` build the rustc-style diagnostic
   whose span lands inside the caller's `"""…"""` literal.
 

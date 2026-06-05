@@ -2701,6 +2701,25 @@ fn inferTemplateMethod(
         } else if (std.mem.eql(u8, callee, "parts")) {
             op = .parts;
             retType = try env.namedTypeArgs("array", &.{try env.namedType("Part")});
+        } else if (std.mem.eql(u8, callee, "source")) {
+            // Declaration position — where the expression was written.
+            op = .source;
+            retType = try env.namedType("Source");
+        } else if (std.mem.eql(u8, callee, "context")) {
+            // The full second-layer input: source + text + shape.
+            op = .context;
+            retType = try env.namedType("Context");
+        } else if (std.mem.eql(u8, callee, "bindings")) {
+            // Enumerate the origin scope (top-level decls + imports, V1).
+            op = .bindings;
+            retType = try env.namedTypeArgs("array", &.{try env.namedType("Binding")});
+        } else if (std.mem.eql(u8, callee, "build")) {
+            // Parse source text into an expression carrying the receiver's
+            // origin scope + provenance — how a second-layer language emits
+            // code without quoting (`expr { … }` covers the pattern case).
+            op = .build;
+            try unifyArg(env, typedArgs, 0, try env.namedType("string"));
+            retType = try env.namedTypeArgs("expr", &.{try env.freshVar()});
         } else if (std.mem.eql(u8, callee, "lookup")) {
             op = .lookup;
             try unifyArg(env, typedArgs, 0, try env.namedType("string"));

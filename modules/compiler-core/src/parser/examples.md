@@ -260,7 +260,11 @@ val greeting = "hello ${name}!";          // ${…} interpolation (string templa
 fn parse(comptime T: type string | int, raw: string) -> T;   // `type` meta-kind
 
 pub fn html(comptime template: expr string) -> expr string { // `expr` meta-kind
-    return expr { ${template} };          // expr literal + splice hole
+    return template;                      // an expr param IS an expr value
+}
+
+fn doubled(comptime n: expr i32) -> expr i32 {
+    return expr { ${n} + ${n} };          // expr literal + splice holes (patterns)
 }
 
 val page = html """
