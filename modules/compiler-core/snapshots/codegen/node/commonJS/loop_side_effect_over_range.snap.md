@@ -7,7 +7,7 @@ loop (0..10) { i ->
 
 ----- JAVASCRIPT -- main.js
 ```javascript
-const _loop = for (const [i] of Object.entries(0..10)) {
+const _loop = for (const i of 0..10) {
     console.log(i);
 };
 ```

@@ -363,20 +363,45 @@ test "infer error: template body not expandable by the V1 driver (F6)" {
     );
 }
 
+/// Compile `src` through the full node pipeline and require a `.ok` outcome —
+/// snapshot-only assertions accept error outcomes as a SOURCE-only snapshot,
+/// which silently hides template-evaluation failures.
+fn assertCompilesOk(comptime loc: std.builtin.SourceLocation, src: []const u8) !void {
+    const io = std.testing.io;
+    const build_root = comptime h.buildRootPathFromSrc(loc);
+    var session = try comptimeMod.compile(
+        std.testing.allocator,
+        &.{.{ .path = "", .source = src }},
+        io,
+        .node,
+        build_root,
+    );
+    defer session.deinit(std.testing.allocator);
+    const outcome = session.outputs.items[0].outcome;
+    if (outcome == .typeError) {
+        const desc = try h.renderTypeError(std.testing.allocator, src, outcome.typeError);
+        defer std.testing.allocator.free(desc);
+        std.debug.print("\nunexpected type error:\n{s}\n", .{desc});
+    }
+    try std.testing.expect(outcome == .ok);
+}
+
 // ── F6-full: runtime-backed template bodies ───────────────────────────────────
 
 test "comptime: runtime template body ---- text() + build() end to end" {
-    try h.assertComptimeAstSingle(std.testing.allocator, @src(),
+    const src =
         \\pub fn shout(comptime q: @Expr<string>) -> @Expr<string> {
         \\    val t = q.text();
         \\    return q.build("\"" + t + "!\"");
         \\}
         \\val s = shout "hey";
-    );
+    ;
+    try assertCompilesOk(@src(), src);
+    try h.assertComptimeAstSingle(std.testing.allocator, @src(), src);
 }
 
 test "comptime: runtime template body ---- lookup miss drives control flow" {
-    try h.assertComptimeAstSingle(std.testing.allocator, @src(),
+    const src =
         \\pub struct Button {
         \\    label: string,
         \\}
@@ -388,17 +413,21 @@ test "comptime: runtime template body ---- lookup miss drives control flow" {
         \\    return t.build("\"ok\"");
         \\}
         \\val r = need "x";
-    );
+    ;
+    try assertCompilesOk(@src(), src);
+    try h.assertComptimeAstSingle(std.testing.allocator, @src(), src);
 }
 
 test "comptime: runtime template body ---- @expr lifts a computed value" {
-    try h.assertComptimeAstSingle(std.testing.allocator, @src(),
+    const src =
         \\pub fn six(comptime t: @Expr<string>) -> @Expr<i32> {
         \\    val n = 2 + 4;
         \\    return @expr(n);
         \\}
         \\val n = six "ignored";
-    );
+    ;
+    try assertCompilesOk(@src(), src);
+    try h.assertComptimeAstSingle(std.testing.allocator, @src(), src);
 }
 
 test "template: runtime fail() maps into the caller's template" {
@@ -429,4 +458,25 @@ test "template: runtime fail() maps into the caller's template" {
     const msg = try te.message(std.testing.allocator);
     defer std.testing.allocator.free(msg);
     try std.testing.expectEqualStrings("template rejected: bad", msg);
+}
+
+test "comptime: runtime template body ---- parts() with a hole splices the caller expression" {
+    const src =
+        \\pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
+        \\    var acc = "\"\"";
+        \\    loop (q.parts()) { p ->
+        \\        if (p.kind == "Text") {
+        \\            acc = acc + " + \"" + p.text + "\"";
+        \\        };
+        \\        if (p.kind == "Interp") {
+        \\            acc = acc + " + " + p.code;
+        \\        };
+        \\    };
+        \\    return q.build(acc);
+        \\}
+        \\val name = "world";
+        \\val page = html """<p>${name}</p>""";
+    ;
+    try assertCompilesOk(@src(), src);
+    try h.assertComptimeAstSingle(std.testing.allocator, @src(), src);
 }

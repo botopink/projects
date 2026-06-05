@@ -1589,19 +1589,14 @@ fn expandTemplateCallViaRuntime(
         ).withLoc(loc);
         return error.TypeError;
     }
+    // Memoize by callee + capture texts — hole-free captures only: a holed
+    // template's expansion embeds the call site's own hole expressions, so
+    // equal text parts at two sites would alias the wrong holes.
+    var holed = false;
     for (captures) |cap| {
-        if (cap.text == null) {
-            env.lastError = TypeError.custom(
-                "templates with `${…}` holes cannot cross into the eval runtime yet",
-                "Hole-aware evaluation is a recorded follow-up — keep the template literal contiguous for now.",
-            ).withLoc(cap.loc);
-            return error.TypeError;
-        }
+        if (cap.text == null) holed = true;
     }
-
-    // Memoize by callee + capture texts: same template input, same expansion
-    // (the expansion is still re-inferred per call site).
-    const memoKey = blk: {
+    const memoKey: ?[]const u8 = if (holed) null else blk: {
         var buf: std.ArrayListUnmanaged(u8) = .empty;
         buf.appendSlice(env.arena, tfn.name) catch return error.OutOfMemory;
         for (captures) |cap| {
@@ -1610,8 +1605,10 @@ fn expandTemplateCallViaRuntime(
         }
         break :blk buf.toOwnedSlice(env.arena) catch return error.OutOfMemory;
     };
-    if (env.templateEvalCache.get(memoKey)) |cached| {
-        return finishExpansion(env, cached, retType, loc);
+    if (memoKey) |key| {
+        if (env.templateEvalCache.get(key)) |cached| {
+            return finishExpansion(env, cached, retType, loc);
+        }
     }
 
     const outcome = templateEval.evaluate(env.arena, ctx.io, ctx.build_root, tfn, captures) catch {
@@ -1623,12 +1620,18 @@ fn expandTemplateCallViaRuntime(
     };
 
     const expansion: *const ast.Expr = switch (outcome) {
-        .code => |src| parseCodeText(env, src) orelse {
-            env.lastError = TypeError.custom(
-                "the code built by the template does not parse as an expression",
-                "`build(…)`/`@code(…)` output must be a single well-formed botopink expression.",
-            ).withLoc(loc);
-            return error.TypeError;
+        .code => |src| blk: {
+            const parsed = parseCodeText(env, src) orelse {
+                env.lastError = TypeError.custom(
+                    "the code built by the template does not parse as an expression",
+                    "`build(…)`/`@code(…)` output must be a single well-formed botopink expression.",
+                ).withLoc(loc);
+                return error.TypeError;
+            };
+            // Splice the caller's `${…}` hole expressions back in place of
+            // the `__bp_hole_<param>_<i>` placeholders the template embedded.
+            substituteHoles(@constCast(parsed), captures);
+            break :blk parsed;
         },
         .capture => |param| captureNodeFor(captures, param) orelse {
             env.lastError = TypeError.custom(
@@ -1667,8 +1670,82 @@ fn expandTemplateCallViaRuntime(
         },
     };
 
-    env.templateEvalCache.put(memoKey, expansion) catch return error.OutOfMemory;
+    if (memoKey) |key| {
+        env.templateEvalCache.put(key, expansion) catch return error.OutOfMemory;
+    }
     return finishExpansion(env, expansion, retType, loc);
+}
+
+/// Replace `__bp_hole_<param>_<i>` placeholder identifiers in freshly parsed
+/// template output with the caller's hole expressions (the i-th `${…}` part
+/// of the named capture). The parsed tree is private to this expansion, so
+/// in-place mutation is safe.
+fn substituteHoles(e: *ast.Expr, captures: []const template.CapturedExpr) void {
+    switch (e.*) {
+        .identifier => |id| switch (id.kind) {
+            .ident => |name| {
+                const hole = holeForPlaceholder(name, captures) orelse return;
+                e.* = hole.*;
+            },
+            .identAccess => |ia| substituteHoles(ia.receiver, captures),
+            else => {},
+        },
+        .binaryOp => |b| {
+            substituteHoles(b.lhs, captures);
+            substituteHoles(b.rhs, captures);
+        },
+        .unaryOp => |u| substituteHoles(u.expr, captures),
+        .call => |c| switch (c.kind) {
+            .call => |cc| {
+                if (cc.receiver) |r| substituteHoles(r, captures);
+                for (cc.args) |arg| substituteHoles(arg.value, captures);
+            },
+            .pipeline => |pl| {
+                substituteHoles(pl.lhs, captures);
+                substituteHoles(pl.rhs, captures);
+            },
+        },
+        .collection => |col| switch (col.kind) {
+            .grouped => |g| substituteHoles(g, captures),
+            .arrayLit => |al| for (al.elems) |*elem| substituteHoles(elem, captures),
+            .tupleLit => |tl| for (tl.elems) |*elem| substituteHoles(elem, captures),
+            else => {},
+        },
+        .literal => |lit| switch (lit.kind) {
+            .stringTemplate => |t| for (t.parts) |part| switch (part) {
+                .text => {},
+                .expr => |hole| substituteHoles(hole, captures),
+            },
+            else => {},
+        },
+        else => {},
+    }
+}
+
+/// Resolve a `__bp_hole_<param>_<i>` placeholder to the i-th `${…}` hole
+/// expression of the named capture, or null for ordinary identifiers.
+fn holeForPlaceholder(name: []const u8, captures: []const template.CapturedExpr) ?*const ast.Expr {
+    const prefix = "__bp_hole_";
+    if (!std.mem.startsWith(u8, name, prefix)) return null;
+    const rest = name[prefix.len..];
+    const sep = std.mem.lastIndexOfScalar(u8, rest, '_') orelse return null;
+    const param = rest[0..sep];
+    const idx = std.fmt.parseInt(usize, rest[sep + 1 ..], 10) catch return null;
+
+    for (captures) |cap| {
+        if (!std.mem.eql(u8, cap.paramName, param)) continue;
+        if (cap.node.* != .literal or cap.node.literal.kind != .stringTemplate) return null;
+        var holeIdx: usize = 0;
+        for (cap.node.literal.kind.stringTemplate.parts) |part| switch (part) {
+            .text => {},
+            .expr => |hole| {
+                if (holeIdx == idx) return hole;
+                holeIdx += 1;
+            },
+        };
+        return null;
+    }
+    return null;
 }
 
 /// Build a literal expression from a JSON value produced by `@expr(…)` in

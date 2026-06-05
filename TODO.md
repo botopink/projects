@@ -170,8 +170,21 @@
       printed literally) — escape pairs now pass through verbatim.
       V1-driver guard added: `return @expr(E)` where E references a template
       param now defers to the runtime (was: spliced an unbound identifier)
-- [ ] F6-full remaining: `${…}` holes across the evaluator (parts with hole
-      handles + splice-back), runtime params / mixed signatures, cross-module
+- [x] F6-full slice 2: `${…}` holes across the evaluator — holed captures
+      serialize their parts to the JS side (Text with text+span; Interp with
+      a `code` placeholder `__bp_hole_<param>_<i>`); the DSL embeds the
+      placeholder in built source and `substituteHoles` splices the caller's
+      hole AST back after parse; memoization is gated to hole-free captures
+      (equal text parts at two sites would alias the wrong holes). Canonical
+      e2e: `html """<p>${name}</p>"""` via parts() runs and prints
+      `<p>world</p>`. New `assertCompilesOk` guard in templates tests —
+      snapshot-only assertions accepted error outcomes as SOURCE-only snaps.
+      FIXED pre-existing codegen bug en route: statement-loop lowering used
+      `Object.entries` — the 1-param form bound the loop var to the string
+      INDEX (not the item) and the 2-param form had [item, i] inverted; now
+      `for (const x of xs)` / `for (const [i, x] of xs.entries())` swapped
+      to the declared (item, index) order
+- [ ] F6-full remaining: runtime params / mixed signatures, cross-module
       template fns (registry only exports types today), erlang evaluator
       parity, `Binding.ref()` end-to-end, hole loc mapping (slice-relative)
 - [ ] Memoize by hash(template text + used-binding signatures) — V1 expansion
@@ -617,3 +630,22 @@ codegen/node ---- external_call_emits_import           (import {string_length})
   (under `modules/compiler-core/src/comptime/stdlib/`) or inference won't see it.
 - Keep signatures additive/stable — renames churn every codegen/comptime snapshot.
 - Update the matching `AGENTS.md` for every code/layout change in the same commit.
+
+## F9 — `\\` line strings (user request, 2026-06-05)
+- [x] Lexer: `\\` opens a line string (token `linesStringLiteral`); consecutive
+      `\\`-prefixed lines (newline + horizontal ws + `\\`) absorb into one
+      token; like `"""`, `lineStart` is not advanced so col stays at the
+      opening backslash
+- [x] Parser: `materializeLineString` strips each line's ws + `\\` prefix and
+      joins with newlines (arena-allocated — parser tests wrap in an arena
+      since stringLit content has no per-node deinit); content then follows
+      the `"""` conventions (escapes resolve in the target, `${…}`
+      interpolates via makeStringExpr); works in expression position AND as
+      a tagged-call argument
+- [x] Formatter normalizes to the `"""` form (style round-trip is a recorded
+      follow-up — stringLit carries no style flag)
+- [x] Tests: 3 parser snaps (plain/interpolated/tagged), format
+      normalization, codegen e2e `html\n  \\<p>${name}</p>` runs and prints
+      the interpolated block ×4 backends
+- [ ] Follow-ups: preserve the `\\` style through the formatter; lexer-level
+      escape validation inside line strings (raw scan today)

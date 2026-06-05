@@ -13,7 +13,7 @@ fn main() {
 ----- JAVASCRIPT -- main.js
 ```javascript
 function find(arr) {
-    return for (const [x] of Object.entries(arr)) {
+    return for (const x of arr) {
     (() => { if ((x > 10)) { return return x; } })();
 };
 }

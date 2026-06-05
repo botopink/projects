@@ -119,9 +119,12 @@ expansion is re-inferred in the caller's env (splice + re-check), unified
 against a concrete `-> @Expr<T>` bound (an unconstrained generic `T` reveals
 the type per call site), and recorded in `env.templateExpansions`
 (loc-keyed); the transform pass substitutes the untyped AST at those locs
-and drops template fns (never specialized, never emitted). Slice-1 limits
-(recorded): all params must be `@Expr` captures; hole-free templates only;
-node runtime only.
+and drops template fns (never specialized, never emitted). Holed templates
+(slice 2): parts cross into JS as Text/Interp entries — Interp exposes a
+`code` placeholder (`__bp_hole_<param>_<i>`) the DSL embeds in built source;
+`substituteHoles` splices the caller's hole AST back after parse; holed
+captures are not memoized. Remaining limits (recorded): all params must be
+`@Expr` captures; node runtime only.
 
 ## `@Context<B, R>` capability inference (F7)
 

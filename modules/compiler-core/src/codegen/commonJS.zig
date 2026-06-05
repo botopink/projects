@@ -1760,14 +1760,27 @@ const Emitter = struct {
                     }
                     try self.w("})");
                 } else {
-                    try self.w("for (const [");
-                    for (lp.params, 0..) |p, i| {
-                        if (i > 0) try self.w(", ");
-                        try self.w(p);
+                    // `loop (xs) { x -> … }` binds the ITEM; with two params the
+                    // second is the index (`{ item, i -> … }`). Array.entries()
+                    // yields numeric [index, item] pairs, so the destructure
+                    // order is swapped. (Object.entries gave [stringKey, value],
+                    // which bound the 1-param form to the index — a real bug.)
+                    if (lp.params.len == 1) {
+                        try self.fmt("for (const {s} of ", .{lp.params[0]});
+                        try self.emitExpr(lp.iter.*);
+                        try self.w(") {\n");
+                    } else {
+                        try self.w("for (const [");
+                        var i: usize = lp.params.len;
+                        while (i > 0) {
+                            i -= 1;
+                            try self.w(lp.params[i]);
+                            if (i > 0) try self.w(", ");
+                        }
+                        try self.w("] of (");
+                        try self.emitExpr(lp.iter.*);
+                        try self.w(").entries()) {\n");
                     }
-                    try self.w("] of Object.entries(");
-                    try self.emitExpr(lp.iter.*);
-                    try self.w(")) {\n");
                     for (lp.body) |stmt| {
                         try self.w("    ");
                         try self.emitStmt(stmt);

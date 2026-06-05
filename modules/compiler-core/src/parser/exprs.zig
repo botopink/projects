@@ -861,6 +861,11 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         // Remove the triple quotes from both ends
         return makeStringExpr(this, alloc, tok, tok.lexeme[3 .. tok.lexeme.len - 3], true);
     }
+    if (this.check(.linesStringLiteral)) {
+        const tok = this.advance();
+        const content = try materializeLineString(alloc, tok.lexeme);
+        return makeStringExpr(this, alloc, tok, content, true);
+    }
 
     if (this.check(.numberLiteral)) {
         const tok = this.advance();
@@ -963,13 +968,17 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         // Tagged-call sugar: a string literal immediately after a plain
         // identifier or `a.b` access is a call with that single argument:
         // `html """<Button/>"""` => `html("""<Button/>""")`.
-        if ((this.check(.stringLiteral) or this.check(.multilineStringLiteral)) and base == .identifier) {
+        if ((this.check(.stringLiteral) or this.check(.multilineStringLiteral) or this.check(.linesStringLiteral)) and base == .identifier) {
             switch (base.identifier.kind) {
                 .dotIdent => {}, // `.Red "x"` is not callable — leave for the normal error path
                 else => {
                     const strTok = this.advance();
-                    const multiline = strTok.kind == .multilineStringLiteral;
-                    const content = if (multiline) strTok.lexeme[3 .. strTok.lexeme.len - 3] else strTok.lexeme[1 .. strTok.lexeme.len - 1];
+                    const multiline = strTok.kind != .stringLiteral;
+                    const content = switch (strTok.kind) {
+                        .multilineStringLiteral => strTok.lexeme[3 .. strTok.lexeme.len - 3],
+                        .linesStringLiteral => try materializeLineString(alloc, strTok.lexeme),
+                        else => strTok.lexeme[1 .. strTok.lexeme.len - 1],
+                    };
                     const strExpr = try makeStringExpr(this, alloc, strTok, content, multiline);
                     const argPtr = try this.boxExpr(alloc, strExpr);
                     var args = try alloc.alloc(CallArg, 1);
@@ -1536,6 +1545,25 @@ fn findInterpEnd(s: []const u8, open: usize) ?usize {
 /// interpolations, a `stringTemplate` whose holes are parsed expressions.
 /// Hole sources are sub-lexed/sub-parsed in place; their locs are relative
 /// to the hole slice (good enough until F6 maps spans into the template).
+/// Materialize a `\\ …` line string's content: strip each line's leading
+/// whitespace + `\\` prefix and join the remainders with newlines. The
+/// content then follows the same conventions as `"""` literals (escape
+/// sequences resolve in the target; `${…}` interpolates).
+fn materializeLineString(alloc: std.mem.Allocator, lexeme: []const u8) ParseError![]const u8 {
+    var buf: std.ArrayList(u8) = .empty;
+    errdefer buf.deinit(alloc);
+    var lines = std.mem.splitScalar(u8, lexeme, '\n');
+    var first = true;
+    while (lines.next()) |line| {
+        if (!first) try buf.append(alloc, '\n');
+        first = false;
+        const trimmed = std.mem.trimStart(u8, line, " \t\r");
+        // Every line of the token starts with `\\` (the lexer guarantees it).
+        try buf.appendSlice(alloc, if (trimmed.len >= 2) trimmed[2..] else "");
+    }
+    return buf.toOwnedSlice(alloc);
+}
+
 fn makeStringExpr(this: *This, alloc: std.mem.Allocator, tok: Token, content: []const u8, multiline: bool) ParseError!Expr {
     const loc = locFromToken(tok);
     if (findInterpStart(content, 0) == null)

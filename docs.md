@@ -1068,6 +1068,23 @@ line
 """;
 ```
 
+### Line strings (Zig style)
+
+Consecutive lines prefixed with `\\` form a multiline string — the rest of
+each line joins with newlines. Content follows the same conventions as
+`"""…"""` (escape sequences resolve in the target; `${…}` interpolates), and
+the tagged-call sugar applies:
+
+```botopink
+val page = html
+    \\<div>
+    \\  <p>${name}</p>
+    \\</div>
+;
+```
+
+The formatter normalizes line strings to the `"""` form.
+
 ### Escaping
 
 `\${` produces a literal `${` (and `\$` is a valid escape):
