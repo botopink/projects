@@ -268,6 +268,12 @@ Deeper comptime patterns: [`../comptime/examples.md`](../comptime/examples.md).
 ```text
 val greeting = "hello ${name}!";          // ${…} interpolation (string template)
 
+val block =                               // `\\` line string (Zig style):
+    \\<div>                                //   lines join with newlines;
+    \\  <p>${name}</p>                     //   same conventions as """…"""
+    \\</div>
+;
+
 fn parse(comptime T: type string | int, raw: string) -> T;   // `type` meta-kind
 
 pub fn html(comptime template: @Expr<string>) -> @Expr<string> { // builtin type

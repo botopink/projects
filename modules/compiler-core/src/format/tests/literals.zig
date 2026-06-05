@@ -285,3 +285,26 @@ test "format: string ---- interpolation with expression" {
         \\val s = "sum ${1 + 2}!";
     );
 }
+
+test "format: line string ---- normalizes to triple quotes" {
+    const alloc = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(alloc);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    var lx = lexerMod.Lexer.init(
+        \\val page =
+        \\    \\<div>
+        \\    \\</div>
+        \\;
+    );
+    const tokens = try lx.scanAll(a);
+    var p = parserMod.Parser.init(tokens);
+    const program = try p.parse(a);
+    const out = try formatMod.format(alloc, program);
+    defer alloc.free(out);
+    try std.testing.expectEqualStrings(
+        \\val page = """<div>
+        \\</div>""";
+    , out);
+}

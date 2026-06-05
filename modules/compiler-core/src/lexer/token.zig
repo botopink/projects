@@ -48,6 +48,8 @@ pub const TokenKind = enum {
     identifier,
     stringLiteral,
     multilineStringLiteral,
+    linesStringLiteral, // `\\`-prefixed line string (Zig style): consecutive
+    //                     `\\ …` lines join with newlines
 
     // ── trivia ────────────────────────────────────────────────────────────────
     commentNormal, // // ...

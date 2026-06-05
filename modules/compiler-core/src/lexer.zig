@@ -121,6 +121,33 @@ pub const Lexer = struct {
                     try self.addToken(.questionMark, allocator);
                 }
             },
+
+            // ── `\\ …` line string (Zig style) ───────────────────────────────
+            // Each `\\`-prefixed line contributes the rest of the line;
+            // consecutive lines join with newlines. The token spans every
+            // line; the parser strips the prefixes and materializes the
+            // content. Like `"""` scanning, `lineStart` is NOT advanced so
+            // the token's col stays at the opening `\\`.
+            '\\' => {
+                if (!self.matchChar('\\')) return LexerError.UnexpectedCharacter;
+                while (!self.isAtEnd() and self.peek() != '\n') _ = self.advance();
+                while (true) {
+                    // Lookahead: newline + horizontal ws + `\\` continues the literal.
+                    var look = self.current;
+                    if (look >= self.source.len or self.source[look] != '\n') break;
+                    look += 1;
+                    while (look < self.source.len and (self.source[look] == ' ' or self.source[look] == '\t' or self.source[look] == '\r')) look += 1;
+                    if (look + 1 >= self.source.len or self.source[look] != '\\' or self.source[look + 1] != '\\') break;
+                    _ = self.advance(); // the newline
+                    self.line += 1;
+                    while (self.peek() == ' ' or self.peek() == '\t' or self.peek() == '\r') _ = self.advance();
+                    _ = self.advance(); // first backslash
+                    _ = self.advance(); // second backslash
+                    while (!self.isAtEnd() and self.peek() != '\n') _ = self.advance();
+                }
+                try self.addToken(.linesStringLiteral, allocator);
+            },
+
             '@' => {
                 if (!self.isAtEnd() and isAlpha(self.peek())) {
                     while (!self.isAtEnd() and isAlphaNumeric(self.peek())) _ = self.advance();

@@ -683,3 +683,43 @@ test "parser: optional chaining method call" {
         \\}
     );
 }
+
+test "parser: line string ---- backslash lines join with newlines" {
+    // Materialized `\\` content is arena-owned in the production pipeline;
+    // mirror that here (stringLit content has no per-node deinit).
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    try h.assertParser(arena.allocator(), @src(),
+        \\val page =
+        \\    \\<div>
+        \\    \\  <p>hello</p>
+        \\    \\</div>
+        \\;
+    );
+}
+
+test "parser: line string ---- interpolation hole" {
+    // Materialized `\\` content is arena-owned in the production pipeline;
+    // mirror that here (stringLit content has no per-node deinit).
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    try h.assertParser(arena.allocator(), @src(),
+        \\val page =
+        \\    \\<p>${name}</p>
+        \\;
+    );
+}
+
+test "parser: line string ---- tagged call" {
+    // Materialized `\\` content is arena-owned in the production pipeline;
+    // mirror that here (stringLit content has no per-node deinit).
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    try h.assertParser(arena.allocator(), @src(),
+        \\val page = html
+        \\    \\<div>
+        \\    \\  <p>${name}</p>
+        \\    \\</div>
+        \\;
+    );
+}

@@ -319,3 +319,20 @@ test "js: template end to end ---- holed html via parts() runs" {
         \\}
     );
 }
+
+test "js: template end to end ---- line string template with hole" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
+        \\    return q;
+        \\}
+        \\val name = "world";
+        \\val page = html
+        \\    \\<div>
+        \\    \\  <p>${name}</p>
+        \\    \\</div>
+        \\;
+        \\fn main() {
+        \\    @print(page);
+        \\}
+    );
+}
