@@ -14,3 +14,4 @@ pub const syntax = @embedFile("syntax.bp");
 // inline by every backend (see comptime/infer.zig `inferBuiltinNamespaceCall`).
 pub const bool_mod = @embedFile("bool.bp");
 pub const pair = @embedFile("pair.bp");
+pub const order = @embedFile("order.bp");

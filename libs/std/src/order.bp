@@ -1,0 +1,40 @@
+//// Gleam-style `order` module (`import {order} from "std";`), inspired by
+//// `gleam/order`. Exports the `Order` enum (type export) plus companion
+//// functions. Construct via the module fns (`order.lt()`) — the bare
+//// variant constructors have no local decl in importing modules.
+
+pub enum Order {
+    Lt,
+    Eq,
+    Gt,
+}
+
+pub fn lt() -> Order {
+    return Order.Lt;
+}
+
+pub fn eq() -> Order {
+    return Order.Eq;
+}
+
+pub fn gt() -> Order {
+    return Order.Gt;
+}
+
+pub fn to_int(o: Order) -> i32 {
+    val n = case o {
+        Lt -> -1;
+        Eq -> 0;
+        _ -> 1;
+    };
+    return n;
+}
+
+pub fn reverse(o: Order) -> Order {
+    val r = case o {
+        Lt -> Order.Gt;
+        Gt -> Order.Lt;
+        _ -> Order.Eq;
+    };
+    return r;
+}

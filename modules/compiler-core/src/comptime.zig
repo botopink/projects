@@ -131,6 +131,7 @@ fn analyzeModule(
 pub const std_pkg_modules = [_]Module{
     .{ .path = "std/bool", .source = @import("std_prelude").bool_mod },
     .{ .path = "std/pair", .source = @import("std_prelude").pair },
+    .{ .path = "std/order", .source = @import("std_prelude").order },
 };
 
 /// True when `path` is a "std" package registry key (`std/<module>`).
@@ -284,6 +285,25 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         var p = Parser.init(tokens);
         const program = try p.parse(env.arena);
         const bindings = try infer.inferProgramTyped(&env2, program);
+
+        // Collect the module's public type declarations so `import {…} from
+        // "std"` can register them into the importing env (type export —
+        // enables case patterns / annotations over e.g. `Order`).
+        {
+            var type_decls: std.ArrayListUnmanaged(ast.DeclKind) = .empty;
+            for (program.decls) |decl| {
+                const is_pub_type = switch (decl) {
+                    .record => |r| r.isPub,
+                    .@"struct" => |s| s.isPub,
+                    .@"enum" => |e2| e2.isPub,
+                    else => false,
+                };
+                if (is_pub_type) try type_decls.append(env.arena, decl);
+            }
+            if (type_decls.items.len > 0) {
+                try env.stdModuleTypes.put(mod_name, try type_decls.toOwnedSlice(env.arena));
+            }
+        }
 
         var exports = std.StringHashMap(*T.Type).init(env.arena);
         for (bindings) |b| {

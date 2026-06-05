@@ -289,6 +289,11 @@ pub const Env = struct {
     /// marked during inference; only these gate qualified calls
     /// (`bool.negate(x)`) against `stdModules`.
     stdImports: std.StringHashMap(void),
+    /// Public type declarations (`pub record`/`struct`/`enum`) of each "std"
+    /// package module, keyed by module name. Populated by `registerStdlib`;
+    /// `markStdImports` registers them into the importing env so case
+    /// patterns and annotations see the exported types (e.g. `Order`).
+    stdModuleTypes: std.StringHashMap([]const ast.DeclKind),
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
@@ -317,6 +322,7 @@ pub const Env = struct {
             .dispatchRewrites = std.AutoHashMap(ast.Loc, []const u8).init(arena),
             .stdModules = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena),
             .stdImports = std.StringHashMap(void).init(arena),
+            .stdModuleTypes = std.StringHashMap([]const ast.DeclKind).init(arena),
         };
     }
 
@@ -349,6 +355,7 @@ pub const Env = struct {
         // the compile session, not this env. Only the outer maps are ours.
         self.stdModules.deinit();
         self.stdImports.deinit();
+        self.stdModuleTypes.deinit();
     }
 
     // ── extension dispatch helpers ────────────────────────────────────────────

@@ -414,9 +414,14 @@ loader relocated `libs/std/src/prelude.zig` → `modules/compiler-core/src/compt
 - Known gap: `return f() catch v` inside a `-> @Result` fn doesn't re-wrap the
   caught value (skipped in inference marking) — rare shape, catalogued here.
 
-## F3 — `order` + `bool` + `pair` (small foundations)
-- [ ] `order.bp`: `enum Order { Lt, Eq, Gt }` + `reverse`, `negate`, `to_int`
-      (needs std-module **type** exports — registry holds fn types only today)
+## F3 — `order` + `bool` + `pair` (small foundations) — DONE
+- [x] `order.bp`: `pub enum Order { Lt, Eq, Gt }` + `lt`/`eq`/`gt` constructor
+      fns + `to_int`, `reverse`. E2E green on node (`-1` / `greater` via a
+      `case` over the exported `Order` in main). Construct via module fns —
+      bare variant constructors have no local decl in importers.
+- [x] std-module **type exports**: `registerStdlib` collects each module's pub
+      record/struct/enum decls (`Env.stdModuleTypes`); `markStdImports`
+      registers them into the importing env (case patterns + annotations work)
 - [x] `bool.bp`: `negate`, `nor`, `nand`, `exclusive_or`, `exclusive_nor`
       (landed with F2a as the first real std module; `and`/`or` are operators,
       `to_string`/`guard` deferred)
@@ -428,15 +433,20 @@ loader relocated `libs/std/src/prelude.zig` → `modules/compiler-core/src/compt
   `new X(…)` (`collectClassNames` — JS classes can't be invoked without it);
   tuple index access `t._N` → `t[N]` (tuples are JS arrays).
 
-### Discovered gap — generic RECORD instantiation collapses (blocks record-based std modules)
-A first attempt at `record Pair<A, B>` failed: the registered record's generic
-field/constructor types are SHARED (not instantiated per use), so a module fn
-like `swap` (`Pair(first: p.second, second: p.first)`) unifies `A := B`
-globally, breaking every later call (`pair.of(1, "one")` → "expected i32,
-found string"). Proper fix = per-use instantiation of record constructor +
-field types (HM scheme generalization for type defs) — also a prereq for
-`order.bp`'s enum export and any record-returning std module. Tuples are
-structural and don't hit this.
+### Generic RECORD instantiation — FIXED (was: collapse blocked record modules)
+The registered record's generic field/constructor types were SHARED, so a fn
+like `swap` (`Pair(first: p.second, …)`) unified `A := B` globally. Fixed:
+- `instantiateCtorType` — generic record/struct/enum constructor calls
+  instantiate per call site (plain + `Type.Variant` qualified paths)
+- `instantiateFieldType` — field access on a generic instance substitutes the
+  registration cells with the instance's type args (cells recovered
+  positionally from the ctor binding's return type)
+- Tests: `infer: generic record ---- per-use instantiation does not collapse`
+  + error snapshot `instantiated field type still checks`
+- Remaining (catalogued): local generic FNS still share their type across call
+  sites (two calls with different types collapse) — std-module fns dodge this
+  via the F2a `instantiateType` path; struct ctor return types carry no args
+  (field substitution is a no-op for generic structs).
 
 ## F4 — `list` (the core module, over `Array<T>`)
 - [ ] Folds: `fold`, `fold_right`, `reduce`

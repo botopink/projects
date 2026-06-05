@@ -24,7 +24,8 @@ src/
 │                          plain `.bp` (concrete types, not declaration-only interfaces)
 ├── builtins.d.bp        ← @typeOf / @sizeOf / @panic / … (NOT embedded yet — see below)
 ├── bool.bp              ← `bool` std module (impl — qualified calls via `from "std"`)
-└── pair.bp              ← `pair` std module (impl — pairs are 2-tuples `#(a, b)`)
+├── pair.bp              ← `pair` std module (impl — pairs are 2-tuples `#(a, b)`)
+└── order.bp             ← `order` std module (impl — `pub enum Order` exported)
 ```
 
 ## Files

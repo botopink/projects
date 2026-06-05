@@ -71,6 +71,14 @@ fn markStdImports(env: *Env, u: ast.ImportDecl) InferError!bool {
             return error.TypeError;
         }
         try env.stdImports.put(mod_name, {});
+        // Type export: register the module's `pub` record/struct/enum decls
+        // into this env so case patterns and annotations can name them
+        // (e.g. `Order` from `import {order} from "std"`). Variant/constructor
+        // value bindings come along — construct via the module's fns
+        // (`order.lt()`), not the bare constructors (codegen has no local decl).
+        if (env.stdModuleTypes.get(mod_name)) |decls| {
+            for (decls) |d| try registerTypeDecl(env, d);
+        }
     }
     return true;
 }
@@ -1036,6 +1044,52 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
             return fail(env, fnLoc, "`external` module and symbol must be string literals", "Example: @[external(node, \"./gleam_stdlib.mjs\", \"string_length\")]");
         }
     }
+}
+
+/// True when `name` names a registered type definition with generic params.
+fn typeDefHasGenerics(env: *Env, name: []const u8) bool {
+    const td = env.lookupTypeDef(name) orelse return false;
+    return switch (td) {
+        .record => |r| r.genericParams.len > 0,
+        .struct_ => |s| s.genericParams.len > 0,
+        .enum_ => |e| e.genericParams.len > 0,
+    };
+}
+
+/// Per-call-site instantiation of a generic type-def constructor. Without it
+/// the registration-time generic cells unify destructively at the first call
+/// (`Pair(first: p.second, …)` in one fn would bind `A := B` for every later
+/// `Pair(1, "one")` — "expected i32, found string").
+fn instantiateCtorType(env: *Env, callee: []const u8, ctorType: *T.Type) InferError!*T.Type {
+    if (!typeDefHasGenerics(env, callee)) return ctorType;
+    var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
+    defer seen.deinit();
+    return instantiateType(env, ctorType, &seen);
+}
+
+/// Field type of a generic record instance: substitute the registration-time
+/// generic cells with the instance's type args (`p: Pair<i32, string>` →
+/// `p.second: string`). The cells are recovered positionally from the
+/// constructor binding's return type (`fn(…) -> Pair<A_cell, B_cell>`).
+/// Falls back to the registered (shared) field type when the shape doesn't
+/// line up — never worse than the previous behavior.
+fn instantiateFieldType(env: *Env, typeName: []const u8, instArgs: []*T.Type, fieldType: *T.Type) InferError!*T.Type {
+    if (instArgs.len == 0) return fieldType;
+    const ctor = env.lookup(typeName) orelse return fieldType;
+    const ctorResolved = ctor.deref();
+    if (ctorResolved.* != .func) return fieldType;
+    const ret = ctorResolved.func.ret.deref();
+    if (ret.* != .named or ret.named.args.len != instArgs.len) return fieldType;
+
+    var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
+    defer seen.deinit();
+    for (ret.named.args, instArgs) |cellTy, inst| {
+        const cellResolved = cellTy.deref();
+        if (cellResolved.* != .typeVar) continue;
+        try seen.put(cellResolved.typeVar, inst);
+    }
+    if (seen.count() == 0) return fieldType;
+    return instantiateType(env, fieldType, &seen);
 }
 
 /// Deep-copies `ty`, substituting every unbound type variable with a fresh
@@ -2335,7 +2389,9 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
                     switch (td) {
                         .record, .struct_ => {
                             if (td.findField(ia.member)) |f| {
-                                outType = f.type_;
+                                // Generic instance: substitute the registered
+                                // cells with the instance's type args.
+                                outType = try instantiateFieldType(env, recvNamed.name, recvNamed.args, f.type_);
                             } else {
                                 env.lastError = TypeError.unknownField(recvNamed.name, ia.member).withLoc(loc);
                                 return error.TypeError;
@@ -3322,7 +3378,10 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     if (re.* == .identifier and re.*.identifier.kind == .ident and
                         env.lookupTypeDef(re.*.identifier.kind.ident) != null)
                     {
-                        if (env.lookup(call.callee)) |calleeType| {
+                        if (env.lookup(call.callee)) |calleeTypeRaw| {
+                            // Generic enum variant constructor — instantiate per
+                            // call site (the receiver names the type def).
+                            const calleeType = try instantiateCtorType(env, re.*.identifier.kind.ident, calleeTypeRaw);
                             const resolved = calleeType.deref();
                             const retType: *T.Type = switch (resolved.*) {
                                 .func => |f| blk: {
@@ -3370,10 +3429,13 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                 } } } };
             }
 
-            const calleeType = if (env.lookup(call.callee)) |ty| ty else {
+            const calleeTypeRaw = if (env.lookup(call.callee)) |ty| ty else {
                 env.lastError = TypeError.unboundVariable(call.callee).withLoc(loc);
                 return error.TypeError;
             };
+            // Generic record/struct/enum constructor: instantiate per call site
+            // so the registration-time cells never unify destructively.
+            const calleeType = try instantiateCtorType(env, call.callee, calleeTypeRaw);
             const resolved = calleeType.deref();
             const retType: *T.Type = switch (resolved.*) {
                 .func => |f| blk: {

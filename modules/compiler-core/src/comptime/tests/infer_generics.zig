@@ -135,3 +135,34 @@ test "infer: @Expr builtin type ---- declaration with bounded return typechecks"
         \\}
     );
 }
+
+test "infer: generic record ---- per-use instantiation does not collapse" {
+    // Regression: the registered cells of `Box<A, B>` must NOT unify globally.
+    // `swap` re-constructs with swapped fields (would bind A := B without
+    // per-call-site constructor instantiation + per-instance field typing).
+    try h.assertInfersOk(std.testing.allocator,
+        \\record Box<A, B> { first: A, second: B }
+        \\
+        \\fn swap<A, B>(p: Box<A, B>) -> Box<B, A> {
+        \\    return Box(first: p.second, second: p.first);
+        \\}
+        \\
+        \\fn main() {
+        \\    val b = Box(first: 1, second: "one");
+        \\    val s = swap(b);
+        \\    val n: i32 = s.second;
+        \\    val t: string = s.first;
+        \\}
+    );
+}
+
+test "infer error: generic record ---- instantiated field type still checks" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\record Box<A, B> { first: A, second: B }
+        \\
+        \\fn main() {
+        \\    val b = Box(first: 1, second: "one");
+        \\    val bad: i32 = b.second;
+        \\}
+    );
+}

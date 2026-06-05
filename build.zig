@@ -26,6 +26,7 @@ pub fn build(b: *std.Build) void {
         "syntax.bp",
         "bool.bp",
         "pair.bp",
+        "order.bp",
     };
     for (std_bp_files) |f| {
         std_prelude.addAnonymousImport(f, .{

@@ -34,6 +34,26 @@ test "js: builtin result namespace ---- qualified call lowers inline" {
     );
 }
 
+test "js: std package ---- order enum module with type export" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\import {order} from "std";
+        \\
+        \\fn describe(o: Order) -> string {
+        \\    val s = case o {
+        \\        Lt -> "less";
+        \\        Gt -> "greater";
+        \\        _ -> "equal";
+        \\    };
+        \\    return s;
+        \\}
+        \\
+        \\fn main() {
+        \\    @print(order.to_int(order.lt()));
+        \\    @print(describe(order.reverse(order.lt())));
+        \\}
+    );
+}
+
 test "js: std package ---- pair record module qualified calls" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\import {pair} from "std";
