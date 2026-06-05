@@ -19,7 +19,7 @@ class FetchError {
 }
 
 function fetch() {
-    return ({ error: FetchError("/api") });
+    return ({ error: new FetchError("/api") });
 }
 
 function safe() {

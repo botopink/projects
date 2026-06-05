@@ -130,6 +130,7 @@ fn analyzeModule(
 /// Registry keys are prefixed `std/` so project-root imports never see them.
 pub const std_pkg_modules = [_]Module{
     .{ .path = "std/bool", .source = @import("std_prelude").bool_mod },
+    .{ .path = "std/pair", .source = @import("std_prelude").pair },
 };
 
 /// True when `path` is a "std" package registry key (`std/<module>`).

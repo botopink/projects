@@ -31,7 +31,7 @@ const PatoVoa = {
 
 
 function main() {
-    const donald = Pato(7);
+    const donald = new Pato(7);
     console.log(PatoVoa.fly(donald));
 }
 
@@ -52,4 +52,5 @@ _botopink_main();
 
 ----- RUN LOG -----
 ```logs
+7
 ```

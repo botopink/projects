@@ -18,12 +18,12 @@ class Error {
 }
 
 function fetch() {
-    return ({ error: Error("boom") });
+    return ({ error: new Error("boom") });
 }
 
 function f() {
     const _try0 = fetch();
-    if ("error" in _try0) { throw Error("failed"); }
+    if ("error" in _try0) { throw new Error("failed"); }
     const [ a, b ] = _try0.ok;
 }
 ```

@@ -23,11 +23,11 @@ class IoError {
 }
 
 function step1() {
-    return ({ error: IoError("/data") });
+    return ({ error: new IoError("/data") });
 }
 
 function step2(x) {
-    return ({ error: IoError("/out") });
+    return ({ error: new IoError("/out") });
 }
 
 function pipeline() {

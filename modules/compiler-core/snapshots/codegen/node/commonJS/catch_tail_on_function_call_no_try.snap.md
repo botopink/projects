@@ -18,7 +18,7 @@ class RiskError {
 }
 
 function risky() {
-    return ({ error: RiskError(5) });
+    return ({ error: new RiskError(5) });
 }
 
 function safe() {

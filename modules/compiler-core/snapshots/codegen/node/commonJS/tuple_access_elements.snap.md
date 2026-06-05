@@ -8,7 +8,7 @@ fn getFirst(t: #(i32, string)) -> i32 {
 ----- JAVASCRIPT -- main.js
 ```javascript
 function getFirst(t) {
-    return t._0;
+    return t[0];
 }
 ```
 

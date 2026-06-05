@@ -33,3 +33,16 @@ test "js: builtin result namespace ---- qualified call lowers inline" {
         \\}
     );
 }
+
+test "js: std package ---- pair record module qualified calls" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\import {pair} from "std";
+        \\
+        \\fn main() {
+        \\    val p = pair.of(1, "one");
+        \\    val q = pair.swap(p);
+        \\    @print(pair.first(q));
+        \\    @print(pair.second(q));
+        \\}
+    );
+}

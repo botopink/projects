@@ -19,7 +19,7 @@ class NetError {
 }
 
 function fetch() {
-    return ({ error: NetError(500) });
+    return ({ error: new NetError(500) });
 }
 
 function safe() {

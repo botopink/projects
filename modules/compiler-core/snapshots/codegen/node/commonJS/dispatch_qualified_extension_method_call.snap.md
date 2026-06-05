@@ -34,7 +34,7 @@ const PatoNada = {
 };
 
 function main() {
-    const donald = Pato(3);
+    const donald = new Pato(3);
     console.log(PatoNada.swim(donald));
 }
 
@@ -55,4 +55,5 @@ _botopink_main();
 
 ----- RUN LOG -----
 ```logs
+3
 ```

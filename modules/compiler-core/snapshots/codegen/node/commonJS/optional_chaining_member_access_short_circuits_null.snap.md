@@ -17,7 +17,7 @@ class User {
 }
 
 function main() {
-    const u = User("ana");
+    const u = new User("ana");
     console.log(u?.name);
 }
 
@@ -36,4 +36,5 @@ _botopink_main();
 
 ----- RUN LOG -----
 ```logs
+ana
 ```

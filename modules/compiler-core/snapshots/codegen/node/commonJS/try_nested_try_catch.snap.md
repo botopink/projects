@@ -24,11 +24,11 @@ class DbError {
 }
 
 function inner() {
-    return ({ error: DbError("conn refused") });
+    return ({ error: new DbError("conn refused") });
 }
 
 function outer() {
-    return ({ error: DbError("timeout") });
+    return ({ error: new DbError("timeout") });
 }
 
 function process() {

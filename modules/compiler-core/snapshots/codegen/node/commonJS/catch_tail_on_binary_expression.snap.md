@@ -19,7 +19,7 @@ class CalcError {
 }
 
 function getA() {
-    return ({ error: CalcError("overflow") });
+    return ({ error: new CalcError("overflow") });
 }
 
 function compute() {

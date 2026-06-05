@@ -159,6 +159,7 @@ pub fn emitProgramOpts(
     em.test_mode = test_mode;
     em.module_name = module_name;
     try em.collectExternals(program);
+    try em.collectClassNames(program);
 
     // Test registry entries collected while emitting decls (test mode only).
     const TestEntry = struct { name: ?[]const u8, line: usize, idx: usize };
@@ -548,6 +549,9 @@ const Emitter = struct {
     externals: std.StringHashMap(ast.ExternalRef),
     /// `@[external(…)]` fns with no `node` target — calling one is an error.
     externals_missing: std.StringHashMap(void),
+    /// Names that emit as JS classes (record/struct decls, incl. the
+    /// `val X = record { … }` shorthand) — constructor calls need `new`.
+    class_names: std.StringHashMap(void),
 
     fn emitterInit(
         alloc: std.mem.Allocator,
@@ -562,6 +566,7 @@ const Emitter = struct {
             .rewrites = rewrites,
             .externals = std.StringHashMap(ast.ExternalRef).init(alloc),
             .externals_missing = std.StringHashMap(void).init(alloc),
+            .class_names = std.StringHashMap(void).init(alloc),
         };
     }
 
@@ -569,6 +574,7 @@ const Emitter = struct {
         self.hook_state.deinit(self.alloc);
         self.externals.deinit();
         self.externals_missing.deinit();
+        self.class_names.deinit();
     }
 
     /// Indexes every `@[external(…)]` fn by name: with a `node` target it goes
@@ -588,11 +594,36 @@ const Emitter = struct {
         };
     }
 
+    /// Indexes every name that emits as a JS class so constructor calls
+    /// (`Pair(1, "one")`) can be emitted with `new` — JS classes cannot be
+    /// invoked without it. Both `record X { … }` and the `val X = record { … }`
+    /// shorthand normalize to `.record` decls in the parser.
+    fn collectClassNames(self: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .record => |r| try self.class_names.put(r.name, {}),
+            .@"struct" => |s| {
+                if (!isPhantomContextStruct(s)) try self.class_names.put(s.name, {});
+            },
+            else => {},
+        };
+    }
+
     fn w(self: *Emitter, s: []const u8) !void {
         try self.out.writeAll(s);
     }
     fn fmt(self: *Emitter, comptime f: []const u8, args: anytype) !void {
         try self.out.print(f, args);
+    }
+
+    /// Tuple positional member (`_0`, `_1`, …) → the digits, else null.
+    /// Distinguishes tuple index access from `_`-prefixed record fields
+    /// (`_balance`) by requiring every char after `_` to be a digit.
+    fn tupleIndexMember(member: []const u8) ?[]const u8 {
+        if (member.len < 2 or member[0] != '_') return null;
+        for (member[1..]) |ch| {
+            if (!std.ascii.isDigit(ch)) return null;
+        }
+        return member[1..];
     }
 
     /// True when a lambda's final statement is a plain value expression that
@@ -1498,6 +1529,11 @@ const Emitter = struct {
                         return;
                     }
                     try self.emitExpr(ia.receiver.*);
+                    // Tuple index access: `t._N` → `t[N]` (tuples are JS arrays).
+                    if (tupleIndexMember(ia.member)) |idx| {
+                        try self.fmt("{s}[{s}]", .{ @as([]const u8, if (ia.optional) "?." else ""), idx });
+                        return;
+                    }
                     // Optional chaining maps 1:1 to native JS `?.`.
                     try self.fmt("{s}{s}", .{ @as([]const u8, if (ia.optional) "?." else "."), ia.member });
                 },
@@ -1871,6 +1907,10 @@ const Emitter = struct {
                             // External fn with no `node` target — no symbol to
                             // call on this backend.
                             return error.MissingExternalTarget;
+                        } else if (self.class_names.contains(cc.callee)) {
+                            // Record/struct constructor — JS classes cannot be
+                            // invoked without `new`.
+                            try self.fmt("new {s}(", .{cc.callee});
                         } else {
                             try self.fmt("{s}(", .{cc.callee});
                         }
@@ -2100,7 +2140,7 @@ const Emitter = struct {
             .numberLit => |n| try buf.writer.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try buf.writer.writeAll("_s === ");
-                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing };
+                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try buf.writer.print("_s === \"{s}\"", .{n}),
@@ -2120,7 +2160,7 @@ const Emitter = struct {
             .numberLit => |n| try wr.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try wr.writeAll("_s === ");
-                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing };
+                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try wr.print("_s === \"{s}\"", .{n}),

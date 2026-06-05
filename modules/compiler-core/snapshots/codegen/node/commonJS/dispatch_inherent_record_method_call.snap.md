@@ -25,7 +25,7 @@ class Contador {
 }
 
 function main() {
-    const c = Contador(5);
+    const c = new Contador(5);
     console.log(c.atual());
 }
 
@@ -44,4 +44,5 @@ _botopink_main();
 
 ----- RUN LOG -----
 ```logs
+5
 ```

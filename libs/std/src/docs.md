@@ -18,7 +18,8 @@ src/
 ├── array.d.bp           ← generic Array<T> interface
 ├── string.d.bp          ← String interface methods
 ├── builtins.d.bp        ← @typeOf / @sizeOf / @panic / @typeName / …
-└── bool.bp              ← `bool` std module (impl)
+├── bool.bp              ← `bool` std module (impl)
+└── pair.bp              ← `pair` std module (impl — 2-tuples)
 ```
 
 ## `prelude.zig` shape (in compiler-core)
@@ -29,6 +30,7 @@ pub const primitives = @embedFile("primitives.d.bp");
 pub const array      = @embedFile("array.d.bp");
 pub const string     = @embedFile("string.d.bp");
 pub const bool_mod   = @embedFile("bool.bp");
+pub const pair       = @embedFile("pair.bp");
 ```
 
 One `pub const` per `.bp`. Each name resolves through an anonymous import
@@ -44,6 +46,7 @@ because the `.bp` sources live outside the `std_prelude` module root.
 | `string.d.bp` | `interface String` — `len`, `split`, `to_upper`/`to_lower`, `contains`, `starts_with`, `ends_with`, `trim`/`trim_left`/`trim_right`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
 | `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`), and the `@Result` enum + the `@Result`/`@Option` method API docs (`map`/`flatMap`/`unwrapOr`/`isOk`/`isError`), plus the annotation builtin `external(target, module, symbol)` + `enum Target` (F1 — see the language reference `Annotations & external` section). |
 | `bool.bp` | `bool` module (first `"std"` package module, F2a mechanism) — `pub fn negate`, `nor`, `nand`, `exclusive_or`, `exclusive_nor` over `bool`; pure operators, compiles once for all backends. Imported via `import {bool} from "std"`; `bool.negate(x)` lowers to a per-module output (`out/std/bool.js` / remote `bool:negate/1`). |
+| `pair.bp` | `pair` module (F3) — `pub fn of`, `first`, `second`, `swap`, `map_first`, `map_second`. A pair IS a 2-tuple `#(a, b)` (same as `gleam/pair`) — structural tuples avoid the generic-record instantiation gap (record generics collapse when a module fn re-constructs with swapped params; see the task TODO). Named `of` because `new` is a reserved keyword. |
 
 ### `result` / `option` — builtin, not modules
 

@@ -22,7 +22,7 @@ class LoadError {
 }
 
 function load() {
-    return ({ error: LoadError("not found") });
+    return ({ error: new LoadError("not found") });
 }
 
 function process() {

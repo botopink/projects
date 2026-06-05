@@ -13,3 +13,4 @@ pub const syntax = @embedFile("syntax.bp");
 // NOTE: `option`/`result` are NOT modules — they are builtin namespaces lowered
 // inline by every backend (see comptime/infer.zig `inferBuiltinNamespaceCall`).
 pub const bool_mod = @embedFile("bool.bp");
+pub const pair = @embedFile("pair.bp");

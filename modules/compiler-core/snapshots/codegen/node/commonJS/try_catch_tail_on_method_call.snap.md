@@ -23,7 +23,7 @@ class ParseError {
 class Parser {
 
     parse() {
-        throw ParseError("bad input");
+        throw new ParseError("bad input");
     }
 }
 

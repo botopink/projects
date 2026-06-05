@@ -16,7 +16,7 @@ class Point {
 }
 
 function make() {
-    return Point(3, 4);
+    return new Point(3, 4);
 }
 ```
 

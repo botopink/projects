@@ -19,7 +19,7 @@ class ApiError {
 }
 
 function fetch() {
-    return ({ error: ApiError("not found") });
+    return ({ error: new ApiError("not found") });
 }
 
 function strict() {

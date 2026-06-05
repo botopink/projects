@@ -23,11 +23,11 @@ class UserError {
 }
 
 function fetchName() {
-    return ({ error: UserError("name missing") });
+    return ({ error: new UserError("name missing") });
 }
 
 function fetchAge() {
-    return ({ error: UserError("age missing") });
+    return ({ error: new UserError("age missing") });
 }
 
 function loadUser() {

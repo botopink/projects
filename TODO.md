@@ -420,9 +420,23 @@ loader relocated `libs/std/src/prelude.zig` → `modules/compiler-core/src/compt
 - [x] `bool.bp`: `negate`, `nor`, `nand`, `exclusive_or`, `exclusive_nor`
       (landed with F2a as the first real std module; `and`/`or` are operators,
       `to_string`/`guard` deferred)
-- [ ] `pair.bp`: `first`, `second`, `map_first`, `map_second`, `swap`
-      (may be a `record Pair<A, B>` with methods — modules can use records/
-      structs/interfaces, not only free functions)
+- [x] `pair.bp`: `of`, `first`, `second`, `swap`, `map_first`, `map_second` —
+      a pair IS a 2-tuple `#(a, b)` (gleam/pair semantics). E2E green on node
+      (`std_package_pair_record_module_qualified_calls`: swap → "one"/1).
+      `of` not `new` (reserved keyword).
+- Fixed along the way (commonJS): record/struct constructor calls now emit
+  `new X(…)` (`collectClassNames` — JS classes can't be invoked without it);
+  tuple index access `t._N` → `t[N]` (tuples are JS arrays).
+
+### Discovered gap — generic RECORD instantiation collapses (blocks record-based std modules)
+A first attempt at `record Pair<A, B>` failed: the registered record's generic
+field/constructor types are SHARED (not instantiated per use), so a module fn
+like `swap` (`Pair(first: p.second, second: p.first)`) unifies `A := B`
+globally, breaking every later call (`pair.of(1, "one")` → "expected i32,
+found string"). Proper fix = per-use instantiation of record constructor +
+field types (HM scheme generalization for type defs) — also a prereq for
+`order.bp`'s enum export and any record-returning std module. Tuples are
+structural and don't hit this.
 
 ## F4 — `list` (the core module, over `Array<T>`)
 - [ ] Folds: `fold`, `fold_right`, `reduce`

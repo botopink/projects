@@ -21,7 +21,8 @@ std/
 │   ├── array.d.bp       ← generic Array<T> interface
 │   ├── string.d.bp      ← String interface
 │   ├── builtins.d.bp    ← compiler/runtime builtins (typeOf, sizeOf, panic, …)
-│   └── bool.bp          ← `bool` module (`import {bool} from "std"`)
+│   ├── bool.bp          ← `bool` module (`import {bool} from "std"`)
+│   └── pair.bp          ← `pair` module (2-tuples, `import {pair} from "std"`)
 └── test/              ← `.bp` test suite run by `botopink test` — see test/AGENTS.md
     ├── array_test.bp    ← builtin Array<T> behaviour
     └── string_test.bp   ← builtin String behaviour
