@@ -242,12 +242,14 @@ pub fn parseFnDecl(this: *This, alloc: std.mem.Allocator) ParseError!FnDecl {
         alloc.free(annotations);
     }
     const isPub = this.match(.@"pub");
+    // `declare fn` — bodyless declaration (required for `@[external(…)]` fns).
+    const isDeclare = this.match(.declare);
     // `*fn` — async / generator marker. The leading `*` makes the function
     // return an `@Future`/`@Iterator` and enables `await`/`yield` in the body.
     const isStarFn = this.match(.star);
     _ = try this.consume(.@"fn");
     const name = (try this.consume(.identifier)).lexeme;
-    return this.parseFnBody(alloc, name, isPub, annotations, isStarFn);
+    return this.parseFnBody(alloc, name, isPub, isDeclare, annotations, isStarFn);
 }
 
 /// `val name = #[...] fn(params) -> R { body }` — val-form annotated function.
@@ -267,15 +269,7 @@ pub fn parseFnDeclFromVal(this: *This, alloc: std.mem.Allocator) ParseError!FnDe
     }
     const isStarFn = this.match(.star);
     _ = try this.consume(.@"fn");
-    return this.parseFnBody(alloc, name, isPub, annotations, isStarFn);
-}
-
-/// True when one of the annotations is the `external` builtin (FFI marker).
-fn hasExternalAnnotation(annotations: []const Annotation) bool {
-    for (annotations) |a| {
-        if (std.mem.eql(u8, a.name, "external")) return true;
-    }
-    return false;
+    return this.parseFnBody(alloc, name, isPub, false, annotations, isStarFn);
 }
 
 pub fn parseFnBody(
@@ -283,6 +277,7 @@ pub fn parseFnBody(
     alloc: std.mem.Allocator,
     name: []const u8,
     isPub: bool,
+    isDeclare: bool,
     annotations: []Annotation,
     isStarFn: bool,
 ) ParseError!FnDecl {
@@ -324,12 +319,14 @@ pub fn parseFnBody(
         return ParseError.UnexpectedToken;
     }
 
-    // An `@[external(…)]`-annotated fn may omit its body — it is typed from
-    // the signature alone and lowered to the target's symbol by codegen.
-    if (!this.check(.leftBrace) and hasExternalAnnotation(annotations)) {
+    // A `declare fn` omits its body — it is typed from the signature alone.
+    // `@[external(…)]` fns must use this form (validated in inference).
+    if (isDeclare and !this.check(.leftBrace)) {
+        _ = this.match(.semicolon);
         return FnDecl{
             .isPub = isPub,
             .isStarFn = isStarFn,
+            .isDeclare = true,
             .label = label,
             .name = name,
             .annotations = annotations,
@@ -345,6 +342,7 @@ pub fn parseFnBody(
     return FnDecl{
         .isPub = isPub,
         .isStarFn = isStarFn,
+        .isDeclare = isDeclare,
         .label = label,
         .name = name,
         .annotations = annotations,

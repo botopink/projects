@@ -483,14 +483,14 @@ test "parser: annotation block ---- at bracket" {
     try h.assertParser(std.testing.allocator, @src(),
         \\@[external(erlang, "string", "length"),
         \\  external(node, "./gleam_stdlib.mjs", "string_length")]
-        \\pub fn length(s: string) -> i32
+        \\pub declare fn length(s: string) -> i32;
     );
 }
 
 test "parser: annotation block ---- external decl then next decl" {
     try h.assertParser(std.testing.allocator, @src(),
         \\@[external(erlang, "erlang", "abs")]
-        \\pub fn absolute_value(n: i32) -> i32
+        \\pub declare fn absolute_value(n: i32) -> i32;
         \\
         \\fn main() {
         \\    absolute_value(-5);
