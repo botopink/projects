@@ -67,6 +67,7 @@
                     "callee": "absolute_value",
                     "is_builtin": false,
                     "is_tagged": false,
+                    "optional": false,
                     "args": [
                       {
                         "label": null,

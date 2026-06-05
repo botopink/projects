@@ -109,7 +109,8 @@
                                               }
                                             }
                                           },
-                                          "member": "lat"
+                                          "member": "lat",
+                                          "optional": false
                                         }
                                       }
                                     }
@@ -148,7 +149,8 @@
                                       }
                                     }
                                   },
-                                  "member": "lon"
+                                  "member": "lon",
+                                  "optional": false
                                 }
                               }
                             }

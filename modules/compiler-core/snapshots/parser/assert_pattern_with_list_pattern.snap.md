@@ -64,6 +64,7 @@
                                   "callee": "Error",
                                   "is_builtin": false,
                                   "is_tagged": false,
+                                  "optional": false,
                                   "args": [
                                     {
                                       "label": null,

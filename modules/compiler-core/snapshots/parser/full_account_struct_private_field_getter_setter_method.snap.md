@@ -73,7 +73,8 @@
                                     }
                                   }
                                 },
-                                "member": "_balance"
+                                "member": "_balance",
+                                "optional": false
                               }
                             }
                           }

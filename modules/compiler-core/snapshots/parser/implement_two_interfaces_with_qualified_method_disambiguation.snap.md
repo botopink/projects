@@ -46,6 +46,7 @@
                         "callee": "print",
                         "is_builtin": true,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,
@@ -86,7 +87,8 @@
                                             }
                                           }
                                         },
-                                        "member": "batteryLevel"
+                                        "member": "batteryLevel",
+                                        "optional": false
                                       }
                                     }
                                   }
@@ -135,6 +137,7 @@
                         "callee": "print",
                         "is_builtin": true,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,
@@ -175,7 +178,8 @@
                                             }
                                           }
                                         },
-                                        "member": "batteryLevel"
+                                        "member": "batteryLevel",
+                                        "optional": false
                                       }
                                     }
                                   }

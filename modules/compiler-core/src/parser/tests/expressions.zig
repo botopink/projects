@@ -664,3 +664,22 @@ test "parser: expr stays a plain identifier in expressions" {
         \\val y = expr + 2;
     );
 }
+
+test "parser: optional chaining member access" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\record User { name: string }
+        \\fn main() {
+        \\    val u: ?User = User(name: "ana");
+        \\    val n = u?.name;
+        \\}
+    );
+}
+
+test "parser: optional chaining method call" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val s: ?string = "abc";
+        \\    val up = s?.to_upper();
+        \\}
+    );
+}

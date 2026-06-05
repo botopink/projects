@@ -390,6 +390,34 @@ if (email) { e ->
 };
 ```
 
+### Optional chaining (`?.`)
+
+JS-style optional chaining: when the receiver is null/absent the whole access
+evaluates to null instead of failing. Works for member access and method calls.
+
+```botopink
+record User { name: string }
+
+fn main() {
+    val u: ?User = User(name: "ana");
+    val n = u?.name;          // ?string — null when u is null
+    val up = n?.to_upper();   // method-call form
+}
+```
+
+**Generates (JS):**
+```javascript
+const n = u?.name;
+const up = n?.to_upper();
+```
+
+- Typing: `a?.b` with `a: ?T` resolves `b` on `T` and yields `?U`
+  (already-optional members are not double-wrapped — no `??U`).
+- `?.[index]` and `?.(args)` forms are reserved (botopink has no `a[i]`
+  index syntax yet — use `.at(i)`).
+- Backend status: native on commonJS; erlang/beam/wasm pending the
+  record-field-access lowering on those targets.
+
 ---
 
 ## Structs

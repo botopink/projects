@@ -44,6 +44,7 @@
                                   "callee": "memo",
                                   "is_builtin": false,
                                   "is_tagged": false,
+                                  "optional": false,
                                   "args": [
                                     {
                                       "label": null,

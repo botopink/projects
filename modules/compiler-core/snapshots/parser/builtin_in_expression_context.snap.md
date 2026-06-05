@@ -56,6 +56,7 @@
                               "callee": "abs",
                               "is_builtin": true,
                               "is_tagged": false,
+                              "optional": false,
                               "args": [
                                 {
                                   "label": null,
@@ -90,6 +91,7 @@
                               "callee": "abs",
                               "is_builtin": true,
                               "is_tagged": false,
+                              "optional": false,
                               "args": [
                                 {
                                   "label": null,

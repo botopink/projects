@@ -286,10 +286,13 @@ pub fn IdentifierExprOf(comptime phase: Phase) type {
         ident: []const u8,
         /// Dot-shorthand variant: `.Red` ---- the type is inferred from context.
         dotIdent: []const u8,
-        /// Identifier-based access: `this.field`, `Color.Red`, `obj.x`
+        /// Identifier-based access: `this.field`, `Color.Red`, `obj.x`.
+        /// `optional` marks the chaining form `obj?.x` — when the receiver is
+        /// null/absent the whole access evaluates to null instead of failing.
         identAccess: struct {
             receiver: *ExprOf(phase),
             member: []const u8,
+            optional: bool = false,
         },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
@@ -601,6 +604,9 @@ pub fn CallExprOf(comptime phase: Phase) type {
             /// `callee """..."""` — a single string-literal argument with no
             /// parentheses. Formatting preserves the tagged form.
             is_tagged: bool = false,
+            /// true for the optional-chaining call form `recv?.method(args)` —
+            /// when the receiver is null/absent the call short-circuits to null.
+            optional: bool = false,
             args: []CallArgOf(phase),
             trailing: []TrailingLambdaOf(phase),
         },

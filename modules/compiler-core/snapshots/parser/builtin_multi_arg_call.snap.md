@@ -34,6 +34,7 @@
                         "callee": "min",
                         "is_builtin": true,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,
@@ -86,6 +87,7 @@
                         "callee": "max",
                         "is_builtin": true,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,
@@ -138,6 +140,7 @@
                         "callee": "as",
                         "is_builtin": true,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,

@@ -83,6 +83,7 @@
                         "callee": "WriteLine",
                         "is_builtin": false,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,
@@ -123,7 +124,8 @@
                                             }
                                           }
                                         },
-                                        "member": "color"
+                                        "member": "color",
+                                        "optional": false
                                       }
                                     }
                                   }

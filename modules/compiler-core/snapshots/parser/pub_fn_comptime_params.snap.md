@@ -53,6 +53,7 @@
                     "callee": "todo",
                     "is_builtin": true,
                     "is_tagged": false,
+                    "optional": false,
                     "args": [],
                     "trailing": []
                   }

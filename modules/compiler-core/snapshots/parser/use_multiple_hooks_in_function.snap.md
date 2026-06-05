@@ -58,6 +58,7 @@
                                   "callee": "state",
                                   "is_builtin": false,
                                   "is_tagged": false,
+                                  "optional": false,
                                   "args": [
                                     {
                                       "label": null,
@@ -119,6 +120,7 @@
                                   "callee": "memo",
                                   "is_builtin": false,
                                   "is_tagged": false,
+                                  "optional": false,
                                   "args": [
                                     {
                                       "label": null,
@@ -210,6 +212,7 @@
                           "callee": "effect",
                           "is_builtin": false,
                           "is_tagged": false,
+                          "optional": false,
                           "args": [
                             {
                               "label": null,
@@ -236,6 +239,7 @@
                                                 "callee": "cleanup",
                                                 "is_builtin": false,
                                                 "is_tagged": false,
+                                                "optional": false,
                                                 "args": [],
                                                 "trailing": []
                                               }

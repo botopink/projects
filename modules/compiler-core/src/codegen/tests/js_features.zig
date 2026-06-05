@@ -505,3 +505,14 @@ test "js: lambda ---- string-typed annotation infers params" {
         "join(",
     });
 }
+
+test "js: optional chaining ---- member access short-circuits null" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\record User { name: string }
+        \\
+        \\fn main() {
+        \\    val u: ?User = User(name: "ana");
+        \\    @print(u?.name);
+        \\}
+    );
+}

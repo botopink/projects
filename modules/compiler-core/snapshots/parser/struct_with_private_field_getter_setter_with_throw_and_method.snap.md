@@ -73,7 +73,8 @@
                                     }
                                   }
                                 },
-                                "member": "_balance"
+                                "member": "_balance",
+                                "optional": false
                               }
                             }
                           }
@@ -134,6 +135,7 @@
                                 "callee": "Error",
                                 "is_builtin": false,
                                 "is_tagged": false,
+                                "optional": false,
                                 "args": [
                                   {
                                     "label": "msg",

@@ -349,22 +349,30 @@ loader relocated `libs/std/src/prelude.zig` → `modules/compiler-core/src/compt
 - [x] `option` namespace deliberately NOT added (see F2-design note); the
       builtin `?T` methods (`x.map(f)`, `x.flatMap(f)`, `x.unwrapOr(d)`) stay
 
-### Fx — optional chaining (`?.`) — TODO (spec'd, next up)
+### Fx — optional chaining (`?.`) — v1 DONE (member + method call)
 > `optional` is not a (named) surface type — it is just `?`. The ergonomic
 > surface for optionals is JS-style optional chaining:
 > ```
-> obj.val?.prop       // member access, null when val is null
-> obj.val?.[expr]     // index access
-> obj.arr?.[index]
-> obj.func?.(args)    // call
+> obj.val?.prop       // member access, null when val is null      ← DONE
+> obj.val?.method(a)  // method call                                ← DONE
+> obj.arr?.[index]    // index access     ← BLOCKED: bp has no `a[i]` syntax (uses .at(i))
+> obj.func?.(args)    // fn-value call    ← deferred (no receiverless call-value form)
 > ```
-- [ ] Lexer: `?.` token (`questionDot`); parser: postfix chaining forms
-      (`?.ident`, `?.[expr]`, `?.(args)`)
-- [ ] Inference: `a?.b` where `a: ?T` → result `?U` (short-circuits null);
-      chains collapse (no `??U` nesting)
-- [ ] Codegen: JS native `?.`; erlang `case A of undefined -> undefined; _ -> … end`;
-      beam/wasm tag tests
-- [ ] Snapshots: parser + comptime + 4 codegen targets + run logs
+- [x] Lexer: `?.` token (`questionDot` — `?` immediately followed by `.`)
+- [x] Parser: postfix chain links accept `?.member` / `?.method(args)` in both
+      chain sites (`parsePrimary` + the `parseExpr` method-call shortcut);
+      AST: `identAccess.optional` + `CallExpr.call.optional` (default false)
+- [x] Formatter round-trips `?.`
+- [x] Inference: `a?.b` where `a: ?T` → member resolved on inner `T`, result
+      `?U` (already-optional members not double-wrapped); optional method
+      calls type via the permissive path
+- [x] Codegen commonJS: native `?.` for both forms
+- [ ] Codegen erlang/beam/wasm: blocked on the pre-existing record-field-access
+      gap (erlang concatenates `Recv_member` variable names — no map access);
+      revisit when field access lands on those backends
+- [x] Snapshots: parser `optional_chaining_{member_access,method_call}`,
+      codegen node `optional_chaining_member_access_short_circuits_null`
+      (+ AST-churn re-baseline: `optional: false` now serialized everywhere)
 
 ### F2d — checked-Result effect requires `*fn` (decided 2026-06-04)
 > `*` is the effect marker. Only `*fn f() -> @Result<D, E>` gets the special

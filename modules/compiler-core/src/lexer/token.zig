@@ -25,6 +25,7 @@ pub const TokenKind = enum {
     hash, // #
     bang, // !
     questionMark, // ?
+    questionDot, // ?. (optional chaining)
     semicolon, // ;
     equal, // =
     equalEqual, // ==

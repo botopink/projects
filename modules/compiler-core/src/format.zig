@@ -387,7 +387,7 @@ pub const Formatter = struct {
                 ),
                 .identAccess => |ia| this.concatAll(&.{
                     try this.fmtExpr(ia.receiver.*),
-                    try this.text("."),
+                    try this.text(if (ia.optional) "?." else "."),
                     try this.text(ia.member),
                 }),
             },
@@ -950,10 +950,11 @@ pub const Formatter = struct {
         }
 
         const is_builtin = if (@hasField(@TypeOf(c), "is_builtin")) c.is_builtin else false;
+        const is_optional = if (@hasField(@TypeOf(c), "optional")) c.optional else false;
         const callee: *const Doc = if (c.receiver) |recv|
             try this.concatAll(&.{
                 try this.fmtExpr(recv.*),
-                try this.text("."),
+                try this.text(if (is_optional) "?." else "."),
                 try this.text(c.callee),
             })
         else

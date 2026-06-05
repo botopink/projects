@@ -34,6 +34,7 @@
                         "callee": "sizeOf",
                         "is_builtin": true,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,
@@ -71,6 +72,7 @@
                         "callee": "typeName",
                         "is_builtin": true,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,
@@ -108,6 +110,7 @@
                         "callee": "panic",
                         "is_builtin": true,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,

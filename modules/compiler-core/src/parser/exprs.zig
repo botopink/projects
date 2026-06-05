@@ -386,9 +386,10 @@ pub fn parseExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         // it back and let `parsePrimary` own `a.b.c` so those snapshots stay
         // identical.
         var sawMethodCall = false;
-        while (this.check(.dot)) {
+        while (this.check(.dot) or this.check(.questionDot)) {
+            const isOptional = this.check(.questionDot);
             const dotSaved = this.current;
-            _ = this.advance(); // '.'
+            _ = this.advance(); // '.' / '?.'
             const methodTok: Token = if (this.check(.numberLiteral))
                 this.advance()
             else
@@ -423,13 +424,14 @@ pub fn parseExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
                 .receiver = recvPtr,
                 .callee = methodTok.lexeme,
                 .is_builtin = false,
+                .optional = isOptional,
                 .args = args,
                 .trailing = trailing,
             } } } };
             sawMethodCall = true;
         }
 
-        if ((baseIsCall or sawMethodCall) and !isBinaryOpNext(this) and !this.check(.dot)) {
+        if ((baseIsCall or sawMethodCall) and !isBinaryOpNext(this) and !this.check(.dot) and !this.check(.questionDot)) {
             return this.wrapCatch(alloc, base);
         }
 
@@ -927,8 +929,10 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
             base = makeCall(tok, null, tok.lexeme, false, args, try alloc.alloc(TrailingLambda, 0));
         }
 
-        // Loop for chained links: `.field` access or `.method(args)` calls.
-        while (this.check(.dot)) {
+        // Loop for chained links: `.field` access, `.method(args)` calls, and
+        // their optional-chaining forms (`?.field`, `?.method(args)`).
+        while (this.check(.dot) or this.check(.questionDot)) {
+            const isOptional = this.check(.questionDot);
             _ = this.advance();
             // Accept both identifier and numberLiteral for tuple access
             const fieldTok: Token = if (this.check(.numberLiteral))
@@ -945,11 +949,13 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
                 // Method-call links use the method token's loc so each chain
                 // link has a distinct location (method lowering is loc-keyed).
                 base = makeCall(fieldTok, recvPtr, fieldTok.lexeme, false, args, try alloc.alloc(TrailingLambda, 0));
+                base.call.kind.call.optional = isOptional;
             } else {
                 const recvPtr = try this.boxExpr(alloc, base);
                 base = Expr{ .identifier = .{ .loc = locFromToken(tok), .kind = .{ .identAccess = .{
                     .receiver = recvPtr,
                     .member = fieldTok.lexeme,
+                    .optional = isOptional,
                 } } } };
             }
         }

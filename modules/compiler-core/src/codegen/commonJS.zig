@@ -1498,7 +1498,8 @@ const Emitter = struct {
                         return;
                     }
                     try self.emitExpr(ia.receiver.*);
-                    try self.fmt(".{s}", .{ia.member});
+                    // Optional chaining maps 1:1 to native JS `?.`.
+                    try self.fmt("{s}{s}", .{ @as([]const u8, if (ia.optional) "?." else "."), ia.member });
                 },
             },
 
@@ -1863,7 +1864,8 @@ const Emitter = struct {
                                 first = false;
                             } else {
                                 try self.emitExpr(recv.*);
-                                try self.fmt(".{s}(", .{cc.callee});
+                                // Optional chaining call maps to native JS `?.`.
+                                try self.fmt("{s}{s}(", .{ @as([]const u8, if (cc.optional) "?." else "."), cc.callee });
                             }
                         } else if (self.externals_missing.contains(cc.callee)) {
                             // External fn with no `node` target — no symbol to

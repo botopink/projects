@@ -45,6 +45,7 @@
                                     "callee": "fetch",
                                     "is_builtin": false,
                                     "is_tagged": false,
+                                    "optional": false,
                                     "args": [],
                                     "trailing": []
                                   }
@@ -70,6 +71,7 @@
                                           "callee": "Error",
                                           "is_builtin": false,
                                           "is_tagged": false,
+                                          "optional": false,
                                           "args": [
                                             {
                                               "label": "msg",

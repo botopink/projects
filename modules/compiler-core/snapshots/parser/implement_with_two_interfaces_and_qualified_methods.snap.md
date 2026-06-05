@@ -56,6 +56,7 @@
                         "callee": "WriteLine",
                         "is_builtin": false,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,
@@ -96,7 +97,8 @@
                                             }
                                           }
                                         },
-                                        "member": "batteryLevel"
+                                        "member": "batteryLevel",
+                                        "optional": false
                                       }
                                     }
                                   }
@@ -155,6 +157,7 @@
                         "callee": "WriteLine",
                         "is_builtin": false,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,
@@ -195,7 +198,8 @@
                                             }
                                           }
                                         },
-                                        "member": "batteryLevel"
+                                        "member": "batteryLevel",
+                                        "optional": false
                                       }
                                     }
                                   }

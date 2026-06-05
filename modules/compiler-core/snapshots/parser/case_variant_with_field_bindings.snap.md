@@ -61,7 +61,8 @@
                                       }
                                     }
                                   },
-                                  "member": "color"
+                                  "member": "color",
+                                  "optional": false
                                 }
                               }
                             }

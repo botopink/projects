@@ -2314,10 +2314,20 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
                     }
                 }
             }
-            // Regular instance field access on a variable/instance
+            // Regular instance field access on a variable/instance.
+            // Optional chaining (`a?.b`): the receiver may be `?T` — resolve the
+            // member on the inner `T` and wrap the result back into an optional
+            // (already-optional member types are not double-wrapped).
             const recvTyped = try inferExprTyped(env, ia.receiver.*);
             const recvPtr = try makeTypedPtr(env, recvTyped);
-            const recvType = recvTyped.getType().deref();
+            var recvType = recvTyped.getType().deref();
+            if (ia.optional) {
+                if (recvType.* == .named and std.mem.eql(u8, recvType.named.name, "optional") and
+                    recvType.named.args.len >= 1)
+                {
+                    recvType = recvType.named.args[0].deref();
+                }
+            }
             var outType: *T.Type = try env.freshVar();
             if (recvType.* == .named) {
                 const recvNamed = recvType.named;
@@ -2338,9 +2348,18 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
                     }
                 }
             }
+            if (ia.optional) {
+                const outDeref = outType.deref();
+                const alreadyOptional = outDeref.* == .named and
+                    std.mem.eql(u8, outDeref.named.name, "optional");
+                if (!alreadyOptional) {
+                    outType = try env.namedTypeArgs("optional", &.{outType});
+                }
+            }
             return TypedExpr{ .identifier = .{ .loc = loc, .type_ = outType, .kind = .{ .identAccess = .{
                 .receiver = recvPtr,
                 .member = ia.member,
+                .optional = ia.optional,
             } } } };
         },
     };

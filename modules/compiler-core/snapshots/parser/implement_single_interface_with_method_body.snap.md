@@ -45,6 +45,7 @@
                         "callee": "print",
                         "is_builtin": true,
                         "is_tagged": false,
+                        "optional": false,
                         "args": [
                           {
                             "label": null,

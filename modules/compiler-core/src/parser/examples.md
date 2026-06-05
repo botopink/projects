@@ -117,6 +117,17 @@ Point { x: 1.0, y: 2.0 }
 arr.length()
 ```
 
+### Optional chaining `?.`
+
+```text
+user?.name           // identAccess with optional = true
+name?.to_upper()     // method-call link with optional = true
+```
+
+`?.` (token `questionDot`) short-circuits to null when the receiver is
+null/absent. Only the member and method-call link forms exist; `?.[i]` /
+`?.(args)` are reserved (no base index syntax yet).
+
 ### Pipeline `|>` (left-associative)
 
 ```text
