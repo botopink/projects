@@ -11,7 +11,7 @@ record Unimplemented { id: i32,
 ```erlang
 -module(main).
 
--record(Unimplemented, {id}).
+%% record Unimplemented: id
 
 process() ->
     erlang:error({todo, "not implemented"}).

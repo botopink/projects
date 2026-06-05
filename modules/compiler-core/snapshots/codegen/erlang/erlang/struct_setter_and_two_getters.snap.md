@@ -18,7 +18,7 @@ val Temperature = struct {
 ```erlang
 -module(main).
 
--record(Temperature, {_celsius}).
+%% struct Temperature: _celsius
 ```
 
 ----- RUN LOG -----

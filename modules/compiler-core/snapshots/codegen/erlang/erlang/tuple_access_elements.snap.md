@@ -10,7 +10,7 @@ fn getFirst(t: #(i32, string)) -> i32 {
 -module(main).
 
 getFirst(T) ->
-    T__0.
+    element(1, T).
 ```
 
 ----- RUN LOG -----

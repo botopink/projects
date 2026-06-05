@@ -12,7 +12,7 @@ val Counter = struct {
 ```erlang
 -module(main).
 
--record(Counter, {count}).
+%% struct Counter: count
 
 inc() ->
     %% field assignment is not directly supported in Erlang.

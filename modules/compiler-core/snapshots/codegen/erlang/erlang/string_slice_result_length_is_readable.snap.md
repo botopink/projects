@@ -15,7 +15,7 @@ fn main() {
 main() ->
     S = <<"abcdef">>,
     Mid = S:slice(1, 5),
-    io:format("~p~n", [Mid_len]).
+    io:format("~p~n", [maps:get(len, Mid)]).
 
 '_botopink_main'() ->
     main().

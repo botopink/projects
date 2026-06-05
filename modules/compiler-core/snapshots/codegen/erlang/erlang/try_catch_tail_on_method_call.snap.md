@@ -16,12 +16,12 @@ fn run(p: Parser) -> i32 {
 ```erlang
 -module(main).
 
--record(ParseError, {msg}).
+%% record ParseError: msg
 
--record(Parser, {}).
+%% struct Parser: 
 
 parse() ->
-    erlang:throw(ParseError(<<"bad input">>)).
+    erlang:throw(#{msg => <<"bad input">>}).
 
 run(P) ->
     Result = case P:parse() of

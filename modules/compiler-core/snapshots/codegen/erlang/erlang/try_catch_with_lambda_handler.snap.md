@@ -14,10 +14,10 @@ fn safe() -> i32 {
 ```erlang
 -module(main).
 
--record(FetchError, {url}).
+%% record FetchError: url
 
 fetch() ->
-    {error, FetchError(<<"/api">>)}.
+    {error, #{url => <<"/api">>}}.
 
 safe() ->
     R = case fetch() of

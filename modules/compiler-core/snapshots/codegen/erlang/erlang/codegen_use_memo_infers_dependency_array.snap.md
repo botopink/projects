@@ -18,7 +18,7 @@ fn Counter() -> Element {
 ```erlang
 -module(main).
 
--record(Element, {}).
+%% struct Element: 
 
 state(Initial) ->
     Initial.
@@ -31,7 +31,7 @@ Counter() ->
     Doubled = memo(fun() ->
         (Count * 2)
     end),
-    Element().
+    #{}.
 ```
 
 ----- RUN LOG -----

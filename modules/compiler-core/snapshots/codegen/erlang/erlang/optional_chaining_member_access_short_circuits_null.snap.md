@@ -13,11 +13,11 @@ fn main() {
 -module(main).
 -export(['_botopink_main'/0, main/1]).
 
--record(User, {name}).
+%% record User: name
 
 main() ->
-    U = User(<<"ana">>),
-    io:format("~p~n", [U_name]).
+    U = #{name => <<"ana">>},
+    io:format("~p~n", [(fun(undefined) -> undefined; (_Opt0) -> maps:get(name, _Opt0) end)(U)]).
 
 '_botopink_main'() ->
     main().
@@ -28,4 +28,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+<<"ana">>
 ```

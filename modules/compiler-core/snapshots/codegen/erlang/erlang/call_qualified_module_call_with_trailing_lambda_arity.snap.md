@@ -14,10 +14,10 @@ record Pipeline {
 ```erlang
 -module(main).
 
--record(Pipeline, {items}).
+%% record Pipeline: items
 
 doubled() ->
-    list:map(Self_items, fun(X) ->
+    list:map(maps:get(items, Self), fun(X) ->
         (X * 2)
     end).
 ```

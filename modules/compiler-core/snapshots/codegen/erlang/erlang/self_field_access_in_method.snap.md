@@ -13,10 +13,10 @@ val Point = struct {
 ```erlang
 -module(main).
 
--record(Point, {x, y}).
+%% struct Point: x, y
 
 sum() ->
-    (Self_x + Self_y).
+    (maps:get(x, Self) + maps:get(y, Self)).
 ```
 
 ----- RUN LOG -----

@@ -19,7 +19,7 @@ fn handle() -> i32 {
 %%   Timeout
 
 fetch() ->
-    {error, ErrorKind_NotFound}.
+    {error, 'NotFound'}.
 
 handle() ->
     R = case fetch() of

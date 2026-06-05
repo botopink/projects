@@ -16,13 +16,13 @@ val Vec2 = record {
 ```erlang
 -module(main).
 
--record(Vec2, {x, y}).
+%% record Vec2: x, y
 
 lengthSq() ->
-    ((Self_x * Self_x) + (Self_y * Self_y)).
+    ((maps:get(x, Self) * maps:get(x, Self)) + (maps:get(y, Self) * maps:get(y, Self))).
 
 scale(Factor) ->
-    (Self_x * Factor).
+    (maps:get(x, Self) * Factor).
 ```
 
 ----- RUN LOG -----

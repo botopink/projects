@@ -14,10 +14,10 @@ record ApiError { msg: string }
 ```erlang
 -module(main).
 
--record(ApiError, {msg}).
+%% record ApiError: msg
 
 fetch() ->
-    {error, ApiError(<<"not found">>)}.
+    {error, #{msg => <<"not found">>}}.
 
 strict() ->
     R = case fetch() of

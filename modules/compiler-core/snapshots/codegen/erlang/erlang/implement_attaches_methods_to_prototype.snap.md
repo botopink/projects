@@ -17,12 +17,12 @@ val PersonPrintable = implement Printable for Person {
 
 %% interface Printable
 
--record(Person, {name}).
+%% record Person: name
 
 %% implement Printable for Person
 
 print(Self) ->
-    Self_name.
+    maps:get(name, Self).
 ```
 
 ----- RUN LOG -----

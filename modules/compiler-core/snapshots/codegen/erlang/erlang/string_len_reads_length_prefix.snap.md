@@ -12,7 +12,7 @@ fn n() -> i32 {
 
 n() ->
     S = <<"hello">>,
-    S_len.
+    maps:get(len, S).
 ```
 
 ----- RUN LOG -----

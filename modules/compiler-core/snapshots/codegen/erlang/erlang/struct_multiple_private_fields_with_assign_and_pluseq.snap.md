@@ -22,7 +22,7 @@ val BankAccount = struct {
 ```erlang
 -module(main).
 
--record(BankAccount, {_balance, _owner}).
+%% struct BankAccount: _balance, _owner
 
 deposit(Amount) ->
     %% field assignment is not directly supported in Erlang.

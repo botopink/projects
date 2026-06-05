@@ -13,7 +13,7 @@ val Account = struct { name: string, email: string };
 
 %% Holds name and email
 
--record(Account, {name, email}).
+%% struct Account: name, email
 ```
 
 ----- RUN LOG -----

@@ -13,10 +13,10 @@ fn safe() -> i32 {
 ```erlang
 -module(main).
 
--record(RiskError, {level}).
+%% record RiskError: level
 
 risky() ->
-    {error, RiskError(5)}.
+    {error, #{level => 5}}.
 
 safe() ->
     case risky() of

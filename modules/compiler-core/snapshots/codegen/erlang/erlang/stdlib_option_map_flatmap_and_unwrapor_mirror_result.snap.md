@@ -15,7 +15,7 @@ fn greet(p: Person) -> string {
 ```erlang
 -module(main).
 
--record(Person, {name}).
+%% record Person: name
 
 firstName(P) ->
     erlang:error({todo, "not implemented"}).

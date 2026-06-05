@@ -51,19 +51,19 @@ of(First, Second) ->
     {First, Second}.
 
 first(P) ->
-    P__0.
+    element(1, P).
 
 second(P) ->
-    P__1.
+    element(2, P).
 
 swap(P) ->
-    {P__1, P__0}.
+    {element(2, P), element(1, P)}.
 
 map_first(P, Transform) ->
-    {transform(P__0), P__1}.
+    {transform(element(1, P)), element(2, P)}.
 
 map_second(P, Transform) ->
-    {P__0, transform(P__1)}.
+    {element(1, P), transform(element(2, P))}.
 ```
 
 ----- RUN LOG -----

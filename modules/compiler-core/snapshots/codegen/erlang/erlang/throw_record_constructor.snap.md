@@ -12,12 +12,12 @@ fn validate(x: i32) {
 ```erlang
 -module(main).
 
--record(AppError, {code, msg}).
+%% record AppError: code, msg
 
 validate(X) ->
     case (X < 0) of
         true ->
-            erlang:throw(AppError(400, <<"negative">>));
+            erlang:throw(#{code => 400, msg => <<"negative">>});
         _ -> ok
     end.
 ```

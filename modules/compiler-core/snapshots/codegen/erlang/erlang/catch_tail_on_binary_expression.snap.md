@@ -14,10 +14,10 @@ fn compute() -> i32 {
 ```erlang
 -module(main).
 
--record(CalcError, {msg}).
+%% record CalcError: msg
 
 getA() ->
-    {error, CalcError(<<"overflow">>)}.
+    {error, #{msg => <<"overflow">>}}.
 
 compute() ->
     R = case getA() of

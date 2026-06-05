@@ -15,7 +15,7 @@ fn main() {
 main() ->
     S = <<"hello">>,
     Tail = S:slice(2),
-    io:format("~p~n", [Tail_len]).
+    io:format("~p~n", [maps:get(len, Tail)]).
 
 '_botopink_main'() ->
     main().

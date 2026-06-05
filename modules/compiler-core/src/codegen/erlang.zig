@@ -132,6 +132,13 @@ fn emitErlang(
     defer em.externals_missing.deinit();
     try em.collectStdImports(program);
     defer em.std_imports.deinit();
+    try em.collectTypeShapes(program);
+    defer {
+        var rf_it = em.record_fields.valueIterator();
+        while (rf_it.next()) |names| alloc.free(names.*);
+        em.record_fields.deinit();
+        em.enum_names.deinit();
+    }
     var top_runtime_vals: std.ArrayListUnmanaged(ast.ValDecl) = .empty;
     defer top_runtime_vals.deinit(alloc);
     var has_main_0 = false;
@@ -340,6 +347,30 @@ fn erlangModule(alloc: std.mem.Allocator, name: []const u8) ![]u8 {
     return buf;
 }
 
+/// Render `name` as a valid Erlang atom into `buf` — quoted when it is not a
+/// valid unquoted atom (must start lowercase; only alnum/`_`/`@` after).
+fn atomName(name: []const u8, buf: []u8) ![]const u8 {
+    var ok = name.len > 0 and name[0] >= 'a' and name[0] <= 'z';
+    if (ok) for (name) |ch| {
+        if (!(std.ascii.isAlphanumeric(ch) or ch == '_' or ch == '@')) {
+            ok = false;
+            break;
+        }
+    };
+    if (ok) return name;
+    return std.fmt.bufPrint(buf, "'{s}'", .{name});
+}
+
+/// Tuple positional member (`_0`, `_1`, …) → the digits, else null.
+/// Distinguishes tuple index access from `_`-prefixed record fields.
+fn tupleIndexMember(member: []const u8) ?[]const u8 {
+    if (member.len < 2 or member[0] != '_') return null;
+    for (member[1..]) |ch| {
+        if (!std.ascii.isDigit(ch)) return null;
+    }
+    return member[1..];
+}
+
 // ── Emitter ───────────────────────────────────────────────────────────────────
 
 const Emitter = struct {
@@ -370,6 +401,13 @@ const Emitter = struct {
     /// Module name, used for `<module>.bp:<line>` source locations in
     /// test-mode assert failures.
     module_name: []const u8 = "main",
+    /// Record/struct constructors: name → ordered field names. A constructor
+    /// call (`AppError(code: 1, msg: "x")`) lowers to a map literal
+    /// `#{code => 1, msg => <<"x">>}` (mirrors the beam backend's
+    /// `put_map_assoc` shape); field access lowers to `maps:get/2`.
+    record_fields: std.StringHashMap([]const []const u8),
+    /// Enum names → so `EnumName.Variant` access lowers to the variant atom.
+    enum_names: std.StringHashMap(void),
 
     fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8), rewrites: std.AutoHashMap(ast.Loc, []const u8)) Emitter {
         return .{
@@ -381,6 +419,38 @@ const Emitter = struct {
             .externals = std.StringHashMap(ast.ExternalRef).init(alloc),
             .externals_missing = std.StringHashMap(void).init(alloc),
             .std_imports = std.StringHashMap(void).init(alloc),
+            .record_fields = std.StringHashMap([]const []const u8).init(alloc),
+            .enum_names = std.StringHashMap(void).init(alloc),
+        };
+    }
+
+    /// Indexes record/struct field orders + enum names for constructor-call,
+    /// field-access, and enum-member lowering.
+    fn collectTypeShapes(self: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .record => |r| {
+                var names = try self.alloc.alloc([]const u8, r.fields.len);
+                for (r.fields, 0..) |f, i| names[i] = f.name;
+                try self.record_fields.put(r.name, names);
+            },
+            .@"struct" => |s| {
+                var count: usize = 0;
+                for (s.members) |m| {
+                    if (m == .field) count += 1;
+                }
+                var names = try self.alloc.alloc([]const u8, count);
+                var i: usize = 0;
+                for (s.members) |m| switch (m) {
+                    .field => |f| {
+                        names[i] = f.name;
+                        i += 1;
+                    },
+                    else => {},
+                };
+                try self.record_fields.put(s.name, names);
+            },
+            .@"enum" => |e| try self.enum_names.put(e.name, {}),
+            else => {},
         };
     }
 
@@ -929,8 +999,45 @@ const Emitter = struct {
                     }
                 },
                 .identAccess => |ia| {
-                    try this.emitExpr(ia.receiver.*);
-                    try this.fmt("_{s}", .{ia.member});
+                    // Qualified enum member: `Order.Lt` → the variant atom.
+                    if (ia.receiver.* == .identifier and ia.receiver.*.identifier.kind == .ident and
+                        this.enum_names.contains(ia.receiver.*.identifier.kind.ident))
+                    {
+                        var tag_buf: [128]u8 = undefined;
+                        try this.w(try atomName(ia.member, &tag_buf));
+                        return;
+                    }
+                    // Tuple index access: `t._N` → `element(N+1, T)` (1-based).
+                    if (tupleIndexMember(ia.member)) |digits| {
+                        const idx = std.fmt.parseInt(usize, digits, 10) catch 0;
+                        if (ia.optional) {
+                            const n = this.try_seq;
+                            this.try_seq += 1;
+                            try this.fmt("(fun(undefined) -> undefined; (_Opt{d}) -> element({d}, _Opt{d}) end)(", .{ n, idx + 1, n });
+                            try this.emitExpr(ia.receiver.*);
+                            try this.w(")");
+                        } else {
+                            try this.fmt("element({d}, ", .{idx + 1});
+                            try this.emitExpr(ia.receiver.*);
+                            try this.w(")");
+                        }
+                        return;
+                    }
+                    // Record/struct field access — records are maps at runtime.
+                    // Optional chaining (`a?.b`) guards on `undefined`.
+                    if (ia.optional) {
+                        const n = this.try_seq;
+                        this.try_seq += 1;
+                        var ab1: [128]u8 = undefined;
+                        try this.fmt("(fun(undefined) -> undefined; (_Opt{d}) -> maps:get({s}, _Opt{d}) end)(", .{ n, try atomName(ia.member, &ab1), n });
+                        try this.emitExpr(ia.receiver.*);
+                        try this.w(")");
+                    } else {
+                        var ab2: [128]u8 = undefined;
+                        try this.fmt("maps:get({s}, ", .{try atomName(ia.member, &ab2)});
+                        try this.emitExpr(ia.receiver.*);
+                        try this.w(")");
+                    }
                 },
                 .dotIdent => |n| try this.fmt("{s}", .{n}),
             },
@@ -1136,6 +1243,19 @@ const Emitter = struct {
                                 // receiver names the extension block, so it is
                                 // not a module — call the bare local `m(obj)`.
                                 try this.fmt("{s}(", .{cc.callee});
+                            } else if (mod_name != null and this.enum_names.contains(mod_name.?)) {
+                                // Qualified enum payload constructor:
+                                // `Color.Rgb(r, g, b)` → tagged tuple
+                                // `{'Rgb', R, G, B}` (matches the case-arm
+                                // constructor pattern lowering).
+                                var tag_buf: [128]u8 = undefined;
+                                try this.fmt("{{{s}", .{try atomName(cc.callee, &tag_buf)});
+                                for (cc.args) |arg| {
+                                    try this.w(", ");
+                                    try this.emitExpr(arg.value.*);
+                                }
+                                try this.w("}");
+                                return;
                             } else if (mod_name) |name| {
                                 // A PascalCase identifier receiver is a module-qualified
                                 // call: `List.map(xs, f)` → a remote call `list:map(Xs, F)`.
@@ -1157,6 +1277,27 @@ const Emitter = struct {
                             // External fn with no `erlang` target — no symbol
                             // to call on this backend.
                             return error.MissingExternalTarget;
+                        } else if (this.record_fields.get(cc.callee)) |fields| {
+                            // Record/struct constructor → map literal
+                            // `#{field => V, …}` (runtime shape mirrors the
+                            // beam backend's `put_map_assoc` maps). Labeled
+                            // args use their label; positional args map to
+                            // the declared field order.
+                            try this.w("#{");
+                            for (cc.args, 0..) |arg, ai| {
+                                if (ai > 0) try this.w(", ");
+                                const fname: []const u8 = if (arg.label) |lbl|
+                                    lbl
+                                else if (ai < fields.len)
+                                    fields[ai]
+                                else
+                                    "_arg";
+                                var kb: [128]u8 = undefined;
+                                try this.fmt("{s} => ", .{try atomName(fname, &kb)});
+                                try this.emitExpr(arg.value.*);
+                            }
+                            try this.w("}");
+                            return;
                         } else {
                             try this.fmt("{s}(", .{cc.callee});
                         }
@@ -1683,7 +1824,9 @@ const Emitter = struct {
     // ── struct / record / enum ────────────────────────────────────────────────
 
     fn emitStruct(this: *Emitter, s: ast.StructDecl) !void {
-        try this.fmt("-record({s}, {{", .{s.name});
+        // Structs are maps at runtime (`#{field => V}`) — no decl needed.
+        // (`-record(PascalCase, …)` is invalid Erlang: a capitalised bare atom.)
+        try this.fmt("%% struct {s}: ", .{s.name});
         var first = true;
         for (s.members) |m| switch (m) {
             .field => |f| {
@@ -1693,7 +1836,7 @@ const Emitter = struct {
             },
             else => {},
         };
-        try this.w("}).\n");
+        try this.w("\n");
         // Emit methods as standalone functions
         for (s.members) |m| switch (m) {
             .method => |md| {
@@ -1714,12 +1857,14 @@ const Emitter = struct {
     }
 
     fn emitRecord(this: *Emitter, r: ast.RecordDecl) !void {
-        try this.fmt("-record({s}, {{", .{r.name});
+        // Records are maps at runtime (`#{field => V}`) — no decl needed.
+        // (`-record(PascalCase, …)` is invalid Erlang: a capitalised bare atom.)
+        try this.fmt("%% record {s}: ", .{r.name});
         for (r.fields, 0..) |f, i| {
             if (i > 0) try this.w(", ");
             try this.w(f.name);
         }
-        try this.w("}).\n");
+        try this.w("\n");
         for (r.methods) |m| {
             if (m.is_declare) continue;
             try this.w("\n");

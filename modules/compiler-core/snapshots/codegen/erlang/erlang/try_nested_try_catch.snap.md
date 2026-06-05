@@ -19,13 +19,13 @@ fn process() -> i32 {
 ```erlang
 -module(main).
 
--record(DbError, {msg}).
+%% record DbError: msg
 
 inner() ->
-    {error, DbError(<<"conn refused">>)}.
+    {error, #{msg => <<"conn refused">>}}.
 
 outer() ->
-    {error, DbError(<<"timeout">>)}.
+    {error, #{msg => <<"timeout">>}}.
 
 process() ->
     A = case inner() of

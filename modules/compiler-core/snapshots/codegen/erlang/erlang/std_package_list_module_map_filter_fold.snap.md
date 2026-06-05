@@ -75,10 +75,10 @@ pub fn any<T>(xs: Array<T>, pred: fn(item: T) -> bool) -> bool {
 %%% accumulator through `forEach`.
 
 length(Xs) ->
-    Xs_length.
+    maps:get(length, Xs).
 
 is_empty(Xs) ->
-    (Xs_length =:= 0).
+    (maps:get(length, Xs) =:= 0).
 
 contains(Xs, X) ->
     (Xs:indexOf(X) =/= (-1)).
@@ -87,13 +87,13 @@ first(Xs) ->
     Xs:at(0).
 
 rest(Xs) ->
-    Xs:slice(1, Xs_length).
+    Xs:slice(1, maps:get(length, Xs)).
 
 take(Xs, N) ->
     Xs:slice(0, N).
 
 drop(Xs, N) ->
-    Xs:slice(N, Xs_length).
+    Xs:slice(N, maps:get(length, Xs)).
 
 reverse(Xs) ->
     Xs:reverse().
@@ -112,10 +112,10 @@ fold(Xs, Initial, F) ->
     Acc.
 
 all(Xs, Pred) ->
-    (Xs:filter(Pred)_length =:= Xs_length).
+    (maps:get(length, Xs:filter(Pred)) =:= maps:get(length, Xs)).
 
 any(Xs, Pred) ->
-    (Xs:filter(Pred)_length =/= 0).
+    (maps:get(length, Xs:filter(Pred)) =/= 0).
 ```
 
 ----- RUN LOG -----

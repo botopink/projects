@@ -12,10 +12,10 @@ record Pipeline {
 ```erlang
 -module(main).
 
--record(Pipeline, {items}).
+%% record Pipeline: items
 
 run(F) ->
-    list:map(Self_items, F).
+    list:map(maps:get(items, Self), F).
 ```
 
 ----- RUN LOG -----

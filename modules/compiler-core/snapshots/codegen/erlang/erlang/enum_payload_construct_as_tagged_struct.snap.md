@@ -18,7 +18,7 @@ fn makeCircle() -> Shape {
 %%   Square(side)
 
 makeCircle() ->
-    shape:Circle(5).
+    {'Circle', 5}.
 ```
 
 ----- RUN LOG -----

@@ -14,10 +14,10 @@ fn safe() -> i32 {
 ```erlang
 -module(main).
 
--record(NetError, {code}).
+%% record NetError: code
 
 fetch() ->
-    {error, NetError(500)}.
+    {error, #{code => 500}}.
 
 safe() ->
     R = case fetch() of

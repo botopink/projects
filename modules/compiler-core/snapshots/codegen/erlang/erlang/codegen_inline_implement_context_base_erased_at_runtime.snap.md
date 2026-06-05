@@ -10,10 +10,10 @@ fn render() -> Element {
 ```erlang
 -module(main).
 
--record(Element, {}).
+%% struct Element: 
 
 render() ->
-    Element().
+    #{}.
 ```
 
 ----- RUN LOG -----

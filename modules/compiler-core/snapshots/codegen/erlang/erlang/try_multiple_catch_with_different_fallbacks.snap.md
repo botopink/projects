@@ -18,13 +18,13 @@ fn loadUser() {
 ```erlang
 -module(main).
 
--record(UserError, {msg}).
+%% record UserError: msg
 
 fetchName() ->
-    {error, UserError(<<"name missing">>)}.
+    {error, #{msg => <<"name missing">>}}.
 
 fetchAge() ->
-    {error, UserError(<<"age missing">>)}.
+    {error, #{msg => <<"age missing">>}}.
 
 loadUser() ->
     Name = case fetchName() of

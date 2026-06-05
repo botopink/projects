@@ -11,7 +11,7 @@ fn greet({ name, .. }: Person) -> string {
 ```erlang
 -module(main).
 
--record(Person, {name, age}).
+%% record Person: name, age
 
 greet({Name, _}) ->
     io:format("~p~n", [Name]),

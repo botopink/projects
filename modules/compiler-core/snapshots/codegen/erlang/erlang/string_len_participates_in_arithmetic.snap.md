@@ -13,7 +13,7 @@ fn main() {
 
 main() ->
     S = <<"hello">>,
-    io:format("~p~n", [(S_len + 1)]).
+    io:format("~p~n", [(maps:get(len, S) + 1)]).
 
 '_botopink_main'() ->
     main().

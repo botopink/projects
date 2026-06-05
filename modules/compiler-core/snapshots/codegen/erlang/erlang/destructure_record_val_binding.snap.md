@@ -12,7 +12,7 @@ fn describe(p: Point) -> i32 {
 ```erlang
 -module(main).
 
--record(Point, {x, y}).
+%% record Point: x, y
 
 describe(P) ->
     {X, Y} = P,

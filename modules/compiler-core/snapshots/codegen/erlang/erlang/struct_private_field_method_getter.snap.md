@@ -15,7 +15,7 @@ val Counter = struct {
 ```erlang
 -module(main).
 
--record(Counter, {_count}).
+%% struct Counter: _count
 
 increment() ->
     %% field assignment is not directly supported in Erlang.

@@ -17,7 +17,7 @@ fn Widget() -> Element {
 ```erlang
 -module(main).
 
--record(Element, {}).
+%% struct Element: 
 
 cleanup() ->
     0.
@@ -29,7 +29,7 @@ Widget() ->
     effect(fun() ->
         cleanup()
     end),
-    Element().
+    #{}.
 ```
 
 ----- RUN LOG -----

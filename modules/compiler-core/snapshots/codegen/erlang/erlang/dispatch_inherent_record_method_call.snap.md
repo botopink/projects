@@ -17,13 +17,13 @@ fn main() {
 -module(main).
 -export(['_botopink_main'/0, main/1]).
 
--record(Contador, {n}).
+%% record Contador: n
 
 atual() ->
-    Self_n.
+    maps:get(n, Self).
 
 main() ->
-    C = Contador(5),
+    C = #{n => 5},
     io:format("~p~n", [C:atual()]).
 
 '_botopink_main'() ->

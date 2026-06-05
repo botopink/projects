@@ -13,16 +13,16 @@ fn f() {
 ```erlang
 -module(main).
 
--record(Error, {msg}).
+%% record Error: msg
 
 fetch() ->
-    {error, Error(<<"boom">>)}.
+    {error, #{msg => <<"boom">>}}.
 
 f() ->
     {A, B} = case fetch() of
         {ok, TryV0} -> TryV0;
         {error, _TryE0} ->
-            erlang:throw(Error(<<"failed">>))
+            erlang:throw(#{msg => <<"failed">>})
     end.
 ```
 

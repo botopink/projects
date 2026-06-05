@@ -23,17 +23,17 @@ fn main() {
 
 %% interface Swimmer
 
--record(Pato, {id}).
+%% record Pato: id
 
 %% implement Swimmer for Pato
 
 swim(Self) ->
-    Self_id.
+    maps:get(id, Self).
 
 %% activate PatoNada
 
 main() ->
-    Donald = Pato(2),
+    Donald = #{id => 2},
     io:format("~p~n", [swim(Donald)]).
 
 '_botopink_main'() ->
@@ -45,4 +45,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+2
 ```

@@ -19,7 +19,7 @@ val Status = enum {
 %%   Inactive
 
 isDefault(S) ->
-    Current = Status_Active,
+    Current = 'Active',
     Current.
 ```
 

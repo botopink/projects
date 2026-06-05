@@ -10,10 +10,10 @@ fn make() -> Point {
 ```erlang
 -module(main).
 
--record(Point, {x, y}).
+%% record Point: x, y
 
 make() ->
-    Point(3, 4).
+    #{x => 3, y => 4}.
 ```
 
 ----- RUN LOG -----

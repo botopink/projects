@@ -18,17 +18,17 @@ fn main() {
 -module(main).
 -export(['_botopink_main'/0, main/1]).
 
--record(Pato, {id}).
+%% record Pato: id
 
 %% extend Pato
 
 fly(Self) ->
-    Self_id.
+    maps:get(id, Self).
 
 %% activate PatoVoa
 
 main() ->
-    Donald = Pato(7),
+    Donald = #{id => 7},
     io:format("~p~n", [fly(Donald)]).
 
 '_botopink_main'() ->
@@ -40,4 +40,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+7
 ```

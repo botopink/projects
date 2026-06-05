@@ -13,10 +13,10 @@ record Vec2 {
 ```erlang
 -module(main).
 
--record(Vec2, {x, y}).
+%% record Vec2: x, y
 
 dot(Other) ->
-    ((Self_x * Other_x) + (Self_y * Other_y)).
+    ((maps:get(x, Self) * maps:get(x, Other)) + (maps:get(y, Self) * maps:get(y, Other))).
 ```
 
 ----- RUN LOG -----

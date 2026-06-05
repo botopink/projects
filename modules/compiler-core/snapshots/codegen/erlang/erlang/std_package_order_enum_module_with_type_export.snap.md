@@ -62,13 +62,13 @@ pub fn reverse(o: Order) -> Order {
 %%   Gt
 
 lt() ->
-    Order_Lt.
+    'Lt'.
 
 eq() ->
-    Order_Eq.
+    'Eq'.
 
 gt() ->
-    Order_Gt.
+    'Gt'.
 
 to_int(O) ->
     N = case O of
@@ -84,11 +84,11 @@ to_int(O) ->
 reverse(O) ->
     R = case O of
         Lt ->
-            Order_Gt;
+            'Gt';
         Gt ->
-            Order_Lt;
+            'Lt';
         _ ->
-            Order_Eq
+            'Eq'
     end,
     R.
 ```
@@ -147,4 +147,6 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+-1
+<<"less">>
 ```

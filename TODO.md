@@ -367,9 +367,17 @@ loader relocated `libs/std/src/prelude.zig` → `modules/compiler-core/src/compt
       `?U` (already-optional members not double-wrapped); optional method
       calls type via the permissive path
 - [x] Codegen commonJS: native `?.` for both forms
-- [ ] Codegen erlang/beam/wasm: blocked on the pre-existing record-field-access
-      gap (erlang concatenates `Recv_member` variable names — no map access);
-      revisit when field access lands on those backends
+- [x] Codegen erlang: records/structs are maps at runtime — constructors →
+      `#{field => V}` literals, field access → `maps:get/2`, tuple `_N` →
+      `element(N+1, _)`, enum members → variant atoms / tagged tuples; `?.`
+      guards on `undefined` via an immediate fun. E2E: `<<"ana">>` run log.
+      (Also fixes the previously-invalid `-record(PascalCase, …)` decls and
+      the `Recv_member` concat field access.)
+- [ ] Codegen beam: field access exists (`get_map_elements`) — add the
+      `undefined` guard for `?.`; wasm: still blocked on named-field access
+      in linear memory (`self.id` → `i32.const 0` pre-existing gap)
+- [ ] erlang: optional METHOD call (`recv?.m(args)`) — method calls on value
+      receivers are still the pre-existing broken `Recv:m(...)` path
 - [x] Snapshots: parser `optional_chaining_{member_access,method_call}`,
       codegen node `optional_chaining_member_access_short_circuits_null`
       (+ AST-churn re-baseline: `optional: false` now serialized everywhere)

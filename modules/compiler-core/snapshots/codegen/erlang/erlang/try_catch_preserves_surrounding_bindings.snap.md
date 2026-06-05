@@ -17,10 +17,10 @@ fn process() -> i32 {
 ```erlang
 -module(main).
 
--record(LoadError, {msg}).
+%% record LoadError: msg
 
 load() ->
-    {error, LoadError(<<"not found">>)}.
+    {error, #{msg => <<"not found">>}}.
 
 process() ->
     Prefix = 10,

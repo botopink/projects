@@ -18,13 +18,13 @@ record IoError { path: string }
 ```erlang
 -module(main).
 
--record(IoError, {path}).
+%% record IoError: path
 
 step1() ->
-    {error, IoError(<<"/data">>)}.
+    {error, #{path => <<"/data">>}}.
 
 step2(X) ->
-    {error, IoError(<<"/out">>)}.
+    {error, #{path => <<"/out">>}}.
 
 pipeline() ->
     case step1() of
