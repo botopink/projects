@@ -1,6 +1,6 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-fn fetch() -> @Result<i32, string> {
+*fn fetch() -> @Result<i32, string> {
     @todo();
 }
 fn process() -> i32 {

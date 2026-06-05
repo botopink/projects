@@ -79,7 +79,7 @@ test "js: if ---- conditional with else branch" {
 
 test "js: try ---- propagate without catch" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> @Result<i32, string> {
+        \\*fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn process() -> i32 {
@@ -92,7 +92,7 @@ test "js: try ---- propagate without catch" {
 
 test "js: try ---- with inline catch handler" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> @Result<i32, string> {
+        \\*fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn safe() -> i32 {
@@ -303,10 +303,10 @@ test "js: case ---- nested case in fn body" {
 test "js: try ---- catch with throw rethrow" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\record ApiError { msg: string }
-        \\fn fetch() -> @Result<i32, ApiError> {
+        \\*fn fetch() -> @Result<i32, ApiError> {
         \\    throw ApiError(msg: "not found");
         \\}
-        \\fn strict() -> @Result<i32, string> {
+        \\*fn strict() -> @Result<i32, string> {
         \\    val r = try fetch() catch throw "fetch failed";
         \\    return r;
         \\}
@@ -316,7 +316,7 @@ test "js: try ---- catch with throw rethrow" {
 test "js: try ---- catch with return fallback" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\record NetError { code: i32 }
-        \\fn fetch() -> @Result<i32, NetError> {
+        \\*fn fetch() -> @Result<i32, NetError> {
         \\    throw NetError(code: 500);
         \\}
         \\fn safe() -> i32 {
@@ -329,10 +329,10 @@ test "js: try ---- catch with return fallback" {
 test "js: try ---- nested try catch" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\record DbError { msg: string }
-        \\fn inner() -> @Result<i32, DbError> {
+        \\*fn inner() -> @Result<i32, DbError> {
         \\    throw DbError(msg: "conn refused");
         \\}
-        \\fn outer() -> @Result<i32, DbError> {
+        \\*fn outer() -> @Result<i32, DbError> {
         \\    throw DbError(msg: "timeout");
         \\}
         \\fn process() -> i32 {
@@ -381,13 +381,13 @@ test "js: throw ---- record constructor" {
 test "js: try ---- propagate in multi-statement fn" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\record IoError { path: string }
-        \\fn step1() -> @Result<i32, IoError> {
+        \\*fn step1() -> @Result<i32, IoError> {
         \\    throw IoError(path: "/data");
         \\}
-        \\fn step2(x: i32) -> @Result<i32, IoError> {
+        \\*fn step2(x: i32) -> @Result<i32, IoError> {
         \\    throw IoError(path: "/out");
         \\}
-        \\fn pipeline() -> @Result<i32, IoError> {
+        \\*fn pipeline() -> @Result<i32, IoError> {
         \\    val a = try step1();
         \\    val b = try step2(a);
         \\    return b;
@@ -398,7 +398,7 @@ test "js: try ---- propagate in multi-statement fn" {
 test "js: try ---- catch with lambda handler" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\record FetchError { url: string }
-        \\fn fetch() -> @Result<i32, FetchError> {
+        \\*fn fetch() -> @Result<i32, FetchError> {
         \\    throw FetchError(url: "/api");
         \\}
         \\fn safe() -> i32 {
@@ -411,7 +411,7 @@ test "js: try ---- catch with lambda handler" {
 test "js: catch ---- tail on binary expression" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\record CalcError { msg: string }
-        \\fn getA() -> @Result<i32, CalcError> {
+        \\*fn getA() -> @Result<i32, CalcError> {
         \\    throw CalcError(msg: "overflow");
         \\}
         \\fn compute() -> i32 {
@@ -424,7 +424,7 @@ test "js: catch ---- tail on binary expression" {
 test "js: try ---- catch with case handler" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\val ErrorKind = enum { NotFound, Timeout }
-        \\fn fetch() -> @Result<i32, ErrorKind> {
+        \\*fn fetch() -> @Result<i32, ErrorKind> {
         \\    throw ErrorKind.NotFound;
         \\}
         \\fn handle() -> i32 {
@@ -449,7 +449,7 @@ test "js: throw ---- inside case arm" {
 test "js: try ---- catch preserves surrounding bindings" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\record LoadError { msg: string }
-        \\fn load() -> @Result<i32, LoadError> {
+        \\*fn load() -> @Result<i32, LoadError> {
         \\    throw LoadError(msg: "not found");
         \\}
         \\fn process() -> i32 {
@@ -477,10 +477,10 @@ test "js: throw ---- inside loop body" {
 test "js: try ---- multiple catch with different fallbacks" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\record UserError { msg: string }
-        \\fn fetchName() -> @Result<string, UserError> {
+        \\*fn fetchName() -> @Result<string, UserError> {
         \\    throw UserError(msg: "name missing");
         \\}
-        \\fn fetchAge() -> @Result<i32, UserError> {
+        \\*fn fetchAge() -> @Result<i32, UserError> {
         \\    throw UserError(msg: "age missing");
         \\}
         \\fn loadUser() {
@@ -494,7 +494,7 @@ test "js: try ---- multiple catch with different fallbacks" {
 test "js: catch ---- tail on function call no try" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\record RiskError { level: i32 }
-        \\fn risky() -> @Result<i32, RiskError> {
+        \\*fn risky() -> @Result<i32, RiskError> {
         \\    throw RiskError(level: 5);
         \\}
         \\fn safe() -> i32 {

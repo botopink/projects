@@ -232,7 +232,7 @@ test "infer: null-check binding ---- if (x) { e -> } body ignores binding" {
 
 test "infer: try expression ---- result type unified with return" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> @Result<i32, string> {
+        \\*fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn process() -> i32 {
@@ -245,7 +245,7 @@ test "infer: try expression ---- result type unified with return" {
 
 test "infer: try-catch ---- handler provides fallback" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> @Result<i32, string> {
+        \\*fn fetch() -> @Result<i32, string> {
         \\    @todo();
         \\}
         \\fn safe() -> i32 {

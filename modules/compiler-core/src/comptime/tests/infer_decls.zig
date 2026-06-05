@@ -401,7 +401,7 @@ test "infer: std package ---- import binds namespace" {
 
 test "infer: builtin result namespace ---- qualified calls typecheck" {
     try h.assertInfersOk(std.testing.allocator,
-        \\fn parse(n: i32) -> @Result<i32, string> {
+        \\*fn parse(n: i32) -> @Result<i32, string> {
         \\    if (n < 0) { throw "negative"; };
         \\    return n;
         \\}

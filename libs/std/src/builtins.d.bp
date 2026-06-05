@@ -48,7 +48,7 @@ pub enum Result<R, E> {
 //   result.is_error(r)              ≡ r.isError()
 //
 // A `@Result` value is only constructed by `return`/`throw` inside a
-// `-> @Result<R, E>` fn; the runtime shape is `{ ok: V } | { error: E }` (JS) /
+// `*fn -> @Result<R, E>` fn; the runtime shape is `{ ok: V } | { error: E }` (JS) /
 // `{ok, V} | {error, E}` (erlang/beam).
 
 // ── option type ──────────────────────────────────────────────────────────────

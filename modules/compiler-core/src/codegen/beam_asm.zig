@@ -664,10 +664,11 @@ const Emitter = struct {
         }
 
         try self.bodyWrite("\n");
-        // `*fn` is async/generator. The BEAM model is processes + message passing
-        // (spawn/receive); this backend currently emits the eager body, with full
-        // process-based lowering left as future work.
-        if (f.isStarFn) {
+        // `*fn` is async/generator — except `*fn -> @Result<…>` (checked-Result
+        // effect), which is a plain function. The BEAM model is processes +
+        // message passing (spawn/receive); this backend currently emits the
+        // eager body, with full process-based lowering left as future work.
+        if (f.isStarFn and !f.returnsResult()) {
             try self.bodyWrite("%% *fn (async/generator) — eager lowering\n");
         }
         var fn_buf: [256]u8 = undefined;

@@ -289,7 +289,7 @@ test "js: destructure ---- tuple with long names" {
 test "js: destructure ---- tuple with try-catch" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\record Error { msg: string }
-        \\fn fetch() -> @Result<#(i32, i32), Error> {
+        \\*fn fetch() -> @Result<#(i32, i32), Error> {
         \\    throw Error(msg: "boom");
         \\}
         \\fn f() {

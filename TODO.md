@@ -366,6 +366,22 @@ loader relocated `libs/std/src/prelude.zig` → `modules/compiler-core/src/compt
       beam/wasm tag tests
 - [ ] Snapshots: parser + comptime + 4 codegen targets + run logs
 
+### F2d — checked-Result effect requires `*fn` (decided 2026-06-04)
+> `*` is the effect marker. Only `*fn f() -> @Result<D, E>` gets the special
+> treatment (throw checked against `E`; `return`/`throw` construct
+> `{ok}/{error}` values). A plain `fn -> @Result` stays VALID but untreated:
+> `throw` is a raw host exception, values are not wrapped (option B —
+> deliberate, for interop-style code).
+- [x] Inference: `throwContext = .result` only when `f.isStarFn`; plain
+      `fn -> @Result` → `.unchecked`; `*fn` may now return `@Result` (joins
+      `@Future`/`@Iterator`/`@AsyncIterator`); `await`/`yield` stay exclusive
+      to the async kinds (no `starFn` ctx for Result `*fn`s)
+- [x] Codegen: `ast.FnDecl.returnsResult()` helper — `*fn -> @Result` emits as
+      a PLAIN function in all 4 backends (JS `function`, not `function*`;
+      erlang/beam/wat skip the async-lowering comment)
+- [x] 42 test sources converted `fn → *fn`; 122 snapshots re-baselined
+      (source-line-only diffs; outputs unchanged); E2E still RUN LOG `42`
+
 ### F2b — `@Result` runtime representation unified (`{ok, V}` / `{error, E}`)
 > Found via F2a's first *executing* Result snapshot: producers (`return`/`throw`
 > in `-> @Result` fns) emitted raw values/host exceptions while consumers

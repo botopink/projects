@@ -393,7 +393,7 @@ test "infer error: std package ---- member missing" {
 
 test "infer error: builtin result namespace ---- unknown function" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\fn parse(n: i32) -> @Result<i32, string> {
+        \\*fn parse(n: i32) -> @Result<i32, string> {
         \\    return n;
         \\}
         \\

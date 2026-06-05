@@ -53,7 +53,7 @@ because the `.bp` sources live outside the `std_prelude` module root.
   `__bp_result_*` ops the method form (`r.map(f)`) uses; every backend emits
   inline code. Runtime value is `{ ok: V } \| { error: E }` (JS) /
   `{ok, V} \| {error, E}` (erlang/beam) — constructed only by `return`/`throw`
-  inside `-> @Result` fns.
+  inside `*fn -> @Result` fns.
 - **`option`** has no namespace: the optional surface is the `?T` syntax plus
   the builtin methods (`x.map(f)`, `x.flatMap(f)`, `x.unwrapOr(d)`). JS-style
   optional chaining (`a?.b`, `a?.[i]`, `f?.()`) is the planned ergonomic

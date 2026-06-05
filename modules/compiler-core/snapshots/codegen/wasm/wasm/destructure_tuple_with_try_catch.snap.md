@@ -1,7 +1,7 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
 record Error { msg: string }
-fn fetch() -> @Result<#(i32, i32), Error> {
+*fn fetch() -> @Result<#(i32, i32), Error> {
     throw Error(msg: "boom");
 }
 fn f() {

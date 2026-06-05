@@ -1190,18 +1190,23 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     defer env.inTemplateFn = savedInTemplate;
 
     // Determine how `throw` is checked inside this body:
-    //   - no declared return type  → unchecked (lenient: e.g. `catch throw …`)
-    //   - `@Result<D, E>` return   → thrown value must match `E`
-    //   - any other return type    → `throw` is illegal
+    //   - no declared return type      → unchecked (lenient: e.g. `catch throw …`)
+    //   - `*fn -> @Result<D, E>`       → checked-Result effect: thrown value must
+    //     match `E`; `return`/`throw` construct `{ok, V}`/`{error, E}` values
+    //   - plain `fn -> @Result<D, E>`  → NO special treatment: `throw` stays a
+    //     raw host exception (unchecked), values are not wrapped
+    //   - any other return type        → `throw` is illegal
+    const isResultFn = f.returnsResult();
     var throwCtx: envMod.ThrowContext = .unchecked;
-    if (f.returnType) |rt| {
+    if (f.returnType) |_| {
         throwCtx = .plain;
-        if (rt == .generic and rt.generic.is_builtin and
-            std.mem.eql(u8, rt.generic.name, "Result"))
-        {
-            const rtDeref = retType.deref();
-            if (rtDeref.* == .named and rtDeref.named.args.len >= 2) {
-                throwCtx = .{ .result = rtDeref.named.args[1] };
+        if (isResultFn) {
+            throwCtx = .unchecked;
+            if (f.isStarFn) {
+                const rtDeref = retType.deref();
+                if (rtDeref.* == .named and rtDeref.named.args.len >= 2) {
+                    throwCtx = .{ .result = rtDeref.named.args[1] };
+                }
             }
         }
     }
@@ -1210,13 +1215,14 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     defer env.throwContext = savedThrowCtx;
 
     // ── `*fn` validation + async/generator context ──────────────────────────
-    // A `*fn` must return `@Future<_>` / `@Iterator<_>` / `@AsyncIterator<_, _>`;
-    // a normal `fn` must NOT (it would have to be a `*fn`).
+    // A `*fn` must return `@Future<_>` / `@Iterator<_>` / `@AsyncIterator<_, _>`
+    // — or `@Result<_, _>` (the checked-Result effect form); a normal `fn` must
+    // NOT return the async kinds (it would have to be a `*fn`).
     const asyncKind = classifyAsyncReturn(retType);
     const fnLoc: ?ast.Loc = if (f.body.len > 0) f.body[0].expr.getLoc() else null;
-    if (f.isStarFn and asyncKind == .none) {
+    if (f.isStarFn and asyncKind == .none and !isResultFn) {
         var e = TypeError.custom(
-            "a `*fn` must return `@Future<_>`, `@Iterator<_>` or `@AsyncIterator<_, _>`",
+            "a `*fn` must return `@Future<_>`, `@Iterator<_>`, `@AsyncIterator<_, _>` or `@Result<_, _>`",
             "Drop the `*` if this is a plain function, or change the return type.",
         );
         if (fnLoc) |l| e = e.withLoc(l);
@@ -1241,11 +1247,13 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
         env.starFn = prevStarFn;
         env.labelStack.shrinkRetainingCapacity(prevLabelsLen);
     }
-    if (f.isStarFn) {
+    if (f.isStarFn and !isResultFn) {
         env.starFn = starCtxFromReturn(retType, asyncKind);
         if (f.label) |lbl| try env.labelStack.append(env.arena, lbl);
     } else {
-        // A normal function body sees no async context and no outer labels.
+        // A normal function body (and a `*fn -> @Result` checked-Result body)
+        // sees no async context and no outer labels — `await`/`yield` stay
+        // exclusive to `@Future`/`@Iterator` star fns.
         env.starFn = null;
         env.labelStack.shrinkRetainingCapacity(0);
     }

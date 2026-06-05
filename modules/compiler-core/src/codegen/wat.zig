@@ -644,10 +644,11 @@ const Emitter = struct {
         const result_type = watTypeOpt(f.returnType);
         self.resetFnState(result_type);
 
-        // `*fn` is async/generator. WASM is single-threaded and eager here:
-        // `@Future<T>` resolves to `T` (`await` is identity); full generator
-        // state-machine lowering is not yet implemented.
-        if (f.isStarFn) {
+        // `*fn` is async/generator — except `*fn -> @Result<…>` (checked-Result
+        // effect), which is a plain function. WASM is single-threaded and eager
+        // here: `@Future<T>` resolves to `T` (`await` is identity); full
+        // generator state-machine lowering is not yet implemented.
+        if (f.isStarFn and !f.returnsResult()) {
             try self.w("  ;; *fn (async/generator) — eager lowering\n");
         }
         try self.w("  (func $");

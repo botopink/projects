@@ -21,7 +21,7 @@ const h = @import("helpers.zig");
 test "@Result: try unwraps Result to D" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
         \\record AppError { msg: string }
-        \\fn fetch() -> @Result<i32, AppError> {
+        \\*fn fetch() -> @Result<i32, AppError> {
         \\    throw AppError(msg: "fail");
         \\}
         \\fn process() -> i32 {
@@ -34,10 +34,10 @@ test "@Result: try unwraps Result to D" {
 test "@Result: try propagates without catch" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
         \\record IoError { path: string }
-        \\fn load() -> @Result<string, IoError> {
+        \\*fn load() -> @Result<string, IoError> {
         \\    throw IoError(path: "/data");
         \\}
-        \\fn run() -> @Result<string, IoError> {
+        \\*fn run() -> @Result<string, IoError> {
         \\    val s = try load();
         \\    return s;
         \\}
@@ -47,10 +47,10 @@ test "@Result: try propagates without catch" {
 test "@Result: multiple catch with different types" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
         \\record UserError { msg: string }
-        \\fn getName() -> @Result<string, UserError> {
+        \\*fn getName() -> @Result<string, UserError> {
         \\    throw UserError(msg: "missing");
         \\}
-        \\fn getAge() -> @Result<i32, UserError> {
+        \\*fn getAge() -> @Result<i32, UserError> {
         \\    throw UserError(msg: "missing");
         \\}
         \\fn loadUser() {
@@ -62,7 +62,7 @@ test "@Result: multiple catch with different types" {
 
 test "throw check: string matches declared E = string" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\fn parse(s: string) -> @Result<i32, string> {
+        \\*fn parse(s: string) -> @Result<i32, string> {
         \\    if (s == "") {
         \\        throw "empty input";
         \\    }
@@ -74,7 +74,7 @@ test "throw check: string matches declared E = string" {
 test "throw check: record matches declared E = ErrorRecord" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
         \\record AppError { code: i32, msg: string }
-        \\fn load() -> @Result<string, AppError> {
+        \\*fn load() -> @Result<string, AppError> {
         \\    throw AppError(code: 500, msg: "boom");
         \\}
     );
@@ -82,10 +82,10 @@ test "throw check: record matches declared E = ErrorRecord" {
 
 test "throw check: throw inside catch handler checks enclosing fn E" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\fn fetch() -> @Result<i32, string> {
+        \\*fn fetch() -> @Result<i32, string> {
         \\    throw "primary";
         \\}
-        \\fn process() -> @Result<i32, string> {
+        \\*fn process() -> @Result<i32, string> {
         \\    val r = try fetch() catch throw "secondary";
         \\    return r;
         \\}
@@ -94,7 +94,7 @@ test "throw check: throw inside catch handler checks enclosing fn E" {
 
 test "throw check: multiple throw sites all match E" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\fn validate(n: i32) -> @Result<i32, string> {
+        \\*fn validate(n: i32) -> @Result<i32, string> {
         \\    if (n < 0) {
         \\        throw "negative";
         \\    }
@@ -108,7 +108,7 @@ test "throw check: multiple throw sites all match E" {
 
 test "throw check: throw inside nested fn does not check outer fn E" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
-        \\fn outer() -> @Result<i32, string> {
+        \\*fn outer() -> @Result<i32, string> {
         \\    val cb = fn() {
         \\        throw 404;
         \\    };
@@ -119,7 +119,7 @@ test "throw check: throw inside nested fn does not check outer fn E" {
 
 test "throw check error: type mismatch i32 thrown but E = string" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\fn parse(s: string) -> @Result<i32, string> {
+        \\*fn parse(s: string) -> @Result<i32, string> {
         \\    throw 404;
         \\}
     );

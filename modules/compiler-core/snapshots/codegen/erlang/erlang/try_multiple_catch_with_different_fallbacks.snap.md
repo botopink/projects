@@ -1,10 +1,10 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
 record UserError { msg: string }
-fn fetchName() -> @Result<string, UserError> {
+*fn fetchName() -> @Result<string, UserError> {
     throw UserError(msg: "name missing");
 }
-fn fetchAge() -> @Result<i32, UserError> {
+*fn fetchAge() -> @Result<i32, UserError> {
     throw UserError(msg: "age missing");
 }
 fn loadUser() {

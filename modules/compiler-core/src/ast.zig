@@ -1410,6 +1410,17 @@ pub const FnDecl = struct {
         return false;
     }
 
+    /// True when the declared return type is the builtin `@Result<_, _>`.
+    /// A `*fn -> @Result<…>` is the checked-Result effect form (it emits as a
+    /// plain function in every backend, never as an async/generator).
+    pub fn returnsResult(this: FnDecl) bool {
+        if (this.returnType) |rt| {
+            return rt == .generic and rt.generic.is_builtin and
+                std.mem.eql(u8, rt.generic.name, "Result");
+        }
+        return false;
+    }
+
     /// The `(module, symbol)` of the `external` annotation matching `target`
     /// (e.g. "erlang", "node"), or null when no annotation targets it.
     pub fn externalFor(this: FnDecl, target: []const u8) ?ExternalRef {

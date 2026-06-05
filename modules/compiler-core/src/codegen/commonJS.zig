@@ -625,10 +625,12 @@ const Emitter = struct {
     ///   `*fn -> @Future<_>`        → `async function`
     ///   `*fn -> @Iterator<_>`      → `function*`
     ///   `*fn -> @AsyncIterator<_>` → `async function*`
+    ///   `*fn -> @Result<_, _>`     → `function` (checked-Result effect — plain fn)
     /// A bare `*fn` with no recognized return type falls back to `function*`
     /// when its body yields, else `async function`.
     fn fnKeyword(f: ast.FnDecl) []const u8 {
         if (!f.isStarFn) return "function";
+        if (f.returnsResult()) return "function";
         const kind = starFnKind(f);
         return switch (kind) {
             .async_ => "async function",

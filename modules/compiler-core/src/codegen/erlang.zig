@@ -481,9 +481,11 @@ const Emitter = struct {
     }
 
     fn emitFn(this: *Emitter, f: ast.FnDecl) !void {
-        // `*fn` is async/generator. Erlang is eager: a `@Future<T>` resolves to
-        // `T` (so `await` is identity) and a finite `@Iterator<T>` is a list.
-        if (f.isStarFn) {
+        // `*fn` is async/generator — except `*fn -> @Result<…>` (checked-Result
+        // effect), which is a plain function. Erlang is eager: a `@Future<T>`
+        // resolves to `T` (so `await` is identity) and a finite `@Iterator<T>`
+        // is a list.
+        if (f.isStarFn and !f.returnsResult()) {
             try this.fmt("%% *fn (async/generator) — eager lowering\n", .{});
         }
         try this.w(f.name);

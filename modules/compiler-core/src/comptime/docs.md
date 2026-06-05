@@ -61,7 +61,7 @@ via `import {…} from "std"`: `comptime.zig` (`std_pkg_modules`,
 ### `@Result` value construction (`return` / `throw` lowering)
 
 A `@Result` is never constructed literally in source — it materialises at
-`return`/`throw` inside a `-> @Result<D, E>` fn. Inference records each such
+`return`/`throw` inside a `*fn -> @Result<D, E>` fn. Inference records each such
 jump in `Env.result_jump_lowerings` (keyed by the jump's loc): `return v` →
 `wrap_ok` (skipped when `v` is already a `@Result` — passthrough), `throw e` →
 `wrap_error`, and `return try f()` → `unwrap_passthrough` (unwrap-then-rewrap
@@ -112,7 +112,8 @@ body currently being walked:
 
 | Return type of enclosing fn | `throwContext` | `throw` behaviour |
 |---|---|---|
-| `@Result<D, E>` (builtin) | `.result E` | thrown value must unify with `E` |
+| `*fn -> @Result<D, E>` (checked-Result effect) | `.result E` | thrown value must unify with `E`; `return`/`throw` construct `{ok}/{error}` values |
+| plain `fn -> @Result<D, E>` | `.unchecked` | NO special treatment — `throw` stays a raw host exception, values are not wrapped |
 | any other declared type | `.plain` | `throw` is rejected (`throwWithoutResult`) |
 | none declared (or a lambda) | `.unchecked` | `throw` is left unchecked (e.g. `catch throw …`) |
 

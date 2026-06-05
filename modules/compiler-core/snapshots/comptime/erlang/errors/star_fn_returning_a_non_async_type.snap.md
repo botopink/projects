@@ -4,7 +4,7 @@
 }
 
 ----- ERROR
-error: a `*fn` must return `@Future<_>`, `@Iterator<_>` or `@AsyncIterator<_, _>`
+error: a `*fn` must return `@Future<_>`, `@Iterator<_>`, `@AsyncIterator<_, _>` or `@Result<_, _>`
   ┌─ :2:5
   │
 2 │     return "x";

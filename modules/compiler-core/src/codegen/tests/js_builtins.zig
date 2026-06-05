@@ -161,7 +161,7 @@ test "js: builtin ---- @print expression" {
 
 test "js: stdlib ---- Result.map transforms Ok, propagates Error intact" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\*fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
         \\fn main() {
         \\    val r = parseAge("42").map({ n -> n + 1 });
         \\}
@@ -170,8 +170,8 @@ test "js: stdlib ---- Result.map transforms Ok, propagates Error intact" {
 
 test "js: stdlib ---- Result.flatMap chains and flattens" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
-        \\fn validate(n: i32) -> @Result<i32, string> { @todo(); }
+        \\*fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\*fn validate(n: i32) -> @Result<i32, string> { @todo(); }
         \\fn main() {
         \\    val r = parseAge("42").flatMap({ n -> validate(n) });
         \\}
@@ -180,7 +180,7 @@ test "js: stdlib ---- Result.flatMap chains and flattens" {
 
 test "js: stdlib ---- Result.unwrapOr returns data on Ok, default on Error" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\*fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
         \\fn main() {
         \\    val n = parseAge("42").unwrapOr(0);
         \\}
@@ -189,7 +189,7 @@ test "js: stdlib ---- Result.unwrapOr returns data on Ok, default on Error" {
 
 test "js: stdlib ---- Result.isOk and isError predicates" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\*fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
         \\fn main() {
         \\    val r = parseAge("42");
         \\    val ok = r.isOk();
@@ -214,8 +214,8 @@ test "js: stdlib ---- Option map, flatMap and unwrapOr mirror Result" {
 
 test "js: stdlib ---- chain map flatMap unwrapOr types correctly" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
-        \\fn validate(n: i32) -> @Result<i32, string> { @todo(); }
+        \\*fn parseAge(s: string) -> @Result<i32, string> { @todo(); }
+        \\*fn validate(n: i32) -> @Result<i32, string> { @todo(); }
         \\fn main() {
         \\    val r = parseAge("42")
         \\        .map({ n -> n + 1 })

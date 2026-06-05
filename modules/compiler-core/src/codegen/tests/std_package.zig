@@ -22,7 +22,7 @@ test "js: std package ---- bool qualified call" {
 
 test "js: builtin result namespace ---- qualified call lowers inline" {
     try h.assertJsSingle(std.testing.allocator, @src(),
-        \\fn parse(n: i32) -> @Result<i32, string> {
+        \\*fn parse(n: i32) -> @Result<i32, string> {
         \\    if (n < 0) { throw "negative"; };
         \\    return n;
         \\}
