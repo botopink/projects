@@ -23,7 +23,7 @@ pub fn build(b: *std.Build) void {
         "primitives.d.bp",
         "array.d.bp",
         "string.d.bp",
-        "syntax.d.bp",
+        "syntax.bp",
     };
     for (std_bp_files) |f| {
         std_prelude.addAnonymousImport(f, .{

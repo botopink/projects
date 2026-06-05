@@ -88,7 +88,7 @@ caller and captured **unevaluated**. Wiring in `infer.zig` / `env.zig`:
   `lookup`/`fail`/`failAt` on `expr` receivers and `ref()` on `Binding`,
   recording `env.templateLowerings` (keyed by call loc) for the expansion
   pass (F6). The data model (`Span`, `Part`, `Binding`) is plain stdlib —
-  `libs/std/src/syntax.d.bp`, preloaded by `registerStdlib`.
+  `libs/std/src/syntax.bp`, preloaded by `registerStdlib`.
 - `template.failDiagnostic`/`mapSpanToLoc` build the rustc-style diagnostic
   whose span lands inside the caller's `"""…"""` literal.
 
@@ -98,10 +98,20 @@ The `expr { … }` quoted-code literal and `${…}` splice holes (F5) are
 the body is inferred in the scope where the literal is *written* (hygiene by
 provenance) — and a splice as the `U` of its `expr U` operand; splices outside
 a literal are a type error (`env.exprLiteralDepth`). Both nodes exist only at
-comptime: codegen backends guard them `unreachable` (the F6 expansion pass
+comptime: codegen backends guard them `unreachable` (the expansion pass
 replaces them before codegen).
 
-Call-site expansion, value lifting, and memoization are F6 (pending).
+Call-site expansion (F6, V1 driver): a fn returning `expr [T]` registers in
+`env.templateFns`; `expandTemplateCall` (inferCallExpr) expands its calls
+during inference — V1 bodies are `return <expr param>` (identity splice),
+`return expr { … }` with a whole-body `${param}` hole, or any splice-free
+expression (value lifting); richer bodies raise a TypeError until the
+runtime-backed evaluator (F6-full) lands. The expansion is re-inferred in the
+caller's env (splice + re-check), unified against a bounded `-> expr T`
+(bare `-> expr` reveals the type per call site), and recorded in
+`env.templateExpansions` (loc-keyed); the transform pass substitutes the
+untyped AST at those locs and drops template fns (never specialized, never
+emitted).
 
 ## `@Context<B, R>` capability inference (F7)
 

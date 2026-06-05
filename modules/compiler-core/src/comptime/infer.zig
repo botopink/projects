@@ -2666,7 +2666,7 @@ fn inferResultOptionMethod(
 /// `ref()` on a `Binding`.
 ///
 /// The data model (`Span`, `Part`, `Binding`) lives in `std.syntax`
-/// (libs/std/src/syntax.d.bp); these methods are inference-resolved like the
+/// (libs/std/src/syntax.bp); these methods are inference-resolved like the
 /// `@Result`/`@Option` builtins — no runtime dispatch table — and recorded in
 /// `env.templateLowerings` (keyed by call loc) for the expansion pass (F6).
 /// Instances only exist at comptime; no codegen backend ever sees these calls.

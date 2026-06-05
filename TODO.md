@@ -78,7 +78,7 @@
       *closing* line — capture recovers the opening line by newline count
       (`${…}` holes assumed single-line in V1); spread-arg calls keep ordinary
       unification (templates + spread unsupported V1)
-- [x] `libs/std/src/syntax.d.bp` (new prelude module; wired in build.zig +
+- [x] `libs/std/src/syntax.bp` (new prelude module; wired in build.zig +
       prelude.zig + registerStdlib): `Span`, `Part{Text,Interp}`, `BindingKind`,
       `Binding`. NOTE deviations from spec sketch: named variant fields
       (language has no positional ones), `i32` not `int` (constraint category,
@@ -129,12 +129,39 @@
       `comptime/value_lifting` + full `hygiene_two_scopes` move to F6
 
 ## F6 — call-site expansion + re-typecheck + memoization
-- [ ] Expansion driver in the transform/specialization pass
-- [ ] Bounded `-> expr T`: eager caller inference against `T`; post-splice bound check
-- [ ] Bare `-> expr`: suspend caller inference; resume with expanded structural type
-- [ ] Memoize by hash(template text + used-binding signatures)
-- [ ] End-to-end codegen snapshot per backend
-- [ ] Snapshots: `comptime/splice_bounded_ok`, `comptime/splice_bound_violation`, `comptime/splice_bare_reveals_type`, `codegen/*/template_end_to_end`
+- [x] Expansion driver (V1) — NOTE deviation from spec: lives in *inference*
+      (`expandTemplateCall` in inferCallExpr), not the transform pass — that is
+      where the env exists for splice + re-check; the transform pass only
+      substitutes the untyped AST from `env.templateExpansions` (loc-keyed,
+      same idiom as method/dispatch lowerings) and drops template fns
+      (`-> expr [T]` decls are comptime-only: never specialized, never emitted)
+- [x] V1-expandable bodies: `return <expr param>` (identity splice),
+      `return expr { … }` with a whole-body `${param}` hole, or any splice-free
+      expression (value lifting — covers `return 8080` / `return expr { 42 }`);
+      anything richer (template-method bodies, control flow, partial-splice
+      substitution needing deep copy) → clear TypeError pointing at F6-full
+- [x] Bounded `-> expr T`: expansion re-inferred in the caller's env and
+      unified against `T`; the call types as the expansion (transparent —
+      `val c = html """…"""` is `string`, not `expr<string>`)
+- [x] Bare `-> expr`: the shared ret var is left untouched; each call site
+      reveals the expansion's own type (`answer()` → i32; `n + 1` checks)
+- [ ] F6-full: runtime-backed evaluation of template bodies (text/parts/
+      lookup/fail via the comptime eval runtime, serialized CapturedExpr +
+      scope handle), partial splice substitution (deep copy), cross-module
+      template fns (registry only exports types today — imported template
+      calls don't expand), `${…}` hole loc mapping (still slice-relative)
+- [ ] Memoize by hash(template text + used-binding signatures) — V1 expansion
+      is pure substitution (loc-keying dedupes per site); memoization becomes
+      meaningful with the runtime-backed evaluator
+- [x] End-to-end codegen snapshots: `codegen/*/template_end_to_end_*` ×4
+      backends ×2 (bounded html expansion — runs, prints `<p>world</p>`;
+      bare + lifting `port() + 1`); typed-AST pipeline snaps ×4 regenerated
+- [x] Snapshots: bounded-ok/bare-reveals/lifting as zig infer tests,
+      `splice_bound_violation` + `template_body_not_expandable` error snaps
+- [x] DISCOVERED GAP: typescript `.d.ts` emitter still declares template fns
+      and renders `TypeRef.expr` params as empty (`html(template: )`) — the
+      typedef generator needs the same template-fn drop + an `expr` rendering
+      (separate fix)
 
 ## F7 — canonical examples + docs
 - [ ] `examples/jonhstar/` — minimal `html` component lib
