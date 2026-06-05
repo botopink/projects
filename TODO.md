@@ -69,12 +69,37 @@
       regenerated (new `is_tagged` field in call JSON)
 
 ## F4 — unevaluated passing + `std.syntax` + scope snapshot
-- [ ] Capture arg to `comptime p: expr T` unevaluated, with provenance (file, span, scope handle)
-- [ ] `libs/std/src/syntax.bp`: `Span`, `Part`, `BindingKind`, `Binding`
-- [ ] Extensions on `expr` (`text`, `parts`, `lookup`, `fail`, `failAt`) + `Binding.ref()` (comptime-only)
-- [ ] Scope snapshot V1: top-level decls + imports of the caller → serializable map (`comptime/snapshot.zig`)
-- [ ] `fail`/`failAt`: rustc-style diagnostic with span mapped into the caller's template
-- [ ] Snapshots: `comptime/expr_param_capture`, `comptime/lookup_hit_miss`, `comptime/fail_span_in_template`
+- [x] Capture: `inferFnDecl` registers expr params (`env.fnExprParams`); call sites
+      run `captureExprArg` — arg unifies against the *inner* `T` of `expr T`
+      (typed in caller), V1 literal rule enforced (must be literal string; vars
+      → custom TypeError), capture stored in `env.exprCaptures` keyed by call
+      loc with `{node (untyped, unevaluated), text?, multiline, opening loc,
+      modulePath, scope}`. NOTE: lexer stamps multiline literals with their
+      *closing* line — capture recovers the opening line by newline count
+      (`${…}` holes assumed single-line in V1); spread-arg calls keep ordinary
+      unification (templates + spread unsupported V1)
+- [x] `libs/std/src/syntax.d.bp` (new prelude module; wired in build.zig +
+      prelude.zig + registerStdlib): `Span`, `Part{Text,Interp}`, `BindingKind`,
+      `Binding`. NOTE deviations from spec sketch: named variant fields
+      (language has no positional ones), `i32` not `int` (constraint category,
+      not a type)
+- [x] Extensions on `expr` (`text`, `parts`, `lookup`, `fail`, `failAt`) +
+      `Binding.ref()` — resolved by `inferTemplateMethod` like the
+      `@Result`/`@Option` builtins (NOT extension-dispatch blocks; consistent
+      with the stdlib method idiom), recorded in `env.templateLowerings`
+      (loc-keyed) for F6; `fail`/`failAt` return a fresh var (bottom)
+- [x] Scope snapshot V1: `buildScopeSnapshot` in `inferProgram*` → new
+      `comptime/template.zig` `ScopeSnapshot` (top-level decls + imports,
+      decl order, `toJsonAlloc` serializable handle); import kinds derived
+      from the bound type (fn vs val). NOTE: lives in `template.zig`, not
+      `snapshot.zig` (that file is test-snapshot infra)
+- [x] `fail`/`failAt`: `template.failDiagnostic` + `mapSpanToLoc` — diagnostic
+      points inside the caller's `"""…"""` (line derived from span.start when
+      text is contiguous; line-based fallback with holes)
+- [x] Snapshots/tests (`tests/templates.zig`): capture (plain + multiline-with-
+      hole), `lookup` hit/miss + JSON handle, 6 lowerings typecheck,
+      `comptime/templates/fail_span_in_template`, 2 error snaps (non-literal
+      arg V1, caller-side inner-T mismatch), pipeline snap ×4 runtimes
 
 ## F5 — `expr { … }` literal + composition + lifting
 - [ ] Parser: `expr block` in expression position; `${…}` splices inside

@@ -96,6 +96,8 @@ fn analyzeModule(
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
 ) !AnalysisResult {
     var env = try infer.freshEnv(arena, std.heap.page_allocator);
+    // Capture provenance for `expr` templates: which file is being inferred.
+    env.modulePath = mod.path;
 
     var lexer = Lexer.init(mod.source);
     const tokens = try lexer.scanAll(arena);
@@ -177,6 +179,7 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         prelude.primitives,
         prelude.array,
         prelude.string,
+        prelude.syntax,
     };
     for (sources) |src| {
         var arena = std.heap.ArenaAllocator.init(gpa);

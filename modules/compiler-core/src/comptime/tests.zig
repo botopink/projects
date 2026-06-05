@@ -11,4 +11,5 @@ test {
     _ = @import("tests/variants.zig");
     _ = @import("tests/exhaustiveness.zig");
     _ = @import("tests/effects.zig");
+    _ = @import("tests/templates.zig");
 }

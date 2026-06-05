@@ -24,6 +24,7 @@ comptime/
 ├── render.zig         ← comptime value → target literal
 ├── specialize.zig     ← `SpecializedFn`, `SpecCache`, `specialize()`
 ├── transform.zig      ← `Aggregator` — drives the full transform pass
+├── template.zig       ← `expr` templates: CapturedExpr, ScopeSnapshot, fail diagnostics (F4)
 ├── snapshot.zig       ← comptime snapshot helpers
 ├── stdlib/            ← std prelude loader — see stdlib/AGENTS.md
 │   └── prelude.zig        ← @embedFile of libs/std/src/*.bp (std_prelude module root)
@@ -37,7 +38,8 @@ comptime/
 │   ├── types.zig          ← types / type_unification
 │   ├── variants.zig       ← variant/record-update/pattern/@print/AST probes
 │   ├── exhaustiveness.zig ← case exhaustiveness (+errors)
-│   └── effects.zig        ← throw/context/@Result effect checking
+│   ├── effects.zig        ← throw/context/@Result effect checking
+│   └── templates.zig      ← expr capture / scope snapshot / template methods (F4)
 └── runtime/           ← Node.js + Erlang eval backends — see runtime/AGENTS.md
 ```
 
@@ -54,6 +56,7 @@ comptime/
 | `render.zig` | Converts an evaluated comptime value into a target literal. |
 | `specialize.zig` | Pure AST specialization — unroll loops, fold static if/case. |
 | `transform.zig` | `Aggregator` — drives specialize + rewrite + inline + dead-code. |
+| `template.zig` | `expr` template infrastructure (F4): `CapturedExpr` (an argument bound to a `comptime p: expr T` param, captured unevaluated with provenance), `ScopeSnapshot` (V1 origin scope: caller's top-level decls + imports, serializable via `toJsonAlloc`), and `mapSpanToLoc`/`failDiagnostic` (rustc-style `fail`/`failAt` diagnostics pointing inside the caller's `"""…"""`). |
 | `snapshot.zig` | Snapshot helpers. |
 | `tests.zig` | Barrel aggregating `tests/<feature>.zig`; harness in `tests/helpers.zig`. |
 
@@ -63,6 +66,33 @@ comptime/
 try assertTypes(alloc, source, &.{ .{ "x", "i32" }, .{ "f", "fn(i32) i32" } });
 try assertTypeErrorSnap(alloc, @src(), source);
 ```
+
+## `expr` templates (expr-templates F4)
+
+An argument bound to a `comptime p: expr T` parameter is type-checked in the
+caller and captured **unevaluated**. Wiring in `infer.zig` / `env.zig`:
+
+- `inferFnDecl` records `expr` meta-kind params per function
+  (`env.fnExprParams`, mirroring `fnTypeparams`).
+- `buildScopeSnapshot` (start of `inferProgram*`) collects the module's
+  top-level decls + imports into `env.scopeSnapshot` — the V1 origin scope for
+  `lookup` (function locals are not visible).
+- At a call site, `captureExprArg` unifies the argument's type against the
+  *inner* `T` of `expr T` (the argument is an expression *of* `T`), enforces
+  the V1 literal rule (must be a literal string — single or multiline,
+  interpolation allowed), and records a `template.CapturedExpr` in
+  `env.exprCaptures` (keyed by call loc) with text/parts, the opening-line
+  location (the lexer stamps multiline literals with their *closing* line),
+  module path, and the scope snapshot.
+- `inferTemplateMethod` resolves the comptime-only methods `text`/`parts`/
+  `lookup`/`fail`/`failAt` on `expr` receivers and `ref()` on `Binding`,
+  recording `env.templateLowerings` (keyed by call loc) for the expansion
+  pass (F6). The data model (`Span`, `Part`, `Binding`) is plain stdlib —
+  `libs/std/src/syntax.d.bp`, preloaded by `registerStdlib`.
+- `template.failDiagnostic`/`mapSpanToLoc` build the rustc-style diagnostic
+  whose span lands inside the caller's `"""…"""` literal.
+
+Call-site expansion, splicing, and memoization are F5/F6 (pending).
 
 ## `@Context<B, R>` capability inference (F7)
 

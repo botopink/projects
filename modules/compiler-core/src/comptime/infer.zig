@@ -14,6 +14,7 @@ const T = @import("./types.zig");
 const Env = @import("env.zig").Env;
 const envMod = @import("env.zig");
 const TypeError = @import("error.zig").TypeError;
+const template = @import("template.zig");
 const unify = @import("unify.zig").unify;
 const Lexer = @import("../lexer.zig").Lexer;
 const Parser = @import("../parser.zig").Parser;
@@ -58,6 +59,7 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
         try registerTypeDecl(env, decl);
     }
     try registerExtensions(env, program);
+    try buildScopeSnapshot(env, program);
 
     // Pass 2: infer value-producing declarations in order.
     for (program.decls) |decl| {
@@ -81,6 +83,7 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
         try registerTypeDecl(env, decl);
     }
     try registerExtensions(env, program);
+    try buildScopeSnapshot(env, program);
     for (program.decls) |decl| {
         switch (decl) {
             // `resolveImports` (called before inference in comptime.zig) already
@@ -408,6 +411,36 @@ fn registerExtensions(env: *Env, program: ast.Program) InferError!void {
             else => {},
         }
     }
+}
+
+/// Build the V1 origin-scope snapshot for the module being inferred: every
+/// top-level declaration plus imported names, mapped to a `BindingKind`
+/// (expr-templates F4). The snapshot is attached to every `expr` capture so
+/// template functions can `lookup` names in the *caller's* scope — function
+/// locals are not visible (V1 limit recorded in the spec).
+///
+/// Runs after `resolveImports` (comptime.zig) bound the imports, so an
+/// imported name's kind is derived from its bound type (`fn` vs value).
+fn buildScopeSnapshot(env: *Env, program: ast.Program) InferError!void {
+    const snap = template.ScopeSnapshot.init(env.arena, env.modulePath) catch return error.OutOfMemory;
+    for (program.decls) |decl| switch (decl) {
+        .@"fn" => |f| try snap.put(f.name, .fn_, false),
+        .val => |v| try snap.put(v.name, .val, false),
+        .@"struct" => |s| try snap.put(s.name, .struct_, false),
+        .record => |r| try snap.put(r.name, .struct_, false),
+        .@"enum" => |e| try snap.put(e.name, .enum_, false),
+        .interface => |i| try snap.put(i.name, .interface, false),
+        .use => |u| for (u.imports) |imp| {
+            const name = imp.name();
+            const kind: template.BindingKind = blk: {
+                const ty = env.lookup(name) orelse break :blk .val;
+                break :blk if (ty.deref().* == .func) .fn_ else .val;
+            };
+            try snap.put(name, kind, true);
+        },
+        else => {},
+    };
+    env.scopeSnapshot = snap;
 }
 
 fn collectImplMethodNames(env: *Env, methods: []const ast.ImplementMethod) ![]const []const u8 {
@@ -981,10 +1014,16 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
 
     // Collect typeparam constraints so call sites can validate comptime args.
     var typeparams: std.ArrayListUnmanaged(envMod.TypeparamConstraint) = .empty;
+    // Collect `expr` meta-kind params so call sites capture their arguments
+    // unevaluated (expr-templates F4).
+    var exprParams: std.ArrayListUnmanaged(envMod.ExprParamInfo) = .empty;
 
     // Infer parameter types.
     var paramTypes = try env.arena.alloc(*T.Type, f.params.len);
     for (f.params, 0..) |p, i| {
+        if (p.typeRef == .expr) {
+            try exprParams.append(env.arena, .{ .paramIndex = i, .paramName = p.name });
+        }
         if (p.typeRef == .typeparam) {
             const constraints = p.typeRef.typeparam;
             const names = try env.arena.alloc([]const u8, constraints.len);
@@ -1111,6 +1150,9 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     if (typeparams.items.len > 0) {
         try env.registerTypeparams(f.name, try typeparams.toOwnedSlice(env.arena));
     }
+    if (exprParams.items.len > 0) {
+        try env.registerExprParams(f.name, try exprParams.toOwnedSlice(env.arena));
+    }
 
     return env.funcType(paramTypes, retType);
 }
@@ -1178,6 +1220,94 @@ fn isTypeparamIndex(constraints: []const envMod.TypeparamConstraint, i: usize) b
         if (c.paramIndex == i) return true;
     }
     return false;
+}
+
+/// The `expr` param info for parameter index `i`, or null when `i` is an
+/// ordinary parameter.
+fn exprParamAt(params: []const envMod.ExprParamInfo, i: usize) ?envMod.ExprParamInfo {
+    for (params) |p| {
+        if (p.paramIndex == i) return p;
+    }
+    return null;
+}
+
+/// Type-check and capture an argument bound to a `comptime p: expr T`
+/// parameter (expr-templates F4). The argument unifies against the **inner**
+/// `T` — it is an expression *of* `T`, not a value of `expr T` — and is
+/// captured unevaluated with provenance (module path, location, origin-scope
+/// snapshot) for the call-site expansion pass (F6).
+///
+/// V1 rule (spec): a source-capable template requires a **literal** string at
+/// the call site (single or multiline, interpolation allowed) — a variable
+/// carries no span or scope to attach.
+fn captureExprArg(
+    env: *Env,
+    callee: []const u8,
+    param: envMod.ExprParamInfo,
+    rawArg: *const ast.Expr,
+    typedArg: ast.CallArgOf(.typed),
+    paramType: *T.Type,
+) InferError!template.CapturedExpr {
+    // Inner `T` of `expr T` (`expr` is encoded as a named type with one arg);
+    // a bare `expr` param already carries a fresh var as its arg.
+    const pDeref = paramType.deref();
+    const inner: *T.Type = if (pDeref.* == .named and pDeref.named.args.len == 1)
+        pDeref.named.args[0]
+    else
+        try env.freshVar();
+    try unifyAt(env, inner, typedArg.value.getType(), typedArg.value.getLoc());
+
+    // V1 literal rule. `text` stays null for `${…}` templates — the parts
+    // live on the captured node. A hole-less multiline literal arrives as a
+    // plain `stringLit` whose content keeps the `\n` after the opening `"""`,
+    // so newline presence doubles as the multiline flag.
+    var text: ?[]const u8 = null;
+    var multiline = false;
+    var isLiteral = false;
+    // The lexer stamps a multiline literal with the line of its *closing*
+    // `"""`; subtract the content's newlines to recover the opening line so
+    // span mapping starts from where the template begins.
+    var newlines: usize = 0;
+    if (rawArg.* == .literal) {
+        switch (rawArg.literal.kind) {
+            .stringLit => |s| {
+                text = s;
+                newlines = std.mem.count(u8, s, "\n");
+                multiline = newlines > 0;
+                isLiteral = true;
+            },
+            .stringTemplate => |t| {
+                multiline = t.multiline;
+                // `${…}` holes are assumed single-line in V1.
+                for (t.parts) |p| switch (p) {
+                    .text => |s| newlines += std.mem.count(u8, s, "\n"),
+                    .expr => {},
+                };
+                isLiteral = true;
+            },
+            else => {},
+        }
+    }
+    if (!isLiteral) {
+        env.lastError = TypeError.custom(
+            "an `expr` argument must be a literal string at the call site",
+            "Write the template inline — `f \"\"\"…\"\"\"` or `f(\"…\")`; a variable carries no span or scope to capture (V1).",
+        ).withLoc(typedArg.value.getLoc());
+        return error.TypeError;
+    }
+
+    const litLoc = rawArg.getLoc();
+    return template.CapturedExpr{
+        .callee = callee,
+        .paramIndex = param.paramIndex,
+        .paramName = param.paramName,
+        .node = rawArg,
+        .text = text,
+        .multiline = multiline,
+        .loc = .{ .line = litLoc.line -| newlines, .col = litLoc.col },
+        .modulePath = env.modulePath,
+        .scope = env.scopeSnapshot,
+    };
 }
 
 /// Validate every constrained typeparam argument of a call against its declared
@@ -2369,6 +2499,79 @@ fn inferResultOptionMethod(
     } } } };
 }
 
+/// Resolve a compiler-provided template method (expr-templates F4):
+/// `text`/`parts`/`lookup`/`fail`/`failAt` on an `expr` receiver, plus
+/// `ref()` on a `Binding`.
+///
+/// The data model (`Span`, `Part`, `Binding`) lives in `std.syntax`
+/// (libs/std/src/syntax.d.bp); these methods are inference-resolved like the
+/// `@Result`/`@Option` builtins — no runtime dispatch table — and recorded in
+/// `env.templateLowerings` (keyed by call loc) for the expansion pass (F6).
+/// Instances only exist at comptime; no codegen backend ever sees these calls.
+/// Returns null when the receiver is not an `expr`/`Binding` or the method is
+/// unknown — the caller falls back to permissive method typing.
+fn inferTemplateMethod(
+    env: *Env,
+    recvPtr: *ast.TypedExpr,
+    callee: []const u8,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+    loc: ast.Loc,
+) InferError!?ast.TypedExpr {
+    const recvTy = recvPtr.getType().deref();
+    if (recvTy.* != .named) return null;
+    const named = recvTy.named;
+
+    const unifyArg = struct {
+        fn unifyArg(e: *Env, args: []ast.CallArgOf(.typed), i: usize, expected: *T.Type) InferError!void {
+            if (i >= args.len) return;
+            try unifyAt(e, expected, args[i].value.getType(), args[i].value.getLoc());
+        }
+    }.unifyArg;
+
+    var op: envMod.TemplateOp = undefined;
+    var retType: *T.Type = undefined;
+
+    if (std.mem.eql(u8, named.name, "expr")) {
+        if (std.mem.eql(u8, callee, "text")) {
+            op = .text;
+            retType = try env.namedType("string");
+        } else if (std.mem.eql(u8, callee, "parts")) {
+            op = .parts;
+            retType = try env.namedTypeArgs("array", &.{try env.namedType("Part")});
+        } else if (std.mem.eql(u8, callee, "lookup")) {
+            op = .lookup;
+            try unifyArg(env, typedArgs, 0, try env.namedType("string"));
+            retType = try env.namedTypeArgs("optional", &.{try env.namedType("Binding")});
+        } else if (std.mem.eql(u8, callee, "fail")) {
+            op = .fail;
+            try unifyArg(env, typedArgs, 0, try env.namedType("string"));
+            // `fail` never returns — a fresh var unifies with any context.
+            retType = try env.freshVar();
+        } else if (std.mem.eql(u8, callee, "failAt")) {
+            op = .failAt;
+            try unifyArg(env, typedArgs, 0, try env.namedType("Span"));
+            try unifyArg(env, typedArgs, 1, try env.namedType("string"));
+            retType = try env.freshVar();
+        } else return null;
+    } else if (std.mem.eql(u8, named.name, "Binding")) {
+        if (!std.mem.eql(u8, callee, "ref")) return null;
+        op = .ref;
+        // A spliceable reference: `expr` of a type revealed at expansion.
+        retType = try env.namedTypeArgs("expr", &.{try env.freshVar()});
+    } else return null;
+
+    try env.templateLowerings.put(loc, op);
+
+    return ast.TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
+        .receiver = recvPtr,
+        .callee = callee,
+        .is_builtin = false,
+        .args = typedArgs,
+        .trailing = typedTrailing,
+    } } } };
+}
+
 /// Resolve `recv.callee(args)` against inherent methods and activated extensions.
 ///
 /// Returns the typed call on success, or null when there is no method/extension
@@ -2592,6 +2795,12 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     return dispatched;
                 }
 
+                // Compiler-provided template methods on `expr` / `Binding`
+                // receivers (expr-templates F4) — comptime-only.
+                if (try inferTemplateMethod(env, recvPtr, call.callee, typedArgs, typedTrailing, loc)) |dispatched| {
+                    return dispatched;
+                }
+
                 // Other method calls (struct getters, activated extensions) are
                 // handled by sibling work — type them permissively as a fresh var
                 // so they don't error here.
@@ -2615,6 +2824,9 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     // declared constraints; their param slots skip ordinary unification.
                     const typeparams = env.lookupTypeparams(call.callee);
                     if (typeparams) |constraints| try validateTypeparams(env, constraints, typedArgs);
+                    // `expr` meta-kind params capture their argument unevaluated
+                    // instead of unifying it against `expr T` (expr-templates F4).
+                    const exprParams = env.lookupExprParams(call.callee);
 
                     var spreadCount: usize = 0;
                     var nonSpreadCount: usize = 0;
@@ -2633,9 +2845,17 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                             env.lastError = TypeError.arityMismatch(call.callee, f.params.len, call.args.len).withLoc(loc);
                             return error.TypeError;
                         }
+                        var captures: std.ArrayListUnmanaged(template.CapturedExpr) = .empty;
                         for (typedArgs, f.params, 0..) |ta, paramType, i| {
                             if (typeparams) |constraints| if (isTypeparamIndex(constraints, i)) continue;
+                            if (exprParams) |eps| if (exprParamAt(eps, i)) |ep| {
+                                try captures.append(env.arena, try captureExprArg(env, call.callee, ep, call.args[i].value, ta, paramType));
+                                continue;
+                            };
                             try unifyAt(env, paramType, ta.value.getType(), ta.value.getLoc());
+                        }
+                        if (captures.items.len > 0) {
+                            try env.exprCaptures.put(loc, try captures.toOwnedSlice(env.arena));
                         }
                         break :blk f.ret;
                     }

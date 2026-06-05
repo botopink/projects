@@ -5,6 +5,7 @@
 const std = @import("std");
 const ast = @import("../ast.zig");
 const T = @import("./types.zig");
+const template = @import("./template.zig");
 
 // ── type definitions ──────────────────────────────────────────────────────────
 
@@ -134,6 +135,24 @@ pub const ThrowContext = union(enum) {
     plain,
 };
 
+/// Metadata for one `comptime name: expr T` parameter of a function
+/// (expr-templates F4). Recorded at fn-declaration time; call sites capture
+/// the matching argument **unevaluated** (unified against the inner `T`)
+/// instead of unifying it against `expr T` directly.
+pub const ExprParamInfo = struct {
+    /// Index of this parameter in the function's parameter list.
+    paramIndex: usize,
+    /// The parameter's name (for diagnostics and capture provenance).
+    paramName: []const u8,
+};
+
+/// A compiler-provided template method resolved by inference (expr-templates
+/// F4): `text`/`parts`/`lookup`/`fail`/`failAt` on an `expr` receiver, plus
+/// `ref` on a `Binding`. Mirrors `MethodLowering`: keyed by the call's source
+/// `Loc` and consumed by the call-site expansion pass (F6). Instances only
+/// exist at comptime — no codegen backend ever sees these calls.
+pub const TemplateOp = enum { text, parts, lookup, fail, failAt, ref };
+
 /// Constraint metadata for one `comptime ...: typeparam` parameter of a function.
 /// Recorded at fn-declaration time and consulted at each call site.
 pub const TypeparamConstraint = struct {
@@ -186,6 +205,20 @@ pub const Env = struct {
     /// Per-function typeparam constraints: function name → constraint list.
     /// Only functions with at least one `typeparam` parameter appear here.
     fnTypeparams: std.StringHashMap([]const TypeparamConstraint),
+    /// Per-function `expr` meta-kind params: function name → param info list.
+    /// Only functions with at least one `expr` parameter appear here (F4).
+    fnExprParams: std.StringHashMap([]const ExprParamInfo),
+    /// Unevaluated `expr` arguments captured at call sites, keyed by the
+    /// call's source location; consumed by the expansion pass (F6).
+    exprCaptures: std.AutoHashMap(ast.Loc, []const template.CapturedExpr),
+    /// Compiler-provided template method calls (`text`/`parts`/`lookup`/
+    /// `fail`/`failAt`/`ref`) keyed by call loc; consumed by expansion (F6).
+    templateLowerings: std.AutoHashMap(ast.Loc, TemplateOp),
+    /// V1 origin-scope snapshot of the module being inferred (top-level decls
+    /// + imports); attached to every `expr` capture for `lookup` resolution.
+    scopeSnapshot: ?*template.ScopeSnapshot = null,
+    /// Module path of the file being inferred ("" for main) — capture provenance.
+    modulePath: []const u8 = "",
     /// Monotonically increasing counter for fresh type variable IDs.
     nextId: T.TypeId,
     /// Monotonically increasing counter for type definition IDs (record$$0, struct$$1, ...).
@@ -225,6 +258,9 @@ pub const Env = struct {
             .bindings = std.StringHashMap(*T.Type).init(arena),
             .typeDefs = std.StringHashMap(TypeDef).init(arena),
             .fnTypeparams = std.StringHashMap([]const TypeparamConstraint).init(arena),
+            .fnExprParams = std.StringHashMap([]const ExprParamInfo).init(arena),
+            .exprCaptures = std.AutoHashMap(ast.Loc, []const template.CapturedExpr).init(arena),
+            .templateLowerings = std.AutoHashMap(ast.Loc, TemplateOp).init(arena),
             .nextId = 0,
             .nextTypeId = 0,
             .level = 0,
@@ -254,6 +290,9 @@ pub const Env = struct {
         self.typeDefs.deinit();
         self.method_lowerings.deinit();
         self.fnTypeparams.deinit();
+        self.fnExprParams.deinit();
+        self.exprCaptures.deinit();
+        self.templateLowerings.deinit();
         self.extensions.deinit();
         self.activations.deinit();
         var it = self.inherentMethods.valueIterator();
@@ -346,6 +385,16 @@ pub const Env = struct {
     /// Look up the typeparam constraints for a function, or null if it has none.
     pub fn lookupTypeparams(self: *Env, name: []const u8) ?[]const TypeparamConstraint {
         return self.fnTypeparams.get(name);
+    }
+
+    /// Record the `expr` meta-kind params for a function (keyed by name).
+    pub fn registerExprParams(self: *Env, name: []const u8, params: []const ExprParamInfo) !void {
+        try self.fnExprParams.put(name, params);
+    }
+
+    /// Look up the `expr` params for a function, or null if it has none.
+    pub fn lookupExprParams(self: *Env, name: []const u8) ?[]const ExprParamInfo {
+        return self.fnExprParams.get(name);
     }
 
     pub fn registerTypeDef(self: *Env, name: []const u8, def: TypeDef) !void {
