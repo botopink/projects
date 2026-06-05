@@ -125,6 +125,60 @@ fn analyzeModule(
     return .{ .success = .{ .bindings = bindings, .env = env, .program = program } };
 }
 
+/// The "std" package: stdlib impl modules importable via `import {…} from "std";`.
+/// Order = dependency order (a later module may import an earlier one).
+/// Registry keys are prefixed `std/` so project-root imports never see them.
+pub const std_pkg_modules = [_]Module{
+    .{ .path = "std/bool", .source = @import("std_prelude").bool_mod },
+};
+
+/// True when `path` is a "std" package registry key (`std/<module>`).
+fn isStdPkgPath(path: []const u8) bool {
+    return std.mem.startsWith(u8, path, "std/");
+}
+
+/// Scans `modules` for `import {…} from "std"` declarations and returns the
+/// module list with the required embedded std modules prepended (dependency
+/// order, deduplicated). Modules that fail to parse pass through untouched —
+/// `analyzeModule` reports the parse error later.
+fn expandStdImports(arena: std.mem.Allocator, modules: []const Module) ![]const Module {
+    var needed = [_]bool{false} ** std_pkg_modules.len;
+    var any = false;
+    for (modules) |mod| {
+        var lx = Lexer.init(mod.source);
+        const tokens = lx.scanAll(arena) catch continue;
+        var p = Parser.init(tokens);
+        const program = p.parse(arena) catch continue;
+        for (program.decls) |decl| switch (decl) {
+            .use => |u| {
+                const from_std = switch (u.source) {
+                    .module => |m| std.mem.eql(u8, m, "std"),
+                    .root => false,
+                };
+                if (!from_std) continue;
+                for (u.imports) |imp| {
+                    const want = imp.segments[imp.segments.len - 1];
+                    for (std_pkg_modules, 0..) |spm, i| {
+                        if (std.mem.eql(u8, spm.path["std/".len..], want)) {
+                            needed[i] = true;
+                            any = true;
+                        }
+                    }
+                }
+            },
+            else => {},
+        };
+    }
+    if (!any) return modules;
+
+    var out: std.ArrayListUnmanaged(Module) = .empty;
+    for (std_pkg_modules, 0..) |spm, i| {
+        if (needed[i]) try out.append(arena, spm);
+    }
+    try out.appendSlice(arena, modules);
+    return out.toOwnedSlice(arena);
+}
+
 fn resolveImports(
     env: *envMod.Env,
     program: anytype,
@@ -133,11 +187,24 @@ fn resolveImports(
     for (program.decls) |decl| {
         switch (decl) {
             .use => |u| {
+                const from_std = switch (u.source) {
+                    .module => |m| std.mem.eql(u8, m, "std"),
+                    .root => false,
+                };
                 for (u.imports) |imp| {
                     const name = imp.name();
-                    var it = registry.valueIterator();
-                    while (it.next()) |exports| {
-                        if (exports.get(name)) |ty| {
+                    if (from_std) {
+                        // `import {bool} from "std"` — handled inside
+                        // inference (`inferProgramTyped` marks `stdImports`,
+                        // gating qualified calls on `env.stdModules`).
+                        continue;
+                    }
+                    // Bare import: same-package (project root) resolution only —
+                    // never resolves "std" package modules.
+                    var it = registry.iterator();
+                    while (it.next()) |e| {
+                        if (isStdPkgPath(e.key_ptr.*)) continue;
+                        if (e.value_ptr.get(name)) |ty| {
                             try env.bind(name, ty);
                             break;
                         }
@@ -172,7 +239,10 @@ fn registerExports(
     try registry.put(path, exports);
 }
 
-/// Parse stdlib prelude modules and register their inferred types into `env`.
+/// Parse stdlib prelude modules and register their inferred types into `env`:
+/// interface declarations flatten into the global env; "std" package impl
+/// modules (`std_pkg_modules`) each get their own exports table in
+/// `env.stdModules` (consumed by `import {…} from "std"` qualified calls).
 pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
     const prelude = @import("std_prelude");
     const sources = [_][]const u8{
@@ -191,6 +261,43 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         var p = Parser.init(tokens);
         const program = try p.parse(alloc);
         _ = try infer.inferProgram(env, program);
+    }
+
+    for (std_pkg_modules) |spm| {
+        const mod_name = spm.path["std/".len..];
+        // Each std module is inferred in a scratch env (so its fn names don't
+        // flatten into — or collide across — the global env), sharing `env`'s
+        // arena so the resulting types outlive the scratch maps.
+        var env2 = Env.init(env.arena);
+        defer env2.deinit();
+        try env2.registerBuiltins();
+        for (sources) |src| {
+            var lx = Lexer.init(src);
+            const tokens = try lx.scanAll(env.arena);
+            var p = Parser.init(tokens);
+            const program = try p.parse(env.arena);
+            _ = try infer.inferProgram(&env2, program);
+        }
+        var lx = Lexer.init(spm.source);
+        const tokens = try lx.scanAll(env.arena);
+        var p = Parser.init(tokens);
+        const program = try p.parse(env.arena);
+        const bindings = try infer.inferProgramTyped(&env2, program);
+
+        var exports = std.StringHashMap(*T.Type).init(env.arena);
+        for (bindings) |b| {
+            if (b.name.len == 0 or b.decl == .use) continue;
+            const is_pub = switch (b.decl) {
+                .val => |v| v.isPub,
+                .@"fn" => |f| f.isPub,
+                else => false,
+            };
+            if (is_pub) {
+                const ty = env2.lookup(b.name) orelse b.type_;
+                try exports.put(b.name, ty);
+            }
+        }
+        try env.stdModules.put(mod_name, exports);
     }
 }
 
@@ -250,7 +357,10 @@ pub fn compileTypesOnly(
     const arena_alloc = session.arena.allocator();
     var registry = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena_alloc);
 
-    for (modules, 0..) |mod, idx| {
+    // `from "std"` imports pull the embedded std modules into the compilation.
+    const all_modules = try expandStdImports(arena_alloc, modules);
+
+    for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
         const analysis = try analyzeModule(arena_alloc, mod, &registry);
 
@@ -282,10 +392,13 @@ pub fn compileTypesOnly(
                     var rit = succ.env.dispatchRewrites.iterator();
                     while (rit.next()) |e| try dispatch_rewrites.put(e.key_ptr.*, e.value_ptr.*);
                 }
-                if (idx < modules.len - 1) {
+                if (idx < all_modules.len - 1) {
                     var env = succ.env;
                     try registerExports(arena_alloc, &registry, mod.path, succ.bindings, &env);
-                    env.deinit();
+                    // NOTE: no env.deinit() here — `env` is a copy whose hashmap
+                    // internals are shared with `succ.env`, and the transform
+                    // below still reads `succ.env.method_lowerings`. The env is
+                    // arena-backed; the session arena reclaims it wholesale.
                 }
 
                 var fn_decls = std.StringHashMap(ast.FnDecl).init(arena_alloc);
@@ -302,6 +415,7 @@ pub fn compileTypesOnly(
                     empty_vals,
                     &succ.env.method_lowerings,
                     &succ.env.templateExpansions,
+                    &succ.env.result_jump_lowerings,
                 );
 
                 var type_ids = std.StringHashMap(usize).init(arena_alloc);
@@ -351,7 +465,10 @@ pub fn compile(
     const arena_alloc = session.arena.allocator();
     var registry = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena_alloc);
 
-    for (modules, 0..) |mod, idx| {
+    // `from "std"` imports pull the embedded std modules into the compilation.
+    const all_modules = try expandStdImports(arena_alloc, modules);
+
+    for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
         const analysis = try analyzeModule(arena_alloc, mod, &registry);
 
@@ -383,10 +500,13 @@ pub fn compile(
                     var rit = succ.env.dispatchRewrites.iterator();
                     while (rit.next()) |e| try dispatch_rewrites.put(e.key_ptr.*, e.value_ptr.*);
                 }
-                if (idx < modules.len - 1) {
+                if (idx < all_modules.len - 1) {
                     var env = succ.env;
                     try registerExports(arena_alloc, &registry, mod.path, succ.bindings, &env);
-                    env.deinit();
+                    // NOTE: no env.deinit() here — `env` is a copy whose hashmap
+                    // internals are shared with `succ.env`, and the transform
+                    // below still reads `succ.env.method_lowerings`. The env is
+                    // arena-backed; the session arena reclaims it wholesale.
                 }
                 const ct = try evaluateComptime(arena_alloc, io, succ.bindings, runtime, build_root orelse name);
 
@@ -413,7 +533,7 @@ pub fn compile(
                     }
                 }
 
-                const transformed = try transform.transform(arena_alloc, succ.program, fn_decls, comptime_arrays, ct.comptime_vals, &succ.env.method_lowerings, &succ.env.templateExpansions);
+                const transformed = try transform.transform(arena_alloc, succ.program, fn_decls, comptime_arrays, ct.comptime_vals, &succ.env.method_lowerings, &succ.env.templateExpansions, &succ.env.result_jump_lowerings);
 
                 var type_ids = std.StringHashMap(usize).init(arena_alloc);
                 for (succ.bindings) |b| {

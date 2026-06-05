@@ -23,18 +23,18 @@ class UserError {
 }
 
 function fetchName() {
-    throw UserError("name missing");
+    return ({ error: UserError("name missing") });
 }
 
 function fetchAge() {
-    throw UserError("age missing");
+    return ({ error: UserError("age missing") });
 }
 
 function loadUser() {
     const _try0 = fetchName();
-    const name = _try0.tag === "Error" ? ("anonymous") : _try0.result;
+    const name = "error" in _try0 ? ("anonymous") : _try0.ok;
     const _try1 = fetchAge();
-    const age = _try1.tag === "Error" ? (0) : _try1.result;
+    const age = "error" in _try1 ? (0) : _try1.ok;
     console.log(name, age);
 }
 ```

@@ -40,9 +40,7 @@ fn main() {
     {call, 1, {f, 3}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
-    {test, is_tagged_tuple, {f, 10}, [{x, 0}, 3, {atom, tag}]}.
-    {get_tuple_element, {x, 0}, 1, {x, 1}}.
-    {test, is_eq, {f, 10}, [{x, 1}, {atom, 'Ok'}]}.
+    {test, is_tagged_tuple, {f, 10}, [{x, 0}, 2, {atom, ok}]}.
     {move, {atom, true}, {x, 0}}.
     {jump, {f, 11}}.
   {label, 10}.
@@ -50,9 +48,7 @@ fn main() {
   {label, 11}.
     {move, {x, 0}, {y, 1}}.
     {move, {y, 0}, {x, 0}}.
-    {test, is_tagged_tuple, {f, 12}, [{x, 0}, 3, {atom, tag}]}.
-    {get_tuple_element, {x, 0}, 1, {x, 1}}.
-    {test, is_eq, {f, 12}, [{x, 1}, {atom, 'Error'}]}.
+    {test, is_tagged_tuple, {f, 12}, [{x, 0}, 2, {atom, error}]}.
     {move, {atom, true}, {x, 0}}.
     {jump, {f, 13}}.
   {label, 12}.

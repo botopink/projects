@@ -23,21 +23,21 @@ class IoError {
 }
 
 function step1() {
-    throw IoError("/data");
+    return ({ error: IoError("/data") });
 }
 
 function step2(x) {
-    throw IoError("/out");
+    return ({ error: IoError("/out") });
 }
 
 function pipeline() {
     const _try0 = step1();
-    if (_try0.tag === "Error") return _try0;
-    const a = _try0.result;
+    if ("error" in _try0) return _try0;
+    const a = _try0.ok;
     const _try1 = step2(a);
-    if (_try1.tag === "Error") return _try1;
-    const b = _try1.result;
-    return b;
+    if ("error" in _try1) return _try1;
+    const b = _try1.ok;
+    return ({ ok: b });
 }
 ```
 

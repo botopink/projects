@@ -23,9 +23,9 @@ main() ->
         case (Calculo > 100) of
             true ->
                 <<"Alto">>;
-            _ -> ok
-        end,
-        <<"Baixo">>
+            _ ->
+                <<"Baixo">>
+        end
     end)(),
     Status.
 

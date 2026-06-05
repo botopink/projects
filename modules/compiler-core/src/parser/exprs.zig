@@ -617,16 +617,18 @@ pub fn parseLocalBindExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr
     }
     _ = this.advance();
     const name = if (nameTok.kind == .underscore) "_" else nameTok.lexeme;
+    var typeAnnotation: ?ast.TypeRef = null;
     if (this.match(.colon)) {
-        var typeRef = try this.parseTypeRef(alloc);
-        typeRef.deinit(alloc); // discarded — type inference handles it
+        typeAnnotation = try this.parseTypeRef(alloc);
     }
+    errdefer if (typeAnnotation) |*ann| ann.deinit(alloc);
     _ = try this.consume(.equal);
     const valPtr = try this.boxExpr(alloc, try this.parseExpr(alloc));
     return Expr{ .binding = .{ .loc = locFromToken(bindTok), .kind = .{ .localBind = .{
         .name = name,
         .value = valPtr,
         .mutable = mutable,
+        .typeAnnotation = typeAnnotation,
     } } } };
 }
 

@@ -15,7 +15,7 @@ parseAge(S) ->
     erlang:error({todo, "not implemented"}).
 
 main() ->
-    R = (fun(R) -> case R of {tag, 'Ok', V} -> {tag, 'Ok', (fun(N) ->
+    R = (fun(R) -> case R of {ok, V} -> {ok, (fun(N) ->
         (N + 1)
     end)(V)}; _ -> R end end)(parseAge(<<"42">>)).
 

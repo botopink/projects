@@ -21,17 +21,17 @@ fn pipeline() -> @Result<i32, IoError> {
 -record(IoError, {path}).
 
 step1() ->
-    erlang:throw(IoError(<<"/data">>)).
+    {error, IoError(<<"/data">>)}.
 
 step2(X) ->
-    erlang:throw(IoError(<<"/out">>)).
+    {error, IoError(<<"/out">>)}.
 
 pipeline() ->
     case step1() of
         {ok, A} ->
             case step2(A) of
                 {ok, B} ->
-                    B;
+                    {ok, B};
                 {error, _TryE1} -> {error, _TryE1}
             end;
         {error, _TryE0} -> {error, _TryE0}

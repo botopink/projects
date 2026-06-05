@@ -374,3 +374,31 @@ test "infer error: external ---- wrong arity" {
         \\pub fn str_length(s: string) -> i32
     );
 }
+
+test "infer error: std package ---- unknown module" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\import {linked_list} from "std";
+    );
+}
+
+test "infer error: std package ---- member missing" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\import {bool} from "std";
+        \\
+        \\fn main() {
+        \\    val x = bool.collapse(true);
+        \\}
+    );
+}
+
+test "infer error: builtin result namespace ---- unknown function" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn parse(n: i32) -> @Result<i32, string> {
+        \\    return n;
+        \\}
+        \\
+        \\fn main() {
+        \\    val x = result.collapse(parse(1));
+        \\}
+    );
+}

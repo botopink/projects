@@ -18,7 +18,7 @@ function fetch() {
 
 function safe() {
     const _try0 = fetch();
-    const r = _try0.tag === "Error" ? (0) : _try0.result;
+    const r = "error" in _try0 ? (0) : _try0.ok;
     console.log(r);
     return r;
 }

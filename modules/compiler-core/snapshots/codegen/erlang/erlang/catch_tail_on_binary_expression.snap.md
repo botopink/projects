@@ -17,7 +17,7 @@ fn compute() -> i32 {
 -record(CalcError, {msg}).
 
 getA() ->
-    erlang:throw(CalcError(<<"overflow">>)).
+    {error, CalcError(<<"overflow">>)}.
 
 compute() ->
     R = case getA() of

@@ -18,12 +18,12 @@ class RiskError {
 }
 
 function risky() {
-    throw RiskError(5);
+    return ({ error: RiskError(5) });
 }
 
 function safe() {
     const _try0 = risky();
-    return _try0.tag === "Error" ? ((-1)) : _try0.result;
+    return "error" in _try0 ? ((-1)) : _try0.ok;
 }
 ```
 

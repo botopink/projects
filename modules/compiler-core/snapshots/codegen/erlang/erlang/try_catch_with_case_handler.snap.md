@@ -19,7 +19,7 @@ fn handle() -> i32 {
 %%   Timeout
 
 fetch() ->
-    erlang:throw(ErrorKind_NotFound).
+    {error, ErrorKind_NotFound}.
 
 handle() ->
     R = case fetch() of

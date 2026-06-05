@@ -17,15 +17,15 @@ fn strict() -> @Result<i32, string> {
 -record(ApiError, {msg}).
 
 fetch() ->
-    erlang:throw(ApiError(<<"not found">>)).
+    {error, ApiError(<<"not found">>)}.
 
 strict() ->
     R = case fetch() of
         {ok, TryV0} -> TryV0;
         {error, _TryE0} ->
-            erlang:throw(<<"fetch failed">>)
+            {error, <<"fetch failed">>}
     end,
-    R.
+    {ok, R}.
 ```
 
 ----- RUN LOG -----

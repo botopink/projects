@@ -18,9 +18,9 @@ function validate(n) {
 }
 
 function main() {
-    const r = ((_r) => _r.tag === "Ok" ? ((n) => {
+    const r = ((_r) => "error" in _r ? _r : ((n) => {
     return validate(n);
-})(_r.result) : _r)(parseAge("42"));
+})(_r.ok))(parseAge("42"));
 }
 
 function _botopink_main() {

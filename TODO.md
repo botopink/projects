@@ -294,48 +294,111 @@ loader relocated `libs/std/src/prelude.zig` → `modules/compiler-core/src/compt
       `external_fn_no_body_typechecks`, codegen `external_call_emits_module_symbol`
       + `external_import_binds_symbol` (all 4 targets snapshotted)
 
-## F2 — `option` + `result` (effect types over built-ins)
-> **DECIDED (2026-06-04)** — real namespaces, imported from the `"std"` package:
+## F2 — `option` + `result` (effect types over built-ins) — DONE (revised design)
+> **DECIDED (2026-06-04, revised same day)**:
 >
 > ```bp
-> import {list, option} from "std";   // cross-package: std exports its modules
-> val y = option.map(x, { v -> v + 1 });
+> import {list, bool} from "std";       // real modules: cross-package import
+> val z = bool.negate(flag);
+> val y = result.map(parse(s), { v -> v + 1 });   // builtin namespace, NO import
+> val w = x.map({ v -> v + 1 });                  // ?T builtin methods (option)
 > ```
 >
-> - `from "std"` marks the **package boundary** — it is the only way to reach
->   stdlib modules (exporting from outside the package).
-> - Bare `import {x};` stays **same-package only** (project-root resolution);
->   it never resolves stdlib modules.
-> - Inference gains a module→exports table: importing `option` binds a module
->   namespace whose members resolve to that module's `pub` fns.
+> - `from "std"` marks the **package boundary** — the only way to reach real
+>   stdlib modules (`bool`, future `list`/`dict`/…). Bare `import {x};` stays
+>   same-package only.
+> - **`result` is builtin**: `result.map/then/unwrap/is_ok/is_error` need no
+>   import and lower inline (same `__bp_result_*` ops as the method form).
+> - **`option` is not a type and has no namespace** — the surface is the `?`
+>   syntax (`?T`), the builtin methods, and (planned) JS-style optional
+>   chaining `?.` / `?.[]` / `?.()`.
+> - Modules are Gleam-inspired but may be organized with records/structs/
+>   interfaces and methods — not only free functions.
 
-### F2a — `"std"` package namespacing (mechanism)
-- [ ] Load stdlib impl modules (`option.bp`, `result.bp`, …) per module: parse +
-      infer each into its own exports table (`std` package registry), instead of
-      flattening into the global env
-- [ ] `import {option} from "std"` → bind `option` as a module-namespace symbol
-      backed by that table; unknown module name → clear type error
-- [ ] Inference: qualified call `option.map(args)` where the receiver is an
-      imported std module → look up `map` in the module's exports, infer as a
-      direct fn call (error when missing/not-pub)
-- [ ] Codegen commonJS: emit imported std modules to `out/std/<mod>.js` and lower
-      `option.map(args)` → `require` of that module + call
-- [ ] Codegen erlang: emit `out/std/<mod>.erl`; `option.map(args)` → remote call
-      `option:map(Args)`
-- [ ] Bare `import {x};` unchanged (root resolution only); `from "std"` with a
-      non-module symbol → error
-- [ ] Tests: comptime `std_import_binds_namespace` + `std_member_missing_errors`;
-      codegen `std_qualified_call_lowers` (node + erlang); cli run E2E
+### F2a — `"std"` package namespacing (mechanism) — DONE
+> **DESIGN (revised 2026-06-04):** `option`/`result` are NOT std modules.
+> `result` is a **builtin namespace** (no import); `option` has **no namespace**
+> (optional surface = `?T` + builtin methods + planned `?.` chaining). The
+> `from "std"` mechanism serves modules with real logic — first one: `bool.bp`.
+- [x] Load stdlib impl modules per module: parse + infer each into its own
+      exports table (`std` package registry — `Env.stdModules`)
+- [x] `import {bool} from "std"` → bind `bool` as a module-namespace symbol
+      (`Env.stdImports`); explicit std import wins over same-named value
+      bindings (primitive type name `bool`); unknown module → clear type error
+- [x] Inference: qualified call `bool.negate(x)` on an imported std module →
+      look up in the module's exports, infer as a direct fn call
+      (snapshots `std_package_unknown_module`, `std_package_member_missing`)
+- [x] Codegen commonJS: imported std modules emit to `out/std/<mod>.js`;
+      `bool.negate(x)` → `require` + member call
+- [x] Codegen erlang: `out/std/<mod>.erl`; `bool.negate(x)` → `bool:negate(X)`
+- [x] Tests: codegen `std_package_bool_qualified_call` snapshotted on all 4
+      targets; node + erlang **run** end-to-end (RUN LOG `true`)
+- [x] `bool.bp` (F3 item, landed early as the first real std module):
+      `negate`, `nor`, `nand`, `exclusive_or`, `exclusive_nor`
 
-- [ ] `option.bp`: `map`, `then` (flat_map), `unwrap`, `or`, `is_some`, `is_none`, `to_result`
-- [ ] `result.bp`: `map`, `map_error`, `then`, `unwrap`, `unwrap_error`, `or`, `is_ok`, `from_option`
-- Note: build on the EXISTING `@Option`/`@Result` method work (`map`/`flatMap`/`unwrapOr`
-  from the stdlib-result task) — extend, don't duplicate.
+### F2c — builtin `result` namespace (no import) — DONE
+- [x] `result.map(r, f)` / `then` / `unwrap(r, fallback)` / `is_ok` / `is_error`
+      resolve in inference (`inferResultNamespaceCall`) without any import;
+      local binding named `result` shadows the namespace; unknown member →
+      clear type error (snapshot `builtin_result_namespace_unknown_function`)
+- [x] Lowering reuses the method-form ops: `MethodLowering.qualified = true` →
+      transform emits `__bp_result_<op>(args…)` without receiver injection —
+      inline on all 4 backends, no module emitted, no require/remote call
+- [x] E2E: `builtin_result_namespace_qualified_call_lowers_inline` — RUN LOG
+      `42` on node + erlang
+- [x] `option` namespace deliberately NOT added (see F2-design note); the
+      builtin `?T` methods (`x.map(f)`, `x.flatMap(f)`, `x.unwrapOr(d)`) stay
+
+### Fx — optional chaining (`?.`) — TODO (spec'd, next up)
+> `optional` is not a (named) surface type — it is just `?`. The ergonomic
+> surface for optionals is JS-style optional chaining:
+> ```
+> obj.val?.prop       // member access, null when val is null
+> obj.val?.[expr]     // index access
+> obj.arr?.[index]
+> obj.func?.(args)    // call
+> ```
+- [ ] Lexer: `?.` token (`questionDot`); parser: postfix chaining forms
+      (`?.ident`, `?.[expr]`, `?.(args)`)
+- [ ] Inference: `a?.b` where `a: ?T` → result `?U` (short-circuits null);
+      chains collapse (no `??U` nesting)
+- [ ] Codegen: JS native `?.`; erlang `case A of undefined -> undefined; _ -> … end`;
+      beam/wasm tag tests
+- [ ] Snapshots: parser + comptime + 4 codegen targets + run logs
+
+### F2b — `@Result` runtime representation unified (`{ok, V}` / `{error, E}`)
+> Found via F2a's first *executing* Result snapshot: producers (`return`/`throw`
+> in `-> @Result` fns) emitted raw values/host exceptions while consumers
+> (`try`/`catch`, `__bp_result_*`) pattern-matched tagged values — three
+> different shapes across backends, latent because no old snapshot ran both ends.
+- [x] Inference: `Env.result_jump_lowerings` (loc-keyed) — `return v` → `wrap_ok`
+      (passthrough when `v` already `@Result`), `throw e` → `wrap_error`,
+      `return try f()` → `unwrap_passthrough` (identity)
+- [x] Transform: `tryLowerResultJump` rewrites to `return __bp_ok(v)` /
+      `return __bp_error(e)` / `return f()`
+- [x] commonJS: Result is `{ ok: V } | { error: E }` (`"error" in _r` test);
+      all consumers migrated off `{tag: "Ok", result}`
+- [x] erlang: `{ok, V}/{error, E}` everywhere (was `{tag, 'Ok', V}` in method
+      ops vs `erlang:throw` in producers); `emitEarlyReturnIf` nests the body
+      tail in the false arm for `if`-then-`return` (Erlang has no early return —
+      also fixes pre-existing wrong codegen in `block_block_builtin`)
+- [x] beam: `{ok, V}` 2-tuples (was 3-tuple `{tag, 'Ok', V}`); `__bp_ok/__bp_error`
+      via `put_tuple2`
+- [x] wasm: `__bp_ok/__bp_error` allocate the `[tag, payload]` heap pair
+      (`throw` in `@Result` fns no longer emits `unreachable`)
+- [x] ~60 codegen snapshots re-baselined across 4 targets; suite green (926 tests)
+- Known gap: `return f() catch v` inside a `-> @Result` fn doesn't re-wrap the
+  caught value (skipped in inference marking) — rare shape, catalogued here.
 
 ## F3 — `order` + `bool` + `pair` (small foundations)
 - [ ] `order.bp`: `enum Order { Lt, Eq, Gt }` + `reverse`, `negate`, `to_int`
-- [ ] `bool.bp`: `negate`, `and`, `or`, `to_string`, `guard`
+      (needs std-module **type** exports — registry holds fn types only today)
+- [x] `bool.bp`: `negate`, `nor`, `nand`, `exclusive_or`, `exclusive_nor`
+      (landed with F2a as the first real std module; `and`/`or` are operators,
+      `to_string`/`guard` deferred)
 - [ ] `pair.bp`: `first`, `second`, `map_first`, `map_second`, `swap`
+      (may be a `record Pair<A, B>` with methods — modules can use records/
+      structs/interfaces, not only free functions)
 
 ## F4 — `list` (the core module, over `Array<T>`)
 - [ ] Folds: `fold`, `fold_right`, `reduce`

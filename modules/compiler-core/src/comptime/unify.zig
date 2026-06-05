@@ -43,6 +43,13 @@ pub fn unify(env: *Env, a: *T.Type, b: *T.Type) UnifyError!void {
         .named => |na| switch (tb.*) {
             .typeVar => return unify(env, tb, ta), // symmetric
             .named => |nb| {
+                // Optional subsumption (one-way): an expected `?T` accepts a
+                // plain `T` value (`val x: ?i32 = 5`); unify inner with value.
+                if (std.mem.eql(u8, na.name, "optional") and na.args.len == 1 and
+                    !std.mem.eql(u8, nb.name, "optional"))
+                {
+                    return unify(env, na.args[0], tb);
+                }
                 if (!std.mem.eql(u8, na.name, nb.name)) {
                     env.lastError = TypeError.typeMismatch(ta, tb);
                     return error.TypeError;

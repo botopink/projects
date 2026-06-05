@@ -36,7 +36,12 @@
                         }
                       }
                     },
-                    "mutable": true
+                    "mutable": true,
+                    "typeAnnotation": {
+                      "optional": {
+                        "named": "string"
+                      }
+                    }
                   }
                 }
               }

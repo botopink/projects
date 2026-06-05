@@ -26,7 +26,11 @@ fn handle() -> i32 {
     {move, {atom, 'ErrorKind'}, {x, 0}}.
     {get_map_elements, {f, 6}, {x, 0}, {list, [{atom, NotFound}, {x, 0}]}}.
   {label, 6}.
-    {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, 3, 2}.
+    {put_tuple2, {x, 0}, {list, [{atom, error}, {x, 1}]}}.
+    {deallocate, 0}.
+    return.
 
 {function, handle, 0, 5}.
   {label, 4}.

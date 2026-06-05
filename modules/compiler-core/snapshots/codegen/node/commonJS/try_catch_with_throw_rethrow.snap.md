@@ -19,14 +19,14 @@ class ApiError {
 }
 
 function fetch() {
-    throw ApiError("not found");
+    return ({ error: ApiError("not found") });
 }
 
 function strict() {
     const _try0 = fetch();
-    if (_try0.tag === "Error") { throw "fetch failed"; }
-    const r = _try0.result;
-    return r;
+    if ("error" in _try0) { return ({ error: "fetch failed" }); }
+    const r = _try0.ok;
+    return ({ ok: r });
 }
 ```
 

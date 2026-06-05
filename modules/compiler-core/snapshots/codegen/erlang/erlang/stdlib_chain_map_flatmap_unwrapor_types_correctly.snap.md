@@ -22,9 +22,9 @@ validate(N) ->
     erlang:error({todo, "not implemented"}).
 
 main() ->
-    R = (fun(R) -> case R of {tag, 'Ok', V} -> V; _ -> (0) end end)((fun(R) -> case R of {tag, 'Ok', V} -> (fun(N) ->
+    R = (fun(R) -> case R of {ok, V} -> V; _ -> (0) end end)((fun(R) -> case R of {ok, V} -> (fun(N) ->
         validate(N)
-    end)(V); _ -> R end end)((fun(R) -> case R of {tag, 'Ok', V} -> {tag, 'Ok', (fun(N) ->
+    end)(V); _ -> R end end)((fun(R) -> case R of {ok, V} -> {ok, (fun(N) ->
         (N + 1)
     end)(V)}; _ -> R end end)(parseAge(<<"42">>)))).
 

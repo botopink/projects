@@ -16,7 +16,7 @@ fn safe() -> i32 {
 -record(RiskError, {level}).
 
 risky() ->
-    erlang:throw(RiskError(5)).
+    {error, RiskError(5)}.
 
 safe() ->
     case risky() of

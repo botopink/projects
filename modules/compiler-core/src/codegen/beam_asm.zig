@@ -1983,11 +1983,10 @@ const Emitter = struct {
 
     /// Lower a `__bp_<domain>_<op>(receiver, arg?)` Result/Option method op into
     /// BEAM assembly. The value shapes mirror the Erlang backend so values
-    /// interoperate: a `@Result` is the tagged 3-tuple `{tag, 'Ok'|'Error',
-    /// Payload}` (element 0 is the atom `tag`, element 1 the discriminator), and
-    /// a `@Option` is the bare payload or the atom `undefined` for absence.
-    /// `args[0]` is the receiver; `args[1]` (when present) the fn/default. The
-    /// result lands in `{x, 0}`.
+    /// interoperate: a `@Result` is the idiomatic OTP pair `{ok, V} | {error, E}`
+    /// (element 1 is the payload), and a `@Option` is the bare payload or the
+    /// atom `undefined` for absence. `args[0]` is the receiver; `args[1]` (when
+    /// present) the fn/default. The result lands in `{x, 0}`.
     ///
     /// Register budget: `{x, 0}` carries the receiver/result; the discriminator
     /// goes to `{x, cur_arity + 1}` and a payload stash to `{x, cur_arity + 2}`.
@@ -2000,18 +1999,27 @@ const Emitter = struct {
         const disc = self.cur_arity + 1;
         const pstash = self.cur_arity + 2;
 
+        if (std.mem.eql(u8, callee, "__bp_ok") or std.mem.eql(u8, callee, "__bp_error")) {
+            // Result constructor (`return v` / `throw e` in a `-> @Result<…>` fn):
+            // build the idiomatic `{ok, V}` / `{error, E}` pair.
+            const tag: []const u8 = if (std.mem.eql(u8, callee, "__bp_ok")) "ok" else "error";
+            try self.lowerExprIntoX0(recv.*);
+            try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{disc});
+            try self.bodyPrint("    {{test_heap, 3, {d}}}.\n", .{disc + 1});
+            try self.bodyPrint("    {{put_tuple2, {{x, 0}}, {{list, [{{atom, {s}}}, {{x, {d}}}]}}}}.\n", .{ tag, disc });
+            return;
+        }
+
         const is_result_map = std.mem.eql(u8, callee, "__bp_result_map");
         if (is_result_map or std.mem.eql(u8, callee, "__bp_result_flatMap")) {
             const else_l = self.allocLabel();
             const end_l = self.allocLabel();
             try self.lowerExprIntoX0(recv.*);
-            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 3, {{atom, tag}}]}}.\n", .{else_l});
-            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 1, {{x, {d}}}}}.\n", .{disc});
-            try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, {d}}}, {{atom, 'Ok'}}]}}.\n", .{ else_l, disc });
+            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 2, {{atom, ok}}]}}.\n", .{else_l});
             // Ok: extract the payload, apply the fn to it. The payload sits in
             // `{x, pstash}` and must survive the closure's `test_heap`, so raise
             // the make_fun3 live floor across the fn lowering.
-            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 2, {{x, {d}}}}}.\n", .{pstash});
+            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 1, {{x, {d}}}}}.\n", .{pstash});
             self.min_live = pstash + 1;
             try self.lowerFnInto0(arg1);
             self.min_live = 0;
@@ -2019,17 +2027,17 @@ const Emitter = struct {
             try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{pstash});
             try self.bodyWrite("    {call_fun, 1}.\n");
             if (is_result_map) {
-                // `map` rewraps the result as `{tag, 'Ok', Result}`; `flatMap`
-                // expects the fn to already return a `@Result`, so it passes through.
+                // `map` rewraps the result as `{ok, Result}`; `flatMap` expects
+                // the fn to already return a `@Result`, so it passes through.
                 // Stash the result in `disc` (`{x, cur_arity+1}`) — contiguous with
                 // `{x, 0}` — so the rewrap `test_heap` Live count covers only live
                 // registers (`x1` above it is dead after `call_fun`).
                 try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{disc});
-                try self.bodyPrint("    {{test_heap, 4, {d}}}.\n", .{disc + 1});
-                try self.bodyPrint("    {{put_tuple2, {{x, 0}}, {{list, [{{atom, tag}}, {{atom, 'Ok'}}, {{x, {d}}}]}}}}.\n", .{disc});
+                try self.bodyPrint("    {{test_heap, 3, {d}}}.\n", .{disc + 1});
+                try self.bodyPrint("    {{put_tuple2, {{x, 0}}, {{list, [{{atom, ok}}, {{x, {d}}}]}}}}.\n", .{disc});
             }
             try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
-            // Not Ok: the Error tuple is still in `{x, 0}` — propagate untouched.
+            // Not Ok: the `{error, E}` tuple is still in `{x, 0}` — propagate untouched.
             try self.bodyPrint("  {{label, {d}}}.\n", .{else_l});
             try self.bodyPrint("  {{label, {d}}}.\n", .{end_l});
             return;
@@ -2039,10 +2047,8 @@ const Emitter = struct {
             const else_l = self.allocLabel();
             const end_l = self.allocLabel();
             try self.lowerExprIntoX0(recv.*);
-            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 3, {{atom, tag}}]}}.\n", .{else_l});
-            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 1, {{x, {d}}}}}.\n", .{disc});
-            try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, {d}}}, {{atom, 'Ok'}}]}}.\n", .{ else_l, disc });
-            try self.bodyWrite("    {get_tuple_element, {x, 0}, 2, {x, 0}}.\n");
+            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 2, {{atom, ok}}]}}.\n", .{else_l});
+            try self.bodyWrite("    {get_tuple_element, {x, 0}, 1, {x, 0}}.\n");
             try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
             try self.bodyPrint("  {{label, {d}}}.\n", .{else_l});
             try self.lowerFnInto0(arg1);
@@ -2051,13 +2057,11 @@ const Emitter = struct {
         }
 
         if (std.mem.eql(u8, callee, "__bp_result_isOk") or std.mem.eql(u8, callee, "__bp_result_isError")) {
-            const want: []const u8 = if (std.mem.eql(u8, callee, "__bp_result_isOk")) "'Ok'" else "'Error'";
+            const want: []const u8 = if (std.mem.eql(u8, callee, "__bp_result_isOk")) "ok" else "error";
             const false_l = self.allocLabel();
             const end_l = self.allocLabel();
             try self.lowerExprIntoX0(recv.*);
-            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 3, {{atom, tag}}]}}.\n", .{false_l});
-            try self.bodyPrint("    {{get_tuple_element, {{x, 0}}, 1, {{x, {d}}}}}.\n", .{disc});
-            try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, {d}}}, {{atom, {s}}}]}}.\n", .{ false_l, disc, want });
+            try self.bodyPrint("    {{test, is_tagged_tuple, {{f, {d}}}, [{{x, 0}}, 2, {{atom, {s}}}]}}.\n", .{ false_l, want });
             try self.bodyWrite("    {move, {atom, true}, {x, 0}}.\n");
             try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
             try self.bodyPrint("  {{label, {d}}}.\n", .{false_l});

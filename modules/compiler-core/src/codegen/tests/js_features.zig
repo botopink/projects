@@ -453,7 +453,7 @@ test "js: lambda ---- standalone with params" {
 test "js: lambda ---- with type annotation" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\fn main() -> string {
-        \\    val func: fn(String)-> string = {s ->
+        \\    val func: fn(string)-> string = {s ->
         \\        return s;
         \\    };
         \\    return func("hello");

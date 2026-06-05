@@ -16,7 +16,7 @@ fn f() {
 -record(Error, {msg}).
 
 fetch() ->
-    erlang:throw(Error(<<"boom">>)).
+    {error, Error(<<"boom">>)}.
 
 f() ->
     {A, B} = case fetch() of

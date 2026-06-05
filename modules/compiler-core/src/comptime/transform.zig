@@ -21,6 +21,10 @@ pub const MethodLowerings = std.AutoHashMap(ast.Loc, envMod.MethodLowering);
 /// expression that replaces the call, produced by inference (expr-templates F6).
 pub const TemplateExpansions = std.AutoHashMap(ast.Loc, *const ast.Expr);
 
+/// Map of `return`/`throw` sites inside `-> @Result<…>` fns (by source loc)
+/// to their value-construction lowering, produced by inference.
+pub const ResultJumpLowerings = std.AutoHashMap(ast.Loc, envMod.ResultJumpLowering);
+
 /// Aggregator: collects specialization info during scan/rewrite phases.
 const Aggregator = struct {
     spec_cache: specialize.SpecCache,
@@ -28,6 +32,8 @@ const Aggregator = struct {
     method_lowerings: *const MethodLowerings,
     /// Template-call expansions keyed by call loc (expr-templates F6).
     template_expansions: *const TemplateExpansions,
+    /// `return`/`throw` → `__bp_ok`/`__bp_error` wrappings keyed by jump loc.
+    result_jump_lowerings: *const ResultJumpLowerings,
     /// fn_name → total calls with comptime params found during rewrite.
     total_calls: std.StringHashMap(usize),
     /// fn_name → calls that were actually rewritten to specialized names.
@@ -37,11 +43,12 @@ const Aggregator = struct {
     /// val_name → ct_id mapping (e.g. "pi" → "ct_0")
     val_ct_map: std.StringHashMap([]const u8),
 
-    fn init(allocator: std.mem.Allocator, comptime_vals: std.StringHashMap([]const u8), method_lowerings: *const MethodLowerings, template_expansions: *const TemplateExpansions) Aggregator {
+    fn init(allocator: std.mem.Allocator, comptime_vals: std.StringHashMap([]const u8), method_lowerings: *const MethodLowerings, template_expansions: *const TemplateExpansions, result_jump_lowerings: *const ResultJumpLowerings) Aggregator {
         return .{
             .spec_cache = specialize.SpecCache.init(allocator),
             .method_lowerings = method_lowerings,
             .template_expansions = template_expansions,
+            .result_jump_lowerings = result_jump_lowerings,
             .total_calls = std.StringHashMap(usize).init(allocator),
             .specialized_calls = std.StringHashMap(usize).init(allocator),
             .comptime_vals = comptime_vals,
@@ -96,8 +103,9 @@ pub fn transform(
     comptime_vals: std.StringHashMap([]const u8),
     method_lowerings: *const MethodLowerings,
     template_expansions: *const TemplateExpansions,
+    result_jump_lowerings: *const ResultJumpLowerings,
 ) !ast.Program {
-    var agg = Aggregator.init(allocator, comptime_vals, method_lowerings, template_expansions);
+    var agg = Aggregator.init(allocator, comptime_vals, method_lowerings, template_expansions, result_jump_lowerings);
     defer agg.deinit(allocator);
 
     // Phase 1: Scan and specialize.
@@ -399,9 +407,15 @@ fn tryLowerMethodCall(agg: *Aggregator, expr_ptr: *ast.Expr) ScanError!bool {
     };
     const callee = std.fmt.allocPrint(arena, "__bp_{s}_{s}", .{ domain, opName }) catch return ScanError.OutOfMemory;
 
-    var new_args = arena.alloc(ast.CallArg, cc.args.len + 1) catch return ScanError.OutOfMemory;
-    new_args[0] = .{ .label = null, .value = recv, .comments = &.{} };
-    for (cc.args, 0..) |a, i| new_args[i + 1] = a;
+    // Method form (`x.map(f)`): the receiver is the subject value and becomes
+    // the first arg. Qualified namespace form (`result.map(r, f)`): the
+    // receiver is the namespace identifier — drop it, args are already in place.
+    const new_args = if (lowering.qualified) cc.args else blk: {
+        var args = arena.alloc(ast.CallArg, cc.args.len + 1) catch return ScanError.OutOfMemory;
+        args[0] = .{ .label = null, .value = recv, .comments = &.{} };
+        for (cc.args, 0..) |a, i| args[i + 1] = a;
+        break :blk args;
+    };
 
     expr_ptr.* = ast.Expr{ .call = .{ .loc = loc, .kind = .{ .call = .{
         .receiver = null,
@@ -410,6 +424,55 @@ fn tryLowerMethodCall(agg: *Aggregator, expr_ptr: *ast.Expr) ScanError!bool {
         .args = new_args,
         .trailing = cc.trailing,
     } } } };
+    return true;
+}
+
+/// If `expr_ptr` is a `return`/`throw` jump recorded by inference as a Result
+/// constructor site, wrap the value in a `__bp_ok(…)` / `__bp_error(…)` builtin
+/// call — and rewrite `throw e` into `return __bp_error(e)` so every backend
+/// emits an ordinary function return carrying the `{error, E}` value.
+fn tryLowerResultJump(agg: *Aggregator, expr_ptr: *ast.Expr) ScanError!bool {
+    if (expr_ptr.* != .jump) return false;
+    const loc = expr_ptr.jump.loc;
+    const lowering = agg.result_jump_lowerings.get(loc) orelse return false;
+    const arena = agg.spec_cache.arena;
+
+    const wrapCall = struct {
+        fn make(a: std.mem.Allocator, callee: []const u8, value: *ast.Expr, l: ast.Loc) ScanError!*ast.Expr {
+            const args = a.alloc(ast.CallArg, 1) catch return ScanError.OutOfMemory;
+            args[0] = .{ .label = null, .value = value, .comments = &.{} };
+            const call_expr = a.create(ast.Expr) catch return ScanError.OutOfMemory;
+            call_expr.* = ast.Expr{ .call = .{ .loc = l, .kind = .{ .call = .{
+                .receiver = null,
+                .callee = callee,
+                .is_builtin = true,
+                .args = args,
+                .trailing = &.{},
+            } } } };
+            return call_expr;
+        }
+    }.make;
+
+    switch (lowering) {
+        .wrap_ok => {
+            if (expr_ptr.jump.kind != .@"return") return false;
+            const rp = expr_ptr.jump.kind.@"return" orelse return false;
+            expr_ptr.jump.kind = .{ .@"return" = try wrapCall(arena, "__bp_ok", rp, loc) };
+        },
+        .wrap_error => {
+            if (expr_ptr.jump.kind != .throw_) return false;
+            const tp = expr_ptr.jump.kind.throw_ orelse return false;
+            expr_ptr.jump.kind = .{ .@"return" = try wrapCall(arena, "__bp_error", tp, loc) };
+        },
+        .unwrap_passthrough => {
+            // `return try f()` → `return f()` (drop the redundant unwrap).
+            if (expr_ptr.jump.kind != .@"return") return false;
+            const rp = expr_ptr.jump.kind.@"return" orelse return false;
+            if (rp.* != .jump or rp.jump.kind != .try_) return false;
+            const inner = rp.jump.kind.try_ orelse return false;
+            expr_ptr.jump.kind = .{ .@"return" = inner };
+        },
+    }
     return true;
 }
 
@@ -440,14 +503,17 @@ fn rewriteStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
             .assign => |a| rewriteExpr(agg, fn_decls, comptime_arrays, a.value) catch return ScanError.OutOfMemory,
             else => {},
         },
-        .jump => |*j| switch (j.kind) {
-            .@"return" => |r| if (r) |rp| rewriteExpr(agg, fn_decls, comptime_arrays, rp) catch return ScanError.OutOfMemory,
-            .throw_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
-            .try_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
-            .await_ => |e| rewriteExpr(agg, fn_decls, comptime_arrays, e) catch return ScanError.OutOfMemory,
-            .@"break" => |b| if (b) |bp| rewriteExpr(agg, fn_decls, comptime_arrays, bp) catch return ScanError.OutOfMemory,
-            .yield => |y| if (y.value) |yp| rewriteExpr(agg, fn_decls, comptime_arrays, yp) catch return ScanError.OutOfMemory,
-            .@"continue" => {},
+        .jump => {
+            _ = try tryLowerResultJump(agg, &stmt.expr);
+            switch (stmt.expr.jump.kind) {
+                .@"return" => |r| if (r) |rp| rewriteExpr(agg, fn_decls, comptime_arrays, rp) catch return ScanError.OutOfMemory,
+                .throw_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
+                .try_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
+                .await_ => |e| rewriteExpr(agg, fn_decls, comptime_arrays, e) catch return ScanError.OutOfMemory,
+                .@"break" => |b| if (b) |bp| rewriteExpr(agg, fn_decls, comptime_arrays, bp) catch return ScanError.OutOfMemory,
+                .yield => |y| if (y.value) |yp| rewriteExpr(agg, fn_decls, comptime_arrays, yp) catch return ScanError.OutOfMemory,
+                .@"continue" => {},
+            }
         },
         .branch => |*br| switch (br.kind) {
             .if_ => |if_node| {
@@ -499,14 +565,17 @@ fn rewriteExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
             .localBind => |lb| rewriteExpr(agg, fn_decls, comptime_arrays, lb.value) catch return ScanError.OutOfMemory,
             else => {},
         },
-        .jump => |*j| switch (j.kind) {
-            .@"return" => |r| if (r) |rp| rewriteExpr(agg, fn_decls, comptime_arrays, rp) catch return ScanError.OutOfMemory,
-            .@"break" => |b| if (b) |bp| rewriteExpr(agg, fn_decls, comptime_arrays, bp) catch return ScanError.OutOfMemory,
-            .yield => |y| if (y.value) |yp| rewriteExpr(agg, fn_decls, comptime_arrays, yp) catch return ScanError.OutOfMemory,
-            .@"continue" => {},
-            .throw_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
-            .try_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
-            .await_ => |e| rewriteExpr(agg, fn_decls, comptime_arrays, e) catch return ScanError.OutOfMemory,
+        .jump => {
+            _ = try tryLowerResultJump(agg, expr_ptr);
+            switch (expr_ptr.jump.kind) {
+                .@"return" => |r| if (r) |rp| rewriteExpr(agg, fn_decls, comptime_arrays, rp) catch return ScanError.OutOfMemory,
+                .@"break" => |b| if (b) |bp| rewriteExpr(agg, fn_decls, comptime_arrays, bp) catch return ScanError.OutOfMemory,
+                .yield => |y| if (y.value) |yp| rewriteExpr(agg, fn_decls, comptime_arrays, yp) catch return ScanError.OutOfMemory,
+                .@"continue" => {},
+                .throw_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
+                .try_ => |t| if (t) |tp| rewriteExpr(agg, fn_decls, comptime_arrays, tp) catch return ScanError.OutOfMemory,
+                .await_ => |e| rewriteExpr(agg, fn_decls, comptime_arrays, e) catch return ScanError.OutOfMemory,
+            }
         },
         .branch => |*br| switch (br.kind) {
             .if_ => |if_node| {

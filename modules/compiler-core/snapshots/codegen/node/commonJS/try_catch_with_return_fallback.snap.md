@@ -19,13 +19,13 @@ class NetError {
 }
 
 function fetch() {
-    throw NetError(500);
+    return ({ error: NetError(500) });
 }
 
 function safe() {
     const _try0 = fetch();
-    if (_try0.tag === "Error") { return (-1); }
-    const r = _try0.result;
+    if ("error" in _try0) { return (-1); }
+    const r = _try0.ok;
     return r;
 }
 ```

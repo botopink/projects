@@ -153,6 +153,9 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
         defer agg.deinit(arena);
         try agg.appendSlice(arena, "module.exports = Object.assign({}");
         for (outputs.items) |o| {
+            // "std" package modules are only reachable via `from "std"` —
+            // bare imports (project root) must never see them.
+            if (std.mem.startsWith(u8, o.name, "std/")) continue;
             try agg.appendSlice(arena, ", require(\"./");
             try agg.appendSlice(arena, o.name);
             try agg.appendSlice(arena, ".js\")");

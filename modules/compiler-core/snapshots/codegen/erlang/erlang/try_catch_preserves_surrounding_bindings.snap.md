@@ -20,7 +20,7 @@ fn process() -> i32 {
 -record(LoadError, {msg}).
 
 load() ->
-    erlang:throw(LoadError(<<"not found">>)).
+    {error, LoadError(<<"not found">>)}.
 
 process() ->
     Prefix = 10,

@@ -18,13 +18,13 @@ class Error {
 }
 
 function fetch() {
-    throw Error("boom");
+    return ({ error: Error("boom") });
 }
 
 function f() {
     const _try0 = fetch();
-    if (_try0.tag === "Error") { throw Error("failed"); }
-    const [ a, b ] = _try0.result;
+    if ("error" in _try0) { throw Error("failed"); }
+    const [ a, b ] = _try0.ok;
 }
 ```
 

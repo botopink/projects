@@ -7,3 +7,9 @@ pub const primitives = @embedFile("primitives.d.bp");
 pub const array = @embedFile("array.d.bp");
 pub const string = @embedFile("string.d.bp");
 pub const syntax = @embedFile("syntax.bp");
+
+// "std" package impl modules — importable via `import {…} from "std";`.
+// These are NOT flattened into the global env (see comptime.zig std_pkg_modules).
+// NOTE: `option`/`result` are NOT modules — they are builtin namespaces lowered
+// inline by every backend (see comptime/infer.zig `inferBuiltinNamespaceCall`).
+pub const bool_mod = @embedFile("bool.bp");

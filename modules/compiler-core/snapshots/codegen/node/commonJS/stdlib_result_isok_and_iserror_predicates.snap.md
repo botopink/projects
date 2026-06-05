@@ -16,8 +16,8 @@ function parseAge(s) {
 
 function main() {
     const r = parseAge("42");
-    const ok = ((_r) => _r.tag === "Ok")(r);
-    const bad = ((_r) => _r.tag === "Error")(r);
+    const ok = ((_r) => !("error" in _r))(r);
+    const bad = ((_r) => "error" in _r)(r);
 }
 
 function _botopink_main() {

@@ -21,10 +21,10 @@ fn loadUser() {
 -record(UserError, {msg}).
 
 fetchName() ->
-    erlang:throw(UserError(<<"name missing">>)).
+    {error, UserError(<<"name missing">>)}.
 
 fetchAge() ->
-    erlang:throw(UserError(<<"age missing">>)).
+    {error, UserError(<<"age missing">>)}.
 
 loadUser() ->
     Name = case fetchName() of

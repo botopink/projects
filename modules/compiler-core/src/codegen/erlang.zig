@@ -130,6 +130,8 @@ fn emitErlang(
     try em.collectExternals(program);
     defer em.externals.deinit();
     defer em.externals_missing.deinit();
+    try em.collectStdImports(program);
+    defer em.std_imports.deinit();
     var top_runtime_vals: std.ArrayListUnmanaged(ast.ValDecl) = .empty;
     defer top_runtime_vals.deinit(alloc);
     var has_main_0 = false;
@@ -147,8 +149,13 @@ fn emitErlang(
     // Test mode never auto-runs `main/0` — the escript entry is the test runner.
     const emit_entrypoint_wrapper = has_main_0 and !test_mode;
 
-    // Module header
-    try aw.writer.print("-module({s}).\n", .{module_name});
+    // Module header. "std" package modules are named `std/<mod>` for output
+    // layout; the Erlang module atom is the basename (`-module(option).`).
+    const erl_module_name = if (std.mem.lastIndexOfScalar(u8, module_name, '/')) |i|
+        module_name[i + 1 ..]
+    else
+        module_name;
+    try aw.writer.print("-module({s}).\n", .{erl_module_name});
 
     // Collect public function names for export.
     var pub_fns: std.ArrayListUnmanaged(ast.FnDecl) = .empty;
@@ -351,6 +358,9 @@ const Emitter = struct {
     externals: std.StringHashMap(ast.ExternalRef),
     /// `@[external(…)]` fns with no `erlang` target — calling one is an error.
     externals_missing: std.StringHashMap(void),
+    /// Module names imported via `import {…} from "std"` — a lowercase
+    /// receiver naming one lowers to a remote call (`option:map(Args)`).
+    std_imports: std.StringHashMap(void),
     /// When true, `emitFn` keeps the `self` parameter (extension methods take
     /// the receiver as an explicit first argument; ordinary fns drop `self`).
     keep_self: bool = false,
@@ -370,6 +380,24 @@ const Emitter = struct {
             .ext_names = std.StringHashMap(void).init(alloc),
             .externals = std.StringHashMap(ast.ExternalRef).init(alloc),
             .externals_missing = std.StringHashMap(void).init(alloc),
+            .std_imports = std.StringHashMap(void).init(alloc),
+        };
+    }
+
+    /// Records every module name imported from the "std" package.
+    fn collectStdImports(this: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .use => |u| {
+                const from_std = switch (u.source) {
+                    .module => |m| std.mem.eql(u8, m, "std"),
+                    .root => false,
+                };
+                if (!from_std) continue;
+                for (u.imports) |imp| {
+                    try this.std_imports.put(imp.segments[imp.segments.len - 1], {});
+                }
+            },
+            else => {},
         };
     }
 
@@ -597,10 +625,57 @@ const Emitter = struct {
                 return; // remaining statements are nested inside the Ok arm
             }
 
+            // `if` whose then-branch ends in `return` and that has following
+            // statements: Erlang has no early return, so nest the rest of the
+            // body inside the false arm (mirrors the propagate-try nesting).
+            if (!is_last and stmt.expr == .branch and stmt.expr.branch.kind == .if_) {
+                const if_node = stmt.expr.branch.kind.if_;
+                if (if_node.binding == null and if_node.else_ == null and bodyEndsWithReturn(if_node.then_)) {
+                    try this.writeIndent();
+                    try this.emitEarlyReturnIf(body, i, if_node);
+                    return; // remaining statements are nested inside the false arm
+                }
+            }
+
             try this.writeIndent();
             try this.emitBodyStmt(stmt, is_last);
             if (!is_last) try this.w(",\n");
         }
+    }
+
+    /// True when the last statement of a branch body is a valued `return`.
+    fn bodyEndsWithReturn(body: []const ast.Stmt) bool {
+        if (body.len == 0) return false;
+        return switch (body[body.len - 1].expr) {
+            .jump => |j| switch (j.kind) {
+                .@"return" => |r| r != null,
+                else => false,
+            },
+            else => false,
+        };
+    }
+
+    /// Emit `case Cond of true -> <then-body>; _ -> <body[i+1..]> end` for an
+    /// `if` that early-returns, nesting the remaining statements in the false arm.
+    fn emitEarlyReturnIf(this: *Emitter, body: []const ast.Stmt, i: usize, if_node: anytype) anyerror!void {
+        try this.w("case ");
+        try this.emitExpr(if_node.cond.*);
+        try this.w(" of\n");
+        this.indent += 1;
+        try this.writeIndent();
+        try this.w("true ->\n");
+        this.indent += 1;
+        try this.emitBranchBody(if_node.then_);
+        this.indent -= 1;
+        try this.w(";\n");
+        try this.writeIndent();
+        try this.w("_ ->\n");
+        this.indent += 1;
+        try this.emitBodyFrom(body, i + 1);
+        this.indent -= 2;
+        try this.w("\n");
+        try this.writeIndent();
+        try this.w("end");
     }
 
     const TryHead = union(enum) {
@@ -772,28 +847,40 @@ const Emitter = struct {
     /// Emit the inline Erlang form for a lowered `@Result`/`@Option` method op.
     /// `args[0]` is the receiver; `args[1]` (when present) the fn/default value.
     /// A fun binds the receiver once (so chains don't re-evaluate it). Result
-    /// values use the `{tag, 'Ok'|'Error', Payload}` shape; absent options are
-    /// `undefined`.
+    /// values use the idiomatic OTP `{ok, V} | {error, E}` shape; absent options
+    /// are `undefined`.
     fn emitResultOptionOp(this: *Emitter, callee: []const u8, args: []const ast.CallArg) anyerror!void {
         const recv = args[0].value;
         const arg1: ?*ast.Expr = if (args.len > 1) args[1].value else null;
 
-        if (std.mem.eql(u8, callee, "__bp_result_map")) {
-            try this.w("(fun(R) -> case R of {tag, 'Ok', V} -> {tag, 'Ok', (");
+        if (std.mem.eql(u8, callee, "__bp_ok")) {
+            // Result constructor: `return v` in a `-> @Result<…>` fn.
+            try this.w("{ok, ");
+            try this.emitExpr(recv.*);
+            try this.w("}");
+            return;
+        } else if (std.mem.eql(u8, callee, "__bp_error")) {
+            // Result constructor: `throw e` in a `-> @Result<…>` fn.
+            try this.w("{error, ");
+            try this.emitExpr(recv.*);
+            try this.w("}");
+            return;
+        } else if (std.mem.eql(u8, callee, "__bp_result_map")) {
+            try this.w("(fun(R) -> case R of {ok, V} -> {ok, (");
             if (arg1) |a| try this.emitExpr(a.*);
             try this.w(")(V)}; _ -> R end end)(");
         } else if (std.mem.eql(u8, callee, "__bp_result_flatMap")) {
-            try this.w("(fun(R) -> case R of {tag, 'Ok', V} -> (");
+            try this.w("(fun(R) -> case R of {ok, V} -> (");
             if (arg1) |a| try this.emitExpr(a.*);
             try this.w(")(V); _ -> R end end)(");
         } else if (std.mem.eql(u8, callee, "__bp_result_unwrapOr")) {
-            try this.w("(fun(R) -> case R of {tag, 'Ok', V} -> V; _ -> (");
+            try this.w("(fun(R) -> case R of {ok, V} -> V; _ -> (");
             if (arg1) |a| try this.emitExpr(a.*);
             try this.w(") end end)(");
         } else if (std.mem.eql(u8, callee, "__bp_result_isOk")) {
-            try this.w("(fun(R) -> case R of {tag, 'Ok', _} -> true; _ -> false end end)(");
+            try this.w("(fun(R) -> case R of {ok, _} -> true; _ -> false end end)(");
         } else if (std.mem.eql(u8, callee, "__bp_result_isError")) {
-            try this.w("(fun(R) -> case R of {tag, 'Error', _} -> true; _ -> false end end)(");
+            try this.w("(fun(R) -> case R of {error, _} -> true; _ -> false end end)(");
         } else if (std.mem.eql(u8, callee, "__bp_option_map") or std.mem.eql(u8, callee, "__bp_option_flatMap")) {
             try this.w("(fun(O) -> case O of undefined -> undefined; V -> (");
             if (arg1) |a| try this.emitExpr(a.*);
@@ -1023,7 +1110,19 @@ const Emitter = struct {
                                 },
                                 else => null,
                             };
-                            if (this.rewrites.get(c.loc)) |_| {
+                            // `"std"` package qualified call: a lowercase
+                            // receiver naming an imported std module lowers to
+                            // the remote `option:map(Args)`.
+                            const std_mod: ?[]const u8 = switch (recv.*) {
+                                .identifier => |id| switch (id.kind) {
+                                    .ident => |n| if (this.std_imports.contains(n)) n else null,
+                                    else => null,
+                                },
+                                else => null,
+                            };
+                            if (std_mod) |sm| {
+                                try this.fmt("{s}:{s}(", .{ sm, cc.callee });
+                            } else if (this.rewrites.get(c.loc)) |_| {
                                 // Activated extension dispatch: `recv.m(args)` →
                                 // `m(Recv, args)`, a bare local call to the
                                 // function emitted by `emitExtensionMethods`.

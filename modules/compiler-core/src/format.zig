@@ -536,7 +536,14 @@ pub const Formatter = struct {
                 break :blk doc;
             },
             .binding => |b| switch (b.kind) {
-                .localBind => |lb| this.concatAll(&.{
+                .localBind => |lb| if (lb.typeAnnotation) |ann| this.concatAll(&.{
+                    try this.text(if (lb.mutable) "var " else "val "),
+                    try this.text(lb.name),
+                    try this.text(": "),
+                    try this.fmtTypeRef(ann),
+                    try this.text(" = "),
+                    try this.fmtExpr(lb.value.*),
+                }) else this.concatAll(&.{
                     try this.text(if (lb.mutable) "var " else "val "),
                     try this.text(lb.name),
                     try this.text(" = "),

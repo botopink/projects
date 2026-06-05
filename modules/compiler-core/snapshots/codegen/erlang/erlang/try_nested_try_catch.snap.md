@@ -22,10 +22,10 @@ fn process() -> i32 {
 -record(DbError, {msg}).
 
 inner() ->
-    erlang:throw(DbError(<<"conn refused">>)).
+    {error, DbError(<<"conn refused">>)}.
 
 outer() ->
-    erlang:throw(DbError(<<"timeout">>)).
+    {error, DbError(<<"timeout">>)}.
 
 process() ->
     A = case inner() of

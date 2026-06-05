@@ -24,18 +24,18 @@ class DbError {
 }
 
 function inner() {
-    throw DbError("conn refused");
+    return ({ error: DbError("conn refused") });
 }
 
 function outer() {
-    throw DbError("timeout");
+    return ({ error: DbError("timeout") });
 }
 
 function process() {
     const _try0 = inner();
-    const a = _try0.tag === "Error" ? (0) : _try0.result;
+    const a = "error" in _try0 ? (0) : _try0.ok;
     const _try1 = outer();
-    const b = _try1.tag === "Error" ? (a) : _try1.result;
+    const b = "error" in _try1 ? (a) : _try1.ok;
     console.log(a, b);
     return (a + b);
 }

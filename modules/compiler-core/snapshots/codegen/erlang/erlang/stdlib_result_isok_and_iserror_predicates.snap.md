@@ -18,8 +18,8 @@ parseAge(S) ->
 
 main() ->
     R = parseAge(<<"42">>),
-    Ok = (fun(R) -> case R of {tag, 'Ok', _} -> true; _ -> false end end)(R),
-    Bad = (fun(R) -> case R of {tag, 'Error', _} -> true; _ -> false end end)(R).
+    Ok = (fun(R) -> case R of {ok, _} -> true; _ -> false end end)(R),
+    Bad = (fun(R) -> case R of {error, _} -> true; _ -> false end end)(R).
 
 '_botopink_main'() ->
     main().

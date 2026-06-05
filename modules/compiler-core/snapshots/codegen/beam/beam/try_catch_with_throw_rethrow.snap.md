@@ -26,7 +26,11 @@ fn strict() -> @Result<i32, string> {
     {move, {literal, <<"not found">>}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
     {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, msg}, {x, 1}]}}.
-    {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, 3, 2}.
+    {put_tuple2, {x, 0}, {list, [{atom, error}, {x, 1}]}}.
+    {deallocate, 0}.
+    return.
 
 {function, strict, 0, 5}.
   {label, 4}.
@@ -41,10 +45,17 @@ fn strict() -> @Result<i32, string> {
     {jump, {f, 7}}.
   {label, 6}.
     {move, {literal, <<"fetch failed">>}, {x, 0}}.
-    {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, 3, 2}.
+    {put_tuple2, {x, 0}, {list, [{atom, error}, {x, 1}]}}.
+    {deallocate, 1}.
+    return.
   {label, 7}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, 3, 2}.
+    {put_tuple2, {x, 0}, {list, [{atom, ok}, {x, 1}]}}.
     {deallocate, 1}.
     return.
 ```

@@ -116,13 +116,21 @@ in every target — never to host exceptions (no JS `try/catch`, no Erlang
 
 | Target | Ok | Error | tag test |
 |---|---|---|---|
-| commonJS | `{ tag: "Ok", result }` | `{ tag: "Error", error }` | `_t.tag === "Error"` |
+| commonJS | `{ ok: V }` | `{ error: E }` | `"error" in _t` |
 | erlang / beam | `{ok, V}` | `{error, E}` | `is_tagged_tuple … {atom, ok}` |
 | wasm | ptr; `[ptr]==0`, `[ptr+4]=V` | ptr; `[ptr]!=0`, `[ptr+4]=E` | `i32.load` of `[ptr]` |
 
+- **Producer side**: inside a `-> @Result<…>` fn, inference records each
+  `return`/`throw` site in `Env.result_jump_lowerings` and the transform pass
+  rewrites them to `return __bp_ok(v)` / `return __bp_error(e)` builtin calls
+  (`return try f()` drops the redundant unwrap and passes `f()` through), so
+  every backend constructs the same `{ok, V}` / `{error, E}` value — `throw`
+  never becomes a host exception in a `@Result` fn.
 - `try expr` (no catch) unwraps `Ok`; on `Error` it short-circuits the enclosing
   function with the error variant. JS/BEAM/WAT use a real early `return`; Erlang
-  (no early return) nests the rest of the body inside the `{ok, V}` arm.
+  (no early return) nests the rest of the body inside the `{ok, V}` arm — the
+  same nesting handles an `if` whose then-branch ends in `return`
+  (`emitEarlyReturnIf`).
 - `try expr catch h` keeps the `Ok` value or applies the handler on `Error`
   (a lambda handler receives the unwrapped error). Emitted as an expression.
 - Codegen is type-erased, so the *non-`@Result`* guard lives in inference
@@ -140,7 +148,7 @@ in every target — never to host exceptions (no JS `try/catch`, no Erlang
   access/assign (`get_map_elements`/`put_map_exact`), arrays → lists, tuples
   (`put_tuple2`), lambdas (`make_fun2` + deferred bodies, tail expr returned),
   `case` (all pattern types), try/catch, pipeline, method calls, loops (stub),
-  break, `@Result`/`@Option` methods (`__bp_*` → `{tag, 'Ok'|'Error', V}` match
+  break, `@Result`/`@Option` methods (`__bp_*` → `{ok, V}`/`{error, E}` match
   + `call_fun` closure application; option absence = `undefined`).
   Validated against `erlc +from_asm`.
 - `wasm` — **0 unsupported across 143 snapshots.** Covers: numerics, locals,

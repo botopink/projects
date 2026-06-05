@@ -37,18 +37,37 @@ pub enum Result<R, E> {
 //       The Ok payload, or `default` when the receiver is an Error.
 //   fn isOk(self) -> bool        // true when the receiver is `Ok`
 //   fn isError(self) -> bool     // true when the receiver is `Error`
+//
+// The builtin `result` NAMESPACE exposes the same ops as Gleam-style qualified
+// calls — no import needed; a local binding named `result` shadows it:
+//
+//   result.map(r, transform)        ≡ r.map(transform)
+//   result.then(r, transform)       ≡ r.flatMap(transform)
+//   result.unwrap(r, fallback)      ≡ r.unwrapOr(fallback)
+//   result.is_ok(r)                 ≡ r.isOk()
+//   result.is_error(r)              ≡ r.isError()
+//
+// A `@Result` value is only constructed by `return`/`throw` inside a
+// `-> @Result<R, E>` fn; the runtime shape is `{ ok: V } | { error: E }` (JS) /
+// `{ok, V} | {error, E}` (erlang/beam).
 
 // ── option type ──────────────────────────────────────────────────────────────
 
-// `@Option<T>` is the canonical spelling of the optional type `?T`; both share
-// one representation (a value, or absent). It mirrors the Result method API
-// (also inference-resolved + inline-lowered):
+// The optional type is just the `?` syntax: `?T` (internally `@Option<T>` is
+// its canonical spelling — not a user-facing named type). One representation:
+// a value, or absent. It mirrors the Result method API (also
+// inference-resolved + inline-lowered):
 //
 //   fn map(self, transform: fn(value: T) -> T2) -> @Option<T2>
 //       Apply `transform` to the present value; absence is propagated.
 //   fn flatMap(self, transform: fn(value: T) -> @Option<T2>) -> @Option<T2>
 //   fn unwrapOr(self, default: T) -> T
 //       The present value, or `default` when absent.
+//
+// There is deliberately NO `option` namespace — the ergonomic surface for
+// optionals is JS-style optional chaining (planned):
+//
+//   obj.val?.prop      obj.val?.[expr]      obj.arr?.[index]      obj.func?.(args)
 
 // ── iterator ─────────────────────────────────────────────────────────────────
 

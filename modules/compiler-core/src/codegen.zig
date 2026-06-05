@@ -32,15 +32,25 @@ pub fn generate(
         .wasm => wat.codegenEmit(allocator, session.outputs.items, config),
     };
 
+    // Sibling modules (multi-module compilations, e.g. the "std" package) are
+    // written next to each entry so `require`/remote calls resolve at runtime.
+    var aux_files: std.ArrayListUnmanaged(runtime.AuxFile) = .empty;
+    defer aux_files.deinit(allocator);
+    for (outputs.items) |o| {
+        if (o.result.comptime_err == null and o.name.len > 0) {
+            try aux_files.append(allocator, .{ .name = o.name, .code = o.result.js });
+        }
+    }
+
     // Execute generated code and capture output
     for (outputs.items) |*output| {
         if (output.result.comptime_err == null) {
             output.result.run_output = switch (config.targetSource) {
-                .commonJS => runtime.executeJavaScript(allocator, output.result.js, io) catch |err| blk: {
+                .commonJS => runtime.executeJavaScript(allocator, output.result.js, aux_files.items, io) catch |err| blk: {
                     const err_msg = try std.fmt.allocPrint(allocator, "Execution error: {}", .{err});
                     break :blk err_msg;
                 },
-                .erlang => runtime.executeErlang(allocator, output.result.js, output.name, io) catch |err| blk: {
+                .erlang => runtime.executeErlang(allocator, output.result.js, output.name, aux_files.items, io) catch |err| blk: {
                     const err_msg = try std.fmt.allocPrint(allocator, "Execution error: {}", .{err});
                     break :blk err_msg;
                 },

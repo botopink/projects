@@ -494,6 +494,9 @@ pub fn BindingExprOf(comptime phase: Phase) type {
             value: *ExprOf(phase),
             /// true when declared with `var`, false for `val`
             mutable: bool,
+            /// `val name: TypeRef = expr` — the declared type; inference binds
+            /// it (not the RHS type) and the formatter round-trips it.
+            typeAnnotation: ?TypeRef = null,
         },
         /// Assignment to a variable or field: `name = expr`, `name += expr`, `this.field = expr`, `this.field += expr`
         assign: struct {
@@ -512,6 +515,7 @@ pub fn BindingExprOf(comptime phase: Phase) type {
             switch (this.*) {
                 .localBind => |*lb| {
                     destroyExpr(allocator, lb.value);
+                    if (lb.typeAnnotation) |*ann| @constCast(ann).deinit(allocator);
                 },
                 .assign => |*a| {
                     a.target.deinit(allocator);

@@ -1365,6 +1365,27 @@ const Emitter = struct {
         const recv = args[0].value;
         const arg1: ?*ast.Expr = if (args.len > 1) args[1].value else null;
 
+        if (std.mem.eql(u8, callee, "__bp_ok") or std.mem.eql(u8, callee, "__bp_error")) {
+            // Result constructor (`return v` / `throw e` in a `-> @Result<…>`
+            // fn): allocate a fresh `{ tag, payload }` pair (tag 0 = Ok, 1 = Error).
+            const tag: u8 = if (std.mem.eql(u8, callee, "__bp_ok")) 0 else 1;
+            const b = try self.declRes();
+            try self.w("    global.get $__heap_ptr\n");
+            try self.fmt("    local.set $_res{d}\n", .{b});
+            try self.w("    global.get $__heap_ptr\n");
+            try self.w("    i32.const 8\n");
+            try self.w("    i32.add\n");
+            try self.w("    global.set $__heap_ptr\n");
+            try self.fmt("    local.get $_res{d}\n", .{b});
+            try self.fmt("    i32.const {d}\n", .{tag});
+            try self.fmt("    i32.store ;; Result tag ({s})\n", .{if (tag == 0) "Ok" else "Error"});
+            try self.fmt("    local.get $_res{d}\n", .{b});
+            try self.lowerExpr(recv.*);
+            try self.w("    i32.store offset=4 ;; payload\n");
+            try self.fmt("    local.get $_res{d}\n", .{b});
+            return;
+        }
+
         if (std.mem.eql(u8, callee, "__bp_result_map") or std.mem.eql(u8, callee, "__bp_result_flatMap")) {
             const is_map = std.mem.eql(u8, callee, "__bp_result_map");
             const le = lambdaArg(arg1) orelse {

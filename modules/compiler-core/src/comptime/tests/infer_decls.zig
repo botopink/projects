@@ -387,3 +387,29 @@ test "infer: external ---- fn no body typechecks" {
         \\}
     );
 }
+
+test "infer: std package ---- import binds namespace" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\import {bool} from "std";
+        \\
+        \\fn main() {
+        \\    val a: bool = bool.negate(false);
+        \\    val b: bool = bool.exclusive_or(a, true);
+        \\}
+    );
+}
+
+test "infer: builtin result namespace ---- qualified calls typecheck" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn parse(n: i32) -> @Result<i32, string> {
+        \\    if (n < 0) { throw "negative"; };
+        \\    return n;
+        \\}
+        \\
+        \\fn main() {
+        \\    val doubled = result.map(parse(21), { x -> x * 2 });
+        \\    val n: i32 = result.unwrap(doubled, 0);
+        \\    val ok: bool = result.is_ok(parse(n));
+        \\}
+    );
+}

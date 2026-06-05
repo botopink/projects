@@ -29,7 +29,7 @@ class Parser {
 
 function run(p) {
     const _try0 = p.parse();
-    const result = _try0.tag === "Error" ? (0) : _try0.result;
+    const result = "error" in _try0 ? (0) : _try0.ok;
     return result;
 }
 ```

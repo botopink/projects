@@ -18,12 +18,12 @@ const ErrorKind = Object.freeze({
 });
 
 function fetch() {
-    throw ErrorKind.NotFound;
+    return ({ error: ErrorKind.NotFound });
 }
 
 function handle() {
     const _try0 = fetch();
-    const r = _try0.tag === "Error" ? (0) : _try0.result;
+    const r = "error" in _try0 ? (0) : _try0.ok;
     return r;
 }
 ```

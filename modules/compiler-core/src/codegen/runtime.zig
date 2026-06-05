@@ -32,8 +32,17 @@ fn combineOutput(allocator: std.mem.Allocator, stdout: []const u8, stderr: []con
     return output.toOwnedSlice(allocator);
 }
 
+/// A sibling module written next to the entry file so `require`/remote calls
+/// resolve at runtime (multi-module compilations, e.g. the "std" package).
+pub const AuxFile = struct {
+    name: []const u8,
+    code: []const u8,
+};
+
 /// Execute JavaScript code using Node.js and capture stdout/stderr.
-pub fn executeJavaScript(allocator: std.mem.Allocator, js_code: []const u8, io: anytype) ![]u8 {
+/// `aux` modules are written as `<scratch>/<name>.js` (subdirs created) so the
+/// entry's `require("./<name>.js")` calls resolve.
+pub fn executeJavaScript(allocator: std.mem.Allocator, js_code: []const u8, aux: []const AuxFile, io: anytype) ![]u8 {
     // Write code to a temporary file in a per-execution scratch dir
     var dir_buf: [64]u8 = undefined;
     const tmp_dir = try makeScratchDir(io, &dir_buf);
@@ -43,6 +52,12 @@ pub fn executeJavaScript(allocator: std.mem.Allocator, js_code: []const u8, io: 
     defer allocator.free(tmp_path);
     {
         try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = tmp_path, .data = js_code });
+    }
+    for (aux) |a| {
+        const aux_path = try std.fmt.allocPrint(allocator, "{s}/{s}.js", .{ tmp_dir, a.name });
+        defer allocator.free(aux_path);
+        if (std.fs.path.dirname(aux_path)) |d| try std.Io.Dir.cwd().createDirPath(io, d);
+        try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = aux_path, .data = a.code });
     }
 
     // Execute with Node.js
@@ -59,21 +74,30 @@ pub fn executeJavaScript(allocator: std.mem.Allocator, js_code: []const u8, io: 
     return combineOutput(allocator, result.stdout, result.stderr);
 }
 
+/// An Erlang module name is the path basename (`std/bool` → `bool`) —
+/// matches the `-module(...)` atom the erlang backend emits.
+fn erlModuleName(name: []const u8) []const u8 {
+    return if (std.mem.lastIndexOfScalar(u8, name, '/')) |i| name[i + 1 ..] else name;
+}
+
 /// Execute Erlang code and capture stdout/stderr.
-pub fn executeErlang(allocator: std.mem.Allocator, erl_code: []const u8, module_name: []const u8, io: anytype) ![]u8 {
+/// `aux` modules are compiled into the same scratch dir so remote calls
+/// (`option:map(...)`) resolve at runtime.
+pub fn executeErlang(allocator: std.mem.Allocator, erl_code: []const u8, module_name: []const u8, aux: []const AuxFile, io: anytype) ![]u8 {
     // Create temporary .erl file in a per-execution scratch dir
     var dir_buf: [64]u8 = undefined;
     const tmp_dir = try makeScratchDir(io, &dir_buf);
     defer std.Io.Dir.cwd().deleteTree(io, tmp_dir) catch {};
 
-    const erl_filename = try std.fmt.allocPrint(allocator, "{s}/{s}.erl", .{ tmp_dir, module_name });
+    const entry_module = erlModuleName(module_name);
+    const erl_filename = try std.fmt.allocPrint(allocator, "{s}/{s}.erl", .{ tmp_dir, entry_module });
     defer allocator.free(erl_filename);
 
     {
         try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = erl_filename, .data = erl_code });
     }
 
-    // Compile the Erlang module
+    // Compile the Erlang module (and any sibling modules it calls into)
     const compile_result = std.process.run(allocator, io, .{ .argv = &.{ "erlc", "-o", tmp_dir, erl_filename } }) catch |err| switch (err) {
         error.FileNotFound => return allocator.dupe(u8, ""),
         else => return err,
@@ -83,6 +107,22 @@ pub fn executeErlang(allocator: std.mem.Allocator, erl_code: []const u8, module_
     if (!isProcessSuccess(compile_result.term)) {
         return allocator.dupe(u8, "");
     }
+    for (aux) |a| {
+        const aux_module = erlModuleName(a.name);
+        if (std.mem.eql(u8, aux_module, entry_module)) continue;
+        const aux_filename = try std.fmt.allocPrint(allocator, "{s}/{s}.erl", .{ tmp_dir, aux_module });
+        defer allocator.free(aux_filename);
+        try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = aux_filename, .data = a.code });
+        const aux_compile = std.process.run(allocator, io, .{ .argv = &.{ "erlc", "-o", tmp_dir, aux_filename } }) catch |err| switch (err) {
+            error.FileNotFound => return allocator.dupe(u8, ""),
+            else => return err,
+        };
+        allocator.free(aux_compile.stdout);
+        allocator.free(aux_compile.stderr);
+        if (!isProcessSuccess(aux_compile.term)) {
+            return allocator.dupe(u8, "");
+        }
+    }
 
     // Run only modules that export the generated Botopink entrypoint.
     if (std.mem.indexOf(u8, erl_code, "_botopink_main") == null) {
@@ -90,7 +130,7 @@ pub fn executeErlang(allocator: std.mem.Allocator, erl_code: []const u8, module_
     }
 
     const exec_result = std.process.run(allocator, io, .{
-        .argv = &.{ "erl", "-noinput", "-pa", tmp_dir, "-s", module_name, "_botopink_main", "-s", "init", "stop" },
+        .argv = &.{ "erl", "-noinput", "-pa", tmp_dir, "-s", entry_module, "_botopink_main", "-s", "init", "stop" },
     }) catch |err| switch (err) {
         error.FileNotFound => return allocator.dupe(u8, ""),
         else => return err,

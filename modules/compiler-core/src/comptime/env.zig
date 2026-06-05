@@ -194,7 +194,22 @@ pub const MethodLowering = struct {
     pub const Op = enum { map, flatMap, unwrapOr, isOk, isError };
     domain: Domain,
     op: Op,
+    /// True for builtin-namespace qualified calls (`result.map(r, f)`,
+    /// `result.unwrap(r, 0)`) — the receiver is the namespace identifier, not a
+    /// value, so the transform drops it and keeps the args as-is. False for
+    /// method form (`x.map(f)`) where the receiver becomes the first arg.
+    qualified: bool = false,
 };
+
+/// A type-directed lowering for a `return`/`throw` jump inside a fn returning
+/// `@Result<D, E>`. Recorded by inference keyed by the jump's source `Loc` and
+/// consumed by the transform pass, which wraps the value in a `__bp_ok(…)` /
+/// `__bp_error(…)` builtin call (and rewrites `throw` into a `return`) so every
+/// backend materialises the same `{ok, V}` / `{error, E}` Result value.
+/// `unwrap_passthrough` handles `return try f()`: unwrapping then immediately
+/// re-wrapping is the identity, so the transform drops the `try` and returns
+/// `f()`'s Result directly.
+pub const ResultJumpLowering = enum { wrap_ok, wrap_error, unwrap_passthrough };
 
 pub const Env = struct {
     /// Arena allocator ---- all Type and TypeCell nodes are allocated here.
@@ -241,6 +256,10 @@ pub const Env = struct {
     /// Builtin `@Result`/`@Option` method calls discovered during inference,
     /// keyed by the call's source location. Drives the AST transform lowering.
     method_lowerings: std.AutoHashMap(ast.Loc, MethodLowering),
+    /// `return`/`throw` jumps inside `-> @Result<…>` fns that must construct a
+    /// Result value, keyed by the jump's source location. Drives the AST
+    /// transform `__bp_ok`/`__bp_error` wrapping.
+    result_jump_lowerings: std.AutoHashMap(ast.Loc, ResultJumpLowering),
     /// Capability scope of the function body currently being inferred (null at top level).
     fnContext: ?FnContext = null,
     /// How `throw` is checked in the function body currently being inferred.
@@ -262,6 +281,14 @@ pub const Env = struct {
     /// to qualify with. Consumed by the transform pass to lower `obj.m(args)` to
     /// `Sym.m(obj, args)` without monkey-patching.
     dispatchRewrites: std.AutoHashMap(ast.Loc, []const u8),
+    /// `"std"` package module exports: module name (`option`, `result`, …) →
+    /// exports table (pub fn name → inferred type). Shared registry tables,
+    /// populated by the compile session before inference.
+    stdModules: std.StringHashMap(std.StringHashMap(*T.Type)),
+    /// Local (alias-aware) names imported via `import {…} from "std"` —
+    /// marked during inference; only these gate qualified calls
+    /// (`bool.negate(x)`) against `stdModules`.
+    stdImports: std.StringHashMap(void),
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
@@ -279,6 +306,7 @@ pub const Env = struct {
             .level = 0,
             .lastError = null,
             .method_lowerings = std.AutoHashMap(ast.Loc, MethodLowering).init(arena),
+            .result_jump_lowerings = std.AutoHashMap(ast.Loc, ResultJumpLowering).init(arena),
             .fnContext = null,
             .throwContext = .unchecked,
             .starFn = null,
@@ -287,6 +315,8 @@ pub const Env = struct {
             .activations = std.StringHashMap(void).init(arena),
             .inherentMethods = std.StringHashMap(std.StringHashMap(void)).init(arena),
             .dispatchRewrites = std.AutoHashMap(ast.Loc, []const u8).init(arena),
+            .stdModules = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena),
+            .stdImports = std.StringHashMap(void).init(arena),
         };
     }
 
@@ -302,6 +332,7 @@ pub const Env = struct {
         self.bindings.deinit();
         self.typeDefs.deinit();
         self.method_lowerings.deinit();
+        self.result_jump_lowerings.deinit();
         self.fnTypeparams.deinit();
         self.fnExprParams.deinit();
         self.exprCaptures.deinit();
@@ -314,6 +345,10 @@ pub const Env = struct {
         while (it.next()) |set| set.deinit();
         self.inherentMethods.deinit();
         self.dispatchRewrites.deinit();
+        // Note: stdModules values are shared registry export tables — owned by
+        // the compile session, not this env. Only the outer maps are ours.
+        self.stdModules.deinit();
+        self.stdImports.deinit();
     }
 
     // ── extension dispatch helpers ────────────────────────────────────────────

@@ -19,14 +19,14 @@ class FetchError {
 }
 
 function fetch() {
-    throw FetchError("/api");
+    return ({ error: FetchError("/api") });
 }
 
 function safe() {
     const _try0 = fetch();
-    const r = _try0.tag === "Error" ? ((e) => {
+    const r = "error" in _try0 ? ((e) => {
     return 0;
-})(_try0.error) : _try0.result;
+})(_try0.error) : _try0.ok;
     return r;
 }
 ```

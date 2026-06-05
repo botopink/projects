@@ -17,7 +17,7 @@ fn safe() -> i32 {
 -record(NetError, {code}).
 
 fetch() ->
-    erlang:throw(NetError(500)).
+    {error, NetError(500)}.
 
 safe() ->
     R = case fetch() of

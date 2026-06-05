@@ -22,13 +22,13 @@ class LoadError {
 }
 
 function load() {
-    throw LoadError("not found");
+    return ({ error: LoadError("not found") });
 }
 
 function process() {
     const prefix = 10;
     const _try0 = load();
-    const data = _try0.tag === "Error" ? (0) : _try0.result;
+    const data = "error" in _try0 ? (0) : _try0.ok;
     const suffix = 20;
     console.log(prefix, data, suffix);
     return ((prefix + data) + suffix);

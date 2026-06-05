@@ -36,7 +36,8 @@
                         }
                       }
                     },
-                    "mutable": true
+                    "mutable": true,
+                    "typeAnnotation": null
                   }
                 }
               }

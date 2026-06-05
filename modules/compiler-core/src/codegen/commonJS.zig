@@ -459,7 +459,8 @@ const JsBuilder = struct {
 };
 
 /// How `try`/`catch` is shaped once classified — drives statement-level lowering
-/// to `.tag === "Error"` pattern matching (never JS try/catch).
+/// to `"error" in _r` pattern matching over `{ ok } | { error }` Result values
+/// (never JS try/catch).
 const TryForm = union(enum) {
     /// `try expr` (no catch) — propagate the Error variant up via early `return`.
     propagate: ast.Expr,
@@ -886,6 +887,17 @@ const Emitter = struct {
     fn emitUse(self: *Emitter, u: ast.ImportDecl) !void {
         // Fallback activation `X*;` has no runtime binding — emit nothing.
         if (u.activationOnly) return;
+        // `"std"` package import: each item binds a whole stdlib module
+        // emitted alongside the project (`out/std/<mod>.js`), so qualified
+        // calls (`bool.negate(x)`) resolve naturally at runtime.
+        if (u.source == .module and std.mem.eql(u8, u.source.module, "std")) {
+            for (u.imports, 0..) |imp, i| {
+                if (i > 0) try self.w("\n");
+                const mod = imp.segments[imp.segments.len - 1];
+                try self.fmt("const {s} = require(\"./std/{s}.js\");", .{ imp.name(), mod });
+            }
+            return;
+        }
         try self.w("const { ");
         for (u.imports, 0..) |imp, i| {
             if (i > 0) try self.w(", ");
@@ -1313,8 +1325,9 @@ const Emitter = struct {
         }
     }
 
-    /// Lower a `try`/`catch` at statement position to `.tag === "Error"` pattern
-    /// matching — never JS try/catch. `head` says where the Ok value lands.
+    /// Lower a `try`/`catch` at statement position to `"error" in _r` pattern
+    /// matching over the `{ ok: V } | { error: E }` Result value — never JS
+    /// try/catch. `head` says where the Ok value lands.
     fn emitTryStmt(self: *Emitter, form: TryForm, head: TryHead) !void {
         const n = self.try_seq;
         self.try_seq += 1;
@@ -1327,20 +1340,20 @@ const Emitter = struct {
             .catchValue => |cv| {
                 try self.contLine();
                 _ = try self.writeTryHead(head);
-                try self.fmt("_try{d}.tag === \"Error\" ? (", .{n});
+                try self.fmt("\"error\" in _try{d} ? (", .{n});
                 try self.emitExpr(cv.handler);
                 try self.w(")");
                 if (cv.is_lambda) try self.fmt("(_try{d}.error)", .{n});
-                try self.fmt(" : _try{d}.result;", .{n});
+                try self.fmt(" : _try{d}.ok;", .{n});
             },
             .propagate => {
                 try self.contLine();
-                try self.fmt("if (_try{d}.tag === \"Error\") return _try{d};", .{ n, n });
+                try self.fmt("if (\"error\" in _try{d}) return _try{d};", .{ n, n });
                 try self.writeTryValueLine(head, n);
             },
             .catchJump => |cj| {
                 try self.contLine();
-                try self.fmt("if (_try{d}.tag === \"Error\") {{ ", .{n});
+                try self.fmt("if (\"error\" in _try{d}) {{ ", .{n});
                 try self.emitExpr(cj.handler);
                 try self.w("; }");
                 try self.writeTryValueLine(head, n);
@@ -1348,12 +1361,12 @@ const Emitter = struct {
         }
     }
 
-    /// Emit `<head>_tryN.result;` on its own line, unless the value is discarded.
+    /// Emit `<head>_tryN.ok;` on its own line, unless the value is discarded.
     fn writeTryValueLine(self: *Emitter, head: TryHead, n: usize) !void {
         if (head == .discard) return;
         try self.contLine();
         _ = try self.writeTryHead(head);
-        try self.fmt("_try{d}.result;", .{n});
+        try self.fmt("_try{d}.ok;", .{n});
     }
 
     /// Emit the last stmt of an if-branch as a value expression.
@@ -1395,30 +1408,40 @@ const Emitter = struct {
         const recv = args[0].value;
         const arg1: ?*ast.Expr = if (args.len > 1) args[1].value else null;
 
-        if (std.mem.eql(u8, callee, "__bp_result_map")) {
-            try self.w("((_r) => _r.tag === \"Ok\" ? { tag: \"Ok\", result: (");
+        if (std.mem.eql(u8, callee, "__bp_ok")) {
+            // Result constructor: `return v` in a `-> @Result<…>` fn.
+            try self.w("({ ok: ");
+            try self.emitExpr(recv.*);
+            try self.w(" })");
+        } else if (std.mem.eql(u8, callee, "__bp_error")) {
+            // Result constructor: `throw e` in a `-> @Result<…>` fn.
+            try self.w("({ error: ");
+            try self.emitExpr(recv.*);
+            try self.w(" })");
+        } else if (std.mem.eql(u8, callee, "__bp_result_map")) {
+            try self.w("((_r) => \"error\" in _r ? _r : { ok: (");
             if (arg1) |a| try self.emitExpr(a.*);
-            try self.w(")(_r.result) } : _r)(");
+            try self.w(")(_r.ok) })(");
             try self.emitExpr(recv.*);
             try self.w(")");
         } else if (std.mem.eql(u8, callee, "__bp_result_flatMap")) {
-            try self.w("((_r) => _r.tag === \"Ok\" ? (");
+            try self.w("((_r) => \"error\" in _r ? _r : (");
             if (arg1) |a| try self.emitExpr(a.*);
-            try self.w(")(_r.result) : _r)(");
+            try self.w(")(_r.ok))(");
             try self.emitExpr(recv.*);
             try self.w(")");
         } else if (std.mem.eql(u8, callee, "__bp_result_unwrapOr")) {
-            try self.w("((_r) => _r.tag === \"Ok\" ? _r.result : (");
+            try self.w("((_r) => \"error\" in _r ? (");
             if (arg1) |a| try self.emitExpr(a.*);
-            try self.w("))(");
+            try self.w(") : _r.ok)(");
             try self.emitExpr(recv.*);
             try self.w(")");
         } else if (std.mem.eql(u8, callee, "__bp_result_isOk")) {
-            try self.w("((_r) => _r.tag === \"Ok\")(");
+            try self.w("((_r) => !(\"error\" in _r))(");
             try self.emitExpr(recv.*);
             try self.w(")");
         } else if (std.mem.eql(u8, callee, "__bp_result_isError")) {
-            try self.w("((_r) => _r.tag === \"Error\")(");
+            try self.w("((_r) => \"error\" in _r)(");
             try self.emitExpr(recv.*);
             try self.w(")");
         } else if (std.mem.eql(u8, callee, "__bp_option_map") or std.mem.eql(u8, callee, "__bp_option_flatMap")) {
@@ -1527,7 +1550,7 @@ const Emitter = struct {
                     self.try_seq += 1;
                     try self.fmt("(() => {{ const _try{d} = ", .{n});
                     try self.emitExpr(val.*);
-                    try self.fmt("; if (_try{d}.tag === \"Error\") return _try{d}; return _try{d}.result; }})()", .{ n, n, n });
+                    try self.fmt("; if (\"error\" in _try{d}) return _try{d}; return _try{d}.ok; }})()", .{ n, n, n });
                 },
                 .await_ => |av| {
                     try self.w("await ");
@@ -1617,13 +1640,14 @@ const Emitter = struct {
                 },
                 .tryCatch => |tc| {
                     // `try expr catch handler` in expression position → pattern match
-                    // on the Result tag inside an IIFE (never JS try/catch).
+                    // on the `{ ok } | { error }` Result inside an IIFE (never JS
+                    // try/catch).
                     const handler = tc.handler.*;
                     const n = self.try_seq;
                     self.try_seq += 1;
                     try self.fmt("(() => {{ const _try{d} = ", .{n});
                     try self.emitExpr(tc.expr.*);
-                    try self.fmt("; if (_try{d}.tag === \"Error\") {{ ", .{n});
+                    try self.fmt("; if (\"error\" in _try{d}) {{ ", .{n});
                     if (isJumpHandler(handler)) {
                         try self.emitExpr(handler);
                         try self.w("; ");
@@ -1637,7 +1661,7 @@ const Emitter = struct {
                         }
                         try self.w("; ");
                     }
-                    try self.fmt("}} return _try{d}.result; }})()", .{n});
+                    try self.fmt("}} return _try{d}.ok; }})()", .{n});
                 },
             },
 

@@ -19,12 +19,12 @@ class CalcError {
 }
 
 function getA() {
-    throw CalcError("overflow");
+    return ({ error: CalcError("overflow") });
 }
 
 function compute() {
     const _try0 = getA();
-    const r = _try0.tag === "Error" ? (0) : _try0.result;
+    const r = "error" in _try0 ? (0) : _try0.ok;
     return r;
 }
 ```

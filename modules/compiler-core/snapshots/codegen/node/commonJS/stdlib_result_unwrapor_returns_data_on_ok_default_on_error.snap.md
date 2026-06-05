@@ -13,7 +13,7 @@ function parseAge(s) {
 }
 
 function main() {
-    const n = ((_r) => _r.tag === "Ok" ? _r.result : (0))(parseAge("42"));
+    const n = ((_r) => "error" in _r ? (0) : _r.ok)(parseAge("42"));
 }
 
 function _botopink_main() {

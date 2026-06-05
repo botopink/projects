@@ -18,8 +18,8 @@ function fetch() {
 
 function process() {
     const _try0 = fetch();
-    if (_try0.tag === "Error") return _try0;
-    const r = _try0.result;
+    if ("error" in _try0) return _try0;
+    const r = _try0.ok;
     console.log(r);
     return r;
 }

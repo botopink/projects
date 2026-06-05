@@ -17,7 +17,7 @@ fn safe() -> i32 {
 -record(FetchError, {url}).
 
 fetch() ->
-    erlang:throw(FetchError(<<"/api">>)).
+    {error, FetchError(<<"/api">>)}.
 
 safe() ->
     R = case fetch() of

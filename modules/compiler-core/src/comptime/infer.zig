@@ -51,6 +51,30 @@ pub const TypedBinding = struct {
 ///
 /// Returns a slice of `Binding` values in declaration order.
 /// All memory is allocated in `env.arena`.
+/// `import {bool} from "std"` — marks each imported std module in
+/// `env.stdImports` so qualified calls (`bool.negate(x)`) resolve against
+/// `env.stdModules`. Returns true when the decl was a `from "std"` import
+/// (fully handled here); unknown std module → clear type error.
+fn markStdImports(env: *Env, u: ast.ImportDecl) InferError!bool {
+    const from_std = switch (u.source) {
+        .module => |m| std.mem.eql(u8, m, "std"),
+        .root => false,
+    };
+    if (!from_std) return false;
+    for (u.imports) |imp| {
+        const mod_name = imp.segments[imp.segments.len - 1];
+        if (!env.stdModules.contains(mod_name)) {
+            env.lastError = TypeError.custom(
+                "unknown \"std\" module in import",
+                "Available std modules: bool. (`result` is builtin — call `result.map(r, f)` without importing.)",
+            );
+            return error.TypeError;
+        }
+        try env.stdImports.put(mod_name, {});
+    }
+    return true;
+}
+
 pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     var list: std.ArrayListUnmanaged(Binding) = .empty;
 
@@ -91,6 +115,10 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
             // Emit one TypedBinding per import so the LSP completion engine can
             // see them — the dummy `name = ""` binding is gone.
             .use => |u| {
+                // `import {bool} from "std"` — mark each imported std module
+                // so qualified calls (`bool.negate(x)`) resolve against
+                // `env.stdModules`. Unknown std module → clear type error.
+                if (try markStdImports(env, u)) continue;
                 for (u.imports) |imp| {
                     const name = imp.name();
                     if (env.lookup(name)) |ty| {
@@ -291,8 +319,12 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
                 try inferExprTyped(env, v.value.*);
             const ty = typedExpr.getType();
             if (annType) |at| try unifyAt(env, at, ty, v.value.getLoc());
-            try env.bind(v.name, ty);
-            return .{ .name = v.name, .type_ = ty, .typedExpr = typedExpr, .decl = decl };
+            // The annotation is the DECLARED type — bind it, not the RHS type
+            // (`val head: ?i32 = 5;` must bind `?i32`, or a later
+            // `option.map(head, f)` sees a bare `i32`).
+            const bindTy = annType orelse ty;
+            try env.bind(v.name, bindTy);
+            return .{ .name = v.name, .type_ = bindTy, .typedExpr = typedExpr, .decl = decl };
         },
         .@"fn" => |f| {
             const ty = try inferFnDecl(env, f);
@@ -328,7 +360,12 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
             return .{ .name = d.name, .type_ = try env.namedType(typeName), .typedExpr = null, .decl = decl };
         },
         // Handled in `inferProgramTyped` — each import name is looked up in env.
-        .use => return null,
+        // `from "std"` imports must be marked here too — the untyped path
+        // (tests, LSP) otherwise leaves qualified-call receivers unbound.
+        .use => |u| {
+            _ = try markStdImports(env, u);
+            return null;
+        },
         // A test block produces no binding, but its body must type-check.
         .@"test" => |t| {
             try inferTestDecl(env, t);
@@ -894,12 +931,16 @@ fn inferDecl(env: *Env, decl: ast.DeclKind) InferError!?Binding {
     switch (decl) {
         .val => |v| {
             const ty = try inferExpr(env, v.value.*);
+            // Bind the DECLARED (annotated) type when present — see
+            // `inferDeclTyped`'s `.val` case.
+            var bindTy = ty;
             if (v.typeAnnotation) |ann| {
                 const annType = try resolveTypeRef(env, ann);
                 try unifyAt(env, annType, ty, v.value.getLoc());
+                bindTy = annType;
             }
-            try env.bind(v.name, ty);
-            return .{ .name = v.name, .type_ = ty };
+            try env.bind(v.name, bindTy);
+            return .{ .name = v.name, .type_ = bindTy };
         },
         .@"fn" => |f| {
             const ty = try inferFnDecl(env, f);
@@ -929,7 +970,14 @@ fn inferDecl(env: *Env, decl: ast.DeclKind) InferError!?Binding {
             try inferTestDecl(env, t);
             return null;
         },
-        // implement and use don't produce a value binding.
+        // `from "std"` imports mark module namespaces (no value binding) —
+        // the untyped path (tests, LSP) needs this too, not just
+        // `inferProgramTyped`'s `.use` interception.
+        .use => |u| {
+            _ = try markStdImports(env, u);
+            return null;
+        },
+        // implement doesn't produce a value binding.
         else => return null,
     }
 }
@@ -990,6 +1038,46 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
     }
 }
 
+/// Deep-copies `ty`, substituting every unbound type variable with a fresh
+/// one. Per-call-site instantiation for "std" package generic fns — without
+/// it the shared fn type would unify destructively at the first call site.
+fn instantiateType(env: *Env, ty: *T.Type, seen: *std.AutoHashMap(*T.TypeCell, *T.Type)) InferError!*T.Type {
+    const resolved = ty.deref();
+    switch (resolved.*) {
+        .typeVar => |cell| switch (cell.state) {
+            .unbound, .generic => {
+                if (seen.get(cell)) |fresh| return fresh;
+                const fresh = try env.freshVar();
+                try seen.put(cell, fresh);
+                return fresh;
+            },
+            .link => unreachable, // deref follows links
+        },
+        .named => |n| {
+            if (n.args.len == 0) return resolved;
+            const args = try env.arena.alloc(*T.Type, n.args.len);
+            for (n.args, 0..) |a, i| args[i] = try instantiateType(env, a, seen);
+            const node = try env.arena.create(T.Type);
+            node.* = .{ .named = .{ .name = n.name, .args = args } };
+            return node;
+        },
+        .func => |f| {
+            const params = try env.arena.alloc(*T.Type, f.params.len);
+            for (f.params, 0..) |p, i| params[i] = try instantiateType(env, p, seen);
+            const node = try env.arena.create(T.Type);
+            node.* = .{ .func = .{ .params = params, .ret = try instantiateType(env, f.ret, seen) } };
+            return node;
+        },
+        .union_ => |members| {
+            const copies = try env.arena.alloc(*T.Type, members.len);
+            for (members, 0..) |m, i| copies[i] = try instantiateType(env, m, seen);
+            const node = try env.arena.create(T.Type);
+            node.* = .{ .union_ = copies };
+            return node;
+        },
+    }
+}
+
 fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     // ── `@[external(…)]` annotation validation (F1) ─────────────────────────
     for (f.annotations) |a| {
@@ -1037,7 +1125,19 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
             }
             try typeparams.append(env.arena, .{ .paramIndex = i, .paramName = p.name, .names = names });
         }
-        const ty = try resolveTypeRefInContext(env, p.typeRef, genericMap);
+        // `fn(value: T) -> U` param: build a real func type (the typeRef is
+        // just `.named "fn"`); names resolve via the generic map first.
+        const ty = if (p.fnType) |ft| blk: {
+            const fparams = try env.arena.alloc(*T.Type, ft.params.len);
+            for (ft.params, 0..) |fp, j| {
+                fparams[j] = genericMap.get(fp.typeName) orelse try env.namedType(fp.typeName);
+            }
+            const fret = if (ft.returnType) |rn|
+                genericMap.get(rn) orelse try env.namedType(rn)
+            else
+                try env.namedType("void");
+            break :blk try env.funcType(fparams, fret);
+        } else try resolveTypeRefInContext(env, p.typeRef, genericMap);
         paramTypes[i] = ty;
         if (p.destruct) |d| {
             // Destructuring param: bind each field name to its type.
@@ -2300,6 +2400,27 @@ fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)),
     return switch (j.kind) {
         .@"return" => |r| {
             const valPtr: ?*TypedExpr = if (r) |rv| try makeTypedPtr(env, try inferExprTyped(env, rv.*)) else null;
+            // Inside a `-> @Result<…>` fn, a returned plain value must be wrapped
+            // into `{ok, V}` by the transform pass (`__bp_ok`). Skip values that
+            // are already a `@Result` (passthrough) and `try`/`catch` forms —
+            // those have dedicated statement-level lowerings in each backend.
+            if (env.throwContext == .result) {
+                if (r) |rv| {
+                    const isCatchForm = rv.* == .branch and rv.branch.kind == .tryCatch;
+                    const isTryJump = rv.* == .jump and rv.jump.kind == .try_;
+                    const valIsResult = blk: {
+                        const vt = valPtr.?.getType().deref();
+                        break :blk vt.* == .named and std.mem.eql(u8, vt.named.name, "Result");
+                    };
+                    if (isTryJump) {
+                        // `return try f()` — unwrap-then-rewrap is the identity;
+                        // the transform returns `f()`'s Result directly.
+                        try env.result_jump_lowerings.put(loc, .unwrap_passthrough);
+                    } else if (!isCatchForm and !valIsResult) {
+                        try env.result_jump_lowerings.put(loc, .wrap_ok);
+                    }
+                }
+            }
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .@"return" = valPtr } } };
         },
         .throw_ => |e| {
@@ -2311,6 +2432,10 @@ fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)),
                         // Order matters: `errType` is the expected `E`, the thrown
                         // value is what we got — so unify(expected, got).
                         try unifyAt(env, errType, vp.getType(), loc);
+                        // `throw e` in a `-> @Result<…>` fn produces the value
+                        // `{error, E}` — the transform rewrites it to
+                        // `return __bp_error(e)`.
+                        try env.result_jump_lowerings.put(loc, .wrap_error);
                     }
                 },
                 .plain => {
@@ -2503,13 +2628,24 @@ fn inferLoopExpr(env: *Env, lp: ast.LoopExprOf(.untyped), loc: ast.Loc) InferErr
 fn inferBindingExpr(env: *Env, b: ast.BindingExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
     return switch (b.kind) {
         .localBind => |lb| {
-            const valTyped = try inferExprTyped(env, lb.value.*);
+            const annType: ?*T.Type = if (lb.typeAnnotation) |ann| try resolveTypeRef(env, ann) else null;
+            // Feed a `fn(...) -> ...` annotation into a lambda RHS so its
+            // params are typed from context (mirrors `inferDeclTyped`).
+            const valTyped = if (annType != null and lb.value.* == .function)
+                try inferFunctionExprExpected(env, lb.value.function, lb.value.function.loc, annType)
+            else
+                try inferExprTyped(env, lb.value.*);
             const valPtr = try makeTypedPtr(env, valTyped);
-            try env.bind(lb.name, valTyped.getType());
-            return TypedExpr{ .binding = .{ .loc = loc, .type_ = valTyped.getType(), .kind = .{ .localBind = .{
+            if (annType) |at| try unifyAt(env, at, valTyped.getType(), lb.value.getLoc());
+            // The annotation is the DECLARED type — bind it, not the RHS type
+            // (`val head: ?i32 = 5;` must bind `?i32`).
+            const bindTy = annType orelse valTyped.getType();
+            try env.bind(lb.name, bindTy);
+            return TypedExpr{ .binding = .{ .loc = loc, .type_ = bindTy, .kind = .{ .localBind = .{
                 .name = lb.name,
                 .value = valPtr,
                 .mutable = lb.mutable,
+                .typeAnnotation = lb.typeAnnotation,
             } } } };
         },
 
@@ -2638,6 +2774,82 @@ fn makeMethodCall(
 ) InferError!TypedExpr {
     const retType = try env.freshVar();
     return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
+        .receiver = recvPtr,
+        .callee = callee,
+        .is_builtin = false,
+        .args = typedArgs,
+        .trailing = typedTrailing,
+    } } } };
+}
+
+/// Resolve a builtin `result` namespace qualified call (Gleam-style surface):
+/// `result.map(r, f)` / `result.then(r, f)` / `result.unwrap(r, fallback)` /
+/// `result.is_ok(r)` / `result.is_error(r)`. The subject `@Result<R, E>` value
+/// arrives as the first positional argument. Records a `qualified`
+/// MethodLowering at `loc` so the transform rewrites to the same
+/// `__bp_result_<op>(args…)` builtin the method form uses — every backend
+/// lowers it inline (no module emitted, no import required).
+fn inferResultNamespaceCall(
+    env: *Env,
+    recvPtr: ?*ast.TypedExpr,
+    callee: []const u8,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+    loc: ast.Loc,
+) InferError!TypedExpr {
+    const op: envMod.MethodLowering.Op = blk: {
+        if (std.mem.eql(u8, callee, "map")) break :blk .map;
+        if (std.mem.eql(u8, callee, "then")) break :blk .flatMap;
+        if (std.mem.eql(u8, callee, "unwrap")) break :blk .unwrapOr;
+        if (std.mem.eql(u8, callee, "is_ok")) break :blk .isOk;
+        if (std.mem.eql(u8, callee, "is_error")) break :blk .isError;
+        env.lastError = TypeError.custom(
+            "unknown `result` namespace function",
+            "Available: map, then, unwrap, is_ok, is_error.",
+        ).withLoc(loc);
+        return error.TypeError;
+    };
+
+    const wantArity: usize = switch (op) {
+        .map, .flatMap, .unwrapOr => 2,
+        .isOk, .isError => 1,
+    };
+    const total = typedArgs.len + typedTrailing.len;
+    if (total != wantArity) {
+        env.lastError = TypeError.arityMismatch(callee, wantArity, total).withLoc(loc);
+        return error.TypeError;
+    }
+
+    // The subject `@Result<R, E>` is the first positional argument.
+    const okTy = try env.freshVar();
+    const errTy = try env.freshVar();
+    const subjectShape = try env.namedTypeArgs("Result", &.{ okTy, errTy });
+    try unifyAt(env, subjectShape, typedArgs[0].value.getType(), typedArgs[0].value.getLoc());
+
+    const arg1: ?*T.Type = if (typedArgs.len >= 2) typedArgs[1].value.getType() else null;
+
+    const retType: *T.Type = switch (op) {
+        .map => blk: {
+            const r2 = try env.freshVar();
+            if (arg1) |a| try unifyAt(env, a, try env.funcType(&.{okTy}, r2), loc);
+            break :blk try env.namedTypeArgs("Result", &.{ r2, errTy });
+        },
+        .flatMap => blk: {
+            const r2 = try env.freshVar();
+            const resTy = try env.namedTypeArgs("Result", &.{ r2, errTy });
+            if (arg1) |a| try unifyAt(env, a, try env.funcType(&.{okTy}, resTy), loc);
+            break :blk resTy;
+        },
+        .unwrapOr => blk: {
+            if (arg1) |a| try unifyAt(env, a, okTy, loc);
+            break :blk okTy;
+        },
+        .isOk, .isError => try env.namedType("bool"),
+    };
+
+    try env.method_lowerings.put(loc, .{ .domain = .result, .op = op, .qualified = true });
+
+    return ast.TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
         .receiver = recvPtr,
         .callee = callee,
         .is_builtin = false,
@@ -2959,10 +3171,28 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
     return switch (c.kind) {
         .call => |call| {
             // Method calls carry a receiver expression — infer it first.
-            const typedReceiver: ?*ast.TypedExpr = if (call.receiver) |recvExpr|
-                try makeTypedPtr(env, try inferExprTyped(env, recvExpr.*))
-            else
-                null;
+            // Exception: a `"std"` module receiver (`bool.negate(x)`) or the
+            // builtin `result` namespace (`result.map(r, f)`) is a namespace,
+            // not a value binding — synthesize its typed node instead of
+            // looking it up (it would be an unbound variable).
+            const typedReceiver: ?*ast.TypedExpr = if (call.receiver) |recvExpr| blk: {
+                if (recvExpr.* == .identifier and recvExpr.*.identifier.kind == .ident) {
+                    const rn = recvExpr.*.identifier.kind.ident;
+                    // An explicit `from "std"` import wins over same-named value
+                    // bindings (e.g. the primitive type name `bool`); the builtin
+                    // `result` namespace is shadowable by a local binding.
+                    if (env.stdImports.contains(rn) or
+                        (env.lookup(rn) == null and std.mem.eql(u8, rn, "result")))
+                    {
+                        break :blk try makeTypedPtr(env, TypedExpr{ .identifier = .{
+                            .loc = recvExpr.*.identifier.loc,
+                            .type_ = try env.namedType("#std_module"),
+                            .kind = .{ .ident = rn },
+                        } });
+                    }
+                }
+                break :blk try makeTypedPtr(env, try inferExprTyped(env, recvExpr.*));
+            } else null;
 
             const typedArgs = try env.arena.alloc(ast.CallArgOf(.typed), call.args.len);
             for (call.args, 0..) |arg, i| {
@@ -2981,6 +3211,67 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     .trailing = typedTrailing,
                 } } } };
             }
+            // Builtin `result` namespace: `result.map(r, f)`, `result.unwrap(r, 0)`,
+            // `result.is_ok(r)`… — Gleam-style qualified surface over the built-in
+            // `@Result` method ops. No import needed (builtin, not a "std" module);
+            // a local value binding named `result` shadows the namespace.
+            if (call.receiver) |recvExpr| {
+                if (recvExpr.* == .identifier and recvExpr.*.identifier.kind == .ident) {
+                    const recvName = recvExpr.*.identifier.kind.ident;
+                    if (env.lookup(recvName) == null and std.mem.eql(u8, recvName, "result")) {
+                        return try inferResultNamespaceCall(env, typedReceiver, call.callee, typedArgs, typedTrailing, loc);
+                    }
+                }
+            }
+
+            // `"std"` package qualified call (F2a): `bool.negate(x)` where
+            // `bool` was imported via `import {bool} from "std"`. The explicit
+            // import wins over same-named value bindings (e.g. the primitive
+            // type name `bool`). The callee resolves in the module's exports
+            // table; the fn type is instantiated per call site.
+            if (call.receiver) |recvExpr| {
+                if (recvExpr.* == .identifier and recvExpr.*.identifier.kind == .ident) {
+                    const recvName = recvExpr.*.identifier.kind.ident;
+                    if (env.stdImports.contains(recvName)) {
+                        if (env.stdModules.get(recvName)) |exports| {
+                            const exported = exports.get(call.callee) orelse {
+                                var e = TypeError.custom(
+                                    "this \"std\" module has no such public function",
+                                    "Check the function name against the module's exports.",
+                                );
+                                e = e.withLoc(loc);
+                                env.lastError = e;
+                                return error.TypeError;
+                            };
+                            var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
+                            defer seen.deinit();
+                            const instantiated = try instantiateType(env, exported, &seen);
+                            const retType: *T.Type = switch (instantiated.deref().*) {
+                                .func => |f| blk: {
+                                    const total = typedArgs.len + typedTrailing.len;
+                                    if (f.params.len != total) {
+                                        env.lastError = TypeError.arityMismatch(call.callee, f.params.len, total).withLoc(loc);
+                                        return error.TypeError;
+                                    }
+                                    for (typedArgs, f.params[0..typedArgs.len]) |ta, p| {
+                                        try unifyAt(env, p, ta.value.getType(), ta.value.getLoc());
+                                    }
+                                    break :blk f.ret;
+                                },
+                                else => try env.freshVar(),
+                            };
+                            return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
+                                .receiver = typedReceiver,
+                                .callee = call.callee,
+                                .is_builtin = false,
+                                .args = typedArgs,
+                                .trailing = typedTrailing,
+                            } } } };
+                        }
+                    }
+                }
+            }
+
             // Static extension dispatch (F6): `obj.method(args)` resolved via
             // inherent methods, activated `implement`/`extend` blocks, or a
             // qualified call `Sym.method(obj)`. Only bare-identifier receivers
@@ -3263,7 +3554,15 @@ fn inferFunctionExprExpected(env: *Env, func: ast.FunctionExprOf(.untyped), loc:
         try env.bind(p, params[i]);
     }
     const bodyTyped = try inferStmtsTyped(env, fk.body);
-    const retType = if (bodyTyped.len > 0) bodyTyped[bodyTyped.len - 1].expr.getType() else try env.namedType("void");
+    // The lambda's return type is its tail expression's type; an explicit
+    // `return expr` tail types as void, so use the returned value's type.
+    const retType = if (bodyTyped.len > 0) blk: {
+        const tail = bodyTyped[bodyTyped.len - 1].expr;
+        if (tail == .jump and tail.jump.kind == .@"return") {
+            break :blk if (tail.jump.kind.@"return") |rv| rv.getType() else try env.namedType("void");
+        }
+        break :blk tail.getType();
+    } else try env.namedType("void");
     if (expRet) |er| try unifyAt(env, retType, er, loc);
     const funcType = try env.funcType(params, retType);
     return TypedExpr{ .function = .{ .loc = loc, .type_ = funcType, .kind = .{

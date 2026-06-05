@@ -45,6 +45,31 @@ loc. `transform.transform` consumes that map and rewrites each call into a
 `__bp_<domain>_<op>(receiver, args…)` builtin call; the codegen backends emit the
 inline form (`commonJS`/`erlang` fully, `beam`/`wasm` as a documented stub).
 
+### Builtin `result` namespace + `"std"` package modules
+
+`result.map(r, f)` / `then` / `unwrap` / `is_ok` / `is_error` are the
+Gleam-style qualified surface over the same method ops — no import; inference
+(`inferResultNamespaceCall`) records a `qualified` MethodLowering and the
+transform emits `__bp_result_<op>(args…)` without receiver injection. There is
+deliberately no `option` namespace (optional surface = `?T` + methods +
+planned `?.` chaining). Real std modules (`bool`, future `list`/`dict`/…) load
+via `import {…} from "std"`: `comptime.zig` (`std_pkg_modules`,
+`registerStdlib`) infers each into its own exports table (`Env.stdModules`),
+`markStdImports` gates qualified calls, and codegen emits them as
+`out/std/<mod>.*` outputs (JS `require`, erlang remote calls).
+
+### `@Result` value construction (`return` / `throw` lowering)
+
+A `@Result` is never constructed literally in source — it materialises at
+`return`/`throw` inside a `-> @Result<D, E>` fn. Inference records each such
+jump in `Env.result_jump_lowerings` (keyed by the jump's loc): `return v` →
+`wrap_ok` (skipped when `v` is already a `@Result` — passthrough), `throw e` →
+`wrap_error`, and `return try f()` → `unwrap_passthrough` (unwrap-then-rewrap
+is the identity). `transform.transform` rewrites them to `return __bp_ok(v)` /
+`return __bp_error(e)` / `return f()`, and each backend lowers the constructors
+to its native shape (`{ ok: v }`/`{ error: e }` in JS, `{ok, V}`/`{error, E}`
+tuples on erlang/beam, a `[tag, payload]` heap pair on wasm).
+
 ## Type system at a glance
 
 `types.zig` defines a single `Type = union(enum) { … }`:

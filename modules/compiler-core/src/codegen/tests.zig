@@ -11,5 +11,6 @@ test {
     _ = @import("tests/js_dispatch.zig");
     _ = @import("tests/js_features.zig");
     _ = @import("tests/externals.zig");
+    _ = @import("tests/std_package.zig");
     _ = @import("tests/wat.zig");
 }

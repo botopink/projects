@@ -30,7 +30,11 @@ fn loadUser() {
     {move, {literal, <<"name missing">>}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
     {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, msg}, {x, 1}]}}.
-    {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, 3, 2}.
+    {put_tuple2, {x, 0}, {list, [{atom, error}, {x, 1}]}}.
+    {deallocate, 0}.
+    return.
 
 {function, fetchAge, 0, 5}.
   {label, 4}.
@@ -41,7 +45,11 @@ fn loadUser() {
     {move, {literal, <<"age missing">>}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
     {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, msg}, {x, 1}]}}.
-    {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, 3, 2}.
+    {put_tuple2, {x, 0}, {list, [{atom, error}, {x, 1}]}}.
+    {deallocate, 0}.
+    return.
 
 {function, loadUser, 0, 7}.
   {label, 6}.

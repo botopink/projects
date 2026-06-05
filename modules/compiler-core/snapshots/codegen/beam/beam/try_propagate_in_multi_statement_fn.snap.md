@@ -30,7 +30,11 @@ fn pipeline() -> @Result<i32, IoError> {
     {move, {literal, <<"/data">>}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
     {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, path}, {x, 1}]}}.
-    {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, 3, 2}.
+    {put_tuple2, {x, 0}, {list, [{atom, error}, {x, 1}]}}.
+    {deallocate, 0}.
+    return.
 
 {function, step2, 1, 5}.
   {label, 4}.
@@ -41,7 +45,11 @@ fn pipeline() -> @Result<i32, IoError> {
     {move, {literal, <<"/out">>}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
     {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, path}, {x, 1}]}}.
-    {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
+    {move, {x, 0}, {x, 2}}.
+    {test_heap, 3, 3}.
+    {put_tuple2, {x, 0}, {list, [{atom, error}, {x, 2}]}}.
+    {deallocate, 0}.
+    return.
 
 {function, pipeline, 0, 7}.
   {label, 6}.
@@ -70,6 +78,9 @@ fn pipeline() -> @Result<i32, IoError> {
   {label, 11}.
     {move, {x, 0}, {y, 1}}.
     {move, {y, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, 3, 2}.
+    {put_tuple2, {x, 0}, {list, [{atom, ok}, {x, 1}]}}.
     {deallocate, 2}.
     return.
 ```

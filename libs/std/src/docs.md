@@ -17,7 +17,8 @@ src/
 ├── primitives.d.bp      ← numeric + bool interfaces
 ├── array.d.bp           ← generic Array<T> interface
 ├── string.d.bp          ← String interface methods
-└── builtins.d.bp        ← @typeOf / @sizeOf / @panic / @typeName / …
+├── builtins.d.bp        ← @typeOf / @sizeOf / @panic / @typeName / …
+└── bool.bp              ← `bool` std module (impl)
 ```
 
 ## `prelude.zig` shape (in compiler-core)
@@ -27,6 +28,7 @@ src/
 pub const primitives = @embedFile("primitives.d.bp");
 pub const array      = @embedFile("array.d.bp");
 pub const string     = @embedFile("string.d.bp");
+pub const bool_mod   = @embedFile("bool.bp");
 ```
 
 One `pub const` per `.bp`. Each name resolves through an anonymous import
@@ -41,6 +43,21 @@ because the `.bp` sources live outside the `std_prelude` module root.
 | `array.d.bp` | `interface Array<T>` — `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter`. |
 | `string.d.bp` | `interface String` — `len`, `split`, `to_upper`/`to_lower`, `contains`, `starts_with`, `ends_with`, `trim`/`trim_left`/`trim_right`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
 | `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`), and the `@Result` enum + the `@Result`/`@Option` method API docs (`map`/`flatMap`/`unwrapOr`/`isOk`/`isError`), plus the annotation builtin `external(target, module, symbol)` + `enum Target` (F1 — see the language reference `Annotations & external` section). |
+| `bool.bp` | `bool` module (first `"std"` package module, F2a mechanism) — `pub fn negate`, `nor`, `nand`, `exclusive_or`, `exclusive_nor` over `bool`; pure operators, compiles once for all backends. Imported via `import {bool} from "std"`; `bool.negate(x)` lowers to a per-module output (`out/std/bool.js` / remote `bool:negate/1`). |
+
+### `result` / `option` — builtin, not modules
+
+- **`result`** is a builtin namespace: `result.map(r, f)`, `result.then`,
+  `result.unwrap(r, fallback)`, `result.is_ok`, `result.is_error` — no import,
+  inference resolves it directly and the transform lowers to the same
+  `__bp_result_*` ops the method form (`r.map(f)`) uses; every backend emits
+  inline code. Runtime value is `{ ok: V } \| { error: E }` (JS) /
+  `{ok, V} \| {error, E}` (erlang/beam) — constructed only by `return`/`throw`
+  inside `-> @Result` fns.
+- **`option`** has no namespace: the optional surface is the `?T` syntax plus
+  the builtin methods (`x.map(f)`, `x.flatMap(f)`, `x.unwrapOr(d)`). JS-style
+  optional chaining (`a?.b`, `a?.[i]`, `f?.()`) is the planned ergonomic
+  surface (see the task spec).
 
 ## `@Result` / `@Option` methods
 

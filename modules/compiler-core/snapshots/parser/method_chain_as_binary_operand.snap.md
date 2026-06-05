@@ -106,7 +106,8 @@
                         }
                       }
                     },
-                    "mutable": false
+                    "mutable": false,
+                    "typeAnnotation": null
                   }
                 }
               }
