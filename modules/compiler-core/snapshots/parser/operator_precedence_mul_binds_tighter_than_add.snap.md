@@ -17,6 +17,7 @@
         "methods": [
           {
             "name": "run",
+            "annotations": [],
             "genericParams": [],
             "params": [],
             "returnType": null,

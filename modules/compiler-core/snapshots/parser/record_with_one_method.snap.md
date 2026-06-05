@@ -25,6 +25,7 @@
         "methods": [
           {
             "name": "show",
+            "annotations": [],
             "genericParams": [],
             "params": [
               {

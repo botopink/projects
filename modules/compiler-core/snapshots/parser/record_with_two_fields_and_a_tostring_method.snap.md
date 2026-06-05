@@ -32,6 +32,7 @@
         "methods": [
           {
             "name": "toString",
+            "annotations": [],
             "genericParams": [],
             "params": [
               {

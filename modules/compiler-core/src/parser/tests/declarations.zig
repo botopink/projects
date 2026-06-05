@@ -674,3 +674,16 @@ test "parser: Expr builtin type ---- composed type position" {
         \\}
     );
 }
+
+test "parser: interface with default method and external declare member" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\pub interface List<T> {
+        \\    default fn isEmpty(self: Self) -> bool {
+        \\        return self.length == 0;
+        \\    }
+        \\    @[external(erlang, "lists", "reverse"),
+        \\      external(node, "./bp_stdlib.mjs", "list_reverse")]
+        \\    declare fn reverse(self: Self) -> Array<T>;
+        \\}
+    );
+}

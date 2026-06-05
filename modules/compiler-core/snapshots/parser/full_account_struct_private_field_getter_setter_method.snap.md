@@ -164,6 +164,7 @@
           {
             "method": {
               "name": "deposit",
+              "annotations": [],
               "genericParams": [],
               "params": [
                 {

@@ -464,9 +464,18 @@ pub fn parseInterfaceBody(this: *This, alloc: std.mem.Allocator, name: []const u
             const typeName = (try this.consume(.identifier)).lexeme;
             trailingComma = this.match(.comma);
             try fields.append(alloc, .{ .name = fieldName, .typeName = typeName });
-        } else if (this.check(.default) or this.check(.@"fn")) {
+        } else if (this.check(.default) or this.check(.@"fn") or this.check(.declare) or
+            this.check(.hash) or (this.check(.at) and this.peekAt(1).kind == .leftSquareBracket))
+        {
+            // `default fn … { body }` (default method), `declare fn …;`
+            // (abstract/host-backed member), optionally preceded by an
+            // `@[external(…)]` annotation block.
+            const memberAnnotations = try this.parseAnnotations(alloc);
             const is_default = this.match(.default);
-            const method = try this.parseInterfaceMethod(alloc, is_default);
+            const is_declare = this.match(.declare);
+            var method = try this.parseInterfaceMethod(alloc, is_default);
+            method.annotations = memberAnnotations;
+            method.is_declare = is_declare;
             trailingComma = this.match(.comma);
             try methods.append(alloc, method);
         } else {

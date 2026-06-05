@@ -17,6 +17,7 @@
         "methods": [
           {
             "name": "draw",
+            "annotations": [],
             "genericParams": [],
             "params": [
               {

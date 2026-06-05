@@ -21,6 +21,7 @@
         "methods": [
           {
             "name": "size",
+            "annotations": [],
             "genericParams": [],
             "params": [],
             "returnType": {

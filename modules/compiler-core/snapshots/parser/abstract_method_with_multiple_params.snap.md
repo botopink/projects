@@ -17,6 +17,7 @@
         "methods": [
           {
             "name": "moveTo",
+            "annotations": [],
             "genericParams": [],
             "params": [
               {
