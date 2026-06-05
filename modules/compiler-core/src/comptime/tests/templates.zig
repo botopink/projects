@@ -293,3 +293,82 @@ test "comptime: template fn with expr param compiles through the pipeline" {
         \\""";
     );
 }
+
+// ── F6: call-site expansion ───────────────────────────────────────────────────
+
+test "template: bounded expansion is transparent to the caller (F6)" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\pub fn html(comptime template: expr string) -> expr string {
+        \\    return expr { ${template} };
+        \\}
+        \\val c = html """
+        \\<p>hi</p>
+        \\""";
+    );
+
+    // The call site types as the bound `string`, not `expr<string>` —
+    // splice + re-check happened during inference.
+    try std.testing.expectEqualStrings("string", env.lookup("c").?.deref().named.name);
+    try std.testing.expectEqual(@as(u32, 1), env.templateExpansions.count());
+}
+
+test "template: bare expr reveals the expansion's type per call site (F6)" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\pub fn answer() -> expr {
+        \\    return expr { 42 };
+        \\}
+        \\val n = answer();
+        \\val m = n + 1;
+    );
+
+    // `n` carries the expansion's own type — the bare `expr` revealed it,
+    // and `n + 1` typechecked against it.
+    try std.testing.expectEqualStrings("i32", env.lookup("n").?.deref().named.name);
+}
+
+test "template: value lifting ---- a constant is an expression (F6)" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\pub fn port() -> expr {
+        \\    return 8080;
+        \\}
+        \\val p = port();
+    );
+    try std.testing.expectEqualStrings("i32", env.lookup("p").?.deref().named.name);
+}
+
+test "infer error: splice bound violation at the call site (F6)" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\pub fn bad() -> expr i32 {
+        \\    return expr { "not an int" };
+        \\}
+        \\val d = bad();
+    );
+}
+
+test "infer error: template body not expandable by the V1 driver (F6)" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\pub fn hard(comptime t: expr string) -> expr string {
+        \\    val x = t.text();
+        \\    return t;
+        \\}
+        \\val c = hard "SELECT 1";
+    );
+}

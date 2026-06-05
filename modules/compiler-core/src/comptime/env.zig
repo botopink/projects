@@ -214,6 +214,13 @@ pub const Env = struct {
     /// Compiler-provided template method calls (`text`/`parts`/`lookup`/
     /// `fail`/`failAt`/`ref`) keyed by call loc; consumed by expansion (F6).
     templateLowerings: std.AutoHashMap(ast.Loc, TemplateOp),
+    /// Template functions (`-> expr [T]` return): name → declaration. Calls to
+    /// these are expanded at comptime (F6); the decls never reach codegen.
+    templateFns: std.StringHashMap(ast.FnDecl),
+    /// Call-site expansions: call loc → the expanded (untyped) expression that
+    /// replaces the call. Recorded by inference (post splice + re-check); the
+    /// transform pass rewrites the untyped AST from this map.
+    templateExpansions: std.AutoHashMap(ast.Loc, *const ast.Expr),
     /// V1 origin-scope snapshot of the module being inferred (top-level decls
     /// + imports); attached to every `expr` capture for `lookup` resolution.
     scopeSnapshot: ?*template.ScopeSnapshot = null,
@@ -264,6 +271,8 @@ pub const Env = struct {
             .fnExprParams = std.StringHashMap([]const ExprParamInfo).init(arena),
             .exprCaptures = std.AutoHashMap(ast.Loc, []const template.CapturedExpr).init(arena),
             .templateLowerings = std.AutoHashMap(ast.Loc, TemplateOp).init(arena),
+            .templateFns = std.StringHashMap(ast.FnDecl).init(arena),
+            .templateExpansions = std.AutoHashMap(ast.Loc, *const ast.Expr).init(arena),
             .nextId = 0,
             .nextTypeId = 0,
             .level = 0,
@@ -296,6 +305,8 @@ pub const Env = struct {
         self.fnExprParams.deinit();
         self.exprCaptures.deinit();
         self.templateLowerings.deinit();
+        self.templateFns.deinit();
+        self.templateExpansions.deinit();
         self.extensions.deinit();
         self.activations.deinit();
         var it = self.inherentMethods.valueIterator();

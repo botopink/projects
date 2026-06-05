@@ -301,6 +301,7 @@ pub fn compileTypesOnly(
                     std.StringHashMap([]const ast.TypedExpr).init(arena_alloc),
                     empty_vals,
                     &succ.env.method_lowerings,
+                    &succ.env.templateExpansions,
                 );
 
                 var type_ids = std.StringHashMap(usize).init(arena_alloc);
@@ -412,7 +413,7 @@ pub fn compile(
                     }
                 }
 
-                const transformed = try transform.transform(arena_alloc, succ.program, fn_decls, comptime_arrays, ct.comptime_vals, &succ.env.method_lowerings);
+                const transformed = try transform.transform(arena_alloc, succ.program, fn_decls, comptime_arrays, ct.comptime_vals, &succ.env.method_lowerings, &succ.env.templateExpansions);
 
                 var type_ids = std.StringHashMap(usize).init(arena_alloc);
                 for (succ.bindings) |b| {

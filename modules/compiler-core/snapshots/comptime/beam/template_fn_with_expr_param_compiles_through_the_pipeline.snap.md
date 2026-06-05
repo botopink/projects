@@ -33,16 +33,7 @@ val c = html """
     {
       "ast": "val",
       "indent": "c",
-      "return_type": "expr<string>",
-      "expr": {
-        "ast": "call",
-        "params": [
-          {
-            "value": "string"
-          }
-        ],
-        "return_type": "expr<string>"
-      }
+      "return_type": "string"
     }
   ]
 }

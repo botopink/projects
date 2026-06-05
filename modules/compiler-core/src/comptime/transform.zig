@@ -17,11 +17,17 @@ const envMod = @import("./env.zig");
 /// type-directed lowering, produced by inference.
 pub const MethodLowerings = std.AutoHashMap(ast.Loc, envMod.MethodLowering);
 
+/// Map of template-call sites (by source loc) to the expanded untyped
+/// expression that replaces the call, produced by inference (expr-templates F6).
+pub const TemplateExpansions = std.AutoHashMap(ast.Loc, *const ast.Expr);
+
 /// Aggregator: collects specialization info during scan/rewrite phases.
 const Aggregator = struct {
     spec_cache: specialize.SpecCache,
     /// Builtin `@Result`/`@Option` method lowerings keyed by call loc.
     method_lowerings: *const MethodLowerings,
+    /// Template-call expansions keyed by call loc (expr-templates F6).
+    template_expansions: *const TemplateExpansions,
     /// fn_name → total calls with comptime params found during rewrite.
     total_calls: std.StringHashMap(usize),
     /// fn_name → calls that were actually rewritten to specialized names.
@@ -31,10 +37,11 @@ const Aggregator = struct {
     /// val_name → ct_id mapping (e.g. "pi" → "ct_0")
     val_ct_map: std.StringHashMap([]const u8),
 
-    fn init(allocator: std.mem.Allocator, comptime_vals: std.StringHashMap([]const u8), method_lowerings: *const MethodLowerings) Aggregator {
+    fn init(allocator: std.mem.Allocator, comptime_vals: std.StringHashMap([]const u8), method_lowerings: *const MethodLowerings, template_expansions: *const TemplateExpansions) Aggregator {
         return .{
             .spec_cache = specialize.SpecCache.init(allocator),
             .method_lowerings = method_lowerings,
+            .template_expansions = template_expansions,
             .total_calls = std.StringHashMap(usize).init(allocator),
             .specialized_calls = std.StringHashMap(usize).init(allocator),
             .comptime_vals = comptime_vals,
@@ -88,8 +95,9 @@ pub fn transform(
     comptime_arrays: std.StringHashMap([]const ast.TypedExpr),
     comptime_vals: std.StringHashMap([]const u8),
     method_lowerings: *const MethodLowerings,
+    template_expansions: *const TemplateExpansions,
 ) !ast.Program {
-    var agg = Aggregator.init(allocator, comptime_vals, method_lowerings);
+    var agg = Aggregator.init(allocator, comptime_vals, method_lowerings, template_expansions);
     defer agg.deinit(allocator);
 
     // Phase 1: Scan and specialize.
@@ -174,6 +182,11 @@ pub fn transform(
             if (agg.isFullySpecialized(fn_decl.name)) {
                 // Skip — dead code.
                 continue;
+            }
+            // Template fns (`-> expr [T]`) are comptime-only: every call was
+            // expanded (or rejected) during inference — never emit them.
+            if (fn_decl.returnType) |rt| {
+                if (rt == .expr) continue;
             }
         }
         try filtered.append(allocator, decl);
@@ -401,6 +414,15 @@ fn tryLowerMethodCall(agg: *Aggregator, expr_ptr: *ast.Expr) ScanError!bool {
 }
 
 fn rewriteStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_arrays: std.StringHashMap([]const ast.TypedExpr), stmt: *ast.Stmt) ScanError!void {
+    // Template-call expansion (F6): substitute the expansion recorded by
+    // inference, then process the spliced code like ordinary AST.
+    if (stmt.expr == .call and stmt.expr.call.kind == .call) {
+        if (agg.template_expansions.get(stmt.expr.call.loc)) |expansion| {
+            stmt.expr = expansion.*;
+            rewriteExpr(agg, fn_decls, comptime_arrays, &stmt.expr) catch return ScanError.OutOfMemory;
+            return;
+        }
+    }
     switch (stmt.expr) {
         .call => |*c| switch (c.kind) {
             .call => {
@@ -450,6 +472,14 @@ fn rewriteStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
 }
 
 fn rewriteExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), comptime_arrays: std.StringHashMap([]const ast.TypedExpr), expr_ptr: *ast.Expr) ScanError!void {
+    // Template-call expansion (F6): substitute the expansion recorded by
+    // inference, then fall through so the spliced code is rewritten like
+    // ordinary AST (string templates desugar, inner calls lower, …).
+    if (expr_ptr.* == .call and expr_ptr.call.kind == .call) {
+        if (agg.template_expansions.get(expr_ptr.call.loc)) |expansion| {
+            expr_ptr.* = expansion.*;
+        }
+    }
     switch (expr_ptr.*) {
         .call => |*c| switch (c.kind) {
             .call => {
@@ -702,6 +732,11 @@ fn trySpecializeCall(
     args: []const ast.CallArg,
     comptime_arrays: std.StringHashMap([]const ast.TypedExpr),
 ) !bool {
+    // Template fns (`-> expr [T]`) are expanded at their call sites (F6),
+    // never specialized.
+    if (fn_decl.returnType) |rt| {
+        if (rt == .expr) return false;
+    }
     var has_comptime = false;
     for (fn_decl.params) |p| {
         if (p.modifier == .@"comptime") {

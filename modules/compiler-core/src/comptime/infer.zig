@@ -1153,6 +1153,11 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     if (exprParams.items.len > 0) {
         try env.registerExprParams(f.name, try exprParams.toOwnedSlice(env.arena));
     }
+    // A function returning `expr [T]` is a template function: its calls are
+    // expanded at comptime (F6) and the declaration never reaches codegen.
+    if (f.returnType) |rt| {
+        if (rt == .expr) try env.templateFns.put(f.name, f);
+    }
 
     return env.funcType(paramTypes, retType);
 }
@@ -1307,6 +1312,163 @@ fn captureExprArg(
         .loc = .{ .line = litLoc.line -| newlines, .col = litLoc.col },
         .modulePath = env.modulePath,
         .scope = env.scopeSnapshot,
+    };
+}
+
+// ── template call-site expansion (expr-templates F6, V1 driver) ───────────────
+
+/// Expand a call to a template function (`-> expr [T]`) at the call site.
+///
+/// The V1 driver expands bodies of the form `return E` where `E` is an
+/// identifier naming an `expr` parameter (the captured template is spliced
+/// in), an `expr { … }` literal whose single expression optionally is a
+/// `${param}` hole, or any splice-free expression (value lifting, rule 3 —
+/// a constant *is* an expression). Richer bodies (template methods, control
+/// flow) need the comptime evaluation runtime — F6-full, not this driver.
+///
+/// Splice + re-check (rule 4): the expansion is re-inferred in the *caller's*
+/// environment, then checked against a bounded return (`-> expr T`); a bare
+/// `-> expr` reveals the expansion's own structural type per call site. The
+/// expansion is recorded in `env.templateExpansions` (keyed by call loc) and
+/// substituted into the untyped AST by the transform pass — codegen never
+/// sees the call or the template function.
+fn expandTemplateCall(
+    env: *Env,
+    tfn: ast.FnDecl,
+    captures: []const template.CapturedExpr,
+    retType: *T.Type,
+    loc: ast.Loc,
+) InferError!TypedExpr {
+    const expansion = expandableBodyExpr(tfn, captures) orelse {
+        env.lastError = TypeError.custom(
+            "cannot expand this template function at compile time",
+            "The V1 expansion driver supports bodies of the form `return <expr param>`, `return expr { … }` (single expression, `${param}` holes), or a splice-free value. Template-method bodies (text/parts/lookup) require the comptime runtime (F6-full).",
+        ).withLoc(loc);
+        return error.TypeError;
+    };
+
+    // Splice + re-check in the caller's environment.
+    const typed = try inferExprTyped(env, expansion.*);
+
+    // Bounded `-> expr T`: verify the splice against the bound. A bare
+    // `-> expr` carries an unbound var shared by every call site of this fn —
+    // leave it untouched so each call reveals its own type independently.
+    const rDeref = retType.deref();
+    if (rDeref.* == .named and std.mem.eql(u8, rDeref.named.name, "expr") and rDeref.named.args.len == 1) {
+        const bound = rDeref.named.args[0];
+        if (bound.deref().* != .typeVar) {
+            try unifyAt(env, bound, typed.getType(), loc);
+        }
+    }
+
+    try env.templateExpansions.put(loc, expansion);
+    return typed;
+}
+
+/// The single expression a V1-expandable template body reduces to (with a
+/// whole-body `${param}` hole substituted by its capture), or null when the
+/// body is not V1-expandable.
+fn expandableBodyExpr(tfn: ast.FnDecl, captures: []const template.CapturedExpr) ?*const ast.Expr {
+    if (tfn.body.len != 1) return null;
+    const stmt = tfn.body[0];
+    if (stmt.expr != .jump) return null;
+    if (stmt.expr.jump.kind != .@"return") return null;
+    const ret = stmt.expr.jump.kind.@"return" orelse return null;
+
+    switch (ret.*) {
+        // `return expr { … }` — splice the quoted code.
+        .comptime_ => |ct| switch (ct.kind) {
+            .exprLiteral => |el| {
+                if (el.body.len != 1) return null;
+                return expandableQuotedExpr(&el.body[0].expr, captures);
+            },
+            else => return null,
+        },
+        // `return template` — identity: splice the captured literal.
+        .identifier => |id| {
+            if (id.kind != .ident) return null;
+            if (captureNodeFor(captures, id.kind.ident)) |node| return node;
+            // A library binding lifts as a reference (V1: same-module scope).
+            return ret;
+        },
+        // Anything splice-free lifts as written (constants are expressions).
+        else => return if (isV1SpliceFree(ret)) ret else null,
+    }
+}
+
+/// Resolve the inner expression of a quoted `expr { … }` body: a whole-body
+/// `${param}` hole substitutes its capture; otherwise the expression must be
+/// splice-free (partial substitution needs a deep copy — F6-full).
+fn expandableQuotedExpr(e: *const ast.Expr, captures: []const template.CapturedExpr) ?*const ast.Expr {
+    if (e.* == .comptime_ and e.comptime_.kind == .splice) {
+        const inner = e.comptime_.kind.splice;
+        if (inner.* == .identifier and inner.identifier.kind == .ident) {
+            return captureNodeFor(captures, inner.identifier.kind.ident);
+        }
+        return null;
+    }
+    return if (isV1SpliceFree(e)) e else null;
+}
+
+/// The captured argument bound to the `expr` parameter named `name`.
+fn captureNodeFor(captures: []const template.CapturedExpr, name: []const u8) ?*const ast.Expr {
+    for (captures) |cap| {
+        if (std.mem.eql(u8, cap.paramName, name)) return cap.node;
+    }
+    return null;
+}
+
+/// True when `e` contains no `${…}` splice and only V1-liftable forms
+/// (literals, identifiers, operators, calls, collections). Control flow is
+/// conservatively not expandable in the V1 driver.
+fn isV1SpliceFree(e: *const ast.Expr) bool {
+    return switch (e.*) {
+        .comptime_ => |ct| switch (ct.kind) {
+            .splice => false,
+            .exprLiteral => |el| blk: {
+                for (el.body) |*s| if (!isV1SpliceFree(&s.expr)) break :blk false;
+                break :blk true;
+            },
+            .comptimeExpr => |inner| isV1SpliceFree(inner),
+            else => false,
+        },
+        .literal => |lit| switch (lit.kind) {
+            .stringTemplate => |t| blk: {
+                for (t.parts) |p| switch (p) {
+                    .text => {},
+                    .expr => |hole| if (!isV1SpliceFree(hole)) break :blk false,
+                };
+                break :blk true;
+            },
+            else => true,
+        },
+        .identifier => |id| switch (id.kind) {
+            .identAccess => |ia| isV1SpliceFree(ia.receiver),
+            else => true,
+        },
+        .binaryOp => |b| isV1SpliceFree(b.lhs) and isV1SpliceFree(b.rhs),
+        .unaryOp => |u| isV1SpliceFree(u.expr),
+        .call => |c| switch (c.kind) {
+            .call => |cc| blk: {
+                if (cc.receiver) |r| if (!isV1SpliceFree(r)) break :blk false;
+                for (cc.args) |a| if (!isV1SpliceFree(a.value)) break :blk false;
+                break :blk true;
+            },
+            .pipeline => |p| isV1SpliceFree(p.lhs) and isV1SpliceFree(p.rhs),
+        },
+        .collection => |col| switch (col.kind) {
+            .grouped => |g| isV1SpliceFree(g),
+            .arrayLit => |al| blk: {
+                for (al.elems) |*elem| if (!isV1SpliceFree(elem)) break :blk false;
+                break :blk true;
+            },
+            .tupleLit => |tl| blk: {
+                for (tl.elems) |*elem| if (!isV1SpliceFree(elem)) break :blk false;
+                break :blk true;
+            },
+            else => false,
+        },
+        else => false,
     };
 }
 
@@ -2854,8 +3016,18 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                             };
                             try unifyAt(env, paramType, ta.value.getType(), ta.value.getLoc());
                         }
-                        if (captures.items.len > 0) {
-                            try env.exprCaptures.put(loc, try captures.toOwnedSlice(env.arena));
+                        const capturedSlice: []const template.CapturedExpr = if (captures.items.len > 0)
+                            try captures.toOwnedSlice(env.arena)
+                        else
+                            &.{};
+                        if (capturedSlice.len > 0) {
+                            try env.exprCaptures.put(loc, capturedSlice);
+                        }
+                        // Call-site expansion (F6): a call to a template fn
+                        // (`-> expr [T]`) is replaced by its expansion,
+                        // re-type-checked in the caller's environment.
+                        if (env.templateFns.get(call.callee)) |tfn| {
+                            return try expandTemplateCall(env, tfn, capturedSlice, f.ret, loc);
                         }
                         break :blk f.ret;
                     }
