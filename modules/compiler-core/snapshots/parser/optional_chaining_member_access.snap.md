@@ -29,6 +29,7 @@
       "fn": {
         "isPub": false,
         "isStarFn": false,
+        "isDeclare": false,
         "label": null,
         "name": "main",
         "docComment": null,

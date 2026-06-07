@@ -26,6 +26,7 @@
         "methods": [
           {
             "name": "label",
+            "annotations": [],
             "genericParams": [],
             "params": [
               {

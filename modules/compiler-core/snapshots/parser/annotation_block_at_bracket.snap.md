@@ -5,6 +5,7 @@
       "fn": {
         "isPub": true,
         "isStarFn": false,
+        "isDeclare": true,
         "label": null,
         "name": "length",
         "docComment": null,

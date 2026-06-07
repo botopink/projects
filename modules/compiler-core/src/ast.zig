@@ -995,6 +995,9 @@ pub const GenericParam = struct {
 /// If `body` is null the method is abstract (no default implementation).
 pub const InterfaceMethod = struct {
     name: []const u8,
+    /// `@[external(target, "module", "symbol")]` annotations on a `declare fn`
+    /// member — host-backed interface methods (per-target lowering).
+    annotations: []Annotation = &.{},
     /// Generic type parameters, e.g. `<T, R>`. Empty slice when not generic.
     genericParams: []GenericParam = &.{},
     params: []Param,
@@ -1004,10 +1007,13 @@ pub const InterfaceMethod = struct {
     /// true when declared with `default fn` in an interface body
     is_default: bool = false,
     /// true when declared with `declare fn` inside a struct/record/enum body
+    /// or an interface body (bodyless, typed from the signature)
     is_declare: bool = false,
     isPub: bool = false,
 
     pub fn deinit(this: *InterfaceMethod, allocator: std.mem.Allocator) void {
+        for (this.annotations) |*ann| ann.deinit(allocator);
+        if (this.annotations.len > 0) allocator.free(this.annotations);
         allocator.free(this.genericParams);
         for (this.params) |*p| p.deinit(allocator);
         allocator.free(this.params);
@@ -1410,6 +1416,9 @@ pub const FnDecl = struct {
     /// `*fn` ---- the return type implements `@Future<_>` or `@Iterator<_>`
     /// (async function / generator). Enables `await` and `yield` in the body.
     isStarFn: bool = false,
+    /// `declare fn` ---- a bodyless declaration typed from the signature alone.
+    /// Required for `@[external(…)]` FFI fns (the only valid annotated form).
+    isDeclare: bool = false,
     /// Optional generator label declared after the return type (`*fn f() -> @Iterator<T> :gen`),
     /// used to disambiguate `yield :label` from an enclosing loop's accumulator.
     label: ?[]const u8 = null,

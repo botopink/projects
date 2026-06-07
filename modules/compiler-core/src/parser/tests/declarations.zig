@@ -483,14 +483,14 @@ test "parser: annotation block ---- at bracket" {
     try h.assertParser(std.testing.allocator, @src(),
         \\@[external(erlang, "string", "length"),
         \\  external(node, "./gleam_stdlib.mjs", "string_length")]
-        \\pub fn length(s: string) -> i32
+        \\pub declare fn length(s: string) -> i32;
     );
 }
 
 test "parser: annotation block ---- external decl then next decl" {
     try h.assertParser(std.testing.allocator, @src(),
         \\@[external(erlang, "erlang", "abs")]
-        \\pub fn absolute_value(n: i32) -> i32
+        \\pub declare fn absolute_value(n: i32) -> i32;
         \\
         \\fn main() {
         \\    absolute_value(-5);
@@ -671,6 +671,19 @@ test "parser: Expr builtin type ---- composed type position" {
     try h.assertParser(std.testing.allocator, @src(),
         \\fn collect<T>(comptime first: ?@Expr<Element>) -> @Expr<T> {
         \\    @todo();
+        \\}
+    );
+}
+
+test "parser: interface with default method and external declare member" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\pub interface List<T> {
+        \\    default fn isEmpty(self: Self) -> bool {
+        \\        return self.length == 0;
+        \\    }
+        \\    @[external(erlang, "lists", "reverse"),
+        \\      external(node, "./bp_stdlib.mjs", "list_reverse")]
+        \\    declare fn reverse(self: Self) -> Array<T>;
         \\}
     );
 }

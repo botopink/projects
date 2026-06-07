@@ -16,6 +16,7 @@
           {
             "method": {
               "name": "deposit",
+              "annotations": [],
               "genericParams": [],
               "params": [
                 {
@@ -40,6 +41,7 @@
           {
             "method": {
               "name": "withdraw",
+              "annotations": [],
               "genericParams": [],
               "params": [
                 {

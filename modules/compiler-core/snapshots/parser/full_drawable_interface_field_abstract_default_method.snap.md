@@ -22,6 +22,7 @@
         "methods": [
           {
             "name": "draw",
+            "annotations": [],
             "genericParams": [],
             "params": [
               {
@@ -44,6 +45,7 @@
           },
           {
             "name": "log",
+            "annotations": [],
             "genericParams": [],
             "params": [
               {

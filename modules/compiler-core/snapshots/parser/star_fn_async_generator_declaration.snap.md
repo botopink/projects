@@ -5,6 +5,7 @@
       "fn": {
         "isPub": true,
         "isStarFn": true,
+        "isDeclare": false,
         "label": null,
         "name": "stream",
         "docComment": null,

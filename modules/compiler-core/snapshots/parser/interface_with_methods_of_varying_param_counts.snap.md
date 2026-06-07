@@ -17,6 +17,7 @@
         "methods": [
           {
             "name": "clear",
+            "annotations": [],
             "genericParams": [],
             "params": [
               {
@@ -39,6 +40,7 @@
           },
           {
             "name": "drawLine",
+            "annotations": [],
             "genericParams": [],
             "params": [
               {
@@ -83,6 +85,7 @@
           },
           {
             "name": "drawRect",
+            "annotations": [],
             "genericParams": [],
             "params": [
               {
