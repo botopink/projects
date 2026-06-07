@@ -57,8 +57,8 @@ comptime/
 | `render.zig` | Converts an evaluated comptime value into a target literal. |
 | `specialize.zig` | Pure AST specialization — unroll loops, fold static if/case. |
 | `transform.zig` | `Aggregator` — drives specialize + rewrite + inline + dead-code; lowers `@Result`/`@Option` method calls to `__bp_<domain>_<op>(…)` and `return`/`throw` in `*fn -> @Result` fns to `return __bp_ok(…)`/`return __bp_error(…)` (`tryLowerResultJump`). Walks `fn` AND `test { … }` decl bodies, including `assert` condition/message subexpressions (`.comptime_` stmt/expr arms) — lowerings inside test asserts apply like anywhere else. |
-| `template.zig` | `@Expr` template infrastructure: `CapturedExpr` (an argument bound to a `comptime p: @Expr<T>` param, captured unevaluated with provenance), `ScopeSnapshot` (V1 origin scope: caller's top-level decls + imports, serializable via `toJsonAlloc`), `contextJsonAlloc` (the full second-layer handle), and `mapSpanToLoc`/`failDiagnostic` (rustc-style `fail`/`failAt` diagnostics pointing inside the caller's `"""…"""`). |
-| `template_eval.zig` | F6-full slice 1: runs a non-V1 template body in the **node** eval runtime (host-side comptime, independent of the compile target). Captures become JS objects implementing the comptime surface (`text`/`parts`/`source`/`context`/`lookup`/`bindings`/`build`/`fail`/`failAt`) over the `contextJsonAlloc` handle; the body is emitted as plain JS via `commonJS.emitFnJs`; the script reports one protocol result — `code` (parse + splice), `value` (`@expr` lift → literal), `capture` (param pass-through), `fail` (template diagnostic), `error`. |
+| `template.zig` | `@Expr` template infrastructure: `CapturedExpr` (an argument bound to a `comptime p: @Expr<T>` param, captured unevaluated with provenance), `PlainArg` (a non-`@Expr` param that received a literal value at the call site — emitted as a plain JS binding in the eval script), `ScopeSnapshot` (V1 origin scope: caller's top-level decls + imports, serializable via `toJsonAlloc`), `contextJsonAlloc` (the full second-layer handle), and `mapSpanToLoc`/`failDiagnostic` (rustc-style `fail`/`failAt` diagnostics pointing inside the caller's `"""…"""`). `mapSpanToLoc` fallback for holed templates uses `capture.loc.line + span.line - 1` (span.line is 1-based, line 1 = opening `"""` line). |
+| `template_eval.zig` | F6-full: runs a non-V1 template body in the **node** eval runtime (host-side comptime, independent of the compile target). Captures become JS objects implementing the comptime surface (`text`/`parts`/`source`/`context`/`lookup`/`bindings`/`build`/`fail`/`failAt`) over the `contextJsonAlloc` handle; plain args are emitted as JS bindings before capture objects; params are passed in declaration order. The script reports one protocol result — `code` (parse + splice), `value` (`@expr` lift → literal), `capture` (param pass-through), `fail` (template diagnostic), `error`. Erlang evaluator parity (running bodies via erlang for erlang-only environments) is a recorded follow-up. |
 | `snapshot.zig` | Snapshot helpers. |
 | `tests.zig` | Barrel aggregating `tests/<feature>.zig`; harness in `tests/helpers.zig`. |
 
@@ -113,8 +113,12 @@ calls during inference. The V1 classifier reduces `return <@Expr param>`
 params — those go to the runtime), and `return @code("…")` by inspection;
 anything richer runs in the **eval runtime** (`template_eval.zig`) when
 `env.templateEval` is set — `comptime.zig` provides it in the full `compile`
-pipeline only (tooling/LSP keeps the V1 error). Runtime expansions are
-memoized by callee + capture texts (`env.templateEvalCache`). Either way the
+pipeline only (tooling/LSP keeps the V1 error). Mixed signatures: non-`@Expr`
+params must receive literal values; `literalToJsAlloc` serializes them as JS;
+`expandTemplateCallViaRuntime` verifies `captures.len + plainArgs.len == tfn.params.len`.
+Runtime expansions are memoized by callee + capture texts + scope JSON +
+plain arg values (`env.templateEvalCache`); scope JSON detects binding changes
+between builds; holed captures remain non-memoized. Either way the
 expansion is re-inferred in the caller's env (splice + re-check), unified
 against a concrete `-> @Expr<T>` bound (an unconstrained generic `T` reveals
 the type per call site), and recorded in `env.templateExpansions`

@@ -1546,6 +1546,7 @@ fn expandTemplateCall(
     env: *Env,
     tfn: ast.FnDecl,
     captures: []const template.CapturedExpr,
+    plainArgs: []const template.PlainArg,
     retType: *T.Type,
     loc: ast.Loc,
 ) InferError!TypedExpr {
@@ -1553,7 +1554,7 @@ fn expandTemplateCall(
         // Not reducible by inspection — run the body in the eval runtime
         // (F6-full). Tooling paths carry no eval context and keep the error.
         if (env.templateEval != null) {
-            return expandTemplateCallViaRuntime(env, tfn, captures, retType, loc);
+            return expandTemplateCallViaRuntime(env, tfn, captures, plainArgs, retType, loc);
         }
         env.lastError = TypeError.custom(
             "cannot expand this template function at compile time",
@@ -1603,21 +1604,26 @@ fn expandTemplateCallViaRuntime(
     env: *Env,
     tfn: ast.FnDecl,
     captures: []const template.CapturedExpr,
+    plainArgs: []const template.PlainArg,
     retType: *T.Type,
     loc: ast.Loc,
 ) InferError!TypedExpr {
     const ctx = env.templateEval.?;
 
-    if (captures.len != tfn.params.len) {
+    // All params must be accounted for: each is either an @Expr capture or a
+    // plain-arg literal. Runtime params (no value at compile time) are rejected.
+    if (captures.len + plainArgs.len != tfn.params.len) {
         env.lastError = TypeError.custom(
-            "a template function can only take `@Expr` parameters (V1)",
-            "Runtime parameters have no value at compile time — capture everything the template needs as `comptime p: @Expr<…>`.",
+            "template function has parameters without compile-time values (V1)",
+            "Every parameter must be either `comptime p: @Expr<T>` or receive a literal value at the call site.",
         ).withLoc(loc);
         return error.TypeError;
     }
-    // Memoize by callee + capture texts — hole-free captures only: a holed
-    // template's expansion embeds the call site's own hole expressions, so
-    // equal text parts at two sites would alias the wrong holes.
+    // Memoize by callee + capture texts + scope JSON + plain arg values —
+    // hole-free captures only: a holed template's expansion embeds the call
+    // site's own hole expressions, so equal text parts at two sites would alias
+    // the wrong holes. Scope JSON catches scope-change invalidation (a binding
+    // added/removed between builds).
     var holed = false;
     for (captures) |cap| {
         if (cap.text == null) holed = true;
@@ -1628,6 +1634,17 @@ fn expandTemplateCallViaRuntime(
         for (captures) |cap| {
             buf.append(env.arena, 0) catch return error.OutOfMemory;
             buf.appendSlice(env.arena, cap.text.?) catch return error.OutOfMemory;
+            if (cap.scope) |scope| {
+                buf.append(env.arena, 0) catch return error.OutOfMemory;
+                const scopeJson = scope.toJsonAlloc(env.arena) catch return error.OutOfMemory;
+                buf.appendSlice(env.arena, scopeJson) catch return error.OutOfMemory;
+            }
+        }
+        for (plainArgs) |pa| {
+            buf.append(env.arena, 0) catch return error.OutOfMemory;
+            buf.appendSlice(env.arena, pa.paramName) catch return error.OutOfMemory;
+            buf.append(env.arena, 1) catch return error.OutOfMemory;
+            buf.appendSlice(env.arena, pa.jsValue) catch return error.OutOfMemory;
         }
         break :blk buf.toOwnedSlice(env.arena) catch return error.OutOfMemory;
     };
@@ -1637,7 +1654,7 @@ fn expandTemplateCallViaRuntime(
         }
     }
 
-    const outcome = templateEval.evaluate(env.arena, ctx.io, ctx.build_root, tfn, captures) catch {
+    const outcome = templateEval.evaluate(env.arena, ctx.io, ctx.build_root, tfn, captures, plainArgs) catch {
         env.lastError = TypeError.custom(
             "the template evaluator failed to run",
             "Template bodies are evaluated by the node runtime at compile time — check that `node` is available.",
@@ -1891,6 +1908,34 @@ fn parseCodeText(env: *Env, src: []const u8) ?*const ast.Expr {
     node.* = p.parseExpr(env.arena) catch return null;
     if (!p.check(.endOfFile)) return null;
     return node;
+}
+
+/// Serialize a literal (or bool-identifier) expression as a JS value string for
+/// a plain arg binding in the template evaluator script. Returns null when the
+/// expression is not a supported constant (string, number, null, true/false).
+fn literalToJsAlloc(arena: std.mem.Allocator, expr: *const ast.Expr) error{OutOfMemory}!?[]const u8 {
+    // Booleans are identifiers in the AST (not literal nodes).
+    if (expr.* == .identifier) {
+        const name = switch (expr.identifier.kind) {
+            .ident => |n| n,
+            else => return null,
+        };
+        if (std.mem.eql(u8, name, "true")) return "true";
+        if (std.mem.eql(u8, name, "false")) return "false";
+        return null;
+    }
+    if (expr.* != .literal) return null;
+    return switch (expr.literal.kind) {
+        .stringLit => |s| blk: {
+            var buf: std.ArrayList(u8) = .empty;
+            try template.appendJsonString(&buf, arena, s);
+            break :blk try buf.toOwnedSlice(arena);
+        },
+        // numberLit is stored as raw source text — valid JS numeric literal.
+        .numberLit => |n| try std.fmt.allocPrint(arena, "{s}", .{n}),
+        .null_ => "null",
+        else => null,
+    };
 }
 
 /// The captured argument bound to the `@Expr` parameter named `name`.
@@ -3855,7 +3900,11 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                             env.lastError = TypeError.arityMismatch(call.callee, f.params.len, call.args.len).withLoc(loc);
                             return error.TypeError;
                         }
+                        // Look up the template fn before the loop so non-@Expr
+                        // params can also be collected as plain arg bindings.
+                        const maybeTfn: ?ast.FnDecl = env.templateFns.get(call.callee);
                         var captures: std.ArrayListUnmanaged(template.CapturedExpr) = .empty;
+                        var plainArgs: std.ArrayListUnmanaged(template.PlainArg) = .empty;
                         for (typedArgs, f.params, 0..) |ta, paramType, i| {
                             if (typeparams) |constraints| if (isTypeparamIndex(constraints, i)) continue;
                             if (exprParams) |eps| if (exprParamAt(eps, i)) |ep| {
@@ -3863,19 +3912,37 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                                 continue;
                             };
                             try unifyAt(env, paramType, ta.value.getType(), ta.value.getLoc());
+                            // For template fns: collect the arg value as a JS literal.
+                            if (maybeTfn != null and i < maybeTfn.?.params.len) {
+                                const jsVal = try literalToJsAlloc(env.arena, call.args[i].value) orelse {
+                                    env.lastError = TypeError.custom(
+                                        "non-`@Expr` parameter of a template function must receive a literal value at the call site",
+                                        "Pass a string, integer, or boolean literal directly; runtime values have no compile-time meaning (V1).",
+                                    ).withLoc(ta.value.getLoc());
+                                    return error.TypeError;
+                                };
+                                try plainArgs.append(env.arena, .{
+                                    .paramName = maybeTfn.?.params[i].name,
+                                    .jsValue = jsVal,
+                                });
+                            }
                         }
                         const capturedSlice: []const template.CapturedExpr = if (captures.items.len > 0)
                             try captures.toOwnedSlice(env.arena)
+                        else
+                            &.{};
+                        const plainSlice: []const template.PlainArg = if (plainArgs.items.len > 0)
+                            try plainArgs.toOwnedSlice(env.arena)
                         else
                             &.{};
                         if (capturedSlice.len > 0) {
                             try env.exprCaptures.put(loc, capturedSlice);
                         }
                         // Call-site expansion (F6): a call to a template fn
-                        // (`-> expr [T]`) is replaced by its expansion,
+                        // (`-> @Expr<T>`) is replaced by its expansion,
                         // re-type-checked in the caller's environment.
-                        if (env.templateFns.get(call.callee)) |tfn| {
-                            return try expandTemplateCall(env, tfn, capturedSlice, f.ret, loc);
+                        if (maybeTfn) |tfn| {
+                            return try expandTemplateCall(env, tfn, capturedSlice, plainSlice, f.ret, loc);
                         }
                         break :blk f.ret;
                     }

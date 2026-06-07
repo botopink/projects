@@ -524,3 +524,81 @@ test "comptime: yaml model ---- static record lift reveals the structure (V1 dri
     try std.testing.expectEqualStrings("i32", env.lookup("p").?.deref().named.name);
     try std.testing.expectEqualStrings("bool", env.lookup("d").?.deref().named.name);
 }
+
+// ── mixed signatures ──────────────────────────────────────────────────────────
+
+test "template: mixed signature ---- plain string literal arg is collected alongside capture" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    // V1 driver can expand a pass-through even with a plain arg present.
+    try inferInto(&env, alloc,
+        \\pub fn wrap(comptime template: @Expr<string>, prefix: string) -> @Expr<string> {
+        \\    return template;
+        \\}
+        \\val c = wrap("hello", "pre:");
+    );
+    // The expansion replaces the call with the capture node (the string "hello").
+    const exp = env.templateExpansions.get(.{ .line = 4, .col = 9 });
+    try std.testing.expect(exp != null);
+}
+
+test "template: mixed signature ---- number literal arg is accepted" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\pub fn port<T>(comptime template: @Expr<string>, base: i32) -> @Expr<T> {
+        \\    return template;
+        \\}
+        \\val c = port("8080", 80);
+    );
+    const exp = env.templateExpansions.get(.{ .line = 4, .col = 9 });
+    try std.testing.expect(exp != null);
+}
+
+test "infer error: non-@Expr template param must receive a literal (V1)" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\pub fn wrap(comptime template: @Expr<string>, prefix: string) -> @Expr<string> {
+        \\    return template;
+        \\}
+        \\val p = "pre:";
+        \\val c = wrap("hello", p);
+    );
+}
+
+// ── hole loc mapping ─────────────────────────────────────────────────────────
+
+test "template: holed fallback span ---- hole on first non-opening line maps correctly" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    const src =
+        \\pub fn html(comptime template: @Expr<string>) -> @Expr<string> {
+        \\    return template;
+        \\}
+        \\val name = "world";
+        \\val c = html """
+        \\<p>${name}</p>
+        \\""";
+    ;
+    try inferInto(&env, alloc, src);
+
+    const captures = try onlyCaptures(&env);
+    const cap = &captures[0];
+    try std.testing.expect(cap.text == null); // has holes
+
+    // The hole is on the second template line (1-based = line 2 in the template);
+    // capture.loc.line = 5 (opening `"""`), so the expected source line is 5+2-1 = 6.
+    const loc = template.mapSpanToLoc(cap, .{ .start = 0, .end = 0, .line = 2 });
+    try std.testing.expectEqual(@as(usize, 6), loc.line);
+}

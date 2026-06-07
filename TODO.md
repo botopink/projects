@@ -123,10 +123,9 @@
       construction; cross-module two-scope proof lands with F6 expansion);
       splice requires an `expr U` operand and types as `U`; splice outside a
       literal → custom TypeError (`env.exprLiteralDepth`)
-- [ ] Value lifting: comptime value of `T` coerces to `expr T` — DEFERRED to
-      F6: pre-expansion there is no unification point (fn returns are not
-      unified against declared types today), so lifting is an expansion-time
-      coercion, not a type rule
+- [x] Value lifting: implemented in F8 as explicit `@expr(value)` builtin;
+      implicit coercion was superseded — the design decision was settled: no
+      implicit lifting, all construction explicit
 - [x] `Binding.ref()` splices inside literals typecheck (`expr { ${b.ref()} }`);
       actual reference splicing into the caller's scope is the F6 expansion
 - [x] Codegen ×2 (commonJS, erlang): `.exprLiteral/.splice => unreachable`
@@ -199,11 +198,24 @@
       (pre-existing, harness-wide): multi-module RUN executes nothing — the
       JS import emits a bare `require("jhonstart")` specifier (no ./), so
       cross-module runs crash at require time (separate fix)
-- [ ] F6-full remaining: runtime params / mixed signatures, erlang evaluator
-      parity, hole loc mapping (slice-relative)
-- [ ] Memoize by hash(template text + used-binding signatures) — V1 expansion
-      is pure substitution (loc-keying dedupes per site); memoization becomes
-      meaningful with the runtime-backed evaluator
+- [x] F6-full: mixed signatures — template fns with non-`@Expr` comptime params
+      now collect plain arg literal values (`literalToJsAlloc`) alongside `@Expr`
+      captures; `buildScript` emits them as JS bindings before capture objects;
+      call passes params in declaration order; non-literal arg → `TypeError` with
+      location pointing at the argument (`non_expr_template_param_must_receive_a_literal_v1`
+      snap). Tests: plain-string, number, error snap.
+- [x] F6-full: hole loc mapping (slice-relative) — `mapSpanToLoc` fallback for
+      holed templates corrected from `capture.loc.line + span.line` to
+      `capture.loc.line + span.line -| 1`; `span.line` is 1-based (1 = opening
+      `"""` line) so the previous formula was off by 1. Test:
+      `holed fallback span ---- hole on first non-opening line maps correctly`.
+- [x] F6-full: memoize by hash(template text + used-binding signatures) — key now
+      includes scope snapshot JSON per capture (detects added/removed bindings
+      between builds) and plain arg values. Hole-free captures continue to memoize;
+      holed captures remain non-memoized (holes alias to call-site expressions).
+      NOTE: erlang evaluator parity (running template bodies via erlang instead of
+      node for erlang-only environments) is a recorded follow-up — all comptime
+      evaluation uses the node runtime today (comment in template_eval.zig).
 - [x] End-to-end codegen snapshots: `codegen/*/template_end_to_end_*` ×4
       backends ×2 (bounded html expansion — runs, prints `<p>world</p>`;
       bare + lifting `port() + 1`); typed-AST pipeline snaps ×4 regenerated
@@ -219,8 +231,8 @@
       main.bp, the user's canonical example verbatim: cross-module import,
       `\\` line-string template, `${name}` hole, component imports); the
       working pipeline is locked by the mirroring codegen e2e tests
-- [ ] `examples/yamlconf/` — `yaml` config lib + structural-fit demo — BLOCKED
-      on F6-full (needs comptime yaml parsing + anonymous record lifting)
+- [x] `examples/yamlconf/` — `yaml` config lib + structural-fit demo — landed
+      in F10 (anonymous record literals) as `examples/yamlconf/` showcase
 - [x] docs.md (language reference): new `String Interpolation` and
       `Expr Templates` sections — meta-kinds, tagged calls, capture rule,
       `std.syntax` surface, `expr { … }`/splices, expansion (bounded/bare/

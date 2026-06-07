@@ -192,6 +192,18 @@ pub fn contextJsonAlloc(capture: *const CapturedExpr, allocator: std.mem.Allocat
     return buf.toOwnedSlice(allocator);
 }
 
+// ── plain comptime arguments ──────────────────────────────────────────────────
+
+/// A non-`@Expr` parameter in a template function that received a literal value
+/// at the call site. Serialized as a plain JS binding in the eval script so the
+/// template body can use it alongside the `@Expr` capture objects.
+pub const PlainArg = struct {
+    /// Name of the parameter as declared in the template function.
+    paramName: []const u8,
+    /// The argument's value as a JS literal expression (e.g. `"42"`, `"\"hi\""`, `"true"`).
+    jsValue: []const u8,
+};
+
 // ── span mapping + diagnostics ────────────────────────────────────────────────
 
 /// A template-relative span (the Zig-side shape of `std.syntax.Span`):
@@ -227,7 +239,9 @@ pub fn mapSpanToLoc(capture: *const CapturedExpr, span: Span) ast.Loc {
         return .{ .line = capture.loc.line + line, .col = upto - lineStart + 1 };
     }
     // Holes present — line-based fallback.
-    if (capture.multiline) return .{ .line = capture.loc.line + span.line, .col = 1 };
+    // `span.line` is 1-based (line 1 = the opening `"""` line); subtract 1 so
+    // line 1 maps to capture.loc.line and line N maps to capture.loc.line + N-1.
+    if (capture.multiline) return .{ .line = capture.loc.line + span.line -| 1, .col = 1 };
     return .{ .line = capture.loc.line, .col = capture.loc.col };
 }
 

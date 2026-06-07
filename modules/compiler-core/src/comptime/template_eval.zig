@@ -135,12 +135,19 @@ fn buildScript(
     arena: std.mem.Allocator,
     tfn: ast.FnDecl,
     captures: []const template.CapturedExpr,
+    plainArgs: []const template.PlainArg,
 ) ![]u8 {
     var aw: std.Io.Writer.Allocating = .init(arena);
     defer aw.deinit();
     const bw = &aw.writer;
 
     try bw.writeAll(prelude);
+
+    // Plain comptime arg bindings (non-@Expr params with literal values) — emitted
+    // before capture objects so the body can reference them freely.
+    for (plainArgs) |pa| {
+        try bw.print("const {s} = {s};\n", .{ pa.paramName, pa.jsValue });
+    }
 
     // One capture object per `@Expr` parameter, bound to the param's name.
     for (captures) |*cap| {
@@ -157,11 +164,12 @@ fn buildScript(
     try commonJS.emitFnJs(arena, bw, tfn);
     try bw.writeAll("\n");
 
-    // Call it and report the protocol result.
+    // Call it with params in declaration order — each param name is already
+    // bound to either a capture object or a plain arg value above.
     try bw.print("let __r;\ntry {{\n    const r = {s}(", .{tfn.name});
-    for (captures, 0..) |cap, i| {
+    for (tfn.params, 0..) |p, i| {
         if (i > 0) try bw.writeAll(", ");
-        try bw.writeAll(cap.paramName);
+        try bw.writeAll(p.name);
     }
     try bw.writeAll(
         \\);
@@ -251,17 +259,19 @@ fn jsonUsize(v: ?std.json.Value) ?usize {
 
 // ── entry point ───────────────────────────────────────────────────────────────
 
-/// Run `tfn` with `captures` in the node eval runtime. Everything in the
-/// returned `Outcome` is allocated in `arena` (same lifetime as the
-/// type-check session). The script lands in `<build_root>/template/<fn>/`.
+/// Run `tfn` with `captures` (and optional `plainArgs` for non-`@Expr` params)
+/// in the node eval runtime. Everything in the returned `Outcome` is allocated
+/// in `arena` (same lifetime as the type-check session). The script lands in
+/// `<build_root>/template/<fn>/`.
 pub fn evaluate(
     arena: std.mem.Allocator,
     io: std.Io,
     build_root: []const u8,
     tfn: ast.FnDecl,
     captures: []const template.CapturedExpr,
+    plainArgs: []const template.PlainArg,
 ) EvalError!Outcome {
-    const script = buildScript(arena, tfn, captures) catch return error.EvalFailed;
+    const script = buildScript(arena, tfn, captures, plainArgs) catch return error.EvalFailed;
 
     var dir_buf: [512]u8 = undefined;
     const tmp_dir = std.fmt.bufPrint(&dir_buf, "{s}/template/{s}", .{ build_root, tfn.name }) catch return error.EvalFailed;
