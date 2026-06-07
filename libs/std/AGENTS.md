@@ -37,18 +37,18 @@ std/
 │   ├── function.bp        ← `function` std module (`identity`/`compose`/`flip`/`constant`)
 │   ├── io.d.bp            ← `io` std module (decl — `#[@external]` backed)
 │   ├── string_builder.bp  ← `string_builder` std module (`pub record StringBuilder`)
-│   └── queue.bp           ← `queue` std module (`pub record Queue<T>`, FIFO)
-└── test/              ← external tests (generic modules + builtins)
-    ├── array_test.bp      ← builtin Array<T> surface: join/reverse/indexOf/at/map/filter/slice
-    ├── option_test.bp     ← ?T builtin methods (map/flatMap/unwrapOr) + `?.` chaining
-    ├── result_test.bp     ← builtin result namespace: map/then/unwrap/isOk/isError
-    ├── pair_test.bp       ← pair module: of/first/second/swap/mapFirst/mapSecond
-    ├── list_test.bp       ← list module: fold/map/filter/range/append/prepend/flatten/all/any
-    ├── iterator_test.bp   ← iterator module: range/toList/fold/map/filter/take
-    ├── dict_test.bp       ← dict module: empty/insert/lookup/hasKey/delete/size/fold/merge/mapValues
-    ├── set_test.bp        ← sets module: empty/insert/contains/delete/fromList/union/intersection/difference
-    ├── function_test.bp   ← function module: identity/compose/flip/constant
-    └── queue_test.bp      ← queue module: empty/enqueue/peek/dequeue/toList/fromList
+│   ├── queue.bp           ← `queue` std module (`pub record Queue<T>`, FIFO)
+│   │                      — external test suites (generic modules + builtins), co-located:
+│   ├── array_test.bp      ← builtin Array<T> surface: join/reverse/indexOf/at/map/filter/slice
+│   ├── option_test.bp     ← ?T builtin methods (map/flatMap/unwrapOr) + `?.` chaining
+│   ├── result_test.bp     ← builtin result namespace: map/then/unwrap/isOk/isError
+│   ├── pair_test.bp       ← pair module: of/first/second/swap/mapFirst/mapSecond
+│   ├── list_test.bp       ← list module: fold/map/filter/range/append/prepend/flatten/all/any
+│   ├── iterator_test.bp   ← iterator module: range/toList/fold/map/filter/take
+│   ├── dict_test.bp       ← dict module: empty/insert/lookup/hasKey/delete/size/fold/merge/mapValues
+│   ├── set_test.bp        ← sets module: empty/insert/contains/delete/fromList/union/intersection/difference
+│   ├── function_test.bp   ← function module: identity/compose/flip/constant
+│   └── queue_test.bp      ← queue module: empty/enqueue/peek/dequeue/toList/fromList
 ```
 
 ## Source modules (src/)
@@ -72,9 +72,9 @@ std/
 | `string_builder.bp` | `pub record StringBuilder` (wraps `Array<string>`). `empty`, `append`, `prepend`, `toString`, `fromString`, `fromStrings`, `length`, `isEmpty`. |
 | `queue.bp` | `pub record Queue<T>` (FIFO, front at index 0). `empty`, `size`, `isEmpty`, `enqueue`, `dequeue` (returns `#(Queue<T>, ?T)`), `peek`, `toList`, `fromList`. O(n) enqueue (copy-on-write). |
 
-## Tests (test/)
+## Tests
 
-Run with:
+All tests live in `src/` — there is no separate `test/` directory. Run with:
 
 ```bash
 cd libs/std && botopink test            # all suites
@@ -86,7 +86,7 @@ botopink test --filter "array map"      # by name substring
 `order.bp`, `string.bp`. `*.d.bp` files are excluded from compilation.
 
 **Generic modules** (pair, list, iterator, dict, sets, function, queue) use
-external `*_test.bp` files in `test/` because `registerStdlib` processes
+external `*_test.bp` files (co-located in `src/`) because `registerStdlib` processes
 each module's source (including inline test blocks) with `.generic` type
 variables not yet instantiated — any call to a generic function inside an
 inline test block throws `TypeError.typeMismatch`, cascading to all

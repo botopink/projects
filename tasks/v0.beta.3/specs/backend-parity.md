@@ -13,13 +13,26 @@ Close the six open backend/stdlib gaps documented in `stdlib-gleam` known gaps
 deferred from `test-blocks`. These are independent of each other and can be
 tackled in any order — phase them by impact.
 
+**Live failures (found 2026-06-07 running `cd libs/std && botopink test` on
+commonJS)** — pre-existing on `feat`, not covered by `zig build test` snapshots:
+
+| Suite | Failure | Phase |
+|---|---|---|
+| `float` | `Error: Cannot find module 'Math'` — `#[@external(node, "Math", …)]` emits `require('Math')` instead of referencing the JS global | F7 |
+| `string` | `SyntaxError: Unexpected token 'with'` — param named `with` (reserved word) emitted verbatim; kills the whole module | F8 |
+| `sets` | `SyntaxError: Unexpected token 'delete'` — fn named `delete` (reserved word); kills the whole module | F8 |
+| `iterator` | 6/10 FAIL — `range`/`toList`/`fold`/`map`/`filter`/`take` all broken at runtime (gap is wider than `fromList`) | F0 |
+| `queue` | 3/7 FAIL — `head.unwrapOr is not a function` (runtime `?T` repr of `dequeue` tuple element) | F9 |
+
 ## Steps
 
-### F0 — `iterator.fromList` JS codegen (known gap #8)
+### F0 — Iterator JS codegen (known gap #8, widened)
 
 `*fn fromList<T>(xs: Array<T>) -> @Iterator<T>` currently emits `.map()` for the
 `loop (xs) { item -> yield item; }` body. This is wrong for non-Array iterables
 and also redundant for Array (`.map()` transforms; we want identity yield).
+The 2026-06-07 run shows the gap is wider: `range`/`toList`/`fold`/`map`/
+`filter`/`take` all fail at runtime on commonJS (`iterator_test.bp:29-56`).
 
 - [ ] In JS codegen, detect `*fn` bodies containing `loop (arr) { item -> yield item; }`
       pattern and emit a proper generator function that `yield*`s the array
@@ -105,6 +118,45 @@ an error — behavior is still deterministic, last one wins or first one wins).
       source file and emit `Diagnostic.warning` on duplicates
 - [ ] Snapshot: `comptime/duplicate_test_name_warning`
 
+### F7 — `#[@external(node, …)]` against JS globals
+
+`#[@external(node, "Math", "abs")]` lowers to `const Math = require('Math')` —
+but `Math` is a JS global, not a module. The whole `float` module crashes at
+load (`Cannot find module 'Math'`).
+
+- [ ] JS codegen: recognize global namespaces (`Math`, `console`, `JSON`,
+      `Number`, `Date`, …) and reference them directly instead of `require`-ing
+      (allowlist or a heuristic: `require` only for relative/package paths)
+- [ ] Snapshot: `codegen/node/external_global_math`
+- [ ] `float` inline tests go green under `botopink test`
+
+### F8 — JS reserved-word sanitization
+
+Identifiers that are JS reserved words are emitted verbatim and produce
+`SyntaxError`s that kill the entire module: `replace(s, pattern, with)` in
+`string.bp` (param `with`), `fn delete` in `sets.bp`/`dict.bp`.
+
+- [ ] JS codegen: rename reserved-word identifiers on emission (e.g. suffix
+      `_` → `with_`, `delete_`) for params, locals, and function names; keep
+      the mapping consistent across call sites and exports
+- [ ] Full reserved-word table (ES2015+: `with`, `delete`, `new`, `class`,
+      `default`, `in`, `of`, `var`, `let`, `enum`, …)
+- [ ] Snapshot: `codegen/node/reserved_word_identifiers`
+- [ ] `string` + `sets` suites go green under `botopink test`
+
+### F9 — `?T` runtime representation in tuple returns (queue)
+
+`queue.dequeue` returns `#(Queue<T>, ?T)`; calling `.unwrapOr` on the second
+element throws `head.unwrapOr is not a function` on commonJS — the option
+methods are not attached/dispatched on values that flow through tuples.
+
+- [ ] Trace how `?T` values get their method surface on commonJS (wrapper vs
+      bare value + static dispatch) and why tuple extraction loses it
+- [ ] Fix the lowering (likely method-call dispatch on the inferred `?T` type,
+      not on a runtime wrapper)
+- [ ] Snapshot: `codegen/node/option_method_on_tuple_element`
+- [ ] `queue` suite goes green under `botopink test`
+
 ## Test scenarios
 
 ```
@@ -116,6 +168,9 @@ codegen/erlang ---- optional_chain
 codegen/wasm ---- optional_chain
 codegen/wasm ---- test_runner_basic
 comptime ---- duplicate_test_name_warning
+codegen/node ---- external_global_math
+codegen/node ---- reserved_word_identifiers
+codegen/node ---- option_method_on_tuple_element
 ```
 
 ## Notes

@@ -1,6 +1,6 @@
 //// Tests for the builtin `Array<T>` interface (array.d.bp), run by
 //// `botopink test`. Covers the surface that lowers correctly on the
-//// commonJS target today — see libs/std/test/AGENTS.md for gaps.
+//// commonJS target today — see libs/std/AGENTS.md for gaps.
 
 test "array join" {
     val xs = ["a", "b", "c"];
