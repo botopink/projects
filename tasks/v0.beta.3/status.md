@@ -6,10 +6,10 @@
 
 | Spec | Header status | Branch `task/<slug>` | Worktree `.tasks/<slug>` | TODO.md |
 |---|---|---|---|---|
-| [generic-inference](specs/generic-inference.md) | pending | — | — | — |
+| [backend-parity](specs/backend-parity.md) | pending | merged | present | 0/30 done |
+| [generic-inference](specs/generic-inference.md) | pending | merged | present | 0/12 done |
 | [stdlib-interface](specs/stdlib-interface.md) | pending | — | — | — |
-| [backend-parity](specs/backend-parity.md) | pending | — | — | — |
-| [tooling-update](specs/tooling-update.md) | pending | — | — | — |
+| [tooling-update](specs/tooling-update.md) | pending | merged | present | 0/24 done |
 
 ## Notes
 
