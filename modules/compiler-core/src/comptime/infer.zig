@@ -2132,9 +2132,18 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             for (b.args, 0..) |a, i| {
                 args[i] = try resolveTypeRefInContext(env, a, genericMap);
             }
-            // The builtin `@Option<T>` is the canonical form of the optional type
-            // `?T` — normalise it so both share one representation (and one set of
-            // `.map` / `.flatMap` / `.unwrapOr` lowerings).
+            // `?T` is the ONLY optional spelling — optional is not a concrete
+            // type (user decision, 2026-06-06). The nominal forms `@Option<T>` /
+            // `@Optional<T>` are rejected with a pointed diagnostic; the stdlib
+            // `interface Option<T>` is the declarative reference for `?T`'s
+            // methods, not a type.
+            if (b.is_builtin and (std.mem.eql(u8, b.name, "Option") or std.mem.eql(u8, b.name, "Optional"))) {
+                env.lastError = TypeError.custom(
+                    "`@Option<T>` is not a type — the optional type is written `?T`",
+                    "Replace the annotation with `?T` (e.g. `?i32`).",
+                );
+                return error.TypeError;
+            }
             // `@Expr<T>` is encoded like `optional`/`array` — a named type with
             // one arg, so structural unification gives `@Expr<T> ~ @Expr<U>
             // iff T ~ U` for free. The generic parameter is mandatory; a type
@@ -2143,9 +2152,7 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             // `Array<T>` is the canonical spelling of the array type `T[]` —
             // normalise it so annotations unify with array-literal inference
             // (`[1, 2]` infers as named "array").
-            const name = if (b.is_builtin and std.mem.eql(u8, b.name, "Option"))
-                "optional"
-            else if (std.mem.eql(u8, b.name, "Array"))
+            const name = if (std.mem.eql(u8, b.name, "Array"))
                 "array"
             else
                 b.name;

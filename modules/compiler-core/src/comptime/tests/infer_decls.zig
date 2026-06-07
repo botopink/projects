@@ -413,3 +413,25 @@ test "infer: builtin result namespace ---- qualified calls typecheck" {
         \\}
     );
 }
+
+test "infer: @Option<T> is rejected ---- the optional type is ?T" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn takeOption(x: @Option<i32>) -> i32 {
+        \\    return x.unwrapOr(0);
+        \\}
+        \\fn main() {
+        \\    @print(takeOption(3));
+        \\}
+    );
+}
+
+test "infer: @Optional<T> is rejected ---- the optional type is ?T" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn takeOptional(x: @Optional<i32>) -> i32 {
+        \\    return x.unwrapOr(0);
+        \\}
+        \\fn main() {
+        \\    @print(takeOptional(3));
+        \\}
+    );
+}
