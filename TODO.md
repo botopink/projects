@@ -593,9 +593,11 @@ like `swap` (`Pair(first: p.second, …)`) unified `A := B` globally. Fixed:
       + `set_test.bp` (`insert`/`contains`, `union`, `intersection`)
 
 ## F6 — `int` + `float` (declarations + externals, via F1 `@[external(…)]`)
-- [ ] `int.d.bp`: `parse`, `to_float`, `to_string`, `absolute_value`, `min`, `max`, `clamp`, `power`, `is_even`
-- [ ] `float.d.bp`: `parse`, `round`, `floor`, `ceiling`, `truncate`, `to_string`, `power`, `square_root`
-- [ ] `libs/std/test/number_test.bp` (`int.parse`, `int.clamp`, `to_float`, `float.round`/`floor`)
+- [x] `int.bp`: `absoluteValue`, `min`, `max`, `clamp`, `isEven`, `isOdd`, `toString` — pure-botopink, no external needed
+- [x] `float.bp`: `absoluteValue`, `min`, `max`, `clamp`, `toString` — pure-botopink; `floor`, `ceiling`, `round`, `squareRoot` via `@[external(node, "Math", …)]`
+- [x] Registered in `std_pkg_modules` + `build.zig` + `prelude.zig`; 2 codegen snapshot tests
+- [ ] `libs/std/test/number_test.bp` (`int.clamp`, `float.round`/`floor`)
+- [ ] `parse` (string → ?i32 / ?f64) — needs a runtime helper to handle NaN → null mapping
 
 ## F7 — `string` (+ `string_builder`, via F1 `@[external(…)]`)
 - [ ] Extend `string.d.bp` to Gleam's surface: `length`, `reverse`, `replace`, `split`,

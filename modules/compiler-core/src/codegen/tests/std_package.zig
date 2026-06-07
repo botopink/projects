@@ -121,3 +121,37 @@ test "js: std package ---- pair record module qualified calls" {
         \\}
     );
 }
+
+test "js: std package ---- int module pure math helpers" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\import {int} from "std";
+        \\
+        \\fn main() {
+        \\    @print(int.absoluteValue(5));
+        \\    @print(int.min(3, 7));
+        \\    @print(int.max(3, 7));
+        \\    @print(int.clamp(10, 0, 5));
+        \\    @print(int.isEven(4));
+        \\    @print(int.isOdd(3));
+        \\    @print(int.toString(42));
+        \\}
+    );
+}
+
+test "js: std package ---- float module pure math helpers" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\import {float} from "std";
+        \\
+        \\fn main() {
+        \\    @print(float.absoluteValue(2.5));
+        \\    @print(float.min(1.5, 2.5));
+        \\    @print(float.max(1.5, 2.5));
+        \\    @print(float.clamp(3.0, 0.0, 5.0));
+        \\    @print(float.toString(3.14));
+        \\    @print(float.floor(2.9));
+        \\    @print(float.ceiling(2.1));
+        \\    @print(float.round(2.5));
+        \\    @print(float.squareRoot(9.0));
+        \\}
+    );
+}

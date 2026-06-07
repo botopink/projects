@@ -137,6 +137,8 @@ pub const std_pkg_modules = [_]Module{
     .{ .path = "std/pair", .source = @import("std_prelude").pair },
     .{ .path = "std/order", .source = @import("std_prelude").order },
     .{ .path = "std/list", .source = @import("std_prelude").list },
+    .{ .path = "std/int", .source = @import("std_prelude").int_mod },
+    .{ .path = "std/float", .source = @import("std_prelude").float_mod },
 };
 
 /// True when `path` is a "std" package registry key (`std/<module>`).

@@ -28,6 +28,8 @@ pub fn build(b: *std.Build) void {
         "pair.bp",
         "order.bp",
         "list.bp",
+        "int.bp",
+        "float.bp",
     };
     for (std_bp_files) |f| {
         std_prelude.addAnonymousImport(f, .{
