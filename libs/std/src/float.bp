@@ -18,20 +18,20 @@ pub fn clamp(n: f64, lo: f64, hi: f64) -> f64 {
     return min(max(n, lo), hi);
 }
 
-@[external(erlang, "math", "floor"),
-  external(node, "Math", "floor")]
+#[@external(erlang, "math", "floor"),
+  @external(node, "Math", "floor")]
 pub declare fn floor(n: f64) -> f64;
 
-@[external(erlang, "math", "ceil"),
-  external(node, "Math", "ceil")]
+#[@external(erlang, "math", "ceil"),
+  @external(node, "Math", "ceil")]
 pub declare fn ceiling(n: f64) -> f64;
 
-@[external(erlang, "math", "round"),
-  external(node, "Math", "round")]
+#[@external(erlang, "math", "round"),
+  @external(node, "Math", "round")]
 pub declare fn round(n: f64) -> f64;
 
-@[external(erlang, "math", "sqrt"),
-  external(node, "Math", "sqrt")]
+#[@external(erlang, "math", "sqrt"),
+  @external(node, "Math", "sqrt")]
 pub declare fn squareRoot(n: f64) -> f64;
 
 // NOTE: `toString` for floats — coerces via string concat.
