@@ -16,7 +16,7 @@ std/
 ├── AGENTS.md          ← you are here
 ├── docs.md            ← how the stdlib reaches the compiler + conventions
 ├── botopink.json      ← package metadata
-├── src/
+├── src/               ← .bp source modules (inline tests only in non-generic modules)
 │   ├── docs.md            ← registry + per-file roles
 │   ├── examples.md        ← stdlib usage in `.bp` (Array, String, builtins)
 │   ├── primitives.d.bp    ← numeric + bool interfaces
@@ -24,34 +24,31 @@ std/
 │   ├── string.d.bp        ← String interface methods
 │   ├── syntax.bp          ← std.syntax — `@Expr` template data model + interface Expr<E>
 │   ├── builtins.d.bp      ← @typeOf / @sizeOf / @panic / … (NOT embedded yet — see below)
-│   ├── bool.bp            ← `bool` std module
+│   ├── bool.bp            ← `bool` std module  ◀ inline tests (5 blocks)
 │   ├── pair.bp            ← `pair` std module
-│   ├── order.bp           ← `order` std module (`pub enum Order`)
+│   ├── order.bp           ← `order` std module (`pub enum Order`)  ◀ inline tests (3 blocks)
 │   ├── list.bp            ← `list` std module (over Array<T>)
-│   ├── int.bp             ← `int` std module
-│   ├── float.bp           ← `float` std module
-│   ├── string.bp          ← `string` std module
+│   ├── int.bp             ← `int` std module  ◀ inline tests (5 blocks)
+│   ├── float.bp           ← `float` std module  ◀ inline tests (4 blocks)
+│   ├── string.bp          ← `string` std module  ◀ inline tests (7 blocks)
 │   ├── iterator.bp        ← `iterator` std module (lazy `*fn` generators + eager higher-order ops)
 │   ├── dict.bp            ← `dict` std module (`pub record Dict<K,V>`)
 │   ├── sets.bp            ← `sets` std module (`pub record Set<T>`)
 │   ├── function.bp        ← `function` std module (`identity`/`compose`/`flip`/`constant`)
 │   ├── io.d.bp            ← `io` std module (decl — `#[@external]` backed)
 │   ├── string_builder.bp  ← `string_builder` std module (`pub record StringBuilder`)
-│   └── queue.bp           ← `queue` std module (`pub record Queue<T>`, FIFO; inline tests)
-└── test/
+│   └── queue.bp           ← `queue` std module (`pub record Queue<T>`, FIFO)
+└── test/              ← external tests (generic modules + builtins)
     ├── array_test.bp      ← builtin Array<T> surface: join/reverse/indexOf/at/map/filter/slice
-    ├── bool_test.bp       ← bool module: negate/nor/nand/exclusiveOr/exclusiveNor
     ├── option_test.bp     ← ?T builtin methods (map/flatMap/unwrapOr) + `?.` chaining
-    ├── order_test.bp      ← order module: lt/eq/gt, toInt, reverse, case over Order
-    ├── pair_test.bp       ← pair module: of/first/second/swap/mapFirst/mapSecond
     ├── result_test.bp     ← builtin result namespace: map/then/unwrap/isOk/isError
-    ├── string_test.bp     ← builtin String surface: split/length/trim/slice
+    ├── pair_test.bp       ← pair module: of/first/second/swap/mapFirst/mapSecond
     ├── list_test.bp       ← list module: fold/map/filter/range/append/prepend/flatten/all/any
-    ├── number_test.bp     ← int + float modules: absoluteValue/min/max/clamp/isEven/toString
     ├── iterator_test.bp   ← iterator module: range/toList/fold/map/filter/take
     ├── dict_test.bp       ← dict module: empty/insert/lookup/hasKey/delete/size/fold/merge/mapValues
     ├── set_test.bp        ← sets module: empty/insert/contains/delete/fromList/union/intersection/difference
-    └── function_test.bp   ← function module: identity/compose/flip/constant
+    ├── function_test.bp   ← function module: identity/compose/flip/constant
+    └── queue_test.bp      ← queue module: empty/enqueue/peek/dequeue/toList/fromList
 ```
 
 ## Source modules (src/)
@@ -84,14 +81,17 @@ cd libs/std && botopink test            # all suites
 botopink test --filter "array map"      # by name substring
 ```
 
-One `<module>_test.bp` per stdlib module, except modules that carry inline
-`test { … }` blocks directly in their `src/` file (Zig-style) — `queue.bp`
-does this. `*.d.bp` files are excluded from compilation. `"std"` package
-copies emitted for other projects never include test blocks.
+**Non-generic modules** carry inline `test { … }` blocks directly in their
+`src/` file (Zig-style co-location): `bool.bp`, `int.bp`, `float.bp`,
+`order.bp`, `string.bp`. `*.d.bp` files are excluded from compilation.
 
-Inline tests inside generic modules must constrain the type parameter via
-concrete literals in each block (e.g. `enqueue(empty(), 0)` to fix `T = i32`)
-— unconstrained generic calls in `registerStdlib` cause cascading type errors.
+**Generic modules** (pair, list, iterator, dict, sets, function, queue) use
+external `*_test.bp` files in `test/` because `registerStdlib` processes
+each module's source (including inline test blocks) with `.generic` type
+variables not yet instantiated — any call to a generic function inside an
+inline test block throws `TypeError.typeMismatch`, cascading to all
+`freshTestEnv` consumers. Non-generic modules are immune (their functions
+have no type variables), which is why inline tests work there.
 
 ### Coverage (commonJS target)
 

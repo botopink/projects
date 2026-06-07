@@ -72,6 +72,23 @@ test "inline: slice" {
     assert slice("hello", 1, 3) == "el";
 }
 
+test "string split and length" {
+    val s = "a,b";
+    val parts = s.split(",");
+    assert parts.length == 2;
+}
+
+test "string trim" {
+    val padded = "  hi  ";
+    assert padded.trim() == "hi";
+}
+
+test "string slice via method" {
+    val h = "hello";
+    assert h.slice(1, 3) == "el";
+    assert h.slice(0, 2) == "he";
+}
+
 ```
 
 ----- ERLANG -- std/string.erl
@@ -122,6 +139,9 @@ toLower(S) ->
 
 join(Parts, Sep) ->
     Parts:join(Sep).
+
+
+
 
 
 

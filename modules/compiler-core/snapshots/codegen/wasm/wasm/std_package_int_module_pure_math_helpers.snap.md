@@ -35,28 +35,34 @@ pub fn toString(n: i32) -> string {
     return "" + n;
 }
 
-test "inline: absoluteValue" {
+test "int absoluteValue" {
     assert absoluteValue(0) == 0;
-    assert absoluteValue(3) == 3;
+    assert absoluteValue(-5) == 5;
+    assert absoluteValue(5) == 5;
 }
 
-test "inline: min and max" {
-    assert min(2, 5) == 2;
-    assert max(2, 5) == 5;
+test "int min and max" {
+    assert min(3, 7) == 3;
+    assert max(3, 7) == 7;
+    assert min(-1, 0) == -1;
 }
 
-test "inline: clamp in range" {
+test "int clamp" {
     assert clamp(3, 0, 5) == 3;
+    assert clamp(-1, 0, 5) == 0;
+    assert clamp(10, 0, 5) == 5;
 }
 
-test "inline: isEven" {
+test "int isEven and isOdd" {
     assert isEven(4);
     assert !isEven(3);
-}
-
-test "inline: isOdd" {
     assert isOdd(7);
     assert !isOdd(8);
+}
+
+test "int toString" {
+    assert toString(42) == "42";
+    assert toString(0) == "0";
 }
 
 ```

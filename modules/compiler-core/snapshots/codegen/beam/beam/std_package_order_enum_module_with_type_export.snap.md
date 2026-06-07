@@ -41,6 +41,28 @@ pub fn reverse(o: Order) -> Order {
     return r;
 }
 
+test "order toInt" {
+    assert toInt(lt()) == -1;
+    assert toInt(eq()) == 0;
+    assert toInt(gt()) == 1;
+}
+
+test "order reverse" {
+    assert toInt(reverse(lt())) == 1;
+    assert toInt(reverse(gt())) == -1;
+    assert toInt(reverse(eq())) == 0;
+}
+
+test "order case over Order" {
+    val o = reverse(lt());
+    val s = case o {
+        Lt -> "less";
+        Gt -> "greater";
+        _ -> "equal";
+    };
+    assert s == "greater";
+}
+
 ```
 
 ----- BEAM ASSEMBLY -- std/order.S

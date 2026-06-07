@@ -41,13 +41,25 @@ pub fn toString(n: f64) -> string {
     return "" + n;
 }
 
-test "inline: absoluteValue of positive" {
-    assert absoluteValue(2.0) == 2.0;
+test "float absoluteValue" {
+    assert absoluteValue(0.0) == 0.0;
+    assert absoluteValue(-3.5) == 3.5;
+    assert absoluteValue(2.1) == 2.1;
 }
 
-test "inline: min and max" {
+test "float min and max" {
     assert min(1.5, 2.5) == 1.5;
     assert max(1.5, 2.5) == 2.5;
+}
+
+test "float clamp" {
+    assert clamp(3.0, 0.0, 5.0) == 3.0;
+    assert clamp(-1.0, 0.0, 5.0) == 0.0;
+    assert clamp(9.9, 0.0, 5.0) == 5.0;
+}
+
+test "float toString" {
+    assert toString(1.5) == "1.5";
 }
 
 ```

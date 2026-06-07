@@ -26,11 +26,29 @@ pub fn exclusiveNor(a: bool, b: bool) -> bool {
     return a == b;
 }
 
-// Zig-style co-located test (stdlib-tests F0: impl modules MAY carry inline
-// `test` blocks; excluded from normal builds, run by `botopink test`).
-test "inline: negate truth table" {
+test "bool negate" {
     assert negate(false);
-    assert !negate(true);
+    assert negate(negate(true));
+}
+
+test "bool nor" {
+    assert nor(false, false);
+    assert negate(nor(true, false));
+}
+
+test "bool nand" {
+    assert nand(true, false);
+    assert negate(nand(true, true));
+}
+
+test "bool exclusiveOr" {
+    assert exclusiveOr(true, false);
+    assert negate(exclusiveOr(true, true));
+}
+
+test "bool exclusiveNor" {
+    assert exclusiveNor(true, true);
+    assert negate(exclusiveNor(true, false));
 }
 
 ```
@@ -133,8 +151,6 @@ test "inline: negate truth table" {
   {label, 25}.
     {deallocate, 0}.
     return.
-% Zig-style co-located test (stdlib-tests F0: impl modules MAY carry inline
-% `test` blocks; excluded from normal builds, run by `botopink test`).
 ```
 
 ----- RUN LOG -----
