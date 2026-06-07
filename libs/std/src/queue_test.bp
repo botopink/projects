@@ -1,46 +1,47 @@
 //// Tests for the `queue` std module (queue.bp).
-//// Qualified calls via `import {queue} from "std"`.
+//// Method syntax via `import {queue} from "std"`; `empty`/`fromList` are
+//// static constructors, the rest are instance methods.
 
 import {queue} from "std";
 
 test "queue empty is empty" {
     val q = queue.empty();
-    assert queue.isEmpty(q);
-    assert queue.size(q) == 0;
+    assert q.isEmpty();
+    assert q.size() == 0;
 }
 
 test "queue enqueue increases size" {
-    val q = queue.enqueue(queue.empty(), 1);
-    assert queue.size(q) == 1;
-    assert !queue.isEmpty(q);
+    val q = queue.empty().enqueue(1);
+    assert q.size() == 1;
+    assert !q.isEmpty();
 }
 
 test "queue peek at front" {
-    val q = queue.enqueue(queue.enqueue(queue.empty(), 10), 20);
-    assert queue.peek(q).unwrapOr(-1) == 10;
+    val q = queue.empty().enqueue(10).enqueue(20);
+    assert q.peek().unwrapOr(-1) == 10;
 }
 
 test "queue dequeue returns front and rest" {
-    val q = queue.enqueue(queue.enqueue(queue.empty(), 1), 2);
-    val result = queue.dequeue(q);
+    val q = queue.empty().enqueue(1).enqueue(2);
+    val result = q.dequeue();
     val rest = result._0;
     val head = result._1;
     assert head.unwrapOr(-1) == 1;
-    assert queue.size(rest) == 1;
-    assert queue.peek(rest).unwrapOr(-1) == 2;
+    assert rest.size() == 1;
+    assert rest.peek().unwrapOr(-1) == 2;
 }
 
-test "queue dequeue empty returns null head" {
-    val result = queue.dequeue(queue.empty());
+test "queue dequeue empty yields no front item" {
+    val result = queue.empty().dequeue();
     val head = result._1;
-    assert head == null;
+    assert head.unwrapOr(-99) == -99;
 }
 
 test "queue fifo order preserved" {
-    val q = queue.enqueue(queue.enqueue(queue.enqueue(queue.empty(), 1), 2), 3);
-    val r1 = queue.dequeue(q);
-    val r2 = queue.dequeue(r1._0);
-    val r3 = queue.dequeue(r2._0);
+    val q = queue.empty().enqueue(1).enqueue(2).enqueue(3);
+    val r1 = q.dequeue();
+    val r2 = r1._0.dequeue();
+    val r3 = r2._0.dequeue();
     assert r1._1.unwrapOr(-1) == 1;
     assert r2._1.unwrapOr(-1) == 2;
     assert r3._1.unwrapOr(-1) == 3;
@@ -48,6 +49,6 @@ test "queue fifo order preserved" {
 
 test "queue fromList and toList round-trip" {
     val q = queue.fromList([10, 20, 30]);
-    assert queue.size(q) == 3;
-    assert queue.toList(q).join(",") == "10,20,30";
+    assert q.size() == 3;
+    assert q.toList().join(",") == "10,20,30";
 }

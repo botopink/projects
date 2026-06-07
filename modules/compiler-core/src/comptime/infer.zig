@@ -626,6 +626,63 @@ fn registerRecord(env: *Env, r: ast.RecordDecl) InferError!void {
     const retType = try env.namedTypeArgs(r.name, retArgs);
     const ctorType = try env.funcType(paramTypes, retType);
     try env.bind(r.name, ctorType);
+
+    // Inherent method signatures (self = the record instance type).
+    try registerInherentMethodTypes(env, r.name, retType, &genericMap, r.methods);
+}
+
+/// Resolve and store the signatures of a type's inherent methods so a later
+/// `recv.method(args)` call can recover the method's real return type (instead
+/// of a fresh var). `instanceType` is what `Self` resolves to — the type
+/// applied to its own generic cells; `typeGenerics` maps the type's generic
+/// param names to those cells. The stored signature is self-first:
+/// `fn(self: Instance, params…) -> Ret`. `makeMethodCall` instantiates it per
+/// call site, so the shared cells never collapse across calls.
+fn registerInherentMethodTypes(
+    env: *Env,
+    typeName: []const u8,
+    instanceType: *T.Type,
+    typeGenerics: *const std.StringHashMap(*T.Type),
+    methods: []const ast.InterfaceMethod,
+) InferError!void {
+    for (methods) |im| {
+        // Register the method NAME for dispatch. This runs from registerRecord/
+        // /Struct/Enum, so it also covers types brought in by `import … from
+        // "std"` (which `registerExtensions` never sees — it only scans the
+        // local program's decls).
+        try env.addInherentMethod(typeName, im.name);
+
+        // Only methods with an explicit return-type annotation get a stored
+        // signature. Without one the true return type comes from body inference
+        // (not available here), so we leave such calls to the fresh-var fallback
+        // rather than mis-typing them as `void`.
+        const retRef = im.returnType orelse continue;
+        // Per-method generic scope: the type's generics + `Self` + the method's
+        // own generic params (fresh vars).
+        var gm = std.StringHashMap(*T.Type).init(env.arena);
+        defer gm.deinit();
+        var git = typeGenerics.iterator();
+        while (git.next()) |e| try gm.put(e.key_ptr.*, e.value_ptr.*);
+        try gm.put("Self", instanceType);
+        for (im.genericParams) |gp| try gm.put(gp.name, try env.freshVar());
+
+        const params = try env.arena.alloc(*T.Type, im.params.len);
+        for (im.params, 0..) |p, i| {
+            params[i] = if (p.fnType) |ft| blk: {
+                const fparams = try env.arena.alloc(*T.Type, ft.params.len);
+                for (ft.params, 0..) |fp, j| {
+                    fparams[j] = gm.get(fp.typeName) orelse try env.namedType(fp.typeName);
+                }
+                const fret = if (ft.returnType) |rn|
+                    gm.get(rn) orelse try env.namedType(rn)
+                else
+                    try env.namedType("void");
+                break :blk try env.funcType(fparams, fret);
+            } else try resolveTypeRefInContext(env, p.typeRef, gm);
+        }
+        const ret = try resolveTypeRefInContext(env, retRef, gm);
+        try env.setInherentMethodType(typeName, im.name, try env.funcType(params, ret));
+    }
 }
 
 fn registerStruct(env: *Env, s: ast.StructDecl) InferError!void {
@@ -675,6 +732,16 @@ fn registerStruct(env: *Env, s: ast.StructDecl) InferError!void {
     const retType = try env.namedType(s.name);
     const ctorType = try env.funcType(paramTypes, retType);
     try env.bind(s.name, ctorType);
+
+    // Inherent method signatures (self = the struct instance, bare name to
+    // match the constructor's return type).
+    var structMethods: std.ArrayListUnmanaged(ast.InterfaceMethod) = .empty;
+    defer structMethods.deinit(env.arena);
+    for (s.members) |m| switch (m) {
+        .method => |im| try structMethods.append(env.arena, im),
+        else => {},
+    };
+    try registerInherentMethodTypes(env, s.name, retType, &genericMap, structMethods.items);
 }
 
 fn registerEnum(env: *Env, e: ast.EnumDecl) InferError!void {
@@ -722,7 +789,11 @@ fn registerEnum(env: *Env, e: ast.EnumDecl) InferError!void {
         .contextBase = ctxBase,
     } });
     // Bind the enum name itself so `inferDecl` can look it up.
-    try env.bind(e.name, try env.namedType(e.name));
+    const enumInstance = try env.namedType(e.name);
+    try env.bind(e.name, enumInstance);
+
+    // Inherent method signatures (self = the enum instance type).
+    try registerInherentMethodTypes(env, e.name, enumInstance, &genericMap, e.methods);
 }
 
 // ── pass 2: declaration inference ────────────────────────────────────────────
@@ -1072,7 +1143,7 @@ fn instantiateCtorType(env: *Env, callee: []const u8, ctorType: *T.Type) InferEr
     if (!typeDefHasGenerics(env, callee)) return ctorType;
     var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
     defer seen.deinit();
-    return instantiateType(env, ctorType, &seen);
+    return instantiateType(env, ctorType, &seen, .allVars);
 }
 
 /// Field type of a generic record instance: substitute the registration-time
@@ -1097,17 +1168,32 @@ fn instantiateFieldType(env: *Env, typeName: []const u8, instArgs: []*T.Type, fi
         try seen.put(cellResolved.typeVar, inst);
     }
     if (seen.count() == 0) return fieldType;
-    return instantiateType(env, fieldType, &seen);
+    return instantiateType(env, fieldType, &seen, .allVars);
 }
 
-/// Deep-copies `ty`, substituting every unbound type variable with a fresh
-/// one. Per-call-site instantiation for "std" package generic fns — without
-/// it the shared fn type would unify destructively at the first call site.
-fn instantiateType(env: *Env, ty: *T.Type, seen: *std.AutoHashMap(*T.TypeCell, *T.Type)) InferError!*T.Type {
+/// Which type-variable states `instantiateType` substitutes with fresh vars.
+///   - `.allVars`: `.unbound` AND `.generic` — registration-time copies for
+///     ctors / "std" module exports, where every var belongs to the scheme.
+///   - `.genericOnly`: standard HM instantiation — only generalized
+///     (`.generic`) vars are freshened; `.unbound` vars belong to the
+///     enclosing inference in progress and must stay shared.
+const InstantiateMode = enum { allVars, genericOnly };
+
+/// Deep-copies `ty`, substituting type variables (per `mode`) with fresh
+/// ones. Per-call-site instantiation — without it the shared fn type would
+/// unify destructively at the first call site.
+fn instantiateType(env: *Env, ty: *T.Type, seen: *std.AutoHashMap(*T.TypeCell, *T.Type), mode: InstantiateMode) InferError!*T.Type {
     const resolved = ty.deref();
     switch (resolved.*) {
         .typeVar => |cell| switch (cell.state) {
-            .unbound, .generic => {
+            .unbound => {
+                if (mode == .genericOnly) return resolved;
+                if (seen.get(cell)) |fresh| return fresh;
+                const fresh = try env.freshVar();
+                try seen.put(cell, fresh);
+                return fresh;
+            },
+            .generic => {
                 if (seen.get(cell)) |fresh| return fresh;
                 const fresh = try env.freshVar();
                 try seen.put(cell, fresh);
@@ -1118,33 +1204,71 @@ fn instantiateType(env: *Env, ty: *T.Type, seen: *std.AutoHashMap(*T.TypeCell, *
         .named => |n| {
             if (n.args.len == 0) return resolved;
             const args = try env.arena.alloc(*T.Type, n.args.len);
-            for (n.args, 0..) |a, i| args[i] = try instantiateType(env, a, seen);
+            for (n.args, 0..) |a, i| args[i] = try instantiateType(env, a, seen, mode);
             const node = try env.arena.create(T.Type);
             node.* = .{ .named = .{ .name = n.name, .args = args } };
             return node;
         },
         .func => |f| {
             const params = try env.arena.alloc(*T.Type, f.params.len);
-            for (f.params, 0..) |p, i| params[i] = try instantiateType(env, p, seen);
+            for (f.params, 0..) |p, i| params[i] = try instantiateType(env, p, seen, mode);
             const node = try env.arena.create(T.Type);
-            node.* = .{ .func = .{ .params = params, .ret = try instantiateType(env, f.ret, seen) } };
+            node.* = .{ .func = .{ .params = params, .ret = try instantiateType(env, f.ret, seen, mode) } };
             return node;
         },
         .union_ => |members| {
             const copies = try env.arena.alloc(*T.Type, members.len);
-            for (members, 0..) |m, i| copies[i] = try instantiateType(env, m, seen);
+            for (members, 0..) |m, i| copies[i] = try instantiateType(env, m, seen, mode);
             const node = try env.arena.create(T.Type);
             node.* = .{ .union_ = copies };
             return node;
         },
         .record => |fields| {
             const copies = try env.arena.alloc(T.RecordField, fields.len);
-            for (fields, 0..) |f, i| copies[i] = .{ .name = f.name, .type_ = try instantiateType(env, f.type_, seen) };
+            for (fields, 0..) |f, i| copies[i] = .{ .name = f.name, .type_ = try instantiateType(env, f.type_, seen, mode) };
             const node = try env.arena.create(T.Type);
             node.* = .{ .record = copies };
             return node;
         },
     }
+}
+
+/// True when `ty` contains a generalized (`.generic`) type variable.
+/// Cheap pre-check so `instantiateGenericType` can skip allocation in the
+/// common monomorphic case.
+fn hasGenericVar(ty: *T.Type) bool {
+    const resolved = ty.deref();
+    switch (resolved.*) {
+        .typeVar => |cell| return cell.state == .generic,
+        .named => |n| {
+            for (n.args) |a| if (hasGenericVar(a)) return true;
+            return false;
+        },
+        .func => |f| {
+            for (f.params) |p| if (hasGenericVar(p)) return true;
+            return hasGenericVar(f.ret);
+        },
+        .union_ => |members| {
+            for (members) |m| if (hasGenericVar(m)) return true;
+            return false;
+        },
+        .record => |fields| {
+            for (fields) |f| if (hasGenericVar(f.type_)) return true;
+            return false;
+        },
+    }
+}
+
+/// Standard HM instantiation: deep-copies `ty` substituting every `.generic`
+/// var with a fresh unbound one. One substitution map across params + return,
+/// so `fn(x: A) -> A` yields the SAME fresh var on both sides. Two calls to
+/// the same generic fn each get their own fresh vars and never conflict.
+/// Returns `ty` unchanged when it has no `.generic` vars (monomorphic case).
+fn instantiateGenericType(env: *Env, ty: *T.Type) InferError!*T.Type {
+    if (!hasGenericVar(ty)) return ty;
+    var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
+    defer seen.deinit();
+    return instantiateType(env, ty, &seen, .genericOnly);
 }
 
 fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
@@ -1335,6 +1459,22 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     // Infer body (for type checking; we ignore the result for now).
     for (f.body) |stmt| {
         _ = try inferExpr(env, stmt.expr);
+    }
+
+    // Generalize (HM let-polymorphism): declared generic params still unbound
+    // after the body is inferred become `.generic`. Every use site then gets a
+    // fresh instantiation via `instantiateGenericType` — two calls in the same
+    // scope never share vars. Params the body linked to a concrete type are
+    // left alone (they were never polymorphic).
+    var git = genericMap.valueIterator();
+    while (git.next()) |gv| {
+        const resolved = gv.*.deref();
+        if (resolved.* != .typeVar) continue;
+        const cell = resolved.typeVar;
+        switch (cell.state) {
+            .unbound => |u| cell.state = .{ .generic = u.id },
+            else => {},
+        }
     }
 
     if (typeparams.items.len > 0) {
@@ -2671,7 +2811,13 @@ fn inferLiteralExpr(env: *Env, lit: ast.LiteralExprOf(.untyped), loc: ast.Loc) I
 fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: ast.Loc) InferError!TypedExpr {
     return switch (ident.kind) {
         .ident => |name| {
-            if (env.lookup(name)) |ty| return TypedExpr{ .identifier = .{ .loc = loc, .type_ = ty, .kind = .{ .ident = name } } };
+            if (env.lookup(name)) |ty| {
+                // A generic fn referenced as a value (`val f = identity;`,
+                // `xs.map(identity)`) gets its own instantiation — the
+                // scheme's `.generic` vars must never reach `unify`.
+                const inst = try instantiateGenericType(env, ty);
+                return TypedExpr{ .identifier = .{ .loc = loc, .type_ = inst, .kind = .{ .ident = name } } };
+            }
             env.lastError = TypeError.unboundVariable(name).withLoc(loc);
             return error.TypeError;
         },
@@ -2747,6 +2893,14 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
                     env.lastError = TypeError.unknownField("record", ia.member).withLoc(loc);
                     return error.TypeError;
                 }
+            }
+            // Tuple element access: `t._0`, `t._1`, … on a `#(A, B, …)` value.
+            // The element type comes from the tuple's positional type args.
+            if (recvType.* == .named and std.mem.eql(u8, recvType.named.name, "tuple")) {
+                const idxStr = if (ia.member.len > 0 and ia.member[0] == '_') ia.member[1..] else ia.member;
+                if (std.fmt.parseInt(usize, idxStr, 10)) |idx| {
+                    if (idx < recvType.named.args.len) outType = recvType.named.args[idx];
+                } else |_| {}
             }
             if (recvType.* == .named) {
                 const recvNamed = recvType.named;
@@ -3220,7 +3374,7 @@ fn makeMethodCall(
     typedTrailing: []ast.TrailingLambdaOf(.typed),
     loc: ast.Loc,
 ) InferError!TypedExpr {
-    const retType = try env.freshVar();
+    const retType = try methodCallReturnType(env, recvPtr, callee, typedArgs, typedTrailing, loc);
     return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
         .receiver = recvPtr,
         .callee = callee,
@@ -3228,6 +3382,47 @@ fn makeMethodCall(
         .args = typedArgs,
         .trailing = typedTrailing,
     } } } };
+}
+
+/// Recover the return type of an inherent-method call `recv.callee(args)` from
+/// the registered signature. The signature's type-level generics (the record's
+/// `<T>` cells, `Self`, method generics) are instantiated fresh per call site;
+/// the self param is unified with the receiver type and the remaining params
+/// with the arguments, propagating concrete types into the return. Falls back
+/// to a fresh var when no signature is registered (extension dispatch, etc.).
+fn methodCallReturnType(
+    env: *Env,
+    recvPtr: ?*ast.TypedExpr,
+    callee: []const u8,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+    loc: ast.Loc,
+) InferError!*T.Type {
+    const recv = recvPtr orelse return env.freshVar();
+    const recvType = recv.getType();
+    const typeName = nominalName(recvType) orelse return env.freshVar();
+    const sigRaw = env.getInherentMethodType(typeName, callee) orelse return env.freshVar();
+
+    // Fresh per-call-site copy so the shared registration cells never collapse.
+    var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
+    defer seen.deinit();
+    const sig = try instantiateType(env, sigRaw, &seen, .allVars);
+    const fn_ = sig.deref();
+    if (fn_.* != .func or fn_.func.params.len == 0) return env.freshVar();
+
+    // params[0] is `self` — bind the type's generics to the receiver instance.
+    try unifyAt(env, fn_.func.params[0], recvType, loc);
+    // Unify positional args when the (self-excluded) arity matches and there
+    // are no trailing lambdas (whose value type isn't available here). The
+    // self-unification alone already propagates the receiver's type args into
+    // the return type; arg unification refines method-generic params.
+    const rest = fn_.func.params[1..];
+    if (typedTrailing.len == 0 and rest.len == typedArgs.len) {
+        for (typedArgs, rest) |ta, p| {
+            try unifyAt(env, p, ta.value.getType(), ta.value.getLoc());
+        }
+    }
+    return fn_.func.ret;
 }
 
 /// Resolve a builtin `result` namespace qualified call (Gleam-style surface):
@@ -3572,7 +3767,7 @@ fn resolveStdArrayMethod(
 
     var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
     defer seen.deinit();
-    const instantiated = try instantiateType(env, methodTypeRaw, &seen);
+    const instantiated = try instantiateType(env, methodTypeRaw, &seen, .allVars);
 
     const retType: *T.Type = switch (instantiated.deref().*) {
         .func => |f| blk: {
@@ -3755,7 +3950,7 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                             };
                             var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
                             defer seen.deinit();
-                            const instantiated = try instantiateType(env, exported, &seen);
+                            const instantiated = try instantiateType(env, exported, &seen, .allVars);
                             const retType: *T.Type = switch (instantiated.deref().*) {
                                 .func => |f| blk: {
                                     const total = typedArgs.len + typedTrailing.len;
@@ -3853,6 +4048,17 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     return dispatched;
                 }
 
+                // Inherent method on the receiver's nominal type, for ANY
+                // receiver expression (chained calls `a.b().c()`, field access)
+                // — `resolveReceiverCall` above only fires for bare-identifier
+                // receivers. This recovers the method's real return type so a
+                // `Queue<i32>` chain keeps tracking `?i32` through `.peek()`.
+                if (nominalName(recvPtr.getType())) |tn| {
+                    if (env.hasInherentMethod(tn, call.callee)) {
+                        return try makeMethodCall(env, recvPtr, call.callee, typedArgs, typedTrailing, loc);
+                    }
+                }
+
                 // Other method calls (struct getters, activated extensions) are
                 // handled by sibling work — type them permissively as a fresh var
                 // so they don't error here.
@@ -3871,7 +4077,11 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
             };
             // Generic record/struct/enum constructor: instantiate per call site
             // so the registration-time cells never unify destructively.
-            const calleeType = try instantiateCtorType(env, call.callee, calleeTypeRaw);
+            const ctorInstantiated = try instantiateCtorType(env, call.callee, calleeTypeRaw);
+            // Generic fn (declared `<T, …>`): standard HM instantiation — each
+            // call site gets fresh vars for the fn's `.generic` params, so two
+            // calls with different concrete types in one scope never conflict.
+            const calleeType = try instantiateGenericType(env, ctorInstantiated);
             const resolved = calleeType.deref();
             const retType: *T.Type = switch (resolved.*) {
                 .func => |f| blk: {
@@ -3997,7 +4207,10 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
             // Build the typed RHS manually to avoid the arity check in inferCallExpr.
             if (p.rhs.* == .call and p.rhs.*.call.kind == .call) {
                 const call = p.rhs.*.call.kind.call;
-                const calleeType = if (env.lookup(call.callee)) |ty| ty else try env.freshVar();
+                const calleeTypeRaw = if (env.lookup(call.callee)) |ty| ty else try env.freshVar();
+                // Generic fn in pipeline position gets the same per-call-site
+                // instantiation as a plain call.
+                const calleeType = try instantiateGenericType(env, calleeTypeRaw);
                 const resolved = calleeType.deref();
                 const retType: *T.Type = switch (resolved.*) {
                     .func => |f| blk: {
