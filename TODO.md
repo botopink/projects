@@ -573,16 +573,17 @@ like `swap` (`Pair(first: p.second, …)`) unified `A := B` globally. Fixed:
 > ```
 > Surface becomes METHOD calls (`xs.fold(0, f)`); parts host-backed per target
 > via `@[external]`; `extend` doesn't fit (needs name + simple target).
-- [ ] Parser: `@[…]` annotations + `declare fn` members inside interface bodies
+- [x] Parser: `@[…]` annotations + `declare fn` members inside interface bodies
       (default-fn-with-body already parses via the `default` keyword)
-- [ ] RULE (user): `@[external(…)]` is only valid on `declare fn` declarations —
+- [x] RULE (user): `@[external(…)]` is only valid on `declare fn` declarations —
       enforce in `validateExternalAnnotation`; migrate F1 tests/snapshots from
       bodyless `pub fn` to `pub declare fn`
-- [ ] Dispatch: `xs.isEmpty()` on a builtin-array receiver resolves the
+- [x] Dispatch: `xs.isEmpty()` on a builtin-array receiver resolves the
       interface default method (loc-keyed lowering like F6) — this is the
-      typed-value method-dispatch work; externals lower per target
-      (erlang remote / node runtime import); node needs a shipped runtime
-      file story (`bp_stdlib.mjs`)
+      typed-value method-dispatch work; `StdArrayLowering` keyed by loc; transform
+      rewrites `xs.method(args)` → `list.method(xs, args)`; synthetic import
+      (`import {list} from "std"`) auto-prepended by the compile session;
+      stdlib modules guard against self-dispatch (`modulePath` check in infer)
 - [ ] Then fold the fn-module `list.bp` into the interface form
 
 ## F5 — `dict` + `set`

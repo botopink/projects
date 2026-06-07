@@ -210,6 +210,15 @@ pub const MethodLowering = struct {
     qualified: bool = false,
 };
 
+/// A type-directed lowering for a stdlib-module method call on a builtin-array
+/// receiver: `xs.method(args)` where `xs: Array<T>` dispatches to the named
+/// stdlib module's function. Recorded by inference, keyed by call loc; consumed
+/// by the transform to rewrite `xs.method(args)` → `module.method(xs, args)`.
+pub const StdArrayLowering = struct {
+    module: []const u8,
+    method: []const u8,
+};
+
 /// A type-directed lowering for a `return`/`throw` jump inside a fn returning
 /// `@Result<D, E>`. Recorded by inference keyed by the jump's source `Loc` and
 /// consumed by the transform pass, which wraps the value in a `__bp_ok(…)` /
@@ -310,6 +319,12 @@ pub const Env = struct {
     /// `markStdImports` registers them into the importing env so case
     /// patterns and annotations see the exported types (e.g. `Order`).
     stdModuleTypes: std.StringHashMap([]const ast.DeclKind),
+    /// Stdlib method calls on builtin-array receivers (`xs.isEmpty()` sugar).
+    /// Key: call loc, value: { module, method }. Consumed by transform.
+    stdArrayLowerings: std.AutoHashMap(ast.Loc, StdArrayLowering),
+    /// Stdlib modules implicitly required via array method dispatch; used by
+    /// the compile session to prepend synthetic imports for the codegen.
+    implicitStdModules: std.StringHashMap(void),
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
@@ -340,6 +355,8 @@ pub const Env = struct {
             .stdModules = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena),
             .stdImports = std.StringHashMap(void).init(arena),
             .stdModuleTypes = std.StringHashMap([]const ast.DeclKind).init(arena),
+            .stdArrayLowerings = std.AutoHashMap(ast.Loc, StdArrayLowering).init(arena),
+            .implicitStdModules = std.StringHashMap(void).init(arena),
         };
     }
 
@@ -374,6 +391,8 @@ pub const Env = struct {
         self.stdModules.deinit();
         self.stdImports.deinit();
         self.stdModuleTypes.deinit();
+        self.stdArrayLowerings.deinit();
+        self.implicitStdModules.deinit();
     }
 
     // ── extension dispatch helpers ────────────────────────────────────────────

@@ -3491,6 +3491,68 @@ fn resolveReceiverCall(
     return null;
 }
 
+/// Resolve `xs.method(args)` where `xs: Array<T>` against the `list` stdlib
+/// module's exported functions. Returns a typed call on success, null when no
+/// match. Records a `StdArrayLowering` so the transform rewrites to the
+/// qualified `list.method(xs, args)` form (no explicit import needed).
+fn resolveStdArrayMethod(
+    env: *Env,
+    recv: *ast.Expr,
+    recvPtr: ?*ast.TypedExpr,
+    callee: []const u8,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+    loc: ast.Loc,
+) InferError!?TypedExpr {
+    // Don't dispatch inside stdlib modules themselves — they implement the methods.
+    if (std.mem.startsWith(u8, env.modulePath, "std/")) return null;
+    if (recv.* != .identifier) return null;
+    if (recv.*.identifier.kind != .ident) return null;
+    const recvName = recv.*.identifier.kind.ident;
+
+    const recvTypeRaw = env.lookup(recvName) orelse return null;
+    const recvType = recvTypeRaw.deref();
+    if (recvType.* != .named) return null;
+    if (!std.mem.eql(u8, recvType.named.name, "array")) return null;
+
+    const listExports = env.stdModules.get("list") orelse return null;
+    const methodTypeRaw = listExports.get(callee) orelse return null;
+
+    var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
+    defer seen.deinit();
+    const instantiated = try instantiateType(env, methodTypeRaw, &seen);
+
+    const retType: *T.Type = switch (instantiated.deref().*) {
+        .func => |f| blk: {
+            if (f.params.len == 0) break :blk try env.freshVar();
+            // First param is the array receiver.
+            try unifyAt(env, f.params[0], recvTypeRaw, loc);
+            const restParams = f.params[1..];
+            const total = typedArgs.len + typedTrailing.len;
+            if (restParams.len != total) {
+                env.lastError = TypeError.arityMismatch(callee, 1 + restParams.len, 1 + total).withLoc(loc);
+                return error.TypeError;
+            }
+            for (typedArgs, restParams[0..typedArgs.len]) |ta, p| {
+                try unifyAt(env, p, ta.value.getType(), ta.value.getLoc());
+            }
+            break :blk f.ret;
+        },
+        else => try env.freshVar(),
+    };
+
+    try env.stdArrayLowerings.put(loc, .{ .module = "list", .method = callee });
+    try env.implicitStdModules.put("list", {});
+
+    return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
+        .receiver = recvPtr,
+        .callee = callee,
+        .is_builtin = false,
+        .args = typedArgs,
+        .trailing = typedTrailing,
+    } } } };
+}
+
 /// Infer type for `use`-hook expressions (@Context F7).
 ///
 /// The enclosing function's return type decides whether `use` is allowed and which
@@ -3679,6 +3741,15 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     if (try resolveReceiverCall(env, recvName, typedReceiver, call.callee, typedArgs, typedTrailing, loc)) |te| {
                         return te;
                     }
+                }
+            }
+
+            // Stdlib array method dispatch: `xs.method(args)` where `xs: Array<T>`
+            // and `method` is defined in the `list` stdlib module. Rewired by the
+            // transform to `list.method(xs, args)` — no explicit import needed.
+            if (call.receiver) |recvExpr| {
+                if (try resolveStdArrayMethod(env, recvExpr, typedReceiver, call.callee, typedArgs, typedTrailing, loc)) |te| {
+                    return te;
                 }
             }
 

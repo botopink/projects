@@ -452,15 +452,38 @@ pub fn compileTypesOnly(
                 }
 
                 const empty_vals = std.StringHashMap([]const u8).init(arena_alloc);
+                // Prepend synthetic imports for stdlib modules implicitly used via
+                // array method dispatch (e.g. `xs.isEmpty()` → needs `list` required).
+                const program_for_transform = blk: {
+                    var synth: std.ArrayListUnmanaged(ast.DeclKind) = .empty;
+                    var mit = succ.env.implicitStdModules.keyIterator();
+                    while (mit.next()) |mod_name| {
+                        if (succ.env.stdImports.contains(mod_name.*)) continue;
+                        const segs = try arena_alloc.alloc([]const u8, 1);
+                        segs[0] = mod_name.*;
+                        const paths = try arena_alloc.alloc(ast.ImportPath, 1);
+                        paths[0] = .{ .segments = segs };
+                        try synth.append(arena_alloc, .{ .use = .{
+                            .imports = paths,
+                            .source = .{ .module = "std" },
+                        } });
+                    }
+                    if (synth.items.len == 0) break :blk succ.program;
+                    const new_decls = try arena_alloc.alloc(ast.DeclKind, synth.items.len + succ.program.decls.len);
+                    @memcpy(new_decls[0..synth.items.len], synth.items);
+                    @memcpy(new_decls[synth.items.len..], succ.program.decls);
+                    break :blk ast.Program{ .decls = new_decls };
+                };
                 const transformed = try transform.transform(
                     arena_alloc,
-                    succ.program,
+                    program_for_transform,
                     fn_decls,
                     std.StringHashMap([]const ast.TypedExpr).init(arena_alloc),
                     empty_vals,
                     &succ.env.method_lowerings,
                     &succ.env.templateExpansions,
                     &succ.env.result_jump_lowerings,
+                    &succ.env.stdArrayLowerings,
                 );
 
                 var type_ids = std.StringHashMap(usize).init(arena_alloc);
@@ -582,7 +605,29 @@ pub fn compile(
                     }
                 }
 
-                const transformed = try transform.transform(arena_alloc, succ.program, fn_decls, comptime_arrays, ct.comptime_vals, &succ.env.method_lowerings, &succ.env.templateExpansions, &succ.env.result_jump_lowerings);
+                // Prepend synthetic imports for stdlib modules implicitly used via
+                // array method dispatch (e.g. `xs.isEmpty()` → needs `list` required).
+                const program_for_transform = blk: {
+                    var synth: std.ArrayListUnmanaged(ast.DeclKind) = .empty;
+                    var mit = succ.env.implicitStdModules.keyIterator();
+                    while (mit.next()) |mod_name| {
+                        if (succ.env.stdImports.contains(mod_name.*)) continue;
+                        const segs = try arena_alloc.alloc([]const u8, 1);
+                        segs[0] = mod_name.*;
+                        const paths = try arena_alloc.alloc(ast.ImportPath, 1);
+                        paths[0] = .{ .segments = segs };
+                        try synth.append(arena_alloc, .{ .use = .{
+                            .imports = paths,
+                            .source = .{ .module = "std" },
+                        } });
+                    }
+                    if (synth.items.len == 0) break :blk succ.program;
+                    const new_decls = try arena_alloc.alloc(ast.DeclKind, synth.items.len + succ.program.decls.len);
+                    @memcpy(new_decls[0..synth.items.len], synth.items);
+                    @memcpy(new_decls[synth.items.len..], succ.program.decls);
+                    break :blk ast.Program{ .decls = new_decls };
+                };
+                const transformed = try transform.transform(arena_alloc, program_for_transform, fn_decls, comptime_arrays, ct.comptime_vals, &succ.env.method_lowerings, &succ.env.templateExpansions, &succ.env.result_jump_lowerings, &succ.env.stdArrayLowerings);
 
                 var type_ids = std.StringHashMap(usize).init(arena_alloc);
                 for (succ.bindings) |b| {

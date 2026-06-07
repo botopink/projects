@@ -284,3 +284,21 @@ test "infer: assign ---- type mismatch error" {
         \\}
     );
 }
+
+test "infer: stdlib array method dispatch ---- xs.isEmpty() sugar" {
+    try h.assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val xs: Array<i32> = [1, 2];
+        \\    val empty = xs.isEmpty();
+        \\}
+    );
+}
+
+test "infer: stdlib array method dispatch ---- ys.contains() with arg" {
+    try h.assertComptimeAstSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val ys = [1, 2, 3];
+        \\    val found = ys.contains(2);
+        \\}
+    );
+}

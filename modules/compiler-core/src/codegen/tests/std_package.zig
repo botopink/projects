@@ -83,6 +83,32 @@ test "js: std package ---- list module v2 range append flatten" {
     );
 }
 
+test "js: std package ---- array method dispatch xs.isEmpty() sugar" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val xs: Array<i32> = [];
+        \\    @print(xs.isEmpty());
+        \\    val ys = [1, 2, 3];
+        \\    @print(ys.isEmpty());
+        \\    @print(ys.length());
+        \\    @print(ys.contains(2));
+        \\}
+    );
+}
+
+test "js: std package ---- array method dispatch no explicit import needed" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn checkAll(xs: Array<i32>) -> bool {
+        \\    return xs.isEmpty();
+        \\}
+        \\
+        \\fn main() {
+        \\    @print(checkAll([]));
+        \\    @print(checkAll([1]));
+        \\}
+    );
+}
+
 test "js: std package ---- pair record module qualified calls" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\import {pair} from "std";

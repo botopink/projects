@@ -25,6 +25,9 @@ pub const TemplateExpansions = std.AutoHashMap(ast.Loc, *const ast.Expr);
 /// to their value-construction lowering, produced by inference.
 pub const ResultJumpLowerings = std.AutoHashMap(ast.Loc, envMod.ResultJumpLowering);
 
+/// Map of stdlib-module method calls on builtin-array receivers (by source loc).
+pub const StdArrayLowerings = std.AutoHashMap(ast.Loc, envMod.StdArrayLowering);
+
 /// Aggregator: collects specialization info during scan/rewrite phases.
 const Aggregator = struct {
     spec_cache: specialize.SpecCache,
@@ -34,6 +37,8 @@ const Aggregator = struct {
     template_expansions: *const TemplateExpansions,
     /// `return`/`throw` → `__bp_ok`/`__bp_error` wrappings keyed by jump loc.
     result_jump_lowerings: *const ResultJumpLowerings,
+    /// Stdlib array method dispatch lowerings keyed by call loc.
+    std_array_lowerings: *const StdArrayLowerings,
     /// fn_name → total calls with comptime params found during rewrite.
     total_calls: std.StringHashMap(usize),
     /// fn_name → calls that were actually rewritten to specialized names.
@@ -43,12 +48,13 @@ const Aggregator = struct {
     /// val_name → ct_id mapping (e.g. "pi" → "ct_0")
     val_ct_map: std.StringHashMap([]const u8),
 
-    fn init(allocator: std.mem.Allocator, comptime_vals: std.StringHashMap([]const u8), method_lowerings: *const MethodLowerings, template_expansions: *const TemplateExpansions, result_jump_lowerings: *const ResultJumpLowerings) Aggregator {
+    fn init(allocator: std.mem.Allocator, comptime_vals: std.StringHashMap([]const u8), method_lowerings: *const MethodLowerings, template_expansions: *const TemplateExpansions, result_jump_lowerings: *const ResultJumpLowerings, std_array_lowerings: *const StdArrayLowerings) Aggregator {
         return .{
             .spec_cache = specialize.SpecCache.init(allocator),
             .method_lowerings = method_lowerings,
             .template_expansions = template_expansions,
             .result_jump_lowerings = result_jump_lowerings,
+            .std_array_lowerings = std_array_lowerings,
             .total_calls = std.StringHashMap(usize).init(allocator),
             .specialized_calls = std.StringHashMap(usize).init(allocator),
             .comptime_vals = comptime_vals,
@@ -104,8 +110,9 @@ pub fn transform(
     method_lowerings: *const MethodLowerings,
     template_expansions: *const TemplateExpansions,
     result_jump_lowerings: *const ResultJumpLowerings,
+    std_array_lowerings: *const StdArrayLowerings,
 ) !ast.Program {
-    var agg = Aggregator.init(allocator, comptime_vals, method_lowerings, template_expansions, result_jump_lowerings);
+    var agg = Aggregator.init(allocator, comptime_vals, method_lowerings, template_expansions, result_jump_lowerings, std_array_lowerings);
     defer agg.deinit(allocator);
 
     // Phase 1: Scan and specialize.
@@ -446,6 +453,38 @@ fn tryLowerMethodCall(agg: *Aggregator, expr_ptr: *ast.Expr) ScanError!bool {
     return true;
 }
 
+/// If `expr_ptr` is a stdlib array method call recorded by inference
+/// (e.g. `xs.isEmpty()`), rewrite it to `list.isEmpty(xs)` — a qualified std
+/// module call — and return true. The transform then walks the new args.
+fn tryLowerStdArrayCall(agg: *Aggregator, expr_ptr: *ast.Expr) ScanError!bool {
+    if (expr_ptr.* != .call) return false;
+    if (expr_ptr.call.kind != .call) return false;
+    const cc = expr_ptr.call.kind.call;
+    const recv = cc.receiver orelse return false;
+    const loc = expr_ptr.call.loc;
+    const lowering = agg.std_array_lowerings.get(loc) orelse return false;
+
+    const arena = agg.spec_cache.arena;
+
+    // New args: [original_receiver, ...original_args]
+    const new_args = arena.alloc(ast.CallArg, cc.args.len + 1) catch return ScanError.OutOfMemory;
+    new_args[0] = .{ .label = null, .value = recv, .comments = &.{} };
+    for (cc.args, 0..) |a, i| new_args[i + 1] = a;
+
+    // New receiver: the stdlib module identifier (e.g. `list`).
+    const mod_ident = arena.create(ast.Expr) catch return ScanError.OutOfMemory;
+    mod_ident.* = ast.Expr{ .identifier = .{ .loc = loc, .kind = .{ .ident = lowering.module } } };
+
+    expr_ptr.* = ast.Expr{ .call = .{ .loc = loc, .kind = .{ .call = .{
+        .receiver = mod_ident,
+        .callee = lowering.method,
+        .is_builtin = false,
+        .args = new_args,
+        .trailing = cc.trailing,
+    } } } };
+    return true;
+}
+
 /// If `expr_ptr` is a `return`/`throw` jump recorded by inference as a Result
 /// constructor site, wrap the value in a `__bp_ok(…)` / `__bp_error(…)` builtin
 /// call — and rewrite `throw e` into `return __bp_error(e)` so every backend
@@ -510,6 +549,8 @@ fn rewriteStmt(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
             .call => {
                 if (try tryLowerMethodCall(agg, &stmt.expr)) {
                     for (stmt.expr.call.kind.call.args) |*arg| rewriteExpr(agg, fn_decls, comptime_arrays, arg.value) catch return ScanError.OutOfMemory;
+                } else if (try tryLowerStdArrayCall(agg, &stmt.expr)) {
+                    for (stmt.expr.call.kind.call.args) |*arg| rewriteExpr(agg, fn_decls, comptime_arrays, arg.value) catch return ScanError.OutOfMemory;
                 } else {
                     if (c.kind.call.receiver) |r| rewriteExpr(agg, fn_decls, comptime_arrays, r) catch return ScanError.OutOfMemory;
                     rewriteCall(agg, fn_decls, comptime_arrays, &c.kind.call) catch return ScanError.OutOfMemory;
@@ -570,6 +611,8 @@ fn rewriteExpr(agg: *Aggregator, fn_decls: std.StringHashMap(ast.FnDecl), compti
         .call => |*c| switch (c.kind) {
             .call => {
                 if (try tryLowerMethodCall(agg, expr_ptr)) {
+                    for (expr_ptr.call.kind.call.args) |*arg| rewriteExpr(agg, fn_decls, comptime_arrays, arg.value) catch return ScanError.OutOfMemory;
+                } else if (try tryLowerStdArrayCall(agg, expr_ptr)) {
                     for (expr_ptr.call.kind.call.args) |*arg| rewriteExpr(agg, fn_decls, comptime_arrays, arg.value) catch return ScanError.OutOfMemory;
                 } else {
                     if (c.kind.call.receiver) |r| rewriteExpr(agg, fn_decls, comptime_arrays, r) catch return ScanError.OutOfMemory;
