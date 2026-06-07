@@ -378,8 +378,8 @@ test "infer: anonymous test body typechecks" {
 
 test "infer: external ---- fn no body typechecks" {
     try h.assertInfersOk(std.testing.allocator,
-        \\@[external(erlang, "string", "length"),
-        \\  external(node, "./gleam_stdlib.mjs", "string_length")]
+        \\#[@external(erlang, "string", "length"),
+        \\  @external(node, "./gleam_stdlib.mjs", "string_length")]
         \\pub declare fn str_length(s: string) -> i32;
         \\
         \\fn main() {

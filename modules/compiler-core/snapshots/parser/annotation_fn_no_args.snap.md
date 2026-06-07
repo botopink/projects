@@ -14,7 +14,8 @@
         "annotations": [
           {
             "name": "inline",
-            "args": []
+            "args": [],
+            "is_builtin": false
           }
         ],
         "genericParams": [],

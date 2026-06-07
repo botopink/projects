@@ -1033,10 +1033,10 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
     // — the host symbol replaces the body, so an annotated plain `fn` (with or
     // without a body) is malformed.
     if (!f.isDeclare) {
-        return fail(env, fnLoc, "`@[external(…)]` requires a `declare fn` declaration", "Write `@[external(erlang, \"string\", \"length\")] pub declare fn length(s: string) -> i32;`");
+        return fail(env, fnLoc, "`#[@external(…)]` requires a `declare fn` declaration", "Write `#[@external(erlang, \"string\", \"length\")] pub declare fn length(s: string) -> i32;`");
     }
     if (a.args.len != 3) {
-        return fail(env, fnLoc, "`external` expects exactly 3 arguments: external(target: Target, module: string, symbol: string)", "Example: @[external(erlang, \"string\", \"length\")]");
+        return fail(env, fnLoc, "`@external` expects exactly 3 arguments: @external(target: Target, module: string, symbol: string)", "Example: #[@external(erlang, \"string\", \"length\")]");
     }
     // arg0: a `Target` enum member (a bare identifier, optionally `.target`).
     const target = std.mem.trimStart(u8, a.args[0], ".");
@@ -1044,12 +1044,12 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
         if (std.mem.eql(u8, t, target)) break true;
     } else false;
     if (!known) {
-        return fail(env, fnLoc, "`external` target must be a Target member: node, typescript, erlang, beam or wasm", "Example: @[external(erlang, \"string\", \"length\")]");
+        return fail(env, fnLoc, "`@external` target must be a Target member: node, typescript, erlang, beam or wasm", "Example: #[@external(erlang, \"string\", \"length\")]");
     }
     // arg1/arg2: string literals naming the host module and symbol.
     for (a.args[1..]) |arg| {
         if (arg.len < 2 or arg[0] != '"') {
-            return fail(env, fnLoc, "`external` module and symbol must be string literals", "Example: @[external(node, \"./gleam_stdlib.mjs\", \"string_length\")]");
+            return fail(env, fnLoc, "`@external` module and symbol must be string literals", "Example: #[@external(node, \"./gleam_stdlib.mjs\", \"string_length\")]");
         }
     }
 }
