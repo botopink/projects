@@ -53,14 +53,14 @@ pub enum Result<R, E> {
 
 // ── option type ──────────────────────────────────────────────────────────────
 
-// The optional type is just the `?` syntax: `?T` (internally `@Option<T>` is
-// its canonical spelling — not a user-facing named type). One representation:
-// a value, or absent. It mirrors the Result method API (also
-// inference-resolved + inline-lowered):
+// The optional type is `?T` — the ONLY spelling. Optional is not a concrete
+// named type: `@Option<T>` / `@Optional<T>` annotations are rejected with a
+// pointed diagnostic. One representation: a value, or absent. It mirrors the
+// Result method API (also inference-resolved + inline-lowered):
 //
-//   fn map(self, transform: fn(value: T) -> T2) -> @Option<T2>
+//   fn map(self, transform: fn(value: T) -> T2) -> ?T2
 //       Apply `transform` to the present value; absence is propagated.
-//   fn flatMap(self, transform: fn(value: T) -> @Option<T2>) -> @Option<T2>
+//   fn flatMap(self, transform: fn(value: T) -> ?T2) -> ?T2
 //   fn unwrapOr(self, default: T) -> T
 //       The present value, or `default` when absent.
 //

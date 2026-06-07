@@ -1465,14 +1465,15 @@ pub const Formatter = struct {
         var docs: std.ArrayList(*const Doc) = .empty;
         defer docs.deinit(this.arena);
         for (annotations) |ann| {
+            const prefix: []const u8 = if (ann.is_builtin) "@" else "";
             if (ann.args.len == 0) {
                 try docs.append(this.arena, try this.text(
-                    try std.fmt.allocPrint(this.arena, "#[{s}]", .{ann.name}),
+                    try std.fmt.allocPrint(this.arena, "#[{s}{s}]", .{ prefix, ann.name }),
                 ));
             } else {
                 const argsStr = try std.mem.join(this.arena, ", ", ann.args);
                 try docs.append(this.arena, try this.text(
-                    try std.fmt.allocPrint(this.arena, "#[{s}({s})]", .{ ann.name, argsStr }),
+                    try std.fmt.allocPrint(this.arena, "#[{s}{s}({s})]", .{ prefix, ann.name, argsStr }),
                 ));
             }
         }

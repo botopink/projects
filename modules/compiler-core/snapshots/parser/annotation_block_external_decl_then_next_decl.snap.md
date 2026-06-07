@@ -18,7 +18,8 @@
               "erlang",
               "\"erlang\"",
               "\"abs\""
-            ]
+            ],
+            "is_builtin": true
           }
         ],
         "genericParams": [],

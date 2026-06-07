@@ -1,8 +1,8 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
 record Person { name: string }
-fn firstName(p: Person) -> @Option<string> { @todo(); }
-fn shout(s: string) -> @Option<string> { @todo(); }
+fn firstName(p: Person) -> ?string { @todo(); }
+fn shout(s: string) -> ?string { @todo(); }
 fn greet(p: Person) -> string {
     return firstName(p)
         .map({ n -> "Hello " + n })

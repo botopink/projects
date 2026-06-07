@@ -16,11 +16,13 @@
             "name": "target",
             "args": [
               ".erlang"
-            ]
+            ],
+            "is_builtin": false
           },
           {
             "name": "inline",
-            "args": []
+            "args": [],
+            "is_builtin": false
           }
         ],
         "genericParams": [],

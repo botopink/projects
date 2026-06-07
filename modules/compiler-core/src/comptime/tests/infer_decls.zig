@@ -378,8 +378,8 @@ test "infer: anonymous test body typechecks" {
 
 test "infer: external ---- fn no body typechecks" {
     try h.assertInfersOk(std.testing.allocator,
-        \\@[external(erlang, "string", "length"),
-        \\  external(node, "./gleam_stdlib.mjs", "string_length")]
+        \\#[@external(erlang, "string", "length"),
+        \\  @external(node, "./gleam_stdlib.mjs", "string_length")]
         \\pub declare fn str_length(s: string) -> i32;
         \\
         \\fn main() {
@@ -410,6 +410,28 @@ test "infer: builtin result namespace ---- qualified calls typecheck" {
         \\    val doubled = result.map(parse(21), { x -> x * 2 });
         \\    val n: i32 = result.unwrap(doubled, 0);
         \\    val ok: bool = result.isOk(parse(n));
+        \\}
+    );
+}
+
+test "infer: @Option<T> is rejected ---- the optional type is ?T" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn takeOption(x: @Option<i32>) -> i32 {
+        \\    return x.unwrapOr(0);
+        \\}
+        \\fn main() {
+        \\    @print(takeOption(3));
+        \\}
+    );
+}
+
+test "infer: @Optional<T> is rejected ---- the optional type is ?T" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn takeOptional(x: @Optional<i32>) -> i32 {
+        \\    return x.unwrapOr(0);
+        \\}
+        \\fn main() {
+        \\    @print(takeOptional(3));
         \\}
     );
 }

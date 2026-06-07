@@ -479,17 +479,17 @@ test "parser: annotation ---- interface shorthand" {
     );
 }
 
-test "parser: annotation block ---- at bracket" {
+test "parser: annotation block ---- hash bracket builtin" {
     try h.assertParser(std.testing.allocator, @src(),
-        \\@[external(erlang, "string", "length"),
-        \\  external(node, "./gleam_stdlib.mjs", "string_length")]
+        \\#[@external(erlang, "string", "length"),
+        \\  @external(node, "./gleam_stdlib.mjs", "string_length")]
         \\pub declare fn length(s: string) -> i32;
     );
 }
 
 test "parser: annotation block ---- external decl then next decl" {
     try h.assertParser(std.testing.allocator, @src(),
-        \\@[external(erlang, "erlang", "abs")]
+        \\#[@external(erlang, "erlang", "abs")]
         \\pub declare fn absolute_value(n: i32) -> i32;
         \\
         \\fn main() {
@@ -681,8 +681,8 @@ test "parser: interface with default method and external declare member" {
         \\    default fn isEmpty(self: Self) -> bool {
         \\        return self.length == 0;
         \\    }
-        \\    @[external(erlang, "lists", "reverse"),
-        \\      external(node, "./bp_stdlib.mjs", "list_reverse")]
+        \\    #[@external(erlang, "lists", "reverse"),
+        \\      @external(node, "./bp_stdlib.mjs", "list_reverse")]
         \\    declare fn reverse(self: Self) -> Array<T>;
         \\}
     );
