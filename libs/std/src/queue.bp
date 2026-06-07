@@ -52,3 +52,55 @@ pub fn toList<T>(q: Queue<T>) -> Array<T> {
 pub fn fromList<T>(xs: Array<T>) -> Queue<T> {
     return Queue(items: xs);
 }
+
+test "queue empty is empty" {
+    val q = enqueue(empty(), 0);
+    val r = dequeue(q);
+    assert isEmpty(r._0);
+    assert size(r._0) == 0;
+}
+
+test "queue enqueue increases size" {
+    val q = enqueue(enqueue(empty(), 1), 2);
+    assert size(q) == 2;
+    assert !isEmpty(q);
+}
+
+test "queue peek at front" {
+    val q = enqueue(enqueue(empty(), 10), 20);
+    assert peek(q).unwrapOr(-1) == 10;
+}
+
+test "queue dequeue returns front and rest" {
+    val q = enqueue(enqueue(empty(), 1), 2);
+    val result = dequeue(q);
+    val rest = result._0;
+    val head = result._1;
+    assert head.unwrapOr(-1) == 1;
+    assert size(rest) == 1;
+    assert peek(rest).unwrapOr(-1) == 2;
+}
+
+test "queue dequeue empty returns null head" {
+    val q = enqueue(empty(), 0);
+    val r1 = dequeue(q);
+    val result = dequeue(r1._0);
+    val head = result._1;
+    assert head == null;
+}
+
+test "queue fifo order preserved" {
+    val q = enqueue(enqueue(enqueue(empty(), 1), 2), 3);
+    val r1 = dequeue(q);
+    val r2 = dequeue(r1._0);
+    val r3 = dequeue(r2._0);
+    assert r1._1.unwrapOr(-1) == 1;
+    assert r2._1.unwrapOr(-1) == 2;
+    assert r3._1.unwrapOr(-1) == 3;
+}
+
+test "queue fromList and toList round-trip" {
+    val q = fromList([10, 20, 30]);
+    assert size(q) == 3;
+    assert toList(q).join(",") == "10,20,30";
+}

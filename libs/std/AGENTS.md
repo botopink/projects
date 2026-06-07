@@ -37,7 +37,7 @@ std/
 │   ├── function.bp        ← `function` std module (`identity`/`compose`/`flip`/`constant`)
 │   ├── io.d.bp            ← `io` std module (decl — `#[@external]` backed)
 │   ├── string_builder.bp  ← `string_builder` std module (`pub record StringBuilder`)
-│   └── queue.bp           ← `queue` std module (`pub record Queue<T>`, FIFO)
+│   └── queue.bp           ← `queue` std module (`pub record Queue<T>`, FIFO; inline tests)
 └── test/
     ├── array_test.bp      ← builtin Array<T> surface: join/reverse/indexOf/at/map/filter/slice
     ├── bool_test.bp       ← bool module: negate/nor/nand/exclusiveOr/exclusiveNor
@@ -51,8 +51,7 @@ std/
     ├── iterator_test.bp   ← iterator module: range/toList/fold/map/filter/take
     ├── dict_test.bp       ← dict module: empty/insert/lookup/hasKey/delete/size/fold/merge/mapValues
     ├── set_test.bp        ← sets module: empty/insert/contains/delete/fromList/union/intersection/difference
-    ├── function_test.bp   ← function module: identity/compose/flip/constant
-    └── queue_test.bp      ← queue module: empty/enqueue/peek/dequeue/FIFO order/fromList/toList
+    └── function_test.bp   ← function module: identity/compose/flip/constant
 ```
 
 ## Source modules (src/)
@@ -85,10 +84,14 @@ cd libs/std && botopink test            # all suites
 botopink test --filter "array map"      # by name substring
 ```
 
-One `<module>_test.bp` per stdlib module. Implementation modules may also carry
-inline `test { … }` blocks (Zig-style); `*.d.bp` files are excluded from
-compilation. `"std"` package copies emitted for other projects never include
-test blocks.
+One `<module>_test.bp` per stdlib module, except modules that carry inline
+`test { … }` blocks directly in their `src/` file (Zig-style) — `queue.bp`
+does this. `*.d.bp` files are excluded from compilation. `"std"` package
+copies emitted for other projects never include test blocks.
+
+Inline tests inside generic modules must constrain the type parameter via
+concrete literals in each block (e.g. `enqueue(empty(), 0)` to fix `T = i32`)
+— unconstrained generic calls in `registerStdlib` cause cascading type errors.
 
 ### Coverage (commonJS target)
 
