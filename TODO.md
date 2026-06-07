@@ -26,11 +26,14 @@
 - [x] `sets` suite green (9/9); `string` + `sets` modules load — remaining
       string failures are F2 (snake_case dispatch), not reserved words
 
-## F0 — Iterator JS codegen (known gap #8, widened)  ◀ 6/10 FAIL
-- [ ] Fix `*fn` + `loop { yield }` lowering (emit real generator, not `.map()`)
-- [ ] Cover `range`/`toList`/`fold`/`map`/`filter`/`take` runtime paths
-- [ ] Snapshot `codegen/node/iterator_fromList_yields_array_items`
-- [ ] `iterator` suite green; remove known gap #8 from `libs/std/AGENTS.md`
+## F0 — Iterator JS codegen (known gap #8, widened)  ✔ done
+- [x] Fix `*fn` lowering: `return <iter>` → `yield*` delegation; `loop { yield }`
+      → `for…of` with native `yield` (was `.map()`, yielded nothing). Nested
+      lambdas guarded so their `return` stays `return` (`in_generator` flag).
+- [x] Cover `range`/`toList`/`fold`/`map`/`filter`/`take` + `fromList`/`repeat`
+- [x] Snapshot `codegen/node/iterator_fromlist_yields_array_items`
+- [x] `iterator` suite green (12/12); known-gap note removed from
+      `libs/std/AGENTS.md` + `iterator.bp`/`iterator_test.bp`
 
 ## F9 — `?T` runtime repr in tuple returns  ◀ queue 3/7 FAIL
 - [ ] Trace why `.unwrapOr` is missing on tuple-extracted `?T` (commonJS)

@@ -7,10 +7,6 @@
 //// Lazy producers: range, repeat, fromList.
 //// Eager consumers (return Array): map, filter, take, toList.
 //// Pure fold: fold.
-////
-//// NOTE: `fromList` is a `*fn` generator; the JS codegen emits `.map()`
-//// for `loop { yield }` bodies, which is broken for non-Array iterables.
-//// Known gap — tracked in TODO.md. Use `loop (array) { … }` directly.
 
 // Internal recursive helper: yields integers [cur, stop).
 *fn doRange(cur: i32, stop: i32) -> @Iterator<i32> {
@@ -38,8 +34,6 @@ pub *fn repeat<T>(value: T, times: i32) -> @Iterator<T> {
 }
 
 // `fromList(xs)` — wrap an Array as a lazy @Iterator<T>.
-// NOTE: JS codegen converts loop+yield to .map(); the generator yields
-// nothing at runtime. Use `loop (array) { item -> … }` for eager iteration.
 pub *fn fromList<T>(xs: Array<T>) -> @Iterator<T> {
     loop (xs) { item ->
         yield item;
@@ -109,10 +103,6 @@ pub fn take<T>(iter: @Iterator<T>, n: i32) -> Array<T> {
 %%% Lazy producers: range, repeat, fromList.
 %%% Eager consumers (return Array): map, filter, take, toList.
 %%% Pure fold: fold.
-%%% 
-%%% NOTE: `fromList` is a `*fn` generator; the JS codegen emits `.map()`
-%%% for `loop { yield }` bodies, which is broken for non-Array iterables.
-%%% Known gap — tracked in TODO.md. Use `loop (array) { … }` directly.
 % Internal recursive helper: yields integers [cur, stop).
 
 %% *fn (async/generator) — eager lowering
@@ -187,8 +177,6 @@ pub fn take<T>(iter: @Iterator<T>, n: i32) -> Array<T> {
     {move, {x, 1}, {x, 1}}.
     {call_last, 2, {f, 7}, 0}.
 % `fromList(xs)` — wrap an Array as a lazy @Iterator<T>.
-% NOTE: JS codegen converts loop+yield to .map(); the generator yields
-% nothing at runtime. Use `loop (array) { item -> … }` for eager iteration.
 
 %% *fn (async/generator) — eager lowering
 {function, fromList, 1, 11}.

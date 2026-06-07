@@ -537,3 +537,36 @@ test "js: reserved word identifiers" {
         \\}
     );
 }
+
+test "js: iterator fromList yields array items" {
+    // A `*fn -> @Iterator<T>` generator: `loop (xs) { yield }` must lower to a
+    // real `for…of` with native `yield` (not `.map()`), and `return <iter>`
+    // must delegate via `yield*` — otherwise the generator yields nothing.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\*fn fromList<T>(xs: Array<T>) -> @Iterator<T> {
+        \\    loop (xs) { item ->
+        \\        yield item;
+        \\    };
+        \\}
+        \\
+        \\*fn doRange(cur: i32, stop: i32) -> @Iterator<i32> {
+        \\    if (cur < stop) {
+        \\        yield cur;
+        \\        return doRange(cur + 1, stop);
+        \\    };
+        \\}
+        \\
+        \\fn toList<T>(iter: @Iterator<T>) -> Array<T> {
+        \\    var out = [];
+        \\    loop (iter) { item ->
+        \\        out.push(item);
+        \\    };
+        \\    return out;
+        \\}
+        \\
+        \\fn main() {
+        \\    @print(toList(fromList([1, 2, 3])).join(","));
+        \\    @print(toList(doRange(0, 3)).join(","));
+        \\}
+    );
+}

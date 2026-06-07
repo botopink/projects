@@ -7,10 +7,6 @@
 //// Lazy producers: range, repeat, fromList.
 //// Eager consumers (return Array): map, filter, take, toList.
 //// Pure fold: fold.
-////
-//// NOTE: `fromList` is a `*fn` generator; the JS codegen emits `.map()`
-//// for `loop { yield }` bodies, which is broken for non-Array iterables.
-//// Known gap — tracked in TODO.md. Use `loop (array) { … }` directly.
 
 // Internal recursive helper: yields integers [cur, stop).
 *fn doRange(cur: i32, stop: i32) -> @Iterator<i32> {
@@ -38,8 +34,6 @@ pub *fn repeat<T>(value: T, times: i32) -> @Iterator<T> {
 }
 
 // `fromList(xs)` — wrap an Array as a lazy @Iterator<T>.
-// NOTE: JS codegen converts loop+yield to .map(); the generator yields
-// nothing at runtime. Use `loop (array) { item -> … }` for eager iteration.
 pub *fn fromList<T>(xs: Array<T>) -> @Iterator<T> {
     loop (xs) { item ->
         yield item;
@@ -112,48 +106,36 @@ pub fn take<T>(iter: @Iterator<T>, n: i32) -> Array<T> {
 
 //// Pure fold: fold.
 
-//// 
-
-//// NOTE: `fromList` is a `*fn` generator; the JS codegen emits `.map()`
-
-//// for `loop { yield }` bodies, which is broken for non-Array iterables.
-
-//// Known gap — tracked in TODO.md. Use `loop (array) { … }` directly.
-
 // Internal recursive helper: yields integers [cur, stop).
 
 function* doRange(cur, stop) {
-     if ((cur < stop)) { yield cur; return doRange((cur + 1), stop); };
+     if ((cur < stop)) { yield cur; yield* doRange((cur + 1), stop); return; };
 }
 
 // `range(start, stop)` — half-open `[start, stop)`, yields lazily.
 
 function* range(start, stop) {
-    return doRange(start, stop);
+    yield* doRange(start, stop); return;
 }
 exports.range = range;
 
 // `repeat(value, times)` — yields `value` exactly `times` times, lazily.
 
 function* doRepeat(value, remaining) {
-     if ((remaining > 0)) { yield value; return doRepeat(value, (remaining - 1)); };
+     if ((remaining > 0)) { yield value; yield* doRepeat(value, (remaining - 1)); return; };
 }
 
 function* repeat(value, times) {
-    return doRepeat(value, times);
+    yield* doRepeat(value, times); return;
 }
 exports.repeat = repeat;
 
 // `fromList(xs)` — wrap an Array as a lazy @Iterator<T>.
 
-// NOTE: JS codegen converts loop+yield to .map(); the generator yields
-
-// nothing at runtime. Use `loop (array) { item -> … }` for eager iteration.
-
 function* fromList(xs) {
-    xs.map((item) => {
-    return item;
-});
+    for (const item of xs) {
+    yield item;
+};
 }
 exports.fromList = fromList;
 

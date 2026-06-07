@@ -1,9 +1,9 @@
 //// Tests for the `iterator` std module (iterator.bp).
 //// Qualified calls via `import {iterator} from "std"`.
 ////
-//// Eager consumer ops (map/filter/take/toList/fold) work correctly.
-//// fromList is a *fn generator; the JS loop+yield codegen limitation
-//// means it yields nothing at runtime — type-checked only here.
+//// Eager consumer ops (map/filter/take/toList/fold) and the `*fn` producers
+//// (range/repeat/fromList) all run correctly: the JS codegen lowers generator
+//// delegation (`return <iter>` → `yield*`) and `loop { yield }` → `for…of`.
 
 import {iterator} from "std";
 import {list} from "std";
@@ -59,4 +59,16 @@ test "iterator take more than available" {
 test "iterator fold empty is initial" {
     val total = iterator.fold(iterator.range(5, 5), 99, { acc, item -> acc + item });
     assert total == 99;
+}
+
+test "iterator fromList yields array items" {
+    val xs = iterator.toList(iterator.fromList([10, 20, 30]));
+    assert xs.length == 3;
+    assert xs.join(",") == "10,20,30";
+}
+
+test "iterator repeat yields value n times" {
+    val xs = iterator.toList(iterator.repeat(7, 4));
+    assert xs.length == 4;
+    assert xs.join(",") == "7,7,7,7";
 }

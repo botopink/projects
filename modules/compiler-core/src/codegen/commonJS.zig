@@ -609,6 +609,12 @@ const Emitter = struct {
     /// When true, `self.x` lowers to `self.x` (extension methods take `self` as a
     /// real first parameter) instead of the prototype-method `this.x`.
     self_is_param: bool = false,
+    /// True while emitting a generator (`function*`) body. A `return <expr>`
+    /// inside a `*fn -> @Iterator<T>` means *delegate the rest of the iteration*
+    /// to that iterator, so it lowers to `yield* <expr>; return;` — a plain
+    /// `return <gen>` would surface the generator object as the done-value and
+    /// yield nothing (the iterator-recursion bug behind the dead `iterator` suite).
+    in_generator: bool = false,
     /// Names bound by `use` hooks seen so far in the current function body, in
     /// source order. Used to infer the dependency array of `useMemo`/`useEffect`:
     /// a hook's lambda dep list is the reactive names it references.
@@ -770,7 +776,11 @@ const Emitter = struct {
 
     fn emitFn(self: *Emitter, f: ast.FnDecl) !void {
         self.try_seq = 0;
-        try self.fmt("{s} {s}(", .{ fnKeyword(f), jsIdent(f.name) });
+        const kw = fnKeyword(f);
+        const prev_in_generator = self.in_generator;
+        self.in_generator = std.mem.endsWith(u8, kw, "function*");
+        defer self.in_generator = prev_in_generator;
+        try self.fmt("{s} {s}(", .{ kw, jsIdent(f.name) });
         try self.emitParams(f.params);
         try self.w(") {\n");
         const prev_fn_indent = self.current_indent;
@@ -1234,6 +1244,15 @@ const Emitter = struct {
                             try self.emitTryStmt(form, .ret);
                             return;
                         }
+                        if (self.in_generator) {
+                            // `return <iter>` in a `*fn -> @Iterator` delegates:
+                            // `yield* <iter>; return;` (a plain `return <gen>`
+                            // surfaces the generator object and yields nothing).
+                            try self.w("yield* ");
+                            try self.emitExpr(rp.*);
+                            try self.w("; return;");
+                            return;
+                        }
                         try self.w("return ");
                         try self.emitExpr(rp.*);
                     } else {
@@ -1361,6 +1380,10 @@ const Emitter = struct {
 
     /// Emit a `params => { body }` arrow function (for trailing-lambda hook args).
     fn emitLambda(self: *Emitter, params: []const []const u8, body: []ast.Stmt) !void {
+        // A nested arrow is not a generator — its `return` stays `return`.
+        const prev_in_generator = self.in_generator;
+        self.in_generator = false;
+        defer self.in_generator = prev_in_generator;
         try self.w("(");
         for (params, 0..) |p, i| {
             if (i > 0) try self.w(", ");
@@ -1802,12 +1825,39 @@ const Emitter = struct {
                     break :blk false;
                 };
 
-                if (has_yield) {
+                if (has_yield and self.in_generator) {
+                    // Inside a `*fn` generator, `loop (xs) { item -> yield item }`
+                    // is real generator iteration — emit `for…of` with native
+                    // `yield`, NOT `.map()` (which builds a throwaway array and
+                    // yields nothing — the `fromList`/iterator-suite bug).
+                    if (lp.params.len == 1) {
+                        try self.fmt("for (const {s} of ", .{jsIdent(lp.params[0])});
+                        try self.emitExpr(lp.iter.*);
+                        try self.w(") {\n");
+                    } else {
+                        try self.w("for (const [");
+                        var i: usize = lp.params.len;
+                        while (i > 0) {
+                            i -= 1;
+                            try self.w(jsIdent(lp.params[i]));
+                            if (i > 0) try self.w(", ");
+                        }
+                        try self.w("] of (");
+                        try self.emitExpr(lp.iter.*);
+                        try self.w(").entries()) {\n");
+                    }
+                    for (lp.body) |stmt| {
+                        try self.w("    ");
+                        try self.emitStmt(stmt);
+                        try self.w("\n");
+                    }
+                    try self.w("}");
+                } else if (has_yield) {
                     try self.emitExpr(lp.iter.*);
                     try self.w(".map((");
                     for (lp.params, 0..) |p, i| {
                         if (i > 0) try self.w(", ");
-                        try self.w(p);
+                        try self.w(jsIdent(p));
                     }
                     try self.w(") => {\n");
                     for (lp.body) |stmt| {
@@ -2010,6 +2060,10 @@ const Emitter = struct {
                         for (cc.trailing) |tl| {
                             if (!first) try self.w(", ");
                             first = false;
+                            // A trailing arrow is not a generator — `return` stays.
+                            const prev_in_generator = self.in_generator;
+                            self.in_generator = false;
+                            defer self.in_generator = prev_in_generator;
                             try self.w("(");
                             for (tl.params, 0..) |p, pi| {
                                 if (pi > 0) try self.w(", ");
@@ -2063,6 +2117,10 @@ const Emitter = struct {
             },
 
             .function => |f| {
+                // A nested arrow is not a generator — its `return` stays `return`.
+                const prev_in_generator = self.in_generator;
+                self.in_generator = false;
+                defer self.in_generator = prev_in_generator;
                 try self.w("(");
                 for (f.kind.params, 0..) |p, i| {
                     if (i > 0) try self.w(", ");
