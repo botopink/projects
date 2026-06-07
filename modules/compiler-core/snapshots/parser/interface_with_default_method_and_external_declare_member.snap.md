@@ -112,7 +112,8 @@
                   "erlang",
                   "\"lists\"",
                   "\"reverse\""
-                ]
+                ],
+                "is_builtin": true
               },
               {
                 "name": "external",
@@ -120,7 +121,8 @@
                   "node",
                   "\"./bp_stdlib.mjs\"",
                   "\"list_reverse\""
-                ]
+                ],
+                "is_builtin": true
               }
             ],
             "genericParams": [],

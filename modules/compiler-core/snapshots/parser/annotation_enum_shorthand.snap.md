@@ -14,7 +14,8 @@
             "name": "target",
             "args": [
               ".beam"
-            ]
+            ],
+            "is_builtin": false
           }
         ],
         "genericParams": [],

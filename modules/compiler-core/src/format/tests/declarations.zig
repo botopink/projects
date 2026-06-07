@@ -323,9 +323,9 @@ test "format: generic ---- @Result<D, E> in signature" {
     );
 }
 
-test "format: generic ---- nested @Option in @Result" {
+test "format: generic ---- nested ?T in @Result" {
     try h.assertFormat(std.testing.allocator,
-        \\pub fn lookup(k: string) -> @Result<@Option<i32>, string> {
+        \\pub fn lookup(k: string) -> @Result<?i32, string> {
         \\    todo;
         \\}
     );

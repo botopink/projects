@@ -543,9 +543,16 @@ pub const Parser = struct {
         return o;
     }
 
-    /// Parses zero or more annotation blocks at the current position. Two forms:
-    /// `#[name(arg, arg)]` — one annotation per block;
-    /// `@[name(…), name(…)]` — one or more builtin-call annotations per block.
+    /// Parses zero or more annotation blocks at the current position.
+    ///
+    /// Primary form (new): `#[@builtin(arg, arg), custom()]`
+    ///   - `@name` prefix marks a compiler-known (builtin) attribute;
+    ///   - plain `name` is a user-defined attribute;
+    ///   - comma-separated list of any mix.
+    ///
+    /// Legacy form (kept for migration): `@[name(…), name(…)]`
+    ///   - all annotations inside are treated as builtin (`is_builtin = true`).
+    ///
     /// Returns an owned slice (empty when no annotations are present).
     pub fn parseAnnotations(this: *This, alloc: std.mem.Allocator) ParseError![]Annotation {
         var list: std.ArrayList(Annotation) = .empty;
@@ -554,25 +561,41 @@ pub const Parser = struct {
             list.deinit(alloc);
         }
         while ((this.check(.hash) or this.check(.at)) and this.peekAt(1).kind == .leftSquareBracket) {
-            const isAtBlock = this.check(.at);
+            const isLegacyAtBlock = this.check(.at);
             _ = this.advance(); // `#` or `@`
             _ = try this.consume(.leftSquareBracket);
             while (true) {
-                try list.append(alloc, try this.parseAnnotationCall(alloc));
-                // Only the `@[ … ]` block holds a comma-separated call list.
-                if (!(isAtBlock and this.match(.comma))) break;
+                var ann = try this.parseAnnotationCall(alloc);
+                // In the legacy `@[…]` form every annotation is implicitly builtin.
+                if (isLegacyAtBlock) ann.is_builtin = true;
+                try list.append(alloc, ann);
+                if (!this.match(.comma)) break;
             }
             _ = try this.consume(.rightSquareBracket);
         }
         return list.toOwnedSlice(alloc);
     }
 
-    /// Parses a single `name` or `name(arg, arg)` annotation call.
+    /// Parses a single annotation call.
+    ///
+    /// Forms:
+    ///   `@name(arg, arg)` — builtin attribute (`is_builtin = true`)
+    ///   `name(arg, arg)`  — custom/user attribute (`is_builtin = false`)
     fn parseAnnotationCall(this: *This, alloc: std.mem.Allocator) ParseError!Annotation {
-        // Accept any word (identifier or reserved word) as the annotation name.
-        const nameTok = this.peek();
-        if (nameTok.kind != .identifier and !isReservedWord(nameTok.kind)) return ParseError.UnexpectedToken;
-        const name = this.advance().lexeme;
+        // `@name(…)` is lexed as a single `.builtinIdent` token (e.g. `"@external"`).
+        // Strip the leading `@` to get the bare name; mark as builtin.
+        var is_builtin = false;
+        const name: []const u8 = blk: {
+            if (this.check(.builtinIdent)) {
+                is_builtin = true;
+                break :blk this.advance().lexeme[1..]; // "@external" → "external"
+            }
+            // Accept any word (identifier or reserved word) as a custom attribute name.
+            const nameTok = this.peek();
+            if (nameTok.kind != .identifier and !isReservedWord(nameTok.kind)) return ParseError.UnexpectedToken;
+            break :blk this.advance().lexeme;
+        };
+
         var args: std.ArrayList([]const u8) = .empty;
         errdefer args.deinit(alloc);
         if (this.match(.leftParenthesis)) {
@@ -593,6 +616,7 @@ pub const Parser = struct {
         return Annotation{
             .name = name,
             .args = try args.toOwnedSlice(alloc),
+            .is_builtin = is_builtin,
         };
     }
 

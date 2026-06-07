@@ -14,7 +14,8 @@
             "name": "target",
             "args": [
               ".erlang"
-            ]
+            ],
+            "is_builtin": false
           }
         ],
         "genericParams": [],

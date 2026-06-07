@@ -1031,6 +1031,9 @@ pub const Annotation = struct {
     name: []const u8,
     /// Raw argument lexemes (may span adjacent source tokens, e.g. `.erlang`).
     args: []const []const u8,
+    /// True when the annotation was written with a `@` prefix inside `#[…]`
+    /// — i.e. `#[@external(…)]`. False for user-defined attributes `#[custom()]`.
+    is_builtin: bool = false,
 
     pub fn deinit(this: *Annotation, allocator: std.mem.Allocator) void {
         allocator.free(this.args);

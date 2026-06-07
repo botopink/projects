@@ -14,7 +14,8 @@
             "name": "derive",
             "args": [
               "Eq"
-            ]
+            ],
+            "is_builtin": false
           }
         ],
         "genericParams": [],

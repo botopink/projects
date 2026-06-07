@@ -1033,10 +1033,10 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
     // — the host symbol replaces the body, so an annotated plain `fn` (with or
     // without a body) is malformed.
     if (!f.isDeclare) {
-        return fail(env, fnLoc, "`@[external(…)]` requires a `declare fn` declaration", "Write `@[external(erlang, \"string\", \"length\")] pub declare fn length(s: string) -> i32;`");
+        return fail(env, fnLoc, "`#[@external(…)]` requires a `declare fn` declaration", "Write `#[@external(erlang, \"string\", \"length\")] pub declare fn length(s: string) -> i32;`");
     }
     if (a.args.len != 3) {
-        return fail(env, fnLoc, "`external` expects exactly 3 arguments: external(target: Target, module: string, symbol: string)", "Example: @[external(erlang, \"string\", \"length\")]");
+        return fail(env, fnLoc, "`@external` expects exactly 3 arguments: @external(target: Target, module: string, symbol: string)", "Example: #[@external(erlang, \"string\", \"length\")]");
     }
     // arg0: a `Target` enum member (a bare identifier, optionally `.target`).
     const target = std.mem.trimStart(u8, a.args[0], ".");
@@ -1044,12 +1044,12 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
         if (std.mem.eql(u8, t, target)) break true;
     } else false;
     if (!known) {
-        return fail(env, fnLoc, "`external` target must be a Target member: node, typescript, erlang, beam or wasm", "Example: @[external(erlang, \"string\", \"length\")]");
+        return fail(env, fnLoc, "`@external` target must be a Target member: node, typescript, erlang, beam or wasm", "Example: #[@external(erlang, \"string\", \"length\")]");
     }
     // arg1/arg2: string literals naming the host module and symbol.
     for (a.args[1..]) |arg| {
         if (arg.len < 2 or arg[0] != '"') {
-            return fail(env, fnLoc, "`external` module and symbol must be string literals", "Example: @[external(node, \"./gleam_stdlib.mjs\", \"string_length\")]");
+            return fail(env, fnLoc, "`@external` module and symbol must be string literals", "Example: #[@external(node, \"./gleam_stdlib.mjs\", \"string_length\")]");
         }
     }
 }
@@ -2132,9 +2132,18 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             for (b.args, 0..) |a, i| {
                 args[i] = try resolveTypeRefInContext(env, a, genericMap);
             }
-            // The builtin `@Option<T>` is the canonical form of the optional type
-            // `?T` — normalise it so both share one representation (and one set of
-            // `.map` / `.flatMap` / `.unwrapOr` lowerings).
+            // `?T` is the ONLY optional spelling — optional is not a concrete
+            // type (user decision, 2026-06-06). The nominal forms `@Option<T>` /
+            // `@Optional<T>` are rejected with a pointed diagnostic; the stdlib
+            // `interface Option<T>` is the declarative reference for `?T`'s
+            // methods, not a type.
+            if (b.is_builtin and (std.mem.eql(u8, b.name, "Option") or std.mem.eql(u8, b.name, "Optional"))) {
+                env.lastError = TypeError.custom(
+                    "`@Option<T>` is not a type — the optional type is written `?T`",
+                    "Replace the annotation with `?T` (e.g. `?i32`).",
+                );
+                return error.TypeError;
+            }
             // `@Expr<T>` is encoded like `optional`/`array` — a named type with
             // one arg, so structural unification gives `@Expr<T> ~ @Expr<U>
             // iff T ~ U` for free. The generic parameter is mandatory; a type
@@ -2143,9 +2152,7 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             // `Array<T>` is the canonical spelling of the array type `T[]` —
             // normalise it so annotations unify with array-literal inference
             // (`[1, 2]` infers as named "array").
-            const name = if (b.is_builtin and std.mem.eql(u8, b.name, "Option"))
-                "optional"
-            else if (std.mem.eql(u8, b.name, "Array"))
+            const name = if (std.mem.eql(u8, b.name, "Array"))
                 "array"
             else
                 b.name;

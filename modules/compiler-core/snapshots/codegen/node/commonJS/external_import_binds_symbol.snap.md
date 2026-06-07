@@ -1,7 +1,7 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
-@[external(erlang, "erlang", "abs"),
-  external(node, "./stdlib.mjs", "abs")]
+#[@external(erlang, "erlang", "abs"),
+  @external(node, "./stdlib.mjs", "abs")]
 pub declare fn abs(n: i32) -> i32;
 
 fn main() {
