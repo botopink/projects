@@ -38,12 +38,15 @@ The server currently handles `initialize` / `shutdown` plus these
 `textDocument/*` methods:
 
 - `publishDiagnostics` (with `$/progress`), `formatting`,
-  `hover` (full signature + doc comments), `definition`, `typeDefinition`,
-  `documentSymbol` (hierarchical), `completion` (prefix + dot-trigger + labeled args + sortText + module names),
+  `hover` (full signature + doc comments, incl. qualified `std` members),
+  `definition` (same-file, cross-module, and into embedded `std` modules),
+  `typeDefinition`,
+  `documentSymbol` (hierarchical, incl. `test "name"` blocks as `Method`),
+  `completion` (prefix + dot-trigger + `list.`/`io.` std members + labeled args + sortText + module names),
   `references` (cross-module with exact positions), `rename` (cross-module multi-file, with `prepareRename`, rejects keywords),
   `signatureHelp`, `inlayHint`,
   `codeAction` (add type annotation, remove unused import, add missing case patterns, add missing import),
-  `foldingRange`.
+  `foldingRange` (incl. `test` blocks).
 
 The server maintains a **project index** (`src/project_index.zig`) that scans
 `.bp` files from the workspace `rootUri`, caching `pub` symbols for cross-module

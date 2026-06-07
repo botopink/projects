@@ -61,15 +61,20 @@
       symbols_test_block, folding_test_block; stdio-verified end to end
       (100 LSP tests green)
 
-## F4 — LSP: interface-method dispatch  ◀ BLOCKED on stdlib-interface
+## F4 — LSP: interface-method dispatch  ◀ DEFERRED — BLOCKED on stdlib-interface
 - [ ] `completion` on receiver dot: `true.` / `42.` / `xs.`
 - [ ] `hover` + `signatureHelp` for interface methods on primitives
 - [ ] Snapshots `lsp/completion_primitive_methods`, `lsp/hover_interface_method`
+> Cannot start until `stdlib-interface` lands primitive interfaces in
+> `primitives.d.bp`/`array.d.bp`. Left untouched on this branch by design.
 
-## F5 — Manifest + docs
-- [ ] Bump `package.json` version; refresh README
-- [ ] Update both `AGENTS.md` + `docs.md`
-- [ ] `zig build test` in `modules/language-server` green
+## F5 — Manifest + docs  ✔ DONE (F4 items excepted)
+- [x] Bumped `package.json` 0.0.1 → 0.1.0; refreshed README feature list
+      (attributes/@-types/`*fn`/`?.`/`${…}`, std go-to-def, std completion,
+      test-block symbols, new snippets)
+- [x] Updated language-server + vscode-extension `AGENTS.md` + `docs.md`
+      feature tables (done incrementally across F0a/F1/F3)
+- [x] `zig build test` in `modules/language-server` green (100/100)
 
 ## Notes
 - Grammar = purely lexical; semantics belong to the LSP ("no compiler-internal
