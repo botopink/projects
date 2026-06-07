@@ -600,11 +600,13 @@ like `swap` (`Pair(first: p.second, …)`) unified `A := B` globally. Fixed:
 - [ ] `parse` (string → ?i32 / ?f64) — needs a runtime helper to handle NaN → null mapping
 
 ## F7 — `string` (+ `string_builder`, via F1 `@[external(…)]`)
-- [ ] Extend `string.d.bp` to Gleam's surface: `length`, `reverse`, `replace`, `split`,
-      `join`, `pad_left`, `pad_right`, `slice`, `contains`, `starts_with`, `to_graphemes`
+- [x] `string.bp` fn-module: `split`, `trim`, `trimStart`, `trimEnd`, `contains`,
+      `startsWith`, `endsWith`, `slice`, `replace`, `toUpper`, `toLower`, `join` —
+      qualified wrappers over the built-in String interface methods; both
+      `s.split(",")` (method syntax) and `string.split(s, ",")` (qualified) work
 - [ ] `string_builder.bp`: `new`, `append`, `from_strings`, `to_string` (efficient concat)
 - [ ] Extend `libs/std/test/string_test.bp` (`split`, `join`, `replace`, `slice`,
-      `starts_with`) — needs the snake_case JS name mapping (see gaps above)
+      `startsWith`) — needs the snake_case JS name mapping (see gaps above)
 
 ## F8 — `iterator` (lazy sequences)
 - [ ] `iterator.bp`: `from_list`, `map`, `filter`, `take`, `fold`, `to_list`, `range`, `repeat`

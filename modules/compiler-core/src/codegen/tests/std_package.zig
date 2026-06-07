@@ -122,6 +122,21 @@ test "js: std package ---- pair record module qualified calls" {
     );
 }
 
+test "js: std package ---- string module qualified wrappers" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\import {string} from "std";
+        \\
+        \\fn main() {
+        \\    val parts = string.split("a,b,c", ",");
+        \\    @print(string.join(parts, "|"));
+        \\    @print(string.contains("hello world", "world"));
+        \\    @print(string.startsWith("foobar", "foo"));
+        \\    @print(string.slice("hello", 1, 3));
+        \\    @print(string.trim("  hi  "));
+        \\}
+    );
+}
+
 test "js: std package ---- int module pure math helpers" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\import {int} from "std";

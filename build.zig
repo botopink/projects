@@ -30,6 +30,7 @@ pub fn build(b: *std.Build) void {
         "list.bp",
         "int.bp",
         "float.bp",
+        "string.bp",
     };
     for (std_bp_files) |f| {
         std_prelude.addAnonymousImport(f, .{
