@@ -50,11 +50,16 @@
 - [x] Reviewed `language-configuration.json`: `#[…]` auto-closes via `[`/`]`,
       `${…}` via `{`/`}`; indentation rules already cover blocks — adequate
 
-## F3 — LSP: test blocks + stdlib surface
-- [ ] `documentSymbol` + `foldingRange` for `test "name" { … }` blocks
-- [ ] `completion`: std module members after `import {list} from "std"`
-- [ ] `hover`: std module fns + `#[@external]` declares
-- [ ] Snapshots under `snapshots/lsp/`
+## F3 — LSP: test blocks + stdlib surface  ✔ DONE
+- [x] `documentSymbol` (Method kind, string-literal name) + `foldingRange` for
+      `test "name" { … }` blocks
+- [x] `completion`: `list.`/`io.` lists the std module's `pub fn`s (signatures as
+      detail), gated on `import { … } from "std"` (`stdModuleCompletion`)
+- [x] `hover`: qualified std member renders `pub [declare] fn` signature + doc
+      comment from embedded source, tagged `from std/<module>` (`hoverStdModule`)
+- [x] Snapshots: hover_std_module_fn, hover_std_external_declare,
+      symbols_test_block, folding_test_block; stdio-verified end to end
+      (100 LSP tests green)
 
 ## F4 — LSP: interface-method dispatch  ◀ BLOCKED on stdlib-interface
 - [ ] `completion` on receiver dot: `true.` / `42.` / `xs.`

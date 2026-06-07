@@ -159,3 +159,30 @@ test "symbols: selectionRange.start.line matches declaration line" {
     try std.testing.expectEqual(@as(u32, 1), syms[1].selectionRange.start.line);
     try snap.assertDocumentSymbols(gpa, "symbols_line_ranges", source, syms);
 }
+
+// ── S-test — `test "name" { … }` blocks appear as Method symbols ──────────────
+
+test "symbols: test blocks become Method symbols" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\val x = 1;
+        \\test "x is positive" {
+        \\    assert x > 0, "positive";
+        \\}
+    ;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), source);
+
+    const syms = try engine.documentSymbols(gpa, tokens);
+    defer {
+        for (syms) |s| engine.freeSymbol(gpa, s);
+        gpa.free(syms);
+    }
+
+    // val + test
+    try std.testing.expectEqual(@as(usize, 2), syms.len);
+    try std.testing.expectEqualStrings("x is positive", syms[1].name);
+    try snap.assertDocumentSymbols(gpa, "symbols_test_block", source, syms);
+}

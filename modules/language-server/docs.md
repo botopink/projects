@@ -27,11 +27,11 @@ The server currently handles `initialize` / `shutdown` plus these
 |---|---|
 | `publishDiagnostics` | Driven by `feedback.zig`; clears stale messages between compiles; sends `$/progress` begin/end. Surfaces parse errors, comptime-validation errors, **and located type-inference errors** (the `typeError` outcome) |
 | `formatting` | Calls `botopink.format` — same code path as `botopink format` |
-| `hover` | Full signature (fn with params/return, record with fields, enum with variants) + `///` doc comments |
+| `hover` | Full signature (fn with params/return, record with fields, enum with variants) + `///` doc comments; on a qualified std member (`list.map`, `io.println`) renders the `pub [declare] fn` signature read from the embedded std source, tagged `from std/<module>` |
 | `definition` | Jumps to the declaration of the symbol; on a local miss, resolves **imported symbols** to their `pub` declaration in another module (`definitionInModules`, candidate sources gathered from the project index); on a workspace miss, resolves **std module symbols** (`list.map`, bare `list`) against the embedded "std" package (`definitionInStdModules`) and materializes the module source under `~/.cache/botopink-lsp/std/` |
 | `typeDefinition` | Jumps to the type declaration (record/struct/enum) of the symbol |
-| `documentSymbol` | Hierarchical outline: enum variants, struct/record fields, methods nested under parent |
-| `completion` | Identifiers + dot-completion of members (trigger `.`) — fields/methods of a value receiver **and** variants/fields of a type-name receiver (`Status.`, `Point.`) — + labeled args + type-aware sorting + module name completion (inside `from "…"`) |
+| `documentSymbol` | Hierarchical outline: enum variants, struct/record fields, methods nested under parent; `test "name" { … }` blocks surface as `Method` symbols |
+| `completion` | Identifiers + dot-completion of members (trigger `.`) — fields/methods of a value receiver **and** variants/fields of a type-name receiver (`Status.`, `Point.`) — + std module members on `list.`/`io.` (the module's `pub fn`s, when imported from "std") + labeled args + type-aware sorting + module name completion (inside `from "…"`) |
 | `references` | Lists references in current file + re-lexes external files for exact positions via project index |
 | `rename` | Cross-module rename with `prepareRename` validation (multi-file WorkspaceEdit, rejects keywords/literals) |
 | `signatureHelp` | Active parameter highlighting on function calls (trigger `(`, retrigger `,` `:`) |

@@ -219,6 +219,100 @@ pub fn hover(
 
         return .{ .contents = .{ .kind = proto.MarkupKind.Markdown, .value = try buf.toOwnedSlice(gpa) } };
     }
+
+    // Not a local binding — try a qualified std module member (`list.map`).
+    if (try hoverStdModule(gpa, source, pos)) |h| return h;
+
+    return null;
+}
+
+/// Hover for `list.map` / `io.println` where the qualifier is a module
+/// imported from "std": renders the `pub [declare] fn` signature plus its
+/// doc comment, read from the embedded std source. Returns null otherwise.
+fn hoverStdModule(
+    gpa: std.mem.Allocator,
+    source: []const u8,
+    pos: proto.Position,
+) !?proto.Hover {
+    const span = identSpanAt(source, pos) orelse return null;
+    const name = source[span.start..span.end];
+    const qual = qualifierBefore(source, span.start) orelse return null;
+    const mod = findStdModule(qual) orelse return null;
+    if (!importsStdModule(source, qual)) return null;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    var lexer = Lexer.init(mod.source);
+    const tokens = lexer.scanAll(arena.allocator()) catch return null;
+
+    var i: usize = 0;
+    while (i < tokens.len) : (i += 1) {
+        if (tokens[i].kind != .@"pub") continue;
+        // `pub fn name` or `pub declare fn name`
+        var j = i + 1;
+        while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
+        if (j < tokens.len and tokens[j].kind == .declare) j += 1;
+        while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
+        if (j >= tokens.len or tokens[j].kind != .@"fn") continue;
+        const fn_idx = j;
+        var k = j + 1;
+        while (k < tokens.len and tokens[k].kind == .endOfFile) : (k += 1) {}
+        if (k >= tokens.len or tokens[k].kind != .identifier) continue;
+        if (!std.mem.eql(u8, tokens[k].lexeme, name)) continue;
+
+        // Signature slice spans the `pub` keyword through the `{`/`;`.
+        const sig_start = tokenOffset(mod.source, tokens[i]);
+        var end_idx = fn_idx + 1;
+        var depth: u32 = 0;
+        while (end_idx < tokens.len) : (end_idx += 1) {
+            const ek = tokens[end_idx].kind;
+            if (ek == .leftParenthesis) depth += 1;
+            if (ek == .rightParenthesis) depth -= 1;
+            if (depth == 0 and (ek == .leftBrace or ek == .semicolon)) break;
+        }
+        const sig_end = if (end_idx < tokens.len) tokenOffset(mod.source, tokens[end_idx]) else mod.source.len;
+        const sig = std.mem.trim(u8, mod.source[sig_start..@min(sig_end, mod.source.len)], " \t\r\n");
+
+        var buf: std.ArrayList(u8) = .empty;
+        errdefer buf.deinit(gpa);
+        try buf.appendSlice(gpa, "```botopink\n");
+        try buf.appendSlice(gpa, sig);
+        try buf.appendSlice(gpa, "\n```");
+        try buf.print(gpa, "\n\n*from `std/{s}`*", .{mod.name});
+
+        // Doc comment: consecutive `///` lines immediately above the decl.
+        if (stdDocCommentBefore(tokens, i)) |doc| {
+            try buf.appendSlice(gpa, "\n\n---\n\n");
+            try buf.appendSlice(gpa, doc);
+        }
+
+        return .{ .contents = .{ .kind = proto.MarkupKind.Markdown, .value = try buf.toOwnedSlice(gpa) } };
+    }
+    return null;
+}
+
+/// Returns the `///` doc-comment lexeme immediately preceding the token at
+/// `decl_idx` (skipping any `#[…]` attribute tokens in between), or null.
+fn stdDocCommentBefore(tokens: []const Token, decl_idx: usize) ?[]const u8 {
+    var i = decl_idx;
+    // Skip backwards over attribute tokens (`]`, `)`, strings, `@external`, `#[`).
+    while (i > 0) {
+        const k = tokens[i - 1].kind;
+        if (k == .commentDoc) return tokens[i - 1].lexeme;
+        if (k == .commentModule or k == .commentNormal or k == .endOfFile) {
+            i -= 1;
+            continue;
+        }
+        // Attribute / decorator tokens may sit between the doc and the decl.
+        if (k == .rightSquareBracket or k == .leftSquareBracket or k == .hash or
+            k == .at or k == .identifier or k == .stringLiteral or
+            k == .leftParenthesis or k == .rightParenthesis or k == .comma)
+        {
+            i -= 1;
+            continue;
+        }
+        break;
+    }
     return null;
 }
 
@@ -491,6 +585,39 @@ pub fn documentSymbols(
     var i: usize = 0;
     while (i < tokens.len) : (i += 1) {
         const tok = tokens[i];
+
+        // `test "name" { … }` — the name is a string literal, not an
+        // identifier, so it gets its own branch (no children).
+        if (tok.kind == .@"test") {
+            var tj = i + 1;
+            while (tj < tokens.len and tokens[tj].kind == .endOfFile) : (tj += 1) {}
+            if (tj >= tokens.len or tokens[tj].kind != .stringLiteral) continue;
+
+            const str_tok = tokens[tj];
+            const sel_start = lsp_types.locToPosition(str_tok.line, str_tok.col);
+            const sel_end = lsp_types.locToPosition(str_tok.line, str_tok.col + str_tok.lexeme.len);
+
+            var range_end = sel_end;
+            const block_end_idx = findBlockEnd(tokens, tj + 1);
+            if (block_end_idx) |end_idx|
+                range_end = lsp_types.locToPosition(tokens[end_idx].line, tokens[end_idx].col + 1);
+
+            // Strip the surrounding quotes from the string lexeme for display.
+            const raw = str_tok.lexeme;
+            const name = if (raw.len >= 2 and raw[0] == '"') raw[1 .. raw.len - 1] else raw;
+
+            try syms.append(gpa, .{
+                .name = try gpa.dupe(u8, name),
+                .kind = proto.SymbolKind.Method,
+                .range = .{ .start = sel_start, .end = range_end },
+                .selectionRange = .{ .start = sel_start, .end = sel_end },
+                .children = null,
+            });
+
+            if (block_end_idx) |end_idx| i = end_idx else i = tj;
+            continue;
+        }
+
         var sym_kind: ?u32 = null;
         var decl_kind: ?TokenKind = null;
         for (decl_values) |k| {
@@ -911,9 +1038,11 @@ pub fn foldingRanges(
     var ranges: std.ArrayList(proto.FoldingRange) = .empty;
     errdefer ranges.deinit(gpa);
 
-    // Track brace-delimited blocks for fn/struct/record/enum/interface/implement.
+    // Track brace-delimited blocks for fn/struct/record/enum/interface/
+    // implement and `test "name" { … }` blocks. The brace-finder skips the
+    // intervening string-literal name, so `test` needs no special handling.
     const block_kws = [_]TokenKind{
-        .@"fn", .@"struct", .record, .@"enum", .interface, .implement,
+        .@"fn", .@"struct", .record, .@"enum", .interface, .implement, .@"test",
     };
     var i: usize = 0;
     while (i < tokens.len) : (i += 1) {
@@ -1862,7 +1991,13 @@ pub fn completion(
     // ── dot-completion: `expr.` triggers member completion ───────────────────
     const dot_ctx = dotContext(source, offset);
     if (dot_ctx) |ctx| {
-        return dotCompletion(gpa, ctx.receiver, bindings);
+        // Local types/values win; on a miss, `list.` resolves to the embedded
+        // "std" module's `pub fn` members (when imported from "std").
+        const member_items = try dotCompletion(gpa, ctx.receiver, bindings);
+        if (member_items.len > 0) return member_items;
+        gpa.free(member_items);
+        if (try stdModuleCompletion(gpa, source, ctx.receiver)) |std_items| return std_items;
+        return gpa.alloc(proto.CompletionItem, 0);
     }
 
     // ── labeled argument completion: inside `fn_name(|)` suggest param labels
@@ -2065,6 +2200,104 @@ fn dotCompletion(
     }
 
     return items.toOwnedSlice(gpa);
+}
+
+/// True when the file imports `module_name` from the "std" package, i.e. it
+/// contains an `import { … module_name … } from "std";` declaration.
+fn importsStdModule(source: []const u8, module_name: []const u8) bool {
+    var search: usize = 0;
+    while (std.mem.indexOfPos(u8, source, search, "from \"std\"")) |from_idx| {
+        // Walk back to the `import { … }` list that precedes this `from`.
+        const brace = std.mem.lastIndexOfScalar(u8, source[0..from_idx], '{') orelse {
+            search = from_idx + 1;
+            continue;
+        };
+        const list = source[brace + 1 .. from_idx];
+        // Match the bare module name as a whole identifier in the import list.
+        var it = std.mem.tokenizeAny(u8, list, " \t\r\n,{}*");
+        while (it.next()) |seg| {
+            if (std.mem.eql(u8, seg, module_name)) return true;
+        }
+        search = from_idx + 1;
+    }
+    return false;
+}
+
+/// Byte offset of `tok`'s first character within `source` (1-based line/col).
+fn tokenOffset(source: []const u8, tok: Token) usize {
+    return lsp_types.positionToOffset(source, lsp_types.locToPosition(tok.line, tok.col));
+}
+
+/// Completion for `list.` where `list` is a module imported from "std":
+/// lists the module's `pub fn` declarations with their rendered signatures.
+/// Returns null when `receiver` is not an imported std module.
+fn stdModuleCompletion(
+    gpa: std.mem.Allocator,
+    source: []const u8,
+    receiver: []const u8,
+) !?[]proto.CompletionItem {
+    const mod = findStdModule(receiver) orelse return null;
+    if (!importsStdModule(source, receiver)) return null;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    var lexer = Lexer.init(mod.source);
+    const tokens = lexer.scanAll(arena.allocator()) catch return null;
+
+    var items: std.ArrayList(proto.CompletionItem) = .empty;
+    errdefer {
+        for (items.items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        items.deinit(gpa);
+    }
+
+    var i: usize = 0;
+    while (i < tokens.len) : (i += 1) {
+        if (tokens[i].kind != .@"pub") continue;
+        var j = i + 1;
+        while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
+        if (j >= tokens.len or tokens[j].kind != .@"fn") continue;
+        var k = j + 1;
+        while (k < tokens.len and tokens[k].kind == .endOfFile) : (k += 1) {}
+        if (k >= tokens.len or tokens[k].kind != .identifier) continue;
+
+        const detail = stdSignatureDetail(gpa, mod.source, tokens, j) catch null;
+        try items.append(gpa, .{
+            .label = try gpa.dupe(u8, tokens[k].lexeme),
+            .kind = proto.CompletionItemKind.Function,
+            .detail = detail,
+        });
+        i = k;
+    }
+
+    return try items.toOwnedSlice(gpa);
+}
+
+/// Renders the signature of a `fn` declaration (the `fn` token sits at index
+/// `fn_idx`) as the source slice from `fn` up to the body `{` or `;`.
+fn stdSignatureDetail(
+    gpa: std.mem.Allocator,
+    mod_source: []const u8,
+    tokens: []const Token,
+    fn_idx: usize,
+) ![]u8 {
+    const start = tokenOffset(mod_source, tokens[fn_idx]);
+    var end_idx = fn_idx + 1;
+    var depth: u32 = 0;
+    while (end_idx < tokens.len) : (end_idx += 1) {
+        const k = tokens[end_idx].kind;
+        if (k == .leftParenthesis) depth += 1;
+        if (k == .rightParenthesis) depth -= 1;
+        if (depth == 0 and (k == .leftBrace or k == .semicolon)) break;
+    }
+    const end = if (end_idx < tokens.len)
+        tokenOffset(mod_source, tokens[end_idx])
+    else
+        mod_source.len;
+    const sig = std.mem.trim(u8, mod_source[start..@min(end, mod_source.len)], " \t\r\n");
+    return gpa.dupe(u8, sig);
 }
 
 /// True when `decl` is a record / struct / enum type declaration whose members
