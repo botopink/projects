@@ -25,17 +25,24 @@
       source materialized to `~/.cache/botopink-lsp/std/<name>.bp`; regression
       tests for the frame reader in `src/tests/messages.zig`
 
-## F0 — Audit
-- [ ] Diff grammar keywords vs `compiler-core/src/lexer/token.zig`
-- [ ] Inventory unhighlighted syntax: `#[@external(…)]`, `@Expr`/`@Result`/
-      `@Option`/`@Iterator`, `*fn`, `|>`, `?.`, template holes, anonymous records
-- [ ] Inventory LSP gaps per feature against the same list
+## F0 — Audit  ✔ DONE
+- [x] Diff grammar keywords vs lexer table (`lexer.zig` `keywordOrIdent`, not
+      just the `token.zig` enum). Missing: `await`, `extend`. Stale (not real
+      keywords): `typeinfo`, `echo`, `todo`. `|>` already present.
+- [x] Inventory unhighlighted syntax: `#[@external(…)]` (only `@external`
+      caught generic @-builtin), `@Expr`/`@Result`/`@Option`/`@Iterator`
+      (mis-scoped as builtin *functions* — should be types), `*fn`, `?.`,
+      `${…}` holes. Anonymous records = lexically `{…}` blocks → semantic, skip.
+- [x] LSP gaps inventory → F3 (test blocks not in documentSymbol/foldingRange;
+      std module completion/hover); F4 (primitive receiver methods).
 
-## F1 — TextMate grammar sync
-- [ ] Update keyword groups in `botopink.tmLanguage.json`
-- [ ] Add scopes: attributes, `@Type` names, `*fn`, `|>`, `?.`
-- [ ] Mirror in `botopink.codeblock.json` (markdown ```bp)
-- [ ] Smoke: open `libs/std/src/*.bp` and check colouring
+## F1 — TextMate grammar sync  ✔ DONE
+- [x] Keyword groups synced (`+await`, `+extend`, `-typeinfo/-echo/-todo`)
+- [x] Added scopes: `#[…]` attribute block, builtin `@Type` names (before the
+      generic @-rule), `*fn` effect `*`, `?.` chaining, `${…}` interpolation
+- [x] `botopink.codeblock.json` injects `source.botopink` → inherits all of the
+      above automatically (no mirror edits needed)
+- [x] JSON + regex sanity validated; no vscode-textmate locally for live tokens
 
 ## F2 — Snippets + language configuration
 - [ ] Snippets: `test` block, `#[@external]` declare fn, `*fn`, `import from "std"`

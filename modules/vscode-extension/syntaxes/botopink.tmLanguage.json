@@ -5,6 +5,7 @@
   "fileTypes": ["bp"],
   "patterns": [
     { "include": "#comments" },
+    { "include": "#attributes" },
     { "include": "#keywords" },
     { "include": "#strings" },
     { "include": "#constants" },
@@ -33,21 +34,51 @@
     "keywords": {
       "patterns": [
         {
+          "comment": "effect marker on generator/effectful fns: `*fn` / `pub *fn`",
+          "name": "keyword.operator.effect.botopink",
+          "match": "\\*(?=fn\\b)"
+        },
+        {
           "name": "keyword.control.botopink",
-          "match": "\\b(if|else|case|loop|for|break|continue|yield|return|try|catch|throw)\\b"
+          "match": "\\b(if|else|case|loop|for|break|continue|yield|return|try|catch|throw|await)\\b"
         },
         {
           "name": "keyword.declaration.botopink",
-          "match": "\\b(fn|val|var|pub|private|struct|record|enum|interface|type|implement|extends|delegate|declare|macro|use|from|import|new|opaque|const|default|derive|test|assert|syntax|typeinfo|comptime|auto|echo|set|get|as)\\b"
+          "match": "\\b(fn|val|var|pub|private|struct|record|enum|interface|type|implement|extend|extends|delegate|declare|macro|use|from|import|new|opaque|const|default|derive|test|assert|syntax|comptime|auto|set|get|as)\\b"
         },
         {
           "name": "constant.language.botopink",
-          "match": "\\b(true|false|null|todo|Self)\\b"
+          "match": "\\b(true|false|null|Self)\\b"
         }
+      ]
+    },
+    "attributes": {
+      "comment": "attribute blocks: `#[@external(erlang, \"math\", \"floor\"), …]`",
+      "name": "meta.attribute.botopink",
+      "begin": "#\\[",
+      "end": "\\]",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.attribute.botopink" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.attribute.botopink" }
+      },
+      "patterns": [
+        {
+          "name": "entity.name.function.attribute.botopink",
+          "match": "@[a-zA-Z_][A-Za-z0-9_]*"
+        },
+        { "include": "#strings" },
+        { "include": "#constants" }
       ]
     },
     "operators": {
       "patterns": [
+        {
+          "comment": "optional chaining — must precede the `?` and `..` rules",
+          "name": "keyword.operator.optional-chaining.botopink",
+          "match": "\\?\\."
+        },
         {
           "name": "keyword.operator.arrow.botopink",
           "match": "->"
@@ -97,9 +128,10 @@
           "begin": "\"\"\"",
           "end": "\"\"\"",
           "patterns": [
+            { "include": "#interpolation" },
             {
               "name": "constant.character.escape.botopink",
-              "match": "\\\\(u\\{[0-9A-Fa-f]+\\}|[\"\\\\nrt0])"
+              "match": "\\\\(u\\{[0-9A-Fa-f]+\\}|[\"\\\\nrt0$])"
             }
           ]
         },
@@ -108,13 +140,27 @@
           "begin": "\"",
           "end": "\"",
           "patterns": [
+            { "include": "#interpolation" },
             {
               "name": "constant.character.escape.botopink",
-              "match": "\\\\(u\\{[0-9A-Fa-f]+\\}|[\"\\\\nrt0])"
+              "match": "\\\\(u\\{[0-9A-Fa-f]+\\}|[\"\\\\nrt0$])"
             }
           ]
         }
       ]
+    },
+    "interpolation": {
+      "comment": "string interpolation hole: `${ … }`",
+      "name": "meta.template.expression.botopink",
+      "begin": "\\$\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.template-expression.begin.botopink" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.template-expression.end.botopink" }
+      },
+      "patterns": [{ "include": "$self" }]
     },
     "constants": {
       "patterns": [
@@ -155,6 +201,11 @@
     },
     "builtins": {
       "patterns": [
+        {
+          "comment": "builtin `@`-prefixed types — must precede the generic @ident rule",
+          "name": "support.type.builtin.botopink",
+          "match": "@(Expr|Result|Option|Iterator)\\b"
+        },
         {
           "name": "support.function.builtin.botopink",
           "match": "@[a-zA-Z_][A-Za-z0-9_]*"
