@@ -1,77 +1,41 @@
-# TODO — stdlib-gleam
+# TODO — generic-inference
 
-> Live checklist for branch `task/stdlib-gleam` (worktree `.tasks/stdlib-gleam/`).
-> Spec (intent, immutable): [`tasks/v0.beta.2/specs/stdlib-gleam.md`](tasks/v0.beta.2/specs/stdlib-gleam.md)
->
+> Live checklist for branch `task/generic-inference` (worktree `.tasks/generic-inference/`).
+> Spec (intent, immutable): [`tasks/v0.beta.3/specs/generic-inference.md`](tasks/v0.beta.3/specs/generic-inference.md)
 
-> **Goal**: grow `libs/std` into a Gleam-style stdlib — `list`, `dict`, `set`,
-> `option`, `result`, `order`, `pair`, `bool`, `iterator`, `function`, `int`,
-> `float`, `string`, `io` — callable as `import {list}; list.map(xs, f)` or
-> via pipeline `xs |> list.map(f)`. Each module lands with its test suite.
+> **Goal**: every call to a generic function gets a **fresh instantiation** of its
+> `.generic` type vars (standard HM instantiation in `inferCallExpr`). Unblocks
+> inline tests in generic std modules and is a prerequisite for `stdlib-interface`.
 
-## F0 — module layout + wiring + conventions
-- [x] Relocate `prelude.zig` → `modules/compiler-core/src/comptime/stdlib/prelude.zig`
-- [x] `build.zig` updated for new `std_prelude` module path
-- [x] `prelude.zig` `@embedFile`s each `.bp`/`.d.bp` via relative path into `libs/std/src/`
-- [x] `libs/std/AGENTS.md` + `libs/std/src/AGENTS.md` document the layout
-- [x] Calling convention: qualified (`list.map(xs, f)`) + pipeline (`xs |> list.map(f)`)
+## F0 — Audit current flow ✅
+- [x] Trace `inferCallExpr` for `identity(42)`: it looked up the raw fn type and
+      passed `.generic` vars straight into `unifyAt` — no instantiation step
+- [x] `types.zig` had no instantiate helper; `infer.zig` had `instantiateType`
+      (ctor/std-export use) substituting `.unbound`+`.generic` indiscriminately
+- [x] Entry points needing the fix: plain call (`env.lookup(callee)` path),
+      pipeline call path, and identifier-as-value path in `inferIdentifierExpr`
 
-## F1 — `#[@external]` annotation syntax
-- [x] `#[@external(target, module, symbol)]` attribute on `pub declare fn`
-- [x] `builtins.d.bp`: `pub enum Target { ... }` + `fn external(...)`
-- [x] Inference: `declare fn` is typed from signature alone (no body required)
-- [x] Codegen: each backend reads the external annotations
+## F1 — Implement per-call instantiation ✅
+- [x] `instantiateGenericType(env, ty)` in `infer.zig`: standard HM instantiation —
+      one substitution map across params + return, replaces only `.generic` vars
+      with fresh `.unbound` (left `.unbound` shared). `instantiateType` gained an
+      `InstantiateMode` so ctor/std-export paths keep `.allVars` behavior
+- [x] `inferFnDecl` now generalizes: declared `<T>` params still unbound after the
+      body become `.generic` (let-polymorphism), so each use site instantiates fresh
+- [x] Applied at the plain-call, pipeline-call, and identifier-as-value sites
+- [x] 2 regression tests in `infer_generics.zig` (two-calls-different-types,
+      fn-referenced-as-value); 1010/1010 tests green
 
-## F2 — `option` + `result` (effect types)
-- [x] `?T` — builtin spelling only; `map`/`flatMap`/`unwrapOr` lowered inline
-- [x] `result` — builtin namespace; `map`/`then`/`unwrap`/`isOk`/`isError`
-- [x] `option_test.bp` + `result_test.bp`
+## F2 / F3 — superseded by `stdlib-interface`
+The loose-function generic modules (`pair.bp`, `list.bp`, …) are being converted
+to **interfaces** (`pair.d.bp`, `interface Array<T>`, …) under the
+`stdlib-interface` spec — so adding inline `test` blocks to them is moot; their
+surface moves to method syntax with its own tests. F1 (the actual fix) is the
+deliverable here. Inline-test re-enablement is replaced by the interface
+migration's per-phase test files.
 
-## F3 — `order` + `bool` + `pair`
-- [x] `order.bp` + `bool.bp` + `pair.bp`
-- [x] `order_test.bp` + `bool_test.bp` + `pair_test.bp`
-
-## F4 — `list` (core module over `Array<T>`)
-- [x] `list.bp`: fold/map/filter/flatMap/flatten/range/append/prepend/reverse/take/drop/first/rest/contains/isEmpty/find/all/any/count
-- [x] `list_test.bp`
-
-## F5 — `dict` + `set`
-- [x] `dict.bp`: `pub record Dict<K, V>` (association list) — new/get/hasKey/insert/delete/size/isEmpty/keys/values/fold/merge/mapValues + inline tests
-- [x] `set.bp`: `pub record Set<T>` (deduplicated Array) — new/contains/size/isEmpty/insert/delete/toList/fromList/union/intersection/difference + inline tests
-- [x] `dict_test.bp` + `set_test.bp`
-- [x] `prelude.zig` + `comptime.zig` + `build.zig` wired for dict/set/function/io/string_builder
-
-## F6 — `int` + `float`
-- [x] `int.bp`: absoluteValue/min/max/clamp/isEven/isOdd/toString + inline tests
-- [x] `float.bp`: absoluteValue/min/max/clamp/toString + floor/ceiling/round/squareRoot via `#[@external]` + inline tests
-- [x] `number_test.bp`
-
-## F7 — `string` + `string_builder`
-- [x] `string.bp`: split/trim/trimStart/trimEnd/contains/startsWith/endsWith/slice/replace/toUpper/toLower/join + inline tests
-- [x] `string_builder.bp`: `pub record StringBuilder` — new/append/prepend/toString/fromString/fromStrings/length/isEmpty + inline tests
-- [x] `string_test.bp`
-
-## F8 — `iterator` (lazy sequences)
-- [x] `iterator.bp`: `range(start, stop)` + `repeat(value, times)` via `*fn` generators
-- [x] `fromList`, `map`, `filter`, `take`, `fold`, `toList` — implemented via `loop (iter) { … }` (eager ops return `Array`)
-- [x] `iterator_test.bp`: 10 tests covering range/toList/fold/map/filter/take
-
-## F9 — `function` + `io`
-- [x] `function.bp`: identity/compose/flip/constant + inline tests
-- [x] `function_test.bp`
-- [x] `io.d.bp`: print/println/debug via `#[@external]`
-
-## F10 — extended modules (optional)
-- [x] `queue.bp`: `pub record Queue<T>` — empty/enqueue/dequeue/peek/size/isEmpty/toList/fromList + `queue_test.bp` (7 tests)
-- [ ] `bit_array`, `uri`, `regexp`, `dynamic` — per demand (need external host infrastructure)
-
-## Known gaps (not blocking; catalogued for follow-up tasks)
-
-1. **snake_case method JS name mapping** — `s.to_upper()` verbatim; needs typed-value dispatch. Blocks fuller string coverage.
-2. **Builtin method lowering is commonJS-only** — Erlang/BEAM codegen untested.
-3. **Erlang test runner can't reach "std" package modules** — escript loads entry module only. Multi-file compile pending.
-4. **Literal method receivers don't parse** — `"a,b".split(",")` is a parse error; must bind to `val` first.
-5. **Structural `==` on arrays is reference equality in JS** — tests compare via `.join(...)`.
-6. **Local generic fns share type across call sites** — std module fns escape via `instantiateType`.
-7. **`?.` codegen on erlang/beam/wasm** — blocked on record-field-access gap.
-8. **`iterator.fromList` JS codegen** — `*fn` + `loop { yield }` emits `.map()` which is broken for non-Array iterables; use `loop (array) { item -> … }` directly.
+## Notes
+- Fix is purely `infer.zig` — no parser or AST changes.
+- `unify.zig`'s `.generic` guard stays as a safeguard.
+- `stdlib-interface` migration now proceeds on this branch (user decision
+  2026-06-07: full migration here).

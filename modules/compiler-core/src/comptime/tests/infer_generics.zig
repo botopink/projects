@@ -116,6 +116,35 @@ test "infer: pub fn generic with two type params<T, R>" {
     );
 }
 
+test "infer: generic fn ---- two calls with different types in same scope" {
+    // Regression (stdlib-gleam known gap #6): each call site must get a fresh
+    // instantiation of the fn's generic vars — the first call must not lock
+    // `T` for the second.
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn identity<T>(x: T) -> T {
+        \\    return x;
+        \\}
+        \\fn main() {
+        \\    val a: i32 = identity(42);
+        \\    val b: string = identity("hi");
+        \\}
+    );
+}
+
+test "infer: generic fn ---- referenced as a value instantiates fresh vars" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn identity<T>(x: T) -> T {
+        \\    return x;
+        \\}
+        \\fn main() {
+        \\    val f = identity;
+        \\    val g = identity;
+        \\    val a: i32 = f(1);
+        \\    val s: string = g("x");
+        \\}
+    );
+}
+
 test "infer: generic interface Container<T>" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
         \\val Container = interface <T> {
