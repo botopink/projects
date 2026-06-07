@@ -1,89 +1,98 @@
-# stdlib interface redesign — funções soltas → métodos de interface
+# stdlib interface redesign — loose functions → interface methods
 
 **Slug**: `stdlib-interface`
-**Depends on**: `generic-inference` (methods genéricos precisam de type vars frescos por call site)
-**Files**: `libs/std/src/*.d.bp`, `libs/std/src/*.bp`; `modules/compiler-core/src/comptime/infer.zig` (method dispatch em tipos primitivos e enums)
+**Depends on**: `generic-inference` (generic methods need fresh type vars per call site)
+**Files**: `libs/std/src/*.d.bp`, `libs/std/src/*.bp`; `modules/compiler-core/src/comptime/infer.zig` (method dispatch on primitive types and enums)
 **Touches docs**: `libs/std/AGENTS.md`; `libs/std/src/docs.md`; `libs/std/src/examples.md`
 **Status**: pending
 
-## Problema
+## Problem
 
-Os módulos stdlib atuais (`bool.bp`, `list.bp`, `order.bp`, `pair.bp`, etc.) são
-**namespaces com funções soltas** — chamadas como `list.map(xs, f)` ou
-`bool.negate(x)`. Isso diverge da abordagem de como `Array<T>` já funciona
-(método: `xs.map(f)`).
+The current stdlib modules (`bool.bp`, `list.bp`, `order.bp`, `pair.bp`, etc.) are
+**namespaces with loose functions** — called as `list.map(xs, f)` or
+`bool.negate(x)`. This diverges from how `Array<T>` already works
+(method: `xs.map(f)`).
 
-A consistência com a forma nativa é melhor: `xs.fold(0, f)` em vez de
-`list.fold(xs, 0, f)`, `o.reverse()` em vez de `order.reverse(o)`.
+Consistency with the native form is better: `xs.fold(0, f)` instead of
+`list.fold(xs, 0, f)`, `o.reverse()` instead of `order.reverse(o)`.
 
-Além disso, `io.d.bp` é um arquivo de declaração isolado desnecessariamente —
-pode ser uma seção em `builtins.d.bp` como os outros primitivos.
+Also, `io.d.bp` is an unnecessarily isolated declaration file — it can be a
+section in `builtins.d.bp` like the other primitives.
 
-## Arquitetura alvo
+**`primitives.d.bp` is the reference model**: it already declares
+`interface I32 / U32 / I64 / U64 / F32 / F64 / Bool` with `self: Self` methods
+(`to_string`, `abs`, `clamp`, …). This spec extends that pattern to the rest of
+the stdlib instead of keeping loose namespace functions.
 
-Cada módulo vira uma **extensão de interface** no arquivo de declaração do tipo:
+## Target architecture
 
-| Módulo atual | Passa a ser | Interface alvo |
+Each module becomes an **interface extension** in the type's declaration file:
+
+| Current module | Becomes | Target interface |
 |---|---|---|
-| `bool.bp` | seção em `primitives.d.bp` | `interface Bool { … }` |
-| `int.bp` | seção em `primitives.d.bp` | `interface I32 { … }` |
-| `float.bp` | seção em `primitives.d.bp` | `interface F64 { … }` |
-| `string.bp` | fusão em `string.d.bp` | `interface String { … }` |
-| `list.bp` | fusão em `array.d.bp` | `interface Array<T> { … }` (métodos adicionais) |
-| `order.bp` | novo `order.d.bp` | `interface OrderOps` + enum `Order` |
-| `pair.bp` | novo `pair.d.bp` | `interface Pair<A, B>` em `#(A, B)` |
-| `iterator.bp` | fusão em `builtins.d.bp` | `interface Iterator<T>` (operações eager) |
-| `dict.bp` | fica `.bp` com métodos | `pub record Dict<K,V>` com métodos |
-| `sets.bp` | fica `.bp` com métodos | `pub record Set<T>` com métodos |
-| `queue.bp` | fica `.bp` com métodos | `pub record Queue<T>` com métodos |
-| `string_builder.bp` | fica `.bp` com métodos | `pub record StringBuilder` com métodos |
-| `function.bp` | eliminado ou virar utils | funções estáticas úteis (sem receiver natural) |
-| `io.d.bp` | fusão em `builtins.d.bp` | seção `// ── I/O ──` |
+| `bool.bp` | section in `primitives.d.bp` | `interface Bool { … }` |
+| `int.bp` | section in `primitives.d.bp` | `interface I32 { … }` |
+| `float.bp` | section in `primitives.d.bp` | `interface F64 { … }` |
+| `string.bp` | merged into `string.d.bp` | `interface String { … }` |
+| `list.bp` | merged into `array.d.bp` | `interface Array<T> { … }` (additional methods) |
+| `order.bp` | new `order.d.bp` | `interface OrderOps` + enum `Order` |
+| `pair.bp` | new `pair.d.bp` | `interface Pair<A, B>` on `#(A, B)` |
+| `iterator.bp` | merged into `builtins.d.bp` | `interface Iterator<T>` (eager operations) |
+| `dict.bp` | stays `.bp` with methods | `pub record Dict<K,V>` with methods |
+| `sets.bp` | stays `.bp` with methods | `pub record Set<T>` with methods |
+| `queue.bp` | stays `.bp` with methods | `pub record Queue<T>` with methods |
+| `string_builder.bp` | stays `.bp` with methods | `pub record StringBuilder` with methods |
+| `function.bp` | eliminated or kept as utils | useful static functions (no natural receiver) |
+| `io.d.bp` | merged into `builtins.d.bp` | `// ── I/O ──` section |
 
-## Sintaxe alvo
+`syntax.bp` (expr-templates data model) is out of scope — it stays as-is.
 
-### bool — métodos no tipo primitivo `bool`
+## Target syntax
+
+### bool — methods on the primitive type `bool`
 
 ```bp
-// primitives.d.bp
+// primitives.d.bp — extend the existing interface Bool
 interface Bool {
-    fn negate(self: bool) -> bool
-    fn nor(self: bool, other: bool) -> bool
-    fn nand(self: bool, other: bool) -> bool
-    fn exclusiveOr(self: bool, other: bool) -> bool
-    fn exclusiveNor(self: bool, other: bool) -> bool
+    fn toString(self: Self) -> string           // normalized from to_string
+    fn negate(self: Self) -> bool
+    fn nor(self: Self, other: bool) -> bool
+    fn nand(self: Self, other: bool) -> bool
+    fn exclusiveOr(self: Self, other: bool) -> bool
+    fn exclusiveNor(self: Self, other: bool) -> bool
 }
 ```
 
 ```bp
-// chamada (sem import)
+// call site (no import)
 val x = true.negate();
 val y = false.nor(false);
 ```
 
-### int — métodos em `i32`
+### int — methods on `i32`
 
 ```bp
+// primitives.d.bp — extend the existing interface I32 (abs/clamp already there)
 interface I32 {
-    fn absoluteValue(self: i32) -> i32
-    fn min(self: i32, other: i32) -> i32
-    fn max(self: i32, other: i32) -> i32
-    fn clamp(self: i32, lo: i32, hi: i32) -> i32
-    fn isEven(self: i32) -> bool
-    fn isOdd(self: i32) -> bool
-    fn toString(self: i32) -> string
+    fn toString(self: Self) -> string           // normalized from to_string
+    fn abs(self: Self) -> i32
+    fn clamp(self: Self, min: i32, max: i32) -> i32
+    fn min(self: Self, other: i32) -> i32
+    fn max(self: Self, other: i32) -> i32
+    fn isEven(self: Self) -> bool
+    fn isOdd(self: Self) -> bool
 }
 ```
 
 ```bp
-val n = (-5).absoluteValue();   // 5
-val e = 4.isEven();             // true
+val n = (-5).abs();   // 5
+val e = 4.isEven();   // true
 ```
 
-### order — métodos no enum `Order`
+### order — methods on the `Order` enum
 
 ```bp
-// order.d.bp (novo arquivo declaração)
+// order.d.bp (new declaration file)
 pub enum Order { Lt, Eq, Gt }
 
 interface OrderOps {
@@ -93,16 +102,16 @@ interface OrderOps {
 ```
 
 ```bp
-// sem import
+// no import
 val o = Order.Lt;
 val n = o.toInt();      // -1
 val r = o.reverse();    // Order.Gt
 ```
 
-### pair — métodos em `#(A, B)`
+### pair — methods on `#(A, B)`
 
 ```bp
-// pair.d.bp (novo arquivo declaração)
+// pair.d.bp (new declaration file)
 interface Pair<A, B> {
     fn first(self: #(A, B)) -> A
     fn second(self: #(A, B)) -> B
@@ -118,16 +127,16 @@ val s = p.swap();       // #(42, "hello")
 val n = p.second();     // 42
 ```
 
-### list — fusão em `Array<T>`
+### list — merged into `Array<T>`
 
 ```bp
-// array.d.bp — seção adicional (list ops)
+// array.d.bp — additional section (list ops)
 interface Array<T> {
-    // … ops existentes …
+    // … existing ops …
 
     fn fold<A>(self: Self, initial: A, f: fn(acc: A, item: T) -> A) -> A
     fn flatMap<U>(self: Self, f: fn(item: T) -> Array<U>) -> Array<U>
-    fn flatten(self: Self) -> Array<T>        // onde T = Array<U>
+    fn flatten(self: Self) -> Array<T>        // where T = Array<U>
     fn append(self: Self, other: Array<T>) -> Array<T>
     fn prepend(self: Self, item: T) -> Array<T>
     fn take(self: Self, n: i32) -> Array<T>
@@ -143,14 +152,14 @@ interface Array<T> {
 }
 ```
 
-### iterator — operações eager na interface `Iterator<T>`
+### iterator — eager operations on the `Iterator<T>` interface
 
 ```bp
-// builtins.d.bp — interface Iterator<T> estendida
+// builtins.d.bp — extended interface Iterator<T>
 pub interface Iterator<T> {
     fn next(self: Self) -> ?T
 
-    // operações eager (retornam Array)
+    // eager operations (return Array)
     fn toList(self: Self) -> Array<T>
     fn fold<A>(self: Self, initial: A, f: fn(acc: A, item: T) -> A) -> A
     fn map<U>(self: Self, f: fn(item: T) -> U) -> Array<U>
@@ -159,10 +168,10 @@ pub interface Iterator<T> {
 }
 ```
 
-### io — fusão em `builtins.d.bp`
+### io — merged into `builtins.d.bp`
 
 ```bp
-// builtins.d.bp — nova seção (substituindo io.d.bp)
+// builtins.d.bp — new section (replacing io.d.bp)
 
 // ── I/O ────────────────────────────────────────────────────────────────────────
 
@@ -181,80 +190,83 @@ pub declare fn debug(value: string);
 
 ## Steps
 
-### F0 — Fundir `io.d.bp` em `builtins.d.bp` (menor impacto, sem deps)
+### F0 — Merge `io.d.bp` into `builtins.d.bp` (smallest impact, no deps)
 
-- [ ] Mover as 3 declarações de `io.d.bp` para uma seção `// ── I/O ──` em `builtins.d.bp`
-- [ ] Deletar `io.d.bp`
-- [ ] Remover `io_mod` de `prelude.zig` e de `std_pkg_modules` em `comptime.zig`
-- [ ] Remover `io.d.bp` de `std_bp_files` em `build.zig`
-- [ ] Manter `import {io} from "std"` funcionando: `print`/`println`/`debug` são
-      builtins agora — sem módulo qualificado, acessados diretamente ou via `io.print`
-      via o namespace builtin
-- [ ] Atualizar `libs/std/AGENTS.md`
+- [ ] Move the 3 declarations from `io.d.bp` into a `// ── I/O ──` section in `builtins.d.bp`
+- [ ] Delete `io.d.bp`
+- [ ] Remove `io_mod` from `prelude.zig` and from `std_pkg_modules` in `comptime.zig`
+- [ ] Remove `io.d.bp` from `std_bp_files` in `build.zig`
+- [ ] Keep `import {io} from "std"` working: `print`/`println`/`debug` are
+      builtins now — no qualified module, accessed directly or as `io.print`
+      via the builtin namespace
+- [ ] Update `libs/std/AGENTS.md`
 
-### F1 — Métodos em `bool` (primitives.d.bp)
+### F1 — Methods on `bool` (primitives.d.bp)
 
-- [ ] Adicionar `interface Bool { … }` em `primitives.d.bp` com os 5 métodos
-- [ ] Remover (ou manter como alias) `bool.bp` — se mantido, vira `.d.bp` vazio
-- [ ] Ajustar `registerStdlib` / `prelude.zig`: remover embedding de `bool.bp` se eliminado
-- [ ] Confirmar method dispatch: `true.negate()` → inferência via `primitives.d.bp`
-- [ ] Migrar inline tests para a nova forma de chamada
+- [ ] Extend the existing `interface Bool` in `primitives.d.bp` with the 5 methods
+- [ ] Normalize legacy snake_case in `primitives.d.bp` to camelCase (`to_string` → `toString`)
+      across all interfaces (I32/U32/I64/U64/F32/F64/Bool)
+- [ ] Remove (or keep as alias) `bool.bp` — if kept, becomes an empty `.d.bp`
+- [ ] Adjust `registerStdlib` / `prelude.zig`: remove `bool.bp` embedding if eliminated
+- [ ] Confirm method dispatch: `true.negate()` → inference via `primitives.d.bp`
+- [ ] Migrate inline tests to the new call form
 
-### F2 — Métodos em `i32` e `f64` (primitives.d.bp)
+### F2 — Methods on `i32` and `f64` (primitives.d.bp)
 
-- [ ] `interface I32 { absoluteValue, min, max, clamp, isEven, isOdd, toString }`
-- [ ] `interface F64 { absoluteValue, min, max, clamp, toString; + floor/ceiling/round/squareRoot via #[@external] }`
-- [ ] Remover `int.bp` e `float.bp` (ou manter como shims transitórios)
-- [ ] Migrar testes inline para method syntax
+- [ ] Extend `interface I32` with `{ min, max, isEven, isOdd }` (`to_string`/`abs`/`clamp` exist)
+- [ ] Extend `interface F64` with `{ min, max, squareRoot via #[@external] }` (`floor`/`ceil`/`round` exist)
+- [ ] Remove `int.bp` and `float.bp` (or keep as transitional shims)
+- [ ] Migrate inline tests to method syntax
 
-### F3 — `Order` enum com métodos (`order.d.bp` novo)
+### F3 — `Order` enum with methods (new `order.d.bp`)
 
-- [ ] Criar `libs/std/src/order.d.bp` com `pub enum Order { Lt, Eq, Gt }` e `interface OrderOps`
-- [ ] Remover `order.bp` (funções migradas para interface)
-- [ ] Atualizar prelude.zig + comptime.zig + build.zig
-- [ ] Migrar `order_test.bp` para method syntax
+- [ ] Create `libs/std/src/order.d.bp` with `pub enum Order { Lt, Eq, Gt }` and `interface OrderOps`
+- [ ] Remove `order.bp` (functions migrated to the interface)
+- [ ] Update prelude.zig + comptime.zig + build.zig
+- [ ] Migrate `order_test.bp` to method syntax
 
-### F4 — `Pair<A, B>` interface em `#(A, B)` (`pair.d.bp` novo)
+### F4 — `Pair<A, B>` interface on `#(A, B)` (new `pair.d.bp`)
 
-- [ ] Criar `libs/std/src/pair.d.bp` com `interface Pair<A, B>` sobre o tipo `#(A, B)`
-- [ ] Remover `pair.bp`
-- [ ] Confirmar que `inferMethodCallExpr` resolve métodos em tuples `#(A, B)`
-- [ ] Migrar `pair_test.bp` para method syntax
+- [ ] Create `libs/std/src/pair.d.bp` with `interface Pair<A, B>` over the `#(A, B)` type
+- [ ] Remove `pair.bp`
+- [ ] Confirm that `inferMethodCallExpr` resolves methods on tuples `#(A, B)`
+- [ ] Migrate `pair_test.bp` to method syntax
 
-### F5 — List ops em `Array<T>` (array.d.bp estendido)
+### F5 — List ops on `Array<T>` (extended array.d.bp)
 
-- [ ] Adicionar `fold`, `flatMap`, `flatten`, `append`, `prepend`, `take`, `drop`,
-      `first`, `rest`, `find`, `all`, `any`, `count`, `isEmpty`, `range` ao `interface Array<T>`
-- [ ] Remover `list.bp`
-- [ ] Confirmar que os generics de `fold<A>` etc. funcionam via `generic-inference`
-- [ ] Migrar `list_test.bp` para method syntax (`xs.fold(0, f)`, `xs.take(3)`, etc.)
+- [ ] Add `fold`, `flatMap`, `flatten`, `append`, `prepend`, `take`, `drop`,
+      `first`, `rest`, `find`, `all`, `any`, `count`, `isEmpty`, `range` to `interface Array<T>`
+- [ ] Remove `list.bp`
+- [ ] Confirm that the generics of `fold<A>` etc. work via `generic-inference`
+- [ ] Migrate `list_test.bp` to method syntax (`xs.fold(0, f)`, `xs.take(3)`, etc.)
 
-### F6 — `String` interface estendida (string.d.bp)
+### F6 — Extended `String` interface (string.d.bp)
 
-- [ ] Mover as implementações de `string.bp` para `string.d.bp` como declarações
-- [ ] Confirmar snake_case → camelCase mapping (ou normalizar na definição)
-- [ ] Remover `string.bp`
-- [ ] Migrar `string_test.bp` e inline tests
+- [ ] Move the implementations from `string.bp` into `string.d.bp` as declarations
+- [ ] Confirm snake_case → camelCase mapping (or normalize at the definition)
+- [ ] Remove `string.bp`
+- [ ] Migrate `string_test.bp` and inline tests
 
-### F7 — `Iterator<T>` com operações eager (builtins.d.bp)
+### F7 — `Iterator<T>` with eager operations (builtins.d.bp)
 
-- [ ] Adicionar `toList`, `fold`, `map`, `filter`, `take` à `interface Iterator<T>`
-- [ ] Remover `iterator.bp` (ou manter `range`, `repeat` como funções geradoras)
-- [ ] Migrar `iterator_test.bp`
+- [ ] Add `toList`, `fold`, `map`, `filter`, `take` to `interface Iterator<T>`
+- [ ] Remove `iterator.bp` (or keep `range`, `repeat` as generator functions)
+- [ ] Migrate `iterator_test.bp`
 
-### F8 — Records com métodos: `Dict<K,V>`, `Set<T>`, `Queue<T>`, `StringBuilder`
+### F8 — Records with methods: `Dict<K,V>`, `Set<T>`, `Queue<T>`, `StringBuilder`
 
-- [ ] Converter sintaxe de chamada para method dispatch: `d.insert("k", v)` em vez de
-      `dict.insert(d, "k", v)` — provavelmente o compilador já suporta se o record tem
-      os métodos declarados
-- [ ] Atualizar test files correspondentes
+- [ ] Convert call syntax to method dispatch: `d.insert("k", v)` instead of
+      `dict.insert(d, "k", v)` — the compiler probably already supports this if the
+      record has the methods declared
+- [ ] Update the corresponding test files
 
-### F9 — Remover módulos eliminados e atualizar prelude
+### F9 — Remove eliminated modules and update the prelude
 
-- [ ] Remover arquivos `.bp` que viraram `.d.bp` ou foram eliminados da `prelude.zig`
-- [ ] Remover entradas de `std_pkg_modules` em `comptime.zig`
-- [ ] Remover de `std_bp_files` em `build.zig`
-- [ ] Atualizar `libs/std/AGENTS.md` (tree + tabelas)
+- [ ] Remove `.bp` files that became `.d.bp` or were eliminated from `prelude.zig`
+- [ ] Remove entries from `std_pkg_modules` in `comptime.zig`
+- [ ] Remove from `std_bp_files` in `build.zig`
+- [ ] Update `libs/std/AGENTS.md` (tree + tables)
+- [ ] Update `libs/std/src/docs.md` + `libs/std/src/examples.md` to method syntax
 
 ## Test scenarios
 
@@ -271,16 +283,22 @@ codegen/node ---- int method toString: 42.toString() == "42"
 
 ## Notes
 
-- A implementação de **method dispatch em tipos primitivos** (`bool`, `i32`, `f64`)
-  precisa de suporte no `inferMethodCallExpr` para lookup de interface pelo tipo
-  do receiver. Verificar se já funciona para `Array<T>` e reusar o mesmo mecanismo.
-- `function.bp` não tem receiver natural — `identity`, `constant` são funções
-  estáticas. Pode ficar como namespace de utilitários (não vira interface).
-  `compose` e `flip` poderiam ser métodos em tipos função (`fn(A)->B`), mas isso
-  é mais complexo.
-- O `range(start, stop)` é uma função estática (não tem receiver) — pode virar
-  função builtin em `builtins.d.bp` ou método estático de `Array<i32>`.
-- F5 (list ops em Array) depende de `generic-inference` para que `fold<A>` funcione
-  corretamente com type vars frescos por call site.
-- Os records (`Dict`, `Set`, `Queue`, `StringBuilder`) já suportam method dispatch
-  via record fields se o compilador os trata como self — confirmar antes de F8.
+- **Naming (decided 2026-06-07)**: camelCase is the standard (`isEven`,
+  `exclusiveOr`, `toString`). The snake_case methods in the existing
+  `primitives.d.bp`/`string.d.bp` (`to_string`, `trim_start`) are legacy — F1/F2/F6
+  normalize them to camelCase. Normalizing at the definition also shrinks the
+  backend-parity F2 name-mapping table (only JS-prototype mismatches like
+  `toUpper` → `toUpperCase` remain).
+- **Method dispatch on primitive types** (`bool`, `i32`, `f64`) needs support in
+  `inferMethodCallExpr` for interface lookup by receiver type. Check whether this
+  already works for `Array<T>` and reuse the same mechanism.
+- `function.bp` has no natural receiver — `identity`, `constant` are static
+  functions. It can stay as a utility namespace (does not become an interface).
+  `compose` and `flip` could be methods on function types (`fn(A)->B`), but that
+  is more complex.
+- `range(start, stop)` is a static function (no receiver) — it can become a
+  builtin function in `builtins.d.bp` or a static method of `Array<i32>`.
+- F5 (list ops on Array) depends on `generic-inference` so that `fold<A>` works
+  correctly with fresh type vars per call site.
+- The records (`Dict`, `Set`, `Queue`, `StringBuilder`) already support method
+  dispatch via record fields if the compiler treats them as self — confirm before F8.

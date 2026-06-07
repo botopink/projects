@@ -8,12 +8,13 @@
 |---|---|---|---|---|
 | [generic-inference](specs/generic-inference.md) | pending | — | — | — |
 | [stdlib-interface](specs/stdlib-interface.md) | pending | — | — | — |
-| [expr-templates](specs/expr-templates.md) | pending | — | — | — |
 | [backend-parity](specs/backend-parity.md) | pending | — | — | — |
+| [tooling-update](specs/tooling-update.md) | pending | — | — | — |
 
 ## Notes
 
-- **generic-inference** is a prerequisite for `expr-templates` (comptime template
-  expansion calls generic functions internally; same `.generic` var instantiation
-  issue would surface).
-- **backend-parity** is independent — can run in parallel with either other spec.
+- **generic-inference** is a prerequisite for `stdlib-interface` (generic modules
+  get inline tests once `.typeVar` instantiation is fixed).
+- **backend-parity** is independent — can run in parallel with any other spec.
+- **tooling-update** F0–F3/F5 are independent; F4 (interface-method completion)
+  waits for `stdlib-interface`.

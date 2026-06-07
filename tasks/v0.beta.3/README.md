@@ -15,7 +15,6 @@ designed but never implemented. Several runtime/backend gaps remain open.
 
 | Carry-over | Reason |
 |---|---|
-| `expr-templates` | Design complete, zero implementation |
 | `zig-feature-gaps` | Catalog walk + decisions not finalized |
 | WASM test runner | Deferred from `test-blocks` |
 | Duplicate-name test warning | Deferred from `test-blocks` |
@@ -26,16 +25,16 @@ designed but never implemented. Several runtime/backend gaps remain open.
 |---|---|---|
 | [Generic type instantiation](specs/generic-inference.md) | `generic-inference` | nothing |
 | [stdlib interface redesign](specs/stdlib-interface.md) | `stdlib-interface` | `generic-inference` |
-| [Comptime template strings](specs/expr-templates.md) | `expr-templates` | `generic-inference` |
 | [Backend parity + stdlib gaps](specs/backend-parity.md) | `backend-parity` | nothing |
+| [Tooling update (LSP + VS Code)](specs/tooling-update.md) | `tooling-update` | `stdlib-interface` (F4 only) |
 
 ## Dependency DAG
 
 ```text
-generic-inference ──► stdlib-interface
-                 ──► expr-templates
+generic-inference ──► stdlib-interface ──► tooling-update (F4)
 
 backend-parity   (independent)
+tooling-update F0–F3, F5   (independent)
 ```
 
 ## v0.beta.2 → v0.beta.3 gap summary
@@ -47,7 +46,7 @@ backend-parity   (independent)
 | `test-blocks` | F0–F4 done | WASM runner; duplicate-name warning |
 | `stdlib-tests` | All suites complete (option/result/bool/order/pair/list/dict/set/int/float/string/iterator/function/queue) | — |
 | `zig-feature-gaps` | Not started | F0 catalog walk; F1 record non-goals; F2 graduate 🟡 items |
-| `expr-templates` | Spec written | F0–F7 all pending (not a single line implemented) |
+| `expr-templates` | Fully implemented | landed in `task/expr-templates` (c5434bf) |
 
 ### Known gaps catalogued in `stdlib-gleam` (drive v0.beta.3 backend-parity spec)
 

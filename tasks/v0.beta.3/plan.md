@@ -8,9 +8,10 @@
 - **stdlib-gleam** — all 14 modules (bool → queue) + io.d.bp; multi-target `#[@external]` syntax
 - **stdlib-tests** — full test suites for all 14 modules (external + inline where applicable)
 - **inline tests** — non-generic modules carry co-located test blocks: bool, int, float, order, string
+- **expr-templates** — F6-full implemented (mixed sigs, hole loc mapping, memo by scope) — landed in `task/expr-templates` (c5434bf), merged into `feat`
+- **extension-dispatch** — merged into `feat`
 
 ### Not done
-- **expr-templates** — full spec written, zero implementation
 - **zig-feature-gaps** — catalog walk + decisions not finalized
 - **WASM test runner** — deferred from test-blocks
 - **Duplicate-name test warning** — deferred from test-blocks
@@ -30,18 +31,21 @@ The inline test migration revealed the generic inference gap:
 
 ## v0.beta.3 priorities
 
-1. `generic-inference` — unblocks both inline tests in generic modules and expr-templates
-2. `expr-templates` — the main unimplemented language feature; can start after F1 of generic-inference
-3. `backend-parity` — independent track; tackle highest-impact items first (iterator.fromList, literal receivers, snake_case dispatch)
+1. `generic-inference` — unblocks inline tests in generic modules and correct generic
+   expansion everywhere (expr-templates comptime expansion included)
+2. `stdlib-interface` — loose namespace functions → interface methods; starts after
+   generic-inference F1 lands
+3. `backend-parity` — independent track; tackle highest-impact items first
+   (iterator.fromList, literal receivers, snake_case dispatch)
+4. `tooling-update` — LSP + VS Code catch-up; F0–F3/F5 anytime, F4 after stdlib-interface
 
 ## Sequencing
 
 ```
 Week 1: generic-inference F0 (audit) + F1 (fix inferCallExpr)
-Week 2: generic-inference F2 (re-enable inline tests in generic modules)
-Week 3: expr-templates F0 (typeparam rename) + F1 (string interpolation)
-Week 4: expr-templates F2–F3 (meta-kind + tagged calls)
-Week 5: expr-templates F4–F5 (comptime capture + splice)
-Week 6: expr-templates F6–F7 (expansion driver + examples)
-Parallel: backend-parity F0 (iterator.fromList) + F1 (literal receivers)
+Week 2: generic-inference F2 (re-enable inline tests in generic modules) + F3 (snapshots)
+Week 3: stdlib-interface F0 (io merge) + F1–F2 (bool/int/float methods)
+Week 4: stdlib-interface F3–F5 (Order, Pair, Array list ops)
+Week 5: stdlib-interface F6–F9 (String, Iterator, records, prelude cleanup)
+Parallel: backend-parity F0 (iterator.fromList) + F1 (literal receivers) + F2 (snake_case)
 ```
