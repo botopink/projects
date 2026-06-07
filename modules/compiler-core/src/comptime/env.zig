@@ -302,6 +302,11 @@ pub const Env = struct {
     /// Inherent methods declared directly on a type (struct/record/enum bodies
     /// and inline `implement`), keyed by type name → set of method names.
     inherentMethods: std.StringHashMap(std.StringHashMap(void)),
+    /// Resolved signatures of inherent methods, keyed type name → method name →
+    /// `fn(self: Instance, params…) -> Ret`. Lets `recv.method(args)` recover the
+    /// method's real return type (the type's generic cells are instantiated per
+    /// call site). Populated alongside `inherentMethods` during registration.
+    inherentMethodTypes: std.StringHashMap(std.StringHashMap(*T.Type)),
     /// Resolved external-dispatch rewrites: call-site location → extension symbol
     /// to qualify with. Consumed by the transform pass to lower `obj.m(args)` to
     /// `Sym.m(obj, args)` without monkey-patching.
@@ -351,6 +356,7 @@ pub const Env = struct {
             .extensions = std.StringHashMap(ExtEntry).init(arena),
             .activations = std.StringHashMap(void).init(arena),
             .inherentMethods = std.StringHashMap(std.StringHashMap(void)).init(arena),
+            .inherentMethodTypes = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena),
             .dispatchRewrites = std.AutoHashMap(ast.Loc, []const u8).init(arena),
             .stdModules = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena),
             .stdImports = std.StringHashMap(void).init(arena),
@@ -385,6 +391,9 @@ pub const Env = struct {
         var it = self.inherentMethods.valueIterator();
         while (it.next()) |set| set.deinit();
         self.inherentMethods.deinit();
+        var itt = self.inherentMethodTypes.valueIterator();
+        while (itt.next()) |set| set.deinit();
+        self.inherentMethodTypes.deinit();
         self.dispatchRewrites.deinit();
         // Note: stdModules values are shared registry export tables — owned by
         // the compile session, not this env. Only the outer maps are ours.
@@ -408,6 +417,19 @@ pub const Env = struct {
     pub fn hasInherentMethod(self: *Env, typeName: []const u8, method: []const u8) bool {
         const set = self.inherentMethods.get(typeName) orelse return false;
         return set.contains(method);
+    }
+
+    /// Store the resolved signature of `typeName.method` (self-first FnType).
+    pub fn setInherentMethodType(self: *Env, typeName: []const u8, method: []const u8, ty: *T.Type) !void {
+        const gop = try self.inherentMethodTypes.getOrPut(typeName);
+        if (!gop.found_existing) gop.value_ptr.* = std.StringHashMap(*T.Type).init(self.arena);
+        try gop.value_ptr.put(method, ty);
+    }
+
+    /// The resolved signature of `typeName.method`, if one was registered.
+    pub fn getInherentMethodType(self: *Env, typeName: []const u8, method: []const u8) ?*T.Type {
+        const set = self.inherentMethodTypes.get(typeName) orelse return null;
+        return set.get(method);
     }
 
     pub fn isActivated(self: *Env, name: []const u8) bool {

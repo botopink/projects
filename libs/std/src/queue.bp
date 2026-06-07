@@ -4,49 +4,46 @@
 ////
 //// API naming note: `new` is a keyword token — constructor is `empty`.
 //// `dequeue` returns `#(Queue<T>, ?T)` (updated queue + the removed front item).
+////
+//// Method syntax (stdlib-interface): instance operations are methods on the
+//// record (`q.enqueue(x)`, `q.size()`); `empty`/`fromList` are static
+//// constructors (no receiver) kept as module functions.
 
 pub record Queue<T> {
     items: Array<T>,
+
+    pub fn size(self: Self) -> i32 {
+        return self.items.length;
+    }
+
+    pub fn isEmpty(self: Self) -> bool {
+        return self.items.length == 0;
+    }
+
+    pub fn enqueue(self: Self, item: T) -> Queue<T> {
+        var out = [];
+        self.items.forEach({ x -> out.push(x); });
+        out.push(item);
+        return Queue(items: out);
+    }
+
+    pub fn dequeue(self: Self) -> #(Queue<T>, ?T) {
+        val head = self.items.at(0);
+        val rest = self.items.slice(1, self.items.length);
+        return #(Queue(items: rest), head);
+    }
+
+    pub fn peek(self: Self) -> ?T {
+        return self.items.at(0);
+    }
+
+    pub fn toList(self: Self) -> Array<T> {
+        return self.items;
+    }
 }
 
 pub fn empty<T>() -> Queue<T> {
     return Queue(items: []);
-}
-
-pub fn size<T>(q: Queue<T>) -> i32 {
-    return q.items.length;
-}
-
-pub fn isEmpty<T>(q: Queue<T>) -> bool {
-    return q.items.length == 0;
-}
-
-// Copy items then push the new element to the back.
-fn copyItems<T>(src: Array<T>, out: Array<T>) {
-    src.forEach({ x -> out.push(x); });
-}
-
-pub fn enqueue<T>(q: Queue<T>, item: T) -> Queue<T> {
-    var out = [];
-    copyItems(q.items, out);
-    out.push(item);
-    return Queue(items: out);
-}
-
-// Removes the front item.  Returns #(updatedQueue, ?item).
-pub fn dequeue<T>(q: Queue<T>) -> #(Queue<T>, ?T) {
-    val head = q.items.at(0);
-    val rest = q.items.slice(1, q.items.length);
-    return #(Queue(items: rest), head);
-}
-
-// Inspect the front item without removing it.
-pub fn peek<T>(q: Queue<T>) -> ?T {
-    return q.items.at(0);
-}
-
-pub fn toList<T>(q: Queue<T>) -> Array<T> {
-    return q.items;
 }
 
 pub fn fromList<T>(xs: Array<T>) -> Queue<T> {

@@ -626,6 +626,63 @@ fn registerRecord(env: *Env, r: ast.RecordDecl) InferError!void {
     const retType = try env.namedTypeArgs(r.name, retArgs);
     const ctorType = try env.funcType(paramTypes, retType);
     try env.bind(r.name, ctorType);
+
+    // Inherent method signatures (self = the record instance type).
+    try registerInherentMethodTypes(env, r.name, retType, &genericMap, r.methods);
+}
+
+/// Resolve and store the signatures of a type's inherent methods so a later
+/// `recv.method(args)` call can recover the method's real return type (instead
+/// of a fresh var). `instanceType` is what `Self` resolves to — the type
+/// applied to its own generic cells; `typeGenerics` maps the type's generic
+/// param names to those cells. The stored signature is self-first:
+/// `fn(self: Instance, params…) -> Ret`. `makeMethodCall` instantiates it per
+/// call site, so the shared cells never collapse across calls.
+fn registerInherentMethodTypes(
+    env: *Env,
+    typeName: []const u8,
+    instanceType: *T.Type,
+    typeGenerics: *const std.StringHashMap(*T.Type),
+    methods: []const ast.InterfaceMethod,
+) InferError!void {
+    for (methods) |im| {
+        // Register the method NAME for dispatch. This runs from registerRecord/
+        // /Struct/Enum, so it also covers types brought in by `import … from
+        // "std"` (which `registerExtensions` never sees — it only scans the
+        // local program's decls).
+        try env.addInherentMethod(typeName, im.name);
+
+        // Only methods with an explicit return-type annotation get a stored
+        // signature. Without one the true return type comes from body inference
+        // (not available here), so we leave such calls to the fresh-var fallback
+        // rather than mis-typing them as `void`.
+        const retRef = im.returnType orelse continue;
+        // Per-method generic scope: the type's generics + `Self` + the method's
+        // own generic params (fresh vars).
+        var gm = std.StringHashMap(*T.Type).init(env.arena);
+        defer gm.deinit();
+        var git = typeGenerics.iterator();
+        while (git.next()) |e| try gm.put(e.key_ptr.*, e.value_ptr.*);
+        try gm.put("Self", instanceType);
+        for (im.genericParams) |gp| try gm.put(gp.name, try env.freshVar());
+
+        const params = try env.arena.alloc(*T.Type, im.params.len);
+        for (im.params, 0..) |p, i| {
+            params[i] = if (p.fnType) |ft| blk: {
+                const fparams = try env.arena.alloc(*T.Type, ft.params.len);
+                for (ft.params, 0..) |fp, j| {
+                    fparams[j] = gm.get(fp.typeName) orelse try env.namedType(fp.typeName);
+                }
+                const fret = if (ft.returnType) |rn|
+                    gm.get(rn) orelse try env.namedType(rn)
+                else
+                    try env.namedType("void");
+                break :blk try env.funcType(fparams, fret);
+            } else try resolveTypeRefInContext(env, p.typeRef, gm);
+        }
+        const ret = try resolveTypeRefInContext(env, retRef, gm);
+        try env.setInherentMethodType(typeName, im.name, try env.funcType(params, ret));
+    }
 }
 
 fn registerStruct(env: *Env, s: ast.StructDecl) InferError!void {
@@ -675,6 +732,16 @@ fn registerStruct(env: *Env, s: ast.StructDecl) InferError!void {
     const retType = try env.namedType(s.name);
     const ctorType = try env.funcType(paramTypes, retType);
     try env.bind(s.name, ctorType);
+
+    // Inherent method signatures (self = the struct instance, bare name to
+    // match the constructor's return type).
+    var structMethods: std.ArrayListUnmanaged(ast.InterfaceMethod) = .empty;
+    defer structMethods.deinit(env.arena);
+    for (s.members) |m| switch (m) {
+        .method => |im| try structMethods.append(env.arena, im),
+        else => {},
+    };
+    try registerInherentMethodTypes(env, s.name, retType, &genericMap, structMethods.items);
 }
 
 fn registerEnum(env: *Env, e: ast.EnumDecl) InferError!void {
@@ -722,7 +789,11 @@ fn registerEnum(env: *Env, e: ast.EnumDecl) InferError!void {
         .contextBase = ctxBase,
     } });
     // Bind the enum name itself so `inferDecl` can look it up.
-    try env.bind(e.name, try env.namedType(e.name));
+    const enumInstance = try env.namedType(e.name);
+    try env.bind(e.name, enumInstance);
+
+    // Inherent method signatures (self = the enum instance type).
+    try registerInherentMethodTypes(env, e.name, enumInstance, &genericMap, e.methods);
 }
 
 // ── pass 2: declaration inference ────────────────────────────────────────────
@@ -2823,6 +2894,14 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
                     return error.TypeError;
                 }
             }
+            // Tuple element access: `t._0`, `t._1`, … on a `#(A, B, …)` value.
+            // The element type comes from the tuple's positional type args.
+            if (recvType.* == .named and std.mem.eql(u8, recvType.named.name, "tuple")) {
+                const idxStr = if (ia.member.len > 0 and ia.member[0] == '_') ia.member[1..] else ia.member;
+                if (std.fmt.parseInt(usize, idxStr, 10)) |idx| {
+                    if (idx < recvType.named.args.len) outType = recvType.named.args[idx];
+                } else |_| {}
+            }
             if (recvType.* == .named) {
                 const recvNamed = recvType.named;
                 if (env.lookupTypeDef(recvNamed.name)) |td| {
@@ -3295,7 +3374,7 @@ fn makeMethodCall(
     typedTrailing: []ast.TrailingLambdaOf(.typed),
     loc: ast.Loc,
 ) InferError!TypedExpr {
-    const retType = try env.freshVar();
+    const retType = try methodCallReturnType(env, recvPtr, callee, typedArgs, typedTrailing, loc);
     return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
         .receiver = recvPtr,
         .callee = callee,
@@ -3303,6 +3382,47 @@ fn makeMethodCall(
         .args = typedArgs,
         .trailing = typedTrailing,
     } } } };
+}
+
+/// Recover the return type of an inherent-method call `recv.callee(args)` from
+/// the registered signature. The signature's type-level generics (the record's
+/// `<T>` cells, `Self`, method generics) are instantiated fresh per call site;
+/// the self param is unified with the receiver type and the remaining params
+/// with the arguments, propagating concrete types into the return. Falls back
+/// to a fresh var when no signature is registered (extension dispatch, etc.).
+fn methodCallReturnType(
+    env: *Env,
+    recvPtr: ?*ast.TypedExpr,
+    callee: []const u8,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+    loc: ast.Loc,
+) InferError!*T.Type {
+    const recv = recvPtr orelse return env.freshVar();
+    const recvType = recv.getType();
+    const typeName = nominalName(recvType) orelse return env.freshVar();
+    const sigRaw = env.getInherentMethodType(typeName, callee) orelse return env.freshVar();
+
+    // Fresh per-call-site copy so the shared registration cells never collapse.
+    var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
+    defer seen.deinit();
+    const sig = try instantiateType(env, sigRaw, &seen, .allVars);
+    const fn_ = sig.deref();
+    if (fn_.* != .func or fn_.func.params.len == 0) return env.freshVar();
+
+    // params[0] is `self` — bind the type's generics to the receiver instance.
+    try unifyAt(env, fn_.func.params[0], recvType, loc);
+    // Unify positional args when the (self-excluded) arity matches and there
+    // are no trailing lambdas (whose value type isn't available here). The
+    // self-unification alone already propagates the receiver's type args into
+    // the return type; arg unification refines method-generic params.
+    const rest = fn_.func.params[1..];
+    if (typedTrailing.len == 0 and rest.len == typedArgs.len) {
+        for (typedArgs, rest) |ta, p| {
+            try unifyAt(env, p, ta.value.getType(), ta.value.getLoc());
+        }
+    }
+    return fn_.func.ret;
 }
 
 /// Resolve a builtin `result` namespace qualified call (Gleam-style surface):
@@ -3926,6 +4046,17 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                 // receivers (expr-templates F4) — comptime-only.
                 if (try inferTemplateMethod(env, recvPtr, call.callee, typedArgs, typedTrailing, loc)) |dispatched| {
                     return dispatched;
+                }
+
+                // Inherent method on the receiver's nominal type, for ANY
+                // receiver expression (chained calls `a.b().c()`, field access)
+                // — `resolveReceiverCall` above only fires for bare-identifier
+                // receivers. This recovers the method's real return type so a
+                // `Queue<i32>` chain keeps tracking `?i32` through `.peek()`.
+                if (nominalName(recvPtr.getType())) |tn| {
+                    if (env.hasInherentMethod(tn, call.callee)) {
+                        return try makeMethodCall(env, recvPtr, call.callee, typedArgs, typedTrailing, loc);
+                    }
                 }
 
                 // Other method calls (struct getters, activated extensions) are
