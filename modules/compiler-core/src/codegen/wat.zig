@@ -888,6 +888,11 @@ const Emitter = struct {
                     if (r.end) |end| n += self.countMemsExpr(end.*);
                     break :blk n;
                 },
+                .recordLit => |rl| blk: {
+                    var n: u32 = 0;
+                    for (rl.fields) |f| n += self.countMemsExpr(f.value.*);
+                    break :blk n;
+                },
             },
             .jump => |j| switch (j.kind) {
                 .@"return", .throw_, .@"break" => |v| if (v) |i| self.countMemsExpr(i.*) else 0,
@@ -1180,6 +1185,9 @@ const Emitter = struct {
                 .case => |c| try self.lowerCase(c),
                 .tupleLit => |tl| try self.lowerTupleLit(tl),
                 .arrayLit => |al| try self.lowerArrayLit(al),
+                // Anonymous record literals are a deferred WAT gap (named
+                // records lower via linear memory; same treatment applies).
+                .recordLit => try self.w("    i32.const 0 ;; unsupported: record literal\n"),
                 .range => try self.w("    i32.const 0 ;; range\n"),
             },
             .jump => |j| switch (j.kind) {

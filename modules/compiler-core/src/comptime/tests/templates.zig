@@ -480,3 +480,47 @@ test "comptime: runtime template body ---- parts() with a hole splices the calle
     try assertCompilesOk(@src(), src);
     try h.assertComptimeAstSingle(std.testing.allocator, @src(), src);
 }
+
+// ── anonymous record literals + the yaml model ────────────────────────────────
+
+test "infer: anonymous record literal types structurally and fields resolve" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\val cfg = (record { server: record { port: 8080 }, debug: true });
+        \\val p = cfg.server.port;
+        \\val d = cfg.debug;
+    );
+    try std.testing.expectEqualStrings("i32", env.lookup("p").?.deref().named.name);
+    try std.testing.expectEqualStrings("bool", env.lookup("d").?.deref().named.name);
+}
+
+test "infer error: unknown field on an anonymous record" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val cfg = (record { port: 8080 });
+        \\val x = cfg.prot;
+    );
+}
+
+test "comptime: yaml model ---- static record lift reveals the structure (V1 driver)" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\pub fn conf<T>(comptime q: @Expr<string>) -> @Expr<T> {
+        \\    return @expr(record { port: 8080, debug: true });
+        \\}
+        \\val cfg = conf "server:";
+        \\val p = cfg.port + 1;
+        \\val d = cfg.debug;
+    );
+    try std.testing.expectEqualStrings("i32", env.lookup("p").?.deref().named.name);
+    try std.testing.expectEqualStrings("bool", env.lookup("d").?.deref().named.name);
+}

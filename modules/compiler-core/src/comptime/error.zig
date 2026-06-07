@@ -324,6 +324,7 @@ fn typeLabel(ty: *T.Type) []const u8 {
         .named => |n| n.name,
         .func => "function",
         .union_ => "union",
+        .record => "record",
         .typeVar => "_",
     };
 }

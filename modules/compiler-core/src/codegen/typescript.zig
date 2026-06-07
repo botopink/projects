@@ -369,6 +369,16 @@ const Emitter = struct {
                     try self.emitType(t.*);
                 }
             },
+            // Anonymous structural record → inline object type.
+            .record => |fields| {
+                try self.w("{ ");
+                for (fields, 0..) |f, i| {
+                    if (i > 0) try self.w("; ");
+                    try self.fmt("{s}: ", .{f.name});
+                    try self.emitType(f.type_.*);
+                }
+                try self.w(" }");
+            },
         }
     }
 

@@ -256,6 +256,7 @@ fn countLocalsInExpr(e: ast.Expr, count: *u32) void {
             else => {},
         },
         .collection => |col| switch (col.kind) {
+            .recordLit => |rl| for (rl.fields) |f| countLocalsInExpr(f.value.*, count),
             .grouped => |inner| countLocalsInExpr(inner.*, count),
             .case => |c| {
                 for (c.subjects) |s| countLocalsInExpr(s, count);
@@ -1334,6 +1335,13 @@ const Emitter = struct {
                 },
                 .tupleLit => |tl| {
                     try self.lowerTupleLit(tl);
+                    return;
+                },
+                // Anonymous record literals are a deferred BEAM gap (named
+                // records lower to put_map_assoc maps; same treatment applies).
+                .recordLit => {
+                    try self.bodyWrite("    %% unsupported: record literal\n");
+                    try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
                     return;
                 },
                 .case => |c| {

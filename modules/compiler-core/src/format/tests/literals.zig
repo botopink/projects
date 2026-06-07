@@ -308,3 +308,11 @@ test "format: line string ---- normalizes to triple quotes" {
         \\</div>""";
     , out);
 }
+
+test "format: record literal ---- round-trip" {
+    try h.assertFormat(std.testing.allocator,
+        \\fn main() {
+        \\    val cfg = record { port: 8080, debug: true };
+        \\}
+    );
+}

@@ -504,6 +504,10 @@ pub fn identInExpr(expr: anytype, name: []const u8) bool {
                 if (r.end) |end| if (identInExpr(end.*, name)) break :blk true;
                 break :blk false;
             },
+            .recordLit => |rl| blk: {
+                for (rl.fields) |f| if (identInExpr(f.value.*, name)) break :blk true;
+                break :blk false;
+            },
         },
         .comptime_ => |ct| switch (ct.kind) {
             .comptimeExpr => |ce| identInExpr(ce.*, name),

@@ -1403,6 +1403,17 @@ const Emitter = struct {
                     if (r.end) |end| try this.emitExpr(end.*) else try this.w("infinity");
                     try this.w(")");
                 },
+                // Anonymous record literal — an Erlang map (the same shape
+                // named records lower to).
+                .recordLit => |rl| {
+                    try this.w("#{");
+                    for (rl.fields, 0..) |f, i| {
+                        if (i > 0) try this.w(", ");
+                        try this.fmt("{s} => ", .{f.name});
+                        try this.emitExpr(f.value.*);
+                    }
+                    try this.w("}");
+                },
             },
 
             .jump => |j| switch (j.kind) {

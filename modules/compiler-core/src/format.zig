@@ -640,6 +640,17 @@ pub const Formatter = struct {
                     try this.fmtExpr(e.*),
                     try this.text(")"),
                 }),
+                // `record { name: value, … }` — anonymous record literal.
+                .recordLit => |rl| blk: {
+                    var doc: *const Doc = try this.text("record { ");
+                    for (rl.fields, 0..) |f, i| {
+                        if (i > 0) doc = try this.concat(doc, try this.text(", "));
+                        doc = try this.concat(doc, try this.text(f.name));
+                        doc = try this.concat(doc, try this.text(": "));
+                        doc = try this.concat(doc, try this.fmtExpr(f.value.*));
+                    }
+                    break :blk try this.concat(doc, try this.text(" }"));
+                },
                 .case => |c| try this.fmtCase(c.subjects, c.arms, c.trailingComments),
                 .arrayLit => |al| blk: {
                     // Build items interleaving elements and comments.

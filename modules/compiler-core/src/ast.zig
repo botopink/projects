@@ -644,6 +644,14 @@ pub fn CallExprOf(comptime phase: Phase) type {
     return MakeExpr(phase, Kind);
 }
 
+/// One `name: value` field of an anonymous `record { … }` literal.
+pub fn RecordLitFieldOf(comptime phase: Phase) type {
+    return struct {
+        name: []const u8,
+        value: *ExprOf(phase),
+    };
+}
+
 /// Collection expressions: data structures and grouping
 pub fn CollectionExprOf(comptime phase: Phase) type {
     const Kind = union(enum) {
@@ -686,6 +694,11 @@ pub fn CollectionExprOf(comptime phase: Phase) type {
         },
         /// `(expr)` ---- grouped expression (parentheses for precedence)
         grouped: *ExprOf(phase),
+        /// `record { name: value, … }` ---- anonymous structural record literal.
+        /// Types as an anonymous record (`Type.record`); nests freely.
+        recordLit: struct {
+            fields: []RecordLitFieldOf(phase),
+        },
 
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             switch (this.*) {
@@ -726,6 +739,13 @@ pub fn CollectionExprOf(comptime phase: Phase) type {
                 .grouped => |e| {
                     e.deinit(allocator);
                     allocator.destroy(e);
+                },
+                .recordLit => |rl| {
+                    for (rl.fields) |f| {
+                        f.value.deinit(allocator);
+                        allocator.destroy(f.value);
+                    }
+                    allocator.free(rl.fields);
                 },
             }
         }

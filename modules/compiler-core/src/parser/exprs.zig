@@ -1007,6 +1007,37 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         return .{ .collection = try this.parseArrayLitExpr(alloc) };
     }
 
+    // record { name: value, … } ---- anonymous structural record literal.
+    // The `record` keyword in expression position followed by `{`. NOTE: a
+    // TOP-LEVEL `val X = record { … }` is the named-record DECLARATION
+    // shorthand (consumed earlier by parseValForm) — at top level the
+    // literal needs parentheses (`val x = (record { … });`); every other
+    // expression position (locals, args, nested fields, @expr) parses here.
+    if (this.check(.record) and this.peekAt(1).kind == .leftBrace) {
+        const recTok = this.advance(); // record
+        _ = this.advance(); // {
+        var fields: std.ArrayList(ast.RecordLitFieldOf(.untyped)) = .empty;
+        errdefer {
+            for (fields.items) |f| {
+                f.value.deinit(alloc);
+                alloc.destroy(f.value);
+            }
+            fields.deinit(alloc);
+        }
+        while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
+            const nameTok = try this.consume(.identifier);
+            _ = try this.consume(.colon);
+            const value = try this.parseExpr(alloc);
+            const valuePtr = try this.boxExpr(alloc, value);
+            try fields.append(alloc, .{ .name = nameTok.lexeme, .value = valuePtr });
+            if (!this.match(.comma)) break;
+        }
+        _ = try this.consume(.rightBrace);
+        return Expr{ .collection = .{ .loc = locFromToken(recTok), .kind = .{ .recordLit = .{
+            .fields = try fields.toOwnedSlice(alloc),
+        } } } };
+    }
+
     // `(expr)` ---- grouped expression (parentheses for precedence)
     if (this.check(.leftParenthesis)) {
         const parenTok = this.advance();

@@ -696,6 +696,21 @@ pub fn renderType(gpa: std.mem.Allocator, ty: *comptime_pipeline.Type) ![]u8 {
             .generic => |id| std.fmt.allocPrint(gpa, "T{d}", .{id}),
             .link => |linked| renderType(gpa, linked),
         },
+        .record => |fields| blk: {
+            var buf: std.ArrayList(u8) = .empty;
+            errdefer buf.deinit(gpa);
+            try buf.appendSlice(gpa, "record { ");
+            for (fields, 0..) |f, idx| {
+                if (idx > 0) try buf.appendSlice(gpa, ", ");
+                try buf.appendSlice(gpa, f.name);
+                try buf.appendSlice(gpa, ": ");
+                const fs = try renderType(gpa, f.type_);
+                defer gpa.free(fs);
+                try buf.appendSlice(gpa, fs);
+            }
+            try buf.appendSlice(gpa, " }");
+            break :blk buf.toOwnedSlice(gpa);
+        },
         .union_ => |arms| blk: {
             var buf: std.ArrayList(u8) = .empty;
             errdefer buf.deinit(gpa);

@@ -28,6 +28,12 @@ pub const TypeVar = union(enum) {
     generic: TypeId,
 };
 
+/// One field of an anonymous structural record type.
+pub const RecordField = struct {
+    name: []const u8,
+    type_: *Type,
+};
+
 /// A botopink type.
 pub const Type = union(enum) {
     /// Named type ---- builtin (`Int`, `Float`, `String`, `Bool`) or user-defined.
@@ -46,6 +52,10 @@ pub const Type = union(enum) {
     /// Union type: `A | B | C` ---- produced when branching constructs (e.g. case)
     /// have arms of structurally different types.
     union_: []*Type,
+    /// Anonymous structural record: the type of a `record { name: value, … }`
+    /// literal. Two records unify field-by-field (same field set, V1 — no
+    /// width subtyping yet). Fields are sorted by declaration order.
+    record: []RecordField,
 
     /// Follow all `.link` chains and return the innermost non-link type.
     /// Never allocates; safe to call on any type.

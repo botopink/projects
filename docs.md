@@ -1346,6 +1346,31 @@ val n = conf();      // n: i32 — revealed by the expansion
 val m = n + 1;       // ok
 ```
 
+### Anonymous record literals and the yaml model
+
+`record { name: value, … }` builds an anonymous **structural** record in any
+expression position (at top level, `val X = record { … }` is the named-record
+declaration shorthand — parenthesize the literal there). Field access is
+fully typed; an unknown field is a compile error:
+
+```botopink
+pub fn conf<T>(comptime q: @Expr<string>) -> @Expr<T> {
+    val t = q.text();
+    return @expr(record { port: 8000 + t.length, debug: true });
+}
+val cfg = conf "yaml";
+val p = cfg.port + 1;     // ok: i32 — structure revealed at expansion
+// cfg.prot               // COMPILE ERROR: 'record' has no field 'prot'
+```
+
+**Generates:**
+```javascript
+const cfg = ({ port: 8004, debug: true });
+```
+
+Records unify structurally (same field set, field types unify — V1, no width
+subtyping yet); they lower to JS objects and Erlang maps.
+
 ### V1 limits
 
 - The expansion driver handles bodies of the form `return <@Expr param>`,

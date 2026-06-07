@@ -1131,6 +1131,13 @@ fn instantiateType(env: *Env, ty: *T.Type, seen: *std.AutoHashMap(*T.TypeCell, *
             node.* = .{ .union_ = copies };
             return node;
         },
+        .record => |fields| {
+            const copies = try env.arena.alloc(T.RecordField, fields.len);
+            for (fields, 0..) |f, i| copies[i] = .{ .name = f.name, .type_ = try instantiateType(env, f.type_, seen) };
+            const node = try env.arena.create(T.Type);
+            node.* = .{ .record = copies };
+            return node;
+        },
     }
 }
 
@@ -1792,6 +1799,22 @@ fn literalFromJson(env: *Env, v: std.json.Value, loc: ast.Loc) ?*const ast.Expr 
             }
             node.* = .{ .collection = .{ .loc = loc, .kind = .{ .arrayLit = .{ .elems = elems } } } };
         },
+        .object => |obj| {
+            // A JS object lifts as an anonymous record literal — the yaml
+            // case: the template computes a structure and the caller gets a
+            // fully typed `record { … }`.
+            const fields = env.arena.alloc(ast.RecordLitFieldOf(.untyped), obj.count()) catch return null;
+            var it = obj.iterator();
+            var i: usize = 0;
+            while (it.next()) |entry| : (i += 1) {
+                const value = literalFromJson(env, entry.value_ptr.*, loc) orelse return null;
+                fields[i] = .{
+                    .name = env.arena.dupe(u8, entry.key_ptr.*) catch return null,
+                    .value = @constCast(value),
+                };
+            }
+            node.* = .{ .collection = .{ .loc = loc, .kind = .{ .recordLit = .{ .fields = fields } } } };
+        },
         else => return null,
     }
     return node;
@@ -1913,6 +1936,10 @@ fn isV1Liftable(e: *const ast.Expr) bool {
             },
             .tupleLit => |tl| blk: {
                 for (tl.elems) |*elem| if (!isV1Liftable(elem)) break :blk false;
+                break :blk true;
+            },
+            .recordLit => |rl| blk: {
+                for (rl.fields) |f| if (!isV1Liftable(f.value)) break :blk false;
                 break :blk true;
             },
             else => false,
@@ -2647,6 +2674,22 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
                 }
             }
             var outType: *T.Type = try env.freshVar();
+            // Anonymous structural record: resolve the field directly.
+            if (recvType.* == .record) {
+                const fields = recvType.record;
+                var found = false;
+                for (fields) |f| {
+                    if (std.mem.eql(u8, f.name, ia.member)) {
+                        outType = f.type_;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    env.lastError = TypeError.unknownField("record", ia.member).withLoc(loc);
+                    return error.TypeError;
+                }
+            }
             if (recvType.* == .named) {
                 const recvNamed = recvType.named;
                 if (env.lookupTypeDef(recvNamed.name)) |td| {
@@ -4030,6 +4073,23 @@ fn inferCollectionExpr(env: *Env, col: ast.CollectionExprOf(.untyped), loc: ast.
 
         .grouped => |e| {
             return try inferExprTyped(env, e.*);
+        },
+
+        .recordLit => |rl| {
+            // Anonymous structural record: each field types independently;
+            // the literal's type is `Type.record` in declaration order.
+            const typedFields = try env.arena.alloc(ast.RecordLitFieldOf(.typed), rl.fields.len);
+            const fieldTypes = try env.arena.alloc(T.RecordField, rl.fields.len);
+            for (rl.fields, 0..) |f, i| {
+                const typedValue = try inferExprTyped(env, f.value.*);
+                typedFields[i] = .{ .name = f.name, .value = try makeTypedPtr(env, typedValue) };
+                fieldTypes[i] = .{ .name = f.name, .type_ = typedValue.getType() };
+            }
+            const recTy = try env.arena.create(T.Type);
+            recTy.* = .{ .record = fieldTypes };
+            return TypedExpr{ .collection = .{ .loc = loc, .type_ = recTy, .kind = .{ .recordLit = .{
+                .fields = typedFields,
+            } } } };
         },
     };
 }

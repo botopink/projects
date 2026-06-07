@@ -665,3 +665,27 @@ codegen/node ---- external_call_emits_import           (import {string_length})
       the interpolated block ×4 backends
 - [ ] Follow-ups: preserve the `\\` style through the formatter; lexer-level
       escape validation inside line strings (raw scan today)
+
+## F10 — anonymous record literals (user decision 1B, 2026-06-05)
+- [x] Parser: `record { name: value, … }` in expression position (nested
+      freely). NOTE collision rule: TOP-LEVEL `val X = record { … }` stays
+      the named-record declaration shorthand — parenthesize the literal
+      there; every other expression position parses the literal
+- [x] Types: new `Type.record: []RecordField` structural variant — unify
+      field-by-field (same set, declaration order; width subtyping is a
+      recorded follow-up), occurs check, instantiate; field access resolves
+      on `.record` receivers (`'record' has no field 'prot'` diagnostic);
+      renders as `record { name: T, … }` in hover/snapshots/errors,
+      `{ name: T; … }` in `.d.ts`
+- [x] Codegen: JS object literal (parenthesized), Erlang map `#{k => V}`;
+      BEAM/WAT emit unsupported placeholders (recorded — named records
+      already lower as maps/memory, same treatment applies)
+- [x] Evaluator: `@expr(record { … })` — static fields splice via the V1
+      driver (isV1Liftable); computed fields run in node and lift back via
+      `literalFromJson` `.object` → recordLit (the yaml model end-to-end:
+      `conf "yaml"` → `const cfg = ({ port: 8004, debug: true })`, RUN 8005)
+- [x] Formatter round-trips `record { a: 1, b: true }` inline
+- [x] `examples/yamlconf/` showcase (model 2 of the spec)
+- [ ] Follow-ups: width subtyping for the structural "fits" rule; record
+      types in TYPE position (`-> @Expr<record { … }>` bound); BEAM/WAT
+      lowering

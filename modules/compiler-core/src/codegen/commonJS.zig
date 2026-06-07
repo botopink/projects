@@ -2074,6 +2074,17 @@ const Emitter = struct {
                         try self.emitExpr(end.*);
                     }
                 },
+                // Anonymous record literal — a plain JS object (parenthesized
+                // so it stays an expression in statement position).
+                .recordLit => |rl| {
+                    try self.w("({ ");
+                    for (rl.fields, 0..) |f, i| {
+                        if (i > 0) try self.w(", ");
+                        try self.fmt("{s}: ", .{f.name});
+                        try self.emitExpr(f.value.*);
+                    }
+                    try self.w(" })");
+                },
             },
 
             .comptime_ => |ct| switch (ct.kind) {

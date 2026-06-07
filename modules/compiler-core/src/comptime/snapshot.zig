@@ -522,6 +522,21 @@ pub fn typeNameOf(allocator: std.mem.Allocator, ty: *T.Type) std.mem.Allocator.E
         },
         .func => |f| return typeNameOf(allocator, f.ret),
         .typeVar => return allocator.dupe(u8, "?"),
+        .record => |fields| {
+            var buf: std.ArrayList(u8) = .empty;
+            defer buf.deinit(allocator);
+            try buf.appendSlice(allocator, "record { ");
+            for (fields, 0..) |f, i| {
+                if (i > 0) try buf.appendSlice(allocator, ", ");
+                try buf.appendSlice(allocator, f.name);
+                try buf.appendSlice(allocator, ": ");
+                const fieldName = try typeNameOf(allocator, f.type_);
+                defer allocator.free(fieldName);
+                try buf.appendSlice(allocator, fieldName);
+            }
+            try buf.appendSlice(allocator, " }");
+            return buf.toOwnedSlice(allocator);
+        },
         .union_ => |types| {
             var buf: std.ArrayList(u8) = .empty;
             defer buf.deinit(allocator);

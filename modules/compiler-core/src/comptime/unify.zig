@@ -87,6 +87,30 @@ pub fn unify(env: *Env, a: *T.Type, b: *T.Type) UnifyError!void {
             },
         },
 
+        // ── anonymous structural records ─────────────────────────────────────
+        // Same field set, in declaration order, field types unify (V1 — no
+        // width subtyping yet).
+        .record => |fieldsA| switch (tb.*) {
+            .typeVar => return unify(env, tb, ta),
+            .record => |fieldsB| {
+                if (fieldsA.len != fieldsB.len) {
+                    env.lastError = TypeError.typeMismatch(ta, tb);
+                    return error.TypeError;
+                }
+                for (fieldsA, fieldsB) |fa, fb| {
+                    if (!std.mem.eql(u8, fa.name, fb.name)) {
+                        env.lastError = TypeError.typeMismatch(ta, tb);
+                        return error.TypeError;
+                    }
+                    try unify(env, fa.type_, fb.type_);
+                }
+            },
+            else => {
+                env.lastError = TypeError.typeMismatch(ta, tb);
+                return error.TypeError;
+            },
+        },
+
         // ── union types ───────────────────────────────────────────────────────
         .union_ => |typesA| switch (tb.*) {
             .typeVar => return unify(env, tb, ta),
@@ -127,6 +151,10 @@ fn occursIn(id: T.TypeId, ty: *T.Type) bool {
         },
         .union_ => |types| {
             for (types) |ut| if (occursIn(id, ut)) return true;
+            return false;
+        },
+        .record => |fields| {
+            for (fields) |f| if (occursIn(id, f.type_)) return true;
             return false;
         },
     }

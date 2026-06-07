@@ -128,8 +128,9 @@ template FnDecls (comptime.zig `template_registry`); imports register them
 via `registerImportedTemplateFn` so calls expand in the importing module
 (template-built code re-infers in the CALLER's scope — V1 hygiene caveat).
 `lookup()`/`bindings()` results expose `ref()` (the binding's name as code).
-Remaining limits (recorded): all params must be `@Expr` captures; node
-runtime only.
+`@expr(record { … })` lifts anonymous structural records (`Type.record`,
+F10) — computed objects come back through `literalFromJson`. Remaining
+limits (recorded): all params must be `@Expr` captures; node runtime only.
 
 ## `@Context<B, R>` capability inference (F7)
 
