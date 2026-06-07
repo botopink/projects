@@ -1,0 +1,37 @@
+//// Tests for the `function` std module (function.bp).
+//// Qualified calls via `import {function} from "std"`.
+
+import {function} from "std";
+
+test "function identity" {
+    assert function.identity(42) == 42;
+    assert function.identity("hi") == "hi";
+    assert function.identity(true);
+}
+
+test "function compose left-to-right" {
+    val double = { n -> n * 2 };
+    val addOne = { n -> n + 1 };
+    val f = function.compose(double, addOne);
+    assert f(3) == 7;
+    assert f(0) == 1;
+}
+
+test "function compose with string transform" {
+    val shout = { s -> s + "!" };
+    val greet = { s -> "Hello, " + s };
+    val greetAndShout = function.compose(greet, shout);
+    assert greetAndShout("world") == "Hello, world!";
+}
+
+test "function flip reverses arg order" {
+    val sub = { a, b -> a - b };
+    val rsub = function.flip(sub);
+    assert rsub(3, 10) == 7;
+}
+
+test "function constant ignores arg" {
+    val always42 = function.constant(42);
+    assert always42("anything") == 42;
+    assert always42(0) == 42;
+}

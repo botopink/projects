@@ -32,6 +32,11 @@ pub fn build(b: *std.Build) void {
         "float.bp",
         "string.bp",
         "iterator.bp",
+        "dict.bp",
+        "sets.bp",
+        "function.bp",
+        "io.d.bp",
+        "string_builder.bp",
     };
     for (std_bp_files) |f| {
         std_prelude.addAnonymousImport(f, .{

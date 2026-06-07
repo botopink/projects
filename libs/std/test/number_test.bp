@@ -1,0 +1,60 @@
+//// Tests for the `int` and `float` std modules.
+//// Qualified calls via `import {int, float} from "std"`.
+
+import {int} from "std";
+import {float} from "std";
+
+// ── int ─────────────────────────────────────────────────────────────────────
+
+test "int absoluteValue" {
+    assert int.absoluteValue(0) == 0;
+    assert int.absoluteValue(-5) == 5;
+    assert int.absoluteValue(5) == 5;
+}
+
+test "int min and max" {
+    assert int.min(3, 7) == 3;
+    assert int.max(3, 7) == 7;
+    assert int.min(-1, 0) == -1;
+}
+
+test "int clamp" {
+    assert int.clamp(3, 0, 5) == 3;
+    assert int.clamp(-1, 0, 5) == 0;
+    assert int.clamp(10, 0, 5) == 5;
+}
+
+test "int isEven and isOdd" {
+    assert int.isEven(4);
+    assert !int.isEven(3);
+    assert int.isOdd(7);
+    assert !int.isOdd(8);
+}
+
+test "int toString" {
+    assert int.toString(42) == "42";
+    assert int.toString(0) == "0";
+}
+
+// ── float ───────────────────────────────────────────────────────────────────
+
+test "float absoluteValue" {
+    assert float.absoluteValue(0.0) == 0.0;
+    assert float.absoluteValue(-3.5) == 3.5;
+    assert float.absoluteValue(2.1) == 2.1;
+}
+
+test "float min and max" {
+    assert float.min(1.5, 2.5) == 1.5;
+    assert float.max(1.5, 2.5) == 2.5;
+}
+
+test "float clamp" {
+    assert float.clamp(3.0, 0.0, 5.0) == 3.0;
+    assert float.clamp(-1.0, 0.0, 5.0) == 0.0;
+    assert float.clamp(9.9, 0.0, 5.0) == 5.0;
+}
+
+test "float toString" {
+    assert float.toString(1.5) == "1.5";
+}

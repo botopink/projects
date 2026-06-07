@@ -141,6 +141,11 @@ pub const std_pkg_modules = [_]Module{
     .{ .path = "std/float", .source = @import("std_prelude").float_mod },
     .{ .path = "std/string", .source = @import("std_prelude").string_mod },
     .{ .path = "std/iterator", .source = @import("std_prelude").iterator_mod },
+    .{ .path = "std/dict", .source = @import("std_prelude").dict_mod },
+    .{ .path = "std/sets", .source = @import("std_prelude").sets_mod },
+    .{ .path = "std/function", .source = @import("std_prelude").function_mod },
+    .{ .path = "std/io", .source = @import("std_prelude").io_mod },
+    .{ .path = "std/string_builder", .source = @import("std_prelude").string_builder_mod },
 };
 
 /// True when `path` is a "std" package registry key (`std/<module>`).

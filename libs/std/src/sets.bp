@@ -1,0 +1,85 @@
+//// Gleam-inspired `sets` module (`import {sets} from "std";`).
+//// Implemented as a `Set<T>` record wrapping a deduplicated `Array<T>`.
+//// Pure botopink — no host backing required. O(n) contains checks.
+////
+//// NOTE: module named `sets` (not `set`) because `set` is a keyword token.
+////
+//// Uniqueness is enforced via `Array.indexOf` (structural equality).
+//// Works for string/numeric elements; Array-valued elements use reference
+//// equality in JS (known gap, catalogued).
+////
+//// API naming note: `new` is a keyword token in botopink — the
+//// constructor is named `empty` instead.
+
+pub record Set<T> {
+    items: Array<T>,
+}
+
+pub fn empty<T>() -> Set<T> {
+    return Set(items: []);
+}
+
+pub fn contains<T>(s: Set<T>, x: T) -> bool {
+    return s.items.indexOf(x) != -1;
+}
+
+pub fn size<T>(s: Set<T>) -> i32 {
+    return s.items.length;
+}
+
+pub fn isEmpty<T>(s: Set<T>) -> bool {
+    return s.items.length == 0;
+}
+
+// Internal: copy items into `out` then push `x`.
+fn pushItem<T>(out: Array<T>, items: Array<T>, x: T) {
+    items.forEach({ item -> out.push(item); });
+    out.push(x);
+}
+
+pub fn insert<T>(s: Set<T>, x: T) -> Set<T> {
+    val alreadyIn = s.items.indexOf(x) != -1;
+    return if (alreadyIn) {
+        s;
+    } else {
+        var out = [];
+        pushItem(out, s.items, x);
+        Set(items: out);
+    };
+}
+
+pub fn delete<T>(s: Set<T>, x: T) -> Set<T> {
+    return Set(items: s.items.filter({ item -> item != x }));
+}
+
+pub fn toList<T>(s: Set<T>) -> Array<T> {
+    return s.items;
+}
+
+// fromList: deduplicate an array into a Set.
+fn fromListHelper<T>(acc: Set<T>, xs: Array<T>) -> Set<T> {
+    var out = acc;
+    xs.forEach({ x -> out = insert(out, x); });
+    return out;
+}
+
+pub fn fromList<T>(xs: Array<T>) -> Set<T> {
+    return fromListHelper(empty(), xs);
+}
+
+// Union: all items from `a` and `b`.
+pub fn union<T>(a: Set<T>, b: Set<T>) -> Set<T> {
+    var out = a;
+    b.items.forEach({ x -> out = insert(out, x); });
+    return out;
+}
+
+// Intersection: items present in both `a` and `b`.
+pub fn intersection<T>(a: Set<T>, b: Set<T>) -> Set<T> {
+    return Set(items: a.items.filter({ x -> b.items.indexOf(x) != -1 }));
+}
+
+// Difference: items in `a` that are not in `b`.
+pub fn difference<T>(a: Set<T>, b: Set<T>) -> Set<T> {
+    return Set(items: a.items.filter({ x -> b.items.indexOf(x) == -1 }));
+}

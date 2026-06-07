@@ -1,0 +1,15 @@
+//// Gleam-inspired `io` module (`import {io} from "std";`).
+//// Host-backed I/O primitives — declaration-only, no pure implementation.
+//// Each target backend supplies the concrete symbol via `#[@external]`.
+
+#[@external(node, "console", "log"),
+  @external(erlang, "io", "format")]
+pub declare fn print(message: string);
+
+#[@external(node, "console", "log"),
+  @external(erlang, "io", "format")]
+pub declare fn println(message: string);
+
+#[@external(node, "console", "debug"),
+  @external(erlang, "io", "format")]
+pub declare fn debug(value: string);

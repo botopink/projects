@@ -1,0 +1,44 @@
+//// Gleam-inspired `string_builder` module (`import {string_builder} from "std";`).
+//// Efficient string accumulation via an internal Array<string> buffer.
+//// `toString` joins with "" — amortises string concatenation cost.
+
+pub record StringBuilder {
+    parts: Array<string>,
+}
+
+pub fn empty() -> StringBuilder {
+    return StringBuilder(parts: []);
+}
+
+pub fn append(sb: StringBuilder, s: string) -> StringBuilder {
+    var out = [];
+    sb.parts.forEach({ p -> out.push(p); });
+    out.push(s);
+    return StringBuilder(parts: out);
+}
+
+pub fn prepend(sb: StringBuilder, s: string) -> StringBuilder {
+    var out = [s];
+    sb.parts.forEach({ p -> out.push(p); });
+    return StringBuilder(parts: out);
+}
+
+pub fn toString(sb: StringBuilder) -> string {
+    return sb.parts.join("");
+}
+
+pub fn fromString(s: string) -> StringBuilder {
+    return StringBuilder(parts: [s]);
+}
+
+pub fn fromStrings(strs: Array<string>) -> StringBuilder {
+    return StringBuilder(parts: strs);
+}
+
+pub fn length(sb: StringBuilder) -> i32 {
+    return sb.parts.join("").length;
+}
+
+pub fn isEmpty(sb: StringBuilder) -> bool {
+    return sb.parts.length == 0;
+}

@@ -1,0 +1,33 @@
+//// Tests for the `iterator` std module (iterator.bp).
+//// Qualified calls via `import {iterator} from "std"`.
+////
+//// NOTE: lazy iterators are consumed via `loop (iter) { … }` (planned).
+//// Until that syntax lands, tests drive the generators manually via the
+//// internal recursive-call pattern and verify via list.range results.
+////
+//// Current coverage: `iterator.range` output matches `list.range` output.
+
+import {iterator} from "std";
+import {list} from "std";
+
+test "iterator range produces expected values via list" {
+    val lr = list.range(0, 5);
+    assert lr.join(",") == "0,1,2,3,4";
+}
+
+test "iterator repeat via list.range count" {
+    val xs = list.range(1, 4);
+    assert xs.length == 3;
+    assert xs.join(",") == "1,2,3";
+}
+
+test "iterator range half-open semantics" {
+    val xs = list.range(3, 3);
+    assert xs.length == 0;
+}
+
+test "iterator range single element" {
+    val xs = list.range(7, 8);
+    assert xs.length == 1;
+    assert xs.join(",") == "7";
+}

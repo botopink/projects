@@ -21,14 +21,20 @@ compilation — they are type surface only).
 
 ```text
 test/
-├── AGENTS.md        ← you are here
-├── array_test.bp    ← builtin Array<T> surface: join/reverse/indexOf/at/map/filter/slice
-├── bool_test.bp     ← bool std module: negate/nor/nand/exclusive_or/exclusive_nor
-├── option_test.bp   ← ?T builtin methods (map/flatMap/unwrapOr) + `?.` chaining
-├── order_test.bp    ← order std module: lt/eq/gt, to_int, reverse, case over Order
-├── pair_test.bp     ← pair std module: of/first/second/swap/map_first/map_second
-├── result_test.bp   ← builtin result namespace: map/then/unwrap/is_ok/is_error
-└── string_test.bp   ← builtin String surface: split/length/trim/slice
+├── AGENTS.md           ← you are here
+├── array_test.bp       ← builtin Array<T> surface: join/reverse/indexOf/at/map/filter/slice
+├── bool_test.bp        ← bool std module: negate/nor/nand/exclusiveOr/exclusiveNor
+├── option_test.bp      ← ?T builtin methods (map/flatMap/unwrapOr) + `?.` chaining
+├── order_test.bp       ← order std module: lt/eq/gt, toInt, reverse, case over Order
+├── pair_test.bp        ← pair std module: of/first/second/swap/mapFirst/mapSecond
+├── result_test.bp      ← builtin result namespace: map/then/unwrap/isOk/isError
+├── string_test.bp      ← builtin String surface: split/length/trim/slice
+├── list_test.bp        ← list std module: fold/map/filter/range/append/prepend/flatten/all/any
+├── number_test.bp      ← int + float std modules: absoluteValue/min/max/clamp/isEven/toString
+├── iterator_test.bp    ← iterator std module: range semantics (via list.range; loop syntax pending)
+├── dict_test.bp        ← dict std module: new/insert/get/hasKey/delete/size/fold/merge/mapValues
+├── set_test.bp         ← set std module: new/insert/contains/delete/fromList/union/intersection/difference
+└── function_test.bp    ← function std module: identity/compose/flip/constant
 ```
 
 ## Running
@@ -47,10 +53,17 @@ Covered today (lowers correctly on the commonJS target):
 | `String` | `split`, `.length` (on the split result), `trim`, `slice` |
 | `Array<T>` | `join`, `reverse`, `indexOf`, `at`, `map`, `filter`, `slice` |
 | `?T` (option) | `map`, `flatMap`, `unwrapOr`; `?.` member access (incl. null short-circuit) |
-| `result` namespace | `map`, `then`, `unwrap`, `is_ok`, `is_error` (producer: `*fn -> @Result<D, E>`) |
-| `bool` module | `negate`, `nor`, `nand`, `exclusive_or`, `exclusive_nor` |
-| `order` module | `lt`/`eq`/`gt`, `to_int`, `reverse`, `case` over the exported `Order` enum |
-| `pair` module | `of`, `first`, `second`, `swap`, `map_first`, `map_second` |
+| `result` namespace | `map`, `then`, `unwrap`, `isOk`, `isError` (producer: `*fn -> @Result<D, E>`) |
+| `bool` module | `negate`, `nor`, `nand`, `exclusiveOr`, `exclusiveNor` |
+| `order` module | `lt`/`eq`/`gt`, `toInt`, `reverse`, `case` over the exported `Order` enum |
+| `pair` module | `of`, `first`, `second`, `swap`, `mapFirst`, `mapSecond` |
+| `list` module | `fold`, `map`, `filter`, `range`, `append`, `prepend`, `flatten`, `all`, `any`, `find`, `count`, `take`, `drop`, `reverse`, `first`, `rest`, `contains`, `isEmpty`, `flatMap` |
+| `int` module | `absoluteValue`, `min`, `max`, `clamp`, `isEven`, `isOdd`, `toString` |
+| `float` module | `absoluteValue`, `min`, `max`, `clamp`, `toString` |
+| `iterator` module | `range` / `repeat` (via lazy `*fn`; `loop` consumption pending) |
+| `dict` module | `new`, `get`, `hasKey`, `insert`, `delete`, `size`, `isEmpty`, `keys`, `values`, `fold`, `merge`, `mapValues` |
+| `set` module | `new`, `contains`, `size`, `isEmpty`, `insert`, `delete`, `toList`, `fromList`, `union`, `intersection`, `difference` |
+| `function` module | `identity`, `compose`, `flip`, `constant` |
 
 **Blocked — snake_case builtin methods lack a JS name mapping** (typed-value
 method dispatch; the blind emitter writes `s.to_upper()` verbatim and JS has
@@ -59,10 +72,13 @@ no such method): `to_upper`, `to_lower`, `contains`, `starts_with`,
 `to_string`, `len()`; Array `push`/`pop`/`forEach` (mutation/effects) are
 also untested. Add their tests when the mapping lands.
 
-**Blocked — modules not yet implemented** (depend on `stdlib-gleam` F4–F9):
-`list`, `dict`, `set`, `int`/`float` (module form), `iterator`, `function`.
-The planned one-file-per-module layout for them is in
-`tasks/v0.beta.2/specs/stdlib-tests.md`.
+**Blocked — `iterator` loop consumption**: `loop (iter) { … }` syntax not yet
+in the parser; higher-order iterator ops (`map`/`filter`/`fold` over lazy
+sequences) are untested until it lands. The `iterator_test.bp` verifies
+`range` semantics via `list.range` as a proxy.
+
+**Blocked — Erlang/BEAM**: std modules are Erlang-unreachable (escript only
+loads the entry module; known gap #3). All test coverage is commonJS-only.
 
 ## Conventions
 

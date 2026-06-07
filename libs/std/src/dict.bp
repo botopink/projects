@@ -1,0 +1,91 @@
+//// Gleam-inspired `dict` module (`import {dict} from "std";`).
+//// Implemented as an association list — a `Dict<K, V>` wraps
+//// `Array<#(K, V)>` for full backend portability (no host-backing needed).
+//// O(n) lookup is acceptable for stdlib correctness; camelCase convention.
+////
+//// NOTE: `==` / `!=` on generic K uses structural equality; works for
+//// string and numeric keys (the common case). Structural equality on
+//// Array keys is reference-equality in JS (known gap, catalogued).
+////
+//// API naming note: `new` and `get` are keyword tokens in botopink —
+//// the functions are named `empty` and `lookup` instead.
+
+pub record Dict<K, V> {
+    pairs: Array<#(K, V)>,
+}
+
+pub fn empty<K, V>() -> Dict<K, V> {
+    return Dict(pairs: []);
+}
+
+// Internal: find the first pair whose key equals `key`.
+fn findPair<K, V>(pairs: Array<#(K, V)>, key: K) -> ?#(K, V) {
+    return pairs.filter({ p -> p._0 == key }).at(0);
+}
+
+pub fn lookup<K, V>(d: Dict<K, V>, key: K) -> ?V {
+    return findPair(d.pairs, key).map({ p -> p._1 });
+}
+
+pub fn hasKey<K, V>(d: Dict<K, V>, key: K) -> bool {
+    return findPair(d.pairs, key) != null;
+}
+
+// Internal: build a new pairs array with all entries for `key` removed.
+fn pairsWithout<K, V>(pairs: Array<#(K, V)>, key: K) -> Array<#(K, V)> {
+    return pairs.filter({ p -> p._0 != key });
+}
+
+// Internal: copy helper (trailing lambda inside another lambda gap).
+fn appendPairs<K, V>(out: Array<#(K, V)>, src: Array<#(K, V)>) {
+    src.forEach({ p -> out.push(p); });
+}
+
+pub fn insert<K, V>(d: Dict<K, V>, key: K, value: V) -> Dict<K, V> {
+    val filtered = pairsWithout(d.pairs, key);
+    var out = [];
+    appendPairs(out, filtered);
+    out.push(#(key, value));
+    return Dict(pairs: out);
+}
+
+pub fn delete<K, V>(d: Dict<K, V>, key: K) -> Dict<K, V> {
+    return Dict(pairs: pairsWithout(d.pairs, key));
+}
+
+pub fn size<K, V>(d: Dict<K, V>) -> i32 {
+    return d.pairs.length;
+}
+
+pub fn isEmpty<K, V>(d: Dict<K, V>) -> bool {
+    return d.pairs.length == 0;
+}
+
+pub fn keys<K, V>(d: Dict<K, V>) -> Array<K> {
+    return d.pairs.map({ p -> p._0 });
+}
+
+pub fn values<K, V>(d: Dict<K, V>) -> Array<V> {
+    return d.pairs.map({ p -> p._1 });
+}
+
+// Fold over all key-value pairs.
+pub fn fold<K, V, A>(d: Dict<K, V>, initial: A, f: fn(acc: A, key: K, value: V) -> A) -> A {
+    var acc = initial;
+    d.pairs.forEach({ p -> acc = f(acc, p._0, p._1); });
+    return acc;
+}
+
+// Right-biased merge: keys present in both `a` and `b` keep `b`'s value.
+pub fn merge<K, V>(a: Dict<K, V>, b: Dict<K, V>) -> Dict<K, V> {
+    var out = a;
+    b.pairs.forEach({ p -> out = insert(out, p._0, p._1); });
+    return out;
+}
+
+// Map each value through `f`, keeping the keys unchanged.
+pub fn mapValues<K, V, W>(d: Dict<K, V>, f: fn(value: V) -> W) -> Dict<K, W> {
+    var out = [];
+    d.pairs.forEach({ p -> out.push(#(p._0, f(p._1))); });
+    return Dict(pairs: out);
+}
