@@ -24,12 +24,26 @@ anonymous record literals — but the editor tooling lagged:
 - The LSP feature set (hover, completion, documentSymbol, codeAction) predates
   test blocks and the stdlib modules — e.g. test blocks don't appear as document
   symbols and std module members may not complete after `import {list} from "std"`.
+- **Known bug (reported 2026-06-07): go-to-definition (ctrl+click) is not
+  working** — `textDocument/definition` either returns nothing or the extension
+  fails to surface it. Highest-priority item of this spec (F0a below).
 
 Per `modules/vscode-extension/AGENTS.md`: the keyword list **must stay in sync**
 with `token.zig`, and the extension itself has no compiler knowledge — semantic
 gaps belong to `language-server`, lexical gaps to the grammar.
 
 ## Steps
+
+### F0a — Fix go-to-definition (ctrl+click) regression
+
+- [ ] Reproduce: `textDocument/definition` over stdio against a workspace file —
+      same-file `val`/`fn`, cross-module `pub` symbol, std module fn
+- [ ] Bisect: LSP engine (`src/engine.zig` definition path + `project_index.zig`)
+      vs extension wiring (`extension.ts` client capabilities)
+- [ ] Likely suspects: import rework (`import {A, X*} from "name"`) changed how
+      the project index resolves symbols; new AST categories changed node lookup
+      at position
+- [ ] Fix + snapshot under `snapshots/lsp/` (same-file, cross-module, std module)
 
 ### F0 — Audit (grammar vs lexer, feature inventory)
 
