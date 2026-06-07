@@ -37,6 +37,7 @@ pub fn build(b: *std.Build) void {
         "function.bp",
         "io.d.bp",
         "string_builder.bp",
+        "queue.bp",
     };
     for (std_bp_files) |f| {
         std_prelude.addAnonymousImport(f, .{

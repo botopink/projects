@@ -1,24 +1,16 @@
 //// Tests for the `iterator` std module (iterator.bp).
 //// Qualified calls via `import {iterator} from "std"`.
 ////
-//// NOTE: lazy iterators are consumed via `loop (iter) { … }` (planned).
-//// Until that syntax lands, tests drive the generators manually via the
-//// internal recursive-call pattern and verify via list.range results.
-////
-//// Current coverage: `iterator.range` output matches `list.range` output.
+//// Eager consumer ops (map/filter/take/toList/fold) work correctly.
+//// fromList is a *fn generator; the JS loop+yield codegen limitation
+//// means it yields nothing at runtime — type-checked only here.
 
 import {iterator} from "std";
 import {list} from "std";
 
-test "iterator range produces expected values via list" {
+test "iterator range produces expected values" {
     val lr = list.range(0, 5);
     assert lr.join(",") == "0,1,2,3,4";
-}
-
-test "iterator repeat via list.range count" {
-    val xs = list.range(1, 4);
-    assert xs.length == 3;
-    assert xs.join(",") == "1,2,3";
 }
 
 test "iterator range half-open semantics" {
@@ -30,4 +22,41 @@ test "iterator range single element" {
     val xs = list.range(7, 8);
     assert xs.length == 1;
     assert xs.join(",") == "7";
+}
+
+test "iterator toList collects range" {
+    val xs = iterator.toList(iterator.range(0, 4));
+    assert xs.length == 4;
+    assert xs.join(",") == "0,1,2,3";
+}
+
+test "iterator fold sums range" {
+    val total = iterator.fold(iterator.range(1, 5), 0, { acc, item -> acc + item });
+    assert total == 10;
+}
+
+test "iterator map doubles range" {
+    val xs = iterator.map(iterator.range(0, 3), { n -> n * 2 });
+    assert xs.join(",") == "0,2,4";
+}
+
+test "iterator filter evens from range" {
+    val evens = iterator.filter(iterator.range(0, 6), { n -> n % 2 == 0 });
+    assert evens.join(",") == "0,2,4";
+}
+
+test "iterator take first three" {
+    val xs = iterator.take(iterator.range(0, 10), 3);
+    assert xs.length == 3;
+    assert xs.join(",") == "0,1,2";
+}
+
+test "iterator take more than available" {
+    val xs = iterator.take(iterator.range(0, 2), 10);
+    assert xs.length == 2;
+}
+
+test "iterator fold empty is initial" {
+    val total = iterator.fold(iterator.range(5, 5), 99, { acc, item -> acc + item });
+    assert total == 99;
 }

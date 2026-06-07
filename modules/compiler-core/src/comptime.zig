@@ -146,6 +146,7 @@ pub const std_pkg_modules = [_]Module{
     .{ .path = "std/function", .source = @import("std_prelude").function_mod },
     .{ .path = "std/io", .source = @import("std_prelude").io_mod },
     .{ .path = "std/string_builder", .source = @import("std_prelude").string_builder_mod },
+    .{ .path = "std/queue", .source = @import("std_prelude").queue_mod },
 };
 
 /// True when `path` is a "std" package registry key (`std/<module>`).

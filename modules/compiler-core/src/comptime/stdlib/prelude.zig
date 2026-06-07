@@ -25,3 +25,4 @@ pub const sets_mod = @embedFile("sets.bp");
 pub const function_mod = @embedFile("function.bp");
 pub const io_mod = @embedFile("io.d.bp");
 pub const string_builder_mod = @embedFile("string_builder.bp");
+pub const queue_mod = @embedFile("queue.bp");

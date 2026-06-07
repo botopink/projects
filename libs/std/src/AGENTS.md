@@ -30,12 +30,13 @@ src/
 ├── int.bp               ← `int` std module (pure-botopink math helpers)
 ├── float.bp             ← `float` std module (pure helpers + #[@external] for Math.*)
 ├── string.bp            ← `string` std module (qualified wrappers over String interface)
-├── iterator.bp          ← `iterator` std module (lazy generators via `*fn`; `range`/`repeat`)
+├── iterator.bp          ← `iterator` std module (lazy `*fn` generators + eager higher-order ops)
 ├── dict.bp              ← `dict` std module (impl — `pub record Dict<K,V>`; association list)
-├── set.bp               ← `set` std module (impl — `pub record Set<T>`; deduplicated Array)
+├── sets.bp              ← `sets` std module (impl — `pub record Set<T>`; deduplicated Array)
 ├── function.bp          ← `function` std module (impl — `identity`, `compose`, `flip`, `constant`)
 ├── io.d.bp              ← `io` std module (decl — `print`/`println`/`debug` via `#[@external]`)
-└── string_builder.bp    ← `string_builder` std module (impl — `StringBuilder` record; Array<string> buffer)
+├── string_builder.bp    ← `string_builder` std module (impl — `StringBuilder` record; Array<string> buffer)
+└── queue.bp             ← `queue` std module (impl — `pub record Queue<T>`; FIFO backed by Array<T>)
 ```
 
 ## Files
@@ -51,12 +52,13 @@ src/
 | `int.bp` | `int` std module: `absoluteValue`, `min`, `max`, `clamp`, `isEven`, `isOdd`, `toString` — pure-botopink, no host backing needed. |
 | `float.bp` | `float` std module: `absoluteValue`, `min`, `max`, `clamp`, `toString` — pure; `floor`, `ceiling`, `round`, `squareRoot` via `@[external(node, "Math", …)]`. |
 | `string.bp` | `string` std module: `split`, `trim`, `trimStart`, `trimEnd`, `contains`, `startsWith`, `endsWith`, `slice`, `replace`, `toUpper`, `toLower`, `join` — qualified wrappers over the builtin `String` interface methods. Both `s.split(",")` and `string.split(s, ",")` work. |
-| `iterator.bp` | `iterator` std module: `range(start, stop)` (half-open `[start, stop)`) and `repeat(value, times)` — lazy generators via `*fn` + recursive `if`-guarded helper pattern (botopink has no `while`; same idiom as `list.bp`'s `pushRange`). Higher-order ops (`map`/`filter`/`fold`) pending `loop (iter) { … }` syntax. |
-| `dict.bp` | `dict` std module: `pub record Dict<K, V>` (association list over `Array<#(K, V)>`). Exports: `new`, `get`, `hasKey`, `insert`, `delete`, `size`, `isEmpty`, `keys`, `values`, `fold`, `merge`, `mapValues`. Pure botopink — no host backing; O(n) lookup. Equality on generic K uses `==`/`!=` (works for string/numeric keys). |
-| `set.bp` | `set` std module: `pub record Set<T>` (deduplicated `Array<T>`). Exports: `new`, `contains`, `size`, `isEmpty`, `insert`, `delete`, `toList`, `fromList`, `union`, `intersection`, `difference`. Pure botopink. |
+| `iterator.bp` | `iterator` std module: lazy producers `range(start, stop)` (half-open `[start, stop)`), `repeat(value, times)`, `fromList(xs)` via `*fn` generators. Eager consumers (return `Array`): `toList`, `map`, `filter`, `take`. Pure fold: `fold`. Note: `fromList` JS codegen has a known gap (yield-in-loop emits `.map()` which fails for non-Array iterables) — documented in TODO.md. |
+| `dict.bp` | `dict` std module: `pub record Dict<K, V>` (association list over `Array<#(K, V)>`). Exports: `empty`, `lookup`, `hasKey`, `insert`, `delete`, `size`, `isEmpty`, `keys`, `values`, `fold`, `merge`, `mapValues`. Pure botopink — no host backing; O(n) lookup. (`new`/`get` are keyword tokens — constructors use `empty`/`lookup`.) |
+| `sets.bp` | `sets` std module: `pub record Set<T>` (deduplicated `Array<T>`). Exports: `empty`, `contains`, `size`, `isEmpty`, `insert`, `delete`, `toList`, `fromList`, `union`, `intersection`, `difference`. Pure botopink. (File named `sets.bp` since `set` is a reserved keyword.) |
 | `function.bp` | `function` std module: `identity`, `compose` (left-to-right), `flip`, `constant`. Pure higher-order combinators, compile once for every backend. |
 | `io.d.bp` | `io` std module: `print`, `println`, `debug` — host-backed I/O via `#[@external]`. Declaration-only (no bodies). node target uses `console.log`/`console.debug`; erlang uses `io:format`. |
-| `string_builder.bp` | `string_builder` std module: `pub record StringBuilder` (wraps `Array<string>`). Exports: `new`, `append`, `prepend`, `toString`, `fromString`, `fromStrings`, `length`, `isEmpty`. Efficient concatenation via `join("")` at the end. |
+| `string_builder.bp` | `string_builder` std module: `pub record StringBuilder` (wraps `Array<string>`). Exports: `empty`, `append`, `prepend`, `toString`, `fromString`, `fromStrings`, `length`, `isEmpty`. Efficient concatenation via `join("")` at the end. |
+| `queue.bp` | `queue` std module: `pub record Queue<T>` (FIFO, backed by `Array<T>` with front at index 0). Exports: `empty`, `size`, `isEmpty`, `enqueue`, `dequeue` (returns `#(Queue<T>, ?T)`), `peek`, `toList`, `fromList`. O(n) enqueue (copy-on-write), O(1) peek. Pure botopink. |
 
 ## Conventions
 

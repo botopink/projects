@@ -53,8 +53,8 @@
 
 ## F8 — `iterator` (lazy sequences)
 - [x] `iterator.bp`: `range(start, stop)` + `repeat(value, times)` via `*fn` generators
-- [x] `iterator_test.bp` (range semantics; higher-order ops pending `loop (iter)` syntax)
-- [ ] `fromList`, `map`, `filter`, `take`, `fold`, `toList` — blocked on `loop (iter)` syntax
+- [x] `fromList`, `map`, `filter`, `take`, `fold`, `toList` — implemented via `loop (iter) { … }` (eager ops return `Array`)
+- [x] `iterator_test.bp`: 10 tests covering range/toList/fold/map/filter/take
 
 ## F9 — `function` + `io`
 - [x] `function.bp`: identity/compose/flip/constant + inline tests
@@ -62,7 +62,8 @@
 - [x] `io.d.bp`: print/println/debug via `#[@external]`
 
 ## F10 — extended modules (optional)
-- [ ] `bit_array`, `uri`, `regexp`, `dynamic`, `queue` — per demand
+- [x] `queue.bp`: `pub record Queue<T>` — empty/enqueue/dequeue/peek/size/isEmpty/toList/fromList + `queue_test.bp` (7 tests)
+- [ ] `bit_array`, `uri`, `regexp`, `dynamic` — per demand (need external host infrastructure)
 
 ## Known gaps (not blocking; catalogued for follow-up tasks)
 
@@ -73,4 +74,4 @@
 5. **Structural `==` on arrays is reference equality in JS** — tests compare via `.join(...)`.
 6. **Local generic fns share type across call sites** — std module fns escape via `instantiateType`.
 7. **`?.` codegen on erlang/beam/wasm** — blocked on record-field-access gap.
-8. **`loop (iter)` syntax** — iterator higher-order ops blocked until this lands.
+8. **`iterator.fromList` JS codegen** — `*fn` + `loop { yield }` emits `.map()` which is broken for non-Array iterables; use `loop (array) { item -> … }` directly.
