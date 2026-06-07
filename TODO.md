@@ -44,9 +44,11 @@
       above automatically (no mirror edits needed)
 - [x] JSON + regex sanity validated; no vscode-textmate locally for live tokens
 
-## F2 — Snippets + language configuration
-- [ ] Snippets: `test` block, `#[@external]` declare fn, `*fn`, `import from "std"`
-- [ ] Review `language-configuration.json` on-enter/auto-close rules
+## F2 — Snippets + language configuration  ✔ DONE
+- [x] Snippets added: `test` block (linked got mirror) + `assert`,
+      `#[@external]` declare fn (`external`), `*fn` generator, `importstd`
+- [x] Reviewed `language-configuration.json`: `#[…]` auto-closes via `[`/`]`,
+      `${…}` via `{`/`}`; indentation rules already cover blocks — adequate
 
 ## F3 — LSP: test blocks + stdlib surface
 - [ ] `documentSymbol` + `foldingRange` for `test "name" { … }` blocks

@@ -29,6 +29,40 @@
     "body": ["import { ${1:name} } from \"${2:module}\";"],
     "description": "Named import"
   },
+  "Import from std": {
+    "prefix": "importstd",
+    "body": ["import { ${1:list} } from \"std\";"],
+    "description": "Import a module from the std package"
+  },
+  "Test block": {
+    "prefix": "test",
+    "body": [
+      "test \"${1:description}\" {",
+      "\tval ${2:got} = $0;",
+      "\tassert ${2:got} == ${3:want}, \"${4:why}\";",
+      "}"
+    ],
+    "description": "Test block with an assertion"
+  },
+  "Assertion": {
+    "prefix": "assert",
+    "body": ["assert ${1:condition}, \"${0:message}\";"],
+    "description": "Assertion inside a test block"
+  },
+  "Effectful function": {
+    "prefix": "*fn",
+    "body": ["*fn ${1:name}(${2:args}) -> @Iterator<${3:T}> {", "\tyield $0", "}"],
+    "description": "Effectful / generator function (yields)"
+  },
+  "External declaration": {
+    "prefix": "external",
+    "body": [
+      "#[@external(${1:node}, \"${2:module}\", \"${3:symbol}\"),",
+      "  @external(${4:erlang}, \"${5:module}\", \"${6:symbol}\")]",
+      "pub declare fn ${7:name}(${8:args}) -> ${9:type};"
+    ],
+    "description": "Externally-implemented declare fn with per-target bindings"
+  },
   "Record": {
     "prefix": "record",
     "body": ["record ${1:Name} {", "\t${2:field}: ${0:type},", "}"],
