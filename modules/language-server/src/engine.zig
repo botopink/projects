@@ -397,6 +397,80 @@ pub fn definitionInModules(
     return null;
 }
 
+// ── Go to Definition: embedded "std" modules ──────────────────────────────────
+
+/// One embedded "std" package module, keyed by bare name (no `std/` prefix).
+pub const StdModule = struct {
+    name: []const u8,
+    source: []const u8,
+};
+
+/// Embedded "std" package modules (`import {…} from "std";`), bare names.
+pub const std_modules: [comptime_pipeline.std_pkg_modules.len]StdModule = blk: {
+    var mods: [comptime_pipeline.std_pkg_modules.len]StdModule = undefined;
+    for (comptime_pipeline.std_pkg_modules, 0..) |spm, i| {
+        mods[i] = .{ .name = spm.path["std/".len..], .source = spm.source };
+    }
+    break :blk mods;
+};
+
+pub fn findStdModule(name: []const u8) ?StdModule {
+    for (std_modules) |m| {
+        if (std.mem.eql(u8, m.name, name)) return m;
+    }
+    return null;
+}
+
+/// A definition resolved into an embedded "std" module. The caller decides
+/// how to expose `module.source` to the editor (e.g. materialize to disk).
+pub const StdDefinition = struct {
+    module: StdModule,
+    range: proto.Range,
+};
+
+/// Resolves the identifier at `pos` against the embedded "std" package
+/// modules. Qualified access (`list.map`) restricts the search to the
+/// qualifying module; a bare module name (`list`) jumps to the top of the
+/// module. Unqualified names are searched across every std module, but only
+/// when the file imports from "std".
+pub fn definitionInStdModules(
+    gpa: std.mem.Allocator,
+    source: []const u8,
+    pos: proto.Position,
+) !?StdDefinition {
+    const span = identSpanAt(source, pos) orelse return null;
+    const name = source[span.start..span.end];
+
+    // `list.map` — the qualifier names the module.
+    if (qualifierBefore(source, span.start)) |qual| {
+        const mod = findStdModule(qual) orelse return null;
+        return findStdDecl(gpa, mod, name);
+    }
+
+    // Bare module name (`list` in `import {list} from "std"`).
+    if (findStdModule(name)) |mod| {
+        const top = proto.Position{ .line = 0, .character = 0 };
+        return .{ .module = mod, .range = .{ .start = top, .end = top } };
+    }
+
+    // Unqualified fallback — only meaningful when the file uses "std".
+    if (std.mem.indexOf(u8, source, "from \"std\"") == null) return null;
+    for (std_modules) |mod| {
+        if (try findStdDecl(gpa, mod, name)) |sd| return sd;
+    }
+    return null;
+}
+
+/// Scans one std module for a `pub` declaration named `name`.
+fn findStdDecl(gpa: std.mem.Allocator, mod: StdModule, name: []const u8) !?StdDefinition {
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    var lexer = Lexer.init(mod.source);
+    const tokens = lexer.scanAll(arena.allocator()) catch return null;
+    const loc = try findDeclLocation(arena.allocator(), mod.name, name, tokens, true) orelse return null;
+    return .{ .module = mod, .range = loc.range };
+}
+
 // ── Document Symbols ──────────────────────────────────────────────────────────
 
 /// Returns all top-level symbol declarations in the document, with children
@@ -621,8 +695,10 @@ fn collectChildren(
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
-/// Returns the identifier name at the given cursor position by scanning the source.
-fn identAt(source: []const u8, pos: proto.Position) ?[]const u8 {
+const IdentSpan = struct { start: usize, end: usize };
+
+/// Returns the byte span of the identifier at the given cursor position.
+fn identSpanAt(source: []const u8, pos: proto.Position) ?IdentSpan {
     const offset = lsp_types.positionToOffset(source, pos);
     var i: usize = 0;
     while (i < source.len) {
@@ -632,9 +708,28 @@ fn identAt(source: []const u8, pos: proto.Position) ?[]const u8 {
         }
         const start = i;
         while (i < source.len and isIdentCont(source[i])) i += 1;
-        if (offset >= start and offset < i) return source[start..i];
+        if (offset >= start and offset < i) return .{ .start = start, .end = i };
     }
     return null;
+}
+
+/// Returns the identifier name at the given cursor position by scanning the source.
+fn identAt(source: []const u8, pos: proto.Position) ?[]const u8 {
+    const span = identSpanAt(source, pos) orelse return null;
+    return source[span.start..span.end];
+}
+
+/// Returns the identifier immediately before `start` when the access is a
+/// plain `qualifier.member` chain (e.g. the `list` in `list.map`). Optional
+/// chaining (`?.`) and other receivers return null.
+fn qualifierBefore(source: []const u8, start: usize) ?[]const u8 {
+    if (start == 0 or source[start - 1] != '.') return null;
+    const dot = start - 1;
+    var i = dot;
+    while (i > 0 and isIdentCont(source[i - 1])) i -= 1;
+    if (i == dot) return null;
+    if (!isIdentStart(source[i])) return null;
+    return source[i..dot];
 }
 
 fn isIdentStart(c: u8) bool {

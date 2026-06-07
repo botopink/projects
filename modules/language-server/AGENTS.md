@@ -49,6 +49,12 @@ The server maintains a **project index** (`src/project_index.zig`) that scans
 `.bp` files from the workspace `rootUri`, caching `pub` symbols for cross-module
 features (import suggestions, references, module completion).
 
+`definition` resolves in three tiers: same file → workspace `pub` symbols
+(project index) → embedded "std" package modules (`engine.definitionInStdModules`).
+Std hits are materialized to `<XDG_CACHE_HOME|~/.cache>/botopink-lsp/std/<name>.bp`
+so the editor can open them (needs `environ_map` from `std.process.Init`,
+plumbed through `Server.init`).
+
 Add a new feature → implement it in [`src/engine.zig`](src/AGENTS.md), add a
 test under [`src/tests/`](src/tests/AGENTS.md) and a snapshot under
 [`snapshots/lsp/`](snapshots/lsp/AGENTS.md).

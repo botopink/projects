@@ -29,9 +29,39 @@ pub fn build(b: *std.Build) void {
     // multiple modules and consumers will need to be able to specify which
     // module they want to access.
     const std_prelude = b.addModule("std_prelude", .{
-        .root_source_file = b.path("../../libs/std/src/prelude.zig"),
+        .root_source_file = b.path("src/comptime/stdlib/prelude.zig"),
         .target = target,
     });
+
+    // The stdlib .bp/.d.bp sources live under libs/std/src/ (outside the
+    // std_prelude module root), so each file is exposed as an anonymous
+    // import that prelude.zig embeds by name. One entry per stdlib module.
+    // Must stay in sync with std_bp_files in the workspace root build.zig.
+    const std_bp_files = [_][]const u8{
+        "primitives.d.bp",
+        "array.d.bp",
+        "string.d.bp",
+        "syntax.bp",
+        "bool.bp",
+        "pair.bp",
+        "order.bp",
+        "list.bp",
+        "int.bp",
+        "float.bp",
+        "string.bp",
+        "iterator.bp",
+        "dict.bp",
+        "sets.bp",
+        "function.bp",
+        "io.d.bp",
+        "string_builder.bp",
+        "queue.bp",
+    };
+    for (std_bp_files) |f| {
+        std_prelude.addAnonymousImport(f, .{
+            .root_source_file = b.path(b.fmt("../../libs/std/src/{s}", .{f})),
+        });
+    }
 
     const mod = b.addModule("botopink", .{
         // The root source file is the "entry point" of this module. Users of

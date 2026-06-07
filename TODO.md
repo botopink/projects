@@ -1,77 +1,63 @@
-# TODO — stdlib-gleam
+# TODO — tooling-update
 
-> Live checklist for branch `task/stdlib-gleam` (worktree `.tasks/stdlib-gleam/`).
-> Spec (intent, immutable): [`tasks/v0.beta.2/specs/stdlib-gleam.md`](tasks/v0.beta.2/specs/stdlib-gleam.md)
->
+> Live checklist for branch `task/tooling-update` (worktree `.tasks/tooling-update/`).
+> Spec (intent, immutable): [`tasks/v0.beta.3/specs/tooling-update.md`](tasks/v0.beta.3/specs/tooling-update.md)
 
-> **Goal**: grow `libs/std` into a Gleam-style stdlib — `list`, `dict`, `set`,
-> `option`, `result`, `order`, `pair`, `bool`, `iterator`, `function`, `int`,
-> `float`, `string`, `io` — callable as `import {list}; list.map(xs, f)` or
-> via pipeline `xs |> list.map(f)`. Each module lands with its test suite.
+> **Goal**: bring `modules/language-server` + `modules/vscode-extension` up to
+> the current language surface (test blocks, `#[@external]`, `@`-types, `*fn`,
+> import rework, `|>`, `?.`). **F0a (ctrl+click) first** — reported broken
+> 2026-06-07. Only F4 waits for `stdlib-interface`.
 
-## F0 — module layout + wiring + conventions
-- [x] Relocate `prelude.zig` → `modules/compiler-core/src/comptime/stdlib/prelude.zig`
-- [x] `build.zig` updated for new `std_prelude` module path
-- [x] `prelude.zig` `@embedFile`s each `.bp`/`.d.bp` via relative path into `libs/std/src/`
-- [x] `libs/std/AGENTS.md` + `libs/std/src/AGENTS.md` document the layout
-- [x] Calling convention: qualified (`list.map(xs, f)`) + pipeline (`xs |> list.map(f)`)
+## F0a — Fix go-to-definition (ctrl+click) regression  ✔ DONE
+- [x] Reproduce via stdio: same-file `val`/`fn`, cross-module `pub`, std module fn
+      (scripted JSON-RPC session against `zig-out/bin/botopink-lsp`)
+- [x] Run `src/tests/definition.zig` (9 tests) — green (suite never covered stdio)
+- [x] Bisect — three real bugs, none in `identAt`/`extension.ts`:
+      1. `messages.zig` framing: Zig 0.16 `takeDelimiterExclusive` stops *before*
+         `\n` → body truncated → server died on the FIRST message (whole LSP
+         down, not just ctrl+click). Fixed with `takeDelimiter`.
+      2. `project_index.zig` `openDir` without `.iterate = true` → O_PATH fd →
+         BADF panic on first `iter.next()` (killed cross-module definition).
+      3. `compiler-core/build.zig` still pointed at the pre-312d1ad prelude path
+         → standalone `zig build test` in language-server didn't even compile.
+- [x] Fix + snapshots (same-file, cross-module, std module): std resolution via
+      new `engine.definitionInStdModules` (qualifier-aware: `list.map`), module
+      source materialized to `~/.cache/botopink-lsp/std/<name>.bp`; regression
+      tests for the frame reader in `src/tests/messages.zig`
 
-## F1 — `#[@external]` annotation syntax
-- [x] `#[@external(target, module, symbol)]` attribute on `pub declare fn`
-- [x] `builtins.d.bp`: `pub enum Target { ... }` + `fn external(...)`
-- [x] Inference: `declare fn` is typed from signature alone (no body required)
-- [x] Codegen: each backend reads the external annotations
+## F0 — Audit
+- [ ] Diff grammar keywords vs `compiler-core/src/lexer/token.zig`
+- [ ] Inventory unhighlighted syntax: `#[@external(…)]`, `@Expr`/`@Result`/
+      `@Option`/`@Iterator`, `*fn`, `|>`, `?.`, template holes, anonymous records
+- [ ] Inventory LSP gaps per feature against the same list
 
-## F2 — `option` + `result` (effect types)
-- [x] `?T` — builtin spelling only; `map`/`flatMap`/`unwrapOr` lowered inline
-- [x] `result` — builtin namespace; `map`/`then`/`unwrap`/`isOk`/`isError`
-- [x] `option_test.bp` + `result_test.bp`
+## F1 — TextMate grammar sync
+- [ ] Update keyword groups in `botopink.tmLanguage.json`
+- [ ] Add scopes: attributes, `@Type` names, `*fn`, `|>`, `?.`
+- [ ] Mirror in `botopink.codeblock.json` (markdown ```bp)
+- [ ] Smoke: open `libs/std/src/*.bp` and check colouring
 
-## F3 — `order` + `bool` + `pair`
-- [x] `order.bp` + `bool.bp` + `pair.bp`
-- [x] `order_test.bp` + `bool_test.bp` + `pair_test.bp`
+## F2 — Snippets + language configuration
+- [ ] Snippets: `test` block, `#[@external]` declare fn, `*fn`, `import from "std"`
+- [ ] Review `language-configuration.json` on-enter/auto-close rules
 
-## F4 — `list` (core module over `Array<T>`)
-- [x] `list.bp`: fold/map/filter/flatMap/flatten/range/append/prepend/reverse/take/drop/first/rest/contains/isEmpty/find/all/any/count
-- [x] `list_test.bp`
+## F3 — LSP: test blocks + stdlib surface
+- [ ] `documentSymbol` + `foldingRange` for `test "name" { … }` blocks
+- [ ] `completion`: std module members after `import {list} from "std"`
+- [ ] `hover`: std module fns + `#[@external]` declares
+- [ ] Snapshots under `snapshots/lsp/`
 
-## F5 — `dict` + `set`
-- [x] `dict.bp`: `pub record Dict<K, V>` (association list) — new/get/hasKey/insert/delete/size/isEmpty/keys/values/fold/merge/mapValues + inline tests
-- [x] `set.bp`: `pub record Set<T>` (deduplicated Array) — new/contains/size/isEmpty/insert/delete/toList/fromList/union/intersection/difference + inline tests
-- [x] `dict_test.bp` + `set_test.bp`
-- [x] `prelude.zig` + `comptime.zig` + `build.zig` wired for dict/set/function/io/string_builder
+## F4 — LSP: interface-method dispatch  ◀ BLOCKED on stdlib-interface
+- [ ] `completion` on receiver dot: `true.` / `42.` / `xs.`
+- [ ] `hover` + `signatureHelp` for interface methods on primitives
+- [ ] Snapshots `lsp/completion_primitive_methods`, `lsp/hover_interface_method`
 
-## F6 — `int` + `float`
-- [x] `int.bp`: absoluteValue/min/max/clamp/isEven/isOdd/toString + inline tests
-- [x] `float.bp`: absoluteValue/min/max/clamp/toString + floor/ceiling/round/squareRoot via `#[@external]` + inline tests
-- [x] `number_test.bp`
+## F5 — Manifest + docs
+- [ ] Bump `package.json` version; refresh README
+- [ ] Update both `AGENTS.md` + `docs.md`
+- [ ] `zig build test` in `modules/language-server` green
 
-## F7 — `string` + `string_builder`
-- [x] `string.bp`: split/trim/trimStart/trimEnd/contains/startsWith/endsWith/slice/replace/toUpper/toLower/join + inline tests
-- [x] `string_builder.bp`: `pub record StringBuilder` — new/append/prepend/toString/fromString/fromStrings/length/isEmpty + inline tests
-- [x] `string_test.bp`
-
-## F8 — `iterator` (lazy sequences)
-- [x] `iterator.bp`: `range(start, stop)` + `repeat(value, times)` via `*fn` generators
-- [x] `fromList`, `map`, `filter`, `take`, `fold`, `toList` — implemented via `loop (iter) { … }` (eager ops return `Array`)
-- [x] `iterator_test.bp`: 10 tests covering range/toList/fold/map/filter/take
-
-## F9 — `function` + `io`
-- [x] `function.bp`: identity/compose/flip/constant + inline tests
-- [x] `function_test.bp`
-- [x] `io.d.bp`: print/println/debug via `#[@external]`
-
-## F10 — extended modules (optional)
-- [x] `queue.bp`: `pub record Queue<T>` — empty/enqueue/dequeue/peek/size/isEmpty/toList/fromList + `queue_test.bp` (7 tests)
-- [ ] `bit_array`, `uri`, `regexp`, `dynamic` — per demand (need external host infrastructure)
-
-## Known gaps (not blocking; catalogued for follow-up tasks)
-
-1. **snake_case method JS name mapping** — `s.to_upper()` verbatim; needs typed-value dispatch. Blocks fuller string coverage.
-2. **Builtin method lowering is commonJS-only** — Erlang/BEAM codegen untested.
-3. **Erlang test runner can't reach "std" package modules** — escript loads entry module only. Multi-file compile pending.
-4. **Literal method receivers don't parse** — `"a,b".split(",")` is a parse error; must bind to `val` first.
-5. **Structural `==` on arrays is reference equality in JS** — tests compare via `.join(...)`.
-6. **Local generic fns share type across call sites** — std module fns escape via `instantiateType`.
-7. **`?.` codegen on erlang/beam/wasm** — blocked on record-field-access gap.
-8. **`iterator.fromList` JS codegen** — `*fn` + `loop { yield }` emits `.map()` which is broken for non-Array iterables; use `loop (array) { item -> … }` directly.
+## Notes
+- Grammar = purely lexical; semantics belong to the LSP ("no compiler-internal
+  knowledge" rule in `vscode-extension/AGENTS.md`).
+- `botopink-lsp` launches with no args — no subcommands.

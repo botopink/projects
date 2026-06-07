@@ -1,6 +1,7 @@
 // Entry point for all LSP engine tests.
 // Each file is imported here so `zig build test` discovers every test.
 comptime {
+    _ = @import("./messages.zig");
     _ = @import("./diagnostics.zig");
     _ = @import("./formatting.zig");
     _ = @import("./hover.zig");
