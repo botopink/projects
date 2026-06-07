@@ -38,10 +38,15 @@ vscode-extension/
   itself — all semantic features come from `botopink-lsp`. The TextMate
   grammar is a separate, purely lexical view used only for syntax
   colouring.
-- **Keywords list must stay in sync** with
-  [`../compiler-core/src/lexer/token.zig`](../compiler-core/src/lexer/token.zig).
-  When you add or remove a keyword there, update
-  `syntaxes/botopink.tmLanguage.json`.
+- **Keywords list must stay in sync** with the lexer keyword table in
+  [`../compiler-core/src/lexer.zig`](../compiler-core/src/lexer.zig)
+  (`keywordOrIdent`) — `token.zig` only holds the enum; the actual
+  surface keywords are the strings matched there. When you add or remove a
+  keyword, update `syntaxes/botopink.tmLanguage.json`. Beyond plain
+  keywords the grammar also scopes: `#[@external(…)]` attribute blocks,
+  the builtin `@`-types (`@Expr`/`@Result`/`@Option`/`@Iterator`), the
+  `*fn` effect marker, `|>` pipeline, `?.` optional chaining, and `${…}`
+  string interpolation holes.
 - **`botopink-lsp` is launched with no args** — see
   [`../language-server/src/main.zig`](../language-server/src/main.zig).
   Do not add `lsp`/`serve`/etc. subcommands here.

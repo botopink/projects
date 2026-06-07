@@ -57,10 +57,13 @@ pub fn readMessage(
     var content_length: usize = 0;
 
     while (true) {
-        const line = reader.takeDelimiterExclusive('\n') catch |err| switch (err) {
-            error.EndOfStream => return null,
-            else => return err,
+        // `takeDelimiter` advances past the '\n' (unlike `takeDelimiterExclusive`,
+        // which stops *before* it — leaving the loop stuck on the same byte and
+        // truncating the body read). Returns null at end of stream.
+        const maybe_line = reader.takeDelimiter('\n') catch |err| switch (err) {
+            error.ReadFailed, error.StreamTooLong => return err,
         };
+        const line = maybe_line orelse return null; // EOF
         const trimmed = std.mem.trimEnd(u8, line, "\r");
         if (trimmed.len == 0) break; // linha em branco = fim dos headers
         if (std.mem.startsWith(u8, trimmed, "Content-Length: ")) {

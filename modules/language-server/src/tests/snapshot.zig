@@ -543,6 +543,7 @@ fn appendSourceWithUnderline(
 
 fn symbolKindName(kind: u32) []const u8 {
     return switch (kind) {
+        proto.SymbolKind.Method => "Method",
         proto.SymbolKind.Function => "Function",
         proto.SymbolKind.Variable => "Variable",
         proto.SymbolKind.Struct => "Struct",

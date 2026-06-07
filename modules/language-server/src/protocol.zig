@@ -74,6 +74,7 @@ pub const SymbolKind = struct {
     pub const File: u32 = 1;
     pub const Module: u32 = 2;
     pub const Namespace: u32 = 3;
+    pub const Method: u32 = 6;
     pub const Function: u32 = 12;
     pub const Variable: u32 = 13;
     pub const Constant: u32 = 14;

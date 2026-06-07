@@ -9,7 +9,7 @@ pub fn main(init: std.process.Init) void {
     const gpa = init.gpa;
     const io = init.io;
 
-    var server = Server.init(gpa, io);
+    var server = Server.init(gpa, io, init.environ_map);
     defer server.deinit();
 
     server.run() catch |err| {

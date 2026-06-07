@@ -24,16 +24,20 @@ The extension does only two things that the LSP cannot:
 
 ## TextMate grammar shape
 
-The grammar mirrors `compiler-core/src/lexer/token.zig`:
+The grammar mirrors the lexer keyword table in
+`compiler-core/src/lexer.zig` (`keywordOrIdent`):
 
 | Group | Patterns |
 |---|---|
-| Control keywords | `if`, `else`, `case`, `loop`, `for`, `break`, `continue`, `yield`, `return`, `try`, `catch`, `throw` |
-| Declaration keywords | `fn`, `val`, `var`, `pub`, `private`, `struct`, `record`, `enum`, `interface`, `type`, `implement`, `implementations`, `extends`, `delegate`, `declare`, `macro`, `use`, `from`, `import`, `new`, `opaque`, `const`, `default`, `derive`, `test`, `assert`, `syntax`, `comptime`, `auto`, `echo`, `set`, `get`, `as` |
-| Language constants | `true`, `false`, `null`, `todo`, `Self` |
-| Operators | `->`, `\|>`, `..`, comparison, logical, bitwise, assignment, arithmetic, `?`, `\|` |
+| Control keywords | `if`, `else`, `case`, `loop`, `for`, `break`, `continue`, `yield`, `return`, `try`, `catch`, `throw`, `await` |
+| Declaration keywords | `fn`, `val`, `var`, `pub`, `private`, `struct`, `record`, `enum`, `interface`, `type`, `implement`, `extend`, `extends`, `delegate`, `declare`, `macro`, `use`, `from`, `import`, `new`, `opaque`, `const`, `default`, `derive`, `test`, `assert`, `syntax`, `comptime`, `auto`, `set`, `get`, `as` |
+| Language constants | `true`, `false`, `null`, `Self` |
+| Effect marker | `*fn` (the `*` scoped as `keyword.operator.effect`) |
+| Attributes | `#[@external(…), …]` blocks — `@name` scoped as `entity.name.function.attribute` |
+| Builtin `@`-types | `@Expr`, `@Result`, `@Option`, `@Iterator` (`support.type.builtin`, matched before generic `@identifier`) |
+| Operators | `->`, `\|>`, `..`, `?.` (optional chaining), comparison, logical, bitwise, assignment, arithmetic, `?`, `\|` |
 | Numbers | binary `0b…`, octal `0o…`, hex `0x…`, float (mantissa + `[eE][+-]?…` exponent), decimal — all support `_` separators |
-| Strings | triple-quoted `"""…"""` (multiline) and `"…"` with `\u{…}`, `\n`, `\r`, `\t`, `\\`, `\"`, `\0` escapes |
+| Strings | triple-quoted `"""…"""` (multiline) and `"…"` with `\u{…}`, `\n`, `\r`, `\t`, `\\`, `\"`, `\0`, `\$` escapes; `${…}` interpolation holes highlighted as embedded code |
 | Builtins | `@identifier` |
 | Comments | `////` module-level, `///` doc, `//` line |
 

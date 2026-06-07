@@ -19,16 +19,19 @@ const Lexer = bp.Lexer;
 pub const Server = struct {
     gpa: std.mem.Allocator,
     io: std.Io,
+    /// Process environment (from `std.process.Init`) — null in tests.
+    environ_map: ?*std.process.Environ.Map,
     files: files_mod.FileCache,
     feedback: feedback_mod.FeedbackBookkeeper,
     index: index_mod.ProjectIndex,
     initialized: bool,
     shutdown_requested: bool,
 
-    pub fn init(gpa: std.mem.Allocator, io: std.Io) Server {
+    pub fn init(gpa: std.mem.Allocator, io: std.Io, environ_map: ?*std.process.Environ.Map) Server {
         return .{
             .gpa = gpa,
             .io = io,
+            .environ_map = environ_map,
             .files = files_mod.FileCache.init(gpa),
             .feedback = feedback_mod.FeedbackBookkeeper.init(gpa),
             .index = index_mod.ProjectIndex.init(gpa, io),
@@ -325,10 +328,51 @@ pub const Server = struct {
 
         if (try engine.definitionInModules(self.gpa, uri, source, pos, tokens, others.items)) |loc| {
             defer self.gpa.free(loc.uri);
-            try messages.writeResponse(self.io, self.gpa, msg.id(), loc);
-        } else {
-            try messages.writeResponse(self.io, self.gpa, msg.id(), null);
+            return messages.writeResponse(self.io, self.gpa, msg.id(), loc);
         }
+
+        // Still unresolved — try the embedded "std" package modules
+        // (`import {list} from "std"; … list.map(…)`). The module source is
+        // materialized into a cache dir so the editor can open it.
+        if (try engine.definitionInStdModules(self.gpa, source, pos)) |sd| {
+            if (self.materializeStdModule(sd.module)) |path| {
+                defer self.gpa.free(path);
+                const std_uri = try lsp_types.pathToUri(self.gpa, path);
+                defer self.gpa.free(std_uri);
+                const loc = proto.Location{ .uri = std_uri, .range = sd.range };
+                return messages.writeResponse(self.io, self.gpa, msg.id(), loc);
+            }
+        }
+
+        try messages.writeResponse(self.io, self.gpa, msg.id(), null);
+    }
+
+    /// Writes one embedded std module to `<cache>/botopink-lsp/std/<name>.bp`
+    /// so go-to-definition can jump into it. Returns the absolute path (owned
+    /// by the caller), or null when the cache dir cannot be resolved/written.
+    fn materializeStdModule(self: *Server, mod: engine.StdModule) ?[]u8 {
+        const env = self.environ_map orelse return null;
+        const dir_path = if (env.get("XDG_CACHE_HOME")) |xdg|
+            std.fmt.allocPrint(self.gpa, "{s}/botopink-lsp/std", .{xdg}) catch return null
+        else if (env.get("HOME")) |home|
+            std.fmt.allocPrint(self.gpa, "{s}/.cache/botopink-lsp/std", .{home}) catch return null
+        else
+            return null;
+        defer self.gpa.free(dir_path);
+
+        const cwd = std.Io.Dir.cwd();
+        cwd.createDirPath(self.io, dir_path) catch |err| switch (err) {
+            error.PathAlreadyExists => {},
+            else => return null,
+        };
+
+        const file_path = std.fmt.allocPrint(self.gpa, "{s}/{s}.bp", .{ dir_path, mod.name }) catch return null;
+        // Always overwrite — the content tracks this binary's stdlib version.
+        cwd.writeFile(self.io, .{ .sub_path = file_path, .data = mod.source }) catch {
+            self.gpa.free(file_path);
+            return null;
+        };
+        return file_path;
     }
 
     // ── textDocument/documentSymbol ───────────────────────────────────────────

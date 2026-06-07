@@ -6,6 +6,7 @@ const std = @import("std");
 const h = @import("./helpers.zig");
 const snap = @import("./snapshot.zig");
 const engine = @import("../engine.zig");
+const proto = @import("../protocol.zig");
 
 // ── DG1 — vai para declaração val ────────────────────────────────────────────
 
@@ -159,6 +160,67 @@ test "definition: imported symbol jumps to defining module" {
     try std.testing.expect(result != null);
     try std.testing.expect(std.mem.eql(u8, result.?.uri, math_uri));
     try snap.assertDefinition(gpa, "definition_imported_symbol", main_src, h.pos(1, 8), result);
+}
+
+// ── DG8 — símbolo de módulo std embutido ─────────────────────────────────────
+//
+// TODO "lsp ---- go-to-definition on std module fn".
+
+test "definition: std module member jumps into embedded std source" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\import {list} from "std";
+        \\val xs = list.map([1, 2], fn(item: i32) -> i32 { return item; });
+    ;
+
+    // 'map' na linha 1: "val xs = list.map(…" — col 14
+    const result = try engine.definitionInStdModules(gpa, source, h.pos(1, 14));
+    try std.testing.expect(result != null);
+    try std.testing.expectEqualStrings("list", result.?.module.name);
+
+    // Snapshot com URI pseudo "std/<module>" — o server materializa o path real.
+    const snap_loc = proto.Location{ .uri = "std/list", .range = result.?.range };
+    try snap.assertDefinition(gpa, "definition_std_module_member", source, h.pos(1, 14), snap_loc);
+}
+
+test "definition: bare std module name jumps to top of module" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\import {list} from "std";
+        \\val xs = list.map([1], fn(item: i32) -> i32 { return item; });
+    ;
+
+    // 'list' no import: "import {list} from …" — col 8
+    const result = try engine.definitionInStdModules(gpa, source, h.pos(0, 8));
+    try std.testing.expect(result != null);
+    try std.testing.expectEqualStrings("list", result.?.module.name);
+    try std.testing.expectEqual(@as(u32, 0), result.?.range.start.line);
+
+    const snap_loc = proto.Location{ .uri = "std/list", .range = result.?.range };
+    try snap.assertDefinition(gpa, "definition_std_module_name", source, h.pos(0, 8), snap_loc);
+}
+
+test "definition: std lookup misses without a std import" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\val y = map;
+    ;
+
+    // 'map' sem qualificador nem `from "std"` — não deve resolver no std.
+    const result = try engine.definitionInStdModules(gpa, source, h.pos(0, 8));
+    try std.testing.expect(result == null);
+}
+
+test "definition: non-std qualifier does not resolve into std" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\import {list} from "std";
+        \\val xs = foo.map(1);
+    ;
+
+    // 'map' qualificado por `foo` (não é módulo std) — null.
+    const result = try engine.definitionInStdModules(gpa, source, h.pos(1, 13));
+    try std.testing.expect(result == null);
 }
 
 test "definition: local declaration preferred over imported" {

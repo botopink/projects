@@ -134,7 +134,9 @@ pub const ProjectIndex = struct {
     fn scanDir(self: *ProjectIndex, dir_path: []const u8) !void {
         const cwd = std.Io.Dir.cwd();
 
-        var dir = cwd.openDir(self.io, dir_path, .{}) catch return;
+        // `.iterate = true` is required: without it Linux opens an O_PATH fd,
+        // and the first `iter.next()` panics with BADF inside the Io runtime.
+        var dir = cwd.openDir(self.io, dir_path, .{ .iterate = true }) catch return;
         defer dir.close(self.io);
 
         var iter = dir.iterate();

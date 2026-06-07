@@ -2,9 +2,9 @@
 
 Botopink language support for Visual Studio Code:
 
-- Syntax highlighting for `.bp` files (and ```` ```bp ```` fenced code blocks in Markdown).
-- Snippets for the most common declarations (`fn`, `val`, `record`, `struct`, `enum`, `case`, `loop`, `comptime`, …).
-- Full LSP integration via [`botopink-lsp`](../language-server/): diagnostics, formatting, hover, go-to-definition, completion, references, rename, signature help, inlay hints.
+- Syntax highlighting for `.bp` files (and ```` ```bp ```` fenced code blocks in Markdown), including `#[@external]` attributes, the builtin `@`-types (`@Expr`/`@Result`/`@Option`/`@Iterator`), the `*fn` effect marker, `|>` pipelines, `?.` optional chaining, and `${…}` string interpolation.
+- Snippets for the most common declarations (`fn`, `val`, `record`, `struct`, `enum`, `case`, `loop`, `comptime`, …) plus `test` blocks, `#[@external]` declares, `*fn` generators, and `import { … } from "std"`.
+- Full LSP integration via [`botopink-lsp`](../language-server/): diagnostics, formatting, hover, go-to-definition (same-file, cross-module, and into the embedded `std` modules), completion (members, `list.`/`io.` std members, labeled args), document symbols (incl. `test` blocks), folding, references, rename, signature help, inlay hints.
 
 ## Requirements
 

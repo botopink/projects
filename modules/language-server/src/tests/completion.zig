@@ -518,3 +518,51 @@ test "completion: iterator receiver offers next/iter/map" {
     }
     try std.testing.expect(have_next and have_iter and have_map);
 }
+
+// ── C-std — `list.` completes embedded std module members ─────────────────────
+
+test "completion: std module member after import from std" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\import {list} from "std";
+        \\val xs = list.
+    ;
+    // Cursor right after `list.` (line 1, char 14).
+    const cursor = h.pos(1, 14);
+    const items = try engine.completion(gpa, source, cursor, &.{});
+    defer {
+        for (items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        gpa.free(items);
+    }
+
+    var have_map = false;
+    var have_filter = false;
+    var have_fold = false;
+    for (items) |it| {
+        if (std.mem.eql(u8, it.label, "map")) have_map = true;
+        if (std.mem.eql(u8, it.label, "filter")) have_filter = true;
+        if (std.mem.eql(u8, it.label, "fold")) have_fold = true;
+    }
+    try std.testing.expect(have_map and have_filter and have_fold);
+    try std.testing.expect(items.len > 5);
+}
+
+test "completion: std module dot does not fire without the import" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\val xs = list.
+    ;
+    const cursor = h.pos(0, 14);
+    const items = try engine.completion(gpa, source, cursor, &.{});
+    defer {
+        for (items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        gpa.free(items);
+    }
+    try std.testing.expectEqual(@as(usize, 0), items.len);
+}

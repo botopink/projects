@@ -100,3 +100,24 @@ test "foldingRange: empty source" {
     try std.testing.expectEqual(@as(usize, 0), ranges.len);
     try snap.assertFoldingRanges(gpa, "folding_empty", source, ranges);
 }
+
+test "foldingRange: test block" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\test "adds" {
+        \\    assert 1 + 1 == 2, "math";
+        \\}
+    ;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), source);
+
+    const ranges = try engine.foldingRanges(gpa, source, tokens);
+    defer gpa.free(ranges);
+
+    try std.testing.expect(ranges.len >= 1);
+    try std.testing.expectEqual(@as(u32, 0), ranges[0].startLine);
+    try std.testing.expectEqual(@as(u32, 2), ranges[0].endLine);
+    try snap.assertFoldingRanges(gpa, "folding_test_block", source, ranges);
+}
