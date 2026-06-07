@@ -128,6 +128,26 @@ pub fn isPhantomContextStruct(s: ast.StructDecl) bool {
     return false;
 }
 
+/// JS host namespaces that exist as globals — `#[@external(node, "Math", …)]`
+/// must reference them directly: `require("Math")` fails at module load
+/// (`Cannot find module 'Math'`). `require` is reserved for relative/package
+/// module paths.
+const js_global_namespaces = [_][]const u8{
+    "globalThis", "Math",    "JSON",    "console", "Number",  "Date",
+    "Object",     "Array",   "String",  "Boolean", "Symbol",  "BigInt",
+    "Promise",    "Reflect", "Intl",    "Error",   "RegExp",  "Map",
+    "Set",        "WeakMap", "WeakSet", "Atomics", "process",
+};
+
+/// True when an `@[external(node, module, …)]` module name is a JS global
+/// namespace rather than a requirable module.
+pub fn isJsGlobalNamespace(module: []const u8) bool {
+    for (js_global_namespaces) |g| {
+        if (std.mem.eql(u8, module, g)) return true;
+    }
+    return false;
+}
+
 /// Emit all declarations as JavaScript source.
 ///
 /// `comptime_vals` maps IDs such as `"ct_0"` to pre-evaluated JS literal
@@ -260,7 +280,11 @@ pub fn emitProgramOpts(
                 if (f.isExternal()) {
                     // FFI declaration — import the host symbol under the fn name.
                     if (em.externals.get(f.name)) |ref| {
-                        if (std.mem.eql(u8, ref.symbol, f.name)) {
+                        if (isJsGlobalNamespace(ref.module)) {
+                            // Global namespace (`Math`, `console`, …) —
+                            // reference directly, never `require`.
+                            try em.fmt("const {s} = {s}.{s};", .{ f.name, ref.module, ref.symbol });
+                        } else if (std.mem.eql(u8, ref.symbol, f.name)) {
                             try em.fmt("const {{ {s} }} = require(\"{s}\");", .{ ref.symbol, ref.module });
                         } else {
                             try em.fmt("const {{ {s}: {s} }} = require(\"{s}\");", .{ ref.symbol, f.name, ref.module });
@@ -562,7 +586,8 @@ const Emitter = struct {
     /// test-mode assert failures.
     module_name: []const u8 = "main",
     /// `@[external(node, "module", "symbol")]` fns: name → host import.
-    /// The decl lowers to `const { symbol: name } = require("module");`.
+    /// The decl lowers to `const { symbol: name } = require("module");`,
+    /// or `const name = Module.symbol;` for JS global namespaces (`Math`, …).
     externals: std.StringHashMap(ast.ExternalRef),
     /// `@[external(…)]` fns with no `node` target — calling one is an error.
     externals_missing: std.StringHashMap(void),

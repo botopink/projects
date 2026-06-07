@@ -92,16 +92,16 @@ function clamp(n, lo, hi) {
 }
 exports.clamp = clamp;
 
-const { floor } = require("Math");
+const floor = Math.floor;
 exports.floor = floor;
 
-const { ceil: ceiling } = require("Math");
+const ceiling = Math.ceil;
 exports.ceiling = ceiling;
 
-const { round } = require("Math");
+const round = Math.round;
 exports.round = round;
 
-const { sqrt: squareRoot } = require("Math");
+const squareRoot = Math.sqrt;
 exports.squareRoot = squareRoot;
 
 // NOTE: `toString` for floats — coerces via string concat.
@@ -192,4 +192,13 @@ _botopink_main();
 
 ----- RUN LOG -----
 ```logs
+2.5
+1.5
+2.5
+3
+3.14
+2
+3
+3
+3
 ```

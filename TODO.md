@@ -1,77 +1,70 @@
-# TODO — stdlib-gleam
+# TODO — backend-parity
 
-> Live checklist for branch `task/stdlib-gleam` (worktree `.tasks/stdlib-gleam/`).
-> Spec (intent, immutable): [`tasks/v0.beta.2/specs/stdlib-gleam.md`](tasks/v0.beta.2/specs/stdlib-gleam.md)
->
+> Live checklist for branch `task/backend-parity` (worktree `.tasks/backend-parity/`).
+> Spec (intent, immutable): [`tasks/v0.beta.3/specs/backend-parity.md`](tasks/v0.beta.3/specs/backend-parity.md)
 
-> **Goal**: grow `libs/std` into a Gleam-style stdlib — `list`, `dict`, `set`,
-> `option`, `result`, `order`, `pair`, `bool`, `iterator`, `function`, `int`,
-> `float`, `string`, `io` — callable as `import {list}; list.map(xs, f)` or
-> via pipeline `xs |> list.map(f)`. Each module lands with its test suite.
+> **Goal**: close the open backend/stdlib gaps (stdlib-gleam known gaps 1, 3, 4,
+> 7, 8 + WASM runner + duplicate-name warning) and the 5 live `botopink test`
+> failures found 2026-06-07. Phases are independent — order by impact.
 
-## F0 — module layout + wiring + conventions
-- [x] Relocate `prelude.zig` → `modules/compiler-core/src/comptime/stdlib/prelude.zig`
-- [x] `build.zig` updated for new `std_prelude` module path
-- [x] `prelude.zig` `@embedFile`s each `.bp`/`.d.bp` via relative path into `libs/std/src/`
-- [x] `libs/std/AGENTS.md` + `libs/std/src/AGENTS.md` document the layout
-- [x] Calling convention: qualified (`list.map(xs, f)`) + pipeline (`xs |> list.map(f)`)
+**Suggested order**: F7 → F8 (cheap, unblock 3 whole suites) → F0 → F9 → F1 → F2 → F3 → F4 → F5 → F6.
 
-## F1 — `#[@external]` annotation syntax
-- [x] `#[@external(target, module, symbol)]` attribute on `pub declare fn`
-- [x] `builtins.d.bp`: `pub enum Target { ... }` + `fn external(...)`
-- [x] Inference: `declare fn` is typed from signature alone (no body required)
-- [x] Codegen: each backend reads the external annotations
+## F7 — `#[@external(node, …)]` against JS globals  ✔ done
+- [x] JS codegen: reference globals (`Math`, `console`, `JSON`, …) directly
+      instead of `require('Math')` (allowlist `js_global_namespaces` in
+      `commonJS.zig`; `require` stays for relative/package paths)
+- [x] Snapshot `codegen/node/external_global_math`
+- [x] `float` suite green under `cd libs/std && botopink test` (4/4)
 
-## F2 — `option` + `result` (effect types)
-- [x] `?T` — builtin spelling only; `map`/`flatMap`/`unwrapOr` lowered inline
-- [x] `result` — builtin namespace; `map`/`then`/`unwrap`/`isOk`/`isError`
-- [x] `option_test.bp` + `result_test.bp`
+## F8 — JS reserved-word sanitization  ◀ string + sets suites dead
+- [ ] Rename reserved-word identifiers on emission (`with` → `with_`,
+      `delete` → `delete_`) — params, locals, fn names; consistent across
+      call sites and exports
+- [ ] Full ES2015+ reserved-word table
+- [ ] Snapshot `codegen/node/reserved_word_identifiers`
+- [ ] `string` + `sets` suites green
 
-## F3 — `order` + `bool` + `pair`
-- [x] `order.bp` + `bool.bp` + `pair.bp`
-- [x] `order_test.bp` + `bool_test.bp` + `pair_test.bp`
+## F0 — Iterator JS codegen (known gap #8, widened)  ◀ 6/10 FAIL
+- [ ] Fix `*fn` + `loop { yield }` lowering (emit real generator, not `.map()`)
+- [ ] Cover `range`/`toList`/`fold`/`map`/`filter`/`take` runtime paths
+- [ ] Snapshot `codegen/node/iterator_fromList_yields_array_items`
+- [ ] `iterator` suite green; remove known gap #8 from `libs/std/AGENTS.md`
 
-## F4 — `list` (core module over `Array<T>`)
-- [x] `list.bp`: fold/map/filter/flatMap/flatten/range/append/prepend/reverse/take/drop/first/rest/contains/isEmpty/find/all/any/count
-- [x] `list_test.bp`
+## F9 — `?T` runtime repr in tuple returns  ◀ queue 3/7 FAIL
+- [ ] Trace why `.unwrapOr` is missing on tuple-extracted `?T` (commonJS)
+- [ ] Fix lowering (dispatch on inferred `?T` type, not runtime wrapper)
+- [ ] Snapshot `codegen/node/option_method_on_tuple_element`
+- [ ] `queue` suite green
 
-## F5 — `dict` + `set`
-- [x] `dict.bp`: `pub record Dict<K, V>` (association list) — new/get/hasKey/insert/delete/size/isEmpty/keys/values/fold/merge/mapValues + inline tests
-- [x] `set.bp`: `pub record Set<T>` (deduplicated Array) — new/contains/size/isEmpty/insert/delete/toList/fromList/union/intersection/difference + inline tests
-- [x] `dict_test.bp` + `set_test.bp`
-- [x] `prelude.zig` + `comptime.zig` + `build.zig` wired for dict/set/function/io/string_builder
+## F1 — Literal method receivers (known gap #4)
+- [ ] Parser: literals as method-call receivers (`"a,b".split(",")`)
+- [ ] Formatter round-trips; snapshot `parser/literal_method_receiver`
+- [ ] Update string tests to direct form; remove known gap #4 from AGENTS.md
 
-## F6 — `int` + `float`
-- [x] `int.bp`: absoluteValue/min/max/clamp/isEven/isOdd/toString + inline tests
-- [x] `float.bp`: absoluteValue/min/max/clamp/toString + floor/ceiling/round/squareRoot via `#[@external]` + inline tests
-- [x] `number_test.bp`
+## F2 — snake_case → camelCase method dispatch (known gap #1)
+- [ ] JS name-mapping for builtin string/array methods (`to_upper` → `toUpperCase`, …)
+      — table shrinks if stdlib-interface normalizes names at definition
+- [ ] Snapshot `codegen/node/string_snake_to_camel_dispatch`
 
-## F7 — `string` + `string_builder`
-- [x] `string.bp`: split/trim/trimStart/trimEnd/contains/startsWith/endsWith/slice/replace/toUpper/toLower/join + inline tests
-- [x] `string_builder.bp`: `pub record StringBuilder` — new/append/prepend/toString/fromString/fromStrings/length/isEmpty + inline tests
-- [x] `string_test.bp`
+## F3 — Erlang/BEAM std package loading (known gap #3) — heaviest
+- [ ] Multi-module compile (separate `.erl`/`.beam`) or inline into entry module
+- [ ] Wire std package into `comptime/runtime/erlang.zig`
+- [ ] Snapshot `codegen/erlang/std_package_list_map_via_erlang`
 
-## F8 — `iterator` (lazy sequences)
-- [x] `iterator.bp`: `range(start, stop)` + `repeat(value, times)` via `*fn` generators
-- [x] `fromList`, `map`, `filter`, `take`, `fold`, `toList` — implemented via `loop (iter) { … }` (eager ops return `Array`)
-- [x] `iterator_test.bp`: 10 tests covering range/toList/fold/map/filter/take
+## F4 — `?.` codegen for Erlang/BEAM/WASM (known gap #7)
+- [ ] Identify record-field-access blocker per backend
+- [ ] Erlang: case/match on `{ok, Val}`; WASM: conditional on optional tag
+- [ ] Snapshots `codegen/erlang/optional_chain`, `codegen/wasm/optional_chain`
 
-## F9 — `function` + `io`
-- [x] `function.bp`: identity/compose/flip/constant + inline tests
-- [x] `function_test.bp`
-- [x] `io.d.bp`: print/println/debug via `#[@external]`
+## F5 — WASM test runner (deferred from test-blocks)
+- [ ] WASM runner shim + wire into `botopink test` CLI
+- [ ] Snapshot `codegen/wasm/test_runner_basic`
 
-## F10 — extended modules (optional)
-- [x] `queue.bp`: `pub record Queue<T>` — empty/enqueue/dequeue/peek/size/isEmpty/toList/fromList + `queue_test.bp` (7 tests)
-- [ ] `bit_array`, `uri`, `regexp`, `dynamic` — per demand (need external host infrastructure)
+## F6 — Duplicate test name warning (deferred from test-blocks)
+- [ ] `Diagnostic.warning` on duplicate test names per file
+- [ ] Snapshot `comptime/duplicate_test_name_warning`
 
-## Known gaps (not blocking; catalogued for follow-up tasks)
-
-1. **snake_case method JS name mapping** — `s.to_upper()` verbatim; needs typed-value dispatch. Blocks fuller string coverage.
-2. **Builtin method lowering is commonJS-only** — Erlang/BEAM codegen untested.
-3. **Erlang test runner can't reach "std" package modules** — escript loads entry module only. Multi-file compile pending.
-4. **Literal method receivers don't parse** — `"a,b".split(",")` is a parse error; must bind to `val` first.
-5. **Structural `==` on arrays is reference equality in JS** — tests compare via `.join(...)`.
-6. **Local generic fns share type across call sites** — std module fns escape via `instantiateType`.
-7. **`?.` codegen on erlang/beam/wasm** — blocked on record-field-access gap.
-8. **`iterator.fromList` JS codegen** — `*fn` + `loop { yield }` emits `.map()` which is broken for non-Array iterables; use `loop (array) { item -> … }` directly.
+## Notes
+- Known gap #5 (structural `==` on arrays in JS) stays deferred — workaround
+  `.join(…)` documented; no fix phase here.
+- Verify suites with `cd libs/std && botopink test` after each phase.
