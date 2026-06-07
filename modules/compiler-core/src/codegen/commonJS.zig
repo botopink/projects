@@ -148,6 +148,39 @@ pub fn isJsGlobalNamespace(module: []const u8) bool {
     return false;
 }
 
+/// ES2015+ reserved words that are illegal as JS binding names (plus
+/// `arguments`/`eval`, illegal in strict mode, and contextual keywords like
+/// `of`). A botopink identifier that collides is renamed with a `_` suffix at
+/// emission — `with` → `with_`, `delete` → `delete_` — consistently across
+/// decls, call sites, and exports (the `exports.<name>` property keeps the
+/// original name; property positions accept reserved words).
+///
+/// `true`/`false`/`null`/`this`/`super` are deliberately omitted: botopink
+/// never creates bindings with those names, and in value position they are
+/// legal JS primary expressions (`true`/`false`/`null`) or handled separately
+/// (`self` → `this`). `of` is also omitted — it is only a contextual keyword
+/// (`for…of`), so `function of()` is valid JS and the stdlib relies on it.
+const js_reserved_words = [_][]const u8{
+    "arguments", "await",      "break",    "case",     "catch",
+    "class",     "const",      "continue", "debugger", "default",
+    "delete",    "do",         "else",     "enum",     "eval",
+    "export",    "extends",    "finally",  "for",      "function",
+    "if",        "implements", "import",   "in",       "instanceof",
+    "interface", "let",        "new",      "package",  "private",
+    "protected", "public",     "return",   "static",   "switch",
+    "throw",     "try",        "typeof",   "var",      "void",
+    "while",     "with",       "yield",
+};
+
+/// Sanitized JS binding name: reserved words get a `_` suffix, everything
+/// else passes through unchanged. Returns a static string — no allocation.
+pub fn jsIdent(name: []const u8) []const u8 {
+    inline for (js_reserved_words) |w| {
+        if (std.mem.eql(u8, name, w)) return w ++ "_";
+    }
+    return name;
+}
+
 /// Emit all declarations as JavaScript source.
 ///
 /// `comptime_vals` maps IDs such as `"ct_0"` to pre-evaluated JS literal
@@ -263,7 +296,7 @@ pub fn emitProgramOpts(
                     if (val_ct_map.get(v.name)) |ct_id| {
                         if (comptime_vals.get(ct_id)) |lit| {
                             if (!firstEmitted) try aw.writer.writeByte('\n');
-                            try em.fmt("const {s} = {s};", .{ v.name, lit });
+                            try em.fmt("const {s} = {s};", .{ jsIdent(v.name), lit });
                             try aw.writer.writeByte('\n');
                             firstEmitted = false;
                         }
@@ -280,16 +313,17 @@ pub fn emitProgramOpts(
                 if (f.isExternal()) {
                     // FFI declaration — import the host symbol under the fn name.
                     if (em.externals.get(f.name)) |ref| {
+                        const bind_name = jsIdent(f.name);
                         if (isJsGlobalNamespace(ref.module)) {
                             // Global namespace (`Math`, `console`, …) —
                             // reference directly, never `require`.
-                            try em.fmt("const {s} = {s}.{s};", .{ f.name, ref.module, ref.symbol });
-                        } else if (std.mem.eql(u8, ref.symbol, f.name)) {
+                            try em.fmt("const {s} = {s}.{s};", .{ bind_name, ref.module, ref.symbol });
+                        } else if (std.mem.eql(u8, ref.symbol, bind_name)) {
                             try em.fmt("const {{ {s} }} = require(\"{s}\");", .{ ref.symbol, ref.module });
                         } else {
-                            try em.fmt("const {{ {s}: {s} }} = require(\"{s}\");", .{ ref.symbol, f.name, ref.module });
+                            try em.fmt("const {{ {s}: {s} }} = require(\"{s}\");", .{ ref.symbol, bind_name, ref.module });
                         }
-                        if (f.isPub) try em.fmt("\nexports.{s} = {s};", .{ f.name, f.name });
+                        if (f.isPub) try em.fmt("\nexports.{s} = {s};", .{ f.name, bind_name });
                     } else {
                         try em.fmt("// external fn {s} (no node target)", .{f.name});
                     }
@@ -689,7 +723,7 @@ const Emitter = struct {
             // Will be handled via comptime_vals lookup at a higher level.
             return;
         }
-        try self.fmt("const {s} = ", .{v.name});
+        try self.fmt("const {s} = ", .{jsIdent(v.name)});
         try self.emitExpr(v.value.*);
         try self.w(";");
     }
@@ -736,7 +770,7 @@ const Emitter = struct {
 
     fn emitFn(self: *Emitter, f: ast.FnDecl) !void {
         self.try_seq = 0;
-        try self.fmt("{s} {s}(", .{ fnKeyword(f), f.name });
+        try self.fmt("{s} {s}(", .{ fnKeyword(f), jsIdent(f.name) });
         try self.emitParams(f.params);
         try self.w(") {\n");
         const prev_fn_indent = self.current_indent;
@@ -750,7 +784,7 @@ const Emitter = struct {
         }
         self.current_indent = prev_fn_indent;
         try self.w("}");
-        if (f.isPub) try self.fmt("\nexports.{s} = {s};", .{ f.name, f.name });
+        if (f.isPub) try self.fmt("\nexports.{s} = {s};", .{ f.name, jsIdent(f.name) });
     }
 
     /// Emit a `test { … }` body as `function __bp_test_<idx>() { … }`.
@@ -1001,19 +1035,19 @@ const Emitter = struct {
     fn emitPattern(self: *Emitter, pat: ast.Pattern) !void {
         switch (pat) {
             .wildcard => try self.w("_"),
-            .ident => |name| try self.w(name),
+            .ident => |name| try self.w(jsIdent(name)),
             .variant => |v| switch (v.payload) {
                 .binding => |binding| {
                     try self.w(v.name);
                     try self.w(" ");
-                    try self.w(binding);
+                    try self.w(jsIdent(binding));
                 },
                 .fields => |fields| {
                     try self.w(v.name);
                     try self.w("(");
                     for (fields, 0..) |b, i| {
                         if (i > 0) try self.w(", ");
-                        try self.w(b);
+                        try self.w(jsIdent(b));
                     }
                     try self.w(")");
                 },
@@ -1060,7 +1094,7 @@ const Emitter = struct {
     fn emitListPatternElem(self: *Emitter, elem: ast.ListPatternElem) !void {
         switch (elem) {
             .wildcard => try self.w("_"),
-            .bind => |name| try self.w(name),
+            .bind => |name| try self.w(jsIdent(name)),
             .numberLit => |n| try self.w(n),
         }
     }
@@ -1113,7 +1147,7 @@ const Emitter = struct {
                     try self.w("{ ");
                     for (n.fields, 0..) |nm, i| {
                         if (i > 0) try self.w(", ");
-                        try self.w(nm.bind_name);
+                        try self.emitDestructFieldBind(nm.bind_name);
                     }
                     if (n.hasSpread) try self.w(", ...");
                     try self.w(" } = ");
@@ -1122,14 +1156,25 @@ const Emitter = struct {
                     try self.w("[ ");
                     for (t, 0..) |nm, i| {
                         if (i > 0) try self.w(", ");
-                        try self.w(nm);
+                        try self.w(jsIdent(nm));
                     }
                     try self.w(" ]");
                 },
                 .list => |pat| try self.emitPattern(pat),
                 .ctor => |pat| try self.emitPattern(pat),
             }
-        } else try self.w(p.name);
+        } else try self.w(jsIdent(p.name));
+    }
+
+    /// Object-destructure field bind: shorthand `{ name }`, or `{ name: name_ }`
+    /// when the bind name is a JS reserved word (shorthand would be a SyntaxError).
+    fn emitDestructFieldBind(self: *Emitter, name: []const u8) !void {
+        const sanitized = jsIdent(name);
+        if (sanitized.ptr == name.ptr) {
+            try self.w(name);
+        } else {
+            try self.fmt("{s}: {s}", .{ name, sanitized });
+        }
     }
 
     // ── statements ──────────────────────────────────────────────────────────────
@@ -1145,7 +1190,7 @@ const Emitter = struct {
                         return;
                     }
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
-                    try self.fmt("{s} {s} = ", .{ kw, lb.name });
+                    try self.fmt("{s} {s} = ", .{ kw, jsIdent(lb.name) });
                     // `val d = use memo { … }` → `const d = useMemo(…, [deps])`.
                     if (useHookInner(lb.value.*)) |inner| {
                         try self.emitHookCall(inner.*);
@@ -1319,7 +1364,7 @@ const Emitter = struct {
         try self.w("(");
         for (params, 0..) |p, i| {
             if (i > 0) try self.w(", ");
-            try self.w(p);
+            try self.w(jsIdent(p));
         }
         try self.w(") => {\n");
         for (body) |st| {
@@ -1338,7 +1383,7 @@ const Emitter = struct {
                 try self.w("{ ");
                 for (n.fields, 0..) |nm, i| {
                     if (i > 0) try self.w(", ");
-                    try self.w(nm.bind_name);
+                    try self.emitDestructFieldBind(nm.bind_name);
                 }
                 if (n.hasSpread) try self.w(", ...");
                 try self.w(" } = ");
@@ -1347,7 +1392,7 @@ const Emitter = struct {
                 try self.w("[ ");
                 for (t, 0..) |nm, i| {
                     if (i > 0) try self.w(", ");
-                    try self.w(nm);
+                    try self.w(jsIdent(nm));
                 }
                 try self.w(" ] = ");
             },
@@ -1552,7 +1597,7 @@ const Emitter = struct {
             },
 
             .identifier => |id| switch (id.kind) {
-                .ident => |n| try self.w(n),
+                .ident => |n| try self.w(jsIdent(n)),
                 .dotIdent => |n| try self.w(n),
                 .identAccess => |ia| {
                     const isSelf = switch (ia.receiver.*) {
@@ -1791,7 +1836,7 @@ const Emitter = struct {
                     // order is swapped. (Object.entries gave [stringKey, value],
                     // which bound the 1-param form to the index — a real bug.)
                     if (lp.params.len == 1) {
-                        try self.fmt("for (const {s} of ", .{lp.params[0]});
+                        try self.fmt("for (const {s} of ", .{jsIdent(lp.params[0])});
                         try self.emitExpr(lp.iter.*);
                         try self.w(") {\n");
                     } else {
@@ -1799,7 +1844,7 @@ const Emitter = struct {
                         var i: usize = lp.params.len;
                         while (i > 0) {
                             i -= 1;
-                            try self.w(lp.params[i]);
+                            try self.w(jsIdent(lp.params[i]));
                             if (i > 0) try self.w(", ");
                         }
                         try self.w("] of (");
@@ -1818,7 +1863,7 @@ const Emitter = struct {
             .binding => |b| switch (b.kind) {
                 .localBind => |lb| {
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
-                    try self.fmt("{s} {s} = ", .{ kw, lb.name });
+                    try self.fmt("{s} {s} = ", .{ kw, jsIdent(lb.name) });
                     try self.emitExpr(lb.value.*);
                 },
                 .assign => |a| {
@@ -1828,7 +1873,7 @@ const Emitter = struct {
                     };
                     switch (a.target) {
                         .name => |name| {
-                            try self.fmt("{s} {s} ", .{ name, op_str });
+                            try self.fmt("{s} {s} ", .{ jsIdent(name), op_str });
                             try self.emitExpr(a.value.*);
                         },
                         .fieldAccess => |*fa| {
@@ -1852,33 +1897,7 @@ const Emitter = struct {
                 .localBindDestruct => |lb| {
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
                     try self.fmt("{s} ", .{kw});
-                    switch (lb.pattern) {
-                        .names => |*n| {
-                            try self.w("{ ");
-                            for (n.fields, 0..) |nm, i| {
-                                if (i > 0) try self.w(", ");
-                                try self.w(nm.bind_name);
-                            }
-                            if (n.hasSpread) try self.w(", ...");
-                            try self.w(" } = ");
-                        },
-                        .tuple_ => |t| {
-                            try self.w("[ ");
-                            for (t, 0..) |nm, i| {
-                                if (i > 0) try self.w(", ");
-                                try self.w(nm);
-                            }
-                            try self.w(" ] = ");
-                        },
-                        .list => |pat| {
-                            try self.emitPattern(pat);
-                            try self.w(" = ");
-                        },
-                        .ctor => |pat| {
-                            try self.emitPattern(pat);
-                            try self.w(" = ");
-                        },
-                    }
+                    try self.emitDestructHead(lb.pattern);
                     try self.emitExpr(lb.value.*);
                 },
             },
@@ -1979,7 +1998,9 @@ const Emitter = struct {
                             // invoked without `new`.
                             try self.fmt("new {s}(", .{cc.callee});
                         } else {
-                            try self.fmt("{s}(", .{cc.callee});
+                            // Plain fn call — sanitize the callee in case the
+                            // fn name is a JS reserved word (`delete` → `delete_`).
+                            try self.fmt("{s}(", .{jsIdent(cc.callee)});
                         }
                         for (cc.args) |arg| {
                             if (!first) try self.w(", ");
@@ -1992,7 +2013,7 @@ const Emitter = struct {
                             try self.w("(");
                             for (tl.params, 0..) |p, pi| {
                                 if (pi > 0) try self.w(", ");
-                                try self.w(p);
+                                try self.w(jsIdent(p));
                             }
                             try self.w(") => {\n");
                             for (tl.body, 0..) |st, si| {
@@ -2045,7 +2066,7 @@ const Emitter = struct {
                 try self.w("(");
                 for (f.kind.params, 0..) |p, i| {
                     if (i > 0) try self.w(", ");
-                    try self.w(p);
+                    try self.w(jsIdent(p));
                 }
                 try self.w(") => {\n");
                 for (f.kind.body, 0..) |st, si| {
@@ -2331,7 +2352,7 @@ const Emitter = struct {
                     if (arm.pattern == .ident and arm.guard != null) {
                         // A guarded identifier binds the subject, then tests the guard.
                         b.open("");
-                        b.fmtLine("const {s} = _s;", .{arm.pattern.ident});
+                        b.fmtLine("const {s} = _s;", .{jsIdent(arm.pattern.ident)});
                         b.newline();
                         try self.emitMatchedBody(&b, arm);
                         b.close();
@@ -2366,14 +2387,21 @@ const Emitter = struct {
                     b.indent();
                     switch (v.payload) {
                         .binding => |binding| {
-                            b.fmtLine("const {s} = _s;", .{binding});
+                            b.fmtLine("const {s} = _s;", .{jsIdent(binding)});
                             b.newline();
                         },
                         .fields => |fields| if (fields.len > 0) {
                             b.line("const { ");
                             for (fields, 0..) |bb, bi| {
                                 if (bi > 0) b.raw(", ");
-                                b.raw(bb);
+                                const sanitized = jsIdent(bb);
+                                if (sanitized.ptr == bb.ptr) {
+                                    b.raw(bb);
+                                } else {
+                                    b.raw(bb);
+                                    b.raw(": ");
+                                    b.raw(sanitized);
+                                }
                             }
                             b.raw(" } = _s;");
                             b.newline();
@@ -2397,12 +2425,12 @@ const Emitter = struct {
                             b.newline();
                             b.indent();
                             if (sp.len > 0) {
-                                b.fmtLine("const {s} = _s.slice({d});", .{ sp, lp.elems.len });
+                                b.fmtLine("const {s} = _s.slice({d});", .{ jsIdent(sp), lp.elems.len });
                                 b.newline();
                             }
                             for (lp.elems, 0..) |elem, ei| switch (elem) {
                                 .bind => |bb| {
-                                    b.fmtLine("const {s} = _s[{d}];", .{ bb, ei });
+                                    b.fmtLine("const {s} = _s[{d}];", .{ jsIdent(bb), ei });
                                     b.newline();
                                 },
                                 else => {},
@@ -2425,7 +2453,7 @@ const Emitter = struct {
                         b.indent();
                         for (lp.elems, 0..) |elem, ei| switch (elem) {
                             .bind => |bb| {
-                                b.fmtLine("const {s} = _s[{d}];", .{ bb, ei });
+                                b.fmtLine("const {s} = _s[{d}];", .{ jsIdent(bb), ei });
                                 b.newline();
                             },
                             else => {},

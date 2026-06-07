@@ -139,8 +139,8 @@ function slice(s, start, end) {
 }
 exports.slice = slice;
 
-function replace(s, pattern, with) {
-    return s.replace(pattern, with);
+function replace(s, pattern, with_) {
+    return s.replace(pattern, with_);
 }
 exports.replace = replace;
 

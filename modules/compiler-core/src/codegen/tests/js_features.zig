@@ -516,3 +516,24 @@ test "js: optional chaining ---- member access short-circuits null" {
         \\}
     );
 }
+
+test "js: reserved word identifiers" {
+    // JS reserved words used as botopink fn names, params, and locals must be
+    // renamed on emission (`delete` → `delete_`, `with` → `with_`) — emitting
+    // them verbatim is a SyntaxError that kills the whole module. The rename is
+    // consistent across the decl, call sites, and the `exports.<name>` property
+    // keeps the original botopink name.
+    // `delete`/`with`/`class`/`static` are JS reserved words but valid botopink
+    // identifiers (botopink keywords like `new`/`enum` are excluded by the
+    // parser, so they can never reach codegen as user names).
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\pub fn delete(with: string, class: string) -> string {
+        \\    val static = with + class;
+        \\    return static;
+        \\}
+        \\
+        \\fn main() {
+        \\    @print(delete("a", "b"));
+        \\}
+    );
+}

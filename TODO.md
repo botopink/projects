@@ -16,13 +16,15 @@
 - [x] Snapshot `codegen/node/external_global_math`
 - [x] `float` suite green under `cd libs/std && botopink test` (4/4)
 
-## F8 — JS reserved-word sanitization  ◀ string + sets suites dead
-- [ ] Rename reserved-word identifiers on emission (`with` → `with_`,
-      `delete` → `delete_`) — params, locals, fn names; consistent across
-      call sites and exports
-- [ ] Full ES2015+ reserved-word table
-- [ ] Snapshot `codegen/node/reserved_word_identifiers`
-- [ ] `string` + `sets` suites green
+## F8 — JS reserved-word sanitization  ✔ done
+- [x] Rename reserved-word identifiers on emission (`with` → `with_`,
+      `delete` → `delete_`) — params, locals, fn names, destructure binds,
+      match-arm binds; consistent across call sites; `exports.<name>` keeps the
+      original botopink name (`jsIdent` helper in `commonJS.zig`)
+- [x] ES2015+ reserved-word table (true/false/null/of omitted — valid JS)
+- [x] Snapshot `codegen/node/reserved_word_identifiers` (test js_features.zig)
+- [x] `sets` suite green (9/9); `string` + `sets` modules load — remaining
+      string failures are F2 (snake_case dispatch), not reserved words
 
 ## F0 — Iterator JS codegen (known gap #8, widened)  ◀ 6/10 FAIL
 - [ ] Fix `*fn` + `loop { yield }` lowering (emit real generator, not `.map()`)
