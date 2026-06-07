@@ -26,7 +26,11 @@ src/
 ├── bool.bp              ← `bool` std module (impl — qualified calls via `from "std"`)
 ├── pair.bp              ← `pair` std module (impl — pairs are 2-tuples `#(a, b)`)
 ├── order.bp             ← `order` std module (impl — `pub enum Order` exported)
-└── list.bp              ← `list` std module (impl — over the builtin Array<T>)
+├── list.bp              ← `list` std module (impl — over the builtin Array<T>)
+├── int.bp               ← `int` std module (pure-botopink math helpers)
+├── float.bp             ← `float` std module (pure helpers + @[external] for Math.*)}
+├── string.bp            ← `string` std module (qualified wrappers over String interface)
+└── iterator.bp          ← `iterator` std module (lazy generators via `*fn`; `range`/`repeat`)
 ```
 
 ## Files
@@ -39,6 +43,10 @@ src/
 | `syntax.bp` | `std.syntax` — data model for `@Expr` templates: `struct Span`, `enum Part { Text, Interp }`, `enum BindingKind`, `struct Binding`, `struct Source` (declaration position), `struct Context` (the full second-layer input: source + text + shape), and `interface Expr<E>` declaring the comptime-only surface of an `@Expr<E>` value (`value`/`text`/`parts`/`source`/`context`/`lookup`/`bindings`/`build`/`fail`/`failAt`; `Binding.ref()` stays a doc comment). Resolved by inference (`comptime/infer.zig: inferTemplateMethod`), like the `@Result`/`@Option` methods — comptime-only, no codegen. Construction is explicit via the `@expr(value)`/`@code(text)` builtins. |
 | `bool.bp` | Gleam-style `bool` module (first real `"std"` package module): `pub fn negate`, `nor`, `nand`, `exclusiveOr`, `exclusiveNor` — pure-operator logic, no host backing. Reached via `import {bool} from "std"`; qualified calls (`bool.negate(x)`) compile the module into its own output (`out/std/bool.*`). Carries the first inline (Zig-style) `test` block — runs via `cd libs/std && botopink test`; `"std"` package copies emitted into OTHER projects never include test blocks. NOTE: `option`/`result` are deliberately NOT std modules — `result` is a builtin namespace (`result.map(r, f)`, no import, lowered inline to `__bp_result_*`), and `option` has no namespace at all (the optional surface is the `?T` syntax + builtin methods; JS-style optional chaining `?.` is the planned ergonomic surface). |
 | `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, `alignOf`, `hasField`, `hasDecl`, `field`, `tagName`), numeric (`min`, `max`, `abs`, `as`), control-flow (`block`), runtime (`panic`, `trap`, `src`). **Not embedded by `prelude.zig` yet** — builtins are currently registered programmatically in `compiler-core`'s `comptime/env.zig` (`registerBuiltins`); wiring this file is part of the `stdlib-gleam` spec (`tasks/v0.beta.2/specs/stdlib-gleam.md`). Also declares the annotation builtin `external(target: Target, module: string, symbol: string)` + `enum Target { node, typescript, erlang, beam, wasm }` (F1), used inside `@[ … ]` blocks and validated programmatically in `comptime/infer.zig`. |
+| `int.bp` | `int` std module: `absoluteValue`, `min`, `max`, `clamp`, `isEven`, `isOdd`, `toString` — pure-botopink, no host backing needed. |
+| `float.bp` | `float` std module: `absoluteValue`, `min`, `max`, `clamp`, `toString` — pure; `floor`, `ceiling`, `round`, `squareRoot` via `@[external(node, "Math", …)]`. |
+| `string.bp` | `string` std module: `split`, `trim`, `trimStart`, `trimEnd`, `contains`, `startsWith`, `endsWith`, `slice`, `replace`, `toUpper`, `toLower`, `join` — qualified wrappers over the builtin `String` interface methods. Both `s.split(",")` and `string.split(s, ",")` work. |
+| `iterator.bp` | `iterator` std module: `range(start, stop)` (half-open `[start, stop)`) and `repeat(value, times)` — lazy generators via `*fn` + recursive `if`-guarded helper pattern (botopink has no `while`; same idiom as `list.bp`'s `pushRange`). Higher-order ops (`map`/`filter`/`fold`) pending `loop (iter) { … }` syntax. |
 
 ## Conventions
 

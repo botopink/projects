@@ -609,9 +609,13 @@ like `swap` (`Pair(first: p.second, …)`) unified `A := B` globally. Fixed:
       `startsWith`) — needs the snake_case JS name mapping (see gaps above)
 
 ## F8 — `iterator` (lazy sequences)
-- [ ] `iterator.bp`: `from_list`, `map`, `filter`, `take`, `fold`, `to_list`, `range`, `repeat`
-- [ ] Build on botopink's `@Iterator<_>` / `*fn` generators
-- [ ] `libs/std/test/iterator_test.bp` (`range`, `map`, `filter`, `take`, `to_list`)
+- [x] `iterator.bp`: `range`, `repeat` — lazy generators via `*fn` + recursive
+      pattern (`doRange`/`doRepeat` helpers); NOTE botopink has no `while` —
+      loops use recursive `if`-guarded `*fn` (same as `list.bp` `pushRange`)
+- [x] Registered in `std_pkg_modules` + `build.zig` + `prelude.zig`; 1 codegen snapshot test
+- [ ] Higher-order ops (`map`, `filter`, `fold`, `take`, `toList`) — blocked on
+      `loop (iter) { … }` iteration syntax for consuming iterators
+- [ ] `libs/std/test/iterator_test.bp` (`range`, `repeat`) — depends on iterator consumption syntax
 
 ## F9 — `function` + `io` (`io` via F1 `@[external(…)]`)
 - [ ] `function.bp`: `identity`, `compose`, `flip`, `const`

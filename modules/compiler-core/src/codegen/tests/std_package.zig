@@ -153,6 +153,17 @@ test "js: std package ---- int module pure math helpers" {
     );
 }
 
+test "js: std package ---- iterator module range and repeat" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\import {iterator} from "std";
+        \\
+        \\fn main() {
+        \\    val gen = iterator.range(0, 3);
+        \\    val gen2 = iterator.repeat(42, 2);
+        \\}
+    );
+}
+
 test "js: std package ---- float module pure math helpers" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\import {float} from "std";

@@ -31,6 +31,7 @@ pub fn build(b: *std.Build) void {
         "int.bp",
         "float.bp",
         "string.bp",
+        "iterator.bp",
     };
     for (std_bp_files) |f| {
         std_prelude.addAnonymousImport(f, .{

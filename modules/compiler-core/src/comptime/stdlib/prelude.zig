@@ -19,3 +19,4 @@ pub const list = @embedFile("list.bp");
 pub const int_mod = @embedFile("int.bp");
 pub const float_mod = @embedFile("float.bp");
 pub const string_mod = @embedFile("string.bp");
+pub const iterator_mod = @embedFile("iterator.bp");
