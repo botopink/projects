@@ -673,3 +673,18 @@ test "js: numeric instance methods (external + default-fn)" {
         \\}
     );
 }
+
+test "js: string methods map to native JS names" {
+    // `String` host-backed methods whose name differs from the native JS one are
+    // mapped (`toUpper`→`toUpperCase`, `toLower`→`toLowerCase`); same-named ones
+    // (`split`, `trim`, `slice`, `startsWith`) use the engine directly.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val s = "Hello,World";
+        \\    @print(s.toUpper());
+        \\    @print(s.toLower());
+        \\    @print(s.split(",").join("|"));
+        \\    @print(s.slice(0, 5));
+        \\}
+    );
+}

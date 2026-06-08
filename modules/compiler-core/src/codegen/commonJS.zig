@@ -155,11 +155,16 @@ pub fn isBoxedPrototype(owner: []const u8) bool {
         std.mem.eql(u8, owner, "String");
 }
 
-/// Map an `Array<T>` `default fn` to a native JS equivalent where one exists, so
-/// the call works even where codegen doesn't emit the prototype patch (record
-/// method bodies aren't walked by inference). `append(other)` ≡ `concat(other)`.
+/// Map a stdlib method name to a native JS equivalent where the names differ, so
+/// the call works without emitting a prototype patch. `append`≡`concat` (Array);
+/// `toUpper`/`toLower` ≡ `toUpperCase`/`toLowerCase` (String). These names are
+/// unique to their primitive (no record uses them), so the type-independent
+/// mapping is safe. (`contains`→`includes` is NOT mapped: a `record` may declare
+/// `contains` — e.g. `Set` — so it would clobber that dispatch.)
 pub fn jsBuiltinMethodName(name: []const u8) []const u8 {
     if (std.mem.eql(u8, name, "append")) return "concat";
+    if (std.mem.eql(u8, name, "toUpper")) return "toUpperCase";
+    if (std.mem.eql(u8, name, "toLower")) return "toLowerCase";
     return name;
 }
 

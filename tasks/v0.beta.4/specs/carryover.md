@@ -81,11 +81,15 @@ or *codegen* it. This is the largest and highest-priority block: it unblocks the
       JS global (`Math`) — relative companions (`./gleam_stdlib.mjs`: array
       `map`/`filter`/`join`, string `split`/`trim`) stay on the permissive native
       path, so this doesn't intercept methods that already work. `jsPrototypeOwner`
-      maps the tower → `Number`. **PENDING**: `String` host-backed methods
-      (`split`/`trim`/`toUpper` via companion) — they have native JS equivalents,
-      so map them (`toUpper`→`toUpperCase`, …) instead; inference doesn't walk
-      record-method bodies (non-`append` array default-fns used there won't emit
-      a prototype patch).
+      maps the tower → `Number`. **String DONE (JS)**: same-named methods
+      (`split`/`trim`/`slice`/`startsWith`/…) use the engine directly; the
+      differently-named host methods map to natives via `jsBuiltinMethodName`
+      (`toUpper`→`toUpperCase`, `toLower`→`toLowerCase`) — these names are unique
+      to `String`, so the type-independent mapping is safe. **PENDING**:
+      `s.contains()`→`includes` (NOT mapped: a `record` like `Set` declares
+      `contains`, so a global name-map would clobber it — needs a type-aware
+      `method_lowerings` entry); inference doesn't walk record-method bodies
+      (non-`append` array default-fns used there won't emit a prototype patch).
 
 ### A.codegen (node / erlang / beam / wasm)
 - [ ] Lower `@[external]` methods to companion modules (`primitives.mjs` /
