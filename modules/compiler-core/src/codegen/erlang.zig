@@ -1259,6 +1259,11 @@ const Emitter = struct {
                                 }
                                 try this.w("}");
                                 return;
+                            } else if (mod_name != null and this.record_fields.contains(mod_name.?)) {
+                                // Associated fn of a LOCAL record (`Response.ok(...)`):
+                                // the fn is emitted as a bare local function in this
+                                // module, not a remote `response:ok(...)`.
+                                try this.fmt("{s}(", .{cc.callee});
                             } else if (mod_name) |name| {
                                 // A PascalCase identifier receiver is a module-qualified
                                 // call: `List.map(xs, f)` → a remote call `list:map(Xs, F)`.
