@@ -12,15 +12,15 @@
 // Capability interfaces shared by every numeric width. `Self` abstracts the
 // concrete type, so one signature serves all widths; concrete types inherit via
 // `extends` and carry no duplicated members. Declared (host-backed) methods use
-// `@[external(erlang, …), external(node, …)]`; pure-logic ops carry none.
+// `#[@external(erlang, …), @external(node, …)]`; pure-logic ops carry none.
 
 interface Number {
-    @[external(erlang, "erlang", "min"),
-      external(node, "Math", "min")]
+    #[@external(erlang, "erlang", "min"),
+      @external(node, "Math", "min")]
     fn min(self: Self, other: Self) -> Self
 
-    @[external(erlang, "erlang", "max"),
-      external(node, "Math", "max")]
+    #[@external(erlang, "erlang", "max"),
+      @external(node, "Math", "max")]
     fn max(self: Self, other: Self) -> Self
 
     default fn clamp(self: Self, lo: Self, hi: Self) -> Self {
@@ -29,8 +29,8 @@ interface Number {
 }
 
 interface Integer extends Number {
-    @[external(erlang, "erlang", "integer_to_binary"),
-      external(node, "./gleam_stdlib.mjs", "to_string")]
+    #[@external(erlang, "erlang", "integer_to_binary"),
+      @external(node, "./gleam_stdlib.mjs", "to_string")]
     fn toString(self: Self) -> string
 
     default fn isEven(self: Self) -> bool {
@@ -43,34 +43,34 @@ interface Integer extends Number {
 }
 
 interface Signed extends Integer {
-    @[external(erlang, "erlang", "abs"),
-      external(node, "Math", "abs")]
+    #[@external(erlang, "erlang", "abs"),
+      @external(node, "Math", "abs")]
     fn abs(self: Self) -> Self
 }
 
 interface Float extends Number {
-    @[external(erlang, "erlang", "float_to_binary"),
-      external(node, "./gleam_stdlib.mjs", "float_to_string")]
+    #[@external(erlang, "erlang", "float_to_binary"),
+      @external(node, "./gleam_stdlib.mjs", "float_to_string")]
     fn toString(self: Self) -> string
 
-    @[external(erlang, "erlang", "abs"),
-      external(node, "Math", "abs")]
+    #[@external(erlang, "erlang", "abs"),
+      @external(node, "Math", "abs")]
     fn abs(self: Self) -> Self
 
-    @[external(erlang, "math", "floor"),
-      external(node, "Math", "floor")]
+    #[@external(erlang, "math", "floor"),
+      @external(node, "Math", "floor")]
     fn floor(self: Self) -> Self
 
-    @[external(erlang, "math", "ceil"),
-      external(node, "Math", "ceil")]
+    #[@external(erlang, "math", "ceil"),
+      @external(node, "Math", "ceil")]
     fn ceil(self: Self) -> Self
 
-    @[external(erlang, "math", "round"),
-      external(node, "Math", "round")]
+    #[@external(erlang, "math", "round"),
+      @external(node, "Math", "round")]
     fn round(self: Self) -> Self
 
-    @[external(erlang, "math", "sqrt"),
-      external(node, "Math", "sqrt")]
+    #[@external(erlang, "math", "sqrt"),
+      @external(node, "Math", "sqrt")]
     fn squareRoot(self: Self) -> Self
 }
 
@@ -85,8 +85,8 @@ interface F64 extends Float {}
 // ── boolean ───────────────────────────────────────────────────────────────────
 
 interface Bool {
-    @[external(erlang, "erlang", "atom_to_binary"),
-      external(node, "./gleam_stdlib.mjs", "to_string")]
+    #[@external(erlang, "erlang", "atom_to_binary"),
+      @external(node, "./gleam_stdlib.mjs", "to_string")]
     fn toString(self: Self) -> string
 
     default fn negate(self: Self) -> bool {
@@ -113,60 +113,60 @@ interface Bool {
 // ── string ────────────────────────────────────────────────────────────────────
 
 interface String {
-    @[external(erlang, "string", "length"),
-      external(node, "./gleam_stdlib.mjs", "string_length")]
+    #[@external(erlang, "string", "length"),
+      @external(node, "./gleam_stdlib.mjs", "string_length")]
     fn length(self: Self) -> i32
 
-    @[external(erlang, "string", "split"),
-      external(node, "./gleam_stdlib.mjs", "split")]
+    #[@external(erlang, "string", "split"),
+      @external(node, "./gleam_stdlib.mjs", "split")]
     fn split(self: Self, sep: string) -> string[]
 
-    @[external(erlang, "string", "uppercase"),
-      external(node, "./gleam_stdlib.mjs", "uppercase")]
+    #[@external(erlang, "string", "uppercase"),
+      @external(node, "./gleam_stdlib.mjs", "uppercase")]
     fn toUpper(self: Self) -> string
 
-    @[external(erlang, "string", "lowercase"),
-      external(node, "./gleam_stdlib.mjs", "lowercase")]
+    #[@external(erlang, "string", "lowercase"),
+      @external(node, "./gleam_stdlib.mjs", "lowercase")]
     fn toLower(self: Self) -> string
 
-    @[external(erlang, "string", "find"),
-      external(node, "./gleam_stdlib.mjs", "contains_string")]
+    #[@external(erlang, "string", "find"),
+      @external(node, "./gleam_stdlib.mjs", "contains_string")]
     fn contains(self: Self, sub: string) -> bool
 
-    @[external(erlang, "string", "prefix"),
-      external(node, "./gleam_stdlib.mjs", "starts_with")]
+    #[@external(erlang, "string", "prefix"),
+      @external(node, "./gleam_stdlib.mjs", "starts_with")]
     fn startsWith(self: Self, prefix: string) -> bool
 
-    @[external(erlang, "string", "suffix"),
-      external(node, "./gleam_stdlib.mjs", "ends_with")]
+    #[@external(erlang, "string", "suffix"),
+      @external(node, "./gleam_stdlib.mjs", "ends_with")]
     fn endsWith(self: Self, suffix: string) -> bool
 
-    @[external(erlang, "string", "trim"),
-      external(node, "./gleam_stdlib.mjs", "trim")]
+    #[@external(erlang, "string", "trim"),
+      @external(node, "./gleam_stdlib.mjs", "trim")]
     fn trim(self: Self) -> string
 
-    @[external(erlang, "string", "trim"),
-      external(node, "./gleam_stdlib.mjs", "trim_start")]
+    #[@external(erlang, "string", "trim"),
+      @external(node, "./gleam_stdlib.mjs", "trim_start")]
     fn trimStart(self: Self) -> string
 
-    @[external(erlang, "string", "trim"),
-      external(node, "./gleam_stdlib.mjs", "trim_end")]
+    #[@external(erlang, "string", "trim"),
+      @external(node, "./gleam_stdlib.mjs", "trim_end")]
     fn trimEnd(self: Self) -> string
 
-    @[external(erlang, "string", "replace"),
-      external(node, "./gleam_stdlib.mjs", "replace")]
+    #[@external(erlang, "string", "replace"),
+      @external(node, "./gleam_stdlib.mjs", "replace")]
     fn replace(self: Self, pattern: string, with: string) -> string
 
-    @[external(erlang, "string", "slice"),
-      external(node, "./gleam_stdlib.mjs", "string_slice")]
+    #[@external(erlang, "string", "slice"),
+      @external(node, "./gleam_stdlib.mjs", "string_slice")]
     fn slice(self: Self, start: i32, end: i32) -> string
 
-    @[external(erlang, "string", "slice"),
-      external(node, "./gleam_stdlib.mjs", "string_char_at")]
+    #[@external(erlang, "string", "slice"),
+      @external(node, "./gleam_stdlib.mjs", "string_char_at")]
     fn charAt(self: Self, index: i32) -> ?string
 
-    @[external(erlang, "string", "str"),
-      external(node, "./gleam_stdlib.mjs", "index_of")]
+    #[@external(erlang, "string", "str"),
+      @external(node, "./gleam_stdlib.mjs", "index_of")]
     fn indexOf(self: Self, sub: string) -> i32
 
     default fn toString(self: Self) -> string {
@@ -495,53 +495,53 @@ interface Array<T> {
     val length: i32
 
     // ── host-backed primitives ──
-    @[external(erlang, "array", "get"),
-      external(node, "./gleam_stdlib.mjs", "index")]
+    #[@external(erlang, "array", "get"),
+      @external(node, "./gleam_stdlib.mjs", "index")]
     fn at(self: Self, index: i32) -> ?T
 
-    @[external(erlang, "array", "set"),
-      external(node, "./gleam_stdlib.mjs", "push")]
+    #[@external(erlang, "array", "set"),
+      @external(node, "./gleam_stdlib.mjs", "push")]
     fn push(self: Self, item: T)
 
-    @[external(erlang, "lists", "last"),
-      external(node, "./gleam_stdlib.mjs", "pop")]
+    #[@external(erlang, "lists", "last"),
+      @external(node, "./gleam_stdlib.mjs", "pop")]
     fn pop(self: Self) -> ?T
 
-    @[external(erlang, "lists", "sublist"),
-      external(node, "./gleam_stdlib.mjs", "slice")]
+    #[@external(erlang, "lists", "sublist"),
+      @external(node, "./gleam_stdlib.mjs", "slice")]
     fn slice(self: Self, start: i32, end: i32) -> Self
 
-    @[external(erlang, "lists", "join"),
-      external(node, "./gleam_stdlib.mjs", "join")]
+    #[@external(erlang, "lists", "join"),
+      @external(node, "./gleam_stdlib.mjs", "join")]
     fn join(self: Self, sep: string) -> string
 
-    @[external(erlang, "lists", "reverse"),
-      external(node, "./gleam_stdlib.mjs", "reverse")]
+    #[@external(erlang, "lists", "reverse"),
+      @external(node, "./gleam_stdlib.mjs", "reverse")]
     fn reverse(self: Self) -> Self
 
-    @[external(erlang, "lists", "search"),
-      external(node, "./gleam_stdlib.mjs", "index_of")]
+    #[@external(erlang, "lists", "search"),
+      @external(node, "./gleam_stdlib.mjs", "index_of")]
     fn indexOf(self: Self, item: T) -> i32
 
-    @[external(erlang, "lists", "foreach"),
-      external(node, "./gleam_stdlib.mjs", "for_each")]
+    #[@external(erlang, "lists", "foreach"),
+      @external(node, "./gleam_stdlib.mjs", "for_each")]
     fn forEach(self: Self, action: fn(item: T))
 
-    @[external(erlang, "lists", "map"),
-      external(node, "./gleam_stdlib.mjs", "map")]
+    #[@external(erlang, "lists", "map"),
+      @external(node, "./gleam_stdlib.mjs", "map")]
     fn map<U>(self: Self, transform: fn(item: T) -> U) -> Array<U>
 
-    @[external(erlang, "lists", "filter"),
-      external(node, "./gleam_stdlib.mjs", "filter")]
+    #[@external(erlang, "lists", "filter"),
+      @external(node, "./gleam_stdlib.mjs", "filter")]
     fn filter(self: Self, pred: fn(item: T) -> bool) -> Self
 
     // ── producers (associated — no receiver) ──
-    @[external(erlang, "lists", "seq"),
-      external(node, "./gleam_stdlib.mjs", "range(start,stop)")]
+    #[@external(erlang, "lists", "seq"),
+      @external(node, "./gleam_stdlib.mjs", "range(start,stop)")]
     fn range(start: i32, stop: i32) -> Array<i32>
 
-    @[external(erlang, "lists", "duplicate"),
-      external(node, "./gleam_stdlib.mjs", "repeat(value,times)")]
+    #[@external(erlang, "lists", "duplicate"),
+      @external(node, "./gleam_stdlib.mjs", "repeat(value,times)")]
     fn repeat<E>(value: E, times: i32) -> Array<E>
 
     // ── derived ops (default implementations over the primitives) ──

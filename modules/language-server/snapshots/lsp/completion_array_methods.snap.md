@@ -9,8 +9,8 @@ val y = xs.
 length  [Field]  detail: val length: i32
 
     // ── host-backed primitives ──
-    @[external(erlang, "array", "get"),
-      external(node, "./gleam_stdlib.mjs", "index")]
+    #[@external(erlang, "array", "get"),
+      @external(node, "./gleam_stdlib.mjs", "index")]
 at  [Method]  detail: fn at(self: Self, index: i32) -> ?T
 push  [Method]  detail: fn push(self: Self, item: T)
 pop  [Method]  detail: fn pop(self: Self) -> ?T

@@ -695,15 +695,10 @@ fn registerInherentMethodTypes(
 /// receiver are instance methods (handled by the inherent-method machinery) and
 /// are skipped here.
 fn registerInterfaceAssociatedFns(env: *Env, d: ast.InterfaceDecl) InferError!void {
-    // Record the decl so codegen can emit its namespace object when used. Only
-    // interfaces that actually declare an associated fn are kept.
-    for (d.methods) |im| {
-        const is_assoc = (im.params.len == 0 or !std.mem.eql(u8, im.params[0].name, "self"));
-        if (is_assoc) {
-            try env.assocInterfaceDecls.put(d.name, d);
-            break;
-        }
-    }
+    // Record EVERY interface decl so codegen can emit its namespace/prototype
+    // when used, and the dispatch can follow the `extends` chain (markers like
+    // `I32 extends Signed` carry no methods but link the tower).
+    try env.assocInterfaceDecls.put(d.name, d);
     for (d.methods) |im| {
         const has_self = im.params.len > 0 and std.mem.eql(u8, im.params[0].name, "self");
         if (has_self) continue;
