@@ -21,21 +21,10 @@ pub fn build(b: *std.Build) void {
     // import that prelude.zig embeds by name. One entry per stdlib module.
     const std_bp_files = [_][]const u8{
         "primitives.d.bp",
-        "array.d.bp",
-        "string.d.bp",
-        "syntax.bp",
-        "bool.bp",
-        "pair.bp",
+        "builtins.d.bp",
         "order.bp",
-        "list.bp",
-        "int.bp",
-        "float.bp",
-        "string.bp",
-        "iterator.bp",
         "dict.bp",
         "sets.bp",
-        "function.bp",
-        "io.d.bp",
         "string_builder.bp",
         "queue.bp",
     };

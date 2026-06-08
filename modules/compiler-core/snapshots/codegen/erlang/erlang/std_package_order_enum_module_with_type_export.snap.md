@@ -1,9 +1,9 @@
 ----- SOURCE CODE -- std/order.bp
 ```botopink
-//// Gleam-style `order` module (`import {order} from "std";`), inspired by
-//// `gleam/order`. Exports the `Order` enum (type export) plus companion
-//// functions. Construct via the module fns (`order.lt()`) — the bare
-//// variant constructors have no local decl in importing modules.
+//// Gleam-style `order` module, inspired by `gleam/order`. A sum type — the
+//// `enum Order` (type-exported to importers) plus companion functions.
+//// Construct via the module fns (`order.lt()`); `toInt`/`reverse` operate on
+//// an `Order`. Enums are concrete types, not interfaces.
 
 pub enum Order {
     Lt,
@@ -70,13 +70,13 @@ test "order case over Order" {
 -module(order).
 -export([lt/0, eq/0, gt/0, toInt/1, reverse/1]).
 
-%%% Gleam-style `order` module (`import {order} from "std";`), inspired by
+%%% Gleam-style `order` module, inspired by `gleam/order`. A sum type — the
 
-%%% `gleam/order`. Exports the `Order` enum (type export) plus companion
+%%% `enum Order` (type-exported to importers) plus companion functions.
 
-%%% functions. Construct via the module fns (`order.lt()`) — the bare
+%%% Construct via the module fns (`order.lt()`); `toInt`/`reverse` operate on
 
-%%% variant constructors have no local decl in importing modules.
+%%% an `Order`. Enums are concrete types, not interfaces.
 
 %% enum Order
 %%   Lt

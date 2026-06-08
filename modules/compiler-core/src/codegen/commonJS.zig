@@ -117,6 +117,15 @@ pub fn isNullLiteral(e: ast.Expr) bool {
     return e == .literal and e.literal.kind == .null_;
 }
 
+/// Map an `Array<T>` `default fn` method name to its native JS equivalent.
+/// These default-fn bodies are not yet materialized by codegen (tracked in
+/// tasks/v0.beta.4 Part A); where a native array method is semantically
+/// identical we emit that instead. `append(other)` ≡ `concat(other)`.
+pub fn jsBuiltinMethodName(name: []const u8) []const u8 {
+    if (std.mem.eql(u8, name, "append")) return "concat";
+    return name;
+}
+
 /// True when a type reference is the phantom capability `@Context<B, R>`.
 pub fn isContextTypeRef(tr: ast.TypeRef) bool {
     return switch (tr) {
@@ -1626,7 +1635,16 @@ const Emitter = struct {
             },
 
             .identifier => |id| switch (id.kind) {
-                .ident => |n| try self.w(jsIdent(n)),
+                // Bare `self` as a value (`var out = self;`, `return self;`) in a
+                // prototype method lowers to `this`; only extension methods keep
+                // `self` as a real parameter (`self_is_param`).
+                .ident => |n| {
+                    if (std.mem.eql(u8, n, "self") and !self.self_is_param) {
+                        try self.w("this");
+                    } else {
+                        try self.w(jsIdent(n));
+                    }
+                },
                 .dotIdent => |n| try self.w(n),
                 .identAccess => |ia| {
                     const isSelf = switch (ia.receiver.*) {
@@ -2047,7 +2065,10 @@ const Emitter = struct {
                             } else {
                                 try self.emitExpr(recv.*);
                                 // Optional chaining call maps to native JS `?.`.
-                                try self.fmt("{s}{s}(", .{ @as([]const u8, if (cc.optional) "?." else "."), cc.callee });
+                                // `Array<T>` default-fn methods whose body isn't
+                                // materialized in codegen map to a native JS
+                                // equivalent (`append` → `concat`).
+                                try self.fmt("{s}{s}(", .{ @as([]const u8, if (cc.optional) "?." else "."), jsBuiltinMethodName(cc.callee) });
                             }
                         } else if (self.externals_missing.contains(cc.callee)) {
                             // External fn with no `node` target — no symbol to

@@ -168,33 +168,24 @@ test "hover: star fn shows async marker and element type" {
 test "hover: std module fn shows its signature" {
     const gpa = std.testing.allocator;
     const source =
-        \\import {list} from "std";
-        \\val xs = list.map([1], { x -> x });
+        \\import {order} from "std";
+        \\val n = order.toInt(order.lt());
     ;
-    // Cursor on `map` in `list.map` (line 1, char 14).
+    // Cursor on `toInt` in `order.toInt` (line 1, char 14).
     const result = try engine.hover(gpa, source, h.pos(1, 14), &.{});
     defer if (result) |hov| gpa.free(hov.contents.value);
 
     try std.testing.expect(result != null);
-    try std.testing.expect(std.mem.indexOf(u8, result.?.contents.value, "fn map") != null);
-    try std.testing.expect(std.mem.indexOf(u8, result.?.contents.value, "std/list") != null);
+    try std.testing.expect(std.mem.indexOf(u8, result.?.contents.value, "fn toInt") != null);
+    try std.testing.expect(std.mem.indexOf(u8, result.?.contents.value, "std/order") != null);
     try snap.assertHover(gpa, "hover_std_module_fn", source, h.pos(1, 14), result);
 }
 
-test "hover: external declare fn in std module shows signature" {
-    const gpa = std.testing.allocator;
-    const source =
-        \\import {io} from "std";
-        \\val u = io.println("hi");
-    ;
-    // Cursor on `println` (line 1, char 12).
-    const result = try engine.hover(gpa, source, h.pos(1, 12), &.{});
-    defer if (result) |hov| gpa.free(hov.contents.value);
-
-    try std.testing.expect(result != null);
-    try std.testing.expect(std.mem.indexOf(u8, result.?.contents.value, "fn println") != null);
-    try snap.assertHover(gpa, "hover_std_external_declare", source, h.pos(1, 12), result);
-}
+// NOTE: the "external declare fn in std module" hover test was retired with the
+// stdlib-interface migration — `io` was dissolved and `@[external]` declarations
+// now live in `primitives.d.bp` (flattened into the global env, not an importable
+// std module). Re-add once an importable module carries an `@[external]` declare
+// fn again (tasks/v0.beta.4 carryover).
 
 // ── H-F4 — hover on an interface method invoked on a builtin receiver ──────────
 

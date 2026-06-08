@@ -1,7 +1,7 @@
 ----- SOURCE
 ```botopink
-import {list} from "std";
-val xs = list.map([1], { x -> x });
+import {order} from "std";
+val n = order.toInt(order.lt());
               ↑
 ```
 
@@ -9,7 +9,7 @@ val xs = list.map([1], { x -> x });
 kind: markdown
 
 ```botopink
-pub fn map<T, U>(xs: Array<T>, transform: fn(item: T) -> U) -> Array<U>
+pub fn toInt(o: Order) -> i32
 ```
 
-*from `std/list`*
+*from `std/order`*

@@ -191,8 +191,8 @@ test "signature_help: interface method on integer receiver drops self" {
     var arena = std.heap.ArenaAllocator.init(gpa);
     defer arena.deinit();
 
-    // `42.clamp(min, max)` — `self` is the receiver, so the signature shows
-    // only `min` / `max`.
+    // `42.clamp(lo, hi)` — `self` is the receiver, so the signature shows
+    // only `lo` / `hi` (`clamp(self: Self, lo: Self, hi: Self)`).
     const source =
         \\val r = 42.clamp(
     ;
@@ -204,9 +204,9 @@ test "signature_help: interface method on integer receiver drops self" {
     if (result) |sh| {
         try std.testing.expect(sh.signatures.len > 0);
         const params = sh.signatures[0].parameters orelse return error.NoParams;
-        // self dropped → exactly min, max.
+        // self dropped → exactly lo, hi.
         try std.testing.expectEqual(@as(usize, 2), params.len);
-        try std.testing.expect(std.mem.indexOf(u8, params[0].label, "min") != null);
+        try std.testing.expect(std.mem.indexOf(u8, params[0].label, "lo") != null);
     }
     try snap.assertSignatureHelp(gpa, "sig_interface_method", source, cursor, result);
 }

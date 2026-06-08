@@ -1,12 +1,12 @@
 ----- SOURCE
 ```botopink
-import {list} from "std";
+import {order} from "std";
         ↑
-val xs = list.map([1], fn(item: i32) -> i32 { return item; });
+val n = order.toInt(order.lt());
 ```
 
 ----- DEFINITION at (line 0, char 8)
-uri: std/list
+uri: std/order
 range: (0,0) → (0,0)
-  import {list} from "std";
+  import {order} from "std";
   

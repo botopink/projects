@@ -27,14 +27,15 @@ designed but never implemented. Several runtime/backend gaps remain open.
 | [stdlib interface redesign](specs/stdlib-interface.md) | `stdlib-interface` | `generic-inference` |
 | [Backend parity + stdlib gaps](specs/backend-parity.md) | `backend-parity` | nothing |
 | [Tooling update (LSP + VS Code)](specs/tooling-update.md) | `tooling-update` | `stdlib-interface` (F4 only) |
+| [Editor experience (LSP enrichment + VS Code)](specs/editor-experience.md) | `editor-experience` | `tooling-update`, `stdlib-interface` |
 
 ## Dependency DAG
 
 ```text
-generic-inference ──► stdlib-interface ──► tooling-update (F4)
-
-backend-parity   (independent)
-tooling-update F0–F3, F5   (independent)
+generic-inference ──► stdlib-interface ──► tooling-update (F4) ──► editor-experience
+                                    └──────────────────────────────►┘
+backend-parity            (independent)
+tooling-update F0–F3, F5  (independent)
 ```
 
 ## v0.beta.2 → v0.beta.3 gap summary

@@ -390,11 +390,11 @@ test "infer: external ---- fn no body typechecks" {
 
 test "infer: std package ---- import binds namespace" {
     try h.assertInfersOk(std.testing.allocator,
-        \\import {bool} from "std";
+        \\import {order} from "std";
         \\
         \\fn main() {
-        \\    val a: bool = bool.negate(false);
-        \\    val b: bool = bool.exclusiveOr(a, true);
+        \\    val a: i32 = order.toInt(order.lt());
+        \\    val b: i32 = order.toInt(order.reverse(order.gt()));
         \\}
     );
 }

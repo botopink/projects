@@ -22,7 +22,7 @@ const Color = Object.freeze({
     Blue: "Blue",
     name: function() {
         (() => {
-            const _s = self;
+            const _s = this;
             if (_s === "Red") return "red";
             if (_s === "Green") return "green";
             if (_s === "Blue") return "blue";

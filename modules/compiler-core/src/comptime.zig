@@ -133,18 +133,9 @@ fn analyzeModule(
 /// Order = dependency order (a later module may import an earlier one).
 /// Registry keys are prefixed `std/` so project-root imports never see them.
 pub const std_pkg_modules = [_]Module{
-    .{ .path = "std/bool", .source = @import("std_prelude").bool_mod },
-    .{ .path = "std/pair", .source = @import("std_prelude").pair },
     .{ .path = "std/order", .source = @import("std_prelude").order },
-    .{ .path = "std/list", .source = @import("std_prelude").list },
-    .{ .path = "std/int", .source = @import("std_prelude").int_mod },
-    .{ .path = "std/float", .source = @import("std_prelude").float_mod },
-    .{ .path = "std/string", .source = @import("std_prelude").string_mod },
-    .{ .path = "std/iterator", .source = @import("std_prelude").iterator_mod },
     .{ .path = "std/dict", .source = @import("std_prelude").dict_mod },
     .{ .path = "std/sets", .source = @import("std_prelude").sets_mod },
-    .{ .path = "std/function", .source = @import("std_prelude").function_mod },
-    .{ .path = "std/io", .source = @import("std_prelude").io_mod },
     .{ .path = "std/string_builder", .source = @import("std_prelude").string_builder_mod },
     .{ .path = "std/queue", .source = @import("std_prelude").queue_mod },
 };
@@ -155,8 +146,10 @@ pub const std_pkg_modules = [_]Module{
 /// server — scans these sources to resolve receiver methods such as `42.abs()`,
 /// `true.to_string()`, `xs.map(…)` and `"s".len()`.
 pub const primitive_interfaces_src = @import("std_prelude").primitives;
-pub const array_interface_src = @import("std_prelude").array;
-pub const string_interface_src = @import("std_prelude").string;
+// Array<T> and String interfaces live inside primitives.d.bp (the controller)
+// in the interface model — there are no standalone array/string modules.
+pub const array_interface_src = @import("std_prelude").primitives;
+pub const string_interface_src = @import("std_prelude").primitives;
 
 /// True when `path` is a "std" package registry key (`std/<module>`).
 fn isStdPkgPath(path: []const u8) bool {
@@ -283,13 +276,26 @@ fn registerExports(
 /// interface declarations flatten into the global env; "std" package impl
 /// modules (`std_pkg_modules`) each get their own exports table in
 /// `env.stdModules` (consumed by `import {…} from "std"` qualified calls).
+/// Returns `program` with its top-level `test` decls removed. Stdlib
+/// registration infers *declarations* into the type env; co-located `test`
+/// blocks are for the test runner, not registration (inferring them here would
+/// require full method-dispatch support at registration time). Allocates the
+/// filtered decl slice in `alloc`.
+fn stripTestDecls(program: ast.Program, alloc: std.mem.Allocator) !ast.Program {
+    var kept: std.ArrayListUnmanaged(ast.DeclKind) = .empty;
+    for (program.decls) |decl| {
+        if (decl == .@"test") continue;
+        try kept.append(alloc, decl);
+    }
+    var out = program;
+    out.decls = try kept.toOwnedSlice(alloc);
+    return out;
+}
+
 pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
     const prelude = @import("std_prelude");
     const sources = [_][]const u8{
         prelude.primitives,
-        prelude.array,
-        prelude.string,
-        prelude.syntax,
     };
     for (sources) |src| {
         var arena = std.heap.ArenaAllocator.init(gpa);
@@ -299,7 +305,7 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         var lx = Lexer.init(src);
         const tokens = try lx.scanAll(alloc);
         var p = Parser.init(tokens);
-        const program = try p.parse(alloc);
+        const program = try stripTestDecls(try p.parse(alloc), alloc);
         _ = try infer.inferProgram(env, program);
     }
 
@@ -319,13 +325,13 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
             var lx = Lexer.init(src);
             const tokens = try lx.scanAll(env.arena);
             var p = Parser.init(tokens);
-            const program = try p.parse(env.arena);
+            const program = try stripTestDecls(try p.parse(env.arena), env.arena);
             _ = try infer.inferProgram(&env2, program);
         }
         var lx = Lexer.init(spm.source);
         const tokens = try lx.scanAll(env.arena);
         var p = Parser.init(tokens);
-        const program = try p.parse(env.arena);
+        const program = try stripTestDecls(try p.parse(env.arena), env.arena);
         const bindings = try infer.inferProgramTyped(&env2, program);
 
         // Collect the module's public type declarations so `import {…} from

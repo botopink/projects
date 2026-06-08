@@ -8,7 +8,7 @@ val s = 42.abs();
 kind: markdown
 
 ```botopink
-fn abs(self: Self) -> i32
+fn abs(self: Self) -> Self
 ```
 
 *from `interface I32`*

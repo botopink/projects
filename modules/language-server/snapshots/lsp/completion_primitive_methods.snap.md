@@ -6,6 +6,14 @@ val s = 42.
 ```
 
 ----- COMPLETION at (line 1, char 11)
-to_string  [Method]  detail: fn to_string(self: Self) -> string
-abs  [Method]  detail: fn abs(self: Self) -> i32
-clamp  [Method]  detail: fn clamp(self: Self, min: i32, max: i32) -> i32
+abs  [Method]  detail: fn abs(self: Self) -> Self
+toString  [Method]  detail: fn toString(self: Self) -> string
+
+    default
+isEven  [Method]  detail: fn isEven(self: Self) -> bool
+isOdd  [Method]  detail: fn isOdd(self: Self) -> bool
+min  [Method]  detail: fn min(self: Self, other: Self) -> Self
+max  [Method]  detail: fn max(self: Self, other: Self) -> Self
+
+    default
+clamp  [Method]  detail: fn clamp(self: Self, lo: Self, hi: Self) -> Self

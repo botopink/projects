@@ -2480,69 +2480,111 @@ fn collectInterfaceMembers(
     var lexer = Lexer.init(iface.source);
     const tokens = lexer.scanAll(arena) catch return null;
 
-    // Locate `interface <name>` and the `{ … }` body that follows it.
-    var i: usize = 0;
-    var body_start: ?usize = null;
-    while (i < tokens.len) : (i += 1) {
-        if (tokens[i].kind != .interface) continue;
-        var j = i + 1;
-        while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
-        if (j >= tokens.len or tokens[j].kind != .identifier) continue;
-        if (!std.mem.eql(u8, tokens[j].lexeme, iface.name)) continue;
-        // Skip generic params (`<T>`) up to the opening brace.
-        while (j < tokens.len and tokens[j].kind != .leftBrace) : (j += 1) {}
-        if (j < tokens.len) body_start = j + 1;
-        break;
-    }
-    const start = body_start orelse return null;
-
-    // Find the matching closing brace (depth tracking).
-    var depth: u32 = 1;
-    var body_end: usize = start;
-    while (body_end < tokens.len) : (body_end += 1) {
-        const k = tokens[body_end].kind;
-        if (k == .leftBrace) depth += 1;
-        if (k == .rightBrace) {
-            depth -= 1;
-            if (depth == 0) break;
-        }
-    }
-
-    // Walk member declarations; each spans from its `fn`/`val` keyword up to the
-    // next member keyword (or the closing brace).
     var members: std.ArrayList(InterfaceMember) = .empty;
-    var k: usize = start;
-    while (k < body_end) : (k += 1) {
-        const kind = tokens[k].kind;
-        if (kind != .@"fn" and kind != .val) continue;
+    var seen = std.StringHashMap(void).init(arena);
+    var found_any = false;
 
-        var n = k + 1;
-        while (n < body_end and tokens[n].kind == .endOfFile) : (n += 1) {}
-        if (n >= body_end or tokens[n].kind != .identifier) continue;
-        const name = tokens[n].lexeme;
+    // Follow the `extends` chain (e.g. `I32 → Signed → Integer → Number`),
+    // collecting each interface's members. The most-derived interface is visited
+    // first, so a member redeclared in a base (e.g. `toString`) doesn't shadow
+    // the derived one — duplicates by name are skipped.
+    var current: ?[]const u8 = iface.name;
+    var guard: usize = 0;
+    while (current) |cname| {
+        if (guard >= 16) break; // depth / cycle guard
+        guard += 1;
+        current = null;
 
-        // The member ends just before the next top-level `fn`/`val`, or at the
-        // brace. A `fn` nested inside parentheses (a function-typed parameter,
-        // e.g. `map(self, transform: fn(item: T) -> T)`) is not a boundary.
-        var e = n + 1;
-        var pdepth: i32 = 0;
-        while (e < body_end) : (e += 1) {
-            const ek = tokens[e].kind;
-            if (ek == .leftParenthesis) {
-                pdepth += 1;
-            } else if (ek == .rightParenthesis) {
-                pdepth -= 1;
-            } else if (pdepth <= 0 and (ek == .@"fn" or ek == .val)) {
-                break;
+        // Locate `interface <cname>`; capture an optional `extends <Base>` and
+        // the `{ … }` body that follows (skipping generic params `<T>`).
+        var i: usize = 0;
+        var body_start: ?usize = null;
+        while (i < tokens.len) : (i += 1) {
+            if (tokens[i].kind != .interface) continue;
+            var j = i + 1;
+            while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
+            if (j >= tokens.len or tokens[j].kind != .identifier) continue;
+            if (!std.mem.eql(u8, tokens[j].lexeme, cname)) continue;
+            j += 1;
+            while (j < tokens.len and tokens[j].kind != .leftBrace) : (j += 1) {
+                if (tokens[j].kind == .extends) {
+                    var q = j + 1;
+                    while (q < tokens.len and tokens[q].kind != .identifier and tokens[q].kind != .leftBrace) : (q += 1) {}
+                    if (q < tokens.len and tokens[q].kind == .identifier) current = tokens[q].lexeme;
+                }
+            }
+            if (j < tokens.len) body_start = j + 1;
+            break;
+        }
+        const start = body_start orelse continue;
+        found_any = true;
+
+        // Find the matching closing brace (depth tracking).
+        var depth: u32 = 1;
+        var body_end: usize = start;
+        while (body_end < tokens.len) : (body_end += 1) {
+            const bk = tokens[body_end].kind;
+            if (bk == .leftBrace) depth += 1;
+            if (bk == .rightBrace) {
+                depth -= 1;
+                if (depth == 0) break;
             }
         }
-        const sig_start = tokenOffset(iface.source, tokens[k]);
-        const sig_end = if (e < tokens.len) tokenOffset(iface.source, tokens[e]) else iface.source.len;
-        const sig = std.mem.trim(u8, iface.source[sig_start..@min(sig_end, iface.source.len)], " \t\r\n");
 
-        try members.append(arena, .{ .is_fn = kind == .@"fn", .name = name, .sig = sig });
-        k = n;
+        // Walk member declarations; each spans from its `fn`/`val` keyword up to
+        // the next member keyword (or the closing brace).
+        var k: usize = start;
+        while (k < body_end) : (k += 1) {
+            const kind = tokens[k].kind;
+            if (kind != .@"fn" and kind != .val) continue;
+
+            var n = k + 1;
+            while (n < body_end and tokens[n].kind == .endOfFile) : (n += 1) {}
+            if (n >= body_end or tokens[n].kind != .identifier) continue;
+            const name = tokens[n].lexeme;
+
+            // The signature spans `fn name(params) -> Ret`, stopping at the body
+            // brace (`default fn`), an attribute (`@[…]` / `#[…]`) or the next
+            // member keyword — so trailing comments/attributes that precede the
+            // next method never leak into this member's detail. `sig_end` is the
+            // end of the last signature token (not the start of the boundary),
+            // dropping whitespace/comments between sig and next decl. A `fn`
+            // nested in parentheses (function-typed param) is not a boundary.
+            const fn_kw = k;
+            var e = n + 1;
+            var pdepth: i32 = 0;
+            var seen_params = false;
+            var last_tok = n;
+            while (e < body_end) : (e += 1) {
+                const ek = tokens[e].kind;
+                if (ek == .leftParenthesis) {
+                    pdepth += 1;
+                    last_tok = e;
+                } else if (ek == .rightParenthesis) {
+                    pdepth -= 1;
+                    last_tok = e;
+                    if (pdepth == 0) seen_params = true;
+                } else if (pdepth > 0) {
+                    last_tok = e;
+                } else if (seen_params and (ek == .leftBrace or ek == .at or ek == .hash or ek == .@"fn" or ek == .val)) {
+                    break;
+                } else {
+                    last_tok = e;
+                }
+            }
+            k = n;
+            if (seen.contains(name)) continue;
+            try seen.put(name, {});
+
+            const sig_start = tokenOffset(iface.source, tokens[fn_kw]);
+            const end_tok = tokens[last_tok];
+            const sig_end = tokenOffset(iface.source, end_tok) + end_tok.lexeme.len;
+            const sig = std.mem.trim(u8, iface.source[sig_start..@min(sig_end, iface.source.len)], " \t\r\n");
+
+            try members.append(arena, .{ .is_fn = kind == .@"fn", .name = name, .sig = sig });
+        }
     }
+    if (!found_any) return null;
     return try members.toOwnedSlice(arena);
 }
 

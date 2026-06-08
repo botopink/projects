@@ -169,34 +169,34 @@ test "definition: imported symbol jumps to defining module" {
 test "definition: std module member jumps into embedded std source" {
     const gpa = std.testing.allocator;
     const source =
-        \\import {list} from "std";
-        \\val xs = list.map([1, 2], fn(item: i32) -> i32 { return item; });
+        \\import {order} from "std";
+        \\val n = order.toInt(order.lt());
     ;
 
-    // 'map' na linha 1: "val xs = list.map(…" — col 14
+    // 'toInt' na linha 1: "val n = order.toInt(…" — col 14
     const result = try engine.definitionInStdModules(gpa, source, h.pos(1, 14));
     try std.testing.expect(result != null);
-    try std.testing.expectEqualStrings("list", result.?.module.name);
+    try std.testing.expectEqualStrings("order", result.?.module.name);
 
     // Snapshot com URI pseudo "std/<module>" — o server materializa o path real.
-    const snap_loc = proto.Location{ .uri = "std/list", .range = result.?.range };
+    const snap_loc = proto.Location{ .uri = "std/order", .range = result.?.range };
     try snap.assertDefinition(gpa, "definition_std_module_member", source, h.pos(1, 14), snap_loc);
 }
 
 test "definition: bare std module name jumps to top of module" {
     const gpa = std.testing.allocator;
     const source =
-        \\import {list} from "std";
-        \\val xs = list.map([1], fn(item: i32) -> i32 { return item; });
+        \\import {order} from "std";
+        \\val n = order.toInt(order.lt());
     ;
 
-    // 'list' no import: "import {list} from …" — col 8
+    // 'order' no import: "import {order} from …" — col 8
     const result = try engine.definitionInStdModules(gpa, source, h.pos(0, 8));
     try std.testing.expect(result != null);
-    try std.testing.expectEqualStrings("list", result.?.module.name);
+    try std.testing.expectEqualStrings("order", result.?.module.name);
     try std.testing.expectEqual(@as(u32, 0), result.?.range.start.line);
 
-    const snap_loc = proto.Location{ .uri = "std/list", .range = result.?.range };
+    const snap_loc = proto.Location{ .uri = "std/order", .range = result.?.range };
     try snap.assertDefinition(gpa, "definition_std_module_name", source, h.pos(0, 8), snap_loc);
 }
 
@@ -214,7 +214,7 @@ test "definition: std lookup misses without a std import" {
 test "definition: non-std qualifier does not resolve into std" {
     const gpa = std.testing.allocator;
     const source =
-        \\import {list} from "std";
+        \\import {order} from "std";
         \\val xs = foo.map(1);
     ;
 

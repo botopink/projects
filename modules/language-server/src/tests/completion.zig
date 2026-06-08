@@ -524,11 +524,11 @@ test "completion: iterator receiver offers next/iter/map" {
 test "completion: std module member after import from std" {
     const gpa = std.testing.allocator;
     const source =
-        \\import {list} from "std";
-        \\val xs = list.
+        \\import {order} from "std";
+        \\val xs = order.
     ;
-    // Cursor right after `list.` (line 1, char 14).
-    const cursor = h.pos(1, 14);
+    // Cursor right after `order.` (line 1, char 15).
+    const cursor = h.pos(1, 15);
     const items = try engine.completion(gpa, source, cursor, &.{});
     defer {
         for (items) |it| {
@@ -538,16 +538,16 @@ test "completion: std module member after import from std" {
         gpa.free(items);
     }
 
-    var have_map = false;
-    var have_filter = false;
-    var have_fold = false;
+    var have_lt = false;
+    var have_to_int = false;
+    var have_reverse = false;
     for (items) |it| {
-        if (std.mem.eql(u8, it.label, "map")) have_map = true;
-        if (std.mem.eql(u8, it.label, "filter")) have_filter = true;
-        if (std.mem.eql(u8, it.label, "fold")) have_fold = true;
+        if (std.mem.eql(u8, it.label, "lt")) have_lt = true;
+        if (std.mem.eql(u8, it.label, "toInt")) have_to_int = true;
+        if (std.mem.eql(u8, it.label, "reverse")) have_reverse = true;
     }
-    try std.testing.expect(have_map and have_filter and have_fold);
-    try std.testing.expect(items.len > 5);
+    try std.testing.expect(have_lt and have_to_int and have_reverse);
+    try std.testing.expect(items.len >= 5);
 }
 
 // ── F4 — interface-method dispatch on builtin receivers ───────────────────────
@@ -584,7 +584,7 @@ test "completion: integer literal receiver offers I32 methods" {
     for (items) |it| {
         if (std.mem.eql(u8, it.label, "abs")) have_abs = true;
         if (std.mem.eql(u8, it.label, "clamp")) have_clamp = true;
-        if (std.mem.eql(u8, it.label, "to_string")) have_to_string = true;
+        if (std.mem.eql(u8, it.label, "toString")) have_to_string = true;
     }
     try std.testing.expect(have_abs and have_clamp and have_to_string);
     try snap.assertCompletion(gpa, "completion_primitive_methods", edit_source, cursor, items);
@@ -607,7 +607,7 @@ test "completion: boolean literal receiver offers Bool methods" {
 
     var have_to_string = false;
     for (items) |it| {
-        if (std.mem.eql(u8, it.label, "to_string")) have_to_string = true;
+        if (std.mem.eql(u8, it.label, "toString")) have_to_string = true;
     }
     try std.testing.expect(have_to_string);
     try snap.assertCompletion(gpa, "completion_bool_methods", source, cursor, items);

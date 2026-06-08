@@ -1,30 +1,36 @@
-//// Gleam-inspired `string_builder` module (`import {string_builder} from "std";`).
-//// Efficient string accumulation via an internal Array<string> buffer.
-//// `toString` joins with "" — amortises string concatenation cost.
+//// Gleam-inspired `string_builder` module — a `record StringBuilder` wrapping
+//// an internal `Array<string>` buffer (`parts`). `toString` joins with "" —
+//// amortises concatenation cost.
+////
+//// Instance operations are `self`-methods on the record; `empty`/`fromString`/
+//// `fromStrings` are top-level constructors.
 
 pub record StringBuilder {
     parts: Array<string>,
+
+    pub fn append(self: Self, s: string) -> StringBuilder {
+        return StringBuilder(parts: self.parts.append([s]));
+    }
+
+    pub fn prepend(self: Self, s: string) -> StringBuilder {
+        return StringBuilder(parts: self.parts.prepend(s));
+    }
+
+    pub fn toString(self: Self) -> string {
+        return self.parts.join("");
+    }
+
+    pub fn length(self: Self) -> i32 {
+        return self.parts.join("").length();
+    }
+
+    pub fn isEmpty(self: Self) -> bool {
+        return self.parts.length == 0;
+    }
 }
 
 pub fn empty() -> StringBuilder {
     return StringBuilder(parts: []);
-}
-
-pub fn append(sb: StringBuilder, s: string) -> StringBuilder {
-    var out = [];
-    sb.parts.forEach({ p -> out.push(p); });
-    out.push(s);
-    return StringBuilder(parts: out);
-}
-
-pub fn prepend(sb: StringBuilder, s: string) -> StringBuilder {
-    var out = [s];
-    sb.parts.forEach({ p -> out.push(p); });
-    return StringBuilder(parts: out);
-}
-
-pub fn toString(sb: StringBuilder) -> string {
-    return sb.parts.join("");
 }
 
 pub fn fromString(s: string) -> StringBuilder {
@@ -33,12 +39,4 @@ pub fn fromString(s: string) -> StringBuilder {
 
 pub fn fromStrings(strs: Array<string>) -> StringBuilder {
     return StringBuilder(parts: strs);
-}
-
-pub fn length(sb: StringBuilder) -> i32 {
-    return sb.parts.join("").length;
-}
-
-pub fn isEmpty(sb: StringBuilder) -> bool {
-    return sb.parts.length == 0;
 }

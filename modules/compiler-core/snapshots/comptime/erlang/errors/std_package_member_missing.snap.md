@@ -1,15 +1,15 @@
 ----- SOURCE CODE
-import {bool} from "std";
+import {order} from "std";
 
 fn main() {
-    val x = bool.collapse(true);
+    val x = order.collapse(true);
 }
 
 ----- ERROR
 error: this "std" module has no such public function
-  ┌─ :4:18
+  ┌─ :4:19
   │
-4 │     val x = bool.collapse(true);
-  │                  ^
+4 │     val x = order.collapse(true);
+  │                   ^
 
   hint: Check the function name against the module's exports.

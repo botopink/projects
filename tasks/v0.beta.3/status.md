@@ -6,10 +6,11 @@
 
 | Spec | Header status | Branch `task/<slug>` | Worktree `.tasks/<slug>` | TODO.md |
 |---|---|---|---|---|
-| [backend-parity](specs/backend-parity.md) | pending | merged | present | 0/30 done |
-| [generic-inference](specs/generic-inference.md) | pending | merged | present | 0/12 done |
-| [stdlib-interface](specs/stdlib-interface.md) | pending | — | — | — |
-| [tooling-update](specs/tooling-update.md) | pending | merged | present | 0/24 done |
+| [backend-parity](specs/backend-parity.md) | F7/F8/F0/F9 done; F1–F6 pending | merged | present | 4/10 phases |
+| [generic-inference](specs/generic-inference.md) | F1 (per-call instantiation) done; F2/F3 superseded by stdlib-interface | merged | present | done |
+| [stdlib-interface](specs/stdlib-interface.md) | src+wiring done; compiler integration in progress (13 std_package tests red) | merged (via generic-inference) | .tasks/generic-inference | in progress |
+| [tooling-update](specs/tooling-update.md) | done (F0a–F5) | merged | — | done |
+| [editor-experience](specs/editor-experience.md) | merged | merged | present | — |
 
 ## Notes
 
