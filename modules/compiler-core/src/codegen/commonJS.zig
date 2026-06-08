@@ -111,6 +111,12 @@ pub fn useHookInner(e: ast.Expr) ?*ast.Expr {
     };
 }
 
+/// True when `e` is the `null` literal — used to choose loose `==`/`!=` for
+/// `?T` none comparisons (so `undefined` and `null` both count as none).
+pub fn isNullLiteral(e: ast.Expr) bool {
+    return e == .literal and e.literal.kind == .null_;
+}
+
 /// True when a type reference is the phantom capability `@Context<B, R>`.
 pub fn isContextTypeRef(tr: ast.TypeRef) bool {
     return switch (tr) {
@@ -126,6 +132,59 @@ pub fn isPhantomContextStruct(s: ast.StructDecl) bool {
     if (s.members.len != 0) return false;
     for (s.implement) |im| if (isContextTypeRef(im)) return true;
     return false;
+}
+
+/// JS host namespaces that exist as globals — `#[@external(node, "Math", …)]`
+/// must reference them directly: `require("Math")` fails at module load
+/// (`Cannot find module 'Math'`). `require` is reserved for relative/package
+/// module paths.
+const js_global_namespaces = [_][]const u8{
+    "globalThis", "Math",    "JSON",    "console", "Number",  "Date",
+    "Object",     "Array",   "String",  "Boolean", "Symbol",  "BigInt",
+    "Promise",    "Reflect", "Intl",    "Error",   "RegExp",  "Map",
+    "Set",        "WeakMap", "WeakSet", "Atomics", "process",
+};
+
+/// True when an `@[external(node, module, …)]` module name is a JS global
+/// namespace rather than a requirable module.
+pub fn isJsGlobalNamespace(module: []const u8) bool {
+    for (js_global_namespaces) |g| {
+        if (std.mem.eql(u8, module, g)) return true;
+    }
+    return false;
+}
+
+/// ES2015+ reserved words that are illegal as JS binding names (plus
+/// `arguments`/`eval`, illegal in strict mode, and contextual keywords like
+/// `of`). A botopink identifier that collides is renamed with a `_` suffix at
+/// emission — `with` → `with_`, `delete` → `delete_` — consistently across
+/// decls, call sites, and exports (the `exports.<name>` property keeps the
+/// original name; property positions accept reserved words).
+///
+/// `true`/`false`/`null`/`this`/`super` are deliberately omitted: botopink
+/// never creates bindings with those names, and in value position they are
+/// legal JS primary expressions (`true`/`false`/`null`) or handled separately
+/// (`self` → `this`). `of` is also omitted — it is only a contextual keyword
+/// (`for…of`), so `function of()` is valid JS and the stdlib relies on it.
+const js_reserved_words = [_][]const u8{
+    "arguments", "await",      "break",    "case",     "catch",
+    "class",     "const",      "continue", "debugger", "default",
+    "delete",    "do",         "else",     "enum",     "eval",
+    "export",    "extends",    "finally",  "for",      "function",
+    "if",        "implements", "import",   "in",       "instanceof",
+    "interface", "let",        "new",      "package",  "private",
+    "protected", "public",     "return",   "static",   "switch",
+    "throw",     "try",        "typeof",   "var",      "void",
+    "while",     "with",       "yield",
+};
+
+/// Sanitized JS binding name: reserved words get a `_` suffix, everything
+/// else passes through unchanged. Returns a static string — no allocation.
+pub fn jsIdent(name: []const u8) []const u8 {
+    inline for (js_reserved_words) |w| {
+        if (std.mem.eql(u8, name, w)) return w ++ "_";
+    }
+    return name;
 }
 
 /// Emit all declarations as JavaScript source.
@@ -243,7 +302,7 @@ pub fn emitProgramOpts(
                     if (val_ct_map.get(v.name)) |ct_id| {
                         if (comptime_vals.get(ct_id)) |lit| {
                             if (!firstEmitted) try aw.writer.writeByte('\n');
-                            try em.fmt("const {s} = {s};", .{ v.name, lit });
+                            try em.fmt("const {s} = {s};", .{ jsIdent(v.name), lit });
                             try aw.writer.writeByte('\n');
                             firstEmitted = false;
                         }
@@ -260,12 +319,17 @@ pub fn emitProgramOpts(
                 if (f.isExternal()) {
                     // FFI declaration — import the host symbol under the fn name.
                     if (em.externals.get(f.name)) |ref| {
-                        if (std.mem.eql(u8, ref.symbol, f.name)) {
+                        const bind_name = jsIdent(f.name);
+                        if (isJsGlobalNamespace(ref.module)) {
+                            // Global namespace (`Math`, `console`, …) —
+                            // reference directly, never `require`.
+                            try em.fmt("const {s} = {s}.{s};", .{ bind_name, ref.module, ref.symbol });
+                        } else if (std.mem.eql(u8, ref.symbol, bind_name)) {
                             try em.fmt("const {{ {s} }} = require(\"{s}\");", .{ ref.symbol, ref.module });
                         } else {
-                            try em.fmt("const {{ {s}: {s} }} = require(\"{s}\");", .{ ref.symbol, f.name, ref.module });
+                            try em.fmt("const {{ {s}: {s} }} = require(\"{s}\");", .{ ref.symbol, bind_name, ref.module });
                         }
-                        if (f.isPub) try em.fmt("\nexports.{s} = {s};", .{ f.name, f.name });
+                        if (f.isPub) try em.fmt("\nexports.{s} = {s};", .{ f.name, bind_name });
                     } else {
                         try em.fmt("// external fn {s} (no node target)", .{f.name});
                     }
@@ -551,6 +615,12 @@ const Emitter = struct {
     /// When true, `self.x` lowers to `self.x` (extension methods take `self` as a
     /// real first parameter) instead of the prototype-method `this.x`.
     self_is_param: bool = false,
+    /// True while emitting a generator (`function*`) body. A `return <expr>`
+    /// inside a `*fn -> @Iterator<T>` means *delegate the rest of the iteration*
+    /// to that iterator, so it lowers to `yield* <expr>; return;` — a plain
+    /// `return <gen>` would surface the generator object as the done-value and
+    /// yield nothing (the iterator-recursion bug behind the dead `iterator` suite).
+    in_generator: bool = false,
     /// Names bound by `use` hooks seen so far in the current function body, in
     /// source order. Used to infer the dependency array of `useMemo`/`useEffect`:
     /// a hook's lambda dep list is the reactive names it references.
@@ -562,7 +632,8 @@ const Emitter = struct {
     /// test-mode assert failures.
     module_name: []const u8 = "main",
     /// `@[external(node, "module", "symbol")]` fns: name → host import.
-    /// The decl lowers to `const { symbol: name } = require("module");`.
+    /// The decl lowers to `const { symbol: name } = require("module");`,
+    /// or `const name = Module.symbol;` for JS global namespaces (`Math`, …).
     externals: std.StringHashMap(ast.ExternalRef),
     /// `@[external(…)]` fns with no `node` target — calling one is an error.
     externals_missing: std.StringHashMap(void),
@@ -664,7 +735,7 @@ const Emitter = struct {
             // Will be handled via comptime_vals lookup at a higher level.
             return;
         }
-        try self.fmt("const {s} = ", .{v.name});
+        try self.fmt("const {s} = ", .{jsIdent(v.name)});
         try self.emitExpr(v.value.*);
         try self.w(";");
     }
@@ -711,7 +782,11 @@ const Emitter = struct {
 
     fn emitFn(self: *Emitter, f: ast.FnDecl) !void {
         self.try_seq = 0;
-        try self.fmt("{s} {s}(", .{ fnKeyword(f), f.name });
+        const kw = fnKeyword(f);
+        const prev_in_generator = self.in_generator;
+        self.in_generator = std.mem.endsWith(u8, kw, "function*");
+        defer self.in_generator = prev_in_generator;
+        try self.fmt("{s} {s}(", .{ kw, jsIdent(f.name) });
         try self.emitParams(f.params);
         try self.w(") {\n");
         const prev_fn_indent = self.current_indent;
@@ -725,7 +800,7 @@ const Emitter = struct {
         }
         self.current_indent = prev_fn_indent;
         try self.w("}");
-        if (f.isPub) try self.fmt("\nexports.{s} = {s};", .{ f.name, f.name });
+        if (f.isPub) try self.fmt("\nexports.{s} = {s};", .{ f.name, jsIdent(f.name) });
     }
 
     /// Emit a `test { … }` body as `function __bp_test_<idx>() { … }`.
@@ -976,19 +1051,19 @@ const Emitter = struct {
     fn emitPattern(self: *Emitter, pat: ast.Pattern) !void {
         switch (pat) {
             .wildcard => try self.w("_"),
-            .ident => |name| try self.w(name),
+            .ident => |name| try self.w(jsIdent(name)),
             .variant => |v| switch (v.payload) {
                 .binding => |binding| {
                     try self.w(v.name);
                     try self.w(" ");
-                    try self.w(binding);
+                    try self.w(jsIdent(binding));
                 },
                 .fields => |fields| {
                     try self.w(v.name);
                     try self.w("(");
                     for (fields, 0..) |b, i| {
                         if (i > 0) try self.w(", ");
-                        try self.w(b);
+                        try self.w(jsIdent(b));
                     }
                     try self.w(")");
                 },
@@ -1035,7 +1110,7 @@ const Emitter = struct {
     fn emitListPatternElem(self: *Emitter, elem: ast.ListPatternElem) !void {
         switch (elem) {
             .wildcard => try self.w("_"),
-            .bind => |name| try self.w(name),
+            .bind => |name| try self.w(jsIdent(name)),
             .numberLit => |n| try self.w(n),
         }
     }
@@ -1088,7 +1163,7 @@ const Emitter = struct {
                     try self.w("{ ");
                     for (n.fields, 0..) |nm, i| {
                         if (i > 0) try self.w(", ");
-                        try self.w(nm.bind_name);
+                        try self.emitDestructFieldBind(nm.bind_name);
                     }
                     if (n.hasSpread) try self.w(", ...");
                     try self.w(" } = ");
@@ -1097,14 +1172,25 @@ const Emitter = struct {
                     try self.w("[ ");
                     for (t, 0..) |nm, i| {
                         if (i > 0) try self.w(", ");
-                        try self.w(nm);
+                        try self.w(jsIdent(nm));
                     }
                     try self.w(" ]");
                 },
                 .list => |pat| try self.emitPattern(pat),
                 .ctor => |pat| try self.emitPattern(pat),
             }
-        } else try self.w(p.name);
+        } else try self.w(jsIdent(p.name));
+    }
+
+    /// Object-destructure field bind: shorthand `{ name }`, or `{ name: name_ }`
+    /// when the bind name is a JS reserved word (shorthand would be a SyntaxError).
+    fn emitDestructFieldBind(self: *Emitter, name: []const u8) !void {
+        const sanitized = jsIdent(name);
+        if (sanitized.ptr == name.ptr) {
+            try self.w(name);
+        } else {
+            try self.fmt("{s}: {s}", .{ name, sanitized });
+        }
     }
 
     // ── statements ──────────────────────────────────────────────────────────────
@@ -1120,7 +1206,7 @@ const Emitter = struct {
                         return;
                     }
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
-                    try self.fmt("{s} {s} = ", .{ kw, lb.name });
+                    try self.fmt("{s} {s} = ", .{ kw, jsIdent(lb.name) });
                     // `val d = use memo { … }` → `const d = useMemo(…, [deps])`.
                     if (useHookInner(lb.value.*)) |inner| {
                         try self.emitHookCall(inner.*);
@@ -1162,6 +1248,15 @@ const Emitter = struct {
                     if (r) |rp| {
                         if (classifyTry(rp.*)) |form| {
                             try self.emitTryStmt(form, .ret);
+                            return;
+                        }
+                        if (self.in_generator) {
+                            // `return <iter>` in a `*fn -> @Iterator` delegates:
+                            // `yield* <iter>; return;` (a plain `return <gen>`
+                            // surfaces the generator object and yields nothing).
+                            try self.w("yield* ");
+                            try self.emitExpr(rp.*);
+                            try self.w("; return;");
                             return;
                         }
                         try self.w("return ");
@@ -1291,10 +1386,14 @@ const Emitter = struct {
 
     /// Emit a `params => { body }` arrow function (for trailing-lambda hook args).
     fn emitLambda(self: *Emitter, params: []const []const u8, body: []ast.Stmt) !void {
+        // A nested arrow is not a generator — its `return` stays `return`.
+        const prev_in_generator = self.in_generator;
+        self.in_generator = false;
+        defer self.in_generator = prev_in_generator;
         try self.w("(");
         for (params, 0..) |p, i| {
             if (i > 0) try self.w(", ");
-            try self.w(p);
+            try self.w(jsIdent(p));
         }
         try self.w(") => {\n");
         for (body) |st| {
@@ -1313,7 +1412,7 @@ const Emitter = struct {
                 try self.w("{ ");
                 for (n.fields, 0..) |nm, i| {
                     if (i > 0) try self.w(", ");
-                    try self.w(nm.bind_name);
+                    try self.emitDestructFieldBind(nm.bind_name);
                 }
                 if (n.hasSpread) try self.w(", ...");
                 try self.w(" } = ");
@@ -1322,7 +1421,7 @@ const Emitter = struct {
                 try self.w("[ ");
                 for (t, 0..) |nm, i| {
                     if (i > 0) try self.w(", ");
-                    try self.w(nm);
+                    try self.w(jsIdent(nm));
                 }
                 try self.w(" ] = ");
             },
@@ -1527,7 +1626,7 @@ const Emitter = struct {
             },
 
             .identifier => |id| switch (id.kind) {
-                .ident => |n| try self.w(n),
+                .ident => |n| try self.w(jsIdent(n)),
                 .dotIdent => |n| try self.w(n),
                 .identAccess => |ia| {
                     const isSelf = switch (ia.receiver.*) {
@@ -1566,8 +1665,12 @@ const Emitter = struct {
                 .gt => try self.emitBinaryOp(">", bin.lhs, bin.rhs),
                 .lte => try self.emitBinaryOp("<=", bin.lhs, bin.rhs),
                 .gte => try self.emitBinaryOp(">=", bin.lhs, bin.rhs),
-                .eq => try self.emitBinaryOp("===", bin.lhs, bin.rhs),
-                .ne => try self.emitBinaryOp("!==", bin.lhs, bin.rhs),
+                // `x == null` / `x != null` lower to loose `==`/`!=` so a `?T`
+                // none represented as `undefined` (e.g. `Array.at()` past the
+                // end) matches the `null` none literal — botopink treats both
+                // as the single none value. All other `==` stay strict `===`.
+                .eq => try self.emitBinaryOp(if (isNullLiteral(bin.lhs.*) or isNullLiteral(bin.rhs.*)) "==" else "===", bin.lhs, bin.rhs),
+                .ne => try self.emitBinaryOp(if (isNullLiteral(bin.lhs.*) or isNullLiteral(bin.rhs.*)) "!=" else "!==", bin.lhs, bin.rhs),
                 .@"and" => try self.emitBinaryOp("&&", bin.lhs, bin.rhs),
                 .@"or" => try self.emitBinaryOp("||", bin.lhs, bin.rhs),
             },
@@ -1732,12 +1835,39 @@ const Emitter = struct {
                     break :blk false;
                 };
 
-                if (has_yield) {
+                if (has_yield and self.in_generator) {
+                    // Inside a `*fn` generator, `loop (xs) { item -> yield item }`
+                    // is real generator iteration — emit `for…of` with native
+                    // `yield`, NOT `.map()` (which builds a throwaway array and
+                    // yields nothing — the `fromList`/iterator-suite bug).
+                    if (lp.params.len == 1) {
+                        try self.fmt("for (const {s} of ", .{jsIdent(lp.params[0])});
+                        try self.emitExpr(lp.iter.*);
+                        try self.w(") {\n");
+                    } else {
+                        try self.w("for (const [");
+                        var i: usize = lp.params.len;
+                        while (i > 0) {
+                            i -= 1;
+                            try self.w(jsIdent(lp.params[i]));
+                            if (i > 0) try self.w(", ");
+                        }
+                        try self.w("] of (");
+                        try self.emitExpr(lp.iter.*);
+                        try self.w(").entries()) {\n");
+                    }
+                    for (lp.body) |stmt| {
+                        try self.w("    ");
+                        try self.emitStmt(stmt);
+                        try self.w("\n");
+                    }
+                    try self.w("}");
+                } else if (has_yield) {
                     try self.emitExpr(lp.iter.*);
                     try self.w(".map((");
                     for (lp.params, 0..) |p, i| {
                         if (i > 0) try self.w(", ");
-                        try self.w(p);
+                        try self.w(jsIdent(p));
                     }
                     try self.w(") => {\n");
                     for (lp.body) |stmt| {
@@ -1766,7 +1896,7 @@ const Emitter = struct {
                     // order is swapped. (Object.entries gave [stringKey, value],
                     // which bound the 1-param form to the index — a real bug.)
                     if (lp.params.len == 1) {
-                        try self.fmt("for (const {s} of ", .{lp.params[0]});
+                        try self.fmt("for (const {s} of ", .{jsIdent(lp.params[0])});
                         try self.emitExpr(lp.iter.*);
                         try self.w(") {\n");
                     } else {
@@ -1774,7 +1904,7 @@ const Emitter = struct {
                         var i: usize = lp.params.len;
                         while (i > 0) {
                             i -= 1;
-                            try self.w(lp.params[i]);
+                            try self.w(jsIdent(lp.params[i]));
                             if (i > 0) try self.w(", ");
                         }
                         try self.w("] of (");
@@ -1793,7 +1923,7 @@ const Emitter = struct {
             .binding => |b| switch (b.kind) {
                 .localBind => |lb| {
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
-                    try self.fmt("{s} {s} = ", .{ kw, lb.name });
+                    try self.fmt("{s} {s} = ", .{ kw, jsIdent(lb.name) });
                     try self.emitExpr(lb.value.*);
                 },
                 .assign => |a| {
@@ -1803,7 +1933,7 @@ const Emitter = struct {
                     };
                     switch (a.target) {
                         .name => |name| {
-                            try self.fmt("{s} {s} ", .{ name, op_str });
+                            try self.fmt("{s} {s} ", .{ jsIdent(name), op_str });
                             try self.emitExpr(a.value.*);
                         },
                         .fieldAccess => |*fa| {
@@ -1827,33 +1957,7 @@ const Emitter = struct {
                 .localBindDestruct => |lb| {
                     const kw: []const u8 = if (lb.mutable) "let" else "const";
                     try self.fmt("{s} ", .{kw});
-                    switch (lb.pattern) {
-                        .names => |*n| {
-                            try self.w("{ ");
-                            for (n.fields, 0..) |nm, i| {
-                                if (i > 0) try self.w(", ");
-                                try self.w(nm.bind_name);
-                            }
-                            if (n.hasSpread) try self.w(", ...");
-                            try self.w(" } = ");
-                        },
-                        .tuple_ => |t| {
-                            try self.w("[ ");
-                            for (t, 0..) |nm, i| {
-                                if (i > 0) try self.w(", ");
-                                try self.w(nm);
-                            }
-                            try self.w(" ] = ");
-                        },
-                        .list => |pat| {
-                            try self.emitPattern(pat);
-                            try self.w(" = ");
-                        },
-                        .ctor => |pat| {
-                            try self.emitPattern(pat);
-                            try self.w(" = ");
-                        },
-                    }
+                    try self.emitDestructHead(lb.pattern);
                     try self.emitExpr(lb.value.*);
                 },
             },
@@ -1954,7 +2058,9 @@ const Emitter = struct {
                             // invoked without `new`.
                             try self.fmt("new {s}(", .{cc.callee});
                         } else {
-                            try self.fmt("{s}(", .{cc.callee});
+                            // Plain fn call — sanitize the callee in case the
+                            // fn name is a JS reserved word (`delete` → `delete_`).
+                            try self.fmt("{s}(", .{jsIdent(cc.callee)});
                         }
                         for (cc.args) |arg| {
                             if (!first) try self.w(", ");
@@ -1964,10 +2070,14 @@ const Emitter = struct {
                         for (cc.trailing) |tl| {
                             if (!first) try self.w(", ");
                             first = false;
+                            // A trailing arrow is not a generator — `return` stays.
+                            const prev_in_generator = self.in_generator;
+                            self.in_generator = false;
+                            defer self.in_generator = prev_in_generator;
                             try self.w("(");
                             for (tl.params, 0..) |p, pi| {
                                 if (pi > 0) try self.w(", ");
-                                try self.w(p);
+                                try self.w(jsIdent(p));
                             }
                             try self.w(") => {\n");
                             for (tl.body, 0..) |st, si| {
@@ -2017,10 +2127,14 @@ const Emitter = struct {
             },
 
             .function => |f| {
+                // A nested arrow is not a generator — its `return` stays `return`.
+                const prev_in_generator = self.in_generator;
+                self.in_generator = false;
+                defer self.in_generator = prev_in_generator;
                 try self.w("(");
                 for (f.kind.params, 0..) |p, i| {
                     if (i > 0) try self.w(", ");
-                    try self.w(p);
+                    try self.w(jsIdent(p));
                 }
                 try self.w(") => {\n");
                 for (f.kind.body, 0..) |st, si| {
@@ -2306,7 +2420,7 @@ const Emitter = struct {
                     if (arm.pattern == .ident and arm.guard != null) {
                         // A guarded identifier binds the subject, then tests the guard.
                         b.open("");
-                        b.fmtLine("const {s} = _s;", .{arm.pattern.ident});
+                        b.fmtLine("const {s} = _s;", .{jsIdent(arm.pattern.ident)});
                         b.newline();
                         try self.emitMatchedBody(&b, arm);
                         b.close();
@@ -2341,14 +2455,21 @@ const Emitter = struct {
                     b.indent();
                     switch (v.payload) {
                         .binding => |binding| {
-                            b.fmtLine("const {s} = _s;", .{binding});
+                            b.fmtLine("const {s} = _s;", .{jsIdent(binding)});
                             b.newline();
                         },
                         .fields => |fields| if (fields.len > 0) {
                             b.line("const { ");
                             for (fields, 0..) |bb, bi| {
                                 if (bi > 0) b.raw(", ");
-                                b.raw(bb);
+                                const sanitized = jsIdent(bb);
+                                if (sanitized.ptr == bb.ptr) {
+                                    b.raw(bb);
+                                } else {
+                                    b.raw(bb);
+                                    b.raw(": ");
+                                    b.raw(sanitized);
+                                }
                             }
                             b.raw(" } = _s;");
                             b.newline();
@@ -2372,12 +2493,12 @@ const Emitter = struct {
                             b.newline();
                             b.indent();
                             if (sp.len > 0) {
-                                b.fmtLine("const {s} = _s.slice({d});", .{ sp, lp.elems.len });
+                                b.fmtLine("const {s} = _s.slice({d});", .{ jsIdent(sp), lp.elems.len });
                                 b.newline();
                             }
                             for (lp.elems, 0..) |elem, ei| switch (elem) {
                                 .bind => |bb| {
-                                    b.fmtLine("const {s} = _s[{d}];", .{ bb, ei });
+                                    b.fmtLine("const {s} = _s[{d}];", .{ jsIdent(bb), ei });
                                     b.newline();
                                 },
                                 else => {},
@@ -2400,7 +2521,7 @@ const Emitter = struct {
                         b.indent();
                         for (lp.elems, 0..) |elem, ei| switch (elem) {
                             .bind => |bb| {
-                                b.fmtLine("const {s} = _s[{d}];", .{ bb, ei });
+                                b.fmtLine("const {s} = _s[{d}];", .{ jsIdent(bb), ei });
                                 b.newline();
                             },
                             else => {},

@@ -17,6 +17,20 @@ test "js: external ---- call emits module symbol" {
     );
 }
 
+test "js: external ---- global math" {
+    // `Math` is a JS global, not a module — the node target must reference
+    // it directly (`const floor = Math.floor;`), never `require("Math")`.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\#[@external(erlang, "math", "floor"),
+        \\  @external(node, "Math", "floor")]
+        \\pub declare fn floor(n: f64) -> f64;
+        \\
+        \\fn main() {
+        \\    @print(floor(1.7));
+        \\}
+    );
+}
+
 test "js: external ---- import binds symbol" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\#[@external(erlang, "erlang", "abs"),

@@ -516,3 +516,79 @@ test "js: optional chaining ---- member access short-circuits null" {
         \\}
     );
 }
+
+test "js: reserved word identifiers" {
+    // JS reserved words used as botopink fn names, params, and locals must be
+    // renamed on emission (`delete` → `delete_`, `with` → `with_`) — emitting
+    // them verbatim is a SyntaxError that kills the whole module. The rename is
+    // consistent across the decl, call sites, and the `exports.<name>` property
+    // keeps the original botopink name.
+    // `delete`/`with`/`class`/`static` are JS reserved words but valid botopink
+    // identifiers (botopink keywords like `new`/`enum` are excluded by the
+    // parser, so they can never reach codegen as user names).
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\pub fn delete(with: string, class: string) -> string {
+        \\    val static = with + class;
+        \\    return static;
+        \\}
+        \\
+        \\fn main() {
+        \\    @print(delete("a", "b"));
+        \\}
+    );
+}
+
+test "js: iterator fromList yields array items" {
+    // A `*fn -> @Iterator<T>` generator: `loop (xs) { yield }` must lower to a
+    // real `for…of` with native `yield` (not `.map()`), and `return <iter>`
+    // must delegate via `yield*` — otherwise the generator yields nothing.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\*fn fromList<T>(xs: Array<T>) -> @Iterator<T> {
+        \\    loop (xs) { item ->
+        \\        yield item;
+        \\    };
+        \\}
+        \\
+        \\*fn doRange(cur: i32, stop: i32) -> @Iterator<i32> {
+        \\    if (cur < stop) {
+        \\        yield cur;
+        \\        return doRange(cur + 1, stop);
+        \\    };
+        \\}
+        \\
+        \\fn toList<T>(iter: @Iterator<T>) -> Array<T> {
+        \\    var out = [];
+        \\    loop (iter) { item ->
+        \\        out.push(item);
+        \\    };
+        \\    return out;
+        \\}
+        \\
+        \\fn main() {
+        \\    @print(toList(fromList([1, 2, 3])).join(","));
+        \\    @print(toList(doRange(0, 3)).join(","));
+        \\}
+    );
+}
+
+test "js: option method on tuple element" {
+    // A `?T` flowing through a tuple element (`result._1`) must keep its
+    // `@Option` method surface — inference resolves the tuple-index type so
+    // `.unwrapOr` lowers to `__bp_option_unwrapOr`. `== null` uses loose
+    // equality so an `undefined` none (from `Array.at`) matches.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn firstAndRest(xs: Array<i32>) -> #(Array<i32>, ?i32) {
+        \\    val head = xs.at(0);
+        \\    val rest = xs.slice(1, xs.length);
+        \\    return #(rest, head);
+        \\}
+        \\
+        \\fn main() {
+        \\    val result = firstAndRest([1, 2, 3]);
+        \\    val head = result._1;
+        \\    @print(head.unwrapOr(-1));
+        \\    val empty = firstAndRest([]);
+        \\    @print(empty._1 == null);
+        \\}
+    );
+}

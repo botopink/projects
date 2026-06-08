@@ -64,7 +64,7 @@ std/
 | `int.bp` | `absoluteValue`, `min`, `max`, `clamp`, `isEven`, `isOdd`, `toString`. |
 | `float.bp` | `absoluteValue`, `min`, `max`, `clamp`, `toString`; `floor`, `ceiling`, `round`, `squareRoot` via `#[@external]`. |
 | `string.bp` | `split`, `trim`, `trimStart`, `trimEnd`, `contains`, `startsWith`, `endsWith`, `slice`, `replace`, `toUpper`, `toLower`, `join`. |
-| `iterator.bp` | Lazy producers: `range(start, stop)`, `repeat(value, times)`, `fromList(xs)` via `*fn`. Eager consumers (return `Array`): `toList`, `map`, `filter`, `take`. Fold: `fold`. Note: `fromList` JS codegen has a known gap — see TODO.md. |
+| `iterator.bp` | Lazy producers: `range(start, stop)`, `repeat(value, times)`, `fromList(xs)` via `*fn`. Eager consumers (return `Array`): `toList`, `map`, `filter`, `take`. Fold: `fold`. (JS codegen lowers generator delegation `return <iter>` → `yield*` and `loop { yield }` → `for…of`.) |
 | `dict.bp` | `pub record Dict<K, V>` (association list over `Array<#(K, V)>`). `empty`, `lookup`, `hasKey`, `insert`, `delete`, `size`, `isEmpty`, `keys`, `values`, `fold`, `merge`, `mapValues`. O(n) lookup. |
 | `sets.bp` | `pub record Set<T>` (deduplicated `Array<T>`). `empty`, `contains`, `size`, `isEmpty`, `insert`, `delete`, `toList`, `fromList`, `union`, `intersection`, `difference`. (Named `sets.bp` — `set` is a keyword.) |
 | `function.bp` | `identity`, `compose` (left-to-right), `flip`, `constant`. Pure combinators. |

@@ -1,101 +1,80 @@
-# TODO — tooling-update
+# TODO — backend-parity
 
-> Live checklist for branch `task/tooling-update` (worktree `.tasks/tooling-update/`).
-> Spec (intent, immutable): [`tasks/v0.beta.3/specs/tooling-update.md`](tasks/v0.beta.3/specs/tooling-update.md)
+> Live checklist for branch `task/backend-parity` (worktree `.tasks/backend-parity/`).
+> Spec (intent, immutable): [`tasks/v0.beta.3/specs/backend-parity.md`](tasks/v0.beta.3/specs/backend-parity.md)
 
-> **Goal**: bring `modules/language-server` + `modules/vscode-extension` up to
-> the current language surface (test blocks, `#[@external]`, `@`-types, `*fn`,
-> import rework, `|>`, `?.`). **F0a (ctrl+click) first** — reported broken
-> 2026-06-07. Only F4 waits for `stdlib-interface`.
+> **Goal**: close the open backend/stdlib gaps (stdlib-gleam known gaps 1, 3, 4,
+> 7, 8 + WASM runner + duplicate-name warning) and the 5 live `botopink test`
+> failures found 2026-06-07. Phases are independent — order by impact.
 
-## F0a — Fix go-to-definition (ctrl+click) regression  ✔ DONE
-- [x] Reproduce via stdio: same-file `val`/`fn`, cross-module `pub`, std module fn
-      (scripted JSON-RPC session against `zig-out/bin/botopink-lsp`)
-- [x] Run `src/tests/definition.zig` (9 tests) — green (suite never covered stdio)
-- [x] Bisect — three real bugs, none in `identAt`/`extension.ts`:
-      1. `messages.zig` framing: Zig 0.16 `takeDelimiterExclusive` stops *before*
-         `\n` → body truncated → server died on the FIRST message (whole LSP
-         down, not just ctrl+click). Fixed with `takeDelimiter`.
-      2. `project_index.zig` `openDir` without `.iterate = true` → O_PATH fd →
-         BADF panic on first `iter.next()` (killed cross-module definition).
-      3. `compiler-core/build.zig` still pointed at the pre-312d1ad prelude path
-         → standalone `zig build test` in language-server didn't even compile.
-- [x] Fix + snapshots (same-file, cross-module, std module): std resolution via
-      new `engine.definitionInStdModules` (qualifier-aware: `list.map`), module
-      source materialized to `~/.cache/botopink-lsp/std/<name>.bp`; regression
-      tests for the frame reader in `src/tests/messages.zig`
+**Suggested order**: F7 → F8 (cheap, unblock 3 whole suites) → F0 → F9 → F1 → F2 → F3 → F4 → F5 → F6.
 
-## F0 — Audit  ✔ DONE
-- [x] Diff grammar keywords vs lexer table (`lexer.zig` `keywordOrIdent`, not
-      just the `token.zig` enum). Missing: `await`, `extend`. Stale (not real
-      keywords): `typeinfo`, `echo`, `todo`. `|>` already present.
-- [x] Inventory unhighlighted syntax: `#[@external(…)]` (only `@external`
-      caught generic @-builtin), `@Expr`/`@Result`/`@Option`/`@Iterator`
-      (mis-scoped as builtin *functions* — should be types), `*fn`, `?.`,
-      `${…}` holes. Anonymous records = lexically `{…}` blocks → semantic, skip.
-- [x] LSP gaps inventory → F3 (test blocks not in documentSymbol/foldingRange;
-      std module completion/hover); F4 (primitive receiver methods).
+## F7 — `#[@external(node, …)]` against JS globals  ✔ done
+- [x] JS codegen: reference globals (`Math`, `console`, `JSON`, …) directly
+      instead of `require('Math')` (allowlist `js_global_namespaces` in
+      `commonJS.zig`; `require` stays for relative/package paths)
+- [x] Snapshot `codegen/node/external_global_math`
+- [x] `float` suite green under `cd libs/std && botopink test` (4/4)
 
-## F1 — TextMate grammar sync  ✔ DONE
-- [x] Keyword groups synced (`+await`, `+extend`, `-typeinfo/-echo/-todo`)
-- [x] Added scopes: `#[…]` attribute block, builtin `@Type` names (before the
-      generic @-rule), `*fn` effect `*`, `?.` chaining, `${…}` interpolation
-- [x] `botopink.codeblock.json` injects `source.botopink` → inherits all of the
-      above automatically (no mirror edits needed)
-- [x] JSON + regex sanity validated; no vscode-textmate locally for live tokens
+## F8 — JS reserved-word sanitization  ✔ done
+- [x] Rename reserved-word identifiers on emission (`with` → `with_`,
+      `delete` → `delete_`) — params, locals, fn names, destructure binds,
+      match-arm binds; consistent across call sites; `exports.<name>` keeps the
+      original botopink name (`jsIdent` helper in `commonJS.zig`)
+- [x] ES2015+ reserved-word table (true/false/null/of omitted — valid JS)
+- [x] Snapshot `codegen/node/reserved_word_identifiers` (test js_features.zig)
+- [x] `sets` suite green (9/9); `string` + `sets` modules load — remaining
+      string failures are F2 (snake_case dispatch), not reserved words
 
-## F2 — Snippets + language configuration  ✔ DONE
-- [x] Snippets added: `test` block (linked got mirror) + `assert`,
-      `#[@external]` declare fn (`external`), `*fn` generator, `importstd`
-- [x] Reviewed `language-configuration.json`: `#[…]` auto-closes via `[`/`]`,
-      `${…}` via `{`/`}`; indentation rules already cover blocks — adequate
+## F0 — Iterator JS codegen (known gap #8, widened)  ✔ done
+- [x] Fix `*fn` lowering: `return <iter>` → `yield*` delegation; `loop { yield }`
+      → `for…of` with native `yield` (was `.map()`, yielded nothing). Nested
+      lambdas guarded so their `return` stays `return` (`in_generator` flag).
+- [x] Cover `range`/`toList`/`fold`/`map`/`filter`/`take` + `fromList`/`repeat`
+- [x] Snapshot `codegen/node/iterator_fromlist_yields_array_items`
+- [x] `iterator` suite green (12/12); known-gap note removed from
+      `libs/std/AGENTS.md` + `iterator.bp`/`iterator_test.bp`
 
-## F3 — LSP: test blocks + stdlib surface  ✔ DONE
-- [x] `documentSymbol` (Method kind, string-literal name) + `foldingRange` for
-      `test "name" { … }` blocks
-- [x] `completion`: `list.`/`io.` lists the std module's `pub fn`s (signatures as
-      detail), gated on `import { … } from "std"` (`stdModuleCompletion`)
-- [x] `hover`: qualified std member renders `pub [declare] fn` signature + doc
-      comment from embedded source, tagged `from std/<module>` (`hoverStdModule`)
-- [x] Snapshots: hover_std_module_fn, hover_std_external_declare,
-      symbols_test_block, folding_test_block; stdio-verified end to end
-      (100 LSP tests green)
+## F9 — `?T` runtime repr in tuple returns  ✔ done
+- [x] Trace why `.unwrapOr` is missing on tuple-extracted `?T` (commonJS):
+      tuple-index access (`t._1`) gave the element a fresh inference var, so
+      `@Option` method dispatch never fired
+- [x] Fix lowering: resolve tuple-index member to the Nth element type in
+      `inferIdentifierExpr` (`tupleMemberIndex` helper, `infer.zig`) so a `?T`
+      element keeps its method surface; `== null`/`!= null` lower to loose
+      `==`/`!=` so an `undefined` none (from `Array.at`) matches the `null` none
+- [x] Snapshot `codegen/node/option_method_on_tuple_element` (+ erlang/beam/wasm)
+- [x] `queue` suite green (7/7)
 
-## F4 — LSP: interface-method dispatch  ✔ DONE
-- [x] Unblocked: `stdlib-interface` landed primitive/array/string interfaces
-      (`primitives.d.bp` `I32`/`U32`/…/`Bool`, `array.d.bp` `Array<T>`,
-      `string.d.bp` `String`), pulled in via the generic-inference merge.
-- [x] Exposed the embedded interface sources to the LSP:
-      `comptime_pipeline.{primitive_interfaces_src,array_interface_src,
-      string_interface_src}` (new pub consts in `comptime.zig`).
-- [x] `completion` on receiver dot: `true.` / `42.` / `xs.` / `"s".` — resolves
-      the receiver's inferred type → interface, lists its `fn`/`val` members
-      (`builtinReceiverCompletion`/`receiverBuiltinInterface`/
-      `collectInterfaceMembers` in `engine.zig`). Member-end scan tracks paren
-      depth so `fn`-typed params (`map(transform: fn(item:T)->T)`) aren't truncated.
-- [x] `hover` (`hoverBuiltinInterfaceMethod`, digit-tolerant `dotReceiverBefore`)
-      + `signatureHelp` (`builtinMethodSignature`, drops the implicit `self`) for
-      interface methods on builtin receivers.
-- [x] Snapshots: `completion_primitive_methods`, `completion_bool_methods`,
-      `completion_array_methods`, `hover_interface_method`,
-      `hover_interface_method_array`, `sig_interface_method`. `zig build test`
-      green (106/106). Stdio-verified end to end: `n.`/`true.`/`xs.` completion +
-      hover, `n.clamp(` signatureHelp.
-> Caveat: an integer *literal* receiver (`42.`) is engine-correct but the editor
-> can't reach it — a buffer with `42.method()` doesn't compile (the lexer reads
-> `42.` as a float), so completion gates on a clean compile. Realistic path is a
-> variable (`val n = 42; n.`). Mapping covers `i32/u32/i64/u64/f32/f64`→I32…/Bool,
-> `string`→String, `array`→Array; other widths (`i8`/`i16`/…) have no interface yet.
+## F1 — Literal method receivers (known gap #4)
+- [ ] Parser: literals as method-call receivers (`"a,b".split(",")`)
+- [ ] Formatter round-trips; snapshot `parser/literal_method_receiver`
+- [ ] Update string tests to direct form; remove known gap #4 from AGENTS.md
 
-## F5 — Manifest + docs  ✔ DONE
-- [x] Bumped `package.json` 0.0.1 → 0.1.0; refreshed README feature list
-      (attributes/@-types/`*fn`/`?.`/`${…}`, std go-to-def, std completion,
-      test-block symbols, new snippets)
-- [x] Updated language-server + vscode-extension `AGENTS.md` + `docs.md`
-      feature tables (done incrementally across F0a/F1/F3)
-- [x] `zig build test` in `modules/language-server` green (100/100)
+## F2 — snake_case → camelCase method dispatch (known gap #1)
+- [ ] JS name-mapping for builtin string/array methods (`to_upper` → `toUpperCase`, …)
+      — table shrinks if stdlib-interface normalizes names at definition
+- [ ] Snapshot `codegen/node/string_snake_to_camel_dispatch`
+
+## F3 — Erlang/BEAM std package loading (known gap #3) — heaviest
+- [ ] Multi-module compile (separate `.erl`/`.beam`) or inline into entry module
+- [ ] Wire std package into `comptime/runtime/erlang.zig`
+- [ ] Snapshot `codegen/erlang/std_package_list_map_via_erlang`
+
+## F4 — `?.` codegen for Erlang/BEAM/WASM (known gap #7)
+- [ ] Identify record-field-access blocker per backend
+- [ ] Erlang: case/match on `{ok, Val}`; WASM: conditional on optional tag
+- [ ] Snapshots `codegen/erlang/optional_chain`, `codegen/wasm/optional_chain`
+
+## F5 — WASM test runner (deferred from test-blocks)
+- [ ] WASM runner shim + wire into `botopink test` CLI
+- [ ] Snapshot `codegen/wasm/test_runner_basic`
+
+## F6 — Duplicate test name warning (deferred from test-blocks)
+- [ ] `Diagnostic.warning` on duplicate test names per file
+- [ ] Snapshot `comptime/duplicate_test_name_warning`
 
 ## Notes
-- Grammar = purely lexical; semantics belong to the LSP ("no compiler-internal
-  knowledge" rule in `vscode-extension/AGENTS.md`).
-- `botopink-lsp` launches with no args — no subcommands.
+- Known gap #5 (structural `==` on arrays in JS) stays deferred — workaround
+  `.join(…)` documented; no fix phase here.
+- Verify suites with `cd libs/std && botopink test` after each phase.

@@ -1125,6 +1125,16 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
     }
 }
 
+/// Parse a tuple-index member name (`_0`, `_1`, …) into its integer index.
+/// Returns null for any other member name. Mirrors codegen's tupleIndexMember.
+fn tupleMemberIndex(member: []const u8) ?usize {
+    if (member.len < 2 or member[0] != '_') return null;
+    for (member[1..]) |ch| {
+        if (!std.ascii.isDigit(ch)) return null;
+    }
+    return std.fmt.parseInt(usize, member[1..], 10) catch null;
+}
+
 /// True when `name` names a registered type definition with generic params.
 fn typeDefHasGenerics(env: *Env, name: []const u8) bool {
     const td = env.lookupTypeDef(name) orelse return false;
@@ -2904,7 +2914,15 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
             }
             if (recvType.* == .named) {
                 const recvNamed = recvType.named;
-                if (env.lookupTypeDef(recvNamed.name)) |td| {
+                // Tuple index access (`t._0`, `t._1`, …): resolve to the Nth
+                // element type so a `?T` element keeps its `@Option` method
+                // surface (`.unwrapOr`) — without this the element gets a fresh
+                // var and the method-call lowering can't fire.
+                if (std.mem.eql(u8, recvNamed.name, "tuple")) {
+                    if (tupleMemberIndex(ia.member)) |idx| {
+                        if (idx < recvNamed.args.len) outType = recvNamed.args[idx];
+                    }
+                } else if (env.lookupTypeDef(recvNamed.name)) |td| {
                     switch (td) {
                         .record, .struct_ => {
                             if (td.findField(ia.member)) |f| {
