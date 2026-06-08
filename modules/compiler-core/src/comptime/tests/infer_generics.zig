@@ -195,3 +195,24 @@ test "infer error: generic record ---- instantiated field type still checks" {
         \\}
     );
 }
+
+test "infer: interface associated fn ---- resolves and instantiates per call" {
+    // `Interface.method(...)` (no `self`) resolves as an associated function;
+    // each call site instantiates fresh generics, so two calls with different
+    // concrete types in the same scope never conflict.
+    try h.assertInfersOk(std.testing.allocator,
+        \\interface Pair2<A, B> {
+        \\    default fn of(first: A, second: B) -> #(A, B) {
+        \\        return #(first, second);
+        \\    }
+        \\    default fn first(p: #(A, B)) -> A {
+        \\        return p._0;
+        \\    }
+        \\}
+        \\
+        \\fn main() {
+        \\    val a: i32 = Pair2.first(Pair2.of(1, "one"));
+        \\    val b: bool = Pair2.first(Pair2.of(true, 9));
+        \\}
+    );
+}

@@ -367,6 +367,7 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
         },
         .interface => |d| {
             const typeName = try buildInterfaceDeclName(env, d);
+            try registerInterfaceAssociatedFns(env, d);
             return .{ .name = d.name, .type_ = try env.namedType(typeName), .typedExpr = null, .decl = decl };
         },
         // Handled in `inferProgramTyped` — each import name is looked up in env.
@@ -683,6 +684,101 @@ fn registerInherentMethodTypes(
         const ret = try resolveTypeRefInContext(env, retRef, gm);
         try env.setInherentMethodType(typeName, im.name, try env.funcType(params, ret));
     }
+}
+
+/// Register an interface's associated functions — `default fn` members with no
+/// `self` receiver (`Pair.of`, `Function.compose`, `Array.range`) — under the
+/// qualified name `"<Interface>.<method>"`, so `inferCallExpr` can resolve a
+/// `Interface.method(...)` call as a callable. Interface + method generics are
+/// generalized to `.generic`, so each call site instantiates fresh vars
+/// (let-polymorphism, same as top-level generic fns). Methods that take a `self`
+/// receiver are instance methods (handled by the inherent-method machinery) and
+/// are skipped here.
+fn registerInterfaceAssociatedFns(env: *Env, d: ast.InterfaceDecl) InferError!void {
+    for (d.methods) |im| {
+        const has_self = im.params.len > 0 and std.mem.eql(u8, im.params[0].name, "self");
+        if (has_self) continue;
+
+        var gm = std.StringHashMap(*T.Type).init(env.arena);
+        defer gm.deinit();
+        for (d.genericParams) |gp| try gm.put(gp.name, try env.freshVar());
+        for (im.genericParams) |gp| try gm.put(gp.name, try env.freshVar());
+
+        const params = try env.arena.alloc(*T.Type, im.params.len);
+        for (im.params, 0..) |p, i| {
+            params[i] = if (p.fnType) |ft| blk: {
+                const fparams = try env.arena.alloc(*T.Type, ft.params.len);
+                for (ft.params, 0..) |fp, j| {
+                    fparams[j] = gm.get(fp.typeName) orelse try env.namedType(fp.typeName);
+                }
+                const fret = if (ft.returnType) |rn|
+                    gm.get(rn) orelse try env.namedType(rn)
+                else
+                    try env.namedType("void");
+                break :blk try env.funcType(fparams, fret);
+            } else try resolveTypeRefInContext(env, p.typeRef, gm);
+        }
+        const ret = if (im.returnType) |rt|
+            try resolveTypeRefInContext(env, rt, gm)
+        else
+            try env.namedType("void");
+        const fnTy = try env.funcType(params, ret);
+
+        // Generalize remaining unbound generics → `.generic`.
+        var git = gm.valueIterator();
+        while (git.next()) |gv| {
+            const resolved = gv.*.deref();
+            if (resolved.* != .typeVar) continue;
+            switch (resolved.typeVar.state) {
+                .unbound => |u| resolved.typeVar.state = .{ .generic = u.id },
+                else => {},
+            }
+        }
+
+        const qname = try std.fmt.allocPrint(env.arena, "{s}.{s}", .{ d.name, im.name });
+        try env.bind(qname, fnTy);
+    }
+}
+
+/// Infer a call to an interface associated function (`Pair.of(a, b)`). `fnTy` is
+/// the registered signature (`.generic` params); each call instantiates fresh
+/// vars, unifies them with the args, and yields the instantiated return type.
+fn inferAssociatedFnCall(
+    env: *Env,
+    callee: []const u8,
+    fnTy: *T.Type,
+    typedReceiver: ?*ast.TypedExpr,
+    typedArgs: []ast.CallArgOf(.typed),
+    typedTrailing: []ast.TrailingLambdaOf(.typed),
+    loc: ast.Loc,
+) InferError!TypedExpr {
+    const inst = (try instantiateGenericType(env, fnTy)).deref();
+    if (inst.* != .func) {
+        env.lastError = TypeError.custom("not an associated function", "").withLoc(loc);
+        return error.TypeError;
+    }
+    const fp = inst.func.params;
+    const total = typedArgs.len + typedTrailing.len;
+    if (total != fp.len) {
+        env.lastError = TypeError.arityMismatch(callee, fp.len, total).withLoc(loc);
+        return error.TypeError;
+    }
+    for (typedArgs, 0..) |arg, i| {
+        try unifyAt(env, fp[i], arg.value.getType(), arg.value.getLoc());
+    }
+    // Trailing lambdas fill the remaining params; unify a fresh fn shape.
+    for (typedTrailing, 0..) |tl, i| {
+        const lamParams = try env.arena.alloc(*T.Type, tl.params.len);
+        for (lamParams) |*lp| lp.* = try env.freshVar();
+        try unifyAt(env, fp[typedArgs.len + i], try env.funcType(lamParams, try env.freshVar()), loc);
+    }
+    return TypedExpr{ .call = .{ .loc = loc, .type_ = inst.func.ret, .kind = .{ .call = .{
+        .receiver = typedReceiver,
+        .callee = callee,
+        .is_builtin = false,
+        .args = typedArgs,
+        .trailing = typedTrailing,
+    } } } };
 }
 
 fn registerStruct(env: *Env, s: ast.StructDecl) InferError!void {
@@ -1044,6 +1140,7 @@ fn inferDecl(env: *Env, decl: ast.DeclKind) InferError!?Binding {
         },
         .interface => |d| {
             const typeName = try buildInterfaceDeclName(env, d);
+            try registerInterfaceAssociatedFns(env, d);
             return .{ .name = d.name, .type_ = try env.namedType(typeName) };
         },
         // A test block produces no binding, but its body must type-check.
@@ -3913,6 +4010,19 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                             .kind = .{ .ident = rn },
                         } });
                     }
+                    // Associated interface fn receiver (`Pair.of`): `rn` names an
+                    // interface (a type, not a value). Synthesize the receiver
+                    // node; the call resolves to the registered `rn.callee` below.
+                    if (env.lookup(rn) == null) {
+                        const qn = try std.fmt.allocPrint(env.arena, "{s}.{s}", .{ rn, call.callee });
+                        if (env.lookup(qn) != null) {
+                            break :blk try makeTypedPtr(env, TypedExpr{ .identifier = .{
+                                .loc = recvExpr.*.identifier.loc,
+                                .type_ = try env.namedType(rn),
+                                .kind = .{ .ident = rn },
+                            } });
+                        }
+                    }
                 }
                 break :blk try makeTypedPtr(env, try inferExprTyped(env, recvExpr.*));
             } else null;
@@ -3943,6 +4053,17 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     const recvName = recvExpr.*.identifier.kind.ident;
                     if (env.lookup(recvName) == null and std.mem.eql(u8, recvName, "result")) {
                         return try inferResultNamespaceCall(env, typedReceiver, call.callee, typedArgs, typedTrailing, loc);
+                    }
+                    // Associated interface fn (`Pair.of(a, b)`, `Array.range(0, n)`,
+                    // `Function.compose(f, g)`): `recvName.callee` is registered by
+                    // `registerInterfaceAssociatedFns`. Each call instantiates fresh
+                    // generics. Guarded by `lookup(recvName) == null` so value
+                    // bindings of the same name keep their normal method dispatch.
+                    if (env.lookup(recvName) == null) {
+                        const qn = try std.fmt.allocPrint(env.arena, "{s}.{s}", .{ recvName, call.callee });
+                        if (env.lookup(qn)) |fnTy| {
+                            return try inferAssociatedFnCall(env, call.callee, fnTy, typedReceiver, typedArgs, typedTrailing, loc);
+                        }
                     }
                 }
             }

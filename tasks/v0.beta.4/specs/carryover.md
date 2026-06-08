@@ -46,8 +46,15 @@ or *codegen* it. This is the largest and highest-priority block: it unblocks the
       a parsed home or programmatic registration so expr-templates keep working.
 
 ### A.inference (`comptime/infer.zig`)
-- [ ] **Associated fn via `Type.fn()`** (`Function.compose(…)`, `Array.range(…)`)
-      — receiver names an interface, not a value. *First blocker for stdlib's own tests.*
+- [~] **Associated fn via `Type.fn()`** (`Function.compose(…)`, `Array.range(…)`)
+      — receiver names an interface, not a value. **INFERENCE DONE**:
+      `registerInterfaceAssociatedFns` binds each `self`-less interface method
+      under `"<Interface>.<method>"` (generics generalized to `.generic`);
+      `inferCallExpr` resolves `Recv.callee(...)` and instantiates per call site.
+      `Pair.of`/`Array.range`/`Function.identity` type-check. **CODEGEN PENDING**:
+      `Pair.of(...)` still emits `Pair.of(...)` with `Pair` undefined at runtime —
+      the backends must emit a namespace object / lowering for the associated fns
+      (derive from `primitives.d.bp` interface bodies). See A.codegen.
 - [ ] **`default fn` bodies** — register + type-check default method bodies.
 - [ ] **`extends` capability inheritance** — concrete type inherits base-interface members.
 - [ ] **`@[external]` on interface methods** (currently only on top-level `declare fn`).
