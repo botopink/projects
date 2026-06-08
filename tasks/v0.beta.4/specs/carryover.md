@@ -63,7 +63,16 @@ or *codegen* it. This is the largest and highest-priority block: it unblocks the
 - [ ] **`default fn` bodies** — register + type-check default method bodies.
 - [ ] **`extends` capability inheritance** — concrete type inherits base-interface members.
 - [ ] **`@[external]` on interface methods** (currently only on top-level `declare fn`).
-- [ ] **`self`-method dispatch on primitives** (`n.abs()`, `s.trim()`, `b.negate()`).
+- [~] **`self`-method dispatch on primitives** (`n.abs()`, `s.trim()`, `b.negate()`).
+      **Array DONE (JS)**: `resolveStdArrayMethod` resolves `xs.<m>()` against the
+      `Array<T>` interface's `default fn` instance methods (`prepend`, `fold`,
+      `isEmpty`, `all`, …), marks `Array` used, and `emitInterface` emits
+      `Array.prototype.<m>` patches; `append` maps to native `concat`, native
+      proto methods (`find`/`flatMap`) are left to the engine. **PENDING**: same
+      for the numeric tower / `Bool` / `String` (`n.clamp()`/`b.negate()` still
+      fall through permissively); and the inference doesn't walk record-method
+      bodies, so an array default-fn used inside a `record` method (other than the
+      `concat`-mapped `append`) won't emit its prototype patch.
 
 ### A.codegen (node / erlang / beam / wasm)
 - [ ] Lower `@[external]` methods to companion modules (`primitives.mjs` /

@@ -124,10 +124,20 @@ pub fn isAssociatedFn(m: ast.InterfaceMethod) bool {
     return m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self");
 }
 
-/// Map an `Array<T>` `default fn` method name to its native JS equivalent.
-/// These default-fn bodies are not yet materialized by codegen (tracked in
-/// tasks/v0.beta.4 Part A); where a native array method is semantically
-/// identical we emit that instead. `append(other)` ≡ `concat(other)`.
+/// `Array<T>` `default fn` methods NOT re-emitted as a prototype patch:
+/// - native JS `Array.prototype` methods (`find`, `flatMap`, …) — the engine's
+///   semantics match the stdlib definition;
+/// - `append`, lowered to native `concat` by `jsBuiltinMethodName` (works in any
+///   context, incl. record method bodies the inference doesn't walk).
+pub fn isNativeProtoMethod(name: []const u8) bool {
+    const native = [_][]const u8{ "find", "flatMap", "reverse", "includes", "flat", "sort", "fill", "append" };
+    for (native) |n| if (std.mem.eql(u8, name, n)) return true;
+    return false;
+}
+
+/// Map an `Array<T>` `default fn` to a native JS equivalent where one exists, so
+/// the call works even where codegen doesn't emit the prototype patch (record
+/// method bodies aren't walked by inference). `append(other)` ≡ `concat(other)`.
 pub fn jsBuiltinMethodName(name: []const u8) []const u8 {
     if (std.mem.eql(u8, name, "append")) return "concat";
     return name;
@@ -1009,6 +1019,33 @@ const Emitter = struct {
                 self.current_indent = prev;
                 try self.w("};");
             }
+        }
+
+        // Instance default fns (`self` receiver) materialize as prototype methods
+        // on the type's JS constructor (`Array.prototype.append`), so
+        // `value.method(...)` resolves at runtime. Native JS prototype methods
+        // (`find`, `flatMap`, …) are left to the engine (the bare `self` body
+        // lowers `self`/`self.x` to `this`/`this.x`).
+        const prev_self_param = self.self_is_param;
+        self.self_is_param = false;
+        defer self.self_is_param = prev_self_param;
+        for (i.methods) |m| {
+            if (!m.is_default or isAssociatedFn(m)) continue;
+            if (isNativeProtoMethod(m.name)) continue;
+            const body = m.body orelse continue;
+            try self.fmt("\n{s}.prototype.{s} = function(", .{ jsIdent(i.name), m.name });
+            try self.emitParams(m.params[1..]);
+            try self.w(") {\n");
+            const prev = self.current_indent;
+            self.current_indent = 1;
+            self.hook_state.clearRetainingCapacity();
+            for (body) |s| {
+                try self.w("    ");
+                try self.emitStmt(s);
+                try self.w("\n");
+            }
+            self.current_indent = prev;
+            try self.w("};");
         }
     }
 
@@ -2103,10 +2140,8 @@ const Emitter = struct {
                                 first = false;
                             } else {
                                 try self.emitExpr(recv.*);
-                                // Optional chaining call maps to native JS `?.`.
-                                // `Array<T>` default-fn methods whose body isn't
-                                // materialized in codegen map to a native JS
-                                // equivalent (`append` → `concat`).
+                                // Optional chaining call maps to native JS `?.`;
+                                // `append` maps to native `concat`.
                                 try self.fmt("{s}{s}(", .{ @as([]const u8, if (cc.optional) "?." else "."), jsBuiltinMethodName(cc.callee) });
                             }
                         } else if (self.externals_missing.contains(cc.callee)) {

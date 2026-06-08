@@ -627,3 +627,18 @@ test "js: stdlib associated fn namespace injected" {
         \\}
     );
 }
+
+test "js: array instance default-fn methods" {
+    // `Array<T>` `default fn` instance methods (`prepend`, `fold`, `isEmpty`, …)
+    // materialize as `Array.prototype.<m>` patches when used. `append` maps to
+    // native `concat`; native `Array.prototype` methods are left to the engine.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val xs = [1, 2, 3];
+        \\    @print(xs.prepend(0).join(","));
+        \\    @print(xs.fold(0, { a, x -> a + x }));
+        \\    @print(xs.isEmpty());
+        \\    @print(xs.all({ x -> x > 0 }));
+        \\}
+    );
+}

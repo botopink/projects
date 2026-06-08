@@ -3878,45 +3878,57 @@ fn resolveStdArrayMethod(
     typedTrailing: []ast.TrailingLambdaOf(.typed),
     loc: ast.Loc,
 ) InferError!?TypedExpr {
+    _ = recv;
     // Don't dispatch inside stdlib modules themselves — they implement the methods.
     if (std.mem.startsWith(u8, env.modulePath, "std/")) return null;
-    if (recv.* != .identifier) return null;
-    if (recv.*.identifier.kind != .ident) return null;
-    const recvName = recv.*.identifier.kind.ident;
-
-    const recvTypeRaw = env.lookup(recvName) orelse return null;
-    const recvType = recvTypeRaw.deref();
+    const rp = recvPtr orelse return null;
+    const recvType = rp.getType().deref();
     if (recvType.* != .named) return null;
     if (!std.mem.eql(u8, recvType.named.name, "array")) return null;
 
-    const listExports = env.stdModules.get("list") orelse return null;
-    const methodTypeRaw = listExports.get(callee) orelse return null;
+    // Resolve `callee` against the `Array<T>` interface's `default fn` instance
+    // methods (`append`, `prepend`, `isEmpty`, `fold`, …). `@[external]` methods
+    // (`map`, `filter`, `at`, …) map to native JS and fall through to the
+    // permissive path; non-Array calls return null.
+    const arrayDecl = env.assocInterfaceDecls.get("Array") orelse return null;
+    var method: ?ast.InterfaceMethod = null;
+    for (arrayDecl.methods) |m| {
+        if (std.mem.eql(u8, m.name, callee) and m.is_default and
+            m.params.len > 0 and std.mem.eql(u8, m.params[0].name, "self"))
+        {
+            method = m;
+            break;
+        }
+    }
+    const im = method orelse return null;
 
-    var seen = std.AutoHashMap(*T.TypeCell, *T.Type).init(env.arena);
-    defer seen.deinit();
-    const instantiated = try instantiateType(env, methodTypeRaw, &seen, .allVars);
+    // Mark `Array` used so codegen emits its prototype methods.
+    try env.usedAssocInterfaces.put("Array", {});
 
-    const retType: *T.Type = switch (instantiated.deref().*) {
-        .func => |f| blk: {
-            if (f.params.len == 0) break :blk try env.freshVar();
-            // First param is the array receiver.
-            try unifyAt(env, f.params[0], recvTypeRaw, loc);
-            const restParams = f.params[1..];
-            const total = typedArgs.len + typedTrailing.len;
-            if (restParams.len != total) {
-                env.lastError = TypeError.arityMismatch(callee, 1 + restParams.len, 1 + total).withLoc(loc);
-                return error.TypeError;
-            }
-            for (typedArgs, restParams[0..typedArgs.len]) |ta, p| {
-                try unifyAt(env, p, ta.value.getType(), ta.value.getLoc());
-            }
-            break :blk f.ret;
-        },
-        else => try env.freshVar(),
-    };
+    // Per-call generic scope: `Self` = the receiver array, `T` = its element.
+    var gm = std.StringHashMap(*T.Type).init(env.arena);
+    defer gm.deinit();
+    try gm.put("Self", recvType);
+    if (recvType.named.args.len >= 1) try gm.put("T", recvType.named.args[0]);
+    for (im.genericParams) |gp| try gm.put(gp.name, try env.freshVar());
 
-    try env.stdArrayLowerings.put(loc, .{ .module = "list", .method = callee });
-    try env.implicitStdModules.put("list", {});
+    const restParams = im.params[1..]; // drop `self`
+    const total = typedArgs.len + typedTrailing.len;
+    if (restParams.len != total) {
+        env.lastError = TypeError.arityMismatch(callee, restParams.len, total).withLoc(loc);
+        return error.TypeError;
+    }
+    for (restParams[0..typedArgs.len], typedArgs) |p, ta| {
+        const pType = try paramTypeInContext(env, p, gm);
+        try unifyAt(env, pType, ta.value.getType(), ta.value.getLoc());
+    }
+    for (typedTrailing, 0..) |tl, i| {
+        const pType = try paramTypeInContext(env, restParams[typedArgs.len + i], gm);
+        const lamParams = try env.arena.alloc(*T.Type, tl.params.len);
+        for (lamParams) |*lp| lp.* = try env.freshVar();
+        try unifyAt(env, pType, try env.funcType(lamParams, try env.freshVar()), loc);
+    }
+    const retType = if (im.returnType) |rt| try resolveTypeRefInContext(env, rt, gm) else try env.namedType("void");
 
     return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
         .receiver = recvPtr,
@@ -3925,6 +3937,23 @@ fn resolveStdArrayMethod(
         .args = typedArgs,
         .trailing = typedTrailing,
     } } } };
+}
+
+/// Resolve a method/param's type within a generic context, handling both
+/// fn-typed params (`f: fn(a: A) -> B`) and ordinary type-ref params.
+fn paramTypeInContext(env: *Env, p: ast.Param, gm: std.StringHashMap(*T.Type)) InferError!*T.Type {
+    if (p.fnType) |ft| {
+        const fparams = try env.arena.alloc(*T.Type, ft.params.len);
+        for (ft.params, 0..) |fp, j| {
+            fparams[j] = gm.get(fp.typeName) orelse try env.namedType(fp.typeName);
+        }
+        const fret = if (ft.returnType) |rn|
+            gm.get(rn) orelse try env.namedType(rn)
+        else
+            try env.namedType("void");
+        return try env.funcType(fparams, fret);
+    }
+    return try resolveTypeRefInContext(env, p.typeRef, gm);
 }
 
 /// Infer type for `use`-hook expressions (@Context F7).
