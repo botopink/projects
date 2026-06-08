@@ -387,6 +387,42 @@ codegen/erlang ---- counter_typechecks   (parity: at least type-checks/compiles)
 
 ## Notes
 
+- **Language gaps surfaced by F1–F3 (must be split out as language specs).**
+  Building the framework against the current `feat` toolchain (this branch)
+  surfaced capabilities the spec's snippets assume but the language cannot yet
+  express. Per the "no new compiler features" rule, jhonstart does **not** work
+  around these — they are recorded here and gate the corresponding framework
+  steps. Verified empirically via `modules/compiler-core/src/comptime/tests/jhonstart.zig`
+  (probe scenarios) on the F0 branch:
+  1. **Records cannot carry function-typed fields.** Both the type-decl form
+     `record Box { set: fn(next: i32) }` and the literal-with-lambda form
+     `(record { set: { next -> } })` fail to **parse** (a bare `fn(next: i32)`
+     *parameter* type parses, so the gap is record-field-specific). ⇒ The hook
+     return shape `{value, set}` / `{on, toggle}` / `{state, dispatch}` is
+     inexpressible, which blocks the **builder-API hook ergonomics** in F3
+     (`val {value, set} = use state(0)`). **Biggest blocker.**
+  2. **No anonymous record TYPE syntax.** `record { value: i32 }` / `{ value: i32 }`
+     in *type* position fail to parse (only value literals like
+     `(record { port: 8080 })` work). ⇒ Hooks cannot declare inline structural
+     returns; a named `record` would be required (but callback fields still hit
+     gap #1).
+  3. **`fn() -> T[]` does not parse.** An array as a function-type's *return*
+     (`children: fn() -> Element[]`) is rejected, even parenthesized. The DOM
+     builders' declared `fn() -> Children` parses only because `Children` is an
+     interface *name*, not `Element[]`.
+  4. **No `Element[]` → `Children` coercion.** The empty `Children` interface is
+     not satisfied by an `Element[]` (`expected: Children, found: Element[]`). ⇒
+     The builder children model `div { [a, b] }` does not type-check (F1/F2).
+  5. **`fn() -> {}` (empty-record return type) does not parse** — same root as #2.
+
+  **What DOES compile today** (also in the `jhonstart.zig` check tests): `use`
+  gating on `@Context<Element, _>` hooks with *simple* / *named-record* (no
+  function-field) returns; and the **`html` DSL building an `Element` tree** via
+  `q.build` — `<Component/>` → caller-scope `q.lookup` → `Component()`,
+  `${expr}` → `text(expr)` child, children assembled with `fragment(Element[])`
+  (sidesteps gaps #3/#4). The `html` authoring path (Case 4) is therefore the
+  one component-construction style that works on the current toolchain.
+
 - **Compiler prerequisites (cross-set).** jhonstart is a *consumer*; it cannot be
   built until these land in `feat`:
   - `use-await-prefix` (the `use`/`await` prefix operators) — **pending** in

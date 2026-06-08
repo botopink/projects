@@ -40,7 +40,8 @@ comptime/
 │   ├── variants.zig       ← variant/record-update/pattern/@print/AST probes
 │   ├── exhaustiveness.zig ← case exhaustiveness (+errors)
 │   ├── effects.zig        ← throw/context/@Result effect checking
-│   └── templates.zig      ← @Expr capture / scope snapshot / methods / expansion
+│   ├── templates.zig      ← @Expr capture / scope snapshot / methods / expansion
+│   └── jhonstart.zig      ← jhonstart framework `check` scenarios (hooks + html DSL)
 └── runtime/           ← Node.js + Erlang eval backends — see runtime/AGENTS.md
 ```
 

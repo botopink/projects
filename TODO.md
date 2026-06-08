@@ -25,25 +25,42 @@
 - [x] Examples landed: `examples/jhonstart-{counter,todo,html,app}/`
 - [x] `examples/AGENTS.md` updated with the four demos
 
+## ⚠ Language gaps surfaced while probing F1–F3 (BLOCKERS — split out as language specs)
+
+> Verified empirically on this branch via `modules/compiler-core/src/comptime/tests/jhonstart.zig`.
+> Per "no new compiler features", jhonstart does NOT work around these. Full
+> detail in the spec Notes ("Language gaps surfaced by F1–F3").
+
+- [ ] **G1** — records cannot carry function-typed fields (`set: fn(next)`), so
+      the hook shape `{value, set}` is inexpressible → blocks builder-API hooks
+- [ ] **G2** — no anonymous record TYPE syntax (only value literals)
+- [ ] **G3** — `fn() -> T[]` does not parse (array as a function-type return)
+- [ ] **G4** — no `Element[]` → `Children` coercion → blocks `div { [a, b] }`
+
 ## F1 — core types (`element.d.bp`)
 
-- [ ] Confirm `Element` is accepted as a ContextBase from a library declaration
-      (today it is a builtin in `builtins.d.bp`) — decide re-export vs. re-declare
-- [ ] `Children` coercions (`string`→text, `Element`→`[Element]`) — document + test
+- [x] Confirm `Element` is accepted as a ContextBase (it is a builtin; usable as
+      `@Context<Element, _>` from inlined declarations — verified in check tests)
+- [ ] `Children` coercions (`string`→text, `Element`→`[Element]`) — **blocked by G3/G4**
 
 ## F2 — DOM builders (`dom.d.bp`)
 
+- [ ] Builder children model `div { [a, b] }` — **blocked by G3/G4**; V1 uses the
+      `html` DSL + `fragment(Element[])` assembly instead
 - [ ] Node runtime stub `jhonstart/runtime` (`el`, `mount`, `text`, `input`) so the
       counter/todo demos run on the `commonJS` target
 - [ ] Attrs strategy for V1 (event handlers as explicit params; full attrs = future)
 
 ## F3 — hooks + composite ergonomics
 
-- [ ] Verify `use state(0)` type-checks inside `-> Element`; rejected inside `-> string`
-- [ ] `fragment.bp` (`Fragment`), custom hooks (`useToggle`) — `.bp` bodies on the intrinsics
-- [ ] `html.bp` body: walk `q.parts()`, splice `${…}`, resolve `<Component/>` via
-      `q.lookup` (miss → `q.failAt`), map lowercase tags to builders, `q.build`
-- [ ] Confirm the expr-template surface composes for building `Element` (not just `string`)
+- [x] `use state(0)` type-checks inside a component; rejected inside `-> string`;
+      ContextBase mismatch (Element vs Http) rejected — `check` tests landed
+- [x] Confirm the expr-template surface builds an `Element` (not just `string`) —
+      `html_component_tags` + `html_interp_hole` compile end-to-end
+- [ ] `{value, set}`-shaped hook returns + `useToggle({on, toggle})` — **blocked by G1**
+- [ ] `html.bp` body (full markup scan): walk `q.parts()`, splice `${…}`, resolve
+      `<Component/>` via `q.lookup` (miss → `q.failAt`), map lowercase tags to
+      builders, `q.build` — mechanism verified; full `appendMarkup` body pending
 
 ## F4 — render (`render.d.bp`)
 
@@ -62,9 +79,15 @@
 ## Test scenarios (acceptance)
 
 ```
-check ---- counter_typechecks / use_outside_element_rejected / hook_compose_transitive
-check ---- server_loader_await / request_http_context
-check ---- html_component_tags / html_unknown_component / html_interp_hole
-codegen/node ---- counter_runs / todo_runs / html_expands_to_tree / ssr_render_to_string
-codegen/erlang ---- counter_typechecks (parity)
+check ---- counter_typechecks            ✅ (tests/jhonstart.zig)
+check ---- use_outside_element_rejected  ✅ (snapshot)
+check ---- hook_compose_transitive       ✅ (named-record return; {on,toggle} blocked by G1)
+check ---- contextbase_mismatch          ✅ (snapshot; Element vs Http)
+check ---- html_component_tags           ✅ (q.build → Page1(); via fragment)
+check ---- html_interp_hole              ✅ (${expr} → text child)
+check ---- html_unknown_component        ☐  needs full html.bp body (q.failAt path)
+check ---- server_loader_await           ☐  gated on async-generators
+check ---- request_http_context          ☐  gated on async-generators (Http ctx ok today)
+codegen/node ---- counter_runs / todo_runs / html_expands_to_tree / ssr_render_to_string ☐
+codegen/erlang ---- counter_typechecks (parity) ☐
 ```
