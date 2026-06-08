@@ -9,6 +9,49 @@ const specialize = @import("../comptime/specialize.zig");
 const ModuleOutput = moduleOutput.ModuleOutput;
 const ComptimeOutput = comptimeMod.ComptimeOutput;
 
+/// Where a `pub` symbol is emitted, for resolving cross-module imports.
+/// `module` is the emitting module's path (e.g. `"rakun/http"`); `is_class`
+/// marks record/struct exports whose construction needs `new`.
+const ExportInfo = struct { module: []const u8, is_class: bool };
+
+/// Cross-module link info, built once over every module's transformed program.
+/// `exports` maps a `pub` symbol name → its emitting module (so an importer can
+/// `require` the right file and know whether to `new` it); `imported` is the set
+/// of names some module imports (so a module only emits `exports.X` for symbols
+/// actually consumed elsewhere — single-module programs stay unchanged).
+const CrossModule = struct {
+    exports: std.StringHashMap(ExportInfo),
+    imported: std.StringHashMap(void),
+
+    fn deinit(self: *CrossModule) void {
+        self.exports.deinit();
+        self.imported.deinit();
+    }
+};
+
+fn buildCrossModule(alloc: std.mem.Allocator, outputs: []ComptimeOutput) !CrossModule {
+    var exports = std.StringHashMap(ExportInfo).init(alloc);
+    var imported = std.StringHashMap(void).init(alloc);
+    for (outputs) |*ct| {
+        const ok = switch (ct.outcome) {
+            .ok => |*o| o,
+            else => continue,
+        };
+        for (ok.transformed.decls) |decl| switch (decl) {
+            .record => |r| if (r.isPub) try exports.put(r.name, .{ .module = ct.name, .is_class = true }),
+            .@"struct" => |s| if (s.isPub and !isPhantomContextStruct(s))
+                try exports.put(s.name, .{ .module = ct.name, .is_class = true }),
+            .@"enum" => |e| if (e.isPub) try exports.put(e.name, .{ .module = ct.name, .is_class = false }),
+            .@"fn" => |f| if (f.isPub and !f.isExternal())
+                try exports.put(f.name, .{ .module = ct.name, .is_class = false }),
+            .val => |v| if (v.isPub) try exports.put(v.name, .{ .module = ct.name, .is_class = false }),
+            .use => |u| for (u.imports) |imp| try imported.put(imp.name(), {}),
+            else => {},
+        };
+    }
+    return .{ .exports = exports, .imported = imported };
+}
+
 // ── public phase 2: codegen ───────────────────────────────────────────────────
 
 /// Emit JavaScript for each module in `outputs`.
@@ -21,6 +64,12 @@ pub fn codegenEmit(
     config: configMod.Config,
 ) !std.ArrayListUnmanaged(ModuleOutput) {
     var results: std.ArrayListUnmanaged(ModuleOutput) = .empty;
+
+    // Cross-module link index: lets each module `require` the file that
+    // actually emits an imported symbol, emit `new` for imported records, and
+    // `exports.X` only for symbols consumed elsewhere.
+    var cross = try buildCrossModule(alloc, outputs);
+    defer cross.deinit();
 
     for (outputs) |*ct| {
         switch (ct.outcome) {
@@ -42,7 +91,7 @@ pub fn codegenEmit(
                 // test blocks (a project's `botopink test` runs only its own
                 // tests; the stdlib's inline tests run from `libs/std` itself).
                 const module_test_mode = config.test_mode and !std.mem.startsWith(u8, ct.name, "std/");
-                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, module_test_mode, ct.name);
+                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, module_test_mode, ct.name, &cross);
 
                 // Generate TypeScript typedefs if configured.
                 const typedef: ?[]u8 = if (config.typeDefLanguage) |_|
@@ -74,8 +123,9 @@ fn emitJs(
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
     test_mode: bool,
     module_name: []const u8,
+    cross: ?*const CrossModule,
 ) ![]u8 {
-    return try emitProgramOpts(alloc, program, comptime_vals, rewrites, test_mode, module_name);
+    return try emitProgramOptsX(alloc, program, comptime_vals, rewrites, test_mode, module_name, cross);
 }
 
 fn emitTypeDef(
@@ -266,12 +316,25 @@ pub fn emitProgramOpts(
     test_mode: bool,
     module_name: []const u8,
 ) ![]u8 {
+    return emitProgramOptsX(alloc, program, comptime_vals, rewrites, test_mode, module_name, null);
+}
+
+fn emitProgramOptsX(
+    alloc: std.mem.Allocator,
+    program: ast.Program,
+    comptime_vals: std.StringHashMap([]const u8),
+    rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    test_mode: bool,
+    module_name: []const u8,
+    cross: ?*const CrossModule,
+) ![]u8 {
     var aw: std.Io.Writer.Allocating = .init(alloc);
     defer aw.deinit();
     var em = Emitter.emitterInit(alloc, &aw.writer, comptime_vals, rewrites);
     defer em.deinit();
     em.test_mode = test_mode;
     em.module_name = module_name;
+    em.cross = cross;
     try em.collectExternals(program);
     try em.collectClassNames(program);
 
@@ -691,6 +754,9 @@ const Emitter = struct {
     /// Names that emit as JS classes (record/struct decls, incl. the
     /// `val X = record { … }` shorthand) — constructor calls need `new`.
     class_names: std.StringHashMap(void),
+    /// Cross-module link info (null in the standalone `emitProgram` path) —
+    /// resolves a `from "<pkg>"` import to the file that emits each name.
+    cross: ?*const CrossModule = null,
 
     fn emitterInit(
         alloc: std.mem.Allocator,
@@ -737,11 +803,29 @@ const Emitter = struct {
     /// (`Pair(1, "one")`) can be emitted with `new` — JS classes cannot be
     /// invoked without it. Both `record X { … }` and the `val X = record { … }`
     /// shorthand normalize to `.record` decls in the parser.
+    /// Emit `exports.<name> = <name>;` for a `pub` type that another module
+    /// imports. Scoped to actually-consumed names so single-module programs
+    /// (the vast majority of fixtures) emit no export line and stay unchanged.
+    fn emitCrossExport(self: *Emitter, name: []const u8) !void {
+        const xc = self.cross orelse return;
+        if (!xc.imported.contains(name)) return;
+        try self.fmt("\nexports.{s} = {s};", .{ name, name });
+    }
+
     fn collectClassNames(self: *Emitter, program: ast.Program) !void {
         for (program.decls) |decl| switch (decl) {
             .record => |r| try self.class_names.put(r.name, {}),
             .@"struct" => |s| {
                 if (!isPhantomContextStruct(s)) try self.class_names.put(s.name, {});
+            },
+            // An imported record/struct is a class in its own module — a
+            // construction here (`App(8080, "/")`) still needs `new`.
+            .use => |u| if (self.cross) |xc| {
+                for (u.imports) |imp| {
+                    if (xc.exports.get(imp.name())) |info| {
+                        if (info.is_class) try self.class_names.put(imp.name(), {});
+                    }
+                }
             },
             else => {},
         };
@@ -946,8 +1030,12 @@ const Emitter = struct {
         }
         for (r.methods) |m| {
             if (m.is_declare) continue;
+            // A method with no `self` receiver is an associated function
+            // (`Response.ok(...)`) — emit it as a `static` method so the call
+            // resolves on the class itself, not an instance prototype.
+            const has_self = m.params.len > 0 and std.mem.eql(u8, m.params[0].name, "self");
             try self.w("\n");
-            try self.fmt("    {s}(", .{m.name});
+            try self.fmt("    {s}{s}(", .{ if (has_self) "" else "static ", m.name });
             try self.emitParams(m.params);
             try self.w(") {\n");
             self.current_indent = 2;
@@ -960,6 +1048,7 @@ const Emitter = struct {
             try self.w("    }\n");
         }
         try self.w("}");
+        if (r.isPub) try self.emitCrossExport(r.name);
     }
 
     fn emitEnum(self: *Emitter, e: ast.EnumDecl) !void {
@@ -993,6 +1082,7 @@ const Emitter = struct {
             try self.w("    },\n");
         }
         try self.w("});");
+        if (e.isPub) try self.emitCrossExport(e.name);
     }
 
     fn emitInterface(self: *Emitter, i: ast.InterfaceDecl) !void {
@@ -1159,6 +1249,35 @@ const Emitter = struct {
             }
             return;
         }
+        // Package import (e.g. `from "rakun"`): resolve each name to the file
+        // that actually emits it via the cross-module export index. Names with
+        // no emitted home (declaration-only markers like rakun decorators) emit
+        // no runtime binding. One `require` per distinct source module.
+        if (u.source == .module and self.cross != null) {
+            const xm = &self.cross.?.exports;
+            var seen = std.StringHashMap(void).init(self.alloc);
+            defer seen.deinit();
+            var first_line = true;
+            for (u.imports) |imp| {
+                const info = xm.get(imp.name()) orelse continue;
+                if (seen.contains(info.module)) continue;
+                try seen.put(info.module, {});
+                if (!first_line) try self.w("\n");
+                first_line = false;
+                try self.w("const { ");
+                var firstn = true;
+                for (u.imports) |imp2| {
+                    const info2 = xm.get(imp2.name()) orelse continue;
+                    if (!std.mem.eql(u8, info2.module, info.module)) continue;
+                    if (!firstn) try self.w(", ");
+                    firstn = false;
+                    try self.w(imp2.name());
+                }
+                try self.fmt(" }} = require(\"./{s}.js\");", .{info.module});
+            }
+            return;
+        }
+
         try self.w("const { ");
         for (u.imports, 0..) |imp, i| {
             if (i > 0) try self.w(", ");

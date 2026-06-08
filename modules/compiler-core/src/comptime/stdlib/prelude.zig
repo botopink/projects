@@ -22,9 +22,13 @@ pub const sets_mod = @embedFile("sets.bp");
 pub const string_builder_mod = @embedFile("string_builder.bp");
 pub const queue_mod = @embedFile("queue.bp");
 
-// "rakun" application framework declarations (libs/rakun/src/rakun.d.bp).
-// Embedded so the type checker can register rakun's decorators + HTTP/DI
-// interfaces when a module imports `from "rakun"`. Unlike the stdlib sources
-// above, this is NOT flattened into the global env — it is opt-in per module
-// (see comptime.zig `registerRakunLib` and infer.zig `markRakunImports`).
+// "rakun" application framework, opt-in via `from "rakun"` (never flattened
+// into the global env). Two source kinds:
+//   • `rakun.d.bp` — declaration-only markers + runtime-boundary interfaces
+//     (decorators, `Request`, `Context`, `Rakun`); registered for inference by
+//     `comptime.zig registerRakunLib`, emitted to nothing.
+//   • `http.bp` — concrete, emitted code (`HttpMethod`, `Response`, `App`);
+//     pulled into the compilation as a real package module on import
+//     (`rakun_pkg_modules`, mirroring `std_pkg_modules`).
 pub const rakun = @embedFile("rakun.d.bp");
+pub const rakun_http = @embedFile("http.bp");

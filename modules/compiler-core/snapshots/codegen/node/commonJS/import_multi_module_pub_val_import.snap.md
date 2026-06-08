@@ -33,7 +33,7 @@ val port = PORT;
 
 ----- JAVASCRIPT -- main.js
 ```javascript
-const { PORT, HOST } = require("config");
+const { PORT, HOST } = require("./config.js");
 
 const addr = HOST;
 

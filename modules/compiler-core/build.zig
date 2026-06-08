@@ -69,6 +69,9 @@ pub fn build(b: *std.Build) void {
     std_prelude.addAnonymousImport("rakun.d.bp", .{
         .root_source_file = b.path("../../libs/rakun/src/rakun.d.bp"),
     });
+    std_prelude.addAnonymousImport("http.bp", .{
+        .root_source_file = b.path("../../libs/rakun/src/http.bp"),
+    });
 
     const mod = b.addModule("botopink", .{
         // The root source file is the "entry point" of this module. Users of

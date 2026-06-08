@@ -47,7 +47,7 @@ fn main() {
 
 ----- JAVASCRIPT -- main.js
 ```javascript
-const { html } = require("jhonstart");
+
 
 const name = "world";
 
@@ -77,4 +77,8 @@ import { html } from "jhonstart";
 
 ----- RUN LOG -----
 ```logs
+<div>
+  <p>world</p>
+  <Page1/>
+</div>
 ```

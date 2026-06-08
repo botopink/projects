@@ -6,20 +6,24 @@
 
 A **Spring-style application framework** for botopink — an IoC container with
 constructor dependency injection plus a declarative web layer (`#[restController]`
-+ route annotations). **Scaffold only:** this package is *not* embedded into the
-compiler (no `prelude.zig`, no `build.zig` wiring) and declares no committed
-symbols yet (`botopink.json` lists `files: []`). It exists to anchor the design
-authored in the v0.beta.5 spec.
++ route annotations). **Opt-in, never auto-loaded:** embedded for the compiler
+(`prelude.zig` + both `build.zig`s) but it enters a module's scope only via
+`from "rakun"`. The HTTP layer is **real, emitted code** (`http.bp`, pulled in as
+the `rakun/http` package module on import); the decorators and runtime-boundary
+interfaces stay declaration-only (`rakun.d.bp`).
 
 ## Tree
 
 ```text
 rakun/
 ├── AGENTS.md          ← you are here
-├── docs.md            ← what this lib will provide + Spring mapping + loading notes
-├── botopink.json      ← package metadata (files: [] — claims nothing yet)
-└── src/               ← .bp declarations
-    └── rakun.d.bp     ← declarative surface (HTTP types · Context · App · Rakun)
+├── docs.md            ← what this lib provides + Spring mapping + loading notes
+├── botopink.json      ← package metadata (files: http.bp + rakun.d.bp)
+└── src/
+    ├── http.bp        ← concrete, emitted: `HttpMethod` enum · `Response` record
+    │                    (builders) · `App` config record (the `rakun/http` module)
+    └── rakun.d.bp     ← declaration-only: decorator markers · `Request`/`Context`/
+                         `Rakun` boundary interfaces (no bodies, emit nothing)
 ```
 
 ## Design at a glance
@@ -38,12 +42,16 @@ rakun/
 
 ## Conventions
 
-- Interface declarations stay declarative (no method bodies), like `libs/std`'s
-  `.d.bp` files. Codegen / comptime supply implementations.
-- **Imported, not prelude.** This lib is reached via `from "rakun"` — it is never
-  auto-loaded into the type `Env`. App authors opt in per project.
-- When the first real symbols land, list their `.bp`/`.d.bp` files in
-  `botopink.json` and decide compiler wiring (a separate, explicit task — spec F5).
+- **`.bp` over `.d.bp`.** Anything implementable lands in `http.bp` as real,
+  emitted code (`Response.ok(...)` has a body). Only true markers (decorators)
+  and runtime-boundary interfaces (`Request`/`Context`/`Rakun`) stay in
+  `rakun.d.bp` — declaration-only, like `libs/std`'s `.d.bp` files.
+- **Imported, not prelude.** Reached via `from "rakun"` — never auto-loaded into
+  the type `Env`. `http.bp` is compiled + emitted as the `rakun/http` package
+  module only when a project imports it; `rakun.d.bp` is registered for inference
+  only (`comptime.zig registerRakunLib` / `infer.zig markRakunImports`).
+- **Tests live here.** rakun's tests are `test { … }` blocks inside its own
+  `.bp` files (run by `botopink test`), NOT in the compiler's Zig test suites.
 - Keep this file in sync with `docs.md` and the spec in the same change.
 
 ## See also

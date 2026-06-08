@@ -31,7 +31,7 @@ val result = double(21);
 
 ----- JAVASCRIPT -- main.js
 ```javascript
-const { double } = require("math");
+const { double } = require("./math.js");
 
 const result = double(21);
 ```

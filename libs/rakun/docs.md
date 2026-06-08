@@ -6,20 +6,26 @@
 > Spec: [`../../tasks/v0.beta.5/specs/rakun.md`](../../tasks/v0.beta.5/specs/rakun.md)
 
 `rakun` is botopink's answer to Java's **Spring** / Spring Boot: a dependency-
-injection container paired with a declarative web layer. Today it is an inert
-**scaffold** — `botopink.json` claims no files, nothing is embedded into the
-compiler, and the type environment does not load it. The full design lives in
-the v0.beta.5 spec.
+injection container paired with a declarative web layer. It is **opt-in** —
+reached via `from "rakun"` and never auto-loaded into the type environment. The
+HTTP layer (`http.bp`: `HttpMethod`, `Response`, `App`) is real, emitted code,
+pulled into a project as the `rakun/http` package module on import; the
+decorators and the runtime-boundary interfaces (`Request`/`Context`/`Rakun`) are
+declaration-only (`rakun.d.bp`). The DI/router/bootstrap wiring is in progress —
+the full design lives in the v0.beta.5 spec.
 
-## What it will provide (planned)
+## What it provides
 
-- **IoC container** — managed singleton components, resolved by type.
-- **Constructor dependency injection** — declare a dependency as a `record`
-  field; rakun supplies it. No setter/field injection.
-- **Web layer** — `#[restController]` records mapping HTTP routes to handler
-  methods, with `Request`/`Response` records.
-- **Bootstrap** — `Rakun.run(App(...))` to scan components, wire the graph,
-  build the router, and start the HTTP server.
+- **HTTP layer (done)** — `Response` with builders (`Response.ok(...)`,
+  `Response.json(...)`, `Response.created/withStatus/notFound/badRequest`), the
+  `HttpMethod` enum, and the `App` bootstrap config record.
+- **IoC container (planned)** — managed singleton components, resolved by type.
+- **Constructor dependency injection (planned)** — declare a dependency as a
+  `record` field; rakun supplies it. No setter/field injection.
+- **Web layer (planned)** — `#[restController]` records mapping HTTP routes to
+  handler methods, with `Request`/`Response`.
+- **Bootstrap (planned)** — `Rakun.run(App(...))` to scan components, wire the
+  graph, build the router, and start the HTTP server.
 
 ## Spring → rakun mapping
 

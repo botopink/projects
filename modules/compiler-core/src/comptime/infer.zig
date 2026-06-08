@@ -101,6 +101,11 @@ fn markRakunImports(env: *Env, u: ast.ImportDecl) InferError!bool {
     for (u.imports) |imp| {
         const want = imp.segments[imp.segments.len - 1]; // original export name
         const local = imp.name(); // local (alias-aware) name
+        // Concrete rakun types (`Response`/`App`/`HttpMethod`) live in the
+        // `rakun/http` package module: in the full `compile` pipeline
+        // `resolveImports` already bound them from the shared registry
+        // (emit-once). Skip — re-registering locally would emit a duplicate.
+        if (env.lookup(local) != null) continue;
         var found = false;
         if (env.rakunTypeDecls.get(want)) |decl| {
             try registerRakunTypeDecl(env, decl);

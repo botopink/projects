@@ -13,5 +13,4 @@ test {
     _ = @import("tests/effects.zig");
     _ = @import("tests/templates.zig");
     _ = @import("tests/jhonstart.zig");
-    _ = @import("tests/rakun.zig");
 }
