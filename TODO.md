@@ -11,21 +11,32 @@
 > `codegen/erlang.zig`.
 
 ## F0 — parser
-- [ ] G5: array-typed (and other suffixed) fields inside an inline
-      `struct implement … { … }` body
-- [ ] G6: generic interface (`Iface<A,B>`, incl. `@Context<…>`) in standalone
-      `implement <Iface> for <Type> { }`
+- [x] G5: array-typed (and other suffixed) fields inside an inline
+      `struct implement … { … }` body — `parseStructBody` now uses `parseTypeRef`;
+      `StructField.typeName` → `typeRef: TypeRef`. Test:
+      `parser: struct implement with array-typed field`.
+- [x] G6: generic interface (`Iface<A,B>`, incl. `@Context<…>`) in standalone
+      `implement <Iface> for <Type> { }` — `ImplementDecl.interfaces` →
+      `[]TypeRef`, parsed via `parseTypeRef`. Test:
+      `parser: implement generic interface for type`.
 
 ## F1 — codegen (the real bug, prioritize)
-- [ ] G7: inline `struct implement … { fields }` must emit a real constructor
-      that assigns fields (positional + labeled), matching `record`, on every
-      backend (`new E("x", 5)` must populate `tag`/`n`)
+- [x] G7: inline `struct implement … { fields }` emits a real constructor that
+      assigns fields (matching `record`) — `emitStruct` in `commonJS.zig` now
+      emits `constructor(...)` (field inits → param defaults). Erlang already
+      lowered struct construction to a `#{…}` map via `collectTypeShapes`, so it
+      had parity already. node + erlang RUN LOGs both print `5`.
 
 ## F2 — regression coverage
-- [ ] a `codegen/node` test that *runs* a `struct implement` value and asserts a
-      field round-trips (gap existed because only inference was tested)
+- [x] `js: struct implement ---- fields round-trip at runtime` — runs `mk().n`
+      on every backend; node + erlang snapshots assert `5` (was `undefined`).
 
 ## Notes
 - jhonstart V1 already dodges all three (`record … implement @Context`), so this
-  unblocks the *next* phase, not the green core. Either fix the broken forms or
-  remove them from the documented surface.
+  unblocks the *next* phase, not the green core. The broken forms are now fixed.
+- Out of scope: beam/wasm struct-field round-trip is still incomplete (the test
+  snapshots record their current — wrong/empty — output); spec only required
+  node + erlang parity. Labeled-arg reordering is unchanged from `record`
+  (call site emits args in written order).
+- Docs updated: `docs.md` §Implement (generic interface + inline struct-implement
+  with fields), `codegen/AGENTS.md` (struct constructor emission).

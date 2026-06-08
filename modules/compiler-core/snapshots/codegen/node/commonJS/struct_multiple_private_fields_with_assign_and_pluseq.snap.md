@@ -21,8 +21,10 @@ val BankAccount = struct {
 ----- JAVASCRIPT -- main.js
 ```javascript
 class BankAccount {
-    _balance = 0.0;
-    _owner = "";
+    constructor(_balance = 0.0, _owner = "") {
+        this._balance = _balance;
+        this._owner = _owner;
+    }
 
     deposit(amount) {
         this._balance += amount;

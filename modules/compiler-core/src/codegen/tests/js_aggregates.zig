@@ -66,6 +66,22 @@ test "js: struct ---- multiple private fields with assign and pluseq" {
     );
 }
 
+test "js: struct implement ---- fields round-trip at runtime" {
+    // G7 regression: an inline `struct implement … { fields }` must emit a real
+    // constructor that assigns its fields, so `E(tag: "x", n: 5).n` reads `5` at
+    // runtime instead of `undefined`. Runs on every backend (node + erlang
+    // parity captured in each RUN LOG).
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\val E = struct implement @Context<E, E> { tag: string, n: i32 }
+        \\fn mk() -> E {
+        \\    return E(tag: "x", n: 5);
+        \\}
+        \\fn main() {
+        \\    @print(mk().n);
+        \\}
+    );
+}
+
 test "js: record ---- two fields" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\val Point = record { x: i32, y: i32 }

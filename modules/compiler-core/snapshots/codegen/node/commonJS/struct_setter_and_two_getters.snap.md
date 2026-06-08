@@ -17,7 +17,9 @@ val Temperature = struct {
 ----- JAVASCRIPT -- main.js
 ```javascript
 class Temperature {
-    _celsius = 0.0;
+    constructor(_celsius = 0.0) {
+        this._celsius = _celsius;
+    }
 
     set celsius(value) {
         this._celsius = value;

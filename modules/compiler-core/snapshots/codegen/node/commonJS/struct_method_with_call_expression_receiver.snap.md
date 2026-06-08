@@ -17,7 +17,9 @@ val Logger = struct {
 ----- JAVASCRIPT -- main.js
 ```javascript
 class Logger {
-    _prefix = "";
+    constructor(_prefix = "") {
+        this._prefix = _prefix;
+    }
 
     setPrefix(p) {
         this._prefix = p;

@@ -99,7 +99,7 @@ pub const ExtEntry = struct {
     /// true for `extend`, false for `implement`.
     isExtend: bool,
     /// Interfaces named in an `implement` block (empty for `extend`).
-    interfaces: []const []const u8 = &.{},
+    interfaces: []const ast.TypeRef = &.{},
     /// Method names declared in the block.
     methods: []const []const u8,
 };

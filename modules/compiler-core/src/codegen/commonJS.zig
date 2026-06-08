@@ -957,17 +957,37 @@ const Emitter = struct {
 
     fn emitStruct(self: *Emitter, s: ast.StructDecl) !void {
         try self.fmt("class {s} {{\n", .{s.name});
-        for (s.members) |m| switch (m) {
-            .field => |f| {
-                try self.fmt("    {s}", .{f.name});
-                if (f.init) |init| {
-                    try self.w(" = ");
-                    try self.emitExpr(init);
-                }
-                try self.w(";\n");
-            },
-            else => {},
+        // Emit a real constructor that assigns each field, matching `record`
+        // codegen — otherwise `new S(a, b)` ignores its arguments and the
+        // fields read `undefined` at runtime. Field initializers become
+        // parameter defaults so `new S()` still applies them.
+        var hasField = false;
+        for (s.members) |m| if (m == .field) {
+            hasField = true;
+            break;
         };
+        if (hasField) {
+            try self.w("    constructor(");
+            var firstParam = true;
+            for (s.members) |m| switch (m) {
+                .field => |f| {
+                    if (!firstParam) try self.w(", ");
+                    firstParam = false;
+                    try self.w(f.name);
+                    if (f.init) |init| {
+                        try self.w(" = ");
+                        try self.emitExpr(init);
+                    }
+                },
+                else => {},
+            };
+            try self.w(") {\n");
+            for (s.members) |m| switch (m) {
+                .field => |f| try self.fmt("        this.{s} = {s};\n", .{ f.name, f.name }),
+                else => {},
+            };
+            try self.w("    }\n");
+        }
         for (s.members) |m| switch (m) {
             .field => {},
             .getter => |g| {
@@ -1197,7 +1217,11 @@ const Emitter = struct {
         try self.w("// implement ");
         for (im.interfaces, 0..) |iface, i| {
             if (i > 0) try self.w(", ");
-            try self.w(iface);
+            try self.w(switch (iface) {
+                .named => |n| n,
+                .generic => |g| g.name,
+                else => "?",
+            });
         }
         try self.fmt(" for {s}\n", .{im.target});
         try self.emitExtensionNamespace(im.name, im.methods);

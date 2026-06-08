@@ -94,7 +94,7 @@ const Emitter = struct {
                 }
                 try self.w(f.name);
                 try self.w(": ");
-                try self.emitTypeRefStr(f.typeName);
+                try self.emitTypeRef(f.typeRef);
                 try self.w(";\n");
             },
             .method => |m2| {

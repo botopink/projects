@@ -11,7 +11,9 @@
         "comment": null,
         "moduleComment": null,
         "interfaces": [
-          "Foo"
+          {
+            "named": "Foo"
+          }
         ],
         "target": "Bar",
         "methods": [
