@@ -1,113 +1,55 @@
-# TODO — task/jhonstart
+# TODO — erika
 
-> Live checklist for branch `task/jhonstart` (worktree `.tasks/jhonstart/`).
-> Spec (intent, immutable): [`tasks/v0.beta.5/specs/jhonstart.md`](tasks/v0.beta.5/specs/jhonstart.md)
->
-> A React/Next-style UI framework written in botopink, on the language's own
-> primitives (no new compiler features). Work happens in THIS worktree.
+> Live checklist for branch `task/erika` (worktree `.tasks/erika/`).
+> Spec (intent, immutable): [`tasks/v0.beta.6/specs/erika.md`](tasks/v0.beta.6/specs/erika.md)
 
-## Compiler prerequisites (cross-set, not part of this task)
+> **Goal**: a C#/LINQ-style query lib as a **pure-`.bp` std module**
+> (`libs/std/src/erika.bp`) — a `record Query<T>` over `Array<T>` with fluent
+> operators — **plus** an `erika "select … from …"` query-string built as an
+> `@Expr` template fn (`q.text()`/`q.lookup()`/`q.build()`), reusing the
+> already-shipped expr-templates machinery. **No compiler surface**: only
+> `erika.bp` + one line each in `build.zig` (`std_bp_files`) and `prelude.zig`.
+> Eager + immutable v1. Fully parallel-touchable — waits on no other spec.
 
-- [x] `context-inference` — `@Context<B,R>` gating `use` (landed)
-- [x] `expr-templates` — `@Expr`, tagged calls, `parts/lookup/build` (landed; powers `html`)
-- [ ] `use-await-prefix` — `use`/`await` prefix operators (pending, `tasks/v0.beta.1/`)
-- [ ] `async-generators` — `*fn`, `await`, `@Future` (pending, `tasks/v0.beta.1/`)
+## F0 — module skeleton + wiring
+- [ ] `record Query<T> { items }` + `record Grouping<K,V>`; constructors
+      (`from`/`range`/`repeat`/`empty`), `toArray`/`toList`
+- [ ] Wire `build.zig` `std_bp_files` + `prelude.zig` `pub const erika`; confirm
+      `import {erika} from "std"` resolves under `botopink test`
+- [ ] Lock constructor spelling (`erika.from` vs `erika.of` — `from` keyword caveat)
 
-> Gate: F1–F3 (hooks/`use`) land once `use` is in `feat`; F4–F5 (SSR/server
-> loaders) gate on the async work. The `html` DSL itself needs only expr-templates.
+## F1 — restriction / projection (fluent)
+- [ ] `where`, `select`, `selectMany` (`cast`/`ofType` skipped — note why)
 
-## F0 — package scaffold ✅ (this commit)
+## F2 — partitioning / ordering (fluent)
+- [ ] `take`, `skip`, `takeWhile`, `skipWhile`, `reverse`
+- [ ] `orderBy`, `orderByDescending` (stable, by projected key); `thenBy` → v2?
 
-- [x] `libs/jhonstart/botopink.json` (`files: []` — inert, not embedded)
-- [x] `libs/jhonstart/AGENTS.md` + `src/AGENTS.md` + `docs.md`
-- [x] Add the package row to `libs/AGENTS.md` (table + tree)
-- [x] Declaration surface: `src/{element,dom,hooks,html,render,router,server}.d.bp`
-- [x] Examples landed: `examples/jhonstart-{counter,todo,html,app}/`
-- [x] `examples/AGENTS.md` updated with the four demos
+## F3 — set ops / grouping / joining (fluent)
+- [ ] `distinct`, `distinctBy`, `concat`, `union`, `intersect`, `except`
+- [ ] `groupBy -> Query<Grouping<K,T>>`; `zip`; `join` → v2?
 
-## ⚠ Language gaps surfaced while probing F1–F3 (BLOCKERS — split out as language specs)
+## F4 — aggregation / element / quantifiers (terminals)
+- [ ] `count`/`count(pred)`, `sum`, `min`, `max`, `average`, `aggregate`
+- [ ] `first`/`first(pred)`, `last`, `single`, `elementAt` → `?T`
+- [ ] `any`/`all`/`contains` → `bool`
 
-> Verified empirically on this branch via `modules/compiler-core/src/comptime/tests/jhonstart.zig`.
-> Per "no new compiler features", jhonstart does NOT work around these. Full
-> detail in the spec Notes ("Language gaps surfaced by F1–F3").
-
-- [ ] **G1** — records cannot carry function-typed fields (`set: fn(next)`), so
-      the hook shape `{value, set}` is inexpressible → blocks builder-API hooks
-- [ ] **G2** — no anonymous record TYPE syntax (only value literals)
-- [ ] **G3** — `fn() -> T[]` does not parse (array as a function-type return)
-- [ ] **G4** — no `Element[]` → `Children` coercion → blocks `div { [a, b] }`
-
-## F1 — core types (`element.bp`) ✅ — real botopink, compiled + runtime-tested
-
-- [x] `Element` = `pub record Element implement @Context<Element, Element> { tag,
-      value, children: Element[] }` — the UI node AND the hook ContextBase, in one
-      recursive record (`libs/jhonstart/src/element.bp`, in `botopink.json`)
-- [x] `Element` **implements `@Context`** (not a builtin — Element isn't builtin;
-      the `record … implement @Context<…>` inline form attaches it AND constructs
-      at runtime, unlike inline `struct implement` which drops fields — gap G7)
-- [x] String→text via the `text(...)` builder; child lists are `Element[]` (no
-      `Children` interface needed — array-arg builders, see F2)
-
-## F2 — DOM builders (`element.bp`) ✅ — `.bp`, not `@[external]`
-
-- [x] `text`, `fragment`, `div`/`span`/`p`/`h1`/`ul`/`li` — real `.bp`, take `Element[]`
-- [x] Sidestep G3/G4: builders take `Element[]` args (`div([a, b])`), not the
-      `fn() -> Children` trailing-lambda form (`div { [a, b] }`, which IS blocked)
-- [ ] `button`/`input` with event handlers — client-only; deferred (handlers can't
-      be stored in the record, G1; SSR ignores them)
-- [ ] Attrs strategy for V1 (full attrs record = future)
-
-## F3 — hooks + composite ergonomics
-
-- [x] `use state(0)` type-checks inside a component; rejected inside `-> string`;
-      ContextBase mismatch (Element vs Http) rejected — `check` tests landed
-- [x] Confirm the expr-template surface builds an `Element` (not just `string`) —
-      `html_component_tags` + `html_interp_hole` compile end-to-end
-- [ ] `{value, set}`-shaped hook returns + `useToggle({on, toggle})` — **blocked by G1**
-- [ ] `html.bp` body (markup scan) — **next focused increment**. Comptime string
-      ops in a template body (`q.text`/`.split`/`.trim`/accumulate/`q.build`) are
-      VERIFIED to run. With the array-arg builders, it can lower **nested**
-      `<div><p>…</p></div>` → `div([p([…])])`, `<Comp/>` → `q.lookup` → `Comp()`
-      (miss → `q.failAt`), `${…}` → `text(…)`. G4 no longer caps this (it only
-      blocked the `fn() -> Children` form, which the core avoids).
-- [ ] `html_unknown_component` check (`<Page9/>` → `q.failAt`) — lands with `html.bp`
-
-## F4 — render (`element.bp`) ✅ for SSR string; client `mount` pending
-
-- [x] `renderToString(e: Element) -> string` — **pure, synchronous `.bp`**; needs
-      NO async-generators. `test {}` asserts `<div><p>hi</p>!</div>` etc.
-- [ ] `mount` (client DOM attach) — host-bound `#[@external]`; pending runtime stub
-- [ ] `*fn renderToString` async variant (await server loaders) — gated on async
-
-## F5 — app layer (`router.d.bp`, `server.d.bp`)
-
-- [ ] `Router`/`useRouter`/`Link`; `Http` ContextBase `request()`
-- [ ] Document file-routing convention (`app/`, `page.bp`, `layout.bp`, `[id]`)
+## F5 — the `erika "…"` template fn (over `@Expr`)
+- [ ] `pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T>` in `erika.bp`
+- [ ] botopink SQL-subset parser: `select <*|field> from <Name> [where <cond>]
+      [order by <field> [asc|desc]]`
+- [ ] resolve `from <Name>` via `q.lookup`; unknown collection ⇒ `q.fail`
+- [ ] build + expand the fluent pipeline; `@Expr<T>` reveals the result type
+- [ ] F5b (future erika version, NOT in v1, NOT a cross-spec dep): multi-field
+      `select a, b` ⇒ clear `q.fail` not-yet (needs anon record types / tuples)
+- [ ] confirm zero new compiler surface; record any missing `@Expr` primitive
 
 ## F6 — docs
+- [ ] `erika` row in `libs/std/src/docs.md` + `examples.md`; update
+      `libs/std/src/AGENTS.md` in the **same commit**
 
-- [ ] `docs.md` (lib) full pass; root `docs.md` + `README.md` "Frameworks → jhonstart" pointer
-
-## Test scenarios (acceptance)
-
-```
-check ---- counter_typechecks            ✅ (tests/jhonstart.zig)
-check ---- use_outside_element_rejected  ✅ (snapshot)
-check ---- hook_compose_transitive       ✅ (named-record return; {on,toggle} blocked by G1)
-check ---- contextbase_mismatch          ✅ (snapshot; Element vs Http)
-check ---- html_component_tags           ✅ (q.build → Page1(); via fragment)
-check ---- html_interp_hole              ✅ (${expr} → text child)
-check ---- html_unknown_component        ☐  needs full html.bp body (q.failAt path)
-check ---- server_loader_await           ☐  gated on async-generators
-check ---- request_http_context          ☐  gated on async-generators (Http ctx ok today)
-ssr_render_to_string                     ✅ (element.bp `test {}` — runs via `botopink test`)
-codegen/node ---- counter_runs / todo_runs / html_expands_to_tree ☐
-codegen/erlang ---- counter_typechecks (parity) ☐
-```
-
-> **Architecture note (per user guidance "prefer `.bp` over `.d.bp`")**: the UI
-> core (`element.bp`) is implemented in real botopink — recursive `Element`
-> record, array-arg builders, synchronous `renderToString` — compiled by
-> `botopink.json` and runtime-tested by its own `test {}`. Only genuinely
-> host-bound / gap-blocked surface (interactive hooks, client `mount`, router,
-> Http server context) stays as illustrative `.d.bp`.
+## Notes
+- Tests live in `erika.bp`'s own `test "…"` blocks (`botopink test`), enforced by
+  the pre-commit `.bp` step. The `erika "…"` expansion is covered the same way.
+- `erika.md` was dropped into this worktree directly — it is **not yet committed
+  on `feat`** (mixed with unrelated in-flight work there). Reconcile on merge.
