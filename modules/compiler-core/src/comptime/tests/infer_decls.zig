@@ -435,3 +435,27 @@ test "infer: @Optional<T> is rejected ---- the optional type is ?T" {
         \\}
     );
 }
+
+test "infer: forward_reference_top_level ---- a() calls b() declared after" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn a() -> i32 { return b(); }
+        \\fn b() -> i32 { return 1; }
+    );
+}
+
+test "infer: mutual_recursion ---- renderToString and renderChildren call each other" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\record Element { tag: string, value: string, children: Element[] }
+        \\
+        \\fn renderChildren(items: Element[]) -> string {
+        \\    var out = "";
+        \\    loop (items) { c -> out = out + renderToString(c); };
+        \\    return out;
+        \\}
+        \\
+        \\fn renderToString(e: Element) -> string {
+        \\    if (e.tag == "#text") { return e.value; };
+        \\    return "<" + e.tag + ">" + renderChildren(e.children) + "</" + e.tag + ">";
+        \\}
+    );
+}

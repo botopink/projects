@@ -217,6 +217,27 @@ fn double(x: i32) -> i32 {
 }
 ```
 
+### Forward references and mutual recursion
+
+Top-level functions are order-independent: a function may call another declared
+later in the same module, and two functions may call each other.
+
+```botopink
+fn isEven(n: i32) -> bool {
+    if (n == 0) { return true; };
+    return isOdd(n - 1);          // forward reference — isOdd is declared below
+}
+
+fn isOdd(n: i32) -> bool {
+    if (n == 0) { return false; };
+    return isEven(n - 1);
+}
+```
+
+Every top-level `fn` signature is bound before any body is type-checked, so
+declaration order never affects what is in scope. (A genuinely undefined name is
+still reported as an unbound-variable error.)
+
 ---
 
 ## Operators

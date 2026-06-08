@@ -402,3 +402,9 @@ test "infer error: builtin result namespace ---- unknown function" {
         \\}
     );
 }
+
+test "infer error: still_reports_unbound ---- a genuinely undefined name still errors" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn a() -> i32 { return nonexistent(); }
+    );
+}

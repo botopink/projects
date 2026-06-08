@@ -165,6 +165,7 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     }
     try registerExtensions(env, program);
     try buildScopeSnapshot(env, program);
+    try registerFnSignatures(env, program);
 
     // Pass 2: infer value-producing declarations in order.
     for (program.decls) |decl| {
@@ -189,6 +190,7 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
     }
     try registerExtensions(env, program);
     try buildScopeSnapshot(env, program);
+    try registerFnSignatures(env, program);
     for (program.decls) |decl| {
         switch (decl) {
             // `resolveImports` (called before inference in comptime.zig) already
@@ -468,6 +470,70 @@ fn registerTypeDecl(env: *Env, decl: ast.DeclKind) InferError!void {
         .@"enum" => |e| try registerEnum(env, e),
         else => {},
     }
+}
+
+/// Pre-pass (mutual recursion): bind every top-level `fn`/`pub fn` name to its
+/// signature type BEFORE any body is inferred, so a function can call another
+/// declared later in the same module (`renderToString` ⇄ `renderChildren`).
+///
+/// A top-level function's signature is fully determined by its declared
+/// parameter and return types plus generic params — the body never changes it —
+/// so the type built here matches what `inferFnDecl` later derives when it walks
+/// the body (which re-binds the same name for self-recursion). This mirrors how
+/// recursive `record` type names are registered in pass 1 before any use.
+fn registerFnSignatures(env: *Env, program: ast.Program) InferError!void {
+    for (program.decls) |decl| switch (decl) {
+        .@"fn" => |f| try env.bind(f.name, try buildFnSignatureType(env, f)),
+        else => {},
+    };
+}
+
+/// Build a top-level function's callable type (params → return) without binding
+/// its parameters into `env` or inferring its body. Mirrors the signature half
+/// of `inferFnDecl`: a generic map, `fn(...)`-param and ordinary-param
+/// resolution, the return type, and generalization of declared generic params
+/// the signature left unbound (so each call site instantiates them fresh).
+fn buildFnSignatureType(env: *Env, f: ast.FnDecl) InferError!*T.Type {
+    var genericMap = std.StringHashMap(*T.Type).init(env.arena);
+    defer genericMap.deinit();
+    for (f.genericParams) |gp| {
+        try genericMap.put(gp.name, try env.freshVar());
+    }
+
+    var paramTypes = try env.arena.alloc(*T.Type, f.params.len);
+    for (f.params, 0..) |p, i| {
+        paramTypes[i] = if (p.fnType) |ft| blk: {
+            const fparams = try env.arena.alloc(*T.Type, ft.params.len);
+            for (ft.params, 0..) |fp, j| {
+                fparams[j] = genericMap.get(fp.typeName) orelse try env.namedType(fp.typeName);
+            }
+            const fret = if (ft.returnType) |rn|
+                genericMap.get(rn) orelse try env.namedType(rn)
+            else
+                try env.namedType("void");
+            break :blk try env.funcType(fparams, fret);
+        } else try resolveTypeRefInContext(env, p.typeRef, genericMap);
+    }
+
+    const retType = if (f.returnType) |rt|
+        try resolveTypeRefInContext(env, rt, genericMap)
+    else
+        try env.namedType("void");
+
+    // Generalize declared generic params the signature left unbound (same rule
+    // as `inferFnDecl`): each becomes `.generic`, so use sites instantiate fresh.
+    var git = genericMap.valueIterator();
+    while (git.next()) |gv| {
+        const resolved = gv.*.deref();
+        if (resolved.* != .typeVar) continue;
+        const cell = resolved.typeVar;
+        switch (cell.state) {
+            .unbound => |u| cell.state = .{ .generic = u.id },
+            else => {},
+        }
+    }
+
+    return env.funcType(paramTypes, retType);
 }
 
 /// Pre-pass for static extension dispatch: record inherent methods, register
