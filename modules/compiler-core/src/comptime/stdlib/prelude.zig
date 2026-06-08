@@ -21,3 +21,10 @@ pub const dict_mod = @embedFile("dict.bp");
 pub const sets_mod = @embedFile("sets.bp");
 pub const string_builder_mod = @embedFile("string_builder.bp");
 pub const queue_mod = @embedFile("queue.bp");
+
+// "rakun" application framework declarations (libs/rakun/src/rakun.d.bp).
+// Embedded so the type checker can register rakun's decorators + HTTP/DI
+// interfaces when a module imports `from "rakun"`. Unlike the stdlib sources
+// above, this is NOT flattened into the global env — it is opt-in per module
+// (see comptime.zig `registerRakunLib` and infer.zig `markRakunImports`).
+pub const rakun = @embedFile("rakun.d.bp");

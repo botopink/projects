@@ -41,7 +41,8 @@ comptime/
 │   ├── exhaustiveness.zig ← case exhaustiveness (+errors)
 │   ├── effects.zig        ← throw/context/@Result effect checking
 │   ├── templates.zig      ← @Expr capture / scope snapshot / methods / expansion
-│   └── jhonstart.zig      ← jhonstart framework `check` scenarios (hooks + html DSL)
+│   ├── jhonstart.zig      ← jhonstart framework `check` scenarios (hooks + html DSL)
+│   └── rakun.zig          ← `from "rakun"` import + `#[decorator]` resolution
 └── runtime/           ← Node.js + Erlang eval backends — see runtime/AGENTS.md
 ```
 
@@ -50,7 +51,7 @@ comptime/
 | File | Role |
 |---|---|
 | `types.zig` | All type representations as `union(enum)`. |
-| `env.zig` | Type environment — scopes, builtins + stdlib, `TypeDef.contextBase`, `FnContext`, static-extension-dispatch tables (`extensions`, `activations`, `inherentMethods`, `dispatchRewrites`), the `"std"` package tables (`stdModules`: module → fn exports; `stdModuleTypes`: module → pub type decls, registered into the importer by `markStdImports` — type export; `stdImports`: names imported via `from "std"` — explicit import wins over same-named value bindings like the primitive `bool`), and the loc-keyed lowering maps `method_lowerings` (`@Result`/`@Option` methods + the builtin `result` namespace, `qualified` flag) + `result_jump_lowerings` (`return`/`throw` → `__bp_ok`/`__bp_error` in `*fn -> @Result` fns). |
+| `env.zig` | Type environment — scopes, builtins + stdlib, `TypeDef.contextBase`, `FnContext`, static-extension-dispatch tables (`extensions`, `activations`, `inherentMethods`, `dispatchRewrites`), the `"std"` package tables (`stdModules`: module → fn exports; `stdModuleTypes`: module → pub type decls, registered into the importer by `markStdImports` — type export; `stdImports`: names imported via `from "std"` — explicit import wins over same-named value bindings like the primitive `bool`), the opt-in `"rakun"` framework tables (`rakunExports`: decorator name → delegate fn type; `rakunTypeDecls`: name → interface/enum decl — both filled by `comptime.zig registerRakunLib` from the embedded `libs/rakun/src/rakun.d.bp`, and brought into a module only by `markRakunImports` on `from "rakun"`, never auto-loaded), and the loc-keyed lowering maps `method_lowerings` (`@Result`/`@Option` methods + the builtin `result` namespace, `qualified` flag) + `result_jump_lowerings` (`return`/`throw` → `__bp_ok`/`__bp_error` in `*fn -> @Result` fns). |
 | `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. `registerExtensions` pre-pass + `resolveReceiverCall` implement F6 static extension dispatch. Ends with `validateProgram` — `implement`/interface coverage + getter/setter type checks. Top-level `test { … }` bodies type-check like void `fn` bodies via `inferTestDecl` (no binding produced); `assert cond` unifies `cond` with `bool`. |
 | `unify.zig` | Unification with substitution + occurs check. |
 | `error.zig` | Structured type errors with source ranges and hints (incl. `missingMethod`/`unknownMethod`/`unknownInterface`/`ambiguousMethod`). |

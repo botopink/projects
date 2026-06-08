@@ -401,6 +401,62 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         }
         try env.stdModules.put(mod_name, exports);
     }
+
+    try registerRakunLib(env);
+}
+
+/// Parse the embedded `rakun.d.bp` and record its public surface in the
+/// import registries (`env.rakunExports`, `env.rakunTypeDecls`) WITHOUT
+/// flattening anything into scope. A module reaches these symbols only via
+/// `import {…} from "rakun"` (see `infer.markRakunImports`): rakun is an
+/// application-level lib — opt-in per module, never auto-loaded into the env.
+///
+/// Inferred in a scratch env (sharing `env.arena` so the resulting types/decls
+/// outlive the scratch maps), mirroring the `std_pkg_modules` loop above.
+fn registerRakunLib(env: *Env) anyerror!void {
+    const prelude = @import("std_prelude");
+
+    var env2 = Env.init(env.arena);
+    defer env2.deinit();
+    try env2.registerBuiltins();
+    try env2.bind("true", try env2.namedType("bool"));
+    try env2.bind("false", try env2.namedType("bool"));
+    // Primitive interfaces (string / i32 / Array<T> / …) so the decorator and
+    // HTTP/DI signatures type-check.
+    {
+        var lx = Lexer.init(prelude.primitives);
+        const tokens = try lx.scanAll(env.arena);
+        var p = Parser.init(tokens);
+        const program = try stripTestDecls(try p.parse(env.arena), env.arena);
+        _ = try infer.inferProgram(&env2, program);
+    }
+
+    var lx = Lexer.init(prelude.rakun);
+    const tokens = try lx.scanAll(env.arena);
+    var p = Parser.init(tokens);
+    const program = try stripTestDecls(try p.parse(env.arena), env.arena);
+
+    for (program.decls) |decl| {
+        switch (decl) {
+            // Type surface (`Request`/`Response`/`Context`/`App`/`Rakun`/
+            // `HttpMethod`) — registered into the importing env on `from "rakun"`
+            // so its name resolves and interface associated fns (`Response.json`)
+            // bind.
+            .interface => |d| try env.rakunTypeDecls.put(d.name, decl),
+            .@"enum" => |d| try env.rakunTypeDecls.put(d.name, decl),
+            .record => |d| try env.rakunTypeDecls.put(d.name, decl),
+            .@"struct" => |d| try env.rakunTypeDecls.put(d.name, decl),
+            // Decorator markers (`service`, `getMapping(path)`, …) parse as
+            // `declare fn` delegates. Expose each as a callable type: bound by
+            // name into a module that imports it, and its signature drives F3
+            // annotation-argument checking.
+            .delegate => |d| {
+                if (!d.isPub) continue;
+                try env.rakunExports.put(d.name, try infer.buildDelegateType(&env2, d));
+            },
+            else => {},
+        }
+    }
 }
 
 /// Re-export so callers use `comptime.zig` as sole entry point.

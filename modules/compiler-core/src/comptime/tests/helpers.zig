@@ -472,3 +472,31 @@ pub fn assertInfersOk(
         return err;
     };
 }
+
+/// Assert that inferring `src` fails with a `TypeError` (non-snapshot variant of
+/// `assertTypeErrorSnap`, for cases where only the fact of rejection matters).
+pub fn assertInfersErr(
+    allocator: std.mem.Allocator,
+    src: []const u8,
+) !void {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var lx = Lexer.init(src);
+    const tokens = try lx.scanAll(alloc);
+    defer lx.deinit(alloc);
+    var p = Parser.init(tokens);
+    var program = try p.parse(alloc);
+    defer program.deinit(alloc);
+
+    var env = Env.init(alloc);
+    defer env.deinit();
+    try env.registerBuiltins();
+    try comptimeMod.registerStdlib(&env, allocator);
+    try env.bind("true", try env.namedType("bool"));
+    try env.bind("false", try env.namedType("bool"));
+
+    const result = inferMod.inferProgram(&env, program);
+    try std.testing.expectError(error.TypeError, result);
+}

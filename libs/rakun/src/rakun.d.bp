@@ -20,25 +20,25 @@
 // `record`/`struct` (component markers) or on a method (route markers).
 
 // component markers
-pub fn component()
-pub fn service()
-pub fn repository()
-pub fn controller()
-pub fn restController()
+pub declare fn component();
+pub declare fn service();
+pub declare fn repository();
+pub declare fn controller();
+pub declare fn restController();
 
 // configuration / factory markers
-pub fn configuration()
-pub fn bean()
-pub fn inject()
-pub fn value(key: string)
+pub declare fn configuration();
+pub declare fn bean();
+pub declare fn inject();
+pub declare fn value(key: string);
 
 // web / route markers
-pub fn route(prefix: string)          // controller-level path prefix (Spring @RequestMapping)
-pub fn getMapping(path: string)
-pub fn postMapping(path: string)
-pub fn putMapping(path: string)
-pub fn patchMapping(path: string)
-pub fn deleteMapping(path: string)
+pub declare fn route(prefix: string);          // controller-level path prefix (Spring @RequestMapping)
+pub declare fn getMapping(path: string);
+pub declare fn postMapping(path: string);
+pub declare fn putMapping(path: string);
+pub declare fn patchMapping(path: string);
+pub declare fn deleteMapping(path: string);
 
 // ---- HTTP primitives ----
 

@@ -63,6 +63,13 @@ pub fn build(b: *std.Build) void {
         });
     }
 
+    // rakun framework declarations — embedded for opt-in registration on
+    // `from "rakun"` (not flattened into the global env). Mirrors the root
+    // build.zig entry; keep both in sync.
+    std_prelude.addAnonymousImport("rakun.d.bp", .{
+        .root_source_file = b.path("../../libs/rakun/src/rakun.d.bp"),
+    });
+
     const mod = b.addModule("botopink", .{
         // The root source file is the "entry point" of this module. Users of
         // this module will only be able to access public declarations contained

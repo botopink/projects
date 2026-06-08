@@ -34,6 +34,14 @@ pub fn build(b: *std.Build) void {
         });
     }
 
+    // rakun framework declarations (libs/rakun/src/rakun.d.bp). Embedded so the
+    // compiler can register them on `from "rakun"`, but — unlike the stdlib —
+    // NOT flattened into the global env: opt-in per module (see
+    // comptime `registerRakunLib` / `markRakunImports`).
+    std_prelude.addAnonymousImport("rakun.d.bp", .{
+        .root_source_file = b.path("libs/rakun/src/rakun.d.bp"),
+    });
+
     // ── compiler-core (library) ───────────────────────────────────────────────
 
     const core_mod = b.addModule("botopink", .{

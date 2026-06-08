@@ -85,6 +85,72 @@ fn markStdImports(env: *Env, u: ast.ImportDecl) InferError!bool {
     return true;
 }
 
+/// `import {…} from "rakun"` — bring the named rakun symbols into this env.
+/// Type names (`Request`/`Response`/`HttpMethod`/…) are registered like a local
+/// type decl; decorator and interface-associated fns are bound as values so
+/// `#[service]` resolves (F3) and `Response.json(...)` type-checks. Returns true
+/// when the decl was a `from "rakun"` import (fully handled here); an unknown
+/// imported name is a clear type error. rakun is opt-in: a module that never
+/// imports it sees none of these symbols.
+fn markRakunImports(env: *Env, u: ast.ImportDecl) InferError!bool {
+    const from_rakun = switch (u.source) {
+        .module => |m| std.mem.eql(u8, m, "rakun"),
+        .root => false,
+    };
+    if (!from_rakun) return false;
+    for (u.imports) |imp| {
+        const want = imp.segments[imp.segments.len - 1]; // original export name
+        const local = imp.name(); // local (alias-aware) name
+        var found = false;
+        if (env.rakunTypeDecls.get(want)) |decl| {
+            try registerRakunTypeDecl(env, decl);
+            found = true;
+        }
+        if (env.rakunExports.get(want)) |ty| {
+            try env.bind(local, ty);
+            found = true;
+        }
+        if (!found) {
+            env.lastError = TypeError.custom(
+                "unknown \"rakun\" import",
+                "rakun exports the decorators component/service/repository/controller/" ++
+                    "restController, configuration/bean/inject/value, route/getMapping/" ++
+                    "postMapping/putMapping/patchMapping/deleteMapping, and the types " ++
+                    "Request/Response/Context/App/Rakun/HttpMethod.",
+            );
+            return error.TypeError;
+        }
+    }
+    return true;
+}
+
+/// Build the function type of a `declare fn` delegate signature. rakun decorator
+/// markers (`service`, `getMapping(path: string)`, …) parse as delegates;
+/// exposing each as a callable type lets `markRakunImports` bind it and lets F3
+/// check `#[…]` annotation arguments against the signature.
+pub fn buildDelegateType(env: *Env, d: ast.DelegateDecl) InferError!*T.Type {
+    const params = try env.arena.alloc(*T.Type, d.params.len);
+    for (d.params, 0..) |p, i| {
+        params[i] = try resolveTypeRef(env, p.typeRef);
+    }
+    const ret = if (d.returnType) |rn| try env.namedType(rn) else try env.namedType("void");
+    return env.funcType(params, ret);
+}
+
+/// Register a single rakun type declaration into the importing env. Interfaces
+/// contribute their associated fns (`Response.json`) and resolve opaquely as a
+/// type name; enums/records/structs register their type definition (guarded so
+/// a repeated import is idempotent).
+fn registerRakunTypeDecl(env: *Env, decl: ast.DeclKind) InferError!void {
+    switch (decl) {
+        .interface => |d| try registerInterfaceAssociatedFns(env, d),
+        .@"enum" => |e| if (env.lookupTypeDef(e.name) == null) try registerEnum(env, e),
+        .record => |r| if (env.lookupTypeDef(r.name) == null) try registerRecord(env, r),
+        .@"struct" => |s| if (env.lookupTypeDef(s.name) == null) try registerStruct(env, s),
+        else => {},
+    }
+}
+
 pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     var list: std.ArrayListUnmanaged(Binding) = .empty;
 
@@ -129,6 +195,7 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
                 // so qualified calls (`bool.negate(x)`) resolve against
                 // `env.stdModules`. Unknown std module → clear type error.
                 if (try markStdImports(env, u)) continue;
+                if (try markRakunImports(env, u)) continue;
                 for (u.imports) |imp| {
                     const name = imp.name();
                     if (env.lookup(name)) |ty| {
@@ -375,6 +442,7 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
         // (tests, LSP) otherwise leaves qualified-call receivers unbound.
         .use => |u| {
             _ = try markStdImports(env, u);
+            _ = try markRakunImports(env, u);
             return null;
         },
         // A test block produces no binding, but its body must type-check.
@@ -1160,6 +1228,7 @@ fn inferDecl(env: *Env, decl: ast.DeclKind) InferError!?Binding {
         // `inferProgramTyped`'s `.use` interception.
         .use => |u| {
             _ = try markStdImports(env, u);
+            _ = try markRakunImports(env, u);
             return null;
         },
         // implement doesn't produce a value binding.
