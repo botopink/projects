@@ -25,7 +25,7 @@
 >
 > Design rule (inherited from the language): library `.d.bp` files declare
 > **signatures only**; the host runtime intrinsics (`state`, `effect`, `div`, …)
-> bind to a JS/Erlang runtime through `@[external(...)]`. Composite ergonomics
+> bind to a JS/Erlang runtime through `#[@external(...)]`. Composite ergonomics
 > (`Fragment`, `Link`, the `html` authoring DSL, custom hooks) are ordinary `.bp`
 > built *on* those intrinsics — no privileged access.
 
@@ -61,7 +61,7 @@ Grammar: **none added.** Every construct above already parses:
 - `*fn` server loaders — from `async-generators`;
 - `html """…"""` authoring — tagged-call + `@Expr<Element>` from `expr-templates`.
 
-### Core surface (`.d.bp`, intrinsics bound via `@[external]`)
+### Core surface (`.d.bp`, intrinsics bound via `#[@external]`)
 
 ```bp
 // element.d.bp — the UI node; the ContextBase for every client hook.
@@ -74,7 +74,7 @@ pub interface Element {
 pub interface Children { }                          // = Element[]
 
 // dom.d.bp — host intrinsics, one per tag (external-bound, no body).
-@[external(node, "jhonstart/runtime", "el")]
+#[@external(node, "jhonstart/runtime", "el")]
 pub fn div(children: fn() -> Children) -> Element
 pub fn span(children: fn() -> Children) -> Element
 pub fn p(children: fn() -> Children) -> Element
@@ -336,13 +336,13 @@ val page = div { [ p { "world" }, Page1(), Page2(), Page3() ] };
 - [ ] Confirm `Element` is accepted as a ContextBase by `context-inference` from a library declaration (today it is a builtin in `builtins.d.bp` — decide: re-export vs. library-declared)
 
 ### F2 — DOM builders (`dom.d.bp`)
-- [ ] One `@[external]` intrinsic per tag (`div`, `span`, `p`, `h1`, `ul`, `li`, `button`, `input`, `text`)
+- [ ] One `#[@external]` intrinsic per tag (`div`, `span`, `p`, `h1`, `ul`, `li`, `button`, `input`, `text`)
 - [ ] Trailing-lambda children signature `fn() -> Children`; `button` takes `onClick` first, children last
 - [ ] Node runtime stub `jhonstart/runtime` (`el`, `mount`, `text`) so demos run on the `commonJS` target
 - [ ] Document attrs strategy for V1 (event handlers as explicit params; full attrs record = future)
 
 ### F3 — hooks + composite ergonomics (`hooks.d.bp`, `fragment.bp`, `html.bp`)
-- [ ] `state`, `effect`, `memo`, `ref`, `reducer` — all `-> @Context<Element, _>`, `@[external]`-bound
+- [ ] `state`, `effect`, `memo`, `ref`, `reducer` — all `-> @Context<Element, _>`, `#[@external]`-bound
 - [ ] Verify `use state(0)` type-checks inside `fn Counter() -> Element` and is rejected inside `-> string` (reuse `context-inference` scenarios)
 - [ ] `Fragment` + `useToggle` in `.bp` — confirm transitive ContextBase propagation
 - [ ] `html.bp`: `html(comptime q: @Expr<string>) -> @Expr<Element>` — walk `q.parts()`, splice `${…}` holes (`p.code`) as children, resolve `<Component/>` via `q.lookup` (hit → `Component()`; miss → `q.failAt`), map lowercase tags to DOM builders, `q.build` the result

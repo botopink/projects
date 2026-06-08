@@ -30,7 +30,7 @@ libs/
 | `std/` | builtin types, primitives, Array/String, builtins — loaded into the type `Env` at infer time | yes (`modules/compiler-core/src/comptime/stdlib/prelude.zig`, wired in root `build.zig`) | [link](std/AGENTS.md) |
 | `server/` | HTTP/socket server-side interfaces | no — inert scaffold | [link](server/AGENTS.md) |
 | `client/` | HTTP client / request interfaces | no — inert scaffold | [link](client/AGENTS.md) |
-| `rakun/` | Spring-style framework — IoC container, constructor DI, `@[restController]` web layer, `Rakun.run` bootstrap | no — inert scaffold (spec: [`tasks/v0.beta.5`](../tasks/v0.beta.5/specs/rakun.md)) | [link](rakun/AGENTS.md) |
+| `rakun/` | Spring-style framework — IoC container, constructor DI, `#[restController]` web layer, `Rakun.run` bootstrap | no — inert scaffold (spec: [`tasks/v0.beta.5`](../tasks/v0.beta.5/specs/rakun.md)) | [link](rakun/AGENTS.md) |
 | `jhonstart/` | React/Next-style UI: components, `@Context<Element,_>` hooks, DOM builders, the `html` DSL, Next-style routing/SSR | no — inert scaffold (reached via `from "jhonstart"`) | [link](jhonstart/AGENTS.md) |
 
 ## Conventions

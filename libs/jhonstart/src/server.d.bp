@@ -11,5 +11,5 @@ pub interface Request {
     get query(self: Self) -> Dict<string, string>
 }
 
-@[external(node, "jhonstart/runtime", "request")]
+#[@external(node, "jhonstart/runtime", "request")]
 pub fn request() -> @Context<Http, Request>

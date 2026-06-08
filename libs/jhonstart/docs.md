@@ -73,6 +73,6 @@ val page = html
 
 ## V1 limits
 
-Scaffold: signatures only, host-bound via `@[external]`. `use`/`await`/`*fn`
+Scaffold: signatures only, host-bound via `#[@external]`. `use`/`await`/`*fn`
 require the pending language work (`use-await-prefix`, `async-generators`); the
 `html` DSL needs only the shipped `expr-templates`.

@@ -12,8 +12,8 @@ pub interface Router {
     fn replace(self: Self, href: string)
 }
 
-@[external(node, "jhonstart/runtime", "useRouter")]
+#[@external(node, "jhonstart/runtime", "useRouter")]
 pub fn useRouter() -> @Context<Element, Router>
 
-@[external(node, "jhonstart/runtime", "link")]
+#[@external(node, "jhonstart/runtime", "link")]
 pub fn Link(href: string, children: fn() -> Children) -> Element

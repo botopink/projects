@@ -42,7 +42,7 @@ libs/jhonstart/
 ## Conventions
 
 - `.d.bp` files declare **signatures only**; the host runtime supplies the
-  implementation per target (bound via `@[external(...)]`). Composite ergonomics
+  implementation per target (bound via `#[@external(...)]`). Composite ergonomics
   (`Fragment`, `Link`, custom hooks, the `html` body) are ordinary `.bp` built on
   the intrinsics — a future phase (see the spec's F3).
 - Components are PascalCase (`Counter`, `Page`); hooks/intrinsics are camelCase

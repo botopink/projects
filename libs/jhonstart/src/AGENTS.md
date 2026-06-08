@@ -4,7 +4,7 @@
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 
 Source for the `jhonstart` package. All files are `.d.bp` **declaration** files
-today (signatures only, scanner-skipped, host-bound via `@[external]`) — the
+today (signatures only, scanner-skipped, host-bound via `#[@external]`) — the
 scaffold stage. Bodies (`html.bp`, `fragment.bp`, custom hooks) arrive in the
 spec's F3.
 

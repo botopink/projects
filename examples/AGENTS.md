@@ -31,7 +31,7 @@ examples/
 │   └── app/               ← file-routing convention (layout.bp, page.bp, posts/[id]/page.bp)
 └── rakun/             ← Spring-style framework showcase (ILLUSTRATIVE — targets the
     │                       planned `rakun` lib; spec: tasks/v0.beta.5/specs/rakun.md)
-    ├── users.bp          ← @[repository]→@[service]→@[restController] DI triad + routes
+    ├── users.bp          ← #[repository]→#[service]→#[restController] DI triad + routes
     └── main.bp           ← `Rakun.run(App(port: 8080))` bootstrap
 ```
 

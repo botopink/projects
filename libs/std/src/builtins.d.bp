@@ -153,11 +153,11 @@ fn embedFile(comptime path: string) string
 
 // ── annotations ──────────────────────────────────────────────────────────────
 
-// Annotation builtins are invoked inside the annotation block `@[ … ]` that
+// Annotation builtins are invoked inside the annotation block `#[ … ]` that
 // precedes a declaration; each entry is a normal builtin-function call:
 //
-//   @[external(erlang, "string", "length"),
-//     external(node, "./gleam_stdlib.mjs", "string_length")]
+//   #[@external(erlang, "string", "length"),
+//     @external(node, "./gleam_stdlib.mjs", "string_length")]
 //   pub declare fn length(s: string) -> i32;
 //
 // `external` is only valid on a `declare fn` — the declaration is typed from

@@ -4,8 +4,8 @@
 // (its return implements `@Future<string>`): it serializes an `Element` tree to
 // HTML and may await server components along the way. Intrinsics, host-bound.
 
-@[external(node, "jhonstart/runtime", "mount")]
+#[@external(node, "jhonstart/runtime", "mount")]
 pub fn mount(app: Element, selector: string)
 
-@[external(node, "jhonstart/runtime", "renderToString")]
+#[@external(node, "jhonstart/runtime", "renderToString")]
 *fn renderToString(app: Element) -> @Future<string>

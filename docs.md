@@ -2021,15 +2021,15 @@ phase of the `test-blocks` spec (`tasks/v0.beta.2/specs/test-blocks.md`).
 
 ## Annotations & `external`
 
-A declaration may be preceded by an **annotation block** `@[ … ]` holding one
-or more comma-separated builtin-function calls. Annotations are not parser
-keywords — each entry is a normal builtin call type-checked against its
-signature in `builtins.d.bp` (the older single-annotation form `#[name(args)]`
-is still accepted):
+A declaration may be preceded by an **annotation block** `#[ … ]` holding one
+or more comma-separated annotation calls. Annotations are not parser keywords —
+each entry is a normal call type-checked against its signature; builtin
+annotations are `@`-prefixed (`@external`, …) and resolve against `builtins.d.bp`
+(the older `@[ … ]` block delimiter is still accepted):
 
 ```botopink
-@[external(erlang, "string", "length"),
-  external(node, "./gleam_stdlib.mjs", "string_length")]
+#[@external(erlang, "string", "length"),
+  @external(node, "./gleam_stdlib.mjs", "string_length")]
 pub fn str_length(s: string) -> i32
 ```
 
