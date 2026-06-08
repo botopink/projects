@@ -168,6 +168,38 @@ pub fn writeNotification(
     try writeFrame(io, gpa, body);
 }
 
+/// Escreve um JSON-RPC request (server→client) para stdout. O `id` permite ao
+/// cliente correlacionar a resposta, que o servidor simplesmente ignora.
+pub fn writeRequest(
+    io: std.Io,
+    gpa: std.mem.Allocator,
+    request_id: i64,
+    method_name: []const u8,
+    params_value: anytype,
+) !void {
+    const params_json = try std.json.Stringify.valueAlloc(gpa, params_value, .{
+        .emit_null_optional_fields = false,
+    });
+    defer gpa.free(params_json);
+
+    var params_parsed = try std.json.parseFromSlice(std.json.Value, gpa, params_json, .{});
+    defer params_parsed.deinit();
+
+    const envelope = .{
+        .jsonrpc = "2.0",
+        .id = request_id,
+        .method = method_name,
+        .params = params_parsed.value,
+    };
+
+    const body = try std.json.Stringify.valueAlloc(gpa, envelope, .{
+        .emit_null_optional_fields = false,
+    });
+    defer gpa.free(body);
+
+    try writeFrame(io, gpa, body);
+}
+
 /// Escreve um JSON-RPC error response para stdout.
 pub fn writeError(
     io: std.Io,

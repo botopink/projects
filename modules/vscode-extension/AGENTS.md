@@ -12,6 +12,27 @@ Thin TypeScript wrapper that:
 2. Ships a TextMate grammar + snippets for offline highlighting.
 3. Launches the `botopink-lsp` binary (see `../language-server/`) and
    speaks LSP over stdio via `vscode-languageclient`.
+4. Provides UI-only editor integrations that shell the `botopink` CLI or
+   consume LSP results — tasks + problem matcher, CodeLens run/test, a
+   status-bar codegen-target switcher, and Test Explorer. None of these
+   parse `.bp`: test/`main` targets come from LSP `documentSymbol`s and
+   pass/fail comes from the CLI's textual output.
+
+## Contributions
+
+| Contribution | What | Driven by |
+|---|---|---|
+| `languages` / `grammars` / `snippets` | `.bp` registration, TextMate colouring, snippets | static / lexical |
+| `configuration` | `botopink.path` (LSP), `botopink.cliPath` (CLI), `botopink.trace.server` | settings |
+| `commands` | `restartServer`, `selectTarget`, `run`, `runTest` | UI |
+| `taskDefinitions` (`botopink`) | `check` / `build` / `test` / `format` tasks (props: `command`, `target`, `filter`) | shells the `botopink` CLI |
+| `problemMatchers` (`$botopink`) | parses `error: <msg> at <file>:<line>:<col>` from `botopink check` | CLI stderr |
+| CodeLens (`src/codeLens.ts`) | "▶ Run" over `fn main`, "▶ Run test" over each `test "…"` | LSP `documentSymbol` |
+| status bar (`src/target.ts`) | active codegen target; click → QuickPick → writes `target` in `botopink.json` | `botopink.json` |
+| Test Explorer (`src/testExplorer.ts`) | discovers `test "…"` blocks, runs `botopink test`, maps pass/fail | LSP `documentSymbol` + CLI output |
+
+Semantic classification (semantic tokens, inlay hints, symbols, …) is
+**always** served by `botopink-lsp`. The extension only wires the UI.
 
 ## Tree
 
@@ -29,7 +50,13 @@ vscode-extension/
 │   └── botopink.codeblock.json     ← markdown injection for ```bp blocks
 ├── images/                         ← extension icon + language icon
 └── src/
-    └── extension.ts                ← activate() / deactivate() / LSP client
+    ├── extension.ts                ← activate() / deactivate() / LSP client + feature wiring
+    ├── cli.ts                      ← resolve `botopink` CLI path + shared OutputChannel
+    ├── target.ts                   ← codegen-target status bar + botopink.json read/write
+    ├── tasks.ts                    ← TaskProvider for check/build/test/format
+    ├── symbols.ts                  ← LSP documentSymbol helpers (test / main detection)
+    ├── codeLens.ts                 ← CodeLens "Run" / "Run test" provider
+    └── testExplorer.ts             ← Testing API controller + `botopink test` runner/parser
 ```
 
 ## Conventions
@@ -37,7 +64,22 @@ vscode-extension/
 - **No compiler-internal knowledge.** The extension does not parse `.bp`
   itself — all semantic features come from `botopink-lsp`. The TextMate
   grammar is a separate, purely lexical view used only for syntax
-  colouring.
+  colouring. CodeLens and Test-Explorer targets come from LSP
+  `documentSymbol`s (test blocks are `Method` symbols named after the test
+  string; `fn main` is a `Function` symbol named `main`), never from
+  reading source. Pass/fail comes from shelling the `botopink` CLI.
+- **CLI coupling points** (keep in sync when the CLI changes):
+  - the `$botopink` problem-matcher regexp in `package.json`
+    (`contributes.problemMatchers`) tracks `botopink check`'s
+    `error: <msg> at <file>:<line>:<col>` stderr format;
+  - `parseTestOutput` in `src/testExplorer.ts` tracks the commonJS test
+    runner lines emitted by
+    [`../compiler-core/src/codegen/commonJS.zig`](../compiler-core/src/codegen/commonJS.zig)
+    (`  ok   <name>` / `  FAIL <name>  (<msg>)  at <loc>`).
+  The `botopink` CLI surface lives in
+  [`../compiler-cli/src/main.zig`](../compiler-cli/src/main.zig) (subcommands
+  `check`/`build`/`test`/`format`/`run`); only `build`/`test` take
+  `--target`.
 - **Keywords list must stay in sync** with the lexer keyword table in
   [`../compiler-core/src/lexer.zig`](../compiler-core/src/lexer.zig)
   (`keywordOrIdent`) — `token.zig` only holds the enum; the actual

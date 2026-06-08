@@ -2,7 +2,7 @@
   "name": "botopink",
   "displayName": "Botopink",
   "description": "Support for the Botopink programming language",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "botopink",
   "repository": {
     "type": "git",
@@ -63,6 +63,73 @@
         "command": "botopink.restartServer",
         "title": "Restart Botopink Server",
         "category": "Botopink"
+      },
+      {
+        "command": "botopink.selectTarget",
+        "title": "Select Codegen Target",
+        "category": "Botopink"
+      },
+      {
+        "command": "botopink.run",
+        "title": "Run main",
+        "category": "Botopink"
+      },
+      {
+        "command": "botopink.runTest",
+        "title": "Run Test",
+        "category": "Botopink"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "botopink",
+        "required": [
+          "command"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "enum": [
+              "check",
+              "build",
+              "test",
+              "format"
+            ],
+            "description": "The botopink CLI subcommand to run."
+          },
+          "target": {
+            "type": "string",
+            "enum": [
+              "commonJS",
+              "erlang",
+              "beam",
+              "wasm"
+            ],
+            "description": "Codegen target for build/test. Defaults to the active target (botopink.json)."
+          },
+          "filter": {
+            "type": "string",
+            "description": "Only run tests whose name contains this substring (test command)."
+          }
+        }
+      }
+    ],
+    "problemMatchers": [
+      {
+        "name": "botopink",
+        "owner": "botopink",
+        "source": "botopink",
+        "fileLocation": [
+          "autoDetect",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^error:\\s+(.*)\\s+at\\s+(.+):(\\d+):(\\d+)$",
+          "message": 1,
+          "file": 2,
+          "line": 3,
+          "column": 4
+        }
       }
     ],
     "configurationDefaults": {
@@ -79,6 +146,12 @@
           "description": "Path to the botopink-lsp executable. By default, the extension looks for botopink-lsp in the PATH; if set, this path is used instead.",
           "scope": "machine"
         },
+        "botopink.cliPath": {
+          "type": "string",
+          "default": null,
+          "description": "Path to the botopink CLI executable used by tasks, CodeLens run/test, and the Test Explorer. By default, the extension looks for botopink in the PATH; if set, this path is used instead.",
+          "scope": "machine"
+        },
         "botopink.trace.server": {
           "type": "string",
           "enum": [
@@ -93,7 +166,9 @@
     }
   },
   "activationEvents": [
-    "onLanguage:botopink"
+    "onLanguage:botopink",
+    "workspaceContains:**/botopink.json",
+    "workspaceContains:**/*.bp"
   ],
   "main": "./out/extension.js",
   "scripts": {

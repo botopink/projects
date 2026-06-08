@@ -1986,8 +1986,13 @@ fn pushParam(
 
 // ── Inlay Hints ───────────────────────────────────────────────────────────────
 
-/// Returns inlay hints (inferred types) for all `val`/`fn` declarations within
-/// `range`. All strings in the result are allocated in `arena`.
+/// Returns inlay hints within `range`. Three kinds are produced, all derived
+/// from the typed top-level `bindings`:
+///   • inferred-type hints after `val x = …` (suppressed when annotated)
+///   • parameter-name hints before call arguments (`fn(»name:« arg)`)
+///   • lambda parameter-type hints, when a lambda is passed to a function whose
+///     matching parameter is a function type (`{ x»: i32« -> … }`)
+/// All strings in the result are allocated in `arena`.
 pub fn inlayHints(
     arena: std.mem.Allocator,
     tokens: []const Token,
@@ -1996,58 +2001,227 @@ pub fn inlayHints(
 ) ![]proto.InlayHint {
     var hints: std.ArrayList(proto.InlayHint) = .empty;
 
-    const decl_values = [_]TokenKind{ .val, .@"fn" };
-
     var i: usize = 0;
     while (i < tokens.len) : (i += 1) {
         const tok = tokens[i];
-        var is_decl = false;
-        for (decl_values) |k| {
-            if (tok.kind == k) {
-                is_decl = true;
-                break;
+
+        // ── inferred-type hint on `val name = …` ──
+        if (tok.kind == .val) {
+            const j = nextSignificantIdx(tokens, i) orelse continue;
+            if (tokens[j].kind != .identifier) continue;
+            const name_tok = tokens[j];
+
+            // Annotated (`val name: T = …`) → suppress: a `:` before `=`/`;`.
+            var annotated = false;
+            var k = j + 1;
+            while (k < tokens.len) : (k += 1) {
+                switch (tokens[k].kind) {
+                    .colon => {
+                        annotated = true;
+                        break;
+                    },
+                    .equal, .semicolon, .endOfFile => break,
+                    else => {},
+                }
             }
-        }
-        if (!is_decl) continue;
 
-        // Next non-trivial token is the declaration name.
-        var j = i + 1;
-        while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
-        if (j >= tokens.len or tokens[j].kind != .identifier) continue;
-
-        const name_tok = tokens[j];
-
-        // Hint position: immediately after the name token.
-        const hint_pos = lsp_types.locToPosition(
-            name_tok.line,
-            name_tok.col + name_tok.lexeme.len,
-        );
-
-        if (!posInRange(hint_pos, range)) {
+            if (!annotated) {
+                const hint_pos = lsp_types.locToPosition(name_tok.line, name_tok.col + name_tok.lexeme.len);
+                if (posInRange(hint_pos, range)) {
+                    if (findBinding(bindings, name_tok.lexeme)) |b| {
+                        if (!b.type_.deref().isUnbound()) {
+                            const type_str = try renderType(arena, b.type_);
+                            try hints.append(arena, .{
+                                .position = hint_pos,
+                                .label = try std.fmt.allocPrint(arena, ": {s}", .{type_str}),
+                                .kind = proto.InlayHintKind.Type,
+                                .paddingLeft = true,
+                            });
+                        }
+                    }
+                }
+            }
             i = j;
             continue;
         }
 
-        // Find the binding and render its type.
-        for (bindings) |b| {
-            if (!std.mem.eql(u8, b.name, name_tok.lexeme)) continue;
-            const t = b.type_.deref();
-            if (t.isUnbound()) break; // skip unknown types
-            const type_str = try renderType(arena, b.type_);
-            const label = try std.fmt.allocPrint(arena, ": {s}", .{type_str});
-            try hints.append(arena, .{
-                .position = hint_pos,
-                .label = label,
-                .kind = proto.InlayHintKind.Type,
-                .paddingLeft = true,
-            });
-            break;
+        // ── call-site hints: `callee( … )` for a known top-level fn ──
+        if (tok.kind == .identifier) {
+            const ni = nextSignificantIdx(tokens, i) orelse continue;
+            if (tokens[ni].kind != .leftParenthesis) continue;
+            // Skip declarations (`fn name(`) and method calls (`recv.name(`).
+            const pk = prevSignificantKind(tokens, i);
+            if (pk == .@"fn" or pk == .dot or pk == .questionDot) continue;
+            if (fnDeclParams(bindings, tok.lexeme)) |params| {
+                try emitCallHints(arena, &hints, tokens, ni, params, range);
+            }
         }
-
-        i = j;
     }
 
     return hints.toOwnedSlice(arena);
+}
+
+/// Emits parameter-name and lambda-type hints for the call whose `(` is at
+/// `lparen_idx`, mapping top-level arguments to `params` by position.
+fn emitCallHints(
+    arena: std.mem.Allocator,
+    hints: *std.ArrayList(proto.InlayHint),
+    tokens: []const Token,
+    lparen_idx: usize,
+    params: []const ast.Param,
+    range: proto.Range,
+) !void {
+    var depth: u32 = 1;
+    var arg_index: usize = 0;
+    var at_arg_start = true; // next significant token begins an argument
+    var idx: usize = lparen_idx + 1;
+    while (idx < tokens.len and depth > 0) : (idx += 1) {
+        const t = tokens[idx];
+        switch (t.kind) {
+            .endOfFile, .commentNormal, .commentDoc, .commentModule => continue,
+            .leftParenthesis, .leftSquareBracket => {
+                depth += 1;
+                at_arg_start = false;
+                continue;
+            },
+            .rightParenthesis, .rightSquareBracket => {
+                depth -= 1;
+                at_arg_start = false;
+                continue;
+            },
+            .leftBrace => {
+                // A lambda argument `{ p -> … }`.
+                if (depth == 1 and at_arg_start and arg_index < params.len) {
+                    try emitLambdaTypeHints(arena, hints, tokens, idx, params[arg_index], range);
+                }
+                depth += 1;
+                at_arg_start = false;
+                continue;
+            },
+            .rightBrace => {
+                depth -= 1;
+                at_arg_start = false;
+                continue;
+            },
+            .comma => {
+                if (depth == 1) {
+                    arg_index += 1;
+                    at_arg_start = true;
+                }
+                continue;
+            },
+            else => {},
+        }
+
+        if (depth == 1 and at_arg_start) {
+            at_arg_start = false;
+            if (arg_index < params.len) {
+                const p = params[arg_index];
+                // Skip when redundant (arg is the bare param name) or already
+                // a named argument (`name: value`).
+                const nk = nextSignificantKind(tokens, idx);
+                const is_named = t.kind == .identifier and nk == .colon;
+                const is_redundant = t.kind == .identifier and
+                    std.mem.eql(u8, t.lexeme, p.name) and
+                    (nk == .comma or nk == .rightParenthesis or nk == null);
+                if (!is_named and !is_redundant and p.name.len > 0) {
+                    const pos = lsp_types.locToPosition(t.line, t.col);
+                    if (posInRange(pos, range)) {
+                        try hints.append(arena, .{
+                            .position = pos,
+                            .label = try std.fmt.allocPrint(arena, "{s}:", .{p.name}),
+                            .kind = proto.InlayHintKind.Parameter,
+                            .paddingRight = true,
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// For a lambda `{ a, b -> … }` opening at `brace_idx`, emits a `: T` hint after
+/// each parameter name, taken from the callee's declared `fn(...)` parameter
+/// signature (`param.fnType`). No-op when `param` isn't a function-typed param.
+fn emitLambdaTypeHints(
+    arena: std.mem.Allocator,
+    hints: *std.ArrayList(proto.InlayHint),
+    tokens: []const Token,
+    brace_idx: usize,
+    param: ast.Param,
+    range: proto.Range,
+) !void {
+    const fn_type = param.fnType orelse return;
+
+    // Collect lambda param-name tokens between `{` and `->` at brace depth 1.
+    var lp: usize = 0;
+    var idx = brace_idx + 1;
+    while (idx < tokens.len) : (idx += 1) {
+        switch (tokens[idx].kind) {
+            .rightArrow, .rightBrace, .endOfFile => break,
+            .identifier => {
+                if (lp < fn_type.params.len and fn_type.params[lp].typeName.len > 0) {
+                    const name_tok = tokens[idx];
+                    const pos = lsp_types.locToPosition(name_tok.line, name_tok.col + name_tok.lexeme.len);
+                    if (posInRange(pos, range)) {
+                        try hints.append(arena, .{
+                            .position = pos,
+                            .label = try std.fmt.allocPrint(arena, ": {s}", .{fn_type.params[lp].typeName}),
+                            .kind = proto.InlayHintKind.Type,
+                            .paddingLeft = true,
+                        });
+                    }
+                }
+                lp += 1;
+            },
+            else => {},
+        }
+    }
+}
+
+fn findBinding(bindings: []const comptime_pipeline.TypedBinding, name: []const u8) ?comptime_pipeline.TypedBinding {
+    for (bindings) |b| {
+        if (std.mem.eql(u8, b.name, name)) return b;
+    }
+    return null;
+}
+
+/// The declared parameters of a top-level `fn` binding, or null.
+fn fnDeclParams(bindings: []const comptime_pipeline.TypedBinding, name: []const u8) ?[]const ast.Param {
+    for (bindings) |b| {
+        if (!std.mem.eql(u8, b.name, name)) continue;
+        return switch (b.decl) {
+            .@"fn" => |f| f.params,
+            else => null,
+        };
+    }
+    return null;
+}
+
+/// Index of the next non-trivia token after `i`, or null at EOF.
+fn nextSignificantIdx(tokens: []const Token, i: usize) ?usize {
+    var j = i + 1;
+    while (j < tokens.len) : (j += 1) {
+        switch (tokens[j].kind) {
+            .endOfFile, .commentNormal, .commentDoc, .commentModule => continue,
+            else => return j,
+        }
+    }
+    return null;
+}
+
+/// Kind of the previous non-trivia token before `i`, or null at the start.
+fn prevSignificantKind(tokens: []const Token, i: usize) ?TokenKind {
+    if (i == 0) return null;
+    var j = i;
+    while (j > 0) {
+        j -= 1;
+        switch (tokens[j].kind) {
+            .endOfFile, .commentNormal, .commentDoc, .commentModule => continue,
+            else => return tokens[j].kind,
+        }
+    }
+    return null;
 }
 
 fn posInRange(pos: proto.Position, range: proto.Range) bool {
@@ -2055,6 +2229,276 @@ fn posInRange(pos: proto.Position, range: proto.Range) bool {
     if (pos.line == range.start.line and pos.character < range.start.character) return false;
     if (pos.line == range.end.line and pos.character > range.end.character) return false;
     return true;
+}
+
+// ── Semantic Tokens ─────────────────────────────────────────────────────────
+
+/// One classified token in absolute coordinates (0-based line/char). The server
+/// delta-encodes a sorted slice of these into the LSP wire format.
+pub const SemToken = struct {
+    line: u32,
+    start: u32,
+    len: u32,
+    type_idx: u32,
+    mods: u32,
+};
+
+/// The lexical container a token sits directly inside — drives the
+/// method-vs-function and enum-member distinctions.
+const ContainerKind = enum { none, interface, @"struct", record, @"enum", extend, implement };
+
+/// Classifies `tokens` into semantic tokens, driven by lexical kind, light
+/// structural tracking (container / param / paren nesting), and a name→category
+/// map built from the typed top-level `bindings`. Returns absolute-coordinate
+/// tokens in source order. All memory is allocated in `arena`.
+///
+/// This is intentionally token-driven (like hover / inlay / symbols) rather than
+/// AST-walking: top-level `bindings` give symbol categories, and the structural
+/// scan supplies the rest (declaration sites, receivers, params, enum members).
+pub fn semanticTokens(
+    arena: std.mem.Allocator,
+    tokens: []const Token,
+    bindings: []const comptime_pipeline.TypedBinding,
+) ![]SemToken {
+    var out: std.ArrayList(SemToken) = .empty;
+
+    var containers: std.ArrayList(ContainerKind) = .empty;
+    defer containers.deinit(arena);
+    var pending_container: ContainerKind = .none;
+
+    var paren_depth: u32 = 0;
+    var fn_param_depth: ?u32 = null; // paren depth at which a fn param list opened
+    var expect_fn_name = false; // just saw `fn` → next ident is the name
+    var expect_fn_paren = false; // saw `fn name` → next `(` opens params
+    var saw_comptime = false; // previous significant token was `comptime`
+    var prev_kind: ?TokenKind = null; // previous significant (non-trivia) token
+
+    var i: usize = 0;
+    while (i < tokens.len) : (i += 1) {
+        const tok = tokens[i];
+
+        // Comments emit a token but are trivia for context purposes.
+        switch (tok.kind) {
+            .endOfFile => continue,
+            .commentNormal, .commentDoc, .commentModule => {
+                try emitSem(arena, &out, tok, proto.SemanticTokenTypes.comment, 0);
+                continue;
+            },
+            else => {},
+        }
+
+        // Structural punctuation: never classified, but tracks nesting.
+        switch (tok.kind) {
+            .leftBrace => {
+                try containers.append(arena, pending_container);
+                pending_container = .none;
+                prev_kind = tok.kind;
+                continue;
+            },
+            .rightBrace => {
+                if (containers.items.len > 0) _ = containers.pop();
+                prev_kind = tok.kind;
+                continue;
+            },
+            .leftParenthesis => {
+                if (expect_fn_paren or prev_kind == .@"fn") {
+                    if (fn_param_depth == null) fn_param_depth = paren_depth;
+                    expect_fn_paren = false;
+                }
+                expect_fn_name = false;
+                paren_depth += 1;
+                prev_kind = tok.kind;
+                continue;
+            },
+            .rightParenthesis => {
+                if (paren_depth > 0) paren_depth -= 1;
+                if (fn_param_depth) |d| {
+                    if (paren_depth == d) fn_param_depth = null;
+                }
+                prev_kind = tok.kind;
+                continue;
+            },
+            else => {},
+        }
+
+        const container_top: ContainerKind = if (containers.items.len > 0)
+            containers.items[containers.items.len - 1]
+        else
+            .none;
+
+        // Container keywords arm `pending_container` for the next `{`.
+        switch (tok.kind) {
+            .interface => pending_container = .interface,
+            .@"struct" => pending_container = .@"struct",
+            .record => pending_container = .record,
+            .@"enum" => pending_container = .@"enum",
+            .extend, .extends => pending_container = .extend,
+            .implement => pending_container = .implement,
+            else => {},
+        }
+
+        // `*` immediately before `fn` is the effect marker of a `*fn`.
+        if (tok.kind == .star) {
+            if (nextSignificantKind(tokens, i) == .@"fn")
+                try emitSem(arena, &out, tok, proto.SemanticTokenTypes.keyword, 0);
+            prev_kind = tok.kind;
+            saw_comptime = false;
+            continue;
+        }
+
+        if (isKeywordKind(tok.kind)) {
+            if (tok.kind == .@"fn") expect_fn_name = true;
+            if (tok.kind == .selfType) {
+                try emitSem(arena, &out, tok, proto.SemanticTokenTypes.type_, proto.SemanticTokenModifiers.defaultLibrary);
+            } else {
+                try emitSem(arena, &out, tok, proto.SemanticTokenTypes.keyword, 0);
+            }
+            saw_comptime = (tok.kind == .@"comptime");
+            prev_kind = tok.kind;
+            continue;
+        }
+
+        if (tok.kind == .builtinIdent) {
+            // `@Name` (PascalCase) → builtin type; `@name` → builtin fn.
+            const is_type = tok.lexeme.len >= 2 and std.ascii.isUpper(tok.lexeme[1]);
+            const ty = if (is_type) proto.SemanticTokenTypes.type_ else proto.SemanticTokenTypes.function;
+            try emitSem(arena, &out, tok, ty, proto.SemanticTokenModifiers.defaultLibrary);
+            prev_kind = tok.kind;
+            saw_comptime = false;
+            continue;
+        }
+
+        if (tok.kind == .identifier) {
+            const pk = prev_kind;
+            const nk = nextSignificantKind(tokens, i);
+            const in_params = fn_param_depth != null and paren_depth == fn_param_depth.? + 1;
+
+            var type_idx: u32 = proto.SemanticTokenTypes.variable;
+            var mods: u32 = 0;
+
+            if (expect_fn_name) {
+                expect_fn_name = false;
+                expect_fn_paren = true;
+                type_idx = switch (container_top) {
+                    .interface, .@"struct", .record, .extend, .implement => proto.SemanticTokenTypes.method,
+                    else => proto.SemanticTokenTypes.function,
+                };
+                mods |= proto.SemanticTokenModifiers.declaration;
+            } else if (pk == .val or pk == .record or pk == .@"struct" or pk == .@"enum" or pk == .interface) {
+                type_idx = lookupCategory(bindings, tok.lexeme) orelse switch (pk.?) {
+                    .record, .@"struct" => proto.SemanticTokenTypes.type_,
+                    .@"enum" => proto.SemanticTokenTypes.@"enum",
+                    .interface => proto.SemanticTokenTypes.interface,
+                    else => proto.SemanticTokenTypes.variable,
+                };
+                mods |= proto.SemanticTokenModifiers.declaration;
+            } else if (pk == .dot or pk == .questionDot) {
+                type_idx = if (nk == .leftParenthesis) proto.SemanticTokenTypes.method else proto.SemanticTokenTypes.property;
+            } else if (in_params and (pk == .leftParenthesis or pk == .comma or pk == .@"comptime")) {
+                type_idx = proto.SemanticTokenTypes.parameter;
+                if (saw_comptime) mods |= proto.SemanticTokenModifiers.readonly;
+            } else if (container_top == .@"enum" and paren_depth == 0 and (pk == .leftBrace or pk == .comma)) {
+                type_idx = proto.SemanticTokenTypes.enumMember;
+            } else if (lookupCategory(bindings, tok.lexeme)) |cat| {
+                type_idx = cat;
+            } else if (isPrimitiveType(tok.lexeme)) {
+                type_idx = proto.SemanticTokenTypes.type_;
+                mods |= proto.SemanticTokenModifiers.defaultLibrary;
+            } else if (nk == .leftParenthesis) {
+                type_idx = proto.SemanticTokenTypes.function;
+            }
+
+            try emitSem(arena, &out, tok, type_idx, mods);
+            prev_kind = tok.kind;
+            saw_comptime = false;
+            continue;
+        }
+
+        // Operators / literals / punctuation: not classified, but still the
+        // "previous significant token" for the next identifier's context.
+        prev_kind = tok.kind;
+        saw_comptime = false;
+    }
+
+    return out.toOwnedSlice(arena);
+}
+
+/// Delta-encodes semantic tokens (sorted by position) into the LSP wire format:
+/// 5 ints per token — [deltaLine, deltaStartChar, length, tokenType, modifiers].
+pub fn encodeSemanticTokens(arena: std.mem.Allocator, toks: []const SemToken) ![]u32 {
+    const data = try arena.alloc(u32, toks.len * 5);
+    var prev_line: u32 = 0;
+    var prev_start: u32 = 0;
+    for (toks, 0..) |t, idx| {
+        const dl = t.line - prev_line;
+        const ds = if (dl == 0) t.start - prev_start else t.start;
+        data[idx * 5 + 0] = dl;
+        data[idx * 5 + 1] = ds;
+        data[idx * 5 + 2] = t.len;
+        data[idx * 5 + 3] = t.type_idx;
+        data[idx * 5 + 4] = t.mods;
+        prev_line = t.line;
+        prev_start = t.start;
+    }
+    return data;
+}
+
+fn emitSem(arena: std.mem.Allocator, out: *std.ArrayList(SemToken), tok: Token, type_idx: u32, mods: u32) !void {
+    try out.append(arena, .{
+        .line = @intCast(tok.line -| 1),
+        .start = @intCast(tok.col -| 1),
+        .len = @intCast(tok.lexeme.len),
+        .type_idx = type_idx,
+        .mods = mods,
+    });
+}
+
+/// Maps a top-level binding's declaration kind to a semantic token type.
+fn lookupCategory(bindings: []const comptime_pipeline.TypedBinding, name: []const u8) ?u32 {
+    for (bindings) |b| {
+        if (!std.mem.eql(u8, b.name, name)) continue;
+        return switch (b.decl) {
+            .@"fn" => proto.SemanticTokenTypes.function,
+            .record, .@"struct" => proto.SemanticTokenTypes.type_,
+            .@"enum" => proto.SemanticTokenTypes.@"enum",
+            .interface => proto.SemanticTokenTypes.interface,
+            .val => proto.SemanticTokenTypes.variable,
+            else => null,
+        };
+    }
+    return null;
+}
+
+/// The kind of the next non-trivia token after index `i`, or null at EOF.
+fn nextSignificantKind(tokens: []const Token, i: usize) ?TokenKind {
+    var j = i + 1;
+    while (j < tokens.len) : (j += 1) {
+        switch (tokens[j].kind) {
+            .endOfFile, .commentNormal, .commentDoc, .commentModule => continue,
+            else => return tokens[j].kind,
+        }
+    }
+    return null;
+}
+
+fn isPrimitiveType(name: []const u8) bool {
+    const prims = [_][]const u8{
+        "bool", "string", "void",  "char", "byte",
+        "i8",   "i16",    "i32",   "i64",  "isize",
+        "u8",   "u16",    "u32",   "u64",  "usize",
+        "f32",  "f64",    "never", "any",
+    };
+    for (prims) |p| if (std.mem.eql(u8, name, p)) return true;
+    return false;
+}
+
+/// True for every keyword-group token kind (`selfType` routes here too and is
+/// reclassified as a type by the caller).
+fn isKeywordKind(kind: TokenKind) bool {
+    return switch (kind) {
+        .as, .assert, .auto, .await, .case, .@"const", .default, .delegate, .derive, .@"else", .@"enum", .extend, .extends, .@"fn", .@"for", .from, .get, .@"if", .implement, .import, .macro, .new, .@"opaque", .private, .@"pub", .@"return", .selfType, .set, .@"struct", .@"test", .throw, .interface, .type, .record, .use, .val, .@"var", .@"comptime", .syntax, .@"break", .loop, .@"continue", .yield, .declare, .null, .@"try", .@"catch" => true,
+        else => false,
+    };
 }
 
 // ── Completion ────────────────────────────────────────────────────────────────

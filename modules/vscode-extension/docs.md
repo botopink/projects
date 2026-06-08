@@ -10,7 +10,8 @@ see [`AGENTS.md`](AGENTS.md).
 
 ## What lives in this package
 
-The extension does only two things that the LSP cannot:
+The extension does the things the LSP cannot, all **UI-only** — it owns no
+compiler knowledge:
 
 1. **Static / lexical view** — TextMate grammar + snippets, used by
    VS Code's tokenizer for colouring and IntelliSense suggestions
@@ -19,8 +20,48 @@ The extension does only two things that the LSP cannot:
 2. **LSP launcher** — TypeScript glue (`src/extension.ts`) that
    resolves `botopink-lsp` and connects it via
    `vscode-languageclient/node`. Everything semantic (diagnostics,
-   hover, completion, rename, …) is served by the LSP, not by this
-   package.
+   hover, completion, rename, semantic tokens, inlay hints, …) is
+   served by the LSP, not by this package.
+3. **Editor integrations that shell the `botopink` CLI or consume LSP
+   results** — tasks + a problem matcher, CodeLens run/test, a
+   status-bar codegen-target switcher, and Test Explorer.
+
+### Tasks + problem matcher (`src/tasks.ts`)
+
+`BotopinkTaskProvider` yields `check` / `build` / `test` / `format` tasks
+(contributed `taskDefinitions` type `botopink`, properties
+`command` / `target` / `filter`). Each is a `ShellExecution` of the resolved
+`botopink` CLI (`botopink.cliPath`, defaulting to `botopink` on `PATH`).
+`build` / `test` append `--target <active>` from the status bar. The
+`check` task attaches the `$botopink` problem matcher, whose regexp parses
+`error: <msg> at <file>:<line>:<col>` from stderr into the Problems panel.
+
+### CodeLens + run/test (`src/codeLens.ts`)
+
+`BotopinkCodeLensProvider` reads LSP `documentSymbol`s for the active file
+and places a "▶ Run" lens over `fn main` (Function symbol `main`) and a
+"▶ Run test" lens over each `test "…"` block (Method symbol). The lenses
+invoke `botopink.run` / `botopink.runTest`, which run the CLI in an
+integrated terminal honouring the active target.
+
+### Status-bar target (`src/target.ts`)
+
+`TargetManager` shows the active codegen target in the status bar. It is
+read from / written to the `target` field of the workspace-root
+`botopink.json` (round-tripped via JSON, preserving other fields); clicking
+the item opens a QuickPick of `commonJS` / `erlang` / `beam` / `wasm`. The
+current value is held in module state so tasks, CodeLens, and the Test
+Explorer all share one source of truth.
+
+### Test Explorer (`src/testExplorer.ts`)
+
+A `TestController` discovers `test "…"` blocks across workspace `.bp` files
+(again via LSP `documentSymbol`), building a file → test tree. The Run
+profile shells `botopink test` (with `--filter <name>` when a single test
+is selected), then `parseTestOutput` maps the commonJS runner's
+`  ok   <name>` / `  FAIL <name>  (<msg>)  at <loc>` lines back onto the
+`TestItem`s. The parser is coupled to
+`../compiler-core/src/codegen/commonJS.zig` — keep them in sync.
 
 ## TextMate grammar shape
 
@@ -106,6 +147,8 @@ the language is stable enough for public release, publish with
 | A new LSP feature consumed by the client | nothing here — implement in `../language-server/src/engine.zig` and the standard LSP capability negotiation will surface it |
 | A new VS Code command (e.g. "compile current file") | `package.json` `contributes.commands` + a handler in `src/extension.ts` |
 | A new user-tunable setting | `package.json` `contributes.configuration.properties` + read it in `src/extension.ts` |
+| A new CLI-backed task | `package.json` `contributes.taskDefinitions` + a branch in `src/tasks.ts` |
+| A new CodeLens / Test action | derive targets from LSP `documentSymbol`s in `src/codeLens.ts` / `src/testExplorer.ts` — do not parse `.bp` |
 
 ## See also
 

@@ -47,7 +47,9 @@ The server currently handles `initialize` / `shutdown` plus these
   interface methods on primitive/array/string receivers + labeled args +
   sortText + module names),
   `references` (cross-module with exact positions), `rename` (cross-module multi-file, with `prepareRename`, rejects keywords),
-  `signatureHelp` (incl. builtin interface methods, `self` dropped), `inlayHint`,
+  `signatureHelp` (incl. builtin interface methods, `self` dropped),
+  `inlayHint` (inferred `val` types, call-site parameter names, lambda parameter types; `workspace/inlayHint/refresh` on edits),
+  `semanticTokens` (`full` + `range`; token-driven legend distinguishing builtin `@Type`s, interface/struct methods vs free fns, `*fn` effect marker, comptime params, enum members),
   `codeAction` (add type annotation, remove unused import, add missing case patterns, add missing import),
   `foldingRange` (incl. `test` blocks).
 

@@ -15,4 +15,6 @@ comptime {
     _ = @import("./tests/prepare_rename.zig");
     _ = @import("./tests/code_actions.zig");
     _ = @import("./tests/type_definition.zig");
+    _ = @import("./tests/semantic_tokens.zig");
+    _ = @import("./tests/inlay_hints.zig");
 }

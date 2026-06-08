@@ -15,7 +15,7 @@ language-server/
 ├── build.zig.zon      ← deps (compiler-core)
 ├── src/               ← server + protocol + features + tests
 └── snapshots/
-    └── lsp/           ← 66 LSP feature snapshots
+    └── lsp/           ← 88 LSP feature snapshots
 ```
 
 ## What the server supports
@@ -35,7 +35,8 @@ The server currently handles `initialize` / `shutdown` plus these
 | `references` | Lists references in current file + re-lexes external files for exact positions via project index |
 | `rename` | Cross-module rename with `prepareRename` validation (multi-file WorkspaceEdit, rejects keywords/literals) |
 | `signatureHelp` | Active parameter highlighting on function calls (trigger `(`, retrigger `,` `:`); on a builtin interface method (`n.clamp(`) the receiver's `self` parameter is dropped |
-| `inlayHint` | Inferred binding types shown inline |
+| `inlayHint` | Inferred type after `val x = …` (suppressed when annotated); parameter-name hints before call arguments (skipped for bare-name / already-named args); lambda parameter-type hints from the callee's `fn(…)` signature. A `workspace/inlayHint/refresh` request is sent on every edit |
+| `semanticTokens` | `full` + `range`; token-driven classifier (legend: `type`/`interface`/`enum`/`enumMember`/`function`/`method`/`parameter`/`variable`/`property`/`keyword`/`comment` + `declaration`/`readonly`/`defaultLibrary`). Distinguishes builtin `@Type`s (`@Result`/`@Option`/`@Iterator` → `type defaultLibrary`), interface/struct methods (`method`) vs free fns (`function`), the `*` effect marker of `*fn`, comptime params (`parameter readonly`), and enum members. Survives type errors (lexer always runs; bindings are best-effort) |
 | `codeAction` | "Add type annotation"; "Remove unused import"; "Add missing case patterns"; "Import 'X' from module" (via project index) |
 | `foldingRange` | Foldable regions for `fn`/`struct`/`record`/`enum`/`interface`/`implement` blocks and consecutive `use` imports |
 

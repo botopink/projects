@@ -24,6 +24,7 @@
 ///   ```
 const std = @import("std");
 const proto = @import("../protocol.zig");
+const engine = @import("../engine.zig");
 
 pub const SNAP_DIR = "snapshots/lsp";
 
@@ -340,6 +341,74 @@ pub fn assertInlayHints(
     if (hints.len == 0) try buf.appendSlice(gpa, "  (none)\n");
 
     try checkText(gpa, slug, buf.items);
+}
+
+// ── Semantic Tokens ───────────────────────────────────────────────────────────
+
+pub fn assertSemanticTokens(
+    gpa: std.mem.Allocator,
+    slug: []const u8,
+    source: []const u8,
+    tokens: []const engine.SemToken,
+) !void {
+    var buf: std.ArrayList(u8) = .empty;
+    defer buf.deinit(gpa);
+
+    try appendSource(&buf, gpa, source);
+    try buf.appendSlice(gpa, "----- SEMANTIC TOKENS\n");
+    for (tokens) |t| {
+        const text = tokenText(source, t);
+        try buf.print(gpa, "  ({d},{d}) +{d}  {s}", .{ t.line, t.start, t.len, semTokenTypeName(t.type_idx) });
+        if (t.mods != 0) {
+            try buf.appendSlice(gpa, " [");
+            var first = true;
+            inline for (.{
+                .{ proto.SemanticTokenModifiers.declaration, "declaration" },
+                .{ proto.SemanticTokenModifiers.readonly, "readonly" },
+                .{ proto.SemanticTokenModifiers.defaultLibrary, "defaultLibrary" },
+            }) |m| {
+                if (t.mods & m[0] != 0) {
+                    if (!first) try buf.appendSlice(gpa, ",");
+                    try buf.appendSlice(gpa, m[1]);
+                    first = false;
+                }
+            }
+            try buf.appendSlice(gpa, "]");
+        }
+        try buf.print(gpa, "  \"{s}\"\n", .{text});
+    }
+    if (tokens.len == 0) try buf.appendSlice(gpa, "  (none)\n");
+
+    try checkText(gpa, slug, buf.items);
+}
+
+/// Extracts the source slice a semantic token covers (single-line tokens only).
+fn tokenText(source: []const u8, t: engine.SemToken) []const u8 {
+    var line: u32 = 0;
+    var i: usize = 0;
+    while (i < source.len and line < t.line) : (i += 1) {
+        if (source[i] == '\n') line += 1;
+    }
+    const start = @min(i + t.start, source.len);
+    const end = @min(start + t.len, source.len);
+    return source[start..end];
+}
+
+fn semTokenTypeName(idx: u32) []const u8 {
+    return switch (idx) {
+        proto.SemanticTokenTypes.type_ => "type",
+        proto.SemanticTokenTypes.interface => "interface",
+        proto.SemanticTokenTypes.@"enum" => "enum",
+        proto.SemanticTokenTypes.enumMember => "enumMember",
+        proto.SemanticTokenTypes.function => "function",
+        proto.SemanticTokenTypes.method => "method",
+        proto.SemanticTokenTypes.parameter => "parameter",
+        proto.SemanticTokenTypes.variable => "variable",
+        proto.SemanticTokenTypes.property => "property",
+        proto.SemanticTokenTypes.keyword => "keyword",
+        proto.SemanticTokenTypes.comment => "comment",
+        else => "?",
+    };
 }
 
 // ── Folding Ranges ───────────────────────────────────────────────────────────

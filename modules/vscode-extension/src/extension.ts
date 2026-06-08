@@ -7,9 +7,24 @@ import {
   LanguageClientOptions,
   ServerOptions,
 } from "vscode-languageclient/node";
+import {
+  getBotopinkCliPath,
+  getOutputChannel,
+  disposeOutputChannel,
+  workspaceCwd,
+} from "./cli";
+import {
+  RUN_MAIN_COMMAND,
+  RUN_TEST_COMMAND,
+  BotopinkCodeLensProvider,
+} from "./codeLens";
+import { BOTOPINK_TASK_TYPE, BotopinkTaskProvider } from "./tasks";
+import { createTestController } from "./testExplorer";
+import { TargetManager } from "./target";
 
 const enum BotopinkCommands {
   RestartServer = "botopink.restartServer",
+  SelectTarget = "botopink.selectTarget",
 }
 
 const EXTENSION_NS = "botopink";
@@ -17,6 +32,7 @@ const DEFAULT_SERVER_BIN = "botopink-lsp";
 
 let client: LanguageClient | undefined;
 let configureLang: vscode.Disposable | undefined;
+let targetManager: TargetManager | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   const onEnterRules = [...continueTypingCommentsOnNewline()];
@@ -48,13 +64,89 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(restartCommand);
 
+  // ── Status-bar target switcher (F3) ──────────────────────────────────────
+  const targets = new TargetManager(BotopinkCommands.SelectTarget);
+  targetManager = targets;
+  context.subscriptions.push(targets);
+  context.subscriptions.push(
+    vscode.commands.registerCommand(BotopinkCommands.SelectTarget, () =>
+      targets.pick(),
+    ),
+  );
+  await targets.init();
+
+  // ── Tasks + problem matcher (F2) ─────────────────────────────────────────
+  const taskProvider = new BotopinkTaskProvider(targets);
+  context.subscriptions.push(
+    vscode.tasks.registerTaskProvider(BOTOPINK_TASK_TYPE, taskProvider),
+  );
+
+  // ── CodeLens + run/test commands (F3) ────────────────────────────────────
+  context.subscriptions.push(
+    vscode.languages.registerCodeLensProvider(
+      { scheme: "file", language: "botopink" },
+      new BotopinkCodeLensProvider(),
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(RUN_TEST_COMMAND, (testName: string) =>
+      runCliInTerminal("test", targets, { filter: testName }),
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(RUN_MAIN_COMMAND, () =>
+      runCliInTerminal("run", targets),
+    ),
+  );
+
+  // ── Test Explorer (F4) ───────────────────────────────────────────────────
+  createTestController(context, targets);
+
   client = await createLanguageClient();
   client?.start();
 }
 
 export function deactivate(): Thenable<void> | undefined {
   configureLang?.dispose();
+  targetManager?.dispose();
+  targetManager = undefined;
+  disposeOutputChannel();
   return client?.stop();
+}
+
+/**
+ * Runs a `botopink` subcommand in an integrated terminal.
+ *
+ * Used by the CodeLens "Run" / "Run test" actions: a terminal gives the user a
+ * live, interactive view (and re-runs are one keystroke away). The active
+ * codegen target is honoured for the commands that accept `--target`.
+ */
+async function runCliInTerminal(
+  command: "run" | "test",
+  targets: TargetManager,
+  opts: { filter?: string } = {},
+): Promise<void> {
+  const cli = await getBotopinkCliPath();
+  const args = [command, "--target", targets.target];
+  if (command === "test" && opts.filter) {
+    args.push("--filter", quoteArg(opts.filter));
+  }
+  const cwd = workspaceCwd();
+  const terminal = vscode.window.createTerminal({
+    name: "Botopink",
+    cwd,
+  });
+  getOutputChannel().appendLine(`$ ${cli} ${args.join(" ")}`);
+  terminal.show();
+  terminal.sendText(`${quoteArg(cli)} ${args.join(" ")}`);
+}
+
+/** Minimal shell quoting for terminal command construction. */
+function quoteArg(value: string): string {
+  if (/^[\w./-]+$/.test(value)) {
+    return value;
+  }
+  return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
 async function createLanguageClient(): Promise<LanguageClient | undefined> {

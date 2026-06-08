@@ -161,6 +161,7 @@ pub const ServerCapabilities = struct {
     inlayHintProvider: bool = false,
     codeActionProvider: bool = false,
     foldingRangeProvider: bool = false,
+    semanticTokensProvider: ?SemanticTokensOptions = null,
 };
 
 pub const CompletionOptions = struct {
@@ -219,6 +220,57 @@ pub const InlayHint = struct {
     label: []const u8,
     kind: ?u32 = null,
     paddingLeft: ?bool = null,
+    paddingRight: ?bool = null,
+};
+
+// ── Semantic Tokens ───────────────────────────────────────────────────────────
+
+/// Token-type indices. The order **defines** the legend advertised to the
+/// client — never reorder without bumping the legend below in lockstep.
+pub const SemanticTokenTypes = struct {
+    pub const type_: u32 = 0;
+    pub const interface: u32 = 1;
+    pub const @"enum": u32 = 2;
+    pub const enumMember: u32 = 3;
+    pub const function: u32 = 4;
+    pub const method: u32 = 5;
+    pub const parameter: u32 = 6;
+    pub const variable: u32 = 7;
+    pub const property: u32 = 8;
+    pub const keyword: u32 = 9;
+    pub const comment: u32 = 10;
+
+    /// Legend, in index order — advertised in `SemanticTokensLegend.tokenTypes`.
+    pub const legend = [_][]const u8{
+        "type",      "interface", "enum",     "enumMember", "function", "method",
+        "parameter", "variable",  "property", "keyword",    "comment",
+    };
+};
+
+/// Token-modifier bit flags. Combined into a bitmask per token.
+pub const SemanticTokenModifiers = struct {
+    pub const declaration: u32 = 1 << 0;
+    pub const readonly: u32 = 1 << 1;
+    pub const defaultLibrary: u32 = 1 << 2;
+
+    pub const legend = [_][]const u8{ "declaration", "readonly", "defaultLibrary" };
+};
+
+pub const SemanticTokensLegend = struct {
+    tokenTypes: []const []const u8,
+    tokenModifiers: []const []const u8,
+};
+
+pub const SemanticTokensOptions = struct {
+    legend: SemanticTokensLegend,
+    range: bool = true,
+    full: bool = true,
+};
+
+/// Response payload for `textDocument/semanticTokens/full` (+ `/range`):
+/// `data` is the LSP delta-encoded array (5 ints per token).
+pub const SemanticTokens = struct {
+    data: []const u32,
 };
 
 // ── textDocument/didChange ────────────────────────────────────────────────────

@@ -28,7 +28,9 @@ tests/
 ├── folding_range.zig     ← textDocument/foldingRange
 ├── prepare_rename.zig    ← textDocument/prepareRename
 ├── code_actions.zig      ← textDocument/codeAction
-└── type_definition.zig   ← textDocument/typeDefinition
+├── type_definition.zig   ← textDocument/typeDefinition
+├── semantic_tokens.zig   ← textDocument/semanticTokens
+└── inlay_hints.zig       ← textDocument/inlayHint
 ```
 
 ## Snapshot workflow

@@ -26,6 +26,8 @@ pub const Server = struct {
     index: index_mod.ProjectIndex,
     initialized: bool,
     shutdown_requested: bool,
+    /// Monotonic id for server→client requests (e.g. inlay-hint refresh).
+    next_request_id: i64,
 
     pub fn init(gpa: std.mem.Allocator, io: std.Io, environ_map: ?*std.process.Environ.Map) Server {
         return .{
@@ -37,6 +39,7 @@ pub const Server = struct {
             .index = index_mod.ProjectIndex.init(gpa, io),
             .initialized = false,
             .shutdown_requested = false,
+            .next_request_id = 1,
         };
     }
 
@@ -113,6 +116,10 @@ pub const Server = struct {
             try self.handlePrepareRename(msg);
         } else if (std.mem.eql(u8, method, "textDocument/codeAction")) {
             try self.handleCodeAction(msg);
+        } else if (std.mem.eql(u8, method, "textDocument/semanticTokens/full")) {
+            try self.handleSemanticTokens(msg, null);
+        } else if (std.mem.eql(u8, method, "textDocument/semanticTokens/range")) {
+            try self.handleSemanticTokens(msg, rangeFromParams(msg.params()));
         } else if (msg.kind == .request) {
             try messages.writeError(self.io, self.gpa, msg.id(), -32601, "Method not found");
         }
@@ -155,6 +162,14 @@ pub const Server = struct {
                 .inlayHintProvider = true,
                 .codeActionProvider = true,
                 .foldingRangeProvider = true,
+                .semanticTokensProvider = .{
+                    .legend = .{
+                        .tokenTypes = &proto.SemanticTokenTypes.legend,
+                        .tokenModifiers = &proto.SemanticTokenModifiers.legend,
+                    },
+                    .range = true,
+                    .full = true,
+                },
             },
             .serverInfo = .{ .name = "botopink-lsp", .version = "0.1.0" },
         };
@@ -194,6 +209,11 @@ pub const Server = struct {
         try self.files.change(uri, text);
         self.index.invalidate();
         try self.publishDiagnostics(uri, text);
+
+        // Inferred-type / parameter inlay hints can change on every edit; ask
+        // the client to re-query them. Harmless if unsupported (ignored reply).
+        messages.writeRequest(self.io, self.gpa, self.next_request_id, "workspace/inlayHint/refresh", null) catch {};
+        self.next_request_id += 1;
     }
 
     // ── textDocument/didClose ─────────────────────────────────────────────────
@@ -638,6 +658,56 @@ pub const Server = struct {
 
         const hints = try engine.inlayHints(hint_arena.allocator(), tokens, bindings, range);
         try messages.writeResponse(self.io, self.gpa, msg.id(), hints);
+    }
+
+    // ── textDocument/semanticTokens/{full,range} ──────────────────────────────
+
+    fn handleSemanticTokens(self: *Server, msg: *messages.Message, range: ?proto.Range) !void {
+        const uri = self.uriFromTextDocument(msg) orelse {
+            return messages.writeResponse(self.io, self.gpa, msg.id(), null);
+        };
+
+        const source = self.files.read(self.gpa, self.io, uri) catch {
+            return messages.writeResponse(self.io, self.gpa, msg.id(), null);
+        };
+        defer self.gpa.free(source);
+
+        var arena = std.heap.ArenaAllocator.init(self.gpa);
+        defer arena.deinit();
+
+        // Semantic tokens are token-driven, so they survive type errors: the
+        // lexer always runs, and `bindings` is best-effort (empty on failure).
+        var lexer = Lexer.init(source);
+        const tokens = lexer.scanAll(arena.allocator()) catch {
+            return messages.writeResponse(self.io, self.gpa, msg.id(), proto.SemanticTokens{ .data = &.{} });
+        };
+
+        var lsp_compiler = @import("./compiler.zig").LspCompiler.init(self.gpa);
+        const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
+        var bindings: []const @import("botopink").comptime_pipeline.TypedBinding = &.{};
+        var result = lsp_compiler.compile(&entries) catch null;
+        defer if (result) |*r| r.deinit(self.gpa);
+        if (result) |r| {
+            for (r.session.outputs.items) |output| {
+                if (!std.mem.eql(u8, output.name, lsp_types.uriToPath(uri))) continue;
+                if (output.outcome == .ok) bindings = output.outcome.ok.bindings;
+            }
+        }
+
+        var toks = try engine.semanticTokens(arena.allocator(), tokens, bindings);
+
+        // `/range` requests: keep only tokens whose line falls in the range.
+        if (range) |rng| {
+            var kept: std.ArrayList(engine.SemToken) = .empty;
+            for (toks) |t| {
+                if (t.line >= rng.start.line and t.line <= rng.end.line)
+                    try kept.append(arena.allocator(), t);
+            }
+            toks = try kept.toOwnedSlice(arena.allocator());
+        }
+
+        const data = try engine.encodeSemanticTokens(arena.allocator(), toks);
+        try messages.writeResponse(self.io, self.gpa, msg.id(), proto.SemanticTokens{ .data = data });
     }
 
     // ── textDocument/typeDefinition ─────────────────────────────────────────
