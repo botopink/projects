@@ -695,6 +695,15 @@ fn registerInherentMethodTypes(
 /// receiver are instance methods (handled by the inherent-method machinery) and
 /// are skipped here.
 fn registerInterfaceAssociatedFns(env: *Env, d: ast.InterfaceDecl) InferError!void {
+    // Record the decl so codegen can emit its namespace object when used. Only
+    // interfaces that actually declare an associated fn are kept.
+    for (d.methods) |im| {
+        const is_assoc = (im.params.len == 0 or !std.mem.eql(u8, im.params[0].name, "self"));
+        if (is_assoc) {
+            try env.assocInterfaceDecls.put(d.name, d);
+            break;
+        }
+    }
     for (d.methods) |im| {
         const has_self = im.params.len > 0 and std.mem.eql(u8, im.params[0].name, "self");
         if (has_self) continue;
@@ -745,6 +754,7 @@ fn registerInterfaceAssociatedFns(env: *Env, d: ast.InterfaceDecl) InferError!vo
 /// vars, unifies them with the args, and yields the instantiated return type.
 fn inferAssociatedFnCall(
     env: *Env,
+    recvName: []const u8,
     callee: []const u8,
     fnTy: *T.Type,
     typedReceiver: ?*ast.TypedExpr,
@@ -752,6 +762,8 @@ fn inferAssociatedFnCall(
     typedTrailing: []ast.TrailingLambdaOf(.typed),
     loc: ast.Loc,
 ) InferError!TypedExpr {
+    // Mark the interface used so codegen emits its namespace object.
+    try env.usedAssocInterfaces.put(recvName, {});
     const inst = (try instantiateGenericType(env, fnTy)).deref();
     if (inst.* != .func) {
         env.lastError = TypeError.custom("not an associated function", "").withLoc(loc);
@@ -4062,7 +4074,7 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     if (env.lookup(recvName) == null) {
                         const qn = try std.fmt.allocPrint(env.arena, "{s}.{s}", .{ recvName, call.callee });
                         if (env.lookup(qn)) |fnTy| {
-                            return try inferAssociatedFnCall(env, call.callee, fnTy, typedReceiver, typedArgs, typedTrailing, loc);
+                            return try inferAssociatedFnCall(env, recvName, call.callee, fnTy, typedReceiver, typedArgs, typedTrailing, loc);
                         }
                     }
                 }

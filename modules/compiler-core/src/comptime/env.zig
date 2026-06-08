@@ -307,6 +307,15 @@ pub const Env = struct {
     /// method's real return type (the type's generic cells are instantiated per
     /// call site). Populated alongside `inherentMethods` during registration.
     inherentMethodTypes: std.StringHashMap(std.StringHashMap(*T.Type)),
+    /// Interface declarations that expose associated functions (`default fn` with
+    /// no `self`), keyed by name. Includes stdlib primitives (`Pair`, `Function`,
+    /// `Array`) registered before user inference. Used to emit their namespace
+    /// objects into the codegen output when a call site uses them.
+    assocInterfaceDecls: std.StringHashMap(ast.InterfaceDecl),
+    /// Interface names actually used as an associated-fn call receiver
+    /// (`Pair.of(...)`), recorded during inference so codegen emits only the
+    /// namespaces that are needed.
+    usedAssocInterfaces: std.StringHashMap(void),
     /// Resolved external-dispatch rewrites: call-site location → extension symbol
     /// to qualify with. Consumed by the transform pass to lower `obj.m(args)` to
     /// `Sym.m(obj, args)` without monkey-patching.
@@ -357,6 +366,8 @@ pub const Env = struct {
             .activations = std.StringHashMap(void).init(arena),
             .inherentMethods = std.StringHashMap(std.StringHashMap(void)).init(arena),
             .inherentMethodTypes = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena),
+            .assocInterfaceDecls = std.StringHashMap(ast.InterfaceDecl).init(arena),
+            .usedAssocInterfaces = std.StringHashMap(void).init(arena),
             .dispatchRewrites = std.AutoHashMap(ast.Loc, []const u8).init(arena),
             .stdModules = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena),
             .stdImports = std.StringHashMap(void).init(arena),

@@ -75,6 +75,36 @@ pub const ComptimeSession = struct {
     }
 };
 
+/// Prepend the interface declarations whose associated functions were used as
+/// call receivers (`Pair.of(...)`) but that aren't declared in the program —
+/// i.e. stdlib primitives (`Pair`, `Function`, `Array`). Codegen then emits their
+/// namespace objects so `Interface.method(...)` resolves at runtime. Local
+/// interfaces already in the program are skipped (avoids duplicate emission).
+fn withUsedAssocInterfaces(arena: std.mem.Allocator, prog: ast.Program, env: *const envMod.Env) !ast.Program {
+    if (env.usedAssocInterfaces.count() == 0) return prog;
+    var extra: std.ArrayListUnmanaged(ast.DeclKind) = .empty;
+    var it = env.usedAssocInterfaces.keyIterator();
+    while (it.next()) |k| {
+        const name = k.*;
+        var already = false;
+        for (prog.decls) |d| {
+            if (d == .interface and std.mem.eql(u8, d.interface.name, name)) {
+                already = true;
+                break;
+            }
+        }
+        if (already) continue;
+        if (env.assocInterfaceDecls.get(name)) |decl| {
+            try extra.append(arena, .{ .interface = decl });
+        }
+    }
+    if (extra.items.len == 0) return prog;
+    const new_decls = try arena.alloc(ast.DeclKind, extra.items.len + prog.decls.len);
+    @memcpy(new_decls[0..extra.items.len], extra.items);
+    @memcpy(new_decls[extra.items.len..], prog.decls);
+    return ast.Program{ .decls = new_decls };
+}
+
 // ── Analysis helpers (internal) ───────────────────────────────────────────────
 
 const AnalysisResult = union(enum) {
@@ -293,14 +323,17 @@ fn stripTestDecls(program: ast.Program, alloc: std.mem.Allocator) !ast.Program {
 }
 
 pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
+    _ = gpa; // stdlib sources are now parsed into `env.arena` (see below)
     const prelude = @import("std_prelude");
     const sources = [_][]const u8{
         prelude.primitives,
     };
     for (sources) |src| {
-        var arena = std.heap.ArenaAllocator.init(gpa);
-        defer arena.deinit();
-        const alloc = arena.allocator();
+        // Parse into `env.arena` (not a scratch arena): the interface decls for
+        // primitive associated fns (`Pair`, `Function`, …) are retained in
+        // `env.assocInterfaceDecls` and emitted by codegen, so they must outlive
+        // this call.
+        const alloc = env.arena;
 
         var lx = Lexer.init(src);
         const tokens = try lx.scanAll(alloc);
@@ -499,7 +532,7 @@ pub fn compileTypesOnly(
                     @memcpy(new_decls[synth.items.len..], succ.program.decls);
                     break :blk ast.Program{ .decls = new_decls };
                 };
-                const transformed = try transform.transform(
+                const transformed = try withUsedAssocInterfaces(arena_alloc, try transform.transform(
                     arena_alloc,
                     program_for_transform,
                     fn_decls,
@@ -509,7 +542,7 @@ pub fn compileTypesOnly(
                     &succ.env.templateExpansions,
                     &succ.env.result_jump_lowerings,
                     &succ.env.stdArrayLowerings,
-                );
+                ), &succ.env);
 
                 var type_ids = std.StringHashMap(usize).init(arena_alloc);
                 for (succ.bindings) |b| {
@@ -652,7 +685,7 @@ pub fn compile(
                     @memcpy(new_decls[synth.items.len..], succ.program.decls);
                     break :blk ast.Program{ .decls = new_decls };
                 };
-                const transformed = try transform.transform(arena_alloc, program_for_transform, fn_decls, comptime_arrays, ct.comptime_vals, &succ.env.method_lowerings, &succ.env.templateExpansions, &succ.env.result_jump_lowerings, &succ.env.stdArrayLowerings);
+                const transformed = try withUsedAssocInterfaces(arena_alloc, try transform.transform(arena_alloc, program_for_transform, fn_decls, comptime_arrays, ct.comptime_vals, &succ.env.method_lowerings, &succ.env.templateExpansions, &succ.env.result_jump_lowerings, &succ.env.stdArrayLowerings), &succ.env);
 
                 var type_ids = std.StringHashMap(usize).init(arena_alloc);
                 for (succ.bindings) |b| {

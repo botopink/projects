@@ -51,10 +51,15 @@ or *codegen* it. This is the largest and highest-priority block: it unblocks the
       `registerInterfaceAssociatedFns` binds each `self`-less interface method
       under `"<Interface>.<method>"` (generics generalized to `.generic`);
       `inferCallExpr` resolves `Recv.callee(...)` and instantiates per call site.
-      `Pair.of`/`Array.range`/`Function.identity` type-check. **CODEGEN PENDING**:
-      `Pair.of(...)` still emits `Pair.of(...)` with `Pair` undefined at runtime —
-      the backends must emit a namespace object / lowering for the associated fns
-      (derive from `primitives.d.bp` interface bodies). See A.codegen.
+      `Pair.of`/`Array.range`/`Function.identity` type-check. **JS CODEGEN DONE**
+      for `default fn` associated fns: `emitInterface` emits a namespace object
+      (`const Pair = {}; Pair.of = function(...){...}`), and codegen injects the
+      stdlib interface decls used as receivers (`withUsedAssocInterfaces` +
+      `env.usedAssocInterfaces`/`assocInterfaceDecls`; primitives.d.bp parsed into
+      `env.arena` so the decls persist). `Pair.of`/`Pair.first`/`Function.identity`/
+      `Function.compose` run end-to-end on node. **STILL PENDING**: `@[external]`
+      associated fns (e.g. `Array.range`, host-backed via `gleam_stdlib.mjs`) need
+      the companion-module lowering below; erlang/beam/wasm backends.
 - [ ] **`default fn` bodies** — register + type-check default method bodies.
 - [ ] **`extends` capability inheritance** — concrete type inherits base-interface members.
 - [ ] **`@[external]` on interface methods** (currently only on top-level `declare fn`).

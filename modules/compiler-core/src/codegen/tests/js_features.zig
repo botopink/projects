@@ -612,3 +612,18 @@ test "js: interface associated fn namespace" {
         \\}
     );
 }
+
+test "js: stdlib associated fn namespace injected" {
+    // `Pair`/`Function` are primitives in primitives.d.bp (not in the user
+    // program). When their associated fns are used, codegen injects the
+    // interface decl so the namespace object is emitted at runtime.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val p = Pair.of(1, "one");
+        \\    @print(Pair.first(p));
+        \\    @print(Function.identity(42));
+        \\    val inc = Function.compose({ x -> x + 1 }, { y -> y * 2 });
+        \\    @print(inc(10));
+        \\}
+    );
+}
