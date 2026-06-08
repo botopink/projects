@@ -12,7 +12,7 @@ surface (interactive hooks, client navigation, the Http context) stays as
 
 | File | Kind | Provides |
 |---|---|---|
-| `element.bp` | **compiled** | `record Element`, builders (`text`, `fragment`, `div`/`span`/`p`/`h1`/`ul`/`li` — take `Element[]`), `renderToString` (pure, synchronous), `test {}` asserting the rendered HTML |
+| `element.bp` | **compiled** | `record Element implement @Context<Element, Element>` (the UI node AND the hook ContextBase), builders (`text`, `fragment`, `div`/`span`/`p`/`h1`/`ul`/`li` — take `Element[]`), `renderToString` (pure, synchronous), `test {}` asserting the rendered HTML |
 | `hooks.d.bp` | declarative | `state`, `effect`, `memo`, `ref`, `reducer` (`@Context<Element, _>`) — **blocked**: record callback-field returns `{value, set}` are inexpressible (gap G1) |
 | `html.d.bp` | declarative | `html(comptime q: @Expr<string>) -> @Expr<Element>` — JSX-like DSL; body (markup scanner) pending |
 | `router.d.bp` | declarative | `Router`, `useRouter`, `Link` (Next-style navigation) |

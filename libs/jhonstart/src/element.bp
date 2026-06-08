@@ -1,29 +1,34 @@
 // jhonstart/element — the UI core, implemented in *real* botopink.
 //
-// V1 deliberately models the UI tree as ordinary data rather than a host
-// intrinsic: an `Element` is a plain `record` and every builder/renderer here is
-// an ordinary `.bp` function. The framework stays a *consumer* of the language
-// (no privileged compiler access), and the SSR renderer is a pure, synchronous
-// function — no host runtime, no `@[external]`, no async.
+// V1 models the UI tree as ordinary data rather than a host intrinsic: every
+// builder/renderer here is an ordinary `.bp` function and the SSR renderer is a
+// pure, synchronous walk — no host runtime, no `@[external]`, no async.
 //
-// A node is tagged:
-//   - `tag`      — `"#text"` (leaf), `"#fragment"` (siblings, no wrapper), or an
-//                  HTML tag name (`"div"`, `"p"`, …);
-//   - `value`    — text content (only meaningful for `"#text"`);
-//   - `children` — child nodes (empty for text leaves).
+// `Element` IS the `@Context` base for every client hook: a function whose
+// return implements `@Context<Element, _>` is a hook, and the `use` prefix is
+// only legal inside a `-> Element` body (enforced by context-inference). The
+// node type is therefore a `record` that *implements* `@Context<Element, Element>`
+// — at once the rendered data and the capability the hooks gate on. (A `record`
+// carries the inline `implement` clause AND constructs correctly at runtime;
+// an inline `struct implement … {}` type-checks but its fields are dropped by
+// codegen, and a standalone `implement @Context<…> for …` block does not parse —
+// see the spec Notes.)
 //
-// The builders take `Element[]` directly (not a `fn() -> Children` trailing
-// lambda) — the form the current toolchain accepts; see the spec Notes. Hooks
-// (`use state`, …) and client `mount` remain host concerns (declarative, gap-
-// blocked) and are NOT part of this compiled core.
-
-pub record Element {
+// A node is tagged: `tag` is `"#text"` (a leaf), `"#fragment"` (siblings, no
+// wrapper), or an HTML tag name (`"div"`, `"p"`, …); `value` is text content
+// (only for `"#text"`); `children` holds the child nodes.
+pub record Element implement @Context<Element, Element> {
     tag: string,
     value: string,
     children: Element[],
 }
 
 // ── builders ──────────────────────────────────────────────────────────────────
+//
+// Builders take a plain `Element[]` argument (`div([a, b])`) rather than a
+// `fn() -> Children` trailing lambda (`div { [a, b] }`): the trailing-lambda form
+// needs `fn() -> T[]` parsing + an `Element[]`→`Children` coercion the toolchain
+// lacks (spec Notes). The array form builds nested trees today.
 
 // A text leaf. A bare string in markup becomes one of these.
 pub fn text(value: string) -> Element {
@@ -73,4 +78,3 @@ test {
     val tree = div([p([text("hi")]), text("!")]);
     assert renderToString(tree) == "<div><p>hi</p>!</div>";
 }
-

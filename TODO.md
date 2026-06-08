@@ -39,9 +39,12 @@
 
 ## F1 — core types (`element.bp`) ✅ — real botopink, compiled + runtime-tested
 
-- [x] `Element` modelled as a `pub record Element { tag, value, children: Element[] }`
-      (recursive record) — `libs/jhonstart/src/element.bp`, in `botopink.json`
-- [x] `Element` usable as `@Context<Element, _>` base (builtin) — verified in check tests
+- [x] `Element` = `pub record Element implement @Context<Element, Element> { tag,
+      value, children: Element[] }` — the UI node AND the hook ContextBase, in one
+      recursive record (`libs/jhonstart/src/element.bp`, in `botopink.json`)
+- [x] `Element` **implements `@Context`** (not a builtin — Element isn't builtin;
+      the `record … implement @Context<…>` inline form attaches it AND constructs
+      at runtime, unlike inline `struct implement` which drops fields — gap G7)
 - [x] String→text via the `text(...)` builder; child lists are `Element[]` (no
       `Children` interface needed — array-arg builders, see F2)
 

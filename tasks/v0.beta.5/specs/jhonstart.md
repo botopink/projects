@@ -414,13 +414,29 @@ codegen/erlang ---- counter_typechecks   (parity: at least type-checks/compiles)
      not satisfied by an `Element[]` (`expected: Children, found: Element[]`),
      so the `fn() -> Children` builder signature can't receive an element list.
   5. **`fn() -> {}` (empty-record return type) does not parse** — same root as #2.
+  6. **Standalone `implement <generic-iface> for <T>` does not parse.** The
+     `val X = implement Foo for Bar { }` form (docs §Implement) parses only a
+     *non-generic* interface; `implement @Context<E, E> for E` (and any
+     `implement Foo<A, B> for …`) fails to parse.
+  7. **Inline `struct implement … { fields }` drops its fields at codegen.** The
+     form type-checks, but the JS emitter produces `class E { tag; n; }` with
+     **no constructor**, so `new E("x", 5)` ignores the args and every field
+     reads back `undefined` at runtime. (Also an array-typed field inside that
+     body fails to parse.) The context-inference tests only ever *type-check*
+     this form, so the gap was latent.
 
-  > **Design response (V1).** Gaps #3/#4 only block the `fn() -> Children`
-  > *trailing-lambda* builder form. V1 therefore makes the builders take an
-  > **`Element[]` argument** (`div([a, b])`) instead — which parses and
-  > type-checks today — sidestepping both. Authoring trades `div { […] }` sugar
-  > for `div([…])`. Gap #1 has no such workaround, so the React hook ergonomics
-  > (`{value, set}`) stay blocked.
+  > **Design response (V1).** Gaps #3/#4 block only the `fn() -> Children`
+  > *trailing-lambda* builder form, so V1 builders take an **`Element[]`
+  > argument** (`div([a, b])`) — parses and type-checks today. For the
+  > **ContextBase**, `Element` is declared as a **`record` that carries the
+  > inline `implement` clause**: `record Element implement @Context<Element,
+  > Element> { … children: Element[] }`. This is the one form that both (a)
+  > attaches `@Context` *and* (b) constructs correctly at runtime — it dodges
+  > gap #6 (it's inline, not a standalone block), gap #7 (a `record` emits a real
+  > constructor, unlike an inline `struct`), and even allows the bare
+  > `children: Element[]` array field that an inline `struct` body rejects. Gap
+  > #1 has no workaround, so the React hook ergonomics (`{value, set}`) stay
+  > blocked.
 
   **What compiles today.** The whole **UI core is real botopink**, not host
   intrinsics (`libs/jhonstart/src/element.bp`, in `botopink.json`'s compiled
@@ -459,10 +475,13 @@ codegen/erlang ---- counter_typechecks   (parity: at least type-checks/compiles)
 - **Not embedded.** Unlike `std`, jhonstart is resolved as an ordinary project
   dependency (`from "jhonstart"`); do **not** wire it into
   `comptime/stdlib/prelude.zig` or `build.zig`.
-- **`Element` as library ContextBase.** Today `@Context`'s base `Element` is a
-  builtin (`builtins.d.bp`). F1 must decide whether jhonstart re-declares it or
-  re-exports the builtin; the cleanest is: keep `Element` builtin, let jhonstart
-  add methods/builders around it (extension-dispatch).
+- **`Element` as library ContextBase.** `Element` is **not** a builtin — there is
+  no `Element` in `builtins.d.bp`; the ContextBase is simply whatever type a
+  program declares as `@Context`'s base (context-inference resolves it via
+  `td.contextBase()`). jhonstart therefore **declares** it, as
+  `record Element implement @Context<Element, Element> { … }` (see the Design
+  response above for why the `record`-with-inline-`implement` form is the only
+  one that both attaches `@Context` and constructs at runtime).
 - **File routing is a convention, not a compiler feature** in V1. `app/…/page.bp`
   is resolved by a (future) jhonstart build step / CLI integration; the demo wires
   it manually in `main.bp`. Real file-system routing = a separate spec.
