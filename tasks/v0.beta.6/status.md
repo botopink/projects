@@ -11,6 +11,8 @@
 | [rakun-ioc-web](specs/rakun-ioc-web.md) | pending — rakun foundation landed (`from "rakun"`, `http.bp`, `#[decorator]` resolution) | `task/rakun` | `.tasks/rakun` | F2–F4 (0/3 phases) |
 | [rakun-bootstrap](specs/rakun-bootstrap.md) | pending — blocked on `rakun-ioc-web`; needs real `libs/server` | not opened | — | F0–F2 (0/3 phases) |
 | [jhonstart-language-gaps](specs/jhonstart-language-gaps.md) | pending — 4 blockers verified on `task/jhonstart` | not opened | — | F0–F3 (0/4 phases) |
+| [implement-completeness](specs/implement-completeness.md) | pending — G5/G6/G7 verified on `task/jhonstart` (G7 = codegen bug) | not opened | — | F0–F2 (0/3 phases) |
+| [mutual-recursion](specs/mutual-recursion.md) | pending — verified on `task/jhonstart` (renderToString) | not opened | — | F0 (0/1 phases) |
 
 ## Notes
 
@@ -29,3 +31,8 @@
   graduating from scaffold to a real HTTP backing.
 - **jhonstart-language-gaps** are language features surfaced by jhonstart; its
   own F4–F5 (SSR/loaders) stay gated on the async specs in `tasks/v0.beta.1/`.
+- **implement-completeness** + **mutual-recursion** were surfaced going deeper on
+  jhonstart (attaching `@Context` to `Element`, the recursive renderer): G5/G6/G7
+  + forward-reference, continuing the G1–G4 numbering. **G7 is a correctness bug**
+  (inline `struct implement` values drop their fields at runtime — latent because
+  that form was only typecheck-tested). jhonstart V1 already sidesteps all of them.

@@ -41,6 +41,8 @@ Two strands converge here:
 | [rakun-ioc-web — comptime DI container + router](specs/rakun-ioc-web.md) | `rakun-ioc-web` | nothing (rakun foundation in feat) |
 | [rakun-bootstrap — `Rakun.run` + real HTTP backing](specs/rakun-bootstrap.md) | `rakun-bootstrap` | `rakun-ioc-web` |
 | [jhonstart-language-gaps — record/array ergonomics](specs/jhonstart-language-gaps.md) | `jhonstart-language-gaps` | nothing |
+| [implement-completeness — `implement` parses & codegens in every form](specs/implement-completeness.md) | `implement-completeness` | nothing |
+| [mutual-recursion — forward references between top-level fns](specs/mutual-recursion.md) | `mutual-recursion` | nothing |
 
 ## Dependency DAG
 
@@ -54,6 +56,9 @@ rakun-ioc-web  ── F2 IoC container · F3 annotation args · F4 router
 
 jhonstart-language-gaps  ── G1 fn-typed fields · G2 anon record types
                             G3 fn() -> T[] · G4 Children coercion
+implement-completeness   ── G5 array field in struct-implement body
+                            G6 generic iface in `implement … for` · G7 struct-implement codegen bug
+mutual-recursion         ── forward refs between top-level fns (renderToString ⇄ renderChildren)
 ```
 
 ## Scope boundaries
@@ -66,5 +71,13 @@ jhonstart-language-gaps  ── G1 fn-typed fields · G2 anon record types
 - **jhonstart-language-gaps** are *language* features (general), merely surfaced
   by jhonstart. jhonstart's own F4–F5 (SSR/loaders) stay gated on the async
   specs in `tasks/v0.beta.1/`, out of this set.
+- **implement-completeness** + **mutual-recursion** were surfaced going deeper on
+  jhonstart (attaching `@Context` to `Element`, writing the recursive renderer) —
+  G5/G6/G7 + the forward-reference gap, continuing the G1–G4 numbering. G7 is a
+  *correctness bug* (an inline `struct implement` value's fields are dropped at
+  runtime), latent because that form was only ever typecheck-tested. The shipped
+  jhonstart V1 already sidesteps all of these (`record … implement @Context`,
+  array-arg builders, an inlined recursive walk), so they unblock the *next*
+  jhonstart phase rather than the current green core.
 - Tests for libraries live in the library's own `.bp` files (`botopink test`),
   not in the compiler's Zig suites.
