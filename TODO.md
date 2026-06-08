@@ -61,14 +61,33 @@
       symbols_test_block, folding_test_block; stdio-verified end to end
       (100 LSP tests green)
 
-## F4 — LSP: interface-method dispatch  ◀ DEFERRED — BLOCKED on stdlib-interface
-- [ ] `completion` on receiver dot: `true.` / `42.` / `xs.`
-- [ ] `hover` + `signatureHelp` for interface methods on primitives
-- [ ] Snapshots `lsp/completion_primitive_methods`, `lsp/hover_interface_method`
-> Cannot start until `stdlib-interface` lands primitive interfaces in
-> `primitives.d.bp`/`array.d.bp`. Left untouched on this branch by design.
+## F4 — LSP: interface-method dispatch  ✔ DONE
+- [x] Unblocked: `stdlib-interface` landed primitive/array/string interfaces
+      (`primitives.d.bp` `I32`/`U32`/…/`Bool`, `array.d.bp` `Array<T>`,
+      `string.d.bp` `String`), pulled in via the generic-inference merge.
+- [x] Exposed the embedded interface sources to the LSP:
+      `comptime_pipeline.{primitive_interfaces_src,array_interface_src,
+      string_interface_src}` (new pub consts in `comptime.zig`).
+- [x] `completion` on receiver dot: `true.` / `42.` / `xs.` / `"s".` — resolves
+      the receiver's inferred type → interface, lists its `fn`/`val` members
+      (`builtinReceiverCompletion`/`receiverBuiltinInterface`/
+      `collectInterfaceMembers` in `engine.zig`). Member-end scan tracks paren
+      depth so `fn`-typed params (`map(transform: fn(item:T)->T)`) aren't truncated.
+- [x] `hover` (`hoverBuiltinInterfaceMethod`, digit-tolerant `dotReceiverBefore`)
+      + `signatureHelp` (`builtinMethodSignature`, drops the implicit `self`) for
+      interface methods on builtin receivers.
+- [x] Snapshots: `completion_primitive_methods`, `completion_bool_methods`,
+      `completion_array_methods`, `hover_interface_method`,
+      `hover_interface_method_array`, `sig_interface_method`. `zig build test`
+      green (106/106). Stdio-verified end to end: `n.`/`true.`/`xs.` completion +
+      hover, `n.clamp(` signatureHelp.
+> Caveat: an integer *literal* receiver (`42.`) is engine-correct but the editor
+> can't reach it — a buffer with `42.method()` doesn't compile (the lexer reads
+> `42.` as a float), so completion gates on a clean compile. Realistic path is a
+> variable (`val n = 42; n.`). Mapping covers `i32/u32/i64/u64/f32/f64`→I32…/Bool,
+> `string`→String, `array`→Array; other widths (`i8`/`i16`/…) have no interface yet.
 
-## F5 — Manifest + docs  ✔ DONE (F4 items excepted)
+## F5 — Manifest + docs  ✔ DONE
 - [x] Bumped `package.json` 0.0.1 → 0.1.0; refreshed README feature list
       (attributes/@-types/`*fn`/`?.`/`${…}`, std go-to-def, std completion,
       test-block symbols, new snippets)

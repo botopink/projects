@@ -195,3 +195,44 @@ test "hover: external declare fn in std module shows signature" {
     try std.testing.expect(std.mem.indexOf(u8, result.?.contents.value, "fn println") != null);
     try snap.assertHover(gpa, "hover_std_external_declare", source, h.pos(1, 12), result);
 }
+
+// ── H-F4 — hover on an interface method invoked on a builtin receiver ──────────
+
+test "hover: interface method on integer receiver shows signature" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\val s = 42.abs();
+    ;
+    // Cursor on `abs` in `42.abs` (line 0, char 12).
+    const result = try engine.hover(gpa, source, h.pos(0, 12), &.{});
+    defer if (result) |hov| gpa.free(hov.contents.value);
+
+    try std.testing.expect(result != null);
+    try std.testing.expect(std.mem.indexOf(u8, result.?.contents.value, "fn abs") != null);
+    try std.testing.expect(std.mem.indexOf(u8, result.?.contents.value, "interface I32") != null);
+    try snap.assertHover(gpa, "hover_interface_method", source, h.pos(0, 12), result);
+}
+
+test "hover: interface method on array receiver shows signature" {
+    const gpa = std.testing.allocator;
+    const valid_source =
+        \\val xs = [1, 2, 3];
+    ;
+    const source =
+        \\val xs = [1, 2, 3];
+        \\val y = xs.filter({ x -> true });
+    ;
+
+    var c = try h.compile(gpa, valid_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    // Cursor on `filter` in `xs.filter` (line 1, char 12).
+    const result = try engine.hover(gpa, source, h.pos(1, 12), bindings);
+    defer if (result) |hov| gpa.free(hov.contents.value);
+
+    try std.testing.expect(result != null);
+    try std.testing.expect(std.mem.indexOf(u8, result.?.contents.value, "fn filter") != null);
+    try std.testing.expect(std.mem.indexOf(u8, result.?.contents.value, "interface Array") != null);
+    try snap.assertHover(gpa, "hover_interface_method_array", source, h.pos(1, 12), result);
+}

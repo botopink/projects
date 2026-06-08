@@ -182,3 +182,31 @@ test "signature_help: signature label contains function name" {
     }
     try snap.assertSignatureHelp(gpa, "sig_label_has_name", source, cursor, result);
 }
+
+// ── SH-F4 — interface method on a builtin receiver (self dropped) ──────────────
+
+test "signature_help: interface method on integer receiver drops self" {
+    const gpa = std.testing.allocator;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+
+    // `42.clamp(min, max)` — `self` is the receiver, so the signature shows
+    // only `min` / `max`.
+    const source =
+        \\val r = 42.clamp(
+    ;
+    // col 17 = right after `(` in "val r = 42.clamp("
+    const cursor = h.pos(0, 17);
+    const result = try engine.signatureHelp(arena.allocator(), source, cursor, &.{});
+
+    try std.testing.expect(result != null);
+    if (result) |sh| {
+        try std.testing.expect(sh.signatures.len > 0);
+        const params = sh.signatures[0].parameters orelse return error.NoParams;
+        // self dropped → exactly min, max.
+        try std.testing.expectEqual(@as(usize, 2), params.len);
+        try std.testing.expect(std.mem.indexOf(u8, params[0].label, "min") != null);
+    }
+    try snap.assertSignatureHelp(gpa, "sig_interface_method", source, cursor, result);
+}

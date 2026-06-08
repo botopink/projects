@@ -223,6 +223,9 @@ pub fn hover(
     // Not a local binding — try a qualified std module member (`list.map`).
     if (try hoverStdModule(gpa, source, pos)) |h| return h;
 
+    // …or an interface method on a builtin receiver (`42.abs`, `xs.map`).
+    if (try hoverBuiltinInterfaceMethod(gpa, source, pos, bindings)) |h| return h;
+
     return null;
 }
 
@@ -1877,7 +1880,108 @@ pub fn signatureHelp(
         };
     }
 
+    // No matching binding — the call may be an interface method on a builtin
+    // receiver (`42.clamp(|)`, `xs.map(|)`). Resolve via the receiver before the
+    // method name.
+    if (j > 0 and source[j - 1] == '.') {
+        var r = j - 1; // index of the '.'
+        while (r > 0 and isIdentCont(source[r - 1])) r -= 1;
+        const receiver = source[r .. j - 1];
+        if (try builtinMethodSignature(arena, receiver, fn_name, active_param, bindings)) |sh|
+            return sh;
+    }
+
     return null;
+}
+
+/// Builds signature help for an interface method on a builtin receiver. The
+/// receiver's `self` parameter is dropped — the caller fills the remaining
+/// arguments. Returns null when the receiver/method has no interface entry.
+fn builtinMethodSignature(
+    arena: std.mem.Allocator,
+    receiver: []const u8,
+    method: []const u8,
+    active_param: u32,
+    bindings: []const comptime_pipeline.TypedBinding,
+) !?proto.SignatureHelp {
+    const iface = receiverBuiltinInterface(receiver, bindings) orelse return null;
+    const members = (try collectInterfaceMembers(arena, iface)) orelse return null;
+
+    for (members) |m| {
+        if (!m.is_fn or !std.mem.eql(u8, m.name, method)) continue;
+
+        // Re-lex the signature to split the parameter list, dropping `self`.
+        var lexer = Lexer.init(m.sig);
+        const tokens = lexer.scanAll(arena) catch return null;
+        var lp: ?usize = null;
+        var rp: ?usize = null;
+        var depth: u32 = 0;
+        for (tokens, 0..) |t, ti| {
+            if (t.kind == .leftParenthesis) {
+                if (depth == 0 and lp == null) lp = ti;
+                depth += 1;
+            } else if (t.kind == .rightParenthesis) {
+                depth -= 1;
+                if (depth == 0) {
+                    rp = ti;
+                    break;
+                }
+            }
+        }
+
+        var params: std.ArrayList(proto.ParameterInformation) = .empty;
+        if (lp != null and rp != null) {
+            // Split top-level params by commas between `(` and `)`.
+            var seg_start = tokenOffset(m.sig, tokens[lp.? + 1]);
+            var pd: u32 = 0;
+            var ti = lp.? + 1;
+            while (ti <= rp.?) : (ti += 1) {
+                const tk = tokens[ti].kind;
+                if (tk == .leftParenthesis) pd += 1;
+                if (tk == .rightParenthesis) {
+                    if (pd == 0) {
+                        try pushParam(arena, &params, m.sig[seg_start..tokenOffset(m.sig, tokens[ti])]);
+                        break;
+                    }
+                    pd -= 1;
+                }
+                if (pd == 0 and tk == .comma) {
+                    try pushParam(arena, &params, m.sig[seg_start..tokenOffset(m.sig, tokens[ti])]);
+                    seg_start = tokenOffset(m.sig, tokens[ti + 1]);
+                }
+            }
+        }
+
+        const nparams = params.items.len;
+        const sigs = try arena.alloc(proto.SignatureInformation, 1);
+        sigs[0] = .{
+            .label = try arena.dupe(u8, m.sig),
+            .parameters = if (nparams > 0) try params.toOwnedSlice(arena) else null,
+        };
+        const active = if (nparams > 0)
+            @min(active_param, @as(u32, @intCast(nparams - 1)))
+        else
+            0;
+        return proto.SignatureHelp{
+            .signatures = sigs,
+            .activeSignature = 0,
+            .activeParameter = active,
+        };
+    }
+    return null;
+}
+
+/// Appends a trimmed parameter to `params`, skipping the implicit `self`.
+fn pushParam(
+    arena: std.mem.Allocator,
+    params: *std.ArrayList(proto.ParameterInformation),
+    raw: []const u8,
+) !void {
+    const p = std.mem.trim(u8, raw, " \t\r\n,");
+    if (p.len == 0) return;
+    if (std.mem.eql(u8, p, "self") or std.mem.startsWith(u8, p, "self:") or
+        std.mem.startsWith(u8, p, "self ")) return;
+    try params.append(arena, .{ .label = try arena.dupe(u8, p) });
 }
 
 // ── Inlay Hints ───────────────────────────────────────────────────────────────
@@ -1997,6 +2101,8 @@ pub fn completion(
         if (member_items.len > 0) return member_items;
         gpa.free(member_items);
         if (try stdModuleCompletion(gpa, source, ctx.receiver)) |std_items| return std_items;
+        // Methods on primitives / arrays / strings (`42.`, `true.`, `xs.`).
+        if (try builtinReceiverCompletion(gpa, ctx.receiver, bindings)) |bi_items| return bi_items;
         return gpa.alloc(proto.CompletionItem, 0);
     }
 
@@ -2273,6 +2379,233 @@ fn stdModuleCompletion(
     }
 
     return try items.toOwnedSlice(gpa);
+}
+
+// ── Builtin-type interface methods (primitives / arrays / strings) ────────────
+//
+// The methods callable on a primitive (`42.abs()`), boolean (`true.to_string()`),
+// array (`xs.map(…)`) or string (`"s".len()`) come from the embedded interface
+// declarations in `primitives.d.bp` / `array.d.bp` / `string.d.bp`. These are
+// not user bindings, so completion / hover / signatureHelp resolve them by
+// scanning those embedded sources directly.
+
+/// One builtin-type interface: its declared name plus the embedded source that
+/// contains the `interface … { … }` block.
+const BuiltinInterface = struct {
+    name: []const u8,
+    source: []const u8,
+};
+
+/// Maps a botopink type name (as it appears in an inferred `Type.named`) to its
+/// builtin interface, or null when the type has no method surface.
+fn builtinInterfaceForType(type_name: []const u8) ?BuiltinInterface {
+    const prim = comptime_pipeline.primitive_interfaces_src;
+    const pairs = [_]struct { ty: []const u8, iface: []const u8 }{
+        .{ .ty = "i32", .iface = "I32" },
+        .{ .ty = "u32", .iface = "U32" },
+        .{ .ty = "i64", .iface = "I64" },
+        .{ .ty = "u64", .iface = "U64" },
+        .{ .ty = "f32", .iface = "F32" },
+        .{ .ty = "f64", .iface = "F64" },
+        .{ .ty = "bool", .iface = "Bool" },
+    };
+    for (pairs) |p| {
+        if (std.mem.eql(u8, type_name, p.ty)) return .{ .name = p.iface, .source = prim };
+    }
+    if (std.mem.eql(u8, type_name, "array"))
+        return .{ .name = "Array", .source = comptime_pipeline.array_interface_src };
+    if (std.mem.eql(u8, type_name, "string"))
+        return .{ .name = "String", .source = comptime_pipeline.string_interface_src };
+    return null;
+}
+
+/// Resolves a dot-receiver to its builtin interface. Numeric literals default
+/// to `I32`, `true`/`false` to `Bool`; any other receiver is looked up as a
+/// value binding and mapped from its inferred type.
+fn receiverBuiltinInterface(
+    receiver: []const u8,
+    bindings: []const comptime_pipeline.TypedBinding,
+) ?BuiltinInterface {
+    if (receiver.len == 0) return null;
+
+    // Integer literal receiver (`42.`): defaults to `i32`.
+    var all_digits = true;
+    for (receiver) |c| {
+        if (!isDigit(c)) {
+            all_digits = false;
+            break;
+        }
+    }
+    if (all_digits) return builtinInterfaceForType("i32");
+
+    if (std.mem.eql(u8, receiver, "true") or std.mem.eql(u8, receiver, "false"))
+        return builtinInterfaceForType("bool");
+
+    for (bindings) |b| {
+        if (!std.mem.eql(u8, b.name, receiver)) continue;
+        const t = b.type_.deref();
+        if (t.* == .named) return builtinInterfaceForType(t.named.name);
+        return null;
+    }
+    return null;
+}
+
+/// Like `qualifierBefore`, but tolerant of receivers that start with a digit
+/// (an integer literal such as `42.abs`). Returns the `receiver` in
+/// `receiver.member` when `start` sits just after the `.`.
+fn dotReceiverBefore(source: []const u8, start: usize) ?[]const u8 {
+    if (start == 0 or source[start - 1] != '.') return null;
+    const dot = start - 1;
+    var i = dot;
+    while (i > 0 and isIdentCont(source[i - 1])) i -= 1;
+    if (i == dot) return null;
+    return source[i..dot];
+}
+
+/// A single member declared inside an interface block. `sig` is the source
+/// slice spanning the declaration (e.g. `fn clamp(self: Self, min: i32, …) -> i32`).
+const InterfaceMember = struct {
+    is_fn: bool,
+    name: []const u8,
+    sig: []const u8,
+};
+
+/// Collects every `fn`/`val` member declared inside `iface`'s `interface { … }`
+/// block. Slices borrow `iface.source`, which is an embedded compile-time
+/// string (static lifetime). Returns null when the block can't be located.
+fn collectInterfaceMembers(
+    arena: std.mem.Allocator,
+    iface: BuiltinInterface,
+) !?[]InterfaceMember {
+    var lexer = Lexer.init(iface.source);
+    const tokens = lexer.scanAll(arena) catch return null;
+
+    // Locate `interface <name>` and the `{ … }` body that follows it.
+    var i: usize = 0;
+    var body_start: ?usize = null;
+    while (i < tokens.len) : (i += 1) {
+        if (tokens[i].kind != .interface) continue;
+        var j = i + 1;
+        while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
+        if (j >= tokens.len or tokens[j].kind != .identifier) continue;
+        if (!std.mem.eql(u8, tokens[j].lexeme, iface.name)) continue;
+        // Skip generic params (`<T>`) up to the opening brace.
+        while (j < tokens.len and tokens[j].kind != .leftBrace) : (j += 1) {}
+        if (j < tokens.len) body_start = j + 1;
+        break;
+    }
+    const start = body_start orelse return null;
+
+    // Find the matching closing brace (depth tracking).
+    var depth: u32 = 1;
+    var body_end: usize = start;
+    while (body_end < tokens.len) : (body_end += 1) {
+        const k = tokens[body_end].kind;
+        if (k == .leftBrace) depth += 1;
+        if (k == .rightBrace) {
+            depth -= 1;
+            if (depth == 0) break;
+        }
+    }
+
+    // Walk member declarations; each spans from its `fn`/`val` keyword up to the
+    // next member keyword (or the closing brace).
+    var members: std.ArrayList(InterfaceMember) = .empty;
+    var k: usize = start;
+    while (k < body_end) : (k += 1) {
+        const kind = tokens[k].kind;
+        if (kind != .@"fn" and kind != .val) continue;
+
+        var n = k + 1;
+        while (n < body_end and tokens[n].kind == .endOfFile) : (n += 1) {}
+        if (n >= body_end or tokens[n].kind != .identifier) continue;
+        const name = tokens[n].lexeme;
+
+        // The member ends just before the next top-level `fn`/`val`, or at the
+        // brace. A `fn` nested inside parentheses (a function-typed parameter,
+        // e.g. `map(self, transform: fn(item: T) -> T)`) is not a boundary.
+        var e = n + 1;
+        var pdepth: i32 = 0;
+        while (e < body_end) : (e += 1) {
+            const ek = tokens[e].kind;
+            if (ek == .leftParenthesis) {
+                pdepth += 1;
+            } else if (ek == .rightParenthesis) {
+                pdepth -= 1;
+            } else if (pdepth <= 0 and (ek == .@"fn" or ek == .val)) {
+                break;
+            }
+        }
+        const sig_start = tokenOffset(iface.source, tokens[k]);
+        const sig_end = if (e < tokens.len) tokenOffset(iface.source, tokens[e]) else iface.source.len;
+        const sig = std.mem.trim(u8, iface.source[sig_start..@min(sig_end, iface.source.len)], " \t\r\n");
+
+        try members.append(arena, .{ .is_fn = kind == .@"fn", .name = name, .sig = sig });
+        k = n;
+    }
+    return try members.toOwnedSlice(arena);
+}
+
+/// Completion for `42.` / `true.` / `xs.` / `"s".`: lists the methods/values of
+/// the receiver's builtin interface. Returns null when the receiver has none.
+fn builtinReceiverCompletion(
+    gpa: std.mem.Allocator,
+    receiver: []const u8,
+    bindings: []const comptime_pipeline.TypedBinding,
+) !?[]proto.CompletionItem {
+    const iface = receiverBuiltinInterface(receiver, bindings) orelse return null;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const members = (try collectInterfaceMembers(arena.allocator(), iface)) orelse return null;
+
+    var items: std.ArrayList(proto.CompletionItem) = .empty;
+    errdefer {
+        for (items.items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        items.deinit(gpa);
+    }
+    for (members) |m| {
+        try items.append(gpa, .{
+            .label = try gpa.dupe(u8, m.name),
+            .kind = if (m.is_fn) proto.CompletionItemKind.Method else proto.CompletionItemKind.Field,
+            .detail = try gpa.dupe(u8, m.sig),
+        });
+    }
+    return try items.toOwnedSlice(gpa);
+}
+
+/// Hover for an interface method invoked on a builtin receiver
+/// (`42.abs`, `true.to_string`, `xs.map`): renders the method signature plus
+/// the interface it comes from. Returns null when nothing matches.
+fn hoverBuiltinInterfaceMethod(
+    gpa: std.mem.Allocator,
+    source: []const u8,
+    pos: proto.Position,
+    bindings: []const comptime_pipeline.TypedBinding,
+) !?proto.Hover {
+    const span = identSpanAt(source, pos) orelse return null;
+    const member = source[span.start..span.end];
+    const receiver = dotReceiverBefore(source, span.start) orelse return null;
+    const iface = receiverBuiltinInterface(receiver, bindings) orelse return null;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const members = (try collectInterfaceMembers(arena.allocator(), iface)) orelse return null;
+
+    for (members) |m| {
+        if (!std.mem.eql(u8, m.name, member)) continue;
+        var buf: std.ArrayList(u8) = .empty;
+        errdefer buf.deinit(gpa);
+        try buf.appendSlice(gpa, "```botopink\n");
+        try buf.appendSlice(gpa, m.sig);
+        try buf.appendSlice(gpa, "\n```");
+        try buf.print(gpa, "\n\n*from `interface {s}`*", .{iface.name});
+        return .{ .contents = .{ .kind = proto.MarkupKind.Markdown, .value = try buf.toOwnedSlice(gpa) } };
+    }
+    return null;
 }
 
 /// Renders the signature of a `fn` declaration (the `fn` token sits at index

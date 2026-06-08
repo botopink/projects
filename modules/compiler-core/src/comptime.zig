@@ -149,6 +149,15 @@ pub const std_pkg_modules = [_]Module{
     .{ .path = "std/queue", .source = @import("std_prelude").queue_mod },
 };
 
+/// Embedded builtin-type interface declarations. Unlike `std_pkg_modules`
+/// these are flattened into the global type env at infer time (they declare the
+/// methods available on primitives / arrays / strings). Tooling — the language
+/// server — scans these sources to resolve receiver methods such as `42.abs()`,
+/// `true.to_string()`, `xs.map(…)` and `"s".len()`.
+pub const primitive_interfaces_src = @import("std_prelude").primitives;
+pub const array_interface_src = @import("std_prelude").array;
+pub const string_interface_src = @import("std_prelude").string;
+
 /// True when `path` is a "std" package registry key (`std/<module>`).
 fn isStdPkgPath(path: []const u8) bool {
     return std.mem.startsWith(u8, path, "std/");

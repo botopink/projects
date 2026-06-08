@@ -550,6 +550,106 @@ test "completion: std module member after import from std" {
     try std.testing.expect(items.len > 5);
 }
 
+// ── F4 — interface-method dispatch on builtin receivers ───────────────────────
+
+test "completion: integer literal receiver offers I32 methods" {
+    const gpa = std.testing.allocator;
+    // Bindings come from a valid compile; completion runs on the mid-edit buffer.
+    const valid_source =
+        \\val n = 42;
+    ;
+    const edit_source =
+        \\val n = 42;
+        \\val s = 42.
+    ;
+
+    var c = try h.compile(gpa, valid_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    // Cursor right after `42.` on line 1 (char 11).
+    const cursor = h.pos(1, 11);
+    const items = try engine.completion(gpa, edit_source, cursor, bindings);
+    defer {
+        for (items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        gpa.free(items);
+    }
+
+    var have_abs = false;
+    var have_clamp = false;
+    var have_to_string = false;
+    for (items) |it| {
+        if (std.mem.eql(u8, it.label, "abs")) have_abs = true;
+        if (std.mem.eql(u8, it.label, "clamp")) have_clamp = true;
+        if (std.mem.eql(u8, it.label, "to_string")) have_to_string = true;
+    }
+    try std.testing.expect(have_abs and have_clamp and have_to_string);
+    try snap.assertCompletion(gpa, "completion_primitive_methods", edit_source, cursor, items);
+}
+
+test "completion: boolean literal receiver offers Bool methods" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\val s = true.
+    ;
+    const cursor = h.pos(0, 13);
+    const items = try engine.completion(gpa, source, cursor, &.{});
+    defer {
+        for (items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        gpa.free(items);
+    }
+
+    var have_to_string = false;
+    for (items) |it| {
+        if (std.mem.eql(u8, it.label, "to_string")) have_to_string = true;
+    }
+    try std.testing.expect(have_to_string);
+    try snap.assertCompletion(gpa, "completion_bool_methods", source, cursor, items);
+}
+
+test "completion: array value receiver offers Array methods" {
+    const gpa = std.testing.allocator;
+    const valid_source =
+        \\val xs = [1, 2, 3];
+    ;
+    const edit_source =
+        \\val xs = [1, 2, 3];
+        \\val y = xs.
+    ;
+
+    var c = try h.compile(gpa, valid_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    // Cursor right after `xs.` on line 1 (char 11).
+    const cursor = h.pos(1, 11);
+    const items = try engine.completion(gpa, edit_source, cursor, bindings);
+    defer {
+        for (items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        gpa.free(items);
+    }
+
+    var have_map = false;
+    var have_filter = false;
+    var have_push = false;
+    for (items) |it| {
+        if (std.mem.eql(u8, it.label, "map")) have_map = true;
+        if (std.mem.eql(u8, it.label, "filter")) have_filter = true;
+        if (std.mem.eql(u8, it.label, "push")) have_push = true;
+    }
+    try std.testing.expect(have_map and have_filter and have_push);
+    try snap.assertCompletion(gpa, "completion_array_methods", edit_source, cursor, items);
+}
+
 test "completion: std module dot does not fire without the import" {
     const gpa = std.testing.allocator;
     const source =
