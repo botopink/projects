@@ -73,11 +73,19 @@ or *codegen* it. This is the largest and highest-priority block: it unblocks the
       boxed-primitive `this` is unwrapped via `const self = this.valueOf()`
       (`jsPrototypeOwner` maps `Bool`→`Boolean`, `isBoxedPrototype`). Dispatch
       generalized: `resolveStdArrayMethod` → `primitiveInterfaceName` +
-      `findInterfaceDefaultFn` (follows `extends`). **PENDING**: the numeric tower
-      (`n.clamp()`/`isEven()` need `@[external]` `min`/`max`/`%`-helpers and the
-      `Number.prototype` owner) and `String` (its only default-fn `toString` is
-      native); inference doesn't walk record-method bodies (non-`append` array
-      default-fns used there won't emit a prototype patch).
+      `findInterfaceDefaultFn` (follows `extends`). **Numeric tower DONE (JS)**:
+      `n.abs()`/`min`/`max`/`floor`/… (`@[external]` → JS global `Math`) emit
+      `Number.prototype.<m> = function(a){ return Math.sym(this.valueOf(), a); }`,
+      and `default fn`s (`clamp`/`isEven`/`isOdd`) materialize and call them.
+      `findInterfaceDefaultFn` accepts `@[external]` ONLY when the node module is a
+      JS global (`Math`) — relative companions (`./gleam_stdlib.mjs`: array
+      `map`/`filter`/`join`, string `split`/`trim`) stay on the permissive native
+      path, so this doesn't intercept methods that already work. `jsPrototypeOwner`
+      maps the tower → `Number`. **PENDING**: `String` host-backed methods
+      (`split`/`trim`/`toUpper` via companion) — they have native JS equivalents,
+      so map them (`toUpper`→`toUpperCase`, …) instead; inference doesn't walk
+      record-method bodies (non-`append` array default-fns used there won't emit
+      a prototype patch).
 
 ### A.codegen (node / erlang / beam / wasm)
 - [ ] Lower `@[external]` methods to companion modules (`primitives.mjs` /

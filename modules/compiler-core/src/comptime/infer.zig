@@ -3931,17 +3931,30 @@ fn resolveStdArrayMethod(
 /// Numeric widths are intentionally excluded for now (their `default fn`s call
 /// host-backed `@[external]` methods that codegen doesn't materialize yet).
 fn primitiveInterfaceName(typeName: []const u8) ?[]const u8 {
-    if (std.mem.eql(u8, typeName, "array")) return "Array";
-    if (std.mem.eql(u8, typeName, "bool")) return "Bool";
-    if (std.mem.eql(u8, typeName, "string")) return "String";
+    const map = [_]struct { t: []const u8, i: []const u8 }{
+        .{ .t = "array", .i = "Array" },
+        .{ .t = "bool", .i = "Bool" },
+        .{ .t = "string", .i = "String" },
+        .{ .t = "i32", .i = "I32" },
+        .{ .t = "i64", .i = "I64" },
+        .{ .t = "u32", .i = "U32" },
+        .{ .t = "u64", .i = "U64" },
+        .{ .t = "f32", .i = "F32" },
+        .{ .t = "f64", .i = "F64" },
+    };
+    for (map) |e| if (std.mem.eql(u8, typeName, e.t)) return e.i;
     return null;
 }
 
 const FoundMethod = struct { method: ast.InterfaceMethod, owner: []const u8 };
 
-/// Find a `default fn` instance method (`self` receiver) named `callee` in
-/// interface `ifaceName`, following its `extends` chain. Returns the method and
-/// the interface that declares it (so codegen emits the prototype on that owner).
+/// Find an instance method (`self` receiver) named `callee` in interface
+/// `ifaceName`, following its `extends` chain. Matches `default fn` methods (their
+/// body is materialized) and `@[external]` declarations that bind to a JS global
+/// namespace (`Math`) — those lower to `Math.sym(self, …)`. `@[external]` methods
+/// backed by a relative companion (`./gleam_stdlib.mjs`, e.g. `map`/`filter`/
+/// `join`/`split`) are left to the permissive path (native JS handles them), so
+/// this doesn't intercept array/string methods that already work.
 fn findInterfaceDefaultFn(env: *Env, ifaceName: []const u8, callee: []const u8) ?FoundMethod {
     var current: ?[]const u8 = ifaceName;
     var guard: usize = 0;
@@ -3950,10 +3963,13 @@ fn findInterfaceDefaultFn(env: *Env, ifaceName: []const u8, callee: []const u8) 
         guard += 1;
         const decl = env.assocInterfaceDecls.get(cname) orelse return null;
         for (decl.methods) |m| {
-            if (std.mem.eql(u8, m.name, callee) and m.is_default and
-                m.params.len > 0 and std.mem.eql(u8, m.params[0].name, "self"))
-            {
-                return .{ .method = m, .owner = cname };
+            if (!std.mem.eql(u8, m.name, callee)) continue;
+            if (m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self")) continue;
+            if (m.is_default) return .{ .method = m, .owner = cname };
+            if (m.externalFor("node")) |ref| {
+                const is_global = std.mem.indexOfScalar(u8, ref.module, '/') == null and
+                    std.mem.indexOfScalar(u8, ref.module, '.') == null;
+                if (is_global) return .{ .method = m, .owner = cname };
             }
         }
         current = if (decl.extends.len > 0) decl.extends[0] else null;

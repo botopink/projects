@@ -656,3 +656,20 @@ test "js: bool instance default-fn methods" {
         \\}
     );
 }
+
+test "js: numeric instance methods (external + default-fn)" {
+    // Numeric `@[external]` methods backed by a JS global (`Math`) lower to
+    // `Number.prototype.<m> = function(a){ return Math.<sym>(this.valueOf(), a); }`;
+    // `default fn`s like `clamp`/`isEven` materialize and call them.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val n = -5;
+        \\    @print(n.abs());
+        \\    @print(n.min(3));
+        \\    @print(n.max(10));
+        \\    @print(n.clamp(0, 5));
+        \\    val x = 7;
+        \\    @print(x.isEven());
+        \\}
+    );
+}

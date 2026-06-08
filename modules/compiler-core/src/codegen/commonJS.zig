@@ -140,6 +140,9 @@ pub fn isNativeProtoMethod(name: []const u8) bool {
 /// (incl. local interfaces) own their prototype directly.
 pub fn jsPrototypeOwner(name: []const u8) []const u8 {
     if (std.mem.eql(u8, name, "Bool")) return "Boolean";
+    // The numeric tower (controllers + concrete widths) maps to `Number`.
+    const numeric = [_][]const u8{ "Number", "Integer", "Signed", "Float", "I32", "I64", "U32", "U64", "F32", "F64" };
+    for (numeric) |nm| if (std.mem.eql(u8, name, nm)) return "Number";
     return name;
 }
 
@@ -1048,30 +1051,47 @@ const Emitter = struct {
         const owner = jsPrototypeOwner(i.name);
         const boxed = isBoxedPrototype(owner);
         for (i.methods) |m| {
-            if (!m.is_default or isAssociatedFn(m)) continue;
+            if (isAssociatedFn(m)) continue; // associated fns handled above
             if (isNativeProtoMethod(m.name)) continue;
-            const body = m.body orelse continue;
-            try self.fmt("\n{s}.prototype.{s} = function(", .{ owner, m.name });
-            try self.emitParams(m.params[1..]);
-            try self.w(") {\n");
-            const prev = self.current_indent;
-            self.current_indent = 1;
-            // Boxed primitives wrap `this` in a (truthy) object — bind `self` to
-            // the unwrapped primitive; arrays use `this` directly.
-            if (boxed) {
-                try self.w("    const self = this.valueOf();\n");
-                self.self_is_param = true; // `self`/`self.x` stay `self`
-            } else {
-                self.self_is_param = false; // bare `self` → `this`
+            if (m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self")) continue;
+
+            if (m.is_default) {
+                const body = m.body orelse continue;
+                try self.fmt("\n{s}.prototype.{s} = function(", .{ owner, m.name });
+                try self.emitParams(m.params[1..]);
+                try self.w(") {\n");
+                const prev = self.current_indent;
+                self.current_indent = 1;
+                // Boxed primitives wrap `this` in a (truthy) object — bind `self`
+                // to the unwrapped primitive; arrays use `this` directly.
+                if (boxed) {
+                    try self.w("    const self = this.valueOf();\n");
+                    self.self_is_param = true; // `self`/`self.x` stay `self`
+                } else {
+                    self.self_is_param = false; // bare `self` → `this`
+                }
+                self.hook_state.clearRetainingCapacity();
+                for (body) |s| {
+                    try self.w("    ");
+                    try self.emitStmt(s);
+                    try self.w("\n");
+                }
+                self.current_indent = prev;
+                try self.w("};");
+            } else if (m.externalFor("node")) |ref| {
+                // Host-backed instance method via a JS global namespace (`Math`):
+                // `Owner.prototype.m = function(args){ return Mod.sym(self, args); }`.
+                // Relative companions and call-template symbols are skipped (matches
+                // the inference, which leaves them to native JS).
+                if (!isJsGlobalNamespace(ref.module)) continue;
+                if (std.mem.indexOfScalar(u8, ref.symbol, '(') != null) continue;
+                try self.fmt("\n{s}.prototype.{s} = function(", .{ owner, m.name });
+                try self.emitParams(m.params[1..]);
+                try self.fmt(") {{ return {s}.{s}(", .{ ref.module, ref.symbol });
+                try self.w(if (boxed) "this.valueOf()" else "this");
+                for (m.params[1..]) |p| try self.fmt(", {s}", .{jsIdent(p.name)});
+                try self.w("); };");
             }
-            self.hook_state.clearRetainingCapacity();
-            for (body) |s| {
-                try self.w("    ");
-                try self.emitStmt(s);
-                try self.w("\n");
-            }
-            self.current_indent = prev;
-            try self.w("};");
         }
     }
 

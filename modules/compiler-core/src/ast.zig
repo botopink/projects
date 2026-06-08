@@ -1011,6 +1011,30 @@ pub const InterfaceMethod = struct {
     is_declare: bool = false,
     isPub: bool = false,
 
+    /// True when the method is a host-backed `#[@external(…)]` declaration.
+    pub fn isExternal(this: InterfaceMethod) bool {
+        for (this.annotations) |a| {
+            if (std.mem.eql(u8, a.name, "external")) return true;
+        }
+        return false;
+    }
+
+    /// The `(module, symbol)` of the `external` annotation targeting `target`
+    /// (e.g. "node", "erlang"), or null when none matches.
+    pub fn externalFor(this: InterfaceMethod, target: []const u8) ?ExternalRef {
+        for (this.annotations) |a| {
+            if (!std.mem.eql(u8, a.name, "external")) continue;
+            if (a.args.len != 3) continue;
+            const t = std.mem.trimStart(u8, a.args[0], ".");
+            if (!std.mem.eql(u8, t, target)) continue;
+            return .{
+                .module = unquoteAnnotationArg(a.args[1]),
+                .symbol = unquoteAnnotationArg(a.args[2]),
+            };
+        }
+        return null;
+    }
+
     pub fn deinit(this: *InterfaceMethod, allocator: std.mem.Allocator) void {
         for (this.annotations) |*ann| ann.deinit(allocator);
         if (this.annotations.len > 0) allocator.free(this.annotations);
