@@ -34,37 +34,55 @@ Two strands converge here:
 
 ## Features (v0.beta.6)
 
+Every spec is **independent** — no spec waits on another, so all seven can run
+in parallel as separate `task/<slug>` branches.
+
 | Spec | Slug | Depends on |
 |---|---|---|
 | [stdlib-backends-and-tooling — finish backends + dispatch + editor tooling](specs/stdlib-backends-and-tooling.md) | `stdlib-backends-and-tooling` | v0.beta.4 carryover (JS path done) |
 | [cross-module-codegen — concrete types across the package boundary](specs/cross-module-codegen.md) | `cross-module-codegen` | nothing (commonJS done) |
-| [rakun-ioc-web — comptime DI container + router](specs/rakun-ioc-web.md) | `rakun-ioc-web` | nothing (rakun foundation in feat) |
-| [rakun-bootstrap — `Rakun.run` + real HTTP backing](specs/rakun-bootstrap.md) | `rakun-bootstrap` | `rakun-ioc-web` |
+| [rakun — comptime DI container + router + bootstrap](specs/rakun.md) | `rakun` | nothing (rakun foundation in feat) |
 | [jhonstart-language-gaps — record/array ergonomics](specs/jhonstart-language-gaps.md) | `jhonstart-language-gaps` | nothing |
 | [implement-completeness — `implement` parses & codegens in every form](specs/implement-completeness.md) | `implement-completeness` | nothing |
 | [mutual-recursion — forward references between top-level fns](specs/mutual-recursion.md) | `mutual-recursion` | nothing |
+| [erika — LINQ-style query lib + `erika "…"` query-string (`@Expr`)](specs/erika.md) | `erika` | nothing (pure `.bp` std module; `erika "…"` built on `@Expr`) |
 
-## Dependency DAG
+## Independent specs (no cross-spec ordering)
 
 ```text
 stdlib-backends-and-tooling   (Part A backends · Part B backend-parity · Part C editor)
 
 cross-module-codegen          (commonJS landed; erlang/beam/wasm parity)
 
-rakun-ioc-web  ── F2 IoC container · F3 annotation args · F4 router
-       └────────► rakun-bootstrap  ── F5 Rakun.run ──► libs/server (HTTP backing)
+rakun                         F2 IoC container · F3 annotation args · F4 router
+                              F5 Rakun.run ──► libs/server (HTTP backing)
+                              (F5 boots F2–F4; one branch, sequential phases)
 
 jhonstart-language-gaps  ── G1 fn-typed fields · G2 anon record types
                             G3 fn() -> T[] · G4 Children coercion
 implement-completeness   ── G5 array field in struct-implement body
                             G6 generic iface in `implement … for` · G7 struct-implement codegen bug
 mutual-recursion         ── forward refs between top-level fns (renderToString ⇄ renderChildren)
+
+erika                    ── F0 skeleton+wiring · F1 where/select · F2 take/skip/orderBy
+                            F3 distinct/groupBy/zip · F4 aggregate/first/any
+                            F5 `erika "…"` query string via @Expr template fn · F6 docs
+                            (pure .bp std module over Array<T>; eager v1)
 ```
+
+The only ordering that existed (`rakun-bootstrap` after `rakun-ioc-web`) is now
+**internal** to the `rakun` spec — its F5 phase boots what F2–F4 build, on the
+same `task/rakun` branch and the same `libs/rakun/src/*.bp` files. Folding it in
+keeps every *spec* parallel-touchable instead of having two tasks wait on each
+other.
 
 ## Scope boundaries
 
 - **rakun**: constructor injection only, singleton scope only — no prototype/
-  request scopes, AOP, or runtime reflection. Wiring stays **comptime**.
+  request scopes, AOP, or runtime reflection. Wiring stays **comptime**. The
+  spec's F5 (bootstrap) is its only leg needing a real HTTP backing
+  (`libs/server`, scaffold → real, node first then erlang); it lands last
+  because it boots the F2–F4 container/router.
 - **cross-module-codegen** mirrors the commonJS behaviour already in `feat`;
   `new` is an emitted-JS detail, never botopink source. wasm may defer if
   single-module — record the limit rather than fake it.
@@ -79,5 +97,12 @@ mutual-recursion         ── forward refs between top-level fns (renderToStri
   jhonstart V1 already sidesteps all of these (`record … implement @Context`,
   array-arg builders, an inlined recursive walk), so they unblock the *next*
   jhonstart phase rather than the current green core.
+- **erika** is the most isolated spec: a pure-`.bp` std module (`libs/std/src/
+  erika.bp`) plus two one-line wiring additions (`build.zig`, `prelude.zig`). The
+  `erika "…"` query string is an `@Expr` template fn reusing the *already-shipped*
+  expr-templates machinery — **no** `parser`/`comptime`/`codegen` edits, so it
+  never collides with the language-gap specs. Multi-field projection is deferred
+  *inside erika* (a future version), **not** borrowed from `jhonstart-language-
+  gaps`'s G2 — erika waits on nothing.
 - Tests for libraries live in the library's own `.bp` files (`botopink test`),
   not in the compiler's Zig suites.

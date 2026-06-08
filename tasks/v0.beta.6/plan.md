@@ -39,13 +39,21 @@ half on erlang + the whole thing on beam/wasm.
 - Consider lifting `CrossModule` to a shared analysis if the four emitters
   duplicate it.
 
-## rakun-ioc-web
+## rakun
+
+One branch (`task/rakun`), four sequential phases — F2–F4 are the framework
+semantics, F5 boots them. Folded into a single spec (was `rakun-ioc-web` +
+`rakun-bootstrap`) so no spec in this set waits on another: the only ordering is
+now internal to rakun, on shared `libs/rakun/src/*.bp` files.
 
 ### Why now
 The markers resolve but mean nothing yet. F2 (the comptime component scan + DI
 graph) is the heart of Spring-in-botopink; F3 (annotation arg validation) and F4
 (router) are the surface around it. All comptime — reuses the `expr-templates`
-scan machinery, no runtime reflection.
+scan machinery, no runtime reflection. F5 (`Rakun.run`) then closes the loop and
+is the one leg that needs a **real** HTTP server (`libs/server`, today a
+scaffold) — it boots the F2–F4 scan/graph/router, which is exactly why it can't
+be a separate parallel task.
 
 ### Design decisions
 - A record field whose type is a known component ⇒ a DI edge. Topo-sort; a cycle
@@ -53,15 +61,9 @@ scan machinery, no runtime reflection.
 - Singleton scope only; constructor injection only (immutable-first).
 - `#[bean]`/`#[configuration]`/`#[value]` extend the graph (factory + property
   contributions) without changing the resolution model.
+- F5 keeps `libs/server` minimal — one backend (node) first, then erlang.
 
-## rakun-bootstrap
-
-### Why now
-`Rakun.run` is the one leg that needs a **real** HTTP server (`libs/server`,
-today a scaffold). Gated on `rakun-ioc-web` (it boots the scan/graph/router).
-Keep `libs/server` minimal — one backend (node) first, then erlang.
-
-### Open points
+### Open points (F5)
 - The `Request` boundary interface gets its concrete, server-supplied impl here.
 - Decide the imported-lib lowering for `Rakun.run` (driven by the import, never
   prelude-embedded).
