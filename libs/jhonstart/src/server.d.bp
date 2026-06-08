@@ -1,0 +1,15 @@
+// jhonstart/server — the Http ContextBase: server components & data loading.
+//
+// `request()` is a server hook (`@Context<Http, Request>`) — usable inside a
+// server component (`*fn … -> @Future<Element>`). A loader is an ordinary `*fn`
+// returning `@Future<_>`, awaited before the component returns its Element.
+// (`Http` mirrors the `connection()` ContextBase from context-inference.)
+
+pub interface Request {
+    get path(self: Self) -> string
+    get params(self: Self) -> Dict<string, string>
+    get query(self: Self) -> Dict<string, string>
+}
+
+@[external(node, "jhonstart/runtime", "request")]
+pub fn request() -> @Context<Http, Request>

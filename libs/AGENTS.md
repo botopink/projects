@@ -19,7 +19,8 @@ libs/
 ├── std/               ← standard library (embedded prelude + interfaces)
 ├── server/            ← server-side interfaces (scaffold)
 ├── client/            ← client-side interfaces (scaffold)
-└── rakun/             ← Spring-style application framework (scaffold)
+├── rakun/             ← Spring-style application framework (scaffold)
+└── jhonstart/         ← React/Next-style UI framework (scaffold)
 ```
 
 ## Packages
@@ -30,6 +31,7 @@ libs/
 | `server/` | HTTP/socket server-side interfaces | no — inert scaffold | [link](server/AGENTS.md) |
 | `client/` | HTTP client / request interfaces | no — inert scaffold | [link](client/AGENTS.md) |
 | `rakun/` | Spring-style framework — IoC container, constructor DI, `@[restController]` web layer, `Rakun.run` bootstrap | no — inert scaffold (spec: [`tasks/v0.beta.5`](../tasks/v0.beta.5/specs/rakun.md)) | [link](rakun/AGENTS.md) |
+| `jhonstart/` | React/Next-style UI: components, `@Context<Element,_>` hooks, DOM builders, the `html` DSL, Next-style routing/SSR | no — inert scaffold (reached via `from "jhonstart"`) | [link](jhonstart/AGENTS.md) |
 
 ## Conventions
 

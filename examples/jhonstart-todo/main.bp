@@ -1,0 +1,38 @@
+// jhonstart-todo — lists, controlled input, and a custom hook.
+//
+// Two pieces of state (the draft text and the item list) are held without
+// destructuring, so they don't clash: `draft.value` / `draft.set(...)`.
+// `items.value.map(...)` renders one `li` per item — list rendering is just
+// an ordinary `Array.map` producing `Children`. `useToggle` shows that a custom
+// hook composes the primitive hooks (its return implements `@Context<Element, _>`).
+
+import { div, ul, li, input, button, span, state, mount } from "jhonstart";
+import { useToggle } from "jhonstart";
+
+fn TodoApp() -> Element {
+    val items = use state([]);          // items.value : string[]
+    val draft = use state("");
+    val {on, toggle} = use useToggle(false);   // custom hook
+
+    val add = { ->
+        items.set(items.value + [draft.value]);
+        draft.set("");
+    };
+
+    div {
+        [
+            input(draft.value, { next -> draft.set(next) }),
+            button(add) { "add" },
+            button(toggle) { if on { "hide" } else { "show" } },
+            if on {
+                ul { items.value.map({ it -> li { it } }) }
+            } else {
+                span { "" }
+            },
+        ]
+    }
+}
+
+fn main() {
+    mount(TodoApp(), "#app");
+}

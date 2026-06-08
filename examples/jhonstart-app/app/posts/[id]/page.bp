@@ -1,0 +1,27 @@
+// jhonstart-app — a dynamic, server-rendered route (`app/posts/[id]/page.bp`).
+//
+// `[id]` is a dynamic segment, exposed via the Http-context `request()` hook.
+// The page is a SERVER component: a `*fn` that `await`s a loader before
+// returning its `Element`. `*fn` marks the return as `@Future<_>`; `await`
+// unwraps it (both from the async-generators language work).
+
+import { div, h1, p } from "jhonstart";
+import { request } from "jhonstart/server";
+
+*fn loadPost(id: string) -> @Future<{ title: string, body: string }> {
+    val resp = await fetch("/api/posts/" + id);
+    return resp.json();
+}
+
+*fn Page() -> @Future<Element> {
+    val req = use request();                         // @Context<Http, Request>
+    val id = req.params.get("id").unwrapOr("0");
+    val post = await loadPost(id);
+
+    div {
+        [
+            h1 { post.title },
+            p { post.body },
+        ]
+    }
+}

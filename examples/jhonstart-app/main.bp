@@ -1,0 +1,15 @@
+// jhonstart-app — server-side rendering entry.
+//
+// File-based routing is a jhonstart convention (V1); here the dynamic post route
+// is wired manually. `Page` is a server component (`*fn -> @Future<Element>`):
+// `await Page()` runs its loader, `renderToString` serializes the resulting
+// `Element` tree to an HTML string. Both `*fn`/`await` come from the language's
+// async work; `renderToString` is itself a `*fn` (it may await the tree).
+
+import { renderToString } from "jhonstart";
+import { Page } from "jhonstart-app/app/posts/[id]/page";
+
+*fn main() {
+    val html = await renderToString(await Page());
+    @print(html);
+}

@@ -1,0 +1,18 @@
+// jhonstart/element — the UI node and child model.
+//
+// `Element` is the ContextBase for every client-side hook: a function whose
+// return implements `@Context<Element, _>` is a hook, and the `use` prefix is
+// only legal inside an `-> Element` body (enforced by context-inference).
+//
+// Declarations only — the host runtime supplies the implementation per target.
+// This package is a scaffold: it is NOT embedded into the prelude and is reached
+// with `from "jhonstart"`.
+
+// The rendered UI node.
+pub interface Element {
+    fn key(self: Self) -> ?string             // optional reconciliation key
+}
+
+// An ordered list of child elements (= Element[]). A bare `string` coerces to a
+// text node; a bare `Element` coerces to a one-element list.
+pub interface Children { }

@@ -1,0 +1,22 @@
+// jhonstart/hooks — the client hook surface.
+//
+// Every hook returns `@Context<Element, _>`: this is what makes the `use` prefix
+// legal on it, and only inside a component (`-> Element`) body. The capability
+// is the language's, declared in context-inference; jhonstart just names the
+// hooks. Intrinsics bind to the host runtime via `@[external]`.
+
+@[external(node, "jhonstart/runtime", "useState")]
+pub fn state<T>(initial: T) -> @Context<Element, {value: T, set: fn(next: T)}>
+
+@[external(node, "jhonstart/runtime", "useEffect")]
+pub fn effect(run: fn(), deps: any[]) -> @Context<Element, {}>
+
+@[external(node, "jhonstart/runtime", "useMemo")]
+pub fn memo<T>(compute: fn() -> T, deps: any[]) -> @Context<Element, T>
+
+@[external(node, "jhonstart/runtime", "useRef")]
+pub fn ref<T>(initial: T) -> @Context<Element, {current: T}>
+
+@[external(node, "jhonstart/runtime", "useReducer")]
+pub fn reducer<S, A>(reduce: fn(s: S, a: A) -> S, initial: S)
+    -> @Context<Element, {state: S, dispatch: fn(action: A)}>

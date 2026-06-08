@@ -1,0 +1,19 @@
+// jhonstart/router — client-side navigation (the Next-style app layer).
+//
+// `useRouter` is an Element-context hook (so `use`-only inside a component);
+// `Link` renders an anchor the router intercepts for client navigation.
+// File-based routing (`app/`, `page.bp`, `layout.bp`, `[id]`) is a library
+// CONVENTION in V1, not a compiler feature.
+
+pub interface Router {
+    get pathname(self: Self) -> string
+    get params(self: Self) -> Dict<string, string>
+    fn push(self: Self, href: string)
+    fn replace(self: Self, href: string)
+}
+
+@[external(node, "jhonstart/runtime", "useRouter")]
+pub fn useRouter() -> @Context<Element, Router>
+
+@[external(node, "jhonstart/runtime", "link")]
+pub fn Link(href: string, children: fn() -> Children) -> Element

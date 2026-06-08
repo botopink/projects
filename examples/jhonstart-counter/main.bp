@@ -1,0 +1,25 @@
+// jhonstart-counter — the React-core showcase: a component, two hooks, events.
+//
+// A component is a plain `fn(...) -> Element`. `state` is a hook — its return
+// implements `@Context<Element, _>`, so the `use` prefix is only legal here,
+// inside a `-> Element` body (enforced by the language's context-inference).
+// `mount` attaches the tree to a DOM node on the `commonJS` target.
+
+import { div, p, button, state, effect, mount } from "jhonstart";
+
+fn Counter() -> Element {
+    val {value, set} = use state(0);
+    use effect({ -> @print("rendered with " + value) });
+
+    div {
+        [
+            p { "count: " + value },
+            button({ -> set(value + 1) }) { "+" },
+            button({ -> set(value - 1) }) { "-" },
+        ]
+    }
+}
+
+fn main() {
+    mount(Counter(), "#app");
+}

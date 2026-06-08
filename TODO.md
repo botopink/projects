@@ -1,62 +1,70 @@
-# TODO — rakun
+# TODO — task/jhonstart
 
-> Live checklist for branch `task/rakun` (worktree `.tasks/rakun/`).
-> Spec (intent, immutable): [`tasks/v0.beta.5/specs/rakun.md`](tasks/v0.beta.5/specs/rakun.md)
+> Live checklist for branch `task/jhonstart` (worktree `.tasks/jhonstart/`).
+> Spec (intent, immutable): [`tasks/v0.beta.5/specs/jhonstart.md`](tasks/v0.beta.5/specs/jhonstart.md)
 >
-> rakun = Spring-style application framework for botopink: IoC container +
-> constructor DI + `#[restController]` web layer + `Rakun.run` bootstrap.
-> Wiring is **comptime** (compilation-unit scan), not runtime reflection.
-> Scaffold-first: declarations land before any compiler wiring.
+> A React/Next-style UI framework written in botopink, on the language's own
+> primitives (no new compiler features). Work happens in THIS worktree.
 
-## F0 — package scaffold & docs
-- [x] `libs/rakun/botopink.json` (`files: []`)
-- [x] `libs/rakun/AGENTS.md` + `libs/rakun/docs.md` (Spring mapping, loading notes)
-- [x] `libs/rakun/src/rakun.d.bp` — header + declarative surface
-- [x] Update `libs/AGENTS.md` tree + Packages table (lives in `feat`)
+## Compiler prerequisites (cross-set, not part of this task)
 
-## F1 — HTTP primitives
-- [x] `HttpMethod` enum (declared in `rakun.d.bp`)
-- [x] `interface Request` — `method`/`path`/`param`/`query`/`header`/`body`
-- [x] `interface Response` — `status`/`body`/`header` + `ok`/`json`/`created`/`withStatus`/`notFound`/`badRequest`
-- [ ] Split into `src/http.d.bp` once the surface grows; list it in `botopink.json`
+- [x] `context-inference` — `@Context<B,R>` gating `use` (landed)
+- [x] `expr-templates` — `@Expr`, tagged calls, `parts/lookup/build` (landed; powers `html`)
+- [ ] `use-await-prefix` — `use`/`await` prefix operators (pending, `tasks/v0.beta.1/`)
+- [ ] `async-generators` — `*fn`, `await`, `@Future` (pending, `tasks/v0.beta.1/`)
 
-## F2 — IoC container
-- [x] `interface Context` — `resolve<T>()`, `has<T>()` (declared)
-- [ ] Bean model: singleton scope; constructor injection by field type (semantics)
-- [ ] Comptime DI graph: discover components, topo-sort, detect cycles → diagnostic
+> Gate: F1–F3 (hooks/`use`) land once `use` is in `feat`; F4–F5 (SSR/server
+> loaders) gate on the async work. The `html` DSL itself needs only expr-templates.
 
-## F3 — component annotations (comptime scan)
-- [x] Decorator signatures exported from `rakun` (`component`/`service`/`repository`/
-      `controller`/`restController`/`configuration`/`bean`/`inject`/`value`)
-- [ ] Annotation resolution: `#[ … ]` entries resolve to **imported** rakun symbols,
-      not only `builtins.d.bp` (today `#[…]` is implicitly builtin) — compiler work
-- [ ] `#[configuration]` + `#[bean]` factory contribution
-- [ ] `#[value("key")]` property injection
-- [ ] Scope rule: a record field whose type is a known component ⇒ a dependency edge
+## F0 — package scaffold ✅ (this commit)
 
-## F4 — web layer / router
-- [x] `route` + `getMapping`/`postMapping`/`putMapping`/`patchMapping`/`deleteMapping` signatures
-- [ ] `Router` build: prefix + method path → handler; path params (`:name`)
-- [ ] `Response` builders type-check against handler return type
+- [x] `libs/jhonstart/botopink.json` (`files: []` — inert, not embedded)
+- [x] `libs/jhonstart/AGENTS.md` + `src/AGENTS.md` + `docs.md`
+- [x] Add the package row to `libs/AGENTS.md` (table + tree)
+- [x] Declaration surface: `src/{element,dom,hooks,html,render,router,server}.d.bp`
+- [x] Examples landed: `examples/jhonstart-{counter,todo,html,app}/`
+- [x] `examples/AGENTS.md` updated with the four demos
 
-## F5 — bootstrap
-- [x] `interface App` (`port`/`basePath`) + `interface Rakun` with `run(app)` (declared)
-- [ ] `Rakun.run` lowering: scan → wire container → build router → start server
-- [ ] Needs `libs/server` HTTP backing (scaffold → real: separate task)
-- [ ] Decide compiler wiring (imported lib, not prelude-embedded)
+## F1 — core types (`element.d.bp`)
 
-## F6 — examples & docs
-- [x] `examples/rakun/main.bp` (bootstrap) + `examples/rakun/users.bp` (DI triad + routes)
-- [x] `examples/rakun/config.bp` — `#[configuration]`/`#[bean]`/`#[value]` + bean injection
-- [x] `examples/rakun/posts.bp` — write side: `#[postMapping]`/`#[deleteMapping]`, `req.body()`, status codes
-- [x] `examples/AGENTS.md` tree marks `rakun/` illustrative (lives in `feat`)
-- [ ] Keep `libs/rakun/docs.md` usage guide in sync as semantics land
+- [ ] Confirm `Element` is accepted as a ContextBase from a library declaration
+      (today it is a builtin in `builtins.d.bp`) — decide re-export vs. re-declare
+- [ ] `Children` coercions (`string`→text, `Element`→`[Element]`) — document + test
 
-## Notes / next
+## F2 — DOM builders (`dom.d.bp`)
 
-- F0, F1, plus the **declarations** of F2/F4/F5 and the decorator exports of F3
-  are done in the scaffold. The remaining work is **compiler-side** (the comptime
-  component scan, annotation→imported-symbol resolution, router/DI codegen) and
-  the `libs/server` HTTP backing for F5 — both large, both tracked above.
-- This branch carries only rakun-exclusive files. The shared v0.beta.5 set index
-  (`README`/`plan`/`status`) and the `AGENTS.md` edits live in `feat`.
+- [ ] Node runtime stub `jhonstart/runtime` (`el`, `mount`, `text`, `input`) so the
+      counter/todo demos run on the `commonJS` target
+- [ ] Attrs strategy for V1 (event handlers as explicit params; full attrs = future)
+
+## F3 — hooks + composite ergonomics
+
+- [ ] Verify `use state(0)` type-checks inside `-> Element`; rejected inside `-> string`
+- [ ] `fragment.bp` (`Fragment`), custom hooks (`useToggle`) — `.bp` bodies on the intrinsics
+- [ ] `html.bp` body: walk `q.parts()`, splice `${…}`, resolve `<Component/>` via
+      `q.lookup` (miss → `q.failAt`), map lowercase tags to builders, `q.build`
+- [ ] Confirm the expr-template surface composes for building `Element` (not just `string`)
+
+## F4 — render (`render.d.bp`)
+
+- [ ] `mount` (client) + `*fn renderToString` (SSR) runtime stubs
+- [ ] End-to-end: `renderToString(Page) -> HTML string`
+
+## F5 — app layer (`router.d.bp`, `server.d.bp`)
+
+- [ ] `Router`/`useRouter`/`Link`; `Http` ContextBase `request()`
+- [ ] Document file-routing convention (`app/`, `page.bp`, `layout.bp`, `[id]`)
+
+## F6 — docs
+
+- [ ] `docs.md` (lib) full pass; root `docs.md` + `README.md` "Frameworks → jhonstart" pointer
+
+## Test scenarios (acceptance)
+
+```
+check ---- counter_typechecks / use_outside_element_rejected / hook_compose_transitive
+check ---- server_loader_await / request_http_context
+check ---- html_component_tags / html_unknown_component / html_interp_hole
+codegen/node ---- counter_runs / todo_runs / html_expands_to_tree / ssr_render_to_string
+codegen/erlang ---- counter_typechecks (parity)
+```

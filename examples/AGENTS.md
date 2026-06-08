@@ -36,7 +36,7 @@ examples/
 ```
 
 > The `rakun/` and `jhonstart-*/` files are **illustrative**: they target planned
-> libraries (`rakun` is a scaffold today; `jhonstart` is not created yet — spec:
+> libraries (both are inert scaffolds today — specs:
 > `tasks/v0.beta.5/specs/`), so they document intended usage and do not yet
 > compile against the current toolchain — unlike the other examples here. The
 > `jhonstart-html` demo is the closest to working: its `html` DSL needs only the
