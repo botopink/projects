@@ -25,6 +25,7 @@ fn main() {
     {func_info, {atom, main}, {atom, 'Contador_atual'}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
+    {test, is_map, {f, 10}, [{x, 0}]}.
     {get_map_elements, {f, 10}, {x, 0}, {list, [{atom, n}, {x, 0}]}}.
   {label, 10}.
     {deallocate, 0}.
@@ -38,7 +39,8 @@ fn main() {
     {allocate, 1, 0}.
     {init_yregs, {list, [{y, 0}]}}.
     {move, {integer, 5}, {x, 0}}.
-    %% unresolved local call: Contador/1
+    {move, {x, 0}, {x, 1}}.
+    {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, n}, {x, 1}]}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
@@ -70,5 +72,5 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
-5
+#{n => 5}
 ```

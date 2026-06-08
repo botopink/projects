@@ -21,6 +21,7 @@ record Pipeline {
     {func_info, {atom, main}, {atom, 'Pipeline_run'}, 2}.
   {label, 3}.
     {allocate, 0, 2}.
+    {test, is_map, {f, 4}, [{x, 0}]}.
     {get_map_elements, {f, 4}, {x, 0}, {list, [{atom, items}, {x, 0}]}}.
   {label, 4}.
     {move, {x, 0}, {x, 2}}.

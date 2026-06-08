@@ -41,6 +41,7 @@ fn main() {
     {move, {x, 0}, {x, 1}}.
     {move, {integer, 1}, {x, 0}}.
     {move, {x, 0}, {x, 2}}.
+    {test, is_map, {f, 10}, [{x, 0}]}.
     {get_map_elements, {f, 10}, {x, 0}, {list, [{atom, length}, {x, 0}]}}.
   {label, 10}.
     {move, {x, 0}, {x, 3}}.
@@ -81,7 +82,8 @@ fn main() {
     {call, 1, {f, 3}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
-    {get_map_elements, {f, 11}, {x, 0}, {list, [{atom, _1}, {x, 0}]}}.
+    {test, is_map, {f, 11}, [{x, 0}]}.
+    {get_map_elements, {f, 11}, {x, 0}, {list, [{atom, '_1'}, {x, 0}]}}.
   {label, 11}.
     {move, {x, 0}, {y, 1}}.
     {move, {y, 1}, {x, 0}}.
@@ -101,7 +103,8 @@ fn main() {
     {call, 1, {f, 3}}.
     {move, {x, 0}, {y, 2}}.
     {move, {y, 2}, {x, 0}}.
-    {get_map_elements, {f, 14}, {x, 0}, {list, [{atom, _1}, {x, 0}]}}.
+    {test, is_map, {f, 14}, [{x, 0}]}.
+    {get_map_elements, {f, 14}, {x, 0}, {list, [{atom, '_1'}, {x, 0}]}}.
   {label, 14}.
     {test, is_eq, {f, 15}, [{x, 0}, {atom, nil}]}.
     {move, {atom, true}, {x, 0}}.
@@ -135,4 +138,6 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
+{[1|1],[1|1]}
+false
 ```

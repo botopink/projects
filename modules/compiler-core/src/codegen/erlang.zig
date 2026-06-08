@@ -13,9 +13,11 @@ const comptimeMod = @import("../comptime.zig");
 const moduleOutput = @import("./moduleOutput.zig");
 const configMod = @import("./config.zig");
 const ast = @import("../ast.zig");
+const crossModule = @import("./crossModule.zig");
 
 const ModuleOutput = moduleOutput.ModuleOutput;
 const ComptimeOutput = comptimeMod.ComptimeOutput;
+const CrossModule = crossModule.CrossModule;
 
 fn fnArityNoSelf(f: ast.FnDecl) usize {
     var n: usize = 0;
@@ -23,6 +25,13 @@ fn fnArityNoSelf(f: ast.FnDecl) usize {
         if (!std.mem.eql(u8, p.name, "self")) n += 1;
     }
     return n;
+}
+
+/// True when a record/struct/enum method is an associated fn — no `self`
+/// receiver, so it's callable as `Type.method(...)` (and across modules as a
+/// remote call). Its Erlang arity is just `params.len` (no `self` to drop).
+fn isAssocMethod(m: ast.InterfaceMethod) bool {
+    return m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self");
 }
 
 fn isZeroArgMainCallExpr(expr: ast.Expr) bool {
@@ -62,6 +71,12 @@ pub fn codegenEmit(
 ) !std.ArrayListUnmanaged(ModuleOutput) {
     var results: std.ArrayListUnmanaged(ModuleOutput) = .empty;
 
+    // Cross-module link index — lets a consumer resolve an imported record's
+    // associated fn to a remote call into the owning module (`http:ok(...)`)
+    // and an owner export only the assoc fns another module consumes.
+    var cross = try crossModule.build(alloc, outputs);
+    defer cross.deinit();
+
     for (outputs) |*ct| {
         switch (ct.outcome) {
             .parseError => continue,
@@ -81,7 +96,7 @@ pub fn codegenEmit(
                 // `"std"` package copies are dependencies — never emit their
                 // test blocks (mirrors the commonJS rule).
                 const module_test_mode = config.test_mode and !std.mem.startsWith(u8, ct.name, "std/");
-                const code = try emitErlang(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, module_test_mode);
+                const code = try emitErlang(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, module_test_mode, &cross);
                 try results.append(alloc, .{
                     .name = ct.name,
                     .src = ct.src,
@@ -107,6 +122,7 @@ fn emitErlang(
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
     test_mode: bool,
+    cross: ?*const CrossModule,
 ) ![]u8 {
     var aw: std.Io.Writer.Allocating = .init(alloc);
     defer aw.deinit();
@@ -114,6 +130,7 @@ fn emitErlang(
     var em = Emitter.init(alloc, &aw.writer, comptime_vals, rewrites);
     em.test_mode = test_mode;
     em.module_name = module_name;
+    em.cross = cross;
 
     // Test registry entries collected while emitting decls (test mode only).
     const TestEntry = struct { name: ?[]const u8, line: usize, idx: usize };
@@ -136,11 +153,13 @@ fn emitErlang(
     try em.collectStdImports(program);
     defer em.std_imports.deinit();
     try em.collectTypeShapes(program);
+    try em.collectImportedTypes(program);
     defer {
         var rf_it = em.record_fields.valueIterator();
         while (rf_it.next()) |names| alloc.free(names.*);
         em.record_fields.deinit();
         em.enum_names.deinit();
+        em.imported_types.deinit();
     }
     var top_runtime_vals: std.ArrayListUnmanaged(ast.ValDecl) = .empty;
     defer top_runtime_vals.deinit(alloc);
@@ -187,12 +206,48 @@ fn emitErlang(
         try aw.writer.writeAll("-export([main/1]).\n");
     }
 
-    // Export other public functions
-    if (pub_fns.items.len > 0) {
+    // A record/struct/enum whose name another module imports must export its
+    // associated fns: the consumer reaches them via a remote call
+    // (`http:ok(...)`). Records emit assoc fns as bare local functions (see
+    // `emitRecord`), so the owner exports `<fn>/<arity>` for every no-`self`
+    // method. Scoped to consumed types → single-module programs are unchanged.
+    var assoc_exports: std.ArrayListUnmanaged(struct { name: []const u8, arity: usize }) = .empty;
+    defer assoc_exports.deinit(alloc);
+    if (cross) |xc| {
+        const Collect = struct {
+            fn methods(list: *@TypeOf(assoc_exports), a: std.mem.Allocator, ms: []const ast.InterfaceMethod) !void {
+                for (ms) |m| {
+                    if (m.is_declare or !isAssocMethod(m)) continue;
+                    try list.append(a, .{ .name = m.name, .arity = m.params.len });
+                }
+            }
+        };
+        for (program.decls) |decl| switch (decl) {
+            .record => |r| if (xc.imported.contains(r.name)) try Collect.methods(&assoc_exports, alloc, r.methods),
+            .@"enum" => |e| if (xc.imported.contains(e.name)) try Collect.methods(&assoc_exports, alloc, e.methods),
+            .@"struct" => |s| if (xc.imported.contains(s.name)) {
+                for (s.members) |m| if (m == .method) {
+                    if (m.method.is_declare or !isAssocMethod(m.method)) continue;
+                    try assoc_exports.append(alloc, .{ .name = m.method.name, .arity = m.method.params.len });
+                };
+            },
+            else => {},
+        };
+    }
+
+    // Export other public functions + cross-imported associated fns.
+    if (pub_fns.items.len > 0 or assoc_exports.items.len > 0) {
         try aw.writer.writeAll("-export([");
-        for (pub_fns.items, 0..) |f, i| {
-            if (i > 0) try aw.writer.writeAll(", ");
+        var first = true;
+        for (pub_fns.items) |f| {
+            if (!first) try aw.writer.writeAll(", ");
+            first = false;
             try aw.writer.print("{s}/{d}", .{ f.name, fnArityNoSelf(f) });
+        }
+        for (assoc_exports.items) |e| {
+            if (!first) try aw.writer.writeAll(", ");
+            first = false;
+            try aw.writer.print("{s}/{d}", .{ e.name, e.arity });
         }
         try aw.writer.writeAll("]).\n");
     }
@@ -411,6 +466,12 @@ const Emitter = struct {
     record_fields: std.StringHashMap([]const []const u8),
     /// Enum names → so `EnumName.Variant` access lowers to the variant atom.
     enum_names: std.StringHashMap(void),
+    /// Cross-module link index (null in the standalone path).
+    cross: ?*const CrossModule = null,
+    /// Imported record/struct name → owning module atom. A qualified call whose
+    /// receiver names one (`Response.ok(...)` for an imported `Response`) lowers
+    /// to a remote call into the owner (`http:ok(...)`), not a bare local fn.
+    imported_types: std.StringHashMap([]const u8),
 
     fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8), rewrites: std.AutoHashMap(ast.Loc, []const u8)) Emitter {
         return .{
@@ -424,6 +485,7 @@ const Emitter = struct {
             .std_imports = std.StringHashMap(void).init(alloc),
             .record_fields = std.StringHashMap([]const []const u8).init(alloc),
             .enum_names = std.StringHashMap(void).init(alloc),
+            .imported_types = std.StringHashMap([]const u8).init(alloc),
         };
     }
 
@@ -453,6 +515,36 @@ const Emitter = struct {
                 try self.record_fields.put(s.name, names);
             },
             .@"enum" => |e| try self.enum_names.put(e.name, {}),
+            else => {},
+        };
+    }
+
+    /// Registers types this module imports `from "<pkg>"` (resolved via the
+    /// cross-module index). An imported record/struct joins `record_fields` so a
+    /// construction (`App(8080, "/")`) inlines the same `#{…}` map the owner
+    /// would build, and `imported_types` so an associated-fn call
+    /// (`Response.ok(...)`) lowers to a remote call into the owner module.
+    /// Imported enums join `enum_names` (their tagged-tuple / atom shape is
+    /// module-independent). No-op without a cross index (standalone path).
+    fn collectImportedTypes(self: *Emitter, program: ast.Program) !void {
+        const xc = self.cross orelse return;
+        for (program.decls) |decl| switch (decl) {
+            .use => |u| for (u.imports) |imp| {
+                const name = imp.name();
+                const info = xc.exports.get(name) orelse continue;
+                const owner = crossModule.moduleBasename(info.module);
+                switch (info.kind) {
+                    .record, .@"struct" => {
+                        if (!self.record_fields.contains(name)) {
+                            const fields = try self.alloc.dupe([]const u8, info.fields);
+                            try self.record_fields.put(name, fields);
+                        }
+                        try self.imported_types.put(name, owner);
+                    },
+                    .@"enum" => try self.enum_names.put(name, {}),
+                    .@"fn", .val => {},
+                }
+            },
             else => {},
         };
     }
@@ -1259,6 +1351,15 @@ const Emitter = struct {
                                 }
                                 try this.w("}");
                                 return;
+                            } else if (mod_name != null and this.imported_types.get(mod_name.?) != null) {
+                                // Associated fn of an IMPORTED record/struct
+                                // (`Response.ok(...)` where `Response` comes
+                                // `from "rakun"`): a remote call into the owning
+                                // module (`http:ok(...)`) — the bare fn only
+                                // exists in the owner, lowercasing the type name
+                                // (`response:ok`) would hit the wrong module.
+                                const owner = this.imported_types.get(mod_name.?).?;
+                                try this.fmt("{s}:{s}(", .{ owner, cc.callee });
                             } else if (mod_name != null and this.record_fields.contains(mod_name.?)) {
                                 // Associated fn of a LOCAL record (`Response.ok(...)`):
                                 // the fn is emitted as a bare local function in this

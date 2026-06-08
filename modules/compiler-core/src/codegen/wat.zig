@@ -12,6 +12,9 @@ const comptimeMod = @import("../comptime.zig");
 const moduleOutput = @import("./moduleOutput.zig");
 const configMod = @import("./config.zig");
 const ast = @import("../ast.zig");
+const crossModule = @import("./crossModule.zig");
+
+const CrossModule = crossModule.CrossModule;
 
 const ModuleOutput = moduleOutput.ModuleOutput;
 const ComptimeOutput = comptimeMod.ComptimeOutput;
@@ -63,6 +66,13 @@ pub fn codegenEmit(
     _ = config;
     var results: std.ArrayListUnmanaged(ModuleOutput) = .empty;
 
+    // Built only to detect (and flag) cross-module imports — wasm stays
+    // single-module today, so it links nothing; the index lets `emitWat`
+    // record the explicit limitation instead of silently emitting a `call`
+    // to a function that lives in another module.
+    var cross = try crossModule.build(alloc, outputs);
+    defer cross.deinit();
+
     for (outputs) |*ct| {
         switch (ct.outcome) {
             .parseError => continue,
@@ -79,7 +89,7 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const code = try emitWat(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites);
+                const code = try emitWat(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, &cross);
                 try results.append(alloc, .{
                     .name = ct.name,
                     .src = ct.src,
@@ -106,6 +116,7 @@ fn emitWat(
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    cross: ?*const CrossModule,
 ) ![]u8 {
     _ = module_name;
 
@@ -137,7 +148,22 @@ fn emitWat(
         // `$<target>_<method>` so activated/qualified dispatch can `call` them.
         .implement => |im| try em.emitExtensionMethods(im.target, im.methods),
         .extend => |ex| try em.emitExtensionMethods(ex.target, ex.methods),
-        .record, .@"struct", .@"enum", .interface, .delegate, .use, .@"test" => {},
+        // KNOWN GAP: wasm is single-module. A `from "<pkg>"` import that
+        // resolves to a concrete emitted symbol in another module can't be
+        // linked here (no wasm module-linking story yet) — flag it explicitly
+        // so the broken `call $sym` below isn't silently mistaken for working
+        // code. erlang/beam handle this via remote calls (see crossModule.zig).
+        .use => |u| if (cross) |xc| {
+            for (u.imports) |imp| {
+                if (xc.exports.get(imp.name())) |info| {
+                    try fn_buf.writer.print(
+                        "  ;; cross-module import not linked (wasm single-module): {s} from {s}\n",
+                        .{ imp.name(), info.module },
+                    );
+                }
+            }
+        },
+        .record, .@"struct", .@"enum", .interface, .delegate, .@"test" => {},
     };
 
     if (has_main_0) try em.emitEntrypointWrapper();

@@ -27,6 +27,7 @@ fn main() {
     {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, name}, {x, 1}]}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
+    {test, is_map, {f, 8}, [{x, 0}]}.
     {get_map_elements, {f, 8}, {x, 0}, {list, [{atom, name}, {x, 0}]}}.
   {label, 8}.
     {move, {x, 0}, {x, 1}}.

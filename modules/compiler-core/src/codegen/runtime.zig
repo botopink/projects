@@ -154,12 +154,13 @@ pub fn executeErlang(allocator: std.mem.Allocator, erl_code: []const u8, module_
 /// Returns the captured stdout. Failure (missing erlc, assembly rejection,
 /// or runtime error) returns an empty string so the test still produces a
 /// readable snapshot.
-pub fn executeBeamAsm(allocator: std.mem.Allocator, asm_code: []const u8, module_name: []const u8, io: anytype) ![]u8 {
+pub fn executeBeamAsm(allocator: std.mem.Allocator, asm_code: []const u8, module_name: []const u8, aux: []const AuxFile, io: anytype) ![]u8 {
     var dir_buf: [64]u8 = undefined;
     const tmp_dir = try makeScratchDir(io, &dir_buf);
     defer std.Io.Dir.cwd().deleteTree(io, tmp_dir) catch {};
 
-    const asm_filename = try std.fmt.allocPrint(allocator, "{s}/{s}.S", .{ tmp_dir, module_name });
+    const entry_module = erlModuleName(module_name);
+    const asm_filename = try std.fmt.allocPrint(allocator, "{s}/{s}.S", .{ tmp_dir, entry_module });
     defer allocator.free(asm_filename);
 
     {
@@ -176,13 +177,31 @@ pub fn executeBeamAsm(allocator: std.mem.Allocator, asm_code: []const u8, module
         return allocator.dupe(u8, "");
     }
 
+    // Assemble sibling modules the entry calls into (cross-module `call_ext`).
+    for (aux) |a| {
+        const aux_module = erlModuleName(a.name);
+        if (std.mem.eql(u8, aux_module, entry_module)) continue;
+        const aux_filename = try std.fmt.allocPrint(allocator, "{s}/{s}.S", .{ tmp_dir, aux_module });
+        defer allocator.free(aux_filename);
+        try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = aux_filename, .data = a.code });
+        const aux_assemble = std.process.run(allocator, io, .{ .argv = &.{ "erlc", "+from_asm", "-o", tmp_dir, aux_filename } }) catch |err| switch (err) {
+            error.FileNotFound => return allocator.dupe(u8, ""),
+            else => return err,
+        };
+        allocator.free(aux_assemble.stdout);
+        allocator.free(aux_assemble.stderr);
+        if (!isProcessSuccess(aux_assemble.term)) {
+            return allocator.dupe(u8, "");
+        }
+    }
+
     // Run only modules that export the generated Botopink entrypoint.
     if (std.mem.indexOf(u8, asm_code, "'_botopink_main', 0") == null) {
         return allocator.dupe(u8, "");
     }
 
     const exec_result = std.process.run(allocator, io, .{
-        .argv = &.{ "erl", "-noinput", "-pa", tmp_dir, "-s", module_name, "_botopink_main", "-s", "init", "stop" },
+        .argv = &.{ "erl", "-noinput", "-pa", tmp_dir, "-s", entry_module, "_botopink_main", "-s", "init", "stop" },
     }) catch |err| switch (err) {
         error.FileNotFound => return allocator.dupe(u8, ""),
         else => return err,

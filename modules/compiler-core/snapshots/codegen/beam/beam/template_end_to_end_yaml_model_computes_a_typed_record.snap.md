@@ -24,6 +24,7 @@ fn main() {
   {label, 3}.
     {allocate, 0, 0}.
     {move, {atom, cfg}, {x, 0}}.
+    {test, is_map, {f, 8}, [{x, 0}]}.
     {get_map_elements, {f, 8}, {x, 0}, {list, [{atom, port}, {x, 0}]}}.
   {label, 8}.
     {gc_bif, '+', {f, 0}, 1, [{x, 0}, {integer, 1}], {x, 0}}.

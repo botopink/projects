@@ -337,6 +337,40 @@ test "js: import ---- multi-module pub val import" {
     });
 }
 
+test "js: import ---- cross-module record construct and assoc fn" {
+    // A library ships concrete emitted types (`Response`/`App`); a consumer
+    // imports them, calls a record's associated fn across the package boundary
+    // (`Response.ok(...)`), and constructs an imported record positionally
+    // (`App(8080, "/")`). Every backend must link these to the owning module:
+    // commonJS `require`s + `new`/`static`; erlang/beam remote-call the owner
+    // atom + build the owner's map. (wasm stays single-module — see wat.zig.)
+    try h.assertJs(std.testing.allocator, @src(), &.{
+        .{ .path = "http", .source =
+        \\pub record Response {
+        \\    body: string,
+        \\    fn ok(body: string) -> Response {
+        \\        return Response(body: body);
+        \\    }
+        \\}
+        \\
+        \\pub record App {
+        \\    port: i32,
+        \\    path: string,
+        \\}
+        },
+        .{ .path = "", .source =
+        \\import {Response, App} from "http";
+        \\
+        \\fn main() {
+        \\    val r = Response.ok("hi");
+        \\    @print(r.body);
+        \\    val a = App(8080, "/");
+        \\    @print(a.port);
+        \\}
+        },
+    });
+}
+
 test "js: pipeline ---- simple chain" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\fn double(x: i32) -> i32 { return x * 2; }

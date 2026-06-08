@@ -25,16 +25,20 @@ val Vec2 = record {
     {func_info, {atom, main}, {atom, 'Vec2_lengthSq'}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
+    {test, is_map, {f, 6}, [{x, 0}]}.
     {get_map_elements, {f, 6}, {x, 0}, {list, [{atom, x}, {x, 0}]}}.
   {label, 6}.
     {move, {x, 0}, {x, 1}}.
+    {test, is_map, {f, 7}, [{x, 0}]}.
     {get_map_elements, {f, 7}, {x, 0}, {list, [{atom, x}, {x, 0}]}}.
   {label, 7}.
     {gc_bif, '*', {f, 0}, 2, [{x, 1}, {x, 0}], {x, 0}}.
     {move, {x, 0}, {x, 1}}.
+    {test, is_map, {f, 8}, [{x, 0}]}.
     {get_map_elements, {f, 8}, {x, 0}, {list, [{atom, y}, {x, 0}]}}.
   {label, 8}.
     {move, {x, 0}, {x, 1}}.
+    {test, is_map, {f, 9}, [{x, 0}]}.
     {get_map_elements, {f, 9}, {x, 0}, {list, [{atom, y}, {x, 0}]}}.
   {label, 9}.
     {gc_bif, '*', {f, 0}, 2, [{x, 1}, {x, 0}], {x, 0}}.
@@ -48,6 +52,7 @@ val Vec2 = record {
     {func_info, {atom, main}, {atom, 'Vec2_scale'}, 2}.
   {label, 5}.
     {allocate, 0, 2}.
+    {test, is_map, {f, 10}, [{x, 0}]}.
     {get_map_elements, {f, 10}, {x, 0}, {list, [{atom, x}, {x, 0}]}}.
   {label, 10}.
     {move, {x, 0}, {x, 2}}.

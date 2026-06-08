@@ -25,12 +25,15 @@ val Invoice = record {
     {func_info, {atom, main}, {atom, 'Invoice_total'}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
+    {test, is_map, {f, 6}, [{x, 0}]}.
     {get_map_elements, {f, 6}, {x, 0}, {list, [{atom, subtotal}, {x, 0}]}}.
   {label, 6}.
     {move, {x, 0}, {x, 1}}.
+    {test, is_map, {f, 7}, [{x, 0}]}.
     {get_map_elements, {f, 7}, {x, 0}, {list, [{atom, subtotal}, {x, 0}]}}.
   {label, 7}.
     {move, {x, 0}, {x, 1}}.
+    {test, is_map, {f, 8}, [{x, 0}]}.
     {get_map_elements, {f, 8}, {x, 0}, {list, [{atom, taxRate}, {x, 0}]}}.
   {label, 8}.
     {gc_bif, '*', {f, 0}, 2, [{x, 1}, {x, 0}], {x, 0}}.

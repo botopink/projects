@@ -43,7 +43,8 @@ val Logger = struct {
     {allocate, 0, 2}.
     {move, {atom, console}, {x, 0}}.
     {move, {x, 0}, {x, 2}}.
-    {get_map_elements, {f, 8}, {x, 0}, {list, [{atom, _prefix}, {x, 0}]}}.
+    {test, is_map, {f, 8}, [{x, 0}]}.
+    {get_map_elements, {f, 8}, {x, 0}, {list, [{atom, '_prefix'}, {x, 0}]}}.
   {label, 8}.
     {move, {x, 0}, {x, 3}}.
     {move, {x, 1}, {x, 0}}.
@@ -62,7 +63,8 @@ val Logger = struct {
     {func_info, {atom, main}, {atom, 'Logger_prefix'}, 1}.
   {label, 7}.
     {allocate, 0, 1}.
-    {get_map_elements, {f, 9}, {x, 0}, {list, [{atom, _prefix}, {x, 0}]}}.
+    {test, is_map, {f, 9}, [{x, 0}]}.
+    {get_map_elements, {f, 9}, {x, 0}, {list, [{atom, '_prefix'}, {x, 0}]}}.
   {label, 9}.
     {deallocate, 0}.
     return.

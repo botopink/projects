@@ -54,7 +54,7 @@ pub fn generate(
                     const err_msg = try std.fmt.allocPrint(allocator, "Execution error: {}", .{err});
                     break :blk err_msg;
                 },
-                .beam => runtime.executeBeamAsm(allocator, output.result.js, output.name, io) catch |err| blk: {
+                .beam => runtime.executeBeamAsm(allocator, output.result.js, output.name, aux_files.items, io) catch |err| blk: {
                     const err_msg = try std.fmt.allocPrint(allocator, "Execution error: {}", .{err});
                     break :blk err_msg;
                 },

@@ -34,6 +34,7 @@ val result = double(21);
 (module
   (memory (export "memory") 1)
   (global $__heap_ptr (mut i32) (i32.const 256))
+  ;; cross-module import not linked (wasm single-module): double from math
   (global $result (mut i32) (i32.const 0))
 )
 ```

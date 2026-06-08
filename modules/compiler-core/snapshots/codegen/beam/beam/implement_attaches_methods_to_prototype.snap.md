@@ -24,6 +24,7 @@ val PersonPrintable = implement Printable for Person {
     {func_info, {atom, main}, {atom, 'Person_print'}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
+    {test, is_map, {f, 4}, [{x, 0}]}.
     {get_map_elements, {f, 4}, {x, 0}, {list, [{atom, name}, {x, 0}]}}.
   {label, 4}.
     {deallocate, 0}.
