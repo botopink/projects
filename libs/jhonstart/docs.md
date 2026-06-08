@@ -1,8 +1,10 @@
 # jhonstart — reference
 
 > A React/Next-style UI framework written in botopink, on the language's own
-> primitives. Status: **scaffold** (declarations only). Spec:
-> `tasks/v0.beta.5/specs/jhonstart.md`.
+> primitives. Status: **core implemented in real `.bp`** (`Element` tree +
+> builders + synchronous `renderToString`, compiled & runtime-tested); hooks,
+> router, and the Http server context remain declarative (`.d.bp`) pending their
+> language prerequisites. Spec: `tasks/v0.beta.5/specs/jhonstart.md`.
 
 ## Component model
 
@@ -73,6 +75,12 @@ val page = html
 
 ## V1 limits
 
-Scaffold: signatures only, host-bound via `#[@external]`. `use`/`await`/`*fn`
-require the pending language work (`use-await-prefix`, `async-generators`); the
-`html` DSL needs only the shipped `expr-templates`.
+- **Implemented now** (`element.bp`, compiled + `test {}`-checked): the `Element`
+  record, builders (`text`, `fragment`, `div`/`span`/`p`/`h1`/`ul`/`li` — take an
+  `Element[]`), and a synchronous `renderToString`. Author trees as `div([…])`,
+  not `div { … }` (the trailing-lambda children form needs gaps G3/G4).
+- **Declarative / pending**: hooks (`{value, set}` returns blocked by gap G1),
+  client `mount` (host `#[@external]`), router, the Http server context, and the
+  `*fn`/`await` data-loading path (`use-await-prefix`, `async-generators`). The
+  `html` DSL body needs only the shipped `expr-templates`; SSR `renderToString`
+  needs **no** async.

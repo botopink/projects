@@ -407,37 +407,45 @@ codegen/erlang ---- counter_typechecks   (parity: at least type-checks/compiles)
      returns; a named `record` would be required (but callback fields still hit
      gap #1).
   3. **`fn() -> T[]` does not parse.** An array as a function-type's *return*
-     (`children: fn() -> Element[]`) is rejected, even parenthesized. The DOM
-     builders' declared `fn() -> Children` parses only because `Children` is an
-     interface *name*, not `Element[]`.
+     (`children: fn() -> Element[]`) is rejected, even parenthesized — so the
+     *trailing-lambda* children form `div { [a, b] }` (which desugars to a
+     `fn() -> Children` arg) is unavailable.
   4. **No `Element[]` → `Children` coercion.** The empty `Children` interface is
-     not satisfied by an `Element[]` (`expected: Children, found: Element[]`). ⇒
-     The builder children model `div { [a, b] }` does not type-check (F1/F2).
-     **This also caps the `html` DSL**: lowering a lowercase tag `<div>…</div>`
-     to `div(fn() -> Children)` hits the same wall, so V1 `html` cannot emit DOM
-     builder calls with children — only `fragment(Element[])` assembly works.
+     not satisfied by an `Element[]` (`expected: Children, found: Element[]`),
+     so the `fn() -> Children` builder signature can't receive an element list.
   5. **`fn() -> {}` (empty-record return type) does not parse** — same root as #2.
 
-  **What DOES compile today** (also in the `jhonstart.zig` check tests): `use`
-  gating on `@Context<Element, _>` hooks with *simple* / *named-record* (no
-  function-field) returns; and the **`html` DSL building an `Element` tree** via
-  `q.build` — `<Component/>` → caller-scope `q.lookup` → `Component()`,
-  `${expr}` → `text(expr)` child, children assembled with `fragment(Element[])`
-  (sidesteps gaps #3/#4). Comptime string ops inside a template body
-  (`q.text()`, `.split()`, `.trim()`, accumulate, `q.build()`) are verified to
-  run, so a real markup-scanning `html.bp` body is feasible. **V1 `html` scope**:
-  self-closing component tags + `${…}` interpolation assembled flat via
-  `fragment([…])`; lowercase/nested builder tags (`<div>`, `<p>…</p>`) are
-  blocked by gap #4, exactly like the builder API. The canonical Case-4 demo's
-  `<div>` wrapper therefore needs gap #4 resolved first; the component-only
-  subset (`<Page1/><Page2/>` + `${name}`) is the buildable V1 surface.
+  > **Design response (V1).** Gaps #3/#4 only block the `fn() -> Children`
+  > *trailing-lambda* builder form. V1 therefore makes the builders take an
+  > **`Element[]` argument** (`div([a, b])`) instead — which parses and
+  > type-checks today — sidestepping both. Authoring trades `div { […] }` sugar
+  > for `div([…])`. Gap #1 has no such workaround, so the React hook ergonomics
+  > (`{value, set}`) stay blocked.
+
+  **What compiles today.** The whole **UI core is real botopink**, not host
+  intrinsics (`libs/jhonstart/src/element.bp`, in `botopink.json`'s compiled
+  set, runtime-tested by its own `test {}`): a recursive `record Element`,
+  array-arg builders (`text`, `fragment`, `div`/`span`/`p`/`h1`/`ul`/`li`), and
+  a **pure, synchronous `renderToString`** (a self-recursive walk — botopink
+  resolves a fn's own name but not yet forward references between two top-level
+  fns, so the child loop is inlined). This means **SSR string rendering needs no
+  `async-generators`** — only the *data-loading* `*fn`/`await` server pieces do.
+  Also compiling (in the `jhonstart.zig` check tests): `use` gating on
+  `@Context<Element, _>` hooks with simple/named-record returns; the `html` DSL
+  building an `Element` tree via `q.build`. Comptime string ops in a template
+  body (`q.text`/`.split`/`.trim`/accumulate/`q.build`) run, and with array-arg
+  builders a markup-scanning `html.bp` can lower **nested** `<div><p>…</p></div>`
+  to `div([p([…])])` — the canonical Case-4 demo is buildable without waiting on
+  gap #4. (Earlier notes that capped `html` to component-only assumed the
+  `fn() -> Children` builder form; the array-arg core lifts that cap.)
 
 - **Compiler prerequisites (cross-set).** jhonstart is a *consumer*; it cannot be
   built until these land in `feat`:
   - `use-await-prefix` (the `use`/`await` prefix operators) — **pending** in
     `tasks/v0.beta.1/specs/`.
   - `async-generators` (`*fn`, `await`, `@Future`) — **pending**; needed for
-    server loaders and `renderToString`.
+    server *data loaders* only. (SSR `renderToString` is now a synchronous `.bp`
+    function — it does **not** need async.)
   - `context-inference` (`@Context<B,R>` gating `use`) — **already ✅** (branch
     `task/context-inference`).
   - `expr-templates` (`@Expr<Element>`, tagged calls) — **✅ landed** (c5434bf);

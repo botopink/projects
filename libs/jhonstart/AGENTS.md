@@ -10,8 +10,11 @@ functions returning `Element`; hooks are the `@Context<Element, _>` capability
 gated by the `use` prefix; server components are `*fn … -> @Future<Element>`; an
 optional JSX-like `html` DSL reuses `expr-templates` (`@Expr<Element>`).
 
-Like `server`/`client`, this is a **scaffold** today: `botopink.json` claims no
-files, nothing is embedded into the prelude. It is reached with `from "jhonstart"`,
+The UI **core is real botopink** (`src/element.bp`, in `botopink.json`'s compiled
+set): an `Element` tree, builders, and a synchronous SSR renderer — no host
+intrinsics, no async. Only the host-bound / gap-blocked surface (interactive
+hooks, client `mount`, router, Http server context) stays as illustrative
+`.d.bp`. Nothing is embedded into the prelude; reached with `from "jhonstart"`,
 never auto-loaded into the type `Env`.
 
 ## Tree
@@ -19,34 +22,34 @@ never auto-loaded into the type `Env`.
 ```text
 libs/jhonstart/
 ├── AGENTS.md          ← you are here
-├── botopink.json      ← package manifest (files: [] — inert scaffold)
+├── botopink.json      ← package manifest (files: ["element.bp"])
 ├── docs.md            ← user-facing reference
 └── src/
     ├── AGENTS.md
-    ├── element.d.bp   ← Element (the ContextBase) + Children
-    ├── dom.d.bp       ← DOM builder intrinsics (div/p/button/input/…)
-    ├── hooks.d.bp     ← state/effect/memo/ref/reducer — all @Context<Element,_>
-    ├── html.d.bp      ← the JSX-like `html` template DSL (signature)
-    ├── render.d.bp    ← mount (client) + renderToString (SSR, *fn)
+    ├── element.bp     ← COMPILED CORE: record Element + builders + renderToString + test {}
+    ├── hooks.d.bp     ← state/effect/memo/ref/reducer (@Context<Element,_>) — blocked by G1
+    ├── html.d.bp      ← the JSX-like `html` template DSL (signature; body pending)
     ├── router.d.bp    ← Router/useRouter/Link (Next-style navigation)
     └── server.d.bp    ← Http ContextBase: request() + loaders
 ```
 
 ## Layers
 
-| Layer | Analog | ContextBase | Files |
+| Layer | Analog | ContextBase | Surface |
 |---|---|---|---|
-| core | React | `Element` | `element`, `dom`, `hooks`, `html`, `render` |
-| app | Next.js | `Http` | `router`, `server` |
+| core | React | `Element` | `element.bp` (compiled), `hooks`/`html` (declarative) |
+| app | Next.js | `Http` | `router`, `server` (declarative) |
 
 ## Conventions
 
-- `.d.bp` files declare **signatures only**; the host runtime supplies the
-  implementation per target (bound via `#[@external(...)]`). Composite ergonomics
-  (`Fragment`, `Link`, custom hooks, the `html` body) are ordinary `.bp` built on
-  the intrinsics — a future phase (see the spec's F3).
-- Components are PascalCase (`Counter`, `Page`); hooks/intrinsics are camelCase
-  (`state`, `useToggle`, `renderToString`).
+- **Prefer real `.bp`**: implement in botopink whatever the language can express
+  (the `Element` record, builders, `renderToString` are ordinary `.bp`). Keep
+  `.d.bp` only for genuinely host-bound intrinsics (client `mount`) or surface
+  blocked by a language gap (hooks' `{value, set}` returns — gap G1).
+- Builders take `Element[]` args (`div([a, b])`), not a `fn() -> Children`
+  trailing lambda (`div { [a, b] }`, blocked by gaps G3/G4 — see spec Notes).
+- `renderToString` is **synchronous** (`.bp`); SSR string output needs no async.
+- Components are PascalCase (`Counter`, `Page`); fns/builders camelCase.
 - Not embedded: do **not** wire jhonstart into `comptime/stdlib/prelude.zig` or
   `build.zig`.
 

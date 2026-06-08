@@ -37,19 +37,22 @@
 - [ ] **G3** — `fn() -> T[]` does not parse (array as a function-type return)
 - [ ] **G4** — no `Element[]` → `Children` coercion → blocks `div { [a, b] }`
 
-## F1 — core types (`element.d.bp`)
+## F1 — core types (`element.bp`) ✅ — real botopink, compiled + runtime-tested
 
-- [x] Confirm `Element` is accepted as a ContextBase (it is a builtin; usable as
-      `@Context<Element, _>` from inlined declarations — verified in check tests)
-- [ ] `Children` coercions (`string`→text, `Element`→`[Element]`) — **blocked by G3/G4**
+- [x] `Element` modelled as a `pub record Element { tag, value, children: Element[] }`
+      (recursive record) — `libs/jhonstart/src/element.bp`, in `botopink.json`
+- [x] `Element` usable as `@Context<Element, _>` base (builtin) — verified in check tests
+- [x] String→text via the `text(...)` builder; child lists are `Element[]` (no
+      `Children` interface needed — array-arg builders, see F2)
 
-## F2 — DOM builders (`dom.d.bp`)
+## F2 — DOM builders (`element.bp`) ✅ — `.bp`, not `@[external]`
 
-- [ ] Builder children model `div { [a, b] }` — **blocked by G3/G4**; V1 uses the
-      `html` DSL + `fragment(Element[])` assembly instead
-- [ ] Node runtime stub `jhonstart/runtime` (`el`, `mount`, `text`, `input`) so the
-      counter/todo demos run on the `commonJS` target
-- [ ] Attrs strategy for V1 (event handlers as explicit params; full attrs = future)
+- [x] `text`, `fragment`, `div`/`span`/`p`/`h1`/`ul`/`li` — real `.bp`, take `Element[]`
+- [x] Sidestep G3/G4: builders take `Element[]` args (`div([a, b])`), not the
+      `fn() -> Children` trailing-lambda form (`div { [a, b] }`, which IS blocked)
+- [ ] `button`/`input` with event handlers — client-only; deferred (handlers can't
+      be stored in the record, G1; SSR ignores them)
+- [ ] Attrs strategy for V1 (full attrs record = future)
 
 ## F3 — hooks + composite ergonomics
 
@@ -60,16 +63,18 @@
 - [ ] `{value, set}`-shaped hook returns + `useToggle({on, toggle})` — **blocked by G1**
 - [ ] `html.bp` body (markup scan) — **next focused increment**. Comptime string
       ops in a template body (`q.text`/`.split`/`.trim`/accumulate/`q.build`) are
-      VERIFIED to run. V1 scope: self-closing `<Component/>` (→ `q.lookup` →
-      `Comp()`, miss → `q.failAt`) + `${…}` (→ `text`) assembled flat via
-      `fragment([…])`. Lowercase/nested builder tags (`<div>`, `<p>…</p>`) are
-      blocked by **G4** (same wall as the builder API) — defer until G4 lands.
+      VERIFIED to run. With the array-arg builders, it can lower **nested**
+      `<div><p>…</p></div>` → `div([p([…])])`, `<Comp/>` → `q.lookup` → `Comp()`
+      (miss → `q.failAt`), `${…}` → `text(…)`. G4 no longer caps this (it only
+      blocked the `fn() -> Children` form, which the core avoids).
 - [ ] `html_unknown_component` check (`<Page9/>` → `q.failAt`) — lands with `html.bp`
 
-## F4 — render (`render.d.bp`)
+## F4 — render (`element.bp`) ✅ for SSR string; client `mount` pending
 
-- [ ] `mount` (client) + `*fn renderToString` (SSR) runtime stubs
-- [ ] End-to-end: `renderToString(Page) -> HTML string`
+- [x] `renderToString(e: Element) -> string` — **pure, synchronous `.bp`**; needs
+      NO async-generators. `test {}` asserts `<div><p>hi</p>!</div>` etc.
+- [ ] `mount` (client DOM attach) — host-bound `#[@external]`; pending runtime stub
+- [ ] `*fn renderToString` async variant (await server loaders) — gated on async
 
 ## F5 — app layer (`router.d.bp`, `server.d.bp`)
 
@@ -92,6 +97,14 @@ check ---- html_interp_hole              ✅ (${expr} → text child)
 check ---- html_unknown_component        ☐  needs full html.bp body (q.failAt path)
 check ---- server_loader_await           ☐  gated on async-generators
 check ---- request_http_context          ☐  gated on async-generators (Http ctx ok today)
-codegen/node ---- counter_runs / todo_runs / html_expands_to_tree / ssr_render_to_string ☐
+ssr_render_to_string                     ✅ (element.bp `test {}` — runs via `botopink test`)
+codegen/node ---- counter_runs / todo_runs / html_expands_to_tree ☐
 codegen/erlang ---- counter_typechecks (parity) ☐
 ```
+
+> **Architecture note (per user guidance "prefer `.bp` over `.d.bp`")**: the UI
+> core (`element.bp`) is implemented in real botopink — recursive `Element`
+> record, array-arg builders, synchronous `renderToString` — compiled by
+> `botopink.json` and runtime-tested by its own `test {}`. Only genuinely
+> host-bound / gap-blocked surface (interactive hooks, client `mount`, router,
+> Http server context) stays as illustrative `.d.bp`.
