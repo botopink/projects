@@ -58,9 +58,13 @@
 - [x] Confirm the expr-template surface builds an `Element` (not just `string`) —
       `html_component_tags` + `html_interp_hole` compile end-to-end
 - [ ] `{value, set}`-shaped hook returns + `useToggle({on, toggle})` — **blocked by G1**
-- [ ] `html.bp` body (full markup scan): walk `q.parts()`, splice `${…}`, resolve
-      `<Component/>` via `q.lookup` (miss → `q.failAt`), map lowercase tags to
-      builders, `q.build` — mechanism verified; full `appendMarkup` body pending
+- [ ] `html.bp` body (markup scan) — **next focused increment**. Comptime string
+      ops in a template body (`q.text`/`.split`/`.trim`/accumulate/`q.build`) are
+      VERIFIED to run. V1 scope: self-closing `<Component/>` (→ `q.lookup` →
+      `Comp()`, miss → `q.failAt`) + `${…}` (→ `text`) assembled flat via
+      `fragment([…])`. Lowercase/nested builder tags (`<div>`, `<p>…</p>`) are
+      blocked by **G4** (same wall as the builder API) — defer until G4 lands.
+- [ ] `html_unknown_component` check (`<Page9/>` → `q.failAt`) — lands with `html.bp`
 
 ## F4 — render (`render.d.bp`)
 

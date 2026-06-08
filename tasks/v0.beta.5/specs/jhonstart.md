@@ -413,6 +413,9 @@ codegen/erlang ---- counter_typechecks   (parity: at least type-checks/compiles)
   4. **No `Element[]` → `Children` coercion.** The empty `Children` interface is
      not satisfied by an `Element[]` (`expected: Children, found: Element[]`). ⇒
      The builder children model `div { [a, b] }` does not type-check (F1/F2).
+     **This also caps the `html` DSL**: lowering a lowercase tag `<div>…</div>`
+     to `div(fn() -> Children)` hits the same wall, so V1 `html` cannot emit DOM
+     builder calls with children — only `fragment(Element[])` assembly works.
   5. **`fn() -> {}` (empty-record return type) does not parse** — same root as #2.
 
   **What DOES compile today** (also in the `jhonstart.zig` check tests): `use`
@@ -420,8 +423,14 @@ codegen/erlang ---- counter_typechecks   (parity: at least type-checks/compiles)
   function-field) returns; and the **`html` DSL building an `Element` tree** via
   `q.build` — `<Component/>` → caller-scope `q.lookup` → `Component()`,
   `${expr}` → `text(expr)` child, children assembled with `fragment(Element[])`
-  (sidesteps gaps #3/#4). The `html` authoring path (Case 4) is therefore the
-  one component-construction style that works on the current toolchain.
+  (sidesteps gaps #3/#4). Comptime string ops inside a template body
+  (`q.text()`, `.split()`, `.trim()`, accumulate, `q.build()`) are verified to
+  run, so a real markup-scanning `html.bp` body is feasible. **V1 `html` scope**:
+  self-closing component tags + `${…}` interpolation assembled flat via
+  `fragment([…])`; lowercase/nested builder tags (`<div>`, `<p>…</p>`) are
+  blocked by gap #4, exactly like the builder API. The canonical Case-4 demo's
+  `<div>` wrapper therefore needs gap #4 resolved first; the component-only
+  subset (`<Page1/><Page2/>` + `${name}`) is the buildable V1 surface.
 
 - **Compiler prerequisites (cross-set).** jhonstart is a *consumer*; it cannot be
   built until these land in `feat`:
