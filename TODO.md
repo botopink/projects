@@ -11,8 +11,9 @@
 ## Part A — stdlib-interface: dispatch + other backends
 - [ ] A1 — mirror JS instance/associated-method lowering in `erlang.zig`,
       `beam_asm.zig`, `wat.zig`; `std_erlang.sh` green
-- [ ] A2 — dispatch stragglers: `s.contains()`→`includes` (type-aware),
-      `@[external]` associated fns (`Array.range`/`repeat`), record-method-body
+- [ ] A2 — dispatch stragglers: ✅ `s.contains()`→`includes` (type-aware,
+      loc-keyed `jsMethodRenames`, JS-only — `record Set.contains` unaffected);
+      ⬜ `@[external]` associated fns (`Array.range`/`repeat`), record-method-body
       inference walk, companion `primitives.mjs`/`.erl`
 - [ ] A3 — inference: type-check `default fn` bodies; generic-extends-generic +
       literal method receivers (parser)

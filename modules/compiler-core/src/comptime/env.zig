@@ -320,6 +320,12 @@ pub const Env = struct {
     /// to qualify with. Consumed by the transform pass to lower `obj.m(args)` to
     /// `Sym.m(obj, args)` without monkey-patching.
     dispatchRewrites: std.AutoHashMap(ast.Loc, []const u8),
+    /// Type-directed JS method renames: call-site location → the native JS method
+    /// name to emit instead of the source `callee`. Recorded by inference when the
+    /// receiver's static type makes a global name-map unsafe (e.g. `s.contains(x)`
+    /// on a `string` lowers to `s.includes(x)`, but `Set.contains` must stay).
+    /// JS-specific — only the commonJS backend reads it.
+    jsMethodRenames: std.AutoHashMap(ast.Loc, []const u8),
     /// `"std"` package module exports: module name (`option`, `result`, …) →
     /// exports table (pub fn name → inferred type). Shared registry tables,
     /// populated by the compile session before inference.
@@ -378,6 +384,7 @@ pub const Env = struct {
             .assocInterfaceDecls = std.StringHashMap(ast.InterfaceDecl).init(arena),
             .usedAssocInterfaces = std.StringHashMap(void).init(arena),
             .dispatchRewrites = std.AutoHashMap(ast.Loc, []const u8).init(arena),
+            .jsMethodRenames = std.AutoHashMap(ast.Loc, []const u8).init(arena),
             .stdModules = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena),
             .stdImports = std.StringHashMap(void).init(arena),
             .stdModuleTypes = std.StringHashMap([]const ast.DeclKind).init(arena),
@@ -417,6 +424,7 @@ pub const Env = struct {
         while (itt.next()) |set| set.deinit();
         self.inherentMethodTypes.deinit();
         self.dispatchRewrites.deinit();
+        self.jsMethodRenames.deinit();
         // Note: stdModules values are shared registry export tables — owned by
         // the compile session, not this env. Only the outer maps are ours.
         self.stdModules.deinit();

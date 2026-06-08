@@ -4020,6 +4020,17 @@ fn primitiveInterfaceName(typeName: []const u8) ?[]const u8 {
     return null;
 }
 
+/// JS-native rename for a `string` interface method whose host name differs and
+/// has no companion lowering yet. `js_name` is the `String.prototype` method to
+/// emit; `ret` is the method's return type. Only consulted for `string` receivers.
+fn jsStringMethodRename(callee: []const u8) ?struct { js_name: []const u8, ret: []const u8 } {
+    const map = [_]struct { src: []const u8, js: []const u8, ret: []const u8 }{
+        .{ .src = "contains", .js = "includes", .ret = "bool" },
+    };
+    for (map) |e| if (std.mem.eql(u8, callee, e.src)) return .{ .js_name = e.js, .ret = e.ret };
+    return null;
+}
+
 const FoundMethod = struct { method: ast.InterfaceMethod, owner: []const u8 };
 
 /// Find an instance method (`self` receiver) named `callee` in interface
@@ -4348,6 +4359,26 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                 if (nominalName(recvPtr.getType())) |tn| {
                     if (env.hasInherentMethod(tn, call.callee)) {
                         return try makeMethodCall(env, recvPtr, call.callee, typedArgs, typedTrailing, loc);
+                    }
+                }
+
+                // Type-directed JS method rename: `s.contains(x)` on a `string`
+                // receiver has no JS-native `String.prototype.contains`, so lower
+                // it to `s.includes(x)`. A global name-map would be unsafe here —
+                // `record Set` also declares `contains` as an inherent method — so
+                // the rename is recorded per call site, gated on the receiver type.
+                if (nominalName(recvPtr.getType())) |tn| {
+                    if (std.mem.eql(u8, tn, "string")) {
+                        if (jsStringMethodRename(call.callee)) |native| {
+                            try env.jsMethodRenames.put(loc, native.js_name);
+                            return TypedExpr{ .call = .{ .loc = loc, .type_ = try env.namedType(native.ret), .kind = .{ .call = .{
+                                .receiver = recvPtr,
+                                .callee = call.callee,
+                                .is_builtin = false,
+                                .args = typedArgs,
+                                .trailing = typedTrailing,
+                            } } } };
+                        }
                     }
                 }
 

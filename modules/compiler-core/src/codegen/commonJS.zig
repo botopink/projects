@@ -91,7 +91,7 @@ pub fn codegenEmit(
                 // test blocks (a project's `botopink test` runs only its own
                 // tests; the stdlib's inline tests run from `libs/std` itself).
                 const module_test_mode = config.test_mode and !std.mem.startsWith(u8, ct.name, "std/");
-                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, module_test_mode, ct.name, &cross);
+                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, &ok.js_method_renames, module_test_mode, ct.name, &cross);
 
                 // Generate TypeScript typedefs if configured.
                 const typedef: ?[]u8 = if (config.typeDefLanguage) |_|
@@ -121,11 +121,12 @@ fn emitJs(
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    renames: ?*const std.AutoHashMap(ast.Loc, []const u8),
     test_mode: bool,
     module_name: []const u8,
     cross: ?*const CrossModule,
 ) ![]u8 {
-    return try emitProgramOptsX(alloc, program, comptime_vals, rewrites, test_mode, module_name, cross);
+    return try emitProgramOptsX(alloc, program, comptime_vals, rewrites, renames, test_mode, module_name, cross);
 }
 
 fn emitTypeDef(
@@ -304,6 +305,9 @@ pub fn emitProgram(
     return emitProgramOpts(alloc, program, comptime_vals, rewrites, false, "main");
 }
 
+// Standalone emit paths (`emitProgram`/`emitProgramOpts`) carry no type-directed
+// rename map; only the cross-module `emitJs` path threads one from inference.
+
 /// Like `emitProgram`, but with test-mode emission control. In test mode,
 /// `test { … }` decls emit as `__bp_test_N` functions plus a registry +
 /// runner, `assert` lowers to the throwing `__bp_assert` helper, and
@@ -316,7 +320,7 @@ pub fn emitProgramOpts(
     test_mode: bool,
     module_name: []const u8,
 ) ![]u8 {
-    return emitProgramOptsX(alloc, program, comptime_vals, rewrites, test_mode, module_name, null);
+    return emitProgramOptsX(alloc, program, comptime_vals, rewrites, null, test_mode, module_name, null);
 }
 
 fn emitProgramOptsX(
@@ -324,6 +328,7 @@ fn emitProgramOptsX(
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    renames: ?*const std.AutoHashMap(ast.Loc, []const u8),
     test_mode: bool,
     module_name: []const u8,
     cross: ?*const CrossModule,
@@ -332,6 +337,7 @@ fn emitProgramOptsX(
     defer aw.deinit();
     var em = Emitter.emitterInit(alloc, &aw.writer, comptime_vals, rewrites);
     defer em.deinit();
+    em.renames = renames;
     em.test_mode = test_mode;
     em.module_name = module_name;
     em.cross = cross;
@@ -726,6 +732,10 @@ const Emitter = struct {
     alloc: std.mem.Allocator,
     /// Static extension dispatch: call-site loc → activated extension symbol.
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    /// Type-directed JS method renames: call-site loc → native JS method name to
+    /// emit instead of `callee` (e.g. string `contains` → `includes`). Null in the
+    /// standalone `emitProgram`/`emitFnJs` paths.
+    renames: ?*const std.AutoHashMap(ast.Loc, []const u8) = null,
     /// When true, `self.x` lowers to `self.x` (extension methods take `self` as a
     /// real first parameter) instead of the prototype-method `this.x`.
     self_is_param: bool = false,
@@ -2311,8 +2321,11 @@ const Emitter = struct {
                             } else {
                                 try self.emitExpr(recv.*);
                                 // Optional chaining call maps to native JS `?.`;
-                                // `append` maps to native `concat`.
-                                try self.fmt("{s}{s}(", .{ @as([]const u8, if (cc.optional) "?." else "."), jsBuiltinMethodName(cc.callee) });
+                                // `append` maps to native `concat`. A type-directed
+                                // rename (`s.contains` → `s.includes` on a string)
+                                // takes precedence when inference recorded one here.
+                                const method = if (self.renames) |r| (r.get(c.loc) orelse jsBuiltinMethodName(cc.callee)) else jsBuiltinMethodName(cc.callee);
+                                try self.fmt("{s}{s}(", .{ @as([]const u8, if (cc.optional) "?." else "."), method });
                             }
                         } else if (self.externals_missing.contains(cc.callee)) {
                             // External fn with no `node` target — no symbol to
