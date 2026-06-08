@@ -40,6 +40,7 @@ Semantic classification (semantic tokens, inlay hints, symbols, …) is
 vscode-extension/
 ├── AGENTS.md                       ← you are here
 ├── README.md                       ← user-facing install + dev notes
+├── CHANGELOG.md                    ← per-version feature notes (marketplace tab)
 ├── docs.md                         ← deep-dive: design, LSP wiring
 ├── package.json                    ← extension manifest (contributes/commands/config)
 ├── tsconfig.json

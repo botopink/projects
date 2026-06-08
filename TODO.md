@@ -23,9 +23,11 @@
       loading · F4 `?.` codegen (erlang/beam/wasm) · F5 wasm test runner ·
       F6 duplicate test-name warning
 
-## Part C — editor-experience F0–F5 (from v0.beta.3)
-- [ ] F0 semantic tokens · F1 inlay hints · F2 VS Code tasks+matcher ·
-      F3 CodeLens+status bar · F4 Testing API · F5 docs+manifest
+## Part C — editor-experience F0–F5 (from v0.beta.3) ✅ DONE
+- [x] F0 semantic tokens · F1 inlay hints · F2 VS Code tasks+matcher ·
+      F3 CodeLens+status bar · F4 Testing API (all landed in 25073f7) ·
+      F5 docs+manifest (README/AGENTS already cover F0–F4; CHANGELOG.md added +
+      extension `version` → 0.3.0)
 
 ## Notes
 - Accepting `@[external]` indiscriminately collapsed the suite once (516 fails) —
