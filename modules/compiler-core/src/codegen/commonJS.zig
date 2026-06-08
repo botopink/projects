@@ -111,6 +111,12 @@ pub fn useHookInner(e: ast.Expr) ?*ast.Expr {
     };
 }
 
+/// True when `e` is the `null` literal — used to choose loose `==`/`!=` for
+/// `?T` none comparisons (so `undefined` and `null` both count as none).
+pub fn isNullLiteral(e: ast.Expr) bool {
+    return e == .literal and e.literal.kind == .null_;
+}
+
 /// True when a type reference is the phantom capability `@Context<B, R>`.
 pub fn isContextTypeRef(tr: ast.TypeRef) bool {
     return switch (tr) {
@@ -1659,8 +1665,12 @@ const Emitter = struct {
                 .gt => try self.emitBinaryOp(">", bin.lhs, bin.rhs),
                 .lte => try self.emitBinaryOp("<=", bin.lhs, bin.rhs),
                 .gte => try self.emitBinaryOp(">=", bin.lhs, bin.rhs),
-                .eq => try self.emitBinaryOp("===", bin.lhs, bin.rhs),
-                .ne => try self.emitBinaryOp("!==", bin.lhs, bin.rhs),
+                // `x == null` / `x != null` lower to loose `==`/`!=` so a `?T`
+                // none represented as `undefined` (e.g. `Array.at()` past the
+                // end) matches the `null` none literal — botopink treats both
+                // as the single none value. All other `==` stay strict `===`.
+                .eq => try self.emitBinaryOp(if (isNullLiteral(bin.lhs.*) or isNullLiteral(bin.rhs.*)) "==" else "===", bin.lhs, bin.rhs),
+                .ne => try self.emitBinaryOp(if (isNullLiteral(bin.lhs.*) or isNullLiteral(bin.rhs.*)) "!=" else "!==", bin.lhs, bin.rhs),
                 .@"and" => try self.emitBinaryOp("&&", bin.lhs, bin.rhs),
                 .@"or" => try self.emitBinaryOp("||", bin.lhs, bin.rhs),
             },

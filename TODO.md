@@ -35,11 +35,16 @@
 - [x] `iterator` suite green (12/12); known-gap note removed from
       `libs/std/AGENTS.md` + `iterator.bp`/`iterator_test.bp`
 
-## F9 — `?T` runtime repr in tuple returns  ◀ queue 3/7 FAIL
-- [ ] Trace why `.unwrapOr` is missing on tuple-extracted `?T` (commonJS)
-- [ ] Fix lowering (dispatch on inferred `?T` type, not runtime wrapper)
-- [ ] Snapshot `codegen/node/option_method_on_tuple_element`
-- [ ] `queue` suite green
+## F9 — `?T` runtime repr in tuple returns  ✔ done
+- [x] Trace why `.unwrapOr` is missing on tuple-extracted `?T` (commonJS):
+      tuple-index access (`t._1`) gave the element a fresh inference var, so
+      `@Option` method dispatch never fired
+- [x] Fix lowering: resolve tuple-index member to the Nth element type in
+      `inferIdentifierExpr` (`tupleMemberIndex` helper, `infer.zig`) so a `?T`
+      element keeps its method surface; `== null`/`!= null` lower to loose
+      `==`/`!=` so an `undefined` none (from `Array.at`) matches the `null` none
+- [x] Snapshot `codegen/node/option_method_on_tuple_element` (+ erlang/beam/wasm)
+- [x] `queue` suite green (7/7)
 
 ## F1 — Literal method receivers (known gap #4)
 - [ ] Parser: literals as method-call receivers (`"a,b".split(",")`)
