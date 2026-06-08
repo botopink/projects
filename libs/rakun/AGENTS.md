@@ -5,7 +5,7 @@
 > Docs: [`./docs.md`](docs.md) · Spec: [`../../tasks/v0.beta.5/specs/rakun.md`](../../tasks/v0.beta.5/specs/rakun.md)
 
 A **Spring-style application framework** for botopink — an IoC container with
-constructor dependency injection plus a declarative web layer (`@[restController]`
+constructor dependency injection plus a declarative web layer (`#[restController]`
 + route annotations). **Scaffold only:** this package is *not* embedded into the
 compiler (no `prelude.zig`, no `build.zig` wiring) and declares no committed
 symbols yet (`botopink.json` lists `files: []`). It exists to anchor the design
@@ -24,14 +24,14 @@ rakun/
 
 ## Design at a glance
 
-- **IoC container** — components (`@[component]`/`@[service]`/`@[repository]`/
-  `@[controller]`) are managed singletons; `Context.get<T>()` resolves them.
+- **IoC container** — components (`#[component]`/`#[service]`/`#[repository]`/
+  `#[controller]`) are managed singletons; `Context.get<T>()` resolves them.
 - **Constructor injection** — a dependency is declared as a `record` field and
   resolved **by type**. Immutable-first: no setter/field injection.
 - **Comptime wiring** — discovery + DI graph resolution happen at compile time
   over the compilation unit (reuses the `@Expr`/`expr-templates` machinery), not
   via runtime reflection.
-- **Web layer** — `@[restController, route(prefix)]` + `@[get|post|put|patch|delete(path)]`
+- **Web layer** — `#[restController, route(prefix)]` + `#[get|post|put|patch|delete(path)]`
   map routes to handler methods over `Request`/`Response`.
 - **Bootstrap** — `Rakun.run(App(port: 8080))` scans → wires → builds the router →
   starts the server (the last leg needs `libs/server` to graduate from scaffold).

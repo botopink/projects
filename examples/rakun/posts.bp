@@ -4,15 +4,15 @@
 // tasks/v0.beta.5/specs/rakun.md).
 //
 // Extends the read-only `users.bp` triad with the write side of a REST resource:
-// `@[postMapping]` reads `req.body()` and answers `Response.created` /
-// `Response.badRequest`; `@[deleteMapping]` returns an explicit status code.
+// `#[postMapping]` reads `req.body()` and answers `Response.created` /
+// `Response.badRequest`; `#[deleteMapping]` returns an explicit status code.
 
 import {Request, Response} from "rakun";
 import {repository, service, restController, route, getMapping, postMapping, deleteMapping} from "rakun";
 
 // ---- data layer ----
 
-@[repository]
+#[repository]
 pub record PostRepository {
     pub fn all(self: Self) -> Array<string> {
         return ["hello world", "rakun rocks"];
@@ -21,7 +21,7 @@ pub record PostRepository {
 
 // ---- business layer ----
 
-@[service]
+#[service]
 pub record PostService {
     repo: PostRepository,                // injected by type
 
@@ -36,16 +36,16 @@ pub record PostService {
 
 // ---- web layer ----
 
-@[restController, route("/api/posts")]
+#[restController, route("/api/posts")]
 pub record PostController {
     service: PostService,                // injected by type
 
-    @[getMapping("/")]
+    #[getMapping("/")]
     pub fn index(self: Self, req: Request) -> Response {
         return Response.json(self.service.list().join(" | "));
     }
 
-    @[postMapping("/")]
+    #[postMapping("/")]
     pub fn create(self: Self, req: Request) -> Response {
         val title = req.body();
         return if (self.service.isValid(title)) {
@@ -55,7 +55,7 @@ pub record PostController {
         };
     }
 
-    @[deleteMapping("/:id")]
+    #[deleteMapping("/:id")]
     pub fn remove(self: Self, req: Request) -> Response {
         val id = req.param("id").unwrapOr("?");
         return Response.withStatus(204, "deleted " + id);

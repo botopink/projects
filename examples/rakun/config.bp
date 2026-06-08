@@ -3,17 +3,17 @@
 // ILLUSTRATIVE: targets the planned `rakun` lib (spec:
 // tasks/v0.beta.5/specs/rakun.md).
 //
-// Spring's @Configuration: a record whose @[bean] methods are FACTORIES whose
+// Spring's @Configuration: a record whose #[bean] methods are FACTORIES whose
 // return values become managed singletons — injectable by type anywhere a
-// component declares a field of that type. @[value("key")] pulls a config
+// component declares a field of that type. #[value("key")] pulls a config
 // property into a field (Spring's @Value).
 //
 // Decorators (`configuration`, `bean`, `value`, `service`) are imported from
-// "rakun" and applied in `@[ … ]` blocks.
+// "rakun" and applied in `#[ … ]` blocks.
 
 import {configuration, bean, value, service} from "rakun";
 
-// a plain value type, produced by a @[bean] factory below
+// a plain value type, produced by a #[bean] factory below
 pub record Clock {
     zone: string,
 
@@ -22,20 +22,20 @@ pub record Clock {
     }
 }
 
-@[configuration]
+#[configuration]
 pub record AppConfig {
-    @[value("app.timezone")]
+    #[value("app.timezone")]
     timezone: string,                    // injected from config properties
 
-    @[bean]
+    #[bean]
     pub fn clock(self: Self) -> Clock {   // Clock becomes a managed singleton
         return Clock(zone: self.timezone);
     }
 }
 
-@[service]
+#[service]
 pub record TimeService {
-    clock: Clock,                        // injected by type (the @[bean] singleton)
+    clock: Clock,                        // injected by type (the #[bean] singleton)
 
     pub fn stamp(self: Self, label: string) -> string {
         return label + ": " + self.clock.now();

@@ -16,7 +16,7 @@ the v0.beta.5 spec.
 - **IoC container** — managed singleton components, resolved by type.
 - **Constructor dependency injection** — declare a dependency as a `record`
   field; rakun supplies it. No setter/field injection.
-- **Web layer** — `@[restController]` records mapping HTTP routes to handler
+- **Web layer** — `#[restController]` records mapping HTTP routes to handler
   methods, with `Request`/`Response` records.
 - **Bootstrap** — `Rakun.run(App(...))` to scan components, wire the graph,
   build the router, and start the HTTP server.
@@ -25,19 +25,19 @@ the v0.beta.5 spec.
 
 | Spring | rakun |
 |---|---|
-| `@Component` / `@Service` / `@Repository` | `@[component]` / `@[service]` / `@[repository]` |
-| `@RestController` + `@RequestMapping("/api")` | `@[restController, route("/api")]` |
-| `@GetMapping("/x")` … | `@[getMapping("/x")]`, `@[postMapping]`, `@[putMapping]`, `@[patchMapping]`, `@[deleteMapping]` |
+| `@Component` / `@Service` / `@Repository` | `#[component]` / `#[service]` / `#[repository]` |
+| `@RestController` + `@RequestMapping("/api")` | `#[restController, route("/api")]` |
+| `@GetMapping("/x")` … | `#[getMapping("/x")]`, `#[postMapping]`, `#[putMapping]`, `#[patchMapping]`, `#[deleteMapping]` |
 | `@Autowired` (constructor) | a `record` field — injected by type |
-| `@Configuration` + `@Bean` | `@[configuration]` + `@[bean]` |
-| `@Value("server.port")` | `@[value("server.port")]` |
+| `@Configuration` + `@Bean` | `#[configuration]` + `#[bean]` |
+| `@Value("server.port")` | `#[value("server.port")]` |
 | `SpringApplication.run(App.class)` | `Rakun.run(App(port: 8080))` |
 | `ApplicationContext` | `Context` (`ctx.resolve<T>()`) |
 | `ResponseEntity` | `Response` (`Response.ok(...)`, `Response.json(...)`) |
 
 The decorators (`service`, `restController`, `route`, `getMapping`, …) are
 symbols **exported by rakun** — import them at the call site before applying
-them in a `@[ … ]` block. Route decorators use Spring's names (`getMapping`, …)
+them in a `#[ … ]` block. Route decorators use Spring's names (`getMapping`, …)
 because `get`/`set`/`new` are reserved keyword tokens.
 
 ## Usage (intended)
@@ -46,18 +46,18 @@ because `get`/`set`/`new` are reserved keyword tokens.
 import {Rakun, App, Request, Response} from "rakun";
 import {service, restController, route, getMapping} from "rakun";
 
-@[service]
+#[service]
 pub record GreetingService {
     pub fn greet(self: Self, name: string) -> string {
         return "Hello, " + name + "!";
     }
 }
 
-@[restController, route("/api")]
+#[restController, route("/api")]
 pub record GreetingController {
     greeting: GreetingService,           // injected by type
 
-    @[getMapping("/hello/:name")]
+    #[getMapping("/hello/:name")]
     pub fn hello(self: Self, req: Request) -> Response {
         return Response.ok(self.greeting.greet(req.param("name").unwrapOr("world")));
     }

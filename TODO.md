@@ -4,7 +4,7 @@
 > Spec (intent, immutable): [`tasks/v0.beta.5/specs/rakun.md`](tasks/v0.beta.5/specs/rakun.md)
 >
 > rakun = Spring-style application framework for botopink: IoC container +
-> constructor DI + `@[restController]` web layer + `Rakun.run` bootstrap.
+> constructor DI + `#[restController]` web layer + `Rakun.run` bootstrap.
 > Wiring is **comptime** (compilation-unit scan), not runtime reflection.
 > Scaffold-first: declarations land before any compiler wiring.
 
@@ -28,10 +28,10 @@
 ## F3 — component annotations (comptime scan)
 - [x] Decorator signatures exported from `rakun` (`component`/`service`/`repository`/
       `controller`/`restController`/`configuration`/`bean`/`inject`/`value`)
-- [ ] Annotation resolution: `@[ … ]` entries resolve to **imported** rakun symbols,
-      not only `builtins.d.bp` (today `@[…]` is implicitly builtin) — compiler work
-- [ ] `@[configuration]` + `@[bean]` factory contribution
-- [ ] `@[value("key")]` property injection
+- [ ] Annotation resolution: `#[ … ]` entries resolve to **imported** rakun symbols,
+      not only `builtins.d.bp` (today `#[…]` is implicitly builtin) — compiler work
+- [ ] `#[configuration]` + `#[bean]` factory contribution
+- [ ] `#[value("key")]` property injection
 - [ ] Scope rule: a record field whose type is a known component ⇒ a dependency edge
 
 ## F4 — web layer / router
@@ -47,8 +47,8 @@
 
 ## F6 — examples & docs
 - [x] `examples/rakun/main.bp` (bootstrap) + `examples/rakun/users.bp` (DI triad + routes)
-- [x] `examples/rakun/config.bp` — `@[configuration]`/`@[bean]`/`@[value]` + bean injection
-- [x] `examples/rakun/posts.bp` — write side: `@[postMapping]`/`@[deleteMapping]`, `req.body()`, status codes
+- [x] `examples/rakun/config.bp` — `#[configuration]`/`#[bean]`/`#[value]` + bean injection
+- [x] `examples/rakun/posts.bp` — write side: `#[postMapping]`/`#[deleteMapping]`, `req.body()`, status codes
 - [x] `examples/AGENTS.md` tree marks `rakun/` illustrative (lives in `feat`)
 - [ ] Keep `libs/rakun/docs.md` usage guide in sync as semantics land
 

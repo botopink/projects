@@ -13,7 +13,7 @@
 //// decorators follow Spring's own names (`getMapping`, …) and the container
 //// uses `resolve<T>()` rather than `get<T>()`.
 
-// ---- decorators (imported from "rakun", applied as `@[service]`, `@[getMapping("/x")]`) ----
+// ---- decorators (imported from "rakun", applied as `#[service]`, `#[getMapping("/x")]`) ----
 //
 // Annotations are call entries type-checked against these signatures (the same
 // mechanism as the builtin `external`). The comptime scan recognises them on a

@@ -3,12 +3,12 @@
 // ILLUSTRATIVE: targets the planned `rakun` lib (spec:
 // tasks/v0.beta.5/specs/rakun.md).
 //
-// The Spring triad — @[repository] (data) → @[service] (logic) →
-// @[restController] (HTTP) — wired by CONSTRUCTOR INJECTION: each layer declares
+// The Spring triad — #[repository] (data) → #[service] (logic) →
+// #[restController] (HTTP) — wired by CONSTRUCTOR INJECTION: each layer declares
 // its dependency as a record field, and rakun resolves it by type.
 //
 // Every decorator (`repository`, `service`, `restController`, `route`,
-// `getMapping`) is a symbol imported from "rakun", then applied in a `@[ … ]`
+// `getMapping`) is a symbol imported from "rakun", then applied in a `#[ … ]`
 // block. The route decorators follow Spring's names (`getMapping`, …) because
 // `get`/`set`/`new` are reserved keyword tokens in botopink.
 
@@ -17,7 +17,7 @@ import {repository, service, restController, route, getMapping} from "rakun";
 
 // ---- data layer ----
 
-@[repository]
+#[repository]
 pub record UserRepository {
     pub fn all(self: Self) -> Array<string> {
         return ["ana", "bob", "cleo"];
@@ -30,7 +30,7 @@ pub record UserRepository {
 
 // ---- business layer ----
 
-@[service]
+#[service]
 pub record UserService {
     repo: UserRepository,                 // injected by type
 
@@ -49,16 +49,16 @@ pub record UserService {
 
 // ---- web layer ----
 
-@[restController, route("/api/users")]
+#[restController, route("/api/users")]
 pub record UserController {
     service: UserService,                 // injected by type
 
-    @[getMapping("/")]
+    #[getMapping("/")]
     pub fn index(self: Self, req: Request) -> Response {
         return Response.json(self.service.list().join(", "));
     }
 
-    @[getMapping("/:name")]
+    #[getMapping("/:name")]
     pub fn show(self: Self, req: Request) -> Response {
         val name = req.param("name").unwrapOr("world");
         return Response.ok(self.service.greet(name));

@@ -5,7 +5,7 @@
 // documents the intended usage rather than compiling against the current
 // toolchain.
 //
-// `Rakun.run` scans the program for @[repository]/@[service]/@[restController]
+// `Rakun.run` scans the program for #[repository]/#[service]/#[restController]
 // declarations (see users.bp), resolves their constructor dependencies by type,
 // builds the router, and starts the HTTP server on the configured port.
 

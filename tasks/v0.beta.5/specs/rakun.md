@@ -17,12 +17,12 @@ application framework built on three pillars —
    dependency as a record field; rakun supplies it *by type*. This is the
    idiomatic, immutable-friendly analogue of Spring's `@Autowired` constructor
    injection.
-3. **Web layer** — `@[restController]` records map HTTP routes to handler
+3. **Web layer** — `#[restController]` records map HTTP routes to handler
    methods, with `Request`/`Response` records and path/query/body access.
 
 The wiring is **comptime**, not runtime reflection. Spring scans the classpath
 at startup; rakun scans the *compilation unit* at compile time — it discovers
-`@[component]`-family declarations, topologically resolves their constructor
+`#[component]`-family declarations, topologically resolves their constructor
 dependencies, and emits the wiring + router table. This reuses the same
 comptime machinery that powers `expr-templates` (no host reflection needed).
 
@@ -35,16 +35,16 @@ compiler.
 
 | Spring | rakun | Form |
 |---|---|---|
-| `@Component` | `@[component]` | annotation on a `record`/`struct` |
-| `@Service` | `@[service]` | semantic alias of component (business logic) |
-| `@Repository` | `@[repository]` | semantic alias (data access) |
-| `@Controller` / `@RestController` | `@[controller]` / `@[restController]` | HTTP controller |
+| `@Component` | `#[component]` | annotation on a `record`/`struct` |
+| `@Service` | `#[service]` | semantic alias of component (business logic) |
+| `@Repository` | `#[repository]` | semantic alias (data access) |
+| `@Controller` / `@RestController` | `#[controller]` / `#[restController]` | HTTP controller |
 | `@Autowired` (constructor) | constructor injection | declare a dependency as a record field — resolved by type |
-| `@Configuration` | `@[configuration]` | record whose `@[bean]` methods are factories |
-| `@Bean` | `@[bean]` | factory fn whose return value becomes a managed singleton |
-| `@Value("server.port")` | `@[value("server.port")]` | inject a config property |
-| `@GetMapping("/x")` … | `@[getMapping("/x")]`, `@[postMapping]`, `@[putMapping]`, `@[patchMapping]`, `@[deleteMapping]` | route mapping on a handler method |
-| `@RequestMapping("/api")` | `@[route("/api")]` | controller-level path prefix |
+| `@Configuration` | `#[configuration]` | record whose `#[bean]` methods are factories |
+| `@Bean` | `#[bean]` | factory fn whose return value becomes a managed singleton |
+| `@Value("server.port")` | `#[value("server.port")]` | inject a config property |
+| `@GetMapping("/x")` … | `#[getMapping("/x")]`, `#[postMapping]`, `#[putMapping]`, `#[patchMapping]`, `#[deleteMapping]` | route mapping on a handler method |
+| `@RequestMapping("/api")` | `#[route("/api")]` | controller-level path prefix |
 | `SpringApplication.run(App.class)` | `Rakun.run(App(port: 8080))` | bootstrap |
 | `ApplicationContext` | `Context` | `ctx.resolve<T>()` resolves a managed bean |
 | `ResponseEntity` | `Response` | `Response.ok(...)`, `Response.json(...)`, … |
@@ -52,7 +52,7 @@ compiler.
 **Decorators are rakun symbols.** Every marker above (`service`, `repository`,
 `restController`, `route`, `getMapping`, …) is exported by `rakun` and **imported
 at the call site** — `import {service, restController, route, getMapping} from "rakun";`
-— then applied in a `@[ … ]` block. Annotations in botopink are call entries
+— then applied in a `#[ … ]` block. Annotations in botopink are call entries
 type-checked against a signature (the same mechanism as the builtin `external`);
 rakun supplies those signatures. The route decorators use Spring's own names
 (`getMapping`, …) because `get`/`set`/`new` are reserved keyword tokens.
@@ -63,14 +63,14 @@ rakun supplies those signatures. The route decorators use Spring's own names
 import {Rakun, App, Request, Response} from "rakun";
 import {repository, service, restController, route, getMapping} from "rakun";
 
-@[repository]
+#[repository]
 pub record UserRepository {
     pub fn all(self: Self) -> Array<string> {
         return ["ana", "bob", "cleo"];
     }
 }
 
-@[service]
+#[service]
 pub record UserService {
     repo: UserRepository,                 // injected by type (constructor injection)
 
@@ -79,11 +79,11 @@ pub record UserService {
     }
 }
 
-@[restController, route("/api/users")]
+#[restController, route("/api/users")]
 pub record UserController {
     service: UserService,                 // injected by type
 
-    @[getMapping("/")]
+    #[getMapping("/")]
     pub fn index(self: Self, req: Request) -> Response {
         return Response.json(self.service.list().join(", "));
     }
@@ -99,9 +99,9 @@ fn main() {
 
 ### Constructor injection resolves a 3-level chain
 ```bp
-@[repository] record R { pub fn n(self: Self) -> i32 { return 1; } }
-@[service]    record S { r: R, pub fn n(self: Self) -> i32 { return self.r.n() + 1; } }
-@[restController] record C { s: S, /* @[getMapping("/")] … self.s.n() == 2 */ }
+#[repository] record R { pub fn n(self: Self) -> i32 { return 1; } }
+#[service]    record S { r: R, pub fn n(self: Self) -> i32 { return self.r.n() + 1; } }
+#[restController] record C { s: S, /* #[getMapping("/")] … self.s.n() == 2 */ }
 ```
 At comptime, rakun discovers `R`, `S`, `C`; resolves `R()` first (no deps),
 then `S(r: <R singleton>)`, then `C(s: <S singleton>)`. Each type is a single
@@ -109,9 +109,9 @@ shared instance (singleton scope).
 
 ### A route maps a method to a path + verb
 ```bp
-@[restController, route("/api")]
+#[restController, route("/api")]
 record Greet {
-    @[getMapping("/hello/:name")]
+    #[getMapping("/hello/:name")]
     pub fn hello(self: Self, req: Request) -> Response {
         return Response.ok("Hello, " + req.param("name").unwrapOr("world") + "!");
     }
@@ -120,11 +120,11 @@ record Greet {
 Lowers to a router entry `{ method: Get, path: "/api/hello/:name", handler: Greet.hello }`.
 `req.param("name")` reads the `:name` path segment.
 
-### A `@[bean]` factory contributes a managed singleton
+### A `#[bean]` factory contributes a managed singleton
 ```bp
-@[configuration]
+#[configuration]
 record AppConfig {
-    @[bean]
+    #[bean]
     pub fn clock(self: Self) -> Clock {
         return Clock(zone: "UTC");
     }
@@ -155,15 +155,15 @@ field — identical to Spring's `@Bean` methods on a `@Configuration` class.
 - [ ] Export the decorator symbols from `rakun` (`component`/`service`/`repository`/
       `controller`/`restController`/`configuration`/`bean`/`inject`/`value`) so the
       call site `import {service, …} from "rakun";` brings them into scope
-- [ ] Annotation resolution: `@[ … ]` entries resolve to **imported** rakun
-      symbols, not only `builtins.d.bp` (today `@[…]` is implicitly builtin)
-- [ ] `@[configuration]` + `@[bean]` factory contribution
-- [ ] `@[value("key")]` property injection
+- [ ] Annotation resolution: `#[ … ]` entries resolve to **imported** rakun
+      symbols, not only `builtins.d.bp` (today `#[…]` is implicitly builtin)
+- [ ] `#[configuration]` + `#[bean]` factory contribution
+- [ ] `#[value("key")]` property injection
 - [ ] Scope rule: a record field whose type is a known component ⇒ a dependency edge
 
 ### F4 — web layer / router
-- [ ] `@[restController]` + `@[route(prefix)]` (exported from `rakun`)
-- [ ] `@[getMapping|postMapping|putMapping|patchMapping|deleteMapping(path)]` method mappings
+- [ ] `#[restController]` + `#[route(prefix)]` (exported from `rakun`)
+- [ ] `#[getMapping|postMapping|putMapping|patchMapping|deleteMapping(path)]` method mappings
 - [ ] `Router` build: prefix + method path → handler; path params (`:name`)
 - [ ] `Response` builders type-check against handler return type
 
@@ -181,12 +181,12 @@ field — identical to Spring's `@Bean` methods on a `@Configuration` class.
 ## Test scenarios
 
 ```
-comptime ---- component scan discovers every @[service]/@[repository]/@[controller] decl
+comptime ---- component scan discovers every #[service]/#[repository]/#[controller] decl
 comptime ---- container resolves a 3-level DI chain (repo → service → controller)
 comptime ---- dependency cycle (A needs B, B needs A) raises a scoped diagnostic
-comptime ---- @[bean] factory output is injectable by its return type
-infer    ---- imported decorator (`import {service} from "rakun"`) resolves at the @[ ] site
-infer    ---- @[getMapping("/x")] handler signature (Request) -> Response type-checks
+comptime ---- #[bean] factory output is injectable by its return type
+infer    ---- imported decorator (`import {service} from "rakun"`) resolves at the #[ ] site
+infer    ---- #[getMapping("/x")] handler signature (Request) -> Response type-checks
 infer    ---- unresolved dependency (field type is not a component) is a clear error
 codegen  ---- router table emitted for node + beam targets
 run      ---- GET /api/users/  returns 200 with the joined user list
@@ -213,7 +213,7 @@ run      ---- GET /api/hello/ana returns 200 "Hello, ana!"
   `Env`. App authors opt in per project via `botopink.json` deps. The
   **decorators are imported too** (`import {service, getMapping, …} from "rakun";`),
   which means F3 must extend annotation resolution to imported symbols — today
-  every `@[…]` entry is treated as builtin (`is_builtin = true`) and checked only
+  every `#[…]` entry is treated as builtin (`is_builtin = true`) and checked only
   against `builtins.d.bp`.
 - **Naming.** camelCase methods; `new`/`get`/`set` are reserved keyword tokens —
   hence `Context.resolve<T>()` (not `get<T>()`) and the Spring-style
