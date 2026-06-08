@@ -592,3 +592,23 @@ test "js: option method on tuple element" {
         \\}
     );
 }
+
+test "js: interface associated fn namespace" {
+    // An interface's associated functions (`default fn` with no `self`) emit as
+    // a namespace object so `Interface.method(...)` resolves at runtime.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\interface Pairish<A, B> {
+        \\    default fn of(first: A, second: B) -> #(A, B) {
+        \\        return #(first, second);
+        \\    }
+        \\    default fn first(p: #(A, B)) -> A {
+        \\        return p._0;
+        \\    }
+        \\}
+        \\
+        \\fn main() {
+        \\    val p = Pairish.of(1, "one");
+        \\    @print(Pairish.first(p));
+        \\}
+    );
+}

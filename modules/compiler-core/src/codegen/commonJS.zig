@@ -117,6 +117,13 @@ pub fn isNullLiteral(e: ast.Expr) bool {
     return e == .literal and e.literal.kind == .null_;
 }
 
+/// True when an interface method is an associated function — `default fn` with
+/// no `self` receiver (callable as `Interface.method(...)`, not on a value).
+pub fn isAssociatedFn(m: ast.InterfaceMethod) bool {
+    if (!m.is_default) return false;
+    return m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self");
+}
+
 /// Map an `Array<T>` `default fn` method name to its native JS equivalent.
 /// These default-fn bodies are not yet materialized by codegen (tracked in
 /// tasks/v0.beta.4 Part A); where a native array method is semantically
@@ -969,6 +976,38 @@ const Emitter = struct {
                 try self.fmt("\n//   default fn {s}(...)", .{m.name});
             } else {
                 try self.fmt("\n//   fn {s}(...)", .{m.name});
+            }
+        }
+
+        // Associated functions (`default fn` with no `self` receiver, e.g.
+        // `Pair.of`, `Function.compose`) materialize as a namespace object so
+        // `Interface.method(...)` resolves at runtime. Instance methods (with a
+        // `self` receiver) dispatch on the value and are not emitted here.
+        var has_assoc = false;
+        for (i.methods) |m| {
+            if (isAssociatedFn(m)) {
+                has_assoc = true;
+                break;
+            }
+        }
+        if (has_assoc) {
+            try self.fmt("\nconst {s} = {{}};", .{jsIdent(i.name)});
+            for (i.methods) |m| {
+                if (!isAssociatedFn(m)) continue;
+                const body = m.body orelse continue;
+                try self.fmt("\n{s}.{s} = function(", .{ jsIdent(i.name), m.name });
+                try self.emitParams(m.params);
+                try self.w(") {\n");
+                const prev = self.current_indent;
+                self.current_indent = 1;
+                self.hook_state.clearRetainingCapacity();
+                for (body) |s| {
+                    try self.w("    ");
+                    try self.emitStmt(s);
+                    try self.w("\n");
+                }
+                self.current_indent = prev;
+                try self.w("};");
             }
         }
     }
