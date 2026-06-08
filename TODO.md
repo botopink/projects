@@ -47,6 +47,8 @@
 
 ## F6 — examples & docs
 - [x] `examples/rakun/main.bp` (bootstrap) + `examples/rakun/users.bp` (DI triad + routes)
+- [x] `examples/rakun/config.bp` — `@[configuration]`/`@[bean]`/`@[value]` + bean injection
+- [x] `examples/rakun/posts.bp` — write side: `@[postMapping]`/`@[deleteMapping]`, `req.body()`, status codes
 - [x] `examples/AGENTS.md` tree marks `rakun/` illustrative (lives in `feat`)
 - [ ] Keep `libs/rakun/docs.md` usage guide in sync as semantics land
 
