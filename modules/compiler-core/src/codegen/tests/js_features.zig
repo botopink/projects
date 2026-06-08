@@ -642,3 +642,17 @@ test "js: array instance default-fn methods" {
         \\}
     );
 }
+
+test "js: bool instance default-fn methods" {
+    // `Bool` `default fn`s materialize as `Boolean.prototype.<m>`. A boxed
+    // primitive's `this` is a truthy wrapper, so the body unwraps via
+    // `this.valueOf()` (`const self = this.valueOf()`).
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    @print(true.negate());
+        \\    @print(false.nor(false));
+        \\    @print(true.nand(true));
+        \\    @print(true.exclusiveOr(false));
+        \\}
+    );
+}

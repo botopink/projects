@@ -3879,26 +3879,19 @@ fn resolveStdArrayMethod(
     const rp = recvPtr orelse return null;
     const recvType = rp.getType().deref();
     if (recvType.* != .named) return null;
-    if (!std.mem.eql(u8, recvType.named.name, "array")) return null;
 
-    // Resolve `callee` against the `Array<T>` interface's `default fn` instance
-    // methods (`append`, `prepend`, `isEmpty`, `fold`, …). `@[external]` methods
-    // (`map`, `filter`, `at`, …) map to native JS and fall through to the
-    // permissive path; non-Array calls return null.
-    const arrayDecl = env.assocInterfaceDecls.get("Array") orelse return null;
-    var method: ?ast.InterfaceMethod = null;
-    for (arrayDecl.methods) |m| {
-        if (std.mem.eql(u8, m.name, callee) and m.is_default and
-            m.params.len > 0 and std.mem.eql(u8, m.params[0].name, "self"))
-        {
-            method = m;
-            break;
-        }
-    }
-    const im = method orelse return null;
+    // Map the receiver's primitive type to its interface, then resolve `callee`
+    // against that interface's `default fn` instance methods, following the
+    // `extends` chain. Only `default fn` methods are materialized; `@[external]`
+    // methods (`map`, `abs`, …) and unknown methods fall through to the permissive
+    // path. (Numeric tower deferred until `@[external]` method lowering lands —
+    // its `default fn`s like `clamp` call host-backed `min`/`max`.)
+    const ifaceName = primitiveInterfaceName(recvType.named.name) orelse return null;
+    const found = findInterfaceDefaultFn(env, ifaceName, callee) orelse return null;
+    const im = found.method;
 
-    // Mark `Array` used so codegen emits its prototype methods.
-    try env.usedAssocInterfaces.put("Array", {});
+    // Mark the owning interface used so codegen emits its prototype methods.
+    try env.usedAssocInterfaces.put(found.owner, {});
 
     // Per-call generic scope: `Self` = the receiver array, `T` = its element.
     var gm = std.StringHashMap(*T.Type).init(env.arena);
@@ -3932,6 +3925,40 @@ fn resolveStdArrayMethod(
         .args = typedArgs,
         .trailing = typedTrailing,
     } } } };
+}
+
+/// Map a primitive type name to its controller interface in `primitives.d.bp`.
+/// Numeric widths are intentionally excluded for now (their `default fn`s call
+/// host-backed `@[external]` methods that codegen doesn't materialize yet).
+fn primitiveInterfaceName(typeName: []const u8) ?[]const u8 {
+    if (std.mem.eql(u8, typeName, "array")) return "Array";
+    if (std.mem.eql(u8, typeName, "bool")) return "Bool";
+    if (std.mem.eql(u8, typeName, "string")) return "String";
+    return null;
+}
+
+const FoundMethod = struct { method: ast.InterfaceMethod, owner: []const u8 };
+
+/// Find a `default fn` instance method (`self` receiver) named `callee` in
+/// interface `ifaceName`, following its `extends` chain. Returns the method and
+/// the interface that declares it (so codegen emits the prototype on that owner).
+fn findInterfaceDefaultFn(env: *Env, ifaceName: []const u8, callee: []const u8) ?FoundMethod {
+    var current: ?[]const u8 = ifaceName;
+    var guard: usize = 0;
+    while (current) |cname| {
+        if (guard >= 16) break;
+        guard += 1;
+        const decl = env.assocInterfaceDecls.get(cname) orelse return null;
+        for (decl.methods) |m| {
+            if (std.mem.eql(u8, m.name, callee) and m.is_default and
+                m.params.len > 0 and std.mem.eql(u8, m.params[0].name, "self"))
+            {
+                return .{ .method = m, .owner = cname };
+            }
+        }
+        current = if (decl.extends.len > 0) decl.extends[0] else null;
+    }
+    return null;
 }
 
 /// Resolve a method/param's type within a generic context, handling both

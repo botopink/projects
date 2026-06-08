@@ -130,9 +130,26 @@ pub fn isAssociatedFn(m: ast.InterfaceMethod) bool {
 /// - `append`, lowered to native `concat` by `jsBuiltinMethodName` (works in any
 ///   context, incl. record method bodies the inference doesn't walk).
 pub fn isNativeProtoMethod(name: []const u8) bool {
-    const native = [_][]const u8{ "find", "flatMap", "reverse", "includes", "flat", "sort", "fill", "append" };
+    const native = [_][]const u8{ "find", "flatMap", "reverse", "includes", "flat", "sort", "fill", "append", "toString" };
     for (native) |n| if (std.mem.eql(u8, name, n)) return true;
     return false;
+}
+
+/// Map a primitive controller interface name to the JS constructor whose
+/// `prototype` carries the instance methods (`Bool` → `Boolean`). Other names
+/// (incl. local interfaces) own their prototype directly.
+pub fn jsPrototypeOwner(name: []const u8) []const u8 {
+    if (std.mem.eql(u8, name, "Bool")) return "Boolean";
+    return name;
+}
+
+/// True for JS constructors whose instances box a primitive into an object —
+/// calling a prototype method on a primitive (`false.m()`) sets `this` to a
+/// truthy wrapper object, so the body must unwrap via `this.valueOf()`.
+pub fn isBoxedPrototype(owner: []const u8) bool {
+    return std.mem.eql(u8, owner, "Boolean") or
+        std.mem.eql(u8, owner, "Number") or
+        std.mem.eql(u8, owner, "String");
 }
 
 /// Map an `Array<T>` `default fn` to a native JS equivalent where one exists, so
@@ -1027,17 +1044,26 @@ const Emitter = struct {
         // (`find`, `flatMap`, …) are left to the engine (the bare `self` body
         // lowers `self`/`self.x` to `this`/`this.x`).
         const prev_self_param = self.self_is_param;
-        self.self_is_param = false;
         defer self.self_is_param = prev_self_param;
+        const owner = jsPrototypeOwner(i.name);
+        const boxed = isBoxedPrototype(owner);
         for (i.methods) |m| {
             if (!m.is_default or isAssociatedFn(m)) continue;
             if (isNativeProtoMethod(m.name)) continue;
             const body = m.body orelse continue;
-            try self.fmt("\n{s}.prototype.{s} = function(", .{ jsIdent(i.name), m.name });
+            try self.fmt("\n{s}.prototype.{s} = function(", .{ owner, m.name });
             try self.emitParams(m.params[1..]);
             try self.w(") {\n");
             const prev = self.current_indent;
             self.current_indent = 1;
+            // Boxed primitives wrap `this` in a (truthy) object — bind `self` to
+            // the unwrapped primitive; arrays use `this` directly.
+            if (boxed) {
+                try self.w("    const self = this.valueOf();\n");
+                self.self_is_param = true; // `self`/`self.x` stay `self`
+            } else {
+                self.self_is_param = false; // bare `self` → `this`
+            }
             self.hook_state.clearRetainingCapacity();
             for (body) |s| {
                 try self.w("    ");
