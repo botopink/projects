@@ -1136,11 +1136,14 @@ pub const InterfaceDecl = struct {
 /// `name: type` or `name: type = defaultValue`
 pub const StructField = struct {
     name: []const u8,
-    typeName: []const u8,
+    /// Full type reference — supports arrays (`E[]`), optionals (`?T`),
+    /// generics, etc., exactly like `RecordField.typeRef`.
+    typeRef: TypeRef,
     /// Optional initializer expression.
     init: ?Expr,
 
     pub fn deinit(this: *StructField, allocator: std.mem.Allocator) void {
+        this.typeRef.deinit(allocator);
         if (this.init) |*expr| expr.deinit(allocator);
     }
 };
@@ -1599,14 +1602,17 @@ pub const ImplementDecl = struct {
     comment: ?[]const u8 = null,
     /// `////` module-level documentation
     moduleComment: ?[]const u8 = null,
-    /// interfaces being implemented, e.g. ["UsbCharger", "SolarCharger"].
-    interfaces: []const []const u8,
+    /// interfaces being implemented, e.g. `[Drawable, @Context<E, E>]`.
+    /// Each is a full `TypeRef` so generic interfaces (`Iface<A, B>`, `@Context<…>`)
+    /// are supported, not just bare identifiers.
+    interfaces: []TypeRef,
     /// The type this implement is for, e.g. "SmartCamera".
     target: []const u8,
     methods: []ImplementMethod,
 
     pub fn deinit(this: *ImplementDecl, allocator: std.mem.Allocator) void {
         allocator.free(this.genericParams);
+        for (this.interfaces) |*iface| iface.deinit(allocator);
         allocator.free(this.interfaces);
         for (this.methods) |*m| m.deinit(allocator);
         allocator.free(this.methods);

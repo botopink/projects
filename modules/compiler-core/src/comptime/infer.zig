@@ -262,10 +262,21 @@ fn interfaceHasMethod(d: ast.InterfaceDecl, name: []const u8) bool {
     return false;
 }
 
+/// The bare name of an interface type ref — the identifier the interface was
+/// declared under. Generic interfaces (`Iface<A, B>`, `@Context<…>`) reduce to
+/// their head name (`Iface`, `Context`); non-name refs yield "".
+fn interfaceRefName(ref: ast.TypeRef) []const u8 {
+    return switch (ref) {
+        .named => |n| n,
+        .generic => |g| g.name,
+        else => "",
+    };
+}
+
 /// True when `name` is one of the interfaces this implement block declares.
 fn implementsInterface(impl: ast.ImplementDecl, name: []const u8) bool {
-    for (impl.interfaces) |iname| {
-        if (std.mem.eql(u8, iname, name)) return true;
+    for (impl.interfaces) |iface| {
+        if (std.mem.eql(u8, interfaceRefName(iface), name)) return true;
     }
     return false;
 }
@@ -294,7 +305,8 @@ fn validateImplement(
             // Unqualified: find which implemented interfaces declare this method.
             var first: ?[]const u8 = null;
             var second: ?[]const u8 = null;
-            for (impl.interfaces) |iname| {
+            for (impl.interfaces) |iface| {
+                const iname = interfaceRefName(iface);
                 const d = interfaces.get(iname) orelse continue;
                 if (!interfaceHasMethod(d, m.name)) continue;
                 if (first == null) {
@@ -315,7 +327,8 @@ fn validateImplement(
     }
 
     // Coverage: every abstract method of every implemented interface must be met.
-    for (impl.interfaces) |iname| {
+    for (impl.interfaces) |iface| {
+        const iname = interfaceRefName(iface);
         const d = interfaces.get(iname) orelse continue;
         for (d.methods) |am| {
             if (am.body != null) continue; // default method — implementing it is optional
@@ -350,7 +363,7 @@ fn structFieldType(
 ) InferError!?*T.Type {
     for (s.members) |m| switch (m) {
         .field => |f| if (std.mem.eql(u8, f.name, name)) {
-            return try env.resolveTypeName(f.typeName, genericMap);
+            return try resolveTypeRefInContext(env, f.typeRef, genericMap);
         },
         else => {},
     };
@@ -950,7 +963,7 @@ fn registerStruct(env: *Env, s: ast.StructDecl) InferError!void {
         .field => |f| {
             fields[fi] = .{
                 .name = f.name,
-                .type_ = try env.resolveTypeName(f.typeName, genericMap),
+                .type_ = try resolveTypeRefInContext(env, f.typeRef, genericMap),
             };
             fi += 1;
         },
@@ -1085,7 +1098,7 @@ fn buildStructDeclName(env: *Env, s: ast.StructDecl) ![]const u8 {
                 try buf.appendSlice(env.arena, "    ");
                 try buf.appendSlice(env.arena, f.name);
                 try buf.appendSlice(env.arena, ": ");
-                try buf.appendSlice(env.arena, f.typeName);
+                try buf.appendSlice(env.arena, try typeRefToString(env.arena, f.typeRef));
                 if (f.init) |_| {
                     try buf.append(env.arena, '\n');
                 } else {

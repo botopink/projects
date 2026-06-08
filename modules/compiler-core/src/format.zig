@@ -1640,7 +1640,7 @@ pub const Formatter = struct {
             return this.concatAll(&.{
                 try this.text(f.name),
                 try this.text(": "),
-                try this.text(f.typeName),
+                try this.fmtTypeRef(f.typeRef),
                 try this.text(" = "),
                 try this.fmtExpr(initExpr),
             });
@@ -1648,7 +1648,7 @@ pub const Formatter = struct {
             return this.concatAll(&.{
                 try this.text(f.name),
                 try this.text(": "),
-                try this.text(f.typeName),
+                try this.fmtTypeRef(f.typeRef),
             });
         }
     }
@@ -1831,7 +1831,7 @@ pub const Formatter = struct {
     fn fmtImplement(this: *Formatter, impl: ast.ImplementDecl) !*const Doc {
         // `implement Interface1, Interface2 for Type`
         var ifaceDocs = try this.arena.alloc(*const Doc, impl.interfaces.len);
-        for (impl.interfaces, 0..) |iface, i| ifaceDocs[i] = try this.text(iface);
+        for (impl.interfaces, 0..) |iface, i| ifaceDocs[i] = try this.fmtTypeRef(iface);
         const ifacesDoc = try this.join(ifaceDocs, try this.text(", "));
 
         var methodDocs = try this.arena.alloc(*const Doc, impl.methods.len);

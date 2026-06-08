@@ -11,8 +11,12 @@
         "comment": null,
         "moduleComment": null,
         "interfaces": [
-          "UsbCharger",
-          "SolarCharger"
+          {
+            "named": "UsbCharger"
+          },
+          {
+            "named": "SolarCharger"
+          }
         ],
         "target": "SmartCamera",
         "methods": [

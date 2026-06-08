@@ -145,6 +145,24 @@ test "parser: struct with inline implement multiple interfaces" {
     );
 }
 
+test "parser: struct implement with array-typed field" {
+    // G5: an array-typed (suffixed) field inside an inline `struct implement`
+    // body must parse, just like a plain record field.
+    try h.assertParser(std.testing.allocator, @src(),
+        \\val E = struct implement @Context<E, E> { tag: string, children: E[] }
+    );
+}
+
+test "parser: implement generic interface for type" {
+    // G6: a standalone `implement <generic-iface> for <Type>` must parse, both
+    // for a builtin generic (`@Context<…>`) and a user generic (`Foo<A, B>`).
+    try h.assertParser(std.testing.allocator, @src(),
+        \\record E { tag: string }
+        \\val C = implement @Context<E, E> for E {}
+        \\val D = implement Foo<E, E> for E {}
+    );
+}
+
 test "parser: enum with inline implement" {
     try h.assertParser(std.testing.allocator, @src(),
         \\val Color = enum implement Printable { Red, Green, Blue }

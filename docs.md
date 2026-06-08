@@ -1829,6 +1829,41 @@ class Person {
 }
 ```
 
+### Generic interface
+
+The standalone `implement <Iface> for <Type>` form accepts a **generic**
+interface (`Iface<A, B>`, including the builtin `@Context<…>`), not just a bare
+identifier:
+
+```botopink
+record E { tag: string }
+val C = implement @Context<E, E> for E {}
+val D = implement Foo<E, E> for E {}
+```
+
+### Inline `struct implement` with fields
+
+A `struct implement <Iface> { fields }` carries fields like a `record`, and any
+field type is allowed — including array-typed (`E[]`), optional, and generic
+fields. The value emits a real constructor, so its fields round-trip at runtime:
+
+```botopink
+val E = struct implement @Context<E, E> { tag: string, children: E[] }
+fn mk() -> E {
+    return E(tag: "x", children: []);
+}
+```
+
+**Generates:**
+```javascript
+class E {
+    constructor(tag, children) {
+        this.tag = tag;
+        this.children = children;
+    }
+}
+```
+
 ---
 
 ## Destructuring

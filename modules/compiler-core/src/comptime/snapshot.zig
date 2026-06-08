@@ -433,7 +433,7 @@ fn bindingToRepr(
         .@"struct" => |s| blk: {
             var entries: std.ArrayList(FieldMap.Entry) = .empty;
             for (s.members) |member| switch (member) {
-                .field => |fld| try entries.append(allocator, .{ .name = fld.name, .value = fld.typeName }),
+                .field => |fld| try entries.append(allocator, .{ .name = fld.name, .value = typeNameFromTypeRef(fld.typeRef) }),
                 else => {},
             };
             const gens = try genericNames(allocator, s.genericParams);

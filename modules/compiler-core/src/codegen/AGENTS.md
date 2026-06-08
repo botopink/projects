@@ -98,7 +98,14 @@ codegen/
   in `Emitter.hook_state`) the lambda reads, via `identInExpr`. Erlang/BEAM/WAT
   lower `use` transparently (the call result lands in a binding/slot). Phantom
   `@Context` base structs (`isPhantomContextStruct`: implements `@Context`, no
-  members) emit no runtime code; the `.d.ts` erases `@Context<B, R>` to `R`.
+  members) emit no runtime code; the `.d.ts` erases `@Context<B, R>` to `R`. A
+  struct that *does* carry fields (incl. `struct implement … { fields }`) emits a
+  real constructor assigning each field, exactly like `record` (`emitStruct` —
+  field initializers become param defaults); the standalone
+  `implement <Iface> for <Type>` form accepts a generic interface
+  (`Iface<A, B>`, `@Context<…>`), and `StructField`/`ImplementDecl.interfaces`
+  both carry full `TypeRef`s so suffixed field types (`E[]`) and generic
+  interfaces parse.
 
 For the `.bp` → target translation gallery see
 [`./examples.md`](examples.md); for the full API surface and snapshot

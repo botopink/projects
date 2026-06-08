@@ -16,7 +16,9 @@
           {
             "field": {
               "name": "_balance",
-              "typeName": "number",
+              "typeRef": {
+                "named": "number"
+              },
               "init": {
                 "literal": {
                   "loc": {

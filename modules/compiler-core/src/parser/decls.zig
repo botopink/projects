@@ -637,9 +637,12 @@ pub fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
                 // Not a field — fall through to the normal member loop
             } else {
                 // Field: name: Type [= expr]
+                // Reuse the full type-ref parser (same as record fields) so
+                // array-typed (`E[]`), optional, and generic fields parse.
                 const fieldName = (try this.consume(.identifier)).lexeme;
                 _ = try this.consume(.colon);
-                const typeName = (try this.consumeTypeName()).lexeme;
+                var fieldType = try this.parseTypeRef(alloc);
+                errdefer fieldType.deinit(alloc);
                 var initExpr: ?Expr = null;
                 if (this.match(.equal)) {
                     initExpr = try this.parseExpr(alloc);
@@ -647,7 +650,7 @@ pub fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
                 trailingComma = this.match(.comma);
                 try members.append(alloc, .{ .field = .{
                     .name = fieldName,
-                    .typeName = typeName,
+                    .typeRef = fieldType,
                     .init = initExpr,
                 } });
                 continue;
@@ -841,21 +844,28 @@ pub fn parseImplementBody(
 ) ParseError!ImplementDecl {
     _ = try this.consume(.implement);
 
-    var interfaces: std.ArrayList([]const u8) = .empty;
-    errdefer interfaces.deinit(alloc);
+    // Interfaces are full type refs so generic interfaces (`Iface<A, B>`,
+    // `@Context<…>`) parse, not just bare identifiers.
+    var interfaces: std.ArrayList(TypeRef) = .empty;
+    errdefer {
+        for (interfaces.items) |*t| t.deinit(alloc);
+        interfaces.deinit(alloc);
+    }
 
-    const firstInterface = (try this.consume(.identifier)).lexeme;
-    try interfaces.append(alloc, firstInterface);
+    try interfaces.append(alloc, try this.parseTypeRef(alloc));
     while (this.match(.comma)) {
         if (this.check(.@"for")) break;
-        try interfaces.append(alloc, (try this.consume(.identifier)).lexeme);
+        try interfaces.append(alloc, try this.parseTypeRef(alloc));
     }
 
     _ = try this.consume(.@"for");
     const target = (try this.consume(.identifier)).lexeme;
 
     const ifaceSlice = try interfaces.toOwnedSlice(alloc);
-    errdefer alloc.free(ifaceSlice);
+    errdefer {
+        for (ifaceSlice) |*t| t.deinit(alloc);
+        alloc.free(ifaceSlice);
+    }
     const methods = try this.parseImplementMethods(alloc);
 
     return ImplementDecl{

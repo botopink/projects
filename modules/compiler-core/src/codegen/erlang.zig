@@ -1936,7 +1936,11 @@ const Emitter = struct {
         try this.w("%% implement ");
         for (im.interfaces, 0..) |iface, i| {
             if (i > 0) try this.w(", ");
-            try this.w(iface);
+            try this.w(switch (iface) {
+                .named => |n| n,
+                .generic => |g| g.name,
+                else => "?",
+            });
         }
         try this.fmt(" for {s}\n", .{im.target});
         try this.emitExtensionMethods(im.methods);
