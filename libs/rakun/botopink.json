@@ -1,0 +1,7 @@
+{
+  "name": "rakun",
+  "version": "0.0.1",
+  "description": "Botopink application framework — Spring-style IoC container + web layer (scaffold)",
+  "src": "src/",
+  "files": []
+}

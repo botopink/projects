@@ -1,0 +1,98 @@
+//// rakun — Spring-style application framework for botopink (scaffold).
+////
+//// Declarative surface only — interface/decorator SIGNATURES, no bodies. The
+//// comptime component scan + codegen supply the implementations (spec F1–F5).
+////
+//// NOT embedded into the compiler: no `prelude.zig`, no `build.zig` wiring,
+//// `botopink.json` lists `files: []`. This is an APPLICATION-level lib, reached
+//// via `from "rakun"` and opted into per project — never auto-loaded into the
+//// type `Env`. See ./AGENTS.md, ./docs.md and the spec:
+////   tasks/v0.beta.5/specs/rakun.md
+////
+//// Naming note: `get`/`set`/`new` are reserved keyword tokens, so the route
+//// decorators follow Spring's own names (`getMapping`, …) and the container
+//// uses `resolve<T>()` rather than `get<T>()`.
+
+// ---- decorators (imported from "rakun", applied as `@[service]`, `@[getMapping("/x")]`) ----
+//
+// Annotations are call entries type-checked against these signatures (the same
+// mechanism as the builtin `external`). The comptime scan recognises them on a
+// `record`/`struct` (component markers) or on a method (route markers).
+
+// component markers
+pub fn component()
+pub fn service()
+pub fn repository()
+pub fn controller()
+pub fn restController()
+
+// configuration / factory markers
+pub fn configuration()
+pub fn bean()
+pub fn inject()
+pub fn value(key: string)
+
+// web / route markers
+pub fn route(prefix: string)          // controller-level path prefix (Spring @RequestMapping)
+pub fn getMapping(path: string)
+pub fn postMapping(path: string)
+pub fn putMapping(path: string)
+pub fn patchMapping(path: string)
+pub fn deleteMapping(path: string)
+
+// ---- HTTP primitives ----
+
+pub enum HttpMethod {
+    Get,
+    Post,
+    Put,
+    Patch,
+    Delete,
+    Head,
+    Options,
+}
+
+interface Request {
+    val method: HttpMethod
+    val path: string
+
+    fn param(self: Self, name: string) -> ?string
+    fn query(self: Self, name: string) -> ?string
+    fn header(self: Self, name: string) -> ?string
+    fn body(self: Self) -> string
+}
+
+interface Response {
+    val status: i32
+    val body: string
+
+    fn header(self: Self, name: string, value: string) -> Self
+
+    // associated constructors (Spring ResponseEntity analogues)
+    fn ok(body: string) -> Self
+    fn json(body: string) -> Self
+    fn created(body: string) -> Self
+    fn withStatus(code: i32, body: string) -> Self
+    fn notFound() -> Self
+    fn badRequest(message: string) -> Self
+}
+
+// ---- IoC container ----
+
+interface Context {
+    fn resolve<T>(self: Self) -> ?T      // resolve a managed singleton by type
+    fn has<T>(self: Self) -> bool
+}
+
+// ---- application bootstrap ----
+
+interface App {
+    val port: i32
+    val basePath: string
+}
+
+interface Rakun {
+    // Scan the compilation unit for components, wire the DI graph, build the
+    // router, and start the server. Associated fn — called as `Rakun.run(app)`.
+    fn run(app: App)
+}
