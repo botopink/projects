@@ -23,6 +23,7 @@ record Pipeline {
     {func_info, {atom, main}, {atom, 'Pipeline_doubled'}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
+    {test, is_map, {f, 4}, [{x, 0}]}.
     {get_map_elements, {f, 4}, {x, 0}, {list, [{atom, items}, {x, 0}]}}.
   {label, 4}.
     {move, {x, 0}, {x, 1}}.

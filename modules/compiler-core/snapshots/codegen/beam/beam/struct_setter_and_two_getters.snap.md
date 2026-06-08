@@ -41,7 +41,8 @@ val Temperature = struct {
     {func_info, {atom, main}, {atom, 'Temperature_celsius'}, 1}.
   {label, 5}.
     {allocate, 0, 1}.
-    {get_map_elements, {f, 8}, {x, 0}, {list, [{atom, _celsius}, {x, 0}]}}.
+    {test, is_map, {f, 8}, [{x, 0}]}.
+    {get_map_elements, {f, 8}, {x, 0}, {list, [{atom, '_celsius'}, {x, 0}]}}.
   {label, 8}.
     {deallocate, 0}.
     return.
@@ -52,7 +53,8 @@ val Temperature = struct {
     {func_info, {atom, main}, {atom, 'Temperature_fahrenheit'}, 1}.
   {label, 7}.
     {allocate, 0, 1}.
-    {get_map_elements, {f, 9}, {x, 0}, {list, [{atom, _celsius}, {x, 0}]}}.
+    {test, is_map, {f, 9}, [{x, 0}]}.
+    {get_map_elements, {f, 9}, {x, 0}, {list, [{atom, '_celsius'}, {x, 0}]}}.
   {label, 9}.
     {move, {x, 0}, {x, 1}}.
     {gc_bif, '*', {f, 0}, 2, [{x, 1}, {float, 1.8}], {x, 0}}.

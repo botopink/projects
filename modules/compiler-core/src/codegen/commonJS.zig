@@ -5,52 +5,15 @@ const moduleOutput = @import("./moduleOutput.zig");
 const configMod = @import("./config.zig");
 const ast = @import("../ast.zig");
 const specialize = @import("../comptime/specialize.zig");
+const crossModule = @import("./crossModule.zig");
 
 const ModuleOutput = moduleOutput.ModuleOutput;
 const ComptimeOutput = comptimeMod.ComptimeOutput;
 
-/// Where a `pub` symbol is emitted, for resolving cross-module imports.
-/// `module` is the emitting module's path (e.g. `"rakun/http"`); `is_class`
-/// marks record/struct exports whose construction needs `new`.
-const ExportInfo = struct { module: []const u8, is_class: bool };
-
-/// Cross-module link info, built once over every module's transformed program.
-/// `exports` maps a `pub` symbol name → its emitting module (so an importer can
-/// `require` the right file and know whether to `new` it); `imported` is the set
-/// of names some module imports (so a module only emits `exports.X` for symbols
-/// actually consumed elsewhere — single-module programs stay unchanged).
-const CrossModule = struct {
-    exports: std.StringHashMap(ExportInfo),
-    imported: std.StringHashMap(void),
-
-    fn deinit(self: *CrossModule) void {
-        self.exports.deinit();
-        self.imported.deinit();
-    }
-};
-
-fn buildCrossModule(alloc: std.mem.Allocator, outputs: []ComptimeOutput) !CrossModule {
-    var exports = std.StringHashMap(ExportInfo).init(alloc);
-    var imported = std.StringHashMap(void).init(alloc);
-    for (outputs) |*ct| {
-        const ok = switch (ct.outcome) {
-            .ok => |*o| o,
-            else => continue,
-        };
-        for (ok.transformed.decls) |decl| switch (decl) {
-            .record => |r| if (r.isPub) try exports.put(r.name, .{ .module = ct.name, .is_class = true }),
-            .@"struct" => |s| if (s.isPub and !isPhantomContextStruct(s))
-                try exports.put(s.name, .{ .module = ct.name, .is_class = true }),
-            .@"enum" => |e| if (e.isPub) try exports.put(e.name, .{ .module = ct.name, .is_class = false }),
-            .@"fn" => |f| if (f.isPub and !f.isExternal())
-                try exports.put(f.name, .{ .module = ct.name, .is_class = false }),
-            .val => |v| if (v.isPub) try exports.put(v.name, .{ .module = ct.name, .is_class = false }),
-            .use => |u| for (u.imports) |imp| try imported.put(imp.name(), {}),
-            else => {},
-        };
-    }
-    return .{ .exports = exports, .imported = imported };
-}
+/// Cross-module link index — shared, backend-agnostic analysis (`crossModule.zig`).
+/// commonJS reads `.module` (which file `require`s a name) and `.is_class`
+/// (whether an imported record's construction needs `new`).
+const CrossModule = crossModule.CrossModule;
 
 // ── public phase 2: codegen ───────────────────────────────────────────────────
 
@@ -68,7 +31,7 @@ pub fn codegenEmit(
     // Cross-module link index: lets each module `require` the file that
     // actually emits an imported symbol, emit `new` for imported records, and
     // `exports.X` only for symbols consumed elsewhere.
-    var cross = try buildCrossModule(alloc, outputs);
+    var cross = try crossModule.build(alloc, outputs);
     defer cross.deinit();
 
     for (outputs) |*ct| {

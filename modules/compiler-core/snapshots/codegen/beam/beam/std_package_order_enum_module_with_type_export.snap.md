@@ -67,7 +67,7 @@ test "order case over Order" {
 
 ----- BEAM ASSEMBLY -- std/order.S
 ```erlang
-{module, std/order}.
+{module, order}.
 {exports, [{lt, 0}, {eq, 0}, {gt, 0}, {toInt, 1}, {reverse, 1}]}.
 {attributes, []}.
 {labels, 20}.
@@ -78,44 +78,47 @@ test "order case over Order" {
 
 {function, lt, 0, 3}.
   {label, 2}.
-    {line, [{location, "std/order.erl", 1}]}.
-    {func_info, {atom, std/order}, {atom, lt}, 0}.
+    {line, [{location, "order.erl", 1}]}.
+    {func_info, {atom, order}, {atom, lt}, 0}.
   {label, 3}.
     {allocate, 0, 0}.
     {move, {atom, 'Order'}, {x, 0}}.
-    {get_map_elements, {f, 12}, {x, 0}, {list, [{atom, Lt}, {x, 0}]}}.
+    {test, is_map, {f, 12}, [{x, 0}]}.
+    {get_map_elements, {f, 12}, {x, 0}, {list, [{atom, 'Lt'}, {x, 0}]}}.
   {label, 12}.
     {deallocate, 0}.
     return.
 
 {function, eq, 0, 5}.
   {label, 4}.
-    {line, [{location, "std/order.erl", 2}]}.
-    {func_info, {atom, std/order}, {atom, eq}, 0}.
+    {line, [{location, "order.erl", 2}]}.
+    {func_info, {atom, order}, {atom, eq}, 0}.
   {label, 5}.
     {allocate, 0, 0}.
     {move, {atom, 'Order'}, {x, 0}}.
-    {get_map_elements, {f, 13}, {x, 0}, {list, [{atom, Eq}, {x, 0}]}}.
+    {test, is_map, {f, 13}, [{x, 0}]}.
+    {get_map_elements, {f, 13}, {x, 0}, {list, [{atom, 'Eq'}, {x, 0}]}}.
   {label, 13}.
     {deallocate, 0}.
     return.
 
 {function, gt, 0, 7}.
   {label, 6}.
-    {line, [{location, "std/order.erl", 3}]}.
-    {func_info, {atom, std/order}, {atom, gt}, 0}.
+    {line, [{location, "order.erl", 3}]}.
+    {func_info, {atom, order}, {atom, gt}, 0}.
   {label, 7}.
     {allocate, 0, 0}.
     {move, {atom, 'Order'}, {x, 0}}.
-    {get_map_elements, {f, 14}, {x, 0}, {list, [{atom, Gt}, {x, 0}]}}.
+    {test, is_map, {f, 14}, [{x, 0}]}.
+    {get_map_elements, {f, 14}, {x, 0}, {list, [{atom, 'Gt'}, {x, 0}]}}.
   {label, 14}.
     {deallocate, 0}.
     return.
 
 {function, toInt, 1, 9}.
   {label, 8}.
-    {line, [{location, "std/order.erl", 4}]}.
-    {func_info, {atom, std/order}, {atom, toInt}, 1}.
+    {line, [{location, "order.erl", 4}]}.
+    {func_info, {atom, order}, {atom, toInt}, 1}.
   {label, 9}.
     {allocate, 3, 1}.
     {init_yregs, {list, [{y, 0}, {y, 1}, {y, 2}]}}.
@@ -135,23 +138,26 @@ test "order case over Order" {
 
 {function, reverse, 1, 11}.
   {label, 10}.
-    {line, [{location, "std/order.erl", 5}]}.
-    {func_info, {atom, std/order}, {atom, reverse}, 1}.
+    {line, [{location, "order.erl", 5}]}.
+    {func_info, {atom, order}, {atom, reverse}, 1}.
   {label, 11}.
     {allocate, 3, 1}.
     {init_yregs, {list, [{y, 0}, {y, 1}, {y, 2}]}}.
     {move, {x, 0}, {y, 0}}.
     {move, {atom, 'Order'}, {x, 0}}.
-    {get_map_elements, {f, 17}, {x, 0}, {list, [{atom, Gt}, {x, 0}]}}.
+    {test, is_map, {f, 17}, [{x, 0}]}.
+    {get_map_elements, {f, 17}, {x, 0}, {list, [{atom, 'Gt'}, {x, 0}]}}.
   {label, 17}.
     {jump, {f, 16}}.
     {move, {x, 0}, {y, 1}}.
     {move, {atom, 'Order'}, {x, 0}}.
-    {get_map_elements, {f, 18}, {x, 0}, {list, [{atom, Lt}, {x, 0}]}}.
+    {test, is_map, {f, 18}, [{x, 0}]}.
+    {get_map_elements, {f, 18}, {x, 0}, {list, [{atom, 'Lt'}, {x, 0}]}}.
   {label, 18}.
     {jump, {f, 16}}.
     {move, {atom, 'Order'}, {x, 0}}.
-    {get_map_elements, {f, 19}, {x, 0}, {list, [{atom, Eq}, {x, 0}]}}.
+    {test, is_map, {f, 19}, [{x, 0}]}.
+    {get_map_elements, {f, 19}, {x, 0}, {list, [{atom, 'Eq'}, {x, 0}]}}.
   {label, 19}.
     {jump, {f, 16}}.
   {label, 16}.
@@ -163,7 +169,7 @@ test "order case over Order" {
 
 ----- RUN LOG -----
 ```logs
-Execution error: error.FileNotFound```
+```
 
 ----- SOURCE CODE -- main.bp
 ```botopink

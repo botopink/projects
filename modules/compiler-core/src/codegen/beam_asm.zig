@@ -22,9 +22,11 @@ const comptimeMod = @import("../comptime.zig");
 const moduleOutput = @import("./moduleOutput.zig");
 const configMod = @import("./config.zig");
 const ast = @import("../ast.zig");
+const crossModule = @import("./crossModule.zig");
 
 const ModuleOutput = moduleOutput.ModuleOutput;
 const ComptimeOutput = comptimeMod.ComptimeOutput;
+const CrossModule = crossModule.CrossModule;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,13 +88,29 @@ fn methodArity(m: ast.InterfaceMethod) usize {
     return m.params.len;
 }
 
+/// True when a record/struct/enum method is an associated fn — no `self`
+/// receiver, so it's reachable as `Type.method(...)` and, across modules, as a
+/// remote `call_ext` into the owner.
+fn isAssocMethod(m: ast.InterfaceMethod) bool {
+    return m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self");
+}
+
 /// Arity for an `ImplementMethod` (same convention).
 fn implementMethodArity(m: ast.ImplementMethod) usize {
     return m.params.len;
 }
 
-/// Append `'Owner_methodName'/arity` for every `pub` method in `methods` to
-/// the exports list. Caller is responsible for the `owned` tracker — every
+/// True when another module imports `name` (so the owner must export its
+/// associated fns for the consumer's remote `call_ext` to resolve).
+fn isCrossImported(cross: ?*const CrossModule, name: []const u8) bool {
+    const xc = cross orelse return false;
+    return xc.imported.contains(name);
+}
+
+/// Append `'Owner_methodName'/arity` for every exported method in `methods`.
+/// A method is exported when it's `pub`, or — when `force_assoc` (the owner
+/// type is imported by another module) — when it's an associated fn another
+/// module reaches via a remote call. Caller owns the `owned` tracker — every
 /// allocated string is pushed there so it gets freed after the header.
 fn collectMethodExports(
     alloc: std.mem.Allocator,
@@ -100,10 +118,11 @@ fn collectMethodExports(
     owned: *std.ArrayListUnmanaged([]u8),
     owner: []const u8,
     methods: []const ast.InterfaceMethod,
+    force_assoc: bool,
 ) !void {
     for (methods) |m| {
         if (m.body == null or m.is_declare) continue;
-        if (!m.isPub) continue;
+        if (!m.isPub and !(force_assoc and isAssocMethod(m))) continue;
         const mangled = try std.fmt.allocPrint(alloc, "'{s}_{s}'", .{ owner, m.name });
         try owned.append(alloc, mangled);
         try exports.append(alloc, .{ .name = mangled, .arity = methodArity(m) });
@@ -115,6 +134,7 @@ fn collectStructExports(
     exports: *std.ArrayListUnmanaged(ExportEntry),
     owned: *std.ArrayListUnmanaged([]u8),
     s: ast.StructDecl,
+    force_assoc: bool,
 ) !void {
     for (s.members) |mem| switch (mem) {
         .field => {},
@@ -132,7 +152,7 @@ fn collectStructExports(
         },
         .method => |m| {
             if (m.body == null or m.is_declare) continue;
-            if (!m.isPub) continue;
+            if (!m.isPub and !(force_assoc and isAssocMethod(m))) continue;
             const mangled = try std.fmt.allocPrint(alloc, "'{s}_{s}'", .{ s.name, m.name });
             try owned.append(alloc, mangled);
             try exports.append(alloc, .{ .name = mangled, .arity = methodArity(m) });
@@ -307,6 +327,12 @@ pub fn codegenEmit(
     _ = config;
     var results: std.ArrayListUnmanaged(ModuleOutput) = .empty;
 
+    // Cross-module link index — resolves an imported record's associated fn to
+    // a remote `call_ext` into the owning module and an imported record literal
+    // to the owner's map shape.
+    var cross = try crossModule.build(alloc, outputs);
+    defer cross.deinit();
+
     for (outputs) |*ct| {
         switch (ct.outcome) {
             .parseError => continue,
@@ -323,7 +349,7 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const code = try emitBeamAsm(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites);
+                const code = try emitBeamAsm(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, &cross);
                 try results.append(alloc, .{
                     .name = ct.name,
                     .src = ct.src,
@@ -350,6 +376,7 @@ fn emitBeamAsm(
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    cross: ?*const CrossModule,
 ) ![]u8 {
     // Three passes:
     //   1. assign entry labels to every fn/top-val so wrappers can refer to
@@ -364,12 +391,23 @@ fn emitBeamAsm(
     var body_buf: std.Io.Writer.Allocating = .init(alloc);
     defer body_buf.deinit();
 
-    var em = Emitter.init(alloc, module_name, &body_buf.writer, comptime_vals, rewrites);
+    // The BEAM module atom is the path basename (`std/order` → `order`,
+    // `rakun/http` → `http`) — a slash is invalid in an unquoted module atom,
+    // and cross-module `call_ext` targets resolve by basename (see
+    // `crossModule.ownerModuleAtom`). Mirrors the Erlang backend's
+    // `erl_module_name`.
+    const module_atom = crossModule.moduleBasename(module_name);
+
+    var em = Emitter.init(alloc, module_atom, &body_buf.writer, comptime_vals, rewrites);
+    em.cross = cross;
     defer em.deinit();
 
     // Map each `implement`/`extend` block name to its target type + methods so
     // dispatch sites can resolve the mangled `'<target>_<method>'` callee.
     try em.collectExtensions(program);
+    // Record/struct field orders (local + cross-imported) drive map construction
+    // and cross-module associated-fn calls.
+    try em.collectRecordShapes(program);
 
     // Detect main/0 entrypoint (drives wrapper emission).
     var has_main_0 = false;
@@ -422,9 +460,9 @@ fn emitBeamAsm(
             .@"fn" => |f| if (f.isPub) {
                 try exports.append(alloc, .{ .name = f.name, .arity = fnArityNoSelf(f) });
             },
-            .record => |r| try collectMethodExports(alloc, &exports, &owned_export_names, r.name, r.methods),
-            .@"struct" => |s| try collectStructExports(alloc, &exports, &owned_export_names, s),
-            .@"enum" => |e| try collectMethodExports(alloc, &exports, &owned_export_names, e.name, e.methods),
+            .record => |r| try collectMethodExports(alloc, &exports, &owned_export_names, r.name, r.methods, isCrossImported(cross, r.name)),
+            .@"struct" => |s| try collectStructExports(alloc, &exports, &owned_export_names, s, isCrossImported(cross, s.name)),
+            .@"enum" => |e| try collectMethodExports(alloc, &exports, &owned_export_names, e.name, e.methods, isCrossImported(cross, e.name)),
             .implement => |im| try collectImplementExports(alloc, &exports, &owned_export_names, im),
             .extend => |ex| try collectExtendExports(alloc, &exports, &owned_export_names, ex),
             else => {},
@@ -464,7 +502,7 @@ fn emitBeamAsm(
     var aw: std.Io.Writer.Allocating = .init(alloc);
     defer aw.deinit();
 
-    try aw.writer.print("{{module, {s}}}.\n", .{module_name});
+    try aw.writer.print("{{module, {s}}}.\n", .{module_atom});
 
     try aw.writer.writeAll("{exports, [");
     for (exports.items, 0..) |e, i| {
@@ -548,6 +586,15 @@ const Emitter = struct {
     /// Extension block name → target type + methods, for resolving the mangled
     /// `'<target>_<method>'` callee at activated and qualified dispatch sites.
     ext_by_name: std.StringHashMap(ExtInfo),
+    /// Cross-module link index (null in the standalone path).
+    cross: ?*const CrossModule = null,
+    /// Record/struct name → ordered field names (local decls + cross-imported).
+    /// Drives `App(8080, "/")` → a `put_map_assoc` map keyed by field name.
+    record_fields: std.StringHashMap([]const []const u8),
+    /// Imported record/struct name → owning module atom. A qualified call whose
+    /// receiver names one (`Response.ok(...)`) lowers to a remote `call_ext`
+    /// into the owner (`http:'Response_ok'(...)`).
+    imported_types: std.StringHashMap([]const u8),
 
     /// Target type and methods of an `implement`/`extend` block.
     const ExtInfo = struct { target: []const u8, methods: []const ast.ImplementMethod };
@@ -562,6 +609,8 @@ const Emitter = struct {
             .reg_map = std.StringHashMap(Reg).init(alloc),
             .rewrites = rewrites,
             .ext_by_name = std.StringHashMap(ExtInfo).init(alloc),
+            .record_fields = std.StringHashMap([]const []const u8).init(alloc),
+            .imported_types = std.StringHashMap([]const u8).init(alloc),
         };
     }
 
@@ -573,12 +622,65 @@ const Emitter = struct {
         for (self.deferred_lambdas.items) |s| self.alloc.free(s);
         self.deferred_lambdas.deinit(self.alloc);
         self.ext_by_name.deinit();
+        var rf = self.record_fields.valueIterator();
+        while (rf.next()) |names| self.alloc.free(names.*);
+        self.record_fields.deinit();
+        self.imported_types.deinit();
     }
 
     fn collectExtensions(self: *Emitter, program: ast.Program) !void {
         for (program.decls) |decl| switch (decl) {
             .implement => |im| try self.ext_by_name.put(im.name, .{ .target = im.target, .methods = im.methods }),
             .extend => |ex| try self.ext_by_name.put(ex.name, .{ .target = ex.target, .methods = ex.methods }),
+            else => {},
+        };
+    }
+
+    /// Registers ordered field names for every local record/struct, plus every
+    /// record/struct this module imports `from "<pkg>"` (resolved via the cross
+    /// index). Imported types also record their owning module atom so an
+    /// associated-fn call can `call_ext` into it.
+    fn collectRecordShapes(self: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .record => |r| {
+                const fields = try self.alloc.alloc([]const u8, r.fields.len);
+                for (r.fields, 0..) |f, i| fields[i] = f.name;
+                try self.record_fields.put(r.name, fields);
+            },
+            .@"struct" => |s| {
+                var count: usize = 0;
+                for (s.members) |m| {
+                    if (m == .field) count += 1;
+                }
+                const fields = try self.alloc.alloc([]const u8, count);
+                var i: usize = 0;
+                for (s.members) |m| switch (m) {
+                    .field => |f| {
+                        fields[i] = f.name;
+                        i += 1;
+                    },
+                    else => {},
+                };
+                try self.record_fields.put(s.name, fields);
+            },
+            else => {},
+        };
+        const xc = self.cross orelse return;
+        for (program.decls) |decl| switch (decl) {
+            .use => |u| for (u.imports) |imp| {
+                const name = imp.name();
+                const info = xc.exports.get(name) orelse continue;
+                switch (info.kind) {
+                    .record, .@"struct" => {
+                        if (!self.record_fields.contains(name)) {
+                            const fields = try self.alloc.dupe([]const u8, info.fields);
+                            try self.record_fields.put(name, fields);
+                        }
+                        try self.imported_types.put(name, crossModule.moduleBasename(info.module));
+                    },
+                    else => {},
+                }
+            },
             else => {},
         };
     }
@@ -1731,6 +1833,39 @@ const Emitter = struct {
                         if (mode == .tail) try self.emitReturn();
                         return;
                     }
+                    // A lowercase callee on a PascalCase record/struct receiver
+                    // is an associated fn (`Response.ok(...)`), emitted by
+                    // `emitMethodAsFn` as `'<Type>_<callee>'`. A LOCAL record
+                    // calls that fn directly by label; an IMPORTED record
+                    // (`from "rakun"`) calls it remotely in the owning module —
+                    // never the lowercased type name (`response:ok`).
+                    if (cc.trailing.len == 0 and self.record_fields.contains(rn)) {
+                        var nbuf: [256]u8 = undefined;
+                        const mangled = std.fmt.bufPrint(&nbuf, "'{s}_{s}'", .{ rn, cc.callee }) catch return;
+                        const arity = cc.args.len;
+                        if (self.imported_types.get(rn)) |owner| {
+                            try self.materializeCallArgs(cc.args);
+                            switch (mode) {
+                                .non_tail => try self.bodyPrint(
+                                    "    {{call_ext, {d}, {{extfunc, {s}, {s}, {d}}}}}.\n",
+                                    .{ arity, owner, mangled, arity },
+                                ),
+                                .tail => try self.bodyPrint(
+                                    "    {{call_ext_last, {d}, {{extfunc, {s}, {s}, {d}}}, {d}}}.\n",
+                                    .{ arity, owner, mangled, arity, self.num_y },
+                                ),
+                            }
+                            return;
+                        }
+                        if (self.fnLabelsFor(mangled, arity)) |labels| {
+                            try self.materializeCallArgs(cc.args);
+                            switch (mode) {
+                                .non_tail => try self.bodyPrint("    {{call, {d}, {{f, {d}}}}}.\n", .{ arity, labels.entry }),
+                                .tail => try self.bodyPrint("    {{call_last, {d}, {{f, {d}}}, {d}}}.\n", .{ arity, labels.entry, self.num_y }),
+                            }
+                            return;
+                        } else |_| {}
+                    }
                     const total = cc.args.len + cc.trailing.len;
                     const scratch = self.cur_arity;
                     for (cc.args, 0..) |arg, i| {
@@ -1833,14 +1968,24 @@ const Emitter = struct {
             return;
         }
 
-        // A PascalCase callee with named arguments that resolves to neither a
-        // function nor a local is a record/struct constructor: `AppError(code:
-        // 400, msg: "x")` → a map `#{code => 400, msg => <<"x">>}`. Records are
-        // maps; field reads use `get_map_elements` with the same atom keys.
-        if (cc.callee.len > 0 and std.ascii.isUpper(cc.callee[0]) and allNamed(cc.args)) {
-            try self.lowerRecordConstruct(cc.args);
-            if (mode == .tail) try self.emitReturn();
-            return;
+        // A PascalCase callee that names a known record/struct (local or
+        // cross-imported) is a constructor: `AppError(code: 400, msg: "x")` /
+        // `App(8080, "/")` → a map `#{…}`. Positional args take their field name
+        // from the declared order; reads use `get_map_elements` with the same
+        // atom keys.
+        if (cc.callee.len > 0 and std.ascii.isUpper(cc.callee[0])) {
+            if (self.record_fields.get(cc.callee)) |fields| {
+                try self.lowerRecordConstruct(cc.args, fields);
+                if (mode == .tail) try self.emitReturn();
+                return;
+            }
+            // No registered shape (e.g. an inferred/anonymous record) but all
+            // args are labeled — fall back to label-keyed construction.
+            if (allNamed(cc.args)) {
+                try self.lowerRecordConstruct(cc.args, null);
+                if (mode == .tail) try self.emitReturn();
+                return;
+            }
         }
 
         try self.materializeCallArgs(cc.args);
@@ -1905,8 +2050,10 @@ const Emitter = struct {
 
     /// Build a record/struct as an Erlang map via `put_map_assoc`. Each field
     /// value is evaluated into a scratch register, then the map is assembled
-    /// with the field names as atom keys. Result in `{x, 0}`.
-    fn lowerRecordConstruct(self: *Emitter, args: anytype) anyerror!void {
+    /// with the field names as atom keys. A labeled arg uses its label; a
+    /// positional arg (`App(8080, "/")`) takes the field name at its index from
+    /// `fields` (the declared order). Result in `{x, 0}`.
+    fn lowerRecordConstruct(self: *Emitter, args: anytype, fields: ?[]const []const u8) anyerror!void {
         const n = args.len;
         if (n == 0) {
             try self.bodyWrite("    {move, {literal, #{}}, {x, 0}}.\n");
@@ -1926,7 +2073,9 @@ const Emitter = struct {
         );
         for (args, 0..) |arg, i| {
             if (i > 0) try self.bodyWrite(", ");
-            try self.bodyPrint("{{atom, {s}}}, {{x, {d}}}", .{ arg.label.?, scratch + i });
+            const key: []const u8 = arg.label orelse if (fields != null and i < fields.?.len) fields.?[i] else "_arg";
+            var kb: [256]u8 = undefined;
+            try self.bodyPrint("{{atom, {s}}}, {{x, {d}}}", .{ try atomName(key, &kb), scratch + i });
         }
         try self.bodyWrite("]}}.\n");
     }
@@ -2731,9 +2880,16 @@ const Emitter = struct {
     fn lowerIdentAccess(self: *Emitter, ia: anytype, dest: u32) anyerror!void {
         try self.lowerExprIntoX0(ia.receiver.*);
         const fail_label = self.allocLabel();
+        // Refine x0's type to map before reading a field. A locally-built map is
+        // already typed, but a receiver returned from a cross-module `call_ext`
+        // (`Response.ok(...)`) is typed `any` — the BEAM loader then rejects a
+        // bare `get_map_elements` (`bad_type, needed t_map`). The `is_map` test
+        // narrows it; on failure both fall through past the read.
+        var member_buf: [256]u8 = undefined;
+        try self.bodyPrint("    {{test, is_map, {{f, {d}}}, [{{x, 0}}]}}.\n", .{fail_label});
         try self.bodyPrint(
             "    {{get_map_elements, {{f, {d}}}, {{x, 0}}, {{list, [{{atom, {s}}}, {{x, {d}}}]}}}}.\n",
-            .{ fail_label, ia.member, dest },
+            .{ fail_label, try atomName(ia.member, &member_buf), dest },
         );
         try self.bodyPrint("  {{label, {d}}}.\n", .{fail_label});
     }

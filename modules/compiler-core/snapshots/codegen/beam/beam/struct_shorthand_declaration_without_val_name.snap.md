@@ -38,7 +38,8 @@ struct Counter {
     {func_info, {atom, main}, {atom, 'Counter_count'}, 1}.
   {label, 5}.
     {allocate, 0, 1}.
-    {get_map_elements, {f, 6}, {x, 0}, {list, [{atom, _count}, {x, 0}]}}.
+    {test, is_map, {f, 6}, [{x, 0}]}.
+    {get_map_elements, {f, 6}, {x, 0}, {list, [{atom, '_count'}, {x, 0}]}}.
   {label, 6}.
     {deallocate, 0}.
     return.

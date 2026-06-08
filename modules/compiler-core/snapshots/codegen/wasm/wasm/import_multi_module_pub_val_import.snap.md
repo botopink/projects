@@ -31,6 +31,8 @@ val port = PORT;
 (module
   (memory (export "memory") 1)
   (global $__heap_ptr (mut i32) (i32.const 256))
+  ;; cross-module import not linked (wasm single-module): PORT from config
+  ;; cross-module import not linked (wasm single-module): HOST from config
   (global $addr (mut i32) (i32.const 0))
   (global $port (mut i32) (i32.const 0))
 )

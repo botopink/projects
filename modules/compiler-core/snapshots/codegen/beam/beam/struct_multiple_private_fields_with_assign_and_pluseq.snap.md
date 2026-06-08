@@ -59,7 +59,8 @@ val BankAccount = struct {
     {func_info, {atom, main}, {atom, 'BankAccount_balance'}, 1}.
   {label, 7}.
     {allocate, 0, 1}.
-    {get_map_elements, {f, 10}, {x, 0}, {list, [{atom, _balance}, {x, 0}]}}.
+    {test, is_map, {f, 10}, [{x, 0}]}.
+    {get_map_elements, {f, 10}, {x, 0}, {list, [{atom, '_balance'}, {x, 0}]}}.
   {label, 10}.
     {deallocate, 0}.
     return.
@@ -70,7 +71,8 @@ val BankAccount = struct {
     {func_info, {atom, main}, {atom, 'BankAccount_owner'}, 1}.
   {label, 9}.
     {allocate, 0, 1}.
-    {get_map_elements, {f, 11}, {x, 0}, {list, [{atom, _owner}, {x, 0}]}}.
+    {test, is_map, {f, 11}, [{x, 0}]}.
+    {get_map_elements, {f, 11}, {x, 0}, {list, [{atom, '_owner'}, {x, 0}]}}.
   {label, 11}.
     {deallocate, 0}.
     return.
