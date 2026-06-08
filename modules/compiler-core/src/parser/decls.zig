@@ -456,6 +456,8 @@ pub fn parseInterfaceBody(this: *This, alloc: std.mem.Allocator, name: []const u
 
     var trailingComma = false;
     while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
+        this.skipComments();
+        if (this.check(.rightBrace) or this.check(.endOfFile)) break;
         if (this.check(.val)) {
             _ = this.match(.@"pub");
             _ = try this.consume(.val);
@@ -757,6 +759,8 @@ pub fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
 
     var trailingComma = false;
     while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
+        this.skipComments();
+        if (this.check(.rightBrace) or this.check(.endOfFile)) break;
         // Check if this is a method (fn/pub/declare)
         if (this.check(.@"pub") or this.check(.declare) or this.check(.@"fn")) {
             const is_pub = this.match(.@"pub");

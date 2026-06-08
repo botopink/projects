@@ -7,9 +7,10 @@
 | Spec | Header status | Branch `task/<slug>` | Worktree `.tasks/<slug>` | TODO.md |
 |---|---|---|---|---|
 | [generic-inference](specs/generic-inference.md) | pending | — | — | — |
-| [stdlib-interface](specs/stdlib-interface.md) | pending | — | — | — |
+| [stdlib-interface](specs/stdlib-interface.md) | src+wiring done; compiler integration in progress | task/generic-inference | .tasks/generic-inference | — |
 | [backend-parity](specs/backend-parity.md) | pending | — | — | — |
 | [tooling-update](specs/tooling-update.md) | pending | — | — | — |
+| [editor-experience](specs/editor-experience.md) | pending | — | — | — |
 
 ## Notes
 

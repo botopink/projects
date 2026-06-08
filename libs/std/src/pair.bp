@@ -1,29 +1,58 @@
-//// Gleam-style `pair` module (`import {pair} from "std";`), inspired by
-//// `gleam/pair`. A pair IS a 2-tuple `#(a, b)` (same as Gleam) — structural,
-//// so no generic-record instantiation is involved. Pure logic, compiles once
-//// for every backend.
+//// Gleam-style `pair` module, modelled as `interface Pair`. A pair IS a
+//// 2-tuple `#(a, b)` — structural, so no own record type; the operations are
+//// associated functions (no `self`) over tuples. Pure botopink — `default`
+//// bodies, compiles once for every backend.
 
-// NOTE: named `of` (not `new`) — `new` is a reserved keyword.
-pub fn of<A, B>(first: A, second: B) -> #(A, B) {
-    return #(first, second);
+interface Pair {
+    // NOTE: named `of` (not `new`) — `new` is a reserved keyword.
+    default fn of<A, B>(first: A, second: B) -> #(A, B) {
+        return #(first, second);
+    }
+
+    default fn first<A, B>(p: #(A, B)) -> A {
+        return p._0;
+    }
+
+    default fn second<A, B>(p: #(A, B)) -> B {
+        return p._1;
+    }
+
+    default fn swap<A, B>(p: #(A, B)) -> #(B, A) {
+        return #(p._1, p._0);
+    }
+
+    default fn mapFirst<A, B, C>(p: #(A, B), transform: fn(value: A) -> C) -> #(C, B) {
+        return #(transform(p._0), p._1);
+    }
+
+    default fn mapSecond<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) {
+        return #(p._0, transform(p._1));
+    }
 }
 
-pub fn first<A, B>(p: #(A, B)) -> A {
-    return p._0;
+test "pair of, first, second" {
+    val p = Pair.of(1, "one");
+    assert Pair.first(p) == 1;
+    assert Pair.second(p) == "one";
 }
 
-pub fn second<A, B>(p: #(A, B)) -> B {
-    return p._1;
+test "pair swap" {
+    val p = Pair.of(1, "one");
+    val q = Pair.swap(p);
+    assert Pair.first(q) == "one";
+    assert Pair.second(q) == 1;
 }
 
-pub fn swap<A, B>(p: #(A, B)) -> #(B, A) {
-    return #(p._1, p._0);
+test "pair mapFirst" {
+    val p = Pair.of(2, "x");
+    val a = Pair.mapFirst(p, { n -> n * 10 });
+    assert Pair.first(a) == 20;
+    assert Pair.second(a) == "x";
 }
 
-pub fn mapFirst<A, B, C>(p: #(A, B), transform: fn(value: A) -> C) -> #(C, B) {
-    return #(transform(p._0), p._1);
-}
-
-pub fn mapSecond<A, B, C>(p: #(A, B), transform: fn(value: B) -> C) -> #(A, C) {
-    return #(p._0, transform(p._1));
+test "pair mapSecond" {
+    val p = Pair.of(2, "x");
+    val b = Pair.mapSecond(p, { s -> s + "!" });
+    assert Pair.first(b) == 2;
+    assert Pair.second(b) == "x!";
 }

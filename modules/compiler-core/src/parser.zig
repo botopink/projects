@@ -993,6 +993,14 @@ pub const Parser = struct {
         return t;
     }
 
+    /// Consume any run of comment tokens. Used inside type/interface/record
+    /// bodies, whose member loops don't model comments as members.
+    pub fn skipComments(this: *This) void {
+        while (this.check(.commentNormal) or this.check(.commentDoc) or this.check(.commentModule)) {
+            _ = this.advance();
+        }
+    }
+
     pub fn peek(this: *This) Token {
         return this.tokens[this.current];
     }
