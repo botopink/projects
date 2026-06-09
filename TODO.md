@@ -9,27 +9,31 @@
 > coupled exception; the gate binds rakun/jhonstart/future frameworks.
 
 ## P0 — generic package loader (de-lib the core; std excepted)
-- [ ] `from "<lib>"` resolves any external **non-std** lib by name through one
-      lib-agnostic mechanism (discover `libs/<name>/` via the manifest); no per-lib
-      `@embedFile`, no `rakun_pkg_modules`, no `registerRakunLib`. `std` keeps its
-      embedded-prelude path.
-- [ ] Delete every `rakun`/`service`/`Response`/HTTP-verb reference from
-      `modules/compiler-core/src/**` (incl. `validateRakun*` + the
-      `rakunExports`/`rakunTypeDecls`/`rakunImports` env fields).
+- [~] `from "<lib>"` resolves any external **non-std** lib by name through one
+      lib-agnostic mechanism; no per-lib `@embedFile`, no `rakun_pkg_modules`, no
+      `registerRakunLib`. `std` keeps its embedded-prelude path. DONE for
+      co-compiled modules: non-std lib `.bp` sources passed in `Module[]` resolve
+      `from "<lib>"` through the shared import registry (same path the
+      `from "http"` cross-module test exercises) — the embed/registry/loader
+      rakun code is all gone. REMAINING: the CLI driver should *discover*
+      `libs/<name>/` on disk (manifest deps) and feed those modules in — a
+      `compiler-cli` change with no in-repo test fixture yet (tracked).
+- [x] Delete every `rakun` reference from `modules/compiler-core/src/**` (incl.
+      the `rakunExports`/`rakunTypeDecls` env fields, `registerRakunLib`,
+      `markRakunImports`, `buildDelegateType`, `registerRakunTypeDecl`,
+      `expandRakunImports`, `isRakunPkgPath`, `rakun_pkg_modules`, the
+      `prelude.zig` embeds, and both `build.zig` `@embedFile`s). `validateRakun*`
+      never existed (planned-only). Codegen example comments de-named.
 - [x] Fold `comptime/tests/jhonstart.zig` into the generic suites — N/A on this
       branch: `grep -riE jhonstart modules/compiler-core/src` already returns
       nothing (the file/comments don't exist here; the earlier scan was wrong).
       So the gate's `jhonstart` half is already satisfied.
-- [ ] Gate as a test: `grep -riE "rakun|jhonstart" modules/compiler-core/src`
-      returns nothing (std exempt). CURRENT: 93 `rakun` hits across comptime.zig
-      (registerRakunLib/rakun_pkg_modules/isRakunPkgPath/expandRakunImports),
-      env.zig (rakunExports/rakunTypeDecls), infer.zig (markRakunImports/
-      buildDelegateType/registerRakunTypeDecl), prelude.zig (rakun embeds), and
-      codegen example comments (logic already generic). CONSTRAINT: pre-commit
-      runs `libs/rakun (.bp)` tests — deletion must keep `from "rakun"` resolving
-      via the generic path (concrete types already cross via the shared registry;
-      decorator sigs + boundary-interface type decls must be exported cross-module
-      like template fns are), or those tests break.
+- [x] Gate as a test: `grep -riE "rakun|jhonstart" modules/compiler-core/src`
+      returns nothing (std exempt). Wired as a `zig build test` step in `build.zig`
+      (`lib_agnostic_gate`: `! grep -riIE 'rakun|jhonstart' modules/compiler-core/src`,
+      `has_side_effects` so it always re-scans). `libs/rakun (.bp)` tests stay
+      green — they compile the lib's own local sources, not an external
+      `from "rakun"`.
 
 ## P1 — recognition + generic argument validation
 - [x] Recognize a decorator by signature: a `pub fn`/`declare fn` whose first param

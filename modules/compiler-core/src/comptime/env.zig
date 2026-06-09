@@ -354,15 +354,6 @@ pub const Env = struct {
     /// Stdlib modules implicitly required via array method dispatch; used by
     /// the compile session to prepend synthetic imports for the codegen.
     implicitStdModules: std.StringHashMap(void),
-    /// "rakun" framework value exports (decorator fns + interface associated
-    /// fns), name → inferred type. Populated by `registerRakunLib`; consumed by
-    /// `markRakunImports` to bind imported decorators (`#[service]`) and to
-    /// type-check annotation arguments (F3). rakun is opt-in per module — these
-    /// only enter scope via `import {…} from "rakun"`, never auto-loaded.
-    rakunExports: std.StringHashMap(*T.Type),
-    /// "rakun" framework type declarations (interface / enum), keyed by name.
-    /// `markRakunImports` registers the imported ones into the importing env.
-    rakunTypeDecls: std.StringHashMap(ast.DeclKind),
     /// Decorators recognized in this module (and its imports), name → trailing
     /// signature. A decorator is any fn whose first param is `comptime _: @Decl`;
     /// this is the lib-agnostic registry used to type-check `#[d(args)]` argument
@@ -405,8 +396,6 @@ pub const Env = struct {
             .stdModuleTypes = std.StringHashMap([]const ast.DeclKind).init(arena),
             .stdArrayLowerings = std.AutoHashMap(ast.Loc, StdArrayLowering).init(arena),
             .implicitStdModules = std.StringHashMap(void).init(arena),
-            .rakunExports = std.StringHashMap(*T.Type).init(arena),
-            .rakunTypeDecls = std.StringHashMap(ast.DeclKind).init(arena),
             .decorators = std.StringHashMap(DecoratorSig).init(arena),
         };
     }
@@ -448,10 +437,6 @@ pub const Env = struct {
         self.stdModuleTypes.deinit();
         self.stdArrayLowerings.deinit();
         self.implicitStdModules.deinit();
-        // rakun registries mirror stdModules: outer maps are ours, the type
-        // values live in the shared arena.
-        self.rakunExports.deinit();
-        self.rakunTypeDecls.deinit();
         self.decorators.deinit();
     }
 

@@ -69,7 +69,8 @@ test "decorator: string-arg marker on a method (interface site)" {
 }
 
 test "decorator: declared as a `declare fn` marker (delegate form)" {
-    // rakun ships its markers as bodyless `declare fn`s — recognized identically.
+    // A framework lib may ship its markers as bodyless `declare fn`s — the core
+    // recognizes that form identically (first param `comptime _: @Decl`).
     try h.assertInfersOk(std.testing.allocator,
         \\declare fn component(comptime decl: @Decl);
         \\

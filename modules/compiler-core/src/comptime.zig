@@ -171,14 +171,6 @@ fn analyzeModule(
 /// so project-root imports never see them.
 pub const std_pkg_modules = @import("std_prelude").pkg_modules;
 
-/// The "rakun" package: concrete framework modules importable via
-/// `import {…} from "rakun";` (the declaration-only markers/interfaces live in
-/// `rakun.d.bp` and are handled by `registerRakunLib`, not here). Prepended to
-/// the compilation — and emitted — only when a module imports from rakun.
-pub const rakun_pkg_modules = [_]Module{
-    .{ .path = "rakun/http", .source = @import("std_prelude").rakun_http },
-};
-
 /// Embedded builtin-type interface declarations. Unlike `std_pkg_modules`
 /// these are flattened into the global type env at infer time (they declare the
 /// methods available on primitives / arrays / strings). Tooling — the language
@@ -233,44 +225,6 @@ fn expandStdImports(arena: std.mem.Allocator, modules: []const Module) ![]const 
     for (std_pkg_modules, 0..) |spm, i| {
         if (needed[i]) try out.append(arena, .{ .path = spm.path, .source = spm.source });
     }
-    try out.appendSlice(arena, modules);
-    return out.toOwnedSlice(arena);
-}
-
-/// True when `path` is a "rakun" package registry key (`rakun/<module>`).
-fn isRakunPkgPath(path: []const u8) bool {
-    return std.mem.startsWith(u8, path, "rakun/");
-}
-
-/// Scans `modules` for `import {…} from "rakun"` and, if any is present,
-/// prepends the concrete rakun package modules (`rakun_pkg_modules`) so their
-/// real types (`Response`/`App`/`HttpMethod`) are compiled + emitted once and
-/// resolved into importers via the shared registry. Decorator markers and the
-/// runtime-boundary interfaces stay declaration-only (`registerRakunLib`).
-/// Modules that fail to parse pass through untouched.
-fn expandRakunImports(arena: std.mem.Allocator, modules: []const Module) ![]const Module {
-    var any = false;
-    for (modules) |mod| {
-        var lx = Lexer.init(mod.source);
-        const tokens = lx.scanAll(arena) catch continue;
-        var p = Parser.init(tokens);
-        const program = p.parse(arena) catch continue;
-        for (program.decls) |decl| switch (decl) {
-            .use => |u| {
-                const from_rakun = switch (u.source) {
-                    .module => |m| std.mem.eql(u8, m, "rakun"),
-                    .root => false,
-                };
-                if (from_rakun) any = true;
-            },
-            else => {},
-        };
-        if (any) break;
-    }
-    if (!any) return modules;
-
-    var out: std.ArrayListUnmanaged(Module) = .empty;
-    try out.appendSlice(arena, &rakun_pkg_modules);
     try out.appendSlice(arena, modules);
     return out.toOwnedSlice(arena);
 }
@@ -448,70 +402,6 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         }
         try env.stdModules.put(mod_name, exports);
     }
-
-    try registerRakunLib(env);
-}
-
-/// Parse the embedded `rakun.d.bp` and record its public surface in the
-/// import registries (`env.rakunExports`, `env.rakunTypeDecls`) WITHOUT
-/// flattening anything into scope. A module reaches these symbols only via
-/// `import {…} from "rakun"` (see `infer.markRakunImports`): rakun is an
-/// application-level lib — opt-in per module, never auto-loaded into the env.
-///
-/// Inferred in a scratch env (sharing `env.arena` so the resulting types/decls
-/// outlive the scratch maps), mirroring the `std_pkg_modules` loop above.
-fn registerRakunLib(env: *Env) anyerror!void {
-    const prelude = @import("std_prelude");
-
-    var env2 = Env.init(env.arena);
-    defer env2.deinit();
-    try env2.registerBuiltins();
-    try env2.bind("true", try env2.namedType("bool"));
-    try env2.bind("false", try env2.namedType("bool"));
-    // Primitive interfaces (string / i32 / Array<T> / …) so the decorator and
-    // HTTP/DI signatures type-check.
-    {
-        var lx = Lexer.init(prelude.primitives);
-        const tokens = try lx.scanAll(env.arena);
-        var p = Parser.init(tokens);
-        const program = try stripTestDecls(try p.parse(env.arena), env.arena);
-        _ = try infer.inferProgram(&env2, program);
-    }
-
-    // Both rakun sources feed the inference registries so `from "rakun"`
-    // resolves in every harness. `rakun.d.bp` carries the markers + boundary
-    // interfaces; `http.bp` carries the concrete types — the latter are ALSO
-    // prepended + emitted as the `rakun/http` package module in `compile`
-    // (`expandRakunImports`), where `resolveImports` binds them from the shared
-    // registry (so `markRakunImports` then skips the local registration below).
-    const sources = [_][]const u8{ prelude.rakun, prelude.rakun_http };
-    for (sources) |src| {
-        var lx = Lexer.init(src);
-        const tokens = try lx.scanAll(env.arena);
-        var p = Parser.init(tokens);
-        const program = try stripTestDecls(try p.parse(env.arena), env.arena);
-        for (program.decls) |decl| {
-            switch (decl) {
-                // Type surface (`Request`/`Context`/`Rakun` interfaces,
-                // `Response`/`App`/`HttpMethod` concrete) — registered into the
-                // importing env so its name resolves and associated fns
-                // (`Response.json`) bind.
-                .interface => |d| try env.rakunTypeDecls.put(d.name, decl),
-                .@"enum" => |d| try env.rakunTypeDecls.put(d.name, decl),
-                .record => |d| try env.rakunTypeDecls.put(d.name, decl),
-                .@"struct" => |d| try env.rakunTypeDecls.put(d.name, decl),
-                // Decorator markers (`service`, `getMapping(path)`, …) parse as
-                // `declare fn` delegates. Expose each as a callable type: bound
-                // by name into a module that imports it, and its signature
-                // drives F3 annotation-argument checking.
-                .delegate => |d| {
-                    if (!d.isPub) continue;
-                    try env.rakunExports.put(d.name, try infer.buildDelegateType(&env2, d));
-                },
-                else => {},
-            }
-        }
-    }
 }
 
 /// Re-export so callers use `comptime.zig` as sole entry point.
@@ -572,8 +462,10 @@ pub fn compileTypesOnly(
     var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
-    const std_expanded = try expandStdImports(arena_alloc, modules);
-    const all_modules = try expandRakunImports(arena_alloc, std_expanded);
+    // Non-std libs are ordinary input modules: the driver supplies their `.bp`
+    // sources and `resolveImports` binds `from "<lib>"` through the shared
+    // registry — the core names no specific lib (std is the one exception).
+    const all_modules = try expandStdImports(arena_alloc, modules);
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
@@ -711,8 +603,10 @@ pub fn compile(
     var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
-    const std_expanded = try expandStdImports(arena_alloc, modules);
-    const all_modules = try expandRakunImports(arena_alloc, std_expanded);
+    // Non-std libs are ordinary input modules: the driver supplies their `.bp`
+    // sources and `resolveImports` binds `from "<lib>"` through the shared
+    // registry — the core names no specific lib (std is the one exception).
+    const all_modules = try expandStdImports(arena_alloc, modules);
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";

@@ -49,7 +49,7 @@ comptime/
 | File | Role |
 |---|---|
 | `types.zig` | All type representations as `union(enum)`. |
-| `env.zig` | Type environment — scopes, builtins + stdlib, `TypeDef.contextBase`, `FnContext`, static-extension-dispatch tables (`extensions`, `activations`, `inherentMethods`, `dispatchRewrites`), the `"std"` package tables (`stdModules`: module → fn exports; `stdModuleTypes`: module → pub type decls, registered into the importer by `markStdImports` — type export; `stdImports`: names imported via `from "std"` — explicit import wins over same-named value bindings like the primitive `bool`), the opt-in `"rakun"` framework tables (`rakunExports`: decorator name → delegate fn type; `rakunTypeDecls`: name → interface/enum decl — both filled by `comptime.zig registerRakunLib` from the embedded `libs/rakun/src/rakun.d.bp`, and brought into a module only by `markRakunImports` on `from "rakun"`, never auto-loaded), the lib-agnostic `decorators` table (decorator name →
+| `env.zig` | Type environment — scopes, builtins + stdlib, `TypeDef.contextBase`, `FnContext`, static-extension-dispatch tables (`extensions`, `activations`, `inherentMethods`, `dispatchRewrites`), the `"std"` package tables (`stdModules`: module → fn exports; `stdModuleTypes`: module → pub type decls, registered into the importer by `markStdImports` — type export; `stdImports`: names imported via `from "std"` — explicit import wins over same-named value bindings like the primitive `bool`), the lib-agnostic `decorators` table (decorator name →
 `DecoratorSig{ params }`, filled by `registerDecoratorSig` for any fn/delegate whose
 first param is `comptime _: @Decl`; drives `#[d(args)]` argument checking), and the loc-keyed lowering maps `method_lowerings` (`@Result`/`@Option` methods + the builtin `result` namespace, `qualified` flag) + `result_jump_lowerings` (`return`/`throw` → `__bp_ok`/`__bp_error` in `*fn -> @Result` fns) + `jsMethodRenames` (type-directed JS-only method renames, e.g. `string` `contains` → native `includes`; recorded only when the receiver's static type makes a global name-map unsafe, since `record Set` also declares `contains`). |
 | `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. `registerExtensions` pre-pass + `resolveReceiverCall` implement F6 static extension dispatch. `registerFnSignatures` pre-pass (via `buildFnSignatureType`) binds every top-level `fn` signature *before* any body is inferred, so mutually-recursive / forward-referenced top-level fns resolve (a fn's signature is fully determined by its declared param/return types + generics, so the pre-pass type matches the one `inferFnDecl` re-derives for self-recursion). Ends with `validateProgram` — `implement`/interface coverage + getter/setter type checks. Top-level `test { … }` bodies type-check like void `fn` bodies via `inferTestDecl` (no binding produced); `assert cond` unifies `cond` with `bool`. |
@@ -151,7 +151,7 @@ it never knows what a marker means (that lives in the lib body, in `.bp`).
   and `delegate`; when the first param is `comptime _: @Decl` it records the
   trailing signature (everything after the handle) in `env.decorators`
   (name → `DecoratorSig{ params }`). This is the lib-agnostic registry that
-  replaces the rakun-specific `rakunExports` role for marker arg-checking.
+  replaces bespoke per-lib marker handling for arg-checking.
 - `validateDecorators` (pass 3, before `validateProgram`) walks every
   declaration's `annotations` — record/struct/enum/fn/interface + their methods —
   and for each `#[name(args)]` whose `name` is a recognized decorator,
@@ -160,7 +160,7 @@ it never knows what a marker means (that lives in the lib body, in `.bp`).
   member), mirroring `validateExternalAnnotation`. Unknown markers stay lenient
   (a lib may simply not be loaded); placement rules are the decorator body's job.
 - Field-site and record/struct *method*-site annotations are a parser gap today
-  (annotations only parse on interface methods); to be closed when the rakun
+  (annotations only parse on interface methods); to be closed when a framework
   migration (P2) needs them.
 
 ## `@Context<B, R>` capability inference (F7)
