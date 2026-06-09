@@ -236,3 +236,66 @@ pub interface Expr<E> {
     fn fail(self: Self, message: string)
     fn failAt(self: Self, span: Span, message: string)
 }
+
+// ── @Decl reflection model (annotation processors) ─────────────────────────────
+// Read-only reflection of the declaration a decorator is attached to. A decorator
+// is an ordinary comptime function whose first parameter is `comptime _: @Decl`;
+// when `#[d(args)]` is applied, the core serializes the annotated declaration into
+// a `@Decl` handle and runs the body, exactly like an `@Expr` template capture.
+// The lib (rakun, …) — never the core — gives the marker meaning: validate
+// placement/arguments via `fail`/`failAt`, and (later) contribute generated
+// wiring. The core only provides the protocol (recognize → reflect → invoke).
+
+// Which kind of top-level declaration the annotation sits on.
+pub enum DeclKind {
+    Record,
+    Struct,
+    Enum,
+    Fn,
+    Method,
+    Field,
+}
+
+// One annotation entry on a reflected declaration (`#[name(args…)]`). `args`
+// holds the raw argument lexemes in source order.
+pub struct Annotation {
+    name: string,
+    args: string[],
+}
+
+// One parameter of a reflected method/fn.
+pub struct Param {
+    name: string,
+    typeName: string,
+}
+
+// One field of a reflected record/struct, with its own annotations.
+pub struct Field {
+    name: string,
+    typeName: string,
+    annotations: Annotation[],
+}
+
+// One method of a reflected record/struct/enum, with its own annotations.
+pub struct Method {
+    name: string,
+    params: Param[],
+    returnType: string,
+    annotations: Annotation[],
+}
+
+// The reflection handle. `kind`/`name`/`fields`/`methods`/`returnType`/
+// `annotations` are read-only data (serialized like a template's capture);
+// `fail`/`failAt` emit a scoped diagnostic at the annotated declaration, reusing
+// the template diagnostic surface.
+pub interface Decl {
+    val kind: DeclKind
+    val name: string
+    val fields: Field[]
+    val methods: Method[]
+    val returnType: string
+    val annotations: Annotation[]
+
+    fn fail(self: Self, message: string)
+    fn failAt(self: Self, span: Span, message: string)
+}

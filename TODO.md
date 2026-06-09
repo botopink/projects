@@ -27,7 +27,9 @@
       is `comptime _: @Decl`; record per importing module (generic registry).
 - [ ] `#[d(args)]` type-checks `args` against the decorator signature (arity +
       types) at any site (record/struct/enum/method/field/fn).
-- [ ] Declare `@Decl` builtin reflection type + `DeclKind` in `builtins.d.bp`.
+- [x] Declare `@Decl` builtin reflection type + `DeclKind` in `builtins.d.bp`.
+      (`DeclKind`/`Annotation`/`Param`/`Field`/`Method` + `interface Decl`;
+      `TypeRef.isDeclType` recognizes bare `@Decl`.)
 
 ## P2 — comptime invocation + diagnostics
 - [ ] Serialize the annotated declaration to the `@Decl` handle.
