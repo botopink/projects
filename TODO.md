@@ -1,42 +1,43 @@
-# TODO — implement-completeness
+# TODO — rakun (port onto annotation-processors)
 
-> Live checklist for branch `task/implement-completeness` (worktree
-> `.tasks/implement-completeness/`).
-> Spec (intent, immutable): [`tasks/v0.beta.6/specs/implement-completeness.md`](tasks/v0.beta.6/specs/implement-completeness.md)
+> Task branch `task/rakun-port` · spec
+> [`tasks/v0.beta.7/specs/rakun.md`](../../tasks/v0.beta.7/specs/rakun.md).
+> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test.
+>
+> ⛔ **BLOCKED on `annotation-processors`.** rakun is a pure-`.bp` client of the
+> generic decorator mechanism — it cannot start until that lands in `feat`. When
+> it does, `git merge feat` into this worktree, then implement all semantics in
+> `libs/rakun/*.bp` (lib-side decorator bodies), **no new compiler-core code**.
+>
+> 📎 The interim core-coupled F2/F3 reference implementation is preserved on the
+> `task/rakun` branch (`feb96f0`) — port the *behaviour*, do not merge that Zig.
 
-> **Goal**: `implement` parses + codegens in every documented form. Surfaced
-> attaching `@Context` to jhonstart's `Element` (G5–G7). G7 is a **correctness
-> bug** (inline `struct implement` values drop their fields at runtime) — fix it
-> first. Files: `parser/decls.zig`, `parser/types.zig`, `codegen/commonJS.zig`,
-> `codegen/erlang.zig`.
+## F2 — IoC container (lib-side, on annotation-processors)
+- [ ] Comptime component scan: every `#[component]`/`#[service]`/`#[repository]`/
+      `#[controller]`/`#[restController]` record in the unit.
+- [ ] DI graph: a field whose type is a known component ⇒ a dependency edge;
+      topo-sort; cycle → scoped diagnostic.
+- [ ] Singleton scope (one instance per component type).
+- [ ] `#[configuration]`+`#[bean]` factory contribution; `#[value("key")]` property.
 
-## F0 — parser
-- [x] G5: array-typed (and other suffixed) fields inside an inline
-      `struct implement … { … }` body — `parseStructBody` now uses `parseTypeRef`;
-      `StructField.typeName` → `typeRef: TypeRef`. Test:
-      `parser: struct implement with array-typed field`.
-- [x] G6: generic interface (`Iface<A,B>`, incl. `@Context<…>`) in standalone
-      `implement <Iface> for <Type> { }` — `ImplementDecl.interfaces` →
-      `[]TypeRef`, parsed via `parseTypeRef`. Test:
-      `parser: implement generic interface for type`.
+## F3 — annotation argument validation
+- [ ] Type-check `#[decorator(args)]` against the decorator signature (arity + types).
+- [ ] Clear diagnostic for a marker on the wrong target.
 
-## F1 — codegen (the real bug, prioritize)
-- [x] G7: inline `struct implement … { fields }` emits a real constructor that
-      assigns fields (matching `record`) — `emitStruct` in `commonJS.zig` now
-      emits `constructor(...)` (field inits → param defaults). Erlang already
-      lowered struct construction to a `#{…}` map via `collectTypeShapes`, so it
-      had parity already. node + erlang RUN LOGs both print `5`.
+## F4 — web layer / router
+- [ ] `route` + `getMapping|postMapping|putMapping|patchMapping|deleteMapping(path)`
+      → router table `{ method, path, handler }`.
+- [ ] Path params (`:name`) → `req.param("name")`.
+- [ ] `Response` builders type-check against the handler return type.
 
-## F2 — regression coverage
-- [x] `js: struct implement ---- fields round-trip at runtime` — runs `mk().n`
-      on every backend; node + erlang snapshots assert `5` (was `undefined`).
+## F5 — bootstrap (`Rakun.run` + real HTTP backing)
+- [ ] Promote `libs/server` from scaffold to a real minimal HTTP server (node
+      first, then erlang) behind `#[@external]` host calls.
+- [ ] `Request` gets a concrete server-supplied impl (`param`/`query`/`header`/`body`).
+- [ ] `Rakun.run(app)` lowers (lib-driven): scan → instantiate singletons →
+      register router → start server on `app.port`/`basePath`.
+- [ ] e2e: a request to a mapped route invokes the handler and returns its `Response`.
 
-## Notes
-- jhonstart V1 already dodges all three (`record … implement @Context`), so this
-  unblocks the *next* phase, not the green core. The broken forms are now fixed.
-- Out of scope: beam/wasm struct-field round-trip is still incomplete (the test
-  snapshots record their current — wrong/empty — output); spec only required
-  node + erlang parity. Labeled-arg reordering is unchanged from `record`
-  (call site emits args in written order).
-- Docs updated: `docs.md` §Implement (generic interface + inline struct-implement
-  with fields), `codegen/AGENTS.md` (struct constructor emission).
+## Done gate
+- [ ] Tests live in `libs/rakun/*.bp` (`botopink test`), not compiler Zig suites.
+- [ ] `grep -riE "rakun" modules/compiler-core/src` still returns nothing.
