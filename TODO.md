@@ -16,11 +16,20 @@
 - [ ] Delete every `rakun`/`service`/`Response`/HTTP-verb reference from
       `modules/compiler-core/src/**` (incl. `validateRakun*` + the
       `rakunExports`/`rakunTypeDecls`/`rakunImports` env fields).
-- [ ] Fold `comptime/tests/jhonstart.zig` into the generic suites
-      (`effects.zig`/`templates.zig` + context-inference/expr-templates `check`),
-      drop the barrel import, de-name the jhonstart comments in `infer.zig`.
+- [x] Fold `comptime/tests/jhonstart.zig` into the generic suites — N/A on this
+      branch: `grep -riE jhonstart modules/compiler-core/src` already returns
+      nothing (the file/comments don't exist here; the earlier scan was wrong).
+      So the gate's `jhonstart` half is already satisfied.
 - [ ] Gate as a test: `grep -riE "rakun|jhonstart" modules/compiler-core/src`
-      returns nothing (std exempt).
+      returns nothing (std exempt). CURRENT: 93 `rakun` hits across comptime.zig
+      (registerRakunLib/rakun_pkg_modules/isRakunPkgPath/expandRakunImports),
+      env.zig (rakunExports/rakunTypeDecls), infer.zig (markRakunImports/
+      buildDelegateType/registerRakunTypeDecl), prelude.zig (rakun embeds), and
+      codegen example comments (logic already generic). CONSTRAINT: pre-commit
+      runs `libs/rakun (.bp)` tests — deletion must keep `from "rakun"` resolving
+      via the generic path (concrete types already cross via the shared registry;
+      decorator sigs + boundary-interface type decls must be exported cross-module
+      like template fns are), or those tests break.
 
 ## P1 — recognition + generic argument validation
 - [x] Recognize a decorator by signature: a `pub fn`/`declare fn` whose first param
