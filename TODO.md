@@ -1,42 +1,33 @@
-# TODO — implement-completeness
+# TODO — stdlib-backends-parity
 
-> Live checklist for branch `task/implement-completeness` (worktree
-> `.tasks/implement-completeness/`).
-> Spec (intent, immutable): [`tasks/v0.beta.6/specs/implement-completeness.md`](tasks/v0.beta.6/specs/implement-completeness.md)
+> Task branch `task/stdlib-backends-parity` · spec
+> [`tasks/v0.beta.7/specs/stdlib-backends-parity.md`](../../tasks/v0.beta.7/specs/stdlib-backends-parity.md).
+> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test.
+> Independent / parallel-safe with `annotation-processors`. No framework knowledge;
+> stdlib coupling in the core is allowed (this spec de-couples nothing).
 
-> **Goal**: `implement` parses + codegens in every documented form. Surfaced
-> attaching `@Context` to jhonstart's `Element` (G5–G7). G7 is a **correctness
-> bug** (inline `struct implement` values drop their fields at runtime) — fix it
-> first. Files: `parser/decls.zig`, `parser/types.zig`, `codegen/commonJS.zig`,
-> `codegen/erlang.zig`.
+## A1 — mirror JS instance/associated-method lowering on the other backends
+- [ ] Port commonJS instance + associated-method lowering (Array/Bool/numeric/
+      String + `Pair.of`/`Function.compose`) to `erlang.zig`, `beam_asm.zig`, `wat.zig`.
+- [ ] `std_erlang.sh` suite green (parity with the node suite).
 
-## F0 — parser
-- [x] G5: array-typed (and other suffixed) fields inside an inline
-      `struct implement … { … }` body — `parseStructBody` now uses `parseTypeRef`;
-      `StructField.typeName` → `typeRef: TypeRef`. Test:
-      `parser: struct implement with array-typed field`.
-- [x] G6: generic interface (`Iface<A,B>`, incl. `@Context<…>`) in standalone
-      `implement <Iface> for <Type> { }` — `ImplementDecl.interfaces` →
-      `[]TypeRef`, parsed via `parseTypeRef`. Test:
-      `parser: implement generic interface for type`.
+## A2 (remainder) — `@[external]` associated fns
+- [ ] `Array.range`/`Array.repeat` + other `@[external]` associated fns lower on
+      every backend; ship companion host modules (`primitives.mjs`/`.erl`).
 
-## F1 — codegen (the real bug, prioritize)
-- [x] G7: inline `struct implement … { fields }` emits a real constructor that
-      assigns fields (matching `record`) — `emitStruct` in `commonJS.zig` now
-      emits `constructor(...)` (field inits → param defaults). Erlang already
-      lowered struct construction to a `#{…}` map via `collectTypeShapes`, so it
-      had parity already. node + erlang RUN LOGs both print `5`.
+## A3 — inference correctness
+- [ ] Type-check `default fn` bodies (not just signatures).
+- [ ] Generic-extends-generic (`implement Foo<A> for Bar<A>`).
+- [ ] Parse + infer literal method receivers (`[1,2].map(...)`, `"x".contains(...)`).
 
-## F2 — regression coverage
-- [x] `js: struct implement ---- fields round-trip at runtime` — runs `mk().n`
-      on every backend; node + erlang snapshots assert `5` (was `undefined`).
+## B — backend-parity F1–F6
+- [ ] F1 literal method receivers reach codegen on every backend.
+- [ ] F2 snake_case→camelCase dispatch normalization.
+- [ ] F3 erlang/beam load std modules the way node does.
+- [ ] F4 `?.` optional-chaining codegen on erlang/beam/wasm.
+- [ ] F5 wasm test runner (`wasmtime`) so `botopink test` runs on wasm.
+- [ ] F6 duplicate test-name warning.
 
-## Notes
-- jhonstart V1 already dodges all three (`record … implement @Context`), so this
-  unblocks the *next* phase, not the green core. The broken forms are now fixed.
-- Out of scope: beam/wasm struct-field round-trip is still incomplete (the test
-  snapshots record their current — wrong/empty — output); spec only required
-  node + erlang parity. Labeled-arg reordering is unchanged from `record`
-  (call site emits args in written order).
-- Docs updated: `docs.md` §Implement (generic interface + inline struct-implement
-  with fields), `codegen/AGENTS.md` (struct constructor emission).
+## Done gate
+- [ ] `zig build && zig build test` green; `std_erlang.sh` green.
+- [ ] `codegen/AGENTS.md` + `comptime/AGENTS.md` updated.
