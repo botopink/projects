@@ -2,9 +2,27 @@
 
 **Slug**: erika
 **Depends on**: **nothing** — pure botopink over `Array<T>`; the `erika "…"` syntax is built on the **existing `@Expr` template machinery** (`expr-templates`, already in `feat`). Fully parallel-touchable: it shares **no deliverable** with any other v0.beta.6 spec (see "Parallelism" below)
-**Files** (no compiler surface — zero overlap with other specs): `libs/std/src/erika.bp` (new — both the fluent lib **and** the `erika` template fn live here), root `build.zig` (`std_bp_files` +1 line), `modules/compiler-core/src/comptime/stdlib/prelude.zig` (+1 line)
-**Touches docs**: `libs/std/src/docs.md`, `libs/std/src/AGENTS.md`, `libs/std/src/examples.md`
-**Status**: pending
+**Files** (no compiler surface — zero overlap with other specs): `libs/std/src/erika.bp` (new — both the fluent lib **and** the `erika` template fn live here) + root `build.zig` (add `"erika.bp"` to the `std_pkg_files` list). **`modules/compiler-core/src/**` is NOT touched** — see "Data-driven std registry" below: compiler-core must remain agnostic of every individual std lib (it names no module), so a lib's wiring lives only in `build.zig` + `libs/std/`.
+**Touches docs**: `libs/std/src/docs.md`, `libs/std/src/examples.md`, `libs/std/AGENTS.md`
+**Status**: done (see "Realized scope" below)
+
+## Data-driven std registry (compiler-core stays lib-agnostic)
+
+A std package module is wired in **one place only — `build.zig`**:
+
+- `build.zig` keeps a `std_pkg_files` list (`order.bp`, `dict.bp`, …, `erika.bp`)
+  and **generates** the package registry (`pub const pkg_modules = [_]{ path,
+  source }{ … @embedFile(...) }`) into its own module, exposed to compiler-core
+  via `std_prelude` (which re-exports `pkg_modules`).
+- `modules/compiler-core/src/comptime.zig` consumes it generically
+  (`std_pkg_modules = @import("std_prelude").pkg_modules`) and never names a
+  module; `prelude.zig` re-exports the generated table and embeds only the core
+  controller files (`primitives.d.bp`, `builtins.d.bp`).
+
+**Adding a std module = drop `libs/std/src/<name>.bp` + add `"<name>.bp"` to
+`std_pkg_files` in `build.zig`.** No `modules/compiler-core/src/**` edit. (This
+generalised the previous per-module `prelude.zig`/`comptime.zig` enumeration, so
+*the lib configures itself* and compiler-core is unaware of erika specifically.)
 
 ## Intent
 
@@ -29,7 +47,7 @@ Two layers, one lib named **erika**, both in pure botopink:
 ```bp
 val list = erika "select * from PersonList";
 //         └──────────────── expands (comptime) to ────────────────┘
-//         erika.from(PersonList).toArray()        // list : Array<Person>
+//         of(PersonList).toArray()               // list : Array<Person>
 ```
 
 **Eager, immutable, v1.** Every fluent operator returns a *new* `Query<T>` over a
@@ -53,8 +71,10 @@ pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T> {
     val src = q.lookup(ast.source);
     if (src == null) { q.fail("erika: unknown collection '" + ast.source + "'"); };
 
-    // build the fluent pipeline as source, then expand it:
-    var pipe = "erika.from(" + ast.source + ")";
+    // build the fluent pipeline as source, then expand it. The constructor is
+    // `of` (`from` is the import keyword), emitted UNQUALIFIED so it resolves
+    // wherever the lib + collection are in scope (see "Realized scope"):
+    var pipe = "of(" + ast.source + ")";
     if (ast.where != null) { pipe = pipe + ".where({ row -> " + ast.where + " })"; };
     if (ast.orderBy != null) {
         val op = if (ast.desc) { "orderByDescending" } else { "orderBy" };
@@ -96,23 +116,25 @@ erika is the **most isolated** spec in the set:
 - **No shared deliverable.** Multi-field projection is deferred *inside erika*
   (F5b), not borrowed from `jhonstart-language-gaps`'s G2 — erika ships complete
   without it, so it waits on nothing.
-- **Files touched** are `libs/std/src/erika.bp` (new) plus one line each in
-  `build.zig` and `prelude.zig`. The only theoretical overlap is those two wiring
-  files if another std module is added concurrently — a one-line, trivially
-  mergeable addition, not a logical dependency.
+- **Files touched** are `libs/std/src/erika.bp` (new) plus one line in
+  `build.zig` (`std_pkg_files`). `modules/compiler-core/src/**` is untouched (the
+  registry is data-driven — see above). The only theoretical overlap is the
+  single `build.zig` list if another std module is added concurrently — a
+  one-line, trivially mergeable addition, not a logical dependency.
 
 Run it on its own `task/erika` branch/worktree in parallel with all six others.
 
 ## Steps
 
 ### F0 — module skeleton + wiring
-- [ ] `libs/std/src/erika.bp`: `record Query<T> { items }` + `record Grouping<K,V>`,
-      constructors (`from`/`range`/`repeat`/`empty`), `toArray`/`toList`.
-- [ ] Wire: `build.zig` `std_bp_files` + `prelude.zig` `pub const erika`; confirm
-      `import {erika} from "std"` resolves and `botopink test` sees the file.
-- [ ] Constructor spelling: `erika.from(arr)` is the target; if `from` is rejected
-      as a companion-fn name (it's the `import` token), fall back to `erika.of(arr)`
-      (the `Pair.of` shape) and lock one spelling across API + the F5 expansion.
+- [x] `libs/std/src/erika.bp`: `record Query<T> { items }` + `record Grouping<K,V>`,
+      constructors (`of`/`range`/`repeat`/`empty`), `toArray`/`toList`.
+- [x] Wire: add `"erika.bp"` to `std_pkg_files` in `build.zig` (data-driven
+      registry — no `modules/compiler-core/src/**` edit). `import {erika} from
+      "std"` resolves and `botopink test` sees the file.
+- [x] Constructor spelling: `from` is the `import` keyword and is **rejected** as a
+      fn name (`UnexpectedToken`), so the constructor is **`of`** (`Pair.of` shape),
+      locked across the API and the F5 expansion.
 
 ### F1 — restriction / projection (fluent)
 - [ ] `where(pred)`, `select(fn)`, `selectMany(fn)` (flatMap). `cast`/`ofType`
@@ -211,3 +233,43 @@ erika.query  ---- multi-field `select name, age` ⇒ clear not-yet diagnostic (v
   same way (a `test` that runs an `erika "…"` query and asserts the result) — its
   comptime behaviour also belongs in the `comptime/tests/templates.zig` family if
   any compiler-side adjustment is needed.
+
+## Realized scope (what actually shipped + deviations)
+
+Implemented with **zero compiler-logic surface** (wiring is one line in
+`build.zig`; see "Data-driven std registry"). 19 inline `test` blocks pass under
+`botopink test`; `zig build test` green. Deviations forced by current
+language/compiler limits, each recorded (never silently worked around):
+
+- **`of`, not `from`** — `from` is the `import` keyword (rejected as a fn name).
+- **No arity overloading** (the JS backend collides same-named methods at
+  runtime) → predicate variants are distinct names: `countWhere` / `firstWhere` /
+  `anyWhere` (alongside `count` / `first` / `any`).
+- **`selectMany` deferred to v2** — its selector needs an array/generic return
+  inside a function-type parameter (`fn -> Query<U>` / `-> U[]`), which the parser
+  rejects (catalogued `fn() -> T[]` gap). Workaround documented in AGENTS.
+- **`average` takes an `f64` selector** (no `i32 → f64` cast); **`range`/`repeat`
+  recurse** (associated `Array.range`/`Array.repeat` aren't lowered by commonJS).
+- **The `erika "…"` body is self-contained** (no calls to sibling fns): the
+  comptime evaluator (`template_eval.zig`) emits only the template fn and runs it
+  with `node` over a minimal prelude, so method calls must lower to **native JS**
+  (`split`/`slice`/`trim`/`join`) — host-helper ops (optional `.unwrapOr`,
+  `.append`) are undefined there and are avoided; the SQL→botopink translation is
+  inlined.
+- **`erika "…"` import-resolution gap (the one user-facing limit).** The template
+  form resolves only where `erika` is a directly in-scope template fn (e.g. this
+  module's own tests, which is how it is covered). After `import {erika} from
+  "std"` it is `unbound`: the import binds the `erika` *namespace* (so
+  `erika.of(...)` works fully) but not the same-named template fn as a value, and
+  paren-free template application resolves its callee as a bare value. Closing it
+  is a **small, recorded compiler add** (bind a std module's same-named template fn
+  into the importer's value scope + `templateFns`/`exprParams` in `infer.zig
+  markStdImports` / `comptime.zig registerStdlib`) — intentionally **not** done
+  here, to preserve the zero-compiler-surface / conflict-free-merge guarantee.
+- **Recorded language findings** (general, surfaced while building erika):
+  `&&`/`||` don't parse directly inside `if (...)` (pre-bind to a `val`);
+  if-**expression** branch blocks need a trailing `;` (`{ x; }`); an `if/else`
+  whose branches end in different-typed assignments unifies the branch types
+  (false "expected bool, got string") — use separate guarded `if`s; optional
+  `if (opt) { x -> … }` does **not** gate on absence at commonJS runtime (only its
+  present-case is reliable; `at()`-OOB + `.unwrapOr(d)` is the safe absence path).

@@ -38,6 +38,7 @@ std/
 │   ├── io.d.bp            ← `io` std module (decl — `#[@external]` backed)
 │   ├── string_builder.bp  ← `string_builder` std module (`pub record StringBuilder`)
 │   ├── queue.bp           ← `queue` std module (`pub record Queue<T>`, FIFO)
+│   ├── erika.bp           ← `erika` std module (LINQ `Query<T>` + `erika "…"` template)  ◀ inline tests (19 blocks)
 │   │                      — external test suites (generic modules + builtins), co-located:
 │   ├── array_test.bp      ← builtin Array<T> surface: join/reverse/indexOf/at/map/filter/slice
 │   ├── option_test.bp     ← ?T builtin methods (map/flatMap/unwrapOr) + `?.` chaining
@@ -71,6 +72,7 @@ std/
 | `io.d.bp` | `print`, `println`, `debug` — host-backed via `#[@external]`. Declaration-only. |
 | `string_builder.bp` | `pub record StringBuilder` (wraps `Array<string>`). `empty`, `append`, `prepend`, `toString`, `fromString`, `fromStrings`, `length`, `isEmpty`. |
 | `queue.bp` | `pub record Queue<T>` (FIFO, front at index 0). `empty`, `size`, `isEmpty`, `enqueue`, `dequeue` (returns `#(Queue<T>, ?T)`), `peek`, `toList`, `fromList`. O(n) enqueue (copy-on-write). |
+| `erika.bp` | C#/LINQ-style query lib over `Array<T>`. `pub record Query<T> { items }` — eager, immutable fluent ops: `where`/`select`; `take`/`skip`/`takeWhile`/`skipWhile`/`reverse`/`orderBy`/`orderByDescending`; `distinct`/`distinctBy`/`concat`/`union`/`intersect`/`except`/`groupBy`(→`Grouping<K,V>`)/`zip`; terminals `count`/`countWhere`/`sum`/`average`/`min`/`max`/`aggregate`/`first`/`firstWhere`/`last`/`single`/`elementAt`(→`?T`)/`any`/`anyWhere`/`all`/`contains`. Constructors `of`/`empty`/`range`/`repeat`. Also `pub fn erika<T>(comptime q: @Expr<string>)` — the `erika "…"` SQL-subset template (see caveats below). |
 
 ## Tests
 
@@ -93,6 +95,13 @@ inline test block throws `TypeError.typeMismatch`, cascading to all
 `freshTestEnv` consumers. Non-generic modules are immune (their functions
 have no type variables), which is why inline tests work there.
 
+**Exception — `erika.bp`** keeps its tests *inline* even though `Query<T>` is
+generic: `registerStdlib` strips top-level `test` decls before inference
+(`stripTestDecls`), so the call-site monomorphization that trips the other
+generic modules never happens during registration. `botopink test` compiles the
+file as an ordinary project module, where the inline tests type-check and run
+normally. New generic modules can follow either pattern.
+
 ### Coverage (commonJS target)
 
 | Surface | Covered |
@@ -112,12 +121,51 @@ have no type variables), which is why inline tests work there.
 | `sets` module | `empty`, `contains`, `size`, `isEmpty`, `insert`, `delete`, `toList`, `fromList`, `union`, `intersection`, `difference` |
 | `function` module | `identity`, `compose`, `flip`, `constant` |
 | `queue` module | `empty`, `enqueue`, `peek`, `dequeue`, `toList`, `fromList` |
+| `erika` module (fluent) | `of`/`range`/`repeat`/`empty`, `where`/`select`, `take`/`skip`/`takeWhile`/`skipWhile`/`reverse`, `orderBy`/`orderByDescending`, `distinct`/`distinctBy`/`concat`/`union`/`intersect`/`except`/`groupBy`/`zip`, `count`/`countWhere`/`sum`/`average`/`min`/`max`/`aggregate`, `first`/`firstWhere`/`last`/`single`/`elementAt`, `any`/`anyWhere`/`all`/`contains` |
+| `erika "…"` template | `select *`, `select field`, `where <cond>`, `order by <field> [asc\|desc]`, string/number literals, `and`/`or` — expanded + asserted in-file |
 
 **Blocked — snake_case method JS mapping**: `s.to_upper()` etc. are emitted verbatim;
 no JS equivalent. Add tests when typed-value dispatch lands.
 
 **Blocked — Erlang/BEAM**: escript loads only the entry module; std modules are
 unreachable. All coverage is commonJS-only.
+
+## erika caveats (deferred ops + the `erika "…"` import gap)
+
+`erika.bp` ships **zero compiler surface** — only the three wiring lines below.
+A few items hit current language/compiler limits and are deferred, each recorded
+here rather than worked around invisibly:
+
+- **`selectMany` (flatMap) — deferred to v2.** It needs a selector typed
+  `fn(item: T) -> Query<U>` (or `-> U[]`), but the parser rejects an array /
+  generic-applied **return type inside a function-type parameter** (the
+  catalogued `fn() -> T[]` gap). Workaround: `erika.of(xs.flatMap({ x -> … }))`.
+- **Multi-field projection (`select a, b`) — deferred to v2.** Naming the
+  projected shape needs anonymous record types / tuples (botopink has neither);
+  v1 emits a clear `q.fail("… not supported yet")`, never a wrong result.
+- **`average` takes an `f64` selector** (no `i32 → f64` numeric cast exists), and
+  `range`/`repeat` build their arrays by **recursion** (the associated
+  `Array.range`/`Array.repeat` producers aren't lowered by the commonJS backend).
+- **`erika "…"` import resolution — the one user-facing gap.** The template form
+  works wherever the `erika` template fn is a **directly in-scope identifier**
+  (e.g. inside this module's own tests, which is how it's covered). It does **not**
+  yet resolve through `import {erika} from "std"`: that import binds the `erika`
+  *namespace* (so `erika.of(...)` works), but paren-free template application
+  (`erika "…"`) resolves its callee as a bare value, and the std import never
+  binds the same-named template fn into value scope (`unbound variable 'erika'`).
+  The fluent API (`erika.of(...)`) is fully usable from user projects today. Making
+  `erika "…"` resolve after `import {erika}` is a **small, recorded compiler add**
+  (bind a std module's same-named template fn into the importer's value scope +
+  `templateFns`/`exprParams` in `infer.zig markStdImports` / `comptime.zig
+  registerStdlib`) — intentionally left out here to preserve erika's zero-surface,
+  conflict-free-merge guarantee.
+
+The `erika "…"` body is **self-contained** (no calls to sibling fns): the
+comptime evaluator (`template_eval.zig`) emits only the template fn itself and
+runs it with `node` over a minimal prelude, so the SQL→botopink translation is
+inlined and uses only ops that lower to **native JS** methods
+(`split`/`slice`/`trim`/`join`/`==`/`+`) — never host-helper-backed ops like
+optional `.unwrapOr` or `.append`, which aren't defined in the eval script.
 
 ## Wiring
 

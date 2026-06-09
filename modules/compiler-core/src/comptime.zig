@@ -164,15 +164,12 @@ fn analyzeModule(
 }
 
 /// The "std" package: stdlib impl modules importable via `import {…} from "std";`.
-/// Order = dependency order (a later module may import an earlier one).
-/// Registry keys are prefixed `std/` so project-root imports never see them.
-pub const std_pkg_modules = [_]Module{
-    .{ .path = "std/order", .source = @import("std_prelude").order },
-    .{ .path = "std/dict", .source = @import("std_prelude").dict_mod },
-    .{ .path = "std/sets", .source = @import("std_prelude").sets_mod },
-    .{ .path = "std/string_builder", .source = @import("std_prelude").string_builder_mod },
-    .{ .path = "std/queue", .source = @import("std_prelude").queue_mod },
-};
+/// The registry is DATA-DRIVEN — `build.zig` enumerates the package `.bp` files
+/// and generates this `{ path, source }` table (re-exported by `prelude.zig`), so
+/// compiler-core names no individual std module. Order = list order in build.zig
+/// (a later module may import an earlier one). Registry keys are prefixed `std/`
+/// so project-root imports never see them.
+pub const std_pkg_modules = @import("std_prelude").pkg_modules;
 
 /// The "rakun" package: concrete framework modules importable via
 /// `import {…} from "rakun";` (the declaration-only markers/interfaces live in
@@ -234,7 +231,7 @@ fn expandStdImports(arena: std.mem.Allocator, modules: []const Module) ![]const 
 
     var out: std.ArrayListUnmanaged(Module) = .empty;
     for (std_pkg_modules, 0..) |spm, i| {
-        if (needed[i]) try out.append(arena, spm);
+        if (needed[i]) try out.append(arena, .{ .path = spm.path, .source = spm.source });
     }
     try out.appendSlice(arena, modules);
     return out.toOwnedSlice(arena);
