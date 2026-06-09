@@ -60,6 +60,10 @@ pub const ComptimeOutput = struct {
         /// Static extension dispatch: call-site location → activated extension
         /// symbol. Backends lower `obj.m(args)` at these sites to `Sym.m(obj, args)`.
         dispatch_rewrites: std.AutoHashMap(ast.Loc, []const u8),
+        /// Type-directed JS method renames: call-site location → native JS method
+        /// name. JS-specific (e.g. string `contains` → `includes`); only commonJS
+        /// reads it. Empty for the other backends.
+        js_method_renames: std.AutoHashMap(ast.Loc, []const u8),
     };
 };
 
@@ -606,6 +610,11 @@ pub fn compileTypesOnly(
                     var rit = succ.env.dispatchRewrites.iterator();
                     while (rit.next()) |e| try dispatch_rewrites.put(e.key_ptr.*, e.value_ptr.*);
                 }
+                var js_method_renames = std.AutoHashMap(ast.Loc, []const u8).init(arena_alloc);
+                {
+                    var rit = succ.env.jsMethodRenames.iterator();
+                    while (rit.next()) |e| try js_method_renames.put(e.key_ptr.*, e.value_ptr.*);
+                }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
                     try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
@@ -670,6 +679,7 @@ pub fn compileTypesOnly(
                         .transformed = transformed,
                         .type_ids = type_ids,
                         .dispatch_rewrites = dispatch_rewrites,
+                        .js_method_renames = js_method_renames,
                     } },
                 });
             },
@@ -741,6 +751,11 @@ pub fn compile(
                 {
                     var rit = succ.env.dispatchRewrites.iterator();
                     while (rit.next()) |e| try dispatch_rewrites.put(e.key_ptr.*, e.value_ptr.*);
+                }
+                var js_method_renames = std.AutoHashMap(ast.Loc, []const u8).init(arena_alloc);
+                {
+                    var rit = succ.env.jsMethodRenames.iterator();
+                    while (rit.next()) |e| try js_method_renames.put(e.key_ptr.*, e.value_ptr.*);
                 }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
@@ -814,6 +829,7 @@ pub fn compile(
                         .transformed = transformed,
                         .type_ids = type_ids,
                         .dispatch_rewrites = dispatch_rewrites,
+                        .js_method_renames = js_method_renames,
                     } },
                 });
             },

@@ -43,6 +43,19 @@ test "js: dispatch ---- inherent record method call" {
     );
 }
 
+test "js: dispatch ---- string contains lowers to native includes" {
+    // `s.contains(x)` on a `string` has no `String.prototype.contains`; inference
+    // records a type-directed rename so codegen emits `s.includes(x)`. A `record`
+    // method of the same name (`Set.contains`) keeps its own dispatch — see the
+    // inherent-record-method case above.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val hw = "hello world";
+        \\    @print(hw.contains("world"));
+        \\}
+    );
+}
+
 test "js: dispatch ---- activated extension method call" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\val Swimmer = interface {

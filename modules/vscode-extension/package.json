@@ -2,7 +2,7 @@
   "name": "botopink",
   "displayName": "Botopink",
   "description": "Support for the Botopink programming language",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "botopink",
   "repository": {
     "type": "git",
