@@ -32,6 +32,10 @@ pub const ProjectConfig = struct {
     name: []const u8,
     version: []const u8 = "0.1.0",
     target: []const u8 = "commonJS",
+    /// External lib names this project depends on (resolved generically from the
+    /// libs root — `libs/<name>/` — by `libs.zig`, never by the compiler core).
+    /// `std` is implicit and not listed here.
+    dependencies: []const []const u8 = &.{},
 
     pub fn parsedTarget(self: ProjectConfig) Target {
         return Target.fromString(self.target) orelse .commonJS;
