@@ -175,6 +175,7 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     }
 
     // Pass 3: semantic validation of `implement` blocks and struct accessors.
+    try validateDecorators(env, program);
     try validateProgram(env, program);
 
     return list.toOwnedSlice(env.arena);
@@ -224,6 +225,7 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
     }
 
     // Semantic validation of `implement` blocks and struct accessors.
+    try validateDecorators(env, program);
     try validateProgram(env, program);
 
     return list.toOwnedSlice(env.arena);
@@ -496,9 +498,33 @@ fn registerTypeDecl(env: *Env, decl: ast.DeclKind) InferError!void {
 /// recursive `record` type names are registered in pass 1 before any use.
 fn registerFnSignatures(env: *Env, program: ast.Program) InferError!void {
     for (program.decls) |decl| switch (decl) {
-        .@"fn" => |f| try env.bind(f.name, try buildFnSignatureType(env, f)),
+        .@"fn" => |f| {
+            try env.bind(f.name, try buildFnSignatureType(env, f));
+            registerDecoratorSig(env, f.name, f.params);
+        },
+        // A `declare fn` decorator (`declare fn service(comptime _: @Decl)`) —
+        // the bodyless form a lib ships its markers as — parses as a delegate.
+        .delegate => |d| registerDecoratorSig(env, d.name, d.params),
         else => {},
     };
+}
+
+/// True when `params` open with `comptime _: @Decl`, the signature shape that
+/// marks a function as a decorator (annotation processor). The core recognizes
+/// decorators purely by this shape — it never knows what a marker means (that is
+/// the lib's job). Applies to both `pub fn` and `declare fn` forms.
+fn isDecoratorParams(params: []const ast.Param) bool {
+    if (params.len == 0) return false;
+    const p0 = params[0];
+    return p0.modifier == .@"comptime" and p0.typeRef.isDeclType();
+}
+
+/// Record a decorator's trailing signature (everything after the leading
+/// `comptime _: @Decl`) so `#[name(args)]` applications can be argument-checked.
+/// No-op for ordinary functions.
+fn registerDecoratorSig(env: *Env, name: []const u8, params: []const ast.Param) void {
+    if (!isDecoratorParams(params)) return;
+    env.decorators.put(name, .{ .params = params[1..] }) catch {};
 }
 
 /// Build a top-level function's callable type (params → return) without binding
@@ -1390,6 +1416,119 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
             return fail(env, fnLoc, "`@external` module and symbol must be string literals", "Example: #[@external(node, \"./gleam_stdlib.mjs\", \"string_length\")]");
         }
     }
+}
+
+// ── generic decorator argument validation (annotation processors, P1) ─────────
+//
+// A decorator is any fn whose first param is `comptime _: @Decl` (recognized by
+// `registerDecoratorSig` into `env.decorators`). Applying `#[d(args)]` is sugar
+// for a comptime call `d(reflect(decl), args…)`; the trailing `args` are checked
+// here against the decorator's declared signature — arity + argument types —
+// with no lib knowledge. PLACEMENT rules (where a marker may sit) are the
+// decorator body's job (P2), not the core's.
+
+/// Validate every `#[decorator(args)]` application in `program` against the
+/// recognized decorator's trailing signature. Annotations whose name is not a
+/// recognized decorator are left untouched: builtins (`external`) validate
+/// elsewhere, and an unknown bare marker stays lenient (a lib may not be loaded).
+fn validateDecorators(env: *Env, program: ast.Program) InferError!void {
+    if (env.decorators.count() == 0) return;
+    for (program.decls) |decl| switch (decl) {
+        .@"fn" => |f| try checkDecoratorAnnotations(env, f.annotations, f.name),
+        .record => |r| {
+            try checkDecoratorAnnotations(env, r.annotations, r.name);
+            for (r.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
+        },
+        .@"struct" => |s| {
+            try checkDecoratorAnnotations(env, s.annotations, s.name);
+            for (s.members) |mem| switch (mem) {
+                .method => |m| try checkDecoratorAnnotations(env, m.annotations, m.name),
+                else => {},
+            };
+        },
+        .@"enum" => |e| {
+            try checkDecoratorAnnotations(env, e.annotations, e.name);
+            for (e.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
+        },
+        .interface => |i| {
+            try checkDecoratorAnnotations(env, i.annotations, i.name);
+            for (i.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
+        },
+        else => {},
+    };
+}
+
+/// Check one declaration's annotation list. `owner` names the annotated
+/// declaration (for diagnostics).
+fn checkDecoratorAnnotations(env: *Env, anns: []const ast.Annotation, owner: []const u8) InferError!void {
+    for (anns) |a| {
+        if (a.is_builtin) continue; // `@external`, … validated by their own pass.
+        const sig = env.decorators.get(a.name) orelse continue;
+        try checkDecoratorArgs(env, a, sig, owner);
+    }
+}
+
+/// Type-check a single `#[name(args…)]` application's trailing arguments against
+/// the decorator's parameters (everything after `comptime _: @Decl`). V1: arity
+/// (honoring trailing defaults) + a per-argument lexical kind check (string /
+/// numeric / bool / enum-member), mirroring `validateExternalAnnotation`.
+fn checkDecoratorArgs(env: *Env, a: ast.Annotation, sig: envMod.DecoratorSig, owner: []const u8) InferError!void {
+    const fail = struct {
+        fn fail(e_: *Env, msg: []const u8, hint: []const u8) InferError {
+            e_.lastError = TypeError.custom(msg, hint);
+            return error.TypeError;
+        }
+    }.fail;
+
+    // Arity: required params (no default) ≤ args ≤ total params.
+    var required: usize = 0;
+    for (sig.params) |p| {
+        if (p.defaultVal == null) required += 1;
+    }
+    if (a.args.len < required or a.args.len > sig.params.len) {
+        const msg = try std.fmt.allocPrint(env.arena, "`#[{s}]` on `{s}` expects {d} argument(s), got {d}", .{ a.name, owner, sig.params.len, a.args.len });
+        return fail(env, msg, "Match the decorator's declared parameters (after the leading `comptime _: @Decl`).");
+    }
+
+    // Per-argument kind check against the declared parameter type.
+    for (a.args, 0..) |arg, i| {
+        const want = paramTypeName(sig.params[i].typeRef) orelse continue; // non-simple type → lenient
+        if (!argMatchesType(arg, want)) {
+            const msg = try std.fmt.allocPrint(env.arena, "`#[{s}]` argument {d} must be {s}", .{ a.name, i + 1, want });
+            return fail(env, msg, "Decorator arguments are type-checked against the decorator's signature.");
+        }
+    }
+}
+
+/// The simple (named) type of a parameter, or null for arrays/optionals/generics
+/// where the lexical check is skipped (kept lenient in V1).
+fn paramTypeName(tr: ast.TypeRef) ?[]const u8 {
+    return switch (tr) {
+        .named => |n| n,
+        else => null,
+    };
+}
+
+/// True when the raw annotation argument lexeme is consistent with `typeName`.
+/// Annotation args reach inference as source lexemes, so this is a lexical (not
+/// full-expression) check: enough to catch `#[value(123)]` where a string is
+/// required, while staying permissive for user/named types.
+fn argMatchesType(arg: []const u8, typeName: []const u8) bool {
+    if (arg.len == 0) return true;
+    if (std.mem.eql(u8, typeName, "string")) {
+        return arg[0] == '"';
+    }
+    if (std.mem.eql(u8, typeName, "bool")) {
+        return std.mem.eql(u8, arg, "true") or std.mem.eql(u8, arg, "false");
+    }
+    // Numeric primitives: a leading digit or sign (covers i32/i64/f32/f64/u*).
+    if (std.mem.startsWith(u8, typeName, "i") or std.mem.startsWith(u8, typeName, "u") or
+        std.mem.startsWith(u8, typeName, "f"))
+    {
+        const c = arg[0];
+        return std.ascii.isDigit(c) or c == '-' or c == '+';
+    }
+    return true; // enum member / named type → lenient (full check is the body's job).
 }
 
 /// Parse a tuple-index member name (`_0`, `_1`, …) into its integer index.

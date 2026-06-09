@@ -23,10 +23,16 @@
       returns nothing (std exempt).
 
 ## P1 — recognition + generic argument validation
-- [ ] Recognize a decorator by signature: a `pub fn`/`declare fn` whose first param
+- [x] Recognize a decorator by signature: a `pub fn`/`declare fn` whose first param
       is `comptime _: @Decl`; record per importing module (generic registry).
-- [ ] `#[d(args)]` type-checks `args` against the decorator signature (arity +
-      types) at any site (record/struct/enum/method/field/fn).
+      (`env.decorators` registry, populated in `registerFnSignatures` for both the
+      `.fn` and `.delegate` forms; parser now accepts bare `@Decl`.)
+- [x] `#[d(args)]` type-checks `args` against the decorator signature (arity +
+      types) at any site (record/struct/enum/method/fn). (`validateDecorators`
+      pass; arity honors trailing defaults; per-arg lexical kind check.)
+      NOTE: field-site + record/struct method-site annotations are a *parser* gap
+      (annotations only parse on interface methods today) — addressed when rakun
+      migration (P2) needs `#[getMapping]` on controller methods.
 - [x] Declare `@Decl` builtin reflection type + `DeclKind` in `builtins.d.bp`.
       (`DeclKind`/`Annotation`/`Param`/`Field`/`Method` + `interface Decl`;
       `TypeRef.isDeclType` recognizes bare `@Decl`.)

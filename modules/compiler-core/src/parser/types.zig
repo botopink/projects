@@ -140,7 +140,13 @@ pub fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.Ty
             };
             return ParseError.UnexpectedToken;
         }
-        // Builtin types always take their generic parameters (`@Expr<i32>`,
+        // `@Decl` (the annotation-processor reflection handle) is the one builtin
+        // written WITHOUT type arguments — bare, like a nominal type. A decorator
+        // declares its first parameter as `comptime _: @Decl`.
+        if (std.mem.eql(u8, name, "Decl") and !this.check(.lessThan)) {
+            return ast.TypeRef{ .generic = .{ .name = name, .args = &.{}, .is_builtin = true } };
+        }
+        // Other builtin types always take their generic parameters (`@Expr<i32>`,
         // never bare `@Expr`) — a result type only the expansion knows is
         // written as an ordinary fn generic: `fn yaml<T>(…) -> @Expr<T>`.
         _ = try this.consume(.lessThan);

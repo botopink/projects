@@ -219,6 +219,15 @@ pub const StdArrayLowering = struct {
     method: []const u8,
 };
 
+/// A recognized decorator's signature, minus its leading `comptime _: @Decl`
+/// parameter. `params` are the trailing argument parameters an `#[d(args)]`
+/// application type-checks against (arity + types). Populated generically for
+/// any fn whose first parameter is `comptime _: @Decl` — no lib knowledge. The
+/// slice points into the AST arena (the decl's own `params`), so it is stable.
+pub const DecoratorSig = struct {
+    params: []const ast.Param,
+};
+
 /// A type-directed lowering for a `return`/`throw` jump inside a fn returning
 /// `@Result<D, E>`. Recorded by inference keyed by the jump's source `Loc` and
 /// consumed by the transform pass, which wraps the value in a `__bp_ok(…)` /
@@ -354,6 +363,12 @@ pub const Env = struct {
     /// "rakun" framework type declarations (interface / enum), keyed by name.
     /// `markRakunImports` registers the imported ones into the importing env.
     rakunTypeDecls: std.StringHashMap(ast.DeclKind),
+    /// Decorators recognized in this module (and its imports), name → trailing
+    /// signature. A decorator is any fn whose first param is `comptime _: @Decl`;
+    /// this is the lib-agnostic registry used to type-check `#[d(args)]` argument
+    /// arity + types at every annotation site. Lib knowledge lives in the
+    /// decorator body, never here.
+    decorators: std.StringHashMap(DecoratorSig),
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
@@ -392,6 +407,7 @@ pub const Env = struct {
             .implicitStdModules = std.StringHashMap(void).init(arena),
             .rakunExports = std.StringHashMap(*T.Type).init(arena),
             .rakunTypeDecls = std.StringHashMap(ast.DeclKind).init(arena),
+            .decorators = std.StringHashMap(DecoratorSig).init(arena),
         };
     }
 
@@ -436,6 +452,7 @@ pub const Env = struct {
         // values live in the shared arena.
         self.rakunExports.deinit();
         self.rakunTypeDecls.deinit();
+        self.decorators.deinit();
     }
 
     // ── extension dispatch helpers ────────────────────────────────────────────
