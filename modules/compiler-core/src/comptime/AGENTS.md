@@ -168,6 +168,21 @@ other targets treat `use` as a transparent prefix (bind the call result into a
 slot). Phantom `@Context` base structs (`struct implement @Context { }`, no
 members) are erased — see `codegen/AGENTS.md`.
 
+## Anonymous record types + `Children` coercion (jhonstart-language-gaps)
+
+- `resolveTypeRefInContext` lowers a `TypeRef.record_type` (`{ f: T, … }`) to a
+  structural `Type.record`; it unifies field-by-field with a `record { … }`
+  literal (`unify.zig`, same field set + order, V1).
+- `childrenCoercion` (checked at the top of `unifyAt`, which is always called
+  target-first) lets an argument bind to a parameter declared `Children` when
+  it is another `Children`, any array (`Element[]` — the list form), a `string`
+  (→ a text child), or a single value implementing `@Context` (an `Element` →
+  a one-element list). One-directional: only fires when the *declared* type is
+  `Children`. This is the builder children model `div([a, b])`/`div(a)`/`div("…")`.
+- A record field whose type is a function (`set: fn(next: T)`) needs no special
+  inference — it is an ordinary `Type.func` field and codegen stores the closure
+  like any field (`new State(0, (n) => {})`).
+
 ## `case` exhaustiveness + reachability
 
 A single-subject `case` on an **enum** or **string** subject is checked by

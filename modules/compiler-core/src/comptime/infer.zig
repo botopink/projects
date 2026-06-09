@@ -1181,6 +1181,16 @@ fn appendTypeRefStr(buf: *std.ArrayListUnmanaged(u8), allocator: std.mem.Allocat
                 try appendTypeRefStr(buf, allocator, c);
             }
         },
+        .record_type => |flds| {
+            try buf.appendSlice(allocator, "{ ");
+            for (flds, 0..) |f, i| {
+                if (i > 0) try buf.appendSlice(allocator, ", ");
+                try buf.appendSlice(allocator, f.name);
+                try buf.appendSlice(allocator, ": ");
+                try appendTypeRefStr(buf, allocator, f.typeRef);
+            }
+            try buf.appendSlice(allocator, " }");
+        },
     }
 }
 
@@ -2357,9 +2367,31 @@ fn validateTypeparams(
 
 /// Calls `unify` and, if it fails, stamps the expression's location onto the error.
 fn unifyAt(env: *Env, a: *T.Type, b: *T.Type, loc: ast.Loc) InferError!void {
+    // jhonstart `Children` coercion (gap G4) — applied before unification since
+    // `unifyAt` is always called target-first (`unifyAt(param, arg)`).
+    if (childrenCoercion(env, a, b)) return;
     unify(env, a, b) catch |err| {
         if (env.lastError) |*e| e.loc = loc;
         return err;
+    };
+}
+
+/// True when `source` coerces into a `Children`-typed `target` (gap G4). A
+/// `Children` parameter (the builder children model jhonstart's `div { … }`
+/// needs) accepts another `Children`, any array (`Element[]` — the list form),
+/// a `string` (→ a text child), or a single value implementing `@Context` (an
+/// `Element` → a one-element list). Coercion is one-directional: it only fires
+/// when the *declared* type (`target`) is `Children`, never the reverse.
+fn childrenCoercion(env: *Env, target: *T.Type, source: *T.Type) bool {
+    const t = target.deref();
+    if (t.* != .named or !std.mem.eql(u8, t.named.name, "Children")) return false;
+    const s = source.deref();
+    return switch (s.*) {
+        .named => |n| std.mem.eql(u8, n.name, "Children") or
+            std.mem.eql(u8, n.name, "array") or
+            std.mem.eql(u8, n.name, "string") or
+            contextBaseOfType(env, source) != null,
+        else => false,
     };
 }
 fn inferBuiltinCallReturnType(
@@ -2562,6 +2594,21 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
         // its constraints are validated separately (see `validateTypeparams`).
         // Resolve to a fresh variable so unification against it never fails.
         .typeparam => return env.freshVar(),
+        // Anonymous record type `{ f: T, … }` — a structural `Type.record` that
+        // unifies field-by-field with a `record { … }` literal (same field set,
+        // declaration order; see unify.zig).
+        .record_type => |flds| {
+            const fields = try env.arena.alloc(T.RecordField, flds.len);
+            for (flds, 0..) |f, i| {
+                fields[i] = .{
+                    .name = f.name,
+                    .type_ = try resolveTypeRefInContext(env, f.typeRef, genericMap),
+                };
+            }
+            const ty = try env.arena.create(T.Type);
+            ty.* = .{ .record = fields };
+            return ty;
+        },
     }
 }
 

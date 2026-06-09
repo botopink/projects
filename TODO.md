@@ -9,21 +9,24 @@
 > features; files: `parser*.zig`, `comptime/*`, `codegen/*`.
 
 ## F0 — G1 fn-typed record fields
-- [ ] parse + infer a record field typed as a function (`set: fn(next: T)`);
-      codegen stores it as a closure value
+- [x] parse + infer a record field typed as a function (`set: fn(next: T)`);
+      codegen stores it as a closure value. (`get`/`set` are now soft keywords,
+      valid as field/member names — the `{value, set}` hook shape.)
 
 ## F1 — G2 anonymous record types
-- [ ] anonymous record *type* syntax usable as annotation / return type
-      (`-> { value: T, set: fn(T) }`)
+- [x] anonymous record *type* syntax usable as annotation / return type
+      (`-> { value: T, set: fn(T) }`) — `TypeRef.record_type` → `Type.record`
 
 ## F2 — G3 array-as-return parsing
-- [ ] `fn(...) -> T[]` (and nested `?T[]`, `T[][]`) parse + infer
+- [x] `fn(...) -> T[]` (and nested `?T[]`, `T[][]`) parse + infer
 
 ## F3 — G4 Children coercion
-- [ ] `Element` → `[Element]` and `string` → text-node coercion into a
-      `Children`-typed parameter (what `div { … }` needs)
+- [x] `Element` → one-element list and `string` → text-node coercion into a
+      `Children`-typed parameter (what `div([a, b])` needs); array passes through
 
 ## Notes
-- Each gap is independently shippable — split further if parallelism helps.
+- All four gaps closed; spec Test scenarios live in
+  `modules/compiler-core/src/comptime/tests/jhonstart.zig` (+ codegen smoke
+  tests in `codegen/tests/js_aggregates.zig`).
 - jhonstart F4–F5 (SSR/loaders) stay gated on the async specs in
   `tasks/v0.beta.1/`, not here.

@@ -1283,6 +1283,12 @@ pub const EnumDecl = struct {
 
 // ── type reference ────────────────────────────────────────────────────────────
 
+/// One field of an anonymous record TYPE: `name: Type` in `{ value: T, set: fn(T) }`.
+pub const RecordTypeField = struct {
+    name: []const u8,
+    typeRef: TypeRef,
+};
+
 /// A type annotation expression, e.g. `Int`, `string[]`, `#(Int, string)`, `?T`.
 pub const TypeRef = union(enum) {
     /// Plain named type: `Int`, `string`, `Self`. Slice into source — not heap-owned.
@@ -1302,10 +1308,17 @@ pub const TypeRef = union(enum) {
     /// means the typeparam is unconstrained and accepts any type. Owns the constraints.
     /// Surface syntax (post-F0): `type` / `type string | int | bool`.
     typeparam: []TypeRef,
+    /// Anonymous structural record type: `{ value: T, set: fn(T) }`, usable as a
+    /// return type or annotation without a named `record`. Owns the fields.
+    record_type: []RecordTypeField,
 
     pub fn deinit(this: *TypeRef, allocator: std.mem.Allocator) void {
         switch (this.*) {
             .named => {},
+            .record_type => |flds| {
+                for (flds) |*f| f.typeRef.deinit(allocator);
+                allocator.free(flds);
+            },
             .array => |elem| {
                 elem.deinit(allocator);
                 allocator.destroy(elem);

@@ -768,8 +768,9 @@ pub fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
             const method = try this.parseMethodDecl(alloc, is_iface, is_pub);
             trailingComma = false;
             try methods.append(alloc, method);
-        } else if (this.check(.identifier)) {
-            // Could be a field: [val] name: Type [= expr]
+        } else if (this.check(.val) or This.isMemberName(this.peek().kind)) {
+            // Could be a field: [val] name: Type [= expr]. `get`/`set` are valid
+            // record field names (records have no getters/setters).
             const nextIdx = this.current + 1;
             const nextToken = if (nextIdx < this.tokens.len) this.tokens[nextIdx] else token.Token{ .kind = .endOfFile, .lexeme = "", .line = 0, .col = 0 };
 
@@ -780,7 +781,7 @@ pub fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
 
             // It's a field: [val] name: Type [= expr]
             if (this.check(.val)) _ = this.advance();
-            const fieldName = (try this.consume(.identifier)).lexeme;
+            const fieldName = (try this.consumeMemberName()).lexeme;
             _ = try this.consume(.colon);
             var fieldType = try this.parseTypeRef(alloc);
             errdefer fieldType.deinit(alloc);
@@ -1093,9 +1094,9 @@ pub fn parseParam(this: *This, alloc: std.mem.Allocator) ParseError!Param {
                 hasSpread = true;
                 break;
             }
-            const field_name = try alloc.dupe(u8, (try this.consume(.identifier)).lexeme);
+            const field_name = try alloc.dupe(u8, (try this.consumeMemberName()).lexeme);
             const bind_name: []const u8 = if (this.match(.colon))
-                try alloc.dupe(u8, (try this.consume(.identifier)).lexeme)
+                try alloc.dupe(u8, (try this.consumeMemberName()).lexeme)
             else
                 field_name;
             try fields.append(alloc, .{ .field_name = field_name, .bind_name = bind_name });
@@ -1157,8 +1158,13 @@ pub fn parseParam(this: *This, alloc: std.mem.Allocator) ParseError!Param {
     // Detect post-colon modifiers: `syntax` or `comptime`
     if (this.match(.syntax)) modifier = .syntax else if (this.match(.@"comptime")) modifier = .@"comptime";
 
-    // ── fn-type params: `name: fn(...)` or `name comptime: syntax fn(...)` ─
-    if (this.check(.@"fn")) {
+    // ── fn-type params: `name comptime: syntax fn(...)` ─────────────────────
+    // The legacy `FnType` representation (named string params + named return)
+    // is kept only for `syntax` params, whose template machinery reads it. A
+    // plain `name: fn(...)` falls through to the general `parseTypeRef` below,
+    // which yields a `TypeRef.function` and supports array/optional/nested
+    // returns (`fn() -> T[]`).
+    if (modifier == .syntax and this.check(.@"fn")) {
         _ = this.advance(); // consume 'fn'
         _ = try this.consume(.leftParenthesis);
         var fnParams: std.ArrayList(FnTypeParam) = .empty;

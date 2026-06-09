@@ -393,6 +393,16 @@ fn appendTypeRef(gpa: std.mem.Allocator, buf: *std.ArrayList(u8), tr: ast.TypeRe
                 try appendTypeRef(gpa, buf, c);
             }
         },
+        .record_type => |flds| {
+            try buf.appendSlice(gpa, "{ ");
+            for (flds, 0..) |f, i| {
+                if (i > 0) try buf.appendSlice(gpa, ", ");
+                try buf.appendSlice(gpa, f.name);
+                try buf.appendSlice(gpa, ": ");
+                try appendTypeRef(gpa, buf, f.typeRef);
+            }
+            try buf.appendSlice(gpa, " }");
+        },
     }
 }
 
@@ -2142,7 +2152,8 @@ fn emitCallHints(
 
 /// For a lambda `{ a, b -> … }` opening at `brace_idx`, emits a `: T` hint after
 /// each parameter name, taken from the callee's declared `fn(...)` parameter
-/// signature (`param.fnType`). No-op when `param` isn't a function-typed param.
+/// signature — either the legacy `syntax` `param.fnType` or a plain
+/// `TypeRef.function`. No-op when `param` isn't a function-typed param.
 fn emitLambdaTypeHints(
     arena: std.mem.Allocator,
     hints: *std.ArrayList(proto.InlayHint),
@@ -2151,7 +2162,19 @@ fn emitLambdaTypeHints(
     param: ast.Param,
     range: proto.Range,
 ) !void {
-    const fn_type = param.fnType orelse return;
+    // Resolve the declared parameter-type strings of the callee's fn-type param.
+    var param_types: std.ArrayList([]const u8) = .empty;
+    if (param.fnType) |fn_type| {
+        for (fn_type.params) |p| try param_types.append(arena, p.typeName);
+    } else switch (param.typeRef) {
+        .function => |f| for (f.params) |p| {
+            var buf: std.ArrayList(u8) = .empty;
+            try appendTypeRef(arena, &buf, p);
+            try param_types.append(arena, try buf.toOwnedSlice(arena));
+        },
+        else => return,
+    }
+    if (param_types.items.len == 0) return;
 
     // Collect lambda param-name tokens between `{` and `->` at brace depth 1.
     var lp: usize = 0;
@@ -2160,13 +2183,13 @@ fn emitLambdaTypeHints(
         switch (tokens[idx].kind) {
             .rightArrow, .rightBrace, .endOfFile => break,
             .identifier => {
-                if (lp < fn_type.params.len and fn_type.params[lp].typeName.len > 0) {
+                if (lp < param_types.items.len and param_types.items[lp].len > 0) {
                     const name_tok = tokens[idx];
                     const pos = lsp_types.locToPosition(name_tok.line, name_tok.col + name_tok.lexeme.len);
                     if (posInRange(pos, range)) {
                         try hints.append(arena, .{
                             .position = pos,
-                            .label = try std.fmt.allocPrint(arena, ": {s}", .{fn_type.params[lp].typeName}),
+                            .label = try std.fmt.allocPrint(arena, ": {s}", .{param_types.items[lp]}),
                             .kind = proto.InlayHintKind.Type,
                             .paddingLeft = true,
                         });

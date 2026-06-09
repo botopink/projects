@@ -12,3 +12,40 @@ val map = fn(opt: Option<i32>, f: fn(i32) -> i32) -> Option<i32> {
 };
 ```
 
+----- TYPED AST JSON -- main.json
+```json
+{
+  "declarations": [
+    {
+      "ast": "enum_def",
+      "name": "Option",
+      "id": 0,
+      "generic": [
+        "T"
+      ]
+    },
+    {
+      "ast": "fn_def",
+      "name": "map",
+      "is_pub": false,
+      "params": [
+        {
+          "name": "opt",
+          "type": "?"
+        },
+        {
+          "name": "f",
+          "type": "?"
+        }
+      ],
+      "return_type": "?",
+      "body": [
+        {
+          "source": "case opt {"
+        }
+      ]
+    }
+  ]
+}
+```
+

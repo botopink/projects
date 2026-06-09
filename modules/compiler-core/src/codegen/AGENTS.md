@@ -99,6 +99,11 @@ codegen/
   lower `use` transparently (the call result lands in a binding/slot). Phantom
   `@Context` base structs (`isPhantomContextStruct`: implements `@Context`, no
   members) emit no runtime code; the `.d.ts` erases `@Context<B, R>` to `R`.
+- jhonstart-language-gaps: a function-typed record field (`set: fn(next: T)`)
+  needs no special handling — it is stored like any field (the closure lands in
+  the constructor: `new State(0, (n) => {})`). The `Children` coercion is purely
+  type-level (the argument value passes through unchanged). `typescript.zig`
+  renders an anonymous `TypeRef.record_type` as a `{ f: T; … }` object type.
 
 For the `.bp` → target translation gallery see
 [`./examples.md`](examples.md); for the full API surface and snapshot
