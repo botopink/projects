@@ -23,13 +23,7 @@ pub const builtins = @embedFile("builtins.d.bp");
 // module — adding one touches only `build.zig` + `libs/std/`, never this tree.
 pub const pkg_modules = @import("std_pkg").pkg_modules;
 
-// "rakun" application framework, opt-in via `from "rakun"` (never flattened
-// into the global env). Two source kinds:
-//   • `rakun.d.bp` — declaration-only markers + runtime-boundary interfaces
-//     (decorators, `Request`, `Context`, `Rakun`); registered for inference by
-//     `comptime.zig registerRakunLib`, emitted to nothing.
-//   • `http.bp` — concrete, emitted code (`HttpMethod`, `Response`, `App`);
-//     pulled into the compilation as a real package module on import
-//     (`rakun_pkg_modules`, mirroring `std_pkg_modules`).
-pub const rakun = @embedFile("rakun.d.bp");
-pub const rakun_http = @embedFile("http.bp");
+// Non-std libs are NOT embedded here: `std` is the one lib the core may name.
+// Any other lib (a framework, …) is supplied as ordinary input `.bp` modules by
+// the driver and resolved generically through the shared import registry — the
+// core knows nothing about any specific framework.

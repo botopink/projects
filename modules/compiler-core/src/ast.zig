@@ -1358,6 +1358,15 @@ pub const TypeRef = union(enum) {
         return this == .generic and this.generic.is_builtin and
             std.mem.eql(u8, this.generic.name, "Expr");
     }
+
+    /// True when this is the builtin reflection type `@Decl` (annotation
+    /// processors). A function whose first parameter is `comptime _: @Decl` is a
+    /// decorator: the core invokes it over the declaration the annotation sits on.
+    /// Bare `@Decl` parses as a builtin generic with no args (like bare `@Expr`).
+    pub fn isDeclType(this: TypeRef) bool {
+        return this == .generic and this.generic.is_builtin and
+            std.mem.eql(u8, this.generic.name, "Decl");
+    }
 };
 
 // ── top-level program ─────────────────────────────────────────────────────────

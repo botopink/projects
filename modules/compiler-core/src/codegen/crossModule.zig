@@ -22,7 +22,7 @@ const ComptimeOutput = comptimeMod.ComptimeOutput;
 pub const ExportKind = enum { record, @"struct", @"enum", @"fn", val };
 
 /// Where a `pub` symbol is emitted, for resolving cross-module imports.
-/// `module` is the emitting module's path (e.g. `"rakun/http"`). `is_class`
+/// `module` is the emitting module's path (e.g. `"web/http"`). `is_class`
 /// marks record/struct exports whose construction needs `new` (commonJS) or
 /// the owner's map shape (erlang/beam). `fields` is the declared field order
 /// of a record/struct (empty otherwise) — a consumer needs it to build the map
@@ -54,7 +54,7 @@ pub const CrossModule = struct {
     }
 
     /// Basename of an export's emitting module path — the Erlang/BEAM module
-    /// atom (`"rakun/http"` → `"http"`). Null when `name` isn't a cross-module
+    /// atom (`"web/http"` → `"http"`). Null when `name` isn't a cross-module
     /// export.
     pub fn ownerModuleAtom(self: *const CrossModule, name: []const u8) ?[]const u8 {
         const info = self.exports.get(name) orelse return null;

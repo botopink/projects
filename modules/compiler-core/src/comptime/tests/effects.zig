@@ -229,3 +229,67 @@ test "context error: struct without @Context impl used with use" {
         \\}
     );
 }
+
+// ── record/array ergonomics the hook/builder model needs ──────────────────────
+//
+// The features a `@Context` hook + markup-builder model relies on: records with
+// function-typed fields (the `{value, set}` hook shape), anonymous record types
+// as annotations, function types returning arrays, and `Children` coercion.
+
+// a record can carry a function-typed field (`set: fn(next: T)`); `set` is a
+// soft keyword, valid as a field name.
+test "context: record with a fn-typed field parses" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\record State<T> { value: T, set: fn(next: T) }
+    );
+}
+
+// a function type returns an array (`fn() -> T[]`), incl. nested/optional forms.
+test "context: fn() -> T[] parses" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn rows() -> i32[] { rows(); }
+        \\fn grid() -> i32[][] { grid(); }
+        \\fn maybe() -> ?i32[] { maybe(); }
+        \\record Builder { make: fn() -> i32[] }
+    );
+}
+
+// the `{value, set}` hook shape type-checks: a hook returns a record carrying a
+// fn-typed `set`, and a component uses it (`s.set(s.value)`).
+test "context: {value, set} hook shape type-checks" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\record State<T> { value: T, set: fn(next: T) }
+        \\fn state<T>(initial: T) -> @Context<Element, State<T>> {
+        \\    State(value: initial, set: { n -> });
+        \\}
+        \\fn Counter() -> Element {
+        \\    val s = use state(0);
+        \\    s.set(s.value);
+        \\    Element();
+        \\}
+    );
+}
+
+// an anonymous record TYPE is accepted as a return annotation, and a
+// `record { … }` literal unifies with it field-by-field.
+test "context: anonymous record type as return annotation" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn mk() -> { value: i32, set: fn(next: i32) } {
+        \\    record { value: 0, set: { n -> } };
+        \\}
+    );
+}
+
+// `Element[]` coerces into a `Children`-typed parameter (the builder children
+// model `div([a, b])`); a single `Element` and a `string` coerce too.
+test "context: Element[] coerces into Children" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn div(children: Children) -> Element { Element(); }
+        \\fn a() -> Element { Element(); }
+        \\val list = div([a(), a()]);
+        \\val one = div(a());
+        \\val text = div("hello");
+    );
+}

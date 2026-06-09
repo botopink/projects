@@ -1,42 +1,75 @@
-# TODO — implement-completeness
+# TODO — annotation-processors (the lib-agnostic core)
 
-> Live checklist for branch `task/implement-completeness` (worktree
-> `.tasks/implement-completeness/`).
-> Spec (intent, immutable): [`tasks/v0.beta.6/specs/implement-completeness.md`](tasks/v0.beta.6/specs/implement-completeness.md)
+> Task branch `task/annotation-processors` · spec
+> [`tasks/v0.beta.7/specs/annotation-processors.md`](../../tasks/v0.beta.7/specs/annotation-processors.md).
+> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test.
+>
+> **Indivisible spec:** the generic mechanism AND the removal of every non-std lib
+> footprint live here — one branch, sequential phases. `std` is the allowed
+> coupled exception; the gate binds rakun/jhonstart/future frameworks.
 
-> **Goal**: `implement` parses + codegens in every documented form. Surfaced
-> attaching `@Context` to jhonstart's `Element` (G5–G7). G7 is a **correctness
-> bug** (inline `struct implement` values drop their fields at runtime) — fix it
-> first. Files: `parser/decls.zig`, `parser/types.zig`, `codegen/commonJS.zig`,
-> `codegen/erlang.zig`.
+## P0 — generic package loader (de-lib the core; std excepted)
+- [~] `from "<lib>"` resolves any external **non-std** lib by name through one
+      lib-agnostic mechanism; no per-lib `@embedFile`, no `rakun_pkg_modules`, no
+      `registerRakunLib`. `std` keeps its embedded-prelude path. DONE for
+      co-compiled modules: non-std lib `.bp` sources passed in `Module[]` resolve
+      `from "<lib>"` through the shared import registry (same path the
+      `from "http"` cross-module test exercises) — the embed/registry/loader
+      rakun code is all gone. REMAINING: the CLI driver should *discover*
+      `libs/<name>/` on disk (manifest deps) and feed those modules in — a
+      `compiler-cli` change with no in-repo test fixture yet (tracked).
+- [x] Delete every `rakun` reference from `modules/compiler-core/src/**` (incl.
+      the `rakunExports`/`rakunTypeDecls` env fields, `registerRakunLib`,
+      `markRakunImports`, `buildDelegateType`, `registerRakunTypeDecl`,
+      `expandRakunImports`, `isRakunPkgPath`, `rakun_pkg_modules`, the
+      `prelude.zig` embeds, and both `build.zig` `@embedFile`s). `validateRakun*`
+      never existed (planned-only). Codegen example comments de-named.
+- [x] Fold `comptime/tests/jhonstart.zig` into the generic suites — N/A on this
+      branch: `grep -riE jhonstart modules/compiler-core/src` already returns
+      nothing (the file/comments don't exist here; the earlier scan was wrong).
+      So the gate's `jhonstart` half is already satisfied.
+- [x] Gate as a test: `grep -riE "rakun|jhonstart" modules/compiler-core/src`
+      returns nothing (std exempt). Wired as a `zig build test` step in `build.zig`
+      (`lib_agnostic_gate`: `! grep -riIE 'rakun|jhonstart' modules/compiler-core/src`,
+      `has_side_effects` so it always re-scans). `libs/rakun (.bp)` tests stay
+      green — they compile the lib's own local sources, not an external
+      `from "rakun"`.
 
-## F0 — parser
-- [x] G5: array-typed (and other suffixed) fields inside an inline
-      `struct implement … { … }` body — `parseStructBody` now uses `parseTypeRef`;
-      `StructField.typeName` → `typeRef: TypeRef`. Test:
-      `parser: struct implement with array-typed field`.
-- [x] G6: generic interface (`Iface<A,B>`, incl. `@Context<…>`) in standalone
-      `implement <Iface> for <Type> { }` — `ImplementDecl.interfaces` →
-      `[]TypeRef`, parsed via `parseTypeRef`. Test:
-      `parser: implement generic interface for type`.
+## P1 — recognition + generic argument validation
+- [x] Recognize a decorator by signature: a `pub fn`/`declare fn` whose first param
+      is `comptime _: @Decl`; record per importing module (generic registry).
+      (`env.decorators` registry, populated in `registerFnSignatures` for both the
+      `.fn` and `.delegate` forms; parser now accepts bare `@Decl`.)
+- [x] `#[d(args)]` type-checks `args` against the decorator signature (arity +
+      types) at any site (record/struct/enum/method/fn). (`validateDecorators`
+      pass; arity honors trailing defaults; per-arg lexical kind check.)
+      NOTE: field-site + record/struct method-site annotations are a *parser* gap
+      (annotations only parse on interface methods today) — addressed when rakun
+      migration (P2) needs `#[getMapping]` on controller methods.
+- [x] Declare `@Decl` builtin reflection type + `DeclKind` in `builtins.d.bp`.
+      (`DeclKind`/`Annotation`/`Param`/`Field`/`Method` + `interface Decl`;
+      `TypeRef.isDeclType` recognizes bare `@Decl`.)
 
-## F1 — codegen (the real bug, prioritize)
-- [x] G7: inline `struct implement … { fields }` emits a real constructor that
-      assigns fields (matching `record`) — `emitStruct` in `commonJS.zig` now
-      emits `constructor(...)` (field inits → param defaults). Erlang already
-      lowered struct construction to a `#{…}` map via `collectTypeShapes`, so it
-      had parity already. node + erlang RUN LOGs both print `5`.
+## P2 — comptime invocation + diagnostics
+- [x] Serialize the annotated declaration to the `@Decl` handle. (`buildHandleJson`
+      in infer.zig — kind/name/fields/methods/returnType/annotations, for
+      fn/record/struct/enum + their methods.)
+- [x] Run the decorator body in the node runtime; surface `fail`/`failAt` as a
+      scoped diagnostic. (`decorator_eval.zig` mirrors `template_eval`; `__decl`
+      handle + `fail`/`failAt`; `invokeDecorators` runs body-carrying decorators
+      after `validateDecorators`, only when `env.templateEval` is set. Diagnostic
+      locs are coarse for now — message carries the detail; precise spans = TODO.)
+      `@Decl` body type-checks via the `decl_reflection_src` cluster registered in
+      `registerStdlib` (scalar `kind`/`name`/`returnType` + `fail`/`failAt`).
+- [ ] (with `rakun`) decorator placement + arg rules move to lib-side bodies.
+      Blocked on the parser gap: `#[getMapping]` must parse on record/struct
+      method + field sites (today only interface methods).
 
-## F2 — regression coverage
-- [x] `js: struct implement ---- fields round-trip at runtime` — runs `mk().n`
-      on every backend; node + erlang snapshots assert `5` (was `undefined`).
+## P3 — wiring contribution (DI graph + router)
+- [ ] A decorator body may return generated decls / `@Expr` (expr-templates
+      expansion) to contribute singletons, the DI graph, and the router table.
+- [ ] (with `rakun`) DI cycle check + router build + `Rakun.run` become lib-side.
 
-## Notes
-- jhonstart V1 already dodges all three (`record … implement @Context`), so this
-  unblocks the *next* phase, not the green core. The broken forms are now fixed.
-- Out of scope: beam/wasm struct-field round-trip is still incomplete (the test
-  snapshots record their current — wrong/empty — output); spec only required
-  node + erlang parity. Labeled-arg reordering is unchanged from `record`
-  (call site emits args in written order).
-- Docs updated: `docs.md` §Implement (generic interface + inline struct-implement
-  with fields), `codegen/AGENTS.md` (struct constructor emission).
+## Done gate
+- [ ] `zig build && zig build test` green; the `grep` gate test passes.
+- [ ] `comptime/AGENTS.md` + `codegen/AGENTS.md` + `libs/std/AGENTS.md` updated.

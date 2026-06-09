@@ -602,3 +602,42 @@ test "template: holed fallback span ---- hole on first non-opening line maps cor
     const loc = template.mapSpanToLoc(cap, .{ .start = 0, .end = 0, .line = 2 });
     try std.testing.expectEqual(@as(usize, 6), loc.line);
 }
+
+// ── markup authoring DSL ──────────────────────────────────────────────────────
+//
+// A markup DSL captures `<…>` text unevaluated as `@Expr<string>`, expands it at
+// compile time, and yields a plain `Element` — verified end-to-end through the
+// node pipeline. Children are assembled with `fragment(Element[])`. (This is the
+// pattern a React/Next-style view lib builds on top of generic primitives.)
+
+test "template: markup DSL ---- <Component/> tags resolve to calls" {
+    try assertCompilesOk(@src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn fragment(items: Element[]) -> Element { Element(); }
+        \\fn Page1() -> Element { Element(); }
+        \\fn Page2() -> Element { Element(); }
+        \\pub fn html(comptime q: @Expr<string>) -> @Expr<Element> {
+        \\    return q.build("fragment([Page1(), Page2()])");
+        \\}
+        \\val page = html """<Page1/><Page2/>""";
+    );
+}
+
+test "template: markup DSL ---- ${expr} splices as a text child" {
+    try assertCompilesOk(@src(),
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn fragment(items: Element[]) -> Element { Element(); }
+        \\fn text(value: string) -> Element { Element(); }
+        \\pub fn html(comptime q: @Expr<string>) -> @Expr<Element> {
+        \\    var acc = "fragment([";
+        \\    loop (q.parts()) { p ->
+        \\        if (p.kind == "Interp") {
+        \\            acc = acc + "text(" + p.code + "),";
+        \\        };
+        \\    };
+        \\    return q.build(acc + "])");
+        \\}
+        \\val name = "world";
+        \\val page = html """<p>${name}</p>""";
+    );
+}

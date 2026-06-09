@@ -1354,7 +1354,7 @@ const Emitter = struct {
                             } else if (mod_name != null and this.imported_types.get(mod_name.?) != null) {
                                 // Associated fn of an IMPORTED record/struct
                                 // (`Response.ok(...)` where `Response` comes
-                                // `from "rakun"`): a remote call into the owning
+                                // `from "web"`): a remote call into the owning
                                 // module (`http:ok(...)`) — the bare fn only
                                 // exists in the owner, lowercasing the type name
                                 // (`response:ok`) would hit the wrong module.

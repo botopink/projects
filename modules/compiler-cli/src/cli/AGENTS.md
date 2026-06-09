@@ -20,8 +20,9 @@ cli/
 ├── format_cmd.zig     ← `botopink format`   format / check .bp files
 ├── new.zig            ← `botopink new`      scaffold a new project
 ├── clean.zig          ← `botopink clean`    delete out/ + .botopinkbuild/
-├── config.zig         ← `botopink.json` loader + target options
+├── config.zig         ← `botopink.json` loader + target options + `dependencies`
 ├── scanner.zig        ← source-module discovery in `src/`
+├── libs.zig           ← generic external-lib loader (`libs/<name>/` from disk)
 └── reporter.zig       ← stdout/stderr helpers (status, errors, hints)
 ```
 
@@ -41,8 +42,9 @@ cli/
 
 | File | Role |
 |---|---|
-| `config.zig` | Parses `botopink.json` (target, entry module, etc). |
+| `config.zig` | Parses `botopink.json` (target, entry module, `dependencies`, etc). |
 | `scanner.zig` | Walks `src/` and returns modules sorted by path (deterministic). |
+| `libs.zig` | Resolves `dependencies` to `libs/<name>/` modules on disk (lib-agnostic — the core never names a lib; sees them as ordinary `Module[]` prefixed `<name>/`). |
 | `reporter.zig` | Single source of truth for CLI text — use `reporter.errMsg`, `reporter.info`, etc. |
 
 ## Conventions
