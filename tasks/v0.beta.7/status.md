@@ -6,6 +6,8 @@
 | Spec | Header status | Branch `task/<slug>` | Worktree `.tasks/<slug>` | TODO.md |
 |---|---|---|---|---|
 | [annotation-processors](specs/annotation-processors.md) | pending | open (3e507e3) | present | 0/14 done |
+| [erika](specs/erika.md) | pending | see Notes (stale v0.beta.6 branch) | none yet | — |
+| [jhonstart](specs/jhonstart.md) | pending | see Notes (stale v0.beta.6 branch) | none yet | — |
 | [rakun](specs/rakun.md) | pending | see Notes (task/rakun-port) | present | 0/15 done |
 | [stdlib-backends-parity](specs/stdlib-backends-parity.md) | pending | open (b8c778f) | present | 0/14 done |
 
@@ -30,5 +32,15 @@
   the mechanism lands in `feat`, `git merge feat` into `.tasks/rakun` and port the
   behaviour into `libs/rakun/*.bp` (no new compiler-core code).
 
+- **erika / jhonstart are newly authored (2026-06-09)** and have **no fresh
+  worktree/branch yet**. `scripts/status.sh` derives `task/<slug>` from the slug
+  and finds the **stale v0.beta.6** `task/erika`/`task/jhonstart` branches (already
+  merged into `feat`) — that "merged" is the *old* work, not these specs. When
+  starting them, branch fresh off `feat` (e.g. `task/erika-port`,
+  `task/jhonstart-port`, mirroring `task/rakun-port`) and seed each `TODO.md` from
+  the spec. Both are **BLOCKED** on `annotation-processors` (pure `.bp` clients of
+  the generic loader); carry the ⛔ banner.
+
 - **Acceptance gate for the set:** `grep -riE "rakun|jhonstart" modules/compiler-core/src`
   returns nothing (std exempt), shipped as a test by `annotation-processors` P0.
+  The set gate extends to `erika` too (erika leaves `std` — see its spec).
