@@ -1,4 +1,4 @@
------ SOURCE CODE -- jhonstart.bp
+----- SOURCE CODE -- view.bp
 ```botopink
 pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
     var acc = "\"\"";
@@ -14,11 +14,11 @@ pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
 }
 ```
 
------ JAVASCRIPT -- jhonstart.js
+----- JAVASCRIPT -- view.js
 ```javascript
 ```
 
------ TYPESCRIPT TYPEDEF -- jhonstart.d.ts
+----- TYPESCRIPT TYPEDEF -- view.d.ts
 ```typescript
 export declare function html(q: ): Expr<string>;
 
@@ -30,7 +30,7 @@ export declare function html(q: ): Expr<string>;
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-import {html} from "jhonstart";
+import {html} from "view";
 
 val name = "world";
 
@@ -65,7 +65,7 @@ _botopink_main();
 
 ----- TYPESCRIPT TYPEDEF -- main.d.ts
 ```typescript
-import { html } from "jhonstart";
+import { html } from "view";
 
 
 

@@ -108,8 +108,8 @@ codegen/
   (`Iface<A, B>`, `@Context<…>`), and `StructField`/`ImplementDecl.interfaces`
   both carry full `TypeRef`s so suffixed field types (`E[]`) and generic
   interfaces parse.
-- jhonstart-language-gaps: a function-typed record field (`set: fn(next: T)`)
-  needs no special handling — it is stored like any field (the closure lands in
+- a function-typed record field (`set: fn(next: T)`) needs no special
+  handling — it is stored like any field (the closure lands in
   the constructor: `new State(0, (n) => {})`). The `Children` coercion is purely
   type-level (the argument value passes through unchanged). `typescript.zig`
   renders an anonymous `TypeRef.record_type` as a `{ f: T; … }` object type.

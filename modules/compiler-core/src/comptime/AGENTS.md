@@ -40,8 +40,7 @@ comptime/
 │   ├── variants.zig       ← variant/record-update/pattern/@print/AST probes
 │   ├── exhaustiveness.zig ← case exhaustiveness (+errors)
 │   ├── effects.zig        ← throw/context/@Result effect checking
-│   ├── templates.zig      ← @Expr capture / scope snapshot / methods / expansion
-│   └── jhonstart.zig      ← jhonstart framework `check` scenarios (hooks + html DSL)
+│   └── templates.zig      ← @Expr capture / scope snapshot / methods / expansion / markup DSL
 └── runtime/           ← Node.js + Erlang eval backends — see runtime/AGENTS.md
 ```
 
@@ -168,7 +167,7 @@ other targets treat `use` as a transparent prefix (bind the call result into a
 slot). Phantom `@Context` base structs (`struct implement @Context { }`, no
 members) are erased — see `codegen/AGENTS.md`.
 
-## Anonymous record types + `Children` coercion (jhonstart-language-gaps)
+## Anonymous record types + `Children` coercion
 
 - `resolveTypeRefInContext` lowers a `TypeRef.record_type` (`{ f: T, … }`) to a
   structural `Type.record`; it unifies field-by-field with a `record { … }`

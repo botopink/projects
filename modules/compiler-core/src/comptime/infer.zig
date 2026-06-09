@@ -2446,8 +2446,8 @@ fn validateTypeparams(
 
 /// Calls `unify` and, if it fails, stamps the expression's location onto the error.
 fn unifyAt(env: *Env, a: *T.Type, b: *T.Type, loc: ast.Loc) InferError!void {
-    // jhonstart `Children` coercion (gap G4) — applied before unification since
-    // `unifyAt` is always called target-first (`unifyAt(param, arg)`).
+    // `Children` coercion — applied before unification since `unifyAt` is
+    // always called target-first (`unifyAt(param, arg)`).
     if (childrenCoercion(env, a, b)) return;
     unify(env, a, b) catch |err| {
         if (env.lastError) |*e| e.loc = loc;
@@ -2455,10 +2455,10 @@ fn unifyAt(env: *Env, a: *T.Type, b: *T.Type, loc: ast.Loc) InferError!void {
     };
 }
 
-/// True when `source` coerces into a `Children`-typed `target` (gap G4). A
-/// `Children` parameter (the builder children model jhonstart's `div { … }`
-/// needs) accepts another `Children`, any array (`Element[]` — the list form),
-/// a `string` (→ a text child), or a single value implementing `@Context` (an
+/// True when `source` coerces into a `Children`-typed `target`. A `Children`
+/// parameter (the builder children model a markup DSL's `div { … }` needs)
+/// accepts another `Children`, any array (`Element[]` — the list form), a
+/// `string` (→ a text child), or a single value implementing `@Context` (an
 /// `Element` → a one-element list). Coercion is one-directional: it only fires
 /// when the *declared* type (`target`) is `Children`, never the reverse.
 fn childrenCoercion(env: *Env, target: *T.Type, source: *T.Type) bool {

@@ -340,7 +340,7 @@ test "js: template end to end ---- line string template with hole" {
 test "js: template end to end ---- cross-module html mirrors the canonical example" {
     try h.assertJs(std.testing.allocator, @src(), &.{
         .{
-            .path = "jhonstart",
+            .path = "view",
             .source =
             \\pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
             \\    var acc = "\"\"";
@@ -359,7 +359,7 @@ test "js: template end to end ---- cross-module html mirrors the canonical examp
         .{
             .path = "",
             .source =
-            \\import {html} from "jhonstart";
+            \\import {html} from "view";
             \\
             \\val name = "world";
             \\
