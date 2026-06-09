@@ -37,6 +37,7 @@ fn main() {
   {label, 5}.
     {allocate, 0, 0}.
     {call, 0, {f, 3}}.
+    {test, is_map, {f, 10}, [{x, 0}]}.
     {get_map_elements, {f, 10}, {x, 0}, {list, [{atom, n}, {x, 0}]}}.
   {label, 10}.
     {move, {x, 0}, {x, 1}}.
@@ -65,4 +66,5 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
+5
 ```
