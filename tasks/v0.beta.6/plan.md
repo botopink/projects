@@ -16,18 +16,23 @@ mechanisms.** So this set was consolidated, not finished as originally planned:
   jhonstart-language-gaps, implement-completeness, mutual-recursion, erika (+ the
   data-driven std package registry), and stdlib-backends-and-tooling's done parts
   (Part C tooling + A2 `s.contains`→`includes`).
-- **Re-aimed to a new keystone spec — `annotation-processors`** (decorators as
-  custom comptime fns + `@Decl` reflection + a generic package loader; P0 deletes
-  the rakun foundation from the core). `rakun` is re-specified as its client; the
-  reference F2/F3 implementation is preserved on the `task/rakun` branch (not
-  merged, to keep the core clean). **Implementation is a new set.**
-- **Still partial → new tasks:** stdlib-backends-and-tooling Part A1/A3 + Part B
-  (backend-parity F1–F6); de-jhonstart-ifying `tests/jhonstart.zig`.
+- **Re-aimed to [v0.beta.7](../v0.beta.7/) — `annotation-processors` + `rakun`**
+  (decorators as custom comptime fns the lib *defines and acts* on + `@Decl`
+  reflection + a generic loader; P0 deletes the rakun foundation; `std` stays the
+  allowed coupled exception). The specs **moved** to v0.beta.7; the reference F2/F3
+  implementation is preserved on the `task/rakun` branch (not merged).
+- **Also advanced to v0.beta.7:** stdlib-backends-and-tooling Part A1/A3 + Part B
+  → `stdlib-backends-parity`; de-jhonstart-ifying `tests/jhonstart.zig` → folded
+  into `annotation-processors` P0.
 
 The `.tasks/` worktrees for this set were removed after consolidation; the
 `task/<slug>` branches are preserved.
 
-## annotation-processors
+## annotation-processors + rakun → moved to v0.beta.7
+
+> The detailed reasoning for both now lives in
+> [`../v0.beta.7/plan.md`](../v0.beta.7/plan.md). Kept below as the original
+> v0.beta.6 reasoning (history).
 
 The replacement for the interim rakun core foundation. A decorator is an ordinary
 comptime function whose first param is a reflected `@Decl`; the core only provides

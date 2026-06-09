@@ -39,33 +39,34 @@ So the work split in two:
   *surfaced* by jhonstart), `erika` (a pure-`.bp` std module + a **data-driven**
   std package registry, so the core names no individual std module), and the
   editor tooling + the `s.contains`→`includes` dispatch.
-- **Re-aimed (the new direction) — specs only, implementation deferred to a new
-  set.** rakun's interim foundation hard-codes `rakun` in the core; that is the
-  **coupling to remove**. The keystone replacing it is
-  [`annotation-processors`](specs/annotation-processors.md): decorators become
-  **custom comptime functions** (written in the lib, invoked by the core over a
-  generic `@Decl` reflection handle) and `from "<lib>"` resolves through one
-  **generic package loader**. rakun is then re-specified as a *client* of that
-  mechanism. The reference F2/F3 implementation stays on the `task/rakun` branch.
+- **Re-aimed (the new direction) — advanced to [v0.beta.7](../v0.beta.7/).**
+  rakun's interim foundation hard-codes `rakun` in the core; that is the
+  **coupling to remove**. The keystone replacing it,
+  [`annotation-processors`](../v0.beta.7/specs/annotation-processors.md)
+  (decorators as **custom comptime fns** the lib both *defines and acts* on, over
+  a generic `@Decl` handle + a generic package loader), and the rakun re-spec as
+  its *client*, **moved to the v0.beta.7 set** — that is where they execute. The
+  reference F2/F3 implementation stays on the `task/rakun` branch.
 
 ## Features (v0.beta.6)
 
-Most specs are **independent** and ran in parallel as separate `task/<slug>`
-branches. The one real edge is the new direction: **`rakun` now depends on
-`annotation-processors`** (it is re-specified as a client of that mechanism).
-The originally-listed seven landed as generic work; `annotation-processors` is
-the eighth, added by the direction shift and **pending** (a new set executes it).
+These specs ran in parallel as separate `task/<slug>` branches and **landed in
+`feat`** (generic, lib-agnostic work). The lib-coupled strand
+(`annotation-processors` + `rakun`) **advanced to [v0.beta.7](../v0.beta.7/)** —
+it is not listed here.
 
 | Spec | Slug | Depends on |
 |---|---|---|
 | [stdlib-backends-and-tooling — finish backends + dispatch + editor tooling](specs/stdlib-backends-and-tooling.md) | `stdlib-backends-and-tooling` | v0.beta.4 carryover (JS path done) |
 | [cross-module-codegen — concrete types across the package boundary](specs/cross-module-codegen.md) | `cross-module-codegen` | nothing (commonJS done) |
-| [annotation-processors — decorators as custom comptime functions (de-rakun the core)](specs/annotation-processors.md) | `annotation-processors` | comptime eval + expr-templates |
-| [rakun — comptime DI container + router + bootstrap, **on annotation-processors**](specs/rakun.md) | `rakun` | [`annotation-processors`](specs/annotation-processors.md) |
 | [jhonstart-language-gaps — record/array ergonomics](specs/jhonstart-language-gaps.md) | `jhonstart-language-gaps` | nothing |
 | [implement-completeness — `implement` parses & codegens in every form](specs/implement-completeness.md) | `implement-completeness` | nothing |
 | [mutual-recursion — forward references between top-level fns](specs/mutual-recursion.md) | `mutual-recursion` | nothing |
 | [erika — LINQ-style query lib + `erika "…"` query-string (`@Expr`)](specs/erika.md) | `erika` | nothing (pure `.bp` std module; `erika "…"` built on `@Expr`) |
+
+> **Advanced to v0.beta.7:** [`annotation-processors`](../v0.beta.7/specs/annotation-processors.md)
+> (the lib-agnostic-core keystone) and [`rakun`](../v0.beta.7/specs/rakun.md)
+> (its client). See [`../v0.beta.7/README.md`](../v0.beta.7/README.md).
 
 ## Independent specs (no cross-spec ordering)
 
@@ -74,12 +75,7 @@ stdlib-backends-and-tooling   (Part A backends · Part B backend-parity · Part 
 
 cross-module-codegen          (commonJS landed; erlang/beam/wasm parity)
 
-annotation-processors    ── P0 generic package loader (de-rakun the core) · P1 recognition + arg
-                            validation · P2 comptime invocation + @Decl reflection · P3 wiring (DI + router)
-rakun  ──(needs)──►  annotation-processors
-                              F2 IoC container · F3 annotation args · F4 router
-                              F5 Rakun.run ──► libs/server (HTTP backing)
-                              (built on annotation-processors; F5 boots F2–F4)
+annotation-processors + rakun ── advanced to v0.beta.7 (the lib-agnostic core)
 
 jhonstart-language-gaps  ── G1 fn-typed fields · G2 anon record types
                             G3 fn() -> T[] · G4 Children coercion
@@ -93,35 +89,12 @@ erika                    ── F0 skeleton+wiring · F1 where/select · F2 take
                             (pure .bp std module over Array<T>; eager v1)
 ```
 
-The cross-spec ordering is now the direction shift: **`rakun` is built on
-`annotation-processors`**. The old internal ordering (`rakun-bootstrap` after
-`rakun-ioc-web`) stays folded into the `rakun` spec — its F5 phase boots what
-F2–F4 build, on one `task/rakun` branch over the same `libs/rakun/src/*.bp`
-files.
+The lib-agnostic-core strand (`annotation-processors` → `rakun`) and its residual
+coupling debt (the rakun foundation + `tests/jhonstart.zig`) moved to
+[v0.beta.7](../v0.beta.7/) — that set owns the direction and its gate.
 
 ## Scope boundaries
 
-- **annotation-processors** is the keystone of the direction shift: it deletes
-  the interim rakun foundation from the core (`registerRakunLib`,
-  `markRakunImports`, `rakunExports`/`rakunTypeDecls`, `expandRakunImports`,
-  `rakun_pkg_modules`, `isRakunPkgPath`, the `rakun.d.bp`/`http.bp` embeds, the
-  `validateRakun*` passes) and replaces it with a generic package loader +
-  decorator-as-comptime-fn protocol over a `@Decl` reflection handle. **Gate:**
-  `grep -ri "rakun" modules/compiler-core/src` returns nothing. Spec is written;
-  implementation is a **new set**.
-- **rakun**: constructor injection only, singleton scope only — no prototype/
-  request scopes, AOP, or runtime reflection. Wiring stays **comptime**, now
-  expressed as lib-side decorator bodies on `annotation-processors` (not core
-  passes). The spec's F5 (bootstrap) is its only leg needing a real HTTP backing
-  (`libs/server`, scaffold → real, node first then erlang); it boots the F2–F4
-  container/router.
-- **Residual coupling debt (for the new set, not this consolidation).** Two
-  lib-specific footprints remain in the core and must be removed by the new
-  tasks: (1) the **rakun foundation** listed above (already on `feat` from
-  v0.beta.5) — removed by `annotation-processors` P0; (2)
-  `modules/compiler-core/src/comptime/tests/jhonstart.zig` — a jhonstart-named
-  test in the compiler is a layering violation (see `jhonstart.md`), to be folded
-  into the generic `effects.zig`/`templates.zig` + context-inference scenarios.
 - **cross-module-codegen** mirrors the commonJS behaviour already in `feat`;
   `new` is an emitted-JS detail, never botopink source. wasm may defer if
   single-module — record the limit rather than fake it.
