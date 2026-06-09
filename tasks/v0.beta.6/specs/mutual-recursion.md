@@ -4,7 +4,7 @@
 **Depends on**: nothing
 **Files**: `modules/compiler-core/src/comptime/infer.zig` (top-level binding pre-pass)
 **Touches docs**: `docs.md` (§Functions), `modules/compiler-core/src/comptime/AGENTS.md`
-**Status**: pending
+**Status**: done — forward refs between top-level fns merged into `feat` (180ef93)
 
 > **Why.** Surfaced writing `renderToString` in `libs/jhonstart`. A function may
 > call *itself* (its own name is in scope inside its body), but it may not call

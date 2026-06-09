@@ -1,9 +1,39 @@
 # v0.beta.6 — working notes
 
-This set is **completion work** across two strands: the v0.beta.4 carryover
-(finish stdlib backends + dispatch + editor tooling) and the v0.beta.5
+This set opened as **completion work** across two strands: the v0.beta.4
+carryover (finish stdlib backends + dispatch + editor tooling) and the v0.beta.5
 application-framework completion (cross-module codegen parity, rakun's
 container/web/bootstrap, jhonstart's language gaps). Notes grouped per spec.
+
+## Direction shift (2026-06-08) — the lib-agnostic core
+
+Building the frameworks out made the real problem visible: the libraries coupled
+to compiler-core (`rakun` is hard-coded in `modules/compiler-core/src/**`). Eric's
+call: **the core must know zero libs; a framework is a pure-`.bp` lib on generic
+mechanisms.** So this set was consolidated, not finished as originally planned:
+
+- **Merged into `feat` (generic work, no lib knowledge):** cross-module-codegen,
+  jhonstart-language-gaps, implement-completeness, mutual-recursion, erika (+ the
+  data-driven std package registry), and stdlib-backends-and-tooling's done parts
+  (Part C tooling + A2 `s.contains`→`includes`).
+- **Re-aimed to a new keystone spec — `annotation-processors`** (decorators as
+  custom comptime fns + `@Decl` reflection + a generic package loader; P0 deletes
+  the rakun foundation from the core). `rakun` is re-specified as its client; the
+  reference F2/F3 implementation is preserved on the `task/rakun` branch (not
+  merged, to keep the core clean). **Implementation is a new set.**
+- **Still partial → new tasks:** stdlib-backends-and-tooling Part A1/A3 + Part B
+  (backend-parity F1–F6); de-jhonstart-ifying `tests/jhonstart.zig`.
+
+The `.tasks/` worktrees for this set were removed after consolidation; the
+`task/<slug>` branches are preserved.
+
+## annotation-processors
+
+The replacement for the interim rakun core foundation. A decorator is an ordinary
+comptime function whose first param is a reflected `@Decl`; the core only provides
+the protocol (recognize → reflect → invoke → apply) and a generic `from "<lib>"`
+loader — no lib names anywhere in `modules/compiler-core/src/**`. Reuses the
+`expr-templates` comptime-eval + diagnostic surface. See the spec for P0–P3.
 
 ## stdlib-backends-and-tooling (carryover)
 

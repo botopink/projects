@@ -1,17 +1,27 @@
 # rakun — comptime DI container + router + bootstrap (rakun F2–F5)
 
 **Slug**: rakun
-**Depends on**: nothing (builds on the rakun foundation in `feat`: `from "rakun"` + `#[decorator]` resolution)
-**Files**: `libs/rakun/src/*.bp`, `libs/server/src/*` (HTTP backing — scaffold → real), `modules/compiler-core/src/comptime/*` (component scan + DI graph), `modules/compiler-core/src/codegen/*` (router table + `Rakun.run` lowering)
-**Touches docs**: `libs/rakun/AGENTS.md`, `libs/rakun/docs.md`, `libs/server/AGENTS.md`, `modules/compiler-core/src/comptime/AGENTS.md`
+**Depends on**: [`annotation-processors`](annotation-processors.md) — the generic mechanism rakun is built on
+**Files**: `libs/rakun/src/*.bp` (ALL semantics — decorators, DI, router, bootstrap, written in botopink), `libs/server/src/*` (HTTP backing — scaffold → real)
+**Touches docs**: `libs/rakun/AGENTS.md`, `libs/rakun/docs.md`, `libs/server/AGENTS.md`
 **Status**: pending
+
+> **HARD RULE (2026-06-08).** `modules/compiler-core/src/**` must contain **zero**
+> knowledge of rakun — no lib names, no DI/router/`Response` semantics, no
+> `registerRakunLib`/`rakun_pkg_modules`/embeds. rakun is a **pure-botopink lib**:
+> every behaviour below is implemented in `libs/rakun/*.bp` on top of the generic
+> primitives from [`annotation-processors.md`](annotation-processors.md) (custom
+> comptime decorator fns + a generic package loader). The steps below describe the
+> *behaviour*; the *implementation* is in the lib, not the compiler.
 
 ## Intent
 
-The rakun foundation (in `feat`) makes `from "rakun"` resolve, ships the real
-`http.bp` types, and resolves `#[decorator]` markers to imported symbols. This
-spec adds the **semantics** behind those markers and closes the loop to a
-booting server, as one sequential strand on the `task/rakun` branch:
+rakun ships HTTP types (`http.bp`) and `#[decorator]` markers. The generic
+package loader resolves `from "rakun"`, and the annotation-processor mechanism
+lets rakun's decorators (custom comptime fns in the lib) give those markers their
+**semantics** — all in botopink. This spec describes the behaviour those
+decorators implement and the loop to a booting server, as one sequential strand
+on the `task/rakun` branch:
 
 - the comptime IoC container (F2), annotation argument validation (F3), and the
   web router (F4);

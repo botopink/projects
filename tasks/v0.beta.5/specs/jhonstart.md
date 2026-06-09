@@ -369,6 +369,13 @@ val page = div { [ p { "world" }, Page1(), Page2(), Page3() ] };
 
 ## Test scenarios
 
+These belong to **jhonstart**, not the compiler: the `check`/`codegen` scenarios
+below are `.bp` `test {}` blocks (and runnable examples) under `libs/jhonstart/`,
+run by the library test step. The *language* behaviour they exercise (`use`
+gating, `@Context` base mismatch, `html`/`@Expr` expansion) is owned and tested
+generically by the `context-inference` and `expr-templates` specs — there are **no
+jhonstart-named tests in `modules/compiler-core/`**.
+
 ```
 check ---- counter_typechecks            (Counter() -> Element; use state/effect ok)
 check ---- use_outside_element_rejected  (use state in -> string → context error)
@@ -392,8 +399,9 @@ codegen/erlang ---- counter_typechecks   (parity: at least type-checks/compiles)
   surfaced capabilities the spec's snippets assume but the language cannot yet
   express. Per the "no new compiler features" rule, jhonstart does **not** work
   around these — they are recorded here and gate the corresponding framework
-  steps. Verified empirically via `modules/compiler-core/src/comptime/tests/jhonstart.zig`
-  (probe scenarios) on the F0 branch:
+  steps. Verified empirically while building `task/jhonstart` (throwaway probe
+  scenarios — the compiler must not know jhonstart, so these live as language
+  tests and `libs/jhonstart` `.bp` tests, not as compiler Zig tests):
   1. **Records cannot carry function-typed fields.** Both the type-decl form
      `record Box { set: fn(next: i32) }` and the literal-with-lambda form
      `(record { set: { next -> } })` fail to **parse** (a bare `fn(next: i32)`
@@ -442,11 +450,14 @@ codegen/erlang ---- counter_typechecks   (parity: at least type-checks/compiles)
   intrinsics (`libs/jhonstart/src/element.bp`, in `botopink.json`'s compiled
   set, runtime-tested by its own `test {}`): a recursive `record Element`,
   array-arg builders (`text`, `fragment`, `div`/`span`/`p`/`h1`/`ul`/`li`), and
-  a **pure, synchronous `renderToString`** (a self-recursive walk — botopink
-  resolves a fn's own name but not yet forward references between two top-level
-  fns, so the child loop is inlined). This means **SSR string rendering needs no
+  a **pure, synchronous `renderToString`**. (It was originally a self-recursive
+  walk with the child loop inlined, because botopink resolved a fn's own name but
+  not forward references between two top-level fns; the `mutual-recursion` spec
+  has since landed on `feat`, so it can split into the natural `renderToString` /
+  `renderChildren` pair.) This means **SSR string rendering needs no
   `async-generators`** — only the *data-loading* `*fn`/`await` server pieces do.
-  Also compiling (in the `jhonstart.zig` check tests): `use` gating on
+  Also compiling (jhonstart's own `.bp` `test {}` blocks, plus the language
+  `check` scenarios owned by `context-inference` / `expr-templates`): `use` gating on
   `@Context<Element, _>` hooks with simple/named-record returns; the `html` DSL
   building an `Element` tree via `q.build`. Comptime string ops in a template
   body (`q.text`/`.split`/`.trim`/accumulate/`q.build`) run, and with array-arg
@@ -472,6 +483,19 @@ codegen/erlang ---- counter_typechecks   (parity: at least type-checks/compiles)
 - **No new compiler features.** This is a deliberate constraint and a litmus
   test: if jhonstart needs something the language can't express, that is a
   *language* spec, not a framework one. Record any such gap here and split it out.
+- **The compiler must not know jhonstart.** `modules/compiler-core/*` carries
+  **zero** references to jhonstart — no probe tests, no name special-casing
+  (contrast `std`, embedded into the prelude, and `rakun`, whose decorators the
+  inferer recognises by name). jhonstart is ordinary userland botopink: every
+  capability it relies on is a *language* feature, exercised by the compiler's own
+  generic tests (`comptime/tests/effects.zig`, `templates.zig`, and the
+  `context-inference` / `expr-templates` `check` scenarios). jhonstart's **own**
+  behaviour is verified by `.bp` `test {}` blocks inside `libs/jhonstart/`, run by
+  the library test step — never by Zig tests in the compiler. A jhonstart-named
+  test under `modules/compiler-core/` is a layering violation: either the thing it
+  checks is a language feature (move it to the relevant language test, drop the
+  jhonstart framing) or it is framework behaviour (move it to a `libs/jhonstart`
+  `.bp` test).
 - **Not embedded.** Unlike `std`, jhonstart is resolved as an ordinary project
   dependency (`from "jhonstart"`); do **not** wire it into
   `comptime/stdlib/prelude.zig` or `build.zig`.
