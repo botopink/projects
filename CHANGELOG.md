@@ -6,6 +6,21 @@ All notable changes to the botopink compiler workspace are documented in this fi
 
 ### Added
 
+- **Record / array ergonomics for the UI framework** (jhonstart-language-gaps)
+  - Records carry **function-typed fields** (`record State<T> { value: T, set: fn(next: T) }`);
+    codegen stores the closure like any field.
+  - `get` / `set` are **soft keywords** — usable as record field names,
+    record-literal labels, destructuring names, member access, method-call
+    names, and named-call labels (the hook shape `{ value, set }`, `s.set(x)`).
+  - **Anonymous record types** as annotations / return types
+    (`-> { value: T, set: fn(T) }`, `TypeRef.record_type` → structural `Type.record`).
+  - A **function type returns an array** — `fn() -> T[]` (and `?T[]`, `T[][]`)
+    parse + infer in any position (declaration, field, annotation).
+  - **`Children` coercion**: an `Element[]` (any array), a single value
+    implementing `@Context` (an `Element`), or a `string` coerces into a
+    `Children`-typed parameter — the builder children model `div([a, b])` /
+    `div(child)` / `div("text")`.
+
 - **`@Result` / `@Option` method API** (stdlib)
   - `@Result<R, E>`: `.map`, `.flatMap`, `.unwrapOr`, `.isOk`, `.isError`.
   - `@Option<T>` (the canonical spelling of `?T`): `.map`, `.flatMap`, `.unwrapOr`.

@@ -450,6 +450,16 @@ const Emitter = struct {
             },
             // A comptime typeparam is erased after specialization; surface it as `any`.
             .typeparam => try self.w("any"),
+            .record_type => |flds| {
+                try self.w("{ ");
+                for (flds, 0..) |f, i| {
+                    if (i > 0) try self.w(", ");
+                    try self.w(f.name);
+                    try self.w(": ");
+                    try self.emitTypeRef(f.typeRef);
+                }
+                try self.w(" }");
+            },
         }
     }
 

@@ -6,20 +6,14 @@
 //! package is not embedded (reached via `from "jhonstart"`), so each scenario
 //! inlines the minimal declarations it needs — mirroring effects.zig/templates.zig.
 //!
-//! These cover the slice the current toolchain supports. Several spec snippets
-//! assume language features that are NOT yet expressible; the framework cannot
-//! work around them (spec rule: a missing capability is a language spec, not a
-//! framework one). The gaps are recorded in tasks/v0.beta.5/specs/jhonstart.md
-//! (Notes → "Language gaps surfaced by F1–F3"):
-//!   1. records cannot carry function-typed fields (`set: fn(next)`, `toggle: fn()`),
-//!      so the hook return shape `{value, set}` is inexpressible;
-//!   2. there is no anonymous record TYPE syntax (only value literals);
-//!   3. the parser rejects `fn() -> T[]` (array as a function-type's return);
-//!   4. `Element[]` does not satisfy a `Children` interface (no coercion),
-//!      so the builder children model `div { [a, b] }` does not type-check.
-//! The hook scenarios below therefore use simple/named-record returns, and the
-//! `html` scenarios assemble children with `fragment(Element[])` — the subset
-//! that compiles today.
+//! The four language gaps the framework once surfaced are now closed by the
+//! `jhonstart-language-gaps` spec, and their Test scenarios open this file:
+//!   G1. records carry function-typed fields (`set: fn(next: T)`) — and `get`/
+//!       `set` are soft keywords, valid as the hook shape's field names;
+//!   G2. anonymous record TYPE syntax (`-> { value: T, set: fn(T) }`);
+//!   G3. a function type returns an array (`fn() -> T[]`, `?T[]`, `T[][]`);
+//!   G4. `Element[]` (and a single `Element`, or a `string`) coerces into a
+//!       `Children`-typed parameter — the builder children model `div([a, b])`.
 
 const std = @import("std");
 const comptimeMod = @import("../../comptime.zig");
@@ -55,6 +49,69 @@ fn assertCompilesOk(comptime loc: std.builtin.SourceLocation, src: []const u8) !
         .parseError => std.debug.print("\nunexpected parse error\n", .{}),
     }
     try std.testing.expect(outcome == .ok);
+}
+
+// ── check ---- record/array ergonomics (jhonstart-language-gaps) ───────────────
+//
+// The four language gaps the framework surfaced (spec: jhonstart-language-gaps).
+// Each is now expressible; these are the spec's Test scenarios.
+
+// G1 ---- a record can carry a function-typed field (`set: fn(next: T)`). `set`
+// is a soft keyword, valid as a field name (the hook shape `{value, set}`).
+test "jhonstart gap ---- G1 record with a fn-typed field parses" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\record State<T> { value: T, set: fn(next: T) }
+    );
+}
+
+// G3 ---- a function type returns an array (`fn() -> T[]`), incl. nested forms.
+test "jhonstart gap ---- G3 fn() -> T[] parses" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn rows() -> i32[] { rows(); }
+        \\fn grid() -> i32[][] { grid(); }
+        \\fn maybe() -> ?i32[] { maybe(); }
+        \\record Builder { make: fn() -> i32[] }
+    );
+}
+
+// G1 ---- the `{value, set}` hook shape type-checks: a hook returns a record
+// carrying a fn-typed `set`, and a component uses it (`s.set(s.value)`).
+test "jhonstart gap ---- G1 {value, set} hook shape type-checks" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\record State<T> { value: T, set: fn(next: T) }
+        \\fn state<T>(initial: T) -> @Context<Element, State<T>> {
+        \\    State(value: initial, set: { n -> });
+        \\}
+        \\fn Counter() -> Element {
+        \\    val s = use state(0);
+        \\    s.set(s.value);
+        \\    Element();
+        \\}
+    );
+}
+
+// G2 ---- an anonymous record TYPE is accepted as a return annotation, and a
+// `record { … }` literal unifies with it field-by-field.
+test "jhonstart gap ---- G2 anonymous record type as return annotation" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn mk() -> { value: i32, set: fn(next: i32) } {
+        \\    record { value: 0, set: { n -> } };
+        \\}
+    );
+}
+
+// G4 ---- `Element[]` coerces into a `Children`-typed parameter (the builder
+// children model `div([a, b])`); a single `Element` and a `string` coerce too.
+test "jhonstart gap ---- G4 Element[] coerces into Children" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn div(children: Children) -> Element { Element(); }
+        \\fn a() -> Element { Element(); }
+        \\val list = div([a(), a()]);
+        \\val one = div(a());
+        \\val text = div("hello");
+    );
 }
 
 // ── check ---- hook surface (@Context<Element, _>) ────────────────────────────

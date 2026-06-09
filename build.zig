@@ -2,6 +2,7 @@
 ///
 ///   zig build          → builds botopink + botopink-lsp
 ///   zig build test     → runs every compiler-core test
+///   zig build test -Dtest-filter=<substr> → runs only matching tests
 ///   zig build run      → builds and runs the botopink CLI
 const std = @import("std");
 
@@ -65,8 +66,10 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const test_filters = b.option([]const []const u8, "test-filter", "Only run tests matching filter") orelse &.{};
     const core_tests = b.addTest(.{
         .root_module = core_test_mod,
+        .filters = test_filters,
     });
 
     const run_core_tests = b.addRunArtifact(core_tests);
@@ -87,7 +90,7 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    const lsp_tests = b.addTest(.{ .root_module = lsp_test_mod });
+    const lsp_tests = b.addTest(.{ .root_module = lsp_test_mod, .filters = test_filters });
     const run_lsp_tests = b.addRunArtifact(lsp_tests);
     run_lsp_tests.setCwd(b.path("modules/language-server"));
 

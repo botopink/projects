@@ -2019,6 +2019,20 @@ pub const Formatter = struct {
                     try this.join(docs, try this.text(" | ")),
                 );
             },
+            .record_type => |flds| blk: {
+                if (flds.len == 0) break :blk this.text("{}");
+                var docs = try this.arena.alloc(*const Doc, flds.len);
+                for (flds, 0..) |f, i| docs[i] = try this.concatAll(&.{
+                    try this.text(f.name),
+                    try this.text(": "),
+                    try this.fmtTypeRef(f.typeRef),
+                });
+                break :blk this.concatAll(&.{
+                    try this.text("{ "),
+                    try this.join(docs, try this.text(", ")),
+                    try this.text(" }"),
+                });
+            },
         };
     }
 

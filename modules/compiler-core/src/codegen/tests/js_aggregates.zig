@@ -245,3 +245,25 @@ test "js: tuple ---- access elements" {
         \\}
     );
 }
+
+// jhonstart-language-gaps: a record carrying a function-typed field (`set`)
+// codegens like any other field — the closure is stored in the constructor.
+test "js: record ---- fn-typed field (jhonstart hook shape)" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\record State<T> { value: T, set: fn(next: T) }
+        \\fn make() -> State<i32> { return State(value: 0, set: { n -> }); }
+        \\fn apply(s: State<i32>) -> i32 { s.set(s.value); return s.value; }
+    );
+}
+
+// jhonstart-language-gaps: `Element[]`, a single value, and a `string` all
+// coerce into a `Children`-typed parameter (the builder children model).
+test "js: call ---- Children coercion (list / single / text)" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn node() -> string { return "n"; }
+        \\fn box(children: Children) -> string { return "x"; }
+        \\val many = box([node(), node()]);
+        \\val one = box(node());
+        \\val txt = box("hi");
+    );
+}
