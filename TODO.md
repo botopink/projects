@@ -51,10 +51,19 @@
       `TypeRef.isDeclType` recognizes bare `@Decl`.)
 
 ## P2 — comptime invocation + diagnostics
-- [ ] Serialize the annotated declaration to the `@Decl` handle.
-- [ ] Run the decorator body in `template_eval`; surface `fail`/`failAt` as a
-      scoped diagnostic at the annotated declaration.
+- [x] Serialize the annotated declaration to the `@Decl` handle. (`buildHandleJson`
+      in infer.zig — kind/name/fields/methods/returnType/annotations, for
+      fn/record/struct/enum + their methods.)
+- [x] Run the decorator body in the node runtime; surface `fail`/`failAt` as a
+      scoped diagnostic. (`decorator_eval.zig` mirrors `template_eval`; `__decl`
+      handle + `fail`/`failAt`; `invokeDecorators` runs body-carrying decorators
+      after `validateDecorators`, only when `env.templateEval` is set. Diagnostic
+      locs are coarse for now — message carries the detail; precise spans = TODO.)
+      `@Decl` body type-checks via the `decl_reflection_src` cluster registered in
+      `registerStdlib` (scalar `kind`/`name`/`returnType` + `fail`/`failAt`).
 - [ ] (with `rakun`) decorator placement + arg rules move to lib-side bodies.
+      Blocked on the parser gap: `#[getMapping]` must parse on record/struct
+      method + field sites (today only interface methods).
 
 ## P3 — wiring contribution (DI graph + router)
 - [ ] A decorator body may return generated decls / `@Expr` (expr-templates

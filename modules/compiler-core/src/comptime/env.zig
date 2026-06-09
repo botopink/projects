@@ -224,8 +224,14 @@ pub const StdArrayLowering = struct {
 /// application type-checks against (arity + types). Populated generically for
 /// any fn whose first parameter is `comptime _: @Decl` — no lib knowledge. The
 /// slice points into the AST arena (the decl's own `params`), so it is stable.
+///
+/// `fn_decl` carries the full decorator function (with body) when it has one —
+/// `pub fn d(comptime _: @Decl) { … }`. It is run over the annotated declaration
+/// at comptime (P2: placement/argument rules live in the body). `null` for a
+/// bodyless `declare fn` marker, which only gets argument validation.
 pub const DecoratorSig = struct {
     params: []const ast.Param,
+    fn_decl: ?ast.FnDecl = null,
 };
 
 /// A type-directed lowering for a `return`/`throw` jump inside a fn returning

@@ -103,6 +103,35 @@ test "decorator: an unknown marker is left untouched (no decorator loaded)" {
     );
 }
 
+// ── decorator bodies reflect over `@Decl` (P2) ─────────────────────────────────
+
+test "decorator body: reads decl.kind and calls decl.fail" {
+    // The body must type-check: `decl.kind` (a `DeclKind`), the `.Record`
+    // member literal, and the `decl.fail(string)` diagnostic call.
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn service(comptime decl: @Decl) {
+        \\    if (decl.kind != .Record) {
+        \\        decl.fail("#[service] must annotate a record");
+        \\    }
+        \\}
+        \\
+        \\#[service]
+        \\record UserService { name: string }
+    );
+}
+
+test "decorator body: reads decl.name and decl.returnType" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn describe(comptime decl: @Decl) {
+        \\    val n = decl.name;
+        \\    val rt = decl.returnType;
+        \\}
+        \\
+        \\#[describe]
+        \\record Point { x: i32, y: i32 }
+    );
+}
+
 // ── generic argument validation (arity + type) ────────────────────────────────
 
 test "decorator error: too few arguments" {

@@ -16,6 +16,7 @@ const envMod = @import("env.zig");
 const TypeError = @import("error.zig").TypeError;
 const template = @import("template.zig");
 const templateEval = @import("template_eval.zig");
+const decoratorEval = @import("decorator_eval.zig");
 const specializeMod = @import("specialize.zig");
 const unify = @import("unify.zig").unify;
 const Lexer = @import("../lexer.zig").Lexer;
@@ -105,6 +106,7 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
 
     // Pass 3: semantic validation of `implement` blocks and struct accessors.
     try validateDecorators(env, program);
+    try invokeDecorators(env, program);
     try validateProgram(env, program);
 
     return list.toOwnedSlice(env.arena);
@@ -154,6 +156,7 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
 
     // Semantic validation of `implement` blocks and struct accessors.
     try validateDecorators(env, program);
+    try invokeDecorators(env, program);
     try validateProgram(env, program);
 
     return list.toOwnedSlice(env.arena);
@@ -427,11 +430,11 @@ fn registerFnSignatures(env: *Env, program: ast.Program) InferError!void {
     for (program.decls) |decl| switch (decl) {
         .@"fn" => |f| {
             try env.bind(f.name, try buildFnSignatureType(env, f));
-            registerDecoratorSig(env, f.name, f.params);
+            registerDecoratorSig(env, f.name, f.params, f);
         },
         // A `declare fn` decorator (`declare fn service(comptime _: @Decl)`) —
         // the bodyless form a lib ships its markers as — parses as a delegate.
-        .delegate => |d| registerDecoratorSig(env, d.name, d.params),
+        .delegate => |d| registerDecoratorSig(env, d.name, d.params, null),
         else => {},
     };
 }
@@ -447,11 +450,12 @@ fn isDecoratorParams(params: []const ast.Param) bool {
 }
 
 /// Record a decorator's trailing signature (everything after the leading
-/// `comptime _: @Decl`) so `#[name(args)]` applications can be argument-checked.
-/// No-op for ordinary functions.
-fn registerDecoratorSig(env: *Env, name: []const u8, params: []const ast.Param) void {
+/// `comptime _: @Decl`) so `#[name(args)]` applications can be argument-checked,
+/// plus its full `FnDecl` (when it has a body) so the body can run over each
+/// annotated declaration at comptime (P2). No-op for ordinary functions.
+fn registerDecoratorSig(env: *Env, name: []const u8, params: []const ast.Param, fn_decl: ?ast.FnDecl) void {
     if (!isDecoratorParams(params)) return;
-    env.decorators.put(name, .{ .params = params[1..] }) catch {};
+    env.decorators.put(name, .{ .params = params[1..], .fn_decl = fn_decl }) catch {};
 }
 
 /// Build a top-level function's callable type (params → return) without binding
@@ -1424,6 +1428,209 @@ fn checkDecoratorArgs(env: *Env, a: ast.Annotation, sig: envMod.DecoratorSig, ow
             return fail(env, msg, "Decorator arguments are type-checked against the decorator's signature.");
         }
     }
+}
+
+// ── generic decorator invocation (annotation processors, P2) ──────────────────
+//
+// After argument validation, the decorator's BODY runs over the declaration it
+// annotates: the core serializes that declaration into a `@Decl` handle and the
+// body (lib code) gives the marker meaning — validate placement/arguments via
+// `fail`/`failAt`. The core knows nothing about any specific marker. Runs only
+// in the full compile pipeline (`env.templateEval` set, node available); tooling
+// paths (LSP / compileTypesOnly) skip it.
+
+/// Render a `TypeRef` as the simple type name a `@Decl` handle exposes
+/// (best-effort: the named/generic head, else empty).
+fn declTypeName(tr: ast.TypeRef) []const u8 {
+    return switch (tr) {
+        .named => |n| n,
+        .generic => |g| g.name,
+        else => "",
+    };
+}
+
+fn appendAnnotationsJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, anns: []const ast.Annotation) !void {
+    try buf.append(arena, '[');
+    var first = true;
+    for (anns) |a| {
+        if (a.is_builtin) continue;
+        if (!first) try buf.append(arena, ',');
+        first = false;
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(buf, arena, a.name);
+        try buf.appendSlice(arena, ",\"args\":[");
+        for (a.args, 0..) |arg, i| {
+            if (i > 0) try buf.append(arena, ',');
+            try template.appendJsonString(buf, arena, arg);
+        }
+        try buf.appendSlice(arena, "]}");
+    }
+    try buf.append(arena, ']');
+}
+
+fn appendParamsJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, params: []const ast.Param) !void {
+    try buf.append(arena, '[');
+    for (params, 0..) |p, i| {
+        if (i > 0) try buf.append(arena, ',');
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(buf, arena, p.name);
+        try buf.appendSlice(arena, ",\"typeName\":");
+        try template.appendJsonString(buf, arena, declTypeName(p.typeRef));
+        try buf.append(arena, '}');
+    }
+    try buf.append(arena, ']');
+}
+
+fn appendMethodsJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, methods: []const ast.InterfaceMethod) !void {
+    try buf.append(arena, '[');
+    for (methods, 0..) |m, i| {
+        if (i > 0) try buf.append(arena, ',');
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(buf, arena, m.name);
+        try buf.appendSlice(arena, ",\"params\":");
+        try appendParamsJson(buf, arena, m.params);
+        try buf.appendSlice(arena, ",\"returnType\":");
+        try template.appendJsonString(buf, arena, if (m.returnType) |rt| declTypeName(rt) else "");
+        try buf.appendSlice(arena, ",\"annotations\":");
+        try appendAnnotationsJson(buf, arena, m.annotations);
+        try buf.append(arena, '}');
+    }
+    try buf.append(arena, ']');
+}
+
+const HandleField = struct { name: []const u8, typeName: []const u8 };
+
+/// Build a `@Decl` handle JSON for any annotated declaration. `fields`/`methods`
+/// default to empty for the kinds that have none; `returnType` is the empty
+/// string except for a fn/method.
+fn buildHandleJson(
+    arena: std.mem.Allocator,
+    kind: []const u8,
+    name: []const u8,
+    fields: []const HandleField,
+    methods: []const ast.InterfaceMethod,
+    returnType: []const u8,
+    annotations: []const ast.Annotation,
+) ![]const u8 {
+    var buf: std.ArrayList(u8) = .empty;
+    try buf.appendSlice(arena, "{\"kind\":");
+    try template.appendJsonString(&buf, arena, kind);
+    try buf.appendSlice(arena, ",\"name\":");
+    try template.appendJsonString(&buf, arena, name);
+    try buf.appendSlice(arena, ",\"fields\":[");
+    for (fields, 0..) |f, i| {
+        if (i > 0) try buf.append(arena, ',');
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(&buf, arena, f.name);
+        try buf.appendSlice(arena, ",\"typeName\":");
+        try template.appendJsonString(&buf, arena, f.typeName);
+        try buf.appendSlice(arena, ",\"annotations\":[]}");
+    }
+    try buf.appendSlice(arena, "],\"methods\":");
+    try appendMethodsJson(&buf, arena, methods);
+    try buf.appendSlice(arena, ",\"returnType\":");
+    try template.appendJsonString(&buf, arena, returnType);
+    try buf.appendSlice(arena, ",\"annotations\":");
+    try appendAnnotationsJson(&buf, arena, annotations);
+    try buf.append(arena, '}');
+    return buf.toOwnedSlice(arena);
+}
+
+/// Run every body-carrying decorator applied to one declaration over its handle.
+fn runDeclDecorators(
+    env: *Env,
+    ctx: envMod.TemplateEvalCtx,
+    anns: []const ast.Annotation,
+    handleJson: []const u8,
+) InferError!void {
+    for (anns) |a| {
+        if (a.is_builtin) continue;
+        const sig = env.decorators.get(a.name) orelse continue;
+        const dfn = sig.fn_decl orelse continue; // bodyless `declare fn` marker
+        if (dfn.body.len == 0) continue; // empty body — nothing to run
+
+        var plain = try env.arena.alloc(template.PlainArg, a.args.len);
+        for (a.args, 0..) |arg, i| {
+            const pname = if (i < sig.params.len) sig.params[i].name else "_";
+            plain[i] = .{ .paramName = pname, .jsValue = arg };
+        }
+
+        const outcome = decoratorEval.evaluate(env.arena, ctx.io, ctx.build_root, dfn, handleJson, plain) catch {
+            env.lastError = TypeError.custom(
+                "the decorator evaluator failed to run",
+                "Decorator bodies run in the node runtime at compile time — check that `node` is available.",
+            );
+            return error.TypeError;
+        };
+        switch (outcome) {
+            .ok => {},
+            .fail => |fl| {
+                env.lastError = TypeError.custom(fl.message, "raised by the decorator via `fail`/`failAt`");
+                return error.TypeError;
+            },
+            .err => |m| {
+                env.lastError = TypeError.custom(m, "the decorator body raised an unexpected error");
+                return error.TypeError;
+            },
+        }
+    }
+}
+
+/// Walk `program` and run body-carrying decorators over every annotated
+/// declaration (and its methods). Mirrors `validateDecorators`' walk; runs after
+/// it (so arguments are already validated).
+fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
+    if (env.decorators.count() == 0) return;
+    const ctx = env.templateEval orelse return;
+    for (program.decls) |decl| switch (decl) {
+        .@"fn" => |f| {
+            const h = try buildHandleJson(env.arena, "Fn", f.name, &.{}, &.{}, if (f.returnType) |rt| declTypeName(rt) else "", f.annotations);
+            try runDeclDecorators(env, ctx, f.annotations, h);
+        },
+        .record => |r| {
+            var fields = try env.arena.alloc(HandleField, r.fields.len);
+            for (r.fields, 0..) |fld, i| fields[i] = .{ .name = fld.name, .typeName = declTypeName(fld.typeRef) };
+            const h = try buildHandleJson(env.arena, "Record", r.name, fields, r.methods, "", r.annotations);
+            try runDeclDecorators(env, ctx, r.annotations, h);
+            for (r.methods) |m| {
+                const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                try runDeclDecorators(env, ctx, m.annotations, mh);
+            }
+        },
+        .@"struct" => |s| {
+            var fields: std.ArrayList(HandleField) = .empty;
+            for (s.members) |mem| switch (mem) {
+                .field => |fld| try fields.append(env.arena, .{ .name = fld.name, .typeName = declTypeName(fld.typeRef) }),
+                else => {},
+            };
+            const h = try buildHandleJson(env.arena, "Struct", s.name, fields.items, &.{}, "", s.annotations);
+            try runDeclDecorators(env, ctx, s.annotations, h);
+            for (s.members) |mem| switch (mem) {
+                .method => |m| {
+                    const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                    try runDeclDecorators(env, ctx, m.annotations, mh);
+                },
+                else => {},
+            };
+        },
+        .@"enum" => |e| {
+            const h = try buildHandleJson(env.arena, "Enum", e.name, &.{}, e.methods, "", e.annotations);
+            try runDeclDecorators(env, ctx, e.annotations, h);
+            for (e.methods) |m| {
+                const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                try runDeclDecorators(env, ctx, m.annotations, mh);
+            }
+        },
+        .interface => |i| {
+            // No `Interface` DeclKind — interface-level markers are skipped; its
+            // methods (`#[getMapping]` on a route) reflect as `Method`.
+            for (i.methods) |m| {
+                const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                try runDeclDecorators(env, ctx, m.annotations, mh);
+            }
+        },
+        else => {},
+    };
 }
 
 /// The simple (named) type of a parameter, or null for arrays/optionals/generics

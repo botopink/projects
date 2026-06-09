@@ -171,6 +171,28 @@ fn analyzeModule(
 /// so project-root imports never see them.
 pub const std_pkg_modules = @import("std_prelude").pkg_modules;
 
+/// The `@Decl` reflection cluster, in botopink, registered into the global type
+/// env so a decorator body (`fn d(comptime decl: @Decl) { … }`) type-checks. The
+/// canonical/documented copy lives in `libs/std/src/builtins.d.bp`; this minimal
+/// mirror exists because that file is not parsed as a standalone program. Keep
+/// the two in sync. `Span` (used by `failAt`) resolves opaquely — it is the
+/// `@Expr` model's span, not part of this cluster.
+///
+/// P2 surface: the scalar reflection an annotation processor needs to validate
+/// placement (`kind`/`name`/`returnType`) plus the `fail`/`failAt` diagnostics.
+/// The aggregate members (`fields`/`methods`/`annotations`, which need array
+/// types interface `val`s do not yet parse) arrive with the wiring phase (P3).
+const decl_reflection_src =
+    \\pub enum DeclKind { Record, Struct, Enum, Fn, Method, Field }
+    \\pub interface Decl {
+    \\    val kind: DeclKind
+    \\    val name: string
+    \\    val returnType: string
+    \\    fn fail(self: Self, message: string)
+    \\    fn failAt(self: Self, span: Span, message: string)
+    \\}
+;
+
 /// Embedded builtin-type interface declarations. Unlike `std_pkg_modules`
 /// these are flattened into the global type env at infer time (they declare the
 /// methods available on primitives / arrays / strings). Tooling — the language
@@ -340,6 +362,22 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         const tokens = try lx.scanAll(alloc);
         var p = Parser.init(tokens);
         const program = try stripTestDecls(try p.parse(alloc), alloc);
+        _ = try infer.inferProgram(env, program);
+    }
+
+    // The `@Decl` reflection cluster (annotation processors): register these
+    // types into the global env so a decorator body type-checks — `decl.kind` /
+    // `decl.name` / `decl.fields` / … and `decl.fail(…)`, plus the `Field` /
+    // `Method` / `Param` / `Annotation` shapes it reads. This mirrors the surface
+    // documented in `libs/std/src/builtins.d.bp` (kept there for tooling); it is
+    // parsed from a dedicated minimal source here because the full `builtins.d.bp`
+    // is the tooling/`@Expr` surface and is not consumed as a standalone program.
+    {
+        const alloc = env.arena;
+        var lx = Lexer.init(decl_reflection_src);
+        const tokens = try lx.scanAll(alloc);
+        var p = Parser.init(tokens);
+        const program = try p.parse(alloc);
         _ = try infer.inferProgram(env, program);
     }
 
