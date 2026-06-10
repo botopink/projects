@@ -193,6 +193,18 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   `DeclKind.Field` — `name` + the field's `returnType`) alongside methods. Adding
   the `annotations` field re-serializes the parser AST, so the record/struct
   parser snapshots were regenerated.
+- **P3 wiring contribution:** a decorator body contributes generated top-level
+  declarations via `@emit(source)` (declared in `builtins.d.bp`; lowered to
+  `__emit` by commonJS; the `decorator_eval` prelude collects the strings and
+  returns them in `Outcome.ok`). `runDeclDecorators` accumulates them into
+  `env.contributions`; `analyzeModule`/`analyzeSource` then **splice** the
+  contributed sources onto the module and **re-analyze it once** with
+  `env.skipDecoratorInvoke = true` (so the generated decls are inferred + emitted
+  without re-running decorators — no re-contribution, no loop). This is how a
+  framework lib builds singletons / a DI graph / a router table as ordinary code,
+  with no wiring logic in the core. (Decorator fns themselves are still emitted
+  by codegen today — dropping comptime-only decorator/`@Decl` fns like template
+  fns is a recorded follow-up.)
 
 ## `@Context<B, R>` capability inference (F7)
 

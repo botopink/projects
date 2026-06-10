@@ -366,6 +366,14 @@ pub const Env = struct {
     /// arity + types at every annotation site. Lib knowledge lives in the
     /// decorator body, never here.
     decorators: std.StringHashMap(DecoratorSig),
+    /// Top-level declaration sources a decorator body contributed via `@emit(...)`
+    /// while inferring this module. `analyzeModule` splices them into the module
+    /// and re-analyzes it (a wiring decorator builds singletons / DI / router as
+    /// ordinary code). Allocated in `arena`; no explicit deinit needed.
+    contributions: std.ArrayListUnmanaged([]const u8) = .empty,
+    /// Set on the second analysis pass (after splicing contributions) so
+    /// decorators are not re-invoked — no re-contribution, no infinite loop.
+    skipDecoratorInvoke: bool = false,
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{

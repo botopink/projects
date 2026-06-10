@@ -121,3 +121,28 @@ test "decorator invocation: @compilerError body accepts the right placement" {
         \\record UserService { name: string }
     );
 }
+
+// ── wiring contribution: a body emits generated declarations (P3) ──────────────
+
+test "decorator invocation: @emit contributes a top-level declaration" {
+    // The decorator body builds wiring as ordinary code; `@emit(source)` splices
+    // it into the module, where it is inferred + emitted like hand-written decls.
+    const io = std.testing.io;
+    const build_root = comptime h.buildRootPathFromSrc(@src());
+    const src =
+        \\fn singleton(comptime decl: @Decl) {
+        \\    @emit("pub val wiredMarker = 99;");
+        \\}
+        \\#[singleton]
+        \\record Service { x: i32 }
+    ;
+    var session = try comptimeMod.compile(std.testing.allocator, &.{.{ .path = "", .source = src }}, io, .node, build_root);
+    defer session.deinit(std.testing.allocator);
+    const outcome = session.outputs.items[0].outcome;
+    try std.testing.expect(outcome == .ok);
+    var found = false;
+    for (outcome.ok.transformed.decls) |d| {
+        if (d == .val and std.mem.eql(u8, d.val.name, "wiredMarker")) found = true;
+    }
+    if (!found) return error.ContributionMissing;
+}

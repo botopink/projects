@@ -2274,7 +2274,7 @@ const Emitter = struct {
                             }
                         } else if (std.mem.startsWith(u8, cc.callee, "__bp_")) {
                             try self.emitResultOptionOp(cc.callee, cc.args);
-                        } else if (std.mem.eql(u8, cc.callee, "expr") or std.mem.eql(u8, cc.callee, "code") or std.mem.eql(u8, cc.callee, "compilerError")) {
+                        } else if (std.mem.eql(u8, cc.callee, "expr") or std.mem.eql(u8, cc.callee, "code") or std.mem.eql(u8, cc.callee, "compilerError") or std.mem.eql(u8, cc.callee, "emit")) {
                             // `@expr(value)` / `@code(text)` — comptime template
                             // construction builtins; `@compilerError(msg)` — abort
                             // compilation from a comptime body. Only reachable when

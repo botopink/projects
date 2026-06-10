@@ -131,13 +131,43 @@ fn analyzeModule(
     templateRegistry: *const std.StringHashMap(ast.FnDecl),
     templateEvalCtx: ?envMod.TemplateEvalCtx,
 ) !AnalysisResult {
+    return analyzeSource(arena, mod, mod.source, registry, templateRegistry, templateEvalCtx, false);
+}
+
+/// Append decorator `@emit(...)` contributions to a module's source as extra
+/// top-level declarations (the wiring a decorator builds — singletons, DI, router).
+fn spliceContributions(arena: std.mem.Allocator, source: []const u8, contributions: []const []const u8) ![]const u8 {
+    var buf: std.ArrayListUnmanaged(u8) = .empty;
+    try buf.appendSlice(arena, source);
+    for (contributions) |c| {
+        try buf.append(arena, '\n');
+        try buf.appendSlice(arena, c);
+    }
+    return buf.toOwnedSlice(arena);
+}
+
+/// Analyze one module's `source`. On the first pass (`skip_invoke == false`) a
+/// decorator body may contribute generated declarations via `@emit(...)`; if it
+/// does, the contributions are spliced onto the source and the module is
+/// re-analyzed ONCE with decorator invocation disabled (`skip_invoke == true`),
+/// so the generated decls are inferred + emitted without re-running decorators.
+fn analyzeSource(
+    arena: std.mem.Allocator,
+    mod: Module,
+    source: []const u8,
+    registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    templateRegistry: *const std.StringHashMap(ast.FnDecl),
+    templateEvalCtx: ?envMod.TemplateEvalCtx,
+    skip_invoke: bool,
+) anyerror!AnalysisResult {
     var env = try infer.freshEnv(arena, std.heap.page_allocator);
     // Capture provenance for `expr` templates: which file is being inferred.
     env.modulePath = mod.path;
     // Runtime-backed template expansion (F6-full) — null in tooling paths.
     env.templateEval = templateEvalCtx;
+    env.skipDecoratorInvoke = skip_invoke;
 
-    var lexer = Lexer.init(mod.source);
+    var lexer = Lexer.init(source);
     const tokens = try lexer.scanAll(arena);
 
     var parser = Parser.init(tokens);
@@ -160,6 +190,15 @@ fn analyzeModule(
         },
         else => return err,
     };
+
+    // A decorator body contributed generated declarations (`@emit`): splice them
+    // onto the source and re-analyze once (decorators off, to avoid re-emitting).
+    if (!skip_invoke and env.contributions.items.len > 0) {
+        const spliced = try spliceContributions(arena, source, env.contributions.items);
+        env.deinit();
+        return analyzeSource(arena, mod, spliced, registry, templateRegistry, templateEvalCtx, true);
+    }
+
     return .{ .success = .{ .bindings = bindings, .env = env, .program = program } };
 }
 

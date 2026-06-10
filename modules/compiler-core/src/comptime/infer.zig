@@ -1565,7 +1565,10 @@ fn runDeclDecorators(
             return error.TypeError;
         };
         switch (outcome) {
-            .ok => {},
+            .ok => |contributions| {
+                // `@emit(...)` sources — spliced into the module by `analyzeModule`.
+                for (contributions) |src| try env.contributions.append(env.arena, src);
+            },
             .fail => |fl| {
                 env.lastError = TypeError.custom(fl.message, "raised by the decorator via `fail`/`failAt`");
                 return error.TypeError;
@@ -1582,6 +1585,7 @@ fn runDeclDecorators(
 /// declaration (and its methods). Mirrors `validateDecorators`' walk; runs after
 /// it (so arguments are already validated).
 fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
+    if (env.skipDecoratorInvoke) return; // second pass: contributions already spliced
     if (env.decorators.count() == 0) return;
     const ctx = env.templateEval orelse return;
     for (program.decls) |decl| switch (decl) {
@@ -2823,6 +2827,15 @@ fn inferBuiltinCallReturnType(
             try unifyAt(env, try env.namedType("string"), typedArgs[0].value.getType(), typedArgs[0].value.getLoc());
         }
         return env.freshVar();
+    }
+    // `@emit(source)` — a comptime body (a decorator) contributes generated
+    // top-level declarations, spliced into its module. Void; the source is parsed
+    // + inferred in a second pass over the module (see `analyzeModule`).
+    if (std.mem.eql(u8, callee, "emit")) {
+        if (typedArgs.len >= 1) {
+            try unifyAt(env, try env.namedType("string"), typedArgs[0].value.getType(), typedArgs[0].value.getLoc());
+        }
+        return env.namedType("void");
     }
     return env.namedType("void");
 }
