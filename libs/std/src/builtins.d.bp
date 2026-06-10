@@ -141,6 +141,13 @@ fn panic(message: string) noreturn
 fn trap() noreturn
 fn src() string
 
+// ── compile-time diagnostics ──────────────────────────────────────────────────
+// Abort compilation with `message`. The generic way for any comptime body — a
+// decorator (`fn d(comptime _: @Decl)`) or a template (`-> @Expr<…>`) — to reject
+// its input, surfaced as a scoped diagnostic at the call site. Preferred over the
+// `@Decl` handle's `fail`/`failAt`: it needs no handle and reads like `@panic`.
+fn compilerError(message: string) noreturn
+
 
 // ── module imports ───────────────────────────────────────────────────────────
 

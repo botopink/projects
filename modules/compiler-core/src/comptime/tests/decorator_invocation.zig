@@ -99,3 +99,25 @@ test "decorator invocation: body reads the reflected name" {
         \\record Bad { }
     , "the name Bad is reserved");
 }
+
+test "decorator invocation: @compilerError rejects wrong placement" {
+    // The generic compile-time error builtin — no `@Decl` handle needed — also
+    // surfaces as a scoped rejection when the body runs.
+    try assertRejects(@src(),
+        \\fn service(comptime decl: @Decl) {
+        \\    if (decl.kind != DeclKind.Record) { @compilerError("#[service] must annotate a record"); }
+        \\}
+        \\#[service]
+        \\fn notARecord() { }
+    , "must annotate a record");
+}
+
+test "decorator invocation: @compilerError body accepts the right placement" {
+    try assertAccepts(@src(),
+        \\fn service(comptime decl: @Decl) {
+        \\    if (decl.kind != DeclKind.Record) { @compilerError("#[service] must annotate a record"); }
+        \\}
+        \\#[service]
+        \\record UserService { name: string }
+    );
+}

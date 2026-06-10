@@ -155,11 +155,20 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   and `delegate`; when the first param is `comptime _: @Decl` it records the
   trailing signature (everything after the handle) **and the body-carrying
   `FnDecl`** in `env.decorators` (name → `DecoratorSig{ params, fn_decl }`).
-- The `@Decl` cluster (`enum DeclKind` + `interface Decl` with scalar
-  `kind`/`name`/`returnType` + `fail`/`failAt`) is registered into the global env
-  by `comptime.zig registerStdlib` from `decl_reflection_src`, so a decorator
-  body type-checks. The aggregate members (`fields`/`methods`/`annotations`)
-  await P3 (interface `val`s don't yet parse array types).
+- The `@Decl` cluster (`enum DeclKind` + `struct Decl`/`Field`/`Method`/`Param`/
+  `Annotation`/`Span`) is registered into the global env by `comptime.zig
+  registerStdlib` from `decl_reflection_src`, so a decorator body type-checks. It
+  is a `struct` (not an interface) so the **aggregate** members resolve too —
+  `decl.fields`/`decl.methods`/`decl.annotations` (array types interface `val`s
+  don't parse) — which is what a wiring decorator iterates. The shape matches the
+  handle JSON and the `__decl` runtime object.
+- `@compilerError(message)` — the generic compile-time error builtin (declared in
+  `builtins.d.bp`, return-typed `noreturn` via a fresh var in
+  `inferBuiltinCallReturnType`, lowered to `__compilerError(...)` by commonJS).
+  The preferred way for a comptime body — a decorator or an `@Expr` template — to
+  reject its input: the `decorator_eval`/`template_eval` preludes define
+  `__compilerError` as a `__failRaw` throw, so it surfaces as the same scoped
+  diagnostic as `decl.fail`, but needs no `@Decl` handle.
 - `validateDecorators` (pass 3, before `validateProgram`) walks every
   declaration's `annotations` — record/struct/enum/fn/interface + their methods —
   and for each `#[name(args)]` whose `name` is a recognized decorator,

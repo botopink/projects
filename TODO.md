@@ -72,8 +72,17 @@
       (`RecordField`/`StructField` carry `annotations`; `parseRecordBody`/
       `parseStructBody` attach them; the inference walk reflects fields as
       `DeclKind.Field`. Parser AST snapshots regenerated.)
-- [ ] A decorator body may return generated decls / `@Expr` (expr-templates
-      expansion) to contribute singletons, the DI graph, and the router table.
+- [x] `@Decl` exposes the aggregate reflection a wiring decorator iterates:
+      `Decl` is now a `struct` with `fields`/`methods`/`annotations` (+ `Field`/
+      `Method`/`Param`/`Annotation`/`Span`), so `decl.fields`/`decl.methods` resolve.
+- [x] `@compilerError(message)` builtin — the generic compile-time error a comptime
+      body raises (decorator or template); lowered to `__compilerError` and thrown
+      as the `fail` protocol. Preferred over `decl.fail`/`decl.failAt`.
+- [ ] A decorator body may *return* generated decls / `@Expr` to contribute
+      singletons, the DI graph, and the router table. (Needs the pipeline to
+      capture a decorator's return + splice top-level decls after inference — the
+      remaining wiring primitive. The reflection + diagnostics it builds on are
+      done; the consumer — rakun DI/router — is lib-side, in `libs/rakun/*.bp`.)
 - [ ] (with `rakun`) DI cycle check + router build + `Rakun.run` become lib-side.
 
 ## Done gate

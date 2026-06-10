@@ -175,21 +175,30 @@ pub const std_pkg_modules = @import("std_prelude").pkg_modules;
 /// env so a decorator body (`fn d(comptime decl: @Decl) { … }`) type-checks. The
 /// canonical/documented copy lives in `libs/std/src/builtins.d.bp`; this minimal
 /// mirror exists because that file is not parsed as a standalone program. Keep
-/// the two in sync. `Span` (used by `failAt`) resolves opaquely — it is the
-/// `@Expr` model's span, not part of this cluster.
+/// the two in sync.
 ///
-/// P2 surface: the scalar reflection an annotation processor needs to validate
-/// placement (`kind`/`name`/`returnType`) plus the `fail`/`failAt` diagnostics.
-/// The aggregate members (`fields`/`methods`/`annotations`, which need array
-/// types interface `val`s do not yet parse) arrive with the wiring phase (P3).
+/// `Decl` is a `struct` (not an interface) so its **aggregate** members —
+/// `fields`/`methods`/`annotations` with array types — parse and resolve; that
+/// is what the wiring phase (P3) reads to build DI/router tables. The shape
+/// matches the `@Decl` handle JSON `buildHandleJson` emits and the `__decl`
+/// object `decorator_eval.zig` binds, so a body's `decl.fields`/`decl.kind`/
+/// `decl.fail(…)` type-check against the same data the runtime provides.
 const decl_reflection_src =
     \\pub enum DeclKind { Record, Struct, Enum, Fn, Method, Field }
-    \\pub interface Decl {
-    \\    val kind: DeclKind
-    \\    val name: string
-    \\    val returnType: string
-    \\    fn fail(self: Self, message: string)
-    \\    fn failAt(self: Self, span: Span, message: string)
+    \\pub struct Span { val start: i32, val end: i32, val line: i32 }
+    \\pub struct Annotation { val name: string, val args: string[] }
+    \\pub struct Param { val name: string, val typeName: string }
+    \\pub struct Field { val name: string, val typeName: string, val annotations: Annotation[] }
+    \\pub struct Method { val name: string, val params: Param[], val returnType: string, val annotations: Annotation[] }
+    \\pub struct Decl {
+    \\    val kind: DeclKind,
+    \\    val name: string,
+    \\    val fields: Field[],
+    \\    val methods: Method[],
+    \\    val returnType: string,
+    \\    val annotations: Annotation[],
+    \\    declare fn fail(self: Self, message: string);
+    \\    declare fn failAt(self: Self, span: Span, message: string);
     \\}
 ;
 

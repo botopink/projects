@@ -54,6 +54,7 @@ const prelude =
     \\function __failRaw(message, span) {
     \\    throw { __bpfail: { message: String(message), span: span ?? null } };
     \\}
+    \\function __compilerError(message) { __failRaw(message, null); }
     \\function __decl(h) {
     \\    return {
     \\        kind: h.kind,

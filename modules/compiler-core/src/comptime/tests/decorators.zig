@@ -152,6 +152,21 @@ test "decorator: an unknown marker is left untouched (no decorator loaded)" {
 
 // ── decorator bodies reflect over `@Decl` (P2) ─────────────────────────────────
 
+test "decorator body: @compilerError aborts compilation" {
+    // `@compilerError(msg)` is the generic compile-time error — no `@Decl` handle
+    // needed, reads like `@panic`. Preferred over `decl.fail`/`decl.failAt`.
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn service(comptime decl: @Decl) {
+        \\    if (decl.kind != .Record) {
+        \\        @compilerError("#[service] must annotate a record");
+        \\    }
+        \\}
+        \\
+        \\#[service]
+        \\record UserService { name: string }
+    );
+}
+
 test "decorator body: reads decl.kind and calls decl.fail" {
     // The body must type-check: `decl.kind` (a `DeclKind`), the `.Record`
     // member literal, and the `decl.fail(string)` diagnostic call.
@@ -176,6 +191,21 @@ test "decorator body: reads decl.name and decl.returnType" {
         \\
         \\#[describe]
         \\record Point { x: i32, y: i32 }
+    );
+}
+
+test "decorator body: reads the aggregate members (fields/methods/annotations)" {
+    // P3: `@Decl` is a struct, so the aggregate reflection members resolve —
+    // this is what a wiring decorator iterates to build a DI/router table.
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn component(comptime decl: @Decl) {
+        \\    val fs = decl.fields;
+        \\    val ms = decl.methods;
+        \\    val ans = decl.annotations;
+        \\}
+        \\
+        \\#[component]
+        \\record Service { repo: string }
     );
 }
 

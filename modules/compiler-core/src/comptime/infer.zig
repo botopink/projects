@@ -2814,6 +2814,16 @@ fn inferBuiltinCallReturnType(
         if (typedArgs.len > 0) return typedArgs[0].value.getType();
         return env.freshVar();
     }
+    // `@compilerError(message)` — abort compilation with a diagnostic. The
+    // generic way for any comptime body (a decorator or a template) to reject
+    // its input; reaches `decorator_eval`/`template_eval` as a `fail` outcome.
+    // `noreturn`-like: a fresh var unifies with whatever context follows it.
+    if (std.mem.eql(u8, callee, "compilerError")) {
+        if (typedArgs.len >= 1) {
+            try unifyAt(env, try env.namedType("string"), typedArgs[0].value.getType(), typedArgs[0].value.getLoc());
+        }
+        return env.freshVar();
+    }
     return env.namedType("void");
 }
 
