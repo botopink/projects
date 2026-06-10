@@ -330,10 +330,15 @@ pub fn repeat<T>(value: T, times: i32) -> Query<T> {
 // translation is inlined. See AGENTS.md for the user-project import caveat.
 pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T> {
     val sql = q.text();
-    // Normalize commas to spaces up front so `select a, b` and `select a , b`
-    // tokenize identically — each projected field is its own token; empty tokens
-    // from the doubled spaces fall through as blanks.
-    val tokens = sql.trim().split(",").join(" ").split(" ");
+    // Normalize newlines/tabs to spaces so the triple-quoted multi-line form
+    // (`erika """ select … """`) tokenizes the same as the single-line one — a
+    // `\n` would otherwise stay glued to the previous token (`cities\n`). Then
+    // normalize commas to spaces so `select a, b` and `select a , b` tokenize
+    // identically — each projected field is its own token; empty tokens from the
+    // doubled spaces fall through as blanks. (split/join lower to native JS — the
+    // only ops the comptime evaluator runs; see AGENTS.md.)
+    val flat = sql.split("\n").join(" ").split("\r").join(" ").split("\t").join(" ");
+    val tokens = flat.trim().split(",").join(" ").split(" ");
     var star = false;
     var fields = [];
     var source = "";
@@ -566,6 +571,15 @@ test "erika query: multi-field select projects an anonymous record" {
     val rows = erika "select name, pop from erikaCities where pop >= 5 order by name asc";
     val labels = rows.map({ r -> r.name + ":" + r.pop.toString() });
     assert labels.join(",") == "Lyon:5,Paris:9";
+}
+
+test "erika query: triple-quoted multi-line form tokenizes the same" {
+    val names = erika """
+        select name from erikaCities
+        where pop >= 5
+        order by name asc
+    """;
+    assert names.join(",") == "Lyon,Paris";
 }
 
 

@@ -77,10 +77,18 @@ val labels = rows.map({ r -> r.name + ":" + r.pop.toString() });
 
 // `select *` returns whole rows → Array<City>
 val all = erika "select * from cities";
+
+// the triple-quoted multi-line form (the `html """…"""` sibling) is authored the
+// same way — newlines and tabs are normalized to spaces before tokenizing:
+val bigRows = erika """
+    select name, pop from cities
+    where pop >= 5
+    order by name asc
+""";
 ```
 
 The referenced collection (`cities`) is resolved against the caller's top-level
-scope.
+scope — the same caller-scope resolution `html` uses for its builders.
 
 ## `select` over a `var listas = [..]`
 
@@ -132,11 +140,13 @@ val paresPorDez = erika.of(nums).where({ n -> n % 2 == 0 }).select({ n -> n * 10
 > `var` does not resolve — use a `val` for the string form, or the fluent
 > `erika.of(listas)` (above) for a `var`.
 
-> **Note.** Within a *consumer* project the `erika "…"` form does not resolve yet
-> after `import {erika} from "erika"` (`unbound variable 'erika'`) — a generic
-> loader limit, see [`AGENTS.md`](AGENTS.md). The fluent `erika.of(...)` API works
-> from any project today; the string form is exercised by erika's own in-file
-> tests, where the template fn is directly in scope.
+> **Runnable example.** A consumer project lives at
+> [`examples/erika-linq/`](../../examples/erika-linq/): it imports
+> `{of, erika} from "erika"` and exercises the fluent layer **and** both the
+> single-line `erika "…"` and triple-quoted `erika """…"""` SQL forms
+> cross-module (`botopink test` green). The bare imported `erika` template fn now
+> binds in a consumer's scope — the generic-loader-binding keystone (v0.beta.8)
+> closed the old `unbound variable 'erika'` limit.
 
 ## See also
 
