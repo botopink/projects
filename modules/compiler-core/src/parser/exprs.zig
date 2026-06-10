@@ -745,7 +745,6 @@ pub fn parseBinaryExpr(this: *This, alloc: std.mem.Allocator, comptime level: us
 /// token's loc so loc-keyed method lowering stays per-link distinct.
 fn parsePostfixChain(this: *This, alloc: std.mem.Allocator, base_in: Expr) ParseError!Expr {
     var base = base_in;
-    const baseLoc = base.getLoc();
     while (this.check(.dot) or this.check(.questionDot)) {
         const isOptional = this.check(.questionDot);
         _ = this.advance();
@@ -764,7 +763,12 @@ fn parsePostfixChain(this: *This, alloc: std.mem.Allocator, base_in: Expr) Parse
             base.call.kind.call.optional = isOptional;
         } else {
             const recvPtr = try this.boxExpr(alloc, base);
-            base = Expr{ .identifier = .{ .loc = baseLoc, .kind = .{ .identAccess = .{
+            // Field-access links use the member token's loc — like the
+            // method-call links above — so each chain link has a distinct
+            // location. Loc-keyed lowering (`instanceLowerings` for `.length`)
+            // would otherwise collide on the shared base loc, e.g. emitting
+            // `self.pairs.length` as `length(length(Self))`.
+            base = Expr{ .identifier = .{ .loc = locFromToken(fieldTok), .kind = .{ .identAccess = .{
                 .receiver = recvPtr,
                 .member = fieldTok.lexeme,
                 .optional = isOptional,
@@ -999,7 +1003,11 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
                 base.call.kind.call.optional = isOptional;
             } else {
                 const recvPtr = try this.boxExpr(alloc, base);
-                base = Expr{ .identifier = .{ .loc = locFromToken(tok), .kind = .{ .identAccess = .{
+                // Field-access links use the member token's loc (like the
+                // method-call links above) so each chain link has a distinct
+                // location — loc-keyed lowering would otherwise collide on the
+                // shared base loc (e.g. `xs.length` nested in another access).
+                base = Expr{ .identifier = .{ .loc = locFromToken(fieldTok), .kind = .{ .identAccess = .{
                     .receiver = recvPtr,
                     .member = fieldTok.lexeme,
                     .optional = isOptional,

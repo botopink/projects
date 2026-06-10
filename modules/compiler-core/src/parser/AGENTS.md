@@ -85,6 +85,15 @@ names, record-literal labels, destructuring names, member access, method-call
 names, and named-call labels — so a hook can return the shape `{ value, set }`
 with `set` a function field (`s.set(x)`).
 
+## Postfix-chain locs
+
+Each link in a `.field` / `?.field` / `.method(args)` postfix chain carries the
+loc of **its own member token**, never the shared base loc. Downstream lowering
+is loc-keyed (e.g. `instanceLowerings` records `arr.length` → host length op by
+the access loc), so two links sharing a loc collide — `self.pairs.length` would
+emit `length(length(Self))`. `parsePostfixChain` and the identifier postfix loop
+both use `locFromToken(fieldTok)` for this reason.
+
 ## Notes
 
 - AST nodes are `union(enum)`; always call `deinit(alloc)` on heap-allocated
