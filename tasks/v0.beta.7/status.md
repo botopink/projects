@@ -5,27 +5,42 @@
 
 | Spec | Header status | Branch `task/<slug>` | Worktree `.tasks/<slug>` | TODO.md |
 |---|---|---|---|---|
-| [annotation-processors](specs/annotation-processors.md) | pending | — | — | — |
-| [rakun](specs/rakun.md) | pending | open (feb96f0) | — | — |
-| [stdlib-backends-parity](specs/stdlib-backends-parity.md) | pending | — | — | — |
+| [annotation-processors](specs/annotation-processors.md) | pending | open (3e507e3) | present | 0/14 done |
+| [erika](specs/erika.md) | pending | see Notes (stale v0.beta.6 branch) | none yet | — |
+| [jhonstart](specs/jhonstart.md) | pending | see Notes (stale v0.beta.6 branch) | none yet | — |
+| [rakun](specs/rakun.md) | pending | see Notes (task/rakun-port) | present | 0/15 done |
+| [stdlib-backends-parity](specs/stdlib-backends-parity.md) | pending | open (b8c778f) | present | 0/14 done |
 
 ## Notes
 
-- **New set, no execution yet.** All three specs are `pending`; no worktrees
-  exist. `rakun` shows `open (feb96f0)` — that branch holds the **interim,
-  core-coupled** F2/F3 reference implementation from v0.beta.5/6; this set ports
-  the *behaviour* into `libs/rakun/*.bp` on `annotation-processors` and does **not**
-  merge that branch's Zig.
+- **Worktrees created (2026-06-09), branched off `feat` (`316ef1a`):**
+  `.tasks/annotation-processors` (`task/annotation-processors`),
+  `.tasks/stdlib-backends-parity` (`task/stdlib-backends-parity`), and
+  `.tasks/rakun`. Each `TODO.md` is seeded from its spec.
 
-- **The one dependency:** `rakun` needs `annotation-processors` (the generic
-  decorator mechanism). `stdlib-backends-parity` is independent and parallel-safe.
+- **rakun branch naming.** The `.tasks/rakun` worktree runs on **`task/rakun-port`**
+  (a fresh branch off `feat`), **not** `task/rakun`. `task/rakun` (`feb96f0`) is
+  the **preserved reference** — the interim, core-coupled F2/F3 implementation —
+  and is intentionally left untouched. `scripts/status.sh` derives the branch from
+  the slug (`task/rakun`), so the auto-generated row points at the *reference*;
+  the live work is on `task/rakun-port` (`149651b`).
 
-- **Start order.** Open `annotation-processors` first (it de-libs the core and
-  ships the mechanism); `stdlib-backends-parity` can start in parallel; `rakun`
-  starts once the mechanism exists. Per the workflow (D7): for each, `git worktree
-  add .tasks/<slug> -b task/<slug> feat` and seed `.tasks/<slug>/TODO.md` from the
-  spec steps. (`task/rakun` already exists at `feb96f0` — branch off `feat` into a
-  fresh `task/rakun-port` or reset the worktree's intent to the new spec.)
+- **Start order.** `annotation-processors` and `stdlib-backends-parity` are
+  **ready now** and parallel-safe (different files / different regions of
+  `infer.zig`). **`rakun` is BLOCKED** on `annotation-processors` — it is a pure
+  `.bp` client of the generic mechanism; its `TODO.md` carries the ⛔ banner. When
+  the mechanism lands in `feat`, `git merge feat` into `.tasks/rakun` and port the
+  behaviour into `libs/rakun/*.bp` (no new compiler-core code).
+
+- **erika / jhonstart are newly authored (2026-06-09)** and have **no fresh
+  worktree/branch yet**. `scripts/status.sh` derives `task/<slug>` from the slug
+  and finds the **stale v0.beta.6** `task/erika`/`task/jhonstart` branches (already
+  merged into `feat`) — that "merged" is the *old* work, not these specs. When
+  starting them, branch fresh off `feat` (e.g. `task/erika-port`,
+  `task/jhonstart-port`, mirroring `task/rakun-port`) and seed each `TODO.md` from
+  the spec. Both are **BLOCKED** on `annotation-processors` (pure `.bp` clients of
+  the generic loader); carry the ⛔ banner.
 
 - **Acceptance gate for the set:** `grep -riE "rakun|jhonstart" modules/compiler-core/src`
   returns nothing (std exempt), shipped as a test by `annotation-processors` P0.
+  The set gate extends to `erika` too (erika leaves `std` — see its spec).

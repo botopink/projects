@@ -72,17 +72,6 @@ pub fn build(b: *std.Build) void {
     }
     std_prelude.addImport("std_pkg", std_pkg);
 
-    // rakun framework declarations (libs/rakun/src/rakun.d.bp). Embedded so the
-    // compiler can register them on `from "rakun"`, but — unlike the stdlib —
-    // NOT flattened into the global env: opt-in per module (see
-    // comptime `registerRakunLib` / `markRakunImports`).
-    std_prelude.addAnonymousImport("rakun.d.bp", .{
-        .root_source_file = b.path("libs/rakun/src/rakun.d.bp"),
-    });
-    std_prelude.addAnonymousImport("http.bp", .{
-        .root_source_file = b.path("libs/rakun/src/http.bp"),
-    });
-
     // ── compiler-core (library) ───────────────────────────────────────────────
 
     const core_mod = b.addModule("botopink", .{
@@ -116,6 +105,21 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run every test (compiler-core + language-server)");
     test_step.dependOn(&run_core_tests.step);
+
+    // ── lib-agnostic gate (annotation-processors P0) ──────────────────────────
+    // HARD RULE: the compiler core must name no specific NON-std library. Fail
+    // the build if any framework name leaks into `modules/compiler-core/src`.
+    // `std` is the one allowed exception (deliberately absent from the
+    // alternation). Extend the pattern as frameworks are added. `grep` exits 1
+    // when nothing matches, so `!` turns "clean" into success; a match → exit 0
+    // → `!` → failure. This file lives outside the scanned tree, so it may name
+    // the forbidden tokens. Runs as part of `zig build test`.
+    const lib_agnostic_gate = b.addSystemCommand(&.{
+        "sh",                                                       "-c",
+        "! grep -riIE 'rakun|jhonstart' modules/compiler-core/src",
+    });
+    lib_agnostic_gate.has_side_effects = true; // never cache — always re-scan
+    test_step.dependOn(&lib_agnostic_gate.step);
 
     // ── language-server tests ─────────────────────────────────────────────────
 

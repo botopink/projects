@@ -16,6 +16,7 @@ const envMod = @import("env.zig");
 const TypeError = @import("error.zig").TypeError;
 const template = @import("template.zig");
 const templateEval = @import("template_eval.zig");
+const decoratorEval = @import("decorator_eval.zig");
 const specializeMod = @import("specialize.zig");
 const unify = @import("unify.zig").unify;
 const Lexer = @import("../lexer.zig").Lexer;
@@ -85,77 +86,6 @@ fn markStdImports(env: *Env, u: ast.ImportDecl) InferError!bool {
     return true;
 }
 
-/// `import {…} from "rakun"` — bring the named rakun symbols into this env.
-/// Type names (`Request`/`Response`/`HttpMethod`/…) are registered like a local
-/// type decl; decorator and interface-associated fns are bound as values so
-/// `#[service]` resolves (F3) and `Response.json(...)` type-checks. Returns true
-/// when the decl was a `from "rakun"` import (fully handled here); an unknown
-/// imported name is a clear type error. rakun is opt-in: a module that never
-/// imports it sees none of these symbols.
-fn markRakunImports(env: *Env, u: ast.ImportDecl) InferError!bool {
-    const from_rakun = switch (u.source) {
-        .module => |m| std.mem.eql(u8, m, "rakun"),
-        .root => false,
-    };
-    if (!from_rakun) return false;
-    for (u.imports) |imp| {
-        const want = imp.segments[imp.segments.len - 1]; // original export name
-        const local = imp.name(); // local (alias-aware) name
-        // Concrete rakun types (`Response`/`App`/`HttpMethod`) live in the
-        // `rakun/http` package module: in the full `compile` pipeline
-        // `resolveImports` already bound them from the shared registry
-        // (emit-once). Skip — re-registering locally would emit a duplicate.
-        if (env.lookup(local) != null) continue;
-        var found = false;
-        if (env.rakunTypeDecls.get(want)) |decl| {
-            try registerRakunTypeDecl(env, decl);
-            found = true;
-        }
-        if (env.rakunExports.get(want)) |ty| {
-            try env.bind(local, ty);
-            found = true;
-        }
-        if (!found) {
-            env.lastError = TypeError.custom(
-                "unknown \"rakun\" import",
-                "rakun exports the decorators component/service/repository/controller/" ++
-                    "restController, configuration/bean/inject/value, route/getMapping/" ++
-                    "postMapping/putMapping/patchMapping/deleteMapping, and the types " ++
-                    "Request/Response/Context/App/Rakun/HttpMethod.",
-            );
-            return error.TypeError;
-        }
-    }
-    return true;
-}
-
-/// Build the function type of a `declare fn` delegate signature. rakun decorator
-/// markers (`service`, `getMapping(path: string)`, …) parse as delegates;
-/// exposing each as a callable type lets `markRakunImports` bind it and lets F3
-/// check `#[…]` annotation arguments against the signature.
-pub fn buildDelegateType(env: *Env, d: ast.DelegateDecl) InferError!*T.Type {
-    const params = try env.arena.alloc(*T.Type, d.params.len);
-    for (d.params, 0..) |p, i| {
-        params[i] = try resolveTypeRef(env, p.typeRef);
-    }
-    const ret = if (d.returnType) |rn| try env.namedType(rn) else try env.namedType("void");
-    return env.funcType(params, ret);
-}
-
-/// Register a single rakun type declaration into the importing env. Interfaces
-/// contribute their associated fns (`Response.json`) and resolve opaquely as a
-/// type name; enums/records/structs register their type definition (guarded so
-/// a repeated import is idempotent).
-fn registerRakunTypeDecl(env: *Env, decl: ast.DeclKind) InferError!void {
-    switch (decl) {
-        .interface => |d| try registerInterfaceAssociatedFns(env, d),
-        .@"enum" => |e| if (env.lookupTypeDef(e.name) == null) try registerEnum(env, e),
-        .record => |r| if (env.lookupTypeDef(r.name) == null) try registerRecord(env, r),
-        .@"struct" => |s| if (env.lookupTypeDef(s.name) == null) try registerStruct(env, s),
-        else => {},
-    }
-}
-
 pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     var list: std.ArrayListUnmanaged(Binding) = .empty;
 
@@ -175,6 +105,8 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     }
 
     // Pass 3: semantic validation of `implement` blocks and struct accessors.
+    try validateDecorators(env, program);
+    try invokeDecorators(env, program);
     try validateProgram(env, program);
 
     return list.toOwnedSlice(env.arena);
@@ -202,7 +134,6 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
                 // so qualified calls (`bool.negate(x)`) resolve against
                 // `env.stdModules`. Unknown std module → clear type error.
                 if (try markStdImports(env, u)) continue;
-                if (try markRakunImports(env, u)) continue;
                 for (u.imports) |imp| {
                     const name = imp.name();
                     if (env.lookup(name)) |ty| {
@@ -224,6 +155,8 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
     }
 
     // Semantic validation of `implement` blocks and struct accessors.
+    try validateDecorators(env, program);
+    try invokeDecorators(env, program);
     try validateProgram(env, program);
 
     return list.toOwnedSlice(env.arena);
@@ -462,7 +395,6 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
         // (tests, LSP) otherwise leaves qualified-call receivers unbound.
         .use => |u| {
             _ = try markStdImports(env, u);
-            _ = try markRakunImports(env, u);
             return null;
         },
         // A test block produces no binding, but its body must type-check.
@@ -496,9 +428,34 @@ fn registerTypeDecl(env: *Env, decl: ast.DeclKind) InferError!void {
 /// recursive `record` type names are registered in pass 1 before any use.
 fn registerFnSignatures(env: *Env, program: ast.Program) InferError!void {
     for (program.decls) |decl| switch (decl) {
-        .@"fn" => |f| try env.bind(f.name, try buildFnSignatureType(env, f)),
+        .@"fn" => |f| {
+            try env.bind(f.name, try buildFnSignatureType(env, f));
+            registerDecoratorSig(env, f.name, f.params, f);
+        },
+        // A `declare fn` decorator (`declare fn service(comptime _: @Decl)`) —
+        // the bodyless form a lib ships its markers as — parses as a delegate.
+        .delegate => |d| registerDecoratorSig(env, d.name, d.params, null),
         else => {},
     };
+}
+
+/// True when `params` open with `comptime _: @Decl`, the signature shape that
+/// marks a function as a decorator (annotation processor). The core recognizes
+/// decorators purely by this shape — it never knows what a marker means (that is
+/// the lib's job). Applies to both `pub fn` and `declare fn` forms.
+fn isDecoratorParams(params: []const ast.Param) bool {
+    if (params.len == 0) return false;
+    const p0 = params[0];
+    return p0.modifier == .@"comptime" and p0.typeRef.isDeclType();
+}
+
+/// Record a decorator's trailing signature (everything after the leading
+/// `comptime _: @Decl`) so `#[name(args)]` applications can be argument-checked,
+/// plus its full `FnDecl` (when it has a body) so the body can run over each
+/// annotated declaration at comptime (P2). No-op for ordinary functions.
+fn registerDecoratorSig(env: *Env, name: []const u8, params: []const ast.Param, fn_decl: ?ast.FnDecl) void {
+    if (!isDecoratorParams(params)) return;
+    env.decorators.put(name, .{ .params = params[1..], .fn_decl = fn_decl }) catch {};
 }
 
 /// Build a top-level function's callable type (params → return) without binding
@@ -1322,7 +1279,6 @@ fn inferDecl(env: *Env, decl: ast.DeclKind) InferError!?Binding {
         // `inferProgramTyped`'s `.use` interception.
         .use => |u| {
             _ = try markStdImports(env, u);
-            _ = try markRakunImports(env, u);
             return null;
         },
         // implement doesn't produce a value binding.
@@ -1390,6 +1346,322 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
             return fail(env, fnLoc, "`@external` module and symbol must be string literals", "Example: #[@external(node, \"./gleam_stdlib.mjs\", \"string_length\")]");
         }
     }
+}
+
+// ── generic decorator argument validation (annotation processors, P1) ─────────
+//
+// A decorator is any fn whose first param is `comptime _: @Decl` (recognized by
+// `registerDecoratorSig` into `env.decorators`). Applying `#[d(args)]` is sugar
+// for a comptime call `d(reflect(decl), args…)`; the trailing `args` are checked
+// here against the decorator's declared signature — arity + argument types —
+// with no lib knowledge. PLACEMENT rules (where a marker may sit) are the
+// decorator body's job (P2), not the core's.
+
+/// Validate every `#[decorator(args)]` application in `program` against the
+/// recognized decorator's trailing signature. Annotations whose name is not a
+/// recognized decorator are left untouched: builtins (`external`) validate
+/// elsewhere, and an unknown bare marker stays lenient (a lib may not be loaded).
+fn validateDecorators(env: *Env, program: ast.Program) InferError!void {
+    if (env.decorators.count() == 0) return;
+    for (program.decls) |decl| switch (decl) {
+        .@"fn" => |f| try checkDecoratorAnnotations(env, f.annotations, f.name),
+        .record => |r| {
+            try checkDecoratorAnnotations(env, r.annotations, r.name);
+            for (r.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
+        },
+        .@"struct" => |s| {
+            try checkDecoratorAnnotations(env, s.annotations, s.name);
+            for (s.members) |mem| switch (mem) {
+                .method => |m| try checkDecoratorAnnotations(env, m.annotations, m.name),
+                else => {},
+            };
+        },
+        .@"enum" => |e| {
+            try checkDecoratorAnnotations(env, e.annotations, e.name);
+            for (e.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
+        },
+        .interface => |i| {
+            try checkDecoratorAnnotations(env, i.annotations, i.name);
+            for (i.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
+        },
+        else => {},
+    };
+}
+
+/// Check one declaration's annotation list. `owner` names the annotated
+/// declaration (for diagnostics).
+fn checkDecoratorAnnotations(env: *Env, anns: []const ast.Annotation, owner: []const u8) InferError!void {
+    for (anns) |a| {
+        if (a.is_builtin) continue; // `@external`, … validated by their own pass.
+        const sig = env.decorators.get(a.name) orelse continue;
+        try checkDecoratorArgs(env, a, sig, owner);
+    }
+}
+
+/// Type-check a single `#[name(args…)]` application's trailing arguments against
+/// the decorator's parameters (everything after `comptime _: @Decl`). V1: arity
+/// (honoring trailing defaults) + a per-argument lexical kind check (string /
+/// numeric / bool / enum-member), mirroring `validateExternalAnnotation`.
+fn checkDecoratorArgs(env: *Env, a: ast.Annotation, sig: envMod.DecoratorSig, owner: []const u8) InferError!void {
+    const fail = struct {
+        fn fail(e_: *Env, msg: []const u8, hint: []const u8) InferError {
+            e_.lastError = TypeError.custom(msg, hint);
+            return error.TypeError;
+        }
+    }.fail;
+
+    // Arity: required params (no default) ≤ args ≤ total params.
+    var required: usize = 0;
+    for (sig.params) |p| {
+        if (p.defaultVal == null) required += 1;
+    }
+    if (a.args.len < required or a.args.len > sig.params.len) {
+        const msg = try std.fmt.allocPrint(env.arena, "`#[{s}]` on `{s}` expects {d} argument(s), got {d}", .{ a.name, owner, sig.params.len, a.args.len });
+        return fail(env, msg, "Match the decorator's declared parameters (after the leading `comptime _: @Decl`).");
+    }
+
+    // Per-argument kind check against the declared parameter type.
+    for (a.args, 0..) |arg, i| {
+        const want = paramTypeName(sig.params[i].typeRef) orelse continue; // non-simple type → lenient
+        if (!argMatchesType(arg, want)) {
+            const msg = try std.fmt.allocPrint(env.arena, "`#[{s}]` argument {d} must be {s}", .{ a.name, i + 1, want });
+            return fail(env, msg, "Decorator arguments are type-checked against the decorator's signature.");
+        }
+    }
+}
+
+// ── generic decorator invocation (annotation processors, P2) ──────────────────
+//
+// After argument validation, the decorator's BODY runs over the declaration it
+// annotates: the core serializes that declaration into a `@Decl` handle and the
+// body (lib code) gives the marker meaning — validate placement/arguments via
+// `fail`/`failAt`. The core knows nothing about any specific marker. Runs only
+// in the full compile pipeline (`env.templateEval` set, node available); tooling
+// paths (LSP / compileTypesOnly) skip it.
+
+/// Render a `TypeRef` as the simple type name a `@Decl` handle exposes
+/// (best-effort: the named/generic head, else empty).
+fn declTypeName(tr: ast.TypeRef) []const u8 {
+    return switch (tr) {
+        .named => |n| n,
+        .generic => |g| g.name,
+        else => "",
+    };
+}
+
+fn appendAnnotationsJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, anns: []const ast.Annotation) !void {
+    try buf.append(arena, '[');
+    var first = true;
+    for (anns) |a| {
+        if (a.is_builtin) continue;
+        if (!first) try buf.append(arena, ',');
+        first = false;
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(buf, arena, a.name);
+        try buf.appendSlice(arena, ",\"args\":[");
+        for (a.args, 0..) |arg, i| {
+            if (i > 0) try buf.append(arena, ',');
+            try template.appendJsonString(buf, arena, arg);
+        }
+        try buf.appendSlice(arena, "]}");
+    }
+    try buf.append(arena, ']');
+}
+
+fn appendParamsJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, params: []const ast.Param) !void {
+    try buf.append(arena, '[');
+    for (params, 0..) |p, i| {
+        if (i > 0) try buf.append(arena, ',');
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(buf, arena, p.name);
+        try buf.appendSlice(arena, ",\"typeName\":");
+        try template.appendJsonString(buf, arena, declTypeName(p.typeRef));
+        try buf.append(arena, '}');
+    }
+    try buf.append(arena, ']');
+}
+
+fn appendMethodsJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, methods: []const ast.InterfaceMethod) !void {
+    try buf.append(arena, '[');
+    for (methods, 0..) |m, i| {
+        if (i > 0) try buf.append(arena, ',');
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(buf, arena, m.name);
+        try buf.appendSlice(arena, ",\"params\":");
+        try appendParamsJson(buf, arena, m.params);
+        try buf.appendSlice(arena, ",\"returnType\":");
+        try template.appendJsonString(buf, arena, if (m.returnType) |rt| declTypeName(rt) else "");
+        try buf.appendSlice(arena, ",\"annotations\":");
+        try appendAnnotationsJson(buf, arena, m.annotations);
+        try buf.append(arena, '}');
+    }
+    try buf.append(arena, ']');
+}
+
+const HandleField = struct { name: []const u8, typeName: []const u8 };
+
+/// Build a `@Decl` handle JSON for any annotated declaration. `fields`/`methods`
+/// default to empty for the kinds that have none; `returnType` is the empty
+/// string except for a fn/method.
+fn buildHandleJson(
+    arena: std.mem.Allocator,
+    kind: []const u8,
+    name: []const u8,
+    fields: []const HandleField,
+    methods: []const ast.InterfaceMethod,
+    returnType: []const u8,
+    annotations: []const ast.Annotation,
+) ![]const u8 {
+    var buf: std.ArrayList(u8) = .empty;
+    try buf.appendSlice(arena, "{\"kind\":");
+    try template.appendJsonString(&buf, arena, kind);
+    try buf.appendSlice(arena, ",\"name\":");
+    try template.appendJsonString(&buf, arena, name);
+    try buf.appendSlice(arena, ",\"fields\":[");
+    for (fields, 0..) |f, i| {
+        if (i > 0) try buf.append(arena, ',');
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(&buf, arena, f.name);
+        try buf.appendSlice(arena, ",\"typeName\":");
+        try template.appendJsonString(&buf, arena, f.typeName);
+        try buf.appendSlice(arena, ",\"annotations\":[]}");
+    }
+    try buf.appendSlice(arena, "],\"methods\":");
+    try appendMethodsJson(&buf, arena, methods);
+    try buf.appendSlice(arena, ",\"returnType\":");
+    try template.appendJsonString(&buf, arena, returnType);
+    try buf.appendSlice(arena, ",\"annotations\":");
+    try appendAnnotationsJson(&buf, arena, annotations);
+    try buf.append(arena, '}');
+    return buf.toOwnedSlice(arena);
+}
+
+/// Run every body-carrying decorator applied to one declaration over its handle.
+fn runDeclDecorators(
+    env: *Env,
+    ctx: envMod.TemplateEvalCtx,
+    anns: []const ast.Annotation,
+    handleJson: []const u8,
+) InferError!void {
+    for (anns) |a| {
+        if (a.is_builtin) continue;
+        const sig = env.decorators.get(a.name) orelse continue;
+        const dfn = sig.fn_decl orelse continue; // bodyless `declare fn` marker
+        if (dfn.body.len == 0) continue; // empty body — nothing to run
+
+        var plain = try env.arena.alloc(template.PlainArg, a.args.len);
+        for (a.args, 0..) |arg, i| {
+            const pname = if (i < sig.params.len) sig.params[i].name else "_";
+            plain[i] = .{ .paramName = pname, .jsValue = arg };
+        }
+
+        const outcome = decoratorEval.evaluate(env.arena, ctx.io, ctx.build_root, dfn, handleJson, plain) catch {
+            env.lastError = TypeError.custom(
+                "the decorator evaluator failed to run",
+                "Decorator bodies run in the node runtime at compile time — check that `node` is available.",
+            );
+            return error.TypeError;
+        };
+        switch (outcome) {
+            .ok => {},
+            .fail => |fl| {
+                env.lastError = TypeError.custom(fl.message, "raised by the decorator via `fail`/`failAt`");
+                return error.TypeError;
+            },
+            .err => |m| {
+                env.lastError = TypeError.custom(m, "the decorator body raised an unexpected error");
+                return error.TypeError;
+            },
+        }
+    }
+}
+
+/// Walk `program` and run body-carrying decorators over every annotated
+/// declaration (and its methods). Mirrors `validateDecorators`' walk; runs after
+/// it (so arguments are already validated).
+fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
+    if (env.decorators.count() == 0) return;
+    const ctx = env.templateEval orelse return;
+    for (program.decls) |decl| switch (decl) {
+        .@"fn" => |f| {
+            const h = try buildHandleJson(env.arena, "Fn", f.name, &.{}, &.{}, if (f.returnType) |rt| declTypeName(rt) else "", f.annotations);
+            try runDeclDecorators(env, ctx, f.annotations, h);
+        },
+        .record => |r| {
+            var fields = try env.arena.alloc(HandleField, r.fields.len);
+            for (r.fields, 0..) |fld, i| fields[i] = .{ .name = fld.name, .typeName = declTypeName(fld.typeRef) };
+            const h = try buildHandleJson(env.arena, "Record", r.name, fields, r.methods, "", r.annotations);
+            try runDeclDecorators(env, ctx, r.annotations, h);
+            for (r.methods) |m| {
+                const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                try runDeclDecorators(env, ctx, m.annotations, mh);
+            }
+        },
+        .@"struct" => |s| {
+            var fields: std.ArrayList(HandleField) = .empty;
+            for (s.members) |mem| switch (mem) {
+                .field => |fld| try fields.append(env.arena, .{ .name = fld.name, .typeName = declTypeName(fld.typeRef) }),
+                else => {},
+            };
+            const h = try buildHandleJson(env.arena, "Struct", s.name, fields.items, &.{}, "", s.annotations);
+            try runDeclDecorators(env, ctx, s.annotations, h);
+            for (s.members) |mem| switch (mem) {
+                .method => |m| {
+                    const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                    try runDeclDecorators(env, ctx, m.annotations, mh);
+                },
+                else => {},
+            };
+        },
+        .@"enum" => |e| {
+            const h = try buildHandleJson(env.arena, "Enum", e.name, &.{}, e.methods, "", e.annotations);
+            try runDeclDecorators(env, ctx, e.annotations, h);
+            for (e.methods) |m| {
+                const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                try runDeclDecorators(env, ctx, m.annotations, mh);
+            }
+        },
+        .interface => |i| {
+            // No `Interface` DeclKind — interface-level markers are skipped; its
+            // methods (`#[getMapping]` on a route) reflect as `Method`.
+            for (i.methods) |m| {
+                const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                try runDeclDecorators(env, ctx, m.annotations, mh);
+            }
+        },
+        else => {},
+    };
+}
+
+/// The simple (named) type of a parameter, or null for arrays/optionals/generics
+/// where the lexical check is skipped (kept lenient in V1).
+fn paramTypeName(tr: ast.TypeRef) ?[]const u8 {
+    return switch (tr) {
+        .named => |n| n,
+        else => null,
+    };
+}
+
+/// True when the raw annotation argument lexeme is consistent with `typeName`.
+/// Annotation args reach inference as source lexemes, so this is a lexical (not
+/// full-expression) check: enough to catch `#[value(123)]` where a string is
+/// required, while staying permissive for user/named types.
+fn argMatchesType(arg: []const u8, typeName: []const u8) bool {
+    if (arg.len == 0) return true;
+    if (std.mem.eql(u8, typeName, "string")) {
+        return arg[0] == '"';
+    }
+    if (std.mem.eql(u8, typeName, "bool")) {
+        return std.mem.eql(u8, arg, "true") or std.mem.eql(u8, arg, "false");
+    }
+    // Numeric primitives: a leading digit or sign (covers i32/i64/f32/f64/u*).
+    if (std.mem.startsWith(u8, typeName, "i") or std.mem.startsWith(u8, typeName, "u") or
+        std.mem.startsWith(u8, typeName, "f"))
+    {
+        const c = arg[0];
+        return std.ascii.isDigit(c) or c == '-' or c == '+';
+    }
+    return true; // enum member / named type → lenient (full check is the body's job).
 }
 
 /// Parse a tuple-index member name (`_0`, `_1`, …) into its integer index.
@@ -2446,8 +2718,8 @@ fn validateTypeparams(
 
 /// Calls `unify` and, if it fails, stamps the expression's location onto the error.
 fn unifyAt(env: *Env, a: *T.Type, b: *T.Type, loc: ast.Loc) InferError!void {
-    // jhonstart `Children` coercion (gap G4) — applied before unification since
-    // `unifyAt` is always called target-first (`unifyAt(param, arg)`).
+    // `Children` coercion — applied before unification since `unifyAt` is
+    // always called target-first (`unifyAt(param, arg)`).
     if (childrenCoercion(env, a, b)) return;
     unify(env, a, b) catch |err| {
         if (env.lastError) |*e| e.loc = loc;
@@ -2455,10 +2727,10 @@ fn unifyAt(env: *Env, a: *T.Type, b: *T.Type, loc: ast.Loc) InferError!void {
     };
 }
 
-/// True when `source` coerces into a `Children`-typed `target` (gap G4). A
-/// `Children` parameter (the builder children model jhonstart's `div { … }`
-/// needs) accepts another `Children`, any array (`Element[]` — the list form),
-/// a `string` (→ a text child), or a single value implementing `@Context` (an
+/// True when `source` coerces into a `Children`-typed `target`. A `Children`
+/// parameter (the builder children model a markup DSL's `div { … }` needs)
+/// accepts another `Children`, any array (`Element[]` — the list form), a
+/// `string` (→ a text child), or a single value implementing `@Context` (an
 /// `Element` → a one-element list). Coercion is one-directional: it only fires
 /// when the *declared* type (`target`) is `Children`, never the reverse.
 fn childrenCoercion(env: *Env, target: *T.Type, source: *T.Type) bool {

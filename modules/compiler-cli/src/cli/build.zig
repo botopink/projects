@@ -4,6 +4,9 @@ const bp = @import("botopink");
 const reporter = @import("./reporter.zig");
 const config = @import("./config.zig");
 const scanner = @import("./scanner.zig");
+const libs = @import("./libs.zig");
+
+const Module = bp.Module;
 
 // ── Options ───────────────────────────────────────────────────────────────────
 
@@ -32,15 +35,37 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
 
     const target = opts.target orelse proj.parsedTarget();
 
-    // Scan source files.
-    const modules = try scanner.scanSources(gpa, io, "src");
-    defer scanner.freeModules(gpa, modules);
+    // Scan project source files.
+    const project_modules = try scanner.scanSources(gpa, io, "src");
+    defer scanner.freeModules(gpa, project_modules);
 
-    if (modules.len == 0) {
+    if (project_modules.len == 0) {
         reporter.errMsg("no source files found in src/");
         reporter.hintMsg("create a .bp file, e.g. src/main.bp");
         return 1;
     }
+
+    // Resolve declared external libs from disk (generic — `libs/<name>/`). The
+    // core never names a lib; it only sees these as ordinary `Module[]` and
+    // resolves `from "<lib>"` through the shared import registry. `std` is the
+    // embedded exception and is not loaded here.
+    const dep_modules = libs.loadDependencies(gpa, io, proj.dependencies) catch |err| {
+        switch (err) {
+            error.LibsRootNotFound => reporter.errMsg("project declares dependencies but no libs/ directory was found in this or any parent directory"),
+            error.LibNotFound => reporter.errMsg("a declared dependency was not found under the libs root"),
+            error.LibManifestInvalid => reporter.errMsg("a dependency's botopink.json is invalid"),
+            else => reporter.errMsg("failed to load project dependencies"),
+        }
+        return 1;
+    };
+    defer libs.freeModules(gpa, dep_modules);
+
+    // Compile dependency modules ahead of project modules (their types/decorators
+    // must resolve before the project that imports them).
+    const modules = try gpa.alloc(Module, dep_modules.len + project_modules.len);
+    defer gpa.free(modules);
+    @memcpy(modules[0..dep_modules.len], dep_modules);
+    @memcpy(modules[dep_modules.len..], project_modules);
 
     reporter.compiling(modules.len);
     const t0 = std.Io.Timestamp.now(io, .awake);

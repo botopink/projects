@@ -219,6 +219,21 @@ pub const StdArrayLowering = struct {
     method: []const u8,
 };
 
+/// A recognized decorator's signature, minus its leading `comptime _: @Decl`
+/// parameter. `params` are the trailing argument parameters an `#[d(args)]`
+/// application type-checks against (arity + types). Populated generically for
+/// any fn whose first parameter is `comptime _: @Decl` — no lib knowledge. The
+/// slice points into the AST arena (the decl's own `params`), so it is stable.
+///
+/// `fn_decl` carries the full decorator function (with body) when it has one —
+/// `pub fn d(comptime _: @Decl) { … }`. It is run over the annotated declaration
+/// at comptime (P2: placement/argument rules live in the body). `null` for a
+/// bodyless `declare fn` marker, which only gets argument validation.
+pub const DecoratorSig = struct {
+    params: []const ast.Param,
+    fn_decl: ?ast.FnDecl = null,
+};
+
 /// A type-directed lowering for a `return`/`throw` jump inside a fn returning
 /// `@Result<D, E>`. Recorded by inference keyed by the jump's source `Loc` and
 /// consumed by the transform pass, which wraps the value in a `__bp_ok(…)` /
@@ -345,15 +360,12 @@ pub const Env = struct {
     /// Stdlib modules implicitly required via array method dispatch; used by
     /// the compile session to prepend synthetic imports for the codegen.
     implicitStdModules: std.StringHashMap(void),
-    /// "rakun" framework value exports (decorator fns + interface associated
-    /// fns), name → inferred type. Populated by `registerRakunLib`; consumed by
-    /// `markRakunImports` to bind imported decorators (`#[service]`) and to
-    /// type-check annotation arguments (F3). rakun is opt-in per module — these
-    /// only enter scope via `import {…} from "rakun"`, never auto-loaded.
-    rakunExports: std.StringHashMap(*T.Type),
-    /// "rakun" framework type declarations (interface / enum), keyed by name.
-    /// `markRakunImports` registers the imported ones into the importing env.
-    rakunTypeDecls: std.StringHashMap(ast.DeclKind),
+    /// Decorators recognized in this module (and its imports), name → trailing
+    /// signature. A decorator is any fn whose first param is `comptime _: @Decl`;
+    /// this is the lib-agnostic registry used to type-check `#[d(args)]` argument
+    /// arity + types at every annotation site. Lib knowledge lives in the
+    /// decorator body, never here.
+    decorators: std.StringHashMap(DecoratorSig),
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
@@ -390,8 +402,7 @@ pub const Env = struct {
             .stdModuleTypes = std.StringHashMap([]const ast.DeclKind).init(arena),
             .stdArrayLowerings = std.AutoHashMap(ast.Loc, StdArrayLowering).init(arena),
             .implicitStdModules = std.StringHashMap(void).init(arena),
-            .rakunExports = std.StringHashMap(*T.Type).init(arena),
-            .rakunTypeDecls = std.StringHashMap(ast.DeclKind).init(arena),
+            .decorators = std.StringHashMap(DecoratorSig).init(arena),
         };
     }
 
@@ -432,10 +443,7 @@ pub const Env = struct {
         self.stdModuleTypes.deinit();
         self.stdArrayLowerings.deinit();
         self.implicitStdModules.deinit();
-        // rakun registries mirror stdModules: outer maps are ours, the type
-        // values live in the shared arena.
-        self.rakunExports.deinit();
-        self.rakunTypeDecls.deinit();
+        self.decorators.deinit();
     }
 
     // ── extension dispatch helpers ────────────────────────────────────────────
