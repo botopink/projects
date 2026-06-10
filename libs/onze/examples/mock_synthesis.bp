@@ -1,14 +1,11 @@
-// onze — `#[mock]` synthesis example (compile with `botopink build`).
+// onze — `#[mock]` synthesis example (`from "onze"`).
 //
 // `#[mock]` reflects the interface's methods via `@Decl` and `@emit`s, into this
 // module, a `record MockUserRepo implement UserRepo` plus a `mockUserRepo()`
-// factory — so you never hand-write the double. The generated record is the same
-// shape `test/onze_test.bp` writes out by hand.
-//
-// This is shown under `build` because the `botopink test` pipeline does not yet
-// splice `@emit` contributions (a core test-mode gap — see ../AGENTS.md). Run it
-// from a project that has onze in scope; the onze API (`mock`/`when`/`verify`/…)
-// and the host externals must be visible when the emitted code type-checks.
+// factory — so you never hand-write the double. Run it from a project that has
+// onze in scope; the onze API (`mock`/`when`/`verify`/…) and the host externals
+// must be visible when the emitted code type-checks. The same flow runs under
+// `botopink test` — see `test/onze_test.bp`.
 
 import {mock, when, verify, eq, times, atLeastOnce} from "onze";
 

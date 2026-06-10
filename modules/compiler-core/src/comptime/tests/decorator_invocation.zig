@@ -151,3 +151,48 @@ test "decorator invocation: @emit contributes a top-level declaration" {
     if (!found) return error.ContributionMissing;
     if (decoratorEmitted) return error.DecoratorFnNotDropped;
 }
+
+test "decorator invocation: a body may reference an @emit'd declaration" {
+    // Annotation processors run BEFORE bodies are inferred, so the generated decls
+    // are spliced before any body that references them is type-checked. Here a `fn`
+    // calls an `@emit`ed factory — with body-first inference this failed as an
+    // unbound variable (the regression that blocked `@emit` under `botopink test`).
+    try assertAccepts(@src(),
+        \\fn gen(comptime decl: @Decl) {
+        \\    @emit("pub fn makeThing() -> i32 { return 7; }");
+        \\}
+        \\#[gen]
+        \\record Anchor { x: i32 }
+        \\fn useit() -> i32 { return makeThing(); }
+    );
+}
+
+test "decorator invocation: interface-level marker runs over the interface" {
+    // A marker on an interface reflects with `kind == Interface` and runs its body
+    // (previously interface-level markers were silently skipped).
+    try assertRejects(@src(),
+        \\fn onlyRecords(comptime decl: @Decl) {
+        \\    if (decl.kind == DeclKind.Interface) { decl.fail("marker is not allowed on an interface"); }
+        \\}
+        \\#[onlyRecords]
+        \\interface Repo { fn find(self: Self, id: i32) -> string }
+    , "not allowed on an interface");
+}
+
+test "decorator invocation: mock-style synthesis from an interface compiles" {
+    // A mocking-lib shape: reflect an interface's methods, emit a record that
+    // implements it plus a factory, then use the factory — all in one compile.
+    try assertAccepts(@src(),
+        \\fn mock(comptime decl: @Decl) {
+        \\    var methods = "";
+        \\    decl.methods.forEach({ m ->
+        \\        methods = methods + "  fn " + m.name + "(self: Self) -> i32 { return 0; }\n";
+        \\    });
+        \\    @emit("record Mock" + decl.name + " implement " + decl.name + " {\n  tag: string,\n" + methods + "}");
+        \\    @emit("pub fn mock" + decl.name + "() -> " + decl.name + " { return Mock" + decl.name + "(tag: \"\"); }");
+        \\}
+        \\#[mock]
+        \\interface Counter { fn value(self: Self) -> i32 }
+        \\fn useit() -> i32 { return mockCounter().value(); }
+    );
+}

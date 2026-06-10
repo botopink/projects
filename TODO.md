@@ -18,10 +18,12 @@
       `record MockXxx implement Xxx` (each method records the call + returns the
       stub-or-type-default through `onzeInvoke`) plus a `mockXxx()` factory. Backed by
       a host-cell registry keyed per mock instance (`onze.mjs`).
-      **Works + type-checks under `botopink build`** (see `examples/mock_synthesis.bp`).
-      ⚠ The `botopink test` pipeline does not yet splice `@emit` (core test-mode gap —
-      it runs decorator *placement* validation but drops emitted decls), so the runtime
-      tests use the explicit mock shape `#[mock]` emits. Tracked in `libs/onze/AGENTS.md`.
+      **`test/onze_test.bp` drives the whole suite through `#[mock]` under `botopink
+      test`** (7 green). Needed two CORE fixes (the user authorised touching core):
+      decorators run before body inference (so `@emit`ed decls are visible to a body
+      that references them — the test-mode `@emit` regression), and interface-level
+      markers run with `DeclKind.Interface`. Regression tests in
+      `comptime/tests/decorator_invocation.zig`.
 
 ## F2 — stubbing (`when … thenReturn / thenThrow`)
 - [x] `when(mock.m(args))` captures the recorded call (with matchers) as the stub key;
@@ -44,17 +46,19 @@
       updated. Same commit as the code.
 
 ## Done gate
-- [x] mock synthesizes every method (under `build`); unstubbed → type-default; stub
-      returns; verify count passes/fails correctly; matchers work. Tests in
-      `libs/onze/test/onze_test.bp` (7 green under `botopink test`).
-- [x] `grep -riE "onze" modules/compiler-core/src` returns nothing.
+- [x] `#[mock]` synthesizes every method; unstubbed → type-default; stub returns;
+      verify count passes/fails correctly; matchers work. Tests in
+      `libs/onze/test/onze_test.bp` (7 green under `botopink test`, all via `#[mock]`).
+- [x] `grep -riE "\bonze\b" modules/compiler-core/src` returns nothing (the core fixes
+      are generic — `@emit` ordering + interface markers — never name onze).
 
 ## Notes
 - v1: mock signatures + return stubbing + count verification. Out of scope (recorded):
   spies / partial mocks, `thenAnswer`, in-order verification, argument captors.
-- **Carried gap (core, not onze):** `@emit` contributions are spliced under `build`
-  but dropped under `botopink test` (test_mode). When that lands, swap the explicit
-  mocks in `test/onze_test.bp` for `#[mock]` and the synthesis is testable end to end.
+- **Core fixes (authorised) that unblocked test-mode `#[mock]`:** (1) decorators run
+  before body inference in `inferProgram(Typed)` so `@emit`ed decls are spliced before
+  a referencing body is type-checked; (2) interface-level markers reflect with
+  `DeclKind.Interface`. Both generic; regression tests in `decorator_invocation.zig`.
 - **Parser/comptime gotchas hit:** `if` is an expression (needs `else`, `;` bodies);
   bare `if {…}` only as a block's last statement; decorator bodies can't call sibling
   fns; `//` comments with quotes/backticks inside a closure break the lexer; `==` on

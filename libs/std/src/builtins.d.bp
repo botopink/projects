@@ -265,6 +265,7 @@ pub enum DeclKind {
     Record,
     Struct,
     Enum,
+    Interface,
     Fn,
     Method,
     Field,

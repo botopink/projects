@@ -1,40 +1,25 @@
-// onze — runtime tests (mock recording, stubbing, matchers, verification).
+// onze — runtime tests (mock synthesis, stubbing, matchers, verification).
 //
-// Run by `botopink test` from `libs/onze/`. These exercise the onze RUNTIME end to
-// end: a mock records its calls, `when(...)` stubs returns, argument matchers pick
-// the right stub, and `verify(...)` checks call counts.
+// Run by `botopink test` from `libs/onze/`. These exercise onze end to end:
+// `#[mock]` SYNTHESIZES the double from the interface (reflects its methods via
+// `@Decl` and `@emit`s `record MockUserRepo implement UserRepo` + a `mockUserRepo()`
+// factory), then a mock records its calls, `when(...)` stubs returns, argument
+// matchers pick the right stub, and `verify(...)` checks call counts.
 //
-// The `MockUserRepo` below is written by hand, but it is *exactly* the shape the
-// `#[mock]` decorator (`src/onze.bp`) emits for `interface UserRepo`: a record
-// implementing the interface whose every method funnels through `onzeInvoke`. The
-// `botopink test` pipeline does not yet splice `@emit` contributions (a core
-// test-mode gap, see ../AGENTS.md), so the synthesis is shown under `build` in
-// `../examples/` and the runtime is proven here against the explicit form.
+// The bare import pulls in the onze API plus the host externals the *emitted* mock
+// body references (`onzeInvoke`/`onzeKey`/`onzeNewMock`) — `@emit` splices its code
+// into THIS module, so those names must resolve here.
 //
 // Arrays are compared with `.join(",")` because botopink lowers `==` on arrays to
 // JS reference equality (a general codegen trait, not an onze concern).
 
-import {when, verify, eq, anyInt, times, never, atLeastOnce, onzeInvoke, onzeKey, onzeNewMock};
+import {mock, when, verify, eq, anyInt, times, never, atLeastOnce, onzeInvoke, onzeKey, onzeNewMock};
 
+#[mock]
 interface UserRepo {
     fn find(self: Self, id: i32) -> string
     fn all(self: Self) -> Array<string>
 }
-
-// === begin synthesized-by-`#[mock]` shape ===
-record MockUserRepo implement UserRepo {
-    __id: string,
-    fn find(self: Self, id: i32) -> string {
-        return onzeInvoke(self.__id, "find", [onzeKey(id)], "");
-    }
-    fn all(self: Self) -> Array<string> {
-        return onzeInvoke(self.__id, "all", [], []);
-    }
-}
-fn mockUserRepo() -> UserRepo {
-    return MockUserRepo(__id: onzeNewMock());
-}
-// === end synthesized shape ===
 
 // A unit under test that depends only on the interface.
 record UserService {

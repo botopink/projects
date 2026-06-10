@@ -97,6 +97,16 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     try buildScopeSnapshot(env, program);
     try registerFnSignatures(env, program);
 
+    // Annotation processors run before bodies (see `inferProgramTyped`): a
+    // decorator's `@emit`ed decls must be spliced before a body referencing them
+    // is inferred. Bail out early when contributions exist — the spliced
+    // re-analysis does the real inference.
+    try validateDecorators(env, program);
+    try invokeDecorators(env, program);
+    if (env.contributions.items.len > 0) {
+        return list.toOwnedSlice(env.arena);
+    }
+
     // Pass 2: infer value-producing declarations in order.
     for (program.decls) |decl| {
         if (try inferDecl(env, decl)) |b| {
@@ -105,8 +115,7 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     }
 
     // Pass 3: semantic validation of `implement` blocks and struct accessors.
-    try validateDecorators(env, program);
-    try invokeDecorators(env, program);
+    // (Decorators already ran above, before body inference.)
     try validateProgram(env, program);
 
     return list.toOwnedSlice(env.arena);
@@ -123,6 +132,22 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
     try registerExtensions(env, program);
     try buildScopeSnapshot(env, program);
     try registerFnSignatures(env, program);
+
+    // Annotation processors run BEFORE bodies are inferred: a decorator's
+    // `@emit`ed declarations must be spliced (by `analyzeSource`) and present
+    // before any body that references the generated decl is type-checked.
+    // (Previously decorators ran in pass 3, after bodies — a body referencing a
+    // generated decl failed spuriously, which blocked `@emit` under `botopink
+    // test`. The serialized handles read only the AST, so no body inference is
+    // needed first.)
+    try validateDecorators(env, program);
+    try invokeDecorators(env, program);
+    if (env.contributions.items.len > 0) {
+        // The spliced re-analysis (`analyzeSource`) does the real inference; skip
+        // body inference here, since bodies may reference the not-yet-spliced decls.
+        return list.toOwnedSlice(env.arena);
+    }
+
     for (program.decls) |decl| {
         switch (decl) {
             // `resolveImports` (called before inference in comptime.zig) already
@@ -154,9 +179,8 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
         }
     }
 
-    // Semantic validation of `implement` blocks and struct accessors.
-    try validateDecorators(env, program);
-    try invokeDecorators(env, program);
+    // Semantic validation of `implement` blocks and struct accessors. (Decorators
+    // already ran above, before body inference.)
     try validateProgram(env, program);
 
     return list.toOwnedSlice(env.arena);
@@ -1655,8 +1679,13 @@ fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
             }
         },
         .interface => |i| {
-            // No `Interface` DeclKind — interface-level markers are skipped; its
-            // methods (`#[getMapping]` on a route) reflect as `Method`.
+            // Interface-level markers (`#[mock]`) reflect with kind `Interface`,
+            // exposing the interface's fields + method signatures. Its methods also
+            // reflect individually (`#[getMapping]` on a route) as `Method`.
+            var fields = try env.arena.alloc(HandleField, i.fields.len);
+            for (i.fields, 0..) |fld, idx| fields[idx] = .{ .name = fld.name, .typeName = fld.typeName };
+            const h = try buildHandleJson(env.arena, "Interface", i.name, fields, i.methods, "", i.annotations);
+            try runDeclDecorators(env, ctx, i.annotations, h);
             for (i.methods) |m| {
                 const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
                 try runDeclDecorators(env, ctx, m.annotations, mh);

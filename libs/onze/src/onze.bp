@@ -142,11 +142,9 @@ pub fn verify<T>(mock: T, spec: i32) -> T {
 // is botopink. The generated method records the call and returns the stub value, or
 // the per-return-type default (`""` / `false` / `0` / `[]`).
 //
-// NOTE: `@emit` contributions splice + type-check under `botopink build`, but the
-// `botopink test` pipeline does not yet splice them (a core test-mode gap, tracked
-// in ./AGENTS.md). Until that lands, onze's own runtime tests use the *explicit*
-// mock shape this decorator emits (see `test/onze_test.bp`); the synthesis itself is
-// exercised under `build` (see `examples/`).
+// `test/onze_test.bp` drives the whole suite through `#[mock]` under `botopink test`.
+// The emitted record's methods reference the onze host externals (`onzeInvoke` etc.),
+// so those must be in scope in the module that hosts the annotated interface.
 
 // Comptime-body constraints (see ../AGENTS.md): `if` is an expression (needs
 // `else`, `;`-terminated branches); a bare `if {…}` statement is only legal as the

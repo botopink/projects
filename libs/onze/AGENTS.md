@@ -53,18 +53,25 @@ onze/
 |---|---|
 | Runtime: record/stub/verify/matchers/thenThrow | **done** — 7 tests green under `botopink test` |
 | `from "onze"` resolution (generic loader) | **done** — bare-imported fns bind |
-| `#[mock]` synthesis (`@Decl` → `@emit`) | **works under `botopink build`**; type-checks + emits a valid mock record + factory |
-| `#[mock]` under `botopink test` | **blocked (core)** — the test-mode pipeline does not splice `@emit` contributions (it runs decorator *placement* validation but drops emitted decls). Until that lands, the runtime tests use the explicit mock shape `#[mock]` emits (`test/onze_test.bp`); the synthesis is exercised under `build` (`examples/`). |
+| `#[mock]` synthesis (`@Decl` → `@emit`) | **done** — reflects the interface, emits `record MockXxx implement Xxx` + `mockXxx()`; `test/onze_test.bp` drives the suite through `#[mock]` under `botopink test` |
+
+This needed two **core** fixes (in this branch — pure-lib onze couldn't do them):
+1. **Decorators run before body inference** — `@emit`ed decls are spliced before a
+   body that references them (a `test {}` calling `mockXxx()`) is type-checked.
+   Previously decorators ran after bodies, so the reference failed as unbound and
+   `@emit` was silently dead under `botopink test`.
+2. **Interface-level markers run** (`DeclKind.Interface`) — `#[mock]` sits on an
+   interface; the old pipeline skipped interface-level decorators entirely.
 
 ### Known constraints
 
-- **`@emit` not spliced in test mode.** `codegen.generate` → `comptime.compile`
-  splices `@emit` under `build`, but `botopink test` (test_mode) drops the
-  contributions. A core fix outside onze's surface; tracked here.
 - **Host path is project-relative.** `#[@external(node, "../../src/onze.mjs", …)]`
   resolves from `…/.botopinkbuild/test-out/<mod>.js` back to `libs/onze/src/` — correct
   for onze's own tests. A general consumer story (copying/resolving the host file
   from a dependency) is future work.
+- **Emitted mock body references host externals.** `@emit`s into the annotated
+  module, so `onzeInvoke`/`onzeKey`/`onzeNewMock` must be in scope there — the
+  consumer imports them (bare in-project, or via `from "onze"`).
 - **No fn overloading / default params**, so `verify` is uniform two-arg:
   `verify(repo, atLeastOnce())` rather than `verify(repo)`.
 - **`==` on arrays** lowers to JS reference equality (general codegen trait) — tests
@@ -85,6 +92,7 @@ onze/
 ## Testing
 
 ```bash
-cd libs/onze && botopink test          # runs test/onze_test.bp (commonJS/node)
-botopink build  # (from a project with onze) exercises #[mock] synthesis
+cd libs/onze && botopink test          # runs test/onze_test.bp through #[mock] (commonJS/node)
 ```
+
+`examples/mock_synthesis.bp` is a standalone `from "onze"` usage sample.
