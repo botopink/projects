@@ -651,12 +651,12 @@ pub fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
                 if (this.match(.equal)) {
                     initExpr = try this.parseExpr(alloc);
                 }
-                if (memberAnnotations.len > 0) return ParseError.UnexpectedToken;
                 trailingComma = this.match(.comma);
                 try members.append(alloc, .{ .field = .{
                     .name = fieldName,
                     .typeRef = fieldType,
                     .init = initExpr,
+                    .annotations = memberAnnotations,
                 } });
                 continue;
             }
@@ -784,10 +784,6 @@ pub fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
             method.annotations = memberAnnotations;
             trailingComma = false;
             try methods.append(alloc, method);
-        } else if (memberAnnotations.len > 0) {
-            // A decorator preceding a non-method member (a field) — not yet
-            // supported (field-site decorators are a follow-up).
-            return ParseError.UnexpectedToken;
         } else if (this.check(.val) or This.isMemberName(this.peek().kind)) {
             // Could be a field: [val] name: Type [= expr]. `get`/`set` are valid
             // record field names (records have no getters/setters).
@@ -810,7 +806,7 @@ pub fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
                 defaultExpr = try this.parseBinaryExpr(alloc, prec.equality);
             }
             trailingComma = this.match(.comma);
-            try fields.append(alloc, .{ .name = fieldName, .typeRef = fieldType, .default = defaultExpr });
+            try fields.append(alloc, .{ .name = fieldName, .typeRef = fieldType, .default = defaultExpr, .annotations = memberAnnotations });
         } else {
             return ParseError.UnexpectedToken;
         }

@@ -33,7 +33,8 @@
                     "numberLit": "0"
                   }
                 }
-              }
+              },
+              "annotations": []
             }
           }
         ],

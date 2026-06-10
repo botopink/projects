@@ -1367,11 +1367,13 @@ fn validateDecorators(env: *Env, program: ast.Program) InferError!void {
         .@"fn" => |f| try checkDecoratorAnnotations(env, f.annotations, f.name),
         .record => |r| {
             try checkDecoratorAnnotations(env, r.annotations, r.name);
+            for (r.fields) |fld| try checkDecoratorAnnotations(env, fld.annotations, fld.name);
             for (r.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
         },
         .@"struct" => |s| {
             try checkDecoratorAnnotations(env, s.annotations, s.name);
             for (s.members) |mem| switch (mem) {
+                .field => |fld| try checkDecoratorAnnotations(env, fld.annotations, fld.name),
                 .method => |m| try checkDecoratorAnnotations(env, m.annotations, m.name),
                 else => {},
             };
@@ -1592,6 +1594,10 @@ fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
             for (r.fields, 0..) |fld, i| fields[i] = .{ .name = fld.name, .typeName = declTypeName(fld.typeRef) };
             const h = try buildHandleJson(env.arena, "Record", r.name, fields, r.methods, "", r.annotations);
             try runDeclDecorators(env, ctx, r.annotations, h);
+            for (r.fields) |fld| {
+                const fh = try buildHandleJson(env.arena, "Field", fld.name, &.{}, &.{}, declTypeName(fld.typeRef), fld.annotations);
+                try runDeclDecorators(env, ctx, fld.annotations, fh);
+            }
             for (r.methods) |m| {
                 const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
                 try runDeclDecorators(env, ctx, m.annotations, mh);
@@ -1606,6 +1612,10 @@ fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
             const h = try buildHandleJson(env.arena, "Struct", s.name, fields.items, &.{}, "", s.annotations);
             try runDeclDecorators(env, ctx, s.annotations, h);
             for (s.members) |mem| switch (mem) {
+                .field => |fld| {
+                    const fh = try buildHandleJson(env.arena, "Field", fld.name, &.{}, &.{}, declTypeName(fld.typeRef), fld.annotations);
+                    try runDeclDecorators(env, ctx, fld.annotations, fh);
+                },
                 .method => |m| {
                     const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
                     try runDeclDecorators(env, ctx, m.annotations, mh);

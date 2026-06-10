@@ -18,14 +18,16 @@
             "typeRef": {
               "named": "i32"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           },
           {
             "name": "y",
             "typeRef": {
               "named": "i32"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           }
         ],
         "trailingComma": false,

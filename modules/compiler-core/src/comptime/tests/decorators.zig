@@ -92,6 +92,29 @@ test "decorator: marker on a struct method (P3 method-site)" {
     );
 }
 
+test "decorator: marker on a record field (P3 field-site)" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn inject(comptime decl: @Decl) { }
+        \\
+        \\record UserService {
+        \\    #[inject]
+        \\    repo: string,
+        \\    name: string
+        \\}
+    );
+}
+
+test "decorator: string-arg marker on a struct field (P3 field-site)" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn value(comptime decl: @Decl, key: string) { }
+        \\
+        \\struct Config {
+        \\    #[value("port")]
+        \\    val port: i32
+        \\}
+    );
+}
+
 test "decorator: declared as a `declare fn` marker (delegate form)" {
     // A framework lib may ship its markers as bodyless `declare fn`s — the core
     // recognizes that form identically (first param `comptime _: @Decl`).
