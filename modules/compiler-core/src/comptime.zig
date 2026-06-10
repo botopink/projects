@@ -129,9 +129,10 @@ fn analyzeModule(
     mod: Module,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
     templateRegistry: *const std.StringHashMap(ast.FnDecl),
+    decoratorRegistry: *const std.StringHashMap(ast.FnDecl),
     templateEvalCtx: ?envMod.TemplateEvalCtx,
 ) !AnalysisResult {
-    return analyzeSource(arena, mod, mod.source, registry, templateRegistry, templateEvalCtx, false);
+    return analyzeSource(arena, mod, mod.source, registry, templateRegistry, decoratorRegistry, templateEvalCtx, false);
 }
 
 /// Append decorator `@emit(...)` contributions to a module's source as extra
@@ -157,6 +158,7 @@ fn analyzeSource(
     source: []const u8,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
     templateRegistry: *const std.StringHashMap(ast.FnDecl),
+    decoratorRegistry: *const std.StringHashMap(ast.FnDecl),
     templateEvalCtx: ?envMod.TemplateEvalCtx,
     skip_invoke: bool,
 ) anyerror!AnalysisResult {
@@ -181,7 +183,7 @@ fn analyzeSource(
         return .{ .validationError = .{ .info = err_info } };
     }
 
-    try resolveImports(&env, program, registry, templateRegistry);
+    try resolveImports(&env, program, registry, templateRegistry, decoratorRegistry);
     const bindings = infer.inferProgramTyped(&env, program) catch |err| switch (err) {
         error.TypeError => {
             const te = env.lastError orelse validation.TypeError{ .kind = .{ .unboundVariable = "" } };
@@ -196,7 +198,7 @@ fn analyzeSource(
     if (!skip_invoke and env.contributions.items.len > 0) {
         const spliced = try spliceContributions(arena, source, env.contributions.items);
         env.deinit();
-        return analyzeSource(arena, mod, spliced, registry, templateRegistry, templateEvalCtx, true);
+        return analyzeSource(arena, mod, spliced, registry, templateRegistry, decoratorRegistry, templateEvalCtx, true);
     }
 
     return .{ .success = .{ .bindings = bindings, .env = env, .program = program } };
@@ -304,6 +306,7 @@ fn resolveImports(
     program: anytype,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
     templateRegistry: *const std.StringHashMap(ast.FnDecl),
+    decoratorRegistry: *const std.StringHashMap(ast.FnDecl),
 ) !void {
     for (program.decls) |decl| {
         switch (decl) {
@@ -335,6 +338,15 @@ fn resolveImports(
                     if (templateRegistry.get(name)) |tfn| {
                         try infer.registerImportedTemplateFn(env, name, tfn);
                     }
+                    // Imported decorators (`comptime _: @Decl` first param) carry
+                    // their decl across modules too, so `#[name(args)]` sites in
+                    // THIS module argument-check against the marker and run its
+                    // body over each annotated declaration at comptime. Without
+                    // this a marker only fired in its defining module — a lib
+                    // ships its decorators, but they are applied by importers.
+                    if (decoratorRegistry.get(name)) |dfn| {
+                        infer.registerImportedDecorator(env, name, dfn);
+                    }
                 }
             },
             else => {},
@@ -346,6 +358,7 @@ fn registerExports(
     arena: std.mem.Allocator,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
     templateRegistry: *std.StringHashMap(ast.FnDecl),
+    decoratorRegistry: *std.StringHashMap(ast.FnDecl),
     path: []const u8,
     bindings: []const infer.TypedBinding,
     env: *envMod.Env,
@@ -364,9 +377,14 @@ fn registerExports(
             // Template fns export their declaration too — importing modules
             // expand their calls at comptime (the decl never reaches codegen).
             if (b.decl == .@"fn") {
-                if (b.decl.@"fn".returnType) |rt| {
-                    if (rt.isExprType()) try templateRegistry.put(b.name, b.decl.@"fn");
+                const f = b.decl.@"fn";
+                if (f.returnType) |rt| {
+                    if (rt.isExprType()) try templateRegistry.put(b.name, f);
                 }
+                // Decorators (`comptime _: @Decl` first param) export their decl
+                // too, so importing modules can run the body over their annotated
+                // declarations — generic, by shape, no lib name involved.
+                if (infer.isDecoratorParams(f.params)) try decoratorRegistry.put(b.name, f);
             }
         }
     }
@@ -546,6 +564,7 @@ pub fn compileTypesOnly(
     const arena_alloc = session.arena.allocator();
     var registry = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena_alloc);
     var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
+    var decorator_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
     // Non-std libs are ordinary input modules: the driver supplies their `.bp`
@@ -555,7 +574,7 @@ pub fn compileTypesOnly(
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry, &template_registry, null);
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, &template_registry, &decorator_registry, null);
 
         switch (analysis) {
             .parseError => {
@@ -592,7 +611,7 @@ pub fn compileTypesOnly(
                 }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
-                    try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
+                    try registerExports(arena_alloc, &registry, &template_registry, &decorator_registry, mod.path, succ.bindings, &env);
                     // NOTE: no env.deinit() here — `env` is a copy whose hashmap
                     // internals are shared with `succ.env`, and the transform
                     // below still reads `succ.env.method_lowerings`. The env is
@@ -687,6 +706,7 @@ pub fn compile(
     const arena_alloc = session.arena.allocator();
     var registry = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena_alloc);
     var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
+    var decorator_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
     // Non-std libs are ordinary input modules: the driver supplies their `.bp`
@@ -696,7 +716,7 @@ pub fn compile(
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry, &template_registry, .{
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, &template_registry, &decorator_registry, .{
             .io = io,
             .build_root = build_root orelse name,
         });
@@ -736,7 +756,7 @@ pub fn compile(
                 }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
-                    try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
+                    try registerExports(arena_alloc, &registry, &template_registry, &decorator_registry, mod.path, succ.bindings, &env);
                     // NOTE: no env.deinit() here — `env` is a copy whose hashmap
                     // internals are shared with `succ.env`, and the transform
                     // below still reads `succ.env.method_lowerings`. The env is

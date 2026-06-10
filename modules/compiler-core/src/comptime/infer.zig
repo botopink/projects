@@ -443,10 +443,20 @@ fn registerFnSignatures(env: *Env, program: ast.Program) InferError!void {
 /// marks a function as a decorator (annotation processor). The core recognizes
 /// decorators purely by this shape — it never knows what a marker means (that is
 /// the lib's job). Applies to both `pub fn` and `declare fn` forms.
-fn isDecoratorParams(params: []const ast.Param) bool {
+pub fn isDecoratorParams(params: []const ast.Param) bool {
     if (params.len == 0) return false;
     const p0 = params[0];
     return p0.modifier == .@"comptime" and p0.typeRef.isDeclType();
+}
+
+/// Register a decorator imported from another module — its full `FnDecl` (body
+/// included) — into this module's decorator table, so `#[name(args)]` sites here
+/// argument-check against it AND run its body over each annotated declaration at
+/// comptime. Mirrors `registerImportedTemplateFn` for the `@Expr` template case;
+/// the core stays lib-agnostic (it carries the decorator across modules by its
+/// generic `@Decl`-first shape, never by any lib's name). No-op for non-decorators.
+pub fn registerImportedDecorator(env: *Env, name: []const u8, fn_decl: ast.FnDecl) void {
+    registerDecoratorSig(env, name, fn_decl.params, fn_decl);
 }
 
 /// Record a decorator's trailing signature (everything after the leading

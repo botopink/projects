@@ -205,6 +205,15 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   with no wiring logic in the core. (Decorator fns themselves are still emitted
   by codegen today — dropping comptime-only decorator/`@Decl` fns like template
   fns is a recorded follow-up.)
+- **Cross-module invocation:** a decorator is shipped by one module (a lib) and
+  *applied* in another (its importers), so the body must travel like a template
+  fn does. `registerExports` publishes every decorator `FnDecl` into `comptime.zig`'s
+  `decorator_registry` (keyed by name, selected by the generic `@Decl`-first shape
+  — no lib name); `resolveImports` rehydrates an imported name via
+  `infer.registerImportedDecorator`, so `#[name(args)]` sites in the importing
+  module both arg-check **and** run the body. This is the exact mirror of the
+  `template_registry` / `registerImportedTemplateFn` path. Without it a marker
+  only fired in its defining module — which no real lib client can use.
 
 ## `@Context<B, R>` capability inference (F7)
 
