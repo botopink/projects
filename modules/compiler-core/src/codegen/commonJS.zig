@@ -746,6 +746,12 @@ const Emitter = struct {
     /// Cross-module link info (null in the standalone `emitProgram` path) —
     /// resolves a `from "<pkg>"` import to the file that emits each name.
     cross: ?*const CrossModule = null,
+    /// Import binding names already lowered to a `const { … } = require(…)` in
+    /// this module. A name maps to exactly one runtime binding, so a second
+    /// `import {x}` for the same `x` (e.g. several decorator `@emit`s each
+    /// importing the runtime fn they call) must not redeclare it — `const x`
+    /// twice is a JS `SyntaxError`. Tracked per module; reset in `emitterInit`.
+    seen_imports: std.StringHashMap(void),
 
     fn emitterInit(
         alloc: std.mem.Allocator,
@@ -761,6 +767,7 @@ const Emitter = struct {
             .externals = std.StringHashMap(ast.ExternalRef).init(alloc),
             .externals_missing = std.StringHashMap(void).init(alloc),
             .class_names = std.StringHashMap(void).init(alloc),
+            .seen_imports = std.StringHashMap(void).init(alloc),
         };
     }
 
@@ -769,6 +776,7 @@ const Emitter = struct {
         self.externals.deinit();
         self.externals_missing.deinit();
         self.class_names.deinit();
+        self.seen_imports.deinit();
     }
 
     /// Indexes every `@[external(…)]` fn by name: with a `node` target it goes
@@ -1255,8 +1263,12 @@ const Emitter = struct {
         // emitted alongside the project (`out/std/<mod>.js`), so qualified
         // calls (`bool.negate(x)`) resolve naturally at runtime.
         if (u.source == .module and std.mem.eql(u8, u.source.module, "std")) {
-            for (u.imports, 0..) |imp, i| {
-                if (i > 0) try self.w("\n");
+            var first = true;
+            for (u.imports) |imp| {
+                if (self.seen_imports.contains(imp.name())) continue;
+                try self.seen_imports.put(imp.name(), {});
+                if (!first) try self.w("\n");
+                first = false;
                 const mod = imp.segments[imp.segments.len - 1];
                 try self.fmt("const {s} = require(\"./std/{s}.js\");", .{ imp.name(), mod });
             }
@@ -1265,7 +1277,9 @@ const Emitter = struct {
         // Package import (e.g. `from "web"`): resolve each name to the file
         // that actually emits it via the cross-module export index. Names with
         // no emitted home (declaration-only markers like lib decorators) emit
-        // no runtime binding. One `require` per distinct source module.
+        // no runtime binding. One `require` per distinct source module, and a
+        // name already bound in this module (a repeated import) is skipped so it
+        // is never redeclared.
         if (u.source == .module and self.cross != null) {
             const xm = &self.cross.?.exports;
             var seen = std.StringHashMap(void).init(self.alloc);
@@ -1275,6 +1289,16 @@ const Emitter = struct {
                 const info = xm.get(imp.name()) orelse continue;
                 if (seen.contains(info.module)) continue;
                 try seen.put(info.module, {});
+                // Names from this module not already bound here — `const {…}` for
+                // exactly those. If every one is already bound, emit no line.
+                var count: usize = 0;
+                for (u.imports) |imp2| {
+                    const info2 = xm.get(imp2.name()) orelse continue;
+                    if (!std.mem.eql(u8, info2.module, info.module)) continue;
+                    if (self.seen_imports.contains(imp2.name())) continue;
+                    count += 1;
+                }
+                if (count == 0) continue;
                 if (!first_line) try self.w("\n");
                 first_line = false;
                 try self.w("const { ");
@@ -1282,6 +1306,8 @@ const Emitter = struct {
                 for (u.imports) |imp2| {
                     const info2 = xm.get(imp2.name()) orelse continue;
                     if (!std.mem.eql(u8, info2.module, info.module)) continue;
+                    if (self.seen_imports.contains(imp2.name())) continue;
+                    try self.seen_imports.put(imp2.name(), {});
                     if (!firstn) try self.w(", ");
                     firstn = false;
                     try self.w(imp2.name());
@@ -1291,9 +1317,19 @@ const Emitter = struct {
             return;
         }
 
+        var count: usize = 0;
+        for (u.imports) |imp| {
+            if (self.seen_imports.contains(imp.name())) continue;
+            count += 1;
+        }
+        if (count == 0) return;
         try self.w("const { ");
-        for (u.imports, 0..) |imp, i| {
-            if (i > 0) try self.w(", ");
+        var firstn = true;
+        for (u.imports) |imp| {
+            if (self.seen_imports.contains(imp.name())) continue;
+            try self.seen_imports.put(imp.name(), {});
+            if (!firstn) try self.w(", ");
+            firstn = false;
             try self.w(imp.name());
         }
         try self.w(" } = require(\"");
@@ -2589,7 +2625,7 @@ const Emitter = struct {
             .numberLit => |n| try buf.writer.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try buf.writer.writeAll("_s === ");
-                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names };
+                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names, .seen_imports = self.seen_imports };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try buf.writer.print("_s === \"{s}\"", .{n}),
@@ -2609,7 +2645,7 @@ const Emitter = struct {
             .numberLit => |n| try wr.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try wr.writeAll("_s === ");
-                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names };
+                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names, .seen_imports = self.seen_imports };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try wr.print("_s === \"{s}\"", .{n}),
