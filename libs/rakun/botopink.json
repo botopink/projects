@@ -5,6 +5,7 @@
   "src": "src/",
   "files": [
     "http.bp",
+    "decorators.bp",
     "rakun.d.bp"
   ]
 }
