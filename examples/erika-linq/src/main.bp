@@ -1,0 +1,82 @@
+// erika-linq — querying lists with the erika LINQ layer + the iterator methods.
+//
+// `of(list)` wraps an `Array<T>` (a list) in a fluent `Query<T>`; the query
+// operators (`where`/`select`/`orderBy`/…) each return a fresh `Query`, and
+// `.toArray()` lands back on an ordinary `Array<T>` — which IS an `Iterator<T>`,
+// so the iterator methods (`map`/`filter`/`fold`/`join`) compose right after.
+// `.join(sep)` is the terminal that renders an iterator to a string.
+//
+// Reached through the generic loader: `import {of} from "erika"` (no embed).
+
+import {of} from "erika";
+
+record Person { name: string, age: i32 }
+
+val people = [
+    Person(name: "Ann", age: 30),
+    Person(name: "Bob", age: 17),
+    Person(name: "Cy",  age: 22),
+    Person(name: "Dan", age: 15),
+];
+
+// 1) list → erika query → join: filter adults, order by name, project, join.
+fn adultNames() -> string {
+    return of(people)
+        .where({ p -> p.age >= 18 })
+        .orderBy({ p -> p.name })
+        .select({ p -> p.name })
+        .toArray()
+        .join(", ");
+}
+
+// 2) Iterator methods on the query result: the returned `Array<T>` is an
+//    `Iterator<T>`, so `fold` folds it left like any iterator.
+fn adultAgeSum() -> i32 {
+    return of(people)
+        .where({ p -> p.age >= 18 })
+        .select({ p -> p.age })
+        .toArray()
+        .fold(0, { acc, a -> acc + a });
+}
+
+// 3) a number list → erika → join: pipe the list through erika and join the
+//    squares of the even numbers.
+fn evenSquares() -> string {
+    val nums = [1, 2, 3, 4, 5, 6, 7];
+    return of(nums)
+        .where({ n -> n % 2 == 0 })
+        .select({ n -> n * n })
+        .toArray()
+        .join("-");
+}
+
+// 4) the iterator methods stand alone on a list too — `map`/`join` without
+//    erika, showing the Query result and a raw `Iterator<T>` share the same
+//    vocabulary.
+fn loudNames() -> string {
+    return ["ann", "cy", "dan"]
+        .map({ n -> n.toUpper() })
+        .join(" / ");
+}
+
+fn main() {
+    print(adultNames());     // Ann, Cy
+    print(evenSquares());    // 4-16-36
+    print(loudNames());      // ANN / CY / DAN
+}
+
+test "list → query → join: adult names, sorted" {
+    assert adultNames() == "Ann, Cy";
+}
+
+test "iterator fold over the query result sums the adult ages" {
+    assert adultAgeSum() == 52;          // 30 + 22
+}
+
+test "a number list piped through erika, then joined" {
+    assert evenSquares() == "4-16-36";   // 2², 4², 6²
+}
+
+test "iterator map/join stand alone on a list" {
+    assert loudNames() == "ANN / CY / DAN";
+}
