@@ -38,6 +38,30 @@ associated fn) is not bundled cross-module on commonJS (covered by
 [`stdlib-backends-parity`](stdlib-backends-parity.md) A2). The example uses the bare
 `of` form + list literals to stay green today.
 
+## The model — `erika "…"` is an embedded sub-language (the `html` sibling)
+
+`erika "…"` and jhonstart's `html """…"""` are **the same mechanism**: a template
+fn `fn(comptime q: @Expr<string>) -> @Expr<T>` whose string argument is a **mini
+language** — SQL for erika, markup for html — parsed at compile time and expanded
+into ordinary botopink. Neither reaches codegen; the call site pays no parse cost.
+They must behave alike:
+
+- **A sub-language inside the language.** The quoted text is not a string value —
+  it is source in another grammar (a SQL subset / a markup tree). `erika` captures
+  it unevaluated (`@Expr<string>`), walks it, and `q.build(...)`s the equivalent
+  botopink expression.
+- **References resolve in the CALLER's scope.** Exactly as `html`'s `<div>` resolves
+  the `div` builder in the call site's scope, `erika "select … from cities …"`
+  resolves the collection name `cities` against the caller's bindings (its comptime
+  scope), and `${…}`/identifier holes splice the caller's typed values. An unknown
+  name is a diagnostic pointing **inside the query**, rustc-style — not at the lib.
+- **Same triple-quote authoring surface.** A multi-line query uses `erika """ … """`
+  just as `html """ … """` does; the single-line `erika "…"` is the short form.
+
+So this spec finishes erika to the **same bar** as `jhonstart-html`: the SQL
+sub-language works cross-module (bare import bound by the keystone), resolves its
+collections in the caller's scope, and ships a runnable example.
+
 ## Target — the runnable example
 
 ```bp
@@ -72,13 +96,28 @@ test "list → query → join" { assert adultNames() == "Ann, Cy"; }
 test "iterator fold over the query result" { assert adultAgeSum() == 52; }
 ```
 
-The **SQL form** is added in F1 once the keystone binds bare `erika`:
+The **SQL sub-language** is added in F1 once the keystone binds bare `erika`. The
+query resolves `cities` in the caller's scope — the same way `html` resolves `div`:
 ```bp
 import {erika} from "erika";
-val cities = [Person(name: "Paris", age: 9), Person(name: "Lyon", age: 5)];
+
+record City { name: string, pop: i32 }
+val cities = [City(name: "Paris", pop: 9), City(name: "Lyon", pop: 5)];
+
+// single-line short form — `cities` resolved in the caller's scope
 test "erika \"…\" runs cross-module" {
-    val names = erika "select name from cities where age >= 5 order by name asc";
+    val names = erika "select name from cities where pop >= 5 order by name asc";
     assert names.join(",") == "Lyon,Paris";
+}
+
+// triple-quoted multi-line form (the `html """…"""` sibling)
+test "erika \"\"\"…\"\"\" multi-line query" {
+    val rows = erika """
+        select name, pop from cities
+        where pop >= 5
+        order by name asc
+    """;
+    assert rows.map({ r -> r.name }).join(",") == "Lyon,Paris";
 }
 ```
 
@@ -92,11 +131,14 @@ test "erika \"…\" runs cross-module" {
       the bare `of` + list literals (not the namespace form, not `Array.range` —
       both hit pre-existing gaps; see Context).
 
-### F1 — the cross-module `erika "…"` form
+### F1 — the cross-module `erika "…"` sub-language
 - [ ] Once [`generic-loader-binding`](generic-loader-binding.md) binds the bare
-      imported template fn, add an `erika "select …"` SQL-form `test {}` to the
-      example (a consumer module, not the lib). It expands + runs against a
-      `val` collection in the caller's comptime scope.
+      imported template fn, add `erika "select …"` (and the multi-line
+      `erika """ … """`) `test {}`s to the example — a consumer module, not the lib.
+      The query resolves its collection name (`cities`) **in the caller's comptime
+      scope** (the same caller-scope resolution `html` uses for builders); an unknown
+      name is a diagnostic pointing inside the query. Expands + runs against a `val`
+      collection.
 
 ### F2 — docs
 - [ ] Point `libs/erika/examples.md` at the runnable `examples/erika-linq/` (the
@@ -121,9 +163,11 @@ gate   ---- grep -riE "erika" modules/compiler-core/src returns nothing (std exe
   (the operator set + the `erika "…"` template already pass in-lib); if a gap
   surfaces while writing the example, fix it in `libs/erika/*.bp` (real `.bp`,
   memory: [[feedback_prefer_bp_over_dbp]]).
-- **Cross-module `erika "…"` is the only language dependency** → the single DAG edge
-  to `generic-loader-binding` (shared with `jhonstart-html`). The fluent form needs
-  nothing new. Memory: [[project_generic_loader_namespace_only]].
+- **Same bar as `jhonstart-html`.** `erika "…"` (SQL) and `html """…"""` (markup) are
+  the same template-fn mechanism — an embedded sub-language expanded at comptime,
+  references resolved in the caller's scope. Finish erika to that bar; the two share
+  the single DAG edge to `generic-loader-binding`. The fluent layer needs nothing new.
+  Memory: [[project_generic_loader_namespace_only]].
 - **SQL form needs a `val` collection** (it snapshots the caller's *comptime* scope,
   which captures immutable `val` only) — the example uses `val cities`, matching the
   in-lib tests. The fluent form queries any `val`/`var`.
