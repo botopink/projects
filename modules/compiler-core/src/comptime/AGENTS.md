@@ -176,9 +176,12 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   the full compile pipeline (`env.templateEval` set); tooling/LSP paths skip it.
   Diagnostic locs are coarse for now (message carries the detail; precise spans
   are a follow-up).
-- Field-site and record/struct *method*-site annotations are a parser gap today
-  (annotations only parse on interface methods); to be closed when a framework
-  migration needs them.
+- Method-site decorators now parse on record/struct bodies too (`parseRecordBody`/
+  `parseStructBody` read member-level annotations before a `fn`), so `#[getMapping]`
+  on a controller method reaches `invokeDecorators`. **Field-site** annotations
+  (`#[inject]`/`#[value]` on a record/struct field) remain a gap — `RecordField`/
+  `StructField` carry no `annotations` yet; a decorator preceding a field is a
+  parse error for now.
 
 ## `@Context<B, R>` capability inference (F7)
 

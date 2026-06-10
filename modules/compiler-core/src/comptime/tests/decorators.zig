@@ -68,6 +68,30 @@ test "decorator: string-arg marker on a method (interface site)" {
     );
 }
 
+test "decorator: string-arg marker on a record method (P3 method-site)" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn getMapping(comptime decl: @Decl, path: string) { }
+        \\
+        \\record Controller {
+        \\    name: string,
+        \\    #[getMapping("/users")]
+        \\    fn index(self: Self) -> string { return self.name; }
+        \\}
+    );
+}
+
+test "decorator: marker on a struct method (P3 method-site)" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn tag(comptime decl: @Decl, label: string) { }
+        \\
+        \\struct Sb {
+        \\    val x: i32,
+        \\    #[tag("a")]
+        \\    fn m(self: Self) -> i32 { return self.x; }
+        \\}
+    );
+}
+
 test "decorator: declared as a `declare fn` marker (delegate form)" {
     // A framework lib may ship its markers as bodyless `declare fn`s — the core
     // recognizes that form identically (first param `comptime _: @Decl`).

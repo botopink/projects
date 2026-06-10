@@ -61,11 +61,16 @@
       locs are coarse for now — message carries the detail; precise spans = TODO.)
       `@Decl` body type-checks via the `decl_reflection_src` cluster registered in
       `registerStdlib` (scalar `kind`/`name`/`returnType` + `fail`/`failAt`).
-- [ ] (with `rakun`) decorator placement + arg rules move to lib-side bodies.
-      Blocked on the parser gap: `#[getMapping]` must parse on record/struct
-      method + field sites (today only interface methods).
+- [~] (with `rakun`) decorator placement + arg rules move to lib-side bodies.
+      Method-site now unblocked: `#[getMapping]` parses on record/struct method
+      bodies (`parseRecordBody`/`parseStructBody` read member annotations before a
+      `fn`). REMAINING for full rakun migration: **field-site** decorators
+      (`#[inject]`/`#[value]` on a field) — `RecordField`/`StructField` need an
+      `annotations` slice + the inference walk must visit fields.
 
 ## P3 — wiring contribution (DI graph + router)
+- [ ] Field-site decorators: parse + reflect annotations on record/struct fields
+      (prerequisite for `#[inject]`/`#[value]` DI).
 - [ ] A decorator body may return generated decls / `@Expr` (expr-templates
       expansion) to contribute singletons, the DI graph, and the router table.
 - [ ] (with `rakun`) DI cycle check + router build + `Rakun.run` become lib-side.

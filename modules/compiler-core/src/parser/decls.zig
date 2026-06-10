@@ -623,6 +623,10 @@ pub fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
 
     var trailingComma = false;
     while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
+        // Member-level decorators: `#[getMapping("/")] fn handler(…)`. Parsed
+        // here so annotation processors reach struct methods (field/getter/setter
+        // sites are a follow-up — only `InterfaceMethod` carries annotations).
+        const memberAnnotations = try this.parseAnnotations(alloc);
         // Field: [val] name: Type = expr [,]
         // `val` keyword is optional/implicit
         if (this.check(.val)) _ = this.advance();
@@ -647,6 +651,7 @@ pub fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
                 if (this.match(.equal)) {
                     initExpr = try this.parseExpr(alloc);
                 }
+                if (memberAnnotations.len > 0) return ParseError.UnexpectedToken;
                 trailingComma = this.match(.comma);
                 try members.append(alloc, .{ .field = .{
                     .name = fieldName,
@@ -658,17 +663,20 @@ pub fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
         }
 
         if (this.check(.get)) {
+            if (memberAnnotations.len > 0) return ParseError.UnexpectedToken;
             const getter = try this.parseStructGetter(alloc);
             trailingComma = this.match(.comma);
             try members.append(alloc, .{ .getter = getter });
         } else if (this.check(.set)) {
+            if (memberAnnotations.len > 0) return ParseError.UnexpectedToken;
             const setter = try this.parseStructSetter(alloc);
             trailingComma = this.match(.comma);
             try members.append(alloc, .{ .setter = setter });
         } else if (this.check(.@"pub") or this.check(.declare) or this.check(.@"fn")) {
             const is_pub = this.match(.@"pub");
             const is_iface = this.match(.declare);
-            const method = try this.parseMethodDecl(alloc, is_iface, is_pub);
+            var method = try this.parseMethodDecl(alloc, is_iface, is_pub);
+            method.annotations = memberAnnotations;
             trailingComma = this.match(.comma);
             try members.append(alloc, .{ .method = method });
         } else {
@@ -764,13 +772,22 @@ pub fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
     while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
         this.skipComments();
         if (this.check(.rightBrace) or this.check(.endOfFile)) break;
+        // Member-level decorators: `#[getMapping("/")] fn index(…)`. Parsed here
+        // so annotation processors reach record methods (field-site is a separate
+        // follow-up — `RecordField` carries no annotations yet).
+        const memberAnnotations = try this.parseAnnotations(alloc);
         // Check if this is a method (fn/pub/declare)
         if (this.check(.@"pub") or this.check(.declare) or this.check(.@"fn")) {
             const is_pub = this.match(.@"pub");
             const is_iface = this.match(.declare);
-            const method = try this.parseMethodDecl(alloc, is_iface, is_pub);
+            var method = try this.parseMethodDecl(alloc, is_iface, is_pub);
+            method.annotations = memberAnnotations;
             trailingComma = false;
             try methods.append(alloc, method);
+        } else if (memberAnnotations.len > 0) {
+            // A decorator preceding a non-method member (a field) — not yet
+            // supported (field-site decorators are a follow-up).
+            return ParseError.UnexpectedToken;
         } else if (this.check(.val) or This.isMemberName(this.peek().kind)) {
             // Could be a field: [val] name: Type [= expr]. `get`/`set` are valid
             // record field names (records have no getters/setters).
