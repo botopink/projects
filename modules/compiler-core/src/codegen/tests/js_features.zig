@@ -371,6 +371,74 @@ test "js: import ---- cross-module record construct and assoc fn" {
     });
 }
 
+test "js: import ---- disk-lib namespace member binds + emits the namespace object" {
+    // A disk-loaded lib (module path `<lib>/<stem>`, reached via `from "<lib>"`)
+    // exports an ordinary `pub fn` (`make`, an emitted symbol) and a template fn
+    // whose name equals the lib (`qlib`, comptime-only → no emitted symbol). The
+    // consumer imports both: `make` destructures from the owning module, while
+    // the lib-named handle is bound to the whole module object so `qlib.make(...)`
+    // resolves at runtime — parity with the bare form. Generic: no lib name lives
+    // in the core; the lib is whatever `from "<lib>"` resolved off disk.
+    try h.assertConsumerJs(std.testing.allocator, &.{
+        .{ .path = "qlib/qlib", .source =
+        \\pub fn make(x: i32) -> i32 {
+        \\    return x + 1;
+        \\}
+        \\
+        \\pub fn qlib(comptime e: @Expr<string>) -> @Expr<i32> {
+        \\    return e.build("99");
+        \\}
+        },
+        .{ .path = "", .source =
+        \\import {make, qlib} from "qlib";
+        \\
+        \\fn main() {
+        \\    val a = make(1);
+        \\    val b = qlib.make(5);
+        \\    @print(a + b);
+        \\}
+        },
+    }, &.{
+        "const { make } = require(\"./qlib/qlib.js\");",
+        "const qlib = require(\"./qlib/qlib.js\");",
+        "qlib.make(5)",
+    }, &.{});
+}
+
+test "js: import ---- disk-lib namespace merges across the lib's modules" {
+    // A lib spread over two files (`mlib/core`, `mlib/extra`, both under the
+    // `mlib/` prefix): the namespace handle merges every module of the lib via
+    // `Object.assign({}, …)`, sorted for deterministic output, so members from
+    // either file resolve (`mlib.make` from core, `mlib.twice` from extra).
+    try h.assertConsumerJs(std.testing.allocator, &.{
+        .{ .path = "mlib/core", .source =
+        \\pub fn make(x: i32) -> i32 {
+        \\    return x + 1;
+        \\}
+        \\
+        \\pub fn mlib(comptime e: @Expr<string>) -> @Expr<i32> {
+        \\    return e.build("7");
+        \\}
+        },
+        .{ .path = "mlib/extra", .source =
+        \\pub fn twice(x: i32) -> i32 {
+        \\    return x * 2;
+        \\}
+        },
+        .{ .path = "", .source =
+        \\import {mlib} from "mlib";
+        \\
+        \\fn main() {
+        \\    @print(mlib.make(1) + mlib.twice(3));
+        \\}
+        },
+    }, &.{
+        "const mlib = Object.assign({}, require(\"./mlib/core.js\"), require(\"./mlib/extra.js\"));",
+        "mlib.make(1)",
+        "mlib.twice(3)",
+    }, &.{});
+}
+
 test "js: pipeline ---- simple chain" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\fn double(x: i32) -> i32 { return x * 2; }
