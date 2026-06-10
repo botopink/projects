@@ -219,6 +219,25 @@ pub const StdArrayLowering = struct {
     method: []const u8,
 };
 
+/// The builtin-primitive family of a method-call receiver. Lets a backend that
+/// has no native method dispatch (erlang/beam/wasm) map `xs.map(f)` /
+/// `s.toUpper()` / `n.abs()` to the host's equivalent (`lists:map(F, Xs)`, …).
+pub const PrimKind = enum { array, string, bool, int, float };
+
+/// How a value-receiver instance call `recv.method(args)` lowers on backends
+/// without native method dispatch. Recorded by inference keyed by call loc.
+///   - `prim`   — the receiver is a builtin primitive; the backend maps
+///                `(PrimKind, method)` to its host operation.
+///   - `record` — the receiver is a record/struct/enum value; the method is a
+///                plain function taking the receiver first. The payload is the
+///                receiver's nominal type name; the backend resolves a local
+///                call (`method(Recv, args)`) vs an imported owner module
+///                (`owner:method(Recv, args)`) from its own import index.
+pub const InstanceLowering = union(enum) {
+    prim: PrimKind,
+    record: []const u8,
+};
+
 /// A recognized decorator's signature, minus its leading `comptime _: @Decl`
 /// parameter. `params` are the trailing argument parameters an `#[d(args)]`
 /// application type-checks against (arity + types). Populated generically for
@@ -357,6 +376,10 @@ pub const Env = struct {
     /// Stdlib method calls on builtin-array receivers (`xs.isEmpty()` sugar).
     /// Key: call loc, value: { module, method }. Consumed by transform.
     stdArrayLowerings: std.AutoHashMap(ast.Loc, StdArrayLowering),
+    /// Value-receiver instance method calls (`recv.method(args)`), keyed by call
+    /// loc. Lets backends without native method dispatch lower record + builtin
+    /// primitive methods. Empty contribution on commonJS (native dispatch).
+    instanceLowerings: std.AutoHashMap(ast.Loc, InstanceLowering),
     /// Stdlib modules implicitly required via array method dispatch; used by
     /// the compile session to prepend synthetic imports for the codegen.
     implicitStdModules: std.StringHashMap(void),
@@ -401,6 +424,7 @@ pub const Env = struct {
             .stdImports = std.StringHashMap(void).init(arena),
             .stdModuleTypes = std.StringHashMap([]const ast.DeclKind).init(arena),
             .stdArrayLowerings = std.AutoHashMap(ast.Loc, StdArrayLowering).init(arena),
+            .instanceLowerings = std.AutoHashMap(ast.Loc, InstanceLowering).init(arena),
             .implicitStdModules = std.StringHashMap(void).init(arena),
             .decorators = std.StringHashMap(DecoratorSig).init(arena),
         };
@@ -442,6 +466,7 @@ pub const Env = struct {
         self.stdImports.deinit();
         self.stdModuleTypes.deinit();
         self.stdArrayLowerings.deinit();
+        self.instanceLowerings.deinit();
         self.implicitStdModules.deinit();
         self.decorators.deinit();
     }

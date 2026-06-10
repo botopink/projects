@@ -21,8 +21,8 @@ fn main() {
 -export(['_botopink_main'/0, main/1]).
 
 firstAndRest(Xs) ->
-    Head = Xs:at(0),
-    Rest = Xs:slice(1, maps:get(length, Xs)),
+    Head = (fun(__L, __I) -> case ((__I >= 0) andalso (__I < length(__L))) of true -> lists:nth(__I + 1, __L); false -> undefined end end)(Xs, 0),
+    Rest = lists:sublist(Xs, (1) + 1, ((length(Xs)) - (1))),
     {Rest, Head}.
 
 main() ->
@@ -41,4 +41,6 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+1
+true
 ```

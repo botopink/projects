@@ -15,7 +15,7 @@ record Vec2 {
 
 %% record Vec2: x, y
 
-dot(Other) ->
+dot(Self, Other) ->
     ((maps:get(x, Self) * maps:get(x, Other)) + (maps:get(y, Self) * maps:get(y, Other))).
 ```
 

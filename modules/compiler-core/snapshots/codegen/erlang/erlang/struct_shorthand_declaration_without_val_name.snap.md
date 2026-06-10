@@ -17,7 +17,7 @@ struct Counter {
 
 %% struct Counter: _count
 
-increment() ->
+increment(Self) ->
     %% field assignment is not directly supported in Erlang.
 ```
 

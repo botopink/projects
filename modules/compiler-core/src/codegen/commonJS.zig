@@ -508,6 +508,22 @@ fn emitProgramOptsX(
 
     // Test mode: emit the registry + runner entry.
     if (test_mode and test_entries.items.len > 0) {
+        // F6 — warn on duplicate test names within a module: two `test "x"`
+        // blocks both run, but a shared name makes a failure report ambiguous.
+        {
+            var seen_names = std.StringHashMap(void).init(alloc);
+            defer seen_names.deinit();
+            for (test_entries.items) |t| {
+                const n = t.name orelse continue;
+                const gop = try seen_names.getOrPut(n);
+                if (gop.found_existing) {
+                    std.debug.print(
+                        "warning: duplicate test name \"{s}\" in {s}.bp:{d}\n",
+                        .{ n, module_name, t.line },
+                    );
+                }
+            }
+        }
         if (!firstEmitted) try aw.writer.writeByte('\n');
         try aw.writer.writeAll("const __bp_tests = [\n");
         for (test_entries.items) |t| {

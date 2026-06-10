@@ -10,7 +10,7 @@ fn apply(f: syntax fn(x: i32) -> i32) -> i32 {
 -module(main).
 
 apply(F) ->
-    f(10).
+    F(10).
 ```
 
 ----- RUN LOG -----

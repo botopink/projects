@@ -16,7 +16,7 @@ record Pipeline {
 
 %% record Pipeline: items
 
-doubled() ->
+doubled(Self) ->
     list:map(maps:get(items, Self), fun(X) ->
         (X * 2)
     end).

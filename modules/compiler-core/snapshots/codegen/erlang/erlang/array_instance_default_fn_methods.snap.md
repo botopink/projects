@@ -18,12 +18,12 @@ fn main() {
 
 main() ->
     Xs = [1, 2, 3],
-    io:format("~p~n", [Xs:prepend(0):join(<<",">>)]),
-    io:format("~p~n", [Xs:fold(0, fun(A, X) ->
+    io:format("~p~n", [iolist_to_binary(lists:join(<<",">>, [0 | Xs]))]),
+    io:format("~p~n", [fold(Xs, 0, fun(A, X) ->
         (A + X)
     end)]),
-    io:format("~p~n", [Xs:isEmpty()]),
-    io:format("~p~n", [Xs:all(fun(X) ->
+    io:format("~p~n", [(Xs =:= [])]),
+    io:format("~p~n", [all(Xs, fun(X) ->
         (X > 0)
     end)]).
 

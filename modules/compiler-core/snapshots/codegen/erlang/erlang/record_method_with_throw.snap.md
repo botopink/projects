@@ -18,10 +18,10 @@ val Invoice = record {
 
 %% record Invoice: subtotal, taxRate
 
-total() ->
+total(Self) ->
     (maps:get(subtotal, Self) + (maps:get(subtotal, Self) * maps:get(taxRate, Self))).
 
-validate() ->
+validate(Self) ->
     erlang:throw(Error(<<"invalid invoice">>)).
 ```
 

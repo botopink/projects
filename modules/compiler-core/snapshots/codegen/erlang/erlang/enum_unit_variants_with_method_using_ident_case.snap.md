@@ -29,11 +29,11 @@ val HttpMethod = enum {
 
 name(M) ->
     Label = case M of
-        Get ->
+        'Get' ->
             <<"GET">>;
-        Post ->
+        'Post' ->
             <<"POST">>;
-        Put ->
+        'Put' ->
             <<"PUT">>;
         _ ->
             <<"DELETE">>

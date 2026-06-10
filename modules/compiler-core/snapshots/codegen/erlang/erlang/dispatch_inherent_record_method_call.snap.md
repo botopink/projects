@@ -19,12 +19,12 @@ fn main() {
 
 %% record Contador: n
 
-atual() ->
+atual(Self) ->
     maps:get(n, Self).
 
 main() ->
     C = #{n => 5},
-    io:format("~p~n", [C:atual()]).
+    io:format("~p~n", [atual(C)]).
 
 '_botopink_main'() ->
     main().
@@ -35,4 +35,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+5
 ```

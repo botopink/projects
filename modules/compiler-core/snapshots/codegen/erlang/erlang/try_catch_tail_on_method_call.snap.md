@@ -20,11 +20,11 @@ fn run(p: Parser) -> i32 {
 
 %% struct Parser: 
 
-parse() ->
+parse(Self) ->
     erlang:throw(#{msg => <<"bad input">>}).
 
 run(P) ->
-    Result = case P:parse() of
+    Result = case parse(P) of
         {ok, TryV0} -> TryV0;
         {error, _TryE0} ->
             0

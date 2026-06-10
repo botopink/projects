@@ -367,6 +367,7 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
                 .record => |rec| rec.id,
                 else => null,
             } else null;
+            try inferTypeMethods(env, r.name, r.genericParams, r.methods);
             return .{ .name = r.name, .type_ = try env.namedType(typeName), .typedExpr = null, .decl = decl, .typeId = typeId };
         },
         .@"struct" => |s| {
@@ -375,6 +376,13 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
                 .struct_ => |st| st.id,
                 else => null,
             } else null;
+            var structMethods: std.ArrayListUnmanaged(ast.InterfaceMethod) = .empty;
+            defer structMethods.deinit(env.arena);
+            for (s.members) |mem| switch (mem) {
+                .method => |md| try structMethods.append(env.arena, md),
+                else => {},
+            };
+            try inferTypeMethods(env, s.name, s.genericParams, structMethods.items);
             return .{ .name = s.name, .type_ = try env.namedType(typeName), .typedExpr = null, .decl = decl, .typeId = typeId };
         },
         .@"enum" => |e| {
@@ -383,6 +391,7 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
                 .enum_ => |en| en.id,
                 else => null,
             } else null;
+            try inferTypeMethods(env, e.name, e.genericParams, e.methods);
             return .{ .name = e.name, .type_ = try env.namedType(typeName), .typedExpr = null, .decl = decl, .typeId = typeId };
         },
         .interface => |d| {
@@ -2041,6 +2050,78 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     return env.funcType(paramTypes, retType);
 }
 
+/// Walk the bodies of a type's instance/associated methods (record / struct /
+/// enum) to record the codegen instance-method lowerings (and type the calls
+/// inside). Their signatures are registered earlier, but the bodies were never
+/// walked — so a `self.xs.map(f)` call was neither typed nor recorded, and the
+/// non-JS backends had no way to lower it.
+///
+/// This is BEST-EFFORT: a method whose body trips an inference gap is skipped
+/// (the lowerings recorded up to that point stand; the rest fall back to the
+/// backend default). Record method bodies are not part of the strict
+/// type-checking contract here — only `default fn` interface bodies are (see
+/// `inferInterfaceDefaultBodies`) — so a gap must not fail the whole compile.
+fn inferTypeMethods(
+    env: *Env,
+    typeName: []const u8,
+    typeGenerics: []const ast.GenericParam,
+    methods: []const ast.InterfaceMethod,
+) InferError!void {
+    for (methods) |m| {
+        const body = m.body orelse continue;
+        if (m.is_declare) continue;
+
+        var genericMap = std.StringHashMap(*T.Type).init(env.arena);
+        defer genericMap.deinit();
+
+        // `Self = Type<G0, G1, …>` over fresh generics shared with the params.
+        const selfArgs = try env.arena.alloc(*T.Type, typeGenerics.len);
+        for (typeGenerics, 0..) |gp, i| {
+            const v = try env.freshVar();
+            selfArgs[i] = v;
+            try genericMap.put(gp.name, v);
+        }
+        const selfTy = if (typeGenerics.len == 0)
+            try env.namedType(typeName)
+        else
+            try env.namedTypeArgs(typeName, selfArgs);
+        try genericMap.put("Self", selfTy);
+
+        // Method-level generics (`mapValues<C>`).
+        for (m.genericParams) |gp| try genericMap.put(gp.name, try env.freshVar());
+
+        // Bind parameters — a `self` receiver resolves through `Self`.
+        for (m.params) |p| {
+            const ty = if (p.fnType) |ft| blk: {
+                const fparams = try env.arena.alloc(*T.Type, ft.params.len);
+                for (ft.params, 0..) |fp, j| {
+                    fparams[j] = genericMap.get(fp.typeName) orelse try env.namedType(fp.typeName);
+                }
+                const fret = if (ft.returnType) |rn|
+                    genericMap.get(rn) orelse try env.namedType(rn)
+                else
+                    try env.namedType("void");
+                break :blk try env.funcType(fparams, fret);
+            } else try resolveTypeRefInContext(env, p.typeRef, genericMap);
+            try env.bind(p.name, ty);
+        }
+
+        // Scope the return-type-derived `use`/effect context to this body.
+        const savedFnCtx = env.fnContext;
+        env.fnContext = try contextInfoFromReturn(env, m.returnType);
+        defer env.fnContext = savedFnCtx;
+
+        for (body) |stmt| {
+            // Swallow inference gaps (see the best-effort note above): clear the
+            // stale error and move to the next method so the compile survives.
+            _ = inferExpr(env, stmt.expr) catch {
+                env.lastError = null;
+                break;
+            };
+        }
+    }
+}
+
 const AsyncReturnKind = enum { none, future, iterator, asyncIterator };
 
 /// Classify a resolved return type as `@Future` / `@Iterator` / `@AsyncIterator`.
@@ -3490,11 +3571,22 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
             }
             if (recvType.* == .named) {
                 const recvNamed = recvType.named;
+                // `arr.length` / `s.length` / `arr.len`: the host length op
+                // (`length(Arr)` / `string:length(S)` / `.length` in JS), NOT a
+                // map field read. Record the primitive kind so the non-JS
+                // backends lower the field access correctly.
+                if ((std.mem.eql(u8, recvNamed.name, "array") or std.mem.eql(u8, recvNamed.name, "string")) and
+                    (std.mem.eql(u8, ia.member, "length") or std.mem.eql(u8, ia.member, "len")))
+                {
+                    const k: envMod.PrimKind = if (std.mem.eql(u8, recvNamed.name, "string")) .string else .array;
+                    try env.instanceLowerings.put(loc, .{ .prim = k });
+                    outType = try env.namedType("i32");
+                }
                 // Tuple index access (`t._0`, `t._1`, …): resolve to the Nth
                 // element type so a `?T` element keeps its `@Option` method
                 // surface (`.unwrapOr`) — without this the element gets a fresh
                 // var and the method-call lowering can't fire.
-                if (std.mem.eql(u8, recvNamed.name, "tuple")) {
+                else if (std.mem.eql(u8, recvNamed.name, "tuple")) {
                     if (tupleMemberIndex(ia.member)) |idx| {
                         if (idx < recvNamed.args.len) outType = recvNamed.args[idx];
                     }
@@ -4291,6 +4383,7 @@ fn resolveReceiverCall(
 
     // Rule 1 — inherent method (declared on the type or inline `implement`).
     if (env.hasInherentMethod(typeName, callee)) {
+        try recordInstanceCall(env, loc, typeName);
         return try makeMethodCall(env, recvPtr, callee, typedArgs, typedTrailing, loc);
     }
 
@@ -4390,6 +4483,8 @@ fn resolveStdArrayMethod(
     }
     const retType = if (im.returnType) |rt| try resolveTypeRefInContext(env, rt, gm) else try env.namedType("void");
 
+    if (primKindOfName(recvType.named.name) != null) try recordInstanceCall(env, loc, recvType.named.name);
+
     return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
         .receiver = recvPtr,
         .callee = callee,
@@ -4397,6 +4492,74 @@ fn resolveStdArrayMethod(
         .args = typedArgs,
         .trailing = typedTrailing,
     } } } };
+}
+
+/// Map a builtin-primitive type name to its `PrimKind` family, or null when the
+/// name is not a primitive (a record/struct/enum/type variable). Used to record
+/// how a value-receiver instance call lowers on the non-JS backends.
+fn primKindOfName(typeName: []const u8) ?envMod.PrimKind {
+    const map = [_]struct { t: []const u8, k: envMod.PrimKind }{
+        .{ .t = "array", .k = .array },
+        .{ .t = "string", .k = .string },
+        .{ .t = "bool", .k = .bool },
+        .{ .t = "i32", .k = .int },
+        .{ .t = "i64", .k = .int },
+        .{ .t = "u32", .k = .int },
+        .{ .t = "u64", .k = .int },
+        .{ .t = "f32", .k = .float },
+        .{ .t = "f64", .k = .float },
+    };
+    for (map) |e| if (std.mem.eql(u8, typeName, e.t)) return e.k;
+    return null;
+}
+
+/// The return type of a builtin-primitive method call, or null when the method
+/// is unknown (the caller then types it permissively). Lets a chained call keep
+/// tracking its type (`xs.filter(f).at(0)` → `?T`). `recvTy` is the (already
+/// dereferenced) `.named` receiver type; `T` is its first type arg for arrays.
+fn primMethodReturnType(env: *Env, recvTy: *T.Type, callee: []const u8) InferError!?*T.Type {
+    const eq = std.mem.eql;
+    const name = recvTy.named.name;
+    if (eq(u8, name, "array")) {
+        const elem = if (recvTy.named.args.len >= 1) recvTy.named.args[0] else try env.freshVar();
+        // Same-array-shape transforms.
+        if (eq(u8, callee, "filter") or eq(u8, callee, "append") or
+            eq(u8, callee, "prepend") or eq(u8, callee, "reverse") or
+            eq(u8, callee, "push") or eq(u8, callee, "slice")) return recvTy;
+        if (eq(u8, callee, "map")) return try env.namedTypeArgs("array", &.{try env.freshVar()});
+        if (eq(u8, callee, "at")) return try env.namedTypeArgs("optional", &.{elem});
+        if (eq(u8, callee, "forEach")) return try env.namedType("void");
+        if (eq(u8, callee, "join")) return try env.namedType("string");
+        if (eq(u8, callee, "len") or eq(u8, callee, "length") or
+            eq(u8, callee, "size") or eq(u8, callee, "indexOf"))
+            return try env.namedType("i32");
+        if (eq(u8, callee, "isEmpty") or eq(u8, callee, "contains")) return try env.namedType("bool");
+        return null;
+    }
+    if (eq(u8, name, "string")) {
+        if (eq(u8, callee, "length")) return try env.namedType("i32");
+        if (eq(u8, callee, "contains") or eq(u8, callee, "startsWith") or eq(u8, callee, "endsWith"))
+            return try env.namedType("bool");
+        if (eq(u8, callee, "toUpper") or eq(u8, callee, "toLower") or
+            eq(u8, callee, "trim") or eq(u8, callee, "slice"))
+            return try env.namedType("string");
+        if (eq(u8, callee, "split")) return try env.namedTypeArgs("array", &.{try env.namedType("string")});
+        return null;
+    }
+    return null;
+}
+
+/// Record how a value-receiver instance call `recv.callee(args)` lowers on the
+/// backends without native method dispatch (erlang/beam/wasm). A primitive
+/// receiver records its `PrimKind`; any other nominal type records as a record
+/// method carrying its type name (the backend resolves local vs imported owner).
+/// commonJS ignores the table (it dispatches natively).
+fn recordInstanceCall(env: *Env, loc: ast.Loc, typeName: []const u8) InferError!void {
+    if (primKindOfName(typeName)) |k| {
+        try env.instanceLowerings.put(loc, .{ .prim = k });
+    } else {
+        try env.instanceLowerings.put(loc, .{ .record = typeName });
+    }
 }
 
 /// Map a primitive type name to its controller interface in `primitives.d.bp`.
@@ -4756,6 +4919,7 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                 // `Queue<i32>` chain keeps tracking `?i32` through `.peek()`.
                 if (nominalName(recvPtr.getType())) |tn| {
                     if (env.hasInherentMethod(tn, call.callee)) {
+                        try recordInstanceCall(env, loc, tn);
                         return try makeMethodCall(env, recvPtr, call.callee, typedArgs, typedTrailing, loc);
                     }
                 }
@@ -4769,7 +4933,29 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     if (std.mem.eql(u8, tn, "string")) {
                         if (jsStringMethodRename(call.callee)) |native| {
                             try env.jsMethodRenames.put(loc, native.js_name);
+                            try recordInstanceCall(env, loc, tn);
                             return TypedExpr{ .call = .{ .loc = loc, .type_ = try env.namedType(native.ret), .kind = .{ .call = .{
+                                .receiver = recvPtr,
+                                .callee = call.callee,
+                                .is_builtin = false,
+                                .args = typedArgs,
+                                .trailing = typedTrailing,
+                            } } } };
+                        }
+                    }
+                }
+
+                // A builtin-primitive receiver (`xs.map(f)`, `s.split(sep)`) has
+                // no native method dispatch on erlang/beam/wasm — record the
+                // primitive family so those backends lower it to the host op,
+                // and recover the method's real return type so a chained call
+                // (`xs.filter(f).at(0)`) keeps tracking the element/array type.
+                {
+                    const recvTy = recvPtr.getType().deref();
+                    if (recvTy.* == .named and primKindOfName(recvTy.named.name) != null) {
+                        try recordInstanceCall(env, loc, recvTy.named.name);
+                        if (try primMethodReturnType(env, recvTy, call.callee)) |ret| {
+                            return TypedExpr{ .call = .{ .loc = loc, .type_ = ret, .kind = .{ .call = .{
                                 .receiver = recvPtr,
                                 .callee = call.callee,
                                 .is_builtin = false,

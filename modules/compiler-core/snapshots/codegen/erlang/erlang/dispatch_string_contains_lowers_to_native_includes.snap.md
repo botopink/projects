@@ -13,7 +13,7 @@ fn main() {
 
 main() ->
     Hw = <<"hello world">>,
-    io:format("~p~n", [Hw:contains(<<"world">>)]).
+    io:format("~p~n", [(string:find(Hw, <<"world">>) =/= nomatch)]).
 
 '_botopink_main'() ->
     main().
@@ -24,4 +24,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+true
 ```

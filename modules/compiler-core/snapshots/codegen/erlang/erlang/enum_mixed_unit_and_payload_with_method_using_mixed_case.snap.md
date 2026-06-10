@@ -22,7 +22,7 @@ val Maybe = enum {
 
 check(M) ->
     case M of
-        Nothing ->
+        'Nothing' ->
             <<"nothing">>;
         {tag, Just, Value} ->
             <<"just">>

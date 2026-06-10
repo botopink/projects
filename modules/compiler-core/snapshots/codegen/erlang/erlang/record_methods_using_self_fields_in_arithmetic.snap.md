@@ -18,10 +18,10 @@ val Vec2 = record {
 
 %% record Vec2: x, y
 
-lengthSq() ->
+lengthSq(Self) ->
     ((maps:get(x, Self) * maps:get(x, Self)) + (maps:get(y, Self) * maps:get(y, Self))).
 
-scale(Factor) ->
+scale(Self, Factor) ->
     (maps:get(x, Self) * Factor).
 ```
 

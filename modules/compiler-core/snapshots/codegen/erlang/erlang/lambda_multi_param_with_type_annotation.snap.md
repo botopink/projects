@@ -17,7 +17,7 @@ main() ->
     Add = fun(A, B) ->
         (A + B)
     end,
-    add(10, 20).
+    Add(10, 20).
 
 '_botopink_main'() ->
     main().

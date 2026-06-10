@@ -16,10 +16,10 @@ fn main() {
 
 main() ->
     S = <<"Hello,World">>,
-    io:format("~p~n", [S:toUpper()]),
-    io:format("~p~n", [S:toLower()]),
-    io:format("~p~n", [S:split(<<",">>):join(<<"|">>)]),
-    io:format("~p~n", [S:slice(0, 5)]).
+    io:format("~p~n", [string:uppercase(S)]),
+    io:format("~p~n", [string:lowercase(S)]),
+    io:format("~p~n", [iolist_to_binary(lists:join(<<"|">>, string:split(S, <<",">>, all)))]),
+    io:format("~p~n", [string:slice(S, 0, ((5) - (0)))]).
 
 '_botopink_main'() ->
     main().
@@ -30,4 +30,8 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+<<"HELLO,WORLD">>
+<<"hello,world">>
+<<"Hello|World">>
+<<"Hello">>
 ```

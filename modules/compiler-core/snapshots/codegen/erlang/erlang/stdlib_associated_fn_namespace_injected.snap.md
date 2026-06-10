@@ -27,7 +27,7 @@ main() ->
     end, fun(Y) ->
         (Y * 2)
     end),
-    io:format("~p~n", [inc(10)]).
+    io:format("~p~n", [Inc(10)]).
 
 '_botopink_main'() ->
     main().

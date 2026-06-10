@@ -64,6 +64,10 @@ pub const ComptimeOutput = struct {
         /// name. JS-specific (e.g. string `contains` → `includes`); only commonJS
         /// reads it. Empty for the other backends.
         js_method_renames: std.AutoHashMap(ast.Loc, []const u8),
+        /// Value-receiver instance method calls: call-site location → how the
+        /// receiver's record/primitive method lowers. Consumed by the backends
+        /// without native method dispatch (erlang/beam/wasm); commonJS ignores it.
+        instance_lowerings: std.AutoHashMap(ast.Loc, envMod.InstanceLowering),
     };
 };
 
@@ -542,6 +546,11 @@ pub fn compileTypesOnly(
                     var rit = succ.env.jsMethodRenames.iterator();
                     while (rit.next()) |e| try js_method_renames.put(e.key_ptr.*, e.value_ptr.*);
                 }
+                var instance_lowerings = std.AutoHashMap(ast.Loc, envMod.InstanceLowering).init(arena_alloc);
+                {
+                    var rit = succ.env.instanceLowerings.iterator();
+                    while (rit.next()) |e| try instance_lowerings.put(e.key_ptr.*, e.value_ptr.*);
+                }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
                     try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
@@ -607,6 +616,7 @@ pub fn compileTypesOnly(
                         .type_ids = type_ids,
                         .dispatch_rewrites = dispatch_rewrites,
                         .js_method_renames = js_method_renames,
+                        .instance_lowerings = instance_lowerings,
                     } },
                 });
             },
@@ -686,6 +696,11 @@ pub fn compile(
                     var rit = succ.env.jsMethodRenames.iterator();
                     while (rit.next()) |e| try js_method_renames.put(e.key_ptr.*, e.value_ptr.*);
                 }
+                var instance_lowerings = std.AutoHashMap(ast.Loc, envMod.InstanceLowering).init(arena_alloc);
+                {
+                    var rit = succ.env.instanceLowerings.iterator();
+                    while (rit.next()) |e| try instance_lowerings.put(e.key_ptr.*, e.value_ptr.*);
+                }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
                     try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
@@ -759,6 +774,7 @@ pub fn compile(
                         .type_ids = type_ids,
                         .dispatch_rewrites = dispatch_rewrites,
                         .js_method_renames = js_method_renames,
+                        .instance_lowerings = instance_lowerings,
                     } },
                 });
             },

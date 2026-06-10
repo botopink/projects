@@ -13,6 +13,7 @@ const comptimeMod = @import("../comptime.zig");
 const moduleOutput = @import("./moduleOutput.zig");
 const configMod = @import("./config.zig");
 const ast = @import("../ast.zig");
+const envMod = @import("../comptime/env.zig");
 const crossModule = @import("./crossModule.zig");
 
 const ModuleOutput = moduleOutput.ModuleOutput;
@@ -96,7 +97,7 @@ pub fn codegenEmit(
                 // `"std"` package copies are dependencies — never emit their
                 // test blocks (mirrors the commonJS rule).
                 const module_test_mode = config.test_mode and !std.mem.startsWith(u8, ct.name, "std/");
-                const code = try emitErlang(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, module_test_mode, &cross);
+                const code = try emitErlang(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, ok.instance_lowerings, module_test_mode, &cross);
                 try results.append(alloc, .{
                     .name = ct.name,
                     .src = ct.src,
@@ -121,6 +122,7 @@ fn emitErlang(
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    instance_lowerings: std.AutoHashMap(ast.Loc, envMod.InstanceLowering),
     test_mode: bool,
     cross: ?*const CrossModule,
 ) ![]u8 {
@@ -128,6 +130,7 @@ fn emitErlang(
     defer aw.deinit();
 
     var em = Emitter.init(alloc, &aw.writer, comptime_vals, rewrites);
+    em.instance_lowerings = instance_lowerings;
     em.test_mode = test_mode;
     em.module_name = module_name;
     em.cross = cross;
@@ -152,6 +155,7 @@ fn emitErlang(
     defer em.externals_missing.deinit();
     try em.collectStdImports(program);
     defer em.std_imports.deinit();
+    defer em.locals.deinit();
     try em.collectTypeShapes(program);
     try em.collectImportedTypes(program);
     defer {
@@ -159,6 +163,7 @@ fn emitErlang(
         while (rf_it.next()) |names| alloc.free(names.*);
         em.record_fields.deinit();
         em.enum_names.deinit();
+        em.enum_variants.deinit();
         em.imported_types.deinit();
     }
     var top_runtime_vals: std.ArrayListUnmanaged(ast.ValDecl) = .empty;
@@ -466,12 +471,25 @@ const Emitter = struct {
     record_fields: std.StringHashMap([]const []const u8),
     /// Enum names → so `EnumName.Variant` access lowers to the variant atom.
     enum_names: std.StringHashMap(void),
+    /// Enum variant names (across every enum) → so a bare `.ident` case pattern
+    /// (`case o { Lt -> … }`) lowers to the atom `'Lt'`, not an erlang variable
+    /// that would shadow-match anything.
+    enum_variants: std.StringHashMap(void),
     /// Cross-module link index (null in the standalone path).
     cross: ?*const CrossModule = null,
     /// Imported record/struct name → owning module atom. A qualified call whose
     /// receiver names one (`Response.ok(...)` for an imported `Response`) lowers
     /// to a remote call into the owner (`http:ok(...)`), not a bare local fn.
     imported_types: std.StringHashMap([]const u8),
+    /// Value-receiver instance call lowerings (call loc → record/primitive). A
+    /// record method lowers to `method(Recv, args)` (or `owner:method(...)` for
+    /// an imported type); a primitive method lowers to the erlang host op.
+    instance_lowerings: std.AutoHashMap(ast.Loc, envMod.InstanceLowering) = undefined,
+    /// Function-scoped local bindings (params, `val`/`var`, lambda params) of the
+    /// function currently being emitted. Erlang variables are function-scoped, so
+    /// a flat per-function set is exact. A no-receiver call whose callee is a
+    /// local lowers to a fun application (`F(args)`), not a bare function call.
+    locals: std.StringHashMap(void),
 
     fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8), rewrites: std.AutoHashMap(ast.Loc, []const u8)) Emitter {
         return .{
@@ -485,8 +503,15 @@ const Emitter = struct {
             .std_imports = std.StringHashMap(void).init(alloc),
             .record_fields = std.StringHashMap([]const []const u8).init(alloc),
             .enum_names = std.StringHashMap(void).init(alloc),
+            .enum_variants = std.StringHashMap(void).init(alloc),
             .imported_types = std.StringHashMap([]const u8).init(alloc),
+            .locals = std.StringHashMap(void).init(alloc),
         };
+    }
+
+    /// Mark `name` as a function-scoped local (param / `val` / lambda param).
+    fn addLocal(this: *Emitter, name: []const u8) void {
+        this.locals.put(name, {}) catch {};
     }
 
     /// Indexes record/struct field orders + enum names for constructor-call,
@@ -514,7 +539,10 @@ const Emitter = struct {
                 };
                 try self.record_fields.put(s.name, names);
             },
-            .@"enum" => |e| try self.enum_names.put(e.name, {}),
+            .@"enum" => |e| {
+                try self.enum_names.put(e.name, {});
+                for (e.variants) |v| try self.enum_variants.put(v.name, {});
+            },
             else => {},
         };
     }
@@ -653,6 +681,8 @@ const Emitter = struct {
         if (f.isStarFn and !f.returnsResult()) {
             try this.fmt("%% *fn (async/generator) — eager lowering\n", .{});
         }
+        // Fresh local scope for this function (erlang vars are function-scoped).
+        this.locals.clearRetainingCapacity();
         try this.w(f.name);
         try this.w("(");
         var first = true;
@@ -667,6 +697,7 @@ const Emitter = struct {
                             const vname = try erlangVar(this.alloc, fld.bind_name);
                             defer this.alloc.free(vname);
                             try this.w(vname);
+                            this.addLocal(fld.bind_name);
                         }
                         if (n.hasSpread) try this.w(", _");
                         try this.w("}");
@@ -680,6 +711,7 @@ const Emitter = struct {
                             const vname = try erlangVar(this.alloc, nm);
                             defer this.alloc.free(vname);
                             try this.w(vname);
+                            this.addLocal(nm);
                         }
                         try this.w("}");
                         first = false;
@@ -692,6 +724,7 @@ const Emitter = struct {
                 const vname = try erlangVar(this.alloc, p.name);
                 defer this.alloc.free(vname);
                 try this.w(vname);
+                this.addLocal(p.name);
                 first = false;
             }
         }
@@ -946,6 +979,7 @@ const Emitter = struct {
                 .localBind => |lb| {
                     const vname = try erlangVar(this.alloc, lb.name);
                     defer this.alloc.free(vname);
+                    this.addLocal(lb.name);
                     try this.fmt("{s} = ", .{vname});
                     try this.emitExpr(lb.value.*);
                 },
@@ -1118,6 +1152,21 @@ const Emitter = struct {
                         }
                         return;
                     }
+                    // `arr.length` / `s.length` / `arr.len` recorded by inference
+                    // as a primitive field access → the host length op, not a
+                    // map read (`maps:get(length, …)` would crash on a list).
+                    if (this.instance_lowerings.get(id.loc)) |il| switch (il) {
+                        .prim => |k| {
+                            switch (k) {
+                                .string => try this.w("string:length("),
+                                else => try this.w("length("),
+                            }
+                            try this.emitExpr(ia.receiver.*);
+                            try this.w(")");
+                            return;
+                        },
+                        .record => {},
+                    };
                     // Record/struct field access — records are maps at runtime.
                     // Optional chaining (`a?.b`) guards on `undefined`.
                     if (ia.optional) {
@@ -1289,6 +1338,7 @@ const Emitter = struct {
                                 const vname = try erlangVar(this.alloc, p);
                                 defer this.alloc.free(vname);
                                 try this.w(vname);
+                                this.addLocal(p);
                             }
                             try this.w(") ->\n");
                             const tl_saved = this.indent;
@@ -1373,10 +1423,34 @@ const Emitter = struct {
                                 const mod = try erlangModule(this.alloc, name);
                                 defer this.alloc.free(mod);
                                 try this.fmt("{s}:{s}(", .{ mod, cc.callee });
+                            } else if (this.instance_lowerings.get(c.loc)) |il| switch (il) {
+                                // Builtin-primitive method (`xs.map(f)`, `s.split(sep)`):
+                                // erlang has no native method dispatch — emit the host op
+                                // directly (the receiver's argument position varies).
+                                .prim => |k| {
+                                    try this.emitPrimMethod(k, cc.callee, recv, cc);
+                                    return;
+                                },
+                                // Record/struct/enum instance method: a plain function
+                                // taking the receiver first. Local types call the bare
+                                // `m(Recv, args)`; an imported type calls into its owner
+                                // module (`owner:m(Recv, args)`).
+                                .record => |tn| {
+                                    if (this.imported_types.get(tn)) |owner| {
+                                        try this.fmt("{s}:{s}(", .{ owner, cc.callee });
+                                    } else {
+                                        try this.fmt("{s}(", .{cc.callee});
+                                    }
+                                    try this.emitExpr(recv.*);
+                                    recv_arg_emitted = true;
+                                },
                             } else {
-                                // Method call on a value receiver.
+                                // Method call on a value receiver with no recorded
+                                // lowering — treat as a local record method taking the
+                                // receiver first (`recv.m(args)` → `m(Recv, args)`).
+                                try this.fmt("{s}(", .{cc.callee});
                                 try this.emitExpr(recv.*);
-                                try this.fmt(":{s}(", .{cc.callee});
+                                recv_arg_emitted = true;
                             }
                         } else if (this.externals.get(cc.callee)) |ref| {
                             // `@[external(erlang, "module", "symbol")]` fn:
@@ -1407,6 +1481,13 @@ const Emitter = struct {
                             }
                             try this.w("}");
                             return;
+                        } else if (this.locals.contains(cc.callee)) {
+                            // The callee is a fn-typed local (a parameter, `val`,
+                            // or lambda binding) — apply it as a fun variable
+                            // (`Pred(X)`), not a bare module function call.
+                            const vname = try erlangVar(this.alloc, cc.callee);
+                            defer this.alloc.free(vname);
+                            try this.fmt("{s}(", .{vname});
                         } else {
                             try this.fmt("{s}(", .{cc.callee});
                         }
@@ -1426,6 +1507,7 @@ const Emitter = struct {
                                 const vname = try erlangVar(this.alloc, p);
                                 defer this.alloc.free(vname);
                                 try this.w(vname);
+                                this.addLocal(p);
                             }
                             try this.w(") ->\n");
                             const tl_saved = this.indent;
@@ -1448,6 +1530,7 @@ const Emitter = struct {
                     const vname = try erlangVar(this.alloc, p);
                     defer this.alloc.free(vname);
                     try this.w(vname);
+                    this.addLocal(p);
                 }
                 try this.w(") ->\n");
                 const lam_saved = this.indent;
@@ -1648,6 +1731,7 @@ const Emitter = struct {
                 .localBind => |lb| {
                     const vname = try erlangVar(this.alloc, lb.name);
                     defer this.alloc.free(vname);
+                    this.addLocal(lb.name);
                     try this.fmt("{s} = ", .{vname});
                     try this.emitExpr(lb.value.*);
                 },
@@ -1834,7 +1918,19 @@ const Emitter = struct {
     fn emitPattern(this: *Emitter, pat: ast.Pattern) !void {
         switch (pat) {
             .wildcard => try this.w("_"),
-            .ident => |n| try this.w(n), // enum variant → atom
+            .ident => |n| {
+                // A bare ident pattern is either a nullary enum variant (→ the
+                // atom `'Lt'`) or a binding (→ an erlang variable `X`). Emitting
+                // the raw name would make a variant match like an unbound var.
+                if (this.enum_variants.contains(n)) {
+                    var ab: [128]u8 = undefined;
+                    try this.w(try atomName(n, &ab));
+                } else {
+                    const vname = try erlangVar(this.alloc, n);
+                    defer this.alloc.free(vname);
+                    try this.w(vname);
+                }
+            },
             .numberLit => |n| try this.w(n),
             .stringLit => |s| try this.emitBinary(s),
             .variant => |v| switch (v.payload) {
@@ -1941,6 +2037,266 @@ const Emitter = struct {
         }
     }
 
+    // ── builtin-primitive method lowering ─────────────────────────────────────
+
+    /// Emit the `i`-th argument of a call (positional args first, then trailing
+    /// lambdas as `fun(...) -> ... end`). Used by `emitPrimMethod`, where the
+    /// receiver and arguments are reordered to fit the erlang host signature.
+    fn emitArg(this: *Emitter, cc: anytype, i: usize) anyerror!void {
+        if (i < cc.args.len) {
+            try this.emitExpr(cc.args[i].value.*);
+            return;
+        }
+        if (i - cc.args.len >= cc.trailing.len) {
+            // Caller asked for an argument that wasn't supplied (e.g. an
+            // optional-arg method form) — emit nothing rather than crash.
+            try this.w("undefined");
+            return;
+        }
+        const tl = cc.trailing[i - cc.args.len];
+        try this.w("fun(");
+        for (tl.params, 0..) |p, pi| {
+            if (pi > 0) try this.w(", ");
+            const vname = try erlangVar(this.alloc, p);
+            defer this.alloc.free(vname);
+            try this.w(vname);
+            this.addLocal(p);
+        }
+        try this.w(") ->\n");
+        const saved = this.indent;
+        this.indent = this.indent + 1;
+        try this.emitBody(tl.body);
+        this.indent = saved;
+        try this.w("\n");
+        try this.writeIndent();
+        try this.w("end");
+    }
+
+    /// Lower a builtin-primitive instance method to its erlang host operation.
+    /// botopink arrays are erlang lists, strings are binaries, numbers/bools are
+    /// native. The receiver's argument position differs per op (e.g. the fun is
+    /// first in `lists:map/2`), so this emits the whole call. Unmapped methods
+    /// fall back to a bare local `m(Recv, args)` call (a clear runtime error if
+    /// truly unsupported) rather than invalid `Recv:m(args)` syntax.
+    fn emitPrimMethod(this: *Emitter, k: envMod.PrimKind, callee: []const u8, recv: *const ast.Expr, cc: anytype) anyerror!void {
+        const eq = std.mem.eql;
+        switch (k) {
+            .array => {
+                if (eq(u8, callee, "map") or eq(u8, callee, "filter")) {
+                    try this.fmt("lists:{s}(", .{callee});
+                    try this.emitArg(cc, 0);
+                    try this.w(", ");
+                    try this.emitExpr(recv.*);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "forEach")) {
+                    try this.w("lists:foreach(");
+                    try this.emitArg(cc, 0);
+                    try this.w(", ");
+                    try this.emitExpr(recv.*);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "reverse")) {
+                    try this.w("lists:reverse(");
+                    try this.emitExpr(recv.*);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "append")) {
+                    try this.w("(");
+                    try this.emitExpr(recv.*);
+                    try this.w(" ++ ");
+                    try this.emitArg(cc, 0);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "prepend")) {
+                    try this.w("[");
+                    try this.emitArg(cc, 0);
+                    try this.w(" | ");
+                    try this.emitExpr(recv.*);
+                    try this.w("]");
+                    return;
+                }
+                if (eq(u8, callee, "push")) {
+                    // Append a single element to the end of the list.
+                    try this.w("(");
+                    try this.emitExpr(recv.*);
+                    try this.w(" ++ [");
+                    try this.emitArg(cc, 0);
+                    try this.w("])");
+                    return;
+                }
+                if (eq(u8, callee, "contains")) {
+                    try this.w("lists:member(");
+                    try this.emitArg(cc, 0);
+                    try this.w(", ");
+                    try this.emitExpr(recv.*);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "indexOf")) {
+                    // 0-based position of the first matching element, or -1.
+                    try this.w("(fun(__L, __X) -> __Find = fun __F(__I, [__H | __T]) -> case (__H =:= __X) of true -> __I; false -> __F(__I + 1, __T) end; __F(_, []) -> -1 end, __Find(0, __L) end)(");
+                    try this.emitExpr(recv.*);
+                    try this.w(", ");
+                    try this.emitArg(cc, 0);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "len") or eq(u8, callee, "length") or eq(u8, callee, "size")) {
+                    try this.w("length(");
+                    try this.emitExpr(recv.*);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "isEmpty")) {
+                    try this.w("(");
+                    try this.emitExpr(recv.*);
+                    try this.w(" =:= [])");
+                    return;
+                }
+                if (eq(u8, callee, "slice")) {
+                    const argc = cc.args.len + cc.trailing.len;
+                    if (argc >= 2) {
+                        // `xs.slice(start, end)` (0-based, end-exclusive) → erlang's
+                        // 1-based `lists:sublist(L, Start+1, End-Start)`.
+                        try this.w("lists:sublist(");
+                        try this.emitExpr(recv.*);
+                        try this.w(", (");
+                        try this.emitArg(cc, 0);
+                        try this.w(") + 1, ((");
+                        try this.emitArg(cc, 1);
+                        try this.w(") - (");
+                        try this.emitArg(cc, 0);
+                        try this.w(")))");
+                    } else {
+                        // `xs.slice(start)` → drop the first `start` elements.
+                        try this.w("lists:nthtail(");
+                        try this.emitArg(cc, 0);
+                        try this.w(", ");
+                        try this.emitExpr(recv.*);
+                        try this.w(")");
+                    }
+                    return;
+                }
+                if (eq(u8, callee, "join")) {
+                    // Concatenate a list of (string) elements, interspersing the
+                    // separator, into a single binary.
+                    try this.w("iolist_to_binary(lists:join(");
+                    try this.emitArg(cc, 0);
+                    try this.w(", ");
+                    try this.emitExpr(recv.*);
+                    try this.w("))");
+                    return;
+                }
+                if (eq(u8, callee, "at")) {
+                    // Bounds-safe 0-based index → erlang's 1-based `lists:nth`,
+                    // returning `undefined` (the `?T` absence) out of range.
+                    try this.w("(fun(__L, __I) -> case ((__I >= 0) andalso (__I < length(__L))) of true -> lists:nth(__I + 1, __L); false -> undefined end end)(");
+                    try this.emitExpr(recv.*);
+                    try this.w(", ");
+                    try this.emitArg(cc, 0);
+                    try this.w(")");
+                    return;
+                }
+            },
+            .string => {
+                if (eq(u8, callee, "length")) {
+                    try this.w("string:length(");
+                    try this.emitExpr(recv.*);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "toUpper")) {
+                    try this.w("string:uppercase(");
+                    try this.emitExpr(recv.*);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "toLower")) {
+                    try this.w("string:lowercase(");
+                    try this.emitExpr(recv.*);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "trim")) {
+                    try this.w("string:trim(");
+                    try this.emitExpr(recv.*);
+                    try this.w(")");
+                    return;
+                }
+                if (eq(u8, callee, "slice")) {
+                    const argc = cc.args.len + cc.trailing.len;
+                    if (argc >= 2) {
+                        // `s.slice(start, end)` (0-based, end-exclusive) → erlang's
+                        // `string:slice(S, Start, End - Start)` (start + length).
+                        try this.w("string:slice(");
+                        try this.emitExpr(recv.*);
+                        try this.w(", ");
+                        try this.emitArg(cc, 0);
+                        try this.w(", ((");
+                        try this.emitArg(cc, 1);
+                        try this.w(") - (");
+                        try this.emitArg(cc, 0);
+                        try this.w(")))");
+                    } else {
+                        // `s.slice(start)` → from `start` to the end.
+                        try this.w("string:slice(");
+                        try this.emitExpr(recv.*);
+                        try this.w(", ");
+                        try this.emitArg(cc, 0);
+                        try this.w(")");
+                    }
+                    return;
+                }
+                if (eq(u8, callee, "contains")) {
+                    try this.w("(string:find(");
+                    try this.emitExpr(recv.*);
+                    try this.w(", ");
+                    try this.emitArg(cc, 0);
+                    try this.w(") =/= nomatch)");
+                    return;
+                }
+                if (eq(u8, callee, "startsWith")) {
+                    try this.w("(string:prefix(");
+                    try this.emitExpr(recv.*);
+                    try this.w(", ");
+                    try this.emitArg(cc, 0);
+                    try this.w(") =/= nomatch)");
+                    return;
+                }
+                if (eq(u8, callee, "split")) {
+                    try this.w("string:split(");
+                    try this.emitExpr(recv.*);
+                    try this.w(", ");
+                    try this.emitArg(cc, 0);
+                    try this.w(", all)");
+                    return;
+                }
+            },
+            .bool => {
+                if (eq(u8, callee, "negate")) {
+                    try this.w("(not ");
+                    try this.emitExpr(recv.*);
+                    try this.w(")");
+                    return;
+                }
+            },
+            .int, .float => {},
+        }
+        // Unmapped primitive method: bare local call (`m(Recv, args)`).
+        try this.fmt("{s}(", .{callee});
+        try this.emitExpr(recv.*);
+        for (cc.args) |arg| {
+            try this.w(", ");
+            try this.emitExpr(arg.value.*);
+        }
+        try this.w(")");
+    }
+
     // ── struct / record / enum ────────────────────────────────────────────────
 
     fn emitStruct(this: *Emitter, s: ast.StructDecl) !void {
@@ -1962,6 +2318,9 @@ const Emitter = struct {
             .method => |md| {
                 if (md.is_declare) continue;
                 try this.w("\n");
+                const saved_keep_self = this.keep_self;
+                this.keep_self = !isAssocMethod(md);
+                defer this.keep_self = saved_keep_self;
                 try this.emitFn(.{
                     .isPub = false,
                     .name = md.name,
@@ -1985,9 +2344,16 @@ const Emitter = struct {
             try this.w(f.name);
         }
         try this.w("\n");
+        // Instance methods keep their `self` receiver as an explicit first
+        // parameter (`Self`); the call site passes the receiver positionally
+        // (`recv.m(args)` → `m(Recv, args)`). Associated fns (no `self`) are
+        // emitted as ordinary bare functions.
         for (r.methods) |m| {
             if (m.is_declare) continue;
             try this.w("\n");
+            const saved_keep_self = this.keep_self;
+            this.keep_self = !isAssocMethod(m);
+            defer this.keep_self = saved_keep_self;
             try this.emitFn(.{
                 .isPub = false,
                 .name = m.name,
@@ -2017,6 +2383,9 @@ const Emitter = struct {
         for (e.methods) |m| {
             if (m.is_declare) continue;
             try this.w("\n");
+            const saved_keep_self = this.keep_self;
+            this.keep_self = !isAssocMethod(m);
+            defer this.keep_self = saved_keep_self;
             try this.emitFn(.{
                 .isPub = false,
                 .name = m.name,

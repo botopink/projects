@@ -12,7 +12,7 @@ fn first3() -> string {
 
 first3() ->
     S = <<"hello">>,
-    S:slice(0, 3).
+    string:slice(S, 0, ((3) - (0))).
 ```
 
 ----- RUN LOG -----
