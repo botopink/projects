@@ -82,6 +82,56 @@ val all = erika "select * from cities";
 The referenced collection (`cities`) is resolved against the caller's top-level
 scope.
 
+## `select` over a `var listas = [..]`
+
+The **fluent** layer is an ordinary runtime call, so it queries any in-scope array
+— `val` or `var`, records or scalars, even after a `var` is reassigned:
+
+```bp
+record Produto { nome: string, preco: i32 }
+
+fn main() {
+    var listas = [
+        Produto(nome: "caderno", preco: 12),
+        Produto(nome: "caneta",  preco: 3),
+        Produto(nome: "mochila", preco: 80),
+    ];
+
+    // select the names of the pricier items
+    val caros = erika.of(listas)
+        .where({ p -> p.preco >= 12 })
+        .select({ p -> p.nome })
+        .toArray();                          // ["caderno", "mochila"]
+
+    // a `var` can be reassigned, then re-queried
+    listas = listas.append([Produto(nome: "lapis", preco: 2)]);
+    val baratos = erika.of(listas)
+        .where({ p -> p.preco < 12 })
+        .orderBy({ p -> p.preco })
+        .select({ p -> p.nome })
+        .toArray();                          // ["lapis", "caneta"]
+
+    // multi-field projection → an anonymous record per row
+    val pares = erika.of(listas)
+        .select({ p -> record { nome: p.nome, preco: p.preco } })
+        .toArray();                          // [record { nome, preco }, …]
+}
+```
+
+Scalars work the same way:
+
+```bp
+var nums = [1, 2, 3, 4, 5, 6];
+val paresPorDez = erika.of(nums).where({ n -> n % 2 == 0 }).select({ n -> n * 10 }).toArray();
+// [20, 40, 60]
+```
+
+> **`erika "…"` needs a `val`, not a `var`.** The SQL template resolves its
+> collection from the caller's *comptime* scope snapshot, which only captures
+> immutable `val` bindings. `erika "select … from listas"` where `listas` is a
+> `var` does not resolve — use a `val` for the string form, or the fluent
+> `erika.of(listas)` (above) for a `var`.
+
 > **Note.** Within a *consumer* project the `erika "…"` form does not resolve yet
 > after `import {erika} from "erika"` (`unbound variable 'erika'`) — a generic
 > loader limit, see [`AGENTS.md`](AGENTS.md). The fluent `erika.of(...)` API works
