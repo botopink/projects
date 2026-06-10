@@ -1,12 +1,13 @@
 # jhonstart — reference
 
 > A React/Next-style UI framework written in botopink, on the language's own
-> primitives. Status: **core + hooks implemented in real `.bp`** (`Element` tree,
-> builders, synchronous `renderToString`, and the `state`/`effect`/`memo`/`ref`/
-> `reducer` family — compiled & runtime-tested). The `html` markup DSL, the
-> router, and the Http server context remain declarative (`.d.bp`), each gated on
-> a generic language gap (see **V1 limits**). Spec:
-> `tasks/v0.beta.7/specs/jhonstart.md`.
+> primitives. Status: **core + hooks + the `html` markup DSL implemented in real
+> `.bp`** (`Element` tree, builders, synchronous `renderToString`, the
+> `state`/`effect`/`memo`/`ref`/`reducer` family, and the `html """…"""` authoring
+> DSL — all compiled & runtime-tested). Only the router and the Http server
+> context remain declarative (`.d.bp`), each gated on a generic language gap (see
+> **V1 limits**). Specs: `tasks/v0.beta.7/specs/jhonstart.md`,
+> `tasks/v0.beta.8/specs/jhonstart-html.md`.
 
 ## Component model
 
@@ -73,16 +74,48 @@ type-checks but its render is a recorded follow-up.
 renderToString(div([p([text("hi")]), text("!")]))   // "<div><p>hi</p>!</div>"
 ```
 
-## The `html` DSL — declared, gated (F2)
+## The `html` DSL — shipped (`html.bp`)
 
-`html` is meant to capture markup unevaluated and expand it to an `Element` tree
-at compile time (lowercase tags → builders, `<Component/>` → caller-scope lookup,
-`${expr}` → typed hole), at zero runtime cost — the expr-templates machinery
-applied to elements. The real body is **not yet shipped**: it is blocked by two
-generic language gaps (a comptime template body sees only a native-JS prelude;
-the generic loader doesn't bind a bare imported template-fn — so
-`import {html} from "jhonstart"` leaves `html "…"` unbound). Authored trees use
-the builders (`div([…])`) until it lands.
+`html` captures markup **unevaluated** (`@Expr<string>` — the `"""…"""`
+triple-quoted literal) and expands it, at compile time, into the `Element` builder
+pipeline — at zero runtime cost (the expr-templates machinery applied to
+elements). `val page = html """…"""` compiles straight to the builder calls;
+`html` never reaches codegen.
+
+```bp
+import { html, Element, div, p, text, renderToString } from "jhonstart";
+
+val name = "world";
+val page = html """
+<div>
+  <p>hello, ${name}</p>
+</div>
+""";
+
+fn main() {
+    @print(renderToString(page));   // <div><p>hello, world</p></div>
+}
+```
+
+The expansion is:
+
+- a lowercase `<tag>` → a bare `tag([...])` call resolved in **the caller's
+  scope** (the expr-template `lookup` model), so the caller must `import` the
+  builders the markup names (`div`/`p`/`li`/…); an unknown tag surfaces as an
+  unbound diagnostic at the call site, pointing inside the template;
+- a text run → a `text("…")` leaf (whitespace-only runs between tags are dropped,
+  so the markup can be indented);
+- each `${expr}` → the caller's already-typed expression, spliced as a
+  `text(<expr>)` child (`html """<li>item ${n.toString()}</li>"""` →
+  `li([text("item "), text(n.toString())])`).
+
+A single root tag is returned bare; multiple top-level siblings wrap in
+`fragment([...])` (which then must be imported too). Bare `html`/`div`/… are
+reached unqualified after `import … from "jhonstart"` via the generic
+loader-bare binding. Capitalized `<Component/>` markup lookup is a **future
+layer** — today a component is an ordinary `fn(...) -> Element` (its body may
+itself author `html """…"""`) reused by a plain call. See
+`examples/jhonstart-html`.
 
 ## App layer (Next-style) — declared, host-bound
 
@@ -96,13 +129,13 @@ the builders (`div([…])`) until it lands.
 
 ## V1 limits
 
-- **Implemented now** (`element.bp` + `hooks.bp`, compiled + `test {}`-checked):
-  the `Element` record, builders (`Children` args, list-form render), a
-  synchronous `renderToString`, and the `state`/`effect`/`memo`/`ref`/`reducer`
-  hook family (real SSR bodies). Author trees as `div([…])`.
+- **Implemented now** (`element.bp` + `hooks.bp` + `html.bp`, compiled +
+  `test {}`-checked): the `Element` record, builders (`Children` args, list-form
+  render), a synchronous `renderToString`, the `state`/`effect`/`memo`/`ref`/
+  `reducer` hook family (real SSR bodies), and the `html """…"""` markup DSL
+  (comptime expansion to the builder pipeline). Author trees as `div([…])` or as
+  `html """…"""`.
 - **Gated / declarative** (each a generic core gap, none jhonstart-specific):
-  - the `html` markup body — comptime native-JS template prelude + the generic
-    loader-bare gap;
   - `router`/`server` host hooks (`useRouter`/`request`, `#[@external]`), `Link`
     and form controls (the `Element` model has no attribute slot for
     `href`/`value`/`onClick`), and `get`-accessor interfaces (`.d.bp` syntax);
