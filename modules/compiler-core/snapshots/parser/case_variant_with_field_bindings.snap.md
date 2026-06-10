@@ -48,7 +48,7 @@
                             "identifier": {
                               "loc": {
                                 "line": 3,
-                                "col": 15
+                                "col": 20
                               },
                               "kind": {
                                 "identAccess": {

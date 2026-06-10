@@ -1,51 +1,48 @@
-# TODO — generic-loader-binding  (keystone · Wave 1)
+# TODO — stdlib-backends-parity  (backend · Wave 1)
 
-> Task branch `task/generic-loader-binding` · spec
-> [`tasks/v0.beta.8/specs/generic-loader-binding.md`](../../tasks/v0.beta.8/specs/generic-loader-binding.md).
+> Task branch `task/stdlib-backends-beam` · spec
+> [`tasks/v0.beta.8/specs/stdlib-backends-parity.md`](../../tasks/v0.beta.8/specs/stdlib-backends-parity.md).
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
-> **Depends on: nothing.** Start now. Unblocks the two sub-language DSLs
-> (`jhonstart-html`, `erika`) — land this first.
+> **Depends on: nothing.** Start now. The one core/std-touching strand; stdlib coupling
+> in the core is allowed.
 >
-> Generic core work, std-exempt, **no lib name** in `compiler-core`.
+> ⚠ Touches `comptime/infer.zig` — same file as `generic-loader-binding` (different
+> regions: stdlib/dispatch inference vs import binding; the later merge resolves it,
+> like the v0.beta.7 typeDeclRegistry/decoratorRegistry overlap).
 
-## F0 — pin the two gaps  ✅
-- [x] Confirmed baseline: bare value/fn import binds + runs (`examples/erika-linq`, 4 green).
-- [x] Re-pinned empirically against the current `feat`:
-      - **bare template fn already binds** — `import {erika}…; erika "…"` *expands*
-        (the disk loader's `registerExports` → `templateRegistry` → `registerImportedTemplateFn`
-        path is live). It only failed on `unbound 'of'` because erika's expansion
-        emits **unqualified** `of(...)`, which the consumer must also import — an
-        erika-design choice, not a core gap. So F1 is **already closed** in core.
-      - **namespace member does NOT codegen** — `import {erika}…; erika.of(...)`
-        type-checks but runs as `erika is not defined`: the disk lib's namespace
-        object is never emitted in the consumer. This was the one real gap.
+## A1b — mirror the method lowering on beam + wasm
+- [ ] Port the instance/associated-method lowering (Array/Bool/numeric tower/String +
+      `Pair.of`/`Function.compose`) from `erlang.zig` to `beam_asm.zig` and `wat.zig`
+      (they still emit the old value-receiver form for primitives). NB: the
+      `forEach`-accumulator → `lists:foldl` fusion is erlang-only so far; beam/wasm
+      need the same idiom (their closures can't rebind captured vars either).
+- [x] **`std_erlang.sh` green for `dict`/`queue`/`sets`** (31/31, was 9/31). Two fixes:
+      (1) parser per-link loc collision (`self.pairs.length` → `length(length(Self))`),
+      committed in `566e927`; (2) `forEach`-accumulator fold fusion + `join` element
+      stringification, committed in `ec7d895`. `erika`/LINQ still blocked (`?T` option
+      chaining through chained method results + `case … of` codegen + LINQ inference).
+      Note: erlang `==`/`!=` is `=:=`/`=/=`, already structural on tuples/maps/lists.
 
-## F1 — bind bare template fns  ✅ (already worked)
-- [x] A bare imported template fn rehydrates via `registerImportedTemplateFn` so
-      `name "…"` / `name """…"""` expands in the importing module. Verified live;
-      no core change needed (the disk loader already mirrors the same-project path).
+## A2 (remainder) — `@[external]` associated fns
+- [ ] `Array.range`/`Array.repeat` + the other `@[external]` associated fns lower on
+      every backend; ship companion host modules (`primitives.mjs`/`.erl`).
+      (NB: `examples/erika-linq` had to avoid `Array.range` cross-module — this closes it.)
 
-## F2 — emit the disk lib's namespace object  ✅
-- [x] `Lib.member(...)` for a disk lib resolves at runtime. Fix is codegen-only
-      (`codegen/commonJS.zig` `emitUse`): when the import names the lib itself
-      (`import {Lib} from "Lib"`) and that name has **no emitted symbol** of its own
-      (a comptime template fn → no cross-module export home), bind the lib's whole
-      module object — `const Lib = require("./<pkg>/<mod>.js");` (or
-      `Object.assign({}, …)` across the lib's modules) — so `Lib.member(...)`
-      resolves, parity with the destructured bare form. Pub fns are always
-      exported, so fn members link. Generic: the core names no specific lib.
-      (No `comptime.zig`/`infer.zig`/`template_eval.zig` change was needed — the
-      spec's file list pre-dated the empirical re-pin; the gap was in emission.)
+## B — backend-parity tails
+- [ ] **F1** literal method receivers reach **codegen** on every backend (parser done;
+      thread the loc-keyed lowering for a literal receiver through each emitter).
+- [ ] **F2** snake_case→camelCase dispatch normalization (legacy `to_string` → `toString`).
+- [ ] **F3** erlang/beam load std modules the way node does (erlang partial; beam pending).
+- [ ] **F4** `?.` optional-chaining codegen on **beam/wasm** (commonJS + erlang done).
+- [ ] **F5** wasm test runner (`wasmtime`) so `botopink test` runs on wasm.
 
-## F3 — close the recorded consumers  ✅
-- [x] `erika "…"` after `import {of, erika} from "erika"` binds + expands + runs
-      (erika emits unqualified `of(...)`, so the consumer imports `of` too).
-- [x] Path ready for jhonstart's `html "…"` (same bare template-fn + namespace shapes).
-- [x] New runnable example `examples/generic-loader-binding` exercises all three
-      forms (bare value, bare template fn, namespace member) — 3 green tests.
+## Done gate
+- [ ] beam map/filter/len chain + `Array.range` run (parity with node/erlang).
+- [ ] wasm `?.` guards; literal receivers codegen on every backend.
+- [x] `std_erlang.sh` green for order/dict/queue/sets (31/31). wasm runner still pending.
+- [~] `codegen/AGENTS.md` updated (erlang fold-fusion + join). `comptime/AGENTS.md`
+      pending (no infer change yet). `zig build && zig build test` green.
 
-## Done gate  ✅
-- [x] bare value/fn (baseline) + bare template-fn + `Lib.member(...)` all run from a disk lib.
-- [x] `grep -riE "rakun|jhonstart|erika" modules/compiler-core/src` returns nothing (std exempt).
-- [x] `codegen/AGENTS.md` + `codegen/tests/AGENTS.md` + `examples/AGENTS.md` updated;
-      `zig build && zig build test` green.
+## Notes
+- Backend-parity only — `commonJS`/`erlang` are the reference. Record limits (e.g. wasm
+  single-module) rather than fake them.
