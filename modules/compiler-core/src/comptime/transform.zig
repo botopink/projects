@@ -215,6 +215,14 @@ pub fn transform(
             if (fn_decl.returnType) |rt| {
                 if (rt.isExprType()) continue;
             }
+            // Decorator fns (first param `comptime _: @Decl`) are comptime-only
+            // too: their body ran over each annotated declaration during inference
+            // (validation + `@emit` wiring) — emitting it would leak `__decl`/
+            // `__emit`/`__compilerError` into real output. Drop them like templates.
+            if (fn_decl.params.len >= 1) {
+                const p0 = fn_decl.params[0];
+                if (p0.modifier == .@"comptime" and p0.typeRef.isDeclType()) continue;
+            }
         }
         try filtered.append(allocator, decl);
     }

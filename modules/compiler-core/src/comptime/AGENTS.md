@@ -202,9 +202,13 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   `env.skipDecoratorInvoke = true` (so the generated decls are inferred + emitted
   without re-running decorators — no re-contribution, no loop). This is how a
   framework lib builds singletons / a DI graph / a router table as ordinary code,
-  with no wiring logic in the core. (Decorator fns themselves are still emitted
-  by codegen today — dropping comptime-only decorator/`@Decl` fns like template
-  fns is a recorded follow-up.)
+  with no wiring logic in the core.
+- Decorator fns are **comptime-only** and dropped from codegen by `transform.zig`
+  (Phase 3 decl filter, next to the template-fn drop): a `fn` whose first param is
+  `comptime _: @Decl` is never emitted, so its body's `@emit`/`@compilerError`/
+  `decl.fail` (→ `__emit`/`__compilerError`/`__decl`) never leaks into real output.
+  The decls it contributed via `@emit` are already spliced into the module and
+  stay.
 
 ## `@Context<B, R>` capability inference (F7)
 
