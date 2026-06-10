@@ -567,3 +567,53 @@ test "erika query: multi-field select projects an anonymous record" {
     val labels = rows.map({ r -> r.name + ":" + r.pop.toString() });
     assert labels.join(",") == "Lyon:5,Paris:9";
 }
+
+
+// ── tests: select over `var listas = [..]` ───────────────────────────────────
+// The fluent layer is an ordinary runtime call, so it queries ANY in-scope array
+// — `val` or `var`, records or scalars, even after the `var` is reassigned. (The
+// `erika "…"` template, by contrast, resolves its collection from the caller's
+// *comptime* scope snapshot, which only captures immutable `val` bindings, so the
+// SQL form needs a `val` collection — see AGENTS.md.)
+
+record ErikaProduct {
+    nome: string,
+    preco: i32,
+}
+
+test "erika select over a var listas of records" {
+    var listas = [
+        ErikaProduct(nome: "caderno", preco: 12),
+        ErikaProduct(nome: "caneta", preco: 3),
+        ErikaProduct(nome: "mochila", preco: 80),
+    ];
+    // select the names of the pricier items
+    val caros = of(listas).where({ p -> p.preco >= 12 }).select({ p -> p.nome }).toArray();
+    assert caros.join(",") == "caderno,mochila";
+
+    // a `var` can be reassigned and re-queried
+    listas = listas.append([ErikaProduct(nome: "lapis", preco: 2)]);
+    val baratos = of(listas)
+        .where({ p -> p.preco < 12 })
+        .orderBy({ p -> p.preco })
+        .select({ p -> p.nome })
+        .toArray();
+    assert baratos.join(",") == "lapis,caneta";
+}
+
+test "erika select over a var listas of scalars" {
+    var listas = [1, 2, 3, 4, 5, 6];
+    val paresPorDez = of(listas).where({ n -> n % 2 == 0 }).select({ n -> n * 10 }).toArray();
+    assert paresPorDez.join(",") == "20,40,60";
+}
+
+test "erika multi-field select over a var listas" {
+    var listas = [
+        ErikaProduct(nome: "caderno", preco: 12),
+        ErikaProduct(nome: "caneta", preco: 3),
+    ];
+    // project two columns into an anonymous record per row (the same shape the
+    // `erika "select nome, preco …"` SQL form expands to)
+    val pares = of(listas).select({ p -> record { nome: p.nome, preco: p.preco } }).toArray();
+    assert pares.map({ x -> x.nome + ":" + x.preco.toString() }).join(",") == "caderno:12,caneta:3";
+}

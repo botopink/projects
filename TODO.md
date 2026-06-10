@@ -18,7 +18,7 @@
       `libs/std/src/docs.md`/`examples.md`/`AGENTS.md` (left "moved" pointers).
       `std` no longer ships erika (verified: `libs/std` test suite still green).
 - [x] `import {erika} from "erika"` resolves through the generic loader;
-      `botopink test` in `libs/erika` discovers `src/erika.bp` (21 blocks pass).
+      `botopink test` in `libs/erika` discovers `src/erika.bp` (24 blocks pass).
       Zero `modules/compiler-core/src/**` edit. Added `erika` to the lib-agnostic
       gate alternation in root `build.zig`.
 
@@ -52,7 +52,7 @@
       F1 gap. Updated in the same change as the code.
 - [x] All tests live in `libs/erika/src/erika.bp`'s own `test "…"` blocks — the 19
       v0.beta.6 blocks moved with the file + `selectMany` + multi-field projection
-      (21 total, all pass under `botopink test`).
+      (24 total — incl. `var listas = [..]` select examples — all pass under `botopink test`).
 
 ## Done gate
 - [x] Tests live in `libs/erika/src/erika.bp` (`botopink test`), not compiler Zig suites.

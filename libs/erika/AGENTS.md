@@ -29,7 +29,7 @@ erika/
 ├── botopink.json      ← package metadata (files: ["erika.bp"])
 └── src/
     └── erika.bp       ← the whole lib: `record Query<T>` + `Grouping<K,V>` +
-                         constructors + the `erika "…"` template fn + 21 tests
+                         constructors + the `erika "…"` template fn + 24 tests
 ```
 
 ## Design at a glance
@@ -105,6 +105,13 @@ throughout `erika.bp`.
   (`erika.of(...)`) is fully usable from user projects today; the `erika "…"` form
   is exercised by this lib's own in-file tests, where the template fn is a directly
   in-scope identifier.
+- **`erika "…"` resolves only `val` collections, not `var`.** The template reads
+  the caller's *comptime* scope snapshot, which captures immutable `val` bindings
+  only, so `erika "select … from listas"` where `listas` is a `var` does not
+  resolve. The **fluent** form (`of(listas)` / `erika.of(listas)`) is an ordinary
+  runtime call and queries any `var` or `val` array (covered by the
+  `select over a var listas …` tests). Making the string form see `var`s is
+  comptime scope-snapshot work in core — out of scope here.
 - **Interpolated queries** (`erika "… where age >= ${min}"` via `q.parts()`
   Text/Interp) — the next extension, unchanged from v0.beta.6. Record, don't build.
 - **`average`** takes an `f64` selector (no `i32 → f64` cast exists); `range` /
