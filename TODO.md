@@ -1,65 +1,70 @@
-# TODO — onze  (annotation-processor lib · Wave 1)
+# TODO — rakun  (annotation-processor lib · Wave 1)
 
-> Task branch `task/onze` · spec
-> [`tasks/v0.beta.8/specs/onze.md`](../../tasks/v0.beta.8/specs/onze.md).
+> Task branch `task/rakun-di` · spec
+> [`tasks/v0.beta.8/specs/rakun.md`](../../tasks/v0.beta.8/specs/rakun.md).
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
-> **Depends on: nothing** — the `@Decl`/`@emit` mechanism + loader are in `feat`.
-> Start now. Sibling of `rakun` (same mechanism, disjoint lib).
+> **Depends on: nothing** — the `@Decl`/`@emit` mechanism + F3 placement bodies are
+> in `feat`. Start now. Sibling of `onze` (same mechanism, disjoint lib).
 >
-> New pure-`.bp` lib, **zero** core code. Mockito for botopink tests:
-> `mock(T)`/`when`/`verify`. Mock state behind `#[@external]` host cells.
+> **HARD RULE.** Zero rakun knowledge in `compiler-core`. All behaviour is
+> `libs/rakun/*.bp` decorator bodies via `@emit`. Port *behaviour* from the preserved
+> `task/rakun` reference (`feb96f0`), never the Zig.
 
-## F0 — stand up the lib
-- [x] `libs/onze/botopink.json` + `src/` skeleton; `from "onze"` resolves; `test {}`
-      blocks run under `botopink test` (7 tests green in `test/onze_test.bp`).
+> **Mechanism reality (verified 2026-06-10).** Each decorator runs in an isolated
+> node process — there is NO shared comptime registry across decorators, no
+> top-level mutable `var`, and hand-code can't reference emitted symbols. So the
+> spec's "shared comptime registry" / "topo-sorted singleton `val`s" / "comptime
+> cycle diagnostic" are realized differently: a **host runtime** (`runtime.mjs`
+> behind `#[@external]`) holds the scan/cycle/router state, and each decorator
+> `@emit`s self-registering code + a lazy factory. Equivalent behaviour; the
+> *comptime* cycle diagnostic is the one genuine casualty (runtime instead).
+>
+> **Generic core fixes this needed (landed):** cross-module host-`#[@external]`
+> lowering + import dedup (`14cd527`); `@Decl` field-annotation reflection +
+> `test/` modules excluded from the test aggregator (this commit).
 
-## F1 — mock synthesis from `@Decl`
-- [x] `#[mock]` reflects the interface's methods via `@Decl` and `@emit`s a
-      `record MockXxx implement Xxx` (each method records the call + returns the
-      stub-or-type-default through `onzeInvoke`) plus a `mockXxx()` factory. Backed by
-      a host-cell registry keyed per mock instance (`onze.mjs`).
-      **`test/onze_test.bp` drives the whole suite through `#[mock]` under `botopink
-      test`** (7 green). Needed two CORE fixes (the user authorised touching core):
-      decorators run before body inference (so `@emit`ed decls are visible to a body
-      that references them — the test-mode `@emit` regression), and interface-level
-      markers run with `DeclKind.Interface`. Regression tests in
-      `comptime/tests/decorator_invocation.zig`.
+## F2 — IoC container (the wiring, via `@emit`)
+- [x] Component scan: each component decorator `@emit`s `rkScan("Name")` at module
+      load → host scan registry (no shared comptime state needed).
+- [x] DI graph: each component `@emit`s `__rkMake_<Type>()` injecting every field
+      by its own factory (lazy; topo-order is implicit in the call graph, not `val`
+      order). Tested via dispatch building a controller→service→repo chain.
+- [x] Cycle detection (A↔B): `rkEnter`/`rkDone` guard raises at construction.
+      NOTE: **runtime**, not comptime (per-decorator has no whole-graph view).
+- [ ] Singleton scope (currently fresh-per-resolve) + `#[configuration]`/`#[bean]`
+      factories + `#[value("key")]` property injection. (`@Decl` now reflects field
+      annotations, so `#[value]` detection is unblocked — wiring deferred.)
 
-## F2 — stubbing (`when … thenReturn / thenThrow`)
-- [x] `when(mock.m(args))` captures the recorded call (with matchers) as the stub key;
-      `.thenReturn(v)` / `.thenThrow(msg)` writes the stub table; a later matching call
-      returns `v` / host-raises. Last stub wins.
+## F4 — web layer / router (via `@emit`)
+- [x] Controller decorator walks `decl.methods`, reads `#[getMapping(path)]`/… from
+      `method.annotations`, `@emit`s `rkRegisterRoute(verb, prefix + path, handler)`
+      (+ `#[route]` prefix). Verb from the marker name.
+- [x] Path params (`:name`) — `dispatch` matches them (binding into the request);
+      `req.param("name")` wiring exercised via the fake request.
+- [x] `Response` builders type-check against the handler return type (handler is
+      `fn(req: Request) -> Response`; `rkDispatch -> Response`).
 
-## F3 — verification (`verify`, `times`, `never`)
-- [x] `verify(mock, atLeastOnce()).m(args)` asserts ≥1; `verify(mock, times(n))` exactly
-      n; `verify(mock, never())` 0. Failure → clear assertion (expected vs actual +
-      recorded calls). Uniform 2-arg form (no fn overloading / default params in botopink).
-
-## F4 — argument matchers
-- [x] `eq(v)` / `anyInt()` / `anyString()` match args; a literal arg = exact equality;
-      matchers compose across params. (Generic `any<T>()` can't produce a per-type dummy
-      — typed `anyXxx()` instead; extend per type.)
-
-## F5 — docs
-- [x] `libs/onze/AGENTS.md`, `src/AGENTS.md`, `docs.md`: API, comptime synthesis model,
-      host-cell state, `from "onze"` import path, status table. Parent `libs/AGENTS.md`
-      updated. Same commit as the code.
+## F5 — bootstrap (`Rakun.run` + real HTTP backing)
+- [ ] Promote `libs/server` scaffold → real minimal HTTP (listen, dispatch, req/resp
+      bridge) behind `#[@external]` host calls (node `http` first; then erlang).
+- [ ] `Request` gets a concrete server-supplied impl: `param`/`query`/`header`/`body`.
+- [ ] `Rakun.run(app)` reads the host router and starts `libs/server` on
+      `app.port`/`basePath`. (Needs G2: ship the runtime `.mjs` next to the emitted
+      module so a consumer build resolves it — today only the lib's own tests do.)
+- [ ] End-to-end: a request to a mapped route invokes the handler + returns its Response.
 
 ## Done gate
-- [x] `#[mock]` synthesizes every method; unstubbed → type-default; stub returns;
-      verify count passes/fails correctly; matchers work. Tests in
-      `libs/onze/test/onze_test.bp` (7 green under `botopink test`, all via `#[mock]`).
-- [x] `grep -riE "\bonze\b" modules/compiler-core/src` returns nothing (the core fixes
-      are generic — `@emit` ordering + interface markers — never name onze).
+- [x] component scan + DI chain + cycle diagnostic (runtime) — green under
+      `botopink test` (`test/di_test.bp`, `test/router_test.bp`). `#[bean]` deferred.
+- [~] router: GET routes return 200, unmapped → 404 — green in-test via `rkDispatch`.
+      Real `run` over node `http` + beam pending F5/G2.
+- [x] Tests in `libs/rakun/*.bp`; `libs/rakun/AGENTS.md` updated. `libs/server/AGENTS.md`
+      update lands with F5.
+- [x] `grep -riE "rakun" modules/compiler-core/src` returns nothing (mechanism is generic).
 
 ## Notes
-- v1: mock signatures + return stubbing + count verification. Out of scope (recorded):
-  spies / partial mocks, `thenAnswer`, in-order verification, argument captors.
-- **Core fixes (authorised) that unblocked test-mode `#[mock]`:** (1) decorators run
-  before body inference in `inferProgram(Typed)` so `@emit`ed decls are spliced before
-  a referencing body is type-checked; (2) interface-level markers reflect with
-  `DeclKind.Interface`. Both generic; regression tests in `decorator_invocation.zig`.
-- **Parser/comptime gotchas hit:** `if` is an expression (needs `else`, `;` bodies);
-  bare `if {…}` only as a block's last statement; decorator bodies can't call sibling
-  fns; `//` comments with quotes/backticks inside a closure break the lexer; `==` on
-  arrays is JS reference equality (compare with `.join`). Recorded in `src/AGENTS.md`.
+- Constructor injection only in v1; singleton scope, `#[value]`/`#[bean]`, and the
+  real server are the remaining work. `libs/server` realness + runtime-`.mjs`
+  shipping (G2) gate F5. No graceful-shutdown / middleware in v1.
+- Comptime constraints on decorator bodies (no sibling calls, `if`-expr, bare-`if`
+  only last, block-lambdas) force the factory builder to be inlined per marker.

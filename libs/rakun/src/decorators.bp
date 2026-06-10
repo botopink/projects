@@ -22,23 +22,83 @@
 // are Spring's stereotypes — semantically identical to `#[component]` here, kept
 // distinct for intent + future per-stereotype behaviour.
 
+// Each component marker contributes the IoC wiring on top of its placement rule.
+// In order, the body:
+//   1. `@emit`s `rkScan("Name")` — module-load self-registration into the scan
+//      registry (F2: the scan discovers every component, no shared comptime state);
+//   2. `@emit`s a factory `__rkMake_Name()` that constructs the record, injecting
+//      each field by type via that type's own factory (F2: constructor injection),
+//      bracketed by `rkEnter`/`rkDone` so a dependency cycle raises at construction;
+//   3. enforces placement (must annotate a record).
+// The `@emit`s run before the placement `fail`, and a failed outcome discards the
+// contributions — so only correctly placed records wire up. The emitted code calls
+// `rkScan`/`rkMake_*`/`rkEnter`/`rkDone`, which are in scope at the application
+// site (`import {service, rkScan, rkEnter, rkDone, …} from "rakun"`).
+//
+// Decorator-body constraints (see ../AGENTS.md): the body can't call sibling fns
+// (each is lowered alone into the eval script), so the factory builder is inlined
+// in every component marker rather than shared. `#[value("key")]` property
+// injection is a recorded follow-up; v1 injects every field by type.
+
 pub fn component(comptime decl: @Decl) {
+    @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
+    var args: Array<string> = [];
+    decl.fields.forEach({ f -> args.push(f.name + ": __rkMake_" + f.typeName + "()"); });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + args.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); return v; }");
     if (decl.kind != DeclKind.Record) { decl.fail("#[component] must annotate a record"); }
 }
 
 pub fn service(comptime decl: @Decl) {
+    @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
+    var args: Array<string> = [];
+    decl.fields.forEach({ f -> args.push(f.name + ": __rkMake_" + f.typeName + "()"); });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + args.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); return v; }");
     if (decl.kind != DeclKind.Record) { decl.fail("#[service] must annotate a record"); }
 }
 
 pub fn repository(comptime decl: @Decl) {
+    @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
+    var args: Array<string> = [];
+    decl.fields.forEach({ f -> args.push(f.name + ": __rkMake_" + f.typeName + "()"); });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + args.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); return v; }");
     if (decl.kind != DeclKind.Record) { decl.fail("#[repository] must annotate a record"); }
 }
 
+// A controller is a component (scan + factory) that ALSO contributes routes: for
+// every method carrying a `#[getMapping(path)]`/… annotation, `@emit` a
+// `rkRegisterRoute(verb, prefix + path, handler)` whose handler builds the
+// controller via its factory and calls the method. The `#[route("/prefix")]` on
+// the record (if any) is the path prefix. See `routeWiring` note below.
+
 pub fn controller(comptime decl: @Decl) {
+    @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
+    var cargs: Array<string> = [];
+    decl.fields.forEach({ f -> cargs.push(f.name + ": __rkMake_" + f.typeName + "()"); });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + cargs.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); return v; }");
+    var prefix = "\"\"";
+    decl.annotations.forEach({ a -> if (a.name == "route") { prefix = a.args.join(""); } });
+    decl.methods.forEach({ m ->
+        m.annotations.forEach({ a ->
+            val verb = if (a.name == "getMapping") { "GET"; } else if (a.name == "postMapping") { "POST"; } else if (a.name == "putMapping") { "PUT"; } else if (a.name == "patchMapping") { "PATCH"; } else if (a.name == "deleteMapping") { "DELETE"; } else { ""; };
+            if (verb != "") { @emit("val __rkRoute_" + decl.name + "_" + m.name + " = rkRegisterRoute(\"" + verb + "\", " + prefix + " + " + a.args.join("") + ", { req -> __rkMake_" + decl.name + "()." + m.name + "(req) });"); }
+        });
+    });
     if (decl.kind != DeclKind.Record) { decl.fail("#[controller] must annotate a record"); }
 }
 
 pub fn restController(comptime decl: @Decl) {
+    @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
+    var rargs: Array<string> = [];
+    decl.fields.forEach({ f -> rargs.push(f.name + ": __rkMake_" + f.typeName + "()"); });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + rargs.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); return v; }");
+    var rprefix = "\"\"";
+    decl.annotations.forEach({ a -> if (a.name == "route") { rprefix = a.args.join(""); } });
+    decl.methods.forEach({ m ->
+        m.annotations.forEach({ a ->
+            val verb = if (a.name == "getMapping") { "GET"; } else if (a.name == "postMapping") { "POST"; } else if (a.name == "putMapping") { "PUT"; } else if (a.name == "patchMapping") { "PATCH"; } else if (a.name == "deleteMapping") { "DELETE"; } else { ""; };
+            if (verb != "") { @emit("val __rkRoute_" + decl.name + "_" + m.name + " = rkRegisterRoute(\"" + verb + "\", " + rprefix + " + " + a.args.join("") + ", { req -> __rkMake_" + decl.name + "()." + m.name + "(req) });"); }
+        });
+    });
     if (decl.kind != DeclKind.Record) { decl.fail("#[restController] must annotate a record"); }
 }
 

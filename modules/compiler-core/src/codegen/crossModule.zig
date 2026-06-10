@@ -109,7 +109,12 @@ pub fn build(alloc: std.mem.Allocator, outputs: []ComptimeOutput) !CrossModule {
                 try exports.put(s.name, .{ .module = ct.name, .kind = .@"struct", .is_class = true, .fields = fields });
             },
             .@"enum" => |e| if (e.isPub) try exports.put(e.name, .{ .module = ct.name, .kind = .@"enum", .is_class = false }),
-            .@"fn" => |f| if (f.isPub and !f.isExternal())
+            // `pub fn` exports — including host-backed `#[@external]` declarations.
+            // An external fn's owning module re-exports the host symbol under the
+            // fn name (`exports.regItem = regItem`), so a consumer that imports it
+            // `from "<lib>"` must `require` that owner just like any other export;
+            // omitting externals here left such imports unresolved at the call site.
+            .@"fn" => |f| if (f.isPub)
                 try exports.put(f.name, .{ .module = ct.name, .kind = .@"fn", .is_class = false }),
             .val => |v| if (v.isPub) try exports.put(v.name, .{ .module = ct.name, .kind = .val, .is_class = false }),
             .use => |u| for (u.imports) |imp| try imported.put(imp.name(), {}),

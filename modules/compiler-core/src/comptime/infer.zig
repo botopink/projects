@@ -1543,7 +1543,7 @@ fn appendMethodsJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, methods:
     try buf.append(arena, ']');
 }
 
-const HandleField = struct { name: []const u8, typeName: []const u8 };
+const HandleField = struct { name: []const u8, typeName: []const u8, annotations: []const ast.Annotation = &.{} };
 
 /// Build a `@Decl` handle JSON for any annotated declaration. `fields`/`methods`
 /// default to empty for the kinds that have none; `returnType` is the empty
@@ -1569,7 +1569,9 @@ fn buildHandleJson(
         try template.appendJsonString(&buf, arena, f.name);
         try buf.appendSlice(arena, ",\"typeName\":");
         try template.appendJsonString(&buf, arena, f.typeName);
-        try buf.appendSlice(arena, ",\"annotations\":[]}");
+        try buf.appendSlice(arena, ",\"annotations\":");
+        try appendAnnotationsJson(&buf, arena, f.annotations);
+        try buf.append(arena, '}');
     }
     try buf.appendSlice(arena, "],\"methods\":");
     try appendMethodsJson(&buf, arena, methods);
@@ -1638,7 +1640,7 @@ fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
         },
         .record => |r| {
             var fields = try env.arena.alloc(HandleField, r.fields.len);
-            for (r.fields, 0..) |fld, i| fields[i] = .{ .name = fld.name, .typeName = declTypeName(fld.typeRef) };
+            for (r.fields, 0..) |fld, i| fields[i] = .{ .name = fld.name, .typeName = declTypeName(fld.typeRef), .annotations = fld.annotations };
             const h = try buildHandleJson(env.arena, "Record", r.name, fields, r.methods, "", r.annotations);
             try runDeclDecorators(env, ctx, r.annotations, h);
             for (r.fields) |fld| {
@@ -1653,7 +1655,7 @@ fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
         .@"struct" => |s| {
             var fields: std.ArrayList(HandleField) = .empty;
             for (s.members) |mem| switch (mem) {
-                .field => |fld| try fields.append(env.arena, .{ .name = fld.name, .typeName = declTypeName(fld.typeRef) }),
+                .field => |fld| try fields.append(env.arena, .{ .name = fld.name, .typeName = declTypeName(fld.typeRef), .annotations = fld.annotations }),
                 else => {},
             };
             const h = try buildHandleJson(env.arena, "Struct", s.name, fields.items, &.{}, "", s.annotations);
