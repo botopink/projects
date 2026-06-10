@@ -54,6 +54,7 @@ const prelude =
     \\function __failRaw(message, param, span) {
     \\    throw { __bpfail: { message: String(message), param: param ?? null, span: span ?? null } };
     \\}
+    \\function __compilerError(message) { __failRaw(message, null, null); }
     \\// `parts` is null for a hole-free template (synthesized from `text`); a
     \\// holed template carries explicit parts whose Interp entries expose a
     \\// `code` placeholder (`__bp_hole_<param>_<i>`) — embedding it in built

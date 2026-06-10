@@ -34,7 +34,8 @@
               "typeRef": {
                 "named": "string"
               },
-              "init": null
+              "init": null,
+              "annotations": []
             }
           },
           {
@@ -45,7 +46,8 @@
                   "named": "E"
                 }
               },
-              "init": null
+              "init": null,
+              "annotations": []
             }
           }
         ],

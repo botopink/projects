@@ -1141,10 +1141,14 @@ pub const StructField = struct {
     typeRef: TypeRef,
     /// Optional initializer expression.
     init: ?Expr,
+    /// Member-level decorators on the field (`#[inject] val repo: …`).
+    annotations: []Annotation = &.{},
 
     pub fn deinit(this: *StructField, allocator: std.mem.Allocator) void {
         this.typeRef.deinit(allocator);
         if (this.init) |*expr| expr.deinit(allocator);
+        for (this.annotations) |*ann| ann.deinit(allocator);
+        if (this.annotations.len > 0) allocator.free(this.annotations);
     }
 };
 
@@ -1544,10 +1548,14 @@ pub const RecordField = struct {
     typeRef: TypeRef,
     /// Optional default value, e.g. `= null` or `= 0`.
     default: ?Expr = null,
+    /// Member-level decorators on the field (`#[inject] repo: …`).
+    annotations: []Annotation = &.{},
 
     pub fn deinit(this: *RecordField, allocator: std.mem.Allocator) void {
         this.typeRef.deinit(allocator);
         if (this.default) |*d| d.deinit(allocator);
+        for (this.annotations) |*ann| ann.deinit(allocator);
+        if (this.annotations.len > 0) allocator.free(this.annotations);
     }
 };
 

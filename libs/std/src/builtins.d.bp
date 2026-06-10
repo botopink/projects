@@ -141,6 +141,20 @@ fn panic(message: string) noreturn
 fn trap() noreturn
 fn src() string
 
+// ── compile-time diagnostics ──────────────────────────────────────────────────
+// Abort compilation with `message`. The generic way for any comptime body — a
+// decorator (`fn d(comptime _: @Decl)`) or a template (`-> @Expr<…>`) — to reject
+// its input, surfaced as a scoped diagnostic at the call site. Preferred over the
+// `@Decl` handle's `fail`/`failAt`: it needs no handle and reads like `@panic`.
+fn compilerError(message: string) noreturn
+
+// Contribute generated top-level declarations to the program from a decorator
+// body. `@emit("pub val userServiceSingleton = …")` parses `source` as botopink
+// declarations and splices them into the annotated declaration's module, so a
+// decorator can build wiring (singletons, a DI graph, a router table) as ordinary
+// code. May be called any number of times; each call appends. Comptime-only.
+fn emit(source: string)
+
 
 // ── module imports ───────────────────────────────────────────────────────────
 

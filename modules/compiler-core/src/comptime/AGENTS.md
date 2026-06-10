@@ -55,7 +55,7 @@ comptime/
 | `env.zig` | Type environment — scopes, builtins + stdlib, `TypeDef.contextBase`, `FnContext`, static-extension-dispatch tables (`extensions`, `activations`, `inherentMethods`, `dispatchRewrites`), the `"std"` package tables (`stdModules`: module → fn exports; `stdModuleTypes`: module → pub type decls, registered into the importer by `markStdImports` — type export; `stdImports`: names imported via `from "std"` — explicit import wins over same-named value bindings like the primitive `bool`), the lib-agnostic `decorators` table (decorator name →
 `DecoratorSig{ params }`, filled by `registerDecoratorSig` for any fn/delegate whose
 first param is `comptime _: @Decl`; drives `#[d(args)]` argument checking), and the loc-keyed lowering maps `method_lowerings` (`@Result`/`@Option` methods + the builtin `result` namespace, `qualified` flag) + `result_jump_lowerings` (`return`/`throw` → `__bp_ok`/`__bp_error` in `*fn -> @Result` fns) + `jsMethodRenames` (type-directed JS-only method renames, e.g. `string` `contains` → native `includes`; recorded only when the receiver's static type makes a global name-map unsafe, since `record Set` also declares `contains`). |
-| `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. `registerExtensions` pre-pass + `resolveReceiverCall` implement F6 static extension dispatch. `registerFnSignatures` pre-pass (via `buildFnSignatureType`) binds every top-level `fn` signature *before* any body is inferred, so mutually-recursive / forward-referenced top-level fns resolve (a fn's signature is fully determined by its declared param/return types + generics, so the pre-pass type matches the one `inferFnDecl` re-derives for self-recursion). Ends with `validateProgram` — `implement`/interface coverage + getter/setter type checks. Top-level `test { … }` bodies type-check like void `fn` bodies via `inferTestDecl` (no binding produced); `assert cond` unifies `cond` with `bool`. **Type method bodies** (`stdlib-backends-parity`): `inferTypeMethods` walks record/struct/enum method bodies (previously only signatures were registered) — binding the type generics, `Self`, the method generics + params, then inferring each statement. This type-checks method/`default fn` bodies AND records the codegen lowerings for the calls inside; it is **best-effort** (a body that trips an inference gap is skipped, not a hard error) so the LINQ-heavy `erika` lib still compiles. **Value-receiver instance calls** are recorded in the loc-keyed `instanceLowerings` table (`env.zig`): `.record <typeName>` (codegen resolves local vs imported owner) or `.prim <PrimKind>` (array/string/bool/int/float — the non-JS backends map it to a host op). `primMethodReturnType` recovers an array/string method's real return type so a chain (`xs.filter(f).at(0)` → `?T`) keeps tracking through it; `arr.length`/`s.length`/`.len` field access records a `.prim` entry too (→ `length`/`string:length`). commonJS ignores `instanceLowerings` (native dispatch). |
+| `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. `registerExtensions` pre-pass + `resolveReceiverCall` implement F6 static extension dispatch. `registerFnSignatures` pre-pass (via `buildFnSignatureType`) binds every top-level `fn` signature *before* any body is inferred, so mutually-recursive / forward-referenced top-level fns resolve (a fn's signature is fully determined by its declared param/return types + generics, so the pre-pass type matches the one `inferFnDecl` re-derives for self-recursion). Ends with `validateProgram` — `implement`/interface coverage + getter/setter type checks. Top-level `test { … }` bodies type-check like void `fn` bodies via `inferTestDecl` (no binding produced); `assert cond` unifies `cond` with `bool`. **Type method bodies** (`stdlib-backends-parity`): `inferTypeMethods` walks record/struct/enum method bodies (previously only signatures were registered) — binding the type generics, `Self`, the method generics + params, then inferring each statement. This type-checks method/`default fn` bodies AND records the codegen lowerings for the calls inside; it is **best-effort** (a body that trips an inference gap is skipped, not a hard error) so the LINQ-heavy stdlib lib still compiles. **Value-receiver instance calls** are recorded in the loc-keyed `instanceLowerings` table (`env.zig`): `.record <typeName>` (codegen resolves local vs imported owner) or `.prim <PrimKind>` (array/string/bool/int/float — the non-JS backends map it to a host op). `primMethodReturnType` recovers an array/string method's real return type so a chain (`xs.filter(f).at(0)` → `?T`) keeps tracking through it; `arr.length`/`s.length`/`.len` field access records a `.prim` entry too (→ `length`/`string:length`). commonJS ignores `instanceLowerings` (native dispatch). |
 | `unify.zig` | Unification with substitution + occurs check. |
 | `error.zig` | Structured type errors with source ranges and hints (incl. `missingMethod`/`unknownMethod`/`unknownInterface`/`ambiguousMethod`). |
 | `eval.zig` | Builds eval scripts, calls runtime, parses JSON results. |
@@ -155,11 +155,20 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   and `delegate`; when the first param is `comptime _: @Decl` it records the
   trailing signature (everything after the handle) **and the body-carrying
   `FnDecl`** in `env.decorators` (name → `DecoratorSig{ params, fn_decl }`).
-- The `@Decl` cluster (`enum DeclKind` + `interface Decl` with scalar
-  `kind`/`name`/`returnType` + `fail`/`failAt`) is registered into the global env
-  by `comptime.zig registerStdlib` from `decl_reflection_src`, so a decorator
-  body type-checks. The aggregate members (`fields`/`methods`/`annotations`)
-  await P3 (interface `val`s don't yet parse array types).
+- The `@Decl` cluster (`enum DeclKind` + `struct Decl`/`Field`/`Method`/`Param`/
+  `Annotation`/`Span`) is registered into the global env by `comptime.zig
+  registerStdlib` from `decl_reflection_src`, so a decorator body type-checks. It
+  is a `struct` (not an interface) so the **aggregate** members resolve too —
+  `decl.fields`/`decl.methods`/`decl.annotations` (array types interface `val`s
+  don't parse) — which is what a wiring decorator iterates. The shape matches the
+  handle JSON and the `__decl` runtime object.
+- `@compilerError(message)` — the generic compile-time error builtin (declared in
+  `builtins.d.bp`, return-typed `noreturn` via a fresh var in
+  `inferBuiltinCallReturnType`, lowered to `__compilerError(...)` by commonJS).
+  The preferred way for a comptime body — a decorator or an `@Expr` template — to
+  reject its input: the `decorator_eval`/`template_eval` preludes define
+  `__compilerError` as a `__failRaw` throw, so it surfaces as the same scoped
+  diagnostic as `decl.fail`, but needs no `@Decl` handle.
 - `validateDecorators` (pass 3, before `validateProgram`) walks every
   declaration's `annotations` — record/struct/enum/fn/interface + their methods —
   and for each `#[name(args)]` whose `name` is a recognized decorator,
@@ -176,9 +185,26 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   the full compile pipeline (`env.templateEval` set); tooling/LSP paths skip it.
   Diagnostic locs are coarse for now (message carries the detail; precise spans
   are a follow-up).
-- Field-site and record/struct *method*-site annotations are a parser gap today
-  (annotations only parse on interface methods); to be closed when a framework
-  migration needs them.
+- Method-site **and** field-site decorators now parse on record/struct bodies
+  (`parseRecordBody`/`parseStructBody` read member-level annotations before a `fn`
+  or a field; `RecordField`/`StructField` carry an `annotations` slice). So
+  `#[getMapping]` on a controller method and `#[inject]`/`#[value]` on a field both
+  reach `validateDecorators` + `invokeDecorators`, which walk fields (reflected as
+  `DeclKind.Field` — `name` + the field's `returnType`) alongside methods. Adding
+  the `annotations` field re-serializes the parser AST, so the record/struct
+  parser snapshots were regenerated.
+- **P3 wiring contribution:** a decorator body contributes generated top-level
+  declarations via `@emit(source)` (declared in `builtins.d.bp`; lowered to
+  `__emit` by commonJS; the `decorator_eval` prelude collects the strings and
+  returns them in `Outcome.ok`). `runDeclDecorators` accumulates them into
+  `env.contributions`; `analyzeModule`/`analyzeSource` then **splice** the
+  contributed sources onto the module and **re-analyze it once** with
+  `env.skipDecoratorInvoke = true` (so the generated decls are inferred + emitted
+  without re-running decorators — no re-contribution, no loop). This is how a
+  framework lib builds singletons / a DI graph / a router table as ordinary code,
+  with no wiring logic in the core. (Decorator fns themselves are still emitted
+  by codegen today — dropping comptime-only decorator/`@Decl` fns like template
+  fns is a recorded follow-up.)
 
 ## `@Context<B, R>` capability inference (F7)
 

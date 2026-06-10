@@ -33,15 +33,16 @@ pub fn build(b: *std.Build) void {
     // "std" package modules — importable via `import {…} from "std"`. This list
     // is the ONLY place a std module is wired: compiler-core discovers them
     // generically through the generated `std_pkg` table below, so adding a module
-    // (e.g. erika) never touches `modules/compiler-core/src/**`. Adding a module
-    // is: drop `libs/std/src/<name>.bp` + add `"<name>.bp"` here.
+    // never touches `modules/compiler-core/src/**`. Adding a module is: drop
+    // `libs/std/src/<name>.bp` + add `"<name>.bp"` here. (Application-level libs
+    // like `erika` are NOT std — they ship under `libs/<name>/` and load through
+    // the generic `from "<lib>"` loader, never this table.)
     const std_pkg_files = [_][]const u8{
         "order.bp",
         "dict.bp",
         "sets.bp",
         "string_builder.bp",
         "queue.bp",
-        "erika.bp",
     };
     // Generate the package-module registry (`pkg_modules: [N]{ path, source }`),
     // each entry embedding its `.bp` source. The generated file lives in its own
@@ -115,8 +116,8 @@ pub fn build(b: *std.Build) void {
     // → `!` → failure. This file lives outside the scanned tree, so it may name
     // the forbidden tokens. Runs as part of `zig build test`.
     const lib_agnostic_gate = b.addSystemCommand(&.{
-        "sh",                                                       "-c",
-        "! grep -riIE 'rakun|jhonstart' modules/compiler-core/src",
+        "sh",                                                             "-c",
+        "! grep -riIE 'rakun|jhonstart|erika' modules/compiler-core/src",
     });
     lib_agnostic_gate.has_side_effects = true; // never cache — always re-scan
     test_step.dependOn(&lib_agnostic_gate.step);

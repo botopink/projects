@@ -135,13 +135,43 @@ fn analyzeModule(
     templateRegistry: *const std.StringHashMap(ast.FnDecl),
     templateEvalCtx: ?envMod.TemplateEvalCtx,
 ) !AnalysisResult {
+    return analyzeSource(arena, mod, mod.source, registry, templateRegistry, templateEvalCtx, false);
+}
+
+/// Append decorator `@emit(...)` contributions to a module's source as extra
+/// top-level declarations (the wiring a decorator builds — singletons, DI, router).
+fn spliceContributions(arena: std.mem.Allocator, source: []const u8, contributions: []const []const u8) ![]const u8 {
+    var buf: std.ArrayListUnmanaged(u8) = .empty;
+    try buf.appendSlice(arena, source);
+    for (contributions) |c| {
+        try buf.append(arena, '\n');
+        try buf.appendSlice(arena, c);
+    }
+    return buf.toOwnedSlice(arena);
+}
+
+/// Analyze one module's `source`. On the first pass (`skip_invoke == false`) a
+/// decorator body may contribute generated declarations via `@emit(...)`; if it
+/// does, the contributions are spliced onto the source and the module is
+/// re-analyzed ONCE with decorator invocation disabled (`skip_invoke == true`),
+/// so the generated decls are inferred + emitted without re-running decorators.
+fn analyzeSource(
+    arena: std.mem.Allocator,
+    mod: Module,
+    source: []const u8,
+    registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    templateRegistry: *const std.StringHashMap(ast.FnDecl),
+    templateEvalCtx: ?envMod.TemplateEvalCtx,
+    skip_invoke: bool,
+) anyerror!AnalysisResult {
     var env = try infer.freshEnv(arena, std.heap.page_allocator);
     // Capture provenance for `expr` templates: which file is being inferred.
     env.modulePath = mod.path;
     // Runtime-backed template expansion (F6-full) — null in tooling paths.
     env.templateEval = templateEvalCtx;
+    env.skipDecoratorInvoke = skip_invoke;
 
-    var lexer = Lexer.init(mod.source);
+    var lexer = Lexer.init(source);
     const tokens = try lexer.scanAll(arena);
 
     var parser = Parser.init(tokens);
@@ -164,6 +194,15 @@ fn analyzeModule(
         },
         else => return err,
     };
+
+    // A decorator body contributed generated declarations (`@emit`): splice them
+    // onto the source and re-analyze once (decorators off, to avoid re-emitting).
+    if (!skip_invoke and env.contributions.items.len > 0) {
+        const spliced = try spliceContributions(arena, source, env.contributions.items);
+        env.deinit();
+        return analyzeSource(arena, mod, spliced, registry, templateRegistry, templateEvalCtx, true);
+    }
+
     return .{ .success = .{ .bindings = bindings, .env = env, .program = program } };
 }
 
@@ -179,21 +218,30 @@ pub const std_pkg_modules = @import("std_prelude").pkg_modules;
 /// env so a decorator body (`fn d(comptime decl: @Decl) { … }`) type-checks. The
 /// canonical/documented copy lives in `libs/std/src/builtins.d.bp`; this minimal
 /// mirror exists because that file is not parsed as a standalone program. Keep
-/// the two in sync. `Span` (used by `failAt`) resolves opaquely — it is the
-/// `@Expr` model's span, not part of this cluster.
+/// the two in sync.
 ///
-/// P2 surface: the scalar reflection an annotation processor needs to validate
-/// placement (`kind`/`name`/`returnType`) plus the `fail`/`failAt` diagnostics.
-/// The aggregate members (`fields`/`methods`/`annotations`, which need array
-/// types interface `val`s do not yet parse) arrive with the wiring phase (P3).
+/// `Decl` is a `struct` (not an interface) so its **aggregate** members —
+/// `fields`/`methods`/`annotations` with array types — parse and resolve; that
+/// is what the wiring phase (P3) reads to build DI/router tables. The shape
+/// matches the `@Decl` handle JSON `buildHandleJson` emits and the `__decl`
+/// object `decorator_eval.zig` binds, so a body's `decl.fields`/`decl.kind`/
+/// `decl.fail(…)` type-check against the same data the runtime provides.
 const decl_reflection_src =
     \\pub enum DeclKind { Record, Struct, Enum, Fn, Method, Field }
-    \\pub interface Decl {
-    \\    val kind: DeclKind
-    \\    val name: string
-    \\    val returnType: string
-    \\    fn fail(self: Self, message: string)
-    \\    fn failAt(self: Self, span: Span, message: string)
+    \\pub struct Span { val start: i32, val end: i32, val line: i32 }
+    \\pub struct Annotation { val name: string, val args: string[] }
+    \\pub struct Param { val name: string, val typeName: string }
+    \\pub struct Field { val name: string, val typeName: string, val annotations: Annotation[] }
+    \\pub struct Method { val name: string, val params: Param[], val returnType: string, val annotations: Annotation[] }
+    \\pub struct Decl {
+    \\    val kind: DeclKind,
+    \\    val name: string,
+    \\    val fields: Field[],
+    \\    val methods: Method[],
+    \\    val returnType: string,
+    \\    val annotations: Annotation[],
+    \\    declare fn fail(self: Self, message: string);
+    \\    declare fn failAt(self: Self, span: Span, message: string);
     \\}
 ;
 

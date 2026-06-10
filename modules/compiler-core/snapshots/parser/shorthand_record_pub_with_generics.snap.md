@@ -22,14 +22,16 @@
             "typeRef": {
               "named": "T"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           },
           {
             "name": "second",
             "typeRef": {
               "named": "T"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           }
         ],
         "trailingComma": false,
