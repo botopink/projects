@@ -41,7 +41,7 @@ written with native-JS-only comptime ops (no Option runtime — see Notes).
 ## Target syntax
 
 ```bp
-import {html, Element} from "jhonstart";   // bare binding via generic-loader-binding
+import {html, Element, div, p} from "jhonstart";   // bare binding via generic-loader-binding
 
 val name = "world";
 
@@ -59,6 +59,11 @@ fn main() {
 `page : Element` — the built tree, identical to writing
 `div([p([text(name)])])` by hand. The `"""…"""` triple-quoted form is the
 authoring surface (re-homed from the abandoned `jonhstar` example).
+
+The builders the markup names (`div`, `p`, …) must be **imported by the caller**:
+the expansion resolves each lowercase tag to a builder **in the call site's scope**
+(the expr-template `lookup` model), not inside `html` — so `<div>`/`<p>` require
+`div`/`p` in scope. An unknown tag is a diagnostic pointing inside the template.
 
 ## Examples
 
@@ -90,16 +95,22 @@ val row = html """<li>item ${n.toString()}</li>""";
       runtime; memory: [[reference_bp_parser_comptime_gotchas]]). Open/close tags
       nest; lowercase names map to the `element.bp` builder of the same name.
 
-### F2 — build the Element expression
+### F2 — build the Element expression (builders resolved in the CALLER's scope)
 - [ ] Promote `html.d.bp` → `html.bp`: walk the parsed structure and
       `template.build(…)` the builder pipeline — `<tag>` → `tag([...children])`,
       text runs → `text("…")`, and each `${expr}` `Interp` part spliced via its
       `code` placeholder as a child. List `html.bp` in `botopink.json`.
+- [ ] A lowercase `<tag>` emits a bare `tag(...)` call resolved **in the call
+      site's scope** (the expr-template `lookup` model), so the caller must
+      `import {div, p, …}` the builders it uses; an unknown tag is a diagnostic
+      pointing inside the template (rustc-style), not at `html`.
 
 ### F3 — examples + tests
-- [ ] `examples/jhonstart-html` authors its page with `html """…${x}…"""` and
-      asserts `renderToString(page) == "<…>"`. Tests live in the lib / example
-      `.bp`, never in Zig.
+- [ ] `examples/jhonstart-html` imports the builders it authors with
+      (`import {html, Element, div, p} from "jhonstart"`), writes its page as
+      `html """<div><p>${x}</p></div>"""`, and asserts
+      `renderToString(page) == "<div><p>…</p></div>"`. Tests live in the lib /
+      example `.bp`, never in Zig.
 
 ### F4 — docs
 - [ ] Update `libs/jhonstart/AGENTS.md`, `src/AGENTS.md`, `docs.md` to the
