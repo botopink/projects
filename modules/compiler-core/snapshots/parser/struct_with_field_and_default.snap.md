@@ -29,7 +29,8 @@
                     "stringLit": "localhost"
                   }
                 }
-              }
+              },
+              "annotations": []
             }
           }
         ],

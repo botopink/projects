@@ -18,7 +18,8 @@
             "typeRef": {
               "named": "number"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           }
         ],
         "trailingComma": false,

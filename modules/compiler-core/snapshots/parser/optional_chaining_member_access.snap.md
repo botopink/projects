@@ -18,7 +18,8 @@
             "typeRef": {
               "named": "string"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           }
         ],
         "trailingComma": false,

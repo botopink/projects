@@ -1367,11 +1367,13 @@ fn validateDecorators(env: *Env, program: ast.Program) InferError!void {
         .@"fn" => |f| try checkDecoratorAnnotations(env, f.annotations, f.name),
         .record => |r| {
             try checkDecoratorAnnotations(env, r.annotations, r.name);
+            for (r.fields) |fld| try checkDecoratorAnnotations(env, fld.annotations, fld.name);
             for (r.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
         },
         .@"struct" => |s| {
             try checkDecoratorAnnotations(env, s.annotations, s.name);
             for (s.members) |mem| switch (mem) {
+                .field => |fld| try checkDecoratorAnnotations(env, fld.annotations, fld.name),
                 .method => |m| try checkDecoratorAnnotations(env, m.annotations, m.name),
                 else => {},
             };
@@ -1563,7 +1565,10 @@ fn runDeclDecorators(
             return error.TypeError;
         };
         switch (outcome) {
-            .ok => {},
+            .ok => |contributions| {
+                // `@emit(...)` sources — spliced into the module by `analyzeModule`.
+                for (contributions) |src| try env.contributions.append(env.arena, src);
+            },
             .fail => |fl| {
                 env.lastError = TypeError.custom(fl.message, "raised by the decorator via `fail`/`failAt`");
                 return error.TypeError;
@@ -1580,6 +1585,7 @@ fn runDeclDecorators(
 /// declaration (and its methods). Mirrors `validateDecorators`' walk; runs after
 /// it (so arguments are already validated).
 fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
+    if (env.skipDecoratorInvoke) return; // second pass: contributions already spliced
     if (env.decorators.count() == 0) return;
     const ctx = env.templateEval orelse return;
     for (program.decls) |decl| switch (decl) {
@@ -1592,6 +1598,10 @@ fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
             for (r.fields, 0..) |fld, i| fields[i] = .{ .name = fld.name, .typeName = declTypeName(fld.typeRef) };
             const h = try buildHandleJson(env.arena, "Record", r.name, fields, r.methods, "", r.annotations);
             try runDeclDecorators(env, ctx, r.annotations, h);
+            for (r.fields) |fld| {
+                const fh = try buildHandleJson(env.arena, "Field", fld.name, &.{}, &.{}, declTypeName(fld.typeRef), fld.annotations);
+                try runDeclDecorators(env, ctx, fld.annotations, fh);
+            }
             for (r.methods) |m| {
                 const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
                 try runDeclDecorators(env, ctx, m.annotations, mh);
@@ -1606,6 +1616,10 @@ fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
             const h = try buildHandleJson(env.arena, "Struct", s.name, fields.items, &.{}, "", s.annotations);
             try runDeclDecorators(env, ctx, s.annotations, h);
             for (s.members) |mem| switch (mem) {
+                .field => |fld| {
+                    const fh = try buildHandleJson(env.arena, "Field", fld.name, &.{}, &.{}, declTypeName(fld.typeRef), fld.annotations);
+                    try runDeclDecorators(env, ctx, fld.annotations, fh);
+                },
                 .method => |m| {
                     const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
                     try runDeclDecorators(env, ctx, m.annotations, mh);
@@ -2803,6 +2817,25 @@ fn inferBuiltinCallReturnType(
     {
         if (typedArgs.len > 0) return typedArgs[0].value.getType();
         return env.freshVar();
+    }
+    // `@compilerError(message)` — abort compilation with a diagnostic. The
+    // generic way for any comptime body (a decorator or a template) to reject
+    // its input; reaches `decorator_eval`/`template_eval` as a `fail` outcome.
+    // `noreturn`-like: a fresh var unifies with whatever context follows it.
+    if (std.mem.eql(u8, callee, "compilerError")) {
+        if (typedArgs.len >= 1) {
+            try unifyAt(env, try env.namedType("string"), typedArgs[0].value.getType(), typedArgs[0].value.getLoc());
+        }
+        return env.freshVar();
+    }
+    // `@emit(source)` — a comptime body (a decorator) contributes generated
+    // top-level declarations, spliced into its module. Void; the source is parsed
+    // + inferred in a second pass over the module (see `analyzeModule`).
+    if (std.mem.eql(u8, callee, "emit")) {
+        if (typedArgs.len >= 1) {
+            try unifyAt(env, try env.namedType("string"), typedArgs[0].value.getType(), typedArgs[0].value.getLoc());
+        }
+        return env.namedType("void");
     }
     return env.namedType("void");
 }

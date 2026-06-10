@@ -28,7 +28,9 @@ const commonJS = @import("../codegen/commonJS.zig");
 
 pub const Outcome = union(enum) {
     /// The body ran to completion without raising — placement/args accepted.
-    ok,
+    /// `ok` carries the sources the body contributed via `@emit(...)` (empty when
+    /// it emitted nothing); each is parsed + spliced into the module.
+    ok: []const []const u8,
     /// `fail`/`failAt` — a scoped diagnostic to surface at the annotated decl.
     fail: struct {
         message: []const u8,
@@ -54,6 +56,9 @@ const prelude =
     \\function __failRaw(message, span) {
     \\    throw { __bpfail: { message: String(message), span: span ?? null } };
     \\}
+    \\function __compilerError(message) { __failRaw(message, null); }
+    \\const __emits = [];
+    \\function __emit(source) { __emits.push(String(source)); }
     \\function __decl(h) {
     \\    return {
     \\        kind: h.kind,
@@ -106,7 +111,7 @@ fn buildScript(
     }
     try bw.writeAll(
         \\);
-        \\    __r = { kind: "ok" };
+        \\    __r = { kind: "ok", contributions: __emits };
         \\} catch (e) {
         \\    if (e && e.__bpfail) __r = { kind: "fail", ...e.__bpfail };
         \\    else __r = { kind: "error", message: String((e && e.message) || e) };
@@ -133,7 +138,17 @@ fn parseOutcome(arena: std.mem.Allocator, stdout: []const u8) !Outcome {
         else => return .{ .err = "missing result kind" },
     };
 
-    if (std.mem.eql(u8, kind, "ok")) return .ok;
+    if (std.mem.eql(u8, kind, "ok")) {
+        var contributions: std.ArrayListUnmanaged([]const u8) = .empty;
+        if (obj.get("contributions")) |c| switch (c) {
+            .array => |items| for (items.items) |it| switch (it) {
+                .string => |s| try contributions.append(arena, s),
+                else => {},
+            },
+            else => {},
+        };
+        return .{ .ok = try contributions.toOwnedSlice(arena) };
+    }
     if (std.mem.eql(u8, kind, "fail")) {
         const message = switch (obj.get("message") orelse .null) {
             .string => |s| s,

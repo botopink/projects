@@ -2274,12 +2274,13 @@ const Emitter = struct {
                             }
                         } else if (std.mem.startsWith(u8, cc.callee, "__bp_")) {
                             try self.emitResultOptionOp(cc.callee, cc.args);
-                        } else if (std.mem.eql(u8, cc.callee, "expr") or std.mem.eql(u8, cc.callee, "code")) {
+                        } else if (std.mem.eql(u8, cc.callee, "expr") or std.mem.eql(u8, cc.callee, "code") or std.mem.eql(u8, cc.callee, "compilerError") or std.mem.eql(u8, cc.callee, "emit")) {
                             // `@expr(value)` / `@code(text)` — comptime template
-                            // construction builtins. Only reachable when the
-                            // template evaluator emits a template fn body
-                            // (template fns are dropped before normal codegen);
-                            // its prelude defines `__expr`/`__code`.
+                            // construction builtins; `@compilerError(msg)` — abort
+                            // compilation from a comptime body. Only reachable when
+                            // the template/decorator evaluator emits the body
+                            // (those fns are dropped before normal codegen); its
+                            // prelude defines `__expr`/`__code`/`__compilerError`.
                             try self.fmt("__{s}(", .{cc.callee});
                             for (cc.args, 0..) |arg, i| {
                                 if (i > 0) try self.w(", ");

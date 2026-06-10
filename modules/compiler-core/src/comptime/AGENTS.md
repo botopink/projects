@@ -155,11 +155,20 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   and `delegate`; when the first param is `comptime _: @Decl` it records the
   trailing signature (everything after the handle) **and the body-carrying
   `FnDecl`** in `env.decorators` (name → `DecoratorSig{ params, fn_decl }`).
-- The `@Decl` cluster (`enum DeclKind` + `interface Decl` with scalar
-  `kind`/`name`/`returnType` + `fail`/`failAt`) is registered into the global env
-  by `comptime.zig registerStdlib` from `decl_reflection_src`, so a decorator
-  body type-checks. The aggregate members (`fields`/`methods`/`annotations`)
-  await P3 (interface `val`s don't yet parse array types).
+- The `@Decl` cluster (`enum DeclKind` + `struct Decl`/`Field`/`Method`/`Param`/
+  `Annotation`/`Span`) is registered into the global env by `comptime.zig
+  registerStdlib` from `decl_reflection_src`, so a decorator body type-checks. It
+  is a `struct` (not an interface) so the **aggregate** members resolve too —
+  `decl.fields`/`decl.methods`/`decl.annotations` (array types interface `val`s
+  don't parse) — which is what a wiring decorator iterates. The shape matches the
+  handle JSON and the `__decl` runtime object.
+- `@compilerError(message)` — the generic compile-time error builtin (declared in
+  `builtins.d.bp`, return-typed `noreturn` via a fresh var in
+  `inferBuiltinCallReturnType`, lowered to `__compilerError(...)` by commonJS).
+  The preferred way for a comptime body — a decorator or an `@Expr` template — to
+  reject its input: the `decorator_eval`/`template_eval` preludes define
+  `__compilerError` as a `__failRaw` throw, so it surfaces as the same scoped
+  diagnostic as `decl.fail`, but needs no `@Decl` handle.
 - `validateDecorators` (pass 3, before `validateProgram`) walks every
   declaration's `annotations` — record/struct/enum/fn/interface + their methods —
   and for each `#[name(args)]` whose `name` is a recognized decorator,
@@ -176,9 +185,26 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   the full compile pipeline (`env.templateEval` set); tooling/LSP paths skip it.
   Diagnostic locs are coarse for now (message carries the detail; precise spans
   are a follow-up).
-- Field-site and record/struct *method*-site annotations are a parser gap today
-  (annotations only parse on interface methods); to be closed when a framework
-  migration needs them.
+- Method-site **and** field-site decorators now parse on record/struct bodies
+  (`parseRecordBody`/`parseStructBody` read member-level annotations before a `fn`
+  or a field; `RecordField`/`StructField` carry an `annotations` slice). So
+  `#[getMapping]` on a controller method and `#[inject]`/`#[value]` on a field both
+  reach `validateDecorators` + `invokeDecorators`, which walk fields (reflected as
+  `DeclKind.Field` — `name` + the field's `returnType`) alongside methods. Adding
+  the `annotations` field re-serializes the parser AST, so the record/struct
+  parser snapshots were regenerated.
+- **P3 wiring contribution:** a decorator body contributes generated top-level
+  declarations via `@emit(source)` (declared in `builtins.d.bp`; lowered to
+  `__emit` by commonJS; the `decorator_eval` prelude collects the strings and
+  returns them in `Outcome.ok`). `runDeclDecorators` accumulates them into
+  `env.contributions`; `analyzeModule`/`analyzeSource` then **splice** the
+  contributed sources onto the module and **re-analyze it once** with
+  `env.skipDecoratorInvoke = true` (so the generated decls are inferred + emitted
+  without re-running decorators — no re-contribution, no loop). This is how a
+  framework lib builds singletons / a DI graph / a router table as ordinary code,
+  with no wiring logic in the core. (Decorator fns themselves are still emitted
+  by codegen today — dropping comptime-only decorator/`@Decl` fns like template
+  fns is a recorded follow-up.)
 
 ## `@Context<B, R>` capability inference (F7)
 
