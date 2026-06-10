@@ -9,30 +9,32 @@ botopink's **React/Next-style** UI framework, written *in* botopink on the
 language's own primitives — **no jhonstart-specific compiler features**.
 Components are plain functions returning `Element`; hooks are the
 `@Context<Element, _>` capability gated by the `use` prefix; server components are
-`*fn … -> @Future<Element>`; an optional JSX-like `html` DSL reuses
-`expr-templates` (`@Expr<Element>`). The compiler is **unaware** of jhonstart
-(hard rule + `grep -riE "rakun|jhonstart" modules/compiler-core/src` gate); the
-framework is a pure client, reached with `from "jhonstart"`, never embedded.
+`*fn … -> @Future<Element>`; the JSX-like `html """…"""` DSL reuses
+`expr-templates` (`@Expr<Element>`), expanding markup to the builder pipeline at
+comptime. The compiler is **unaware** of jhonstart (hard rule + `grep -riE
+"rakun|jhonstart" modules/compiler-core/src` gate); the framework is a pure
+client, reached with `from "jhonstart"`, never embedded.
 
-The UI **core + hooks are real botopink** (`src/element.bp`, `src/hooks.bp` — both
-in `botopink.json`'s compiled set): an `Element` tree, builders, a synchronous SSR
-renderer, and the hook family — no host intrinsics, no async. Only the host-bound
-/ still-gap-blocked surface (client navigation, the Http server context, the
-`html` markup body) stays as `.d.bp` declarations, each with an explicit
-"STILL GATED" note. Nothing is embedded into the prelude.
+The UI **core + hooks + the `html` markup DSL are real botopink** (`src/element.bp`,
+`src/hooks.bp`, `src/html.bp` — all in `botopink.json`'s compiled set): an
+`Element` tree, builders, a synchronous SSR renderer, the hook family, and the
+`html """…"""` comptime expander — no host intrinsics, no async. Only the
+host-bound surface (client navigation, the Http server context) stays as `.d.bp`
+declarations, each with an explicit "STILL GATED" note. Nothing is embedded into
+the prelude.
 
 ## Tree
 
 ```text
 libs/jhonstart/
 ├── AGENTS.md          ← you are here
-├── botopink.json      ← manifest (files: element.bp, hooks.bp, html.d.bp, router.d.bp, server.d.bp)
+├── botopink.json      ← manifest (files: element.bp, hooks.bp, html.bp, router.d.bp, server.d.bp)
 ├── docs.md            ← user-facing reference
 └── src/
     ├── AGENTS.md
     ├── element.bp     ← COMPILED CORE: record Element + builders (Children) + renderToString + test {}
     ├── hooks.bp       ← COMPILED: State<T> + state/effect/memo/ref/reducer (@Context<Element,_>) + test {}
-    ├── html.d.bp      ← the JSX-like `html` template DSL (signature; body GATED — F2)
+    ├── html.bp        ← COMPILED: the JSX-like `html """…"""` markup DSL (comptime expander → builder pipeline)
     ├── router.d.bp    ← Router/useRouter/Link (host-bound navigation; GATED)
     └── server.d.bp    ← Http ContextBase: request() + loaders (host-bound/async; GATED)
 ```
@@ -41,7 +43,7 @@ libs/jhonstart/
 
 | Layer | Analog | ContextBase | Surface |
 |---|---|---|---|
-| core | React | `Element` | `element.bp` + `hooks.bp` (**compiled**), `html` (declared) |
+| core | React | `Element` | `element.bp` + `hooks.bp` + `html.bp` (**compiled**) |
 | app | Next.js | `Http` | `router`, `server` (declared, host-bound) |
 
 ## Conventions

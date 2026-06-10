@@ -28,9 +28,8 @@ examples/
 │   └── main.bp            ← `use state`/`use effect`, `button(onClick){…}`, `mount`
 ├── jhonstart-todo/    ← jhonstart showcase: lists, controlled input, custom hook
 │   └── main.bp            ← `items.value.map(…)` → `li`, `useToggle`
-├── jhonstart-html/    ← jhonstart showcase: JSX-like `html` DSL (`<Component/>` + `${…}`)
-│   ├── main.bp            ← `html \\<div><Page1/>…` expanded to an Element tree
-│   └── pages.bp           ← `Page1/Page2/Page3` components resolved by the template
+├── jhonstart-html/    ← jhonstart showcase (WORKS): the JSX-like `html """…"""` DSL
+│   └── src/main.bp       ← `html """<div><p>${name}</p></div>"""` expanded to an Element tree + rendered
 ├── jhonstart-app/     ← jhonstart showcase: Next-style routing + server data loading
 │   ├── main.bp            ← SSR entry: `await renderToString(await Page())`
 │   └── app/               ← file-routing convention (layout.bp, page.bp, posts/[id]/page.bp)
@@ -40,12 +39,13 @@ examples/
     └── main.bp           ← `Rakun.run(App(port: 8080))` bootstrap
 ```
 
-> The `rakun/` and `jhonstart-*/` files are **illustrative**: they target planned
-> libraries (both are inert scaffolds today — specs:
+> `jhonstart-html` **works**: it `import …s from "jhonstart"`, authors
+> `html """…"""`, and `botopink test`/`run` pass (the `html` DSL is shipped on the
+> `expr-templates` machinery + the generic loader-bare binding). The `rakun/` and
+> the remaining `jhonstart-*/` files are still **illustrative**: they target
+> planned surface (host-bound router/server, events, async loaders — specs:
 > `tasks/v0.beta.5/specs/`), so they document intended usage and do not yet
-> compile against the current toolchain — unlike the other examples here. The
-> `jhonstart-html` demo is the closest to working: its `html` DSL needs only the
-> shipped `expr-templates` machinery.
+> compile against the current toolchain.
 
 ## Running an example
 

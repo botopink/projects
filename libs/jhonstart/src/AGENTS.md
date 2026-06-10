@@ -3,19 +3,20 @@
 > Path: `libs/jhonstart/src/`
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 
-Source for the `jhonstart` package. The UI **core and hooks are real botopink** —
-an `Element` tree, builders, a synchronous SSR renderer, and the hook family,
-all implemented in `.bp` (no host intrinsics, no async). Only the genuinely
-host-bound / still-gated surface (client navigation, the Http context, the `html`
-markup body) stays as `.d.bp` **declarations**, each carrying an explicit
-"STILL GATED" note naming the gap. `botopink test` compiles the `.bp` files and
-runs their `test {}` blocks; the `.d.bp` files are type surface for consumers.
+Source for the `jhonstart` package. The UI **core, hooks, and the `html` markup
+DSL are real botopink** — an `Element` tree, builders, a synchronous SSR renderer,
+the hook family, and the `html """…"""` comptime expander, all implemented in
+`.bp` (no host intrinsics, no async). Only the genuinely host-bound surface
+(client navigation, the Http context) stays as `.d.bp` **declarations**, each
+carrying an explicit "STILL GATED" note naming the gap. `botopink test` compiles
+the `.bp` files and runs their `test {}` blocks; the `.d.bp` files are type
+surface for consumers.
 
 | File | Kind | Provides |
 |---|---|---|
 | `element.bp` | **compiled** | `record Element implement @Context<Element, Element>` with a `Children` `children` field (the UI node AND the hook ContextBase), builders (`text`, `fragment`, `div`/`span`/`p`/`h1`/`ul`/`li` — take `Children`), `renderToString` (pure, synchronous), `test {}` (render + the G4 coercion) |
 | `hooks.bp` | **compiled** | `record State<T> { value, set: fn(next: T) }` (G1) + `state`/`effect`/`memo`/`ref`/`reducer` returning `@Context<Element, _>` with real SSR bodies (G2 anon shapes for `{current}`/`{state,dispatch}`), `test {}` calling the bodies directly + a `use`-component that type-checks the capability |
-| `html.d.bp` | declarative (GATED) | `html(comptime q: @Expr<string>) -> @Expr<Element>` — JSX-like DSL; body deferred (F2): comptime native-JS prelude + the loader-bare gap |
+| `html.bp` | **compiled** | `html(comptime template: @Expr<string>) -> @Expr<Element>` — the JSX-like `html """…"""` DSL: a native-JS-only comptime parser walks `template.parts()` and `build()`s the builder pipeline (`<tag>` → `tag([...])`, text → `text("…")`, `${expr}` → `text(<code>)`), resolving lowercase tags in the **caller's** scope. Exercised by `examples/jhonstart-html` (`.bp` tests). See the file header for the comptime-eval constraints (no `?T`, no in-body comments, `.forEach` not a nested `loop`, root tracking by array length) |
 | `router.d.bp` | declarative (GATED) | `Router`, `useRouter`, `Link` — host-bound navigation; getters + `#[@external]` + no Element attribute slot |
 | `server.d.bp` | declarative (GATED) | `Http` ContextBase: `Request`, `request()` — host-bound + async loaders |
 
