@@ -141,8 +141,13 @@ test "decorator invocation: @emit contributes a top-level declaration" {
     const outcome = session.outputs.items[0].outcome;
     try std.testing.expect(outcome == .ok);
     var found = false;
+    var decoratorEmitted = false;
     for (outcome.ok.transformed.decls) |d| {
         if (d == .val and std.mem.eql(u8, d.val.name, "wiredMarker")) found = true;
+        // The decorator fn is comptime-only and must be dropped from codegen
+        // (else `@emit`/`__decl` would leak into real output).
+        if (d == .@"fn" and std.mem.eql(u8, d.@"fn".name, "singleton")) decoratorEmitted = true;
     }
     if (!found) return error.ContributionMissing;
+    if (decoratorEmitted) return error.DecoratorFnNotDropped;
 }

@@ -9,15 +9,14 @@
 > coupled exception; the gate binds rakun/jhonstart/future frameworks.
 
 ## P0 — generic package loader (de-lib the core; std excepted)
-- [~] `from "<lib>"` resolves any external **non-std** lib by name through one
+- [x] `from "<lib>"` resolves any external **non-std** lib by name through one
       lib-agnostic mechanism; no per-lib `@embedFile`, no `rakun_pkg_modules`, no
-      `registerRakunLib`. `std` keeps its embedded-prelude path. DONE for
-      co-compiled modules: non-std lib `.bp` sources passed in `Module[]` resolve
-      `from "<lib>"` through the shared import registry (same path the
-      `from "http"` cross-module test exercises) — the embed/registry/loader
-      rakun code is all gone. REMAINING: the CLI driver should *discover*
-      `libs/<name>/` on disk (manifest deps) and feed those modules in — a
-      `compiler-cli` change with no in-repo test fixture yet (tracked).
+      `registerRakunLib`. `std` keeps its embedded-prelude path. Core: non-std lib
+      `.bp` sources resolve `from "<lib>"` through the shared import registry. CLI
+      driver: `compiler-cli/src/cli/libs.zig` discovers `libs/<name>/` on disk via
+      `botopink.json` deps and feeds the modules in. PROVEN end-to-end by the
+      `erika` port (`import {erika} from "erika"` resolves; `libs/erika` test suite
+      green) with zero `modules/compiler-core/src/**` edit.
 - [x] Delete every `rakun` reference from `modules/compiler-core/src/**` (incl.
       the `rakunExports`/`rakunTypeDecls` env fields, `registerRakunLib`,
       `markRakunImports`, `buildDelegateType`, `registerRakunTypeDecl`,
@@ -84,12 +83,20 @@
       so the generated decls are inferred + emitted like hand-written code. A lib
       builds singletons / DI graph / router as ordinary `.bp` — no wiring logic in
       the core. Test: a decorator emitting a top-level `val` reaches the program.
-- [ ] (with `rakun`) DI cycle check + router build + `Rakun.run` become lib-side.
-      Now UNBLOCKED at the core level — uses `@Decl` reflection + `@emit` +
-      `@compilerError`. Implemented in `libs/rakun/*.bp` (separate worktree).
-- [ ] Follow-up: drop comptime-only decorator/`@Decl` fns from codegen (like
-      template fns) so a decorator body's `@emit`/`decl.fail` never reaches real JS.
+- [x] Drop comptime-only decorator/`@Decl` fns from codegen (like template fns):
+      `transform.zig` Phase-3 decl filter drops a `fn` whose first param is
+      `comptime _: @Decl`, so a body's `@emit`/`@compilerError`/`decl.fail`
+      (→ `__emit`/`__compilerError`/`__decl`) never reaches real JS. The decls it
+      contributed via `@emit` stay (spliced into the module). Test asserts the
+      decorator fn is absent from the transformed program.
+- [ ] LIB-SIDE (separate `task/rakun-port` worktree — NOT this core branch; the
+      gate forbids `rakun` in core): write rakun's decorator bodies in `.bp` —
+      `#[service]`/`#[getMapping]` placement + arg rules via `@Decl`/`@compilerError`,
+      DI graph + router + `Rakun.run` via `@emit`. Core fully UNBLOCKS this.
 
 ## Done gate
-- [ ] `zig build && zig build test` green; the `grep` gate test passes.
-- [ ] `comptime/AGENTS.md` + `codegen/AGENTS.md` + `libs/std/AGENTS.md` updated.
+- [x] `zig build && zig build test` green; the `grep` gate test passes (the
+      `lib_agnostic_gate` build step; every commit through pre-commit).
+- [x] `comptime/AGENTS.md` + `codegen/AGENTS.md` + `libs/std/AGENTS.md` updated
+      (decorator recognition/invocation/wiring + `@Decl`/`@compilerError`/`@emit`
+      + the codegen drop).

@@ -93,6 +93,13 @@ codegen/
   which only occur inside template bodies). KNOWN GAP: the typescript
   `.d.ts` emitter still declares template fns (renders `Expr<>`) — needs the
   same drop.
+- Decorators (annotation processors): a decorator fn (first param
+  `comptime _: @Decl`) is comptime-only too — the transform pass drops it next
+  to the template-fn drop, so emitters never see its body's comptime builtins
+  (`@emit` → `__emit`, `@compilerError` → `__compilerError`, the `decl.*`
+  reflection / `__decl`). Those builtins only run inside a decorator body in the
+  `decorator_eval` node runtime; the decls a body contributed via `@emit` are
+  already spliced into the module and ARE emitted as ordinary declarations.
 - `use` hooks (F8): `use` is a transparent prefix; `val`/`var` does the binding.
   CommonJS maps hooks to React (`state`→`useState`, `memo`→`useMemo`, …) via the
   `use`+Capitalize convention (`writeHookName`); `memo`/`effect`/`callback` get an
