@@ -4,7 +4,10 @@
 **Depends on**: [`annotation-processors`](annotation-processors.md) — the generic mechanism rakun is built on
 **Files**: `libs/rakun/src/*.bp` (ALL semantics — decorators, DI, router, bootstrap, written in botopink), `libs/server/src/*` (HTTP backing — scaffold → real)
 **Touches docs**: `libs/rakun/AGENTS.md`, `libs/rakun/docs.md`, `libs/server/AGENTS.md`
-**Status**: pending
+**Status**: unblocked — `annotation-processors` is complete and merged into `feat`
+(P0 de-lib + generic loader, P1 recognition + arg validation, P2 invocation +
+diagnostics, P3 `@Decl`/`@compilerError`/`@emit` wiring + decorator-fn codegen drop).
+`git merge feat` into `.tasks/rakun`, then implement F2–F5 in `.bp` per below.
 
 > **HARD RULE (2026-06-08).** `modules/compiler-core/src/**` must contain **zero**
 > knowledge of rakun — no lib names, no DI/router/`Response` semantics, no
@@ -32,6 +35,47 @@ The wiring is **comptime** — a compilation-unit scan, not runtime reflection �
 reusing the same machinery as `expr-templates`. F5 lands last because it boots
 everything F2–F4 produces; the phases share `libs/rakun/src/*.bp`, so they stay
 **one branch** rather than two tasks that would have to wait on each other.
+
+## Available primitives — annotation-processors (DONE, in `feat`)
+
+The generic mechanism rakun is built on is complete in the compiler core. rakun
+implements F2–F5 in `.bp` on top of these — the core adds nothing more (the
+lib-agnostic gate forbids any `rakun` reference in `modules/compiler-core/src`):
+
+- **`from "rakun"` loader** — the generic disk loader resolves any `libs/<name>/`
+  by name via `botopink.json` deps (proven by the `erika` port). Ship rakun as
+  `libs/rakun/{botopink.json, src/*.bp}`; `import {…} from "rakun"` resolves it.
+- **Decorator recognition** — a decorator is any `fn`/`declare fn` whose first
+  param is `comptime _: @Decl`. Write each marker as such a fn in the lib
+  (`pub fn service(comptime decl: @Decl) { … }`); applying `#[service]` invokes
+  it over the annotated declaration. Trailing `#[d(args)]` are arg-checked
+  generically (arity + types).
+- **Reflection — `@Decl` (struct)** — the body reads `decl.kind` (`DeclKind`:
+  Record/Struct/Enum/Fn/Method/Field), `decl.name`, `decl.returnType`,
+  `decl.fields` (`Field{ name, typeName, annotations }`), `decl.methods`
+  (`Method{ name, params, returnType, annotations }`), `decl.annotations`. This is
+  the whole input for the scan, the DI graph (fields → edges), and the router
+  (methods + their annotations).
+- **Diagnostics — `@compilerError(message)`** — placement / arg / cycle errors are
+  raised from the body and surface as scoped compile errors (`decl.fail`/`failAt`
+  also exist, when a span is needed).
+- **Wiring — `@emit(source)`** — the body contributes generated top-level
+  declarations (botopink source) spliced into the module: singleton `val`s, the
+  DI-resolved construction, the router table, and the `Rakun.run` boot are all
+  `@emit`-ed code. Decorator fns are comptime-only (dropped from codegen), so
+  `@emit`/`@compilerError`/`decl.*` never reach real output.
+
+### Mapping F2–F5 onto the primitives
+- **F2 (IoC):** the component decorator reads `decl.fields`, resolves each field's
+  `typeName` to another component, builds the singleton + DI graph, and `@emit`s
+  the singleton `val`s in dependency order; a cycle → `@compilerError`.
+- **F3 (arg validation):** the core already arg-checks `#[d(args)]`; the body adds
+  the placement rules (`decl.kind != …` → `@compilerError`).
+- **F4 (router):** the controller decorator walks `decl.methods`, reads each
+  method's `#[getMapping(path)]` from `method.annotations`, and `@emit`s a
+  router-table entry `{ method, path, handler }` (+ `route` prefix, `:param`).
+- **F5 (bootstrap):** `Rakun.run` `@emit`s the boot — instantiate singletons →
+  register the router → start `libs/server` on `app.port`/`basePath`.
 
 ## Target syntax
 
