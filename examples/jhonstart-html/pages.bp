@@ -1,9 +1,0 @@
-// jhonstart-html — the components referenced by `<Page1/>`/`<Page2/>`/`<Page3/>`
-// in main.bp. Each is an ordinary component (a `fn(...) -> Element`); the `html`
-// template resolves them by name against this file's exported bindings.
-
-import { p } from "jhonstart";
-
-pub fn Page1() -> Element { p { "page one" } }
-pub fn Page2() -> Element { p { "page two" } }
-pub fn Page3() -> Element { p { "page three" } }

@@ -132,10 +132,11 @@ fn analyzeModule(
     arena: std.mem.Allocator,
     mod: Module,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    typeDeclRegistry: *std.StringHashMap(std.StringHashMap(ast.DeclKind)),
     templateRegistry: *const std.StringHashMap(ast.FnDecl),
     templateEvalCtx: ?envMod.TemplateEvalCtx,
 ) !AnalysisResult {
-    return analyzeSource(arena, mod, mod.source, registry, templateRegistry, templateEvalCtx, false);
+    return analyzeSource(arena, mod, mod.source, registry, typeDeclRegistry, templateRegistry, templateEvalCtx, false);
 }
 
 /// Append decorator `@emit(...)` contributions to a module's source as extra
@@ -160,6 +161,7 @@ fn analyzeSource(
     mod: Module,
     source: []const u8,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    typeDeclRegistry: *std.StringHashMap(std.StringHashMap(ast.DeclKind)),
     templateRegistry: *const std.StringHashMap(ast.FnDecl),
     templateEvalCtx: ?envMod.TemplateEvalCtx,
     skip_invoke: bool,
@@ -185,7 +187,7 @@ fn analyzeSource(
         return .{ .validationError = .{ .info = err_info } };
     }
 
-    try resolveImports(&env, program, registry, templateRegistry);
+    try resolveImports(&env, program, registry, typeDeclRegistry, templateRegistry);
     const bindings = infer.inferProgramTyped(&env, program) catch |err| switch (err) {
         error.TypeError => {
             const te = env.lastError orelse validation.TypeError{ .kind = .{ .unboundVariable = "" } };
@@ -200,7 +202,7 @@ fn analyzeSource(
     if (!skip_invoke and env.contributions.items.len > 0) {
         const spliced = try spliceContributions(arena, source, env.contributions.items);
         env.deinit();
-        return analyzeSource(arena, mod, spliced, registry, templateRegistry, templateEvalCtx, true);
+        return analyzeSource(arena, mod, spliced, registry, typeDeclRegistry, templateRegistry, templateEvalCtx, true);
     }
 
     return .{ .success = .{ .bindings = bindings, .env = env, .program = program } };
@@ -307,6 +309,7 @@ fn resolveImports(
     env: *envMod.Env,
     program: anytype,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    typeDeclRegistry: *std.StringHashMap(std.StringHashMap(ast.DeclKind)),
     templateRegistry: *const std.StringHashMap(ast.FnDecl),
 ) !void {
     for (program.decls) |decl| {
@@ -325,13 +328,35 @@ fn resolveImports(
                         continue;
                     }
                     // Bare import: same-package (project root) resolution only —
-                    // never resolves "std" package modules.
-                    var it = registry.iterator();
-                    while (it.next()) |e| {
+                    // never resolves "std" package modules. An imported nominal
+                    // type carries its full declaration across the module
+                    // boundary (re-registered below) so its `TypeDef` metadata —
+                    // `implements`/`contextBase`/fields — is visible here, not
+                    // just its constructor value. This mirrors the `from "std"`
+                    // type-export path (`stdModuleTypes` → `registerTypeDecl`).
+                    var bound_type_decl = false;
+                    var dit = typeDeclRegistry.iterator();
+                    while (dit.next()) |e| {
                         if (isStdPkgPath(e.key_ptr.*)) continue;
-                        if (e.value_ptr.get(name)) |ty| {
-                            try env.bind(name, ty);
+                        if (e.value_ptr.get(name)) |type_decl| {
+                            try infer.registerImportedTypeDecl(env, type_decl);
+                            bound_type_decl = true;
                             break;
+                        }
+                    }
+                    // Value/constructor binding. Skipped for nominal types whose
+                    // declaration was just re-registered — `registerTypeDecl`
+                    // already bound the constructor with the importing module's
+                    // own type ids, and clobbering it with the exported `*T.Type`
+                    // would reintroduce the defining module's ids.
+                    if (!bound_type_decl) {
+                        var it = registry.iterator();
+                        while (it.next()) |e| {
+                            if (isStdPkgPath(e.key_ptr.*)) continue;
+                            if (e.value_ptr.get(name)) |ty| {
+                                try env.bind(name, ty);
+                                break;
+                            }
                         }
                     }
                     // Imported template fns (`-> @Expr<…>`) carry their decl
@@ -349,12 +374,14 @@ fn resolveImports(
 fn registerExports(
     arena: std.mem.Allocator,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    typeDeclRegistry: *std.StringHashMap(std.StringHashMap(ast.DeclKind)),
     templateRegistry: *std.StringHashMap(ast.FnDecl),
     path: []const u8,
     bindings: []const infer.TypedBinding,
     env: *envMod.Env,
 ) !void {
     var exports = std.StringHashMap(*T.Type).init(arena);
+    var typeDecls = std.StringHashMap(ast.DeclKind).init(arena);
     for (bindings) |b| {
         if (b.name.len == 0 or b.decl == .use) continue;
         const is_pub = switch (b.decl) {
@@ -365,6 +392,18 @@ fn registerExports(
         if (is_pub) {
             const ty = env.lookup(b.name) orelse b.type_;
             try exports.put(b.name, ty);
+            // `pub` nominal type declarations export their full AST decl too, so
+            // the importing module can re-register the `TypeDef` (implements /
+            // contextBase / fields) — not just the constructor value. Mirrors
+            // the `from "std"` type-export path (`stdModuleTypes`), which is also
+            // `pub`-only. Non-pub types still export their constructor (above)
+            // for value use, but carry no cross-module `TypeDef`.
+            switch (b.decl) {
+                .record => |r| if (r.isPub) try typeDecls.put(b.name, b.decl),
+                .@"struct" => |s| if (s.isPub) try typeDecls.put(b.name, b.decl),
+                .@"enum" => |e| if (e.isPub) try typeDecls.put(b.name, b.decl),
+                else => {},
+            }
             // Template fns export their declaration too — importing modules
             // expand their calls at comptime (the decl never reaches codegen).
             if (b.decl == .@"fn") {
@@ -375,6 +414,7 @@ fn registerExports(
         }
     }
     try registry.put(path, exports);
+    try typeDeclRegistry.put(path, typeDecls);
 }
 
 /// Parse stdlib prelude modules and register their inferred types into `env`:
@@ -549,6 +589,7 @@ pub fn compileTypesOnly(
 
     const arena_alloc = session.arena.allocator();
     var registry = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena_alloc);
+    var type_decl_registry = std.StringHashMap(std.StringHashMap(ast.DeclKind)).init(arena_alloc);
     var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
@@ -559,7 +600,7 @@ pub fn compileTypesOnly(
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry, &template_registry, null);
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, &type_decl_registry, &template_registry, null);
 
         switch (analysis) {
             .parseError => {
@@ -601,7 +642,7 @@ pub fn compileTypesOnly(
                 }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
-                    try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
+                    try registerExports(arena_alloc, &registry, &type_decl_registry, &template_registry, mod.path, succ.bindings, &env);
                     // NOTE: no env.deinit() here — `env` is a copy whose hashmap
                     // internals are shared with `succ.env`, and the transform
                     // below still reads `succ.env.method_lowerings`. The env is
@@ -696,6 +737,7 @@ pub fn compile(
 
     const arena_alloc = session.arena.allocator();
     var registry = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena_alloc);
+    var type_decl_registry = std.StringHashMap(std.StringHashMap(ast.DeclKind)).init(arena_alloc);
     var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
@@ -706,7 +748,7 @@ pub fn compile(
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry, &template_registry, .{
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, &type_decl_registry, &template_registry, .{
             .io = io,
             .build_root = build_root orelse name,
         });
@@ -751,7 +793,7 @@ pub fn compile(
                 }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
-                    try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
+                    try registerExports(arena_alloc, &registry, &type_decl_registry, &template_registry, mod.path, succ.bindings, &env);
                     // NOTE: no env.deinit() here — `env` is a copy whose hashmap
                     // internals are shared with `succ.env`, and the transform
                     // below still reads `succ.env.method_lowerings`. The env is
