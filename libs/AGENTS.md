@@ -21,7 +21,8 @@ libs/
 ├── client/            ← client-side interfaces (scaffold)
 ├── rakun/             ← Spring-style application framework (scaffold)
 ├── jhonstart/         ← React/Next-style UI framework (scaffold)
-└── erika/             ← C#/LINQ-style query lib (pure `.bp`, reached via `from "erika"`)
+├── erika/             ← C#/LINQ-style query lib (pure `.bp`, reached via `from "erika"`)
+└── onze/              ← Mockito-style mocking + verification for tests (pure `.bp`, `from "onze"`)
 ```
 
 ## Packages
@@ -34,6 +35,7 @@ libs/
 | `rakun/` | Spring-style framework — IoC container, constructor DI, `#[restController]` web layer, `Rakun.run` bootstrap | no — inert scaffold (spec: [`tasks/v0.beta.5`](../tasks/v0.beta.5/specs/rakun.md)) | [link](rakun/AGENTS.md) |
 | `jhonstart/` | React/Next-style UI: components, `@Context<Element,_>` hooks, DOM builders, the `html` DSL, Next-style routing/SSR | no — inert scaffold (reached via `from "jhonstart"`) | [link](jhonstart/AGENTS.md) |
 | `erika/` | C#/LINQ-style fluent `Query<T>` + an `erika "…"` SQL-subset template fn — pure `.bp`, zero compiler surface | no — reached via `from "erika"` (generic loader; spec: [`tasks/v0.beta.7`](../tasks/v0.beta.7/specs/erika.md)) | [link](erika/AGENTS.md) |
+| `onze/` | Mockito-style mocking: `#[mock]` synthesizes a stub from an interface (`@Decl`+`@emit`), `when`/`verify`/matchers; host-bound call log + stub table — pure `.bp`, zero compiler surface | no — reached via `from "onze"` (generic loader; spec: [`tasks/v0.beta.8`](../tasks/v0.beta.8/specs/onze.md)) | [link](onze/AGENTS.md) |
 
 ## Conventions
 

@@ -51,7 +51,7 @@ pub const EvalError = error{ OutOfMemory, EvalFailed } || std.Io.Writer.Error;
 /// data plus `fail`/`failAt` (which throw the `__bpfail` protocol object).
 const prelude =
     \\"use strict";
-    \\const DeclKind = { Record: "Record", Struct: "Struct", Enum: "Enum", Fn: "Fn", Method: "Method", Field: "Field" };
+    \\const DeclKind = { Record: "Record", Struct: "Struct", Enum: "Enum", Interface: "Interface", Fn: "Fn", Method: "Method", Field: "Field" };
     \\function Span(start, end, line) { return { start, end, line }; }
     \\function __failRaw(message, span) {
     \\    throw { __bpfail: { message: String(message), span: span ?? null } };

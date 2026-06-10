@@ -1,48 +1,65 @@
-# TODO — stdlib-backends-parity  (backend · Wave 1)
+# TODO — onze  (annotation-processor lib · Wave 1)
 
-> Task branch `task/stdlib-backends-beam` · spec
-> [`tasks/v0.beta.8/specs/stdlib-backends-parity.md`](../../tasks/v0.beta.8/specs/stdlib-backends-parity.md).
+> Task branch `task/onze` · spec
+> [`tasks/v0.beta.8/specs/onze.md`](../../tasks/v0.beta.8/specs/onze.md).
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
-> **Depends on: nothing.** Start now. The one core/std-touching strand; stdlib coupling
-> in the core is allowed.
+> **Depends on: nothing** — the `@Decl`/`@emit` mechanism + loader are in `feat`.
+> Start now. Sibling of `rakun` (same mechanism, disjoint lib).
 >
-> ⚠ Touches `comptime/infer.zig` — same file as `generic-loader-binding` (different
-> regions: stdlib/dispatch inference vs import binding; the later merge resolves it,
-> like the v0.beta.7 typeDeclRegistry/decoratorRegistry overlap).
+> New pure-`.bp` lib, **zero** core code. Mockito for botopink tests:
+> `mock(T)`/`when`/`verify`. Mock state behind `#[@external]` host cells.
 
-## A1b — mirror the method lowering on beam + wasm
-- [ ] Port the instance/associated-method lowering (Array/Bool/numeric tower/String +
-      `Pair.of`/`Function.compose`) from `erlang.zig` to `beam_asm.zig` and `wat.zig`
-      (they still emit the old value-receiver form for primitives). NB: the
-      `forEach`-accumulator → `lists:foldl` fusion is erlang-only so far; beam/wasm
-      need the same idiom (their closures can't rebind captured vars either).
-- [x] **`std_erlang.sh` green for `dict`/`queue`/`sets`** (31/31, was 9/31). Two fixes:
-      (1) parser per-link loc collision (`self.pairs.length` → `length(length(Self))`),
-      committed in `566e927`; (2) `forEach`-accumulator fold fusion + `join` element
-      stringification, committed in `ec7d895`. `erika`/LINQ still blocked (`?T` option
-      chaining through chained method results + `case … of` codegen + LINQ inference).
-      Note: erlang `==`/`!=` is `=:=`/`=/=`, already structural on tuples/maps/lists.
+## F0 — stand up the lib
+- [x] `libs/onze/botopink.json` + `src/` skeleton; `from "onze"` resolves; `test {}`
+      blocks run under `botopink test` (7 tests green in `test/onze_test.bp`).
 
-## A2 (remainder) — `@[external]` associated fns
-- [ ] `Array.range`/`Array.repeat` + the other `@[external]` associated fns lower on
-      every backend; ship companion host modules (`primitives.mjs`/`.erl`).
-      (NB: `examples/erika-linq` had to avoid `Array.range` cross-module — this closes it.)
+## F1 — mock synthesis from `@Decl`
+- [x] `#[mock]` reflects the interface's methods via `@Decl` and `@emit`s a
+      `record MockXxx implement Xxx` (each method records the call + returns the
+      stub-or-type-default through `onzeInvoke`) plus a `mockXxx()` factory. Backed by
+      a host-cell registry keyed per mock instance (`onze.mjs`).
+      **`test/onze_test.bp` drives the whole suite through `#[mock]` under `botopink
+      test`** (7 green). Needed two CORE fixes (the user authorised touching core):
+      decorators run before body inference (so `@emit`ed decls are visible to a body
+      that references them — the test-mode `@emit` regression), and interface-level
+      markers run with `DeclKind.Interface`. Regression tests in
+      `comptime/tests/decorator_invocation.zig`.
 
-## B — backend-parity tails
-- [ ] **F1** literal method receivers reach **codegen** on every backend (parser done;
-      thread the loc-keyed lowering for a literal receiver through each emitter).
-- [ ] **F2** snake_case→camelCase dispatch normalization (legacy `to_string` → `toString`).
-- [ ] **F3** erlang/beam load std modules the way node does (erlang partial; beam pending).
-- [ ] **F4** `?.` optional-chaining codegen on **beam/wasm** (commonJS + erlang done).
-- [ ] **F5** wasm test runner (`wasmtime`) so `botopink test` runs on wasm.
+## F2 — stubbing (`when … thenReturn / thenThrow`)
+- [x] `when(mock.m(args))` captures the recorded call (with matchers) as the stub key;
+      `.thenReturn(v)` / `.thenThrow(msg)` writes the stub table; a later matching call
+      returns `v` / host-raises. Last stub wins.
+
+## F3 — verification (`verify`, `times`, `never`)
+- [x] `verify(mock, atLeastOnce()).m(args)` asserts ≥1; `verify(mock, times(n))` exactly
+      n; `verify(mock, never())` 0. Failure → clear assertion (expected vs actual +
+      recorded calls). Uniform 2-arg form (no fn overloading / default params in botopink).
+
+## F4 — argument matchers
+- [x] `eq(v)` / `anyInt()` / `anyString()` match args; a literal arg = exact equality;
+      matchers compose across params. (Generic `any<T>()` can't produce a per-type dummy
+      — typed `anyXxx()` instead; extend per type.)
+
+## F5 — docs
+- [x] `libs/onze/AGENTS.md`, `src/AGENTS.md`, `docs.md`: API, comptime synthesis model,
+      host-cell state, `from "onze"` import path, status table. Parent `libs/AGENTS.md`
+      updated. Same commit as the code.
 
 ## Done gate
-- [ ] beam map/filter/len chain + `Array.range` run (parity with node/erlang).
-- [ ] wasm `?.` guards; literal receivers codegen on every backend.
-- [x] `std_erlang.sh` green for order/dict/queue/sets (31/31). wasm runner still pending.
-- [~] `codegen/AGENTS.md` updated (erlang fold-fusion + join). `comptime/AGENTS.md`
-      pending (no infer change yet). `zig build && zig build test` green.
+- [x] `#[mock]` synthesizes every method; unstubbed → type-default; stub returns;
+      verify count passes/fails correctly; matchers work. Tests in
+      `libs/onze/test/onze_test.bp` (7 green under `botopink test`, all via `#[mock]`).
+- [x] `grep -riE "\bonze\b" modules/compiler-core/src` returns nothing (the core fixes
+      are generic — `@emit` ordering + interface markers — never name onze).
 
 ## Notes
-- Backend-parity only — `commonJS`/`erlang` are the reference. Record limits (e.g. wasm
-  single-module) rather than fake them.
+- v1: mock signatures + return stubbing + count verification. Out of scope (recorded):
+  spies / partial mocks, `thenAnswer`, in-order verification, argument captors.
+- **Core fixes (authorised) that unblocked test-mode `#[mock]`:** (1) decorators run
+  before body inference in `inferProgram(Typed)` so `@emit`ed decls are spliced before
+  a referencing body is type-checked; (2) interface-level markers reflect with
+  `DeclKind.Interface`. Both generic; regression tests in `decorator_invocation.zig`.
+- **Parser/comptime gotchas hit:** `if` is an expression (needs `else`, `;` bodies);
+  bare `if {…}` only as a block's last statement; decorator bodies can't call sibling
+  fns; `//` comments with quotes/backticks inside a closure break the lexer; `==` on
+  arrays is JS reference equality (compare with `.join`). Recorded in `src/AGENTS.md`.
