@@ -60,9 +60,9 @@ fn loudNames() -> string {
 }
 
 fn main() {
-    print(adultNames());     // Ann, Cy
-    print(evenSquares());    // 4-16-36
-    print(loudNames());      // ANN / CY / DAN
+    @print(adultNames());     // Ann, Cy
+    @print(evenSquares());    // 4-16-36
+    @print(loudNames());      // ANN / CY / DAN
 }
 
 test "list → query → join: adult names, sorted" {
