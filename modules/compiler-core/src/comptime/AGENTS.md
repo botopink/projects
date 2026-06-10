@@ -26,6 +26,7 @@ comptime/
 ├── transform.zig      ← `Aggregator` — drives the full transform pass
 ├── template.zig       ← `@Expr` templates: CapturedExpr, ScopeSnapshot, fail diagnostics
 ├── template_eval.zig  ← runtime-backed template body evaluation (node) — F6-full
+├── decorator_eval.zig ← runtime-backed decorator body invocation (node) — annotation processors (P2)
 ├── snapshot.zig       ← comptime snapshot helpers
 ├── stdlib/            ← std prelude loader — see stdlib/AGENTS.md
 │   └── prelude.zig        ← @embedFile of libs/std/src/*.bp (std_prelude module root)
@@ -40,8 +41,9 @@ comptime/
 │   ├── variants.zig       ← variant/record-update/pattern/@print/AST probes
 │   ├── exhaustiveness.zig ← case exhaustiveness (+errors)
 │   ├── effects.zig        ← throw/context/@Result effect checking
-│   ├── templates.zig      ← @Expr capture / scope snapshot / methods / expansion
-│   └── jhonstart.zig      ← jhonstart framework `check` scenarios (hooks + html DSL)
+│   ├── templates.zig      ← @Expr capture / scope snapshot / methods / expansion / markup DSL
+│   ├── decorators.zig     ← decorator recognition + generic argument validation (P1)
+│   └── decorator_invocation.zig ← decorator body invocation + fail diagnostics (P2)
 └── runtime/           ← Node.js + Erlang eval backends — see runtime/AGENTS.md
 ```
 
@@ -50,7 +52,9 @@ comptime/
 | File | Role |
 |---|---|
 | `types.zig` | All type representations as `union(enum)`. |
-| `env.zig` | Type environment — scopes, builtins + stdlib, `TypeDef.contextBase`, `FnContext`, static-extension-dispatch tables (`extensions`, `activations`, `inherentMethods`, `dispatchRewrites`), the `"std"` package tables (`stdModules`: module → fn exports; `stdModuleTypes`: module → pub type decls, registered into the importer by `markStdImports` — type export; `stdImports`: names imported via `from "std"` — explicit import wins over same-named value bindings like the primitive `bool`), the opt-in `"rakun"` framework tables (`rakunExports`: decorator name → delegate fn type; `rakunTypeDecls`: name → interface/enum decl — both filled by `comptime.zig registerRakunLib` from the embedded `libs/rakun/src/rakun.d.bp`, and brought into a module only by `markRakunImports` on `from "rakun"`, never auto-loaded), and the loc-keyed lowering maps `method_lowerings` (`@Result`/`@Option` methods + the builtin `result` namespace, `qualified` flag) + `result_jump_lowerings` (`return`/`throw` → `__bp_ok`/`__bp_error` in `*fn -> @Result` fns) + `jsMethodRenames` (type-directed JS-only method renames, e.g. `string` `contains` → native `includes`; recorded only when the receiver's static type makes a global name-map unsafe, since `record Set` also declares `contains`). |
+| `env.zig` | Type environment — scopes, builtins + stdlib, `TypeDef.contextBase`, `FnContext`, static-extension-dispatch tables (`extensions`, `activations`, `inherentMethods`, `dispatchRewrites`), the `"std"` package tables (`stdModules`: module → fn exports; `stdModuleTypes`: module → pub type decls, registered into the importer by `markStdImports` — type export; `stdImports`: names imported via `from "std"` — explicit import wins over same-named value bindings like the primitive `bool`), the lib-agnostic `decorators` table (decorator name →
+`DecoratorSig{ params }`, filled by `registerDecoratorSig` for any fn/delegate whose
+first param is `comptime _: @Decl`; drives `#[d(args)]` argument checking), and the loc-keyed lowering maps `method_lowerings` (`@Result`/`@Option` methods + the builtin `result` namespace, `qualified` flag) + `result_jump_lowerings` (`return`/`throw` → `__bp_ok`/`__bp_error` in `*fn -> @Result` fns) + `jsMethodRenames` (type-directed JS-only method renames, e.g. `string` `contains` → native `includes`; recorded only when the receiver's static type makes a global name-map unsafe, since `record Set` also declares `contains`). |
 | `infer.zig` | Main HM inference: `inferProgramTyped(...) → []TypedBinding`. `registerExtensions` pre-pass + `resolveReceiverCall` implement F6 static extension dispatch. `registerFnSignatures` pre-pass (via `buildFnSignatureType`) binds every top-level `fn` signature *before* any body is inferred, so mutually-recursive / forward-referenced top-level fns resolve (a fn's signature is fully determined by its declared param/return types + generics, so the pre-pass type matches the one `inferFnDecl` re-derives for self-recursion). Ends with `validateProgram` — `implement`/interface coverage + getter/setter type checks. Top-level `test { … }` bodies type-check like void `fn` bodies via `inferTestDecl` (no binding produced); `assert cond` unifies `cond` with `bool`. |
 | `unify.zig` | Unification with substitution + occurs check. |
 | `error.zig` | Structured type errors with source ranges and hints (incl. `missingMethod`/`unknownMethod`/`unknownInterface`/`ambiguousMethod`). |
@@ -60,6 +64,7 @@ comptime/
 | `transform.zig` | `Aggregator` — drives specialize + rewrite + inline + dead-code; lowers `@Result`/`@Option` method calls to `__bp_<domain>_<op>(…)` and `return`/`throw` in `*fn -> @Result` fns to `return __bp_ok(…)`/`return __bp_error(…)` (`tryLowerResultJump`). Walks `fn` AND `test { … }` decl bodies, including `assert` condition/message subexpressions (`.comptime_` stmt/expr arms) — lowerings inside test asserts apply like anywhere else. |
 | `template.zig` | `@Expr` template infrastructure: `CapturedExpr` (an argument bound to a `comptime p: @Expr<T>` param, captured unevaluated with provenance), `PlainArg` (a non-`@Expr` param that received a literal value at the call site — emitted as a plain JS binding in the eval script), `ScopeSnapshot` (V1 origin scope: caller's top-level decls + imports, serializable via `toJsonAlloc`), `contextJsonAlloc` (the full second-layer handle), and `mapSpanToLoc`/`failDiagnostic` (rustc-style `fail`/`failAt` diagnostics pointing inside the caller's `"""…"""`). `mapSpanToLoc` fallback for holed templates uses `capture.loc.line + span.line - 1` (span.line is 1-based, line 1 = opening `"""` line). |
 | `template_eval.zig` | F6-full: runs a non-V1 template body in the **node** eval runtime (host-side comptime, independent of the compile target). Captures become JS objects implementing the comptime surface (`text`/`parts`/`source`/`context`/`lookup`/`bindings`/`build`/`fail`/`failAt`) over the `contextJsonAlloc` handle; plain args are emitted as JS bindings before capture objects; params are passed in declaration order. The script reports one protocol result — `code` (parse + splice), `value` (`@expr` lift → literal), `capture` (param pass-through), `fail` (template diagnostic), `error`. Erlang evaluator parity (running bodies via erlang for erlang-only environments) is a recorded follow-up. |
+| `decorator_eval.zig` | Annotation processors (P2): runs a decorator body in the **node** eval runtime over the declaration it annotates. The serialized `@Decl` handle becomes a `__decl(...)` object exposing the reflection fields (`kind`/`name`/`fields`/`methods`/`returnType`/`annotations`) + `fail`/`failAt`; a global `DeclKind` mirrors the registered enum. The script reports `ok` (placement accepted), `fail` (scoped diagnostic), or `error`. Driven by `infer.zig invokeDecorators`, which serializes each annotated decl and surfaces a `fail` as a `TypeError`. Like template eval, node-only and skipped in tooling paths. |
 | `snapshot.zig` | Snapshot helpers. |
 | `tests.zig` | Barrel aggregating `tests/<feature>.zig`; harness in `tests/helpers.zig`. |
 
@@ -137,6 +142,44 @@ via `registerImportedTemplateFn` so calls expand in the importing module
 F10) — computed objects come back through `literalFromJson`. Remaining
 limits (recorded): all params must be `@Expr` captures; node runtime only.
 
+## Annotation processors / decorators (P1 + P2)
+
+A **decorator** is an ordinary comptime function whose first parameter is
+`comptime _: @Decl` (the reflection handle, declared in `libs/std/src/builtins.d.bp`
+and recognized in the parser as a bare builtin via `TypeRef.isDeclType`). Both
+the `pub fn` and bodyless `declare fn` (delegate) forms are recognized. The core
+provides only the generic protocol — recognize → reflect → invoke → apply; it
+never knows what a marker means (that lives in the lib body, in `.bp`).
+
+- `registerFnSignatures` calls `registerDecoratorSig` for every top-level `fn`
+  and `delegate`; when the first param is `comptime _: @Decl` it records the
+  trailing signature (everything after the handle) **and the body-carrying
+  `FnDecl`** in `env.decorators` (name → `DecoratorSig{ params, fn_decl }`).
+- The `@Decl` cluster (`enum DeclKind` + `interface Decl` with scalar
+  `kind`/`name`/`returnType` + `fail`/`failAt`) is registered into the global env
+  by `comptime.zig registerStdlib` from `decl_reflection_src`, so a decorator
+  body type-checks. The aggregate members (`fields`/`methods`/`annotations`)
+  await P3 (interface `val`s don't yet parse array types).
+- `validateDecorators` (pass 3, before `validateProgram`) walks every
+  declaration's `annotations` — record/struct/enum/fn/interface + their methods —
+  and for each `#[name(args)]` whose `name` is a recognized decorator,
+  `checkDecoratorArgs` type-checks the trailing args: arity (honoring trailing
+  defaults) + a per-argument lexical kind check (`string`/numeric/`bool`/enum
+  member). Unknown markers stay lenient (a lib may simply not be loaded).
+- **P2 invocation:** `invokeDecorators` (right after `validateDecorators`) runs
+  each body-carrying decorator over the declaration it annotates. `buildHandleJson`
+  serializes the decl into a `@Decl` handle (kind/name/fields/methods/returnType/
+  annotations); `decorator_eval.zig` emits the body as plain JS, binds a `__decl`
+  object + the trailing args, runs it in the **node** runtime, and reports
+  `ok` / `fail{message,span}` / `error`. A `fail`/`failAt` becomes a scoped
+  `TypeError`; placement/arg rules live entirely in the lib body. Runs only in
+  the full compile pipeline (`env.templateEval` set); tooling/LSP paths skip it.
+  Diagnostic locs are coarse for now (message carries the detail; precise spans
+  are a follow-up).
+- Field-site and record/struct *method*-site annotations are a parser gap today
+  (annotations only parse on interface methods); to be closed when a framework
+  migration needs them.
+
 ## `@Context<B, R>` capability inference (F7)
 
 `use` is a **prefix operator** (`use <hookcall>`); any binding is done by the
@@ -168,7 +211,7 @@ other targets treat `use` as a transparent prefix (bind the call result into a
 slot). Phantom `@Context` base structs (`struct implement @Context { }`, no
 members) are erased — see `codegen/AGENTS.md`.
 
-## Anonymous record types + `Children` coercion (jhonstart-language-gaps)
+## Anonymous record types + `Children` coercion
 
 - `resolveTypeRefInContext` lowers a `TypeRef.record_type` (`{ f: T, … }`) to a
   structural `Type.record`; it unifies field-by-field with a `record { … }`

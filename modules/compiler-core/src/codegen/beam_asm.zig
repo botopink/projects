@@ -392,7 +392,7 @@ fn emitBeamAsm(
     defer body_buf.deinit();
 
     // The BEAM module atom is the path basename (`std/order` → `order`,
-    // `rakun/http` → `http`) — a slash is invalid in an unquoted module atom,
+    // `web/http` → `http`) — a slash is invalid in an unquoted module atom,
     // and cross-module `call_ext` targets resolve by basename (see
     // `crossModule.ownerModuleAtom`). Mirrors the Erlang backend's
     // `erl_module_name`.
@@ -1837,7 +1837,7 @@ const Emitter = struct {
                     // is an associated fn (`Response.ok(...)`), emitted by
                     // `emitMethodAsFn` as `'<Type>_<callee>'`. A LOCAL record
                     // calls that fn directly by label; an IMPORTED record
-                    // (`from "rakun"`) calls it remotely in the owning module —
+                    // (`from "web"`) calls it remotely in the owning module —
                     // never the lowercased type name (`response:ok`).
                     if (cc.trailing.len == 0 and self.record_fields.contains(rn)) {
                         var nbuf: [256]u8 = undefined;

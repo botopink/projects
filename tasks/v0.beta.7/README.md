@@ -32,31 +32,43 @@ v0.beta.6; the rest of v0.beta.6 froze as history.
 
 ## Features (v0.beta.7)
 
-Three specs. Only **what can be touched in parallel is a separate spec**: the
-whole compiler-core de-coupling is one indivisible strand; the lib port and the
-backend parity are the two that parallelize.
+Five specs. Only **what can be touched in parallel is a separate spec**: the
+whole compiler-core de-coupling is one indivisible strand; the lib ports
+(`rakun`, `erika`, `jhonstart` — all pure clients of the generic mechanism) and
+the backend parity are what parallelize.
 
 | Spec | Slug | Depends on |
 |---|---|---|
 | [annotation-processors — decorators as custom comptime fns; de-lib the core](specs/annotation-processors.md) | `annotation-processors` | comptime eval + expr-templates |
 | [rakun — DI container + router + bootstrap, **on annotation-processors**](specs/rakun.md) | `rakun` | [`annotation-processors`](specs/annotation-processors.md) |
+| [erika — de-couple the LINQ lib out of `std` onto the generic loader](specs/erika.md) | `erika` | [`annotation-processors`](specs/annotation-processors.md) |
+| [jhonstart — de-couple the UI framework into a pure client](specs/jhonstart.md) | `jhonstart` | [`annotation-processors`](specs/annotation-processors.md) |
 | [stdlib-backends-parity — finish non-JS backends + dispatch + inference](specs/stdlib-backends-parity.md) | `stdlib-backends-parity` | nothing |
 
-## DAG (the one real edge)
+## DAG (one keystone, three client edges)
 
 ```text
 annotation-processors  ──(needs the mechanism)──►  rakun
-        │  (compiler-core: generic protocol + @Decl reflection + generic loader;
-        │   removes the rakun foundation, validateRakun*, and the jhonstart-named
+        │  (compiler-core: generic protocol + @Decl reflection + generic loader;  ├─►  erika
+        │   removes the rakun foundation, validateRakun*, and the jhonstart-named  └─►  jhonstart
         │   tests/comments; ships the lib-agnostic gate — one indivisible branch)
         ▼
 rakun                  (libs/rakun/*.bp + libs/server: DI/router/bootstrap, all
                         lib-side decorator bodies — F2 IoC · F3 args · F4 router
                         · F5 Rakun.run over a real HTTP backing)
+erika                  (libs/erika/*.bp: move the LINQ lib out of std onto the
+                        generic loader; close the erika "…" import-binding gap)
+jhonstart              (libs/jhonstart/*.bp: stand up as a pure client post-decouple;
+                        promote hooks/html/router/server .d.bp → real .bp on G1–G4)
 
 stdlib-backends-parity (independent — codegen erlang/beam/wasm + dispatch +
                         inference; parallel-safe with the above)
 ```
+
+All three lib ports (`rakun`, `erika`, `jhonstart`) depend on the **same**
+keystone — the generic mechanism — and are mutually parallel once it lands:
+`rakun` uses the `@Decl`/decorator half, `erika` and `jhonstart` the generic
+`from "<lib>"` loader half. None touches `compiler-core`.
 
 ## Scope boundaries
 
@@ -67,6 +79,12 @@ stdlib-backends-parity (independent — codegen erlang/beam/wasm + dispatch +
 - **rakun** waits on the mechanism, then implements all semantics in `.bp`
   (constructor injection, singleton scope; F5 needs a real `libs/server`, node
   first then erlang). No new core code.
+- **erika** waits on the mechanism's **loader** half, then moves out of `std`
+  into `libs/erika/` (source unchanged) and closes the `erika "…"` import-binding
+  gap generically. No new core code; `std` sheds the erika module.
+- **jhonstart** waits on the mechanism's **loader** half + P0 de-coupling, then
+  stands up as a pure client and promotes its `.d.bp` surface (hooks/html/router/
+  server) to real `.bp` on the now-landed G1–G4 gaps. No new core code.
 - **stdlib-backends-parity** is the v0.beta.6 `stdlib-backends-and-tooling`
   remainder (Part A1/A2-rest/A3 + Part B F1–F6). Stdlib coupling in the core is
   allowed — this spec de-couples nothing; it is pure backend/inference parity.

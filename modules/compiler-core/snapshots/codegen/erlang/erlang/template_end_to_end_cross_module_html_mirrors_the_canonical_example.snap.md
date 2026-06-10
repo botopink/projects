@@ -1,4 +1,4 @@
------ SOURCE CODE -- jhonstart.bp
+----- SOURCE CODE -- view.bp
 ```botopink
 pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
     var acc = "\"\"";
@@ -14,9 +14,9 @@ pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
 }
 ```
 
------ ERLANG -- jhonstart.erl
+----- ERLANG -- view.erl
 ```erlang
--module(jhonstart).
+-module(view).
 ```
 
 ----- RUN LOG -----
@@ -25,7 +25,7 @@ pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-import {html} from "jhonstart";
+import {html} from "view";
 
 val name = "world";
 

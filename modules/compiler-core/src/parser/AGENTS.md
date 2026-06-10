@@ -63,7 +63,7 @@ test "import decl" {
 
 `parseBaseTypeRef` handles `?T`, `#(…)` tuples, `fn(…) -> R` function types,
 `@Name<…>` builtins, `type` meta-kinds, plain names with `<…>`/`[]` wraps, and
-(jhonstart-language-gaps) two additions:
+two additions for record/builder ergonomics:
 
 - **Function-type params may be named** — `fn(next: T)` parses alongside the
   bare `fn(T)`; the name is documentation-only (function types are positional)

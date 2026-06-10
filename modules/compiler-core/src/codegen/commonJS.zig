@@ -1246,9 +1246,9 @@ const Emitter = struct {
             }
             return;
         }
-        // Package import (e.g. `from "rakun"`): resolve each name to the file
+        // Package import (e.g. `from "web"`): resolve each name to the file
         // that actually emits it via the cross-module export index. Names with
-        // no emitted home (declaration-only markers like rakun decorators) emit
+        // no emitted home (declaration-only markers like lib decorators) emit
         // no runtime binding. One `require` per distinct source module.
         if (u.source == .module and self.cross != null) {
             const xm = &self.cross.?.exports;
