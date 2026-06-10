@@ -46,10 +46,14 @@ pub record Query<T> {
         return Query(items: self.items.map(selector));
     }
 
-    // NOTE: `selectMany` (flatMap) is deferred to v2. It needs a selector typed
-    // `fn(item: T) -> Query<U>`, but the parser rejects an array / generic-applied
-    // return inside a function-type parameter (the catalogued `fn() -> T[]` gap).
-    // Use `.select(...).toArray()` then re-wrap, or `Array.flatMap`, until it lands.
+    // `selectMany` (flatMap): the per-item selector returns an `Array<U>` and the
+    // results are concatenated into one flat `Query<U>`. Unblocked by `fn() -> T[]`
+    // in a function-type parameter (v0.beta.6 gap G3, landed in `feat`).
+    pub fn selectMany<U>(self: Self, selector: fn(item: T) -> Array<U>) -> Query<U> {
+        var out = [];
+        self.items.forEach({ x -> out = out.append(selector(x)); });
+        return Query(items: out);
+    }
 
     // ── F2: partitioning / ordering ───────────────────────────────────────────
     pub fn take(self: Self, n: i32) -> Query<T> {
@@ -311,7 +315,11 @@ pub fn repeat<T>(value: T, times: i32) -> Query<T> {
 // collection against the caller's scope snapshot, and expands to the fluent
 // layer via `q.build(...)`. Grammar (keywords lowercase):
 //
-//   select <* | field> from <Name> [where <cond>] [order by <field> [asc|desc]]
+//   select <* | f1[, f2…]> from <Name> [where <cond>] [order by <field> [asc|desc]]
+//
+// A single field projects that column (`Array<field>`); two or more project an
+// anonymous structural `record { f1: …, f2: … }` per row (gap G2, landed in
+// `feat`). `*` returns the whole rows.
 //
 // `<cond>` is comparisons over a field and a literal/field (`== != < <= > >=`,
 // `=` as `==`, `<>` as `!=`, `and`/`or`). The expansion emits UNQUALIFIED fluent
@@ -322,11 +330,13 @@ pub fn repeat<T>(value: T, times: i32) -> Query<T> {
 // translation is inlined. See AGENTS.md for the user-project import caveat.
 pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T> {
     val sql = q.text();
-    val tokens = sql.trim().split(" ");
+    // Normalize commas to spaces up front so `select a, b` and `select a , b`
+    // tokenize identically — each projected field is its own token; empty tokens
+    // from the doubled spaces fall through as blanks.
+    val tokens = sql.trim().split(",").join(" ").split(" ");
     var star = false;
-    var field = "";
+    var fields = [];
     var source = "";
-    var multiField = false;
     var whereCond = "";
     var orderField = "";
     var orderDesc = false;
@@ -344,13 +354,15 @@ pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T> {
             val inWhere = mode == "where";
             val inOrder = mode == "order";
             if (inHead) {
-                val afterSelect = prev == "select";
-                if (afterSelect) {
+                val isSelectKw = tok == "select";
+                val isFromKw = tok == "from";
+                val isSource = prev == "from";
+                if (isSource) { source = tok; };
+                val isProj = !isSource && !isSelectKw && !isFromKw;
+                if (isProj) {
                     if (tok == "*") { star = true; };
-                    if (tok != "*") { field = tok; };
+                    if (tok != "*") { fields = fields.append([tok]); };
                 };
-                if (tok == ",") { multiField = true; };
-                if (prev == "from") { source = tok; };
             };
             if (inWhere) {
                 var piece = "row." + tok;
@@ -381,10 +393,6 @@ pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T> {
         };
     };
 
-    if (multiField) {
-        return q.fail("erika: multi-field `select a, b` not supported yet (v1) — needs anonymous record types / tuples");
-    };
-
     val known = q.lookup(source);
     if (known) { binding ->
         var pipe = "of(" + source + ")";
@@ -393,7 +401,18 @@ pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T> {
             val op = if (orderDesc) { "orderByDescending"; } else { "orderBy"; };
             pipe = pipe + "." + op + "({ row -> row." + orderField + " })";
         };
-        pipe = if (star) { pipe + ".toArray()"; } else { pipe + ".select({ row -> row." + field + " }).toArray()"; };
+        val single = fields.length == 1;
+        val multi = fields.length > 1;
+        if (star) { pipe = pipe + ".toArray()"; };
+        if (single) {
+            val proj = fields.map({ f -> "row." + f }).join("");
+            pipe = pipe + ".select({ row -> " + proj + " }).toArray()";
+        };
+        if (multi) {
+            val parts = fields.map({ f -> f + ": row." + f });
+            val rec = "record { " + parts.join(", ") + " }";
+            pipe = pipe + ".select({ row -> " + rec + " }).toArray()";
+        };
         return q.build(pipe);
     };
     return q.fail("erika: unknown collection '" + source + "' in scope");
@@ -415,6 +434,11 @@ test "erika where/select pipeline materializes" {
         .select({ n -> n * 10 })
         .toArray();
     assert out.join(",") == "20,40";
+}
+
+test "erika selectMany flattens per-item arrays" {
+    val out = of([1, 2, 3]).selectMany({ n -> [n, n * 10] }).toArray();
+    assert out.join(",") == "1,10,2,20,3,30";
 }
 
 test "erika range where even sum is 2550" {
@@ -536,4 +560,10 @@ test "erika query: order by desc reverses" {
 test "erika query: where with a string literal" {
     val one = erika "select pop from erikaCities where name = 'Paris'";
     assert one.join(",") == "9";
+}
+
+test "erika query: multi-field select projects an anonymous record" {
+    val rows = erika "select name, pop from erikaCities where pop >= 5 order by name asc";
+    val labels = rows.map({ r -> r.name + ":" + r.pop.toString() });
+    assert labels.join(",") == "Lyon:5,Paris:9";
 }

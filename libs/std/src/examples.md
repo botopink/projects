@@ -174,66 +174,9 @@ OVER
 LAZY
 ```
 
-## erika — LINQ-style queries
-
-The `erika` module is a C#/LINQ-style query library over `Array<T>`. Import it
-from `"std"`, wrap an array in a `Query<T>` with `erika.of(...)`, then chain
-fluent operators. Everything is eager and immutable — each operator returns a
-fresh `Query`.
-
-```text
-import {erika} from "std";
-
-record Person { name: string, age: i32 }
-
-fn main() {
-    val people = [
-        Person(name: "Ann", age: 30),
-        Person(name: "Bob", age: 17),
-        Person(name: "Cy",  age: 22),
-    ];
-
-    val adults = erika.of(people)
-        .where({ p -> p.age >= 18 })
-        .orderBy({ p -> p.name })
-        .select({ p -> p.name })
-        .toArray();
-
-    @print(adults.join(", ")); // Ann, Cy
-}
-```
-
-Aggregations, grouping and element terminals:
-
-```text
-val total    = erika.range(1, 101).where({ n -> n % 2 == 0 }).sum({ n -> n }); // 2550
-val byParity = erika.of([1, 2, 3, 4]).groupBy({ n -> n % 2 });                 // Query<Grouping<i32, i32>>
-val firstBig = erika.of([1, 5, 9]).firstWhere({ n -> n > 4 });                 // ?i32 → 5
-```
-
-### The `erika "…"` query string
-
-`erika` is also a **template function**: a SQL-subset query string is parsed at
-compile time and expanded into the fluent pipeline. The grammar (keywords
-lowercase) is:
-
-```text
-select <* | field> from <Name> [where <cond>] [order by <field> [asc|desc]]
-```
-
-```text
-// expands (at comptime) to:
-//   of(erikaCities).where({ row -> row.pop >= 5 })
-//                  .orderBy({ row -> row.name })
-//                  .select({ row -> row.name }).toArray()
-val names = erika "select name from erikaCities where pop >= 5 order by name asc";
-```
-
-The referenced collection (`erikaCities`) is resolved against the caller's
-top-level scope. `select *` yields `Array<Row>`; `select field` yields
-`Array<FieldType>`. Multi-field projection (`select a, b`) is a deliberate
-not-yet error in v1. See [`../AGENTS.md`](../AGENTS.md) for the current resolution
-caveat on the `erika "…"` form.
+> **erika moved out of `std`.** The C#/LINQ-style `Query<T>` + `erika "…"`
+> template now live in their own package, reached with `import {…} from "erika"`.
+> See [`libs/erika/`](../../erika/) for its docs and examples.
 
 ## See also
 

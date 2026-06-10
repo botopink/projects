@@ -21,8 +21,7 @@ src/
 ├── bool.bp              ← `bool` std module (impl)
 ├── pair.bp              ← `pair` std module (impl — 2-tuples)
 ├── order.bp             ← `order` std module (impl — Order enum + type export)
-├── list.bp              ← `list` std module (impl — over Array<T>)
-└── erika.bp             ← `erika` std module (LINQ-style Query<T> + `erika "…"` template)
+└── list.bp              ← `list` std module (impl — over Array<T>)
 ```
 
 ## `prelude.zig` shape (in compiler-core)
@@ -36,7 +35,6 @@ pub const bool_mod   = @embedFile("bool.bp");
 pub const pair       = @embedFile("pair.bp");
 pub const order      = @embedFile("order.bp");
 pub const list       = @embedFile("list.bp");
-pub const erika_mod  = @embedFile("erika.bp");
 ```
 
 One `pub const` per `.bp`. Each name resolves through an anonymous import
@@ -55,7 +53,6 @@ because the `.bp` sources live outside the `std_prelude` module root.
 | `pair.bp` | `pair` module (F3) — `pub fn of`, `first`, `second`, `swap`, `mapFirst`, `mapSecond`. A pair IS a 2-tuple `#(a, b)` (same as `gleam/pair`) — structural tuples avoid the generic-record instantiation gap (record generics collapse when a module fn re-constructs with swapped params; see the task TODO). Named `of` because `new` is a reserved keyword. |
 | `order.bp` | `order` module (F3) — `pub enum Order { Lt, Eq, Gt }` (type-exported to importers) + `lt`/`eq`/`gt` constructor fns, `toInt`, `reverse`. Importers can `case` over `Order` and use it in annotations; construct via the module fns (bare variant constructors have no local decl in the importing module's codegen). |
 | `list.bp` | `list` module (F4) — `length`, `isEmpty`, `contains`, `first`, `rest`, `take`, `drop`, `reverse`, `map`, `filter`, `fold`, `all`, `any` over the builtin `Array<T>`. Transforms delegate to the builtin Array methods; `fold` drives a `var` accumulator through `forEach`. `Array<T>` annotations normalise to the array-literal type (named `array`) so `[1, 2]` unifies with `Array<i32>` params. |
-| `erika.bp` | `erika` module — a C#/LINQ-style query lib over `Array<T>`. A `record Query<T> { items }` with a fluent, eager, immutable operator vocabulary: `where`/`select`; `take`/`skip`/`takeWhile`/`skipWhile`/`reverse`/`orderBy`/`orderByDescending`; `distinct`/`distinctBy`/`concat`/`union`/`intersect`/`except`/`groupBy`(→`Grouping<K,V>`)/`zip`; terminals `count`/`countWhere`/`sum`/`average`/`min`/`max`/`aggregate`/`first`/`firstWhere`/`last`/`single`/`elementAt`(→`?T`)/`any`/`anyWhere`/`all`/`contains`. Constructors `of`/`empty`/`range`/`repeat`. Plus the `erika "…"` template fn: an `@Expr<string>` SQL-subset (`select <*\|field> from <Name> [where <cond>] [order by <field> [asc\|desc]]`) parsed at comptime and expanded to the fluent layer via `q.build(...)`. Imported via `import {erika} from "std"` → `erika.of(xs)…`. See `../AGENTS.md` for deferred ops (`selectMany`, multi-field select) and the `erika "…"` import caveat. |
 
 ### `result` / `option` — builtin, not modules
 

@@ -1,90 +1,69 @@
-# TODO — annotation-processors (the lib-agnostic core)
+# TODO — erika (de-couple the LINQ lib onto the generic loader)
 
-> Task branch `task/annotation-processors` · spec
-> [`tasks/v0.beta.7/specs/annotation-processors.md`](../../tasks/v0.beta.7/specs/annotation-processors.md).
+> Task branch `task/erika-port` · spec
+> [`tasks/v0.beta.7/specs/erika.md`](../../tasks/v0.beta.7/specs/erika.md).
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test.
 >
-> **Indivisible spec:** the generic mechanism AND the removal of every non-std lib
-> footprint live here — one branch, sequential phases. `std` is the allowed
-> coupled exception; the gate binds rakun/jhonstart/future frameworks.
+> ✅ **Unblocked.** `annotation-processors` merged into `feat` (the generic
+> `from "<lib>"` loader landed: `compiler-cli/src/cli/libs.zig`). erika moved out
+> of `std` into `libs/erika/*.bp` with **no new compiler-core code** (the gate
+> covers `erika` too).
 
-## P0 — generic package loader (de-lib the core; std excepted)
-- [~] `from "<lib>"` resolves any external **non-std** lib by name through one
-      lib-agnostic mechanism; no per-lib `@embedFile`, no `rakun_pkg_modules`, no
-      `registerRakunLib`. `std` keeps its embedded-prelude path. DONE for
-      co-compiled modules: non-std lib `.bp` sources passed in `Module[]` resolve
-      `from "<lib>"` through the shared import registry (same path the
-      `from "http"` cross-module test exercises) — the embed/registry/loader
-      rakun code is all gone. REMAINING: the CLI driver should *discover*
-      `libs/<name>/` on disk (manifest deps) and feed those modules in — a
-      `compiler-cli` change with no in-repo test fixture yet (tracked).
-- [x] Delete every `rakun` reference from `modules/compiler-core/src/**` (incl.
-      the `rakunExports`/`rakunTypeDecls` env fields, `registerRakunLib`,
-      `markRakunImports`, `buildDelegateType`, `registerRakunTypeDecl`,
-      `expandRakunImports`, `isRakunPkgPath`, `rakun_pkg_modules`, the
-      `prelude.zig` embeds, and both `build.zig` `@embedFile`s). `validateRakun*`
-      never existed (planned-only). Codegen example comments de-named.
-- [x] Fold `comptime/tests/jhonstart.zig` into the generic suites — N/A on this
-      branch: `grep -riE jhonstart modules/compiler-core/src` already returns
-      nothing (the file/comments don't exist here; the earlier scan was wrong).
-      So the gate's `jhonstart` half is already satisfied.
-- [x] Gate as a test: `grep -riE "rakun|jhonstart" modules/compiler-core/src`
-      returns nothing (std exempt). Wired as a `zig build test` step in `build.zig`
-      (`lib_agnostic_gate`: `! grep -riIE 'rakun|jhonstart' modules/compiler-core/src`,
-      `has_side_effects` so it always re-scans). `libs/rakun (.bp)` tests stay
-      green — they compile the lib's own local sources, not an external
-      `from "rakun"`.
+## F0 — package extraction + generic loader wiring
+- [x] Created `libs/erika/` with `botopink.json` (`files: ["erika.bp"]`),
+      `src/erika.bp` (moved from `libs/std/src/erika.bp`), `AGENTS.md`, `docs.md`,
+      `examples.md`.
+- [x] **Removed** `"erika.bp"` from `std_pkg_files` in **both** `build.zig` and
+      `modules/compiler-core/build.zig`; dropped the erika rows from
+      `libs/std/src/docs.md`/`examples.md`/`AGENTS.md` (left "moved" pointers).
+      `std` no longer ships erika (verified: `libs/std` test suite still green).
+- [x] `import {erika} from "erika"` resolves through the generic loader;
+      `botopink test` in `libs/erika` discovers `src/erika.bp` (21 blocks pass).
+      Zero `modules/compiler-core/src/**` edit. Added `erika` to the lib-agnostic
+      gate alternation in root `build.zig`.
 
-## P1 — recognition + generic argument validation
-- [x] Recognize a decorator by signature: a `pub fn`/`declare fn` whose first param
-      is `comptime _: @Decl`; record per importing module (generic registry).
-      (`env.decorators` registry, populated in `registerFnSignatures` for both the
-      `.fn` and `.delegate` forms; parser now accepts bare `@Decl`.)
-- [x] `#[d(args)]` type-checks `args` against the decorator signature (arity +
-      types) at any site (record/struct/enum/method/fn). (`validateDecorators`
-      pass; arity honors trailing defaults; per-arg lexical kind check.)
-      NOTE: field-site + record/struct method-site annotations are a *parser* gap
-      (annotations only parse on interface methods today) — addressed when rakun
-      migration (P2) needs `#[getMapping]` on controller methods.
-- [x] Declare `@Decl` builtin reflection type + `DeclKind` in `builtins.d.bp`.
-      (`DeclKind`/`Annotation`/`Param`/`Field`/`Method` + `interface Decl`;
-      `TypeRef.isDeclType` recognizes bare `@Decl`.)
+## F1 — close the `erika "…"` import-resolution limit
+- [ ] **GAP RECORDED (not closed) — requires generic loader work that is out of
+      scope here.** The generic `from "<lib>"` loader binds the lib **namespace**
+      only (so `erika.of(...)` works), but does **not** bind bare imported values
+      into value scope — confirmed with a throwaway probe lib where even a plain
+      `import {plain} from "lib"` leaves bare `plain` unbound, and a non-colliding
+      template fn `qq "…"` is unbound too. So `erika "…"` after
+      `import {erika} from "erika"` is still `unbound variable 'erika'`. Closing it
+      means **generic** bare-value / template-fn import binding in the loader/import
+      resolver (compiler-core) — forbidden here (no new core code; the gate forbids
+      erika in core). Fully documented in `libs/erika/AGENTS.md` + `docs.md`.
+- [x] Confirmed the eager comptime body still runs over the minimal `node` prelude
+      after the move — the in-file `erika "…"` tests pass (the template fn is a
+      directly in-scope identifier there). No regression from the move.
 
-## P2 — comptime invocation + diagnostics
-- [x] Serialize the annotated declaration to the `@Decl` handle. (`buildHandleJson`
-      in infer.zig — kind/name/fields/methods/returnType/annotations, for
-      fn/record/struct/enum + their methods.)
-- [x] Run the decorator body in the node runtime; surface `fail`/`failAt` as a
-      scoped diagnostic. (`decorator_eval.zig` mirrors `template_eval`; `__decl`
-      handle + `fail`/`failAt`; `invokeDecorators` runs body-carrying decorators
-      after `validateDecorators`, only when `env.templateEval` is set. Diagnostic
-      locs are coarse for now — message carries the detail; precise spans = TODO.)
-      `@Decl` body type-checks via the `decl_reflection_src` cluster registered in
-      `registerStdlib` (scalar `kind`/`name`/`returnType` + `fail`/`failAt`).
-- [~] (with `rakun`) decorator placement + arg rules move to lib-side bodies.
-      UNBLOCKED: `#[getMapping]` on methods AND `#[inject]`/`#[value]` on fields now
-      parse on record/struct bodies and reach `validateDecorators`/`invokeDecorators`.
-      REMAINING: write the rakun decorator bodies in `.bp` (lib-side) — pending the
-      P3 wiring primitive so they can contribute DI/router entries.
+## F2 — fluent ops the language now allows (v0.beta.6 deferrals)
+- [x] `selectMany` **landed** — `fn(item: T) -> Array<U>` selector, flattened.
+      Unblocked by `fn() -> T[]` in a function-type param (G3, in `feat`).
+- [x] Multi-field projection **landed** — `select a, b` ⇒ an anonymous structural
+      `record { a: row.a, b: row.b }` per row. Unblocked by anonymous record types
+      (G2, in `feat`). Commas attached (`a, b`) or spaced (`a , b`) both parse.
+- [x] Kept the distinct-name predicate variants (`countWhere`/`firstWhere`/
+      `anyWhere`) — no arity overloading on the JS backend.
 
-## P3 — wiring contribution (DI graph + router)
-- [x] Field-site decorators: parse + reflect annotations on record/struct fields.
-      (`RecordField`/`StructField` carry `annotations`; `parseRecordBody`/
-      `parseStructBody` attach them; the inference walk reflects fields as
-      `DeclKind.Field`. Parser AST snapshots regenerated.)
-- [x] `@Decl` exposes the aggregate reflection a wiring decorator iterates:
-      `Decl` is now a `struct` with `fields`/`methods`/`annotations` (+ `Field`/
-      `Method`/`Param`/`Annotation`/`Span`), so `decl.fields`/`decl.methods` resolve.
-- [x] `@compilerError(message)` builtin — the generic compile-time error a comptime
-      body raises (decorator or template); lowered to `__compilerError` and thrown
-      as the `fail` protocol. Preferred over `decl.fail`/`decl.failAt`.
-- [ ] A decorator body may *return* generated decls / `@Expr` to contribute
-      singletons, the DI graph, and the router table. (Needs the pipeline to
-      capture a decorator's return + splice top-level decls after inference — the
-      remaining wiring primitive. The reflection + diagnostics it builds on are
-      done; the consumer — rakun DI/router — is lib-side, in `libs/rakun/*.bp`.)
-- [ ] (with `rakun`) DI cycle check + router build + `Rakun.run` become lib-side.
+## F3 — docs + tests in the lib
+- [x] `libs/erika/docs.md` + `examples.md` cover both forms; `libs/erika/AGENTS.md`
+      documents the package, the loader path, the comptime-eval constraint, and the
+      F1 gap. Updated in the same change as the code.
+- [x] All tests live in `libs/erika/src/erika.bp`'s own `test "…"` blocks — the 19
+      v0.beta.6 blocks moved with the file + `selectMany` + multi-field projection
+      (21 total, all pass under `botopink test`).
 
 ## Done gate
-- [ ] `zig build && zig build test` green; the `grep` gate test passes.
-- [ ] `comptime/AGENTS.md` + `codegen/AGENTS.md` + `libs/std/AGENTS.md` updated.
+- [x] Tests live in `libs/erika/src/erika.bp` (`botopink test`), not compiler Zig suites.
+- [x] `grep -riE "erika" modules/compiler-core/src` returns nothing.
+- [x] `zig build test` green (compiler suite + the erika-inclusive lib-agnostic gate).
+
+## Notes / parser gotchas hit during the port
+- The `erika "…"` comptime body runs over a **minimal `node` prelude** in
+  `template_eval.zig` — native-JS ops only. `.split`/`.join`/`.slice`/`.trim`/
+  `.map`/`.append`/`.length` are fine; optional `.at(i).unwrapOr(…)` is **not**
+  (undefined in the eval script → surfaces as a terse "parse error"). The field
+  list is built with `append`+`map`+`join`, never `fields.at(0).unwrapOr(…)`.
+- A top-level binary boolean **directly inside `if (…)` fails to parse**
+  (`if (a && b)`). Extract to a `val` first — the established `erika.bp` style.

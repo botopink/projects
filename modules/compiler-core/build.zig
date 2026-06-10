@@ -60,7 +60,6 @@ pub fn build(b: *std.Build) void {
         "sets.bp",
         "string_builder.bp",
         "queue.bp",
-        "erika.bp",
     };
     // Generate the package-module registry (`pkg_modules: [N]{ path, source }`),
     // each entry embedding its `.bp` source. The generated file lives in its own
