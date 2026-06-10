@@ -12,6 +12,7 @@ const bp = @import("botopink");
 const reporter = @import("./reporter.zig");
 const config = @import("./config.zig");
 const scanner = @import("./scanner.zig");
+const libs = @import("./libs.zig");
 
 // ── Options ───────────────────────────────────────────────────────────────────
 
@@ -55,13 +56,38 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
     const test_modules = try scanner.scanSources(gpa, io, "test");
     defer scanner.freeModules(gpa, test_modules);
 
-    const modules = try std.mem.concat(arena, bp.Module, &.{ src_modules, test_modules });
-
-    if (modules.len == 0) {
+    if (src_modules.len == 0 and test_modules.len == 0) {
         reporter.errMsg("no source files found in src/ or test/");
         reporter.hintMsg("create a .bp file, e.g. src/main.bp");
         return 1;
     }
+
+    // Resolve declared external libs (generic — `libs/<name>/`), same as `build`,
+    // so a consumer's tests can `import … from "<lib>"`. Dependency modules are
+    // compiled first (their types/exports must resolve before the project), but
+    // their OWN `test {}` blocks are not run — only the project's are.
+    const dep_modules = libs.loadDependencies(gpa, io, proj.dependencies) catch |err| {
+        switch (err) {
+            error.LibsRootNotFound => reporter.errMsg("project declares dependencies but no libs/ directory was found in this or any parent directory"),
+            error.LibNotFound => reporter.errMsg("a declared dependency was not found under the libs root"),
+            error.LibManifestInvalid => reporter.errMsg("a dependency's botopink.json is invalid"),
+            else => reporter.errMsg("failed to load project dependencies"),
+        }
+        return 1;
+    };
+    defer libs.freeModules(gpa, dep_modules);
+
+    // Keep only real `.bp` dependency modules. Declaration-only (`.d.bp`) modules
+    // use declaration-file syntax the regular pipeline doesn't parse for external
+    // libs yet (the declaration-parse path is std-only), so they are skipped
+    // rather than failed — they carry host-bound / gated surface, not runnable
+    // code. `build` effectively drops them the same way.
+    var real_deps: std.ArrayListUnmanaged(bp.Module) = .empty;
+    for (dep_modules) |d| {
+        if (!d.declaration) try real_deps.append(arena, d);
+    }
+
+    const modules = try std.mem.concat(arena, bp.Module, &.{ real_deps.items, src_modules, test_modules });
 
     reporter.compiling(modules.len);
 
@@ -162,11 +188,38 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
         }
         try agg.appendSlice(arena, ");\n");
         try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = TEST_OUT_DIR ++ "/module.js", .data = agg.items });
+
+        // Nested modules (a dependency's `jhonstart/hooks.js`) emit a flat
+        // `require("./module")` for their bare sibling imports, which would
+        // resolve next to themselves (`jhonstart/module.js`), not at the root
+        // aggregator. Drop a shim `module.js` in each such directory that points
+        // back up to the root one.
+        var seen_dirs = std.StringHashMap(void).init(arena);
+        for (outputs.items) |o| {
+            if (std.mem.startsWith(u8, o.name, "std/")) continue;
+            const dir = std.fs.path.dirname(o.name) orelse continue; // null → top level
+            if (seen_dirs.contains(dir)) continue;
+            try seen_dirs.put(dir, {});
+
+            // One `../` per path segment in `dir` (segments = '/' count + 1).
+            const depth = std.mem.count(u8, dir, "/") + 1;
+            var shim = std.ArrayListUnmanaged(u8).empty;
+            defer shim.deinit(arena);
+            try shim.appendSlice(arena, "module.exports = require(\"");
+            for (0..depth) |_| try shim.appendSlice(arena, "../");
+            try shim.appendSlice(arena, "module\");\n");
+
+            const shim_path = try std.fmt.allocPrint(arena, TEST_OUT_DIR ++ "/{s}/module.js", .{dir});
+            try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = shim_path, .data = shim.items });
+        }
     }
 
     var any_tests = false;
     var exit_code: u8 = 0;
     for (outputs.items) |o| {
+        // Dependency modules are compiled for their exports, not tested here —
+        // run only the project's own `test {}` blocks.
+        if (isDepModule(o.name, real_deps.items)) continue;
         // Modules without test blocks have no runner — skip them.
         if (std.mem.indexOf(u8, o.result.js, "__bp_run_tests") == null) continue;
         any_tests = true;
@@ -201,4 +254,13 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
     }
 
     return exit_code;
+}
+
+/// True when an output module name belongs to a loaded dependency (so its own
+/// `test {}` blocks should not be run by the consumer's `botopink test`).
+fn isDepModule(name: []const u8, dep_modules: []const bp.Module) bool {
+    for (dep_modules) |d| {
+        if (std.mem.eql(u8, d.path, name)) return true;
+    }
+    return false;
 }

@@ -4,6 +4,7 @@ const bp = @import("botopink");
 const reporter = @import("./reporter.zig");
 const config = @import("./config.zig");
 const scanner = @import("./scanner.zig");
+const libs = @import("./libs.zig");
 
 pub fn run(gpa: std.mem.Allocator, io: std.Io) !u8 {
     var arena_instance = std.heap.ArenaAllocator.init(gpa);
@@ -19,13 +20,37 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io) !u8 {
         return 1;
     };
 
-    const modules = try scanner.scanSources(gpa, io, "src");
-    defer scanner.freeModules(gpa, modules);
+    const project_modules = try scanner.scanSources(gpa, io, "src");
+    defer scanner.freeModules(gpa, project_modules);
 
-    if (modules.len == 0) {
+    if (project_modules.len == 0) {
         reporter.errMsg("no source files found in src/");
         return 1;
     }
+
+    // Resolve declared external libs (generic — `libs/<name>/`), same as `build`,
+    // so `import … from "<lib>"` type-checks. Dependencies compile first.
+    const dep_modules = libs.loadDependencies(gpa, io, proj.dependencies) catch |err| {
+        switch (err) {
+            error.LibsRootNotFound => reporter.errMsg("project declares dependencies but no libs/ directory was found in this or any parent directory"),
+            error.LibNotFound => reporter.errMsg("a declared dependency was not found under the libs root"),
+            error.LibManifestInvalid => reporter.errMsg("a dependency's botopink.json is invalid"),
+            else => reporter.errMsg("failed to load project dependencies"),
+        }
+        return 1;
+    };
+    defer libs.freeModules(gpa, dep_modules);
+
+    // Keep only real `.bp` dependency modules. Declaration-only (`.d.bp`) modules
+    // use declaration-file syntax the regular pipeline doesn't parse for external
+    // libs yet (the declaration-parse path is std-only), so they are skipped
+    // rather than failed — they carry host-bound / gated surface, not code.
+    var real_deps: std.ArrayListUnmanaged(bp.Module) = .empty;
+    for (dep_modules) |d| {
+        if (!d.declaration) try real_deps.append(arena, d);
+    }
+
+    const modules = try std.mem.concat(arena, bp.Module, &.{ real_deps.items, project_modules });
 
     reporter.checking(modules.len);
     const t0 = std.Io.Timestamp.now(io, .awake);

@@ -1,0 +1,8 @@
+// jhonstart-html — the components composed by `main.bp`. Each is an ordinary
+// component (a `fn() -> Element`) built from the DOM builders.
+
+import { Element, p, text } from "jhonstart";
+
+pub fn Page1() -> Element { return p([text("page one")]); }
+pub fn Page2() -> Element { return p([text("page two")]); }
+pub fn Page3() -> Element { return p([text("page three")]); }

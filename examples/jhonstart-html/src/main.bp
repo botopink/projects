@@ -1,0 +1,30 @@
+// jhonstart-html — composing components into a page (the SSR-functional form).
+//
+// The JSX-like `html "<div>…<Page1/>…</div>"` authoring DSL is the ergonomic
+// sugar for exactly this tree, but its comptime body is still gated (F2 — see
+// `libs/jhonstart/src/html.d.bp`). Here the same page is assembled directly with
+// the builders + component calls, rendered synchronously, and tested.
+
+import { Element, div, p, text, renderToString } from "jhonstart";
+import { Page1, Page2, Page3 };
+
+val name = "world";
+
+// The page: a greeting plus the three sub-pages, composed as a tree.
+fn page() -> Element {
+    return div([
+        p([text("hello, " + name)]),
+        Page1(),
+        Page2(),
+        Page3(),
+    ]);
+}
+
+fn main() {
+    print(renderToString(page()));
+}
+
+test "the page composes the greeting and the three sub-pages" {
+    assert renderToString(page()) ==
+        "<div><p>hello, world</p><p>page one</p><p>page two</p><p>page three</p></div>";
+}

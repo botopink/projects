@@ -31,9 +31,9 @@ cli/
 | File | Command | Notes |
 |---|---|---|
 | `build.zig` | `botopink build` | Driver — calls into compiler-core codegen. |
-| `check.zig` | `botopink check` | Same pipeline as `build`, stops after type infer. |
+| `check.zig` | `botopink check` | Same pipeline as `build`, stops after type infer. Loads declared `dependencies` (like `build`) so `import … from "<lib>"` type-checks. |
 | `run.zig` | `botopink run` | After `build`, exec target via `comptime/runtime` helpers. |
-| `test_cmd.zig` | `botopink test [--filter <substr>]` | Compiles with `test_mode = true` (test blocks emit as a registry + runner; `main/0` not auto-invoked), writes to `.botopinkbuild/test-out/`, runs each test-containing module via node (commonJS) or escript (erlang). WASM pending. |
+| `test_cmd.zig` | `botopink test [--filter <substr>]` | Compiles with `test_mode = true` (test blocks emit as a registry + runner; `main/0` not auto-invoked), writes to `.botopinkbuild/test-out/`, runs each test-containing module via node (commonJS) or escript (erlang). WASM pending. Loads declared `dependencies` so a consumer's tests can `import … from "<lib>"`; a dependency's own `test {}` blocks are NOT run (only the project's). For nested dep module names (`jhonstart/hooks`), a per-directory `module.js` shim re-exports the root aggregator so their bare-import `require("./module")` resolves. `check`/`test` skip declaration-only (`.d.bp`) deps — the regular pipeline parses declaration syntax for std only; external `.d.bp` (host-bound/gated surface) is not consumed there. |
 | `format_cmd.zig` | `botopink format [--check]` | Round-trip stable formatting. |
 | `new.zig` | `botopink new <name>` | Drops a project template. |
 | `clean.zig` | `botopink clean` | Removes generated artifacts. |
