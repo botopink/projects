@@ -137,6 +137,16 @@ captures are not memoized. Cross-module: the export registry carries
 template FnDecls (comptime.zig `template_registry`); imports register them
 via `registerImportedTemplateFn` so calls expand in the importing module
 (template-built code re-infers in the CALLER's scope — V1 hygiene caveat).
+Imported `pub` nominal types (`record`/`struct`/`enum`) likewise carry their
+AST decl across the boundary (comptime.zig `type_decl_registry`); `resolveImports`
+re-registers them via `registerImportedTypeDecl` so the importer sees the full
+`TypeDef` — `implements`/`contextBase`/fields — not just the constructor value
+binding (and skips the redundant constructor rebind for those names). Mirrors the
+`from "std"` `stdModuleTypes` path. Without it an imported type's
+`implement @Context<…>` is invisible to the `use`-legality check
+(`contextInfoFromReturn` → `lookupTypeDef`), and a local fn annotated with an
+imported type resolves the annotation to the constructor func — `resolveTypeName`
+(env.zig) guards the latter by mapping a constructor binding back to its named type.
 `lookup()`/`bindings()` results expose `ref()` (the binding's name as code).
 `@expr(record { … })` lifts anonymous structural records (`Type.record`,
 F10) — computed objects come back through `literalFromJson`. Remaining

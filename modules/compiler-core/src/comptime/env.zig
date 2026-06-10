@@ -614,7 +614,20 @@ pub const Env = struct {
         // Registered user-defined types
         if (self.typeDefs.contains(name)) return self.namedType(name);
         // Primitive / built-in names
-        if (self.bindings.get(name)) |ty| return ty;
+        if (self.bindings.get(name)) |ty| {
+            // A name bound to a *constructor function* (`fn(fields…) -> Name`)
+            // names a nominal type in annotation position, not a value. This is
+            // the case for an imported record/struct/enum: the import binds its
+            // constructor as a value, but the type definition lives in the
+            // defining module, so the `typeDefs` check above missed it here.
+            // Resolve to the named type the constructor builds, so it unifies
+            // with the same nominal type as seen by the defining module.
+            const d = ty.deref();
+            if (d.* == .func and d.func.ret.isNamed(name)) {
+                return self.namedType(name);
+            }
+            return ty;
+        }
         // Fallback: treat as an opaque named type (forward reference, etc.)
         return self.namedType(name);
     }

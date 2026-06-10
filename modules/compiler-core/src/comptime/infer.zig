@@ -2213,6 +2213,19 @@ pub fn registerImportedTemplateFn(env: *Env, name: []const u8, decl: ast.FnDecl)
     }
 }
 
+/// Register a nominal type (record/struct/enum) imported from another module.
+/// The export registry carries the full declaration so the importing module can
+/// rebuild the `TypeDef` — its `implements` / `contextBase` and fields, not just
+/// the constructor value binding. Without this, an imported type's `implement`
+/// clause is invisible here (e.g. the `use`-legality check `contextInfoFromReturn`
+/// looks up `env.lookupTypeDef` and would find nothing). This mirrors the
+/// `from "std"` type-export path, which re-runs `registerTypeDecl` over the
+/// module's `pub` type decls. Registering in the importing env also re-binds the
+/// constructor with this module's own type ids.
+pub fn registerImportedTypeDecl(env: *Env, decl: ast.DeclKind) !void {
+    try registerTypeDecl(env, decl);
+}
+
 // ── template call-site expansion (expr-templates F6, V1 driver) ───────────────
 
 /// Expand a call to a template function (`-> @Expr<…>`) at the call site.
