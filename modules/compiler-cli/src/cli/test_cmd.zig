@@ -182,6 +182,13 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
             // "std" package modules are only reachable via `from "std"` —
             // bare imports (project root) must never see them.
             if (std.mem.startsWith(u8, o.name, "std/")) continue;
+            // Test modules export nothing other modules import, and a test module
+            // may run module-load side effects (e.g. decorator `@emit`s) that
+            // depend on its own bare imports resolving through this aggregator.
+            // Requiring one test module from another's run would re-execute it
+            // mid-aggregator-build — the circular `require("./module")` would then
+            // see an empty object and its side effects would crash. Exclude them.
+            if (isTestModule(o.name, test_modules)) continue;
             try agg.appendSlice(arena, ", require(\"./");
             try agg.appendSlice(arena, o.name);
             try agg.appendSlice(arena, ".js\")");
@@ -261,6 +268,17 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
 fn isDepModule(name: []const u8, dep_modules: []const bp.Module) bool {
     for (dep_modules) |d| {
         if (std.mem.eql(u8, d.path, name)) return true;
+    }
+    return false;
+}
+
+/// True when an output module name belongs to a `test/` suite module. These are
+/// excluded from the root `module.js` aggregator: they export nothing other
+/// modules consume, and cross-loading one (with module-load side effects) from
+/// another test's run would hit a half-built aggregator.
+fn isTestModule(name: []const u8, test_modules: []const bp.Module) bool {
+    for (test_modules) |t| {
+        if (std.mem.eql(u8, t.path, name)) return true;
     }
     return false;
 }

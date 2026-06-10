@@ -1,0 +1,57 @@
+//// rakun — runtime surface (host-backed): the DI container + router seams.
+////
+//// These `declare fn`s map to `runtime.mjs` (see it for the rationale: botopink
+//// has no top-level mutable state, so the scan registry / DI cache / router live
+//// in the host). The path is relative to the generated JS — for the lib's own
+//// `botopink test` (`.botopinkbuild/test-out/runtime.js`) `../../src/runtime.mjs`
+//// reaches the source. A consumer build needs the runtime shipped next to the
+//// emitted module (tracked separately); these decls are the stable seam.
+////
+//// `pub` so a module compiled with rakun can reference them from the
+//// self-registering `val`s the decorators `@emit`. Reached via `from "rakun"`.
+
+// ── component scan ──────────────────────────────────────────────────────────
+// A component decorator emits `val _ = rkScan("TypeName");` at module load.
+
+#[@external(node, "../../src/runtime.mjs", "scan")]
+pub declare fn rkScan(name: string) -> i32;
+
+#[@external(node, "../../src/runtime.mjs", "scannedNames")]
+pub declare fn rkScannedNames() -> string;
+
+#[@external(node, "../../src/runtime.mjs", "scannedCount")]
+pub declare fn rkScannedCount() -> i32;
+
+// ── dependency-cycle guard ──────────────────────────────────────────────────
+// A component factory brackets its construction with `rkEnter`/`rkDone`; a cycle
+// makes `rkEnter` raise at first construction (see runtime.mjs).
+
+#[@external(node, "../../src/runtime.mjs", "enter")]
+pub declare fn rkEnter(name: string) -> i32;
+
+#[@external(node, "../../src/runtime.mjs", "done")]
+pub declare fn rkDone(name: string) -> i32;
+
+// ── property injection (`#[value("key")]`) ──────────────────────────────────
+
+#[@external(node, "../../src/runtime.mjs", "setProp")]
+pub declare fn rkSetProp(key: string, value: string) -> i32;
+
+#[@external(node, "../../src/runtime.mjs", "prop")]
+pub declare fn rkProp(key: string) -> string;
+
+// ── router ──────────────────────────────────────────────────────────────────
+// A controller decorator emits `rkRegisterRoute(verb, path, handler)` per mapped
+// method; `rkDispatch` runs the matching handler (or returns a 404 Response).
+
+#[@external(node, "../../src/runtime.mjs", "registerRoute")]
+pub declare fn rkRegisterRoute(verb: string, path: string, handler: fn(req: Request) -> Response) -> i32;
+
+#[@external(node, "../../src/runtime.mjs", "routeCount")]
+pub declare fn rkRouteCount() -> i32;
+
+#[@external(node, "../../src/runtime.mjs", "routePaths")]
+pub declare fn rkRoutePaths() -> string;
+
+#[@external(node, "../../src/runtime.mjs", "dispatch")]
+pub declare fn rkDispatch(verb: string, path: string) -> Response;
