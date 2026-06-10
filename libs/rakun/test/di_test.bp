@@ -1,0 +1,34 @@
+// rakun — wiring tests: decorators applied to real records.
+//
+// Run by `botopink test` from `libs/rakun/`. These exercise the decorator
+// bodies (placement validation, F3) by APPLYING them to correctly-shaped
+// declarations: a `#[service]`/`#[repository]` on a record, route markers on
+// methods. A clean compile means every decorator accepted its placement; the
+// assertions check the records still construct and run as ordinary code.
+//
+// Wrong-placement REJECTION is covered generically by the compiler's own
+// annotation-processor suite (`comptime/tests/decorator_invocation.zig`) — a
+// compile-failure can't be expressed as a runtime `assert` here.
+
+import {service, repository};
+
+#[repository]
+record GreetRepo {
+    pub fn all(self: Self) -> Array<string> {
+        return ["ana", "bob"];
+    }
+}
+
+#[service]
+record GreetService {
+    repo: GreetRepo,                 // constructor injection by type
+
+    pub fn list(self: Self) -> Array<string> {
+        return self.repo.all();
+    }
+}
+
+test "rakun di: #[service]/#[repository] records construct and run" {
+    val svc = GreetService(repo: GreetRepo());
+    assert svc.list().join(",") == "ana,bob";
+}

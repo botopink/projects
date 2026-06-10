@@ -1,0 +1,92 @@
+//// rakun — decorator bodies (annotation processors, lib-side).
+////
+//// These are the `#[service]`/`#[getMapping("/x")]`/… markers, implemented as
+//// generic comptime decorator functions: each takes the reflected declaration
+//// it is applied to as its first parameter (`comptime decl: @Decl`) and the
+//// annotation arguments as the trailing ones. The compiler core knows NOTHING
+//// about rakun — it only recognises the `@Decl`-first signature, type-checks the
+//// trailing arguments against it (arity + types), and runs the body over the
+//// annotated declaration. Every rule below lives here, in botopink.
+////
+//// This file holds the PLACEMENT rules (F3): a component marker must sit on a
+//// record, a route marker on a method, `#[value]` on a field. Argument arity /
+//// type checking is automatic from the signatures (e.g. `getMapping(path:
+//// string)` rejects `#[getMapping()]` and `#[getMapping(1)]`). The DI/router
+//// WIRING the same decorators contribute (F2/F4) is layered on via `@emit`.
+////
+//// Reached via `from "rakun"`; see ./AGENTS.md and ./docs.md.
+
+// ---- component markers (annotate a record) ----
+//
+// A component is a managed singleton. `#[service]`/`#[repository]`/`#[controller]`
+// are Spring's stereotypes — semantically identical to `#[component]` here, kept
+// distinct for intent + future per-stereotype behaviour.
+
+pub fn component(comptime decl: @Decl) {
+    if (decl.kind != DeclKind.Record) { decl.fail("#[component] must annotate a record"); }
+}
+
+pub fn service(comptime decl: @Decl) {
+    if (decl.kind != DeclKind.Record) { decl.fail("#[service] must annotate a record"); }
+}
+
+pub fn repository(comptime decl: @Decl) {
+    if (decl.kind != DeclKind.Record) { decl.fail("#[repository] must annotate a record"); }
+}
+
+pub fn controller(comptime decl: @Decl) {
+    if (decl.kind != DeclKind.Record) { decl.fail("#[controller] must annotate a record"); }
+}
+
+pub fn restController(comptime decl: @Decl) {
+    if (decl.kind != DeclKind.Record) { decl.fail("#[restController] must annotate a record"); }
+}
+
+// ---- configuration / factory markers ----
+
+// `#[configuration]` marks a record whose `#[bean]` methods are factories.
+pub fn configuration(comptime decl: @Decl) {
+    if (decl.kind != DeclKind.Record) { decl.fail("#[configuration] must annotate a record"); }
+}
+
+// `#[bean]` marks a factory method: its return type becomes an injectable singleton.
+pub fn bean(comptime decl: @Decl) {
+    if (decl.kind != DeclKind.Method) { decl.fail("#[bean] must annotate a method"); }
+}
+
+// `#[inject]` marks a field for explicit constructor injection by type.
+pub fn inject(comptime decl: @Decl) {
+    if (decl.kind != DeclKind.Field) { decl.fail("#[inject] must annotate a field"); }
+}
+
+// `#[value("key")]` pulls a config property into a field (Spring's @Value).
+pub fn value(comptime decl: @Decl, key: string) {
+    if (decl.kind != DeclKind.Field) { decl.fail("#[value] must annotate a field"); }
+}
+
+// ---- web / route markers ----
+
+// `#[route("/prefix")]` sets a controller-level path prefix (Spring @RequestMapping).
+pub fn route(comptime decl: @Decl, prefix: string) {
+    if (decl.kind != DeclKind.Record) { decl.fail("#[route] must annotate a record (controller)"); }
+}
+
+pub fn getMapping(comptime decl: @Decl, path: string) {
+    if (decl.kind != DeclKind.Method) { decl.fail("#[getMapping] must annotate a method"); }
+}
+
+pub fn postMapping(comptime decl: @Decl, path: string) {
+    if (decl.kind != DeclKind.Method) { decl.fail("#[postMapping] must annotate a method"); }
+}
+
+pub fn putMapping(comptime decl: @Decl, path: string) {
+    if (decl.kind != DeclKind.Method) { decl.fail("#[putMapping] must annotate a method"); }
+}
+
+pub fn patchMapping(comptime decl: @Decl, path: string) {
+    if (decl.kind != DeclKind.Method) { decl.fail("#[patchMapping] must annotate a method"); }
+}
+
+pub fn deleteMapping(comptime decl: @Decl, path: string) {
+    if (decl.kind != DeclKind.Method) { decl.fail("#[deleteMapping] must annotate a method"); }
+}

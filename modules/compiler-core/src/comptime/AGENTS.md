@@ -219,6 +219,15 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   `decl.fail` (→ `__emit`/`__compilerError`/`__decl`) never leaks into real output.
   The decls it contributed via `@emit` are already spliced into the module and
   stay.
+- **Cross-module invocation:** a decorator is shipped by one module (a lib) and
+  *applied* in another (its importers), so the body must travel like a template
+  fn does. `registerExports` publishes every decorator `FnDecl` into `comptime.zig`'s
+  `decorator_registry` (keyed by name, selected by the generic `@Decl`-first shape
+  — no lib name); `resolveImports` rehydrates an imported name via
+  `infer.registerImportedDecorator`, so `#[name(args)]` sites in the importing
+  module both arg-check **and** run the body. This is the exact mirror of the
+  `template_registry` / `registerImportedTemplateFn` path. Without it a marker
+  only fired in its defining module — which no real lib client can use.
 
 ## `@Context<B, R>` capability inference (F7)
 
