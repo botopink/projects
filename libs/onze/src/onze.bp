@@ -1,0 +1,188 @@
+//// onze — a Mockito-style mocking + verification library for botopink tests.
+////
+//// Reached via `from "onze"`; imported bare:
+////   import {mock, when, verify, eq, anyInt, times, never, atLeastOnce} from "onze";
+////
+//// A mock is a record that *implements* the target interface, where every method
+//// (1) records its call into a host-side log and (2) returns the matching stub
+//// value, or the type-default for its return type. `when(...)` writes the stub
+//// table; `verify(...)` reads the call log. All of that mutable state lives behind
+//// the `#[@external]` host cells declared below (see `onze.mjs`) — the compiler
+//// core learns nothing about onze (memory: no lib-specific surface in core).
+////
+//// Two layers:
+////   • the RUNTIME (matchers / when / verify / the host cells) — ordinary botopink,
+////     exercised by `test/onze_test.bp` under `botopink test`.
+////   • the SYNTHESIS (`#[mock]`) — a comptime decorator that reflects an interface's
+////     methods via `@Decl` and `@emit`s the mock record + a `mockXxx()` factory.
+////     See `./AGENTS.md` for the current pipeline status of `@emit` under test mode.
+////
+//// See ./AGENTS.md, ./docs.md and the spec: tasks/v0.beta.8/specs/onze.md
+
+// ── host cells (the one mutable seam) ───────────────────────────────────────────
+//
+// Each maps to a function in `onze.mjs`. The path is relative to the generated JS
+// (`.botopinkbuild/test-out/<module>.js`), so `../../src/onze.mjs` reaches the lib
+// source. `pub` so a test/example module compiled with onze can reference them
+// from a synthesized (or hand-written) mock body.
+
+#[@external(node, "../../src/onze.mjs", "newMock")]
+pub declare fn onzeNewMock() -> string;
+
+#[@external(node, "../../src/onze.mjs", "key")]
+pub declare fn onzeKey<T>(v: T) -> string;
+
+#[@external(node, "../../src/onze.mjs", "pushMatcher")]
+pub declare fn onzePushMatcher(kind: string, k: string) -> i32;
+
+#[@external(node, "../../src/onze.mjs", "invoke")]
+pub declare fn onzeInvoke<T>(id: string, method: string, keys: Array<string>, def: T) -> T;
+
+#[@external(node, "../../src/onze.mjs", "beginVerify")]
+pub declare fn onzeBeginVerify(spec: i32) -> i32;
+
+#[@external(node, "../../src/onze.mjs", "when")]
+pub declare fn onzeWhen() -> i32;
+
+#[@external(node, "../../src/onze.mjs", "thenReturn")]
+pub declare fn onzeThenReturn<T>(v: T) -> i32;
+
+#[@external(node, "../../src/onze.mjs", "thenThrow")]
+pub declare fn onzeThenThrow(msg: string) -> i32;
+
+// ── argument matchers ───────────────────────────────────────────────────────────
+//
+// A matcher returns a dummy value of the right type (so the `mock.m(matcher)` call
+// type-checks) and pushes a descriptor onto the host matcher stack. When the mock
+// method runs, the stack decides how each argument is matched. A *literal* argument
+// (no matcher) means exact-equality on its key. Matchers compose across params.
+
+// `eq(v)` — match exactly `v` (the default for a literal argument, made explicit).
+pub fn eq<T>(v: T) -> T {
+    val _m = onzePushMatcher("eq", onzeKey(v));
+    return v;
+}
+
+// `anyInt()` / `anyString()` — match any value of that type. (A fully generic
+// `any<T>()` would need a per-type default it cannot produce, so onze ships the
+// concrete ones; extend per type as needed.)
+pub fn anyInt() -> i32 {
+    val _m = onzePushMatcher("any", "*");
+    return 0;
+}
+
+pub fn anyString() -> string {
+    val _m = onzePushMatcher("any", "*");
+    return "";
+}
+
+// ── verification specs ──────────────────────────────────────────────────────────
+//
+// Encoded as an i32: -1 = at least once, n >= 0 = exactly n (0 = never).
+
+pub fn atLeastOnce() -> i32 {
+    return -1;
+}
+
+pub fn times(n: i32) -> i32 {
+    return n;
+}
+
+pub fn never() -> i32 {
+    return 0;
+}
+
+// ── stubbing: when(...).thenReturn / thenThrow ──────────────────────────────────
+//
+// `when(mock.m(args))` evaluates `mock.m(args)` first — that records the call and
+// captures it (with its matchers) as the pending stub target. The returned builder
+// then writes the action. Last stub registered wins on overlap.
+
+pub record OnzeStub {
+    tag: string,
+
+    // Make the captured call return `v` for every later matching invocation.
+    pub fn thenReturn<T>(self: Self, v: T) -> bool {
+        val _r = onzeThenReturn(v);
+        return true;
+    }
+
+    // Make the captured call raise `message` (a host-side throw) when matched.
+    pub fn thenThrow(self: Self, message: string) -> bool {
+        val _r = onzeThenThrow(message);
+        return true;
+    }
+}
+
+pub fn when<T>(value: T) -> OnzeStub {
+    val _w = onzeWhen();
+    return OnzeStub(tag: "");
+}
+
+// ── verification entry ──────────────────────────────────────────────────────────
+//
+// `verify(mock, spec).m(args)` runs `m` in verify mode: instead of recording, the
+// synthesized method asserts the count of matching prior calls against `spec`.
+// Uniform two-argument form (no fn overloading / default params in botopink):
+//   verify(repo, atLeastOnce()).all();
+//   verify(repo, times(1)).find(eq(7));
+//   verify(repo, never()).find(eq(99));
+
+pub fn verify<T>(mock: T, spec: i32) -> T {
+    val _v = onzeBeginVerify(spec);
+    return mock;
+}
+
+// ── mock synthesis (`#[mock]`) ──────────────────────────────────────────────────
+//
+// A comptime annotation processor: reflect the annotated interface's methods via
+// `@Decl` and `@emit` (a) a record `MockXxx implement Xxx` whose every method funnels
+// through `onzeInvoke`, and (b) a `pub fn mockXxx() -> Xxx` factory. The compiler core
+// only provides the protocol (recognise → reflect → run the body) — every rule here
+// is botopink. The generated method records the call and returns the stub value, or
+// the per-return-type default (`""` / `false` / `0` / `[]`).
+//
+// NOTE: `@emit` contributions splice + type-check under `botopink build`, but the
+// `botopink test` pipeline does not yet splice them (a core test-mode gap, tracked
+// in ./AGENTS.md). Until that lands, onze's own runtime tests use the *explicit*
+// mock shape this decorator emits (see `test/onze_test.bp`); the synthesis itself is
+// exercised under `build` (see `examples/`).
+
+// Comptime-body constraints (see ../AGENTS.md): `if` is an expression (needs
+// `else`, `;`-terminated branches); a bare `if {…}` statement is only legal as the
+// last statement in a block; and the body cannot call sibling fns (only this fn is
+// lowered into the decorator eval script), so the return-type default is inlined.
+pub fn mock(comptime decl: @Decl) {
+    var methods = "";
+    decl.methods.forEach({ m ->
+        var paramList: Array<string> = [];
+        var keyList: Array<string> = [];
+        m.params.forEach({ p ->
+            if (p.name != "self") {
+                paramList.push(p.name + ": " + p.typeName);
+                keyList.push("onzeKey(" + p.name + ")");
+            }
+        });
+        val params = paramList.join(", ");
+        val sig = if (params == "") {
+            "self: Self";
+        } else {
+            "self: Self, " + params;
+        };
+        val keys = keyList.join(", ");
+        val def = if (m.returnType == "string") {
+            "\"\"";
+        } else if (m.returnType == "bool") {
+            "false";
+        } else if (m.returnType.startsWith("Array")) {
+            "[]";
+        } else {
+            "0";
+        };
+        methods = methods + "  fn " + m.name + "(" + sig + ") -> " + m.returnType
+            + " { return onzeInvoke(self.__id, \"" + m.name + "\", [" + keys + "], " + def + "); }\n";
+    });
+    @emit("record Mock" + decl.name + " implement " + decl.name + " {\n  __id: string,\n" + methods + "}");
+    @emit("pub fn mock" + decl.name + "() -> " + decl.name
+        + " { return Mock" + decl.name + "(__id: onzeNewMock()); }");
+}
