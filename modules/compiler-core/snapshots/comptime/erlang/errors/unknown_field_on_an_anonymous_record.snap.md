@@ -4,9 +4,9 @@ val x = cfg.prot;
 
 ----- ERROR
 error: unknown field
-  ┌─ :2:9
+  ┌─ :2:13
   │
 2 │ val x = cfg.prot;
-  │         ^
+  │             ^
 
   'record' has no field 'prot'

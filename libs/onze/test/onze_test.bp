@@ -1,0 +1,91 @@
+// onze — runtime tests (mock synthesis, stubbing, matchers, verification).
+//
+// Run by `botopink test` from `libs/onze/`. These exercise onze end to end:
+// `#[mock]` SYNTHESIZES the double from the interface (reflects its methods via
+// `@Decl` and `@emit`s `record MockUserRepo implement UserRepo` + a `mockUserRepo()`
+// factory), then a mock records its calls, `when(...)` stubs returns, argument
+// matchers pick the right stub, and `verify(...)` checks call counts.
+//
+// The bare import pulls in the onze API plus the host externals the *emitted* mock
+// body references (`onzeInvoke`/`onzeKey`/`onzeNewMock`) — `@emit` splices its code
+// into THIS module, so those names must resolve here.
+//
+// Arrays are compared with `.join(",")` because botopink lowers `==` on arrays to
+// JS reference equality (a general codegen trait, not an onze concern).
+
+import {mock, when, verify, eq, anyInt, times, never, atLeastOnce, onzeInvoke, onzeKey, onzeNewMock};
+
+#[mock]
+interface UserRepo {
+    fn find(self: Self, id: i32) -> string
+    fn all(self: Self) -> Array<string>
+}
+
+// A unit under test that depends only on the interface.
+record UserService {
+    repo: UserRepo,
+    pub fn list(self: Self) -> Array<string> {
+        return self.repo.all();
+    }
+    pub fn name(self: Self, id: i32) -> string {
+        return self.repo.find(id);
+    }
+}
+
+test "onze: an unstubbed method returns the type-default" {
+    val repo = mockUserRepo();
+    assert repo.all().join(",") == "";
+    assert repo.find(1) == "";
+}
+
+test "onze: when(...).thenReturn stubs a return value" {
+    val repo = mockUserRepo();
+    val _s = when(repo.all()).thenReturn(["ana", "bob"]);
+    val svc = UserService(repo: repo);
+    assert svc.list().join(",") == "ana,bob";
+}
+
+test "onze: eq(v) stubs only the matching argument" {
+    val repo = mockUserRepo();
+    val _s = when(repo.find(eq(7))).thenReturn("ana");
+    val svc = UserService(repo: repo);
+    assert svc.name(7) == "ana";
+    assert svc.name(8) == "";
+}
+
+test "onze: anyInt() matches any argument" {
+    val repo = mockUserRepo();
+    val _s = when(repo.find(anyInt())).thenReturn("x");
+    val svc = UserService(repo: repo);
+    assert svc.name(1) == "x";
+    assert svc.name(42) == "x";
+}
+
+test "onze: the last matching stub wins" {
+    val repo = mockUserRepo();
+    val _a = when(repo.find(anyInt())).thenReturn("default");
+    val _b = when(repo.find(eq(7))).thenReturn("seven");
+    val svc = UserService(repo: repo);
+    assert svc.name(7) == "seven";
+    assert svc.name(1) == "default";
+}
+
+test "onze: verify atLeastOnce / times / never" {
+    val repo = mockUserRepo();
+    val _s = when(repo.find(eq(7))).thenReturn("ana");
+    val svc = UserService(repo: repo);
+    val _1 = svc.name(7);
+    val _2 = svc.list();
+
+    val _v1 = verify(repo, atLeastOnce()).all();
+    val _v2 = verify(repo, times(1)).find(eq(7));
+    val _v3 = verify(repo, never()).find(eq(99));
+}
+
+test "onze: thenThrow raises when the call is matched" {
+    val repo = mockUserRepo();
+    val _s = when(repo.find(eq(0))).thenThrow("not found");
+    val svc = UserService(repo: repo);
+    // A non-matching call still returns the default rather than raising.
+    assert svc.name(5) == "";
+}

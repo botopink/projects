@@ -13,9 +13,9 @@ val test = fn(r: Result) -> i32 {
 
 ----- ERROR
 error: unknown field
-  ┌─ :10:12
+  ┌─ :10:14
   │
 10 │     return r.kind;
-  │            ^
+  │              ^
 
   'Result' has no field 'kind'

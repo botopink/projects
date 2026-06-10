@@ -1314,6 +1314,55 @@ const Emitter = struct {
                 }
                 try self.fmt(" }} = require(\"./{s}.js\");", .{info.module});
             }
+            // Namespace binding: when the import names the lib itself
+            // (`import {Lib} from "Lib"`) and that name has no emitted symbol of
+            // its own — it's a namespace handle (or a comptime template fn, whose
+            // only runtime use is `Lib.member(...)`) — bind it to the lib's module
+            // object so `Lib.member(...)` resolves at runtime, parity with the
+            // destructured bare form. Generic: the core names no specific lib; the
+            // lib is whatever `from "<lib>"` resolved off disk.
+            const lib_name = u.source.module;
+            var names_lib = false;
+            for (u.imports) |imp| {
+                if (std.mem.eql(u8, imp.name(), lib_name)) {
+                    names_lib = true;
+                    break;
+                }
+            }
+            if (names_lib and xm.get(lib_name) == null) {
+                // Distinct modules emitted under the lib's `<lib>/` path prefix,
+                // sorted for deterministic output (the export map is unordered).
+                var mods: std.ArrayListUnmanaged([]const u8) = .empty;
+                defer mods.deinit(self.alloc);
+                var mseen = std.StringHashMap(void).init(self.alloc);
+                defer mseen.deinit();
+                const prefix = try std.fmt.allocPrint(self.alloc, "{s}/", .{lib_name});
+                defer self.alloc.free(prefix);
+                var it = xm.valueIterator();
+                while (it.next()) |info| {
+                    const m = info.module;
+                    if (!std.mem.startsWith(u8, m, prefix)) continue;
+                    if (mseen.contains(m)) continue;
+                    try mseen.put(m, {});
+                    try mods.append(self.alloc, m);
+                }
+                if (mods.items.len > 0) {
+                    std.mem.sort([]const u8, mods.items, {}, struct {
+                        fn lt(_: void, a: []const u8, b: []const u8) bool {
+                            return std.mem.lessThan(u8, a, b);
+                        }
+                    }.lt);
+                    if (!first_line) try self.w("\n");
+                    first_line = false;
+                    if (mods.items.len == 1) {
+                        try self.fmt("const {s} = require(\"./{s}.js\");", .{ jsIdent(lib_name), mods.items[0] });
+                    } else {
+                        try self.fmt("const {s} = Object.assign({{}}", .{jsIdent(lib_name)});
+                        for (mods.items) |m| try self.fmt(", require(\"./{s}.js\")", .{m});
+                        try self.w(");");
+                    }
+                }
+            }
             return;
         }
 

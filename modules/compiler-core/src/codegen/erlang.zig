@@ -35,6 +35,99 @@ fn isAssocMethod(m: ast.InterfaceMethod) bool {
     return m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self");
 }
 
+/// How the body of a `forEach` accumulator lambda computes the next value of
+/// the captured `acc`, recognized by `classifyFoldStmt`. Each variant carries
+/// the AST piece a `lists:foldl/3` fun body is built from (the accumulator is
+/// the fun's second parameter, named after `acc`).
+const FoldBodyKind = union(enum) {
+    /// `acc = expr;` → fun body is `expr`.
+    assign: *const ast.Expr,
+    /// `acc += expr;` → fun body is `(Acc + expr)`.
+    plus_assign: *const ast.Expr,
+    /// `acc.push(x);` (mutate-in-place on JS) → fun body is `(Acc ++ [x])`.
+    push: *const ast.Expr,
+    /// `if (c) { acc = t; } [else { acc = e; }]` → `case c of true -> t; _ -> e|Acc end`.
+    if_assign: struct { cond: *const ast.Expr, then_val: *const ast.Expr, else_val: ?*const ast.Expr },
+};
+
+/// A `var acc = init;` binding immediately followed by `recv.forEach({ p -> … })`
+/// whose lambda body only mutates `acc`. Erlang closures can't rebind a captured
+/// variable, so the pair is fused into a single
+/// `Acc = lists:foldl(fun(P, Acc) -> <body> end, Init, Recv)` — see
+/// `detectFoldFusion`/`emitFoldFusion`.
+const FoldFusion = struct {
+    acc_name: []const u8,
+    init: *const ast.Expr,
+    recv: *const ast.Expr,
+    param: []const u8,
+    body_kind: FoldBodyKind,
+};
+
+/// Recognize the single statement of a `forEach` accumulator lambda. Returns
+/// `null` for any shape that doesn't reduce to "compute the next `acc`".
+fn classifyFoldStmt(stmt: ast.Stmt, acc_name: []const u8) ?FoldBodyKind {
+    switch (stmt.expr) {
+        .binding => |b| switch (b.kind) {
+            .assign => |a| {
+                const tgt = switch (a.target) {
+                    .name => |n| n,
+                    else => return null,
+                };
+                if (!std.mem.eql(u8, tgt, acc_name)) return null;
+                return switch (a.op) {
+                    .assign => .{ .assign = a.value },
+                    .plusAssign => .{ .plus_assign = a.value },
+                };
+            },
+            else => return null,
+        },
+        .call => |c| switch (c.kind) {
+            .call => |cc| {
+                if (!std.mem.eql(u8, cc.callee, "push")) return null;
+                if (cc.args.len != 1) return null;
+                const recv = cc.receiver orelse return null;
+                const rn = identName(recv.*) orelse return null;
+                if (!std.mem.eql(u8, rn, acc_name)) return null;
+                return .{ .push = cc.args[0].value };
+            },
+            else => return null,
+        },
+        .branch => |br| switch (br.kind) {
+            .if_ => |if_node| {
+                if (if_node.binding != null) return null;
+                const then_val = singleAssignValue(if_node.then_, acc_name) orelse return null;
+                var else_val: ?*const ast.Expr = null;
+                if (if_node.else_) |else_body| {
+                    else_val = singleAssignValue(else_body, acc_name) orelse return null;
+                }
+                return .{ .if_assign = .{ .cond = if_node.cond, .then_val = then_val, .else_val = else_val } };
+            },
+            else => return null,
+        },
+        else => return null,
+    }
+}
+
+/// The RHS of a single `acc = expr;` statement body, or `null`.
+fn singleAssignValue(body: []const ast.Stmt, acc_name: []const u8) ?*const ast.Expr {
+    if (body.len != 1) return null;
+    return switch (classifyFoldStmt(body[0], acc_name) orelse return null) {
+        .assign => |e| e,
+        else => null,
+    };
+}
+
+/// The bare identifier name of `expr`, or `null` if it isn't a plain identifier.
+fn identName(expr: ast.Expr) ?[]const u8 {
+    return switch (expr) {
+        .identifier => |id| switch (id.kind) {
+            .ident => |n| n,
+            else => null,
+        },
+        else => null,
+    };
+}
+
 fn isZeroArgMainCallExpr(expr: ast.Expr) bool {
     return switch (expr) {
         .call => |c| switch (c.kind) {
@@ -837,9 +930,136 @@ const Emitter = struct {
                 }
             }
 
+            // `var acc = init;` + `recv.forEach({ p -> <mutate acc> })`: fuse
+            // into a single `lists:foldl` (Erlang closures can't rebind a
+            // captured var). Consumes both statements.
+            if (!is_last) {
+                if (this.detectFoldFusion(body, i)) |ff| {
+                    try this.writeIndent();
+                    try this.emitFoldFusion(ff);
+                    const fused_last = (i + 1 == body.len - 1);
+                    if (!fused_last) try this.w(",\n");
+                    i += 1; // also consume the forEach statement
+                    continue;
+                }
+            }
+
             try this.writeIndent();
             try this.emitBodyStmt(stmt, is_last);
             if (!is_last) try this.w(",\n");
+        }
+    }
+
+    /// Match `var acc = init;` at `body[i]` immediately followed by
+    /// `recv.forEach({ p -> … })` at `body[i+1]` whose lambda body only mutates
+    /// `acc`. Returns the fusion plan, or `null` if the shape doesn't match.
+    fn detectFoldFusion(this: *Emitter, body: []const ast.Stmt, i: usize) ?FoldFusion {
+        _ = this;
+        if (i + 1 >= body.len) return null;
+
+        const bind = switch (body[i].expr) {
+            .binding => |b| switch (b.kind) {
+                .localBind => |lb| lb,
+                else => return null,
+            },
+            else => return null,
+        };
+        if (!bind.mutable) return null;
+
+        const cc = switch (body[i + 1].expr) {
+            .call => |c| switch (c.kind) {
+                .call => |call| call,
+                else => return null,
+            },
+            else => return null,
+        };
+        if (cc.receiver == null) return null;
+        if (!std.mem.eql(u8, cc.callee, "forEach")) return null;
+
+        // The action lambda may arrive as a parenthesized arg (`forEach({…})`)
+        // or as a trailing block (`forEach { … }`).
+        var lam_params: []const []const u8 = undefined;
+        var lam_body: []const ast.Stmt = undefined;
+        if (cc.args.len == 1 and cc.trailing.len == 0) {
+            switch (cc.args[0].value.*) {
+                .function => |fe| {
+                    lam_params = fe.kind.params;
+                    lam_body = fe.kind.body;
+                },
+                else => return null,
+            }
+        } else if (cc.args.len == 0 and cc.trailing.len == 1) {
+            lam_params = cc.trailing[0].params;
+            lam_body = cc.trailing[0].body;
+        } else return null;
+        if (lam_params.len != 1) return null;
+        if (lam_body.len != 1) return null;
+
+        const bk = classifyFoldStmt(lam_body[0], bind.name) orelse return null;
+        return .{
+            .acc_name = bind.name,
+            .init = bind.value,
+            .recv = cc.receiver.?,
+            .param = lam_params[0],
+            .body_kind = bk,
+        };
+    }
+
+    /// Emit `Acc = lists:foldl(fun(P, Acc) -> <body> end, Init, Recv)`. The
+    /// accumulator reuses its source name as the fun's second parameter so the
+    /// body's reads of `acc` resolve to the per-iteration value.
+    fn emitFoldFusion(this: *Emitter, ff: FoldFusion) anyerror!void {
+        const acc_var = try erlangVar(this.alloc, ff.acc_name);
+        defer this.alloc.free(acc_var);
+        const p_var = try erlangVar(this.alloc, ff.param);
+        defer this.alloc.free(p_var);
+        this.addLocal(ff.acc_name);
+        this.addLocal(ff.param);
+        try this.fmt("{s} = lists:foldl(fun({s}, {s}) ->\n", .{ acc_var, p_var, acc_var });
+        const saved = this.indent;
+        this.indent = saved + 1;
+        try this.writeIndent();
+        try this.emitFoldBody(ff.body_kind, acc_var);
+        this.indent = saved;
+        try this.w("\n");
+        try this.writeIndent();
+        try this.w("end, ");
+        try this.emitExpr(ff.init.*);
+        try this.w(", ");
+        try this.emitExpr(ff.recv.*);
+        try this.w(")");
+    }
+
+    fn emitFoldBody(this: *Emitter, bk: FoldBodyKind, acc_var: []const u8) anyerror!void {
+        switch (bk) {
+            .assign => |e| try this.emitExpr(e.*),
+            .plus_assign => |e| {
+                try this.fmt("({s} + ", .{acc_var});
+                try this.emitExpr(e.*);
+                try this.w(")");
+            },
+            .push => |e| {
+                try this.fmt("({s} ++ [", .{acc_var});
+                try this.emitExpr(e.*);
+                try this.w("])");
+            },
+            .if_assign => |ia| {
+                try this.w("case ");
+                try this.emitExpr(ia.cond.*);
+                try this.w(" of\n");
+                this.indent += 1;
+                try this.writeIndent();
+                try this.w("true -> ");
+                try this.emitExpr(ia.then_val.*);
+                try this.w(";\n");
+                try this.writeIndent();
+                try this.w("_ -> ");
+                if (ia.else_val) |ev| try this.emitExpr(ev.*) else try this.w(acc_var);
+                this.indent -= 1;
+                try this.w("\n");
+                try this.writeIndent();
+                try this.w("end");
+            },
         }
     }
 
@@ -2183,13 +2403,16 @@ const Emitter = struct {
                     return;
                 }
                 if (eq(u8, callee, "join")) {
-                    // Concatenate a list of (string) elements, interspersing the
-                    // separator, into a single binary.
+                    // Concatenate the elements, interspersing the separator, into
+                    // a single binary. Each element is first rendered to text to
+                    // match JS (`[10,20].join(",") == "10,20"`) — a bare integer
+                    // in an iolist is a byte, not its decimal form, so numbers
+                    // must go through `integer_to_binary`/`io_lib:format`.
                     try this.w("iolist_to_binary(lists:join(");
                     try this.emitArg(cc, 0);
-                    try this.w(", ");
+                    try this.w(", lists:map(fun(__E) -> if is_binary(__E) -> __E; is_integer(__E) -> integer_to_binary(__E); is_list(__E) -> __E; true -> iolist_to_binary(io_lib:format(\"~p\", [__E])) end end, ");
                     try this.emitExpr(recv.*);
-                    try this.w("))");
+                    try this.w(")))");
                     return;
                 }
                 if (eq(u8, callee, "at")) {

@@ -179,12 +179,12 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   reject its input: the `decorator_eval`/`template_eval` preludes define
   `__compilerError` as a `__failRaw` throw, so it surfaces as the same scoped
   diagnostic as `decl.fail`, but needs no `@Decl` handle.
-- `validateDecorators` (pass 3, before `validateProgram`) walks every
-  declaration's `annotations` — record/struct/enum/fn/interface + their methods —
-  and for each `#[name(args)]` whose `name` is a recognized decorator,
-  `checkDecoratorArgs` type-checks the trailing args: arity (honoring trailing
-  defaults) + a per-argument lexical kind check (`string`/numeric/`bool`/enum
-  member). Unknown markers stay lenient (a lib may simply not be loaded).
+- `validateDecorators` walks every declaration's `annotations` —
+  record/struct/enum/fn/interface + their methods — and for each `#[name(args)]`
+  whose `name` is a recognized decorator, `checkDecoratorArgs` type-checks the
+  trailing args: arity (honoring trailing defaults) + a per-argument lexical kind
+  check (`string`/numeric/`bool`/enum member). Unknown markers stay lenient (a lib
+  may simply not be loaded).
 - **P2 invocation:** `invokeDecorators` (right after `validateDecorators`) runs
   each body-carrying decorator over the declaration it annotates. `buildHandleJson`
   serializes the decl into a `@Decl` handle (kind/name/fields/methods/returnType/
@@ -195,6 +195,22 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   the full compile pipeline (`env.templateEval` set); tooling/LSP paths skip it.
   Diagnostic locs are coarse for now (message carries the detail; precise spans
   are a follow-up).
+- **Order — decorators run BEFORE body inference.** `validateDecorators` +
+  `invokeDecorators` fire in `inferProgram(Typed)` right after `registerFnSignatures`
+  (the handles read only the AST, so no body inference is needed first), then if
+  `env.contributions` is non-empty the pass returns early so `analyzeSource` can
+  splice + re-analyze. This is what lets an `@emit`ed decl be visible to a body
+  that references it — a `test {}` calling a generated `mockXxx()`, or a `fn` using
+  the wiring — under **every** entry, including `botopink test`. (Earlier they ran
+  in pass 3, after bodies; a body referencing a generated decl failed as unbound,
+  which silently blocked `@emit` in test mode.)
+- **Interface-level markers** reflect with `DeclKind.Interface` (added to the
+  reflection enum in `decl_reflection_src` + the `decorator_eval` prelude +
+  `builtins.d.bp`): `invokeDecorators` builds an `Interface` handle (the interface's
+  fields + method signatures) and runs its annotations, alongside per-method
+  reflection. So `#[mock] interface Repo { … }` runs over the interface. (Records
+  reflect as `Record`, so a `#[service]` that rejects non-records still rejects an
+  interface correctly.)
 - Method-site **and** field-site decorators now parse on record/struct bodies
   (`parseRecordBody`/`parseStructBody` read member-level annotations before a `fn`
   or a field; `RecordField`/`StructField` carry an `annotations` slice). So

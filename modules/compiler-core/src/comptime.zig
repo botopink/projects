@@ -231,7 +231,7 @@ pub const std_pkg_modules = @import("std_prelude").pkg_modules;
 /// object `decorator_eval.zig` binds, so a body's `decl.fields`/`decl.kind`/
 /// `decl.fail(…)` type-check against the same data the runtime provides.
 const decl_reflection_src =
-    \\pub enum DeclKind { Record, Struct, Enum, Fn, Method, Field }
+    \\pub enum DeclKind { Record, Struct, Enum, Interface, Fn, Method, Field }
     \\pub struct Span { val start: i32, val end: i32, val line: i32 }
     \\pub struct Annotation { val name: string, val args: string[] }
     \\pub struct Param { val name: string, val typeName: string }

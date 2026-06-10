@@ -322,3 +322,34 @@ pub fn assertJsNotContains(allocator: Allocator, src: []const u8, needles: []con
         }
     }
 }
+
+/// Multi-module variant of `assertJsContains`/`assertJsNotContains`: generates
+/// every module (last one is the consumer `main`) and asserts the consumer's JS
+/// both contains every `present` needle and contains none of the `absent` ones.
+pub fn assertConsumerJs(
+    allocator: Allocator,
+    modules: []const Module,
+    present: []const []const u8,
+    absent: []const []const u8,
+) !void {
+    const io = std.testing.io;
+    var outputs = try codegen.generate(allocator, modules, io, configs[0]);
+    defer {
+        for (outputs.items) |*o| o.result.deinit(allocator);
+        outputs.deinit(allocator);
+    }
+    try std.testing.expect(outputs.items.len > 0);
+    const js = outputs.items[outputs.items.len - 1].result.js;
+    for (present) |needle| {
+        if (std.mem.indexOf(u8, js, needle) == null) {
+            std.debug.print("\n=== consumer JS ===\n{s}\n=== missing: {s} ===\n", .{ js, needle });
+            return error.NeedleNotFound;
+        }
+    }
+    for (absent) |needle| {
+        if (std.mem.indexOf(u8, js, needle) != null) {
+            std.debug.print("\n=== consumer JS ===\n{s}\n=== unexpected: {s} ===\n", .{ js, needle });
+            return error.UnexpectedNeedle;
+        }
+    }
+}
