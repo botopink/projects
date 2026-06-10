@@ -13,10 +13,15 @@
 ## A1b — mirror the method lowering on beam + wasm
 - [ ] Port the instance/associated-method lowering (Array/Bool/numeric tower/String +
       `Pair.of`/`Function.compose`) from `erlang.zig` to `beam_asm.zig` and `wat.zig`
-      (they still emit the old value-receiver form for primitives).
-- [ ] Extend `std_erlang.sh` parity (`dict`/`queue`/`sets`/`erika`) — close the blockers:
-      structural `==`/`!=` on tuples/maps, `?T` option chaining through method results,
-      erika `case … of` codegen + LINQ inference gaps.
+      (they still emit the old value-receiver form for primitives). NB: the
+      `forEach`-accumulator → `lists:foldl` fusion is erlang-only so far; beam/wasm
+      need the same idiom (their closures can't rebind captured vars either).
+- [x] **`std_erlang.sh` green for `dict`/`queue`/`sets`** (31/31, was 9/31). Two fixes:
+      (1) parser per-link loc collision (`self.pairs.length` → `length(length(Self))`),
+      committed in `566e927`; (2) `forEach`-accumulator fold fusion + `join` element
+      stringification, committed in `ec7d895`. `erika`/LINQ still blocked (`?T` option
+      chaining through chained method results + `case … of` codegen + LINQ inference).
+      Note: erlang `==`/`!=` is `=:=`/`=/=`, already structural on tuples/maps/lists.
 
 ## A2 (remainder) — `@[external]` associated fns
 - [ ] `Array.range`/`Array.repeat` + the other `@[external]` associated fns lower on
@@ -34,8 +39,9 @@
 ## Done gate
 - [ ] beam map/filter/len chain + `Array.range` run (parity with node/erlang).
 - [ ] wasm `?.` guards; literal receivers codegen on every backend.
-- [ ] `std_erlang.sh` green for order/dict/queue/sets; wasm runner executes a module.
-- [ ] `codegen/AGENTS.md` + `comptime/AGENTS.md` updated; `zig build && zig build test` green.
+- [x] `std_erlang.sh` green for order/dict/queue/sets (31/31). wasm runner still pending.
+- [~] `codegen/AGENTS.md` updated (erlang fold-fusion + join). `comptime/AGENTS.md`
+      pending (no infer change yet). `zig build && zig build test` green.
 
 ## Notes
 - Backend-parity only — `commonJS`/`erlang` are the reference. Record limits (e.g. wasm
