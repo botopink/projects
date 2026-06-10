@@ -1,11 +1,13 @@
 # v0.beta.8 — finish the frameworks
 
-> A set with **one focus**: complete what v0.beta.7 started. The lib-agnostic core
-> mechanism landed (annotation-processors + the generic loader); now close the last
-> generic gap that blocks bare-import call forms, then finish the two frameworks
-> (`rakun` wiring, jhonstart's `html` DSL) and the non-JS backend parity — all
-> lib-side / std-only, **zero new framework knowledge in the core**. See
-> [`../AGENTS.md`](../AGENTS.md) for the rules. Live progress → [`status.md`](status.md).
+> A set with **one focus**: complete what v0.beta.7 started. The core now offers
+> **two generic ways a lib extends the language** — embedded sub-language template
+> DSLs (`html """…"""`, `erika "…"`) and annotation processors (`@Decl` decorators:
+> `rakun`, `onze`) — plus the generic loader. This set closes the last generic gap
+> that blocks bare-imported sub-languages cross-module, then ships the client libs on
+> both mechanisms and the non-JS backend parity — all lib-side / std-only, **zero new
+> framework knowledge in the core**. See [`../AGENTS.md`](../AGENTS.md) for the rules.
+> Live progress → [`status.md`](status.md).
 
 ## Context — where v0.beta.7 left off
 
@@ -35,71 +37,91 @@ ecosystem lib with zero core changes.
 - **Enforced gate:** `grep -riE "rakun|jhonstart|erika" modules/compiler-core/src`
   returns nothing (std exempt) — already shipped as a test in v0.beta.7.
 
-## Features (v0.beta.8)
+## The shape of the set — two generic mechanisms, their client libs
 
-Six specs. Only **what can be touched in parallel is a separate spec**: the one
-generic core gap (`generic-loader-binding`) is the keystone the `html` DSL and the
-cross-module `erika "…"` form wait on; `rakun`, `stdlib-backends-parity`, and the
-new `onze` test lib are independent.
+v0.beta.7 left the core with **two generic ways a lib extends the language**, and
+every spec here is either one of those mechanisms' enabler or a client of it:
 
-| Spec | Slug | Depends on |
-|---|---|---|
-| [generic-loader-binding — `from "<lib>"` binds bare values + template fns](specs/generic-loader-binding.md) | `generic-loader-binding` | nothing |
-| [jhonstart-html — the `html """…"""` DSL → Element tree](specs/jhonstart-html.md) | `jhonstart-html` | [`generic-loader-binding`](specs/generic-loader-binding.md) |
-| [erika — finish the port: runnable example + cross-module `erika "…"`](specs/erika.md) | `erika` | [`generic-loader-binding`](specs/generic-loader-binding.md) |
-| [rakun — IoC container + router + bootstrap (F2·F4·F5)](specs/rakun.md) | `rakun` | nothing |
-| [onze — a Mockito-style mocking + verification lib for tests](specs/onze.md) | `onze` | nothing |
-| [stdlib-backends-parity — beam/wasm lowering + dispatch + literal-receiver codegen](specs/stdlib-backends-parity.md) | `stdlib-backends-parity` | nothing |
+- **Embedded sub-language template DSLs** — a template fn
+  `fn(comptime q: @Expr<string>) -> @Expr<T>` whose string argument is a *mini
+  language* (markup, SQL) parsed at comptime and expanded into botopink, with its
+  references resolved in the **caller's scope**. `html """…"""` (markup → Element)
+  and `erika "…"` (SQL → Query) are **the same mechanism**, sibling DSLs.
+- **Annotation processors** — a decorator fn `fn(comptime decl: @Decl, …)` that
+  reflects the declaration it annotates and contributes generated code via `@emit`.
+  `rakun` (DI/router/bootstrap) and `onze` (mocking) are **the same mechanism**,
+  sibling libs.
 
-## DAG (one keystone, two client edges)
+Both mechanisms need the loader to bind a **bare imported** template-fn / decorator
+cross-module — the keystone. Backend parity is the one orthogonal, core-touching
+strand. So the six specs group into **keystone → two DSL clients · two
+annotation-processor libs · backend**:
+
+| Group | Spec | Slug | Depends on |
+|---|---|---|---|
+| **keystone** | [generic-loader-binding — bind bare template fns + emit the disk-lib namespace](specs/generic-loader-binding.md) | `generic-loader-binding` | nothing |
+| **sub-language DSLs** | [jhonstart-html — `html """…"""` markup → Element tree](specs/jhonstart-html.md) | `jhonstart-html` | [`generic-loader-binding`](specs/generic-loader-binding.md) |
+| **sub-language DSLs** | [erika — `erika "…"` SQL DSL + runnable example](specs/erika.md) | `erika` | [`generic-loader-binding`](specs/generic-loader-binding.md) |
+| **annotation-processor libs** | [rakun — IoC container + router + bootstrap (F2·F4·F5)](specs/rakun.md) | `rakun` | nothing |
+| **annotation-processor libs** | [onze — Mockito-style mocking + verification](specs/onze.md) | `onze` | nothing |
+| **backend** | [stdlib-backends-parity — beam/wasm lowering + dispatch + literal-receiver codegen](specs/stdlib-backends-parity.md) | `stdlib-backends-parity` | nothing |
+
+> One spec per **parallel-touchable unit** (Eric's granularity rule): `html` and
+> `erika` share a *mechanism* but live in disjoint libs (`libs/jhonstart` vs
+> `libs/erika`), so they stay separate specs — mutually parallel once the keystone
+> lands. Same for `rakun`/`onze`.
+
+## DAG — keystone feeds the two sub-language DSLs; everything else is parallel
 
 ```text
-generic-loader-binding  ──(binds bare `html`)──►  jhonstart-html
-   (compiler-core: import resolver binds bare    │  (libs/jhonstart/html.bp:
-    values/fns/template-fns from the disk loader,│   html """…""" → Element tree,
-    std-exempt — closes erika "…" + bare html)   │   native-JS-only parser)
-                                                 └─►  erika
-                                                     (examples/erika-linq + the
-                                                      cross-module erika "…" form)
+                          ┌─►  jhonstart-html   (html """…""" markup → Element tree)
+generic-loader-binding  ──┤      embedded sub-language DSLs — same template-fn
+  (binds the bare         └─►  erika            mechanism, caller-scope resolution
+   template fn so               (erika "…" SQL → Query; + runnable example)
+   `foo "…"` works
+   cross-module; emits     · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+   the disk-lib            rakun   (DI graph + router + Rakun.run; @Decl/@emit)
+   namespace object)       onze    (mock(T)/when/verify; @Decl/@emit + host cells)
+                              └ annotation-processor libs — mechanism already in feat
 
-rakun                   (libs/rakun/*.bp + libs/server: DI graph + router + Rakun.run
-                         over a real HTTP backing — all lib-side @emit wiring; F3 done)
-
-onze                    (libs/onze/*.bp: Mockito-style mock(T)/when/verify — mock
-                         synthesis via @Decl/@emit + host-cell call recorder; pure client)
-
-stdlib-backends-parity  (independent — beam/wasm method lowering + @[external] assoc
-                         fns + literal-receiver codegen + ?./snake→camel/wasm runner)
+                           stdlib-backends-parity   (beam/wasm + Part B; core/std)
 ```
 
-`generic-loader-binding` is the keystone: it unblocks jhonstart's bare `html` import
-**and** the cross-module `erika "…"` form (both bare template-fn bindings). `rakun`
-and `onze` build on the `@Decl`/`@emit` mechanism already in `feat`;
-`stdlib-backends-parity` is pure backend work. All strands but the two client edges
-are mutually parallel.
+The only edges are `generic-loader-binding → {jhonstart-html, erika}` — the two
+embedded sub-language DSLs both need their bare `foo "…"` template fn bound
+cross-module. The annotation-processor libs (`rakun`, `onze`) build on the
+`@Decl`/`@emit` mechanism already in `feat`; `stdlib-backends-parity` is core/std
+backend work. Everything but those two edges runs in parallel.
 
 ## Scope boundaries
 
-- **generic-loader-binding** is generic core work (import resolver / template-fn
-  rehydration), std-exempt, no lib name. It is the keystone — land it first.
-- **jhonstart-html** is lib-side only: promote `html.d.bp` → `html.bp` with the
-  `html """…""" -> @Expr<Element>` body (string authoring surface, Element output),
-  native-JS-only comptime parser. No core code; `<Component/>` lookup is a future
-  layer.
-- **erika** finishes the v0.beta.7 port: the lib itself is done (~30 in-file tests),
-  but it ships **no runnable example** and the cross-module `erika "…"` form is
-  unbound. This adds `examples/erika-linq/` (a real `from "erika"` consumer) and the
-  cross-module SQL form once the keystone binds bare `erika`. Example/docs only, no
-  new operators.
-- **rakun** writes the F2/F4/F5 wiring in `.bp` via `@emit` (component scan + DI
-  graph + cycle diagnostic + router + `Rakun.run`) over a real minimal `libs/server`
-  (node first, then erlang). No new core code.
-- **onze** is a new pure-`.bp` lib: `mock(T)`/`when`/`verify` built on `@Decl`
-  reflection + `@emit` (mock synthesis) and `#[@external]` host cells (the stub
-  table + call log). The proof the mechanism handles mocking, not just DI. No core
-  code; tests live in `libs/onze/*.bp`.
-- **stdlib-backends-parity** is the v0.beta.7 remainder: A1b beam/wasm lowering,
-  A2-rest `@[external]` assoc fns, Part B (literal-receiver codegen, snake→camel,
-  beam std loading, `?.` beam/wasm, wasm test runner). Stdlib coupling allowed.
+**Keystone**
+- **generic-loader-binding** — generic core work (import resolver / template-fn
+  rehydration + disk-lib namespace codegen), std-exempt, no lib name. Land it first:
+  it is what makes a bare-imported `foo "…"` sub-language work cross-module.
+
+**Sub-language DSLs** (template fns; built on expr-templates + the keystone)
+- **jhonstart-html** — promote `html.d.bp` → `html.bp`:
+  `html """…""" -> @Expr<Element>` (triple-quoted markup authoring surface, Element
+  output), lowercase tags resolved to builders **in the caller's scope**, native-JS
+  -only comptime parser. Lib-side only; `<Component/>` lookup is a future layer.
+- **erika** — finish the port to the **same bar**: `erika "…"` / `erika """…"""`
+  SQL sub-language resolving its collection in the caller's scope, plus the missing
+  runnable `examples/erika-linq/`. The lib (Query<T> + the SQL template) is done;
+  example/docs + the cross-module binding only, no new operators.
+
+**Annotation-processor libs** (decorator fns; built on `@Decl`/`@emit`, in `feat`)
+- **rakun** — the F2/F4/F5 wiring in `.bp` via `@emit` (component scan + DI graph +
+  cycle diagnostic + router + `Rakun.run`) over a real minimal `libs/server` (node
+  first, then erlang). No new core code.
+- **onze** — new pure-`.bp` lib: `mock(T)`/`when`/`verify` via `@Decl` reflection +
+  `@emit` (mock synthesis) and `#[@external]` host cells (stub table + call log).
+  Proof the mechanism handles mocking, not just DI.
+
+**Backend** (the one core/std-touching strand)
+- **stdlib-backends-parity** — v0.beta.7 remainder: A1b beam/wasm lowering, A2-rest
+  `@[external]` assoc fns, Part B (literal-receiver codegen, snake→camel, beam std
+  loading, `?.` beam/wasm, wasm test runner). Stdlib coupling allowed.
+
 - **Library tests live in the library's own `.bp` files** (`botopink test`), never
   in the compiler's Zig suites.

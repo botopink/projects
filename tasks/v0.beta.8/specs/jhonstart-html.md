@@ -130,6 +130,12 @@ gate     ---- grep -riE "jhonstart" modules/compiler-core/src returns nothing
 
 ## Notes
 
+- **Sibling of `erika "…"`.** `html """…"""` (markup) and [`erika`](erika.md)'s
+  `erika "…"` (SQL) are the **same mechanism** — a `fn(comptime q: @Expr<string>) ->
+  @Expr<T>` template fn whose string is a mini-language expanded at comptime, with
+  references resolved in the caller's scope (html's builders / erika's collection).
+  Both share the single keystone edge to
+  [`generic-loader-binding`](generic-loader-binding.md). Build them to the same bar.
 - **Authoring = `"""…"""` string; output = Element tree.** The triple-quoted
   string is the input surface (Eric's correction, 2026-06-10); `html` returns
   `@Expr<Element>`, expanding markup into the `element.bp` builders. This is the
