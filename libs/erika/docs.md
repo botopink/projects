@@ -71,17 +71,20 @@ select <* | f1[, f2…]> from <Name> [where <cond>] [order by <field> [asc|desc]
 The referenced collection is resolved against the caller's top-level scope. The
 expansion emits **unqualified** fluent source
 (`of(Name).where(…).orderBy(…).select(…).toArray()`), so it resolves wherever
-`of` / the collection are in scope.
+`of` / the collection are in scope. The query may be written single-line
+(`erika "…"`) or triple-quoted multi-line (`erika """ … """`) — newlines and tabs
+are normalized to spaces before tokenizing, so the two forms parse identically.
 
 ## Known gaps
 
-- **`erika "…"` after `import {erika} from "erika"` does not resolve yet**
-  (`unbound variable 'erika'`). This is a *generic loader* limit — lib imports
-  bind the namespace (`erika.of(...)` works) but not bare values / same-named
-  template fns. The fluent API is fully usable from user projects today; the
-  string form is exercised by erika's own in-file tests. See
-  [`AGENTS.md`](AGENTS.md) for the precise diagnosis.
 - **Interpolated queries** (`erika "… where age >= ${min}"`) — not built yet.
+- **`erika "…"` resolves only `val` collections, not `var`** — the template reads
+  the caller's comptime scope snapshot, which captures immutable `val` bindings
+  only. The fluent `of(listas)` / `erika.of(listas)` form queries any `var`/`val`.
+
+> Cross-module `erika "…"` after `import {erika} from "erika"` now resolves — the
+> generic-loader-binding keystone (v0.beta.8) binds the bare imported template fn.
+> A runnable consumer lives at [`examples/erika-linq/`](../../examples/erika-linq/).
 
 ## See also
 

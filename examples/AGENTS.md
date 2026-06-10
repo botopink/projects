@@ -13,8 +13,9 @@ and do not affect `zig build` / `zig build test`.
 examples/
 ├── AGENTS.md          ← you are here
 ├── hello.bp           ← smallest runnable program (prints a line)
-├── erika-linq/        ← generic loader showcase (WORKS): `import {of} from "erika"`
-│   └── src/main.bp        ← bare value/fn form — `of(list).where(…).toArray().join(…)`
+├── erika-linq/        ← generic loader showcase (WORKS): `import {of, erika} from "erika"`
+│   └── src/main.bp        ← fluent `of(list).where(…).toArray().join(…)` + the SQL
+│                            sub-language `erika "…"` / `erika """…"""`, cross-module
 ├── generic-loader-binding/ ← generic loader showcase (WORKS): the three `from "<lib>"` forms
 │   └── src/main.bp        ← bare value (`of`), bare template fn (`erika "…"`), namespace (`erika.of(…)`)
 ├── jonhstar/          ← expr-templates showcase: comptime html template lib

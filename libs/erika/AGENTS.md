@@ -29,7 +29,7 @@ erika/
 ├── botopink.json      ← package metadata (files: ["erika.bp"])
 └── src/
     └── erika.bp       ← the whole lib: `record Query<T>` + `Grouping<K,V>` +
-                         constructors + the `erika "…"` template fn + 24 tests
+                         constructors + the `erika "…"` template fn + 25 tests
 ```
 
 ## Design at a glance
@@ -47,6 +47,9 @@ erika/
   collection against the caller's scope, and expands to unqualified fluent source
   via `q.build(...)`. Grammar:
   `select <* | f1[, f2…]> from <Name> [where <cond>] [order by <field> [asc|desc]]`.
+  The single-line `erika "…"` and triple-quoted multi-line `erika """ … """` forms
+  are equivalent — the tokenizer normalizes newlines/tabs to spaces before
+  splitting, so layout is free (the `html """…"""` sibling).
 
 ## Conventions
 
@@ -56,8 +59,10 @@ erika/
   loader (`compiler-cli/src/cli/libs.zig`) resolves `dependencies: ["erika"]` to
   `libs/erika/src/erika.bp` as the `erika/erika` package module. No per-lib
   registry, no embed.
-- **Tests live here.** 21 `test { … }` blocks inside `src/erika.bp`, run by
-  `botopink test` from this directory — not in the compiler's Zig suites.
+- **Tests live here.** 25 `test { … }` blocks inside `src/erika.bp`, run by
+  `botopink test` from this directory — not in the compiler's Zig suites. The
+  cross-module consumer story lives in [`examples/erika-linq/`](../../examples/erika-linq/)
+  (`botopink test` green there too).
 - Keep this file, `docs.md`, `examples.md`, and the spec in sync in the same
   change that touches the lib.
 
@@ -70,14 +75,17 @@ So the SQL→botopink translation may use only ops that lower to **native JS**:
 It must **not** use host-helper-backed ops — notably optional `.at(i).unwrapOr(…)`
 is **undefined** in the eval script (it silently fails the expansion, surfacing as
 a terse "parse error"). That is why the field list is built with `append` + `map`
-+ `join` and never `fields.at(0).unwrapOr(…)`.
++ `join` and never `fields.at(0).unwrapOr(…)`, and why the multi-line form is
+flattened with `split("\n").join(" ")` (native-JS ops) rather than a regex/trim
+helper — the triple-quoted query's newlines/tabs are normalized to spaces before
+tokenizing so `erika """ … """` and `erika "…"` parse identically.
 
 A second, language-wide quirk the body works around: a top-level binary boolean
 **directly inside an `if (…)` condition fails to parse** (e.g. `if (a && b)`).
 Extract the compound to a `val` first, then `if (theVal)` — the established style
 throughout `erika.bp`.
 
-## Status (v0.beta.7)
+## Status (v0.beta.8)
 
 - **Fluent layer** — complete; all ops covered by tests.
 - **`selectMany` (flatMap)** — **landed.** Selector typed `fn(item: T) -> Array<U>`;
@@ -87,24 +95,18 @@ throughout `erika.bp`.
   anonymous record types (gap **G2**, landed in `feat`). A single field projects
   the bare column; `*` returns whole rows. Commas may be attached (`a, b`) or
   spaced (`a , b`) — they are normalized to spaces before tokenizing.
+- **Cross-module `erika "…"` (bare import)** — **landed (v0.beta.8).** A consumer's
+  `import {erika} from "erika"` now binds the bare template fn into value scope, so
+  `erika "select …"` (and the triple-quoted multi-line form) expand in a consumer
+  module, resolving the collection in the caller's comptime scope — the
+  `generic-loader-binding` keystone bound the lib module's exports (and same-named
+  template fns) into the importer. Exercised by
+  [`examples/erika-linq/`](../../examples/erika-linq/) and
+  [`examples/generic-loader-binding/`](../../examples/generic-loader-binding/).
+  Still zero core surface here: the binding is generic loader work, not erika-aware.
 
 ### Recorded gaps
 
-- **`erika "…"` after `import {erika} from "erika"` — still `unbound`.** This is
-  the v0.beta.6 limit, and it is **not** erika-specific: the generic `from "<lib>"`
-  loader binds the lib **namespace** (so `erika.of(...)` and any `lib.member`
-  works) but does **not** bind bare imported values into value scope — confirmed
-  with a throwaway probe lib where even a plain `import {plain} from "lib"` leaves
-  bare `plain` unbound, and a non-colliding template fn `qq "…"` is unbound too.
-  Paren-free template application (`erika "…"`) resolves its callee as a bare
-  value, so it cannot resolve until the loader gains **generic bare-value /
-  template-fn import binding** (bind a lib module's exports — and same-named
-  template fns into `templateFns`/`exprParams` — into the importer's value scope).
-  That is a generic compiler-core / loader add; it is **out of scope here** (the
-  gate forbids erika in core, and this task adds no core code). The fluent API
-  (`erika.of(...)`) is fully usable from user projects today; the `erika "…"` form
-  is exercised by this lib's own in-file tests, where the template fn is a directly
-  in-scope identifier.
 - **`erika "…"` resolves only `val` collections, not `var`.** The template reads
   the caller's *comptime* scope snapshot, which captures immutable `val` bindings
   only, so `erika "select … from listas"` where `listas` is a `var` does not
