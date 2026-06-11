@@ -1,70 +1,34 @@
-# TODO — rakun  (annotation-processor lib · Wave 1)
+# TODO — mutual-recursion  (inference / regression · Wave 1)
 
-> Task branch `task/rakun-di` · spec
-> [`tasks/v0.beta.8/specs/rakun.md`](../../tasks/v0.beta.8/specs/rakun.md).
+> Task branch `task/mutual-recursion` · spec
+> [`tasks/v0.beta.9/specs/mutual-recursion.md`](tasks/v0.beta.9/specs/mutual-recursion.md).
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
-> **Depends on: nothing** — the `@Decl`/`@emit` mechanism + F3 placement bodies are
-> in `feat`. Start now. Sibling of `onze` (same mechanism, disjoint lib).
->
-> **HARD RULE.** Zero rakun knowledge in `compiler-core`. All behaviour is
-> `libs/rakun/*.bp` decorator bodies via `@emit`. Port *behaviour* from the preserved
-> `task/rakun` reference (`feb96f0`), never the Zig.
+> **Depends on: nothing.** **F0 already resolved** — this spec only closes the regression gap.
 
-> **Mechanism reality (verified 2026-06-10).** Each decorator runs in an isolated
-> node process — there is NO shared comptime registry across decorators, no
-> top-level mutable `var`, and hand-code can't reference emitted symbols. So the
-> spec's "shared comptime registry" / "topo-sorted singleton `val`s" / "comptime
-> cycle diagnostic" are realized differently: a **host runtime** (`runtime.mjs`
-> behind `#[@external]`) holds the scan/cycle/router state, and each decorator
-> `@emit`s self-registering code + a lazy factory. Equivalent behaviour; the
-> *comptime* cycle diagnostic is the one genuine casualty (runtime instead).
->
-> **Generic core fixes this needed (landed):** cross-module host-`#[@external]`
-> lowering + import dedup (`14cd527`); `@Decl` field-annotation reflection +
-> `test/` modules excluded from the test aggregator (this commit).
+> Verified 2026-06-10 on `feat`: forward refs + true mutual recursion (`isEven ⇄ isOdd`)
+> type-check on commonJS/erlang/beam/wasm and run on commonJS; a genuine unbound name
+> still errors. The binding pre-pass already landed (with the jhonstart renderer work).
 
-## F2 — IoC container (the wiring, via `@emit`)
-- [x] Component scan: each component decorator `@emit`s `rkScan("Name")` at module
-      load → host scan registry (no shared comptime state needed).
-- [x] DI graph: each component `@emit`s `__rkMake_<Type>()` injecting every field
-      by its own factory (lazy; topo-order is implicit in the call graph, not `val`
-      order). Tested via dispatch building a controller→service→repo chain.
-- [x] Cycle detection (A↔B): `rkEnter`/`rkDone` guard raises at construction.
-      NOTE: **runtime**, not comptime (per-decorator has no whole-graph view).
-- [ ] Singleton scope (currently fresh-per-resolve) + `#[configuration]`/`#[bean]`
-      factories + `#[value("key")]` property injection. (`@Decl` now reflects field
-      annotations, so `#[value]` detection is unblocked — wiring deferred.)
-
-## F4 — web layer / router (via `@emit`)
-- [x] Controller decorator walks `decl.methods`, reads `#[getMapping(path)]`/… from
-      `method.annotations`, `@emit`s `rkRegisterRoute(verb, prefix + path, handler)`
-      (+ `#[route]` prefix). Verb from the marker name.
-- [x] Path params (`:name`) — `dispatch` matches them (binding into the request);
-      `req.param("name")` wiring exercised via the fake request.
-- [x] `Response` builders type-check against the handler return type (handler is
-      `fn(req: Request) -> Response`; `rkDispatch -> Response`).
-
-## F5 — bootstrap (`Rakun.run` + real HTTP backing)
-- [ ] Promote `libs/server` scaffold → real minimal HTTP (listen, dispatch, req/resp
-      bridge) behind `#[@external]` host calls (node `http` first; then erlang).
-- [ ] `Request` gets a concrete server-supplied impl: `param`/`query`/`header`/`body`.
-- [ ] `Rakun.run(app)` reads the host router and starts `libs/server` on
-      `app.port`/`basePath`. (Needs G2: ship the runtime `.mjs` next to the emitted
-      module so a consumer build resolves it — today only the lib's own tests do.)
-- [ ] End-to-end: a request to a mapped route invokes the handler + returns its Response.
+## F0 — confirm + lock in (a BEAM codegen fix WAS needed)
+- [x] Regression test added: `isEven ⇄ isOdd` (forward ref + mutual recursion).
+      - **Run + assert** (`.bp` run-test): `modules/compiler-cli/tests/mutual_recursion{,.sh}`
+        — `botopink test` asserts the result on commonJS + erlang; the script also
+        assembles the BEAM `.S` (`erlc +from_asm`) and asserts `main:main() == true`.
+      - **All-backend codegen guard** (in `zig build test`):
+        `codegen/tests/js_control_flow.zig` (snapshots commonJS/erlang/beam/wasm).
+      - Type-check + unbound-name guards already existed in
+        `comptime/tests/infer_decls.zig` + `infer_errors.zig`.
+- [x] Runs confirmed: commonJS ✓, erlang ✓, beam ✓ (all assert `true`).
+      wasm = **DEFERRED**: blocked by an unrelated boolean-literal gap (`return true`
+      → `global.get $true`, no such global); the recursion/forward-ref lowering itself
+      is fine and is still covered by the wasm snapshot.
+- [x] A backend run DID reveal codegen mis-ordering: the BEAM emitter ended an
+      else-less `if` statement with `move undefined`+`return.`, turning the recursive
+      tail call into dead code (`isEven(10)` → atom `undefined`). Fixed in
+      `codegen/beam_asm.zig` `emitIf` (false branch now falls through). 9 BEAM
+      snapshots regenerated (all the same dead-code removal).
 
 ## Done gate
-- [x] component scan + DI chain + cycle diagnostic (runtime) — green under
-      `botopink test` (`test/di_test.bp`, `test/router_test.bp`). `#[bean]` deferred.
-- [~] router: GET routes return 200, unmapped → 404 — green in-test via `rkDispatch`.
-      Real `run` over node `http` + beam pending F5/G2.
-- [x] Tests in `libs/rakun/*.bp`; `libs/rakun/AGENTS.md` updated. `libs/server/AGENTS.md`
-      update lands with F5.
-- [x] `grep -riE "rakun" modules/compiler-core/src` returns nothing (mechanism is generic).
-
-## Notes
-- Constructor injection only in v1; singleton scope, `#[value]`/`#[bean]`, and the
-  real server are the remaining work. `libs/server` realness + runtime-`.mjs`
-  shipping (G2) gate F5. No graceful-shutdown / middleware in v1.
-- Comptime constraints on decorator bodies (no sibling calls, `if`-expr, bare-`if`
-  only last, block-lambdas) force the factory builder to be inlined per marker.
+- [x] regression test green; `a() calls b() declared later` type-checks + runs.
+- [x] a genuine unbound name still errors (diagnostics unchanged).
+- [x] `zig build && zig build test` green.

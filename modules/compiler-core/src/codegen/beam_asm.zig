@@ -1275,10 +1275,14 @@ const Emitter = struct {
         try self.bodyPrint("  {{label, {d}}}.\n", .{else_label});
         if (i.else_) |els| {
             for (els) |s| try self.emitStmt(s);
-        } else {
-            try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
-            try self.emitReturn();
         }
+        // A bare `if` with no else is a *statement*: when the condition is
+        // false, control must fall through to whatever follows (the next
+        // statement, or the trailing `return.` `emitBody` appends because
+        // `bodyExits` is false for an else-less if). Emitting `move undefined`
+        // + `return.` here would end the function early and turn every
+        // following statement — e.g. the `return isOdd(n - 1)` tail of a
+        // mutually-recursive base-case guard — into unreachable dead code.
 
         if (end_label) |el| try self.bodyPrint("  {{label, {d}}}.\n", .{el});
     }

@@ -238,6 +238,11 @@ Every top-level `fn` signature is bound before any body is type-checked, so
 declaration order never affects what is in scope. (A genuinely undefined name is
 still reported as an unbound-variable error.)
 
+This is a runtime guarantee, not just a type-checking one: the recursion above
+compiles **and runs** to the same result on every backend (commonJS, erlang,
+beam). A function's else-less base-case guard (`if (n == 0) { return … };`)
+falls through to the recursive tail call when the guard is false on all of them.
+
 ---
 
 ## Operators

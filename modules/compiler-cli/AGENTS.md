@@ -13,6 +13,10 @@ compiler-cli/
 ├── AGENTS.md            ← you are here
 ├── build.zig            ← package build graph + `run` + `test` steps
 ├── build.zig.zon        ← dependency manifest (compiler-core)
+├── tests/               ← end-to-end CLI scripts (NOT in `zig build test`)
+│   ├── std_erlang.sh        ← `bp test --target erlang` over libs/std
+│   ├── mutual_recursion.sh  ← forward-ref + mutual recursion runs on every backend
+│   └── mutual_recursion/    ← fixture project for the script above
 └── src/
     ├── AGENTS.md
     ├── docs.md          ← argv parser layout, dispatch flow
@@ -30,6 +34,11 @@ zig build               # produce ./zig-out/bin/botopink
 zig build run -- help
 zig build run -- version
 zig build test          # CLI unit tests (e.g. the generic lib loader)
+
+# End-to-end scripts under tests/ build the CLI + spawn runtimes, so they are
+# NOT part of `zig build test` — run them directly:
+bash modules/compiler-cli/tests/std_erlang.sh        # stdlib suite on erlang
+bash modules/compiler-cli/tests/mutual_recursion.sh  # mutual recursion on every backend
 ```
 
 ## External libs (generic loader)

@@ -30,9 +30,6 @@ fn validate(x: i32) {
     {call_ext_only, 1, {extfunc, erlang, throw, 1}}.
     {jump, {f, 5}}.
   {label, 4}.
-    {move, {atom, undefined}, {x, 0}}.
-    {deallocate, 0}.
-    return.
   {label, 5}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 0}.

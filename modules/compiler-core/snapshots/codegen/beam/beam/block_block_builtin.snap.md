@@ -34,9 +34,6 @@ fn main() -> string {
     {deallocate, 2}.
     return.
   {label, 8}.
-    {move, {atom, undefined}, {x, 0}}.
-    {deallocate, 2}.
-    return.
     {move, {literal, <<"Baixo">>}, {x, 0}}.
     {deallocate, 2}.
     return.

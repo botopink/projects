@@ -44,9 +44,6 @@ fn sumEvens(arr: i32[]) -> i32 {
     return.
     {jump, {f, 7}}.
   {label, 6}.
-    {move, {atom, undefined}, {x, 0}}.
-    {deallocate, 0}.
-    return.
   {label, 7}.
     {deallocate, 0}.
     return.

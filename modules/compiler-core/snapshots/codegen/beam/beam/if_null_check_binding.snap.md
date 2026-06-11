@@ -26,9 +26,6 @@ fn getName(name: ?string) -> string {
     {deallocate, 0}.
     return.
   {label, 4}.
-    {move, {atom, undefined}, {x, 0}}.
-    {deallocate, 0}.
-    return.
     {move, {literal, <<"unknown">>}, {x, 0}}.
     {deallocate, 0}.
     return.
