@@ -228,6 +228,22 @@ pub fn build(b: *std.Build) void {
     const test_vscode_step = b.step("test-vscode", "Run the VS Code extension unit tests");
     test_vscode_step.dependOn(&test_vscode_run.step);
 
+    // `zig build test-backends` — the single build step that reaches BEAM + wasm
+    // *execution* (not just codegen snapshots): builds the CLI, then runs the
+    // backend-execution harness against `node`/`escript`/`erlc`+`erl`/`wasmtime`,
+    // skipping any backend whose runtime is absent. Like `test-libs`/`test-vscode`
+    // it is NOT wired into `zig build test` (needs those runtimes on PATH).
+    // BOTOPINK_SKIP_BUILD=1 avoids nesting a `zig build` — the CLI is installed by
+    // the dependency below.
+    const test_backends_run = b.addSystemCommand(&.{ "bash", "modules/compiler-cli/tests/backend_exec.sh" });
+    test_backends_run.setCwd(b.path("."));
+    test_backends_run.setEnvironmentVariable("BOTOPINK_SKIP_BUILD", "1");
+    test_backends_run.step.dependOn(b.getInstallStep());
+    test_backends_run.has_side_effects = true; // spawns child runtimes — never cache
+
+    const test_backends_step = b.step("test-backends", "Run beam/wasm/erlang execution parity scenarios");
+    test_backends_step.dependOn(&test_backends_run.step);
+
     // ── Run step ──────────────────────────────────────────────────────────────
 
     const run_cmd = b.addRunArtifact(cli_exe);
