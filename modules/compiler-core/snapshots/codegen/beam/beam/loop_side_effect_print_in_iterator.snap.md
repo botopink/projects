@@ -20,15 +20,15 @@ loop (messages, 0..) { msg, i ->
   {label, 3}.
     {move, nil, {x, 0}}.
     {test_heap, 6, 1}.
-    {move, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"Aviso 500">>}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"Sucesso 200">>}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"Erro 404">>}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
     {deallocate, 0}.
     return.
 ```

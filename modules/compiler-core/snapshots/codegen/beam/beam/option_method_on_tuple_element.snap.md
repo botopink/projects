@@ -68,15 +68,15 @@ fn main() {
     {init_yregs, {list, [{y, 0}, {y, 1}, {y, 2}]}}.
     {move, nil, {x, 0}}.
     {test_heap, 6, 1}.
-    {move, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {integer, 3}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {integer, 2}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {integer, 1}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {call, 1, {f, 3}}.
@@ -138,6 +138,6 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
-{[1|1],[1|1]}
+{[1,2,3],[1,2,3]}
 false
 ```

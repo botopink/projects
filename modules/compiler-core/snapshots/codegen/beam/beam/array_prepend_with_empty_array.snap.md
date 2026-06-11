@@ -17,9 +17,9 @@ val list1 = [1, ..[]];
   {label, 3}.
     {move, nil, {x, 0}}.
     {test_heap, 2, 1}.
-    {move, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {integer, 1}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
     {deallocate, 0}.
     return.
 ```

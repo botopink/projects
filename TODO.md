@@ -11,10 +11,15 @@
 > commonJS/erlang are the reference; record genuine backend limits, don't fake them.
 
 ## A1b — mirror the method lowering on beam + wasm
-- [ ] Port instance/associated-method lowering (Array/Bool/numeric tower/String +
-      `Pair.of`/`Function.compose`) from `erlang.zig` to `beam_asm.zig` + `wat.zig`;
-      the `forEach`-accumulator → fold fusion idiom too (closures can't rebind
-      captures).
+- [~] **beam** instance-method lowering: `instance_lowerings` threaded into
+      `beam_asm.zig`; `emitPrimMethod` lowers Array `map`/`filter`/`forEach`/
+      `reverse`/`contains`/`len` + String `length`/`toUpper`/`toLower`/`trim`/
+      `split`/1-arg `slice` to `call_ext` (`lists:`/`erlang:`/`string:`). Verified
+      end-to-end: `[1,2,3].map(f).filter(g).len()` assembles + runs `2` (parity
+      with node/erlang). Also fixed a pre-existing arity-0 array-literal bug
+      (`[Elem|Elem]` improper lists). **Pending:** the inline-fun / arithmetic /
+      structural-compare methods (`join`/`indexOf`/`at`/`isEmpty`/2-arg `slice`/
+      `append`/`prepend`/`push`/`string contains`), fold-fusion, and **wasm**.
 - [ ] Extend `dict`/`queue`/`sets`/`erika` parity on beam — structural `==`/`!=` on
       tuples/maps, `?T` option chaining through method results, erika `case … of`
       codegen + LINQ inference gaps (the long pole, also unblocks erika on beam).

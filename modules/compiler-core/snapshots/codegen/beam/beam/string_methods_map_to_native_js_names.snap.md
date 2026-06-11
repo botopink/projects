@@ -26,30 +26,21 @@ fn main() {
     {move, {literal, <<"Hello,World">>}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    %% unresolved method call: toUpper/1
+    {call_ext, 1, {extfunc, string, uppercase, 1}}.
     {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"~p~n">>}, {x, 0}}.
     {test_heap, 2, 2}.
     {put_list, {x, 1}, nil, {x, 1}}.
     {call_ext, 2, {extfunc, io, format, 2}}.
     {move, {y, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    %% unresolved method call: toLower/1
+    {call_ext, 1, {extfunc, string, lowercase, 1}}.
     {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"~p~n">>}, {x, 0}}.
     {test_heap, 2, 2}.
     {put_list, {x, 1}, nil, {x, 1}}.
     {call_ext, 2, {extfunc, io, format, 2}}.
     {move, {y, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {literal, <<",">>}, {x, 0}}.
-    {move, {x, 0}, {x, 1}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 1}, {x, 1}}.
-    %% unresolved method call: split/2
+    %% prim method not lowered on beam (complex arg): split/2
     {move, {x, 0}, {x, 0}}.
     {move, {literal, <<"|">>}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
@@ -97,8 +88,8 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
-<<"Hello,World">>
-<<"Hello,World">>
+<<"HELLO,WORLD">>
+<<"hello,world">>
 <<"|">>
 5
 ```

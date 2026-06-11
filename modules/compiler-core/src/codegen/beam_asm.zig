@@ -23,6 +23,7 @@ const moduleOutput = @import("./moduleOutput.zig");
 const configMod = @import("./config.zig");
 const ast = @import("../ast.zig");
 const crossModule = @import("./crossModule.zig");
+const envMod = @import("../comptime/env.zig");
 
 const ModuleOutput = moduleOutput.ModuleOutput;
 const ComptimeOutput = comptimeMod.ComptimeOutput;
@@ -349,7 +350,7 @@ pub fn codegenEmit(
                 });
             },
             .ok => |*ok| {
-                const code = try emitBeamAsm(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, &cross);
+                const code = try emitBeamAsm(alloc, ct.name, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, ok.instance_lowerings, &cross);
                 try results.append(alloc, .{
                     .name = ct.name,
                     .src = ct.src,
@@ -376,6 +377,7 @@ fn emitBeamAsm(
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    instance_lowerings: std.AutoHashMap(ast.Loc, envMod.InstanceLowering),
     cross: ?*const CrossModule,
 ) ![]u8 {
     // Three passes:
@@ -399,6 +401,7 @@ fn emitBeamAsm(
     const module_atom = crossModule.moduleBasename(module_name);
 
     var em = Emitter.init(alloc, module_atom, &body_buf.writer, comptime_vals, rewrites);
+    em.instance_lowerings = instance_lowerings;
     em.cross = cross;
     defer em.deinit();
 
@@ -585,6 +588,11 @@ const Emitter = struct {
     in_loop_lambda: bool = false,
     /// Static extension dispatch (F6): call-site loc → activated extension symbol.
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    /// Primitive (Array/String/Bool/numeric) receiver method lowering, keyed by
+    /// call-site loc. A `.prim` entry routes `recv.m(args)` to a host op
+    /// (`lists:map`, `string:uppercase`, …) — parity with the erlang backend's
+    /// `emitPrimMethod`. Populated by inference; empty in the standalone path.
+    instance_lowerings: std.AutoHashMap(ast.Loc, envMod.InstanceLowering) = undefined,
     /// Extension block name → target type + methods, for resolving the mangled
     /// `'<target>_<method>'` callee at activated and qualified dispatch sites.
     ext_by_name: std.StringHashMap(ExtInfo),
@@ -1820,6 +1828,20 @@ const Emitter = struct {
                     }
                 }
             }
+            // Primitive receiver method (`xs.map(f)`, `s.toUpper()`): inference
+            // tagged this call-site loc with the receiver's primitive family, so
+            // lower it to the host op (`lists:map`, `string:uppercase`) — parity
+            // with the erlang backend's `emitPrimMethod`.
+            if (self.instance_lowerings.get(loc)) |il| switch (il) {
+                .prim => |k| {
+                    if (try self.emitPrimMethod(k, cc.callee, recv_expr, cc, mode)) return;
+                    // An unrecognised prim method (a `default fn` like `fold`/`all`,
+                    // or one not yet lowered on BEAM) falls through to the
+                    // value-receiver local-call path below — parity with the
+                    // erlang backend's bare-`callee(Recv, …)` fallthrough.
+                },
+                .record => {},
+            };
             // Module-qualified remote call: a PascalCase identifier receiver that
             // isn't a local binding is a module reference: `List.map(xs, f)` →
             // `list:map(xs, f)` (mirrors the Erlang backend's `isModuleRef`/
@@ -1997,6 +2019,112 @@ const Emitter = struct {
         try self.materializeCallArgs(cc.args);
         try self.bodyPrint("    %% unresolved local call: {s}/{d}\n", .{ cc.callee, arity });
         if (mode == .tail) try self.emitReturn();
+    }
+
+    // ── primitive-receiver method lowering ────────────────────────────────────
+    //
+    // Mirrors the erlang backend's `emitPrimMethod`, but BEAM is register-based,
+    // so each shape needs an explicit operand→x-register choreography. Three
+    // reusable layouts cover the directly-host-callable methods:
+    //
+    //   • recv-only        `fn(Recv)`            → `lists:reverse`, `string:length`
+    //   • fun-then-list    `fn(Fun, Recv)`       → `lists:map/filter/foreach`
+    //   • recv-then-args   `fn(Recv, Arg…[Lit])` → `string:split`, `string:slice/2`
+    //   • arg-then-list    `fn(Arg, Recv)`       → `lists:member`
+    //
+    // The fun-then-list layout exploits that a `move {x,0},{x,1}` leaves the list
+    // live in *both* registers, so the closure's `make_fun3` (which always writes
+    // `{x, 0}`) lands the fun in `x0` while the list survives in `x1` — correct at
+    // any current arity, with no scratch gap to GC over.
+    //
+    // Methods needing inline funs / arithmetic / structural compares (`join`,
+    // `indexOf`, `at`, `isEmpty`, 2-arg `slice`, `append`/`prepend`/`push`,
+    // `string contains/startsWith`) are not yet lowered on BEAM; returning
+    // `false` lets the caller fall through to the value-receiver path (a genuine
+    // backend limit, recorded rather than faked). Returns `true` when handled.
+    fn emitPrimMethod(self: *Emitter, k: envMod.PrimKind, callee: []const u8, recv_expr: *const ast.Expr, cc: anytype, mode: CallMode) anyerror!bool {
+        const eq = std.mem.eql;
+        switch (k) {
+            .array => {
+                if (eq(u8, callee, "map")) try self.primFunThenList("lists", "map", recv_expr, cc, mode) else if (eq(u8, callee, "filter")) try self.primFunThenList("lists", "filter", recv_expr, cc, mode) else if (eq(u8, callee, "forEach")) try self.primFunThenList("lists", "foreach", recv_expr, cc, mode) else if (eq(u8, callee, "reverse")) try self.primRecvOnly("lists", "reverse", recv_expr, mode) else if (eq(u8, callee, "contains")) try self.primArgThenList("lists", "member", recv_expr, cc, mode) else if (eq(u8, callee, "len") or eq(u8, callee, "length") or eq(u8, callee, "size")) try self.primRecvOnly("erlang", "length", recv_expr, mode) else return false;
+                return true;
+            },
+            .string => {
+                if (eq(u8, callee, "length")) try self.primRecvOnly("string", "length", recv_expr, mode) else if (eq(u8, callee, "toUpper")) try self.primRecvOnly("string", "uppercase", recv_expr, mode) else if (eq(u8, callee, "toLower")) try self.primRecvOnly("string", "lowercase", recv_expr, mode) else if (eq(u8, callee, "trim")) try self.primRecvOnly("string", "trim", recv_expr, mode) else if (eq(u8, callee, "split")) try self.primRecvThenArgs("string", "split", recv_expr, cc, "{atom, all}", mode) else if (eq(u8, callee, "slice") and cc.args.len + cc.trailing.len == 1) try self.primRecvThenArgs("string", "slice", recv_expr, cc, null, mode) else return false;
+                return true;
+            },
+            .bool, .int, .float => return false,
+        }
+    }
+
+    /// `fn(Recv)` — the sole operand is the receiver, lowered straight into `x0`.
+    fn primRecvOnly(self: *Emitter, mod: []const u8, fn_name: []const u8, recv_expr: *const ast.Expr, mode: CallMode) anyerror!void {
+        try self.lowerExprIntoX0(recv_expr.*);
+        try self.emitPrimCallExt(mod, fn_name, 1, mode);
+    }
+
+    /// `fn(Fun, Recv)` — `lists:map`/`filter`/`foreach`. The list lands in `x1`,
+    /// the closure (a positional fun arg or a trailing lambda) in `x0`.
+    fn primFunThenList(self: *Emitter, mod: []const u8, fn_name: []const u8, recv_expr: *const ast.Expr, cc: anytype, mode: CallMode) anyerror!void {
+        try self.lowerExprIntoX0(recv_expr.*); // x0 = List
+        try self.bodyWrite("    {move, {x, 0}, {x, 1}}.\n"); // x1 = List (x0 still List)
+        try self.lowerPrimFunArg(cc, 2); // x0 = Fun (closure live=2 keeps x1)
+        try self.emitPrimCallExt(mod, fn_name, 2, mode);
+    }
+
+    /// `fn(Arg, Recv)` — `lists:member`. List in `x1`, the data arg in `x0`.
+    fn primArgThenList(self: *Emitter, mod: []const u8, fn_name: []const u8, recv_expr: *const ast.Expr, cc: anytype, mode: CallMode) anyerror!void {
+        try self.lowerExprIntoX0(recv_expr.*); // x0 = List
+        try self.bodyWrite("    {move, {x, 0}, {x, 1}}.\n"); // x1 = List
+        try self.lowerPrimFunArg(cc, 2); // x0 = Arg
+        try self.emitPrimCallExt(mod, fn_name, 2, mode);
+    }
+
+    /// `fn(Recv, Arg [, Lit])` — receiver stays in `x0`; the (simple) arg goes to
+    /// `x1`, with an optional literal in `x2` (`string:split(S, Sep, all)`). A
+    /// non-simple arg would need to clobber `x0`, so it falls back to the limit.
+    fn primRecvThenArgs(self: *Emitter, mod: []const u8, fn_name: []const u8, recv_expr: *const ast.Expr, cc: anytype, extra_lit: ?[]const u8, mode: CallMode) anyerror!void {
+        try self.lowerExprIntoX0(recv_expr.*); // x0 = Recv
+        var buf: [64]u8 = undefined;
+        if (cc.args.len > 0) {
+            const t = try self.simpleTerm(cc.args[0].value.*, &buf) orelse {
+                try self.bodyPrint("    %% prim method not lowered on beam (complex arg): {s}/{d}\n", .{ fn_name, cc.args.len + 1 });
+                if (mode == .tail) try self.emitReturn();
+                return;
+            };
+            try self.bodyPrint("    {{move, {s}, {{x, 1}}}}.\n", .{t});
+        }
+        var arity: usize = 1 + cc.args.len;
+        if (extra_lit) |lit| {
+            try self.bodyPrint("    {{move, {s}, {{x, 2}}}}.\n", .{lit});
+            arity += 1;
+        }
+        try self.emitPrimCallExt(mod, fn_name, arity, mode);
+    }
+
+    /// Lower the first call argument (positional fun/value or trailing lambda)
+    /// into `x0`. `live` is the x-register floor any closure allocation must
+    /// preserve — raised via `min_live` so it applies whether the fun arrives as
+    /// a positional lambda (lowered through `lowerExprIntoX0`, which would
+    /// otherwise request `live = cur_arity`) or a trailing one.
+    fn lowerPrimFunArg(self: *Emitter, cc: anytype, live: u32) anyerror!void {
+        const saved = self.min_live;
+        self.min_live = @max(self.min_live, live);
+        defer self.min_live = saved;
+        if (cc.args.len > 0) {
+            try self.lowerExprIntoX0(cc.args[0].value.*);
+        } else if (cc.trailing.len > 0) {
+            try self.lowerLambda(cc.trailing[0], live);
+        } else {
+            try self.bodyWrite("    {move, nil, {x, 0}}.\n");
+        }
+    }
+
+    fn emitPrimCallExt(self: *Emitter, mod: []const u8, fn_name: []const u8, arity: usize, mode: CallMode) anyerror!void {
+        switch (mode) {
+            .non_tail => try self.bodyPrint("    {{call_ext, {d}, {{extfunc, {s}, {s}, {d}}}}}.\n", .{ arity, mod, fn_name, arity }),
+            .tail => try self.bodyPrint("    {{call_ext_last, {d}, {{extfunc, {s}, {s}, {d}}}, {d}}}.\n", .{ arity, mod, fn_name, arity, self.num_y }),
+        }
     }
 
     /// Activated extension dispatch: lower the receiver into `{x, 0}` and the
@@ -2331,7 +2459,12 @@ const Emitter = struct {
             var i: usize = al.elems.len;
             while (i > 0) {
                 i -= 1;
-                const scratch = self.cur_arity;
+                // The tail accumulator is stashed here while the next element is
+                // computed into `x0`; the slot must differ from `x0`, so floor it
+                // at 1 (a 0-arity fn like `main/0` would otherwise alias `x0` and
+                // cons `[Elem | Elem]`). No GC runs in this loop — the up-front
+                // `test_heap` reserves every cons cell — so the slot stays live.
+                const scratch = @max(self.cur_arity, 1);
                 try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
                 try self.lowerExprIntoX0(al.elems[i]);
                 try self.bodyPrint(

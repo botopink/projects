@@ -24,12 +24,8 @@ fn main() {
     {move, {literal, <<"hello">>}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {integer, 2}, {x, 0}}.
-    {move, {x, 0}, {x, 1}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 1}, {x, 1}}.
-    %% unresolved method call: slice/2
+    {move, {integer, 2}, {x, 1}}.
+    {call_ext, 2, {extfunc, string, slice, 2}}.
     {move, {x, 0}, {y, 1}}.
     {move, {y, 1}, {x, 0}}.
     {test, is_map, {f, 8}, [{x, 0}]}.
@@ -61,5 +57,5 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
-2
+<<"llo">>
 ```

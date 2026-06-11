@@ -17,12 +17,12 @@ val xs = ["hello", "world"];
   {label, 3}.
     {move, nil, {x, 0}}.
     {test_heap, 4, 1}.
-    {move, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"world">>}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"hello">>}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
     {deallocate, 0}.
     return.
 ```

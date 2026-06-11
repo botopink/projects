@@ -40,18 +40,18 @@ fn main() {
     {allocate, 0, 0}.
     {move, nil, {x, 0}}.
     {test_heap, 8, 1}.
-    {move, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {integer, 20}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {integer, 15}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {integer, 8}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {move, {integer, 5}, {x, 0}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {call, 1, {f, 3}}.

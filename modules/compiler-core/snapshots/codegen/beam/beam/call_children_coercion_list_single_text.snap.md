@@ -41,12 +41,12 @@ val txt = box("hi");
   {label, 7}.
     {move, nil, {x, 0}}.
     {test_heap, 4, 1}.
-    {move, {x, 0}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {call, 0, {f, 3}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
+    {move, {x, 0}, {x, 1}}.
     {call, 0, {f, 3}}.
-    {put_list, {x, 0}, {x, 0}, {x, 0}}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {call, 1, {f, 5}}.
