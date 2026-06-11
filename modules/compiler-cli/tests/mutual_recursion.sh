@@ -18,10 +18,8 @@
 #   commonJS  ── `botopink test`            (assert isEven(10) == true, …)
 #   erlang    ── `botopink test --target erlang`
 #   beam      ── build the BEAM assembly, `erlc +from_asm`, then `main:main()`
-#   wasm      ── DEFERRED: the run is blocked by an unrelated boolean-literal
-#                gap (`return true` lowers to `global.get $true`, no such
-#                global). The wasm *codegen* is still covered by the snapshot
-#                test; only the live run is skipped. Not a mutual-recursion bug.
+#   wasm      ── build the .wat, then `wasmtime --invoke main` (returns the i32
+#                `isEven(10)` == 1)
 #
 # Exit 0 = every available backend ran the recursion and returned the right
 # answer. A missing runtime (node/escript/erl) skips that backend with a notice;
@@ -74,6 +72,21 @@ else
 fi
 
 # ── wasm ──────────────────────────────────────────────────────────────────────
-echo "==> wasm: DEFERRED (blocked by unrelated boolean-literal lowering, not mutual recursion)"
+# `botopink run --target wasm` would spawn wasmtime on the module's `_start`,
+# but `main` (the recursion entry) is also exported, so invoke it directly and
+# check it returns the i32 `1` (`isEven(10)` — bool `true` is `1` in wasm).
+if command -v wasmtime >/dev/null 2>&1; then
+  echo "==> wasm: build --target wasm, wasmtime --invoke main"
+  "$BP_BIN" build --target wasm
+  wasm_result="$(wasmtime --invoke main out/main.wat 2>/dev/null | tail -1 | tr -d '[:space:]')"
+  if [[ "$wasm_result" == "1" ]]; then
+    echo "  wasm: main() => 1 (true)"
+  else
+    echo "  wasm: WRONG result '${wasm_result}' (expected 1)" >&2
+    exit 1
+  fi
+else
+  echo "==> wasm: SKIPPED (wasmtime not on PATH)"
+fi
 
 echo "==> mutual-recursion run guard: OK"

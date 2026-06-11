@@ -18,15 +18,15 @@ fn main() {
     call $negate
     call $__print_i32
     drop
-    global.get $false
+    i32.const 0
     call $nor
     call $__print_i32
     drop
-    global.get $true
+    i32.const 1
     call $nand
     call $__print_i32
     drop
-    global.get $false
+    i32.const 0
     call $exclusiveOr
     call $__print_i32
   )

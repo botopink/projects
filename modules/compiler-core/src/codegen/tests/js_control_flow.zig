@@ -577,7 +577,10 @@ test "case guard ---- variant field guard" {
 // THROUGH to the tail call when the guard is false — an earlier emitter ended
 // the function in the else branch (`move undefined` + `return.`), turning the
 // recursive call into unreachable dead code so `isEven(10)` returned the atom
-// `undefined` instead of `true` (commonJS/erlang/wasm were already correct).
+// `undefined` instead of `true`. commonJS/erlang were already correct; wasm
+// needed two unrelated fixes to *run* this (boolean literals `true`/`false` →
+// `i32.const 1`/`0`, not an undefined `global.get $true`; and the entrypoint
+// wrapper must `drop` a value-returning `main`).
 test "js: mutual recursion ---- forward reference + bare-if base case on every backend" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\fn main() -> bool {

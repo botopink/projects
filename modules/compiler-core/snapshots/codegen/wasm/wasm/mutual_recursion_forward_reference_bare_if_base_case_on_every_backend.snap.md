@@ -31,7 +31,7 @@ fn isOdd(n: i32) -> bool {
     i32.eq
     (if (result i32)
       (then
-    global.get $true
+    i32.const 1
     return
       )
       (else
@@ -51,7 +51,7 @@ fn isOdd(n: i32) -> bool {
     i32.eq
     (if (result i32)
       (then
-    global.get $false
+    i32.const 0
     return
       )
       (else
@@ -67,6 +67,7 @@ fn isOdd(n: i32) -> bool {
   )
   (func $_botopink_main (export "_botopink_main") (export "_start")
     (call $main)
+    drop
   )
 )
 ```

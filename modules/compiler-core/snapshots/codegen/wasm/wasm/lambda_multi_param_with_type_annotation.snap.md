@@ -24,6 +24,7 @@ fn main() -> i32 {
   )
   (func $_botopink_main (export "_botopink_main") (export "_start")
     (call $main)
+    drop
   )
 )
 ```

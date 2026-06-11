@@ -18,15 +18,18 @@
         `codegen/tests/js_control_flow.zig` (snapshots commonJS/erlang/beam/wasm).
       - Type-check + unbound-name guards already existed in
         `comptime/tests/infer_decls.zig` + `infer_errors.zig`.
-- [x] Runs confirmed: commonJS ✓, erlang ✓, beam ✓ (all assert `true`).
-      wasm = **DEFERRED**: blocked by an unrelated boolean-literal gap (`return true`
-      → `global.get $true`, no such global); the recursion/forward-ref lowering itself
-      is fine and is still covered by the wasm snapshot.
-- [x] A backend run DID reveal codegen mis-ordering: the BEAM emitter ended an
-      else-less `if` statement with `move undefined`+`return.`, turning the recursive
-      tail call into dead code (`isEven(10)` → atom `undefined`). Fixed in
-      `codegen/beam_asm.zig` `emitIf` (false branch now falls through). 9 BEAM
-      snapshots regenerated (all the same dead-code removal).
+- [x] Runs confirmed on **all four** backends (each asserts the result):
+      commonJS ✓, erlang ✓, beam ✓ (`true`), wasm ✓ (`main()` → `1`).
+- [x] A backend run DID reveal codegen bugs — fixed all:
+      - **BEAM** (`codegen/beam_asm.zig` `emitIf`): an else-less `if` statement
+        ended in `move undefined`+`return.`, turning the recursive tail call into
+        dead code (`isEven(10)` → atom `undefined`). False branch now falls
+        through. 9 BEAM snapshots regenerated (same dead-code removal).
+      - **wasm** (`codegen/wat.zig`): two unrelated gaps that blocked the run —
+        `true`/`false` lowered to an undefined `global.get $true` (→ `i32.const
+        1`/`0`), and the entrypoint wrapper didn't `drop` a value-returning
+        `main` (invalid wasm). 9 wasm snapshots regenerated; the logical-operator
+        wasm tests now actually execute under wasmtime in the harness.
 
 ## Done gate
 - [x] regression test green; `a() calls b() declared later` type-checks + runs.

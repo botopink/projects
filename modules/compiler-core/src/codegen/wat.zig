@@ -129,9 +129,11 @@ fn emitWat(
     try em.collectExtensions(program);
 
     var has_main_0 = false;
+    var main_returns_value = false;
     for (program.decls) |decl| switch (decl) {
         .@"fn" => |f| if (isMain0(f)) {
             has_main_0 = true;
+            main_returns_value = f.returnType != null;
         },
         else => {},
     };
@@ -166,7 +168,7 @@ fn emitWat(
         .record, .@"struct", .@"enum", .interface, .delegate, .@"test" => {},
     };
 
-    if (has_main_0) try em.emitEntrypointWrapper();
+    if (has_main_0) try em.emitEntrypointWrapper(main_returns_value);
 
     var aw: std.Io.Writer.Allocating = .init(alloc);
     defer aw.deinit();
@@ -999,9 +1001,12 @@ const Emitter = struct {
         try self.fmt("  (global ${s} (mut i32) (i32.const 0))\n", .{v.name});
     }
 
-    fn emitEntrypointWrapper(self: *Emitter) !void {
+    fn emitEntrypointWrapper(self: *Emitter, main_returns_value: bool) !void {
         try self.w("  (func $_botopink_main (export \"_botopink_main\") (export \"_start\")\n");
         try self.w("    (call $main)\n");
+        // The wrapper itself returns nothing, so a value-returning `main` would
+        // leave its result on the stack — invalid wasm. Discard it.
+        if (main_returns_value) try self.w("    drop\n");
         try self.w("  )\n");
     }
 
@@ -1128,7 +1133,16 @@ const Emitter = struct {
             },
             .identifier => |id| switch (id.kind) {
                 .ident => |n| {
-                    if (self.locals.contains(n)) {
+                    // `true`/`false` are bound as identifiers (bool builtins),
+                    // not literals. wasm has no boolean type — they lower to
+                    // the same `i32` 0/1 a comparison yields. Without this they
+                    // would emit `global.get $true`, referencing a global that
+                    // is never defined.
+                    if (std.mem.eql(u8, n, "true")) {
+                        try self.w("    i32.const 1\n");
+                    } else if (std.mem.eql(u8, n, "false")) {
+                        try self.w("    i32.const 0\n");
+                    } else if (self.locals.contains(n)) {
                         try self.fmt("    local.get ${s}\n", .{n});
                     } else {
                         try self.fmt("    global.get ${s}\n", .{n});
