@@ -267,7 +267,7 @@ test "infer: doc comment on struct" {
     );
 }
 
-test "infer: activated extension method resolves" {
+test "infer: local extension method resolves without activation" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
         \\val Swimmer = interface {
         \\    fn swim(self: Self);
@@ -278,7 +278,6 @@ test "infer: activated extension method resolves" {
         \\        return self.id;
         \\    }
         \\}
-        \\PatoNada*;
         \\val donald = Pato(1);
         \\val splash = donald.swim();
     );
@@ -298,6 +297,29 @@ test "infer: qualified extension call needs no activation" {
         \\val donald = Pato(1);
         \\val splash = PatoNada.swim(donald);
     );
+}
+
+test "infer: multi-module local extension resolves on an imported record" {
+    // `Swimmer`/`Pato` are imported; the `implement` is declared in the consumer
+    // module and auto-applied, so `donald.swim()` resolves without activation.
+    try h.assertComptimeAst(std.testing.allocator, @src(), &.{
+        .{ .path = "pond", .source =
+        \\pub val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\pub record Pato { id: i32 }
+        },
+        .{ .path = "", .source =
+        \\import {Swimmer, Pato} from "pond";
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\val donald = Pato(1);
+        \\val splash = donald.swim();
+        },
+    });
 }
 
 test "infer: inherent record method is always available" {
@@ -432,6 +454,30 @@ test "infer: @Optional<T> is rejected ---- the optional type is ?T" {
         \\}
         \\fn main() {
         \\    @print(takeOptional(3));
+        \\}
+    );
+}
+
+test "infer: forward_reference_top_level ---- a() calls b() declared after" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn a() -> i32 { return b(); }
+        \\fn b() -> i32 { return 1; }
+    );
+}
+
+test "infer: mutual_recursion ---- renderToString and renderChildren call each other" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\record Element { tag: string, value: string, children: Element[] }
+        \\
+        \\fn renderChildren(items: Element[]) -> string {
+        \\    var out = "";
+        \\    loop (items) { c -> out = out + renderToString(c); };
+        \\    return out;
+        \\}
+        \\
+        \\fn renderToString(e: Element) -> string {
+        \\    if (e.tag == "#text") { return e.value; };
+        \\    return "<" + e.tag + ">" + renderChildren(e.children) + "</" + e.tag + ">";
         \\}
     );
 }

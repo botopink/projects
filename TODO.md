@@ -1,37 +1,45 @@
-# TODO — cross-module-codegen
+# TODO — sublanguage-vscode  (vscode · Wave 2 of 3)
 
-> Live checklist for branch `task/cross-module-codegen` (worktree
-> `.tasks/cross-module-codegen/`).
-> Spec (intent, immutable): [`tasks/v0.beta.6/specs/cross-module-codegen.md`](tasks/v0.beta.6/specs/cross-module-codegen.md)
+> Task branch `task/sublanguage-vscode` · spec
+> [`tasks/v0.beta.10/specs/sublanguage-vscode.md`](tasks/v0.beta.10/specs/sublanguage-vscode.md).
+> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
+> **Depends on:** `sublanguage-lsp` at **runtime** (consumes its semantic tokens) —
+> author this last and verify against a running `botopink-lsp`. The highlight is
+> comptime-driven from the LSP; VSCode is a pure renderer (no SQL/HTML grammar).
 
-> **Goal**: bring erlang/beam/wasm to the commonJS backend's parity for concrete
-> emitted types crossing the package boundary (a consumer importing
-> `Response`/`App` from rakun). commonJS is the reference — match its behaviour.
-> Files: `codegen/erlang.zig`, `codegen/beam_asm.zig`, `codegen/wat.zig`.
+## F0 — don't swallow the string interior as one opaque scope
+- [x] **Chose option (a):** keep the `string.quoted` scopes and let the LSP's
+      semantic tokens override the interior per-range. `package.json` forces
+      `editor.semanticHighlighting.enabled: true` for `[botopink]`, so semantic
+      tokens win across *every* theme (not just the default dark/light ones that
+      opt in). A plain string carries no semantic tokens → stays `string`-coloured
+      (F2 "unchanged"). Decision documented in the `strings` repository comment.
+      Option (b) was rejected: a neutral interior scope would de-colour plain
+      strings too, since the grammar can't tell sub-language strings apart.
 
-## F0 — erlang cross-package
-- [x] track which imported names come from which emitted module (mirror commonJS
-      `CrossModule` index)
-- [x] imported-record assoc fn → remote call to the owner module atom; imported
-      record construction → owner's map constructor
-- [x] emit `-export` for `pub` types/assoc-fns imported elsewhere
+## F1 — semantic token type mapping
+- [x] Added `contributes.semanticTokenScopes` in `package.json` mapping each
+      sub-language token type (keyword/property/string/number/operator) to fallback
+      TextMate scopes, so themes that don't directly style the semantic type still
+      colour it. `extension.ts` unchanged — `vscode-languageclient` auto-registers
+      the semantic-tokens feature once the server advertises the provider.
 
-## F1 — beam_asm cross-package
-- [x] imported record construction (`put_map_assoc`) + cross-module `call_ext`
-      for associated fns
+## F2 — verify end-to-end in the editor
+- [~] **Gated on `sublanguage-lsp`** (runtime dependency). The LSP does not yet
+      emit semantic tokens for string interiors / sub-language content
+      (`language-server/src/engine.zig` `semanticTokens()` skips string literals;
+      legend in `protocol.zig` lacks `string`/`number`/`operator`). The renderer
+      side is complete and correct; live `erika "select …"` verification must be
+      done once `sublanguage-lsp` lands its F0–F4. The manifest is ready for it.
 
-## F2 — wasm cross-package
-- [x] wasm stays single-module: `emitWat` flags each cross-module import with an
-      explicit `;; cross-module import not linked (wasm single-module)` comment
-      instead of emitting a call to a missing function
+## F3 — optional static fallback (follow-up, not blocking)
+- [ ] **Optional (follow-up, omitted):** a prefix-keyed TextMate injection would
+      fight the semantic tokens and can never know the real fields/bindings — left
+      out deliberately; the comptime-driven LSP path is the source of truth.
 
-## F3 — shared
-- [x] lifted the commonJS `CrossModule` builder to a backend-agnostic
-      `crossModule.zig` analysis consumed by commonJS, erlang, beam_asm and wat
-
-## Notes
-- `new` is a JS detail; botopink source never has `new`.
-- wasm legitimately defers — limit recorded; parity scoped to erlang+beam.
-- Done in `a9e2ad2`. Test: js_features "import ---- cross-module record
-  construct and assoc fn" exercises all four backends; full `zig build test`
-  green.
+## Done gate
+- [~] `erika "…"` highlighted by LSP semantic tokens / squiggle / unchanged plain
+      string / survives theme switches — **renderer ready, blocked on
+      `sublanguage-lsp`** for the live editor check (see F2).
+- [ ] `zig build && zig build test` green (pre-commit; extension edits are
+      JSON/Markdown only and don't touch Zig).

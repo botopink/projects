@@ -18,7 +18,8 @@
             "typeRef": {
               "named": "number"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           }
         ],
         "trailingComma": false,
@@ -54,7 +55,7 @@
                         "identifier": {
                           "loc": {
                             "line": 4,
-                            "col": 16
+                            "col": 21
                           },
                           "kind": {
                             "identAccess": {

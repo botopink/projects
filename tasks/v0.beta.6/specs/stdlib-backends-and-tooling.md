@@ -2,7 +2,7 @@
 
 **Slug**: `stdlib-backends-and-tooling`
 **Supersedes**: the unfinished parts of `tasks/v0.beta.4/specs/carryover.md`.
-**Status**: pending
+**Status**: partial — Part C (editor tooling) + Part A2 (`s.contains`→`includes`) merged into `feat` (via 0d2a6a6); Part A1/A3 + Part B (backend-parity F1–F6) pending → carried into a new task
 
 > Clean carry-forward of what's still open after v0.beta.4. The stdlib-interface
 > **JS** path is done (instance + associated methods for Array/Bool/Numeric/String,

@@ -4,7 +4,7 @@
 **Depends on**: nothing (commonJS leg already landed in `feat`)
 **Files**: `modules/compiler-core/src/codegen/erlang.zig`, `modules/compiler-core/src/codegen/beam_asm.zig`, `modules/compiler-core/src/codegen/wat.zig` (commonJS done)
 **Touches docs**: `modules/compiler-core/src/codegen/AGENTS.md`
-**Status**: pending
+**Status**: done — erlang/beam/wasm cross-module parity merged into `feat` (99fb9e9; wasm single-module limit recorded)
 
 ## Intent
 

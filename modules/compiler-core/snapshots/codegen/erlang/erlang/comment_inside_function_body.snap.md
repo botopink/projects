@@ -14,9 +14,9 @@ fn main() {
 -export(['_botopink_main'/0, main/1]).
 
 main() ->
-    % Initialize value,
+    % Initialize value
     X = 1,
-    % Return null,
+    % Return null
     undefined.
 
 '_botopink_main'() ->

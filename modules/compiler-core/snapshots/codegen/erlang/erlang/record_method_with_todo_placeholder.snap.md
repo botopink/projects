@@ -13,7 +13,7 @@ record Unimplemented { id: i32,
 
 %% record Unimplemented: id
 
-process() ->
+process(Self) ->
     erlang:error({todo, "not implemented"}).
 ```
 

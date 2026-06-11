@@ -18,14 +18,16 @@
             "typeRef": {
               "named": "number"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           },
           {
             "name": "lon",
             "typeRef": {
               "named": "number"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           }
         ],
         "trailingComma": false,
@@ -95,7 +97,7 @@
                                     "identifier": {
                                       "loc": {
                                         "line": 5,
-                                        "col": 26
+                                        "col": 31
                                       },
                                       "kind": {
                                         "identAccess": {
@@ -135,7 +137,7 @@
                             "identifier": {
                               "loc": {
                                 "line": 5,
-                                "col": 48
+                                "col": 53
                               },
                               "kind": {
                                 "identAccess": {

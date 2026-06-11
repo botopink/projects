@@ -68,6 +68,44 @@ test "parser: multiple import declarations" {
     );
 }
 
+// ── mod / pub mod declarations ────────────────────────────────────────────────
+
+test "parser: mod decl private" {
+    try h.assertParser(std.testing.allocator, @src(), "mod geometry;");
+}
+
+test "parser: pub mod decl" {
+    try h.assertParser(std.testing.allocator, @src(), "pub mod shapes;");
+}
+
+test "parser: multiple mod decls" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\pub mod geometry;
+        \\pub mod shapes;
+        \\mod internal;
+    );
+}
+
+test "parser: mod alongside imports" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\import {x} from "geometry";
+        \\pub mod geometry;
+        \\mod helpers;
+    );
+}
+
+test "parser: mod requires a semicolon" {
+    try h.expectParseFails(std.testing.allocator, "mod geometry");
+}
+
+test "parser: mod in fn body is a parse error" {
+    try h.expectParseFails(std.testing.allocator,
+        \\fn main() {
+        \\  mod nested;
+        \\}
+    );
+}
+
 test "parser: delegate ---- val form simple" {
     try h.assertParser(std.testing.allocator, @src(),
         \\val log = declare fn(self: Self);

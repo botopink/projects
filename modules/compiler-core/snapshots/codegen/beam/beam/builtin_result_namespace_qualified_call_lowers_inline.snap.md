@@ -32,9 +32,6 @@ fn main() {
     {deallocate, 0}.
     return.
   {label, 10}.
-    {move, {atom, undefined}, {x, 0}}.
-    {deallocate, 0}.
-    return.
     {move, {x, 0}, {x, 2}}.
     {test_heap, 3, 3}.
     {put_tuple2, {x, 0}, {list, [{atom, ok}, {x, 2}]}}.

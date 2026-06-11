@@ -6,6 +6,7 @@ Complete examples and language features organized by topic. Most examples map to
 
 - [Reference Updates (v0.0.13-beta)](#reference-updates-v0013-beta)
 - [Imports](#imports)
+- [Modules](#modules)
 - [Variables](#variables)
 - [Functions](#functions)
 - [Operators](#operators)
@@ -143,6 +144,89 @@ PatoExtra*;
 
 ---
 
+## Modules
+
+botopink uses an explicit, Rust-style module tree. A package declares which
+files belong to it by following `mod` declarations from a root, instead of the
+compiler implicitly compiling every `.bp` it finds under `src/`.
+
+```
+module ::= "pub"? "mod" ident ";"
+```
+
+`mod` is a keyword; a `mod` declaration is only valid at module top level (a
+`mod` inside a function body is a parse error).
+
+### The tree
+
+```
+src/
+  main.bp          ← binary entry (holds `fn main`); roots a binary package
+  root.bp          ← library root (public API surface); roots a library package
+  geometry.bp      ← a leaf module, pulled in by `mod geometry;`
+  shapes/
+    mod.bp         ← the `shapes` module — the folder index (like Rust's mod.rs)
+    circle.bp      ← pulled in by `mod circle;` inside shapes/mod.bp
+    square.bp
+```
+
+```botopink
+// root.bp — the tree root declares the top-level modules
+pub mod geometry;     // public: re-exported, reachable package-wide / by consumers
+pub mod shapes;       // public: resolves shapes/mod.bp (the folder index)
+mod internal;         // private: visible only within the root's subtree
+
+// shapes/mod.bp — a folder index declares the folder's submodules
+pub mod circle;       // resolves shapes/circle.bp
+pub mod square;       // resolves shapes/square.bp
+mod helpers;          // private to the shapes subtree
+```
+
+- **`main.bp`** roots a **binary** package (the entry holding `fn main`);
+  **`root.bp`** roots a **library** package. `botopink.json` `entry` chooses
+  which root applies (auto-detected as `main.bp`, then `root.bp`).
+- **`mod Name;`** declares a submodule. It resolves, in the declaring file's
+  directory, to either a sibling `Name.bp` **or** a folder index `Name/mod.bp`
+  — exactly one must exist (both, or neither, is an error).
+- **`mod.bp`** is a folder's index module (Rust's `mod.rs`): it is the module
+  named after its folder and declares that folder's submodules.
+- A `.bp` not reached through any `mod` path is reported **orphaned** and is not
+  compiled.
+
+### Visibility — the path-visibility rule
+
+`pub mod` re-exports a submodule through its parent; a plain `mod` keeps it
+private to the declaring module's subtree. A declaration is importable across a
+module boundary only if **every `mod` on its path is `pub mod`** *and* the
+declaration itself is `pub`.
+
+```botopink
+// shapes/mod.bp
+pub mod circle;   // shapes.circle is reachable from outside shapes
+mod helpers;      // shapes.helpers is private to the shapes subtree
+```
+
+Importing through a private `mod` fails, naming the private segment — e.g.
+`import { secret } from "shapes.helpers";` from `main.bp` is rejected because
+`helpers` is private to `shapes`; the same import from another file inside
+`shapes/` succeeds.
+
+### Imports through the tree
+
+`import { x } from "geometry"` resolves `x` from module `geometry`;
+`import { x } from "shapes.circle"` follows the `mod` chain (the dotted path is
+the module path `shapes/circle`). The named module must publicly export `x`.
+`from "<lib>"` resolves an external dependency unchanged (the generic loader).
+
+### Migration
+
+Packages that predate the explicit tree (no `main.bp`/`root.bp` root) still
+build through a deprecated implicit `src/` scan, with a warning. Add a root with
+`mod` declarations to opt into the explicit tree; the implicit scan will be
+removed in a future release.
+
+---
+
 ## Variables
 
 ### Number literal
@@ -216,6 +300,32 @@ fn double(x: i32) -> i32 {
     return result;
 }
 ```
+
+### Forward references and mutual recursion
+
+Top-level functions are order-independent: a function may call another declared
+later in the same module, and two functions may call each other.
+
+```botopink
+fn isEven(n: i32) -> bool {
+    if (n == 0) { return true; };
+    return isOdd(n - 1);          // forward reference — isOdd is declared below
+}
+
+fn isOdd(n: i32) -> bool {
+    if (n == 0) { return false; };
+    return isEven(n - 1);
+}
+```
+
+Every top-level `fn` signature is bound before any body is type-checked, so
+declaration order never affects what is in scope. (A genuinely undefined name is
+still reported as an unbound-variable error.)
+
+This is a runtime guarantee, not just a type-checking one: the recursion above
+compiles **and runs** to the same result on every backend (commonJS, erlang,
+beam, wasm). A function's else-less base-case guard (`if (n == 0) { return … };`)
+falls through to the recursive tail call when the guard is false on all of them.
 
 ---
 
@@ -1804,6 +1914,41 @@ val PersonPrintable = implement Printable for Person {
 class Person {
     constructor(name) {
         this.name = name;
+    }
+}
+```
+
+### Generic interface
+
+The standalone `implement <Iface> for <Type>` form accepts a **generic**
+interface (`Iface<A, B>`, including the builtin `@Context<…>`), not just a bare
+identifier:
+
+```botopink
+record E { tag: string }
+val C = implement @Context<E, E> for E {}
+val D = implement Foo<E, E> for E {}
+```
+
+### Inline `struct implement` with fields
+
+A `struct implement <Iface> { fields }` carries fields like a `record`, and any
+field type is allowed — including array-typed (`E[]`), optional, and generic
+fields. The value emits a real constructor, so its fields round-trip at runtime:
+
+```botopink
+val E = struct implement @Context<E, E> { tag: string, children: E[] }
+fn mk() -> E {
+    return E(tag: "x", children: []);
+}
+```
+
+**Generates:**
+```javascript
+class E {
+    constructor(tag, children) {
+        this.tag = tag;
+        this.children = children;
     }
 }
 ```

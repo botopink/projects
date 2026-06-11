@@ -112,9 +112,6 @@ fn main() {
     %% assign to unknown variable: output
     {jump, {f, 15}}.
   {label, 14}.
-    {move, {atom, undefined}, {x, 0}}.
-    {deallocate, 0}.
-    return.
   {label, 15}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 0}.
@@ -132,9 +129,6 @@ fn main() {
     %% assign to unknown variable: output
     {jump, {f, 19}}.
   {label, 18}.
-    {move, {atom, undefined}, {x, 0}}.
-    {deallocate, 0}.
-    return.
   {label, 19}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 0}.

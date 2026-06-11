@@ -4,7 +4,7 @@
 **Depends on**: nothing (pure language features)
 **Files**: `modules/compiler-core/src/parser*.zig`, `modules/compiler-core/src/comptime/*` (type inference + coercions), `modules/compiler-core/src/codegen/*`
 **Touches docs**: `modules/compiler-core/src/comptime/AGENTS.md`, `modules/compiler-core/src/codegen/AGENTS.md`, `libs/jhonstart/*`
-**Status**: pending
+**Status**: done — 4 generic language gaps merged into `feat` (94c3bfa via ed2931e)
 
 ## Intent
 

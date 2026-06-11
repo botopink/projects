@@ -1,0 +1,106 @@
+// jhonstart/html — the JSX-like authoring DSL (real comptime body).
+//
+// `html` is a template function: it receives the caller's markup UNEVALUATED
+// (`@Expr<string>` — the `"""…"""` triple-quoted literal) and expands it, at
+// compile time, into an `Element` tree — the expr-templates machinery
+// (`parts`/`build`) applied to building elements instead of strings.
+//
+//   - lowercase tags (`<div>`, `<p>`) → a bare `tag(...)` call resolved in the
+//     CALLER's scope (the expr-template `lookup` model), so the caller must
+//     `import {div, p, …}` the builders the markup names; an unknown tag is an
+//     unbound diagnostic at the call site, pointing inside the template;
+//   - `${expr}`                       → the caller's already-typed expression,
+//     spliced as a `text(<expr>)` child via the `Interp` part's `code`
+//     placeholder.
+//
+// The call site pays zero parsing cost at runtime — `val page = html """…"""`
+// compiles to the builder calls; `html` never reaches codegen.
+//
+// HOW THE BODY WORKS. A frame stack: each open tag pushes its name onto
+// `tagStack` and a fresh "" children accumulator onto `childStack` (`childStack[0]`
+// is the implicit root). `pushChild` appends a child-source into the current top
+// frame, comma-joined; a close pops the frame, wraps its children as `tag([...])`,
+// and emits that into the parent. `rootMarks` collects one entry per root-level
+// child, so a single-root template returns that element bare (no `fragment`
+// wrapper — the caller then need not import `fragment`). Each text part is split
+// on "<": chunk 0 is leading text, every later chunk is a tag (up to ">") plus
+// trailing text. `${expr}` interps become `text(<code>)` children.
+//
+// COMPTIME CONSTRAINTS (the body runs in `template_eval.zig` over a native-JS
+// prelude — hence the unusual style; explanation lives here, not inline):
+//   - native-JS ops only (`split`/`slice`/`trim`/`join`/`append`/`forEach`/
+//     `length`/`+`/`==`) — no `?T`/Option (`.at()`/`.pop()`): the top frame is
+//     read with `slice(len-1, len).join("")` and popped with `slice(0, len-1)`;
+//   - self-contained: the evaluator emits only this fn, so every helper is an
+//     inline closure, never a sibling call;
+//   - root tracking is an array LENGTH, not an `i32` counter — a closure that
+//     reassigns both an array and an `i32`, called from another closure, trips
+//     comptime type inference;
+//   - the markup walk uses `.forEach`, not a nested `loop`: the if/else is the
+//     outer loop body's sole statement, so the emitter lowers it to an expression
+//     and `return`s each branch tail — a `loop` lowers to a `for` STATEMENT
+//     (`return for (...)` is invalid JS) while `.forEach(...)` is an expression;
+//   - NO comments inside the body: the emitter flattens each block to one line,
+//     so a `//` would comment out the code that follows it on that line.
+
+pub fn html(comptime template: @Expr<string>) -> @Expr<Element> {
+    var tagStack = [];
+    var childStack = [""];
+    var rootMarks = [];
+
+    val pushChild = { c ->
+        val topIdx = childStack.length - 1;
+        val cur = childStack.slice(topIdx, childStack.length).join("");
+        val sep = if (cur == "") { ""; } else { ","; };
+        childStack = childStack.slice(0, topIdx).append([cur + sep + c]);
+        val isRoot = topIdx == 0;
+        if (isRoot) { rootMarks = rootMarks.append(["x"]); };
+    };
+
+    val handleTag = { tg, isClose ->
+        val act = tg != "";
+        if (act) {
+            if (isClose) {
+                val topIdx = childStack.length - 1;
+                val kids = childStack.slice(topIdx, childStack.length).join("");
+                val cname = tagStack.slice(tagStack.length - 1, tagStack.length).join("");
+                childStack = childStack.slice(0, topIdx);
+                tagStack = tagStack.slice(0, tagStack.length - 1);
+                pushChild(cname + "([" + kids + "])");
+            } else {
+                val openName = tg.split(" ").slice(0, 1).join("");
+                tagStack = tagStack.append([openName]);
+                childStack = childStack.append([""]);
+            };
+        };
+    };
+
+    val pushText = { raw ->
+        val isWs = raw.trim() == "";
+        val node = if (isWs) { ""; } else { "text(\"" + raw + "\")"; };
+        val keep = !isWs;
+        if (keep) { pushChild(node); };
+    };
+
+    loop (template.parts()) { p ->
+        if (p.kind == "Interp") {
+            pushChild("text(" + p.code + ")");
+        } else {
+            val chunks = p.text.split("<");
+            pushText(chunks.slice(0, 1).join(""));
+            chunks.slice(1, chunks.length).forEach({ seg ->
+                val sp = seg.split(">");
+                val tg = sp.slice(0, 1).join("").trim();
+                val after = sp.slice(1, sp.length).join(">");
+                val isClose = tg.slice(0, 1) == "/";
+                handleTag(tg, isClose);
+                pushText(after);
+            });
+        };
+    };
+
+    val rootKids = childStack.slice(0, 1).join("");
+    val single = rootMarks.length == 1;
+    val result = if (single) { rootKids; } else { "fragment([" + rootKids + "])"; };
+    return template.build(result);
+}

@@ -11,8 +11,12 @@
         "comment": null,
         "moduleComment": null,
         "interfaces": [
-          "UsbCharger",
-          "SolarCharger"
+          {
+            "named": "UsbCharger"
+          },
+          {
+            "named": "SolarCharger"
+          }
         ],
         "target": "SmartCamera",
         "methods": [
@@ -82,7 +86,7 @@
                                   "identifier": {
                                     "loc": {
                                       "line": 3,
-                                      "col": 66
+                                      "col": 71
                                     },
                                     "kind": {
                                       "identAccess": {
@@ -183,7 +187,7 @@
                                   "identifier": {
                                     "loc": {
                                       "line": 6,
-                                      "col": 75
+                                      "col": 80
                                     },
                                     "kind": {
                                       "identAccess": {

@@ -77,6 +77,13 @@ pub fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.Ty
         }
 
         while (!this.check(.rightParenthesis) and !this.check(.endOfFile)) {
+            // Optional `name:` prefix — `fn(next: T)` is accepted alongside the
+            // bare `fn(T)` form. The parameter name is documentation-only here
+            // (function types are positional), so it is parsed and discarded.
+            if (this.check(.identifier) and this.peekAt(1).kind == .colon) {
+                _ = this.advance(); // name
+                _ = this.advance(); // ':'
+            }
             try params.append(alloc, try this.parseTypeRef(alloc));
             if (!this.match(.comma)) break;
         }
@@ -100,6 +107,24 @@ pub fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.Ty
             .returnType = returnPtr,
         } };
     }
+    // { name: T, ... } — anonymous record type
+    if (this.check(.leftBrace)) {
+        _ = this.advance(); // consume '{'
+        var fields: std.ArrayList(ast.RecordTypeField) = .empty;
+        errdefer {
+            for (fields.items) |*f| f.typeRef.deinit(alloc);
+            fields.deinit(alloc);
+        }
+        while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
+            const nameTok = try this.consumeMemberName();
+            _ = try this.consume(.colon);
+            const fieldType = try this.parseTypeRef(alloc);
+            try fields.append(alloc, .{ .name = nameTok.lexeme, .typeRef = fieldType });
+            if (!this.match(.comma)) break;
+        }
+        _ = try this.consume(.rightBrace);
+        return ast.TypeRef{ .record_type = try fields.toOwnedSlice(alloc) };
+    }
     // @Name<T1, T2> — builtin type constructor
     if (this.check(.builtinIdent)) {
         const tok = this.advance();
@@ -115,7 +140,13 @@ pub fn parseBaseTypeRef(this: *This, alloc: std.mem.Allocator) ParseError!ast.Ty
             };
             return ParseError.UnexpectedToken;
         }
-        // Builtin types always take their generic parameters (`@Expr<i32>`,
+        // `@Decl` (the annotation-processor reflection handle) is the one builtin
+        // written WITHOUT type arguments — bare, like a nominal type. A decorator
+        // declares its first parameter as `comptime _: @Decl`.
+        if (std.mem.eql(u8, name, "Decl") and !this.check(.lessThan)) {
+            return ast.TypeRef{ .generic = .{ .name = name, .args = &.{}, .is_builtin = true } };
+        }
+        // Other builtin types always take their generic parameters (`@Expr<i32>`,
         // never bare `@Expr`) — a result type only the expansion knows is
         // written as an ordinary fn generic: `fn yaml<T>(…) -> @Expr<T>`.
         _ = try this.consume(.lessThan);

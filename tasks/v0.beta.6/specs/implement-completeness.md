@@ -4,7 +4,7 @@
 **Depends on**: nothing
 **Files**: `modules/compiler-core/src/parser/decls.zig`, `modules/compiler-core/src/parser/types.zig`, `modules/compiler-core/src/codegen/commonJS.zig`, `modules/compiler-core/src/codegen/erlang.zig`
 **Touches docs**: `docs.md` (§Implement), `modules/compiler-core/src/codegen/AGENTS.md`
-**Status**: pending
+**Status**: done — G5–G7 merged into `feat` (be13669 / ece318b)
 
 > **Why.** Surfaced attaching `@Context` to jhonstart's `Element` (gaps G5–G7).
 > A `record` carrying an inline `implement @Context<…>` clause works end-to-end,

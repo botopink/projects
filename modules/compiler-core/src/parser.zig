@@ -221,6 +221,11 @@ pub const Parser = struct {
                 const d = try this.parseImportDecl(alloc);
                 _ = this.match(.semicolon);
                 break :blk .{ .use = d };
+            } else if (this.check(.mod) or
+                (this.check(.@"pub") and this.peekAt(1).kind == .mod))
+            blk: {
+                const d = try this.parseModDecl();
+                break :blk .{ .mod = d };
             } else if (this.isActivationStmt()) blk: {
                 const d = try this.parseActivationStmt(alloc);
                 _ = this.match(.semicolon);
@@ -318,6 +323,17 @@ pub const Parser = struct {
             try decls.append(alloc, decl);
         }
         return Program{ .decls = try decls.toOwnedSlice(alloc) };
+    }
+
+    /// Parses a top-level `mod Name;` / `pub mod Name;` module declaration.
+    /// `mod` is a keyword: inside a fn body statement parsing never reaches here,
+    /// so a stray `mod` there surfaces as a normal unexpected-token error.
+    pub fn parseModDecl(this: *This) ParseError!ast.ModDecl {
+        const isPub = this.match(.@"pub");
+        _ = try this.consume(.mod);
+        const nameTok = try this.consume(.identifier);
+        _ = try this.consume(.semicolon);
+        return .{ .name = nameTok.lexeme, .isPub = isPub };
     }
 
     /// Dispatches `val [pub] Name = <kind> ...` to the appropriate sub-parser.
@@ -904,6 +920,21 @@ pub const Parser = struct {
 
     pub fn consumeParamName(this: *This) ParseError!Token {
         if (this.check(.identifier)) return this.advance();
+        return ParseError.UnexpectedToken;
+    }
+
+    /// True when `kind` may be used as a record field / member name. `get` and
+    /// `set` are soft keywords: they introduce struct getters/setters only at
+    /// the start of a struct member, and are otherwise ordinary names (a hook
+    /// returns the shape `{ value, set }` where `set` is a function field).
+    pub fn isMemberName(kind: TokenKind) bool {
+        return kind == .identifier or kind == .get or kind == .set;
+    }
+
+    /// Consume a record field / member name — an `identifier`, or the soft
+    /// keywords `get` / `set`.
+    pub fn consumeMemberName(this: *This) ParseError!Token {
+        if (isMemberName(this.peek().kind)) return this.advance();
         return ParseError.UnexpectedToken;
     }
 

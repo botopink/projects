@@ -16,6 +16,7 @@ const envMod = @import("env.zig");
 const TypeError = @import("error.zig").TypeError;
 const template = @import("template.zig");
 const templateEval = @import("template_eval.zig");
+const decoratorEval = @import("decorator_eval.zig");
 const specializeMod = @import("specialize.zig");
 const unify = @import("unify.zig").unify;
 const Lexer = @import("../lexer.zig").Lexer;
@@ -85,77 +86,6 @@ fn markStdImports(env: *Env, u: ast.ImportDecl) InferError!bool {
     return true;
 }
 
-/// `import {…} from "rakun"` — bring the named rakun symbols into this env.
-/// Type names (`Request`/`Response`/`HttpMethod`/…) are registered like a local
-/// type decl; decorator and interface-associated fns are bound as values so
-/// `#[service]` resolves (F3) and `Response.json(...)` type-checks. Returns true
-/// when the decl was a `from "rakun"` import (fully handled here); an unknown
-/// imported name is a clear type error. rakun is opt-in: a module that never
-/// imports it sees none of these symbols.
-fn markRakunImports(env: *Env, u: ast.ImportDecl) InferError!bool {
-    const from_rakun = switch (u.source) {
-        .module => |m| std.mem.eql(u8, m, "rakun"),
-        .root => false,
-    };
-    if (!from_rakun) return false;
-    for (u.imports) |imp| {
-        const want = imp.segments[imp.segments.len - 1]; // original export name
-        const local = imp.name(); // local (alias-aware) name
-        // Concrete rakun types (`Response`/`App`/`HttpMethod`) live in the
-        // `rakun/http` package module: in the full `compile` pipeline
-        // `resolveImports` already bound them from the shared registry
-        // (emit-once). Skip — re-registering locally would emit a duplicate.
-        if (env.lookup(local) != null) continue;
-        var found = false;
-        if (env.rakunTypeDecls.get(want)) |decl| {
-            try registerRakunTypeDecl(env, decl);
-            found = true;
-        }
-        if (env.rakunExports.get(want)) |ty| {
-            try env.bind(local, ty);
-            found = true;
-        }
-        if (!found) {
-            env.lastError = TypeError.custom(
-                "unknown \"rakun\" import",
-                "rakun exports the decorators component/service/repository/controller/" ++
-                    "restController, configuration/bean/inject/value, route/getMapping/" ++
-                    "postMapping/putMapping/patchMapping/deleteMapping, and the types " ++
-                    "Request/Response/Context/App/Rakun/HttpMethod.",
-            );
-            return error.TypeError;
-        }
-    }
-    return true;
-}
-
-/// Build the function type of a `declare fn` delegate signature. rakun decorator
-/// markers (`service`, `getMapping(path: string)`, …) parse as delegates;
-/// exposing each as a callable type lets `markRakunImports` bind it and lets F3
-/// check `#[…]` annotation arguments against the signature.
-pub fn buildDelegateType(env: *Env, d: ast.DelegateDecl) InferError!*T.Type {
-    const params = try env.arena.alloc(*T.Type, d.params.len);
-    for (d.params, 0..) |p, i| {
-        params[i] = try resolveTypeRef(env, p.typeRef);
-    }
-    const ret = if (d.returnType) |rn| try env.namedType(rn) else try env.namedType("void");
-    return env.funcType(params, ret);
-}
-
-/// Register a single rakun type declaration into the importing env. Interfaces
-/// contribute their associated fns (`Response.json`) and resolve opaquely as a
-/// type name; enums/records/structs register their type definition (guarded so
-/// a repeated import is idempotent).
-fn registerRakunTypeDecl(env: *Env, decl: ast.DeclKind) InferError!void {
-    switch (decl) {
-        .interface => |d| try registerInterfaceAssociatedFns(env, d),
-        .@"enum" => |e| if (env.lookupTypeDef(e.name) == null) try registerEnum(env, e),
-        .record => |r| if (env.lookupTypeDef(r.name) == null) try registerRecord(env, r),
-        .@"struct" => |s| if (env.lookupTypeDef(s.name) == null) try registerStruct(env, s),
-        else => {},
-    }
-}
-
 pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     var list: std.ArrayListUnmanaged(Binding) = .empty;
 
@@ -165,6 +95,17 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     }
     try registerExtensions(env, program);
     try buildScopeSnapshot(env, program);
+    try registerFnSignatures(env, program);
+
+    // Annotation processors run before bodies (see `inferProgramTyped`): a
+    // decorator's `@emit`ed decls must be spliced before a body referencing them
+    // is inferred. Bail out early when contributions exist — the spliced
+    // re-analysis does the real inference.
+    try validateDecorators(env, program);
+    try invokeDecorators(env, program);
+    if (env.contributions.items.len > 0) {
+        return list.toOwnedSlice(env.arena);
+    }
 
     // Pass 2: infer value-producing declarations in order.
     for (program.decls) |decl| {
@@ -174,6 +115,7 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     }
 
     // Pass 3: semantic validation of `implement` blocks and struct accessors.
+    // (Decorators already ran above, before body inference.)
     try validateProgram(env, program);
 
     return list.toOwnedSlice(env.arena);
@@ -189,6 +131,23 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
     }
     try registerExtensions(env, program);
     try buildScopeSnapshot(env, program);
+    try registerFnSignatures(env, program);
+
+    // Annotation processors run BEFORE bodies are inferred: a decorator's
+    // `@emit`ed declarations must be spliced (by `analyzeSource`) and present
+    // before any body that references the generated decl is type-checked.
+    // (Previously decorators ran in pass 3, after bodies — a body referencing a
+    // generated decl failed spuriously, which blocked `@emit` under `botopink
+    // test`. The serialized handles read only the AST, so no body inference is
+    // needed first.)
+    try validateDecorators(env, program);
+    try invokeDecorators(env, program);
+    if (env.contributions.items.len > 0) {
+        // The spliced re-analysis (`analyzeSource`) does the real inference; skip
+        // body inference here, since bodies may reference the not-yet-spliced decls.
+        return list.toOwnedSlice(env.arena);
+    }
+
     for (program.decls) |decl| {
         switch (decl) {
             // `resolveImports` (called before inference in comptime.zig) already
@@ -200,7 +159,6 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
                 // so qualified calls (`bool.negate(x)`) resolve against
                 // `env.stdModules`. Unknown std module → clear type error.
                 if (try markStdImports(env, u)) continue;
-                if (try markRakunImports(env, u)) continue;
                 for (u.imports) |imp| {
                     const name = imp.name();
                     if (env.lookup(name)) |ty| {
@@ -221,7 +179,8 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
         }
     }
 
-    // Semantic validation of `implement` blocks and struct accessors.
+    // Semantic validation of `implement` blocks and struct accessors. (Decorators
+    // already ran above, before body inference.)
     try validateProgram(env, program);
 
     return list.toOwnedSlice(env.arena);
@@ -260,10 +219,21 @@ fn interfaceHasMethod(d: ast.InterfaceDecl, name: []const u8) bool {
     return false;
 }
 
+/// The bare name of an interface type ref — the identifier the interface was
+/// declared under. Generic interfaces (`Iface<A, B>`, `@Context<…>`) reduce to
+/// their head name (`Iface`, `Context`); non-name refs yield "".
+fn interfaceRefName(ref: ast.TypeRef) []const u8 {
+    return switch (ref) {
+        .named => |n| n,
+        .generic => |g| g.name,
+        else => "",
+    };
+}
+
 /// True when `name` is one of the interfaces this implement block declares.
 fn implementsInterface(impl: ast.ImplementDecl, name: []const u8) bool {
-    for (impl.interfaces) |iname| {
-        if (std.mem.eql(u8, iname, name)) return true;
+    for (impl.interfaces) |iface| {
+        if (std.mem.eql(u8, interfaceRefName(iface), name)) return true;
     }
     return false;
 }
@@ -292,7 +262,8 @@ fn validateImplement(
             // Unqualified: find which implemented interfaces declare this method.
             var first: ?[]const u8 = null;
             var second: ?[]const u8 = null;
-            for (impl.interfaces) |iname| {
+            for (impl.interfaces) |iface| {
+                const iname = interfaceRefName(iface);
                 const d = interfaces.get(iname) orelse continue;
                 if (!interfaceHasMethod(d, m.name)) continue;
                 if (first == null) {
@@ -313,7 +284,8 @@ fn validateImplement(
     }
 
     // Coverage: every abstract method of every implemented interface must be met.
-    for (impl.interfaces) |iname| {
+    for (impl.interfaces) |iface| {
+        const iname = interfaceRefName(iface);
         const d = interfaces.get(iname) orelse continue;
         for (d.methods) |am| {
             if (am.body != null) continue; // default method — implementing it is optional
@@ -348,7 +320,7 @@ fn structFieldType(
 ) InferError!?*T.Type {
     for (s.members) |m| switch (m) {
         .field => |f| if (std.mem.eql(u8, f.name, name)) {
-            return try env.resolveTypeName(f.typeName, genericMap);
+            return try resolveTypeRefInContext(env, f.typeRef, genericMap);
         },
         else => {},
     };
@@ -419,6 +391,7 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
                 .record => |rec| rec.id,
                 else => null,
             } else null;
+            try inferTypeMethods(env, r.name, r.genericParams, r.methods);
             return .{ .name = r.name, .type_ = try env.namedType(typeName), .typedExpr = null, .decl = decl, .typeId = typeId };
         },
         .@"struct" => |s| {
@@ -427,6 +400,13 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
                 .struct_ => |st| st.id,
                 else => null,
             } else null;
+            var structMethods: std.ArrayListUnmanaged(ast.InterfaceMethod) = .empty;
+            defer structMethods.deinit(env.arena);
+            for (s.members) |mem| switch (mem) {
+                .method => |md| try structMethods.append(env.arena, md),
+                else => {},
+            };
+            try inferTypeMethods(env, s.name, s.genericParams, structMethods.items);
             return .{ .name = s.name, .type_ = try env.namedType(typeName), .typedExpr = null, .decl = decl, .typeId = typeId };
         },
         .@"enum" => |e| {
@@ -435,6 +415,7 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
                 .enum_ => |en| en.id,
                 else => null,
             } else null;
+            try inferTypeMethods(env, e.name, e.genericParams, e.methods);
             return .{ .name = e.name, .type_ = try env.namedType(typeName), .typedExpr = null, .decl = decl, .typeId = typeId };
         },
         .interface => |d| {
@@ -447,7 +428,6 @@ fn inferDeclTyped(env: *Env, decl: ast.DeclKind) InferError!?TypedBinding {
         // (tests, LSP) otherwise leaves qualified-call receivers unbound.
         .use => |u| {
             _ = try markStdImports(env, u);
-            _ = try markRakunImports(env, u);
             return null;
         },
         // A test block produces no binding, but its body must type-check.
@@ -468,6 +448,105 @@ fn registerTypeDecl(env: *Env, decl: ast.DeclKind) InferError!void {
         .@"enum" => |e| try registerEnum(env, e),
         else => {},
     }
+}
+
+/// Pre-pass (mutual recursion): bind every top-level `fn`/`pub fn` name to its
+/// signature type BEFORE any body is inferred, so a function can call another
+/// declared later in the same module (`renderToString` ⇄ `renderChildren`).
+///
+/// A top-level function's signature is fully determined by its declared
+/// parameter and return types plus generic params — the body never changes it —
+/// so the type built here matches what `inferFnDecl` later derives when it walks
+/// the body (which re-binds the same name for self-recursion). This mirrors how
+/// recursive `record` type names are registered in pass 1 before any use.
+fn registerFnSignatures(env: *Env, program: ast.Program) InferError!void {
+    for (program.decls) |decl| switch (decl) {
+        .@"fn" => |f| {
+            try env.bind(f.name, try buildFnSignatureType(env, f));
+            registerDecoratorSig(env, f.name, f.params, f);
+        },
+        // A `declare fn` decorator (`declare fn service(comptime _: @Decl)`) —
+        // the bodyless form a lib ships its markers as — parses as a delegate.
+        .delegate => |d| registerDecoratorSig(env, d.name, d.params, null),
+        else => {},
+    };
+}
+
+/// True when `params` open with `comptime _: @Decl`, the signature shape that
+/// marks a function as a decorator (annotation processor). The core recognizes
+/// decorators purely by this shape — it never knows what a marker means (that is
+/// the lib's job). Applies to both `pub fn` and `declare fn` forms.
+pub fn isDecoratorParams(params: []const ast.Param) bool {
+    if (params.len == 0) return false;
+    const p0 = params[0];
+    return p0.modifier == .@"comptime" and p0.typeRef.isDeclType();
+}
+
+/// Register a decorator imported from another module — its full `FnDecl` (body
+/// included) — into this module's decorator table, so `#[name(args)]` sites here
+/// argument-check against it AND run its body over each annotated declaration at
+/// comptime. Mirrors `registerImportedTemplateFn` for the `@Expr` template case;
+/// the core stays lib-agnostic (it carries the decorator across modules by its
+/// generic `@Decl`-first shape, never by any lib's name). No-op for non-decorators.
+pub fn registerImportedDecorator(env: *Env, name: []const u8, fn_decl: ast.FnDecl) void {
+    registerDecoratorSig(env, name, fn_decl.params, fn_decl);
+}
+
+/// Record a decorator's trailing signature (everything after the leading
+/// `comptime _: @Decl`) so `#[name(args)]` applications can be argument-checked,
+/// plus its full `FnDecl` (when it has a body) so the body can run over each
+/// annotated declaration at comptime (P2). No-op for ordinary functions.
+fn registerDecoratorSig(env: *Env, name: []const u8, params: []const ast.Param, fn_decl: ?ast.FnDecl) void {
+    if (!isDecoratorParams(params)) return;
+    env.decorators.put(name, .{ .params = params[1..], .fn_decl = fn_decl }) catch {};
+}
+
+/// Build a top-level function's callable type (params → return) without binding
+/// its parameters into `env` or inferring its body. Mirrors the signature half
+/// of `inferFnDecl`: a generic map, `fn(...)`-param and ordinary-param
+/// resolution, the return type, and generalization of declared generic params
+/// the signature left unbound (so each call site instantiates them fresh).
+fn buildFnSignatureType(env: *Env, f: ast.FnDecl) InferError!*T.Type {
+    var genericMap = std.StringHashMap(*T.Type).init(env.arena);
+    defer genericMap.deinit();
+    for (f.genericParams) |gp| {
+        try genericMap.put(gp.name, try env.freshVar());
+    }
+
+    var paramTypes = try env.arena.alloc(*T.Type, f.params.len);
+    for (f.params, 0..) |p, i| {
+        paramTypes[i] = if (p.fnType) |ft| blk: {
+            const fparams = try env.arena.alloc(*T.Type, ft.params.len);
+            for (ft.params, 0..) |fp, j| {
+                fparams[j] = genericMap.get(fp.typeName) orelse try env.namedType(fp.typeName);
+            }
+            const fret = if (ft.returnType) |rn|
+                genericMap.get(rn) orelse try env.namedType(rn)
+            else
+                try env.namedType("void");
+            break :blk try env.funcType(fparams, fret);
+        } else try resolveTypeRefInContext(env, p.typeRef, genericMap);
+    }
+
+    const retType = if (f.returnType) |rt|
+        try resolveTypeRefInContext(env, rt, genericMap)
+    else
+        try env.namedType("void");
+
+    // Generalize declared generic params the signature left unbound (same rule
+    // as `inferFnDecl`): each becomes `.generic`, so use sites instantiate fresh.
+    var git = genericMap.valueIterator();
+    while (git.next()) |gv| {
+        const resolved = gv.*.deref();
+        if (resolved.* != .typeVar) continue;
+        const cell = resolved.typeVar;
+        switch (cell.state) {
+            .unbound => |u| cell.state = .{ .generic = u.id },
+            else => {},
+        }
+    }
+
+    return env.funcType(paramTypes, retType);
 }
 
 /// Pre-pass for static extension dispatch: record inherent methods, register
@@ -493,7 +572,6 @@ fn registerExtensions(env: *Env, program: ast.Program) InferError!void {
                 try env.extensions.put(im.name, .{
                     .name = im.name,
                     .target = im.target,
-                    .isExtend = false,
                     .interfaces = im.interfaces,
                     .methods = try collectImplMethodNames(env, im.methods),
                 });
@@ -503,28 +581,32 @@ fn registerExtensions(env: *Env, program: ast.Program) InferError!void {
                 try env.bind(im.name, try env.freshVar());
             },
             .extend => |ex| {
-                try env.extensions.put(ex.name, .{
-                    .name = ex.name,
-                    .target = ex.target,
-                    .isExtend = true,
-                    .methods = try collectImplMethodNames(env, ex.methods),
-                });
-                try env.bind(ex.name, try env.freshVar());
+                // Rule A: methods are added to a type only through `implement
+                // <Interface> for T`, which `validateImplement` checks against the
+                // interface. A contract-free `extend` block is rejected.
+                env.lastError = TypeError.extendRequiresInterface(ex.target);
+                return error.TypeError;
             },
             else => {},
         }
     }
 
-    // Activations: `name*` imports and bare `name*;` statements. Both are carried
-    // by `use` declarations (`activationOnly` marks the bare `name*;` form).
+    // Activations carried by `use` declarations: an `import { name* } from "…"`
+    // opts an *imported* extension into scope, while a bare `name*;`
+    // (`activationOnly`) names a local symbol. Rule B: a locally-declared
+    // extension is auto-applied in its module, so a bare `name*;` is never needed.
     for (program.decls) |decl| {
         switch (decl) {
             .use => |u| for (u.imports) |imp| {
                 if (!imp.activate) continue;
                 const nm = imp.name();
-                // A bare `name*;` must name a locally-known impl/extend symbol.
-                if (u.activationOnly and !env.extensions.contains(nm)) {
-                    env.lastError = TypeError.notAnExtension(nm);
+                if (u.activationOnly) {
+                    // `*` is only for imports. A bare statement is redundant when it
+                    // names a local extension, and otherwise names no extension.
+                    env.lastError = if (env.extensions.contains(nm))
+                        TypeError.redundantActivation(nm)
+                    else
+                        TypeError.notAnExtension(nm);
                     return error.TypeError;
                 }
                 try env.activations.put(nm, {});
@@ -884,7 +966,7 @@ fn registerStruct(env: *Env, s: ast.StructDecl) InferError!void {
         .field => |f| {
             fields[fi] = .{
                 .name = f.name,
-                .type_ = try env.resolveTypeName(f.typeName, genericMap),
+                .type_ = try resolveTypeRefInContext(env, f.typeRef, genericMap),
             };
             fi += 1;
         },
@@ -1019,7 +1101,7 @@ fn buildStructDeclName(env: *Env, s: ast.StructDecl) ![]const u8 {
                 try buf.appendSlice(env.arena, "    ");
                 try buf.appendSlice(env.arena, f.name);
                 try buf.appendSlice(env.arena, ": ");
-                try buf.appendSlice(env.arena, f.typeName);
+                try buf.appendSlice(env.arena, try typeRefToString(env.arena, f.typeRef));
                 if (f.init) |_| {
                     try buf.append(env.arena, '\n');
                 } else {
@@ -1181,6 +1263,16 @@ fn appendTypeRefStr(buf: *std.ArrayListUnmanaged(u8), allocator: std.mem.Allocat
                 try appendTypeRefStr(buf, allocator, c);
             }
         },
+        .record_type => |flds| {
+            try buf.appendSlice(allocator, "{ ");
+            for (flds, 0..) |f, i| {
+                if (i > 0) try buf.appendSlice(allocator, ", ");
+                try buf.appendSlice(allocator, f.name);
+                try buf.appendSlice(allocator, ": ");
+                try appendTypeRefStr(buf, allocator, f.typeRef);
+            }
+            try buf.appendSlice(allocator, " }");
+        },
     }
 }
 
@@ -1233,7 +1325,6 @@ fn inferDecl(env: *Env, decl: ast.DeclKind) InferError!?Binding {
         // `inferProgramTyped`'s `.use` interception.
         .use => |u| {
             _ = try markStdImports(env, u);
-            _ = try markRakunImports(env, u);
             return null;
         },
         // implement doesn't produce a value binding.
@@ -1301,6 +1392,343 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
             return fail(env, fnLoc, "`@external` module and symbol must be string literals", "Example: #[@external(node, \"./gleam_stdlib.mjs\", \"string_length\")]");
         }
     }
+}
+
+// ── generic decorator argument validation (annotation processors, P1) ─────────
+//
+// A decorator is any fn whose first param is `comptime _: @Decl` (recognized by
+// `registerDecoratorSig` into `env.decorators`). Applying `#[d(args)]` is sugar
+// for a comptime call `d(reflect(decl), args…)`; the trailing `args` are checked
+// here against the decorator's declared signature — arity + argument types —
+// with no lib knowledge. PLACEMENT rules (where a marker may sit) are the
+// decorator body's job (P2), not the core's.
+
+/// Validate every `#[decorator(args)]` application in `program` against the
+/// recognized decorator's trailing signature. Annotations whose name is not a
+/// recognized decorator are left untouched: builtins (`external`) validate
+/// elsewhere, and an unknown bare marker stays lenient (a lib may not be loaded).
+fn validateDecorators(env: *Env, program: ast.Program) InferError!void {
+    if (env.decorators.count() == 0) return;
+    for (program.decls) |decl| switch (decl) {
+        .@"fn" => |f| try checkDecoratorAnnotations(env, f.annotations, f.name),
+        .record => |r| {
+            try checkDecoratorAnnotations(env, r.annotations, r.name);
+            for (r.fields) |fld| try checkDecoratorAnnotations(env, fld.annotations, fld.name);
+            for (r.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
+        },
+        .@"struct" => |s| {
+            try checkDecoratorAnnotations(env, s.annotations, s.name);
+            for (s.members) |mem| switch (mem) {
+                .field => |fld| try checkDecoratorAnnotations(env, fld.annotations, fld.name),
+                .method => |m| try checkDecoratorAnnotations(env, m.annotations, m.name),
+                else => {},
+            };
+        },
+        .@"enum" => |e| {
+            try checkDecoratorAnnotations(env, e.annotations, e.name);
+            for (e.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
+        },
+        .interface => |i| {
+            try checkDecoratorAnnotations(env, i.annotations, i.name);
+            for (i.methods) |m| try checkDecoratorAnnotations(env, m.annotations, m.name);
+        },
+        else => {},
+    };
+}
+
+/// Check one declaration's annotation list. `owner` names the annotated
+/// declaration (for diagnostics).
+fn checkDecoratorAnnotations(env: *Env, anns: []const ast.Annotation, owner: []const u8) InferError!void {
+    for (anns) |a| {
+        if (a.is_builtin) continue; // `@external`, … validated by their own pass.
+        const sig = env.decorators.get(a.name) orelse continue;
+        try checkDecoratorArgs(env, a, sig, owner);
+    }
+}
+
+/// Type-check a single `#[name(args…)]` application's trailing arguments against
+/// the decorator's parameters (everything after `comptime _: @Decl`). V1: arity
+/// (honoring trailing defaults) + a per-argument lexical kind check (string /
+/// numeric / bool / enum-member), mirroring `validateExternalAnnotation`.
+fn checkDecoratorArgs(env: *Env, a: ast.Annotation, sig: envMod.DecoratorSig, owner: []const u8) InferError!void {
+    const fail = struct {
+        fn fail(e_: *Env, msg: []const u8, hint: []const u8) InferError {
+            e_.lastError = TypeError.custom(msg, hint);
+            return error.TypeError;
+        }
+    }.fail;
+
+    // Arity: required params (no default) ≤ args ≤ total params.
+    var required: usize = 0;
+    for (sig.params) |p| {
+        if (p.defaultVal == null) required += 1;
+    }
+    if (a.args.len < required or a.args.len > sig.params.len) {
+        const msg = try std.fmt.allocPrint(env.arena, "`#[{s}]` on `{s}` expects {d} argument(s), got {d}", .{ a.name, owner, sig.params.len, a.args.len });
+        return fail(env, msg, "Match the decorator's declared parameters (after the leading `comptime _: @Decl`).");
+    }
+
+    // Per-argument kind check against the declared parameter type.
+    for (a.args, 0..) |arg, i| {
+        const want = paramTypeName(sig.params[i].typeRef) orelse continue; // non-simple type → lenient
+        if (!argMatchesType(arg, want)) {
+            const msg = try std.fmt.allocPrint(env.arena, "`#[{s}]` argument {d} must be {s}", .{ a.name, i + 1, want });
+            return fail(env, msg, "Decorator arguments are type-checked against the decorator's signature.");
+        }
+    }
+}
+
+// ── generic decorator invocation (annotation processors, P2) ──────────────────
+//
+// After argument validation, the decorator's BODY runs over the declaration it
+// annotates: the core serializes that declaration into a `@Decl` handle and the
+// body (lib code) gives the marker meaning — validate placement/arguments via
+// `fail`/`failAt`. The core knows nothing about any specific marker. Runs only
+// in the full compile pipeline (`env.templateEval` set, node available); tooling
+// paths (LSP / compileTypesOnly) skip it.
+
+/// Render a `TypeRef` as the simple type name a `@Decl` handle exposes
+/// (best-effort: the named/generic head, else empty).
+fn declTypeName(tr: ast.TypeRef) []const u8 {
+    return switch (tr) {
+        .named => |n| n,
+        .generic => |g| g.name,
+        else => "",
+    };
+}
+
+fn appendAnnotationsJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, anns: []const ast.Annotation) !void {
+    try buf.append(arena, '[');
+    var first = true;
+    for (anns) |a| {
+        if (a.is_builtin) continue;
+        if (!first) try buf.append(arena, ',');
+        first = false;
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(buf, arena, a.name);
+        try buf.appendSlice(arena, ",\"args\":[");
+        for (a.args, 0..) |arg, i| {
+            if (i > 0) try buf.append(arena, ',');
+            try template.appendJsonString(buf, arena, arg);
+        }
+        try buf.appendSlice(arena, "]}");
+    }
+    try buf.append(arena, ']');
+}
+
+fn appendParamsJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, params: []const ast.Param) !void {
+    try buf.append(arena, '[');
+    for (params, 0..) |p, i| {
+        if (i > 0) try buf.append(arena, ',');
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(buf, arena, p.name);
+        try buf.appendSlice(arena, ",\"typeName\":");
+        try template.appendJsonString(buf, arena, declTypeName(p.typeRef));
+        try buf.append(arena, '}');
+    }
+    try buf.append(arena, ']');
+}
+
+fn appendMethodsJson(buf: *std.ArrayList(u8), arena: std.mem.Allocator, methods: []const ast.InterfaceMethod) !void {
+    try buf.append(arena, '[');
+    for (methods, 0..) |m, i| {
+        if (i > 0) try buf.append(arena, ',');
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(buf, arena, m.name);
+        try buf.appendSlice(arena, ",\"params\":");
+        try appendParamsJson(buf, arena, m.params);
+        try buf.appendSlice(arena, ",\"returnType\":");
+        try template.appendJsonString(buf, arena, if (m.returnType) |rt| declTypeName(rt) else "");
+        try buf.appendSlice(arena, ",\"annotations\":");
+        try appendAnnotationsJson(buf, arena, m.annotations);
+        try buf.append(arena, '}');
+    }
+    try buf.append(arena, ']');
+}
+
+const HandleField = struct { name: []const u8, typeName: []const u8, annotations: []const ast.Annotation = &.{} };
+
+/// Build a `@Decl` handle JSON for any annotated declaration. `fields`/`methods`
+/// default to empty for the kinds that have none; `returnType` is the empty
+/// string except for a fn/method.
+fn buildHandleJson(
+    arena: std.mem.Allocator,
+    kind: []const u8,
+    name: []const u8,
+    fields: []const HandleField,
+    methods: []const ast.InterfaceMethod,
+    returnType: []const u8,
+    annotations: []const ast.Annotation,
+) ![]const u8 {
+    var buf: std.ArrayList(u8) = .empty;
+    try buf.appendSlice(arena, "{\"kind\":");
+    try template.appendJsonString(&buf, arena, kind);
+    try buf.appendSlice(arena, ",\"name\":");
+    try template.appendJsonString(&buf, arena, name);
+    try buf.appendSlice(arena, ",\"fields\":[");
+    for (fields, 0..) |f, i| {
+        if (i > 0) try buf.append(arena, ',');
+        try buf.appendSlice(arena, "{\"name\":");
+        try template.appendJsonString(&buf, arena, f.name);
+        try buf.appendSlice(arena, ",\"typeName\":");
+        try template.appendJsonString(&buf, arena, f.typeName);
+        try buf.appendSlice(arena, ",\"annotations\":");
+        try appendAnnotationsJson(&buf, arena, f.annotations);
+        try buf.append(arena, '}');
+    }
+    try buf.appendSlice(arena, "],\"methods\":");
+    try appendMethodsJson(&buf, arena, methods);
+    try buf.appendSlice(arena, ",\"returnType\":");
+    try template.appendJsonString(&buf, arena, returnType);
+    try buf.appendSlice(arena, ",\"annotations\":");
+    try appendAnnotationsJson(&buf, arena, annotations);
+    try buf.append(arena, '}');
+    return buf.toOwnedSlice(arena);
+}
+
+/// Run every body-carrying decorator applied to one declaration over its handle.
+fn runDeclDecorators(
+    env: *Env,
+    ctx: envMod.TemplateEvalCtx,
+    anns: []const ast.Annotation,
+    handleJson: []const u8,
+) InferError!void {
+    for (anns) |a| {
+        if (a.is_builtin) continue;
+        const sig = env.decorators.get(a.name) orelse continue;
+        const dfn = sig.fn_decl orelse continue; // bodyless `declare fn` marker
+        if (dfn.body.len == 0) continue; // empty body — nothing to run
+
+        var plain = try env.arena.alloc(template.PlainArg, a.args.len);
+        for (a.args, 0..) |arg, i| {
+            const pname = if (i < sig.params.len) sig.params[i].name else "_";
+            plain[i] = .{ .paramName = pname, .jsValue = arg };
+        }
+
+        const outcome = decoratorEval.evaluate(env.arena, ctx.io, ctx.build_root, dfn, handleJson, plain) catch {
+            env.lastError = TypeError.custom(
+                "the decorator evaluator failed to run",
+                "Decorator bodies run in the node runtime at compile time — check that `node` is available.",
+            );
+            return error.TypeError;
+        };
+        switch (outcome) {
+            .ok => |contributions| {
+                // `@emit(...)` sources — spliced into the module by `analyzeModule`.
+                for (contributions) |src| try env.contributions.append(env.arena, src);
+            },
+            .fail => |fl| {
+                env.lastError = TypeError.custom(fl.message, "raised by the decorator via `fail`/`failAt`");
+                return error.TypeError;
+            },
+            .err => |m| {
+                env.lastError = TypeError.custom(m, "the decorator body raised an unexpected error");
+                return error.TypeError;
+            },
+        }
+    }
+}
+
+/// Walk `program` and run body-carrying decorators over every annotated
+/// declaration (and its methods). Mirrors `validateDecorators`' walk; runs after
+/// it (so arguments are already validated).
+fn invokeDecorators(env: *Env, program: ast.Program) InferError!void {
+    if (env.skipDecoratorInvoke) return; // second pass: contributions already spliced
+    if (env.decorators.count() == 0) return;
+    const ctx = env.templateEval orelse return;
+    for (program.decls) |decl| switch (decl) {
+        .@"fn" => |f| {
+            const h = try buildHandleJson(env.arena, "Fn", f.name, &.{}, &.{}, if (f.returnType) |rt| declTypeName(rt) else "", f.annotations);
+            try runDeclDecorators(env, ctx, f.annotations, h);
+        },
+        .record => |r| {
+            var fields = try env.arena.alloc(HandleField, r.fields.len);
+            for (r.fields, 0..) |fld, i| fields[i] = .{ .name = fld.name, .typeName = declTypeName(fld.typeRef), .annotations = fld.annotations };
+            const h = try buildHandleJson(env.arena, "Record", r.name, fields, r.methods, "", r.annotations);
+            try runDeclDecorators(env, ctx, r.annotations, h);
+            for (r.fields) |fld| {
+                const fh = try buildHandleJson(env.arena, "Field", fld.name, &.{}, &.{}, declTypeName(fld.typeRef), fld.annotations);
+                try runDeclDecorators(env, ctx, fld.annotations, fh);
+            }
+            for (r.methods) |m| {
+                const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                try runDeclDecorators(env, ctx, m.annotations, mh);
+            }
+        },
+        .@"struct" => |s| {
+            var fields: std.ArrayList(HandleField) = .empty;
+            for (s.members) |mem| switch (mem) {
+                .field => |fld| try fields.append(env.arena, .{ .name = fld.name, .typeName = declTypeName(fld.typeRef), .annotations = fld.annotations }),
+                else => {},
+            };
+            const h = try buildHandleJson(env.arena, "Struct", s.name, fields.items, &.{}, "", s.annotations);
+            try runDeclDecorators(env, ctx, s.annotations, h);
+            for (s.members) |mem| switch (mem) {
+                .field => |fld| {
+                    const fh = try buildHandleJson(env.arena, "Field", fld.name, &.{}, &.{}, declTypeName(fld.typeRef), fld.annotations);
+                    try runDeclDecorators(env, ctx, fld.annotations, fh);
+                },
+                .method => |m| {
+                    const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                    try runDeclDecorators(env, ctx, m.annotations, mh);
+                },
+                else => {},
+            };
+        },
+        .@"enum" => |e| {
+            const h = try buildHandleJson(env.arena, "Enum", e.name, &.{}, e.methods, "", e.annotations);
+            try runDeclDecorators(env, ctx, e.annotations, h);
+            for (e.methods) |m| {
+                const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                try runDeclDecorators(env, ctx, m.annotations, mh);
+            }
+        },
+        .interface => |i| {
+            // Interface-level markers (`#[mock]`) reflect with kind `Interface`,
+            // exposing the interface's fields + method signatures. Its methods also
+            // reflect individually (`#[getMapping]` on a route) as `Method`.
+            var fields = try env.arena.alloc(HandleField, i.fields.len);
+            for (i.fields, 0..) |fld, idx| fields[idx] = .{ .name = fld.name, .typeName = fld.typeName };
+            const h = try buildHandleJson(env.arena, "Interface", i.name, fields, i.methods, "", i.annotations);
+            try runDeclDecorators(env, ctx, i.annotations, h);
+            for (i.methods) |m| {
+                const mh = try buildHandleJson(env.arena, "Method", m.name, &.{}, &.{}, if (m.returnType) |rt| declTypeName(rt) else "", m.annotations);
+                try runDeclDecorators(env, ctx, m.annotations, mh);
+            }
+        },
+        else => {},
+    };
+}
+
+/// The simple (named) type of a parameter, or null for arrays/optionals/generics
+/// where the lexical check is skipped (kept lenient in V1).
+fn paramTypeName(tr: ast.TypeRef) ?[]const u8 {
+    return switch (tr) {
+        .named => |n| n,
+        else => null,
+    };
+}
+
+/// True when the raw annotation argument lexeme is consistent with `typeName`.
+/// Annotation args reach inference as source lexemes, so this is a lexical (not
+/// full-expression) check: enough to catch `#[value(123)]` where a string is
+/// required, while staying permissive for user/named types.
+fn argMatchesType(arg: []const u8, typeName: []const u8) bool {
+    if (arg.len == 0) return true;
+    if (std.mem.eql(u8, typeName, "string")) {
+        return arg[0] == '"';
+    }
+    if (std.mem.eql(u8, typeName, "bool")) {
+        return std.mem.eql(u8, arg, "true") or std.mem.eql(u8, arg, "false");
+    }
+    // Numeric primitives: a leading digit or sign (covers i32/i64/f32/f64/u*).
+    if (std.mem.startsWith(u8, typeName, "i") or std.mem.startsWith(u8, typeName, "u") or
+        std.mem.startsWith(u8, typeName, "f"))
+    {
+        const c = arg[0];
+        return std.ascii.isDigit(c) or c == '-' or c == '+';
+    }
+    return true; // enum member / named type → lenient (full check is the body's job).
 }
 
 /// Parse a tuple-index member name (`_0`, `_1`, …) into its integer index.
@@ -1564,10 +1992,11 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     env.fnContext = try contextInfoFromReturn(env, f.returnType);
     defer env.fnContext = savedFnCtx;
 
-    // A `-> @Expr<…>` return marks a template function: its body runs at
-    // comptime, enabling the `@expr`/`@code` construction builtins.
+    // A `-> @Expr<…>` (or `-> @ExprCustom<…>`) return marks a template
+    // function: its body runs at comptime, enabling the `@expr`/`@code`
+    // construction builtins (and, for the custom carrier, `q.custom`).
     const savedInTemplate = env.inTemplateFn;
-    env.inTemplateFn = if (f.returnType) |rt| rt.isExprType() else false;
+    env.inTemplateFn = if (f.returnType) |rt| rt.isTemplateReturnType() else false;
     defer env.inTemplateFn = savedInTemplate;
 
     // Determine how `throw` is checked inside this body:
@@ -1671,13 +2100,86 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     if (exprParams.items.len > 0) {
         try env.registerExprParams(f.name, try exprParams.toOwnedSlice(env.arena));
     }
-    // A function returning `expr [T]` is a template function: its calls are
-    // expanded at comptime (F6) and the declaration never reaches codegen.
+    // A function returning `@Expr<T>` / `@ExprCustom<T>` is a template
+    // function: its calls are expanded at comptime (F6) and the declaration
+    // never reaches codegen.
     if (f.returnType) |rt| {
-        if (rt.isExprType()) try env.templateFns.put(f.name, f);
+        if (rt.isTemplateReturnType()) try env.templateFns.put(f.name, f);
     }
 
     return env.funcType(paramTypes, retType);
+}
+
+/// Walk the bodies of a type's instance/associated methods (record / struct /
+/// enum) to record the codegen instance-method lowerings (and type the calls
+/// inside). Their signatures are registered earlier, but the bodies were never
+/// walked — so a `self.xs.map(f)` call was neither typed nor recorded, and the
+/// non-JS backends had no way to lower it.
+///
+/// This is BEST-EFFORT: a method whose body trips an inference gap is skipped
+/// (the lowerings recorded up to that point stand; the rest fall back to the
+/// backend default). Record method bodies are not part of the strict
+/// type-checking contract here — only `default fn` interface bodies are (see
+/// `inferInterfaceDefaultBodies`) — so a gap must not fail the whole compile.
+fn inferTypeMethods(
+    env: *Env,
+    typeName: []const u8,
+    typeGenerics: []const ast.GenericParam,
+    methods: []const ast.InterfaceMethod,
+) InferError!void {
+    for (methods) |m| {
+        const body = m.body orelse continue;
+        if (m.is_declare) continue;
+
+        var genericMap = std.StringHashMap(*T.Type).init(env.arena);
+        defer genericMap.deinit();
+
+        // `Self = Type<G0, G1, …>` over fresh generics shared with the params.
+        const selfArgs = try env.arena.alloc(*T.Type, typeGenerics.len);
+        for (typeGenerics, 0..) |gp, i| {
+            const v = try env.freshVar();
+            selfArgs[i] = v;
+            try genericMap.put(gp.name, v);
+        }
+        const selfTy = if (typeGenerics.len == 0)
+            try env.namedType(typeName)
+        else
+            try env.namedTypeArgs(typeName, selfArgs);
+        try genericMap.put("Self", selfTy);
+
+        // Method-level generics (`mapValues<C>`).
+        for (m.genericParams) |gp| try genericMap.put(gp.name, try env.freshVar());
+
+        // Bind parameters — a `self` receiver resolves through `Self`.
+        for (m.params) |p| {
+            const ty = if (p.fnType) |ft| blk: {
+                const fparams = try env.arena.alloc(*T.Type, ft.params.len);
+                for (ft.params, 0..) |fp, j| {
+                    fparams[j] = genericMap.get(fp.typeName) orelse try env.namedType(fp.typeName);
+                }
+                const fret = if (ft.returnType) |rn|
+                    genericMap.get(rn) orelse try env.namedType(rn)
+                else
+                    try env.namedType("void");
+                break :blk try env.funcType(fparams, fret);
+            } else try resolveTypeRefInContext(env, p.typeRef, genericMap);
+            try env.bind(p.name, ty);
+        }
+
+        // Scope the return-type-derived `use`/effect context to this body.
+        const savedFnCtx = env.fnContext;
+        env.fnContext = try contextInfoFromReturn(env, m.returnType);
+        defer env.fnContext = savedFnCtx;
+
+        for (body) |stmt| {
+            // Swallow inference gaps (see the best-effort note above): clear the
+            // stale error and move to the next method so the compile survives.
+            _ = inferExpr(env, stmt.expr) catch {
+                env.lastError = null;
+                break;
+            };
+        }
+    }
 }
 
 const AsyncReturnKind = enum { none, future, iterator, asyncIterator };
@@ -1852,6 +2354,19 @@ pub fn registerImportedTemplateFn(env: *Env, name: []const u8, decl: ast.FnDecl)
     }
 }
 
+/// Register a nominal type (record/struct/enum) imported from another module.
+/// The export registry carries the full declaration so the importing module can
+/// rebuild the `TypeDef` — its `implements` / `contextBase` and fields, not just
+/// the constructor value binding. Without this, an imported type's `implement`
+/// clause is invisible here (e.g. the `use`-legality check `contextInfoFromReturn`
+/// looks up `env.lookupTypeDef` and would find nothing). This mirrors the
+/// `from "std"` type-export path, which re-runs `registerTypeDecl` over the
+/// module's `pub` type decls. Registering in the importing env also re-binds the
+/// constructor with this module's own type ids.
+pub fn registerImportedTypeDecl(env: *Env, decl: ast.DeclKind) !void {
+    try registerTypeDecl(env, decl);
+}
+
 // ── template call-site expansion (expr-templates F6, V1 driver) ───────────────
 
 /// Expand a call to a template function (`-> @Expr<…>`) at the call site.
@@ -1911,8 +2426,14 @@ fn expandTemplateCall(
 fn finishExpansion(env: *Env, expansion: *const ast.Expr, retType: *T.Type, loc: ast.Loc) InferError!TypedExpr {
     const typed = try inferExprTyped(env, expansion.*);
 
+    // The expansion carries only the executable `code` half (the `ast` tree is
+    // stored separately for tooling). Verify it against the declared bound for
+    // both carriers: `@Expr<T>` (named "Expr") and `@ExprCustom<T>` (the
+    // `CustomExpr<T>` struct), whose `T` is the code's value type.
     const rDeref = retType.deref();
-    if (rDeref.* == .named and std.mem.eql(u8, rDeref.named.name, "Expr") and rDeref.named.args.len == 1) {
+    if (rDeref.* == .named and rDeref.named.args.len == 1 and
+        (std.mem.eql(u8, rDeref.named.name, "Expr") or std.mem.eql(u8, rDeref.named.name, "CustomExpr")))
+    {
         const bound = rDeref.named.args[0];
         if (bound.deref().* != .typeVar) {
             try unifyAt(env, bound, typed.getType(), loc);
@@ -1956,7 +2477,16 @@ fn expandTemplateCallViaRuntime(
     for (captures) |cap| {
         if (cap.text == null) holed = true;
     }
-    const memoKey: ?[]const u8 = if (holed) null else blk: {
+    // `@ExprCustom<T>` calls are never memoized: each expansion also stores a
+    // reference `CustomNode` tree keyed by *this* call's location, so the
+    // evaluation must run per call site (the memo cache holds only the `code`
+    // expression). Custom templates are opt-in and rare — correctness over the
+    // node round-trip saving.
+    const isCustomRet = blk: {
+        const d = retType.deref();
+        break :blk d.* == .named and std.mem.eql(u8, d.named.name, "CustomExpr");
+    };
+    const memoKey: ?[]const u8 = if (holed or isCustomRet) null else blk: {
         var buf: std.ArrayListUnmanaged(u8) = .empty;
         buf.appendSlice(env.arena, tfn.name) catch return error.OutOfMemory;
         for (captures) |cap| {
@@ -2010,6 +2540,30 @@ fn expandTemplateCallViaRuntime(
                 "This is a template-evaluator protocol bug — please report it.",
             ).withLoc(loc);
             return error.TypeError;
+        },
+        .custom => |c| blk: {
+            // The `code` half is spliced exactly like a plain `.code` outcome —
+            // runtime/codegen never learn it came from `q.custom`.
+            const parsed = parseCodeText(env, c.code) orelse {
+                env.lastError = TypeError.custom(
+                    "the code built by the template does not parse as an expression",
+                    "`q.custom(tree, code)` — the `code` must be a single well-formed botopink expression (e.g. from `q.build(…)`).",
+                ).withLoc(loc);
+                return error.TypeError;
+            };
+            substituteHoles(@constCast(parsed), captures);
+            // The `ast` half: deserialize the canonical reference tree and store
+            // it by call-location for the tooling read API. It is never lowered.
+            const root = template.parseCustomNode(env.arena, c.ast) catch return error.OutOfMemory;
+            const prov: ?*const template.CapturedExpr = if (captures.len > 0) &captures[0] else null;
+            env.customAstByLoc.put(loc, .{
+                .callee = tfn.name,
+                .root = root,
+                .file = if (prov) |p| p.modulePath else env.modulePath,
+                .line = if (prov) |p| p.loc.line else loc.line,
+                .col = if (prov) |p| p.loc.col else loc.col,
+            }) catch return error.OutOfMemory;
+            break :blk parsed;
         },
         .value => |v| literalFromJson(env, v, loc) orelse {
             env.lastError = TypeError.custom(
@@ -2357,9 +2911,31 @@ fn validateTypeparams(
 
 /// Calls `unify` and, if it fails, stamps the expression's location onto the error.
 fn unifyAt(env: *Env, a: *T.Type, b: *T.Type, loc: ast.Loc) InferError!void {
+    // `Children` coercion — applied before unification since `unifyAt` is
+    // always called target-first (`unifyAt(param, arg)`).
+    if (childrenCoercion(env, a, b)) return;
     unify(env, a, b) catch |err| {
         if (env.lastError) |*e| e.loc = loc;
         return err;
+    };
+}
+
+/// True when `source` coerces into a `Children`-typed `target`. A `Children`
+/// parameter (the builder children model a markup DSL's `div { … }` needs)
+/// accepts another `Children`, any array (`Element[]` — the list form), a
+/// `string` (→ a text child), or a single value implementing `@Context` (an
+/// `Element` → a one-element list). Coercion is one-directional: it only fires
+/// when the *declared* type (`target`) is `Children`, never the reverse.
+fn childrenCoercion(env: *Env, target: *T.Type, source: *T.Type) bool {
+    const t = target.deref();
+    if (t.* != .named or !std.mem.eql(u8, t.named.name, "Children")) return false;
+    const s = source.deref();
+    return switch (s.*) {
+        .named => |n| std.mem.eql(u8, n.name, "Children") or
+            std.mem.eql(u8, n.name, "array") or
+            std.mem.eql(u8, n.name, "string") or
+            contextBaseOfType(env, source) != null,
+        else => false,
     };
 }
 fn inferBuiltinCallReturnType(
@@ -2420,6 +2996,25 @@ fn inferBuiltinCallReturnType(
     {
         if (typedArgs.len > 0) return typedArgs[0].value.getType();
         return env.freshVar();
+    }
+    // `@compilerError(message)` — abort compilation with a diagnostic. The
+    // generic way for any comptime body (a decorator or a template) to reject
+    // its input; reaches `decorator_eval`/`template_eval` as a `fail` outcome.
+    // `noreturn`-like: a fresh var unifies with whatever context follows it.
+    if (std.mem.eql(u8, callee, "compilerError")) {
+        if (typedArgs.len >= 1) {
+            try unifyAt(env, try env.namedType("string"), typedArgs[0].value.getType(), typedArgs[0].value.getLoc());
+        }
+        return env.freshVar();
+    }
+    // `@emit(source)` — a comptime body (a decorator) contributes generated
+    // top-level declarations, spliced into its module. Void; the source is parsed
+    // + inferred in a second pass over the module (see `analyzeModule`).
+    if (std.mem.eql(u8, callee, "emit")) {
+        if (typedArgs.len >= 1) {
+            try unifyAt(env, try env.namedType("string"), typedArgs[0].value.getType(), typedArgs[0].value.getLoc());
+        }
+        return env.namedType("void");
     }
     return env.namedType("void");
 }
@@ -2552,8 +3147,15 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             // `Array<T>` is the canonical spelling of the array type `T[]` —
             // normalise it so annotations unify with array-literal inference
             // (`[1, 2]` infers as named "array").
+            // `@ExprCustom<T>` is the marker spelling of the carrier struct
+            // `CustomExpr<T>` (`{ code: Expr<T>, ast: CustomNode }`) — normalise
+            // it so a template fn's `-> @ExprCustom<T>` return unifies with the
+            // `q.custom(…)` value the body produces (exactly as `@Expr` ↔ the
+            // `Expr` interface).
             const name = if (std.mem.eql(u8, b.name, "Array"))
                 "array"
+            else if (b.is_builtin and std.mem.eql(u8, b.name, "ExprCustom"))
+                "CustomExpr"
             else
                 b.name;
             return env.namedTypeArgs(name, args);
@@ -2562,6 +3164,21 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
         // its constraints are validated separately (see `validateTypeparams`).
         // Resolve to a fresh variable so unification against it never fails.
         .typeparam => return env.freshVar(),
+        // Anonymous record type `{ f: T, … }` — a structural `Type.record` that
+        // unifies field-by-field with a `record { … }` literal (same field set,
+        // declaration order; see unify.zig).
+        .record_type => |flds| {
+            const fields = try env.arena.alloc(T.RecordField, flds.len);
+            for (flds, 0..) |f, i| {
+                fields[i] = .{
+                    .name = f.name,
+                    .type_ = try resolveTypeRefInContext(env, f.typeRef, genericMap),
+                };
+            }
+            const ty = try env.arena.create(T.Type);
+            ty.* = .{ .record = fields };
+            return ty;
+        },
     }
 }
 
@@ -3092,11 +3709,22 @@ fn inferIdentifierExpr(env: *Env, ident: ast.IdentifierExprOf(.untyped), loc: as
             }
             if (recvType.* == .named) {
                 const recvNamed = recvType.named;
+                // `arr.length` / `s.length` / `arr.len`: the host length op
+                // (`length(Arr)` / `string:length(S)` / `.length` in JS), NOT a
+                // map field read. Record the primitive kind so the non-JS
+                // backends lower the field access correctly.
+                if ((std.mem.eql(u8, recvNamed.name, "array") or std.mem.eql(u8, recvNamed.name, "string")) and
+                    (std.mem.eql(u8, ia.member, "length") or std.mem.eql(u8, ia.member, "len")))
+                {
+                    const k: envMod.PrimKind = if (std.mem.eql(u8, recvNamed.name, "string")) .string else .array;
+                    try env.instanceLowerings.put(loc, .{ .prim = k });
+                    outType = try env.namedType("i32");
+                }
                 // Tuple index access (`t._0`, `t._1`, …): resolve to the Nth
                 // element type so a `?T` element keeps its `@Option` method
                 // surface (`.unwrapOr`) — without this the element gets a fresh
                 // var and the method-call lowering can't fire.
-                if (std.mem.eql(u8, recvNamed.name, "tuple")) {
+                else if (std.mem.eql(u8, recvNamed.name, "tuple")) {
                     if (tupleMemberIndex(ia.member)) |idx| {
                         if (idx < recvNamed.args.len) outType = recvNamed.args[idx];
                     }
@@ -3829,6 +4457,16 @@ fn inferTemplateMethod(
             op = .build;
             try unifyArg(env, typedArgs, 0, try env.namedType("string"));
             retType = try env.namedTypeArgs("Expr", &.{try env.freshVar()});
+        } else if (std.mem.eql(u8, callee, "custom")) {
+            // Pack a reference `CustomNode` tree + executable `code` into the
+            // `@ExprCustom<R>` carrier (expr-custom). The `code`'s value type `R`
+            // is revealed at expansion; the tree is stored by call-location for
+            // tooling. Generic — the core never inspects `kind`/`label`.
+            op = .custom;
+            const r = try env.freshVar();
+            try unifyArg(env, typedArgs, 0, try env.namedType("CustomNode"));
+            try unifyArg(env, typedArgs, 1, try env.namedTypeArgs("Expr", &.{r}));
+            retType = try env.namedTypeArgs("CustomExpr", &.{r});
         } else if (std.mem.eql(u8, callee, "lookup")) {
             op = .lookup;
             try unifyArg(env, typedArgs, 0, try env.namedType("string"));
@@ -3893,29 +4531,28 @@ fn resolveReceiverCall(
 
     // Rule 1 — inherent method (declared on the type or inline `implement`).
     if (env.hasInherentMethod(typeName, callee)) {
+        try recordInstanceCall(env, loc, typeName);
         return try makeMethodCall(env, recvPtr, callee, typedArgs, typedTrailing, loc);
     }
 
-    // Rule 2 — activated `implement`/`extend` providing `callee` for this type.
-    var activatedSym: ?[]const u8 = null;
+    // Rule 2 — an `implement` block providing `callee` for this type. Every entry
+    // in `env.extensions` is declared in the current module (imports do not register
+    // here), so all are auto-applied: no activation is required (Rule B). Two local
+    // impls of the same method for the same type are ambiguous.
+    var matchSym: ?[]const u8 = null;
     var ambiguousWith: ?[]const u8 = null;
-    var inactiveSym: ?[]const u8 = null;
     var it = env.extensions.valueIterator();
     while (it.next()) |ext| {
         if (!std.mem.eql(u8, ext.target, typeName)) continue;
         if (!containsStr(ext.methods, callee)) continue;
-        if (env.isActivated(ext.name)) {
-            if (activatedSym == null) {
-                activatedSym = ext.name;
-            } else if (ambiguousWith == null) {
-                ambiguousWith = ext.name;
-            }
-        } else if (inactiveSym == null) {
-            inactiveSym = ext.name;
+        if (matchSym == null) {
+            matchSym = ext.name;
+        } else if (ambiguousWith == null) {
+            ambiguousWith = ext.name;
         }
     }
 
-    if (activatedSym) |sym| {
+    if (matchSym) |sym| {
         if (ambiguousWith) |other| {
             env.lastError = TypeError.ambiguousExtension(typeName, callee, sym, other).withLoc(loc);
             return error.TypeError;
@@ -3923,12 +4560,6 @@ fn resolveReceiverCall(
         // External dispatch: lower `recv.callee(args)` → `sym.callee(recv, args)`.
         try env.dispatchRewrites.put(loc, sym);
         return try makeMethodCall(env, recvPtr, callee, typedArgs, typedTrailing, loc);
-    }
-
-    // Rule 3 — method exists but no activation: error with an activation hint.
-    if (inactiveSym) |sym| {
-        env.lastError = TypeError.methodNotActive(typeName, callee, sym).withLoc(loc);
-        return error.TypeError;
     }
 
     return null;
@@ -3992,6 +4623,8 @@ fn resolveStdArrayMethod(
     }
     const retType = if (im.returnType) |rt| try resolveTypeRefInContext(env, rt, gm) else try env.namedType("void");
 
+    if (primKindOfName(recvType.named.name) != null) try recordInstanceCall(env, loc, recvType.named.name);
+
     return TypedExpr{ .call = .{ .loc = loc, .type_ = retType, .kind = .{ .call = .{
         .receiver = recvPtr,
         .callee = callee,
@@ -3999,6 +4632,74 @@ fn resolveStdArrayMethod(
         .args = typedArgs,
         .trailing = typedTrailing,
     } } } };
+}
+
+/// Map a builtin-primitive type name to its `PrimKind` family, or null when the
+/// name is not a primitive (a record/struct/enum/type variable). Used to record
+/// how a value-receiver instance call lowers on the non-JS backends.
+fn primKindOfName(typeName: []const u8) ?envMod.PrimKind {
+    const map = [_]struct { t: []const u8, k: envMod.PrimKind }{
+        .{ .t = "array", .k = .array },
+        .{ .t = "string", .k = .string },
+        .{ .t = "bool", .k = .bool },
+        .{ .t = "i32", .k = .int },
+        .{ .t = "i64", .k = .int },
+        .{ .t = "u32", .k = .int },
+        .{ .t = "u64", .k = .int },
+        .{ .t = "f32", .k = .float },
+        .{ .t = "f64", .k = .float },
+    };
+    for (map) |e| if (std.mem.eql(u8, typeName, e.t)) return e.k;
+    return null;
+}
+
+/// The return type of a builtin-primitive method call, or null when the method
+/// is unknown (the caller then types it permissively). Lets a chained call keep
+/// tracking its type (`xs.filter(f).at(0)` → `?T`). `recvTy` is the (already
+/// dereferenced) `.named` receiver type; `T` is its first type arg for arrays.
+fn primMethodReturnType(env: *Env, recvTy: *T.Type, callee: []const u8) InferError!?*T.Type {
+    const eq = std.mem.eql;
+    const name = recvTy.named.name;
+    if (eq(u8, name, "array")) {
+        const elem = if (recvTy.named.args.len >= 1) recvTy.named.args[0] else try env.freshVar();
+        // Same-array-shape transforms.
+        if (eq(u8, callee, "filter") or eq(u8, callee, "append") or
+            eq(u8, callee, "prepend") or eq(u8, callee, "reverse") or
+            eq(u8, callee, "push") or eq(u8, callee, "slice")) return recvTy;
+        if (eq(u8, callee, "map")) return try env.namedTypeArgs("array", &.{try env.freshVar()});
+        if (eq(u8, callee, "at")) return try env.namedTypeArgs("optional", &.{elem});
+        if (eq(u8, callee, "forEach")) return try env.namedType("void");
+        if (eq(u8, callee, "join")) return try env.namedType("string");
+        if (eq(u8, callee, "len") or eq(u8, callee, "length") or
+            eq(u8, callee, "size") or eq(u8, callee, "indexOf"))
+            return try env.namedType("i32");
+        if (eq(u8, callee, "isEmpty") or eq(u8, callee, "contains")) return try env.namedType("bool");
+        return null;
+    }
+    if (eq(u8, name, "string")) {
+        if (eq(u8, callee, "length")) return try env.namedType("i32");
+        if (eq(u8, callee, "contains") or eq(u8, callee, "startsWith") or eq(u8, callee, "endsWith"))
+            return try env.namedType("bool");
+        if (eq(u8, callee, "toUpper") or eq(u8, callee, "toLower") or
+            eq(u8, callee, "trim") or eq(u8, callee, "slice"))
+            return try env.namedType("string");
+        if (eq(u8, callee, "split")) return try env.namedTypeArgs("array", &.{try env.namedType("string")});
+        return null;
+    }
+    return null;
+}
+
+/// Record how a value-receiver instance call `recv.callee(args)` lowers on the
+/// backends without native method dispatch (erlang/beam/wasm). A primitive
+/// receiver records its `PrimKind`; any other nominal type records as a record
+/// method carrying its type name (the backend resolves local vs imported owner).
+/// commonJS ignores the table (it dispatches natively).
+fn recordInstanceCall(env: *Env, loc: ast.Loc, typeName: []const u8) InferError!void {
+    if (primKindOfName(typeName)) |k| {
+        try env.instanceLowerings.put(loc, .{ .prim = k });
+    } else {
+        try env.instanceLowerings.put(loc, .{ .record = typeName });
+    }
 }
 
 /// Map a primitive type name to its controller interface in `primitives.d.bp`.
@@ -4017,6 +4718,17 @@ fn primitiveInterfaceName(typeName: []const u8) ?[]const u8 {
         .{ .t = "f64", .i = "F64" },
     };
     for (map) |e| if (std.mem.eql(u8, typeName, e.t)) return e.i;
+    return null;
+}
+
+/// JS-native rename for a `string` interface method whose host name differs and
+/// has no companion lowering yet. `js_name` is the `String.prototype` method to
+/// emit; `ret` is the method's return type. Only consulted for `string` receivers.
+fn jsStringMethodRename(callee: []const u8) ?struct { js_name: []const u8, ret: []const u8 } {
+    const map = [_]struct { src: []const u8, js: []const u8, ret: []const u8 }{
+        .{ .src = "contains", .js = "includes", .ret = "bool" },
+    };
+    for (map) |e| if (std.mem.eql(u8, callee, e.src)) return .{ .js_name = e.js, .ret = e.ret };
     return null;
 }
 
@@ -4347,7 +5059,50 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                 // `Queue<i32>` chain keeps tracking `?i32` through `.peek()`.
                 if (nominalName(recvPtr.getType())) |tn| {
                     if (env.hasInherentMethod(tn, call.callee)) {
+                        try recordInstanceCall(env, loc, tn);
                         return try makeMethodCall(env, recvPtr, call.callee, typedArgs, typedTrailing, loc);
+                    }
+                }
+
+                // Type-directed JS method rename: `s.contains(x)` on a `string`
+                // receiver has no JS-native `String.prototype.contains`, so lower
+                // it to `s.includes(x)`. A global name-map would be unsafe here —
+                // `record Set` also declares `contains` as an inherent method — so
+                // the rename is recorded per call site, gated on the receiver type.
+                if (nominalName(recvPtr.getType())) |tn| {
+                    if (std.mem.eql(u8, tn, "string")) {
+                        if (jsStringMethodRename(call.callee)) |native| {
+                            try env.jsMethodRenames.put(loc, native.js_name);
+                            try recordInstanceCall(env, loc, tn);
+                            return TypedExpr{ .call = .{ .loc = loc, .type_ = try env.namedType(native.ret), .kind = .{ .call = .{
+                                .receiver = recvPtr,
+                                .callee = call.callee,
+                                .is_builtin = false,
+                                .args = typedArgs,
+                                .trailing = typedTrailing,
+                            } } } };
+                        }
+                    }
+                }
+
+                // A builtin-primitive receiver (`xs.map(f)`, `s.split(sep)`) has
+                // no native method dispatch on erlang/beam/wasm — record the
+                // primitive family so those backends lower it to the host op,
+                // and recover the method's real return type so a chained call
+                // (`xs.filter(f).at(0)`) keeps tracking the element/array type.
+                {
+                    const recvTy = recvPtr.getType().deref();
+                    if (recvTy.* == .named and primKindOfName(recvTy.named.name) != null) {
+                        try recordInstanceCall(env, loc, recvTy.named.name);
+                        if (try primMethodReturnType(env, recvTy, call.callee)) |ret| {
+                            return TypedExpr{ .call = .{ .loc = loc, .type_ = ret, .kind = .{ .call = .{
+                                .receiver = recvPtr,
+                                .callee = call.callee,
+                                .is_builtin = false,
+                                .args = typedArgs,
+                                .trailing = typedTrailing,
+                            } } } };
+                        }
                     }
                 }
 

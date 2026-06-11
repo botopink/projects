@@ -59,6 +59,41 @@ test "import decl" {
 - Snapshot path: `../../snapshots/parser/<slug>.snap.md`
 - Error tests: `expectParseError(source, "expected message")`
 
+## Type-ref grammar (`types.zig`)
+
+`parseBaseTypeRef` handles `?T`, `#(…)` tuples, `fn(…) -> R` function types,
+`@Name<…>` builtins, `type` meta-kinds, plain names with `<…>`/`[]` wraps, and
+two additions for record/builder ergonomics:
+
+- **Function-type params may be named** — `fn(next: T)` parses alongside the
+  bare `fn(T)`; the name is documentation-only (function types are positional)
+  and is discarded.
+- **Anonymous record types** — `{ value: T, set: fn(T) }` parses to
+  `TypeRef.record_type` (a `[]RecordTypeField`), usable as any annotation /
+  return type; inference resolves it to a structural `Type.record`.
+
+A non-`syntax` `name: fn(…)` param is parsed through `parseTypeRef` (a
+`TypeRef.function`, so its return may be an array — `fn() -> T[]`); the legacy
+string-based `Param.fnType` is kept **only** for `syntax fn(…)` params.
+
+## Soft keywords `get` / `set`
+
+`get`/`set` introduce struct getters/setters only at the **start** of a struct
+member; everywhere else they are ordinary names. `Parser.isMemberName` /
+`consumeMemberName` accept `identifier`/`get`/`set` and back the record field
+names, record-literal labels, destructuring names, member access, method-call
+names, and named-call labels — so a hook can return the shape `{ value, set }`
+with `set` a function field (`s.set(x)`).
+
+## Postfix-chain locs
+
+Each link in a `.field` / `?.field` / `.method(args)` postfix chain carries the
+loc of **its own member token**, never the shared base loc. Downstream lowering
+is loc-keyed (e.g. `instanceLowerings` records `arr.length` → host length op by
+the access loc), so two links sharing a loc collide — `self.pairs.length` would
+emit `length(length(Self))`. `parsePostfixChain` and the identifier postfix loop
+both use `locFromToken(fieldTok)` for this reason.
+
 ## Notes
 
 - AST nodes are `union(enum)`; always call `deinit(alloc)` on heap-allocated

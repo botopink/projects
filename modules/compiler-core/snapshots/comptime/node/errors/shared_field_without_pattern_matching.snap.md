@@ -9,9 +9,9 @@ val get_value = fn(r: Result) -> i32 {
 
 ----- ERROR
 error: unknown field
-  ┌─ :6:5
+  ┌─ :6:7
   │
 6 │     r.kind
-  │     ^
+  │       ^
 
   'Result' has no field 'kind'

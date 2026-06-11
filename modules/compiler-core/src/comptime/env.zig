@@ -88,18 +88,17 @@ pub const TypeDef = union(enum) {
 
 // ── static extension dispatch ───────────────────────────────────────────────────
 
-/// A named `implement … for T` or `extend T` block, registered for static
-/// extension dispatch. `obj.method()` resolves to one of these only when the
-/// entry's `name` has been activated (`name*` in an import, or a bare `name*;`).
+/// A named `implement … for T` block, registered for static extension dispatch.
+/// Every entry is declared in the current module (imports do not register here),
+/// so `obj.method()` resolves to one without any activation — local extensions
+/// are auto-applied.
 pub const ExtEntry = struct {
-    /// The activation symbol, e.g. "PatoNada".
+    /// The dispatch symbol, e.g. "PatoNada".
     name: []const u8,
-    /// The type this block extends, e.g. "Pato".
+    /// The type this block implements methods for, e.g. "Pato".
     target: []const u8,
-    /// true for `extend`, false for `implement`.
-    isExtend: bool,
-    /// Interfaces named in an `implement` block (empty for `extend`).
-    interfaces: []const []const u8 = &.{},
+    /// Interfaces named in the `implement` block.
+    interfaces: []const ast.TypeRef = &.{},
     /// Method names declared in the block.
     methods: []const []const u8,
 };
@@ -146,13 +145,29 @@ pub const ExprParamInfo = struct {
     paramName: []const u8,
 };
 
+/// One reference-AST entry produced by a `q.custom(tree, code)` template
+/// expansion (expr-custom): the canonical `CustomNode` root plus the provenance
+/// a tooling consumer needs to map a node's (template-relative) `span` to an
+/// absolute document position. Generic — no sub-language is named.
+pub const CustomAstEntry = struct {
+    /// The called template function's name (e.g. the DSL entry point).
+    callee: []const u8,
+    /// The reference tree (reference-only; never lowered).
+    root: template.CustomNode,
+    /// Source file of the template literal ("" for main).
+    file: []const u8,
+    /// 1-based line/column of the template literal's opening quote.
+    line: usize,
+    col: usize,
+};
+
 /// A compiler-provided template method resolved by inference (expr-templates
 /// F4): `text`/`parts`/`source`/`context`/`lookup`/`bindings`/`fail`/`failAt`
 /// on an `expr` receiver, plus `ref` on a `Binding`. Mirrors `MethodLowering`:
 /// keyed by the call's source `Loc` and consumed by the call-site expansion
 /// pass (F6). Instances only exist at comptime — no codegen backend ever sees
 /// these calls.
-pub const TemplateOp = enum { value, text, parts, source, context, lookup, bindings, build, fail, failAt, ref };
+pub const TemplateOp = enum { value, text, parts, source, context, lookup, bindings, build, custom, fail, failAt, ref };
 
 /// Everything the inference-time template evaluator needs to run a template
 /// body in the external eval runtime (expr-templates F6-full). Null in
@@ -219,6 +234,40 @@ pub const StdArrayLowering = struct {
     method: []const u8,
 };
 
+/// The builtin-primitive family of a method-call receiver. Lets a backend that
+/// has no native method dispatch (erlang/beam/wasm) map `xs.map(f)` /
+/// `s.toUpper()` / `n.abs()` to the host's equivalent (`lists:map(F, Xs)`, …).
+pub const PrimKind = enum { array, string, bool, int, float };
+
+/// How a value-receiver instance call `recv.method(args)` lowers on backends
+/// without native method dispatch. Recorded by inference keyed by call loc.
+///   - `prim`   — the receiver is a builtin primitive; the backend maps
+///                `(PrimKind, method)` to its host operation.
+///   - `record` — the receiver is a record/struct/enum value; the method is a
+///                plain function taking the receiver first. The payload is the
+///                receiver's nominal type name; the backend resolves a local
+///                call (`method(Recv, args)`) vs an imported owner module
+///                (`owner:method(Recv, args)`) from its own import index.
+pub const InstanceLowering = union(enum) {
+    prim: PrimKind,
+    record: []const u8,
+};
+
+/// A recognized decorator's signature, minus its leading `comptime _: @Decl`
+/// parameter. `params` are the trailing argument parameters an `#[d(args)]`
+/// application type-checks against (arity + types). Populated generically for
+/// any fn whose first parameter is `comptime _: @Decl` — no lib knowledge. The
+/// slice points into the AST arena (the decl's own `params`), so it is stable.
+///
+/// `fn_decl` carries the full decorator function (with body) when it has one —
+/// `pub fn d(comptime _: @Decl) { … }`. It is run over the annotated declaration
+/// at comptime (P2: placement/argument rules live in the body). `null` for a
+/// bodyless `declare fn` marker, which only gets argument validation.
+pub const DecoratorSig = struct {
+    params: []const ast.Param,
+    fn_decl: ?ast.FnDecl = null,
+};
+
 /// A type-directed lowering for a `return`/`throw` jump inside a fn returning
 /// `@Result<D, E>`. Recorded by inference keyed by the jump's source `Loc` and
 /// consumed by the transform pass, which wraps the value in a `__bp_ok(…)` /
@@ -255,6 +304,12 @@ pub const Env = struct {
     /// replaces the call. Recorded by inference (post splice + re-check); the
     /// transform pass rewrites the untyped AST from this map.
     templateExpansions: std.AutoHashMap(ast.Loc, *const ast.Expr),
+    /// Reference ASTs from `q.custom(tree, code)` (expr-custom): call loc → the
+    /// canonical `CustomNode` tree + provenance. Sibling of `templateExpansions`
+    /// — the `code` half lives there and reaches codegen; this `ast` half is
+    /// reference-only (tooling/LSP), never lowered. Exposed via the read API in
+    /// `root.zig`/`comptime.zig`.
+    customAstByLoc: std.AutoHashMap(ast.Loc, CustomAstEntry),
     /// V1 origin-scope snapshot of the module being inferred (top-level decls
     /// + imports); attached to every `expr` capture for `lookup` resolution.
     scopeSnapshot: ?*template.ScopeSnapshot = null,
@@ -320,6 +375,12 @@ pub const Env = struct {
     /// to qualify with. Consumed by the transform pass to lower `obj.m(args)` to
     /// `Sym.m(obj, args)` without monkey-patching.
     dispatchRewrites: std.AutoHashMap(ast.Loc, []const u8),
+    /// Type-directed JS method renames: call-site location → the native JS method
+    /// name to emit instead of the source `callee`. Recorded by inference when the
+    /// receiver's static type makes a global name-map unsafe (e.g. `s.contains(x)`
+    /// on a `string` lowers to `s.includes(x)`, but `Set.contains` must stay).
+    /// JS-specific — only the commonJS backend reads it.
+    jsMethodRenames: std.AutoHashMap(ast.Loc, []const u8),
     /// `"std"` package module exports: module name (`option`, `result`, …) →
     /// exports table (pub fn name → inferred type). Shared registry tables,
     /// populated by the compile session before inference.
@@ -336,18 +397,27 @@ pub const Env = struct {
     /// Stdlib method calls on builtin-array receivers (`xs.isEmpty()` sugar).
     /// Key: call loc, value: { module, method }. Consumed by transform.
     stdArrayLowerings: std.AutoHashMap(ast.Loc, StdArrayLowering),
+    /// Value-receiver instance method calls (`recv.method(args)`), keyed by call
+    /// loc. Lets backends without native method dispatch lower record + builtin
+    /// primitive methods. Empty contribution on commonJS (native dispatch).
+    instanceLowerings: std.AutoHashMap(ast.Loc, InstanceLowering),
     /// Stdlib modules implicitly required via array method dispatch; used by
     /// the compile session to prepend synthetic imports for the codegen.
     implicitStdModules: std.StringHashMap(void),
-    /// "rakun" framework value exports (decorator fns + interface associated
-    /// fns), name → inferred type. Populated by `registerRakunLib`; consumed by
-    /// `markRakunImports` to bind imported decorators (`#[service]`) and to
-    /// type-check annotation arguments (F3). rakun is opt-in per module — these
-    /// only enter scope via `import {…} from "rakun"`, never auto-loaded.
-    rakunExports: std.StringHashMap(*T.Type),
-    /// "rakun" framework type declarations (interface / enum), keyed by name.
-    /// `markRakunImports` registers the imported ones into the importing env.
-    rakunTypeDecls: std.StringHashMap(ast.DeclKind),
+    /// Decorators recognized in this module (and its imports), name → trailing
+    /// signature. A decorator is any fn whose first param is `comptime _: @Decl`;
+    /// this is the lib-agnostic registry used to type-check `#[d(args)]` argument
+    /// arity + types at every annotation site. Lib knowledge lives in the
+    /// decorator body, never here.
+    decorators: std.StringHashMap(DecoratorSig),
+    /// Top-level declaration sources a decorator body contributed via `@emit(...)`
+    /// while inferring this module. `analyzeModule` splices them into the module
+    /// and re-analyzes it (a wiring decorator builds singletons / DI / router as
+    /// ordinary code). Allocated in `arena`; no explicit deinit needed.
+    contributions: std.ArrayListUnmanaged([]const u8) = .empty,
+    /// Set on the second analysis pass (after splicing contributions) so
+    /// decorators are not re-invoked — no re-contribution, no infinite loop.
+    skipDecoratorInvoke: bool = false,
 
     pub fn init(arena: std.mem.Allocator) Env {
         return .{
@@ -360,6 +430,7 @@ pub const Env = struct {
             .templateLowerings = std.AutoHashMap(ast.Loc, TemplateOp).init(arena),
             .templateFns = std.StringHashMap(ast.FnDecl).init(arena),
             .templateExpansions = std.AutoHashMap(ast.Loc, *const ast.Expr).init(arena),
+            .customAstByLoc = std.AutoHashMap(ast.Loc, CustomAstEntry).init(arena),
             .templateEvalCache = std.StringHashMap(*const ast.Expr).init(arena),
             .nextId = 0,
             .nextTypeId = 0,
@@ -378,13 +449,14 @@ pub const Env = struct {
             .assocInterfaceDecls = std.StringHashMap(ast.InterfaceDecl).init(arena),
             .usedAssocInterfaces = std.StringHashMap(void).init(arena),
             .dispatchRewrites = std.AutoHashMap(ast.Loc, []const u8).init(arena),
+            .jsMethodRenames = std.AutoHashMap(ast.Loc, []const u8).init(arena),
             .stdModules = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena),
             .stdImports = std.StringHashMap(void).init(arena),
             .stdModuleTypes = std.StringHashMap([]const ast.DeclKind).init(arena),
             .stdArrayLowerings = std.AutoHashMap(ast.Loc, StdArrayLowering).init(arena),
+            .instanceLowerings = std.AutoHashMap(ast.Loc, InstanceLowering).init(arena),
             .implicitStdModules = std.StringHashMap(void).init(arena),
-            .rakunExports = std.StringHashMap(*T.Type).init(arena),
-            .rakunTypeDecls = std.StringHashMap(ast.DeclKind).init(arena),
+            .decorators = std.StringHashMap(DecoratorSig).init(arena),
         };
     }
 
@@ -407,6 +479,7 @@ pub const Env = struct {
         self.templateLowerings.deinit();
         self.templateFns.deinit();
         self.templateExpansions.deinit();
+        self.customAstByLoc.deinit();
         self.templateEvalCache.deinit();
         self.extensions.deinit();
         self.activations.deinit();
@@ -417,17 +490,16 @@ pub const Env = struct {
         while (itt.next()) |set| set.deinit();
         self.inherentMethodTypes.deinit();
         self.dispatchRewrites.deinit();
+        self.jsMethodRenames.deinit();
         // Note: stdModules values are shared registry export tables — owned by
         // the compile session, not this env. Only the outer maps are ours.
         self.stdModules.deinit();
         self.stdImports.deinit();
         self.stdModuleTypes.deinit();
         self.stdArrayLowerings.deinit();
+        self.instanceLowerings.deinit();
         self.implicitStdModules.deinit();
-        // rakun registries mirror stdModules: outer maps are ours, the type
-        // values live in the shared arena.
-        self.rakunExports.deinit();
-        self.rakunTypeDecls.deinit();
+        self.decorators.deinit();
     }
 
     // ── extension dispatch helpers ────────────────────────────────────────────
@@ -598,7 +670,20 @@ pub const Env = struct {
         // Registered user-defined types
         if (self.typeDefs.contains(name)) return self.namedType(name);
         // Primitive / built-in names
-        if (self.bindings.get(name)) |ty| return ty;
+        if (self.bindings.get(name)) |ty| {
+            // A name bound to a *constructor function* (`fn(fields…) -> Name`)
+            // names a nominal type in annotation position, not a value. This is
+            // the case for an imported record/struct/enum: the import binds its
+            // constructor as a value, but the type definition lives in the
+            // defining module, so the `typeDefs` check above missed it here.
+            // Resolve to the named type the constructor builds, so it unifies
+            // with the same nominal type as seen by the defining module.
+            const d = ty.deref();
+            if (d.* == .func and d.func.ret.isNamed(name)) {
+                return self.namedType(name);
+            }
+            return ty;
+        }
         // Fallback: treat as an opaque named type (forward reference, etc.)
         return self.namedType(name);
     }

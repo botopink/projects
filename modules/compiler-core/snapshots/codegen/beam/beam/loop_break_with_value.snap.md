@@ -89,9 +89,6 @@ fn main() {
     return.
     {jump, {f, 13}}.
   {label, 12}.
-    {move, {atom, undefined}, {x, 0}}.
-    {deallocate, 0}.
-    return.
   {label, 13}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 0}.

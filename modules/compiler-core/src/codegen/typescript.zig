@@ -50,8 +50,9 @@ const Emitter = struct {
             .extend => {},
             .use => |u| try self.emitUse(u),
             .delegate => |d| try self.emitDelegate(d),
-            // Test blocks never surface in the public typedef.
-            .@"test", .comment => {},
+            // Test blocks never surface in the public typedef; `mod` declares a
+            // submodule that carries its own typedef, so it emits nothing here.
+            .@"test", .mod, .comment => {},
         }
     }
 
@@ -94,7 +95,7 @@ const Emitter = struct {
                 }
                 try self.w(f.name);
                 try self.w(": ");
-                try self.emitTypeRefStr(f.typeName);
+                try self.emitTypeRef(f.typeRef);
                 try self.w(";\n");
             },
             .method => |m2| {
@@ -450,6 +451,16 @@ const Emitter = struct {
             },
             // A comptime typeparam is erased after specialization; surface it as `any`.
             .typeparam => try self.w("any"),
+            .record_type => |flds| {
+                try self.w("{ ");
+                for (flds, 0..) |f, i| {
+                    if (i > 0) try self.w(", ");
+                    try self.w(f.name);
+                    try self.w(": ");
+                    try self.emitTypeRef(f.typeRef);
+                }
+                try self.w(" }");
+            },
         }
     }
 

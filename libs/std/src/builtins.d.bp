@@ -141,6 +141,20 @@ fn panic(message: string) noreturn
 fn trap() noreturn
 fn src() string
 
+// ── compile-time diagnostics ──────────────────────────────────────────────────
+// Abort compilation with `message`. The generic way for any comptime body — a
+// decorator (`fn d(comptime _: @Decl)`) or a template (`-> @Expr<…>`) — to reject
+// its input, surfaced as a scoped diagnostic at the call site. Preferred over the
+// `@Decl` handle's `fail`/`failAt`: it needs no handle and reads like `@panic`.
+fn compilerError(message: string) noreturn
+
+// Contribute generated top-level declarations to the program from a decorator
+// body. `@emit("pub val userServiceSingleton = …")` parses `source` as botopink
+// declarations and splices them into the annotated declaration's module, so a
+// decorator can build wiring (singletons, a DI graph, a router table) as ordinary
+// code. May be called any number of times; each call appends. Comptime-only.
+fn emit(source: string)
+
 
 // ── module imports ───────────────────────────────────────────────────────────
 
@@ -225,6 +239,31 @@ pub struct Context {
     multiline: bool,
 }
 
+// ── @ExprCustom carrier (expr-custom) ──────────────────────────────────────────
+// A node of ANY embedded sub-language, in one canonical shape the core and the
+// tooling understand WITHOUT knowing the language. A second-layer language (an
+// `@Expr` template that lexes/parses its own DSL) converts its private AST into
+// `CustomNode`s at the boundary; the core never branches on the contents.
+// `kind`/`label` are opaque tags the lib picks; `span` indexes the
+// `@Expr<string>` source text; `ref` optionally ties a node (a queried
+// collection, a column, …) to a caller-scope symbol via a `lookup` result.
+pub struct CustomNode {
+    kind: string,             // lib-chosen tag: "select" / "field" / "predicate" / "literal" …
+    span: Span,               // offsets into the template's source text
+    label: string,            // tooling token category: "keyword"/"property"/"string"/"number"/"operator"
+    ref: ?Binding,            // optional association to an origin-scope symbol
+    children: CustomNode[],
+}
+
+// What `@ExprCustom<T>` carries: the executable expression plus the reference
+// tree. The `code` half travels the ordinary `@Expr<T>` expansion path (spliced,
+// lowered to every backend — runtime behaviour is unchanged); the `ast` half is
+// stored by call-location and is reference-only (the language server reads it).
+pub struct CustomExpr<T> {
+    code: Expr<T>,            // the botopink expression that actually runs
+    ast: CustomNode,          // the sub-language tree, reference only
+}
+
 pub interface Expr<E> {
     fn text(self: Self) -> string
     fn parts(self: Self) -> Part[]
@@ -233,6 +272,73 @@ pub interface Expr<E> {
     fn lookup(self: Self, name: string) -> ?Binding
     fn bindings(self: Self) -> Binding[]
     fn build<R>(self: Self, source: string) -> Expr<R>
+    // Pack a reference tree + the executable code into the custom return — a
+    // template fn opts into tooling visibility by returning `@ExprCustom<T>`.
+    fn custom<R>(self: Self, ast: CustomNode, code: Expr<R>) -> CustomExpr<R>
+    fn fail(self: Self, message: string)
+    fn failAt(self: Self, span: Span, message: string)
+}
+
+// ── @Decl reflection model (annotation processors) ─────────────────────────────
+// Read-only reflection of the declaration a decorator is attached to. A decorator
+// is an ordinary comptime function whose first parameter is `comptime _: @Decl`;
+// when `#[d(args)]` is applied, the core serializes the annotated declaration into
+// a `@Decl` handle and runs the body, exactly like an `@Expr` template capture.
+// The lib (rakun, …) — never the core — gives the marker meaning: validate
+// placement/arguments via `fail`/`failAt`, and (later) contribute generated
+// wiring. The core only provides the protocol (recognize → reflect → invoke).
+
+// Which kind of top-level declaration the annotation sits on.
+pub enum DeclKind {
+    Record,
+    Struct,
+    Enum,
+    Interface,
+    Fn,
+    Method,
+    Field,
+}
+
+// One annotation entry on a reflected declaration (`#[name(args…)]`). `args`
+// holds the raw argument lexemes in source order.
+pub struct Annotation {
+    name: string,
+    args: string[],
+}
+
+// One parameter of a reflected method/fn.
+pub struct Param {
+    name: string,
+    typeName: string,
+}
+
+// One field of a reflected record/struct, with its own annotations.
+pub struct Field {
+    name: string,
+    typeName: string,
+    annotations: Annotation[],
+}
+
+// One method of a reflected record/struct/enum, with its own annotations.
+pub struct Method {
+    name: string,
+    params: Param[],
+    returnType: string,
+    annotations: Annotation[],
+}
+
+// The reflection handle. `kind`/`name`/`fields`/`methods`/`returnType`/
+// `annotations` are read-only data (serialized like a template's capture);
+// `fail`/`failAt` emit a scoped diagnostic at the annotated declaration, reusing
+// the template diagnostic surface.
+pub interface Decl {
+    val kind: DeclKind
+    val name: string
+    val fields: Field[]
+    val methods: Method[]
+    val returnType: string
+    val annotations: Annotation[]
+
     fn fail(self: Self, message: string)
     fn failAt(self: Self, span: Span, message: string)
 }

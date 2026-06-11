@@ -83,6 +83,7 @@ pub const TokenKind = enum {
     implement,
     import,
     macro,
+    mod,
     new,
     @"opaque",
     private,

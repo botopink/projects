@@ -1,4 +1,4 @@
------ SOURCE CODE -- jhonstart.bp
+----- SOURCE CODE -- view.bp
 ```botopink
 pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
     var acc = "\"\"";
@@ -14,7 +14,7 @@ pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
 }
 ```
 
------ WASM TEXT -- jhonstart.wat
+----- WASM TEXT -- view.wat
 ```wasm
 (module
   (memory (export "memory") 1)
@@ -28,7 +28,7 @@ pub fn html(comptime q: @Expr<string>) -> @Expr<string> {
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-import {html} from "jhonstart";
+import {html} from "view";
 
 val name = "world";
 

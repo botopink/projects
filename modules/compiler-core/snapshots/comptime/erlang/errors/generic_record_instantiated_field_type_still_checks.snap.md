@@ -8,10 +8,10 @@ fn main() {
 
 ----- ERROR
 error: type mismatch
-  ┌─ :5:20
+  ┌─ :5:22
   │
 5 │     val bad: i32 = b.second;
-  │                    ^
+  │                      ^
 
   expected: i32
   found:    string

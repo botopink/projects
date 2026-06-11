@@ -14,8 +14,8 @@ fn main() {
 
 main() ->
     S = <<"hello">>,
-    Tail = S:slice(2),
-    io:format("~p~n", [maps:get(len, Tail)]).
+    Tail = string:slice(S, 2),
+    io:format("~p~n", [string:length(Tail)]).
 
 '_botopink_main'() ->
     main().
@@ -26,4 +26,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+3
 ```

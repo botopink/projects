@@ -50,13 +50,13 @@ doRange(Cur, Stop) ->
 toList(Iter) ->
     Out = [],
     lists:foreach(fun(Item) ->
-        Out:push(Item)
+        (Out ++ [Item])
     end, Iter),
     Out.
 
 main() ->
-    io:format("~p~n", [toList(fromList([1, 2, 3])):join(<<",">>)]),
-    io:format("~p~n", [toList(doRange(0, 3)):join(<<",">>)]).
+    io:format("~p~n", [iolist_to_binary(lists:join(<<",">>, lists:map(fun(__E) -> if is_binary(__E) -> __E; is_integer(__E) -> integer_to_binary(__E); is_list(__E) -> __E; true -> iolist_to_binary(io_lib:format("~p", [__E])) end end, toList(fromList([1, 2, 3])))))]),
+    io:format("~p~n", [iolist_to_binary(lists:join(<<",">>, lists:map(fun(__E) -> if is_binary(__E) -> __E; is_integer(__E) -> integer_to_binary(__E); is_list(__E) -> __E; true -> iolist_to_binary(io_lib:format("~p", [__E])) end end, toList(doRange(0, 3)))))]).
 
 '_botopink_main'() ->
     main().

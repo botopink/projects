@@ -392,7 +392,7 @@ fn emitBeamAsm(
     defer body_buf.deinit();
 
     // The BEAM module atom is the path basename (`std/order` → `order`,
-    // `rakun/http` → `http`) — a slash is invalid in an unquoted module atom,
+    // `web/http` → `http`) — a slash is invalid in an unquoted module atom,
     // and cross-module `call_ext` targets resolve by basename (see
     // `crossModule.ownerModuleAtom`). Mirrors the Erlang backend's
     // `erl_module_name`.
@@ -490,7 +490,9 @@ fn emitBeamAsm(
             // Purely abstract decls (interface/delegate), module-graph
             // metadata (use), and test blocks (only compiled under
             // `botopink test`) don't lower to runtime code — silently skip.
-            .interface, .delegate, .use, .@"test" => {},
+            // `mod` declares a submodule in the explicit tree; the submodule is
+            // compiled as its own unit, so the declaration itself emits nothing.
+            .interface, .delegate, .use, .mod, .@"test" => {},
         }
     }
 
@@ -1275,10 +1277,14 @@ const Emitter = struct {
         try self.bodyPrint("  {{label, {d}}}.\n", .{else_label});
         if (i.else_) |els| {
             for (els) |s| try self.emitStmt(s);
-        } else {
-            try self.bodyWrite("    {move, {atom, undefined}, {x, 0}}.\n");
-            try self.emitReturn();
         }
+        // A bare `if` with no else is a *statement*: when the condition is
+        // false, control must fall through to whatever follows (the next
+        // statement, or the trailing `return.` `emitBody` appends because
+        // `bodyExits` is false for an else-less if). Emitting `move undefined`
+        // + `return.` here would end the function early and turn every
+        // following statement — e.g. the `return isOdd(n - 1)` tail of a
+        // mutually-recursive base-case guard — into unreachable dead code.
 
         if (end_label) |el| try self.bodyPrint("  {{label, {d}}}.\n", .{el});
     }
@@ -1837,7 +1843,7 @@ const Emitter = struct {
                     // is an associated fn (`Response.ok(...)`), emitted by
                     // `emitMethodAsFn` as `'<Type>_<callee>'`. A LOCAL record
                     // calls that fn directly by label; an IMPORTED record
-                    // (`from "rakun"`) calls it remotely in the owning module —
+                    // (`from "web"`) calls it remotely in the owning module —
                     // never the lowercased type name (`response:ok`).
                     if (cc.trailing.len == 0 and self.record_fields.contains(rn)) {
                         var nbuf: [256]u8 = undefined;

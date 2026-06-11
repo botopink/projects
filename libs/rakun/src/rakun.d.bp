@@ -1,45 +1,18 @@
 //// rakun — Spring-style application framework for botopink.
 ////
-//// Declaration-only surface: decorator markers + runtime-boundary interfaces
-//// (`Request`/`Context`/`Rakun`), SIGNATURES with no bodies. These are
-//// registered for inference only (`comptime.zig registerRakunLib`) and emit
-//// nothing. The concrete, EMITTED types (`HttpMethod`/`Response`/`App`) live in
-//// the sibling `http.bp` — real code pulled in as the `rakun/http` package
-//// module on import.
+//// Declaration-only surface: runtime-boundary interfaces (`Request`/`Context`/
+//// `Rakun`), SIGNATURES with no bodies. They are registered for inference only
+//// and emit nothing. The concrete, EMITTED types (`HttpMethod`/`Response`/`App`)
+//// live in the sibling `http.bp`; the `#[decorator]` bodies (component/route/…
+//// markers) live in `decorators.bp` — both real code pulled in as package
+//// modules on import.
 ////
 //// Opt-in, never auto-loaded into the type `Env`: reached via `from "rakun"`.
-//// See ./AGENTS.md, ./docs.md and the spec: tasks/v0.beta.5/specs/rakun.md
+//// See ./AGENTS.md, ./docs.md and the spec: tasks/v0.beta.7/specs/rakun.md
 ////
 //// Naming note: `get`/`set`/`new` are reserved keyword tokens, so the route
 //// decorators follow Spring's own names (`getMapping`, …) and the container
 //// uses `resolve<T>()` rather than `get<T>()`.
-
-// ---- decorators (imported from "rakun", applied as `#[service]`, `#[getMapping("/x")]`) ----
-//
-// Annotations are call entries type-checked against these signatures (the same
-// mechanism as the builtin `external`). The comptime scan recognises them on a
-// `record`/`struct` (component markers) or on a method (route markers).
-
-// component markers
-pub declare fn component();
-pub declare fn service();
-pub declare fn repository();
-pub declare fn controller();
-pub declare fn restController();
-
-// configuration / factory markers
-pub declare fn configuration();
-pub declare fn bean();
-pub declare fn inject();
-pub declare fn value(key: string);
-
-// web / route markers
-pub declare fn route(prefix: string);          // controller-level path prefix (Spring @RequestMapping)
-pub declare fn getMapping(path: string);
-pub declare fn postMapping(path: string);
-pub declare fn putMapping(path: string);
-pub declare fn patchMapping(path: string);
-pub declare fn deleteMapping(path: string);
 
 // ---- HTTP request (runtime boundary) ----
 //

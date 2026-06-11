@@ -20,7 +20,7 @@ fn main() {
     return
   )
   (func $main
-    global.get $true
+    i32.const 1
     call $negate
     call $__print_i32
   )
@@ -189,4 +189,5 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
+0
 ```

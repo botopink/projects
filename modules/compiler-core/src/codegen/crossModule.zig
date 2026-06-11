@@ -22,7 +22,7 @@ const ComptimeOutput = comptimeMod.ComptimeOutput;
 pub const ExportKind = enum { record, @"struct", @"enum", @"fn", val };
 
 /// Where a `pub` symbol is emitted, for resolving cross-module imports.
-/// `module` is the emitting module's path (e.g. `"rakun/http"`). `is_class`
+/// `module` is the emitting module's path (e.g. `"web/http"`). `is_class`
 /// marks record/struct exports whose construction needs `new` (commonJS) or
 /// the owner's map shape (erlang/beam). `fields` is the declared field order
 /// of a record/struct (empty otherwise) — a consumer needs it to build the map
@@ -54,7 +54,7 @@ pub const CrossModule = struct {
     }
 
     /// Basename of an export's emitting module path — the Erlang/BEAM module
-    /// atom (`"rakun/http"` → `"http"`). Null when `name` isn't a cross-module
+    /// atom (`"web/http"` → `"http"`). Null when `name` isn't a cross-module
     /// export.
     pub fn ownerModuleAtom(self: *const CrossModule, name: []const u8) ?[]const u8 {
         const info = self.exports.get(name) orelse return null;
@@ -109,7 +109,12 @@ pub fn build(alloc: std.mem.Allocator, outputs: []ComptimeOutput) !CrossModule {
                 try exports.put(s.name, .{ .module = ct.name, .kind = .@"struct", .is_class = true, .fields = fields });
             },
             .@"enum" => |e| if (e.isPub) try exports.put(e.name, .{ .module = ct.name, .kind = .@"enum", .is_class = false }),
-            .@"fn" => |f| if (f.isPub and !f.isExternal())
+            // `pub fn` exports — including host-backed `#[@external]` declarations.
+            // An external fn's owning module re-exports the host symbol under the
+            // fn name (`exports.regItem = regItem`), so a consumer that imports it
+            // `from "<lib>"` must `require` that owner just like any other export;
+            // omitting externals here left such imports unresolved at the call site.
+            .@"fn" => |f| if (f.isPub)
                 try exports.put(f.name, .{ .module = ct.name, .kind = .@"fn", .is_class = false }),
             .val => |v| if (v.isPub) try exports.put(v.name, .{ .module = ct.name, .kind = .val, .is_class = false }),
             .use => |u| for (u.imports) |imp| try imported.put(imp.name(), {}),

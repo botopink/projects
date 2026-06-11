@@ -11,7 +11,9 @@
         "comment": null,
         "moduleComment": null,
         "interfaces": [
-          "Drawable"
+          {
+            "named": "Drawable"
+          }
         ],
         "target": "Circle",
         "methods": [

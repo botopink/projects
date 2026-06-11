@@ -16,7 +16,9 @@
           {
             "field": {
               "name": "_balance",
-              "typeName": "i32",
+              "typeRef": {
+                "named": "i32"
+              },
               "init": {
                 "literal": {
                   "loc": {
@@ -27,7 +29,8 @@
                     "numberLit": "0"
                   }
                 }
-              }
+              },
+              "annotations": []
             }
           }
         ],

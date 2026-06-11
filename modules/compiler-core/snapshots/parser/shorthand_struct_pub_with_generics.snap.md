@@ -20,7 +20,9 @@
           {
             "field": {
               "name": "item",
-              "typeName": "T",
+              "typeRef": {
+                "named": "T"
+              },
               "init": {
                 "literal": {
                   "loc": {
@@ -31,7 +33,8 @@
                     "numberLit": "0"
                   }
                 }
-              }
+              },
+              "annotations": []
             }
           }
         ],

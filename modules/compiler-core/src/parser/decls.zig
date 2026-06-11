@@ -623,6 +623,10 @@ pub fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
 
     var trailingComma = false;
     while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
+        // Member-level decorators: `#[getMapping("/")] fn handler(…)`. Parsed
+        // here so annotation processors reach struct methods (field/getter/setter
+        // sites are a follow-up — only `InterfaceMethod` carries annotations).
+        const memberAnnotations = try this.parseAnnotations(alloc);
         // Field: [val] name: Type = expr [,]
         // `val` keyword is optional/implicit
         if (this.check(.val)) _ = this.advance();
@@ -637,9 +641,12 @@ pub fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
                 // Not a field — fall through to the normal member loop
             } else {
                 // Field: name: Type [= expr]
+                // Reuse the full type-ref parser (same as record fields) so
+                // array-typed (`E[]`), optional, and generic fields parse.
                 const fieldName = (try this.consume(.identifier)).lexeme;
                 _ = try this.consume(.colon);
-                const typeName = (try this.consumeTypeName()).lexeme;
+                var fieldType = try this.parseTypeRef(alloc);
+                errdefer fieldType.deinit(alloc);
                 var initExpr: ?Expr = null;
                 if (this.match(.equal)) {
                     initExpr = try this.parseExpr(alloc);
@@ -647,25 +654,29 @@ pub fn parseStructBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
                 trailingComma = this.match(.comma);
                 try members.append(alloc, .{ .field = .{
                     .name = fieldName,
-                    .typeName = typeName,
+                    .typeRef = fieldType,
                     .init = initExpr,
+                    .annotations = memberAnnotations,
                 } });
                 continue;
             }
         }
 
         if (this.check(.get)) {
+            if (memberAnnotations.len > 0) return ParseError.UnexpectedToken;
             const getter = try this.parseStructGetter(alloc);
             trailingComma = this.match(.comma);
             try members.append(alloc, .{ .getter = getter });
         } else if (this.check(.set)) {
+            if (memberAnnotations.len > 0) return ParseError.UnexpectedToken;
             const setter = try this.parseStructSetter(alloc);
             trailingComma = this.match(.comma);
             try members.append(alloc, .{ .setter = setter });
         } else if (this.check(.@"pub") or this.check(.declare) or this.check(.@"fn")) {
             const is_pub = this.match(.@"pub");
             const is_iface = this.match(.declare);
-            const method = try this.parseMethodDecl(alloc, is_iface, is_pub);
+            var method = try this.parseMethodDecl(alloc, is_iface, is_pub);
+            method.annotations = memberAnnotations;
             trailingComma = this.match(.comma);
             try members.append(alloc, .{ .method = method });
         } else {
@@ -761,15 +772,21 @@ pub fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
     while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
         this.skipComments();
         if (this.check(.rightBrace) or this.check(.endOfFile)) break;
+        // Member-level decorators: `#[getMapping("/")] fn index(…)`. Parsed here
+        // so annotation processors reach record methods (field-site is a separate
+        // follow-up — `RecordField` carries no annotations yet).
+        const memberAnnotations = try this.parseAnnotations(alloc);
         // Check if this is a method (fn/pub/declare)
         if (this.check(.@"pub") or this.check(.declare) or this.check(.@"fn")) {
             const is_pub = this.match(.@"pub");
             const is_iface = this.match(.declare);
-            const method = try this.parseMethodDecl(alloc, is_iface, is_pub);
+            var method = try this.parseMethodDecl(alloc, is_iface, is_pub);
+            method.annotations = memberAnnotations;
             trailingComma = false;
             try methods.append(alloc, method);
-        } else if (this.check(.identifier)) {
-            // Could be a field: [val] name: Type [= expr]
+        } else if (this.check(.val) or This.isMemberName(this.peek().kind)) {
+            // Could be a field: [val] name: Type [= expr]. `get`/`set` are valid
+            // record field names (records have no getters/setters).
             const nextIdx = this.current + 1;
             const nextToken = if (nextIdx < this.tokens.len) this.tokens[nextIdx] else token.Token{ .kind = .endOfFile, .lexeme = "", .line = 0, .col = 0 };
 
@@ -780,7 +797,7 @@ pub fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
 
             // It's a field: [val] name: Type [= expr]
             if (this.check(.val)) _ = this.advance();
-            const fieldName = (try this.consume(.identifier)).lexeme;
+            const fieldName = (try this.consumeMemberName()).lexeme;
             _ = try this.consume(.colon);
             var fieldType = try this.parseTypeRef(alloc);
             errdefer fieldType.deinit(alloc);
@@ -789,7 +806,7 @@ pub fn parseRecordBody(this: *This, alloc: std.mem.Allocator, name: []const u8, 
                 defaultExpr = try this.parseBinaryExpr(alloc, prec.equality);
             }
             trailingComma = this.match(.comma);
-            try fields.append(alloc, .{ .name = fieldName, .typeRef = fieldType, .default = defaultExpr });
+            try fields.append(alloc, .{ .name = fieldName, .typeRef = fieldType, .default = defaultExpr, .annotations = memberAnnotations });
         } else {
             return ParseError.UnexpectedToken;
         }
@@ -841,21 +858,28 @@ pub fn parseImplementBody(
 ) ParseError!ImplementDecl {
     _ = try this.consume(.implement);
 
-    var interfaces: std.ArrayList([]const u8) = .empty;
-    errdefer interfaces.deinit(alloc);
+    // Interfaces are full type refs so generic interfaces (`Iface<A, B>`,
+    // `@Context<…>`) parse, not just bare identifiers.
+    var interfaces: std.ArrayList(TypeRef) = .empty;
+    errdefer {
+        for (interfaces.items) |*t| t.deinit(alloc);
+        interfaces.deinit(alloc);
+    }
 
-    const firstInterface = (try this.consume(.identifier)).lexeme;
-    try interfaces.append(alloc, firstInterface);
+    try interfaces.append(alloc, try this.parseTypeRef(alloc));
     while (this.match(.comma)) {
         if (this.check(.@"for")) break;
-        try interfaces.append(alloc, (try this.consume(.identifier)).lexeme);
+        try interfaces.append(alloc, try this.parseTypeRef(alloc));
     }
 
     _ = try this.consume(.@"for");
     const target = (try this.consume(.identifier)).lexeme;
 
     const ifaceSlice = try interfaces.toOwnedSlice(alloc);
-    errdefer alloc.free(ifaceSlice);
+    errdefer {
+        for (ifaceSlice) |*t| t.deinit(alloc);
+        alloc.free(ifaceSlice);
+    }
     const methods = try this.parseImplementMethods(alloc);
 
     return ImplementDecl{
@@ -1093,9 +1117,9 @@ pub fn parseParam(this: *This, alloc: std.mem.Allocator) ParseError!Param {
                 hasSpread = true;
                 break;
             }
-            const field_name = try alloc.dupe(u8, (try this.consume(.identifier)).lexeme);
+            const field_name = try alloc.dupe(u8, (try this.consumeMemberName()).lexeme);
             const bind_name: []const u8 = if (this.match(.colon))
-                try alloc.dupe(u8, (try this.consume(.identifier)).lexeme)
+                try alloc.dupe(u8, (try this.consumeMemberName()).lexeme)
             else
                 field_name;
             try fields.append(alloc, .{ .field_name = field_name, .bind_name = bind_name });
@@ -1157,8 +1181,13 @@ pub fn parseParam(this: *This, alloc: std.mem.Allocator) ParseError!Param {
     // Detect post-colon modifiers: `syntax` or `comptime`
     if (this.match(.syntax)) modifier = .syntax else if (this.match(.@"comptime")) modifier = .@"comptime";
 
-    // ── fn-type params: `name: fn(...)` or `name comptime: syntax fn(...)` ─
-    if (this.check(.@"fn")) {
+    // ── fn-type params: `name comptime: syntax fn(...)` ─────────────────────
+    // The legacy `FnType` representation (named string params + named return)
+    // is kept only for `syntax` params, whose template machinery reads it. A
+    // plain `name: fn(...)` falls through to the general `parseTypeRef` below,
+    // which yields a `TypeRef.function` and supports array/optional/nested
+    // returns (`fn() -> T[]`).
+    if (modifier == .syntax and this.check(.@"fn")) {
         _ = this.advance(); // consume 'fn'
         _ = try this.consume(.leftParenthesis);
         var fnParams: std.ArrayList(FnTypeParam) = .empty;

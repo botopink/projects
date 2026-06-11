@@ -22,6 +22,7 @@ const format_cmd = @import("./cli/format_cmd.zig");
 const new_cmd = @import("./cli/new.zig");
 const clean_cmd = @import("./cli/clean.zig");
 const test_cmd = @import("./cli/test_cmd.zig");
+const migrate_cmd = @import("./cli/migrate.zig");
 const cfg = @import("./cli/config.zig");
 
 // ── Version ───────────────────────────────────────────────────────────────────
@@ -44,6 +45,7 @@ const HELP =
     \\  format   Format source files
     \\  new      Create a new botopink project
     \\  clean    Remove build artifacts
+    \\  migrate  Generate the module tree (mod/pub mod) from the src/ layout
     \\  help     Show this message
     \\  version  Show the compiler version
     \\
@@ -132,6 +134,11 @@ fn dispatch(init: std.process.Init) !u8 {
 
     if (std.mem.eql(u8, cmd, "clean")) {
         return clean_cmd.run(io);
+    }
+
+    if (std.mem.eql(u8, cmd, "migrate")) {
+        const dry = args.len > 2 and std.mem.eql(u8, args[2], "--dry-run");
+        return migrate_cmd.run(gpa, io, .{ .dry_run = dry });
     }
 
     // Unknown command.

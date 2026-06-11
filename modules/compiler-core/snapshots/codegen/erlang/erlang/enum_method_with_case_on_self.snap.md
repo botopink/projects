@@ -25,11 +25,11 @@ val Color = enum {
 
 name() ->
     case Self of
-        Red ->
+        'Red' ->
             <<"red">>;
-        Green ->
+        'Green' ->
             <<"green">>;
-        Blue ->
+        'Blue' ->
             <<"blue">>
     end.
 ```

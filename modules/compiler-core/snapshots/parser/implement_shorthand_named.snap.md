@@ -11,7 +11,9 @@
         "comment": null,
         "moduleComment": null,
         "interfaces": [
-          "Nada"
+          {
+            "named": "Nada"
+          }
         ],
         "target": "Pato",
         "methods": [

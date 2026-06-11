@@ -14,7 +14,9 @@ val Counter = struct {
 ----- JAVASCRIPT -- main.js
 ```javascript
 class Counter {
-    _count = 0;
+    constructor(_count = 0) {
+        this._count = _count;
+    }
 
     increment() {
         this._count += 1;

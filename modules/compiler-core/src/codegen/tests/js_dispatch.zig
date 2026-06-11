@@ -43,7 +43,20 @@ test "js: dispatch ---- inherent record method call" {
     );
 }
 
-test "js: dispatch ---- activated extension method call" {
+test "js: dispatch ---- string contains lowers to native includes" {
+    // `s.contains(x)` on a `string` has no `String.prototype.contains`; inference
+    // records a type-directed rename so codegen emits `s.includes(x)`. A `record`
+    // method of the same name (`Set.contains`) keeps its own dispatch — see the
+    // inherent-record-method case above.
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() {
+        \\    val hw = "hello world";
+        \\    @print(hw.contains("world"));
+        \\}
+    );
+}
+
+test "js: dispatch ---- auto-applied extension method call" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\val Swimmer = interface {
         \\    fn swim(self: Self);
@@ -54,7 +67,6 @@ test "js: dispatch ---- activated extension method call" {
         \\        return self.id;
         \\    }
         \\}
-        \\PatoNada*;
         \\fn main() {
         \\    val donald = Pato(2);
         \\    @print(donald.swim());
@@ -80,20 +92,30 @@ test "js: dispatch ---- qualified extension method call" {
     );
 }
 
-test "js: dispatch ---- activated extend method call" {
-    try h.assertJsSingle(std.testing.allocator, @src(),
-        \\record Pato { id: i32 }
-        \\val PatoVoa = extend Pato {
-        \\    fn fly(self: Self) {
+test "js: dispatch ---- multi-module implement on an imported record" {
+    // The interface and record cross the module boundary; the `implement` is
+    // local to the consumer and auto-applied — `donald.swim()` lowers to the
+    // local symbol with no activation statement.
+    try h.assertJs(std.testing.allocator, @src(), &.{
+        .{ .path = "pond", .source =
+        \\pub val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\pub record Pato { id: i32 }
+        },
+        .{ .path = "", .source =
+        \\import {Swimmer, Pato} from "pond";
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
         \\        return self.id;
         \\    }
         \\}
-        \\PatoVoa*;
         \\fn main() {
-        \\    val donald = Pato(7);
-        \\    @print(donald.fly());
+        \\    val donald = Pato(2);
+        \\    @print(donald.swim());
         \\}
-    );
+        },
+    });
 }
 
 test "js: delegate ---- emits comment" {

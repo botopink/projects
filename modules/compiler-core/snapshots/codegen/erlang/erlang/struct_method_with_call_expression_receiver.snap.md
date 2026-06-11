@@ -20,11 +20,11 @@ val Logger = struct {
 
 %% struct Logger: _prefix
 
-setPrefix(P) ->
+setPrefix(Self, P) ->
     %% field assignment is not directly supported in Erlang.
 
-log(Msg) ->
-    Console:log(maps:get('_prefix', Self), Msg).
+log(Self, Msg) ->
+    log(Console, maps:get('_prefix', Self), Msg).
 ```
 
 ----- RUN LOG -----

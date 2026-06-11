@@ -66,6 +66,22 @@ test "js: struct ---- multiple private fields with assign and pluseq" {
     );
 }
 
+test "js: struct implement ---- fields round-trip at runtime" {
+    // G7 regression: an inline `struct implement … { fields }` must emit a real
+    // constructor that assigns its fields, so `E(tag: "x", n: 5).n` reads `5` at
+    // runtime instead of `undefined`. Runs on every backend (node + erlang
+    // parity captured in each RUN LOG).
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\val E = struct implement @Context<E, E> { tag: string, n: i32 }
+        \\fn mk() -> E {
+        \\    return E(tag: "x", n: 5);
+        \\}
+        \\fn main() {
+        \\    @print(mk().n);
+        \\}
+    );
+}
+
 test "js: record ---- two fields" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\val Point = record { x: i32, y: i32 }
@@ -227,5 +243,27 @@ test "js: tuple ---- access elements" {
         \\fn getFirst(t: #(i32, string)) -> i32 {
         \\    return t._0;
         \\}
+    );
+}
+
+// a record carrying a function-typed field (`set`) codegens like any other
+// field — the closure is stored in the constructor.
+test "js: record ---- fn-typed field (hook-shape record)" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\record State<T> { value: T, set: fn(next: T) }
+        \\fn make() -> State<i32> { return State(value: 0, set: { n -> }); }
+        \\fn apply(s: State<i32>) -> i32 { s.set(s.value); return s.value; }
+    );
+}
+
+// `Element[]`, a single value, and a `string` all coerce into a
+// `Children`-typed parameter (the builder children model).
+test "js: call ---- Children coercion (list / single / text)" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn node() -> string { return "n"; }
+        \\fn box(children: Children) -> string { return "x"; }
+        \\val many = box([node(), node()]);
+        \\val one = box(node());
+        \\val txt = box("hi");
     );
 }

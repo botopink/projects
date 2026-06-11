@@ -295,13 +295,14 @@ pub fn parseExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
             } } } };
         }
 
-        if (this.check(.dot)) {
+        // `ident.field = expr` / `ident.field += expr`. Accept identifier,
+        // numberLiteral (tuple access `.0`), or the soft keywords `get`/`set`
+        // as the field — anything else rolls back to the call-chain path below.
+        if (this.check(.dot) and
+            (this.peekAt(1).kind == .numberLiteral or This.isMemberName(this.peekAt(1).kind)))
+        {
             _ = this.advance();
-            // Accept both identifier and numberLiteral for tuple access (.0, .1)
-            const fieldTok: Token = if (this.check(.numberLiteral))
-                this.advance()
-            else
-                try this.consume(.identifier);
+            const fieldTok: Token = this.advance();
 
             if (this.match(.equal)) {
                 const valExpr = try this.parseBinaryExpr(alloc, prec.equality);
@@ -393,7 +394,7 @@ pub fn parseExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
             const methodTok: Token = if (this.check(.numberLiteral))
                 this.advance()
             else
-                this.consume(.identifier) catch {
+                this.consumeMemberName() catch {
                     this.current = dotSaved;
                     break;
                 };
@@ -535,9 +536,9 @@ pub fn parseLocalBindExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr
                 hasSpread = true;
                 break;
             }
-            const field_name = try alloc.dupe(u8, (try this.consume(.identifier)).lexeme);
+            const field_name = try alloc.dupe(u8, (try this.consumeMemberName()).lexeme);
             const bind_name: []const u8 = if (this.match(.colon))
-                try alloc.dupe(u8, (try this.consume(.identifier)).lexeme)
+                try alloc.dupe(u8, (try this.consumeMemberName()).lexeme)
             else
                 field_name;
             try fields.append(alloc, .{ .field_name = field_name, .bind_name = bind_name });
@@ -678,7 +679,7 @@ pub fn parsePipelineExpr(this: *This, alloc: std.mem.Allocator) ParseError!Expr 
                     }
                     break :rhs_blk makeCall(nameTok, null, nameTok.lexeme, false, args, trailing);
                 } else if (this.match(.dot)) {
-                    const methodTok = try this.consume(.identifier);
+                    const methodTok = try this.consumeMemberName();
                     var args: []CallArg = &.{};
                     if (this.check(.leftParenthesis)) {
                         args = try this.parseCallArgs(alloc);
@@ -734,6 +735,47 @@ pub fn parseBinaryExpr(this: *This, alloc: std.mem.Allocator, comptime level: us
         lhs = try this.makeBinOp(alloc, op, opTok, lhs, rhs);
     }
     return lhs;
+}
+
+/// Consume a postfix `.member` / `?.member` / `.method(args)` chain off an
+/// already-parsed `base` expression, so a literal receiver chains the same way
+/// an identifier does (`[1, 2].map(f)`, `"x".contains(y)`). Operand position:
+/// trailing lambdas are not consumed (a `{` belongs to the enclosing construct),
+/// mirroring the identifier path below. Each method-call link uses the method
+/// token's loc so loc-keyed method lowering stays per-link distinct.
+fn parsePostfixChain(this: *This, alloc: std.mem.Allocator, base_in: Expr) ParseError!Expr {
+    var base = base_in;
+    while (this.check(.dot) or this.check(.questionDot)) {
+        const isOptional = this.check(.questionDot);
+        _ = this.advance();
+        const fieldTok: Token = if (this.check(.numberLiteral))
+            this.advance()
+        else
+            try this.consumeMemberName();
+        if (this.check(.leftParenthesis)) {
+            const args = try this.parseCallArgs(alloc);
+            errdefer {
+                for (args) |*a| a.deinit(alloc);
+                alloc.free(args);
+            }
+            const recvPtr = try this.boxExpr(alloc, base);
+            base = makeCall(fieldTok, recvPtr, fieldTok.lexeme, false, args, try alloc.alloc(TrailingLambda, 0));
+            base.call.kind.call.optional = isOptional;
+        } else {
+            const recvPtr = try this.boxExpr(alloc, base);
+            // Field-access links use the member token's loc — like the
+            // method-call links above — so each chain link has a distinct
+            // location. Loc-keyed lowering (`instanceLowerings` for `.length`)
+            // would otherwise collide on the shared base loc, e.g. emitting
+            // `self.pairs.length` as `length(length(Self))`.
+            base = Expr{ .identifier = .{ .loc = locFromToken(fieldTok), .kind = .{ .identAccess = .{
+                .receiver = recvPtr,
+                .member = fieldTok.lexeme,
+                .optional = isOptional,
+            } } } };
+        }
+    }
+    return base;
 }
 
 pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
@@ -854,17 +896,20 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
 
     if (this.check(.stringLiteral)) {
         const tok = this.advance();
-        return makeStringExpr(this, alloc, tok, tok.lexeme[1 .. tok.lexeme.len - 1], false);
+        const lit = try makeStringExpr(this, alloc, tok, tok.lexeme[1 .. tok.lexeme.len - 1], false);
+        return parsePostfixChain(this, alloc, lit);
     }
     if (this.check(.multilineStringLiteral)) {
         const tok = this.advance();
         // Remove the triple quotes from both ends
-        return makeStringExpr(this, alloc, tok, tok.lexeme[3 .. tok.lexeme.len - 3], true);
+        const lit = try makeStringExpr(this, alloc, tok, tok.lexeme[3 .. tok.lexeme.len - 3], true);
+        return parsePostfixChain(this, alloc, lit);
     }
     if (this.check(.linesStringLiteral)) {
         const tok = this.advance();
         const content = try materializeLineString(alloc, tok.lexeme);
-        return makeStringExpr(this, alloc, tok, content, true);
+        const lit = try makeStringExpr(this, alloc, tok, content, true);
+        return parsePostfixChain(this, alloc, lit);
     }
 
     if (this.check(.numberLiteral)) {
@@ -939,11 +984,12 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         while (this.check(.dot) or this.check(.questionDot)) {
             const isOptional = this.check(.questionDot);
             _ = this.advance();
-            // Accept both identifier and numberLiteral for tuple access
+            // Accept both identifier and numberLiteral for tuple access; `get`/
+            // `set` are valid member names (`state.set(x)`).
             const fieldTok: Token = if (this.check(.numberLiteral))
                 this.advance()
             else
-                try this.consume(.identifier);
+                try this.consumeMemberName();
             if (this.check(.leftParenthesis)) {
                 const args = try this.parseCallArgs(alloc);
                 errdefer {
@@ -957,7 +1003,11 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
                 base.call.kind.call.optional = isOptional;
             } else {
                 const recvPtr = try this.boxExpr(alloc, base);
-                base = Expr{ .identifier = .{ .loc = locFromToken(tok), .kind = .{ .identAccess = .{
+                // Field-access links use the member token's loc (like the
+                // method-call links above) so each chain link has a distinct
+                // location — loc-keyed lowering would otherwise collide on the
+                // shared base loc (e.g. `xs.length` nested in another access).
+                base = Expr{ .identifier = .{ .loc = locFromToken(fieldTok), .kind = .{ .identAccess = .{
                     .receiver = recvPtr,
                     .member = fieldTok.lexeme,
                     .optional = isOptional,
@@ -1002,9 +1052,11 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
         return Expr{ .identifier = .{ .loc = locFromToken(dotTok), .kind = .{ .dotIdent = memberTok.lexeme } } };
     }
 
-    // [e1, e2, ...] or [e1, ..rest] ---- array literal with optional spread
+    // [e1, e2, ...] or [e1, ..rest] ---- array literal with optional spread.
+    // A literal receiver may chain methods directly (`[1, 2].map(f).len()`).
     if (this.check(.leftSquareBracket)) {
-        return .{ .collection = try this.parseArrayLitExpr(alloc) };
+        const lit = Expr{ .collection = try this.parseArrayLitExpr(alloc) };
+        return parsePostfixChain(this, alloc, lit);
     }
 
     // record { name: value, … } ---- anonymous structural record literal.
@@ -1025,7 +1077,7 @@ pub fn parsePrimary(this: *This, alloc: std.mem.Allocator) ParseError!Expr {
             fields.deinit(alloc);
         }
         while (!this.check(.rightBrace) and !this.check(.endOfFile)) {
-            const nameTok = try this.consume(.identifier);
+            const nameTok = try this.consumeMemberName();
             _ = try this.consume(.colon);
             const value = try this.parseExpr(alloc);
             const valuePtr = try this.boxExpr(alloc, value);
@@ -1361,9 +1413,9 @@ pub fn parseCallArgs(this: *This, alloc: std.mem.Allocator) ParseError![]CallArg
             continue;
         }
 
-        // Detect named arg: ident : expr
+        // Detect named arg: ident : expr (`get`/`set` are valid labels)
         const label: ?[]const u8 = blk: {
-            if (this.check(.identifier)) {
+            if (This.isMemberName(this.peek().kind)) {
                 const i = this.current;
                 const toks = this.tokens;
                 if (i + 1 < toks.len and toks[i + 1].kind == .colon) {

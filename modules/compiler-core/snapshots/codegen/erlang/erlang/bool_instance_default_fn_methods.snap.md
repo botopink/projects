@@ -16,10 +16,10 @@ fn main() {
 %% interface Bool
 
 main() ->
-    io:format("~p~n", [true:negate()]),
-    io:format("~p~n", [false:nor(false)]),
-    io:format("~p~n", [true:nand(true)]),
-    io:format("~p~n", [true:exclusiveOr(false)]).
+    io:format("~p~n", [(not true)]),
+    io:format("~p~n", [nor(false, false)]),
+    io:format("~p~n", [nand(true, true)]),
+    io:format("~p~n", [exclusiveOr(true, false)]).
 
 '_botopink_main'() ->
     main().

@@ -2,7 +2,7 @@
   "name": "botopink",
   "displayName": "Botopink",
   "description": "Support for the Botopink programming language",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "botopink",
   "repository": {
     "type": "git",
@@ -134,9 +134,25 @@
     ],
     "configurationDefaults": {
       "[botopink]": {
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "editor.semanticHighlighting.enabled": true
       }
     },
+    "semanticTokenScopes": [
+      {
+        "language": "botopink",
+        "scopes": {
+          "keyword": ["keyword.control.botopink", "keyword.control", "keyword"],
+          "property": [
+            "variable.other.property.botopink",
+            "variable.other.property"
+          ],
+          "string": ["string.quoted.botopink", "string.quoted", "string"],
+          "number": ["constant.numeric.botopink", "constant.numeric"],
+          "operator": ["keyword.operator.botopink", "keyword.operator"]
+        }
+      }
+    ],
     "configuration": {
       "title": "Botopink",
       "properties": {

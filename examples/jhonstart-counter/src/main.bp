@@ -1,0 +1,42 @@
+// jhonstart-counter — the React-core showcase, as a pure SSR client.
+//
+// A component is a plain `fn(...) -> Element`. `counterView` is a PURE view:
+// given a count it builds the markup, so it renders synchronously with
+// `renderToString` and is directly testable. `Counter` is the stateful,
+// idiomatic form — `use state(0)` makes it a client component whose re-renders
+// the host runtime drives (the `use` prefix lowers to the target's hook
+// convention); it type-checks here and the host runs it. Interactivity
+// (buttons / event handlers) is host-bound and lives outside this pure core.
+
+import { Element, div, p, span, text, state, renderToString } from "jhonstart";
+
+// Pure view: the counter markup for a given count.
+fn counterView(count: i32) -> Element {
+    val sign = if (count >= 0) { "non-negative"; } else { "negative"; };
+    return div([
+        p([text("count: " + count.toString())]),
+        span([text(sign)]),
+    ]);
+}
+
+// Stateful component (idiomatic hooks). Type-checks the `use`/@Context
+// capability; the host runtime renders it client-side.
+fn Counter() -> Element {
+    val c = use state(0);
+    return counterView(c.value);
+}
+
+fn main() {
+    print(renderToString(counterView(0)));
+}
+
+test "the counter view renders its count and sign" {
+    assert renderToString(counterView(0)) == "<div><p>count: 0</p><span>non-negative</span></div>";
+    assert renderToString(counterView(-2)) == "<div><p>count: -2</p><span>negative</span></div>";
+}
+
+test "the state hook seeds the initial count and exposes a setter" {
+    val c = state(0);
+    assert c.value == 0;
+    c.set(5);
+}

@@ -10,7 +10,7 @@ fn process(f: syntax fn(x: i32) -> i32) -> i32 {
 -module(main).
 
 process(F) ->
-    f(5).
+    F(5).
 ```
 
 ----- RUN LOG -----

@@ -16,19 +16,14 @@ pub const builtins = @embedFile("builtins.d.bp");
 // These are NOT flattened into the global env (see comptime.zig std_pkg_modules).
 // NOTE: `option`/`result` are NOT modules — they are builtin namespaces lowered
 // inline by every backend (see comptime/infer.zig `inferBuiltinNamespaceCall`).
-pub const order = @embedFile("order.bp");
-pub const dict_mod = @embedFile("dict.bp");
-pub const sets_mod = @embedFile("sets.bp");
-pub const string_builder_mod = @embedFile("string_builder.bp");
-pub const queue_mod = @embedFile("queue.bp");
+//
+// The package registry is DATA-DRIVEN: `build.zig` enumerates the package `.bp`
+// files (its `std_pkg_files` list) and generates the `pkg_modules` table, which
+// this prelude re-exports. compiler-core therefore names no individual std
+// module — adding one touches only `build.zig` + `libs/std/`, never this tree.
+pub const pkg_modules = @import("std_pkg").pkg_modules;
 
-// "rakun" application framework, opt-in via `from "rakun"` (never flattened
-// into the global env). Two source kinds:
-//   • `rakun.d.bp` — declaration-only markers + runtime-boundary interfaces
-//     (decorators, `Request`, `Context`, `Rakun`); registered for inference by
-//     `comptime.zig registerRakunLib`, emitted to nothing.
-//   • `http.bp` — concrete, emitted code (`HttpMethod`, `Response`, `App`);
-//     pulled into the compilation as a real package module on import
-//     (`rakun_pkg_modules`, mirroring `std_pkg_modules`).
-pub const rakun = @embedFile("rakun.d.bp");
-pub const rakun_http = @embedFile("http.bp");
+// Non-std libs are NOT embedded here: `std` is the one lib the core may name.
+// Any other lib (a framework, …) is supplied as ordinary input `.bp` modules by
+// the driver and resolved generically through the shared import registry — the
+// core knows nothing about any specific framework.

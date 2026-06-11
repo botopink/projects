@@ -16,7 +16,9 @@
           {
             "field": {
               "name": "host",
-              "typeName": "string",
+              "typeRef": {
+                "named": "string"
+              },
               "init": {
                 "literal": {
                   "loc": {
@@ -27,7 +29,8 @@
                     "stringLit": "localhost"
                   }
                 }
-              }
+              },
+              "annotations": []
             }
           }
         ],

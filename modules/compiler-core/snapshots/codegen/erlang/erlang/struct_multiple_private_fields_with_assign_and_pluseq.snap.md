@@ -24,10 +24,10 @@ val BankAccount = struct {
 
 %% struct BankAccount: _balance, _owner
 
-deposit(Amount) ->
+deposit(Self, Amount) ->
     %% field assignment is not directly supported in Erlang.
 
-setOwner(Name) ->
+setOwner(Self, Name) ->
     %% field assignment is not directly supported in Erlang.
 ```
 

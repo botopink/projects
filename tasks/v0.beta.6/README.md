@@ -22,30 +22,51 @@ Two strands converge here:
 
 ## Theme
 
-**Completion, not new direction.** Finish what the earlier sets proved out:
+**The lib-agnostic core.** This set opened as *completion* work (finish backends,
+tooling, and the v0.beta.5 frameworks). Building the frameworks out surfaced a
+direction shift, set by Eric (2026-06-08):
 
-- **Strand 1 — backends & tooling (carryover).** The other backends
-  (erlang/beam/wasm) for the established method lowering + dispatch stragglers +
-  inference correctness (Part A); the backend-parity F1–F6 still open from
-  v0.beta.3 (Part B); editor-experience F0–F5 (Part C).
-- **Strand 2 — application frameworks.** Bring cross-module codegen to backend
-  parity, give rakun its comptime DI container / router / bootstrap, and land the
-  language ergonomics jhonstart's API needs.
+> `modules/compiler-core/src/**` **must know zero libraries.** A framework
+> (rakun, jhonstart, erika) is a pure-`.bp` lib built on **generic** compiler
+> mechanisms — never as Zig passes that name a lib.
+
+So the work split in two:
+
+- **Landed (generic, lib-agnostic) — merged into `feat`.** The pieces that are
+  pure language/stdlib/tooling and carry no lib knowledge: cross-module codegen
+  parity (erlang/beam/wasm), the four jhonstart **language** gaps + the
+  `implement`/`mutual-recursion` completeness fixes (generic features merely
+  *surfaced* by jhonstart), `erika` (a pure-`.bp` std module + a **data-driven**
+  std package registry, so the core names no individual std module), and the
+  editor tooling + the `s.contains`→`includes` dispatch.
+- **Re-aimed (the new direction) — advanced to [v0.beta.7](../v0.beta.7/).**
+  rakun's interim foundation hard-codes `rakun` in the core; that is the
+  **coupling to remove**. The keystone replacing it,
+  [`annotation-processors`](../v0.beta.7/specs/annotation-processors.md)
+  (decorators as **custom comptime fns** the lib both *defines and acts* on, over
+  a generic `@Decl` handle + a generic package loader), and the rakun re-spec as
+  its *client*, **moved to the v0.beta.7 set** — that is where they execute. The
+  reference F2/F3 implementation stays on the `task/rakun` branch.
 
 ## Features (v0.beta.6)
 
-Every spec is **independent** — no spec waits on another, so all seven can run
-in parallel as separate `task/<slug>` branches.
+These specs ran in parallel as separate `task/<slug>` branches and **landed in
+`feat`** (generic, lib-agnostic work). The lib-coupled strand
+(`annotation-processors` + `rakun`) **advanced to [v0.beta.7](../v0.beta.7/)** —
+it is not listed here.
 
 | Spec | Slug | Depends on |
 |---|---|---|
 | [stdlib-backends-and-tooling — finish backends + dispatch + editor tooling](specs/stdlib-backends-and-tooling.md) | `stdlib-backends-and-tooling` | v0.beta.4 carryover (JS path done) |
 | [cross-module-codegen — concrete types across the package boundary](specs/cross-module-codegen.md) | `cross-module-codegen` | nothing (commonJS done) |
-| [rakun — comptime DI container + router + bootstrap](specs/rakun.md) | `rakun` | nothing (rakun foundation in feat) |
 | [jhonstart-language-gaps — record/array ergonomics](specs/jhonstart-language-gaps.md) | `jhonstart-language-gaps` | nothing |
 | [implement-completeness — `implement` parses & codegens in every form](specs/implement-completeness.md) | `implement-completeness` | nothing |
 | [mutual-recursion — forward references between top-level fns](specs/mutual-recursion.md) | `mutual-recursion` | nothing |
 | [erika — LINQ-style query lib + `erika "…"` query-string (`@Expr`)](specs/erika.md) | `erika` | nothing (pure `.bp` std module; `erika "…"` built on `@Expr`) |
+
+> **Advanced to v0.beta.7:** [`annotation-processors`](../v0.beta.7/specs/annotation-processors.md)
+> (the lib-agnostic-core keystone) and [`rakun`](../v0.beta.7/specs/rakun.md)
+> (its client). See [`../v0.beta.7/README.md`](../v0.beta.7/README.md).
 
 ## Independent specs (no cross-spec ordering)
 
@@ -54,9 +75,7 @@ stdlib-backends-and-tooling   (Part A backends · Part B backend-parity · Part 
 
 cross-module-codegen          (commonJS landed; erlang/beam/wasm parity)
 
-rakun                         F2 IoC container · F3 annotation args · F4 router
-                              F5 Rakun.run ──► libs/server (HTTP backing)
-                              (F5 boots F2–F4; one branch, sequential phases)
+annotation-processors + rakun ── advanced to v0.beta.7 (the lib-agnostic core)
 
 jhonstart-language-gaps  ── G1 fn-typed fields · G2 anon record types
                             G3 fn() -> T[] · G4 Children coercion
@@ -70,19 +89,12 @@ erika                    ── F0 skeleton+wiring · F1 where/select · F2 take
                             (pure .bp std module over Array<T>; eager v1)
 ```
 
-The only ordering that existed (`rakun-bootstrap` after `rakun-ioc-web`) is now
-**internal** to the `rakun` spec — its F5 phase boots what F2–F4 build, on the
-same `task/rakun` branch and the same `libs/rakun/src/*.bp` files. Folding it in
-keeps every *spec* parallel-touchable instead of having two tasks wait on each
-other.
+The lib-agnostic-core strand (`annotation-processors` → `rakun`) and its residual
+coupling debt (the rakun foundation + `tests/jhonstart.zig`) moved to
+[v0.beta.7](../v0.beta.7/) — that set owns the direction and its gate.
 
 ## Scope boundaries
 
-- **rakun**: constructor injection only, singleton scope only — no prototype/
-  request scopes, AOP, or runtime reflection. Wiring stays **comptime**. The
-  spec's F5 (bootstrap) is its only leg needing a real HTTP backing
-  (`libs/server`, scaffold → real, node first then erlang); it lands last
-  because it boots the F2–F4 container/router.
 - **cross-module-codegen** mirrors the commonJS behaviour already in `feat`;
   `new` is an emitted-JS detail, never botopink source. wasm may defer if
   single-module — record the limit rather than fake it.

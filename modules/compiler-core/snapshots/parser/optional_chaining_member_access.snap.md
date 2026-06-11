@@ -18,7 +18,8 @@
             "typeRef": {
               "named": "string"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           }
         ],
         "trailingComma": false,
@@ -111,7 +112,7 @@
                       "identifier": {
                         "loc": {
                           "line": 4,
-                          "col": 13
+                          "col": 16
                         },
                         "kind": {
                           "identAccess": {

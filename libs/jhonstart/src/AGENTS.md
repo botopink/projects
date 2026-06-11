@@ -3,26 +3,39 @@
 > Path: `libs/jhonstart/src/`
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 
-Source for the `jhonstart` package. The UI **core is real botopink** — an
-`Element` tree, builders, and a synchronous SSR renderer implemented in `.bp`
-(no host intrinsics, no async). Only the genuinely host-bound / gap-blocked
-surface (interactive hooks, client navigation, the Http context) stays as
-`.d.bp` **declarations**. `botopink.json` compiles only the `.bp` core; the
-`.d.bp` files are illustrative until their language prerequisites land.
+Source for the `jhonstart` package. The UI **core, hooks, and the `html` markup
+DSL are real botopink** — an `Element` tree, builders, a synchronous SSR renderer,
+the hook family, and the `html """…"""` comptime expander, all implemented in
+`.bp` (no host intrinsics, no async). Only the genuinely host-bound surface
+(client navigation, the Http context) stays as `.d.bp` **declarations**, each
+carrying an explicit "STILL GATED" note naming the gap. `botopink test` compiles
+the `.bp` files and runs their `test {}` blocks; the `.d.bp` files are type
+surface for consumers.
 
 | File | Kind | Provides |
 |---|---|---|
-| `element.bp` | **compiled** | `record Element implement @Context<Element, Element>` (the UI node AND the hook ContextBase), builders (`text`, `fragment`, `div`/`span`/`p`/`h1`/`ul`/`li` — take `Element[]`), `renderToString` (pure, synchronous), `test {}` asserting the rendered HTML |
-| `hooks.d.bp` | declarative | `state`, `effect`, `memo`, `ref`, `reducer` (`@Context<Element, _>`) — **blocked**: record callback-field returns `{value, set}` are inexpressible (gap G1) |
-| `html.d.bp` | declarative | `html(comptime q: @Expr<string>) -> @Expr<Element>` — JSX-like DSL; body (markup scanner) pending |
-| `router.d.bp` | declarative | `Router`, `useRouter`, `Link` (Next-style navigation) |
-| `server.d.bp` | declarative | `Http` ContextBase: `Request`, `request()` |
+| `element.bp` | **compiled** | `record Element implement @Context<Element, Element>` with a `Children` `children` field (the UI node AND the hook ContextBase), builders (`text`, `fragment`, `div`/`span`/`p`/`h1`/`ul`/`li` — take `Children`), `renderToString` (pure, synchronous), `test {}` (render + the G4 coercion) |
+| `hooks.bp` | **compiled** | `record State<T> { value, set: fn(next: T) }` (G1) + `state`/`effect`/`memo`/`ref`/`reducer` returning `@Context<Element, _>` with real SSR bodies (G2 anon shapes for `{current}`/`{state,dispatch}`), `test {}` calling the bodies directly + a `use`-component that type-checks the capability |
+| `html.bp` | **compiled** | `html(comptime template: @Expr<string>) -> @Expr<Element>` — the JSX-like `html """…"""` DSL: a native-JS-only comptime parser walks `template.parts()` and `build()`s the builder pipeline (`<tag>` → `tag([...])`, text → `text("…")`, `${expr}` → `text(<code>)`), resolving lowercase tags in the **caller's** scope. Exercised by `examples/jhonstart-html` (`.bp` tests). See the file header for the comptime-eval constraints (no `?T`, no in-body comments, `.forEach` not a nested `loop`, root tracking by array length) |
+| `router.d.bp` | declarative (GATED) | `Router`, `useRouter`, `Link` — host-bound navigation; getters + `#[@external]` + no Element attribute slot |
+| `server.d.bp` | declarative (GATED) | `Http` ContextBase: `Request`, `request()` — host-bound + async loaders |
 
-Builders take `Element[]` directly (not a `fn() -> Children` trailing lambda):
-the trailing-lambda children form needs `fn() -> T[]` parsing + an
-`Element[]`→`Children` coercion the toolchain lacks (gaps G3/G4) — see the spec
-Notes. The array form sidesteps both and lets the renderer (and a future
-`html.bp`) build nested trees today.
+The four language gaps the framework surfaced are closed (spec
+`jhonstart-language-gaps`, v0.beta.6) and now **used** here: records carry
+function-typed fields (`set: fn(next: T)`, G1 — `State<T>` in `hooks.bp`),
+anonymous record types annotate transient hook shapes (G2 — `{current}`,
+`{state, dispatch}`), a function type returns an array (G3), and
+`Element[]`/`Element`/`string` coerce into a `Children` parameter (G4 — the
+builders' `children` arg and the `Element.children` field). The list form
+(`div([a, b])`) is the rendering contract; the single/`string` forms type-check
+(asserted in `element.bp`) but their render is the recorded normalization
+follow-up (no runtime type tags to branch a lone child vs a list on).
+
+This port also relies on a generic **cross-module** fix (a local component
+returning an imported `Element`, fed to an imported `renderToString`/`use`, now
+type-checks) — see `modules/compiler-core/src/comptime/AGENTS.md`
+(`type_decl_registry` + `resolveTypeName`). It is lib-agnostic; the
+`grep -riE "rakun|jhonstart"` gate stays clean.
 
 Update this index in the same change that adds/renames a file, and keep
-`botopink.json`'s `files` list in sync with the compiled `.bp` set.
+`botopink.json`'s `files` list in sync.

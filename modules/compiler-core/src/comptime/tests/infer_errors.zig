@@ -212,7 +212,18 @@ test "infer error: import of val ---- unbound variable" {
     );
 }
 
-test "infer error: extension method not active ---- hint to activate" {
+test "infer error: extend without an interface ---- requires implement" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\record Pato { id: i32 }
+        \\val PatoVoa = extend Pato {
+        \\    fn fly(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+    );
+}
+
+test "infer error: redundant local activation ---- star is for imports" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
         \\val Swimmer = interface {
         \\    fn swim(self: Self);
@@ -223,12 +234,11 @@ test "infer error: extension method not active ---- hint to activate" {
         \\        return self.id;
         \\    }
         \\}
-        \\val donald = Pato(1);
-        \\val r = donald.swim();
+        \\PatoNada*;
     );
 }
 
-test "infer error: extension method ambiguous ---- two activated impls" {
+test "infer error: extension method ambiguous ---- two local impls" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
         \\val Swimmer = interface {
         \\    fn swim(self: Self);
@@ -247,8 +257,6 @@ test "infer error: extension method ambiguous ---- two activated impls" {
         \\        return self.id;
         \\    }
         \\}
-        \\PatoNada*;
-        \\PatoFundo*;
         \\val donald = Pato(1);
         \\val r = donald.swim();
     );
@@ -400,5 +408,11 @@ test "infer error: builtin result namespace ---- unknown function" {
         \\fn main() {
         \\    val x = result.collapse(parse(1));
         \\}
+    );
+}
+
+test "infer error: still_reports_unbound ---- a genuinely undefined name still errors" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\fn a() -> i32 { return nonexistent(); }
     );
 }

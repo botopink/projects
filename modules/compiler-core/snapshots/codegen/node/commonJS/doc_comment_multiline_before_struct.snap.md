@@ -12,8 +12,10 @@ val Account = struct { name: string, email: string };
 /** Holds name and email */
 
 class Account {
-    name;
-    email;
+    constructor(name, email) {
+        this.name = name;
+        this.email = email;
+    }
 }
 ```
 

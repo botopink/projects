@@ -17,7 +17,7 @@ main() ->
     Func = fun(S) ->
         S
     end,
-    func(<<"hello">>).
+    Func(<<"hello">>).
 
 '_botopink_main'() ->
     main().

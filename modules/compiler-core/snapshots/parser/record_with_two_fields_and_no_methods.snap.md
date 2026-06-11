@@ -18,14 +18,16 @@
             "typeRef": {
               "named": "number"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           },
           {
             "name": "y",
             "typeRef": {
               "named": "number"
             },
-            "default": null
+            "default": null,
+            "annotations": []
           }
         ],
         "trailingComma": false,

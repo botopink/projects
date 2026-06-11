@@ -14,8 +14,8 @@ fn main() {
 
 main() ->
     S = <<"abcdef">>,
-    Mid = S:slice(1, 5),
-    io:format("~p~n", [maps:get(len, Mid)]).
+    Mid = string:slice(S, 1, ((5) - (1))),
+    io:format("~p~n", [string:length(Mid)]).
 
 '_botopink_main'() ->
     main().
@@ -26,4 +26,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+4
 ```

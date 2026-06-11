@@ -14,7 +14,7 @@ record Pipeline {
 
 %% record Pipeline: items
 
-run(F) ->
+run(Self, F) ->
     list:map(maps:get(items, Self), F).
 ```
 

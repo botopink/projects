@@ -54,7 +54,7 @@ pub fn codegenEmit(
                 // test blocks (a project's `botopink test` runs only its own
                 // tests; the stdlib's inline tests run from `libs/std` itself).
                 const module_test_mode = config.test_mode and !std.mem.startsWith(u8, ct.name, "std/");
-                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, module_test_mode, ct.name, &cross);
+                const js = try emitJs(alloc, ok.transformed, ok.comptime_vals, ok.dispatch_rewrites, &ok.js_method_renames, module_test_mode, ct.name, &cross);
 
                 // Generate TypeScript typedefs if configured.
                 const typedef: ?[]u8 = if (config.typeDefLanguage) |_|
@@ -84,11 +84,12 @@ fn emitJs(
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    renames: ?*const std.AutoHashMap(ast.Loc, []const u8),
     test_mode: bool,
     module_name: []const u8,
     cross: ?*const CrossModule,
 ) ![]u8 {
-    return try emitProgramOptsX(alloc, program, comptime_vals, rewrites, test_mode, module_name, cross);
+    return try emitProgramOptsX(alloc, program, comptime_vals, rewrites, renames, test_mode, module_name, cross);
 }
 
 fn emitTypeDef(
@@ -267,6 +268,9 @@ pub fn emitProgram(
     return emitProgramOpts(alloc, program, comptime_vals, rewrites, false, "main");
 }
 
+// Standalone emit paths (`emitProgram`/`emitProgramOpts`) carry no type-directed
+// rename map; only the cross-module `emitJs` path threads one from inference.
+
 /// Like `emitProgram`, but with test-mode emission control. In test mode,
 /// `test { … }` decls emit as `__bp_test_N` functions plus a registry +
 /// runner, `assert` lowers to the throwing `__bp_assert` helper, and
@@ -279,7 +283,7 @@ pub fn emitProgramOpts(
     test_mode: bool,
     module_name: []const u8,
 ) ![]u8 {
-    return emitProgramOptsX(alloc, program, comptime_vals, rewrites, test_mode, module_name, null);
+    return emitProgramOptsX(alloc, program, comptime_vals, rewrites, null, test_mode, module_name, null);
 }
 
 fn emitProgramOptsX(
@@ -287,6 +291,7 @@ fn emitProgramOptsX(
     program: ast.Program,
     comptime_vals: std.StringHashMap([]const u8),
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    renames: ?*const std.AutoHashMap(ast.Loc, []const u8),
     test_mode: bool,
     module_name: []const u8,
     cross: ?*const CrossModule,
@@ -295,6 +300,7 @@ fn emitProgramOptsX(
     defer aw.deinit();
     var em = Emitter.emitterInit(alloc, &aw.writer, comptime_vals, rewrites);
     defer em.deinit();
+    em.renames = renames;
     em.test_mode = test_mode;
     em.module_name = module_name;
     em.cross = cross;
@@ -467,6 +473,9 @@ fn emitProgramOptsX(
                 try aw.writer.writeByte('\n');
                 firstEmitted = false;
             },
+            // `mod` declares a submodule in the explicit tree; the submodule is
+            // emitted as its own module file, so the declaration emits nothing.
+            .mod => {},
             // Test blocks are only compiled under `botopink test`; in normal
             // builds they are skipped entirely.
             .@"test" => |t| {
@@ -502,6 +511,22 @@ fn emitProgramOptsX(
 
     // Test mode: emit the registry + runner entry.
     if (test_mode and test_entries.items.len > 0) {
+        // F6 — warn on duplicate test names within a module: two `test "x"`
+        // blocks both run, but a shared name makes a failure report ambiguous.
+        {
+            var seen_names = std.StringHashMap(void).init(alloc);
+            defer seen_names.deinit();
+            for (test_entries.items) |t| {
+                const n = t.name orelse continue;
+                const gop = try seen_names.getOrPut(n);
+                if (gop.found_existing) {
+                    std.debug.print(
+                        "warning: duplicate test name \"{s}\" in {s}.bp:{d}\n",
+                        .{ n, module_name, t.line },
+                    );
+                }
+            }
+        }
         if (!firstEmitted) try aw.writer.writeByte('\n');
         try aw.writer.writeAll("const __bp_tests = [\n");
         for (test_entries.items) |t| {
@@ -689,6 +714,10 @@ const Emitter = struct {
     alloc: std.mem.Allocator,
     /// Static extension dispatch: call-site loc → activated extension symbol.
     rewrites: std.AutoHashMap(ast.Loc, []const u8),
+    /// Type-directed JS method renames: call-site loc → native JS method name to
+    /// emit instead of `callee` (e.g. string `contains` → `includes`). Null in the
+    /// standalone `emitProgram`/`emitFnJs` paths.
+    renames: ?*const std.AutoHashMap(ast.Loc, []const u8) = null,
     /// When true, `self.x` lowers to `self.x` (extension methods take `self` as a
     /// real first parameter) instead of the prototype-method `this.x`.
     self_is_param: bool = false,
@@ -720,6 +749,12 @@ const Emitter = struct {
     /// Cross-module link info (null in the standalone `emitProgram` path) —
     /// resolves a `from "<pkg>"` import to the file that emits each name.
     cross: ?*const CrossModule = null,
+    /// Import binding names already lowered to a `const { … } = require(…)` in
+    /// this module. A name maps to exactly one runtime binding, so a second
+    /// `import {x}` for the same `x` (e.g. several decorator `@emit`s each
+    /// importing the runtime fn they call) must not redeclare it — `const x`
+    /// twice is a JS `SyntaxError`. Tracked per module; reset in `emitterInit`.
+    seen_imports: std.StringHashMap(void),
 
     fn emitterInit(
         alloc: std.mem.Allocator,
@@ -735,6 +770,7 @@ const Emitter = struct {
             .externals = std.StringHashMap(ast.ExternalRef).init(alloc),
             .externals_missing = std.StringHashMap(void).init(alloc),
             .class_names = std.StringHashMap(void).init(alloc),
+            .seen_imports = std.StringHashMap(void).init(alloc),
         };
     }
 
@@ -743,6 +779,7 @@ const Emitter = struct {
         self.externals.deinit();
         self.externals_missing.deinit();
         self.class_names.deinit();
+        self.seen_imports.deinit();
     }
 
     /// Indexes every `@[external(…)]` fn by name: with a `node` target it goes
@@ -920,17 +957,37 @@ const Emitter = struct {
 
     fn emitStruct(self: *Emitter, s: ast.StructDecl) !void {
         try self.fmt("class {s} {{\n", .{s.name});
-        for (s.members) |m| switch (m) {
-            .field => |f| {
-                try self.fmt("    {s}", .{f.name});
-                if (f.init) |init| {
-                    try self.w(" = ");
-                    try self.emitExpr(init);
-                }
-                try self.w(";\n");
-            },
-            else => {},
+        // Emit a real constructor that assigns each field, matching `record`
+        // codegen — otherwise `new S(a, b)` ignores its arguments and the
+        // fields read `undefined` at runtime. Field initializers become
+        // parameter defaults so `new S()` still applies them.
+        var hasField = false;
+        for (s.members) |m| if (m == .field) {
+            hasField = true;
+            break;
         };
+        if (hasField) {
+            try self.w("    constructor(");
+            var firstParam = true;
+            for (s.members) |m| switch (m) {
+                .field => |f| {
+                    if (!firstParam) try self.w(", ");
+                    firstParam = false;
+                    try self.w(f.name);
+                    if (f.init) |init| {
+                        try self.w(" = ");
+                        try self.emitExpr(init);
+                    }
+                },
+                else => {},
+            };
+            try self.w(") {\n");
+            for (s.members) |m| switch (m) {
+                .field => |f| try self.fmt("        this.{s} = {s};\n", .{ f.name, f.name }),
+                else => {},
+            };
+            try self.w("    }\n");
+        }
         for (s.members) |m| switch (m) {
             .field => {},
             .getter => |g| {
@@ -1160,7 +1217,11 @@ const Emitter = struct {
         try self.w("// implement ");
         for (im.interfaces, 0..) |iface, i| {
             if (i > 0) try self.w(", ");
-            try self.w(iface);
+            try self.w(switch (iface) {
+                .named => |n| n,
+                .generic => |g| g.name,
+                else => "?",
+            });
         }
         try self.fmt(" for {s}\n", .{im.target});
         try self.emitExtensionNamespace(im.name, im.methods);
@@ -1205,17 +1266,23 @@ const Emitter = struct {
         // emitted alongside the project (`out/std/<mod>.js`), so qualified
         // calls (`bool.negate(x)`) resolve naturally at runtime.
         if (u.source == .module and std.mem.eql(u8, u.source.module, "std")) {
-            for (u.imports, 0..) |imp, i| {
-                if (i > 0) try self.w("\n");
+            var first = true;
+            for (u.imports) |imp| {
+                if (self.seen_imports.contains(imp.name())) continue;
+                try self.seen_imports.put(imp.name(), {});
+                if (!first) try self.w("\n");
+                first = false;
                 const mod = imp.segments[imp.segments.len - 1];
                 try self.fmt("const {s} = require(\"./std/{s}.js\");", .{ imp.name(), mod });
             }
             return;
         }
-        // Package import (e.g. `from "rakun"`): resolve each name to the file
+        // Package import (e.g. `from "web"`): resolve each name to the file
         // that actually emits it via the cross-module export index. Names with
-        // no emitted home (declaration-only markers like rakun decorators) emit
-        // no runtime binding. One `require` per distinct source module.
+        // no emitted home (declaration-only markers like lib decorators) emit
+        // no runtime binding. One `require` per distinct source module, and a
+        // name already bound in this module (a repeated import) is skipped so it
+        // is never redeclared.
         if (u.source == .module and self.cross != null) {
             const xm = &self.cross.?.exports;
             var seen = std.StringHashMap(void).init(self.alloc);
@@ -1225,6 +1292,16 @@ const Emitter = struct {
                 const info = xm.get(imp.name()) orelse continue;
                 if (seen.contains(info.module)) continue;
                 try seen.put(info.module, {});
+                // Names from this module not already bound here — `const {…}` for
+                // exactly those. If every one is already bound, emit no line.
+                var count: usize = 0;
+                for (u.imports) |imp2| {
+                    const info2 = xm.get(imp2.name()) orelse continue;
+                    if (!std.mem.eql(u8, info2.module, info.module)) continue;
+                    if (self.seen_imports.contains(imp2.name())) continue;
+                    count += 1;
+                }
+                if (count == 0) continue;
                 if (!first_line) try self.w("\n");
                 first_line = false;
                 try self.w("const { ");
@@ -1232,18 +1309,79 @@ const Emitter = struct {
                 for (u.imports) |imp2| {
                     const info2 = xm.get(imp2.name()) orelse continue;
                     if (!std.mem.eql(u8, info2.module, info.module)) continue;
+                    if (self.seen_imports.contains(imp2.name())) continue;
+                    try self.seen_imports.put(imp2.name(), {});
                     if (!firstn) try self.w(", ");
                     firstn = false;
                     try self.w(imp2.name());
                 }
                 try self.fmt(" }} = require(\"./{s}.js\");", .{info.module});
             }
+            // Namespace binding: when the import names the lib itself
+            // (`import {Lib} from "Lib"`) and that name has no emitted symbol of
+            // its own — it's a namespace handle (or a comptime template fn, whose
+            // only runtime use is `Lib.member(...)`) — bind it to the lib's module
+            // object so `Lib.member(...)` resolves at runtime, parity with the
+            // destructured bare form. Generic: the core names no specific lib; the
+            // lib is whatever `from "<lib>"` resolved off disk.
+            const lib_name = u.source.module;
+            var names_lib = false;
+            for (u.imports) |imp| {
+                if (std.mem.eql(u8, imp.name(), lib_name)) {
+                    names_lib = true;
+                    break;
+                }
+            }
+            if (names_lib and xm.get(lib_name) == null) {
+                // Distinct modules emitted under the lib's `<lib>/` path prefix,
+                // sorted for deterministic output (the export map is unordered).
+                var mods: std.ArrayListUnmanaged([]const u8) = .empty;
+                defer mods.deinit(self.alloc);
+                var mseen = std.StringHashMap(void).init(self.alloc);
+                defer mseen.deinit();
+                const prefix = try std.fmt.allocPrint(self.alloc, "{s}/", .{lib_name});
+                defer self.alloc.free(prefix);
+                var it = xm.valueIterator();
+                while (it.next()) |info| {
+                    const m = info.module;
+                    if (!std.mem.startsWith(u8, m, prefix)) continue;
+                    if (mseen.contains(m)) continue;
+                    try mseen.put(m, {});
+                    try mods.append(self.alloc, m);
+                }
+                if (mods.items.len > 0) {
+                    std.mem.sort([]const u8, mods.items, {}, struct {
+                        fn lt(_: void, a: []const u8, b: []const u8) bool {
+                            return std.mem.lessThan(u8, a, b);
+                        }
+                    }.lt);
+                    if (!first_line) try self.w("\n");
+                    first_line = false;
+                    if (mods.items.len == 1) {
+                        try self.fmt("const {s} = require(\"./{s}.js\");", .{ jsIdent(lib_name), mods.items[0] });
+                    } else {
+                        try self.fmt("const {s} = Object.assign({{}}", .{jsIdent(lib_name)});
+                        for (mods.items) |m| try self.fmt(", require(\"./{s}.js\")", .{m});
+                        try self.w(");");
+                    }
+                }
+            }
             return;
         }
 
+        var count: usize = 0;
+        for (u.imports) |imp| {
+            if (self.seen_imports.contains(imp.name())) continue;
+            count += 1;
+        }
+        if (count == 0) return;
         try self.w("const { ");
-        for (u.imports, 0..) |imp, i| {
-            if (i > 0) try self.w(", ");
+        var firstn = true;
+        for (u.imports) |imp| {
+            if (self.seen_imports.contains(imp.name())) continue;
+            try self.seen_imports.put(imp.name(), {});
+            if (!firstn) try self.w(", ");
+            firstn = false;
             try self.w(imp.name());
         }
         try self.w(" } = require(\"");
@@ -2240,12 +2378,13 @@ const Emitter = struct {
                             }
                         } else if (std.mem.startsWith(u8, cc.callee, "__bp_")) {
                             try self.emitResultOptionOp(cc.callee, cc.args);
-                        } else if (std.mem.eql(u8, cc.callee, "expr") or std.mem.eql(u8, cc.callee, "code")) {
+                        } else if (std.mem.eql(u8, cc.callee, "expr") or std.mem.eql(u8, cc.callee, "code") or std.mem.eql(u8, cc.callee, "compilerError") or std.mem.eql(u8, cc.callee, "emit")) {
                             // `@expr(value)` / `@code(text)` — comptime template
-                            // construction builtins. Only reachable when the
-                            // template evaluator emits a template fn body
-                            // (template fns are dropped before normal codegen);
-                            // its prelude defines `__expr`/`__code`.
+                            // construction builtins; `@compilerError(msg)` — abort
+                            // compilation from a comptime body. Only reachable when
+                            // the template/decorator evaluator emits the body
+                            // (those fns are dropped before normal codegen); its
+                            // prelude defines `__expr`/`__code`/`__compilerError`.
                             try self.fmt("__{s}(", .{cc.callee});
                             for (cc.args, 0..) |arg, i| {
                                 if (i > 0) try self.w(", ");
@@ -2274,8 +2413,11 @@ const Emitter = struct {
                             } else {
                                 try self.emitExpr(recv.*);
                                 // Optional chaining call maps to native JS `?.`;
-                                // `append` maps to native `concat`.
-                                try self.fmt("{s}{s}(", .{ @as([]const u8, if (cc.optional) "?." else "."), jsBuiltinMethodName(cc.callee) });
+                                // `append` maps to native `concat`. A type-directed
+                                // rename (`s.contains` → `s.includes` on a string)
+                                // takes precedence when inference recorded one here.
+                                const method = if (self.renames) |r| (r.get(c.loc) orelse jsBuiltinMethodName(cc.callee)) else jsBuiltinMethodName(cc.callee);
+                                try self.fmt("{s}{s}(", .{ @as([]const u8, if (cc.optional) "?." else "."), method });
                             }
                         } else if (self.externals_missing.contains(cc.callee)) {
                             // External fn with no `node` target — no symbol to
@@ -2535,7 +2677,7 @@ const Emitter = struct {
             .numberLit => |n| try buf.writer.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try buf.writer.writeAll("_s === ");
-                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names };
+                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names, .seen_imports = self.seen_imports };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try buf.writer.print("_s === \"{s}\"", .{n}),
@@ -2555,7 +2697,7 @@ const Emitter = struct {
             .numberLit => |n| try wr.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try wr.writeAll("_s === ");
-                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names };
+                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names, .seen_imports = self.seen_imports };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try wr.print("_s === \"{s}\"", .{n}),

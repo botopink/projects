@@ -11,6 +11,7 @@ const Lexer = @import("./lexer.zig").Lexer;
 const Parser = @import("./parser.zig").Parser;
 const Env = @import("./comptime/env.zig").Env;
 const envMod = @import("./comptime/env.zig");
+const template = @import("./comptime/template.zig");
 const T = @import("./comptime/types.zig");
 const Module = @import("./module.zig").Module;
 const validation = @import("./comptime/error.zig");
@@ -33,6 +34,25 @@ pub const ComptimeEvalResult = struct {
 
 /// Per-module result after analysis and comptime evaluation.
 /// Bindings reference `ComptimeSession.arena` — valid only while the session is alive.
+/// The canonical reference node a sub-language template produced via
+/// `q.custom` — re-exported so tooling consumers (the language server) read the
+/// generic shape without depending on the comptime internals. expr-custom.
+pub const CustomNode = template.CustomNode;
+
+/// One `@ExprCustom` reference-AST entry surfaced to tooling: the call site, the
+/// template callee, the canonical `CustomNode` root, and the provenance
+/// (file/line/col of the template literal's opening quote) needed to map a
+/// node's template-relative `span` to an absolute document position. Generic —
+/// names no sub-language.
+pub const CustomAstEntry = struct {
+    loc: ast.Loc,
+    callee: []const u8,
+    root: CustomNode,
+    file: []const u8,
+    line: usize,
+    col: usize,
+};
+
 pub const ComptimeOutput = struct {
     name: []const u8,
     src: []const u8,
@@ -60,8 +80,41 @@ pub const ComptimeOutput = struct {
         /// Static extension dispatch: call-site location → activated extension
         /// symbol. Backends lower `obj.m(args)` at these sites to `Sym.m(obj, args)`.
         dispatch_rewrites: std.AutoHashMap(ast.Loc, []const u8),
+        /// Type-directed JS method renames: call-site location → native JS method
+        /// name. JS-specific (e.g. string `contains` → `includes`); only commonJS
+        /// reads it. Empty for the other backends.
+        js_method_renames: std.AutoHashMap(ast.Loc, []const u8),
+        /// Value-receiver instance method calls: call-site location → how the
+        /// receiver's record/primitive method lowers. Consumed by the backends
+        /// without native method dispatch (erlang/beam/wasm); commonJS ignores it.
+        instance_lowerings: std.AutoHashMap(ast.Loc, envMod.InstanceLowering),
+        /// `@ExprCustom` reference ASTs produced by `q.custom` in this module —
+        /// the generic, canonical `CustomNode` tree per call location. Read-only,
+        /// for tooling (the language server). Empty for modules with no custom
+        /// templates. expr-custom.
+        custom_ast: []const CustomAstEntry,
     };
 };
+
+/// Collect the `@ExprCustom` reference-AST entries recorded during inference of
+/// one module into the read-only slice surfaced on `OkData.custom_ast`.
+fn collectCustomAst(arena: std.mem.Allocator, env: *const envMod.Env) ![]const CustomAstEntry {
+    if (env.customAstByLoc.count() == 0) return &.{};
+    var out = try arena.alloc(CustomAstEntry, env.customAstByLoc.count());
+    var i: usize = 0;
+    var it = env.customAstByLoc.iterator();
+    while (it.next()) |e| : (i += 1) {
+        out[i] = .{
+            .loc = e.key_ptr.*,
+            .callee = e.value_ptr.callee,
+            .root = e.value_ptr.root,
+            .file = e.value_ptr.file,
+            .line = e.value_ptr.line,
+            .col = e.value_ptr.col,
+        };
+    }
+    return out;
+}
 
 /// Owns the shared parse/type arena and per-module comptime outputs.
 /// Keep alive until `codegenEmit` returns, then call `deinit(allocator)`.
@@ -124,16 +177,50 @@ fn analyzeModule(
     arena: std.mem.Allocator,
     mod: Module,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    typeDeclRegistry: *std.StringHashMap(std.StringHashMap(ast.DeclKind)),
     templateRegistry: *const std.StringHashMap(ast.FnDecl),
+    decoratorRegistry: *const std.StringHashMap(ast.FnDecl),
     templateEvalCtx: ?envMod.TemplateEvalCtx,
 ) !AnalysisResult {
+    return analyzeSource(arena, mod, mod.source, registry, typeDeclRegistry, templateRegistry, decoratorRegistry, templateEvalCtx, false);
+}
+
+/// Append decorator `@emit(...)` contributions to a module's source as extra
+/// top-level declarations (the wiring a decorator builds — singletons, DI, router).
+fn spliceContributions(arena: std.mem.Allocator, source: []const u8, contributions: []const []const u8) ![]const u8 {
+    var buf: std.ArrayListUnmanaged(u8) = .empty;
+    try buf.appendSlice(arena, source);
+    for (contributions) |c| {
+        try buf.append(arena, '\n');
+        try buf.appendSlice(arena, c);
+    }
+    return buf.toOwnedSlice(arena);
+}
+
+/// Analyze one module's `source`. On the first pass (`skip_invoke == false`) a
+/// decorator body may contribute generated declarations via `@emit(...)`; if it
+/// does, the contributions are spliced onto the source and the module is
+/// re-analyzed ONCE with decorator invocation disabled (`skip_invoke == true`),
+/// so the generated decls are inferred + emitted without re-running decorators.
+fn analyzeSource(
+    arena: std.mem.Allocator,
+    mod: Module,
+    source: []const u8,
+    registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    typeDeclRegistry: *std.StringHashMap(std.StringHashMap(ast.DeclKind)),
+    templateRegistry: *const std.StringHashMap(ast.FnDecl),
+    decoratorRegistry: *const std.StringHashMap(ast.FnDecl),
+    templateEvalCtx: ?envMod.TemplateEvalCtx,
+    skip_invoke: bool,
+) anyerror!AnalysisResult {
     var env = try infer.freshEnv(arena, std.heap.page_allocator);
     // Capture provenance for `expr` templates: which file is being inferred.
     env.modulePath = mod.path;
     // Runtime-backed template expansion (F6-full) — null in tooling paths.
     env.templateEval = templateEvalCtx;
+    env.skipDecoratorInvoke = skip_invoke;
 
-    var lexer = Lexer.init(mod.source);
+    var lexer = Lexer.init(source);
     const tokens = try lexer.scanAll(arena);
 
     var parser = Parser.init(tokens);
@@ -147,7 +234,7 @@ fn analyzeModule(
         return .{ .validationError = .{ .info = err_info } };
     }
 
-    try resolveImports(&env, program, registry, templateRegistry);
+    try resolveImports(&env, program, registry, typeDeclRegistry, templateRegistry, decoratorRegistry);
     const bindings = infer.inferProgramTyped(&env, program) catch |err| switch (err) {
         error.TypeError => {
             const te = env.lastError orelse validation.TypeError{ .kind = .{ .unboundVariable = "" } };
@@ -156,27 +243,73 @@ fn analyzeModule(
         },
         else => return err,
     };
+
+    // A decorator body contributed generated declarations (`@emit`): splice them
+    // onto the source and re-analyze once (decorators off, to avoid re-emitting).
+    if (!skip_invoke and env.contributions.items.len > 0) {
+        const spliced = try spliceContributions(arena, source, env.contributions.items);
+        env.deinit();
+        return analyzeSource(arena, mod, spliced, registry, typeDeclRegistry, templateRegistry, decoratorRegistry, templateEvalCtx, true);
+    }
+
     return .{ .success = .{ .bindings = bindings, .env = env, .program = program } };
 }
 
 /// The "std" package: stdlib impl modules importable via `import {…} from "std";`.
-/// Order = dependency order (a later module may import an earlier one).
-/// Registry keys are prefixed `std/` so project-root imports never see them.
-pub const std_pkg_modules = [_]Module{
-    .{ .path = "std/order", .source = @import("std_prelude").order },
-    .{ .path = "std/dict", .source = @import("std_prelude").dict_mod },
-    .{ .path = "std/sets", .source = @import("std_prelude").sets_mod },
-    .{ .path = "std/string_builder", .source = @import("std_prelude").string_builder_mod },
-    .{ .path = "std/queue", .source = @import("std_prelude").queue_mod },
-};
+/// The registry is DATA-DRIVEN — `build.zig` enumerates the package `.bp` files
+/// and generates this `{ path, source }` table (re-exported by `prelude.zig`), so
+/// compiler-core names no individual std module. Order = list order in build.zig
+/// (a later module may import an earlier one). Registry keys are prefixed `std/`
+/// so project-root imports never see them.
+pub const std_pkg_modules = @import("std_prelude").pkg_modules;
 
-/// The "rakun" package: concrete framework modules importable via
-/// `import {…} from "rakun";` (the declaration-only markers/interfaces live in
-/// `rakun.d.bp` and are handled by `registerRakunLib`, not here). Prepended to
-/// the compilation — and emitted — only when a module imports from rakun.
-pub const rakun_pkg_modules = [_]Module{
-    .{ .path = "rakun/http", .source = @import("std_prelude").rakun_http },
-};
+/// The `@Decl` reflection cluster, in botopink, registered into the global type
+/// env so a decorator body (`fn d(comptime decl: @Decl) { … }`) type-checks. The
+/// canonical/documented copy lives in `libs/std/src/builtins.d.bp`; this minimal
+/// mirror exists because that file is not parsed as a standalone program. Keep
+/// the two in sync.
+///
+/// `Decl` is a `struct` (not an interface) so its **aggregate** members —
+/// `fields`/`methods`/`annotations` with array types — parse and resolve; that
+/// is what the wiring phase (P3) reads to build DI/router tables. The shape
+/// matches the `@Decl` handle JSON `buildHandleJson` emits and the `__decl`
+/// object `decorator_eval.zig` binds, so a body's `decl.fields`/`decl.kind`/
+/// `decl.fail(…)` type-check against the same data the runtime provides.
+const decl_reflection_src =
+    \\pub enum DeclKind { Record, Struct, Enum, Interface, Fn, Method, Field }
+    \\pub struct Span { val start: i32, val end: i32, val line: i32 }
+    \\pub struct Annotation { val name: string, val args: string[] }
+    \\pub struct Param { val name: string, val typeName: string }
+    \\pub struct Field { val name: string, val typeName: string, val annotations: Annotation[] }
+    \\pub struct Method { val name: string, val params: Param[], val returnType: string, val annotations: Annotation[] }
+    \\pub struct Decl {
+    \\    val kind: DeclKind,
+    \\    val name: string,
+    \\    val fields: Field[],
+    \\    val methods: Method[],
+    \\    val returnType: string,
+    \\    val annotations: Annotation[],
+    \\    declare fn fail(self: Self, message: string);
+    \\    declare fn failAt(self: Self, span: Span, message: string);
+    \\}
+;
+
+/// The `@ExprCustom` reference-tree type (expr-custom), registered into the
+/// global env so a sub-language template body can BUILD a `CustomNode` tree
+/// (`CustomNode(kind: …, span: …, …)`) and hand it to `q.custom`. Like the
+/// `@Decl` cluster this mirrors the surface documented in
+/// `libs/std/src/builtins.d.bp`; registered after `decl_reflection_src` so its
+/// `Span` field type resolves. `Binding` (the `ref` field) is the same opaque
+/// type `q.lookup` yields. Generic — the core never inspects `kind`/`label`.
+const custom_ast_reflection_src =
+    \\pub struct CustomNode {
+    \\    val kind: string,
+    \\    val span: Span,
+    \\    val label: string,
+    \\    val ref: ?Binding,
+    \\    val children: CustomNode[],
+    \\}
+;
 
 /// Embedded builtin-type interface declarations. Unlike `std_pkg_modules`
 /// these are flattened into the global type env at infer time (they declare the
@@ -230,46 +363,8 @@ fn expandStdImports(arena: std.mem.Allocator, modules: []const Module) ![]const 
 
     var out: std.ArrayListUnmanaged(Module) = .empty;
     for (std_pkg_modules, 0..) |spm, i| {
-        if (needed[i]) try out.append(arena, spm);
+        if (needed[i]) try out.append(arena, .{ .path = spm.path, .source = spm.source });
     }
-    try out.appendSlice(arena, modules);
-    return out.toOwnedSlice(arena);
-}
-
-/// True when `path` is a "rakun" package registry key (`rakun/<module>`).
-fn isRakunPkgPath(path: []const u8) bool {
-    return std.mem.startsWith(u8, path, "rakun/");
-}
-
-/// Scans `modules` for `import {…} from "rakun"` and, if any is present,
-/// prepends the concrete rakun package modules (`rakun_pkg_modules`) so their
-/// real types (`Response`/`App`/`HttpMethod`) are compiled + emitted once and
-/// resolved into importers via the shared registry. Decorator markers and the
-/// runtime-boundary interfaces stay declaration-only (`registerRakunLib`).
-/// Modules that fail to parse pass through untouched.
-fn expandRakunImports(arena: std.mem.Allocator, modules: []const Module) ![]const Module {
-    var any = false;
-    for (modules) |mod| {
-        var lx = Lexer.init(mod.source);
-        const tokens = lx.scanAll(arena) catch continue;
-        var p = Parser.init(tokens);
-        const program = p.parse(arena) catch continue;
-        for (program.decls) |decl| switch (decl) {
-            .use => |u| {
-                const from_rakun = switch (u.source) {
-                    .module => |m| std.mem.eql(u8, m, "rakun"),
-                    .root => false,
-                };
-                if (from_rakun) any = true;
-            },
-            else => {},
-        };
-        if (any) break;
-    }
-    if (!any) return modules;
-
-    var out: std.ArrayListUnmanaged(Module) = .empty;
-    try out.appendSlice(arena, &rakun_pkg_modules);
     try out.appendSlice(arena, modules);
     return out.toOwnedSlice(arena);
 }
@@ -278,7 +373,9 @@ fn resolveImports(
     env: *envMod.Env,
     program: anytype,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    typeDeclRegistry: *std.StringHashMap(std.StringHashMap(ast.DeclKind)),
     templateRegistry: *const std.StringHashMap(ast.FnDecl),
+    decoratorRegistry: *const std.StringHashMap(ast.FnDecl),
 ) !void {
     for (program.decls) |decl| {
         switch (decl) {
@@ -296,19 +393,50 @@ fn resolveImports(
                         continue;
                     }
                     // Bare import: same-package (project root) resolution only —
-                    // never resolves "std" package modules.
-                    var it = registry.iterator();
-                    while (it.next()) |e| {
+                    // never resolves "std" package modules. An imported nominal
+                    // type carries its full declaration across the module
+                    // boundary (re-registered below) so its `TypeDef` metadata —
+                    // `implements`/`contextBase`/fields — is visible here, not
+                    // just its constructor value. This mirrors the `from "std"`
+                    // type-export path (`stdModuleTypes` → `registerTypeDecl`).
+                    var bound_type_decl = false;
+                    var dit = typeDeclRegistry.iterator();
+                    while (dit.next()) |e| {
                         if (isStdPkgPath(e.key_ptr.*)) continue;
-                        if (e.value_ptr.get(name)) |ty| {
-                            try env.bind(name, ty);
+                        if (e.value_ptr.get(name)) |type_decl| {
+                            try infer.registerImportedTypeDecl(env, type_decl);
+                            bound_type_decl = true;
                             break;
+                        }
+                    }
+                    // Value/constructor binding. Skipped for nominal types whose
+                    // declaration was just re-registered — `registerTypeDecl`
+                    // already bound the constructor with the importing module's
+                    // own type ids, and clobbering it with the exported `*T.Type`
+                    // would reintroduce the defining module's ids.
+                    if (!bound_type_decl) {
+                        var it = registry.iterator();
+                        while (it.next()) |e| {
+                            if (isStdPkgPath(e.key_ptr.*)) continue;
+                            if (e.value_ptr.get(name)) |ty| {
+                                try env.bind(name, ty);
+                                break;
+                            }
                         }
                     }
                     // Imported template fns (`-> @Expr<…>`) carry their decl
                     // across modules so call sites here can expand them.
                     if (templateRegistry.get(name)) |tfn| {
                         try infer.registerImportedTemplateFn(env, name, tfn);
+                    }
+                    // Imported decorators (`comptime _: @Decl` first param) carry
+                    // their decl across modules too, so `#[name(args)]` sites in
+                    // THIS module argument-check against the marker and run its
+                    // body over each annotated declaration at comptime. Without
+                    // this a marker only fired in its defining module — a lib
+                    // ships its decorators, but they are applied by importers.
+                    if (decoratorRegistry.get(name)) |dfn| {
+                        infer.registerImportedDecorator(env, name, dfn);
                     }
                 }
             },
@@ -320,12 +448,15 @@ fn resolveImports(
 fn registerExports(
     arena: std.mem.Allocator,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
+    typeDeclRegistry: *std.StringHashMap(std.StringHashMap(ast.DeclKind)),
     templateRegistry: *std.StringHashMap(ast.FnDecl),
+    decoratorRegistry: *std.StringHashMap(ast.FnDecl),
     path: []const u8,
     bindings: []const infer.TypedBinding,
     env: *envMod.Env,
 ) !void {
     var exports = std.StringHashMap(*T.Type).init(arena);
+    var typeDecls = std.StringHashMap(ast.DeclKind).init(arena);
     for (bindings) |b| {
         if (b.name.len == 0 or b.decl == .use) continue;
         const is_pub = switch (b.decl) {
@@ -336,16 +467,34 @@ fn registerExports(
         if (is_pub) {
             const ty = env.lookup(b.name) orelse b.type_;
             try exports.put(b.name, ty);
+            // `pub` nominal type declarations export their full AST decl too, so
+            // the importing module can re-register the `TypeDef` (implements /
+            // contextBase / fields) — not just the constructor value. Mirrors
+            // the `from "std"` type-export path (`stdModuleTypes`), which is also
+            // `pub`-only. Non-pub types still export their constructor (above)
+            // for value use, but carry no cross-module `TypeDef`.
+            switch (b.decl) {
+                .record => |r| if (r.isPub) try typeDecls.put(b.name, b.decl),
+                .@"struct" => |s| if (s.isPub) try typeDecls.put(b.name, b.decl),
+                .@"enum" => |e| if (e.isPub) try typeDecls.put(b.name, b.decl),
+                else => {},
+            }
             // Template fns export their declaration too — importing modules
             // expand their calls at comptime (the decl never reaches codegen).
             if (b.decl == .@"fn") {
-                if (b.decl.@"fn".returnType) |rt| {
-                    if (rt.isExprType()) try templateRegistry.put(b.name, b.decl.@"fn");
+                const f = b.decl.@"fn";
+                if (f.returnType) |rt| {
+                    if (rt.isTemplateReturnType()) try templateRegistry.put(b.name, f);
                 }
+                // Decorators (`comptime _: @Decl` first param) export their decl
+                // too, so importing modules can run the body over their annotated
+                // declarations — generic, by shape, no lib name involved.
+                if (infer.isDecoratorParams(f.params)) try decoratorRegistry.put(b.name, f);
             }
         }
     }
     try registry.put(path, exports);
+    try typeDeclRegistry.put(path, typeDecls);
 }
 
 /// Parse stdlib prelude modules and register their inferred types into `env`:
@@ -385,6 +534,35 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         const tokens = try lx.scanAll(alloc);
         var p = Parser.init(tokens);
         const program = try stripTestDecls(try p.parse(alloc), alloc);
+        _ = try infer.inferProgram(env, program);
+    }
+
+    // The `@Decl` reflection cluster (annotation processors): register these
+    // types into the global env so a decorator body type-checks — `decl.kind` /
+    // `decl.name` / `decl.fields` / … and `decl.fail(…)`, plus the `Field` /
+    // `Method` / `Param` / `Annotation` shapes it reads. This mirrors the surface
+    // documented in `libs/std/src/builtins.d.bp` (kept there for tooling); it is
+    // parsed from a dedicated minimal source here because the full `builtins.d.bp`
+    // is the tooling/`@Expr` surface and is not consumed as a standalone program.
+    {
+        const alloc = env.arena;
+        var lx = Lexer.init(decl_reflection_src);
+        const tokens = try lx.scanAll(alloc);
+        var p = Parser.init(tokens);
+        const program = try p.parse(alloc);
+        _ = try infer.inferProgram(env, program);
+    }
+
+    // The `@ExprCustom` reference-tree type (expr-custom): registered after the
+    // `@Decl` cluster so a sub-language template body can construct `CustomNode`
+    // values for `q.custom`. Its `Span` field resolves against the struct just
+    // registered above.
+    {
+        const alloc = env.arena;
+        var lx = Lexer.init(custom_ast_reflection_src);
+        const tokens = try lx.scanAll(alloc);
+        var p = Parser.init(tokens);
+        const program = try p.parse(alloc);
         _ = try infer.inferProgram(env, program);
     }
 
@@ -447,70 +625,6 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
         }
         try env.stdModules.put(mod_name, exports);
     }
-
-    try registerRakunLib(env);
-}
-
-/// Parse the embedded `rakun.d.bp` and record its public surface in the
-/// import registries (`env.rakunExports`, `env.rakunTypeDecls`) WITHOUT
-/// flattening anything into scope. A module reaches these symbols only via
-/// `import {…} from "rakun"` (see `infer.markRakunImports`): rakun is an
-/// application-level lib — opt-in per module, never auto-loaded into the env.
-///
-/// Inferred in a scratch env (sharing `env.arena` so the resulting types/decls
-/// outlive the scratch maps), mirroring the `std_pkg_modules` loop above.
-fn registerRakunLib(env: *Env) anyerror!void {
-    const prelude = @import("std_prelude");
-
-    var env2 = Env.init(env.arena);
-    defer env2.deinit();
-    try env2.registerBuiltins();
-    try env2.bind("true", try env2.namedType("bool"));
-    try env2.bind("false", try env2.namedType("bool"));
-    // Primitive interfaces (string / i32 / Array<T> / …) so the decorator and
-    // HTTP/DI signatures type-check.
-    {
-        var lx = Lexer.init(prelude.primitives);
-        const tokens = try lx.scanAll(env.arena);
-        var p = Parser.init(tokens);
-        const program = try stripTestDecls(try p.parse(env.arena), env.arena);
-        _ = try infer.inferProgram(&env2, program);
-    }
-
-    // Both rakun sources feed the inference registries so `from "rakun"`
-    // resolves in every harness. `rakun.d.bp` carries the markers + boundary
-    // interfaces; `http.bp` carries the concrete types — the latter are ALSO
-    // prepended + emitted as the `rakun/http` package module in `compile`
-    // (`expandRakunImports`), where `resolveImports` binds them from the shared
-    // registry (so `markRakunImports` then skips the local registration below).
-    const sources = [_][]const u8{ prelude.rakun, prelude.rakun_http };
-    for (sources) |src| {
-        var lx = Lexer.init(src);
-        const tokens = try lx.scanAll(env.arena);
-        var p = Parser.init(tokens);
-        const program = try stripTestDecls(try p.parse(env.arena), env.arena);
-        for (program.decls) |decl| {
-            switch (decl) {
-                // Type surface (`Request`/`Context`/`Rakun` interfaces,
-                // `Response`/`App`/`HttpMethod` concrete) — registered into the
-                // importing env so its name resolves and associated fns
-                // (`Response.json`) bind.
-                .interface => |d| try env.rakunTypeDecls.put(d.name, decl),
-                .@"enum" => |d| try env.rakunTypeDecls.put(d.name, decl),
-                .record => |d| try env.rakunTypeDecls.put(d.name, decl),
-                .@"struct" => |d| try env.rakunTypeDecls.put(d.name, decl),
-                // Decorator markers (`service`, `getMapping(path)`, …) parse as
-                // `declare fn` delegates. Expose each as a callable type: bound
-                // by name into a module that imports it, and its signature
-                // drives F3 annotation-argument checking.
-                .delegate => |d| {
-                    if (!d.isPub) continue;
-                    try env.rakunExports.put(d.name, try infer.buildDelegateType(&env2, d));
-                },
-                else => {},
-            }
-        }
-    }
 }
 
 /// Re-export so callers use `comptime.zig` as sole entry point.
@@ -568,15 +682,19 @@ pub fn compileTypesOnly(
 
     const arena_alloc = session.arena.allocator();
     var registry = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena_alloc);
+    var type_decl_registry = std.StringHashMap(std.StringHashMap(ast.DeclKind)).init(arena_alloc);
     var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
+    var decorator_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
-    const std_expanded = try expandStdImports(arena_alloc, modules);
-    const all_modules = try expandRakunImports(arena_alloc, std_expanded);
+    // Non-std libs are ordinary input modules: the driver supplies their `.bp`
+    // sources and `resolveImports` binds `from "<lib>"` through the shared
+    // registry — the core names no specific lib (std is the one exception).
+    const all_modules = try expandStdImports(arena_alloc, modules);
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry, &template_registry, null);
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, &type_decl_registry, &template_registry, &decorator_registry, null);
 
         switch (analysis) {
             .parseError => {
@@ -606,9 +724,19 @@ pub fn compileTypesOnly(
                     var rit = succ.env.dispatchRewrites.iterator();
                     while (rit.next()) |e| try dispatch_rewrites.put(e.key_ptr.*, e.value_ptr.*);
                 }
+                var js_method_renames = std.AutoHashMap(ast.Loc, []const u8).init(arena_alloc);
+                {
+                    var rit = succ.env.jsMethodRenames.iterator();
+                    while (rit.next()) |e| try js_method_renames.put(e.key_ptr.*, e.value_ptr.*);
+                }
+                var instance_lowerings = std.AutoHashMap(ast.Loc, envMod.InstanceLowering).init(arena_alloc);
+                {
+                    var rit = succ.env.instanceLowerings.iterator();
+                    while (rit.next()) |e| try instance_lowerings.put(e.key_ptr.*, e.value_ptr.*);
+                }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
-                    try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
+                    try registerExports(arena_alloc, &registry, &type_decl_registry, &template_registry, &decorator_registry, mod.path, succ.bindings, &env);
                     // NOTE: no env.deinit() here — `env` is a copy whose hashmap
                     // internals are shared with `succ.env`, and the transform
                     // below still reads `succ.env.method_lowerings`. The env is
@@ -670,6 +798,9 @@ pub fn compileTypesOnly(
                         .transformed = transformed,
                         .type_ids = type_ids,
                         .dispatch_rewrites = dispatch_rewrites,
+                        .js_method_renames = js_method_renames,
+                        .instance_lowerings = instance_lowerings,
+                        .custom_ast = try collectCustomAst(arena_alloc, &succ.env),
                     } },
                 });
             },
@@ -701,15 +832,19 @@ pub fn compile(
 
     const arena_alloc = session.arena.allocator();
     var registry = std.StringHashMap(std.StringHashMap(*T.Type)).init(arena_alloc);
+    var type_decl_registry = std.StringHashMap(std.StringHashMap(ast.DeclKind)).init(arena_alloc);
     var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
+    var decorator_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
-    const std_expanded = try expandStdImports(arena_alloc, modules);
-    const all_modules = try expandRakunImports(arena_alloc, std_expanded);
+    // Non-std libs are ordinary input modules: the driver supplies their `.bp`
+    // sources and `resolveImports` binds `from "<lib>"` through the shared
+    // registry — the core names no specific lib (std is the one exception).
+    const all_modules = try expandStdImports(arena_alloc, modules);
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry, &template_registry, .{
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, &type_decl_registry, &template_registry, &decorator_registry, .{
             .io = io,
             .build_root = build_root orelse name,
         });
@@ -742,9 +877,19 @@ pub fn compile(
                     var rit = succ.env.dispatchRewrites.iterator();
                     while (rit.next()) |e| try dispatch_rewrites.put(e.key_ptr.*, e.value_ptr.*);
                 }
+                var js_method_renames = std.AutoHashMap(ast.Loc, []const u8).init(arena_alloc);
+                {
+                    var rit = succ.env.jsMethodRenames.iterator();
+                    while (rit.next()) |e| try js_method_renames.put(e.key_ptr.*, e.value_ptr.*);
+                }
+                var instance_lowerings = std.AutoHashMap(ast.Loc, envMod.InstanceLowering).init(arena_alloc);
+                {
+                    var rit = succ.env.instanceLowerings.iterator();
+                    while (rit.next()) |e| try instance_lowerings.put(e.key_ptr.*, e.value_ptr.*);
+                }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
-                    try registerExports(arena_alloc, &registry, &template_registry, mod.path, succ.bindings, &env);
+                    try registerExports(arena_alloc, &registry, &type_decl_registry, &template_registry, &decorator_registry, mod.path, succ.bindings, &env);
                     // NOTE: no env.deinit() here — `env` is a copy whose hashmap
                     // internals are shared with `succ.env`, and the transform
                     // below still reads `succ.env.method_lowerings`. The env is
@@ -814,6 +959,9 @@ pub fn compile(
                         .transformed = transformed,
                         .type_ids = type_ids,
                         .dispatch_rewrites = dispatch_rewrites,
+                        .js_method_renames = js_method_renames,
+                        .instance_lowerings = instance_lowerings,
+                        .custom_ast = try collectCustomAst(arena_alloc, &succ.env),
                     } },
                 });
             },

@@ -58,6 +58,22 @@ pub const ImportDecl = struct {
     moduleComment: ?[]const u8 = null,
 };
 
+/// A `mod Name;` / `pub mod Name;` declaration — a node in the explicit module
+/// tree (Rust-style). It names a submodule of the declaring file's module and
+/// records whether it is re-exported (`pub mod`) or private to the subtree
+/// (`mod`). Resolution of `Name` to `Name.bp` / `Name/mod.bp` happens in the
+/// CLI driver, not here; the AST only carries the declaration.
+pub const ModDecl = struct {
+    name: []const u8,
+    isPub: bool,
+    /// `///` documentation comment (multi-line joined with `\n`)
+    docComment: ?[]const u8 = null,
+    /// `//` regular comment (last one before the declaration)
+    comment: ?[]const u8 = null,
+    /// `////` module-level documentation
+    moduleComment: ?[]const u8 = null,
+};
+
 /// Source location of a node: line and column (both 1-based).
 pub const Loc = struct {
     line: usize,
@@ -1136,12 +1152,19 @@ pub const InterfaceDecl = struct {
 /// `name: type` or `name: type = defaultValue`
 pub const StructField = struct {
     name: []const u8,
-    typeName: []const u8,
+    /// Full type reference — supports arrays (`E[]`), optionals (`?T`),
+    /// generics, etc., exactly like `RecordField.typeRef`.
+    typeRef: TypeRef,
     /// Optional initializer expression.
     init: ?Expr,
+    /// Member-level decorators on the field (`#[inject] val repo: …`).
+    annotations: []Annotation = &.{},
 
     pub fn deinit(this: *StructField, allocator: std.mem.Allocator) void {
+        this.typeRef.deinit(allocator);
         if (this.init) |*expr| expr.deinit(allocator);
+        for (this.annotations) |*ann| ann.deinit(allocator);
+        if (this.annotations.len > 0) allocator.free(this.annotations);
     }
 };
 
@@ -1283,6 +1306,12 @@ pub const EnumDecl = struct {
 
 // ── type reference ────────────────────────────────────────────────────────────
 
+/// One field of an anonymous record TYPE: `name: Type` in `{ value: T, set: fn(T) }`.
+pub const RecordTypeField = struct {
+    name: []const u8,
+    typeRef: TypeRef,
+};
+
 /// A type annotation expression, e.g. `Int`, `string[]`, `#(Int, string)`, `?T`.
 pub const TypeRef = union(enum) {
     /// Plain named type: `Int`, `string`, `Self`. Slice into source — not heap-owned.
@@ -1302,10 +1331,17 @@ pub const TypeRef = union(enum) {
     /// means the typeparam is unconstrained and accepts any type. Owns the constraints.
     /// Surface syntax (post-F0): `type` / `type string | int | bool`.
     typeparam: []TypeRef,
+    /// Anonymous structural record type: `{ value: T, set: fn(T) }`, usable as a
+    /// return type or annotation without a named `record`. Owns the fields.
+    record_type: []RecordTypeField,
 
     pub fn deinit(this: *TypeRef, allocator: std.mem.Allocator) void {
         switch (this.*) {
             .named => {},
+            .record_type => |flds| {
+                for (flds) |*f| f.typeRef.deinit(allocator);
+                allocator.free(flds);
+            },
             .array => |elem| {
                 elem.deinit(allocator);
                 allocator.destroy(elem);
@@ -1341,6 +1377,33 @@ pub const TypeRef = union(enum) {
     pub fn isExprType(this: TypeRef) bool {
         return this == .generic and this.generic.is_builtin and
             std.mem.eql(u8, this.generic.name, "Expr");
+    }
+
+    /// True when this annotation is the builtin custom-carrier type
+    /// `@ExprCustom<T>` (expr-custom). A function returning it is a template fn
+    /// whose body returns `q.custom(tree, code)`: `code` travels the ordinary
+    /// `@Expr<T>` expansion path while `tree` is a reference `CustomNode` stored
+    /// by call-location for tooling. The carrier is generic on purpose — the
+    /// core never learns any sub-language; `kind`/`label` are opaque lib tags.
+    pub fn isExprCustomType(this: TypeRef) bool {
+        return this == .generic and this.generic.is_builtin and
+            std.mem.eql(u8, this.generic.name, "ExprCustom");
+    }
+
+    /// True when this return type marks a comptime-expanded template function —
+    /// either a plain `@Expr<T>` or the custom carrier `@ExprCustom<T>`. Both are
+    /// expanded at their call sites and never reach codegen.
+    pub fn isTemplateReturnType(this: TypeRef) bool {
+        return this.isExprType() or this.isExprCustomType();
+    }
+
+    /// True when this is the builtin reflection type `@Decl` (annotation
+    /// processors). A function whose first parameter is `comptime _: @Decl` is a
+    /// decorator: the core invokes it over the declaration the annotation sits on.
+    /// Bare `@Decl` parses as a builtin generic with no args (like bare `@Expr`).
+    pub fn isDeclType(this: TypeRef) bool {
+        return this == .generic and this.generic.is_builtin and
+            std.mem.eql(u8, this.generic.name, "Decl");
     }
 };
 
@@ -1391,6 +1454,7 @@ pub const DeclKind = union(enum) {
     implement: ImplementDecl,
     extend: ExtendDecl,
     use: ImportDecl,
+    mod: ModDecl,
     interface: InterfaceDecl,
     delegate: DelegateDecl,
     @"struct": StructDecl,
@@ -1420,6 +1484,7 @@ pub const DeclKind = union(enum) {
             .@"fn" => |*f| f.deinit(allocator),
             .val => |*v| v.deinit(allocator),
             .@"test" => |*t| t.deinit(allocator),
+            .mod => {},
             .comment => {},
         }
     }
@@ -1519,10 +1584,14 @@ pub const RecordField = struct {
     typeRef: TypeRef,
     /// Optional default value, e.g. `= null` or `= 0`.
     default: ?Expr = null,
+    /// Member-level decorators on the field (`#[inject] repo: …`).
+    annotations: []Annotation = &.{},
 
     pub fn deinit(this: *RecordField, allocator: std.mem.Allocator) void {
         this.typeRef.deinit(allocator);
         if (this.default) |*d| d.deinit(allocator);
+        for (this.annotations) |*ann| ann.deinit(allocator);
+        if (this.annotations.len > 0) allocator.free(this.annotations);
     }
 };
 
@@ -1599,14 +1668,17 @@ pub const ImplementDecl = struct {
     comment: ?[]const u8 = null,
     /// `////` module-level documentation
     moduleComment: ?[]const u8 = null,
-    /// interfaces being implemented, e.g. ["UsbCharger", "SolarCharger"].
-    interfaces: []const []const u8,
+    /// interfaces being implemented, e.g. `[Drawable, @Context<E, E>]`.
+    /// Each is a full `TypeRef` so generic interfaces (`Iface<A, B>`, `@Context<…>`)
+    /// are supported, not just bare identifiers.
+    interfaces: []TypeRef,
     /// The type this implement is for, e.g. "SmartCamera".
     target: []const u8,
     methods: []ImplementMethod,
 
     pub fn deinit(this: *ImplementDecl, allocator: std.mem.Allocator) void {
         allocator.free(this.genericParams);
+        for (this.interfaces) |*iface| iface.deinit(allocator);
         allocator.free(this.interfaces);
         for (this.methods) |*m| m.deinit(allocator);
         allocator.free(this.methods);

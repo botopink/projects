@@ -19,7 +19,7 @@ fn main() {
 %% interface Pair
 
 main() ->
-    P = pair:of(1, <<"one">>),
+    P = pair:'of'(1, <<"one">>),
     io:format("~p~n", [pair:first(P)]),
     io:format("~p~n", [function:identity(42)]),
     Inc = function:compose(fun(X) ->
@@ -27,7 +27,7 @@ main() ->
     end, fun(Y) ->
         (Y * 2)
     end),
-    io:format("~p~n", [inc(10)]).
+    io:format("~p~n", [Inc(10)]).
 
 '_botopink_main'() ->
     main().

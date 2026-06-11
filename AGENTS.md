@@ -38,10 +38,18 @@ Golden snapshots live inside the owning package (`modules/compiler-core/snapshot
 ## Workspace commands
 
 ```bash
-zig build           # compile CLI + language-server
+zig build           # compile CLI + language-server + lib-test-runner
 zig build test      # run compiler-core + language-server tests
 zig build run       # run the CLI entry point
+zig build test-libs # run every libs/ project's tests per backend (needs node/escript)
 ```
+
+`test-libs` is the lib ecosystem's CI gate (`botopink-lib-test`): it runs
+`botopink test --target <t>` in each `libs/<lib>` and exits non-zero iff any cell
+fails. It is **deliberately not part of `zig build test`** — it needs `node` /
+`escript` on `PATH`, which the Zig-only gate does not assume. Forward args with
+`--`, e.g. `zig build test-libs -- --target erlang --lib rakun`. See
+[`modules/lib-test-runner/AGENTS.md`](modules/lib-test-runner/AGENTS.md).
 
 Per-package commands live in each package's `build.zig` — see
 [`modules/AGENTS.md`](modules/AGENTS.md).

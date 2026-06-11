@@ -24,12 +24,12 @@ fn main() {
 
 main() ->
     N = (-5),
-    io:format("~p~n", [N:abs()]),
-    io:format("~p~n", [N:min(3)]),
-    io:format("~p~n", [N:max(10)]),
-    io:format("~p~n", [N:clamp(0, 5)]),
+    io:format("~p~n", [abs(N)]),
+    io:format("~p~n", [min(N, 3)]),
+    io:format("~p~n", [max(N, 10)]),
+    io:format("~p~n", [clamp(N, 0, 5)]),
     X = 7,
-    io:format("~p~n", [X:isEven()]).
+    io:format("~p~n", [isEven(X)]).
 
 '_botopink_main'() ->
     main().

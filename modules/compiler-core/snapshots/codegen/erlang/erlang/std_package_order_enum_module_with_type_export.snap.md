@@ -94,9 +94,9 @@ gt() ->
 
 toInt(O) ->
     N = case O of
-        Lt ->
+        'Lt' ->
             (-1);
-        Eq ->
+        'Eq' ->
             0;
         _ ->
             1
@@ -105,9 +105,9 @@ toInt(O) ->
 
 reverse(O) ->
     R = case O of
-        Lt ->
+        'Lt' ->
             'Gt';
-        Gt ->
+        'Gt' ->
             'Lt';
         _ ->
             'Eq'
