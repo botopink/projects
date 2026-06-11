@@ -29,7 +29,7 @@
     {
       "fn": {
         "isPub": false,
-        "isStarFn": false,
+        "effect": null,
         "isDeclare": false,
         "label": null,
         "name": "main",

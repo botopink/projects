@@ -1,55 +1,59 @@
-# TODO — lib-test-runner  (tooling · Wave 1)
+# TODO — effect-annotations  (core · Wave 2 of 3)
 
-> Task branch `task/lib-test-runner` · spec
-> [`tasks/v0.beta.9/specs/lib-test-runner.md`](tasks/v0.beta.9/specs/lib-test-runner.md).
+> Task branch `task/effect-annotations` · spec
+> [`tasks/v0.beta.10/specs/effect-annotations.md`](tasks/v0.beta.10/specs/effect-annotations.md).
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
-> **Depends on: nothing.** A new `modules/` Zig module — fully self-contained. Start now.
+> **Depends on:** nothing. **Coordination:** touches the 4 codegen emitters — one of
+> the 3 codegen-emitter Wave-2 specs (with `stdlib-backends-parity`,
+> `cross-module-codegen`); different region (function-keyword lowering), but
+> sequence the merges. Syntax/marker change over a working effect system.
 
-> Orchestration only — shells out to the existing `botopink test`; no compiler internals.
+## F0 — parse the effect annotations
+- [x] Recognize `#[@result]`/`#[@future]`/`#[@generator]`/`#[@iterator]`/
+      `#[@asyncGenerator]`/`#[@context]` as builtin effect decorators on a `fn`.
+      Replace `FnDecl.isStarFn: bool` with `FnDecl.effect: ?EffectKind`; the parser
+      stops requiring the `*` prefix. (`ast.EffectKind` + `parser/decls.zig`; `*fn`
+      kept as a deprecated alias via `EffectKind.fromStarReturn`.)
 
-## F0 — the module skeleton
-- [x] `modules/lib-test-runner/` with `build.zig` + `build.zig.zon` (mirror compiler-cli);
-      `AGENTS.md` linked from `modules/AGENTS.md` (tree + table row).
-- [x] Workspace `build.zig`: `addExecutable` (`botopink-lib-test`) + `installArtifact` +
-      a **`zig build test-libs`** step (depends on the `botopink` install, `setCwd(".")`,
-      forwards `b.args`).
+## F1 — effect ↔ return-type + body ops
+- [x] Check the annotation against the return wrapper (`#[@future]`→`@Future<…>`,
+      etc.; clear diagnostic on mismatch — `effectMatchesReturn`). Gate body ops by
+      effect kind: `await` under future/asyncGenerator; `yield`/delegation under
+      generator/iterator/asyncGenerator (`StarFnCtx.allowsYield`); `throw`/`try`
+      under result (`env.throwContext`).
 
-## F1 — discovery
-- [x] Enumerate `libs/*/` with a `botopink.json`; `--lib` filter; "has tests" =
-      `test/*.bp` or a `src/**/*.bp` `test` block. No-tests lib → green skip (`–`).
+## F1b — annotation is implementation-only
+- [x] `#[@<effect>]` marks an **implementation** (fn with body). Interface methods
+      (`validateEffectAnnotations`) and bodyless `declare fn` (`inferFnDecl`) express
+      the effect through the return **wrapper**, no annotation — using the annotation
+      there is an error. Existing builtin interfaces stay annotation-free.
 
-## F2 — fan-out + per-cell run
-- [x] For each `(lib, target)`: spawn `botopink test --target <t> [--filter …]` with
-      `cwd = libs/<lib>`, capture+re-emit stdio, capture exit code. Locate
-      `zig-out/bin/botopink` (`--bin`/`BOTOPINK_BIN` override allowed; PATH fallback).
-- [x] Unsupported target (beam/wasm today) → `~ skipped-unsupported` unless `--strict`.
-      Detection is child-output-driven (`"currently supports only"`), not a hard-coded list.
-- [x] CLI: `--target <t>[,<t>]|all` (accept `node`→commonJS alias + `--target=X`), `--lib`,
-      `--filter`, `--strict`. Default targets `commonJS,erlang`.
+## F2 — codegen off the effect kind (no behaviour change)
+- [x] Replaced `f.isStarFn` + `starFnKind(returnType)` (`commonJS.zig fnKeyword`)
+      with `FnDecl.effect`. Exact lowering kept (future→async function, generator/
+      iterator→function*, asyncGenerator→async function*, result/context→plain).
+      Mirrored on erlang/beam/wasm. Byte-identical to `*fn` (proved by a test).
 
-## F3 — aggregation + exit code
-- [x] Print a lib×target matrix (`✓`/`✗`/`–`/`~`) + summary.
-- [x] **Exit non-zero iff any cell is `✗`** — a red `.bp` test fails `zig build test-libs`.
-      (core acceptance criterion)
+## F3 — register the annotations as builtins
+- [x] Documented the effect annotations in `builtins.d.bp` (recognized as core
+      builtins by the compiler; no `fn` decl, to avoid colliding with the `result`
+      namespace). `@Future<T>` ≡ `@Future<T, E>` already works (one-arg form).
 
-## F4 — wire it in
-- [x] Document `zig build test-libs` in `modules/AGENTS.md` + root `AGENTS.md`. Do **not**
-      add to default `zig build test` (needs node/escript on PATH).
+## F4 — migrate every `*fn` + deprecate the prefix
+- [x] Migrated `libs/std` (`primitives.d.bp` `parse` → `#[@result]`), the gated
+      `examples/jhonstart-app`, and the `libs/jhonstart` / docs comments. `*fn` kept
+      working (deprecated alias) so the existing codegen snapshots stay green; no
+      iterator-generator `*fn` exists in the tree to migrate.
+
+## F5 — docs + tests
+- [x] `docs.md` §Effects (model + per-effect body ops + codegen mapping); comptime
+      + codegen AGENTS.md updated. Parser tests (`effect` kind), infer-error tests
+      (mismatch / yield-in-future / annotation-on-declare / -interface), codegen
+      snapshots (4 backends) + a byte-identical-to-`*fn` test.
 
 ## Done gate
-- [~] `zig build test-libs` green across all libs (commonJS+erlang). commonJS: all green;
-      std passes both backends. **erlang still reds for erika/jhonstart/onze/rakun** —
-      not one bug but a *cluster* of pre-existing erlang-codegen gaps; the runner
-      correctly surfaces them as `✗` (the gate working). While investigating, two
-      *general* `erlang.zig` fixes landed here (gate green, 3 broken erlang snapshots
-      corrected):
-        1. reserved-word atom quoting — a fn named `of`/`div` is now `'of'`/`'div'`
-           at def/export/call (was invalid bare-atom erlang).
-        2. trailing-comment dangling comma — a final `// comment` stmt no longer
-           strands a `,` before `end` (`emitBodyFrom` keys off the last *real* stmt).
-      Remaining tail is real stdlib-backends-parity scope: erika (unbound module `val`,
-      missing `toString/1`), jhonstart (empty `fun -> end` body), rakun (`@emit`-generated
-      erlang), and **onze (`MissingExternalTarget` — node-only mock lib, architecturally
-      not erlang-compilable without an erlang mock runtime).**
-- [x] a deliberately-failing lib test → matrix `✗`, exit != 0 (verified: 4 erlang reds).
-- [x] arg-parsing + discovery + matrix have Zig tests; `zig build && zig build test` green.
+- [x] Each annotation lowers to the right JS keyword (and erlang/beam/wasm parity);
+      `#[@future]` body using `yield` errors; annotation/return mismatch errors;
+      `#[@<effect>]` on an interface/bodyless decl errors.
+- [x] Migrated `libs/std` + jhonstart + examples build + test green.
+- [x] `zig build && zig build test` green.

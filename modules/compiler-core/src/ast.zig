@@ -1503,11 +1503,83 @@ pub const Program = struct {
 
 /// `pub fn name<T>(params) ReturnType { body }`
 /// `isPub` is false for module-private functions.
+/// The effect a function implements, named by a `#[@<effect>]` annotation (the
+/// marker that replaces the deprecated `*fn` prefix). The matching `@Effect<…>`
+/// return wrapper carries the effect's type parameters; this enum is the source
+/// of truth for how the function lowers and which body operations (`await` /
+/// `yield` / `throw`) it permits.
+pub const EffectKind = enum {
+    result,
+    future,
+    generator,
+    iterator,
+    asyncGenerator,
+    context,
+
+    /// The annotation spelling — `#[@<name>]` — for this effect.
+    pub fn annotationName(self: EffectKind) []const u8 {
+        return switch (self) {
+            .result => "result",
+            .future => "future",
+            .generator => "generator",
+            .iterator => "iterator",
+            .asyncGenerator => "asyncGenerator",
+            .context => "context",
+        };
+    }
+
+    /// The builtin return-type wrapper this effect requires (`@Future`, …).
+    pub fn returnWrapper(self: EffectKind) []const u8 {
+        return switch (self) {
+            .result => "Result",
+            .future => "Future",
+            .generator => "Generator",
+            .iterator => "Iterator",
+            .asyncGenerator => "AsyncIterator",
+            .context => "Context",
+        };
+    }
+
+    /// Map a builtin annotation name (`future`, …) to its effect, or null when
+    /// the name is not one of the builtin effect markers.
+    pub fn fromAnnotationName(name: []const u8) ?EffectKind {
+        const all = [_]EffectKind{ .result, .future, .generator, .iterator, .asyncGenerator, .context };
+        for (all) |kind| {
+            if (std.mem.eql(u8, kind.annotationName(), name)) return kind;
+        }
+        return null;
+    }
+
+    /// Derive the effect of a (deprecated) `*fn` from its return wrapper / body.
+    /// Mirrors the legacy return-type discrimination so codegen stays
+    /// byte-identical when the `*` prefix is used instead of the annotation.
+    pub fn fromStarReturn(returnType: ?TypeRef, body: []const Stmt) EffectKind {
+        if (returnType) |rt| {
+            if (rt == .generic and rt.generic.is_builtin) {
+                const n = rt.generic.name;
+                if (std.mem.eql(u8, n, "Future")) return .future;
+                if (std.mem.eql(u8, n, "Iterator")) return .iterator;
+                if (std.mem.eql(u8, n, "AsyncIterator")) return .asyncGenerator;
+                if (std.mem.eql(u8, n, "Result")) return .result;
+                if (std.mem.eql(u8, n, "Generator")) return .generator;
+                if (std.mem.eql(u8, n, "Context")) return .context;
+            }
+        }
+        // A bare `*fn` with no recognized wrapper: a yielding body is a
+        // generator, else an async function (the legacy commonJS fallback).
+        for (body) |stmt| {
+            if (stmt.expr == .jump and stmt.expr.jump.kind == .yield) return .generator;
+        }
+        return .future;
+    }
+};
+
 pub const FnDecl = struct {
     isPub: bool,
-    /// `*fn` ---- the return type implements `@Future<_>` or `@Iterator<_>`
-    /// (async function / generator). Enables `await` and `yield` in the body.
-    isStarFn: bool = false,
+    /// The function's effect, or null for a plain function. Set from a
+    /// `#[@<effect>]` annotation (the canonical marker) or derived from the
+    /// deprecated `*fn` prefix. The return wrapper carries the type params.
+    effect: ?EffectKind = null,
     /// `declare fn` ---- a bodyless declaration typed from the signature alone.
     /// Required for `@[external(…)]` FFI fns (the only valid annotated form).
     isDeclare: bool = false,
@@ -1527,6 +1599,17 @@ pub const FnDecl = struct {
     /// null when the return type is omitted (void-returning functions).
     returnType: ?TypeRef,
     body: []Stmt,
+
+    /// The effect named by a `#[@<effect>]` annotation on this fn, if any.
+    /// Distinct from `effect`, which may also be set by the deprecated `*fn`.
+    pub fn effectAnnotation(this: FnDecl) ?EffectKind {
+        for (this.annotations) |a| {
+            if (a.is_builtin) {
+                if (EffectKind.fromAnnotationName(a.name)) |k| return k;
+            }
+        }
+        return null;
+    }
 
     /// True when the fn is an `@[external(…)]` FFI declaration (bodyless;
     /// each codegen backend lowers calls to its target's symbol).

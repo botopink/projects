@@ -4,7 +4,7 @@
     {
       "fn": {
         "isPub": true,
-        "isStarFn": false,
+        "effect": null,
         "isDeclare": true,
         "label": null,
         "name": "absolute_value",
@@ -45,7 +45,7 @@
     {
       "fn": {
         "isPub": false,
-        "isStarFn": false,
+        "effect": null,
         "isDeclare": false,
         "label": null,
         "name": "main",

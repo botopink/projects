@@ -4,7 +4,7 @@
     {
       "fn": {
         "isPub": true,
-        "isStarFn": false,
+        "effect": null,
         "isDeclare": false,
         "label": null,
         "name": "where",

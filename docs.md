@@ -12,6 +12,7 @@ Complete examples and language features organized by topic. Most examples map to
 - [Operators](#operators)
 - [Conditionals](#conditionals)
 - [Error Handling](#error-handling)
+- [Effects](#effects)
 - [Null Safety](#null-safety)
 - [Structs](#structs)
 - [Records](#records)
@@ -486,6 +487,75 @@ fn run() -> i32 {
 Functions with **no** declared return type leave `throw` unchecked (this is
 what makes `val x = try f() catch throw err;` legal), and a `throw` inside a
 nested lambda is checked against that lambda, never the outer function's `E`.
+
+---
+
+## Effects
+
+A function's **effect** is named by a `#[@<effect>]` annotation — the same
+`#[@…]` form used for `#[@external]`. The annotation marks the implementation;
+the matching `@Effect<…>` **return wrapper** carries the effect's type
+parameters. The annotation is the source of truth for how the function lowers
+and which body operations it permits.
+
+```botopink
+#[@result]    fn parse(n: i32) -> @Result<i32, string> { … }
+#[@future]    fn load() -> @Future<T> { … }
+#[@generator] fn range(a: i32, b: i32) -> @Generator<i32> { … }
+#[@iterator]  fn lazy() -> @Iterator<T> { … }
+#[@context]   fn useThing() -> @Context<Base, T> { … }
+```
+
+### The effects
+
+| Annotation          | Return wrapper        | Body operations              | CommonJS lowering    |
+| ------------------- | --------------------- | ---------------------------- | -------------------- |
+| `#[@result]`        | `@Result<D, E>`       | `throw` / `try` (checked)    | `function` (plain)   |
+| `#[@future]`        | `@Future<T>`          | `await`                      | `async function`     |
+| `#[@iterator]`      | `@Iterator<T>`        | `yield` / delegation         | `function*`          |
+| `#[@generator]`     | `@Generator<T, R>`    | `yield` / delegation         | `function*`          |
+| `#[@asyncGenerator]`| `@AsyncIterator<T>`   | `await` + `yield`            | `async function*`    |
+| `#[@context]`       | `@Context<Base, T>`   | `use`                        | `function` (plain)   |
+
+The effect gates the body operations: `await` is only valid inside a
+`#[@future]` / `#[@asyncGenerator]` fn; `yield` (and `return <iter>`
+delegation) only inside a `#[@generator]` / `#[@iterator]` / `#[@asyncGenerator]`
+fn; `throw` / `try` is the checked-Result effect of a `#[@result]` fn. Using
+one in the wrong effect is a compile-time error, as is an annotation that does
+not match its return wrapper (`#[@future] fn -> @Result<…>`).
+
+`@Future<T>` accepts an optional error type — `@Future<T, E>` is also valid;
+the one-argument form defaults the error type.
+
+### Implementation-only
+
+An effect annotation marks an **implementation** (a `fn` with a body). An
+**interface** method and a `.d.bp` declaration are declarative: they express
+the effect through the return **wrapper** alone, with **no** annotation —
+mirroring TypeScript, where the interface says `-> Promise<T>` and the impl
+marks `async`.
+
+```botopink
+pub interface AsyncIterator<T, E> {
+    fn next(self: Self) -> @Future<?T, E>   // declarative — no annotation
+}
+```
+
+Using `#[@<effect>]` on an interface method or a bodyless `declare fn` is an
+error: *effect annotations mark an implementation; declare the effect in the
+return type*.
+
+### Backends
+
+CommonJS maps each effect to the matching JavaScript keyword (above). The
+Erlang, BEAM, and WebAssembly backends lower effects **eagerly**: a `@Future<T>`
+resolves to `T` (so `await` is the identity), a finite `@Iterator<T>` is a list,
+and a `#[@result]` fn is a plain function returning the `{ok, V}` / `{error, E}`
+tagged value.
+
+> The bare `*fn` prefix is the **deprecated** spelling of an effect (its kind is
+> inferred from the return wrapper). It still compiles to identical output, but
+> the `#[@<effect>]` annotation is the canonical form.
 
 ---
 

@@ -239,6 +239,18 @@ pub fn assertJsSingle(allocator: Allocator, comptime loc: std.builtin.SourceLoca
     return assertJs(allocator, loc, &.{.{ .path = "", .source = src }});
 }
 
+/// Generate CommonJS for a single-module program and return the JS as an owned
+/// slice (caller frees). Used to assert two source forms lower identically.
+pub fn generateJs(allocator: Allocator, src: []const u8) ![]u8 {
+    const io = std.testing.io;
+    var outputs = try codegen.generate(allocator, &.{.{ .path = "", .source = src }}, io, configs[0]);
+    defer {
+        for (outputs.items) |*o| o.result.deinit(allocator);
+        outputs.deinit(allocator);
+    }
+    return allocator.dupe(u8, outputs.items[0].result.js);
+}
+
 /// Snapshot a single module compiled in **test mode** (commonJS + erlang):
 /// `test { … }` blocks emit as test functions plus a registry + runner
 /// entry, and `assert` lowers to a recoverable per-test failure.
