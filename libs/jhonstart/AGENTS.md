@@ -30,14 +30,16 @@ libs/jhonstart/
 ├── AGENTS.md          ← you are here
 ├── botopink.json      ← manifest (files: element.bp, hooks.bp, html.bp, router.d.bp, server.d.bp)
 ├── docs.md            ← user-facing reference
-└── src/
-    ├── AGENTS.md
-    ├── root.bp        ← module-tree root: `pub mod element; pub mod hooks; pub mod html;`
-    ├── element.bp     ← COMPILED CORE: record Element + builders (Children) + renderToString + test {}
-    ├── hooks.bp       ← COMPILED: State<T> + state/effect/memo/ref/reducer (@Context<Element,_>) + test {} (imports `Element`)
-    ├── html.bp        ← COMPILED: the JSX-like `html """…"""` markup DSL (comptime expander → builder pipeline)
-    ├── router.d.bp    ← Router/useRouter/Link (host-bound navigation; GATED)
-    └── server.d.bp    ← Http ContextBase: request() + loaders (host-bound/async; GATED)
+├── src/
+│   ├── AGENTS.md
+│   ├── root.bp        ← module-tree root: `pub mod element; pub mod hooks; pub mod html;`
+│   ├── element.bp     ← COMPILED CORE: record Element + builders (Children) + renderToString + test {}
+│   ├── hooks.bp       ← COMPILED: State<T> + state/effect/memo/ref/reducer (@Context<Element,_>) + test {} (imports `Element`)
+│   ├── html.bp        ← COMPILED: the JSX-like `html """…"""` markup DSL (lexer → tokens → stack parser → dual lowering → `q.custom` → `@ExprCustom<Element>`)
+│   ├── router.d.bp    ← Router/useRouter/Link (host-bound navigation; GATED)
+│   └── server.d.bp    ← Http ContextBase: request() + loaders (host-bound/async; GATED)
+└── test/
+    └── html_test.bp   ← `botopink test` flat suite: `html` behaviour-parity (renders match the old body)
 ```
 
 ## Module tree (`root.bp`)
@@ -88,9 +90,14 @@ jhonstart is a *consumer*. What it relies on:
   **cross-module nominal-type resolution** (a local component `fn … -> Element`
   whose result feeds an imported `renderToString`/`use` now type-checks; see
   `modules/compiler-core/src/comptime` `type_decl_registry` + `resolveTypeName`).
-- **Still gated** (block F2 / router / server, all generic core work):
-  - the comptime template body sees only a native-JS prelude (no Option/`unwrapOr`
-    runtime) — so `html`'s markup scanner is awkward to express; deferred (F2);
+- **Landed** (markup front-end): `expr-custom` (`@ExprCustom<T>` + `CustomNode` +
+  `q.custom`) now backs `html` — its body lexes/parses the markup into a token
+  stream and lowers it twice (builder code + a `CustomNode` reference overlay the
+  LSP reads), the sibling of erika's `erika "…"` SQL front-end. The comptime
+  template body still sees only a native-JS prelude (no Option/`unwrapOr`), so the
+  walk uses a stack + `indexOf` span recovery rather than a recursive descent —
+  see `html.bp`'s header.
+- **Still gated** (router / server, all generic core work):
   - the generic loader binds a lib's **namespace** but not bare imported
     values/template-fns — `import {html} from "jhonstart"` leaves `html "…"`
     unbound (same gap as `erika "…"`);
