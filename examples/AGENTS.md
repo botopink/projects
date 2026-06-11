@@ -13,11 +13,17 @@ and do not affect `zig build` / `zig build test`.
 examples/
 ├── AGENTS.md          ← you are here
 ├── hello.bp           ← smallest runnable program (prints a line)
+├── stdlib-tour/       ← stdlib showcase (WORKS): `import {dict, queue, sets, order} from "std"`
+│   └── src/main.bp        ← qualified module calls (`dict.empty()`, `queue.empty()`…),
+│                            Array combinators, an Order-driven sort, a Queue BFS — with `test {}`
 ├── erika-linq/        ← generic loader showcase (WORKS): `import {of, erika} from "erika"`
 │   └── src/main.bp        ← fluent `of(list).where(…).toArray().join(…)` + the SQL
-│                            sub-language `erika "…"` / `erika """…"""`, cross-module
+│                            sub-language `erika "…"` / `erika """…"""`, cross-module (incl.
+│                            two-column `where`, arg-position expansion, two queries in one scope)
 ├── generic-loader-binding/ ← generic loader showcase (WORKS): the three `from "<lib>"` forms
 │   └── src/main.bp        ← bare value (`of`), bare template fn (`erika "…"`), namespace (`erika.of(…)`)
+├── onze/              ← onze showcase (WORKS): unit-testing a unit against a `#[mock]` double
+│   └── src/main.bp        ← `mockInventory()` + `when(…).thenReturn(…)`, matchers, `verify(…)`
 ├── jonhstar/          ← expr-templates showcase: comptime html template lib
 │   ├── jhonstart.bp       ← `html(comptime q: @Expr<string>)` — parts/build DSL
 │   └── main.bp            ← `\\` line-string template with `${name}`, expanded at compile time
@@ -42,9 +48,11 @@ examples/
         └── main.bp          ← module-tree root + `Rakun.run(App(port: 8080, basePath: "/api"))`
 ```
 
-> `jhonstart-html` and `rakun` **work**: `rakun` builds to a real node-`http`
-> server (`botopink build` then `node out/main.js`, exercised over real HTTP with
-> `curl` — see its `src/main.bp` header). The remaining `jhonstart-*/` files are
+> `stdlib-tour`, `erika-linq`, `generic-loader-binding`, `jhonstart-html`,
+> `jhonstart-counter`, `onze` and `rakun` **work** and carry `.bp` `test {}`
+> blocks (run with `botopink test` from each dir): `rakun` builds to a real
+> node-`http` server (`botopink build` then `node out/main.js`, exercised over
+> real HTTP with `curl` — see its `src/main.bp` header). The remaining `jhonstart-*/` files are
 > still **illustrative**: they target planned surface (events, async loaders —
 > specs: `tasks/v0.beta.5/specs/`), so they document intended usage and do not yet
 > compile against the current toolchain.

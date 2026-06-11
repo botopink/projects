@@ -100,12 +100,37 @@ fn bigCityLabels() -> string {
     return rows.map({ r -> r.name + ":" + r.pop.toString() }).join(", ");
 }
 
+// ── B2 net-new: two-column `where`, arg position, two queries in one scope ──
+
+record Box { label: string, w: i32, h: i32 }
+
+val boxes = [
+    Box(label: "sq",   w: 4, h: 4),   // w == h, h > 2
+    Box(label: "wide", w: 6, h: 2),   // w != h
+    Box(label: "tiny", w: 2, h: 2),   // w == h, h == 2
+];
+
+// 7) two-column `where`: `w = h` compares COLUMN-to-COLUMN (both lower to
+//    `row.w`/`row.h`), `and h > 2` adds a column-vs-literal term. Only "sq"
+//    satisfies both.
+fn squareBigBoxes() -> string {
+    val rows = erika "select label from boxes where w = h and h > 2 order by label asc";
+    return rows.join(",");
+}
+
+// 8) a number list consumed straight from ARGUMENT position — the `erika "…"`
+//    template expands in place where the call expects an `Array<string>`.
+fn countNames(xs: Array<string>) -> i32 {
+    return xs.length;
+}
+
 fn main() {
     @print(adultNames());     // Ann, Cy
     @print(evenSquares());    // 4-16-36
     @print(loudNames());      // ANN / CY / DAN
     @print(bigCityNames());   // Lyon, Paris
     @print(bigCityLabels());  // Lyon:5, Paris:9
+    @print(squareBigBoxes()); // sq
 }
 
 test "list → query → join: adult names, sorted" {
@@ -130,4 +155,23 @@ test "erika \"…\" SQL sub-language runs cross-module (single-line)" {
 
 test "erika \"\"\"…\"\"\" multi-line query runs cross-module" {
     assert bigCityLabels() == "Lyon:5, Paris:9";
+}
+
+// ── B2 net-new gaps ──────────────────────────────────────────────────────────
+
+test "erika where compares two columns (w = h) plus a column>literal" {
+    assert squareBigBoxes() == "sq";
+}
+
+test "erika \"…\" expands in argument position" {
+    assert countNames(erika "select name from cities where pop >= 5 order by name asc") == 2;
+}
+
+test "two erika strings in one scope expand to independent queries" {
+    // Distinct collections, distinct conditions — neither query's tree leaks
+    // into the other.
+    val names = erika "select name from cities where pop >= 5 order by name asc";
+    val labels = erika "select label from boxes where w = h order by label asc";
+    assert names.join(",") == "Lyon,Paris";
+    assert labels.join(",") == "sq,tiny";
 }

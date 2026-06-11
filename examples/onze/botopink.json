@@ -1,0 +1,8 @@
+{
+  "name": "onze-demo",
+  "version": "0.0.1",
+  "description": "onze showcase — unit-testing a service against a mocked dependency",
+  "target": "commonJS",
+  "src": "src/",
+  "dependencies": ["onze"]
+}
