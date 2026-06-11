@@ -249,6 +249,7 @@ fn emitErlang(
     try em.collectStdImports(program);
     defer em.std_imports.deinit();
     defer em.locals.deinit();
+    defer em.top_vals.deinit();
     try em.collectTypeShapes(program);
     try em.collectImportedTypes(program);
     defer {
@@ -275,6 +276,14 @@ fn emitErlang(
     }
     // Test mode never auto-runs `main/0` — the escript entry is the test runner.
     const emit_entrypoint_wrapper = has_main_0 and !test_mode;
+
+    // Without the wrapper, each runtime module-level `val` is emitted as a 0-arity
+    // function (`emitTopVal`), so a bare reference to it lowers to a call `name()`,
+    // not a variable. With the wrapper the vals are local `Name = …` bindings, so
+    // the set stays empty and references stay variables.
+    if (!emit_entrypoint_wrapper) {
+        for (top_runtime_vals.items) |v| em.top_vals.put(v.name, {}) catch {};
+    }
 
     // Module header. "std" package modules are named `std/<mod>` for output
     // layout; the Erlang module atom is the basename (`-module(option).`).
@@ -611,6 +620,11 @@ const Emitter = struct {
     /// a flat per-function set is exact. A no-receiver call whose callee is a
     /// local lowers to a fun application (`F(args)`), not a bare function call.
     locals: std.StringHashMap(void),
+    /// Module-level `val` names emitted as 0-arity functions (library / test
+    /// mode, no entrypoint wrapper). A bare reference to one is NOT a variable —
+    /// it lowers to the call `name()`. Empty when an entrypoint wrapper binds the
+    /// vals as local variables instead.
+    top_vals: std.StringHashMap(void),
 
     fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8), rewrites: std.AutoHashMap(ast.Loc, []const u8)) Emitter {
         return .{
@@ -627,6 +641,7 @@ const Emitter = struct {
             .enum_variants = std.StringHashMap(void).init(alloc),
             .imported_types = std.StringHashMap([]const u8).init(alloc),
             .locals = std.StringHashMap(void).init(alloc),
+            .top_vals = std.StringHashMap(void).init(alloc),
         };
     }
 
@@ -987,6 +1002,29 @@ const Emitter = struct {
                 const real_follows = if (last_real) |lr| (!isCommentStmt(stmt) and i < lr) else false;
                 try this.w(if (real_follows) ",\n" else "\n");
             }
+        }
+
+        // Erlang has no empty body: a `fun`, clause or function must end in an
+        // expression (`fun(X) -> end` is a syntax error). When `body[start..]`
+        // contributes no real statement — empty, or comments only — the tail
+        // value is `undefined` (mirrors how an absent value lowers elsewhere).
+        const has_real = blk: {
+            var k = start;
+            while (k < body.len) : (k += 1) {
+                if (!isCommentStmt(body[k])) break :blk true;
+            }
+            break :blk false;
+        };
+        if (!has_real) {
+            if (start < body.len) try this.w("\n"); // separate from emitted comments
+            try this.writeIndent();
+            try this.w("undefined");
+        } else if (body.len > start and isCommentStmt(body[body.len - 1])) {
+            // A trailing comment ends the body on a `%`-line; the caller's
+            // terminator (`.` for a clause, `end` for a fun) would be swallowed
+            // by it. Break to a fresh indented line so it lands cleanly.
+            try this.w("\n");
+            try this.writeIndent();
         }
     }
 
@@ -1407,6 +1445,12 @@ const Emitter = struct {
                     // they must stay lowercase atoms, never `True`/`False` vars.
                     if (std.mem.eql(u8, n, "true") or std.mem.eql(u8, n, "false")) {
                         try this.w(n);
+                    } else if (!this.locals.contains(n) and this.top_vals.contains(n)) {
+                        // A module-level `val` emitted as a 0-arity function: a bare
+                        // reference is the call `name()`, not a variable. A local of
+                        // the same name shadows it (handled by the `locals` check).
+                        var fb: [256]u8 = undefined;
+                        try this.fmt("{s}()", .{try fnAtom(n, &fb)});
                     } else {
                         const vname = try erlangVar(this.alloc, n);
                         defer this.alloc.free(vname);
