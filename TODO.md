@@ -30,42 +30,47 @@ text → ① lexer → Token[] → ② parser → SelectStmt (erika's SQL AST)
 ## Steps
 
 ### F0 — lexer (tokenizer with spans)
-- [ ] `Token { kind, text, span }` (`kind`: keyword/ident/star/comma/op/string/
-      number/paren). Scan `q.text()` char-by-char tracking byte offsets so every
-      token carries a real `Span` — no more `split`/`join`. Comptime-evaluator ops
-      only (native string index/slice; `if` is an expression; bare-`if` only last;
-      no `?T` Option runtime).
+- [x] `Token { kind, text, span }` (`kind`: keyword/ident/star/comma/op/string/
+      number/paren). Scans `q.text()` char-by-char tracking byte offsets so every
+      token carries a real `Span` — no more `split`/`join`. **Note:** every token is
+      emitted through a *single* `append` site (the `pending` flush) — appending
+      records from 3+ branchy sites trips a comptime type-checker mis-unification.
 
 ### F1 — SQL AST (erika's private records)
-- [ ] `SelectStmt { star: bool, fields: Field[], source: SourceRef, where: ?Predicate,
-      orderBy: ?OrderBy }`; `Field { name, span }`; `SourceRef { name, span }`;
-      `Predicate` (Compare/And/Or/Ident/Lit, each with span); `OrderBy { field, desc,
-      span }`. Plain botopink records, not exposed to the core.
+- [x] `SelectStmt`-shaped value (`star` / `fields` / `srcName`+`srcSpan` / `orGroups`
+      / `orderName`+`orderSpan`+`orderDesc`), `Field { name, span }`, comparison
+      records, `or`-of-`and`-of-comparison `where` tree. **Modelled with anonymous
+      `record { … }`** (not named records): the comptime evaluator emits only the
+      template fn + `Span`/`CustomNode`, so a named `Token(…)` ctor is undefined —
+      anon records lower to plain JS object literals. Still erika-private, never
+      exposed to core. `?where`/`?order` are 0-length-list / bool sentinels.
 
 ### F2 — parser (tokens → SQL AST)
-- [ ] Recursive-descent: `select` field-list (`*` or comma list), `from` source,
-      optional `where` predicate (precedence: or < and < comparison), optional
-      `order by field [asc|desc]`. Malformed query → `q.failAt(span, msg)` at the
-      offending token (LSP underline), not a whole-template `fail`.
+- [x] Token-bucketing recursive-descent: `select` field-list (`*` or comma list),
+      `from` source, optional `where` predicate (precedence: or < and < comparison,
+      structural in the `orGroups` nesting), optional `order by field [asc|desc]`.
+      A dangling-operator condition → `q.failAt(opSpan, msg)`; unknown collection →
+      `q.failAt(srcSpan, msg)` — both at the offending token, not whole-template.
 
 ### F3 — lowering ③: SQL AST → @Expr<T>
-- [ ] Produce `of(source).where({row -> …}).orderBy(…).select({row -> …}).toArray()`.
-      Preserve today's behaviour exactly (single-field projection unwraps; multi-field
-      → `record {…}`; `*` → `toArray()`; `=`→`==`, `<>`→`!=`, `and`→`&&`, `'x'`→`"x"`).
-      Resolve source in caller scope via `q.lookup`; `q.fail` if unknown. Keeps tests green.
+- [x] Produces `of(source).where({row -> …}).orderBy(…).select({row -> …}).toArray()`.
+      Behaviour preserved exactly (single-field unwraps; multi-field → `record {…}`;
+      `*` → `toArray()`; `=`→`==`, `<>`→`!=`, `and`→`&&`, `'x'`→`"x"`). Source
+      resolved via `q.lookup`; `q.failAt` if unknown. All 29 in-file tests green.
 
 ### F4 — lowering ④: SQL AST → CustomNode
-- [ ] Convert the same `SelectStmt` to a generic `CustomNode` tree with `span` + a
-      `label` per node (select/from/where/order → `keyword`; idents → `property`;
-      string → `string`; number → `number`; comparison/logical → `operator`). Set
-      `ref` on the source node (+ resolvable columns) to the `q.lookup` `Binding`.
-- [ ] `return q.custom(customRoot, code)`.
+- [x] Converts the same tokens to a generic `CustomNode` tree with `span` + a
+      `label` per node (select/from/where/order/by/asc/desc → `keyword`; idents →
+      `property`; string → `string`; number → `number`; comparison/logical ops →
+      `operator`). `ref` set on the source node to the `q.lookup` `Binding`.
+- [x] `return q.custom(customRoot, code)`.
 
-### F5 — tests (`libs/erika/test/`)
-- [ ] Parser unit tests: `select *`, single/multi field, `where` with and/or/cmp,
-      `order by … desc`, the multi-line `"""…"""` form; a malformed query asserts
-      `failAt` at the right span.
-- [ ] Behaviour parity: `examples/erika-linq` + the ~30 in-file tests still pass.
+### F5 — tests (in-file in `src/erika.bp`, the established convention)
+- [x] Parser scenarios: `select *`, single/multi field, `where` with and/or/cmp
+      (`+ precedence`), `order by … desc`, `<>`, the multi-line `"""…"""` form.
+      (failAt-at-span is impl'd but un-`.bp`-testable — a malformed query aborts the
+      module compile; covered by the generic sublanguage-lsp Zig fixtures instead.)
+- [x] Behaviour parity: `examples/erika-linq` (6 green) + the 29 in-file tests pass.
 
 ## Test scenarios
 

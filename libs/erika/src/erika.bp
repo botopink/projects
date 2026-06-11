@@ -311,161 +311,257 @@ pub fn repeat<T>(value: T, times: i32) -> Query<T> {
 // ── F5: the `erika "…"` query-string template fn ──────────────────────────────
 //
 // `erika` is a template function: it captures a SQL-subset query string as
-// `@Expr<string>`, parses it in botopink at comptime, resolves the referenced
-// collection against the caller's scope snapshot, and expands to the fluent
-// layer via `q.build(...)`. Grammar (keywords lowercase):
+// `@Expr<string>`, runs a real three-stage front-end over it at comptime, and
+// returns `@ExprCustom<T>` — an executable pipeline plus a reference tree the
+// LSP overlays. Grammar (keywords lowercase):
 //
 //   select <* | f1[, f2…]> from <Name> [where <cond>] [order by <field> [asc|desc]]
 //
-// A single field projects that column (`Array<field>`); two or more project an
-// anonymous structural `record { f1: …, f2: … }` per row (gap G2, landed in
-// `feat`). `*` returns the whole rows.
+// The front-end is, in order:
+//   ① lexer   — a char-by-char scanner (`q.text()` → `Token[]`); every token
+//               carries a real `Span` of byte offsets (no more `split`/`join`,
+//               which destroyed positions).
+//   ② parser  — buckets the tokens into a `SelectStmt`-shaped value (`star` /
+//               `fields` / `srcName` / `orGroups` / `orderName`), the where
+//               clause split into `or`-of-`and`-of-comparison groups so the
+//               `or < and < comparison` precedence is structural.
+//   ③ lower → @Expr<T>     — walks the parse into the fluent pipeline string
+//               `of(Name).where({row -> …}).orderBy(…).select(…).toArray()` and
+//               splices it with `q.build(...)` (behaviour identical to before:
+//               single field unwraps, multi → `record {…}`, `*` → `toArray()`,
+//               `=`→`==`, `<>`→`!=`, `and`→`&&`, `'x'`→`"x"`).
+//   ④ lower → CustomNode   — walks the SAME tokens into the generic reference
+//               tree (label per node: keywords → `keyword`, idents → `property`,
+//               string/number lits → `string`/`number`, comparison/logical ops →
+//               `operator`); the source node carries `ref` (the `q.lookup`
+//               binding) for hover/go-to-def.
 //
-// `<cond>` is comparisons over a field and a literal/field (`== != < <= > >=`,
-// `=` as `==`, `<>` as `!=`, `and`/`or`). The expansion emits UNQUALIFIED fluent
-// source (`of(Name).where({ row -> … }).orderBy(…).select(…).toArray()`), so it
-// resolves wherever `of`/the collection are in scope — e.g. inside this module's
-// own tests. The whole body is self-contained (no calls to sibling fns): the
-// comptime evaluator emits only the template fn itself, so the SQL→botopink
-// translation is inlined. See AGENTS.md for the user-project import caveat.
+// A single field projects that column (`Array<field>`); two or more project an
+// anonymous structural `record { f1: …, f2: … }` per row (gap G2). `*` returns
+// the whole rows. An unknown collection (or a malformed condition) aborts with
+// `q.failAt(span, …)` ranged at the offending token, not the whole template.
+//
+// Comptime-eval constraint (see AGENTS.md): only this template fn + the prelude
+// (`Span`/`CustomNode`) are emitted, so there are NO calls to sibling fns and NO
+// named-record constructors — the whole front-end is inlined here, the private
+// SQL "AST" is modelled with anonymous `record { … }` values (object literals),
+// and helpers are local closures. String length is `s.split("").length` (the
+// `.length()` method is absent); "optional" where/order are 0-length-list
+// sentinels (no `?T` Option runtime); compound booleans live in a `val` before
+// any `if (…)`.
 pub fn erika<T>(comptime q: @Expr<string>) -> @ExprCustom<T> {
     val sql = q.text();
-    // Normalize newlines/tabs to spaces so the triple-quoted multi-line form
-    // (`erika """ select … """`) tokenizes the same as the single-line one — a
-    // `\n` would otherwise stay glued to the previous token (`cities\n`). Then
-    // normalize commas to spaces so `select a, b` and `select a , b` tokenize
-    // identically — each projected field is its own token; empty tokens from the
-    // doubled spaces fall through as blanks. (split/join lower to native JS — the
-    // only ops the comptime evaluator runs; see AGENTS.md.)
-    val flat = sql.split("\n").join(" ").split("\r").join(" ").split("\t").join(" ");
-    val rawTokens = flat.trim().split(",").join(" ").split(" ");
-
-    // Re-attach each token to its byte offset in the *original* `sql` (= the
-    // template text), the coordinate the LSP overlays its highlight onto
-    // (sublanguage-lsp). Tokens are exact substrings of `sql` (only delimiters
-    // were normalized), so a left-to-right `indexOf` over the unconsumed suffix
-    // recovers each span without a fromIndex variant — `cursor` advances per
-    // non-blank token, blanks (doubled spaces) are zero-width and skipped.
-    // Length via `split("").length` (array property): a template body runs as
-    // standalone JS, where string `.length()` (a method needing a JS-property
-    // rename) is unavailable — only ops whose JS name matches directly survive.
     val sqlLen = sql.split("").length;
-    var cursor = 0;
+    // Trailing space forces the final token to flush at the end of the scan
+    // (bound to a `val` first — the comptime parser rejects `(expr).method()`).
+    val padded = sql + " ";
+    val chars = padded.split("");
+    val blankTok = record { kind: "", text: "", span: Span(0, 0, 1) };
 
-    var star = false;
-    var fields = [];
-    var source = "";
-    var srcStart = 0;
-    var srcFinish = 0;
-    var whereCond = "";
-    var orderField = "";
-    var orderDesc = false;
-    var mode = "head";
-    var prev = "";
-    // The generic `CustomNode` overlay the LSP renders: one node per highlighted
-    // token, `label` chosen from the editor vocabulary (keyword/property/…). The
-    // collection node also carries `ref` so hover/go-to-def resolve to its
-    // declaration. `kind` is an opaque tag the core never reads.
-    var nodes = [];
-    loop (rawTokens) { tok ->
-        if (tok != "") {
-            val rest = sql.slice(cursor, sqlLen);
-            val rel = rest.indexOf(tok);
-            val start = cursor + rel;
-            val finish = start + tok.split("").length;
-            cursor = finish;
-            val sp = Span(start, finish, 1);
-            val isWhere = tok == "where";
-            val isOrder = tok == "order";
-            val isBy = tok == "by";
-            val isBlank = isBy;
-            if (isWhere) { mode = "where"; nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
-            if (isOrder) { mode = "order"; nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
-            if (isBy) { nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
-            val isKw = isWhere || isOrder || isBlank;
-            if (!isKw) {
-                val inHead = mode == "head";
-                val inWhere = mode == "where";
-                val inOrder = mode == "order";
-                if (inHead) {
-                    val isSelectKw = tok == "select";
-                    val isFromKw = tok == "from";
-                    val isSource = prev == "from";
-                    if (isSelectKw) { nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
-                    if (isFromKw) { nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
-                    if (isSource) { source = tok; srcStart = start; srcFinish = finish; };
-                    val isProj = !isSource && !isSelectKw && !isFromKw;
-                    if (isProj) {
-                        if (tok == "*") { star = true; nodes = nodes.append([CustomNode(kind: "star", span: sp, label: "operator", ref: null, children: [])]); };
-                        if (tok != "*") { fields = fields.append([tok]); nodes = nodes.append([CustomNode(kind: "field", span: sp, label: "property", ref: null, children: [])]); };
-                    };
-                };
-                if (inWhere) {
-                var piece = "row." + tok;
-                if (tok == "=") { piece = "=="; };
-                if (tok == "<>") { piece = "!="; };
-                if (tok == "and") { piece = "&&"; };
-                if (tok == "or") { piece = "||"; };
-                if (tok == "==") { piece = "=="; };
-                if (tok == "!=") { piece = "!="; };
-                if (tok == "<") { piece = "<"; };
-                if (tok == "<=") { piece = "<="; };
-                if (tok == ">") { piece = ">"; };
-                if (tok == ">=") { piece = ">="; };
-                val c0 = tok.slice(0, 1);
-                if (c0 == "'") { piece = "\"" + tok.split("'").join("") + "\""; };
-                val isDigit = (c0 == "0") || (c0 == "1") || (c0 == "2") || (c0 == "3") || (c0 == "4") || (c0 == "5") || (c0 == "6") || (c0 == "7") || (c0 == "8") || (c0 == "9");
-                if (isDigit) { piece = tok; };
-                whereCond = if (whereCond == "") { piece; } else { whereCond + " " + piece; };
-                val isStr = c0 == "'";
-                val isOp = (tok == "=") || (tok == "<>") || (tok == "and") || (tok == "or") || (tok == "==") || (tok == "!=") || (tok == "<") || (tok == "<=") || (tok == ">") || (tok == ">=");
-                if (isOp) { nodes = nodes.append([CustomNode(kind: "op", span: sp, label: "operator", ref: null, children: [])]); };
-                if (isStr) { nodes = nodes.append([CustomNode(kind: "str", span: sp, label: "string", ref: null, children: [])]); };
-                if (isDigit) { nodes = nodes.append([CustomNode(kind: "num", span: sp, label: "number", ref: null, children: [])]); };
-                val isFieldRef = !isOp && !isStr && !isDigit;
-                if (isFieldRef) { nodes = nodes.append([CustomNode(kind: "field", span: sp, label: "property", ref: null, children: [])]); };
-            };
-            if (inOrder) {
-                val isAsc = tok == "asc";
-                val isDesc = tok == "desc";
-                if (isDesc) { orderDesc = true; };
-                val isOrderKw = isAsc || isDesc;
-                if (isOrderKw) { nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
-                if (!isOrderKw) { orderField = tok; nodes = nodes.append([CustomNode(kind: "field", span: sp, label: "property", ref: null, children: [])]); };
-            };
-            prev = tok;
+    // ── local helpers (lowering ③) ────────────────────────────────────────────
+    val operandCode = { knd, txt ->
+        val out = if (knd == "string") { "\"" + txt.split("'").join("") + "\""; } else { if (knd == "number") { txt; } else { "row." + txt; }; };
+        out;
+    };
+    val opCode = { opText ->
+        val out = if (opText == "=") { "=="; } else { if (opText == "<>") { "!="; } else { opText; }; };
+        out;
+    };
+    val cmpCode = { cmp ->
+        val lc = operandCode(cmp.lKind, cmp.lText);
+        val rc = operandCode(cmp.rKind, cmp.rText);
+        val oc = opCode(cmp.opText);
+        val out = if (cmp.hasOp) { lc + " " + oc + " " + rc; } else { lc; };
+        out;
+    };
+    // A comparison group's tokens → a flat comparison record (`left [op right]`).
+    // Positional extraction is a counter loop (no `arr[i]` / Option `.at` in the
+    // eval); a dangling operator (2 tokens) is a `failAt` at the operator.
+    val buildCmp = { cmpToks ->
+        var lTok = blankTok;
+        var opTok = blankTok;
+        var rTok = blankTok;
+        loop (cmpToks) { ct, idx ->
+            if (idx == 0) { lTok = ct; };
+            if (idx == 1) { opTok = ct; };
+            if (idx == 2) { rTok = ct; };
         };
+        val cnt = cmpToks.length;
+        if (cnt == 2) { q.failAt(opTok.span, "erika: condition needs a value after '" + opTok.text + "'"); };
+        record {
+            lKind: lTok.kind, lText: lTok.text,
+            opText: opTok.text, opSpan: opTok.span,
+            rKind: rTok.kind, rText: rTok.text,
+            hasOp: cnt >= 3,
         };
     };
 
-    val known = q.lookup(source);
+    // ── ① lexer: chars → Token[] with real spans ──────────────────────────────
+    // `loop (chars) { ch, i }` binds the char and its byte offset. Every token is
+    // emitted through a SINGLE `toks.append` site (the `pending` flush): word
+    // chars and operator chars (`< > = !`) accumulate into one token; whitespace,
+    // commas, `*`, parens and `'…'` strings are their own boundaries; a token
+    // closes when the next char no longer continues it, ending at that char's
+    // offset (the trailing space flushes the last one). The single append site is
+    // deliberate — the comptime type-checker mis-unifies `toks` when records are
+    // appended from three-plus branchy sites (it reports "expected string, got
+    // array"), so the kind is classified here, not at distinct per-kind sites.
+    var toks = [];
+    var cur = "";
+    var curKind = "";
+    var curStart = 0;
+    var strClosed = false;
+    loop (chars) { ch, i ->
+        val isWs = ch == " " || ch == "\n" || ch == "\r" || ch == "\t";
+        val isComma = ch == ",";
+        val isStar = ch == "*";
+        val isParen = ch == "(" || ch == ")";
+        val isQuote = ch == "'";
+        val isOpCh = ch == "<" || ch == ">" || ch == "=" || ch == "!";
+        val isWordCh = !isWs && !isComma && !isStar && !isParen && !isQuote && !isOpCh;
+        val contWord = curKind == "word" && isWordCh;
+        val contOp = curKind == "op" && isOpCh;
+        val contStr = curKind == "str" && !strClosed;
+        val cont = contWord || contOp || contStr;
+        if (cont) {
+            cur = cur + ch;
+            if (isQuote) { strClosed = true; };
+        };
+        if (!cont) {
+            val pending = curKind != "";
+            if (pending) {
+                val c0 = cur.slice(0, 1);
+                val isDigit0 = c0 == "0" || c0 == "1" || c0 == "2" || c0 == "3" || c0 == "4" || c0 == "5" || c0 == "6" || c0 == "7" || c0 == "8" || c0 == "9";
+                val isKwTok = cur == "select" || cur == "from" || cur == "where" || cur == "order" || cur == "by" || cur == "asc" || cur == "desc" || cur == "and" || cur == "or";
+                val isWordKind = curKind == "word";
+                val wordFinal = if (isDigit0) { "number"; } else { if (isKwTok) { "keyword"; } else { "ident"; }; };
+                val nonWord = if (curKind == "str") { "string"; } else { curKind; };
+                val finalKind = if (isWordKind) { wordFinal; } else { nonWord; };
+                toks = toks.append([record { kind: finalKind, text: cur, span: Span(curStart, i, 1) }]);
+            };
+            cur = ch;
+            curStart = i;
+            strClosed = false;
+            if (isWordCh) { curKind = "word"; };
+            if (isOpCh) { curKind = "op"; };
+            if (isQuote) { curKind = "str"; };
+            if (isComma) { curKind = "comma"; };
+            if (isStar) { curKind = "star"; };
+            if (isParen) { curKind = "paren"; };
+            if (isWs) { curKind = ""; cur = ""; };
+        };
+    };
+
+    // ── ② parser: bucket tokens into the SelectStmt pieces ────────────────────
+    var star = false;
+    var fields = [];
+    var srcName = "";
+    var srcSpan = Span(0, 0, 1);
+    var whereToks = [];
+    var orderToks = [];
+    var section = "head";
+    loop (toks) { t ->
+        val tk = t.kind;
+        val tx = t.text;
+        val isFrom = tk == "keyword" && tx == "from";
+        val isWhere = tk == "keyword" && tx == "where";
+        val isOrder = tk == "keyword" && tx == "order";
+        val isBy = tk == "keyword" && tx == "by";
+        val isStructural = isFrom || isWhere || isOrder || isBy;
+        if (isFrom) { section = "afterFrom"; };
+        if (isWhere) { section = "where"; };
+        if (isOrder) { section = "order"; };
+        if (!isStructural) {
+            if (section == "head") {
+                if (tk == "star") { star = true; };
+                if (tk == "ident") { fields = fields.append([record { name: tx, span: t.span }]); };
+            };
+            if (section == "afterFrom") { srcName = tx; srcSpan = t.span; section = "tail"; };
+            if (section == "where") { whereToks = whereToks.append([t]); };
+            if (section == "order") { orderToks = orderToks.append([t]); };
+        };
+    };
+
+    // where clause → `or`-groups of `and`-groups of comparisons (precedence is
+    // the nesting: a new `or` closes the current `or`-group, `and` only the
+    // current comparison).
+    val hasWhere = whereToks.length > 0;
+    var orGroups = [];
+    var curAnd = [];
+    var curCmp = [];
+    loop (whereToks) { t ->
+        val isAnd = t.kind == "keyword" && t.text == "and";
+        val isOr = t.kind == "keyword" && t.text == "or";
+        val isConn = isAnd || isOr;
+        if (isAnd) {
+            if (curCmp.length > 0) { curAnd = curAnd.append([buildCmp(curCmp)]); curCmp = []; };
+        };
+        if (isOr) {
+            if (curCmp.length > 0) { curAnd = curAnd.append([buildCmp(curCmp)]); curCmp = []; };
+            orGroups = orGroups.append([curAnd]);
+            curAnd = [];
+        };
+        if (!isConn) { curCmp = curCmp.append([t]); };
+    };
+    if (curCmp.length > 0) { curAnd = curAnd.append([buildCmp(curCmp)]); };
+    if (hasWhere) { orGroups = orGroups.append([curAnd]); };
+
+    var orderName = "";
+    var orderSpan = Span(0, 0, 1);
+    var orderDesc = false;
+    loop (orderToks) { ot ->
+        val isAsc = ot.text == "asc";
+        val isDesc = ot.text == "desc";
+        if (isDesc) { orderDesc = true; };
+        val isDir = isAsc || isDesc;
+        if (!isDir) {
+            if (orderName == "") { orderName = ot.text; orderSpan = ot.span; };
+        };
+    };
+    val hasOrder = orderToks.length > 0;
+
+    // ── resolve the source + dual lowering (③ code, ④ reference tree) ─────────
+    val known = q.lookup(srcName);
     if (known) { binding ->
-        var pipe = "of(" + source + ")";
-        if (whereCond != "") { pipe = pipe + ".where({ row -> " + whereCond + " })"; };
-        if (orderField != "") {
-            val op = if (orderDesc) { "orderByDescending"; } else { "orderBy"; };
-            pipe = pipe + "." + op + "({ row -> row." + orderField + " })";
+        var pipe = "of(" + srcName + ")";
+        if (hasWhere) {
+            val orParts = orGroups.map({ andGroup -> andGroup.map({ cmp -> cmpCode(cmp) }).join(" && ") });
+            pipe = pipe + ".where({ row -> " + orParts.join(" || ") + " })";
+        };
+        if (hasOrder) {
+            val opName = if (orderDesc) { "orderByDescending"; } else { "orderBy"; };
+            pipe = pipe + "." + opName + "({ row -> row." + orderName + " })";
         };
         val single = fields.length == 1;
         val multi = fields.length > 1;
         if (star) { pipe = pipe + ".toArray()"; };
         if (single) {
-            val proj = fields.map({ f -> "row." + f }).join("");
+            val proj = fields.map({ f -> "row." + f.name }).join("");
             pipe = pipe + ".select({ row -> " + proj + " }).toArray()";
         };
         if (multi) {
-            val parts = fields.map({ f -> f + ": row." + f });
-            val rec = "record { " + parts.join(", ") + " }";
-            pipe = pipe + ".select({ row -> " + rec + " }).toArray()";
+            val parts = fields.map({ f -> f.name + ": row." + f.name });
+            pipe = pipe + ".select({ row -> record { " + parts.join(", ") + " } }).toArray()";
         };
-        val srcSpan = Span(srcStart, srcFinish, 1);
-        val srcNode = CustomNode(kind: "source", span: srcSpan, label: "property", ref: binding, children: []);
-        val root = CustomNode(kind: "query", span: Span(0, sqlLen, 1), label: "none", ref: null, children: nodes.append([srcNode]));
+        var nodes = [];
+        loop (toks) { t ->
+            val tk = t.kind;
+            val tx = t.text;
+            val isLogical = tk == "keyword" && (tx == "and" || tx == "or");
+            val isPlainKw = tk == "keyword" && !isLogical;
+            val lbl = if (isPlainKw) { "keyword"; } else { if (isLogical) { "operator"; } else { if (tk == "ident") { "property"; } else { if (tk == "string") { "string"; } else { if (tk == "number") { "number"; } else { if (tk == "op") { "operator"; } else { if (tk == "star") { "operator"; } else { "none"; }; }; }; }; }; }; };
+            val skip = tk == "comma" || tk == "paren";
+            val isSrc = t.span.start == srcSpan.start && t.span.end == srcSpan.end;
+            if (isSrc) { nodes = nodes.append([CustomNode(kind: tk, span: t.span, label: lbl, ref: binding, children: [])]); };
+            val plain = !skip && !isSrc;
+            if (plain) { nodes = nodes.append([CustomNode(kind: tk, span: t.span, label: lbl, ref: null, children: [])]); };
+        };
+        val root = CustomNode(kind: "query", span: Span(0, sqlLen, 1), label: "none", ref: null, children: nodes);
         return q.custom(root, q.build(pipe));
     };
     // Unknown collection → a diagnostic ranged at the offending name *inside* the
     // string (sublanguage-lsp F2), not at the whole template.
-    return q.failAt(Span(srcStart, srcFinish, 1), "erika: unknown collection '" + source + "' in scope");
+    return q.failAt(srcSpan, "erika: unknown collection '" + srcName + "' in scope");
 }
 
 
@@ -625,6 +721,30 @@ test "erika query: triple-quoted multi-line form tokenizes the same" {
         order by name asc
     """;
     assert names.join(",") == "Lyon,Paris";
+}
+
+test "erika query: where with and narrows both predicates" {
+    val mid = erika "select name from erikaCities where pop >= 5 and pop <= 9 order by name asc";
+    assert mid.join(",") == "Lyon,Paris";
+}
+
+test "erika query: where with or unions predicates" {
+    val some = erika "select name from erikaCities where pop <= 3 or pop >= 9 order by name asc";
+    assert some.join(",") == "Nice,Paris";
+}
+
+// `or < and < comparison`: this parses as `pop >= 9 || (pop >= 5 && name = 'Lyon')`,
+// so Paris (pop 9) and Lyon (pop 5, name match) qualify but Nice does not. Were the
+// precedence flipped to `(a || b) && c` only Lyon would survive — the assertion below
+// pins the structural `or`-of-`and` lowering.
+test "erika query: where precedence is or over and over comparison" {
+    val rows = erika "select name from erikaCities where pop >= 9 or pop >= 5 and name = 'Lyon'";
+    assert rows.join(",") == "Lyon,Paris";
+}
+
+test "erika query: not-equal operator <> maps to !=" {
+    val notLyon = erika "select name from erikaCities where name <> 'Lyon' order by name asc";
+    assert notLyon.join(",") == "Nice,Paris";
 }
 
 

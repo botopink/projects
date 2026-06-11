@@ -72,8 +72,27 @@ The referenced collection is resolved against the caller's top-level scope. The
 expansion emits **unqualified** fluent source
 (`of(Name).where(…).orderBy(…).select(…).toArray()`), so it resolves wherever
 `of` / the collection are in scope. The query may be written single-line
-(`erika "…"`) or triple-quoted multi-line (`erika """ … """`) — newlines and tabs
-are normalized to spaces before tokenizing, so the two forms parse identically.
+(`erika "…"`) or triple-quoted multi-line (`erika """ … """`) — the lexer scans
+character-by-character and treats newlines and tabs as ordinary token boundaries,
+so the two forms parse identically.
+
+### Front-end (lexer → parser → dual lowering)
+
+`erika "…"` runs a real three-stage front-end at comptime — no string
+`split`/`join` scanning:
+
+1. **lexer** — a char-by-char scanner turns the query into a `Token[]`, each token
+   carrying a `Span` (byte offsets into the source string).
+2. **parser** — buckets the tokens into a `SelectStmt`-shaped value; the `where`
+   clause is parsed into `or`-groups of `and`-groups of comparisons, so the
+   `or < and < comparison` precedence is structural.
+3. **dual lowering** — the same parse is lowered twice: into the executable fluent
+   `@Expr<T>` pipeline (spliced via `q.build`), and into a generic `CustomNode`
+   reference tree (for the language server). The two halves are returned together
+   as `@ExprCustom<T>` via `q.custom(tree, code)`; the source node carries its
+   `q.lookup` binding as `ref` so hover / go-to-definition resolve to the
+   collection's declaration. A malformed query aborts with `q.failAt(span, …)`
+   ranged at the offending token, not the whole template.
 
 ## Known gaps
 
