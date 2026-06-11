@@ -84,3 +84,36 @@ test "codeAction: no actions on empty source" {
     try std.testing.expectEqual(@as(usize, 0), actions.len);
     try snap.assertCodeActions(gpa, "code_action_empty", source, range, actions);
 }
+
+// ── remove-unused-import (provider exists; was untested) ──────────────────────
+
+test "codeAction: remove unused import" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\import { order } from "std";
+        \\val x = 42;
+    ;
+
+    // Tokens-only action: no compile/bindings needed (`order` is never used).
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), source);
+
+    const range = h.range(0, 0, 1, 10);
+    const actions = try engine.codeActions(gpa, h.TEST_URI, source, range, tokens, &.{}, null);
+    defer freeActions(gpa, actions);
+
+    var found = false;
+    for (actions) |a| {
+        if (std.mem.indexOf(u8, a.title, "Remove unused import") != null) found = true;
+    }
+    try std.testing.expect(found);
+    try snap.assertCodeActions(gpa, "code_action_remove_unused_import", source, range, actions);
+}
+
+// NOTE: "add missing case patterns" (addMissingCasePatternsActions) is exercised
+// in the field but not unit-tested here: case exhaustiveness is enforced at
+// type-check time, so a non-exhaustive `case` is a compile error and the
+// types-only `h.compile` helper yields no bindings for the codeAction to read
+// the enum type from. Testing it needs a best-effort-bindings compile path
+// (recorded in front-c-runtime.md C3, deferred with import-missing to v14).

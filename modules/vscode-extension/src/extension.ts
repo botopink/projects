@@ -21,6 +21,8 @@ import {
 import { BOTOPINK_TASK_TYPE, BotopinkTaskProvider } from "./tasks";
 import { createTestController } from "./testExplorer";
 import { TargetManager } from "./target";
+import { quoteArg } from "./quoting";
+import { resolveBinPath } from "./pathResolve";
 
 const enum BotopinkCommands {
   RestartServer = "botopink.restartServer",
@@ -141,14 +143,6 @@ async function runCliInTerminal(
   terminal.sendText(`${quoteArg(cli)} ${args.join(" ")}`);
 }
 
-/** Minimal shell quoting for terminal command construction. */
-function quoteArg(value: string): string {
-  if (/^[\w./-]+$/.test(value)) {
-    return value;
-  }
-  return `'${value.replace(/'/g, "'\\''")}'`;
-}
-
 async function createLanguageClient(): Promise<LanguageClient | undefined> {
   const command = await getBotopinkLspPath();
   if (!command) {
@@ -203,20 +197,17 @@ function continueTypingCommentsOnNewline(): vscode.OnEnterRule[] {
 
 /** Returns the absolute path to the botopink-lsp command, or the bare name. */
 export async function getBotopinkLspPath(): Promise<string | undefined> {
-  const configured = getWorkspaceConfigLspPath();
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!configured || !workspaceFolders) {
-    return configured ?? DEFAULT_SERVER_BIN;
-  } else if (!path.isAbsolute(configured)) {
-    for (const folder of workspaceFolders) {
-      const candidate = path.resolve(folder.uri.fsPath, configured);
-      if (await fileExists(candidate)) {
-        return candidate;
-      }
-    }
-    return undefined;
-  }
-  return configured;
+  return resolveBinPath({
+    configured: getWorkspaceConfigLspPath(),
+    workspaceFolders: (vscode.workspace.workspaceFolders ?? []).map(
+      (folder) => folder.uri.fsPath,
+    ),
+    defaultBin: DEFAULT_SERVER_BIN,
+    relativeMiss: "undefined", // an unresolved relative path is reported unresolved
+    isAbsolute: path.isAbsolute,
+    resolve: path.resolve,
+    exists: fileExists,
+  });
 }
 
 function getWorkspaceConfigLspPath(): string | undefined {

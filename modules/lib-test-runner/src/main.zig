@@ -124,8 +124,8 @@ fn run(init: std.process.Init) !u8 {
     const text = try matrix.render(arena, lib_names, opts.targets, cells_const, summary);
     std.Io.File.stdout().writeStreamingAll(io, text) catch {};
 
-    // Exit non-zero iff any cell failed.
-    return if (summary.failed > 0) 1 else 0;
+    // Exit non-zero iff any cell failed (skips / no-tests do not).
+    return summary.exitCode();
 }
 
 /// Walk up from `start` until a directory containing a readable `libs/` is found.

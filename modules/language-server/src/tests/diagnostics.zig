@@ -134,3 +134,35 @@ test "diagnostics: type mismatch surfaces a located typeError" {
     }
     try std.testing.expect(found);
 }
+
+// ── D10 — comptime annotation failure surfaces as a diagnostic ────────────────
+//
+// A comptime annotation `fail` surfaces as a diagnostic. `@external` arity
+// validation runs during inference (no node eval needed), so it is the
+// deterministic, node-free representative of that path. (The node-backed
+// `decorator_eval` `fail`/`failAt` path is exercised by the lib matrix —
+// onze/rakun decorators — see front-c-runtime.md C3.)
+//
+// NOTE: this annotation-validation typeError currently carries a null `loc`, so
+// it surfaces file-wide rather than pinned to the annotated decl. Attaching the
+// span is `compiler-core` (Front A) work; here we pin the diagnostic fires.
+test "diagnostics: a comptime @external misuse surfaces a typeError diagnostic" {
+    const gpa = std.testing.allocator;
+    var c = try h.compile(gpa,
+        \\#[@external(erlang, "string")]
+        \\pub declare fn length(s: string) -> i32;
+    );
+    defer c.deinit(gpa);
+
+    // The arity failure means there is no successful (.ok) output.
+    try std.testing.expect(!c.isOk());
+
+    var found = false;
+    for (c.result.session.outputs.items) |o| {
+        if (o.outcome != .typeError) continue;
+        const msg = try o.outcome.typeError.message(gpa);
+        defer gpa.free(msg);
+        if (std.mem.indexOf(u8, msg, "external") != null) found = true;
+    }
+    try std.testing.expect(found);
+}

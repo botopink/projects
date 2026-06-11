@@ -1,11 +1,16 @@
 import * as vscode from "vscode";
 import { getBotopinkCliPath } from "./cli";
 import { TargetManager } from "./target";
+import {
+  argsFor,
+  taskGroupKind,
+  taskLabel,
+  type BotopinkCommand,
+} from "./taskArgs";
 
 export const BOTOPINK_TASK_TYPE = "botopink";
 
-/** CLI subcommands surfaced as tasks. */
-export type BotopinkCommand = "check" | "build" | "test" | "format";
+export type { BotopinkCommand };
 
 /** Shape of a `botopink` task in `tasks.json` / `taskDefinitions`. */
 interface BotopinkTaskDefinition extends vscode.TaskDefinition {
@@ -58,13 +63,13 @@ export class BotopinkTaskProvider implements vscode.TaskProvider {
     scope?: vscode.WorkspaceFolder | vscode.TaskScope,
   ): Promise<vscode.Task | undefined> {
     const cli = await getBotopinkCliPath();
-    const args = this.argsFor(def);
+    const args = argsFor(def, this.targets.target);
     const execution = new vscode.ShellExecution(cli, args);
     const taskScope = scope ?? vscode.TaskScope.Workspace;
     const task = new vscode.Task(
       def,
       taskScope,
-      this.label(def),
+      taskLabel(def, this.targets.target),
       BOTOPINK_TASK_TYPE,
       execution,
       def.command === "check" ? [BotopinkTaskProvider.problemMatcher] : [],
@@ -73,38 +78,8 @@ export class BotopinkTaskProvider implements vscode.TaskProvider {
     return task;
   }
 
-  /** Builds the CLI argument vector for a task definition. */
-  private argsFor(def: BotopinkTaskDefinition): string[] {
-    const args: string[] = [def.command];
-    switch (def.command) {
-      case "build":
-        args.push("--target", def.target ?? this.targets.target);
-        break;
-      case "test":
-        // Only commonJS / erlang run tests; honour the active target so an
-        // erlang project still works, defaulting otherwise.
-        args.push("--target", def.target ?? this.targets.target);
-        if (def.filter) {
-          args.push("--filter", def.filter);
-        }
-        break;
-      case "check":
-      case "format":
-        // `check` reads botopink.json; `format` rewrites in place.
-        break;
-    }
-    return args;
-  }
-
-  private label(def: BotopinkTaskDefinition): string {
-    if (def.command === "build" || def.command === "test") {
-      return `${def.command} (${def.target ?? this.targets.target})`;
-    }
-    return def.command;
-  }
-
   private groupFor(command: BotopinkCommand): vscode.TaskGroup | undefined {
-    switch (command) {
+    switch (taskGroupKind(command)) {
       case "build":
         return vscode.TaskGroup.Build;
       case "test":

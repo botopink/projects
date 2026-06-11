@@ -1,91 +1,42 @@
-# TODO — rakun (Wave 3 of 3, v0.beta.11)
+# TODO — Front C: runtime, CLI & editor tooling test coverage (v0.beta.13)
 
-**Branch**: `task/rakun-finish` (from `origin/feat` @ f50de6d)
-**Slug**: rakun · **Spec**: `tasks/v0.beta.11/specs/rakun.md`
-**Depends on**: nothing — `@Decl`/`@emit`, F2 scan/graph/cycle, F3 placement, F4
-router all landed in `feat` in-lib (`91db590`, `4eef880`, `0ff15a0`, `e10b49f`).
-**Status**: F2-scopes + F5 DONE — 13 lib tests green; `examples/rakun` runs over real HTTP.
+**Branch**: `task/v13-tooling` (from `origin/feat` @ eac9313)
+**Spec**: `tasks/v0.beta.13/specs/front-c-runtime.md`
+**Front territory** (edit ONLY here): `modules/compiler-cli/tests/*.sh` ·
+`modules/lib-test-runner/**` · the wasm/beam run harness · `modules/language-server/**` ·
+`modules/vscode-extension/**`. File-disjoint from Fronts A (`task/v13-core`) and B
+(`task/v13-libs`).
+**Status**: C1–C4 all done (test-only + recorded reds; one real `FileCache` leak fixed)
 
-> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test
-> (no `--no-verify`).
+> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test. Goal:
+> close each `[gap]` (add the test / harness) or record the limitation. No production
+> behaviour change expected (except the vscode F0 test harness scaffolding).
 
-## HARD RULE
+## Sections (see front-c-runtime.md for the tagged scenarios)
 
-`modules/compiler-core/src/**` keeps **zero** knowledge of rakun. Every behaviour
-below is implemented in `libs/rakun/*.bp` as lib-side decorator bodies via `@emit`
-over the generic primitives + a `#[@external]` host runtime.
+- [x] C1 test-tooling — DONE: `test_tooling.sh` (empty test, --filter multiple/none,
+      `assert msg`, mixed pass/fail exit) + `Summary.exitCode` unit test (mixed-matrix exit).
+      Recorded: uncaught-throw (no portable throw construct; assert-fail shows graceful catch),
+      wasm-target lib exec (lib-test-runner is commonJS/erlang only).
+- [x] C2 backend execution — DONE: `backend_exec.sh` + `zig build test-backends` (single step
+      reaching beam+wasm). Green: std_erlang.sh (case…of fixed upstream), wasm numeric smoke
+      (`numeric`→55), node/erlang records+enum+case+lambda, beam tail recursion (`sumTo`),
+      multi-folder mod on commonJS. Pinned Front-A reds (non-fatal): beam case-dispatch/lambda,
+      beam call+call arithmetic, erlang cross-module call qualification.
+- [x] C3 language-server — DONE for v13: cross-module references/rename/import-missing
+      (`cross_module.zig`, project-index over on-disk fixture), lifecycle didOpen→change→close
+      (`lifecycle.zig`, + fixed a real `FileCache.change` leak), codeAction remove-import,
+      typeDefinition generic, comptime `@external` fail diagnostic. Recorded/deferred:
+      add-missing-case (exhaustiveness suppresses bindings), annotation-fail range (Front A),
+      typeDef optional/fn-typed, async-unwrap Future/AsyncIterator, decorator-`@emit` +
+      local-scope completion/def `→ v14`. See spec C3 status block.
+- [x] C4 vscode-extension — **F0 DONE**: `node:test` harness (`npm test` / `zig build
+      test-vscode`); pure logic extracted into 6 `vscode`-free leaf modules; all 15 pure-unit
+      scenarios green (parseTestOutput, argsFor/label/group, quoteArg, symbol predicates,
+      target fallback + round-trip, resolveBinPath). Host-integration + static-contribution
+      checks deferred (need `@vscode/test-electron` + a built LSP; recorded in spec C4).
 
-> The old core-coupled F2/F3 line (the deleted `feb96f0`) is discarded — it
-> reintroduced lib-specific code into the Zig core and was superseded. `feat`
-> already has the correct in-lib F2/F4 (`libs/rakun/src/*.bp`); this task continues
-> from there. Port any remaining *behaviour* into `.bp`, **never the Zig**.
-
-## What already landed in `feat` (in-lib)
-
-- **F2 (partial)** — component scan (`#[service]`/`#[repository]`/`#[controller]`
-  → `rkScan`), DI graph (`__rkMake_<Type>()` lazy factories), runtime cycle
-  detection (`rkEnter`/`rkDone`). Host runtime in `runtime.mjs` behind `#[@external]`.
-- **F4 (done)** — controller decorator builds the router table from method
-  `#[getMapping(path)]`/…; `dispatch` matches path params; `Response` builders
-  type-check against handler return type. Green via `rkDispatch`.
-
-What remains: **DI scopes** (F2-scopes) and the **real server** (F5).
-
-## Steps
-
-### F2-scopes — singleton scope + factory/property injection
-- [x] Singleton scope: each `__rkMake_<Type>()` is `rkSingleton("Type", { -> … })` —
-      one shared instance per type (host cache), a 3-level diamond shares one repo.
-      `rkBuildCount` proves it (`runtime.mjs#buildCount`/`singleton`).
-- [x] `#[configuration]` + `#[bean]` factories: `#[configuration]` `@emit`s a
-      `__rkMake_<ReturnType>()` per `#[bean]` method → the return type is injectable
-      by type (a singleton, resolved by return-type name).
-- [x] `#[value("key")]` property injection: the component factory reads
-      `f.annotations`, fills a `#[value]` field from `rkProp`/`rkPropInt`, and keeps
-      it OFF the DI graph (no `__rkMake_<i32|string>` edge — clean compile proves it).
-
-### F5 — bootstrap (`Rakun.run` + real HTTP backing)
-- [x] `libs/server` is real: `server.mjs` is a node-`http` server (`serve`/`stop`);
-      `server.bp` binds it via `#[@external]`. Framework-agnostic (generic over the
-      response value `R`); rakun → server, never the reverse. (Erlang transport: follow-up.)
-- [x] `Request` has a concrete server-supplied impl (`runtime.mjs#makeRequest`,
-      built by `dispatchHttp`): `param`/`query`/`header`/`body`, all populated live.
-- [x] `Rakun.run(app)` (`bootstrap.bp`) hands `libs/server` a dispatcher over the
-      host router and listens on `app.port`. **G2 done:** the CLI ships the runtime
-      `.mjs` next to every emitted module (`libs.zig#shipMjsSidecars`), so a consumer
-      build resolves the `#[@external]` requires.
-- [x] End-to-end: `examples/rakun` is a runnable app — `botopink build` + `node
-      out/main.js` serves; every route below verified over a real socket with `curl`.
-
-## Test scenarios
-
-```
-comptime ---- a 3-level diamond (repo ← service + controller) resolves a SINGLE  [✓ scopes_test]
-              shared instance per type (rkBuildCount == 1)
-comptime ---- #[bean] factory output is injectable by its return type            [✓ scopes_test]
-infer    ---- #[value("port")] field is filled, NOT treated as a DI edge         [✓ scopes_test]
-run      ---- GET /api/users/  returns 200 with the joined user list             [✓ server_test + example]
-run      ---- GET /api/hello/:name returns 200 "Hello, ana!"  (path param)       [✓ server_test + example]
-run      ---- an unmapped path returns 404                                       [✓ server_test + example]
-```
-
-The `run` scenarios are covered two ways: `server_test.bp` drives `rkDispatchHttp`
-(the EXACT seam `libs/server` calls — match → live `Request` → handler → status/body,
-synchronously, so it runs under `botopink test`), and `examples/rakun` exercises the
-full node-`http` socket round trip end to end (manual `curl`; node's single thread
-can't both serve and block on a client in one synchronous test).
-
-## Notes
-
-- Constructor injection only; singleton is the only scope (no request/proto scope,
-  no graceful-shutdown / middleware).
-- `Request.param`/`query`/`header` return `string` (`""` when absent), not `?string`:
-  interface-method optional returns don't yet get the `@Option` lowering, and a
-  required path var / empty default is the cleaner contract anyway.
-- Core touched (all generic, lib-agnostic gate green): `commonJS.zig` require paths
-  now prefix `../`×depth so a nested dependency module resolves correctly; CLI G2
-  `.mjs` sidecar shipping in `libs.zig` (wired into `test_cmd.zig` + `build.zig`).
-- Comptime constraints on decorator bodies (no sibling calls, `if`-expr, bare-`if`
-  only last, block-lambdas) force the per-field injection + factory builder to be
-  inlined per marker.
-- Keep AGENTS.md / docs.md updated in the same commit as code changes.
+## Done means
+`zig build test` + `botopink-lib-test` green with new Zig LSP tests, CLI run scripts, and the
+vscode unit harness; every C-front `[gap]` closed or recorded. Integrate into `feat` via a
+throwaway `.tasks/_integrate-v13-tooling`.

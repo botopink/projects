@@ -43,10 +43,10 @@ pub const FileCache = struct {
 
     /// Aplica mudanças full (LSP TextDocumentSyncKind.Full) ao arquivo em cache.
     pub fn change(self: *FileCache, uri: []const u8, new_text: []const u8) !void {
-        const owned_text = try self.gpa.dupe(u8, new_text);
-        errdefer self.gpa.free(owned_text);
-
         if (self.map.getPtr(uri)) |ptr| {
+            // Dup only in the found branch — the else branch's `open` dups its
+            // own copy, so duping up-front here would leak it.
+            const owned_text = try self.gpa.dupe(u8, new_text);
             self.gpa.free(ptr.*);
             ptr.* = owned_text;
         } else {
