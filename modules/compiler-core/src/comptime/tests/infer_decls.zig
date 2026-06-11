@@ -299,6 +299,29 @@ test "infer: qualified extension call needs no activation" {
     );
 }
 
+test "infer: multi-module local extension resolves on an imported record" {
+    // `Swimmer`/`Pato` are imported; the `implement` is declared in the consumer
+    // module and auto-applied, so `donald.swim()` resolves without activation.
+    try h.assertComptimeAst(std.testing.allocator, @src(), &.{
+        .{ .path = "pond", .source =
+        \\pub val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\pub record Pato { id: i32 }
+        },
+        .{ .path = "", .source =
+        \\import {Swimmer, Pato} from "pond";
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\val donald = Pato(1);
+        \\val splash = donald.swim();
+        },
+    });
+}
+
 test "infer: inherent record method is always available" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
         \\record Pato {

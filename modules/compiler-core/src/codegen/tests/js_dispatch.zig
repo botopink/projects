@@ -92,6 +92,32 @@ test "js: dispatch ---- qualified extension method call" {
     );
 }
 
+test "js: dispatch ---- multi-module implement on an imported record" {
+    // The interface and record cross the module boundary; the `implement` is
+    // local to the consumer and auto-applied — `donald.swim()` lowers to the
+    // local symbol with no activation statement.
+    try h.assertJs(std.testing.allocator, @src(), &.{
+        .{ .path = "pond", .source =
+        \\pub val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\pub record Pato { id: i32 }
+        },
+        .{ .path = "", .source =
+        \\import {Swimmer, Pato} from "pond";
+        \\val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        \\fn main() {
+        \\    val donald = Pato(2);
+        \\    @print(donald.swim());
+        \\}
+        },
+    });
+}
+
 test "js: delegate ---- emits comment" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\declare fn Callback(msg: string) -> void;
