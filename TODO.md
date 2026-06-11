@@ -1,74 +1,55 @@
-# TODO — module-system  (core keystone · Wave 1)
+# TODO — lib-test-runner  (tooling · Wave 1)
 
-> Task branch `task/module-system` · spec
-> [`tasks/v0.beta.9/specs/module-system.md`](tasks/v0.beta.9/specs/module-system.md).
+> Task branch `task/lib-test-runner` · spec
+> [`tasks/v0.beta.9/specs/lib-test-runner.md`](tasks/v0.beta.9/specs/lib-test-runner.md).
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
-> **Depends on: nothing.** Keystone — unblocks `libs-module-migration` (Wave 2). Start now.
-> Breaking change to module resolution.
+> **Depends on: nothing.** A new `modules/` Zig module — fully self-contained. Start now.
 
-## F0 — parse `mod` / `pub mod`
-- [x] Top-level `mod ident;` / `pub mod ident;` → `ModDecl { name, is_pub }` (`ast.zig`).
-      `mod` becomes a keyword; `mod` in a fn body = parse error.
+> Orchestration only — shells out to the existing `botopink test`; no compiler internals.
 
-## F1 — build the module tree from a root
-- [x] Resolver from the package root (`main.bp` binary / `root.bp` library, per
-      `botopink.json` entry) following `ModDecl`s. `mod Name;` resolves `Name.bp` OR
-      `Name/mod.bp` (ambiguous/missing → error). CLI `scanner.zig` stops blind-walking
-      `src/`; an unreferenced `.bp` is reported orphaned.
-      (`resolver.zig` + `sources.zig`; topological order so imports resolve;
-      blind scan kept as deprecated fallback when no root exists.)
+## F0 — the module skeleton
+- [x] `modules/lib-test-runner/` with `build.zig` + `build.zig.zon` (mirror compiler-cli);
+      `AGENTS.md` linked from `modules/AGENTS.md` (tree + table row).
+- [x] Workspace `build.zig`: `addExecutable` (`botopink-lib-test`) + `installArtifact` +
+      a **`zig build test-libs`** step (depends on the `botopink` install, `setCwd(".")`,
+      forwards `b.args`).
 
-## F2 — visibility / path resolution
-- [x] Track visibility + parent per module; enforce path-visibility (every `mod` on the
-      path must be `pub mod` + decl `pub` to cross a boundary). Name the private segment.
-      (Enforced in `resolver.zig` where the tree lives — `checkVisibility` walks each
-      import edge; decl-level `pub` already gated by core `registerExports`.)
+## F1 — discovery
+- [x] Enumerate `libs/*/` with a `botopink.json`; `--lib` filter; "has tests" =
+      `test/*.bp` or a `src/**/*.bp` `test` block. No-tests lib → green skip (`–`).
 
-## F3 — imports resolve through the tree
-- [x] `import {x} from "a.b"` follows the `mod` chain (dotted path = `mod` chain →
-      slashed logical path); a `from` that names a real package module must export
-      the symbol (`checkImportResolution`). `from "<lib>"`/`from "std"` unchanged
-      (generic loader / global). Bare `import {x};` still resolves package-wide
-      (strict root-only semantics deferred to F4 reexports).
+## F2 — fan-out + per-cell run
+- [x] For each `(lib, target)`: spawn `botopink test --target <t> [--filter …]` with
+      `cwd = libs/<lib>`, capture+re-emit stdio, capture exit code. Locate
+      `zig-out/bin/botopink` (`--bin`/`BOTOPINK_BIN` override allowed; PATH fallback).
+- [x] Unsupported target (beam/wasm today) → `~ skipped-unsupported` unless `--strict`.
+      Detection is child-output-driven (`"currently supports only"`), not a hard-coded list.
+- [x] CLI: `--target <t>[,<t>]|all` (accept `node`→commonJS alias + `--target=X`), `--lib`,
+      `--filter`, `--strict`. Default targets `commonJS,erlang`.
 
-## F4 — codegen: module boundaries + reexports
-- [~] Emit each module per the tree; `pub mod` reexports through the parent. Parity on
-      all four backends. (Largely covered by the existing cross-module codegen —
-      verified end-to-end on commonJS: `require`/`exports` per module in dependency
-      order. erlang/beam share the same `crossModule.zig` analysis; wasm stays
-      single-module (known gap). Cross-PACKAGE `pub mod` reexport surface ties into
-      F5/libs-module-migration. No new code needed for the within-package case.)
+## F3 — aggregation + exit code
+- [x] Print a lib×target matrix (`✓`/`✗`/`–`/`~`) + summary.
+- [x] **Exit non-zero iff any cell is `✗`** — a red `.bp` test fails `zig build test-libs`.
+      (core acceptance criterion)
 
-## F5 — migration mechanism + pilot
-- [x] Migration generator (`botopink migrate [--dry-run]`, `migrate.zig`): walks
-      `src/`, prepends `pub mod X;` to each directory's index (`root.bp`/`main.bp`
-      at the root, `mod.bp` per folder), creating index files as needed.
-      Defaults to `pub mod` to preserve old reachability; idempotent. Verified
-      migrate→build→run on a multi-folder package. Breaking change in `CHANGELOG.md`.
-- [ ] Pilot `examples/*` (run the generator on self-contained examples) + `libs/std`
-      (std is embedded, loaded outside the CLI resolver — needs the std embed path
-      to honor a `root.bp` tree; deferred, higher-risk). Other libs = Wave 2
-      `libs-module-migration`.
-
-## F6 — docs + tests
-- [x] `docs.md` §Modules (tree, `mod`/`pub mod`/`mod.bp`/`root.bp`/`main.bp`,
-      path-visibility, imports-through-tree, migration). CHANGELOG breaking-change
-      entry recorded.
-- [x] parser tests (F0); resolver/visibility/import-resolution unit tests
-      (`resolver.zig`: stripBpExt, isSource, topological order, cycle-safety,
-      withinSubtree, visibility both directions, unexported-import). CLI tests now
-      run in `zig build test`.
-- [ ] LSP go-to-def across `mod` boundaries still works (verify; LSP path-aware
-      handling if needed).
-
-## Open decisions (resolve in F1/F5)
-- [x] implicit-scan: deprecated fallback (kept behind a deprecation warning when
-      no `main.bp`/`root.bp` root exists; remove in a future release).
-- [ ] `root.bp`/`main.bp` coexistence in one package (F1: auto-detect prefers
-      `main.bp` then `root.bp`; `entry` overrides — finalize during F5 pilot)
-- [x] `Name.bp` + `Name/mod.bp` both present = error (no silent precedence)
+## F4 — wire it in
+- [x] Document `zig build test-libs` in `modules/AGENTS.md` + root `AGENTS.md`. Do **not**
+      add to default `zig build test` (needs node/escript on PATH).
 
 ## Done gate
-- [ ] a multi-folder package builds + runs on commonJS via the declared tree.
-- [ ] a private `mod` is provably not importable across a boundary.
-- [ ] `zig build && zig build test` green.
+- [~] `zig build test-libs` green across all libs (commonJS+erlang). commonJS: all green;
+      std passes both backends. **erlang still reds for erika/jhonstart/onze/rakun** —
+      not one bug but a *cluster* of pre-existing erlang-codegen gaps; the runner
+      correctly surfaces them as `✗` (the gate working). While investigating, two
+      *general* `erlang.zig` fixes landed here (gate green, 3 broken erlang snapshots
+      corrected):
+        1. reserved-word atom quoting — a fn named `of`/`div` is now `'of'`/`'div'`
+           at def/export/call (was invalid bare-atom erlang).
+        2. trailing-comment dangling comma — a final `// comment` stmt no longer
+           strands a `,` before `end` (`emitBodyFrom` keys off the last *real* stmt).
+      Remaining tail is real stdlib-backends-parity scope: erika (unbound module `val`,
+      missing `toString/1`), jhonstart (empty `fun -> end` body), rakun (`@emit`-generated
+      erlang), and **onze (`MissingExternalTarget` — node-only mock lib, architecturally
+      not erlang-compilable without an erlang mock runtime).**
+- [x] a deliberately-failing lib test → matrix `✗`, exit != 0 (verified: 4 erlang reds).
+- [x] arg-parsing + discovery + matrix have Zig tests; `zig build && zig build test` green.
