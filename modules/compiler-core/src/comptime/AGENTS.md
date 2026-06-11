@@ -102,10 +102,11 @@ the caller and captured **unevaluated**. Wiring in `infer.zig` / `env.zig`:
   for the runtime-backed evaluator (F6-full).
 - `inferTemplateMethod` resolves the comptime-only methods on `@Expr`
   receivers (`value`/`text`/`parts`/`source`/`context`/`lookup`/`bindings`/
-  `build`/`fail`/`failAt`) and `ref()` on `Binding`, recording
+  `build`/`custom`/`fail`/`failAt`) and `ref()` on `Binding`, recording
   `env.templateLowerings` (keyed by call loc). The contract is declared as
-  `interface Expr<E>` in `libs/std/src/syntax.bp` (plain stdlib, preloaded
-  by `registerStdlib`), alongside `Span`/`Part`/`Binding`/`Source`/`Context`.
+  `interface Expr<E>` in `libs/std/src/builtins.d.bp` (the `std.syntax`
+  surface), alongside `Span`/`Part`/`Binding`/`Source`/`Context` and the
+  `@ExprCustom` carrier (`CustomNode`/`CustomExpr`).
 - Construction is **explicit** — no implicit value lifting. The builtins
   `@expr(value)` (lift a comptime value as code) and `@code(text)` (parse
   generated source text) are typed in `inferBuiltinCallReturnType` and only
@@ -151,6 +152,39 @@ imported type resolves the annotation to the constructor func — `resolveTypeNa
 `@expr(record { … })` lifts anonymous structural records (`Type.record`,
 F10) — computed objects come back through `literalFromJson`. Remaining
 limits (recorded): all params must be `@Expr` captures; node runtime only.
+
+### `@ExprCustom<T>` — the carrier with a reference tree (expr-custom)
+
+A template fn may return `@ExprCustom<T>` instead of `@Expr<T>` to carry **two**
+things at once: the executable `code` *and* a generic reference AST a sub-language
+(SQL, markup, …) built from its own private parse. `@ExprCustom<T>` is a builtin
+marker (`TypeRef.isExprCustomType`, grouped with `@Expr` under
+`isTemplateReturnType` at every template-fn detection site) that resolves to the
+`CustomExpr<T>` struct (`{ code: Expr<T>, ast: CustomNode }`) —
+`resolveTypeRefInContext` normalises the name exactly as `@Expr` ↔ interface
+`Expr`. The body packs the two halves with `q.custom(tree, code)`
+(`inferTemplateMethod`, `op = .custom`): `tree` is a `CustomNode`
+(`{ kind, span, label, ref: ?Binding, children }`) the lib fills with record
+literals — `kind`/`label` are **opaque tags the lib chose; the core never branches
+on them**. `CustomNode` is registered as a real, constructible struct via
+`custom_ast_reflection_src` (a `registerStdlib` mirror, sibling of
+`decl_reflection_src`) and pre-defined in the `template_eval` prelude so a body can
+build it at runtime.
+
+Expansion (`expandTemplateCallViaRuntime`, outcome `.custom { code, ast }`):
+the **`code`** half is spliced *identically* to a plain `.code` outcome —
+re-inferred in the caller, hole-substituted, recorded in `env.templateExpansions`,
+lowered to every backend (zero runtime/codegen change; `@ExprCustom` is a superset
+of `@Expr`, not a rewrite). The **`ast`** half is deserialized
+(`template.parseCustomNode`) and stored in `env.customAstByLoc` (loc → callee +
+root `CustomNode` + the template literal's file/line/col) — it is **never lowered,
+never reaches codegen**. Custom calls are not memoized (the tree is stored per
+call-location). Tooling read API: `comptime.zig` surfaces the per-module entries
+on `OkData.custom_ast` (`[]CustomAstEntry`, re-exported as `root.zig`'s
+`CustomNode`/`CustomAstEntry`); a consumer maps a node's template-relative `span`
+to an absolute document position via the entry's provenance. The lib's private
+sub-language AST never enters the core — this is the keystone the sub-language
+LSP (Wave 2) and the query / markup AST-producer specs (Wave 3) consume.
 
 ## Annotation processors / decorators (P1 + P2)
 

@@ -22,8 +22,7 @@ std/
 │   ├── primitives.d.bp    ← numeric + bool interfaces
 │   ├── array.d.bp         ← generic Array<T> interface
 │   ├── string.d.bp        ← String interface methods
-│   ├── syntax.bp          ← std.syntax — `@Expr` template data model + interface Expr<E>
-│   ├── builtins.d.bp      ← @typeOf / @sizeOf / @panic / … (NOT embedded yet — see below)
+│   ├── builtins.d.bp      ← @typeOf / @sizeOf / @panic / … + std.syntax `@Expr`/`@ExprCustom` surface (NOT embedded yet — see below)
 │   ├── bool.bp            ← `bool` std module  ◀ inline tests (5 blocks)
 │   ├── pair.bp            ← `pair` std module
 │   ├── order.bp           ← `order` std module (`pub enum Order`)  ◀ inline tests (3 blocks)
@@ -58,7 +57,7 @@ std/
 | `primitives.d.bp` | `interface I32 { … }`, `interface U32 { … }`, …, `interface Bool { … }`. |
 | `array.d.bp` | `interface Array<T>` — `length`, `at`, `push`, `pop`, `contains`, `slice`, `join`, `reverse`, `indexOf`, `forEach`, `map`, `filter`. |
 | `string.d.bp` | `interface String` — `len`, `split`, `to_upper/lower`, `contains`, `starts_with`, `ends_with`, `trim*`, `replace`, `slice`, `char_at`, `index_of`, `to_string`. |
-| `syntax.bp` | `std.syntax` — data model for `@Expr` templates: `struct Span`, `enum Part`, `enum BindingKind`, `struct Binding`, `struct Source`, `struct Context`, and `interface Expr<E>`. Comptime-only; no codegen. |
+| `builtins.d.bp` (`std.syntax` section) | Data model for `@Expr` templates: `struct Span`, `enum Part`, `enum BindingKind`, `struct Binding`, `struct Source`, `struct Context`, and `interface Expr<E>`. Plus the **`@ExprCustom` carrier** (expr-custom): `struct CustomNode` (`kind`/`span`/`label`/`ref`/`children` — opaque sub-language tree), `struct CustomExpr<T>` (`{ code, ast }`), and `Expr.custom(ast, code)`. Comptime-only; no codegen. The compiler-consumed `CustomNode` is registered via `comptime.zig custom_ast_reflection_src`. |
 | `builtins.d.bp` | Reflection (`typeOf`, `typeName`, `sizeOf`, …), numeric (`min`, `max`, `abs`, `as`), runtime (`panic`, `trap`, `src`), `compilerError(message)` — the compile-time error a comptime body (decorator/template) raises — and `emit(source)` — a decorator body contributes generated top-level declarations (wiring) spliced into its module. Also the **`@Decl` reflection model** (annotation processors): `enum DeclKind`, `struct Annotation/Param/Field/Method/Span`, and **`struct Decl`** (`kind`/`name`/`fields`/`methods`/`returnType`/`annotations` + `fail`/`failAt`). A decorator is a comptime fn whose first param is `comptime _: @Decl`; the core serializes the annotated declaration into this handle. The compiler-consumed copy of the `@Decl` cluster + the recognized builtins are registered programmatically (`comptime.zig decl_reflection_src` / `inferBuiltinCallReturnType`); this file is the documented surface (not embedded by `prelude.zig`). |
 | `bool.bp` | `negate`, `nor`, `nand`, `exclusiveOr`, `exclusiveNor` — pure-operator logic. `option`/`result` are NOT std modules (builtin namespaces). |
 | `int.bp` | `absoluteValue`, `min`, `max`, `clamp`, `isEven`, `isOdd`, `toString`. |

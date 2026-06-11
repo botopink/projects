@@ -1379,6 +1379,24 @@ pub const TypeRef = union(enum) {
             std.mem.eql(u8, this.generic.name, "Expr");
     }
 
+    /// True when this annotation is the builtin custom-carrier type
+    /// `@ExprCustom<T>` (expr-custom). A function returning it is a template fn
+    /// whose body returns `q.custom(tree, code)`: `code` travels the ordinary
+    /// `@Expr<T>` expansion path while `tree` is a reference `CustomNode` stored
+    /// by call-location for tooling. The carrier is generic on purpose — the
+    /// core never learns any sub-language; `kind`/`label` are opaque lib tags.
+    pub fn isExprCustomType(this: TypeRef) bool {
+        return this == .generic and this.generic.is_builtin and
+            std.mem.eql(u8, this.generic.name, "ExprCustom");
+    }
+
+    /// True when this return type marks a comptime-expanded template function —
+    /// either a plain `@Expr<T>` or the custom carrier `@ExprCustom<T>`. Both are
+    /// expanded at their call sites and never reach codegen.
+    pub fn isTemplateReturnType(this: TypeRef) bool {
+        return this.isExprType() or this.isExprCustomType();
+    }
+
     /// True when this is the builtin reflection type `@Decl` (annotation
     /// processors). A function whose first parameter is `comptime _: @Decl` is a
     /// decorator: the core invokes it over the declaration the annotation sits on.

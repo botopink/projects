@@ -11,6 +11,7 @@ const Lexer = @import("./lexer.zig").Lexer;
 const Parser = @import("./parser.zig").Parser;
 const Env = @import("./comptime/env.zig").Env;
 const envMod = @import("./comptime/env.zig");
+const template = @import("./comptime/template.zig");
 const T = @import("./comptime/types.zig");
 const Module = @import("./module.zig").Module;
 const validation = @import("./comptime/error.zig");
@@ -33,6 +34,25 @@ pub const ComptimeEvalResult = struct {
 
 /// Per-module result after analysis and comptime evaluation.
 /// Bindings reference `ComptimeSession.arena` — valid only while the session is alive.
+/// The canonical reference node a sub-language template produced via
+/// `q.custom` — re-exported so tooling consumers (the language server) read the
+/// generic shape without depending on the comptime internals. expr-custom.
+pub const CustomNode = template.CustomNode;
+
+/// One `@ExprCustom` reference-AST entry surfaced to tooling: the call site, the
+/// template callee, the canonical `CustomNode` root, and the provenance
+/// (file/line/col of the template literal's opening quote) needed to map a
+/// node's template-relative `span` to an absolute document position. Generic —
+/// names no sub-language.
+pub const CustomAstEntry = struct {
+    loc: ast.Loc,
+    callee: []const u8,
+    root: CustomNode,
+    file: []const u8,
+    line: usize,
+    col: usize,
+};
+
 pub const ComptimeOutput = struct {
     name: []const u8,
     src: []const u8,
@@ -68,8 +88,33 @@ pub const ComptimeOutput = struct {
         /// receiver's record/primitive method lowers. Consumed by the backends
         /// without native method dispatch (erlang/beam/wasm); commonJS ignores it.
         instance_lowerings: std.AutoHashMap(ast.Loc, envMod.InstanceLowering),
+        /// `@ExprCustom` reference ASTs produced by `q.custom` in this module —
+        /// the generic, canonical `CustomNode` tree per call location. Read-only,
+        /// for tooling (the language server). Empty for modules with no custom
+        /// templates. expr-custom.
+        custom_ast: []const CustomAstEntry,
     };
 };
+
+/// Collect the `@ExprCustom` reference-AST entries recorded during inference of
+/// one module into the read-only slice surfaced on `OkData.custom_ast`.
+fn collectCustomAst(arena: std.mem.Allocator, env: *const envMod.Env) ![]const CustomAstEntry {
+    if (env.customAstByLoc.count() == 0) return &.{};
+    var out = try arena.alloc(CustomAstEntry, env.customAstByLoc.count());
+    var i: usize = 0;
+    var it = env.customAstByLoc.iterator();
+    while (it.next()) |e| : (i += 1) {
+        out[i] = .{
+            .loc = e.key_ptr.*,
+            .callee = e.value_ptr.callee,
+            .root = e.value_ptr.root,
+            .file = e.value_ptr.file,
+            .line = e.value_ptr.line,
+            .col = e.value_ptr.col,
+        };
+    }
+    return out;
+}
 
 /// Owns the shared parse/type arena and per-module comptime outputs.
 /// Keep alive until `codegenEmit` returns, then call `deinit(allocator)`.
@@ -249,6 +294,23 @@ const decl_reflection_src =
     \\}
 ;
 
+/// The `@ExprCustom` reference-tree type (expr-custom), registered into the
+/// global env so a sub-language template body can BUILD a `CustomNode` tree
+/// (`CustomNode(kind: …, span: …, …)`) and hand it to `q.custom`. Like the
+/// `@Decl` cluster this mirrors the surface documented in
+/// `libs/std/src/builtins.d.bp`; registered after `decl_reflection_src` so its
+/// `Span` field type resolves. `Binding` (the `ref` field) is the same opaque
+/// type `q.lookup` yields. Generic — the core never inspects `kind`/`label`.
+const custom_ast_reflection_src =
+    \\pub struct CustomNode {
+    \\    val kind: string,
+    \\    val span: Span,
+    \\    val label: string,
+    \\    val ref: ?Binding,
+    \\    val children: CustomNode[],
+    \\}
+;
+
 /// Embedded builtin-type interface declarations. Unlike `std_pkg_modules`
 /// these are flattened into the global type env at infer time (they declare the
 /// methods available on primitives / arrays / strings). Tooling — the language
@@ -422,7 +484,7 @@ fn registerExports(
             if (b.decl == .@"fn") {
                 const f = b.decl.@"fn";
                 if (f.returnType) |rt| {
-                    if (rt.isExprType()) try templateRegistry.put(b.name, f);
+                    if (rt.isTemplateReturnType()) try templateRegistry.put(b.name, f);
                 }
                 // Decorators (`comptime _: @Decl` first param) export their decl
                 // too, so importing modules can run the body over their annotated
@@ -485,6 +547,19 @@ pub fn registerStdlib(env: *Env, gpa: std.mem.Allocator) anyerror!void {
     {
         const alloc = env.arena;
         var lx = Lexer.init(decl_reflection_src);
+        const tokens = try lx.scanAll(alloc);
+        var p = Parser.init(tokens);
+        const program = try p.parse(alloc);
+        _ = try infer.inferProgram(env, program);
+    }
+
+    // The `@ExprCustom` reference-tree type (expr-custom): registered after the
+    // `@Decl` cluster so a sub-language template body can construct `CustomNode`
+    // values for `q.custom`. Its `Span` field resolves against the struct just
+    // registered above.
+    {
+        const alloc = env.arena;
+        var lx = Lexer.init(custom_ast_reflection_src);
         const tokens = try lx.scanAll(alloc);
         var p = Parser.init(tokens);
         const program = try p.parse(alloc);
@@ -725,6 +800,7 @@ pub fn compileTypesOnly(
                         .dispatch_rewrites = dispatch_rewrites,
                         .js_method_renames = js_method_renames,
                         .instance_lowerings = instance_lowerings,
+                        .custom_ast = try collectCustomAst(arena_alloc, &succ.env),
                     } },
                 });
             },
@@ -885,6 +961,7 @@ pub fn compile(
                         .dispatch_rewrites = dispatch_rewrites,
                         .js_method_renames = js_method_renames,
                         .instance_lowerings = instance_lowerings,
+                        .custom_ast = try collectCustomAst(arena_alloc, &succ.env),
                     } },
                 });
             },
