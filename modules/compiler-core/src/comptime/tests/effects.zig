@@ -133,6 +133,101 @@ test "throw check error: throw without enclosing Result return type" {
     );
 }
 
+// ── net-new (v0.beta.13 · A2): errors / result / option ──────────────────────
+
+// A `@Result<T, E>` is usable as a record FIELD type: constructing the record
+// with a result-returning call type-checks, and the field's `.unwrapOr` resolves
+// the wrapped value.
+test "infer: net-new ---- @Result as a record field" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\#[@result]
+        \\fn parse(n: i32) -> @Result<i32, string> { return n; }
+        \\record Cell { value: @Result<i32, string> }
+        \\fn main() {
+        \\    val c = Cell(value: parse(2));
+        \\    val v: i32 = c.value.unwrapOr(0);
+        \\}
+    );
+}
+
+// `?.` optional chaining over an optional receiver yields an Option, which
+// `unwrapOr` collapses back to a concrete value.
+test "infer: net-new ---- optional chain yields an Option resolved by unwrapOr" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\record User { name: ?string }
+        \\fn nameOf(u: ?User) -> string {
+        \\    return u?.name.unwrapOr("anon");
+        \\}
+    );
+}
+
+// `val x = try f()` in expression position binds the unwrapped Ok value, which
+// is then usable as the underlying `T`.
+test "infer: net-new ---- val x = try f() binds the unwrapped Ok value" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\#[@result]
+        \\fn parse(n: i32) -> @Result<i32, string> { return n; }
+        \\#[@result]
+        \\fn compute() -> @Result<i32, string> {
+        \\    val x = try parse(2);
+        \\    return x + 1;
+        \\}
+    );
+}
+
+// `throw` of an enum error variant unifies the thrown value with the enclosing
+// fn's declared `E = <that enum>` — including a payload-carrying variant.
+test "infer: net-new ---- throw of an enum error variant unifies with E" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\enum LoadError {
+        \\    NotFound,
+        \\    Invalid(reason: string),
+        \\}
+        \\#[@result]
+        \\fn load() -> @Result<i32, LoadError> {
+        \\    throw LoadError.Invalid(reason: "bad");
+        \\}
+    );
+}
+
+// ── net-new (v0.beta.13 · A1): effect markers ────────────────────────────────
+
+// An effect marker applies to a record METHOD (not only a top-level fn): the
+// `#[@result]` method body may `throw`, and the throw checks against the
+// method's declared `E`.
+test "infer: net-new ---- effect marker on a record method" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\record Fetcher {
+        \\    url: string,
+        \\    #[@result]
+        \\    fn load(self: Self) -> @Result<string, string> {
+        \\        throw self.url;
+        \\    }
+        \\}
+    );
+}
+
+// A compound return `@Future<@Result<T, E>>` type-checks: the `#[@future]` body
+// `await`s an inner future and returns a `@Result` produced by a `#[@result]`
+// fn — the two effect layers compose.
+test "infer: net-new ---- compound @Future<@Result> return type-checks" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\#[@result]
+        \\fn parse(n: i32) -> @Result<i32, string> {
+        \\    return n;
+        \\}
+        \\#[@future]
+        \\fn ready() -> @Future<i32> {
+        \\    return 5;
+        \\}
+        \\#[@future]
+        \\fn fetch() -> @Future<@Result<i32, string>> {
+        \\    val n = await ready();
+        \\    return parse(n);
+        \\}
+    );
+}
+
 test "context: use with binding in @Context fn passes" {
     try h.assertInfersOk(std.testing.allocator,
         \\fn state(initial: i32) -> @Context<Element, i32> {
