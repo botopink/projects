@@ -46,7 +46,7 @@ cli/
 |---|---|
 | `config.zig` | Parses `botopink.json` (target, `entry` module-tree root, `dependencies`, etc). |
 | `sources.zig` | Loads a package's project modules: resolves the explicit module tree (`resolver.zig`), warns on orphaned `.bp`, and falls back to the deprecated blind scan when a package has no `main.bp`/`root.bp` root. Every command loads `src/` through here. |
-| `resolver.zig` | Builds the package's module set by following `mod`/`pub mod` from the root (`main.bp` binary / `root.bp` library, per `entry`). `mod Name;` resolves `Name.bp` or `Name/mod.bp` (exactly one); both/neither errors. Reports orphans, and topologically orders modules so an imported module compiles before its importer. |
+| `resolver.zig` | Builds the package's module set by following `mod`/`pub mod` from the root (`main.bp` binary / `root.bp` library, per `entry`). `mod Name;` resolves `Name.bp` or `Name/mod.bp` (exactly one); both/neither errors. Reports orphans, enforces path-visibility (an import may cross into a module only if every `mod` on its path is `pub mod` — a private `mod` is reachable only within its declaring module's subtree), and topologically orders modules so an imported module compiles before its importer. |
 | `scanner.zig` | Legacy blind `src/` walk (every `.bp` becomes a module), returns modules sorted by path. Deprecated fallback used only when no module-tree root exists, and still drives the flat `test/` suite dir. |
 | `libs.zig` | Resolves `dependencies` to `libs/<name>/` modules on disk (lib-agnostic — the core never names a lib; sees them as ordinary `Module[]` prefixed `<name>/`). |
 | `reporter.zig` | Single source of truth for CLI text — use `reporter.errMsg`, `reporter.warnMsg`, `reporter.hintMsg`, etc. |

@@ -19,8 +19,10 @@
       blind scan kept as deprecated fallback when no root exists.)
 
 ## F2 — visibility / path resolution
-- [ ] Track visibility + parent per module; enforce path-visibility (every `mod` on the
+- [x] Track visibility + parent per module; enforce path-visibility (every `mod` on the
       path must be `pub mod` + decl `pub` to cross a boundary). Name the private segment.
+      (Enforced in `resolver.zig` where the tree lives — `checkVisibility` walks each
+      import edge; decl-level `pub` already gated by core `registerExports`.)
 
 ## F3 — imports resolve through the tree
 - [ ] `import {x} from "a.b"` follows the `mod` chain; `from "<lib>"` unchanged; bare

@@ -20,6 +20,7 @@ pub const Error = error{
     ModuleNotFound,
     AmbiguousModule,
     DuplicateModule,
+    PrivateModuleImport,
 } || std.mem.Allocator.Error;
 
 /// Diagnostic detail for a resolution failure. `kind` selects the message; the
@@ -34,6 +35,10 @@ pub const Diagnostic = struct {
     /// Candidate paths considered (for ambiguous/missing diagnostics).
     sibling: []const u8 = "",
     folder: []const u8 = "",
+    /// For a `PrivateModuleImport`: the module that issued the import.
+    importer: []const u8 = "",
+    /// For a `PrivateModuleImport`: the target module being imported.
+    target: []const u8 = "",
 };
 
 /// A `.bp` file under `src/` that no `mod` path reached — not compiled.
@@ -57,6 +62,17 @@ const WorkItem = struct {
     logical: []const u8,
     /// File path relative to cwd, e.g. "src/shapes/circle.bp".
     file: []const u8,
+    /// Whether the declaring `mod` was `pub mod` (the root counts as public).
+    is_pub: bool = true,
+    /// Index in `modules`/`nodes` of the declaring (parent) module; null = root.
+    parent: ?usize = null,
+};
+
+/// A node in the resolved module tree — the visibility data path-visibility
+/// checks walk. Parallel to `modules` (same index) before reordering.
+const Node = struct {
+    is_pub: bool,
+    parent: ?usize,
 };
 
 /// Resolve the module tree of the package whose source lives in `src_dir_path`
@@ -83,6 +99,9 @@ pub fn resolve(
 
     var modules: std.ArrayListUnmanaged(Module) = .empty;
     errdefer freeAccumulated(gpa, &modules);
+    // `nodes` mirrors `modules` (same index) and carries the tree's visibility
+    // data; scratch-owned (only needed during resolution).
+    var nodes: std.ArrayListUnmanaged(Node) = .empty;
 
     // Set of resolved file paths (for orphan detection + duplicate guard),
     // keyed in the scratch arena.
@@ -102,6 +121,8 @@ pub fn resolve(
         const source = std.Io.Dir.cwd().readFileAlloc(io, item.file, gpa, .unlimited) catch
             return fail(diag, diag_arena, .{ .kind = Error.ModuleNotFound, .name = item.logical, .declared_in = item.file });
 
+        const my_idx = modules.items.len;
+
         // Transfer `source` + `logical` ownership to `modules` (freed wholesale
         // by the function's `errdefer freeAccumulated`). No per-item errdefer:
         // once appended it would double-free with `freeAccumulated`.
@@ -114,21 +135,31 @@ pub fn resolve(
             gpa.free(logical);
             return Error.OutOfMemory;
         };
+        try nodes.append(sa, .{ .is_pub = item.is_pub, .parent = item.parent });
 
         // Parse just enough to read the `mod` declarations. A parse failure here
         // is not fatal — the module is still compiled (the real pipeline reports
         // the error); we simply can't descend into its submodules.
         const decl_dir = std.fs.path.dirname(item.file) orelse src_dir_path;
-        try collectChildren(sa, diag_arena, io, source, item.logical, decl_dir, root_logical, &work, diag);
+        try collectChildren(sa, diag_arena, io, source, item.logical, decl_dir, root_logical, my_idx, &work, diag);
     }
 
     const orphans = try collectOrphans(gpa, io, src_dir_path, &visited);
+
+    // Analyze the cross-module import graph once: which module owns each `pub`
+    // symbol, and what each module imports. Used for both visibility and order.
+    const analysis = analyzeModules(sa, modules.items);
+
+    // F2 — path-visibility: an import may cross into a module only if every
+    // `mod` on its path is `pub mod`. Reject imports that reach a private module
+    // from outside its declaring module's subtree (the private segment named).
+    try checkVisibility(sa, modules.items, nodes.items, analysis, diag_arena, diag);
 
     // The comptime pipeline resolves imports by registering each module's
     // exports as it compiles, so an imported module must be compiled before its
     // importer. Reorder the discovered modules into dependency order (a parent
     // folder index that imports its submodules compiles after them).
-    orderByDependencies(sa, modules.items);
+    orderByDependencies(sa, modules.items, analysis);
 
     const owned_modules = try modules.toOwnedSlice(gpa);
     return .{ .modules = owned_modules, .orphans = orphans };
@@ -145,6 +176,7 @@ fn collectChildren(
     parent_logical: []const u8,
     decl_dir: []const u8,
     root_logical: []const u8,
+    parent_idx: usize,
     work: *std.ArrayListUnmanaged(WorkItem),
     diag: ?*Diagnostic,
 ) Error!void {
@@ -180,7 +212,12 @@ fn collectChildren(
         else
             try std.fs.path.join(sa, &.{ parent_logical, m.name });
 
-        try work.append(sa, .{ .logical = logical, .file = if (has_sibling) sibling else folder });
+        try work.append(sa, .{
+            .logical = logical,
+            .file = if (has_sibling) sibling else folder,
+            .is_pub = m.isPub,
+            .parent = parent_idx,
+        });
     }
 }
 
@@ -238,24 +275,36 @@ fn resolveRoot(
     return null;
 }
 
-/// Reorder `mods` in place so that every module precedes the modules that
-/// import its symbols (a topological sort of the cross-module import graph).
-/// Imports resolve by symbol name across the whole package, so an edge runs
-/// from the module that `pub`-defines a symbol to each module that imports it.
-/// Best-effort: on any allocation/parse failure, or an import cycle, the
-/// affected modules keep their discovery order (the compiler then reports the
-/// genuine error). Ties break by logical path for determinism.
-fn orderByDependencies(sa: std.mem.Allocator, mods: []Module) void {
-    const n = mods.len;
-    if (n < 2) return;
+/// The cross-module import graph, computed once from every module's source.
+/// `owner` maps each `pub`-exported symbol to the first module that defines it;
+/// `imports[i]` is module i's imported definition-names. Imports resolve by
+/// symbol name across the whole package, so an edge runs from a symbol's owner
+/// to each module that imports it.
+const Analysis = struct {
+    owner: std.StringHashMapUnmanaged(usize),
+    imports: []const []const []const u8,
+};
 
-    // symbol → index of the first module that `pub`-defines it.
+fn analyzeModules(sa: std.mem.Allocator, mods: []const Module) Analysis {
     var owner = std.StringHashMapUnmanaged(usize){};
-    // per-module set of imported definition-names (last path segment).
-    var imports = sa.alloc([]const []const u8, n) catch return;
+    const imports = sa.alloc([]const []const u8, mods.len) catch
+        return .{ .owner = owner, .imports = &.{} };
     for (mods, 0..) |m, i| {
         imports[i] = collectModuleSymbols(sa, m.source, &owner, i) catch &.{};
     }
+    return .{ .owner = owner, .imports = imports };
+}
+
+/// Reorder `mods` in place so that every module precedes the modules that
+/// import its symbols (a topological sort of the cross-module import graph).
+/// Best-effort: on any allocation failure, or an import cycle, the affected
+/// modules keep their discovery order (the compiler then reports the genuine
+/// error). Ties break by logical path for determinism.
+fn orderByDependencies(sa: std.mem.Allocator, mods: []Module, analysis: Analysis) void {
+    const n = mods.len;
+    if (n < 2 or analysis.imports.len != n) return;
+    const owner = analysis.owner;
+    const imports = analysis.imports;
 
     // Build the dependency graph: edge owner(sym) → importer.
     var indeg = sa.alloc(usize, n) catch return;
@@ -311,6 +360,82 @@ fn orderByDependencies(sa: std.mem.Allocator, mods: []Module) void {
     @memcpy(mods, tmp);
 }
 
+const Boundary = struct {
+    /// Logical path of the declaring module whose subtree the target is private
+    /// to; the target is importable only from within this subtree.
+    prefix: []const u8,
+    /// The private `mod` segment (the name) that blocks the import.
+    private_segment: []const u8,
+};
+
+/// Enforce path-visibility (F2): an import may reach module `target` only if it
+/// is issued from within the subtree of the module that declared `target`'s
+/// shallowest private `mod`. Imports owned by a package module that cross such a
+/// boundary fail, naming the private segment. Imports of external (`from
+/// "<lib>"`/`"std"`) symbols never appear in `owner`, so they are not checked.
+fn checkVisibility(
+    sa: std.mem.Allocator,
+    mods: []const Module,
+    nodes: []const Node,
+    analysis: Analysis,
+    diag_arena: std.mem.Allocator,
+    diag: ?*Diagnostic,
+) Error!void {
+    if (analysis.imports.len != mods.len) return;
+    const owner = analysis.owner;
+    for (analysis.imports, 0..) |imps, importer| {
+        for (imps) |sym| {
+            const target = owner.get(sym) orelse continue;
+            if (target == importer) continue;
+            const b = visibilityBoundary(sa, mods, nodes, target) orelse continue;
+            if (!withinSubtree(mods[importer].path, b.prefix)) {
+                return fail(diag, diag_arena, .{
+                    .kind = Error.PrivateModuleImport,
+                    .name = b.private_segment,
+                    .importer = mods[importer].path,
+                    .target = mods[target].path,
+                });
+            }
+        }
+    }
+}
+
+/// The visibility boundary of module `idx`: the subtree it is confined to by the
+/// shallowest private `mod` on its path. Returns null when the module is
+/// reachable package-wide — either every `mod` on its path is `pub`, or the
+/// shallowest private one is a top-level `mod` (private to the root, i.e. the
+/// whole package).
+fn visibilityBoundary(sa: std.mem.Allocator, mods: []const Module, nodes: []const Node, idx: usize) ?Boundary {
+    // Collect the module's ancestor chain (deepest first), excluding the root —
+    // the root is not a `mod` segment and is always visible.
+    var chain: std.ArrayListUnmanaged(usize) = .empty;
+    var cur: ?usize = idx;
+    while (cur) |c| {
+        if (nodes[c].parent == null) break;
+        chain.append(sa, c) catch return null;
+        cur = nodes[c].parent;
+    }
+    // Walk root-first; the first private segment is the most restrictive.
+    var i: usize = chain.items.len;
+    while (i > 0) {
+        i -= 1;
+        const node_idx = chain.items[i];
+        if (nodes[node_idx].is_pub) continue;
+        const parent = nodes[node_idx].parent.?;
+        // A top-level private `mod` is private to the root → package-wide.
+        if (nodes[parent].parent == null) return null;
+        return .{ .prefix = mods[parent].path, .private_segment = std.fs.path.basename(mods[node_idx].path) };
+    }
+    return null;
+}
+
+/// True when logical `path` is `prefix` itself or a descendant of it.
+fn withinSubtree(path: []const u8, prefix: []const u8) bool {
+    if (prefix.len == 0) return true;
+    if (std.mem.eql(u8, path, prefix)) return true;
+    return path.len > prefix.len and std.mem.startsWith(u8, path, prefix) and path[prefix.len] == '/';
+}
+
 /// Parse `source` and collect its imported definition-names (returned), while
 /// recording each `pub`-exported symbol's owning module index into `owner`
 /// (first definer wins). Best-effort — a parse failure yields no symbols.
@@ -358,6 +483,8 @@ fn fail(diag: ?*Diagnostic, da: std.mem.Allocator, d: Diagnostic) Error {
         .declared_in = da.dupe(u8, d.declared_in) catch d.declared_in,
         .sibling = da.dupe(u8, d.sibling) catch d.sibling,
         .folder = da.dupe(u8, d.folder) catch d.folder,
+        .importer = da.dupe(u8, d.importer) catch d.importer,
+        .target = da.dupe(u8, d.target) catch d.target,
     };
     return d.kind;
 }
@@ -446,12 +573,67 @@ test "orderByDependencies orders imported modules before importers" {
         .{ .path = "shapes/circle", .source = "pub fn name() -> string { return \"c\"; }" },
     };
 
-    orderByDependencies(sa, &mods);
+    orderByDependencies(sa, &mods, analyzeModules(sa, &mods));
 
     // Every importer compiles after the modules whose symbols it imports.
     try std.testing.expect(indexOfPath(&mods, "geometry") < indexOfPath(&mods, "main"));
     try std.testing.expect(indexOfPath(&mods, "shapes/circle") < indexOfPath(&mods, "shapes"));
     try std.testing.expect(indexOfPath(&mods, "shapes") < indexOfPath(&mods, "main"));
+}
+
+test "withinSubtree matches a module and its descendants only" {
+    try std.testing.expect(withinSubtree("shapes/circle", "shapes"));
+    try std.testing.expect(withinSubtree("shapes", "shapes"));
+    try std.testing.expect(withinSubtree("anything", "")); // package-wide
+    try std.testing.expect(!withinSubtree("shapesX", "shapes"));
+    try std.testing.expect(!withinSubtree("main", "shapes"));
+}
+
+test "checkVisibility rejects an import crossing a private mod boundary" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const sa = arena.allocator();
+
+    // main(root) → shapes(pub) → helpers(private). Root imports helpers' symbol.
+    var mods = [_]Module{
+        .{ .path = "main", .source = "import {secret} from \"shapes.helpers\";\nfn main() {}" },
+        .{ .path = "shapes", .source = "pub fn describe() -> i32 { return 1; }" },
+        .{ .path = "shapes/helpers", .source = "pub fn secret() -> i32 { return 42; }" },
+    };
+    const nodes = [_]Node{
+        .{ .is_pub = true, .parent = null }, // main (root)
+        .{ .is_pub = true, .parent = 0 }, // pub mod shapes
+        .{ .is_pub = false, .parent = 1 }, // mod helpers (private under shapes)
+    };
+    const analysis = analyzeModules(sa, &mods);
+    var diag: Diagnostic = .{ .kind = Error.RootNotFound };
+    try std.testing.expectError(Error.PrivateModuleImport, checkVisibility(sa, &mods, &nodes, analysis, sa, &diag));
+    try std.testing.expectEqualStrings("helpers", diag.name);
+    try std.testing.expectEqualStrings("main", diag.importer);
+    try std.testing.expectEqualStrings("shapes/helpers", diag.target);
+}
+
+test "checkVisibility allows an import from within the private subtree" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const sa = arena.allocator();
+
+    // circle is a sibling of helpers inside shapes — within helpers' boundary.
+    var mods = [_]Module{
+        .{ .path = "main", .source = "fn main() {}" },
+        .{ .path = "shapes", .source = "pub fn describe() -> i32 { return 1; }" },
+        .{ .path = "shapes/circle", .source = "import {secret} from \"shapes.helpers\";\npub fn c() -> i32 { return secret(); }" },
+        .{ .path = "shapes/helpers", .source = "pub fn secret() -> i32 { return 42; }" },
+    };
+    const nodes = [_]Node{
+        .{ .is_pub = true, .parent = null },
+        .{ .is_pub = true, .parent = 0 },
+        .{ .is_pub = true, .parent = 1 },
+        .{ .is_pub = false, .parent = 1 },
+    };
+    const analysis = analyzeModules(sa, &mods);
+    var diag: Diagnostic = .{ .kind = Error.RootNotFound };
+    try checkVisibility(sa, &mods, &nodes, analysis, sa, &diag); // no error
 }
 
 test "orderByDependencies keeps a cycle's modules without crashing" {
@@ -464,7 +646,7 @@ test "orderByDependencies keeps a cycle's modules without crashing" {
         .{ .path = "a", .source = "import {fb} from \"b\";\npub fn fa() -> i32 { return fb(); }" },
         .{ .path = "b", .source = "import {fa} from \"a\";\npub fn fb() -> i32 { return fa(); }" },
     };
-    orderByDependencies(sa, &mods);
+    orderByDependencies(sa, &mods, analyzeModules(sa, &mods));
     // Both modules survive (order is best-effort under a cycle).
     try std.testing.expectEqual(@as(usize, 2), mods.len);
     try std.testing.expect(indexOfPath(&mods, "a") != std.math.maxInt(usize));

@@ -84,6 +84,13 @@ fn reportDiag(diag: resolver.Diagnostic) void {
             reporter.errMsg("module reached by more than one `mod` path");
             reporter.warnDetail("  module:", diag.name);
         },
+        resolver.Error.PrivateModuleImport => {
+            reporter.errMsg("import crosses a private module boundary");
+            reporter.warnDetail("  private `mod`:", diag.name);
+            reporter.warnDetail("  imported by:", diag.importer);
+            reporter.warnDetail("  target module:", diag.target);
+            reporter.hintMsg("make every `mod` on the path `pub mod`, or move the import inside the private subtree");
+        },
         resolver.Error.RootNotFound => {
             reporter.errMsg("no module-tree root found (src/main.bp or src/root.bp)");
         },
