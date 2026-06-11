@@ -2385,6 +2385,7 @@ const Emitter = struct {
                         }
                     } else {
                         var first = true;
+                        var as_property = false;
                         if (cc.receiver) |recv| {
                             // Static extension dispatch: lower `recv.m(args)` to
                             // `Sym.m(recv, args)` at activated call sites.
@@ -2399,7 +2400,20 @@ const Emitter = struct {
                                 // rename (`s.contains` → `s.includes` on a string)
                                 // takes precedence when inference recorded one here.
                                 const method = if (self.renames) |r| (r.get(c.loc) orelse jsBuiltinMethodName(cc.callee)) else jsBuiltinMethodName(cc.callee);
-                                try self.fmt("{s}{s}(", .{ @as([]const u8, if (cc.optional) "?." else "."), method });
+                                const dot: []const u8 = if (cc.optional) "?." else ".";
+                                // `arr.len()`/`.size()`/`.length()` & `str.length()`:
+                                // inference renamed these to `length` only for a
+                                // typed array/string receiver — the native `.length`
+                                // is a PROPERTY, so emit it without call parens/args.
+                                const len_prop = cc.args.len == 0 and cc.trailing.len == 0 and
+                                    self.renames != null and
+                                    if (self.renames.?.get(c.loc)) |rn| std.mem.eql(u8, rn, "length") else false;
+                                if (len_prop) {
+                                    try self.fmt("{s}length", .{dot});
+                                    as_property = true;
+                                } else {
+                                    try self.fmt("{s}{s}(", .{ dot, method });
+                                }
                             }
                         } else if (self.externals_missing.contains(cc.callee)) {
                             // External fn with no `node` target — no symbol to
@@ -2441,7 +2455,9 @@ const Emitter = struct {
                             }
                             try self.w("}");
                         }
-                        try self.w(")");
+                        // A `.length` property access (`as_property`) emitted no
+                        // opening paren, so it must not emit a closing one either.
+                        if (!as_property) try self.w(")");
                     }
                 },
                 .pipeline => |p| {

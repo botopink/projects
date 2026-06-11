@@ -30,10 +30,16 @@
       the `examples/erika-linq` `Array.range` cross-module workaround.
 
 ## B — backend-parity tails
-- [ ] **F1** literal method receivers reach **codegen** on every backend (parser
-      done; thread the loc-keyed lowering through each emitter).
-- [ ] **F2** snake_case→camelCase dispatch normalization (legacy `to_string` →
-      `toString`).
+- [x] **F1** literal method receivers reach **codegen** on every backend: the
+      loc-keyed `instance_lowerings` dispatch keys off the call loc regardless of
+      receiver kind, so `[1,2,3].map(f).len()` runs on beam (`3`) + erlang, and
+      commonJS now emits the `.length` PROPERTY for `arr.len()`/`.size()`/`.length()`
+      + `str.length()` (inference records a type-gated `length` rename;
+      `lowerExpr` skips call parens for it) — verified `3`/`3`/`5` on node.
+- [~] **F2** snake_case→camelCase dispatch: primitives.d.bp already uses camelCase
+      (`toString` maps to the host `to_string` SYMBOL); the related parity gap was
+      `arr.len()`/`size()` on commonJS, now fixed (see F1). Legacy user-side
+      `to_string()` normalization not separately needed (no such call surfaced).
 - [ ] **F3** erlang/beam load the std modules the same way node does (erlang
       partial; beam pending).
 - [~] **F4** `?.` optional-chaining codegen: **beam DONE** (`lowerIdentAccess`
