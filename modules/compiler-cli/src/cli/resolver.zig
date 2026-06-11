@@ -21,6 +21,7 @@ pub const Error = error{
     AmbiguousModule,
     DuplicateModule,
     PrivateModuleImport,
+    UnexportedImport,
 } || std.mem.Allocator.Error;
 
 /// Diagnostic detail for a resolution failure. `kind` selects the message; the
@@ -150,6 +151,10 @@ pub fn resolve(
     // symbol, and what each module imports. Used for both visibility and order.
     const analysis = analyzeModules(sa, modules.items);
 
+    // F3 — imports resolve through the tree: an `import {x} from "a.b"` that
+    // names a real package module must find `x` publicly exported there.
+    try checkImportResolution(sa, modules.items, analysis, diag_arena, diag);
+
     // F2 — path-visibility: an import may cross into a module only if every
     // `mod` on its path is `pub mod`. Reject imports that reach a private module
     // from outside its declaring module's subtree (the private segment named).
@@ -275,24 +280,42 @@ fn resolveRoot(
     return null;
 }
 
+/// One `import {…}` item: the imported definition-name plus the project module
+/// it names. `from` is the slashed logical path of `from "a.b"` (dotted → "a/b")
+/// when it could name a package module; null for a bare `import {x};`, `from
+/// "std"`, or an external lib import — those resolve globally / via the loader.
+const ImportRef = struct {
+    from: ?[]const u8,
+    symbol: []const u8,
+};
+
 /// The cross-module import graph, computed once from every module's source.
 /// `owner` maps each `pub`-exported symbol to the first module that defines it;
-/// `imports[i]` is module i's imported definition-names. Imports resolve by
-/// symbol name across the whole package, so an edge runs from a symbol's owner
-/// to each module that imports it.
+/// `imports[i]`/`exports[i]` are module i's imports and `pub` export names;
+/// `paths` maps a logical module path to its index. Imports resolve by symbol
+/// name across the whole package, so an edge runs from a symbol's owner to each
+/// module that imports it.
 const Analysis = struct {
     owner: std.StringHashMapUnmanaged(usize),
-    imports: []const []const []const u8,
+    imports: []const []const ImportRef,
+    exports: []const []const []const u8,
+    paths: std.StringHashMapUnmanaged(usize),
 };
 
 fn analyzeModules(sa: std.mem.Allocator, mods: []const Module) Analysis {
     var owner = std.StringHashMapUnmanaged(usize){};
-    const imports = sa.alloc([]const []const u8, mods.len) catch
-        return .{ .owner = owner, .imports = &.{} };
+    var paths = std.StringHashMapUnmanaged(usize){};
+    for (mods, 0..) |m, i| paths.put(sa, m.path, i) catch {};
+
+    const empty: Analysis = .{ .owner = owner, .imports = &.{}, .exports = &.{}, .paths = paths };
+    const imports = sa.alloc([]const ImportRef, mods.len) catch return empty;
+    const exports = sa.alloc([]const []const u8, mods.len) catch return empty;
     for (mods, 0..) |m, i| {
-        imports[i] = collectModuleSymbols(sa, m.source, &owner, i) catch &.{};
+        const refs = collectModuleRefs(sa, m.source, &owner, i) catch ModuleRefs{ .imports = &.{}, .exports = &.{} };
+        imports[i] = refs.imports;
+        exports[i] = refs.exports;
     }
-    return .{ .owner = owner, .imports = imports };
+    return .{ .owner = owner, .imports = imports, .exports = exports, .paths = paths };
 }
 
 /// Reorder `mods` in place so that every module precedes the modules that
@@ -314,8 +337,8 @@ fn orderByDependencies(sa: std.mem.Allocator, mods: []Module, analysis: Analysis
 
     for (imports, 0..) |imps, j| {
         var deps = std.AutoHashMapUnmanaged(usize, void){};
-        for (imps) |sym| {
-            const oi = owner.get(sym) orelse continue;
+        for (imps) |ref| {
+            const oi = owner.get(ref.symbol) orelse continue;
             if (oi == j) continue;
             deps.put(sa, oi, {}) catch continue;
         }
@@ -384,8 +407,8 @@ fn checkVisibility(
     if (analysis.imports.len != mods.len) return;
     const owner = analysis.owner;
     for (analysis.imports, 0..) |imps, importer| {
-        for (imps) |sym| {
-            const target = owner.get(sym) orelse continue;
+        for (imps) |ref| {
+            const target = owner.get(ref.symbol) orelse continue;
             if (target == importer) continue;
             const b = visibilityBoundary(sa, mods, nodes, target) orelse continue;
             if (!withinSubtree(mods[importer].path, b.prefix)) {
@@ -398,6 +421,42 @@ fn checkVisibility(
             }
         }
     }
+}
+
+/// Enforce import resolution through the tree (F3): when an `import {x} from
+/// "a.b"` names a real package module (dotted path = the `mod` chain), that
+/// module must publicly export `x`. Imports whose `from` is a bare/`std`/lib
+/// source — or names a path that isn't a package module — are left to the
+/// global resolver / generic loader, never flagged.
+fn checkImportResolution(
+    sa: std.mem.Allocator,
+    mods: []const Module,
+    analysis: Analysis,
+    diag_arena: std.mem.Allocator,
+    diag: ?*Diagnostic,
+) Error!void {
+    _ = sa;
+    if (analysis.imports.len != mods.len) return;
+    for (analysis.imports, 0..) |imps, importer| {
+        for (imps) |ref| {
+            const from = ref.from orelse continue;
+            const target = analysis.paths.get(from) orelse continue; // not a package module
+            if (target == importer) continue;
+            if (!symbolInList(analysis.exports[target], ref.symbol)) {
+                return fail(diag, diag_arena, .{
+                    .kind = Error.UnexportedImport,
+                    .name = ref.symbol,
+                    .importer = mods[importer].path,
+                    .target = mods[target].path,
+                });
+            }
+        }
+    }
+}
+
+fn symbolInList(names: []const []const u8, name: []const u8) bool {
+    for (names) |n| if (std.mem.eql(u8, n, name)) return true;
+    return false;
 }
 
 /// The visibility boundary of module `idx`: the subtree it is confined to by the
@@ -436,40 +495,70 @@ fn withinSubtree(path: []const u8, prefix: []const u8) bool {
     return path.len > prefix.len and std.mem.startsWith(u8, path, prefix) and path[prefix.len] == '/';
 }
 
-/// Parse `source` and collect its imported definition-names (returned), while
-/// recording each `pub`-exported symbol's owning module index into `owner`
-/// (first definer wins). Best-effort — a parse failure yields no symbols.
-fn collectModuleSymbols(
+const ModuleRefs = struct {
+    imports: []const ImportRef,
+    exports: []const []const u8,
+};
+
+/// Parse `source` and collect its imports (each with the project module it
+/// names, if any) and its `pub` export names, while recording each exported
+/// symbol's owning module index into `owner` (first definer wins). Best-effort
+/// — a parse failure yields no refs.
+fn collectModuleRefs(
     sa: std.mem.Allocator,
     source: []const u8,
     owner: *std.StringHashMapUnmanaged(usize),
     idx: usize,
-) ![]const []const u8 {
+) !ModuleRefs {
     var lx = Lexer.init(source);
-    const tokens = lx.scanAll(sa) catch return &.{};
+    const tokens = lx.scanAll(sa) catch return .{ .imports = &.{}, .exports = &.{} };
     var p = Parser.init(tokens);
-    const program = p.parse(sa) catch return &.{};
+    const program = p.parse(sa) catch return .{ .imports = &.{}, .exports = &.{} };
 
-    var imps: std.ArrayListUnmanaged([]const u8) = .empty;
+    var imps: std.ArrayListUnmanaged(ImportRef) = .empty;
+    var exps: std.ArrayListUnmanaged([]const u8) = .empty;
     for (program.decls) |decl| switch (decl) {
-        .@"fn" => |f| if (f.isPub) try registerOwner(sa, owner, f.name, idx),
-        .val => |v| if (v.isPub) try registerOwner(sa, owner, v.name, idx),
-        .record => |r| if (r.isPub) try registerOwner(sa, owner, r.name, idx),
-        .@"struct" => |s| if (s.isPub) try registerOwner(sa, owner, s.name, idx),
-        .@"enum" => |e| if (e.isPub) try registerOwner(sa, owner, e.name, idx),
-        .interface => |it| if (it.isPub) try registerOwner(sa, owner, it.name, idx),
-        .use => |u| for (u.imports) |imp| {
-            // The imported symbol's definition name is its last path segment
-            // (an `as` alias renames only the local binding, not the export).
-            try imps.append(sa, imp.segments[imp.segments.len - 1]);
+        .@"fn" => |f| if (f.isPub) try registerExport(sa, owner, &exps, f.name, idx),
+        .val => |v| if (v.isPub) try registerExport(sa, owner, &exps, v.name, idx),
+        .record => |r| if (r.isPub) try registerExport(sa, owner, &exps, r.name, idx),
+        .@"struct" => |s| if (s.isPub) try registerExport(sa, owner, &exps, s.name, idx),
+        .@"enum" => |e| if (e.isPub) try registerExport(sa, owner, &exps, e.name, idx),
+        .interface => |it| if (it.isPub) try registerExport(sa, owner, &exps, it.name, idx),
+        .use => |u| {
+            // `from "a.b"` → slashed logical path "a/b" when it could name a
+            // package module; `from "std"`, a lib, or a bare import → null.
+            const from: ?[]const u8 = switch (u.source) {
+                .root => null,
+                .module => |m| if (std.mem.eql(u8, m, "std")) null else try dotsToSlashes(sa, m),
+            };
+            for (u.imports) |imp| {
+                // The imported symbol's definition name is its last path segment
+                // (an `as` alias renames only the local binding, not the export).
+                try imps.append(sa, .{ .from = from, .symbol = imp.segments[imp.segments.len - 1] });
+            }
         },
         else => {},
     };
-    return imps.toOwnedSlice(sa);
+    return .{ .imports = try imps.toOwnedSlice(sa), .exports = try exps.toOwnedSlice(sa) };
 }
 
-fn registerOwner(sa: std.mem.Allocator, owner: *std.StringHashMapUnmanaged(usize), name: []const u8, idx: usize) !void {
+fn registerExport(
+    sa: std.mem.Allocator,
+    owner: *std.StringHashMapUnmanaged(usize),
+    exps: *std.ArrayListUnmanaged([]const u8),
+    name: []const u8,
+    idx: usize,
+) !void {
     if (!owner.contains(name)) try owner.put(sa, name, idx);
+    try exps.append(sa, name);
+}
+
+fn dotsToSlashes(sa: std.mem.Allocator, dotted: []const u8) ![]const u8 {
+    const out = try sa.dupe(u8, dotted);
+    for (out) |*c| {
+        if (c.* == '.') c.* = '/';
+    }
+    return out;
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -587,6 +676,43 @@ test "withinSubtree matches a module and its descendants only" {
     try std.testing.expect(withinSubtree("anything", "")); // package-wide
     try std.testing.expect(!withinSubtree("shapesX", "shapes"));
     try std.testing.expect(!withinSubtree("main", "shapes"));
+}
+
+test "checkImportResolution rejects importing an unexported symbol from a named module" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const sa = arena.allocator();
+
+    // main imports `area` from "geometry", which only exports `perimeter`.
+    var mods = [_]Module{
+        .{ .path = "main", .source = "import {area} from \"geometry\";\nfn main() {}" },
+        .{ .path = "geometry", .source = "pub fn perimeter() -> i32 { return 1; }" },
+    };
+    const analysis = analyzeModules(sa, &mods);
+    var diag: Diagnostic = .{ .kind = Error.RootNotFound };
+    try std.testing.expectError(Error.UnexportedImport, checkImportResolution(sa, &mods, analysis, sa, &diag));
+    try std.testing.expectEqualStrings("area", diag.name);
+    try std.testing.expectEqualStrings("geometry", diag.target);
+}
+
+test "checkImportResolution accepts a correct export and ignores lib/std imports" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const sa = arena.allocator();
+
+    var mods = [_]Module{
+        // `from "rakun"` names no package module → ignored (lib); `from "std"` → ignored.
+        .{ .path = "main", .source =
+        \\import {area} from "geometry";
+        \\import {Rakun} from "rakun";
+        \\import {bool} from "std";
+        \\fn main() {}
+        },
+        .{ .path = "geometry", .source = "pub fn area() -> i32 { return 1; }" },
+    };
+    const analysis = analyzeModules(sa, &mods);
+    var diag: Diagnostic = .{ .kind = Error.RootNotFound };
+    try checkImportResolution(sa, &mods, analysis, sa, &diag); // no error
 }
 
 test "checkVisibility rejects an import crossing a private mod boundary" {

@@ -84,6 +84,13 @@ fn reportDiag(diag: resolver.Diagnostic) void {
             reporter.errMsg("module reached by more than one `mod` path");
             reporter.warnDetail("  module:", diag.name);
         },
+        resolver.Error.UnexportedImport => {
+            reporter.errMsg("imported symbol is not exported by the named module");
+            reporter.warnDetail("  symbol:", diag.name);
+            reporter.warnDetail("  imported by:", diag.importer);
+            reporter.warnDetail("  from module:", diag.target);
+            reporter.hintMsg("declare it `pub` in that module, or import it from the module that defines it");
+        },
         resolver.Error.PrivateModuleImport => {
             reporter.errMsg("import crosses a private module boundary");
             reporter.warnDetail("  private `mod`:", diag.name);

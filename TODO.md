@@ -25,8 +25,11 @@
       import edge; decl-level `pub` already gated by core `registerExports`.)
 
 ## F3 — imports resolve through the tree
-- [ ] `import {x} from "a.b"` follows the `mod` chain; `from "<lib>"` unchanged; bare
-      `import {x};` = from the root module.
+- [x] `import {x} from "a.b"` follows the `mod` chain (dotted path = `mod` chain →
+      slashed logical path); a `from` that names a real package module must export
+      the symbol (`checkImportResolution`). `from "<lib>"`/`from "std"` unchanged
+      (generic loader / global). Bare `import {x};` still resolves package-wide
+      (strict root-only semantics deferred to F4 reexports).
 
 ## F4 — codegen: module boundaries + reexports
 - [ ] Emit each module per the tree; `pub mod` reexports through the parent. Parity on
