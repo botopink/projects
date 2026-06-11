@@ -12,6 +12,7 @@ const bp = @import("botopink");
 const reporter = @import("./reporter.zig");
 const config = @import("./config.zig");
 const scanner = @import("./scanner.zig");
+const sources = @import("./sources.zig");
 const libs = @import("./libs.zig");
 
 // ── Options ───────────────────────────────────────────────────────────────────
@@ -51,8 +52,11 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
     // Scan source files: `src/` (inline test blocks) plus `test/` (separate
     // `*_test.bp` suites). Test modules come last so `src/` exports are
     // already registered when they compile.
-    const src_modules = try scanner.scanSources(gpa, io, "src");
-    defer scanner.freeModules(gpa, src_modules);
+    // `src/` resolves through the explicit module tree; the flat `test/` suite
+    // dir is not a package, so it keeps the plain directory scan.
+    var src_loaded = sources.load(gpa, io, proj, "src") catch return 1;
+    defer src_loaded.free(gpa);
+    const src_modules = src_loaded.modules;
     const test_modules = try scanner.scanSources(gpa, io, "test");
     defer scanner.freeModules(gpa, test_modules);
 

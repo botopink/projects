@@ -1,70 +1,74 @@
-# TODO — rakun  (annotation-processor lib · Wave 1)
+# TODO — module-system  (core keystone · Wave 1)
 
-> Task branch `task/rakun-di` · spec
-> [`tasks/v0.beta.8/specs/rakun.md`](../../tasks/v0.beta.8/specs/rakun.md).
+> Task branch `task/module-system` · spec
+> [`tasks/v0.beta.9/specs/module-system.md`](tasks/v0.beta.9/specs/module-system.md).
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
-> **Depends on: nothing** — the `@Decl`/`@emit` mechanism + F3 placement bodies are
-> in `feat`. Start now. Sibling of `onze` (same mechanism, disjoint lib).
->
-> **HARD RULE.** Zero rakun knowledge in `compiler-core`. All behaviour is
-> `libs/rakun/*.bp` decorator bodies via `@emit`. Port *behaviour* from the preserved
-> `task/rakun` reference (`feb96f0`), never the Zig.
+> **Depends on: nothing.** Keystone — unblocks `libs-module-migration` (Wave 2). Start now.
+> Breaking change to module resolution.
 
-> **Mechanism reality (verified 2026-06-10).** Each decorator runs in an isolated
-> node process — there is NO shared comptime registry across decorators, no
-> top-level mutable `var`, and hand-code can't reference emitted symbols. So the
-> spec's "shared comptime registry" / "topo-sorted singleton `val`s" / "comptime
-> cycle diagnostic" are realized differently: a **host runtime** (`runtime.mjs`
-> behind `#[@external]`) holds the scan/cycle/router state, and each decorator
-> `@emit`s self-registering code + a lazy factory. Equivalent behaviour; the
-> *comptime* cycle diagnostic is the one genuine casualty (runtime instead).
->
-> **Generic core fixes this needed (landed):** cross-module host-`#[@external]`
-> lowering + import dedup (`14cd527`); `@Decl` field-annotation reflection +
-> `test/` modules excluded from the test aggregator (this commit).
+## F0 — parse `mod` / `pub mod`
+- [x] Top-level `mod ident;` / `pub mod ident;` → `ModDecl { name, is_pub }` (`ast.zig`).
+      `mod` becomes a keyword; `mod` in a fn body = parse error.
 
-## F2 — IoC container (the wiring, via `@emit`)
-- [x] Component scan: each component decorator `@emit`s `rkScan("Name")` at module
-      load → host scan registry (no shared comptime state needed).
-- [x] DI graph: each component `@emit`s `__rkMake_<Type>()` injecting every field
-      by its own factory (lazy; topo-order is implicit in the call graph, not `val`
-      order). Tested via dispatch building a controller→service→repo chain.
-- [x] Cycle detection (A↔B): `rkEnter`/`rkDone` guard raises at construction.
-      NOTE: **runtime**, not comptime (per-decorator has no whole-graph view).
-- [ ] Singleton scope (currently fresh-per-resolve) + `#[configuration]`/`#[bean]`
-      factories + `#[value("key")]` property injection. (`@Decl` now reflects field
-      annotations, so `#[value]` detection is unblocked — wiring deferred.)
+## F1 — build the module tree from a root
+- [x] Resolver from the package root (`main.bp` binary / `root.bp` library, per
+      `botopink.json` entry) following `ModDecl`s. `mod Name;` resolves `Name.bp` OR
+      `Name/mod.bp` (ambiguous/missing → error). CLI `scanner.zig` stops blind-walking
+      `src/`; an unreferenced `.bp` is reported orphaned.
+      (`resolver.zig` + `sources.zig`; topological order so imports resolve;
+      blind scan kept as deprecated fallback when no root exists.)
 
-## F4 — web layer / router (via `@emit`)
-- [x] Controller decorator walks `decl.methods`, reads `#[getMapping(path)]`/… from
-      `method.annotations`, `@emit`s `rkRegisterRoute(verb, prefix + path, handler)`
-      (+ `#[route]` prefix). Verb from the marker name.
-- [x] Path params (`:name`) — `dispatch` matches them (binding into the request);
-      `req.param("name")` wiring exercised via the fake request.
-- [x] `Response` builders type-check against the handler return type (handler is
-      `fn(req: Request) -> Response`; `rkDispatch -> Response`).
+## F2 — visibility / path resolution
+- [x] Track visibility + parent per module; enforce path-visibility (every `mod` on the
+      path must be `pub mod` + decl `pub` to cross a boundary). Name the private segment.
+      (Enforced in `resolver.zig` where the tree lives — `checkVisibility` walks each
+      import edge; decl-level `pub` already gated by core `registerExports`.)
 
-## F5 — bootstrap (`Rakun.run` + real HTTP backing)
-- [ ] Promote `libs/server` scaffold → real minimal HTTP (listen, dispatch, req/resp
-      bridge) behind `#[@external]` host calls (node `http` first; then erlang).
-- [ ] `Request` gets a concrete server-supplied impl: `param`/`query`/`header`/`body`.
-- [ ] `Rakun.run(app)` reads the host router and starts `libs/server` on
-      `app.port`/`basePath`. (Needs G2: ship the runtime `.mjs` next to the emitted
-      module so a consumer build resolves it — today only the lib's own tests do.)
-- [ ] End-to-end: a request to a mapped route invokes the handler + returns its Response.
+## F3 — imports resolve through the tree
+- [x] `import {x} from "a.b"` follows the `mod` chain (dotted path = `mod` chain →
+      slashed logical path); a `from` that names a real package module must export
+      the symbol (`checkImportResolution`). `from "<lib>"`/`from "std"` unchanged
+      (generic loader / global). Bare `import {x};` still resolves package-wide
+      (strict root-only semantics deferred to F4 reexports).
+
+## F4 — codegen: module boundaries + reexports
+- [~] Emit each module per the tree; `pub mod` reexports through the parent. Parity on
+      all four backends. (Largely covered by the existing cross-module codegen —
+      verified end-to-end on commonJS: `require`/`exports` per module in dependency
+      order. erlang/beam share the same `crossModule.zig` analysis; wasm stays
+      single-module (known gap). Cross-PACKAGE `pub mod` reexport surface ties into
+      F5/libs-module-migration. No new code needed for the within-package case.)
+
+## F5 — migration mechanism + pilot
+- [x] Migration generator (`botopink migrate [--dry-run]`, `migrate.zig`): walks
+      `src/`, prepends `pub mod X;` to each directory's index (`root.bp`/`main.bp`
+      at the root, `mod.bp` per folder), creating index files as needed.
+      Defaults to `pub mod` to preserve old reachability; idempotent. Verified
+      migrate→build→run on a multi-folder package. Breaking change in `CHANGELOG.md`.
+- [ ] Pilot `examples/*` (run the generator on self-contained examples) + `libs/std`
+      (std is embedded, loaded outside the CLI resolver — needs the std embed path
+      to honor a `root.bp` tree; deferred, higher-risk). Other libs = Wave 2
+      `libs-module-migration`.
+
+## F6 — docs + tests
+- [x] `docs.md` §Modules (tree, `mod`/`pub mod`/`mod.bp`/`root.bp`/`main.bp`,
+      path-visibility, imports-through-tree, migration). CHANGELOG breaking-change
+      entry recorded.
+- [x] parser tests (F0); resolver/visibility/import-resolution unit tests
+      (`resolver.zig`: stripBpExt, isSource, topological order, cycle-safety,
+      withinSubtree, visibility both directions, unexported-import). CLI tests now
+      run in `zig build test`.
+- [ ] LSP go-to-def across `mod` boundaries still works (verify; LSP path-aware
+      handling if needed).
+
+## Open decisions (resolve in F1/F5)
+- [x] implicit-scan: deprecated fallback (kept behind a deprecation warning when
+      no `main.bp`/`root.bp` root exists; remove in a future release).
+- [ ] `root.bp`/`main.bp` coexistence in one package (F1: auto-detect prefers
+      `main.bp` then `root.bp`; `entry` overrides — finalize during F5 pilot)
+- [x] `Name.bp` + `Name/mod.bp` both present = error (no silent precedence)
 
 ## Done gate
-- [x] component scan + DI chain + cycle diagnostic (runtime) — green under
-      `botopink test` (`test/di_test.bp`, `test/router_test.bp`). `#[bean]` deferred.
-- [~] router: GET routes return 200, unmapped → 404 — green in-test via `rkDispatch`.
-      Real `run` over node `http` + beam pending F5/G2.
-- [x] Tests in `libs/rakun/*.bp`; `libs/rakun/AGENTS.md` updated. `libs/server/AGENTS.md`
-      update lands with F5.
-- [x] `grep -riE "rakun" modules/compiler-core/src` returns nothing (mechanism is generic).
-
-## Notes
-- Constructor injection only in v1; singleton scope, `#[value]`/`#[bean]`, and the
-  real server are the remaining work. `libs/server` realness + runtime-`.mjs`
-  shipping (G2) gate F5. No graceful-shutdown / middleware in v1.
-- Comptime constraints on decorator bodies (no sibling calls, `if`-expr, bare-`if`
-  only last, block-lambdas) force the factory builder to be inlined per marker.
+- [ ] a multi-folder package builds + runs on commonJS via the declared tree.
+- [ ] a private `mod` is provably not importable across a boundary.
+- [ ] `zig build && zig build test` green.

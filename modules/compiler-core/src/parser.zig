@@ -221,6 +221,11 @@ pub const Parser = struct {
                 const d = try this.parseImportDecl(alloc);
                 _ = this.match(.semicolon);
                 break :blk .{ .use = d };
+            } else if (this.check(.mod) or
+                (this.check(.@"pub") and this.peekAt(1).kind == .mod))
+            blk: {
+                const d = try this.parseModDecl();
+                break :blk .{ .mod = d };
             } else if (this.isActivationStmt()) blk: {
                 const d = try this.parseActivationStmt(alloc);
                 _ = this.match(.semicolon);
@@ -318,6 +323,17 @@ pub const Parser = struct {
             try decls.append(alloc, decl);
         }
         return Program{ .decls = try decls.toOwnedSlice(alloc) };
+    }
+
+    /// Parses a top-level `mod Name;` / `pub mod Name;` module declaration.
+    /// `mod` is a keyword: inside a fn body statement parsing never reaches here,
+    /// so a stray `mod` there surfaces as a normal unexpected-token error.
+    pub fn parseModDecl(this: *This) ParseError!ast.ModDecl {
+        const isPub = this.match(.@"pub");
+        _ = try this.consume(.mod);
+        const nameTok = try this.consume(.identifier);
+        _ = try this.consume(.semicolon);
+        return .{ .name = nameTok.lexeme, .isPub = isPub };
     }
 
     /// Dispatches `val [pub] Name = <kind> ...` to the appropriate sub-parser.

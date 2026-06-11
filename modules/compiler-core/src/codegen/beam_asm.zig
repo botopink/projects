@@ -490,7 +490,9 @@ fn emitBeamAsm(
             // Purely abstract decls (interface/delegate), module-graph
             // metadata (use), and test blocks (only compiled under
             // `botopink test`) don't lower to runtime code — silently skip.
-            .interface, .delegate, .use, .@"test" => {},
+            // `mod` declares a submodule in the explicit tree; the submodule is
+            // compiled as its own unit, so the declaration itself emits nothing.
+            .interface, .delegate, .use, .mod, .@"test" => {},
         }
     }
 

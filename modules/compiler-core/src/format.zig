@@ -1342,6 +1342,7 @@ pub const Formatter = struct {
                 .@"fn" => |v| v.docComment,
                 .val => |v| v.docComment,
                 .@"test" => |v| v.docComment,
+                .mod => |v| v.docComment,
                 .comment => null,
             };
             const prefix = try this.fmtDocPrefix(docComment);
@@ -1355,6 +1356,7 @@ pub const Formatter = struct {
                 .@"enum" => true,
                 .interface => true,
                 .use, .delegate, .implement, .extend => true,
+                .mod => true,
                 .comment => false,
             };
             const declWithSemi = if (needsSemi)
@@ -1375,8 +1377,10 @@ pub const Formatter = struct {
         for (1..docs.len) |i| {
             const prev = program.decls[i - 1];
             const curr = program.decls[i];
-            const prevIsUse = prev == .use;
-            const currIsUse = curr == .use;
+            // `mod` declarations group with imports — both are tight module-graph
+            // statements, so adjacent ones get a single newline, not a blank line.
+            const prevIsUse = prev == .use or prev == .mod;
+            const currIsUse = curr == .use or curr == .mod;
             const prevIsComment = prev == .comment;
             const prevIsModuleComment = prevIsComment and prev.comment.is_module;
             const currIsComment = curr == .comment;
@@ -1406,6 +1410,11 @@ pub const Formatter = struct {
             .@"fn" => |f| this.fmtFnDecl(f),
             .val => |v| this.fmtValDecl(v),
             .@"test" => |t| this.fmtTestDecl(t),
+            .mod => |m| this.text(try std.fmt.allocPrint(
+                this.arena,
+                "{s}mod {s}",
+                .{ if (m.isPub) "pub " else "", m.name },
+            )),
             .comment => |c| blk: {
                 const prefix = if (c.is_module) "////" else if (c.is_doc) "///" else "//";
                 break :blk this.text(try std.fmt.allocPrint(this.arena, "{s} {s}", .{ prefix, c.text }));

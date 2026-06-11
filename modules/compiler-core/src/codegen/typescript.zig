@@ -50,8 +50,9 @@ const Emitter = struct {
             .extend => {},
             .use => |u| try self.emitUse(u),
             .delegate => |d| try self.emitDelegate(d),
-            // Test blocks never surface in the public typedef.
-            .@"test", .comment => {},
+            // Test blocks never surface in the public typedef; `mod` declares a
+            // submodule that carries its own typedef, so it emits nothing here.
+            .@"test", .mod, .comment => {},
         }
     }
 

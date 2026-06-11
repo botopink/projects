@@ -380,6 +380,8 @@ fn emitErlang(
             .implement => |im| try em.emitImplement(im),
             .extend => |ex| try em.emitExtend(ex),
             .use => |u| try em.emitUse(u),
+            // `mod` is module-tree metadata; the submodule emits as its own atom.
+            .mod => {},
             .delegate => |d| try aw.writer.print("%% delegate {s}\n", .{d.name}),
             // Test blocks are only compiled under `botopink test`; in normal
             // builds they are skipped entirely.

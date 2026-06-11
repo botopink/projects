@@ -58,6 +58,15 @@ pub fn hintMsg(msg: []const u8) void {
     std.debug.print(" {s}hint{s}: {s}\n", .{ yellow, reset, msg });
 }
 
+pub fn warnMsg(msg: []const u8) void {
+    std.debug.print("{s}{s}warning{s}: {s}\n", .{ bold, yellow, reset, msg });
+}
+
+/// Warning with a trailing detail string (e.g. a file path), dimmed.
+pub fn warnDetail(msg: []const u8, detail: []const u8) void {
+    std.debug.print("{s}{s}warning{s}: {s} {s}{s}{s}\n", .{ bold, yellow, reset, msg, dim, detail, reset });
+}
+
 // ── Stdout helpers ────────────────────────────────────────────────────────────
 
 /// Write `text` to stdout. Used for help text and version output.

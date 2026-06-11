@@ -163,7 +163,7 @@ fn emitWat(
                 }
             }
         },
-        .record, .@"struct", .@"enum", .interface, .delegate, .@"test" => {},
+        .record, .@"struct", .@"enum", .interface, .delegate, .mod, .@"test" => {},
     };
 
     if (has_main_0) try em.emitEntrypointWrapper();
