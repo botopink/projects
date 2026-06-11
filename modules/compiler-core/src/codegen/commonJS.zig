@@ -1115,11 +1115,20 @@ const Emitter = struct {
             }
         }
         if (has_assoc) {
-            try self.fmt("\nconst {s} = {{}};", .{jsIdent(i.name)});
+            // A JS-global-backed primitive (`Array`, `String`, the numeric tower,
+            // `Bool`) already exists as a global constructor: associated fns are
+            // statics on it (`Array.range = …`). Emitting `const Array = {}` would
+            // SHADOW the global and leave `Array.prototype.*` patches setting
+            // properties on `undefined`. Only a fresh interface (`Pair`/`Function`)
+            // needs the namespace object.
+            const assoc_ns = jsIdent(i.name);
+            if (!isJsGlobalNamespace(jsPrototypeOwner(i.name)) and !isJsGlobalNamespace(i.name)) {
+                try self.fmt("\nconst {s} = {{}};", .{assoc_ns});
+            }
             for (i.methods) |m| {
                 if (!isAssociatedFn(m)) continue;
                 const body = m.body orelse continue;
-                try self.fmt("\n{s}.{s} = function(", .{ jsIdent(i.name), m.name });
+                try self.fmt("\n{s}.{s} = function(", .{ assoc_ns, m.name });
                 try self.emitParams(m.params);
                 try self.w(") {\n");
                 const prev = self.current_indent;

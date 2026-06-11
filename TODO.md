@@ -24,10 +24,19 @@
       tuples/maps, `?T` option chaining through method results, erika `case … of`
       codegen + LINQ inference gaps (the long pole, also unblocks erika on beam).
 
-## A2 (remainder) — `#[@external]` associated fns
-- [ ] `Array.range`/`Array.repeat` + other `#[@external]` associated fns lower on
-      every backend; ship companion host modules (`primitives.mjs`/`.erl`). Closes
-      the `examples/erika-linq` `Array.range` cross-module workaround.
+## A2 (remainder) — `Array.range`/`repeat`
+- [~] Reimplemented `range`/`repeat` in **pure botopink** (recursive `default fn`
+      over `prepend`) instead of broken host externals (`lists:seq` is end-inclusive;
+      the node companion `gleam_stdlib.mjs` never existed). Correct half-open
+      `[start, stop)` semantics. **commonJS DONE+verified** (`0,1,2` / `3..3`=`[]` /
+      `repeat(7,3)`=`7,7,7`); std range tests were red on *both* backends before,
+      now green on commonJS. Fixed a real commonJS bug: a JS-global-backed interface
+      (`Array`) with associated fns emitted `const Array = {}` shadowing the global
+      → `Array.prototype.*` patches hit `undefined`; now statics go on the global.
+      **erlang/beam PENDING:** associated interface `default fn`s aren't emitted at
+      all there (`emitInterface` is a comment — `Pair.of`/`Function.compose` are
+      equally broken), so `Array.range` falls back to `array:range` (undefined). A
+      real cross-module associated-default-fn-emission feature, not a tweak.
 
 ## B — backend-parity tails
 - [x] **F1** literal method receivers reach **codegen** on every backend: the
