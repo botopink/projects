@@ -1,91 +1,91 @@
-# TODO — rakun (Wave 3 of 3, v0.beta.11)
+# TODO — lsp-project-awareness (v0.beta.14)
 
-**Branch**: `task/rakun-finish` (from `origin/feat` @ f50de6d)
-**Slug**: rakun · **Spec**: `tasks/v0.beta.11/specs/rakun.md`
-**Depends on**: nothing — `@Decl`/`@emit`, F2 scan/graph/cycle, F3 placement, F4
-router all landed in `feat` in-lib (`91db590`, `4eef880`, `0ff15a0`, `e10b49f`).
-**Status**: F2-scopes + F5 DONE — 13 lib tests green; `examples/rakun` runs over real HTTP.
+**Branch**: `task/lsp-project-awareness` (from `origin/feat` @ 36347ab)
+**Slug**: lsp-project-awareness · **Spec**: `tasks/v0.beta.14/specs/lsp-project-awareness.md`
+**Depends on**: `module-system` (graph + `from "<lib>"` resolution, DONE), `sublanguage-lsp`
+(Custom AST overlay, DONE), `libs-module-migration` (`botopink.json` `files` surface, DONE).
+**Status**: DONE — F0–F5 implemented; `zig build test` green (fmt + lib-agnostic gate +
+1100+ tests). `botopink-lib-test` commonJS green (erlang reds pre-existing, backends-parity
+scope). Codegen byte-identical (snapshots + test-libs unchanged).
 
-> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test
-> (no `--no-verify`).
+> Edit code **inside this worktree only** (`.tasks/lsp-project-awareness/...`), not the main
+> repo. Pre-commit runs zig fmt + build + test (no `--no-verify`).
 
-## HARD RULE
+## Why
 
-`modules/compiler-core/src/**` keeps **zero** knowledge of rakun. Every behaviour
-below is implemented in `libs/rakun/*.bp` as lib-side decorator bodies via `@emit`
-over the generic primitives + a `#[@external]` host runtime.
+The editor tooling goes dark on real files: comptime decorator bodies, example apps that
+apply emitting decorators, and any file importing across modules. One structural cause —
+**the LSP compiles each document in isolation and has no local-scope symbol model**. This
+task makes completion, go-to-def, hover, and sub-language highlighting survive those shapes.
+No language surface changes.
 
-> The old core-coupled F2/F3 line (the deleted `feb96f0`) is discarded — it
-> reintroduced lib-specific code into the Zig core and was superseded. `feat`
-> already has the correct in-lib F2/F4 (`libs/rakun/src/*.bp`); this task continues
-> from there. Port any remaining *behaviour* into `.bp`, **never the Zig**.
-
-## What already landed in `feat` (in-lib)
-
-- **F2 (partial)** — component scan (`#[service]`/`#[repository]`/`#[controller]`
-  → `rkScan`), DI graph (`__rkMake_<Type>()` lazy factories), runtime cycle
-  detection (`rkEnter`/`rkDone`). Host runtime in `runtime.mjs` behind `#[@external]`.
-- **F4 (done)** — controller decorator builds the router table from method
-  `#[getMapping(path)]`/…; `dispatch` matches path params; `Response` builders
-  type-check against handler return type. Green via `rkDispatch`.
-
-What remains: **DI scopes** (F2-scopes) and the **real server** (F5).
-
-## Steps
-
-### F2-scopes — singleton scope + factory/property injection
-- [x] Singleton scope: each `__rkMake_<Type>()` is `rkSingleton("Type", { -> … })` —
-      one shared instance per type (host cache), a 3-level diamond shares one repo.
-      `rkBuildCount` proves it (`runtime.mjs#buildCount`/`singleton`).
-- [x] `#[configuration]` + `#[bean]` factories: `#[configuration]` `@emit`s a
-      `__rkMake_<ReturnType>()` per `#[bean]` method → the return type is injectable
-      by type (a singleton, resolved by return-type name).
-- [x] `#[value("key")]` property injection: the component factory reads
-      `f.annotations`, fills a `#[value]` field from `rkProp`/`rkPropInt`, and keeps
-      it OFF the DI graph (no `__rkMake_<i32|string>` edge — clean compile proves it).
-
-### F5 — bootstrap (`Rakun.run` + real HTTP backing)
-- [x] `libs/server` is real: `server.mjs` is a node-`http` server (`serve`/`stop`);
-      `server.bp` binds it via `#[@external]`. Framework-agnostic (generic over the
-      response value `R`); rakun → server, never the reverse. (Erlang transport: follow-up.)
-- [x] `Request` has a concrete server-supplied impl (`runtime.mjs#makeRequest`,
-      built by `dispatchHttp`): `param`/`query`/`header`/`body`, all populated live.
-- [x] `Rakun.run(app)` (`bootstrap.bp`) hands `libs/server` a dispatcher over the
-      host router and listens on `app.port`. **G2 done:** the CLI ships the runtime
-      `.mjs` next to every emitted module (`libs.zig#shipMjsSidecars`), so a consumer
-      build resolves the `#[@external]` requires.
-- [x] End-to-end: `examples/rakun` is a runnable app — `botopink build` + `node
-      out/main.js` serves; every route below verified over a real socket with `curl`.
-
-## Test scenarios
+## Four reproductions (each must gain a regression test)
 
 ```
-comptime ---- a 3-level diamond (repo ← service + controller) resolves a SINGLE  [✓ scopes_test]
-              shared instance per type (rkBuildCount == 1)
-comptime ---- #[bean] factory output is injectable by its return type            [✓ scopes_test]
-infer    ---- #[value("port")] field is filled, NOT treated as a DI edge         [✓ scopes_test]
-run      ---- GET /api/users/  returns 200 with the joined user list             [✓ server_test + example]
-run      ---- GET /api/hello/:name returns 200 "Hello, ana!"  (path param)       [✓ server_test + example]
-run      ---- an unmapped path returns 404                                       [✓ server_test + example]
+R1  libs/rakun/src/decorators.bp     completion + Ctrl+Click on `decl` / `args` / `f` → nothing
+R2  examples/rakun/posts.bp          completion empty everywhere in the file
+R3  examples/rakun/posts.bp          Ctrl+Click on `Response.created` (and every import) → nothing
+R4  examples/erika-linq/src/main.bp  `erika "select name from cities …"` painted as a plain string
 ```
 
-The `run` scenarios are covered two ways: `server_test.bp` drives `rkDispatchHttp`
-(the EXACT seam `libs/server` calls — match → live `Request` → handler → status/body,
-synchronously, so it runs under `botopink test`), and `examples/rakun` exercises the
-full node-`http` socket round trip end to end (manual `curl`; node's single thread
-can't both serve and block on a client in one synchronous test).
+## Files
 
-## Notes
+- `modules/language-server/src/{server,compiler,engine,project_index}.zig`
+- `modules/compiler-core/src/comptime/infer.zig` (F2 — the one narrow core fix)
+- Docs: `modules/language-server/AGENTS.md`, `modules/language-server/src/docs.md`
 
-- Constructor injection only; singleton is the only scope (no request/proto scope,
-  no graceful-shutdown / middleware).
-- `Request.param`/`query`/`header` return `string` (`""` when absent), not `?string`:
-  interface-method optional returns don't yet get the `@Option` lowering, and a
-  required path var / empty default is the cleaner contract anyway.
-- Core touched (all generic, lib-agnostic gate green): `commonJS.zig` require paths
-  now prefix `../`×depth so a nested dependency module resolves correctly; CLI G2
-  `.mjs` sidecar shipping in `libs.zig` (wired into `test_cmd.zig` + `build.zig`).
-- Comptime constraints on decorator bodies (no sibling calls, `if`-expr, bare-`if`
-  only last, block-lambdas) force the per-field injection + factory builder to be
-  inlined per marker.
-- Keep AGENTS.md / docs.md updated in the same commit as code changes.
+## Checklist
+
+### F0 — reproductions first
+- [x] Failing test per report under `modules/language-server/src/tests/` (F2's lives in
+      `comptime/tests/`), each using the real shape (decorator body of locals; record with
+      `#[service]`; `from "<lib>"` member access; cross-module `erika "…"`). Must fail on
+      `feat`.
+
+### F1 — local-scope symbol model (R1)
+- [x] Position-scoped view at the cursor: params, `comptime` params, `val`/`var` locals from
+      enclosing blocks, closure binders (`{ f -> … }`). Source from the typed body; fall back
+      to an AST/token walk so completion degrades, not vanishes, on a type error.
+- [x] `engine.completion` merges locals with module-level bindings (inner shadows outer),
+      prefix-filtered. Kind `Variable` for locals.
+- [x] go-to-def resolves a param / `var` / closure binder to its binding site in the enclosing
+      function, nearest scope wins over a same-named top-level decl. Add `var` to the decl
+      keyword set in `findDeclLocation`.
+
+### F2 — decorators must not discard bindings (R2)
+- [x] In `inferProgramTyped` (`infer.zig:147-151`), stop returning an empty list when
+      `env.contributions.items.len > 0`. Collect `TypedBinding`s for the source decls (record,
+      fields, imported decorator names) before returning, or surface the spliced
+      `analyzeSource` bindings. **Generic — no rakun/jhonstart/onze names in core.**
+- [x] Verify `@emit` codegen / `botopink test` output is byte-identical after the fix.
+
+### F3 — project-graph compile in the LSP (R3)
+- [x] Compile the active document **with its module graph** (`compiler.zig`/`server.zig`),
+      using the compiler's own rules: `mod`/`pub mod` siblings via `root.bp`/`mod.bp`;
+      `from "<lib>"` via the lib `botopink.json` `src` + `files`; `from "std"` via embedded std.
+      Active doc stays the hot in-memory copy; deps read from disk.
+- [x] Cache the graph keyed by dependency document versions; a keystroke re-infers only the
+      active doc. Invalidate on save/watch.
+- [x] go-to-def for `from "<lib>"` symbols incl. member access (`Response.created`) resolves
+      through the graph, independent of the editor workspace root. `project_index` stays the
+      fast path.
+
+### F4 — cross-module sub-language expansion (R4)
+- [x] With F3, the cross-module `erika`/`html` template fn resolves, so the eval compile
+      expands `erika "…"` and `customAstFor(uri)` returns the `CustomNode` tree. Confirm
+      `engine.customSemanticTokens` paints `select`/`from`/`where`/`order by` as `keyword`,
+      idents as `property`. Overlay code unchanged — only the AST now exists.
+- [x] Confirm the same compile feeds `definitionCustomRef` / `hoverCustomRef` for a
+      cross-module sub-language literal.
+
+### F5 — capabilities + docs
+- [x] Document the project-graph compile + local-scope model in `language-server/AGENTS.md`
+      and `src/docs.md`. No new capability advertised — these correct existing providers.
+- [x] Snapshots under `snapshots/lsp/`: decorator body (completion + def), `#[service]` record
+      (completion), `from "<lib>"` member def, cross-module `erika "…"` (semantic tokens).
+
+## Done means
+
+`zig build test` + `botopink-lib-test` green; the four reproductions each have a regression
+test that fails on `feat` and passes here; AGENTS.md + docs.md updated. See the spec's
+`## Test scenarios` block for the full `[have]`/`[gap]` list.

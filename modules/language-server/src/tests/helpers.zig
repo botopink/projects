@@ -79,6 +79,22 @@ pub fn compileMulti(
     return .{ .result = result };
 }
 
+/// Como `compileMulti`, mas expande corpos de template via `node` — necessário
+/// para que uma sub-linguagem `@ExprCustom` definida num módulo de dependência
+/// (`from "<lib>"`) seja expandida ao ser usada no módulo principal (F4: a
+/// expansão cross-module só acontece quando o grafo resolve o template fn).
+pub fn compileMultiEval(
+    gpa: std.mem.Allocator,
+    entries: []const compiler_mod.ModuleEntry,
+) !CompileHandle {
+    const n = eval_counter.fetchAdd(1, .monotonic);
+    const root = try std.fmt.allocPrint(gpa, ".botopinkbuild/lsp-test-multi/{d}", .{n});
+    defer gpa.free(root);
+    var lsp_compiler = compiler_mod.LspCompiler.init(gpa, std.testing.io, root);
+    const result = try lsp_compiler.compile(entries);
+    return .{ .result = result };
+}
+
 pub const CompileHandle = struct {
     result: compiler_mod.CompileResult,
 

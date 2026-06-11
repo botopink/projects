@@ -18,4 +18,5 @@ comptime {
     _ = @import("./tests/semantic_tokens.zig");
     _ = @import("./tests/inlay_hints.zig");
     _ = @import("./tests/sublanguage.zig");
+    _ = @import("./tests/project_graph.zig");
 }

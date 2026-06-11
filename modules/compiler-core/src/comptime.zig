@@ -190,8 +190,9 @@ fn analyzeModule(
     decoratorRegistry: *const std.StringHashMap(ast.FnDecl),
     extensionRegistry: *const std.StringHashMap(std.StringHashMap(ast.ImplementDecl)),
     templateEvalCtx: ?envMod.TemplateEvalCtx,
+    types_only: bool,
 ) !AnalysisResult {
-    return analyzeSource(arena, mod, mod.source, registry, typeDeclRegistry, templateRegistry, decoratorRegistry, extensionRegistry, templateEvalCtx, false);
+    return analyzeSource(arena, mod, mod.source, registry, typeDeclRegistry, templateRegistry, decoratorRegistry, extensionRegistry, templateEvalCtx, types_only, false);
 }
 
 /// Append decorator `@emit(...)` contributions to a module's source as extra
@@ -221,6 +222,7 @@ fn analyzeSource(
     decoratorRegistry: *const std.StringHashMap(ast.FnDecl),
     extensionRegistry: *const std.StringHashMap(std.StringHashMap(ast.ImplementDecl)),
     templateEvalCtx: ?envMod.TemplateEvalCtx,
+    types_only: bool,
     skip_invoke: bool,
 ) anyerror!AnalysisResult {
     var env = try infer.freshEnv(arena, std.heap.page_allocator);
@@ -258,8 +260,25 @@ fn analyzeSource(
     // onto the source and re-analyze once (decorators off, to avoid re-emitting).
     if (!skip_invoke and env.contributions.items.len > 0) {
         const spliced = try spliceContributions(arena, source, env.contributions.items);
+        const reanalysis = try analyzeSource(arena, mod, spliced, registry, typeDeclRegistry, templateRegistry, decoratorRegistry, extensionRegistry, templateEvalCtx, types_only, true);
+        if (reanalysis == .success) {
+            env.deinit();
+            return reanalysis;
+        }
+        // The spliced (`@emit`ed) code did not type-check on its own — typically
+        // because it references symbols that only resolve with the full project
+        // graph (e.g. an example app applying a `from "<lib>"` decorator that the
+        // LSP compiled without its dependencies). In the types-only/LSP path we
+        // surface this module's pre-splice bindings so completion/hover degrade
+        // rather than vanish (`inferProgramTyped` collected the source decls —
+        // record, fields, imports — for exactly this case). The CLI
+        // (`types_only == false`) keeps the real error instead, so codegen never
+        // runs on a half-resolved module.
+        if (types_only) {
+            return .{ .success = .{ .bindings = bindings, .env = env, .program = program } };
+        }
         env.deinit();
-        return analyzeSource(arena, mod, spliced, registry, typeDeclRegistry, templateRegistry, decoratorRegistry, extensionRegistry, templateEvalCtx, true);
+        return reanalysis;
     }
 
     return .{ .success = .{ .bindings = bindings, .env = env, .program = program } };
@@ -741,7 +760,7 @@ pub fn compileTypesOnly(
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry, &type_decl_registry, &template_registry, &decorator_registry, &extension_registry, eval_ctx);
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, &type_decl_registry, &template_registry, &decorator_registry, &extension_registry, eval_ctx, true);
 
         switch (analysis) {
             .parseError => {
@@ -818,17 +837,26 @@ pub fn compileTypesOnly(
                     @memcpy(new_decls[synth.items.len..], succ.program.decls);
                     break :blk ast.Program{ .decls = new_decls };
                 };
-                const transformed = try withUsedAssocInterfaces(arena_alloc, try transform.transform(
-                    arena_alloc,
-                    program_for_transform,
-                    fn_decls,
-                    std.StringHashMap([]const ast.TypedExpr).init(arena_alloc),
-                    empty_vals,
-                    &succ.env.method_lowerings,
-                    &succ.env.templateExpansions,
-                    &succ.env.result_jump_lowerings,
-                    &succ.env.stdArrayLowerings,
-                ), &succ.env);
+                // Lowering is best-effort here: a degraded module (decorator
+                // `@emit` that couldn't type-check standalone, surfaced for the
+                // LSP via the types-only fallback) may carry incomplete lowering
+                // maps. The LSP reads `bindings`/`custom_ast`, not `transformed`,
+                // so on a transform error we keep the untransformed program
+                // rather than blanking the whole session.
+                const transformed = blk_t: {
+                    const t = transform.transform(
+                        arena_alloc,
+                        program_for_transform,
+                        fn_decls,
+                        std.StringHashMap([]const ast.TypedExpr).init(arena_alloc),
+                        empty_vals,
+                        &succ.env.method_lowerings,
+                        &succ.env.templateExpansions,
+                        &succ.env.result_jump_lowerings,
+                        &succ.env.stdArrayLowerings,
+                    ) catch break :blk_t program_for_transform;
+                    break :blk_t withUsedAssocInterfaces(arena_alloc, t, &succ.env) catch program_for_transform;
+                };
 
                 var type_ids = std.StringHashMap(usize).init(arena_alloc);
                 for (succ.bindings) |b| {
@@ -895,7 +923,7 @@ pub fn compile(
         const analysis = try analyzeModule(arena_alloc, mod, &registry, &type_decl_registry, &template_registry, &decorator_registry, &extension_registry, .{
             .io = io,
             .build_root = build_root orelse name,
-        });
+        }, false);
 
         switch (analysis) {
             .parseError => {
