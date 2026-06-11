@@ -29,7 +29,7 @@ fn main() {
     i32.store
     local.get $__mem0
     local.set $u
-    i32.const 0 ;; field access .name
+    i32.const 0 ;; optional field access .name (unsupported on wasm)
     call $__print_i32
   )
   (func $_botopink_main (export "_botopink_main") (export "_start")

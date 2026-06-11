@@ -36,7 +36,11 @@
       `toString`).
 - [ ] **F3** erlang/beam load the std modules the same way node does (erlang
       partial; beam pending).
-- [ ] **F4** `?.` optional-chaining codegen on **beam/wasm** (commonJS+erlang done).
+- [~] **F4** `?.` optional-chaining codegen: **beam DONE** (`lowerIdentAccess`
+      guards on `{atom, undefined}` with `is_eq`, short-circuits + chains; present
+      path runs, parity erlang/node). **wasm**: records aren't laid out by name in
+      linear memory (pre-existing gap), so `?.` can't be realized — recorded as a
+      genuine backend limit (`;; (unsupported on wasm)`), not faked.
 - [ ] **F5** wasm test runner (`wasmtime`) so `botopink test` runs on wasm.
 
 ## Done gate
