@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
+import { resolveBinPath } from "./pathResolve";
 
 const EXTENSION_NS = "botopink";
 const DEFAULT_CLI_BIN = "botopink";
@@ -14,24 +15,23 @@ const DEFAULT_CLI_BIN = "botopink";
  * the PATH lookup applies.
  */
 export async function getBotopinkCliPath(): Promise<string> {
-  const configured = getConfiguredCliPath();
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!configured) {
-    return DEFAULT_CLI_BIN;
-  }
-  if (path.isAbsolute(configured)) {
-    return configured;
-  }
-  if (workspaceFolders) {
-    for (const folder of workspaceFolders) {
-      const candidate = path.resolve(folder.uri.fsPath, configured);
-      if (await fileExists(candidate)) {
-        return candidate;
-      }
-    }
-  }
-  // Relative path that did not resolve to a file — let the shell try it.
-  return configured;
+  const resolved = await resolveBinPath({
+    configured: getConfiguredCliPath(),
+    workspaceFolders: workspaceFolderPaths(),
+    defaultBin: DEFAULT_CLI_BIN,
+    relativeMiss: "passthrough", // let the shell try a relative miss
+    isAbsolute: path.isAbsolute,
+    resolve: path.resolve,
+    exists: fileExists,
+  });
+  // `passthrough` never yields undefined; keep a defensive fallback.
+  return resolved ?? DEFAULT_CLI_BIN;
+}
+
+function workspaceFolderPaths(): string[] {
+  return (vscode.workspace.workspaceFolders ?? []).map(
+    (folder) => folder.uri.fsPath,
+  );
 }
 
 function getConfiguredCliPath(): string | undefined {

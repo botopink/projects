@@ -3,27 +3,14 @@ import * as vscode from "vscode";
 import { getBotopinkCliPath, getOutputChannel, workspaceCwd } from "./cli";
 import { fetchDocumentSymbols, flattenSymbols, isTestSymbol } from "./symbols";
 import { TargetManager } from "./target";
+import { parseTestOutput } from "./testOutput";
+
+// `parseTestOutput` (and its regexes / `TestOutcome` shape) live in the
+// `vscode`-free `./testOutput` module so they can be unit-tested without a host.
+export { parseTestOutput };
 
 const CONTROLLER_ID = "botopink";
 const CONTROLLER_LABEL = "Botopink";
-
-/**
- * Result of running `botopink test`, keyed by test name.
- *
- * The CLI's commonJS runner prints (see
- * `compiler-core/src/codegen/commonJS.zig`):
- *   running <N> tests
- *     ok   <name>
- *     FAIL <name>  (<message>)  at <loc>
- *   <P> passed, <F> failed
- */
-interface TestOutcome {
-  passed: boolean;
-  message?: string;
-}
-
-const OK_LINE = /^\s*ok\s+(.+?)\s*$/;
-const FAIL_LINE = /^\s*FAIL\s+(.+?)\s{2}\((.*)\)\s{2}at\s+(.+?)\s*$/;
 
 /**
  * Wires the VS Code Testing API for Botopink.
@@ -299,24 +286,4 @@ async function runBotopinkTest(
       });
     });
   });
-}
-
-/** Parses the commonJS test runner's textual report into per-test outcomes. */
-export function parseTestOutput(output: string): Map<string, TestOutcome> {
-  const outcomes = new Map<string, TestOutcome>();
-  for (const rawLine of output.split(/\r?\n/)) {
-    const failMatch = FAIL_LINE.exec(rawLine);
-    if (failMatch) {
-      const [, name, message] = failMatch;
-      outcomes.set(name, { passed: false, message });
-      continue;
-    }
-    const okMatch = OK_LINE.exec(rawLine);
-    if (okMatch) {
-      // Avoid matching the trailing "<P> passed, <F> failed" summary line; that
-      // line never starts with "ok".
-      outcomes.set(okMatch[1], { passed: true });
-    }
-  }
-  return outcomes;
 }

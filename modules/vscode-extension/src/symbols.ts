@@ -1,4 +1,10 @@
 import * as vscode from "vscode";
+import {
+  flattenSymbolNodes,
+  isDocumentSymbolArray as isDocumentSymbolArrayNode,
+  isMainSymbolNode,
+  isTestSymbolNode,
+} from "./symbolNodes";
 
 /**
  * Fetches document symbols for a `.bp` document.
@@ -29,21 +35,18 @@ export async function fetchDocumentSymbols(
 function isDocumentSymbolArray(
   symbols: vscode.DocumentSymbol[] | vscode.SymbolInformation[],
 ): symbols is vscode.DocumentSymbol[] {
-  return (
-    symbols.length > 0 && "range" in symbols[0] && "children" in symbols[0]
-  );
+  return isDocumentSymbolArrayNode(symbols);
 }
 
+// The traversal + classification logic lives in the `vscode`-free
+// `./symbolNodes` module (unit-testable without a host). `vscode.DocumentSymbol`
+// structurally satisfies `SymbolNode`, so these re-exports just narrow the type.
+
 /** Walks a symbol tree depth-first, yielding every symbol. */
-export function* flattenSymbols(
+export function flattenSymbols(
   symbols: vscode.DocumentSymbol[],
 ): Generator<vscode.DocumentSymbol> {
-  for (const symbol of symbols) {
-    yield symbol;
-    if (symbol.children && symbol.children.length > 0) {
-      yield* flattenSymbols(symbol.children);
-    }
-  }
+  return flattenSymbolNodes(symbols);
 }
 
 /**
@@ -51,10 +54,10 @@ export function* flattenSymbols(
  * string (landed in tooling-update F3).
  */
 export function isTestSymbol(symbol: vscode.DocumentSymbol): boolean {
-  return symbol.kind === vscode.SymbolKind.Method;
+  return isTestSymbolNode(symbol);
 }
 
 /** `fn main` is exposed as a `Function` symbol named `main`. */
 export function isMainSymbol(symbol: vscode.DocumentSymbol): boolean {
-  return symbol.kind === vscode.SymbolKind.Function && symbol.name === "main";
+  return isMainSymbolNode(symbol);
 }
