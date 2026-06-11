@@ -45,10 +45,17 @@
       at the root, `mod.bp` per folder), creating index files as needed.
       Defaults to `pub mod` to preserve old reachability; idempotent. Verified
       migrate→build→run on a multi-folder package. Breaking change in `CHANGELOG.md`.
-- [ ] Pilot `examples/*` (run the generator on self-contained examples) + `libs/std`
-      (std is embedded, loaded outside the CLI resolver — needs the std embed path
-      to honor a `root.bp` tree; deferred, higher-risk). Other libs = Wave 2
-      `libs-module-migration`.
+- [x] Pilot — `examples/modules/`: a committed multi-folder package (root + leaf +
+      folder index + a private submodule used within its subtree) that builds and
+      runs on commonJS (`12`/`circle`/`7`) and demonstrates the path-visibility rule
+      (importing the private `helpers` from `main.bp` is rejected). Existing examples
+      are either single-file in `src/` (already tree-compatible, nothing to migrate)
+      or illustrative lib-dependent (non-standard layouts).
+- [ ] `libs/std` pilot deferred: std is **embedded at compile time** (explicit
+      `std_pkg_files` list in `build.zig` + `markStdImports`), resolved entirely
+      outside the CLI resolver. Carrying std on the tree needs a std-embedding rework
+      (build-system + compiler-core) — higher-risk, out of the keystone's clean
+      scope. Other libs = Wave 2 `libs-module-migration`.
 
 ## F6 — docs + tests
 - [x] `docs.md` §Modules (tree, `mod`/`pub mod`/`mod.bp`/`root.bp`/`main.bp`,
@@ -58,8 +65,12 @@
       (`resolver.zig`: stripBpExt, isSource, topological order, cycle-safety,
       withinSubtree, visibility both directions, unexported-import). CLI tests now
       run in `zig build test`.
-- [ ] LSP go-to-def across `mod` boundaries still works (verify; LSP path-aware
-      handling if needed).
+- [x] LSP go-to-def across `mod` boundaries still works. The LSP (`project_index.zig`)
+      walks the workspace itself and indexes every `.bp`'s `pub` symbols by name,
+      independently of the module tree, so cross-`mod` go-to-def resolves unchanged;
+      `pub mod X;` is correctly ignored (not a value/type symbol). `lsp_tests` green
+      in the gate. (Visibility-aware completion/def is a future enhancement, not
+      required here.)
 
 ## Open decisions (resolve in F1/F5)
 - [x] implicit-scan: deprecated fallback (kept behind a deprecation warning when
