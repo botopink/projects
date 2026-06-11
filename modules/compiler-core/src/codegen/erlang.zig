@@ -562,6 +562,16 @@ fn fnAtom(name: []const u8, buf: []u8) ![]const u8 {
     return name;
 }
 
+/// Mangled atom for an interface associated `default fn` (`Array`.`range` →
+/// `array_range`). The interface's first char is lowercased so the result is a
+/// valid UNQUOTED erlang atom (a PascalCase `Array_range` would need quoting),
+/// and the `Interface_` prefix avoids colliding with a consumer's own top-level
+/// fn of the same name (a consumer may define its own `range`/`repeat`).
+fn interfaceAssocAtom(buf: []u8, iface: []const u8, method: []const u8) ![]const u8 {
+    if (iface.len == 0) return std.fmt.bufPrint(buf, "{s}", .{method});
+    return std.fmt.bufPrint(buf, "{c}{s}_{s}", .{ std.ascii.toLower(iface[0]), iface[1..], method });
+}
+
 /// Tuple positional member (`_0`, `_1`, …) → the digits, else null.
 /// Distinguishes tuple index access from `_`-prefixed record fields.
 fn tupleIndexMember(member: []const u8) ?[]const u8 {
@@ -1792,12 +1802,13 @@ const Emitter = struct {
                                 try this.fmt("{s}(", .{callee});
                             } else if (mod_name != null and this.isInterfaceAssoc(mod_name.?, cc.callee)) {
                                 // Associated `default fn` of an interface (`Array.range`,
-                                // `Pair.of`): emitted as a bare local function by
-                                // `emitInterface` (the interface is inlined), so call it
-                                // directly — `callee` is already reserved-word-quoted
-                                // (`'of'`) to match the emitted name. Look up the qname
-                                // with the RAW `cc.callee` (`of`, not `'of'`).
-                                try this.fmt("{s}(", .{callee});
+                                // `Pair.of`): `emitInterface` emits it as the mangled
+                                // local `'<Interface>_<method>'` (so it never collides
+                                // with a consumer's own top-level fn), so call that — not
+                                // a remote `array:range`.
+                                var mraw: [256]u8 = undefined;
+                                const mname = interfaceAssocAtom(&mraw, mod_name.?, cc.callee) catch return;
+                                try this.fmt("{s}(", .{mname});
                             } else if (mod_name) |name| {
                                 // A PascalCase identifier receiver is a module-qualified
                                 // call: `List.map(xs, f)` → a remote call `list:map(Xs, F)`.
@@ -2795,17 +2806,22 @@ const Emitter = struct {
     fn emitInterface(this: *Emitter, i: ast.InterfaceDecl) !void {
         try this.fmt("%% interface {s}\n", .{i.name});
         // Associated `default fn`s (no `self`) are pure botopink — emit them as
-        // bare local functions so `Interface.method(...)` resolves locally (the
-        // interface decl is inlined into each consuming module). Instance default
-        // fns (with `self`) are a separate gap, not emitted here.
+        // local functions so `Interface.method(...)` resolves locally (the
+        // interface decl is inlined into each consuming module). The name is
+        // mangled `Interface_method` (→ quoted `'Array_range'`, since it starts
+        // uppercase) so it never collides with a consumer's own top-level fn of
+        // the same name (a consumer may define its own `range`/`repeat`). Instance
+        // default fns (with `self`) are a separate gap, not emitted here.
         for (i.methods) |m| {
             if (!m.is_default or m.body == null) continue;
             const has_self = m.params.len > 0 and std.mem.eql(u8, m.params[0].name, "self");
             if (has_self) continue;
+            var mbuf: [256]u8 = undefined;
+            const mangled = interfaceAssocAtom(&mbuf, i.name, m.name) catch continue;
             try this.w("\n");
             try this.emitFn(.{
                 .isPub = false,
-                .name = m.name,
+                .name = mangled,
                 .annotations = &.{},
                 .genericParams = &.{},
                 .params = m.params,

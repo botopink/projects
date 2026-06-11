@@ -16,49 +16,49 @@ fn main() {
 
 %% interface Function
 
-identity(X) ->
+function_identity(X) ->
     X.
 
-compose(F, G) ->
+function_compose(F, G) ->
     fun(A) ->
         G(F(A))
     end.
 
-flip(F) ->
+function_flip(F) ->
     fun(B, A) ->
         F(A, B)
     end.
 
-constant(X) ->
+function_constant(X) ->
     fun(Ignored) ->
         X
     end.
 
 %% interface Pair
 
-'of'(First, Second) ->
+pair_of(First, Second) ->
     {First, Second}.
 
-first(P) ->
+pair_first(P) ->
     element(1, P).
 
-second(P) ->
+pair_second(P) ->
     element(2, P).
 
-swap(P) ->
+pair_swap(P) ->
     {element(2, P), element(1, P)}.
 
-mapFirst(P, Transform) ->
+pair_mapFirst(P, Transform) ->
     {Transform(element(1, P)), element(2, P)}.
 
-mapSecond(P, Transform) ->
+pair_mapSecond(P, Transform) ->
     {element(1, P), Transform(element(2, P))}.
 
 main() ->
-    P = 'of'(1, <<"one">>),
-    io:format("~p~n", [first(P)]),
-    io:format("~p~n", [identity(42)]),
-    Inc = compose(fun(X) ->
+    P = pair_of(1, <<"one">>),
+    io:format("~p~n", [pair_first(P)]),
+    io:format("~p~n", [function_identity(42)]),
+    Inc = function_compose(fun(X) ->
         (X + 1)
     end, fun(Y) ->
         (Y * 2)

@@ -16,22 +16,22 @@ fn main() {
 
 %% interface Array
 
-range(Start, Stop) ->
+array_range(Start, Stop) ->
     case (Start >= Stop) of
         true ->
             [];
         false ->
             Head = Start,
-            [Head] ++ (range((Start + 1), Stop))
+            [Head] ++ (array_range((Start + 1), Stop))
     end.
 
-repeat(Value, Times) ->
+array_repeat(Value, Times) ->
     case (Times =< 0) of
         true ->
             [];
         false ->
             Head = Value,
-            [Head] ++ (repeat(Value, (Times - 1)))
+            [Head] ++ (array_repeat(Value, (Times - 1)))
     end.
 
 main() ->
