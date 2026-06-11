@@ -3,7 +3,7 @@ const std = @import("std");
 const bp = @import("botopink");
 const reporter = @import("./reporter.zig");
 const config = @import("./config.zig");
-const scanner = @import("./scanner.zig");
+const sources = @import("./sources.zig");
 const libs = @import("./libs.zig");
 
 const Module = bp.Module;
@@ -35,9 +35,11 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
 
     const target = opts.target orelse proj.parsedTarget();
 
-    // Scan project source files.
-    const project_modules = try scanner.scanSources(gpa, io, "src");
-    defer scanner.freeModules(gpa, project_modules);
+    // Resolve project source files through the explicit module tree.
+    // (`sources.load` reports resolution errors itself.)
+    var loaded = sources.load(gpa, io, proj, "src") catch return 1;
+    defer loaded.free(gpa);
+    const project_modules = loaded.modules;
 
     if (project_modules.len == 0) {
         reporter.errMsg("no source files found in src/");

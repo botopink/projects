@@ -20,10 +20,12 @@ cli/
 ├── format_cmd.zig     ← `botopink format`   format / check .bp files
 ├── new.zig            ← `botopink new`      scaffold a new project
 ├── clean.zig          ← `botopink clean`    delete out/ + .botopinkbuild/
-├── config.zig         ← `botopink.json` loader + target options + `dependencies`
-├── scanner.zig        ← source-module discovery in `src/`
+├── config.zig         ← `botopink.json` loader + target options + `entry` + `dependencies`
+├── sources.zig        ← project-source loading: drives the module tree + fallback
+├── resolver.zig       ← explicit module-tree resolver (`mod`/`pub mod` → files)
+├── scanner.zig        ← legacy blind `src/` walk (deprecated fallback)
 ├── libs.zig           ← generic external-lib loader (`libs/<name>/` from disk)
-└── reporter.zig       ← stdout/stderr helpers (status, errors, hints)
+└── reporter.zig       ← stdout/stderr helpers (status, errors, hints, warnings)
 ```
 
 ## Subcommands
@@ -42,13 +44,16 @@ cli/
 
 | File | Role |
 |---|---|
-| `config.zig` | Parses `botopink.json` (target, entry module, `dependencies`, etc). |
-| `scanner.zig` | Walks `src/` and returns modules sorted by path (deterministic). |
+| `config.zig` | Parses `botopink.json` (target, `entry` module-tree root, `dependencies`, etc). |
+| `sources.zig` | Loads a package's project modules: resolves the explicit module tree (`resolver.zig`), warns on orphaned `.bp`, and falls back to the deprecated blind scan when a package has no `main.bp`/`root.bp` root. Every command loads `src/` through here. |
+| `resolver.zig` | Builds the package's module set by following `mod`/`pub mod` from the root (`main.bp` binary / `root.bp` library, per `entry`). `mod Name;` resolves `Name.bp` or `Name/mod.bp` (exactly one); both/neither errors. Reports orphans, and topologically orders modules so an imported module compiles before its importer. |
+| `scanner.zig` | Legacy blind `src/` walk (every `.bp` becomes a module), returns modules sorted by path. Deprecated fallback used only when no module-tree root exists, and still drives the flat `test/` suite dir. |
 | `libs.zig` | Resolves `dependencies` to `libs/<name>/` modules on disk (lib-agnostic — the core never names a lib; sees them as ordinary `Module[]` prefixed `<name>/`). |
-| `reporter.zig` | Single source of truth for CLI text — use `reporter.errMsg`, `reporter.info`, etc. |
+| `reporter.zig` | Single source of truth for CLI text — use `reporter.errMsg`, `reporter.warnMsg`, `reporter.hintMsg`, etc. |
 
 ## Conventions
 
-- Source discovery (`scanner.zig`) must remain deterministic — sort by path.
-- All errors and hints must go through `reporter.zig` so output style stays
-  consistent (`error: …` / `hint: …`).
+- Project `src/` is loaded through `sources.zig` (explicit module tree); the flat
+  `test/` suite dir keeps the deterministic `scanner.zig` walk (sort by path).
+- All errors, warnings, and hints must go through `reporter.zig` so output style
+  stays consistent (`error: …` / `warning: …` / `hint: …`).

@@ -138,6 +138,24 @@ pub fn build(b: *std.Build) void {
 
     test_step.dependOn(&run_lsp_tests.step);
 
+    // ── compiler-cli tests ────────────────────────────────────────────────────
+    // Rooted at the CLI entry so every `test {}` reachable through its import
+    // graph runs (scanner/resolver/libs source-loading logic).
+
+    const cli_test_mod = b.createModule(.{
+        .root_source_file = b.path("modules/compiler-cli/src/main.zig"),
+        .target = target,
+        .imports = &.{
+            .{ .name = "botopink", .module = core_mod },
+        },
+    });
+
+    const cli_tests = b.addTest(.{ .root_module = cli_test_mod, .filters = test_filters });
+    const run_cli_tests = b.addRunArtifact(cli_tests);
+    run_cli_tests.setCwd(b.path("modules/compiler-cli"));
+
+    test_step.dependOn(&run_cli_tests.step);
+
     // ── compiler-cli (botopink executable) ────────────────────────────────────
 
     const cli_exe = b.addExecutable(.{

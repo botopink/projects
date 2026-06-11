@@ -11,10 +11,12 @@
       `mod` becomes a keyword; `mod` in a fn body = parse error.
 
 ## F1 — build the module tree from a root
-- [ ] Resolver from the package root (`main.bp` binary / `root.bp` library, per
+- [x] Resolver from the package root (`main.bp` binary / `root.bp` library, per
       `botopink.json` entry) following `ModDecl`s. `mod Name;` resolves `Name.bp` OR
       `Name/mod.bp` (ambiguous/missing → error). CLI `scanner.zig` stops blind-walking
       `src/`; an unreferenced `.bp` is reported orphaned.
+      (`resolver.zig` + `sources.zig`; topological order so imports resolve;
+      blind scan kept as deprecated fallback when no root exists.)
 
 ## F2 — visibility / path resolution
 - [ ] Track visibility + parent per module; enforce path-visibility (every `mod` on the
@@ -39,9 +41,11 @@
       across `mod` boundaries still works.
 
 ## Open decisions (resolve in F1/F5)
-- [ ] implicit-scan: deprecated fallback or remove? (recommend: deprecate 1 release)
-- [ ] `root.bp`/`main.bp` coexistence in one package
-- [ ] `Name.bp` + `Name/mod.bp` both present = error (no silent precedence)
+- [x] implicit-scan: deprecated fallback (kept behind a deprecation warning when
+      no `main.bp`/`root.bp` root exists; remove in a future release).
+- [ ] `root.bp`/`main.bp` coexistence in one package (F1: auto-detect prefers
+      `main.bp` then `root.bp`; `entry` overrides — finalize during F5 pilot)
+- [x] `Name.bp` + `Name/mod.bp` both present = error (no silent precedence)
 
 ## Done gate
 - [ ] a multi-folder package builds + runs on commonJS via the declared tree.
