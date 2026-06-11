@@ -48,6 +48,7 @@ fn main() -> string {
   )
   (func $_botopink_main (export "_botopink_main") (export "_start")
     (call $main)
+    drop
   )
 )
 ```

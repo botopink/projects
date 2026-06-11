@@ -21,8 +21,8 @@ fn main() {
     return
   )
   (func $main
-    global.get $false
-    global.get $true
+    i32.const 0
+    i32.const 1
     call $either
     call $__print_i32
   )
@@ -191,4 +191,5 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
+1
 ```

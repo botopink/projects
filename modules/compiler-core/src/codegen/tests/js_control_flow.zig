@@ -568,3 +568,33 @@ test "case guard ---- variant field guard" {
         \\}
     );
 }
+
+// Mutual recursion across declaration order, on every backend (mutual-recursion
+// spec, Wave 1). `main` calls `isEven`, declared *after* it (a forward
+// reference); `isEven`/`isOdd` then call each other. Each carries a bare-`if`
+// base-case guard (`if (n == 0) { return … };`) followed by the recursive tail
+// call. This is the BEAM regression guard: that else-less `if` must FALL
+// THROUGH to the tail call when the guard is false — an earlier emitter ended
+// the function in the else branch (`move undefined` + `return.`), turning the
+// recursive call into unreachable dead code so `isEven(10)` returned the atom
+// `undefined` instead of `true`. commonJS/erlang were already correct; wasm
+// needed two unrelated fixes to *run* this (boolean literals `true`/`false` →
+// `i32.const 1`/`0`, not an undefined `global.get $true`; and the entrypoint
+// wrapper must `drop` a value-returning `main`).
+test "js: mutual recursion ---- forward reference + bare-if base case on every backend" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn main() -> bool {
+        \\    return isEven(10);
+        \\}
+        \\
+        \\fn isEven(n: i32) -> bool {
+        \\    if (n == 0) { return true; };
+        \\    return isOdd(n - 1);
+        \\}
+        \\
+        \\fn isOdd(n: i32) -> bool {
+        \\    if (n == 0) { return false; };
+        \\    return isEven(n - 1);
+        \\}
+    );
+}

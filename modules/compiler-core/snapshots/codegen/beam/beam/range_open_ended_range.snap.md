@@ -48,9 +48,6 @@ fn countUp(x: i32) {
     return.
     {jump, {f, 7}}.
   {label, 6}.
-    {move, {atom, undefined}, {x, 0}}.
-    {deallocate, 0}.
-    return.
   {label, 7}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 0}.

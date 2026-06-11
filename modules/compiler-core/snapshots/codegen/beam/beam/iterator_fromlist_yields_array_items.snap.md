@@ -68,9 +68,6 @@ fn main() {
     {move, {x, 3}, {x, 1}}.
     {call_last, 2, {f, 5}, 0}.
   {label, 16}.
-    {move, {atom, undefined}, {x, 0}}.
-    {deallocate, 0}.
-    return.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 0}.
     return.
