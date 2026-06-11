@@ -804,7 +804,7 @@ const Emitter = struct {
     /// True when the body is a flat sequence of `yield` statements (a simple
     /// finite generator that lowers to an eager Erlang list).
     fn isPlainYieldGenerator(f: ast.FnDecl) bool {
-        if (!f.isStarFn or f.body.len == 0) return false;
+        if (f.effect == null or f.body.len == 0) return false;
         for (f.body) |stmt| {
             if (!(stmt.expr == .jump and stmt.expr.jump.kind == .yield)) return false;
         }
@@ -812,11 +812,11 @@ const Emitter = struct {
     }
 
     fn emitFn(this: *Emitter, f: ast.FnDecl) !void {
-        // `*fn` is async/generator — except `*fn -> @Result<…>` (checked-Result
+        // An effect fn is async/generator — except `#[@result]` (checked-Result
         // effect), which is a plain function. Erlang is eager: a `@Future<T>`
         // resolves to `T` (so `await` is identity) and a finite `@Iterator<T>`
         // is a list.
-        if (f.isStarFn and !f.returnsResult()) {
+        if (f.effect != null and f.effect.? != .result) {
             try this.fmt("%% *fn (async/generator) — eager lowering\n", .{});
         }
         // Fresh local scope for this function (erlang vars are function-scoped).

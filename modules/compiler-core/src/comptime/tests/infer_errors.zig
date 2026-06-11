@@ -350,6 +350,40 @@ test "infer error: loop await on a non-async-iterable" {
     );
 }
 
+test "infer error: effect annotation does not match the return wrapper" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\#[@future]
+        \\fn bad() -> @Result<i32, string> {
+        \\    return 0;
+        \\}
+    );
+}
+
+test "infer error: #[@future] body using yield" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\#[@future]
+        \\fn bad() -> @Future<i32> {
+        \\    yield 1;
+        \\}
+    );
+}
+
+test "infer error: effect annotation on a bodyless declare fn" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\#[@result]
+        \\pub declare fn parse(n: i32) -> @Result<i32, string>;
+    );
+}
+
+test "infer error: effect annotation on an interface method" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\val AsyncSource = interface {
+        \\    #[@future]
+        \\    fn next(self: Self) -> @Future<i32>
+        \\}
+    );
+}
+
 test "infer error: assert requires bool" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
         \\test "bad assert" {

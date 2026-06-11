@@ -319,13 +319,17 @@ pub fn parseFnBody(
         return ParseError.UnexpectedToken;
     }
 
+    // The function's effect: a `#[@<effect>]` annotation names it directly; the
+    // deprecated `*` prefix derives it from the return wrapper (mapped below).
+    const annEffect = effectFromAnnotations(annotations);
+
     // A `declare fn` omits its body — it is typed from the signature alone.
     // `@[external(…)]` fns must use this form (validated in inference).
     if (isDeclare and !this.check(.leftBrace)) {
         _ = this.match(.semicolon);
         return FnDecl{
             .isPub = isPub,
-            .isStarFn = isStarFn,
+            .effect = annEffect, // `*fn` requires a body, so only an annotation applies here
             .isDeclare = true,
             .label = label,
             .name = name,
@@ -339,9 +343,12 @@ pub fn parseFnBody(
 
     const body = try this.parseStmtListInBraces(alloc);
 
+    const effect: ?ast.EffectKind = annEffect orelse
+        (if (isStarFn) ast.EffectKind.fromStarReturn(returnType, body) else null);
+
     return FnDecl{
         .isPub = isPub,
-        .isStarFn = isStarFn,
+        .effect = effect,
         .isDeclare = isDeclare,
         .label = label,
         .name = name,
@@ -351,6 +358,17 @@ pub fn parseFnBody(
         .returnType = returnType,
         .body = body,
     };
+}
+
+/// The effect named by a builtin `#[@<effect>]` annotation in `annotations`,
+/// or null when none is present.
+fn effectFromAnnotations(annotations: []const Annotation) ?ast.EffectKind {
+    for (annotations) |a| {
+        if (a.is_builtin) {
+            if (ast.EffectKind.fromAnnotationName(a.name)) |k| return k;
+        }
+    }
+    return null;
 }
 
 /// `test { body }` / `test "name" { body }` — top-level test declaration.

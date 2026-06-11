@@ -199,8 +199,12 @@ pub const StarFnCtx = struct {
     /// `await` is permitted here — async function (`@Future`) or async
     /// generator (`@AsyncIterator`).
     allowsAwait: bool,
-    /// `@Iterator<T>` / `@AsyncIterator<T, _>` item type that `yield` values
-    /// must unify with; `null` for a pure async function (`@Future`).
+    /// `yield` (and generator delegation) is permitted here — `@Iterator` /
+    /// `@Generator` / `@AsyncIterator`. False for a pure `@Future`.
+    allowsYield: bool,
+    /// `@Iterator<T>` / `@Generator<T, _>` / `@AsyncIterator<T, _>` item type
+    /// that `yield` values must unify with; `null` when unknown (anonymous
+    /// `*fn`) or absent (`@Future`).
     iterItem: ?*T.Type,
 };
 

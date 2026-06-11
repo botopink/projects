@@ -137,9 +137,16 @@ fn renderBindingHover(gpa: std.mem.Allocator, b: comptime_pipeline.TypedBinding)
 
     switch (b.decl) {
         .@"fn" => |f| {
+            // The effect is carried by a `#[@<effect>]` annotation; the
+            // deprecated `*` prefix marks a `*fn` that has no annotation.
+            if (f.effectAnnotation()) |e| {
+                try buf.appendSlice(gpa, "#[@");
+                try buf.appendSlice(gpa, e.annotationName());
+                try buf.appendSlice(gpa, "]\n");
+            }
             if (f.isPub) try buf.appendSlice(gpa, "pub ");
-            // `*fn` marks an async / generator function.
-            try buf.appendSlice(gpa, if (f.isStarFn) "*fn " else "fn ");
+            const isStar = f.effect != null and f.effectAnnotation() == null;
+            try buf.appendSlice(gpa, if (isStar) "*fn " else "fn ");
             try buf.appendSlice(gpa, b.name);
             try buf.append(gpa, '(');
             for (f.params, 0..) |p, pi| {
@@ -211,10 +218,10 @@ fn renderBindingHover(gpa: std.mem.Allocator, b: comptime_pipeline.TypedBinding)
 
     try buf.appendSlice(gpa, "\n```");
 
-    // For a `*fn`, surface the unwrapped element type produced by
+    // For an effect fn, surface the unwrapped element type produced by
     // `await` / `yield` / iteration (the `T` of `@Future<T>` /
     // `@Iterator<T>` / `@AsyncIterator<T, _>`).
-    if (b.decl == .@"fn" and b.decl.@"fn".isStarFn) {
+    if (b.decl == .@"fn" and b.decl.@"fn".effect != null) {
         if (b.decl.@"fn".returnType) |rt| {
             if (asyncItemTypeRef(rt)) |item| {
                 try buf.appendSlice(gpa, "\n\n---\n\n`await`/`yield` element type: `");

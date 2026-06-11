@@ -4,7 +4,7 @@
     {
       "fn": {
         "isPub": false,
-        "isStarFn": true,
+        "effect": "iterator",
         "isDeclare": false,
         "label": null,
         "name": "fib",

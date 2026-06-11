@@ -4,7 +4,7 @@
     {
       "fn": {
         "isPub": true,
-        "isStarFn": true,
+        "effect": "asyncGenerator",
         "isDeclare": false,
         "label": null,
         "name": "stream",

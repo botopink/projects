@@ -5,10 +5,10 @@ fn notAsync() -> i32 {
 }
 
 ----- ERROR
-error: `await` can only be used inside an async `*fn`
+error: `await` can only be used inside a `#[@future]` / `#[@asyncGenerator]` fn
   ┌─ :2:13
   │
 2 │     val x = await ready();
   │             ^
 
-  hint: Mark the enclosing function `*fn` with a `@Future`/`@AsyncIterator` return type.
+  hint: Mark the enclosing fn `#[@future]` (`-> @Future<…>`) or `#[@asyncGenerator]` (`-> @AsyncIterator<…>`).

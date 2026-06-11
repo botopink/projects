@@ -120,7 +120,7 @@ in every target — never to host exceptions (no JS `try/catch`, no Erlang
 | erlang / beam | `{ok, V}` | `{error, E}` | `is_tagged_tuple … {atom, ok}` |
 | wasm | ptr; `[ptr]==0`, `[ptr+4]=V` | ptr; `[ptr]!=0`, `[ptr+4]=E` | `i32.load` of `[ptr]` |
 
-- **Producer side**: inside a `*fn -> @Result<…>` fn, inference records each
+- **Producer side**: inside a `#[@result]` fn (`-> @Result<…>`), inference records each
   `return`/`throw` site in `Env.result_jump_lowerings` and the transform pass
   rewrites them to `return __bp_ok(v)` / `return __bp_error(e)` builtin calls
   (`return try f()` drops the redundant unwrap and passes `f()` through), so

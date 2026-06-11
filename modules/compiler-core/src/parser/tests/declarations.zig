@@ -24,6 +24,41 @@ test "parser: empty interface" {
     try h.assertParser(std.testing.allocator, @src(), "val Drawable = interface {}");
 }
 
+test "parser: #[@future] annotation sets FnDecl.effect" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var lx = Lexer.init("#[@future]\nfn f() -> @Future<i32> { return 0; }");
+    const tokens = try lx.scanAll(alloc);
+    var p = Parser.init(tokens);
+    const program = try p.parse(alloc);
+    try std.testing.expect(program.decls.len == 1);
+    try std.testing.expect(program.decls[0] == .@"fn");
+    try std.testing.expectEqual(ast.EffectKind.future, program.decls[0].@"fn".effect.?);
+}
+
+test "parser: deprecated *fn derives effect from the return wrapper" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var lx = Lexer.init("*fn f() -> @Iterator<i32> { yield 1; }");
+    const tokens = try lx.scanAll(alloc);
+    var p = Parser.init(tokens);
+    const program = try p.parse(alloc);
+    try std.testing.expectEqual(ast.EffectKind.iterator, program.decls[0].@"fn".effect.?);
+}
+
+test "parser: a plain fn has no effect" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var lx = Lexer.init("fn f() -> i32 { return 0; }");
+    const tokens = try lx.scanAll(alloc);
+    var p = Parser.init(tokens);
+    const program = try p.parse(alloc);
+    try std.testing.expect(program.decls[0].@"fn".effect == null);
+}
+
 test "parser: interface with one field" {
     try h.assertParser(std.testing.allocator, @src(), "val Drawable = interface { val color: string }");
 }

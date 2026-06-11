@@ -4,10 +4,10 @@ fn bad() -> @Future<i32> {
 }
 
 ----- ERROR
-error: a function returning `@Future`/`@Iterator`/`@AsyncIterator` must be declared `*fn`
+error: a function returning `@Future`/`@Iterator`/`@AsyncIterator` needs an effect annotation
   ┌─ :2:5
   │
 2 │     return 0;
   │     ^
 
-  hint: Prefix the function with `*` to make it async/generator.
+  hint: Mark it `#[@future]` / `#[@iterator]` / `#[@asyncGenerator]` (or use the deprecated `*fn`).

@@ -59,6 +59,70 @@ test "js: star fn ---- pub typedefs" {
     );
 }
 
+// ── effect annotations (`#[@<effect>]`) ──────────────────────────────────────
+
+test "js: effect annotation ---- future/iterator/asyncGenerator/result" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\#[@future]
+        \\fn fetch(x: i32) -> @Future<i32> {
+        \\    return x;
+        \\}
+        \\#[@iterator]
+        \\fn counter() -> @Iterator<i32> {
+        \\    yield 1;
+        \\    yield 2;
+        \\}
+        \\#[@asyncGenerator]
+        \\fn stream() -> @AsyncIterator<i32, string> {
+        \\    yield 1;
+        \\}
+        \\#[@result]
+        \\fn parse(n: i32) -> @Result<i32, string> {
+        \\    if (n < 0) { throw "negative"; };
+        \\    return n;
+        \\}
+    );
+}
+
+test "js: effect annotation ---- generator lowers to function*" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\#[@generator]
+        \\fn range(a: i32, b: i32) -> @Generator<i32> {
+        \\    yield a;
+        \\    yield b;
+        \\}
+    );
+}
+
+// Each `#[@<effect>]` lowers byte-identically to the deprecated `*fn` form.
+test "js: effect annotation lowers identically to *fn" {
+    const cases = [_]struct { ann: []const u8, star: []const u8 }{
+        .{
+            .ann = "#[@future]\nfn f(x: i32) -> @Future<i32> { return x; }",
+            .star = "*fn f(x: i32) -> @Future<i32> { return x; }",
+        },
+        .{
+            .ann = "#[@iterator]\nfn f() -> @Iterator<i32> { yield 1; yield 2; }",
+            .star = "*fn f() -> @Iterator<i32> { yield 1; yield 2; }",
+        },
+        .{
+            .ann = "#[@asyncGenerator]\nfn f() -> @AsyncIterator<i32, string> { yield 1; }",
+            .star = "*fn f() -> @AsyncIterator<i32, string> { yield 1; }",
+        },
+        .{
+            .ann = "#[@result]\nfn f(n: i32) -> @Result<i32, string> { if (n < 0) { throw \"x\"; }; return n; }",
+            .star = "*fn f(n: i32) -> @Result<i32, string> { if (n < 0) { throw \"x\"; }; return n; }",
+        },
+    };
+    inline for (cases) |c| {
+        const a = try h.generateJs(std.testing.allocator, c.ann);
+        defer std.testing.allocator.free(a);
+        const b = try h.generateJs(std.testing.allocator, c.star);
+        defer std.testing.allocator.free(b);
+        try std.testing.expectEqualStrings(b, a);
+    }
+}
+
 test "js: enum ---- unit variants" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\val Direction = enum {

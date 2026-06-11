@@ -182,6 +182,32 @@ pub enum Target { node, typescript, erlang, beam, wasm }
 
 fn external(target: Target, module: string, symbol: string)
 
+// ── effect annotations ─────────────────────────────────────────────────────
+//
+// An effect annotation names a function's effect — the implementation marker
+// that replaces the deprecated `*fn` prefix. Each takes no arguments and pairs
+// with the matching return wrapper, which carries the effect's type parameters:
+//
+//   #[@result]         fn parse(n: i32) -> @Result<i32, string>
+//   #[@future]         fn load() -> @Future<T>
+//   #[@generator]      fn range(a: i32, b: i32) -> @Generator<i32>
+//   #[@iterator]       fn lazy() -> @Iterator<T>
+//   #[@asyncGenerator] fn stream() -> @AsyncIterator<T>
+//   #[@context]        fn useThing() -> @Context<Base, T>
+//
+// The annotation marks an IMPLEMENTATION (a `fn` with a body): it gates the
+// body operations (`await` under future/asyncGenerator; `yield` under
+// generator/iterator/asyncGenerator; `throw`/`try` under result) and drives
+// codegen (future → `async function`, generator/iterator → `function*`,
+// asyncGenerator → `async function*`, result/context → plain `function`).
+// Interface methods and `declare fn` declarations are declarative — they
+// express the effect through the return wrapper alone, with NO annotation
+// (using one there is an error).
+//
+// The markers (`result`, `future`, `generator`, `iterator`, `asyncGenerator`,
+// `context`) are recognized as core builtins by the compiler — they are
+// lib-agnostic and take no arguments, so they need no signature here.
+
 
 
 
