@@ -23,11 +23,9 @@ fn main() {
     {func_info, {atom, main}, {atom, find}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
-    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 1}.
+    {move, {x, 0}, {x, 1}}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 2}.
     {make_fun3, {f, 11}, 0, 0, {x, 0}, {list, []}}.
-    {move, {x, 0}, {x, 1}}.
-    {move, {x, 0}, {x, 1}}.
-    {move, {x, 1}, {x, 0}}.
     {call_ext, 2, {extfunc, lists, map, 2}}.
     {deallocate, 0}.
     return.
@@ -97,4 +95,5 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
+[ok,ok,15,20]
 ```

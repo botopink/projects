@@ -10,7 +10,7 @@ fn sumTo(n: i32) -> i32 {
 ----- JAVASCRIPT -- main.js
 ```javascript
 function sumTo(n) {
-    return 0..n.map((i) => {
+    return Array.from({length: Math.max(0, (n) - (0))}, (_, __i) => (0) + __i).map((i) => {
     return i;
 });
 }

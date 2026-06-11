@@ -14,7 +14,7 @@ fn sumTo(n: i32) -> i32 {
 sumTo(N) ->
     lists:map(fun(I) ->
         I
-    end, lists:seq(0, N)).
+    end, lists:seq(0, (N) - 1)).
 ```
 
 ----- RUN LOG -----

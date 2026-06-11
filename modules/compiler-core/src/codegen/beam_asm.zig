@@ -2955,14 +2955,19 @@ const Emitter = struct {
     /// as the upper bound. Result list lands in `{x, 0}`.
     fn lowerRange(self: *Emitter, r: anytype) anyerror!void {
         // Materialize both bounds into scratch x-registers above the live
-        // argument floor so neither clobbers the other while evaluating.
-        const base = self.cur_arity;
+        // argument floor so neither clobbers the other while evaluating. Floor at
+        // 1: a 0-arity fn (`main/0`) would otherwise stash `start` in `x0` and then
+        // overwrite it computing `end` (`lists:seq(end-1, end-1)` → `[end-1]`).
+        const base = @max(self.cur_arity, 1);
 
         try self.lowerExprIntoX0(r.start.*);
         try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{base});
 
         if (r.end) |end| {
+            // `a..b` is half-open `[a, b)` (parity with wasm/erlang/`Array.range`),
+            // but `lists:seq/2` is inclusive — so the upper bound is `b - 1`.
             try self.lowerExprIntoX0(end.*);
+            try self.bodyPrint("    {{gc_bif, '-', {{f, 0}}, {d}, [{{x, 0}}, {{integer, 1}}], {{x, 0}}}}.\n", .{@max(base + 1, self.min_live)});
             try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{base + 1});
         } else {
             try self.bodyPrint("    {{move, {{atom, infinity}}, {{x, {d}}}}}.\n", .{base + 1});
@@ -3092,15 +3097,15 @@ const Emitter = struct {
         try self.deferred_lambdas.append(self.alloc, try lam_buf.toOwnedSlice());
         lam_buf.deinit();
 
-        // The loop body fun is built before the iterator is materialised, so
-        // only the enclosing params/locals (`cur_arity`) are live here.
-        try self.emitMakeFun(labels.entry, self.cur_arity);
-
-        const scratch = self.cur_arity;
-        try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch});
+        // Materialize the iterable FIRST, then build the body closure into `x0`.
+        // A range iterator lowers via a `lists:seq` *call* that clobbers
+        // x-registers (and uses `cur_arity` as scratch), so stashing the fun in an
+        // x-register beforehand would lose it (`lists:foreach([_],[_])`). Instead
+        // the list lands in `x1` (and stays in `x0` too), so the closure's
+        // `make_fun3` — which always writes `x0` — keeps the list live in `x1`.
         try self.lowerExprIntoX0(lp.iter.*);
-        try self.bodyPrint("    {{move, {{x, 0}}, {{x, 1}}}}.\n", .{});
-        try self.bodyPrint("    {{move, {{x, {d}}}, {{x, 0}}}}.\n", .{scratch});
+        try self.bodyWrite("    {move, {x, 0}, {x, 1}}.\n");
+        try self.emitMakeFun(labels.entry, 2);
 
         const func = if (has_map) "map" else "foreach";
         try self.bodyPrint("    {{call_ext, 2, {{extfunc, lists, {s}, 2}}}}.\n", .{func});

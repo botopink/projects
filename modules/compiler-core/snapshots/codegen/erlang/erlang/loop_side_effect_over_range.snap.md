@@ -12,7 +12,7 @@ loop (0..10) { i ->
 _loop() ->
     lists:foreach(fun(I) ->
         io:format("~p~n", [I])
-    end, lists:seq(0, 10)).
+    end, lists:seq(0, (10) - 1)).
 ```
 
 ----- RUN LOG -----

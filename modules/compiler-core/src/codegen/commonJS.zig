@@ -2578,10 +2578,21 @@ const Emitter = struct {
                 },
                 .case => |c| try self.emitCase(c.subjects, c.arms, null),
                 .range => |r| {
-                    try self.emitExpr(r.start.*);
-                    try self.w("..");
+                    // `a..b` is the half-open `[a, b)` integer range. JS has no
+                    // range literal, so materialize a real array (parity with the
+                    // erlang/beam `lists:seq(a, b-1)` and `Array.range`).
                     if (r.end) |end| {
+                        try self.w("Array.from({length: Math.max(0, (");
                         try self.emitExpr(end.*);
+                        try self.w(") - (");
+                        try self.emitExpr(r.start.*);
+                        try self.w("))}, (_, __i) => (");
+                        try self.emitExpr(r.start.*);
+                        try self.w(") + __i)");
+                    } else {
+                        // An open-ended `a..` is a lazy infinite range (used only
+                        // with `break`); a finite JS array can't represent it.
+                        try self.w("(() => { throw new Error(\"open-ended range unsupported on commonJS\"); })()");
                     }
                 },
                 // Anonymous record literal — a plain JS object (parenthesized

@@ -53,12 +53,10 @@ fn main() {
     {move, {x, 0}, {y, 0}}.
     {move, {integer, 0}, {x, 0}}.
     {move, {x, 0}, {y, 1}}.
-    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 1}.
-    {make_fun3, {f, 13}, 0, 0, {x, 0}, {list, []}}.
-    {move, {x, 0}, {x, 1}}.
     {move, {atom, 'COMMANDS'}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
-    {move, {x, 1}, {x, 0}}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 2}.
+    {make_fun3, {f, 13}, 0, 0, {x, 0}, {list, []}}.
     {call_ext, 2, {extfunc, lists, foreach, 2}}.
     {move, {y, 1}, {x, 0}}.
     {deallocate, 2}.
@@ -75,12 +73,10 @@ fn main() {
     {move, {x, 0}, {y, 0}}.
     {move, {integer, 0}, {x, 0}}.
     {move, {x, 0}, {y, 1}}.
-    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 1}.
-    {make_fun3, {f, 17}, 0, 0, {x, 0}, {list, []}}.
-    {move, {x, 0}, {x, 1}}.
     {move, {atom, 'COMMANDS'}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
-    {move, {x, 1}, {x, 0}}.
+    {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 2}.
+    {make_fun3, {f, 17}, 0, 0, {x, 0}, {list, []}}.
     {call_ext, 2, {extfunc, lists, foreach, 2}}.
     {move, {y, 1}, {x, 0}}.
     {deallocate, 2}.

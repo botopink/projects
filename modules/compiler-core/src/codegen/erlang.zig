@@ -1969,10 +1969,18 @@ const Emitter = struct {
                 },
                 .case => |c| try this.emitCase(c.subjects, c.arms),
                 .range => |r| {
+                    // `a..b` is half-open `[a, b)` (parity with wasm + `Array.range`),
+                    // but erlang's `lists:seq/2` is inclusive — so the upper bound is
+                    // `b - 1` (`lists:seq(A, B - 1)`; `B = A` yields `[]`). An open
+                    // range `a..` iterates to `infinity`.
                     try this.w("lists:seq(");
                     try this.emitExpr(r.start.*);
                     try this.w(", ");
-                    if (r.end) |end| try this.emitExpr(end.*) else try this.w("infinity");
+                    if (r.end) |end| {
+                        try this.w("(");
+                        try this.emitExpr(end.*);
+                        try this.w(") - 1");
+                    } else try this.w("infinity");
                     try this.w(")");
                 },
                 // Anonymous record literal — an Erlang map (the same shape

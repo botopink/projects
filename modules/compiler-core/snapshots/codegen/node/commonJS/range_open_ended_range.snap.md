@@ -12,7 +12,7 @@ fn countUp(x: i32) {
 ----- JAVASCRIPT -- main.js
 ```javascript
 function countUp(x) {
-    for (const i of x..) {
+    for (const i of (() => { throw new Error("open-ended range unsupported on commonJS"); })()) {
     (() => { if ((i > 100)) { return return; } })();
 };
 }
