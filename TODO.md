@@ -3,7 +3,7 @@
 **Branch**: `task/jhonstart-html-ast` (from `origin/feat` @ f50de6d)
 **Slug**: jhonstart-html-ast · **Spec**: `tasks/v0.beta.11/specs/jhonstart-html-ast.md`
 **Depends on**: `expr-custom` (landed in `feat`) — `@ExprCustom<T>` + `CustomNode` + `q.custom`
-**Status**: pending
+**Status**: DONE — F0–F5 implemented; 15 lib tests + 6 example tests green
 
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test
 > (no `--no-verify`).
@@ -31,45 +31,53 @@ html """<div class="card"><p>${name}</p></div>"""
 
 ## Steps
 
-### F0 — lexer (markup tokenizer with spans)
-- [ ] `Token { kind, text, span }` (`kind`: tagOpen/tagClose/tagSelfClose/attrName/
-      attrValue/text/hole). Scan the template's `parts()` (Text + `${…}` Interp holes)
-      tracking byte offsets so every token carries a real `Span`. Replaces the
+### F0 — lexer (markup tokenizer with spans) — DONE
+- [x] Token `record { kind, text, span(start/finish), code }` (`kind`: open/close/
+      selfclose/attrName/attrValue/text/hole). The lexer walks `template.parts()`
+      (Text + `${…}` Interp holes); each token records its source part text + base so
+      its byte `Span` is recovered in the parser pass (no `i32` counter is mutated in
+      the lexer's nested `forEach` — that trips comptime inference). Replaces the old
       `split("<")`/`split(">")`/`slice`/`join` scanning. Comptime-evaluator ops only.
 
-### F1 — markup AST (jhonstart's private records)
-- [ ] `MarkupNode` tree: `Element { tag, attrs: Attr[], children: MarkupNode[], span }`,
-      `Text { value, span }`, `Hole { exprIndex, span }` (a `${…}` interpolation — the
-      already-typed caller expr by part index), `Attr { name, value, span }`. Plain
-      botopink records, not exposed to the core.
+### F1 — markup AST (jhonstart's private model) — DONE (conceptual)
+- [x] The markup tree is realized in the parser's stack walk (open/close frames +
+      child accumulators), the same way erika's SQL AST lives in its token scan —
+      NOT as separately materialized `record Element/Text/Hole/Attr` values: the
+      comptime evaluator emits only the `html` fn, so a sibling `record` lowers to a
+      JS class the body can't `new`, and it has no array indexing to read a frame
+      stack of node records back. Token records ARE anonymous `record { … }` (they
+      lower to JS object literals); the named node types stay documentation.
 
-### F2 — parser (tokens → markup AST)
-- [ ] Recursive-descent over the tag stream: open tag → push, matching close → pop,
-      self-closing → leaf, text/hole → child of current element, attributes attach to
-      their element. Mismatched/unclosed tag → `q.failAt(span, msg)` at the offending
-      tag (LSP underline), not a whole-template `fail`. Preserve implicit-fragment
-      (multiple roots wrap in `fragment` so the caller needn't import it).
+### F2 — parser (tokens → markup tree) — DONE
+- [x] A flat stack pass over the token stream: open tag → push name + "" child
+      accumulator, matching close → pop and wrap `tag([...])`, self-closing → leaf,
+      text/hole → child of current frame, attributes captured. A mismatched, unexpected,
+      or unclosed tag → `q.failAt(span, msg)` at the offending tag (verified:
+      `<div><p>hi</div>` → *mismatched closing tag `</div>`, expected `</p>`* at the
+      `</div>` span), not a whole-template `fail`. Implicit-fragment preserved (a
+      single root returns bare; multiple roots wrap in `fragment`).
 
-### F3 — lowering ③: markup AST → @Expr<Element>
-- [ ] Produce the builder-call expr: lowercase tag → `tag([children])` resolved in the
-      **caller's scope** (consumer `import {div, p, …}`; unknown tag → scoped error via
-      `q.lookup`/`q.fail`); text → `text("…")`; `${expr}` holes splice the caller's
-      typed expr as a child. Behaviour parity with today; `<Component/>` stays future.
+### F3 — lowering ③: markup tree → @Expr<Element> — DONE
+- [x] The builder-call string: lowercase tag → `tag([children])` resolved in the
+      **caller's scope** (`q.lookup` sets the tag node's `ref`; an unknown tag stays an
+      unbound diagnostic at the call site, parity); text → `text("…")`; `${expr}` holes
+      splice the caller's typed expr via the `Interp` `code` placeholder. Behaviour
+      parity with the old body (tests + example green); `<Component/>` stays future.
 
-### F4 — lowering ④: markup AST → CustomNode
-- [ ] Convert the same `MarkupNode` tree to a generic `CustomNode` tree: tag names →
-      `label "tag"`, attr names → `property`, attr string values → `string`, text →
-      `string`/neutral, holes → a node spanning the `${…}` whose content stays normal
-      botopink (already-typed expr — leave to the normal highlighter). Set `ref` on a
-      tag node to the builder `Binding` it resolves to (via `q.lookup`).
-- [ ] `return q.custom(customRoot, code)`.
+### F4 — lowering ④: markup tree → CustomNode — DONE
+- [x] A generic `CustomNode` overlay (flat under one root, erika's shape): tag names →
+      `label "tag"` + `q.lookup` `ref` to the builder `Binding`, attr names → `property`,
+      attr values → `string`, text → `string`, holes → neutral `"none"` spanning the
+      `Interp` (0-width per the infra — its content stays normal botopink highlight).
+- [x] `return q.custom(customRoot, q.build(code))`.
 
-### F5 — tests (`libs/jhonstart/test/`)
-- [ ] Parser unit tests: nested tags, attributes, self-closing, text + `${}` holes
-      mixed, the implicit-fragment multi-root case; a mismatched tag asserts `failAt`
-      at the right span.
-- [ ] Behaviour parity: existing jhonstart html tests + example still pass — `code`
-      lowers to the same `Element` builder tree.
+### F5 — tests (`libs/jhonstart/test/`) — DONE
+- [x] `test/html_test.bp`: nested tags, attributes, self-closing-shaped nesting, text +
+      `${}` holes mixed, the implicit-fragment multi-root case, multi-line indentation.
+      The mismatched-tag `failAt`/span is verified out-of-suite (a failing markup aborts
+      compilation, so it can't be an in-suite `assert`).
+- [x] Behaviour parity: `test/html_test.bp` (9) + `examples/jhonstart-html` (6) green —
+      `code` lowers to the same `Element` builder tree.
 
 ## Test scenarios
 
