@@ -2,9 +2,9 @@
 
 **Slug**: erika-query-ast
 **Depends on**: [`expr-custom`](expr-custom.md) — needs `@ExprCustom<T>` + `CustomNode` + `q.custom`
-**Files**: `libs/erika/src/erika.bp` (lexer, AST, parser, dual lowering), `libs/erika/test/*.bp`
+**Files**: `libs/erika/src/erika.bp` (lexer, AST, parser, dual lowering), tests in-file
 **Touches docs**: `libs/erika/AGENTS.md`, `libs/erika/docs.md`
-**Status**: pending
+**Status**: DONE (F0–F4 complete; F5 with one un-automatable assertion — see below)
 
 > **HARD RULE.** All of this is `libs/erika/*.bp` — pure botopink running in the
 > comptime evaluator. No core code. The SQL AST is **erika's private type**; it is
@@ -94,3 +94,43 @@ comptime ---- a syntax error reports failAt at the offending token's span
   current code does for `where`/`order`.
 - No new SQL operators — same surface as today, just a real front-end. New operators
   are a follow-up. Memory: [[project_v0beta9_tail]] (erika tail context).
+
+## Status — what landed (commit `d764df3`, `task/erika-query-ast`)
+
+All in `libs/erika/src/erika.bp`, zero core code (HARD RULE held):
+
+- **F0 lexer** — DONE. Char-by-char scan of `q.text()` → `Token[]`, each token with a
+  real `Span`. Implementation note: every token is emitted through a **single**
+  `toks.append` site (the `pending` flush) — appending records from 3-plus branchy
+  sites trips a comptime type-checker mis-unification (`expected string, got array`).
+- **F1 SQL AST** — DONE, with a **deliberate deviation**: the AST is modelled with
+  **anonymous `record { … }`** values, **not named records** (`SelectStmt`/`Token`/…).
+  The comptime evaluator emits only the template fn plus the `Span`/`CustomNode`
+  prelude, so a named `Token(…)` constructor is `undefined` at eval time; anonymous
+  records lower to plain JS object literals and stay erika-private. `?where`/`?order`
+  are 0-length-list / bool sentinels (no Option runtime), as the spec allows.
+- **F2 parser** — DONE. Token-bucketing descent; `where` parsed into `or`-of-`and`-of-
+  comparison groups so `or < and < comparison` precedence is structural. `q.failAt`
+  at the offending token for a dangling operator and for an unknown collection.
+- **F3 lowering → `@Expr<T>`** — DONE. Byte-identical to the pre-refactor pipeline;
+  all 25 pre-existing tests stay green.
+- **F4 lowering → `CustomNode`** — DONE. Same tokens → labelled reference tree; source
+  node carries the `q.lookup` `ref`. `return q.custom(root, q.build(pipe))`.
+- **F5 tests** — DONE *except one assertion* (below). 4 new in-file tests cover
+  `and`/`or`/precedence/`<>`; 29 in-file + `examples/erika-linq` (6) pass; full
+  `zig build test` green.
+
+### NOT done / known limitation
+
+- **No `.bp` test asserts `failAt` at a span.** A malformed `erika "…"` query inside a
+  `.bp` file makes `q.failAt` **abort that module's compilation**, so it cannot live
+  as a passing `botopink test` block (no negative-test / `#[test(fails)]` builtin
+  exists in botopink). The `failAt`-ranged-at-span path *is* implemented and was
+  verified manually (`condition needs a value after '>='` and `unknown collection`,
+  each at the right column). The generic builtin path is covered by the synthetic
+  **Zig** fixtures `sublanguage F2` (language-server) and `template: fail span maps`
+  (comptime templates) — kept lib-agnostic on purpose (the core never names erika).
+  Closing this would need either a botopink negative-test builtin or a new synthetic
+  Zig fixture for the dangling-operator case — both out of scope here.
+- **`ref` is set on the source node only**, not (yet) on resolvable column nodes —
+  F4 lists columns as optional ("where resolvable"); left as a follow-up.

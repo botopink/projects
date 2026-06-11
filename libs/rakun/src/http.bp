@@ -19,6 +19,29 @@ pub enum HttpMethod {
     Options,
 }
 
+// ---- HTTP request (runtime boundary) ----
+//
+// `Request` is the inbound HTTP request. The server supplies the concrete
+// instance at runtime (`runtime.mjs#makeRequest`, built by `dispatch`/
+// `dispatchHttp`), so it is an INTERFACE — signatures only, emits nothing. It
+// lives here (a real, compiled module) rather than in the declaration-only
+// `rakun.d.bp` so its method return types are inferred for handlers.
+//
+// `param`/`query`/`header` return a plain `string` — the empty string `""` when
+// absent — rather than `?string`: a matched route's path params are always
+// present, and "" is the natural default for a missing query/header (Spring's
+// `@RequestParam(defaultValue = "")`). This keeps handlers free of optional
+// unwrapping at the boundary.
+pub interface Request {
+    val method: HttpMethod
+    val path: string
+
+    fn param(self: Self, name: string) -> string
+    fn query(self: Self, name: string) -> string
+    fn header(self: Self, name: string) -> string
+    fn body(self: Self) -> string
+}
+
 pub record Response {
     status: i32,
     body: string,

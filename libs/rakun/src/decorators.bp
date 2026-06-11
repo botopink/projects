@@ -26,55 +26,94 @@
 // In order, the body:
 //   1. `@emit`s `rkScan("Name")` — module-load self-registration into the scan
 //      registry (F2: the scan discovers every component, no shared comptime state);
-//   2. `@emit`s a factory `__rkMake_Name()` that constructs the record, injecting
-//      each field by type via that type's own factory (F2: constructor injection),
-//      bracketed by `rkEnter`/`rkDone` so a dependency cycle raises at construction;
+//   2. `@emit`s a SINGLETON factory `__rkMake_Name()` that constructs the record
+//      once and caches it (`rkSingleton`), injecting each field by type via that
+//      type's own factory (F2: constructor injection) — except a `#[value("key")]`
+//      field, which is filled from config (`rkProp`/`rkPropInt`) and is NOT a DI
+//      edge. Construction is bracketed by `rkEnter`/`rkDone` so a dependency cycle
+//      raises at first construction;
 //   3. enforces placement (must annotate a record).
 // The `@emit`s run before the placement `fail`, and a failed outcome discards the
 // contributions — so only correctly placed records wire up. The emitted code calls
-// `rkScan`/`rkMake_*`/`rkEnter`/`rkDone`, which are in scope at the application
-// site (`import {service, rkScan, rkEnter, rkDone, …} from "rakun"`).
+// `rkScan`/`rkSingleton`/`rkEnter`/`rkDone`/`rkProp(Int)`, which are in scope at the
+// application site (`import {service, rkScan, rkSingleton, rkEnter, rkDone, …} from
+// "rakun"`).
 //
 // Decorator-body constraints (see ../AGENTS.md): the body can't call sibling fns
-// (each is lowered alone into the eval script), so the factory builder is inlined
-// in every component marker rather than shared. `#[value("key")]` property
-// injection is a recorded follow-up; v1 injects every field by type.
+// (each is lowered alone into the eval script), so the per-field injection rule
+// and the factory builder are inlined in every component marker rather than shared.
 
 pub fn component(comptime decl: @Decl) {
     @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
     var args: Array<string> = [];
-    decl.fields.forEach({ f -> args.push(f.name + ": __rkMake_" + f.typeName + "()"); });
-    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + args.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); return v; }");
+    decl.fields.forEach({ f ->
+        var valKey = "";
+        f.annotations.forEach({ a -> if (a.name == "value") { valKey = a.args.join(""); } });
+        val expr = if (valKey != "") {
+            if (f.typeName == "i32") { "rkPropInt(" + valKey + ")"; } else { "rkProp(" + valKey + ")"; };
+        } else {
+            "__rkMake_" + f.typeName + "()";
+        };
+        args.push(f.name + ": " + expr);
+    });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { return rkSingleton(\"" + decl.name + "\", { -> val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + args.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); v }); }");
     if (decl.kind != DeclKind.Record) { decl.fail("#[component] must annotate a record"); }
 }
 
 pub fn service(comptime decl: @Decl) {
     @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
     var args: Array<string> = [];
-    decl.fields.forEach({ f -> args.push(f.name + ": __rkMake_" + f.typeName + "()"); });
-    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + args.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); return v; }");
+    decl.fields.forEach({ f ->
+        var valKey = "";
+        f.annotations.forEach({ a -> if (a.name == "value") { valKey = a.args.join(""); } });
+        val expr = if (valKey != "") {
+            if (f.typeName == "i32") { "rkPropInt(" + valKey + ")"; } else { "rkProp(" + valKey + ")"; };
+        } else {
+            "__rkMake_" + f.typeName + "()";
+        };
+        args.push(f.name + ": " + expr);
+    });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { return rkSingleton(\"" + decl.name + "\", { -> val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + args.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); v }); }");
     if (decl.kind != DeclKind.Record) { decl.fail("#[service] must annotate a record"); }
 }
 
 pub fn repository(comptime decl: @Decl) {
     @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
     var args: Array<string> = [];
-    decl.fields.forEach({ f -> args.push(f.name + ": __rkMake_" + f.typeName + "()"); });
-    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + args.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); return v; }");
+    decl.fields.forEach({ f ->
+        var valKey = "";
+        f.annotations.forEach({ a -> if (a.name == "value") { valKey = a.args.join(""); } });
+        val expr = if (valKey != "") {
+            if (f.typeName == "i32") { "rkPropInt(" + valKey + ")"; } else { "rkProp(" + valKey + ")"; };
+        } else {
+            "__rkMake_" + f.typeName + "()";
+        };
+        args.push(f.name + ": " + expr);
+    });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { return rkSingleton(\"" + decl.name + "\", { -> val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + args.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); v }); }");
     if (decl.kind != DeclKind.Record) { decl.fail("#[repository] must annotate a record"); }
 }
 
-// A controller is a component (scan + factory) that ALSO contributes routes: for
-// every method carrying a `#[getMapping(path)]`/… annotation, `@emit` a
-// `rkRegisterRoute(verb, prefix + path, handler)` whose handler builds the
+// A controller is a component (scan + singleton factory) that ALSO contributes
+// routes: for every method carrying a `#[getMapping(path)]`/… annotation, `@emit`
+// a `rkRegisterRoute(verb, prefix + path, handler)` whose handler builds the
 // controller via its factory and calls the method. The `#[route("/prefix")]` on
-// the record (if any) is the path prefix. See `routeWiring` note below.
+// the record (if any) is the path prefix.
 
 pub fn controller(comptime decl: @Decl) {
     @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
     var cargs: Array<string> = [];
-    decl.fields.forEach({ f -> cargs.push(f.name + ": __rkMake_" + f.typeName + "()"); });
-    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + cargs.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); return v; }");
+    decl.fields.forEach({ f ->
+        var valKey = "";
+        f.annotations.forEach({ a -> if (a.name == "value") { valKey = a.args.join(""); } });
+        val expr = if (valKey != "") {
+            if (f.typeName == "i32") { "rkPropInt(" + valKey + ")"; } else { "rkProp(" + valKey + ")"; };
+        } else {
+            "__rkMake_" + f.typeName + "()";
+        };
+        cargs.push(f.name + ": " + expr);
+    });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { return rkSingleton(\"" + decl.name + "\", { -> val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + cargs.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); v }); }");
     var prefix = "\"\"";
     decl.annotations.forEach({ a -> if (a.name == "route") { prefix = a.args.join(""); } });
     decl.methods.forEach({ m ->
@@ -89,8 +128,17 @@ pub fn controller(comptime decl: @Decl) {
 pub fn restController(comptime decl: @Decl) {
     @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
     var rargs: Array<string> = [];
-    decl.fields.forEach({ f -> rargs.push(f.name + ": __rkMake_" + f.typeName + "()"); });
-    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + rargs.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); return v; }");
+    decl.fields.forEach({ f ->
+        var valKey = "";
+        f.annotations.forEach({ a -> if (a.name == "value") { valKey = a.args.join(""); } });
+        val expr = if (valKey != "") {
+            if (f.typeName == "i32") { "rkPropInt(" + valKey + ")"; } else { "rkProp(" + valKey + ")"; };
+        } else {
+            "__rkMake_" + f.typeName + "()";
+        };
+        rargs.push(f.name + ": " + expr);
+    });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { return rkSingleton(\"" + decl.name + "\", { -> val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + rargs.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); v }); }");
     var rprefix = "\"\"";
     decl.annotations.forEach({ a -> if (a.name == "route") { rprefix = a.args.join(""); } });
     decl.methods.forEach({ m ->
@@ -104,12 +152,37 @@ pub fn restController(comptime decl: @Decl) {
 
 // ---- configuration / factory markers ----
 
-// `#[configuration]` marks a record whose `#[bean]` methods are factories.
+// `#[configuration]` marks a record whose `#[bean]` methods are factories. The
+// configuration is itself a managed singleton (scan + factory), and for every
+// `#[bean]` method it `@emit`s a `__rkMake_<ReturnType>()` that builds the
+// configuration and calls the bean — so the bean's RETURN TYPE becomes injectable
+// by type anywhere a component declares a field of it (Spring's @Bean). The bean
+// output is a singleton too (cached by its return-type name).
 pub fn configuration(comptime decl: @Decl) {
+    @emit("val __rkScan_" + decl.name + " = rkScan(\"" + decl.name + "\");");
+    var gargs: Array<string> = [];
+    decl.fields.forEach({ f ->
+        var valKey = "";
+        f.annotations.forEach({ a -> if (a.name == "value") { valKey = a.args.join(""); } });
+        val expr = if (valKey != "") {
+            if (f.typeName == "i32") { "rkPropInt(" + valKey + ")"; } else { "rkProp(" + valKey + ")"; };
+        } else {
+            "__rkMake_" + f.typeName + "()";
+        };
+        gargs.push(f.name + ": " + expr);
+    });
+    @emit("pub fn __rkMake_" + decl.name + "() -> " + decl.name + " { return rkSingleton(\"" + decl.name + "\", { -> val _e = rkEnter(\"" + decl.name + "\"); val v = " + decl.name + "(" + gargs.join(", ") + "); val _d = rkDone(\"" + decl.name + "\"); v }); }");
+    decl.methods.forEach({ m ->
+        var isBean = false;
+        m.annotations.forEach({ a -> if (a.name == "bean") { isBean = true; } });
+        if (isBean) { @emit("pub fn __rkMake_" + m.returnType + "() -> " + m.returnType + " { return rkSingleton(\"" + m.returnType + "\", { -> __rkMake_" + decl.name + "()." + m.name + "() }); }"); }
+    });
     if (decl.kind != DeclKind.Record) { decl.fail("#[configuration] must annotate a record"); }
 }
 
 // `#[bean]` marks a factory method: its return type becomes an injectable singleton.
+// The `#[configuration]` body does the wiring (it sees every method); this marker
+// just enforces placement.
 pub fn bean(comptime decl: @Decl) {
     if (decl.kind != DeclKind.Method) { decl.fail("#[bean] must annotate a method"); }
 }
@@ -119,7 +192,9 @@ pub fn inject(comptime decl: @Decl) {
     if (decl.kind != DeclKind.Field) { decl.fail("#[inject] must annotate a field"); }
 }
 
-// `#[value("key")]` pulls a config property into a field (Spring's @Value).
+// `#[value("key")]` pulls a config property into a field (Spring's @Value). The
+// component factory reads the annotation off the field and fills it from
+// `rkProp`/`rkPropInt` instead of the DI graph; this marker enforces placement.
 pub fn value(comptime decl: @Decl, key: string) {
     if (decl.kind != DeclKind.Field) { decl.fail("#[value] must annotate a field"); }
 }

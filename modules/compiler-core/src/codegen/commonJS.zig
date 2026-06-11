@@ -1253,6 +1253,25 @@ const Emitter = struct {
     fn emitUse(self: *Emitter, u: ast.ImportDecl) !void {
         // Fallback activation `X*;` has no runtime binding — emit nothing.
         if (u.activationOnly) return;
+
+        // All emitted `require` targets are module paths relative to the OUTPUT
+        // ROOT (`std/x`, `<dep>/<mod>`, …), but node resolves a `require` relative
+        // to the requiring FILE. A module nested under a package prefix (a
+        // dependency's `<dep>/<mod>`, depth 1) must therefore reach back up to the
+        // root with one `../` per path segment before descending — without this,
+        // `./<dep2>/<mod2>.js` required from `out/<dep>/<mod>.js` would resolve
+        // under `out/<dep>/`. A top-level module (depth 0) keeps the plain `./`.
+        const depth = std.mem.count(u8, self.module_name, "/");
+        const req_prefix: []const u8 = blk: {
+            var buf: std.ArrayListUnmanaged(u8) = .empty;
+            if (depth == 0) {
+                try buf.appendSlice(self.alloc, "./");
+            } else {
+                for (0..depth) |_| try buf.appendSlice(self.alloc, "../");
+            }
+            break :blk try buf.toOwnedSlice(self.alloc);
+        };
+        defer self.alloc.free(req_prefix);
         // `"std"` package import: each item binds a whole stdlib module
         // emitted alongside the project (`out/std/<mod>.js`), so qualified
         // calls (`bool.negate(x)`) resolve naturally at runtime.
@@ -1264,7 +1283,7 @@ const Emitter = struct {
                 if (!first) try self.w("\n");
                 first = false;
                 const mod = imp.segments[imp.segments.len - 1];
-                try self.fmt("const {s} = require(\"./std/{s}.js\");", .{ imp.name(), mod });
+                try self.fmt("const {s} = require(\"{s}std/{s}.js\");", .{ imp.name(), req_prefix, mod });
             }
             return;
         }
@@ -1306,7 +1325,7 @@ const Emitter = struct {
                     firstn = false;
                     try self.w(imp2.name());
                 }
-                try self.fmt(" }} = require(\"./{s}.js\");", .{info.module});
+                try self.fmt(" }} = require(\"{s}{s}.js\");", .{ req_prefix, info.module });
             }
             // Namespace binding: when the import names the lib itself
             // (`import {Lib} from "Lib"`) and that name has no emitted symbol of
@@ -1330,12 +1349,12 @@ const Emitter = struct {
                 defer mods.deinit(self.alloc);
                 var mseen = std.StringHashMap(void).init(self.alloc);
                 defer mseen.deinit();
-                const prefix = try std.fmt.allocPrint(self.alloc, "{s}/", .{lib_name});
-                defer self.alloc.free(prefix);
+                const mod_prefix = try std.fmt.allocPrint(self.alloc, "{s}/", .{lib_name});
+                defer self.alloc.free(mod_prefix);
                 var it = xm.valueIterator();
                 while (it.next()) |info| {
                     const m = info.module;
-                    if (!std.mem.startsWith(u8, m, prefix)) continue;
+                    if (!std.mem.startsWith(u8, m, mod_prefix)) continue;
                     if (mseen.contains(m)) continue;
                     try mseen.put(m, {});
                     try mods.append(self.alloc, m);
@@ -1349,10 +1368,10 @@ const Emitter = struct {
                     if (!first_line) try self.w("\n");
                     first_line = false;
                     if (mods.items.len == 1) {
-                        try self.fmt("const {s} = require(\"./{s}.js\");", .{ jsIdent(lib_name), mods.items[0] });
+                        try self.fmt("const {s} = require(\"{s}{s}.js\");", .{ jsIdent(lib_name), req_prefix, mods.items[0] });
                     } else {
                         try self.fmt("const {s} = Object.assign({{}}", .{jsIdent(lib_name)});
-                        for (mods.items) |m| try self.fmt(", require(\"./{s}.js\")", .{m});
+                        for (mods.items) |m| try self.fmt(", require(\"{s}{s}.js\")", .{ req_prefix, m });
                         try self.w(");");
                     }
                 }
@@ -1377,7 +1396,7 @@ const Emitter = struct {
         }
         try self.w(" } = require(\"");
         switch (u.source) {
-            .root => try self.w("./module"),
+            .root => try self.fmt("{s}module", .{req_prefix}),
             .module => |name| try self.w(name),
         }
         try self.w("\");");

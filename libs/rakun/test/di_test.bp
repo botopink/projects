@@ -15,7 +15,7 @@
 // annotation-processor suite (`comptime/tests/decorator_invocation.zig`) — a
 // compile-failure can't be expressed as a runtime `assert` here.
 
-import {service, repository, rkScan, rkEnter, rkDone, rkScannedNames, rkScannedCount};
+import {service, repository, rkScan, rkSingleton, rkEnter, rkDone, rkScannedNames, rkScannedCount};
 
 #[repository]
 record GreetRepo {

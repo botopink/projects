@@ -4,18 +4,24 @@
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 > Docs: [`../docs.md`](../docs.md)
 
-Source for the `server` library's `.bp` declarations. Currently a placeholder —
-`server.d.bp` carries a header comment only and declares no symbols.
+Source for the `server` library — a real, minimal node-`http` backing.
 
 ## Tree
 
 ```text
 src/
 ├── AGENTS.md          ← you are here
-└── server.d.bp        ← placeholder declaration file (header only)
+├── root.bp            ← module-tree root: `pub mod server;`
+├── server.bp          ← `#[@external]` decls: `serverServe<R>` / `serverStop` → server.mjs
+└── server.mjs         ← host runtime: the node-`http` server (`serve`/`stop`)
 ```
 
 ## Conventions
 
-- Declarations stay declarative (signatures only, no method bodies).
-- When adding a real `.bp` file, list it in `../botopink.json`'s `files` array.
+- `server.bp` holds the `#[@external(node, "./server.mjs", …)]` `declare fn`s; the
+  real IO lives in `server.mjs` (sibling path — the CLI ships it next to every
+  emitted module via G2).
+- `serve(port, handler)` is framework-agnostic: `handler` is the dispatcher
+  function the consumer passes; the server never names a framework.
+- Add new real `.bp` modules to `root.bp` (`pub mod`) **and** `../botopink.json`
+  `files`.

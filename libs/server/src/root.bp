@@ -1,12 +1,8 @@
 //// The `server` package — module-tree root.
 ////
-//// Declaration-only scaffold: `server` ships no runnable `.bp` module yet, so
-//// this root declares no `mod`. Its surface lives in `server.d.bp`, a
-//// consumer-facing declaration module wired through `botopink.json` `files`
-//// (loaded with `.declaration = true` for a `from "server"` consumer), not the
-//// build tree — `.d.bp` modules are not resolved by `mod` paths (the resolver
-//// only follows `<name>.bp` / `<name>/mod.bp`), mirroring how `libs/std` keeps
-//// its ambient `.d.bp` out of `root.bp`.
-////
-//// Grows real in rakun F5 (the HTTP backing). When the first real symbols land,
-//// drop `src/<name>.bp` + add `pub mod <name>;` here.
+//// The framework-agnostic HTTP backing: `server` (the `#[@external]` node-`http`
+//// transport — `serverServe`/`serverStop`). Public surface, reached by a consumer
+//// (rakun's `Rakun.run`) via `import { serverServe } from "server"` — the single
+//// real module `server.bp`, wired both into this tree and `botopink.json` `files`.
+
+pub mod server;

@@ -30,7 +30,8 @@ erika/
 └── src/
     ├── root.bp        ← module-tree root: `pub mod erika;` (the public surface)
     └── erika.bp       ← the whole lib: `record Query<T>` + `Grouping<K,V>` +
-                         constructors + the `erika "…"` template fn + 25 tests
+                         constructors + the `erika "…"` template fn (lexer +
+                         parser + dual lowering) + 29 tests
 ```
 
 ## Module tree (`root.bp`)
@@ -52,25 +53,33 @@ resolves through that same exported module.
   predicate variants are spelled out: `count`/`countWhere`, `first`/`firstWhere`,
   `any`/`anyWhere`.
 - **`erika "…"`** is a template fn returning **`@ExprCustom<T>`**: it captures a
-  SQL-subset string as `@Expr<string>`, parses it in botopink at comptime,
-  resolves the referenced collection against the caller's scope, and expands to
-  unqualified fluent source. Grammar:
+  SQL-subset string as `@Expr<string>` and runs a real three-stage front-end at
+  comptime — ① a char-by-char **lexer** (`q.text()` → `Token[]`, every token
+  span-aware), ② a recursive-descent-style **parser** (tokens → a `SelectStmt`
+  value; the `where` clause is split into `or`-of-`and`-of-comparison groups so
+  the `or < and < comparison` precedence is structural), then ③/④ **dual lowering**
+  of the *same* parse. Grammar:
   `select <* | f1[, f2…]> from <Name> [where <cond>] [order by <field> [asc|desc]]`.
   The single-line `erika "…"` and triple-quoted multi-line `erika """ … """` forms
-  are equivalent — the tokenizer normalizes newlines/tabs to spaces before
-  splitting, so layout is free (the `html """…"""` sibling).
-- **Custom AST for tooling (sublanguage-lsp).** Besides the executable `code`
-  half (spliced exactly as before — `q.custom(root, q.build(pipe))`), the
-  expansion also returns a generic `CustomNode` tree: each token is span-aware
-  (`select`/`from`/`where`/`order`/`by`/`asc`/`desc`→`keyword`, projected fields
-  and the collection→`property`, where-clause ops/literals→`operator`/`number`/
-  `string`). The collection node carries `ref` (the `q.lookup` binding) so the
-  LSP resolves hover/go-to-def to its declaration. An unknown collection aborts
-  with `q.failAt(span, …)` ranged at the offending name *inside* the string.
-  Spans are byte offsets into `q.text()`; the tokenizer recovers them with a
-  `cursor` + `indexOf` over the unconsumed suffix (no `fromIndex` in the comptime
-  string API). The `code` half is identical to before, so runtime/codegen across
-  all backends is unchanged.
+  are equivalent — the lexer treats newlines/tabs as ordinary token boundaries, so
+  layout is free (the `html """…"""` sibling).
+- **Lowering ③ → `@Expr<T>` (the executable pipeline).** Walks the `SelectStmt`
+  into unqualified fluent source
+  (`of(Name).where({row -> …}).orderBy(…).select(…).toArray()`) and splices it via
+  `q.build(...)`. Behaviour is **byte-for-byte the same** as the pre-refactor
+  scanner (single-field projection unwraps, multi-field → `record {…}`, `*` →
+  `toArray()`, `=`→`==`, `<>`→`!=`, `and`→`&&`, `'x'`→`"x"`), so runtime/codegen
+  across all backends is unchanged and the ~30 in-file + `examples/erika-linq`
+  tests stay green.
+- **Lowering ④ → `CustomNode` for tooling (sublanguage-lsp).** Walks the same
+  tokens into a generic reference tree: keywords → `keyword`, idents
+  (projected fields / source / columns) → `property`, string/number literals →
+  `string`/`number`, comparison/logical ops (`= <> < <= > >= and or`) →
+  `operator`. The source node carries `ref` (the `q.lookup` binding) so the LSP
+  resolves hover/go-to-def to its declaration. Spans are byte offsets into
+  `q.text()`, assigned by the lexer (no `indexOf`/`cursor` recovery any more). An
+  unknown collection — or a malformed condition (a dangling operator) — aborts
+  with `q.failAt(span, …)` ranged at the offending token, not the whole template.
 
 ## Conventions
 
@@ -90,26 +99,44 @@ resolves through that same exported module.
 ## Comptime-eval constraint (why the `erika "…"` parser is written the way it is)
 
 The `erika "…"` body runs at comptime in `template_eval.zig`: the evaluator emits
-**only the template fn itself** and runs it with `node` over a *minimal* prelude.
-So the SQL→botopink translation may use only ops that lower to **native JS**:
-`split` / `join` / `slice` / `trim` / `map` / `append` / `indexOf` / `+` / `==`,
-plus array `.length` (a *property*). It must **not** use host-helper-backed ops —
-notably optional `.at(i).unwrapOr(…)` is **undefined** in the eval script (it
-silently fails the expansion, surfacing as a terse "parse error"). A second trap:
-**`string.length()`** (a method needing a type-directed JS-property rename) does
-**not** exist in the bare eval prelude — use `s.split("").length` (an array
-property) for a string's length, as the span-aware tokenizer does. A third:
-**no comments inside a closure/loop body** (`{ x -> … }`) — they parse as an
-unexpected token; keep comments at fn-body level. That is why the field list is built with `append` + `map`
-+ `join` and never `fields.at(0).unwrapOr(…)`, and why the multi-line form is
-flattened with `split("\n").join(" ")` (native-JS ops) rather than a regex/trim
-helper — the triple-quoted query's newlines/tabs are normalized to spaces before
-tokenizing so `erika """ … """` and `erika "…"` parse identically.
+**only the template fn itself** (over a *minimal* `node` prelude that defines just
+`Span` / `CustomNode`) and runs it. This shapes the whole front-end:
 
-A second, language-wide quirk the body works around: a top-level binary boolean
-**directly inside an `if (…)` condition fails to parse** (e.g. `if (a && b)`).
-Extract the compound to a `val` first, then `if (theVal)` — the established style
-throughout `erika.bp`.
+- **No sibling calls, no named-record constructors.** Only `erika` is emitted, so
+  the lexer/parser/lowering are all **inlined** in one fn body (helpers are local
+  closures, `val f = { … }`), and the private SQL "AST" is modelled with
+  **anonymous `record { … }`** values (which lower to plain JS object literals) —
+  a named `record Token {…}` would emit `new Token(…)`, undefined in the eval.
+- **Native-JS ops only:** `split` / `join` / `slice` / `map` / `filter` / `append`
+  / `+` / `==`, plus array `.length` (a *property*). Host-helper-backed ops are
+  **undefined** in the eval script (they fail the expansion as a terse "parse
+  error") — notably optional `.at(i).unwrapOr(…)`, so positional access into a
+  small token list is a counter `loop (toks) { t, idx -> }` (the two-param form
+  binds the **index**), and "optional" `where`/`order` are 0-length-list sentinels.
+- **`string.length()`** (a method needing a JS-property rename) does **not** exist
+  in the bare prelude — use `s.split("").length` (an array property) for a
+  string's length (`sqlLen`).
+- **No comments inside a closure/loop body** (`{ x -> … }`) — they parse as an
+  unexpected token; keep comments at fn-body level.
+- **A lambda's last statement must be an implicit-return expr** (identifier /
+  call / record / binary), **not a bare `if`** — assign the `if` to a `val` and
+  end the closure with that `val` (e.g. `cmpCode` / `operandCode`).
+
+Two language-wide parser quirks the body works around (both confirmed while
+landing erika-query-ast):
+
+- A top-level binary boolean **directly inside an `if (…)` condition fails to
+  parse** (e.g. `if (a && b)`). Extract the compound to a `val` first, then
+  `if (theVal)`.
+- **`(expr).method()` fails to parse** — a parenthesized expression followed by a
+  method call. Bind it to a `val` first (`val padded = sql + " "; padded.split("")`).
+
+One **comptime type-checker** quirk (not a parse error) also shaped the lexer:
+appending **records from three-plus branchy `toks.append([record {…}])` sites**
+mis-unifies the array element and reports `type mismatch: expected string, got
+array`. The lexer therefore emits every token through a **single** `append` site
+(the `pending` flush), classifying the kind there rather than at distinct
+per-kind sites.
 
 ## Status (v0.beta.8)
 
@@ -120,7 +147,17 @@ throughout `erika.bp`.
   an anonymous structural `record { a: row.a, b: row.b }` per row; unblocked by
   anonymous record types (gap **G2**, landed in `feat`). A single field projects
   the bare column; `*` returns whole rows. Commas may be attached (`a, b`) or
-  spaced (`a , b`) — they are normalized to spaces before tokenizing.
+  spaced (`a , b`) — the lexer treats each as its own token regardless.
+- **Real lexer + parser + dual lowering** (`erika-query-ast`, v0.beta.11) —
+  **landed.** The old `split`/`join` + `mode` scanner is replaced by a char-by-char
+  lexer (`Token[]` with real spans), a parser producing a `SelectStmt` value (the
+  `where` clause an `or`-of-`and`-of-comparison tree, so precedence is structural),
+  and two lowerings off the same parse: ③ the executable `@Expr<T>` pipeline
+  (behaviour identical to before) and ④ the `CustomNode` reference tree. New tests
+  cover `and`/`or`/precedence/`<>` (`where precedence is or over and over
+  comparison`, …); `q.failAt` at the offending token is implemented but not
+  asserted in a `.bp` test (a malformed query would abort that module's compile) —
+  the generic failAt-at-span path is covered by the sublanguage-lsp Zig fixtures.
 - **Cross-module `erika "…"` (bare import)** — **landed (v0.beta.8).** A consumer's
   `import {erika} from "erika"` now binds the bare template fn into value scope, so
   `erika "select …"` (and the triple-quoted multi-line form) expand in a consumer

@@ -1,19 +1,14 @@
-// rakun — layered dependency injection + REST routing (showcase).
-//
-// ILLUSTRATIVE: targets the planned `rakun` lib (spec:
-// tasks/v0.beta.5/specs/rakun.md).
+// rakun example — layered dependency injection + REST routing.
 //
 // The Spring triad — #[repository] (data) → #[service] (logic) →
 // #[restController] (HTTP) — wired by CONSTRUCTOR INJECTION: each layer declares
-// its dependency as a record field, and rakun resolves it by type.
-//
-// Every decorator (`repository`, `service`, `restController`, `route`,
-// `getMapping`) is a symbol imported from "rakun", then applied in a `#[ … ]`
-// block. The route decorators follow Spring's names (`getMapping`, …) because
-// `get`/`set`/`new` are reserved keyword tokens in botopink.
+// its dependency as a record field, and rakun resolves it by type. The route
+// decorators follow Spring's names (`getMapping`, …) because `get`/`set`/`new`
+// are reserved keyword tokens in botopink.
 
-import {Request, Response} from "rakun";
 import {repository, service, restController, route, getMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
 
 // ---- data layer ----
 
@@ -60,7 +55,6 @@ pub record UserController {
 
     #[getMapping("/:name")]
     pub fn show(self: Self, req: Request) -> Response {
-        val name = req.param("name").unwrapOr("world");
-        return Response.ok(self.service.greet(name));
+        return Response.ok(self.service.greet(req.param("name")));
     }
 }

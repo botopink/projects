@@ -174,6 +174,13 @@ pub fn run(gpa: std.mem.Allocator, io: std.Io, opts: Options) !u8 {
         try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = sub_path, .data = o.result.js });
     }
 
+    // Ship runtime `.mjs` sidecars (G2): a dependency's `#[@external]` modules
+    // sit a directory deeper here than in their own build, so their relative
+    // `require("../../src/x.mjs")` would miss the source — copy each into place.
+    if (target == .commonJS) {
+        libs.shipMjsSidecars(gpa, io, outputs.items, TEST_OUT_DIR, ext) catch {};
+    }
+
     // commonJS: root-source imports (`import {x};`) emit `require("./module")`
     // — write a `module.js` aggregator that merges every module's exports.
     // Runners only execute as the entry module (`require.main === module`),
