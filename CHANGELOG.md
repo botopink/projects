@@ -4,6 +4,25 @@ All notable changes to the botopink compiler workspace are documented in this fi
 
 ## Unreleased
 
+### Changed (breaking)
+
+- **Explicit module system** (`mod` / `pub mod`, Rust-style) — module-system
+  - A package now declares its module tree explicitly from a root
+    (`main.bp` for a binary, `root.bp` for a library — `botopink.json` `entry`
+    chooses, auto-detected as `main.bp` then `root.bp`) by following `mod` /
+    `pub mod` declarations, instead of the compiler implicitly compiling every
+    `.bp` under `src/`. `mod` is now a reserved keyword.
+  - `mod Name;` resolves a sibling `Name.bp` **or** a folder index `Name/mod.bp`
+    (exactly one — both/neither is an error). A `.bp` not reached through any
+    `mod` path is reported **orphaned** and is not compiled.
+  - **Path-visibility**: an import may cross into a module only if every `mod`
+    on its path is `pub mod`; a private `mod` is reachable only within its
+    declaring module's subtree. An `import … from "a.b"` that names a package
+    module must publicly export the symbol.
+  - **Migration**: packages without a `main.bp`/`root.bp` root still build via
+    the legacy implicit `src/` scan, now **deprecated** behind a warning, to be
+    removed in a future release. Add a root with `mod` declarations to opt in.
+
 ### Added
 
 - **Record / array ergonomics for the UI framework** (jhonstart-language-gaps)

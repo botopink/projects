@@ -32,8 +32,12 @@
       (strict root-only semantics deferred to F4 reexports).
 
 ## F4 — codegen: module boundaries + reexports
-- [ ] Emit each module per the tree; `pub mod` reexports through the parent. Parity on
-      all four backends.
+- [~] Emit each module per the tree; `pub mod` reexports through the parent. Parity on
+      all four backends. (Largely covered by the existing cross-module codegen —
+      verified end-to-end on commonJS: `require`/`exports` per module in dependency
+      order. erlang/beam share the same `crossModule.zig` analysis; wasm stays
+      single-module (known gap). Cross-PACKAGE `pub mod` reexport surface ties into
+      F5/libs-module-migration. No new code needed for the within-package case.)
 
 ## F5 — migration mechanism + pilot
 - [ ] Migration generator (filesystem → `root.bp`/`main.bp` + `mod.bp`). Pilot
@@ -41,9 +45,15 @@
       (Other libs = `libs-module-migration`, Wave 2.)
 
 ## F6 — docs + tests
-- [ ] `docs.md` §Modules; parser/resolver/visibility tests (sibling vs folder,
-      ambiguous-module error, private-import error, `pub mod` reexport). LSP go-to-def
-      across `mod` boundaries still works.
+- [x] `docs.md` §Modules (tree, `mod`/`pub mod`/`mod.bp`/`root.bp`/`main.bp`,
+      path-visibility, imports-through-tree, migration). CHANGELOG breaking-change
+      entry recorded.
+- [x] parser tests (F0); resolver/visibility/import-resolution unit tests
+      (`resolver.zig`: stripBpExt, isSource, topological order, cycle-safety,
+      withinSubtree, visibility both directions, unexported-import). CLI tests now
+      run in `zig build test`.
+- [ ] LSP go-to-def across `mod` boundaries still works (verify; LSP path-aware
+      handling if needed).
 
 ## Open decisions (resolve in F1/F5)
 - [x] implicit-scan: deprecated fallback (kept behind a deprecation warning when
