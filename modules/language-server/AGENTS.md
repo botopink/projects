@@ -18,7 +18,8 @@ language-server/
 ├── src/               ← server + protocol + features + tests
 │   ├── AGENTS.md
 │   ├── docs.md
-│   └── project_index.zig ← project-level pub symbol index
+│   ├── project_index.zig ← project-level pub symbol index (workspace scan)
+│   └── project_graph.zig ← per-project dependency graph (libs + mod siblings)
 └── snapshots/
     └── lsp/           ← LSP feature snapshots
         └── AGENTS.md
@@ -57,11 +58,47 @@ The server maintains a **project index** (`src/project_index.zig`) that scans
 `.bp` files from the workspace `rootUri`, caching `pub` symbols for cross-module
 features (import suggestions, references, module completion).
 
-`definition` resolves in three tiers: same file → workspace `pub` symbols
-(project index) → embedded "std" package modules (`engine.definitionInStdModules`).
-Std hits are materialized to `<XDG_CACHE_HOME|~/.cache>/botopink-lsp/std/<name>.bp`
-so the editor can open them (needs `environ_map` from `std.process.Init`,
-plumbed through `Server.init`).
+### Project-graph compile (lsp-project-awareness)
+
+Every handler compiles the active document **together with its module graph**,
+not alone (`Server.compileWithGraph` → `buildModuleEntries`). `src/project_graph.zig`
+resolves the dependency set with the same rules the CLI driver uses:
+
+- `from "<lib>"` → the lib's own `botopink.json` (`src` + `files`), read from the
+  first ancestor of the project that contains a `libs/` directory. `.d.bp`
+  declaration files are kept for go-to-def but excluded from the compile (the CLI
+  drops them too).
+- `mod` / `pub mod` siblings → every `.bp` under the project's `src/`.
+- `from "std"` → embedded, expanded inside the compiler.
+
+The active document stays the hot in-memory copy (appended **last** so it can
+import from every dep); open buffers overlay their dependency on disk; closed
+files are read from disk. The resolved deps are **cached per project root**
+(`ProjectGraph`), so a keystroke reuses them (cache hit) instead of re-walking
+the tree — `invalidateAll` runs on `didOpen`/`didClose` (save/watch), never on a
+keystroke. No `botopink.json` walking up from the file ⇒ single-document
+fallback (the old behavior, so isolated buffers and tests still work). The
+compiler core still names no lib: the resolver feeds it ordinary `(uri, source)`
+pairs and `resolveImports` binds `from "<lib>"` generically by symbol name.
+
+`definition` resolves in tiers: same file → **project graph** (`from "<lib>"`
+surface, incl. member access like `Response.created`, the source of truth from
+`botopink.json`) → workspace `pub` symbols (project index) → embedded "std"
+package modules (`engine.definitionInStdModules`). Std hits are materialized to
+`<XDG_CACHE_HOME|~/.cache>/botopink-lsp/std/<name>.bp` so the editor can open
+them (needs `environ_map` from `std.process.Init`, plumbed through `Server.init`).
+
+### Local-scope binding model (lsp-project-awareness)
+
+The typed `bindings` slice is module-level only — it never holds function
+parameters, `comptime` params, `val`/`var` locals, or closure binders
+(`{ f -> … }`). `engine.collectLocalScope` reconstructs the bindings visible at
+the cursor with a **pure token walk** (no typed body needed, so it survives a
+type error — completion degrades, not vanishes). `engine.completion` merges
+these ahead of the module bindings (inner scope shadows outer, `Variable` kind);
+`engine.definition`/`definitionInModules` try `localDefinition` first so a nearer
+param/local/binder wins over a same-named top-level decl. `findDeclLocation`
+includes `var` in its keyword set so `var`-locals resolve at all.
 
 **Builtin interface methods** — `completion`/`hover`/`signatureHelp` on a
 primitive/array/string receiver (`n.abs()`, `true.to_string()`, `xs.map(…)`,
@@ -87,7 +124,10 @@ knows only `CustomNode` — it never branches on any sub-language:
   execute via `node` and surface their trees on `OkData.custom_ast`. The scratch
   root is `<XDG_CACHE_HOME|~/.cache>/botopink-lsp/template` (or `.botopinkbuild/lsp`).
   Spawning `node` per compile is the documented latency cost; tooling that must
-  not touch the runtime passes `eval_ctx = null`.
+  not touch the runtime passes `eval_ctx = null`. Because the compile now runs
+  over the **project graph**, a template fn reached via `from "<lib>"` (a
+  cross-module `erika "…"`) resolves and expands too — `customAstFor` is no
+  longer empty on real app files.
 - **Semantic tokens (F1)** — `engine.customSemanticTokens` maps each node's
   `label` (`keyword`/`property`/`string`/`number`/`operator` → legend indices
   11–13 appended in `protocol.zig`) and `span` (a byte offset into the literal)

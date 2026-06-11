@@ -254,12 +254,17 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
 - **Order — decorators run BEFORE body inference.** `validateDecorators` +
   `invokeDecorators` fire in `inferProgram(Typed)` right after `registerFnSignatures`
   (the handles read only the AST, so no body inference is needed first), then if
-  `env.contributions` is non-empty the pass returns early so `analyzeSource` can
-  splice + re-analyze. This is what lets an `@emit`ed decl be visible to a body
-  that references it — a `test {}` calling a generated `mockXxx()`, or a `fn` using
-  the wiring — under **every** entry, including `botopink test`. (Earlier they ran
-  in pass 3, after bodies; a body referencing a generated decl failed as unbound,
-  which silently blocked `@emit` in test mode.)
+  `env.contributions` is non-empty the pass **defers `val`-body inference** so
+  `analyzeSource` can splice + re-analyze. This is what lets an `@emit`ed decl be
+  visible to a body that references it — a `test {}` calling a generated
+  `mockXxx()`, or a `fn` using the wiring — under **every** entry, including
+  `botopink test`. (Earlier they ran in pass 3, after bodies; a body referencing a
+  generated decl failed as unbound, which silently blocked `@emit` in test mode.)
+  `inferProgramTyped` still collects the **source decls** (imports, type decls, fn
+  signatures — never the `val` bodies that may reference the not-yet-spliced
+  decls) into its binding list before deferring, so the LSP gets a useful binding
+  set even when the spliced re-analysis can't type-check standalone
+  (lsp-project-awareness). It still names no decorator framework.
 - **Interface-level markers** reflect with `DeclKind.Interface` (added to the
   reflection enum in `decl_reflection_src` + the `decorator_eval` prelude +
   `builtins.d.bp`): `invokeDecorators` builds an `Interface` handle (the interface's
@@ -284,7 +289,13 @@ never knows what a marker means (that lives in the lib body, in `.bp`).
   `env.skipDecoratorInvoke = true` (so the generated decls are inferred + emitted
   without re-running decorators — no re-contribution, no loop). This is how a
   framework lib builds singletons / a DI graph / a router table as ordinary code,
-  with no wiring logic in the core.
+  with no wiring logic in the core. In the **types-only** path (the LSP), if that
+  spliced re-analysis fails to type-check — e.g. the `@emit`ed wiring references
+  symbols only resolvable with the full project graph — `analyzeSource` falls back
+  to the module's pre-splice source-decl bindings so completion/hover **degrade,
+  not vanish** (`types_only` flag, threaded from `compileTypesOnly`). The full
+  `compile` keeps the real error, so codegen never runs on a half-resolved module
+  and output stays byte-identical.
 - Decorator fns are **comptime-only** and dropped from codegen by `transform.zig`
   (Phase 3 decl filter, next to the template-fn drop): a `fn` whose first param is
   `comptime _: @Decl` is never emitted, so its body's `@emit`/`@compilerError`/

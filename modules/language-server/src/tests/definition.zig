@@ -248,3 +248,67 @@ test "definition: local declaration preferred over imported" {
     try std.testing.expect(std.mem.eql(u8, result.?.uri, h.TEST_URI));
     try std.testing.expectEqual(@as(u32, 0), result.?.range.start.line);
 }
+
+// ── R1 — go-to-def into the local scope (lsp-project-awareness) ───────────────
+//
+// A parameter, a `var` local, and a `{ f -> … }` closure binder carry no
+// declaration keyword that the old keyword-scan could match — go-to-def returned
+// nothing on them, and a same-named top-level decl would have shadowed the
+// nearer local. The shared source below mirrors a decorator body.
+
+const r1_source =
+    \\val decl = 99;
+    \\pub fn component(comptime decl: @Decl) {
+    \\    var args = "";
+    \\    items.forEach({ f ->
+    \\        use(decl, args, f);
+    \\    });
+    \\}
+;
+
+test "definition: nearer param shadows same-named top-level decl (R1)" {
+    const gpa = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), r1_source);
+
+    // `decl` inside `use(decl, …)` on line 4 (0-based) — must resolve to the
+    // function PARAMETER on line 1, not the top-level `val decl` on line 0.
+    const cursor = h.pos(4, 13);
+    const result = try engine.definition(gpa, h.TEST_URI, r1_source, cursor, tokens);
+    defer if (result) |loc| gpa.free(loc.uri);
+
+    try std.testing.expect(result != null);
+    try std.testing.expectEqual(@as(u32, 1), result.?.range.start.line); // the param, not line 0
+}
+
+test "definition: var-declared local resolves on go-to-def (R1)" {
+    const gpa = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), r1_source);
+
+    // `args` inside `use(decl, args, f)` → the `var args` binding on line 2.
+    const cursor = h.pos(4, 19);
+    const result = try engine.definition(gpa, h.TEST_URI, r1_source, cursor, tokens);
+    defer if (result) |loc| gpa.free(loc.uri);
+
+    try std.testing.expect(result != null);
+    try std.testing.expectEqual(@as(u32, 2), result.?.range.start.line);
+}
+
+test "definition: closure binder resolves to its binding site (R1)" {
+    const gpa = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), r1_source);
+
+    // `f` inside `use(decl, args, f)` → the `{ f -> … }` binder on line 3.
+    const cursor = h.pos(4, 24);
+    const result = try engine.definition(gpa, h.TEST_URI, r1_source, cursor, tokens);
+    defer if (result) |loc| gpa.free(loc.uri);
+
+    try std.testing.expect(result != null);
+    try std.testing.expectEqual(@as(u32, 3), result.?.range.start.line);
+    try snap.assertDefinition(gpa, "definition_closure_binder", r1_source, cursor, result);
+}

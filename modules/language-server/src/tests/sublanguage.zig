@@ -172,3 +172,107 @@ test "sublanguage F4: hover snapshot on a bound sub-language node" {
 
     try snap.assertHover(gpa, "sublanguage_hover_ref", FIXTURE, cursor, hover);
 }
+
+// ── R4 — cross-module sub-language expansion (lsp-project-awareness) ───────────
+//
+// The same `@ExprCustom` template, but defined in a DEPENDENCY module and used
+// across the import boundary. On `feat` the LSP compiled the active document
+// alone, so the `from "<lib>"` template fn never resolved, never expanded, and
+// `customAstFor` was empty — the literal stayed an opaque string. With the
+// project-graph compile the dep resolves, the template expands, and the overlay
+// lights up. The overlay code is unchanged; only the AST now exists.
+
+const X_DEP =
+    \\pub struct Cities { name: string }
+    \\pub fn erika<T>(comptime e: @Expr<string>) -> @ExprCustom<T> {
+    \\    val code = e.build("[1, 2]");
+    \\    val kw = CustomNode(kind: "kw", span: Span(0, 6, 1), label: "keyword", ref: null, children: []);
+    \\    val col = CustomNode(kind: "col", span: Span(7, 11, 1), label: "property", ref: e.lookup("Cities"), children: []);
+    \\    val root = CustomNode(kind: "root", span: Span(0, 0, 1), label: "none", ref: null, children: [kw, col]);
+    \\    return e.custom(root, code);
+    \\}
+;
+const X_MAIN =
+    \\import { erika, Cities } from "erika";
+    \\val xs = erika "select name";
+;
+
+fn compileCrossModule(gpa: std.mem.Allocator) !h.CompileHandle {
+    return h.compileMultiEval(gpa, &.{
+        .{ .uri = "file:///dep_0.bp", .source = X_DEP },
+        .{ .uri = h.TEST_URI, .source = X_MAIN },
+    });
+}
+
+test "sublanguage R4: a cross-module `erika \"…\"` expands and yields a Custom AST" {
+    const gpa = std.testing.allocator;
+    var c = try compileCrossModule(gpa);
+    defer c.deinit(gpa);
+
+    const entries = c.customAst();
+    try std.testing.expectEqual(@as(usize, 1), entries.len);
+    try std.testing.expectEqualStrings("erika", entries[0].callee);
+    try std.testing.expectEqualStrings("keyword", entries[0].root.children[0].label);
+    try std.testing.expectEqualStrings("property", entries[0].root.children[1].label);
+}
+
+test "sublanguage R4: cross-module literal paints keyword + property tokens" {
+    const gpa = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    var c = try compileCrossModule(gpa);
+    defer c.deinit(gpa);
+
+    const custom = try engine.customSemanticTokens(a, X_MAIN, c.customAst());
+    // The overlay produced tokens inside the string — the literal is no longer
+    // opaque. (Empty on `feat`, where the template never resolved.)
+    try std.testing.expect(custom.len > 0);
+
+    const tokens = try h.tokenize(a, X_MAIN);
+    const bindings = c.bindings() orelse &.{};
+    const lexed = try engine.semanticTokens(a, tokens, bindings);
+    const merged = try engine.mergeSemanticTokens(a, lexed, custom);
+    try snap.assertSemanticTokens(gpa, "sublanguage_cross_module_tokens", X_MAIN, merged);
+}
+
+/// A cross-module template that rejects the query via `failAt` — the malformed
+/// case of R4. The diagnostic must land inside the literal in the CALLER module.
+const X_DEP_FAIL =
+    \\pub struct Cities { name: string }
+    \\pub fn erika<T>(comptime e: @Expr<string>) -> @ExprCustom<T> {
+    \\    e.failAt(Span(7, 11, 1), "unknown column 'name'");
+    \\    val code = e.build("[1, 2]");
+    \\    val root = CustomNode(kind: "root", span: Span(0, 0, 1), label: "none", ref: null, children: []);
+    \\    return e.custom(root, code);
+    \\}
+;
+
+test "sublanguage R4: a malformed cross-module query diagnoses inside the string" {
+    const gpa = std.testing.allocator;
+    var c = try h.compileMultiEval(gpa, &.{
+        .{ .uri = "file:///dep_0.bp", .source = X_DEP_FAIL },
+        .{ .uri = h.TEST_URI, .source = X_MAIN },
+    });
+    defer c.deinit(gpa);
+
+    const diags = try c.result.diagnosticsFor(gpa, h.TEST_URI);
+    defer {
+        for (diags) |d| gpa.free(d.message);
+        gpa.free(diags);
+    }
+
+    const lit = "select name";
+    const cstart = std.mem.indexOf(u8, X_MAIN, lit).?;
+    const cend = cstart + lit.len;
+
+    var found = false;
+    for (diags) |d| {
+        if (std.mem.indexOf(u8, d.message, "unknown column") == null) continue;
+        const off = offsetOf(X_MAIN, d.range.start);
+        try std.testing.expect(off >= cstart and off < cend);
+        found = true;
+    }
+    try std.testing.expect(found);
+}
