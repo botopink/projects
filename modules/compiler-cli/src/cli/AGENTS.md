@@ -20,6 +20,7 @@ cli/
 ├── format_cmd.zig     ← `botopink format`   format / check .bp files
 ├── new.zig            ← `botopink new`      scaffold a new project
 ├── clean.zig          ← `botopink clean`    delete out/ + .botopinkbuild/
+├── migrate.zig        ← `botopink migrate`  generate the mod tree from src/ layout
 ├── config.zig         ← `botopink.json` loader + target options + `entry` + `dependencies`
 ├── sources.zig        ← project-source loading: drives the module tree + fallback
 ├── resolver.zig       ← explicit module-tree resolver (`mod`/`pub mod` → files)
@@ -39,6 +40,7 @@ cli/
 | `format_cmd.zig` | `botopink format [--check]` | Round-trip stable formatting. |
 | `new.zig` | `botopink new <name>` | Drops a project template. |
 | `clean.zig` | `botopink clean` | Removes generated artifacts. |
+| `migrate.zig` | `botopink migrate [--dry-run]` | Derives the explicit module tree from the current `src/` layout — prepends `pub mod X;` to each directory's index (`root.bp`/`main.bp` at the root, `mod.bp` per folder), creating index files as needed. Idempotent; defaults to `pub mod` to preserve the implicit-scan reachability of pre-migration packages. |
 
 ## Shared helpers
 

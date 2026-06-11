@@ -40,9 +40,15 @@
       F5/libs-module-migration. No new code needed for the within-package case.)
 
 ## F5 — migration mechanism + pilot
-- [ ] Migration generator (filesystem → `root.bp`/`main.bp` + `mod.bp`). Pilot
-      `examples/*` + `libs/std`. Record the breaking change in `CHANGELOG.md`.
-      (Other libs = `libs-module-migration`, Wave 2.)
+- [x] Migration generator (`botopink migrate [--dry-run]`, `migrate.zig`): walks
+      `src/`, prepends `pub mod X;` to each directory's index (`root.bp`/`main.bp`
+      at the root, `mod.bp` per folder), creating index files as needed.
+      Defaults to `pub mod` to preserve old reachability; idempotent. Verified
+      migrate→build→run on a multi-folder package. Breaking change in `CHANGELOG.md`.
+- [ ] Pilot `examples/*` (run the generator on self-contained examples) + `libs/std`
+      (std is embedded, loaded outside the CLI resolver — needs the std embed path
+      to honor a `root.bp` tree; deferred, higher-risk). Other libs = Wave 2
+      `libs-module-migration`.
 
 ## F6 — docs + tests
 - [x] `docs.md` §Modules (tree, `mod`/`pub mod`/`mod.bp`/`root.bp`/`main.bp`,
