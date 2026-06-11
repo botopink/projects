@@ -27,6 +27,10 @@ modules/
 │   ├── build.zig.zon
 │   ├── src/                 ← JSON-RPC server + LSP features + tests
 │   └── snapshots/lsp/       ← LSP feature snapshots
+├── lib-test-runner/         ← `botopink-lib-test` — per-lib/per-backend test gate
+│   ├── build.zig
+│   ├── build.zig.zon
+│   └── src/                 ← discovery + fan-out + matrix (self-contained)
 └── vscode-extension/        ← VS Code extension (syntax + LSP client)
     ├── package.json
     ├── language-configuration.json
@@ -42,6 +46,7 @@ modules/
 | `compiler-cli/` | `botopink` executable | `compiler-core` | [link](compiler-cli/AGENTS.md) |
 | `compiler-core/` | library (lexer → codegen) | [`libs/std`](../libs/std/AGENTS.md) | [link](compiler-core/AGENTS.md) |
 | `language-server/` | `botopink-lsp` executable | `compiler-core` | [link](language-server/AGENTS.md) |
+| `lib-test-runner/` | `botopink-lib-test` executable | none (shells out to `botopink`) | [link](lib-test-runner/AGENTS.md) |
 | `vscode-extension/` | VS Code `.vsix` extension | `language-server` (runtime) | [link](vscode-extension/AGENTS.md) |
 
 ## Per-package commands
@@ -49,11 +54,13 @@ modules/
 ```bash
 cd modules/<package> && zig build           # compile
 cd modules/<package> && zig build run       # run (cli + lsp only)
-cd modules/<package> && zig build test      # tests (core + lsp)
+cd modules/<package> && zig build test      # tests (core + lsp + lib-test-runner units)
 ```
 
-The workspace `../build.zig` wires CLI + LSP together. See the root
-[`AGENTS.md`](../AGENTS.md) for top-level commands.
+The workspace `../build.zig` wires CLI + LSP + lib-test-runner together, plus a
+`zig build test-libs` step that runs every `libs/` project's tests per backend via
+`botopink-lib-test` (needs `node`/`escript` on `PATH`; not part of `zig build
+test`). See the root [`AGENTS.md`](../AGENTS.md) for top-level commands.
 
 ## Cross-package conventions
 

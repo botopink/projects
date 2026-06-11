@@ -23,7 +23,7 @@ fn main() {
 %% interface Pairish
 
 main() ->
-    P = pairish:of(1, <<"one">>),
+    P = pairish:'of'(1, <<"one">>),
     io:format("~p~n", [pairish:first(P)]).
 
 '_botopink_main'() ->
