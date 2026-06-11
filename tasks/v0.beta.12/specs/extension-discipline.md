@@ -4,7 +4,7 @@
 **Depends on**: nothing (reworks the existing `interface`/`implement`/`extend` + activation machinery already in `feat`)
 **Files**: `modules/compiler-core/src/parser/decls.zig`, `modules/compiler-core/src/comptime/infer.zig`, `modules/compiler-core/src/comptime/env.zig`, `modules/compiler-core/src/comptime/error.zig`, `modules/compiler-core/src/codegen/{typescript,commonJS,erlang,beam_asm,wat}.zig`, `modules/compiler-core/src/ast.zig`
 **Touches docs**: `modules/compiler-core/src/parser/AGENTS.md`, `modules/compiler-core/src/comptime/AGENTS.md`
-**Status**: pending
+**Status**: done
 
 > Closes two holes the same snippet exposes today. `extend` lets you bolt
 > **arbitrary, contract-free methods** onto a type, and the activation operator
