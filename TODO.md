@@ -25,18 +25,28 @@
       codegen + LINQ inference gaps (the long pole, also unblocks erika on beam).
 
 ## A2 (remainder) — `Array.range`/`repeat`
-- [~] Reimplemented `range`/`repeat` in **pure botopink** (recursive `default fn`
-      over `prepend`) instead of broken host externals (`lists:seq` is end-inclusive;
-      the node companion `gleam_stdlib.mjs` never existed). Correct half-open
-      `[start, stop)` semantics. **commonJS DONE+verified** (`0,1,2` / `3..3`=`[]` /
-      `repeat(7,3)`=`7,7,7`); std range tests were red on *both* backends before,
-      now green on commonJS. Fixed a real commonJS bug: a JS-global-backed interface
-      (`Array`) with associated fns emitted `const Array = {}` shadowing the global
-      → `Array.prototype.*` patches hit `undefined`; now statics go on the global.
-      **erlang/beam PENDING:** associated interface `default fn`s aren't emitted at
-      all there (`emitInterface` is a comment — `Pair.of`/`Function.compose` are
-      equally broken), so `Array.range` falls back to `array:range` (undefined). A
-      real cross-module associated-default-fn-emission feature, not a tweak.
+- [x] Reimplemented `range`/`repeat` in **pure botopink** (recursive `default fn`
+      with an array-literal spread `[head, ..(recurse(...))]`) instead of broken
+      host externals (`lists:seq` is end-inclusive; the node companion
+      `gleam_stdlib.mjs` never existed). Correct half-open `[start, stop)` semantics.
+      **DONE+verified on commonJS, erlang, AND beam** (`range(0,3)`=`3`, `range(3,3)`
+      empty, `repeat(7,3)`=`3` on all three; std range tests were red on *every*
+      backend before). To get there:
+      - **commonJS**: fixed a JS-global-backed interface (`Array`) with associated
+        fns emitting `const Array = {}` (shadowed the global → `Array.prototype.*`
+        patches hit `undefined`); statics now go on the global.
+      - **erlang/beam**: implemented **interface associated-`default fn` emission**
+        (`emitInterface`/`emitInterfaceAssoc` + call resolution to the local fn) —
+        `emitInterface` was a comment before, so `Pair.of`/`Function.compose` were
+        equally broken; now emitted + resolved. Function/Pair assoc fns now work too.
+      - **beam**: 3 register-liveness fixes — array-literal `test_heap` live count
+        (per-element, not `cur_arity+1`); `gc_bif`/`materializeCallArgs` honour
+        `min_live`; closures reset `min_live`. `val head` spills the cons head to a
+        y-slot so it survives the recursive call's x-register clobber.
+      - **Known follow-ups (orthogonal, not regressions — Pair was 100% broken
+        before):** `Pair.of` (reserved word `of`) misresolves to `pair:'of'` on
+        erlang; beam tuple-element access `p._0` in an assoc-fn body returns the
+        whole tuple. `Array.range`/`repeat` (the spec's A2) are unaffected.
 
 ## B — backend-parity tails
 - [x] **F1** literal method receivers reach **codegen** on every backend: the

@@ -25,10 +25,20 @@ filter  [Method]  detail: fn filter(self: Self, pred: fn(item: T) -> bool) -> Se
     // ── producers (associated — no receiver) ──
     // Pure botopink (no host backing): the host `lists:seq`/`duplicate` have the
     // wrong semantics (`seq` is end-inclusive; `duplicate` swaps the args), so
-    // these recurse over `prepend`, giving identical end-exclusive `[start, stop)`
-    // and `times`-copy results on every backend.
+    // these recurse with an array-literal spread `[head, ..tail]`, giving
+    // identical end-exclusive `[start, stop)` / `times`-copy results on every
+    // backend. `head` is bound to a `val` first so the BEAM backend spills it to a
+    // stack slot — an x-register would be clobbered by the recursive call. (No
+    // comments inside the bodies: the commonJS if-expr emits as a one-line IIFE,
+    // where a `//` would swallow the rest of the block.)
     default
 range  [Method]  detail: fn range(start: i32, stop: i32) -> Array<i32>
+head  [Field]  detail: val head = start;
+            [head, ..(Array.range(start + 1, stop))];
+        };
+    }
+
+    default
 repeat  [Method]  detail: fn repeat<E>(value: E, times: i32) -> Array<E>
 isEmpty  [Method]  detail: fn isEmpty(self: Self) -> bool
 contains  [Method]  detail: fn contains(self: Self, x: T) -> bool

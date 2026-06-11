@@ -22,9 +22,15 @@ fn main() {
 
 %% interface Pairish
 
+'of'(First, Second) ->
+    {First, Second}.
+
+first(P) ->
+    element(1, P).
+
 main() ->
     P = pairish:'of'(1, <<"one">>),
-    io:format("~p~n", [pairish:first(P)]).
+    io:format("~p~n", [first(P)]).
 
 '_botopink_main'() ->
     main().

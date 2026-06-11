@@ -250,6 +250,12 @@ fn emitErlang(
     defer em.std_imports.deinit();
     defer em.locals.deinit();
     defer em.top_vals.deinit();
+    try em.collectInterfaces(program);
+    defer {
+        var iface_it = em.interface_assoc.keyIterator();
+        while (iface_it.next()) |k| em.alloc.free(k.*);
+        em.interface_assoc.deinit();
+    }
     try em.collectTypeShapes(program);
     try em.collectImportedTypes(program);
     defer {
@@ -627,6 +633,12 @@ const Emitter = struct {
     /// it lowers to the call `name()`. Empty when an entrypoint wrapper binds the
     /// vals as local variables instead.
     top_vals: std.StringHashMap(void),
+    /// Interface associated `default fn` qualified names (`"Array.range"`,
+    /// `"Pair.of"`). These pure-botopink fns are emitted as bare local functions
+    /// (the interface decl is inlined into each consuming module), so an
+    /// `Interface.method(...)` call resolves to the local fn, not a remote
+    /// `array:range`. Populated by `collectInterfaces`.
+    interface_assoc: std.StringHashMap(void),
 
     fn init(alloc: std.mem.Allocator, out: *std.Io.Writer, cv: std.StringHashMap([]const u8), rewrites: std.AutoHashMap(ast.Loc, []const u8)) Emitter {
         return .{
@@ -644,7 +656,32 @@ const Emitter = struct {
             .imported_types = std.StringHashMap([]const u8).init(alloc),
             .locals = std.StringHashMap(void).init(alloc),
             .top_vals = std.StringHashMap(void).init(alloc),
+            .interface_assoc = std.StringHashMap(void).init(alloc),
         };
+    }
+
+    /// Index interface associated `default fn`s (no `self`, with a body) by their
+    /// qualified name so `Interface.method(...)` resolves to the bare local fn
+    /// `emitInterface` emits.
+    fn collectInterfaces(this: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .interface => |i| {
+                for (i.methods) |m| {
+                    if (!m.is_default or m.body == null) continue;
+                    const has_self = m.params.len > 0 and std.mem.eql(u8, m.params[0].name, "self");
+                    if (has_self) continue;
+                    const qn = try std.fmt.allocPrint(this.alloc, "{s}.{s}", .{ i.name, m.name });
+                    try this.interface_assoc.put(qn, {});
+                }
+            },
+            else => {},
+        };
+    }
+
+    fn isInterfaceAssoc(this: *Emitter, iface: []const u8, method: []const u8) bool {
+        var b: [256]u8 = undefined;
+        const qn = std.fmt.bufPrint(&b, "{s}.{s}", .{ iface, method }) catch return false;
+        return this.interface_assoc.contains(qn);
     }
 
     /// Mark `name` as a function-scoped local (param / `val` / lambda param).
@@ -1753,6 +1790,14 @@ const Emitter = struct {
                                 // the fn is emitted as a bare local function in this
                                 // module, not a remote `response:ok(...)`.
                                 try this.fmt("{s}(", .{callee});
+                            } else if (mod_name != null and this.isInterfaceAssoc(mod_name.?, callee)) {
+                                // Associated `default fn` of an interface (`Array.range`,
+                                // `Pair.of`): emitted as a bare local function by
+                                // `emitInterface` (the interface is inlined), so call it
+                                // directly — reserved-word-quoted (`'of'`) to match the
+                                // emitted name — not a remote `array:range`.
+                                var ib: [256]u8 = undefined;
+                                try this.fmt("{s}(", .{try fnAtom(callee, &ib)});
                             } else if (mod_name) |name| {
                                 // A PascalCase identifier receiver is a module-qualified
                                 // call: `List.map(xs, f)` → a remote call `list:map(Xs, F)`.
@@ -2741,6 +2786,25 @@ const Emitter = struct {
 
     fn emitInterface(this: *Emitter, i: ast.InterfaceDecl) !void {
         try this.fmt("%% interface {s}\n", .{i.name});
+        // Associated `default fn`s (no `self`) are pure botopink — emit them as
+        // bare local functions so `Interface.method(...)` resolves locally (the
+        // interface decl is inlined into each consuming module). Instance default
+        // fns (with `self`) are a separate gap, not emitted here.
+        for (i.methods) |m| {
+            if (!m.is_default or m.body == null) continue;
+            const has_self = m.params.len > 0 and std.mem.eql(u8, m.params[0].name, "self");
+            if (has_self) continue;
+            try this.w("\n");
+            try this.emitFn(.{
+                .isPub = false,
+                .name = m.name,
+                .annotations = &.{},
+                .genericParams = &.{},
+                .params = m.params,
+                .returnType = null,
+                .body = m.body.?,
+            });
+        }
     }
 
     fn emitImplement(this: *Emitter, im: ast.ImplementDecl) !void {

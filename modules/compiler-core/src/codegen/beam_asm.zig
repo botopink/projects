@@ -411,6 +411,8 @@ fn emitBeamAsm(
     // Record/struct field orders (local + cross-imported) drive map construction
     // and cross-module associated-fn calls.
     try em.collectRecordShapes(program);
+    // Interface associated `default fn`s (`Array.range`) resolve as local fns.
+    try em.collectInterfaces(program);
 
     // Detect main/0 entrypoint (drives wrapper emission).
     var has_main_0 = false;
@@ -434,6 +436,7 @@ fn emitBeamAsm(
             .record => |r| try em.reserveRecordMethods(r),
             .@"struct" => |s| try em.reserveStructMembers(s),
             .@"enum" => |e| try em.reserveEnumMethods(e),
+            .interface => |i| try em.reserveInterfaceMethods(i),
             .implement => |im| try em.reserveImplementMethods(im),
             .extend => |ex| try em.reserveExtendMethods(ex),
             else => {},
@@ -488,14 +491,16 @@ fn emitBeamAsm(
             .record => |r| try em.emitRecord(r),
             .@"struct" => |s| try em.emitStruct(s),
             .@"enum" => |e| try em.emitEnum(e),
+            // An interface's associated `default fn`s (`Array.range`, `Pair.of`)
+            // are pure botopink — emit them as local mangled fns (`'Array_range'`).
+            .interface => |i| try em.emitInterfaceAssoc(i),
             .implement => |im| try em.emitImplement(im),
             .extend => |ex| try em.emitExtend(ex),
-            // Purely abstract decls (interface/delegate), module-graph
-            // metadata (use), and test blocks (only compiled under
-            // `botopink test`) don't lower to runtime code — silently skip.
-            // `mod` declares a submodule in the explicit tree; the submodule is
-            // compiled as its own unit, so the declaration itself emits nothing.
-            .interface, .delegate, .use, .mod, .@"test" => {},
+            // Purely abstract decls (delegate), module-graph metadata (use), and
+            // test blocks (only compiled under `botopink test`) don't lower to
+            // runtime code — silently skip. `mod` declares a submodule in the
+            // explicit tree; the submodule is compiled as its own unit.
+            .delegate, .use, .mod, .@"test" => {},
         }
     }
 
@@ -605,6 +610,12 @@ const Emitter = struct {
     /// receiver names one (`Response.ok(...)`) lowers to a remote `call_ext`
     /// into the owner (`http:'Response_ok'(...)`).
     imported_types: std.StringHashMap([]const u8),
+    /// Interface associated `default fn` qualified names (`"Array.range"`). Pure
+    /// botopink, emitted as local mangled fns (`'Array_range'`) since the
+    /// interface decl is inlined into each consuming module; an
+    /// `Interface.method(...)` call resolves to that local fn, not a remote
+    /// `array:range`. Populated by `collectInterfaces`.
+    interface_assoc: std.StringHashMap(void),
 
     /// Target type and methods of an `implement`/`extend` block.
     const ExtInfo = struct { target: []const u8, methods: []const ast.ImplementMethod };
@@ -621,6 +632,7 @@ const Emitter = struct {
             .ext_by_name = std.StringHashMap(ExtInfo).init(alloc),
             .record_fields = std.StringHashMap([]const []const u8).init(alloc),
             .imported_types = std.StringHashMap([]const u8).init(alloc),
+            .interface_assoc = std.StringHashMap(void).init(alloc),
         };
     }
 
@@ -636,6 +648,48 @@ const Emitter = struct {
         while (rf.next()) |names| self.alloc.free(names.*);
         self.record_fields.deinit();
         self.imported_types.deinit();
+        var ia = self.interface_assoc.keyIterator();
+        while (ia.next()) |k| self.alloc.free(k.*);
+        self.interface_assoc.deinit();
+    }
+
+    /// Index interface associated `default fn`s (no `self`, with a body) by their
+    /// qualified name (`"Array.range"`) so an `Interface.method(...)` call lowers
+    /// to the local mangled fn `'Interface_method'` that `emitInterfaceAssoc`
+    /// emits — parity with the erlang backend.
+    fn collectInterfaces(self: *Emitter, program: ast.Program) !void {
+        for (program.decls) |decl| switch (decl) {
+            .interface => |i| {
+                for (i.methods) |m| {
+                    if (!m.is_default or m.body == null or !isAssocMethod(m)) continue;
+                    const qn = try std.fmt.allocPrint(self.alloc, "{s}.{s}", .{ i.name, m.name });
+                    try self.interface_assoc.put(qn, {});
+                }
+            },
+            else => {},
+        };
+    }
+
+    fn isInterfaceAssoc(self: *Emitter, iface: []const u8, method: []const u8) bool {
+        var b: [256]u8 = undefined;
+        const qn = std.fmt.bufPrint(&b, "{s}.{s}", .{ iface, method }) catch return false;
+        return self.interface_assoc.contains(qn);
+    }
+
+    /// Reserve labels for an interface's associated `default fn`s (pass 1).
+    fn reserveInterfaceMethods(self: *Emitter, i: ast.InterfaceDecl) !void {
+        for (i.methods) |m| {
+            if (!m.is_default or m.body == null or !isAssocMethod(m)) continue;
+            try self.reserveMethod(i.name, m.name, methodArity(m));
+        }
+    }
+
+    /// Emit an interface's associated `default fn`s as local mangled fns (pass 2).
+    fn emitInterfaceAssoc(self: *Emitter, i: ast.InterfaceDecl) !void {
+        for (i.methods) |m| {
+            if (!m.is_default or m.body == null or !isAssocMethod(m)) continue;
+            try self.emitMethodAsFn(i.name, m);
+        }
     }
 
     fn collectExtensions(self: *Emitter, program: ast.Program) !void {
@@ -1640,7 +1694,7 @@ const Emitter = struct {
         if (lhs_simple != null and rhs_simple != null) {
             try self.bodyPrint(
                 "    {{gc_bif, {s}, {{f, 0}}, {d}, [{s}, {s}], {{x, {d}}}}}.\n",
-                .{ bif, self.cur_arity, lhs_simple.?, rhs_simple.?, dest },
+                .{ bif, @max(self.cur_arity, self.min_live), lhs_simple.?, rhs_simple.?, dest },
             );
             return;
         }
@@ -1665,7 +1719,7 @@ const Emitter = struct {
 
         try self.bodyPrint(
             "    {{gc_bif, {s}, {{f, 0}}, {d}, [{s}, {s}], {{x, {d}}}}}.\n",
-            .{ bif, scratch + 1, lhs_final, rhs_final, dest },
+            .{ bif, @max(scratch + 1, self.min_live), lhs_final, rhs_final, dest },
         );
     }
 
@@ -1885,6 +1939,23 @@ const Emitter = struct {
                             }
                             return;
                         }
+                        if (self.fnLabelsFor(mangled, arity)) |labels| {
+                            try self.materializeCallArgs(cc.args);
+                            switch (mode) {
+                                .non_tail => try self.bodyPrint("    {{call, {d}, {{f, {d}}}}}.\n", .{ arity, labels.entry }),
+                                .tail => try self.bodyPrint("    {{call_last, {d}, {{f, {d}}}, {d}}}.\n", .{ arity, labels.entry, self.num_y }),
+                            }
+                            return;
+                        } else |_| {}
+                    }
+                    // Associated `default fn` of an interface (`Array.range`, `Pair.of`):
+                    // emitted as the local mangled fn `'<Interface>_<callee>'` by
+                    // `emitInterfaceAssoc` (the interface is inlined), so call it
+                    // directly — never a remote `array:range`.
+                    if (cc.trailing.len == 0 and self.isInterfaceAssoc(rn, cc.callee)) {
+                        var nbuf: [256]u8 = undefined;
+                        const mangled = std.fmt.bufPrint(&nbuf, "'{s}_{s}'", .{ rn, cc.callee }) catch return;
+                        const arity = cc.args.len;
                         if (self.fnLabelsFor(mangled, arity)) |labels| {
                             try self.materializeCallArgs(cc.args);
                             switch (mode) {
@@ -2437,7 +2508,15 @@ const Emitter = struct {
             if (terms[i]) |t| {
                 try self.bodyPrint("    {{move, {s}, {{x, {d}}}}}.\n", .{ t, scratch_base + i });
             } else {
+                // A complex arg lowered here must not let its inner `gc_bif`/closure
+                // GC-clobber the scratch slots holding the args already
+                // materialized (`scratch_base..scratch_base+i-1`): raise the live
+                // floor so those survive (e.g. `repeat(value, times - 1)` saves
+                // `value` then lowers the `times - 1` gc_bif).
+                const saved_min = self.min_live;
+                self.min_live = @max(self.min_live, @as(u32, @intCast(scratch_base + i)));
                 try self.lowerExprIntoX0(arg.value.*);
+                self.min_live = saved_min;
                 try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{scratch_base + i});
             }
         }
@@ -2455,7 +2534,26 @@ const Emitter = struct {
             try self.bodyWrite("    {move, nil, {x, 0}}.\n");
         }
         if (al.elems.len > 0) {
-            try self.bodyPrint("    {{test_heap, {d}, {d}}}.\n", .{ al.elems.len * 2, self.cur_arity + 1 });
+            // Live x-registers across the cons allocation: `x0` holds the
+            // accumulator (the spread tail, or `nil`), plus any x-register an
+            // element reads in the loop below. A `val` spilled to a y-slot
+            // contributes nothing — which is exactly why the recursive
+            // `[head, ..(recurse(...))]` builders assemble (the recursive call
+            // clobbers the param x-registers, but `head` lives on the stack). The
+            // scratch save slot is written *after* this `test_heap`, so it must
+            // not be claimed live (`cur_arity + 1` over-claimed it → `not_live`).
+            var live: u32 = 1;
+            for (al.elems) |elem| switch (elem) {
+                .identifier => |id| switch (id.kind) {
+                    .ident => |nm| if (self.reg_map.get(nm)) |reg| switch (reg) {
+                        .x => |xi| live = @max(live, xi + 1),
+                        .y => {},
+                    },
+                    else => {},
+                },
+                else => {},
+            };
+            try self.bodyPrint("    {{test_heap, {d}, {d}}}.\n", .{ al.elems.len * 2, live });
             var i: usize = al.elems.len;
             while (i > 0) {
                 i -= 1;
@@ -2793,6 +2891,11 @@ const Emitter = struct {
         const saved_y = self.next_y;
         const saved_num_y = self.num_y;
         const saved_arity = self.cur_arity;
+        // The closure has its own register frame: the outer `min_live` floor (a
+        // stashed `@Result`/arg scratch slot) doesn't apply here and would make
+        // the closure's `gc_bif`s over-claim live registers (`not_live`).
+        const saved_min_live = self.min_live;
+        self.min_live = 0;
 
         self.next_y = 0;
         self.cur_arity = arity;
@@ -2818,6 +2921,7 @@ const Emitter = struct {
         self.next_y = saved_y;
         self.num_y = saved_num_y;
         self.cur_arity = saved_arity;
+        self.min_live = saved_min_live;
         self.out = saved_out;
 
         try self.deferred_lambdas.append(self.alloc, try lam_buf.toOwnedSlice());
@@ -2952,6 +3056,8 @@ const Emitter = struct {
         const saved_num_y = self.num_y;
         const saved_arity = self.cur_arity;
         const saved_loop_flag = self.in_loop_lambda;
+        const saved_min_live = self.min_live;
+        self.min_live = 0;
 
         self.next_y = 0;
         self.cur_arity = arity;
@@ -2980,6 +3086,7 @@ const Emitter = struct {
         self.num_y = saved_num_y;
         self.cur_arity = saved_arity;
         self.in_loop_lambda = saved_loop_flag;
+        self.min_live = saved_min_live;
         self.out = saved_out;
 
         try self.deferred_lambdas.append(self.alloc, try lam_buf.toOwnedSlice());

@@ -16,13 +16,49 @@ fn main() {
 
 %% interface Function
 
+identity(X) ->
+    X.
+
+compose(F, G) ->
+    fun(A) ->
+        G(F(A))
+    end.
+
+flip(F) ->
+    fun(B, A) ->
+        F(A, B)
+    end.
+
+constant(X) ->
+    fun(Ignored) ->
+        X
+    end.
+
 %% interface Pair
+
+'of'(First, Second) ->
+    {First, Second}.
+
+first(P) ->
+    element(1, P).
+
+second(P) ->
+    element(2, P).
+
+swap(P) ->
+    {element(2, P), element(1, P)}.
+
+mapFirst(P, Transform) ->
+    {Transform(element(1, P)), element(2, P)}.
+
+mapSecond(P, Transform) ->
+    {element(1, P), Transform(element(2, P))}.
 
 main() ->
     P = pair:'of'(1, <<"one">>),
-    io:format("~p~n", [pair:first(P)]),
-    io:format("~p~n", [function:identity(42)]),
-    Inc = function:compose(fun(X) ->
+    io:format("~p~n", [first(P)]),
+    io:format("~p~n", [identity(42)]),
+    Inc = compose(fun(X) ->
         (X + 1)
     end, fun(Y) ->
         (Y * 2)

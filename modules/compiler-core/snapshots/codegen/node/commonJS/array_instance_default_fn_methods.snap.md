@@ -42,10 +42,10 @@ fn main() {
 //   default fn flatMap(...)
 //   default fn toList(...)
 Array.range = function(start, stop) {
-    return (() => { if ((start >= stop)) { return []; } else { return Array.range((start + 1), stop).prepend(start); } })();
+    return (() => { if ((start >= stop)) { return []; } else { const head = start; return [head, ...(Array.range((start + 1), stop))]; } })();
 };
 Array.repeat = function(value, times) {
-    return (() => { if ((times <= 0)) { return []; } else { return Array.repeat(value, (times - 1)).prepend(value); } })();
+    return (() => { if ((times <= 0)) { return []; } else { const head = value; return [head, ...(Array.repeat(value, (times - 1)))]; } })();
 };
 Array.prototype.isEmpty = function() {
     return (this.length === 0);

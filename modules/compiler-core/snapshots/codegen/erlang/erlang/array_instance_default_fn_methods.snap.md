@@ -16,6 +16,24 @@ fn main() {
 
 %% interface Array
 
+range(Start, Stop) ->
+    case (Start >= Stop) of
+        true ->
+            [];
+        false ->
+            Head = Start,
+            [Head] ++ (range((Start + 1), Stop))
+    end.
+
+repeat(Value, Times) ->
+    case (Times =< 0) of
+        true ->
+            [];
+        false ->
+            Head = Value,
+            [Head] ++ (repeat(Value, (Times - 1)))
+    end.
+
 main() ->
     Xs = [1, 2, 3],
     io:format("~p~n", [iolist_to_binary(lists:join(<<",">>, lists:map(fun(__E) -> if is_binary(__E) -> __E; is_integer(__E) -> integer_to_binary(__E); is_list(__E) -> __E; true -> iolist_to_binary(io_lib:format("~p", [__E])) end end, [0 | Xs])))]),
