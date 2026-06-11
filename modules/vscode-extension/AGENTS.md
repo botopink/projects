@@ -34,6 +34,29 @@ Thin TypeScript wrapper that:
 Semantic classification (semantic tokens, inlay hints, symbols, …) is
 **always** served by `botopink-lsp`. The extension only wires the UI.
 
+### Sub-language highlighting (`erika "…"`, `html """…"""`)
+
+The interior of a sub-language string is coloured by the **LSP's semantic
+tokens**, never by a hand-written SQL/HTML grammar — VSCode is a pure renderer
+of what the compiler computed at comptime (`@ExprCustom` → `CustomNode` →
+`semanticTokens`). Two manifest pieces let those tokens win:
+
+- `configurationDefaults["[botopink]"]."editor.semanticHighlighting.enabled": true`
+  forces semantic highlighting on for `.bp` regardless of the active theme, so
+  the LSP tokens override the TextMate `string.quoted` scope per-range. (Default
+  dark/light themes already opt in; this makes every theme behave.)
+- `contributes.semanticTokenScopes` maps each sub-language token type
+  (`keyword`/`property`/`string`/`number`/`operator`) to fallback TextMate
+  scopes so a theme that doesn't directly style the semantic type still colours
+  it.
+
+The TextMate grammar deliberately does **not** sub-scope string interiors (see
+the `strings` repository comment in `syntaxes/botopink.tmLanguage.json`): a plain
+string carries no semantic tokens and stays `string`-coloured, so non-sub-language
+strings are visually unchanged. No `extension.ts` change is needed — the
+`vscode-languageclient` registers the semantic-tokens feature automatically once
+the server advertises the provider.
+
 ## Tree
 
 ```text

@@ -1,0 +1,10 @@
+//// The `erika` package — module-tree root.
+////
+//// `erika` is a single-module library: `erika.bp` carries the whole lib (the
+//// fluent `Query<T>` + the `erika "…"` SQL-subset template fn). Declaring it
+//// `pub mod` makes it the package's public surface, reached by a consumer via
+//// `import {…} from "erika"` (the generic `from "<lib>"` loader). The bare
+//// template-fn binding that powers `erika "…"` resolves through this same
+//// exported module.
+
+pub mod erika;

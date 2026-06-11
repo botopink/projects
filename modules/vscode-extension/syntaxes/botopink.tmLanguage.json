@@ -122,6 +122,7 @@
       ]
     },
     "strings": {
+      "comment": "Sub-language interiors (erika \"…\" SQL, html \"\"\"…\"\"\" DSL) are NOT scoped here — VSCode is a pure renderer of the LSP's semantic tokens, which override this `string.quoted` scope per-range (editor.semanticHighlighting.enabled is forced on for botopink in package.json). A plain string carries no semantic tokens and stays string-coloured. See modules/vscode-extension/AGENTS.md.",
       "patterns": [
         {
           "name": "string.quoted.triple.botopink",

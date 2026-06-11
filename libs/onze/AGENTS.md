@@ -20,6 +20,7 @@ onze/
 ├── botopink.json      ← package metadata (files: onze.bp)
 ├── src/
 │   ├── AGENTS.md      ← internals: host cells, the when/verify protocol, #[mock]
+│   ├── root.bp        ← module-tree root: `pub mod onze;` (the public surface)
 │   ├── onze.bp        ← ALL behaviour: externals · matchers · when/verify · #[mock]
 │   └── onze.mjs       ← host runtime (the one mutable seam: call log + stub table)
 ├── test/
@@ -27,6 +28,14 @@ onze/
 └── examples/
     └── mock_synthesis.bp ← `#[mock]` synthesis, shown under `botopink build`
 ```
+
+## Module tree (`root.bp`)
+
+`src/root.bp` is the explicit module-tree root: `pub mod onze;` declares the
+single public module, so the package builds from the tree, not a deprecated blind
+`src/` scan. `test/` stays a plain suite directory (not a package), and a
+consumer reaches the lib via `import {…} from "onze"` — `#[mock]` and the host
+cells resolve through that exported module.
 
 ## Design at a glance
 

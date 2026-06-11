@@ -32,12 +32,26 @@ libs/jhonstart/
 ├── docs.md            ← user-facing reference
 └── src/
     ├── AGENTS.md
+    ├── root.bp        ← module-tree root: `pub mod element; pub mod hooks; pub mod html;`
     ├── element.bp     ← COMPILED CORE: record Element + builders (Children) + renderToString + test {}
-    ├── hooks.bp       ← COMPILED: State<T> + state/effect/memo/ref/reducer (@Context<Element,_>) + test {}
+    ├── hooks.bp       ← COMPILED: State<T> + state/effect/memo/ref/reducer (@Context<Element,_>) + test {} (imports `Element`)
     ├── html.bp        ← COMPILED: the JSX-like `html """…"""` markup DSL (comptime expander → builder pipeline)
     ├── router.d.bp    ← Router/useRouter/Link (host-bound navigation; GATED)
     └── server.d.bp    ← Http ContextBase: request() + loaders (host-bound/async; GATED)
 ```
+
+## Module tree (`root.bp`)
+
+`src/root.bp` is the explicit module-tree root — the package builds from it, not
+a deprecated blind `src/` scan. It declares the three compiled modules
+`pub mod element; pub mod hooks; pub mod html;` (all public surface; `hooks`
+imports `Element` from `element`, so the resolver compiles `element` first). The
+host-bound declaration modules `router.d.bp` / `server.d.bp` are **not** in the
+tree: they are wired through `botopink.json` `files` (consumer surface, loaded
+with `.declaration = true` for a `from "jhonstart"` consumer). `.d.bp` modules
+are not resolved by `mod` paths (the resolver follows only `<name>.bp` /
+`<name>/mod.bp`), mirroring how `libs/std` keeps its ambient `.d.bp` out of
+`root.bp`.
 
 ## Layers
 

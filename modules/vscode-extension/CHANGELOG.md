@@ -2,6 +2,18 @@
 
 All notable changes to the Botopink VS Code extension are documented here.
 
+## Unreleased
+
+### Added
+
+- **Sub-language highlighting inside strings** — the interior of `erika "…"` /
+  `html """…"""` is now coloured by the LSP's comptime-driven semantic tokens.
+  Semantic highlighting is forced on for `.bp` and the sub-language token types
+  (`keyword` / `property` / `string` / `number` / `operator`) get fallback theme
+  mappings, so the tokens win over the `string.quoted` scope across dark/light
+  themes. Plain (non-sub-language) strings are unchanged. No SQL/HTML grammar is
+  shipped — VSCode is a pure renderer of what the LSP computed.
+
 ## 0.3.0
 
 The editor-experience feature set (LSP semantic features + VS Code workbench

@@ -28,9 +28,18 @@ erika/
 ├── examples.md        ← both forms (fluent + `erika "…"`), runnable
 ├── botopink.json      ← package metadata (files: ["erika.bp"])
 └── src/
+    ├── root.bp        ← module-tree root: `pub mod erika;` (the public surface)
     └── erika.bp       ← the whole lib: `record Query<T>` + `Grouping<K,V>` +
                          constructors + the `erika "…"` template fn + 25 tests
 ```
+
+## Module tree (`root.bp`)
+
+`src/root.bp` is the explicit module-tree root: `pub mod erika;` declares the
+single public module, so the package builds from the tree, not a deprecated blind
+`src/` scan. A consumer reaches it via `import {…} from "erika"` (the generic
+`from "<lib>"` loader), and the bare template-fn binding behind `erika "…"`
+resolves through that same exported module.
 
 ## Design at a glance
 
