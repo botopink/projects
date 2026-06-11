@@ -3018,17 +3018,45 @@ const Emitter = struct {
     /// The receiver is evaluated into x0, then the field is extracted.
     fn lowerIdentAccess(self: *Emitter, ia: anytype, dest: u32) anyerror!void {
         try self.lowerExprIntoX0(ia.receiver.*);
+        var member_buf: [256]u8 = undefined;
+        const member = try atomName(ia.member, &member_buf);
+
+        // Optional chaining (`recv?.member`): short-circuit to `undefined` when
+        // the receiver is absent — parity with the erlang backend's guarding
+        // immediate fun. A chain (`a?.b?.c`) composes because each link reads
+        // the prior result from `{x, 0}` and propagates `undefined`. A non-map
+        // or missing-key receiver also yields `undefined` (JS `?.` semantics).
+        if (ia.optional) {
+            const present_l = self.allocLabel();
+            const undef_l = self.allocLabel();
+            const end_l = self.allocLabel();
+            try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 0}}, {{atom, undefined}}]}}.\n", .{present_l});
+            // Receiver IS `undefined` (test fell through) → result is `undefined`.
+            try self.bodyPrint("    {{move, {{atom, undefined}}, {{x, {d}}}}}.\n", .{dest});
+            try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
+            try self.bodyPrint("  {{label, {d}}}.\n", .{present_l});
+            try self.bodyPrint("    {{test, is_map, {{f, {d}}}, [{{x, 0}}]}}.\n", .{undef_l});
+            try self.bodyPrint(
+                "    {{get_map_elements, {{f, {d}}}, {{x, 0}}, {{list, [{{atom, {s}}}, {{x, {d}}}]}}}}.\n",
+                .{ undef_l, member, dest },
+            );
+            try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
+            try self.bodyPrint("  {{label, {d}}}.\n", .{undef_l});
+            try self.bodyPrint("    {{move, {{atom, undefined}}, {{x, {d}}}}}.\n", .{dest});
+            try self.bodyPrint("  {{label, {d}}}.\n", .{end_l});
+            return;
+        }
+
         const fail_label = self.allocLabel();
         // Refine x0's type to map before reading a field. A locally-built map is
         // already typed, but a receiver returned from a cross-module `call_ext`
         // (`Response.ok(...)`) is typed `any` — the BEAM loader then rejects a
         // bare `get_map_elements` (`bad_type, needed t_map`). The `is_map` test
         // narrows it; on failure both fall through past the read.
-        var member_buf: [256]u8 = undefined;
         try self.bodyPrint("    {{test, is_map, {{f, {d}}}, [{{x, 0}}]}}.\n", .{fail_label});
         try self.bodyPrint(
             "    {{get_map_elements, {{f, {d}}}, {{x, 0}}, {{list, [{{atom, {s}}}, {{x, {d}}}]}}}}.\n",
-            .{ fail_label, try atomName(ia.member, &member_buf), dest },
+            .{ fail_label, member, dest },
         );
         try self.bodyPrint("  {{label, {d}}}.\n", .{fail_label});
     }

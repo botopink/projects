@@ -23,8 +23,8 @@ fn main() {
 //   fn forEach(...)
 //   fn map(...)
 //   fn filter(...)
-//   fn range(...)
-//   fn repeat(...)
+//   default fn range(...)
+//   default fn repeat(...)
 //   default fn isEmpty(...)
 //   default fn contains(...)
 //   default fn first(...)
@@ -41,6 +41,12 @@ fn main() {
 //   default fn flatten(...)
 //   default fn flatMap(...)
 //   default fn toList(...)
+Array.range = function(start, stop) {
+    return (() => { if ((start >= stop)) { return []; } else { return Array.range((start + 1), stop).prepend(start); } })();
+};
+Array.repeat = function(value, times) {
+    return (() => { if ((times <= 0)) { return []; } else { return Array.repeat(value, (times - 1)).prepend(value); } })();
+};
 Array.prototype.isEmpty = function() {
     return (this.length === 0);
 };
