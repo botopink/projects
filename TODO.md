@@ -75,11 +75,19 @@
 ## Open decisions (resolve in F1/F5)
 - [x] implicit-scan: deprecated fallback (kept behind a deprecation warning when
       no `main.bp`/`root.bp` root exists; remove in a future release).
-- [ ] `root.bp`/`main.bp` coexistence in one package (F1: auto-detect prefers
-      `main.bp` then `root.bp`; `entry` overrides — finalize during F5 pilot)
+- [x] `root.bp`/`main.bp` coexistence in one package — resolved: auto-detect prefers
+      `main.bp` then `root.bp`, `botopink.json` `entry` overrides. Validated by the
+      `examples/modules/` pilot (binary root via `main.bp` + `entry`).
 - [x] `Name.bp` + `Name/mod.bp` both present = error (no silent precedence)
 
 ## Done gate
-- [ ] a multi-folder package builds + runs on commonJS via the declared tree.
-- [ ] a private `mod` is provably not importable across a boundary.
-- [ ] `zig build && zig build test` green.
+- [x] a multi-folder package builds + runs on commonJS via the declared tree.
+      (`examples/modules/`: root + leaf + folder index + nested module → `12`/`circle`/`7`.)
+- [x] a private `mod` is provably not importable across a boundary.
+      (Importing `shapes.helpers` from `main.bp` is rejected, naming the private segment.)
+- [x] `zig build && zig build test` green. (Every commit's pre-commit gate; merged to feat.)
+
+> **Status: module-system keystone COMPLETE.** F0–F6 done and merged+pushed to
+> `origin/feat` (core `662b64c`, example pilot `1eae5ea`). Sole deferred item: the
+> `libs/std` pilot (std is embedded at compile time, outside the CLI resolver — a
+> separate embedding rework; belongs with the broader libs migration / Wave 2).
