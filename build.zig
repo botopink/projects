@@ -30,20 +30,17 @@ pub fn build(b: *std.Build) void {
         });
     }
 
-    // "std" package modules — importable via `import {…} from "std"`. This list
-    // is the ONLY place a std module is wired: compiler-core discovers them
-    // generically through the generated `std_pkg` table below, so adding a module
-    // never touches `modules/compiler-core/src/**`. Adding a module is: drop
-    // `libs/std/src/<name>.bp` + add `"<name>.bp"` here. (Application-level libs
-    // like `erika` are NOT std — they ship under `libs/<name>/` and load through
-    // the generic `from "<lib>"` loader, never this table.)
-    const std_pkg_files = [_][]const u8{
-        "order.bp",
-        "dict.bp",
-        "sets.bp",
-        "string_builder.bp",
-        "queue.bp",
-    };
+    // "std" package modules — importable via `import {…} from "std"`. The set is
+    // derived from the std module tree: `libs/std/src/root.bp` declares one
+    // `pub mod <name>;` per module, and the build embeds exactly those. This is
+    // the std pilot of the explicit module system — `root.bp` is the single
+    // source of truth, so adding a module is `drop libs/std/src/<name>.bp` +
+    // `pub mod <name>;` in root.bp (no build.zig edit). compiler-core then
+    // discovers them generically through the generated `std_pkg` table below, so
+    // adding a module never touches `modules/compiler-core/src/**` either.
+    // (Application-level libs like `erika` are NOT std — they ship under
+    // `libs/<name>/` and load through the generic `from "<lib>"` loader.)
+    const std_pkg_files = stdPkgFilesFromRoot(b);
     // Generate the package-module registry (`pkg_modules: [N]{ path, source }`),
     // each entry embedding its `.bp` source. The generated file lives in its own
     // module so its `@embedFile`s resolve against the package `.bp` anonymous
@@ -226,4 +223,43 @@ pub fn build(b: *std.Build) void {
 
     const run_step = b.step("run", "Build and run the botopink CLI");
     run_step.dependOn(&run_cmd.step);
+}
+
+/// Derive the importable "std" package module files from the std module tree
+/// (`libs/std/src/root.bp`): one `<name>.bp` per `pub mod <name>;` declaration,
+/// in declaration order. This makes `root.bp` the single source of truth for the
+/// std module set (the module-system pilot for std). Panics with a clear message
+/// if the root is missing or declares nothing — a misread here would silently
+/// drop std modules and break every build.
+fn stdPkgFilesFromRoot(b: *std.Build) []const []const u8 {
+    const root_src = b.build_root.handle.readFileAlloc(
+        b.graph.io,
+        "libs/std/src/root.bp",
+        b.allocator,
+        .unlimited,
+    ) catch |err| std.debug.panic(
+        "std pilot: cannot read libs/std/src/root.bp (the std module-tree root): {s}",
+        .{@errorName(err)},
+    );
+
+    var files: std.ArrayListUnmanaged([]const u8) = .empty;
+    var it = std.mem.splitScalar(u8, root_src, '\n');
+    while (it.next()) |raw| {
+        var line = std.mem.trim(u8, raw, " \t\r");
+        // Skip comments and blank lines; accept `mod X;` and `pub mod X;`.
+        if (std.mem.startsWith(u8, line, "//")) continue;
+        if (std.mem.startsWith(u8, line, "pub ")) line = std.mem.trimStart(u8, line["pub ".len..], " \t");
+        if (!std.mem.startsWith(u8, line, "mod ")) continue;
+        var name = std.mem.trim(u8, line["mod ".len..], " \t");
+        name = std.mem.trimEnd(u8, name, ";");
+        name = std.mem.trim(u8, name, " \t");
+        if (name.len == 0) continue;
+        files.append(b.allocator, b.fmt("{s}.bp", .{name})) catch @panic("OOM");
+    }
+
+    if (files.items.len == 0) std.debug.panic(
+        "std pilot: libs/std/src/root.bp declares no `pub mod` modules",
+        .{},
+    );
+    return files.toOwnedSlice(b.allocator) catch @panic("OOM");
 }
