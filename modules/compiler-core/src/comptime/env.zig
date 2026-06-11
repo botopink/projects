@@ -146,13 +146,29 @@ pub const ExprParamInfo = struct {
     paramName: []const u8,
 };
 
+/// One reference-AST entry produced by a `q.custom(tree, code)` template
+/// expansion (expr-custom): the canonical `CustomNode` root plus the provenance
+/// a tooling consumer needs to map a node's (template-relative) `span` to an
+/// absolute document position. Generic — no sub-language is named.
+pub const CustomAstEntry = struct {
+    /// The called template function's name (e.g. the DSL entry point).
+    callee: []const u8,
+    /// The reference tree (reference-only; never lowered).
+    root: template.CustomNode,
+    /// Source file of the template literal ("" for main).
+    file: []const u8,
+    /// 1-based line/column of the template literal's opening quote.
+    line: usize,
+    col: usize,
+};
+
 /// A compiler-provided template method resolved by inference (expr-templates
 /// F4): `text`/`parts`/`source`/`context`/`lookup`/`bindings`/`fail`/`failAt`
 /// on an `expr` receiver, plus `ref` on a `Binding`. Mirrors `MethodLowering`:
 /// keyed by the call's source `Loc` and consumed by the call-site expansion
 /// pass (F6). Instances only exist at comptime — no codegen backend ever sees
 /// these calls.
-pub const TemplateOp = enum { value, text, parts, source, context, lookup, bindings, build, fail, failAt, ref };
+pub const TemplateOp = enum { value, text, parts, source, context, lookup, bindings, build, custom, fail, failAt, ref };
 
 /// Everything the inference-time template evaluator needs to run a template
 /// body in the external eval runtime (expr-templates F6-full). Null in
@@ -289,6 +305,12 @@ pub const Env = struct {
     /// replaces the call. Recorded by inference (post splice + re-check); the
     /// transform pass rewrites the untyped AST from this map.
     templateExpansions: std.AutoHashMap(ast.Loc, *const ast.Expr),
+    /// Reference ASTs from `q.custom(tree, code)` (expr-custom): call loc → the
+    /// canonical `CustomNode` tree + provenance. Sibling of `templateExpansions`
+    /// — the `code` half lives there and reaches codegen; this `ast` half is
+    /// reference-only (tooling/LSP), never lowered. Exposed via the read API in
+    /// `root.zig`/`comptime.zig`.
+    customAstByLoc: std.AutoHashMap(ast.Loc, CustomAstEntry),
     /// V1 origin-scope snapshot of the module being inferred (top-level decls
     /// + imports); attached to every `expr` capture for `lookup` resolution.
     scopeSnapshot: ?*template.ScopeSnapshot = null,
@@ -409,6 +431,7 @@ pub const Env = struct {
             .templateLowerings = std.AutoHashMap(ast.Loc, TemplateOp).init(arena),
             .templateFns = std.StringHashMap(ast.FnDecl).init(arena),
             .templateExpansions = std.AutoHashMap(ast.Loc, *const ast.Expr).init(arena),
+            .customAstByLoc = std.AutoHashMap(ast.Loc, CustomAstEntry).init(arena),
             .templateEvalCache = std.StringHashMap(*const ast.Expr).init(arena),
             .nextId = 0,
             .nextTypeId = 0,
@@ -457,6 +480,7 @@ pub const Env = struct {
         self.templateLowerings.deinit();
         self.templateFns.deinit();
         self.templateExpansions.deinit();
+        self.customAstByLoc.deinit();
         self.templateEvalCache.deinit();
         self.extensions.deinit();
         self.activations.deinit();

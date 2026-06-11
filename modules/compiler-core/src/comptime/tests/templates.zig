@@ -157,6 +157,8 @@ test "template: expr methods typecheck and record lowerings" {
         \\    val scope = template.bindings();
         \\    val b = template.lookup("Button");
         \\    val made = template.build("1 + 2");
+        \\    val node = CustomNode(kind: "expr", span: sp, label: "number", ref: b, children: []);
+        \\    val cu = template.custom(node, made);
         \\    template.failAt(sp, "bad tag");
         \\    template.fail("no component");
         \\    return template;
@@ -166,7 +168,7 @@ test "template: expr methods typecheck and record lowerings" {
         \\}
     );
 
-    try std.testing.expectEqual(@as(usize, 11), env.templateLowerings.count());
+    try std.testing.expectEqual(@as(usize, 12), env.templateLowerings.count());
     var counts = std.enums.EnumArray(envMod.TemplateOp, usize).initFill(0);
     var it = env.templateLowerings.valueIterator();
     while (it.next()) |op| counts.set(op.*, counts.get(op.*) + 1);
@@ -479,6 +481,111 @@ test "comptime: runtime template body ---- parts() with a hole splices the calle
     ;
     try assertCompilesOk(@src(), src);
     try h.assertComptimeAstSingle(std.testing.allocator, @src(), src);
+}
+
+// ── @ExprCustom carrier (expr-custom) ─────────────────────────────────────────
+
+test "infer: a fn returning @ExprCustom<T> is recognized as a template fn" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    // Body-only inference: the carrier return marks `dsl` as a template fn, so it
+    // lands in `env.templateFns` and never reaches codegen.
+    try inferInto(&env, alloc,
+        \\pub fn dsl<T>(comptime e: @Expr<string>) -> @ExprCustom<T> {
+        \\    val code = e.build("[1, 2]");
+        \\    val root = CustomNode(kind: "select", span: Span(0, 6, 1), label: "keyword", ref: null, children: []);
+        \\    return e.custom(root, code);
+        \\}
+    );
+    try std.testing.expect(env.templateFns.contains("dsl"));
+}
+
+test "comptime: q.custom executes `code` identically + the tree is retrievable by loc" {
+    const src =
+        \\pub struct Item { id: i32 }
+        \\pub fn dsl<T>(comptime e: @Expr<string>) -> @ExprCustom<T> {
+        \\    val code = e.build("41");
+        \\    val leaf = CustomNode(kind: "field", span: Span(5, 9, 1), label: "property", ref: e.lookup("Item"), children: []);
+        \\    val root = CustomNode(kind: "select", span: Span(0, 6, 1), label: "keyword", ref: null, children: [leaf]);
+        \\    return e.custom(root, code);
+        \\}
+        \\val rows = dsl "select id";
+        \\val answer = rows + 1;
+    ;
+    const io = std.testing.io;
+    var session = try comptimeMod.compile(
+        std.testing.allocator,
+        &.{.{ .path = "", .source = src }},
+        io,
+        .node,
+        ".botopinkbuild/comptime/expr_custom_carrier",
+    );
+    defer session.deinit(std.testing.allocator);
+
+    try std.testing.expectEqual(@as(usize, 1), session.outputs.items.len);
+    const outcome = session.outputs.items[0].outcome;
+    if (outcome == .typeError) {
+        const desc = try h.renderTypeError(std.testing.allocator, src, outcome.typeError);
+        defer std.testing.allocator.free(desc);
+        std.debug.print("\nunexpected type error:\n{s}\n", .{desc});
+    } else if (outcome != .ok) {
+        std.debug.print("\nunexpected outcome: {s}\n", .{@tagName(outcome)});
+    }
+    try std.testing.expect(outcome == .ok);
+
+    // `code` ran the ordinary `@Expr<T>` path: `rows[0] + 1` type-checks, so the
+    // splice produced an `i32[]` exactly as returning `e.build("[10, 20]")` would.
+    const entries = outcome.ok.custom_ast;
+    try std.testing.expectEqual(@as(usize, 1), entries.len);
+    const entry = entries[0];
+    try std.testing.expectEqualStrings("dsl", entry.callee);
+    // Provenance points at the template literal in the caller (line 8).
+    try std.testing.expectEqual(@as(usize, 8), entry.line);
+
+    // The canonical reference tree is the one the lib built — opaque tags intact.
+    const root = entry.root;
+    try std.testing.expectEqualStrings("select", root.kind);
+    try std.testing.expectEqualStrings("keyword", root.label);
+    try std.testing.expectEqual(@as(usize, 0), root.span.start);
+    try std.testing.expectEqual(@as(usize, 6), root.span.end);
+    try std.testing.expect(root.ref == null);
+    try std.testing.expectEqual(@as(usize, 1), root.children.len);
+
+    const leaf = root.children[0];
+    try std.testing.expectEqualStrings("field", leaf.kind);
+    try std.testing.expectEqualStrings("property", leaf.label);
+    try std.testing.expectEqual(@as(usize, 5), leaf.span.start);
+    // `ref` carries the resolved origin-scope Binding (a `q.lookup` result).
+    try std.testing.expect(leaf.ref != null);
+    try std.testing.expectEqualStrings("Item", leaf.ref.?.name);
+    try std.testing.expectEqualStrings("Struct", leaf.ref.?.kind);
+}
+
+test "gate: the @ExprCustom carrier code names no sub-language" {
+    // HARD RULE (expr-custom): the core carries a generic `CustomNode` tree and
+    // never branches on a lib's opaque `kind`/`label` tags. The two
+    // carrier-specific core files must stay free of any DSL keyword vocabulary —
+    // example tags like "select" live only in lib and test code, never in
+    // `compiler-core/src` proper. (Lib *names* are already enforced tree-wide by
+    // the build's lib-agnostic `grep` gate; this test must not spell any of
+    // them, or it would trip that same gate on itself.)
+    const sources = [_][]const u8{
+        @embedFile("../template.zig"),
+        @embedFile("../template_eval.zig"),
+    };
+    const forbidden = [_][]const u8{ "select", "sql", "html", "markup" };
+    for (sources) |src| {
+        for (forbidden) |word| {
+            if (std.ascii.indexOfIgnoreCase(src, word) != null) {
+                std.debug.print("\nlib-agnostic gate: DSL token '{s}' leaked into carrier core code\n", .{word});
+                try std.testing.expect(false);
+            }
+        }
+    }
 }
 
 // ── anonymous record literals + the yaml model ────────────────────────────────

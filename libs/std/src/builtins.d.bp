@@ -239,6 +239,31 @@ pub struct Context {
     multiline: bool,
 }
 
+// ── @ExprCustom carrier (expr-custom) ──────────────────────────────────────────
+// A node of ANY embedded sub-language, in one canonical shape the core and the
+// tooling understand WITHOUT knowing the language. A second-layer language (an
+// `@Expr` template that lexes/parses its own DSL) converts its private AST into
+// `CustomNode`s at the boundary; the core never branches on the contents.
+// `kind`/`label` are opaque tags the lib picks; `span` indexes the
+// `@Expr<string>` source text; `ref` optionally ties a node (a queried
+// collection, a column, …) to a caller-scope symbol via a `lookup` result.
+pub struct CustomNode {
+    kind: string,             // lib-chosen tag: "select" / "field" / "predicate" / "literal" …
+    span: Span,               // offsets into the template's source text
+    label: string,            // tooling token category: "keyword"/"property"/"string"/"number"/"operator"
+    ref: ?Binding,            // optional association to an origin-scope symbol
+    children: CustomNode[],
+}
+
+// What `@ExprCustom<T>` carries: the executable expression plus the reference
+// tree. The `code` half travels the ordinary `@Expr<T>` expansion path (spliced,
+// lowered to every backend — runtime behaviour is unchanged); the `ast` half is
+// stored by call-location and is reference-only (the language server reads it).
+pub struct CustomExpr<T> {
+    code: Expr<T>,            // the botopink expression that actually runs
+    ast: CustomNode,          // the sub-language tree, reference only
+}
+
 pub interface Expr<E> {
     fn text(self: Self) -> string
     fn parts(self: Self) -> Part[]
@@ -247,6 +272,9 @@ pub interface Expr<E> {
     fn lookup(self: Self, name: string) -> ?Binding
     fn bindings(self: Self) -> Binding[]
     fn build<R>(self: Self, source: string) -> Expr<R>
+    // Pack a reference tree + the executable code into the custom return — a
+    // template fn opts into tooling visibility by returning `@ExprCustom<T>`.
+    fn custom<R>(self: Self, ast: CustomNode, code: Expr<R>) -> CustomExpr<R>
     fn fail(self: Self, message: string)
     fn failAt(self: Self, span: Span, message: string)
 }

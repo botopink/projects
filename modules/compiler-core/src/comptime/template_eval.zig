@@ -9,6 +9,7 @@
 ///   {"kind":"code","source":"…"}                  ← build() / @code
 ///   {"kind":"value","value":<json>}               ← @expr(v)
 ///   {"kind":"capture","param":"template"}         ← `return template;`
+///   {"kind":"custom","source":"…","ast":<json>}   ← custom(tree, code)
 ///   {"kind":"fail","message","param","span"}      ← fail()/failAt()
 ///   {"kind":"error","message"}                    ← anything else thrown
 ///
@@ -30,6 +31,13 @@ pub const Outcome = union(enum) {
     value: std.json.Value,
     /// Pass-through of the named `@Expr` parameter's capture.
     capture: []const u8,
+    /// `q.custom(tree, code)` — the executable `code` half (source text, spliced
+    /// like `code` above) plus the reference `ast` tree (a JSON `CustomNode`,
+    /// stored by call-location for tooling, never lowered). expr-custom.
+    custom: struct {
+        code: []const u8,
+        ast: std.json.Value,
+    },
     /// `fail`/`failAt` — abort expansion with a template diagnostic.
     fail: struct {
         message: []const u8,
@@ -51,6 +59,11 @@ const prelude =
     \\function __expr(v) { return { __lift: v }; }
     \\function __code(s) { return { __code: String(s) }; }
     \\function Span(start, end, line) { return { start, end, line }; }
+    \\// `CustomNode(kind, span, label, ref, children)` — the reference-tree node a
+    \\// sub-language template builds for `q.custom`. Named-arg construction lowers
+    \\// to positional in field-declaration order; a returned object satisfies both
+    \\// the plain-call and `new`-call forms.
+    \\function CustomNode(kind, span, label, ref, children) { return { kind, span, label, ref, children }; }
     \\function __failRaw(message, param, span) {
     \\    throw { __bpfail: { message: String(message), param: param ?? null, span: span ?? null } };
     \\}
@@ -80,6 +93,10 @@ const prelude =
     \\        },
     \\        bindings() { return Object.entries(d.scope).map(([name, kind]) => ({ name, kind, ref() { return { __code: name }; } })); },
     \\        build(s) { return { __code: String(s) }; },
+    \\        custom(ast, code) {
+    \\            const source = (code && code.__code !== undefined) ? String(code.__code) : String(code);
+    \\            return { __custom: { source, ast } };
+    \\        },
     \\        fail(message) { __failRaw(message, param, null); },
     \\        failAt(span, message) { __failRaw(message, param, span); },
     \\    };
@@ -177,7 +194,8 @@ fn buildScript(
         \\    if (r && r.__code !== undefined) __r = { kind: "code", source: r.__code };
         \\    else if (r && r.__lift !== undefined) __r = { kind: "value", value: r.__lift };
         \\    else if (r && r.__cap !== undefined) __r = { kind: "capture", param: r.__cap };
-        \\    else __r = { kind: "error", message: "template returned a plain value — construct code with @expr(...), @code(...), or build(...)" };
+        \\    else if (r && r.__custom !== undefined) __r = { kind: "custom", source: r.__custom.source, ast: r.__custom.ast };
+        \\    else __r = { kind: "error", message: "template returned a plain value — construct code with @expr(...), @code(...), build(...), or custom(...)" };
         \\} catch (e) {
         \\    if (e && e.__bpfail) __r = { kind: "fail", ...e.__bpfail };
         \\    else __r = { kind: "error", message: String((e && e.message) || e) };
@@ -220,6 +238,13 @@ fn parseOutcome(arena: std.mem.Allocator, stdout: []const u8) !Outcome {
             else => return .{ .err = "capture result without param name" },
         };
         return .{ .capture = param };
+    }
+    if (std.mem.eql(u8, kind, "custom")) {
+        const src = switch (obj.get("source") orelse .null) {
+            .string => |s| s,
+            else => return .{ .err = "custom result without code source" },
+        };
+        return .{ .custom = .{ .code = src, .ast = obj.get("ast") orelse .null } };
     }
     if (std.mem.eql(u8, kind, "fail")) {
         const message = switch (obj.get("message") orelse .null) {

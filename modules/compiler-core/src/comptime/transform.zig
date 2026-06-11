@@ -210,10 +210,11 @@ pub fn transform(
                 // Skip — dead code.
                 continue;
             }
-            // Template fns (`-> @Expr<…>`) are comptime-only: every call was
-            // expanded (or rejected) during inference — never emit them.
+            // Template fns (`-> @Expr<…>` / `-> @ExprCustom<…>`) are
+            // comptime-only: every call was expanded (or rejected) during
+            // inference — never emit them.
             if (fn_decl.returnType) |rt| {
-                if (rt.isExprType()) continue;
+                if (rt.isTemplateReturnType()) continue;
             }
             // Decorator fns (first param `comptime _: @Decl`) are comptime-only
             // too: their body ran over each annotated declaration during inference
@@ -879,10 +880,10 @@ fn trySpecializeCall(
     args: []const ast.CallArg,
     comptime_arrays: std.StringHashMap([]const ast.TypedExpr),
 ) !bool {
-    // Template fns (`-> @Expr<…>`) are expanded at their call sites (F6),
-    // never specialized.
+    // Template fns (`-> @Expr<…>` / `-> @ExprCustom<…>`) are expanded at their
+    // call sites (F6), never specialized.
     if (fn_decl.returnType) |rt| {
-        if (rt.isExprType()) return false;
+        if (rt.isTemplateReturnType()) return false;
     }
     var has_comptime = false;
     for (fn_decl.params) |p| {

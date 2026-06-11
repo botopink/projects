@@ -1989,10 +1989,11 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     env.fnContext = try contextInfoFromReturn(env, f.returnType);
     defer env.fnContext = savedFnCtx;
 
-    // A `-> @Expr<…>` return marks a template function: its body runs at
-    // comptime, enabling the `@expr`/`@code` construction builtins.
+    // A `-> @Expr<…>` (or `-> @ExprCustom<…>`) return marks a template
+    // function: its body runs at comptime, enabling the `@expr`/`@code`
+    // construction builtins (and, for the custom carrier, `q.custom`).
     const savedInTemplate = env.inTemplateFn;
-    env.inTemplateFn = if (f.returnType) |rt| rt.isExprType() else false;
+    env.inTemplateFn = if (f.returnType) |rt| rt.isTemplateReturnType() else false;
     defer env.inTemplateFn = savedInTemplate;
 
     // Determine how `throw` is checked inside this body:
@@ -2096,10 +2097,11 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     if (exprParams.items.len > 0) {
         try env.registerExprParams(f.name, try exprParams.toOwnedSlice(env.arena));
     }
-    // A function returning `expr [T]` is a template function: its calls are
-    // expanded at comptime (F6) and the declaration never reaches codegen.
+    // A function returning `@Expr<T>` / `@ExprCustom<T>` is a template
+    // function: its calls are expanded at comptime (F6) and the declaration
+    // never reaches codegen.
     if (f.returnType) |rt| {
-        if (rt.isExprType()) try env.templateFns.put(f.name, f);
+        if (rt.isTemplateReturnType()) try env.templateFns.put(f.name, f);
     }
 
     return env.funcType(paramTypes, retType);
@@ -2421,8 +2423,14 @@ fn expandTemplateCall(
 fn finishExpansion(env: *Env, expansion: *const ast.Expr, retType: *T.Type, loc: ast.Loc) InferError!TypedExpr {
     const typed = try inferExprTyped(env, expansion.*);
 
+    // The expansion carries only the executable `code` half (the `ast` tree is
+    // stored separately for tooling). Verify it against the declared bound for
+    // both carriers: `@Expr<T>` (named "Expr") and `@ExprCustom<T>` (the
+    // `CustomExpr<T>` struct), whose `T` is the code's value type.
     const rDeref = retType.deref();
-    if (rDeref.* == .named and std.mem.eql(u8, rDeref.named.name, "Expr") and rDeref.named.args.len == 1) {
+    if (rDeref.* == .named and rDeref.named.args.len == 1 and
+        (std.mem.eql(u8, rDeref.named.name, "Expr") or std.mem.eql(u8, rDeref.named.name, "CustomExpr")))
+    {
         const bound = rDeref.named.args[0];
         if (bound.deref().* != .typeVar) {
             try unifyAt(env, bound, typed.getType(), loc);
@@ -2466,7 +2474,16 @@ fn expandTemplateCallViaRuntime(
     for (captures) |cap| {
         if (cap.text == null) holed = true;
     }
-    const memoKey: ?[]const u8 = if (holed) null else blk: {
+    // `@ExprCustom<T>` calls are never memoized: each expansion also stores a
+    // reference `CustomNode` tree keyed by *this* call's location, so the
+    // evaluation must run per call site (the memo cache holds only the `code`
+    // expression). Custom templates are opt-in and rare — correctness over the
+    // node round-trip saving.
+    const isCustomRet = blk: {
+        const d = retType.deref();
+        break :blk d.* == .named and std.mem.eql(u8, d.named.name, "CustomExpr");
+    };
+    const memoKey: ?[]const u8 = if (holed or isCustomRet) null else blk: {
         var buf: std.ArrayListUnmanaged(u8) = .empty;
         buf.appendSlice(env.arena, tfn.name) catch return error.OutOfMemory;
         for (captures) |cap| {
@@ -2520,6 +2537,30 @@ fn expandTemplateCallViaRuntime(
                 "This is a template-evaluator protocol bug — please report it.",
             ).withLoc(loc);
             return error.TypeError;
+        },
+        .custom => |c| blk: {
+            // The `code` half is spliced exactly like a plain `.code` outcome —
+            // runtime/codegen never learn it came from `q.custom`.
+            const parsed = parseCodeText(env, c.code) orelse {
+                env.lastError = TypeError.custom(
+                    "the code built by the template does not parse as an expression",
+                    "`q.custom(tree, code)` — the `code` must be a single well-formed botopink expression (e.g. from `q.build(…)`).",
+                ).withLoc(loc);
+                return error.TypeError;
+            };
+            substituteHoles(@constCast(parsed), captures);
+            // The `ast` half: deserialize the canonical reference tree and store
+            // it by call-location for the tooling read API. It is never lowered.
+            const root = template.parseCustomNode(env.arena, c.ast) catch return error.OutOfMemory;
+            const prov: ?*const template.CapturedExpr = if (captures.len > 0) &captures[0] else null;
+            env.customAstByLoc.put(loc, .{
+                .callee = tfn.name,
+                .root = root,
+                .file = if (prov) |p| p.modulePath else env.modulePath,
+                .line = if (prov) |p| p.loc.line else loc.line,
+                .col = if (prov) |p| p.loc.col else loc.col,
+            }) catch return error.OutOfMemory;
+            break :blk parsed;
         },
         .value => |v| literalFromJson(env, v, loc) orelse {
             env.lastError = TypeError.custom(
@@ -3103,8 +3144,15 @@ fn resolveTypeRefInContext(env: *Env, ref: ast.TypeRef, genericMap: std.StringHa
             // `Array<T>` is the canonical spelling of the array type `T[]` —
             // normalise it so annotations unify with array-literal inference
             // (`[1, 2]` infers as named "array").
+            // `@ExprCustom<T>` is the marker spelling of the carrier struct
+            // `CustomExpr<T>` (`{ code: Expr<T>, ast: CustomNode }`) — normalise
+            // it so a template fn's `-> @ExprCustom<T>` return unifies with the
+            // `q.custom(…)` value the body produces (exactly as `@Expr` ↔ the
+            // `Expr` interface).
             const name = if (std.mem.eql(u8, b.name, "Array"))
                 "array"
+            else if (b.is_builtin and std.mem.eql(u8, b.name, "ExprCustom"))
+                "CustomExpr"
             else
                 b.name;
             return env.namedTypeArgs(name, args);
@@ -4406,6 +4454,16 @@ fn inferTemplateMethod(
             op = .build;
             try unifyArg(env, typedArgs, 0, try env.namedType("string"));
             retType = try env.namedTypeArgs("Expr", &.{try env.freshVar()});
+        } else if (std.mem.eql(u8, callee, "custom")) {
+            // Pack a reference `CustomNode` tree + executable `code` into the
+            // `@ExprCustom<R>` carrier (expr-custom). The `code`'s value type `R`
+            // is revealed at expansion; the tree is stored by call-location for
+            // tooling. Generic — the core never inspects `kind`/`label`.
+            op = .custom;
+            const r = try env.freshVar();
+            try unifyArg(env, typedArgs, 0, try env.namedType("CustomNode"));
+            try unifyArg(env, typedArgs, 1, try env.namedTypeArgs("Expr", &.{r}));
+            retType = try env.namedTypeArgs("CustomExpr", &.{r});
         } else if (std.mem.eql(u8, callee, "lookup")) {
             op = .lookup;
             try unifyArg(env, typedArgs, 0, try env.namedType("string"));

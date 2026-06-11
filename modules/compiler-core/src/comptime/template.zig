@@ -214,6 +214,101 @@ pub const Span = struct {
     line: usize,
 };
 
+// ── custom AST (expr-custom) ──────────────────────────────────────────────────
+
+/// A node's optional tie to an origin-scope symbol — the Zig-side shape of a
+/// `std.syntax.Binding` carried on a `CustomNode.ref` (a `q.lookup` result).
+/// `kind` is the resolved binding's variant name ("Val"/"Fn"/…), kept as an
+/// opaque string: the core never interprets it.
+pub const NodeBinding = struct {
+    name: []const u8,
+    kind: []const u8,
+};
+
+/// The Zig-side shape of a `std.syntax.CustomNode`: one node of ANY embedded
+/// sub-language, in the single canonical form the core/tooling understand
+/// without knowing the language. `kind`/`label` are opaque tags the producing
+/// lib chose (the core never branches on them); `span` indexes the template's
+/// source text; `ref` optionally associates the node with a caller-scope
+/// symbol. This tree is reference-only — it never reaches codegen.
+pub const CustomNode = struct {
+    kind: []const u8,
+    span: Span,
+    label: []const u8,
+    ref: ?NodeBinding,
+    children: []const CustomNode,
+};
+
+fn jsonStr(v: ?std.json.Value) ?[]const u8 {
+    return switch (v orelse return null) {
+        .string => |s| s,
+        else => null,
+    };
+}
+
+fn jsonUsizeField(v: ?std.json.Value) usize {
+    return switch (v orelse return 0) {
+        .integer => |n| if (n >= 0) @intCast(n) else 0,
+        .float => |f| if (f >= 0) @intFromFloat(f) else 0,
+        else => 0,
+    };
+}
+
+fn parseSpanJson(v: ?std.json.Value) Span {
+    const obj = switch (v orelse return .{ .start = 0, .end = 0, .line = 1 }) {
+        .object => |o| o,
+        else => return .{ .start = 0, .end = 0, .line = 1 },
+    };
+    return .{
+        .start = jsonUsizeField(obj.get("start")),
+        .end = jsonUsizeField(obj.get("end")),
+        .line = blk: {
+            const l = jsonUsizeField(obj.get("line"));
+            break :blk if (l == 0) 1 else l;
+        },
+    };
+}
+
+/// Deserialize the JSON `CustomNode` tree a template returned via `q.custom`
+/// into the Zig-side `CustomNode`. Strings are duped into `arena` (the
+/// type-check session). Generic throughout — no sub-language is named.
+pub fn parseCustomNode(arena: std.mem.Allocator, v: std.json.Value) error{OutOfMemory}!CustomNode {
+    const obj = switch (v) {
+        .object => |o| o,
+        else => return CustomNode{ .kind = "", .span = .{ .start = 0, .end = 0, .line = 1 }, .label = "", .ref = null, .children = &.{} },
+    };
+
+    const ref: ?NodeBinding = blk: {
+        const ro = switch (obj.get("ref") orelse break :blk null) {
+            .object => |o| o,
+            else => break :blk null,
+        };
+        const name = jsonStr(ro.get("name")) orelse break :blk null;
+        break :blk NodeBinding{
+            .name = try arena.dupe(u8, name),
+            .kind = try arena.dupe(u8, jsonStr(ro.get("kind")) orelse ""),
+        };
+    };
+
+    var children: []const CustomNode = &.{};
+    if (obj.get("children")) |c| switch (c) {
+        .array => |arr| {
+            const buf = try arena.alloc(CustomNode, arr.items.len);
+            for (arr.items, 0..) |child, i| buf[i] = try parseCustomNode(arena, child);
+            children = buf;
+        },
+        else => {},
+    };
+
+    return CustomNode{
+        .kind = try arena.dupe(u8, jsonStr(obj.get("kind")) orelse ""),
+        .span = parseSpanJson(obj.get("span")),
+        .label = try arena.dupe(u8, jsonStr(obj.get("label")) orelse ""),
+        .ref = ref,
+        .children = children,
+    };
+}
+
 /// Map a template-relative `span` to a location in the caller's file.
 ///
 /// When the contiguous template text is available, line/column are derived
