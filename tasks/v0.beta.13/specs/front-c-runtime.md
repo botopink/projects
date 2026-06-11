@@ -63,6 +63,20 @@ under `snapshots/lsp/`); `helpers.zig` (`compile`/`compileEval`/`compileMulti`).
 `@ExprCustom` overlay here is the editor counterpart of Front B's lib-side expansion (B2);
 multi-module gaps feed [`lsp-project-awareness`](../../v0.beta.14/specs/lsp-project-awareness.md).
 
+> **C3 status (v0.beta.13 — done).** Closed: cross-module **references**, **rename**, and
+> **import-missing codeAction** (`tests/cross_module.zig`, project-index over a real on-disk
+> fixture); the didOpen→didChange→didClose **lifecycle** (`tests/lifecycle.zig` — which
+> surfaced & fixed a double-dup leak in `files.FileCache.change`); **codeAction remove unused
+> import**; **typeDefinition** on a generic (`Array<i32>`) binding; and a **comptime
+> annotation `fail`** diagnostic (`@external` arity, node-free). Recorded/deferred: **add
+> missing case patterns** (exhaustiveness is enforced at type-check time, so a non-exhaustive
+> `case` has no `.ok` bindings for the types-only helper — needs a best-effort-bindings path);
+> the precise **range** of the annotation-`fail` diagnostic (currently null `loc` — a Front-A
+> span-propagation nicety); **typeDefinition** optional/function-typed; hover async-unwrap for
+> `@Future`/`@AsyncIterator` (the `@Iterator` case already pins the mechanism); and
+> request-after-shutdown. The `→ v14` items below (local-scope completion/def, decorator-emit
+> bindings, cross-module sub-language tokens) ship with their fix in `lsp-project-awareness`.
+
 > **The structural gap.** Every existing test compiles a **single self-contained document**.
 > `compileMulti()` exists in `helpers.zig` but is **called by no test**; the one cross-module
 > case (`definition: imported symbol`) hand-builds a `ModuleSource[]`. No test exercises a

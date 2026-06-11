@@ -19,10 +19,13 @@
 - [ ] C2 backend execution — the `run/*` Front A snapshots can't prove (gaps: std_erlang.sh
       green / pin the `case…of` red, beam program run, wasm wasmtime smoke, interpolation +
       Result/case parity, closures make_fun, beam tail recursion, multi-folder mod build+run)
-- [ ] C3 language-server — every LSP request + CustomNode overlay (gaps: `compileMulti`
-      cross-module fixtures for completion/def/refs/rename, decorator-`@emit` bindings,
-      local-scope completion/def, codeAction remove-import / add-cases / import-missing,
-      lifecycle didOpen→change→close, async-unwrap hover; some tagged `→ v14`)
+- [x] C3 language-server — DONE for v13: cross-module references/rename/import-missing
+      (`cross_module.zig`, project-index over on-disk fixture), lifecycle didOpen→change→close
+      (`lifecycle.zig`, + fixed a real `FileCache.change` leak), codeAction remove-import,
+      typeDefinition generic, comptime `@external` fail diagnostic. Recorded/deferred:
+      add-missing-case (exhaustiveness suppresses bindings), annotation-fail range (Front A),
+      typeDef optional/fn-typed, async-unwrap Future/AsyncIterator, decorator-`@emit` +
+      local-scope completion/def `→ v14`. See spec C3 status block.
 - [x] C4 vscode-extension — **F0 DONE**: `node:test` harness (`npm test` / `zig build
       test-vscode`); pure logic extracted into 6 `vscode`-free leaf modules; all 15 pure-unit
       scenarios green (parseTestOutput, argsFor/label/group, quoteArg, symbol predicates,
