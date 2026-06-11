@@ -140,6 +140,89 @@ pub fn freeModules(gpa: std.mem.Allocator, modules: []Module) void {
     gpa.free(modules);
 }
 
+// ── runtime `.mjs` sidecar shipping (G2) ───────────────────────────────────────
+//
+// A `#[@external(node, "../../src/x.mjs", …)]` lowers to a top-level
+// `require("../../src/x.mjs")` in the emitted module. The path is authored
+// relative to the lib's OWN build output, so it resolves for the lib's own
+// `botopink test`/`build`; but when the lib is loaded as a *dependency* its
+// emitted module sits one directory deeper (`<out>/<lib>/<mod>.js`), so the same
+// relative `require` lands at a path the source `.mjs` was never copied to.
+//
+// `shipMjsSidecars` closes that gap generically (no lib names): for every emitted
+// module it scans the JS for relative `require("….mjs")`, resolves the path the
+// runtime will look up, and — when nothing is there yet — copies the source
+// `.mjs` (found under the owning lib's `src/`, or the project's own `src/`) into
+// place. Idempotent and lib-agnostic; a no-op when every `.mjs` already resolves.
+pub fn shipMjsSidecars(
+    gpa: std.mem.Allocator,
+    io: std.Io,
+    outputs: []const bp.codegen.ModuleOutput,
+    out_dir: []const u8,
+    ext: []const u8,
+) !void {
+    var arena_inst = std.heap.ArenaAllocator.init(gpa);
+    defer arena_inst.deinit();
+    const arena = arena_inst.allocator();
+
+    // Resolved lazily on the first relative `.mjs` require (most builds have none).
+    var libs_root: ?[]u8 = null;
+    defer if (libs_root) |r| gpa.free(r);
+
+    for (outputs) |o| {
+        const emitted_rel = try std.fmt.allocPrint(arena, "{s}/{s}{s}", .{ out_dir, o.name, ext });
+        const emitted_dir = std.fs.path.dirname(emitted_rel) orelse out_dir;
+        // The owning lib is the first path segment of a dependency module name
+        // (`server/server` → `server`); a project-own module has no such prefix.
+        const owner: ?[]const u8 = if (std.mem.indexOfScalar(u8, o.name, '/')) |i| o.name[0..i] else null;
+
+        var search: usize = 0;
+        const js = o.result.js;
+        const needle = "require(\"";
+        while (std.mem.indexOfPos(u8, js, search, needle)) |start| {
+            const path_start = start + needle.len;
+            const path_end = std.mem.indexOfScalarPos(u8, js, path_start, '"') orelse break;
+            const req_path = js[path_start..path_end];
+            search = path_end + 1;
+
+            if (!std.mem.endsWith(u8, req_path, ".mjs")) continue;
+            // Only relative requires need shipping — bare specifiers (`node:http`)
+            // and absolutes resolve on their own.
+            if (!std.mem.startsWith(u8, req_path, ".")) continue;
+
+            // Where the runtime will look for it (absolute, `..` collapsed).
+            const target = try std.fs.path.resolve(arena, &.{ emitted_dir, req_path });
+            if (fileExists(io, target)) continue;
+
+            const base = std.fs.path.basename(req_path);
+            const src_path: ?[]const u8 = blk: {
+                if (owner) |lib| {
+                    if (libs_root == null) libs_root = try resolveLibsRoot(gpa, io);
+                    if (libs_root) |root| break :blk try std.fs.path.join(arena, &.{ root, lib, "src", base });
+                    break :blk null;
+                }
+                // Project-own module: the source `.mjs` lives in the project's `src/`.
+                break :blk try std.fs.path.join(arena, &.{ "src", base });
+            };
+            const src = src_path orelse continue;
+
+            const data = std.Io.Dir.cwd().readFileAlloc(io, src, arena, .unlimited) catch continue;
+            if (std.fs.path.dirname(target)) |parent| {
+                std.Io.Dir.cwd().createDirPath(io, parent) catch |err| switch (err) {
+                    error.PathAlreadyExists => {},
+                    else => return err,
+                };
+            }
+            try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = target, .data = data });
+        }
+    }
+}
+
+fn fileExists(io: std.Io, path: []const u8) bool {
+    std.Io.Dir.cwd().access(io, path, .{}) catch return false;
+    return true;
+}
+
 // ── tests ─────────────────────────────────────────────────────────────────────
 
 test "stripSourceExt strips .d.bp before .bp" {

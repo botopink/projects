@@ -4,7 +4,7 @@
 **Slug**: rakun · **Spec**: `tasks/v0.beta.11/specs/rakun.md`
 **Depends on**: nothing — `@Decl`/`@emit`, F2 scan/graph/cycle, F3 placement, F4
 router all landed in `feat` in-lib (`91db590`, `4eef880`, `0ff15a0`, `e10b49f`).
-**Status**: pending
+**Status**: F2-scopes + F5 DONE — 13 lib tests green; `examples/rakun` runs over real HTTP.
 
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test
 > (no `--no-verify`).
@@ -34,44 +34,58 @@ What remains: **DI scopes** (F2-scopes) and the **real server** (F5).
 ## Steps
 
 ### F2-scopes — singleton scope + factory/property injection
-- [ ] Singleton scope: one shared instance per component type (memoize the lazy
-      `__rkMake_<Type>()` in the host registry so a 3-level chain shares one instance).
-- [ ] `#[configuration]` + `#[bean]` factories: a `#[bean]` fn's return type becomes
-      injectable by type (factory output registered as a DI-graph leaf);
-      `#[configuration]` records group bean factories.
-- [ ] `#[value("key")]` property injection: a `#[value]` field is filled from a
-      config source and **excluded** from the DI graph (`@Decl` reflects field
-      annotations, so detection is unblocked).
+- [x] Singleton scope: each `__rkMake_<Type>()` is `rkSingleton("Type", { -> … })` —
+      one shared instance per type (host cache), a 3-level diamond shares one repo.
+      `rkBuildCount` proves it (`runtime.mjs#buildCount`/`singleton`).
+- [x] `#[configuration]` + `#[bean]` factories: `#[configuration]` `@emit`s a
+      `__rkMake_<ReturnType>()` per `#[bean]` method → the return type is injectable
+      by type (a singleton, resolved by return-type name).
+- [x] `#[value("key")]` property injection: the component factory reads
+      `f.annotations`, fills a `#[value]` field from `rkProp`/`rkPropInt`, and keeps
+      it OFF the DI graph (no `__rkMake_<i32|string>` edge — clean compile proves it).
 
 ### F5 — bootstrap (`Rakun.run` + real HTTP backing)
-- [ ] Promote `libs/server` from scaffold to a real minimal HTTP surface (listen,
-      route dispatch, request/response bridge) behind `#[@external]` host calls
-      (node `http` first; then erlang `gen_tcp`/`inets`/`cowboy`).
-- [ ] `Request` gets a concrete server-supplied impl: `param`/`query`/`header`/`body`.
-- [ ] `Rakun.run(app)` reads the host router and starts `libs/server` on
-      `app.port`/`basePath`. **Needs G2:** ship the runtime `.mjs` next to the
-      emitted module so a *consumer* build resolves it.
-- [ ] End-to-end: a request to a mapped route invokes the handler with a live
-      `Request` and returns its `Response` (status + body) over the wire.
+- [x] `libs/server` is real: `server.mjs` is a node-`http` server (`serve`/`stop`);
+      `server.bp` binds it via `#[@external]`. Framework-agnostic (generic over the
+      response value `R`); rakun → server, never the reverse. (Erlang transport: follow-up.)
+- [x] `Request` has a concrete server-supplied impl (`runtime.mjs#makeRequest`,
+      built by `dispatchHttp`): `param`/`query`/`header`/`body`, all populated live.
+- [x] `Rakun.run(app)` (`bootstrap.bp`) hands `libs/server` a dispatcher over the
+      host router and listens on `app.port`. **G2 done:** the CLI ships the runtime
+      `.mjs` next to every emitted module (`libs.zig#shipMjsSidecars`), so a consumer
+      build resolves the `#[@external]` requires.
+- [x] End-to-end: `examples/rakun` is a runnable app — `botopink build` + `node
+      out/main.js` serves; every route below verified over a real socket with `curl`.
 
 ## Test scenarios
 
 ```
-comptime ---- a 3-level DI chain (repo → service → controller) resolves a SINGLE
-              shared instance per type (singleton scope)
-comptime ---- #[bean] factory output is injectable by its return type
-infer    ---- #[value("port")] field is filled, NOT treated as a DI edge
-run      ---- GET /api/users/  returns 200 with the joined user list (over real http)
-run      ---- GET /api/hello/ana returns 200 "Hello, ana!"  (path param, real http)
-run      ---- an unmapped path returns 404
+comptime ---- a 3-level diamond (repo ← service + controller) resolves a SINGLE  [✓ scopes_test]
+              shared instance per type (rkBuildCount == 1)
+comptime ---- #[bean] factory output is injectable by its return type            [✓ scopes_test]
+infer    ---- #[value("port")] field is filled, NOT treated as a DI edge         [✓ scopes_test]
+run      ---- GET /api/users/  returns 200 with the joined user list             [✓ server_test + example]
+run      ---- GET /api/hello/:name returns 200 "Hello, ana!"  (path param)       [✓ server_test + example]
+run      ---- an unmapped path returns 404                                       [✓ server_test + example]
 ```
+
+The `run` scenarios are covered two ways: `server_test.bp` drives `rkDispatchHttp`
+(the EXACT seam `libs/server` calls — match → live `Request` → handler → status/body,
+synchronously, so it runs under `botopink test`), and `examples/rakun` exercises the
+full node-`http` socket round trip end to end (manual `curl`; node's single thread
+can't both serve and block on a client in one synchronous test).
 
 ## Notes
 
-- Constructor injection only; singleton is the only scope in v1 (no request/proto
-  scope, no graceful-shutdown / middleware).
-- `libs/server` realness + runtime-`.mjs` shipping (**G2**) gate F5 — keep the
-  server minimal (node first, then erlang).
+- Constructor injection only; singleton is the only scope (no request/proto scope,
+  no graceful-shutdown / middleware).
+- `Request.param`/`query`/`header` return `string` (`""` when absent), not `?string`:
+  interface-method optional returns don't yet get the `@Option` lowering, and a
+  required path var / empty default is the cleaner contract anyway.
+- Core touched (all generic, lib-agnostic gate green): `commonJS.zig` require paths
+  now prefix `../`×depth so a nested dependency module resolves correctly; CLI G2
+  `.mjs` sidecar shipping in `libs.zig` (wired into `test_cmd.zig` + `build.zig`).
 - Comptime constraints on decorator bodies (no sibling calls, `if`-expr, bare-`if`
-  only last, block-lambdas) force the factory builder to be inlined per marker.
+  only last, block-lambdas) force the per-field injection + factory builder to be
+  inlined per marker.
 - Keep AGENTS.md / docs.md updated in the same commit as code changes.
