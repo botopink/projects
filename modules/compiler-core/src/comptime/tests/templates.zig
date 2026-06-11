@@ -710,6 +710,110 @@ test "template: holed fallback span ---- hole on first non-opening line maps cor
     try std.testing.expectEqual(@as(usize, 6), loc.line);
 }
 
+// ── net-new (v0.beta.13 · A7): expr-templates ─────────────────────────────────
+
+// A template called with a `${…}` hole that is a bare VARIABLE reference (not a
+// literal) captures the variable as an unevaluated `.identifier` expression.
+test "template: net-new ---- a hole captures a bare variable reference" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\pub fn tpl(comptime t: @Expr<string>) -> @Expr<string> {
+        \\    return t;
+        \\}
+        \\val name = "world";
+        \\val page = tpl """${name}""";
+    );
+
+    const captures = try onlyCaptures(&env);
+    const cap = captures[0];
+    // A hole is present, so there is no contiguous text — the variable lives in
+    // the parts as an unevaluated identifier reference.
+    try std.testing.expect(cap.text == null);
+    const parts = cap.node.literal.kind.stringTemplate.parts;
+    var sawIdentHole = false;
+    for (parts) |p| {
+        if (p == .expr and p.expr.* == .identifier) sawIdentHole = true;
+    }
+    try std.testing.expect(sawIdentHole);
+}
+
+// An empty template (`tpl ""`) is handled gracefully — it captures empty text
+// with no holes and does not crash inference.
+test "template: net-new ---- an empty template is handled gracefully" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\pub fn tpl(comptime t: @Expr<string>) -> @Expr<string> {
+        \\    return t;
+        \\}
+        \\val c = tpl "";
+    );
+
+    const captures = try onlyCaptures(&env);
+    const cap = captures[0];
+    try std.testing.expect(cap.text != null);
+    try std.testing.expectEqualStrings("", cap.text.?);
+    try std.testing.expect(!cap.multiline);
+}
+
+// A splice whose lifted value expands to a TYPE error is reported at the splice
+// site (the caller's `port()` call), not at the template definition: `@expr`
+// lifts a `bool`, but the bound is `@Expr<i32>`.
+test "infer error: net-new ---- splice type error reports at the splice site" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\pub fn port() -> @Expr<i32> {
+        \\    return @expr(true);
+        \\}
+        \\val p = port();
+    );
+}
+
+// Two separate template invocations each expand independently (the memo is keyed
+// by call-site scope, so two call sites yield two expansions).
+test "template: net-new ---- two template invocations expand independently" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    var env = try freshTestEnv(alloc);
+    defer env.deinit();
+
+    try inferInto(&env, alloc,
+        \\pub fn tpl(comptime q: @Expr<string>) -> @Expr<string> {
+        \\    return q;
+        \\}
+        \\val a = tpl "one";
+        \\val b = tpl "two";
+    );
+
+    try std.testing.expectEqual(@as(u32, 2), env.templateExpansions.count());
+}
+
+// A nested template — `outer`'s built code itself calls the template fn `inner`
+// with a literal. Expanding `outer` splices in `inner("deep")`, which then
+// expands in turn: each template fn expands once for its own call site.
+test "comptime: net-new ---- nested template call inside a template body" {
+    const src =
+        \\pub fn inner(comptime q: @Expr<string>) -> @Expr<string> {
+        \\    return q;
+        \\}
+        \\pub fn outer(comptime q: @Expr<string>) -> @Expr<string> {
+        \\    return q.build("inner(\"deep\")");
+        \\}
+        \\val s = outer "x";
+    ;
+    try assertCompilesOk(@src(), src);
+    try h.assertComptimeAstSingle(std.testing.allocator, @src(), src);
+}
+
 // ── markup authoring DSL ──────────────────────────────────────────────────────
 //
 // A markup DSL captures `<…>` text unevaluated as `@Expr<string>`, expands it at

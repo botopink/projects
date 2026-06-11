@@ -54,6 +54,13 @@ pub const Summary = struct {
             .skipped_unsupported => self.skipped += 1,
         }
     }
+
+    /// Process exit code for the whole matrix: non-zero iff a cell failed.
+    /// `no_tests` (–) and `skipped_unsupported` (~) do NOT fail the run, so a
+    /// mixed pass/skip/no-test matrix still exits 0; one fail flips it to 1.
+    pub fn exitCode(self: Summary) u8 {
+        return if (self.failed > 0) 1 else 0;
+    }
 };
 
 // ── Rendering ───────────────────────────────────────────────────────────────────
@@ -145,6 +152,24 @@ test "summary tally" {
     try testing.expectEqual(@as(usize, 1), s.failed);
     try testing.expectEqual(@as(usize, 1), s.no_tests);
     try testing.expectEqual(@as(usize, 1), s.skipped);
+}
+
+test "summary exit code: a mixed pass/skip/no-test matrix exits 0; one fail flips to 1" {
+    // Pass + skip + no-test only → still a clean run.
+    var ok: Summary = .{};
+    ok.tally(.pass);
+    ok.tally(.skipped_unsupported);
+    ok.tally(.no_tests);
+    try testing.expectEqual(@as(u8, 0), ok.exitCode());
+
+    // Add a single failing cell → non-zero.
+    var bad = ok;
+    bad.tally(.fail);
+    try testing.expectEqual(@as(u8, 1), bad.exitCode());
+
+    // An all-empty matrix (no libs/targets) is not a failure.
+    const empty: Summary = .{};
+    try testing.expectEqual(@as(u8, 0), empty.exitCode());
 }
 
 test "render contains lib names, target headers and symbols" {

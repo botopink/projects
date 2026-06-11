@@ -73,15 +73,45 @@ vscode-extension/
 │   ├── botopink.tmLanguage.json    ← TextMate grammar for `.bp`
 │   └── botopink.codeblock.json     ← markdown injection for ```bp blocks
 ├── images/                         ← extension icon + language icon
-└── src/
-    ├── extension.ts                ← activate() / deactivate() / LSP client + feature wiring
-    ├── cli.ts                      ← resolve `botopink` CLI path + shared OutputChannel
-    ├── target.ts                   ← codegen-target status bar + botopink.json read/write
-    ├── tasks.ts                    ← TaskProvider for check/build/test/format
-    ├── symbols.ts                  ← LSP documentSymbol helpers (test / main detection)
-    ├── codeLens.ts                 ← CodeLens "Run" / "Run test" provider
-    └── testExplorer.ts             ← Testing API controller + `botopink test` runner/parser
+├── src/
+│   ├── extension.ts                ← activate() / deactivate() / LSP client + feature wiring
+│   ├── cli.ts                      ← resolve `botopink` CLI path + shared OutputChannel
+│   ├── target.ts                   ← codegen-target status bar + botopink.json read/write
+│   ├── tasks.ts                    ← TaskProvider for check/build/test/format
+│   ├── symbols.ts                  ← LSP documentSymbol helpers (test / main detection)
+│   ├── codeLens.ts                 ← CodeLens "Run" / "Run test" provider
+│   ├── testExplorer.ts             ← Testing API controller + `botopink test` runner
+│   │                                 (re-exports parseTestOutput from ./testOutput)
+│   │   ── vscode-free leaf modules (pure logic, unit-tested under test/) ──
+│   ├── testOutput.ts               ← parseTestOutput + OK/FAIL line regexes
+│   ├── taskArgs.ts                 ← argsFor / taskLabel / taskGroupKind
+│   ├── quoting.ts                  ← quoteArg (POSIX shell quoting)
+│   ├── symbolNodes.ts              ← flatten + test/main predicates + DocumentSymbol[] guard
+│   ├── targetConfig.ts             ← TARGETS + resolve/parse/write botopink.json target
+│   └── pathResolve.ts              ← resolveBinPath (CLI/LSP executable resolution)
+└── test/
+    ├── package.json                ← `{"type":"module"}` for Node's native-TS test runner
+    └── unit.test.ts                ← 15 pure-function scenarios (no vscode host)
 ```
+
+## Testing
+
+The pure logic lives in **`vscode`-free leaf modules** (`src/{testOutput,
+taskArgs,quoting,symbolNodes,targetConfig,pathResolve}.ts`); the host-coupled
+files (`testExplorer.ts`, `tasks.ts`, `symbols.ts`, `target.ts`, `cli.ts`,
+`extension.ts`) import and thinly wrap them. That split keeps `vscode` out of
+the test-reachable path so the unit suite needs **no Electron host**:
+
+```bash
+npm test                # tsc --noEmit typecheck (pretest) + node --test test/
+zig build test-vscode   # same, from the repo gate (needs node + `npm install`)
+```
+
+`test/unit.test.ts` runs on Node's built-in runner with native TypeScript
+support (tests import the leaf modules with explicit `.ts` extensions). Like
+`zig build test-libs`, `test-vscode` is **not** wired into `zig build test` —
+it needs `node`/`npm` on PATH. When you touch a pure helper, keep its wrapper in
+the host file a one-line delegation so the tested code is the shipped code.
 
 ## Conventions
 

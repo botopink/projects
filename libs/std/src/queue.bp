@@ -93,3 +93,15 @@ test "queue fromList and toList round-trip" {
     assert q.size() == 3;
     assert q.toList().join(",") == "10,20,30";
 }
+
+// ── empty-collection boundary (B1) ──
+
+test "queue empty boundary: size 0, peek + dequeue miss" {
+    val q: Queue<i32> = empty();
+    assert q.size() == 0;
+    assert q.isEmpty();
+    assert q.peek().unwrapOr(-1) == -1;
+    val r = q.dequeue();
+    assert r._0.size() == 0;
+    assert r._1.unwrapOr(-1) == -1;
+}

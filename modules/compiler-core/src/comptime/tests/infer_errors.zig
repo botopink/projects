@@ -384,6 +384,18 @@ test "infer error: effect annotation on an interface method" {
     );
 }
 
+// net-new (A1): two effect markers on one fn conflict — `#[@result]` and
+// `#[@future]` cannot both annotate the same declaration.
+test "infer error: net-new ---- two effect markers on one fn conflict" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\#[@result]
+        \\#[@future]
+        \\fn bad() -> @Future<i32> {
+        \\    return 0;
+        \\}
+    );
+}
+
 test "infer error: assert requires bool" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
         \\test "bad assert" {

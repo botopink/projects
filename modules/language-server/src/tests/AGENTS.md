@@ -31,12 +31,24 @@ tests/
 ├── type_definition.zig   ← textDocument/typeDefinition
 ├── semantic_tokens.zig   ← textDocument/semanticTokens
 ├── inlay_hints.zig       ← textDocument/inlayHint
-└── sublanguage.zig       ← `@ExprCustom` overlay: tokens + diagnostics + hover/def
+├── sublanguage.zig       ← `@ExprCustom` overlay: tokens + diagnostics + hover/def
+├── lifecycle.zig         ← `files.FileCache` didOpen→didChange→didClose
+└── cross_module.zig      ← project-index requests (references / rename / import-missing)
 ```
 
 `sublanguage.zig` uses `helpers.compileEval` (template-eval context on, unique
 scratch root per call) so the `@ExprCustom` `CustomNode` trees actually exist —
 it spawns `node`, like the comptime template tests.
+
+`cross_module.zig` is the only suite that touches **disk**: it materializes a
+tiny project under a unique `.botopinkbuild/xmod-*` dir (resolved against the
+test cwd, this module's root), points a `ProjectIndex` at it via `setRoot`, and
+exercises `crossModuleReferences` / `crossModuleRename` / the import-missing
+`codeAction` — the requests that only fire once a workspace root is known. Each
+test deletes its dir on exit (and pre-deletes on entry, so a crashed run leaves
+no stale fixture). `lifecycle.zig` drives the in-memory `FileCache` directly (no
+`node`, no disk); writing it surfaced a double-dup leak in `FileCache.change`'s
+unopened-uri fallback, since fixed.
 
 ## Snapshot workflow
 

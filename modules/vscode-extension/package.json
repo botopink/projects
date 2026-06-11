@@ -192,8 +192,10 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "vscode:package": "vsce package",
-    "format-check": "prettier ./src/**/*.ts --check",
-    "format": "prettier ./src/**/*.ts --write"
+    "pretest": "tsc -p ./ --noEmit",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"test/**/*.test.ts\"",
+    "format-check": "prettier \"./src/**/*.ts\" --check",
+    "format": "prettier \"./src/**/*.ts\" --write"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",

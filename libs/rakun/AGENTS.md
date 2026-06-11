@@ -54,8 +54,11 @@ rakun/
     ├── di_test.bp     ← placement + component scan
     ├── router_test.bp ← DI chain + router dispatch (200 / 404) end to end
     ├── scopes_test.bp ← singleton scope (diamond) · `#[value]` · `#[bean]` (F2-scopes)
-    └── server_test.bp ← the live HTTP dispatch pipeline (`rkDispatchHttp`): path
-                          param · query/header/body · 200/404 (F5)
+    ├── server_test.bp ← the live HTTP dispatch pipeline (`rkDispatchHttp`): path
+    │                     param · query/header/body · 200/404 (F5)
+    └── overlapping_routes_test.bp ← two controllers sharing a path prefix both
+                          register; dispatch matches the FULL path; a leaf (no-dep)
+                          #[service] resolves through the DI chain
 ```
 
 ## Module tree (`root.bp`)

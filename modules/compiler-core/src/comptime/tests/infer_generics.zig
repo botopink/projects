@@ -196,6 +196,90 @@ test "infer error: generic record ---- instantiated field type still checks" {
     );
 }
 
+// ── net-new (v0.beta.13 · A4): generics / recursion / context ────────────────
+
+// A generic RECORD instantiates independently at two concrete types in the same
+// scope: `unbox(Box<i32>)` and `unbox(Box<string>)` each bind `T` fresh.
+test "infer: net-new ---- generic record at two concrete types" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\record Box<T> { item: T }
+        \\fn unbox<T>(b: Box<T>) -> T { return b.item; }
+        \\fn main() {
+        \\    val a: i32 = unbox(Box(item: 7));
+        \\    val s: string = unbox(Box(item: "hi"));
+        \\}
+    );
+}
+
+// Recursion through a generic data type: a `Tree<T>` sum folds the two child
+// `Tree<i32>` subtrees, so the recursive call type-checks at the instantiated
+// element type.
+test "infer: net-new ---- recursion through a generic data type" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\enum Tree<T> {
+        \\    Leaf(value: T),
+        \\    Node(left: Tree<T>, right: Tree<T>),
+        \\}
+        \\fn sum(t: Tree<i32>) -> i32 {
+        \\    return case t {
+        \\        Leaf(v) -> v;
+        \\        Node(l, r) -> sum(l) + sum(r);
+        \\    };
+        \\}
+    );
+}
+
+// A generic fn's return type is inferred SOLELY from the call's usage context:
+// `make()` has no value argument fixing `T`, so the `val: i32`/`val: string`
+// annotations are the only source — each call site instantiates fresh.
+test "infer: net-new ---- generic return inferred from usage context" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn make<T>() -> T { @todo(); }
+        \\fn main() {
+        \\    val n: i32 = make();
+        \\    val s: string = make();
+        \\}
+    );
+}
+
+// An inline `test {}` block inside a module that also defines a generic fn
+// resolves (historic `.generic` TypeError gap): the test body instantiates the
+// generic call and the `assert` typechecks.
+test "infer: net-new ---- inline test in a generic module resolves" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\record Box<T> { item: T }
+        \\fn unbox<T>(b: Box<T>) -> T { return b.item; }
+        \\test "unbox round-trips" {
+        \\    val n = unbox(Box(item: 7));
+        \\    assert n == 7;
+        \\}
+    );
+}
+
+// @Context composition across THREE hook layers stays Element-based: a base hook
+// feeds a second hook, which a third consumes, and the component still returns
+// `Element` with no ContextBase drift.
+test "infer: net-new ---- @Context across three hook layers stays Element-based" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\val Element = struct implement @Context<Element, Element> { }
+        \\fn layer1(initial: i32) -> @Context<Element, i32> {
+        \\    initial;
+        \\}
+        \\fn layer2() -> @Context<Element, i32> {
+        \\    val a = use layer1(0);
+        \\    a;
+        \\}
+        \\fn layer3() -> @Context<Element, i32> {
+        \\    val b = use layer2();
+        \\    b;
+        \\}
+        \\fn Widget() -> Element {
+        \\    val c = use layer3();
+        \\    Element();
+        \\}
+    );
+}
+
 test "infer: interface associated fn ---- resolves and instantiates per call" {
     // `Interface.method(...)` (no `self`) resolves as an associated function;
     // each call site instantiates fresh generics, so two calls with different

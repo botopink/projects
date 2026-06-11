@@ -141,6 +141,79 @@ test "exhaustiveness error: unreachable arm after wildcard" {
     );
 }
 
+// ── net-new (v0.beta.13 · A3): pattern matching ──────────────────────────────
+
+// A wildcard `_` arm makes an otherwise-partial case (string scrutinee, which
+// can never be matched by literals alone) exhaustive — no diagnostic.
+test "infer: net-new ---- wildcard arm makes a partial case exhaustive" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn categorize(s: string) -> string {
+        \\    return case s {
+        \\        "hello" -> "greeting";
+        \\        "bye" -> "farewell";
+        \\        _ -> "other";
+        \\    };
+        \\}
+    );
+}
+
+// A case can scrutinize a plain `int` literal (non-enum) and a plain `string`
+// literal; both bind to a wildcard tail.
+test "infer: net-new ---- case over int and string literal scrutinees" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn intName(n: i32) -> string {
+        \\    return case n {
+        \\        0 -> "zero";
+        \\        1 -> "one";
+        \\        _ -> "many";
+        \\    };
+        \\}
+        \\fn strKind(s: string) -> string {
+        \\    return case s {
+        \\        "" -> "empty";
+        \\        _ -> "non-empty";
+        \\    };
+        \\}
+    );
+}
+
+// A nested record pattern destructures inner fields: matching `Line` binds the
+// inner `Point`'s coordinates directly. Note the outer payload is written with a
+// leading non-identifier sub-pattern (`_`) so the parser takes its nested-pattern
+// branch — an identifier-first outer payload (`Line(Point(x,y), tail)`) only
+// accepts flat bindings and is a known parser limitation.
+test "infer: net-new ---- nested record destructuring binds inner fields" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\record Point { x: i32, y: i32 }
+        \\record Line { head: Point, tail: Point }
+        \\fn endXY(l: Line) -> i32 {
+        \\    return case l {
+        \\        Line(_, Point(x, y)) -> x + y;
+        \\    };
+        \\}
+    );
+}
+
+// A `case` bound to a `val` and the same `case` as the trailing expression
+// type-check identically (both yield `string`).
+test "infer: net-new ---- case as val vs trailing expr type-check identically" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\fn asVal(n: i32) -> string {
+        \\    val r = case n {
+        \\        0 -> "zero";
+        \\        _ -> "other";
+        \\    };
+        \\    return r;
+        \\}
+        \\fn asTrailing(n: i32) -> string {
+        \\    return case n {
+        \\        0 -> "zero";
+        \\        _ -> "other";
+        \\    };
+        \\}
+    );
+}
+
 test "exhaustiveness error: duplicate variant arm" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
         \\val Color = enum {

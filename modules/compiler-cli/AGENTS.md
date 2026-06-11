@@ -16,7 +16,13 @@ compiler-cli/
 ├── tests/               ← end-to-end CLI scripts (NOT in `zig build test`)
 │   ├── std_erlang.sh        ← `bp test --target erlang` over libs/std
 │   ├── mutual_recursion.sh  ← forward-ref + mutual recursion runs on every backend
-│   └── mutual_recursion/    ← fixture project for the script above
+│   ├── mutual_recursion/    ← fixture project for the script above
+│   ├── backend_exec.sh      ← backend EXECUTION parity (numeric/records/modules
+│   │                          on node/erlang/beam/wasm); `zig build test-backends`
+│   ├── backend_exec/         ← numeric + records fixture projects
+│   ├── test_tooling.sh      ← `botopink test` behaviours: empty test, --filter
+│   │                          (multi / none), assert-message, mixed pass/fail exit
+│   └── test_tooling/         ← pass + fail fixture projects
 └── src/
     ├── AGENTS.md
     ├── docs.md          ← argv parser layout, dispatch flow
@@ -39,7 +45,22 @@ zig build test          # CLI unit tests (e.g. the generic lib loader)
 # NOT part of `zig build test` — run them directly:
 bash modules/compiler-cli/tests/std_erlang.sh        # stdlib suite on erlang
 bash modules/compiler-cli/tests/mutual_recursion.sh  # mutual recursion on every backend
+bash modules/compiler-cli/tests/backend_exec.sh      # numeric/records/modules per backend
+bash modules/compiler-cli/tests/test_tooling.sh      # `botopink test` behaviours
+
+# backend_exec.sh is also reachable from the repo root as a single build step
+# (skips any absent runtime; sets BOTOPINK_SKIP_BUILD so it reuses the install):
+zig build test-backends
 ```
+
+> **Pinned backend reds** (recorded, not regressions — Front-A codegen gaps that
+> `backend_exec.sh` surfaces and keeps visible): BEAM mis-codegens integer
+> arithmetic combined with calls (`f(n-1) + …` / 2-arg arithmetic calls trip
+> `beam_validator`), `case…of` enum dispatch (returns the wrong arm), and lambdas
+> (a `#Fun` mis-applied to `*`); the erlang backend emits cross-module package
+> calls unqualified (`area` vs `geometry:area`). The harness builds these (erlc
+> must accept the asm) but treats the run as informational, flagging loudly if a
+> red ever starts passing so the pin can be promoted to a hard assert.
 
 ## External libs (generic loader)
 
