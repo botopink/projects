@@ -175,6 +175,8 @@ pub fn renderTypeError(
         .methodNotActive => "method not active",
         .ambiguousExtension => "ambiguous extension method",
         .notAnExtension => "not an extension symbol",
+        .extendRequiresInterface => "extend requires an interface",
+        .redundantActivation => "redundant activation",
         .useNotAllowed => "`use` not allowed",
         .useNotContext => "`use` requires @Context",
         .contextMismatch => "ContextBase mismatch",
@@ -287,6 +289,20 @@ pub fn renderTypeError(
             try out.appendSlice(allocator, try std.fmt.allocPrint(
                 tmp,
                 "\n  '{s}' does not name an implement/extend symbol\n",
+                .{name},
+            ));
+        },
+        .extendRequiresInterface => |t| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  `extend {s}` adds methods without a contract\n  hint: use `implement <Interface> for {s}` so the methods satisfy an interface\n",
+                .{ t, t },
+            ));
+        },
+        .redundantActivation => |name| {
+            try out.appendSlice(allocator, try std.fmt.allocPrint(
+                tmp,
+                "\n  `{s}*` is redundant: a local extension is auto-applied\n  hint: drop it — `*` is only for imports\n",
                 .{name},
             ));
         },

@@ -1,15 +1,17 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
+val Swimmer = interface {
+    fn swim(self: Self);
+}
 record Pato { id: i32 }
-val PatoVoa = extend Pato {
-    fn fly(self: Self) {
+val PatoNada = implement Swimmer for Pato {
+    fn swim(self: Self) {
         return self.id;
     }
 }
-PatoVoa*;
 fn main() {
-    val donald = Pato(7);
-    @print(donald.fly());
+    val donald = Pato(2);
+    @print(donald.swim());
 }
 ```
 
@@ -18,18 +20,18 @@ fn main() {
 -module(main).
 -export(['_botopink_main'/0, main/1]).
 
+%% interface Swimmer
+
 %% record Pato: id
 
-%% extend Pato
+%% implement Swimmer for Pato
 
-fly(Self) ->
+swim(Self) ->
     maps:get(id, Self).
 
-%% activate PatoVoa
-
 main() ->
-    Donald = #{id => 7},
-    io:format("~p~n", [fly(Donald)]).
+    Donald = #{id => 2},
+    io:format("~p~n", [swim(Donald)]).
 
 '_botopink_main'() ->
     main().
@@ -40,5 +42,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
-7
+2
 ```

@@ -572,7 +572,6 @@ fn registerExtensions(env: *Env, program: ast.Program) InferError!void {
                 try env.extensions.put(im.name, .{
                     .name = im.name,
                     .target = im.target,
-                    .isExtend = false,
                     .interfaces = im.interfaces,
                     .methods = try collectImplMethodNames(env, im.methods),
                 });
@@ -582,28 +581,32 @@ fn registerExtensions(env: *Env, program: ast.Program) InferError!void {
                 try env.bind(im.name, try env.freshVar());
             },
             .extend => |ex| {
-                try env.extensions.put(ex.name, .{
-                    .name = ex.name,
-                    .target = ex.target,
-                    .isExtend = true,
-                    .methods = try collectImplMethodNames(env, ex.methods),
-                });
-                try env.bind(ex.name, try env.freshVar());
+                // Rule A: methods are added to a type only through `implement
+                // <Interface> for T`, which `validateImplement` checks against the
+                // interface. A contract-free `extend` block is rejected.
+                env.lastError = TypeError.extendRequiresInterface(ex.target);
+                return error.TypeError;
             },
             else => {},
         }
     }
 
-    // Activations: `name*` imports and bare `name*;` statements. Both are carried
-    // by `use` declarations (`activationOnly` marks the bare `name*;` form).
+    // Activations carried by `use` declarations: an `import { name* } from "…"`
+    // opts an *imported* extension into scope, while a bare `name*;`
+    // (`activationOnly`) names a local symbol. Rule B: a locally-declared
+    // extension is auto-applied in its module, so a bare `name*;` is never needed.
     for (program.decls) |decl| {
         switch (decl) {
             .use => |u| for (u.imports) |imp| {
                 if (!imp.activate) continue;
                 const nm = imp.name();
-                // A bare `name*;` must name a locally-known impl/extend symbol.
-                if (u.activationOnly and !env.extensions.contains(nm)) {
-                    env.lastError = TypeError.notAnExtension(nm);
+                if (u.activationOnly) {
+                    // `*` is only for imports. A bare statement is redundant when it
+                    // names a local extension, and otherwise names no extension.
+                    env.lastError = if (env.extensions.contains(nm))
+                        TypeError.redundantActivation(nm)
+                    else
+                        TypeError.notAnExtension(nm);
                     return error.TypeError;
                 }
                 try env.activations.put(nm, {});
@@ -4474,26 +4477,24 @@ fn resolveReceiverCall(
         return try makeMethodCall(env, recvPtr, callee, typedArgs, typedTrailing, loc);
     }
 
-    // Rule 2 — activated `implement`/`extend` providing `callee` for this type.
-    var activatedSym: ?[]const u8 = null;
+    // Rule 2 — an `implement` block providing `callee` for this type. Every entry
+    // in `env.extensions` is declared in the current module (imports do not register
+    // here), so all are auto-applied: no activation is required (Rule B). Two local
+    // impls of the same method for the same type are ambiguous.
+    var matchSym: ?[]const u8 = null;
     var ambiguousWith: ?[]const u8 = null;
-    var inactiveSym: ?[]const u8 = null;
     var it = env.extensions.valueIterator();
     while (it.next()) |ext| {
         if (!std.mem.eql(u8, ext.target, typeName)) continue;
         if (!containsStr(ext.methods, callee)) continue;
-        if (env.isActivated(ext.name)) {
-            if (activatedSym == null) {
-                activatedSym = ext.name;
-            } else if (ambiguousWith == null) {
-                ambiguousWith = ext.name;
-            }
-        } else if (inactiveSym == null) {
-            inactiveSym = ext.name;
+        if (matchSym == null) {
+            matchSym = ext.name;
+        } else if (ambiguousWith == null) {
+            ambiguousWith = ext.name;
         }
     }
 
-    if (activatedSym) |sym| {
+    if (matchSym) |sym| {
         if (ambiguousWith) |other| {
             env.lastError = TypeError.ambiguousExtension(typeName, callee, sym, other).withLoc(loc);
             return error.TypeError;
@@ -4501,12 +4502,6 @@ fn resolveReceiverCall(
         // External dispatch: lower `recv.callee(args)` → `sym.callee(recv, args)`.
         try env.dispatchRewrites.put(loc, sym);
         return try makeMethodCall(env, recvPtr, callee, typedArgs, typedTrailing, loc);
-    }
-
-    // Rule 3 — method exists but no activation: error with an activation hint.
-    if (inactiveSym) |sym| {
-        env.lastError = TypeError.methodNotActive(typeName, callee, sym).withLoc(loc);
-        return error.TypeError;
     }
 
     return null;

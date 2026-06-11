@@ -9,7 +9,6 @@ val PatoNada = implement Swimmer for Pato {
         return self.id;
     }
 }
-PatoNada*;
 val donald = Pato(1);
 val splash = donald.swim();
 ```
@@ -53,16 +52,6 @@ val splash = donald.swim();
         "params": [],
         "return_type": "?"
       }
-    },
-    {
-      "ast": "use",
-      "declarations": [
-        {
-          "ast": "use-declaration",
-          "indent": "PatoNada",
-          "return_type": "?"
-        }
-      ]
     }
   ]
 }

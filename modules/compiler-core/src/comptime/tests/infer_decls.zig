@@ -267,7 +267,7 @@ test "infer: doc comment on struct" {
     );
 }
 
-test "infer: activated extension method resolves" {
+test "infer: local extension method resolves without activation" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
         \\val Swimmer = interface {
         \\    fn swim(self: Self);
@@ -278,7 +278,6 @@ test "infer: activated extension method resolves" {
         \\        return self.id;
         \\    }
         \\}
-        \\PatoNada*;
         \\val donald = Pato(1);
         \\val splash = donald.swim();
     );

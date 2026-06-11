@@ -94,6 +94,13 @@ pub const TypeErrorKind = union(enum) {
     },
     /// `name*` where `name` does not name an `implement`/`extend` symbol.
     notAnExtension: []const u8,
+    /// A contract-free `extend T { … }` block. Methods may only be added to a
+    /// type through `implement <Interface> for T`, so they satisfy an interface.
+    /// Payload is the extended type `T`.
+    extendRequiresInterface: []const u8,
+    /// A bare `name*;` naming a locally-declared extension. Extensions declared in
+    /// the current module are auto-applied; `*` is only for imports. Payload is `name`.
+    redundantActivation: []const u8,
     /// `use` appeared in a function whose return type does not implement `@Context`.
     /// Payload is the rendered return type (e.g. `"string"`, `"void"`).
     useNotAllowed: []const u8,
@@ -219,6 +226,14 @@ pub const TypeError = struct {
         return .{ .kind = .{ .notAnExtension = name } };
     }
 
+    pub fn extendRequiresInterface(typeName: []const u8) TypeError {
+        return .{ .kind = .{ .extendRequiresInterface = typeName } };
+    }
+
+    pub fn redundantActivation(name: []const u8) TypeError {
+        return .{ .kind = .{ .redundantActivation = name } };
+    }
+
     pub fn useNotAllowed(returnType: []const u8) TypeError {
         return .{ .kind = .{ .useNotAllowed = returnType } };
     }
@@ -290,6 +305,8 @@ pub const TypeError = struct {
             .methodNotActive => |m| std.fmt.allocPrint(gpa, "'{s}' has no active method '{s}' — activate the extension with `{s}*`", .{ m.typeName, m.method, m.hintSym }),
             .ambiguousExtension => |a| std.fmt.allocPrint(gpa, "'{s}.{s}' is provided by both '{s}' and '{s}' — qualify the call, e.g. `{s}.{s}(obj)`", .{ a.typeName, a.method, a.symA, a.symB, a.symA, a.method }),
             .notAnExtension => |name| std.fmt.allocPrint(gpa, "'{s}' does not name an implement/extend symbol", .{name}),
+            .extendRequiresInterface => |t| std.fmt.allocPrint(gpa, "`extend {s}` adds methods without a contract — use `implement <Interface> for {s}` so the methods satisfy an interface", .{ t, t }),
+            .redundantActivation => |name| std.fmt.allocPrint(gpa, "`{s}*` is redundant: an extension declared in this module is auto-applied; `*` is only for imports", .{name}),
             .missingMethod => |m| std.fmt.allocPrint(gpa, "'{s}' does not implement '{s}' required by interface '{s}'", .{ m.typeName, m.method, m.interfaceName }),
             .unknownMethod => |m| std.fmt.allocPrint(gpa, "'{s}' is not declared in any interface implemented for '{s}'", .{ m.method, m.typeName }),
             .unknownInterface => |u| std.fmt.allocPrint(gpa, "'{s}' is not an interface implemented here (method '{s}')", .{ u.qualifier, u.method }),
