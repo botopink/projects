@@ -58,6 +58,22 @@ pub const ImportDecl = struct {
     moduleComment: ?[]const u8 = null,
 };
 
+/// A `mod Name;` / `pub mod Name;` declaration — a node in the explicit module
+/// tree (Rust-style). It names a submodule of the declaring file's module and
+/// records whether it is re-exported (`pub mod`) or private to the subtree
+/// (`mod`). Resolution of `Name` to `Name.bp` / `Name/mod.bp` happens in the
+/// CLI driver, not here; the AST only carries the declaration.
+pub const ModDecl = struct {
+    name: []const u8,
+    isPub: bool,
+    /// `///` documentation comment (multi-line joined with `\n`)
+    docComment: ?[]const u8 = null,
+    /// `//` regular comment (last one before the declaration)
+    comment: ?[]const u8 = null,
+    /// `////` module-level documentation
+    moduleComment: ?[]const u8 = null,
+};
+
 /// Source location of a node: line and column (both 1-based).
 pub const Loc = struct {
     line: usize,
@@ -1420,6 +1436,7 @@ pub const DeclKind = union(enum) {
     implement: ImplementDecl,
     extend: ExtendDecl,
     use: ImportDecl,
+    mod: ModDecl,
     interface: InterfaceDecl,
     delegate: DelegateDecl,
     @"struct": StructDecl,
@@ -1449,6 +1466,7 @@ pub const DeclKind = union(enum) {
             .@"fn" => |*f| f.deinit(allocator),
             .val => |*v| v.deinit(allocator),
             .@"test" => |*t| t.deinit(allocator),
+            .mod => {},
             .comment => {},
         }
     }

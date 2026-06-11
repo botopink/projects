@@ -473,6 +473,9 @@ fn emitProgramOptsX(
                 try aw.writer.writeByte('\n');
                 firstEmitted = false;
             },
+            // `mod` declares a submodule in the explicit tree; the submodule is
+            // emitted as its own module file, so the declaration emits nothing.
+            .mod => {},
             // Test blocks are only compiled under `botopink test`; in normal
             // builds they are skipped entirely.
             .@"test" => |t| {

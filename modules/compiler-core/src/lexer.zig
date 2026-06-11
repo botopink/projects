@@ -680,6 +680,7 @@ pub const Lexer = struct {
         if (std.mem.eql(u8, text, "import")) return .import;
         // `let` is an alias for `val` (immutable binding)
         if (std.mem.eql(u8, text, "macro")) return .macro;
+        if (std.mem.eql(u8, text, "mod")) return .mod;
         if (std.mem.eql(u8, text, "new")) return .new;
         if (std.mem.eql(u8, text, "opaque")) return .@"opaque";
         if (std.mem.eql(u8, text, "private")) return .private;
