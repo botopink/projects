@@ -1,29 +1,31 @@
 ----- SOURCE CODE -- main.bp
 ```botopink
+val Swimmer = interface {
+    fn swim(self: Self);
+}
 record Pato { id: i32 }
-val PatoVoa = extend Pato {
-    fn fly(self: Self) {
+val PatoNada = implement Swimmer for Pato {
+    fn swim(self: Self) {
         return self.id;
     }
 }
-PatoVoa*;
 fn main() {
-    val donald = Pato(7);
-    @print(donald.fly());
+    val donald = Pato(2);
+    @print(donald.swim());
 }
 ```
 
 ----- BEAM ASSEMBLY -- main.S
 ```erlang
 {module, main}.
-{exports, [{'_botopink_main', 0}, {main, 1}, {'Pato_fly', 1}]}.
+{exports, [{'_botopink_main', 0}, {main, 1}, {'Pato_swim', 1}]}.
 {attributes, []}.
 {labels, 11}.
 
-{function, 'Pato_fly', 1, 3}.
+{function, 'Pato_swim', 1, 3}.
   {label, 2}.
     {line, [{location, "main.erl", 1}]}.
-    {func_info, {atom, main}, {atom, 'Pato_fly'}, 1}.
+    {func_info, {atom, main}, {atom, 'Pato_swim'}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
     {test, is_map, {f, 10}, [{x, 0}]}.
@@ -39,7 +41,7 @@ fn main() {
   {label, 5}.
     {allocate, 1, 0}.
     {init_yregs, {list, [{y, 0}]}}.
-    {move, {integer, 7}, {x, 0}}.
+    {move, {integer, 2}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
     {put_map_assoc, {f, 0}, {literal, #{}}, {x, 0}, 2, {list, [{atom, id}, {x, 1}]}}.
     {move, {x, 0}, {y, 0}}.
@@ -73,5 +75,5 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
-7
+2
 ```

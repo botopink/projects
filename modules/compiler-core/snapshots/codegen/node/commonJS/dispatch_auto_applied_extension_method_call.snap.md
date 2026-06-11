@@ -9,7 +9,6 @@ val PatoNada = implement Swimmer for Pato {
         return self.id;
     }
 }
-PatoNada*;
 fn main() {
     val donald = Pato(2);
     @print(donald.swim());
@@ -34,8 +33,6 @@ const PatoNada = {
     },
 };
 
-
-
 function main() {
     const donald = new Pato(2);
     console.log(PatoNada.swim(donald));
@@ -49,8 +46,6 @@ _botopink_main();
 
 ----- TYPESCRIPT TYPEDEF -- main.d.ts
 ```typescript
-
-
 
 
 

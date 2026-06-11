@@ -88,17 +88,16 @@ pub const TypeDef = union(enum) {
 
 // ── static extension dispatch ───────────────────────────────────────────────────
 
-/// A named `implement … for T` or `extend T` block, registered for static
-/// extension dispatch. `obj.method()` resolves to one of these only when the
-/// entry's `name` has been activated (`name*` in an import, or a bare `name*;`).
+/// A named `implement … for T` block, registered for static extension dispatch.
+/// Every entry is declared in the current module (imports do not register here),
+/// so `obj.method()` resolves to one without any activation — local extensions
+/// are auto-applied.
 pub const ExtEntry = struct {
-    /// The activation symbol, e.g. "PatoNada".
+    /// The dispatch symbol, e.g. "PatoNada".
     name: []const u8,
-    /// The type this block extends, e.g. "Pato".
+    /// The type this block implements methods for, e.g. "Pato".
     target: []const u8,
-    /// true for `extend`, false for `implement`.
-    isExtend: bool,
-    /// Interfaces named in an `implement` block (empty for `extend`).
+    /// Interfaces named in the `implement` block.
     interfaces: []const ast.TypeRef = &.{},
     /// Method names declared in the block.
     methods: []const []const u8,

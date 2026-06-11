@@ -56,7 +56,7 @@ test "js: dispatch ---- string contains lowers to native includes" {
     );
 }
 
-test "js: dispatch ---- activated extension method call" {
+test "js: dispatch ---- auto-applied extension method call" {
     try h.assertJsSingle(std.testing.allocator, @src(),
         \\val Swimmer = interface {
         \\    fn swim(self: Self);
@@ -67,7 +67,6 @@ test "js: dispatch ---- activated extension method call" {
         \\        return self.id;
         \\    }
         \\}
-        \\PatoNada*;
         \\fn main() {
         \\    val donald = Pato(2);
         \\    @print(donald.swim());
@@ -89,22 +88,6 @@ test "js: dispatch ---- qualified extension method call" {
         \\fn main() {
         \\    val donald = Pato(3);
         \\    @print(PatoNada.swim(donald));
-        \\}
-    );
-}
-
-test "js: dispatch ---- activated extend method call" {
-    try h.assertJsSingle(std.testing.allocator, @src(),
-        \\record Pato { id: i32 }
-        \\val PatoVoa = extend Pato {
-        \\    fn fly(self: Self) {
-        \\        return self.id;
-        \\    }
-        \\}
-        \\PatoVoa*;
-        \\fn main() {
-        \\    val donald = Pato(7);
-        \\    @print(donald.fly());
         \\}
     );
 }

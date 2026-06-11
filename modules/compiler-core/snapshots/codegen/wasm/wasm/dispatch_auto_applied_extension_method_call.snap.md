@@ -9,7 +9,6 @@ val PatoNada = implement Swimmer for Pato {
         return self.id;
     }
 }
-PatoNada*;
 fn main() {
     val donald = Pato(2);
     @print(donald.swim());

@@ -65,7 +65,7 @@ pub fn eq<T>(v: T) -> T {
 
 // `anyInt()` / `anyString()` — match any value of that type. (A fully generic
 // `any<T>()` would need a per-type default it cannot produce, so onze ships the
-// concrete ones; extend per type as needed.)
+// concrete ones; add more per type as needed.)
 pub fn anyInt() -> i32 {
     val _m = onzePushMatcher("any", "*");
     return 0;
