@@ -16,7 +16,7 @@ messages() ->
 _loop() ->
     lists:foreach(fun(Msg, I) ->
         io:format("~p~n", [Msg])
-    end, Messages).
+    end, messages()).
 ```
 
 ----- RUN LOG -----

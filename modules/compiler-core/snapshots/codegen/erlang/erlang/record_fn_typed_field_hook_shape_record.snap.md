@@ -13,7 +13,7 @@ fn apply(s: State<i32>) -> i32 { s.set(s.value); return s.value; }
 
 make() ->
     #{value => 0, set => fun(N) ->
-
+        undefined
     end}.
 
 apply(S) ->
