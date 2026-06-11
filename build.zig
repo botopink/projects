@@ -170,6 +170,36 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(lsp_exe);
 
+    // ── lib-test-runner (botopink-lib-test executable) ────────────────────────
+    // Fully self-contained orchestrator — shells out to the installed `botopink`
+    // binary, so it carries no `compiler-core` import.
+
+    const lib_test_exe = b.addExecutable(.{
+        .name = "botopink-lib-test",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("modules/lib-test-runner/src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    b.installArtifact(lib_test_exe);
+
+    // `zig build test-libs` — run every lib's tests on each backend. Depends on
+    // the `botopink` install (the child binary must exist), runs from the repo
+    // root so `libs/` resolves, and forwards `--` args, e.g.
+    //   zig build test-libs -- --target erlang --lib rakun
+    // Deliberately NOT wired into `zig build test`: it needs node/escript on
+    // PATH, which the Zig-only gate does not assume.
+    const test_libs_run = b.addRunArtifact(lib_test_exe);
+    test_libs_run.step.dependOn(b.getInstallStep());
+    test_libs_run.setCwd(b.path("."));
+    test_libs_run.has_side_effects = true; // spawns child compilers — never cache
+    if (b.args) |args| test_libs_run.addArgs(args);
+
+    const test_libs_step = b.step("test-libs", "Run every libs/ project's tests per backend");
+    test_libs_step.dependOn(&test_libs_run.step);
+
     // ── Run step ──────────────────────────────────────────────────────────────
 
     const run_cmd = b.addRunArtifact(cli_exe);

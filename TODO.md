@@ -1,70 +1,55 @@
-# TODO — rakun  (annotation-processor lib · Wave 1)
+# TODO — lib-test-runner  (tooling · Wave 1)
 
-> Task branch `task/rakun-di` · spec
-> [`tasks/v0.beta.8/specs/rakun.md`](../../tasks/v0.beta.8/specs/rakun.md).
+> Task branch `task/lib-test-runner` · spec
+> [`tasks/v0.beta.9/specs/lib-test-runner.md`](tasks/v0.beta.9/specs/lib-test-runner.md).
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
-> **Depends on: nothing** — the `@Decl`/`@emit` mechanism + F3 placement bodies are
-> in `feat`. Start now. Sibling of `onze` (same mechanism, disjoint lib).
->
-> **HARD RULE.** Zero rakun knowledge in `compiler-core`. All behaviour is
-> `libs/rakun/*.bp` decorator bodies via `@emit`. Port *behaviour* from the preserved
-> `task/rakun` reference (`feb96f0`), never the Zig.
+> **Depends on: nothing.** A new `modules/` Zig module — fully self-contained. Start now.
 
-> **Mechanism reality (verified 2026-06-10).** Each decorator runs in an isolated
-> node process — there is NO shared comptime registry across decorators, no
-> top-level mutable `var`, and hand-code can't reference emitted symbols. So the
-> spec's "shared comptime registry" / "topo-sorted singleton `val`s" / "comptime
-> cycle diagnostic" are realized differently: a **host runtime** (`runtime.mjs`
-> behind `#[@external]`) holds the scan/cycle/router state, and each decorator
-> `@emit`s self-registering code + a lazy factory. Equivalent behaviour; the
-> *comptime* cycle diagnostic is the one genuine casualty (runtime instead).
->
-> **Generic core fixes this needed (landed):** cross-module host-`#[@external]`
-> lowering + import dedup (`14cd527`); `@Decl` field-annotation reflection +
-> `test/` modules excluded from the test aggregator (this commit).
+> Orchestration only — shells out to the existing `botopink test`; no compiler internals.
 
-## F2 — IoC container (the wiring, via `@emit`)
-- [x] Component scan: each component decorator `@emit`s `rkScan("Name")` at module
-      load → host scan registry (no shared comptime state needed).
-- [x] DI graph: each component `@emit`s `__rkMake_<Type>()` injecting every field
-      by its own factory (lazy; topo-order is implicit in the call graph, not `val`
-      order). Tested via dispatch building a controller→service→repo chain.
-- [x] Cycle detection (A↔B): `rkEnter`/`rkDone` guard raises at construction.
-      NOTE: **runtime**, not comptime (per-decorator has no whole-graph view).
-- [ ] Singleton scope (currently fresh-per-resolve) + `#[configuration]`/`#[bean]`
-      factories + `#[value("key")]` property injection. (`@Decl` now reflects field
-      annotations, so `#[value]` detection is unblocked — wiring deferred.)
+## F0 — the module skeleton
+- [x] `modules/lib-test-runner/` with `build.zig` + `build.zig.zon` (mirror compiler-cli);
+      `AGENTS.md` linked from `modules/AGENTS.md` (tree + table row).
+- [x] Workspace `build.zig`: `addExecutable` (`botopink-lib-test`) + `installArtifact` +
+      a **`zig build test-libs`** step (depends on the `botopink` install, `setCwd(".")`,
+      forwards `b.args`).
 
-## F4 — web layer / router (via `@emit`)
-- [x] Controller decorator walks `decl.methods`, reads `#[getMapping(path)]`/… from
-      `method.annotations`, `@emit`s `rkRegisterRoute(verb, prefix + path, handler)`
-      (+ `#[route]` prefix). Verb from the marker name.
-- [x] Path params (`:name`) — `dispatch` matches them (binding into the request);
-      `req.param("name")` wiring exercised via the fake request.
-- [x] `Response` builders type-check against the handler return type (handler is
-      `fn(req: Request) -> Response`; `rkDispatch -> Response`).
+## F1 — discovery
+- [x] Enumerate `libs/*/` with a `botopink.json`; `--lib` filter; "has tests" =
+      `test/*.bp` or a `src/**/*.bp` `test` block. No-tests lib → green skip (`–`).
 
-## F5 — bootstrap (`Rakun.run` + real HTTP backing)
-- [ ] Promote `libs/server` scaffold → real minimal HTTP (listen, dispatch, req/resp
-      bridge) behind `#[@external]` host calls (node `http` first; then erlang).
-- [ ] `Request` gets a concrete server-supplied impl: `param`/`query`/`header`/`body`.
-- [ ] `Rakun.run(app)` reads the host router and starts `libs/server` on
-      `app.port`/`basePath`. (Needs G2: ship the runtime `.mjs` next to the emitted
-      module so a consumer build resolves it — today only the lib's own tests do.)
-- [ ] End-to-end: a request to a mapped route invokes the handler + returns its Response.
+## F2 — fan-out + per-cell run
+- [x] For each `(lib, target)`: spawn `botopink test --target <t> [--filter …]` with
+      `cwd = libs/<lib>`, capture+re-emit stdio, capture exit code. Locate
+      `zig-out/bin/botopink` (`--bin`/`BOTOPINK_BIN` override allowed; PATH fallback).
+- [x] Unsupported target (beam/wasm today) → `~ skipped-unsupported` unless `--strict`.
+      Detection is child-output-driven (`"currently supports only"`), not a hard-coded list.
+- [x] CLI: `--target <t>[,<t>]|all` (accept `node`→commonJS alias + `--target=X`), `--lib`,
+      `--filter`, `--strict`. Default targets `commonJS,erlang`.
+
+## F3 — aggregation + exit code
+- [x] Print a lib×target matrix (`✓`/`✗`/`–`/`~`) + summary.
+- [x] **Exit non-zero iff any cell is `✗`** — a red `.bp` test fails `zig build test-libs`.
+      (core acceptance criterion)
+
+## F4 — wire it in
+- [x] Document `zig build test-libs` in `modules/AGENTS.md` + root `AGENTS.md`. Do **not**
+      add to default `zig build test` (needs node/escript on PATH).
 
 ## Done gate
-- [x] component scan + DI chain + cycle diagnostic (runtime) — green under
-      `botopink test` (`test/di_test.bp`, `test/router_test.bp`). `#[bean]` deferred.
-- [~] router: GET routes return 200, unmapped → 404 — green in-test via `rkDispatch`.
-      Real `run` over node `http` + beam pending F5/G2.
-- [x] Tests in `libs/rakun/*.bp`; `libs/rakun/AGENTS.md` updated. `libs/server/AGENTS.md`
-      update lands with F5.
-- [x] `grep -riE "rakun" modules/compiler-core/src` returns nothing (mechanism is generic).
-
-## Notes
-- Constructor injection only in v1; singleton scope, `#[value]`/`#[bean]`, and the
-  real server are the remaining work. `libs/server` realness + runtime-`.mjs`
-  shipping (G2) gate F5. No graceful-shutdown / middleware in v1.
-- Comptime constraints on decorator bodies (no sibling calls, `if`-expr, bare-`if`
-  only last, block-lambdas) force the factory builder to be inlined per marker.
+- [~] `zig build test-libs` green across all libs (commonJS+erlang). commonJS: all green;
+      std passes both backends. **erlang still reds for erika/jhonstart/onze/rakun** —
+      not one bug but a *cluster* of pre-existing erlang-codegen gaps; the runner
+      correctly surfaces them as `✗` (the gate working). While investigating, two
+      *general* `erlang.zig` fixes landed here (gate green, 3 broken erlang snapshots
+      corrected):
+        1. reserved-word atom quoting — a fn named `of`/`div` is now `'of'`/`'div'`
+           at def/export/call (was invalid bare-atom erlang).
+        2. trailing-comment dangling comma — a final `// comment` stmt no longer
+           strands a `,` before `end` (`emitBodyFrom` keys off the last *real* stmt).
+      Remaining tail is real stdlib-backends-parity scope: erika (unbound module `val`,
+      missing `toString/1`), jhonstart (empty `fun -> end` body), rakun (`@emit`-generated
+      erlang), and **onze (`MissingExternalTarget` — node-only mock lib, architecturally
+      not erlang-compilable without an erlang mock runtime).**
+- [x] a deliberately-failing lib test → matrix `✗`, exit != 0 (verified: 4 erlang reds).
+- [x] arg-parsing + discovery + matrix have Zig tests; `zig build && zig build test` green.

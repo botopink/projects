@@ -337,15 +337,16 @@ fn emitErlang(
     if (pub_fns.items.len > 0 or assoc_exports.items.len > 0) {
         try aw.writer.writeAll("-export([");
         var first = true;
+        var exp_buf: [256]u8 = undefined;
         for (pub_fns.items) |f| {
             if (!first) try aw.writer.writeAll(", ");
             first = false;
-            try aw.writer.print("{s}/{d}", .{ f.name, fnArityNoSelf(f) });
+            try aw.writer.print("{s}/{d}", .{ try fnAtom(f.name, &exp_buf), fnArityNoSelf(f) });
         }
         for (assoc_exports.items) |e| {
             if (!first) try aw.writer.writeAll(", ");
             first = false;
-            try aw.writer.print("{s}/{d}", .{ e.name, e.arity });
+            try aw.writer.print("{s}/{d}", .{ try fnAtom(e.name, &exp_buf), e.arity });
         }
         try aw.writer.writeAll("]).\n");
     }
@@ -503,10 +504,28 @@ fn erlangModule(alloc: std.mem.Allocator, name: []const u8) ![]u8 {
     return buf;
 }
 
+/// Erlang reserved words. A botopink identifier that collides with one of these
+/// (e.g. a fn named `of` or `div`, an HTML builder `div`) is a syntactically
+/// valid *unquoted* atom lexically, yet the parser rejects it as a bare atom —
+/// it must be single-quoted (`'of'`). Used to decide quoting for atoms and
+/// function names alike. Source: Erlang reference manual reserved words.
+const erlang_reserved = std.StaticStringMap(void).initComptime(.{
+    .{"after"}, .{"and"}, .{"andalso"}, .{"band"}, .{"begin"},  .{"bnot"},
+    .{"bor"},   .{"bsl"}, .{"bsr"},     .{"bxor"}, .{"case"},   .{"catch"},
+    .{"cond"},  .{"div"}, .{"end"},     .{"fun"},  .{"if"},     .{"let"},
+    .{"maybe"}, .{"not"}, .{"of"},      .{"or"},   .{"orelse"}, .{"receive"},
+    .{"rem"},   .{"try"}, .{"when"},    .{"xor"},
+});
+
+fn isErlangReserved(name: []const u8) bool {
+    return erlang_reserved.has(name);
+}
+
 /// Render `name` as a valid Erlang atom into `buf` — quoted when it is not a
-/// valid unquoted atom (must start lowercase; only alnum/`_`/`@` after).
+/// valid unquoted atom (must start lowercase; only alnum/`_`/`@` after) or when
+/// it collides with a reserved word.
 fn atomName(name: []const u8, buf: []u8) ![]const u8 {
-    var ok = name.len > 0 and name[0] >= 'a' and name[0] <= 'z';
+    var ok = name.len > 0 and name[0] >= 'a' and name[0] <= 'z' and !isErlangReserved(name);
     if (ok) for (name) |ch| {
         if (!(std.ascii.isAlphanumeric(ch) or ch == '_' or ch == '@')) {
             ok = false;
@@ -515,6 +534,15 @@ fn atomName(name: []const u8, buf: []u8) ![]const u8 {
     };
     if (ok) return name;
     return std.fmt.bufPrint(buf, "'{s}'", .{name});
+}
+
+/// Render `name` as a callable Erlang function atom into `buf`. Function names
+/// from botopink are already valid lowercase identifiers, so this only adds the
+/// single-quoting a reserved word needs (`of` → `'of'`) and is otherwise a no-op
+/// — keeping output byte-identical for every non-reserved name.
+fn fnAtom(name: []const u8, buf: []u8) ![]const u8 {
+    if (isErlangReserved(name)) return std.fmt.bufPrint(buf, "'{s}'", .{name});
+    return name;
 }
 
 /// Tuple positional member (`_0`, `_1`, …) → the digits, else null.
@@ -776,7 +804,8 @@ const Emitter = struct {
         }
         // Fresh local scope for this function (erlang vars are function-scoped).
         this.locals.clearRetainingCapacity();
-        try this.w(f.name);
+        var fn_buf: [256]u8 = undefined;
+        try this.w(try fnAtom(f.name, &fn_buf));
         try this.w("(");
         var first = true;
         for (f.params) |p| {
@@ -880,10 +909,14 @@ const Emitter = struct {
     /// nesting every following statement inside the Ok arm (Erlang has no early
     /// return), so the Error variant propagates up as the function's value.
     fn emitBodyFrom(this: *Emitter, body: []const ast.Stmt, start: usize) anyerror!void {
+        // The body's tail (last value) and comma-joining key off the last *real*
+        // statement, so trailing comments neither become the tail nor strand a
+        // dangling `,` before the closing `end`/`.`.
+        const last_real = lastRealStmt(body);
         var i = start;
         while (i < body.len) : (i += 1) {
             const stmt = body[i];
-            const is_last = (i == body.len - 1);
+            const is_last = if (last_real) |lr| (i == lr) else (i == body.len - 1);
 
             // Detect `[val name =] try inner` (no catch) at this position.
             const prop: ?struct { inner: ast.Expr, head: TryHead } = switch (stmt.expr) {
@@ -937,8 +970,10 @@ const Emitter = struct {
                 if (this.detectFoldFusion(body, i)) |ff| {
                     try this.writeIndent();
                     try this.emitFoldFusion(ff);
-                    const fused_last = (i + 1 == body.len - 1);
-                    if (!fused_last) try this.w(",\n");
+                    if (i + 1 != body.len - 1) {
+                        const real_follows = if (last_real) |lr| (i + 1 < lr) else false;
+                        try this.w(if (real_follows) ",\n" else "\n");
+                    }
                     i += 1; // also consume the forEach statement
                     continue;
                 }
@@ -946,7 +981,12 @@ const Emitter = struct {
 
             try this.writeIndent();
             try this.emitBodyStmt(stmt, is_last);
-            if (!is_last) try this.w(",\n");
+            // A real statement takes a trailing `,` only when another real
+            // statement follows; comments (and the tail) get a bare newline.
+            if (i != body.len - 1) {
+                const real_follows = if (last_real) |lr| (!isCommentStmt(stmt) and i < lr) else false;
+                try this.w(if (real_follows) ",\n" else "\n");
+            }
         }
     }
 
@@ -1064,6 +1104,32 @@ const Emitter = struct {
     }
 
     /// True when the last statement of a branch body is a valued `return`.
+    /// A statement that is only a source comment (`.literal.comment`). Comments
+    /// are not Erlang expressions: they never take a `,` separator and must not
+    /// be treated as the body's tail value.
+    fn isCommentStmt(stmt: ast.Stmt) bool {
+        return switch (stmt.expr) {
+            .literal => |lit| switch (lit.kind) {
+                .comment => true,
+                else => false,
+            },
+            else => false,
+        };
+    }
+
+    /// Index of the last non-comment statement in `body`, or `null` when every
+    /// statement is a comment. The comma-joining of a body keys off this: a real
+    /// statement gets a trailing `,` only when another real statement follows, so
+    /// trailing comments never strand a dangling comma before `end`/`.`.
+    fn lastRealStmt(body: []const ast.Stmt) ?usize {
+        var i = body.len;
+        while (i > 0) {
+            i -= 1;
+            if (!isCommentStmt(body[i])) return i;
+        }
+        return null;
+    }
+
     fn bodyEndsWithReturn(body: []const ast.Stmt) bool {
         if (body.len == 0) return false;
         return switch (body[body.len - 1].expr) {
@@ -1541,7 +1607,8 @@ const Emitter = struct {
                             try this.emitResultOptionOp(cc.callee, cc.args);
                             return;
                         }
-                        try this.fmt("{s}(", .{cc.callee});
+                        var callee_buf: [256]u8 = undefined;
+                        try this.fmt("{s}(", .{try fnAtom(cc.callee, &callee_buf)});
                         var first = true;
                         for (cc.args) |arg| {
                             if (!first) try this.w(", ");
@@ -1576,6 +1643,11 @@ const Emitter = struct {
                         // (activated extension dispatch) so the argument loop
                         // knows to prefix a comma.
                         var recv_arg_emitted = false;
+                        // Reserved-word function names (`of`, `div`) must be
+                        // single-quoted wherever they are called; `fnAtom` is a
+                        // no-op for every other callee. One buffer, reused per use.
+                        var callee_buf: [256]u8 = undefined;
+                        const callee = try fnAtom(cc.callee, &callee_buf);
                         if (cc.receiver) |recv| {
                             const mod_name: ?[]const u8 = switch (recv.*) {
                                 .identifier => |id| switch (id.kind) {
@@ -1595,19 +1667,19 @@ const Emitter = struct {
                                 else => null,
                             };
                             if (std_mod) |sm| {
-                                try this.fmt("{s}:{s}(", .{ sm, cc.callee });
+                                try this.fmt("{s}:{s}(", .{ sm, callee });
                             } else if (this.rewrites.get(c.loc)) |_| {
                                 // Activated extension dispatch: `recv.m(args)` →
                                 // `m(Recv, args)`, a bare local call to the
                                 // function emitted by `emitExtensionMethods`.
-                                try this.fmt("{s}(", .{cc.callee});
+                                try this.fmt("{s}(", .{callee});
                                 try this.emitExpr(recv.*);
                                 recv_arg_emitted = true;
                             } else if (mod_name != null and this.ext_names.contains(mod_name.?)) {
                                 // Qualified extension call `Sym.m(obj)`: the
                                 // receiver names the extension block, so it is
                                 // not a module — call the bare local `m(obj)`.
-                                try this.fmt("{s}(", .{cc.callee});
+                                try this.fmt("{s}(", .{callee});
                             } else if (mod_name != null and this.enum_names.contains(mod_name.?)) {
                                 // Qualified enum payload constructor:
                                 // `Color.Rgb(r, g, b)` → tagged tuple
@@ -1629,12 +1701,12 @@ const Emitter = struct {
                                 // exists in the owner, lowercasing the type name
                                 // (`response:ok`) would hit the wrong module.
                                 const owner = this.imported_types.get(mod_name.?).?;
-                                try this.fmt("{s}:{s}(", .{ owner, cc.callee });
+                                try this.fmt("{s}:{s}(", .{ owner, callee });
                             } else if (mod_name != null and this.record_fields.contains(mod_name.?)) {
                                 // Associated fn of a LOCAL record (`Response.ok(...)`):
                                 // the fn is emitted as a bare local function in this
                                 // module, not a remote `response:ok(...)`.
-                                try this.fmt("{s}(", .{cc.callee});
+                                try this.fmt("{s}(", .{callee});
                             } else if (mod_name) |name| {
                                 // A PascalCase identifier receiver is a module-qualified
                                 // call: `List.map(xs, f)` → a remote call `list:map(Xs, F)`.
@@ -1642,7 +1714,7 @@ const Emitter = struct {
                                 // implicit from the arg count (args + trailing lambdas).
                                 const mod = try erlangModule(this.alloc, name);
                                 defer this.alloc.free(mod);
-                                try this.fmt("{s}:{s}(", .{ mod, cc.callee });
+                                try this.fmt("{s}:{s}(", .{ mod, callee });
                             } else if (this.instance_lowerings.get(c.loc)) |il| switch (il) {
                                 // Builtin-primitive method (`xs.map(f)`, `s.split(sep)`):
                                 // erlang has no native method dispatch — emit the host op
@@ -1657,9 +1729,9 @@ const Emitter = struct {
                                 // module (`owner:m(Recv, args)`).
                                 .record => |tn| {
                                     if (this.imported_types.get(tn)) |owner| {
-                                        try this.fmt("{s}:{s}(", .{ owner, cc.callee });
+                                        try this.fmt("{s}:{s}(", .{ owner, callee });
                                     } else {
-                                        try this.fmt("{s}(", .{cc.callee});
+                                        try this.fmt("{s}(", .{callee});
                                     }
                                     try this.emitExpr(recv.*);
                                     recv_arg_emitted = true;
@@ -1668,7 +1740,7 @@ const Emitter = struct {
                                 // Method call on a value receiver with no recorded
                                 // lowering — treat as a local record method taking the
                                 // receiver first (`recv.m(args)` → `m(Recv, args)`).
-                                try this.fmt("{s}(", .{cc.callee});
+                                try this.fmt("{s}(", .{callee});
                                 try this.emitExpr(recv.*);
                                 recv_arg_emitted = true;
                             }
@@ -1709,7 +1781,7 @@ const Emitter = struct {
                             defer this.alloc.free(vname);
                             try this.fmt("{s}(", .{vname});
                         } else {
-                            try this.fmt("{s}(", .{cc.callee});
+                            try this.fmt("{s}(", .{callee});
                         }
                         var first = !recv_arg_emitted;
                         for (cc.args) |arg| {
