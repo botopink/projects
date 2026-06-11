@@ -1,102 +1,91 @@
-# TODO — jhonstart-html-ast (Wave 3 of 3, v0.beta.11)
+# TODO — rakun (Wave 3 of 3, v0.beta.11)
 
-**Branch**: `task/jhonstart-html-ast` (from `origin/feat` @ f50de6d)
-**Slug**: jhonstart-html-ast · **Spec**: `tasks/v0.beta.11/specs/jhonstart-html-ast.md`
-**Depends on**: `expr-custom` (landed in `feat`) — `@ExprCustom<T>` + `CustomNode` + `q.custom`
-**Status**: DONE — F0–F5 implemented; 15 lib tests + 6 example tests green
+**Branch**: `task/rakun-finish` (from `origin/feat` @ f50de6d)
+**Slug**: rakun · **Spec**: `tasks/v0.beta.11/specs/rakun.md`
+**Depends on**: nothing — `@Decl`/`@emit`, F2 scan/graph/cycle, F3 placement, F4
+router all landed in `feat` in-lib (`91db590`, `4eef880`, `0ff15a0`, `e10b49f`).
+**Status**: F2-scopes + F5 DONE — 13 lib tests green; `examples/rakun` runs over real HTTP.
 
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test
 > (no `--no-verify`).
 
 ## HARD RULE
 
-All of this is `libs/jhonstart/*.bp` — pure botopink in the comptime evaluator. **No
-core code.** The markup AST is jhonstart's private type; converted to the generic
-`CustomNode` tree only at the `q.custom(...)` boundary. Sibling of
-[erika-query-ast] — same mechanism, disjoint lib. camelCase fn names.
+`modules/compiler-core/src/**` keeps **zero** knowledge of rakun. Every behaviour
+below is implemented in `libs/rakun/*.bp` as lib-side decorator bodies via `@emit`
+over the generic primitives + a `#[@external]` host runtime.
 
-## Intent — replace the split/slice scanner with a proper front-end for `html`
+> The old core-coupled F2/F3 line (the deleted `feb96f0`) is discarded — it
+> reintroduced lib-specific code into the Zig core and was superseded. `feat`
+> already has the correct in-lib F2/F4 (`libs/rakun/src/*.bp`); this task continues
+> from there. Port any remaining *behaviour* into `.bp`, **never the Zig**.
 
-Today `html """…"""` scans markup with `split`/`slice`/`join` + a `tagStack`/
-`childStack` state machine, building the builder-call pipeline as a **string**, so
-tooling can't see the HTML. Give `html` the same three-stage front-end in `html.bp`:
+## What already landed in `feat` (in-lib)
 
-```
-html """<div class="card"><p>${name}</p></div>"""
-   ① lexer → Token[] → ② parser → MarkupNode tree (jhonstart's markup AST)
-                                    ├─ ③ lower → @Expr<Element>  (div([p([text(name)])]))
-                                    └─ ④ lower → CustomNode       (generic reference tree)
-                             return q.custom(customRoot, code) → @ExprCustom<Element>
-```
+- **F2 (partial)** — component scan (`#[service]`/`#[repository]`/`#[controller]`
+  → `rkScan`), DI graph (`__rkMake_<Type>()` lazy factories), runtime cycle
+  detection (`rkEnter`/`rkDone`). Host runtime in `runtime.mjs` behind `#[@external]`.
+- **F4 (done)** — controller decorator builds the router table from method
+  `#[getMapping(path)]`/…; `dispatch` matches path params; `Response` builders
+  type-check against handler return type. Green via `rkDispatch`.
+
+What remains: **DI scopes** (F2-scopes) and the **real server** (F5).
 
 ## Steps
 
-### F0 — lexer (markup tokenizer with spans) — DONE
-- [x] Token `record { kind, text, span(start/finish), code }` (`kind`: open/close/
-      selfclose/attrName/attrValue/text/hole). The lexer walks `template.parts()`
-      (Text + `${…}` Interp holes); each token records its source part text + base so
-      its byte `Span` is recovered in the parser pass (no `i32` counter is mutated in
-      the lexer's nested `forEach` — that trips comptime inference). Replaces the old
-      `split("<")`/`split(">")`/`slice`/`join` scanning. Comptime-evaluator ops only.
+### F2-scopes — singleton scope + factory/property injection
+- [x] Singleton scope: each `__rkMake_<Type>()` is `rkSingleton("Type", { -> … })` —
+      one shared instance per type (host cache), a 3-level diamond shares one repo.
+      `rkBuildCount` proves it (`runtime.mjs#buildCount`/`singleton`).
+- [x] `#[configuration]` + `#[bean]` factories: `#[configuration]` `@emit`s a
+      `__rkMake_<ReturnType>()` per `#[bean]` method → the return type is injectable
+      by type (a singleton, resolved by return-type name).
+- [x] `#[value("key")]` property injection: the component factory reads
+      `f.annotations`, fills a `#[value]` field from `rkProp`/`rkPropInt`, and keeps
+      it OFF the DI graph (no `__rkMake_<i32|string>` edge — clean compile proves it).
 
-### F1 — markup AST (jhonstart's private model) — DONE (conceptual)
-- [x] The markup tree is realized in the parser's stack walk (open/close frames +
-      child accumulators), the same way erika's SQL AST lives in its token scan —
-      NOT as separately materialized `record Element/Text/Hole/Attr` values: the
-      comptime evaluator emits only the `html` fn, so a sibling `record` lowers to a
-      JS class the body can't `new`, and it has no array indexing to read a frame
-      stack of node records back. Token records ARE anonymous `record { … }` (they
-      lower to JS object literals); the named node types stay documentation.
-
-### F2 — parser (tokens → markup tree) — DONE
-- [x] A flat stack pass over the token stream: open tag → push name + "" child
-      accumulator, matching close → pop and wrap `tag([...])`, self-closing → leaf,
-      text/hole → child of current frame, attributes captured. A mismatched, unexpected,
-      or unclosed tag → `q.failAt(span, msg)` at the offending tag (verified:
-      `<div><p>hi</div>` → *mismatched closing tag `</div>`, expected `</p>`* at the
-      `</div>` span), not a whole-template `fail`. Implicit-fragment preserved (a
-      single root returns bare; multiple roots wrap in `fragment`).
-
-### F3 — lowering ③: markup tree → @Expr<Element> — DONE
-- [x] The builder-call string: lowercase tag → `tag([children])` resolved in the
-      **caller's scope** (`q.lookup` sets the tag node's `ref`; an unknown tag stays an
-      unbound diagnostic at the call site, parity); text → `text("…")`; `${expr}` holes
-      splice the caller's typed expr via the `Interp` `code` placeholder. Behaviour
-      parity with the old body (tests + example green); `<Component/>` stays future.
-
-### F4 — lowering ④: markup tree → CustomNode — DONE
-- [x] A generic `CustomNode` overlay (flat under one root, erika's shape): tag names →
-      `label "tag"` + `q.lookup` `ref` to the builder `Binding`, attr names → `property`,
-      attr values → `string`, text → `string`, holes → neutral `"none"` spanning the
-      `Interp` (0-width per the infra — its content stays normal botopink highlight).
-- [x] `return q.custom(customRoot, q.build(code))`.
-
-### F5 — tests (`libs/jhonstart/test/`) — DONE
-- [x] `test/html_test.bp`: nested tags, attributes, self-closing-shaped nesting, text +
-      `${}` holes mixed, the implicit-fragment multi-root case, multi-line indentation.
-      The mismatched-tag `failAt`/span is verified out-of-suite (a failing markup aborts
-      compilation, so it can't be an in-suite `assert`).
-- [x] Behaviour parity: `test/html_test.bp` (9) + `examples/jhonstart-html` (6) green —
-      `code` lowers to the same `Element` builder tree.
+### F5 — bootstrap (`Rakun.run` + real HTTP backing)
+- [x] `libs/server` is real: `server.mjs` is a node-`http` server (`serve`/`stop`);
+      `server.bp` binds it via `#[@external]`. Framework-agnostic (generic over the
+      response value `R`); rakun → server, never the reverse. (Erlang transport: follow-up.)
+- [x] `Request` has a concrete server-supplied impl (`runtime.mjs#makeRequest`,
+      built by `dispatchHttp`): `param`/`query`/`header`/`body`, all populated live.
+- [x] `Rakun.run(app)` (`bootstrap.bp`) hands `libs/server` a dispatcher over the
+      host router and listens on `app.port`. **G2 done:** the CLI ships the runtime
+      `.mjs` next to every emitted module (`libs.zig#shipMjsSidecars`), so a consumer
+      build resolves the `#[@external]` requires.
+- [x] End-to-end: `examples/rakun` is a runnable app — `botopink build` + `node
+      out/main.js` serves; every route below verified over a real socket with `curl`.
 
 ## Test scenarios
 
 ```
-comptime ---- lexer tokenizes <div><p>x</p></div> with correct tag/text spans
-comptime ---- parser builds the nested Element tree; mismatched close → failAt at span
-run      ---- the lowered @Expr<Element> builds the same Element tree as today
-comptime ---- CustomNode labels tags as "tag", attrs as "property", values as "string"
-comptime ---- a ${hole} node spans the interpolation; tag ref points at its builder
+comptime ---- a 3-level diamond (repo ← service + controller) resolves a SINGLE  [✓ scopes_test]
+              shared instance per type (rkBuildCount == 1)
+comptime ---- #[bean] factory output is injectable by its return type            [✓ scopes_test]
+infer    ---- #[value("port")] field is filled, NOT treated as a DI edge         [✓ scopes_test]
+run      ---- GET /api/users/  returns 200 with the joined user list             [✓ server_test + example]
+run      ---- GET /api/hello/:name returns 200 "Hello, ana!"  (path param)       [✓ server_test + example]
+run      ---- an unmapped path returns 404                                       [✓ server_test + example]
 ```
+
+The `run` scenarios are covered two ways: `server_test.bp` drives `rkDispatchHttp`
+(the EXACT seam `libs/server` calls — match → live `Request` → handler → status/body,
+synchronously, so it runs under `botopink test`), and `examples/rakun` exercises the
+full node-`http` socket round trip end to end (manual `curl`; node's single thread
+can't both serve and block on a client in one synchronous test).
 
 ## Notes
 
-- Sibling of erika-query-ast: same mechanism (`@Expr<string>` → lex → private AST →
-  dual lowering → `q.custom`), disjoint lib. Proves `@ExprCustom` is generic across
-  SQL vs markup.
-- The reader/renderer specs (sublanguage-lsp, sublanguage-vscode) are generic over
-  `CustomNode` — they light up `html """…"""` with no change once this produces the tree.
-- Holes (`${…}`) are botopink, not markup — keep them as normal botopink highlight.
-- No new markup features (no `<Component/>`, no directives) — a real front-end for the
-  existing surface.
-- Keep `libs/jhonstart/AGENTS.md` + `docs.md` updated in the same commit.
+- Constructor injection only; singleton is the only scope (no request/proto scope,
+  no graceful-shutdown / middleware).
+- `Request.param`/`query`/`header` return `string` (`""` when absent), not `?string`:
+  interface-method optional returns don't yet get the `@Option` lowering, and a
+  required path var / empty default is the cleaner contract anyway.
+- Core touched (all generic, lib-agnostic gate green): `commonJS.zig` require paths
+  now prefix `../`×depth so a nested dependency module resolves correctly; CLI G2
+  `.mjs` sidecar shipping in `libs.zig` (wired into `test_cmd.zig` + `build.zig`).
+- Comptime constraints on decorator bodies (no sibling calls, `if`-expr, bare-`if`
+  only last, block-lambdas) force the per-field injection + factory builder to be
+  inlined per marker.
+- Keep AGENTS.md / docs.md updated in the same commit as code changes.

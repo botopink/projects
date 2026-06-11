@@ -1115,11 +1115,20 @@ const Emitter = struct {
             }
         }
         if (has_assoc) {
-            try self.fmt("\nconst {s} = {{}};", .{jsIdent(i.name)});
+            // A JS-global-backed primitive (`Array`, `String`, the numeric tower,
+            // `Bool`) already exists as a global constructor: associated fns are
+            // statics on it (`Array.range = …`). Emitting `const Array = {}` would
+            // SHADOW the global and leave `Array.prototype.*` patches setting
+            // properties on `undefined`. Only a fresh interface (`Pair`/`Function`)
+            // needs the namespace object.
+            const assoc_ns = jsIdent(i.name);
+            if (!isJsGlobalNamespace(jsPrototypeOwner(i.name)) and !isJsGlobalNamespace(i.name)) {
+                try self.fmt("\nconst {s} = {{}};", .{assoc_ns});
+            }
             for (i.methods) |m| {
                 if (!isAssociatedFn(m)) continue;
                 const body = m.body orelse continue;
-                try self.fmt("\n{s}.{s} = function(", .{ jsIdent(i.name), m.name });
+                try self.fmt("\n{s}.{s} = function(", .{ assoc_ns, m.name });
                 try self.emitParams(m.params);
                 try self.w(") {\n");
                 const prev = self.current_indent;
@@ -1244,6 +1253,25 @@ const Emitter = struct {
     fn emitUse(self: *Emitter, u: ast.ImportDecl) !void {
         // Fallback activation `X*;` has no runtime binding — emit nothing.
         if (u.activationOnly) return;
+
+        // All emitted `require` targets are module paths relative to the OUTPUT
+        // ROOT (`std/x`, `<dep>/<mod>`, …), but node resolves a `require` relative
+        // to the requiring FILE. A module nested under a package prefix (a
+        // dependency's `<dep>/<mod>`, depth 1) must therefore reach back up to the
+        // root with one `../` per path segment before descending — without this,
+        // `./<dep2>/<mod2>.js` required from `out/<dep>/<mod>.js` would resolve
+        // under `out/<dep>/`. A top-level module (depth 0) keeps the plain `./`.
+        const depth = std.mem.count(u8, self.module_name, "/");
+        const req_prefix: []const u8 = blk: {
+            var buf: std.ArrayListUnmanaged(u8) = .empty;
+            if (depth == 0) {
+                try buf.appendSlice(self.alloc, "./");
+            } else {
+                for (0..depth) |_| try buf.appendSlice(self.alloc, "../");
+            }
+            break :blk try buf.toOwnedSlice(self.alloc);
+        };
+        defer self.alloc.free(req_prefix);
         // `"std"` package import: each item binds a whole stdlib module
         // emitted alongside the project (`out/std/<mod>.js`), so qualified
         // calls (`bool.negate(x)`) resolve naturally at runtime.
@@ -1255,7 +1283,7 @@ const Emitter = struct {
                 if (!first) try self.w("\n");
                 first = false;
                 const mod = imp.segments[imp.segments.len - 1];
-                try self.fmt("const {s} = require(\"./std/{s}.js\");", .{ imp.name(), mod });
+                try self.fmt("const {s} = require(\"{s}std/{s}.js\");", .{ imp.name(), req_prefix, mod });
             }
             return;
         }
@@ -1297,7 +1325,7 @@ const Emitter = struct {
                     firstn = false;
                     try self.w(imp2.name());
                 }
-                try self.fmt(" }} = require(\"./{s}.js\");", .{info.module});
+                try self.fmt(" }} = require(\"{s}{s}.js\");", .{ req_prefix, info.module });
             }
             // Namespace binding: when the import names the lib itself
             // (`import {Lib} from "Lib"`) and that name has no emitted symbol of
@@ -1321,12 +1349,12 @@ const Emitter = struct {
                 defer mods.deinit(self.alloc);
                 var mseen = std.StringHashMap(void).init(self.alloc);
                 defer mseen.deinit();
-                const prefix = try std.fmt.allocPrint(self.alloc, "{s}/", .{lib_name});
-                defer self.alloc.free(prefix);
+                const mod_prefix = try std.fmt.allocPrint(self.alloc, "{s}/", .{lib_name});
+                defer self.alloc.free(mod_prefix);
                 var it = xm.valueIterator();
                 while (it.next()) |info| {
                     const m = info.module;
-                    if (!std.mem.startsWith(u8, m, prefix)) continue;
+                    if (!std.mem.startsWith(u8, m, mod_prefix)) continue;
                     if (mseen.contains(m)) continue;
                     try mseen.put(m, {});
                     try mods.append(self.alloc, m);
@@ -1340,10 +1368,10 @@ const Emitter = struct {
                     if (!first_line) try self.w("\n");
                     first_line = false;
                     if (mods.items.len == 1) {
-                        try self.fmt("const {s} = require(\"./{s}.js\");", .{ jsIdent(lib_name), mods.items[0] });
+                        try self.fmt("const {s} = require(\"{s}{s}.js\");", .{ jsIdent(lib_name), req_prefix, mods.items[0] });
                     } else {
                         try self.fmt("const {s} = Object.assign({{}}", .{jsIdent(lib_name)});
-                        for (mods.items) |m| try self.fmt(", require(\"./{s}.js\")", .{m});
+                        for (mods.items) |m| try self.fmt(", require(\"{s}{s}.js\")", .{ req_prefix, m });
                         try self.w(");");
                     }
                 }
@@ -1368,7 +1396,7 @@ const Emitter = struct {
         }
         try self.w(" } = require(\"");
         switch (u.source) {
-            .root => try self.w("./module"),
+            .root => try self.fmt("{s}module", .{req_prefix}),
             .module => |name| try self.w(name),
         }
         try self.w("\");");
@@ -2385,6 +2413,7 @@ const Emitter = struct {
                         }
                     } else {
                         var first = true;
+                        var as_property = false;
                         if (cc.receiver) |recv| {
                             // Static extension dispatch: lower `recv.m(args)` to
                             // `Sym.m(recv, args)` at activated call sites.
@@ -2399,7 +2428,20 @@ const Emitter = struct {
                                 // rename (`s.contains` → `s.includes` on a string)
                                 // takes precedence when inference recorded one here.
                                 const method = if (self.renames) |r| (r.get(c.loc) orelse jsBuiltinMethodName(cc.callee)) else jsBuiltinMethodName(cc.callee);
-                                try self.fmt("{s}{s}(", .{ @as([]const u8, if (cc.optional) "?." else "."), method });
+                                const dot: []const u8 = if (cc.optional) "?." else ".";
+                                // `arr.len()`/`.size()`/`.length()` & `str.length()`:
+                                // inference renamed these to `length` only for a
+                                // typed array/string receiver — the native `.length`
+                                // is a PROPERTY, so emit it without call parens/args.
+                                const len_prop = cc.args.len == 0 and cc.trailing.len == 0 and
+                                    self.renames != null and
+                                    if (self.renames.?.get(c.loc)) |rn| std.mem.eql(u8, rn, "length") else false;
+                                if (len_prop) {
+                                    try self.fmt("{s}length", .{dot});
+                                    as_property = true;
+                                } else {
+                                    try self.fmt("{s}{s}(", .{ dot, method });
+                                }
                             }
                         } else if (self.externals_missing.contains(cc.callee)) {
                             // External fn with no `node` target — no symbol to
@@ -2441,7 +2483,9 @@ const Emitter = struct {
                             }
                             try self.w("}");
                         }
-                        try self.w(")");
+                        // A `.length` property access (`as_property`) emitted no
+                        // opening paren, so it must not emit a closing one either.
+                        if (!as_property) try self.w(")");
                     }
                 },
                 .pipeline => |p| {

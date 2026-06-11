@@ -11,7 +11,7 @@
 
 import {repository, service, restController, route, getMapping};
 import {Request, Response};
-import {rkScan, rkEnter, rkDone, rkRegisterRoute, rkDispatch, rkRouteCount};
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute, rkDispatch, rkRouteCount};
 
 #[repository]
 record UserRepo {

@@ -537,13 +537,25 @@ interface Array<T> {
     fn filter(self: Self, pred: fn(item: T) -> bool) -> Self
 
     // ── producers (associated — no receiver) ──
-    #[@external(erlang, "lists", "seq"),
-      @external(node, "./gleam_stdlib.mjs", "range(start,stop)")]
-    fn range(start: i32, stop: i32) -> Array<i32>
+    // Pure botopink (no host backing): the host `lists:seq`/`duplicate` have the
+    // wrong semantics (`seq` is end-inclusive; `duplicate` swaps the args), so
+    // these recurse over `prepend`, giving identical end-exclusive `[start, stop)`
+    // and `times`-copy results on every backend.
+    default fn range(start: i32, stop: i32) -> Array<i32> {
+        return if (start >= stop) {
+            [];
+        } else {
+            Array.range(start + 1, stop).prepend(start);
+        };
+    }
 
-    #[@external(erlang, "lists", "duplicate"),
-      @external(node, "./gleam_stdlib.mjs", "repeat(value,times)")]
-    fn repeat<E>(value: E, times: i32) -> Array<E>
+    default fn repeat<E>(value: E, times: i32) -> Array<E> {
+        return if (times <= 0) {
+            [];
+        } else {
+            Array.repeat(value, times - 1).prepend(value);
+        };
+    }
 
     // ── derived ops (default implementations over the primitives) ──
     default fn isEmpty(self: Self) -> bool {

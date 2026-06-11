@@ -1833,6 +1833,14 @@ const Emitter = struct {
             },
             else => {},
         }
+        // Named record-field access is a pre-existing WAT gap (fields aren't laid
+        // out by name in linear memory yet), so optional chaining (`recv?.member`)
+        // can't be realized here either — both short-circuit to `0`. Recorded as a
+        // genuine backend limit rather than faked; beam/erlang/commonJS guard `?.`.
+        if (ia.optional) {
+            try self.fmt("    i32.const 0 ;; optional field access .{s} (unsupported on wasm)\n", .{ia.member});
+            return;
+        }
         try self.fmt("    i32.const 0 ;; field access .{s}\n", .{ia.member});
     }
 

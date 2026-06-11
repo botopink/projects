@@ -33,18 +33,20 @@ examples/
 ├── jhonstart-app/     ← jhonstart showcase: Next-style routing + server data loading
 │   ├── main.bp            ← SSR entry: `await renderToString(await Page())`
 │   └── app/               ← file-routing convention (layout.bp, page.bp, posts/[id]/page.bp)
-└── rakun/             ← Spring-style framework showcase (ILLUSTRATIVE — targets the
-    │                       planned `rakun` lib; spec: tasks/v0.beta.5/specs/rakun.md)
-    ├── users.bp          ← #[repository]→#[service]→#[restController] DI triad + routes
-    └── main.bp           ← `Rakun.run(App(port: 8080))` bootstrap
+└── rakun/             ← Spring-style framework showcase (WORKS — a runnable app on
+    │                       `from "rakun"` + `from "server"`; `botopink build` + node)
+    └── src/
+        ├── users.bp         ← #[repository]→#[service]→#[restController] DI triad + routes
+        ├── posts.bp         ← write endpoints: #[postMapping]/#[deleteMapping], body, status
+        ├── config.bp        ← #[configuration]/#[bean]/#[value] showcase
+        └── main.bp          ← module-tree root + `Rakun.run(App(port: 8080, basePath: "/api"))`
 ```
 
-> `jhonstart-html` **works**: it `import …s from "jhonstart"`, authors
-> `html """…"""`, and `botopink test`/`run` pass (the `html` DSL is shipped on the
-> `expr-templates` machinery + the generic loader-bare binding). The `rakun/` and
-> the remaining `jhonstart-*/` files are still **illustrative**: they target
-> planned surface (host-bound router/server, events, async loaders — specs:
-> `tasks/v0.beta.5/specs/`), so they document intended usage and do not yet
+> `jhonstart-html` and `rakun` **work**: `rakun` builds to a real node-`http`
+> server (`botopink build` then `node out/main.js`, exercised over real HTTP with
+> `curl` — see its `src/main.bp` header). The remaining `jhonstart-*/` files are
+> still **illustrative**: they target planned surface (events, async loaders —
+> specs: `tasks/v0.beta.5/specs/`), so they document intended usage and do not yet
 > compile against the current toolchain.
 
 ## Running an example
