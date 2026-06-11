@@ -1,14 +1,13 @@
-// rakun — write endpoints: POST/DELETE, request body & status codes (showcase).
-//
-// ILLUSTRATIVE: targets the planned `rakun` lib (spec:
-// tasks/v0.beta.5/specs/rakun.md).
+// rakun example — write endpoints: POST/DELETE, request body & status codes.
 //
 // Extends the read-only `users.bp` triad with the write side of a REST resource:
 // `#[postMapping]` reads `req.body()` and answers `Response.created` /
-// `Response.badRequest`; `#[deleteMapping]` returns an explicit status code.
+// `Response.badRequest`; `#[deleteMapping]` returns an explicit status code via a
+// path param.
 
-import {Request, Response} from "rakun";
 import {repository, service, restController, route, getMapping, postMapping, deleteMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
 
 // ---- data layer ----
 
@@ -30,7 +29,7 @@ pub record PostService {
     }
 
     pub fn isValid(self: Self, title: string) -> bool {
-        return title.length() > 0;
+        return title != "";
     }
 }
 
@@ -57,7 +56,6 @@ pub record PostController {
 
     #[deleteMapping("/:id")]
     pub fn remove(self: Self, req: Request) -> Response {
-        val id = req.param("id").unwrapOr("?");
-        return Response.withStatus(204, "deleted " + id);
+        return Response.withStatus(204, "deleted " + req.param("id"));
     }
 }

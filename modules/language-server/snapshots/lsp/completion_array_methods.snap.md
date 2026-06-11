@@ -23,11 +23,13 @@ map  [Method]  detail: fn map<U>(self: Self, transform: fn(item: T) -> U) -> Arr
 filter  [Method]  detail: fn filter(self: Self, pred: fn(item: T) -> bool) -> Self
 
     // ── producers (associated — no receiver) ──
+    // Pure botopink (no host backing): the host `lists:seq`/`duplicate` have the
+    // wrong semantics (`seq` is end-inclusive; `duplicate` swaps the args), so
+    // these recurse over `prepend`, giving identical end-exclusive `[start, stop)`
+    // and `times`-copy results on every backend.
+    default
 range  [Method]  detail: fn range(start: i32, stop: i32) -> Array<i32>
 repeat  [Method]  detail: fn repeat<E>(value: E, times: i32) -> Array<E>
-
-    // ── derived ops (default implementations over the primitives) ──
-    default
 isEmpty  [Method]  detail: fn isEmpty(self: Self) -> bool
 contains  [Method]  detail: fn contains(self: Self, x: T) -> bool
 first  [Method]  detail: fn first(self: Self) -> ?T

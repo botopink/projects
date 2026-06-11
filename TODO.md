@@ -1,91 +1,91 @@
-# TODO — erika-query-ast (Wave 3 of 3, v0.beta.11)
+# TODO — rakun (Wave 3 of 3, v0.beta.11)
 
-**Branch**: `task/erika-query-ast` (from `origin/feat` @ f50de6d)
-**Slug**: erika-query-ast · **Spec**: `tasks/v0.beta.11/specs/erika-query-ast.md`
-**Depends on**: `expr-custom` (landed in `feat`) — `@ExprCustom<T>` + `CustomNode` + `q.custom`
-**Status**: pending
+**Branch**: `task/rakun-finish` (from `origin/feat` @ f50de6d)
+**Slug**: rakun · **Spec**: `tasks/v0.beta.11/specs/rakun.md`
+**Depends on**: nothing — `@Decl`/`@emit`, F2 scan/graph/cycle, F3 placement, F4
+router all landed in `feat` in-lib (`91db590`, `4eef880`, `0ff15a0`, `e10b49f`).
+**Status**: F2-scopes + F5 DONE — 13 lib tests green; `examples/rakun` runs over real HTTP.
 
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test
 > (no `--no-verify`).
 
 ## HARD RULE
 
-All of this is `libs/erika/*.bp` — pure botopink in the comptime evaluator. **No core
-code.** The SQL AST is erika's private type; it is converted to the generic
-`CustomNode` tree only at the `q.custom(...)` boundary. camelCase fn names.
+`modules/compiler-core/src/**` keeps **zero** knowledge of rakun. Every behaviour
+below is implemented in `libs/rakun/*.bp` as lib-side decorator bodies via `@emit`
+over the generic primitives + a `#[@external]` host runtime.
 
-## Intent — replace the split/join scanner with a proper front-end
+> The old core-coupled F2/F3 line (the deleted `feb96f0`) is discarded — it
+> reintroduced lib-specific code into the Zig core and was superseded. `feat`
+> already has the correct in-lib F2/F4 (`libs/rakun/src/*.bp`); this task continues
+> from there. Port any remaining *behaviour* into `.bp`, **never the Zig**.
 
-Today `erika "…"` normalizes the string with `split`/`join` and walks a flat token
-list with a `mode` state machine, building the pipeline as a **string** for
-`q.build(...)`. Replace it with a real three-stage front-end, all in `erika.bp`:
+## What already landed in `feat` (in-lib)
 
-```
-text → ① lexer → Token[] → ② parser → SelectStmt (erika's SQL AST)
-                                        ├─ ③ lower → @Expr<T>     (of(…).where(…).toArray())
-                                        └─ ④ lower → CustomNode   (generic reference tree)
-                                 return q.custom(customRoot, code) → @ExprCustom<T>
-```
+- **F2 (partial)** — component scan (`#[service]`/`#[repository]`/`#[controller]`
+  → `rkScan`), DI graph (`__rkMake_<Type>()` lazy factories), runtime cycle
+  detection (`rkEnter`/`rkDone`). Host runtime in `runtime.mjs` behind `#[@external]`.
+- **F4 (done)** — controller decorator builds the router table from method
+  `#[getMapping(path)]`/…; `dispatch` matches path params; `Response` builders
+  type-check against handler return type. Green via `rkDispatch`.
+
+What remains: **DI scopes** (F2-scopes) and the **real server** (F5).
 
 ## Steps
 
-### F0 — lexer (tokenizer with spans)
-- [x] `Token { kind, text, span }` (`kind`: keyword/ident/star/comma/op/string/
-      number/paren). Scans `q.text()` char-by-char tracking byte offsets so every
-      token carries a real `Span` — no more `split`/`join`. **Note:** every token is
-      emitted through a *single* `append` site (the `pending` flush) — appending
-      records from 3+ branchy sites trips a comptime type-checker mis-unification.
+### F2-scopes — singleton scope + factory/property injection
+- [x] Singleton scope: each `__rkMake_<Type>()` is `rkSingleton("Type", { -> … })` —
+      one shared instance per type (host cache), a 3-level diamond shares one repo.
+      `rkBuildCount` proves it (`runtime.mjs#buildCount`/`singleton`).
+- [x] `#[configuration]` + `#[bean]` factories: `#[configuration]` `@emit`s a
+      `__rkMake_<ReturnType>()` per `#[bean]` method → the return type is injectable
+      by type (a singleton, resolved by return-type name).
+- [x] `#[value("key")]` property injection: the component factory reads
+      `f.annotations`, fills a `#[value]` field from `rkProp`/`rkPropInt`, and keeps
+      it OFF the DI graph (no `__rkMake_<i32|string>` edge — clean compile proves it).
 
-### F1 — SQL AST (erika's private records)
-- [x] `SelectStmt`-shaped value (`star` / `fields` / `srcName`+`srcSpan` / `orGroups`
-      / `orderName`+`orderSpan`+`orderDesc`), `Field { name, span }`, comparison
-      records, `or`-of-`and`-of-comparison `where` tree. **Modelled with anonymous
-      `record { … }`** (not named records): the comptime evaluator emits only the
-      template fn + `Span`/`CustomNode`, so a named `Token(…)` ctor is undefined —
-      anon records lower to plain JS object literals. Still erika-private, never
-      exposed to core. `?where`/`?order` are 0-length-list / bool sentinels.
-
-### F2 — parser (tokens → SQL AST)
-- [x] Token-bucketing recursive-descent: `select` field-list (`*` or comma list),
-      `from` source, optional `where` predicate (precedence: or < and < comparison,
-      structural in the `orGroups` nesting), optional `order by field [asc|desc]`.
-      A dangling-operator condition → `q.failAt(opSpan, msg)`; unknown collection →
-      `q.failAt(srcSpan, msg)` — both at the offending token, not whole-template.
-
-### F3 — lowering ③: SQL AST → @Expr<T>
-- [x] Produces `of(source).where({row -> …}).orderBy(…).select({row -> …}).toArray()`.
-      Behaviour preserved exactly (single-field unwraps; multi-field → `record {…}`;
-      `*` → `toArray()`; `=`→`==`, `<>`→`!=`, `and`→`&&`, `'x'`→`"x"`). Source
-      resolved via `q.lookup`; `q.failAt` if unknown. All 29 in-file tests green.
-
-### F4 — lowering ④: SQL AST → CustomNode
-- [x] Converts the same tokens to a generic `CustomNode` tree with `span` + a
-      `label` per node (select/from/where/order/by/asc/desc → `keyword`; idents →
-      `property`; string → `string`; number → `number`; comparison/logical ops →
-      `operator`). `ref` set on the source node to the `q.lookup` `Binding`.
-- [x] `return q.custom(customRoot, code)`.
-
-### F5 — tests (in-file in `src/erika.bp`, the established convention)
-- [x] Parser scenarios: `select *`, single/multi field, `where` with and/or/cmp
-      (`+ precedence`), `order by … desc`, `<>`, the multi-line `"""…"""` form.
-      (failAt-at-span is impl'd but un-`.bp`-testable — a malformed query aborts the
-      module compile; covered by the generic sublanguage-lsp Zig fixtures instead.)
-- [x] Behaviour parity: `examples/erika-linq` (6 green) + the 29 in-file tests pass.
+### F5 — bootstrap (`Rakun.run` + real HTTP backing)
+- [x] `libs/server` is real: `server.mjs` is a node-`http` server (`serve`/`stop`);
+      `server.bp` binds it via `#[@external]`. Framework-agnostic (generic over the
+      response value `R`); rakun → server, never the reverse. (Erlang transport: follow-up.)
+- [x] `Request` has a concrete server-supplied impl (`runtime.mjs#makeRequest`,
+      built by `dispatchHttp`): `param`/`query`/`header`/`body`, all populated live.
+- [x] `Rakun.run(app)` (`bootstrap.bp`) hands `libs/server` a dispatcher over the
+      host router and listens on `app.port`. **G2 done:** the CLI ships the runtime
+      `.mjs` next to every emitted module (`libs.zig#shipMjsSidecars`), so a consumer
+      build resolves the `#[@external]` requires.
+- [x] End-to-end: `examples/rakun` is a runnable app — `botopink build` + `node
+      out/main.js` serves; every route below verified over a real socket with `curl`.
 
 ## Test scenarios
 
 ```
-comptime ---- lexer tokenizes "select a, b from xs" with correct spans
-comptime ---- parser builds SelectStmt; where-precedence (or < and < cmp) is correct
-run      ---- the lowered @Expr<T> runs identically to the pre-refactor pipeline
-comptime ---- CustomNode tree labels select/from/where as keyword, fields as property
-comptime ---- a syntax error reports failAt at the offending token's span
+comptime ---- a 3-level diamond (repo ← service + controller) resolves a SINGLE  [✓ scopes_test]
+              shared instance per type (rkBuildCount == 1)
+comptime ---- #[bean] factory output is injectable by its return type            [✓ scopes_test]
+infer    ---- #[value("port")] field is filled, NOT treated as a DI edge         [✓ scopes_test]
+run      ---- GET /api/users/  returns 200 with the joined user list             [✓ server_test + example]
+run      ---- GET /api/hello/:name returns 200 "Hello, ana!"  (path param)       [✓ server_test + example]
+run      ---- an unmapped path returns 404                                       [✓ server_test + example]
 ```
+
+The `run` scenarios are covered two ways: `server_test.bp` drives `rkDispatchHttp`
+(the EXACT seam `libs/server` calls — match → live `Request` → handler → status/body,
+synchronously, so it runs under `botopink test`), and `examples/rakun` exercises the
+full node-`http` socket round trip end to end (manual `curl`; node's single thread
+can't both serve and block on a client in one synchronous test).
 
 ## Notes
 
-- Dual lowering (③ executable, ④ reference) walks the **same** `SelectStmt` — one or
-  two small passes driven by one AST so they never drift.
-- No Option runtime → model "optional" as a sentinel or 0/1-length list (as today).
-- No new SQL operators — same surface, just a real front-end.
-- Keep `libs/erika/AGENTS.md` + `docs.md` updated in the same commit.
+- Constructor injection only; singleton is the only scope (no request/proto scope,
+  no graceful-shutdown / middleware).
+- `Request.param`/`query`/`header` return `string` (`""` when absent), not `?string`:
+  interface-method optional returns don't yet get the `@Option` lowering, and a
+  required path var / empty default is the cleaner contract anyway.
+- Core touched (all generic, lib-agnostic gate green): `commonJS.zig` require paths
+  now prefix `../`×depth so a nested dependency module resolves correctly; CLI G2
+  `.mjs` sidecar shipping in `libs.zig` (wired into `test_cmd.zig` + `build.zig`).
+- Comptime constraints on decorator bodies (no sibling calls, `if`-expr, bare-`if`
+  only last, block-lambdas) force the per-field injection + factory builder to be
+  inlined per marker.
+- Keep AGENTS.md / docs.md updated in the same commit as code changes.

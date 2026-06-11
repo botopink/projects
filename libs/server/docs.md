@@ -1,26 +1,38 @@
-# server — server-side interfaces (scaffold)
+# server — HTTP backing (node `http`)
 
 > Path: `libs/server/`
 > Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md)
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 
-A future home for botopink's server-side interfaces — HTTP/socket server
-declarations (request routing, response building, connection lifecycle). Today
-it is an inert **scaffold**: `botopink.json` claims no files, nothing is embedded
-into the compiler, and the type environment does not load it.
+A **framework-agnostic, minimal HTTP server** for botopink, behind `#[@external]`
+host calls. Reached via `from "server"`; **not** embedded into the compiler. It
+is the transport rakun's `Rakun.run` starts (graduated from scaffold to real in
+rakun F5), but it names no framework — `serve` takes the dispatcher as a plain
+function, so the dependency runs **rakun → server**, never the reverse.
 
-## What it will provide (planned)
+## What it provides
 
-- HTTP server interfaces — listen/accept, route registration, request/response.
-- Socket-level interfaces for lower-level server programs.
+- `serverServe<R>(port, handler) -> i32` — start a node-`http` server on `port`.
+  `handler` is the request dispatcher: `(method, path, headersJson, queryJson,
+  body) -> R`. Headers and the query string arrive JSON-encoded (the boundary
+  stays scalar — no map types cross it); the server reads `R.status` / `R.body`
+  off the returned value to write the reply. Generic over `R` so the server is
+  decoupled from any framework's `Response` type.
+- `serverStop() -> i32` — close the listening socket.
+
+The real IO lives in `src/server.mjs` (the node-`http` server); `src/server.bp`
+is the `#[@external]` seam binding it.
 
 ## Loading notes
 
-Unlike `libs/std`, this package is **not** `@embedFile`'d into a `prelude.zig`
-and is **not** wired into `build.zig`. Wiring it into stdlib loading / the type
-`Env` is a deliberate follow-up task, undertaken once it declares real symbols.
+The `#[@external]` path is the **sibling** `./server.mjs`. The CLI ships the
+runtime `.mjs` next to every emitted module (**G2**,
+`compiler-cli/src/cli/libs.zig#shipMjsSidecars`), so `require("./server.mjs")`
+resolves both in the lib's own build and in a consumer's `botopink build` output.
+Node first; an Erlang/BEAM transport (`gen_tcp`/`inets`/`cowboy`) is a follow-up.
 
 ## See also
 
-- The embedded standard library → [`../std/docs.md`](../std/docs.md).
+- The framework that composes it → [`../rakun/docs.md`](../rakun/docs.md).
+- The runnable end-to-end app → [`../../examples/rakun/`](../../examples/rakun/).
 - The `.bp` libraries group contract → [`../AGENTS.md`](../AGENTS.md).

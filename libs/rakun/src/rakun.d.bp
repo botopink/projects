@@ -1,11 +1,14 @@
-//// rakun — Spring-style application framework for botopink.
+//// rakun — Spring-style application framework: future/abstract surface.
 ////
-//// Declaration-only surface: runtime-boundary interfaces (`Request`/`Context`/
-//// `Rakun`), SIGNATURES with no bodies. They are registered for inference only
-//// and emit nothing. The concrete, EMITTED types (`HttpMethod`/`Response`/`App`)
-//// live in the sibling `http.bp`; the `#[decorator]` bodies (component/route/…
-//// markers) live in `decorators.bp` — both real code pulled in as package
-//// modules on import.
+//// Declaration-only: the `Context` IoC-container interface, kept as the intended
+//// shape for a future `ctx.resolve<T>()` API (not yet implemented). SIGNATURES
+//// with no bodies — registered for inference only, emits nothing.
+////
+//// The runtime-boundary `Request` interface moved to the real, compiled `http.bp`
+//// (so handlers get its `?string` return types); the bootstrap `Rakun` is now a
+//// CONCRETE record in `bootstrap.bp`. The concrete value types (`HttpMethod`/
+//// `Response`/`App`) live in `http.bp`; the `#[decorator]` bodies in
+//// `decorators.bp`; the host seams in `runtime.bp`.
 ////
 //// Opt-in, never auto-loaded into the type `Env`: reached via `from "rakun"`.
 //// See ./AGENTS.md, ./docs.md and the spec: tasks/v0.beta.7/specs/rakun.md
@@ -14,33 +17,9 @@
 //// decorators follow Spring's own names (`getMapping`, …) and the container
 //// uses `resolve<T>()` rather than `get<T>()`.
 
-// ---- HTTP request (runtime boundary) ----
-//
-// `Request` is the inbound HTTP request — the server supplies the concrete
-// instance at runtime, so it stays an interface here. `HttpMethod`, `Response`
-// and `App` are concrete and live in `http.bp` (real, emitted code).
-
-interface Request {
-    val method: HttpMethod
-    val path: string
-
-    fn param(self: Self, name: string) -> ?string
-    fn query(self: Self, name: string) -> ?string
-    fn header(self: Self, name: string) -> ?string
-    fn body(self: Self) -> string
-}
-
-// ---- IoC container ----
+// ---- IoC container (future) ----
 
 interface Context {
     fn resolve<T>(self: Self) -> ?T      // resolve a managed singleton by type
     fn has<T>(self: Self) -> bool
-}
-
-// ---- application bootstrap ----
-
-interface Rakun {
-    // Scan the compilation unit for components, wire the DI graph, build the
-    // router, and start the server. Associated fn — called as `Rakun.run(app)`.
-    fn run(app: App)
 }

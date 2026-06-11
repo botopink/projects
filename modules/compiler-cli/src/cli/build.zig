@@ -164,4 +164,11 @@ fn writeOutputs(
             try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = dts_path, .data = td });
         }
     }
+
+    // Ship runtime `.mjs` sidecars (G2) so a built program resolves every
+    // `#[@external]` `require("…/x.mjs")` — including a dependency's, whose
+    // emitted module sits a directory deeper than in its own build.
+    if (target == .commonJS) {
+        libs.shipMjsSidecars(gpa, io, outputs, out_dir, ext) catch {};
+    }
 }

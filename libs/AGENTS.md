@@ -17,9 +17,9 @@ the shape of `std/`.
 libs/
 ├── AGENTS.md          ← you are here
 ├── std/               ← standard library (embedded prelude + interfaces)
-├── server/            ← server-side interfaces (scaffold)
+├── server/            ← framework-agnostic HTTP backing (real node-`http`, `from "server"`)
 ├── client/            ← client-side interfaces (scaffold)
-├── rakun/             ← Spring-style application framework (scaffold)
+├── rakun/             ← Spring-style application framework (real, `from "rakun"`)
 ├── jhonstart/         ← React/Next-style UI framework (scaffold)
 ├── erika/             ← C#/LINQ-style query lib (pure `.bp`, reached via `from "erika"`)
 └── onze/              ← Mockito-style mocking + verification for tests (pure `.bp`, `from "onze"`)
@@ -30,9 +30,9 @@ libs/
 | Package | Provides | Embedded in compiler? | AGENTS |
 |---|---|---|---|
 | `std/` | builtin types, primitives, Array/String, builtins — loaded into the type `Env` at infer time | yes (`modules/compiler-core/src/comptime/stdlib/prelude.zig`, wired in root `build.zig`) | [link](std/AGENTS.md) |
-| `server/` | HTTP/socket server-side interfaces | no — inert scaffold | [link](server/AGENTS.md) |
+| `server/` | framework-agnostic HTTP backing — node-`http` server (`serverServe`/`serverStop`) behind `#[@external]` | no — reached via `from "server"` (real; rakun's transport) | [link](server/AGENTS.md) |
 | `client/` | HTTP client / request interfaces | no — inert scaffold | [link](client/AGENTS.md) |
-| `rakun/` | Spring-style framework — IoC container, constructor DI, `#[restController]` web layer, `Rakun.run` bootstrap | no — inert scaffold (spec: [`tasks/v0.beta.5`](../tasks/v0.beta.5/specs/rakun.md)) | [link](rakun/AGENTS.md) |
+| `rakun/` | Spring-style framework — IoC container, constructor DI, singleton scope, `#[bean]`/`#[value]`, `#[restController]` web layer, `Rakun.run` bootstrap | no — reached via `from "rakun"` (real; spec: [`tasks/v0.beta.11`](../tasks/v0.beta.11/specs/rakun.md)) | [link](rakun/AGENTS.md) |
 | `jhonstart/` | React/Next-style UI: components, `@Context<Element,_>` hooks, DOM builders, the `html` DSL, Next-style routing/SSR | no — inert scaffold (reached via `from "jhonstart"`) | [link](jhonstart/AGENTS.md) |
 | `erika/` | C#/LINQ-style fluent `Query<T>` + an `erika "…"` SQL-subset template fn — pure `.bp`, zero compiler surface | no — reached via `from "erika"` (generic loader; spec: [`tasks/v0.beta.7`](../tasks/v0.beta.7/specs/erika.md)) | [link](erika/AGENTS.md) |
 | `onze/` | Mockito-style mocking: `#[mock]` synthesizes a stub from an interface (`@Decl`+`@emit`), `when`/`verify`/matchers; host-bound call log + stub table — pure `.bp`, zero compiler surface | no — reached via `from "onze"` (generic loader; spec: [`tasks/v0.beta.8`](../tasks/v0.beta.8/specs/onze.md)) | [link](onze/AGENTS.md) |
@@ -41,11 +41,10 @@ libs/
 
 - `.bp` declarations stay declarative — interface/method **signatures only**, no
   bodies. Codegen supplies implementations per target.
-- Only `std` is embedded today. `server`/`client`/`rakun` are scaffolds: they are
-  not wired into `build.zig` / the compiler-core prelude loader. Embedding a new
-  lib into stdlib loading / the type `Env` is a deliberate, separate task.
-  (`rakun` is an *application-level* lib — reached via `from "rakun"`, opted into
-  per project, never prelude-embedded.)
+- Only `std` is embedded today. `client` is still a scaffold; `server` and `rakun`
+  are real **application-level** libs reached via `from "server"` / `from "rakun"`,
+  opted into per project, never prelude-embedded or wired into `build.zig`.
+  Embedding a lib into stdlib loading / the type `Env` is a deliberate, separate task.
 - `erika` is a real (non-scaffold) **application-level** lib too — fully
   implemented in `.bp`, reached via `from "erika"` through the generic external-lib
   loader (`compiler-cli/src/cli/libs.zig`), never embedded. It is the reference

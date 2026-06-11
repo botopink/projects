@@ -5180,6 +5180,20 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     const recvTy = recvPtr.getType().deref();
                     if (recvTy.* == .named and primKindOfName(recvTy.named.name) != null) {
                         try recordInstanceCall(env, loc, recvTy.named.name);
+                        // `arr.len()`/`.size()`/`.length()` and `str.length()` are
+                        // the native JS `.length` PROPERTY (commonJS emits it
+                        // without call parens); erlang/beam lower them to the host
+                        // length op. Recording the rename only on a typed array/
+                        // string receiver keeps it safe — a `record` with a `len`/
+                        // `size`/`length` method is never renamed.
+                        const pk = primKindOfName(recvTy.named.name).?;
+                        if ((pk == .array or pk == .string) and
+                            (std.mem.eql(u8, call.callee, "len") or
+                                std.mem.eql(u8, call.callee, "size") or
+                                std.mem.eql(u8, call.callee, "length")))
+                        {
+                            try env.jsMethodRenames.put(loc, "length");
+                        }
                         if (try primMethodReturnType(env, recvTy, call.callee)) |ret| {
                             return TypedExpr{ .call = .{ .loc = loc, .type_ = ret, .kind = .{ .call = .{
                                 .receiver = recvPtr,
