@@ -26,6 +26,21 @@ fn Counter() -> Element {
     return counterView(c.value);
 }
 
+// SSR-rendered component that consumes a hook (B3 gap): `use state` lowers to
+// the client runtime's `useState` (React), so a `use`-prefixed component can't
+// be rendered in a plain `botopink test` process. The hook BODIES are pure
+// botopink, though, so a server-rendered component calls the hook DIRECTLY (no
+// `use` prefix) and the result renders synchronously to its SSR string — the
+// first-render contract a server would emit.
+fn StatefulBadge() -> Element {
+    val c = state(7);
+    val doubled = c.value + c.value;
+    return div([
+        p([text("count: " + c.value.toString())]),
+        span([text("x2=" + doubled.toString())]),
+    ]);
+}
+
 fn main() {
     print(renderToString(counterView(0)));
 }
@@ -40,3 +55,18 @@ test "the state hook seeds the initial count and exposes a setter" {
     assert c.value == 0;
     c.set(5);
 }
+
+test "renderToString of a component consuming a hook produces the SSR string" {
+    assert renderToString(StatefulBadge()) ==
+        "<div><p>count: 7</p><span>x2=14</span></div>";
+}
+
+// LIMITATION (recorded, not a forced test): a builder called with a LONE child
+// (`div(text("x"))`) or a BARE string (`div("x")`) type-checks via the `Children`
+// coercion (G4) but does NOT render — `renderToString` walks `children` as an
+// array (`loop (e.children)`), and a single Element / string is not iterable, so
+// rendering throws `e.children is not iterable`. Normalizing a lone child / bare
+// string to a one-element list needs a runtime type tag the value doesn't carry
+// (there is nothing to branch single-vs-list on). Closing it is a renderer/
+// normalization-intrinsic change outside this test-audit's scope; the list form
+// (`div([…])`) is the rendering contract and is covered throughout.

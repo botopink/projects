@@ -1,0 +1,83 @@
+// onze-demo — unit-testing a unit-under-test against a MOCKED dependency.
+//
+// The pattern: an interface (`Inventory`) is the seam; a real unit (`Checkout`)
+// depends only on that interface; `#[mock]` synthesizes a test double from the
+// interface (reflecting its methods via `@Decl` + `@emit`, producing
+// `mockInventory()`), and the tests stub returns with `when(...).thenReturn(...)`,
+// use argument matchers (`eq`/`anyString`), and assert call counts with
+// `verify(...)`. onze is reached through the generic loader (`from "onze"`); the
+// bare import also pulls in the host cells the *emitted* mock body references
+// (`onzeInvoke`/`onzeKey`/`onzeNewMock`), since `@emit` splices that code into
+// THIS module.
+
+import {
+    mock, when, verify, eq, anyString, times, never, atLeastOnce,
+    onzeInvoke, onzeKey, onzeNewMock,
+} from "onze";
+
+// The dependency seam.
+#[mock]
+interface Inventory {
+    fn stock(self: Self, sku: string) -> i32
+    fn label(self: Self, sku: string) -> string
+}
+
+// The unit under test — depends ONLY on the interface, never on a concrete impl.
+record Checkout {
+    inv: Inventory,
+
+    // Can we fulfil `qty` of `sku`? (true when enough is in stock)
+    pub fn canFulfil(self: Self, sku: string, qty: i32) -> bool {
+        return self.inv.stock(sku) >= qty;
+    }
+
+    // A human line for a sku, e.g. "Widget x3".
+    pub fn line(self: Self, sku: string, qty: i32) -> string {
+        return self.inv.label(sku) + " x" + qty.toString();
+    }
+}
+
+test "stubbed stock drives the fulfilment decision" {
+    val inv = mockInventory();
+    val _s = when(inv.stock(eq("widget"))).thenReturn(5);
+    val co = Checkout(inv: inv);
+    assert co.canFulfil("widget", 3);    // 5 >= 3
+    assert !co.canFulfil("widget", 9);   // 5 >= 9 is false
+}
+
+test "an unstubbed method returns the type-default (0 / empty string)" {
+    val inv = mockInventory();
+    val co = Checkout(inv: inv);
+    assert !co.canFulfil("unknown", 1);          // default stock 0, 0 >= 1 false
+    assert co.line("unknown", 2) == " x2";       // default label ""
+}
+
+test "matchers: anyString stubs every label; eq pins one" {
+    val inv = mockInventory();
+    val _a = when(inv.label(anyString())).thenReturn("Item");
+    val _b = when(inv.label(eq("widget"))).thenReturn("Widget");  // last match wins
+    val co = Checkout(inv: inv);
+    assert co.line("widget", 3) == "Widget x3";
+    assert co.line("gadget", 1) == "Item x1";
+}
+
+test "verify counts each interaction independently" {
+    val inv = mockInventory();
+    val _s = when(inv.stock(anyString())).thenReturn(2);
+    val co = Checkout(inv: inv);
+    val _1 = co.canFulfil("widget", 1);
+    val _2 = co.canFulfil("widget", 1);
+    val _3 = co.canFulfil("gadget", 1);
+
+    val _v1 = verify(inv, times(2)).stock(eq("widget"));
+    val _v2 = verify(inv, times(1)).stock(eq("gadget"));
+    val _v3 = verify(inv, never()).stock(eq("missing"));
+    val _v4 = verify(inv, atLeastOnce()).stock(anyString());
+}
+
+fn main() {
+    val inv = mockInventory();
+    val _s = when(inv.stock(eq("widget"))).thenReturn(5);
+    val co = Checkout(inv: inv);
+    print("can fulfil 3 widgets: " + co.canFulfil("widget", 3).toString());
+}

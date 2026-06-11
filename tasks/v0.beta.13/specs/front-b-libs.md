@@ -6,7 +6,25 @@
 **Scope**: the standard library and the framework / sub-language libs as they behave
 today, exercised by `botopink test` / `botopink-lib-test`, **plus** a runnable `examples/`
 demo per area whose `main.bp` carries `.bp` unit tests. No compiler-core or LSP edits.
-**Status**: pending (test-audit)
+**Status**: DONE — every `[gap]` is closed by a `.bp` test/demo or recorded as a
+limitation below. `botopink-lib-test --target commonJS` green (std/erika/jhonstart/onze/rakun ✓,
+client/server no-tests); demos (`stdlib-tour`, `erika-linq`, `jhonstart-html`,
+`jhonstart-counter`, `onze`) green under `botopink test`. erlang remains at the
+pre-existing backends-parity baseline (it is Front A/C territory).
+
+**Recorded limitations (gaps that expose a real product gap, not forced into a test):**
+- B1: structural record keys / record-set dedup — `==` on records is *reference*
+  equality (documented + asserted as identity semantics in `examples/stdlib-tour`).
+- B1: `result.isOk`/`isError` (method or namespace form) not lowered by the commonJS
+  backend — covered indirectly via `unwrapOr` (note in `libs/std/test/result_test.bp`).
+- B3 jhonstart: a lone-child / bare-string `Children` type-checks but does not RENDER —
+  `renderToString` walks `children` as an array, and normalizing a single value needs a
+  runtime type tag the value doesn't carry (note in `examples/jhonstart-counter`).
+- B3 onze: a `thenThrow` mock caught by the caller's `try/catch` — botopink `try/catch`
+  only unwraps an `@Result`, not a host throw; and a fully generic `any<T>()` / argument
+  captor needs a per-type default / new host cell (notes in `libs/onze/test/onze_test.bp`).
+- B3 rakun: a missing-dependency-type error is a COMPILE diagnostic (annotation processing),
+  not expressible as a runtime `assert` — covered by Front A's compiler-core suite.
 
 > Tags + dead-syntax table: [`../README.md`](../README.md). Record construction is the call
 > form `Name(field: value)`. The sub-language **LSP overlay** (semantic tokens / hover /

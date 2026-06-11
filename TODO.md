@@ -1,42 +1,42 @@
-# TODO — Front C: runtime, CLI & editor tooling test coverage (v0.beta.13)
+# TODO — Front B: libs & examples test coverage (v0.beta.13)
 
-**Branch**: `task/v13-tooling` (from `origin/feat` @ eac9313)
-**Spec**: `tasks/v0.beta.13/specs/front-c-runtime.md`
-**Front territory** (edit ONLY here): `modules/compiler-cli/tests/*.sh` ·
-`modules/lib-test-runner/**` · the wasm/beam run harness · `modules/language-server/**` ·
-`modules/vscode-extension/**`. File-disjoint from Fronts A (`task/v13-core`) and B
-(`task/v13-libs`).
-**Status**: C1–C4 all done (test-only + recorded reds; one real `FileCache` leak fixed)
+**Branch**: `task/v13-libs` (from `origin/feat` @ eac9313)
+**Spec**: `tasks/v0.beta.13/specs/front-b-libs.md`
+**Front territory** (edit ONLY here): `libs/**` (`.bp` `test {}` blocks) + `examples/**`
+(demo apps with their `.bp` unit tests). File-disjoint from Fronts A (`task/v13-core`) and
+C (`task/v13-tooling`).
+**Status**: DONE — `botopink-lib-test --target commonJS` green (5 libs pass, 2 no-tests);
+all six demo apps green under `botopink test`. erlang stays at the pre-existing
+backends-parity baseline (erika/jhonstart/onze/rakun ✗ on erlang — `drop`/`forEach`/
+`fold`/`toString` undefined in generated `.erl`; std ✓ on both targets).
 
-> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test. Goal:
-> close each `[gap]` (add the test / harness) or record the limitation. No production
-> behaviour change expected (except the vscode F0 test harness scaffolding).
+> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test; lib
+> behaviour runs via `botopink test` / `botopink-lib-test`. Goal: close each `[gap]` (add a
+> `.bp` test or a demo) or record it. No production behaviour change expected.
 
-## Sections (see front-c-runtime.md for the tagged scenarios)
+## Areas (see front-b-libs.md for the tagged scenarios + examples)
 
-- [x] C1 test-tooling — DONE: `test_tooling.sh` (empty test, --filter multiple/none,
-      `assert msg`, mixed pass/fail exit) + `Summary.exitCode` unit test (mixed-matrix exit).
-      Recorded: uncaught-throw (no portable throw construct; assert-fail shows graceful catch),
-      wasm-target lib exec (lib-test-runner is commonJS/erlang only).
-- [x] C2 backend execution — DONE: `backend_exec.sh` + `zig build test-backends` (single step
-      reaching beam+wasm). Green: std_erlang.sh (case…of fixed upstream), wasm numeric smoke
-      (`numeric`→55), node/erlang records+enum+case+lambda, beam tail recursion (`sumTo`),
-      multi-folder mod on commonJS. Pinned Front-A reds (non-fatal): beam case-dispatch/lambda,
-      beam call+call arithmetic, erlang cross-module call qualification.
-- [x] C3 language-server — DONE for v13: cross-module references/rename/import-missing
-      (`cross_module.zig`, project-index over on-disk fixture), lifecycle didOpen→change→close
-      (`lifecycle.zig`, + fixed a real `FileCache.change` leak), codeAction remove-import,
-      typeDefinition generic, comptime `@external` fail diagnostic. Recorded/deferred:
-      add-missing-case (exhaustiveness suppresses bindings), annotation-fail range (Front A),
-      typeDef optional/fn-typed, async-unwrap Future/AsyncIterator, decorator-`@emit` +
-      local-scope completion/def `→ v14`. See spec C3 status block.
-- [x] C4 vscode-extension — **F0 DONE**: `node:test` harness (`npm test` / `zig build
-      test-vscode`); pure logic extracted into 6 `vscode`-free leaf modules; all 15 pure-unit
-      scenarios green (parseTestOutput, argsFor/label/group, quoteArg, symbol predicates,
-      target fallback + round-trip, resolveBinPath). Host-integration + static-contribution
-      checks deferred (need `@vscode/test-electron` + a built LSP; recorded in spec C4).
+- [x] B1 stdlib — Option map/flatMap/unwrapOr (`dict.bp` over `lookup`'s `?V`); Result
+      map/flatMap/unwrapOr (`test/result_test.bp`, `#[@result]` producers); Array combinators +
+      Order-driven sort + Queue BFS (`examples/stdlib-tour`); empty-collection boundary in
+      dict/queue/sets; `to_string` gate verified (only `@external` host symbols — botopink
+      surface is `toString`). RECORDED: structural record keys / record-set dedup (`==` on
+      records is reference equality); `result.isOk`/`isError` not lowered by commonJS.
+- [x] B2 sublanguages (lib-side) — erika two-column `where` (`w = h and h > 2`), `erika "…"` in
+      argument position, two erika strings in one scope → independent queries (`examples/erika-linq`);
+      deeply nested html with mixed text + `${holes}` (`examples/jhonstart-html`).
+- [x] B3 frameworks — rakun overlapping path prefixes + leaf (no-dep) #[service] resolution
+      (`test/overlapping_routes_test.bp`); jhonstart SSR-of-a-hook-consuming component
+      (`examples/jhonstart-counter`); onze verify-after-different-arg-calls + new `examples/onze`
+      demo. RECORDED: jhonstart lone-child/bare-string Children render (needs runtime
+      normalization tag); onze `thenThrow` caught by try/catch (try/catch is `@Result`-only, host
+      throw uncatchable) + generic `any<T>()`/captor (needs per-type default / host cell); rakun
+      missing-dependency error is a COMPILE diagnostic (Front A annotation-processor suite).
+
+## Demo apps to ship (each with `.bp` `test {}`)
+- [x] `examples/stdlib-tour/` (B1, new) · `examples/erika-linq` + `examples/jhonstart-html` (B2)
+- [x] `examples/rakun` + `examples/jhonstart-counter`; new `examples/onze/` (B3)
 
 ## Done means
-`zig build test` + `botopink-lib-test` green with new Zig LSP tests, CLI run scripts, and the
-vscode unit harness; every C-front `[gap]` closed or recorded. Integrate into `feat` via a
-throwaway `.tasks/_integrate-v13-tooling`.
+`botopink-lib-test` green with the new `.bp` tests + demo apps; every B-front `[gap]` closed
+or recorded. Integrate into `feat` via a throwaway `.tasks/_integrate-v13-libs`.

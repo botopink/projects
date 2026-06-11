@@ -122,3 +122,17 @@ test "set difference removes b from a" {
     assert d.contains(1);
     assert !d.contains(2);
 }
+
+// ── empty-collection boundary (B1) ──
+
+test "set empty boundary: size 0, contains misses, toList empty" {
+    val s: Set<i32> = empty();
+    assert s.size() == 0;
+    assert s.isEmpty();
+    assert !s.contains(1);
+    assert s.toList().length == 0;
+    // an empty set is the identity element for union.
+    assert s.union(fromList([1, 2])).size() == 2;
+    // intersection / difference with empty stay empty.
+    assert fromList([1, 2]).intersection(s).size() == 0;
+}
