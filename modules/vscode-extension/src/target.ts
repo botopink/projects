@@ -1,11 +1,15 @@
 import * as path from "path";
 import * as vscode from "vscode";
+import {
+  DEFAULT_TARGET,
+  TARGETS,
+  parseTargetFromJson,
+  writeTargetConfig,
+  type Target,
+} from "./targetConfig";
 
-/** Codegen targets understood by the `botopink` CLI / `botopink.json`. */
-export const TARGETS = ["commonJS", "erlang", "beam", "wasm"] as const;
-export type Target = (typeof TARGETS)[number];
-
-export const DEFAULT_TARGET: Target = "commonJS";
+// Re-exported for existing consumers that import these from `./target`.
+export { DEFAULT_TARGET, TARGETS, type Target };
 
 const STATUS_BAR_PRIORITY = 100;
 
@@ -87,14 +91,7 @@ export class TargetManager {
     }
     try {
       const bytes = await vscode.workspace.fs.readFile(uri);
-      const json = JSON.parse(Buffer.from(bytes).toString("utf8")) as {
-        target?: string;
-      };
-      const target = json.target;
-      this.current =
-        target && (TARGETS as readonly string[]).includes(target)
-          ? (target as Target)
-          : DEFAULT_TARGET;
+      this.current = parseTargetFromJson(Buffer.from(bytes).toString("utf8"));
     } catch {
       this.current = DEFAULT_TARGET;
     }
@@ -109,19 +106,15 @@ export class TargetManager {
     uri: vscode.Uri,
     target: Target,
   ): Promise<void> {
-    let parsed: Record<string, unknown> = {};
+    let existing: string | undefined;
     try {
       const bytes = await vscode.workspace.fs.readFile(uri);
-      parsed = JSON.parse(Buffer.from(bytes).toString("utf8")) as Record<
-        string,
-        unknown
-      >;
+      existing = Buffer.from(bytes).toString("utf8");
     } catch {
       // Treat an unreadable/empty file as an empty object.
-      parsed = {};
+      existing = undefined;
     }
-    parsed.target = target;
-    const text = JSON.stringify(parsed, null, 2) + "\n";
+    const text = writeTargetConfig(existing, target);
     await vscode.workspace.fs.writeFile(uri, Buffer.from(text, "utf8"));
   }
 

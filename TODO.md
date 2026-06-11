@@ -1,50 +1,42 @@
-# TODO — Front A: core-language test coverage (v0.beta.13)
+# TODO — Front C: runtime, CLI & editor tooling test coverage (v0.beta.13)
 
-**Branch**: `task/v13-core` (from `origin/feat` @ eac9313)
-**Spec**: `tasks/v0.beta.13/specs/front-a-core.md`
-**Front territory** (edit ONLY here): `modules/compiler-core/src/**/tests/*.zig` +
-`modules/compiler-core/snapshots/**`. File-disjoint from Fronts B (`task/v13-libs`) and
-C (`task/v13-tooling`) — they never touch these files.
-**Status**: net-new gaps closed; A6 + a few items recorded as out-of-territory/limitations
+**Branch**: `task/v13-tooling` (from `origin/feat` @ eac9313)
+**Spec**: `tasks/v0.beta.13/specs/front-c-runtime.md`
+**Front territory** (edit ONLY here): `modules/compiler-cli/tests/*.sh` ·
+`modules/lib-test-runner/**` · the wasm/beam run harness · `modules/language-server/**` ·
+`modules/vscode-extension/**`. File-disjoint from Fronts A (`task/v13-core`) and B
+(`task/v13-libs`).
+**Status**: C1–C4 all done (test-only + recorded reds; one real `FileCache` leak fixed)
 
-> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test
-> (no `--no-verify`). Goal: turn each `[gap]` in the spec into a `[have]` (add the test)
-> or record it as a product limitation. No production behaviour change expected.
+> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test. Goal:
+> close each `[gap]` (add the test / harness) or record the limitation. No production
+> behaviour change expected (except the vscode F0 test harness scaffolding).
 
-## Areas (see front-a-core.md for the tagged scenarios + examples)
+## Sections (see front-c-runtime.md for the tagged scenarios)
 
-- [x] A1 effects — net-new: effect marker on a record method; compound
-      `@Future<@Result<T,E>>`; two-markers-on-one-fn conflict (error snap); `#[@external]`
-      with no target for the active backend → `MissingExternalTarget`. beam/wasm eager-lowering
-      snapshots are auto-covered by the existing 4-backend `assertJsSingle` effect tests.
-- [x] A2 errors-result-option — net-new: `@Result` as a record field; `?.`→Option resolved by
-      `unwrapOr`; `val x = try f()` binds the unwrapped Ok; throw of an enum error variant
-      unifies with `E`. beam/wasm try snapshots auto-covered by the 4-backend codegen tests.
-- [x] A3 pattern-matching — net-new: wildcard makes a partial (string) case exhaustive; case
-      over int/string literal scrutinees; nested record destructuring binds inner fields (via the
-      leading-non-ident payload form — identifier-first nesting is a parser limitation, noted
-      in-test); case-as-val vs trailing type-check identically.
-- [x] A4 generics-recursion-context — net-new: generic record at two concrete types; recursion
-      through a generic data type; generic return inferred from usage; inline `test {}` in a
-      generic module resolves (closes the historic `.generic` gap); 3-layer @Context stays
-      Element-based.
-- [x] A5 extension-dispatch — net-new: implement-for-primitive + dispatch; chained extension
-      calls; inherent wins over a same-name implemented method; two imported libs activating the
-      same method → cross-module ambiguity (custom multi-module test). codegen/{erlang,beam,wasm}
-      cross-module dispatch stays a known limitation (LOCAL-only).
-- [~] A6 module-system — parser `[have]`s already exist. The net-new resolve/visib/build gaps
-      (3+-level nesting, sibling same-name, pub-mod type re-export, circular mod, orphan) all
-      need the **filesystem module resolver** in the CLI/driver, not compiler-core → out of
-      Front-A territory (belongs to Front C).
-- [x] A7 expr-templates — net-new: hole captures a bare variable reference; empty template
-      handled gracefully; splice type-error reports at the splice site (not the def); nested
-      template (body builds a call to another template fn) expands end-to-end; two invocations
-      expand independently.
-- [x] A8 backends-parity — net-new snapshots (all 4 backends): two-hole string interpolation;
-      record `==` vs array `==` (snapshot exposes equality is *backend-defined* — `===` ref-eq on
-      node/wasm, `=:=` structural on erlang/beam; no special structural record `==`). `Array.range`
-      host-external stays open (limitation).  ·  execution (run/*) is Front C
+- [x] C1 test-tooling — DONE: `test_tooling.sh` (empty test, --filter multiple/none,
+      `assert msg`, mixed pass/fail exit) + `Summary.exitCode` unit test (mixed-matrix exit).
+      Recorded: uncaught-throw (no portable throw construct; assert-fail shows graceful catch),
+      wasm-target lib exec (lib-test-runner is commonJS/erlang only).
+- [x] C2 backend execution — DONE: `backend_exec.sh` + `zig build test-backends` (single step
+      reaching beam+wasm). Green: std_erlang.sh (case…of fixed upstream), wasm numeric smoke
+      (`numeric`→55), node/erlang records+enum+case+lambda, beam tail recursion (`sumTo`),
+      multi-folder mod on commonJS. Pinned Front-A reds (non-fatal): beam case-dispatch/lambda,
+      beam call+call arithmetic, erlang cross-module call qualification.
+- [x] C3 language-server — DONE for v13: cross-module references/rename/import-missing
+      (`cross_module.zig`, project-index over on-disk fixture), lifecycle didOpen→change→close
+      (`lifecycle.zig`, + fixed a real `FileCache.change` leak), codeAction remove-import,
+      typeDefinition generic, comptime `@external` fail diagnostic. Recorded/deferred:
+      add-missing-case (exhaustiveness suppresses bindings), annotation-fail range (Front A),
+      typeDef optional/fn-typed, async-unwrap Future/AsyncIterator, decorator-`@emit` +
+      local-scope completion/def `→ v14`. See spec C3 status block.
+- [x] C4 vscode-extension — **F0 DONE**: `node:test` harness (`npm test` / `zig build
+      test-vscode`); pure logic extracted into 6 `vscode`-free leaf modules; all 15 pure-unit
+      scenarios green (parseTestOutput, argsFor/label/group, quoteArg, symbol predicates,
+      target fallback + round-trip, resolveBinPath). Host-integration + static-contribution
+      checks deferred (need `@vscode/test-electron` + a built LSP; recorded in spec C4).
 
 ## Done means
-`zig build test` green with the new Zig `test {}` / `.snap.md` added; every A-front `[gap]`
-closed or recorded. Then integrate into `feat` via a throwaway `.tasks/_integrate-v13-core`.
+`zig build test` + `botopink-lib-test` green with new Zig LSP tests, CLI run scripts, and the
+vscode unit harness; every C-front `[gap]` closed or recorded. Integrate into `feat` via a
+throwaway `.tasks/_integrate-v13-tooling`.

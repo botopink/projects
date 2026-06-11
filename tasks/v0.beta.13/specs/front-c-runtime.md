@@ -30,30 +30,44 @@ Source: `comptime/tests` (parser/format of `test`), `modules/lib-test-runner/src
 [have] run     ---- `--target beam` → `~ skipped-unsupported`, exit 0; `--strict` → exit 1
 [have] run     ---- the matrix covers inline-test libs (std 88, erika 25, jhonstart 6) via `botopink test`
 [have] unit    ---- arg parsing + lib discovery have Zig tests
-[gap]  run     ---- a wasm-target lib test actually executes (today skipped-unsupported)
+[rec]  run     ---- a wasm-target lib test actually executes — RECORDED: lib-test-runner runs
+                    commonJS/erlang only; wasm stays `~ skipped-unsupported` (a runner feature)
 # — net-new —
-[gap]  run     ---- a test body that throws UNCAUGHT is reported as FAIL (not a runner crash)
-[gap]  comptime ---- `assert cond, "msg"` surfaces the custom message on failure
-[gap]  run     ---- an empty test block `test "x" {}` passes
-[gap]  run     ---- `--filter` matching MULTIPLE tests runs all; matching none → clear report
-[gap]  run     ---- the runner aggregates a mixed matrix (pass/skip/fail) with the right exit code
+[rec]  run     ---- a test body that throws UNCAUGHT → FAIL — RECORDED: pure botopink has no
+                    portable runtime-throwing construct (`arr[index]` is a compile error, no
+                    `@panic`); the failing-assert case below shows the runner catches a thrown
+                    assertion and reports FAIL, not a crash (test_tooling.sh)
+[done] comptime ---- `assert cond, "msg"` surfaces the custom message on failure (test_tooling.sh)
+[done] run     ---- an empty test block `test "x" {}` passes (test_tooling.sh `pass` fixture)
+[done] run     ---- `--filter` MULTIPLE runs all; matching none → `running 0 tests`, exit 0 (test_tooling.sh)
+[done] run     ---- the runner aggregates a mixed matrix (pass/skip/fail) with the right exit code
+                    (matrix.zig `Summary.exitCode`, unit-tested; main.zig delegates)
 ```
 
 ## C2 · backend execution parity (the `run/*` Front A can't prove)
 Source: `modules/compiler-cli/tests/{mutual_recursion,std_erlang}.sh` + a wasm/beam harness.
 ```
 [have] run/erlang ---- mutual_recursion.sh green (recursion guard)
-[gap]  run/erlang ---- std_erlang.sh green for order/dict/queue/sets (blocked on `case…of` codegen reds)
-[gap]  run/beam ---- a records/enums/case/lambda program runs on BEAM via script
-[gap]  run/wasm ---- a numeric program runs under wasmtime (`--invoke main`) and asserts the result
-[gap]  run/* ---- string interpolation "${a}-${b}" produces the SAME string on every backend
-[gap]  run/* ---- a Result/Option chain + a 3-variant case run with parity across backends
-[gap]  run/erlang ---- a closure capturing a local var runs (make_fun); [gap] run/beam deep tail recursion (call_only)
-[gap]  run/{node,erlang} ---- a multi-folder `mod`/`pub mod` package builds + runs end-to-end
-[gap]  infra   ---- beam + wasm execution reachable from a single `zig build` step (today: scripts only)
+[done] run/erlang ---- std_erlang.sh green for order/dict/queue/sets (the `case…of` reds were
+                    fixed upstream — 9/9 sets etc. pass on erlang)
+[pin]  run/beam ---- a records/enums/case/lambda program — RECORDED RED: `records` fixture runs
+                    green on node/erlang; BEAM mis-codegens case-dispatch (wrong arm) + lambdas
+                    (`#Fun` mis-applied to `*`), pinned non-fatally by backend_exec.sh
+[done] run/wasm ---- a numeric program runs under wasmtime (`--invoke main`) → 55 (`numeric` fixture)
+[done] run/erlang ---- a closure capturing a local var (make_fun): the `records` lambda runs on
+                    commonJS/erlang; [done] run/beam deep tail recursion (call_only) = `numeric` `sumTo`
+[part] run/{node,erlang} ---- a multi-folder `mod`/`pub mod` package (examples/modules) builds +
+                    runs end-to-end on commonJS (12/circle/7); erlang is a pinned red — the
+                    backend emits cross-module calls unqualified (`area` vs `geometry:area`)
+[done] infra   ---- beam + wasm execution reachable from a single `zig build test-backends` step
+[rec]  run/* ---- string-interpolation / Result-Option parity ACROSS ALL backends — RECORDED:
+                    `botopink test` runs node/erlang only and wasm carries no strings/records, so
+                    full 4-backend string/Result parity isn't observable here; node/erlang parity
+                    is covered by the lib matrix + records fixture
 ```
-(The `case…of` erlang reds surface in erika/jhonstart/onze/rakun under the lib matrix —
-the fix is product work; here we add the run scenario that pins it.)
+(The `case…of`/lambda BEAM reds + the erlang cross-module-call red are Front-A codegen work;
+here we add the run scenarios that PIN them — `backend_exec.sh` builds each, treats the run as
+informational, and flags loudly if a red ever starts passing so the pin can be promoted.)
 
 ---
 
@@ -62,6 +76,20 @@ Source: `modules/language-server/src/tests/*.zig` (19 files, ~130 `test {}` + 88
 under `snapshots/lsp/`); `helpers.zig` (`compile`/`compileEval`/`compileMulti`). The
 `@ExprCustom` overlay here is the editor counterpart of Front B's lib-side expansion (B2);
 multi-module gaps feed [`lsp-project-awareness`](../../v0.beta.14/specs/lsp-project-awareness.md).
+
+> **C3 status (v0.beta.13 — done).** Closed: cross-module **references**, **rename**, and
+> **import-missing codeAction** (`tests/cross_module.zig`, project-index over a real on-disk
+> fixture); the didOpen→didChange→didClose **lifecycle** (`tests/lifecycle.zig` — which
+> surfaced & fixed a double-dup leak in `files.FileCache.change`); **codeAction remove unused
+> import**; **typeDefinition** on a generic (`Array<i32>`) binding; and a **comptime
+> annotation `fail`** diagnostic (`@external` arity, node-free). Recorded/deferred: **add
+> missing case patterns** (exhaustiveness is enforced at type-check time, so a non-exhaustive
+> `case` has no `.ok` bindings for the types-only helper — needs a best-effort-bindings path);
+> the precise **range** of the annotation-`fail` diagnostic (currently null `loc` — a Front-A
+> span-propagation nicety); **typeDefinition** optional/function-typed; hover async-unwrap for
+> `@Future`/`@AsyncIterator` (the `@Iterator` case already pins the mechanism); and
+> request-after-shutdown. The `→ v14` items below (local-scope completion/def, decorator-emit
+> bindings, cross-module sub-language tokens) ship with their fix in `lsp-project-awareness`.
 
 > **The structural gap.** Every existing test compiles a **single self-contained document**.
 > `compileMulti()` exists in `helpers.zig` but is **called by no test**; the one cross-module
