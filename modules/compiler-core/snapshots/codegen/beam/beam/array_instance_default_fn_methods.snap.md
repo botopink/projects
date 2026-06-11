@@ -14,7 +14,7 @@ fn main() {
 {module, main}.
 {exports, [{'_botopink_main', 0}, {main, 1}]}.
 {attributes, []}.
-{labels, 22}.
+{labels, 24}.
 
 {function, 'Array_range', 2, 3}.
   {label, 2}.
@@ -88,12 +88,10 @@ fn main() {
     {put_list, {x, 0}, {x, 1}, {x, 0}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {integer, 0}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 1}, {x, 1}}.
-    %% unresolved method call: prepend/2
+    {move, {integer, 0}, {x, 0}}.
+    {test_heap, 2, 2}.
+    {put_list, {x, 0}, {x, 1}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {move, {literal, <<",">>}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
@@ -122,9 +120,12 @@ fn main() {
     {put_list, {x, 1}, nil, {x, 1}}.
     {call_ext, 2, {extfunc, io, format, 2}}.
     {move, {y, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    {move, {x, 0}, {x, 0}}.
-    %% unresolved method call: isEmpty/1
+    {test, is_eq, {f, 18}, [{x, 0}, nil]}.
+    {move, {atom, true}, {x, 0}}.
+    {jump, {f, 19}}.
+  {label, 18}.
+    {move, {atom, false}, {x, 0}}.
+  {label, 19}.
     {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"~p~n">>}, {x, 0}}.
     {test_heap, 2, 2}.
@@ -133,7 +134,7 @@ fn main() {
     {move, {y, 0}, {x, 0}}.
     {move, {x, 0}, {x, 0}}.
     {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
-    {make_fun3, {f, 19}, 0, 0, {x, 0}, {list, []}}.
+    {make_fun3, {f, 21}, 0, 0, {x, 0}, {list, []}}.
     {move, {x, 0}, {x, 1}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 1}, {x, 1}}.
@@ -171,18 +172,18 @@ fn main() {
     {deallocate, 0}.
     return.
 
-{function, '-main/0-fun-1-', 1, 19}.
-  {label, 18}.
+{function, '-main/0-fun-1-', 1, 21}.
+  {label, 20}.
     {line, [{location, "main.erl", 4}]}.
     {func_info, {atom, main}, {atom, '-main/0-fun-1-'}, 1}.
-  {label, 19}.
-    {allocate, 0, 1}.
-    {test, is_lt, {f, 20}, [{integer, 0}, {x, 0}]}.
-    {move, {atom, true}, {x, 0}}.
-    {jump, {f, 21}}.
-  {label, 20}.
-    {move, {atom, false}, {x, 0}}.
   {label, 21}.
+    {allocate, 0, 1}.
+    {test, is_lt, {f, 22}, [{integer, 0}, {x, 0}]}.
+    {move, {atom, true}, {x, 0}}.
+    {jump, {f, 23}}.
+  {label, 22}.
+    {move, {atom, false}, {x, 0}}.
+  {label, 23}.
     {deallocate, 0}.
     return.
 ```

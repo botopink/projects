@@ -173,10 +173,12 @@ fn main() {
     {allocate, 0, 1}.
     {move, {atom, out}, {x, 0}}.
     {move, {x, 0}, {x, 1}}.
+    {test_heap, 2, 2}.
+    {put_list, {x, 0}, nil, {x, 0}}.
     {move, {x, 0}, {x, 2}}.
     {move, {x, 1}, {x, 0}}.
     {move, {x, 2}, {x, 1}}.
-    %% unresolved method call: push/2
+    {call_ext, 2, {extfunc, lists, append, 2}}.
     {move, {atom, ok}, {x, 0}}.
     {deallocate, 0}.
     return.

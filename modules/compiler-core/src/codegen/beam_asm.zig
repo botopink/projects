@@ -2130,7 +2130,7 @@ const Emitter = struct {
         const eq = std.mem.eql;
         switch (k) {
             .array => {
-                if (eq(u8, callee, "map")) try self.primFunThenList("lists", "map", recv_expr, cc, mode) else if (eq(u8, callee, "filter")) try self.primFunThenList("lists", "filter", recv_expr, cc, mode) else if (eq(u8, callee, "forEach")) try self.primFunThenList("lists", "foreach", recv_expr, cc, mode) else if (eq(u8, callee, "reverse")) try self.primRecvOnly("lists", "reverse", recv_expr, mode) else if (eq(u8, callee, "contains")) try self.primArgThenList("lists", "member", recv_expr, cc, mode) else if (eq(u8, callee, "len") or eq(u8, callee, "length") or eq(u8, callee, "size")) try self.primRecvOnly("erlang", "length", recv_expr, mode) else return false;
+                if (eq(u8, callee, "map")) try self.primFunThenList("lists", "map", recv_expr, cc, mode) else if (eq(u8, callee, "filter")) try self.primFunThenList("lists", "filter", recv_expr, cc, mode) else if (eq(u8, callee, "forEach")) try self.primFunThenList("lists", "foreach", recv_expr, cc, mode) else if (eq(u8, callee, "reverse")) try self.primRecvOnly("lists", "reverse", recv_expr, mode) else if (eq(u8, callee, "contains")) try self.primArgThenList("lists", "member", recv_expr, cc, mode) else if (eq(u8, callee, "len") or eq(u8, callee, "length") or eq(u8, callee, "size")) try self.primRecvOnly("erlang", "length", recv_expr, mode) else if (eq(u8, callee, "prepend")) try self.primPrepend(recv_expr, cc, mode) else if (eq(u8, callee, "push")) try self.primAppendElem(recv_expr, cc, mode) else if (eq(u8, callee, "append")) try self.primAppendList(recv_expr, cc, mode) else if (eq(u8, callee, "isEmpty")) try self.primIsEmpty(recv_expr, mode) else return false;
                 return true;
             },
             .string => {
@@ -2145,6 +2145,54 @@ const Emitter = struct {
     fn primRecvOnly(self: *Emitter, mod: []const u8, fn_name: []const u8, recv_expr: *const ast.Expr, mode: CallMode) anyerror!void {
         try self.lowerExprIntoX0(recv_expr.*);
         try self.emitPrimCallExt(mod, fn_name, 1, mode);
+    }
+
+    /// `recv.prepend(x)` → `[x | recv]` — a single cons cell.
+    fn primPrepend(self: *Emitter, recv_expr: *const ast.Expr, cc: anytype, mode: CallMode) anyerror!void {
+        try self.lowerExprIntoX0(recv_expr.*); // x0 = recv (the tail)
+        try self.bodyWrite("    {move, {x, 0}, {x, 1}}.\n"); // x1 = tail
+        try self.lowerPrimFunArg(cc, 2); // x0 = head (arg 0), min_live=2 keeps x1
+        try self.bodyWrite("    {test_heap, 2, 2}.\n");
+        try self.bodyWrite("    {put_list, {x, 0}, {x, 1}, {x, 0}}.\n");
+        if (mode == .tail) try self.emitReturn();
+    }
+
+    /// `recv.append(xs)` → `recv ++ xs` (`lists:append/2`; `xs` is already a list).
+    /// The (often-literal) arg is lowered first into `x1`, then the receiver into
+    /// `x0` — a simple receiver won't clobber `x1`.
+    fn primAppendList(self: *Emitter, recv_expr: *const ast.Expr, cc: anytype, mode: CallMode) anyerror!void {
+        try self.lowerPrimFunArg(cc, 1); // x0 = the list to append
+        try self.bodyWrite("    {move, {x, 0}, {x, 1}}.\n"); // x1 = that list
+        try self.lowerExprIntoX0(recv_expr.*); // x0 = recv
+        try self.emitPrimCallExt("lists", "append", 2, mode);
+    }
+
+    /// `recv.push(x)` → `recv ++ [x]` (`lists:append/2`).
+    fn primAppendElem(self: *Emitter, recv_expr: *const ast.Expr, cc: anytype, mode: CallMode) anyerror!void {
+        try self.lowerExprIntoX0(recv_expr.*); // x0 = recv
+        try self.bodyWrite("    {move, {x, 0}, {x, 1}}.\n"); // x1 = recv
+        try self.lowerPrimFunArg(cc, 2); // x0 = the element, min_live=2 keeps x1
+        try self.bodyWrite("    {test_heap, 2, 2}.\n");
+        try self.bodyWrite("    {put_list, {x, 0}, nil, {x, 0}}.\n"); // x0 = [elem]
+        // Want `lists:append(Recv, [elem])` → x0 = Recv, x1 = [elem].
+        try self.bodyWrite("    {move, {x, 0}, {x, 2}}.\n"); // x2 = [elem]
+        try self.bodyWrite("    {move, {x, 1}, {x, 0}}.\n"); // x0 = recv
+        try self.bodyWrite("    {move, {x, 2}, {x, 1}}.\n"); // x1 = [elem]
+        try self.emitPrimCallExt("lists", "append", 2, mode);
+    }
+
+    /// `recv.isEmpty()` → the boolean `recv =:= []`.
+    fn primIsEmpty(self: *Emitter, recv_expr: *const ast.Expr, mode: CallMode) anyerror!void {
+        try self.lowerExprIntoX0(recv_expr.*); // x0 = recv
+        const not_empty = self.allocLabel();
+        const end_l = self.allocLabel();
+        try self.bodyPrint("    {{test, is_eq, {{f, {d}}}, [{{x, 0}}, nil]}}.\n", .{not_empty});
+        try self.bodyWrite("    {move, {atom, true}, {x, 0}}.\n");
+        try self.bodyPrint("    {{jump, {{f, {d}}}}}.\n", .{end_l});
+        try self.bodyPrint("  {{label, {d}}}.\n", .{not_empty});
+        try self.bodyWrite("    {move, {atom, false}, {x, 0}}.\n");
+        try self.bodyPrint("  {{label, {d}}}.\n", .{end_l});
+        if (mode == .tail) try self.emitReturn();
     }
 
     /// `fn(Fun, Recv)` — `lists:map`/`filter`/`foreach`. The list lands in `x1`,
