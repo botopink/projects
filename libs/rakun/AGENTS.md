@@ -32,6 +32,7 @@ rakun/
 ├── docs.md            ← what this lib provides + Spring mapping + loading notes
 ├── botopink.json      ← package metadata (files: http · runtime · decorators · rakun.d)
 ├── src/
+│   ├── root.bp        ← module-tree root: `pub mod decorators; pub mod http; pub mod runtime;`
 │   ├── http.bp        ← concrete, emitted: `HttpMethod` enum · `Response` record
 │   │                    (builders) · `App` config record
 │   ├── runtime.mjs    ← host runtime: the mutable seams (scan list · cycle guard ·
@@ -47,6 +48,18 @@ rakun/
     ├── di_test.bp     ← placement + component scan
     └── router_test.bp ← DI chain + router dispatch (200 / 404) end to end
 ```
+
+## Module tree (`root.bp`)
+
+`src/root.bp` is the explicit module-tree root — the package builds from it, not
+a deprecated blind `src/` scan. It declares the three compiled modules
+`pub mod decorators; pub mod http; pub mod runtime;` (all public surface, reached
+via `from "rakun"`; the `@emit`ted wiring imports the runtime fns by name). The
+boundary declaration module `rakun.d.bp` is **not** in the tree: it is wired
+through `botopink.json` `files` (consumer surface, loaded with `.declaration =
+true` for a consumer). `.d.bp` modules are not resolved by `mod` paths (the
+resolver follows only `<name>.bp` / `<name>/mod.bp`), mirroring how `libs/std`
+keeps its ambient `.d.bp` out of `root.bp`.
 
 ## Design at a glance
 

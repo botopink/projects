@@ -4,7 +4,7 @@
     {
       "fn": {
         "isPub": false,
-        "isStarFn": true,
+        "effect": "future",
         "isDeclare": false,
         "label": null,
         "name": "fetch",

@@ -875,44 +875,23 @@ const Emitter = struct {
         try self.w(";");
     }
 
-    /// JS function keyword for a botopink function, honoring the `*fn` marker.
-    ///   `*fn -> @Future<_>`        → `async function`
-    ///   `*fn -> @Iterator<_>`      → `function*`
-    ///   `*fn -> @AsyncIterator<_>` → `async function*`
-    ///   `*fn -> @Result<_, _>`     → `function` (checked-Result effect — plain fn)
-    /// A bare `*fn` with no recognized return type falls back to `function*`
-    /// when its body yields, else `async function`.
+    /// JS function keyword for a botopink function, driven by its effect kind.
+    ///   `#[@future]`         → `async function`
+    ///   `#[@iterator]`       → `function*`
+    ///   `#[@generator]`      → `function*`
+    ///   `#[@asyncGenerator]` → `async function*`
+    ///   `#[@result]`         → `function` (checked-Result effect — plain fn)
+    ///   `#[@context]` / none → `function`
     fn fnKeyword(f: ast.FnDecl) []const u8 {
-        if (!f.isStarFn) return "function";
-        if (f.returnsResult()) return "function";
-        const kind = starFnKind(f);
-        return switch (kind) {
-            .async_ => "async function",
+        const eff = f.effect orelse return "function";
+        return switch (eff) {
+            .future => "async function",
+            .iterator => "function*",
             .generator => "function*",
             .asyncGenerator => "async function*",
+            .result => "function",
+            .context => "function",
         };
-    }
-
-    const StarFnKind = enum { async_, generator, asyncGenerator };
-
-    fn starFnKind(f: ast.FnDecl) StarFnKind {
-        if (f.returnType) |rt| {
-            if (rt == .generic and rt.generic.is_builtin) {
-                const n = rt.generic.name;
-                if (std.mem.eql(u8, n, "Future")) return .async_;
-                if (std.mem.eql(u8, n, "Iterator")) return .generator;
-                if (std.mem.eql(u8, n, "AsyncIterator")) return .asyncGenerator;
-            }
-        }
-        // No explicit @Future/@Iterator return type: infer from the body.
-        return if (bodyHasYield(f.body)) .generator else .async_;
-    }
-
-    fn bodyHasYield(body: []const ast.Stmt) bool {
-        for (body) |stmt| {
-            if (stmt.expr == .jump and stmt.expr.jump.kind == .yield) return true;
-        }
-        return false;
     }
 
     fn emitFn(self: *Emitter, f: ast.FnDecl) !void {
@@ -1225,6 +1204,9 @@ const Emitter = struct {
         }
         try self.fmt(" for {s}\n", .{im.target});
         try self.emitExtensionNamespace(im.name, im.methods);
+        // A `pub` implement consumed by another module (via `import { Name* }`)
+        // is exported so the consumer's `require` can bind it for dispatch.
+        if (im.isPub) try self.emitCrossExport(im.name);
     }
 
     /// External dispatch: an `extend T` block emitted as a namespace object.

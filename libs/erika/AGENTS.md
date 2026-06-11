@@ -28,9 +28,18 @@ erika/
 ├── examples.md        ← both forms (fluent + `erika "…"`), runnable
 ├── botopink.json      ← package metadata (files: ["erika.bp"])
 └── src/
+    ├── root.bp        ← module-tree root: `pub mod erika;` (the public surface)
     └── erika.bp       ← the whole lib: `record Query<T>` + `Grouping<K,V>` +
                          constructors + the `erika "…"` template fn + 25 tests
 ```
+
+## Module tree (`root.bp`)
+
+`src/root.bp` is the explicit module-tree root: `pub mod erika;` declares the
+single public module, so the package builds from the tree, not a deprecated blind
+`src/` scan. A consumer reaches it via `import {…} from "erika"` (the generic
+`from "<lib>"` loader), and the bare template-fn binding behind `erika "…"`
+resolves through that same exported module.
 
 ## Design at a glance
 
@@ -42,14 +51,26 @@ erika/
 - **No arity overloading** (the JS backend mangles same-named methods), so the
   predicate variants are spelled out: `count`/`countWhere`, `first`/`firstWhere`,
   `any`/`anyWhere`.
-- **`erika "…"`** is a template fn: it captures a SQL-subset string as
-  `@Expr<string>`, parses it in botopink at comptime, resolves the referenced
-  collection against the caller's scope, and expands to unqualified fluent source
-  via `q.build(...)`. Grammar:
+- **`erika "…"`** is a template fn returning **`@ExprCustom<T>`**: it captures a
+  SQL-subset string as `@Expr<string>`, parses it in botopink at comptime,
+  resolves the referenced collection against the caller's scope, and expands to
+  unqualified fluent source. Grammar:
   `select <* | f1[, f2…]> from <Name> [where <cond>] [order by <field> [asc|desc]]`.
   The single-line `erika "…"` and triple-quoted multi-line `erika """ … """` forms
   are equivalent — the tokenizer normalizes newlines/tabs to spaces before
   splitting, so layout is free (the `html """…"""` sibling).
+- **Custom AST for tooling (sublanguage-lsp).** Besides the executable `code`
+  half (spliced exactly as before — `q.custom(root, q.build(pipe))`), the
+  expansion also returns a generic `CustomNode` tree: each token is span-aware
+  (`select`/`from`/`where`/`order`/`by`/`asc`/`desc`→`keyword`, projected fields
+  and the collection→`property`, where-clause ops/literals→`operator`/`number`/
+  `string`). The collection node carries `ref` (the `q.lookup` binding) so the
+  LSP resolves hover/go-to-def to its declaration. An unknown collection aborts
+  with `q.failAt(span, …)` ranged at the offending name *inside* the string.
+  Spans are byte offsets into `q.text()`; the tokenizer recovers them with a
+  `cursor` + `indexOf` over the unconsumed suffix (no `fromIndex` in the comptime
+  string API). The `code` half is identical to before, so runtime/codegen across
+  all backends is unchanged.
 
 ## Conventions
 
@@ -71,10 +92,15 @@ erika/
 The `erika "…"` body runs at comptime in `template_eval.zig`: the evaluator emits
 **only the template fn itself** and runs it with `node` over a *minimal* prelude.
 So the SQL→botopink translation may use only ops that lower to **native JS**:
-`split` / `join` / `slice` / `trim` / `map` / `append` / `length` / `+` / `==`.
-It must **not** use host-helper-backed ops — notably optional `.at(i).unwrapOr(…)`
-is **undefined** in the eval script (it silently fails the expansion, surfacing as
-a terse "parse error"). That is why the field list is built with `append` + `map`
+`split` / `join` / `slice` / `trim` / `map` / `append` / `indexOf` / `+` / `==`,
+plus array `.length` (a *property*). It must **not** use host-helper-backed ops —
+notably optional `.at(i).unwrapOr(…)` is **undefined** in the eval script (it
+silently fails the expansion, surfacing as a terse "parse error"). A second trap:
+**`string.length()`** (a method needing a type-directed JS-property rename) does
+**not** exist in the bare eval prelude — use `s.split("").length` (an array
+property) for a string's length, as the span-aware tokenizer does. A third:
+**no comments inside a closure/loop body** (`{ x -> … }`) — they parse as an
+unexpected token; keep comments at fn-body level. That is why the field list is built with `append` + `map`
 + `join` and never `fields.at(0).unwrapOr(…)`, and why the multi-line form is
 flattened with `split("\n").join(" ")` (native-JS ops) rather than a regex/trim
 helper — the triple-quoted query's newlines/tabs are normalized to spaces before

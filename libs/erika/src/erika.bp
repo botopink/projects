@@ -328,7 +328,7 @@ pub fn repeat<T>(value: T, times: i32) -> Query<T> {
 // own tests. The whole body is self-contained (no calls to sibling fns): the
 // comptime evaluator emits only the template fn itself, so the SQL→botopink
 // translation is inlined. See AGENTS.md for the user-project import caveat.
-pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T> {
+pub fn erika<T>(comptime q: @Expr<string>) -> @ExprCustom<T> {
     val sql = q.text();
     // Normalize newlines/tabs to spaces so the triple-quoted multi-line form
     // (`erika """ select … """`) tokenizes the same as the single-line one — a
@@ -338,38 +338,69 @@ pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T> {
     // doubled spaces fall through as blanks. (split/join lower to native JS — the
     // only ops the comptime evaluator runs; see AGENTS.md.)
     val flat = sql.split("\n").join(" ").split("\r").join(" ").split("\t").join(" ");
-    val tokens = flat.trim().split(",").join(" ").split(" ");
+    val rawTokens = flat.trim().split(",").join(" ").split(" ");
+
+    // Re-attach each token to its byte offset in the *original* `sql` (= the
+    // template text), the coordinate the LSP overlays its highlight onto
+    // (sublanguage-lsp). Tokens are exact substrings of `sql` (only delimiters
+    // were normalized), so a left-to-right `indexOf` over the unconsumed suffix
+    // recovers each span without a fromIndex variant — `cursor` advances per
+    // non-blank token, blanks (doubled spaces) are zero-width and skipped.
+    // Length via `split("").length` (array property): a template body runs as
+    // standalone JS, where string `.length()` (a method needing a JS-property
+    // rename) is unavailable — only ops whose JS name matches directly survive.
+    val sqlLen = sql.split("").length;
+    var cursor = 0;
+
     var star = false;
     var fields = [];
     var source = "";
+    var srcStart = 0;
+    var srcFinish = 0;
     var whereCond = "";
     var orderField = "";
     var orderDesc = false;
     var mode = "head";
     var prev = "";
-    loop (tokens) { tok ->
-        val isWhere = tok == "where";
-        val isOrder = tok == "order";
-        val isBlank = (tok == "") || (tok == "by");
-        if (isWhere) { mode = "where"; };
-        if (isOrder) { mode = "order"; };
-        val isKw = isWhere || isOrder || isBlank;
-        if (!isKw) {
-            val inHead = mode == "head";
-            val inWhere = mode == "where";
-            val inOrder = mode == "order";
-            if (inHead) {
-                val isSelectKw = tok == "select";
-                val isFromKw = tok == "from";
-                val isSource = prev == "from";
-                if (isSource) { source = tok; };
-                val isProj = !isSource && !isSelectKw && !isFromKw;
-                if (isProj) {
-                    if (tok == "*") { star = true; };
-                    if (tok != "*") { fields = fields.append([tok]); };
+    // The generic `CustomNode` overlay the LSP renders: one node per highlighted
+    // token, `label` chosen from the editor vocabulary (keyword/property/…). The
+    // collection node also carries `ref` so hover/go-to-def resolve to its
+    // declaration. `kind` is an opaque tag the core never reads.
+    var nodes = [];
+    loop (rawTokens) { tok ->
+        if (tok != "") {
+            val rest = sql.slice(cursor, sqlLen);
+            val rel = rest.indexOf(tok);
+            val start = cursor + rel;
+            val finish = start + tok.split("").length;
+            cursor = finish;
+            val sp = Span(start, finish, 1);
+            val isWhere = tok == "where";
+            val isOrder = tok == "order";
+            val isBy = tok == "by";
+            val isBlank = isBy;
+            if (isWhere) { mode = "where"; nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
+            if (isOrder) { mode = "order"; nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
+            if (isBy) { nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
+            val isKw = isWhere || isOrder || isBlank;
+            if (!isKw) {
+                val inHead = mode == "head";
+                val inWhere = mode == "where";
+                val inOrder = mode == "order";
+                if (inHead) {
+                    val isSelectKw = tok == "select";
+                    val isFromKw = tok == "from";
+                    val isSource = prev == "from";
+                    if (isSelectKw) { nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
+                    if (isFromKw) { nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
+                    if (isSource) { source = tok; srcStart = start; srcFinish = finish; };
+                    val isProj = !isSource && !isSelectKw && !isFromKw;
+                    if (isProj) {
+                        if (tok == "*") { star = true; nodes = nodes.append([CustomNode(kind: "star", span: sp, label: "operator", ref: null, children: [])]); };
+                        if (tok != "*") { fields = fields.append([tok]); nodes = nodes.append([CustomNode(kind: "field", span: sp, label: "property", ref: null, children: [])]); };
+                    };
                 };
-            };
-            if (inWhere) {
+                if (inWhere) {
                 var piece = "row." + tok;
                 if (tok == "=") { piece = "=="; };
                 if (tok == "<>") { piece = "!="; };
@@ -386,15 +417,24 @@ pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T> {
                 val isDigit = (c0 == "0") || (c0 == "1") || (c0 == "2") || (c0 == "3") || (c0 == "4") || (c0 == "5") || (c0 == "6") || (c0 == "7") || (c0 == "8") || (c0 == "9");
                 if (isDigit) { piece = tok; };
                 whereCond = if (whereCond == "") { piece; } else { whereCond + " " + piece; };
+                val isStr = c0 == "'";
+                val isOp = (tok == "=") || (tok == "<>") || (tok == "and") || (tok == "or") || (tok == "==") || (tok == "!=") || (tok == "<") || (tok == "<=") || (tok == ">") || (tok == ">=");
+                if (isOp) { nodes = nodes.append([CustomNode(kind: "op", span: sp, label: "operator", ref: null, children: [])]); };
+                if (isStr) { nodes = nodes.append([CustomNode(kind: "str", span: sp, label: "string", ref: null, children: [])]); };
+                if (isDigit) { nodes = nodes.append([CustomNode(kind: "num", span: sp, label: "number", ref: null, children: [])]); };
+                val isFieldRef = !isOp && !isStr && !isDigit;
+                if (isFieldRef) { nodes = nodes.append([CustomNode(kind: "field", span: sp, label: "property", ref: null, children: [])]); };
             };
             if (inOrder) {
                 val isAsc = tok == "asc";
                 val isDesc = tok == "desc";
                 if (isDesc) { orderDesc = true; };
                 val isOrderKw = isAsc || isDesc;
-                if (!isOrderKw) { orderField = tok; };
+                if (isOrderKw) { nodes = nodes.append([CustomNode(kind: "keyword", span: sp, label: "keyword", ref: null, children: [])]); };
+                if (!isOrderKw) { orderField = tok; nodes = nodes.append([CustomNode(kind: "field", span: sp, label: "property", ref: null, children: [])]); };
             };
             prev = tok;
+        };
         };
     };
 
@@ -418,9 +458,14 @@ pub fn erika<T>(comptime q: @Expr<string>) -> @Expr<T> {
             val rec = "record { " + parts.join(", ") + " }";
             pipe = pipe + ".select({ row -> " + rec + " }).toArray()";
         };
-        return q.build(pipe);
+        val srcSpan = Span(srcStart, srcFinish, 1);
+        val srcNode = CustomNode(kind: "source", span: srcSpan, label: "property", ref: binding, children: []);
+        val root = CustomNode(kind: "query", span: Span(0, sqlLen, 1), label: "none", ref: null, children: nodes.append([srcNode]));
+        return q.custom(root, q.build(pipe));
     };
-    return q.fail("erika: unknown collection '" + source + "' in scope");
+    // Unknown collection → a diagnostic ranged at the offending name *inside* the
+    // string (sublanguage-lsp F2), not at the whole template.
+    return q.failAt(Span(srcStart, srcFinish, 1), "erika: unknown collection '" + source + "' in scope");
 }
 
 

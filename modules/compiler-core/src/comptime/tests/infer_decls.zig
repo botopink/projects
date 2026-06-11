@@ -300,22 +300,46 @@ test "infer: qualified extension call needs no activation" {
 }
 
 test "infer: multi-module local extension resolves on an imported record" {
-    // `Swimmer`/`Pato` are imported; the `implement` is declared in the consumer
-    // module and auto-applied, so `donald.swim()` resolves without activation.
+    // `Pato` is imported; the interface and `implement` are declared in the
+    // consumer module and auto-applied, so `donald.swim()` resolves without activation.
     try h.assertComptimeAst(std.testing.allocator, @src(), &.{
         .{ .path = "pond", .source =
-        \\pub val Swimmer = interface {
-        \\    fn swim(self: Self);
-        \\}
         \\pub record Pato { id: i32 }
         },
         .{ .path = "", .source =
-        \\import {Swimmer, Pato} from "pond";
+        \\import {Pato} from "pond";
+        \\val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
         \\val PatoNada = implement Swimmer for Pato {
         \\    fn swim(self: Self) {
         \\        return self.id;
         \\    }
         \\}
+        \\val donald = Pato(1);
+        \\val splash = donald.swim();
+        },
+    });
+}
+
+test "infer: multi-module extension activated via star import" {
+    // The interface + record + `implement` all live in `pond`; the consumer pulls
+    // the type in and activates the imported extension with `PatoNada*`, so
+    // `donald.swim()` dispatches across the module boundary.
+    try h.assertComptimeAst(std.testing.allocator, @src(), &.{
+        .{ .path = "pond", .source =
+        \\val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\pub record Pato { id: i32 }
+        \\pub val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        },
+        .{ .path = "", .source =
+        \\import {Pato, PatoNada*} from "pond";
         \\val donald = Pato(1);
         \\val splash = donald.swim();
         },

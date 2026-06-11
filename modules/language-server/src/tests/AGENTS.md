@@ -30,8 +30,13 @@ tests/
 ├── code_actions.zig      ← textDocument/codeAction
 ├── type_definition.zig   ← textDocument/typeDefinition
 ├── semantic_tokens.zig   ← textDocument/semanticTokens
-└── inlay_hints.zig       ← textDocument/inlayHint
+├── inlay_hints.zig       ← textDocument/inlayHint
+└── sublanguage.zig       ← `@ExprCustom` overlay: tokens + diagnostics + hover/def
 ```
+
+`sublanguage.zig` uses `helpers.compileEval` (template-eval context on, unique
+scratch root per call) so the `@ExprCustom` `CustomNode` trees actually exist —
+it spawns `node`, like the comptime template tests.
 
 ## Snapshot workflow
 

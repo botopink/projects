@@ -4,10 +4,10 @@
 }
 
 ----- ERROR
-error: a `*fn` must return `@Future<_>`, `@Iterator<_>`, `@AsyncIterator<_, _>` or `@Result<_, _>`
+error: `#[@future]` requires a `-> @Future<…>` return type
   ┌─ :2:5
   │
 2 │     return "x";
   │     ^
 
-  hint: Drop the `*` if this is a plain function, or change the return type.
+  hint: The effect annotation and the return wrapper must name the same effect.

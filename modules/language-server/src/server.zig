@@ -16,6 +16,21 @@ const index_mod = @import("./project_index.zig");
 
 const Lexer = bp.Lexer;
 
+/// Best-effort scratch root for the template evaluator. Prefers the user cache
+/// dir (`$XDG_CACHE_HOME` / `$HOME/.cache`), falling back to a cwd-relative
+/// `.botopinkbuild/lsp` (also used when there is no process environment, e.g.
+/// tests). Returns null only if every allocation fails. The returned slice is
+/// owned by the caller (freed in `Server.deinit`).
+fn computeTemplateRoot(gpa: std.mem.Allocator, environ_map: ?*std.process.Environ.Map) ?[]const u8 {
+    if (environ_map) |env| {
+        if (env.get("XDG_CACHE_HOME")) |xdg|
+            return std.fmt.allocPrint(gpa, "{s}/botopink-lsp/template", .{xdg}) catch null;
+        if (env.get("HOME")) |home|
+            return std.fmt.allocPrint(gpa, "{s}/.cache/botopink-lsp/template", .{home}) catch null;
+    }
+    return gpa.dupe(u8, ".botopinkbuild/lsp") catch null;
+}
+
 pub const Server = struct {
     gpa: std.mem.Allocator,
     io: std.Io,
@@ -28,6 +43,11 @@ pub const Server = struct {
     shutdown_requested: bool,
     /// Monotonic id for server→client requests (e.g. inlay-hint refresh).
     next_request_id: i64,
+    /// Scratch root for the node-backed template evaluator (`<cache>/botopink-lsp`
+    /// or `.botopinkbuild/lsp`). Computed once, owned by the server. When the
+    /// compiler runs with it, `@ExprCustom` sub-languages expand and their
+    /// `CustomNode` trees light up inside the literal (sublanguage-lsp).
+    template_root: ?[]const u8,
 
     pub fn init(gpa: std.mem.Allocator, io: std.Io, environ_map: ?*std.process.Environ.Map) Server {
         return .{
@@ -40,6 +60,7 @@ pub const Server = struct {
             .initialized = false,
             .shutdown_requested = false,
             .next_request_id = 1,
+            .template_root = computeTemplateRoot(gpa, environ_map),
         };
     }
 
@@ -47,6 +68,13 @@ pub const Server = struct {
         self.files.deinit();
         self.feedback.deinit();
         self.index.deinit();
+        if (self.template_root) |r| self.gpa.free(r);
+    }
+
+    /// Build an LSP compiler bound to this server's io + template-eval root, so
+    /// every compile can expand sub-language templates for tooling.
+    fn makeCompiler(self: *Server) @import("./compiler.zig").LspCompiler {
+        return @import("./compiler.zig").LspCompiler.init(self.gpa, self.io, self.template_root);
     }
 
     /// Main loop: reads messages from stdin and dispatches until shutdown.
@@ -269,7 +297,7 @@ pub const Server = struct {
         defer self.gpa.free(source);
 
         // Compile to get typed bindings
-        var lsp_compiler = @import("./compiler.zig").LspCompiler.init(self.gpa);
+        var lsp_compiler = self.makeCompiler();
         const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
         var result = lsp_compiler.compile(&entries) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
@@ -284,8 +312,17 @@ pub const Server = struct {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
 
+        // Cursor inside a sub-language literal (`erika "…"`): hover the symbol
+        // the `CustomNode.ref` resolves to (sublanguage-lsp F3). Tried first
+        // because the bound symbol (e.g. a struct) differs from the word under
+        // the cursor (e.g. a column name).
+        if (try engine.hoverCustomRef(self.gpa, source, pos, bindings, result.customAstFor(uri))) |h| {
+            defer self.gpa.free(h.contents.value);
+            return messages.writeResponse(self.io, self.gpa, msg.id(), h);
+        }
+
         if (try engine.hover(self.gpa, source, pos, bindings)) |h| {
-            defer self.gpa.free(h.contents.kind);
+            defer self.gpa.free(h.contents.value);
             try messages.writeResponse(self.io, self.gpa, msg.id(), h);
         } else {
             try messages.writeResponse(self.io, self.gpa, msg.id(), null);
@@ -314,6 +351,23 @@ pub const Server = struct {
         const tokens = lexer.scanAll(arena.allocator()) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
+
+        // Cursor inside a sub-language literal (`erika "…"`): jump to the
+        // declaration of the symbol its `CustomNode.ref` binds (sublanguage-lsp
+        // F3). Gated on being inside a string so the common path skips the extra
+        // template-expanding compile.
+        if (engine.cursorInString(source, lsp_types.positionToOffset(source, pos))) {
+            var lsp_compiler = self.makeCompiler();
+            const c_entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
+            if (lsp_compiler.compile(&c_entries)) |res| {
+                var result = res;
+                defer result.deinit(self.gpa);
+                if (try engine.definitionCustomRef(self.gpa, uri, source, pos, tokens, result.customAstFor(uri))) |loc| {
+                    defer self.gpa.free(loc.uri);
+                    return messages.writeResponse(self.io, self.gpa, msg.id(), loc);
+                }
+            } else |_| {}
+        }
 
         // First try a declaration in the current file.
         if (try engine.definition(self.gpa, uri, source, pos, tokens)) |loc| {
@@ -439,7 +493,7 @@ pub const Server = struct {
         };
         defer self.gpa.free(source);
 
-        var lsp_compiler = @import("./compiler.zig").LspCompiler.init(self.gpa);
+        var lsp_compiler = self.makeCompiler();
         const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
         var result = lsp_compiler.compile(&entries) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
@@ -587,7 +641,7 @@ pub const Server = struct {
         };
         defer self.gpa.free(source);
 
-        var lsp_compiler = @import("./compiler.zig").LspCompiler.init(self.gpa);
+        var lsp_compiler = self.makeCompiler();
         const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
         var result = lsp_compiler.compile(&entries) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
@@ -630,7 +684,7 @@ pub const Server = struct {
         };
         defer self.gpa.free(source);
 
-        var lsp_compiler = @import("./compiler.zig").LspCompiler.init(self.gpa);
+        var lsp_compiler = self.makeCompiler();
         const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
         var result = lsp_compiler.compile(&entries) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), &.{});
@@ -682,7 +736,7 @@ pub const Server = struct {
             return messages.writeResponse(self.io, self.gpa, msg.id(), proto.SemanticTokens{ .data = &.{} });
         };
 
-        var lsp_compiler = @import("./compiler.zig").LspCompiler.init(self.gpa);
+        var lsp_compiler = self.makeCompiler();
         const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
         var bindings: []const @import("botopink").comptime_pipeline.TypedBinding = &.{};
         var result = lsp_compiler.compile(&entries) catch null;
@@ -694,7 +748,15 @@ pub const Server = struct {
             }
         }
 
-        var toks = try engine.semanticTokens(arena.allocator(), tokens, bindings);
+        const lexed = try engine.semanticTokens(arena.allocator(), tokens, bindings);
+
+        // Overlay sub-language tokens (`@ExprCustom` Custom AST) inside string
+        // literals, then re-sort into one stream (sublanguage-lsp F1).
+        const custom = if (result) |*r|
+            try engine.customSemanticTokens(arena.allocator(), source, r.customAstFor(uri))
+        else
+            &.{};
+        var toks = try engine.mergeSemanticTokens(arena.allocator(), lexed, custom);
 
         // `/range` requests: keep only tokens whose line falls in the range.
         if (range) |rng| {
@@ -733,7 +795,7 @@ pub const Server = struct {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
 
-        var lsp_compiler = @import("./compiler.zig").LspCompiler.init(self.gpa);
+        var lsp_compiler = self.makeCompiler();
         const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
         var result = lsp_compiler.compile(&entries) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
@@ -830,7 +892,7 @@ pub const Server = struct {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
 
-        var lsp_compiler = @import("./compiler.zig").LspCompiler.init(self.gpa);
+        var lsp_compiler = self.makeCompiler();
         const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
         var result = lsp_compiler.compile(&entries) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
@@ -872,7 +934,7 @@ pub const Server = struct {
     fn publishDiagnostics(self: *Server, uri: []const u8, source: []const u8) !void {
         try self.sendProgress("begin", "Compiling...");
 
-        var result = try engine.diagnose(self.gpa, self.io, uri, source);
+        var result = try engine.diagnose(self.gpa, self.io, uri, source, self.template_root);
         defer result.deinit(self.gpa);
 
         try self.sendDiagnostics(uri, result.diagnostics);

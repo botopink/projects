@@ -30,6 +30,7 @@ lsp/
 | `sig_*` | `textDocument/signatureHelp` |
 | `symbols_*` | `textDocument/documentSymbol` |
 | `type_definition_*` | `textDocument/typeDefinition` |
+| `sublanguage_*` | `@ExprCustom` overlay (tokens + hover) |
 
 ## Rules
 

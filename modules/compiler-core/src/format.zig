@@ -1924,8 +1924,10 @@ pub const Formatter = struct {
     }
 
     fn fmtFnDecl(this: *Formatter, f: ast.FnDecl) !*const Doc {
-        // `[pub] [*]fn ` — the `*` marks an async/generator function.
-        const star: []const u8 = if (f.isStarFn) "*" else "";
+        // `[pub] [*]fn ` — the effect is carried by a `#[@<effect>]` annotation
+        // (emitted by `fmtAnnotations`). The deprecated `*` prefix is preserved
+        // only when the effect came from `*fn` rather than an annotation.
+        const star: []const u8 = if (f.effect != null and f.effectAnnotation() == null) "*" else "";
         const pubKw: []const u8 = if (f.isPub) "pub " else "";
         const prefix = try this.text(try std.fmt.allocPrint(this.arena, "{s}{s}fn ", .{ pubKw, star }));
 

@@ -102,6 +102,7 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     // is inferred. Bail out early when contributions exist — the spliced
     // re-analysis does the real inference.
     try validateDecorators(env, program);
+    try validateEffectAnnotations(env, program);
     try invokeDecorators(env, program);
     if (env.contributions.items.len > 0) {
         return list.toOwnedSlice(env.arena);
@@ -141,6 +142,7 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
     // test`. The serialized handles read only the AST, so no body inference is
     // needed first.)
     try validateDecorators(env, program);
+    try validateEffectAnnotations(env, program);
     try invokeDecorators(env, program);
     if (env.contributions.items.len > 0) {
         // The spliced re-analysis (`analyzeSource`) does the real inference; skip
@@ -490,6 +492,21 @@ pub fn isDecoratorParams(params: []const ast.Param) bool {
 /// generic `@Decl`-first shape, never by any lib's name). No-op for non-decorators.
 pub fn registerImportedDecorator(env: *Env, name: []const u8, fn_decl: ast.FnDecl) void {
     registerDecoratorSig(env, name, fn_decl.params, fn_decl);
+}
+
+/// Register an `implement` block imported and activated from another module
+/// (`import { Name* } from "mod"`) into this module's extension table, so
+/// `obj.method()` dispatches to it. Local extensions are auto-applied
+/// ([[registerExtensions]]); imported ones are opt-in via the `*` activation —
+/// they only land here when the importer asked for them. The dispatch table makes
+/// no further local/imported distinction (every entry here is meant to resolve).
+pub fn registerImportedExtension(env: *Env, im: ast.ImplementDecl) !void {
+    try env.extensions.put(im.name, .{
+        .name = im.name,
+        .target = im.target,
+        .interfaces = im.interfaces,
+        .methods = try collectImplMethodNames(env, im.methods),
+    });
 }
 
 /// Record a decorator's trailing signature (everything after the leading
@@ -1436,6 +1453,37 @@ fn validateDecorators(env: *Env, program: ast.Program) InferError!void {
     };
 }
 
+/// Reject `#[@<effect>]` annotations where an effect is implementation-only
+/// (F1b): on an interface method, which is declarative and expresses its effect
+/// through the return wrapper alone. (Bodyless top-level `declare fn` is caught
+/// in `inferFnDecl`.)
+fn validateEffectAnnotations(env: *Env, program: ast.Program) InferError!void {
+    for (program.decls) |decl| switch (decl) {
+        .interface => |i| {
+            for (i.methods) |m| {
+                if (effectAnnotationOf(m.annotations) != null) {
+                    env.lastError = TypeError.custom(
+                        "effect annotations mark an implementation; declare the effect in the return type",
+                        "An interface method expresses its effect through the return wrapper (e.g. `-> @Future<T>`), with no annotation.",
+                    );
+                    return error.TypeError;
+                }
+            }
+        },
+        else => {},
+    };
+}
+
+/// The effect named by a builtin `#[@<effect>]` annotation, or null.
+fn effectAnnotationOf(anns: []const ast.Annotation) ?ast.EffectKind {
+    for (anns) |a| {
+        if (a.is_builtin) {
+            if (ast.EffectKind.fromAnnotationName(a.name)) |k| return k;
+        }
+    }
+    return null;
+}
+
 /// Check one declaration's annotation list. `owner` names the annotated
 /// declaration (for diagnostics).
 fn checkDecoratorAnnotations(env: *Env, anns: []const ast.Annotation, owner: []const u8) InferError!void {
@@ -1895,6 +1943,17 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
         }
     }
 
+    // ── effect annotation is implementation-only (F1b) ──────────────────────
+    // A `#[@<effect>]` marks a `fn` with a body; a bodyless `declare fn` (and a
+    // `.d.bp` declaration) expresses its effect through the return wrapper only.
+    if (f.body.len == 0 and f.effectAnnotation() != null) {
+        env.lastError = TypeError.custom(
+            "effect annotations mark an implementation; declare the effect in the return type",
+            "A `declare fn` expresses its effect through the return wrapper (e.g. `-> @Future<T>`), with no annotation.",
+        );
+        return error.TypeError;
+    }
+
     // Build generic map.
     var genericMap = std.StringHashMap(*T.Type).init(env.arena);
     defer genericMap.deinit();
@@ -2007,12 +2066,13 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     //     raw host exception (unchecked), values are not wrapped
     //   - any other return type        → `throw` is illegal
     const isResultFn = f.returnsResult();
+    const eff = f.effect;
     var throwCtx: envMod.ThrowContext = .unchecked;
     if (f.returnType) |_| {
         throwCtx = .plain;
         if (isResultFn) {
             throwCtx = .unchecked;
-            if (f.isStarFn) {
+            if (eff == .result) {
                 const rtDeref = retType.deref();
                 if (rtDeref.* == .named and rtDeref.named.args.len >= 2) {
                     throwCtx = .{ .result = rtDeref.named.args[1] };
@@ -2024,32 +2084,35 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
     env.throwContext = throwCtx;
     defer env.throwContext = savedThrowCtx;
 
-    // ── `*fn` validation + async/generator context ──────────────────────────
-    // A `*fn` must return `@Future<_>` / `@Iterator<_>` / `@AsyncIterator<_, _>`
-    // — or `@Result<_, _>` (the checked-Result effect form); a normal `fn` must
-    // NOT return the async kinds (it would have to be a `*fn`).
+    // ── effect ↔ return-type validation + async/generator context (F1) ───────
+    // An effect annotation must match its return wrapper (`#[@future]` →
+    // `@Future<…>`, etc.); a plain `fn` must NOT return one of the async
+    // wrappers (those need an effect annotation, or the deprecated `*`).
     const asyncKind = classifyAsyncReturn(retType);
     const fnLoc: ?ast.Loc = if (f.body.len > 0) f.body[0].expr.getLoc() else null;
-    if (f.isStarFn and asyncKind == .none and !isResultFn) {
-        var e = TypeError.custom(
-            "a `*fn` must return `@Future<_>`, `@Iterator<_>`, `@AsyncIterator<_, _>` or `@Result<_, _>`",
-            "Drop the `*` if this is a plain function, or change the return type.",
+    if (eff) |e| {
+        if (!effectMatchesReturn(e, retType)) {
+            const msg = try std.fmt.allocPrint(
+                env.arena,
+                "`#[@{s}]` requires a `-> @{s}<…>` return type",
+                .{ e.annotationName(), e.returnWrapper() },
+            );
+            var err = TypeError.custom(msg, "The effect annotation and the return wrapper must name the same effect.");
+            if (fnLoc) |l| err = err.withLoc(l);
+            env.lastError = err;
+            return error.TypeError;
+        }
+    } else if (asyncKind != .none) {
+        var err = TypeError.custom(
+            "a function returning `@Future`/`@Iterator`/`@AsyncIterator` needs an effect annotation",
+            "Mark it `#[@future]` / `#[@iterator]` / `#[@asyncGenerator]` (or use the deprecated `*fn`).",
         );
-        if (fnLoc) |l| e = e.withLoc(l);
-        env.lastError = e;
-        return error.TypeError;
-    }
-    if (!f.isStarFn and asyncKind != .none) {
-        var e = TypeError.custom(
-            "a function returning `@Future`/`@Iterator`/`@AsyncIterator` must be declared `*fn`",
-            "Prefix the function with `*` to make it async/generator.",
-        );
-        if (fnLoc) |l| e = e.withLoc(l);
-        env.lastError = e;
+        if (fnLoc) |l| err = err.withLoc(l);
+        env.lastError = err;
         return error.TypeError;
     }
 
-    // Establish the `*fn` context (saved/restored around the body) so nested
+    // Establish the effect context (saved/restored around the body) so nested
     // `await`/`yield` validate against this function, not an enclosing one.
     const prevStarFn = env.starFn;
     const prevLabelsLen = env.labelStack.items.len;
@@ -2057,13 +2120,13 @@ fn inferFnDecl(env: *Env, f: ast.FnDecl) InferError!*T.Type {
         env.starFn = prevStarFn;
         env.labelStack.shrinkRetainingCapacity(prevLabelsLen);
     }
-    if (f.isStarFn and !isResultFn) {
-        env.starFn = starCtxFromReturn(retType, asyncKind);
+    if (if (eff) |e| starCtxFromEffect(e, retType) else null) |ctx| {
+        env.starFn = ctx;
         if (f.label) |lbl| try env.labelStack.append(env.arena, lbl);
     } else {
-        // A normal function body (and a `*fn -> @Result` checked-Result body)
-        // sees no async context and no outer labels — `await`/`yield` stay
-        // exclusive to `@Future`/`@Iterator` star fns.
+        // A normal function body (and a `#[@result]`/`#[@context]` body) sees no
+        // async context and no outer labels — `await`/`yield` stay exclusive to
+        // the future/iterator/generator/asyncGenerator effects.
         env.starFn = null;
         env.labelStack.shrinkRetainingCapacity(0);
     }
@@ -2200,18 +2263,32 @@ fn classifyAsyncReturn(ty: *T.Type) AsyncReturnKind {
     };
 }
 
-/// Build the `*fn` body context from its (already classified) return type.
-fn starCtxFromReturn(ty: *T.Type, kind: AsyncReturnKind) envMod.StarFnCtx {
-    const t = ty.deref();
+/// True when `retType` is the builtin wrapper named by `eff` (an unresolved
+/// type variable stays lenient, matching the rest of the effect checks).
+fn effectMatchesReturn(eff: ast.EffectKind, retType: *T.Type) bool {
+    const t = retType.deref();
+    return switch (t.*) {
+        .named => |n| std.mem.eql(u8, n.name, eff.returnWrapper()),
+        .typeVar => true,
+        else => false,
+    };
+}
+
+/// Build the effect body context (drives `await`/`yield` validation) from the
+/// effect kind and its return type. Returns null for effects with no async /
+/// generator body operations (`#[@result]`, `#[@context]`).
+fn starCtxFromEffect(eff: ast.EffectKind, retType: *T.Type) ?envMod.StarFnCtx {
+    const t = retType.deref();
     const item: ?*T.Type = switch (t.*) {
         .named => |n| if (n.args.len >= 1) n.args[0] else null,
         else => null,
     };
-    return switch (kind) {
-        .future => .{ .allowsAwait = true, .iterItem = null },
-        .iterator => .{ .allowsAwait = false, .iterItem = item },
-        .asyncIterator => .{ .allowsAwait = true, .iterItem = item },
-        .none => .{ .allowsAwait = false, .iterItem = null },
+    return switch (eff) {
+        .future => .{ .allowsAwait = true, .allowsYield = false, .iterItem = null },
+        .iterator => .{ .allowsAwait = false, .allowsYield = true, .iterItem = item },
+        .generator => .{ .allowsAwait = false, .allowsYield = true, .iterItem = item },
+        .asyncGenerator => .{ .allowsAwait = true, .allowsYield = true, .iterItem = item },
+        .result, .context => null,
     };
 }
 
@@ -3883,11 +3960,12 @@ fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)),
             return TypedExpr{ .jump = .{ .loc = loc, .type_ = try env.namedType("void"), .kind = .{ .@"break" = typedPtr } } };
         },
         .await_ => |e| {
-            // `await` is only valid inside an async `*fn` (returns `@Future`/`@AsyncIterator`).
+            // `await` is only valid inside an async effect fn (`#[@future]` /
+            // `#[@asyncGenerator]`).
             if (env.starFn == null or !env.starFn.?.allowsAwait) {
                 env.lastError = TypeError.custom(
-                    "`await` can only be used inside an async `*fn`",
-                    "Mark the enclosing function `*fn` with a `@Future`/`@AsyncIterator` return type.",
+                    "`await` can only be used inside a `#[@future]` / `#[@asyncGenerator]` fn",
+                    "Mark the enclosing fn `#[@future]` (`-> @Future<…>`) or `#[@asyncGenerator]` (`-> @AsyncIterator<…>`).",
                 ).withLoc(loc);
                 return error.TypeError;
             }
@@ -3913,15 +3991,23 @@ fn inferJumpExpr(env: *Env, j: ast.MakeExpr(.untyped, ast.JumpExprOf(.untyped)),
                 if (!env.hasLabel(lbl)) {
                     env.lastError = TypeError.custom(
                         "`yield` targets an unknown label",
-                        "Label a `*fn` (`-> @Iterator<T> :name`) or a `loop :name (...)`.",
+                        "Label a generator fn (`#[@iterator] fn … -> @Iterator<T> :name`) or a `loop :name (...)`.",
                     ).withLoc(loc);
                     return error.TypeError;
                 }
             }
             const typedPtr: ?*TypedExpr = if (y.value) |expr| try makeTypedPtr(env, try inferExprTyped(env, expr.*)) else null;
-            // Inside a `*fn` generator, each yielded value unifies with the
-            // iterator item type `T` of `@Iterator<T>` / `@AsyncIterator<T, _>`.
+            // `yield` belongs to a generator effect (`#[@generator]` /
+            // `#[@iterator]` / `#[@asyncGenerator]`); a `#[@future]` body cannot
+            // yield. Each yielded value unifies with the iterator item type `T`.
             if (env.starFn) |ctx| {
+                if (!ctx.allowsYield) {
+                    env.lastError = TypeError.custom(
+                        "`yield` can only be used inside a `#[@generator]` / `#[@iterator]` / `#[@asyncGenerator]` fn",
+                        "A `#[@future]` fn awaits; mark the fn `#[@iterator]` (`-> @Iterator<T>`) to yield.",
+                    ).withLoc(loc);
+                    return error.TypeError;
+                }
                 if (ctx.iterItem) |item| {
                     if (typedPtr) |vp| try unifyAt(env, vp.getType(), item, loc);
                 }
@@ -4009,8 +4095,8 @@ fn inferLoopExpr(env: *Env, lp: ast.LoopExprOf(.untyped), loc: ast.Loc) InferErr
     if (lp.awaitLoop) {
         if (env.starFn == null or !env.starFn.?.allowsAwait) {
             env.lastError = TypeError.custom(
-                "`loop await` can only be used inside an async `*fn`",
-                "Mark the enclosing function `*fn` with a `@Future`/`@AsyncIterator` return type.",
+                "`loop await` can only be used inside a `#[@future]` / `#[@asyncGenerator]` fn",
+                "Mark the enclosing fn `#[@future]` (`-> @Future<…>`) or `#[@asyncGenerator]` (`-> @AsyncIterator<…>`).",
             ).withLoc(loc);
             return error.TypeError;
         }
@@ -5338,7 +5424,7 @@ fn inferFunctionExprExpected(env: *Env, func: ast.FunctionExprOf(.untyped), loc:
     // `await` and `yield` (item type unknown ⇒ no unification). Lambdas and plain
     // `fn` expressions clear the async context.
     env.starFn = if (fk.syntax == .fnExpr and fk.isStarFn)
-        .{ .allowsAwait = true, .iterItem = null }
+        .{ .allowsAwait = true, .allowsYield = true, .iterItem = null }
     else
         null;
 
