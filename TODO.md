@@ -10,24 +10,28 @@
 > Files: `codegen/erlang.zig`, `codegen/beam_asm.zig`, `codegen/wat.zig`.
 
 ## F0 — erlang cross-package
-- [ ] track which imported names come from which emitted module (mirror commonJS
+- [x] track which imported names come from which emitted module (mirror commonJS
       `CrossModule` index)
-- [ ] imported-record assoc fn → remote call to the owner module atom; imported
+- [x] imported-record assoc fn → remote call to the owner module atom; imported
       record construction → owner's map constructor
-- [ ] emit `-export` for `pub` types/assoc-fns imported elsewhere
+- [x] emit `-export` for `pub` types/assoc-fns imported elsewhere
 
 ## F1 — beam_asm cross-package
-- [ ] imported record construction (`put_map_assoc`) + cross-module `call_ext`
+- [x] imported record construction (`put_map_assoc`) + cross-module `call_ext`
       for associated fns
 
 ## F2 — wasm cross-package
-- [ ] decide the wasm module-linking story for imported types — or `log()` the
-      explicit limitation if wasm stays single-module for now
+- [x] wasm stays single-module: `emitWat` flags each cross-module import with an
+      explicit `;; cross-module import not linked (wasm single-module)` comment
+      instead of emitting a call to a missing function
 
 ## F3 — shared
-- [ ] lift the commonJS `CrossModule` builder to a backend-agnostic analysis if
-      it reduces duplication
+- [x] lifted the commonJS `CrossModule` builder to a backend-agnostic
+      `crossModule.zig` analysis consumed by commonJS, erlang, beam_asm and wat
 
 ## Notes
 - `new` is a JS detail; botopink source never has `new`.
-- wasm may legitimately defer — if so, record the limit and scope to erlang+beam.
+- wasm legitimately defers — limit recorded; parity scoped to erlang+beam.
+- Done in `a9e2ad2`. Test: js_features "import ---- cross-module record
+  construct and assoc fn" exercises all four backends; full `zig build test`
+  green.
