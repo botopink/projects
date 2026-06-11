@@ -1,13 +1,28 @@
 ----- SOURCE CODE -- pond.bp
 ```botopink
+val Swimmer = interface {
+    fn swim(self: Self);
+}
 pub record Pato { id: i32 }
+pub val PatoNada = implement Swimmer for Pato {
+    fn swim(self: Self) {
+        return self.id;
+    }
+}
 ```
 
 ----- ERLANG -- pond.erl
 ```erlang
 -module(pond).
 
+%% interface Swimmer
+
 %% record Pato: id
+
+%% implement Swimmer for Pato
+
+swim(Self) ->
+    maps:get(id, Self).
 ```
 
 ----- RUN LOG -----
@@ -16,15 +31,7 @@ pub record Pato { id: i32 }
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-import {Pato} from "pond";
-val Swimmer = interface {
-    fn swim(self: Self);
-}
-val PatoNada = implement Swimmer for Pato {
-    fn swim(self: Self) {
-        return self.id;
-    }
-}
+import {Pato, PatoNada*} from "pond";
 fn main() {
     val donald = Pato(2);
     @print(donald.swim());
@@ -36,14 +43,7 @@ fn main() {
 -module(main).
 -export(['_botopink_main'/0, main/1]).
 
-%% import Pato
-
-%% interface Swimmer
-
-%% implement Swimmer for Pato
-
-swim(Self) ->
-    maps:get(id, Self).
+%% import Pato, PatoNada
 
 main() ->
     Donald = #{id => 2},
@@ -58,5 +58,4 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
-2
 ```

@@ -1,12 +1,24 @@
 ----- SOURCE CODE -- pond.bp
 ```botopink
+val Swimmer = interface {
+    fn swim(self: Self);
+}
 pub record Pato { id: i32 }
+pub val PatoNada = implement Swimmer for Pato {
+    fn swim(self: Self) {
+        return self.id;
+    }
+}
 ```
 
 ----- TYPED AST JSON -- pond.json
 ```json
 {
   "declarations": [
+    {
+      "ast": "interface_def",
+      "name": "Swimmer"
+    },
     {
       "ast": "record_def",
       "name": "Pato",
@@ -22,15 +34,7 @@ pub record Pato { id: i32 }
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-import {Pato} from "pond";
-val Swimmer = interface {
-    fn swim(self: Self);
-}
-val PatoNada = implement Swimmer for Pato {
-    fn swim(self: Self) {
-        return self.id;
-    }
-}
+import {Pato, PatoNada*} from "pond";
 val donald = Pato(1);
 val splash = donald.swim();
 ```
@@ -39,10 +43,6 @@ val splash = donald.swim();
 ```json
 {
   "declarations": [
-    {
-      "ast": "interface_def",
-      "name": "Swimmer"
-    },
     {
       "ast": "val",
       "indent": "donald",

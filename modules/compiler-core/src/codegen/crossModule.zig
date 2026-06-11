@@ -117,6 +117,9 @@ pub fn build(alloc: std.mem.Allocator, outputs: []ComptimeOutput) !CrossModule {
             .@"fn" => |f| if (f.isPub)
                 try exports.put(f.name, .{ .module = ct.name, .kind = .@"fn", .is_class = false }),
             .val => |v| if (v.isPub) try exports.put(v.name, .{ .module = ct.name, .kind = .val, .is_class = false }),
+            // A `pub implement` is emitted as a namespace object; a consumer that
+            // stars it (`import { Name* }`) references it as a value (`Name.m(x)`).
+            .implement => |im| if (im.isPub) try exports.put(im.name, .{ .module = ct.name, .kind = .val, .is_class = false }),
             .use => |u| for (u.imports) |imp| try imported.put(imp.name(), {}),
             else => {},
         };

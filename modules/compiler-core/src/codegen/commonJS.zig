@@ -1204,6 +1204,9 @@ const Emitter = struct {
         }
         try self.fmt(" for {s}\n", .{im.target});
         try self.emitExtensionNamespace(im.name, im.methods);
+        // A `pub` implement consumed by another module (via `import { Name* }`)
+        // is exported so the consumer's `require` can bind it for dispatch.
+        if (im.isPub) try self.emitCrossExport(im.name);
     }
 
     /// External dispatch: an `extend T` block emitted as a namespace object.

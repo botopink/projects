@@ -494,6 +494,21 @@ pub fn registerImportedDecorator(env: *Env, name: []const u8, fn_decl: ast.FnDec
     registerDecoratorSig(env, name, fn_decl.params, fn_decl);
 }
 
+/// Register an `implement` block imported and activated from another module
+/// (`import { Name* } from "mod"`) into this module's extension table, so
+/// `obj.method()` dispatches to it. Local extensions are auto-applied
+/// ([[registerExtensions]]); imported ones are opt-in via the `*` activation —
+/// they only land here when the importer asked for them. The dispatch table makes
+/// no further local/imported distinction (every entry here is meant to resolve).
+pub fn registerImportedExtension(env: *Env, im: ast.ImplementDecl) !void {
+    try env.extensions.put(im.name, .{
+        .name = im.name,
+        .target = im.target,
+        .interfaces = im.interfaces,
+        .methods = try collectImplMethodNames(env, im.methods),
+    });
+}
+
 /// Record a decorator's trailing signature (everything after the leading
 /// `comptime _: @Decl`) so `#[name(args)]` applications can be argument-checked,
 /// plus its full `FnDecl` (when it has a body) so the body can run over each

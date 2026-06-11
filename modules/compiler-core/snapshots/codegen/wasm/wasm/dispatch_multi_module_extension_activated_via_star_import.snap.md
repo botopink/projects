@@ -1,6 +1,14 @@
 ----- SOURCE CODE -- pond.bp
 ```botopink
+val Swimmer = interface {
+    fn swim(self: Self);
+}
 pub record Pato { id: i32 }
+pub val PatoNada = implement Swimmer for Pato {
+    fn swim(self: Self) {
+        return self.id;
+    }
+}
 ```
 
 ----- WASM TEXT -- pond.wat
@@ -8,6 +16,10 @@ pub record Pato { id: i32 }
 (module
   (memory (export "memory") 1)
   (global $__heap_ptr (mut i32) (i32.const 256))
+  (func $Pato_swim (param $self i32) (result i32)
+    i32.const 0 ;; field access .id
+    return
+  )
 )
 ```
 
@@ -17,15 +29,7 @@ pub record Pato { id: i32 }
 
 ----- SOURCE CODE -- main.bp
 ```botopink
-import {Pato} from "pond";
-val Swimmer = interface {
-    fn swim(self: Self);
-}
-val PatoNada = implement Swimmer for Pato {
-    fn swim(self: Self) {
-        return self.id;
-    }
-}
+import {Pato, PatoNada*} from "pond";
 fn main() {
     val donald = Pato(2);
     @print(donald.swim());
@@ -39,17 +43,13 @@ fn main() {
   (memory (export "memory") 1)
   (global $__heap_ptr (mut i32) (i32.const 256))
   ;; cross-module import not linked (wasm single-module): Pato from pond
-  (func $Pato_swim (param $self i32) (result i32)
-    i32.const 0 ;; field access .id
-    return
-  )
+  ;; cross-module import not linked (wasm single-module): PatoNada from pond
   (func $main
     (local $donald i32)
     i32.const 2
     call $Pato
     local.set $donald
-    local.get $donald
-    call $Pato_swim
+    call $swim
     call $__print_i32
   )
   (func $_botopink_main (export "_botopink_main") (export "_start")
