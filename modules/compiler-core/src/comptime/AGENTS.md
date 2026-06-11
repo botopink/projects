@@ -185,6 +185,12 @@ on `OkData.custom_ast` (`[]CustomAstEntry`, re-exported as `root.zig`'s
 to an absolute document position via the entry's provenance. The lib's private
 sub-language AST never enters the core — this is the keystone the sub-language
 LSP (Wave 2) and the query / markup AST-producer specs (Wave 3) consume.
+Because the trees are a by-product of running the template body, a tooling
+caller must opt into expansion: `compileTypesOnly(allocator, modules, eval_ctx)`
+takes an optional `TemplateEvalCtx` (`{ io, build_root }`, re-exported on
+`comptime.zig`). With it, `@ExprCustom` bodies execute via `node` and fill
+`custom_ast`; with `null` (the legacy contract) templates stay unexpanded and no
+external runtime is touched. The LSP passes it (sublanguage-lsp).
 
 ## Annotation processors / decorators (P1 + P2)
 

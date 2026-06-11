@@ -24,6 +24,9 @@ pub const TypeError = validation.TypeError;
 pub const TypedBinding = infer.TypedBinding;
 pub const Type = T.Type;
 pub const Env_ = Env; // alias: use `comptimeMod.Env` in callers
+/// What `compileTypesOnly`'s opt-in template evaluator needs (`{ io, build_root }`).
+/// Re-exported so tooling (the LSP) builds it without importing comptime internals.
+pub const TemplateEvalCtx = envMod.TemplateEvalCtx;
 
 // ── Intermediate types ────────────────────────────────────────────────────────
 
@@ -38,6 +41,11 @@ pub const ComptimeEvalResult = struct {
 /// `q.custom` — re-exported so tooling consumers (the language server) read the
 /// generic shape without depending on the comptime internals. expr-custom.
 pub const CustomNode = template.CustomNode;
+
+/// A `CustomNode.ref` — the origin-scope symbol (`{ name, kind }`) a sub-language
+/// node binds to (a `q.lookup` result). Re-exported so tooling resolves
+/// hover/go-to-definition through it. expr-custom / sublanguage-lsp.
+pub const NodeBinding = template.NodeBinding;
 
 /// One `@ExprCustom` reference-AST entry surfaced to tooling: the call site, the
 /// template callee, the canonical `CustomNode` root, and the provenance
@@ -664,15 +672,25 @@ pub fn evaluateComptime(
 
 // ── LSP entry point: type inference only ─────────────────────────────────────
 
-/// Lex, parse, and infer types for each module **without** evaluating comptime
-/// expressions. Intended for tooling (LSP, linters) where spawning an external
-/// runtime is undesirable.
+/// Lex, parse, and infer types for each module **without** evaluating the
+/// ordinary comptime entries (`comptime_script`/`comptime_vals` stay empty).
+/// Intended for tooling (LSP, linters).
+///
+/// `eval_ctx` is opt-in: when null, template functions whose bodies need the
+/// node-backed evaluator are left unexpanded (the original types-only contract,
+/// no external runtime). When supplied (`{ io, build_root }`), template bodies
+/// are expanded exactly as the full `compile` pipeline does — the LSP passes it
+/// so `@ExprCustom` templates run and surface their `CustomNode` trees on
+/// `OkData.custom_ast` (sublanguage-lsp). Spawning `node` per compile is the
+/// documented latency cost; callers that must not touch the filesystem/runtime
+/// pass null.
 ///
 /// Returns a `ComptimeSession` whose outputs always have `.ok.comptime_script = null`
 /// and `.ok.comptime_vals` empty. Caller must call `session.deinit(allocator)`.
 pub fn compileTypesOnly(
     allocator: std.mem.Allocator,
     modules: []const Module,
+    eval_ctx: ?envMod.TemplateEvalCtx,
 ) !ComptimeSession {
     var session = ComptimeSession{
         .arena = std.heap.ArenaAllocator.init(allocator),
@@ -694,7 +712,7 @@ pub fn compileTypesOnly(
 
     for (all_modules, 0..) |mod, idx| {
         const name: []const u8 = if (mod.path.len > 0) mod.path else "main";
-        const analysis = try analyzeModule(arena_alloc, mod, &registry, &type_decl_registry, &template_registry, &decorator_registry, null);
+        const analysis = try analyzeModule(arena_alloc, mod, &registry, &type_decl_registry, &template_registry, &decorator_registry, eval_ctx);
 
         switch (analysis) {
             .parseError => {

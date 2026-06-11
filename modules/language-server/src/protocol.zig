@@ -239,11 +239,19 @@ pub const SemanticTokenTypes = struct {
     pub const property: u32 = 8;
     pub const keyword: u32 = 9;
     pub const comment: u32 = 10;
+    // Indices 11–13 carry sub-language (`@ExprCustom`) `CustomNode.label`s that
+    // have no first-class botopink token — `string`/`number`/`operator` content
+    // inside an embedded query/markup literal (sublanguage-lsp). Appended after
+    // `comment` so the existing indices above never shift.
+    pub const string: u32 = 11;
+    pub const number: u32 = 12;
+    pub const operator: u32 = 13;
 
     /// Legend, in index order — advertised in `SemanticTokensLegend.tokenTypes`.
     pub const legend = [_][]const u8{
         "type",      "interface", "enum",     "enumMember", "function", "method",
-        "parameter", "variable",  "property", "keyword",    "comment",
+        "parameter", "variable",  "property", "keyword",    "comment",  "string",
+        "number",    "operator",
     };
 };
 

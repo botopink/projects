@@ -407,6 +407,9 @@ fn semTokenTypeName(idx: u32) []const u8 {
         proto.SemanticTokenTypes.property => "property",
         proto.SemanticTokenTypes.keyword => "keyword",
         proto.SemanticTokenTypes.comment => "comment",
+        proto.SemanticTokenTypes.string => "string",
+        proto.SemanticTokenTypes.number => "number",
+        proto.SemanticTokenTypes.operator => "operator",
         else => "?",
     };
 }

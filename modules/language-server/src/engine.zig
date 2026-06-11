@@ -32,9 +32,9 @@ pub fn diagnose(
     io: std.Io,
     uri: []const u8,
     source: []const u8,
+    eval_root: ?[]const u8,
 ) !DiagnosticsResult {
-    _ = io;
-    var lsp_compiler = compiler_mod.LspCompiler.init(gpa);
+    var lsp_compiler = compiler_mod.LspCompiler.init(gpa, io, eval_root);
     const entries = [_]compiler_mod.ModuleEntry{.{ .uri = uri, .source = source }};
 
     var result = try lsp_compiler.compile(&entries);
@@ -114,110 +114,7 @@ pub fn hover(
     const name = identAt(source, pos) orelse return null;
 
     for (bindings) |b| {
-        if (!std.mem.eql(u8, b.name, name)) continue;
-
-        var buf: std.ArrayList(u8) = .empty;
-        errdefer buf.deinit(gpa);
-
-        try buf.appendSlice(gpa, "```botopink\n");
-
-        switch (b.decl) {
-            .@"fn" => |f| {
-                if (f.isPub) try buf.appendSlice(gpa, "pub ");
-                // `*fn` marks an async / generator function.
-                try buf.appendSlice(gpa, if (f.isStarFn) "*fn " else "fn ");
-                try buf.appendSlice(gpa, b.name);
-                try buf.append(gpa, '(');
-                for (f.params, 0..) |p, pi| {
-                    if (pi > 0) try buf.appendSlice(gpa, ", ");
-                    try buf.appendSlice(gpa, p.name);
-                    try buf.appendSlice(gpa, ": ");
-                    try appendTypeRef(gpa, &buf, p.typeRef);
-                }
-                try buf.append(gpa, ')');
-                if (f.returnType) |rt| {
-                    try buf.appendSlice(gpa, " -> ");
-                    try appendTypeRef(gpa, &buf, rt);
-                }
-                if (f.label) |lbl| {
-                    try buf.appendSlice(gpa, " :");
-                    try buf.appendSlice(gpa, lbl);
-                }
-            },
-            .val => {
-                const type_str = try renderType(gpa, b.type_);
-                defer gpa.free(type_str);
-                try buf.appendSlice(gpa, "val ");
-                try buf.appendSlice(gpa, b.name);
-                try buf.appendSlice(gpa, " : ");
-                try buf.appendSlice(gpa, type_str);
-            },
-            .record => |r| {
-                if (r.isPub) try buf.appendSlice(gpa, "pub ");
-                try buf.appendSlice(gpa, "record ");
-                try buf.appendSlice(gpa, b.name);
-                try buf.appendSlice(gpa, " { ");
-                for (r.fields, 0..) |field, fi| {
-                    if (fi > 0) try buf.appendSlice(gpa, ", ");
-                    try buf.appendSlice(gpa, field.name);
-                    try buf.appendSlice(gpa, ": ");
-                    try appendTypeRef(gpa, &buf, field.typeRef);
-                }
-                try buf.appendSlice(gpa, " }");
-            },
-            .@"struct" => |s| {
-                if (s.isPub) try buf.appendSlice(gpa, "pub ");
-                try buf.appendSlice(gpa, "struct ");
-                try buf.appendSlice(gpa, b.name);
-            },
-            .@"enum" => |e| {
-                if (e.isPub) try buf.appendSlice(gpa, "pub ");
-                try buf.appendSlice(gpa, "enum ");
-                try buf.appendSlice(gpa, b.name);
-                try buf.appendSlice(gpa, " { ");
-                for (e.variants, 0..) |v, vi| {
-                    if (vi > 0) try buf.appendSlice(gpa, ", ");
-                    try buf.appendSlice(gpa, v.name);
-                    if (v.fields.len > 0) try buf.appendSlice(gpa, "(...)");
-                }
-                try buf.appendSlice(gpa, " }");
-            },
-            .interface => {
-                try buf.appendSlice(gpa, "interface ");
-                try buf.appendSlice(gpa, b.name);
-            },
-            else => {
-                const type_str = try renderType(gpa, b.type_);
-                defer gpa.free(type_str);
-                try buf.appendSlice(gpa, b.name);
-                try buf.appendSlice(gpa, " : ");
-                try buf.appendSlice(gpa, type_str);
-            },
-        }
-
-        try buf.appendSlice(gpa, "\n```");
-
-        // For a `*fn`, surface the unwrapped element type produced by
-        // `await` / `yield` / iteration (the `T` of `@Future<T>` /
-        // `@Iterator<T>` / `@AsyncIterator<T, _>`).
-        if (b.decl == .@"fn" and b.decl.@"fn".isStarFn) {
-            if (b.decl.@"fn".returnType) |rt| {
-                if (asyncItemTypeRef(rt)) |item| {
-                    try buf.appendSlice(gpa, "\n\n---\n\n`await`/`yield` element type: `");
-                    try appendTypeRef(gpa, &buf, item);
-                    try buf.appendSlice(gpa, "`");
-                }
-            }
-        }
-
-        // Append doc comment if available.
-        const doc = getDeclDocComment(b.decl);
-        if (doc) |d| {
-            try buf.appendSlice(gpa, "\n\n---\n\n");
-            try buf.appendSlice(gpa, d);
-        }
-
-        return .{ .contents = .{ .kind = proto.MarkupKind.Markdown, .value = try buf.toOwnedSlice(gpa) } };
+        if (std.mem.eql(u8, b.name, name)) return try renderBindingHover(gpa, b);
     }
 
     // Not a local binding — try a qualified std module member (`list.map`).
@@ -227,6 +124,114 @@ pub fn hover(
     if (try hoverBuiltinInterfaceMethod(gpa, source, pos, bindings)) |h| return h;
 
     return null;
+}
+
+/// Renders the markdown hover card for a resolved top-level binding. Shared by
+/// `hover` (cursor on a botopink symbol) and `hoverCustomRef` (cursor on a
+/// sub-language node whose `ref` resolves to this binding).
+fn renderBindingHover(gpa: std.mem.Allocator, b: comptime_pipeline.TypedBinding) !proto.Hover {
+    var buf: std.ArrayList(u8) = .empty;
+    errdefer buf.deinit(gpa);
+
+    try buf.appendSlice(gpa, "```botopink\n");
+
+    switch (b.decl) {
+        .@"fn" => |f| {
+            if (f.isPub) try buf.appendSlice(gpa, "pub ");
+            // `*fn` marks an async / generator function.
+            try buf.appendSlice(gpa, if (f.isStarFn) "*fn " else "fn ");
+            try buf.appendSlice(gpa, b.name);
+            try buf.append(gpa, '(');
+            for (f.params, 0..) |p, pi| {
+                if (pi > 0) try buf.appendSlice(gpa, ", ");
+                try buf.appendSlice(gpa, p.name);
+                try buf.appendSlice(gpa, ": ");
+                try appendTypeRef(gpa, &buf, p.typeRef);
+            }
+            try buf.append(gpa, ')');
+            if (f.returnType) |rt| {
+                try buf.appendSlice(gpa, " -> ");
+                try appendTypeRef(gpa, &buf, rt);
+            }
+            if (f.label) |lbl| {
+                try buf.appendSlice(gpa, " :");
+                try buf.appendSlice(gpa, lbl);
+            }
+        },
+        .val => {
+            const type_str = try renderType(gpa, b.type_);
+            defer gpa.free(type_str);
+            try buf.appendSlice(gpa, "val ");
+            try buf.appendSlice(gpa, b.name);
+            try buf.appendSlice(gpa, " : ");
+            try buf.appendSlice(gpa, type_str);
+        },
+        .record => |r| {
+            if (r.isPub) try buf.appendSlice(gpa, "pub ");
+            try buf.appendSlice(gpa, "record ");
+            try buf.appendSlice(gpa, b.name);
+            try buf.appendSlice(gpa, " { ");
+            for (r.fields, 0..) |field, fi| {
+                if (fi > 0) try buf.appendSlice(gpa, ", ");
+                try buf.appendSlice(gpa, field.name);
+                try buf.appendSlice(gpa, ": ");
+                try appendTypeRef(gpa, &buf, field.typeRef);
+            }
+            try buf.appendSlice(gpa, " }");
+        },
+        .@"struct" => |s| {
+            if (s.isPub) try buf.appendSlice(gpa, "pub ");
+            try buf.appendSlice(gpa, "struct ");
+            try buf.appendSlice(gpa, b.name);
+        },
+        .@"enum" => |e| {
+            if (e.isPub) try buf.appendSlice(gpa, "pub ");
+            try buf.appendSlice(gpa, "enum ");
+            try buf.appendSlice(gpa, b.name);
+            try buf.appendSlice(gpa, " { ");
+            for (e.variants, 0..) |v, vi| {
+                if (vi > 0) try buf.appendSlice(gpa, ", ");
+                try buf.appendSlice(gpa, v.name);
+                if (v.fields.len > 0) try buf.appendSlice(gpa, "(...)");
+            }
+            try buf.appendSlice(gpa, " }");
+        },
+        .interface => {
+            try buf.appendSlice(gpa, "interface ");
+            try buf.appendSlice(gpa, b.name);
+        },
+        else => {
+            const type_str = try renderType(gpa, b.type_);
+            defer gpa.free(type_str);
+            try buf.appendSlice(gpa, b.name);
+            try buf.appendSlice(gpa, " : ");
+            try buf.appendSlice(gpa, type_str);
+        },
+    }
+
+    try buf.appendSlice(gpa, "\n```");
+
+    // For a `*fn`, surface the unwrapped element type produced by
+    // `await` / `yield` / iteration (the `T` of `@Future<T>` /
+    // `@Iterator<T>` / `@AsyncIterator<T, _>`).
+    if (b.decl == .@"fn" and b.decl.@"fn".isStarFn) {
+        if (b.decl.@"fn".returnType) |rt| {
+            if (asyncItemTypeRef(rt)) |item| {
+                try buf.appendSlice(gpa, "\n\n---\n\n`await`/`yield` element type: `");
+                try appendTypeRef(gpa, &buf, item);
+                try buf.appendSlice(gpa, "`");
+            }
+        }
+    }
+
+    // Append doc comment if available.
+    const doc = getDeclDocComment(b.decl);
+    if (doc) |d| {
+        try buf.appendSlice(gpa, "\n\n---\n\n");
+        try buf.appendSlice(gpa, d);
+    }
+
+    return .{ .contents = .{ .kind = proto.MarkupKind.Markdown, .value = try buf.toOwnedSlice(gpa) } };
 }
 
 /// Hover for `list.map` / `io.println` where the qualifier is a module
@@ -2476,6 +2481,198 @@ fn emitSem(arena: std.mem.Allocator, out: *std.ArrayList(SemToken), tok: Token, 
     });
 }
 
+// ── sub-language (Custom AST) overlay ─────────────────────────────────────────
+//
+// A sub-language template (`@ExprCustom`, e.g. `erika "select … from …"`)
+// produces a generic `CustomNode` tree per call site (`compiler.zig`'s
+// `customAstFor`). The LSP knows only `CustomNode`: it maps `node.label` to a
+// semantic-token type and `node.span` (a byte offset into the template text) to
+// an absolute document range. No sub-language is named here — any lib returning
+// `@ExprCustom` lights up for free (sublanguage-lsp).
+
+const CustomNode = comptime_pipeline.CustomNode;
+pub const CustomAstEntry = compiler_mod.CustomAstEntry;
+
+/// Byte offset in `source` where a custom template literal's content begins —
+/// the anchor that `CustomNode.span` offsets are relative to (`span == 0` is the
+/// first content byte). The provenance `entry.line`/`entry.col` (1-based) point
+/// at the opening quote; content starts after the delimiter: `"""` for a
+/// triple-quoted literal (whose captured text keeps the leading `\n`), else the
+/// single `"`. Returns null when the position is not a string literal in
+/// `source` (stale provenance, holed template, …).
+fn customContentStart(source: []const u8, entry: CustomAstEntry) ?usize {
+    if (entry.line == 0 or entry.col == 0) return null;
+    const quote = lsp_types.positionToOffset(source, .{
+        .line = @intCast(entry.line - 1),
+        .character = @intCast(entry.col - 1),
+    });
+    if (quote >= source.len or source[quote] != '"') return null;
+    const triple = quote + 3 <= source.len and std.mem.eql(u8, source[quote .. quote + 3], "\"\"\"");
+    return quote + (if (triple) @as(usize, 3) else @as(usize, 1));
+}
+
+/// Maps a sub-language `CustomNode.label` to a semantic-token legend index.
+/// Generic: `label` is the lib's opaque category; only labels the legend can
+/// render map — anything else returns null and the range stays the opaque
+/// `string` token. Public so hover/definition share the same mapping.
+pub fn customLabelToken(label: []const u8) ?u32 {
+    const ST = proto.SemanticTokenTypes;
+    const pairs = .{
+        .{ "keyword", ST.keyword },
+        .{ "property", ST.property },
+        .{ "string", ST.string },
+        .{ "number", ST.number },
+        .{ "operator", ST.operator },
+        .{ "variable", ST.variable },
+        .{ "function", ST.function },
+        .{ "type", ST.type_ },
+        .{ "parameter", ST.parameter },
+        .{ "enumMember", ST.enumMember },
+        .{ "method", ST.method },
+    };
+    inline for (pairs) |p| {
+        if (std.mem.eql(u8, label, p[0])) return p[1];
+    }
+    return null;
+}
+
+fn appendCustomNode(
+    arena: std.mem.Allocator,
+    out: *std.ArrayList(SemToken),
+    source: []const u8,
+    content_start: usize,
+    node: CustomNode,
+) !void {
+    if (customLabelToken(node.label)) |type_idx| {
+        const abs_start = content_start + node.span.start;
+        const abs_end = content_start + node.span.end;
+        // Skip empty/out-of-range spans and any node whose text crosses a line —
+        // delta-encoding is per-line and a sub-language token is a single word.
+        if (abs_start < abs_end and abs_end <= source.len and
+            std.mem.indexOfScalar(u8, source[abs_start..abs_end], '\n') == null)
+        {
+            const p = lsp_types.offsetToPosition(source, abs_start);
+            try out.append(arena, .{
+                .line = p.line,
+                .start = p.character,
+                .len = @intCast(abs_end - abs_start),
+                .type_idx = type_idx,
+                .mods = 0,
+            });
+        }
+    }
+    for (node.children) |child| try appendCustomNode(arena, out, source, content_start, child);
+}
+
+/// Semantic tokens for every `CustomNode` across all sub-language sites in
+/// `source` (F0/F1). Unsorted relative to the lexer tokens — merge with
+/// `mergeSemanticTokens` before delta-encoding.
+pub fn customSemanticTokens(
+    arena: std.mem.Allocator,
+    source: []const u8,
+    entries: []const CustomAstEntry,
+) ![]SemToken {
+    var out: std.ArrayList(SemToken) = .empty;
+    for (entries) |entry| {
+        const content_start = customContentStart(source, entry) orelse continue;
+        try appendCustomNode(arena, &out, source, content_start, entry.root);
+    }
+    return out.toOwnedSlice(arena);
+}
+
+fn semTokenLess(_: void, x: SemToken, y: SemToken) bool {
+    if (x.line != y.line) return x.line < y.line;
+    return x.start < y.start;
+}
+
+/// Concatenate the lexer tokens and the sub-language overlay, then sort by
+/// (line, start) so the combined stream satisfies the delta-encoder's
+/// sorted-order contract. Sub-language tokens sit inside string literals, where
+/// the lexer pass emits nothing, so the two never collide on a range.
+pub fn mergeSemanticTokens(
+    arena: std.mem.Allocator,
+    base: []const SemToken,
+    overlay: []const SemToken,
+) ![]SemToken {
+    if (overlay.len == 0) return @constCast(base);
+    const merged = try arena.alloc(SemToken, base.len + overlay.len);
+    @memcpy(merged[0..base.len], base);
+    @memcpy(merged[base.len..], overlay);
+    std.mem.sort(SemToken, merged, {}, semTokenLess);
+    return merged;
+}
+
+// ── sub-language associations: hover + go-to-definition (F3) ──────────────────
+//
+// A `CustomNode` may carry `ref` — the caller-scope symbol the sub-language
+// bound the node to (e.g. a SQL column tied to the `Users` struct via
+// `q.lookup`). When the cursor sits on such a node inside the string literal, we
+// resolve `ref.name` against the ordinary botopink symbol table, so hover and
+// go-to-definition behave exactly as they would on the source identifier — the
+// LSP never learns SQL/HTML, only `CustomNode.ref`.
+
+/// Depth-first search for the deepest `CustomNode` whose absolute span covers
+/// `off`, returning its `ref.name`. The deepest match wins so a leaf (column)
+/// beats its container (table). Null when `off` is not on a ref-carrying node.
+fn refNameAtOffset(content_start: usize, node: CustomNode, off: usize) ?[]const u8 {
+    for (node.children) |child| {
+        if (refNameAtOffset(content_start, child, off)) |r| return r;
+    }
+    const abs_start = content_start + node.span.start;
+    const abs_end = content_start + node.span.end;
+    if (node.ref) |r| {
+        if (abs_start <= off and off < abs_end) return r.name;
+    }
+    return null;
+}
+
+/// The bound symbol name of the sub-language `CustomNode` under `pos`, across
+/// every `@ExprCustom` site in `source`. Drives hover / go-to-definition inside
+/// a sub-language literal; null when the cursor is not on a ref-carrying node.
+pub fn customRefNameAt(
+    source: []const u8,
+    pos: proto.Position,
+    entries: []const CustomAstEntry,
+) ?[]const u8 {
+    const off = lsp_types.positionToOffset(source, pos);
+    for (entries) |entry| {
+        const content_start = customContentStart(source, entry) orelse continue;
+        if (refNameAtOffset(content_start, entry.root, off)) |r| return r;
+    }
+    return null;
+}
+
+/// Hover for a sub-language node bound to a caller-scope symbol: renders the
+/// same card the bound binding would show on its own declaration (F3).
+pub fn hoverCustomRef(
+    gpa: std.mem.Allocator,
+    source: []const u8,
+    pos: proto.Position,
+    bindings: []const comptime_pipeline.TypedBinding,
+    entries: []const CustomAstEntry,
+) !?proto.Hover {
+    const name = customRefNameAt(source, pos, entries) orelse return null;
+    for (bindings) |b| {
+        if (std.mem.eql(u8, b.name, name)) return try renderBindingHover(gpa, b);
+    }
+    return null;
+}
+
+/// Go-to-definition for a sub-language node bound to a caller-scope symbol:
+/// jumps to the declaration of `ref.name` in the current file (F3). Returns a
+/// `Location` whose `uri` is owned by the caller.
+pub fn definitionCustomRef(
+    gpa: std.mem.Allocator,
+    uri: []const u8,
+    source: []const u8,
+    pos: proto.Position,
+    tokens: []const Token,
+    entries: []const CustomAstEntry,
+) !?proto.Location {
+    const name = customRefNameAt(source, pos, entries) orelse return null;
+    return findDeclLocation(gpa, uri, name, tokens, false);
+}
+
 /// Maps a top-level binding's declaration kind to a semantic token type.
 fn lookupCategory(bindings: []const comptime_pipeline.TypedBinding, name: []const u8) ?u32 {
     for (bindings) |b| {
@@ -3214,7 +3411,7 @@ fn appendDeclMembers(
 /// Returns true if `offset` (byte index into `source`) falls inside a
 /// double-quoted string literal.  Handles `\"` escapes; strings cannot span
 /// newlines so a bare `\n` also closes an open string.
-fn cursorInString(source: []const u8, offset: usize) bool {
+pub fn cursorInString(source: []const u8, offset: usize) bool {
     var in_string = false;
     var i: usize = 0;
     while (i < offset) {

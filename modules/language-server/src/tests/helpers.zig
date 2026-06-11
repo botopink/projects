@@ -27,8 +27,27 @@ pub fn range(sl: u32, sc: u32, el: u32, ec: u32) proto.Range {
 }
 
 /// Compila `source` (módulo único) e devolve um handle que o chamador deve `.deinit(gpa)`.
+/// Sem eval context — corpos de template não são expandidos (types-only puro).
 pub fn compile(gpa: std.mem.Allocator, source: []const u8) !CompileHandle {
-    var lsp_compiler = compiler_mod.LspCompiler.init(gpa);
+    var lsp_compiler = compiler_mod.LspCompiler.init(gpa, std.testing.io, null);
+    const entries = [_]compiler_mod.ModuleEntry{.{ .uri = TEST_URI, .source = source }};
+    const result = try lsp_compiler.compile(&entries);
+    return .{ .result = result };
+}
+
+/// Counter for unique per-test template-eval scratch dirs — tests run in
+/// parallel, so a shared `node` build root would race on deleteTree/writeFile.
+var eval_counter: std.atomic.Value(usize) = .init(0);
+
+/// Compila `source` expandindo corpos de template via `node` (necessário para
+/// que sub-linguagens `@ExprCustom` produzam suas árvores `CustomNode`). Usa um
+/// build root único por chamada para evitar corrida entre testes paralelos.
+/// O `root` só é usado durante a compilação, então é liberado ao retornar.
+pub fn compileEval(gpa: std.mem.Allocator, source: []const u8) !CompileHandle {
+    const n = eval_counter.fetchAdd(1, .monotonic);
+    const root = try std.fmt.allocPrint(gpa, ".botopinkbuild/lsp-test/{d}", .{n});
+    defer gpa.free(root);
+    var lsp_compiler = compiler_mod.LspCompiler.init(gpa, std.testing.io, root);
     const entries = [_]compiler_mod.ModuleEntry{.{ .uri = TEST_URI, .source = source }};
     const result = try lsp_compiler.compile(&entries);
     return .{ .result = result };
@@ -55,7 +74,7 @@ pub fn compileMulti(
     gpa: std.mem.Allocator,
     entries: []const compiler_mod.ModuleEntry,
 ) !CompileHandle {
-    var lsp_compiler = compiler_mod.LspCompiler.init(gpa);
+    var lsp_compiler = compiler_mod.LspCompiler.init(gpa, std.testing.io, null);
     const result = try lsp_compiler.compile(entries);
     return .{ .result = result };
 }
@@ -73,6 +92,11 @@ pub const CompileHandle = struct {
             if (output.outcome == .ok) return output.outcome.ok.bindings;
         }
         return null;
+    }
+
+    /// Entradas de Custom AST (`@ExprCustom`) do módulo principal.
+    pub fn customAst(self: *const CompileHandle) []const compiler_mod.CustomAstEntry {
+        return self.result.customAstFor(TEST_URI);
     }
 
     /// true se o módulo compilou sem erros.

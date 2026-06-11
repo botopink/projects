@@ -10,15 +10,27 @@ const lsp_types = @import("./lsp_types.zig");
 const Module = bp.Module;
 const comptime_pipeline = bp.comptime_pipeline;
 
+/// Re-export so the LSP can build the template-eval context without reaching
+/// into compiler-core internals.
+pub const TemplateEvalCtx = comptime_pipeline.TemplateEvalCtx;
+
 pub const LspCompiler = struct {
     gpa: std.mem.Allocator,
+    io: std.Io,
+    /// Scratch root for the node-backed template evaluator. When non-null,
+    /// `@ExprCustom` (and any runtime-evaluated) template bodies are expanded so
+    /// their `CustomNode` trees reach `OkData.custom_ast` (sublanguage-lsp). Null
+    /// keeps the pure types-only path — no `node`, no filesystem writes.
+    eval_root: ?[]const u8,
 
-    pub fn init(gpa: std.mem.Allocator) LspCompiler {
-        return .{ .gpa = gpa };
+    pub fn init(gpa: std.mem.Allocator, io: std.Io, eval_root: ?[]const u8) LspCompiler {
+        return .{ .gpa = gpa, .io = io, .eval_root = eval_root };
     }
 
     /// Compila uma lista de módulos (source já em memória) usando apenas
-    /// inferência de tipos — sem avaliar expressões comptime.
+    /// inferência de tipos. Quando `eval_root` foi fornecido, os corpos de
+    /// template (incl. `@ExprCustom`) são expandidos via `node` para que suas
+    /// árvores `CustomNode` cheguem em `custom_ast`.
     /// O chamador deve chamar `result.deinit(gpa)` quando terminar.
     pub fn compile(
         self: *LspCompiler,
@@ -34,7 +46,11 @@ pub const LspCompiler = struct {
             };
         }
 
-        const session = try comptime_pipeline.compileTypesOnly(self.gpa, mods);
+        const eval_ctx: ?TemplateEvalCtx = if (self.eval_root) |root|
+            .{ .io = self.io, .build_root = root }
+        else
+            null;
+        const session = try comptime_pipeline.compileTypesOnly(self.gpa, mods, eval_ctx);
         return .{ .session = session, .modules = modules };
     }
 };
@@ -45,6 +61,10 @@ pub const ModuleEntry = struct {
     source: []const u8,
 };
 
+/// Re-export: one `@ExprCustom` reference-AST entry (`{ loc, callee, root, file,
+/// line, col }`) surfaced by a sub-language template (sublanguage-lsp).
+pub const CustomAstEntry = comptime_pipeline.CustomAstEntry;
+
 /// Resultado de uma sessão de compilação.
 pub const CompileResult = struct {
     session: comptime_pipeline.ComptimeSession,
@@ -52,6 +72,18 @@ pub const CompileResult = struct {
 
     pub fn deinit(self: *CompileResult, gpa: std.mem.Allocator) void {
         self.session.deinit(gpa);
+    }
+
+    /// The `@ExprCustom` reference trees a sub-language produced for `uri`'s
+    /// document (one per `q.custom` call site). Empty when the module errored,
+    /// has no custom templates, or the compiler ran without an eval context.
+    pub fn customAstFor(self: *const CompileResult, uri: []const u8) []const CustomAstEntry {
+        const path = lsp_types.uriToPath(uri);
+        for (self.session.outputs.items) |output| {
+            if (!std.mem.eql(u8, output.name, path)) continue;
+            if (output.outcome == .ok) return output.outcome.ok.custom_ast;
+        }
+        return &.{};
     }
 
     /// Retorna diagnósticos LSP para o URI dado.
