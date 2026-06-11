@@ -1,55 +1,45 @@
-# TODO — lib-test-runner  (tooling · Wave 1)
+# TODO — sublanguage-vscode  (vscode · Wave 2 of 3)
 
-> Task branch `task/lib-test-runner` · spec
-> [`tasks/v0.beta.9/specs/lib-test-runner.md`](tasks/v0.beta.9/specs/lib-test-runner.md).
+> Task branch `task/sublanguage-vscode` · spec
+> [`tasks/v0.beta.10/specs/sublanguage-vscode.md`](tasks/v0.beta.10/specs/sublanguage-vscode.md).
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
-> **Depends on: nothing.** A new `modules/` Zig module — fully self-contained. Start now.
+> **Depends on:** `sublanguage-lsp` at **runtime** (consumes its semantic tokens) —
+> author this last and verify against a running `botopink-lsp`. The highlight is
+> comptime-driven from the LSP; VSCode is a pure renderer (no SQL/HTML grammar).
 
-> Orchestration only — shells out to the existing `botopink test`; no compiler internals.
+## F0 — don't swallow the string interior as one opaque scope
+- [x] **Chose option (a):** keep the `string.quoted` scopes and let the LSP's
+      semantic tokens override the interior per-range. `package.json` forces
+      `editor.semanticHighlighting.enabled: true` for `[botopink]`, so semantic
+      tokens win across *every* theme (not just the default dark/light ones that
+      opt in). A plain string carries no semantic tokens → stays `string`-coloured
+      (F2 "unchanged"). Decision documented in the `strings` repository comment.
+      Option (b) was rejected: a neutral interior scope would de-colour plain
+      strings too, since the grammar can't tell sub-language strings apart.
 
-## F0 — the module skeleton
-- [x] `modules/lib-test-runner/` with `build.zig` + `build.zig.zon` (mirror compiler-cli);
-      `AGENTS.md` linked from `modules/AGENTS.md` (tree + table row).
-- [x] Workspace `build.zig`: `addExecutable` (`botopink-lib-test`) + `installArtifact` +
-      a **`zig build test-libs`** step (depends on the `botopink` install, `setCwd(".")`,
-      forwards `b.args`).
+## F1 — semantic token type mapping
+- [x] Added `contributes.semanticTokenScopes` in `package.json` mapping each
+      sub-language token type (keyword/property/string/number/operator) to fallback
+      TextMate scopes, so themes that don't directly style the semantic type still
+      colour it. `extension.ts` unchanged — `vscode-languageclient` auto-registers
+      the semantic-tokens feature once the server advertises the provider.
 
-## F1 — discovery
-- [x] Enumerate `libs/*/` with a `botopink.json`; `--lib` filter; "has tests" =
-      `test/*.bp` or a `src/**/*.bp` `test` block. No-tests lib → green skip (`–`).
+## F2 — verify end-to-end in the editor
+- [~] **Gated on `sublanguage-lsp`** (runtime dependency). The LSP does not yet
+      emit semantic tokens for string interiors / sub-language content
+      (`language-server/src/engine.zig` `semanticTokens()` skips string literals;
+      legend in `protocol.zig` lacks `string`/`number`/`operator`). The renderer
+      side is complete and correct; live `erika "select …"` verification must be
+      done once `sublanguage-lsp` lands its F0–F4. The manifest is ready for it.
 
-## F2 — fan-out + per-cell run
-- [x] For each `(lib, target)`: spawn `botopink test --target <t> [--filter …]` with
-      `cwd = libs/<lib>`, capture+re-emit stdio, capture exit code. Locate
-      `zig-out/bin/botopink` (`--bin`/`BOTOPINK_BIN` override allowed; PATH fallback).
-- [x] Unsupported target (beam/wasm today) → `~ skipped-unsupported` unless `--strict`.
-      Detection is child-output-driven (`"currently supports only"`), not a hard-coded list.
-- [x] CLI: `--target <t>[,<t>]|all` (accept `node`→commonJS alias + `--target=X`), `--lib`,
-      `--filter`, `--strict`. Default targets `commonJS,erlang`.
-
-## F3 — aggregation + exit code
-- [x] Print a lib×target matrix (`✓`/`✗`/`–`/`~`) + summary.
-- [x] **Exit non-zero iff any cell is `✗`** — a red `.bp` test fails `zig build test-libs`.
-      (core acceptance criterion)
-
-## F4 — wire it in
-- [x] Document `zig build test-libs` in `modules/AGENTS.md` + root `AGENTS.md`. Do **not**
-      add to default `zig build test` (needs node/escript on PATH).
+## F3 — optional static fallback (follow-up, not blocking)
+- [ ] **Optional (follow-up, omitted):** a prefix-keyed TextMate injection would
+      fight the semantic tokens and can never know the real fields/bindings — left
+      out deliberately; the comptime-driven LSP path is the source of truth.
 
 ## Done gate
-- [~] `zig build test-libs` green across all libs (commonJS+erlang). commonJS: all green;
-      std passes both backends. **erlang still reds for erika/jhonstart/onze/rakun** —
-      not one bug but a *cluster* of pre-existing erlang-codegen gaps; the runner
-      correctly surfaces them as `✗` (the gate working). While investigating, two
-      *general* `erlang.zig` fixes landed here (gate green, 3 broken erlang snapshots
-      corrected):
-        1. reserved-word atom quoting — a fn named `of`/`div` is now `'of'`/`'div'`
-           at def/export/call (was invalid bare-atom erlang).
-        2. trailing-comment dangling comma — a final `// comment` stmt no longer
-           strands a `,` before `end` (`emitBodyFrom` keys off the last *real* stmt).
-      Remaining tail is real stdlib-backends-parity scope: erika (unbound module `val`,
-      missing `toString/1`), jhonstart (empty `fun -> end` body), rakun (`@emit`-generated
-      erlang), and **onze (`MissingExternalTarget` — node-only mock lib, architecturally
-      not erlang-compilable without an erlang mock runtime).**
-- [x] a deliberately-failing lib test → matrix `✗`, exit != 0 (verified: 4 erlang reds).
-- [x] arg-parsing + discovery + matrix have Zig tests; `zig build && zig build test` green.
+- [~] `erika "…"` highlighted by LSP semantic tokens / squiggle / unchanged plain
+      string / survives theme switches — **renderer ready, blocked on
+      `sublanguage-lsp`** for the live editor check (see F2).
+- [ ] `zig build && zig build test` green (pre-commit; extension edits are
+      JSON/Markdown only and don't touch Zig).
