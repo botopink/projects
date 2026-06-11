@@ -89,3 +89,37 @@ test "onze: thenThrow raises when the call is matched" {
     // A non-matching call still returns the default rather than raising.
     assert svc.name(5) == "";
 }
+
+// ── B3 net-new ───────────────────────────────────────────────────────────────
+
+test "onze: verify checks each matcher independently after different-arg calls" {
+    val repo = mockUserRepo();
+    val _s = when(repo.find(anyInt())).thenReturn("x");
+    val svc = UserService(repo: repo);
+    val _1 = svc.name(7);
+    val _2 = svc.name(7);
+    val _3 = svc.name(9);
+    // Each verify matcher is checked independently against the call log:
+    // find(7) twice, find(9) once, find(99) never, any-int three times.
+    val _v1 = verify(repo, times(2)).find(eq(7));
+    val _v2 = verify(repo, times(1)).find(eq(9));
+    val _v3 = verify(repo, never()).find(eq(99));
+    val _v4 = verify(repo, times(3)).find(anyInt());
+}
+
+// LIMITATION (recorded): a `thenThrow` stub matched at run time raises a HOST
+// throw from `onzeInvoke`. botopink's `try … catch …` only unwraps an `@Result`
+// produced by a `#[@result]` fn — it does not catch a host throw from a plain
+// (non-effect) method call (`try svc.name(0) catch …` fails to compile, the
+// callee is not `-> @Result`). So "a thenThrow method caught by the caller's
+// try/catch" needs onze to model the throw as an `@Result` effect (a separate
+// design change: the synthesized method would return `@Result<R, string>` and
+// the test would `try`/`catch` it). Today the covered surface is: a matched
+// `thenThrow` raises, and a non-matching call returns the default (above).
+
+// LIMITATION (recorded): a fully generic `any<T>()` matcher and a stateful
+// argument captor are not provided. `any<T>()` would need a per-type default it
+// cannot synthesize (so onze ships the concrete `anyInt()` / `anyString()`,
+// exercised above and composed independently across params); a captor would need
+// a new host cell to record + read back the captured argument. Both are host-
+// runtime additions beyond this test-audit's scope.

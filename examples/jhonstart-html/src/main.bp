@@ -71,3 +71,22 @@ test "html-authored components compose by ordinary call" {
     assert renderToString(ui) ==
         "<div><p>hello, world</p><ul><li>one</li><li>two</li></ul></div>";
 }
+
+// ── B3 net-new: deeply nested markup with mixed text + multiple holes ────────
+
+test "deeply nested html with mixed text and holes renders the right tree" {
+    val title = "News";
+    val a = "Alpha";
+    val b = "Beta";
+    val page2 = html """
+<div>
+  <ul>
+    <li>first: ${a}</li>
+    <li>second: ${b}</li>
+  </ul>
+  <p>end ${title}</p>
+</div>
+""";
+    assert renderToString(page2) ==
+        "<div><ul><li>first: Alpha</li><li>second: Beta</li></ul><p>end News</p></div>";
+}

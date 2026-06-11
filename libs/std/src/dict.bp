@@ -150,3 +150,42 @@ test "dict mapValues transforms values" {
     assert doubled.lookup("a").unwrapOr(0) == 6;
     assert doubled.lookup("b").unwrapOr(0) == 14;
 }
+
+// ── option method API over `lookup`'s `?V` (B1: Option map/flatMap/unwrapOr) ──
+
+test "option map over a present lookup" {
+    val some = empty().insert("a", 1).lookup("a");
+    assert some.map({ x -> x + 9 }).unwrapOr(0) == 10;
+}
+
+test "option map propagates absence" {
+    val none = empty().insert("a", 1).lookup("z");
+    assert none.map({ x -> x + 9 }).unwrapOr(-1) == -1;
+}
+
+test "option flatMap chains present" {
+    val d = empty().insert("a", 1);
+    val r = d.lookup("a").flatMap({ x -> d.lookup("a").map({ y -> x + y }) });
+    assert r.unwrapOr(0) == 2;
+}
+
+test "option flatMap short-circuits on absence" {
+    val d = empty().insert("a", 1);
+    val r = d.lookup("missing").flatMap({ x -> d.lookup("a") });
+    assert r.unwrapOr(-7) == -7;
+}
+
+test "option unwrapOr returns present value" {
+    assert empty().insert("a", 42).lookup("a").unwrapOr(0) == 42;
+}
+
+// ── empty-collection boundary (B1) ──
+
+test "dict empty boundary: size 0, lookup misses" {
+    val d: Dict<string, i32> = empty();
+    assert d.size() == 0;
+    assert !d.hasKey("anything");
+    assert d.lookup("anything").unwrapOr(-1) == -1;
+    assert d.keys().length == 0;
+    assert d.values().length == 0;
+}
