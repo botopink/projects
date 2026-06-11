@@ -51,11 +51,14 @@
       (importing the private `helpers` from `main.bp` is rejected). Existing examples
       are either single-file in `src/` (already tree-compatible, nothing to migrate)
       or illustrative lib-dependent (non-standard layouts).
-- [ ] `libs/std` pilot deferred: std is **embedded at compile time** (explicit
-      `std_pkg_files` list in `build.zig` + `markStdImports`), resolved entirely
-      outside the CLI resolver. Carrying std on the tree needs a std-embedding rework
-      (build-system + compiler-core) — higher-risk, out of the keystone's clean
-      scope. Other libs = Wave 2 `libs-module-migration`.
+- [x] `libs/std` pilot — std now carries the tree: `libs/std/src/root.bp` declares
+      `pub mod <name>;` per importable std module and is the **single source of
+      truth**. `build.zig` (`stdPkgFilesFromRoot`) reads root.bp at build time and
+      embeds exactly the declared modules — the generated `std_pkg` table is
+      byte-identical to the old hardcoded `std_pkg_files`, so behavior is unchanged
+      but tree-driven (adding a std module = drop `<name>.bp` + `pub mod <name>;` in
+      root.bp, no build/core edit). `.d.bp` ambient modules stay separate (flattened
+      into the env). Other libs = Wave 2 `libs-module-migration`.
 
 ## F6 — docs + tests
 - [x] `docs.md` §Modules (tree, `mod`/`pub mod`/`mod.bp`/`root.bp`/`main.bp`,

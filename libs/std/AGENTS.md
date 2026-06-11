@@ -19,6 +19,7 @@ std/
 ├── src/               ← .bp source modules (inline tests only in non-generic modules)
 │   ├── docs.md            ← registry + per-file roles
 │   ├── examples.md        ← stdlib usage in `.bp` (Array, String, builtins)
+│   ├── root.bp            ← module-tree root: `pub mod <name>;` per std module (source of truth)
 │   ├── primitives.d.bp    ← numeric + bool interfaces
 │   ├── array.d.bp         ← generic Array<T> interface
 │   ├── string.d.bp        ← String interface methods
@@ -124,16 +125,23 @@ unreachable. All coverage is commonJS-only.
 > ships it nowhere (dropped from `build.zig` `std_pkg_files`); it is reached only
 > through the generic `from "erika"` loader.
 
-## Wiring
+## Module tree (`root.bp`)
 
-`comptime/env.zig` → `registerStdlib` → `prelude.zig` → embeds each `.bp` string
-→ type `Env`. Each `.bp` file is exposed as an anonymous import in `build.zig`
-(`std_bp_files`).
+`src/root.bp` is the explicit module-tree root of the `std` package (the module
+system's std pilot): one `pub mod <name>;` per importable std module. It is the
+**single source of truth** for the std module set — `build.zig`
+(`stdPkgFilesFromRoot`) reads `root.bp`, embeds exactly the declared modules, and
+generates the `std_pkg` registry compiler-core discovers generically.
 
-When adding a `.bp` file:
-1. Add to `std_bp_files` in the root `build.zig`.
-2. Add `pub const <name>_mod = @embedFile("<name>.bp");` to `prelude.zig`.
-3. Add `.{ .path = "std/<name>", .source = @import("std_prelude").<name>_mod }` to `std_pkg_modules` in `comptime.zig`.
+When adding an importable std module (`import {…} from "std"`):
+1. Drop `libs/std/src/<name>.bp`.
+2. Add `pub mod <name>;` to `libs/std/src/root.bp`.
+
+That's it — no `build.zig`, `prelude.zig`, or `compiler-core` edit. (The ambient
+declaration modules `primitives.d.bp` / `builtins.d.bp` are NOT importable
+packages: they are flattened into the global type env, wired separately via
+`std_core_files` in `build.zig` + `prelude.zig`, and so are not declared in
+`root.bp`.)
 
 ## Conventions
 
