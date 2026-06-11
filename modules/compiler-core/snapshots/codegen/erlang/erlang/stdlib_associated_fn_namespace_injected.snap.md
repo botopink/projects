@@ -55,7 +55,7 @@ mapSecond(P, Transform) ->
     {element(1, P), Transform(element(2, P))}.
 
 main() ->
-    P = pair:'of'(1, <<"one">>),
+    P = 'of'(1, <<"one">>),
     io:format("~p~n", [first(P)]),
     io:format("~p~n", [identity(42)]),
     Inc = compose(fun(X) ->
@@ -74,4 +74,7 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+1
+42
+22
 ```

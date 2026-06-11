@@ -14,7 +14,7 @@ fn main() {
 {module, main}.
 {exports, [{'_botopink_main', 0}, {main, 1}]}.
 {attributes, []}.
-{labels, 46}.
+{labels, 38}.
 
 {function, 'Function_identity', 1, 3}.
   {label, 2}.
@@ -78,9 +78,9 @@ fn main() {
     {func_info, {atom, main}, {atom, 'Pair_first'}, 1}.
   {label, 13}.
     {allocate, 0, 1}.
-    {test, is_map, {f, 34}, [{x, 0}]}.
-    {get_map_elements, {f, 34}, {x, 0}, {list, [{atom, '_0'}, {x, 0}]}}.
-  {label, 34}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 1}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
     {deallocate, 0}.
     return.
 
@@ -90,9 +90,9 @@ fn main() {
     {func_info, {atom, main}, {atom, 'Pair_second'}, 1}.
   {label, 15}.
     {allocate, 0, 1}.
-    {test, is_map, {f, 35}, [{x, 0}]}.
-    {get_map_elements, {f, 35}, {x, 0}, {list, [{atom, '_1'}, {x, 0}]}}.
-  {label, 35}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 2}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
     {deallocate, 0}.
     return.
 
@@ -102,13 +102,13 @@ fn main() {
     {func_info, {atom, main}, {atom, 'Pair_swap'}, 1}.
   {label, 17}.
     {allocate, 0, 1}.
-    {test, is_map, {f, 36}, [{x, 0}]}.
-    {get_map_elements, {f, 36}, {x, 0}, {list, [{atom, '_1'}, {x, 0}]}}.
-  {label, 36}.
     {move, {x, 0}, {x, 1}}.
-    {test, is_map, {f, 37}, [{x, 0}]}.
-    {get_map_elements, {f, 37}, {x, 0}, {list, [{atom, '_0'}, {x, 0}]}}.
-  {label, 37}.
+    {move, {integer, 2}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 1}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
     {move, {x, 0}, {x, 2}}.
     {test_heap, 3, 3}.
     {put_tuple2, {x, 0}, {list, [{x, 1}, {x, 2}]}}.
@@ -122,16 +122,16 @@ fn main() {
   {label, 19}.
     {allocate, 0, 2}.
     {move, {x, 1}, {x, 1}}.
-    {test, is_map, {f, 38}, [{x, 0}]}.
-    {get_map_elements, {f, 38}, {x, 0}, {list, [{atom, '_0'}, {x, 0}]}}.
-  {label, 38}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 1}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
     {move, {x, 0}, {x, 2}}.
     {move, {x, 2}, {x, 0}}.
     {call_fun, 1}.
     {move, {x, 0}, {x, 2}}.
-    {test, is_map, {f, 39}, [{x, 0}]}.
-    {get_map_elements, {f, 39}, {x, 0}, {list, [{atom, '_1'}, {x, 0}]}}.
-  {label, 39}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 2}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
     {move, {x, 0}, {x, 3}}.
     {test_heap, 3, 4}.
     {put_tuple2, {x, 0}, {list, [{x, 2}, {x, 3}]}}.
@@ -144,14 +144,14 @@ fn main() {
     {func_info, {atom, main}, {atom, 'Pair_mapSecond'}, 2}.
   {label, 21}.
     {allocate, 0, 2}.
-    {test, is_map, {f, 40}, [{x, 0}]}.
-    {get_map_elements, {f, 40}, {x, 0}, {list, [{atom, '_0'}, {x, 0}]}}.
-  {label, 40}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 1}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
     {move, {x, 0}, {x, 2}}.
     {move, {x, 1}, {x, 1}}.
-    {test, is_map, {f, 41}, [{x, 0}]}.
-    {get_map_elements, {f, 41}, {x, 0}, {list, [{atom, '_1'}, {x, 0}]}}.
-  {label, 41}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 2}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
     {move, {x, 0}, {x, 2}}.
     {move, {x, 2}, {x, 0}}.
     {call_fun, 1}.
@@ -190,10 +190,10 @@ fn main() {
     {put_list, {x, 1}, nil, {x, 1}}.
     {call_ext, 2, {extfunc, io, format, 2}}.
     {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 0}.
-    {make_fun3, {f, 43}, 0, 0, {x, 0}, {list, []}}.
+    {make_fun3, {f, 35}, 0, 0, {x, 0}, {list, []}}.
     {move, {x, 0}, {x, 0}}.
     {test_heap, {alloc, [{words, 0}, {floats, 0}, {funs, 1}]}, 1}.
-    {make_fun3, {f, 45}, 0, 0, {x, 0}, {list, []}}.
+    {make_fun3, {f, 37}, 0, 0, {x, 0}, {list, []}}.
     {move, {x, 0}, {x, 1}}.
     {move, {x, 0}, {x, 0}}.
     {move, {x, 1}, {x, 1}}.
@@ -261,21 +261,21 @@ fn main() {
     {deallocate, 0}.
     return.
 
-{function, '-main/0-fun-3-', 1, 43}.
-  {label, 42}.
+{function, '-main/0-fun-3-', 1, 35}.
+  {label, 34}.
     {line, [{location, "main.erl", 12}]}.
     {func_info, {atom, main}, {atom, '-main/0-fun-3-'}, 1}.
-  {label, 43}.
+  {label, 35}.
     {allocate, 0, 1}.
     {gc_bif, '+', {f, 0}, 1, [{x, 0}, {integer, 1}], {x, 0}}.
     {deallocate, 0}.
     return.
 
-{function, '-main/0-fun-4-', 1, 45}.
-  {label, 44}.
+{function, '-main/0-fun-4-', 1, 37}.
+  {label, 36}.
     {line, [{location, "main.erl", 12}]}.
     {func_info, {atom, main}, {atom, '-main/0-fun-4-'}, 1}.
-  {label, 45}.
+  {label, 37}.
     {allocate, 0, 1}.
     {gc_bif, '*', {f, 0}, 1, [{x, 0}, {integer, 2}], {x, 0}}.
     {deallocate, 0}.
@@ -284,7 +284,7 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
-{<<"one">>,<<"one">>}
+<<"one">>
 42
 10
 ```

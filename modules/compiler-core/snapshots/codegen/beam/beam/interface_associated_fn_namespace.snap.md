@@ -20,7 +20,7 @@ fn main() {
 {module, main}.
 {exports, [{'_botopink_main', 0}, {main, 1}]}.
 {attributes, []}.
-{labels, 13}.
+{labels, 12}.
 
 {function, 'Pairish_of', 2, 3}.
   {label, 2}.
@@ -42,9 +42,9 @@ fn main() {
     {func_info, {atom, main}, {atom, 'Pairish_first'}, 1}.
   {label, 5}.
     {allocate, 0, 1}.
-    {test, is_map, {f, 12}, [{x, 0}]}.
-    {get_map_elements, {f, 12}, {x, 0}, {list, [{atom, '_0'}, {x, 0}]}}.
-  {label, 12}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 1}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
     {deallocate, 0}.
     return.
 
@@ -90,5 +90,5 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
-{<<"one">>,<<"one">>}
+<<"one">>
 ```

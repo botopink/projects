@@ -10,7 +10,7 @@ fn getFirst(t: #(i32, string)) -> i32 {
 {module, main}.
 {exports, []}.
 {attributes, []}.
-{labels, 5}.
+{labels, 4}.
 
 {function, getFirst, 1, 3}.
   {label, 2}.
@@ -18,9 +18,9 @@ fn getFirst(t: #(i32, string)) -> i32 {
     {func_info, {atom, main}, {atom, getFirst}, 1}.
   {label, 3}.
     {allocate, 0, 1}.
-    {test, is_map, {f, 4}, [{x, 0}]}.
-    {get_map_elements, {f, 4}, {x, 0}, {list, [{atom, '_0'}, {x, 0}]}}.
-  {label, 4}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 1}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
     {deallocate, 0}.
     return.
 ```

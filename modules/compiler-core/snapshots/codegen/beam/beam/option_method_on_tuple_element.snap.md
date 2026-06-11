@@ -20,7 +20,7 @@ fn main() {
 {module, main}.
 {exports, [{'_botopink_main', 0}, {main, 1}]}.
 {attributes, []}.
-{labels, 17}.
+{labels, 15}.
 
 {function, firstAndRest, 1, 3}.
   {label, 2}.
@@ -82,16 +82,16 @@ fn main() {
     {call, 1, {f, 3}}.
     {move, {x, 0}, {y, 0}}.
     {move, {y, 0}, {x, 0}}.
-    {test, is_map, {f, 11}, [{x, 0}]}.
-    {get_map_elements, {f, 11}, {x, 0}, {list, [{atom, '_1'}, {x, 0}]}}.
-  {label, 11}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 2}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
     {move, {x, 0}, {y, 1}}.
     {move, {y, 1}, {x, 0}}.
-    {test, is_eq, {f, 12}, [{x, 0}, {atom, undefined}]}.
+    {test, is_eq, {f, 11}, [{x, 0}, {atom, undefined}]}.
     {move, {integer, -1}, {x, 0}}.
-    {jump, {f, 13}}.
+    {jump, {f, 12}}.
+  {label, 11}.
   {label, 12}.
-  {label, 13}.
     {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"~p~n">>}, {x, 0}}.
     {test_heap, 2, 2}.
@@ -103,15 +103,15 @@ fn main() {
     {call, 1, {f, 3}}.
     {move, {x, 0}, {y, 2}}.
     {move, {y, 2}, {x, 0}}.
-    {test, is_map, {f, 14}, [{x, 0}]}.
-    {get_map_elements, {f, 14}, {x, 0}, {list, [{atom, '_1'}, {x, 0}]}}.
-  {label, 14}.
-    {test, is_eq, {f, 15}, [{x, 0}, {atom, nil}]}.
+    {move, {x, 0}, {x, 1}}.
+    {move, {integer, 2}, {x, 0}}.
+    {call_ext, 2, {extfunc, erlang, element, 2}}.
+    {test, is_eq, {f, 13}, [{x, 0}, {atom, nil}]}.
     {move, {atom, true}, {x, 0}}.
-    {jump, {f, 16}}.
-  {label, 15}.
+    {jump, {f, 14}}.
+  {label, 13}.
     {move, {atom, false}, {x, 0}}.
-  {label, 16}.
+  {label, 14}.
     {move, {x, 0}, {x, 1}}.
     {move, {literal, <<"~p~n">>}, {x, 0}}.
     {test_heap, 2, 2}.
@@ -138,6 +138,6 @@ fn main() {
 
 ----- RUN LOG -----
 ```logs
-{[1,2,3],[1,2,3]}
+[1,2,3]
 false
 ```

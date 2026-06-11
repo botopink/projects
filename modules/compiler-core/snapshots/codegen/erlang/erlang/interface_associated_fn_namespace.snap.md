@@ -29,7 +29,7 @@ first(P) ->
     element(1, P).
 
 main() ->
-    P = pairish:'of'(1, <<"one">>),
+    P = 'of'(1, <<"one">>),
     io:format("~p~n", [first(P)]).
 
 '_botopink_main'() ->
@@ -41,4 +41,5 @@ main(_Args) ->
 
 ----- RUN LOG -----
 ```logs
+1
 ```

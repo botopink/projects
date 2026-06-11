@@ -1790,14 +1790,14 @@ const Emitter = struct {
                                 // the fn is emitted as a bare local function in this
                                 // module, not a remote `response:ok(...)`.
                                 try this.fmt("{s}(", .{callee});
-                            } else if (mod_name != null and this.isInterfaceAssoc(mod_name.?, callee)) {
+                            } else if (mod_name != null and this.isInterfaceAssoc(mod_name.?, cc.callee)) {
                                 // Associated `default fn` of an interface (`Array.range`,
                                 // `Pair.of`): emitted as a bare local function by
                                 // `emitInterface` (the interface is inlined), so call it
-                                // directly — reserved-word-quoted (`'of'`) to match the
-                                // emitted name — not a remote `array:range`.
-                                var ib: [256]u8 = undefined;
-                                try this.fmt("{s}(", .{try fnAtom(callee, &ib)});
+                                // directly — `callee` is already reserved-word-quoted
+                                // (`'of'`) to match the emitted name. Look up the qname
+                                // with the RAW `cc.callee` (`of`, not `'of'`).
+                                try this.fmt("{s}(", .{callee});
                             } else if (mod_name) |name| {
                                 // A PascalCase identifier receiver is a module-qualified
                                 // call: `List.map(xs, f)` → a remote call `list:map(Xs, F)`.

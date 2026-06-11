@@ -101,6 +101,19 @@ fn implementMethodArity(m: ast.ImplementMethod) usize {
     return m.params.len;
 }
 
+/// `_N` tuple-index member (`t._0`, `t._1`) → the 0-based index, else null.
+/// Distinguishes tuple element access from a record field that happens to start
+/// with `_`. Mirrors the erlang/wat backends.
+fn tupleIndexMember(member: []const u8) ?u32 {
+    if (member.len < 2 or member[0] != '_') return null;
+    var n: u32 = 0;
+    for (member[1..]) |c| {
+        if (!std.ascii.isDigit(c)) return null;
+        n = n * 10 + (c - '0');
+    }
+    return n;
+}
+
 /// True when another module imports `name` (so the owner must export its
 /// associated fns for the consumer's remote `call_ext` to resolve).
 fn isCrossImported(cross: ?*const CrossModule, name: []const u8) bool {
@@ -3130,6 +3143,20 @@ const Emitter = struct {
     /// The receiver is evaluated into x0, then the field is extracted.
     fn lowerIdentAccess(self: *Emitter, ia: anytype, dest: u32) anyerror!void {
         try self.lowerExprIntoX0(ia.receiver.*);
+
+        // `t._N` is a tuple-element access (`#(a, b)._0`), not a map field. Use the
+        // runtime-checked `erlang:element(N+1, T)` BIF (1-based) rather than
+        // `get_tuple_element`: the receiver is typed `any` (an assoc-fn param /
+        // cross-module result), and `is_tuple` alone leaves the arity unknown, so
+        // `get_tuple_element` fails the loader (`bad_type, needed t_tuple,1`).
+        if (tupleIndexMember(ia.member)) |idx| {
+            try self.bodyWrite("    {move, {x, 0}, {x, 1}}.\n"); // tuple → x1
+            try self.bodyPrint("    {{move, {{integer, {d}}}, {{x, 0}}}}.\n", .{idx + 1}); // index → x0
+            try self.bodyWrite("    {call_ext, 2, {extfunc, erlang, element, 2}}.\n");
+            if (dest != 0) try self.bodyPrint("    {{move, {{x, 0}}, {{x, {d}}}}}.\n", .{dest});
+            return;
+        }
+
         var member_buf: [256]u8 = undefined;
         const member = try atomName(ia.member, &member_buf);
 
