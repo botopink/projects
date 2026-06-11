@@ -20,4 +20,5 @@ comptime {
     _ = @import("./tests/sublanguage.zig");
     _ = @import("./tests/lifecycle.zig");
     _ = @import("./tests/cross_module.zig");
+    _ = @import("./tests/project_graph.zig");
 }

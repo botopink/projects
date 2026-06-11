@@ -666,3 +666,94 @@ test "completion: std module dot does not fire without the import" {
     }
     try std.testing.expectEqual(@as(usize, 0), items.len);
 }
+
+// ── R1 — local-scope symbol model (lsp-project-awareness) ─────────────────────
+//
+// A decorator body is full of locals the module-level `bindings` slice never
+// holds: the `comptime decl` parameter, the `var args` local, and the `{ f -> … }`
+// closure binder. Completion inside the body must list them — this is the real
+// shape that shipped broken. The body need not type-check (`@Decl` here is left
+// unresolved); completion degrades to a token walk and still surfaces the locals.
+
+fn hasLabel(items: []const proto.CompletionItem, name: []const u8) bool {
+    for (items) |it| if (std.mem.eql(u8, it.label, name)) return true;
+    return false;
+}
+
+test "completion: decorator body lists params/locals/closure binder (R1)" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\pub fn component(comptime decl: @Decl) {
+        \\    var args = "";
+        \\    items.forEach({ f ->
+        \\        log(args);
+        \\    });
+        \\}
+    ;
+
+    var c = try h.compile(gpa, source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse &[_]h.comptime_pipeline.TypedBinding{};
+
+    // cursor at the start of the `log(args)` line (empty prefix → list everything)
+    const cursor = h.pos(3, 8);
+    const items = try engine.completion(gpa, source, cursor, bindings);
+    defer {
+        for (items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        gpa.free(items);
+    }
+
+    try std.testing.expect(hasLabel(items, "decl")); // comptime parameter
+    try std.testing.expect(hasLabel(items, "args")); // `var` local
+    try std.testing.expect(hasLabel(items, "f")); //    closure binder
+    try snap.assertCompletion(gpa, "completion_decorator_body_locals", source, cursor, items);
+}
+
+// ── R2 — decorator-bearing record keeps its bindings (lsp-project-awareness) ───
+//
+// A record carrying an EMITTING decorator (`#[service]`) used to hand the LSP
+// zero bindings: the decorator `@emit`ed wiring, the spliced re-analysis failed
+// to type-check standalone, and completion went dark everywhere in the file
+// (R2). The fix surfaces the source decls (record, fields, the marker) even when
+// the emitted code can't stand alone. Runs the node-backed evaluator so the
+// `@emit` path actually fires.
+
+test "completion: decorator-bearing record still lists bindings (R2)" {
+    const gpa = std.testing.allocator;
+    // `@emit`s code referencing an unresolved symbol — stands in for the wiring a
+    // real `#[service]` emits against `from \"<lib>\"` symbols the LSP compiled
+    // without. The spliced re-analysis fails; completion must still degrade.
+    const source =
+        \\fn service(comptime decl: @Decl) {
+        \\    @emit("val __wired = unresolvedRuntimeSymbol();");
+        \\}
+        \\
+        \\#[service]
+        \\record PostService { name: string, count: i32 }
+        \\
+        \\val usePost = PostService;
+    ;
+
+    var c = try h.compileEval(gpa, source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse &[_]h.comptime_pipeline.TypedBinding{};
+
+    // cursor at the start of `PostService` on the last line (empty prefix)
+    const cursor = h.pos(7, 14);
+    const items = try engine.completion(gpa, source, cursor, bindings);
+    defer {
+        for (items) |it| {
+            gpa.free(it.label);
+            if (it.detail) |d| gpa.free(d);
+        }
+        gpa.free(items);
+    }
+
+    // Not blanked: the record (and the marker fn) are still completable.
+    try std.testing.expect(items.len > 0);
+    try std.testing.expect(hasLabel(items, "PostService"));
+    try snap.assertCompletion(gpa, "completion_decorator_record", source, cursor, items);
+}

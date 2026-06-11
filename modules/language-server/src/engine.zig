@@ -33,11 +33,16 @@ pub fn diagnose(
     uri: []const u8,
     source: []const u8,
     eval_root: ?[]const u8,
+    /// The active document's full module graph (deps + active last). When empty,
+    /// the document is compiled alone. The server resolves this from
+    /// `botopink.json`; the engine never reads the filesystem itself. Diagnostics
+    /// are still reported only for `uri` (a dep's errors don't leak here).
+    entries: []const compiler_mod.ModuleEntry,
 ) !DiagnosticsResult {
     var lsp_compiler = compiler_mod.LspCompiler.init(gpa, io, eval_root);
-    const entries = [_]compiler_mod.ModuleEntry{.{ .uri = uri, .source = source }};
+    const single = [_]compiler_mod.ModuleEntry{.{ .uri = uri, .source = source }};
 
-    var result = try lsp_compiler.compile(&entries);
+    var result = try lsp_compiler.compile(if (entries.len > 0) entries else &single);
     defer result.deinit(gpa);
 
     var diags: std.ArrayList(proto.Diagnostic) = .empty;
@@ -437,7 +442,9 @@ fn findDeclLocation(
     tokens: []const Token,
     require_pub: bool,
 ) !?proto.Location {
-    const decl_values = [_]TokenKind{ .val, .@"fn", .record, .@"struct", .@"enum", .interface };
+    // `var` is included so a `var`-declared local resolves on go-to-def; a `var`
+    // is never `pub`, so it is naturally absent from the `require_pub` path.
+    const decl_values = [_]TokenKind{ .val, .@"var", .@"fn", .record, .@"struct", .@"enum", .interface };
     var i: usize = 0;
     while (i < tokens.len) : (i += 1) {
         const tok = tokens[i];
@@ -484,6 +491,9 @@ pub fn definition(
     tokens: []const Token,
 ) !?proto.Location {
     const name = identAt(source, pos) orelse return null;
+    // A nearer enclosing local (param / `val` / `var` / closure binder) wins over
+    // a same-named top-level declaration.
+    if (try localDefinition(gpa, uri, tokens, pos, name)) |loc| return loc;
     return findDeclLocation(gpa, uri, name, tokens, false);
 }
 
@@ -500,6 +510,10 @@ pub fn definitionInModules(
     others: []const ModuleSource,
 ) !?proto.Location {
     const name = identAt(source, pos) orelse return null;
+
+    // A nearer enclosing local (param / `val` / `var` / closure binder) wins over
+    // any declaration, local or cross-module.
+    if (try localDefinition(gpa, uri, tokens, pos, name)) |loc| return loc;
 
     // Prefer a local declaration in the current file.
     if (try findDeclLocation(gpa, uri, name, tokens, false)) |loc| return loc;
@@ -2728,6 +2742,218 @@ fn isKeywordKind(kind: TokenKind) bool {
     };
 }
 
+// ── Local-scope symbol model ──────────────────────────────────────────────────
+//
+// The typed `bindings` slice the engine receives is module-level only — it never
+// holds function parameters, `comptime` params, `val`/`var` locals, or closure
+// binders (`{ f -> … }`). Real files (library bodies, decorator bodies) are full
+// of those, so completion and go-to-def must reconstruct the bindings visible at
+// the cursor. This is a pure token walk (no typed body needed) so it keeps
+// working even when the body fails to type-check — completion degrades, not
+// vanishes.
+
+const LocalSymKind = enum { param, local, binder };
+
+/// One function-local binding visible at the cursor: a parameter, a `val`/`var`
+/// local, or a closure binder. `line`/`col` are the 1-based binding site.
+/// `depth` is the brace-scope depth where it was declared (a larger depth is a
+/// nearer/inner scope and shadows a smaller one).
+const LocalSym = struct {
+    name: []const u8,
+    kind: LocalSymKind,
+    line: usize,
+    col: usize,
+    depth: usize,
+};
+
+/// True when `tok` starts strictly before the (0-based) cursor `pos`.
+fn tokenBeforePos(tok: Token, pos: proto.Position) bool {
+    const tl: u32 = if (tok.line > 0) @intCast(tok.line - 1) else 0;
+    if (tl != pos.line) return tl < pos.line;
+    const tc: u32 = if (tok.col > 0) @intCast(tok.col - 1) else 0;
+    return tc < pos.character;
+}
+
+fn isTrivia(kind: TokenKind) bool {
+    return switch (kind) {
+        .newLine, .commentNormal, .commentDoc, .commentModule, .endOfFile => true,
+        else => false,
+    };
+}
+
+/// The first identifier token after index `i`, or null if a non-identifier
+/// (other than trivia) comes first. Used to read the name after `val`/`var`.
+fn nextIdentToken(tokens: []const Token, i: usize) ?Token {
+    var j = i + 1;
+    while (j < tokens.len) : (j += 1) {
+        if (isTrivia(tokens[j].kind)) continue;
+        if (tokens[j].kind == .identifier) return tokens[j];
+        return null;
+    }
+    return null;
+}
+
+/// Collect the parameter names of the `fn` at `fn_idx` (the names before each
+/// `:` in its `( … )` list, including `comptime` params and `self`), attaching
+/// them to `pending` at `depth` (the function-body scope they belong to).
+fn collectParams(
+    arena: std.mem.Allocator,
+    tokens: []const Token,
+    fn_idx: usize,
+    depth: usize,
+    pending: *std.ArrayListUnmanaged(LocalSym),
+) !void {
+    var i = fn_idx + 1;
+    while (i < tokens.len) : (i += 1) switch (tokens[i].kind) {
+        .leftParenthesis => break,
+        .leftBrace, .semicolon, .endOfFile => return, // no param list
+        else => {},
+    };
+    if (i >= tokens.len) return;
+    i += 1; // step past '('
+
+    var nest: usize = 0; // nesting inside the param list (generics, tuples, …)
+    var expect_name = true; // at the start of each param, the next ident is its name
+    while (i < tokens.len) : (i += 1) {
+        const t = tokens[i];
+        switch (t.kind) {
+            .leftParenthesis, .leftSquareBracket, .lessThan => nest += 1,
+            .rightSquareBracket, .greaterThan => {
+                if (nest > 0) nest -= 1;
+            },
+            .rightParenthesis => {
+                if (nest == 0) return;
+                nest -= 1;
+            },
+            .comma => if (nest == 0) {
+                expect_name = true;
+            },
+            .colon => if (nest == 0) {
+                expect_name = false; // the type follows, up to the next top-level comma
+            },
+            .identifier => if (expect_name and nest == 0) {
+                try pending.append(arena, .{ .name = t.lexeme, .kind = .param, .line = t.line, .col = t.col, .depth = depth });
+                expect_name = false;
+            },
+            else => {},
+        }
+    }
+}
+
+/// If the `{` at `brace_idx` opens a closure with binders (`{ a, b -> … }` or the
+/// bare `{ -> … }`), collect them into `pending` at `depth`. Anything that is not
+/// the `ident (, ident)* ->` shape (a plain block, a record-type body) yields no
+/// binders.
+fn collectClosureBinders(
+    arena: std.mem.Allocator,
+    tokens: []const Token,
+    brace_idx: usize,
+    depth: usize,
+    pending: *std.ArrayListUnmanaged(LocalSym),
+) !void {
+    var names: std.ArrayListUnmanaged(LocalSym) = .empty;
+    var i = brace_idx + 1;
+    var expect_name = true;
+    while (i < tokens.len) : (i += 1) {
+        const t = tokens[i];
+        if (isTrivia(t.kind)) continue;
+        switch (t.kind) {
+            .rightArrow => {
+                for (names.items) |n| try pending.append(arena, n);
+                return;
+            },
+            .identifier => {
+                if (!expect_name) return; // two idents in a row → not a binder list
+                try names.append(arena, .{ .name = t.lexeme, .kind = .binder, .line = t.line, .col = t.col, .depth = depth });
+                expect_name = false;
+            },
+            .comma => {
+                if (expect_name) return;
+                expect_name = true;
+            },
+            else => return, // not a binder list
+        }
+    }
+}
+
+/// Build the position-scoped view of function-local bindings visible at `pos`:
+/// parameters, `comptime` params, `val`/`var` locals declared earlier in the
+/// enclosing blocks, and closure binders. Pure token walk — no typed body
+/// required. The returned slice is in declaration order; a caller that wants one
+/// entry per name should prefer the larger `depth` (the nearer scope shadows the
+/// outer). Arena-allocated.
+fn collectLocalScope(
+    arena: std.mem.Allocator,
+    tokens: []const Token,
+    pos: proto.Position,
+) ![]LocalSym {
+    var out: std.ArrayListUnmanaged(LocalSym) = .empty;
+    var pending: std.ArrayListUnmanaged(LocalSym) = .empty;
+    var depth: usize = 0;
+
+    for (tokens, 0..) |tok, i| {
+        if (isTrivia(tok.kind)) continue;
+        if (!tokenBeforePos(tok, pos)) break; // reached the cursor — stop
+
+        switch (tok.kind) {
+            .@"fn" => try collectParams(arena, tokens, i, depth + 1, &pending),
+            .leftBrace => {
+                try collectClosureBinders(arena, tokens, i, depth + 1, &pending);
+                depth += 1;
+                for (pending.items) |p| try out.append(arena, p);
+                pending.clearRetainingCapacity();
+            },
+            .rightBrace => {
+                if (depth > 0) {
+                    // This scope closed before the cursor → drop its bindings.
+                    var k: usize = out.items.len;
+                    while (k > 0 and out.items[k - 1].depth >= depth) k -= 1;
+                    out.shrinkRetainingCapacity(k);
+                    depth -= 1;
+                }
+                pending.clearRetainingCapacity();
+            },
+            .val, .@"var" => {
+                // Only *function-local* `val`/`var` (inside a block); a
+                // module-level binding is already in the typed `bindings` slice.
+                if (depth > 0) {
+                    if (nextIdentToken(tokens, i)) |nt| {
+                        try out.append(arena, .{ .name = nt.lexeme, .kind = .local, .line = nt.line, .col = nt.col, .depth = depth });
+                    }
+                }
+            },
+            else => {},
+        }
+    }
+    return out.toOwnedSlice(arena);
+}
+
+/// Resolve the identifier `name` at `pos` to its nearest enclosing local binding
+/// site (a parameter / `val` / `var` / closure binder), preferring the innermost
+/// scope. Returns null when no local of that name is in scope. The returned
+/// `uri` is owned by the caller.
+fn localDefinition(
+    gpa: std.mem.Allocator,
+    uri: []const u8,
+    tokens: []const Token,
+    pos: proto.Position,
+    name: []const u8,
+) !?proto.Location {
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const locals = try collectLocalScope(arena.allocator(), tokens, pos);
+
+    var best: ?LocalSym = null;
+    for (locals) |l| {
+        if (!std.mem.eql(u8, l.name, name)) continue;
+        if (best == null or l.depth >= best.?.depth) best = l;
+    }
+    const b = best orelse return null;
+    const start = lsp_types.locToPosition(b.line, b.col);
+    const end = lsp_types.locToPosition(b.line, b.col + name.len);
+    return .{ .uri = try gpa.dupe(u8, uri), .range = .{ .start = start, .end = end } };
+}
+
 // ── Completion ────────────────────────────────────────────────────────────────
 
 /// Returns completion items for all bindings in scope at the cursor position.
@@ -2792,9 +3018,50 @@ pub fn completion(
         items.deinit(gpa);
     }
 
+    // Function-local bindings visible at the cursor (params, `comptime` params,
+    // `val`/`var` locals, closure binders). These come from a token walk, merge
+    // ahead of the module-level bindings, and shadow a same-named module binding.
+    var scope_arena = std.heap.ArenaAllocator.init(gpa);
+    defer scope_arena.deinit();
+    const sa = scope_arena.allocator();
+    var local_tokens_lexer = Lexer.init(source);
+    const local_tokens = local_tokens_lexer.scanAll(sa) catch &[_]Token{};
+    const locals = collectLocalScope(sa, local_tokens, pos) catch &[_]LocalSym{};
+
+    // Dedupe locals by name keeping the nearest (largest `depth`); record the
+    // surviving names so the module loop can skip what a local shadows.
+    var local_names = std.StringHashMap(void).init(sa);
+    {
+        var best = std.StringHashMap(LocalSym).init(sa);
+        for (locals) |l| {
+            if (!std.mem.startsWith(u8, l.name, prefix)) continue;
+            if (best.get(l.name)) |cur| {
+                if (l.depth < cur.depth) continue;
+            }
+            try best.put(l.name, l);
+        }
+        var it = best.valueIterator();
+        while (it.next()) |l| {
+            try local_names.put(l.name, {});
+            try items.append(gpa, .{
+                .label = try gpa.dupe(u8, l.name),
+                .kind = proto.CompletionItemKind.Variable,
+                .detail = try gpa.dupe(u8, switch (l.kind) {
+                    .param => "parameter",
+                    .local => "local",
+                    .binder => "binder",
+                }),
+                // Locals are the most relevant at the cursor — sort them first.
+                .sortText = "0",
+            });
+        }
+    }
+
     for (bindings) |b| {
         if (b.name.len == 0) continue;
         if (!std.mem.startsWith(u8, b.name, prefix)) continue;
+        // An in-scope local of the same name shadows this module binding.
+        if (local_names.contains(b.name)) continue;
 
         const kind = bindingCompletionKind(b);
         const detail = try renderType(gpa, b.type_);

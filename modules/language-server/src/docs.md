@@ -17,6 +17,8 @@ src/
 ├── protocol.zig       ← LSP + JSON-RPC serializable types
 ├── engine.zig         ← LSP feature implementations
 ├── compiler.zig       ← thin wrapper around compiler-core for LSP analysis
+├── project_index.zig  ← workspace pub-symbol index (cross-module fallback)
+├── project_graph.zig  ← per-project dependency graph (libs + mod siblings)
 ├── files.zig          ← in-memory cache for open document contents
 ├── feedback.zig       ← tracks active diagnostics → clears stale editor feedback
 ├── lsp_types.zig      ← position/offset, URI ↔ path helpers
@@ -68,6 +70,26 @@ textDocument/didClose   → files.drop(uri)
 `files.zig` is the **single source of truth** for in-memory document
 content. Don't read the filesystem from `engine.zig` — go through the
 cache.
+
+## Project-graph compile
+
+A feature request does **not** compile the active document alone. `server.zig`'s
+`compileWithGraph` calls `project_graph.zig` to resolve the document's
+dependencies — `from "<lib>"` packages (from each lib's `botopink.json`) and
+`mod` siblings (the project `src/` tree) — and feeds the whole set to
+`compiler.zig`, with the active document last (so it imports from every dep) and
+its in-memory `files.zig` source overlaid. The resolved deps are cached per
+project root; a keystroke is a cache hit, and `ProjectGraph.invalidateAll` runs
+on `didOpen`/`didClose`. A file outside any project (no `botopink.json`) falls
+back to the single-document compile. This is what makes completion, go-to-def,
+and sub-language expansion work on files that import across modules — and it is
+why `engine.zig` must still never read the filesystem itself (the graph does).
+
+`engine.zig` also reconstructs **function-local scope** at the cursor
+(`collectLocalScope`: params, `comptime` params, `val`/`var` locals, closure
+binders) via a token walk, merging it into completion and go-to-def so library
+and decorator bodies — full of locals the module-level binding slice never
+holds — stop going dark.
 
 ## Failure policy
 

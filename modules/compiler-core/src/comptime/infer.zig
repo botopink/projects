@@ -86,6 +86,30 @@ fn markStdImports(env: *Env, u: ast.ImportDecl) InferError!bool {
     return true;
 }
 
+/// Append one `TypedBinding` per imported symbol in a `use` decl so the LSP's
+/// completion/hover engine sees them. `import {…} from "std"` is marked (and
+/// contributes no value bindings — std symbols resolve via `env.stdModules`).
+/// `resolveImports` already bound each name, so we read the type from `env`.
+fn appendImportBindings(
+    env: *Env,
+    list: *std.ArrayListUnmanaged(TypedBinding),
+    decl: ast.DeclKind,
+    u: ast.ImportDecl,
+) InferError!void {
+    if (try markStdImports(env, u)) return;
+    for (u.imports) |imp| {
+        const name = imp.name();
+        if (env.lookup(name)) |ty| {
+            try list.append(env.arena, .{
+                .name = name,
+                .type_ = ty,
+                .typedExpr = null,
+                .decl = decl,
+            });
+        }
+    }
+}
+
 pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     var list: std.ArrayListUnmanaged(Binding) = .empty;
 
@@ -145,8 +169,27 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
     try validateEffectAnnotations(env, program);
     try invokeDecorators(env, program);
     if (env.contributions.items.len > 0) {
-        // The spliced re-analysis (`analyzeSource`) does the real inference; skip
-        // body inference here, since bodies may reference the not-yet-spliced decls.
+        // A decorator `@emit`ed code: the spliced re-analysis (`analyzeSource`)
+        // does the real, full inference of the generated declarations. But the
+        // LSP needs a useful binding list even when that spliced code can't
+        // type-check standalone (it may reference symbols only resolvable with
+        // the project graph). Collect the bindings that don't depend on the
+        // not-yet-spliced decls: imports, type declarations, and `fn`
+        // signatures. `val` bodies are skipped — they may reference a generated
+        // decl. A decl that fails to infer is tolerated (it just contributes no
+        // binding) so one broken body never blanks the whole list. Generic — no
+        // decorator framework is named here.
+        for (program.decls) |decl| switch (decl) {
+            .use => |u| try appendImportBindings(env, &list, decl, u),
+            .val => {},
+            else => {
+                const maybe = inferDeclTyped(env, decl) catch |err| switch (err) {
+                    error.TypeError => null,
+                    else => return err,
+                };
+                if (maybe) |b| try list.append(env.arena, b);
+            },
+        };
         return list.toOwnedSlice(env.arena);
     }
 
@@ -156,23 +199,7 @@ pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBind
             // called `env.bind(name, ty)` for each symbol in the `use` statement.
             // Emit one TypedBinding per import so the LSP completion engine can
             // see them — the dummy `name = ""` binding is gone.
-            .use => |u| {
-                // `import {bool} from "std"` — mark each imported std module
-                // so qualified calls (`bool.negate(x)`) resolve against
-                // `env.stdModules`. Unknown std module → clear type error.
-                if (try markStdImports(env, u)) continue;
-                for (u.imports) |imp| {
-                    const name = imp.name();
-                    if (env.lookup(name)) |ty| {
-                        try list.append(env.arena, .{
-                            .name = name,
-                            .type_ = ty,
-                            .typedExpr = null,
-                            .decl = decl,
-                        });
-                    }
-                }
-            },
+            .use => |u| try appendImportBindings(env, &list, decl, u),
             else => {
                 if (try inferDeclTyped(env, decl)) |b| {
                     try list.append(env.arena, b);

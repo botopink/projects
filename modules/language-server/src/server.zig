@@ -13,6 +13,8 @@ const files_mod = @import("./files.zig");
 const feedback_mod = @import("./feedback.zig");
 const lsp_types = @import("./lsp_types.zig");
 const index_mod = @import("./project_index.zig");
+const graph_mod = @import("./project_graph.zig");
+const compiler_mod = @import("./compiler.zig");
 
 const Lexer = bp.Lexer;
 
@@ -39,6 +41,9 @@ pub const Server = struct {
     files: files_mod.FileCache,
     feedback: feedback_mod.FeedbackBookkeeper,
     index: index_mod.ProjectIndex,
+    /// Per-project dependency graph (lib `from "<lib>"` + `mod` siblings),
+    /// resolved from `botopink.json` and cached so a keystroke reuses it.
+    graph: graph_mod.ProjectGraph,
     initialized: bool,
     shutdown_requested: bool,
     /// Monotonic id for server→client requests (e.g. inlay-hint refresh).
@@ -57,6 +62,7 @@ pub const Server = struct {
             .files = files_mod.FileCache.init(gpa),
             .feedback = feedback_mod.FeedbackBookkeeper.init(gpa),
             .index = index_mod.ProjectIndex.init(gpa, io),
+            .graph = graph_mod.ProjectGraph.init(gpa, io),
             .initialized = false,
             .shutdown_requested = false,
             .next_request_id = 1,
@@ -68,13 +74,76 @@ pub const Server = struct {
         self.files.deinit();
         self.feedback.deinit();
         self.index.deinit();
+        self.graph.deinit();
         if (self.template_root) |r| self.gpa.free(r);
     }
 
     /// Build an LSP compiler bound to this server's io + template-eval root, so
     /// every compile can expand sub-language templates for tooling.
-    fn makeCompiler(self: *Server) @import("./compiler.zig").LspCompiler {
-        return @import("./compiler.zig").LspCompiler.init(self.gpa, self.io, self.template_root);
+    fn makeCompiler(self: *Server) compiler_mod.LspCompiler {
+        return compiler_mod.LspCompiler.init(self.gpa, self.io, self.template_root);
+    }
+
+    /// Build the module list to compile for `uri`: its project dependencies
+    /// (`from "<lib>"` packages + `mod` siblings, resolved from `botopink.json`)
+    /// followed by the active document LAST, so it can import from every dep.
+    /// Declaration-only `.d.bp` modules are excluded from the compile (they carry
+    /// no bodies). When the file is not inside a project, falls back to the
+    /// single active document. Entries are arena-allocated; their sources are
+    /// borrowed (graph cache + the in-memory `source`), valid for this call.
+    fn buildModuleEntries(
+        self: *Server,
+        arena: std.mem.Allocator,
+        uri: []const u8,
+        source: []const u8,
+    ) ![]compiler_mod.ModuleEntry {
+        const active_path = lsp_types.uriToPath(uri);
+        const resolved = (self.graph.resolve(uri) catch null) orelse {
+            const one = try arena.alloc(compiler_mod.ModuleEntry, 1);
+            one[0] = .{ .uri = uri, .source = source };
+            return one;
+        };
+
+        var list: std.ArrayListUnmanaged(compiler_mod.ModuleEntry) = .empty;
+        for (resolved.deps) |dep| {
+            if (dep.declaration) continue; // mirror the CLI: `.d.bp` not compiled
+            if (samePath(lsp_types.uriToPath(dep.uri), active_path)) continue; // the active doc
+            // Overlay an open buffer so unsaved edits to a dependency are seen.
+            const src = self.files.get(dep.uri) orelse dep.source;
+            try list.append(arena, .{ .uri = dep.uri, .source = src });
+        }
+        try list.append(arena, .{ .uri = uri, .source = source }); // active doc LAST
+        return list.toOwnedSlice(arena);
+    }
+
+    /// The project dependency sources (libs + siblings, INCLUDING `.d.bp`
+    /// declaration surfaces) as `engine.ModuleSource` for cross-module
+    /// go-to-def. Empty when the file is not inside a project.
+    fn graphOthers(
+        self: *Server,
+        arena: std.mem.Allocator,
+        uri: []const u8,
+    ) ![]engine.ModuleSource {
+        const active_path = lsp_types.uriToPath(uri);
+        const resolved = (self.graph.resolve(uri) catch null) orelse return &.{};
+        var list: std.ArrayListUnmanaged(engine.ModuleSource) = .empty;
+        for (resolved.deps) |dep| {
+            if (samePath(lsp_types.uriToPath(dep.uri), active_path)) continue;
+            const src = self.files.get(dep.uri) orelse dep.source;
+            try list.append(arena, .{ .uri = dep.uri, .source = src });
+        }
+        return list.toOwnedSlice(arena);
+    }
+
+    /// Compile `uri`'s document together with its project module graph. The
+    /// returned `CompileResult` borrows the active `source`/`uri` and the graph
+    /// cache (both outlive the call); only the entry array is temporary.
+    fn compileWithGraph(self: *Server, uri: []const u8, source: []const u8) !compiler_mod.CompileResult {
+        var ea = std.heap.ArenaAllocator.init(self.gpa);
+        defer ea.deinit();
+        const entries = try self.buildModuleEntries(ea.allocator(), uri, source);
+        var lsp_compiler = self.makeCompiler();
+        return lsp_compiler.compile(entries);
     }
 
     /// Main loop: reads messages from stdin and dispatches until shutdown.
@@ -221,6 +290,10 @@ pub const Server = struct {
         const uri = jsonStr(td, "uri") orelse return;
         const text = jsonStr(td, "text") orelse return;
         try self.files.open(uri, text);
+        // A newly opened file may be (or join) a project dependency; re-resolve
+        // the graph so its `src` tree is current. A keystroke (didChange) does
+        // NOT invalidate — open buffers are overlaid, so cached deps stay valid.
+        self.graph.invalidateAll();
         try self.publishDiagnostics(uri, text);
     }
 
@@ -252,6 +325,9 @@ pub const Server = struct {
         const td = params.object.get("textDocument") orelse return;
         const uri = jsonStr(td, "uri") orelse return;
         self.files.close(uri);
+        // The closed buffer's on-disk content is now authoritative again; drop the
+        // cached graph so the next compile re-reads it from disk (save/watch).
+        self.graph.invalidateAll();
         if (self.feedback.has(uri)) {
             try self.sendDiagnostics(uri, &.{});
             self.feedback.clear(uri);
@@ -297,9 +373,7 @@ pub const Server = struct {
         defer self.gpa.free(source);
 
         // Compile to get typed bindings
-        var lsp_compiler = self.makeCompiler();
-        const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
-        var result = lsp_compiler.compile(&entries) catch {
+        var result = self.compileWithGraph(uri, source) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
         defer result.deinit(self.gpa);
@@ -357,9 +431,7 @@ pub const Server = struct {
         // F3). Gated on being inside a string so the common path skips the extra
         // template-expanding compile.
         if (engine.cursorInString(source, lsp_types.positionToOffset(source, pos))) {
-            var lsp_compiler = self.makeCompiler();
-            const c_entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
-            if (lsp_compiler.compile(&c_entries)) |res| {
+            if (self.compileWithGraph(uri, source)) |res| {
                 var result = res;
                 defer result.deinit(self.gpa);
                 if (try engine.definitionCustomRef(self.gpa, uri, source, pos, tokens, result.customAstFor(uri))) |loc| {
@@ -373,6 +445,22 @@ pub const Server = struct {
         if (try engine.definition(self.gpa, uri, source, pos, tokens)) |loc| {
             defer self.gpa.free(loc.uri);
             return messages.writeResponse(self.io, self.gpa, msg.id(), loc);
+        }
+
+        // Project graph (resolved from `botopink.json`) is the source of truth for
+        // `from "<lib>"` symbols (incl. member access like `Response.created`) —
+        // search the lib `src` + `files` surface before the workspace-scanned
+        // index. The dep sources are borrowed from the graph cache.
+        {
+            var ga = std.heap.ArenaAllocator.init(self.gpa);
+            defer ga.deinit();
+            const g_others = self.graphOthers(ga.allocator(), uri) catch &.{};
+            if (g_others.len > 0) {
+                if (try engine.definitionInModules(self.gpa, uri, source, pos, tokens, g_others)) |loc| {
+                    defer self.gpa.free(loc.uri);
+                    return messages.writeResponse(self.io, self.gpa, msg.id(), loc);
+                }
+            }
         }
 
         // On a local miss, resolve imported symbols against other modules.
@@ -493,9 +581,7 @@ pub const Server = struct {
         };
         defer self.gpa.free(source);
 
-        var lsp_compiler = self.makeCompiler();
-        const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
-        var result = lsp_compiler.compile(&entries) catch {
+        var result = self.compileWithGraph(uri, source) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
         defer result.deinit(self.gpa);
@@ -641,9 +727,7 @@ pub const Server = struct {
         };
         defer self.gpa.free(source);
 
-        var lsp_compiler = self.makeCompiler();
-        const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
-        var result = lsp_compiler.compile(&entries) catch {
+        var result = self.compileWithGraph(uri, source) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
         defer result.deinit(self.gpa);
@@ -684,9 +768,7 @@ pub const Server = struct {
         };
         defer self.gpa.free(source);
 
-        var lsp_compiler = self.makeCompiler();
-        const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
-        var result = lsp_compiler.compile(&entries) catch {
+        var result = self.compileWithGraph(uri, source) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), &.{});
         };
         defer result.deinit(self.gpa);
@@ -736,10 +818,8 @@ pub const Server = struct {
             return messages.writeResponse(self.io, self.gpa, msg.id(), proto.SemanticTokens{ .data = &.{} });
         };
 
-        var lsp_compiler = self.makeCompiler();
-        const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
         var bindings: []const @import("botopink").comptime_pipeline.TypedBinding = &.{};
-        var result = lsp_compiler.compile(&entries) catch null;
+        var result = self.compileWithGraph(uri, source) catch null;
         defer if (result) |*r| r.deinit(self.gpa);
         if (result) |r| {
             for (r.session.outputs.items) |output| {
@@ -795,9 +875,7 @@ pub const Server = struct {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
 
-        var lsp_compiler = self.makeCompiler();
-        const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
-        var result = lsp_compiler.compile(&entries) catch {
+        var result = self.compileWithGraph(uri, source) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
         defer result.deinit(self.gpa);
@@ -892,9 +970,7 @@ pub const Server = struct {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
 
-        var lsp_compiler = self.makeCompiler();
-        const entries = [_]@import("./compiler.zig").ModuleEntry{.{ .uri = uri, .source = source }};
-        var result = lsp_compiler.compile(&entries) catch {
+        var result = self.compileWithGraph(uri, source) catch {
             return messages.writeResponse(self.io, self.gpa, msg.id(), null);
         };
         defer result.deinit(self.gpa);
@@ -934,7 +1010,14 @@ pub const Server = struct {
     fn publishDiagnostics(self: *Server, uri: []const u8, source: []const u8) !void {
         try self.sendProgress("begin", "Compiling...");
 
-        var result = try engine.diagnose(self.gpa, self.io, uri, source, self.template_root);
+        // Compile the document together with its project graph so a file importing
+        // across `mod` siblings / `from "<lib>"` doesn't report false "unbound"
+        // errors. Diagnostics are still filtered to `uri`.
+        var ea = std.heap.ArenaAllocator.init(self.gpa);
+        defer ea.deinit();
+        const entries = self.buildModuleEntries(ea.allocator(), uri, source) catch &.{};
+
+        var result = try engine.diagnose(self.gpa, self.io, uri, source, self.template_root, entries);
         defer result.deinit(self.gpa);
 
         try self.sendDiagnostics(uri, result.diagnostics);
@@ -975,6 +1058,26 @@ pub const Server = struct {
         return jsonStr(td, "uri");
     }
 };
+
+/// Compare two filesystem paths for equality, treating any run of `/` as a
+/// single separator and ignoring a trailing slash (so `a/src//x` == `a/src/x`).
+fn samePath(a: []const u8, b: []const u8) bool {
+    var i: usize = 0;
+    var j: usize = 0;
+    while (i < a.len and j < b.len) {
+        if (a[i] == '/' and b[j] == '/') {
+            while (i < a.len and a[i] == '/') i += 1;
+            while (j < b.len and b[j] == '/') j += 1;
+            continue;
+        }
+        if (a[i] != b[j]) return false;
+        i += 1;
+        j += 1;
+    }
+    while (i < a.len and a[i] == '/') i += 1;
+    while (j < b.len and b[j] == '/') j += 1;
+    return i == a.len and j == b.len;
+}
 
 /// Writes a WorkspaceEdit response for a single-file rename.
 /// Builds the JSON body manually to avoid vtable-in-json issues.

@@ -237,3 +237,47 @@ test "decorator error: argument type mismatch (number where string expected)" {
         \\record A { x: i32 }
     , "must be string");
 }
+
+// ── F2 (lsp-project-awareness): @emit must not blank the binding list ─────────
+//
+// When a decorator body `@emit`s code, `inferProgramTyped` used to return an
+// empty binding slice (the per-decl loop sat after an early `return`). The LSP
+// then saw zero bindings for any file applying an emitting decorator — completion
+// went dark everywhere (R2). The fix still collects the SOURCE decls (record,
+// fields, imports, fn signatures) before deferring the spliced re-analysis.
+
+test "infer: an @emit-ing module still yields source-decl TypedBindings (R2)" {
+    const allocator = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const src =
+        \\fn service(comptime decl: @Decl) { }
+        \\
+        \\#[service]
+        \\record PostService { name: string }
+    ;
+    var lx = Lexer.init(src);
+    const tokens = try lx.scanAll(alloc);
+    var p = Parser.init(tokens);
+    const program = try p.parse(alloc);
+
+    var env = Env.init(alloc);
+    defer env.deinit();
+    try env.registerBuiltins();
+    try comptimeMod.registerStdlib(&env, allocator);
+
+    // A non-empty contributions list is exactly what a decorator body's `@emit`
+    // produces — and what used to trigger the early empty return.
+    try env.contributions.append(env.arena, "val __emitted = 1;");
+
+    const bindings = try inferMod.inferProgramTyped(&env, program);
+
+    try std.testing.expect(bindings.len > 0);
+    var found_record = false;
+    for (bindings) |b| {
+        if (std.mem.eql(u8, b.name, "PostService")) found_record = true;
+    }
+    try std.testing.expect(found_record);
+}
