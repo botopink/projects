@@ -316,3 +316,36 @@ test "js: string ---- interpolation lowers to concat" {
         \\}
     );
 }
+
+// ── net-new (v0.beta.13 · A8): backend-parity snapshots ──────────────────────
+
+// String interpolation with TWO holes (`"${a}-${b}"`) lowers consistently on
+// every backend (node/erlang/beam/wasm) — the snapshot pins each lowering.
+test "js: net-new ---- interpolation with two holes lowers on every backend" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\fn label(a: string, b: string) -> string {
+        \\    return "${a}-${b}";
+        \\}
+    );
+}
+
+// Record `==` vs array `==`: the per-backend snapshots pin how each `==` lowers
+// and expose that equality is *backend-defined* — node/wasm emit reference
+// equality (`===`) for both records and arrays, while erlang/beam emit Erlang
+// term equality (`=:=`, structural) for both. No backend gives records a
+// special structural `==` that arrays lack.
+test "js: net-new ---- record equality vs array equality across backends" {
+    try h.assertJsSingle(std.testing.allocator, @src(),
+        \\record Point { x: i32, y: i32 }
+        \\fn recordEq() -> bool {
+        \\    val a = Point(x: 1, y: 2);
+        \\    val b = Point(x: 1, y: 2);
+        \\    return a == b;
+        \\}
+        \\fn arrayEq() -> bool {
+        \\    val xs = [1, 2];
+        \\    val ys = [1, 2];
+        \\    return xs == ys;
+        \\}
+    );
+}

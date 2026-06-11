@@ -283,6 +283,124 @@ test "infer: local extension method resolves without activation" {
     );
 }
 
+// ── net-new (v0.beta.13 · A5): extension dispatch ────────────────────────────
+
+// Implementing an interface for a PRIMITIVE (`i32`) and dispatching a method on
+// a literal receiver resolves the extension method.
+test "infer: net-new ---- implement an interface for a primitive and dispatch" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\val Doubler = interface {
+        \\    fn double(self: Self) -> i32;
+        \\}
+        \\val IntDoubler = implement Doubler for i32 {
+        \\    fn double(self: Self) -> i32 {
+        \\        return self + self;
+        \\    }
+        \\}
+        \\val n = 3;
+        \\val six = n.double();
+    );
+}
+
+// Two imported libs each activating the SAME method name for the same type
+// (`PatoNada*` from one, `PatoFundo*` from another) make `donald.swim()`
+// cross-module ambiguous — inference reports a type error at the call.
+test "infer: net-new ---- two imported libs activating the same method are ambiguous" {
+    const io = std.testing.io;
+    const modules = [_]Module{
+        .{ .path = "swimlib", .source =
+        \\pub record Pato { id: i32 }
+        \\pub val Swimmer = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\pub val PatoNada = implement Swimmer for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        },
+        .{ .path = "divelib", .source =
+        \\import {Pato} from "swimlib";
+        \\pub val Diver = interface {
+        \\    fn swim(self: Self);
+        \\}
+        \\pub val PatoFundo = implement Diver for Pato {
+        \\    fn swim(self: Self) {
+        \\        return self.id;
+        \\    }
+        \\}
+        },
+        .{ .path = "", .source =
+        \\import {Pato, PatoNada*} from "swimlib";
+        \\import {PatoFundo*} from "divelib";
+        \\val donald = Pato(1);
+        \\val splash = donald.swim();
+        },
+    };
+
+    var session = try comptimeMod.compile(
+        std.testing.allocator,
+        &modules,
+        io,
+        .node,
+        ".botopinkbuild/comptime/cross_module_extension_ambiguity",
+    );
+    defer session.deinit(std.testing.allocator);
+
+    // The consumer module fails inference with an ambiguous-method diagnostic.
+    var sawAmbiguous = false;
+    for (session.outputs.items) |out| {
+        if (out.outcome == .typeError) {
+            switch (out.outcome.typeError.kind) {
+                .ambiguousExtension, .ambiguousMethod => sawAmbiguous = true,
+                else => {},
+            }
+        }
+    }
+    try std.testing.expect(sawAmbiguous);
+}
+
+// Precedence: when a record has an inherent method and an interface
+// implementation declares the SAME method name, the inherent method wins (it is
+// always available, so `t.label()` resolves without ambiguity).
+test "infer: net-new ---- inherent method wins over a same-name implemented one" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\record Tag {
+        \\    name: string,
+        \\    fn label(self: Self) -> string {
+        \\        return self.name;
+        \\    }
+        \\}
+        \\val Named = interface {
+        \\    fn label(self: Self) -> string;
+        \\}
+        \\val TagNamed = implement Named for Tag {
+        \\    fn label(self: Self) -> string {
+        \\        return "iface";
+        \\    }
+        \\}
+        \\val t = Tag(name: "x");
+        \\val l: string = t.label();
+    );
+}
+
+// Chained `x.a().b()` where both `a` and `b` are extension methods resolves each
+// link in the chain (the result of the first call is the receiver of the second).
+test "infer: net-new ---- chained extension calls resolve each link" {
+    try h.assertInfersOk(std.testing.allocator,
+        \\val Stepper = interface {
+        \\    fn inc(self: Self) -> i32;
+        \\    fn dec(self: Self) -> i32;
+        \\}
+        \\val IntStepper = implement Stepper for i32 {
+        \\    fn inc(self: Self) -> i32 { return self + 1; }
+        \\    fn dec(self: Self) -> i32 { return self - 1; }
+        \\}
+        \\val n = 5;
+        \\val r: i32 = n.inc().dec();
+    );
+}
+
 test "infer: qualified extension call needs no activation" {
     try h.assertComptimeAstSingle(std.testing.allocator, @src(),
         \\val Swimmer = interface {

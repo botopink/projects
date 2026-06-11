@@ -1,91 +1,50 @@
-# TODO — rakun (Wave 3 of 3, v0.beta.11)
+# TODO — Front A: core-language test coverage (v0.beta.13)
 
-**Branch**: `task/rakun-finish` (from `origin/feat` @ f50de6d)
-**Slug**: rakun · **Spec**: `tasks/v0.beta.11/specs/rakun.md`
-**Depends on**: nothing — `@Decl`/`@emit`, F2 scan/graph/cycle, F3 placement, F4
-router all landed in `feat` in-lib (`91db590`, `4eef880`, `0ff15a0`, `e10b49f`).
-**Status**: F2-scopes + F5 DONE — 13 lib tests green; `examples/rakun` runs over real HTTP.
+**Branch**: `task/v13-core` (from `origin/feat` @ eac9313)
+**Spec**: `tasks/v0.beta.13/specs/front-a-core.md`
+**Front territory** (edit ONLY here): `modules/compiler-core/src/**/tests/*.zig` +
+`modules/compiler-core/snapshots/**`. File-disjoint from Fronts B (`task/v13-libs`) and
+C (`task/v13-tooling`) — they never touch these files.
+**Status**: net-new gaps closed; A6 + a few items recorded as out-of-territory/limitations
 
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test
-> (no `--no-verify`).
+> (no `--no-verify`). Goal: turn each `[gap]` in the spec into a `[have]` (add the test)
+> or record it as a product limitation. No production behaviour change expected.
 
-## HARD RULE
+## Areas (see front-a-core.md for the tagged scenarios + examples)
 
-`modules/compiler-core/src/**` keeps **zero** knowledge of rakun. Every behaviour
-below is implemented in `libs/rakun/*.bp` as lib-side decorator bodies via `@emit`
-over the generic primitives + a `#[@external]` host runtime.
+- [x] A1 effects — net-new: effect marker on a record method; compound
+      `@Future<@Result<T,E>>`; two-markers-on-one-fn conflict (error snap); `#[@external]`
+      with no target for the active backend → `MissingExternalTarget`. beam/wasm eager-lowering
+      snapshots are auto-covered by the existing 4-backend `assertJsSingle` effect tests.
+- [x] A2 errors-result-option — net-new: `@Result` as a record field; `?.`→Option resolved by
+      `unwrapOr`; `val x = try f()` binds the unwrapped Ok; throw of an enum error variant
+      unifies with `E`. beam/wasm try snapshots auto-covered by the 4-backend codegen tests.
+- [x] A3 pattern-matching — net-new: wildcard makes a partial (string) case exhaustive; case
+      over int/string literal scrutinees; nested record destructuring binds inner fields (via the
+      leading-non-ident payload form — identifier-first nesting is a parser limitation, noted
+      in-test); case-as-val vs trailing type-check identically.
+- [x] A4 generics-recursion-context — net-new: generic record at two concrete types; recursion
+      through a generic data type; generic return inferred from usage; inline `test {}` in a
+      generic module resolves (closes the historic `.generic` gap); 3-layer @Context stays
+      Element-based.
+- [x] A5 extension-dispatch — net-new: implement-for-primitive + dispatch; chained extension
+      calls; inherent wins over a same-name implemented method; two imported libs activating the
+      same method → cross-module ambiguity (custom multi-module test). codegen/{erlang,beam,wasm}
+      cross-module dispatch stays a known limitation (LOCAL-only).
+- [~] A6 module-system — parser `[have]`s already exist. The net-new resolve/visib/build gaps
+      (3+-level nesting, sibling same-name, pub-mod type re-export, circular mod, orphan) all
+      need the **filesystem module resolver** in the CLI/driver, not compiler-core → out of
+      Front-A territory (belongs to Front C).
+- [x] A7 expr-templates — net-new: hole captures a bare variable reference; empty template
+      handled gracefully; splice type-error reports at the splice site (not the def); nested
+      template (body builds a call to another template fn) expands end-to-end; two invocations
+      expand independently.
+- [x] A8 backends-parity — net-new snapshots (all 4 backends): two-hole string interpolation;
+      record `==` vs array `==` (snapshot exposes equality is *backend-defined* — `===` ref-eq on
+      node/wasm, `=:=` structural on erlang/beam; no special structural record `==`). `Array.range`
+      host-external stays open (limitation).  ·  execution (run/*) is Front C
 
-> The old core-coupled F2/F3 line (the deleted `feb96f0`) is discarded — it
-> reintroduced lib-specific code into the Zig core and was superseded. `feat`
-> already has the correct in-lib F2/F4 (`libs/rakun/src/*.bp`); this task continues
-> from there. Port any remaining *behaviour* into `.bp`, **never the Zig**.
-
-## What already landed in `feat` (in-lib)
-
-- **F2 (partial)** — component scan (`#[service]`/`#[repository]`/`#[controller]`
-  → `rkScan`), DI graph (`__rkMake_<Type>()` lazy factories), runtime cycle
-  detection (`rkEnter`/`rkDone`). Host runtime in `runtime.mjs` behind `#[@external]`.
-- **F4 (done)** — controller decorator builds the router table from method
-  `#[getMapping(path)]`/…; `dispatch` matches path params; `Response` builders
-  type-check against handler return type. Green via `rkDispatch`.
-
-What remains: **DI scopes** (F2-scopes) and the **real server** (F5).
-
-## Steps
-
-### F2-scopes — singleton scope + factory/property injection
-- [x] Singleton scope: each `__rkMake_<Type>()` is `rkSingleton("Type", { -> … })` —
-      one shared instance per type (host cache), a 3-level diamond shares one repo.
-      `rkBuildCount` proves it (`runtime.mjs#buildCount`/`singleton`).
-- [x] `#[configuration]` + `#[bean]` factories: `#[configuration]` `@emit`s a
-      `__rkMake_<ReturnType>()` per `#[bean]` method → the return type is injectable
-      by type (a singleton, resolved by return-type name).
-- [x] `#[value("key")]` property injection: the component factory reads
-      `f.annotations`, fills a `#[value]` field from `rkProp`/`rkPropInt`, and keeps
-      it OFF the DI graph (no `__rkMake_<i32|string>` edge — clean compile proves it).
-
-### F5 — bootstrap (`Rakun.run` + real HTTP backing)
-- [x] `libs/server` is real: `server.mjs` is a node-`http` server (`serve`/`stop`);
-      `server.bp` binds it via `#[@external]`. Framework-agnostic (generic over the
-      response value `R`); rakun → server, never the reverse. (Erlang transport: follow-up.)
-- [x] `Request` has a concrete server-supplied impl (`runtime.mjs#makeRequest`,
-      built by `dispatchHttp`): `param`/`query`/`header`/`body`, all populated live.
-- [x] `Rakun.run(app)` (`bootstrap.bp`) hands `libs/server` a dispatcher over the
-      host router and listens on `app.port`. **G2 done:** the CLI ships the runtime
-      `.mjs` next to every emitted module (`libs.zig#shipMjsSidecars`), so a consumer
-      build resolves the `#[@external]` requires.
-- [x] End-to-end: `examples/rakun` is a runnable app — `botopink build` + `node
-      out/main.js` serves; every route below verified over a real socket with `curl`.
-
-## Test scenarios
-
-```
-comptime ---- a 3-level diamond (repo ← service + controller) resolves a SINGLE  [✓ scopes_test]
-              shared instance per type (rkBuildCount == 1)
-comptime ---- #[bean] factory output is injectable by its return type            [✓ scopes_test]
-infer    ---- #[value("port")] field is filled, NOT treated as a DI edge         [✓ scopes_test]
-run      ---- GET /api/users/  returns 200 with the joined user list             [✓ server_test + example]
-run      ---- GET /api/hello/:name returns 200 "Hello, ana!"  (path param)       [✓ server_test + example]
-run      ---- an unmapped path returns 404                                       [✓ server_test + example]
-```
-
-The `run` scenarios are covered two ways: `server_test.bp` drives `rkDispatchHttp`
-(the EXACT seam `libs/server` calls — match → live `Request` → handler → status/body,
-synchronously, so it runs under `botopink test`), and `examples/rakun` exercises the
-full node-`http` socket round trip end to end (manual `curl`; node's single thread
-can't both serve and block on a client in one synchronous test).
-
-## Notes
-
-- Constructor injection only; singleton is the only scope (no request/proto scope,
-  no graceful-shutdown / middleware).
-- `Request.param`/`query`/`header` return `string` (`""` when absent), not `?string`:
-  interface-method optional returns don't yet get the `@Option` lowering, and a
-  required path var / empty default is the cleaner contract anyway.
-- Core touched (all generic, lib-agnostic gate green): `commonJS.zig` require paths
-  now prefix `../`×depth so a nested dependency module resolves correctly; CLI G2
-  `.mjs` sidecar shipping in `libs.zig` (wired into `test_cmd.zig` + `build.zig`).
-- Comptime constraints on decorator bodies (no sibling calls, `if`-expr, bare-`if`
-  only last, block-lambdas) force the per-field injection + factory builder to be
-  inlined per marker.
-- Keep AGENTS.md / docs.md updated in the same commit as code changes.
+## Done means
+`zig build test` green with the new Zig `test {}` / `.snap.md` added; every A-front `[gap]`
+closed or recorded. Then integrate into `feat` via a throwaway `.tasks/_integrate-v13-core`.
