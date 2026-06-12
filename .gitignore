@@ -27,3 +27,6 @@ modules/compiler-core/main.S
 # per-task git worktrees
 .tasks/
 .tmp-exec-*/
+
+# per-lib local editor config (machine-specific LSP paths, trace flags)
+libs/*/.vscode/

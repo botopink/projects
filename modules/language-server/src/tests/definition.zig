@@ -312,3 +312,324 @@ test "definition: closure binder resolves to its binding site (R1)" {
     try std.testing.expectEqual(@as(u32, 3), result.?.range.start.line);
     try snap.assertDefinition(gpa, "definition_closure_binder", r1_source, cursor, result);
 }
+
+// ── lsp-definition-completeness — members, builtin methods & `mod` refs ───────
+//
+// Go-to-def used to be a declaration-keyword scan with no notion of "member of a
+// type": record fields had no keyword, methods resolved by the first same-named
+// `fn` (receiver-blind), builtin methods had no `fn` in the file at all, and a
+// `mod` name's declaration is a sibling file. These cover R2–R7 from the spec on
+// the real erika shape: a record with an `Array` field + methods, a `self.field`
+// access, a builtin call, a `Name(field:)` label, and a `pub mod <name>;`.
+
+/// 0-based Position of the `occurrence`-th match of `needle`, shifted right by
+/// `shift` characters (to land the cursor inside the needle).
+fn posOf(source: []const u8, needle: []const u8, occurrence: usize, shift: usize) proto.Position {
+    var from: usize = 0;
+    var found: usize = 0;
+    var idx: usize = 0;
+    while (std.mem.indexOfPos(u8, source, from, needle)) |p| {
+        found += 1;
+        if (found == occurrence) {
+            idx = p + shift;
+            break;
+        }
+        from = p + 1;
+    }
+    var line: u32 = 0;
+    var col: u32 = 0;
+    var i: usize = 0;
+    while (i < idx) : (i += 1) {
+        if (source[i] == '\n') {
+            line += 1;
+            col = 0;
+        } else col += 1;
+    }
+    return h.pos(line, col);
+}
+
+/// The source slice covered by `range` (single-line ranges only).
+fn sliceAt(source: []const u8, range: proto.Range) []const u8 {
+    var line: u32 = 0;
+    var i: usize = 0;
+    while (i < source.len and line < range.start.line) : (i += 1) {
+        if (source[i] == '\n') line += 1;
+    }
+    const start = i + range.start.character;
+    const end = i + range.end.character;
+    return source[start..@min(end, source.len)];
+}
+
+/// erika-shaped fixture: a `Query` record over an `Array<i32>` with fields and
+/// methods that reproduce R2–R6.
+const member_source =
+    \\pub record Query {
+    \\    items: Array<i32>,
+    \\    pub fn reverse(self: Self) -> Query {
+    \\        return Query(items: self.items.reverse());
+    \\    }
+    \\    pub fn all(self: Self) -> Array<i32> {
+    \\        return self.items;
+    \\    }
+    \\    pub fn each(self: Self) {
+    \\        var sink = [];
+    \\        self.items.forEach({ x -> sink = sink.append([x]); });
+    \\    }
+    \\}
+    \\val q = Query(items: [1, 2, 3]);
+    \\val r = q.reverse();
+;
+
+test "definition: method on a builtin field jumps to primitives, not the same-named record method (R2)" {
+    const gpa = std.testing.allocator;
+    var c = try h.compile(gpa, member_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), member_source);
+
+    // `.reverse` in `self.items.reverse()` — receiver `self.items` is Array<i32>,
+    // so it must resolve to the builtin `Array.reverse`, NOT Query's own method.
+    const cursor = posOf(member_source, "self.items.reverse()", 1, "self.items.".len);
+    const td = try engine.definitionMember(gpa, h.TEST_URI, member_source, cursor, tokens, bindings, &.{});
+    defer if (td) |t| switch (t) {
+        .location => |loc| gpa.free(loc.uri),
+        .builtin => {},
+    };
+    try std.testing.expect(td != null);
+    try std.testing.expect(td.? == .builtin);
+    try std.testing.expectEqualStrings("reverse", sliceAt(td.?.builtin.source, td.?.builtin.range));
+}
+
+test "definition: field label in a constructor call jumps to the field decl (R3)" {
+    const gpa = std.testing.allocator;
+    var c = try h.compile(gpa, member_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), member_source);
+
+    // `items` label in `Query(items: …)` → the `items:` field declaration (line 1).
+    const cursor = posOf(member_source, "Query(items:", 1, "Query(".len);
+    const td = try engine.definitionMember(gpa, h.TEST_URI, member_source, cursor, tokens, bindings, &.{});
+    defer if (td) |t| switch (t) {
+        .location => |loc| gpa.free(loc.uri),
+        .builtin => {},
+    };
+    try std.testing.expect(td != null);
+    try std.testing.expect(td.? == .location);
+    try std.testing.expectEqual(@as(u32, 1), td.?.location.range.start.line);
+    try std.testing.expectEqualStrings("items", sliceAt(member_source, td.?.location.range));
+}
+
+test "definition: self.field jumps to the field declaration (R4)" {
+    const gpa = std.testing.allocator;
+    var c = try h.compile(gpa, member_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), member_source);
+
+    // `items` in `return self.items;` → the `items:` field declaration (line 1).
+    const cursor = posOf(member_source, "self.items;", 1, "self.".len);
+    const td = try engine.definitionMember(gpa, h.TEST_URI, member_source, cursor, tokens, bindings, &.{});
+    defer if (td) |t| switch (t) {
+        .location => |loc| gpa.free(loc.uri),
+        .builtin => {},
+    };
+    try std.testing.expect(td != null);
+    try std.testing.expect(td.? == .location);
+    try std.testing.expectEqual(@as(u32, 1), td.?.location.range.start.line);
+    try std.testing.expectEqualStrings("items", sliceAt(member_source, td.?.location.range));
+}
+
+/// The exact erika shape: a *generic* `Query<T>` over `Array<T>` (a generic field
+/// whose arg is a type parameter, not a concrete type) — exercises R2/R4 the way
+/// `libs/erika/src/erika.bp` actually declares them.
+const generic_source =
+    \\pub record Query<T> {
+    \\    items: Array<T>,
+    \\    pub fn reverse(self: Self) -> Query<T> {
+    \\        return Query(items: self.items.reverse());
+    \\    }
+    \\    pub fn all(self: Self) -> Array<T> {
+    \\        return self.items;
+    \\    }
+    \\}
+    \\val q = Query(items: [1, 2, 3]);
+;
+
+test "definition: generic record — builtin method on Array<T> field jumps to primitives (R2 generic)" {
+    const gpa = std.testing.allocator;
+    var c = try h.compile(gpa, generic_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), generic_source);
+
+    const cursor = posOf(generic_source, "self.items.reverse()", 1, "self.items.".len);
+    const td = try engine.definitionMember(gpa, h.TEST_URI, generic_source, cursor, tokens, bindings, &.{});
+    defer if (td) |t| switch (t) {
+        .location => |loc| gpa.free(loc.uri),
+        .builtin => {},
+    };
+    try std.testing.expect(td != null);
+    try std.testing.expect(td.? == .builtin);
+    try std.testing.expectEqualStrings("reverse", sliceAt(td.?.builtin.source, td.?.builtin.range));
+}
+
+test "definition: generic record — self.field on Array<T> field jumps to the field decl (R4 generic)" {
+    const gpa = std.testing.allocator;
+    var c = try h.compile(gpa, generic_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), generic_source);
+
+    const cursor = posOf(generic_source, "self.items;", 1, "self.".len);
+    const td = try engine.definitionMember(gpa, h.TEST_URI, generic_source, cursor, tokens, bindings, &.{});
+    defer if (td) |t| switch (t) {
+        .location => |loc| gpa.free(loc.uri),
+        .builtin => {},
+    };
+    try std.testing.expect(td != null);
+    try std.testing.expect(td.? == .location);
+    try std.testing.expectEqual(@as(u32, 1), td.?.location.range.start.line);
+    try std.testing.expectEqualStrings("items", sliceAt(generic_source, td.?.location.range));
+}
+
+/// Two records with a same-named method — `.tag` must land on the *receiver's*
+/// record, not the first `fn tag` in the file.
+const r5_source =
+    \\pub record A {
+    \\    n: i32,
+    \\    pub fn tag(self: Self) -> i32 { return self.n; }
+    \\}
+    \\pub record B {
+    \\    m: i32,
+    \\    pub fn tag(self: Self) -> i32 { return self.m; }
+    \\}
+    \\val b = B(m: 5);
+    \\val t = b.tag();
+;
+
+test "definition: same-named method resolves on the receiver's record (R5)" {
+    const gpa = std.testing.allocator;
+    var c = try h.compile(gpa, r5_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), r5_source);
+
+    // `tag` in `b.tag()` where `b: B` → B.tag (line 6), not A.tag (line 2).
+    const cursor = posOf(r5_source, "b.tag()", 1, "b.".len);
+    const td = try engine.definitionMember(gpa, h.TEST_URI, r5_source, cursor, tokens, bindings, &.{});
+    defer if (td) |t| switch (t) {
+        .location => |loc| gpa.free(loc.uri),
+        .builtin => {},
+    };
+    try std.testing.expect(td != null);
+    try std.testing.expect(td.? == .location);
+    try std.testing.expectEqual(@as(u32, 6), td.?.location.range.start.line);
+}
+
+test "definition: builtin method with no fn in the file jumps to primitives (R6)" {
+    const gpa = std.testing.allocator;
+    var c = try h.compile(gpa, member_source);
+    defer c.deinit(gpa);
+    const bindings = c.bindings() orelse return error.CompileFailed;
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), member_source);
+
+    // `forEach` in `self.items.forEach(…)` — no `fn forEach` anywhere in the file.
+    const cursor = posOf(member_source, "self.items.forEach", 1, "self.items.".len);
+    const td = try engine.definitionMember(gpa, h.TEST_URI, member_source, cursor, tokens, bindings, &.{});
+    defer if (td) |t| switch (t) {
+        .location => |loc| gpa.free(loc.uri),
+        .builtin => {},
+    };
+    try std.testing.expect(td != null);
+    try std.testing.expect(td.? == .builtin);
+    try std.testing.expectEqualStrings("forEach", sliceAt(td.?.builtin.source, td.?.builtin.range));
+}
+
+test "definition: `pub mod <name>;` jumps to the backing module file (R7)" {
+    const gpa = std.testing.allocator;
+    const source =
+        \\pub mod erika;
+    ;
+    const erika_uri = "file:///erika/src/erika.bp";
+    const others = [_]engine.ModuleSource{.{
+        .uri = erika_uri,
+        .source = "pub fn ping() -> i32 { return 1; }",
+    }};
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), source);
+
+    // Cursor on `erika` in `pub mod erika;` → the `erika.bp` module file.
+    const cursor = posOf(source, "erika", 1, 0);
+    const empty: []const h.comptime_pipeline.TypedBinding = &.{};
+    const td = try engine.definitionMember(gpa, h.TEST_URI, source, cursor, tokens, empty, &others);
+    defer if (td) |t| switch (t) {
+        .location => |loc| gpa.free(loc.uri),
+        .builtin => {},
+    };
+    try std.testing.expect(td != null);
+    try std.testing.expect(td.? == .location);
+    try std.testing.expectEqualStrings(erika_uri, td.?.location.uri);
+}
+
+test "definition: cross-module field jumps into the declaring module (F5)" {
+    const gpa = std.testing.allocator;
+    const dep_uri = "file:///dep_0.bp";
+    const dep_src =
+        \\pub record Box {
+        \\    value: i32,
+        \\}
+    ;
+    const main_src =
+        \\import { Box } from "dep";
+        \\val b = Box(value: 1);
+        \\val v = b.value;
+    ;
+
+    var c = try h.compileMulti(gpa, &.{
+        .{ .uri = dep_uri, .source = dep_src },
+        .{ .uri = h.TEST_URI, .source = main_src },
+    });
+    defer c.deinit(gpa);
+    const bindings = c.result.bindingsFor(h.TEST_URI);
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const tokens = try h.tokenize(arena.allocator(), main_src);
+    const others = [_]engine.ModuleSource{.{ .uri = dep_uri, .source = dep_src }};
+
+    // `value` in `b.value` where `b: Box` (declared in dep_0) → dep_0's field.
+    const cursor = posOf(main_src, "b.value", 1, "b.".len);
+    const td = try engine.definitionMember(gpa, h.TEST_URI, main_src, cursor, tokens, bindings, &others);
+    defer if (td) |t| switch (t) {
+        .location => |loc| gpa.free(loc.uri),
+        .builtin => {},
+    };
+    try std.testing.expect(td != null);
+    try std.testing.expect(td.? == .location);
+    try std.testing.expectEqualStrings(dep_uri, td.?.location.uri);
+    try std.testing.expectEqualStrings("value", sliceAt(dep_src, td.?.location.range));
+}
