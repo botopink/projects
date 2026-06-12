@@ -22,8 +22,18 @@ Goal: sweep the deliberately-recorded, deferred gaps into one wave. Each section
       generics substituted; `val length: T` is read as a property (intrinsic) and the
       `len`/`size` aliases route to the same field. Hardcoded `primMethodReturnType` table
       deleted; output byte-identical (zero snapshot diff).
-- [ ] A4 — node: drive `commonJS.zig` native emission from `@external(Target.Node,…)`; delete
-      `isNativeProtoMethod` + `jsBuiltinMethodName` + `jsStringMethodRename`/`jsMethodRenames`; keep `jsPrototypeOwner`.
+- [x] A4 — node: drive `commonJS.zig` native emission from `@external(Target.Node, "X")`.
+      `primitives.d.bp` carries the 2-arg annotation on every primitive method whose JS
+      counterpart is a native prototype method (rename or same-name skip);
+      `isNativeProtoMethod` deleted (the loop now skips a method when its annotation has
+      an empty module — single skip-rule); `jsStringMethodRename` deleted (inference's
+      `primMethodNodeRename` walks the receiver's interface + `extends` chain and records
+      a per-loc rename, type-directed); `jsBuiltinMethodName` replaced by the emitter's
+      `prim_node_renames` map (built from interface annotations with a record-method
+      collision filter; seeded with the three known-safe pairs so `emitFnJs`'s standalone
+      path used by comptime template eval picks them up too). Output byte-identical
+      (zero snapshot diff); `jsMethodRenames` and `jsPrototypeOwner` kept as the per-loc
+      type-directed channel and JS-constructor map respectively.
 - [ ] A5 — erlang/beam: replace `emitPrimMethod` switches with `@external(Target.Erlang,…)` lookup
       + template arg order; irreducible cases → small explicit inline allow-list.
 - [ ] A6 — migrate every current case; **byte-identical** output (empty snapshot diff).

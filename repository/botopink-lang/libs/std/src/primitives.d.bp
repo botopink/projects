@@ -30,7 +30,7 @@ interface Number {
 
 interface Integer extends Number {
     #[@external(erlang, "erlang", "integer_to_binary"),
-      @external(node, "./gleam_stdlib.mjs", "to_string")]
+      @external(node, "toString")]
     fn toString(self: Self) -> string
 
     default fn isEven(self: Self) -> bool {
@@ -50,7 +50,7 @@ interface Signed extends Integer {
 
 interface Float extends Number {
     #[@external(erlang, "erlang", "float_to_binary"),
-      @external(node, "./gleam_stdlib.mjs", "float_to_string")]
+      @external(node, "toString")]
     fn toString(self: Self) -> string
 
     #[@external(erlang, "erlang", "abs"),
@@ -86,7 +86,7 @@ interface F64 extends Float {}
 
 interface Bool {
     #[@external(erlang, "erlang", "atom_to_binary"),
-      @external(node, "./gleam_stdlib.mjs", "to_string")]
+      @external(node, "toString")]
     fn toString(self: Self) -> string
 
     default fn negate(self: Self) -> bool {
@@ -122,15 +122,15 @@ interface String {
     fn split(self: Self, sep: string) -> string[]
 
     #[@external(erlang, "string", "uppercase"),
-      @external(node, "./gleam_stdlib.mjs", "uppercase")]
+      @external(node, "toUpperCase")]
     fn toUpper(self: Self) -> string
 
     #[@external(erlang, "string", "lowercase"),
-      @external(node, "./gleam_stdlib.mjs", "lowercase")]
+      @external(node, "toLowerCase")]
     fn toLower(self: Self) -> string
 
     #[@external(erlang, "string", "find"),
-      @external(node, "./gleam_stdlib.mjs", "contains_string")]
+      @external(node, "includes")]
     fn contains(self: Self, sub: string) -> bool
 
     #[@external(erlang, "string", "prefix"),
@@ -169,6 +169,7 @@ interface String {
       @external(node, "./gleam_stdlib.mjs", "index_of")]
     fn indexOf(self: Self, sub: string) -> i32
 
+    #[@external(node, "toString")]
     default fn toString(self: Self) -> string {
         return self;
     }
@@ -517,7 +518,7 @@ interface Array<T> {
     fn join(self: Self, sep: string) -> string
 
     #[@external(erlang, "lists", "reverse"),
-      @external(node, "./gleam_stdlib.mjs", "reverse")]
+      @external(node, "reverse")]
     fn reverse(self: Self) -> Self
 
     #[@external(erlang, "lists", "search"),
@@ -594,6 +595,7 @@ interface Array<T> {
         return acc;
     }
 
+    #[@external(node, "find")]
     default fn find(self: Self, pred: fn(item: T) -> bool) -> ?T {
         return self.filter(pred).at(0);
     }
@@ -610,6 +612,7 @@ interface Array<T> {
         return self.filter(pred).length != 0;
     }
 
+    #[@external(node, "concat")]
     default fn append(self: Self, other: Self) -> Self {
         var out = self.slice(0, self.length);
         other.forEach({ y -> out.push(y); });
@@ -630,6 +633,7 @@ interface Array<T> {
         return out;
     }
 
+    #[@external(node, "flatMap")]
     default fn flatMap<U>(self: Self, transform: fn(item: T) -> U) -> Array<U> {
         return self.map(transform).flatten();
     }

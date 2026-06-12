@@ -4881,14 +4881,33 @@ fn primitiveInterfaceName(typeName: []const u8) ?[]const u8 {
     return null;
 }
 
-/// JS-native rename for a `string` interface method whose host name differs and
-/// has no companion lowering yet. `js_name` is the `String.prototype` method to
-/// emit; `ret` is the method's return type. Only consulted for `string` receivers.
-fn jsStringMethodRename(callee: []const u8) ?struct { js_name: []const u8, ret: []const u8 } {
-    const map = [_]struct { src: []const u8, js: []const u8, ret: []const u8 }{
-        .{ .src = "contains", .js = "includes", .ret = "bool" },
-    };
-    for (map) |e| if (std.mem.eql(u8, callee, e.src)) return .{ .js_name = e.js, .ret = e.ret };
+/// JS prototype-method rename driven by the 2-arg `@external(node, "X")`
+/// annotation on a primitive-receiver interface method. Returns the host
+/// symbol `X` when it differs from `callee` (the call site emits
+/// `recv.X(args)` instead of `recv.callee(args)`); returns null when there is
+/// no node annotation, when the module is non-empty (3-arg Math/relative form),
+/// or when the symbol carries a call template (`"sym(a, self)"`) — those are
+/// not call-site renames. Walks the receiver's interface and its `extends`
+/// chain so an annotation on `Number.toString` covers every numeric width.
+fn primMethodNodeRename(env: *Env, recvTy: *T.Type, callee: []const u8) InferError!?[]const u8 {
+    const ifaceName = primitiveInterfaceName(recvTy.named.name) orelse return null;
+    var current: ?[]const u8 = ifaceName;
+    var guard: usize = 0;
+    while (current) |cname| {
+        if (guard >= 16) break;
+        guard += 1;
+        const decl = env.assocInterfaceDecls.get(cname) orelse return null;
+        for (decl.methods) |m| {
+            if (!std.mem.eql(u8, m.name, callee)) continue;
+            if (m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self")) continue;
+            const ref = m.externalFor("node") orelse return null;
+            if (ref.module.len != 0) return null;
+            if (std.mem.indexOfScalar(u8, ref.symbol, '(') != null) return null;
+            if (std.mem.eql(u8, ref.symbol, callee)) return null;
+            return ref.symbol;
+        }
+        current = if (decl.extends.len > 0) decl.extends[0] else null;
+    }
     return null;
 }
 
@@ -4913,6 +4932,11 @@ fn findInterfaceDefaultFn(env: *Env, ifaceName: []const u8, callee: []const u8) 
             if (m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self")) continue;
             if (m.is_default) return .{ .method = m, .owner = cname };
             if (m.externalFor("node")) |ref| {
+                // A JS global namespace (`Math`) lowers as `Math.sym(self, …)`,
+                // dispatched through the stdlib lib path. The §A4 2-arg shorthand
+                // (`@external(node, "X")`, module empty) names a native prototype
+                // method — that case is handled by the prim-block rename, NOT here.
+                if (ref.module.len == 0) continue;
                 const is_global = std.mem.indexOfScalar(u8, ref.module, '/') == null and
                     std.mem.indexOfScalar(u8, ref.module, '.') == null;
                 if (is_global) return .{ .method = m, .owner = cname };
@@ -5224,27 +5248,6 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                     }
                 }
 
-                // Type-directed JS method rename: `s.contains(x)` on a `string`
-                // receiver has no JS-native `String.prototype.contains`, so lower
-                // it to `s.includes(x)`. A global name-map would be unsafe here —
-                // `record Set` also declares `contains` as an inherent method — so
-                // the rename is recorded per call site, gated on the receiver type.
-                if (nominalName(recvPtr.getType())) |tn| {
-                    if (std.mem.eql(u8, tn, "string")) {
-                        if (jsStringMethodRename(call.callee)) |native| {
-                            try env.jsMethodRenames.put(loc, native.js_name);
-                            try recordInstanceCall(env, loc, tn);
-                            return TypedExpr{ .call = .{ .loc = loc, .type_ = try env.namedType(native.ret), .kind = .{ .call = .{
-                                .receiver = recvPtr,
-                                .callee = call.callee,
-                                .is_builtin = false,
-                                .args = typedArgs,
-                                .trailing = typedTrailing,
-                            } } } };
-                        }
-                    }
-                }
-
                 // A builtin-primitive receiver (`xs.map(f)`, `s.split(sep)`) has
                 // no native method dispatch on erlang/beam/wasm — record the
                 // primitive family so those backends lower it to the host op,
@@ -5267,6 +5270,17 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                                 std.mem.eql(u8, call.callee, "length")))
                         {
                             try env.jsMethodRenames.put(loc, "length");
+                        }
+                        // §A4: per-call-site JS prototype rename driven by the
+                        // 2-arg `@external(node, "X")` annotation on the method
+                        // (`String.contains` ⇒ `includes`, `Array.append` ⇒
+                        // `concat`, …). When the annotated symbol equals the
+                        // method name nothing is recorded — call site emits the
+                        // bare name unchanged. The rename is gated on a typed
+                        // primitive receiver, so a user record method like
+                        // `Set.contains` is never renamed.
+                        if (try primMethodNodeRename(env, recvTy, call.callee)) |rn| {
+                            try env.jsMethodRenames.put(loc, rn);
                         }
                         if (try primMethodReturnTypeFromIface(env, recvTy, call.callee)) |ret| {
                             return TypedExpr{ .call = .{ .loc = loc, .type_ = ret, .kind = .{ .call = .{

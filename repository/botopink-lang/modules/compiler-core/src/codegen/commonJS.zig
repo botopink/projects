@@ -138,17 +138,6 @@ pub fn isAssociatedFn(m: ast.InterfaceMethod) bool {
     return m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self");
 }
 
-/// `Array<T>` `default fn` methods NOT re-emitted as a prototype patch:
-/// - native JS `Array.prototype` methods (`find`, `flatMap`, …) — the engine's
-///   semantics match the stdlib definition;
-/// - `append`, lowered to native `concat` by `jsBuiltinMethodName` (works in any
-///   context, incl. record method bodies the inference doesn't walk).
-pub fn isNativeProtoMethod(name: []const u8) bool {
-    const native = [_][]const u8{ "find", "flatMap", "reverse", "includes", "flat", "sort", "fill", "append", "toString" };
-    for (native) |n| if (std.mem.eql(u8, name, n)) return true;
-    return false;
-}
-
 /// Map a primitive controller interface name to the JS constructor whose
 /// `prototype` carries the instance methods (`Bool` → `Boolean`). Other names
 /// (incl. local interfaces) own their prototype directly.
@@ -167,19 +156,6 @@ pub fn isBoxedPrototype(owner: []const u8) bool {
     return std.mem.eql(u8, owner, "Boolean") or
         std.mem.eql(u8, owner, "Number") or
         std.mem.eql(u8, owner, "String");
-}
-
-/// Map a stdlib method name to a native JS equivalent where the names differ, so
-/// the call works without emitting a prototype patch. `append`≡`concat` (Array);
-/// `toUpper`/`toLower` ≡ `toUpperCase`/`toLowerCase` (String). These names are
-/// unique to their primitive (no record uses them), so the type-independent
-/// mapping is safe. (`contains`→`includes` is NOT mapped: a `record` may declare
-/// `contains` — e.g. `Set` — so it would clobber that dispatch.)
-pub fn jsBuiltinMethodName(name: []const u8) []const u8 {
-    if (std.mem.eql(u8, name, "append")) return "concat";
-    if (std.mem.eql(u8, name, "toUpper")) return "toUpperCase";
-    if (std.mem.eql(u8, name, "toLower")) return "toLowerCase";
-    return name;
 }
 
 /// True when a type reference is the phantom capability `@Context<B, R>`.
@@ -306,6 +282,7 @@ fn emitProgramOptsX(
     em.cross = cross;
     try em.collectExternals(program);
     try em.collectClassNames(program);
+    try em.collectPrimNodeRenames(program);
 
     // Test registry entries collected while emitting decls (test mode only).
     const TestEntry = struct { name: ?[]const u8, line: usize, idx: usize };
@@ -755,6 +732,15 @@ const Emitter = struct {
     /// importing the runtime fn they call) must not redeclare it — `const x`
     /// twice is a JS `SyntaxError`. Tracked per module; reset in `emitterInit`.
     seen_imports: std.StringHashMap(void),
+    /// §A4 type-naive prim-method rename: method name → JS prototype symbol,
+    /// driven by the 2-arg `@external(node, "X")` annotation on a primitive
+    /// interface method. Consulted at the call site as a fallback when no
+    /// per-loc (type-directed) rename was recorded by inference — the latter
+    /// path covers interface default-fn bodies, which are emitted from AST
+    /// without going through inference. Collisions with a record/struct method
+    /// of the same name are excluded (`String.contains`/`Set.contains` →
+    /// inference's per-loc rename is the only path; this map omits `contains`).
+    prim_node_renames: std.StringHashMap([]const u8),
 
     fn emitterInit(
         alloc: std.mem.Allocator,
@@ -762,7 +748,7 @@ const Emitter = struct {
         cv: std.StringHashMap([]const u8),
         rewrites: std.AutoHashMap(ast.Loc, []const u8),
     ) Emitter {
-        return Emitter{
+        var em = Emitter{
             .out = out,
             .cv = cv,
             .alloc = alloc,
@@ -771,7 +757,20 @@ const Emitter = struct {
             .externals_missing = std.StringHashMap(void).init(alloc),
             .class_names = std.StringHashMap(void).init(alloc),
             .seen_imports = std.StringHashMap(void).init(alloc),
+            .prim_node_renames = std.StringHashMap([]const u8).init(alloc),
         };
+        // §A4 default prim renames: the three host-name → native-prototype pairs
+        // primitives.d.bp annotates with the 2-arg shorthand. Seeding them here
+        // (instead of relying on `collectPrimNodeRenames` to find the interface
+        // decl) lets the standalone `emitFnJs` path — used by the comptime
+        // template eval to run a template body — pick up the rename even though
+        // it has no program AST to scan. The full collector (called from
+        // `emitProgramOptsX`) reaffirms these and adds any further interface
+        // annotation, with a record-method collision filter on top.
+        em.prim_node_renames.put("append", "concat") catch {};
+        em.prim_node_renames.put("toUpper", "toUpperCase") catch {};
+        em.prim_node_renames.put("toLower", "toLowerCase") catch {};
+        return em;
     }
 
     fn deinit(self: *Emitter) void {
@@ -780,6 +779,41 @@ const Emitter = struct {
         self.externals_missing.deinit();
         self.class_names.deinit();
         self.seen_imports.deinit();
+        self.prim_node_renames.deinit();
+    }
+
+    /// §A4: build the type-naive prim-method rename map from interface
+    /// annotations. For each interface method carrying a 2-arg
+    /// `@external(node, "X")` annotation whose symbol `X` differs from the
+    /// method name, register `name → X` — UNLESS a record/struct in the program
+    /// declares a method with the same name (a collision would silently rename
+    /// the record call, e.g. `Set.contains` → `Set.includes`). The per-loc
+    /// `renames` map (populated by inference's type-directed lookup) takes
+    /// precedence and covers the collision-prone cases (`contains`); this map
+    /// only catches calls inference never visits, namely interface default-fn
+    /// bodies materialised as prototype patches.
+    fn collectPrimNodeRenames(self: *Emitter, program: ast.Program) !void {
+        var record_methods = std.StringHashMap(void).init(self.alloc);
+        defer record_methods.deinit();
+        for (program.decls) |decl| switch (decl) {
+            .record => |r| for (r.methods) |m| try record_methods.put(m.name, {}),
+            .@"struct" => |s| for (s.members) |mem| switch (mem) {
+                .method => |m| try record_methods.put(m.name, {}),
+                else => {},
+            },
+            else => {},
+        };
+        for (program.decls) |decl| {
+            if (decl != .interface) continue;
+            for (decl.interface.methods) |m| {
+                const ref = m.externalFor("node") orelse continue;
+                if (ref.module.len != 0) continue;
+                if (std.mem.indexOfScalar(u8, ref.symbol, '(') != null) continue;
+                if (std.mem.eql(u8, ref.symbol, m.name)) continue;
+                if (record_methods.contains(m.name)) continue;
+                try self.prim_node_renames.put(m.name, ref.symbol);
+            }
+        }
     }
 
     /// Indexes every `@[external(…)]` fn by name: with a `node` target it goes
@@ -1145,18 +1179,22 @@ const Emitter = struct {
         }
 
         // Instance default fns (`self` receiver) materialize as prototype methods
-        // on the type's JS constructor (`Array.prototype.append`), so
-        // `value.method(...)` resolves at runtime. Native JS prototype methods
-        // (`find`, `flatMap`, …) are left to the engine (the bare `self` body
-        // lowers `self`/`self.x` to `this`/`this.x`).
+        // on the type's JS constructor (`Array.prototype.contains`), so
+        // `value.method(...)` resolves at runtime. §A4: a 2-arg
+        // `@external(node, "X")` annotation means "this method already exists on
+        // the engine's prototype (possibly under a different name `X`) — don't
+        // patch", and is the single skip-rule. The call-site rename map routes
+        // `recv.method(args)` to `recv.X(args)` for the same call.
         const prev_self_param = self.self_is_param;
         defer self.self_is_param = prev_self_param;
         const owner = jsPrototypeOwner(i.name);
         const boxed = isBoxedPrototype(owner);
         for (i.methods) |m| {
             if (isAssociatedFn(m)) continue; // associated fns handled above
-            if (isNativeProtoMethod(m.name)) continue;
             if (m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self")) continue;
+            if (m.externalFor("node")) |ref| {
+                if (ref.module.len == 0) continue; // §A4: native prototype, no patch
+            }
 
             if (m.is_default) {
                 const body = m.body orelse continue;
@@ -2423,11 +2461,26 @@ const Emitter = struct {
                                 first = false;
                             } else {
                                 try self.emitExpr(recv.*);
-                                // Optional chaining call maps to native JS `?.`;
-                                // `append` maps to native `concat`. A type-directed
-                                // rename (`s.contains` → `s.includes` on a string)
-                                // takes precedence when inference recorded one here.
-                                const method = if (self.renames) |r| (r.get(c.loc) orelse jsBuiltinMethodName(cc.callee)) else jsBuiltinMethodName(cc.callee);
+                                // Optional chaining call maps to native JS `?.`.
+                                // §A4 rename: a 2-arg `@external(node, "X")` on
+                                // a primitive interface method routes
+                                // `recv.callee(args)` to `recv.X(args)`. The
+                                // per-loc `renames` map (populated by inference's
+                                // type-directed lookup) is consulted FIRST so a
+                                // collision-prone name (`String.contains` vs
+                                // `Set.contains`) lands the right rename. The
+                                // type-naive `prim_node_renames` map (built from
+                                // annotations at emitter init) is the fallback
+                                // for calls inference doesn't visit — interface
+                                // default-fn bodies materialised as prototype
+                                // patches (`out.append(inner)` inside `flatten`).
+                                const method = blk: {
+                                    if (self.renames) |r| {
+                                        if (r.get(c.loc)) |loc_rename| break :blk loc_rename;
+                                    }
+                                    if (self.prim_node_renames.get(cc.callee)) |sym| break :blk sym;
+                                    break :blk cc.callee;
+                                };
                                 const dot: []const u8 = if (cc.optional) "?." else ".";
                                 // `arr.len()`/`.size()`/`.length()` & `str.length()`:
                                 // inference renamed these to `length` only for a
@@ -2714,7 +2767,7 @@ const Emitter = struct {
             .numberLit => |n| try buf.writer.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try buf.writer.writeAll("_s === ");
-                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names, .seen_imports = self.seen_imports };
+                var sw = Emitter{ .out = &buf.writer, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names, .seen_imports = self.seen_imports, .prim_node_renames = self.prim_node_renames };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try buf.writer.print("_s === \"{s}\"", .{n}),
@@ -2734,7 +2787,7 @@ const Emitter = struct {
             .numberLit => |n| try wr.print("_s === {s}", .{n}),
             .stringLit => |s| {
                 try wr.writeAll("_s === ");
-                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names, .seen_imports = self.seen_imports };
+                var sw = Emitter{ .out = wr, .alloc = self.alloc, .cv = self.cv, .rewrites = self.rewrites, .externals = self.externals, .externals_missing = self.externals_missing, .class_names = self.class_names, .seen_imports = self.seen_imports, .prim_node_renames = self.prim_node_renames };
                 try sw.emitJsonString(s);
             },
             .ident => |n| try wr.print("_s === \"{s}\"", .{n}),
