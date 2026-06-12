@@ -441,6 +441,41 @@ pub const Server = struct {
             } else |_| {}
         }
 
+        // Type-aware resolution for member access (`recv.field` / `recv.method`),
+        // builtin methods, `self.field`, `Name(label:)` constructor labels and
+        // `mod` references — these need the receiver's type, so they run before
+        // (and override) the name-scan `definition` below. Gated on a cheap
+        // syntactic pre-check so a plain symbol jump stays compile-free.
+        if (engine.needsTypedDefinition(source, pos, tokens)) {
+            var ga = std.heap.ArenaAllocator.init(self.gpa);
+            defer ga.deinit();
+            const g_others = self.graphOthers(ga.allocator(), uri) catch &.{};
+            if (self.compileWithGraph(uri, source)) |res| {
+                var result = res;
+                defer result.deinit(self.gpa);
+                const bindings = result.bindingsFor(uri);
+                if (try engine.definitionMember(self.gpa, uri, source, pos, tokens, bindings, g_others)) |td| {
+                    switch (td) {
+                        .location => |loc| {
+                            defer self.gpa.free(loc.uri);
+                            return messages.writeResponse(self.io, self.gpa, msg.id(), loc);
+                        },
+                        .builtin => |bj| {
+                            // The method lives in the embedded primitives source;
+                            // materialize it to the cache so the editor can open it.
+                            if (self.materializeStdModule(.{ .name = "primitives", .source = bj.source })) |path| {
+                                defer self.gpa.free(path);
+                                const std_uri = try lsp_types.pathToUri(self.gpa, path);
+                                defer self.gpa.free(std_uri);
+                                const loc = proto.Location{ .uri = std_uri, .range = bj.range };
+                                return messages.writeResponse(self.io, self.gpa, msg.id(), loc);
+                            }
+                        },
+                    }
+                }
+            } else |_| {}
+        }
+
         // First try a declaration in the current file.
         if (try engine.definition(self.gpa, uri, source, pos, tokens)) |loc| {
             defer self.gpa.free(loc.uri);

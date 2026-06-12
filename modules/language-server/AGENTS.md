@@ -41,7 +41,9 @@ The server currently handles `initialize` / `shutdown` plus these
 - `publishDiagnostics` (with `$/progress`), `formatting`,
   `hover` (full signature + doc comments, incl. qualified `std` members and
   builtin interface methods on primitives/arrays/strings),
-  `definition` (same-file, cross-module, and into embedded `std` modules),
+  `definition` (same-file, cross-module, embedded `std` modules, plus type-aware
+  member access — record fields/methods, builtin methods into `primitives.d.bp`,
+  `self.field`, `Name(field:)` labels, and `mod` refs to their backing file),
   `typeDefinition`,
   `documentSymbol` (hierarchical, incl. `test "name"` blocks as `Method`),
   `completion` (prefix + dot-trigger + `list.`/`io.` std members + builtin
@@ -81,12 +83,37 @@ fallback (the old behavior, so isolated buffers and tests still work). The
 compiler core still names no lib: the resolver feeds it ordinary `(uri, source)`
 pairs and `resolveImports` binds `from "<lib>"` generically by symbol name.
 
-`definition` resolves in tiers: same file → **project graph** (`from "<lib>"`
+`definition` resolves in tiers: **typed member/`mod` path** (`needsTypedDefinition`
+→ `definitionMember`, see below) → same file → **project graph** (`from "<lib>"`
 surface, incl. member access like `Response.created`, the source of truth from
 `botopink.json`) → workspace `pub` symbols (project index) → embedded "std"
 package modules (`engine.definitionInStdModules`). Std hits are materialized to
 `<XDG_CACHE_HOME|~/.cache>/botopink-lsp/std/<name>.bp` so the editor can open
 them (needs `environ_map` from `std.process.Init`, plumbed through `Server.init`).
+
+**Type-aware member / module go-to-def (lsp-definition-completeness)** —
+`findDeclLocation`'s keyword scan is blind to anything that is *part of a type*: a
+record field has no declaration keyword, a method jump landed on the first
+same-named `fn` (receiver-blind), builtin methods have no `fn` in the file, and a
+`mod` name's "declaration" *is* a sibling file. `engine.definitionMember`
+(gated by the cheap `needsTypedDefinition` so the plain name scan stays
+compile-free) covers these by reusing the receiver-type machinery completion/hover
+already have:
+- **`recv.field` / `recv.method`** — `receiverChain` parses the dotted receiver,
+  `resolveChainType` walks it to a named type (a value binding's inferred type, an
+  integer/bool literal, or `self` → the lexically `enclosingTypeName`), narrowing
+  through record fields (`stepField`). The member is then located by token-scanning
+  that type's `{…}` body (`findMemberInTokens`) — type-aware, so a same-named method
+  on another record no longer wins.
+- **Builtin receivers** (`xs.reverse()`, `s.split(…)`) route through
+  `builtinInterfaceForType` to the embedded `primitives.d.bp` and return a
+  `TypedDefinition.builtin` (source + range) the server materializes like a std hit.
+- **`Name(field: …)` labels** — `ctorCalleeBefore` finds the constructor callee and
+  jumps to the field decl.
+- **Cross-module fields** (`findMemberDeclAcross`) search the `others` graph deps,
+  requiring the owning type be `pub`.
+- **`mod` / `pub mod <name>;`** — `modRefNameAt` + `findModuleFile` map the name to
+  the backing dep file (`<name>.bp` / `<name>/mod.bp`) and jump to its top.
 
 ### Local-scope binding model (lsp-project-awareness)
 
