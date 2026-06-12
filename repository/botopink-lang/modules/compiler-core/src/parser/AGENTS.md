@@ -94,6 +94,20 @@ the access loc), so two links sharing a loc collide — `self.pairs.length` woul
 emit `length(length(Self))`. `parsePostfixChain` and the identifier postfix loop
 both use `locFromToken(fieldTok)` for this reason.
 
+## Annotation arguments (`parseAnnotationCall`)
+
+`#[name(arg, …)]` / `@name(…)` arguments are kept as **raw lexemes**
+(`Annotation.args: [][]const u8`), not parsed expressions. The arg loop special-cases
+two shapes so the `#[@external]` vocabulary stays expressible (see §A,
+`libs/std/AGENTS.md`):
+
+- **Enum/member chains** — `.Erlang`, `Target.Erlang`: a run of adjacent
+  `.`/identifier tokens is folded into a single argument lexeme spanning the source
+  bytes (`spanLexemes`). The bare single identifier (`erlang`) and string literals
+  go through unchanged.
+- **Keyword labels** — `runtime:`/`module:`/`method:`: a leading `identifier :` is
+  dropped, so the labeled Form B and positional Form A produce the same `args`.
+
 ## Notes
 
 - AST nodes are `union(enum)`; always call `deinit(alloc)` on heap-allocated

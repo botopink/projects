@@ -1,8 +1,8 @@
 ----- SOURCE CODE
-#[@external(erlang, "string")]
+#[@external(erlang)]
 pub declare fn str_length(s: string) -> i32;
 
 ----- ERROR
-error: `@external` expects exactly 3 arguments: @external(target: Target, module: string, symbol: string)
+error: `@external` expects 2 or 3 arguments: @external(target, [module,] symbol)
 
-  hint: Example: #[@external(erlang, "string", "length")]
+  hint: Example: #[@external(erlang, "string", "length")] or #[@external(node, "reverse")]

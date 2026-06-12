@@ -1047,17 +1047,7 @@ pub const InterfaceMethod = struct {
     /// The `(module, symbol)` of the `external` annotation targeting `target`
     /// (e.g. "node", "erlang"), or null when none matches.
     pub fn externalFor(this: InterfaceMethod, target: []const u8) ?ExternalRef {
-        for (this.annotations) |a| {
-            if (!std.mem.eql(u8, a.name, "external")) continue;
-            if (a.args.len != 3) continue;
-            const t = std.mem.trimStart(u8, a.args[0], ".");
-            if (!std.mem.eql(u8, t, target)) continue;
-            return .{
-                .module = unquoteAnnotationArg(a.args[1]),
-                .symbol = unquoteAnnotationArg(a.args[2]),
-            };
-        }
-        return null;
+        return externalRefFor(this.annotations, target);
     }
 
     pub fn deinit(this: *InterfaceMethod, allocator: std.mem.Allocator) void {
@@ -1116,11 +1106,85 @@ pub const ExternalRef = struct {
     symbol: []const u8,
 };
 
+/// A parsed `@external` call template: the host `symbol` (with the call
+/// punctuation stripped) plus the ordered argument names that pin the host's
+/// argument layout — including `self`'s position. `args == null` means the
+/// caller should use the botopink fn's declaration order (bare symbol).
+pub const ExternalCall = struct {
+    symbol: []const u8,
+    args: ?[]const []const u8,
+};
+
+/// Splits an `@external` symbol slot into its host symbol and an optional
+/// ordered arg-name list. `"sym(a, self)"` → `("sym", ["a", "self"])`;
+/// `"sym"` → `("sym", null)`. The arg list is empty for `"sym()"`.
+/// `slots_out` must have capacity for at least one slot per `,` plus one — the
+/// caller (`InterfaceMethod.callTemplateFor`/`FnDecl.callTemplateFor`) reuses a
+/// stack-allocated buffer so we never allocate just to read an annotation.
+pub fn parseExternalCallTemplate(
+    symbol: []const u8,
+    slots_out: [][]const u8,
+) ExternalCall {
+    const lp = std.mem.indexOfScalar(u8, symbol, '(') orelse
+        return .{ .symbol = symbol, .args = null };
+    const rp = std.mem.lastIndexOfScalar(u8, symbol, ')') orelse
+        return .{ .symbol = symbol, .args = null };
+    if (rp <= lp) return .{ .symbol = symbol, .args = null };
+
+    const head = std.mem.trim(u8, symbol[0..lp], " \t");
+    const inside = std.mem.trim(u8, symbol[lp + 1 .. rp], " \t");
+    if (inside.len == 0) return .{ .symbol = head, .args = slots_out[0..0] };
+
+    var n: usize = 0;
+    var it = std.mem.tokenizeScalar(u8, inside, ',');
+    while (it.next()) |tok| {
+        if (n >= slots_out.len) break;
+        slots_out[n] = std.mem.trim(u8, tok, " \t");
+        n += 1;
+    }
+    return .{ .symbol = head, .args = slots_out[0..n] };
+}
+
 /// Strips the surrounding quotes off a string-literal annotation argument.
 fn unquoteAnnotationArg(arg: []const u8) []const u8 {
     if (arg.len >= 2 and arg[0] == '"' and arg[arg.len - 1] == '"')
         return arg[1 .. arg.len - 1];
     return arg;
+}
+
+/// Canonicalises an `@external` target argument to its bare target name.
+/// Accepts every spelling of the `Target` enum value: bare (`erlang`), the
+/// dot-variant shorthand (`.Erlang`) and the qualified form (`Target.Erlang`).
+/// The remainder is compared case-insensitively by `externalTargetMatches`.
+pub fn normalizeExternalTarget(arg: []const u8) []const u8 {
+    var t = std.mem.trimStart(u8, arg, ".");
+    if (std.mem.indexOfScalar(u8, t, '.')) |dot| {
+        if (std.ascii.eqlIgnoreCase(t[0..dot], "Target")) t = t[dot + 1 ..];
+    }
+    return t;
+}
+
+/// True when an `@external` target argument names `target` (a lowercase
+/// canonical name like "node"/"erlang"), in any of the accepted spellings.
+pub fn externalTargetMatches(arg: []const u8, target: []const u8) bool {
+    return std.ascii.eqlIgnoreCase(normalizeExternalTarget(arg), target);
+}
+
+/// Resolves an `@external` annotation's `(module, symbol)` for `target`, honouring
+/// both arities: 3 args `[target, module, symbol]`, or 2 args `[target, symbol]`
+/// with the module omitted (node ⇒ native JS prototype; `module` comes back "").
+/// `symbol` may carry a call template `"sym(arg, self)"` — callers detect the `(`.
+fn externalRefFor(annotations: []const Annotation, target: []const u8) ?ExternalRef {
+    for (annotations) |a| {
+        if (!std.mem.eql(u8, a.name, "external")) continue;
+        if (a.args.len < 2 or a.args.len > 3) continue;
+        if (!externalTargetMatches(a.args[0], target)) continue;
+        return if (a.args.len == 3)
+            .{ .module = unquoteAnnotationArg(a.args[1]), .symbol = unquoteAnnotationArg(a.args[2]) }
+        else
+            .{ .module = "", .symbol = unquoteAnnotationArg(a.args[1]) };
+    }
+    return null;
 }
 
 /// `val Name = interface { ... }`  or  `val Name = interface <T> { ... }`
@@ -1647,17 +1711,7 @@ pub const FnDecl = struct {
     /// The `(module, symbol)` of the `external` annotation matching `target`
     /// (e.g. "erlang", "node"), or null when no annotation targets it.
     pub fn externalFor(this: FnDecl, target: []const u8) ?ExternalRef {
-        for (this.annotations) |a| {
-            if (!std.mem.eql(u8, a.name, "external")) continue;
-            if (a.args.len != 3) continue;
-            const t = std.mem.trimStart(u8, a.args[0], ".");
-            if (!std.mem.eql(u8, t, target)) continue;
-            return .{
-                .module = unquoteAnnotationArg(a.args[1]),
-                .symbol = unquoteAnnotationArg(a.args[2]),
-            };
-        }
-        return null;
+        return externalRefFor(this.annotations, target);
     }
 
     pub fn deinit(this: *FnDecl, allocator: std.mem.Allocator) void {

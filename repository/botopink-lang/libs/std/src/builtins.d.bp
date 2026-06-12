@@ -177,8 +177,21 @@ fn embedFile(comptime path: string) string
 // `external` is only valid on a `declare fn` — the declaration is typed from
 // the signature alone, and each codegen backend emits a call to the target's
 // symbol (Erlang `module:symbol`, JS `require(module).symbol`).
+//
+// The target is a `Target` enum value. It may be written bare (`erlang`), as the
+// dot-variant shorthand (`.Erlang`) or qualified (`Target.Erlang`) — all matched
+// case-insensitively, so the legacy bare-lowercase annotations keep working.
+//
+// Two forms, both valid (see libs/std/AGENTS.md for the full vocabulary):
+//   Form A — positional:    #[@external(Target.Erlang, "lists", "reverse")]
+//   Form B — keyword args:  #[@external(runtime: Target.Erlang, module: "lists",
+//                                       method: "reverse(self)")]
+// The `symbol`/`method` string may carry a call template `"sym(arg, self)"` to
+// fix the host argument order and receiver position. Omitting `module` on node
+// (`#[@external(Target.Node, "reverse")]`) means "emit the native JS prototype
+// method directly", with no host module require.
 
-pub enum Target { node, typescript, erlang, beam, wasm }
+pub enum Target { Node, Typescript, Erlang, Beam, Wasm }
 
 fn external(target: Target, module: string, symbol: string)
 

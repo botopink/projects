@@ -1449,18 +1449,21 @@ fn validateExternalAnnotation(env: *Env, f: ast.FnDecl, a: ast.Annotation) Infer
     if (!f.isDeclare) {
         return fail(env, fnLoc, "`#[@external(…)]` requires a `declare fn` declaration", "Write `#[@external(erlang, \"string\", \"length\")] pub declare fn length(s: string) -> i32;`");
     }
-    if (a.args.len != 3) {
-        return fail(env, fnLoc, "`@external` expects exactly 3 arguments: @external(target: Target, module: string, symbol: string)", "Example: #[@external(erlang, \"string\", \"length\")]");
+    // Form A `@external(target, module, symbol)` or the node-prototype shorthand
+    // `@external(target, symbol)` (module omitted). Labels (`runtime:`/`module:`/
+    // `method:`) are dropped at parse time, so Form B normalises to the same arity.
+    if (a.args.len < 2 or a.args.len > 3) {
+        return fail(env, fnLoc, "`@external` expects 2 or 3 arguments: @external(target, [module,] symbol)", "Example: #[@external(erlang, \"string\", \"length\")] or #[@external(node, \"reverse\")]");
     }
-    // arg0: a `Target` enum member (a bare identifier, optionally `.target`).
-    const target = std.mem.trimStart(u8, a.args[0], ".");
+    // arg0: a `Target` enum member — bare (`erlang`), dot-variant (`.Erlang`) or
+    // qualified (`Target.Erlang`), matched case-insensitively.
     const known = for (external_targets) |t| {
-        if (std.mem.eql(u8, t, target)) break true;
+        if (ast.externalTargetMatches(a.args[0], t)) break true;
     } else false;
     if (!known) {
         return fail(env, fnLoc, "`@external` target must be a Target member: node, typescript, erlang, beam or wasm", "Example: #[@external(erlang, \"string\", \"length\")]");
     }
-    // arg1/arg2: string literals naming the host module and symbol.
+    // remaining args: string literals naming the host module and/or symbol.
     for (a.args[1..]) |arg| {
         if (arg.len < 2 or arg[0] != '"') {
             return fail(env, fnLoc, "`@external` module and symbol must be string literals", "Example: #[@external(node, \"./gleam_stdlib.mjs\", \"string_length\")]");

@@ -149,12 +149,13 @@ test "diagnostics: type mismatch surfaces a located typeError" {
 test "diagnostics: a comptime @external misuse surfaces a typeError diagnostic" {
     const gpa = std.testing.allocator;
     var c = try h.compile(gpa,
-        \\#[@external(erlang, "string")]
+        \\#[@external(erlang)]
         \\pub declare fn length(s: string) -> i32;
     );
     defer c.deinit(gpa);
 
-    // The arity failure means there is no successful (.ok) output.
+    // The arity failure means there is no successful (.ok) output. (1 arg is
+    // below the 2..3 range; the 2-arg node shorthand is valid — see §A.)
     try std.testing.expect(!c.isOk());
 
     var found = false;

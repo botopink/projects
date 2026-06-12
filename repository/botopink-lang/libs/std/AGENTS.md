@@ -72,6 +72,31 @@ std/
 | `string_builder.bp` | `pub record StringBuilder` (wraps `Array<string>`). `empty`, `append`, `prepend`, `toString`, `fromString`, `fromStrings`, `length`, `isEmpty`. |
 | `queue.bp` | `pub record Queue<T>` (FIFO, front at index 0). `empty`, `size`, `isEmpty`, `enqueue`, `dequeue` (returns `#(Queue<T>, ?T)`), `peek`, `toList`, `fromList`. O(n) enqueue (copy-on-write). |
 
+## The `#[@external]` vocabulary (annotation-driven builtins, §A)
+
+`#[@external]` + the method signature are the single source of truth for how a
+builtin method lowers. The `Target` enum (`builtins.d.bp`) value is written bare
+(`erlang`), dot-variant (`.Erlang`) or qualified (`Target.Erlang`) — all matched
+case-insensitively, so legacy bare-lowercase annotations keep working.
+
+- **Form A (positional)** — `#[@external(Target.Erlang, "lists", "reverse")]`:
+  `target`, `module`, `symbol`. Args follow the method's declaration order.
+- **Form B (keyword args)** — `#[@external(runtime: Target.Erlang, module: "lists",
+  method: "reverse(self)")]`: the language's own `name: value` labels. The labels
+  are cosmetic; Form B normalises to the same positional shape as Form A.
+- **Call template** — the `symbol`/`method` string may carry `"sym(arg, self)"` to
+  fix the host argument order and receiver position (`contains` → `lists:member(item,
+  self)`, `map` → `lists:map(action, self)`). A bare `"sym"` uses declaration order.
+- **Node prototype shorthand** — omitting `module` on node
+  (`#[@external(Target.Node, "reverse")]`) means "emit the native JS prototype
+  method `recv.reverse(args)` directly", with no host `require`. A different symbol
+  is a rename (`append` → `"concat(self, item)"`).
+
+`FnDecl.externalFor`/`InterfaceMethod.externalFor` (`ast.zig`) resolve the
+`(module, symbol)` for a target at both arities (`module` comes back `""` for the
+node shorthand); the parser keeps an enum/member chain (`Target.Erlang`) as one
+argument lexeme and drops the keyword labels.
+
 ## Tests
 
 All tests live in `src/` — there is no separate `test/` directory. Run with:

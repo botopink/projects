@@ -637,11 +637,23 @@ pub const Parser = struct {
         errdefer args.deinit(alloc);
         if (this.match(.leftParenthesis)) {
             while (!this.check(.rightParenthesis) and !this.check(.endOfFile)) {
-                if (this.check(.dot) and this.peekAt(1).kind == .identifier) {
-                    // `.erlang` — adjacent source bytes form a single lexeme
-                    const dot = try this.consume(.dot);
-                    const ident = try this.consume(.identifier);
-                    try args.append(alloc, dot.lexeme.ptr[0 .. dot.lexeme.len + ident.lexeme.len]);
+                // Labeled argument (`runtime:`, `module:`, `method:`) — the label is
+                // cosmetic; the value is kept positionally so Form A `@external(t, m, s)`
+                // and Form B `@external(runtime: t, module: m, method: s)` share a single
+                // representation. (See the `#[@external]` vocabulary in libs/std/AGENTS.md.)
+                if (this.check(.identifier) and this.peekAt(1).kind == .colon) {
+                    _ = this.advance(); // label name
+                    _ = this.advance(); // `:`
+                }
+                if ((this.check(.dot) or this.check(.identifier)) and
+                    (this.peekAt(1).kind == .dot or this.peekAt(1).kind == .identifier))
+                {
+                    // Enum/member chain: `.Erlang`, `Target.Erlang`, … — the adjacent
+                    // source bytes form a single lexeme spanning the whole path.
+                    const first = this.advance();
+                    var last = first;
+                    while (this.check(.dot) or this.check(.identifier)) last = this.advance();
+                    try args.append(alloc, spanLexemes(first, last));
                 } else {
                     const tok = this.advance();
                     try args.append(alloc, tok.lexeme);
@@ -655,6 +667,15 @@ pub const Parser = struct {
             .args = try args.toOwnedSlice(alloc),
             .is_builtin = is_builtin,
         };
+    }
+
+    /// The single source lexeme spanning `first`..`last` inclusive. Used to keep
+    /// an enum/member chain (`Target.Erlang`) as one annotation argument — the
+    /// tokens are adjacent in source, so the byte range is contiguous.
+    fn spanLexemes(first: Token, last: Token) []const u8 {
+        const begin = @intFromPtr(first.lexeme.ptr);
+        const end = @intFromPtr(last.lexeme.ptr) + last.lexeme.len;
+        return first.lexeme.ptr[0 .. end - begin];
     }
 
     /// The shared opening of a type/interface declaration: visibility, name and

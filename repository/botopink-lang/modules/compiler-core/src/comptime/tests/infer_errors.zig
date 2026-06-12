@@ -437,8 +437,10 @@ test "infer error: external ---- builtin typechecks args" {
 }
 
 test "infer error: external ---- wrong arity" {
+    // 1 arg is below the 2..3 range (target alone). The 2-arg node-prototype
+    // shorthand `@external(target, symbol)` is now valid (§A vocabulary).
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
-        \\#[@external(erlang, "string")]
+        \\#[@external(erlang)]
         \\pub declare fn str_length(s: string) -> i32;
     );
 }

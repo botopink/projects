@@ -1,62 +1,73 @@
-# TODO — repo-restructure
+# TODO — recorded-gap-sweep (v0.beta.16)
 
-> Spec: [`tasks/v0.beta.17/specs/repo-restructure.md`](tasks/v0.beta.17/specs/repo-restructure.md)
-> Branch: `task/repo-restructure` · Worktree: `.tasks/repo-restructure/`
->
-> **Hard order:** F0–F2 (resolver) must be green on the **flat tree** and
-> committed before any file moves in F3. The resolver is a pure superset; the
-> move rides on it. Pre-commit runs `zig fmt`+`zig build`+`zig build test`.
+> Task branch `task/recorded-gap-sweep` · spec
+> [`tasks/v0.beta.16/specs/recorded-gap-sweep.md`](tasks/v0.beta.16/specs/recorded-gap-sweep.md).
+> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test.
+> Seven file-disjoint sections §A–§G; **§A lands first** (keystone refactor, byte-identical output).
 
-## F0 — multi-root resolver (compiler-cli)
-- [x] `resolveLibsRoot` (single `[]u8`) → `resolveLibRoots` (`[][]const u8`) per the `roots(cwd)` rule; `rootsFrom` split out for tests
-- [x] `loadOne`/`loadDependencies`: resolve each `dep` by scanning the root list for `<root>/<dep>/botopink.json`; first match wins, `LibNotFound` if none
-- [x] `shipMjsSidecars`: resolve the owning lib's dir through the root list (not `<libs_root>/<lib>/src/`); project-own (`owner == null`) stays `src/<base>`
-- [x] Unit test: synthetic two-root layout resolves rakun→`server` across roots; flat `libs/`-only layout resolves identically to before
+Goal: sweep the deliberately-recorded, deferred gaps into one wave. Each section closes a cited
+`AGENTS.md` "KNOWN GAP" / "Recorded gaps" / backend "Remaining gaps" note or a prior spec non-goal.
 
-## F1 — language server parity
-- [x] `project_graph.zig`: replaced `findLibsRoot` + the `{libs_root,"libs",dep}` join with the root-list rule (the double-`libs` was just findLibsRoot returning the *parent* of libs/; new roots ARE the libs/ dir, so loadLib joins `{root,dep}` — net flat-tree behaviour preserved)
-- [x] Existing `project_graph` LSP tests stay green on the flat tree
+## §A — annotation-driven-builtins (keystone) — byte-identical output is the bar
+- [x] A1 — `Target` enum (capitalised variants) in `builtins.d.bp`; parser folds
+      `Target.Erlang` / `.Erlang` into a single annotation arg and `externalTargetMatches`
+      compares case-insensitively, so bare `erlang` keeps working (back-compat).
+- [x] A2 — keyword-arg form + call template: parser drops `runtime:`/`module:`/`method:`
+      labels (Form B normalises to Form A); 2-arg shorthand (`@external(Target.Node, "sym")`)
+      means "emit prototype directly, no host module"; `ast.parseExternalCallTemplate` splits
+      `"sym(arg, self)"` into `(symbol, ordered arg names incl. self)`; bare symbol ⇒ decl order.
+- [ ] A3 — return types from the `fn` signature (instantiate `Self`/type params); delete
+      `primMethodReturnType` (`infer.zig:4773`).
+- [ ] A4 — node: drive `commonJS.zig` native emission from `@external(Target.Node,…)`; delete
+      `isNativeProtoMethod` + `jsBuiltinMethodName` + `jsStringMethodRename`/`jsMethodRenames`; keep `jsPrototypeOwner`.
+- [ ] A5 — erlang/beam: replace `emitPrimMethod` switches with `@external(Target.Erlang,…)` lookup
+      + template arg order; irreducible cases → small explicit inline allow-list.
+- [ ] A6 — migrate every current case; **byte-identical** output (empty snapshot diff).
+- [ ] A7 — docs (`libs/std/AGENTS.md` + `codegen/AGENTS.md` + `comptime/AGENTS.md`) + a test that
+      adds a new primitive method via one `.d.bp` annotation, lowering on all backends with no `.zig` edit.
 
-## F2 — lib-test-runner discovery across roots
-- [x] `discovery.zig`: discover libs by scanning **every** root in the list (each immediate child with a `botopink.json`), not one `libs/`; de-dup by name (first-root-wins); `Lib.dir` carries the path
-- [x] `main.zig`/`args.zig`: `resolveRoots` produces the list; `--lib <name>` selects by name across roots; HELP/usage wording fixed
-- [x] **Gate:** flat tree `zig build test` green (incl. new unit tests). **Committed here — resolver green pre-move.**
+## §B — generic-inference
+- [ ] B1 — resolve `Self`'s primitive kind inside interface `default fn` bodies (instance_lowering).
+- [ ] B2 — instantiate callee generic vars before `unifyAt` so generic inline `test { … }` works;
+      fold external `*_test.bp` back to inline.
+- [ ] B3 — fix `variable 'B' is unbound` codegen bug (erika LINQ pipeline).
+- [ ] B4 — emit primitive interfaces' instance `default fn`s on erlang/beam (merge-order w/ parity-tail E).
+- [ ] B5 — drop generic-module inline-test caveat in `libs/std/AGENTS.md`; add inference unit tests.
 
-## F3 — scaffold + move the language core (git mv, preserve history)
-- [x] Create `repository/` + `repository/botopink-lang/`; author the top-level workspace `AGENTS.md` (`repository/AGENTS.md`: workspace overview, multi-root rule, per-project entry points; `tasks/`+`scripts/` documented as workspace-root globals)
-- [x] `git mv` `build.zig`, `test_format.zig`, `test_pub.zig`, `modules/` (minus vscode-extension), `libs/{std,client,server}`, non-framework `examples/` → `repository/botopink-lang/`; move core root docs there
-- [x] Verify `build.zig` relative paths still resolve from the new home (`modules/…`, `libs/std/src/root.bp`, the `:117` grep — `modules/compiler-core/src`, all resolve when cwd is `repository/botopink-lang/`)
+## §C — wasm-aggregates (after backends-parity-tail W)
+- [ ] C1 — record field layout (stable 4-byte slot offsets; construction stores at offset).
+- [ ] C2 — `recv.field`/`self.field` loads `base+offset`; field assign stores.
+- [ ] C3 — `?.` guards base against null, reads slot; remove short-circuit.
+- [ ] C4 — keep wasm single-module note (no linking).
+- [ ] C5 — update `codegen/AGENTS.md`; add wat snapshots.
 
-## F4 — extract frameworks + vscode extension to siblings
-- [x] erika/jhonstart/onze/rakun: `git mv libs/<name>` → `repository/<name>/`; move its example(s) into `repository/<name>/examples/`; per-project `AGENTS.md`/`docs.md` rode along; CHANGELOG/README per-project still pending (F6 sweep)
-- [x] `git mv modules/vscode-extension` → `repository/vscode-extension/` (+ docs)
-- [x] Map every `examples/` entry to one destination; `jonhstar/` typo + `jhonstart-*` → `repository/jhonstart/`
+## §D — cross-backend-feature-parity (after §A)
+- [ ] D1 — `console.log` + `new Error(…)` declared `@external`, lowered by consulting annotation.
+- [ ] D2 — cross-module fn imports → remote call into owner module (erlang first, then beam).
+- [ ] D3 — typed-value method dispatch (`p.parse(x)` → `'Parser_parse'(P, X)`).
+- [ ] D4 — `*fn` async/`await` on erlang/beam, or scope to follow-up + record the boundary.
+- [ ] D5 — update beam/erlang AGENTS "Remaining gaps"; snapshots on both backends.
 
-## F5 — fix the paths the move breaks
-- [x] `build.zig`: `test-vscode` `setCwd` → `repository/vscode-extension` (`../vscode-extension` from `repository/botopink-lang/`); `test-libs` walks every resolved root (no per-framework cwd needed — lib-test-runner's `discovery.zig` scans the root list)
-- [x] `scripts/install-tooling.sh`: `modules/vscode-extension` → `repository/vscode-extension`; `zig build install` runs inside `repository/botopink-lang/`; legacy flat-tree fallback preserved
-- [x] `modules/language-server/src/tests/project_graph.zig:84`: fixture path → `../../../rakun/examples/rakun/src/posts.bp` (3 ups now, since cwd is two layers deeper than the legacy flat tree); also fixed `resolveRoots` to absolutize relative `project_root` before walking — `std.fs.path.dirname` on `../../..` lexically shortens and silently visits the wrong ancestor
-- [x] `doc-health.sh` / `status.sh` confirmed layout-agnostic (`git ls-files` + `git rev-parse --show-toplevel`); no changes needed
+## §E — lsp-definition-tail (after v0.beta.15)
+- [ ] E1 — tuple-field `recv._N` → Nth element decl.
+- [ ] E2 — interface associated-function dispatch → `default fn` decl in interface source.
+- [ ] E3 — note paths in `language-server/AGENTS.md` + `docs.md`; regression tests.
 
-## F6 — docs sweep + green gate from new locations
-- [x] Updated moved dirs' `AGENTS.md` (new path + parent link); refreshed `libs/AGENTS.md` (std/client/server only, frameworks documented as siblings) and `examples/AGENTS.md` (non-framework only) under `botopink-lang/`; per-framework AGENTS/docs paths + cross-refs threaded; `scripts/` + `tasks/` AGENTS now point at the workspace overview, not a non-existent root file
-- [x] `cd repository/botopink-lang && zig build test` green — **9/9 steps, 1181/1181 tests pass** (compiler-core stages + `:117` lib-agnostic gate + LSP + CLI). Required one code fix beyond the moves: `project_graph.zig:resolveRoots` was lexically dirname-walking a relative `project_root` (an LSP active-doc relative URI in R3), which silently visited the wrong ancestors — now absolutizes via `std.process.currentPath` + `std.fs.path.resolve` before walking
-- [ ] `zig build test-libs` discovers + runs all frameworks in sibling homes; rakun resolves `server` cross-root (deferred to follow-up: needs `node`/`escript` on PATH; not part of the standard gate)
-- [ ] `zig build test-vscode` green from new path; each `repository/<framework>/examples/` compiles via `from "<framework>"` (deferred: needs `npm install` in `repository/vscode-extension/`)
+## §F — typescript-dts-templates
+- [ ] F1 — skip `@Expr<…>`/`@ExprCustom<…>` return fns when emitting `.d.ts`; never render `@expr`/`@code`.
+- [ ] F2 — remove KNOWN GAP note in `codegen/AGENTS.md`; `.d.ts` snapshot asserting no `Expr<>`.
 
-## Test scenarios (acceptance)
-```
-unit  ---- resolveLibRoots: flat libs/ tree → single legacy root, order preserved
-unit  ---- resolveLibRoots: repository/ workspace → [botopink-lang/libs, repository]
-unit  ---- loadDependencies: rakun resolves "server" across roots
-unit  ---- loadDependencies: name absent from all roots → LibNotFound
-unit  ---- shipMjsSidecars: lib .mjs via root list; project-own via src/
-cli   ---- pre-move: compiler-cli libs-loading tests byte-identical
-lsp   ---- pre-move: project_graph from "<lib>" + mod siblings still resolve
-build ---- post-move: repository/botopink-lang zig build test green
-build ---- post-move: zig build test-libs runs erika/jhonstart/onze/rakun
-build ---- post-move: rakun example from "server" resolves cross-root
-build ---- post-move: zig build test-vscode green from new path
-lsp   ---- post-move: project_graph fixture resolves at the example's new path
-git   ---- moves preserve history (git log --follow on a moved file)
-```
+## §G — erika-dsl-extensions
+- [ ] G1 — lower `${expr}` interpolations (`q.parts()` Text/Interp); tests.
+- [ ] G2 — string form resolves `var` (generic comptime scope-snapshot; no erika coupling in core).
+- [ ] G3 — update `libs/erika/AGENTS.md` "Recorded gaps"; `.bp` tests for both forms.
+
+## Done gate (whole version)
+- [ ] §A single-edit-site; switches gone; output byte-identical (snapshots unchanged).
+- [ ] §B erika green on erlang under `zig build test-libs`; generic stdlib modules inline tests.
+- [ ] §C `self.field` r/w right slot on wasm; `?.` guards; gap notes removed.
+- [ ] §D erlang+beam parity snapshots; `*fn` lowered or boundary recorded.
+- [ ] §E `p._0` + interface assoc resolve without regressing v0.beta.15.
+- [ ] §F `.d.ts` no template fns.
+- [ ] §G interpolation woven; `var` string form resolves.
+- [ ] `zig build test` + `botopink-lib-test` + `zig build test-libs` green; touched AGENTS.md updated same commit.

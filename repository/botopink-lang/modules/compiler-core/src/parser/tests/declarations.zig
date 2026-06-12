@@ -740,3 +740,98 @@ test "parser: interface with default method and external declare member" {
         \\}
     );
 }
+
+// ── §A annotation-driven-builtins: extended `#[@external]` vocabulary ──────────
+
+test "parser: external ---- qualified enum target and call template" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\#[@external(Target.Erlang, "lists", "zip(other, self)"),
+        \\  @external(Target.Node, "./gleam_stdlib.mjs", "zip")]
+        \\pub declare fn zip(self: Array<i32>, other: Array<i32>) -> Array<i32>;
+    );
+}
+
+test "parser: external ---- keyword-argument form" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\#[@external(runtime: Target.Erlang, module: "lists", method: "reverse(self)")]
+        \\pub declare fn reverse(self: Array<i32>) -> Array<i32>;
+    );
+}
+
+test "parser: external ---- node prototype shorthand (module omitted)" {
+    try h.assertParser(std.testing.allocator, @src(),
+        \\#[@external(Target.Node, "reverse"),
+        \\  @external(.Erlang, "lists", "reverse")]
+        \\pub declare fn reverse(self: Array<i32>) -> Array<i32>;
+    );
+}
+
+// Semantic check: every spelling of the extended vocabulary resolves to the same
+// `(module, symbol)` via `externalFor`, and the back-compat bare form still works.
+test "ast: externalFor resolves extended @external vocabulary" {
+    const alloc = std.testing.allocator;
+    const src =
+        \\#[@external(Target.Erlang, "lists", "zip(other, self)"),
+        \\  @external(runtime: Target.Node, method: "zip")]
+        \\pub declare fn zip(self: Array<i32>, other: Array<i32>) -> Array<i32>;
+        \\#[@external(erlang, "lists", "reverse")]
+        \\pub declare fn rev(self: Array<i32>) -> Array<i32>;
+    ;
+    var l = Lexer.init(src);
+    const tokens = try l.scanAll(alloc);
+    defer l.deinit(alloc);
+    var p = Parser.init(tokens);
+    var program = try p.parse(alloc);
+    defer program.deinit(alloc);
+
+    var zip: ?ast.FnDecl = null;
+    var rev: ?ast.FnDecl = null;
+    for (program.decls) |d| switch (d) {
+        .@"fn" => |f| {
+            if (std.mem.eql(u8, f.name, "zip")) zip = f;
+            if (std.mem.eql(u8, f.name, "rev")) rev = f;
+        },
+        else => {},
+    };
+    try std.testing.expect(zip != null);
+    try std.testing.expect(rev != null);
+
+    // Qualified `Target.Erlang` target + call template carried in the symbol slot.
+    const erl = zip.?.externalFor("erlang").?;
+    try std.testing.expectEqualStrings("lists", erl.module);
+    try std.testing.expectEqualStrings("zip(other, self)", erl.symbol);
+
+    // Keyword form with the module omitted (node prototype) → empty module.
+    const nod = zip.?.externalFor("node").?;
+    try std.testing.expectEqualStrings("", nod.module);
+    try std.testing.expectEqualStrings("zip", nod.symbol);
+
+    // Back-compat: bare lowercase target still resolves; a missing target is null.
+    const rerl = rev.?.externalFor("erlang").?;
+    try std.testing.expectEqualStrings("lists", rerl.module);
+    try std.testing.expectEqualStrings("reverse", rerl.symbol);
+    try std.testing.expect(rev.?.externalFor("node") == null);
+}
+
+// Splits the symbol slot into `(host symbol, ordered arg names)`. The bare
+// form has no parens (codegen falls back to declaration order); `"sym()"` is
+// the zero-arg call.
+test "ast: parseExternalCallTemplate splits symbol from arg order" {
+    var slots: [8][]const u8 = undefined;
+
+    const bare = ast.parseExternalCallTemplate("reverse", &slots);
+    try std.testing.expectEqualStrings("reverse", bare.symbol);
+    try std.testing.expect(bare.args == null);
+
+    const swapped = ast.parseExternalCallTemplate("zip(other, self)", &slots);
+    try std.testing.expectEqualStrings("zip", swapped.symbol);
+    try std.testing.expect(swapped.args != null);
+    try std.testing.expectEqual(@as(usize, 2), swapped.args.?.len);
+    try std.testing.expectEqualStrings("other", swapped.args.?[0]);
+    try std.testing.expectEqualStrings("self", swapped.args.?[1]);
+
+    const nullary = ast.parseExternalCallTemplate("now()", &slots);
+    try std.testing.expectEqualStrings("now", nullary.symbol);
+    try std.testing.expect(nullary.args != null);
+    try std.testing.expectEqual(@as(usize, 0), nullary.args.?.len);
+}
