@@ -15,6 +15,7 @@
         "source": {
           "module": "module"
         },
+        "package": null,
         "activationOnly": false,
         "docComment": null,
         "comment": null,

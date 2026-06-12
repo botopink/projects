@@ -230,7 +230,7 @@ pub const Parser = struct {
                 const d = try this.parseActivationStmt(alloc);
                 _ = this.match(.semicolon);
                 break :blk .{ .use = d };
-            } else if (this.checkShorthand(.@"fn") or this.checkStarFn()) blk: {
+            } else if (this.checkShorthand(.@"fn") or this.checkStarFn() or this.checkDefaultFn()) blk: {
                 const d = try this.parseFnDecl(alloc);
                 _ = this.match(.semicolon);
                 break :blk .{ .@"fn" = d };
@@ -392,6 +392,13 @@ pub const Parser = struct {
     pub inline fn checkStarFn(this: *This) bool {
         if (this.check(.star)) return this.peekAt(1).kind == .@"fn";
         if (this.check(.@"pub")) return this.peekAt(1).kind == .star and this.peekAt(2).kind == .@"fn";
+        return false;
+    }
+    /// `default fn` / `pub default fn` at a module's top level — the package DSL
+    /// handler (`root.bp`). Distinct from a `default fn` inside an `interface`.
+    pub inline fn checkDefaultFn(this: *This) bool {
+        if (this.check(.default)) return this.peekAt(1).kind == .@"fn";
+        if (this.check(.@"pub")) return this.peekAt(1).kind == .default and this.peekAt(2).kind == .@"fn";
         return false;
     }
 

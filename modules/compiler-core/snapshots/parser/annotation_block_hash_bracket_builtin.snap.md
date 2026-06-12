@@ -6,6 +6,7 @@
         "isPub": true,
         "effect": null,
         "isDeclare": true,
+        "isDefault": false,
         "label": null,
         "name": "length",
         "docComment": null,

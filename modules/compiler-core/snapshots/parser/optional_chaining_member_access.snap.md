@@ -31,6 +31,7 @@
         "isPub": false,
         "effect": null,
         "isDeclare": false,
+        "isDefault": false,
         "label": null,
         "name": "main",
         "docComment": null,

@@ -6,6 +6,7 @@
         "isPub": false,
         "effect": "future",
         "isDeclare": false,
+        "isDefault": false,
         "label": null,
         "name": "run",
         "docComment": null,

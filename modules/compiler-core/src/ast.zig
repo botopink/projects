@@ -48,6 +48,11 @@ pub const ImportSource = union(enum) {
 pub const ImportDecl = struct {
     imports: []const ImportPath,
     source: ImportSource,
+    /// Package-namespace import: `import pkg [, { … }];` binds the package name
+    /// (so its `root.bp` `pub default fn` powers the `pkg "…"` DSL). Null for the
+    /// plain `import { … }` form. The bound name is `package` (= the `from` target
+    /// when present, else this identifier).
+    package: ?[]const u8 = null,
     /// Fallback activation statement `X*;` — no real import, only activation.
     activationOnly: bool = false,
     /// `///` documentation comment (multi-line joined with `\n`)
@@ -1583,6 +1588,10 @@ pub const FnDecl = struct {
     /// `declare fn` ---- a bodyless declaration typed from the signature alone.
     /// Required for `@[external(…)]` FFI fns (the only valid annotated form).
     isDeclare: bool = false,
+    /// `pub default fn` in a package's `root.bp` — the package's DEFAULT handler,
+    /// invoked by the `<package> "…"` DSL form (`q "select …"`). Only valid at
+    /// a root module's top level.
+    isDefault: bool = false,
     /// Optional generator label declared after the return type (`*fn f() -> @Iterator<T> :gen`),
     /// used to disambiguate `yield :label` from an enclosing loop's accumulator.
     label: ?[]const u8 = null,

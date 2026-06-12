@@ -6,6 +6,7 @@
         "isPub": false,
         "effect": "iterator",
         "isDeclare": false,
+        "isDefault": false,
         "label": "gen",
         "name": "gen",
         "docComment": null,

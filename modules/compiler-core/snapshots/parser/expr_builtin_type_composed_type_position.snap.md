@@ -6,6 +6,7 @@
         "isPub": false,
         "effect": null,
         "isDeclare": false,
+        "isDefault": false,
         "label": null,
         "name": "collect",
         "docComment": null,

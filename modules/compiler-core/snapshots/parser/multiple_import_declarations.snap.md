@@ -15,6 +15,7 @@
         "source": {
           "root": {}
         },
+        "package": null,
         "activationOnly": false,
         "docComment": null,
         "comment": null,
@@ -42,6 +43,7 @@
         "source": {
           "module": "dep"
         },
+        "package": null,
         "activationOnly": false,
         "docComment": null,
         "comment": null,
@@ -63,6 +65,7 @@
         "source": {
           "root": {}
         },
+        "package": null,
         "activationOnly": false,
         "docComment": null,
         "comment": null,

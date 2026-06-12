@@ -162,9 +162,27 @@ pub fn parseValDecl(this: *This, alloc: std.mem.Allocator) ParseError!ValDecl {
     return ValDecl{ .name = name, .isPub = isPub, .typeAnnotation = typeAnnotation, .value = value_ptr };
 }
 
-/// `import { item, ... } [from "name"];`
+/// `import { item, ... } [from "name"];`  ──or──
+/// `import pkg [, { item, ... }] [from "name"];`  (package-namespace form: binds
+/// `pkg` so its `root.bp` `pub default fn` powers the `pkg "…"` DSL).
 pub fn parseImportDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImportDecl {
     _ = try this.consume(.import);
+
+    // Package-namespace form leads with a bare identifier (not `{`).
+    var package: ?[]const u8 = null;
+    if (!this.check(.leftBrace)) {
+        package = (try this.consume(.identifier)).lexeme;
+        // `import pkg;` / `import pkg from "…";` — no named list.
+        if (!this.match(.comma)) {
+            const src: ImportSource = if (this.match(.from)) blk: {
+                const tok = try this.consume(.stringLiteral);
+                break :blk .{ .module = tok.lexeme[1 .. tok.lexeme.len - 1] };
+            } else .root;
+            return ImportDecl{ .imports = &.{}, .source = src, .package = package };
+        }
+        // `import pkg, { … } [from …];` falls through to parse the list.
+    }
+
     _ = try this.consume(.leftBrace);
     const imports = try this.parseImportList(alloc);
     errdefer {
@@ -176,7 +194,7 @@ pub fn parseImportDecl(this: *This, alloc: std.mem.Allocator) ParseError!ImportD
         const tok = try this.consume(.stringLiteral);
         break :blk .{ .module = tok.lexeme[1 .. tok.lexeme.len - 1] };
     } else .root;
-    return ImportDecl{ .imports = imports, .source = source };
+    return ImportDecl{ .imports = imports, .source = source, .package = package };
 }
 
 /// Fallback activation statement `dottedPath "*" ";"` — activates an
@@ -242,6 +260,8 @@ pub fn parseFnDecl(this: *This, alloc: std.mem.Allocator) ParseError!FnDecl {
         alloc.free(annotations);
     }
     const isPub = this.match(.@"pub");
+    // `pub default fn` (root.bp) — the package's DSL default handler.
+    const isDefault = this.match(.default);
     // `declare fn` — bodyless declaration (required for `@[external(…)]` fns).
     const isDeclare = this.match(.declare);
     // `*fn` — async / generator marker. The leading `*` makes the function
@@ -249,7 +269,9 @@ pub fn parseFnDecl(this: *This, alloc: std.mem.Allocator) ParseError!FnDecl {
     const isStarFn = this.match(.star);
     _ = try this.consume(.@"fn");
     const name = (try this.consume(.identifier)).lexeme;
-    return this.parseFnBody(alloc, name, isPub, isDeclare, annotations, isStarFn);
+    var fn_decl = try this.parseFnBody(alloc, name, isPub, isDeclare, annotations, isStarFn);
+    fn_decl.isDefault = isDefault;
+    return fn_decl;
 }
 
 /// `val name = #[...] fn(params) -> R { body }` — val-form annotated function.

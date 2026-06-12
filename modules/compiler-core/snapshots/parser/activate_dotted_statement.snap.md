@@ -16,6 +16,7 @@
         "source": {
           "root": {}
         },
+        "package": null,
         "activationOnly": true,
         "docComment": null,
         "comment": null,
