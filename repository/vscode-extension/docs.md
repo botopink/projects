@@ -1,8 +1,8 @@
 # vscode-extension — Botopink VS Code extension
 
-> Path: `modules/vscode-extension/`
+> Path: `repository/vscode-extension/`
 > Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md)
-> Parent: [`../docs.md`](../docs.md)
+> Parent (workspace): [`../AGENTS.md`](../AGENTS.md)
 
 Design notes and rationale for the VS Code extension. For install / dev
 instructions see [`README.md`](README.md); for file-by-file conventions
@@ -109,7 +109,7 @@ activate(ctx)
 Notes:
 
 - The server is invoked **with no args**; see
-  [`../language-server/src/main.zig`](../language-server/src/main.zig).
+  [`../botopink-lang/modules/language-server/src/main.zig`](../botopink-lang/modules/language-server/src/main.zig).
   Do not add subcommands here.
 - `documentSelector` uses `scheme: "file"` only — untitled buffers will
   not currently bind to the LSP. Revisit if/when the LSP supports
@@ -144,7 +144,7 @@ the language is stable enough for public release, publish with
 |---|---|
 | A new keyword to highlight | `syntaxes/botopink.tmLanguage.json` (`keywords` repo) + `AGENTS.md` |
 | A new snippet | `snippets.json` |
-| A new LSP feature consumed by the client | nothing here — implement in `../language-server/src/engine.zig` and the standard LSP capability negotiation will surface it |
+| A new LSP feature consumed by the client | nothing here — implement in `../botopink-lang/modules/language-server/src/engine.zig` and the standard LSP capability negotiation will surface it |
 | A new VS Code command (e.g. "compile current file") | `package.json` `contributes.commands` + a handler in `src/extension.ts` |
 | A new user-tunable setting | `package.json` `contributes.configuration.properties` + read it in `src/extension.ts` |
 | A new CLI-backed task | `package.json` `contributes.taskDefinitions` + a branch in `src/tasks.ts` |
@@ -152,6 +152,6 @@ the language is stable enough for public release, publish with
 
 ## See also
 
-- Language server it talks to → [`../language-server/docs.md`](../language-server/docs.md).
-- Token kinds reflected in the grammar → [`../compiler-core/src/lexer/docs.md`](../compiler-core/src/lexer/docs.md).
-- Snippet bodies follow the surface syntax in → [`../../docs.md`](../../docs.md).
+- Language server it talks to → [`../botopink-lang/modules/language-server/docs.md`](../botopink-lang/modules/language-server/docs.md).
+- Token kinds reflected in the grammar → [`../botopink-lang/modules/compiler-core/src/lexer/docs.md`](../botopink-lang/modules/compiler-core/src/lexer/docs.md).
+- Snippet bodies follow the surface syntax in → [`../botopink-lang/docs.md`](../botopink-lang/docs.md).

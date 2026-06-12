@@ -232,7 +232,21 @@ pub const ProjectGraph = struct {
     /// resolution is byte-identical to the former single-root walk. Caller owns
     /// the slice and each element via gpa.
     fn resolveRoots(self: *ProjectGraph, project_root: []const u8) ![][]const u8 {
-        var dir = project_root;
+        // Walking with `std.fs.path.dirname` only behaves correctly on absolute
+        // paths — a relative `../../..` lexically shortens to `../..`, which
+        // resolves to a *different* directory and the walk silently visits the
+        // wrong ancestors. Normalize via process cwd before walking.
+        var abs_root_buf: ?[]u8 = null;
+        defer if (abs_root_buf) |b| self.gpa.free(b);
+        var dir: []const u8 = project_root;
+        if (!std.fs.path.isAbsolute(project_root)) {
+            var cwd_buf: [std.fs.max_path_bytes]u8 = undefined;
+            const n = try std.process.currentPath(self.io, &cwd_buf);
+            const abs = try std.fs.path.resolve(self.gpa, &.{ cwd_buf[0..n], project_root });
+            abs_root_buf = abs;
+            dir = abs;
+        }
+
         var roots: std.ArrayListUnmanaged([]const u8) = .empty;
         errdefer {
             for (roots.items) |r| self.gpa.free(r);

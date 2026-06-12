@@ -175,8 +175,9 @@ LAZY
 ```
 
 > **erika moved out of `std`.** The C#/LINQ-style `Query<T>` + `erika "…"`
-> template now live in their own package, reached with `import {…} from "erika"`.
-> See [`libs/erika/`](../../erika/) for its docs and examples.
+> template now live in their own package (a workspace sibling), reached with
+> `import {…} from "erika"`. See [`../../../../erika/`](../../../../erika/)
+> for its docs and examples.
 
 ## See also
 

@@ -1,7 +1,7 @@
 # vscode-extension · AGENTS.md
 
-> Path: `modules/vscode-extension/`
-> Parent: [`../AGENTS.md`](../AGENTS.md)
+> Path: `repository/vscode-extension/`
+> Parent (workspace): [`../AGENTS.md`](../AGENTS.md) · Sibling (core): [`../botopink-lang/AGENTS.md`](../botopink-lang/AGENTS.md)
 > Sibling docs: [`./docs.md`](docs.md)
 
 VS Code extension for the `.bp` language. Adapted from
@@ -10,7 +10,8 @@ Thin TypeScript wrapper that:
 
 1. Registers `.bp` as a language (`botopink`).
 2. Ships a TextMate grammar + snippets for offline highlighting.
-3. Launches the `botopink-lsp` binary (see `../language-server/`) and
+3. Launches the `botopink-lsp` binary (built from
+   [`../botopink-lang/modules/language-server/`](../botopink-lang/modules/language-server/)) and
    speaks LSP over stdio via `vscode-languageclient`.
 4. Provides UI-only editor integrations that shell the `botopink` CLI or
    consume LSP results — tasks + problem matcher, CodeLens run/test, a
@@ -128,14 +129,14 @@ the host file a one-line delegation so the tested code is the shipped code.
     `error: <msg> at <file>:<line>:<col>` stderr format;
   - `parseTestOutput` in `src/testExplorer.ts` tracks the commonJS test
     runner lines emitted by
-    [`../compiler-core/src/codegen/commonJS.zig`](../compiler-core/src/codegen/commonJS.zig)
+    [`../botopink-lang/modules/compiler-core/src/codegen/commonJS.zig`](../botopink-lang/modules/compiler-core/src/codegen/commonJS.zig)
     (`  ok   <name>` / `  FAIL <name>  (<msg>)  at <loc>`).
   The `botopink` CLI surface lives in
-  [`../compiler-cli/src/main.zig`](../compiler-cli/src/main.zig) (subcommands
+  [`../botopink-lang/modules/compiler-cli/src/main.zig`](../botopink-lang/modules/compiler-cli/src/main.zig) (subcommands
   `check`/`build`/`test`/`format`/`run`); only `build`/`test` take
   `--target`.
 - **Keywords list must stay in sync** with the lexer keyword table in
-  [`../compiler-core/src/lexer.zig`](../compiler-core/src/lexer.zig)
+  [`../botopink-lang/modules/compiler-core/src/lexer.zig`](../botopink-lang/modules/compiler-core/src/lexer.zig)
   (`keywordOrIdent`) — `token.zig` only holds the enum; the actual
   surface keywords are the strings matched there. When you add or remove a
   keyword, update `syntaxes/botopink.tmLanguage.json`. Beyond plain
@@ -144,7 +145,7 @@ the host file a one-line delegation so the tested code is the shipped code.
   `*fn` effect marker, `|>` pipeline, `?.` optional chaining, and `${…}`
   string interpolation holes.
 - **`botopink-lsp` is launched with no args** — see
-  [`../language-server/src/main.zig`](../language-server/src/main.zig).
+  [`../botopink-lang/modules/language-server/src/main.zig`](../botopink-lang/modules/language-server/src/main.zig).
   Do not add `lsp`/`serve`/etc. subcommands here.
 - **Comment continuation** for `///` and `////` is wired through
   `continueTypingCommentsOnNewline()` in `src/extension.ts`. Keep that
@@ -166,6 +167,6 @@ Development Host. Make sure `botopink-lsp` is on `PATH` (or set
 
 ## See also
 
-- LSP server it launches → [`../language-server/AGENTS.md`](../language-server/AGENTS.md).
-- Token kinds the grammar mirrors → [`../compiler-core/src/lexer/token.zig`](../compiler-core/src/lexer/token.zig).
-- Language reference for snippet bodies → [`../../docs.md`](../../docs.md).
+- LSP server it launches → [`../botopink-lang/modules/language-server/AGENTS.md`](../botopink-lang/modules/language-server/AGENTS.md).
+- Token kinds the grammar mirrors → [`../botopink-lang/modules/compiler-core/src/lexer/token.zig`](../botopink-lang/modules/compiler-core/src/lexer/token.zig).
+- Language reference for snippet bodies → [`../botopink-lang/docs.md`](../botopink-lang/docs.md).

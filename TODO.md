@@ -23,26 +23,26 @@
 - [x] **Gate:** flat tree `zig build test` green (incl. new unit tests). **Committed here — resolver green pre-move.**
 
 ## F3 — scaffold + move the language core (git mv, preserve history)
-- [ ] Create `repository/` + `repository/botopink-lang/`; author the top-level workspace `AGENTS.md` (`repository/` purpose; `tasks/`+`scripts/` global)
-- [ ] `git mv` `build.zig`, `test_format.zig`, `test_pub.zig`, `modules/` (minus vscode-extension), `libs/{std,client,server}`, non-framework `examples/` → `repository/botopink-lang/`; move core root docs there
-- [ ] Verify `build.zig` relative paths still resolve from the new home (`modules/…`, `libs/std/src/root.bp`, the `:117` grep)
+- [x] Create `repository/` + `repository/botopink-lang/`; author the top-level workspace `AGENTS.md` (`repository/AGENTS.md`: workspace overview, multi-root rule, per-project entry points; `tasks/`+`scripts/` documented as workspace-root globals)
+- [x] `git mv` `build.zig`, `test_format.zig`, `test_pub.zig`, `modules/` (minus vscode-extension), `libs/{std,client,server}`, non-framework `examples/` → `repository/botopink-lang/`; move core root docs there
+- [x] Verify `build.zig` relative paths still resolve from the new home (`modules/…`, `libs/std/src/root.bp`, the `:117` grep — `modules/compiler-core/src`, all resolve when cwd is `repository/botopink-lang/`)
 
 ## F4 — extract frameworks + vscode extension to siblings
-- [ ] erika/jhonstart/onze/rakun: `git mv libs/<name>` → `repository/<name>/`; move its example(s) into `repository/<name>/examples/`; add per-project `AGENTS.md`/`README.md`/`CHANGELOG.md`/`docs.md`
-- [ ] `git mv modules/vscode-extension` → `repository/vscode-extension/` (+ docs)
-- [ ] Map every `examples/` entry to one destination; `jonhstar/` typo + `jhonstart-*` → `repository/jhonstart/`
+- [x] erika/jhonstart/onze/rakun: `git mv libs/<name>` → `repository/<name>/`; move its example(s) into `repository/<name>/examples/`; per-project `AGENTS.md`/`docs.md` rode along; CHANGELOG/README per-project still pending (F6 sweep)
+- [x] `git mv modules/vscode-extension` → `repository/vscode-extension/` (+ docs)
+- [x] Map every `examples/` entry to one destination; `jonhstar/` typo + `jhonstart-*` → `repository/jhonstart/`
 
 ## F5 — fix the paths the move breaks
-- [ ] `build.zig`: `test-vscode` `setCwd` → `repository/vscode-extension`; `test-libs` (`lib-test-exe` + cwd/args) → new framework roots
-- [ ] `scripts/install-tooling.sh`: `modules/vscode-extension` → `repository/vscode-extension`; fixed `zig build` cwd → `repository/botopink-lang`
-- [ ] `modules/language-server/src/tests/project_graph.zig:80`: update `../../examples/rakun/src/posts.bp` fixture path
-- [ ] Confirm `doc-health.sh` / `status.sh` need no change (note if they do)
+- [x] `build.zig`: `test-vscode` `setCwd` → `repository/vscode-extension` (`../vscode-extension` from `repository/botopink-lang/`); `test-libs` walks every resolved root (no per-framework cwd needed — lib-test-runner's `discovery.zig` scans the root list)
+- [x] `scripts/install-tooling.sh`: `modules/vscode-extension` → `repository/vscode-extension`; `zig build install` runs inside `repository/botopink-lang/`; legacy flat-tree fallback preserved
+- [x] `modules/language-server/src/tests/project_graph.zig:84`: fixture path → `../../../rakun/examples/rakun/src/posts.bp` (3 ups now, since cwd is two layers deeper than the legacy flat tree); also fixed `resolveRoots` to absolutize relative `project_root` before walking — `std.fs.path.dirname` on `../../..` lexically shortens and silently visits the wrong ancestor
+- [x] `doc-health.sh` / `status.sh` confirmed layout-agnostic (`git ls-files` + `git rev-parse --show-toplevel`); no changes needed
 
 ## F6 — docs sweep + green gate from new locations
-- [ ] Update every moved dir's `AGENTS.md` (new path + parent link); refresh `libs/AGENTS.md` (std/client/server only) and `examples/AGENTS.md` (non-framework only) under `botopink-lang/`
-- [ ] `cd repository/botopink-lang && zig build test` green (stages + `:117` gate + LSP + CLI)
-- [ ] `zig build test-libs` discovers + runs all frameworks in sibling homes; rakun resolves `server` cross-root
-- [ ] `zig build test-vscode` green from new path; each `repository/<framework>/examples/` compiles via `from "<framework>"`
+- [x] Updated moved dirs' `AGENTS.md` (new path + parent link); refreshed `libs/AGENTS.md` (std/client/server only, frameworks documented as siblings) and `examples/AGENTS.md` (non-framework only) under `botopink-lang/`; per-framework AGENTS/docs paths + cross-refs threaded; `scripts/` + `tasks/` AGENTS now point at the workspace overview, not a non-existent root file
+- [x] `cd repository/botopink-lang && zig build test` green — **9/9 steps, 1181/1181 tests pass** (compiler-core stages + `:117` lib-agnostic gate + LSP + CLI). Required one code fix beyond the moves: `project_graph.zig:resolveRoots` was lexically dirname-walking a relative `project_root` (an LSP active-doc relative URI in R3), which silently visited the wrong ancestors — now absolutizes via `std.process.currentPath` + `std.fs.path.resolve` before walking
+- [ ] `zig build test-libs` discovers + runs all frameworks in sibling homes; rakun resolves `server` cross-root (deferred to follow-up: needs `node`/`escript` on PATH; not part of the standard gate)
+- [ ] `zig build test-vscode` green from new path; each `repository/<framework>/examples/` compiles via `from "<framework>"` (deferred: needs `npm install` in `repository/vscode-extension/`)
 
 ## Test scenarios (acceptance)
 ```

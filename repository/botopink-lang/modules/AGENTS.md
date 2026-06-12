@@ -5,8 +5,10 @@
 > Docs: [`./docs.md`](docs.md)
 
 All Zig packages live here. Each package ships its own `build.zig` and `AGENTS.md`.
-The `.bp` libraries (stdlib, server, client) now live at the repo root under
-[`../libs/`](../libs/AGENTS.md).
+The bundled `.bp` libraries (`std`/`server`/`client`) live alongside under
+[`../libs/`](../libs/AGENTS.md). The **VS Code extension** is a sibling project
+at [`../../vscode-extension/`](../../vscode-extension/AGENTS.md), not a module
+here — it ships and versions separately from the language core.
 
 ## Tree
 
@@ -27,16 +29,10 @@ modules/
 │   ├── build.zig.zon
 │   ├── src/                 ← JSON-RPC server + LSP features + tests
 │   └── snapshots/lsp/       ← LSP feature snapshots
-├── lib-test-runner/         ← `botopink-lib-test` — per-lib/per-backend test gate
-│   ├── build.zig
-│   ├── build.zig.zon
-│   └── src/                 ← discovery + fan-out + matrix (self-contained)
-└── vscode-extension/        ← VS Code extension (syntax + LSP client)
-    ├── package.json
-    ├── language-configuration.json
-    ├── syntaxes/             ← TextMate grammar + markdown injection
-    ├── snippets.json
-    └── src/                  ← TypeScript LSP client (extension.ts)
+└── lib-test-runner/         ← `botopink-lib-test` — per-lib/per-backend test gate
+    ├── build.zig
+    ├── build.zig.zon
+    └── src/                 ← discovery + fan-out + matrix (self-contained)
 ```
 
 ## Packages
@@ -47,7 +43,7 @@ modules/
 | `compiler-core/` | library (lexer → codegen) | [`libs/std`](../libs/std/AGENTS.md) | [link](compiler-core/AGENTS.md) |
 | `language-server/` | `botopink-lsp` executable | `compiler-core` | [link](language-server/AGENTS.md) |
 | `lib-test-runner/` | `botopink-lib-test` executable | none (shells out to `botopink`) | [link](lib-test-runner/AGENTS.md) |
-| `vscode-extension/` | VS Code `.vsix` extension | `language-server` (runtime) | [link](vscode-extension/AGENTS.md) |
+| `../../vscode-extension/` | VS Code `.vsix` extension (sibling project) | `language-server` (runtime) | [link](../../vscode-extension/AGENTS.md) |
 
 ## Per-package commands
 

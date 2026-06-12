@@ -1,7 +1,7 @@
 # onze
 
-> Path: `libs/onze/`
-> Parent: [`../AGENTS.md`](../AGENTS.md) · Root: [`../../AGENTS.md`](../../AGENTS.md)
+> Path: `repository/onze/`
+> Parent (workspace): [`../AGENTS.md`](../AGENTS.md) · Sibling (core): [`../botopink-lang/AGENTS.md`](../botopink-lang/AGENTS.md)
 > Docs: [`./docs.md`](docs.md) · Spec: [`../../tasks/v0.beta.8/specs/onze.md`](../../tasks/v0.beta.8/specs/onze.md)
 
 A **Mockito-style mocking + verification library** for botopink unit tests:
@@ -24,7 +24,7 @@ onze/
 │   ├── onze.bp        ← ALL behaviour: externals · matchers · when/verify · #[mock]
 │   └── onze.mjs       ← host runtime (the one mutable seam: call log + stub table)
 ├── test/
-│   └── onze_test.bp   ← runtime tests (run by `botopink test` from libs/onze/)
+│   └── onze_test.bp   ← runtime tests (run by `botopink test` from repository/onze/)
 └── examples/
     └── mock_synthesis.bp ← `#[mock]` synthesis, shown under `botopink build`
 ```
@@ -75,9 +75,9 @@ This needed two **core** fixes (in this branch — pure-lib onze couldn't do the
 ### Known constraints
 
 - **Host path is project-relative.** `#[@external(node, "../../src/onze.mjs", …)]`
-  resolves from `…/.botopinkbuild/test-out/<mod>.js` back to `libs/onze/src/` — correct
-  for onze's own tests. A general consumer story (copying/resolving the host file
-  from a dependency) is future work.
+  resolves from `…/.botopinkbuild/test-out/<mod>.js` back to `repository/onze/src/`
+  — correct for onze's own tests. A general consumer story (copying/resolving
+  the host file from a dependency) is future work.
 - **Emitted mock body references host externals.** `@emit`s into the annotated
   module, so `onzeInvoke`/`onzeKey`/`onzeNewMock` must be in scope there — the
   consumer imports them (bare in-project, or via `from "onze"`).
@@ -101,7 +101,7 @@ This needed two **core** fixes (in this branch — pure-lib onze couldn't do the
 ## Testing
 
 ```bash
-cd libs/onze && botopink test          # runs test/onze_test.bp through #[mock] (commonJS/node)
+cd repository/onze && botopink test    # runs test/onze_test.bp through #[mock] (commonJS/node)
 ```
 
 `examples/mock_synthesis.bp` is a standalone `from "onze"` usage sample.

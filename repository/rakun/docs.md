@@ -1,8 +1,8 @@
 # rakun — Spring-style application framework
 
-> Path: `libs/rakun/`
+> Path: `repository/rakun/`
 > Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md)
-> Parent: [`../AGENTS.md`](../AGENTS.md)
+> Parent (workspace): [`../AGENTS.md`](../AGENTS.md)
 > Spec: [`../../tasks/v0.beta.5/specs/rakun.md`](../../tasks/v0.beta.5/specs/rakun.md)
 
 `rakun` is botopink's answer to Java's **Spring** / Spring Boot: a dependency-
@@ -95,7 +95,7 @@ The emitted DI/router wiring calls the host runtime by name, so a module
 declaring components imports those fns too (`rkScan`/`rkSingleton`/`rkEnter`/
 `rkDone`/`rkRegisterRoute`; add `rkProp`/`rkPropInt` when it has a `#[value]`
 field). See the runnable end-to-end app under
-[`../../examples/rakun/`](../../examples/rakun/).
+[`./examples/rakun/`](examples/rakun/).
 
 ## Loading notes
 
@@ -108,7 +108,7 @@ every `#[@external]` require.
 
 ## See also
 
-- The embedded standard library → [`../std/docs.md`](../std/docs.md).
-- The HTTP server backing → [`../server/docs.md`](../server/docs.md).
-- The runnable end-to-end app → [`../../examples/rakun/`](../../examples/rakun/).
+- The embedded standard library → [`../botopink-lang/libs/std/docs.md`](../botopink-lang/libs/std/docs.md).
+- The HTTP server backing → [`../botopink-lang/libs/server/docs.md`](../botopink-lang/libs/server/docs.md).
+- The runnable end-to-end app → [`./examples/rakun/`](examples/rakun/).
 - The `.bp` libraries group contract → [`../AGENTS.md`](../AGENTS.md).

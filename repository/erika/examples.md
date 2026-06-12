@@ -1,8 +1,8 @@
 # erika — examples
 
-> Path: `libs/erika/`
+> Path: `repository/erika/`
 > Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md) · Docs: [`./docs.md`](docs.md)
-> Parent: [`../AGENTS.md`](../AGENTS.md)
+> Parent (workspace): [`../AGENTS.md`](../AGENTS.md)
 
 All examples assume `erika` is a declared dependency
 (`"dependencies": ["erika"]` in `botopink.json`).
@@ -141,7 +141,7 @@ val paresPorDez = erika.of(nums).where({ n -> n % 2 == 0 }).select({ n -> n * 10
 > `erika.of(listas)` (above) for a `var`.
 
 > **Runnable example.** A consumer project lives at
-> [`examples/erika-linq/`](../../examples/erika-linq/): it imports
+> [`./examples/erika-linq/`](examples/erika-linq/): it imports
 > `{of, erika} from "erika"` and exercises the fluent layer **and** both the
 > single-line `erika "…"` and triple-quoted `erika """…"""` SQL forms
 > cross-module (`botopink test` green). The bare imported `erika` template fn now

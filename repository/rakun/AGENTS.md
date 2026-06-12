@@ -1,7 +1,7 @@
 # rakun
 
-> Path: `libs/rakun/`
-> Parent: [`../AGENTS.md`](../AGENTS.md) · Root: [`../../AGENTS.md`](../../AGENTS.md)
+> Path: `repository/rakun/`
+> Parent (workspace): [`../AGENTS.md`](../AGENTS.md) · Sibling (core): [`../botopink-lang/AGENTS.md`](../botopink-lang/AGENTS.md)
 > Docs: [`./docs.md`](docs.md) · Spec: [`../../tasks/v0.beta.11/specs/rakun.md`](../../tasks/v0.beta.11/specs/rakun.md)
 
 A **Spring-style application framework** for botopink — an IoC container with
@@ -110,7 +110,7 @@ it); the consumer declares both.
 - **Host state behind `#[@external]`.** The one mutable seam is `runtime.mjs`; the
   core never sees it. Decorator bodies obey the comptime constraints (no sibling
   calls, `if`-expr, bare-`if` only last, block-lambdas) — see
-  [`../../modules/compiler-core/src/comptime/AGENTS.md`](../../modules/compiler-core/src/comptime/AGENTS.md).
+  [`../botopink-lang/modules/compiler-core/src/comptime/AGENTS.md`](../botopink-lang/modules/compiler-core/src/comptime/AGENTS.md).
 - **Imported, not prelude.** Reached via `from "rakun"` — never auto-loaded into
   the type `Env`, no core embed/registry.
 - **Tests live here.** rakun's tests are `test { … }` blocks inside its own
@@ -122,5 +122,5 @@ it); the consumer declares both.
 ## See also
 
 - The spec (intent, steps, test scenarios) → [`../../tasks/v0.beta.11/specs/rakun.md`](../../tasks/v0.beta.11/specs/rakun.md).
-- The runnable end-to-end app → [`../../examples/rakun/`](../../examples/rakun/).
-- The HTTP server backing `Rakun.run` starts → [`../server/AGENTS.md`](../server/AGENTS.md).
+- The runnable end-to-end app → [`./examples/rakun/`](examples/rakun/).
+- The HTTP server backing `Rakun.run` starts → [`../botopink-lang/libs/server/AGENTS.md`](../botopink-lang/libs/server/AGENTS.md).

@@ -1,7 +1,7 @@
 # tasks — spec sets (universal contract)
 
-> Path: `tasks/`
-> Parent: [`../AGENTS.md`](../AGENTS.md)
+> Path: `tasks/` (workspace-global, lives **above** `repository/`)
+> Workspace overview: [`../repository/AGENTS.md`](../repository/AGENTS.md)
 > Template: [`./_TEMPLATE.md`](_TEMPLATE.md)
 
 This folder holds the project's **specs**, grouped into versioned **sets**
@@ -136,5 +136,6 @@ Five phases across the three layers; each names what is written and its exit gat
    doc listed in the spec's `Touches docs:`; remove worktrees and prune. *Gate:*
    merged into `feat`, docs synced, worktrees gone. The spec stays as history.
 
-See [`../AGENTS.md`](../AGENTS.md) → "Parallel tasks (git worktrees)" for the exact
-git commands and integration/conflict rules.
+See [`../repository/botopink-lang/AGENTS.md`](../repository/botopink-lang/AGENTS.md)
+→ "Parallel tasks (git worktrees)" for the exact git commands and
+integration/conflict rules.

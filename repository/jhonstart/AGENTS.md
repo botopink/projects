@@ -1,7 +1,7 @@
-# libs/jhonstart/
+# jhonstart
 
-> Path: `libs/jhonstart/`
-> Parent: [`../AGENTS.md`](../AGENTS.md)
+> Path: `repository/jhonstart/`
+> Parent (workspace): [`../AGENTS.md`](../AGENTS.md) · Sibling (core): [`../botopink-lang/AGENTS.md`](../botopink-lang/AGENTS.md)
 > Spec: [`../../tasks/v0.beta.7/specs/jhonstart.md`](../../tasks/v0.beta.7/specs/jhonstart.md)
 > (port), originally [`../../tasks/v0.beta.5/specs/jhonstart.md`](../../tasks/v0.beta.5/specs/jhonstart.md)
 
@@ -26,7 +26,7 @@ the prelude.
 ## Tree
 
 ```text
-libs/jhonstart/
+repository/jhonstart/
 ├── AGENTS.md          ← you are here
 ├── botopink.json      ← manifest (files: element.bp, hooks.bp, html.bp, router.d.bp, server.d.bp)
 ├── docs.md            ← user-facing reference

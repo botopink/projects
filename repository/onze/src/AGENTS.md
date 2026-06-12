@@ -1,6 +1,6 @@
 # onze/src
 
-> Path: `libs/onze/src/`
+> Path: `repository/onze/src/`
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 
 The whole library: one `.bp` module of behaviour plus one host module for the

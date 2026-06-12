@@ -120,9 +120,10 @@ no JS equivalent. Add tests when typed-value dispatch lands.
 unreachable. All coverage is commonJS-only.
 
 > **erika is no longer a std module.** The C#/LINQ `Query<T>` + `erika "…"`
-> template graduated to its own package — see [`libs/erika/`](../erika/). `std`
-> ships it nowhere (dropped from `build.zig` `std_pkg_files`); it is reached only
-> through the generic `from "erika"` loader.
+> template graduated to its own package — now a workspace sibling at
+> [`../../../erika/`](../../../erika/). `std` ships it nowhere (dropped from
+> `build.zig` `std_pkg_files`); it is reached only through the generic
+> `from "erika"` loader (resolved across roots).
 
 ## Module tree (`root.bp`)
 

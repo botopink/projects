@@ -33,6 +33,6 @@ Node first; an Erlang/BEAM transport (`gen_tcp`/`inets`/`cowboy`) is a follow-up
 
 ## See also
 
-- The framework that composes it → [`../rakun/docs.md`](../rakun/docs.md).
-- The runnable end-to-end app → [`../../examples/rakun/`](../../examples/rakun/).
+- The framework that composes it → [`../../../rakun/docs.md`](../../../rakun/docs.md) (sibling project).
+- The runnable end-to-end app → [`../../../rakun/examples/rakun/`](../../../rakun/examples/rakun/).
 - The `.bp` libraries group contract → [`../AGENTS.md`](../AGENTS.md).

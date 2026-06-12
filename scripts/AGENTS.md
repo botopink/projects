@@ -1,10 +1,12 @@
 # scripts
 
-> Path: `scripts/`
-> Parent: [`../AGENTS.md`](../AGENTS.md)
+> Path: `scripts/` (workspace-global, lives **above** `repository/`)
+> Workspace overview: [`../repository/AGENTS.md`](../repository/AGENTS.md)
 
-Repo maintenance scripts (bash). Born in the `docs-refactor` spec
-(`tasks/v0.beta.2/specs/docs-refactor.md`, F4).
+Workspace maintenance scripts (bash). Born in the `docs-refactor` spec
+(`tasks/v0.beta.2/specs/docs-refactor.md`, F4). They detect both layouts —
+the workspace shape (`repository/botopink-lang/`) and a legacy flat tree —
+so the same script works in either.
 
 ## Tree
 

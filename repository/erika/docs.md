@@ -1,9 +1,9 @@
 # erika — C#/LINQ-style queries
 
-> Path: `libs/erika/`
+> Path: `repository/erika/`
 > Sibling (AGENTS): [`./AGENTS.md`](AGENTS.md)
 > Examples: [`./examples.md`](examples.md)
-> Parent: [`../AGENTS.md`](../AGENTS.md)
+> Parent (workspace): [`../AGENTS.md`](../AGENTS.md)
 > Spec: [`../../tasks/v0.beta.7/specs/erika.md`](../../tasks/v0.beta.7/specs/erika.md)
 
 `erika` is botopink's answer to C#'s **LINQ**: a fluent query vocabulary over
@@ -27,9 +27,12 @@ import {erika} from "erika";   // the `erika` namespace + the `erika "…"` temp
 import {Query} from "erika";   // the Query<T> type (for annotations)
 ```
 
-The loader finds `libs/erika/src/erika.bp` (nearest ancestor `libs/` dir) and
-compiles it as the `erika/erika` package module. There is no embed and no per-lib
-registry — the compiler core never names erika.
+The loader walks up from `cwd` and, at each ancestor, considers these roots
+(nearest-first): `repository/botopink-lang/libs`, `repository/`, and a legacy
+flat `libs/`. The first root holding `erika/botopink.json` wins (in this
+workspace that's `repository/erika/`); it compiles `src/erika.bp` as the
+`erika/erika` package module. There is no embed and no per-lib registry — the
+compiler core never names erika.
 
 ## The fluent layer — `Query<T>`
 
@@ -103,10 +106,10 @@ so the two forms parse identically.
 
 > Cross-module `erika "…"` after `import {erika} from "erika"` now resolves — the
 > generic-loader-binding keystone (v0.beta.8) binds the bare imported template fn.
-> A runnable consumer lives at [`examples/erika-linq/`](../../examples/erika-linq/).
+> A runnable consumer lives at [`./examples/erika-linq/`](examples/erika-linq/).
 
 ## See also
 
 - Runnable examples → [`./examples.md`](examples.md).
 - The package contract + comptime-eval constraints → [`./AGENTS.md`](AGENTS.md).
-- Full language reference → [`../../docs.md`](../../docs.md).
+- Full language reference → [`../botopink-lang/docs.md`](../botopink-lang/docs.md).

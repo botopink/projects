@@ -1,6 +1,6 @@
-# libs/jhonstart/src/
+# jhonstart/src/
 
-> Path: `libs/jhonstart/src/`
+> Path: `repository/jhonstart/src/`
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 
 Source for the `jhonstart` package. The UI **core, hooks, and the `html` markup

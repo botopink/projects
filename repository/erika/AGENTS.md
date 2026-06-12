@@ -1,7 +1,7 @@
 # erika
 
-> Path: `libs/erika/`
-> Parent: [`../AGENTS.md`](../AGENTS.md) · Root: [`../../AGENTS.md`](../../AGENTS.md)
+> Path: `repository/erika/`
+> Parent (workspace): [`../AGENTS.md`](../AGENTS.md) · Sibling (core): [`../botopink-lang/AGENTS.md`](../botopink-lang/AGENTS.md)
 > Docs: [`./docs.md`](docs.md) · Examples: [`./examples.md`](examples.md)
 > Spec: [`../../tasks/v0.beta.7/specs/erika.md`](../../tasks/v0.beta.7/specs/erika.md)
 
@@ -94,12 +94,13 @@ Both `root.bp` and `erika.bp` are listed in `botopink.json` `files` — the
 - **Pure `.bp`, zero core surface.** The only compiler dependency is the
   *generic* loader; erika adds no Zig and is named nowhere in `compiler-core`.
 - **Imported, never prelude.** Reached via `from "erika"` — the CLI's generic
-  loader (`compiler-cli/src/cli/libs.zig`) resolves `dependencies: ["erika"]` to
-  `libs/erika/src/erika.bp` as the `erika/erika` package module. No per-lib
-  registry, no embed.
+  loader ([`../botopink-lang/modules/compiler-cli/src/cli/libs.zig`](../botopink-lang/modules/compiler-cli/src/cli/libs.zig))
+  resolves `dependencies: ["erika"]` to `repository/erika/src/erika.bp` as the
+  `erika/erika` package module via the multi-root walk. No per-lib registry,
+  no embed.
 - **Tests live here.** 25 `test { … }` blocks inside `src/erika.bp`, run by
   `botopink test` from this directory — not in the compiler's Zig suites. The
-  cross-module consumer story lives in [`examples/erika-linq/`](../../examples/erika-linq/)
+  cross-module consumer story lives in [`./examples/erika-linq/`](examples/erika-linq/)
   (`botopink test` green there too).
 - Keep this file, `docs.md`, `examples.md`, and the spec in sync in the same
   change that touches the lib.
@@ -176,8 +177,8 @@ per-kind sites.
   it — generic, not erika-aware. (Before v0.beta.14 the consumer named the fn
   directly, `import {erika} from "erika"`, relying on a `pub fn erika` whose name
   matched the lib; that name-matching `pub fn` is now dropped.) Exercised by
-  [`examples/erika-linq/`](../../examples/erika-linq/) and
-  [`examples/generic-loader-binding/`](../../examples/generic-loader-binding/).
+  [`./examples/erika-linq/`](examples/erika-linq/) and
+  [`../botopink-lang/examples/generic-loader-binding/`](../botopink-lang/examples/generic-loader-binding/).
   Still zero core surface here: the binding is generic loader work, not erika-aware.
 
 ### Recorded gaps
@@ -198,5 +199,5 @@ per-kind sites.
 ## See also
 
 - The spec (intent, steps, test scenarios) → [`../../tasks/v0.beta.7/specs/erika.md`](../../tasks/v0.beta.7/specs/erika.md).
-- The generic loader erika is a client of → [`../../modules/compiler-cli/src/cli/libs.zig`](../../modules/compiler-cli/src/cli/AGENTS.md).
+- The generic loader erika is a client of → [`../botopink-lang/modules/compiler-cli/src/cli/libs.zig`](../botopink-lang/modules/compiler-cli/src/cli/AGENTS.md).
 - The decorator-driven sibling client → [`../rakun/AGENTS.md`](../rakun/AGENTS.md).

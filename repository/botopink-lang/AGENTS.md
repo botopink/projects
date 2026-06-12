@@ -1,36 +1,44 @@
-# botopink-lang · root AGENTS.md
+# botopink-lang · project AGENTS.md
 
-Guidance for AI agents working on the botopink language workspace.
+Guidance for AI agents working on the botopink **language core** — the CLI,
+the LSP, the compiler, the lib-test-runner, and the bundled `std`/`server`/
+`client` libs. The frameworks (erika/jhonstart/onze/rakun) and the VS Code
+extension live as **siblings** under [`../`](../) — see [`../AGENTS.md`](../AGENTS.md)
+for the workspace overview.
 
 > Convention: source, comments, commit messages and docs are all in **English**.
 > Each directory ships its own `AGENTS.md` — read the closest one first, then
 > walk up the tree. Detailed architectural explanations live in sibling
 > `docs.md` files; concrete `.bp` / CLI usage in sibling `examples.md` files.
 
-## Repository tree
+## Project tree
 
 ```text
-botopink-lang/
-├── AGENTS.md                  ← you are here (workspace overview)
+botopink-lang/                 ← language core (this project)
+├── AGENTS.md                  ← you are here
 ├── README.md                  ← public-facing intro
 ├── CHANGELOG.md               ← release notes (current: v0.0.13-beta)
 ├── docs.md                    ← language reference (.bp syntax + semantics)
-├── build.zig                  ← workspace build graph (CLI + LSP)
+├── build.zig                  ← workspace build graph (CLI + LSP + lib-test-runner)
 ├── test_format.zig            ← ad-hoc formatter smoke
 ├── test_pub.zig               ← ad-hoc pub-decl smoke
 ├── modules/                   ← all Zig packages — see modules/AGENTS.md
 │   ├── compiler-cli/          ← `botopink` CLI
 │   ├── compiler-core/         ← lexer, parser, AST, infer, comptime, codegen
 │   ├── language-server/       ← `botopink-lsp` LSP server
-│   └── vscode-extension/     ← VS Code extension (syntax + LSP client)
-├── libs/                      ← .bp libraries — see libs/AGENTS.md
+│   └── lib-test-runner/       ← `botopink-lib-test` (test-libs gate)
+├── libs/                      ← bundled .bp libraries — see libs/AGENTS.md
 │   ├── std/                   ← standard library (prelude loaded at infer time)
 │   ├── server/                ← server-side interfaces (scaffold)
 │   └── client/                ← client-side interfaces (scaffold)
-├── tasks/                     ← versioned spec sets (roadmap) — see tasks/AGENTS.md
-├── examples/                  ← .bp example programs
-└── scripts/                   ← maintenance scripts (doc-health, status rollup) — see scripts/AGENTS.md
+└── examples/                  ← non-framework .bp example programs
 ```
+
+Two workspace-globals live **above** the `repository/` root (i.e. outside
+this project): `tasks/` (versioned spec sets — the roadmap) and `scripts/`
+(workspace maintenance scripts: `install-tooling.sh`, `doc-health.sh`,
+`status.sh`). The frameworks (`erika`, `jhonstart`, `onze`, `rakun`) and the
+`vscode-extension` are siblings of this project under `repository/`.
 
 Golden snapshots live inside the owning package (`modules/compiler-core/snapshots/`,
 `modules/language-server/snapshots/`) — `zig build test` runs with the package as cwd.
@@ -61,7 +69,7 @@ conventions — read the closest one, then walk up. This root file does **not**
 mirror those trees (that would drift); the two tables below are the index into the
 deeper design/example docs. Entry points: [`modules/AGENTS.md`](modules/AGENTS.md),
 [`libs/AGENTS.md`](libs/AGENTS.md), and — for the spec/roadmap layer —
-[`tasks/AGENTS.md`](tasks/AGENTS.md). Snapshot counts and similar volatile figures
+[`tasks/AGENTS.md`](../../tasks/AGENTS.md). Snapshot counts and similar volatile figures
 live in the owning leaf, never here.
 
 ## Where deep content lives
@@ -76,7 +84,7 @@ live in the owning leaf, never here.
 | LSP layered design | [`modules/language-server/docs.md`](modules/language-server/docs.md) |
 | Stdlib loading + interface conventions | [`libs/std/docs.md`](libs/std/docs.md) |
 | `.bp` libraries group (std/server/client) | [`libs/AGENTS.md`](libs/AGENTS.md) |
-| VS Code extension design + LSP wiring | [`modules/vscode-extension/docs.md`](modules/vscode-extension/docs.md) |
+| VS Code extension design + LSP wiring | [`../vscode-extension/docs.md`](../vscode-extension/docs.md) (sibling project) |
 | `.bp` language reference (user-facing) | [`docs.md`](docs.md) |
 
 ## Where concrete examples live
@@ -109,7 +117,7 @@ live in the owning leaf, never here.
   portability anchor. Tool-specific dirs (`.claude/`, `.cursor/`, …) may hold
   *triggers* that point to this content, never a source of truth.
 - **One fact, one source.** Each fact lives in a single file; the others link or
-  derive. The spec/roadmap layer's contract is [`tasks/AGENTS.md`](tasks/AGENTS.md).
+  derive. The spec/roadmap layer's contract is [`tasks/AGENTS.md`](../../tasks/AGENTS.md).
 - `Parser.init(tokens)` and `Lexer.init(source)` do **not** store an
   allocator — it is always passed as `alloc: std.mem.Allocator` to the
   method that needs it.
@@ -126,7 +134,7 @@ live in the owning leaf, never here.
 ## Parallel tasks (git worktrees)
 
 > The spec/roadmap model (sets, specs, the 5-phase workflow, slug rule, trust
-> order) lives in [`tasks/AGENTS.md`](tasks/AGENTS.md). This section owns only the
+> order) lives in [`tasks/AGENTS.md`](../../tasks/AGENTS.md). This section owns only the
 > **exact git mechanics** that contract points back to.
 
 Independent features are developed in parallel, one **git worktree per task**
@@ -151,7 +159,7 @@ the conflict.
 
 Each worktree carries its own `.tasks/<name>/TODO.md` (the live execution state,
 seeded from the spec's steps). Its shape and the spec→worktree→completion flow are
-defined in [`tasks/AGENTS.md`](tasks/AGENTS.md).
+defined in [`tasks/AGENTS.md`](../../tasks/AGENTS.md).
 
 Tool paths (Read/Edit/Write) must target the worktree
 (`.../botopink-lang/.tasks/<name>/...`), never the main repo — it is easy to
@@ -188,7 +196,7 @@ cwd to the worktree.
 ### Open parallel tasks
 
 The live set of in-flight tasks lives in the active spec set's `status.md`
-(see [`tasks/AGENTS.md`](tasks/AGENTS.md)) — not duplicated here.
+(see [`tasks/AGENTS.md`](../../tasks/AGENTS.md)) — not duplicated here.
 
 ## Recent commit context
 
