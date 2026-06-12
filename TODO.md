@@ -34,8 +34,14 @@ Goal: sweep the deliberately-recorded, deferred gaps into one wave. Each section
       path used by comptime template eval picks them up too). Output byte-identical
       (zero snapshot diff); `jsMethodRenames` and `jsPrototypeOwner` kept as the per-loc
       type-directed channel and JS-constructor map respectively.
-- [ ] A5 — erlang/beam: replace `emitPrimMethod` switches with `@external(Target.Erlang,…)` lookup
-      + template arg order; irreducible cases → small explicit inline allow-list.
+- [x] A5 — erlang/beam: `emitPrimMethod` consults a shared `prim_erlang_dispatch`
+      table built from `@external(erlang, "mod", "sym[(args)]")` on every prim interface
+      (incl. reparsing the embedded `primitives.d.bp` so `String`/`Bool` resolve even
+      when not stubbed into `program.decls`). erlang renders the template directly; BEAM
+      maps the shape (`[self]` / `[X,self]` / `[self,X]`) to its register patterns
+      (`primRecvOnly` / `primFunThenList` / `primRecvThenArgs`). Each backend has a small
+      explicit irreducible allow-list (`++` ops, list-cons, BIF aliases, atom-arg `split`,
+      register-juggling `slice`, inline funs). Output byte-identical on both backends.
 - [ ] A6 — migrate every current case; **byte-identical** output (empty snapshot diff).
 - [ ] A7 — docs (`libs/std/AGENTS.md` + `codegen/AGENTS.md` + `comptime/AGENTS.md`) + a test that
       adds a new primitive method via one `.d.bp` annotation, lowering on all backends with no `.zig` edit.
