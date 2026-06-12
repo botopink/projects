@@ -1,6 +1,7 @@
 .zig-cache
 zig-out
 botopink.rar
+/.vscode/settings.json
 changes.txt
 .zip
 src.zip

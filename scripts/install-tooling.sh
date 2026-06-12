@@ -50,8 +50,8 @@ need() { command -v "$1" >/dev/null 2>&1 || { echo "install-tooling: missing req
 # ── 1. language-server: build + install botopink-lsp ────────────────────────
 if [ "$do_lsp" -eq 1 ]; then
     need zig
-    step "Building botopink-lsp (zig build)"
-    zig build
+    step "Building botopink-lsp (zig build install)"
+    zig build install
 
     src="zig-out/bin/botopink-lsp"
     [ -x "$src" ] || { echo "install-tooling: expected binary not found: $src" >&2; exit 1; }
