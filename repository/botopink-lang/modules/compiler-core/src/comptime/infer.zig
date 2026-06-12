@@ -113,6 +113,8 @@ fn appendImportBindings(
 pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
     var list: std.ArrayListUnmanaged(Binding) = .empty;
 
+    try validateUniqueDefaults(env, program);
+
     // Pass 1: register type definitions and their constructors.
     for (program.decls) |decl| {
         try registerTypeDecl(env, decl);
@@ -148,8 +150,36 @@ pub fn inferProgram(env: *Env, program: ast.Program) InferError![]Binding {
 
 /// Like `inferProgram` but returns `TypedBinding` slices that include the
 /// typed expression tree for each `val` declaration.
+/// A package declares at most one `pub default mod` and one `pub default fn`; a
+/// duplicate of either in one module is the error (NOT the location — they may be
+/// declared in any module of the package). Cross-module pairing is the driver's
+/// job (`registerExports`); this catches the per-module case for both inference
+/// entry points.
+fn validateUniqueDefaults(env: *Env, program: ast.Program) InferError!void {
+    var default_mods: usize = 0;
+    var default_fns: usize = 0;
+    for (program.decls) |decl| switch (decl) {
+        .mod => |m| if (m.isDefault) {
+            default_mods += 1;
+        },
+        .@"fn" => |f| if (f.isDefault) {
+            default_fns += 1;
+        },
+        else => {},
+    };
+    if (default_mods > 1 or default_fns > 1) {
+        env.lastError = TypeError.custom(
+            "a package declares at most one `pub default mod` and one `pub default fn`",
+            "Remove the duplicate default declaration; a package has a single default module and handler.",
+        );
+        return error.TypeError;
+    }
+}
+
 pub fn inferProgramTyped(env: *Env, program: ast.Program) InferError![]TypedBinding {
     var list: std.ArrayListUnmanaged(TypedBinding) = .empty;
+
+    try validateUniqueDefaults(env, program);
 
     for (program.decls) |decl| {
         try registerTypeDecl(env, decl);

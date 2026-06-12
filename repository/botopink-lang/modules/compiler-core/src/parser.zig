@@ -222,7 +222,8 @@ pub const Parser = struct {
                 _ = this.match(.semicolon);
                 break :blk .{ .use = d };
             } else if (this.check(.mod) or
-                (this.check(.@"pub") and this.peekAt(1).kind == .mod))
+                (this.check(.@"pub") and this.peekAt(1).kind == .mod) or
+                this.checkDefaultMod())
             blk: {
                 const d = try this.parseModDecl();
                 break :blk .{ .mod = d };
@@ -330,10 +331,14 @@ pub const Parser = struct {
     /// so a stray `mod` there surfaces as a normal unexpected-token error.
     pub fn parseModDecl(this: *This) ParseError!ast.ModDecl {
         const isPub = this.match(.@"pub");
+        // `pub default mod Name;` — the package's DEFAULT module (the `import <pkg>`
+        // surface). Declarable at any module top level; uniqueness is validated
+        // later (inference), not by the parser.
+        const isDefault = this.match(.default);
         _ = try this.consume(.mod);
         const nameTok = try this.consume(.identifier);
         _ = try this.consume(.semicolon);
-        return .{ .name = nameTok.lexeme, .isPub = isPub };
+        return .{ .name = nameTok.lexeme, .isPub = isPub, .isDefault = isDefault };
     }
 
     /// Dispatches `val [pub] Name = <kind> ...` to the appropriate sub-parser.
@@ -399,6 +404,15 @@ pub const Parser = struct {
     pub inline fn checkDefaultFn(this: *This) bool {
         if (this.check(.default)) return this.peekAt(1).kind == .@"fn";
         if (this.check(.@"pub")) return this.peekAt(1).kind == .default and this.peekAt(2).kind == .@"fn";
+        return false;
+    }
+
+    /// `default mod Name;` / `pub default mod Name;` at a module's top level — the
+    /// package's DEFAULT module (the `import <pkg>` surface). Mirrors
+    /// `checkDefaultFn`; declarable at any module top level (no root-only rule).
+    pub inline fn checkDefaultMod(this: *This) bool {
+        if (this.check(.default)) return this.peekAt(1).kind == .mod;
+        if (this.check(.@"pub")) return this.peekAt(1).kind == .default and this.peekAt(2).kind == .mod;
         return false;
     }
 

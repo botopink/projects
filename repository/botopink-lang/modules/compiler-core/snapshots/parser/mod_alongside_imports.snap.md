@@ -26,6 +26,7 @@
       "mod": {
         "name": "geometry",
         "isPub": true,
+        "isDefault": false,
         "docComment": null,
         "comment": null,
         "moduleComment": null
@@ -35,6 +36,7 @@
       "mod": {
         "name": "helpers",
         "isPub": false,
+        "isDefault": false,
         "docComment": null,
         "comment": null,
         "moduleComment": null

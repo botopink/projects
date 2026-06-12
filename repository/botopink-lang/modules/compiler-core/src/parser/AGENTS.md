@@ -100,3 +100,10 @@ both use `locFromToken(fieldTok)` for this reason.
   branches.
 - `Parser.init(tokens)` does **not** store an allocator; parse methods receive
   `alloc: std.mem.Allocator`.
+- **Package-default DSL** (`package-default-dsl`): `pub default mod Name;` parses
+  at any module top level (`checkDefaultMod` mirrors `checkDefaultFn`;
+  `parseModDecl` reads the optional `default` modifier → `ModDecl.isDefault`).
+  Pairs with `pub default fn` (`FnDecl.isDefault`) and the package-namespace
+  `import pkg [, { … }] [from "…"]` form (`ImportDecl.package`, parsed in
+  `decls.zig`). The parser only records the modifier — uniqueness is validated in
+  inference, and the resolver/driver (`comptime.zig`) binds the handle.

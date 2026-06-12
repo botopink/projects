@@ -414,6 +414,30 @@ fn resolveImports(
                     .module => |m| std.mem.eql(u8, m, "std"),
                     .root => false,
                 };
+                // Package-namespace import (`import pkg [, { … }] [from "…"]`):
+                // bind `pkg` to the package's `pub default fn` (aliased under the
+                // package handle = the `pub default mod` name by `registerExports`
+                // / the compile driver). Internal (`import pkg`, local call) and
+                // external (`from "pkg"`, cross-module) resolve the same way — the
+                // default fn is a template fn, expanded at the call site, so no
+                // cross-module call ever reaches codegen. The named-item list of
+                // `import pkg, { a, b }` is bound by the loop below as usual.
+                if (u.package) |pkg| {
+                    // Value/type binding so a bare `pkg "…"` callee type-checks
+                    // (mirrors the named-import value binding below).
+                    var pit = registry.iterator();
+                    while (pit.next()) |e| {
+                        if (isStdPkgPath(e.key_ptr.*)) continue;
+                        if (e.value_ptr.get(pkg)) |ty| {
+                            try env.bind(pkg, ty);
+                            break;
+                        }
+                    }
+                    // Template-fn binding so the call expands at comptime.
+                    if (templateRegistry.get(pkg)) |tfn| {
+                        try infer.registerImportedTemplateFn(env, pkg, tfn);
+                    }
+                }
                 for (u.imports) |imp| {
                     const name = imp.name();
                     if (from_std) {
@@ -489,6 +513,34 @@ fn resolveImports(
     }
 }
 
+/// Cross-module aggregation for the package-default DSL. A package's
+/// `pub default mod` (the `import <pkg>` handle) and `pub default fn` (the
+/// handler) may live in different modules; this pairs them — keyed by package key
+/// (the module-path prefix before the first `/`, "" for the root package) — so
+/// the handler can be aliased under the handle for `import <pkg>` to bind.
+const DefaultDsl = struct {
+    /// pkgKey -> default module name (= the import handle).
+    modName: std.StringHashMap([]const u8),
+    /// pkgKey -> the package's default handler fn (defining path + exported type).
+    handler: std.StringHashMap(Handler),
+
+    const Handler = struct { path: []const u8, type_: *T.Type, decl: ast.FnDecl };
+
+    fn init(a: std.mem.Allocator) DefaultDsl {
+        return .{
+            .modName = std.StringHashMap([]const u8).init(a),
+            .handler = std.StringHashMap(Handler).init(a),
+        };
+    }
+};
+
+/// The package key for a module path: the segment before the first `/` (a lib
+/// dependency is loaded as `<lib>/<stem>`), or "" for a root-package module.
+fn pkgKey(path: []const u8) []const u8 {
+    if (std.mem.indexOfScalar(u8, path, '/')) |i| return path[0..i];
+    return "";
+}
+
 fn registerExports(
     arena: std.mem.Allocator,
     registry: *std.StringHashMap(std.StringHashMap(*T.Type)),
@@ -496,6 +548,7 @@ fn registerExports(
     templateRegistry: *std.StringHashMap(ast.FnDecl),
     decoratorRegistry: *std.StringHashMap(ast.FnDecl),
     extensionRegistry: *std.StringHashMap(std.StringHashMap(ast.ImplementDecl)),
+    dsl: *DefaultDsl,
     path: []const u8,
     bindings: []const infer.TypedBinding,
     decls: []const ast.DeclKind,
@@ -550,6 +603,33 @@ fn registerExports(
     try registry.put(path, exports);
     try typeDeclRegistry.put(path, typeDecls);
     try extensionRegistry.put(path, extensions);
+
+    // Package-default DSL: record this module's `pub default mod` (the import
+    // handle) and `pub default fn` (the handler), then — once both halves of the
+    // package are known — alias the handler under the handle so `import <pkg>`
+    // binds it. Per-module duplicates already errored in inference; first-seen
+    // wins for the cross-module edge case.
+    const key = pkgKey(path);
+    for (decls) |d| switch (d) {
+        .mod => |m| if (m.isDefault and !dsl.modName.contains(key)) {
+            try dsl.modName.put(key, m.name);
+        },
+        else => {},
+    };
+    for (bindings) |b| {
+        if (b.decl == .@"fn" and b.decl.@"fn".isDefault and !dsl.handler.contains(key)) {
+            const ty = env.lookup(b.name) orelse b.type_;
+            try dsl.handler.put(key, .{ .path = path, .type_ = ty, .decl = b.decl.@"fn" });
+        }
+    }
+    if (dsl.modName.get(key)) |handle| {
+        if (dsl.handler.get(key)) |h| {
+            // Value/type binding under the handle (in the handler's own exports
+            // table) + the handler decl under the handle in the template registry.
+            if (registry.getPtr(h.path)) |exps| try exps.put(handle, h.type_);
+            try templateRegistry.put(handle, h.decl);
+        }
+    }
 }
 
 /// Parse stdlib prelude modules and register their inferred types into `env`:
@@ -751,6 +831,7 @@ pub fn compileTypesOnly(
     var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
     var decorator_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
     var extension_registry = std.StringHashMap(std.StringHashMap(ast.ImplementDecl)).init(arena_alloc);
+    var default_dsl = DefaultDsl.init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
     // Non-std libs are ordinary input modules: the driver supplies their `.bp`
@@ -802,7 +883,7 @@ pub fn compileTypesOnly(
                 }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
-                    try registerExports(arena_alloc, &registry, &type_decl_registry, &template_registry, &decorator_registry, &extension_registry, mod.path, succ.bindings, succ.program.decls, &env);
+                    try registerExports(arena_alloc, &registry, &type_decl_registry, &template_registry, &decorator_registry, &extension_registry, &default_dsl, mod.path, succ.bindings, succ.program.decls, &env);
                     // NOTE: no env.deinit() here — `env` is a copy whose hashmap
                     // internals are shared with `succ.env`, and the transform
                     // below still reads `succ.env.method_lowerings`. The env is
@@ -911,6 +992,7 @@ pub fn compile(
     var template_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
     var decorator_registry = std.StringHashMap(ast.FnDecl).init(arena_alloc);
     var extension_registry = std.StringHashMap(std.StringHashMap(ast.ImplementDecl)).init(arena_alloc);
+    var default_dsl = DefaultDsl.init(arena_alloc);
 
     // `from "std"` imports pull the embedded std modules into the compilation.
     // Non-std libs are ordinary input modules: the driver supplies their `.bp`
@@ -965,7 +1047,7 @@ pub fn compile(
                 }
                 if (idx < all_modules.len - 1) {
                     var env = succ.env;
-                    try registerExports(arena_alloc, &registry, &type_decl_registry, &template_registry, &decorator_registry, &extension_registry, mod.path, succ.bindings, succ.program.decls, &env);
+                    try registerExports(arena_alloc, &registry, &type_decl_registry, &template_registry, &decorator_registry, &extension_registry, &default_dsl, mod.path, succ.bindings, succ.program.decls, &env);
                     // NOTE: no env.deinit() here — `env` is a copy whose hashmap
                     // internals are shared with `succ.env`, and the transform
                     // below still reads `succ.env.method_lowerings`. The env is

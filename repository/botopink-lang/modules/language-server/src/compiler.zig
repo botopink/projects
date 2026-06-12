@@ -86,6 +86,18 @@ pub const CompileResult = struct {
         return &.{};
     }
 
+    /// The typed bindings of `uri`'s own module (NOT a dependency's). The server
+    /// keys resolution on the active document, so picking the first `ok` output
+    /// would wrongly return a dependency's bindings in a multi-module compile.
+    pub fn bindingsFor(self: *const CompileResult, uri: []const u8) []const comptime_pipeline.TypedBinding {
+        const path = lsp_types.uriToPath(uri);
+        for (self.session.outputs.items) |output| {
+            if (!std.mem.eql(u8, output.name, path)) continue;
+            if (output.outcome == .ok) return output.outcome.ok.bindings;
+        }
+        return &.{};
+    }
+
     /// Retorna diagnósticos LSP para o URI dado.
     /// O slice retornado é owned pelo chamador.
     pub fn diagnosticsFor(

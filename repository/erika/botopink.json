@@ -5,6 +5,7 @@
   "target": "commonJS",
   "src": "src/",
   "files": [
+    "root.bp",
     "erika.bp"
   ]
 }

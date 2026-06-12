@@ -18,6 +18,20 @@ const Parser = parserMod.Parser;
 const Env = envMod.Env;
 const h = @import("helpers.zig");
 
+test "infer error: two pub default fn in one package" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\pub default fn one(comptime q: @Expr<string>) -> @ExprCustom<i32> { return q.build("0"); }
+        \\pub default fn two(comptime q: @Expr<string>) -> @ExprCustom<i32> { return q.build("0"); }
+    );
+}
+
+test "infer error: two pub default mod in one package" {
+    try h.assertTypeErrorSnap(std.testing.allocator, @src(),
+        \\pub default mod alpha;
+        \\pub default mod beta;
+    );
+}
+
 test "infer error: type ---- arg violates constraint" {
     try h.assertTypeErrorSnap(std.testing.allocator, @src(),
         \\fn coerce(comptime v: type string | int | bool, x: i32) -> i32 {

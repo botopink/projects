@@ -91,6 +91,16 @@ binders) via a token walk, merging it into completion and go-to-def so library
 and decorator bodies — full of locals the module-level binding slice never
 holds — stop going dark.
 
+Go-to-def is also **type-aware for member access**: `engine.definitionMember`
+resolves a `recv.field`/`recv.method` by walking the receiver chain to its named
+type (a binding's inferred type, `self` → the enclosing record, or a literal),
+then locating the member inside that type's body — so a method resolves on the
+*receiver's* record, not the first same-named `fn`. Builtin-receiver methods
+(`xs.reverse()`) jump into the embedded `primitives.d.bp`, constructor labels
+(`Name(field:)`) reach the field decl, and `mod <name>;` opens its backing
+sibling file. The server gates this on `needsTypedDefinition` so a plain symbol
+jump still skips the compile.
+
 ## Failure policy
 
 When a request payload is unsupported, malformed, or addresses a closed

@@ -71,6 +71,10 @@ pub const ImportDecl = struct {
 pub const ModDecl = struct {
     name: []const u8,
     isPub: bool,
+    /// `pub default mod Name;` — names the package's DEFAULT module, the surface
+    /// `import <pkg>` resolves to (its `pub default fn` powers the `<pkg> "…"`
+    /// DSL). Declarable at any module's top level; a package has at most one.
+    isDefault: bool = false,
     /// `///` documentation comment (multi-line joined with `\n`)
     docComment: ?[]const u8 = null,
     /// `//` regular comment (last one before the declaration)

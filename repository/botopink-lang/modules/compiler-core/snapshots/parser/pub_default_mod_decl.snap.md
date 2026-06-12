@@ -3,9 +3,9 @@
   "decls": [
     {
       "mod": {
-        "name": "shapes",
+        "name": "query",
         "isPub": true,
-        "isDefault": false,
+        "isDefault": true,
         "docComment": null,
         "comment": null,
         "moduleComment": null

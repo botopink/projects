@@ -1067,6 +1067,575 @@ pub fn typeDefinition(
     return null;
 }
 
+// ── Go to Definition: members, builtin methods & module refs ──────────────────
+//
+// The plain `definition` token-scan above is blind to everything that is *part
+// of a type*: a record field has no declaration keyword, a method jump landed on
+// the first same-named `fn` regardless of the receiver, builtin methods have no
+// `fn` in the file at all, and a `mod` name's "declaration" is a sibling file.
+// `definitionMember` resolves those by reusing the receiver-type machinery that
+// completion/hover already have: it walks the dotted receiver chain to a named
+// type, then points at the member inside that type's body (a user record, or the
+// embedded `primitives.d.bp` for a builtin), and resolves `mod` names through the
+// project graph (the `others` modules).
+
+/// The result of a type-aware definition lookup. A `location` is a real on-disk
+/// jump (current file, a dependency module, or a sibling file). A `builtin`
+/// member lives in the embedded primitives source; the caller materializes that
+/// source to a cache file and uses `range` against it.
+pub const TypedDefinition = union(enum) {
+    location: proto.Location,
+    builtin: BuiltinJump,
+};
+
+/// A builtin-method jump target: the embedded interface `source` (the
+/// `primitives.d.bp` content) and the `range` of the method's name token in it.
+pub const BuiltinJump = struct {
+    source: []const u8,
+    range: proto.Range,
+};
+
+/// A resolved receiver type: a builtin interface (`Array`/`string`/numeric/…),
+/// a user-defined named type, or unknown (fall back to the name scan).
+const ReceiverType = union(enum) {
+    builtin: BuiltinInterface,
+    user: []const u8,
+    unknown,
+};
+
+/// Type-aware go-to-definition for member access (`recv.field` / `recv.method`),
+/// builtin methods, `self.field`, constructor-argument labels (`Name(field:…)`)
+/// and `mod`/`pub mod` references. Returns null when the cursor is not one of
+/// these (the caller then runs the plain `definition` name scan). `others` are
+/// the project graph dependency modules (real file URIs) used for cross-module
+/// fields and `mod` resolution.
+pub fn definitionMember(
+    gpa: std.mem.Allocator,
+    uri: []const u8,
+    source: []const u8,
+    pos: proto.Position,
+    tokens: []const Token,
+    bindings: []const comptime_pipeline.TypedBinding,
+    others: []const ModuleSource,
+) !?TypedDefinition {
+    const span = identSpanAt(source, pos) orelse return null;
+    const name = source[span.start..span.end];
+
+    var arena_inst = std.heap.ArenaAllocator.init(gpa);
+    defer arena_inst.deinit();
+    const arena = arena_inst.allocator();
+
+    // F4 — `mod <name>` / `pub mod <name>`: jump to the backing module file.
+    if (modRefNameAt(tokens, pos)) {
+        if (findModuleFile(others, name)) |muri| {
+            const top = proto.Position{ .line = 0, .character = 0 };
+            return .{ .location = .{
+                .uri = try gpa.dupe(u8, muri),
+                .range = .{ .start = top, .end = top },
+            } };
+        }
+        return null;
+    }
+
+    // F1 / F1b / F2 — member access `recv.member` (the cursor is on `member`,
+    // immediately preceded by a `.`).
+    if (span.start > 0 and source[span.start - 1] == '.') {
+        const segs = receiverChain(arena, source, span.start) orelse return null;
+        switch (resolveChainType(arena, source, tokens, pos, bindings, segs)) {
+            .builtin => |iface| {
+                const r = findInterfaceMemberRange(arena, iface, name) orelse return null;
+                return .{ .builtin = .{ .source = iface.source, .range = r } };
+            },
+            .user => |tname| {
+                if (try findMemberDeclAcross(gpa, uri, tokens, tname, name, others)) |loc|
+                    return .{ .location = loc };
+                return null;
+            },
+            .unknown => return null,
+        }
+    }
+
+    // F3 — constructor / record-literal label `Name(member: …)`.
+    if (ctorCalleeBefore(source, tokens, span)) |callee| {
+        if (try findMemberDeclAcross(gpa, uri, tokens, callee, name, others)) |loc|
+            return .{ .location = loc };
+    }
+    return null;
+}
+
+/// Cheap pre-check the server uses to decide whether a definition request needs
+/// the (more expensive) typed path — a member access, a `Name(label:)` argument,
+/// or a `mod` reference. Keeps the common name-scan path compile-free.
+pub fn needsTypedDefinition(source: []const u8, pos: proto.Position, tokens: []const Token) bool {
+    const span = identSpanAt(source, pos) orelse return false;
+    if (span.start > 0 and source[span.start - 1] == '.') return true;
+    if (modRefNameAt(tokens, pos)) return true;
+    // `Name(member: …)` label — an identifier directly followed by `:`.
+    var i = span.end;
+    while (i < source.len and (source[i] == ' ' or source[i] == '\t')) i += 1;
+    if (i < source.len and source[i] == ':' and (i + 1 >= source.len or source[i + 1] != ':')) return true;
+    return false;
+}
+
+/// True when the cursor at `pos` lands on the name identifier of a `mod` /
+/// `pub mod` declaration (`mod erika;`), i.e. the token right after a `mod`
+/// keyword.
+fn modRefNameAt(tokens: []const Token, pos: proto.Position) bool {
+    var i: usize = 0;
+    while (i < tokens.len) : (i += 1) {
+        if (tokens[i].kind != .mod) continue;
+        var j = i + 1;
+        while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
+        if (j >= tokens.len or tokens[j].kind != .identifier) continue;
+        if (posInToken(tokens[j], pos)) return true;
+    }
+    return false;
+}
+
+/// True when `pos` (0-based) falls within `tok`'s span (1-based line/col).
+fn posInToken(tok: Token, pos: proto.Position) bool {
+    if (pos.line != tok.line -| 1) return false;
+    const col0: u32 = @intCast(tok.col -| 1);
+    return pos.character >= col0 and pos.character < col0 + @as(u32, @intCast(tok.lexeme.len));
+}
+
+/// Locates the module file backing a `mod <name>` reference: the dependency
+/// whose path is `<name>.bp` or `<name>/mod.bp`. Returns its URI (borrowed).
+fn findModuleFile(others: []const ModuleSource, name: []const u8) ?[]const u8 {
+    var best: ?[]const u8 = null;
+    for (others) |m| {
+        const path = lsp_types.uriToPath(m.uri);
+        const base = std.fs.path.basename(path);
+        // `<name>.bp`
+        if (std.mem.endsWith(u8, base, ".bp")) {
+            const stem = base[0 .. base.len - ".bp".len];
+            if (std.mem.eql(u8, stem, name)) return m.uri;
+        }
+        // `<name>/mod.bp`
+        if (std.mem.eql(u8, base, "mod.bp")) {
+            const dir = std.fs.path.dirname(path) orelse continue;
+            if (std.mem.eql(u8, std.fs.path.basename(dir), name)) best = m.uri;
+        }
+    }
+    return best;
+}
+
+/// Parses the dotted receiver chain ending just before `member_start` (which
+/// sits right after a `.`). Returns the identifier segments left-to-right, or
+/// null when the receiver is not a plain identifier chain (e.g. it contains a
+/// call `f().g` or an index — left to the name-scan fallback).
+fn receiverChain(arena: std.mem.Allocator, source: []const u8, member_start: usize) ?[][]const u8 {
+    if (member_start == 0 or source[member_start - 1] != '.') return null;
+    var segs: std.ArrayList([]const u8) = .empty;
+    var dot = member_start - 1; // index of the `.` before the current segment
+    while (true) {
+        if (dot == 0) return null;
+        const seg_end = dot; // exclusive
+        var s = seg_end;
+        while (s > 0 and isIdentCont(source[s - 1])) s -= 1;
+        if (s == seg_end) return null; // no identifier before the dot → bail
+        segs.append(arena, source[s..seg_end]) catch return null;
+        if (s == 0) break;
+        if (source[s - 1] == '.') {
+            dot = s - 1;
+            continue;
+        }
+        break;
+    }
+    // Reverse to left-to-right order (head first).
+    std.mem.reverse([]const u8, segs.items);
+    return segs.items;
+}
+
+/// Resolves a fully-parsed receiver chain to its final type. The head is a
+/// binding value, an integer/bool literal, or `self` (→ the enclosing record);
+/// each further segment is a field access on a user record, narrowing the type.
+fn resolveChainType(
+    arena: std.mem.Allocator,
+    source: []const u8,
+    tokens: []const Token,
+    pos: proto.Position,
+    bindings: []const comptime_pipeline.TypedBinding,
+    segs: [][]const u8,
+) ReceiverType {
+    _ = arena;
+    if (segs.len == 0) return .unknown;
+    var cur = resolveHead(source, tokens, pos, bindings, segs[0]);
+    var i: usize = 1;
+    while (i < segs.len) : (i += 1) {
+        cur = stepField(bindings, cur, segs[i]);
+        if (cur == .unknown) return .unknown;
+    }
+    return cur;
+}
+
+/// Resolves the head identifier of a receiver chain to a type.
+fn resolveHead(
+    source: []const u8,
+    tokens: []const Token,
+    pos: proto.Position,
+    bindings: []const comptime_pipeline.TypedBinding,
+    head: []const u8,
+) ReceiverType {
+    if (head.len == 0) return .unknown;
+
+    // Integer literal (`42.…`) → i32; `true`/`false` → bool.
+    var all_digits = true;
+    for (head) |c| {
+        if (!isDigit(c)) {
+            all_digits = false;
+            break;
+        }
+    }
+    if (all_digits) return .{ .builtin = builtinInterfaceForType("i32").? };
+    if (std.mem.eql(u8, head, "true") or std.mem.eql(u8, head, "false"))
+        return .{ .builtin = builtinInterfaceForType("bool").? };
+
+    // `self` → the record whose body lexically encloses the cursor.
+    if (std.mem.eql(u8, head, "self")) {
+        if (enclosingTypeName(source, tokens, pos)) |tname| return .{ .user = tname };
+        return .unknown;
+    }
+
+    // A value binding → its inferred named type (builtin or user).
+    for (bindings) |b| {
+        if (!std.mem.eql(u8, b.name, head)) continue;
+        const t = b.type_.deref();
+        if (t.* == .named) {
+            if (builtinForName(t.named.name)) |bi| return .{ .builtin = bi };
+            return .{ .user = t.named.name };
+        }
+        return .unknown;
+    }
+    return .unknown;
+}
+
+/// Narrows `cur` by one `.field` step: looks up the field on the current user
+/// record and maps its declared type to a `ReceiverType`. Builtin/unknown
+/// receivers (which we don't chain through) yield unknown.
+fn stepField(
+    bindings: []const comptime_pipeline.TypedBinding,
+    cur: ReceiverType,
+    field: []const u8,
+) ReceiverType {
+    const tname = switch (cur) {
+        .user => |n| n,
+        else => return .unknown,
+    };
+    for (bindings) |b| {
+        if (!std.mem.eql(u8, b.name, tname)) continue;
+        switch (b.decl) {
+            .record => |r| {
+                for (r.fields) |f| {
+                    if (std.mem.eql(u8, f.name, field)) return typeRefState(f.typeRef);
+                }
+            },
+            .@"struct" => |s| {
+                for (s.members) |m| switch (m) {
+                    .field => |f| if (std.mem.eql(u8, f.name, field)) return typeRefState(f.typeRef),
+                    else => {},
+                };
+            },
+            else => {},
+        }
+        break;
+    }
+    return .unknown;
+}
+
+/// Maps an AST `TypeRef` (a field's declared type) to a `ReceiverType`.
+fn typeRefState(tref: ast.TypeRef) ReceiverType {
+    return switch (tref) {
+        .array => .{ .builtin = builtinInterfaceForType("array").? },
+        .generic => |g| if (builtinForName(g.name)) |bi| .{ .builtin = bi } else .{ .user = g.name },
+        .named => |n| if (builtinForName(n)) |bi| .{ .builtin = bi } else .{ .user = n },
+        else => .unknown,
+    };
+}
+
+/// Like `builtinInterfaceForType`, but also accepts the source spellings that
+/// appear in `TypeRef`s (`Array`, `String`) on top of the inferred-type names
+/// (`array`, `string`, `i32`, …).
+fn builtinForName(name: []const u8) ?BuiltinInterface {
+    if (std.mem.eql(u8, name, "Array")) return builtinInterfaceForType("array");
+    if (std.mem.eql(u8, name, "String")) return builtinInterfaceForType("string");
+    return builtinInterfaceForType(name);
+}
+
+/// Returns the name of the record/struct/enum declaration whose body braces
+/// lexically enclose `pos` — the type `self` refers to inside a method. Picks
+/// the innermost when types nest.
+fn enclosingTypeName(source: []const u8, tokens: []const Token, pos: proto.Position) ?[]const u8 {
+    const offset = lsp_types.positionToOffset(source, pos);
+    var best: ?[]const u8 = null;
+    var best_len: usize = std.math.maxInt(usize);
+    var i: usize = 0;
+    while (i < tokens.len) : (i += 1) {
+        switch (tokens[i].kind) {
+            .record, .@"struct", .@"enum" => {},
+            else => continue,
+        }
+        var j = i + 1;
+        while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
+        if (j >= tokens.len or tokens[j].kind != .identifier) continue;
+        const type_name = tokens[j].lexeme;
+
+        const body = typeBodyBraces(tokens, j) orelse continue;
+        const open_off = tokenOffset(source, tokens[body.open]);
+        const close_tok = tokens[body.close];
+        const close_off = tokenOffset(source, close_tok) + close_tok.lexeme.len;
+        if (offset >= open_off and offset < close_off and (close_off - open_off) < best_len) {
+            best = type_name;
+            best_len = close_off - open_off;
+        }
+    }
+    return best;
+}
+
+const BodyBraces = struct { open: usize, close: usize };
+
+/// Given the index of a type's name token, returns the token indices of the
+/// matching `{`…`}` body braces (skipping generic params / a `(…)` field list).
+fn typeBodyBraces(tokens: []const Token, name_idx: usize) ?BodyBraces {
+    var p = name_idx + 1;
+    var pdepth: i32 = 0;
+    var open: ?usize = null;
+    while (p < tokens.len) : (p += 1) {
+        switch (tokens[p].kind) {
+            .leftParenthesis => pdepth += 1,
+            .rightParenthesis => pdepth -= 1,
+            .leftBrace => if (pdepth == 0) {
+                open = p;
+                break;
+            },
+            .semicolon => if (pdepth == 0) return null,
+            else => {},
+        }
+    }
+    const o = open orelse return null;
+    var depth: i32 = 1;
+    var q = o + 1;
+    while (q < tokens.len) : (q += 1) {
+        switch (tokens[q].kind) {
+            .leftBrace => depth += 1,
+            .rightBrace => {
+                depth -= 1;
+                if (depth == 0) return .{ .open = o, .close = q };
+            },
+            else => {},
+        }
+    }
+    return null;
+}
+
+/// Finds a field/method `member` of `type_name`, searching the active file's
+/// tokens first, then the `others` modules (where the type must be `pub`).
+fn findMemberDeclAcross(
+    gpa: std.mem.Allocator,
+    active_uri: []const u8,
+    active_tokens: []const Token,
+    type_name: []const u8,
+    member: []const u8,
+    others: []const ModuleSource,
+) !?proto.Location {
+    if (try findMemberInTokens(gpa, active_uri, active_tokens, type_name, member, false)) |loc| return loc;
+    for (others) |m| {
+        if (std.mem.eql(u8, m.uri, active_uri)) continue;
+        var arena = std.heap.ArenaAllocator.init(gpa);
+        defer arena.deinit();
+        var lexer = Lexer.init(m.source);
+        const mtoks = lexer.scanAll(arena.allocator()) catch continue;
+        if (try findMemberInTokens(gpa, m.uri, mtoks, type_name, member, true)) |loc| return loc;
+    }
+    return null;
+}
+
+/// Scans `tokens` for the `record/struct/enum <type_name>` body and returns the
+/// location of its field-or-method named `member`. When `require_pub`, the type
+/// declaration must be preceded by `pub` (cross-module reachability).
+fn findMemberInTokens(
+    gpa: std.mem.Allocator,
+    uri: []const u8,
+    tokens: []const Token,
+    type_name: []const u8,
+    member: []const u8,
+    require_pub: bool,
+) !?proto.Location {
+    var i: usize = 0;
+    while (i < tokens.len) : (i += 1) {
+        switch (tokens[i].kind) {
+            .record, .@"struct", .@"enum" => {},
+            else => continue,
+        }
+        if (require_pub and (i == 0 or tokens[i - 1].kind != .@"pub")) continue;
+
+        var j = i + 1;
+        while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
+        if (j >= tokens.len or tokens[j].kind != .identifier) continue;
+        if (!std.mem.eql(u8, tokens[j].lexeme, type_name)) continue;
+
+        const body = typeBodyBraces(tokens, j) orelse continue;
+
+        var depth: i32 = 1;
+        var q = body.open + 1;
+        while (q < body.close) : (q += 1) {
+            const k = tokens[q].kind;
+            if (k == .leftBrace) {
+                depth += 1;
+                continue;
+            }
+            if (k == .rightBrace) {
+                depth -= 1;
+                continue;
+            }
+            if (depth != 1) continue;
+
+            if (k == .@"fn") {
+                var n = q + 1;
+                while (n < body.close and tokens[n].kind == .endOfFile) : (n += 1) {}
+                if (n < body.close and tokens[n].kind == .identifier and
+                    std.mem.eql(u8, tokens[n].lexeme, member))
+                    return try tokenLocation(gpa, uri, tokens[n]);
+            } else if (k == .identifier and std.mem.eql(u8, tokens[q].lexeme, member)) {
+                // A field is `name : Type` — the next token is a colon.
+                var n = q + 1;
+                while (n < body.close and tokens[n].kind == .endOfFile) : (n += 1) {}
+                if (n < body.close and tokens[n].kind == .colon)
+                    return try tokenLocation(gpa, uri, tokens[q]);
+            }
+        }
+        // The type was found but the member is not in its body: stop (a later
+        // same-named type would be a different declaration).
+        return null;
+    }
+    return null;
+}
+
+/// Builds a Location pointing at `tok` in `uri` (uri is duped, caller owns it).
+fn tokenLocation(gpa: std.mem.Allocator, uri: []const u8, tok: Token) !proto.Location {
+    const start = lsp_types.locToPosition(tok.line, tok.col);
+    const end = lsp_types.locToPosition(tok.line, tok.col + tok.lexeme.len);
+    return .{ .uri = try gpa.dupe(u8, uri), .range = .{ .start = start, .end = end } };
+}
+
+/// Returns the callee identifier when `span` is a labeled argument name in a
+/// call `Callee(member: …)` — an identifier directly followed by `:`, sitting
+/// at the top level of a `(…)` whose callee is an identifier. Returns null
+/// otherwise (so an ordinary `:` — a field decl, a type annotation — is ignored).
+fn ctorCalleeBefore(source: []const u8, tokens: []const Token, span: IdentSpan) ?[]const u8 {
+    const idx = tokenIndexAt(source, tokens, span) orelse return null;
+
+    var n = idx + 1;
+    while (n < tokens.len and tokens[n].kind == .endOfFile) : (n += 1) {}
+    if (n >= tokens.len or tokens[n].kind != .colon) return null;
+
+    // Walk back to the `(` that opens the enclosing call, balancing `()`/`{}`.
+    var pdepth: i32 = 0;
+    var bdepth: i32 = 0;
+    var i = idx;
+    while (i > 0) {
+        i -= 1;
+        switch (tokens[i].kind) {
+            .rightParenthesis => pdepth += 1,
+            .rightBrace => bdepth += 1,
+            .leftBrace => {
+                if (bdepth == 0) return null; // left the call body
+                bdepth -= 1;
+            },
+            .leftParenthesis => {
+                if (pdepth > 0) {
+                    pdepth -= 1;
+                    continue;
+                }
+                // This `(` opens our call — the callee is the token before it.
+                var c = i;
+                while (c > 0 and tokens[c - 1].kind == .endOfFile) : (c -= 1) {}
+                if (c > 0 and tokens[c - 1].kind == .identifier) return tokens[c - 1].lexeme;
+                return null;
+            },
+            .semicolon => return null,
+            else => {},
+        }
+    }
+    return null;
+}
+
+/// Returns the index of the token starting at `span.start`.
+fn tokenIndexAt(source: []const u8, tokens: []const Token, span: IdentSpan) ?usize {
+    for (tokens, 0..) |tok, idx| {
+        if (tok.kind != .identifier) continue;
+        if (tokenOffset(source, tok) == span.start) return idx;
+    }
+    return null;
+}
+
+/// Finds a builtin interface member's name token and returns its range within
+/// the embedded interface `source`, following the `extends` chain so inherited
+/// methods (e.g. `toString` on a numeric) still resolve.
+fn findInterfaceMemberRange(arena: std.mem.Allocator, iface: BuiltinInterface, member: []const u8) ?proto.Range {
+    var lexer = Lexer.init(iface.source);
+    const tokens = lexer.scanAll(arena) catch return null;
+
+    var current: ?[]const u8 = iface.name;
+    var guard: usize = 0;
+    while (current) |cname| {
+        if (guard >= 16) break;
+        guard += 1;
+        current = null;
+
+        var i: usize = 0;
+        var name_idx: ?usize = null;
+        while (i < tokens.len) : (i += 1) {
+            if (tokens[i].kind != .interface) continue;
+            var j = i + 1;
+            while (j < tokens.len and tokens[j].kind == .endOfFile) : (j += 1) {}
+            if (j >= tokens.len or tokens[j].kind != .identifier) continue;
+            if (!std.mem.eql(u8, tokens[j].lexeme, cname)) continue;
+            name_idx = j;
+            // Capture an `extends <Base>` to continue the chain.
+            var p = j + 1;
+            while (p < tokens.len and tokens[p].kind != .leftBrace) : (p += 1) {
+                if (tokens[p].kind == .extends) {
+                    var q = p + 1;
+                    while (q < tokens.len and tokens[q].kind != .identifier and tokens[q].kind != .leftBrace) : (q += 1) {}
+                    if (q < tokens.len and tokens[q].kind == .identifier) current = tokens[q].lexeme;
+                }
+            }
+            break;
+        }
+        const ni = name_idx orelse continue;
+        const body = typeBodyBraces(tokens, ni) orelse continue;
+
+        var depth: i32 = 1;
+        var q = body.open + 1;
+        while (q < body.close) : (q += 1) {
+            const k = tokens[q].kind;
+            if (k == .leftBrace) {
+                depth += 1;
+                continue;
+            }
+            if (k == .rightBrace) {
+                depth -= 1;
+                continue;
+            }
+            if (depth != 1) continue;
+            if (k != .@"fn" and k != .val) continue;
+            var n = q + 1;
+            while (n < body.close and tokens[n].kind == .endOfFile) : (n += 1) {}
+            if (n < body.close and tokens[n].kind == .identifier and
+                std.mem.eql(u8, tokens[n].lexeme, member))
+            {
+                const t = tokens[n];
+                return .{
+                    .start = lsp_types.locToPosition(t.line, t.col),
+                    .end = lsp_types.locToPosition(t.line, t.col + t.lexeme.len),
+                };
+            }
+        }
+    }
+    return null;
+}
+
 // ── Folding Ranges ───────────────────────────────────────────────────────────
 
 pub fn foldingRanges(
