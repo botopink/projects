@@ -16,12 +16,13 @@ emitters.
 
 ## Goal
 
-Let a package declare, in its **`root.bp` only**, a *default module* and a
-*default function* that power the package-handle DSL:
+Let a package declare a *default module* and a *default function* that power the
+package-handle DSL. Declarable at **any module's top level** (not restricted to
+`root.bp`):
 
 ```bp
-// erika/root.bp
-pub default mod erika;        // the package's default module (root-only)
+// any module in the erika package
+pub default mod erika;        // the package's default module
 pub default fn query(...) { } // the default handler the `erika "…"` DSL calls
 ```
 
@@ -39,25 +40,33 @@ val more = erika """ … multi-line … """;
 `erika "…"` already parses to a tagged call `erika(<string>)` (parser
 `exprs.zig:1021`); today it only resolves if a function literally named `erika`
 is in scope. The new contract: **`import erika` binds the `erika` package's
-`root.bp` `pub default fn` under the name `erika`**, so the existing tagged-call +
-`@Expr`/`@ExprCustom` template machinery resolves it unchanged.
+`pub default fn` (wherever in the package it's declared) under the name `erika`**,
+so the existing tagged-call + `@Expr`/`@ExprCustom` template machinery resolves it
+unchanged.
 
 `pub default mod erika;` names *which* module of the package carries that
 `pub default fn` (the default surface), and is the thing `import erika` resolves
-to. It is **only valid in a `root.bp`** — reject it elsewhere with a clear error.
+to. It may appear at **any module's top level** — there is no root-only
+restriction (the package's build aggregates the declaration wherever it lives). A
+package has at most one default module and one default handler fn; a second of
+either in the same package is the only error to diagnose.
 
 ## Steps
 
 ### F0 — parser: `pub default mod`
-- [ ] `pub default mod Name;` parses at a `root.bp` top level. `pub mod` /
-      `mod Name;` parse today via `parseModDecl`; add the `default` modifier
-      (mirror `checkDefaultFn` / `FnDecl.isDefault`): `ModDecl.isDefault`.
-- [ ] A non-`pub` `default mod`, or a `pub default mod` outside a root module, is a
-      parse/validation error (root-only rule).
+- [ ] `pub default mod Name;` parses at **any module's top level** (no root-only
+      restriction). `pub mod` / `mod Name;` parse today via `parseModDecl`; add the
+      `default` modifier (mirror `checkDefaultFn` / `FnDecl.isDefault`):
+      `ModDecl.isDefault`.
+- [ ] `pub default fn` already parses anywhere (`FnDecl.isDefault`, on `feat`); keep
+      it unrestricted too.
+- [ ] Validation: at most one `pub default mod` and one `pub default fn` per
+      package (a duplicate is the error — NOT the location).
 
 ### F1 — resolver: `import pkg` binds the package default
 - [ ] When loading a package referenced by `import pkg` / `import pkg from "pkg"`,
-      locate its `root.bp`'s `pub default mod` and that module's `pub default fn`,
+      locate the package's `pub default mod` and its `pub default fn` (wherever
+      in the package they are declared),
       and bind the name `pkg` (`ImportDecl.package`) to that fn. Internal
       (`import pkg`, same package, local call) vs external (`from "pkg"`,
       cross-module call) must both resolve.
@@ -83,17 +92,19 @@ to. It is **only valid in a `root.bp`** — reject it elsewhere with a clear err
 ## Test scenarios
 
 ```
-parser  ---- `pub default mod erika;` parses in root.bp; rejected elsewhere
+parser  ---- `pub default mod erika;` parses at any module top level (not root-only)
+parser  ---- a 2nd `pub default mod` / `pub default fn` in one package is an error
 parser  ---- `import erika;` / `import erika from "erika";` / `import erika, { Q };`
-resolve ---- `import erika` binds the package's root.bp `pub default fn` as `erika`
+resolve ---- `import erika` binds the package's `pub default fn` as `erika`
 run     ---- `erika "select …"` and `erika """ … """` produce the same result as the
              current name-matching template fn (commonJS reference)
 ```
 
 ## Notes
 
-- `pub default mod` / `pub default fn` are **root-only** — a package has exactly
-  one default module and (at most) one default handler fn. Enforce both.
+- `pub default mod` / `pub default fn` may be declared in **any** module of a
+  package (no root-only restriction). A package has at most one default module and
+  one default handler fn — enforce uniqueness, not location.
 - No new runtime surface: this is a cleaner *declaration + binding* for the DSL
   that already works via `pub fn <pkgname>` + `import { <pkgname> } from "<pkg>"`.
 - Memory: the `pub default fn` / `import pkg` parser layer is on `feat`

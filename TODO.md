@@ -6,20 +6,20 @@
 > **Depends on:** the parser layer already on `feat` (`593af55`): `pub default fn`
 > (`FnDecl.isDefault`) + `import pkg` namespace forms (`ImportDecl.package`).
 
-Goal: `pub default mod erika;` (root.bp only) + `pub default fn` (the handler) +
-`import erika` so the `erika "…"` package-handle DSL resolves to the package's
-`root.bp` default fn — replacing the current name-matching `pub fn erika`.
+Goal: `pub default mod erika;` (declarable in ANY module, not root-only) +
+`pub default fn` (the handler) + `import erika` so the `erika "…"` package-handle
+DSL resolves to the package's default fn — replacing the name-matching `pub fn erika`.
 
 ## F0 — parser: `pub default mod`
-- [ ] `pub default mod Name;` parses in root.bp (`ModDecl.isDefault`; mirror
-      `checkDefaultFn`/`FnDecl.isDefault`).
-- [ ] Root-only rule: reject `pub default mod` outside a root module, and a
-      non-`pub` `default mod`.
+- [ ] `pub default mod Name;` parses at any module top level (`ModDecl.isDefault`;
+      mirror `checkDefaultFn`/`FnDecl.isDefault`). No root-only restriction.
+- [ ] Validation: at most one `pub default mod` + one `pub default fn` per package
+      (duplicate is the error, NOT the location).
 
 ## F1 — resolver: `import pkg` binds the package default
-- [ ] `import pkg` / `import pkg from "pkg"` locate the package `root.bp`'s
-      `pub default mod` + its `pub default fn`, and bind `pkg` → that fn
-      (internal = local call, external = cross-module call).
+- [ ] `import pkg` / `import pkg from "pkg"` locate the package's `pub default mod`
+      + its `pub default fn` (wherever in the package they're declared), and bind
+      `pkg` → that fn (internal = local call, external = cross-module call).
 - [ ] `import pkg, { a, b }` binds the default AND the named items.
 
 ## F2 — inference: `<pkg> "…"` resolves to the bound default
@@ -36,7 +36,7 @@ Goal: `pub default mod erika;` (root.bp only) + `pub default fn` (the handler) +
       All erika tests + the example green.
 
 ## Done gate
-- [ ] `pub default mod erika;` parses in root.bp, rejected elsewhere; `import erika`
-      forms parse; `erika "select …"` + `erika """ … """` produce the same result
-      as today on commonJS.
+- [ ] `pub default mod erika;` parses at any module top level (not root-only); a
+      duplicate default mod/fn in one package errors; `import erika` forms parse;
+      `erika "select …"` + `erika """ … """` produce the same result as today on commonJS.
 - [ ] `zig build && zig build test` green; erika lib tests + `examples/erika-linq` green.
