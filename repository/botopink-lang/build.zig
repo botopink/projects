@@ -201,11 +201,14 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(lib_test_exe);
 
     // `zig build test-libs` — run every lib's tests on each backend. Depends on
-    // the `botopink` install (the child binary must exist), runs from the repo
-    // root so `libs/` resolves, and forwards `--` args, e.g.
+    // the `botopink` install (the child binary must exist), and forwards `--`
+    // args, e.g.
     //   zig build test-libs -- --target erlang --lib rakun
-    // Deliberately NOT wired into `zig build test`: it needs node/escript on
-    // PATH, which the Zig-only gate does not assume.
+    // Runs from `botopink-lang/`; the runner walks up to the workspace root and
+    // discovers libs across every resolved root (bundled `botopink-lang/libs` +
+    // the sibling framework projects under `repository/`). Deliberately NOT wired
+    // into `zig build test`: it needs node/escript on PATH, which the Zig-only
+    // gate does not assume.
     const test_libs_run = b.addRunArtifact(lib_test_exe);
     test_libs_run.step.dependOn(b.getInstallStep());
     test_libs_run.setCwd(b.path("."));
@@ -218,11 +221,11 @@ pub fn build(b: *std.Build) void {
     // `zig build test-vscode` — run the VS Code extension's pure-function unit
     // suite (`npm test` → tsc typecheck + Node's built-in test runner). Like
     // `test-libs`, it is deliberately NOT wired into `zig build test`: it needs
-    // `node`/`npm` on PATH and `npm install` to have run in
-    // `modules/vscode-extension/` (the `vscode`-free tests carry no Electron
-    // host). See modules/vscode-extension/test/.
+    // `node`/`npm` on PATH and `npm install` to have run in the sibling
+    // `repository/vscode-extension/` (the `vscode`-free tests carry no Electron
+    // host). See ../vscode-extension/test/.
     const test_vscode_run = b.addSystemCommand(&.{ "npm", "test", "--silent" });
-    test_vscode_run.setCwd(b.path("modules/vscode-extension"));
+    test_vscode_run.setCwd(b.path("../vscode-extension"));
     test_vscode_run.has_side_effects = true; // spawns node — never cache
 
     const test_vscode_step = b.step("test-vscode", "Run the VS Code extension unit tests");

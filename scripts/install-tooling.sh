@@ -22,6 +22,14 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
+# The language core lives under repository/botopink-lang/ in the workspace layout
+# (build.zig + the modules); fall back to the repo root for a legacy flat tree.
+if [ -f repository/botopink-lang/build.zig ]; then
+    core_dir="repository/botopink-lang"
+else
+    core_dir="."
+fi
+
 bin_dir="${BOTOPINK_BIN_DIR:-$HOME/.local/bin}"
 do_lsp=1
 do_ext=1
@@ -50,10 +58,10 @@ need() { command -v "$1" >/dev/null 2>&1 || { echo "install-tooling: missing req
 # ── 1. language-server: build + install botopink-lsp ────────────────────────
 if [ "$do_lsp" -eq 1 ]; then
     need zig
-    step "Building botopink-lsp (zig build)"
-    zig build
+    step "Building botopink-lsp (zig build, in $core_dir)"
+    ( cd "$core_dir" && zig build )
 
-    src="zig-out/bin/botopink-lsp"
+    src="$core_dir/zig-out/bin/botopink-lsp"
     [ -x "$src" ] || { echo "install-tooling: expected binary not found: $src" >&2; exit 1; }
 
     step "Installing botopink-lsp → $bin_dir"
@@ -80,7 +88,11 @@ if [ "$do_ext" -eq 1 ]; then
     fi
     [ -n "$code_bin" ] || { echo "install-tooling: no VS Code CLI found (tried code/codium/code-insiders); set CODE_BIN" >&2; exit 1; }
 
-    ext_dir="modules/vscode-extension"
+    if [ -d repository/vscode-extension ]; then
+        ext_dir="repository/vscode-extension"
+    else
+        ext_dir="modules/vscode-extension"
+    fi
     step "Building VS Code extension ($ext_dir)"
     (
         cd "$ext_dir"

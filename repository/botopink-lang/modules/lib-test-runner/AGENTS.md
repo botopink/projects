@@ -4,11 +4,14 @@
 > Parent: [`../AGENTS.md`](../AGENTS.md)
 
 Package that builds the `botopink-lib-test` executable: the CI gate that runs
-every `libs/` project's test suite on each requested backend and aggregates the
-results into a lib×target matrix. It **shells out to the installed `botopink`
-binary** (`botopink test --target <t>` with `cwd` set to each lib) and touches no
-compiler internals — so it carries **no `compiler-core` dependency**. Its job is
-discovery + fan-out + aggregation + exit code, nothing the compiler already does.
+every discovered project's test suite on each requested backend and aggregates
+the results into a lib×target matrix. Projects are discovered across the resolved
+**root list** (`resolveRoots`: bundled `repository/botopink-lang/libs`, sibling
+`repository/`, legacy flat `libs/`, de-duped nearest-first; first-root-wins by
+name). It **shells out to the installed `botopink` binary** (`botopink test
+--target <t>` with `cwd` set to each lib's own directory) and touches no compiler
+internals — so it carries **no `compiler-core` dependency**. Its job is discovery
++ fan-out + aggregation + exit code, nothing the compiler already does.
 
 ## Tree
 
@@ -18,9 +21,9 @@ lib-test-runner/
 ├── build.zig            ← package build graph + `run` + `test` steps
 ├── build.zig.zon        ← manifest (no dependencies — self-contained)
 └── src/
-    ├── main.zig         ← entry: resolve paths/binary → discover → run cells → matrix → exit
+    ├── main.zig         ← entry: resolve roots/binary → discover → run cells → matrix → exit
     ├── args.zig         ← CLI parsing (Target enum, node alias, =-form, all)  + unit tests
-    ├── discovery.zig    ← enumerate libs/*/ with botopink.json, "has tests" probe + unit tests
+    ├── discovery.zig    ← enumerate <root>/*/ with botopink.json across roots, "has tests" probe + unit tests
     ├── runner.zig       ← per-(lib,target) `botopink test` spawn + status classification
     └── matrix.zig       ← Status enum, lib×target matrix render, summary + unit tests
 ```
@@ -48,8 +51,8 @@ botopink-lib-test [--target <t>[,<t>…] | --target all] [--lib <name>]
 - `--target` — repeatable / comma-separated. Accepts `commonJS|erlang|beam|wasm`
   plus the alias `node`→`commonJS`, and both `--target <t>` and `--target=<t>`.
   Default: `commonJS,erlang`. `all` expands to every *supported* target.
-- `--lib <name>` — restrict to one lib under `libs/` (default: every lib with a
-  `botopink.json`).
+- `--lib <name>` — restrict to one project by name across roots (default: every
+  project with a `botopink.json`).
 - `--filter <s>` — forwarded to `botopink test --filter`.
 - `--strict` — treat an unsupported target (beam/wasm) as a **failure** instead of
   a skip (default: skip with `~`, keeping the gate green until those backends run).
@@ -71,8 +74,9 @@ skipped-unsupported target (`~`) never redden the gate.
 ## Design contract
 
 - **Orchestrate, don't reimplement.** Per-lib isolation falls out of spawning a
-  child with `cwd = libs/<lib>`: `botopink test` reads that lib's `botopink.json`
-  and writes its own `.botopinkbuild/test-out/`. No global-cwd juggling.
+  child with `cwd = <lib_dir>` (the lib's own directory, under any resolved root):
+  `botopink test` reads that lib's `botopink.json` and writes its own
+  `.botopinkbuild/test-out/`. No global-cwd juggling.
 - **Unsupported-target detection is child-driven**, not a hard-coded list: the
   runner scans the child's output for `"currently supports only"`. The moment
   `botopink test` learns `beam`/`wasm`, that target stops being skipped here with

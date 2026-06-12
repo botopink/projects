@@ -7,8 +7,9 @@
 /// using the same rules as the CLI driver:
 ///
 ///   * `from "<lib>"` → the lib's own `botopink.json` (`src` + `files`), read
-///     from `<libs_root>/<lib>/…`. `<libs_root>` is the first ancestor of the
-///     project that contains a `libs/` directory.
+///     from `<root>/<lib>/…` where `<root>` is the first entry in the resolved
+///     root list (bundled `repository/botopink-lang/libs`, sibling `repository/`,
+///     or legacy flat `libs/`) that carries `<lib>` — see `resolveRoots`.
 ///   * `mod` / `pub mod` siblings → every `.bp` under the project's `src/`.
 ///   * `from "std"` → handled inside the compiler (embedded), not here.
 ///
@@ -131,11 +132,13 @@ pub const ProjectGraph = struct {
 
         // 1) Lib dependencies, in declared order, before the project's own files.
         if (manifest.dependencies.len > 0) {
-            if (try self.findLibsRoot(root)) |libs_root| {
-                defer self.gpa.free(libs_root);
-                for (manifest.dependencies) |dep| {
-                    self.loadLib(a, &deps, libs_root, dep) catch continue;
-                }
+            const roots = try self.resolveRoots(root);
+            defer {
+                for (roots) |r| self.gpa.free(r);
+                self.gpa.free(roots);
+            }
+            for (manifest.dependencies) |dep| {
+                self.loadLib(a, &deps, roots, dep) catch continue;
             }
         }
 
@@ -149,17 +152,27 @@ pub const ProjectGraph = struct {
         return cp;
     }
 
-    /// Load every `file` listed in `<libs_root>/<dep>/botopink.json` as a module.
+    /// Load every `file` listed in `<root>/<dep>/botopink.json` as a module,
+    /// resolving `dep` to the first root in `roots` that carries its manifest.
     fn loadLib(
         self: *ProjectGraph,
         a: std.mem.Allocator,
         deps: *std.ArrayListUnmanaged(GraphModule),
-        libs_root: []const u8,
+        roots: []const []const u8,
         dep: []const u8,
     ) !void {
-        const lib_dir = try std.fs.path.join(self.gpa, &.{ libs_root, "libs", dep });
+        var resolved_dir: ?[]const u8 = null;
+        var lib: LibManifest = undefined;
+        for (roots) |root| {
+            const cand = try std.fs.path.join(self.gpa, &.{ root, dep });
+            if (self.readManifest(LibManifest, a, cand, "botopink.json")) |m| {
+                lib = m;
+                resolved_dir = cand;
+                break;
+            } else |_| self.gpa.free(cand);
+        }
+        const lib_dir = resolved_dir orelse return error.ManifestNotFound;
         defer self.gpa.free(lib_dir);
-        const lib = try self.readManifest(LibManifest, a, lib_dir, "botopink.json");
         const lib_src = std.mem.trimEnd(u8, lib.src, "/");
         for (lib.files) |file| {
             const path = try std.fs.path.join(self.gpa, &.{ lib_dir, lib_src, file });
@@ -210,20 +223,44 @@ pub const ProjectGraph = struct {
         return std.json.parseFromSliceLeaky(T, a, data, .{ .ignore_unknown_fields = true }) catch return error.ManifestInvalid;
     }
 
-    /// Walk up from `project_root` to the first ancestor containing a `libs/`
-    /// directory. Returns that ancestor path (caller owns via gpa), or null.
-    fn findLibsRoot(self: *ProjectGraph, project_root: []const u8) !?[]u8 {
+    /// Resolve the ordered list of library roots — directories that directly hold
+    /// a `<name>/botopink.json` — mirroring the CLI driver's `resolveLibRoots`.
+    /// Walking up from `project_root`, for each ancestor `D` (nearest-first) these
+    /// roots are added when present: `D/repository/botopink-lang/libs` (bundled),
+    /// `D/repository` (sibling projects), `D/libs` (legacy flat tree). De-duped,
+    /// nearest-first. On the flat tree the list is exactly `[<ancestor>/libs]`, so
+    /// resolution is byte-identical to the former single-root walk. Caller owns
+    /// the slice and each element via gpa.
+    fn resolveRoots(self: *ProjectGraph, project_root: []const u8) ![][]const u8 {
         var dir = project_root;
+        var roots: std.ArrayListUnmanaged([]const u8) = .empty;
+        errdefer {
+            for (roots.items) |r| self.gpa.free(r);
+            roots.deinit(self.gpa);
+        }
         while (true) {
-            const candidate = try std.fs.path.join(self.gpa, &.{ dir, "libs" });
-            defer self.gpa.free(candidate);
-            if (std.Io.Dir.cwd().access(self.io, candidate, .{})) |_| {
-                return try self.gpa.dupe(u8, dir);
-            } else |_| {}
-            const parent = std.fs.path.dirname(dir) orelse return null;
-            if (std.mem.eql(u8, parent, dir)) return null;
+            try self.addRoot(&roots, &.{ dir, "repository", "botopink-lang", "libs" });
+            try self.addRoot(&roots, &.{ dir, "repository" });
+            try self.addRoot(&roots, &.{ dir, "libs" });
+            const parent = std.fs.path.dirname(dir) orelse break;
+            if (std.mem.eql(u8, parent, dir)) break;
             dir = parent;
         }
+        return roots.toOwnedSlice(self.gpa);
+    }
+
+    /// Join `parts`; if it is an existing directory not already in `roots`, append
+    /// it (transferring ownership), else free it.
+    fn addRoot(self: *ProjectGraph, roots: *std.ArrayListUnmanaged([]const u8), parts: []const []const u8) !void {
+        const cand = try std.fs.path.join(self.gpa, parts);
+        var keep = false;
+        defer if (!keep) self.gpa.free(cand);
+        std.Io.Dir.cwd().access(self.io, cand, .{}) catch return;
+        for (roots.items) |r| {
+            if (std.mem.eql(u8, r, cand)) return;
+        }
+        try roots.append(self.gpa, cand);
+        keep = true;
     }
 
     /// Walk up from the active file's directory to the nearest `botopink.json`.

@@ -1,9 +1,10 @@
 /// Per-cell execution — spawn `botopink test` for one `(lib, target)` pair.
 ///
 /// The runner orchestrates the existing CLI; it never re-implements test running.
-/// Each child runs with `cwd = <libs_root>/<lib>` so it reads that lib's
-/// `botopink.json` and writes its own `.botopinkbuild/test-out/` — per-lib
-/// isolation falls out of the working directory, exactly as CI would do it.
+/// Each child runs with `cwd = <lib_dir>` (the lib's own directory, which may live
+/// under any resolved root) so it reads that lib's `botopink.json` and writes its
+/// own `.botopinkbuild/test-out/` — per-lib isolation falls out of the working
+/// directory, exactly as CI would do it.
 const std = @import("std");
 const args = @import("args.zig");
 const matrix = @import("matrix.zig");
@@ -24,14 +25,12 @@ pub fn runCell(
     arena: std.mem.Allocator,
     io: std.Io,
     bin: []const u8,
-    libs_root: []const u8,
+    lib_dir: []const u8,
     lib_name: []const u8,
     target: Target,
     filter: ?[]const u8,
     strict: bool,
 ) !Status {
-    const lib_path = try std.fmt.allocPrint(arena, "{s}/{s}", .{ libs_root, lib_name });
-
     var argv: std.ArrayListUnmanaged([]const u8) = .empty;
     try argv.append(arena, bin);
     try argv.append(arena, "test");
@@ -47,7 +46,7 @@ pub fn runCell(
 
     const result = std.process.run(arena, io, .{
         .argv = argv.items,
-        .cwd = .{ .path = lib_path },
+        .cwd = .{ .path = lib_dir },
         .stdout_limit = .limited(16 * 1024 * 1024),
         .stderr_limit = .limited(16 * 1024 * 1024),
     }) catch |err| {

@@ -65,12 +65,19 @@ zig build test-backends
 ## External libs (generic loader)
 
 `cli/libs.zig` is the driver-side half of the lib-agnostic package mechanism. A
-project's `botopink.json` `dependencies: ["<name>", …]` are resolved from disk:
-the loader walks up for a `libs/` directory, reads each `libs/<name>/botopink.json`
-(`{src, files}`), and feeds the lib's modules into compilation prefixed by name
-(`<name>/<module>`). The compiler core never names a lib — it just sees ordinary
-`Module[]` and resolves `from "<name>"` through the shared import registry. `std`
-is the one embedded exception and is not loaded here.
+project's `botopink.json` `dependencies: ["<name>", …]` are resolved from disk
+against an ordered **root list** (`resolveLibRoots`): walking up from cwd, each
+ancestor `D` contributes — when present — `D/repository/botopink-lang/libs`
+(bundled libs), `D/repository` (sibling projects), and `D/libs` (legacy flat
+tree), de-duplicated nearest-first. `<name>` resolves to the **first root**
+holding `<name>/botopink.json`; the loader reads its `{src, files}` and feeds the
+lib's modules into compilation prefixed by name (`<name>/<module>`). On today's
+flat tree only the `D/libs` branch fires, so the list is `[<ancestor>/libs]` —
+byte-identical to the former single-root walk. The compiler core never names a
+lib — it just sees ordinary `Module[]` and resolves `from "<name>"` through the
+shared import registry. `std` is the one embedded exception and is not loaded
+here. `shipMjsSidecars` resolves an owning lib's `.mjs` through the same root
+list.
 
 ## CLI behavior contract
 

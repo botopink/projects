@@ -1,17 +1,23 @@
-/// Lib discovery — enumerate `libs/*/` projects and decide which have tests.
+/// Lib discovery — enumerate projects across the resolved root list and decide
+/// which have tests.
 ///
-/// A "lib" is any immediate subdirectory of the libs root that holds a
-/// `botopink.json`. "Has tests" means either a `test/` directory with at least
-/// one `.bp` suite, or a `src/**/*.bp` file containing a `test` block. A lib with
-/// no tests is reported (`has_tests = false`) and rendered as a green skip — it is
-/// never a failure, matching `botopink test`'s own "no test blocks found" → exit 0.
+/// A "lib" is any immediate subdirectory of a root that holds a `botopink.json`.
+/// Roots are scanned in order (bundled `repository/botopink-lang/libs`, sibling
+/// `repository/`, legacy flat `libs/`); the first root carrying a given name wins,
+/// later duplicates are dropped. "Has tests" means either a `test/` directory with
+/// at least one `.bp` suite, or a `src/**/*.bp` file containing a `test` block. A
+/// lib with no tests is reported (`has_tests = false`) and rendered as a green skip
+/// — never a failure, matching `botopink test`'s own "no test blocks found" → exit 0.
 const std = @import("std");
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 
 pub const Lib = struct {
-    /// Directory name under the libs root. Owned by the caller-supplied `gpa`.
+    /// Directory name (the immediate child of its root). Owned by `gpa`.
     name: []const u8,
+    /// Full path to the lib's directory (`<root>/<name>`), used as the child's
+    /// `cwd`. Owned by `gpa`.
+    dir: []const u8,
     has_tests: bool,
 };
 
@@ -21,44 +27,54 @@ pub const Error = error{
 
 // ── Discovery ───────────────────────────────────────────────────────────────────
 
-/// Discover every lib under `libs_root` (relative to cwd) that carries a
-/// `botopink.json`. If `only` is set, restrict to that one lib. Results are sorted
-/// by name; each `name` is heap-allocated with `gpa` — call `free` when done.
+/// Discover every lib under each root in `roots` (relative to cwd) that carries a
+/// `botopink.json`. If `only` is set, restrict to that one lib. A name found in an
+/// earlier root shadows the same name in a later one (first-root-wins). Results
+/// are sorted by name; each `name`/`dir` is heap-allocated with `gpa` — call
+/// `free` when done. Roots that cannot be opened are skipped; the call errors only
+/// if no root could be read at all.
 pub fn discover(
     gpa: std.mem.Allocator,
     io: std.Io,
-    libs_root: []const u8,
+    roots: []const []const u8,
     only: ?[]const u8,
 ) Error![]Lib {
-    var root = std.Io.Dir.cwd().openDir(io, libs_root, .{ .iterate = true }) catch {
-        return error.LibsRootNotFound;
-    };
-    defer root.close(io);
-
     var libs: std.ArrayListUnmanaged(Lib) = .empty;
     errdefer free(gpa, libs.items);
     errdefer libs.deinit(gpa);
 
-    var it = root.iterate();
-    while (it.next(io) catch return error.LibsRootNotFound) |entry| {
-        if (entry.kind != .directory) continue;
-        if (only) |want| {
-            if (!std.mem.eql(u8, entry.name, want)) continue;
+    var any_opened = false;
+    for (roots) |libs_root| {
+        var root = std.Io.Dir.cwd().openDir(io, libs_root, .{ .iterate = true }) catch continue;
+        defer root.close(io);
+        any_opened = true;
+
+        var it = root.iterate();
+        while (it.next(io) catch break) |entry| {
+            if (entry.kind != .directory) continue;
+            if (only) |want| {
+                if (!std.mem.eql(u8, entry.name, want)) continue;
+            }
+            // First root carrying this name wins — skip a later duplicate.
+            if (hasName(libs.items, entry.name)) continue;
+
+            var lib_dir = root.openDir(io, entry.name, .{}) catch continue;
+            defer lib_dir.close(io);
+
+            // A project is a lib iff it has a manifest.
+            lib_dir.access(io, "botopink.json", .{}) catch continue;
+
+            // `entry.name` is backed by the iterator's scratch buffer — dupe before
+            // any further `it.next()` invalidates it.
+            const name = try gpa.dupe(u8, entry.name);
+            errdefer gpa.free(name);
+            const dir = try std.fs.path.join(gpa, &.{ libs_root, entry.name });
+            errdefer gpa.free(dir);
+
+            try libs.append(gpa, .{ .name = name, .dir = dir, .has_tests = libHasTests(gpa, io, lib_dir) });
         }
-
-        var lib_dir = root.openDir(io, entry.name, .{}) catch continue;
-        defer lib_dir.close(io);
-
-        // A project is a lib iff it has a manifest.
-        lib_dir.access(io, "botopink.json", .{}) catch continue;
-
-        // `entry.name` is backed by the iterator's scratch buffer — dupe before
-        // any further `it.next()` invalidates it.
-        const name = try gpa.dupe(u8, entry.name);
-        errdefer gpa.free(name);
-
-        try libs.append(gpa, .{ .name = name, .has_tests = libHasTests(gpa, io, lib_dir) });
     }
+    if (!any_opened) return error.LibsRootNotFound;
 
     const items = libs.items;
     std.mem.sort(Lib, items, {}, struct {
@@ -70,8 +86,18 @@ pub fn discover(
     return libs.toOwnedSlice(gpa);
 }
 
+fn hasName(libs: []const Lib, name: []const u8) bool {
+    for (libs) |l| {
+        if (std.mem.eql(u8, l.name, name)) return true;
+    }
+    return false;
+}
+
 pub fn free(gpa: std.mem.Allocator, libs: []Lib) void {
-    for (libs) |l| gpa.free(l.name);
+    for (libs) |l| {
+        gpa.free(l.name);
+        gpa.free(l.dir);
+    }
     gpa.free(libs);
 }
 

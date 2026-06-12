@@ -28,28 +28,76 @@ pub const Error = error{
     LibManifestInvalid,
 } || std.mem.Allocator.Error;
 
-/// Resolve the libs root: the nearest ancestor directory (starting at cwd) that
-/// contains a `libs/` subdirectory. Returns the path to that `libs/` directory
-/// (caller owns via `gpa`), or null if none is found.
-pub fn resolveLibsRoot(gpa: std.mem.Allocator, io: std.Io) !?[]u8 {
+/// Resolve the ordered list of library roots — directories that directly hold a
+/// `<name>/botopink.json`, so `from "<name>"` and a project's declared
+/// `dependencies` resolve `<name>` to the **first root** carrying it. Walking up
+/// from cwd, for each ancestor dir `D` (nearest-first) these roots are added when
+/// they exist, in this order:
+///
+///   * `D/repository/botopink-lang/libs`  — bundled libs (std/client/server)
+///   * `D/repository`                     — sibling projects (frameworks)
+///   * `D/libs`                           — legacy flat tree
+///
+/// The list is de-duplicated, nearest-first. On today's flat tree only the
+/// `D/libs` branch fires, so the list is exactly `[<ancestor>/libs]` — resolution
+/// is byte-identical to the former single-root walk. Caller owns the slice and
+/// every element (free with `freeRoots`).
+pub fn resolveLibRoots(gpa: std.mem.Allocator, io: std.Io) ![][]const u8 {
     var buf: [std.fs.max_path_bytes]u8 = undefined;
     const n = try std.process.currentPath(io, &buf);
-    var dir = buf[0..n];
+    return rootsFrom(gpa, io, buf[0..n]);
+}
+
+/// `resolveLibRoots` minus the cwd lookup — walks up from `start`. Split out so a
+/// test can drive a synthetic tree without touching the process cwd.
+fn rootsFrom(gpa: std.mem.Allocator, io: std.Io, start: []const u8) ![][]const u8 {
+    var dir = start;
+
+    var roots: std.ArrayListUnmanaged([]const u8) = .empty;
+    errdefer {
+        for (roots.items) |r| gpa.free(r);
+        roots.deinit(gpa);
+    }
 
     while (true) {
-        const candidate = try std.fs.path.join(gpa, &.{ dir, "libs" });
-        const exists = blk: {
-            var d = std.Io.Dir.cwd().openDir(io, candidate, .{}) catch break :blk false;
-            d.close(io);
-            break :blk true;
-        };
-        if (exists) return candidate;
-        gpa.free(candidate);
+        try addRootIfExists(gpa, io, &roots, &.{ dir, "repository", "botopink-lang", "libs" });
+        try addRootIfExists(gpa, io, &roots, &.{ dir, "repository" });
+        try addRootIfExists(gpa, io, &roots, &.{ dir, "libs" });
 
-        const parent = std.fs.path.dirname(dir) orelse return null;
-        if (std.mem.eql(u8, parent, dir)) return null;
+        const parent = std.fs.path.dirname(dir) orelse break;
+        if (std.mem.eql(u8, parent, dir)) break;
         dir = dir[0..parent.len];
     }
+
+    return roots.toOwnedSlice(gpa);
+}
+
+/// Join `parts` into a candidate root; if it is an existing directory and not
+/// already in `roots`, append it (transferring ownership). Otherwise free it.
+fn addRootIfExists(
+    gpa: std.mem.Allocator,
+    io: std.Io,
+    roots: *std.ArrayListUnmanaged([]const u8),
+    parts: []const []const u8,
+) !void {
+    const candidate = try std.fs.path.join(gpa, parts);
+    var keep = false;
+    defer if (!keep) gpa.free(candidate);
+
+    var d = std.Io.Dir.cwd().openDir(io, candidate, .{}) catch return;
+    d.close(io);
+
+    for (roots.items) |r| {
+        if (std.mem.eql(u8, r, candidate)) return; // de-dup, nearest-first wins
+    }
+    try roots.append(gpa, candidate);
+    keep = true;
+}
+
+/// Free a root list produced by `resolveLibRoots`.
+pub fn freeRoots(gpa: std.mem.Allocator, roots: [][]const u8) void {
+    for (roots) |r| gpa.free(r);
+    gpa.free(roots);
 }
 
 /// Load every module of every declared dependency. Returns a flat `Module[]`
@@ -74,11 +122,12 @@ pub fn loadDependencies(
 
     if (deps.len == 0) return try modules.toOwnedSlice(gpa);
 
-    const libs_root = (try resolveLibsRoot(gpa, io)) orelse return error.LibsRootNotFound;
-    defer gpa.free(libs_root);
+    const roots = try resolveLibRoots(gpa, io);
+    defer freeRoots(gpa, roots);
+    if (roots.len == 0) return error.LibsRootNotFound;
 
     for (deps) |dep| {
-        try loadOne(gpa, io, libs_root, dep, &modules);
+        try loadOne(gpa, io, roots, dep, &modules);
     }
     return try modules.toOwnedSlice(gpa);
 }
@@ -86,7 +135,7 @@ pub fn loadDependencies(
 fn loadOne(
     gpa: std.mem.Allocator,
     io: std.Io,
-    libs_root: []const u8,
+    roots: []const []const u8,
     dep: []const u8,
     out: *std.ArrayListUnmanaged(Module),
 ) !void {
@@ -94,17 +143,23 @@ fn loadOne(
     defer arena_inst.deinit();
     const arena = arena_inst.allocator();
 
-    const lib_dir = try std.fs.path.join(arena, &.{ libs_root, dep });
-    const manifest_path = try std.fs.path.join(arena, &.{ lib_dir, "botopink.json" });
-
-    const data = std.Io.Dir.cwd().readFileAlloc(io, manifest_path, arena, .limited(64 * 1024)) catch
-        return error.LibNotFound;
+    // Resolve `dep` to the first root carrying `<root>/<dep>/botopink.json`.
+    var lib_dir: ?[]const u8 = null;
+    var data: []const u8 = undefined;
+    for (roots) |root| {
+        const cand_dir = try std.fs.path.join(arena, &.{ root, dep });
+        const manifest_path = try std.fs.path.join(arena, &.{ cand_dir, "botopink.json" });
+        data = std.Io.Dir.cwd().readFileAlloc(io, manifest_path, arena, .limited(64 * 1024)) catch continue;
+        lib_dir = cand_dir;
+        break;
+    }
+    const dir = lib_dir orelse return error.LibNotFound;
     const manifest = std.json.parseFromSliceLeaky(LibManifest, arena, data, .{
         .ignore_unknown_fields = true,
     }) catch return error.LibManifestInvalid;
 
     for (manifest.files) |file| {
-        const file_path = try std.fs.path.join(arena, &.{ lib_dir, manifest.src, file });
+        const file_path = try std.fs.path.join(arena, &.{ dir, manifest.src, file });
         const source = try std.Io.Dir.cwd().readFileAlloc(io, file_path, gpa, .unlimited);
         errdefer gpa.free(source);
 
@@ -166,8 +221,8 @@ pub fn shipMjsSidecars(
     const arena = arena_inst.allocator();
 
     // Resolved lazily on the first relative `.mjs` require (most builds have none).
-    var libs_root: ?[]u8 = null;
-    defer if (libs_root) |r| gpa.free(r);
+    var roots: ?[][]const u8 = null;
+    defer if (roots) |r| freeRoots(gpa, r);
 
     for (outputs) |o| {
         const emitted_rel = try std.fmt.allocPrint(arena, "{s}/{s}{s}", .{ out_dir, o.name, ext });
@@ -197,8 +252,12 @@ pub fn shipMjsSidecars(
             const base = std.fs.path.basename(req_path);
             const src_path: ?[]const u8 = blk: {
                 if (owner) |lib| {
-                    if (libs_root == null) libs_root = try resolveLibsRoot(gpa, io);
-                    if (libs_root) |root| break :blk try std.fs.path.join(arena, &.{ root, lib, "src", base });
+                    if (roots == null) roots = try resolveLibRoots(gpa, io);
+                    // The owning lib lives under the first root that carries it.
+                    for (roots.?) |root| {
+                        const cand = try std.fs.path.join(arena, &.{ root, lib, "src", base });
+                        if (fileExists(io, cand)) break :blk cand;
+                    }
                     break :blk null;
                 }
                 // Project-own module: the source `.mjs` lives in the project's `src/`.
@@ -241,6 +300,95 @@ test "loadDependencies with no deps touches no filesystem" {
     const mods = try loadDependencies(std.testing.allocator, std.testing.io, &.{});
     defer freeModules(std.testing.allocator, mods);
     try std.testing.expectEqual(@as(usize, 0), mods.len);
+}
+
+// Multi-root resolution. Each test materializes a synthetic tree under a unique
+// relative dir (resolved against the test cwd) and drives `rootsFrom` / `loadOne`
+// directly, so neither the process cwd nor the real repo layout is touched.
+
+fn writeFileP(io: std.Io, path: []const u8, data: []const u8) !void {
+    if (std.fs.path.dirname(path)) |d| try std.Io.Dir.cwd().createDirPath(io, d);
+    try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = path, .data = data });
+}
+
+test "resolveLibRoots: repository workspace yields [bundled libs, repository]" {
+    const gpa = std.testing.allocator;
+    const io = std.testing.io;
+
+    const ws = ".botopinkbuild/roots-repo/ws";
+    std.Io.Dir.cwd().deleteTree(io, ".botopinkbuild/roots-repo") catch {};
+    defer std.Io.Dir.cwd().deleteTree(io, ".botopinkbuild/roots-repo") catch {};
+    try writeFileP(io, ws ++ "/repository/botopink-lang/libs/server/botopink.json", "{}");
+    try writeFileP(io, ws ++ "/repository/rakun/botopink.json", "{}");
+
+    // A consumer under repository/rakun resolves up to `ws`, where both roots fire.
+    const roots = try rootsFrom(gpa, io, ws ++ "/repository/rakun");
+    defer freeRoots(gpa, roots);
+
+    try std.testing.expectEqual(@as(usize, 2), roots.len);
+    try std.testing.expectEqualStrings(ws ++ "/repository/botopink-lang/libs", roots[0]);
+    try std.testing.expectEqualStrings(ws ++ "/repository", roots[1]);
+}
+
+test "resolveLibRoots: flat libs/ tree yields a single legacy root" {
+    const gpa = std.testing.allocator;
+    const io = std.testing.io;
+
+    const ws = ".botopinkbuild/roots-flat/ws";
+    std.Io.Dir.cwd().deleteTree(io, ".botopinkbuild/roots-flat") catch {};
+    defer std.Io.Dir.cwd().deleteTree(io, ".botopinkbuild/roots-flat") catch {};
+    try writeFileP(io, ws ++ "/libs/std/botopink.json", "{}");
+
+    const roots = try rootsFrom(gpa, io, ws);
+    defer freeRoots(gpa, roots);
+
+    try std.testing.expectEqual(@as(usize, 1), roots.len);
+    try std.testing.expectEqualStrings(ws ++ "/libs", roots[0]);
+}
+
+test "loadOne: rakun resolves \"server\" across roots; absent dep is LibNotFound" {
+    const gpa = std.testing.allocator;
+    const io = std.testing.io;
+
+    const ws = ".botopinkbuild/loadone/ws";
+    std.Io.Dir.cwd().deleteTree(io, ".botopinkbuild/loadone") catch {};
+    defer std.Io.Dir.cwd().deleteTree(io, ".botopinkbuild/loadone") catch {};
+    // `server` is a bundled lib; `rakun` is a sibling project.
+    try writeFileP(io, ws ++ "/repository/botopink-lang/libs/server/botopink.json",
+        \\{ "src": "src/", "files": ["server.bp"] }
+    );
+    try writeFileP(io, ws ++ "/repository/botopink-lang/libs/server/src/server.bp",
+        \\pub fn serverServe() {}
+    );
+    try writeFileP(io, ws ++ "/repository/rakun/botopink.json",
+        \\{ "src": "src/", "files": ["rakun.bp"] }
+    );
+    try writeFileP(io, ws ++ "/repository/rakun/src/rakun.bp",
+        \\pub fn run() {}
+    );
+
+    const roots = [_][]const u8{
+        ws ++ "/repository/botopink-lang/libs",
+        ws ++ "/repository",
+    };
+
+    var out: std.ArrayListUnmanaged(Module) = .empty;
+    defer {
+        for (out.items) |m| {
+            gpa.free(m.path);
+            gpa.free(m.source);
+        }
+        out.deinit(gpa);
+    }
+
+    try loadOne(gpa, io, &roots, "server", &out); // bundled — first root
+    try loadOne(gpa, io, &roots, "rakun", &out); // sibling — second root
+    try std.testing.expectEqual(@as(usize, 2), out.items.len);
+    try std.testing.expectEqualStrings("server/server", out.items[0].path);
+    try std.testing.expect(std.mem.indexOf(u8, out.items[0].source, "serverServe") != null);
+    try std.testing.expectEqualStrings("rakun/rakun", out.items[1].path);
+
+    try std.testing.expectError(error.LibNotFound, loadOne(gpa, io, &roots, "absent", &out));
 }
 
 test "LibManifest parses src + files, ignores unknown fields" {

@@ -1,14 +1,16 @@
-/// `botopink-lib-test` — run every `libs/` project's test suite on each requested
-/// backend and aggregate the results into a lib×target matrix.
+/// `botopink-lib-test` — run every discovered project's test suite on each
+/// requested backend and aggregate the results into a lib×target matrix.
 ///
 /// Usage:
 ///   botopink-lib-test [--target <t>[,<t>…] | --target all]
 ///                     [--lib <name>] [--filter <s>] [--strict] [--bin <path>]
 ///
-/// It discovers every lib under `libs/` carrying a `botopink.json`, runs
-/// `botopink test --target <t>` with `cwd` set to each lib, and **exits non-zero
-/// iff any cell fails** — the missing CI gate for the lib ecosystem. It shells out
-/// to the installed `botopink` binary and touches no compiler internals.
+/// It discovers every project carrying a `botopink.json` across the resolved root
+/// list (bundled `repository/botopink-lang/libs`, sibling `repository/`, legacy
+/// flat `libs/`), runs `botopink test --target <t>` with `cwd` set to each lib's
+/// own directory, and **exits non-zero iff any cell fails** — the missing CI gate
+/// for the lib ecosystem. It shells out to the installed `botopink` binary and
+/// touches no compiler internals.
 const std = @import("std");
 const args = @import("args.zig");
 const discovery = @import("discovery.zig");
@@ -16,17 +18,20 @@ const matrix = @import("matrix.zig");
 const runner = @import("runner.zig");
 
 const HELP =
-    \\botopink-lib-test — run every libs/ project's tests per backend
+    \\botopink-lib-test — run every discovered project's tests per backend
     \\
     \\Usage:
     \\  botopink-lib-test [options]
+    \\
+    \\Discovers every project carrying a botopink.json across the resolved roots
+    \\(repository/botopink-lang/libs, repository/, or a legacy flat libs/).
     \\
     \\Options:
     \\  --target <t>[,<t>…]   Targets to run; repeatable. Accepts commonJS|erlang|
     \\                        beam|wasm plus the alias node→commonJS, and --target=<t>.
     \\                        `all` expands to every supported target.
     \\                        Default: commonJS,erlang.
-    \\  --lib <name>          Restrict to one lib under libs/ (default: all).
+    \\  --lib <name>          Restrict to one project by name across roots (default: all).
     \\  --filter <s>          Forwarded to `botopink test --filter`.
     \\  --strict              Treat an unsupported target as a failure, not a skip.
     \\  --bin <path>          Path to the `botopink` binary (env: BOTOPINK_BIN;
@@ -68,23 +73,24 @@ fn run(init: std.process.Init) !u8 {
         return 2;
     };
 
-    // Resolve the repo root (cwd), the libs root, and the botopink binary —
-    // all as absolute paths so each child's `cwd = libs/<lib>` stays consistent.
+    // Resolve the cwd, the library roots, and the botopink binary — all as
+    // absolute paths so each child's `cwd = <lib_dir>` stays consistent.
     var cwd_buf: [std.fs.max_path_bytes]u8 = undefined;
     const cwd_len = try std.process.currentPath(io, &cwd_buf);
     const cwd = cwd_buf[0..cwd_len];
 
-    const libs_root = findLibsRoot(arena, io, cwd) orelse {
-        std.debug.print("\x1b[1m\x1b[31merror\x1b[0m: no libs/ directory found in this or any parent directory\n", .{});
+    const roots = try resolveRoots(arena, io, cwd);
+    if (roots.len == 0) {
+        std.debug.print("\x1b[1m\x1b[31merror\x1b[0m: no library root (repository/ or libs/) found in this or any parent directory\n", .{});
         return 1;
-    };
+    }
 
     const bin = try resolveBin(arena, io, cwd, opts.bin, init.environ_map.get("BOTOPINK_BIN"));
 
-    // Discover libs.
-    const libs = discovery.discover(gpa, io, libs_root, opts.lib) catch |err| {
+    // Discover libs across every root.
+    const libs = discovery.discover(gpa, io, roots, opts.lib) catch |err| {
         switch (err) {
-            error.LibsRootNotFound => std.debug.print("\x1b[1m\x1b[31merror\x1b[0m: libs/ directory could not be read\n", .{}),
+            error.LibsRootNotFound => std.debug.print("\x1b[1m\x1b[31merror\x1b[0m: no library root could be read\n", .{}),
             else => return err,
         }
         return 1;
@@ -93,10 +99,10 @@ fn run(init: std.process.Init) !u8 {
 
     if (libs.len == 0) {
         if (opts.lib) |name| {
-            std.debug.print("\x1b[1m\x1b[31merror\x1b[0m: no lib named '{s}' found under {s}\n", .{ name, libs_root });
+            std.debug.print("\x1b[1m\x1b[31merror\x1b[0m: no lib named '{s}' found across the library roots\n", .{name});
             return 1;
         }
-        std.debug.print("\x1b[1m\x1b[31merror\x1b[0m: no libs found under {s}\n", .{libs_root});
+        std.debug.print("\x1b[1m\x1b[31merror\x1b[0m: no libs found across the library roots\n", .{});
         return 1;
     }
 
@@ -112,7 +118,7 @@ fn run(init: std.process.Init) !u8 {
             const status: matrix.Status = if (!lib.has_tests)
                 .no_tests
             else
-                try runner.runCell(arena, io, bin, libs_root, lib.name, target, opts.filter, opts.strict);
+                try runner.runCell(arena, io, bin, lib.dir, lib.name, target, opts.filter, opts.strict);
             cells[r][c] = status;
             summary.tally(status);
         }
@@ -128,21 +134,40 @@ fn run(init: std.process.Init) !u8 {
     return summary.exitCode();
 }
 
-/// Walk up from `start` until a directory containing a readable `libs/` is found.
-/// Returns the absolute path to that `libs/` (arena-owned), or null.
-fn findLibsRoot(arena: std.mem.Allocator, io: std.Io, start: []const u8) ?[]const u8 {
+/// Resolve the ordered list of library roots — directories that directly hold a
+/// `<name>/botopink.json` — mirroring the CLI driver's `resolveLibRoots` (kept a
+/// local copy so this orchestrator carries no compiler-core import). Walking up
+/// from `start`, for each ancestor `D` (nearest-first) these roots are added when
+/// present: `D/repository/botopink-lang/libs` (bundled), `D/repository` (sibling
+/// projects), `D/libs` (legacy flat tree). De-duped, nearest-first; on the flat
+/// tree the list is exactly `[<ancestor>/libs]`. Arena-owned.
+fn resolveRoots(arena: std.mem.Allocator, io: std.Io, start: []const u8) ![]const []const u8 {
     var dir: []const u8 = start;
+    var roots: std.ArrayListUnmanaged([]const u8) = .empty;
     while (true) {
-        const candidate = std.fs.path.join(arena, &.{ dir, "libs" }) catch return null;
-        var d = std.Io.Dir.cwd().openDir(io, candidate, .{ .iterate = true }) catch {
-            const parent = std.fs.path.dirname(dir) orelse return null;
-            if (std.mem.eql(u8, parent, dir)) return null;
-            dir = parent;
-            continue;
-        };
-        d.close(io);
-        return candidate;
+        try addRootIfExists(arena, io, &roots, &.{ dir, "repository", "botopink-lang", "libs" });
+        try addRootIfExists(arena, io, &roots, &.{ dir, "repository" });
+        try addRootIfExists(arena, io, &roots, &.{ dir, "libs" });
+        const parent = std.fs.path.dirname(dir) orelse break;
+        if (std.mem.eql(u8, parent, dir)) break;
+        dir = parent;
     }
+    return roots.toOwnedSlice(arena);
+}
+
+fn addRootIfExists(
+    arena: std.mem.Allocator,
+    io: std.Io,
+    roots: *std.ArrayListUnmanaged([]const u8),
+    parts: []const []const u8,
+) !void {
+    const candidate = try std.fs.path.join(arena, parts);
+    var d = std.Io.Dir.cwd().openDir(io, candidate, .{}) catch return;
+    d.close(io);
+    for (roots.items) |r| {
+        if (std.mem.eql(u8, r, candidate)) return; // de-dup, nearest-first wins
+    }
+    try roots.append(arena, candidate);
 }
 
 /// Resolve the `botopink` binary path. Precedence: `--bin` flag, then

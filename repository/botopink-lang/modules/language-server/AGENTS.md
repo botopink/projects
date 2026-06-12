@@ -65,7 +65,10 @@ not alone (`Server.compileWithGraph` → `buildModuleEntries`). `src/project_gra
 resolves the dependency set with the same rules the CLI driver uses:
 
 - `from "<lib>"` → the lib's own `botopink.json` (`src` + `files`), read from the
-  first ancestor of the project that contains a `libs/` directory. `.d.bp`
+  first entry of the resolved **root list** (`resolveRoots`: bundled
+  `repository/botopink-lang/libs`, sibling `repository/`, or legacy flat `libs/`,
+  de-duped nearest-first) that carries `<lib>`. On the flat tree the list is
+  `[<ancestor>/libs]`, byte-identical to the former single-root walk. `.d.bp`
   declaration files are kept for go-to-def but excluded from the compile (the CLI
   drops them too).
 - `mod` / `pub mod` siblings → every `.bp` under the project's `src/`.

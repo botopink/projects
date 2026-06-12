@@ -68,16 +68,20 @@ fn engine_offsetToPos(source: []const u8, off: usize) proto.Position {
 
 // ── R3 — on-disk resolver + cache (latency guard) ─────────────────────────────
 //
-// Resolves the real `examples/rakun` project (relative to the test CWD, which
-// build.zig sets to `modules/language-server/`). Skips cleanly if the example is
-// absent so the suite never hard-depends on the tree layout.
+// Resolves the real rakun example project (relative to the test CWD, which
+// build.zig sets to `repository/botopink-lang/modules/language-server/`). The
+// example now lives at the rakun sibling's `examples/`, so from that CWD it is
+// `../../../rakun/examples/rakun/`. Its `from "rakun"`/`from "server"` deps
+// resolve across roots (sibling `repository/` + bundled `botopink-lang/libs`).
+// Skips cleanly if the example is absent so the suite never hard-depends on the
+// tree layout.
 
 test "project graph: resolves a real project's lib deps and caches them (R3)" {
     const gpa = std.testing.allocator;
     var g = graph_mod.ProjectGraph.init(gpa, std.testing.io);
     defer g.deinit();
 
-    const active = "file://../../examples/rakun/src/posts.bp";
+    const active = "file://../../../rakun/examples/rakun/src/posts.bp";
 
     const first = g.resolve(active) catch return; // I/O hiccup → skip
     const r1 = first orelse return; // no project found from this CWD → skip
