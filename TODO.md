@@ -16,8 +16,12 @@ Goal: sweep the deliberately-recorded, deferred gaps into one wave. Each section
       labels (Form B normalises to Form A); 2-arg shorthand (`@external(Target.Node, "sym")`)
       means "emit prototype directly, no host module"; `ast.parseExternalCallTemplate` splits
       `"sym(arg, self)"` into `(symbol, ordered arg names incl. self)`; bare symbol ⇒ decl order.
-- [ ] A3 — return types from the `fn` signature (instantiate `Self`/type params); delete
-      `primMethodReturnType` (`infer.zig:4773`).
+- [x] A3 — return types from the `fn` signature: `primMethodReturnTypeFromIface` walks
+      the receiver's primitive interface (+`extends` chain), reads the method's declared
+      `returnType` and resolves it via `resolveTypeRefInContext` with `Self`/`T`/method
+      generics substituted; `val length: T` is read as a property (intrinsic) and the
+      `len`/`size` aliases route to the same field. Hardcoded `primMethodReturnType` table
+      deleted; output byte-identical (zero snapshot diff).
 - [ ] A4 — node: drive `commonJS.zig` native emission from `@external(Target.Node,…)`; delete
       `isNativeProtoMethod` + `jsBuiltinMethodName` + `jsStringMethodRename`/`jsMethodRenames`; keep `jsPrototypeOwner`.
 - [ ] A5 — erlang/beam: replace `emitPrimMethod` switches with `@external(Target.Erlang,…)` lookup

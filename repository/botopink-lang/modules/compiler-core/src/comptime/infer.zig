@@ -4799,38 +4799,52 @@ fn primKindOfName(typeName: []const u8) ?envMod.PrimKind {
     return null;
 }
 
-/// The return type of a builtin-primitive method call, or null when the method
-/// is unknown (the caller then types it permissively). Lets a chained call keep
-/// tracking its type (`xs.filter(f).at(0)` → `?T`). `recvTy` is the (already
-/// dereferenced) `.named` receiver type; `T` is its first type arg for arrays.
-fn primMethodReturnType(env: *Env, recvTy: *T.Type, callee: []const u8) InferError!?*T.Type {
-    const eq = std.mem.eql;
-    const name = recvTy.named.name;
-    if (eq(u8, name, "array")) {
-        const elem = if (recvTy.named.args.len >= 1) recvTy.named.args[0] else try env.freshVar();
-        // Same-array-shape transforms.
-        if (eq(u8, callee, "filter") or eq(u8, callee, "append") or
-            eq(u8, callee, "prepend") or eq(u8, callee, "reverse") or
-            eq(u8, callee, "push") or eq(u8, callee, "slice")) return recvTy;
-        if (eq(u8, callee, "map")) return try env.namedTypeArgs("array", &.{try env.freshVar()});
-        if (eq(u8, callee, "at")) return try env.namedTypeArgs("optional", &.{elem});
-        if (eq(u8, callee, "forEach")) return try env.namedType("void");
-        if (eq(u8, callee, "join")) return try env.namedType("string");
-        if (eq(u8, callee, "len") or eq(u8, callee, "length") or
-            eq(u8, callee, "size") or eq(u8, callee, "indexOf"))
-            return try env.namedType("i32");
-        if (eq(u8, callee, "isEmpty") or eq(u8, callee, "contains")) return try env.namedType("bool");
-        return null;
-    }
-    if (eq(u8, name, "string")) {
-        if (eq(u8, callee, "length")) return try env.namedType("i32");
-        if (eq(u8, callee, "contains") or eq(u8, callee, "startsWith") or eq(u8, callee, "endsWith"))
-            return try env.namedType("bool");
-        if (eq(u8, callee, "toUpper") or eq(u8, callee, "toLower") or
-            eq(u8, callee, "trim") or eq(u8, callee, "slice"))
-            return try env.namedType("string");
-        if (eq(u8, callee, "split")) return try env.namedTypeArgs("array", &.{try env.namedType("string")});
-        return null;
+/// The return type of a builtin-primitive method call derived from its declared
+/// signature in `primitives.d.bp` (`Self` substitutes to the receiver, `T` to its
+/// first type arg, and any method-level `<U>` becomes a fresh var). Lets a chained
+/// call keep tracking its type (`xs.filter(f).at(0)` → `?T`). Returns null when
+/// the method is unknown to the interface; the caller then types it permissively.
+/// Two intrinsic shapes don't map to a `fn` slot: a `val name: T` interface field
+/// (e.g. `Array.length` — a property, not a fn) and the `len`/`size` aliases for
+/// that same length property — both are read off the interface field directly.
+fn primMethodReturnTypeFromIface(env: *Env, recvTy: *T.Type, callee: []const u8) InferError!?*T.Type {
+    const ifaceName = primitiveInterfaceName(recvTy.named.name) orelse return null;
+    var current: ?[]const u8 = ifaceName;
+    var guard: usize = 0;
+    while (current) |cname| {
+        if (guard >= 16) break;
+        guard += 1;
+        const decl = env.assocInterfaceDecls.get(cname) orelse return null;
+
+        // (a) Declared `fn` method (host-backed or `default fn`) — derive its
+        // return type via the same generic-substitution path the stdlib lib
+        // dispatch uses, so `map<U>(…) -> Array<U>` yields a fresh-var element.
+        for (decl.methods) |m| {
+            if (!std.mem.eql(u8, m.name, callee)) continue;
+            if (m.params.len == 0 or !std.mem.eql(u8, m.params[0].name, "self")) continue;
+            var gm = std.StringHashMap(*T.Type).init(env.arena);
+            defer gm.deinit();
+            try gm.put("Self", recvTy);
+            if (recvTy.named.args.len >= 1) try gm.put("T", recvTy.named.args[0]);
+            for (m.genericParams) |gp| try gm.put(gp.name, try env.freshVar());
+            return if (m.returnType) |rt|
+                try resolveTypeRefInContext(env, rt, gm)
+            else
+                try env.namedType("void");
+        }
+
+        // (b) `val name: T` interface field accessed as `recv.name()`. The
+        // `length` rename routes both `xs.len()` and `xs.size()` to the same
+        // intrinsic property, so they share the field's declared type.
+        const field_name: []const u8 = if (std.mem.eql(u8, callee, "len") or std.mem.eql(u8, callee, "size"))
+            "length"
+        else
+            callee;
+        for (decl.fields) |f| {
+            if (std.mem.eql(u8, f.name, field_name)) return try env.namedType(f.typeName);
+        }
+
+        current = if (decl.extends.len > 0) decl.extends[0] else null;
     }
     return null;
 }
@@ -5254,7 +5268,7 @@ fn inferCallExpr(env: *Env, c: ast.CallExprOf(.untyped), loc: ast.Loc) InferErro
                         {
                             try env.jsMethodRenames.put(loc, "length");
                         }
-                        if (try primMethodReturnType(env, recvTy, call.callee)) |ret| {
+                        if (try primMethodReturnTypeFromIface(env, recvTy, call.callee)) |ret| {
                             return TypedExpr{ .call = .{ .loc = loc, .type_ = ret, .kind = .{ .call = .{
                                 .receiver = recvPtr,
                                 .callee = call.callee,
