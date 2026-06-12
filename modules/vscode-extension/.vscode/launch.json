@@ -7,11 +7,15 @@
       "request": "launch",
       "runtimeExecutable": "${execPath}",
       "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}"
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--disable-extensions"
       ],
       "outFiles": [
         "${workspaceFolder}/out/**/*.js"
       ],
+      "env": {
+        "PATH": "${env:HOME}/.local/bin:${env:PATH}"
+      },
       "preLaunchTask": "npm: compile"
     }
   ]

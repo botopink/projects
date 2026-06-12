@@ -44,7 +44,7 @@
         },
         {
           "name": "keyword.declaration.botopink",
-          "match": "\\b(fn|val|var|pub|private|struct|record|enum|interface|type|implement|extend|extends|delegate|declare|macro|use|from|import|new|opaque|const|default|derive|test|assert|syntax|comptime|auto|set|get|as)\\b"
+          "match": "\\b(fn|val|var|pub|private|mod|struct|record|enum|interface|type|implement|extend|extends|delegate|declare|macro|use|from|import|new|opaque|const|default|derive|test|assert|syntax|comptime|auto|set|get|as)\\b"
         },
         {
           "name": "constant.language.botopink",
