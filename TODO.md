@@ -1,42 +1,42 @@
-# TODO — Front B: libs & examples test coverage (v0.beta.13)
+# TODO — package-default-dsl
 
-**Branch**: `task/v13-libs` (from `origin/feat` @ eac9313)
-**Spec**: `tasks/v0.beta.13/specs/front-b-libs.md`
-**Front territory** (edit ONLY here): `libs/**` (`.bp` `test {}` blocks) + `examples/**`
-(demo apps with their `.bp` unit tests). File-disjoint from Fronts A (`task/v13-core`) and
-C (`task/v13-tooling`).
-**Status**: DONE — `botopink-lib-test --target commonJS` green (5 libs pass, 2 no-tests);
-all six demo apps green under `botopink test`. erlang stays at the pre-existing
-backends-parity baseline (erika/jhonstart/onze/rakun ✗ on erlang — `drop`/`forEach`/
-`fold`/`toString` undefined in generated `.erl`; std ✓ on both targets).
+> Task branch `task/package-default-dsl` · spec
+> [`tasks/v0.beta.14/specs/package-default-dsl.md`](tasks/v0.beta.14/specs/package-default-dsl.md).
+> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test (no `--no-verify`).
+> **Depends on:** the parser layer already on `feat` (`593af55`): `pub default fn`
+> (`FnDecl.isDefault`) + `import pkg` namespace forms (`ImportDecl.package`).
 
-> Edit code **inside this worktree only**. Pre-commit runs zig fmt + build + test; lib
-> behaviour runs via `botopink test` / `botopink-lib-test`. Goal: close each `[gap]` (add a
-> `.bp` test or a demo) or record it. No production behaviour change expected.
+Goal: `pub default mod erika;` (root.bp only) + `pub default fn` (the handler) +
+`import erika` so the `erika "…"` package-handle DSL resolves to the package's
+`root.bp` default fn — replacing the current name-matching `pub fn erika`.
 
-## Areas (see front-b-libs.md for the tagged scenarios + examples)
+## F0 — parser: `pub default mod`
+- [ ] `pub default mod Name;` parses in root.bp (`ModDecl.isDefault`; mirror
+      `checkDefaultFn`/`FnDecl.isDefault`).
+- [ ] Root-only rule: reject `pub default mod` outside a root module, and a
+      non-`pub` `default mod`.
 
-- [x] B1 stdlib — Option map/flatMap/unwrapOr (`dict.bp` over `lookup`'s `?V`); Result
-      map/flatMap/unwrapOr (`test/result_test.bp`, `#[@result]` producers); Array combinators +
-      Order-driven sort + Queue BFS (`examples/stdlib-tour`); empty-collection boundary in
-      dict/queue/sets; `to_string` gate verified (only `@external` host symbols — botopink
-      surface is `toString`). RECORDED: structural record keys / record-set dedup (`==` on
-      records is reference equality); `result.isOk`/`isError` not lowered by commonJS.
-- [x] B2 sublanguages (lib-side) — erika two-column `where` (`w = h and h > 2`), `erika "…"` in
-      argument position, two erika strings in one scope → independent queries (`examples/erika-linq`);
-      deeply nested html with mixed text + `${holes}` (`examples/jhonstart-html`).
-- [x] B3 frameworks — rakun overlapping path prefixes + leaf (no-dep) #[service] resolution
-      (`test/overlapping_routes_test.bp`); jhonstart SSR-of-a-hook-consuming component
-      (`examples/jhonstart-counter`); onze verify-after-different-arg-calls + new `examples/onze`
-      demo. RECORDED: jhonstart lone-child/bare-string Children render (needs runtime
-      normalization tag); onze `thenThrow` caught by try/catch (try/catch is `@Result`-only, host
-      throw uncatchable) + generic `any<T>()`/captor (needs per-type default / host cell); rakun
-      missing-dependency error is a COMPILE diagnostic (Front A annotation-processor suite).
+## F1 — resolver: `import pkg` binds the package default
+- [ ] `import pkg` / `import pkg from "pkg"` locate the package `root.bp`'s
+      `pub default mod` + its `pub default fn`, and bind `pkg` → that fn
+      (internal = local call, external = cross-module call).
+- [ ] `import pkg, { a, b }` binds the default AND the named items.
 
-## Demo apps to ship (each with `.bp` `test {}`)
-- [x] `examples/stdlib-tour/` (B1, new) · `examples/erika-linq` + `examples/jhonstart-html` (B2)
-- [x] `examples/rakun` + `examples/jhonstart-counter`; new `examples/onze/` (B3)
+## F2 — inference: `<pkg> "…"` resolves to the bound default
+- [ ] A tagged `pkg "…"` / `pkg """…"""` where `pkg` is an imported package
+      resolves to the bound `pub default fn`, via the existing `@Expr`/
+      `@ExprCustom` template path.
 
-## Done means
-`botopink-lib-test` green with the new `.bp` tests + demo apps; every B-front `[gap]` closed
-or recorded. Integrate into `feat` via a throwaway `.tasks/_integrate-v13-libs`.
+## F3 — codegen ×3
+- [ ] Emit the default fn once; lower `pkg "…"` per backend (local vs cross-module).
+
+## F4 — migrate erika + example
+- [ ] `libs/erika/root.bp`: `pub default mod erika;` + `pub default fn` (drop the
+      name-matching `pub fn erika`); `examples/erika-linq` → `import erika;`.
+      All erika tests + the example green.
+
+## Done gate
+- [ ] `pub default mod erika;` parses in root.bp, rejected elsewhere; `import erika`
+      forms parse; `erika "select …"` + `erika """ … """` produce the same result
+      as today on commonJS.
+- [ ] `zig build && zig build test` green; erika lib tests + `examples/erika-linq` green.
