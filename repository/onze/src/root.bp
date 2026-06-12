@@ -1,9 +1,0 @@
-//// The `onze` package — module-tree root.
-////
-//// `onze` is a single-module library: `onze.bp` carries all behaviour
-//// (externals · matchers · when/verify · the `#[mock]` decorator). Declaring it
-//// `pub mod` makes it the package's public surface, reached by a consumer via
-//// `import {…} from "onze"` (the generic `from "<lib>"` loader); `#[mock]` and
-//// the host cells resolve through this exported module.
-
-pub mod onze;

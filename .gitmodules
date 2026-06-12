@@ -1,0 +1,24 @@
+[submodule "repository/vscode-extension"]
+	path = repository/vscode-extension
+	url = git@github.com:botopink/vscode-extension.git
+	branch = feat
+[submodule "repository/onze"]
+	path = repository/onze
+	url = git@github.com:botopink/onze.git
+	branch = feat
+[submodule "repository/jhonstart"]
+	path = repository/jhonstart
+	url = git@github.com:botopink/jhonstart.git
+	branch = feat
+[submodule "repository/erika"]
+	path = repository/erika
+	url = git@github.com:botopink/erika.git
+	branch = feat
+[submodule "repository/botopink-lang"]
+	path = repository/botopink-lang
+	url = git@github.com:botopink/botopink-lang.git
+	branch = feat
+[submodule "repository/rakun"]
+	path = repository/rakun
+	url = git@github.com:botopink/rakun.git
+	branch = feat
