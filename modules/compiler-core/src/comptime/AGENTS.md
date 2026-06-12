@@ -154,6 +154,20 @@ captures are not memoized. Cross-module: the export registry carries
 template FnDecls (comptime.zig `template_registry`); imports register them
 via `registerImportedTemplateFn` so calls expand in the importing module
 (template-built code re-infers in the CALLER's scope — V1 hygiene caveat).
+**Package-default DSL** (`package-default-dsl`): a package may declare one
+`pub default mod <handle>;` (`ModDecl.isDefault`) and one `pub default fn`
+(`FnDecl.isDefault`), in any module. `registerExports` pairs them per package
+(`pkgKey` = the module-path prefix before the first `/`) and aliases the handler
+under the handle — both in the path's value-export table and in
+`template_registry[handle]`. A consumer's `import <handle> [, { … }] [from "…"]`
+(`ImportDecl.package`) then binds `<handle>` to that handler in `resolveImports`
+(value type + `registerImportedTemplateFn`), so a bare `<handle> "…"` tagged call
+resolves to it via the ordinary template path — the handler's own name need not
+match the handle (the alias is keyed by the handle, not the fn name). Uniqueness
+is enforced per-module in `validateUniqueDefaults` (a 2nd default mod/fn in one
+module is a `TypeError`); it is NOT a location restriction. For an external lib
+the `pub default mod`'s module must SHIP (listed in the lib's `botopink.json`
+`files`), since only those modules reach a consumer.
 Imported `pub` nominal types (`record`/`struct`/`enum`) likewise carry their
 AST decl across the boundary (comptime.zig `type_decl_registry`); `resolveImports`
 re-registers them via `registerImportedTypeDecl` so the importer sees the full

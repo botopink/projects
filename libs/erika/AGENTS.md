@@ -26,21 +26,29 @@ erika/
 ├── AGENTS.md          ← you are here
 ├── docs.md            ← what this lib provides + the grammar + loading notes
 ├── examples.md        ← both forms (fluent + `erika "…"`), runnable
-├── botopink.json      ← package metadata (files: ["erika.bp"])
+├── botopink.json      ← package metadata (files: ["root.bp", "erika.bp"])
 └── src/
-    ├── root.bp        ← module-tree root: `pub mod erika;` (the public surface)
+    ├── root.bp        ← module-tree root: `pub default mod erika;` (public +
+                         DEFAULT surface — the `import erika` handle)
     └── erika.bp       ← the whole lib: `record Query<T>` + `Grouping<K,V>` +
-                         constructors + the `erika "…"` template fn (lexer +
-                         parser + dual lowering) + 29 tests
+                         constructors + the `pub default fn erika` template fn
+                         (lexer + parser + dual lowering) + 29 tests
 ```
 
-## Module tree (`root.bp`)
+## Module tree (`root.bp`) + the package handle
 
-`src/root.bp` is the explicit module-tree root: `pub mod erika;` declares the
-single public module, so the package builds from the tree, not a deprecated blind
-`src/` scan. A consumer reaches it via `import {…} from "erika"` (the generic
-`from "<lib>"` loader), and the bare template-fn binding behind `erika "…"`
-resolves through that same exported module.
+`src/root.bp` is the explicit module-tree root: `pub default mod erika;` declares
+the single public module AND marks it the package's DEFAULT module (the
+`import erika` handle), so the package builds from the tree, not a deprecated
+blind `src/` scan. A consumer reaches the named items via `import {…} from "erika"`
+(the generic `from "<lib>"` loader), and binds the SQL DSL with `import erika`
+(package-default-dsl): the handle `erika` resolves to the package's
+`pub default fn erika`, so a bare `erika "…"` tagged call expands through the
+ordinary template path. (The driver keys the alias by the *handle*, not the fn
+name, so a handler need not share the lib's name; this lib keeps the name `erika`
+so the generic-loader namespace form `erika.of(…)` still resolves through it.)
+Both `root.bp` and `erika.bp` are listed in `botopink.json` `files` — the
+`pub default mod` declaration only reaches consumers if its module ships.
 
 ## Design at a glance
 
@@ -158,12 +166,16 @@ per-kind sites.
   comparison`, …); `q.failAt` at the offending token is implemented but not
   asserted in a `.bp` test (a malformed query would abort that module's compile) —
   the generic failAt-at-span path is covered by the sublanguage-lsp Zig fixtures.
-- **Cross-module `erika "…"` (bare import)** — **landed (v0.beta.8).** A consumer's
-  `import {erika} from "erika"` now binds the bare template fn into value scope, so
+- **Cross-module `erika "…"` (package handle)** — **landed (v0.beta.8, package
+  binding v0.beta.14).** A consumer binds the package with `import erika, {of}
+  from "erika"`: `erika` is the package handle (`ImportDecl.package`) and resolves
+  to the package's `pub default fn query` (`package-default-dsl`), so
   `erika "select …"` (and the triple-quoted multi-line form) expand in a consumer
-  module, resolving the collection in the caller's comptime scope — the
-  `generic-loader-binding` keystone bound the lib module's exports (and same-named
-  template fns) into the importer. Exercised by
+  module, resolving the collection in the caller's comptime scope. The driver
+  (`comptime.zig`) aliases the handler under the handle and `resolveImports` binds
+  it — generic, not erika-aware. (Before v0.beta.14 the consumer named the fn
+  directly, `import {erika} from "erika"`, relying on a `pub fn erika` whose name
+  matched the lib; that name-matching `pub fn` is now dropped.) Exercised by
   [`examples/erika-linq/`](../../examples/erika-linq/) and
   [`examples/generic-loader-binding/`](../../examples/generic-loader-binding/).
   Still zero core surface here: the binding is generic loader work, not erika-aware.

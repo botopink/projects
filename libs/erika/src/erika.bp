@@ -310,7 +310,11 @@ pub fn repeat<T>(value: T, times: i32) -> Query<T> {
 
 // ── F5: the `erika "…"` query-string template fn ──────────────────────────────
 //
-// `erika` is a template function: it captures a SQL-subset query string as
+// `erika` is the package's `pub default fn` — the handler the `erika "…"` DSL
+// resolves to. A consumer binds it with `import erika` (the package handle →
+// `pub default fn`, package-default-dsl); the handler keeps the lib's name so the
+// generic-loader namespace form (`erika.of(…)`) still resolves through it. It is
+// a template function: it captures a SQL-subset query string as
 // `@Expr<string>`, runs a real three-stage front-end over it at comptime, and
 // returns `@ExprCustom<T>` — an executable pipeline plus a reference tree the
 // LSP overlays. Grammar (keywords lowercase):
@@ -349,7 +353,7 @@ pub fn repeat<T>(value: T, times: i32) -> Query<T> {
 // `.length()` method is absent); "optional" where/order are 0-length-list
 // sentinels (no `?T` Option runtime); compound booleans live in a `val` before
 // any `if (…)`.
-pub fn erika<T>(comptime q: @Expr<string>) -> @ExprCustom<T> {
+pub default fn erika<T>(comptime q: @Expr<string>) -> @ExprCustom<T> {
     val sql = q.text();
     val sqlLen = sql.split("").length;
     // Trailing space forces the final token to flush at the end of the scan

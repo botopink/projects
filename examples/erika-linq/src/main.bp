@@ -12,9 +12,11 @@
 // its builders. The single-line `erika "…"` and triple-quoted `erika """…"""`
 // forms are the short and multi-line authoring surfaces.
 //
-// Reached through the generic loader: `import {of, erika} from "erika"` (no embed).
+// Reached through the generic loader: `import erika, {of} from "erika"` — the
+// package handle `erika` binds the package's `pub default fn` (the SQL DSL); `of`
+// is a named export (the fluent constructor). No embed.
 
-import {of, erika} from "erika";
+import erika, {of} from "erika";
 
 record Person { name: string, age: i32 }
 

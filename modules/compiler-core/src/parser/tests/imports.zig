@@ -98,6 +98,25 @@ test "parser: mod requires a semicolon" {
     try h.expectParseFails(std.testing.allocator, "mod geometry");
 }
 
+// ── pub default mod (package-default DSL) ─────────────────────────────────────
+
+test "parser: pub default mod decl" {
+    try h.assertParser(std.testing.allocator, @src(), "pub default mod query;");
+}
+
+test "parser: default mod decl (private)" {
+    try h.assertParser(std.testing.allocator, @src(), "default mod query;");
+}
+
+test "parser: pub default mod parses at any module top level" {
+    // No root-only restriction: it parses alongside ordinary decls anywhere.
+    try h.assertParser(std.testing.allocator, @src(),
+        \\import {x} from "geometry";
+        \\pub default mod query;
+        \\pub fn helper() -> i32 { return 1; }
+    );
+}
+
 test "parser: mod in fn body is a parse error" {
     try h.expectParseFails(std.testing.allocator,
         \\fn main() {
