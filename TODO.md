@@ -72,11 +72,18 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
       `ParseErrorType.genericArgSkipForbidden`.)
 
 ### F4 — `#[@result]` auto-wrap (§1) + R11/R12
-- [ ] `comptime/transform.zig` rewrites `return <r>;` inside `#[@result]`
-      to `return @Result.Ok(<r>);` AST-level.
-- [ ] Same file rewrites `throw <e>;` to `return @Result.Err(<e>);`.
-- [ ] **R11/R12** — visiting manual `Result::Ok(…)` / `Result::Err(…)`
+- [x] `comptime/transform.zig` rewrites `return <r>;` inside `#[@result]`
+      to `return @Result.Ok(<r>);` AST-level. (Already wired —
+      `infer.zig` populates `env.result_jump_lowerings.put(loc, .wrap_ok)`
+      at the return site; transform consumes it to emit `__bp_ok(<r>)`.)
+- [x] Same file rewrites `throw <e>;` to `return @Result.Err(<e>);`.
+      (`env.result_jump_lowerings.put(loc, .wrap_error)` at the throw
+      site; `__bp_error(<e>)` lowering in transform.)
+- [x] **R11/R12** — visiting manual `Result::Ok(…)` / `Result::Err(…)`
       forms inside `#[@result]` body emits the matching diagnostic.
+      (`resultVariantCallName` in `comptime/infer.zig`; R11 +
+      `throw-must-be-bare-E` fire at the jump site, R12 fires at any
+      other call site.)
 
 ### F4F — `#[@future]` auto-wrap (§1F) + RF1–RF5
 - [ ] `transform.zig` rewrites `return <t>;` inside `#[@future]` to
