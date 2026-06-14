@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# pre-commit — tracked source of truth for the workspace pre-commit gate.
+#
+# Symlinked into .git/hooks/pre-commit (meta) and each submodule's
+# .git/modules/<path>/hooks/pre-commit (via scripts/install-hooks.sh).
+# The same file is used at every project: it sources test-runner.sh, then
+# `runProjectGate` auto-detects the project type at $(git rev-parse
+# --show-toplevel) and dispatches to the right runner.
+#
+# A contributor who wants to skip a gate intentionally can pass --no-verify
+# to `git commit`. CI's hook-integrity.yml workflow replays this hook against
+# every PR head, so a bypassed red gate is caught at merge time.
+set -euo pipefail
+
+# Detect the tracked source root. Two layouts to support:
+#   1. meta: HOOK_ROOT = repo root, helpers at scripts/git-hooks/lib/
+#   2. nested submodule under the meta: still resolves to its own toplevel,
+#      but we also try the meta's shared runner if reachable.
+#   3. standalone clone of a submodule: helpers at scripts/git-hooks/lib/
+#      (the submodule ships its own copy).
+HOOK_ROOT="$(git rev-parse --show-toplevel)"
+
+# Prefer the meta's runner when nested (single source of truth). Otherwise
+# fall back to whichever scripts/git-hooks/ the current repo ships.
+SUPER_ROOT="$(git rev-parse --show-superproject-working-tree 2>/dev/null || true)"
+if [ -n "$SUPER_ROOT" ] && [ -f "$SUPER_ROOT/scripts/git-hooks/lib/test-runner.sh" ]; then
+    SHARED_RUNNER="$SUPER_ROOT/scripts/git-hooks/lib/test-runner.sh"
+elif [ -f "$HOOK_ROOT/scripts/git-hooks/lib/test-runner.sh" ]; then
+    SHARED_RUNNER="$HOOK_ROOT/scripts/git-hooks/lib/test-runner.sh"
+else
+    echo "pre-commit: cannot locate scripts/git-hooks/lib/test-runner.sh" >&2
+    echo "         run scripts/install-hooks.sh from the meta workspace." >&2
+    exit 1
+fi
+
+echo "── pre-commit ──"
+
+# shellcheck source=lib/test-runner.sh
+. "$SHARED_RUNNER"
+runProjectGate "$HOOK_ROOT"
+
+echo -e "${GREEN}── pre-commit passed ──${NC}"
