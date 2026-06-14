@@ -154,9 +154,10 @@ Reference URLs land in every header:
 - `httpc` — <https://www.erlang.org/doc/man/httpc.html>
 - `crypto` — <https://nodejs.org/api/crypto.html>, <https://www.erlang.org/doc/man/crypto.html>
 
-- [ ] **§W4.url** — deferred: the `Url` struct + parse/serialize would
-      need cross-backend URL parsing; pure-botopink is doable but big.
-      Tracked as a follow-up after `prim-op-annotation`.
+- [x] **§W4.url** — `Url` record + `parse(s)` + `serialize(u)`; pure
+      botopink (wat-safe), round-trip closed. Built on top of
+      `prim-op-annotation`'s arity-branch + triple-quoted template
+      grammar.
 - [x] **§W4.querystring** — `parse(query) -> Array<#(string, string)>`
       and `stringify(pairs)`; 4 inline tests; pure botopink (wat-safe).
       URI percent-encoding deferred — needs the template grammar to
@@ -171,13 +172,13 @@ Reference URLs land in every header:
       on Node — a chain — vs `crypto:hash(sha256, s)` on Erlang, where
       the algorithm is a literal atom). Both shapes need the
       `prim-op-annotation` template grammar.
-- [x] **§W4.root.bp** — extends with `pub mod querystring;`
-      (url/http/crypto deferred — see above).
-- [x] **§W4.AGENTS** — `libs/std/AGENTS.md` gains a `querystring` row;
-      `docs.md` "What the stdlib currently exposes" lists the new
-      module.
-- [x] **§W4.gate** — `querystring` green on commonJS + erlang via
-      `botopink-lib-test --lib std`.
+- [x] **§W4.root.bp** — extends with `pub mod querystring; pub mod url;`
+      (http/crypto deferred — see above).
+- [x] **§W4.AGENTS** — `libs/std/AGENTS.md` gains `querystring` + `url`
+      rows; `docs.md` "What the stdlib currently exposes" lists the new
+      modules.
+- [x] **§W4.gate** — `querystring` + `url` green on commonJS + erlang
+      via `botopink-lib-test --lib std`.
 
 ## §W5 — assertions
 
@@ -230,12 +231,12 @@ Reference URLs land in every header:
 ## Done gate
 
 - [~] Wave checklists: §W1 + §W2 + §W3 + §W4 + §W5 ticked for the
-      _landed_ subset (math, asserts, path, random, querystring, time).
-      Deferred surfaces (json, base64, fs, env, process, os, regex,
-      unicode, array_ext, string_ext, url, http, crypto, `assert`-named
-      module) are explicitly documented in their wave sections — each
-      needs either the `prim-op-annotation` template grammar or
-      a new sidecar wiring spec to land cleanly.
+      _landed_ subset (math, asserts, path, random, querystring, time,
+      url). Deferred surfaces (json, base64, fs, env, process, os,
+      regex, unicode, array_ext, string_ext, http, crypto,
+      `assert`-named module) are explicitly documented in their wave
+      sections — each needs either further `prim-op-annotation`
+      template grammar or a new sidecar wiring spec to land cleanly.
 - [x] Every landed `.bp` file's header comment cites both upstream URLs
       verbatim (ref-cite gate).
 - [~] `botopink-lib-test --lib std --target commonJS,erlang` green on
