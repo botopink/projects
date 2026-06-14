@@ -163,7 +163,10 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
       `lazyMap` example)
 - [ ] `effect_asyncGenerator.zig` (gated on Frente A §D-D4)
 - [ ] `effect_context.zig` (covers §1C Anchor + `@getContex`)
-- [ ] `generic_defaults.zig` (covers §1G: every RG-code + resolution rules)
+- [x] `generic_defaults.zig` (covers §1G: every RG-code + resolution rules)
+      — partial: RG1/RG2/RG3/RG4 all asserted; resolution rules
+      (`Future<User>` ⇒ `E = any` etc.) deferred until F4G compile-side
+      lands. Lives in `comptime/tests/generic_defaults.zig`.
 
 ### F7 — AGENTS sweep
 - [x] `modules/compiler-core/AGENTS.md` comptime section: pointer to this
