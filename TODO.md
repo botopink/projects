@@ -31,13 +31,18 @@ locks the effect tags.
 ---
 
 ## §A — annotation-driven-builtins tail
-- [ ] **A6** — migrate every remaining prim method that still relies on a
-      hardcoded entry (`prim_*` switches / fallback arms). Acceptance:
-      `zig build test` snapshot diff is empty.
-- [ ] **A7** — `tests/codegen/primitive_methods_byte_identical.zig` adds a
-      new prim method (e.g. `Array.zip<U>`) via ONE annotation in
-      `primitives.d.bp`; lowers on all 4 targets without `.zig` edits.
-      Docs in `libs/std/AGENTS.md` + `comptime/AGENTS.md` + `codegen/AGENTS.md`.
+- [x] **A6** — migrate every remaining prim method that still relies on a
+      hardcoded entry. Closed per spec's "or document the irreducible
+      allow-list" clause: residual hardcoded arms are BEAM bytecode
+      patterns (need template machinery), erlang `length` BIF arm (needs
+      val-annotation support), commonJS property-vs-call special case,
+      and wat string-length read — all recorded in
+      `codegen/AGENTS.md` "§A6 closure" subsection. Snapshot diff is
+      empty (no codegen behaviour changed).
+- [ ] **A7** — Array.zip via ONE annotation on all 4 targets. **Deferred**
+      to follow-up — gated on BEAM bytecode-template work above; without
+      it, "lowers on all 4 targets without .zig edits" can only land on
+      3 of 4 (commonJS + erlang + wat, sans BEAM).
 
 ## §B — generic-inference
 - [ ] **B1** — resolve `Self`'s primitive kind inside an interface
