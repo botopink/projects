@@ -1,136 +1,193 @@
-# TODO — frente-c-distribution (v0.beta.19)
+# TODO — prim-op-annotation (v0.beta.19 satellite)
 
-> Branch: `task/frente-c-distribution` · Worktree: `.tasks/frente-c-distribution/`
-> Spec: [`tasks/v0.beta.19/specs/frente-c-distribution.md`](tasks/v0.beta.19/specs/frente-c-distribution.md)
+> Branch: `task/prim-op-annotation` · Worktree: `.tasks/prim-op-annotation/`
+> Spec: [`tasks/v0.beta.19/specs/prim-op-annotation.md`](tasks/v0.beta.19/specs/prim-op-annotation.md)
 > Set umbrella: [`tasks/v0.beta.19/README.md`](tasks/v0.beta.19/README.md)
 > Reasoning + decisions: [`tasks/v0.beta.19/plan.md`](tasks/v0.beta.19/plan.md)
 >
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt +
 > build + test (no `--no-verify`).
 
-## Internal ordering
+## Mission
 
-```text
-§H ──▶ §I ──▶ §J
-§K — independent, parallel; environment plumbing only
-```
+Extend `#[@external]`'s template grammar so every primitive-method
+lowering across the four codegens is annotation-driven. Delete **~105
+hardcoded switch arms** across `erlang.zig` + `beam_asm.zig` +
+`commonJS.zig` + `wat.zig` by migrating to `primitives.d.bp` /
+`builtins.d.bp` annotations. Output stays **byte-identical** at every
+commit — this is a pure refactor.
 
-- **§H first** — §I's mergeback wants the online path live so the smoke
-  test is end-to-end.
-- **§I before §J** — `module-auto-tag` reads `botopink.json` versions;
-  submodule pointers must be stable before the workflow fires.
-- **§K fire-and-forget** — scripts + `build.zig` only.
+## Coordination
 
----
-
-## §H — bpmp online (v0.beta.18 "pinned for follow-up")
-- [x] **H1** — `download.fetch` wired to `std.http.Client` (streaming +
-      retry max 3, backoff). Cache-hit fast path preserved.
-- [x] **H2** — `extract.extractTarGz` / `extractZip` use `std.tar` /
-      `std.zip`. Round-trip a known archive in tests (system `tar`-gated
-      so non-POSIX runners skip cleanly).
-- [x] **H3** — `bpmp self update` POSIX path: `$BPMP_HOME/bin/bpmp.new` →
-      `rename` over `bpmp` while running. Windows deferred-swap helper
-      prints the exact `cmd /c move` swap line.
-- [x] **H4** — `bpmp use botopink <ver>` / `latest` → 4-binary toolchain
-      install via `release.installOne`; `bpmp sync` → live `liveTags`
-      drift reporting.
-- [x] **H5** — `bpmp pack` tar writer (`std.tar.Writer` +
-      `std.compress.flate.Compress` gzip) + `.sha256` sidecar.
-      End-to-end verified.
-- [x] **H6** — `bpmp install` warns when active toolchain (from `stable`
-      sentinel) is outside the manifest's `botopink` range.
-- [x] **H7** — Lib-repo `test.yml` opt-in release fast-path
-      (`vars.BOTOPINK_USE_RELEASE_FASTPATH`); 4 libs updated + bumped.
-- [ ] **H8** — `botopink.dev/install.sh` redirect (v18 spec C1.F3) — ops
-      step, post-merge. **Confirm with Eric before flipping.**
-
-## §I — distribution submodule mergeback
-
-> **Gotcha:** one PR at a time per sibling; bump root after each. No
-> automation races the 6 merges. Per memory rule
-> `feedback_user_works_in_parallel`, re-check `git status` immediately
-> before each merge / bump.
-
-> **Closed early.** The v0.beta.18 mergebacks already landed (parent's
-> `b4b3098 merge: task/distribution into feat` + the per-sibling pushes
-> directly to `feat`); no `task/distribution` branch remains on any
-> sibling's remote. §H's commits exercised the same merge-into-feat +
-> bump workflow on 5 of the 6 sibling submodules (botopink-lang, erika,
-> jhonstart, onze, rakun); vscode-extension was already in sync.
-
-- [x] **I1a** — `repository/botopink-lang` — task/distribution already on
-      feat (5f02b03); §H1–§H6 + §J added on top, merged to feat, pushed
-      (botopink-lang feat = 745a2ef after §K commit).
-- [x] **I1b** — `repository/erika` — no task/distribution branch; feat
-      bumped by §H7 to 4b722be.
-- [x] **I1c** — `repository/jhonstart` — feat bumped by §H7 to 925634b.
-- [x] **I1d** — `repository/onze` — feat bumped by §H7 to 3345c20.
-- [x] **I1e** — `repository/rakun` — feat bumped by §H7 to 6dce324.
-- [x] **I1f** — `repository/vscode-extension` — feat bumped by §J to
-      b7a5829.
-- [x] **I2** — six submodule SHAs bumped across §H1–§H6 / §H7 / §J / §K
-      commits (one commit per logical bump; convention preserved).
-
-## §J — module-auto-tag (v0.beta.18 spec 6 receipt)
-
-> Spec is **immutable**: see
-> [`tasks/v0.beta.18/specs/module-auto-tag.md`](tasks/v0.beta.18/specs/module-auto-tag.md).
-> This section is the implementation receipt.
-
-- [x] **J0** — Skipped sub-worktree spawn (no `.tasks/module-auto-tag/`);
-      §J landed inside this worktree alongside §H7+§I bumps. Submodule
-      pointers were stable when §J committed (5/6 had just been bumped).
-- [x] **J1** — implemented `module-auto-tag.md` **as authored**:
-      - [x] path-scoped tags `compiler-core/<ver>[-feat]` +
-            `compiler-cli/<ver>[-feat]` in
-            `repository/botopink-lang/.github/workflows/tag.yml`
-      - [x] `<ver>[-feat]` tags in
-            `repository/vscode-extension/.github/workflows/tag.yml`
-            (with package.json drift check)
-      - [x] new `botopink.json` carrying `version` for each of the three
-            units (compiler-core, compiler-cli, vscode-extension)
-            + a Tagging section in each unit's AGENTS.md.
-- [ ] **J2** — fork smoke-test deferred to the maintainer (requires GH
-      Actions runs against a fork; the YAML is identical to v18 spec).
-- [x] **J3** — merged into feat (botopink-lang 5aa68da, vscode-extension
-      b7a5829) + bumped from the parent worktree (commit `chore(...)
-      module-auto-tag`).
-
-## §K — v0.beta.17 environment deferreds
-- [x] **K1** — `scripts/test-libs.sh` wrapper pre-flights
-      node/escript/erlc/wasmtime with install hints; `install-tooling.sh`
-      gains the same advisory probe; `repository/botopink-lang/AGENTS.md`
-      documents the runtime requirements matrix. `zig build test-libs`
-      routes through the wrapper.
-- [x] **K2** — `scripts/test-vscode.sh` lazy-runs `npm ci` gated on
-      `repository/vscode-extension/node_modules/.botopink-installed`;
-      `zig build test-vscode` routes through the wrapper.
+- **Frente A §A keystone must be in place.** §A5 (annotation-driven
+  primitive method emission, last commit `0a37fbe`) is the prerequisite —
+  `tryEmitPrimAnnotation` exists. This worktree extends the grammar it
+  consumes.
+- **Frente A §A6 hands its surviving switch arms off to this spec.**
+  After F2 here lands, §A6's "irreducible allow-list" carve-out goes
+  away — every prim method is annotation-driven.
+- **Frente A §D-D5 (BEAM inline-fun array/string methods) collapses
+  into entries on this annotation grammar.** Coordinate at merge:
+  prefer this spec landing first so §D-D5 becomes "author annotation
+  rows in `primitives.d.bp`" not "hand-code BEAM helper funs".
+- **Land before std-expansion.** The new modules in std-expansion
+  consume the multi-line `"""…"""` + `$stringify(...)` grammar this
+  spec ships.
 
 ---
 
-## Done gate (whole frente)
+## F0 — extend the AST + parser
+- [x] **F0.1 (partial)** — `comptime/primOpTemplate.zig` carries the
+      template-vs-legacy discriminator (`looksLikeTemplate`); no AST
+      enum churn (`legacy_2_arg` / `template` / `arity_branch`) — the
+      raw `external` symbol bytes ARE the template body, recognised by
+      the `$` marker. `arity_branch` (`when($argc == N)`) and `"""…"""`
+      raw-string form remain deferred (need parser + ast extension).
+- [ ] **F0.2** — `"""…"""` raw strings (any string with embedded `"`
+      like `Array.join`'s `io_lib:format("~p", …)` template body needs
+      this); `when(…)` clauses (`Array.slice` arity branch). Both
+      deferred — the existing migrations use single-string templates
+      that fit on one line.
 
-- [x] §H 7 of 8 ticked (H8 is an ops step pending Eric's confirmation).
-- [x] §I 6 sibling merges + 6 submodule SHA bumps committed (across the
-      §H1–§H6 / §H7 / §J / §K commits, one per logical bump).
-- [x] §J `module-auto-tag` implemented + merged. Fork smoke (J2)
-      deferred to maintainer.
-- [x] §K env-aware gating in place (wrappers + AGENTS.md matrix).
-- [x] `zig build test` + `zig build test-bpmp` green; `zig build
-      test-libs --target commonJS --lib std` end-to-end smoke green
-      through the new wrapper; `zig build test-vscode` ready (will
-      `npm ci` on first run).
-- [x] every touched AGENTS.md updated in the same commit as the code.
-- [x] commit message convention: `feat(...)` / `chore(submodules): ...` /
-      `ci(...)`; English; no `--no-verify`.
+## F1 — `tryEmitPrimAnnotation` + shared renderer
+- [x] **F1.1** — `comptime/primOpTemplate.zig` shipped: `render(template,
+      ctx)` walks the body and dispatches `$self` / `$<digits>` markers
+      via `ctx.emitRecv()` / `ctx.emitArg(i)`. RP1
+      (`error.PrimOpArgIndexOutOfRange`) reserved.
+- [x] **F1.2 (erlang only)** — `codegen/erlang.zig`
+      `tryEmitPrimAnnotation` detects template form via
+      `primOpTemplate.looksLikeTemplate(call.symbol)` and renders;
+      `collectIfaceErlangDispatch` stores the template body verbatim
+      (skips `parseExternalCallTemplate`, which would mis-parse
+      `($self ++ $0)` as a `f(arg)` shape). `codegen/beam_asm.zig`
+      short-circuits on the same discriminator and falls through to its
+      inline switch (BEAM has not migrated). `codegen/commonJS.zig` /
+      `codegen/wat.zig` not yet wired — pending.
+- [ ] **F1.3** — `$stringify($expr)` not yet supported. Per-target
+      table not yet added to `codegen/AGENTS.md`.
+
+## F2 — migrate Family 1 (`emitPrimMethod`) — erlang only
+- [x] **F2.Array.append** — `($self ++ $0)` annotation; switch arm deleted
+      (NB: spec said `($self ++ [$0])`, but the existing switch — and
+      `default fn append(self, other: Self)` semantics — concatenate two
+      lists; the `[$0]` shape belongs to `push`).
+- [x] **F2.Array.prepend** — `[$0 | $self]` annotation; switch arm deleted
+- [x] **F2.Array.push** — `($self ++ [$0])` annotation; switch arm deleted
+- [x] **F2.Array.contains** — `lists:member($0, $self)`; switch arm deleted
+- [x] **F2.Array.indexOf** — single-line inline-fun template; switch arm deleted
+- [ ] **F2.Array.{len,length,size}** — pending: `length` is a `val`
+      (property) in primitives.d.bp, not a `fn`; the
+      `collectIfaceErlangDispatch` collector only iterates
+      `iface.methods`. Needs val-property support OR explicit
+      `fn length() -> i32` / `fn len()` / `fn size()` declarations.
+- [x] **F2.Array.isEmpty** — `($self =:= [])`; switch arm deleted
+- [ ] **F2.Array.slice** — arity branch (1 vs 2 args) — deferred
+- [ ] **F2.Array.join** — embedded `"~p"` inside template needs `"""…"""` — deferred
+- [x] **F2.Array.at** — single-line inline-fun + bounds check template; switch arm deleted
+- [ ] **F2.String.slice** — arity branch — deferred
+- [x] **F2.String.contains** — `(string:find($self, $0) =/= nomatch)`; switch arm deleted
+- [x] **F2.String.startsWith** — `(string:prefix($self, $0) =/= nomatch)`; switch arm deleted
+- [x] **F2.String.split** — `string:split($self, $0, all)`; switch arm deleted
+- [x] **F2.Bool.negate** — `(not $self)`; switch arm deleted
+- [ ] **F2 verification** — `git grep 'if (eq(u8, callee,'
+      codegen/erlang.zig` now finds 4 surviving Array arms
+      (`length/len/size`, `slice`, `join`) waiting on the deferred
+      grammar features (arity branch, `"""…"""` raw strings, val-property
+      bridge) + the final `// Unmapped` fallback. `beam_asm.zig` and
+      `commonJS.zig` are NOT yet migrated (the latter never had per-callee
+      arms for these — its JS-method renames already cover most).
+
+## F2-R — migrate Family 2 (`emitResultOptionOp`)
+- [ ] **F2-R.1** — Convert `@Result` / `@Option` doc-comment method block
+      (lines 44–88) in `builtins.d.bp` into real `fn` decls with full
+      per-backend `#[@external]` sets.
+- [ ] **F2-R.2** — In `comptime/{infer,transform}.zig`, the emission
+      path for `@Result`/`@Option` methods looks up the annotation set
+      on the receiver's enum (not the synthetic `__bp_*` name) and feeds
+      it to the shared renderer.
+- [ ] **F2-R.3** — Delete `emitResultOptionOp` (or stub to delegating
+      call) in `erlang.zig`, `beam_asm.zig`, `wat.zig`, `commonJS.zig`.
+- [ ] One commit per synthetic callee: `refactor(codegen): drive
+      @Result.<op> from annotation` (9 commits).
+
+## F2-B — migrate Family 3 (`@todo` / `@panic` / `@block`)
+- [ ] **F2-B.todo** — `fn todo() noreturn` decl in `builtins.d.bp` gains
+      full `#[@external]` set; switch arms deleted.
+- [ ] **F2-B.panic** — `panic(message: string) noreturn` decl gains
+      annotation set; switch arms deleted. `@print` already covered.
+- [ ] **F2-B.block** — coordinate with Frente A §U: if §U deletes
+      `block`, this row drops. Otherwise annotation set + switch deletion.
+
+## F2-X — verify `runtime.zig` + `typescript.zig` out-of-scope
+- [ ] `runtime.zig`: confirm no callee-keyed switches (all `mem.eql`
+      hits are on module / target / shell-arg strings).
+- [ ] `typescript.zig`: confirm no `mem.eql(callee, …)` switches.
+- [ ] `codegen/AGENTS.md` §"Annotation-driven lowering" gains a note
+      that `runtime.zig` is host-side and `typescript.zig` emits decls
+      only — both out of scope.
+
+## F3 — diagnostics + tests
+- [ ] Reserve RP1–RP5 in `comptime/diagnostics.zig`:
+      - **RP1** `prim-op-arg-index-out-of-range`
+      - **RP2** `prim-op-no-arity-match`
+      - **RP3** `prim-op-stringify-unsupported` (wat)
+      - **RP4** `prim-op-argc-only-in-when`
+      - **RP5** target-language passthrough (documented escape hatch)
+- [ ] `tests/codegen/prim_op_templates.zig`:
+      - [ ] Valid: every migration row renders correctly per F2.
+      - [ ] Invalid: each RP-code reds with the expected text.
+      - [ ] Multi-line: an inline-fun template preserves whitespace and
+            substitutes correctly.
+      - [ ] Arity branch: 1-arg call selects the 1-arg `when`; 2-arg
+            selects the 2-arg `when`; 3-arg reds with RP2.
+
+## F4 — docs
+- [ ] `libs/std/AGENTS.md` §"External annotation vocabulary" — new
+      "Template grammar" subsection with marker table + arity-branch
+      syntax + `"""…"""` form.
+- [ ] `modules/compiler-core/src/codegen/AGENTS.md` — per-target
+      `$stringify` expansion table.
+- [ ] `modules/compiler-core/src/comptime/AGENTS.md` — document
+      `comptime/primOpTemplate.zig` as the shared renderer.
+- [ ] `CHANGELOG.md` under v0.beta.19:
+      `feat(stdlib): primitive-method lowering driven entirely by annotations; no more hardcoded switches.`
+
+---
+
+## Done gate
+
+- [ ] F0–F4 all ticked. Current: F0/F1 partial, F2 erlang partial,
+      F2-R/F2-B/F2-X/F3 pending, F4 partial (codegen+comptime AGENTS.md
+      updated; libs/std/AGENTS.md docs not yet refreshed).
+- [x] `zig build test` green at every commit on this branch.
+- [x] `zig build test-libs` matches baseline failure set (no
+      regressions introduced — same pre-existing jhonstart erlang
+      badarith, hooks Counter, rakun decorator emit issues).
+- [x] Snapshot diff against pre-F2 HEAD: **empty for codegen**. LSP
+      `completion_bool_methods` and `completion_array_methods` snapshots
+      updated to reflect the new annotations being visible in completion
+      detail — desired behavioural change, not codegen drift.
+- [ ] `git grep 'if (eq(u8, callee,'
+      modules/compiler-core/src/codegen/erlang.zig` — currently 4
+      surviving Array arms (`length/len/size`, `slice` arity branch,
+      `join` quoted-string template, `at` is DONE). `beam_asm.zig` /
+      `commonJS.zig` / `wat.zig` not yet migrated.
+- [x] Every touched `AGENTS.md` updated in the same commit as the
+      code (codegen/AGENTS.md erlang row; comptime/AGENTS.md tree +
+      file table both for the new `primOpTemplate.zig`).
+- [x] Commit message convention followed (`feat(comptime+codegen/...)`
+      for foundation; `refactor(codegen/erlang): drive <X>.<method>
+      from annotation` per migration; `fix(codegen): …` for the
+      dispatch + BEAM passthrough fixes; English; no `--no-verify`).
 
 ## Per-memory reminders
 
-- SSH for all git remote ops (`feedback_always_ssh_git`); origin is
-  `git@github.com:botopink/projects.git`.
-- Re-check `git status` immediately before every merge / bump
-  (`feedback_user_works_in_parallel`).
+- SSH for all git remote ops (`feedback_always_ssh_git`).
 - Worktree paths for Read/Edit (`project_worktree_workflow`); this
-  worktree is at `.tasks/frente-c-distribution/`.
-- After each commit, advance to the next checkbox (`feedback_continue_after_commit`).
+  worktree is at `.tasks/prim-op-annotation/`.
+- Functions in camelCase (`feedback_camelcase_naming`).
+- After each commit, advance to the next checkbox
+  (`feedback_continue_after_commit`).
+- Byte-identical promise from v12 + §A5 covers F2: if a snapshot drifts,
+  **that** is the real bug — not a deprecation issue. Investigate; do
+  not lower the bar.
