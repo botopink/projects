@@ -166,9 +166,15 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
 - [ ] `generic_defaults.zig` (covers §1G: every RG-code + resolution rules)
 
 ### F7 — AGENTS sweep
-- [ ] `modules/compiler-core/AGENTS.md` comptime section: pointer to this
-      spec under "Effect annotations".
-- [ ] `codegen/AGENTS.md` "Effects" subsection with the support matrix.
+- [x] `modules/compiler-core/AGENTS.md` comptime section: pointer to this
+      spec under "Effect annotations". (Landed in
+      `src/comptime/AGENTS.md` "Effect annotations" — the module-level
+      AGENTS.md is a Tree/Children index; the comptime-level one is the
+      runtime-behaviour doc that gets the spec link.)
+- [x] `codegen/AGENTS.md` "Effects" subsection with the support matrix.
+      (New "Effects (`#[@<effect>]`)" section with a per-backend matrix
+      for the six markers, plus rejection-codes paragraph and the
+      `StarFnCtx.effect` ↔ `inEffectContext` thread.)
 
 ---
 
