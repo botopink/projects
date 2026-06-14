@@ -4,15 +4,11 @@
 > `.tasks/<slug>/TODO.md` per universal contract. See
 > [`AGENTS.md`](../AGENTS.md) §"One fact, one source".
 
-Three frentes + one satellite spec, all **pending**. Worktrees created
-for the three frentes (`ce7afe6`); satellite has no worktree yet —
-authored as a refactor companion to Frente A.
-
 | Frente / spec | Slug | Branch | Worktree | State |
 |---|---|---|---|---|
 | [frente-a-compiler](specs/frente-a-compiler.md) | `frente-a-compiler` | `task/frente-a-compiler` | `.tasks/frente-a-compiler/` | pending |
 | [frente-b-rules-tooling](specs/frente-b-rules-tooling.md) | `frente-b-rules-tooling` | `task/frente-b-rules-tooling` | `.tasks/frente-b-rules-tooling/` | pending |
-| [frente-c-distribution](specs/frente-c-distribution.md) | `frente-c-distribution` | `task/frente-c-distribution` | `.tasks/frente-c-distribution/` | pending |
+| [frente-c-distribution](specs/frente-c-distribution.md) | `frente-c-distribution` | `task/frente-c-distribution` | `.tasks/frente-c-distribution/` | **merged+pushed** (`origin/feat` ← 4957f2d; H8 ops + J2 fork smoke deferred to maintainer) |
 | [prim-op-annotation](specs/prim-op-annotation.md) | `prim-op-annotation` | (pending — likely lands in Frente A's worktree as a satellite) | — | pending |
 | [std-expansion](specs/std-expansion.md) | `std-expansion` | (pending — one worktree per wave: `.tasks/std-wave1/` etc) | — | pending |
 
@@ -51,16 +47,16 @@ authored as a refactor companion to Frente A.
 
 | Track | Description | State |
 |---|---|---|
-| §H | bpmp online (v18 pinned follow-ups) | pending |
-| §I | distribution submodule mergeback | pending |
-| §J | module-auto-tag (v18 spec 6, deferred) | pending |
-| §K | v17 environment deferreds | pending |
+| §H | bpmp online (v18 pinned follow-ups) | **done** (H1–H7); H8 = DNS redirect ops step, deferred to maintainer |
+| §I | distribution submodule mergeback | **done** (closed-early: v18 work already on each sibling's `feat`; 6 SHA bumps + 6 sibling `feat` heads pushed across §H/§J/§K commits) |
+| §J | module-auto-tag (v18 spec 6, deferred) | **done** (J1+J3); J2 fork smoke deferred to maintainer |
+| §K | v17 environment deferreds | **done** (K1+K2 wrappers + AGENTS.md matrix) |
 
 ## Done = the whole set ships
 
 - [ ] Frente A: §A through §G + §S + §U all merged + pushed to `feat`
 - [ ] Frente B: Rules track §0–§4 + §E + §F + §T all merged + pushed
-- [ ] Frente C: §H + §I + §J + §K all merged + pushed
+- [x] Frente C: §H + §I + §J + §K all merged + pushed (4957f2d; H8 ops step + J2 fork smoke deferred to maintainer)
 - [ ] `zig build test` + `zig build test-libs` + `botopink-lib-test` +
       `zig build test-vscode` all green
 - [ ] Zero `*fn` literals in `repository/` outside CHANGELOG.md
