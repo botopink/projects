@@ -26,12 +26,10 @@ worktree per slug under `.tasks/<slug>/`.
       — `#[@external]` template grammar + 3 families of switch-arm
       migrations across 4 backends (partial: foundation + erlang Family 1
       landed; BEAM/commonJS/wat + Families 2–3 in flight)
-- [ ] **[recursive-test-gate](tasks/v0.beta.19/specs/recursive-test-gate.md)**
-      — tracked per-project `scripts/git-hooks/pre-commit` + recursive
-      submodule-bump gate + `scripts/install-hooks.sh`
-- [ ] **[docs-audit-refresh](tasks/v0.beta.19/specs/docs-audit-refresh.md)**
-      — *this task* — two-tier `*.md` + comment-only `*.zig` / `*.bp` /
-      `*.d.bp` / `*.ts` / `*.js` / `*.mjs` sweep
+- [ ] **[std-expansion-tail](tasks/v0.beta.19/specs/std-expansion-tail.md)**
+      — 12 deferred std modules + tails (`json`/`base64`/`env`/`fs`/
+      `process`/`os`/`regex`/`unicode`/`array_ext`/`string_ext`/`http`/
+      `crypto`) — consumes `prim-op-annotation`'s template grammar
 
 Done in this set (kept here as anchors, full receipts in `status.md`):
 
@@ -41,8 +39,17 @@ Done in this set (kept here as anchors, full receipts in `status.md`):
       ops step + J2 fork smoke deferred to maintainer.
 - [x] **std-expansion** — first wave (math · asserts · path · random ·
       querystring · time · url) merged + pushed; remaining stdlib gaps
-      pivot to `prim-op-annotation`'s richer `#[@external]` template
-      grammar.
+      pivot to `std-expansion-tail` once `prim-op-annotation`'s richer
+      `#[@external]` template grammar lands.
+- [x] **recursive-test-gate** — F0–F7 done; tracked
+      `scripts/git-hooks/pre-commit` + recursive submodule-bump gate +
+      `scripts/install-hooks.sh` merged + pushed to `origin/feat`
+      (eede97d); per-submodule shim commits landed on each lib's feat.
+- [x] **docs-audit-refresh** — two-tier audit done; F0 deletions, F1
+      cross-submodule `*.md` drift sweep, F2/F3 clean, F4 meta-root
+      `TODO.md` refresh, F4a comments-only LSP sweep (pt-br translation
+      + closed TODO markers), F4b/F4c clean, F6 link + strip-comments
+      invariant green.
 
 See [`tasks/v0.beta.19/status.md`](tasks/v0.beta.19/status.md) for the
 per-track rollup and the done-gate.
