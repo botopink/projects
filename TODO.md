@@ -64,8 +64,12 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
       `#[@future]` / `#[@iterator]` / `#[@asyncGenerator]` is no
       longer red; `#[@generator]` / `#[@context]` / plain fn keep the
       `effect-throw-without-fallible-channel` reject text.
-- [ ] **RG3** — missing required generic arg → `generic-required-arg-missing`.
-- [ ] **RG4** — skipped middle generic arg → `generic-arg-skip-forbidden`.
+- [x] **RG3** — missing required generic arg → `generic-required-arg-missing`.
+      (`builtinRequiredGenericArgs` in `comptime/infer.zig` fires on
+      `@Future<>` / `@Iterator<>` / `@Result<i32>` etc.)
+- [x] **RG4** — skipped middle generic arg → `generic-arg-skip-forbidden`.
+      (`parser/types.zig` detects the `,,` / `,>` slot at parse time,
+      `ParseErrorType.genericArgSkipForbidden`.)
 
 ### F4 — `#[@result]` auto-wrap (§1) + R11/R12
 - [ ] `comptime/transform.zig` rewrites `return <r>;` inside `#[@result]`
