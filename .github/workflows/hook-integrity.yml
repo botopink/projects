@@ -1,0 +1,87 @@
+# hook-integrity.yml — assert the tracked pre-commit hook ran (and passes)
+# against the head SHA of every project. Catches `--no-verify` bypasses and
+# drift between .git/hooks/pre-commit and the tracked source.
+#
+# One matrix axis per project (meta + 6 submodules). Per axis:
+#   1. checkout (submodules: recursive) so install-hooks.sh can walk them.
+#   2. install-hooks.sh + install-hooks.sh --check (drift detection).
+#   3. Replay the tracked hook against HEAD: rewind index by one commit,
+#      re-stage the diff, then invoke `.git/hooks/pre-commit` exactly the way
+#      `git commit` would. If it fails, the landed commit bypassed the gate.
+
+name: hook-integrity
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  replay:
+    name: replay pre-commit (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - meta
+          - repository/botopink-lang
+          - repository/erika
+          - repository/jhonstart
+          - repository/onze
+          - repository/rakun
+          - repository/vscode-extension
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 2  # need HEAD~1 for the replay reset
+
+      - name: Install Zig (botopink-lang / meta gates need zig)
+        if: matrix.project == 'meta' || matrix.project == 'repository/botopink-lang'
+        uses: mlugg/setup-zig@v1
+        with:
+          version: 0.16.0
+
+      - name: Install Node (vscode-extension / lib-test runtimes)
+        if: matrix.project == 'meta' || matrix.project == 'repository/vscode-extension' || matrix.project == 'repository/botopink-lang'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install hooks (all 7)
+        run: scripts/install-hooks.sh
+
+      - name: Verify hook integrity (--check)
+        run: scripts/install-hooks.sh --check
+
+      - name: Replay pre-commit against HEAD
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.project }}" = "meta" ]; then
+              cd "$GITHUB_WORKSPACE"
+          else
+              cd "$GITHUB_WORKSPACE/${{ matrix.project }}"
+          fi
+          # Resolve the hook entry point for this project: .git/hooks for the
+          # meta + standalone submodule clones; .git/modules/<path>/hooks when
+          # the submodule lives under a superproject. install-hooks.sh has
+          # already wired both, so `git rev-parse --git-path hooks/pre-commit`
+          # always resolves to the symlink we just created.
+          hook=$(git rev-parse --git-path hooks/pre-commit)
+          case "$hook" in
+              /*) ;;
+              *) hook="$(pwd)/$hook" ;;
+          esac
+          if [ ! -x "$hook" ]; then
+              echo "hook-integrity: expected $hook to be executable" >&2
+              ls -la "$(dirname "$hook")" >&2 || true
+              exit 1
+          fi
+          # Rewind the index by one commit then re-stage the HEAD diff so the
+          # hook sees the same staged set a fresh `git commit` would.
+          git reset --soft HEAD~1 || true
+          git add -A
+          "$hook"

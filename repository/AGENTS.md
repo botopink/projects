@@ -90,3 +90,12 @@ across the workspace boundary.
 - **Always SSH** for remote git operations (`git@github.com:botopink/botopink-lang.git`).
 - **One project per directory.** Cross-project changes touch each project's
   `AGENTS.md` so the workspace view stays consistent.
+- **Tracked pre-commit hook in every project.** Each submodule ships
+  `scripts/git-hooks/pre-commit` plus a self-contained
+  `scripts/git-hooks/lib/runner-standalone.sh`; the meta workspace's
+  [`../scripts/install-hooks.sh`](../scripts/install-hooks.sh) wires
+  all 7 hooks (meta + 6 submodules) at once. A commit at the meta
+  that bumps a submodule pointer also runs the bumped submodule's
+  gate at the staged SHA, in a throwaway worktree. See
+  [`../scripts/AGENTS.md`](../scripts/AGENTS.md) "Hook layout" for the
+  full table.
