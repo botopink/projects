@@ -21,6 +21,7 @@
 | [frente-c-distribution](specs/frente-c-distribution.md) | `frente-c-distribution` | §H bpmp online · §I distribution submodule mergeback · §J module-auto-tag · §K v17 environment deferreds | `modules/bpmp/src/**` · each sibling repo's `feat` branch + the submodule pointer bumps · `.github/workflows/tag.yml` × 2 + 3 new `botopink.json` · `scripts/install-tooling.sh` + `build.zig` env gates |
 | [prim-op-annotation](specs/prim-op-annotation.md) | `prim-op-annotation` | satellite to Frente A §A — extends `#[@external]` with `$self` / `$0..N` / `$argc` / `$stringify(...)` markers + `when($argc == N)` arity branching + `"""…"""` multi-line inline-fun templates, then migrates **3 families** of hardcoded switch arms (Family 1: `emitPrimMethod` 19 methods · Family 2: `emitResultOptionOp` 9 synthetic callees · Family 3: `@todo`/`@panic`/`@block`) — ~105 switch arms across 4 backends → zero | `parser/decls.zig` (`parseExternalCallTemplate` extension) · `ast.zig` (richer `ExternalCallTemplate`) · `codegen/{erlang,beam_asm,commonJS,wat}.zig` (consumer + switch deletions) · `libs/std/src/{builtins,primitives}.d.bp` · `comptime/primOpTemplate.zig` (new shared renderer) |
 | [std-expansion](specs/std-expansion.md) | `std-expansion` | satellite consuming `prim-op-annotation` — fills cross-backend stdlib gaps from Node + Erlang reference APIs in five waves: §W1 essentials (`math`/`json`/`base64`/`time`/`random`) · §W2 system (`env`/`path`/`fs`/`process`/`os`) · §W3 text (`regex`/`unicode` + `array_ext`/`string_ext` extension methods) · §W4 network+crypto (`url`/`querystring`/`http` client/`crypto`) · §W5 assertions (`assert`). Every new `.bp` file ships with header comments citing the canonical Node + Erlang URLs and inline `test { … }` blocks covering the surface. | 13 new `libs/std/src/*.bp` files + `interface Array<T>` + `interface String` extensions on `primitives.d.bp` + sidecar adapters (`.mjs` for node, `.erl` for erlang) for `json` + `libs/std/tests/` per-module test fixtures + coverage-matrix gate in `comptime/infer.zig` |
+| [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | local pre-commit gate, version-controlled + recursive — every project (meta + 6 submodules) has a tracked `scripts/git-hooks/pre-commit` that runs its own `zig build test` / `botopink test` / `npm test`; the meta hook additionally validates **staged submodule pointer bumps** by running the submodule's gate against the staged SHA in a throwaway worktree; one bootstrap script (`scripts/install-hooks.sh`) wires all 7 symlinks; a `hook-integrity.yml` CI smoke catches `--no-verify` bypasses | `scripts/git-hooks/**` (new tracked tree) · `scripts/install-hooks.sh` (new) · `repository/<sub>/scripts/git-hooks/pre-commit` + `lib/runner-standalone.sh` × 6 submodules · `.github/workflows/hook-integrity.yml` (new) · `scripts/AGENTS.md` + `repository/AGENTS.md` + each lib's `AGENTS.md` |
 
 ## Order
 
@@ -43,6 +44,13 @@ std-expansion      ─▶ consumes prim-op-annotation; runs in its own per-wave 
                       §W2 (system), §W3 (text + Array/String extension), §W4
                       (network+crypto), §W5 (assertions). Each wave is one
                       file-disjoint commit.
+
+recursive-test-gate ─▶ independent of every other spec (it only consumes the gates
+                      each project already ships: zig build test / botopink test /
+                      npm test). Lands on its own worktree .tasks/recursive-test-gate/.
+                      File-disjoint with Frentes A/B/C: touches only scripts/git-hooks/**,
+                      install-hooks.sh, per-submodule scripts/git-hooks/, and
+                      .github/workflows/hook-integrity.yml.
 ```
 
 - **The three frentes are file-disjoint** at the directory level — they can
