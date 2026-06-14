@@ -1,145 +1,153 @@
-# TODO — frente-a-compiler (v0.beta.19)
+# TODO — recursive-test-gate (v0.beta.19)
 
-> Branch: `task/frente-a-compiler` · Worktree: `.tasks/frente-a-compiler/`
-> Spec: [`tasks/v0.beta.19/specs/frente-a-compiler.md`](tasks/v0.beta.19/specs/frente-a-compiler.md)
-> Set umbrella: [`tasks/v0.beta.19/README.md`](tasks/v0.beta.19/README.md)
-> Reasoning + decisions: [`tasks/v0.beta.19/plan.md`](tasks/v0.beta.19/plan.md)
->
-> Edit code **inside this worktree only**. Pre-commit runs zig fmt +
-> build + test (no `--no-verify`).
+> Branch: `task/recursive-test-gate` · Worktree: `.tasks/recursive-test-gate/`
+> Spec: [`tasks/v0.beta.19/specs/recursive-test-gate.md`](../../tasks/v0.beta.19/specs/recursive-test-gate.md)
+> Set: [`tasks/v0.beta.19/README.md`](../../tasks/v0.beta.19/README.md)
+> Status rollup: [`tasks/v0.beta.19/status.md`](../../tasks/v0.beta.19/status.md)
 
-## Internal ordering
+Local pre-commit gate, version-controlled and recursive — every
+project (meta + 6 submodules) gets a tracked `scripts/git-hooks/pre-commit`
+that runs its own gate; the meta hook additionally validates staged
+submodule pointer bumps by running the submodule's gate at the staged
+SHA in a throwaway worktree. One bootstrap script
+(`scripts/install-hooks.sh`) wires all 7 symlinks idempotently; a
+`hook-integrity.yml` CI smoke catches `--no-verify` bypasses.
 
-```text
-§A (keystone)  ──▶  §B  ──▶  §D
-§A             ──▶  §C  (parallel with §B after §A)
-§A             ──▶  §G  (erika DSL, file-disjoint)
-§S  (*fn removal)      — parallel; lexer/parser/AST
-§U  (unused-builtin)   — parallel; builtins.d.bp + comptime handlers
+## F0 — extract the current meta hook to tracked source
+
+- [ ] Copy `.git/hooks/pre-commit` (existing meta hook) verbatim to
+      `scripts/git-hooks/pre-commit`. No behaviour change yet.
+- [ ] Move the body of the test loop into
+      `scripts/git-hooks/lib/runners/meta.sh` as `metaGate()`.
+- [ ] Replace `.git/hooks/pre-commit` with a symlink to
+      `../../scripts/git-hooks/pre-commit` (the tracked source).
+- [ ] `git commit --allow-empty -m test` once to confirm the new
+      symlinked hook behaves identically.
+
+## F1 — extract shared helpers
+
+- [ ] `scripts/git-hooks/lib/lib/colors.sh` — pass/fail/warn shell
+      helpers (lifted from the current hook's preamble).
+- [ ] `scripts/git-hooks/lib/lib/botopink-bin.sh` — `locateBotopink`
+      function: env > nearest ancestor
+      `repository/botopink-lang/zig-out/bin/botopink` > `$PATH` >
+      skip+warn.
+- [ ] `scripts/git-hooks/lib/test-runner.sh` — `runProjectGate(root)`:
+      detect project type (`.gitmodules` → meta; `build.zig` +
+      `modules/` → botopink-lang; `botopink.json` only → bp-lib;
+      `package.json` with `botopink.lsp` markers → vscode-extension)
+      and dispatch.
+
+## F2 — write per-project gates
+
+- [ ] `runners/botopink-lang.sh` — current "Compilation" + "Tests" +
+      "libs/* botopink test" loop, but inside `repository/botopink-lang/`.
+- [ ] `runners/bp-lib.sh` — `botopink test` in the lib's cwd; locate
+      the binary via `botopink-bin.sh`; skip + warn if missing.
+- [ ] `runners/vscode-extension.sh` — `npm test`; bootstrap
+      `npm install` once if `node_modules/` missing; reuse
+      `scripts/test-vscode.sh` logic where possible.
+- [ ] `runners/meta.sh` — current four-step gate plus the new "scan
+      staged submodule bumps" routine (see F3).
+
+## F3 — submodule pointer scan in meta gate
+
+- [ ] In `runners/meta.sh` after the existing steps: `git diff --cached
+      --name-only` ∩ `.gitmodules` paths.
+- [ ] For each hit: resolve staged SHA from `git diff --cached <path>`;
+      `git -C repository/<sub> worktree add
+      .tasks/_hook-<sub>-<sha7> <sha>`; cd in; `runProjectGate $(pwd)`.
+- [ ] On success: `git -C repository/<sub> worktree remove
+      .tasks/_hook-<sub>-<sha7>`. On failure: leave the worktree, print
+      the inspect path, fail the meta commit.
+- [ ] Race-safety: if the worktree already exists at the path (previous
+      failed commit), reuse it; never double `worktree add`.
+- [ ] Time budget: 10 minutes per submodule; longer fails with
+      "split your commit — don't bump multiple submodules at once".
+
+## F4 — per-submodule tracked pre-commit
+
+- [ ] In each of the 6 submodule repos
+      (botopink-lang/erika/jhonstart/onze/rakun/vscode-extension): add
+      `scripts/git-hooks/pre-commit` (thin shim) +
+      `scripts/git-hooks/lib/runner-standalone.sh` (per-project gate
+      for the standalone-clone path).
+- [ ] Update each submodule's `AGENTS.md` "CI" section with a new
+      "Local gate" subsection pointing at the tracked hook +
+      `scripts/install-hooks.sh`.
+
+## F5 — install-hooks.sh
+
+- [ ] `scripts/install-hooks.sh`: walks `.gitmodules`, resolves each
+      submodule's git dir (handles linkfile `.git` files), symlinks
+      each `pre-commit`. Backs up existing non-symlink files to
+      `pre-commit.bak.<ts>`.
+- [ ] `--check` flag: print ✓/⚠/✗ per project, exit non-zero on any
+      missing or drifted.
+- [ ] `--meta-only` flag: skip submodules (for partial clones).
+- [ ] Idempotent — re-run is a no-op.
+
+## F6 — CI guard
+
+- [ ] `.github/workflows/hook-integrity.yml`: 1 job, 7-matrix (one per
+      project). Per axis: `install-hooks.sh`, then
+      `install-hooks.sh --check`, then replay the tracked hook against
+      HEAD (the bypass-catcher).
+- [ ] Triggers: `push` to any branch + `pull_request`.
+
+## F7 — docs
+
+- [ ] `scripts/AGENTS.md` — new "Hook layout" section pointing at
+      `git-hooks/` tree + `install-hooks.sh` + the per-project dispatch
+      table from this spec.
+- [ ] `repository/AGENTS.md` — one-line row in the workspace overview
+      noting every submodule has a tracked pre-commit hook and
+      `install-hooks.sh` wires all 7 at once.
+- [ ] `repository/botopink-lang/AGENTS.md` — replace its existing
+      "pre-commit" paragraph with a pointer to the tracked source +
+      install script.
+- [ ] Each lib's `AGENTS.md` — "Local gate" subsection per F4.
+- [ ] This set's `README.md` + `status.md` — flip the
+      recursive-test-gate row to `done` once merged into `feat`.
+
+## Acceptance — test scenarios (from spec)
+
+```
+hook ---- install-hooks.sh on a fresh clone: 7 symlinks created, --check green
+hook ---- install-hooks.sh idempotent: re-run is a no-op, still --check green
+hook ---- install-hooks.sh refuses to silently overwrite a local custom hook
+hook ---- install-hooks.sh --meta-only: only the meta hook is installed
+hook ---- a contributor with a pre-existing non-symlink hook gets a .bak file + warning
+meta ---- commit at meta with no submodule bump: only meta gate runs
+meta ---- commit at meta bumping rakun pointer: rakun's gate runs in throwaway worktree
+meta ---- commit at meta bumping 2 submodules: both gates run; if any fails, commit fails
+meta ---- bumped submodule's gate fails: throwaway worktree is preserved + path printed
+meta ---- bumped submodule's gate passes: throwaway worktree is cleaned up
+meta ---- two parallel meta commits bumping different submodules: each gets its own worktree
+sub  ---- commit inside repository/erika: erika gate runs (botopink test)
+sub  ---- commit inside repository/erika with botopink binary missing: yellow warn, no commit-block
+sub  ---- commit inside repository/vscode-extension: npm test runs; fresh clone bootstraps node_modules
+sub  ---- commit inside repository/botopink-lang: zig build + zig build test + libs/* loop runs
+sub  ---- commit inside repository/botopink-lang touching a libs/std test that fails: commit blocked
+sub  ---- commit inside repository/jhonstart with a .bp test failure: commit blocked, error names the test
+ci   ---- hook-integrity.yml on a PR: all 7 axes green; install + --check + replay
+ci   ---- contributor pushes with --no-verify and a red test: hook-integrity catches it
+ci   ---- contributor edits .git/hooks/pre-commit locally (drift): hook-integrity --check red
+edge ---- meta hook timeout: a submodule whose gate takes >10min fails with "split your commit"
+edge ---- staged submodule SHA does not exist in the submodule (push not done yet): clear error
+edge ---- submodule pointer staged for *removal* (deleted submodule): scan skips it cleanly
+edge ---- meta worktree under .tasks/_integrate-<slug>: hook still finds the tracked source
 ```
 
-§S ships first (pure deletion, byte-identical). Then §A (keystone),
-then §B/§C/§D/§G in parallel. §U after the Rules track in Frente B
-locks the effect tags.
+## Exit gate (per `tasks/AGENTS.md` workflow §5)
 
-## Coordination
-
-- **§D-D4 (`#[@future]` erlang/beam)** consumes Frente B's Rules track
-  §1F — schedule §1F first; §D-D4 reads it. If §1F isn't in yet,
-  §D-D4 scopes to follow-up per the spec's "scope to follow-up" clause.
-
----
-
-## §A — annotation-driven-builtins tail
-- [ ] **A6** — migrate every remaining prim method that still relies on a
-      hardcoded entry (`prim_*` switches / fallback arms). Acceptance:
-      `zig build test` snapshot diff is empty.
-- [ ] **A7** — `tests/codegen/primitive_methods_byte_identical.zig` adds a
-      new prim method (e.g. `Array.zip<U>`) via ONE annotation in
-      `primitives.d.bp`; lowers on all 4 targets without `.zig` edits.
-      Docs in `libs/std/AGENTS.md` + `comptime/AGENTS.md` + `codegen/AGENTS.md`.
-
-## §B — generic-inference
-- [ ] **B1** — resolve `Self`'s primitive kind inside an interface
-      `default fn` body (`comptime/infer.zig` `instance_lowering`).
-- [ ] **B2** — instantiate callee generic vars before `unifyAt` so
-      generic inline `test { … }` works; re-fold external `*_test.bp`
-      shadow files back to inline tests in `order.bp` / `sets.bp` /
-      `dict.bp` / `queue.bp`.
-- [ ] **B3** — fix `variable 'B' is unbound` codegen bug from LINQ
-      pipeline; capture the `B`-binding lambda's free vars.
-- [ ] **B4** — emit primitive interfaces' instance `default fn`s on
-      erlang + beam (mangled). erika test-libs row flips red→green on
-      erlang and beam.
-- [ ] **B5** — drop the generic-module inline-test caveat in
-      `libs/std/AGENTS.md`; add inference unit tests for B1/B2.
-
-## §C — wasm-aggregates + wat stack-discipline
-- [ ] **C1** — track per-expression "produces a value" in the wat
-      emitter. Classifier + `returns_value` threaded into `emitBody`.
-- [ ] **C2** — wire `botopink test --target wasm`. `test_cmd.zig:46`
-      gates wasm; test-mode emits `__bp_run_tests`; CLI invokes via
-      `wasmtime`.
-- [ ] **C3** — record field layout (stable 4-byte slot offsets).
-- [ ] **C4** — `?.` on wasm: guards base against null, reads the slot.
-- [ ] **C5** — note wasm single-module rule in `codegen/AGENTS.md`.
-- [ ] **C6** — update `codegen/AGENTS.md`; add `.wat` snapshots.
-
-## §D — cross-backend feature parity
-- [ ] **D1** — `console.log` + `new Error(…)` declared as `#[@external]`;
-      lowered by reading the annotation.
-- [ ] **D2** — cross-module fn imports lower to remote call on erlang
-      first, then beam. Unblocks `from "std"` on erlang/beam.
-- [ ] **D3** — typed-value method dispatch (`p.parse(x)` →
-      `'Parser_parse'(P, X)` on erlang/beam).
-- [ ] **D4** — `#[@future]` lowering on erlang/beam (spawn body as
-      process, return Future handle whose `await` joins). **Reads
-      contract from Frente B §1F.** Scope to follow-up if too large; note
-      in `codegen/AGENTS.md`.
-- [ ] **D5** — BEAM inline-fun array/string methods: `join`, `indexOf`,
-      `at`, 2-arg `slice`, string `contains` / `startsWith`.
-- [ ] **D6** — update beam + erlang AGENTS "Remaining gaps"; add
-      cross-backend snapshots for D1–D3 + D5; sweep the negation
-      `gc_bif Live count` note.
-
-## §G — erika DSL extensions
-- [ ] **G1** — lower `${expr}` interpolations inside an `erika`
-      template literal (reuse `Part.Interp` machinery).
-- [ ] **G2** — `var s = "select ..."; erika s` runtime-string form
-      (generic mechanism, no erika coupling in core).
-- [ ] **G3** — update `libs/erika/AGENTS.md` "Recorded gaps"; add `.bp`
-      tests under `libs/erika/tests/`.
-
-## §S — remove deprecated `*fn` prefix
-- [x] **S0** — survey: `git grep -nE '\*fn\b' repository/` captures the
-      surface; sanity-check zero authored `.bp` / `.d.bp` hits.
-- [x] **S1** — lexer drops `*` lookahead; parser emits
-      `deprecated-star-fn` diagnostic with migration help line.
-- [x] **S2** — delete `EffectKind.fromStarReturn` + `FnDecl.is_star`;
-      docstrings drop `*fn` mentions; collapse `effectAnnotation` if
-      identical to `effect`.
-- [x] **S3** — rewrite codegen comment lines (`// *fn …` → `#[@<effect>]`).
-- [x] **S4** — rewrite `\\*fn` literals in `js_builtins.zig` (5) +
-      `js_control_flow.zig` (~30); output stays byte-identical.
-- [x] **S5** — AGENTS sweep + `CHANGELOG.md` `BREAKING:` line.
-- [x] **S6** — gate: `git grep '\*fn'` finds only the CHANGELOG line;
-      `zig build test` + `botopink-lib-test` green; end-to-end test of
-      the diagnostic.
-
-## §U — remove unused stdlib builtins
-- [ ] **U0** — re-run candidate grep at execution time; abort any
-      candidate that now has a caller.
-- [ ] **U1** — per confirmed-unused fn (15 candidates from the
-      2026-06-13 audit): delete declaration + handler + per-backend
-      lowering + AGENTS row. One commit per candidate.
-- [ ] **U2** — per unused `@<tag>` (8 candidates): same shape, comptime
-      tag registry. **KEEP** the six effect tags.
-- [ ] **U3** — sweep `builtins.d.bp` comment-block headers; delete
-      orphans.
-- [ ] **U4** — `CHANGELOG.md` grouped `BREAKING:` line.
-- [ ] **U5** — gate: full test sweep green; fresh `git grep` finds each
-      removed symbol only in CHANGELOG.md.
-
----
-
-## Done gate (whole frente)
-
-- [ ] every section's checklist ticked above
-- [ ] `zig build test` + `zig build test-libs` + `botopink-lib-test` green
-- [ ] every touched AGENTS.md updated in the same commit as the code
-      (memory rule `feedback_agents_md_maintenance`)
-- [ ] zero `*fn` literals in `repository/` outside `CHANGELOG.md`
-- [ ] every entry in `libs/std/src/builtins.d.bp` has at least one
-      authored caller
-- [ ] commit message convention: `feat(...)` / `refactor(...)` /
-      `docs(...)` per phase; English; no `--no-verify`
-
-## Per-memory reminders
-
-- SSH for all git remote ops (`feedback_always_ssh_git`).
-- Worktree paths for Read/Edit (`project_worktree_workflow`); this
-  worktree is at `.tasks/frente-a-compiler/`.
-- Functions in camelCase (`feedback_camelcase_naming`).
-- Implement in `.bp` when possible (`feedback_prefer_bp_over_dbp`);
-  `.d.bp` only for markers / FFI / abstract interface.
-- After each commit, advance to the next checkbox (`feedback_continue_after_commit`).
+- [ ] All F0–F7 boxes ticked.
+- [ ] All acceptance scenarios above pass on a local rerun.
+- [ ] `scripts/install-hooks.sh --check` green on a fresh clone.
+- [ ] `hook-integrity.yml` green on the PR.
+- [ ] Touched docs synced (`scripts/AGENTS.md`, `repository/AGENTS.md`,
+      `repository/botopink-lang/AGENTS.md`, each lib's `AGENTS.md`).
+- [ ] Merged into `feat` over SSH via a throwaway
+      `.tasks/_integrate-recursive-test-gate/` worktree (per workflow);
+      `status.md` flipped to `done`.
+- [ ] Worktree + branch cleaned up after the merge.
