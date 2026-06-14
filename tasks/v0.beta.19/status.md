@@ -10,18 +10,20 @@
 | [frente-b-rules-tooling](specs/frente-b-rules-tooling.md) | `frente-b-rules-tooling` | `task/frente-b-rules-tooling` | `.tasks/frente-b-rules-tooling/` | pending |
 | [frente-c-distribution](specs/frente-c-distribution.md) | `frente-c-distribution` | `task/frente-c-distribution` | `.tasks/frente-c-distribution/` | **merged+pushed** (`origin/feat` ← 4957f2d; H8 ops + J2 fork smoke deferred to maintainer) |
 | [prim-op-annotation](specs/prim-op-annotation.md) | `prim-op-annotation` | (pending — likely lands in Frente A's worktree as a satellite) | — | pending |
-| [std-expansion](specs/std-expansion.md) | `std-expansion` | (pending — one worktree per wave: `.tasks/std-wave1/` etc) | — | pending |
-| [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | `task/recursive-test-gate` | `.tasks/recursive-test-gate/` | pending |
+| [std-expansion](specs/std-expansion.md) | `std-expansion` | `task/std-expansion` | `.tasks/std-expansion/` | **merged+pushed** (`origin/feat` ← bot-lang `83d5d1a` + meta `06fa981`; 7/19 modules landed: math/asserts/path/random/querystring/time/url; 12 deferred → `std-expansion-tail`) |
+| [std-expansion-tail](specs/std-expansion-tail.md) | `std-expansion-tail` | (pending — single worktree `.tasks/std-expansion-tail/`) | — | pending |
+| [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | `task/recursive-test-gate` | `.tasks/recursive-test-gate/` | **done** (F0–F7 merged + pushed to `origin/feat` eede97d; submodule shim commits on each lib's `feat`; recursive submodule scan exercised live during the bump commit) |
+| [docs-audit-refresh](specs/docs-audit-refresh.md) | `docs-audit-refresh` | `task/docs-audit-refresh` | `.tasks/docs-audit-refresh/` | **merged+pushed** (F0–F6 done; 6 sibling `feat` heads bumped; meta merged into `feat`) |
 
 ## std-expansion — per-wave state
 
 | Wave | Modules | State |
 |---|---|---|
-| §W1 essentials | `math`, `json`, `base64`, `time`, `random` | pending |
-| §W2 system | `env`, `path`, `fs`, `process`, `os` | pending |
-| §W3 text | `regex`, `unicode`, `array_ext` (Array<T> methods), `string_ext` (String methods) | pending |
-| §W4 network+crypto | `url`, `querystring`, `http`, `crypto` | pending |
-| §W5 assertions | `assert` | pending |
+| §W1 essentials | `math`, `json`, `base64`, `time`, `random` | **done** for `math` ✓ + `time` (partial — `nowMillis`) + `random` (partial — `float`/`coin`/`pick<T>`); `json`/`base64` and the time/random tails moved to `std-expansion-tail` |
+| §W2 system | `env`, `path`, `fs`, `process`, `os` | **done** for `path` ✓ (`relative`/`resolve` tail moved to `std-expansion-tail`); `env`/`fs`/`process`/`os` moved to `std-expansion-tail` |
+| §W3 text | `regex`, `unicode`, `array_ext` (Array<T> methods), `string_ext` (String methods) | all moved to `std-expansion-tail` |
+| §W4 network+crypto | `url`, `querystring`, `http`, `crypto` | **done** for `url` ✓ (`parse` + `serialize`) and `querystring` ✓; `http`/`crypto` moved to `std-expansion-tail` |
+| §W5 assertions | `assert` | **done** as `asserts` ✓ (plural — `assert` is keyword); `throws`/`matches`/`AssertError` tail moved to `std-expansion-tail` |
 
 ## Frente A — per-track state
 
@@ -55,6 +57,7 @@
 
 ## Done = the whole set ships
 
+- [ ] `std-expansion-tail` merged + pushed (12 deferred modules + F6 `STD-001` + F7 examples-CLI + the in-module tails)
 - [ ] Frente A: §A through §G + §S + §U all merged + pushed to `feat`
 - [ ] Frente B: Rules track §0–§4 + §E + §F + §T all merged + pushed
 - [x] Frente C: §H + §I + §J + §K all merged + pushed (4957f2d; H8 ops step + J2 fork smoke deferred to maintainer)
@@ -76,3 +79,11 @@
 - [ ] `scripts/install-hooks.sh --check` green on a fresh clone (all 7
       tracked pre-commit symlinks in place) and `hook-integrity.yml` CI
       job green on every PR
+- [ ] `docs-audit-refresh` F6 verification gate green: tier 1 — orphan
+      files gone, no `<!-- TODO/TBD/FIXME/WIP -->` in scope, every
+      relative `.md` link resolves, no in-scope file claims discarded
+      surfaces or paths; tier 2 — strip-comments invariant holds on
+      every `*.zig` / `*.bp` / `*.d.bp` / `*.ts` / `*.js` / `*.mjs`
+      file the audit touched (zero non-comment-line diffs), and
+      `zig build test` + `zig build test-libs` + `botopink-lib-test` +
+      `npm test` (vscode-extension) green at tip
