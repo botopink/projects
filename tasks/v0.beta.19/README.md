@@ -1,0 +1,79 @@
+# v0.beta.19 — three frentes: compiler · rules+tooling · distribution
+
+> v0.beta.18 distributed the language; v0.beta.19 **closes every recorded gap**
+> still open across v0.beta.12 (`*fn` cleanup), v0.beta.14
+> (`backends-parity-tail`), v0.beta.16 (`recorded-gap-sweep` §A6–§G),
+> v0.beta.17 (`repo-restructure` ambient deferreds), and v0.beta.18
+> (`distribution` online follow-ups + the unshipped `module-auto-tag` spec) —
+> organised as **three file-disjoint frentes**, each runnable on its own
+> worktree.
+
+## Scope
+
+| Frente | Slug | Tracks | Files |
+|---|---|---|---|
+| [frente-a-compiler](specs/frente-a-compiler.md) | `frente-a-compiler` | §A annotation-driven-builtins tail · §B generic-inference · §C wasm-aggregates + wat refactor · §D cross-backend parity · §G erika DSL extensions · §S `*fn` removal · §U unused-builtin sweep | parser · ast · comptime · codegen ×4 (commonJS/erlang/beam_asm/wat) · `libs/std/src/{builtins,primitives}.d.bp` · `libs/erika/src/erika.bp` |
+| [frente-b-rules-tooling](specs/frente-b-rules-tooling.md) | `frente-b-rules-tooling` | Rules track §0–§4 (effect-annotation contract: `#[@result]` / `#[@future]` / `#[@generator]` / `#[@iterator]` / `#[@asyncGenerator]` / `#[@context]` + default generic parameters §1G; §1/§1F/§1I/§1C carry the user's hand-supplied addenda verbatim) · §E LSP definition tail · §F TS `.d.ts` template skip · §T test-run-log | `comptime/{infer,transform,contextStack}.zig` · `parser/decls.zig` · `language-server/src/engine.zig` · `codegen/typescript.zig` · test-mode codegen ×4 · `modules/compiler-cli/src/cli/test_cmd.zig` · `modules/lib-test-runner/src/{runner,report}.zig` · `libs/std/src/builtins.d.bp` (§4 mirror) |
+| [frente-c-distribution](specs/frente-c-distribution.md) | `frente-c-distribution` | §H bpmp online · §I distribution submodule mergeback · §J module-auto-tag · §K v17 environment deferreds | `modules/bpmp/src/**` · each sibling repo's `feat` branch + the submodule pointer bumps · `.github/workflows/tag.yml` × 2 + 3 new `botopink.json` · `scripts/install-tooling.sh` + `build.zig` env gates |
+
+## Order
+
+```text
+Frente A — §A keystone ─▶ §B/§C/§D/§G   (codegen tail, byte-identical refactor first)
+           §S, §U                       (cleanup tracks — parallel with everything)
+
+Frente B — Rules §0 → §1 → §1F → §1I → §1C → §1G → §2 → §3 → §4 → F0–F7
+           §E, §F, §T                   (parallel tracks, file-disjoint)
+
+Frente C — §H ─▶ §I ─▶ §J               (distribution track)
+           §K                           (env plumbing, fire-and-forget)
+```
+
+- **The three frentes are file-disjoint** at the directory level — they can
+  proceed in parallel on three worktrees with no cross-merge contention.
+- **One coordination point:** Frente A's §D-D4 (`#[@future]` erlang/beam
+  lowering) consumes the surface contract authored by Frente B's Rules
+  track §1F. Schedule: Frente B's §1F lands first; Frente A's §D-D4 reads
+  it.
+- **Inside Frente A:** §A first (byte-identical refactor that §B/§D
+  consume); §B/§C/§D parallelise after; §G is isolated; §S and §U are
+  parallel with everything (§S touches lexer/parser/ast, §U touches
+  `builtins.d.bp` + comptime handlers).
+- **Inside Frente B:** the Rules track has internal DAG (§0 → §1 → …);
+  §E/§F/§T are independent and can land in any order.
+- **Inside Frente C:** §H → §I → §J along the distribution track (each
+  consumes the prior); §K is fire-and-forget.
+
+## Non-goals (explicit)
+
+- **No new language surface besides the rules captured by Frente B's §1
+  through §1G.** Every checkbox elsewhere closes an *already-recorded* gap
+  or finishes an *already-merged* parser layer — no spec invents semantics
+  beyond §1's auto-wrap (already an addendum from the user) and §1G's
+  default generic positioning rule.
+- **No backward-compatibility shim for `*fn`.** Frente A §S is a hard
+  delete: `*fn` parses as a syntax error after this set lands.
+- **No "soft" deprecation for the dropped builtins.** Frente A §U is a
+  hard delete with live grep evidence captured in the commit body.
+- **No external dependency for the run log.** Frente B §T is a string
+  capture inside the test-mode codegen — no log library, no `tee`, no
+  temp files.
+- **No registry/index work** for `bpmp` — Frente C §H is purely "wire
+  `std.http` / `std.tar` into the offline stubs"; the v0.beta.18 spec
+  `bpmp.md` already nails the contract.
+- **No `module-auto-tag` redesign.** Frente C §J implements the
+  v0.beta.18 spec 6 *as written*; that spec is immutable.
+
+## Goal
+
+`zig build test` + `zig build test-libs` + `botopink-lib-test` green across
+every backend (incl. wasm under wasmtime); zero `*fn` literals anywhere in
+`repository/`; every builtin in `libs/std/src/builtins.d.bp` has at least
+one authored caller; every `botopink test` invocation prints a
+`----- RUN LOG -----` block per test; the six `#[@<effect>]` markers are
+fully specified with bilingual addenda for the four user-supplied
+rulesets (§1, §1F, §1I, §1C); `bpmp install <pkg>` works end-to-end
+**online**; every lib submodule pointer in `repository/botopink-lang`
+tracks its sibling repo's `feat` head; `compiler-core` / `compiler-cli` /
+`vscode-extension` cut their own version tags via `module-auto-tag`.
+After this set lands, every spec authored before it is fully closed.
