@@ -55,6 +55,24 @@ done
 step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 need() { command -v "$1" >/dev/null 2>&1 || { echo "install-tooling: missing required tool: $1" >&2; exit 1; }; }
 
+# K1 of v0.beta.19 frente-c-distribution: warn (don't fail) about every
+# backend runtime that `zig build test-libs` would later need. The user can
+# still install the LSP / extension on a partial env; this just preempts
+# the cryptic "exec failed" hours later.
+warn_missing() {
+    local tool="$1" purpose="$2" hint="$3"
+    command -v "$tool" >/dev/null 2>&1 && return
+    printf '\033[1;33mwarning:\033[0m %s missing — %s.\n' "$tool" "$purpose" >&2
+    printf '         install hint: %s\n' "$hint" >&2
+}
+check_backend_env() {
+    step "Probing backend runtimes (advisory — not a gate)"
+    warn_missing node     "needed for the commonJS backend (zig build test-libs)" "https://nodejs.org/en/download"
+    warn_missing escript  "needed for the erlang/beam backends"                    "apt-get install erlang · brew install erlang"
+    warn_missing erlc     "needed for the beam backend"                            "apt-get install erlang · brew install erlang"
+    warn_missing wasmtime "needed for the wasm backend"                            "curl https://wasmtime.dev/install.sh | bash"
+}
+
 # ── 1. language-server: build + install botopink-lsp ────────────────────────
 if [ "$do_lsp" -eq 1 ]; then
     need zig
@@ -109,6 +127,8 @@ if [ "$do_ext" -eq 1 ]; then
         echo "installed: $vsix"
     )
 fi
+
+check_backend_env
 
 echo
 echo "install-tooling: done."
