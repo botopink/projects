@@ -91,13 +91,23 @@ commit — this is a pure refactor.
 - [x] **F2.String.startsWith** — `(string:prefix($self, $0) =/= nomatch)`; switch arm deleted
 - [x] **F2.String.split** — `string:split($self, $0, all)`; switch arm deleted
 - [x] **F2.Bool.negate** — `(not $self)`; switch arm deleted
-- [ ] **F2 verification** — `git grep 'if (eq(u8, callee,'
-      codegen/erlang.zig` now finds 4 surviving Array arms
-      (`length/len/size`, `slice`, `join`) waiting on the deferred
-      grammar features (arity branch, `"""…"""` raw strings, val-property
-      bridge) + the final `// Unmapped` fallback. `beam_asm.zig` and
-      `commonJS.zig` are NOT yet migrated (the latter never had per-callee
-      arms for these — its JS-method renames already cover most).
+- [x] **F2 verification (erlang)** — `git grep 'if (eq(u8, callee,'
+      codegen/erlang.zig` now finds **1 surviving arm**
+      (`len/length/size` at line 2781), the val-property bridge that
+      can't migrate until property-shape annotations land (cf. F2.Array.
+      {len,length,size}). `slice`/`join`/`at` all migrated in this
+      pass — initial estimate of 4 surviving arms was conservative.
+- [ ] **F2 verification (BEAM)** — BEAM still owns its prim-method
+      lowerings inline (`beam_asm.zig:2280/2284` — 2 mega-arms covering
+      contains/len/prepend/push/append/isEmpty + split/slice). Migration
+      blocked by BEAM's needing `inline-fun` codegen for the
+      template body (a register-allocated closure, not a textual
+      substitution). Spec §D-D5 owns this; left for follow-up.
+- [ ] **F2 verification (commonJS)** — has no per-callee `if (eq(u8,
+      callee, …))` arms; JS-method renaming via the `prim_node_renames`
+      / per-loc `renames` map already covers the surface (`.contains` →
+      `.includes`, `.length()` → `.length` property, etc.). No
+      migration target.
 
 ## F2-R — migrate Family 2 (`emitResultOptionOp`)
 - [ ] **F2-R.1** — Convert `@Result` / `@Option` doc-comment method block
@@ -113,54 +123,152 @@ commit — this is a pure refactor.
       @Result.<op> from annotation` (9 commits).
 
 ## F2-B — migrate Family 3 (`@todo` / `@panic` / `@block`)
-- [ ] **F2-B.todo** — `fn todo() noreturn` decl in `builtins.d.bp` gains
-      full `#[@external]` set; switch arms deleted.
-- [ ] **F2-B.panic** — `panic(message: string) noreturn` decl gains
-      annotation set; switch arms deleted. `@print` already covered.
+> **BLOCKED on `builtins.d.bp` parsability.** Two attempts landed and
+> were reverted:
+> - `d51e935` (F2-B erlang) → reverted at `8f56133`, reapplied at
+>   `fb9aa4a`, then reverted again at `0f6a820`.
+> - `9390f1c` (F2-B commonJS) → reverted at `0bc62aa`.
+>
+> Root cause: `collectBuiltinErlangDispatch` / `collectBuiltinNodeDispatch`
+> call `Parser.parse(prelude.builtins)`, which aborts at the FIRST
+> bodyless `fn` without the `declare` keyword (e.g.
+> `fn typeOf<T>(val: T) type` on line 4). `Parser.parse` has no error
+> recovery — one bad decl rejects the whole prelude, leaving the
+> dispatch map empty. The fallback in commonJS emits the raw `@todo()`
+> literal (visible regression); the fallback in erlang emits `todo(arg)`
+> raw, which mismatched the saved erlang snapshot but was masked
+> because `assertJs` runs configs in order (commonJS first) and the
+> commonJS failure short-circuits the test before erlang config runs.
+>
+> Unblock path (one of):
+> 1. Make `builtins.d.bp` fully parseable — add `declare` + `->` to all
+>    bodyless `fn` decls, rename param `val` (keyword clash) → `value`.
+>    ~30 decls touched; needs CI verification it doesn't break other
+>    tooling that reads the file.
+> 2. Lift the parse out of `builtins.d.bp` — embed a dedicated minimal
+>    source string (like `decl_reflection_src` in `comptime.zig`) with
+>    only the `fn todo` / `fn panic` decls in parseable form. Cleanest;
+>    loses the "single source of truth" property.
+> 3. Make `Parser.parse` skip-on-error or accept bodyless without
+>    `declare`. Largest blast radius; defer.
+- [ ] **F2-B.todo** — pending. `fn todo() noreturn` annotation set was
+      authored on `builtins.d.bp` lines 160-166 but the dispatch never
+      fired; annotation removed by the reverts. Hardcoded `is_todo`
+      switch arms restored in `commonJS.zig` + `erlang.zig`.
+- [ ] **F2-B.panic** — pending. Same status as todo.
 - [ ] **F2-B.block** — coordinate with Frente A §U: if §U deletes
       `block`, this row drops. Otherwise annotation set + switch deletion.
 
 ## F2-X — verify `runtime.zig` + `typescript.zig` out-of-scope
-- [ ] `runtime.zig`: confirm no callee-keyed switches (all `mem.eql`
-      hits are on module / target / shell-arg strings).
-- [ ] `typescript.zig`: confirm no `mem.eql(callee, …)` switches.
-- [ ] `codegen/AGENTS.md` §"Annotation-driven lowering" gains a note
-      that `runtime.zig` is host-side and `typescript.zig` emits decls
-      only — both out of scope.
+- [x] `runtime.zig`: confirmed no callee-keyed switches — every
+      `mem.eql` hit lands on `aux_module`/`entry_module` (host path
+      strings for aux-module aggregation).
+- [x] `typescript.zig`: confirmed no `mem.eql(callee, …)` switches —
+      every `mem.eql` hit lands on `p.name == "self"` (param skip) or
+      builtin generic type names (`Context`/`Result`/`Future`/…); no
+      call-site lowering exists in this emitter.
+- [x] `codegen/AGENTS.md` table rows for both files gained a
+      "`prim-op-annotation` out-of-scope" note explaining why.
 
 ## F3 — diagnostics + tests
-- [ ] Reserve RP1–RP5 in `comptime/diagnostics.zig`:
-      - **RP1** `prim-op-arg-index-out-of-range`
-      - **RP2** `prim-op-no-arity-match`
-      - **RP3** `prim-op-stringify-unsupported` (wat)
-      - **RP4** `prim-op-argc-only-in-when`
-      - **RP5** target-language passthrough (documented escape hatch)
-- [ ] `tests/codegen/prim_op_templates.zig`:
-      - [ ] Valid: every migration row renders correctly per F2.
-      - [ ] Invalid: each RP-code reds with the expected text.
-      - [ ] Multi-line: an inline-fun template preserves whitespace and
-            substitutes correctly.
-      - [ ] Arity branch: 1-arg call selects the 1-arg `when`; 2-arg
-            selects the 2-arg `when`; 3-arg reds with RP2.
+- [x] **RP1** `prim-op-arg-index-out-of-range` — reserved as
+      `error.PrimOpArgIndexOutOfRange` in `primOpTemplate.render`
+      (`comptime/primOpTemplate.zig:67`) with `render: $N out of range
+      reds` covering it.
+- [ ] **RP2** `prim-op-no-arity-match` — currently a silent fall-through
+      in `tryEmitBuiltinAnnotation` / `tryEmitPrimAnnotation` (loop
+      returns `false` when no `branch.argc` matches). Spec wants this
+      surfaced as a diagnostic; deferred — no caller depends on the
+      hard-error today and Family-1 migrations all have full arity
+      coverage. Reserve when F2-B unblocks and a real "no match"
+      annotation appears in `builtins.d.bp`.
+- [ ] **RP3** `prim-op-stringify-unsupported` (wat) — deferred,
+      `$stringify(...)` not implemented (TODO F1.3).
+- [ ] **RP4** `prim-op-argc-only-in-when` — deferred, would surface
+      when a bare `argc` reference appears in a template body outside
+      the `when(...)` predicate (the parser doesn't accept this today,
+      so the case is effectively closed; reserve if escape hatches
+      emerge).
+- [ ] **RP5** target-language passthrough — passthrough IS the default
+      `render` behaviour (literal bytes emitted verbatim — that's the
+      escape hatch); no diagnostic needed. Documented at the
+      `primOpTemplate.zig` module header.
+- [x] **Tests live in `comptime/primOpTemplate.zig`** (kept next to the
+      renderer so the unit covers the helper directly, no
+      `tests/codegen/prim_op_templates.zig` shim):
+      - [x] `render: $self → recv` / `$0 → first arg` / `$0 and $1`
+      - [x] `render: list cons / operator passthrough` (the `[$0 |
+            $self]` migration)
+      - [x] `render: empty-list eq operator` (the `($self =:= [])`
+            migration)
+      - [x] `render: unary not` (the `(not $self)` migration)
+      - [x] `render: $ followed by non-digit is literal` (RP5
+            passthrough sanity)
+      - [x] `render: $N out of range reds` (RP1)
+      - [x] `looksLikeTemplate` discriminator
+      - [x] `parseArityBranchArg: 1-arg branch` / `2-arg with internal
+            whitespace` / `non-when returns null` / `missing predicate
+            returns null` / `missing colon returns null`
+      - [x] `parseArityBranchArg: triple-quoted template strips fences
+            + leading/trailing newline` (the `"""…"""` form proven on
+            an embedded-`"` template)
+      - [x] **End-to-end coverage** is exercised by the existing
+            `js: builtin ---- @todo with message` / `@panic with
+            message` / erlang `Array.append/prepend/push/contains/…`
+            snapshot tests — every migration row renders through the
+            backend's emitter at test time.
 
 ## F4 — docs
-- [ ] `libs/std/AGENTS.md` §"External annotation vocabulary" — new
-      "Template grammar" subsection with marker table + arity-branch
-      syntax + `"""…"""` form.
+- [x] `libs/std/AGENTS.md` §"Template grammar (`prim-op-annotation`)" —
+      marker table + arity-branch syntax + `"""…"""` form +
+      per-target reach.
 - [ ] `modules/compiler-core/src/codegen/AGENTS.md` — per-target
-      `$stringify` expansion table.
-- [ ] `modules/compiler-core/src/comptime/AGENTS.md` — document
-      `comptime/primOpTemplate.zig` as the shared renderer.
-- [ ] `CHANGELOG.md` under v0.beta.19:
-      `feat(stdlib): primitive-method lowering driven entirely by annotations; no more hardcoded switches.`
+      `$stringify` expansion table. **Deferred**: `$stringify(...)` is
+      not implemented yet (TODO F1.3), so there is no per-target
+      expansion to document. The `typescript.zig` + `runtime.zig` rows
+      gained their `prim-op-annotation` out-of-scope note in this pass.
+- [x] `modules/compiler-core/src/comptime/AGENTS.md` — primOpTemplate
+      row now spells out arity branching + triple-quoted +
+      RP1/RP2/RP5 status; deferred `$stringify` + val-property bridge
+      flagged.
+- [x] `CHANGELOG.md` under v0.beta.19 — already documents the shipped
+      grammar (template form, `$self`/`$N`, arity-branch, triple-quoted)
+      plus the erlang Family-1 migrations (`Bool.negate`,
+      `Array.{contains,isEmpty,push,append,prepend,indexOf,at,slice,
+      join}`, `String.{contains,startsWith,split,slice}`). The
+      optimistic "primitive-method lowering driven entirely by
+      annotations" line from the original TODO is **not** added — F2-B
+      and BEAM/commonJS/wat migrations are blocked, so the broader
+      claim would mislead.
 
 ---
 
 ## Done gate
 
-- [ ] F0–F4 all ticked. Current: F0/F1 partial, F2 erlang partial,
-      F2-R/F2-B/F2-X/F3 pending, F4 partial (codegen+comptime AGENTS.md
-      updated; libs/std/AGENTS.md docs not yet refreshed).
+- [x] F0 — AST + parser foundation landed (`comptime/primOpTemplate.zig`,
+      `ast.ArityBranch` / `parseArityBranchArg`, parser `when(...)` arg
+      span, triple-quoted via `unquoteAnnotationArg`).
+- [x] F1 — `tryEmitPrimAnnotation` + shared renderer landed (erlang +
+      BEAM passthrough). F1.3 `$stringify` still deferred — no
+      consumer yet.
+- [~] F2 — erlang Family-1 partial: 14/15 method-row arms gone. The
+      4 surviving arms (`Array.{length,len,size}` val-property +
+      `Array.slice` arity branch + `Array.join` triple-quoted +
+      `Array.at` already DONE — only `length/len/size` val-property
+      remains; the others all migrated). BEAM/commonJS/wat backends
+      not migrated (per-target lowerings still inline).
+- [x] F2-X verified — `runtime.zig`/`typescript.zig` confirmed
+      out-of-scope (no callee-keyed switches; docs note added).
+- [x] F3 partial — RP1 reserved + tested; renderer tests cover every
+      Family-1 migration shape + arity-branch + triple-quoted; RP2/RP3/
+      RP4 deferred behind real consumers.
+- [x] F4 partial — `libs/std/AGENTS.md`, `comptime/AGENTS.md`,
+      `codegen/AGENTS.md`, `CHANGELOG.md` all reflect the shipped
+      grammar + reach; `$stringify` per-target table deferred.
+- [ ] **F2-B (`@todo`/`@panic`)** — blocked; see F2-B section above.
+- [ ] **F2-R (`@Result`/`@Option`)** — blocked on the same
+      `builtins.d.bp` parsability gap (both F2-B and F2-R need the
+      collector to scan the full builtins prelude).
 - [x] `zig build test` green at every commit on this branch.
 - [x] `zig build test-libs` matches baseline failure set (no
       regressions introduced — same pre-existing jhonstart erlang
