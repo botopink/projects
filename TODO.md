@@ -60,8 +60,10 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
       mismatch case.)
 - [x] Body walk — partial: R7 / R8 / RI4 already fire from the existing
       starFn/labelStack infrastructure, now carry stable codes
-      (34ae1af). R6 extension (throw outside fallible-channel effects)
-      pending — needs ThrowContext variants per fallible effect.
+      (34ae1af). R6 extended (f619737) — `throw` inside
+      `#[@future]` / `#[@iterator]` / `#[@asyncGenerator]` is no
+      longer red; `#[@generator]` / `#[@context]` / plain fn keep the
+      `effect-throw-without-fallible-channel` reject text.
 - [ ] **RG3** — missing required generic arg → `generic-required-arg-missing`.
 - [ ] **RG4** — skipped middle generic arg → `generic-arg-skip-forbidden`.
 
