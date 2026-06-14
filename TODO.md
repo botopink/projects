@@ -54,11 +54,14 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
       (7db5de7 — `parseGenericParams` enforces strict-trailing.)
 
 ### F3 — comptime cross-checks (R3, R4, R6, R7, R8, R9, R10, RG3, RG4)
-- [ ] Cross-check `effectAnnotation()` vs `returnType` for each
-      `EffectKind.returnWrapper()`.
-- [ ] Body walk: `throw` outside fallible-channel effects ⇒ R6;
-      `await` outside `#[@future]`/`#[@asyncGenerator]` ⇒ R7; `yield`
-      outside `#[@generator]`/`#[@iterator]`/`#[@asyncGenerator]` ⇒ R8.
+- [x] Cross-check `effectAnnotation()` vs `returnType` for each
+      `EffectKind.returnWrapper()`. (34ae1af — R3/R4 codes on the
+      existing check; discriminator picks the missing-wrapper vs
+      mismatch case.)
+- [x] Body walk — partial: R7 / R8 / RI4 already fire from the existing
+      starFn/labelStack infrastructure, now carry stable codes
+      (34ae1af). R6 extension (throw outside fallible-channel effects)
+      pending — needs ThrowContext variants per fallible effect.
 - [ ] **RG3** — missing required generic arg → `generic-required-arg-missing`.
 - [ ] **RG4** — skipped middle generic arg → `generic-arg-skip-forbidden`.
 
