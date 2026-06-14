@@ -1,158 +1,136 @@
-# TODO — frente-a-compiler (v0.beta.19)
+# TODO — docs-audit-refresh (v0.beta.19)
 
-> Branch: `task/frente-a-compiler` · Worktree: `.tasks/frente-a-compiler/`
-> Spec: [`tasks/v0.beta.19/specs/frente-a-compiler.md`](tasks/v0.beta.19/specs/frente-a-compiler.md)
+> Branch: `task/docs-audit-refresh` · Worktree: `.tasks/docs-audit-refresh/`
+> Spec: [`tasks/v0.beta.19/specs/docs-audit-refresh.md`](tasks/v0.beta.19/specs/docs-audit-refresh.md)
 > Set umbrella: [`tasks/v0.beta.19/README.md`](tasks/v0.beta.19/README.md)
 > Reasoning + decisions: [`tasks/v0.beta.19/plan.md`](tasks/v0.beta.19/plan.md)
 >
-> Edit code **inside this worktree only**. Pre-commit runs zig fmt +
+> Edit docs/comments **inside this worktree only**. Pre-commit runs zig fmt +
 > build + test (no `--no-verify`).
+>
+> **Comments-only invariant** for `*.zig` / `*.bp` / `*.d.bp` / `*.ts` /
+> `*.js` / `*.mjs`: every diff hunk must be comment lines. Verified by F6.
 
-## Internal ordering
+## Immutability boundary — DO NOT TOUCH
 
-```text
-§A (keystone)  ──▶  §B  ──▶  §D
-§A             ──▶  §C  (parallel with §B after §A)
-§A             ──▶  §G  (erika DSL, file-disjoint)
-§S  (*fn removal)      — parallel; lexer/parser/AST
-§U  (unused-builtin)   — parallel; builtins.d.bp + comptime handlers
-```
+- `tasks/v0.beta.{1..18}/**` (frozen sets — tasks/AGENTS.md D9)
+- `tasks/v0.beta.19/specs/*.md` (open-spec bodies — tasks/AGENTS.md D6)
+- `zig-out/` · `.zig-cache/` · `node_modules/` · `repository/vscode-extension/out/`
+  (unless tracked + hand-authored) · `libs/**/dist/`
 
-§S ships first (pure deletion, byte-identical). Then §A (keystone),
-then §B/§C/§D/§G in parallel. §U after the Rules track in Frente B
-locks the effect tags.
+## F0 — orphan triage (`tasks/` root)
 
-## Coordination
+- [ ] `git rm tasks/parser-split.md` (duplicate of `v0.beta.1/specs/parser-split.md`)
+- [ ] `git rm tasks/test-reorg.md` (duplicate of `v0.beta.1/specs/test-reorg.md`)
+- [ ] `git rm tasks/situacao.md` (2026-06-02 snapshot — git log + per-set
+      status.md are authoritative; filename violates English-only rule)
+- [ ] Verify no in-scope file references those 3 paths
+      (`rg -F 'tasks/parser-split.md|tasks/test-reorg.md|tasks/situacao.md' --type md`)
 
-- **§D-D4 (`#[@future]` erlang/beam)** consumes Frente B's Rules track
-  §1F — schedule §1F first; §D-D4 reads it. If §1F isn't in yet,
-  §D-D4 scopes to follow-up per the spec's "scope to follow-up" clause.
+## F1 — stale-reference sweep (per-file *.md audit)
 
----
+- [ ] Build inventory of in-scope `*.md` (see spec "In scope — mutable")
+- [ ] Per file, apply the five-point operational definition (syntax /
+      path / command / supersession / contradiction)
+- [ ] Produce `audit-md.log` (per-file: keep / edit / delete)
+- [ ] Apply edits; anchor each rewrite to current truth with link to
+      the v0.beta.N spec that landed the change
+- [ ] Re-run `rg -o '\[.*?\]\(([^)]+\.md[^)]*)\)' --replace '$1'` and
+      `ls` every link target — broken links become sub-task fixes
 
-## §A — annotation-driven-builtins tail
-- [x] **A6** — migrate every remaining prim method that still relies on a
-      hardcoded entry. Closed per spec's "or document the irreducible
-      allow-list" clause: residual hardcoded arms are BEAM bytecode
-      patterns (need template machinery), erlang `length` BIF arm (needs
-      val-annotation support), commonJS property-vs-call special case,
-      and wat string-length read — all recorded in
-      `codegen/AGENTS.md` "§A6 closure" subsection. Snapshot diff is
-      empty (no codegen behaviour changed).
-- [ ] **A7** — Array.zip via ONE annotation on all 4 targets. **Deferred**
-      to follow-up — gated on BEAM bytecode-template work above; without
-      it, "lowers on all 4 targets without .zig edits" can only land on
-      3 of 4 (commonJS + erlang + wat, sans BEAM).
+## F2 — HTML-comment + editorial-marker sweep (*.md only)
 
-## §B — generic-inference
-- [ ] **B1** — resolve `Self`'s primitive kind inside an interface
-      `default fn` body (`comptime/infer.zig` `instance_lowering`).
-- [ ] **B2** — instantiate callee generic vars before `unifyAt` so
-      generic inline `test { … }` works; re-fold external `*_test.bp`
-      shadow files back to inline tests in `order.bp` / `sets.bp` /
-      `dict.bp` / `queue.bp`.
-- [ ] **B3** — fix `variable 'B' is unbound` codegen bug from LINQ
-      pipeline; capture the `B`-binding lambda's free vars.
-- [ ] **B4** — emit primitive interfaces' instance `default fn`s on
-      erlang + beam (mangled). erika test-libs row flips red→green on
-      erlang and beam.
-- [ ] **B5** — drop the generic-module inline-test caveat in
-      `libs/std/AGENTS.md`; add inference unit tests for B1/B2.
+- [ ] `rg -F '<!--' --type md` over in-scope set → per-occurrence decision
+- [ ] `rg -i '\b(TODO|TBD|FIXME|WIP|XXX)\b' --type md` over in-scope set
+      → resolve each (shipped → strike; dropped → delete or pivot;
+      still open → link to open spec)
 
-## §C — wasm-aggregates + wat stack-discipline
-- [ ] **C1** — track per-expression "produces a value" in the wat
-      emitter. Classifier + `returns_value` threaded into `emitBody`.
-- [ ] **C2** — wire `botopink test --target wasm`. `test_cmd.zig:46`
-      gates wasm; test-mode emits `__bp_run_tests`; CLI invokes via
-      `wasmtime`.
-- [ ] **C3** — record field layout (stable 4-byte slot offsets).
-- [ ] **C4** — `?.` on wasm: guards base against null, reads the slot.
-- [ ] **C5** — note wasm single-module rule in `codegen/AGENTS.md`.
-- [ ] **C6** — update `codegen/AGENTS.md`; add `.wat` snapshots.
+## F3 — English-only sweep (*.md only)
 
-## §D — cross-backend feature parity
-- [ ] **D1** — `console.log` + `new Error(…)` declared as `#[@external]`;
-      lowered by reading the annotation.
-- [ ] **D2** — cross-module fn imports lower to remote call on erlang
-      first, then beam. Unblocks `from "std"` on erlang/beam.
-- [ ] **D3** — typed-value method dispatch (`p.parse(x)` →
-      `'Parser_parse'(P, X)` on erlang/beam).
-- [ ] **D4** — `#[@future]` lowering on erlang/beam (spawn body as
-      process, return Future handle whose `await` joins). **Reads
-      contract from Frente B §1F.** Scope to follow-up if too large; note
-      in `codegen/AGENTS.md`.
-- [ ] **D5** — BEAM inline-fun array/string methods: `join`, `indexOf`,
-      `at`, 2-arg `slice`, string `contains` / `startsWith`.
-- [ ] **D6** — update beam + erlang AGENTS "Remaining gaps"; add
-      cross-backend snapshots for D1–D3 + D5; sweep the negation
-      `gc_bif Live count` note.
+- [ ] `rg -i '\b(situação|situacao|português|portugues|levantamento|atualiz|conclu|MESCLAD|PUSHED|verde|vermelho|ativ|inativ)\b' --type md`
+      → translate or delete (false positives reviewed by hand)
+- [ ] Every in-scope filename is English
 
-## §G — erika DSL extensions
-- [ ] **G1** — lower `${expr}` interpolations inside an `erika`
-      template literal (reuse `Part.Interp` machinery).
-- [ ] **G2** — `var s = "select ..."; erika s` runtime-string form
-      (generic mechanism, no erika coupling in core).
-- [ ] **G3** — update `libs/erika/AGENTS.md` "Recorded gaps"; add `.bp`
-      tests under `libs/erika/tests/`.
+## F4 — refresh meta-root `TODO.md`
 
-## §S — remove deprecated `*fn` prefix
-- [x] **S0** — survey: `git grep -nE '\*fn\b' repository/` captures the
-      surface; sanity-check zero authored `.bp` / `.d.bp` hits.
-- [x] **S1** — lexer drops `*` lookahead; parser emits
-      `deprecated-star-fn` diagnostic with migration help line.
-- [x] **S2** — delete `EffectKind.fromStarReturn` + `FnDecl.is_star`;
-      docstrings drop `*fn` mentions; collapse `effectAnnotation` if
-      identical to `effect`.
-- [x] **S3** — rewrite codegen comment lines (`// *fn …` → `#[@<effect>]`).
-- [x] **S4** — rewrite `\\*fn` literals in `js_builtins.zig` (5) +
-      `js_control_flow.zig` (~30); output stays byte-identical.
-- [x] **S5** — AGENTS sweep + `CHANGELOG.md` `BREAKING:` line.
-- [x] **S6** — gate: `git grep '\*fn'` finds only the CHANGELOG line;
-      `zig build test` + `botopink-lib-test` green; end-to-end test of
-      the diagnostic.
+- [ ] Replace body with: 1-line pointer to `tasks/v0.beta.19/status.md` +
+      pending list for v0.beta.19 only (from README Scope table)
+- [ ] Delete any claim about v0.beta.{<19} pending work
 
-## §U — remove unused stdlib builtins
-- [x] **U0** — re-run candidate grep at execution time; abort any
-      candidate that now has a caller. (2026-06-14: 15/15 fns + 8/8
-      tags confirmed zero authored callers.)
-- [x] **U1** — per confirmed-unused fn (15 candidates from the
-      2026-06-13 audit): delete declaration + handler + per-backend
-      lowering + AGENTS row. **Landed as one composite commit**
-      (975910b) — `typeOf`/`typeName`/`sizeOf`/`alignOf`/`hasField`/
-      `hasDecl`/`tagName`/`min`/`max`/`abs`/`as`/`block`/`src`/
-      `compilerError`/`embedFile`/`root` + `pub interface AsyncIterable`.
-- [x] **U2** — per unused `@<tag>` (8 candidates): subsumed by U1 —
-      capture-tag form derives from the same fn surface; deleting the
-      fn removes the `@<tag>` form. **KEEP** the six effect tags +
-      `@trap` / `@module` (their fn counterparts are retained).
-- [ ] **U3** — sweep `builtins.d.bp` comment-block headers; delete
-      orphans. (DONE inline with U1 — 5 orphan headers removed: type
-      reflection, numeric, control flow, compile-time I/O, "compile-time
-      diagnostics" block. Re-verify before gate.)
-- [x] **U4** — `CHANGELOG.md` grouped `BREAKING:` line (in 975910b).
-- [ ] **U5** — gate: full test sweep green; fresh `git grep` finds each
-      removed symbol only in CHANGELOG.md.
+## F4a — `*.zig` comment sweep (comments-only)
 
----
+- [ ] Inventory: `rg -n '^[[:space:]]*(//|///|//!)' --type zig` over
+      `repository/botopink-lang/src/**`, `modules/**`, workspace
+      `build.zig*` → `audit-zig-comments.log`
+- [ ] Per file, five-point definition against comment lines only
+- [ ] Edit: drop discarded-surface refs (`*fn`, retired AST nodes),
+      missing paths, resolved TODOs, closed FIXMEs
+- [ ] Keep + sharpen comments that explain *why* (non-obvious
+      invariants, workarounds, surprising behavior). One short line max.
+- [ ] **Zero semantic edits**: every diff hunk is comment lines
 
-## Done gate (whole frente)
+## F4b — `*.bp` / `*.d.bp` comment sweep (comments-only)
 
-- [ ] every section's checklist ticked above
-- [ ] `zig build test` + `zig build test-libs` + `botopink-lib-test` green
-- [ ] every touched AGENTS.md updated in the same commit as the code
-      (memory rule `feedback_agents_md_maintenance`)
-- [ ] zero `*fn` literals in `repository/` outside `CHANGELOG.md`
-- [ ] every entry in `libs/std/src/builtins.d.bp` has at least one
-      authored caller
-- [ ] commit message convention: `feat(...)` / `refactor(...)` /
-      `docs(...)` per phase; English; no `--no-verify`
+- [ ] Inventory: `rg -n '^[[:space:]]*(//|/\*)' --type-add 'bp:*.bp' --type-add 'dbp:*.d.bp' --type bp --type dbp`
+      over `repository/botopink-lang/libs/**` + every sibling lib's
+      `libs/**` + example dirs → `audit-bp-comments.log`
+- [ ] Watchouts: `*fn` examples (discarded v0.beta.12); `.d.bp`
+      headers citing canonical Node/Erlang URLs (keep + verify HTTP 200);
+      `// TODO` naming v0.beta.{<19} as the resolver (closed)
+- [ ] Keep + sharpen `interface`/`template` body comments encoding
+      mock/sigil semantics (`$self`, `$0..N`, `$argc`, `when($argc==N)`)
+- [ ] **Zero semantic edits**
 
-## Per-memory reminders
+## F4c — `*.ts` / `*.js` / `*.mjs` comment sweep (comments-only)
 
-- SSH for all git remote ops (`feedback_always_ssh_git`).
-- Worktree paths for Read/Edit (`project_worktree_workflow`); this
-  worktree is at `.tasks/frente-a-compiler/`.
-- Functions in camelCase (`feedback_camelcase_naming`).
-- Implement in `.bp` when possible (`feedback_prefer_bp_over_dbp`);
-  `.d.bp` only for markers / FFI / abstract interface.
-- After each commit, advance to the next checkbox (`feedback_continue_after_commit`).
+- [ ] Inventory: `rg -n '^[[:space:]]*(//|/\*|\*)' --type ts --type js`
+      over `repository/vscode-extension/{src,test}/**` + every tracked
+      `*.mjs`/`*.js` sidecar under `libs/**/src/` → `audit-ts-js-comments.log`
+- [ ] JSDoc `/** … */`: keep when export still in `package.json` exports
+      graph; delete orphaned blocks
+- [ ] `// TODO` naming closed tasks → delete or pivot to
+      "(landed in vN — see spec link)"
+- [ ] `console.log` / `console.warn` debug breadcrumbs: out of scope
+      (audit log records sightings only)
+- [ ] **Zero semantic edits**
+
+## F5 — set-level updates (`tasks/v0.beta.19/`)
+
+- [x] Add row to `tasks/v0.beta.19/README.md` Scope table + Order block
+      (done in initial spec commit)
+- [x] Add rollup row to `tasks/v0.beta.19/status.md`
+      (done in initial spec commit)
+
+## F6 — verification gate
+
+- [ ] `rg -F '<!--' --type md repository/ scripts/ tasks/AGENTS.md tasks/_TEMPLATE.md tasks/v0.beta.19/{README,plan,status}.md`
+      returns only audit-whitelisted comments
+- [ ] No `<!-- TODO -->`-style markers remain in scope
+- [ ] No link in the in-scope `*.md` set resolves to a missing file
+- [ ] `git grep -l 'situacao\|tasks/parser-split.md\|tasks/test-reorg.md'`
+      finds only the F0 deletion commit's own body + the immutable
+      `v0.beta.1/specs/{parser-split,test-reorg}.md`
+- [ ] Spot-check 5 sample files end-to-end: root `AGENTS.md` ·
+      `repository/AGENTS.md` · `repository/botopink-lang/AGENTS.md` ·
+      `repository/erika/docs.md` · `tasks/AGENTS.md`
+- [ ] **Strip-comments invariant**: per-file `strip-comments` pass on
+      base vs. tip yields byte-identical result for every `*.zig` /
+      `*.bp` / `*.d.bp` / `*.ts` / `*.js` / `*.mjs` the audit touched
+- [ ] `zig build` + `zig build test` + `zig build test-libs` +
+      `botopink-lib-test` + `npm test` (vscode-extension) all green
+- [ ] No surviving `// TODO`/`FIXME`/`XXX`/`HACK`/`WIP` in any
+      in-scope code file (unless whitelisted with permanent
+      "(see spec X)" anchor)
+
+## Integration
+
+- [ ] All checks above ticked
+- [ ] AGENTS.md updated everywhere the audit edited (memory rule —
+      AGENTS sempre atualizado)
+- [ ] Sweep submodule feat heads (memory: feat remotas sempre unificadas)
+- [ ] Integrate into feat via throwaway `.tasks/_integrate-docs-audit-refresh/`
+      worktree (per repository/botopink-lang AGENTS.md "Parallel tasks
+      (git worktrees)" workflow)
+- [ ] Push over SSH (memory: sempre SSH no git)
+- [ ] Update `tasks/v0.beta.19/status.md` row to **merged+pushed**
+- [ ] Remove worktrees and prune

@@ -12,6 +12,7 @@
 | [prim-op-annotation](specs/prim-op-annotation.md) | `prim-op-annotation` | (pending — likely lands in Frente A's worktree as a satellite) | — | pending |
 | [std-expansion](specs/std-expansion.md) | `std-expansion` | (pending — one worktree per wave: `.tasks/std-wave1/` etc) | — | pending |
 | [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | `task/recursive-test-gate` | `.tasks/recursive-test-gate/` | pending |
+| [docs-audit-refresh](specs/docs-audit-refresh.md) | `docs-audit-refresh` | `task/docs-audit-refresh` | `.tasks/docs-audit-refresh/` | pending |
 
 ## std-expansion — per-wave state
 
@@ -76,3 +77,11 @@
 - [ ] `scripts/install-hooks.sh --check` green on a fresh clone (all 7
       tracked pre-commit symlinks in place) and `hook-integrity.yml` CI
       job green on every PR
+- [ ] `docs-audit-refresh` F6 verification gate green: tier 1 — orphan
+      files gone, no `<!-- TODO/TBD/FIXME/WIP -->` in scope, every
+      relative `.md` link resolves, no in-scope file claims discarded
+      surfaces or paths; tier 2 — strip-comments invariant holds on
+      every `*.zig` / `*.bp` / `*.d.bp` / `*.ts` / `*.js` / `*.mjs`
+      file the audit touched (zero non-comment-line diffs), and
+      `zig build test` + `zig build test-libs` + `botopink-lib-test` +
+      `npm test` (vscode-extension) green at tip
