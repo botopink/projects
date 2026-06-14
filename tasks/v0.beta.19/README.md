@@ -1,4 +1,4 @@
-# v0.beta.19 — three frentes: compiler · rules+tooling · distribution
+# v0.beta.19 — three frentes + prim-op annotation extension
 
 > v0.beta.18 distributed the language; v0.beta.19 **closes every recorded gap**
 > still open across v0.beta.12 (`*fn` cleanup), v0.beta.14
@@ -6,7 +6,11 @@
 > v0.beta.17 (`repo-restructure` ambient deferreds), and v0.beta.18
 > (`distribution` online follow-ups + the unshipped `module-auto-tag` spec) —
 > organised as **three file-disjoint frentes**, each runnable on its own
-> worktree.
+> worktree. A satellite spec (`prim-op-annotation`) extends `#[@external]`'s
+> grammar so the remaining hardcoded `mem.eql(callee, …)` switches in every
+> codegen backend can be authored as annotations, deleting Frente A §A6's
+> "irreducible allow-list" carve-out and adjacent surfaces
+> (`emitResultOptionOp`, `@todo`/`@panic`/`@block`).
 
 ## Scope
 
@@ -15,6 +19,8 @@
 | [frente-a-compiler](specs/frente-a-compiler.md) | `frente-a-compiler` | §A annotation-driven-builtins tail · §B generic-inference · §C wasm-aggregates + wat refactor · §D cross-backend parity · §G erika DSL extensions · §S `*fn` removal · §U unused-builtin sweep | parser · ast · comptime · codegen ×4 (commonJS/erlang/beam_asm/wat) · `libs/std/src/{builtins,primitives}.d.bp` · `libs/erika/src/erika.bp` |
 | [frente-b-rules-tooling](specs/frente-b-rules-tooling.md) | `frente-b-rules-tooling` | Rules track §0–§4 (effect-annotation contract: `#[@result]` / `#[@future]` / `#[@generator]` / `#[@iterator]` / `#[@asyncGenerator]` / `#[@context]` + default generic parameters §1G; §1/§1F/§1I/§1C carry the user's hand-supplied addenda verbatim) · §E LSP definition tail · §F TS `.d.ts` template skip · §T test-run-log | `comptime/{infer,transform,contextStack}.zig` · `parser/decls.zig` · `language-server/src/engine.zig` · `codegen/typescript.zig` · test-mode codegen ×4 · `modules/compiler-cli/src/cli/test_cmd.zig` · `modules/lib-test-runner/src/{runner,report}.zig` · `libs/std/src/builtins.d.bp` (§4 mirror) |
 | [frente-c-distribution](specs/frente-c-distribution.md) | `frente-c-distribution` | §H bpmp online · §I distribution submodule mergeback · §J module-auto-tag · §K v17 environment deferreds | `modules/bpmp/src/**` · each sibling repo's `feat` branch + the submodule pointer bumps · `.github/workflows/tag.yml` × 2 + 3 new `botopink.json` · `scripts/install-tooling.sh` + `build.zig` env gates |
+| [prim-op-annotation](specs/prim-op-annotation.md) | `prim-op-annotation` | satellite to Frente A §A — extends `#[@external]` with `$self` / `$0..N` / `$argc` / `$stringify(...)` markers + `when($argc == N)` arity branching + `"""…"""` multi-line inline-fun templates, then migrates **3 families** of hardcoded switch arms (Family 1: `emitPrimMethod` 19 methods · Family 2: `emitResultOptionOp` 9 synthetic callees · Family 3: `@todo`/`@panic`/`@block`) — ~105 switch arms across 4 backends → zero | `parser/decls.zig` (`parseExternalCallTemplate` extension) · `ast.zig` (richer `ExternalCallTemplate`) · `codegen/{erlang,beam_asm,commonJS,wat}.zig` (consumer + switch deletions) · `libs/std/src/{builtins,primitives}.d.bp` · `comptime/primOpTemplate.zig` (new shared renderer) |
+| [std-expansion](specs/std-expansion.md) | `std-expansion` | satellite consuming `prim-op-annotation` — fills cross-backend stdlib gaps from Node + Erlang reference APIs in five waves: §W1 essentials (`math`/`json`/`base64`/`time`/`random`) · §W2 system (`env`/`path`/`fs`/`process`/`os`) · §W3 text (`regex`/`unicode` + `array_ext`/`string_ext` extension methods) · §W4 network+crypto (`url`/`querystring`/`http` client/`crypto`) · §W5 assertions (`assert`). Every new `.bp` file ships with header comments citing the canonical Node + Erlang URLs and inline `test { … }` blocks covering the surface. | 13 new `libs/std/src/*.bp` files + `interface Array<T>` + `interface String` extensions on `primitives.d.bp` + sidecar adapters (`.mjs` for node, `.erl` for erlang) for `json` + `libs/std/tests/` per-module test fixtures + coverage-matrix gate in `comptime/infer.zig` |
 
 ## Order
 
@@ -27,6 +33,16 @@ Frente B — Rules §0 → §1 → §1F → §1I → §1C → §1G → §2 → �
 
 Frente C — §H ─▶ §I ─▶ §J               (distribution track)
            §K                           (env plumbing, fire-and-forget)
+
+prim-op-annotation ─▶ runs alongside Frente A §A6/§D5 — landings in any order
+                      (the grammar extension lands first as F0–F1; then F2/F2-R/F2-B
+                      migrate the 105 switch arms across 4 backends)
+
+std-expansion      ─▶ consumes prim-op-annotation; runs in its own per-wave worktrees
+                      (.tasks/std-wave1/ ... wave5/). §W1 first (essentials), then
+                      §W2 (system), §W3 (text + Array/String extension), §W4
+                      (network+crypto), §W5 (assertions). Each wave is one
+                      file-disjoint commit.
 ```
 
 - **The three frentes are file-disjoint** at the directory level — they can

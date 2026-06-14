@@ -4,14 +4,27 @@
 > `.tasks/<slug>/TODO.md` per universal contract. See
 > [`AGENTS.md`](../AGENTS.md) §"One fact, one source".
 
-Three orthogonal frentes, all **pending**. No worktrees spun up yet; the
-set was just authored.
+Three frentes + one satellite spec, all **pending**. Worktrees created
+for the three frentes (`ce7afe6`); satellite has no worktree yet —
+authored as a refactor companion to Frente A.
 
-| Frente | Slug | Branch | Worktree | State |
+| Frente / spec | Slug | Branch | Worktree | State |
 |---|---|---|---|---|
 | [frente-a-compiler](specs/frente-a-compiler.md) | `frente-a-compiler` | `task/frente-a-compiler` | `.tasks/frente-a-compiler/` | pending |
 | [frente-b-rules-tooling](specs/frente-b-rules-tooling.md) | `frente-b-rules-tooling` | `task/frente-b-rules-tooling` | `.tasks/frente-b-rules-tooling/` | pending |
 | [frente-c-distribution](specs/frente-c-distribution.md) | `frente-c-distribution` | `task/frente-c-distribution` | `.tasks/frente-c-distribution/` | pending |
+| [prim-op-annotation](specs/prim-op-annotation.md) | `prim-op-annotation` | (pending — likely lands in Frente A's worktree as a satellite) | — | pending |
+| [std-expansion](specs/std-expansion.md) | `std-expansion` | (pending — one worktree per wave: `.tasks/std-wave1/` etc) | — | pending |
+
+## std-expansion — per-wave state
+
+| Wave | Modules | State |
+|---|---|---|
+| §W1 essentials | `math`, `json`, `base64`, `time`, `random` | pending |
+| §W2 system | `env`, `path`, `fs`, `process`, `os` | pending |
+| §W3 text | `regex`, `unicode`, `array_ext` (Array<T> methods), `string_ext` (String methods) | pending |
+| §W4 network+crypto | `url`, `querystring`, `http`, `crypto` | pending |
+| §W5 assertions | `assert` | pending |
 
 ## Frente A — per-track state
 
