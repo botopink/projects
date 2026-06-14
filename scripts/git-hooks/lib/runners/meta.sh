@@ -172,6 +172,13 @@ metaGate() {
 
     info "(submodule pointer scan: ${#bumped[@]} bump(s) staged)"
 
+    # Drop the meta's GIT_* env so submodule git invocations don't reach into
+    # the meta's index/object DB. `git -C <path>` only changes CWD; without
+    # this unset, GIT_DIR (inherited from the parent commit) overrides it and
+    # `cat-file -e <submodule-sha>` runs against the meta's object DB, where
+    # the submodule's tip does not exist.
+    unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX
+
     local budget_s=600   # 10 minutes per submodule, per spec
     local preserved=()
     for entry in "${bumped[@]}"; do
