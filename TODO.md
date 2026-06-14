@@ -1,145 +1,230 @@
-# TODO — frente-a-compiler (v0.beta.19)
+# TODO — frente-b-rules-tooling (v0.beta.19)
 
-> Branch: `task/frente-a-compiler` · Worktree: `.tasks/frente-a-compiler/`
-> Spec: [`tasks/v0.beta.19/specs/frente-a-compiler.md`](tasks/v0.beta.19/specs/frente-a-compiler.md)
+> Branch: `task/frente-b-rules-tooling` · Worktree: `.tasks/frente-b-rules-tooling/`
+> Spec: [`tasks/v0.beta.19/specs/frente-b-rules-tooling.md`](tasks/v0.beta.19/specs/frente-b-rules-tooling.md)
 > Set umbrella: [`tasks/v0.beta.19/README.md`](tasks/v0.beta.19/README.md)
 > Reasoning + decisions: [`tasks/v0.beta.19/plan.md`](tasks/v0.beta.19/plan.md)
 >
 > Edit code **inside this worktree only**. Pre-commit runs zig fmt +
 > build + test (no `--no-verify`).
 
-## Internal ordering
+## Tracks (four file-disjoint surfaces)
 
-```text
-§A (keystone)  ──▶  §B  ──▶  §D
-§A             ──▶  §C  (parallel with §B after §A)
-§A             ──▶  §G  (erika DSL, file-disjoint)
-§S  (*fn removal)      — parallel; lexer/parser/AST
-§U  (unused-builtin)   — parallel; builtins.d.bp + comptime handlers
-```
+| Track | Description |
+|---|---|
+| **Rules** §0–§4 | authoritative ruleset for the six `#[@<effect>]` markers + §1G default generics |
+| **§E** | LSP definition tail (tuple `recv._N` + interface assoc dispatch) |
+| **§F** | TS `.d.ts` template skip (drop `@Expr<…>` / `@ExprCustom<…>` returns) |
+| **§T** | test-run-log (`----- RUN LOG -----` fence per test, all 4 backends) |
 
-§S ships first (pure deletion, byte-identical). Then §A (keystone),
-then §B/§C/§D/§G in parallel. §U after the Rules track in Frente B
-locks the effect tags.
+The Rules track has internal sequencing; §E/§F/§T are parallel.
 
 ## Coordination
 
-- **§D-D4 (`#[@future]` erlang/beam)** consumes Frente B's Rules track
-  §1F — schedule §1F first; §D-D4 reads it. If §1F isn't in yet,
-  §D-D4 scopes to follow-up per the spec's "scope to follow-up" clause.
+- **Frente A §D-D4 (`#[@future]` erlang/beam) reads this frente's §1F.**
+  Land Rules §1F first so Frente A can consume the contract.
+- **§T's wasm backend depends on Frente A §C2** (wires
+  `botopink test --target wasm`). §T's commonJS/erlang/beam shipping
+  doesn't block on §C2; the wat path turns green later.
 
 ---
 
-## §A — annotation-driven-builtins tail
-- [ ] **A6** — migrate every remaining prim method that still relies on a
-      hardcoded entry (`prim_*` switches / fallback arms). Acceptance:
-      `zig build test` snapshot diff is empty.
-- [ ] **A7** — `tests/codegen/primitive_methods_byte_identical.zig` adds a
-      new prim method (e.g. `Array.zip<U>`) via ONE annotation in
-      `primitives.d.bp`; lowers on all 4 targets without `.zig` edits.
-      Docs in `libs/std/AGENTS.md` + `comptime/AGENTS.md` + `codegen/AGENTS.md`.
+## Rules track — §0 → §1 → §1F → §1I → §1C → §1G → §2 → §3 → §4 → Steps F0–F7
 
-## §B — generic-inference
-- [ ] **B1** — resolve `Self`'s primitive kind inside an interface
-      `default fn` body (`comptime/infer.zig` `instance_lowering`).
-- [ ] **B2** — instantiate callee generic vars before `unifyAt` so
-      generic inline `test { … }` works; re-fold external `*_test.bp`
-      shadow files back to inline tests in `order.bp` / `sets.bp` /
-      `dict.bp` / `queue.bp`.
-- [ ] **B3** — fix `variable 'B' is unbound` codegen bug from LINQ
-      pipeline; capture the `B`-binding lambda's free vars.
-- [ ] **B4** — emit primitive interfaces' instance `default fn`s on
-      erlang + beam (mangled). erika test-libs row flips red→green on
-      erlang and beam.
-- [ ] **B5** — drop the generic-module inline-test caveat in
-      `libs/std/AGENTS.md`; add inference unit tests for B1/B2.
+### F0 — write the spec + lock the contract
+- [x] Spec authored in `tasks/v0.beta.19/specs/frente-b-rules-tooling.md`
+      (ce7afe6). Immutable now.
 
-## §C — wasm-aggregates + wat stack-discipline
-- [ ] **C1** — track per-expression "produces a value" in the wat
-      emitter. Classifier + `returns_value` threaded into `emitBody`.
-- [ ] **C2** — wire `botopink test --target wasm`. `test_cmd.zig:46`
-      gates wasm; test-mode emits `__bp_run_tests`; CLI invokes via
-      `wasmtime`.
-- [ ] **C3** — record field layout (stable 4-byte slot offsets).
-- [ ] **C4** — `?.` on wasm: guards base against null, reads the slot.
-- [ ] **C5** — note wasm single-module rule in `codegen/AGENTS.md`.
-- [ ] **C6** — update `codegen/AGENTS.md`; add `.wat` snapshots.
+### F1 — diagnostic-code table
+- [x] Reserve stable codes R1–R17 + RF1–RF5 + RI1–RI6 + RC1–RC6 + RG1–RG4
+      in `modules/compiler-core/src/comptime/diagnostics.zig` (or
+      equivalent). Existing diagnostics keep their text; new ones are
+      net-new. (cb28f06 — `comptime/diagnostics.zig` reserves every
+      code as a stable string constant; the catalogue is the contract.)
 
-## §D — cross-backend feature parity
-- [ ] **D1** — `console.log` + `new Error(…)` declared as `#[@external]`;
-      lowered by reading the annotation.
-- [ ] **D2** — cross-module fn imports lower to remote call on erlang
-      first, then beam. Unblocks `from "std"` on erlang/beam.
-- [ ] **D3** — typed-value method dispatch (`p.parse(x)` →
-      `'Parser_parse'(P, X)` on erlang/beam).
-- [ ] **D4** — `#[@future]` lowering on erlang/beam (spawn body as
-      process, return Future handle whose `await` joins). **Reads
-      contract from Frente B §1F.** Scope to follow-up if too large; note
-      in `codegen/AGENTS.md`.
-- [ ] **D5** — BEAM inline-fun array/string methods: `join`, `indexOf`,
-      `at`, 2-arg `slice`, string `contains` / `startsWith`.
-- [ ] **D6** — update beam + erlang AGENTS "Remaining gaps"; add
-      cross-backend snapshots for D1–D3 + D5; sweep the negation
-      `gc_bif Live count` note.
+### F2 — parser rejections (R1, R2, R5, RG1)
+- [x] **R1** — `#[@<effect>] declare fn …` reds with
+      `effect-on-declare-forbidden`. (461b681 — parser path)
+- [x] **R2** — `interface I { #[@<effect>] fn … }` reds with
+      `effect-on-interface-method-forbidden`. (461b681)
+- [x] **R5** — duplicate effect annotation reds with
+      `effect-duplicate-annotation`. (461b681)
+- [x] **RG1** — generic-default-before-required rejection at every
+      `GenericParamList` site (struct, fn, enum, interface, TypeRef).
+      (7db5de7 — `parseGenericParams` enforces strict-trailing.)
 
-## §G — erika DSL extensions
-- [ ] **G1** — lower `${expr}` interpolations inside an `erika`
-      template literal (reuse `Part.Interp` machinery).
-- [ ] **G2** — `var s = "select ..."; erika s` runtime-string form
-      (generic mechanism, no erika coupling in core).
-- [ ] **G3** — update `libs/erika/AGENTS.md` "Recorded gaps"; add `.bp`
-      tests under `libs/erika/tests/`.
+### F3 — comptime cross-checks (R3, R4, R6, R7, R8, R9, R10, RG3, RG4)
+- [x] Cross-check `effectAnnotation()` vs `returnType` for each
+      `EffectKind.returnWrapper()`. (34ae1af — R3/R4 codes on the
+      existing check; discriminator picks the missing-wrapper vs
+      mismatch case.)
+- [x] Body walk — partial: R7 / R8 / RI4 already fire from the existing
+      starFn/labelStack infrastructure, now carry stable codes
+      (34ae1af). R6 extended (f619737) — `throw` inside
+      `#[@future]` / `#[@iterator]` / `#[@asyncGenerator]` is no
+      longer red; `#[@generator]` / `#[@context]` / plain fn keep the
+      `effect-throw-without-fallible-channel` reject text.
+- [x] **RG3** — missing required generic arg → `generic-required-arg-missing`.
+      (`builtinRequiredGenericArgs` in `comptime/infer.zig` fires on
+      `@Future<>` / `@Iterator<>` / `@Result<i32>` etc.)
+- [x] **RG4** — skipped middle generic arg → `generic-arg-skip-forbidden`.
+      (`parser/types.zig` detects the `,,` / `,>` slot at parse time,
+      `ParseErrorType.genericArgSkipForbidden`.)
 
-## §S — remove deprecated `*fn` prefix
-- [x] **S0** — survey: `git grep -nE '\*fn\b' repository/` captures the
-      surface; sanity-check zero authored `.bp` / `.d.bp` hits.
-- [x] **S1** — lexer drops `*` lookahead; parser emits
-      `deprecated-star-fn` diagnostic with migration help line.
-- [x] **S2** — delete `EffectKind.fromStarReturn` + `FnDecl.is_star`;
-      docstrings drop `*fn` mentions; collapse `effectAnnotation` if
-      identical to `effect`.
-- [x] **S3** — rewrite codegen comment lines (`// *fn …` → `#[@<effect>]`).
-- [x] **S4** — rewrite `\\*fn` literals in `js_builtins.zig` (5) +
-      `js_control_flow.zig` (~30); output stays byte-identical.
-- [x] **S5** — AGENTS sweep + `CHANGELOG.md` `BREAKING:` line.
-- [x] **S6** — gate: `git grep '\*fn'` finds only the CHANGELOG line;
-      `zig build test` + `botopink-lib-test` green; end-to-end test of
-      the diagnostic.
+### F4 — `#[@result]` auto-wrap (§1) + R11/R12
+- [x] `comptime/transform.zig` rewrites `return <r>;` inside `#[@result]`
+      to `return @Result.Ok(<r>);` AST-level. (Already wired —
+      `infer.zig` populates `env.result_jump_lowerings.put(loc, .wrap_ok)`
+      at the return site; transform consumes it to emit `__bp_ok(<r>)`.)
+- [x] Same file rewrites `throw <e>;` to `return @Result.Err(<e>);`.
+      (`env.result_jump_lowerings.put(loc, .wrap_error)` at the throw
+      site; `__bp_error(<e>)` lowering in transform.)
+- [x] **R11/R12** — visiting manual `Result::Ok(…)` / `Result::Err(…)`
+      forms inside `#[@result]` body emits the matching diagnostic.
+      (`resultVariantCallName` in `comptime/infer.zig`; R11 +
+      `throw-must-be-bare-E` fire at the jump site, R12 fires at any
+      other call site.)
 
-## §U — remove unused stdlib builtins
-- [ ] **U0** — re-run candidate grep at execution time; abort any
-      candidate that now has a caller.
-- [ ] **U1** — per confirmed-unused fn (15 candidates from the
-      2026-06-13 audit): delete declaration + handler + per-backend
-      lowering + AGENTS row. One commit per candidate.
-- [ ] **U2** — per unused `@<tag>` (8 candidates): same shape, comptime
-      tag registry. **KEEP** the six effect tags.
-- [ ] **U3** — sweep `builtins.d.bp` comment-block headers; delete
-      orphans.
-- [ ] **U4** — `CHANGELOG.md` grouped `BREAKING:` line.
-- [ ] **U5** — gate: full test sweep green; fresh `git grep` finds each
-      removed symbol only in CHANGELOG.md.
+### F4F — `#[@future]` auto-wrap (§1F) + RF1–RF5
+- [ ] `transform.zig` rewrites `return <t>;` inside `#[@future]` to
+      `return @Future.resolved(<t>);` and `throw <e>;` to
+      `return @Future.rejected(<e>);`.
+- [ ] **RF1/RF2/RF5** — visiting manual `Future::resolved(…)` /
+      `Future::rejected(…)` reds.
+- [ ] commonJS lowering: `@Future.resolved` → bare `return <t>;`;
+      `@Future.rejected` → `throw <e>;` (inside `async function`).
+- [ ] erlang/beam: **gated on Frente A §D-D4** — coordinate at merge.
+
+### F4I — `#[@iterator]` `break <C>` + `yield :label` (§1I) + RI1–RI6
+- [ ] `parser/stmts.zig` parses `break;`, `break <expr>;`,
+      `break :label [<expr>];` inside `#[@iterator]`/`#[@asyncGenerator]`.
+- [ ] `parser/decls.zig` parses trailing `:label` after the return type
+      (extend from `#[@generator]` to `#[@iterator]`/`#[@asyncGenerator]`).
+- [ ] `transform.zig` rewrites `break <c>;` to
+      `return @IteratorStep.Done(<c>);` and `throw <e>;` to
+      `return @IteratorStep.Error(<e>);`.
+- [ ] **RI1/RI2/RI3/RI5** — invalid forms reject with their codes.
+- [x] **RI4** — already covered by `yield-label-unbound` in
+      `comptime/infer.zig` (34ae1af).
+- [x] **RI6** — parser hard-rejects the legacy `yield break <expr>` /
+      `yield break` form with `yield-break-removed` (32883c9).
+
+### F4C — `#[@context]` Anchor + `@getContex` (§1C) + RC1–RC6 (R18–R21)
+- [ ] `parser/decls.zig` parses `@getContex(T)` intrinsic.
+- [ ] `transform.zig` records the Anchor (`Base`) extracted from
+      `@Context<Base, T>`; every `use <hook>()` / `use @getContex(<T>)`
+      is type-checked against it.
+- [ ] **`comptime/contextStack.zig` (new)** — per-compilation-unit map of
+      `Type → Provider`, populated by `use`-block entry / exit.
+- [ ] **RC1 (E1)** — no active provider ⇒ comptime if statically known;
+      runtime trap otherwise.
+- [ ] **RC2 (E2)** — hook's `HookBase` not assignable to enclosing Anchor.
+- [ ] **RC3/RC4/RC5/RC6** — invalid `@getContex` / `use` forms reject.
+- [ ] commonJS lowering: scope-stack as a module-level array; push/pop.
+- [ ] erlang/beam lowering: process-dictionary scope.
+
+### F4G — default generic parameters (§1G) + RG1–RG4
+- [x] `parser/types.zig` `GenericParamList` accepts `IDENT ("=" TypeRef)?`;
+      enforce strict-trailing-position rule at parse time. (7db5de7)
+- [ ] `comptime/types.zig` — omitted trailing args resolve to declared
+      defaults.
+- [ ] Update consumers (struct, fn, enum, interface) to thread
+      default-typed params through codegen.
+
+### F5 — `builtins.d.bp` mirror (§4)
+- [x] Rewrite the `§ effect annotations` block per §4 (the §1 + §1F +
+      §1I + §1C + §1G summaries land here). (ae32095)
+- [x] Update `pub interface Future<T, E = any>` declaration. (ae32095 —
+      requires `any` primitive, added in `comptime/env.zig`.)
+- [ ] Update `pub interface Iterator<T, E = any, C = void>` declaration
+      + new `pub enum IteratorStep<T, E, C>`. (Deferred until libs
+      `next() -> ?T` consumers migrate atomically.)
+- [x] Add `@getContex` intrinsic declaration. (ae32095 — comptime/
+      parser side of the intrinsic still gated on F4C.)
+- [x] Add `libs/std/AGENTS.md` link to the spec under "Effect annotations".
+      (ae32095)
+
+### F6 — snapshot suites
+- [ ] `effect_result.zig`
+- [ ] `effect_future.zig` (covers §1F + `fetchUser` example)
+- [ ] `effect_generator.zig`
+- [ ] `effect_iterator.zig` (covers §1I `yield :label` + `break <C>` +
+      `lazyMap` example)
+- [ ] `effect_asyncGenerator.zig` (gated on Frente A §D-D4)
+- [ ] `effect_context.zig` (covers §1C Anchor + `@getContex`)
+- [ ] `generic_defaults.zig` (covers §1G: every RG-code + resolution rules)
+
+### F7 — AGENTS sweep
+- [ ] `modules/compiler-core/AGENTS.md` comptime section: pointer to this
+      spec under "Effect annotations".
+- [ ] `codegen/AGENTS.md` "Effects" subsection with the support matrix.
+
+---
+
+## §E — LSP definition tail
+- [ ] **E1** — tuple-field `recv._N` resolves to the Nth element's type
+      (`resolveChainType` + a new step for `_<digits>`).
+- [ ] **E2** — interface assoc-fn dispatch — `Iface.method(...)` from
+      another module jumps to the `default fn` in the interface source.
+- [ ] **E3** — note both paths in `modules/language-server/AGENTS.md` +
+      `docs.md`; regression tests under `language-server/src/tests/`.
+
+## §F — typescript `.d.ts` template skip
+- [x] **F1** — `typescript.zig` decl emitter skips any fn whose return
+      type starts with `@Expr<` / `@ExprCustom<` / is `@expr` / `@code`.
+      (Done via `TypeRef.isTemplateReturnType()` on free fns, struct
+      methods, record methods, and interface methods — e3104e2.)
+- [x] **F2** — remove KNOWN GAP note in `codegen/AGENTS.md`; add
+      `.d.ts` snapshot asserting no `Expr<>` shows up.
+      (Note rewritten to mirror the drop; new
+      `codegen/tests/dts_skips_templates.zig` asserts no `Expr<` /
+      `ExprCustom<` leaks — e3104e2.)
+
+## §T — test-run-log
+- [ ] **T0** — `runtime.zig.captureStdout(...)` primitive. Each
+      `execute*` path returns `(exit_code, stdout_bytes)`.
+- [ ] **T1** — per-backend test-mode codegen wraps each test body and
+      emits the `TEST <file>:<line> <name>\n----- RUN LOG -----\n` +
+      fenced ```logs``` block:
+      - [ ] commonJS
+      - [ ] erlang
+      - [ ] beam_asm
+      - [ ] wat (gated on Frente A §C2)
+- [ ] **T2** — `test_cmd.zig` parses sentinels; renders per "Target
+      format"; adds `--json` mode emitting per-test
+      `{file,line,name,status,duration_ms,run_log}` records.
+- [ ] **T3** — `lib-test-runner` `report.zig` lib-prefixes lines;
+      `--json` records carry `lib` field.
+- [ ] **T4** — `tests/cli/test_run_log_format.zig` (pass/fail/empty/
+      multi-test on each backend); `tests/cli/test_run_log_json.zig`
+      (schema check); snapshots under `snapshots/cli/test/`.
+- [ ] **T5** — docs:
+      `modules/compiler-cli/AGENTS.md` "Test output format" subsection,
+      `modules/lib-test-runner/AGENTS.md` lib-prefixed mirror,
+      `libs/std/AGENTS.md` "test blocks" paragraph,
+      `modules/compiler-core/AGENTS.md` codegen section link.
 
 ---
 
 ## Done gate (whole frente)
 
-- [ ] every section's checklist ticked above
+- [ ] Rules track F1–F7 ticked above
+- [ ] §E/§F/§T checklists ticked above
+- [ ] R1–R17 + RF1–RF5 + RI1–RI6 + RC1–RC6 + RG1–RG4 all defined +
+      fire correctly under tests
+- [ ] `libs/std/src/builtins.d.bp` `§ effect annotations` block matches §4
+      verbatim
 - [ ] `zig build test` + `zig build test-libs` + `botopink-lib-test` green
 - [ ] every touched AGENTS.md updated in the same commit as the code
-      (memory rule `feedback_agents_md_maintenance`)
-- [ ] zero `*fn` literals in `repository/` outside `CHANGELOG.md`
-- [ ] every entry in `libs/std/src/builtins.d.bp` has at least one
-      authored caller
-- [ ] commit message convention: `feat(...)` / `refactor(...)` /
-      `docs(...)` per phase; English; no `--no-verify`
 
 ## Per-memory reminders
 
 - SSH for all git remote ops (`feedback_always_ssh_git`).
 - Worktree paths for Read/Edit (`project_worktree_workflow`); this
-  worktree is at `.tasks/frente-a-compiler/`.
+  worktree is at `.tasks/frente-b-rules-tooling/`.
 - Functions in camelCase (`feedback_camelcase_naming`).
-- Implement in `.bp` when possible (`feedback_prefer_bp_over_dbp`);
-  `.d.bp` only for markers / FFI / abstract interface.
+- Implement in `.bp` when possible (`feedback_prefer_bp_over_dbp`).
 - After each commit, advance to the next checkbox (`feedback_continue_after_commit`).
+- The bilingual §1/§1F/§1I/§1C addendum blocks are the **only**
+  Portuguese surface — preserve them verbatim (the user's hand-supplied
+  rulesets, zero translation drift); everything else stays English.
