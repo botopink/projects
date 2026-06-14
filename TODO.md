@@ -36,20 +36,22 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
       (ce7afe6). Immutable now.
 
 ### F1 — diagnostic-code table
-- [ ] Reserve stable codes R1–R17 + RF1–RF5 + RI1–RI6 + RC1–RC6 + RG1–RG4
+- [x] Reserve stable codes R1–R17 + RF1–RF5 + RI1–RI6 + RC1–RC6 + RG1–RG4
       in `modules/compiler-core/src/comptime/diagnostics.zig` (or
       equivalent). Existing diagnostics keep their text; new ones are
-      net-new.
+      net-new. (cb28f06 — `comptime/diagnostics.zig` reserves every
+      code as a stable string constant; the catalogue is the contract.)
 
 ### F2 — parser rejections (R1, R2, R5, RG1)
-- [ ] **R1** — `#[@<effect>] declare fn …` reds with
-      `effect-on-declare-forbidden`.
-- [ ] **R2** — `interface I { #[@<effect>] fn … }` reds with
-      `effect-on-interface-method-forbidden`.
-- [ ] **R5** — duplicate effect annotation reds with
-      `effect-duplicate-annotation`.
-- [ ] **RG1** — generic-default-before-required rejection at every
+- [x] **R1** — `#[@<effect>] declare fn …` reds with
+      `effect-on-declare-forbidden`. (461b681 — parser path)
+- [x] **R2** — `interface I { #[@<effect>] fn … }` reds with
+      `effect-on-interface-method-forbidden`. (461b681)
+- [x] **R5** — duplicate effect annotation reds with
+      `effect-duplicate-annotation`. (461b681)
+- [x] **RG1** — generic-default-before-required rejection at every
       `GenericParamList` site (struct, fn, enum, interface, TypeRef).
+      (7db5de7 — `parseGenericParams` enforces strict-trailing.)
 
 ### F3 — comptime cross-checks (R3, R4, R6, R7, R8, R9, R10, RG3, RG4)
 - [ ] Cross-check `effectAnnotation()` vs `returnType` for each
@@ -103,21 +105,25 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
 - [ ] erlang/beam lowering: process-dictionary scope.
 
 ### F4G — default generic parameters (§1G) + RG1–RG4
-- [ ] `parser/types.zig` `GenericParamList` accepts `IDENT ("=" TypeRef)?`;
-      enforce strict-trailing-position rule at parse time.
+- [x] `parser/types.zig` `GenericParamList` accepts `IDENT ("=" TypeRef)?`;
+      enforce strict-trailing-position rule at parse time. (7db5de7)
 - [ ] `comptime/types.zig` — omitted trailing args resolve to declared
       defaults.
 - [ ] Update consumers (struct, fn, enum, interface) to thread
       default-typed params through codegen.
 
 ### F5 — `builtins.d.bp` mirror (§4)
-- [ ] Rewrite the `§ effect annotations` block per §4 (the §1 + §1F +
-      §1I + §1C + §1G summaries land here).
-- [ ] Update `pub interface Future<T, E = any>` declaration.
+- [x] Rewrite the `§ effect annotations` block per §4 (the §1 + §1F +
+      §1I + §1C + §1G summaries land here). (ae32095)
+- [x] Update `pub interface Future<T, E = any>` declaration. (ae32095 —
+      requires `any` primitive, added in `comptime/env.zig`.)
 - [ ] Update `pub interface Iterator<T, E = any, C = void>` declaration
-      + new `pub enum IteratorStep<T, E, C>`.
-- [ ] Add `@getContex` intrinsic declaration.
-- [ ] Add `libs/std/AGENTS.md` link to the spec under "Effect annotations".
+      + new `pub enum IteratorStep<T, E, C>`. (Deferred until libs
+      `next() -> ?T` consumers migrate atomically.)
+- [x] Add `@getContex` intrinsic declaration. (ae32095 — comptime/
+      parser side of the intrinsic still gated on F4C.)
+- [x] Add `libs/std/AGENTS.md` link to the spec under "Effect annotations".
+      (ae32095)
 
 ### F6 — snapshot suites
 - [ ] `effect_result.zig`
