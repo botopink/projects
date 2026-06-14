@@ -88,11 +88,22 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
 ### F4F — `#[@future]` auto-wrap (§1F) + RF1–RF5
 - [ ] `transform.zig` rewrites `return <t>;` inside `#[@future]` to
       `return @Future.resolved(<t>);` and `throw <e>;` to
-      `return @Future.rejected(<e>);`.
-- [ ] **RF1/RF2/RF5** — visiting manual `Future::resolved(…)` /
-      `Future::rejected(…)` reds.
+      `return @Future.rejected(<e>);`. (Deferred — JS `async function`
+      already wraps native; erlang/beam process-spawn handled by
+      Frente A §D-D4. Manual wrappings already rejected; the
+      transform-level rewrite is a pure renaming with no observable
+      output today.)
+- [x] **RF1/RF2/RF5** — visiting manual `Future.resolved(…)` /
+      `Future.rejected(…)` reds. (`futureConstructorCallName` in
+      `comptime/infer.zig`; `StarFnCtx.effect` field added so
+      `inEffectContext(env, .future)` distinguishes future from
+      iterator/asyncGenerator/generator contexts.)
 - [ ] commonJS lowering: `@Future.resolved` → bare `return <t>;`;
       `@Future.rejected` → `throw <e>;` (inside `async function`).
+      (Untouched — the bare `return <t>;` already lowers to a resolved
+      Promise via JS's native `async function`; `throw <e>;` already
+      rejects. Only the AST-level explicit-wrap form would need the
+      lowering, and the contract rejects authoring it.)
 - [ ] erlang/beam: **gated on Frente A §D-D4** — coordinate at merge.
 
 ### F4I — `#[@iterator]` `break <C>` + `yield :label` (§1I) + RI1–RI6
