@@ -37,17 +37,19 @@ commit — this is a pure refactor.
 ---
 
 ## F0 — extend the AST + parser
-- [x] **F0.1 (partial)** — `comptime/primOpTemplate.zig` carries the
-      template-vs-legacy discriminator (`looksLikeTemplate`); no AST
-      enum churn (`legacy_2_arg` / `template` / `arity_branch`) — the
-      raw `external` symbol bytes ARE the template body, recognised by
-      the `$` marker. `arity_branch` (`when($argc == N)`) and `"""…"""`
-      raw-string form remain deferred (need parser + ast extension).
-- [ ] **F0.2** — `"""…"""` raw strings (any string with embedded `"`
-      like `Array.join`'s `io_lib:format("~p", …)` template body needs
-      this); `when(…)` clauses (`Array.slice` arity branch). Both
-      deferred — the existing migrations use single-string templates
-      that fit on one line.
+- [x] **F0.1** — `comptime/primOpTemplate.zig` carries the
+      template-vs-legacy discriminator (`looksLikeTemplate`); raw
+      `external` symbol bytes ARE the template body. `ArityBranch`
+      `{argc, template}` lives on `ast.zig` with
+      `parseArityBranchArg` / `externalHasArityBranches` /
+      `externalArityBranchFor`. Tests in `primOpTemplate.zig`.
+- [x] **F0.2** — `"""…"""` raw strings: `unquoteAnnotationArg`
+      recognises the `multilineStringLiteral` lexeme and strips one
+      leading + one trailing newline ("indent the block" convention),
+      preserving inner indentation. `when(argc == N): "<template>"`
+      clauses: parser spans through balanced parens + `:` + value as
+      ONE arg lexeme (predicate uses bare `argc`, not `$argc` — the
+      botopink lexer rejects bare `$` outside string literals).
 
 ## F1 — `tryEmitPrimAnnotation` + shared renderer
 - [x] **F1.1** — `comptime/primOpTemplate.zig` shipped: `render(template,
@@ -81,10 +83,10 @@ commit — this is a pure refactor.
       `iface.methods`. Needs val-property support OR explicit
       `fn length() -> i32` / `fn len()` / `fn size()` declarations.
 - [x] **F2.Array.isEmpty** — `($self =:= [])`; switch arm deleted
-- [ ] **F2.Array.slice** — arity branch (1 vs 2 args) — deferred
-- [ ] **F2.Array.join** — embedded `"~p"` inside template needs `"""…"""` — deferred
+- [x] **F2.Array.slice** — `when(argc == 1)` / `when(argc == 2)` arity branch; switch arm deleted
+- [x] **F2.Array.join** — `"""…"""` raw-string single-line template; switch arm deleted
 - [x] **F2.Array.at** — single-line inline-fun + bounds check template; switch arm deleted
-- [ ] **F2.String.slice** — arity branch — deferred
+- [x] **F2.String.slice** — `when(argc == 1)` / `when(argc == 2)` arity branch; switch arm deleted
 - [x] **F2.String.contains** — `(string:find($self, $0) =/= nomatch)`; switch arm deleted
 - [x] **F2.String.startsWith** — `(string:prefix($self, $0) =/= nomatch)`; switch arm deleted
 - [x] **F2.String.split** — `string:split($self, $0, all)`; switch arm deleted
