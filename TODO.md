@@ -107,7 +107,7 @@ SHA in a throwaway worktree. One bootstrap script
       "pre-commit" paragraph with a pointer to the tracked source +
       install script.
 - [x] Each lib's `AGENTS.md` — "Local gate" subsection per F4.
-- [ ] This set's `README.md` + `status.md` — flip the
+- [x] This set's `README.md` + `status.md` — flip the
       recursive-test-gate row to `done` once merged into `feat`.
 
 ## Acceptance — test scenarios (from spec)

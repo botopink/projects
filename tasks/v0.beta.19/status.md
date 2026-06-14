@@ -11,7 +11,7 @@
 | [frente-c-distribution](specs/frente-c-distribution.md) | `frente-c-distribution` | `task/frente-c-distribution` | `.tasks/frente-c-distribution/` | **merged+pushed** (`origin/feat` ← 4957f2d; H8 ops + J2 fork smoke deferred to maintainer) |
 | [prim-op-annotation](specs/prim-op-annotation.md) | `prim-op-annotation` | (pending — likely lands in Frente A's worktree as a satellite) | — | pending |
 | [std-expansion](specs/std-expansion.md) | `std-expansion` | (pending — one worktree per wave: `.tasks/std-wave1/` etc) | — | pending |
-| [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | `task/recursive-test-gate` | `.tasks/recursive-test-gate/` | **in-flight** (F0–F7 implemented in worktree; submodule shims pushed to each lib's `feat`; meta integration pending) |
+| [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | `task/recursive-test-gate` | `.tasks/recursive-test-gate/` | **done** (F0–F7 merged + pushed to `origin/feat` eede97d; submodule shim commits on each lib's `feat`; recursive submodule scan exercised live during the bump commit) |
 
 ## std-expansion — per-wave state
 
