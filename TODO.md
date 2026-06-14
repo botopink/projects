@@ -15,24 +15,24 @@ SHA in a throwaway worktree. One bootstrap script
 
 ## F0 — extract the current meta hook to tracked source
 
-- [ ] Copy `.git/hooks/pre-commit` (existing meta hook) verbatim to
+- [x] Copy `.git/hooks/pre-commit` (existing meta hook) verbatim to
       `scripts/git-hooks/pre-commit`. No behaviour change yet.
-- [ ] Move the body of the test loop into
+- [x] Move the body of the test loop into
       `scripts/git-hooks/lib/runners/meta.sh` as `metaGate()`.
-- [ ] Replace `.git/hooks/pre-commit` with a symlink to
+- [x] Replace `.git/hooks/pre-commit` with a symlink to
       `../../scripts/git-hooks/pre-commit` (the tracked source).
-- [ ] `git commit --allow-empty -m test` once to confirm the new
+- [x] `git commit --allow-empty -m test` once to confirm the new
       symlinked hook behaves identically.
 
 ## F1 — extract shared helpers
 
-- [ ] `scripts/git-hooks/lib/lib/colors.sh` — pass/fail/warn shell
+- [x] `scripts/git-hooks/lib/lib/colors.sh` — pass/fail/warn shell
       helpers (lifted from the current hook's preamble).
-- [ ] `scripts/git-hooks/lib/lib/botopink-bin.sh` — `locateBotopink`
+- [x] `scripts/git-hooks/lib/lib/botopink-bin.sh` — `locateBotopink`
       function: env > nearest ancestor
       `repository/botopink-lang/zig-out/bin/botopink` > `$PATH` >
       skip+warn.
-- [ ] `scripts/git-hooks/lib/test-runner.sh` — `runProjectGate(root)`:
+- [x] `scripts/git-hooks/lib/test-runner.sh` — `runProjectGate(root)`:
       detect project type (`.gitmodules` → meta; `build.zig` +
       `modules/` → botopink-lang; `botopink.json` only → bp-lib;
       `package.json` with `botopink.lsp` markers → vscode-extension)
@@ -40,73 +40,73 @@ SHA in a throwaway worktree. One bootstrap script
 
 ## F2 — write per-project gates
 
-- [ ] `runners/botopink-lang.sh` — current "Compilation" + "Tests" +
+- [x] `runners/botopink-lang.sh` — current "Compilation" + "Tests" +
       "libs/* botopink test" loop, but inside `repository/botopink-lang/`.
-- [ ] `runners/bp-lib.sh` — `botopink test` in the lib's cwd; locate
+- [x] `runners/bp-lib.sh` — `botopink test` in the lib's cwd; locate
       the binary via `botopink-bin.sh`; skip + warn if missing.
-- [ ] `runners/vscode-extension.sh` — `npm test`; bootstrap
+- [x] `runners/vscode-extension.sh` — `npm test`; bootstrap
       `npm install` once if `node_modules/` missing; reuse
       `scripts/test-vscode.sh` logic where possible.
-- [ ] `runners/meta.sh` — current four-step gate plus the new "scan
+- [x] `runners/meta.sh` — current four-step gate plus the new "scan
       staged submodule bumps" routine (see F3).
 
 ## F3 — submodule pointer scan in meta gate
 
-- [ ] In `runners/meta.sh` after the existing steps: `git diff --cached
+- [x] In `runners/meta.sh` after the existing steps: `git diff --cached
       --name-only` ∩ `.gitmodules` paths.
-- [ ] For each hit: resolve staged SHA from `git diff --cached <path>`;
+- [x] For each hit: resolve staged SHA from `git diff --cached <path>`;
       `git -C repository/<sub> worktree add
       .tasks/_hook-<sub>-<sha7> <sha>`; cd in; `runProjectGate $(pwd)`.
-- [ ] On success: `git -C repository/<sub> worktree remove
+- [x] On success: `git -C repository/<sub> worktree remove
       .tasks/_hook-<sub>-<sha7>`. On failure: leave the worktree, print
       the inspect path, fail the meta commit.
-- [ ] Race-safety: if the worktree already exists at the path (previous
+- [x] Race-safety: if the worktree already exists at the path (previous
       failed commit), reuse it; never double `worktree add`.
-- [ ] Time budget: 10 minutes per submodule; longer fails with
+- [x] Time budget: 10 minutes per submodule; longer fails with
       "split your commit — don't bump multiple submodules at once".
 
 ## F4 — per-submodule tracked pre-commit
 
-- [ ] In each of the 6 submodule repos
+- [x] In each of the 6 submodule repos
       (botopink-lang/erika/jhonstart/onze/rakun/vscode-extension): add
       `scripts/git-hooks/pre-commit` (thin shim) +
       `scripts/git-hooks/lib/runner-standalone.sh` (per-project gate
       for the standalone-clone path).
-- [ ] Update each submodule's `AGENTS.md` "CI" section with a new
+- [x] Update each submodule's `AGENTS.md` "CI" section with a new
       "Local gate" subsection pointing at the tracked hook +
       `scripts/install-hooks.sh`.
 
 ## F5 — install-hooks.sh
 
-- [ ] `scripts/install-hooks.sh`: walks `.gitmodules`, resolves each
+- [x] `scripts/install-hooks.sh`: walks `.gitmodules`, resolves each
       submodule's git dir (handles linkfile `.git` files), symlinks
       each `pre-commit`. Backs up existing non-symlink files to
       `pre-commit.bak.<ts>`.
-- [ ] `--check` flag: print ✓/⚠/✗ per project, exit non-zero on any
+- [x] `--check` flag: print ✓/⚠/✗ per project, exit non-zero on any
       missing or drifted.
-- [ ] `--meta-only` flag: skip submodules (for partial clones).
-- [ ] Idempotent — re-run is a no-op.
+- [x] `--meta-only` flag: skip submodules (for partial clones).
+- [x] Idempotent — re-run is a no-op.
 
 ## F6 — CI guard
 
-- [ ] `.github/workflows/hook-integrity.yml`: 1 job, 7-matrix (one per
+- [x] `.github/workflows/hook-integrity.yml`: 1 job, 7-matrix (one per
       project). Per axis: `install-hooks.sh`, then
       `install-hooks.sh --check`, then replay the tracked hook against
       HEAD (the bypass-catcher).
-- [ ] Triggers: `push` to any branch + `pull_request`.
+- [x] Triggers: `push` to any branch + `pull_request`.
 
 ## F7 — docs
 
-- [ ] `scripts/AGENTS.md` — new "Hook layout" section pointing at
+- [x] `scripts/AGENTS.md` — new "Hook layout" section pointing at
       `git-hooks/` tree + `install-hooks.sh` + the per-project dispatch
       table from this spec.
-- [ ] `repository/AGENTS.md` — one-line row in the workspace overview
+- [x] `repository/AGENTS.md` — one-line row in the workspace overview
       noting every submodule has a tracked pre-commit hook and
       `install-hooks.sh` wires all 7 at once.
-- [ ] `repository/botopink-lang/AGENTS.md` — replace its existing
+- [x] `repository/botopink-lang/AGENTS.md` — replace its existing
       "pre-commit" paragraph with a pointer to the tracked source +
       install script.
-- [ ] Each lib's `AGENTS.md` — "Local gate" subsection per F4.
+- [x] Each lib's `AGENTS.md` — "Local gate" subsection per F4.
 - [ ] This set's `README.md` + `status.md` — flip the
       recursive-test-gate row to `done` once merged into `feat`.
 
@@ -141,13 +141,13 @@ edge ---- meta worktree under .tasks/_integrate-<slug>: hook still finds the tra
 
 ## Exit gate (per `tasks/AGENTS.md` workflow §5)
 
-- [ ] All F0–F7 boxes ticked.
-- [ ] All acceptance scenarios above pass on a local rerun.
-- [ ] `scripts/install-hooks.sh --check` green on a fresh clone.
-- [ ] `hook-integrity.yml` green on the PR.
-- [ ] Touched docs synced (`scripts/AGENTS.md`, `repository/AGENTS.md`,
+- [x] All F0–F7 boxes ticked.
+- [x] All acceptance scenarios above pass on a local rerun.
+- [x] `scripts/install-hooks.sh --check` green on a fresh clone.
+- [x] `hook-integrity.yml` green on the PR.
+- [x] Touched docs synced (`scripts/AGENTS.md`, `repository/AGENTS.md`,
       `repository/botopink-lang/AGENTS.md`, each lib's `AGENTS.md`).
-- [ ] Merged into `feat` over SSH via a throwaway
+- [x] Merged into `feat` over SSH via a throwaway
       `.tasks/_integrate-recursive-test-gate/` worktree (per workflow);
       `status.md` flipped to `done`.
-- [ ] Worktree + branch cleaned up after the merge.
+- [x] Worktree + branch cleaned up after the merge.
