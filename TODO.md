@@ -92,8 +92,11 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
 - [ ] `transform.zig` rewrites `break <c>;` to
       `return @IteratorStep.Done(<c>);` and `throw <e>;` to
       `return @IteratorStep.Error(<e>);`.
-- [ ] **RI1/RI2/RI3/RI4/RI5/RI6** — invalid forms reject with their codes;
-      RI6 in particular hard-rejects the legacy `yield break`.
+- [ ] **RI1/RI2/RI3/RI5** — invalid forms reject with their codes.
+- [x] **RI4** — already covered by `yield-label-unbound` in
+      `comptime/infer.zig` (34ae1af).
+- [x] **RI6** — parser hard-rejects the legacy `yield break <expr>` /
+      `yield break` form with `yield-break-removed` (32883c9).
 
 ### F4C — `#[@context]` Anchor + `@getContex` (§1C) + RC1–RC6 (R18–R21)
 - [ ] `parser/decls.zig` parses `@getContex(T)` intrinsic.
