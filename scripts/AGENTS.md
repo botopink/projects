@@ -17,7 +17,6 @@ scripts/
 ├── install-hooks.sh   ← wire scripts/git-hooks/pre-commit into meta + every submodule
 ├── install-tooling.sh ← build + install/update botopink-lsp and the VS Code extension
 ├── status.sh          ← print a set's status.md rollup table (usage: status.sh v0.beta.2)
-├── test-libs.sh       ← pre-flight + run zig build test-libs
 ├── test-vscode.sh     ← lazy npm ci + npm test for the VS Code extension
 └── git-hooks/         ← tracked source of truth for the workspace pre-commit gate
     ├── pre-commit                       ← wrapper, symlinked into every project
@@ -41,6 +40,26 @@ scripts/
   writes a binary to a PATH dir + installs the VS Code extension, the second
   creates symlinks under each project's `.git/hooks/`. Both are idempotent.)
 - Exit 0 = healthy, 1 = violations (one line per violation on stderr).
+
+## `test-libs.sh` lives under botopink-lang
+
+The `test-libs.sh` wrapper that `zig build test-libs` invokes lives at
+[`repository/botopink-lang/scripts/test-libs.sh`](../repository/botopink-lang/scripts/test-libs.sh)
+— not here. The in-tree path is what makes `zig build test-libs` work
+in both the meta workspace layout (`<meta>/repository/botopink-lang/`)
+AND the standalone lib-checkout CI layout (`<lib>/botopink-lang/`),
+since the build.zig SystemCommand resolves the relative
+`scripts/test-libs.sh` at the build root in either case. The script's
+own `cd "$(git rev-parse --show-toplevel)"` + `if [ -f repository/
+botopink-lang/build.zig ]; then ...` chain detects which layout it's
+running under.
+
+Run it from the meta workspace via `zig build test-libs` (which
+shells out internally) or directly:
+
+```sh
+bash repository/botopink-lang/scripts/test-libs.sh -- --target erlang --lib rakun
+```
 
 ## Hook layout
 

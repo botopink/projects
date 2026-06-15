@@ -26,7 +26,7 @@
 | [ci-pipelines-green-tail](specs/ci-pipelines-green-tail.md) | `ci-pipelines-green-tail` | `task/ci-pipelines-green` | `.tasks/ci-pipelines-green/` | **done** — F0 confirmed green (all 7 workflows succeed on `feat`); F1 dropped the snap-diff artifact upload step (c8e1e6d); F2 dropped `ERL_AFLAGS` from both bot-lang/test.yml + meta/hook-integrity.yml (c8e1e6d + 7bf9e17); F3 documented the runtime.zig stdout-only RUN LOG contract (08ad75f); F4 flipped the v0.beta.19/status.md row to `done` (7bf9e17) |
 | [backends-parity-erlang](specs/backends-parity-erlang.md) | `backends-parity-erlang` | (pending — likely `.tasks/backends-parity-erlang/`) | — | pending |
 | [backends-parity-windows](specs/backends-parity-windows.md) | `backends-parity-windows` | (pending — likely `.tasks/backends-parity-windows/`) | — | pending |
-| [test-libs-consolidation](specs/test-libs-consolidation.md) | `test-libs-consolidation` | (pending — single meta commit; no dedicated worktree expected) | — | pending |
+| [test-libs-consolidation](specs/test-libs-consolidation.md) | `test-libs-consolidation` | `task/ci-pipelines-green` (piggy-back) | `.tasks/ci-pipelines-green/` (carryover) | **done** — deleted `<meta>/scripts/test-libs.sh`; bot-lang's `repository/botopink-lang/scripts/test-libs.sh` is the single source. scripts/AGENTS.md gained the path-note section; bot-lang AGENTS.md hyperlink updated to bot-lang's own copy. Three callers verified: build.zig already uses the in-tree relative path (no change needed); scripts/git-hooks/lib/runners/botopink-lang.sh's prose comment works for either copy (no change needed). |
 
 ## Carryover state from v0.beta.19
 
