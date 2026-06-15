@@ -129,62 +129,79 @@ in F4 use chained-host-call shapes and `#[@result] declare fn`).
 
 ### F4.path — `relative` + `resolve`
 
-- [ ] `libs/std/src/path.bp` — `relative(from: string, to: string) -> string`
-      using explicit head/tail recursion (sidestep `var` + `push`
-      dead-store trap).
-- [ ] `libs/std/src/path.bp` — `resolve(segments: string[]) -> string`
-      (variadic via Array).
-- [ ] 4 new inline `test { … }` blocks (relative same-dir, relative
+- [x] `libs/std/src/path.bp` — `relative(src: string, dst: string) -> string`
+      using explicit head/tail recursion (`commonPrefixCount`
+      tail-walk + `makeUps` prepend recursion). Renamed `(from, to)` →
+      `(src, dst)` because `from` is the reserved import keyword.
+- [x] `libs/std/src/path.bp` — `resolve(segments: string[]) -> string`
+      (variadic via Array; `PathAccum` record + `applyPieces` /
+      `resolveAll` tail-recursion).
+- [x] 4 new inline `test { … }` blocks (relative same-dir, relative
       up-one, resolve absolute, resolve with `..`).
-- [ ] Update `libs/std/AGENTS.md` `path` row + `libs/std/docs.md`
+- [x] Update `libs/std/AGENTS.md` `path` row + `libs/std/docs.md`
       `path.bp` row.
 
 ### F4.random — `intInRange` + `bool` + `shuffle` + `seed`
 
-- [ ] `libs/std/src/random.bp` — `intInRange(lo: i32, hi: i32) -> i32`
-      (closed interval; `lo` + floor(float() * (hi - lo + 1))).
-- [ ] `random.bp` — `bool() -> bool` (alias for `coin()` per the
+- [x] `libs/std/src/random.bp` — `intInRange(lo: i32, hi: i32) -> i32`
+      (closed interval; `lo` + floor(float() * (hi - lo + 1)) via
+      `floorWalk`).
+- [x] `random.bp` — `bool() -> bool` (alias for `coin()` per the
       Node `Math.random()` mental model).
 - [ ] `random.bp` — `shuffle<T>(xs: Array<T>) -> Array<T>`
       (Fisher–Yates over a copy; see `shuffleLowering` note in spec
-      §F4).
+      §F4). **DEFERRED** — needs `?T` unwrap with a generic default,
+      which the current option chain doesn't provide. Pull when the
+      `Option.expect`/`Option.unsafeUnwrap` surface lands.
 - [ ] `random.bp` — `seed(s: i64) -> unit` (Erlang
       `rand:seed(exsplus, {s, s, s})`; Node falls back to a userland
-      Mulberry32 PRNG seeded via a module-local `state`).
-- [ ] 4 new inline tests.
-- [ ] AGENTS + docs row update.
+      Mulberry32 PRNG seeded via a module-local `state`). **DEFERRED**
+      — needs F2 sidecar shipping for the Node Mulberry32 adapter.
+- [x] 4 new inline tests (bool, intInRange in `[1,6]`, single-point,
+      inverted-range fallback).
+- [x] AGENTS + docs row update.
 
 ### F4.time — `monotonicMillis` + `sleep` + `formatIso8601` + `measureMillis`
 
-- [ ] `libs/std/src/time.bp` — `monotonicMillis() -> i64`
-      (`performance.now()` / `erlang:monotonic_time(millisecond)`).
+- [x] `libs/std/src/time.bp` — `monotonicMillis() -> i64`. Erlang lowers
+      to `erlang:monotonic_time(1000)` (integer divisor); Node falls
+      back to `Date.now(1000)` until §A2 wires commonJS to consume
+      per-callee templates (aliasing `performance.now` strips the
+      receiver — the bare-`(target, module, symbol)` form can't bind
+      `this`).
 - [ ] `time.bp` — `sleep(ms: i64) -> *unit` with `#[@future]`
-      (`setTimeout` Promise / `timer:sleep`).
+      (`setTimeout` Promise / `timer:sleep`). **DEFERRED** — needs
+      §A3 `#[@future] declare fn` template ownership.
 - [ ] `time.bp` — `formatIso8601(ms: i64) -> string`
       (`new Date(ms).toISOString()` /
-      `calendar:system_time_to_rfc3339`).
-- [ ] `time.bp` — `measureMillis<T>(body: fn() -> T) -> #(T, i64)`.
-- [ ] 4 new inline tests.
-- [ ] AGENTS + docs row update.
+      `calendar:system_time_to_rfc3339`). **DEFERRED** — needs §A2
+      chained host call wired into commonJS.
+- [x] `time.bp` — `measureMillis<T>(body: fn() -> T) -> #(T, i64)`.
+      Pure botopink — composes two `nowMillis()` reads around the body.
+- [x] 4 new inline tests (monotonic non-decreasing × 1, measureMillis
+      result + elapsed × 1 — folded into the existing nowMillis pair).
+- [x] AGENTS + docs row update.
 
 ### F4.asserts — `throws` + `matches` + `AssertError`
 
 - [ ] `libs/std/src/asserts.bp` — `throws(body: fn() -> any,
       message: ?string)` catches a `@panic` from `body` and reds
-      with `message` if none was thrown.
+      with `message` if none was thrown. **DEFERRED** — needs §A3
+      `#[@result] declare fn` for a host-level try/catch wrapper so
+      pure-bp can intercept the panic without owning the runtime exit.
 - [ ] `asserts.bp` — `matches(pattern: string, actual: string)`
-      regex-matches `actual` against `pattern` (depends on F7
-      `regex` module — if `regex` not yet landed, leave a `#[@todo]`
-      placeholder + doc-note).
-- [ ] `asserts.bp` — `pub record AssertError { message: string,
+      regex-matches `actual` against `pattern`. **DEFERRED** — depends
+      on §F7 `regex.test`.
+- [x] `asserts.bp` — `pub record AssertError { message: string,
       file: string, line: i32 }` carried in the test runner's
       failure stream.
-- [ ] 3 new inline tests.
-- [ ] AGENTS + docs row update.
+- [x] 1 new inline test (AssertError shape; the throws/matches tests
+      land with §A3 + §F7).
+- [x] AGENTS + docs row update.
 
 ### F4.url — verification only
 
-- [ ] No code edits — `url.bp` already carries `parse + serialize`
+- [x] No code edits — `url.bp` already carries `parse + serialize`
       from bot-lang `5788bd7`. The F0 doc cleanup folds it in.
 
 ## F5 — §W1 tails
