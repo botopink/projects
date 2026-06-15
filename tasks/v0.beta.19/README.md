@@ -24,7 +24,6 @@
 | [std-expansion-tail](specs/std-expansion-tail.md) | `std-expansion-tail` | closes the 12 deferred std modules from `std-expansion` (json/base64/env/fs/process/os/regex/unicode/array_ext/string_ext/http/crypto) + the in-module tails (`path.relative`/`resolve` · `random.intInRange`/`bool`/`shuffle`/`seed` · `time.monotonic`/`sleep`/`formatIso8601`/`measure` · `asserts.throws`/`matches`/`AssertError`) + the F6 `STD-001` `std-unsupported-on-target` diagnostic at the `from "std"` import site + F7 examples.md "Real-world examples" CLI + the codegen per-target coverage doc. Adds two `prim-op-annotation` grammar pieces: §A2 chained-host-call templates (regression-tested only — passthrough already works) and §A3 `#[@result] declare fn` template-owned wrapper. | 10 new `libs/std/src/*.bp` files + 5 tail edits on landed modules + `primitives.d.bp` extension methods + `libs/std/src/sidecars/*.{mjs,erl}` adapters + `compiler-core/src/comptime/infer.zig` `STD-001` + `compiler-cli/src/cli/lib_test.zig` sidecar shipping + `docs.md` / `CHANGELOG.md` / `examples.md` rolls |
 | [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | local pre-commit gate, version-controlled + recursive — every project (meta + 6 submodules) has a tracked `scripts/git-hooks/pre-commit` that runs its own `zig build test` / `botopink test` / `npm test`; the meta hook additionally validates **staged submodule pointer bumps** by running the submodule's gate against the staged SHA in a throwaway worktree; one bootstrap script (`scripts/install-hooks.sh`) wires all 7 symlinks; a `hook-integrity.yml` CI smoke catches `--no-verify` bypasses | `scripts/git-hooks/**` (new tracked tree) · `scripts/install-hooks.sh` (new) · `repository/<sub>/scripts/git-hooks/pre-commit` + `lib/runner-standalone.sh` × 6 submodules · `.github/workflows/hook-integrity.yml` (new) · `scripts/AGENTS.md` + `repository/AGENTS.md` + each lib's `AGENTS.md` |
 | [ci-pipelines-green](specs/ci-pipelines-green.md) | `ci-pipelines-green` | repair every red workflow in the botopink org — bump `mlugg/setup-zig` v1 → v2 (unblocks Zig 0.16.0 download, broken upstream by ziglang.org tarball naming change), bump `actions/checkout` v4 → v5 + `actions/setup-node` v4 → v5 (Node-20 actions deprecated as of 2026-06-16), fix vscode-extension `npm test` glob (`"test/**/*.test.ts"` → `test/`) so Node 20 `--test` discovers files | each lib's `.github/workflows/{test,tag,release}.yml` (×6 repos) · `.github/workflows/hook-integrity.yml` (meta) · `repository/vscode-extension/package.json` (`test` script) · `tasks/v0.beta.19/{README.md,status.md}` (docs roll) |
-| [ci-pipelines-green-tail](specs/ci-pipelines-green-tail.md) | `ci-pipelines-green-tail` | finish ci-pipelines-green's CI surface cleanup (drop the diagnostic artifact step, drop the now-redundant `ERL_AFLAGS` env, decide the `runtime.zig` stdout-only contract, consolidate the duplicated `scripts/test-libs.sh`) + author the four deferred reds as their own specs (A: backends-parity-erlang-tail · B: backends-parity-windows-pwsh · C: bot-lang windows snapshot drift · D: optional test-libs.sh symlink) | `repository/botopink-lang/.github/workflows/test.yml` + `modules/compiler-core/src/codegen/runtime.zig` + `scripts/test-libs.sh` · meta `.github/workflows/hook-integrity.yml` + `scripts/test-libs.sh` + `tasks/v0.beta.19/{README.md,status.md}` |
 
 ## Order
 
@@ -72,15 +71,6 @@ ci-pipelines-green  ─▶ independent of every other spec (touches only workflo
                       sibling pushes (one per submodule + meta) then a `git submodule
                       update --remote repository/vscode-extension` pointer bump close
                       it.
-
-ci-pipelines-green-tail
-                    ─▶ consumes ci-pipelines-green's CI surface. F0–F4 are pure
-                      cleanup of the diagnostic + transitional shims that landed
-                      during ci-pipelines-green's investigation phase; then it
-                      authors four deferred-red specs (A–D) as separate files so
-                      each can be scheduled independently. Lands on its own worktree
-                      .tasks/ci-pipelines-green-tail/ (or piggy-backs on the same
-                      worktree if ci-pipelines-green hasn't been torn down yet).
 ```
 
 - **The three frentes are file-disjoint** at the directory level — they can
