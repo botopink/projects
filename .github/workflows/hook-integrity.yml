@@ -33,22 +33,38 @@ jobs:
           - repository/rakun
           - repository/vscode-extension
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
           fetch-depth: 2  # need HEAD~1 for the replay reset
 
       - name: Install Zig (botopink-lang / meta gates need zig)
         if: matrix.project == 'meta' || matrix.project == 'repository/botopink-lang'
-        uses: mlugg/setup-zig@v1
+        uses: mlugg/setup-zig@v2
         with:
           version: 0.16.0
 
       - name: Install Node (vscode-extension / lib-test runtimes)
         if: matrix.project == 'meta' || matrix.project == 'repository/vscode-extension' || matrix.project == 'repository/botopink-lang'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          # Node 22+ ships `--experimental-strip-types`, used by the
+          # vscode-extension's `npm test` to load the `.ts` source files
+          # directly. Keep the meta + botopink-lang axes on the same
+          # version so the lib-test runtime + the hook replay see one
+          # JS engine.
+          node-version: '22'
+
+      - name: Install erlang (botopink-lang / meta gates run `zig build test`)
+        if: matrix.project == 'meta' || matrix.project == 'repository/botopink-lang'
+        run: sudo apt-get update -y && sudo apt-get install -y erlang
+
+      - name: Install wasmtime (botopink-lang / meta gates embed wasm RUN LOG)
+        if: matrix.project == 'meta' || matrix.project == 'repository/botopink-lang'
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://wasmtime.dev/install.sh | bash
+          echo "$HOME/.wasmtime/bin" >> "$GITHUB_PATH"
 
       - name: Install hooks (all 7)
         run: scripts/install-hooks.sh

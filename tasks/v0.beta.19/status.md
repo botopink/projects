@@ -6,13 +6,14 @@
 
 | Frente / spec | Slug | Branch | Worktree | State |
 |---|---|---|---|---|
-| [frente-a-compiler](specs/frente-a-compiler.md) | `frente-a-compiler` | `task/frente-a-compiler` | `.tasks/frente-a-compiler/` | pending |
+| [frente-a-compiler](specs/frente-a-compiler.md) | `frente-a-compiler` | `task/frente-a-compiler` | `.tasks/frente-a-compiler/` | partial — §S/§U/§A6/§D1/§G1/§G3 done; §A7/§B/§C/§D2-D5/§G2 deferred + recorded |
 | [frente-b-rules-tooling](specs/frente-b-rules-tooling.md) | `frente-b-rules-tooling` | `task/frente-b-rules-tooling` | `.tasks/frente-b-rules-tooling/` | pending |
 | [frente-c-distribution](specs/frente-c-distribution.md) | `frente-c-distribution` | `task/frente-c-distribution` | `.tasks/frente-c-distribution/` | **merged+pushed** (`origin/feat` ← 4957f2d; H8 ops + J2 fork smoke deferred to maintainer) |
 | [prim-op-annotation](specs/prim-op-annotation.md) | `prim-op-annotation` | (pending — likely lands in Frente A's worktree as a satellite) | — | pending |
 | [std-expansion](specs/std-expansion.md) | `std-expansion` | `task/std-expansion` | `.tasks/std-expansion/` | **merged+pushed** (`origin/feat` ← bot-lang `83d5d1a` + meta `06fa981`; 7/19 modules landed: math/asserts/path/random/querystring/time/url; 12 deferred → `std-expansion-tail`) |
 | [std-expansion-tail](specs/std-expansion-tail.md) | `std-expansion-tail` | (pending — single worktree `.tasks/std-expansion-tail/`) | — | pending |
 | [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | `task/recursive-test-gate` | `.tasks/recursive-test-gate/` | **done** (F0–F7 merged + pushed to `origin/feat` eede97d; submodule shim commits on each lib's `feat`; recursive submodule scan exercised live during the bump commit) |
+| [ci-pipelines-green](specs/ci-pipelines-green.md) | `ci-pipelines-green` | `task/ci-pipelines-green` | `.tasks/ci-pipelines-green/` | **CI-YAML scope done + pushed** across all 7 repos (mlugg/setup-zig@v1→@v2, actions/checkout+setup-node@v4→@v5, vscode-extension `npm test` glob → `test/*.test.ts`, erlang install on bot-lang main test job, erika `BOTOPINK_LANG_REF` default → feat, vscode-extension Node 22 + `--experimental-strip-types`, in-tree `botopink-lang/scripts/test-libs.sh`, meta `hook-integrity.yml` Node 22 + erlang); **two deferred reds** out of scope — 34 wasm-codegen snapshot mismatches on bot-lang main `test` (reproduces on CI only; per `project_zig016_parallel_test_flakiness`) + pre-existing erlang/windows-commonJS backends-parity reds across libs. See worktree TODO.md for full breakdown |
 
 ## std-expansion — per-wave state
 
@@ -28,13 +29,13 @@
 
 | Track | Description | State |
 |---|---|---|
-| §A | annotation-driven-builtins tail (v16 §A6+§A7) | pending |
-| §B | generic-inference (v14 E + v16 §B) | pending |
-| §C | wasm-aggregates + wat refactor (v14 W + v16 §C) | pending |
-| §D | cross-backend parity (v14 F3+B + v16 §D) | pending |
-| §G | erika DSL extensions (v16 §G) | pending |
-| §S | `*fn` removal (v12 cleanup) | pending |
-| §U | unused-builtin sweep (live audit) | pending |
+| §A | annotation-driven-builtins tail (v16 §A6+§A7) | A6 closed; **A7 deferred** (BEAM bytecode-template gate — 3/4 backends viable without it) |
+| §B | generic-inference (v14 E + v16 §B) | **deferred** (deep inferencer work; planned for a successor spec — keeps the pre-existing erlang/beam erika-LINQ + generic-module inline-test reds recorded) |
+| §C | wasm-aggregates + wat refactor (v14 W + v16 §C) | **deferred** (deep wat refactor; no regression — the wasm gap was the spec's premise) |
+| §D | cross-backend parity (v14 F3+B + v16 §D) | **D1 done** (annotation-driven `print`/`println`/`debug` + new `$args` template marker — `console.log($args)` / `io:format("~p~n", [$args])` on commonJS+erlang; BEAM keeps inline shape); D2–D5 deferred (substantive cross-module / type-directed / register choreography work — pinned in `codegen/AGENTS.md` Remaining gaps); D6 partial (Remaining-gaps rows updated, cross-backend snapshots TBD) |
+| §G | erika DSL extensions (v16 §G) | **G1 done** (`${…}` interp via `q.parts()` + `substituteHoles` deep walk in `comptime/infer.zig`); G2 deferred (runtime-string form needs a generic compiler mechanism); G3 done (AGENTS gaps refreshed, inline tests added) |
+| §S | `*fn` removal (v12 cleanup) | done (S0–S6 — merged via 1a478cd + 5697b89 + follow-ups) |
+| §U | unused-builtin sweep (live audit) | U0–U4 done (975910b composite — 15 fns + AsyncIterable); U5 gate pending |
 
 ## Frente B — per-track state
 
