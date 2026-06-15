@@ -67,15 +67,15 @@ declare fn` template-owned wrapper).
 
 ## F0 — doc cleanup (no compiler edits)
 
-- [ ] `repository/botopink-lang/CHANGELOG.md` `url` row — drop the
+- [x] `repository/botopink-lang/CHANGELOG.md` `url` row — drop the
       "serialize deferred" sentence (`serialize(u)` landed in bot-lang
       `5788bd7`). Replace with a one-line "round-trip closed" note
       linking to this spec.
-- [ ] `repository/botopink-lang/libs/std/docs.md` `url.bp` row — extend
+- [x] `repository/botopink-lang/libs/std/docs.md` `url.bp` row — extend
       to `record Url { … } + parse(s) + serialize(u)`.
-- [ ] `repository/botopink-lang/libs/std/examples.md` — add a stub
+- [x] `repository/botopink-lang/libs/std/examples.md` — add a stub
       `## Real-world examples` heading with a one-line pointer to F9.
-- [ ] `repository/botopink-lang/libs/std/AGENTS.md` — add a
+- [x] `repository/botopink-lang/libs/std/AGENTS.md` — add a
       "Wave-tail roadmap" row pointing at this spec.
 
 ## F1 — F6 enforcement (`STD-001` diagnostic)
