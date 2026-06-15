@@ -4,9 +4,25 @@
 > `.tasks/<slug>/TODO.md` per universal contract. See
 > [`AGENTS.md`](../AGENTS.md) §"One fact, one source".
 
+### frente-a-compiler-tail family (10 specs)
+
 | Spec | Slug | Branch | Worktree | State |
 |---|---|---|---|---|
-| [frente-a-compiler-tail](specs/frente-a-compiler-tail.md) | `frente-a-compiler-tail` | (pending — likely one worktree per track) | — | pending |
+| [generic-inference-foundation](specs/generic-inference-foundation.md) | `generic-inference-foundation` | (pending — keystone) | — | pending |
+| [primitive-interface-default-fns](specs/primitive-interface-default-fns.md) | `primitive-interface-default-fns` | (pending; depends on generic-inference-foundation) | — | pending |
+| [wat-refactor](specs/wat-refactor.md) | `wat-refactor` | (pending) | — | pending |
+| [wasm-test-runner](specs/wasm-test-runner.md) | `wasm-test-runner` | (pending; depends on wat-refactor) | — | pending |
+| [prim-op-template-instance-methods](specs/prim-op-template-instance-methods.md) | `prim-op-template-instance-methods` | (pending) | — | pending |
+| [typed-method-dispatch](specs/typed-method-dispatch.md) | `typed-method-dispatch` | (pending; depends on generic-inference-foundation) | — | pending |
+| [future-runtime-erlang-beam](specs/future-runtime-erlang-beam.md) | `future-runtime-erlang-beam` | (pending) | — | pending |
+| [beam-inline-prim-methods](specs/beam-inline-prim-methods.md) | `beam-inline-prim-methods` | (pending) | — | pending |
+| [erika-runtime-string](specs/erika-runtime-string.md) | `erika-runtime-string` | (pending) | — | pending |
+| [cross-backend-snapshots-sweep](specs/cross-backend-snapshots-sweep.md) | `cross-backend-snapshots-sweep` | (pending — sweep at the end) | — | pending |
+
+### ci-pipelines-green family (4 specs)
+
+| Spec | Slug | Branch | Worktree | State |
+|---|---|---|---|---|
 | [ci-pipelines-green-tail](specs/ci-pipelines-green-tail.md) | `ci-pipelines-green-tail` | `task/ci-pipelines-green` (current) — or piggy-back on `.tasks/ci-pipelines-green/` until v0.beta.19's worktree is torn down | `.tasks/ci-pipelines-green/` (carryover) | pending — F0 awaits the OTP 28 run; F1–F4 are sequential edits after F0 confirms green |
 | [backends-parity-erlang](specs/backends-parity-erlang.md) | `backends-parity-erlang` | (pending — likely `.tasks/backends-parity-erlang/`) | — | pending |
 | [backends-parity-windows](specs/backends-parity-windows.md) | `backends-parity-windows` | (pending — likely `.tasks/backends-parity-windows/`) | — | pending |
@@ -16,7 +32,7 @@
 
 | v0.beta.19 spec | State at v0.beta.20 kickoff | What v0.beta.20 closes |
 |---|---|---|
-| `frente-a-compiler` | **partial** (§G1+§D1+§D2(BEAM partial)+§B3+§S+§U+§A6 landed; §A7/§B/§C/§D3-D5/§G2 deferred) | `frente-a-compiler-tail` |
+| `frente-a-compiler` | **partial** (§G1+§D1+§D2(BEAM partial)+§B3+§S+§U+§A6 landed; §A7/§B/§C/§D3-D5/§G2 deferred) | the 10-spec frente-a-tail family (see top table) |
 | `ci-pipelines-green` | landed but `status.md` row reads `pending F4 + F5` qualifier from an earlier seed | `ci-pipelines-green-tail` (F4 flips the row to `done`) |
 | frente-b-rules-tooling | pending (not v0.beta.20 surface) | n/a |
 | frente-c-distribution | **done+merged** (`origin/feat` ← 4957f2d, H8 ops + J2 fork smoke deferred to maintainer) | n/a |
@@ -27,7 +43,12 @@
 
 ## Done = the whole set ships
 
-- [ ] `frente-a-compiler-tail` merged + pushed (all 7 tracks closed)
+- [ ] frente-a-tail family (10 specs) all merged + pushed:
+      generic-inference-foundation · primitive-interface-default-fns ·
+      wat-refactor · wasm-test-runner · prim-op-template-instance-methods ·
+      typed-method-dispatch · future-runtime-erlang-beam ·
+      beam-inline-prim-methods · erika-runtime-string ·
+      cross-backend-snapshots-sweep
 - [ ] `ci-pipelines-green-tail` merged + pushed (diagnostic shim
       removed, `ERL_AFLAGS` removed, runtime.zig contract documented,
       v0.beta.19 status.md `ci-pipelines-green` row → `done`)

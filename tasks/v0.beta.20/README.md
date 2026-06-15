@@ -16,7 +16,21 @@
 
 | Spec | Slug | Tracks | Files |
 |---|---|---|---|
-| [frente-a-compiler-tail](specs/frente-a-compiler-tail.md) | `frente-a-compiler-tail` | seven file-disjoint tracks consolidating every v0.beta.19 frente-a-compiler deferral: §B-foundation (generic-inference foundation — Self primitive kind resolution + generic-var instantiation pre-unify) · §B-emit (emit primitive interface instance default fns as bare locals on erlang/beam) · §C-wat-refactor (wat stack-discipline + record field layout + ?. + snapshots) · §C-wasm-test-runner (wire `botopink test --target wasm` once C-wat lands) · §A7-instance-templates (extend codegen on each backend to consume instance template marker) · §D3-D5 (cross-backend parity tail) · §G2 (erika runtime-string DSL form) | `modules/compiler-core/src/comptime/{infer,unify,types,transform}.zig` · `modules/compiler-core/src/codegen/{wat,erlang,beam_asm,commonJS,typescript}.zig` · `modules/compiler-cli/src/cli/test_cmd.zig` · `libs/std/src/primitives.d.bp` · `libs/erika/src/erika.bp` · all touched `AGENTS.md` + `CHANGELOG.md` |
+### frente-a-compiler-tail family (Eric's 10 file-disjoint per-track specs)
+
+| [generic-inference-foundation](specs/generic-inference-foundation.md) | `generic-inference-foundation` | §B keystone — Self primitive kind resolution + generic-var instantiation pre-unify + inference unit tests. Unblocks `primitive-interface-default-fns` + `typed-method-dispatch`. | `modules/compiler-core/src/comptime/{infer,unify,types}.zig` |
+| [primitive-interface-default-fns](specs/primitive-interface-default-fns.md) | `primitive-interface-default-fns` | §B-emit — emit primitive interface instance default fns as bare locals on erlang + beam so erika/jhonstart/onze/rakun lib-test reds flip green. Depends on `generic-inference-foundation`. | `modules/compiler-core/src/codegen/{erlang,beam_asm}.zig` + libs/std/src/primitives.d.bp |
+| [wat-refactor](specs/wat-refactor.md) | `wat-refactor` | §C wat stack-discipline + record field layout + `?.` + snapshot regen. Premise of v0.beta.19 §C. | `modules/compiler-core/src/codegen/wat.zig` + snapshot regen |
+| [wasm-test-runner](specs/wasm-test-runner.md) | `wasm-test-runner` | §C2 — wire `botopink test --target wasm` once wat-refactor lands. | `modules/compiler-cli/src/cli/test_cmd.zig` + `modules/compiler-core/src/codegen/wat.zig` |
+| [prim-op-template-instance-methods](specs/prim-op-template-instance-methods.md) | `prim-op-template-instance-methods` | §A7 — extend codegen on each backend to consume the instance-template marker so per-target dispatch lands without a switch arm. | `modules/compiler-core/src/codegen/{erlang,beam_asm,commonJS,wat}.zig` + `comptime/primOpTemplate.zig` |
+| [typed-method-dispatch](specs/typed-method-dispatch.md) | `typed-method-dispatch` | §D3 — cross-backend type-directed method dispatch on the generic-inference foundation. | `modules/compiler-core/src/codegen/{erlang,beam_asm,commonJS,wat}.zig` + `comptime/infer.zig` |
+| [future-runtime-erlang-beam](specs/future-runtime-erlang-beam.md) | `future-runtime-erlang-beam` | §D4 — `#[@future]` runtime lowering on erlang + beam (commonJS + wat already covered). | `modules/compiler-core/src/codegen/{erlang,beam_asm}.zig` |
+| [beam-inline-prim-methods](specs/beam-inline-prim-methods.md) | `beam-inline-prim-methods` | §D5-BEAM — inline primitive method dispatch on the BEAM backend (parity with erlang). | `modules/compiler-core/src/codegen/beam_asm.zig` |
+| [erika-runtime-string](specs/erika-runtime-string.md) | `erika-runtime-string` | §G2 — erika runtime-string DSL form (runtime variant of the `erika "…"` template). | `libs/erika/src/erika.bp` + comptime DSL plumbing |
+| [cross-backend-snapshots-sweep](specs/cross-backend-snapshots-sweep.md) | `cross-backend-snapshots-sweep` | §D6 — snapshot regen sweep across the 4 backends + AGENTS.md "Remaining gaps" doc roll. | `modules/compiler-core/snapshots/codegen/**/*.snap.md` + codegen/AGENTS.md |
+
+### ci-pipelines-green family (this re-analysis's 4 specs)
+
 | [ci-pipelines-green-tail](specs/ci-pipelines-green-tail.md) | `ci-pipelines-green-tail` | F0 verify OTP 28 closes the residual snap mismatch · F1 drop the diagnostic `Upload snap .new files` artifact step · F2 drop the now-redundant `ERL_AFLAGS` env on bot-lang test.yml + meta hook-integrity.yml · F3 decide and document the `runtime.zig` stdout-only contract (vs. the legacy `combineOutput` shape) · F4 docs roll (v0.beta.19 status.md `ci-pipelines-green` row → done; this set's status.md gains the row) | `repository/botopink-lang/.github/workflows/test.yml` · `repository/botopink-lang/modules/compiler-core/src/codegen/runtime.zig` · `.github/workflows/hook-integrity.yml` · `tasks/v0.beta.19/status.md` · `tasks/v0.beta.20/{README.md,status.md}` |
 | [backends-parity-erlang](specs/backends-parity-erlang.md) | `backends-parity-erlang` | The erlang/beam matrix axes across erika/jhonstart/onze/rakun + bot-lang's own `codegen/erlang/erlang/*.snap.md` are red because the codegen emits user-defined functions whose names shadow auto-imported BIFs (`abs/1`, `length/1`, etc.) — newer OTP erlc treats this as a compile error. Emit `-compile({no_auto_import,[...]}).` for any shadowing function. Remove the lib workflows' `allow_fail: true` on erlang/beam axes once green. Memory: `project_stdlib_backends_parity`. | `repository/botopink-lang/modules/compiler-core/src/codegen/erlang.zig` (emit the directive) · `repository/botopink-lang/modules/compiler-core/src/codegen/beam_asm.zig` (parity) · regenerate every `codegen/erlang/erlang/*.snap.md` + `codegen/beam_asm/beam/*.snap.md` that gains the prelude · each sibling lib's `.github/workflows/test.yml` (drop the erlang + beam allow_fail rows) · meta `tasks/v0.beta.20/status.md` |
 | [backends-parity-windows](specs/backends-parity-windows.md) | `backends-parity-windows` | windows-2022 axes are red for two independent reasons: (1) the sibling lib workflows' `run:` step uses the POSIX `${LIB_NAME}` shell-var expansion that PowerShell (windows-2022 default) does not interpret, so the actual command line is `botopink-lib-test --lib  --target commonJS` (empty `--lib`); (2) bot-lang's own `test (windows-2022)` job carries CRLF + path-separator drift in 763 snapshot tests under `compiler-core/parser/tests`, `comptime/tests`, `codegen/tests`. Both fix paths live in the same windows-2022 spec because the snapshot framework's normalisation is the central blocker. | each sibling lib's `.github/workflows/test.yml` (pin `shell: bash` on the lib-test step or pass `LIB_NAME` via `env:` instead of inline) · `repository/botopink-lang/.github/workflows/test.yml` (drop `windows-2022` allow_fail once snapshots normalise) · `repository/botopink-lang/modules/compiler-core/src/utils/snap.zig` (LF-normalise + path-separator normalise before compare) · audit + regenerate any snapshot recorded on a windows host · meta `tasks/v0.beta.20/status.md` |
@@ -25,12 +39,22 @@
 ## Order
 
 ```text
-frente-a-compiler-tail    ─▶ independent of every CI spec below.
-                              Seven file-disjoint tracks (§B-foundation,
-                              §B-emit, §C-wat-refactor, §C-wasm-test-runner,
-                              §A7-instance-templates, §D3-D5, §G2).
-                              §B-foundation keystones §B-emit and §D3;
-                              everything else parallelises freely.
+generic-inference-foundation ─▶ keystone for the frente-a-tail family.
+                                 Unblocks `primitive-interface-default-fns`
+                                 + `typed-method-dispatch`; everything else
+                                 in the frente-a-tail family parallelises
+                                 freely after it lands.
+
+frente-a-tail family  ─▶ 10 file-disjoint specs, runnable in parallel after
+                          generic-inference-foundation lands:
+                          primitive-interface-default-fns,
+                          wat-refactor, wasm-test-runner,
+                          prim-op-template-instance-methods,
+                          typed-method-dispatch,
+                          future-runtime-erlang-beam,
+                          beam-inline-prim-methods,
+                          erika-runtime-string,
+                          cross-backend-snapshots-sweep.
 
 ci-pipelines-green-tail   ─▶ runs first among the CI specs (cleanup of the
                               v0.beta.19 spec's transitional shims; passive
