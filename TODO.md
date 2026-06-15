@@ -71,29 +71,59 @@ locks the effect tags.
 - [ ] **C6** — update `codegen/AGENTS.md`; add `.wat` snapshots.
 
 ## §D — cross-backend feature parity
-- [ ] **D1** — `console.log` + `new Error(…)` declared as `#[@external]`;
-      lowered by reading the annotation.
+- [x] **D1** — `print` / `println` / `debug` lower through the shared
+      `@external` template (`console.log($args)` on commonJS,
+      `io:format("~p~n", [$args])` on erlang) — `tryEmitBuiltinAnnotation`
+      consumes the registered template (inline-seeded so it works even if
+      the d.bp parse stops early). Hardcoded `is_print` arms removed in
+      both backends. BEAM keeps its register-level inline shape (the
+      `io:format` + heap-cons sequence isn't a clean `$args` template
+      lowering yet; documented in `codegen/AGENTS.md`). `new Error(…)`
+      was never a standalone gap — it lives inside `@todo`/`@panic`
+      templates which are already annotation-driven. Side carrier: new
+      `$args` template marker in `comptime/primOpTemplate.zig`.
 - [ ] **D2** — cross-module fn imports lower to remote call on erlang
       first, then beam. Unblocks `from "std"` on erlang/beam.
+      **Deferred** — substantive cross-module work; pinned in
+      `codegen/erlang.zig` + `codegen/beam_asm.zig` "Remaining gaps".
 - [ ] **D3** — typed-value method dispatch (`p.parse(x)` →
-      `'Parser_parse'(P, X)` on erlang/beam).
+      `'Parser_parse'(P, X)` on erlang/beam). **Deferred** — substantive
+      type-directed dispatch work; pinned in `codegen/AGENTS.md`
+      Remaining gaps.
 - [ ] **D4** — `#[@future]` lowering on erlang/beam (spawn body as
       process, return Future handle whose `await` joins). **Reads
-      contract from Frente B §1F.** Scope to follow-up if too large; note
-      in `codegen/AGENTS.md`.
+      contract from Frente B §1F. Scoped to follow-up** per the spec's
+      "scope to follow-up if too large" clause — pinned in
+      `codegen/AGENTS.md` Remaining gaps as `#[@future]` async/`await`.
 - [ ] **D5** — BEAM inline-fun array/string methods: `join`, `indexOf`,
-      `at`, 2-arg `slice`, string `contains` / `startsWith`.
+      `at`, 2-arg `slice`, string `contains` / `startsWith`. **Deferred**
+      — each requires register choreography + snapshot validation
+      against `erlc +from_asm`; pinned in `codegen/AGENTS.md` BEAM ASM
+      row. Recorded gap, not regressed.
 - [ ] **D6** — update beam + erlang AGENTS "Remaining gaps"; add
       cross-backend snapshots for D1–D3 + D5; sweep the negation
-      `gc_bif Live count` note.
+      `gc_bif Live count` note. Partially landed with D1 (Remaining-gaps
+      rows updated to remove `console.log`/`new Error`); cross-backend
+      D2/D3/D5 snapshots and the negation note remain.
 
 ## §G — erika DSL extensions
-- [ ] **G1** — lower `${expr}` interpolations inside an `erika`
-      template literal (reuse `Part.Interp` machinery).
-- [ ] **G2** — `var s = "select ..."; erika s` runtime-string form
-      (generic mechanism, no erika coupling in core).
-- [ ] **G3** — update `libs/erika/AGENTS.md` "Recorded gaps"; add `.bp`
-      tests under `libs/erika/tests/`.
+- [x] **G1** — `${expr}` interpolations inside an `erika` template
+      literal land via `q.parts()` Text/Interp parts. The placeholder
+      identifier (`__bp_hole_<param>_<i>`) is spliced into the augmented
+      SQL; `operandCode` detects the prefix and emits it verbatim so the
+      post-`build(…)` `substituteHoles` pass swaps in the caller's
+      expression. Required a companion `substituteHoles` extension in
+      `comptime/infer.zig` to walk every expression-bearing surface
+      position (lambda / branch / loop / binding / jump bodies).
+- [ ] **G2** — `var s = "select ..."; erika s` runtime-string form.
+      **Deferred** — needs a generic compiler mechanism (a runtime
+      `@Expr<string>` view + comptime scope-snapshot extended to a
+      runtime string payload). Recorded in `libs/erika/AGENTS.md`
+      "Recorded gaps".
+- [x] **G3** — `libs/erika/AGENTS.md` "Recorded gaps" updated (G1 row
+      gone; G2 + the hole-span fidelity caveat recorded). `.bp` tests
+      land inline in `erika.bp` (the lib has no `tests/` subdir
+      convention — every other test in the file is inline too).
 
 ## §S — remove deprecated `*fn` prefix
 - [x] **S0** — survey: `git grep -nE '\*fn\b' repository/` captures the
