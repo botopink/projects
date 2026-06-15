@@ -13,7 +13,6 @@
 | [std-expansion](specs/std-expansion.md) | `std-expansion` | `task/std-expansion` | `.tasks/std-expansion/` | **merged+pushed** (`origin/feat` ← bot-lang `83d5d1a` + meta `06fa981`; 7/19 modules landed: math/asserts/path/random/querystring/time/url; 12 deferred → `std-expansion-tail`) |
 | [std-expansion-tail](specs/std-expansion-tail.md) | `std-expansion-tail` | (pending — single worktree `.tasks/std-expansion-tail/`) | — | pending |
 | [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | `task/recursive-test-gate` | `.tasks/recursive-test-gate/` | **done** (F0–F7 merged + pushed to `origin/feat` eede97d; submodule shim commits on each lib's `feat`; recursive submodule scan exercised live during the bump commit) |
-| [docs-audit-refresh](specs/docs-audit-refresh.md) | `docs-audit-refresh` | `task/docs-audit-refresh` | `.tasks/docs-audit-refresh/` | **merged+pushed** (F0–F6 done; 6 sibling `feat` heads bumped; meta merged into `feat`) |
 
 ## std-expansion — per-wave state
 
@@ -79,11 +78,3 @@
 - [ ] `scripts/install-hooks.sh --check` green on a fresh clone (all 7
       tracked pre-commit symlinks in place) and `hook-integrity.yml` CI
       job green on every PR
-- [ ] `docs-audit-refresh` F6 verification gate green: tier 1 — orphan
-      files gone, no `<!-- TODO/TBD/FIXME/WIP -->` in scope, every
-      relative `.md` link resolves, no in-scope file claims discarded
-      surfaces or paths; tier 2 — strip-comments invariant holds on
-      every `*.zig` / `*.bp` / `*.d.bp` / `*.ts` / `*.js` / `*.mjs`
-      file the audit touched (zero non-comment-line diffs), and
-      `zig build test` + `zig build test-libs` + `botopink-lib-test` +
-      `npm test` (vscode-extension) green at tip
