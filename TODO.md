@@ -137,8 +137,14 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
 ### F4G — default generic parameters (§1G) + RG1–RG4
 - [x] `parser/types.zig` `GenericParamList` accepts `IDENT ("=" TypeRef)?`;
       enforce strict-trailing-position rule at parse time. (7db5de7)
-- [ ] `comptime/types.zig` — omitted trailing args resolve to declared
-      defaults.
+- [x] `comptime/types.zig` — omitted trailing args resolve to declared
+      defaults. (Builtins-only: `builtinDefaultFilledArgs` in
+      `comptime/infer.zig` fills `@Future<T>` ⇒ `<T, any>`,
+      `@Iterator<T>` ⇒ `<T, any, void>`, `@Iterator<T, E>` ⇒
+      `<T, E, void>`, `@Generator<T>` ⇒ `<T, void>`. User-typeDef
+      defaults need `TypeDef.Record/Struct/Enum.genericDefaults` plus
+      threading through `registerTypeDef` call sites — separate
+      follow-up; not blocking F6 / §T.)
 - [ ] Update consumers (struct, fn, enum, interface) to thread
       default-typed params through codegen.
 
