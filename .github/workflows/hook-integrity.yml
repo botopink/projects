@@ -55,9 +55,14 @@ jobs:
           # JS engine.
           node-version: '22'
 
-      - name: Install erlang (botopink-lang / meta gates run `zig build test`)
+      - name: Install Erlang/OTP 27 (botopink-lang / meta gates run `zig build test`)
         if: matrix.project == 'meta' || matrix.project == 'repository/botopink-lang'
-        run: sudo apt-get update -y && sudo apt-get install -y erlang
+        uses: erlef/setup-beam@v1
+        with:
+          # OTP 27 is the minimum: the comptime runtime writes JSON via
+          # `json:encode/1`, which only landed there. Ubuntu's apt-get
+          # `erlang` is OTP 24 — not enough.
+          otp-version: '27'
 
       - name: Install wasmtime (botopink-lang / meta gates embed wasm RUN LOG)
         if: matrix.project == 'meta' || matrix.project == 'repository/botopink-lang'
