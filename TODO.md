@@ -138,16 +138,32 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
       `yield break` form with `yield-break-removed` (32883c9).
 
 ### F4C — `#[@context]` Anchor + `@getContex` (§1C) + RC1–RC6 (R18–R21)
-- [ ] `parser/decls.zig` parses `@getContex(T)` intrinsic.
+- [x] `@getContex(T)` parses as a builtin call (the existing `@`-prefix
+      `.builtinIdent` lexer path handles it; no new parser surface).
 - [ ] `transform.zig` records the Anchor (`Base`) extracted from
       `@Context<Base, T>`; every `use <hook>()` / `use @getContex(<T>)`
-      is type-checked against it.
+      is type-checked against it. (Partial — `validateUseBase` /
+      `contextBaseOfType` already cover the `use <hook>` path; the
+      `@getContex` Anchor-tree check pends RC3.)
 - [ ] **`comptime/contextStack.zig` (new)** — per-compilation-unit map of
       `Type → Provider`, populated by `use`-block entry / exit.
 - [ ] **RC1 (E1)** — no active provider ⇒ comptime if statically known;
-      runtime trap otherwise.
-- [ ] **RC2 (E2)** — hook's `HookBase` not assignable to enclosing Anchor.
-- [ ] **RC3/RC4/RC5/RC6** — invalid `@getContex` / `use` forms reject.
+      runtime trap otherwise. (Needs contextStack.)
+- [x] **RC2 (E2)** — `use <hook>()` whose HookBase ≠ enclosing Anchor reds
+      with `context-anchor-violation:` (pre-existing `contextMismatch`
+      check now carries the §2 code prefix).
+- [ ] **RC3** — `@getContex(T)` outside Anchor tree reds with
+      `context-getcontex-anchor-violation`. (Needs Anchor extraction from
+      `@Context<Base, T>` on the fn signature; pends with contextStack.)
+- [x] **RC4** — `@getContex(<value>)` reds with
+      `context-getcontex-expects-type` (the typed arg must be an
+      identifier whose name resolves via `env.lookupTypeDef`).
+- [x] **RC5** — `@getContex(…)` outside a `#[@context]` fn body reds with
+      `context-getcontex-outside-context-fn` (`env.inContextFn` flag
+      saved/restored around the body in `inferFnBody`).
+- [x] **RC6** — `use <hook>()` where `<hook>` is not a `#[@context]` fn
+      reds with `use-of-non-context-fn:` (pre-existing `useNotContext` /
+      `useNotAllowed` checks now carry the §2 code prefix).
 - [ ] commonJS lowering: scope-stack as a module-level array; push/pop.
 - [ ] erlang/beam lowering: process-dictionary scope.
 
