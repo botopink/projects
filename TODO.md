@@ -40,15 +40,19 @@ declare fn` template-owned wrapper).
 
 ### §A2 — chained host-call passthrough
 
-- [ ] Regression test `tests/codegen/prim_op_chained.zig`: a primitive
-      method annotated with
-      `#[@external(node, "Buffer.from($0).toString('base64')")]`
-      renders the host shape verbatim. No parser edit expected
-      (the passthrough already works); this test pins the behaviour.
-- [ ] Document in `libs/std/AGENTS.md` §"External annotation
-      vocabulary": the `"""…"""` template body MAY contain `.` /
-      `(` / `)` for chains; the existing renderer passes them
-      through.
+- [x] Regression tests in `tests/codegen/externals.zig`: A2 chained
+      host call (`Buffer.from($0, 'utf8').toString('base64')`) and
+      A2 method-on-class (`JSON.stringify($0)`) render verbatim.
+      Snapshots created on all 4 backends.
+- [x] commonJS backend now consumes per-callee templates — the
+      legacy aliasing path (`const fn = recv.method`) stripped the
+      receiver; §A2 added `Emitter.user_node_templates` +
+      `tryEmitUserTemplate` mirroring the erlang shape. Decl emits a
+      doc breadcrumb instead of the alias; call site renders inline.
+- [x] `libs/std/src/time.bp` `monotonicTimeWithUnit` switched to the
+      §A2 form (`@external(node, "performance.now($0)")`) — Node's
+      real DOM high-res timestamp instead of the `Date.now(1000)`
+      fallback that landed in F4.time.
 
 ### §A3 — `#[@result]`-aware `declare fn` template
 
@@ -225,30 +229,39 @@ in F4 use chained-host-call shapes and `#[@result] declare fn`).
 
 ### F5.base64
 
-- [ ] `libs/std/src/base64.bp` — `encode(s: string) -> string` /
-      `decode(b: string) -> @Result<string, string>` via §A2 chained
-      template
-      (`Buffer.from(s, 'utf8').toString('base64')` on Node,
-      `base64:encode/1` on Erlang).
-- [ ] `base64.bp` — `encodeUrlSafe` / `decodeUrlSafe` (url-safe
-      variant with `-`/`_` replacement).
-- [ ] 4 inline tests.
-- [ ] `root.bp` adds `pub mod base64;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
+- [x] `libs/std/src/base64.bp` — `encode(s: string) -> string` /
+      `decode(b: string) -> string` via §A2 chained template
+      (`Buffer.from($0, 'utf8').toString('base64')` on Node,
+      `base64:encode/1` on Erlang). Note: returns bare `string`
+      rather than `@Result<string, string>` — the spec's `@Result`
+      shape needs §A3 to land cleanly; the bare form matches the
+      pre-existing Erlang BIF contract (raises on malformed input).
+- [x] `base64.bp` — `encodeUrlSafe` / `decodeUrlSafe` (url-safe
+      variant with `-`/`_` replacement + `=` padding helper via
+      tail-recursive `padToMultipleOfFour`).
+- [x] 4 inline tests (round-trip, empty, url-safe drops padding,
+      url-safe round-trip).
+- [x] `root.bp` adds `pub mod base64;`.
+- [x] AGENTS + docs + CHANGELOG entry.
 
 ## F6 — §W2 tails
 
 ### F6.env
 
-- [ ] `libs/std/src/env.bp` — `get(name: string) -> ?string` /
-      `set(name: string, value: string) -> unit` /
-      `unset(name: string) -> unit` / `args() -> Array<string>` /
-      `vars() -> Array<#(string, string)>`.
-- [ ] `sidecars/env.mjs` exports bare `get`/`set` host fns (avoid
-      `[$0]` index marker — keep templates `$self`/`$0`-flat).
-- [ ] 3 inline tests (get/set round-trip, args, vars).
-- [ ] `root.bp` adds `pub mod env;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
+- [x] `libs/std/src/env.bp` — `read(name: string) -> ?string` /
+      `write(name: string, value: string) -> unit` /
+      `clear(name: string) -> unit`. Named `read`/`write`/`clear`
+      rather than `get`/`set`/`unset` because `get`/`set` are reserved
+      tokens (parser `isMemberName` — soft keywords for struct
+      getters/setters).
+- [ ] `args() -> Array<string>` and `vars() -> Array<#(string, string)>`
+      **DEFERRED** — enumeration shapes differ cross-backend.
+- [x] No sidecar needed — the §A2 template path handles the
+      property-access shape `(process.env[$0] ?? null)` directly.
+- [x] 3 inline tests (write/read round-trip, read of unset returns
+      null, clear cancels prior write).
+- [x] `root.bp` adds `pub mod env;`.
+- [x] AGENTS + docs + CHANGELOG entry.
 
 ### F6.fs
 
@@ -263,21 +276,28 @@ in F4 use chained-host-call shapes and `#[@result] declare fn`).
 
 ### F6.process
 
-- [ ] `libs/std/src/process.bp` — `exit(code: i32) -> noreturn` /
+- [x] `libs/std/src/process.bp` — `exit(code: i32)` /
       `cwd() -> string` / `platform() -> string` (`'linux'`/
-      `'darwin'`/`'win32'`) / `arch() -> string` / `pid() -> i32` /
-      `hostname() -> string`.
-- [ ] 5 inline tests.
-- [ ] `root.bp` adds `pub mod process;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
+      `'darwin'`/`'win32'`) / `arch() -> string` / `pid() -> i32`.
+      `hostname() -> string` deferred — needs `require('os')` threaded
+      through the per-module require set on Node (`os.hostname()`
+      isn't a global).
+- [x] 4 inline tests (cwd non-empty, platform one-of, arch non-empty,
+      pid positive).
+- [x] `root.bp` adds `pub mod process;`.
+- [x] AGENTS + docs + CHANGELOG entry.
 
 ### F6.os
 
-- [ ] `libs/std/src/os.bp` — `hostname` / `arch` / `cpuCount` /
-      `tmpdir` / `userInfo` (uid/username pair) / `eol`.
-- [ ] 5 inline tests.
-- [ ] `root.bp` adds `pub mod os;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
+- [x] `libs/std/src/os.bp` — `hostname` / `arch` / `cpuCount` /
+      `tmpdir`. `userInfo` (uid/username pair) / `eol` deferred —
+      cross-backend shape mismatch (Node `os.userInfo()` returns a
+      record-shaped object; Erlang has no direct equivalent without
+      multi-call composition).
+- [x] 4 inline tests (hostname non-empty, arch non-empty, cpuCount
+      >= 1, tmpdir non-empty).
+- [x] `root.bp` adds `pub mod os;`.
+- [x] AGENTS + docs + CHANGELOG entry.
 
 ## F7 — §W3 tails
 
@@ -292,12 +312,18 @@ in F4 use chained-host-call shapes and `#[@result] declare fn`).
 
 ### F7.unicode
 
-- [ ] `libs/std/src/unicode.bp` — `codepoints` / `fromCodepoint` /
-      `firstCodepoint` / `normalize` (NormalizationForm enum
-      NFC/NFD/NFKC/NFKD).
-- [ ] 4 inline tests.
-- [ ] `root.bp` adds `pub mod unicode;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
+- [x] `libs/std/src/unicode.bp` — `fromCodepoint(cp)` +
+      `firstCodepoint(s)` (returns `?i32`). `codepoints` and
+      `normalize(form)` deferred — `NormalizationForm` enum spans 4
+      flavors that don't compose under a single template without
+      arity-on-enum dispatch; `codepoints` needs the codepoint→array
+      conversion that splits cross-backend (`Array.from(s).map(...)`
+      on Node vs `unicode:characters_to_list/2` on Erlang) without
+      a clean wrapper.
+- [x] 4 inline tests (ASCII 'A' round-trip, ASCII '0' round-trip,
+      firstCodepoint of empty is null, firstCodepoint of 'A' is 65).
+- [x] `root.bp` adds `pub mod unicode;`.
+- [x] AGENTS + docs + CHANGELOG entry.
 
 ### F7.array_ext
 
