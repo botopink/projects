@@ -107,31 +107,31 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
 - [ ] erlang/beam: **gated on Frente A §D-D4** — coordinate at merge.
 
 ### F4I — `#[@iterator]` `break <C>` + `yield :label` (§1I) + RI1–RI6
-- [ ] `parser/exprs.zig` parses `break :label [<expr>];` inside
-      `#[@iterator]`/`#[@asyncGenerator]` (the bare `break;` and
-      `break <expr>;` forms already parse — see `parser/exprs.zig:222`).
-      Blocked on a Jump AST widening: `.@"break"` is currently
-      `?*ExprOf(phase)` and must grow a `{label, value}` shape that mirrors
-      `.yield`. Touches the four codegen backends + comptime/transform —
-      land as a separate commit before RI5.
+- [x] `parser/exprs.zig` parses `break :label [<expr>];` inside
+      `#[@iterator]`/`#[@asyncGenerator]` — widened the Jump AST
+      `.@"break"` variant from `?*ExprOf(phase)` to
+      `{label: ?[]const u8, value: ?*ExprOf(phase)}` (mirrors `.yield`),
+      updated all 4 codegen backends + comptime transform/specialize/
+      error/runtime + format printer.
 - [x] `parser/decls.zig` parses trailing `:label` after the return type
       (already effect-agnostic; the comment was misleading and now spells
       out §1I's iterator/asyncGenerator coverage explicitly).
 - [ ] `transform.zig` rewrites `break <c>;` to
       `return @IteratorStep.Done(<c>);` and `throw <e>;` to
-      `return @IteratorStep.Error(<e>);`. (Deferred — depends on the same
-      Jump AST widening for `break :label`.)
+      `return @IteratorStep.Error(<e>);`. (Deferred — `@IteratorStep` enum
+      itself still needs the F5 builtins.d.bp migration; landing this
+      ahead of the consumer migration would crash codegen.)
 - [x] **RI1** — `return <expr>;` inside `#[@iterator]` /
-      `#[@asyncGenerator]` reds with `iterator-return-forbidden`. Bare
-      `return;` (implicit clean end) stays legal. Body walk in
-      `comptime/infer.zig` (`inferJumpExpr` `.@"return"` arm) +
-      `infer_errors.zig` covers both effects.
-      Migrated the `js: iterator fromList yields array items` snapshot
-      suite — the legacy `return doRange(...)` delegation shortcut is
-      now forbidden; recursive-delegation coverage moves to F6
-      `effect_iterator.zig`.
-- [ ] **RI2/RI3/RI5** — gated on `break :label` parsing + completion-type
-      tracking on `StarFnCtx`; land alongside the Jump AST widening.
+      `#[@asyncGenerator]` reds with `iterator-return-forbidden`.
+- [x] **RI2** — `break <expr>;` whose value type does not unify with the
+      declared `C` reds with `iterator-break-type-mismatch`. Fires only
+      when the break targets the iterator (top-level or fn-labelled).
+- [x] **RI3** — `break <expr>;` inside an iterator whose `C` defaults to
+      `void` reds with `iterator-break-without-completion-type`. Same
+      scoping rule as RI2.
+- [x] **RI5** — `break :label <expr>` whose label isn't on `env.labelStack`
+      reds with `break-label-unbound`. Mirrors RI4's `yield :label`
+      machinery.
 - [x] **RI4** — already covered by `yield-label-unbound` in
       `comptime/infer.zig` (34ae1af).
 - [x] **RI6** — parser hard-rejects the legacy `yield break <expr>` /
