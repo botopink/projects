@@ -71,12 +71,24 @@ jobs:
           # `erlang` is OTP 24 — not enough.
           otp-version: '27'
 
+      # Pinned release tarball (not the upstream shell installer — its
+      # version lookup is flaky on the GH runners; can resolve to literal
+      # `{` on macOS or `<!DOCTYPE html>` on linux under rate-limiting).
       - name: Install wasmtime (botopink-lang / meta gates embed wasm RUN LOG)
         if: matrix.project == 'meta' || matrix.project == 'repository/botopink-lang'
         shell: bash
+        env:
+          WASMTIME_VERSION: v45.0.1
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://wasmtime.dev/install.sh | bash
+          set -euo pipefail
+          url="https://github.com/bytecodealliance/wasmtime/releases/download/${WASMTIME_VERSION}/wasmtime-${WASMTIME_VERSION}-x86_64-linux.tar.xz"
+          curl --proto '=https' --tlsv1.2 -sSfL -o /tmp/wasmtime.tar.xz "$url"
+          mkdir -p "$HOME/.wasmtime/bin"
+          tar -xJf /tmp/wasmtime.tar.xz -C /tmp/
+          mv "/tmp/wasmtime-${WASMTIME_VERSION}-x86_64-linux/wasmtime" "$HOME/.wasmtime/bin/"
+          chmod +x "$HOME/.wasmtime/bin/wasmtime"
           echo "$HOME/.wasmtime/bin" >> "$GITHUB_PATH"
+          "$HOME/.wasmtime/bin/wasmtime" --version
 
       - name: Install hooks (all 7)
         run: scripts/install-hooks.sh
