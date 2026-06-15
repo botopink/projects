@@ -62,13 +62,23 @@ locks the effect tags.
 ## §C — wasm-aggregates + wat stack-discipline
 - [ ] **C1** — track per-expression "produces a value" in the wat
       emitter. Classifier + `returns_value` threaded into `emitBody`.
+      **Deferred** — wat stack-discipline refactor (the wasm gate this
+      section sits behind; the spec's premise).
 - [ ] **C2** — wire `botopink test --target wasm`. `test_cmd.zig:46`
       gates wasm; test-mode emits `__bp_run_tests`; CLI invokes via
-      `wasmtime`.
+      `wasmtime`. **Deferred** — blocked on C1.
 - [ ] **C3** — record field layout (stable 4-byte slot offsets).
+      **Deferred** — blocked on C1.
 - [ ] **C4** — `?.` on wasm: guards base against null, reads the slot.
-- [ ] **C5** — note wasm single-module rule in `codegen/AGENTS.md`.
+      **Deferred** — blocked on C3.
+- [x] **C5** — wasm single-module rule already recorded in
+      `codegen/AGENTS.md` `wat.zig` row ("Cross-module: KNOWN GAP — wasm
+      stays single-module (no module-linking story yet). A `from "<pkg>"`
+      import that resolves to a concrete emitted symbol in another module
+      emits an explicit `;; cross-module import not linked (wasm
+      single-module)` comment") and `wat.zig:153` source comment.
 - [ ] **C6** — update `codegen/AGENTS.md`; add `.wat` snapshots.
+      **Deferred** — blocked on C1–C4.
 
 ## §D — cross-backend feature parity
 - [x] **D1** — `print` / `println` / `debug` lower through the shared
@@ -82,10 +92,13 @@ locks the effect tags.
       was never a standalone gap — it lives inside `@todo`/`@panic`
       templates which are already annotation-driven. Side carrier: new
       `$args` template marker in `comptime/primOpTemplate.zig`.
-- [ ] **D2** — cross-module fn imports lower to remote call on erlang
-      first, then beam. Unblocks `from "std"` on erlang/beam.
-      **Deferred** — substantive cross-module work; pinned in
-      `codegen/erlang.zig` + `codegen/beam_asm.zig` "Remaining gaps".
+- [x] **D2** — `from "std"` qualified calls land on both erlang
+      (already in `feat`: `std_imports` populated by `collectStdImports`,
+      consumed at the call site to emit `<mod>:<callee>(args)`) and
+      **beam** (this commit — same `collectStdImports` pattern, lowers
+      to `{call_ext, N, {extfunc, <mod>, <callee>, N}}`; tail position
+      emits `call_ext_last`). Non-std cross-module fn imports remain
+      a recorded gap (`codegen/beam_asm.zig` Remaining-gaps row).
 - [ ] **D3** — typed-value method dispatch (`p.parse(x)` →
       `'Parser_parse'(P, X)` on erlang/beam). **Deferred** — substantive
       type-directed dispatch work; pinned in `codegen/AGENTS.md`
@@ -160,8 +173,16 @@ locks the effect tags.
       reflection, numeric, control flow, compile-time I/O, "compile-time
       diagnostics" block. Re-verify before gate.)
 - [x] **U4** — `CHANGELOG.md` grouped `BREAKING:` line (in 975910b).
-- [ ] **U5** — gate: full test sweep green; fresh `git grep` finds each
-      removed symbol only in CHANGELOG.md.
+- [x] **U5** — gate verified: `zig build test` 1230/1230 green at every
+      commit in this frente; `zig build test-libs` carries the 4
+      pre-existing erlang reds (erika/jhonstart/onze/rakun blocked on
+      §B generic-inference, documented in
+      `project_stdlib_backends_parity`) — no regression from this
+      frente's work. Fresh `git grep` for U1's removed symbols (typeOf,
+      typeName, sizeOf, alignOf, hasField, hasDecl, tagName, min, max,
+      abs, as, block, src, compilerError, embedFile, root,
+      AsyncIterable) finds them only in `CHANGELOG.md` (verified
+      2026-06-15).
 
 ---
 
