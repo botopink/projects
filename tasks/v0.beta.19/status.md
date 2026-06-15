@@ -13,6 +13,7 @@
 | [std-expansion](specs/std-expansion.md) | `std-expansion` | `task/std-expansion` | `.tasks/std-expansion/` | **merged+pushed** (`origin/feat` ← bot-lang `83d5d1a` + meta `06fa981`; 7/19 modules landed: math/asserts/path/random/querystring/time/url; 12 deferred → `std-expansion-tail`) |
 | [std-expansion-tail](specs/std-expansion-tail.md) | `std-expansion-tail` | (pending — single worktree `.tasks/std-expansion-tail/`) | — | pending |
 | [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | `task/recursive-test-gate` | `.tasks/recursive-test-gate/` | **done** (F0–F7 merged + pushed to `origin/feat` eede97d; submodule shim commits on each lib's `feat`; recursive submodule scan exercised live during the bump commit) |
+| [ci-pipelines-green](specs/ci-pipelines-green.md) | `ci-pipelines-green` | `task/ci-pipelines-green` | `.tasks/ci-pipelines-green/` | F1–F3 landed across all 7 repos (mlugg/setup-zig@v1→@v2, actions/checkout+setup-node@v4→@v5, vscode-extension `npm test` glob → `test/*.test.ts`); pending F4 (meta pointer bumps) + F5 (verify) |
 
 ## std-expansion — per-wave state
 
