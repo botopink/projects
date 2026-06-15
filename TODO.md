@@ -214,10 +214,15 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
       returns null (no source-declared name); a chained `t._0.field`
       lands on `field`'s decl on element 0's record. Exposes
       `compiler-core`'s `types` module via `bp.types` for the LSP.
-- [ ] **E2** — interface assoc-fn dispatch — `Iface.method(...)` from
-      another module jumps to the `default fn` in the interface source.
-- [ ] **E3** — note both paths in `modules/language-server/AGENTS.md` +
-      `docs.md`; regression tests under `language-server/src/tests/`.
+- [x] **E2** — interface assoc-fn dispatch: `Iface.method(...)` (head is an
+      interface name, not a value binding) routes through a new
+      `findInterfaceMethodAcross` that scans the active file + project graph
+      for `interface <head> { … }` and returns the inner `default fn` /
+      `declare fn` location. Cross-module reach gated on `pub interface`.
+- [x] **E3** — `language-server/AGENTS.md` + `docs.md` document both §E E1
+      and §E E2 paths; regression tests under `tests/definition.zig`
+      (`definition: tuple element chain …` + `definition: interface
+      assoc-fn cross-module …`).
 
 ## §F — typescript `.d.ts` template skip
 - [x] **F1** — `typescript.zig` decl emitter skips any fn whose return
