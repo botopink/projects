@@ -9,9 +9,13 @@
 #   scripts/install-hooks.sh --meta-only # install only the meta hook (partial clone)
 #
 # Resolution model:
-#   - meta: META_ROOT/.git/hooks/pre-commit → META_ROOT/scripts/git-hooks/pre-commit
-#   - submodule: META_ROOT/.git/modules/<path>/hooks/pre-commit →
-#       META_ROOT/<path>/scripts/git-hooks/pre-commit
+#   - meta: <common>/.git/hooks/pre-commit → MAIN_ROOT/scripts/git-hooks/pre-commit
+#       (always anchored at the main repo — the common git dir is shared
+#       across worktrees, so the symlink must not point at a worktree's
+#       in-flight source.)
+#   - submodule: <sub-git-dir>/hooks/pre-commit →
+#       CURRENT_ROOT/<path>/scripts/git-hooks/pre-commit
+#       (worktree-local — each worktree has its own submodule git dirs.)
 #
 # `--check` exit codes:
 #   0 — every hook is the tracked symlink
@@ -117,16 +121,18 @@ linkHook() {
 }
 
 # --- meta ---------------------------------------------------------------
-META_TRACKED="$META_ROOT/scripts/git-hooks/pre-commit"
-META_HOOKS="$META_ROOT/.git/hooks"
-# If we are inside a worktree (.git is a file), .git/hooks lives under the
-# main repo's worktrees/<name>/hooks. `git rev-parse --git-path hooks` is
-# the canonical resolver.
-META_HOOKS=$(git rev-parse --git-path hooks)
-case "$META_HOOKS" in
+# The meta hook lives in the COMMON git dir, which is shared by every
+# worktree. It must point at the MAIN repo's tracked source — not the
+# current worktree's, which may diverge during in-flight task work.
+COMMON_GIT_DIR=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null \
+    || git rev-parse --git-common-dir)
+case "$COMMON_GIT_DIR" in
     /*) ;;
-    *) META_HOOKS="$META_ROOT/$META_HOOKS" ;;
+    *) COMMON_GIT_DIR="$META_ROOT/$COMMON_GIT_DIR" ;;
 esac
+MAIN_ROOT=$(git worktree list --porcelain | awk '/^worktree / { print $2; exit }')
+META_TRACKED="$MAIN_ROOT/scripts/git-hooks/pre-commit"
+META_HOOKS="$COMMON_GIT_DIR/hooks"
 linkHook "meta" "$META_HOOKS" "$META_TRACKED"
 
 # --- submodules ---------------------------------------------------------
