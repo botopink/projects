@@ -303,12 +303,19 @@ in F4 use chained-host-call shapes and `#[@result] declare fn`).
 
 ### F7.regex
 
-- [ ] `libs/std/src/regex.bp` — `record Match { value: string,
-      index: i32 }`, `match` / `matchAll` / `replace` / `replaceAll`
-      / `test` / `splitOn`.
-- [ ] 7 inline tests.
-- [ ] `root.bp` adds `pub mod regex;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
+- [x] `libs/std/src/regex.bp` — `matches(pattern, input) -> bool`
+      (named `matches` because `test` is a reserved keyword for inline
+      test blocks), `replace`, `replaceAll`, `splitOn`. §A2 chained
+      templates on both backends (`new RegExp(...)` + `re:run/replace/split`).
+- [ ] `record Match { value: string, index: i32 }` + `match` /
+      `matchAll` **DEFERRED** — per-backend position extraction
+      shapes diverge (`String.prototype.match()` returns a regex
+      object with named props vs Erlang `re:run/3` returning
+      `{match, Captured}` with index lists).
+- [x] 4 inline tests (matches digit class, replace swaps first,
+      replaceAll swaps every, splitOn breaks on pattern).
+- [x] `root.bp` adds `pub mod regex;`.
+- [x] AGENTS + docs + CHANGELOG entry.
 
 ### F7.unicode
 
@@ -370,15 +377,18 @@ in F4 use chained-host-call shapes and `#[@result] declare fn`).
 
 ### F8.crypto
 
-- [ ] `libs/std/src/crypto.bp` — `sha256` / `sha512` / `md5`
-      (hex-digest strings) / `hmacSha256(key, data)` /
-      `randomBytes(n: i32) -> Array<u8>`. §A2 chained template
-      (`crypto.createHash('sha256').update(s).digest('hex')` on Node,
-      `crypto:hash(sha256, s)` on Erlang).
-- [ ] 5 inline tests with canonical vectors
-      (`hello world` → `b94d27...`).
-- [ ] `root.bp` adds `pub mod crypto;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
+- [x] `libs/std/src/crypto.bp` — `sha256` / `sha512` / `md5`
+      (hex-digest strings) + `hmacSha256(key, data)`. §A2 chained
+      template (`require('crypto').createHash('<alg>').update($0).digest('hex')`
+      on Node, `crypto:hash` + `io_lib:format("~2.16.0b", …)` on
+      Erlang).
+- [ ] `randomBytes(n: i32) -> Array<u8>` **DEFERRED** — secure-random
+      byte-array return crosses awkwardly across backends without
+      sidecars.
+- [x] 5 inline tests (canonical sha256 of `hello world`, sha256 of
+      empty, md5 of `hello`, sha512 length, hmacSha256 length).
+- [x] `root.bp` adds `pub mod crypto;`.
+- [x] AGENTS + docs + CHANGELOG entry.
 
 ## F9 — examples-CLI + per-target coverage doc
 
