@@ -23,6 +23,7 @@
 | [std-expansion](specs/std-expansion.md) | `std-expansion` | satellite consuming `prim-op-annotation` — fills cross-backend stdlib gaps from Node + Erlang reference APIs in five waves: §W1 essentials (`math`/`json`/`base64`/`time`/`random`) · §W2 system (`env`/`path`/`fs`/`process`/`os`) · §W3 text (`regex`/`unicode` + `array_ext`/`string_ext` extension methods) · §W4 network+crypto (`url`/`querystring`/`http` client/`crypto`) · §W5 assertions (`assert`). Every new `.bp` file ships with header comments citing the canonical Node + Erlang URLs and inline `test { … }` blocks covering the surface. | 13 new `libs/std/src/*.bp` files + `interface Array<T>` + `interface String` extensions on `primitives.d.bp` + sidecar adapters (`.mjs` for node, `.erl` for erlang) for `json` + `libs/std/tests/` per-module test fixtures + coverage-matrix gate in `comptime/infer.zig` |
 | [std-expansion-tail](specs/std-expansion-tail.md) | `std-expansion-tail` | closes the 12 deferred std modules from `std-expansion` (json/base64/env/fs/process/os/regex/unicode/array_ext/string_ext/http/crypto) + the in-module tails (`path.relative`/`resolve` · `random.intInRange`/`bool`/`shuffle`/`seed` · `time.monotonic`/`sleep`/`formatIso8601`/`measure` · `asserts.throws`/`matches`/`AssertError`) + the F6 `STD-001` `std-unsupported-on-target` diagnostic at the `from "std"` import site + F7 examples.md "Real-world examples" CLI + the codegen per-target coverage doc. Adds two `prim-op-annotation` grammar pieces: §A2 chained-host-call templates (regression-tested only — passthrough already works) and §A3 `#[@result] declare fn` template-owned wrapper. | 10 new `libs/std/src/*.bp` files + 5 tail edits on landed modules + `primitives.d.bp` extension methods + `libs/std/src/sidecars/*.{mjs,erl}` adapters + `compiler-core/src/comptime/infer.zig` `STD-001` + `compiler-cli/src/cli/lib_test.zig` sidecar shipping + `docs.md` / `CHANGELOG.md` / `examples.md` rolls |
 | [recursive-test-gate](specs/recursive-test-gate.md) | `recursive-test-gate` | local pre-commit gate, version-controlled + recursive — every project (meta + 6 submodules) has a tracked `scripts/git-hooks/pre-commit` that runs its own `zig build test` / `botopink test` / `npm test`; the meta hook additionally validates **staged submodule pointer bumps** by running the submodule's gate against the staged SHA in a throwaway worktree; one bootstrap script (`scripts/install-hooks.sh`) wires all 7 symlinks; a `hook-integrity.yml` CI smoke catches `--no-verify` bypasses | `scripts/git-hooks/**` (new tracked tree) · `scripts/install-hooks.sh` (new) · `repository/<sub>/scripts/git-hooks/pre-commit` + `lib/runner-standalone.sh` × 6 submodules · `.github/workflows/hook-integrity.yml` (new) · `scripts/AGENTS.md` + `repository/AGENTS.md` + each lib's `AGENTS.md` |
+| [ci-pipelines-green](specs/ci-pipelines-green.md) | `ci-pipelines-green` | repair every red workflow in the botopink org — bump `mlugg/setup-zig` v1 → v2 (unblocks Zig 0.16.0 download, broken upstream by ziglang.org tarball naming change), bump `actions/checkout` v4 → v5 + `actions/setup-node` v4 → v5 (Node-20 actions deprecated as of 2026-06-16), fix vscode-extension `npm test` glob (`"test/**/*.test.ts"` → `test/`) so Node 20 `--test` discovers files | each lib's `.github/workflows/{test,tag,release}.yml` (×6 repos) · `.github/workflows/hook-integrity.yml` (meta) · `repository/vscode-extension/package.json` (`test` script) · `tasks/v0.beta.19/{README.md,status.md}` (docs roll) |
 
 ## Order
 
@@ -60,6 +61,16 @@ recursive-test-gate ─▶ independent of every other spec (it only consumes the
                       File-disjoint with Frentes A/B/C: touches only scripts/git-hooks/**,
                       install-hooks.sh, per-submodule scripts/git-hooks/, and
                       .github/workflows/hook-integrity.yml.
+
+ci-pipelines-green  ─▶ independent of every other spec (touches only workflow YAMLs +
+                      vscode-extension package.json `test` script). Lands on its own
+                      worktree .tasks/ci-pipelines-green/. File-disjoint with
+                      Frentes A/B/C and with recursive-test-gate: recursive-test-gate
+                      authored hook-integrity.yml as a new file; this spec edits the
+                      *landed* version on `feat` for the action-version bumps. Six
+                      sibling pushes (one per submodule + meta) then a `git submodule
+                      update --remote repository/vscode-extension` pointer bump close
+                      it.
 ```
 
 - **The three frentes are file-disjoint** at the directory level — they can

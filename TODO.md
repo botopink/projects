@@ -1,389 +1,140 @@
-# TODO — std-expansion-tail (v0.beta.19 follow-up)
+# TODO — ci-pipelines-green
 
-> Branch: `task/std-expansion-tail` · Worktree: `.tasks/std-expansion-tail/`
-> Spec: [`tasks/v0.beta.19/specs/std-expansion-tail.md`](tasks/v0.beta.19/specs/std-expansion-tail.md)
-> Set umbrella: [`tasks/v0.beta.19/README.md`](tasks/v0.beta.19/README.md)
-> Status rollup: [`tasks/v0.beta.19/status.md`](tasks/v0.beta.19/status.md)
->
-> Reference URLs (cite verbatim in every new `.bp` header):
-> - Node.js: <https://nodejs.org/api/>
-> - Erlang stdlib: <https://www.erlang.org/doc/apps/stdlib/api-reference.html>
->
-> Edit code **inside this worktree only**. Pre-commit runs zig fmt +
-> build + test (no `--no-verify`).
+Spec: [tasks/v0.beta.19/specs/ci-pipelines-green.md](tasks/v0.beta.19/specs/ci-pipelines-green.md)
+Worktree: `.tasks/ci-pipelines-green/` (branch `task/ci-pipelines-green` off
+`origin/feat`)
+Slug: `ci-pipelines-green`
+Status: F0 (kickoff) — no workflow YAMLs edited yet.
 
-## Mission
+## Root causes (verified against live run logs on 2026-06-15)
 
-Close the 12 deferred std modules from `std-expansion`
-(`json`/`base64`/`env`/`fs`/`process`/`os`/`regex`/`unicode`/`array_ext`/
-`string_ext`/`http`/`crypto`), the in-module tails on the 5 landed
-modules, the F6 `STD-001` `std-unsupported-on-target` diagnostic, the
-F7 examples-CLI + per-target coverage doc, and add two grammar pieces
-to `prim-op-annotation` (§A2 chained host calls + §A3 `#[@result]
-declare fn` template-owned wrapper).
+1. **`mlugg/setup-zig@v1` cannot download Zig 0.16.0.** The 0.16.0 release
+   moved the tarball path on `ziglang.org` from `zig-<os>-<arch>-…` to
+   `zig-<arch>-<os>-…`. v1 of the action + every community mirror still
+   resolve the old layout — every install errors with "Unable to locate
+   executable file: zig". `mlugg/setup-zig@v2` (currently v2.2.1) reads
+   the new manifest. **Pinned bump: `@v1` → `@v2` everywhere.**
+2. **vscode-extension `npm test` ships a quoted glob** that Node 20's
+   `--test` does not expand. The package.json script is
+   `node --test "test/**/*.test.ts"` — runner reports `Could not find
+   '/…/test/**/*.test.ts'` and exits 1, cascading into the meta repo's
+   `hook-integrity.yml`. **Fix: replace the quoted glob with the
+   directory form `--test test/`.**
+3. **Node 20 actions are deprecated and switch to Node 24 on
+   2026-06-16** (i.e. tomorrow). Bump `actions/checkout@v4 → @v5` and
+   `actions/setup-node@v4 → @v5` everywhere in the same sweep.
 
-## Coordination
+## Files this task touches
 
-- **One worktree, sequential phases.** Each F# below is one or more
-  commits; F0/F1 land first (cleanup + diagnostic — no impact on the
-  deferred modules), then F2/F3 (infra + grammar — gated by their own
-  snapshots), then F4 (in-module tails — one commit per module),
-  then F5–F8 wave by wave (one commit per module). F9 closes.
-- **Per-module sidecars** ship at `botopink-lib-test` time — the build
-  copies `libs/std/src/sidecars/<m>.{mjs,erl}` next to the emitted
-  `<m>.{js,erl}` so the emitted code can `require('./<m>.mjs')` /
-  `-include("<m>.erl").` (F2 authors the shipping step; F5+ uses it).
-- **Coverage matrix is the gate.** Importing a module marked ✗ on the
-  active backend reds with `STD-001` at the import site (F1 enforces).
+All edits land **on each submodule's `feat` branch** (six independent
+PRs/pushes), then the meta repo bumps the vscode-extension pointer and
+commits the F1+F2 changes to its own `hook-integrity.yml` + README/status.
 
-## §A — `prim-op-annotation` grammar additions
+```
+repository/botopink-lang/.github/workflows/test.yml       F1+F2
+repository/botopink-lang/.github/workflows/tag.yml        F2
+repository/botopink-lang/.github/workflows/release.yml    F2
+repository/jhonstart/.github/workflows/test.yml           F1+F2
+repository/jhonstart/.github/workflows/tag.yml            F2
+repository/rakun/.github/workflows/test.yml               F1+F2
+repository/rakun/.github/workflows/tag.yml                F2
+repository/erika/.github/workflows/test.yml               F1+F2
+repository/erika/.github/workflows/tag.yml                F2
+repository/onze/.github/workflows/test.yml                F1+F2
+repository/onze/.github/workflows/tag.yml                 F2
+repository/vscode-extension/.github/workflows/test.yml    F2
+repository/vscode-extension/.github/workflows/tag.yml     F2
+repository/vscode-extension/.github/workflows/release.yml F2
+repository/vscode-extension/package.json                  F3 (test script glob)
+.github/workflows/hook-integrity.yml                      F1+F2
+tasks/v0.beta.19/README.md                                docs (done in F0)
+tasks/v0.beta.19/status.md                                F5 close-out
+```
 
-### §A2 — chained host-call passthrough
+## Plan / checklist
 
-- [ ] Regression test `tests/codegen/prim_op_chained.zig`: a primitive
-      method annotated with
-      `#[@external(node, "Buffer.from($0).toString('base64')")]`
-      renders the host shape verbatim. No parser edit expected
-      (the passthrough already works); this test pins the behaviour.
-- [ ] Document in `libs/std/AGENTS.md` §"External annotation
-      vocabulary": the `"""…"""` template body MAY contain `.` /
-      `(` / `)` for chains; the existing renderer passes them
-      through.
+### F0 — kickoff (this commit)
 
-### §A3 — `#[@result]`-aware `declare fn` template
+- [x] Spec landed at `tasks/v0.beta.19/specs/ci-pipelines-green.md`.
+- [x] Scope-table row added to `tasks/v0.beta.19/README.md`.
+- [x] Order block extended with the ci-pipelines-green entry.
+- [x] TODO.md (this file) authored.
+- [ ] Initial commit on `task/ci-pipelines-green` to record the spec
+      seed (no workflow edits yet — those land in F1+).
 
-- [ ] `parser/decls.zig` — relax §B-R7 to accept
-      `#[@result] declare fn …` whose template body literally
-      carries the target's `{ ok / error }` shape.
-- [ ] `comptime/infer.zig` — for a `#[@result] declare fn`, skip the
-      auto-wrap (the template already produces the wrapper). Add
-      comptime check `result-template-shape-mismatch`: parse the
-      template body looking for the target's `{ ok / error }`
-      tokens; red if either branch is missing.
-- [ ] `tests/codegen/result_template.zig` — round-trip
-      `parse("42")` to `{ ok: 42 }` (JS) / `{ok, 42}` (erlang).
-- [ ] `comptime/diagnostics.zig` — register
-      `result-template-shape-mismatch` with a stable code.
+### F1 — `mlugg/setup-zig` v1 → v2 (per repo, on each lib's `feat`)
 
-## F0 — doc cleanup (no compiler edits)
+- [ ] botopink-lang `test.yml` (2 call sites: jobs `test` + `test-libs`).
+- [ ] jhonstart `test.yml` (source-build branch).
+- [ ] rakun `test.yml`.
+- [ ] erika `test.yml` (beam + commonJS matrix entries).
+- [ ] onze `test.yml`.
+- [ ] meta `hook-integrity.yml` (matrix axes meta + repository/botopink-lang).
 
-- [ ] `repository/botopink-lang/CHANGELOG.md` `url` row — drop the
-      "serialize deferred" sentence (`serialize(u)` landed in bot-lang
-      `5788bd7`). Replace with a one-line "round-trip closed" note
-      linking to this spec.
-- [ ] `repository/botopink-lang/libs/std/docs.md` `url.bp` row — extend
-      to `record Url { … } + parse(s) + serialize(u)`.
-- [ ] `repository/botopink-lang/libs/std/examples.md` — add a stub
-      `## Real-world examples` heading with a one-line pointer to F9.
-- [ ] `repository/botopink-lang/libs/std/AGENTS.md` — add a
-      "Wave-tail roadmap" row pointing at this spec.
+Verify per repo after push:
+- Look for `Fetching zig-…0.16.0.tar.xz` followed by a 200 + an actual
+  `zig version: 0.16.0` line in the next workflow step.
 
-## F1 — F6 enforcement (`STD-001` diagnostic)
+### F2 — `actions/checkout@v5` + `actions/setup-node@v5` (sweep)
 
-- [ ] `modules/compiler-core/src/comptime/infer.zig` — at every
-      `import { … } from "std"` resolve site, read the per-target
-      `#[@external]` annotation set on each imported decl. If the
-      active target has no matching annotation (and the decl is not
-      a pure-bp `pub fn`), emit
-      `std-unsupported-on-target: module '<name>' has no
-      implementation for target '<target>'; see
-      tasks/v0.beta.19/specs/std-expansion.md §"Coverage matrix".`
-      Stable code: `STD-001`.
-- [ ] `comptime/diagnostics.zig` — register `STD-001`
-      (`stdUnsupportedOnTarget`) mirroring the existing diagnostic
-      registry shape. Span = import-site span. Detail = module name.
-- [ ] `tests/comptime/std_unsupported_on_target.zig` — new fixture:
-      `import {fs} from "std";` compiled with `--target wat` reds
-      with `STD-001`. Until F6 lands `fs.bp`, the fixture uses a
-      throwaway `libs/std/src/_test_unsupported.bp` (cleaned up on
-      F6 land).
-- [ ] `tests/comptime/std_supported_on_target.zig` — counter-fixture:
-      `import {path} from "std";` on `--target commonJS` does NOT
-      red (path is ✓ on every target).
+- [ ] botopink-lang `test.yml`, `tag.yml`, `release.yml`.
+- [ ] jhonstart `test.yml`, `tag.yml`.
+- [ ] rakun `test.yml`, `tag.yml`.
+- [ ] erika `test.yml`, `tag.yml`.
+- [ ] onze `test.yml`, `tag.yml`.
+- [ ] vscode-extension `test.yml`, `tag.yml`, `release.yml`.
+- [ ] meta `hook-integrity.yml`.
 
-## F2 — sidecar shipping infra
+Verify per run: no `Node.js 20 actions are deprecated` warning above the
+run summary.
 
-- [ ] Per-module sidecar discovery: when emitting
-      `libs/std/src/<m>.bp` for `--lib std` lib-test, the build
-      looks for `libs/std/src/sidecars/<m>.{mjs,erl}` and copies it
-      next to the emitted `<m>.{js,erl}`. Owner: the current
-      `--lib std` test-out builder
-      (`modules/compiler-cli/src/cli/test_cmd.zig` `runLibTests` or
-      its successor in `lib_test.zig`).
-- [ ] `libs/std/AGENTS.md` §"Sidecar adapters" — document the
-      convention: one file per module per target; the adapter is
-      plain target source (no botopink syntax); the emitted module
-      imports it via the sibling path.
-- [ ] `tests/cli/lib_test_sidecar.zig` — new fixture: drop a no-op
-      `sidecars/_smoke.mjs` next to a stub `libs/std/src/_smoke.bp`,
-      run lib-test, assert the `.mjs` is copied to the
-      `test-out/` directory next to the emitted `.js`.
+### F3 — vscode-extension `npm test` glob
 
-## F3 — completion of §A2 + §A3 (see §A above)
+- [ ] Edit `repository/vscode-extension/package.json`:
+      `"test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/"`
+- [ ] Local smoke: `cd repository/vscode-extension && npm test` →
+      `test/unit.test.ts` runs and reports pass.
+- [ ] Push to vscode-extension `feat`.
 
-Tracked in `§A — prim-op-annotation grammar additions`. F3 is the
-build-order marker: complete §A2 + §A3 before F4 starts (the tails
-in F4 use chained-host-call shapes and `#[@result] declare fn`).
+### F4 — meta pointer bump
 
-## F4 — in-module tails (5 landed modules)
+- [ ] In the meta worktree:
+      `git submodule update --remote repository/vscode-extension`.
+- [ ] Commit + push so the next `hook-integrity` run picks up the green
+      vscode-extension HEAD.
+- [ ] If F1/F2 lands in the same meta commit, sweep all 6 submodule
+      pointers (memory: feat remotas sempre unificadas — sweep no fim).
 
-### F4.path — `relative` + `resolve`
+### F5 — docs roll + verify
 
-- [ ] `libs/std/src/path.bp` — `relative(from: string, to: string) -> string`
-      using explicit head/tail recursion (sidestep `var` + `push`
-      dead-store trap).
-- [ ] `libs/std/src/path.bp` — `resolve(segments: string[]) -> string`
-      (variadic via Array).
-- [ ] 4 new inline `test { … }` blocks (relative same-dir, relative
-      up-one, resolve absolute, resolve with `..`).
-- [ ] Update `libs/std/AGENTS.md` `path` row + `libs/std/docs.md`
-      `path.bp` row.
+- [ ] `tasks/v0.beta.19/status.md` gains a one-line entry for this slug.
+- [ ] `gh run list --repo botopink/<repo> --workflow test --branch feat
+      --limit 1` returns `success` for botopink-lang, jhonstart, rakun,
+      erika, onze, vscode-extension.
+- [ ] `gh run list --repo botopink/projects --workflow hook-integrity
+      --branch feat --limit 1` returns `success`.
+- [ ] One whitespace-only push to each lib's `feat` confirms the chain
+      stays green for ~10 min end-to-end.
 
-### F4.random — `intInRange` + `bool` + `shuffle` + `seed`
+## Gotchas
 
-- [ ] `libs/std/src/random.bp` — `intInRange(lo: i32, hi: i32) -> i32`
-      (closed interval; `lo` + floor(float() * (hi - lo + 1))).
-- [ ] `random.bp` — `bool() -> bool` (alias for `coin()` per the
-      Node `Math.random()` mental model).
-- [ ] `random.bp` — `shuffle<T>(xs: Array<T>) -> Array<T>`
-      (Fisher–Yates over a copy; see `shuffleLowering` note in spec
-      §F4).
-- [ ] `random.bp` — `seed(s: i64) -> unit` (Erlang
-      `rand:seed(exsplus, {s, s, s})`; Node falls back to a userland
-      Mulberry32 PRNG seeded via a module-local `state`).
-- [ ] 4 new inline tests.
-- [ ] AGENTS + docs row update.
-
-### F4.time — `monotonicMillis` + `sleep` + `formatIso8601` + `measureMillis`
-
-- [ ] `libs/std/src/time.bp` — `monotonicMillis() -> i64`
-      (`performance.now()` / `erlang:monotonic_time(millisecond)`).
-- [ ] `time.bp` — `sleep(ms: i64) -> *unit` with `#[@future]`
-      (`setTimeout` Promise / `timer:sleep`).
-- [ ] `time.bp` — `formatIso8601(ms: i64) -> string`
-      (`new Date(ms).toISOString()` /
-      `calendar:system_time_to_rfc3339`).
-- [ ] `time.bp` — `measureMillis<T>(body: fn() -> T) -> #(T, i64)`.
-- [ ] 4 new inline tests.
-- [ ] AGENTS + docs row update.
-
-### F4.asserts — `throws` + `matches` + `AssertError`
-
-- [ ] `libs/std/src/asserts.bp` — `throws(body: fn() -> any,
-      message: ?string)` catches a `@panic` from `body` and reds
-      with `message` if none was thrown.
-- [ ] `asserts.bp` — `matches(pattern: string, actual: string)`
-      regex-matches `actual` against `pattern` (depends on F7
-      `regex` module — if `regex` not yet landed, leave a `#[@todo]`
-      placeholder + doc-note).
-- [ ] `asserts.bp` — `pub record AssertError { message: string,
-      file: string, line: i32 }` carried in the test runner's
-      failure stream.
-- [ ] 3 new inline tests.
-- [ ] AGENTS + docs row update.
-
-### F4.url — verification only
-
-- [ ] No code edits — `url.bp` already carries `parse + serialize`
-      from bot-lang `5788bd7`. The F0 doc cleanup folds it in.
-
-## F5 — §W1 tails
-
-### F5.json
-
-- [ ] `libs/std/src/json.bp` — `JsonValue` enum
-      (`Null`/`Bool`/`Number`/`String`/`Array<JsonValue>`/
-      `Object<#(string, JsonValue)>`).
-- [ ] `json.bp` — `#[@result] declare fn parse(s: string)
-      -> @Result<JsonValue, string>` via §A3 template + sidecar
-      `sidecars/json.{mjs,erl}` that wraps `JSON.parse` /
-      `json:decode` in `try`/`catch`.
-- [ ] `json.bp` — `stringify(v: JsonValue) -> string` +
-      `stringifyPretty(v: JsonValue, indent: i32) -> string`.
-- [ ] `sidecars/json.mjs` (Node) + `sidecars/json.erl` (Erlang).
-- [ ] 6 inline tests (round-trip Number/String/Array/Object, error,
-      nested, escaped strings).
-- [ ] `root.bp` adds `pub mod json;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-### F5.base64
-
-- [ ] `libs/std/src/base64.bp` — `encode(s: string) -> string` /
-      `decode(b: string) -> @Result<string, string>` via §A2 chained
-      template
-      (`Buffer.from(s, 'utf8').toString('base64')` on Node,
-      `base64:encode/1` on Erlang).
-- [ ] `base64.bp` — `encodeUrlSafe` / `decodeUrlSafe` (url-safe
-      variant with `-`/`_` replacement).
-- [ ] 4 inline tests.
-- [ ] `root.bp` adds `pub mod base64;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-## F6 — §W2 tails
-
-### F6.env
-
-- [ ] `libs/std/src/env.bp` — `get(name: string) -> ?string` /
-      `set(name: string, value: string) -> unit` /
-      `unset(name: string) -> unit` / `args() -> Array<string>` /
-      `vars() -> Array<#(string, string)>`.
-- [ ] `sidecars/env.mjs` exports bare `get`/`set` host fns (avoid
-      `[$0]` index marker — keep templates `$self`/`$0`-flat).
-- [ ] 3 inline tests (get/set round-trip, args, vars).
-- [ ] `root.bp` adds `pub mod env;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-### F6.fs
-
-- [ ] `libs/std/src/fs.bp` — `readText` / `writeText` / `exists` /
-      `list` / `mkdir` / `rm` / `stat` / `copy` (all `@Result`-wrapped).
-- [ ] `record FileStat { size, mtime, isDir }`.
-- [ ] `sidecars/fs.{mjs,erl}` wraps Node `fs/promises` + Erlang
-      `file:*/2` to the `@Result` shape.
-- [ ] 8 inline tests over a temp dir.
-- [ ] `root.bp` adds `pub mod fs;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-### F6.process
-
-- [ ] `libs/std/src/process.bp` — `exit(code: i32) -> noreturn` /
-      `cwd() -> string` / `platform() -> string` (`'linux'`/
-      `'darwin'`/`'win32'`) / `arch() -> string` / `pid() -> i32` /
-      `hostname() -> string`.
-- [ ] 5 inline tests.
-- [ ] `root.bp` adds `pub mod process;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-### F6.os
-
-- [ ] `libs/std/src/os.bp` — `hostname` / `arch` / `cpuCount` /
-      `tmpdir` / `userInfo` (uid/username pair) / `eol`.
-- [ ] 5 inline tests.
-- [ ] `root.bp` adds `pub mod os;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-## F7 — §W3 tails
-
-### F7.regex
-
-- [ ] `libs/std/src/regex.bp` — `record Match { value: string,
-      index: i32 }`, `match` / `matchAll` / `replace` / `replaceAll`
-      / `test` / `splitOn`.
-- [ ] 7 inline tests.
-- [ ] `root.bp` adds `pub mod regex;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-### F7.unicode
-
-- [ ] `libs/std/src/unicode.bp` — `codepoints` / `fromCodepoint` /
-      `firstCodepoint` / `normalize` (NormalizationForm enum
-      NFC/NFD/NFKC/NFKD).
-- [ ] 4 inline tests.
-- [ ] `root.bp` adds `pub mod unicode;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-### F7.array_ext
-
-- [ ] `libs/std/src/primitives.d.bp` — extend `interface Array<T>`
-      with 15 methods (`find` / `findIndex` / `some` / `every` /
-      `flatMap` / `flat` / `fill` / `chunked` / `sliding` / `sort`
-      / `unique` / `reverse` / `zip` / `take` / `drop`). Per-method
-      `#[@external]` set per backend.
-- [ ] 12 inline tests in `libs/std/tests/array_ext.bp`.
-- [ ] Per-method snapshots in
-      `tests/codegen/primitives_array_ext_*.zig`.
-- [ ] AGENTS extension-method table + CHANGELOG entry.
-
-### F7.string_ext
-
-- [ ] `libs/std/src/primitives.d.bp` — extend `interface String`
-      with 11 methods (`padStart` / `padEnd` / `repeat` / `replace`
-      / `replaceAll` / `chars` / `lines` / `words` / `charCodeAt` /
-      `endsWith` / `indexOf` / `lastIndexOf`).
-- [ ] 9 inline tests in `libs/std/tests/string_ext.bp`.
-- [ ] Per-method snapshots in
-      `tests/codegen/primitives_string_ext_*.zig`.
-- [ ] AGENTS extension-method table + CHANGELOG entry.
-
-## F8 — §W4 tails
-
-### F8.http
-
-- [ ] `libs/std/src/http.bp` — `record Request { method, url,
-      headers, body }`, `record Response { status, headers, body }`,
-      `send(req: Request) -> *@Result<Response, string>` with
-      `#[@future]` via §A2 chained template + sidecar
-      `sidecars/http.mjs` (wraps `node:http` as Promise).
-- [ ] `http.bp` — `get(url: string) -> *@Result<Response, string>`
-      and `postJson(url: string, body: JsonValue) ->
-      *@Result<Response, string>` (pure-botopink composers over
-      `send`).
-- [ ] `tests/cli/http_echo.zig` — echo-server harness (out of
-      direct scope; coordinates with the existing `http-echo`
-      deferral in `std-expansion.md` §W4).
-- [ ] 4 inline tests (against the echo fixture).
-- [ ] `root.bp` adds `pub mod http;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-### F8.crypto
-
-- [ ] `libs/std/src/crypto.bp` — `sha256` / `sha512` / `md5`
-      (hex-digest strings) / `hmacSha256(key, data)` /
-      `randomBytes(n: i32) -> Array<u8>`. §A2 chained template
-      (`crypto.createHash('sha256').update(s).digest('hex')` on Node,
-      `crypto:hash(sha256, s)` on Erlang).
-- [ ] 5 inline tests with canonical vectors
-      (`hello world` → `b94d27...`).
-- [ ] `root.bp` adds `pub mod crypto;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-## F9 — examples-CLI + per-target coverage doc
-
-- [ ] `repository/botopink-lang/libs/std/examples.md` — replace the
-      F0 stub with the full "Real-world examples" section: a
-      ~30-line CLI tool reading `args()` + `env.get("HOME")` +
-      `fs.readText` of a JSON file + `http.get` of a configured URL
-      + writes the merged result. Each step references the
-      `std/<m>` source by file:line.
-- [ ] `modules/compiler-core/src/codegen/AGENTS.md` — add a
-      "Per-target coverage" subsection mirroring
-      `std-expansion.md` §"Coverage matrix" but driven from
-      `STD-001`'s per-target lookup (one row per module × four
-      backends).
-- [ ] `CHANGELOG.md` per-wave entries:
-      - `feat(std): wave 1 tail — json, base64`
-      - `feat(std): wave 2 tail — env, fs, process, os`
-      - `feat(std): wave 3 tail — regex, unicode + array/string_ext`
-      - `feat(std): wave 4 tail — http, crypto`
-- [ ] `tasks/v0.beta.19/status.md` — flip the `std-expansion-tail`
-      row to `done` once merged into `feat`.
-
-## Done gate (per spec "Exit gate")
-
-- [ ] All F0–F9 boxes ticked.
-- [ ] All test scenarios in `std-expansion-tail.md` §"Test
-      scenarios" pass on a local rerun.
-- [ ] `zig build test` + `botopink-lib-test --lib std --target
-      commonJS,erlang` green; new `--target wat` smoke for
-      `STD-001` green.
-- [ ] The `Coverage matrix` table in `std-expansion.md` agrees with
-      the `STD-001` lookup at runtime (parse the table + assert
-      every cell matches the per-module annotation set).
-- [ ] `tasks/v0.beta.19/status.md` flips the row to `done`.
-
-## Per-memory reminders
-
-- SSH for all git remote ops (`feedback_always_ssh_git`).
-- Worktree paths for Read/Edit (`project_worktree_workflow`); this
-  worktree is at `.tasks/std-expansion-tail/`.
-- Functions in camelCase (`feedback_camelcase_naming`); module names
-  lowercase singular (`regex`, not `Regex`).
-- Implement in `.bp` when possible (`feedback_prefer_bp_over_dbp`);
-  `.d.bp` only when 100% host-backed with no pure-botopink helpers.
-- After each commit, advance to the next checkbox
-  (`feedback_continue_after_commit`).
-- Every new `.bp` carries a `////` header citing the Node + Erlang
-  URLs for the module (per spec §"Module inventory").
-- Update remote feat in every submodule before/during work
-  (`feedback_always_update_remote_feat_submodules`); always unify
-  to feat at task end.
+- **`.tasks/<slug>/.github/workflows/`**: every per-task worktree
+  (`frente-a-compiler`, `frente-b-rules-tooling`, `prim-op-annotation`,
+  `std-expansion-tail`, *this one*) carries its own copy of
+  `hook-integrity.yml`. **Do not edit those.** They die when the
+  worktree is removed. Only the source-of-truth at
+  `.github/workflows/hook-integrity.yml` on the meta repo's `feat`
+  branch matters.
+- **Mid-merge state on the main worktree**: at kickoff time the main
+  worktree was carrying a half-finished merge (TODO.md, status.md,
+  submodule pointer edits in the index). This worktree is rooted at
+  `origin/feat` so it doesn't share that state — keep edits here, do
+  not `cd` back to the main tree.
+- **Don't bump Zig**: spec is scope-tight on CI. Any Zig version change
+  goes through `build.zig.zon` `minimum_zig_version` in its own gate.
+- **Don't add `actions/cache` for zig**: setup-zig@v2 already does the
+  cache + community-mirror fallback; an `actions/cache` layer adds
+  maintenance without fixing the root cause.
+- **SSH everywhere**: memory rule — push to `origin` always via SSH
+  (already configured in `.gitmodules`). Do not introduce `gh repo
+  push` / HTTPS tokens for any of the 7 pushes.
