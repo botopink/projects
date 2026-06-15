@@ -205,8 +205,15 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
 ---
 
 ## §E — LSP definition tail
-- [ ] **E1** — tuple-field `recv._N` resolves to the Nth element's type
-      (`resolveChainType` + a new step for `_<digits>`).
+- [x] **E1** — tuple-field `recv._N` resolves to the Nth element's type.
+      `ReceiverType` gained a `.tuple: []*T.Type` variant carrying the
+      element types; `resolveHead` populates it from a binding whose
+      deref'd type is `.named "tuple"`; `stepField` adds the `_<digits>`
+      arm that picks element `N` (via `tupleMemberIndex`) and lifts it
+      back through `receiverFromType`. A request directly on `_N`
+      returns null (no source-declared name); a chained `t._0.field`
+      lands on `field`'s decl on element 0's record. Exposes
+      `compiler-core`'s `types` module via `bp.types` for the LSP.
 - [ ] **E2** — interface assoc-fn dispatch — `Iface.method(...)` from
       another module jumps to the `default fn` in the interface source.
 - [ ] **E3** — note both paths in `modules/language-server/AGENTS.md` +
