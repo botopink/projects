@@ -21,13 +21,6 @@ jobs:
   replay:
     name: replay pre-commit (${{ matrix.project }})
     runs-on: ubuntu-latest
-    env:
-      # Silence Erlang's startup logger so the codegen runtime's
-      # `executeErlang` short-circuit (returns empty RUN LOG when
-      # `erl`'s stderr is non-empty) doesn't trip on the runner's
-      # default logger notice. Same flag the per-repo botopink-lang
-      # `test` workflow now carries.
-      ERL_AFLAGS: "-kernel logger_level critical"
     strategy:
       fail-fast: false
       matrix:
