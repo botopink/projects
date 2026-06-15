@@ -107,14 +107,31 @@ The Rules track has internal sequencing; §E/§F/§T are parallel.
 - [ ] erlang/beam: **gated on Frente A §D-D4** — coordinate at merge.
 
 ### F4I — `#[@iterator]` `break <C>` + `yield :label` (§1I) + RI1–RI6
-- [ ] `parser/stmts.zig` parses `break;`, `break <expr>;`,
-      `break :label [<expr>];` inside `#[@iterator]`/`#[@asyncGenerator]`.
-- [ ] `parser/decls.zig` parses trailing `:label` after the return type
-      (extend from `#[@generator]` to `#[@iterator]`/`#[@asyncGenerator]`).
+- [ ] `parser/exprs.zig` parses `break :label [<expr>];` inside
+      `#[@iterator]`/`#[@asyncGenerator]` (the bare `break;` and
+      `break <expr>;` forms already parse — see `parser/exprs.zig:222`).
+      Blocked on a Jump AST widening: `.@"break"` is currently
+      `?*ExprOf(phase)` and must grow a `{label, value}` shape that mirrors
+      `.yield`. Touches the four codegen backends + comptime/transform —
+      land as a separate commit before RI5.
+- [x] `parser/decls.zig` parses trailing `:label` after the return type
+      (already effect-agnostic; the comment was misleading and now spells
+      out §1I's iterator/asyncGenerator coverage explicitly).
 - [ ] `transform.zig` rewrites `break <c>;` to
       `return @IteratorStep.Done(<c>);` and `throw <e>;` to
-      `return @IteratorStep.Error(<e>);`.
-- [ ] **RI1/RI2/RI3/RI5** — invalid forms reject with their codes.
+      `return @IteratorStep.Error(<e>);`. (Deferred — depends on the same
+      Jump AST widening for `break :label`.)
+- [x] **RI1** — `return <expr>;` inside `#[@iterator]` /
+      `#[@asyncGenerator]` reds with `iterator-return-forbidden`. Bare
+      `return;` (implicit clean end) stays legal. Body walk in
+      `comptime/infer.zig` (`inferJumpExpr` `.@"return"` arm) +
+      `infer_errors.zig` covers both effects.
+      Migrated the `js: iterator fromList yields array items` snapshot
+      suite — the legacy `return doRange(...)` delegation shortcut is
+      now forbidden; recursive-delegation coverage moves to F6
+      `effect_iterator.zig`.
+- [ ] **RI2/RI3/RI5** — gated on `break :label` parsing + completion-type
+      tracking on `StarFnCtx`; land alongside the Jump AST widening.
 - [x] **RI4** — already covered by `yield-label-unbound` in
       `comptime/infer.zig` (34ae1af).
 - [x] **RI6** — parser hard-rejects the legacy `yield break <expr>` /
