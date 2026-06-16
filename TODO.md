@@ -39,22 +39,27 @@
   - [~] **P9** F1 STD-001 — diagnostic constant + `all_codes` row landed;
         runtime check (`Env.target` threading + `stdModuleFns`
         population) deferred (CLI thread, multi-file).
-  - [ ] **P10** F2 sidecar shipping infra.
-  - [ ] **P4** F5 json (unblocked by P1; pure-bp parse-via-template
-        + recursive stringify).
-  - [ ] **P11** F4.time.sleep + F4.asserts.throws (unblocked by P1).
-  - [ ] **P12** F4.random.seed + F8.crypto.randomBytes (gated on P10
-        sidecar).
-  - [ ] **P15** F6.fs (gated on P1 + P10).
-  - [ ] **P16** F8.http (gated on P10 sidecar).
+  - [x] **P10** F2 sidecar shipping infra — `shipMjsSidecars` probes
+        `<lib>/src/sidecars/<base>` first; `libs/std/AGENTS.md` documents
+        the convention. Unblocks P12/P15/P16.
+  - [x] **P4** F5 json (V1) — `parse(s) -> @Result<string, string>` +
+        `stringify` via §A3. Validates + canonicalises; full `JsonValue`
+        enum walker deferred.
+  - [x] **P11** F4.asserts.throws — `tryCatch` §A3 wrapper + `throws`
+        pure-bp; sleep deferred (sync vs async @future contract).
+  - [ ] **P12** F4.random.seed + F8.crypto.randomBytes — unblocked by
+        P10 sidecar; needs `libs/std/src/sidecars/random.mjs` (Mulberry32)
+        + `crypto.randomBytes` per-target template.
+  - [ ] **P15** F6.fs — unblocked by P1 + P10; needs `record FileStat`
+        + 8 `#[@result] declare fn` over `fs/promises`.
+  - [ ] **P16** F8.http — unblocked by P10; needs Promise wrapper sidecar.
   - [ ] **P17** F4.random.shuffle — DEFERRED. Pure-bp Fisher–Yates over
-        generic `Array<T>` is circular even with `.expect(sentinel)` (the
-        sentinel itself must be a `T`, but the only T values available
-        are wrapped in `?T`). Host-backed needs generic-fn declare
-        syntax (no precedent in `libs/std`); the call is documented in
-        `random.bp` for future-Eric.
-  - [ ] **P18** F9 examples-CLI walkthrough + per-target coverage table.
-  - [ ] **P19** unification sweep + push to origin/feat.
+        generic `Array<T>` is circular even with `.expect(sentinel)`.
+        Documented in `random.bp` for future-Eric.
+  - [x] **P18** F9 examples-CLI walkthrough + per-target coverage
+        table — `libs/std/src/examples.md` updated.
+  - [ ] **P19** unification sweep + push to origin/feat — pending user
+        authorization for the shared-branch push.
 
 ## Coordination
 
