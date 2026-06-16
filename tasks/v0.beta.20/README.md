@@ -25,7 +25,8 @@ tasks/v0.beta.20/specs/
 ├── std-tail.md       std-expansion finish (2 sub-specs, flat)
 ├── frente-b.md       rules + tooling close (3 sub-specs)
 ├── ci-tail.md        CI cleanup (2 sub-specs)
-└── ecosystem.md      emilia (1 sub-spec)
+├── ecosystem.md      emilia (1 sub-spec)
+└── snap-audit.md     meta-audit of every *.snap.md (1 spec, flat)
 ```
 
 One file per frente. Inside each, sub-specs are ordered by
@@ -47,8 +48,9 @@ Flat frentes (`std-tail`, `ecosystem`) omit the stage labels.
 | [frente-b](specs/frente-b.md) | 2 | 3 | F4F/F4G/F4C/F4I/F5/F6 rules-tooling close · `break :label` 4 backends · `----- RUN LOG -----` §T |
 | [ci-tail](specs/ci-tail.md) | 2 | 2 | (01) v19 ci-pipelines-green shims drop + `test-libs.sh` consolidation · (02) backends-parity erlang BIF directive + windows-2022 snap normalisation + shell-var fix |
 | [ecosystem](specs/ecosystem.md) | flat | 1 | **opens** v0.beta.20 ecosystem-expansion line — `emilia` (CSS-in-bp, type-safe Token enum, cross-frente dep on `enum-sections` from frente-a) |
+| [snap-audit](specs/snap-audit.md) | flat | 1 | meta-audit of every `*.snap.md`: (1) RUN LOG coverage push (`(a)`/`(b)`/`(c)` labelling + promote silent → observable), (2) legacy surface sweep (`*fn`, `@external(target,…)`, `when($argc==N)`), (3) value cross-check against external runtimes + cross-backend parity, (4) gap fixtures routed to the owning frente |
 
-Total: **27 sub-specs** across **6 frente files**. Every v0.beta.19 row in
+Total: **28 sub-specs** across **7 frente files**. Every v0.beta.19 row in
 [v19/status.md](../v0.beta.19/status.md) flagged "deferred" / "pending"
 has a corresponding sub-spec here.
 
@@ -94,6 +96,10 @@ ci-tail:
 
 ecosystem (cross-frente dep):
   emilia ← enum-sections (in frente-a.md)
+
+snap-audit (flat — runs alongside every other frente):
+  F0 audit tooling → F1 (a)→(b) promotion → F2 legacy sweep → F3 value cross-check → F4 gap fixtures
+  (lands BEFORE frente-a-03-closeout so the cross-backend sweep consumes the new observable forms)
 ```
 
 Frentes are file-disjoint at the directory level — they can proceed in
