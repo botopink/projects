@@ -6,11 +6,11 @@
 **Touches docs**: `modules/compiler-core/src/comptime/AGENTS.md` · `tasks/v0.beta.19/status.md` (frente-b row → done).
 **Status**: partial — 3 sub-specs across 2 stages; rules-tooling-close has §1G + F4I-T1 landed.
 
-## Current state (partials landed on origin/feat — bot-lang a9f1a6d)
+## Current state (partials landed on origin/feat — bot-lang 0568466)
 
 | Sub-spec | Landed | Remaining |
 |---|---|---|
-| **rules-tooling-close** | §1G generic-param defaults wired into TypeDef + infer (`3ed957c`) · F4I Jump.@"break" widened from `?*Expr` to `{label, value}` struct + RI1–RI6 + RC4/RC5/RC6 + RG3 diagnostics snapshots · `comptime/tests/generic_defaults.zig` | F4F (`#[@future]` RF3/RF4) · F4G (default generics gates beyond §1G) · F4C (context body validation) · F4I tail (T2/T3 `@IteratorStep` transform rewrite) · F5 builtins.d.bp Iterator enum · F6 effect suites cross-pollination |
+| **rules-tooling-close** | §1G generic-param defaults wired into TypeDef + infer (`3ed957c`) · F4I Jump.@"break" widened from `?*Expr` to `{label, value}` struct + 4 call sites in commonJS/erlang updated to read `.value` accessor (`a9f1a6d`) + RI1–RI6 + RC4/RC5/RC6 + RG3 diagnostics snapshots · `comptime/tests/generic_defaults.zig` | F4F (`#[@future]` RF3/RF4) · F4G (default generics gates beyond §1G) · F4C (context body validation) · F4I tail (T2/T3 `@IteratorStep` transform rewrite) · F5 builtins.d.bp Iterator enum · F6 effect suites cross-pollination · **`fn-param-default-expansion` for `declare fn`**: parser does NOT yet accept `param: type = expr` in `declare fn` signatures — blocked path that prim-op/ci-tail catalogs need (currently every BIF arity overload is a separate decl in `libs/std/src/erlang.bp`) |
 | **test-run-log** | — | §T `----- RUN LOG -----` per test on 4 backends (net-new tooling) |
 | **codegen-break-label** | — | `break :label` honors label on 4 backends (consumes F4I-T2/T3) |
 

@@ -6,12 +6,12 @@
 **Touches docs**: `tasks/v0.beta.19/status.md` (`ci-pipelines-green` row → done) · `tasks/v0.beta.20/status.md`.
 **Status**: partial — 2 sub-specs across 2 stages; both have halves landed.
 
-## Current state (partials landed on origin/feat — meta e338ea5 / bot-lang a9f1a6d)
+## Current state (partials landed on origin/feat — meta 28929e2 / bot-lang 0568466)
 
 | Sub-spec | Landed | Remaining |
 |---|---|---|
 | **01-cleanup** | B-half: meta `scripts/test-libs.sh` deleted (`e3b9d3a`) · bot-lang in-tree wrapper is canonical · A-half partial: F1 (artifact step drop) `c8e1e6d` · F2 (`ERL_AFLAGS` drop) `c8e1e6d`+`7bf9e17` · F3 (`runtime.zig` doc) `08ad75f` | B-half: AGENTS.md `scripts/` path note + caller updates · A0/A4 confirmation that v19 row → done on `tasks/v0.beta.19/status.md` |
-| **02-backends-parity** | E-half: `codegen/erlang.zig` BIF auto-import directive table + 4 snapshot regens (`05d3df6` / bot-lang `a9f1a6d`) | E-half: `codegen/beam_asm.zig` parity audit · 4× sibling lib `test.yml` `allow_fail: false` flip on erlang+beam axes · W-half (all): sibling-lib `shell: bash` fix · `snap.zig` CRLF+path normalisation · bot-lang snap regen on windows · drop windows `allow_fail` rows across 5 workflow YAMLs |
+| **02-backends-parity** | E-half: `codegen/erlang.zig` BIF auto-import directive (now **annotation-driven** from `libs/std/src/erlang.bp` `@External.Erlang("erlang", "<symbol>")` decls via `prelude.pkg_modules` — `0568466`) + 4 snapshot regens (`max/2`, `node/0`, 2× `abs/1`) | E-half: `codegen/beam_asm.zig` parity audit · 4× sibling lib `test.yml` `allow_fail: false` flip on erlang+beam axes (currently 4 libs still red on erlang — pre-existing, tracked here) · W-half (all): sibling-lib `shell: bash` fix · `snap.zig` CRLF+path normalisation · bot-lang snap regen on windows · drop windows `allow_fail` rows across 5 workflow YAMLs · **extend `std/erlang.bp` catalog**: today ~32 single-word BIFs covered (palavras únicas que botopink camelCase shadowiza); BIFs com payload-of-args (`spawn/2..4`, `monitor/3`, `apply/3`, `error/2..3`, `exit/2`, `halt/1..2`, `nodes/1`, `register/2`, `link/2`, `monitor/3`, `process_info/2`, `register/2`, `spawn_link/N`, `spawn_monitor/3`, `spawn_opt/N`) ainda não cobertos por overloads contíguas — feature de `fn-param-default-expansion` que permite trailing defaults em `declare fn` liberará a forma compacta |
 
 ## DAG
 

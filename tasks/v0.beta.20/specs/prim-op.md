@@ -6,7 +6,40 @@
 **Touches docs**: every AGENTS.md under `repository/botopink-lang/modules/compiler-core/` (sweep at closeout) · `CHANGELOG.md`.
 **Status**: partial — 9 sub-specs across 3 stages; 5 sub-specs have landed code in `origin/feat`.
 
-## Current state (partials landed on origin/feat — meta e338ea5 / bot-lang a9f1a6d)
+## Current state (partials landed on origin/feat — meta 28929e2 / bot-lang 0568466)
+
+### Active reds traced to prim-op merge
+
+After merging `task/prim-op-annotation` into `feat`, **7 codegen tests
+still fail** on `zig build test` (bot-lang):
+
+| Test | Symptom | Root cause |
+|---|---|---|
+| `js_features.test.js: iterator fromList yields array items` | snap mismatch | template dispatch |
+| `js_features.test.js: option method on tuple element` | erlang output `Rest = :(Xs, 1, length(Xs))` — should be `lists:sublist(Xs, …)` | `@External.Erlang` template lost the `module:` prefix on call-site emit (2-arg form `(module, symbol)` not routed through `tryEmitPrimAnnotation` correctly) |
+| `js_features.test.js: array instance default-fn methods` | similar | same template dispatch |
+| `js_features.test.js: string methods map to native JS names` | similar | same |
+| `wat.test.wat: string slice copies bytes …` | erlang twin emits `Mid = :(S, 1, 5)` — should be `string:slice(S, 1, 4)` | same |
+| `wat.test.wat: string slice without end arg slices to source length` | same | same |
+| `wat.test.wat: string slice result length is readable` | same | same |
+
+**All 7 share one root cause**: the prim-op-annotation merge bumped
+`tryEmitPrimAnnotation` / `tryEmitBuiltinAnnotation` paths on erlang
+but lost the 2-arg `@External.Erlang("module", "symbol")` resolution
+that emits `module:symbol(args)` at the call site. Need to restore the
+`module:` prefix emit when the annotation arg is a quoted module name
+(not a `$`-bearing template string).
+
+### Annotation-driven BIF table — landed via std/erlang (0568466)
+
+Replaces the hardcoded `auto_imported_bifs` array in `codegen/erlang.zig`
+with a scan of `libs/std/src/erlang.bp` (new module, `pub mod erlang;`
+in `root.bp`). The `@External.Erlang("erlang", "<symbol>")` annotations
+drive (symbol, arity) extraction → shadow table. Future extension:
+when `fn-param-default-expansion` lands trailing defaults in
+`declare fn`, contiguous arity ranges collapse to one decl each.
+
+
 
 | Sub-spec | Landed | Remaining |
 |---|---|---|
@@ -17,7 +50,7 @@
 | **fn-param-default-expansion** | AST plumbing `Param.default` + `EnumVariantField.default` + `expandTrailingDefaults` (`4c2e62c` + `5f0f1d9`) | F0–F6 (builtins.d.bp split + receiver-bound default + 4 diagnostics + when-argc consumers) |
 | **family-1-beam-wat-prim-methods** | Family 1 erlang 9/19 via `64a3436` | Family 1 BEAM + wat (consumes family-2 dispatch infra) |
 | **when-argc-removal** | — | retire grammar (after every consumer migrates via fn-param-default-expansion) |
-| **annotation-tail (§A2)** | commonJS (`a7c6d07`) + erlang (`52d6101`) per-callee template dispatch | BEAM + wat user-template dispatch |
+| **annotation-tail (§A2)** | commonJS (`a7c6d07`) + erlang (`52d6101`) per-callee template dispatch | BEAM + wat user-template dispatch — **FIX FIRST**: restore `module:symbol(args)` emit for 2-arg `@External.Erlang("module", "symbol")` form (lost during merge; 7 reds tracked in "Active reds" above) — and reconcile `$stringify` Ctx: currently guarded by `@hasDecl` so backends without `emitStringifyOpen` surface `PrimOpStringifyUnsupported` (which surfaces in `std·erlang` lib-test when a BIF wrapper triggers stringify) — proper fix is adding the open/close pair to every backend's Ctx struct |
 | **agents-md-resync** | — | umbrella docs sweep |
 
 ## DAG

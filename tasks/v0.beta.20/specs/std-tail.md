@@ -6,7 +6,18 @@
 **Touches docs**: `libs/std/AGENTS.md`, `libs/std/docs.md`, `libs/std/src/examples.md`, `CHANGELOG.md`.
 **Status**: partial — 2 sub-specs (both independent, parallel); std-expansion-tail-followup has substantial code landed.
 
-## Current state (partials landed on origin/feat — bot-lang a9f1a6d)
+## Current state (partials landed on origin/feat — bot-lang 0568466)
+
+### Active reds traced to std lib tests
+
+`zig build test-libs` summary: 5 lib×backend combos red:
+
+| Lib | Backend | Status | Cause |
+|---|---|---|---|
+| std | erlang | RED (new) | `PrimOpStringifyUnsupported` raised during compile — band-aid in `primOpTemplate.zig` (`@hasDecl` guard) leaks the error when a BIF template path triggers `$stringify` and the Ctx doesn't define `emitStringifyOpen`. Fix: add `emitStringifyOpen`/`emitStringifyClose` to every Ctx in erlang.zig (mirror commonJS) or migrate the band-aid to a proper feature flag. |
+| erika / jhonstart / onze / rakun | erlang | RED (pre-existing) | tracked by `ci-tail-02-backends-parity` E-half (BIF shadowing + missing `no_auto_import` overrides for specific BIFs not yet in `libs/std/src/erlang.bp` — extend the catalog or fix lib code) |
+
+
 
 | Sub-spec | Landed | Remaining |
 |---|---|---|
