@@ -50,14 +50,14 @@
 - [ ] **F6-T4 effect_iterator.zig** — §1I `lazyMap` end-to-end (gated on F4I-tail + codegen-break-label).
 - [ ] **F6-T5 effect_context.zig** — §1C happy path + RC1/RC2/RC3/RC4/RC5/RC6 (gated on F4C-tail FULL).
 
-### test-run-log keystone — remaining items (T1-{commonJS,erlang}+T2+T4+T5 DONE)
+### test-run-log keystone — remaining items (T1-{commonJS,erlang}+T2+T3+T4+T5 DONE)
 
 - [x] **T1-commonJS** — bot-lang `e968493`.
 - [x] **T1-erlang** — bot-lang `400e71c`.
 - [x] **T5** docs — bot-lang `9bb0419`.
+- [x] **T3** — bot-lang `2c49630`. `botopink-lib-test --json` splices `"lib":"<name>","target":"<t>"` into every child JSONL record; emits per-cell `{"event":"cell_summary",…}` + final `{"event":"run_summary",…}`. Text-mode per-line prefix deliberately rejected (would corrupt fenced ```` ```logs ```` blocks); cyan stderr header keeps text-mode attribution.
 - [ ] **T1-beam** — mirror erlang's shape lowered to BEAM bytecode. ⚠ no `__bp_run_tests` runner exists in `beam_asm.zig` today; this is "write a BEAM bytecode test runner from scratch", not "tweak existing one".
 - [ ] **T1-wat** — gated on Frente A §C2 (`botopink test --target wasm` wiring).
-- [ ] **T3** lib-test-runner — `lib` field injection in JSON mode (children now emit per-test JSON via T2; lib-test-runner re-emits child stdout verbatim — could parse JSONL lines from `--json` children and inject `"lib":"<name>"` before re-emit). Text-mode per-line prefix would corrupt the §T envelope for downstream tools — skip and rely on the colored `── lib · target ──` header that already prints to stderr.
 - [ ] **T2-followup** — per-test `duration_ms` in the envelope + JSONL (runners need to emit `Date.now()` deltas; currently neither commonJS nor erlang runners track it).
 
 ### codegen-break-label — Stage 02 consumer (deferred)
@@ -71,4 +71,4 @@
 
 ## Exit gate
 
-Per spec — F4F/F4G/F4C/F4I/F5/F6 done; `break :label` honors label on commonJS + erlang + beam + wasm; `botopink test` emits `----- RUN LOG -----` per test on all 4 backends. **Sessions 1+2 shipped: F4G-full / F4F-full / F4C-partial(RC3) / F6-T1+T2+T3 / fn-param-default-expansion / F5-atomic / test-run-log T0+T1-{commonJS,erlang}+T2+T4+T5. Remaining: F4C-full / F4I-tail / F6-T4+T5 / codegen-break-label / T1-beam / T1-wat / T3 / T2-followup.**
+Per spec — F4F/F4G/F4C/F4I/F5/F6 done; `break :label` honors label on commonJS + erlang + beam + wasm; `botopink test` emits `----- RUN LOG -----` per test on all 4 backends. **Sessions 1+2 shipped: F4G-full / F4F-full / F4C-partial(RC3) / F6-T1+T2+T3 / fn-param-default-expansion / F5-atomic / test-run-log T0+T1-{commonJS,erlang}+T2+T3+T4+T5. Remaining: F4C-full / F4I-tail / F6-T4+T5 / codegen-break-label / T1-beam / T1-wat / T2-followup.**
