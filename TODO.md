@@ -2,10 +2,10 @@
 
 > Worktree task: closes v0.beta.19 `std-expansion-tail` partial — the 9 phases + 14 sub-deferrals from std-expansion-tail-followup, plus the additive `Option.expect<T>` method.
 >
-> **Status (as of bot-lang `5d19f7e`):** 16/19 phases closed (P9 STD-001
-> runtime check landed). Remaining deferrals: P16 http (needs `#[@future]`
-> in §A3), P17 random.shuffle (needs generic-fn declare), P19 unification
-> sweep + push.
+> **Status (as of meta `17edf6e` / bot-lang `5d19f7e`):** 17/19 phases
+> closed + option-expect (P9 STD-001 runtime check + P19 push landed on
+> origin/feat). Remaining deferrals: P16 http (needs `#[@future]` in §A3),
+> P17 random.shuffle (needs generic-fn declare) — both v0.beta.21.
 >
 > Spec: [`tasks/v0.beta.20/specs/std-tail.md`](tasks/v0.beta.20/specs/std-tail.md) — full content lives there.
 
@@ -21,7 +21,7 @@
   Compiler arm in `inferResultOptionMethod` routes to the same
   `MethodLowering.Op.unwrapOr` lowering; zero codegen changes; 4 backend
   snapshots pinned.
-- [~] **std-expansion-tail-followup** — partial close (16/19 phases landed):
+- [~] **std-expansion-tail-followup** — partial close (17/19 phases landed):
   - [x] F3 / **P1** §A3 `#[@result] declare fn` template-owned wrapper
         (parser/decls R1 relaxed when `@external` is present + matching
         infer arm + `result-template-shape-mismatch` diag registered;
@@ -74,8 +74,9 @@
         Documented in `random.bp` for future-Eric.
   - [x] **P18** F9 examples-CLI walkthrough + per-target coverage
         table — `libs/std/src/examples.md` updated.
-  - [ ] **P19** unification sweep + push to origin/feat — pending user
-        authorization for the shared-branch push.
+  - [x] **P19** unification sweep + push to origin/feat — bot-lang FF
+        `95359dd..5d19f7e`; meta FF `92e3660..17edf6e` (after merging
+        Eric's ci-tail closeout + 4 sibling W2 bumps from origin/feat).
 
 ## Coordination
 
