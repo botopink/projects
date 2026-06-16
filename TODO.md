@@ -2,6 +2,11 @@
 
 > Worktree task: closes v0.beta.19 `std-expansion-tail` partial — the 9 phases + 14 sub-deferrals from std-expansion-tail-followup, plus the additive `Option.expect<T>` method.
 >
+> **Status (as of bot-lang `5d19f7e`):** 16/19 phases closed (P9 STD-001
+> runtime check landed). Remaining deferrals: P16 http (needs `#[@future]`
+> in §A3), P17 random.shuffle (needs generic-fn declare), P19 unification
+> sweep + push.
+>
 > Spec: [`tasks/v0.beta.20/specs/std-tail.md`](tasks/v0.beta.20/specs/std-tail.md) — full content lives there.
 
 ## Baseline (from origin/feat after prim-op-template-fix merge)
@@ -16,7 +21,7 @@
   Compiler arm in `inferResultOptionMethod` routes to the same
   `MethodLowering.Op.unwrapOr` lowering; zero codegen changes; 4 backend
   snapshots pinned.
-- [~] **std-expansion-tail-followup** — partial close (9/19 phases landed):
+- [~] **std-expansion-tail-followup** — partial close (16/19 phases landed):
   - [x] F3 / **P1** §A3 `#[@result] declare fn` template-owned wrapper
         (parser/decls R1 relaxed when `@external` is present + matching
         infer arm + `result-template-shape-mismatch` diag registered;
@@ -36,9 +41,15 @@
   - [x] **P8** F7.regex tails (`record Match` + `match` + `matchAll`).
   - [x] **P13** F6.env tails (`args()` + `vars()`).
   - [x] **P14** F6.os tails (`record UserInfo` + `userInfo()` + `eol()`).
-  - [~] **P9** F1 STD-001 — diagnostic constant + `all_codes` row landed;
-        runtime check (`Env.target` threading + `stdModuleFns`
-        population) deferred (CLI thread, multi-file).
+  - [x] **P9** F1 STD-001 — diagnostic constant + `all_codes` row +
+        runtime check: `comptime.compile` threads `target_name: ?[]const u8`
+        through `analyzeSource` → `Env.target`; `markStdImports` walks
+        `Env.stdModuleFns` (populated in `registerStdlib`) and reds
+        `std-unsupported-on-target: std/<m>.<fn> has no \`@external\` for
+        target '<t>'` on the first host-bound declare without a target
+        match. `codegen.generate` + `cli/check.zig` forward `node` /
+        `erlang` / `wasm`; LSP + comptime tests pass `null`. 3 new
+        unit tests in `tests/std_target_gating.zig`.
   - [x] **P10** F2 sidecar shipping infra — `shipMjsSidecars` probes
         `<lib>/src/sidecars/<base>` first; `libs/std/AGENTS.md` documents
         the convention. Unblocks P12/P15/P16.
@@ -47,11 +58,16 @@
         enum walker deferred.
   - [x] **P11** F4.asserts.throws — `tryCatch` §A3 wrapper + `throws`
         pure-bp; sleep deferred (sync vs async @future contract).
-  - [ ] **P12** F4.random.seed + F8.crypto.randomBytes — unblocked by
-        P10 sidecar; needs `libs/std/src/sidecars/random.mjs` (Mulberry32)
-        + `crypto.randomBytes` per-target template.
-  - [ ] **P15** F6.fs — unblocked by P1 + P10; needs `record FileStat`
-        + 8 `#[@result] declare fn` over `fs/promises`.
+  - [x] **P12** F4.random.seed + F8.crypto.randomBytes — Mulberry32
+        sidecar at `libs/std/src/sidecars/random.mjs`; `seed` flips a
+        module-local switch so subsequent `seededFloat` reads from the
+        reproducible stream; `crypto.randomBytes` emits a hex-encoded
+        N-byte digest (2N chars) to sidestep the `Array<u8>` cross-backend
+        gap.
+  - [x] **P15** F6.fs — `record FileStat { size: i64, mtime: i64, isDir:
+        bool }` + 8 host-bound declares (`readText`, `writeText`,
+        `exists`, `list`, `mkdir`, `rm`, `copy`, `stat`). Fallible ops
+        return `@Result<_, string>` via the §A3 wrapper.
   - [ ] **P16** F8.http — unblocked by P10; needs Promise wrapper sidecar.
   - [ ] **P17** F4.random.shuffle — DEFERRED. Pure-bp Fisher–Yates over
         generic `Array<T>` is circular even with `.expect(sentinel)`.
