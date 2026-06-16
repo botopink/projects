@@ -43,7 +43,7 @@ comment block on the `#[emilia(...)]` decorator hook and the
 `[emilia]={...}` html attribute, `repository/botopink-lang/libs/AGENTS.md`
 cross-reference (one bullet).
 
-**Status**: pending
+**Status**: pending — `repository/emilia` submodule seeded (`f3b6ef7`) and wired in meta `.gitmodules` (`origin/feat` ← `eaed693`); no `src/*.bp` content shipped yet; jhonstart hooks (annotation-on-builder + `[name]={expr}` html attribute) unimplemented; blocks on `enum-sections` (in `frente-a.md`) for the token surface to be ergonomic.
 
 > **Ecosystem-expansion keystone (v0.beta.20).** v0.beta.19 closed the
 > language's recorded gaps; v0.beta.20 opens the **ecosystem-expansion**

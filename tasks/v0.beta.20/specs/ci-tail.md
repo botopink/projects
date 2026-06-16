@@ -4,7 +4,14 @@
 **Depends on**: v0.beta.19 `ci-pipelines-green` — landed across 7 repos (F1–F5 + 12 follow-up layers as of meta `53456cf` / bot-lang `b6afe7c`); this set winds down the transitional shims and closes the 2 deferred reds (`backends-parity` erlang + windows).
 **Files**: `repository/botopink-lang/.github/workflows/test.yml` · `runtime.zig` doc · meta `hook-integrity.yml` · meta `scripts/test-libs.sh` (delete) · `codegen/erlang.zig` + `codegen/beam_asm.zig` (BIF directive) · `compiler-core/src/utils/snap.zig` (LF + path-sep normalisation) · 5× `.github/workflows/test.yml` (4 sibling libs + bot-lang).
 **Touches docs**: `tasks/v0.beta.19/status.md` (`ci-pipelines-green` row → done) · `tasks/v0.beta.20/status.md`.
-**Status**: pending — 2 sub-specs across 2 stages
+**Status**: partial — 2 sub-specs across 2 stages; both have halves landed.
+
+## Current state (partials landed on origin/feat — meta e338ea5 / bot-lang a9f1a6d)
+
+| Sub-spec | Landed | Remaining |
+|---|---|---|
+| **01-cleanup** | B-half: meta `scripts/test-libs.sh` deleted (`e3b9d3a`) · bot-lang in-tree wrapper is canonical · A-half partial: F1 (artifact step drop) `c8e1e6d` · F2 (`ERL_AFLAGS` drop) `c8e1e6d`+`7bf9e17` · F3 (`runtime.zig` doc) `08ad75f` | B-half: AGENTS.md `scripts/` path note + caller updates · A0/A4 confirmation that v19 row → done on `tasks/v0.beta.19/status.md` |
+| **02-backends-parity** | E-half: `codegen/erlang.zig` BIF auto-import directive table + 4 snapshot regens (`05d3df6` / bot-lang `a9f1a6d`) | E-half: `codegen/beam_asm.zig` parity audit · 4× sibling lib `test.yml` `allow_fail: false` flip on erlang+beam axes · W-half (all): sibling-lib `shell: bash` fix · `snap.zig` CRLF+path normalisation · bot-lang snap regen on windows · drop windows `allow_fail` rows across 5 workflow YAMLs |
 
 ## DAG
 

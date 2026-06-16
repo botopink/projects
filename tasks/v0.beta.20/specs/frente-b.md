@@ -4,7 +4,15 @@
 **Depends on**: v0.beta.19 `frente-b-rules-tooling` partial — Rules F0–F3 + R1/R2/R5/RG1 + R3/R4/R6/R7/R8/R9/R10/RG3/RG4 already landed; F4F/F4G/F4C/F4I/F5/F6 + §T pending.
 **Files**: see each sub-spec — `comptime/{infer,transform,contextStack}.zig` · `codegen/{erlang,beam_asm,commonJS,wat}.zig` · `runtime/runlog.zig` (new) · test-mode codegen wrappers.
 **Touches docs**: `modules/compiler-core/src/comptime/AGENTS.md` · `tasks/v0.beta.19/status.md` (frente-b row → done).
-**Status**: pending — 3 sub-specs across 2 stages
+**Status**: partial — 3 sub-specs across 2 stages; rules-tooling-close has §1G + F4I-T1 landed.
+
+## Current state (partials landed on origin/feat — bot-lang a9f1a6d)
+
+| Sub-spec | Landed | Remaining |
+|---|---|---|
+| **rules-tooling-close** | §1G generic-param defaults wired into TypeDef + infer (`3ed957c`) · F4I Jump.@"break" widened from `?*Expr` to `{label, value}` struct + RI1–RI6 + RC4/RC5/RC6 + RG3 diagnostics snapshots · `comptime/tests/generic_defaults.zig` | F4F (`#[@future]` RF3/RF4) · F4G (default generics gates beyond §1G) · F4C (context body validation) · F4I tail (T2/T3 `@IteratorStep` transform rewrite) · F5 builtins.d.bp Iterator enum · F6 effect suites cross-pollination |
+| **test-run-log** | — | §T `----- RUN LOG -----` per test on 4 backends (net-new tooling) |
+| **codegen-break-label** | — | `break :label` honors label on 4 backends (consumes F4I-T2/T3) |
 
 ## DAG
 

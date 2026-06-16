@@ -4,7 +4,21 @@
 **Depends on**: v0.beta.19 `prim-op-annotation` partial close (`64a3436` Family 1 9/19 erlang merged; `7f8f259` Family 2 erlang; `f9918b1` Family 2 commonJS).
 **Files**: see each sub-spec — `parser/decls.zig` · `ast.zig` · `comptime/{comptime,transform}.zig` · `codegen/{erlang,beam_asm,commonJS,wat}.zig` · `libs/std/src/{builtins,primitives}.d.bp` · every `libs/<sib>/src/**/*.bp` (External.<Target> migration) · all AGENTS.md under compiler-core/.
 **Touches docs**: every AGENTS.md under `repository/botopink-lang/modules/compiler-core/` (sweep at closeout) · `CHANGELOG.md`.
-**Status**: pending — 9 sub-specs across 3 stages
+**Status**: partial — 9 sub-specs across 3 stages; 5 sub-specs have landed code in `origin/feat`.
+
+## Current state (partials landed on origin/feat — meta e338ea5 / bot-lang a9f1a6d)
+
+| Sub-spec | Landed | Remaining |
+|---|---|---|
+| **family-2-beam-wat-runtime-ops** | erlang (`7f8f259`) + commonJS (`f9918b1`) via `tryEmitBuiltinAnnotation` | BEAM + wat dispatch infra |
+| **family-3-block-builtin** | — | @block across every backend |
+| **template-instance-methods** | — | instance method template path on every backend |
+| **external-target-libs-migration** | `libs/std/` + `libs/server/` via `5f0f1d9` + `85b199d` | `libs/{onze,rakun,erika,jhonstart}` + examples + tests sweep + legacy form retirement |
+| **fn-param-default-expansion** | AST plumbing `Param.default` + `EnumVariantField.default` + `expandTrailingDefaults` (`4c2e62c` + `5f0f1d9`) | F0–F6 (builtins.d.bp split + receiver-bound default + 4 diagnostics + when-argc consumers) |
+| **family-1-beam-wat-prim-methods** | Family 1 erlang 9/19 via `64a3436` | Family 1 BEAM + wat (consumes family-2 dispatch infra) |
+| **when-argc-removal** | — | retire grammar (after every consumer migrates via fn-param-default-expansion) |
+| **annotation-tail (§A2)** | commonJS (`a7c6d07`) + erlang (`52d6101`) per-callee template dispatch | BEAM + wat user-template dispatch |
+| **agents-md-resync** | — | umbrella docs sweep |
 
 ## DAG
 
@@ -1489,10 +1503,12 @@ gate     ---- `zig build test` + `zig build test-libs` + `botopink-lib-test` all
 ## prim-op-annotation-tail — finish §A2 four-backend story (BEAM + wat)
 
 **Slug**: prim-op-annotation-tail
-**Depends on**: `std-expansion-tail` §A2 commonJS + erlang twin
-  (`a7c6d07` + `52d6101`); `prim-op-annotation` v0.beta.19 partial
-  close (`64a3436` — Family 1 9/19 erlang done, BEAM/commonJS/wat
-  deferred).
+**Depends on**: `std-tail-followup` §A2 commonJS+erlang twin
+  (**already landed** on `origin/feat` — `a7c6d07` + `52d6101`); local prerequisite
+  is its commonJS/erlang surface available at call time. `prim-op-annotation`
+  v0.beta.19 partial close (`64a3436` — Family 1 9/19 erlang done, BEAM/commonJS/wat
+  deferred). **Consumed by** `frente-a-03-closeout` §A7 audit (it verifies the BEAM
+  template path lands before declaring §A6 closed).
 **Files**:
 - `modules/compiler-core/src/codegen/beam_asm.zig` (`user_beam_templates` +
   `tryEmitUserTemplate` mirroring the commonJS/erlang shape).

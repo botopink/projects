@@ -4,7 +4,22 @@
 **Depends on**: v0.beta.19 `frente-a-compiler` partial close (`fe2b7e3` — §S/§U/§A6/§D1/§G1/§G3 done); v0.beta.20 `prim-op` §A2 (BEAM template dispatch) for §A7 alignment.
 **Files**: see each sub-spec below — `comptime/{infer,unify,types,transform}.zig` · `codegen/{erlang,beam_asm,wat}.zig` · `libs/std/src/{order,sets,dict,queue}.bp` · `libs/erika/src/erika.bp` · new wat encoder + aggregate module · cross-backend snapshots.
 **Touches docs**: `modules/compiler-core/src/{parser,comptime,codegen}/AGENTS.md` · `libs/{std,erika}/AGENTS.md` · `CHANGELOG.md`.
-**Status**: pending — 10 sub-specs across 3 stages
+**Status**: pending — 10 sub-specs across 3 stages; no code landed yet (enum-sections fully designed but unimplemented).
+
+## Current state (no code landed in origin/feat)
+
+| Sub-spec | Landed | Remaining |
+|---|---|---|
+| **generic-inference-foundation** | — | full implementation (Self primitive kind resolution + generic var instantiation) |
+| **wat-refactor** | — | full implementation (wat stack-discipline + wasm aggregates) |
+| **beam-inline-prim-methods** | — | full implementation (6 array/string methods on BEAM ASM) |
+| **erika-runtime-string** | — | full implementation (§G2 runtime template form) |
+| **future-runtime-erlang-beam** | — | full implementation (`#[@future]` spawn-and-await on erlang+beam) |
+| **enum-sections** | design + spec text complete (incl. multi-level nesting + numeric variants — section embedded in this file from emilia design discussion) | implementation (parser/decls.zig + ast.zig section/path AST + comptime resolution + desugar) |
+| **primitive-interface-default-fns** | — | full implementation (depends on generic-inference-foundation) |
+| **typed-method-dispatch** | — | full implementation (depends on generic-inference-foundation) |
+| **wasm-test-runner** | — | full implementation (depends on wat-refactor) |
+| **closeout** | — | snapshot sweep + umbrella audit (after every above lands) |
 
 ## DAG
 
@@ -992,7 +1007,7 @@ F3-fail -- a `test "x" { assert false; }` exits 1 with
 ## frente-a-03-closeout — cross-backend snapshot sweep + umbrella audit
 
 **Slug**: frente-a-03-closeout (combines `cross-backend-snapshots-sweep` + `frente-a-tail` umbrella)
-**Depends on**: every other frente-a-tail spec (`frente-a-01-*` keystones + `frente-a-02-*` consumers); v0.beta.19 `frente-a-compiler` partial close (`fe2b7e3`) for the §A7/§B/§C/§D3-D5/§G2 deferrals to be closed; v0.beta.20 `prim-op-02-annotation-tail` for §A7 alignment (BEAM template dispatch).
+**Depends on**: every other frente-a-tail sub-spec (`frente-a-01-*` keystones + `frente-a-02-*` consumers); v0.beta.19 `frente-a-compiler` partial close (`fe2b7e3`) for the §A7/§B/§C/§D3-D5/§G2 deferrals to be closed; v0.beta.20 `prim-op` `annotation-tail` (BEAM+wat user-template dispatch) for §A7 alignment — note that `prim-op` `annotation-tail` itself depends on `std-tail-followup` §A2 commonJS+erlang (already on `origin/feat` — `a7c6d07` + `52d6101`), so the landing order is `std-tail-followup §A2 (done)` → `prim-op annotation-tail BEAM+wat (pending)` → `frente-a closeout audit (this spec)`.
 **Files**:
   - **Snapshot regen** (cross-backend sweep):
     - `modules/compiler-core/snapshots/codegen/{erlang,beam,wat}/` — regenerate every cross-backend snapshot affected by §D3 (typed-method-dispatch), §D4 (future-runtime-erlang-beam), §D5 (beam-inline-prim-methods); regen the §C wat fixtures touched by wat-refactor + wasm-test-runner.

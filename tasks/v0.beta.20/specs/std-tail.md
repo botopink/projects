@@ -4,7 +4,14 @@
 **Depends on**: v0.beta.19 `std-expansion-tail` partial close (meta `fd3604d` / bot-lang local `6efa449` — §A2 commonJS+erlang + F0 docs + 4 F4 in-module tails + 8 net-new modules in 14 commits).
 **Files**: `libs/std/src/**` · sidecars `.mjs`/`.erl` · `compiler-cli/src/cli/lib_test.zig` · `comptime/infer.zig` STD-001 · examples-CLI · `libs/std/src/builtins.d.bp` Option.expect addition.
 **Touches docs**: `libs/std/AGENTS.md`, `libs/std/docs.md`, `libs/std/src/examples.md`, `CHANGELOG.md`.
-**Status**: pending — 2 sub-specs (both independent, parallel)
+**Status**: partial — 2 sub-specs (both independent, parallel); std-expansion-tail-followup has substantial code landed.
+
+## Current state (partials landed on origin/feat — bot-lang a9f1a6d)
+
+| Sub-spec | Landed | Remaining |
+|---|---|---|
+| **std-expansion-tail-followup** | §A2 commonJS+erlang (`a7c6d07`+`52d6101`) · F0 docs · 4 F4 in-module tails (path `a135b4d`, random `0a29b0b`, time `0d14d2d`, asserts `5244743`) · 8 net-new modules: base64 `2c470d4`, env `140688e`, process `2f043ff`, os `fc2545d`, regex `36ffe1d`, unicode (in `52d6101`), crypto `2cef46b` | F1 STD-001 diag · F2 sidecar shipping · F3 §A3 `#[@result] declare fn` template · F5 json · F6 fs · F7 array_ext + string_ext · F8 http · F9 examples-CLI |
+| **option-expect** | — | additive method on `?T` |
 
 ## DAG
 
