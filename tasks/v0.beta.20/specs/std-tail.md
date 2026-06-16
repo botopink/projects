@@ -8,14 +8,15 @@
 
 ## Current state (partials landed on origin/feat — bot-lang 0568466)
 
-### Active reds traced to std lib tests
+### Resolved + deferred reds from `zig build test-libs`
 
-`zig build test-libs` summary: 5 lib×backend combos red:
-
-| Lib | Backend | Status | Cause |
+| Lib | Backend | Status | Cause / Resolution |
 |---|---|---|---|
-| std | erlang | RED (new) | `PrimOpStringifyUnsupported` raised during compile — band-aid in `primOpTemplate.zig` (`@hasDecl` guard) leaks the error when a BIF template path triggers `$stringify` and the Ctx doesn't define `emitStringifyOpen`. Fix: add `emitStringifyOpen`/`emitStringifyClose` to every Ctx in erlang.zig (mirror commonJS) or migrate the band-aid to a proper feature flag. |
-| erika / jhonstart / onze / rakun | erlang | RED (pre-existing) | tracked by `ci-tail-02-backends-parity` E-half (BIF shadowing + missing `no_auto_import` overrides for specific BIFs not yet in `libs/std/src/erlang.bp` — extend the catalog or fix lib code) |
+| std | erlang | GREEN (cleared by `task/prim-op-template-fix` `1e7a56f`) | `emitStringifyOpen` / `emitStringifyClose` added to all six erlang Ctx structs, emitting `iolist_to_binary(io_lib:format("~p", [...]))` per spec. |
+| erika | erlang | DEFERRED | `function drop/2 undefined`, `forEach/2 undefined` — stdlib LINQ-style methods missing erlang lowering. Pre-existing backends-parity gap; tracked by `ci-tail-02-backends-parity`. |
+| jhonstart | erlang | DEFERRED | HTML DSL builders (`ul`, `li`, `text`, `fragment`, `renderToString`, …) are defined in `element.bp` but not auto-imported into the test compile when html.bp's lowering names them. Pre-existing; tracked by `ci-tail-02-backends-parity`. |
+| onze | erlang | DEFERRED | `MissingExternalTarget` — onze's runtime is JS-only (`#[@external(node, "../../src/onze.mjs", …)]` cells; no erlang shim). Lib is intentionally JS-only at the moment; needs either a per-lib backend declaration in `botopink.json` (so test-libs skips it on erlang) or a real `onze.erl` host module. Pre-existing. |
+| rakun | erlang | PARTIAL — fn name syntax errors cleared by `task/prim-op-template-fix` `b1b819b` (fnAtom now quotes leading-`_` names like `__rkScan_*`); remaining reds are `function rkScan/1 undefined` etc. — rakun's runtime cells are `#[@external(node, "./runtime.mjs", …)]` only, no erlang shim. Same shape as onze; pre-existing. |
 
 
 

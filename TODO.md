@@ -1,442 +1,147 @@
-# TODO — std-expansion-tail (v0.beta.19 follow-up)
+# TODO — prim-op-template-fix
 
-> Branch: `task/std-expansion-tail` · Worktree: `.tasks/std-expansion-tail/`
-> Spec: [`tasks/v0.beta.19/specs/std-expansion-tail.md`](tasks/v0.beta.19/specs/std-expansion-tail.md)
-> Set umbrella: [`tasks/v0.beta.19/README.md`](tasks/v0.beta.19/README.md)
-> Status rollup: [`tasks/v0.beta.19/status.md`](tasks/v0.beta.19/status.md)
+> Worktree task: **zero all red unit tests across every module +
+> backend**. Anchor item is the FIX FIRST flagged in
+> `tasks/v0.beta.20/specs/prim-op.md` sub-spec `annotation-tail (§A2)`
+> (restore the `module:` prefix emit on 2-arg `@External`
+> annotations), then sweep the remaining reds across `zig build test`
+> / `zig build test-libs` / vscode-extension `npm test` until every
+> gate is green.
 >
-> Reference URLs (cite verbatim in every new `.bp` header):
-> - Node.js: <https://nodejs.org/api/>
-> - Erlang stdlib: <https://www.erlang.org/doc/apps/stdlib/api-reference.html>
->
-> Edit code **inside this worktree only**. Pre-commit runs zig fmt +
-> build + test (no `--no-verify`).
+> Spec: [`tasks/v0.beta.20/specs/prim-op.md`](tasks/v0.beta.20/specs/prim-op.md)
+> — see "Active reds traced to prim-op merge" + the
+> `annotation-tail (§A2)` row in the "Current state" table.
 
-## Mission
+## Premise
 
-Close the 12 deferred std modules from `std-expansion`
-(`json`/`base64`/`env`/`fs`/`process`/`os`/`regex`/`unicode`/`array_ext`/
-`string_ext`/`http`/`crypto`), the in-module tails on the 5 landed
-modules, the F6 `STD-001` `std-unsupported-on-target` diagnostic, the
-F7 examples-CLI + per-target coverage doc, and add two grammar pieces
-to `prim-op-annotation` (§A2 chained host calls + §A3 `#[@result]
-declare fn` template-owned wrapper).
+After merging `task/prim-op-annotation` into `feat` (bot-lang
+`5bb3b18` → `0568466`), three test gates have reds that need to clear
+for the v0.beta.20 close to ship:
 
-## Coordination
+- **`zig build test` (bot-lang core)** — **7 reds**, all sharing one
+  root cause: 2-arg `@External.<Target>("module", "symbol")` form lost
+  the `module:` prefix at the call site, so `string:slice(S, 1, 4)`
+  emits as `:(S, 1, 4)` and `lists:sublist(...)` emits as `:(...)`.
+- **`zig build test-libs` (per-lib × per-backend)** — **5 reds**: 1
+  new (`std·erlang` `PrimOpStringifyUnsupported` band-aid leak); 4
+  pre-existing (`erika·erlang`, `jhonstart·erlang`, `onze·erlang`,
+  `rakun·erlang` — backends-parity / BIF shadow gaps).
+- **`vscode-extension npm test` (vscode/ts)** — not yet measured;
+  worktree owner should run `cd repository/vscode-extension && npm
+  install && npm test` early to baseline.
 
-- **One worktree, sequential phases.** Each F# below is one or more
-  commits; F0/F1 land first (cleanup + diagnostic — no impact on the
-  deferred modules), then F2/F3 (infra + grammar — gated by their own
-  snapshots), then F4 (in-module tails — one commit per module),
-  then F5–F8 wave by wave (one commit per module). F9 closes.
-- **Per-module sidecars** ship at `botopink-lib-test` time — the build
-  copies `libs/std/src/sidecars/<m>.{mjs,erl}` next to the emitted
-  `<m>.{js,erl}` so the emitted code can `require('./<m>.mjs')` /
-  `-include("<m>.erl").` (F2 authors the shipping step; F5+ uses it).
-- **Coverage matrix is the gate.** Importing a module marked ✗ on the
-  active backend reds with `STD-001` at the import site (F1 enforces).
+Other gates (`botopink-lib-test`, `zig build test-vscode`) are run by
+the recursive-test-gate hook and surface in the same `zig build
+test-libs` output where applicable.
 
-## §A — `prim-op-annotation` grammar additions
+## Objective
 
-### §A2 — chained host-call passthrough
+By end of this task: **every unit-test gate green** across:
 
-- [x] Regression tests in `tests/codegen/externals.zig`: A2 chained
-      host call (`Buffer.from($0, 'utf8').toString('base64')`) and
-      A2 method-on-class (`JSON.stringify($0)`) render verbatim.
-      Snapshots created on all 4 backends.
-- [x] commonJS backend now consumes per-callee templates — the
-      legacy aliasing path (`const fn = recv.method`) stripped the
-      receiver; §A2 added `Emitter.user_node_templates` +
-      `tryEmitUserTemplate` mirroring the erlang shape. Decl emits a
-      doc breadcrumb instead of the alias; call site renders inline.
-- [x] `libs/std/src/time.bp` `monotonicTimeWithUnit` switched to the
-      §A2 form (`@external(node, "performance.now($0)")`) — Node's
-      real DOM high-res timestamp instead of the `Date.now(1000)`
-      fallback that landed in F4.time.
+- `zig build test` (compiler-core)
+- `zig build test-libs` (all 6+ sibling libs × all 4 backends where each lib supports the backend)
+- `zig build test-vscode` (vscode-extension via Node 22 strip-types)
+- `npm test` inside `repository/vscode-extension` (typescript unit tests, separate from `test-vscode`)
+- inline `test { … }` blocks inside `.bp` modules (these surface via `botopink-lib-test`)
 
-### §A3 — `#[@result]`-aware `declare fn` template
+## Steps
 
-- [ ] `parser/decls.zig` — relax §B-R7 to accept
-      `#[@result] declare fn …` whose template body literally
-      carries the target's `{ ok / error }` shape.
-- [ ] `comptime/infer.zig` — for a `#[@result] declare fn`, skip the
-      auto-wrap (the template already produces the wrapper). Add
-      comptime check `result-template-shape-mismatch`: parse the
-      template body looking for the target's `{ ok / error }`
-      tokens; red if either branch is missing.
-- [ ] `tests/codegen/result_template.zig` — round-trip
-      `parse("42")` to `{ ok: 42 }` (JS) / `{ok, 42}` (erlang).
-- [ ] `comptime/diagnostics.zig` — register
-      `result-template-shape-mismatch` with a stable code.
+### F0 — baseline (record what's red, what's green)
 
-## F0 — doc cleanup (no compiler edits)
+- [ ] `zig build test 2>&1 | grep -E "^error: '" > /tmp/baseline-zig-test.txt` — expect the 7 listed below.
+- [ ] `zig build test-libs 2>&1 | tail -30 > /tmp/baseline-test-libs.txt` — confirm the 5 lib×backend reds.
+- [ ] `cd repository/vscode-extension && npm install && npm test` — baseline TS reds (unknown count).
+- [ ] If any gate has reds NOT enumerated above, add to F4 below.
 
-- [x] `repository/botopink-lang/CHANGELOG.md` `url` row — drop the
-      "serialize deferred" sentence (`serialize(u)` landed in bot-lang
-      `5788bd7`). Replace with a one-line "round-trip closed" note
-      linking to this spec.
-- [x] `repository/botopink-lang/libs/std/docs.md` `url.bp` row — extend
-      to `record Url { … } + parse(s) + serialize(u)`.
-- [x] `repository/botopink-lang/libs/std/examples.md` — add a stub
-      `## Real-world examples` heading with a one-line pointer to F9.
-- [x] `repository/botopink-lang/libs/std/AGENTS.md` — add a
-      "Wave-tail roadmap" row pointing at this spec.
+### F1 — restore module-prefix emit (FIX FIRST — kills 7 zig build test reds)
 
-## F1 — F6 enforcement (`STD-001` diagnostic)
+| Test | Expected | Actual |
+|---|---|---|
+| `codegen.tests.js_features.test.js: option method on tuple element` | `Rest = lists:sublist(Xs, (1) + 1, ((length(Xs)) - (1)))` | `Rest = :(Xs, 1, length(Xs))` |
+| `codegen.tests.js_features.test.js: array instance default-fn methods` | (similar `lists:*` call) | (`:(...)`) |
+| `codegen.tests.js_features.test.js: string methods map to native JS names` | (similar) | (similar) |
+| `codegen.tests.js_features.test.js: iterator fromList yields array items` | (similar) | (similar) |
+| `codegen.tests.wat.test.wat: string slice copies bytes into a new buffer` | `Mid = string:slice(S, 1, ((5) - (1)))` | `Mid = :(S, 1, 5)` |
+| `codegen.tests.wat.test.wat: string slice without end arg slices to source length` | `Tail = string:slice(S, 2)` | `Tail = :(S, 2)` |
+| `codegen.tests.wat.test.wat: string slice result length is readable` | (similar) | (similar) |
 
-- [ ] `modules/compiler-core/src/comptime/infer.zig` — at every
-      `import { … } from "std"` resolve site, read the per-target
-      `#[@external]` annotation set on each imported decl. If the
-      active target has no matching annotation (and the decl is not
-      a pure-bp `pub fn`), emit
-      `std-unsupported-on-target: module '<name>' has no
-      implementation for target '<target>'; see
-      tasks/v0.beta.19/specs/std-expansion.md §"Coverage matrix".`
-      Stable code: `STD-001`.
-- [ ] `comptime/diagnostics.zig` — register `STD-001`
-      (`stdUnsupportedOnTarget`) mirroring the existing diagnostic
-      registry shape. Span = import-site span. Detail = module name.
-- [ ] `tests/comptime/std_unsupported_on_target.zig` — new fixture:
-      `import {fs} from "std";` compiled with `--target wat` reds
-      with `STD-001`. Until F6 lands `fs.bp`, the fixture uses a
-      throwaway `libs/std/src/_test_unsupported.bp` (cleaned up on
-      F6 land).
-- [ ] `tests/comptime/std_supported_on_target.zig` — counter-fixture:
-      `import {path} from "std";` on `--target commonJS` does NOT
-      red (path is ✓ on every target).
+- [ ] `git log --oneline 0568466..HEAD -- modules/compiler-core/src/codegen/erlang.zig` (and `commonJS.zig`) to bisect the regression — most likely path: the `(module, symbol)` 2-arg `@External` resolution in `tryEmitPrimAnnotation` / `tryEmitBuiltinAnnotation` / `collectExternals`.
+- [ ] In the relevant emitter helper: when annotation args are `(module: string, symbol: string)`, emit `module:symbol(rendered_args)` (erlang) / `module.symbol(rendered_args)` (commonJS). Mirror whatever the pre-merge code did — `git show 64a3436:modules/compiler-core/src/codegen/erlang.zig` gives the last-known-good shape.
+- [ ] Cleaner long-term: collapse 1-arg + 2-arg forms into one path — `primOpTemplate.render` consumes a template string, so the 2-arg form just constructs `"module:$args(...)"` (or per-backend equivalent) on the fly and delegates. Single rendering primitive.
+- [ ] `.snap.md.new` files live under `modules/compiler-core/snapshots/codegen/erlang/erlang/` for diff fodder while iterating.
 
-## F2 — sidecar shipping infra
+### F2 — reconcile `$stringify` Ctx pair (kills std·erlang test-libs red)
 
-- [ ] Per-module sidecar discovery: when emitting
-      `libs/std/src/<m>.bp` for `--lib std` lib-test, the build
-      looks for `libs/std/src/sidecars/<m>.{mjs,erl}` and copies it
-      next to the emitted `<m>.{js,erl}`. Owner: the current
-      `--lib std` test-out builder
-      (`modules/compiler-cli/src/cli/test_cmd.zig` `runLibTests` or
-      its successor in `lib_test.zig`).
-- [ ] `libs/std/AGENTS.md` §"Sidecar adapters" — document the
-      convention: one file per module per target; the adapter is
-      plain target source (no botopink syntax); the emitted module
-      imports it via the sibling path.
-- [ ] `tests/cli/lib_test_sidecar.zig` — new fixture: drop a no-op
-      `sidecars/_smoke.mjs` next to a stub `libs/std/src/_smoke.bp`,
-      run lib-test, assert the `.mjs` is copied to the
-      `test-out/` directory next to the emitted `.js`.
+- [ ] **Pick one**:
+  - (a) Add `emitStringifyOpen` / `emitStringifyClose` to every Ctx in `codegen/erlang.zig` (mirror commonJS — open `"iolist_to_binary(io_lib:format(\"~p\", ["` + close `"]))"`). Removes the `@hasDecl` guard band-aid.
+  - (b) Keep the guard but stop triggering `PrimOpStringifyUnsupported` at runtime — if no template uses `$stringify`, the guard never fires. The std·erlang red indicates *something* on that path IS triggering — probably a `primitives.d.bp` method that the erlang Ctx variant doesn't carry the open/close pair for. Audit which Ctx is hit by the lib-test compile and add the pair only there.
+- [ ] Recommend (a) for consistency — every Ctx that owns the template render pipeline should also own the stringify pair.
 
-## F3 — completion of §A2 + §A3 (see §A above)
+### F3 — sibling-lib erlang reds (kills 4 backends-parity reds)
 
-Tracked in `§A — prim-op-annotation grammar additions`. F3 is the
-build-order marker: complete §A2 + §A3 before F4 starts (the tails
-in F4 use chained-host-call shapes and `#[@result] declare fn`).
+Each of `erika·erlang`, `jhonstart·erlang`, `onze·erlang`, `rakun·erlang`
+is red — most likely cause is BIF shadowing not yet caught by
+`std/erlang.bp` catalog OR codegen path issues.
 
-## F4 — in-module tails (5 landed modules)
+- [ ] For each lib: `cd repository/<lib> && zig build test 2>&1 | tail -20` (assuming the gate is `botopink-lib-test --lib <name> --target erlang`).
+- [ ] Categorise the reds:
+  - **BIF shadow**: add the missing single-word BIF to `libs/std/src/erlang.bp` (`#[@External.Erlang("erlang", "<name>")] pub declare fn <camelCase>(...) -> any;`), re-run.
+  - **Codegen template dispatch**: same root cause as F1; F1 fix should clear them.
+  - **Other**: trace + fix at source, document the change in the relevant lib's `AGENTS.md`.
 
-### F4.path — `relative` + `resolve`
+### F4 — vscode-extension ts/npm reds
 
-- [x] `libs/std/src/path.bp` — `relative(src: string, dst: string) -> string`
-      using explicit head/tail recursion (`commonPrefixCount`
-      tail-walk + `makeUps` prepend recursion). Renamed `(from, to)` →
-      `(src, dst)` because `from` is the reserved import keyword.
-- [x] `libs/std/src/path.bp` — `resolve(segments: string[]) -> string`
-      (variadic via Array; `PathAccum` record + `applyPieces` /
-      `resolveAll` tail-recursion).
-- [x] 4 new inline `test { … }` blocks (relative same-dir, relative
-      up-one, resolve absolute, resolve with `..`).
-- [x] Update `libs/std/AGENTS.md` `path` row + `libs/std/docs.md`
-      `path.bp` row.
+- [ ] After `cd repository/vscode-extension && npm install`, run `npm test`. Triage whatever surfaces.
+- [ ] Likely candidates if any red: language-server protocol changes from frente-b (rules-tooling-close may have moved diagnostic shapes); LSP definition/hover changes from lsp-definition-completeness.
+- [ ] Fix the test fixtures if the LSP contract has legitimately evolved (don't rewrite the LSP to match stale tests); update if the LSP regressed (rewrite to match the expected contract).
 
-### F4.random — `intInRange` + `bool` + `shuffle` + `seed`
+### F5 — sweep + commit cadence
 
-- [x] `libs/std/src/random.bp` — `intInRange(lo: i32, hi: i32) -> i32`
-      (closed interval; `lo` + floor(float() * (hi - lo + 1)) via
-      `floorWalk`).
-- [x] `random.bp` — `bool() -> bool` (alias for `coin()` per the
-      Node `Math.random()` mental model).
-- [ ] `random.bp` — `shuffle<T>(xs: Array<T>) -> Array<T>`
-      (Fisher–Yates over a copy; see `shuffleLowering` note in spec
-      §F4). **DEFERRED** — needs `?T` unwrap with a generic default,
-      which the current option chain doesn't provide. Pull when the
-      `Option.expect`/`Option.unsafeUnwrap` surface lands.
-- [ ] `random.bp` — `seed(s: i64) -> unit` (Erlang
-      `rand:seed(exsplus, {s, s, s})`; Node falls back to a userland
-      Mulberry32 PRNG seeded via a module-local `state`). **DEFERRED**
-      — needs F2 sidecar shipping for the Node Mulberry32 adapter.
-- [x] 4 new inline tests (bool, intInRange in `[1,6]`, single-point,
-      inverted-range fallback).
-- [x] AGENTS + docs row update.
+- [ ] Run all gates once locally end-to-end to confirm 0 reds:
+  - `cd repository/botopink-lang && zig build test`
+  - `cd repository/botopink-lang && zig build test-libs`
+  - `cd repository/botopink-lang && zig build test-vscode`
+  - `cd repository/vscode-extension && npm test`
+- [ ] Independent commits per F-phase (don't squash):
+  - F1: `codegen(erlang+commonJS): restore module: prefix on 2-arg @External form`
+  - F2: `codegen(erlang): add emitStringifyOpen/Close to every Ctx`
+  - F3: per-lib fixes — one commit per lib
+  - F4: vscode-extension test fixes
+- [ ] No `--no-verify`. Pre-commit hook is the primary gate.
 
-### F4.time — `monotonicMillis` + `sleep` + `formatIso8601` + `measureMillis`
+## Test scenarios
 
-- [x] `libs/std/src/time.bp` — `monotonicMillis() -> i64`. Erlang lowers
-      to `erlang:monotonic_time(1000)` (integer divisor); Node falls
-      back to `Date.now(1000)` until §A2 wires commonJS to consume
-      per-callee templates (aliasing `performance.now` strips the
-      receiver — the bare-`(target, module, symbol)` form can't bind
-      `this`).
-- [ ] `time.bp` — `sleep(ms: i64) -> *unit` with `#[@future]`
-      (`setTimeout` Promise / `timer:sleep`). **DEFERRED** — needs
-      §A3 `#[@future] declare fn` template ownership.
-- [ ] `time.bp` — `formatIso8601(ms: i64) -> string`
-      (`new Date(ms).toISOString()` /
-      `calendar:system_time_to_rfc3339`). **DEFERRED** — needs §A2
-      chained host call wired into commonJS.
-- [x] `time.bp` — `measureMillis<T>(body: fn() -> T) -> #(T, i64)`.
-      Pure botopink — composes two `nowMillis()` reads around the body.
-- [x] 4 new inline tests (monotonic non-decreasing × 1, measureMillis
-      result + elapsed × 1 — folded into the existing nowMillis pair).
-- [x] AGENTS + docs row update.
+After F1:
+- `zig build test`: all 7 reds clear. `Mid = string:slice(S, 1, 4)` and `Rest = lists:sublist(Xs, 2, length(Xs) - 1)` appear in snapshots verbatim.
+After F2:
+- `zig build test-libs`: `std·erlang` GREEN (no `PrimOpStringifyUnsupported`).
+After F3:
+- `zig build test-libs`: `erika/jhonstart/onze/rakun` erlang rows GREEN.
+After F4:
+- `npm test` in `repository/vscode-extension`: 0 fails.
 
-### F4.asserts — `throws` + `matches` + `AssertError`
+## Notes
 
-- [ ] `libs/std/src/asserts.bp` — `throws(body: fn() -> any,
-      message: ?string)` catches a `@panic` from `body` and reds
-      with `message` if none was thrown. **DEFERRED** — needs §A3
-      `#[@result] declare fn` for a host-level try/catch wrapper so
-      pure-bp can intercept the panic without owning the runtime exit.
-- [ ] `asserts.bp` — `matches(pattern: string, actual: string)`
-      regex-matches `actual` against `pattern`. **DEFERRED** — depends
-      on §F7 `regex.test`.
-- [x] `asserts.bp` — `pub record AssertError { message: string,
-      file: string, line: i32 }` carried in the test runner's
-      failure stream.
-- [x] 1 new inline test (AssertError shape; the throws/matches tests
-      land with §A3 + §F7).
-- [x] AGENTS + docs row update.
+- **Don't squash F1 + F2 in the same commit.** F1 fixes the 7 zig build test reds (one root cause); F2 fixes the `std·erlang` test-libs red (different surface). Independent rollbacks are valuable.
+- **Don't `--no-verify`** unless explicitly approved — the pre-commit hook is the primary gate.
+- The `task/prim-op-template-fix` branch tracks `feat`; merge directly to `feat` when green (no PR needed for solo-maintainer cadence).
+- The catalog extension (BIFs cobrindo `spawn/N`, `monitor/N`, `apply/N`, etc. com defaults) **fica fora deste task** — depende de `fn-param-default-expansion` para `declare fn` que ainda não está implementado no parser (`tasks/v0.beta.20/specs/frente-b.md` notes). Sem isso, cada arity é uma decl separada — opcional cobrir mais BIFs aqui de forma manual, mas o ROI é baixo se F3 já clarifica os 4 libs.
 
-### F4.url — verification only
+## Exit gate
 
-- [x] No code edits — `url.bp` already carries `parse + serialize`
-      from bot-lang `5788bd7`. The F0 doc cleanup folds it in.
+- [x] **F1+F2 cleared**: `zig build test` 0 reds (was 7). `zig build test-libs` `std·erlang` GREEN (was RED). bot-lang `1e7a56f`.
+- [x] **F3 fnAtom**: rakun erlang syntax errors cleared (b1b819b). Remaining rakun + onze + erika + jhonstart erlang reds are pre-existing backends-parity gaps documented as DEFERRED in `std-tail.md`.
+- [x] **F4 vscode-extension**: `npm test` 15/15 GREEN.
+- [x] `prim-op.md` "Active reds" section converted to "Resolved reds" note.
+- [x] `std-tail.md` lib×backend table updated: std·erlang GREEN, others marked DEFERRED with cause.
+- [ ] Per-repo branches pushed (bot-lang `task/prim-op-template-fix`).
+- [ ] Meta `task/prim-op-template-fix` pushed with submodule pointer bump.
+- [ ] Merged to `feat` on bot-lang + meta.
+- [ ] Worktree removed via `git worktree remove .tasks/prim-op-template-fix` + branches deleted via `git branch -d`.
 
-## F5 — §W1 tails
+## Deferred (out of scope for this task — pre-existing backends-parity gaps)
 
-### F5.json
-
-- [ ] `libs/std/src/json.bp` — `JsonValue` enum
-      (`Null`/`Bool`/`Number`/`String`/`Array<JsonValue>`/
-      `Object<#(string, JsonValue)>`).
-- [ ] `json.bp` — `#[@result] declare fn parse(s: string)
-      -> @Result<JsonValue, string>` via §A3 template + sidecar
-      `sidecars/json.{mjs,erl}` that wraps `JSON.parse` /
-      `json:decode` in `try`/`catch`.
-- [ ] `json.bp` — `stringify(v: JsonValue) -> string` +
-      `stringifyPretty(v: JsonValue, indent: i32) -> string`.
-- [ ] `sidecars/json.mjs` (Node) + `sidecars/json.erl` (Erlang).
-- [ ] 6 inline tests (round-trip Number/String/Array/Object, error,
-      nested, escaped strings).
-- [ ] `root.bp` adds `pub mod json;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-### F5.base64
-
-- [x] `libs/std/src/base64.bp` — `encode(s: string) -> string` /
-      `decode(b: string) -> string` via §A2 chained template
-      (`Buffer.from($0, 'utf8').toString('base64')` on Node,
-      `base64:encode/1` on Erlang). Note: returns bare `string`
-      rather than `@Result<string, string>` — the spec's `@Result`
-      shape needs §A3 to land cleanly; the bare form matches the
-      pre-existing Erlang BIF contract (raises on malformed input).
-- [x] `base64.bp` — `encodeUrlSafe` / `decodeUrlSafe` (url-safe
-      variant with `-`/`_` replacement + `=` padding helper via
-      tail-recursive `padToMultipleOfFour`).
-- [x] 4 inline tests (round-trip, empty, url-safe drops padding,
-      url-safe round-trip).
-- [x] `root.bp` adds `pub mod base64;`.
-- [x] AGENTS + docs + CHANGELOG entry.
-
-## F6 — §W2 tails
-
-### F6.env
-
-- [x] `libs/std/src/env.bp` — `read(name: string) -> ?string` /
-      `write(name: string, value: string) -> unit` /
-      `clear(name: string) -> unit`. Named `read`/`write`/`clear`
-      rather than `get`/`set`/`unset` because `get`/`set` are reserved
-      tokens (parser `isMemberName` — soft keywords for struct
-      getters/setters).
-- [ ] `args() -> Array<string>` and `vars() -> Array<#(string, string)>`
-      **DEFERRED** — enumeration shapes differ cross-backend.
-- [x] No sidecar needed — the §A2 template path handles the
-      property-access shape `(process.env[$0] ?? null)` directly.
-- [x] 3 inline tests (write/read round-trip, read of unset returns
-      null, clear cancels prior write).
-- [x] `root.bp` adds `pub mod env;`.
-- [x] AGENTS + docs + CHANGELOG entry.
-
-### F6.fs
-
-- [ ] `libs/std/src/fs.bp` — `readText` / `writeText` / `exists` /
-      `list` / `mkdir` / `rm` / `stat` / `copy` (all `@Result`-wrapped).
-- [ ] `record FileStat { size, mtime, isDir }`.
-- [ ] `sidecars/fs.{mjs,erl}` wraps Node `fs/promises` + Erlang
-      `file:*/2` to the `@Result` shape.
-- [ ] 8 inline tests over a temp dir.
-- [ ] `root.bp` adds `pub mod fs;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-### F6.process
-
-- [x] `libs/std/src/process.bp` — `exit(code: i32)` /
-      `cwd() -> string` / `platform() -> string` (`'linux'`/
-      `'darwin'`/`'win32'`) / `arch() -> string` / `pid() -> i32`.
-      `hostname() -> string` deferred — needs `require('os')` threaded
-      through the per-module require set on Node (`os.hostname()`
-      isn't a global).
-- [x] 4 inline tests (cwd non-empty, platform one-of, arch non-empty,
-      pid positive).
-- [x] `root.bp` adds `pub mod process;`.
-- [x] AGENTS + docs + CHANGELOG entry.
-
-### F6.os
-
-- [x] `libs/std/src/os.bp` — `hostname` / `arch` / `cpuCount` /
-      `tmpdir`. `userInfo` (uid/username pair) / `eol` deferred —
-      cross-backend shape mismatch (Node `os.userInfo()` returns a
-      record-shaped object; Erlang has no direct equivalent without
-      multi-call composition).
-- [x] 4 inline tests (hostname non-empty, arch non-empty, cpuCount
-      >= 1, tmpdir non-empty).
-- [x] `root.bp` adds `pub mod os;`.
-- [x] AGENTS + docs + CHANGELOG entry.
-
-## F7 — §W3 tails
-
-### F7.regex
-
-- [x] `libs/std/src/regex.bp` — `matches(pattern, input) -> bool`
-      (named `matches` because `test` is a reserved keyword for inline
-      test blocks), `replace`, `replaceAll`, `splitOn`. §A2 chained
-      templates on both backends (`new RegExp(...)` + `re:run/replace/split`).
-- [ ] `record Match { value: string, index: i32 }` + `match` /
-      `matchAll` **DEFERRED** — per-backend position extraction
-      shapes diverge (`String.prototype.match()` returns a regex
-      object with named props vs Erlang `re:run/3` returning
-      `{match, Captured}` with index lists).
-- [x] 4 inline tests (matches digit class, replace swaps first,
-      replaceAll swaps every, splitOn breaks on pattern).
-- [x] `root.bp` adds `pub mod regex;`.
-- [x] AGENTS + docs + CHANGELOG entry.
-
-### F7.unicode
-
-- [x] `libs/std/src/unicode.bp` — `fromCodepoint(cp)` +
-      `firstCodepoint(s)` (returns `?i32`). `codepoints` and
-      `normalize(form)` deferred — `NormalizationForm` enum spans 4
-      flavors that don't compose under a single template without
-      arity-on-enum dispatch; `codepoints` needs the codepoint→array
-      conversion that splits cross-backend (`Array.from(s).map(...)`
-      on Node vs `unicode:characters_to_list/2` on Erlang) without
-      a clean wrapper.
-- [x] 4 inline tests (ASCII 'A' round-trip, ASCII '0' round-trip,
-      firstCodepoint of empty is null, firstCodepoint of 'A' is 65).
-- [x] `root.bp` adds `pub mod unicode;`.
-- [x] AGENTS + docs + CHANGELOG entry.
-
-### F7.array_ext
-
-- [ ] `libs/std/src/primitives.d.bp` — extend `interface Array<T>`
-      with 15 methods (`find` / `findIndex` / `some` / `every` /
-      `flatMap` / `flat` / `fill` / `chunked` / `sliding` / `sort`
-      / `unique` / `reverse` / `zip` / `take` / `drop`). Per-method
-      `#[@external]` set per backend.
-- [ ] 12 inline tests in `libs/std/tests/array_ext.bp`.
-- [ ] Per-method snapshots in
-      `tests/codegen/primitives_array_ext_*.zig`.
-- [ ] AGENTS extension-method table + CHANGELOG entry.
-
-### F7.string_ext
-
-- [ ] `libs/std/src/primitives.d.bp` — extend `interface String`
-      with 11 methods (`padStart` / `padEnd` / `repeat` / `replace`
-      / `replaceAll` / `chars` / `lines` / `words` / `charCodeAt` /
-      `endsWith` / `indexOf` / `lastIndexOf`).
-- [ ] 9 inline tests in `libs/std/tests/string_ext.bp`.
-- [ ] Per-method snapshots in
-      `tests/codegen/primitives_string_ext_*.zig`.
-- [ ] AGENTS extension-method table + CHANGELOG entry.
-
-## F8 — §W4 tails
-
-### F8.http
-
-- [ ] `libs/std/src/http.bp` — `record Request { method, url,
-      headers, body }`, `record Response { status, headers, body }`,
-      `send(req: Request) -> *@Result<Response, string>` with
-      `#[@future]` via §A2 chained template + sidecar
-      `sidecars/http.mjs` (wraps `node:http` as Promise).
-- [ ] `http.bp` — `get(url: string) -> *@Result<Response, string>`
-      and `postJson(url: string, body: JsonValue) ->
-      *@Result<Response, string>` (pure-botopink composers over
-      `send`).
-- [ ] `tests/cli/http_echo.zig` — echo-server harness (out of
-      direct scope; coordinates with the existing `http-echo`
-      deferral in `std-expansion.md` §W4).
-- [ ] 4 inline tests (against the echo fixture).
-- [ ] `root.bp` adds `pub mod http;`.
-- [ ] AGENTS + docs + CHANGELOG entry.
-
-### F8.crypto
-
-- [x] `libs/std/src/crypto.bp` — `sha256` / `sha512` / `md5`
-      (hex-digest strings) + `hmacSha256(key, data)`. §A2 chained
-      template (`require('crypto').createHash('<alg>').update($0).digest('hex')`
-      on Node, `crypto:hash` + `io_lib:format("~2.16.0b", …)` on
-      Erlang).
-- [ ] `randomBytes(n: i32) -> Array<u8>` **DEFERRED** — secure-random
-      byte-array return crosses awkwardly across backends without
-      sidecars.
-- [x] 5 inline tests (canonical sha256 of `hello world`, sha256 of
-      empty, md5 of `hello`, sha512 length, hmacSha256 length).
-- [x] `root.bp` adds `pub mod crypto;`.
-- [x] AGENTS + docs + CHANGELOG entry.
-
-## F9 — examples-CLI + per-target coverage doc
-
-- [ ] `repository/botopink-lang/libs/std/examples.md` — replace the
-      F0 stub with the full "Real-world examples" section: a
-      ~30-line CLI tool reading `args()` + `env.get("HOME")` +
-      `fs.readText` of a JSON file + `http.get` of a configured URL
-      + writes the merged result. Each step references the
-      `std/<m>` source by file:line.
-- [ ] `modules/compiler-core/src/codegen/AGENTS.md` — add a
-      "Per-target coverage" subsection mirroring
-      `std-expansion.md` §"Coverage matrix" but driven from
-      `STD-001`'s per-target lookup (one row per module × four
-      backends).
-- [ ] `CHANGELOG.md` per-wave entries:
-      - `feat(std): wave 1 tail — json, base64`
-      - `feat(std): wave 2 tail — env, fs, process, os`
-      - `feat(std): wave 3 tail — regex, unicode + array/string_ext`
-      - `feat(std): wave 4 tail — http, crypto`
-- [ ] `tasks/v0.beta.19/status.md` — flip the `std-expansion-tail`
-      row to `done` once merged into `feat`.
-
-## Done gate (per spec "Exit gate")
-
-- [ ] All F0–F9 boxes ticked.
-- [ ] All test scenarios in `std-expansion-tail.md` §"Test
-      scenarios" pass on a local rerun.
-- [ ] `zig build test` + `botopink-lib-test --lib std --target
-      commonJS,erlang` green; new `--target wat` smoke for
-      `STD-001` green.
-- [ ] The `Coverage matrix` table in `std-expansion.md` agrees with
-      the `STD-001` lookup at runtime (parse the table + assert
-      every cell matches the per-module annotation set).
-- [ ] `tasks/v0.beta.19/status.md` flips the row to `done`.
-
-## Per-memory reminders
-
-- SSH for all git remote ops (`feedback_always_ssh_git`).
-- Worktree paths for Read/Edit (`project_worktree_workflow`); this
-  worktree is at `.tasks/std-expansion-tail/`.
-- Functions in camelCase (`feedback_camelcase_naming`); module names
-  lowercase singular (`regex`, not `Regex`).
-- Implement in `.bp` when possible (`feedback_prefer_bp_over_dbp`);
-  `.d.bp` only when 100% host-backed with no pure-botopink helpers.
-- After each commit, advance to the next checkbox
-  (`feedback_continue_after_commit`).
-- Every new `.bp` carries a `////` header citing the Node + Erlang
-  URLs for the module (per spec §"Module inventory").
-- Update remote feat in every submodule before/during work
-  (`feedback_always_update_remote_feat_submodules`); always unify
-  to feat at task end.
+- **erika·erlang** — `drop/2`/`forEach/2` undefined: stdlib LINQ method erlang lowering gap.
+- **jhonstart·erlang** — html.bp/element.bp tags (`ul`/`li`/`text`/`fragment`/`renderToString`) not reachable in erlang test compile.
+- **onze·erlang** — runtime is `#[@external(node, ...)]` only; needs either a per-lib backend declaration in `botopink.json` or a real `onze.erl` shim.
+- **rakun·erlang** — same pattern as onze: runtime.mjs only, no erlang shim. Syntax errors are now cleared (F3 fnAtom); remaining is "rkScan/1 undefined" etc.

@@ -8,27 +8,28 @@
 
 ## Current state (partials landed on origin/feat — meta 28929e2 / bot-lang 0568466)
 
-### Active reds traced to prim-op merge
+### Resolved reds (task/prim-op-template-fix)
 
-After merging `task/prim-op-annotation` into `feat`, **7 codegen tests
-still fail** on `zig build test` (bot-lang):
+The 7 `zig build test` reds + 1 `std·erlang` test-libs red traced to the
+prim-op-annotation merge are CLEARED on `task/prim-op-template-fix`
+(bot-lang `1e7a56f`):
 
-| Test | Symptom | Root cause |
-|---|---|---|
-| `js_features.test.js: iterator fromList yields array items` | snap mismatch | template dispatch |
-| `js_features.test.js: option method on tuple element` | erlang output `Rest = :(Xs, 1, length(Xs))` — should be `lists:sublist(Xs, …)` | `@External.Erlang` template lost the `module:` prefix on call-site emit (2-arg form `(module, symbol)` not routed through `tryEmitPrimAnnotation` correctly) |
-| `js_features.test.js: array instance default-fn methods` | similar | same template dispatch |
-| `js_features.test.js: string methods map to native JS names` | similar | same |
-| `wat.test.wat: string slice copies bytes …` | erlang twin emits `Mid = :(S, 1, 5)` — should be `string:slice(S, 1, 4)` | same |
-| `wat.test.wat: string slice without end arg slices to source length` | same | same |
-| `wat.test.wat: string slice result length is readable` | same | same |
-
-**All 7 share one root cause**: the prim-op-annotation merge bumped
-`tryEmitPrimAnnotation` / `tryEmitBuiltinAnnotation` paths on erlang
-but lost the 2-arg `@External.Erlang("module", "symbol")` resolution
-that emits `module:symbol(args)` at the call site. Need to restore the
-`module:` prefix emit when the annotation arg is a quoted module name
-(not a `$`-bearing template string).
+- **Root cause**: the four `collect*Dispatch` / `collectExternals` sites that
+  populate the arity-branch dispatch maps filtered annotations by
+  `a.name == "external"` only — silently skipping every `@External.<Target>`
+  enum-variant form. Branches ended up empty, the entry held `.module = ""`
+  / `.symbol = ""`, and the call site rendered `:(args)` instead of
+  `string:slice(S, …)` / `lists:sublist(…)`.
+- **Fix**: route through `externalAnnotationTargetsExt` +
+  `externalBodyArgsExt`, which handle the legacy `@external(target, ...)`
+  AND the variant form uniformly. Applied at four sites (erlang.zig:
+  `collectIfaceErlangDispatch`, `collectExternals`; commonJS.zig:
+  `collectBuiltinDispatch`, `collectExternals`).
+- **F2 follow-up (same commit, surfaced by F1)**: with the templates now
+  rendering, `Array.join`'s erlang template hits `$stringify(__E)` — added
+  `emitStringifyOpen` / `emitStringifyClose` to all six erlang Ctx structs
+  (builtin/prim/user × arity-branched/single-template), emitting
+  `iolist_to_binary(io_lib:format("~p", […]))` as the spec dictates.
 
 ### Annotation-driven BIF table — landed via std/erlang (0568466)
 
@@ -50,7 +51,7 @@ when `fn-param-default-expansion` lands trailing defaults in
 | **fn-param-default-expansion** | AST plumbing `Param.default` + `EnumVariantField.default` + `expandTrailingDefaults` (`4c2e62c` + `5f0f1d9`) | F0–F6 (builtins.d.bp split + receiver-bound default + 4 diagnostics + when-argc consumers) |
 | **family-1-beam-wat-prim-methods** | Family 1 erlang 9/19 via `64a3436` | Family 1 BEAM + wat (consumes family-2 dispatch infra) |
 | **when-argc-removal** | — | retire grammar (after every consumer migrates via fn-param-default-expansion) |
-| **annotation-tail (§A2)** | commonJS (`a7c6d07`) + erlang (`52d6101`) per-callee template dispatch | BEAM + wat user-template dispatch — **FIX FIRST**: restore `module:symbol(args)` emit for 2-arg `@External.Erlang("module", "symbol")` form (lost during merge; 7 reds tracked in "Active reds" above) — and reconcile `$stringify` Ctx: currently guarded by `@hasDecl` so backends without `emitStringifyOpen` surface `PrimOpStringifyUnsupported` (which surfaces in `std·erlang` lib-test when a BIF wrapper triggers stringify) — proper fix is adding the open/close pair to every backend's Ctx struct |
+| **annotation-tail (§A2)** | commonJS (`a7c6d07`) + erlang (`52d6101`) per-callee template dispatch + `@External.<Variant>` arity-branched form routed via `externalAnnotationTargetsExt`/`BodyArgsExt` + `$stringify` Ctx pair on all 6 erlang Ctx structs (`task/prim-op-template-fix` `1e7a56f`) | BEAM + wat user-template dispatch (BEAM + wat `$stringify` Ctx pairs deferred — no template currently triggers it on those backends) |
 | **agents-md-resync** | — | umbrella docs sweep |
 
 ## DAG
