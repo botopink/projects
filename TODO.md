@@ -9,6 +9,11 @@
 - meta: `932256a` · bot-lang: `f57a8cd`
 - **rules-tooling-close partials landed**: §1G generic-param defaults wired into TypeDef + infer (`3ed957c`) · F4I `Jump.@"break"` widened (`a9f1a6d`) + 4 call sites updated.
 
+## Current head (session 2 close)
+
+- meta: `25f8ec9` (F5 bump → bot-lang `d5f277c`) + meta after T2 bump (see `git log`)
+- bot-lang: `a190ee2` (T2+T4 `--json` JSONL + 7 unit tests).
+
 ## Session progress (pushed to origin/task/frente-b)
 
 ### rules-tooling-close — Stage 01 keystone (partial DONE)
@@ -24,27 +29,36 @@
 - [x] **F6-T2 effect_future.zig** — §1F RF1-RF5 + 2 happy paths (`fetchUser` shape + `await` unwrap).
 - [x] **F6-T3 effect_generator.zig** — §1 RI4 (`yield-label-unbound`) + 3 happy paths (bare/labelled/return-channel). R8 (yield outside generator) noted as follow-up — not enforced at comptime today.
 
+### F5 — Iterator<T,E,C> + IteratorStep — ATOMIC DONE (session 2)
+
+- [x] **F5-T2** (bot-lang `d5f277c`) — `libs/std/src/builtins.d.bp`: Iterator/Iterable/AsyncIterator gain `E = any, C = void` defaulted tail; `next` now returns `IteratorStep<T,E,C>` (Yield/Done/Error). Generic-param defaults pre-wired in `infer.builtinDefaultFilledArgs`.
+- [x] **F5-T1** audit — zero `.bp` consumers across libs/tests/examples call `.next()` on an Iterator. One-file change is atomic.
+- [x] **F5-T3** codegen — no change today; `loop` lowers to native `for…of`/`.map(...)`. The `IteratorStep` discriminator surfaces only when F4I-tail's transform rewrite materialises `return @IteratorStep.Done/Error(...)`. **Unblocks F4I-T1**.
+
+### test-run-log — T2+T4 landed (session 2)
+
+- [x] **T2** (bot-lang `a190ee2`) — `botopink test --json` captures child stdout, parses §T envelope, emits one JSON object per test on stdout (forward-compatible 5-state parser, RFC 8259 §7 string escaping). End-of-run aggregated `{"event":"summary",…}` record across all modules.
+- [x] **T4** — 7 inline unit tests in `test_cmd.zig` (passing/failing/multi-test/multi-line-log paths + parser regressions + JSON-string escaping). Picked up by `zig build test` via `cli_test_mod`. Standalone `tests/cli/test_run_log_*.zig` files in TODO subsumed by inline coverage.
+- [x] **T0** — `runtime.captureStdout` was already shipping (all 4 `executeJavaScript/Erlang/BeamAsm/Wat` capture + thread through `codegen.zig`). Marked done on confirmation.
+
 ## Still pending (deferred to follow-up sessions)
 
 ### rules-tooling-close keystone — remaining items
 
 - [ ] **F4C-tail FULL** — `comptime/contextStack.zig` (new file, Type → Provider scope tracker), RC1 (`context-unbound`) comptime check + runtime trap, `use <hook>(args)` lowering on commonJS (push/pop array) + erlang/beam (process dictionary), `effect_context.zig` snapshot suite.
-- [ ] **F5-tail** — `Iterator<T,E,C>` + `IteratorStep<T,E,C>` migration in `libs/std/src/builtins.d.bp`. ATOMIC across every `libs/<lib>/` `next() -> ?T` consumer + each backend's iterator-loop adapter. Single commit per spec.
-- [ ] **F4I-tail** — `transform.zig → @IteratorStep` rewrites (gated on F5-tail). `break`/`throw` inside `#[@iterator]` body rewrite to `@IteratorStep.Done(<c>)` / `@IteratorStep.Error(<e>)` / `@IteratorStep.Yield(<t>)`. Per-backend codegen for each variant.
+- [ ] **F4I-tail** — `transform.zig → @IteratorStep` rewrites (NOW UNBLOCKED by F5-T2). `break`/`throw` inside `#[@iterator]` body rewrite to `@IteratorStep.Done(<c>)` / `@IteratorStep.Error(<e>)` / `@IteratorStep.Yield(<t>)`. Per-backend codegen for each variant.
 - [ ] **F6-T4 effect_iterator.zig** — §1I `lazyMap` end-to-end (gated on F4I-tail + codegen-break-label).
 - [ ] **F6-T5 effect_context.zig** — §1C happy path + RC1/RC2/RC3/RC4/RC5/RC6 (gated on F4C-tail FULL).
 
-### test-run-log keystone — Stage 01 (deferred)
+### test-run-log keystone — remaining items (T1-{commonJS,erlang}+T2+T4+T5 DONE)
 
-- [ ] **T0** runtime.captureStdout single shape (existing executeJavaScript/Erlang/BeamAsm/Wat already capture stdout — mostly READY, just thread the result through).
-- [ ] **T1-commonJS** — rewrite `__bp_run_tests` in commonJS.zig (~lines 533-555) to emit `TEST <file>:<line> <name>\n----- RUN LOG -----\n\`\`\`logs\n<captured>\n\`\`\`` per test. ⚠ regenerates every `test_runner.snap.md` + every lib that emits the runner.
-- [ ] **T1-erlang** — same for `__bp_run_tests` in erlang.zig (~lines 644-675). Uses `io:put_chars/1` with sentinel envelope.
-- [ ] **T1-beam** — mirror erlang's shape lowered to BEAM bytecode.
+- [x] **T1-commonJS** — bot-lang `e968493`.
+- [x] **T1-erlang** — bot-lang `400e71c`.
+- [x] **T5** docs — bot-lang `9bb0419`.
+- [ ] **T1-beam** — mirror erlang's shape lowered to BEAM bytecode. ⚠ no `__bp_run_tests` runner exists in `beam_asm.zig` today; this is "write a BEAM bytecode test runner from scratch", not "tweak existing one".
 - [ ] **T1-wat** — gated on Frente A §C2 (`botopink test --target wasm` wiring).
-- [ ] **T2** test_cmd.zig sentinel parser + `--json` mode (JSONL).
-- [ ] **T3** lib-test-runner lib-prefix injection (every line of child stdout) + `lib` JSON field.
-- [ ] **T4** new tests/cli/test_run_log_format.zig + tests/cli/test_run_log_json.zig + snapshots/cli/test/.
-- [ ] **T5** docs sweep — compiler-cli/AGENTS.md (Test output format), lib-test-runner/AGENTS.md, libs/std/AGENTS.md, compiler-core/AGENTS.md.
+- [ ] **T3** lib-test-runner — `lib` field injection in JSON mode (children now emit per-test JSON via T2; lib-test-runner re-emits child stdout verbatim — could parse JSONL lines from `--json` children and inject `"lib":"<name>"` before re-emit). Text-mode per-line prefix would corrupt the §T envelope for downstream tools — skip and rely on the colored `── lib · target ──` header that already prints to stderr.
+- [ ] **T2-followup** — per-test `duration_ms` in the envelope + JSONL (runners need to emit `Date.now()` deltas; currently neither commonJS nor erlang runners track it).
 
 ### codegen-break-label — Stage 02 consumer (deferred)
 
@@ -57,4 +71,4 @@
 
 ## Exit gate
 
-Per spec — F4F/F4G/F4C/F4I/F5/F6 done; `break :label` honors label on commonJS + erlang + beam + wasm; `botopink test` emits `----- RUN LOG -----` per test on all 4 backends. **This session shipped: F4G-full / F4F-full / F4C-partial(RC3) / F6-T1+T2+T3 / fn-param-default-expansion. Remaining: F4C-full / F5-tail / F4I-tail / F6-T4+T5 / codegen-break-label / test-run-log full.**
+Per spec — F4F/F4G/F4C/F4I/F5/F6 done; `break :label` honors label on commonJS + erlang + beam + wasm; `botopink test` emits `----- RUN LOG -----` per test on all 4 backends. **Sessions 1+2 shipped: F4G-full / F4F-full / F4C-partial(RC3) / F6-T1+T2+T3 / fn-param-default-expansion / F5-atomic / test-run-log T0+T1-{commonJS,erlang}+T2+T4+T5. Remaining: F4C-full / F4I-tail / F6-T4+T5 / codegen-break-label / T1-beam / T1-wat / T3 / T2-followup.**
