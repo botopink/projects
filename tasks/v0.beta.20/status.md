@@ -14,6 +14,7 @@
 | [frente-b.md](specs/frente-b.md) | 3 — rules-tooling-close · test-run-log (keystones) · codegen-break-label (consumer) | `task/frente-b-rules-tooling` (partial) | **partial in-progress** — task branch carries F4F/F4G/F4C/F4I/F5/F6 partials (22 commits ahead `origin/feat`); WIP on `env.zig`/`infer.zig`/`generic_defaults.zig` not yet committed |
 | [ci-tail.md](specs/ci-tail.md) | 2 — 01-cleanup · 02-backends-parity | `task/ci-pipelines-green` (partial) | **01-A partial done** — meta `e3b9d3a` deleted meta `test-libs.sh` (B half); v19 `ci-pipelines-green` row → done; bot-lang `c570cb7` already on `origin/feat`. Remaining: A-shims drop in workflows + W+E halves of 02-backends-parity |
 | [ecosystem.md](specs/ecosystem.md) | 1 — emilia (F0–F5) | `.tasks/emilia/` (pending) | pending — `repository/emilia` seed `f3b6ef7` pushed to `botopink/emilia` `feat`; submodule wired in meta `.gitmodules` (uncommitted) |
+| [snap-audit.md](specs/snap-audit.md) | 1 — flat (F0–F5) | `.tasks/snap-audit/` (in-progress) | **F0 partial** — `scripts/snap_audit.sh` authored with 4 modes (runlog/legacy/values/coverage); baseline measured: **2 053** `*.snap.md` (220 parser · 789 comptime · 942 codegen incl. 4 errors · 102 lsp); codegen empty-RUN-LOG share **~80%** (node 55 / erlang 41 / beam 50 / wasm 27 non-empty out of ~235 per backend); legacy sweep: 24 `external-legacy` hits (6 fixtures × 4 backends), zero `*fn` / `@[name]` / `when($argc)` / `string.length()` / `value:length()` |
 
 ## emilia — per-step state
 
@@ -35,6 +36,7 @@
 - [ ] **std-tail** (2 sub-specs): 9 phases + 14 sub-deferrals merged; `Option.expect<T>` merged.
 - [ ] **frente-b** (3 sub-specs): F4F/F4G/F4C/F4I/F5/F6 merged; `break :label` on 4 backends; `----- RUN LOG -----` per test on 4 backends.
 - [ ] **ci-tail** (2 sub-specs): all `allow_fail` rows deleted across 5 workflow YAMLs; `test-libs.sh` consolidated to single source.
+- [ ] **snap-audit** (1 sub-spec): codegen empty-RUN-LOG share ≤55% (baseline 80%); zero legacy-surface hits (current: 24 `external-legacy` to retire); F3 cross-backend parity holds for backend-agnostic fixtures; `## Findings` table populated.
 - [ ] `zig build test` + `zig build test-libs` + `botopink-lib-test` + `zig build test-vscode` green across every backend incl. wasm via wasmtime.
 - [ ] R1–R17 + RF1–RF5 + RI1–RI6 + RC1–RC6 + RG1–RG4 diagnostics fire (v19 surface still verified).
 

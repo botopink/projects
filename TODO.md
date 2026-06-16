@@ -1,147 +1,112 @@
-# TODO — prim-op-template-fix
+# TODO — snap-audit
 
-> Worktree task: **zero all red unit tests across every module +
-> backend**. Anchor item is the FIX FIRST flagged in
-> `tasks/v0.beta.20/specs/prim-op.md` sub-spec `annotation-tail (§A2)`
-> (restore the `module:` prefix emit on 2-arg `@External`
-> annotations), then sweep the remaining reds across `zig build test`
-> / `zig build test-libs` / vscode-extension `npm test` until every
-> gate is green.
+> Worktree task: **meta-audit every `*.snap.md` in the workspace** —
+> RUN LOG coverage, legacy-surface conformity, value cross-check,
+> gap fixtures. Spec:
+> [`tasks/v0.beta.20/specs/snap-audit.md`](../../tasks/v0.beta.20/specs/snap-audit.md).
 >
-> Spec: [`tasks/v0.beta.20/specs/prim-op.md`](tasks/v0.beta.20/specs/prim-op.md)
-> — see "Active reds traced to prim-op merge" + the
-> `annotation-tail (§A2)` row in the "Current state" table.
+> Read-mostly + reroute: F0 builds the audit tool; F1/F2 rewrite
+> sources and regenerate; F3 cross-checks values; F4 conjectures ≤10
+> gap fixtures (each registered under its owning frente, not here).
+> Discovered gaps land in this spec's `## Findings` table pointing at
+> the owning frente (frente-a-03-closeout / prim-op-annotation-tail /
+> ci-tail-02-backends-parity / std-tail-followup), never at new specs.
+>
+> Branch: `task/snap-audit`. Lands BEFORE `frente-a-03-closeout`.
 
-## Premise
+## F0 — audit tooling (read-only)
 
-After merging `task/prim-op-annotation` into `feat` (bot-lang
-`5bb3b18` → `0568466`), three test gates have reds that need to clear
-for the v0.beta.20 close to ship:
+- [ ] **F0.0 — baseline snapshot of the corpus**
+  - [ ] `rtk proxy find ./repository -name '*.snap.md' -not -path '*/.git/*' | wc -l` to confirm the ~2 077 file count from the spec premise.
+  - [ ] Per-suite counts (parser / comptime / codegen / lsp / errors) match the spec's `## Premise` table; record any drift in commit body.
+- [ ] **F0.1 — author `scripts/snap_audit.sh`**
+  - [ ] Single entry; subcommands `--mode={runlog,legacy,values,coverage}`.
+  - [ ] Pure shell (`awk` + `grep` + `find`). Read-only — zero writes outside `build/snap-audit/`.
+  - [ ] `--mode=runlog`: classify each codegen snap `(a)` / `(b)` / `(c)` by parsing SOURCE CODE block; columns `backend\tlabel\tactual-runlog-state\tpath`.
+  - [ ] `--mode=legacy`: grep each SOURCE CODE block for the legacy surface list (§F2); columns `surface\tcount\tpath`.
+  - [ ] `--mode=values`: dump `(suite, backend, source-hash, runlog-text)` for non-empty (b) snaps.
+  - [ ] `--mode=coverage`: pivot runlog by backend × label; emit the table from spec `## Premise`.
+- [ ] **F0.2 — register entry**
+  - [ ] Update `repository/botopink-lang/scripts/AGENTS.md` with the new entry.
+- [ ] **F0.3 — pin baseline numbers**
+  - [ ] Update `tasks/v0.beta.20/status.md` `snap-audit` row with the F0 baseline (80% empty, 17%+23%+60% split).
+- [ ] **F0.4 — commit**: `feat(snap-audit): scripts/snap_audit.sh — 4-mode read-only audit`.
 
-- **`zig build test` (bot-lang core)** — **7 reds**, all sharing one
-  root cause: 2-arg `@External.<Target>("module", "symbol")` form lost
-  the `module:` prefix at the call site, so `string:slice(S, 1, 4)`
-  emits as `:(S, 1, 4)` and `lists:sublist(...)` emits as `:(...)`.
-- **`zig build test-libs` (per-lib × per-backend)** — **5 reds**: 1
-  new (`std·erlang` `PrimOpStringifyUnsupported` band-aid leak); 4
-  pre-existing (`erika·erlang`, `jhonstart·erlang`, `onze·erlang`,
-  `rakun·erlang` — backends-parity / BIF shadow gaps).
-- **`vscode-extension npm test` (vscode/ts)** — not yet measured;
-  worktree owner should run `cd repository/vscode-extension && npm
-  install && npm test` early to baseline.
+## F1 — promote `(a) → (b)` where the observable form is mechanical
 
-Other gates (`botopink-lib-test`, `zig build test-vscode`) are run by
-the recursive-test-gate hook and surface in the same `zig build
-test-libs` output where applicable.
+- [ ] **F1.0 — dry-run** `scripts/snap_audit.sh --mode=runlog > build/snap-audit/runlog.tsv`; pick the `(a)` candidate set.
+- [ ] **F1.1 — declaration-style snaps**: every snap whose source is a single `val` / `fn` decl with a representable result. Wrap in `fn main() { … @print(…); }`.
+  - **Hard rule**: keep the original decl shape intact. The `@print` call is *added*, not substituted.
+- [ ] **F1.2 — regen across 4 backends**: `UPDATE_SNAPS=1 zig build test` from `repository/botopink-lang/`.
+- [ ] **F1.3 — per-backend RUN LOG audit**: any backend whose RUN LOG stays empty after the rewrite → finding for F4 + row in this spec's `## Findings`.
+- [ ] **F1.4 — commit per source rewrite campaign**: bundle the 4-backend regens; commit subject identifies the rewrite category (e.g., `snaps(codegen): promote array-literal fixtures (a)→(b)`).
+- [ ] **F1.5 — measure**: re-run `--mode=coverage`; empty-share must drop from 80% baseline to ≤55%.
 
-## Objective
+## F2 — legacy surface sweep across every suite
 
-By end of this task: **every unit-test gate green** across:
+- [ ] **F2.0 — run** `scripts/snap_audit.sh --mode=legacy > build/snap-audit/legacy.tsv`.
+- [ ] **F2.1 — `*fn `** prefix (removed in v0.beta.19 §S). Zero hits expected — gate-evidence regression check.
+- [ ] **F2.2 — `#[@external(<target>, "…")]`** legacy form. Rewrite to `#[@External.<Target>("…")]` (memory `feedback_external_annotation_form`); regen across 4 backends; emitted output must stay byte-identical.
+- [ ] **F2.3 — `@[external]` / `@[<annotation>]`** outside `#[…]`. Same rewrite shape.
+- [ ] **F2.4 — `when($argc == N)`** literals. Track count for `prim-op-extension when-argc-removal`'s gate-evidence.
+- [ ] **F2.5 — `string.length()` inside `@code` template bodies** and `value:length()` in erlang templates (memory `reference_bp_parser_comptime_gotchas` #11).
+- [ ] **F2.6 — top-level `(expr).method()`** in `@code` (memory `reference_bp_parser_comptime_gotchas` #12).
+- [ ] **F2.7 — deprecated builtins** (grep for any builtin name *not* present in `libs/std/src/builtins.d.bp`).
+- [ ] **F2.8 — comptime + parser + LSP snaps** — same legacy sweep, no RUN LOG involvement; the regen rewrites the TYPED-AST / parser-JSON / LSP-output section automatically.
+- [ ] **F2.9 — commit per surface** (one commit per `F2.N` row that produces source changes); subject `snaps(codegen): retire <surface>`.
 
-- `zig build test` (compiler-core)
-- `zig build test-libs` (all 6+ sibling libs × all 4 backends where each lib supports the backend)
-- `zig build test-vscode` (vscode-extension via Node 22 strip-types)
-- `npm test` inside `repository/vscode-extension` (typescript unit tests, separate from `test-vscode`)
-- inline `test { … }` blocks inside `.bp` modules (these surface via `botopink-lib-test`)
+## F3 — value correctness cross-check
 
-## Steps
+- [ ] **F3.0 — run** `scripts/snap_audit.sh --mode=values > build/snap-audit/values.tsv`.
+- [ ] **F3.1 — authoritative external diff**: for every `(b)` snap with non-empty RUN LOG, invoke the runner outside the test harness:
+  - [ ] `node`: `node <emitted>.js` from a scratch dir.
+  - [ ] `erlang`: `erlc + erl -noshell -s main main -s init stop`.
+  - [ ] `beam`: `erlc +from_asm <emitted>.S; erl -noshell -s main main`.
+  - [ ] `wasm`: `wasmtime <compiled>.wasm` (memory `project_v0beta19_ci_pipelines_green`).
+- [ ] **F3.2 — classify diffs**: `equal` / `equal-modulo-trailing-newline` / `different`. Each `different` → finding in this spec's `## Findings` table pointing at the owning frente.
+- [ ] **F3.3 — cross-backend parity**: backend-agnostic fixtures must match byte-for-byte across the 4 backends. Real divergences pin with `// per-backend: …` source comment; bugs → finding under the owning backend.
+- [ ] **F3.4 — commit per finding category**.
 
-### F0 — baseline (record what's red, what's green)
+## F4 — conjecture new scenarios
 
-- [ ] `zig build test 2>&1 | grep -E "^error: '" > /tmp/baseline-zig-test.txt` — expect the 7 listed below.
-- [ ] `zig build test-libs 2>&1 | tail -30 > /tmp/baseline-test-libs.txt` — confirm the 5 lib×backend reds.
-- [ ] `cd repository/vscode-extension && npm install && npm test` — baseline TS reds (unknown count).
-- [ ] If any gate has reds NOT enumerated above, add to F4 below.
+- [ ] **F4.0 — gather**: read this spec's `## Findings` table + F1/F2/F3 outputs; pick ≤10 categories.
+- [ ] **F4.1 — author** the minimal new fixtures (single observable, single backend assertion). Candidates from the spec:
+  - [ ] `@print` of a record with nested arrays.
+  - [ ] `@print` of an enum payload variant.
+  - [ ] `@print` inside a `fn main()` called from a generic-module inline test (`comptime/infer.zig` STD-001 path).
+  - [ ] `@assert` with a string message + array equality.
+  - [ ] Cross-module `@print` from a `mod` sibling (gated on frente-a §D3 lowering).
+  - [ ] `@print` inside a `comptime { … }` block whose value is a runtime fold (prim-op Family 3 `@block`).
+- [ ] **F4.2 — register**: each new snap registers under the *owning* spec's test-scenarios block, not under this spec.
+- [ ] **F4.3 — commit per fixture batch**.
 
-### F1 — restore module-prefix emit (FIX FIRST — kills 7 zig build test reds)
+## F5 — docs + closeout
 
-| Test | Expected | Actual |
-|---|---|---|
-| `codegen.tests.js_features.test.js: option method on tuple element` | `Rest = lists:sublist(Xs, (1) + 1, ((length(Xs)) - (1)))` | `Rest = :(Xs, 1, length(Xs))` |
-| `codegen.tests.js_features.test.js: array instance default-fn methods` | (similar `lists:*` call) | (`:(...)`) |
-| `codegen.tests.js_features.test.js: string methods map to native JS names` | (similar) | (similar) |
-| `codegen.tests.js_features.test.js: iterator fromList yields array items` | (similar) | (similar) |
-| `codegen.tests.wat.test.wat: string slice copies bytes into a new buffer` | `Mid = string:slice(S, 1, ((5) - (1)))` | `Mid = :(S, 1, 5)` |
-| `codegen.tests.wat.test.wat: string slice without end arg slices to source length` | `Tail = string:slice(S, 2)` | `Tail = :(S, 2)` |
-| `codegen.tests.wat.test.wat: string slice result length is readable` | (similar) | (similar) |
+- [ ] **F5.0 — author** `modules/compiler-core/snapshots/AGENTS.md` (new) — RUN LOG contract: when `(a)` / `(b)` / `(c)` apply; the framework-side runtime hook path.
+- [ ] **F5.1 — update** `modules/compiler-core/src/codegen/AGENTS.md` — per-backend RUN LOG coverage row derived from this audit.
+- [ ] **F5.2 — populate** `tasks/v0.beta.20/specs/snap-audit.md` `## Findings` table with every residual + owning frente.
+- [ ] **F5.3 — flip** `tasks/v0.beta.20/status.md` `snap-audit` row → **done**.
+- [ ] **F5.4 — CHANGELOG entry**.
 
-- [ ] `git log --oneline 0568466..HEAD -- modules/compiler-core/src/codegen/erlang.zig` (and `commonJS.zig`) to bisect the regression — most likely path: the `(module, symbol)` 2-arg `@External` resolution in `tryEmitPrimAnnotation` / `tryEmitBuiltinAnnotation` / `collectExternals`.
-- [ ] In the relevant emitter helper: when annotation args are `(module: string, symbol: string)`, emit `module:symbol(rendered_args)` (erlang) / `module.symbol(rendered_args)` (commonJS). Mirror whatever the pre-merge code did — `git show 64a3436:modules/compiler-core/src/codegen/erlang.zig` gives the last-known-good shape.
-- [ ] Cleaner long-term: collapse 1-arg + 2-arg forms into one path — `primOpTemplate.render` consumes a template string, so the 2-arg form just constructs `"module:$args(...)"` (or per-backend equivalent) on the fly and delegates. Single rendering primitive.
-- [ ] `.snap.md.new` files live under `modules/compiler-core/snapshots/codegen/erlang/erlang/` for diff fodder while iterating.
+## Exit gate (mirrors spec `## Exit gate`)
 
-### F2 — reconcile `$stringify` Ctx pair (kills std·erlang test-libs red)
+- [ ] F0 tooling lands; 4 modes runnable on a clean `feat`.
+- [ ] F1 empty-share ≤55% codegen-wide.
+- [ ] F2 zero hits across every legacy-surface row.
+- [ ] F3 every non-empty RUN LOG passes the authoritative external diff; cross-backend parity holds (or pins divergence with comment).
+- [ ] F4 ≤10 new fixtures; each registered under an owning spec.
+- [ ] `## Findings` table populated; every row points at an existing v0.beta.20 frente.
+- [ ] `snapshots/AGENTS.md` documents the RUN LOG contract.
+- [ ] `tasks/v0.beta.20/status.md` row → **done**.
 
-- [ ] **Pick one**:
-  - (a) Add `emitStringifyOpen` / `emitStringifyClose` to every Ctx in `codegen/erlang.zig` (mirror commonJS — open `"iolist_to_binary(io_lib:format(\"~p\", ["` + close `"]))"`). Removes the `@hasDecl` guard band-aid.
-  - (b) Keep the guard but stop triggering `PrimOpStringifyUnsupported` at runtime — if no template uses `$stringify`, the guard never fires. The std·erlang red indicates *something* on that path IS triggering — probably a `primitives.d.bp` method that the erlang Ctx variant doesn't carry the open/close pair for. Audit which Ctx is hit by the lib-test compile and add the pair only there.
-- [ ] Recommend (a) for consistency — every Ctx that owns the template render pipeline should also own the stringify pair.
+## Discipline (memory anchors)
 
-### F3 — sibling-lib erlang reds (kills 4 backends-parity reds)
-
-Each of `erika·erlang`, `jhonstart·erlang`, `onze·erlang`, `rakun·erlang`
-is red — most likely cause is BIF shadowing not yet caught by
-`std/erlang.bp` catalog OR codegen path issues.
-
-- [ ] For each lib: `cd repository/<lib> && zig build test 2>&1 | tail -20` (assuming the gate is `botopink-lib-test --lib <name> --target erlang`).
-- [ ] Categorise the reds:
-  - **BIF shadow**: add the missing single-word BIF to `libs/std/src/erlang.bp` (`#[@External.Erlang("erlang", "<name>")] pub declare fn <camelCase>(...) -> any;`), re-run.
-  - **Codegen template dispatch**: same root cause as F1; F1 fix should clear them.
-  - **Other**: trace + fix at source, document the change in the relevant lib's `AGENTS.md`.
-
-### F4 — vscode-extension ts/npm reds
-
-- [ ] After `cd repository/vscode-extension && npm install`, run `npm test`. Triage whatever surfaces.
-- [ ] Likely candidates if any red: language-server protocol changes from frente-b (rules-tooling-close may have moved diagnostic shapes); LSP definition/hover changes from lsp-definition-completeness.
-- [ ] Fix the test fixtures if the LSP contract has legitimately evolved (don't rewrite the LSP to match stale tests); update if the LSP regressed (rewrite to match the expected contract).
-
-### F5 — sweep + commit cadence
-
-- [ ] Run all gates once locally end-to-end to confirm 0 reds:
-  - `cd repository/botopink-lang && zig build test`
-  - `cd repository/botopink-lang && zig build test-libs`
-  - `cd repository/botopink-lang && zig build test-vscode`
-  - `cd repository/vscode-extension && npm test`
-- [ ] Independent commits per F-phase (don't squash):
-  - F1: `codegen(erlang+commonJS): restore module: prefix on 2-arg @External form`
-  - F2: `codegen(erlang): add emitStringifyOpen/Close to every Ctx`
-  - F3: per-lib fixes — one commit per lib
-  - F4: vscode-extension test fixes
-- [ ] No `--no-verify`. Pre-commit hook is the primary gate.
-
-## Test scenarios
-
-After F1:
-- `zig build test`: all 7 reds clear. `Mid = string:slice(S, 1, 4)` and `Rest = lists:sublist(Xs, 2, length(Xs) - 1)` appear in snapshots verbatim.
-After F2:
-- `zig build test-libs`: `std·erlang` GREEN (no `PrimOpStringifyUnsupported`).
-After F3:
-- `zig build test-libs`: `erika/jhonstart/onze/rakun` erlang rows GREEN.
-After F4:
-- `npm test` in `repository/vscode-extension`: 0 fails.
-
-## Notes
-
-- **Don't squash F1 + F2 in the same commit.** F1 fixes the 7 zig build test reds (one root cause); F2 fixes the `std·erlang` test-libs red (different surface). Independent rollbacks are valuable.
-- **Don't `--no-verify`** unless explicitly approved — the pre-commit hook is the primary gate.
-- The `task/prim-op-template-fix` branch tracks `feat`; merge directly to `feat` when green (no PR needed for solo-maintainer cadence).
-- The catalog extension (BIFs cobrindo `spawn/N`, `monitor/N`, `apply/N`, etc. com defaults) **fica fora deste task** — depende de `fn-param-default-expansion` para `declare fn` que ainda não está implementado no parser (`tasks/v0.beta.20/specs/frente-b.md` notes). Sem isso, cada arity é uma decl separada — opcional cobrir mais BIFs aqui de forma manual, mas o ROI é baixo se F3 já clarifica os 4 libs.
-
-## Exit gate
-
-- [x] **F1+F2 cleared**: `zig build test` 0 reds (was 7). `zig build test-libs` `std·erlang` GREEN (was RED). bot-lang `1e7a56f`.
-- [x] **F3 fnAtom**: rakun erlang syntax errors cleared (b1b819b). Remaining rakun + onze + erika + jhonstart erlang reds are pre-existing backends-parity gaps documented as DEFERRED in `std-tail.md`.
-- [x] **F4 vscode-extension**: `npm test` 15/15 GREEN.
-- [x] `prim-op.md` "Active reds" section converted to "Resolved reds" note.
-- [x] `std-tail.md` lib×backend table updated: std·erlang GREEN, others marked DEFERRED with cause.
-- [ ] Per-repo branches pushed (bot-lang `task/prim-op-template-fix`).
-- [ ] Meta `task/prim-op-template-fix` pushed with submodule pointer bump.
-- [ ] Merged to `feat` on bot-lang + meta.
-- [ ] Worktree removed via `git worktree remove .tasks/prim-op-template-fix` + branches deleted via `git branch -d`.
-
-## Deferred (out of scope for this task — pre-existing backends-parity gaps)
-
-- **erika·erlang** — `drop/2`/`forEach/2` undefined: stdlib LINQ method erlang lowering gap.
-- **jhonstart·erlang** — html.bp/element.bp tags (`ul`/`li`/`text`/`fragment`/`renderToString`) not reachable in erlang test compile.
-- **onze·erlang** — runtime is `#[@external(node, ...)]` only; needs either a per-lib backend declaration in `botopink.json` or a real `onze.erl` shim.
-- **rakun·erlang** — same pattern as onze: runtime.mjs only, no erlang shim. Syntax errors are now cleared (F3 fnAtom); remaining is "rkScan/1 undefined" etc.
+- All commits in English; conversation in pt-br (`feedback_pt_br_conversation`, `feedback_everything_english`).
+- AGENTS.md updated in the same commit as the code it documents (`feedback_agents_md_maintenance`).
+- SSH for all git remote ops (`feedback_always_ssh_git`).
+- Worktree paths for Read/Edit during execution; `rtk git` / `rtk proxy` for filtered output (`reference_rtk_filters_git_diff`).
+- Pre-commit gate (zig fmt + build + test) on every commit; **no `--no-verify`** ever (`project_worktree_workflow`).
+- Functions in camelCase (`feedback_camelcase_naming`).
+- After commit, advance to the next checkbox (`feedback_continue_after_commit`).
+- Eric works in parallel — re-check `git status` immediately before every commit/merge (`feedback_user_works_in_parallel`).
+- End-of-session sweep across the 7 remotes (meta + 6 submodules) for any drifted `feat` heads (`feedback_feat_remotes_unified`).
