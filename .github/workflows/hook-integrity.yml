@@ -21,13 +21,6 @@ jobs:
   replay:
     name: replay pre-commit (${{ matrix.project }})
     runs-on: ubuntu-latest
-    env:
-      # Silence Erlang's startup logger so the codegen runtime's
-      # `executeErlang` short-circuit (returns empty RUN LOG when
-      # `erl`'s stderr is non-empty) doesn't trip on the runner's
-      # default logger notice. Same flag the per-repo botopink-lang
-      # `test` workflow now carries.
-      ERL_AFLAGS: "-kernel logger_level critical"
     strategy:
       fail-fast: false
       matrix:
@@ -62,14 +55,17 @@ jobs:
           # JS engine.
           node-version: '22'
 
-      - name: Install Erlang/OTP 27 (botopink-lang / meta gates run `zig build test`)
+      - name: Install Erlang/OTP 28 (botopink-lang / meta gates run `zig build test`)
         if: matrix.project == 'meta' || matrix.project == 'repository/botopink-lang'
         uses: erlef/setup-beam@v1
         with:
-          # OTP 27 is the minimum: the comptime runtime writes JSON via
-          # `json:encode/1`, which only landed there. Ubuntu's apt-get
-          # `erlang` is OTP 24 — not enough.
-          otp-version: '27'
+          # OTP 28 (BEAM 16.x) — matches the dev workstation BEAM and
+          # the per-repo botopink-lang test.yml. OTP 27's erlc treats
+          # the codegen test fixture's user-defined `abs/1` (shadows the
+          # auto-imported BIF) as a compile error, exit 1; OTP 28 emits
+          # the same diagnostic as a warning, exit 0 — which the
+          # runtime framework's snapshot RUN LOG capture needs.
+          otp-version: '28'
 
       # Pinned release tarball (not the upstream shell installer — its
       # version lookup is flaky on the GH runners; can resolve to literal
