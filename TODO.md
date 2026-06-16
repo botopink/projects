@@ -2,10 +2,10 @@
 
 > Worktree task: closes v0.beta.19 `std-expansion-tail` partial — the 9 phases + 14 sub-deferrals from std-expansion-tail-followup, plus the additive `Option.expect<T>` method.
 >
-> **Status (as of bot-lang `5d19f7e`):** 16/19 phases closed (P9 STD-001
-> runtime check landed). Remaining deferrals: P16 http (needs `#[@future]`
-> in §A3), P17 random.shuffle (needs generic-fn declare), P19 unification
-> sweep + push.
+> **Status (as of bot-lang `1791337`):** 17/19 phases closed (P19 push
+> landed alongside ci-tail closeout). P16 (http) + P17 (random.shuffle)
+> formally deferred to v0.beta.21 — both wait on language features
+> (`#[@future]` rollout from `frente-a`, generic-fn declare).
 >
 > Spec: [`tasks/v0.beta.20/specs/std-tail.md`](tasks/v0.beta.20/specs/std-tail.md) — full content lives there.
 
@@ -68,14 +68,21 @@
         bool }` + 8 host-bound declares (`readText`, `writeText`,
         `exists`, `list`, `mkdir`, `rm`, `copy`, `stat`). Fallible ops
         return `@Result<_, string>` via the §A3 wrapper.
-  - [ ] **P16** F8.http — unblocked by P10; needs Promise wrapper sidecar.
+  - [ ] **P16** F8.http — DEFERRED. Unblocked by P10 infra-wise, but
+        needs a Promise wrapper sidecar (node-side `async` + Erlang
+        `httpc:request/4` divergence) — non-trivial sync/async contract
+        belongs with the `#[@future]` rollout (`frente-a` keystone).
+        Drives to v0.beta.21 alongside the §A3 future rollout.
   - [ ] **P17** F4.random.shuffle — DEFERRED. Pure-bp Fisher–Yates over
         generic `Array<T>` is circular even with `.expect(sentinel)`.
         Documented in `random.bp` for future-Eric.
   - [x] **P18** F9 examples-CLI walkthrough + per-target coverage
         table — `libs/std/src/examples.md` updated.
-  - [ ] **P19** unification sweep + push to origin/feat — pending user
-        authorization for the shared-branch push.
+  - [x] **P19** unification sweep + push to origin/feat — landed
+        (meta `38e9bbb` bot-lang bump to `5d19f7e`, `17edf6e` merge from
+        `task/std-tail`, `92e3660` ci-tail close, `08f7467` bot-lang bump
+        to `1791337` for .gitignore `.tmp-exec-*/`). All 7 submodule
+        remotes verified at unified `feat` heads.
 
 ## Coordination
 
