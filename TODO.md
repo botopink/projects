@@ -13,7 +13,12 @@
 
 - [ ] **family-2-beam-wat-runtime-ops** — BEAM + wat dispatch infra (erlang `7f8f259` + commonJS `f9918b1` already landed). **BLOCKED on backend architectural prereqs**: wat backend uses linear-memory `i32.store` + heap-ptr bookkeeping with stateful `_resN` locals + inline lambda body splicing — template `(struct.new $bp_result_ok $0)` from the spec sketch assumes Wasm GC struct types not in current emitter. BEAM-asm has the same issue (bytecode + register alloc, not text). Needs either a wasm-GC migration OR a structured emitArg callback DSL extending `primOpTemplate` first.
 - [ ] **family-3-block-builtin** — `@block` across every backend. Same architectural prereq as family-2 for BEAM+wat (`$body` needs structured stmt-list emit, not text substitution).
-- [ ] **template-instance-methods** — instance method template path on every backend.
+- [~] **template-instance-methods** — F1-commonJS + F2-erlang LANDED via `Array.zip` surface (bot-lang `bdebded`):
+  - F2-erlang: already worked through existing dispatch (`collectIfaceErlangDispatch` indexes every method + `tryEmitPrimAnnotation` renders `$self`/`$N`); `lists:zipwith(...)` RUN LOG green
+  - F1-commonJS: `emitInterface` now patches `Owner.prototype.<m>` for non-`default fn` instance methods with template-form `@External.Node` (the 1-arg `module="" + symbol=<template>` case takes precedence over the §A4 native-prototype skip); template-rendered body inlined; RUN LOG green
+  - F3-beam: still emits `%% unresolved method call: zip/2` (deferred — `beam_asm.zig` needs same branch)
+  - F4-wat: deferred per spec
+  - Known limit: Array interface only spliced into `program.decls` when a `default fn` instance method resolves (`comptime/infer.zig:5302`); a program calling ONLY non-default-fn methods won't trigger prototype-patch emission. Proper fix marks Array as used for any prim-method dispatch.
 - [x] **external-target-libs-migration** — F0–F4 + F5-partial done. **Landed this session**:
   - onze `641e344 → 64fe0d9` (8 host cells)
   - rakun `d7582cc → 4e8d4d3` (17 host cells)
