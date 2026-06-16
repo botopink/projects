@@ -22,3 +22,7 @@
 	path = repository/rakun
 	url = git@github.com:botopink/rakun.git
 	branch = feat
+[submodule "repository/emilia"]
+	path = repository/emilia
+	url = git@github.com:botopink/emilia.git
+	branch = feat
