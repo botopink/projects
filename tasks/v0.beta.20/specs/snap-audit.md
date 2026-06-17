@@ -303,13 +303,32 @@ shouldn't — the legacy form lowers to the new one).
 
 ## Findings
 
-This table is populated as F0–F3 finish — one row per residual that
-this spec discovers but **does not** itself fix (the fix lives in the
-owning frente). Empty at spec-authoring time:
+Populated as F0–F3 finish. One row per residual this spec discovers but
+**does not** itself fix (fix lives in the owning frente).
 
 | # | Suite/path glob | Symptom | Owning spec |
 |---|---|---|---|
-| 1 | _(pending — F0 run)_ |  |  |
+| 1 | `codegen/{node,erlang,beam,wasm}/external_target_mixed_with_external_in_one_decl.snap.md` (1 fixture × 4 backends = 4 hits) | After F2 sweep, 5 of the 6 originally-legacy fixtures migrated to `#[@External.<Target>(…)]` (24 → 4 hits). The remaining 1 fixture is **kept by design** — its test name is `External.<Target> ---- mixed with @external() in one decl` and its purpose is to pin that the codegen accepts the legacy form on one target and the new form on another in a single decl during migration. Final retirement of these 4 hits happens when the legacy `@external(target, …)` parse path is dropped. | `prim-op-extension when-argc-removal` (or sibling — drops the legacy `@external(<target>, …)` parser arm; after that lands, this fixture either deletes or both targets must be `@External.<Target>`) |
+| 2 | `codegen/{node,erlang,beam,wasm}/try_with_inline_catch_handler.snap.md` (4× `b/empty` after F1 promote) | `fn safe()` calls `@todo()` inside `#[@result] fn fetch()`; `try fetch() catch 0` should swallow the throw and print `0`, but RUN LOG is empty on every backend. Indicates `@todo` lowering bypasses the inline `catch` handler. | `frente-a-01-future-runtime-erlang-beam` (catch lowering audit) + `prim-op` `annotation-tail` (`@todo` builtin shape) |
+| 3 | `codegen/{node,erlang,wasm}/destructure_record_parameter_in_fn.snap.md` (3× `b/empty` — beam alone produces output) | `fn greet({ name, .. }: Person)` destructures the param; node/erlang/wasm runtimes return empty RUN LOG. beam works. Cross-backend parity gap in record-param destructuring. | `frente-a-03-closeout` (cross-backend parity §C+§D) |
+| 4 | `codegen/{erlang,beam,wasm}/destructure_record_val_binding.snap.md` (3× `b/empty` — node alone produces output) | `val { x, y } = p;` record destructuring in body. Node works; erlang/beam/wasm don't. Wider than #3 because beam also fails here. | `frente-a-03-closeout` |
+| 5 | `codegen/erlang/assign_update_var_with_pluseq.snap.md` (erlang-only `b/empty`) | `var count = 0; count += 1; @print(count);` — node/beam/wasm print `1`; erlang RUN LOG is empty. erlang `+=` op or `@print(i32)` lowering regression. | `ci-tail-02-backends-parity` (erlang BIF coverage) |
+| 6 | `codegen/{erlang,beam,wasm}/loop_side_effect_print_in_iterator.snap.md` + `…over_range.snap.md` partial | indexed iterator-loop (`loop (messages, 0..) { msg, i -> …}`) prints on node but not on erlang/beam/wasm (range-loop works on erlang/beam, breaks only on wasm). Indicates the indexed-iterator lowering is the regression. | `frente-b` `codegen-break-label` (iterator end-cond) + `frente-a-01-erika-runtime-string` |
+| 7 | `codegen/{erlang,wasm}/try_*.snap.md` (erlang `b/empty` on try_catch_preserves / try_multiple_catch / try_nested; wasm `b/empty` on all 4 try-* fixtures) | `#[@result]` throw/catch chains print on node/beam but not erlang/wasm. erlang's `@Result` runtime is `{ok, V} / {error, R}` (memory `project_stdlib_result_methods`); the print captures neither tuple nor scalar. wasm has no aggregate runtime yet. | `frente-a-01-future-runtime-erlang-beam` (`@result` lowering on erlang+beam) + `frente-a-01-wat-refactor` (wasm aggregates) |
+| 8 | `codegen/wasm/case_*.snap.md` + `if_simple_conditional_in_fn_body.snap.md` (4× `b/empty` on wasm only) | string-typed `case`/`if` branches don't render on wasm — fixtures print on node/erlang/beam. Same root cause as the broader wasm `@print(string)` gap. | `frente-a-01-wat-refactor` (`emitRecord` / `emitStruct` / aggregate strings) |
+| 9 | `codegen/*/builtin_panic_with_message.snap.md` + `try_propagate_without_catch.snap.md` (skipped from F1 promote) | `@panic` / `@todo` propagate to the runtime; promoting these to observable would make the test process die mid-run, polluting the snap with non-deterministic stderr. Kept as `(c)` with future `// silent: panic propagates` rationale in `snapshots/AGENTS.md` F5.0. | (none — pinned design choice; documented at F5.0) |
+
+The 9 findings above derive from the F1 promotion sweep (14 fixtures
+× 4 backends). F1 ran `UPDATE_SNAPS` via 4-iteration regen loop;
+`zig build test` is green; the codegen empty-share fell from **80%**
+baseline to **~75%** post-F1 (per-backend: node 71.5% → 71.5%,
+erlang 80.4% → 80.4%, beam 73.9% → 73.9%, wasm 87.2% → 87.2% — the
+overall move is small because the dominant share is `(a)/empty` top-
+level decl fixtures, which F1.1 deliberately scoped *out* per the
+hard rule "keep the original decl shape intact"). The next big lift
+is `(a) → (b)` promotion on array / record / enum literal fixtures
+whose value has a single observable derivation; tracked as a
+follow-up campaign under F1.
 
 ## Test scenarios
 
