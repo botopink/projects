@@ -4,7 +4,7 @@
 **Depends on**: v0.beta.19 `frente-b-rules-tooling` partial — Rules F0–F3 + R1/R2/R5/RG1 + R3/R4/R6/R7/R8/R9/R10/RG3/RG4 already landed; F4F/F4G/F4C/F4I/F5/F6 + §T pending.
 **Files**: see each sub-spec — `comptime/{infer,transform,contextStack}.zig` · `codegen/{erlang,beam_asm,commonJS,wat}.zig` · `runtime/runlog.zig` (new) · test-mode codegen wrappers.
 **Touches docs**: `modules/compiler-core/src/comptime/AGENTS.md` · `tasks/v0.beta.19/status.md` (frente-b row → done).
-**Status**: partial — 3 sub-specs across 2 stages; rules-tooling-close has §1G + F4I-T1 landed.
+**Status**: **partial in-progress + F4I-tail WIP shipped** — bot-lang `feat` at `ffe7aff` (meta `b1324d8`). Session 2 (df14ef3) already landed F5 atomic + test-run-log T0-T5 + F6-T1/T2/T3 + F4G/F4F/F4C-RC3 + fn-param-default-expansion AST plumbing. **2026-06-16 session** adds **F4I-tail WIP** (`c982097` in bot-lang task/frente-b, merged forward to ffe7aff): `env.IteratorJumpLowering` enum (wrap_done / wrap_done_void / wrap_error) + `env.iterator_jump_lowerings` map keyed by jump loc + `inferJumpExpr` arm populating the map when inside `#[@iterator]`/`#[@asyncGenerator]` for `throw <e>` (and previously for `break <c>`, partially). **Remaining**: F4I-T2/T3 (`transform.zig → @IteratorStep` rewrite that consumes the map); F5 atomic Iterator enum migration finish; F6 effect_*.zig suites cross-pollination; `codegen-break-label` consumer (depends on F4I-T2/T3); `test-run-log` consumer.
 
 ## Current state (partials landed on origin/feat — bot-lang 0568466)
 

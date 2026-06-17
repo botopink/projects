@@ -15,7 +15,7 @@
   - `modules/compiler-core/snapshots/AGENTS.md` (new section: "RUN LOG contract — when a snap *must* print and when it may stay silent").
   - `modules/compiler-core/src/codegen/AGENTS.md` (per-backend RUN LOG coverage row — derived from this audit).
   - `tasks/v0.beta.20/status.md` (this row reaches **done** when F0–F4 land).
-**Status**: pending
+**Status**: **F0+F1.c→b+F2.external done; F1.a + F3/F4/F5 pending** — meta `b1324d8` (merged via `e7fee99`, bot-lang `67181f5`/now ffe7aff). F0: `scripts/snap_audit.sh` 4-mode audit landed (baseline 2 053 snaps). F1: 14 (c)/empty fixtures promoted to (b) (node +12, erlang +5, beam +11, wasm +3 nonempty); 9 `## Findings` rows route to owning frentes. F2: 5 of 6 external-legacy fixtures migrated to `#[@External.<Target>(…)]` (24→4 hits; the 4 residuals are the `external_target_mixed_with_external_in_one_decl` fixture × 4 backends — kept by design as evidence of legacy/new coexistence). **Remaining**: F1.a (141 (a) decl-style fixtures per backend) + F3/F4/F5 untouched.
 
 ## Premise
 

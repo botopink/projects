@@ -33,7 +33,7 @@
   - `repository/botopink-lang/modules/compiler-cli/src/cli/AGENTS.md` (`config.zig` row: object-form `dependencies`; `libs.zig` row: `$BPMP_HOME` fallback)
   - `repository/botopink-lang/AGENTS.md` (one bullet under the **Project surface** §)
   - `tasks/v0.beta.20/status.md` (this row reaches **done** when F0–F6 land)
-**Status**: pending
+**Status**: **pending (F0–F2, F4–F6); F3 in progress** — spec authored 2026-06-16 in `325472a`. F3 partial: emilia-card + erika-linq fixtures migrated (`af1c66d` + `abfcfe4`). All other phases unstarted.
 
 ## Premise
 
@@ -299,10 +299,15 @@ $BPMP_HOME first.
 **Files**:
   - `repository/emilia/examples/emilia-card/botopink.json`
   - `repository/botopink-lang/examples/generic-loader-binding/botopink.json`
-**Status**: pending — main `repository/emilia` has a started-but-typo'd
-migration (line 11 references `jhonstart.git` for the `emilia` entry —
-copy/paste bug). Fix + commit in this spec (this is the entry that
-surfaced the spec in the first place — Eric flagged it 2026-06-16).
+**Status**: **in progress** — 2026-06-16 session shipped:
+- `repository/emilia/examples/emilia-card/botopink.json` migrated to object form + URL fix (`emilia af1c66d`).
+- `repository/erika/examples/erika-linq/botopink.json` migrated to object form (`erika abfcfe4`).
+
+**Remaining** (this phase still owes 6 fixtures):
+- `repository/jhonstart/examples/jhonstart-{counter,html,todo}/botopink.json` (3 jhonstart consumers).
+- `repository/onze/examples/onze/botopink.json`.
+- `repository/rakun/examples/rakun/botopink.json`.
+- `repository/botopink-lang/examples/generic-loader-binding/botopink.json` (consumer of `from "erika"`).
 
 ---
 

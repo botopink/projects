@@ -43,7 +43,7 @@ comment block on the `#[emilia(...)]` decorator hook and the
 `[emilia]={...}` html attribute, `repository/botopink-lang/libs/AGENTS.md`
 cross-reference (one bullet).
 
-**Status**: pending — `repository/emilia` submodule seeded (`f3b6ef7`) and wired in meta `.gitmodules` (`origin/feat` ← `eaed693`); no `src/*.bp` content shipped yet; jhonstart hooks (annotation-on-builder + `[name]={expr}` html attribute) unimplemented; blocks on `enum-sections` (in `frente-a.md`) for the token surface to be ergonomic.
+**Status**: **mostly done + F1 WIP shipped** — emilia `feat` at `3f77623` (meta `b1324d8`). v0 shape (F0/F2/F3/F4/F5) MERGED+PUSHED via earlier sessions (`a62334f` bump to `10ea69e`); the **F1 Token V0→V1 nested-section migration** WIP was committed on 2026-06-16 as `3f77623` (unblocked by `enum-sections` close `bd5c69d` in main feat) and bumped into meta via `1d22c7d`. The `examples/emilia-card/botopink.json` URL typo + object-form migration shipped earlier (`af1c66d`, alongside the new [`botopink-install-from-deps`](botopink-install-from-deps.md) spec). **2 residuals deferred**: jhonstart 2 hooks (annotation-on-builder + `[name]={expr}` html attribute) still pending; F1 token enum tail (modifier composition + `tokenToCss` exhaustiveness re-pin) on top of the 3f77623 WIP — both deferred to the next emilia session.
 
 > **Ecosystem-expansion keystone (v0.beta.20).** v0.beta.19 closed the
 > language's recorded gaps; v0.beta.20 opens the **ecosystem-expansion**
