@@ -14,7 +14,7 @@
   - `repository/botopink-lang/AGENTS.md` (one bullet under **Build & test** if it references scratch dirs).
   - `repository/botopink-lang/CHANGELOG.md`.
   - `tasks/v0.beta.20/status.md` (this row reaches **done** when F0–F4 land).
-**Status**: pending
+**Status**: done — pending merge to `feat`
 
 ## Problem
 
@@ -73,7 +73,7 @@ F4-agents-and-changelog   (AGENTS.md + CHANGELOG.md sweep)
 ## F0 — `runtime.zig` `makeScratchDir` rewrite
 
 **Files**: `modules/compiler-core/src/codegen/runtime.zig` (lines 41–51).
-**Status**: pending
+**Status**: done — pending merge to `feat`
 
 Current:
 ```zig
@@ -106,7 +106,7 @@ Buffer grows from 64 to 96 to fit the longer prefix.
 ## F1 — `.gitignore` cleanup
 
 **Files**: `repository/botopink-lang/.gitignore`.
-**Status**: pending
+**Status**: done — pending merge to `feat`
 
 Remove the line:
 ```
@@ -121,7 +121,7 @@ path. Keep a 30-second post-merge sweep to delete any stray
 ## F2 — `build.zig` `clean-tmp` step (1-day TTL reap)
 
 **Files**: `repository/botopink-lang/build.zig`.
-**Status**: pending
+**Status**: done — pending merge to `feat`
 
 Add a step `clean-tmp` that runs (cross-platform-safe):
 ```
@@ -133,7 +133,7 @@ Wire it as a dependency of `zig build test` (`b.getInstallStep().dependOn(&clean
 ## F3 — `runtime_scratch.zig` pin (NEW test)
 
 **Files**: `repository/botopink-lang/modules/compiler-core/src/codegen/tests/runtime_scratch.zig` (NEW, ~30 LOC).
-**Status**: pending
+**Status**: done — pending merge to `feat`
 
 Pin the new path layout. Test outline:
 
