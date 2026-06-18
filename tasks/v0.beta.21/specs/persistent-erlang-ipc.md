@@ -1,7 +1,7 @@
 # persistent-erlang-ipc — long-lived Erlang/BEAM runner over a length-prefixed stdin/stdout protocol
 
 **Slug**: persistent-erlang-ipc
-**Depends on**: nothing — file-disjoint with `template-static-fold` and other v0.beta.21 specs at the source level. Mirrors `persistent_node.zig` (landed in v0.beta.20's `test-speed-tmp-consolidation`).
+**Depends on**: nothing — file-disjoint with other v0.beta.21 specs at the source level. Mirrors `persistent_node.zig` (landed in v0.beta.20's `test-speed-tmp-consolidation`).
 **Files**:
   - `repository/botopink-lang/modules/compiler-core/src/comptime/runtime/persistent_erlang.zig` (NEW, ~200 LOC) — Zig client to a long-lived `escript` runner. Mirrors `persistent_node.zig`'s singleton + spinlock + length-prefixed protocol.
   - `repository/botopink-lang/modules/compiler-core/src/comptime/runtime/persistent_erlang_runner.escript` (NEW, ~80 LOC) — embedded Erlang script that reads scripts from stdin, dynamically compiles each one via `compile:forms/2`, loads via `code:load_binary/3`, runs `Module:main(ok)` with a captured group_leader, and emits length-prefixed stdout. The escript source is embedded as a Zig comptime string (same approach as `persistent_node.zig`'s embedded `runner_js`).

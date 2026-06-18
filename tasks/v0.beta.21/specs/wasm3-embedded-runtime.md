@@ -1,7 +1,7 @@
 # wasm3-unified-runtime — replace `wasmtime` CLI + the 4 comptime-val runtimes with a single embedded `wasm3` path
 
 **Slug**: wasm3-unified-runtime
-**Depends on**: nothing — file-disjoint with `template-static-fold` and `persistent-erlang-ipc` at the source level. This spec **supersedes** `persistent-erlang-ipc` (its goal — kill Erlang spawn — is achieved here at a deeper layer). It also **deletes** the four-runtime architecture introduced by `comptime/eval.zig`'s `Runtime` enum: `node`, `erlang`, `wasm`, `beam` collapse to a single wasm3-hosted WASM execution path.
+**Depends on**: nothing — file-disjoint with `persistent-erlang-ipc` at the source level. This spec **supersedes** `persistent-erlang-ipc` (its goal — kill Erlang spawn — is achieved here at a deeper layer). It also **deletes** the four-runtime architecture introduced by `comptime/eval.zig`'s `Runtime` enum: `node`, `erlang`, `wasm`, `beam` collapse to a single wasm3-hosted WASM execution path. Template/decorator evaluation continues via Node until the follow-up `templates-decorators-botopink-native.md` migrates them to the same wasm3 pipeline.
 **Files**:
   - `repository/botopink-lang/vendor/wasm3/` (NEW directory, ~50KB of C). Vendored upstream wasm3 source at a pinned tag (≥ v0.5.0). Include `source/*.{c,h}` + upstream `LICENSE` + `README.md`. Strip the rest of the upstream tree (it ships demo platforms / toolchains we don't need).
   - `repository/botopink-lang/modules/compiler-core/src/comptime/runtime/wat_to_wasm.zig` (NEW, ~600 LOC). Pure-Zig WAT (WebAssembly Text) → binary `.wasm` parser/compiler. Tokenises `(module …)` S-expressions, lowers each `(func …)` to typed bytecode, emits the binary module per the [WebAssembly binary format spec](https://webassembly.github.io/spec/core/binary/). Scope: exactly the subset the existing WAT emitter (`comptime/runtime/wasm.zig:buildScript`) produces — no proposal features, no SIMD, no GC types. ~600 LOC because the binary spec is mechanical: section-by-section walk + LEB128 + type table + opcode tables.
@@ -294,7 +294,6 @@ build ---- Linux + macOS + Windows compile + link wasm3 C sources without warnin
 - **Wasm3 maturity.** Used in production by Apple, Intel automotive, Shopify Functions (early), various IoT vendors since 2019. ~50KB binary, no allocator surprises, no JIT (deterministic startup), interpreter-only (consistent perf across all CPU architectures).
 - **Out of scope (separate v0.beta.21 specs):**
   - **`templates-decorators-botopink-native.md`** — the natural follow-up. Migrates `template_eval.zig` and `decorator_eval.zig` off Node by completing the WAT backend so it can compile template/decorator bodies. After that ships, `persistent_node.zig` is deleted and Node is no longer a compiler dependency at all.
-  - `template-static-fold.md` — orthogonal optimisation (constant-fold simple templates at AST level, never invoke any eval).
   - Codegen-execution path (`codegen/runtime.zig:executeJavaScript`, `executeErlang`, `executeBeamAsm`) — these run the GENERATED user program for RUN LOG capture in snapshots. They're separate from comptime evaluation. `executeWat` switches to wasm3 in this spec (F4); the JS / Erlang / BEAM ones stay where they are.
 - **Exit gate (full spec):**
   - `Runtime` enum deleted from the codebase (`comptime/eval.zig`).
