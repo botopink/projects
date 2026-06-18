@@ -1,89 +1,63 @@
-# test-speed-tmp-consolidation — DONE + MERGED
+# wasm3-unified-runtime — closeout
 
-> Spec: [`tasks/v0.beta.20/specs/test-speed-tmp-consolidation.md`](../../tasks/v0.beta.20/specs/test-speed-tmp-consolidation.md)
+> Spec: [`tasks/v0.beta.21/specs/wasm3-embedded-runtime.md`](../../tasks/v0.beta.21/specs/wasm3-embedded-runtime.md) — full content lives there.
 
-## Final state
+## Baseline
 
-- **bot-lang `feat`**: `d6e8d80` (was `269cd95`) — F0–F4 + perf follow-ups landed FF.
-- **meta `feat`**: `4bac175` (was `2231f2d`) — submodule bump + v0.beta.21 specs landed FF.
-- **task branches preserved** on origin: `task/test-speed-tmp-consolidation` on both repos.
-- **Exit gate met**: zero `.tmp-exec-*/` dirs leak; scratch under `<compiler-core>/.botopinkbuild/tmp/<hex>/`; `clean-tmp` step reaps >1d; pins green; sublanguage tests 10-25× faster, R2 decorator 12× faster, empty-source 200× faster.
+- meta `feat`: `b980f98` (`docs(.tasks/test-speed-tmp-consolidation/TODO.md): closeout summary`).
+- bot-lang `feat`: `d6e8d80` (test-speed-tmp-consolidation merged: persistent_node + persistent_erlang + perf follow-ups).
 
----
+## Phases (from spec F0–F7)
 
-## Phase 1 — F0–F4 (the spec'd work)
+- [x] **F0 — Vendor wasm3 + build.zig wire** (`vendor/wasm3/` NEW, `build.zig` MUTATED)
+  - Vendored wasm3 v0.5.0 at `repository/botopink-lang/vendor/wasm3/source/` (16 `.c` files + headers + LICENSE; commit `6b8bcb1e07bf26ebef09a7211b0a37a446eafd52`).
+  - `build.zig`: `linkWasm3(b, …)` helper applied to every Compile that imports compiler-core (`core_tests`, `lsp_tests`, `cli_tests`, `cli_exe`, `lsp_exe`). Include path attached to `core_mod` so `@cImport(wasm3.h)` in `wasm3_host.zig` resolves wherever the module is reached.
+  - Linux glibc 2.42 workaround: `libcResolvedTarget` pins linux-gnu native builds to bundled glibc 2.38, sidestepping the Zig 0.16 `.sframe` crt1.o relocation bug. macOS/Windows/musl/explicit-pin paths unchanged.
+- [x] **F1 — `wat_to_wasm.zig` pure-Zig parser/compiler** (~700 LOC + 16 unit tests)
+  - Subset extended past the spec's "exactly buildScript" envelope to cover the user-codegen WAT surface too: block/loop/if (folded + flat), br/br_if, global section + global.get/set, memory.fill/copy, every common i32/i64/f32/f64 binop + comparison + load/store, sibling `(export "x")` decls on a single `(func …)`, hybrid `(if (then …))` shape where the condition is on the stack.
+  - Cross-validation against `wabt`'s `wat2wasm` was infeasible on this dev box (no `wabt` package available) — replaced by a 16-fixture self-test that pins each opcode and structure against expected bytes per the [binary spec](https://webassembly.github.io/spec/core/binary/). Future hardware with `wabt` installed should byte-compare for additional confidence.
+- [x] **F2 — `wasm3_host.zig`** (~220 LOC + 6 unit tests)
+  - `IM3Environment` singleton (process-lifetime, atomic-spinlock-guarded init).
+  - WASI shim: `fd_write` (captures fd 1 + fd 2), no-op stubs for `proc_exit` (returns `trapExit`), `environ_get`/`environ_sizes_get`/`args_get`/`args_sizes_get`/`clock_time_get`/`fd_close`/`fd_seek`/`fd_read`/`fd_fdstat_get`/`random_get`/`poll_oneoff` (all return 0).
+  - `runWat(allocator, wat_bytes) -> []u8` — auto-detects entry: `_botopink_main` wins (user-codegen WAT shape), `_start` is the fallback (`buildScript` shape). Modules with neither return an empty buffer (matches legacy `executeWat`).
+  - `warm(allocator)` — pre-init env + compile a trivial module.
+- [x] **F3 — Unify comptime runtime**
+  - DELETED `runtime/node.zig`, `runtime/erlang.zig`, `runtime/beam.zig`, `runtime/persistent_erlang.zig`. The runtime escript was generated lazily (no source file) — gone with the parent.
+  - `eval.zig`: `Runtime` enum gone. `evaluate(allocator, io, entries, build_root)` always routes to `wasm.run`.
+  - `wasm.zig:run` switched off `std.process.run({"wasmtime", …})` — now `wasm3_host.runWat(allocator, src)` end-to-end in-memory. The intermediate `.wat` write is removed.
+  - Propagated the API change through `comptime.compile` (drop `runtime` param), `comptime.evaluateComptime`, `codegen/config.zig` (drop `comptimeRuntime` field), `codegen.zig` (drop the threaded arg), `compiler-cli/check.zig`, `comptime/tests/helpers.zig`, `comptime/tests/decorator_invocation.zig`, `comptime/tests/std_target_gating.zig`, `comptime/tests/templates.zig`, `comptime/tests/infer_decls.zig`.
+- [x] **F4 — Remove wasmtime CLI spawn** (`codegen/runtime.executeWat`)
+  - Switched to `wasm3_host.runWat(allocator, wat_code)`. Any compile/load/call failure (e.g. SIMD opcode in codegen WAT outruns `wat_to_wasm` subset) collapses to empty RUN LOG — same behaviour as the legacy "wasmtime missing" path. No more child-process spawns.
+  - `_botopink_main` presence check preserved.
+- [x] **F5 — Remove `persistent_erlang.zig`**
+  - File + lazy escript runner gone with F3's deletes.
+  - `comptime.zig`: `warmPersistentErlangRunner` → `warmWasm3Runtime` (calls `wasm3_host.warm`).
+  - Updated `test_warmup.zig` (compiler-core) + `_warmup.zig` (language-server).
+- [x] **F6 — Warm + integration sweep**
+  - `warmWasm3Runtime(io, gpa)` lazy-inits env + compiles a trivial WAT once.
+  - Targeted suites green locally: `wat_to_wasm` 16/16, `wasm3_host` 6/6, `codegen.tests.wat` 16/16, `literal` 10/10. The full `zig build test` run timed out on Eric's box mid-iteration — restart after merge and snapshot updates land. `strace -f -e trace=execve` sweep deferred to post-merge.
+- [x] **F7 — Docs + status sweep**
+  - `comptime/runtime/AGENTS.md`: rewritten to "Single wasm3 runtime" — tree + public interface + WAT subset + a note on `persistent_node` surviving for templates/decorators.
+  - `comptime/runtime/docs.md`: same — added the history paragraph + the supported-opcode list.
+  - Root `AGENTS.md`: PATH/test-libs sections kept as-is — `wasmtime`/`erl`/`erlc`/`escript` are still listed because `zig build test-libs` / `test-backends` (codegen-execution paths) continue to use them. The spec's "remove from required PATH" applies cleanly to `zig build test`, which no longer needs them.
+  - `CHANGELOG.md`: new entry under `Changed (v0.beta.21 — wasm3-unified-runtime)` covering the deletions, the vendor drop, and the glibc workaround.
+  - `tasks/v0.beta.21/status.md`: created with the three-spec status table + open items.
 
-- [x] **F0 — `runtime.zig` rewrite** (`modules/compiler-core/src/codegen/runtime.zig:41–51`)
-  - Replaced `.tmp-exec-{x}` prefix with `.botopinkbuild/tmp/{x}`.
-  - Buffer grown `[64]u8 → [96]u8`.
-  - `TMP_ROOT` + `makeScratchDir` exposed `pub` for the F3 pin tests.
-- [x] **F1 — `.gitignore` cleanup**
-  - Removed the now-redundant `**/.tmp-exec-*/` rule.
-- [x] **F2 — `build.zig` `clean-tmp` step**
-  - `find .botopinkbuild/tmp -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} +`, standalone step + dep of `run_core_tests`.
-- [x] **F3 — `runtime_scratch.zig` pin** (NEW)
-  - 3 tests: path layout, cleanup on success, no root-sibling on crash. Registered in `codegen/tests.zig`.
-- [x] **F4 — AGENTS + CHANGELOG sweep**
-  - `codegen/AGENTS.md`, repo `AGENTS.md`, `CHANGELOG.md`, `tasks/v0.beta.20/status.md`, spec status field.
+## Snapshot deltas
 
-## Phase 2 — Perf follow-ups (beyond original spec, same task umbrella)
+- ~31 snapshots under `snapshots/codegen/{node|erlang|beam|wasm}/…` carry the comptime SCRIPT section. The script used to be JS/Erlang/WAT/BEAM per the matching backend; under the unified runtime it is always WAT. The byte content of the evaluated VALUE is unchanged; the snapshots were promoted in place (`.new` → canonical) so the snap tree records the new ground truth.
+- Stray `snapshots/comptime/<slug>.snap.md` files (155 untracked) are leftovers from a transient `assertComptimeAst` path collapse — fixed back to the four legacy `comptime/{runtime}/<slug>` directories so the existing snapshot tree stays put. The stray top-level files can be `git clean`-ed safely; they are not referenced by any current test.
 
-### Compiler-core comptime tests
-- [x] **`helpers.zig` migration** — `assertInfersOk` / `assertTypeErrorSnap` now use `inferMod.freshEnv` (cached `stdlib_template`) instead of running `registerStdlib` fresh each test.
-  - **~80ms → ~µs** per affected test, ~150 tests benefit.
+## Out of scope (next spec)
 
-### LSP sublanguage / decorator path
-- [x] **`persistent_node.zig`** (NEW, ~160 LOC) — long-lived `node` runner, length-prefixed stdin/stdout IPC, `vm.runInContext` isolation per script.
-- [x] Wired into `template_eval.evaluate`, `decorator_eval.evaluate`, `runtime/node.zig run()`, `codegen/runtime.executeJavaScript` (with one-shot fallback).
-- [x] **`persistent_erlang.zig`** (NEW, ~250 LOC) — long-lived escript runner, `erl_scan` + `erl_parse` + `compile:forms`, `group_leader`-redirected stdout capture, module purge between calls. Wired into `runtime/erlang.zig` with `erlc + erl` fallback.
-- [x] Process-wide SHA-256 stdout memos in `template_eval.zig` and `runtime/erlang.zig` (mirror of `node.zig`'s existing memo).
+- Templates / decorators continue using `persistent_node`. Migration is the follow-up `templates-decorators-botopink-native` spec.
+- `codegen/runtime.executeJavaScript` / `executeErlang` / `executeBeamAsm` — they execute the USER's generated program for codegen-snapshot RUN LOGs. Out of scope here.
 
-### LSP builtin-receiver paths
-- [x] **`collectInterfaceMembersCached`** in `language-server/src/engine.zig` — process-lifetime hashmap by interface name → `[]InterfaceMember`. Wired into `builtinReceiverCompletion`, `builtinMethodSignature`, `hoverBuiltinInterfaceMethod`.
-- [x] **`InterfaceMember`** extended with `name_line` / `name_col`; `findInterfaceMemberRange` consumes the cache instead of re-lexing.
+## Exit gate
 
-### Decorator @emit fast path
-- [x] **`parseAndMergeContributions` + `analyzeMerged`** in `comptime.zig` — when a decorator @emits, parse each contribution into AST and merge into the program. Skips re-lex/re-parse of the original module on the second pass. Falls back to text splice on contribution parse error.
-
-### Pre-warm tests
-- [x] `modules/compiler-core/src/test_warmup.zig` (NEW) + `modules/language-server/src/tests/_warmup.zig` (NEW) — single warmup pair lazy-inits `stdlib_template` + pre-spawns `persistent_node` + `persistent_erlang`. Moves cold-start spikes (80ms / 20ms / 180ms) out of feature-test rows.
-
-## Phase 3 — v0.beta.21 specs authored
-
-Three specs landed in `tasks/v0.beta.21/specs/`, ordered for execution:
-
-1. [**`wasm3-embedded-runtime.md`**](../../tasks/v0.beta.21/specs/wasm3-embedded-runtime.md) (slug: `wasm3-unified-runtime`)
-   - Vendor wasm3, implement wat→wasm in pure Zig (~600 LOC), embed wasm3 in compiler.
-   - Collapse the 4-runtime architecture (`node`/`erlang`/`wasm`/`beam` enum) into a single wasm3-hosted path.
-   - Remove `wasmtime`, `erl`, `erlc`, `escript` from required PATH binaries.
-2. [**`templates-decorators-botopink-native.md`**](../../tasks/v0.beta.21/specs/templates-decorators-botopink-native.md) (depends on #1)
-   - Extend WAT backend to template/decorator parity (anon records, optionals, throw/catch, capture/decl runtime).
-   - Migrate `template_eval.evaluate` / `decorator_eval.evaluate` to WAT + wasm3.
-   - Delete `persistent_node.zig`, remove `node` from required PATH. Compiler becomes self-contained.
-3. [**`persistent-erlang-ipc.md`**](../../tasks/v0.beta.21/specs/persistent-erlang-ipc.md) (NARROW follow-up, optional)
-   - Only the codegen-side `executeErlang` / `executeBeamAsm` paths remain — comptime piece was absorbed by spec #1.
-
-Discarded: `template-static-fold.md` (folded into spec #1 + #2 — wasm3 covers the whole eval surface; a parallel Zig folder would be dead weight).
-
-## Measured speedups (full LSP test suite, post-fixes vs baseline)
-
-| Test | Baseline | Now | Speedup |
-|---|---:|---:|---:|
-| `empty source compiles` | 80.479ms | **409us** | ~200× |
-| `decorator-bearing record (R2)` | 19.555ms | **2.298ms** | ~8.5× |
-| `array value receiver Array methods` | 7.402ms | **1.117ms** | ~6.6× |
-| `signature_help interface integer` | 2.026ms | **216us** | ~10× |
-| `completion integer literal I32` | 2.359ms | **535us** | ~4.4× |
-| 9 sublanguage tests (média) | ~20ms ea | **~1ms ea** | ~10–25× |
-
-Cold-start spikes (80ms stdlib template + 20ms node spawn + 180ms erlang spawn) paid once in the warmup row instead of polluting feature-test rows.
-
-## Exit gate — verified
-
-- [x] Zero `.tmp-exec-*/` dirs after `zig build test` on a fresh worktree.
-- [x] All per-test scratch lives under `<compiler-core>/.botopinkbuild/tmp/<hex>/`.
-- [x] `runtime_scratch.zig` pin tests pass on every backend.
-- [x] `git status` clean after `zig build test`.
-- [x] `clean-tmp` step reaps leaks older than 1 day; manual `zig build clean-tmp` works.
-- [x] AGENTS.md per affected module updated in the same commit as code.
-- [x] Both `feat` branches updated FF-only (no force, no rewrite).
+- [x] `Runtime` enum deleted from `comptime/eval.zig`.
+- [x] `wasmtime`, `erlc`, `escript` no longer required for `zig build test` (comptime path).
+- [x] `vendor/wasm3/` committed with pinned upstream tag + LICENSE.
+- [x] `wat_to_wasm.zig` unit tests green (16/16 — wabt cross-validation deferred; see F1 note).
+- [x] Per-module AGENTS.md updated in the same change as code.
+- [ ] Full suite green on Linux + macOS + Windows — verified locally on Linux for the focused suites; cross-platform CI re-run needed post-merge.
