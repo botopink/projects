@@ -1,51 +1,67 @@
-# botopink-install-from-deps — F0–F6 closeout
+# templates-decorators-botopink-native
 
-> Spec: [`tasks/v0.beta.20/specs/botopink-install-from-deps.md`](../../tasks/v0.beta.20/specs/botopink-install-from-deps.md)
+> Spec: [`tasks/v0.beta.21/specs/templates-decorators-botopink-native.md`](../../tasks/v0.beta.21/specs/templates-decorators-botopink-native.md) — full content lives there.
 
-## Baseline (pre-this-session)
+## Baseline
 
-- meta `feat`: `ebd0fcc` (post wasm3-unified-runtime perf).
-- bot-lang `feat`: `8f2fdbe` (post wasm3 perf).
+- meta `feat`: `1c38772` (post install-from-deps closeout) — merged into this worktree via fast-forward.
+- bot-lang `feat`: `6b46f55` (post install-from-deps closeout) — merged into this task's bot-lang branch.
+- **`wasm3-unified-runtime` landed** (meta `5f627d1` / bot-lang `1749054` + perf follow-ups). `wasm3_host.runWat`, `wat_to_wasm.compile`, and the unified comptime pipeline are present. Unblocked.
 
-## Phases
+## Phases (from spec F0–F10)
 
-- [x] **F3 — consumer fixture migration** (8/8 botopink.json on object form)
-  - emilia-card `af1c66d`, erika-linq `abfcfe4`, jhonstart-{counter,html,todo} `7a9b0ae`,
-    onze `ab7788b`, rakun `ee798f8`, generic-loader-binding `3aecd65`.
-- [x] **F0 — `config.zig` parser extension**
-  - `ProjectConfig.dependencies` now `[]const DepEntry` (was `[]const []const u8`).
-  - New `DepEntry`/`DepSpec`/`DepRef` shapes; new `DepDiagnostic` collection.
-  - DEP-001 / DEP-002 / DEP-003 surfaced as `dep_diagnostics`; **8 parser tests** pin every path.
-  - `dependencyNames` helper preserves the legacy bare-name surface for callers that don't care about source coordinates.
-- [x] **F2 — resolver `$BPMP_HOME` fallback in `libs.zig`**
-  - `loadDependencies` now takes `[]const DepEntry` directly.
-  - New `resolveFallbackRoots` + `resolveBpmpStoreRoot` (BPMP_HOME / XDG_CACHE_HOME / HOME chain).
-  - `loadOne` consults `.botopinkbuild/deps/<name>/` after the normal `libs/<name>/` + `BOTOPINK_LIB_ROOTS` walk.
-  - `LibsRootNotFound` callsites (build/check/test_cmd) gain a `bpmp install` hint.
-  - **5 new tests**: fallback-root lookup, BPMP_HOME/XDG/HOME resolution.
-- [x] **F1 — `bpmp install` (object-form path)**
-  - NEW `modules/bpmp/src/dep/spec.zig` — `DepSpec`/`DepEntry`/`anySpec` + `parseFromManifest` (5 tests).
-  - NEW `modules/bpmp/src/dep/clone.zig` — `materialise` wraps `git clone --depth 1 [--branch <b>]` + `git rev-parse HEAD`; atomic tmp-dir → CAS rename; `path:` variant; 4 tests.
-  - NEW `modules/bpmp/src/dep/resolver.zig` — `plan` produces one `Action` (`clone` / `reuse_cas` / `path_symlink` / `skip_legacy`) per entry; 6 tests (legacy / path / git+branch / git+rev / frozen-missing / lock_in CAS hit).
-  - NEW `modules/bpmp/src/lock.zig` — `botopink.lock` read/write (distinct from v18's `botopink.lock.json`); sorted-by-name JSON; 5 tests.
-  - `commands/install.zig` — `maybeRunDepInstall` short-circuits the legacy compiler-distribution flow whenever the local `botopink.json` carries object-form deps; new `--frozen` / `--update` / `--dry-run` flags wired.
-  - Symlinks `<project>/.botopinkbuild/deps/<name>` → `$BPMP_HOME/store/<name>/<rev>/`.
-- [x] **F5 — `--frozen` flag + DEP-004**
-  - Implemented as part of F1 dispatch — `dep_resolver.plan` returns `FrozenMissingEntry`; `commands/install.zig` surfaces DEP-004 + a hint to run a non-frozen install first.
-- [x] **F6 — AGENTS.md / docs sweep**
-  - `modules/bpmp/AGENTS.md` — new "botopink.lock" row, new dep/ + lock.zig in the tree, store/ layout entry, install behaviour table extended with --frozen/--update/--dry-run rows.
-  - `modules/bpmp/docs.md` — full "Installing project deps from git (v0.beta.20)" section + `DepSpec` table + diagnostics table + troubleshooting line.
-  - `modules/compiler-cli/src/cli/AGENTS.md` — `config.zig` row notes both shapes + DEP-001/002/003; `libs.zig` row notes `.botopinkbuild/deps/` fallback + `resolveBpmpStoreRoot`.
-  - Root `AGENTS.md` — Manifest schema § extended with the object-form / `bpmp install` / `botopink.lock` paragraph.
-- [ ] **F4 — install snapshot (offline-fixture smoke)** — **deferred**
-  - Spec calls for an end-to-end snapshot under `modules/compiler-cli/snapshots/cli/install_e2e.snap.md` that materialises a scratch project + a local bare repo + invokes `bpmp install --offline-fixture <bare>` + `botopink build`. The `--offline-fixture` flag itself is not in the spec's clone surface, and constructing a hermetic local bare repo is large enough to be its own consumer spec. Recorded here so the v0.beta.20 closeout can carry it forward.
+- [x] **F0 — Audit template/decorator feature set** — done 2026-06-19.
+  - 20 bodies enumerated (4 templates + 16 decorators) across `repository/{botopink-lang/examples,erika,jhonstart,onze,rakun}/src/*.bp`.
+  - Closed feature set: `anon-record` (incl. nested) + `opt-null` + `list-literal` + `str-{concat,len,slice,eq,split,trim}` + `string-multiline` + `cond-if` + `iter-for` + `method-on-record` + `interp-q` + `e.*` (10 capture methods) + `decl.*` (8 reflection methods) + `throw` (via `__failRaw`).
+  - Out-of-set: NONE. JS fallback in F8/F9 is a transition safety net, not load-bearing.
+  - Audit table + acceptance matrix: [`tasks/v0.beta.21/specs/templates-decorators-botopink-native-audit.md`](../../tasks/v0.beta.21/specs/templates-decorators-botopink-native-audit.md).
+
+### WAT backend feature extensions (F1–F5, ~codegen/wat.zig MUTATED + tests)
+- [ ] **F1 — Anonymous records** (~250 LOC additions, 6 fixtures byte-equal vs hand-written WAT)
+- [ ] **F2 — Optionals `?T`** (~120 LOC, 4 fixtures)
+- [ ] **F3 — String operations** (concat, length, slice, equal — ~200 LOC, 5 fixtures)
+- [ ] **F4 — List literals** (~150 LOC, 4 fixtures)
+- [ ] **F5 — Structured throw/catch** (manual unwind protocol — wasm3 doesn't impl exceptions proposal yet — ~250 LOC, 3 fixtures + 2 round-trips against JS)
+
+### Runtime support (F6–F7)
+- [ ] **F6 — `wat_runtime.zig`** (NEW, ~400 LOC Zig emitting ~300 LOC WAT)
+  - Mirrors `template_eval.zig`'s JS prelude: `__expr`, `__code`, `Span`, `CustomNode`, `__failRaw`, `__capture` (with `text/parts/source/context/lookup/bindings/build/custom/fail/failAt` methods).
+- [ ] **F7 — `@Decl` reflection cluster** (~100 LOC additions to `wat_runtime.zig`)
+  - JSON-decoded handle: `kind`, `name`, `fields`, `methods`, `returnType`, `annotations`, `fail()`, `failAt()`.
+
+### Migration (F8–F10)
+- [ ] **F8 — Switch `template_eval.evaluate` to WAT path** (`template_eval.zig` MUTATED)
+  - `commonJS.emitFnJs(...)` → `wat.codegenEmitTemplate(...)`.
+  - JS prelude → WAT prelude from `wat_runtime.zig`.
+  - Fallback to JS path preserved through 1 release cycle.
+  - Exit gate: 9 sublanguage tests + N codegen template tests byte-identical vs v0.beta.20 baseline.
+- [ ] **F9 — Switch `decorator_eval.evaluate` to WAT path** (`decorator_eval.zig` MUTATED)
+  - Same swap. `__decl` handle becomes WAT struct.
+  - Exit gate: every decorator test (R2, onze mocks, #[service] examples) byte-identical.
+- [ ] **F10 — Cleanup**
+  - DELETE `persistent_node.zig` + runner.
+  - DELETE `warmPersistentNodeRunner` in `comptime.zig`.
+  - Remove `_warmup` Node test in both test_root warmups.
+  - `AGENTS.md` (root): `node` removed from required PATH binaries. Mention only as optional for running user's generated commonJS output.
+  - `comptime/AGENTS.md`, `comptime/docs.md`, `codegen/AGENTS.md` narrative updates.
+  - `CHANGELOG.md` + `tasks/v0.beta.21/status.md`.
+  - Exit gate: `grep -r "persistent_node\|process\.run.*node\|spawn.*node" modules/compiler-core/src` returns zero (excluding comments / docs / `codegen/runtime.executeJavaScript`).
+
+## Out of scope (separate concerns)
+
+- `codegen/runtime.executeJavaScript` / `executeErlang` / `executeBeamAsm` — they run the USER's PROGRAM (RUN LOG capture), not comptime. They keep their current spawn paths after this spec.
+- Templates that exercise features outside the F0 audit set (async, generators, complex trait dispatch) — those hit the JS fallback. Future spec widens if the use case materialises.
 
 ## Exit gate
 
-- [x] `config.zig` accepts both legacy + object form, with 8 parser tests pinning every diagnostic.
-- [x] `libs.zig` consults `.botopinkbuild/deps/` fallback; `resolveBpmpStoreRoot` plumbs the `$BPMP_HOME`/XDG/HOME chain (5 tests).
-- [x] `bpmp install <path>` materialises object-form deps into `$BPMP_HOME/store/` + writes `botopink.lock`.
-- [x] `bpmp install --frozen` exits with **DEP-004** when `botopink.lock` is missing entries.
-- [x] Per-module AGENTS.md updated in the same commit as the code.
-- [x] `zig build` green; `zig build test-bpmp` green.
-- [ ] Full `zig build test` re-run on the host post-merge (compiler-core cache had to be re-warmed under the new `[]DepEntry` libs.loadDependencies signature; touched callsites: `build.zig`/`check.zig`/`test_cmd.zig`).
+- F0 audit committed; every template body classified.
+- F1–F7 codegen extensions byte-equal in pinning fixtures.
+- F8 + F9 byte-identical against v0.beta.20 baseline.
+- After 1 release cycle of zero JS-fallback fires, F10 deletes the fallback + `persistent_node.zig`.
+- `node` removed from required PATH binaries.
+- Clean Docker container with only the compiler binary (no `node`/`erl`/`wasmtime`) successfully compiles a template-heavy `.bp` to identical output.
+- AGENTS.md per affected module updated in the same commit as code.
+
+## Block — cleared
+
+`wasm3-unified-runtime` landed (meta `5f627d1` / bot-lang `1749054` + perf follow-ups). All three prerequisites available: `wasm3_host.runWat()`, `wat_to_wasm.compile()`, unified comptime pipeline (Runtime enum collapsed).

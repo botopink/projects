@@ -5,7 +5,7 @@
 | Spec | Slug | State |
 |---|---|---|
 | [`wasm3-embedded-runtime`](specs/wasm3-embedded-runtime.md) | `wasm3-unified-runtime` | in progress — F0–F5 + docs done on `task/wasm3-unified-runtime`; F6 (full `zig build test` sweep) pending; F7 docs partially in (CHANGELOG + runtime/AGENTS.md + runtime/docs.md updated; repo-root AGENTS.md PATH section kept since `test-libs`/`test-backends` still need the runtimes for codegen-execution). |
-| [`templates-decorators-botopink-native`](specs/templates-decorators-botopink-native.md) | `templates-decorators-botopink-native` | pending — depends on `wasm3-embedded-runtime`. |
+| [`templates-decorators-botopink-native`](specs/templates-decorators-botopink-native.md) | `templates-decorators-botopink-native` | in progress on `task/templates-decorators-botopink-native` — block cleared by `wasm3-unified-runtime`. F0 (audit) done — 20 bodies enumerated in [`templates-decorators-botopink-native-audit.md`](specs/templates-decorators-botopink-native-audit.md); zero out-of-set features. F1–F10 pending. |
 | [`persistent-erlang-ipc`](specs/persistent-erlang-ipc.md) | `persistent-erlang-ipc` | **superseded** by `wasm3-embedded-runtime` (persistent_erlang.zig deleted at the comptime layer). The narrow codegen-execution Erlang IPC piece (`executeErlang` / `executeBeamAsm`) remains pending and is now the spec's only deliverable. |
 
 ## Open items on the wasm3 spec
