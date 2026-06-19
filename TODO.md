@@ -1,51 +1,71 @@
-# botopink-install-from-deps — F0–F6 closeout
+# wat-refactor — F2 (record layout) + F3 (`?.`) + F4 (snapshots) + F5 (AGENTS) — DONE
 
-> Spec: [`tasks/v0.beta.20/specs/botopink-install-from-deps.md`](../../tasks/v0.beta.20/specs/botopink-install-from-deps.md)
+> Spec: [`tasks/v0.beta.20/specs/frente-a.md`](../../tasks/v0.beta.20/specs/frente-a.md) (search for `wat-refactor`).
 
 ## Baseline (pre-this-session)
 
-- meta `feat`: `ebd0fcc` (post wasm3-unified-runtime perf).
-- bot-lang `feat`: `8f2fdbe` (post wasm3 perf).
+- meta `feat`: `1c38772` (post merge with install-from-deps F0–F6 + wasm3-unified-runtime closeout).
+- bot-lang `feat`: `6b46f55` (install-from-deps F0–F6 closeout atop wasm3).
+- **F1 (void classifier) already landed**: bot-lang `3790c0f`.
 
-## Phases
+## Closed phases
 
-- [x] **F3 — consumer fixture migration** (8/8 botopink.json on object form)
-  - emilia-card `af1c66d`, erika-linq `abfcfe4`, jhonstart-{counter,html,todo} `7a9b0ae`,
-    onze `ab7788b`, rakun `ee798f8`, generic-loader-binding `3aecd65`.
-- [x] **F0 — `config.zig` parser extension**
-  - `ProjectConfig.dependencies` now `[]const DepEntry` (was `[]const []const u8`).
-  - New `DepEntry`/`DepSpec`/`DepRef` shapes; new `DepDiagnostic` collection.
-  - DEP-001 / DEP-002 / DEP-003 surfaced as `dep_diagnostics`; **8 parser tests** pin every path.
-  - `dependencyNames` helper preserves the legacy bare-name surface for callers that don't care about source coordinates.
-- [x] **F2 — resolver `$BPMP_HOME` fallback in `libs.zig`**
-  - `loadDependencies` now takes `[]const DepEntry` directly.
-  - New `resolveFallbackRoots` + `resolveBpmpStoreRoot` (BPMP_HOME / XDG_CACHE_HOME / HOME chain).
-  - `loadOne` consults `.botopinkbuild/deps/<name>/` after the normal `libs/<name>/` + `BOTOPINK_LIB_ROOTS` walk.
-  - `LibsRootNotFound` callsites (build/check/test_cmd) gain a `bpmp install` hint.
-  - **5 new tests**: fallback-root lookup, BPMP_HOME/XDG/HOME resolution.
-- [x] **F1 — `bpmp install` (object-form path)**
-  - NEW `modules/bpmp/src/dep/spec.zig` — `DepSpec`/`DepEntry`/`anySpec` + `parseFromManifest` (5 tests).
-  - NEW `modules/bpmp/src/dep/clone.zig` — `materialise` wraps `git clone --depth 1 [--branch <b>]` + `git rev-parse HEAD`; atomic tmp-dir → CAS rename; `path:` variant; 4 tests.
-  - NEW `modules/bpmp/src/dep/resolver.zig` — `plan` produces one `Action` (`clone` / `reuse_cas` / `path_symlink` / `skip_legacy`) per entry; 6 tests (legacy / path / git+branch / git+rev / frozen-missing / lock_in CAS hit).
-  - NEW `modules/bpmp/src/lock.zig` — `botopink.lock` read/write (distinct from v18's `botopink.lock.json`); sorted-by-name JSON; 5 tests.
-  - `commands/install.zig` — `maybeRunDepInstall` short-circuits the legacy compiler-distribution flow whenever the local `botopink.json` carries object-form deps; new `--frozen` / `--update` / `--dry-run` flags wired.
-  - Symlinks `<project>/.botopinkbuild/deps/<name>` → `$BPMP_HOME/store/<name>/<rev>/`.
-- [x] **F5 — `--frozen` flag + DEP-004**
-  - Implemented as part of F1 dispatch — `dep_resolver.plan` returns `FrozenMissingEntry`; `commands/install.zig` surfaces DEP-004 + a hint to run a non-frozen install first.
-- [x] **F6 — AGENTS.md / docs sweep**
-  - `modules/bpmp/AGENTS.md` — new "botopink.lock" row, new dep/ + lock.zig in the tree, store/ layout entry, install behaviour table extended with --frozen/--update/--dry-run rows.
-  - `modules/bpmp/docs.md` — full "Installing project deps from git (v0.beta.20)" section + `DepSpec` table + diagnostics table + troubleshooting line.
-  - `modules/compiler-cli/src/cli/AGENTS.md` — `config.zig` row notes both shapes + DEP-001/002/003; `libs.zig` row notes `.botopinkbuild/deps/` fallback + `resolveBpmpStoreRoot`.
-  - Root `AGENTS.md` — Manifest schema § extended with the object-form / `bpmp install` / `botopink.lock` paragraph.
-- [ ] **F4 — install snapshot (offline-fixture smoke)** — **deferred**
-  - Spec calls for an end-to-end snapshot under `modules/compiler-cli/snapshots/cli/install_e2e.snap.md` that materialises a scratch project + a local bare repo + invokes `bpmp install --offline-fixture <bare>` + `botopink build`. The `--offline-fixture` flag itself is not in the spec's clone surface, and constructing a hermetic local bare repo is large enough to be its own consumer spec. Recorded here so the v0.beta.20 closeout can carry it forward.
+- [x] **F2 — record layout** (`modules/compiler-core/src/codegen/wat.zig`)
+  - Stable 4-byte slot offsets per declared field order (mirrors `beam_asm`'s
+    map-by-field-name shape but linearised — no `record_tag` header, the spec
+    test scenario doesn't need one and `recordTypeOfExpr` recovers the
+    type-name from let-bindings + fn return types + chained field types).
+  - `recv.field` / `self.field` now load `base + offset` via the new
+    `local_types: StringHashMap → record name` + `self_type` recovery
+    (codegen is untyped, this is a best-effort walk of decl-time annotations).
+  - `recv.field = v` / `recv.field += v` store at the same offset; `+=` uses
+    one `$__mem{n}` scratch for the load-add-store cycle.
+  - Tuple `t._N` indexes the same memory (already in place).
+  - **Record / struct member methods now emit** as `$<owner>_<method>`
+    linear-memory fns (`emitInterfaceMethods` / `emitStructMethods` /
+    `emitMemberFn`). A method body that references `self` without listing it
+    as a param gets an implicit `(param $self i32)` synthesised
+    (`bodyReferencesSelf`), so the bare `self.field` reads through a real
+    local instead of a `global.get $self` to a non-existent global.
+  - **Destructure `{ a, b } = Rec(...)`** now walks the record's declared
+    field order via `fieldOffsetIn`, so out-of-order destructuring
+    (`{ b, a } = R(7, 11)`) reads the right slot.
+- [x] **F3 — optional chaining `?.`** (`wat.zig`)
+  - `recv?.field` lowers to `local.tee $__mem{k}` + `i32.eqz` +
+    `(if (result i32) (then i32.const 0) (else local.get $__mem{k} i32.load offset=N))`.
+  - Matches the existing `?T` carrier shape (none = `i32.const 0`, some =
+    base pointer).
+  - Chained `a?.b?.c` composes through fresh scratch slots.
+- [x] **F4 — snapshot sweep**
+  - 25 wasm snapshots regenerated (record/struct/enum methods now emit real
+    method bodies; field access reads slots; field assign writes slots; `?.`
+    guards via `local.tee` + `if`).
+  - New fixtures pinned in `tests/wat.zig`:
+    - `wat: record field access by name loads at declared offset` —
+      `val r = R(a: 7, b: 11); @print(r.b);` lowers + runs → RUN LOG `11`.
+    - `wat: optional chaining on record null returns zero` —
+      `fn pick(maybe: ?R) -> i32 { return maybe?.b; }` pins the guard shape.
+- [x] **F5 — AGENTS.md sweep** (`modules/compiler-core/src/codegen/AGENTS.md`)
+  - `wat.zig` row updated: dropped the "named record-field access is
+    unsupported" / "`?.` can't be realised" `(KNOWN GAP)` clauses; pinned the
+    new record method emission + field access by name + `?.` guard pattern
+    + the implicit-self synthesis rule.
+
+## Out of scope (carried)
+
+- `wasm-test-runner` (separate consumer spec; depends on this — now
+  unblocked).
+- The `i32.mul` on `f64` record fields surfacing in regenerated snapshots
+  (e.g. `Vec2_lengthSq`) is a pre-existing wat-untyped-codegen limit, not a
+  regression of this spec.
+- The `Counter_inc` body lowers without an `i32.store` size suffix — pre-
+  existing, applies to all `+=` lowering.
 
 ## Exit gate
 
-- [x] `config.zig` accepts both legacy + object form, with 8 parser tests pinning every diagnostic.
-- [x] `libs.zig` consults `.botopinkbuild/deps/` fallback; `resolveBpmpStoreRoot` plumbs the `$BPMP_HOME`/XDG/HOME chain (5 tests).
-- [x] `bpmp install <path>` materialises object-form deps into `$BPMP_HOME/store/` + writes `botopink.lock`.
-- [x] `bpmp install --frozen` exits with **DEP-004** when `botopink.lock` is missing entries.
-- [x] Per-module AGENTS.md updated in the same commit as the code.
-- [x] `zig build` green; `zig build test-bpmp` green.
-- [ ] Full `zig build test` re-run on the host post-merge (compiler-core cache had to be re-warmed under the new `[]DepEntry` libs.loadDependencies signature; touched callsites: `build.zig`/`check.zig`/`test_cmd.zig`).
+- [x] `zig build test` green on the full suite (1352/1352 tests passed).
+- [x] `zig build test-backends` green — wasmtime executes the new
+  `record_field_access` fixture (RUN LOG `11`).
+- [x] F4 snapshots committed alongside the code.
+- [x] AGENTS.md updated in the same commit.
+- [x] No `--no-verify`; SSH for git per CLAUDE.md memory.
