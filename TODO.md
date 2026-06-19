@@ -1,51 +1,49 @@
-# botopink-install-from-deps — F0–F6 closeout
+# beam-inline-prim-methods (F1 / F2 / F3 — pick one, all file-disjoint)
 
-> Spec: [`tasks/v0.beta.20/specs/botopink-install-from-deps.md`](../../tasks/v0.beta.20/specs/botopink-install-from-deps.md)
+> Spec: [`tasks/v0.beta.20/specs/frente-a.md`](../../tasks/v0.beta.20/specs/frente-a.md) (search for `beam-inline-prim-methods`).
 
-## Baseline (pre-this-session)
+## Baseline
 
-- meta `feat`: `ebd0fcc` (post wasm3-unified-runtime perf).
-- bot-lang `feat`: `8f2fdbe` (post wasm3 perf).
+- meta `feat`: `1c38772`.
+- bot-lang `feat`: `6b46f55`.
+- Already landed on bot-lang `feat`:
+  - **F4** — 2-arg `slice` (`c635730`).
+  - **F5** — string `contains` (inline `binary:match`).
+  - **F6** — string `startsWith` (inline `binary:part`).
+- All 3 lowerings live in `modules/compiler-core/src/codegen/beam_asm.zig`.
 
-## Phases
+## Pending phases (each independent)
 
-- [x] **F3 — consumer fixture migration** (8/8 botopink.json on object form)
-  - emilia-card `af1c66d`, erika-linq `abfcfe4`, jhonstart-{counter,html,todo} `7a9b0ae`,
-    onze `ab7788b`, rakun `ee798f8`, generic-loader-binding `3aecd65`.
-- [x] **F0 — `config.zig` parser extension**
-  - `ProjectConfig.dependencies` now `[]const DepEntry` (was `[]const []const u8`).
-  - New `DepEntry`/`DepSpec`/`DepRef` shapes; new `DepDiagnostic` collection.
-  - DEP-001 / DEP-002 / DEP-003 surfaced as `dep_diagnostics`; **8 parser tests** pin every path.
-  - `dependencyNames` helper preserves the legacy bare-name surface for callers that don't care about source coordinates.
-- [x] **F2 — resolver `$BPMP_HOME` fallback in `libs.zig`**
-  - `loadDependencies` now takes `[]const DepEntry` directly.
-  - New `resolveFallbackRoots` + `resolveBpmpStoreRoot` (BPMP_HOME / XDG_CACHE_HOME / HOME chain).
-  - `loadOne` consults `.botopinkbuild/deps/<name>/` after the normal `libs/<name>/` + `BOTOPINK_LIB_ROOTS` walk.
-  - `LibsRootNotFound` callsites (build/check/test_cmd) gain a `bpmp install` hint.
-  - **5 new tests**: fallback-root lookup, BPMP_HOME/XDG/HOME resolution.
-- [x] **F1 — `bpmp install` (object-form path)**
-  - NEW `modules/bpmp/src/dep/spec.zig` — `DepSpec`/`DepEntry`/`anySpec` + `parseFromManifest` (5 tests).
-  - NEW `modules/bpmp/src/dep/clone.zig` — `materialise` wraps `git clone --depth 1 [--branch <b>]` + `git rev-parse HEAD`; atomic tmp-dir → CAS rename; `path:` variant; 4 tests.
-  - NEW `modules/bpmp/src/dep/resolver.zig` — `plan` produces one `Action` (`clone` / `reuse_cas` / `path_symlink` / `skip_legacy`) per entry; 6 tests (legacy / path / git+branch / git+rev / frozen-missing / lock_in CAS hit).
-  - NEW `modules/bpmp/src/lock.zig` — `botopink.lock` read/write (distinct from v18's `botopink.lock.json`); sorted-by-name JSON; 5 tests.
-  - `commands/install.zig` — `maybeRunDepInstall` short-circuits the legacy compiler-distribution flow whenever the local `botopink.json` carries object-form deps; new `--frozen` / `--update` / `--dry-run` flags wired.
-  - Symlinks `<project>/.botopinkbuild/deps/<name>` → `$BPMP_HOME/store/<name>/<rev>/`.
-- [x] **F5 — `--frozen` flag + DEP-004**
-  - Implemented as part of F1 dispatch — `dep_resolver.plan` returns `FrozenMissingEntry`; `commands/install.zig` surfaces DEP-004 + a hint to run a non-frozen install first.
-- [x] **F6 — AGENTS.md / docs sweep**
-  - `modules/bpmp/AGENTS.md` — new "botopink.lock" row, new dep/ + lock.zig in the tree, store/ layout entry, install behaviour table extended with --frozen/--update/--dry-run rows.
-  - `modules/bpmp/docs.md` — full "Installing project deps from git (v0.beta.20)" section + `DepSpec` table + diagnostics table + troubleshooting line.
-  - `modules/compiler-cli/src/cli/AGENTS.md` — `config.zig` row notes both shapes + DEP-001/002/003; `libs.zig` row notes `.botopinkbuild/deps/` fallback + `resolveBpmpStoreRoot`.
-  - Root `AGENTS.md` — Manifest schema § extended with the object-form / `bpmp install` / `botopink.lock` paragraph.
-- [ ] **F4 — install snapshot (offline-fixture smoke)** — **deferred**
-  - Spec calls for an end-to-end snapshot under `modules/compiler-cli/snapshots/cli/install_e2e.snap.md` that materialises a scratch project + a local bare repo + invokes `bpmp install --offline-fixture <bare>` + `botopink build`. The `--offline-fixture` flag itself is not in the spec's clone surface, and constructing a hermetic local bare repo is large enough to be its own consumer spec. Recorded here so the v0.beta.20 closeout can carry it forward.
+- [x] **F1 — `Array.join`** (BEAM) — `primJoin` ships per-element stringify
+      closure via `ensureStringifyHelper` + `make_fun3`, then
+      `lists:map` + `lists:join` + `iolist_to_binary`. Snapshot
+      `array_join_lowers_byte_identically_across_backends.snap.md`
+      runs to `<<"10, 20, 30">>` (byte-identical with erlang).
+- [x] **F2 — `Array.indexOf`** (BEAM) — `primIndexOf` lazily emits 3-arg
+      recursive synth helper `'-bp_indexOf-'/3 (L, X, I)` tail-recursing
+      via `call_only` with the running index in `{x, 2}`; hit returns the
+      index, miss returns `-1`. Snapshot
+      `array_indexof_lowers_byte_identically_across_backends.snap.md`
+      runs to `2` / `-1`.
+- [x] **F3 — `Array.at`** (BEAM, bounds-safe) — `primAt` ships
+      `'-bp_at-'/2 (L, I)` that spills both args to y-slots so
+      `erlang:length/1` survives, then `is_ge` against `0` + `is_lt`
+      against length + `gc_bif '+' (I+1)` + `call_ext_last lists:nth/2`
+      on hit, `undefined` on miss. Snapshot
+      `array_at_lowers_byte_identically_across_backends.snap.md` runs
+      to `10` / `undefined`.
+- [x] **F7 — docs**
+      - `modules/compiler-core/src/codegen/AGENTS.md` `beam_asm.zig`
+        row updated — join/indexOf/at moved out of "not yet lowered".
+      - `CHANGELOG.md` v0.beta.20 entry for beam-inline-prim-methods.
 
-## Exit gate
+## Out of scope
 
-- [x] `config.zig` accepts both legacy + object form, with 8 parser tests pinning every diagnostic.
-- [x] `libs.zig` consults `.botopinkbuild/deps/` fallback; `resolveBpmpStoreRoot` plumbs the `$BPMP_HOME`/XDG/HOME chain (5 tests).
-- [x] `bpmp install <path>` materialises object-form deps into `$BPMP_HOME/store/` + writes `botopink.lock`.
-- [x] `bpmp install --frozen` exits with **DEP-004** when `botopink.lock` is missing entries.
-- [x] Per-module AGENTS.md updated in the same commit as the code.
-- [x] `zig build` green; `zig build test-bpmp` green.
-- [ ] Full `zig build test` re-run on the host post-merge (compiler-core cache had to be re-warmed under the new `[]DepEntry` libs.loadDependencies signature; touched callsites: `build.zig`/`check.zig`/`test_cmd.zig`).
+- Wat versions of these methods — separate spec.
+- erlang versions — already landed in v0.beta.19 (`64a3436`).
+
+## Exit gate (per phase)
+
+- BEAM snap byte-identical with the spec's reference.
+- `zig build test` green; `zig build test-libs` green on beam axis.
+- AGENTS.md updated in same commit.
