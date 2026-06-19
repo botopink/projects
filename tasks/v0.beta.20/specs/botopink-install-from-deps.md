@@ -33,7 +33,7 @@
   - `repository/botopink-lang/modules/compiler-cli/src/cli/AGENTS.md` (`config.zig` row: object-form `dependencies`; `libs.zig` row: `$BPMP_HOME` fallback)
   - `repository/botopink-lang/AGENTS.md` (one bullet under the **Project surface** §)
   - `tasks/v0.beta.20/status.md` (this row reaches **done** when F0–F6 land)
-**Status**: **pending (F0–F2, F4–F6); F3 in progress** — spec authored 2026-06-16 in `325472a`. F3 partial: emilia-card + erika-linq fixtures migrated (`af1c66d` + `abfcfe4`). All other phases unstarted.
+**Status**: **pending (F0–F2, F4–F6); F3 DONE** — spec authored 2026-06-16 in `325472a`. F3 complete (8/8 consumer fixtures on object form): emilia-card (`af1c66d`), erika-linq (`abfcfe4`), jhonstart-{counter,html,todo} (`7a9b0ae`), onze (`ab7788b`), rakun (`ee798f8`), generic-loader-binding (`3aecd65`). All other phases unstarted.
 
 ## Premise
 
@@ -297,17 +297,13 @@ $BPMP_HOME first.
 ## F3 — consumer fixture migration
 
 **Files**:
-  - `repository/emilia/examples/emilia-card/botopink.json`
-  - `repository/botopink-lang/examples/generic-loader-binding/botopink.json`
-**Status**: **in progress** — 2026-06-16 session shipped:
-- `repository/emilia/examples/emilia-card/botopink.json` migrated to object form + URL fix (`emilia af1c66d`).
-- `repository/erika/examples/erika-linq/botopink.json` migrated to object form (`erika abfcfe4`).
-
-**Remaining** (this phase still owes 6 fixtures):
-- `repository/jhonstart/examples/jhonstart-{counter,html,todo}/botopink.json` (3 jhonstart consumers).
-- `repository/onze/examples/onze/botopink.json`.
-- `repository/rakun/examples/rakun/botopink.json`.
-- `repository/botopink-lang/examples/generic-loader-binding/botopink.json` (consumer of `from "erika"`).
+  - `repository/emilia/examples/emilia-card/botopink.json` (`emilia af1c66d`)
+  - `repository/erika/examples/erika-linq/botopink.json` (`erika abfcfe4`)
+  - `repository/jhonstart/examples/jhonstart-{counter,html,todo}/botopink.json` (`jhonstart 7a9b0ae`)
+  - `repository/onze/examples/onze/botopink.json` (`onze ab7788b`)
+  - `repository/rakun/examples/rakun/botopink.json` (`rakun ee798f8`) — `rakun` + `server` both shifted to object form; `server` keeps the canonical `https://github.com/botopink/server.git, feat` shape pending its eventual publish (still resolves via `BOTOPINK_LIB_ROOTS` → `libs/server/`).
+  - `repository/botopink-lang/examples/generic-loader-binding/botopink.json` (`botopink-lang 3aecd65`)
+**Status**: **DONE** — 8/8 consumer fixtures shifted from legacy bare-name array to the new `{ "<name>": { "git": ..., "branch": ... } }` schema across the 5 submodules touching consumer examples. Schema-only change; resolver behaviour unaffected until F0 (parser) and F2 (`$BPMP_HOME` fallback) land.
 
 ---
 
