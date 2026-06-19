@@ -17,7 +17,9 @@
   - Audit table + acceptance matrix: [`tasks/v0.beta.21/specs/templates-decorators-botopink-native-audit.md`](../../tasks/v0.beta.21/specs/templates-decorators-botopink-native-audit.md).
 
 ### WAT backend feature extensions (F1–F5, ~codegen/wat.zig MUTATED + tests)
-- [ ] **F1 — Anonymous records** (~250 LOC additions, 6 fixtures byte-equal vs hand-written WAT)
+- [~] **F1 — Anonymous records** (~250 LOC additions, 6 fixtures byte-equal vs hand-written WAT)
+  - **Constructor done** (bot-lang `cdae3d9`): `lowerRecordLit` mirrors `lowerRecordCtor` — bumps heap by `fields.len * 4`, stores each value at 4-byte slots in source-text order, returns base pointer. 2/6 fixtures landed (anon two-field + nested anon-in-anon), all 4 backends (commonJS/erlang/beam/wasm) snapped. `-Dtest-filter='wat:'` + `wasm` + `record` green.
+  - **Gap remaining**: field-by-name READ — `lowerIdentAccess` (wat.zig:1893) returns `i32.const 0` for unknown members. wat.zig is untyped; needs either type propagation from the inferer or a single-record-name heuristic via the `records` registry. Same gap blocks named records too. 4 more fixtures pending (mixed types, fn-param, method `.kind`, record returned from fn).
 - [ ] **F2 — Optionals `?T`** (~120 LOC, 4 fixtures)
 - [ ] **F3 — String operations** (concat, length, slice, equal — ~200 LOC, 5 fixtures)
 - [ ] **F4 — List literals** (~150 LOC, 4 fixtures)
