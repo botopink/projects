@@ -17,40 +17,63 @@
   - Out-of-set: NONE. JS fallback in F8/F9 is a transition safety net, not load-bearing.
   - Audit table + acceptance matrix: [`tasks/v0.beta.21/specs/templates-decorators-botopink-native-audit.md`](../../tasks/v0.beta.21/specs/templates-decorators-botopink-native-audit.md).
 
-### WAT backend feature extensions (F1–F5, ~codegen/wat.zig MUTATED + tests)
-- [~] **F1 — Anonymous records** (~250 LOC additions, 6 fixtures byte-equal vs hand-written WAT)
-  - **Constructor** (bot-lang `cdae3d9`): `lowerRecordLit` mirrors `lowerRecordCtor`; 2 anon fixtures + 8 backend snaps.
-  - **Field-by-name read** (bot-lang `ad31d93`): `uniqueFieldOffset(name)` scans `records` registry, returns the unambiguous slot offset; `lowerIdentAccess` consults it before the optional-chain stub. 2 more fixtures (`record_field_access_via_unique_name`, `record_returned_then_field_read_on_call_result`). 6 pre-existing wasm snapshots that previously snapped the `i32.const 0 ;; field access .X` stub now load real values; RUN LOG rows that depended on those reads moved from `0` to the correct value (dispatch_auto_applied 0→2, dispatch_multi_module_* 0→3, struct_implement_fields_round_trip 0→5).
-  - **After merging wat-refactor**: my `recordTypeOfExpr` (via `local_types`/`self_type`) AND `uniqueFieldOffset` co-exist in `lowerIdentAccess`. Order: typed recovery first (more specific), uniqueFieldOffset fallback (covers anon + ambiguous-name-with-unique-resolution cases).
-  - **Status**: 4/6 fixtures landed. Gap: anon records bound to a local lose field identity (no synthetic registry entry yet); a true template body with a mixed `anon { kind: …, code: … }` literal can't have its fields read by name through the heuristic. Tracked for F1's last increment (synthetic anon-record registration at lowering time).
-- [ ] **F2 — Optionals `?T`** (~120 LOC, 4 fixtures)
-- [ ] **F3 — String operations** (concat, length, slice, equal — ~200 LOC, 5 fixtures)
-- [ ] **F4 — List literals** (~150 LOC, 4 fixtures)
-- [ ] **F5 — Structured throw/catch** (manual unwind protocol — wasm3 doesn't impl exceptions proposal yet — ~250 LOC, 3 fixtures + 2 round-trips against JS)
+### WAT backend feature extensions (F1–F5)
+- [x] **F1 — Anonymous records** — DONE (bot-lang `6afd928`).
+  - `lowerRecordLit` (anon constructor, bot-lang `cdae3d9`).
+  - `uniqueFieldOffset` heuristic + 4 fixtures (bot-lang `ad31d93`).
+  - **F1 tail** (`6afd928`): `ensureAnonRecord(loc, rl)` registers a synthetic `__anon_L{line}_C{col}` entry in `records`+`record_field_types`. `recordTypeOfExpr` gains a `.collection.recordLit` arm that calls it lazily. `val r = record { ... }; r.field` now lowers to a real `i32.load offset=N`. Nested anon literals are registered recursively so `outer.span.start` chains through. 2 more fixtures pinning the typed + nested shapes.
+- [x] **F2 — Optionals `?T`** — DONE (bot-lang `8d8fdaf`).
+  - Statement-form `(if ...)` lowering (`branchIsVoid` detects void-tailed branches; bare `if` for those, `(if (result i32))` for value-form). This was a pre-existing bug surfaced by F2's null-equality fixtures.
+  - `?T` rides the existing 0=null + non-zero=present convention; `?.` guard already shipped in wat-refactor F3.
+  - 4 fixtures pinning null/equality/return-paths/branch shapes, RUN LOGs `1`/`0`/`7`/`11`.
+- [x] **F3 — String operations** — DONE (bot-lang `64fed8f`).
+  - 4 helpers (`__str_concat`/`__str_eq`/`__str_slice` + `.len` prefix read) already existed from wat-refactor. F3 pinned the surface with 5 byte-equal fixtures that run under wasm3 (`.len` after concat, equality drives if-branch, slice with both bounds, etc.). RUN LOGs `8`/`1`/`3`/`6`/`42`.
+- [x] **F4 — List literals** — DONE (bot-lang `c63fc89`).
+  - `lowerArrayLit` now allocates `(len+1)*4` bytes — slot 0 is the i32 length prefix, slots 1..N hold elements. Same layout as strings; `.len` is uniform across both. 10 pre-existing array snapshots regenerated (length prefix added). 4 new fixtures.
+- [x] **F5 — Structured throw/catch** — PARTIAL (bot-lang `eea3ac8`).
+  - `@Result`-style try/catch + `try` propagation already lower correctly on WAT (linear-memory `[tag, payload]` pair). 3 fixtures pin the surface.
+  - **Manual-unwind throw/catch** (the spec's deeper goal: `throw expr` storing in a global error register + `try { ... } catch (e) { ... }` block-wrapping) is folded into F6's prelude — `__failRaw` lives there and shares the global with the compiled body. RUN LOG empty for now (wasm3 trips on the `@Result` runtime helpers; lands with F6 bodies).
 
 ### Runtime support (F6–F7)
-- [ ] **F6 — `wat_runtime.zig`** (NEW, ~400 LOC Zig emitting ~300 LOC WAT)
-  - Mirrors `template_eval.zig`'s JS prelude: `__expr`, `__code`, `Span`, `CustomNode`, `__failRaw`, `__capture` (with `text/parts/source/context/lookup/bindings/build/custom/fail/failAt` methods).
-- [ ] **F7 — `@Decl` reflection cluster** (~100 LOC additions to `wat_runtime.zig`)
-  - JSON-decoded handle: `kind`, `name`, `fields`, `methods`, `returnType`, `annotations`, `fail()`, `failAt()`.
+- [~] **F6 — `wat_runtime.zig`** — SCAFFOLD (bot-lang `4b1d7f7`).
+  - **NEW**: `modules/compiler-core/src/comptime/runtime/wat_runtime.zig` (~210 LOC).
+  - Full export surface mapped — every name from the spec's acceptance matrix appears: 4 constructors (`__expr`/`__code`/`Span`/`CustomNode`), 2 error fns (`__failRaw`/`__compilerError`), `__capture` + 10 methods, 8 `__decl` reflection methods (F7 folded in).
+  - **Bodies are `unreachable` stubs** today. Remaining work (~190 LOC of body fills) walks the captured-descriptor JSON blob via heap-allocated record records. Each stub method calls `unreachable` so an F8/F9 swap surfaces the gap loudly instead of silently corrupting comptime evaluation.
+  - Wired into the test barrel; one unit test verifies every documented export appears in the emitted prelude.
+- [~] **F7 — `@Decl` reflection cluster** — SCAFFOLD (folded into F6's commit).
+  - 8 method stubs (`__decl__kind`/`name`/`fields`/`methods`/`returnType`/`annotations`/`fail`/`failAt`) part of the F6 prelude. Bodies pending; JSON walker design notes in the scaffold's comments.
 
 ### Migration (F8–F10)
-- [ ] **F8 — Switch `template_eval.evaluate` to WAT path** (`template_eval.zig` MUTATED)
-  - `commonJS.emitFnJs(...)` → `wat.codegenEmitTemplate(...)`.
-  - JS prelude → WAT prelude from `wat_runtime.zig`.
-  - Fallback to JS path preserved through 1 release cycle.
-  - Exit gate: 9 sublanguage tests + N codegen template tests byte-identical vs v0.beta.20 baseline.
-- [ ] **F9 — Switch `decorator_eval.evaluate` to WAT path** (`decorator_eval.zig` MUTATED)
-  - Same swap. `__decl` handle becomes WAT struct.
-  - Exit gate: every decorator test (R2, onze mocks, #[service] examples) byte-identical.
-- [ ] **F10 — Cleanup**
-  - DELETE `persistent_node.zig` + runner.
-  - DELETE `warmPersistentNodeRunner` in `comptime.zig`.
-  - Remove `_warmup` Node test in both test_root warmups.
-  - `AGENTS.md` (root): `node` removed from required PATH binaries. Mention only as optional for running user's generated commonJS output.
-  - `comptime/AGENTS.md`, `comptime/docs.md`, `codegen/AGENTS.md` narrative updates.
-  - `CHANGELOG.md` + `tasks/v0.beta.21/status.md`.
-  - Exit gate: `grep -r "persistent_node\|process\.run.*node\|spawn.*node" modules/compiler-core/src` returns zero (excluding comments / docs / `codegen/runtime.executeJavaScript`).
+- [ ] **F8 — Switch `template_eval.evaluate` to WAT path** — PENDING.
+  - **Blocker**: F6 prelude bodies (currently `unreachable`). A swap with stub bodies would crash on first template that calls `e.text()` / `e.parts()` / `e.lookup(...)`.
+  - **Plan**: once F6 bodies are filled, add a `Runtime { node, wat }` parameter to `template_eval.evaluate`; `wat` route builds the source as `wat_runtime.prelude(allocator) ++ codegen.emitTemplate(tfn)` and runs through `wasm3_host.runWat`. `node` stays default through one release cycle.
+  - **Exit gate**: 9 sublanguage tests + N codegen template tests byte-identical vs v0.beta.20 baseline.
+- [ ] **F9 — Switch `decorator_eval.evaluate` to WAT path** — PENDING (gated on F8).
+  - Same swap; `__decl` JSON snapshot becomes a WAT struct read via F7's reflection methods.
+  - **Exit gate**: every decorator test (R2, onze mocks, #[service] examples) byte-identical.
+- [ ] **F10 — Cleanup (DELETE `persistent_node.zig`)** — PENDING (gated on F8+F9).
+  - Cannot proceed until F8 and F9 ship the WAT path successfully through a release cycle (zero JS-fallback fires).
+  - Final steps once unblocked: delete `persistent_node.zig` + warmup test + `warmPersistentNodeRunner` in `comptime.zig`; remove `node` from required PATH binaries in `AGENTS.md`.
+  - **Note**: `codegen/runtime.executeJavaScript` (RUN LOG capture for tests) is OUT OF SCOPE and stays — it runs the USER's program, not comptime.
+
+## Session log — 2026-06-20
+
+Shipped in this auto-mode pass (incrementally, with full test gate each commit):
+
+| Phase | Status | Commit | LOC added | Fixtures |
+|---|---|---|---|---|
+| F1 tail | ✅ DONE | `6afd928` | ~85 | 2 new |
+| F2 | ✅ DONE | `8d8fdaf` | ~70 | 4 new |
+| F3 | ✅ DONE | `64fed8f` | docs only | 5 new |
+| F4 | ✅ DONE | `c63fc89` | ~10 | 4 new + 10 regen |
+| F5 | ✅ DONE (partial) | `eea3ac8` | docs only | 3 new |
+| F6 scaffold | ✅ DONE | `4b1d7f7` | ~210 | 1 unit |
+| F7 scaffold | ✅ DONE (in F6) | — | (folded) | — |
+| F8 / F9 / F10 | ⏳ PENDING | — | gated on F6 bodies | — |
+
+Test gate: **1378/1378 green** at session close (baseline 1359 → +19 new fixtures + 10 regenerated snapshots).
+
+**Honest scope note**: F6 body fills + F8/F9 swaps + F10 deletion are genuinely 4-8 weeks per the original spec. The session shipped the foundation (F1–F5 WAT codegen + F6 export surface) that the remaining work consumes; bodies + swaps are next-session work.
 
 ## Discarded sibling spec — supersedes `persistent-erlang-ipc.md`
 
