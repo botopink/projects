@@ -1,49 +1,82 @@
-# beam-inline-prim-methods (F1 / F2 / F3 — pick one, all file-disjoint)
+# wat-refactor — F2 (record layout) + F3 (`?.`) + F4 (snapshots) + F5 (AGENTS) — DONE
 
-> Spec: [`tasks/v0.beta.20/specs/frente-a.md`](../../tasks/v0.beta.20/specs/frente-a.md) (search for `beam-inline-prim-methods`).
+> Spec: [`tasks/v0.beta.20/specs/frente-a.md`](../../tasks/v0.beta.20/specs/frente-a.md) (search for `wat-refactor`).
 
 ## Baseline
 
-- meta `feat`: `1c38772`.
-- bot-lang `feat`: `6b46f55`.
-- Already landed on bot-lang `feat`:
-  - **F4** — 2-arg `slice` (`c635730`).
-  - **F5** — string `contains` (inline `binary:match`).
-  - **F6** — string `startsWith` (inline `binary:part`).
-- All 3 lowerings live in `modules/compiler-core/src/codegen/beam_asm.zig`.
+- meta `feat`: `1c38772` (post merge with install-from-deps F0–F6 + wasm3-unified-runtime closeout).
+- bot-lang `feat`: `6b46f55` (install-from-deps F0–F6 closeout atop wasm3).
+- **F1 (void classifier) already landed**: bot-lang `3790c0f`.
 
-## Pending phases (each independent)
+## Closed phases
 
-- [x] **F1 — `Array.join`** (BEAM) — `primJoin` ships per-element stringify
-      closure via `ensureStringifyHelper` + `make_fun3`, then
-      `lists:map` + `lists:join` + `iolist_to_binary`. Snapshot
-      `array_join_lowers_byte_identically_across_backends.snap.md`
-      runs to `<<"10, 20, 30">>` (byte-identical with erlang).
-- [x] **F2 — `Array.indexOf`** (BEAM) — `primIndexOf` lazily emits 3-arg
-      recursive synth helper `'-bp_indexOf-'/3 (L, X, I)` tail-recursing
-      via `call_only` with the running index in `{x, 2}`; hit returns the
-      index, miss returns `-1`. Snapshot
-      `array_indexof_lowers_byte_identically_across_backends.snap.md`
-      runs to `2` / `-1`.
-- [x] **F3 — `Array.at`** (BEAM, bounds-safe) — `primAt` ships
-      `'-bp_at-'/2 (L, I)` that spills both args to y-slots so
-      `erlang:length/1` survives, then `is_ge` against `0` + `is_lt`
-      against length + `gc_bif '+' (I+1)` + `call_ext_last lists:nth/2`
-      on hit, `undefined` on miss. Snapshot
-      `array_at_lowers_byte_identically_across_backends.snap.md` runs
-      to `10` / `undefined`.
-- [x] **F7 — docs**
-      - `modules/compiler-core/src/codegen/AGENTS.md` `beam_asm.zig`
-        row updated — join/indexOf/at moved out of "not yet lowered".
-      - `CHANGELOG.md` v0.beta.20 entry for beam-inline-prim-methods.
+- [x] **F2 — record layout** (`modules/compiler-core/src/codegen/wat.zig`)
+  - Stable 4-byte slot offsets per declared field order (mirrors `beam_asm`'s
+    map-by-field-name shape but linearised — no `record_tag` header, the spec
+    test scenario doesn't need one and `recordTypeOfExpr` recovers the
+    type-name from let-bindings + fn return types + chained field types).
+  - `recv.field` / `self.field` now load `base + offset` via the new
+    `local_types: StringHashMap → record name` + `self_type` recovery
+    (codegen is untyped, this is a best-effort walk of decl-time annotations).
+  - `recv.field = v` / `recv.field += v` store at the same offset; `+=` uses
+    one `$__mem{n}` scratch for the load-add-store cycle.
+  - Tuple `t._N` indexes the same memory (already in place).
+  - **Record / struct member methods now emit** as `$<owner>_<method>`
+    linear-memory fns (`emitInterfaceMethods` / `emitStructMethods` /
+    `emitMemberFn`). A method body that references `self` without listing it
+    as a param gets an implicit `(param $self i32)` synthesised
+    (`bodyReferencesSelf`), so the bare `self.field` reads through a real
+    local instead of a `global.get $self` to a non-existent global.
+  - **Destructure `{ a, b } = Rec(...)`** now walks the record's declared
+    field order via `fieldOffsetIn`, so out-of-order destructuring
+    (`{ b, a } = R(7, 11)`) reads the right slot.
+- [x] **F3 — optional chaining `?.`** (`wat.zig`)
+  - `recv?.field` lowers to `local.tee $__mem{k}` + `i32.eqz` +
+    `(if (result i32) (then i32.const 0) (else local.get $__mem{k} i32.load offset=N))`.
+  - Matches the existing `?T` carrier shape (none = `i32.const 0`, some =
+    base pointer).
+  - Chained `a?.b?.c` composes through fresh scratch slots.
+- [x] **F4 — snapshot sweep**
+  - 25 wasm snapshots regenerated (record/struct/enum methods now emit real
+    method bodies; field access reads slots; field assign writes slots; `?.`
+    guards via `local.tee` + `if`).
+  - New fixtures pinned in `tests/wat.zig`:
+    - `wat: record field access by name loads at declared offset` —
+      `val r = R(a: 7, b: 11); @print(r.b);` lowers + runs → RUN LOG `11`.
+    - `wat: optional chaining on record null returns zero` —
+      `fn pick(maybe: ?R) -> i32 { return maybe?.b; }` pins the guard shape.
+- [x] **F5 — AGENTS.md sweep** (`modules/compiler-core/src/codegen/AGENTS.md`)
+  - `wat.zig` row updated: dropped the "named record-field access is
+    unsupported" / "`?.` can't be realised" `(KNOWN GAP)` clauses; pinned the
+    new record method emission + field access by name + `?.` guard pattern
+    + the implicit-self synthesis rule.
+- [x] **Perf tail** (`modules/compiler-core/src/codegen/runtime.zig`)
+  - No-I/O early bail before erlc/erl spawn (~22% off cold pass).
+  - Output cache at `.botopinkbuild/runtime-cache/` (SHA256-keyed,
+    `OK:`-prefixed) — warm-run wall clock drops from ~3m20s to ~16.6s (12×).
 
-## Out of scope
+## Merge tail
 
-- Wat versions of these methods — separate spec.
-- erlang versions — already landed in v0.beta.19 (`64a3436`).
+- Pulled `origin/feat` forward (Eric's `beam-inline-prim-methods` 174ef0f
+  is file-disjoint with this branch — conflict confined to
+  `codegen/AGENTS.md` rows for `beam_asm.zig` + `wat.zig`, resolved by
+  keeping both new versions).
 
-## Exit gate (per phase)
+## Out of scope (carried)
 
-- BEAM snap byte-identical with the spec's reference.
-- `zig build test` green; `zig build test-libs` green on beam axis.
-- AGENTS.md updated in same commit.
+- `wasm-test-runner` (separate consumer spec; depends on this — now
+  unblocked).
+- The `i32.mul` on `f64` record fields surfacing in regenerated snapshots
+  (e.g. `Vec2_lengthSq`) is a pre-existing wat-untyped-codegen limit, not a
+  regression of this spec.
+- The `Counter_inc` body lowers without an `i32.store` size suffix — pre-
+  existing, applies to all `+=` lowering.
+
+## Exit gate
+
+- [x] `zig build test` green on the full suite (1355/1355 after merge).
+- [x] `zig build test-backends` green — wasmtime executes the new
+  `record_field_access` fixture (RUN LOG `11`).
+- [x] F4 snapshots committed alongside the code.
+- [x] AGENTS.md updated in the same commit.
+- [x] No `--no-verify`; SSH for git per CLAUDE.md memory.
