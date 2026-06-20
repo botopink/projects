@@ -2,7 +2,7 @@
 
 > Spec: [`tasks/v0.beta.20/specs/frente-a.md`](../../tasks/v0.beta.20/specs/frente-a.md) (search for `wat-refactor`).
 
-## Baseline (pre-this-session)
+## Baseline
 
 - meta `feat`: `1c38772` (post merge with install-from-deps F0–F6 + wasm3-unified-runtime closeout).
 - bot-lang `feat`: `6b46f55` (install-from-deps F0–F6 closeout atop wasm3).
@@ -50,6 +50,17 @@
     unsupported" / "`?.` can't be realised" `(KNOWN GAP)` clauses; pinned the
     new record method emission + field access by name + `?.` guard pattern
     + the implicit-self synthesis rule.
+- [x] **Perf tail** (`modules/compiler-core/src/codegen/runtime.zig`)
+  - No-I/O early bail before erlc/erl spawn (~22% off cold pass).
+  - Output cache at `.botopinkbuild/runtime-cache/` (SHA256-keyed,
+    `OK:`-prefixed) — warm-run wall clock drops from ~3m20s to ~16.6s (12×).
+
+## Merge tail
+
+- Pulled `origin/feat` forward (Eric's `beam-inline-prim-methods` 174ef0f
+  is file-disjoint with this branch — conflict confined to
+  `codegen/AGENTS.md` rows for `beam_asm.zig` + `wat.zig`, resolved by
+  keeping both new versions).
 
 ## Out of scope (carried)
 
@@ -63,7 +74,7 @@
 
 ## Exit gate
 
-- [x] `zig build test` green on the full suite (1352/1352 tests passed).
+- [x] `zig build test` green on the full suite (1355/1355 after merge).
 - [x] `zig build test-backends` green — wasmtime executes the new
   `record_field_access` fixture (RUN LOG `11`).
 - [x] F4 snapshots committed alongside the code.
