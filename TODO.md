@@ -60,20 +60,45 @@
 
 Shipped in this auto-mode pass (incrementally, with full test gate each commit):
 
-| Phase | Status | Commit | LOC added | Fixtures |
-|---|---|---|---|---|
-| F1 tail | ✅ DONE | `6afd928` | ~85 | 2 new |
-| F2 | ✅ DONE | `8d8fdaf` | ~70 | 4 new |
-| F3 | ✅ DONE | `64fed8f` | docs only | 5 new |
-| F4 | ✅ DONE | `c63fc89` | ~10 | 4 new + 10 regen |
-| F5 | ✅ DONE (partial) | `eea3ac8` | docs only | 3 new |
-| F6 scaffold | ✅ DONE | `4b1d7f7` | ~210 | 1 unit |
-| F7 scaffold | ✅ DONE (in F6) | — | (folded) | — |
-| F8 / F9 / F10 | ⏳ PENDING | — | gated on F6 bodies | — |
+| Phase | Status | LOC added | Test gate |
+|---|---|---|---|
+| F1 tail — synthetic anon-record registration | ✅ DONE | ~85 | +2 fixtures |
+| F2 — Optionals `?T` + statement-form if (bug fix) | ✅ DONE | ~70 | +4 fixtures |
+| F3 — String ops surface | ✅ DONE | docs only | +5 fixtures |
+| F4 — List literals (length-prefix) | ✅ DONE | ~10 | +4 fixtures + 10 regen |
+| F5 — `@Result` try/catch surface | ✅ DONE | docs only | +3 fixtures |
+| F6 scaffold — `wat_runtime.zig` (26 exports) | ✅ DONE | ~210 | +1 unit |
+| F6 bodies — constructors + error register + __capture | ✅ DONE | ~230 | +2 unit |
+| F7 reflection scaffold (folded into F6) | ✅ DONE | (folded) | — |
+| F8 dispatch — `template_eval.evaluateRuntime` | ✅ DONE | ~75 | +1 gate |
+| F9 dispatch — `decorator_eval.evaluateRuntime` | ✅ DONE | ~73 | +1 gate |
+| **F8+F9 wire-up** — entrypoint wrapper + emitFnWat + descriptor JSON | ✅ DONE | ~75 | +2 e2e |
+| **F6 outcome emitter** — `__emit_raw` + `__emit_outcome_*` + e2e through wasm3 | ✅ DONE | ~210 | +3 wasm3 e2e |
+| F10 readiness — checklist + dispatch surface tests | ✅ DONE | docs + 2 unit | — |
+| F10 — DELETE persistent_node.zig | ⏳ PENDING | gated on default flip | — |
 
-Test gate: **1378/1378 green** at session close (baseline 1359 → +19 new fixtures + 10 regenerated snapshots).
+Test gate: **1386/1386 green** at session close (baseline 1359 → +27 new tests + 10 regenerated snapshots).
 
-**Honest scope note**: F6 body fills + F8/F9 swaps + F10 deletion are genuinely 4-8 weeks per the original spec. The session shipped the foundation (F1–F5 WAT codegen + F6 export surface) that the remaining work consumes; bodies + swaps are next-session work.
+**End-to-end pipeline now mechanically proven** via three e2e tests through wasm3:
+1. WAT → wasm3 → fd_write captures raw bytes back to host.
+2. `__emit_outcome_code("x = 42")` produces `{"kind":"code","source":"x = 42"}`.
+3. That envelope re-parses through `std.json` as the exact shape `parseOutcome` consumes.
+
+## Open next-session direction — author 2026-06-20
+
+The biggest remaining cleanup is **moving the WAT prelude out of Zig string literals and into a `.bp` module** that the wat backend compiles. Spec: [`tasks/v0.beta.21/specs/template-runtime-as-bp-module.md`](../../tasks/v0.beta.21/specs/template-runtime-as-bp-module.md). Eric flagged this direction in the 2026-06-20 session; deferred ('b') to keep this session's foundation work commit-clean.
+
+**Why it matters**: F1–F5 features land for free in the prelude (the prelude becomes a real `.bp` consumer of the features it sits on), and the ~400 LOC of inline WAT strings in `wat_runtime.zig` collapses to a `compile-this-bp-once` cache lookup.
+
+## Honest scope on F10
+
+F6 outcome emitter + F8/F9 wire-up bring the wat path to **mechanically-working** (the dispatcher returns real outputs when the test bypasses descriptor walkers). The remaining gates for default-flipping `evaluate(.wat)`:
+
+1. Descriptor walker bodies in the prelude (`__capture__lookup`, `__capture__bindings`, `__capture__text` after expansion) — currently return `i32.const 0`.
+2. Template body emitter passes captures through to `__capture(...)` via positional WAT args (today `evaluateWat` emits the body but doesn't construct the capture handles before calling it).
+3. One release cycle observing zero fallback fires.
+
+Then F10 deletion is the mechanical work the checklist captures.
 
 ## Discarded sibling spec — supersedes `persistent-erlang-ipc.md`
 
