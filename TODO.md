@@ -4,9 +4,10 @@
 
 ## Baseline
 
-- meta `feat`: `1c38772` (post install-from-deps closeout) — merged into this worktree via fast-forward.
-- bot-lang `feat`: `6b46f55` (post install-from-deps closeout) — merged into this task's bot-lang branch.
+- meta `feat`: `c6cff7d` (post wat-refactor F2+F3+F4+F5 + perf cache + beam-inline-prim-methods merge).
+- bot-lang `feat`: `7fd5099` (post wat-refactor + perf-cache + beam-inline merge).
 - **`wasm3-unified-runtime` landed** (meta `5f627d1` / bot-lang `1749054` + perf follow-ups). `wasm3_host.runWat`, `wat_to_wasm.compile`, and the unified comptime pipeline are present. Unblocked.
+- **`wat-refactor` landed on feat** (bot-lang `1b2de3c` perf + `0d220f7` F2/F3/F4/F5). My record field access by name (via `local_types` + `recordTypeOfExpr` recovery) and `?.` guard land in `wat.zig`. **This complements F1's `uniqueFieldOffset` heuristic — both stay; reconcile after merge.**
 
 ## Phases (from spec F0–F10)
 
@@ -20,6 +21,7 @@
 - [~] **F1 — Anonymous records** (~250 LOC additions, 6 fixtures byte-equal vs hand-written WAT)
   - **Constructor** (bot-lang `cdae3d9`): `lowerRecordLit` mirrors `lowerRecordCtor`; 2 anon fixtures + 8 backend snaps.
   - **Field-by-name read** (bot-lang `ad31d93`): `uniqueFieldOffset(name)` scans `records` registry, returns the unambiguous slot offset; `lowerIdentAccess` consults it before the optional-chain stub. 2 more fixtures (`record_field_access_via_unique_name`, `record_returned_then_field_read_on_call_result`). 6 pre-existing wasm snapshots that previously snapped the `i32.const 0 ;; field access .X` stub now load real values; RUN LOG rows that depended on those reads moved from `0` to the correct value (dispatch_auto_applied 0→2, dispatch_multi_module_* 0→3, struct_implement_fields_round_trip 0→5).
+  - **After merging wat-refactor**: my `recordTypeOfExpr` (via `local_types`/`self_type`) AND `uniqueFieldOffset` co-exist in `lowerIdentAccess`. Order: typed recovery first (more specific), uniqueFieldOffset fallback (covers anon + ambiguous-name-with-unique-resolution cases).
   - **Status**: 4/6 fixtures landed. Gap: anon records bound to a local lose field identity (no synthetic registry entry yet); a true template body with a mixed `anon { kind: …, code: … }` literal can't have its fields read by name through the heuristic. Tracked for F1's last increment (synthetic anon-record registration at lowering time).
 - [ ] **F2 — Optionals `?T`** (~120 LOC, 4 fixtures)
 - [ ] **F3 — String operations** (concat, length, slice, equal — ~200 LOC, 5 fixtures)
