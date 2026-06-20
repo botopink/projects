@@ -52,6 +52,26 @@
   - `CHANGELOG.md` + `tasks/v0.beta.21/status.md`.
   - Exit gate: `grep -r "persistent_node\|process\.run.*node\|spawn.*node" modules/compiler-core/src` returns zero (excluding comments / docs / `codegen/runtime.executeJavaScript`).
 
+## Discarded sibling spec — supersedes `persistent-erlang-ipc.md`
+
+- [x] **persistent-erlang-ipc — DISCARDED 2026-06-20** (this task supersedes it).
+  - Rewrote `tasks/v0.beta.21/specs/persistent-erlang-ipc.md` as a
+    "**DISCARDED · NEVER DO**" stub explaining why.
+  - **Key rationale**: this task ends with `persistent_node.zig` deleted
+    (F8/F9/F10). Adding a sibling `persistent_erlang.zig` would be
+    moving the wrong way under the same roadmap.
+  - The codegen-test Erlang/BEAM cold-spawn cost the discarded spec was
+    trying to solve is already covered by the perf tail on
+    `codegen/runtime.zig` (no-I/O early bail + content-keyed output
+    cache, shipped in bot-lang `1b2de3c`): warm-run wall clock 3m20s →
+    16.6s (~12×).
+  - **Do not implement persistent_erlang.zig**. Do not vendor an
+    escript runner. Do not re-add `comptime/runtime/erlang.zig` (it was
+    deleted by the wasm3-unified-runtime spec on purpose).
+  - Override path: if a future profile genuinely re-surfaces this cost,
+    extend the output cache key with `erlc --version` first; only after
+    that fails should this decision be re-opened via a new ADR.
+
 ## Out of scope (separate concerns)
 
 - `codegen/runtime.executeJavaScript` / `executeErlang` / `executeBeamAsm` — they run the USER's PROGRAM (RUN LOG capture), not comptime. They keep their current spawn paths after this spec.
