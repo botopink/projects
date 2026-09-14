@@ -1,7 +1,7 @@
 # TODO — Step 2: Fix allocation leaks
 
 **Branch:** `fix/step-2-allocation-leaks`  
-**Commit base:** `461a5894` (feat atual)  
+**Commit base:** `8d88372` (feat atual com Step 4 concluído)  
 **Objetivo:** 0 allocation leaks em todos os testes  
 **Prioridade:** 🟡 ALTA  
 **Depende de:** Step 1 (decorator eval) — recomendado fazer depois
@@ -10,10 +10,11 @@
 
 ## Estado atual (2026-09-14)
 
-- ✅ Branches atualizadas (todos os worktrees no commit `461a5894`)
+- ✅ **Step 4 (Interface Literal) CONCLUÍDO** e merged em `feat` (commit `8d88372`)
+- ✅ Branches atualizadas (todos os worktrees no commit `8d88372`)
 - ⏳ **NENHUM TRABALHO DE CÓDIGO INICIADO**
 - ❌ Leaks suspeitos em múltiplos codegen tests
-- ⚠️ Difícil de isolar porque test runner crasha/timeout por causa dos 9 failures do Step 1
+- ⚠️ **Aguardando Step 1** — test runner precisa estar estável para isolar leaks
 
 ---
 
