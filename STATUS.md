@@ -1,7 +1,7 @@
 # Status Report — botopink projects
 
 **Data:** 2026-09-14  
-**Última atualização:** Após merge de specs e unificação de branches
+**Última atualização:** Após atualização das branches e todos
 
 ---
 
@@ -10,7 +10,7 @@
 | Repo | Branch | main == feat | Status |
 |------|--------|--------------|--------|
 | **projects** (root) | `feat` | ✅ | specs adicionadas |
-| **botopink-lang** | `main` | ✅ | wave1 merged |
+| **botopink-lang** | `feat` | ✅ | 155/164 testes passando |
 | **jhonstart** | `main` | ✅ | estável |
 | **emilia** | `feat` | ✅ | estável |
 | **onze** | `main` | ✅ | estável |
@@ -23,8 +23,8 @@
 ## Últimos commits
 
 ```
-projects:           3e5bef6 feat: add specs directory to main
-botopink-lang:      a6d73f6 merge: integrate spec/1.0.0-beta.wave1
+projects:           461a5894 docs: mark step-3 regression tests as complete
+botopink-lang:      731963d test: add decorator regression tests
 jhonstart:          a79d654 merge: integrate feat into main
 emilia:             068333b docs(emilia): update docs and CHANGELOG
 onze:               8889441 merge: integrate feat into main
@@ -40,13 +40,18 @@ rakun:              d4a6794 merge: integrate feat into main
 ### Spec 01 — Test Green (CRÍTICO)
 
 **Objetivo:** 100% testes unitários passando  
-**Estado atual:** 155/164 pass (9 fail)
+**Estado atual:** 155/164 pass (9 fail) + 4 regression tests falhando
 
-| Step | Título | Status |
-|------|--------|--------|
-| 1 | Fix decorator eval (9 failures) | ⏳ pending |
-| 2 | Fix allocation leaks | ⏳ pending |
-| 3 | Regression tests | ⏳ pending |
+| Step | Título | Status | Branch | Commit |
+|------|--------|--------|--------|--------|
+| 1 | Fix decorator eval (9 failures) | ⏳ NÃO INICIADO | fix/step-1-decorator-eval | 461a5894 |
+| 2 | Fix allocation leaks | ⏳ NÃO INICIADO | fix/step-2-allocation-leaks | 461a5894 |
+| 3 | Regression tests | ✅ ESCRITO, ❌ FALHANDO | fix/step-3-regression-tests | 461a5894 |
+
+**Notas:**
+- Step 3 já tem 4 testes escritos (commit `731963d` na feat)
+- Todos os 4 testes de regressão falham porque dependem do Step 1
+- Branches de todos os worktrees atualizadas para `461a5894`
 
 ### Spec 02 — Type System (MÉDIA — não bloqueia testes)
 
@@ -78,13 +83,18 @@ rakun:              d4a6794 merge: integrate feat into main
 - Erro: "Decorator bodies run in the node runtime"
 - Causa: `evaluateErl` retorna `EvalFailed`
 - Solução: Reutilizar `emitBpExpr` de `template_eval.zig`
+- **Status: NÃO INICIADO**
 
 **Step 2 — Fix allocation leaks**
 - Múltiplos codegen tests vazam 1 allocation cada
 - Arquivos: values, string interpolation, loop, try/catch, @print, dispatch, destructure
+- **Status: NÃO INICIADO**
+- **Depende de Step 1** (test runner precisa estar estável)
 
 **Step 3 — Regression tests**
-- Adicionar testes para garantir que fixes não regredam
+- 4 testes já escritos em `decorator_regression.zig`
+- Todos falhando (dependem do Step 1)
+- **Status: ESCRITO, AGUARDANDO Step 1 + Step 2**
 
 ### Depois — Spec 02
 
@@ -92,24 +102,41 @@ Type system features (não bloqueia testes verdes)
 
 ---
 
+## Worktrees
+
+| Worktree | Branch | Commit | Status |
+|----------|--------|--------|--------|
+| `.tasks/step-1-decorator-eval` | fix/step-1-decorator-eval | 461a5894 | ✅ atualizado |
+| `.tasks/step-2-allocation-leaks` | fix/step-2-allocation-leaks | 461a5894 | ✅ atualizado |
+| `.tasks/step-3-regression-tests` | fix/step-3-regression-tests | 461a5894 | ✅ atualizado |
+
+**Todos os worktrees estão no mesmo commit (`461a5894`) e prontos para trabalho.**
+
+---
+
 ## Estrutura de arquivos
 
 ```
 projects/
-├── specs/                          ← Specs 1.0.0-beta
+├── .tasks/                       ← Worktrees para paralelismo
+│   ├── step-1-decorator-eval/   ← Branch: fix/step-1-decorator-eval
+│   ├── step-2-allocation-leaks/ ← Branch: fix/step-2-allocation-leaks
+│   ├── step-3-regression-tests/ ← Branch: fix/step-3-regression-tests
+│   └── WORKTREES.md             ← Instruções de uso
+├── specs/                        ← Specs 1.0.0-beta
 │   ├── 1.0.0-beta/
-│   │   ├── 01-test-green.md       ← CRÍTICO: 100% testes
-│   │   ├── 02-type-system.md      ← MÉDIA: type features
+│   │   ├── 01-test-green.md     ← CRÍTICO: 100% testes
+│   │   ├── 02-type-system.md    ← MÉDIA: type features
 │   │   └── overview.md
 │   └── __template.md
 ├── repository/
-│   ├── botopink-lang/             ← Compiler (Zig)
-│   ├── jhonstart/                 ← Framework
-│   ├── emilia/                    ← Query builder
-│   ├── onze/                      ← ORM
-│   ├── rakun/                     ← Runtime
-│   ├── erika/                     ← LINQ-like
-│   └── vscode-extension/          ← VS Code
+│   ├── botopink-lang/           ← Compiler (Zig) — branch feat
+│   ├── jhonstart/               ← Framework
+│   ├── emilia/                  ← Query builder
+│   ├── onze/                    ← ORM
+│   ├── rakun/                   ← Runtime
+│   ├── erika/                   ← LINQ-like
+│   └── vscode-extension/        ← VS Code
 └── STATUS.md
 ```
 
@@ -124,6 +151,25 @@ projects/
 | Spec 01 completado | 0/3 steps (0%) |
 | Spec 02 completado | 0/9 steps (0%) |
 | Testes passando | 155/164 (94%) |
-| Testes falhando | 9 (decorator_invocation) |
+| Testes falhando | 9 (decorator_invocation) + 4 (regression) |
+| Worktrees atualizados | 3/3 (100%) |
 | Commits não pushados | 0 |
-| Branches extras | 0 (apenas main/feat) |
+| Branches extras | 3 (fix/step-1, fix/step-2, fix/step-3) |
+
+---
+
+## Próximos passos
+
+1. **Step 1** — Fix decorator eval (desbloqueia 9 testes + 4 regression tests)
+2. **Step 2** — Fix allocation leaks (depois de Step 1)
+3. **Step 3** — Validar regression tests (depois de Step 1 + Step 2)
+4. **Spec 02** — Type system features (depois de Spec 01 completa)
+
+---
+
+## Notas
+
+- Todos os todo.md foram atualizados com estado real
+- Branches de todos os worktrees sincronizadas com feat
+- Compiler (botopink-lang) na branch `feat` com 155/164 testes passando
+- 4 testes de regressão já escritos mas falhando (dependem do Step 1)
