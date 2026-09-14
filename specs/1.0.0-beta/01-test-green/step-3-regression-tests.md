@@ -1,6 +1,6 @@
 # Step 3 — Regression tests
 
-**Status:** ⏳ pending  
+**Status:** ✅ complete  
 **Priority:** 🟢 MÉDIA  
 **Estimativa:** 2-3 horas  
 **Depende de:** Step 1 e Step 2
@@ -13,7 +13,27 @@ Adicionar testes para garantir que fixes dos Steps 1 e 2 não regredam no futuro
 
 ---
 
-## Testes a adicionar
+## ✅ Concluído
+
+### Testes adicionados
+
+**Arquivo:** `modules/compiler-core/src/comptime/tests/decorator_regression.zig`
+
+1. ✅ `decorator regression: loop in body` — forEach over fields
+2. ✅ `decorator regression: conditional in body` — nested if/else
+3. ✅ `decorator regression: string concat in body` — error message building
+4. ✅ `decorator regression: @emit in body` — declaration contribution
+
+### Validação
+
+- ✅ Todos os 4 testes de regressão passam
+- ✅ `zig build test` → exit code 0, sem leaks
+- ✅ Merge em `feat` e push para origin
+- ✅ Branch `fix/step-3-regression-tests` excluída
+
+---
+
+## Testes originais (referência)
 
 ### 1. Decorator regression tests (4 testes)
 
