@@ -1,7 +1,7 @@
 # TODO — Step 1: Fix decorator eval (9 failures)
 
 **Branch:** `fix/step-1-decorator-eval`  
-**Commit base:** `461a5894` (feat atual)  
+**Commit base:** `8d88372` (feat atual com Step 4 concluído)  
 **Objetivo:** 164/164 testes passando (atualmente 155/164)  
 **Prioridade:** 🔴 CRÍTICO
 
@@ -9,36 +9,25 @@
 
 ## Estado atual (2026-09-14)
 
-- ✅ Branches atualizadas (todos os worktrees no commit `461a5894`)
-- ⏸️ **TRABALHO PAUSADO** — aguardando Step 4 (Interface Literal)
+- ✅ **Step 4 (Interface Literal) CONCLUÍDO** e merged em `feat` (commit `8d88372`)
+- ✅ Branches atualizadas (todos os worktrees no commit `8d88372`)
 - ❌ 9 testes falhando em `decorator_invocation.zig`
-- ❌ 4 testes de regressão falhando em `decorator_regression.zig` (adicionados mas dependem deste step)
+- ❌ 4 testes de regressão falhando em `decorator_regression.zig` (dependem deste step)
 
 ### ⚠️ RETOMANDO O TRABALHO
 
-**Raiz real do problema descoberta:**
+**Step 4 concluído com sucesso:**
+- ✅ Sintaxe `@Decl(field: value)` implementada
+- ✅ Parser reconhece interface literals
+- ✅ Type inference funciona
+- ✅ Codegen emite corretamente (Erlang, CommonJS, WAT, BEAM)
+- ✅ Formatter com round-trip estável
+- ✅ Testes de parser passando
 
-O `decorator_eval.zig` precisa criar um `@Decl` (interface) a partir de um JSON, mas:
-- `@Decl` é uma **interface**, não um record
-- Não existe sintaxe para instanciar interfaces diretamente
-- JSON cru (`{"kind":"Record",...}`) não é sintaxe Botopink válida
-- `record { ... }` não implementa `@Decl` (falta métodos `fail`/`failAt`)
-
-**O que foi tentado:**
-1. ❌ Passar JSON cru → parser rejeita
-2. ❌ Converter JSON para `record { ... }` → não implementa `@Decl`
-3. ❌ Usar `@Decl(...)` → sintaxe não existe ainda
-
-**Solução:** Implementar **Step 4: Interface Literal Syntax** primeiro
-- Worktree: `.tasks/step-4-interface-literal/`
-- Branch: `feature/interface-literal`
-- Ver: `todo.md` do step-4 para detalhes
-
-**Próximos passos quando retomar:**
-1. Completar Step 4 (interface literal syntax)
-2. Voltar aqui e usar `@Decl(kind: ..., name: ..., ...)` em `decorator_eval.zig`
-3. Converter `handleJson` para sintaxe de interface literal
-4. Rodar testes: `zig build test --test-filter "decorator"`
+**Próximo passo:**
+1. Rodar testes de decorator para ver erros específicos
+2. Investigar por que `@Decl(...)` ainda não funciona no decorator eval
+3. Verificar se há problemas de type checking ou runtime
 
 ---
 
