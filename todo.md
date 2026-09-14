@@ -1,7 +1,7 @@
 # TODO — Step 3: Regression tests
 
 **Branch:** `fix/step-3-regression-tests`  
-**Commit base:** `461a5894` (feat atual)  
+**Commit base:** `8d88372` (feat atual com Step 4 concluído)  
 **Objetivo:** Testes de regressão para garantir que fixes não regredam  
 **Prioridade:** 🟢 MÉDIA  
 **Depende de:** Step 1 e Step 2
@@ -10,7 +10,8 @@
 
 ## Estado atual (2026-09-14)
 
-- ✅ Branches atualizadas (todos os worktrees no commit `461a5894`)
+- ✅ **Step 4 (Interface Literal) CONCLUÍDO** e merged em `feat` (commit `8d88372`)
+- ✅ Branches atualizadas (todos os worktrees no commit `8d88372`)
 - ✅ **TESTES JÁ ESCRITOS** (commit `731963d` na feat)
 - ❌ **TODOS OS 4 TESTES FALHANDO** (dependem do Step 1)
 - ⏳ Validação final pendente (Step 1 + Step 2 completos)
