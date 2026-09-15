@@ -97,7 +97,8 @@ FnDecl do decorator/template
 - [ ] `.qwen/`, `test_pub.zig` (importa `modules/core/src/parser.zig`, inexistente), `.env` vazio no meta — decisão do Eric
 
 ### F3 — Decorators — pendências menores
-- [ ] `TypeError` de decorator com loc da anotação (hoje coarse) e `failAt` usando o span
+- [x] `TypeError` de decorator na loc da anotação (`ast.Annotation.loc`, fora do JSON do AST); `failAt` reporta na
+      anotação (declaração não tem texto p/ mapear o span); `Span` virou host record do decorator; teste de loc
 
 ### F8 — Erlang AST + emitter (decisão do Eric: `erlang.zig` emite pelo emitter)
 Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o que ainda é texto.
