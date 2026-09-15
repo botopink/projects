@@ -165,7 +165,8 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
 - [x] `comptime/AGENTS.md` com o fluxo final (decorators/templates no `erl`, `val` dobrado em Zig)
 - [x] Spec `specs/1.0.0-beta/01-test-green/step-1-decorator-eval.md` e `architecture.md` alinhadas
 - [x] Commit submódulo → bump no meta a cada fase (sem `--no-verify`)
-- [ ] Push / merge na `feat` + sweep das `feat` remotas — **só quando o Eric pedir**
+- [x] Merge com `origin/feat` (`6344a7b`: mantido o decorator eval desta branch, trazida a quote de chaves de
+      record literal) e push na `feat` do meta e do botopink-lang; os outros 6 submódulos já estavam alinhados
 
 ### F9 — Revisão final de todos os snapshots alterados ✅
 Cada snapshot aceito nesta branch foi conferido na hora, mas vale uma revisão única no fim, com a branch completa,
