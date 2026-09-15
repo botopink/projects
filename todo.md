@@ -13,16 +13,15 @@
 
 ## Estado atual
 
-`zig build` ✅ · `zig build test`: **1401/1423 ok · 22 falhas · 13 leaks · ~17s · sem travamentos**
+`zig build` ✅ · `zig build test`: **1419/1424 ok · 5 falhas · 13 leaks · ~17s · sem travamentos**
 
 | Grupo | Falhas | Causa |
 |---|---|---|
-| `comptime.tests.templates` | 9 | `template_eval.evaluateErl` gera bp sintético → `compile()` → `parse failed for module 'template_body'` |
-| `tests.sublanguage` (LSP) | 8 | idem templates (erika `@ExprCustom`) |
 | `codegen` beam snapshots | 5 | RUN LOG passou a ter saída (`<<"started">>`, `[<<"a">>,…]`) que o `.snap.md` não tem |
 | leaks | 13 | todos de `codegen/runtime.zig` `executeErlang`: saída do `erlc` (`compile_out`/`aux_out`) não liberada no retorno antecipado — escopo do step-2 |
 
-Decorators: `decorator_invocation` 11/11 · `decorator_regression` 4/4 · `completion` R2 ✅.
+Decorators (`decorator_invocation` 11/11 · `decorator_regression` 4/4), templates (`templates` 9/9),
+`sublanguage` e `completion` ✅. language-server 100% verde.
 
 ---
 
@@ -74,6 +73,14 @@ FnDecl do decorator/template
   com handle `Term` e args), módulo/arquivo por hash do código, `evalDetailed` → `Outcome.err` com o diagnóstico Erlang,
   `parseOutcome` com struct plana, sem `std.debug.print`; testes inline. `assertRejects` passou a comparar só a mensagem do
   erro (antes casava com o fonte citado no render). Resultado: 31 → 22 falhas.
+- **F4** (não commitado): `template_eval` sobre `emitComptimeModule` — capture como `Term` (`captureToTerm`: text/parts com
+  placeholders de hole/source/context/bindings), host fns (`text`, `parts`, `lookup`, `build`, `custom`, `fail`, `failAt`,
+  `expr`, `code`…), `main/0` com reply por forma do resultado, `parseOutcome` com struct plana + `std.json.Value` →
+  `TypedValue`/`CustomNodeTree` (`ref` com name+kind); decompilador `emitBpBody` removido; `PlainArg.writeErl` compartilhado
+  com decorators. Codegen erlang: `host_records` no `ComptimeModule` e **mutação em `if`/`loop`/`forEach` retornando os
+  valores** (`Acc@1 = case … end`, `lists:foldl`). Snapshots: `comptime_partial…` (loop de `COMMANDS`), 12 de
+  `template_end_to_end_*` (node/erlang/beam/wasm, antes vazios/truncados), `lsp/sublanguage_semantic_tokens` (agora pinta
+  keyword/property dentro da string). Resultado: 22 → 5 falhas.
 - **F0 parcial:** `.snap.md.new` commitados removidos; `src/` duplicado do meta removido; docs de todo o projeto auditadas.
 
 ---
@@ -87,16 +94,28 @@ FnDecl do decorator/template
 - [ ] Plain args: renomear `PlainArg.jsValue` → `source` (compartilhado com `template_eval`, fazer junto do F4)
 - [ ] `TypeError` de decorator com loc da anotação (hoje coarse) e `failAt` usando o span
 
-### F4 — Templates (`comptime/template_eval.zig`)
-- [ ] Migrar `evaluateErl` p/ `emitComptimeModule`; apagar `emitBpBody` (decompilador bp)
-- [ ] Host fns de template no tail/prelude: `q.build`, `q.text`, `q.parts`, `q.lookup`, `q.bindings`, `q.fail`,
-      `q.custom`, `@expr`, `makeExpr`, `makeCode` (`#[@Host]` em `template_runtime.bp` + `erl_prelude.zig`)
-- [ ] Captures (`template.CapturedExpr`) → `Term` no `main/0`
-- [ ] `parseOutcome`: `union(enum)` do `std.json` espera `{"code":{…}}`, não `{"kind":"code",…}` — trocar por struct plana
-      com `kind` + campos opcionais, ou walk de `std.json.Value`; `TypedValue` não aceita JSON cru (`42`, `{…}`)
-- [ ] Avaliar `TypedValue` = `Term`
-- [ ] Hint de erro fala "node runtime" → erl
-- [ ] Remover `literalFromJson` (`infer.zig`) se não restar uso
+### F4b — Limpeza pós-templates
+- [ ] `comptime.zig` `warmPersistentErlRunner`: remover a compilação de `template_runtime.bp` → `template_runtime.erl` e `patchHostMethods` (não usados pelo avaliador novo)
+- [ ] `runtime/erl_prelude.zig` (`botopink_comptime_prelude`): remover se nada mais chama; tirar do `persistent_erl.ensureSpawned`
+- [ ] `template.zig`: remover helpers WAT/JSON mortos (`readWatString`, leitura de `CustomNode` da memória WAT, `parseCustomNode(std.json.Value)`, `parseSpanJson`/`jsonStr` se sem uso); `contextJsonAlloc` tem teste — decidir
+- [ ] `infer.zig`: remover `literalFromJson`
+- [ ] `libs/std/src/template_runtime.bp`: ainda descreve o modelo WAT (`i32`) — remover ou alinhar ao modelo de capture em map
+- [ ] `PlainArg.jsValue` → `source`
+- [ ] Bug do backend erlang visto no snapshot `template_end_to_end_yaml…`: `Cfg` ligado em `'_botopink_main'` e lido em `main()` (top-level `val` com wrapper de entrypoint) → spec 03
+
+### F8 — Erlang AST + emitter (decisão do Eric: `erlang.zig` emite pelo emitter)
+Hoje o `erlang.zig` usa o `erl_emitter` só p/ nomes/atoms/binários (6 chamadas); ~385 `this.w("…")`/`this.fmt("…")`
+escrevem Erlang à mão (`case`, `fun`, `lists:foldl`, maps, tuplas, chamadas), incluindo a mutação do F4 e o host glue
+em texto de `decorator_eval`/`template_eval`.
+- [ ] `codegen/beam/erl_ast.zig`: modelo de expressões/formas Erlang (module/attribute/function/clause, match, case,
+      if/receive?, fun, call local/remote, binop/unop, var, atom, literal `Term`, map/list/tuple/cons, map get/update,
+      try/catch, block) sobre o `Term` para literais
+- [ ] `erl_emitter`: renderizar `erl_ast` (indentação idêntica à atual p/ snapshots byte-idênticos)
+- [ ] Migrar `erlang.zig` construto por construto (expressões → statements → funções → módulo), snapshot erlang
+      byte-idêntico a cada passo; `emitMutatingStmt` monta nós (sem side buffer de texto)
+- [ ] Host glue de `decorator_eval`/`template_eval` (`fail/2`, `main/0`, `'__bp_reply'`…) como `erl_ast`
+- [ ] `beam_emitter` continua no `Term` (o `.S` é máquina de registradores, não expressões)
+- [ ] AGENTS.md de `codegen/` e `codegen/beam/`
 
 ### F5 — BEAM comptime (`comptime/runtime/beam.zig`) — remover a ida ao `erl`
 `renderExprValue` já calcula tudo no Zig e grava o JSON como string fixa em `main() -> "…"`; o `erl` só devolve
@@ -107,7 +126,6 @@ a string e `parseResults` re-parseia o que o Zig gerou.
 - [ ] Não bloqueia teste verde
 
 ### F6 — Suíte verde
-- [ ] `templates` 9 → 0 · `sublanguage` 8 → 0
 - [ ] Beam snapshots (5): revisar o RUN LOG novo e aceitar
 - [ ] Verificar RUN LOG dos 3 snapshots beam corrigidos no F1 (antes o `.S` nem montava)
 - [ ] Rodar baseline na `feat` p/ separar regressão desta branch de falha pré-existente
