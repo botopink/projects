@@ -13,20 +13,16 @@
 
 ## Estado atual
 
-`zig build` ✅ · `zig build test`: **1390/1421 ok · 31 falhas · 13 leaks · ~17s · sem travamentos**
+`zig build` ✅ · `zig build test`: **1401/1423 ok · 22 falhas · 13 leaks · ~17s · sem travamentos**
 
 | Grupo | Falhas | Causa |
 |---|---|---|
-| `comptime.tests.decorator_invocation` | 6 | `decorator_eval` ainda usa emitter Erlang à mão → módulo não compila |
-| `comptime.tests.decorator_regression` | 2 | idem |
 | `comptime.tests.templates` | 9 | `template_eval.evaluateErl` gera bp sintético → `compile()` → `parse failed for module 'template_body'` |
 | `tests.sublanguage` (LSP) | 8 | idem templates (erika `@ExprCustom`) |
-| `tests.completion` | 1 | decorator falha → record com decorator perde bindings |
 | `codegen` beam snapshots | 5 | RUN LOG passou a ter saída (`<<"started">>`, `[<<"a">>,…]`) que o `.snap.md` não tem |
 | leaks | 13 | todos de `codegen/runtime.zig` `executeErlang`: saída do `erlc` (`compile_out`/`aux_out`) não liberada no retorno antecipado — escopo do step-2 |
 
-⚠️ Os testes de *rejeição* de decorator passam por engano: `assertRejects` procura a mensagem no erro renderizado, que inclui
-o código-fonte inteiro (onde a mensagem já aparece) — p.ex. `regression: loop/conditional`. Corrigir o helper no F6.
+Decorators: `decorator_invocation` 11/11 · `decorator_regression` 4/4 · `completion` R2 ✅.
 
 ---
 
@@ -74,30 +70,22 @@ FnDecl do decorator/template
   `persistent_erl`: `readExact`, `evalDetailed`/`Response`, timeout de 10s no `main/0`, `write_frame` robusto,
   kill do filho em falha de transporte, `halt()` no EOF + stderr em `.botopinkbuild/tmp/persistent_erl/erl.stderr.log`
   (causa dos 2 binários travados: `beam.smp` órfão segurando o stderr do test runner).
-- **F0 parcial:** `.snap.md.new` commitados removidos; `src/` duplicado do meta removido.
+- **F3** (não commitado): `decorator_eval` sobre `emitComptimeModule` (host glue `fail`/`failAt`/`compilerError`/`emit` + `main/0`
+  com handle `Term` e args), módulo/arquivo por hash do código, `evalDetailed` → `Outcome.err` com o diagnóstico Erlang,
+  `parseOutcome` com struct plana, sem `std.debug.print`; testes inline. `assertRejects` passou a comparar só a mensagem do
+  erro (antes casava com o fonte citado no render). Resultado: 31 → 22 falhas.
+- **F0 parcial:** `.snap.md.new` commitados removidos; `src/` duplicado do meta removido; docs de todo o projeto auditadas.
 
 ---
 
 ## Pendente
 
 ### F0 — Housekeeping
-- [ ] Remover `std.debug.print` de `decorator_eval.zig` e `infer.zig` (`calling decoratorEval.evaluate…`) — erro vai no `Outcome`
-- [ ] `.qwen/`, `test_pub.zig`, `.env` vazio no meta — confirmar com Eric se são intencionais
+- [ ] `.qwen/`, `test_pub.zig` (importa `modules/core/src/parser.zig`, inexistente), `.env` vazio no meta — decisão do Eric
 
-### F3 — Decorators (`comptime/decorator_eval.zig`)
-- [ ] Reescrever `buildErlModule` sobre `erlang.emitComptimeModule`:
-  - program = `[dfn]`; `host_enums = &.{"DeclKind"}`; export `main/0`
-  - `tail` = host fns (`fail/2`, `failAt/3`, `compilerError/1`, `emit/1`, `emit_stack/0`) + `main/0`
-  - `main/0` chama `<decorator>(<handle Term>, <plain args Term>)`; aridade = `dfn.params.len`, parâmetro sem arg → `undefined`
-  - `main/0` captura `throw:{comptime_fail, Msg, Span}` e `error:Reason` → `{kind:"error", message}`
-- [ ] Apagar `emitExpr`/`emitStmt`/`emitBody` manuais
-- [ ] `handleToTerm`: `methods[].params`, `returnType`, `annotations[].args` coerentes com `builtins.d.bp`; `Interface` usa `fld.typeName`
-- [ ] Plain args: `PlainArg.jsValue` é lexema bp → `Term` (string/número/bool; resto → erro claro); renomear campo p/ `source`
-- [ ] Nome de módulo/arquivo único por avaliação (hash do Erlang gerado; hoje `hash(dfn.name)` → corrida em paralelo)
-- [ ] Usar `evalDetailed`: `compile_error`/`runtime_error` viram `Outcome.err` com a mensagem
-- [ ] `parseOutcome` com struct no formato do `main/0` (`{kind, contributions|message|span}`); não liberar `stdout` antes de usar os slices
-- [ ] `failAt` → `Outcome.fail.span`
-- [ ] `infer.zig`: mensagem do `Outcome.err` no `TypeError` (hint atual "check that `erl` is available" é enganoso)
+### F3 — Decorators — pendências menores
+- [ ] Plain args: renomear `PlainArg.jsValue` → `source` (compartilhado com `template_eval`, fazer junto do F4)
+- [ ] `TypeError` de decorator com loc da anotação (hoje coarse) e `failAt` usando o span
 
 ### F4 — Templates (`comptime/template_eval.zig`)
 - [ ] Migrar `evaluateErl` p/ `emitComptimeModule`; apagar `emitBpBody` (decompilador bp)
@@ -119,11 +107,9 @@ a string e `parseResults` re-parseia o que o Zig gerou.
 - [ ] Não bloqueia teste verde
 
 ### F6 — Suíte verde
-- [ ] `decorator_invocation` 11/11 · `decorator_regression` 4/4
-- [ ] `templates` 9 → 0 · `sublanguage` 8 → 0 · `completion` 1 → 0
+- [ ] `templates` 9 → 0 · `sublanguage` 8 → 0
 - [ ] Beam snapshots (5): revisar o RUN LOG novo e aceitar
 - [ ] Verificar RUN LOG dos 3 snapshots beam corrigidos no F1 (antes o `.S` nem montava)
-- [ ] `assertRejects` (decorator_invocation/regression): comparar só a mensagem do erro, não o render com fonte
 - [ ] Rodar baseline na `feat` p/ separar regressão desta branch de falha pré-existente
 - [ ] Leaks de codegen (13) → step-2; garantir que F3–F5 não adicionam novos
 - [ ] **Testes do lexer não rodam:** `src/lexer/tests.zig` é só `test {}` — os 7 arquivos de `lexer/tests/` (~1,2k linhas) nunca compilam; re-registrar e corrigir o que quebrar (pode ir p/ step-3)
@@ -167,3 +153,24 @@ a string e `parseResults` re-parseia o que o Zig gerou.
   (ex.: processo filho segurando stdio do runner).
 - Iteração rápida sem suíte: `zig-out/bin/botopink build --target erlang --out out` num projeto de scratch.
 - Não usar `pkill -f <padrão>` no mesmo comando que contém o padrão — mata o próprio shell.
+
+---
+
+## Para um agente revisar depois (achados da auditoria de docs)
+
+Itens que a auditoria dos `.md` do submódulo encontrou mas **não corrigiu** (fora do escopo ou sem certeza).
+Verificar cada um no código antes de agir.
+
+- [ ] `libs/std/src/reflect.bp` e `types.bp` não estão no `root.bp` nem no `build.zig` — órfãos ou WIP? Ligar ou remover.
+- [ ] Os 67 testes inline de `libs/std/src/primitives.bp` provavelmente não rodam no `botopink test` (o `root.bp` não declara o arquivo). Confirmar e decidir onde rodam.
+- [ ] `libs/std/botopink.json` lista em `files` arquivos inexistentes (`primitives.d.bp`, `array.d.bp`, `string.d.bp`).
+- [ ] `zig build test-vscode` chama `../../scripts/test-vscode.sh`, que não existe no meta.
+- [ ] `scripts/git-hooks/pre-commit` procura `scripts/git-hooks/lib/test-runner.sh` no meta (não existe) e não há mais script que instale o hook (`install-hooks.sh` sumiu).
+- [ ] Comentários de código ainda citam wasm3/wat3/`wat_runtime`/`wasm3_host`: doc de `executeWat` (`codegen/runtime.zig`), cabeçalho de `libs/std/src/template_runtime.bp`, `comptime/stdlib/prelude.zig`, `build.zig` (`std_internal_files`), `comptime.zig:674`.
+- [ ] `.github/workflows/test.yml`: comentários desatualizados (wasmtime p/ "26 wasm snapshots", contagens de testes).
+- [ ] Cabeçalho de `examples/hello.bp` diz `botopink run examples/hello.bp`, mas a CLI é baseada em projeto (`botopink.json`).
+- [ ] `README.md` diz licença MIT, mas não há arquivo LICENSE no repo.
+- [ ] Dica removida do `AGENTS.md` por falta de verificação: "logger do OTP escreve SIGTERM no stdout e corrompe o protocolo de frames do `persistent_erl`". Confirmar e, se valer, recolocar.
+- [ ] Spec 03 (`specs/1.0.0-beta/03-codegen-hardening.md`): atualizar com as contagens medidas na working tree —
+      snapshots com `@print` e RUN LOG vazio: node 14 · erlang 33 · beam 26 · wasm 95 (stub `executeWat`);
+      com `undefined`: node 9 · erlang 1 · beam 4. Listar com `scripts/snap_audit.sh --mode=runlog`.
