@@ -71,7 +71,7 @@ Modo comptime (corpo sem tipos): `+` → `'__bp_add'/2`, `.len`/`.length` → `'
 
 | Fase | Escopo | Estado |
 |---|---|---|
-| F0 | Housekeeping (`src/` acidental do meta, `.snap.md.new` commitados, prints de debug) | parcial (`.snap.md.new` beam versionados; `.qwen/`, `test_pub.zig`, `.env` aguardam decisão) |
+| F0 | Housekeeping (`src/` acidental do meta, `.snap.md.new` commitados, prints de debug) | parcial (`.snap.md.new` beam versionados; `.qwen/` removido; `test_pub.zig`, `.env` aguardam decisão) |
 | F1 | `term.zig`, `erl_emitter.zig`, `beam_emitter.zig`; `erlang.zig`/`beam_asm.zig` migrados; `handleToTerm` | feito |
 | F2 | `emitComptimeModule` + modo `untyped` + versionamento de variáveis; `persistent_erl` robusto (`readExact`, `evalDetailed`, timeout, `halt()`, stderr em log) | feito |
 | F3 | Decorators sobre `emitComptimeModule` | feito (menor: loc do `TypeError`, span do `failAt`) |
