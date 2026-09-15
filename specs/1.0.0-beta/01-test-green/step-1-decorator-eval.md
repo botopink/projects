@@ -1,6 +1,6 @@
 # Step 1 — Fix decorator eval (9 failures)
 
-**Status:** ⏳ pending  
+**Status:** 🟡 in progress (investigação concluída; implementação parcial)  
 **Priority:** 🔴 CRÍTICO  
 **Estimativa:** 4-8 horas
 
@@ -37,84 +37,84 @@ hint: Decorator bodies run in the node runtime at compile time — check that `n
 
 ---
 
-## Causa raiz
+## Causa raiz (definitiva — atualizada)
 
-### Análise do código
+A avaliação de decorator via Erlang **nunca esteve completa**. Não é um bug pontual
+de "reutilizar o decompiler": o caminho inteiro (`decorator_eval` → codegen Erlang →
+`persistent_erl`) está incompleto.
 
-**`decorator_eval.zig:94-100`:**
-```zig
-fn evaluateErl(
-    arena: std.mem.Allocator,
-    io: std.Io,
-    dfn: ast.FnDecl,
-    handleJson: []const u8,
-    plainArgs: []const template.PlainArg,
-) EvalError!Outcome {
-    // ... implementação
-}
-```
+### Evidências
 
-**Problema identificado:**
-- `evaluateErl()` retorna `error.EvalFailed` para decorators complexos
-- O decompiler `emitBpExpr` em `template_eval.zig` já está completo
-- Mas `decorator_eval.zig` não o usa corretamente ou tem gaps na implementação
+1. **`template_eval.zig:14-20` documenta o gap:**
+   > *"evaluateErl() returns EvalFailed until erlang.zig gains #[@Host] method
+   > lowering. Methods like Capture.lookup(), Capture.bindings(), failRaw(),
+   > makeExpr(), makeCode() are annotated #[@Host] in template_runtime.bp and must
+   > be redirected to botopink_comptime_prelude module calls."*
 
-### Constructs que falham
+2. **`warmPersistentErlRunner` (`comptime.zig:382`) nunca é chamado.** Ele compila
+   `template_runtime.bp` → `template_runtime.erl` e aplica `patchHostMethods`, mas só
+   `getStdlibTemplate` é aquecido em `test_warmup.zig`. O `template_runtime.erl`/`.beam`
+   nunca é gerado/load no processo erl.
 
-Baseado nos testes, os decorators que falham usam:
+3. **O caminho que FUNCIONA p/ comptime val é `beam.zig`** (`renderExprValue`): avalia
+   expressões simples **em Zig** e usa o erl só para devolver um JSON pré-computado
+   (`main() -> "<json>".`). Não serve para corpos com `if`/loop/`fail`/`@emit`.
+
+### Falhas concretas observadas (após rodar os testes)
+
+1. **Off-by-one (corrigido):** `decorator_eval.zig` alocava `2 + plainArgs.len` decls,
+   mas são 3 fixas (`DeclKind`, handle `@Decl`, fn) + plain args. Crash real:
+   `panic: index out of bounds: index 2, len 2`.
+
+2. **`main/0` ausente:** `persistent_erl.eval` chama `Mod:main()`, mas o `.erl` gerado
+   não tem `main/0`.
+
+3. **Host functions ausentes:** o corpo gerado chama `fail/2`, `compilerError/1`,
+   `emit/1` como funções locais não definidas. `erlc` falha:
+   ```
+   decorator_body.erl:12:13: function compilerError/1 undefined
+   ```
+
+4. **Protocolo de resultado:** `parseOutcome` espera JSON
+   (`{"kind":"ok","contributions":[...]}`, `{"kind":"fail","message":...}`), mas o
+   servidor erl devolve termo Erlang cru.
+
+5. **`-export([main/0])`** precisa ser inserido logo após `-module(...)`.
+
+### Constructs que os testes exercitam
 
 1. **String concatenation** (`methods = methods + "..."`)
 2. **Loops** (`decl.methods.forEach({ m -> ... })`)
 3. **@emit** (`@emit("pub fn ...")`)
 4. **Field access** (`decl.name`, `m.name`)
 5. **Conditionals** (`if (decl.kind != DeclKind.Record)`)
+6. **Host calls** (`decl.fail(msg)`, `@compilerError(msg)`)
 
 ---
 
 ## Solução
 
-### Opção A (recomendada): Reutilizar decompiler
+### Opção A (recomendada): completar o caminho Erlang
 
-**Arquivos a modificar:**
-- `modules/compiler-core/src/comptime/decorator_eval.zig`
-- `modules/compiler-core/src/comptime/template_eval.zig` (se necessário)
+`compileFromAst` + codegen Erlang já geram o corpo corretamente. Falta pós-processar
+o `.erl` em `decorator_eval.zig` para adicionar:
 
-**Passos:**
-
-1. **Verificar se `emitBpExpr`/`emitBpStmt` são públicos em `template_eval.zig`**
-   ```zig
-   // template_eval.zig
-   pub fn emitBpExpr(...) void { ... }
-   pub fn emitBpStmt(...) void { ... }
+1. `-export([main/0]).` logo após `-module(...)`.
+2. Host functions:
+   ```erlang
+   fail(Decl, Msg) -> erlang:throw({comptime_fail, Msg, #{}}).
+   compilerError(Msg) -> erlang:throw({comptime_fail, Msg, #{}}).
+   emit(Src) -> erlang:put('__emit', [Src | emit_stack()]).
+   emit_stack() -> case erlang:get('__emit') of undefined -> []; L -> L end.
    ```
+3. `main/0` que chama `fn(decl(), <arg>()...)`, captura `{comptime_fail, Msg, _}`
+   e devolve o JSON esperado por `parseOutcome` (com escape de string p/ os `@emit`).
 
-2. **Importar em `decorator_eval.zig`**
-   ```zig
-   const templateEval = @import("template_eval.zig");
-   ```
+### Opção B (alternativa): interpretador em Zig
 
-3. **Usar o decompiler em `evaluateErl`**
-   ```zig
-   fn evaluateErl(...) EvalError!Outcome {
-       // Decompilar o corpo do decorator para BP source
-       var bp_source = std.ArrayList(u8).init(arena);
-       templateEval.emitBpBody(&bp_source, dfn.body);
-       
-       // Executar via persistent_erl
-       // ...
-   }
-   ```
-
-4. **Testar cada construct**
-   - String concat
-   - Loops
-   - @emit
-   - Field access
-   - Conditionals
-
-### Opção B: Implementar decompiler separado
-
-**Não recomendado** — duplicaria código e aumentaria manutenção.
+Interpretar o corpo do decorador direto em Zig (como `beam.zig` faz com expressões,
+estendendo p/ `if`/loop/`fail`/`emit`/string concat). Evita o runtime Erlang, mas exige
+um mini-interpretador do AST não-tipado.
 
 ---
 

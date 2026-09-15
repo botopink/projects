@@ -79,11 +79,28 @@ rakun:              d4a6794 merge: integrate feat into main
 ### Prioridade CRÍTICA — Spec 01
 
 **Step 1 — Fix decorator eval (9 failures)**
-- 9 testes em `decorator_invocation.zig` falham
-- Erro: "Decorator bodies run in the node runtime"
-- Causa: `evaluateErl` retorna `EvalFailed`
-- Solução: Reutilizar `emitBpExpr` de `template_eval.zig`
-- **Status: NÃO INICIADO**
+- 9 testes em `decorator_invocation.zig` falham (+ 4 em `decorator_regression.zig`)
+- **Status: EM ANDAMENTO** — investigação concluída, implementação parcial
+
+**Feito nesta etapa:**
+- `compileFromAst` em `comptime.zig` (compila `ast.Program` direto, sem lex/parse)
+- `decorator_eval.zig` refatorado para construir AST direto (`jsonToExpr` + `buildDeclKindRecord`)
+- Fix no codegen Erlang: `atomName(f.name)` em `recordLit`/`interfaceLit`
+- Off-by-one corrigido (`2 + plainArgs.len` → `3 + plainArgs.len`)
+
+**Causa raiz real (não é só "reutilizar emitBpExpr"):**
+- A avaliação de decorator via Erlang **nunca esteve completa**.
+- `template_eval.zig` documenta: *"evaluateErl() returns EvalFailed until erlang.zig gains #[@Host] method lowering"*.
+- `warmPersistentErlRunner` (que compila `template_runtime.bp` e aplica `patchHostMethods`) **não é chamado em lugar nenhum**.
+- O módulo `.erl` gerado para o corpo do decorador não tem `main/0` nem as host functions
+  (`fail`/`emit`/`compilerError`) → `erlc` falha com `function compilerError/1 undefined`.
+
+**Falta (próximos passos):**
+1. Sintetizar `main/0` no `.erl` gerado (chama `fn(decl(), <arg>()...)`).
+2. Definir host functions `fail/2`, `compilerError/1`, `emit/1`.
+3. `main/0` devolver o JSON esperado por `parseOutcome` (com escape de string).
+4. Inserir `-export([main/0])` após `-module(...)`.
+5. Revisar/regenerar snapshots afetados pelo fix `atomName`.
 
 **Step 2 — Fix allocation leaks**
 - Múltiplos codegen tests vazam 1 allocation cada
