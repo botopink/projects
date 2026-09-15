@@ -185,7 +185,7 @@ beam.zig → buildComptimeInput() → ComptimeInput struct
   - ✅ Testes unitários para todas as funções
 
 - ✅ Refatorar `emitDeclHandle()` em `decorator_eval.zig`:
-  - ✅ Usa `erl_emitter` em vez de emitir diretamente
+  - ✅ Usa `erl_emitter.emitMap()` em vez de emitir manualmente
   - ✅ Converte `DeclHandle` para `ErlValue` map
   - ✅ Código mais limpo e reutilizável
 
