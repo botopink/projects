@@ -30,7 +30,11 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/src/`.
   OR patterns, guards, `assert … is`, early return, type guard, `&&`, `?.`, `else if`) and
   `codegen/tests/narrowing.zig` (11 tests with RUN LOG).
 - **Comptime eval:** decorators and templates run on the persistent `erl` through
-  `erlang.emitComptimeModule`; `val x = comptime …` is folded in Zig (`comptime/eval.zig`).
+  `erlang.emitComptimeModule` (snapshots show the generated Erlang and the JSON reply);
+  `val x = comptime …` is folded in Zig (`comptime/eval.zig`). Known fold bug: every binary
+  operator folds as integer arithmetic, so `comptime 3.14 * 2.0` and `comptime "a" + "b"`
+  become `0` (`COMPTIME VALUES` in `expressions_of_multiple_types` shows it). Fix it before
+  building type-level eval on top (step 4).
 
 ---
 

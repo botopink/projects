@@ -48,10 +48,10 @@ if (assemble_result.len == 0) return allocator.dupe(u8, "");
 **H7 — the runtime cache key excludes the harness/toolchain**, so H3/H4 regressions are masked locally by stale entries (470 entries, oldest 2026-06-27).
 
 **Generic backend bugs seen repeatedly (outside this batch too):**
-- **B1 (beam)**: in any function with arity ≥ 1, the first local binding is materialized through `{x,0}` before the parameter is saved, clobbering the parameter. 54 function bodies across `S/beam/beam` start with `{move, {integer|literal|atom,...}, {x, 0}}` right after `allocate` (scan in scratch). Verified at runtime: `'scale_$0'(100)` returns `4` (expected 200), `'scale_$1'(100)` returns `9` (expected 300); loop-unrolling `'execute_$0'(10)` returns `0` (expected 20).
+- **B1 (beam)**: in any function with arity ≥ 1, the first local binding is materialized through `{x,0}` before the parameter is saved, clobbering the parameter. 54 function bodies across `S/beam` start with `{move, {integer|literal|atom,...}, {x, 0}}` right after `allocate` (scan in scratch). Verified at runtime: `'scale_$0'(100)` returns `4` (expected 200), `'scale_$1'(100)` returns `9` (expected 300); loop-unrolling `'execute_$0'(10)` returns `0` (expected 20).
 - **B2 (wasm)**: specialized functions are injected with `.returnType = null` (`src/comptime/transform.zig:272`), so `wat.zig:875` omits `(result i32)` while the body still pushes a value + `return` → wasmtime: `type mismatch: expected i32 but nothing on stack`. Affects every `*_$N` function in the batch.
 - **B3 (erlang)**: module-level runtime vals are bound as locals in `'_botopink_main'/0` (`src/codegen/erlang.zig:755-766`) but referenced as free variables from other functions → `variable 'X' is unbound` compile error (root cause of the known `Cfg`/`Page`/`COMMANDS` issues, also `Base`).
-- **B4 (erlang)**: string `+` is emitted as arithmetic `+` on binaries (badarith) — also present in non-template fixtures such as `S/erlang/erlang/builtin_print_with_variable.snap.md` line 16 `io:format("~p~n", [(<<"Hello, ">> + Name)])`.
+- **B4 (erlang)**: string `+` is emitted as arithmetic `+` on binaries (badarith) — also present in non-template fixtures such as `S/erlang/builtin_print_with_variable.snap.md` line 16 `io:format("~p~n", [(<<"Hello, ">> + Name)])`.
 - **B5 (beam)**: references to module-level vals are lowered to atoms (`{move, {atom, page}, {x, 0}}`, `{atom, cfg}`, `{atom, base}`, `{atom, 'COMMANDS'}`).
 - **B6 (wasm)**: module-level non-literal vals are not emitted (`global.get $page` / `$base` → `unknown global`), and `(local ...)` declarations are emitted mid-body (invalid WAT).
 
@@ -61,7 +61,7 @@ if (assemble_result.len == 0) return allocator.dupe(u8, "");
 
 | slug | backend(s) | verdict | evidence | expected vs actual | suggested fix |
 |---|---|---|---|---|---|
-| comptime_folding_integer_addition_folds_to_literal | all 4 | wrong-test | All 4 files are 0 bytes (`S/{node/commonJS,erlang/erlang,beam/beam,wasm/wasm}/comptime_folding_integer_addition_folds_to_literal.snap.md`, blob `e69de29`, empty since `0c30a38`). Source (`comptime.zig:19-20`) has a top-level statement `@print(v1);`; `@print` lexes as `builtinIdent` and `parser.zig:333-347` returns `UnexpectedToken` for it → parseError → H1. | Expected (after wrapping in `fn main`): `const v1 = 2;`, `ct_0 = 2`, RUN LOG `2`. Actual: nothing pinned; test passes vacuously. | Move `@print` into `fn main() {}`; delete the empty files; fix H1. |
+| comptime_folding_integer_addition_folds_to_literal | all 4 | wrong-test | All 4 files are 0 bytes (`S/{commonJS,erlang,beam,wasm}/comptime_folding_integer_addition_folds_to_literal.snap.md`, blob `e69de29`, empty since `0c30a38`). Source (`comptime.zig:19-20`) has a top-level statement `@print(v1);`; `@print` lexes as `builtinIdent` and `parser.zig:333-347` returns `UnexpectedToken` for it → parseError → H1. | Expected (after wrapping in `fn main`): `const v1 = 2;`, `ct_0 = 2`, RUN LOG `2`. Actual: nothing pinned; test passes vacuously. | Move `@print` into `fn main() {}`; delete the empty files; fix H1. |
 | comptime_folding_block_with_break_value_inlines_result | all 4 | wrong-test | 0-byte snapshots; source `comptime.zig:26-29` ends with top-level `@print(t);` → parseError (H1). | Expected `const t = 24;`, `ct_0 = 24`, RUN LOG `24`. Actual: empty. | Same as above. |
 | comptime_folding_float_multiplication_folds_to_literal | all 4 | wrong-test | 0-byte snapshots; top-level `@print(pi2);` (`comptime.zig:38`). | Expected `ct_0 = 6.28`, RUN LOG `6.28` (3.14*2.0 = 6.28 exactly in IEEE double). Actual: empty. | Same. |
 | comptime_folding_multiplication_binds_tighter_than_addition | all 4 | wrong-test | 0-byte snapshots; top-level `@print(n);` (`comptime.zig:47`). | Expected `ct_0 = 14`, RUN LOG `14`. Actual: empty. | Same. |
@@ -110,7 +110,7 @@ Method (`run-codegen-comptime/orphans.py`): for every `test "…" {` in `modules
 
 Results:
 - 296 `test` blocks; 280 produce snapshots (16 are needle/unit tests). No duplicate slugs, no test with two snapshot asserts, no `SkipZigTest`.
-- `node/commonJS` 279 files = 279 expected; `erlang/erlang` 279 = 279; `beam/beam` 278 = 278; `wasm/wasm` 278 = 278; `errors/*/*` 1 each = 1. No non-`.snap.md` files (no stray `.new`).
+- `commonJS` 279 files = 279 expected; `erlang` 279 = 279; `beam` 278 = 278; `wasm` 278 = 278; `errors/*/*` 1 each = 1. No non-`.snap.md` files (no stray `.new`).
 - **Orphans: 0. Missing: 0.**
 - The 3 tests `runtime_scratch.zig`, 3 `comptime_module.zig`, 2 `dts_skips_templates.zig` produce no snapshots by design.
 
@@ -124,7 +124,7 @@ Results:
 
 - Produced by `src/codegen/tests/builtins.zig:291` `test "codegen: test runner"` → slug `test_runner` (text after `": "`). It calls `h.assertJsTestMode`, which iterates `configs[0..2]` (commonJS + erlang only, `helpers.zig:257`). The missing beam/wasm files are therefore **intended, not orphans**.
 - Weaknesses:
-  - erlang `S/erlang/erlang/test_runner.snap.md` RUN LOG is empty because the test-mode module has no `'_botopink_main'` (`-export([main/1]).`), so `executeErlang` early-returns at `runtime.zig` (`indexOf(erl_code, "_botopink_main") == null`). The erlang runner body (`'__bp_run_tests'/1`) is never executed by the snapshot.
+  - erlang `S/erlang/test_runner.snap.md` RUN LOG is empty because the test-mode module has no `'_botopink_main'` (`-export([main/1]).`), so `executeErlang` early-returns at `runtime.zig` (`indexOf(erl_code, "_botopink_main") == null`). The erlang runner body (`'__bp_run_tests'/1`) is never executed by the snapshot.
   - node RUN LOG pins timing: `  duration 0ms` twice — fails if a test body takes ≥ 0.5 ms on a cold node; only stable thanks to the output cache (H7).
   - node RUN LOG embeds nested ```` ``` ```` fences and `----- RUN LOG -----` inside the outer ```` ```logs ```` block, which breaks Markdown fencing of the snapshot (cosmetic, but confuses section parsers).
   - beam/wasm test mode is untested by design (no documented reason in the test).

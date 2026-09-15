@@ -3,10 +3,10 @@
 Repo root: `/home/ericfillipe/develop/botopink-lang/repository/botopink-lang`
 
 Path legend used below:
-- `S/node/<slug>` = `modules/compiler-core/snapshots/codegen/node/commonJS/<slug>.snap.md`
-- `S/erl/<slug>` = `modules/compiler-core/snapshots/codegen/erlang/erlang/<slug>.snap.md`
-- `S/beam/<slug>` = `modules/compiler-core/snapshots/codegen/beam/beam/<slug>.snap.md`
-- `S/wasm/<slug>` = `modules/compiler-core/snapshots/codegen/wasm/wasm/<slug>.snap.md`
+- `S/node/<slug>` = `modules/compiler-core/snapshots/codegen/commonJS/<slug>.snap.md`
+- `S/erl/<slug>` = `modules/compiler-core/snapshots/codegen/erlang/<slug>.snap.md`
+- `S/beam/<slug>` = `modules/compiler-core/snapshots/codegen/beam/<slug>.snap.md`
+- `S/wasm/<slug>` = `modules/compiler-core/snapshots/codegen/wasm/<slug>.snap.md`
 
 Scratch verification dir: `<scratch>/run-builtins-aggregates/`
 (`erl/<slug>/erlc_out.txt`, `beam/<slug>/asm_out.txt`, `wasm/<slug>/compile_out.txt`, `beamrun/run.py`, `beamrun/run2.py`, `jsrun/checks.js`, `cachekey.py`).

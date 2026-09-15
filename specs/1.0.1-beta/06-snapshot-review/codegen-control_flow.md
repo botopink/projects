@@ -12,7 +12,7 @@
   - 7 slugs repeat test names in `src/comptime/tests/{variants,types}.zig` and `src/format/tests/patterns.zig`. Those tests write to `snapshots/comptime/...` or other trees, so nothing collides.
 
 Path abbreviations used below (all under `modules/compiler-core/snapshots/codegen/`):
-`N/` = `node/commonJS/`, `E/` = `erlang/erlang/`, `B/` = `beam/beam/`, `W/` = `wasm/wasm/`.
+`N/` = `commonJS/`, `E/` = `erlang/`, `B/` = `beam/`, `W/` = `wasm/`.
 
 ## Verdict counts (one primary verdict per test, 44 tests)
 
@@ -47,7 +47,7 @@ Standing known issue: wasm RUN LOG is always empty because `executeWat` is a stu
 **H2. Six tests have 0-byte snapshot files on all 4 backends.** Verdict: wrong-test (empty baseline).
 
 - Affected slugs: `loop_map_with_break_add_tax`, `loop_filter_with_conditional_break`, `loop_map_with_break_simple`, `loop_even_numbers_with_break`, `throw_inside_case_arm`, `throw_inside_loop_body`.
-- `ls -la` shows size `0` for all 24 files. `git cat-file -s HEAD:…/node/commonJS/loop_map_with_break_simple.snap.md` returns `0`, and has since `0c30a38 initial commit`.
+- `ls -la` shows size `0` for all 24 files. `git cat-file -s HEAD:…/commonJS/loop_map_with_break_simple.snap.md` returns `0`, and has since `0c30a38 initial commit`.
 - `buildSnapshot` always writes `----- SOURCE CODE`, so `compareOrCreate` (`src/utils/snap.zig:61-119`) can never match an empty baseline. These 6 tests are red, or error out before snapshotting. Nothing about their codegen is pinned. No `.snap.md.new` files exist.
 - Old non-empty copies in `~/.cline/worktrees/e81c4/...` show that JS then emitted invalid code: `const dobrados = for (const [id] of Object.entries(ids)) {`.
 - **Fix:** regenerate the baselines (delete the empty files and run the test), then review them.

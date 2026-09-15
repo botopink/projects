@@ -3,7 +3,7 @@
 - **Batch:** codegen features (lambda/enum/destructure/star/import/range/pipeline/hooks/prim methods/enum sections)
 - **Tests reviewed:** 66 (62 `assertJs`/`assertJsSingle` snapshot tests, 2 `assertJsContains`, 2 `assertConsumerJs` needle-only tests with no snapshot by design)
 - **Snapshots reviewed:** 248 files (62 tests x 4 backends), all read in full. No orphans: no snapshot in the 4 dirs with a prefix from this file lacks a test. No slug collides with another codegen test file. The slugs that collide with format/parser/comptime tests are written under different snapshot roots.
-- **Path legend:** `node/<slug>` = `modules/compiler-core/snapshots/codegen/node/commonJS/<slug>.snap.md`. `erlang/`, `beam/` and `wasm/` map to `.../erlang/erlang/`, `.../beam/beam/` and `.../wasm/wasm/` the same way.
+- **Path legend:** `node/<slug>` = `modules/compiler-core/snapshots/codegen/commonJS/<slug>.snap.md`. `erlang/`, `beam/` and `wasm/` map to `.../erlang/`, `.../beam/` and `.../wasm/` the same way.
 - **How it was verified:** the generated code was copied into `scratchpad/run-features/`. The JS was run with `node`, the Erlang with `erlc` + `erl -s main _botopink_main`, the BEAM with `erlc +from_asm` + `erl`, and the WAT was validated with `wasmtime compile`. For hidden paths, non-exported functions were called directly on patched copies (exports only). Nothing was run in the repo.
 - **Known and not re-flagged per file:** the wasm RUN LOG is always empty (`executeWat` in `src/codegen/runtime.zig:393` is a stub). "Invalid WAT" below means `wasmtime compile` rejects the module, which is independent of that stub.
 

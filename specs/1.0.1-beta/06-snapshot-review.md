@@ -23,9 +23,9 @@ Paths are relative to `repository/botopink-lang/modules/`.
 
 | Suite | Directory (`*/snapshots/`) | Files | Sections | Producer |
 |---|---|---|---|---|
-| codegen | `compiler-core/snapshots/codegen/{commonJS,erlang,beam,wasm}` | 278 × 4, plus `test_runner.snap.md` in commonJS and erlang only | `SOURCE CODE`, `JAVASCRIPT` / `ERLANG` / `BEAM ASSEMBLY` / `WASM TEXT`, `COMPTIME VALUES`, `RUN LOG` | `compiler-core/src/codegen/snapshot.zig` |
+| codegen | `compiler-core/snapshots/codegen/{commonJS,erlang,beam,wasm}` | 278 × 4, plus `test_runner.snap.md` in commonJS and erlang only | `SOURCE CODE`, `COMPTIME ERLANG` / `COMPTIME REPLY`, `COMPTIME VALUES`, `JAVASCRIPT` / `ERLANG` / `BEAM ASSEMBLY` / `WASM TEXT`, `RUN LOG` | `compiler-core/src/codegen/snapshot.zig` |
 | codegen errors | `compiler-core/snapshots/codegen/errors/<target>/` | 4 (1 test) | `SOURCE CODE`, `ERROR` | same |
-| comptime | `compiler-core/snapshots/comptime/{node,erlang,beam,wasm}` | 199 × 4 | `SOURCE CODE`, `TYPED AST JSON`, `BOTOPINK TRANSFORM CODE`, `COMPTIME VALUES` | `compiler-core/src/comptime/snapshot.zig` |
+| comptime | `compiler-core/snapshots/comptime/{node,erlang,beam,wasm}` | 199 × 4 | `SOURCE CODE`, `COMPTIME ERLANG` / `COMPTIME REPLY`, `COMPTIME VALUES`, `BOTOPINK TRANSFORM CODE`, `TYPED AST JSON` | `compiler-core/src/comptime/snapshot.zig` |
 | comptime errors | `compiler-core/snapshots/comptime/{node,erlang}/errors` | 106 × 2 | `SOURCE CODE`, `ERROR` | `compiler-core/src/comptime/tests/helpers.zig` |
 | comptime templates | `compiler-core/snapshots/comptime/templates` | 1 | rendered `TypeError` | `comptime/tests/templates.zig` (`checkText`) |
 | parser | `compiler-core/snapshots/parser` | 213 | AST as a bare JSON block (no section headers, no source) | `compiler-core/src/parser/tests/*.zig` |
@@ -50,6 +50,16 @@ Facts that shape the review:
   needs the source string from the test.
 - **`.snap.md.new` is not git-ignored** in `repository/botopink-lang/.gitignore` (1.0.0-beta
   had 9 committed by mistake).
+- **The comptime runtime exchange is in the snapshots.** Every decorator/template evaluation
+  on `erl` writes `COMPTIME ERLANG -- <template|decorator> <fn>` (the lowered body plus the
+  `main/0` that encodes the reply, without module header or host glue) and `COMPTIME REPLY`
+  (the JSON sent back to compiler-core, or the compile/runtime error text) — see
+  `comptime/trace.zig`. `COMPTIME VALUES` lists `ct_N: <declaration> → literal`, so a wrong
+  fold shows next to its source (`val pi = comptime 3.14 * 2.0 → 0`). No decorator test
+  writes a snapshot today (`decorator_invocation` / `decorator_regression` assert directly),
+  so only template exchanges appear.
+- The codegen tree is `codegen/<target>/` and `codegen/errors/<target>/` (the reports in
+  `06-snapshot-review/` use these paths).
 - `scripts/snap_audit.sh --mode={runlog,legacy,values,coverage}` already classifies RUN LOGs
   and legacy surface; it does not relate a snapshot to its test.
 
@@ -69,9 +79,12 @@ For each snapshot, open the test that produces it (the test description is the s
      source's `@print`s must produce — computed by hand, not copied from another backend.
      A source with `@print` and an empty RUN LOG is a finding unless the test documents a skip.
      The 4 backends agree on the RUN LOG, or the difference is explained.
-   - comptime: types in `TYPED AST JSON` are the expected ones; `COMPTIME VALUES` are the
-     folded values of the source; `BOTOPINK TRANSFORM CODE` is the expansion the
-     decorator/template should produce.
+   - comptime: types in `TYPED AST JSON` are the expected ones; each `COMPTIME VALUES` line's
+     literal is the fold of the declaration printed next to it; `COMPTIME ERLANG` implements
+     the template/decorator body (and `main/0` passes the captures/handle the call site
+     implies); `COMPTIME REPLY` is the expansion (`source` / `value` / `custom` /
+     `contributions`) the body should produce for those inputs; `BOTOPINK TRANSFORM CODE`
+     matches it.
    - errors: the error is the one the test is about (right message, right location), not an
      unrelated earlier error that happens to make the test "reject".
    - parser: the AST matches the source structure (precedence, spans, node kinds).
@@ -134,7 +147,7 @@ Verified against HEAD while consolidating:
 | H5 | `executeWat` stub | `codegen/runtime.zig` | Every wasm RUN LOG empty; most WAT modules are invalid when run (spec 03 step 2) |
 | H6 | Parser error tests return early when no error detail is produced | `parser/tests/helpers.zig:109` | "assignment without val" and "reserved word in expression" compare nothing |
 | H7 | `language-server/src/tests/snapshot_test.zig` not imported by `test_root.zig` (and would not compile); `src/tests/root.zig` is a stale copy | language-server tests | dead tests |
-| H8 | Comptime transform section only written when a comptime value exists | `comptime/snapshot.zig:551` | template expansions never appear in any snapshot |
+| H8 | `BOTOPINK TRANSFORM CODE` only written when a comptime `val` exists | `comptime/snapshot.zig` | the expansion is visible in `COMPTIME REPLY`, but the program after splicing it (and after `@emit` contributions) is not shown for modules without comptime `val`s |
 | H9 | `assertComptimeAst` / `assertJs` never check the outcome (`comptime_err`, validation errors) | `comptime/tests/helpers.zig`, `codegen/tests/helpers.zig` | e.g. `comptime_block_with_break` records a validation error as success |
 
 ### Root causes behind the `wrong-output` findings (reported, re-confirm before fixing)
@@ -203,7 +216,8 @@ Without this, fixing the compiler changes nothing visible and a re-review is mea
    compiler errors in the RUN LOG (or a `COMPILE ERROR` section) instead of dropping them.
 3. H3/H9: a codegen or comptime snapshot test fails when the program does not compile unless the
    test explicitly expects an error; record the diagnostic in the snapshot.
-4. H4 (see step 1), H6, H7, H8 (always write the transform/expansion section when there is one).
+4. H4 (see step 1), H6, H7, H8 (write `BOTOPINK TRANSFORM CODE` whenever a template expanded or a
+   decorator contributed, not only when a comptime `val` exists).
 5. Clear `.botopinkbuild/runtime-cache` and run the suite from a cold cache; the cache key must
    include the harness version so stale entries cannot mask a change.
 6. Expect a large wave of `.snap.md.new`: triage it with step 2.
