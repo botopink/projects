@@ -18,6 +18,10 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/src/`.
 `zig build test`: **1571/1571 pass · 13 leaks · ~17s**, no hangs. Decorators, templates,
 `sublanguage` and `completion` are green.
 
+"Green" overstates it: spec 06 found harness defects (H1–H3, H9) that let failing programs
+and un-executed BEAM runs pass, and BEAM RUN LOGs come from a local runtime cache. Step 1
+below edits the same `executeErlang` code as spec 06 H2 — do them together.
+
 ---
 
 ## Step 1 — Allocation leaks in `executeErlang`

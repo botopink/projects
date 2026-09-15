@@ -11,13 +11,15 @@ comptime `val`s and the decorator regression tests are done and are not repeated
 | 03 | [`03-codegen-hardening.md`](./03-codegen-hardening.md) | medium | Empty/wrong RUN LOGs per backend (with the baseline bugs accepted in 1.0.0-beta), WAT execution, missing coverage, `persistent_erl` tests. |
 | 04 | [`04-erlang-emitter-cleanup.md`](./04-erlang-emitter-cleanup.md) | low | Optional leftovers of the `Term`/`erl_ast` migration. |
 | 05 | [`05-repo-hygiene.md`](./05-repo-hygiene.md) | low | Findings of the docs audit: orphan std files, broken scripts/manifests, stale comments, license. |
+| 06 | [`06-snapshot-review.md`](./06-snapshot-review.md) | critical | Every snapshot reviewed against its test (first pass done, evidence in `06-snapshot-review/`): harness defects that make the suite green on unchecked output (inverted BEAM check, failed compiles recorded as empty snapshots, cache-only RUN LOGs), root causes per backend/checker/parser/LSP, fix plan. |
 
 ## Dependencies
 
 ```
 01-suite-clean
   ├──► 03-codegen-hardening  (RUN LOG audit needs a leak-free suite; step 1 of 01 touches runtime.zig too)
-  └──► 04-erlang-emitter-cleanup  (byte-identical snapshot gate needs a clean baseline)
+  ├──► 04-erlang-emitter-cleanup  (byte-identical snapshot gate needs a clean baseline)
+  └──► 06-snapshot-review  (step 0 harness fixes share executeErlang with 01 step 1) ──► feeds 02 / 03 / 05 with wrong-output findings
 02-type-system       — independent of 03/04/05
 05-repo-hygiene      — independent; item 5.6 overlaps 03 step 2 (executeWat doc comment)
 ```

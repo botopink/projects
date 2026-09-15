@@ -32,6 +32,11 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/`.
 
 ---
 
+The spec 06 first pass ([`06-snapshot-review/`](./06-snapshot-review/)) lists every codegen
+`wrong-output` with evidence and root causes (BEAM register clobbering, erlang guards/enum
+patterns, commonJS `.slice`/destructuring, invalid WAT). Fix the spec 06 harness defects
+(H1–H3) first: several RUN LOGs below are only reproducible from the runtime cache.
+
 ## Step 1 — Backend runtime gaps
 
 Re-audit every snapshot in the table above and fix it or mark it as an intentional skip
