@@ -100,18 +100,24 @@ FnDecl do decorator/template
 - [ ] `TypeError` de decorator com loc da anotação (hoje coarse) e `failAt` usando o span
 
 ### F8 — Erlang AST + emitter (decisão do Eric: `erlang.zig` emite pelo emitter)
-Hoje o `erlang.zig` usa o `erl_emitter` só p/ nomes/atoms/binários (6 chamadas); ~385 `this.w("…")`/`this.fmt("…")`
-escrevem Erlang à mão (`case`, `fun`, `lists:foldl`, maps, tuplas, chamadas), incluindo a mutação do F4 e o host glue
-em texto de `decorator_eval`/`template_eval`.
-- [ ] `codegen/beam/erl_ast.zig`: modelo de expressões/formas Erlang (module/attribute/function/clause, match, case,
-      if/receive?, fun, call local/remote, binop/unop, var, atom, literal `Term`, map/list/tuple/cons, map get/update,
-      try/catch, block) sobre o `Term` para literais
-- [ ] `erl_emitter`: renderizar `erl_ast` (indentação idêntica à atual p/ snapshots byte-idênticos)
-- [ ] Migrar `erlang.zig` construto por construto (expressões → statements → funções → módulo), snapshot erlang
-      byte-idêntico a cada passo; `emitMutatingStmt` monta nós (sem side buffer de texto)
-- [ ] Host glue de `decorator_eval`/`template_eval` (`fail/2`, `main/0`, `'__bp_reply'`…) como `erl_ast`
+Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o que ainda é texto.
+
+- [x] **8.1** `codegen/beam/erl_ast.zig` (Expr/Clause/Body/Stmt/Function/Form + `Builder`) e renderer no
+      `erl_emitter` (`writeExpr`/`writeBody`/`writeFunction`/`writeForm`) com as regras de layout do backend; testes
+- [x] **8.2** código novo em nós: `ComptimeModule.forms` (sai o `tail` texto), `comptime_helper_forms`
+      (`'__bp_add'`, `'__bp_len'`, `'__bp_text'`, `'__bp_json'`), host glue + `main/0` de `decorator_eval`/`template_eval`
+      via `Builder`, `PlainArg.toExpr`; `emitMutatingIf`/`emitMutatingFold` montam `match`/`case_`/`fun` (corpos ainda `raw`)
+- [ ] **8.3** statements: `emitBodyFrom`/`emitBodyStmt` produzem `Ast.Body`/`Ast.Stmt` (`bind`/`assign`/`return`/comentários),
+      `emitEarlyReturnIf`, `emitPropagateTry`, fold fusion; remove `bodyAsRawStmt`
+- [ ] **8.4** expressões folha/médias em `emitExpr`: literal, identifier, identAccess (`maps:get`), binop/unop, collection
+      (tuple/list/record map), jump; depois `branch` (`if_`/`tryCatch`), `loop`, `function` (lambda → `fun`)
+- [ ] **8.5** `call` (receiver/std/ext/enum ctor/record ctor/prim dispatch/builtin templates) e `emitPrimMethod` — o maior bloco
+- [ ] **8.6** `emitCase`/`emitPattern`/`emitCaseBody` (padrões como `Ast.Expr`)
+- [ ] **8.7** declarações: `emitFn`/`emitTestFn`/`emitTopVal`/records/enums/interfaces/extensions → `Ast.Function`/`Form`;
+      cabeçalho do módulo (`-module`, `-export`, `-compile(no_auto_import)`), wrapper `_botopink_main`, runner de testes
+- [ ] **8.8** `erlang.zig` sem `this.w("…")`/`this.fmt("…")` de sintaxe Erlang (só `erlEmitter`); remover `w`/`fmt`/`writeIndent`
 - [ ] `beam_emitter` continua no `Term` (o `.S` é máquina de registradores, não expressões)
-- [ ] AGENTS.md de `codegen/` e `codegen/beam/`
+- [ ] AGENTS.md de `codegen/` e `codegen/beam/` a cada etapa
 
 ### F5 — BEAM comptime (`comptime/runtime/beam.zig`) — remover a ida ao `erl`
 `renderExprValue` já calcula tudo no Zig e grava o JSON como string fixa em `main() -> "…"`; o `erl` só devolve
