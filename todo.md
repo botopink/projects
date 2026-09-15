@@ -110,8 +110,9 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
 - [x] **8.3** statements: `bodyNode` monta `Ast.Body` (`stmtExpr`: `return`/`bindExpr`/destructuring/comentários) e as
       lowerings de corpo viram nós (`propagateTryExpr`, `earlyReturnIfExpr`, `foldFusionExpr`, `mutatingExpr`);
       `bodyAsRawStmt` removido; expressões ainda entram como `raw` (`exprAsRaw`)
-- [ ] **8.4** expressões folha/médias em `emitExpr`: literal, identifier, identAccess (`maps:get`), binop/unop, collection
-      (tuple/list/record map), jump; depois `branch` (`if_`/`tryCatch`), `loop`, `function` (lambda → `fun`)
+- [x] **8.4** `exprNode`: literal, identifier/identAccess (`maps:get`, `element/2`, `?.` como `fun` inline aplicado,
+      length/`'__bp_len'`), binop/unop, lambda, grouped/array/tuple/range/record/interface, jumps, `if`/`tryCatch`, `loop`;
+      `emitExprLegacy` só com `call`/`binding`/`useHook`/`comptime_` (+ `emitCase`) via `legacyAsRaw`
 - [ ] **8.5** `call` (receiver/std/ext/enum ctor/record ctor/prim dispatch/builtin templates) e `emitPrimMethod` — o maior bloco
 - [ ] **8.6** `emitCase`/`emitPattern`/`emitCaseBody` (padrões como `Ast.Expr`)
 - [ ] **8.7** declarações: `emitFn`/`emitTestFn`/`emitTopVal`/records/enums/interfaces/extensions → `Ast.Function`/`Form`;
