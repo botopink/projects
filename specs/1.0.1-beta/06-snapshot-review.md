@@ -23,8 +23,8 @@ Paths are relative to `repository/botopink-lang/modules/`.
 
 | Suite | Directory (`*/snapshots/`) | Files | Sections | Producer |
 |---|---|---|---|---|
-| codegen | `compiler-core/snapshots/codegen/{node/commonJS,erlang/erlang,beam/beam,wasm/wasm}` | 278 × 4, plus `test_runner.snap.md` in node and erlang only | `SOURCE CODE`, `JAVASCRIPT` / `ERLANG` / `BEAM ASSEMBLY` / `WASM TEXT`, `COMPTIME VALUES`, `RUN LOG` | `compiler-core/src/codegen/snapshot.zig` |
-| codegen errors | `compiler-core/snapshots/codegen/errors/<backend>/` | 4 (1 test) | `SOURCE CODE`, `ERROR` | same |
+| codegen | `compiler-core/snapshots/codegen/{commonJS,erlang,beam,wasm}` | 278 × 4, plus `test_runner.snap.md` in commonJS and erlang only | `SOURCE CODE`, `JAVASCRIPT` / `ERLANG` / `BEAM ASSEMBLY` / `WASM TEXT`, `COMPTIME VALUES`, `RUN LOG` | `compiler-core/src/codegen/snapshot.zig` |
+| codegen errors | `compiler-core/snapshots/codegen/errors/<target>/` | 4 (1 test) | `SOURCE CODE`, `ERROR` | same |
 | comptime | `compiler-core/snapshots/comptime/{node,erlang,beam,wasm}` | 199 × 4 | `SOURCE CODE`, `TYPED AST JSON`, `BOTOPINK TRANSFORM CODE`, `COMPTIME VALUES` | `compiler-core/src/comptime/snapshot.zig` |
 | comptime errors | `compiler-core/snapshots/comptime/{node,erlang}/errors` | 106 × 2 | `SOURCE CODE`, `ERROR` | `compiler-core/src/comptime/tests/helpers.zig` |
 | comptime templates | `compiler-core/snapshots/comptime/templates` | 1 | rendered `TypeError` | `comptime/tests/templates.zig` (`checkText`) |
@@ -44,7 +44,7 @@ Facts that shape the review:
   `beam/errors` or `wasm/errors`). The real review set is 306 comptime files, not 1009 — and
   the copies are a candidate for deduplication.
 - **Backend sets differ by one file.** `test_runner.snap.md` exists only under
-  `codegen/node/commonJS` and `codegen/erlang/erlang`; every other codegen slug exists on all
+  `codegen/commonJS` and `codegen/erlang`; every other codegen slug exists on all
   4 backends.
 - **Parser snapshots carry no source.** A parser snapshot is only the AST JSON; reviewing it
   needs the source string from the test.
