@@ -36,7 +36,7 @@ or mark each as an intentional skip. Known candidates:
 | Backend | File | Gap |
 |---|---|---|
 | commonJS | `src/codegen/commonJS.zig` | `if` without `else` as expression; string/array method mapping; `try`/`catch` propagation |
-| erlang | `src/codegen/erlang.zig` | template end-to-end tests; pipeline `\|>` argument threading; instance methods from external modules |
+| erlang | `src/codegen/erlang.zig` | top-level `val` bound in `'_botopink_main'/0` but read inside `main/0` (unbound — e.g. `template_end_to_end_yaml_model…`); a specialized fn reading a module-level `val` (`COMMANDS` in `comptime_partial_runtime_array_loop…`); pipeline `\|>` argument threading; instance methods from external modules |
 | beam | `src/codegen/beam_asm.zig` | `try`/`catch` on `@Result`; anonymous record literals; string `.len` in arithmetic |
 | wasm | `src/codegen/wat.zig` | `external` host functions; templates and iterators; `case` on literals (`br_table`); instance methods / array builtins |
 

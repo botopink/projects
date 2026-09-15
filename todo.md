@@ -73,7 +73,7 @@ FnDecl do decorator/template
   com handle `Term` e args), módulo/arquivo por hash do código, `evalDetailed` → `Outcome.err` com o diagnóstico Erlang,
   `parseOutcome` com struct plana, sem `std.debug.print`; testes inline. `assertRejects` passou a comparar só a mensagem do
   erro (antes casava com o fonte citado no render). Resultado: 31 → 22 falhas.
-- **F4** (não commitado): `template_eval` sobre `emitComptimeModule` — capture como `Term` (`captureToTerm`: text/parts com
+- **F4** (submódulo `009b093`): `template_eval` sobre `emitComptimeModule` — capture como `Term` (`captureToTerm`: text/parts com
   placeholders de hole/source/context/bindings), host fns (`text`, `parts`, `lookup`, `build`, `custom`, `fail`, `failAt`,
   `expr`, `code`…), `main/0` com reply por forma do resultado, `parseOutcome` com struct plana + `std.json.Value` →
   `TypedValue`/`CustomNodeTree` (`ref` com name+kind); decompilador `emitBpBody` removido; `PlainArg.writeErl` compartilhado
@@ -81,6 +81,12 @@ FnDecl do decorator/template
   valores** (`Acc@1 = case … end`, `lists:foldl`). Snapshots: `comptime_partial…` (loop de `COMMANDS`), 12 de
   `template_end_to_end_*` (node/erlang/beam/wasm, antes vazios/truncados), `lsp/sublanguage_semantic_tokens` (agora pinta
   keyword/property dentro da string). Resultado: 22 → 5 falhas.
+- **F4b** (não commitado): removidos o warmup morto (`warmPersistentErlRunner` + `patchHostMethods`, que compilavam
+  `template_runtime.bp` → Erlang), `libs/std/src/template_runtime.bp` + `std_internal_files`, `runtime/erl_prelude.zig`
+  (`botopink_comptime_prelude`), helpers WAT/JSON do `template.zig` (`readWatString`, `readCustomNodeFromMemory`,
+  `parseCustomNode`, `appendJsonString`, `contextJsonAlloc`) e `literalFromJson`; `PlainArg.jsValue` → `source` (lexema
+  botopink, sem escape JSON; `literalToJsAlloc` → `literalSourceAlloc`); teste de contexto reescrito sobre `captureToTerm`.
+  Bugs do backend erlang vistos nos snapshots (`Cfg`, `COMMANDS`) registrados na spec 03.
 - **F0 parcial:** `.snap.md.new` commitados removidos; `src/` duplicado do meta removido; docs de todo o projeto auditadas.
 
 ---
@@ -91,17 +97,7 @@ FnDecl do decorator/template
 - [ ] `.qwen/`, `test_pub.zig` (importa `modules/core/src/parser.zig`, inexistente), `.env` vazio no meta — decisão do Eric
 
 ### F3 — Decorators — pendências menores
-- [ ] Plain args: renomear `PlainArg.jsValue` → `source` (compartilhado com `template_eval`, fazer junto do F4)
 - [ ] `TypeError` de decorator com loc da anotação (hoje coarse) e `failAt` usando o span
-
-### F4b — Limpeza pós-templates
-- [ ] `comptime.zig` `warmPersistentErlRunner`: remover a compilação de `template_runtime.bp` → `template_runtime.erl` e `patchHostMethods` (não usados pelo avaliador novo)
-- [ ] `runtime/erl_prelude.zig` (`botopink_comptime_prelude`): remover se nada mais chama; tirar do `persistent_erl.ensureSpawned`
-- [ ] `template.zig`: remover helpers WAT/JSON mortos (`readWatString`, leitura de `CustomNode` da memória WAT, `parseCustomNode(std.json.Value)`, `parseSpanJson`/`jsonStr` se sem uso); `contextJsonAlloc` tem teste — decidir
-- [ ] `infer.zig`: remover `literalFromJson`
-- [ ] `libs/std/src/template_runtime.bp`: ainda descreve o modelo WAT (`i32`) — remover ou alinhar ao modelo de capture em map
-- [ ] `PlainArg.jsValue` → `source`
-- [ ] Bug do backend erlang visto no snapshot `template_end_to_end_yaml…`: `Cfg` ligado em `'_botopink_main'` e lido em `main()` (top-level `val` com wrapper de entrypoint) → spec 03
 
 ### F8 — Erlang AST + emitter (decisão do Eric: `erlang.zig` emite pelo emitter)
 Hoje o `erlang.zig` usa o `erl_emitter` só p/ nomes/atoms/binários (6 chamadas); ~385 `this.w("…")`/`this.fmt("…")`
@@ -137,6 +133,31 @@ a string e `parseResults` re-parseia o que o Zig gerou.
 - [ ] Spec `specs/1.0.0-beta/01-test-green/step-1-decorator-eval.md` alinhada
 - [ ] Commit submódulo → bump no meta (sem `--no-verify`)
 - [ ] Sweep das `feat` remotas (meta + submódulos)
+
+### F9 — Revisão final de todos os snapshots alterados (fazer por último, antes do merge)
+Cada snapshot aceito nesta branch foi conferido na hora, mas vale uma revisão única no fim, com a branch completa,
+verificando se cada mudança **faz sentido** (é correção/efeito esperado, não regressão mascarada).
+
+Listar (submódulo, base = merge-base com `origin/feat`, hoje `8d88372`):
+```bash
+cd repository/botopink-lang
+base=$(git merge-base HEAD origin/feat)
+git diff --name-status $base..HEAD -- '*.snap.md'          # A = novo, M = alterado, D = removido
+git diff $base..HEAD -- '<caminho do snapshot>'             # revisar um a um
+```
+
+Estado na hora do F4 (41 arquivos: 20 A, 21 M) — atualizar a lista quando F4b/F8/F5 mexerem em mais:
+- [ ] `codegen/beam` (6): `record_returned_then_field_read_on_call_result` (`{atom, 'end'}`), `val_pub_val_declaration` /
+      `import_multi_module_pub_val_import` (`{function, 'HOST', …}`), 3× `template_end_to_end_*` (antes vazios)
+- [ ] `codegen/erlang` (8): `assign_update_var_with_pluseq` (`Count@1`, RUN LOG `1`), 3× `comptime_loop_unrolling_*`
+      (`Output@1`), `comptime_partial_runtime_array_loop_preserved…` (`lists:foldl` sobre `COMMANDS`), 3× `template_end_to_end_*`
+- [ ] `codegen/node` (3) e `codegen/wasm` (3): `template_end_to_end_*` (antes vazios/truncados)
+- [ ] `comptime/{node,erlang,beam,wasm}` (20, novos): AST tipado dos 5 testes de template em runtime
+- [ ] `lsp/sublanguage_semantic_tokens`: tokens `keyword`/`property` dentro da string
+- [ ] Os 5 snapshots beam de RUN LOG pendentes (F6), quando forem aceitos
+- [ ] Para cada um: a saída nova compila/roda? o RUN LOG bate com o que o programa deveria imprimir? a diferença é
+      explicada por um commit desta branch? Anotar aqui qualquer snapshot que registre bug conhecido (ex.: `Cfg` no
+      `template_end_to_end_yaml…` erlang) para não parecer "aprovado"
 
 ### Opcionais (F1)
 - [ ] Literais constantes de map/list/tuple do `erlang.zig` → `Term` + `writeTerm`
