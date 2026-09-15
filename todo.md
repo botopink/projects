@@ -113,7 +113,10 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
 - [x] **8.4** `exprNode`: literal, identifier/identAccess (`maps:get`, `element/2`, `?.` como `fun` inline aplicado,
       length/`'__bp_len'`), binop/unop, lambda, grouped/array/tuple/range/record/interface, jumps, `if`/`tryCatch`, `loop`;
       `emitExprLegacy` só com `call`/`binding`/`useHook`/`comptime_` (+ `emitCase`) via `legacyAsRaw`
-- [ ] **8.5** `call` (receiver/std/ext/enum ctor/record ctor/prim dispatch/builtin templates) e `emitPrimMethod` — o maior bloco
+- [x] **8.5** `callNode` (pipeline, builtins/`@block`/`__bp_*` via `resultOptionNode`, receiver dispatch, user templates,
+      externals, record ctor, locals), `primMethodNode`/`arrayPrimFallbackNode`, `bindingNode`, `comptimeNode`; templates de
+      host viram `seq` (`templateNode`); `emitExprLegacy`/`legacyAsRaw`/`emitResultOptionOp`/`emitPattern`/`emitBind`/
+      `emitBinaryOp` removidos; `erl_ast` ganhou `seq` e `case` inline
 - [x] **8.6** `caseNode`/`caseBodyNode`/`patternNode`/`listPatElemNode` (padrões como `Ast.Expr`); `emitBranchBody` removido
 - [ ] **8.7** declarações: `emitFn`/`emitTestFn`/`emitTopVal`/records/enums/interfaces/extensions → `Ast.Function`/`Form`;
       cabeçalho do módulo (`-module`, `-export`, `-compile(no_auto_import)`), wrapper `_botopink_main`, runner de testes
