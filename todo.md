@@ -107,8 +107,9 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
 - [x] **8.2** código novo em nós: `ComptimeModule.forms` (sai o `tail` texto), `comptime_helper_forms`
       (`'__bp_add'`, `'__bp_len'`, `'__bp_text'`, `'__bp_json'`), host glue + `main/0` de `decorator_eval`/`template_eval`
       via `Builder`, `PlainArg.toExpr`; `emitMutatingIf`/`emitMutatingFold` montam `match`/`case_`/`fun` (corpos ainda `raw`)
-- [ ] **8.3** statements: `emitBodyFrom`/`emitBodyStmt` produzem `Ast.Body`/`Ast.Stmt` (`bind`/`assign`/`return`/comentários),
-      `emitEarlyReturnIf`, `emitPropagateTry`, fold fusion; remove `bodyAsRawStmt`
+- [x] **8.3** statements: `bodyNode` monta `Ast.Body` (`stmtExpr`: `return`/`bindExpr`/destructuring/comentários) e as
+      lowerings de corpo viram nós (`propagateTryExpr`, `earlyReturnIfExpr`, `foldFusionExpr`, `mutatingExpr`);
+      `bodyAsRawStmt` removido; expressões ainda entram como `raw` (`exprAsRaw`)
 - [ ] **8.4** expressões folha/médias em `emitExpr`: literal, identifier, identAccess (`maps:get`), binop/unop, collection
       (tuple/list/record map), jump; depois `branch` (`if_`/`tryCatch`), `loop`, `function` (lambda → `fun`)
 - [ ] **8.5** `call` (receiver/std/ext/enum ctor/record ctor/prim dispatch/builtin templates) e `emitPrimMethod` — o maior bloco
