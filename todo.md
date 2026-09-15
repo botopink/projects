@@ -122,9 +122,12 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
       (`FnRef`; `ComptimeModule.exports` virou `[]FnRef`), `topValForms`/`fnForms`/`testFunction`/`recordForms`/`enumForms`/
       `interfaceForms`/`implementForms`/`extendForms`, wrapper `_botopink_main` e runner de testes (`testRunnerForms`) em nós;
       `erl_ast` ganhou `string`, `fun_ref`, `list_block` e `Form.blank`
-- [ ] **8.8** `erlang.zig` sem `this.w("…")`/`this.fmt("…")` de sintaxe Erlang (só `erlEmitter`); remover `w`/`fmt`/`writeIndent`
-- [ ] `beam_emitter` continua no `Term` (o `.S` é máquina de registradores, não expressões)
-- [ ] AGENTS.md de `codegen/` e `codegen/beam/` a cada etapa
+- [x] **8.8** `Emitter` sem `out`/`w`/`fmt`/`writeIndent`/`emitExpr`/`emitBody`/`emitBinary`: `erlang.zig` só monta nós e
+      formas, `erl_emitter` renderiza. `raw` sobra só p/ texto de template de host, nomes escritos como no fonte
+      (chaves de record literal, tag de variante, `dotIdent`) e comentários `%%` no lugar de construções sem suporte
+- [x] `beam_emitter` continua no `Term` (o `.S` é máquina de registradores, não expressões)
+- [x] AGENTS.md de `codegen/` e `codegen/beam/` a cada etapa
+- [ ] Opcional: modelar `raw` restantes (`Expr.comment` p/ `%% continue`/field assign; `$stringify` como nó)
 
 ### F5 — BEAM comptime (`comptime/runtime/beam.zig`) — remover a ida ao `erl`
 `renderExprValue` já calcula tudo no Zig e grava o JSON como string fixa em `main() -> "…"`; o `erl` só devolve
@@ -135,7 +138,8 @@ a string e `parseResults` re-parseia o que o Zig gerou.
 - [ ] Não bloqueia teste verde
 
 ### F6 — Suíte verde
-- [ ] Beam snapshots (5): revisar o RUN LOG novo e aceitar
+- [ ] Beam snapshots (5): revisar o RUN LOG novo e aceitar — os `.snap.md.new` deles estão **versionados** (`58dd5e9`):
+      ao aceitar, remover os `.new` do git; não apagá-los antes (o teste os regrava)
 - [ ] Verificar RUN LOG dos 3 snapshots beam corrigidos no F1 (antes o `.S` nem montava)
 - [ ] Rodar baseline na `feat` p/ separar regressão desta branch de falha pré-existente
 - [ ] Leaks de codegen (13) → step-2; garantir que F3–F5 não adicionam novos
