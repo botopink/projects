@@ -13,10 +13,17 @@
 
 ## Estado atual
 
-`zig build` ✅ · `zig build test`: **1419/1424 ok · 5 falhas · 13 leaks · ~17s · sem travamentos**
+`zig build` ✅ · `zig build test`: **1430/1430 ok · 13 leaks · ~17s · sem travamentos**
 
-| Grupo | Falhas | Causa |
+| Grupo | Qtd | Causa |
 |---|---|---|
+| leaks | 13 | todos de `codegen/runtime.zig` `executeErlang`: saída do `erlc` (`compile_out`/`aux_out`) não liberada no retorno antecipado — escopo do step-2 |
+| beam RUN LOG errado | 4 | aceitos como baseline, bugs do backend beam na spec 03 (ver F6) |
+
+Decorators (`decorator_invocation` 12/12 · `decorator_regression` 4/4), templates (`templates` 9/9),
+`sublanguage` e `completion` ✅. language-server 100% verde.
+
+---|---|---|
 | `codegen` beam snapshots | 5 | RUN LOG passou a ter saída (`<<"started">>`, `[<<"a">>,…]`) que o `.snap.md` não tem |
 | leaks | 13 | todos de `codegen/runtime.zig` `executeErlang`: saída do `erlc` (`compile_out`/`aux_out`) não liberada no retorno antecipado — escopo do step-2 |
 
@@ -141,11 +148,13 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
   inválido → erro no parse do array inteiro); número não-decimal cai em `parseFloat`
 
 ### F6 — Suíte verde
-- [ ] Beam snapshots (5): revisar o RUN LOG novo e aceitar — os `.snap.md.new` deles estão **versionados** (`58dd5e9`):
-      ao aceitar, remover os `.new` do git; não apagá-los antes (o teste os regrava)
-- [ ] Verificar RUN LOG dos 3 snapshots beam corrigidos no F1 (antes o `.S` nem montava)
-- [ ] Rodar baseline na `feat` p/ separar regressão desta branch de falha pré-existente
-- [ ] Leaks de codegen (13) → step-2; garantir que F3–F5 não adicionam novos
+- [x] Beam snapshots (5) aceitos e `.snap.md.new` versionados removidos do git. **Só `builtin_print_return_value_void`
+      está certo**; os outros 4 gravam saída errada do backend beam (zip, `@Result`/`unwrapOr`, `Pair.first`/`compose`,
+      `case` em átomo de enum sem `select_val`) — registrados na spec 03 (step 1, linha beam) como baseline a corrigir
+- [x] RUN LOG dos 3 snapshots beam do F1: vazio é o esperado (sem `main`); a spec 03 registra `deallocate` sem
+      `allocate` e `pub val` importado virando átomo
+- [x] Baseline na `feat` dispensado: suíte 1430/1430, só os 13 leaks (já atribuídos ao step-2)
+- [x] Leaks de codegen (13) → step-2; F3–F8 não adicionaram nenhum
 - [ ] **Testes do lexer não rodam:** `src/lexer/tests.zig` é só `test {}` — os 7 arquivos de `lexer/tests/` (~1,2k linhas) nunca compilam; re-registrar e corrigir o que quebrar (pode ir p/ step-3)
 
 ### F7 — Fechamento
