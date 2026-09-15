@@ -100,9 +100,9 @@ FnDecl do decorator/template
 
 ## Pendente
 
-### F0 — Housekeeping
+### F0 — Housekeeping ✅
 - [x] `.qwen/` removido (ok do Eric)
-- [ ] `test_pub.zig` (importa `modules/core/src/parser.zig`, inexistente), `.env` vazio no meta — decisão do Eric
+- [x] `test_pub.zig` (script morto) e `.env` vazio removidos (ok do Eric)
 
 ### F3 — Decorators — pendências menores
 - [x] `TypeError` de decorator na loc da anotação (`ast.Annotation.loc`, fora do JSON do AST); `failAt` reporta na
