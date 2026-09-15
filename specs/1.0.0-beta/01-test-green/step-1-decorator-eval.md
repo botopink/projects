@@ -77,10 +77,10 @@ Modo comptime (corpo sem tipos): `+` → `'__bp_add'/2`, `.len`/`.length` → `'
 | F3 | Decorators sobre `emitComptimeModule` | feito (menor: loc do `TypeError`, span do `failAt`) |
 | F4 | Templates sobre `emitComptimeModule`; runtime morto removido | feito |
 | F5 | Valores `comptime` sem ida ao `erl` | feito |
-| F6 | Suíte verde | pendente: 5 snapshots beam de RUN LOG |
-| F7 | Docs (`AGENTS.md`, `architecture.md`, esta spec); commits | em andamento |
+| F6 | Suíte verde | feito: 1571/1571 (13 leaks do step-2); 4 RUN LOGs beam errados aceitos como baseline (spec 03); testes do lexer registrados |
+| F7 | Docs (`AGENTS.md`, `architecture.md`, esta spec); commits | feito (push/merge aguardam pedido) |
 | F8 | `erl_ast` + emitter: `erlang.zig` sem escrita de texto | feito |
-| F9 | Revisão final de todos os snapshots alterados/criados | pendente |
+| F9 | Revisão final de todos os snapshots alterados/criados | feito (bugs conhecidos anotados no `todo.md`) |
 
 ---
 
@@ -106,7 +106,7 @@ Os testes de *rejeição* de decorator comparam a mensagem do `TypeError` (não 
 
 - [x] `decorator_invocation` 11/11 e `decorator_regression` 4/4
 - [x] `templates`, `sublanguage` e `completion` sem falhas
-- [ ] Snapshots de codegen beam (5): diff do RUN LOG revisado e aceito
+- [x] Snapshots de codegen beam (5): diff do RUN LOG revisado e aceito
 - [x] Nenhum leak novo (os 13 de codegen são do Step 2)
 
 ## Notas de build
