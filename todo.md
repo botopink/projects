@@ -136,7 +136,9 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
       (chaves de record literal, tag de variante, `dotIdent`) e comentários `%%` no lugar de construções sem suporte
 - [x] `beam_emitter` continua no `Term` (o `.S` é máquina de registradores, não expressões)
 - [x] AGENTS.md de `codegen/` e `codegen/beam/` a cada etapa
-- [ ] Opcional: modelar `raw` restantes (`Expr.comment` p/ `%% continue`/field assign; `$stringify` como nó)
+- [x] Comentários como nó: `erl_ast.Comment{level: line/doc/module, text}` em `Stmt`/`Form`/`Expr`; o `erlang.zig` não
+      escreve mais prefixo `%`
+- [ ] Opcional: `$stringify` de template como nó
 
 ### F5 — comptime `val` sem `erl` ✅
 - [x] `comptime/eval.zig` dobra cada entrada no Zig (`valueOf` → `Value`, `literal`) e devolve `id → literal`;
