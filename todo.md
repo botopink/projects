@@ -151,13 +151,15 @@ beam.zig → buildComptimeInput() → ComptimeInput struct
 
 - ✅ Remover referências a `buildHandleJson` (substituído por `buildHandle`)
 - ✅ Remover referências a `literalFromJson` para templates (substituído por `valueToAstLiteral`)
+- ✅ Refatorar `literalFromJson` → `valueToAstLiteral` (usa `TypedValue` nativo)
+- ✅ Refatorar `parseCustomNode` → `parseCustomNodeFromTree` (usa `CustomNodeTree` nativo)
 - ✅ Atualizar documentação (`AGENTS.md`, `architecture.md`, `todo.md`)
 - ✅ Remover funções JSON antigas em `infer.zig`:
   - ✅ `appendAnnotationsJson` (removida)
   - ✅ `appendParamsJson` (removida)
   - ✅ `appendMethodsJson` (removida)
   - ✅ `buildHandleJson` (removida)
-  - 🔧 `literalFromJson` (mantida - ainda em uso)
+  - 🔧 `literalFromJson` (mantida - ainda em uso por outros caminhos)
 - 🔧 Rodar todos os testes
 - 🔧 Verificar se há regressões
 
