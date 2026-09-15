@@ -1,5 +1,7 @@
 # Specs — 1.0.0-beta
 
+Closed. Every open item below was carried into [`1.0.1-beta`](../1.0.1-beta/overview.md).
+
 | # | Spec | Priority | What |
 |---|------|----------|------|
 | 01 | [`01-test-green/`](./01-test-green/README.md) | critical | `zig build test` green: comptime eval on erl (decorators + templates), allocation leaks, decorator regression tests. Blocks everything else. |

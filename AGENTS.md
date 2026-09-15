@@ -15,21 +15,16 @@ closest `AGENTS.md` in each directory you touch.
 | `repository/botopink-lang/` | Compiler (`modules/compiler-core`), CLI, language server, lib-test-runner, `libs/std` |
 | `repository/{emilia,erika,jhonstart,onze,rakun}/` | Libraries written in botopink |
 | `repository/vscode-extension/` | VS Code extension |
-| `specs/1.0.0-beta/` | Milestone specs — index in `overview.md`; new specs start from `specs/__template.md` |
-| `todo.md` | Live plan of the task on the current branch (maintained by the task owner) |
+| `specs/1.0.1-beta/` | Current milestone specs — index in `overview.md`; new specs start from `specs/__template.md` |
+| `specs/1.0.0-beta/` | Previous milestone (closed; open items carried into `1.0.1-beta`) |
+| `todo.md` | Live plan of the task in the current checkout/worktree — git-ignored, never committed |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |
 
 ## Worktrees
 
 Parallel tasks run in git worktrees of this repository under `.tasks/<name>` (next to
-the main checkout), one branch per task:
-
-| Worktree | Branch |
-|---|---|
-| `.tasks/step-1-decorator-eval` | `fix/step-1-decorator-eval` |
-| `.tasks/step-2-allocation-leaks` | `fix/step-2-allocation-leaks` |
-| `.tasks/step-3-regression-tests` | `fix/step-3-regression-tests` |
+the main checkout), one branch per task (`git worktree list` shows the active ones).
 
 Inside a worktree, edit files under that worktree's path only — never the main
 checkout. Work in `repository/botopink-lang` on a branch with the same name as the
@@ -50,7 +45,14 @@ zig build test-libs / test-backends / test-vscode / test-bpmp
 - Comptime evaluation spawns a persistent `erl`; `erl`/`erlc` must be on `PATH`.
   CommonJS snapshot tests execute with `node`.
 - `zig build test -- --test-filter` is not forwarded in Zig 0.16. To run a subset,
-  run the test binary directly (`.zig-cache/o/<hash>/test`).
+  run the test binary directly (`.zig-cache/o/<hash>/test`; the hash appears after
+  `failed command:` in the log).
+- `zig build test --test-timeout 20s` names the test that hangs; "test runner failed to
+  respond" means nothing is running (e.g. a child process holding the runner's stdio).
+- Quick iteration without the suite: `zig-out/bin/botopink build --target erlang --out out`
+  in a scratch project.
+- Do not `pkill -f <pattern>` in the same command line that contains the pattern — it kills
+  the shell itself; kill `beam.smp` by PID.
 - Snapshots live in `modules/<package>/snapshots/`; a mismatch writes `<slug>.snap.md.new`
   next to the snapshot. Do not commit `.snap.md.new` files.
 

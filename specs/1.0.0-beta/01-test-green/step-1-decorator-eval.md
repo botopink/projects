@@ -2,7 +2,7 @@
 
 **Prioridade:** 🔴 CRÍTICO
 **Branch:** `fix/step-1-decorator-eval` (meta + `repository/botopink-lang`)
-**Checklist vivo:** [`todo.md`](../../../todo.md)
+**Pendências:** movidas para [`1.0.1-beta`](../../1.0.1-beta/overview.md)
 
 ---
 
