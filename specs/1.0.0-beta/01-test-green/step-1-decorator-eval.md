@@ -1,19 +1,164 @@
 # Step 1 — Fix decorator eval (9 failures)
 
-**Status:** 🟡 in progress (investigação concluída; implementação parcial)  
+**Status:** 🔄 em andamento — foco em build funcional (2026-09-15)  
 **Priority:** 🔴 CRÍTICO  
 **Estimativa:** 4-8 horas
 
 ---
 
-## Problema
+## Estado Atual
 
-9 testes em `decorator_invocation.zig` falham com:
+### Nova abordagem implementada
+
+**Mudança de estratégia:** gerar Erlang **direto do AST**, sem passar por:
+- JSON intermediário (`handleJson` ainda recebido, mas convertido direto para termos Erlang)
+- Source botopink intermediário (sem `emitBpBody` → `compile()` → codegen)
+- Parse/lex do código gerado (elimina `parseError` do `compile()`)
+
+### Fluxo direto
 
 ```
-error: the decorator evaluator failed to run
-hint: Decorator bodies run in the node runtime at compile time — check that `node` is available.
+ast.FnDecl → emitExpr/emitStmt → Erlang source → persistent_erl.eval()
 ```
+
+### Implementação
+
+- `jsonToErl()` converte `handleJson` diretamente para maps Erlang (`#{kind => ..., name => ...}`)
+- `emitExpr()` emite expressões AST direto para Erlang:
+  - Field access → `maps:get(field, Recv)`
+  - Binary ops → `(Lhs op Rhs)`
+  - String literals → `<<"...">>`
+  - Identifiers → uppercase first letter (Erlang variables)
+- `emitStmt()` emite statements AST direto para Erlang:
+  - Bindings → `Var = Expr`
+  - Assigns → `Var = Expr`
+  - Returns → `erlang:return(Expr)`
+- `buildErlModule()` monta módulo Erlang completo com:
+  - `-module(decorator_<hash>).`
+  - `-export([main/0]).`
+  - Plain arg bindings como funções 0-arity
+  - Decl handle como map Erlang nativo
+  - Corpo do decorator como função Erlang
+  - Host functions: `fail/2`, `compilerError/1`, `emit/1`
+  - `main/0` com try/catch → JSON via `json:encode`
+
+### Problema anterior (resolvido)
+
+- `compile()` falhava com `parseError` no código botopink gerado
+- Parser rejeitava constructs válidos em contexto de `compile()` mas não em parse standalone
+- Root cause: contexto de compilação com std imports e múltiplos módulos
+- Solução: pular completamente o `compile()` e gerar Erlang direto
+
+---
+
+## Plano de Execução
+
+### FASE 1: Fazer Build Funcional (PRIORIDADE ALTA)
+
+**Objetivo:** Código compila sem erros
+
+#### Passo 1: Ajustar infer.zig para criar DeclHandle
+```zig
+// Remover:
+fn buildHandleJson(...) ![]const u8 { ... }
+fn appendAnnotationsJson(...) !void { ... }
+fn appendMethodsJson(...) !void { ... }
+
+// Modificar invokeDecorators():
+const h = decoratorEval.DeclHandle{
+    .kind = "Record",
+    .name = r.name,
+    .fields = fields,
+    .methods = r.methods,
+    .returnType = "",
+    .annotations = r.annotations,
+};
+
+// Modificar runDeclDecorators():
+fn runDeclDecorators(
+    env: *Env,
+    ctx: envMod.TemplateEvalCtx,
+    anns: []const ast.Annotation,
+    handle: decoratorEval.DeclHandle,  // <- mudar de []const u8
+) InferError!void { ... }
+```
+
+#### Passo 2: Completar decorator_eval.zig
+```zig
+// Implementar emitDeclHandle():
+fn emitDeclHandle(
+    buf: *std.ArrayListUnmanaged(u8),
+    arena: std.mem.Allocator,
+    handle: DeclHandle,
+) !void {
+    // Converter DeclHandle para termos Erlang
+    // #{kind => ..., name => ..., fields => [...], ...}
+}
+
+// Ajustar buildErlModule() para usar DeclHandle
+```
+
+#### Passo 3: Verificar Build
+```bash
+zig build test
+```
+**Critério de sucesso:** Compila sem erros (testes podem falhar)
+
+---
+
+### FASE 2: Corrigir Testes (PRIORIDADE MÉDIA)
+
+**Objetivo:** Testes passam
+
+1. **Validar saída Erlang gerada**
+   - Verificar que DeclHandle é convertido corretamente para termos Erlang
+   - Verificar que decorator body é emitido corretamente
+
+2. **Corrigir problemas de runtime**
+   - Ajustar conversões de tipos (TypeRef → string)
+   - Ajustar emissão de constructs específicos (if, loops, etc.)
+
+3. **Rodar testes de decorator**
+   - `decorator_invocation.zig` (11 testes)
+   - `decorator_regression.zig` (4 testes)
+
+**Critério de sucesso:**
+- ✅ `decorator_invocation.zig`: 11/11 testes passam
+- ✅ `decorator_regression.zig`: 4/4 testes passam
+- ✅ Sem regressões em outros testes
+
+---
+
+### FASE 3: Limpeza e Otimização (PRIORIDADE BAIXA)
+
+**Objetivo:** Código limpo e otimizado
+
+1. Remover código morto
+2. Otimizar conversões
+3. Atualizar documentação
+
+---
+
+## Próximas Melhorias (Planejadas)
+
+### Remover JSON intermediário completamente
+
+**Problema atual:**
+- `infer.zig` cria strings JSON via `buildHandleJson()` ❌
+- `decorator_eval.zig` já ajustado para receber `DeclHandle` (estrutura nativa) ✅
+- Build quebrado devido a incompatibilidade de tipos
+
+**Solução:**
+- `infer.zig` deve criar `DeclHandle` (estrutura nativa) em vez de strings JSON
+- `decorator_eval.zig` receberá `DeclHandle` diretamente
+- Eliminar completamente o JSON intermediário
+
+**Benefícios:**
+1. **Separação de responsabilidades:** infer trabalha com AST, não com JSON
+2. **Type safety:** Compilador pega erros de tipo
+3. **Performance:** ~30% mais rápido (estima-se) por eliminar serialização
+4. **Manutenibilidade:** Código mais simples e direto
+5. **Debug:** Mais fácil de debugar estruturas nativas que JSON
 
 ---
 
@@ -33,240 +178,28 @@ hint: Decorator bodies run in the node runtime at compile time — check that `n
 | 10 | `interface-level marker runs over the interface` | 170 | Média |
 | 11 | `mock-style synthesis from an interface compiles` | 182 | Alta |
 
-**Nota:** Alguns testes passam, outros falham. Os que falham usam constructs mais complexos.
+---
+
+## Histórico de Abordagens
+
+### Abordagem 1: compile() intermediário (abandonada)
+
+- Gerar código botopink sintético → `compile()` → codegen Erlang
+- Problema: `compile()` falhava com `parseError` em contexto de múltiplos módulos
+- Solução tentada: debug do parser, mas root cause era contexto de compilação
+
+### Abordagem 2: Erlang direto do AST (atual)
+
+- Gerar Erlang direto do AST do decorator body
+- Converter `handleJson` → termos Erlang nativos
+- Montar módulo Erlang com main/0 + host functions
+- Executar no `persistent_erl.eval()`
+- Vantagens: mais rápido, mais simples, elimina problemas de parse/compile
 
 ---
 
-## Causa raiz (definitiva — atualizada)
+## Notas de Build
 
-A avaliação de decorator via Erlang **nunca esteve completa**. Não é um bug pontual
-de "reutilizar o decompiler": o caminho inteiro (`decorator_eval` → codegen Erlang →
-`persistent_erl`) está incompleto.
-
-### Evidências
-
-1. **`template_eval.zig:14-20` documenta o gap:**
-   > *"evaluateErl() returns EvalFailed until erlang.zig gains #[@Host] method
-   > lowering. Methods like Capture.lookup(), Capture.bindings(), failRaw(),
-   > makeExpr(), makeCode() are annotated #[@Host] in template_runtime.bp and must
-   > be redirected to botopink_comptime_prelude module calls."*
-
-2. **`warmPersistentErlRunner` (`comptime.zig:382`) nunca é chamado.** Ele compila
-   `template_runtime.bp` → `template_runtime.erl` e aplica `patchHostMethods`, mas só
-   `getStdlibTemplate` é aquecido em `test_warmup.zig`. O `template_runtime.erl`/`.beam`
-   nunca é gerado/load no processo erl.
-
-3. **O caminho que FUNCIONA p/ comptime val é `beam.zig`** (`renderExprValue`): avalia
-   expressões simples **em Zig** e usa o erl só para devolver um JSON pré-computado
-   (`main() -> "<json>".`). Não serve para corpos com `if`/loop/`fail`/`@emit`.
-
-### Falhas concretas observadas (após rodar os testes)
-
-1. **Off-by-one (corrigido):** `decorator_eval.zig` alocava `2 + plainArgs.len` decls,
-   mas são 3 fixas (`DeclKind`, handle `@Decl`, fn) + plain args. Crash real:
-   `panic: index out of bounds: index 2, len 2`.
-
-2. **`main/0` ausente:** `persistent_erl.eval` chama `Mod:main()`, mas o `.erl` gerado
-   não tem `main/0`.
-
-3. **Host functions ausentes:** o corpo gerado chama `fail/2`, `compilerError/1`,
-   `emit/1` como funções locais não definidas. `erlc` falha:
-   ```
-   decorator_body.erl:12:13: function compilerError/1 undefined
-   ```
-
-4. **Protocolo de resultado:** `parseOutcome` espera JSON
-   (`{"kind":"ok","contributions":[...]}`, `{"kind":"fail","message":...}`), mas o
-   servidor erl devolve termo Erlang cru.
-
-5. **`-export([main/0])`** precisa ser inserido logo após `-module(...)`.
-
-### Constructs que os testes exercitam
-
-1. **String concatenation** (`methods = methods + "..."`)
-2. **Loops** (`decl.methods.forEach({ m -> ... })`)
-3. **@emit** (`@emit("pub fn ...")`)
-4. **Field access** (`decl.name`, `m.name`)
-5. **Conditionals** (`if (decl.kind != DeclKind.Record)`)
-6. **Host calls** (`decl.fail(msg)`, `@compilerError(msg)`)
-
----
-
-## Solução
-
-### Opção A (recomendada): completar o caminho Erlang
-
-`compileFromAst` + codegen Erlang já geram o corpo corretamente. Falta pós-processar
-o `.erl` em `decorator_eval.zig` para adicionar:
-
-1. `-export([main/0]).` logo após `-module(...)`.
-2. Host functions:
-   ```erlang
-   fail(Decl, Msg) -> erlang:throw({comptime_fail, Msg, #{}}).
-   compilerError(Msg) -> erlang:throw({comptime_fail, Msg, #{}}).
-   emit(Src) -> erlang:put('__emit', [Src | emit_stack()]).
-   emit_stack() -> case erlang:get('__emit') of undefined -> []; L -> L end.
-   ```
-3. `main/0` que chama `fn(decl(), <arg>()...)`, captura `{comptime_fail, Msg, _}`
-   e devolve o JSON esperado por `parseOutcome` (com escape de string p/ os `@emit`).
-
-### Opção B (alternativa): interpretador em Zig
-
-Interpretar o corpo do decorador direto em Zig (como `beam.zig` faz com expressões,
-estendendo p/ `if`/loop/`fail`/`emit`/string concat). Evita o runtime Erlang, mas exige
-um mini-interpretador do AST não-tipado.
-
----
-
-## Implementação detalhada
-
-### 1. Verificar estado atual do decompiler
-
-```bash
-# Ver se emitBpExpr está público
-grep -n "pub fn emitBp" modules/compiler-core/src/comptime/template_eval.zig
-```
-
-### 2. Implementar evaluateErl completo
-
-```zig
-fn evaluateErl(
-    arena: std.mem.Allocator,
-    io: std.Io,
-    dfn: ast.FnDecl,
-    handleJson: []const u8,
-    plainArgs: []const template.PlainArg,
-) EvalError!Outcome {
-    // 1. Decompilar corpo do decorator
-    var bp_body = std.ArrayList(u8).init(arena);
-    defer bp_body.deinit();
-    
-    try templateEval.emitBpBody(arena, &bp_body, dfn.body);
-    
-    // 2. Construir script Erlang
-    var script = std.ArrayList(u8).init(arena);
-    defer script.deinit();
-    
-    try script.writer().print(
-        \\__decorator_body() ->
-        \\    {ok, Decl} = botopink_comptime_prelude:decode_decl(~s),
-        \\    ~s
-        \\    .
-    , .{ handleJson, bp_body.items });
-    
-    // 3. Executar via persistent_erl
-    const result = persistent_erl.eval(arena, io, script.items) catch {
-        return error.EvalFailed;
-    };
-    
-    // 4. Parsear resultado
-    return parseOutcome(arena, result);
-}
-```
-
-### 3. Adicionar suporte a constructs específicos
-
-**String concatenation:**
-```zig
-// emitBpExpr já deve suportar BinaryOp com +
-```
-
-**Loops:**
-```zig
-// emitBpExpr já deve suportar Loop/ForEach
-```
-
-**@emit:**
-```zig
-// @emit é um builtin — verificar se emitBpExpr suporta BuiltinCall
-```
-
-**Field access:**
-```zig
-// emitBpExpr já deve suportar FieldAccess
-```
-
-**Conditionals:**
-```zig
-// emitBpExpr já deve suportar If
-```
-
----
-
-## Testes de aceitação
-
-### Teste 1: String concatenation
-
-```botopink
-fn mock(comptime decl: @Decl) {
-    var methods = "";
-    decl.methods.forEach({ m ->
-        methods = methods + "  fn " + m.name + "(self: Self) -> i32 { return 0; }\n";
-    });
-    @emit("record Mock" + decl.name + " { " + methods + " }");
-}
-#[mock]
-interface Counter { fn value(self: Self) -> i32 }
-```
-
-**Esperado:** Compila sem erros
-
-### Teste 2: @emit com string dinâmica
-
-```botopink
-fn gen(comptime decl: @Decl) {
-    @emit("pub fn make" + decl.name + "() -> i32 { return 42; }");
-}
-#[gen]
-record Service { x: i32 }
-fn useit() -> i32 { return makeService(); }
-```
-
-**Esperado:** Compila sem erros, `makeService()` existe
-
-### Teste 3: Loop com field access
-
-```botopink
-fn validate(comptime decl: @Decl) {
-    decl.fields.forEach({ f ->
-        if (f.name == "bad") { decl.fail("field 'bad' not allowed"); }
-    });
-}
-#[validate]
-record Good { name: string }
-```
-
-**Esperado:** Compila sem erros
-
----
-
-## Arquivos a modificar
-
-| Arquivo | Ação | Linhas estimadas |
-|---------|------|------------------|
-| `decorator_eval.zig` | Implementar `evaluateErl` completo | ~50-100 |
-| `template_eval.zig` | Tornar `emitBpBody` público se necessário | ~5 |
-
----
-
-## Riscos
-
-| Risco | Probabilidade | Impacto | Mitigação |
-|-------|---------------|---------|-----------|
-| Decompiler não suporta todos os constructs | Média | Alto | Testar cada construct individualmente |
-| Persistent erl não executa scripts complexos | Baixa | Alto | Verificar logs do erl |
-| Performance degrada | Baixa | Médio | Benchmark antes/depois |
-
----
-
-## Checklist
-
-- [ ] Verificar se `emitBpExpr`/`emitBpStmt` são públicos
-- [ ] Implementar `evaluateErl` completo
-- [ ] Testar string concatenation
-- [ ] Testar loops
-- [ ] Testar @emit
-- [ ] Testar field access
-- [ ] Testar conditionals
-- [ ] Rodar `zig build test` — 0 failures em decorator tests
-- [ ] Verificar que não há regressões em outros testes
+- `zig build test -- --test-filter "..."` **NÃO funciona** no Zig 0.16
+- Rodar o binário de teste direto: `.zig-cache/o/<hash>/test`
+- `persistent_erl` deixa um processo `beam.smp` órfão por execução
