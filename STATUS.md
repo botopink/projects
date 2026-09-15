@@ -80,27 +80,53 @@ rakun:              d4a6794 merge: integrate feat into main
 
 **Step 1 — Fix decorator eval (9 failures)**
 - 9 testes em `decorator_invocation.zig` falham (+ 4 em `decorator_regression.zig`)
-- **Status: EM ANDAMENTO** — investigação concluída, implementação parcial
+- **Status: 🔄 EM ANDAMENTO** — nova abordagem implementada, foco em build funcional
 
-**Feito nesta etapa:**
-- `compileFromAst` em `comptime.zig` (compila `ast.Program` direto, sem lex/parse)
-- `decorator_eval.zig` refatorado para construir AST direto (`jsonToExpr` + `buildDeclKindRecord`)
-- Fix no codegen Erlang: `atomName(f.name)` em `recordLit`/`interfaceLit`
-- Off-by-one corrigido (`2 + plainArgs.len` → `3 + plainArgs.len`)
+**Nova abordagem (2026-09-15):**
+- `decorator_eval.zig` reescrito para gerar Erlang **direto do AST**, sem passar por:
+  - JSON intermediário (`handleJson` ainda recebido, mas convertido direto para termos Erlang)
+  - Source botopink intermediário (sem `emitBpBody` → `compile()` → codegen)
+  - Parse/lex do código gerado (elimina `parseError` do `compile()`)
+- Fluxo direto: `ast.FnDecl` → `emitExpr`/`emitStmt` → Erlang source → `persistent_erl.eval()`
+- `jsonToErl()` converte `handleJson` diretamente para maps Erlang (`#{kind => ..., name => ...}`)
+- `emitExpr()` emite expressões AST direto para Erlang (field access → `maps:get`, binary ops, etc.)
+- `emitStmt()` emite statements AST direto para Erlang (bindings, assigns, returns)
+- `buildErlModule()` monta módulo Erlang completo com:
+  - `-module(decorator_<hash>).`
+  - `-export([main/0]).`
+  - Plain arg bindings como funções 0-arity
+  - Decl handle como map Erlang nativo
+  - Corpo do decorator como função Erlang
+  - Host functions: `fail/2`, `compilerError/1`, `emit/1`
+  - `main/0` com try/catch → JSON via `json:encode`
 
-**Causa raiz real (não é só "reutilizar emitBpExpr"):**
-- A avaliação de decorator via Erlang **nunca esteve completa**.
-- `template_eval.zig` documenta: *"evaluateErl() returns EvalFailed until erlang.zig gains #[@Host] method lowering"*.
-- `warmPersistentErlRunner` (que compila `template_runtime.bp` e aplica `patchHostMethods`) **não é chamado em lugar nenhum**.
-- O módulo `.erl` gerado para o corpo do decorador não tem `main/0` nem as host functions
-  (`fail`/`emit`/`compilerError`) → `erlc` falha com `function compilerError/1 undefined`.
+**Problema anterior (resolvido):**
+- `compile()` falhava com `parseError` no código botopink gerado
+- Parser rejeitava constructs válidos em contexto de `compile()` mas não em parse standalone
+- Root cause: contexto de compilação com std imports e múltiplos módulos
+- Solução: pular completamente o `compile()` e gerar Erlang direto
 
-**Falta (próximos passos):**
-1. Sintetizar `main/0` no `.erl` gerado (chama `fn(decl(), <arg>()...)`).
-2. Definir host functions `fail/2`, `compilerError/1`, `emit/1`.
-3. `main/0` devolver o JSON esperado por `parseOutcome` (com escape de string).
-4. Inserir `-export([main/0])` após `-module(...)`.
-5. Revisar/regenerar snapshots afetados pelo fix `atomName`.
+**Próximas melhorias (planejadas):**
+- Remover JSON intermediário completamente
+- `infer.zig` deve criar `DeclHandle` (estrutura nativa) em vez de strings JSON
+- `decorator_eval.zig` receberá `DeclHandle` diretamente
+- Benefícios: type safety, performance, simplicidade
+
+**Prioridades atuais:**
+1. **FASE 1 (PRIORIDADE ALTA):** Fazer build funcionar
+   - Ajustar `infer.zig` para criar `DeclHandle` em vez de JSON
+   - Completar `decorator_eval.zig` com `emitDeclHandle()`
+   - Critério: `zig build test` compila sem erros (testes podem falhar)
+
+2. **FASE 2 (PRIORIDADE MÉDIA):** Corrigir testes
+   - Validar saída Erlang gerada
+   - Corrigir problemas de runtime
+   - Critério: 11/11 decorator_invocation + 4/4 decorator_regression passam
+
+3. **FASE 3 (PRIORIDADE BAIXA):** Limpeza e otimização
+   - Remover código morto
+   - Otimizar conversões
+   - Atualizar documentação
 
 **Step 2 — Fix allocation leaks**
 - Múltiplos codegen tests vazam 1 allocation cada
@@ -170,7 +196,7 @@ projects/
 | Testes passando | 155/164 (94%) |
 | Testes falhando | 9 (decorator_invocation) + 4 (regression) |
 | Worktrees atualizados | 3/3 (100%) |
-| Commits não pushados | 0 |
+| Commits não pushados | 1 (fix/step-1-decorator-eval) |
 | Branches extras | 3 (fix/step-1, fix/step-2, fix/step-3) |
 
 ---
