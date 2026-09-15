@@ -1,0 +1,69 @@
+# Spec 03 — Codegen Hardening
+
+**Priority:** 🟡 medium
+**Depends on:** Spec 01 for the template/`@Expr` items; everything else is independent.
+
+---
+
+## Objective
+
+Every codegen snapshot either records real runtime output in its RUN LOG or is an
+explicit, documented skip; the comptime `erl` runtime has direct regression tests.
+
+Paths are relative to `repository/botopink-lang/modules/compiler-core/`.
+
+---
+
+## Current state
+
+- Snapshot tests run the generated code per backend through `src/codegen/runtime.zig`
+  (`executeJavaScript` → `node`, `executeErlang` / `executeBeamAsm` → `erlc` + `erl`), all
+  behind `runWithTimeout`.
+- `executeWat` is a stub that returns an empty RUN LOG: WAT snapshots are generated but never
+  executed. Its doc comment still mentions the removed `wasm3_host`.
+- The comptime runtime (`src/comptime/runtime/persistent_erl.zig`) has no dedicated tests;
+  it is only exercised indirectly (`src/comptime/tests/eval_pipeline.zig` has 2 tests).
+
+---
+
+## Steps
+
+### Step 1 — Backend runtime gaps
+
+Re-audit snapshots with an empty RUN LOG despite `@print`, or with `undefined` output, and fix
+or mark each as an intentional skip. Known candidates:
+
+| Backend | File | Gap |
+|---|---|---|
+| commonJS | `src/codegen/commonJS.zig` | `if` without `else` as expression; string/array method mapping; `try`/`catch` propagation |
+| erlang | `src/codegen/erlang.zig` | template end-to-end tests; pipeline `\|>` argument threading; instance methods from external modules |
+| beam | `src/codegen/beam_asm.zig` | `try`/`catch` on `@Result`; anonymous record literals; string `.len` in arithmetic |
+| wasm | `src/codegen/wat.zig` | `external` host functions; templates and iterators; `case` on literals (`br_table`); instance methods / array builtins |
+
+Acceptance: no unexplained empty RUN LOG; each skip is documented in the test.
+
+### Step 2 — WAT execution
+
+Decide between running WAT through `wasmtime` in `executeWat` (same `runWithTimeout` wrapper)
+or accepting empty WAT RUN LOGs as the baseline. Update the stale doc comment either way.
+
+### Step 3 — Missing codegen coverage
+
+Add snapshot tests (all backends, with documented skips) for: optional/null, cross-module
+imports, interface/implement, records/enums, generics, lambdas/operators/annotations
+(`src/codegen/tests/{values,features,aggregates}.zig`).
+
+After Spec 01: template/`@Expr` holes with runtime values and comptime eval results
+(`src/codegen/tests/comptime.zig`).
+
+### Step 4 — `persistent_erl` regression tests
+
+- Spawn + round-trip of a trivial module.
+- Respawn after the `erl` child is killed mid-session.
+- `main/0` exceeding the eval timeout → `runtime_error`, server keeps serving.
+- Frame edge cases: empty payload, large payload, non-ASCII bytes.
+- Compile/runtime error text reaches the caller (`evalDetailed`) and the compiler diagnostic.
+
+### Step 5 — Final sweep
+
+`zig build test && zig build test-libs && zig build test-backends` green.

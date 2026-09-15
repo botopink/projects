@@ -1,62 +1,43 @@
-# Spec 01 — Test Green (100% testes unitários)
+# Spec 01 — Test Green
 
-**Status:** 🔴 in progress  
-**Priority:** CRÍTICO — bloqueia tudo  
-**Objetivo:** Fazer 100% dos testes unitários passarem sem falhas ou leaks
+**Prioridade:** CRÍTICO — bloqueia as demais specs
+**Objetivo:** `zig build test` (em `repository/botopink-lang`) sem falhas nem leaks.
 
 ---
 
 ## Estado atual
 
-```
-155/164 tests passed (9 failed)
-```
+`zig build test` → **1390/1421** passam · **31 falhas** · **13 leaks** · ~17s, sem travamentos.
 
-### Falhas identificadas
-
-| Categoria | Quantidade | Arquivo |
-|-----------|------------|---------|
-| Decorator eval | 9 | `decorator_invocation.zig` |
-| Allocation leaks | 7+ | `codegen/tests.zig` |
+| Grupo | Falhas | Step |
+|---|---|---|
+| `comptime/tests/decorator_invocation.zig` | 6 | 1 |
+| `comptime/tests/decorator_regression.zig` | 2 | 1 |
+| `comptime/tests/templates.zig` | 9 | 1 |
+| `language-server` `sublanguage` (templates erika `@ExprCustom`) | 8 | 1 |
+| `language-server` `completion` (record com decorator) | 1 | 1 |
+| snapshots de codegen (RUN LOG divergente) | 5 | 1 |
+| leaks em testes de codegen | 13 | 2 |
 
 ---
 
 ## Steps
 
-| # | Step | Status | Bloqueia |
-|---|------|--------|----------|
-| 1 | [Fix decorator eval](./step-1-decorator-eval.md) | ⏳ pending | CI verde |
-| 2 | [Fix allocation leaks](./step-2-allocation-leaks.md) | ⏳ pending | CI verde |
-| 3 | [Regression tests](./step-3-regression-tests.md) | ⏳ pending | — |
-
----
-
-## Ordem de execução
+| # | Step | Branch |
+|---|------|--------|
+| 1 | [Comptime eval no erl (decorators + templates)](./step-1-decorator-eval.md) | `fix/step-1-decorator-eval` |
+| 2 | [Allocation leaks](./step-2-allocation-leaks.md) | `fix/step-2-allocation-leaks` |
+| 3 | [Regression tests de decorator](./step-3-regression-tests.md) | `fix/step-3-regression-tests` |
 
 ```
-Step 1 (decorator eval) ← CRÍTICO, 9 failures
-  └─► Step 2 (allocation leaks)
-       └─► Step 3 (regression tests)
+Step 1 ──► Step 3 (os testes de regressão só passam com o Step 1)
+Step 2 ── independente (leaks de codegen não dependem do comptime)
 ```
 
 ---
 
-## Métricas de sucesso
+## Critério de aceitação
 
-| Métrica | Antes | Depois |
-|---------|-------|--------|
-| Testes passando | 155/164 | 164/164 |
-| Falhas | 9 | 0 |
-| Leaks | 7+ | 0 |
-| CI status | 🔴 vermelho | 🟢 verde |
-
----
-
-## Arquivos relevantes
-
-| Arquivo | Papel |
-|---------|-------|
-| `modules/compiler-core/src/comptime/tests/decorator_invocation.zig` | Testes falhando |
-| `modules/compiler-core/src/comptime/decorator_eval.zig` | Avaliação de decorators |
-| `modules/compiler-core/src/comptime/template_eval.zig` | Decompiler (emitBpExpr) |
-| `modules/compiler-core/src/codegen/tests.zig` | Codegen tests com leaks |
+- [ ] `zig build test`: 0 falhas, 0 leaks
+- [ ] Nenhum `.snap.md.new` gerado
+- [ ] Nenhum `beam.smp` órfão após a suíte

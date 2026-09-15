@@ -16,9 +16,9 @@
 
 **Current:** planning
 
-| Step | Title | Status | Branch | Commit |
-|------|-------|--------|--------|--------|
-| Step 1 | [Step title] | pending | [branch-name] | - |
+| Step | Title | Status | Branch |
+|------|-------|--------|--------|
+| Step 1 | [Step title] | pending | [branch-name] |
 
 ---
 
@@ -106,8 +106,9 @@ git worktree add .tasks/[spec-name] -b [branch-name]
 cd .tasks/[spec-name]
 git submodule update --init --recursive
 
-# Work on compiler-core
-cd repository/botopink-lang/modules/compiler-core
+# Build and test from the compiler workspace root
+cd repository/botopink-lang
+zig build test
 ```
 
 ---
@@ -173,22 +174,12 @@ cd repository/botopink-lang/modules/compiler-core
 - [Design decisions]
 - [Alternatives considered]
 - [Trade-offs made]
-- [Lessons learned]
-
----
-
-## Changelog
-
-| Date | Change | Author |
-|------|--------|--------|
-| [DATE] | Spec created | [NAME] |
-| [DATE] | [What changed] | [NAME] |
 
 ---
 
 ## Working Memory
 
-Create a `_memory.md` sibling file to track live thinking during spec execution — current state, open questions, hunches, next actions. This file is **not** committed (`.gitignore`-ed via `_memory.md`).
+Create a `_memory.md` sibling file to track live thinking during spec execution — current state, open questions, hunches, next actions. Do not commit it.
 
 Two usage modes:
 
