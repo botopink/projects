@@ -13,7 +13,7 @@
 
 ## Estado atual
 
-`zig build` ✅ · `zig build test`: **1430/1430 ok · 13 leaks · ~17s · sem travamentos**
+`zig build` ✅ · `zig build test`: **1571/1571 ok · 13 leaks · ~17s · sem travamentos**
 
 | Grupo | Qtd | Causa |
 |---|---|---|
@@ -155,7 +155,8 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
       `allocate` e `pub val` importado virando átomo
 - [x] Baseline na `feat` dispensado: suíte 1430/1430, só os 13 leaks (já atribuídos ao step-2)
 - [x] Leaks de codegen (13) → step-2; F3–F8 não adicionaram nenhum
-- [ ] **Testes do lexer não rodam:** `src/lexer/tests.zig` é só `test {}` — os 7 arquivos de `lexer/tests/` (~1,2k linhas) nunca compilam; re-registrar e corrigir o que quebrar (pode ir p/ step-3)
+- [x] Testes do lexer registrados em `src/lexer/tests.zig` (+141 testes, todos verdes); removidos os 2 testes e a
+      asserção do keyword `echo`, que não existe mais
 
 ### F7 — Fechamento
 - [ ] `comptime/AGENTS.md` com o fluxo final (sem decompilador bp)
