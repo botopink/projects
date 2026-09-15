@@ -129,13 +129,15 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
 - [x] AGENTS.md de `codegen/` e `codegen/beam/` a cada etapa
 - [ ] Opcional: modelar `raw` restantes (`Expr.comment` p/ `%% continue`/field assign; `$stringify` como nó)
 
-### F5 — BEAM comptime (`comptime/runtime/beam.zig`) — remover a ida ao `erl`
-`renderExprValue` já calcula tudo no Zig e grava o JSON como string fixa em `main() -> "…"`; o `erl` só devolve
-a string e `parseResults` re-parseia o que o Zig gerou.
-- [ ] `renderExprValue` → literal direto no mapa `id → literal`, sem script
-- [ ] Apagar `buildScript`, `parseResults`, cache `beam_cache/`, `persistent_erl.loadBeam` e o cmd=2 do servidor
-- [ ] Ajustar snapshots com seção `COMPTIME ERLANG`
-- [ ] Não bloqueia teste verde
+### F5 — comptime `val` sem `erl` ✅
+- [x] `comptime/eval.zig` dobra cada entrada no Zig (`valueOf` → `Value`, `literal`) e devolve `id → literal`;
+      `runtime/beam.zig` apagado (`buildScript`, `parseResults`, cache `beam_cache/`)
+- [x] `persistent_erl`: sem `loadBeam`, cmd=2 do servidor, `load_error`, `eval`/`warm`/`isReady` mortos
+- [x] `evaluateComptime(allocator, bindings)` (sem `io`/`build_root`)
+- [x] Seção de snapshot `COMPTIME JAVASCRIPT`/`COMPTIME ERLANG` (que mostrava o módulo `.erl` com o JSON) virou
+      `COMPTIME VALUES` com `ct_N = literal`; valores conferidos contra o JSON antigo (script em F9)
+- Diferenças conscientes: identificador solto ≠ `true`/`false`/`null` → `error.UnsupportedComptimeValue` (antes: JSON
+  inválido → erro no parse do array inteiro); número não-decimal cai em `parseFloat`
 
 ### F6 — Suíte verde
 - [ ] Beam snapshots (5): revisar o RUN LOG novo e aceitar — os `.snap.md.new` deles estão **versionados** (`58dd5e9`):

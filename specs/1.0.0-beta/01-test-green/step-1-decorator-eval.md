@@ -30,36 +30,40 @@
 
 ## Arquitetura
 
-### D1 — `Term` + 2 emitters em `codegen/beam/`
+### D1 — `Term` + `erl_ast` + 2 emitters em `codegen/beam/`
 
 ```
-                   codegen/beam/term.zig
-                     /                \
- codegen/beam/erl_emitter.zig     codegen/beam/beam_emitter.zig
- Term + nomes → fonte Erlang      Term → operandos .S ({literal, …} via erl_emitter)
+ codegen/beam/term.zig      Term — valores
+ codegen/beam/erl_ast.zig   código Erlang (Expr/Clause/Body/Function/Form + Builder)
+        │                         │
+ erl_emitter.zig            beam_emitter.zig
+ Term + erl_ast → fonte     Term → operandos .S ({literal, …} via erl_emitter)
 ```
 
 - Emitters escrevem em `*std.Io.Writer`.
 - Duas entradas de binário: `writeBinaryFromBytes` (dados de runtime: handle, valores
   comptime) e `writeBinaryFromLexeme` (literais do lexer).
+- `codegen/erlang.zig` monta nós e formas `erl_ast` (corpos, expressões, chamadas,
+  declarações, cabeçalho, runner de testes); só o `erl_emitter` escreve texto.
 - A migração dos codegens é byte-idêntica, exceto snapshots que antes geravam código
   inválido (átomos reservados/maiúsculos sem quote no `.S`).
 
 ### D2 — Eval pelo codegen real
 
-O `codegen/erlang.zig` já lowera `ast.Program` não tipado com tudo que os corpos usam
-(`if` → `case`, `decl.kind` → `maps:get`, `DeclKind.Record` → `'Record'`,
-`decl.fail(m)` → `fail(Decl, M)`, `forEach` com `var` → `lists:foldl`).
-
 ```
 FnDecl (decorator/template)
   → ast.Program{ decls = [fn] }
-  → erlang.emitComptimeModule(program, .{ host_enums, exports = main/0, tail = host fns + main/0 })
-      main/0 usa erl_emitter para o handle @Decl / captures (Term)
-  → .erl único por avaliação → persistent_erl.evalDetailed → {kind, …} → Outcome
+  → erlang.emitComptimeModule(program, .{ host_enums, host_records, exports = main/0, forms = host fns + main/0 })
+      handle @Decl / captures como Term
+  → .erl único por avaliação (nome = hash do código) → persistent_erl.evalDetailed → JSON {kind, …} → Outcome
 ```
 
 Modo comptime (corpo sem tipos): `+` → `'__bp_add'/2`, `.len`/`.length` → `'__bp_len'/2`.
+
+### D3 — Valores `comptime` em Zig
+
+`val x = comptime …` é dobrado em `comptime/eval.zig`, sem `erl`. Snapshots mostram
+`COMPTIME VALUES` (`ct_N = literal`).
 
 ---
 
@@ -67,42 +71,16 @@ Modo comptime (corpo sem tipos): `+` → `'__bp_add'/2`, `.len`/`.length` → `'
 
 | Fase | Escopo | Estado |
 |---|---|---|
-| F0 | Housekeeping: `src/` acidental do meta, `.snap.md.new` commitados, `std.debug.print` em `decorator_eval.zig`/`infer.zig` | parcial (`src/` removido) |
+| F0 | Housekeeping (`src/` acidental do meta, `.snap.md.new` commitados, prints de debug) | parcial (`.snap.md.new` beam versionados; `.qwen/`, `test_pub.zig`, `.env` aguardam decisão) |
 | F1 | `term.zig`, `erl_emitter.zig`, `beam_emitter.zig`; `erlang.zig`/`beam_asm.zig` migrados; `handleToTerm` | feito |
-| F2 | `emitComptimeModule` + modo `untyped` + versionamento de variáveis (`Count@1`); `persistent_erl`: `readExact`, `evalDetailed`, timeout de `main/0`, `halt()` + stderr em log (fim dos travamentos) | implementado |
-| F3 | Decorators sobre `emitComptimeModule` (ver abaixo) | pendente |
-| F4 | Templates sobre `emitComptimeModule` | pendente |
-| F5 | `runtime/beam.zig` sem ida ao `erl` | pendente (não bloqueia verde) |
-| F6 | Suíte verde | pendente |
-| F7 | `AGENTS.md` do submódulo, `architecture.md`, esta spec; commit + bump | pendente |
-
-### F3 — Decorators (`comptime/decorator_eval.zig`)
-
-- `buildErlModule` sobre `emitComptimeModule`: program `[dfn]`, `host_enums = {"DeclKind"}`,
-  `tail` = `fail/2`, `failAt/3`, `compilerError/1`, `emit/1` + `main/0`.
-- `main/0` chama o decorator com `handleToTerm(handle)` e os plain args como `Term`
-  (parâmetro sem arg → `undefined`); captura `throw:{comptime_fail, Msg, Span}` e `error:Reason`.
-- Apagar `emitExpr`/`emitStmt`/`emitBody`/`emitDeclHandle`.
-- Plain args (`PlainArg.jsValue`, lexema bp) → `Term`: string → binary, número → integer/float,
-  bool → boolean; resto → erro claro.
-- Nome de módulo/arquivo único por avaliação (hash do Erlang gerado, não do nome da fn).
-- `parseOutcome` com struct no formato `{kind, contributions|message|span}`; `failAt` → `Outcome.fail.span`.
-- Mensagem de erro de compilação/runtime do `erl` propagada para o `TypeError` em `infer.zig`.
-
-### F4 — Templates (`comptime/template_eval.zig`)
-
-- `evaluateErl` sobre `emitComptimeModule`; apagar `emitBpBody` e o decompilador.
-- Host fns (`q.build`, `q.text`, `q.parts`, `q.lookup`, `q.bindings`, `q.fail`, `q.custom`,
-  `@expr`, `makeExpr`, `makeCode`) no `tail`/prelude.
-- Captures (`template.CapturedExpr`) → `Term` no `main/0`.
-- `parseOutcome` no formato `{kind, …}`; valores JSON crus → `TypedValue`.
-- Hint de erro sem menção a "node runtime".
-
-### F5 — `comptime/runtime/beam.zig`
-
-`renderExprValue` já calcula tudo em Zig. Gravar o valor direto no mapa `id → literal` e
-apagar `buildScript`, `parseResults`, cache `beam_cache/`, `persistent_erl.loadBeam` e o cmd 2
-do servidor; ajustar snapshots com seção `COMPTIME ERLANG`.
+| F2 | `emitComptimeModule` + modo `untyped` + versionamento de variáveis; `persistent_erl` robusto (`readExact`, `evalDetailed`, timeout, `halt()`, stderr em log) | feito |
+| F3 | Decorators sobre `emitComptimeModule` | feito (menor: loc do `TypeError`, span do `failAt`) |
+| F4 | Templates sobre `emitComptimeModule`; runtime morto removido | feito |
+| F5 | Valores `comptime` sem ida ao `erl` | feito |
+| F6 | Suíte verde | pendente: 5 snapshots beam de RUN LOG |
+| F7 | Docs (`AGENTS.md`, `architecture.md`, esta spec); commits | em andamento |
+| F8 | `erl_ast` + emitter: `erlang.zig` sem escrita de texto | feito |
+| F9 | Revisão final de todos os snapshots alterados/criados | pendente |
 
 ---
 
@@ -122,15 +100,14 @@ do servidor; ajustar snapshots com seção `COMPTIME ERLANG`.
 | regression: string concat | religação `msg = msg + …` |
 | regression: `@emit` in body | `'__bp_add'` dentro de `@emit` |
 
-Os testes de *rejeição* de decorator passam hoje com o avaliador quebrado — confirmar no F3
-que passam pelo motivo certo.
+Os testes de *rejeição* de decorator comparam a mensagem do `TypeError` (não só o fato de rejeitar).
 
 ## Aceitação
 
-- [ ] `decorator_invocation` 11/11 e `decorator_regression` 4/4
-- [ ] `templates`, `sublanguage` e `completion` sem falhas
-- [ ] Snapshots de codegen (5): diff do RUN LOG revisado e aceito
-- [ ] Nenhum leak novo (os 13 de codegen são do Step 2)
+- [x] `decorator_invocation` 11/11 e `decorator_regression` 4/4
+- [x] `templates`, `sublanguage` e `completion` sem falhas
+- [ ] Snapshots de codegen beam (5): diff do RUN LOG revisado e aceito
+- [x] Nenhum leak novo (os 13 de codegen são do Step 2)
 
 ## Notas de build
 
