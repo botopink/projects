@@ -118,8 +118,10 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
       host viram `seq` (`templateNode`); `emitExprLegacy`/`legacyAsRaw`/`emitResultOptionOp`/`emitPattern`/`emitBind`/
       `emitBinaryOp` removidos; `erl_ast` ganhou `seq` e `case` inline
 - [x] **8.6** `caseNode`/`caseBodyNode`/`patternNode`/`listPatElemNode` (padrões como `Ast.Expr`); `emitBranchBody` removido
-- [ ] **8.7** declarações: `emitFn`/`emitTestFn`/`emitTopVal`/records/enums/interfaces/extensions → `Ast.Function`/`Form`;
-      cabeçalho do módulo (`-module`, `-export`, `-compile(no_auto_import)`), wrapper `_botopink_main`, runner de testes
+- [x] **8.7** módulo como `[]Ast.Form` renderizado por `writeForms`: `module`/`no_auto_import` (`noAutoImportRefs`)/`exports`
+      (`FnRef`; `ComptimeModule.exports` virou `[]FnRef`), `topValForms`/`fnForms`/`testFunction`/`recordForms`/`enumForms`/
+      `interfaceForms`/`implementForms`/`extendForms`, wrapper `_botopink_main` e runner de testes (`testRunnerForms`) em nós;
+      `erl_ast` ganhou `string`, `fun_ref`, `list_block` e `Form.blank`
 - [ ] **8.8** `erlang.zig` sem `this.w("…")`/`this.fmt("…")` de sintaxe Erlang (só `erlEmitter`); remover `w`/`fmt`/`writeIndent`
 - [ ] `beam_emitter` continua no `Term` (o `.S` é máquina de registradores, não expressões)
 - [ ] AGENTS.md de `codegen/` e `codegen/beam/` a cada etapa
