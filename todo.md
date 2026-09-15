@@ -159,12 +159,12 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
       asserção do keyword `echo`, que não existe mais
 
 ### F7 — Fechamento
-- [ ] `comptime/AGENTS.md` com o fluxo final (sem decompilador bp)
-- [ ] Spec `specs/1.0.0-beta/01-test-green/step-1-decorator-eval.md` alinhada
-- [ ] Commit submódulo → bump no meta (sem `--no-verify`)
-- [ ] Sweep das `feat` remotas (meta + submódulos)
+- [x] `comptime/AGENTS.md` com o fluxo final (decorators/templates no `erl`, `val` dobrado em Zig)
+- [x] Spec `specs/1.0.0-beta/01-test-green/step-1-decorator-eval.md` e `architecture.md` alinhadas
+- [x] Commit submódulo → bump no meta a cada fase (sem `--no-verify`)
+- [ ] Push / merge na `feat` + sweep das `feat` remotas — **só quando o Eric pedir**
 
-### F9 — Revisão final de todos os snapshots alterados (fazer por último, antes do merge)
+### F9 — Revisão final de todos os snapshots alterados ✅
 Cada snapshot aceito nesta branch foi conferido na hora, mas vale uma revisão única no fim, com a branch completa,
 verificando se cada mudança **faz sentido** (é correção/efeito esperado, não regressão mascarada).
 
@@ -176,18 +176,23 @@ git diff --name-status $base..HEAD -- '*.snap.md'          # A = novo, M = alter
 git diff $base..HEAD -- '<caminho do snapshot>'             # revisar um a um
 ```
 
-Estado na hora do F4 (41 arquivos: 20 A, 21 M) — atualizar a lista quando F4b/F8/F5 mexerem em mais:
-- [ ] `codegen/beam` (6): `record_returned_then_field_read_on_call_result` (`{atom, 'end'}`), `val_pub_val_declaration` /
-      `import_multi_module_pub_val_import` (`{function, 'HOST', …}`), 3× `template_end_to_end_*` (antes vazios)
-- [ ] `codegen/erlang` (8): `assign_update_var_with_pluseq` (`Count@1`, RUN LOG `1`), 3× `comptime_loop_unrolling_*`
-      (`Output@1`), `comptime_partial_runtime_array_loop_preserved…` (`lists:foldl` sobre `COMMANDS`), 3× `template_end_to_end_*`
-- [ ] `codegen/node` (3) e `codegen/wasm` (3): `template_end_to_end_*` (antes vazios/truncados)
-- [ ] `comptime/{node,erlang,beam,wasm}` (20, novos): AST tipado dos 5 testes de template em runtime
-- [ ] `lsp/sublanguage_semantic_tokens`: tokens `keyword`/`property` dentro da string
-- [ ] Os 5 snapshots beam de RUN LOG pendentes (F6), quando forem aceitos
-- [ ] Para cada um: a saída nova compila/roda? o RUN LOG bate com o que o programa deveria imprimir? a diferença é
-      explicada por um commit desta branch? Anotar aqui qualquer snapshot que registre bug conhecido (ex.: `Cfg` no
-      `template_end_to_end_yaml…` erlang) para não parecer "aprovado"
+Revisão feita no fim do F6 (84 arquivos: 20 A, 55 M, 9 D). Veredito por grupo:
+- [x] `comptime/{node,erlang,beam,wasm}` (20 A): AST tipado dos 5 testes de template em runtime; as 4 cópias são
+      idênticas; tipos certos (`six` → `i32`, demais `string`)
+- [x] 22 M com `COMPTIME VALUES` (F5): só a seção muda; valores conferidos contra o JSON antigo por script
+- [x] `codegen/node` 3× `template_end_to_end_*`: expansão e RUN LOG corretos (`8005`, `<p>world</p>`, `<div>…`)
+- [x] `codegen/erlang` `assign_update_var_with_pluseq` (`Count@1`, RUN LOG `1`) e 3× `comptime_loop_unrolling_*`
+      (`Output@1`): corretos
+- [x] `lsp/sublanguage_semantic_tokens`: `q` como função + `keyword`/`property` dentro da string — correto
+- [x] `.snap.md.new` versionados por engano (9 D): removidos
+- **Aceitos registrando bug conhecido** (todos na spec 03, não são "aprovação"):
+  - erlang `template_end_to_end_*`: `Cfg`/`Page` ligados em `'_botopink_main'` e lidos em `main()`; concat de string
+    da expansão sai como `+` em binários; RUN LOG vazio
+  - erlang `comptime_partial_runtime_array_loop…`: `COMMANDS` lido na fn especializada; RUN LOG vazio
+  - beam `template_end_to_end_holed_html…` imprime o átomo `page`; 4 RUN LOGs errados do F6 (zip, `@Result`,
+    `Pair.first`/`compose`, `case` em enum); `import_multi_module_pub_val_import` / `val_pub_val_declaration`
+    (`pub val` importado vira átomo, `deallocate` sem `allocate`)
+  - wasm `template_end_to_end_*`: RUN LOG vazio (sem execução de WAT — spec 03 step 2)
 
 ### Opcionais (F1)
 - [ ] Literais constantes de map/list/tuple do `erlang.zig` → `Term` + `writeTerm`
