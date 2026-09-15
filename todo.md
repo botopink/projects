@@ -114,7 +114,7 @@ Regra: snapshots erlang **byte-idênticos** a cada etapa; `raw` é a ponte p/ o 
       length/`'__bp_len'`), binop/unop, lambda, grouped/array/tuple/range/record/interface, jumps, `if`/`tryCatch`, `loop`;
       `emitExprLegacy` só com `call`/`binding`/`useHook`/`comptime_` (+ `emitCase`) via `legacyAsRaw`
 - [ ] **8.5** `call` (receiver/std/ext/enum ctor/record ctor/prim dispatch/builtin templates) e `emitPrimMethod` — o maior bloco
-- [ ] **8.6** `emitCase`/`emitPattern`/`emitCaseBody` (padrões como `Ast.Expr`)
+- [x] **8.6** `caseNode`/`caseBodyNode`/`patternNode`/`listPatElemNode` (padrões como `Ast.Expr`); `emitBranchBody` removido
 - [ ] **8.7** declarações: `emitFn`/`emitTestFn`/`emitTopVal`/records/enums/interfaces/extensions → `Ast.Function`/`Form`;
       cabeçalho do módulo (`-module`, `-export`, `-compile(no_auto_import)`), wrapper `_botopink_main`, runner de testes
 - [ ] **8.8** `erlang.zig` sem `this.w("…")`/`this.fmt("…")` de sintaxe Erlang (só `erlEmitter`); remover `w`/`fmt`/`writeIndent`
