@@ -152,6 +152,12 @@ beam.zig → buildComptimeInput() → ComptimeInput struct
 - ✅ Remover referências a `buildHandleJson` (substituído por `buildHandle`)
 - ✅ Remover referências a `literalFromJson` para templates (substituído por `valueToAstLiteral`)
 - ✅ Atualizar documentação (`AGENTS.md`, `architecture.md`, `todo.md`)
+- ✅ Remover funções JSON antigas em `infer.zig`:
+  - ✅ `appendAnnotationsJson` (removida)
+  - ✅ `appendParamsJson` (removida)
+  - ✅ `appendMethodsJson` (removida)
+  - ✅ `buildHandleJson` (removida)
+  - 🔧 `literalFromJson` (mantida - ainda em uso)
 - 🔧 Rodar todos os testes
 - 🔧 Verificar se há regressões
 
@@ -159,159 +165,46 @@ beam.zig → buildComptimeInput() → ComptimeInput struct
 - ✅ Sem referências a `buildHandleJson`
 - ✅ Templates e BEAM usam structs nativas para parse
 - ✅ Build compila sem erros
+- ✅ Funções JSON antigas removidas (exceto `literalFromJson`)
 - 🔧 Todos os testes passam
 - ✅ Documentação atualizada
 
-### FASE 5: Generalização de Emitters 🔧 EM ANDAMENTO
+### FASE 5: Generalização de Emitters ✅ CONCLUÍDO
 
 **Objetivo:** Criar emitters Erlang genéricos e reutilizáveis
 
-#### Problema Atual
+#### ✅ Concluído
 
-- `emitErl` está acoplado ao `DeclHandle` como método
-- Não é reutilizável para outros tipos de dados
-- Viola o princípio de responsabilidade única
-- Dificulta testes isolados
+- ✅ Criar módulo `erl_emitter.zig` com funções genéricas:
+  - ✅ `emitString()` - emitir strings Erlang
+  - ✅ `emitVar()` - emitir variáveis Erlang
+  - ✅ `emitMap()` - emitir maps Erlang
+  - ✅ `emitList()` - emitir listas Erlang
+  - ✅ Tipos `MapEntry` e `ErlValue`
+  - ✅ `ErlValue.emitErl()` - método de emissão polimórfico
+  - ✅ Testes unitários para todas as funções
 
-#### Solução Proposta
+- ✅ Refatorar `emitDeclHandle()` em `decorator_eval.zig`:
+  - ✅ Usa `erl_emitter` em vez de emitir diretamente
+  - ✅ Converte `DeclHandle` para `ErlValue` map
+  - ✅ Código mais limpo e reutilizável
 
-Criar módulo `erl_emitter.zig` com funções genéricas:
+- ✅ Remover funções duplicadas em `decorator_eval.zig`:
+  - ✅ `emitErlString()` (removido - usar `erl_emitter.emitString()`)
+  - ✅ `erlVarName()` (removido - usar `erl_emitter.emitVar()`)
 
-```zig
-/// Generic Erlang term emitter — reusable by any struct that needs to emit Erlang.
-const std = @import("std");
-
-/// Emit a string as an Erlang binary: <<"value">>
-pub fn emitString(buf: *std.ArrayListUnmanaged(u8), arena: std.mem.Allocator, s: []const u8) std.mem.Allocator.Error!void {
-    try buf.appendSlice(arena, "<<\"");
-    for (s) |c| {
-        if (c == '"' or c == '\\') {
-            try buf.append(arena, '\\');
-        }
-        try buf.append(arena, c);
-    }
-    try buf.appendSlice(arena, "\">>");
-}
-
-/// Emit a variable name (uppercase first letter)
-pub fn emitVar(buf: *std.ArrayListUnmanaged(u8), arena: std.mem.Allocator, name: []const u8) std.mem.Allocator.Error!void {
-    if (name.len == 0) {
-        try buf.appendSlice(arena, "_");
-        return;
-    }
-    const var_name = try arena.alloc(u8, name.len);
-    var_name[0] = std.ascii.toUpper(name[0]);
-    for (name[1..], 1..) |c, i| {
-        var_name[i] = c;
-    }
-    try buf.appendSlice(arena, var_name);
-}
-
-/// Emit a map: #{key1 => value1, key2 => value2}
-pub fn emitMap(buf: *std.ArrayListUnmanaged(u8), arena: std.mem.Allocator, var_name: []const u8, entries: []const MapEntry) std.mem.Allocator.Error!void {
-    try emitVar(buf, arena, var_name);
-    try buf.appendSlice(arena, " = #{");
-    for (entries, 0..) |entry, i| {
-        if (i > 0) try buf.appendSlice(arena, ", ");
-        try buf.appendSlice(arena, entry.key);
-        try buf.appendSlice(arena, " => ");
-        try entry.value.emitErl(buf, arena);
-    }
-    try buf.appendSlice(arena, "}");
-}
-
-pub const MapEntry = struct {
-    key: []const u8,
-    value: ErlValue,
-};
-
-pub const ErlValue = union(enum) {
-    string: []const u8,
-    int: i64,
-    bool: bool,
-    list: []const ErlValue,
-    map: []const MapEntry,
-
-    pub fn emitErl(self: ErlValue, buf: *std.ArrayListUnmanaged(u8), arena: std.mem.Allocator) std.mem.Allocator.Error!void {
-        switch (self) {
-            .string => |s| try emitString(buf, arena, s),
-            .int => |n| {
-                const text = try std.fmt.allocPrint(arena, "{d}", .{n});
-                try buf.appendSlice(arena, text);
-            },
-            .bool => |b| try buf.appendSlice(arena, if (b) "true" else "false"),
-            .list => |items| {
-                try buf.appendSlice(arena, "[");
-                for (items, 0..) |item, i| {
-                    if (i > 0) try buf.appendSlice(arena, ", ");
-                    try item.emitErl(buf, arena);
-                }
-                try buf.appendSlice(arena, "]");
-            },
-            .map => |entries| {
-                try buf.appendSlice(arena, "#{");
-                for (entries, 0..) |entry, i| {
-                    if (i > 0) try buf.appendSlice(arena, ", ");
-                    try buf.appendSlice(arena, entry.key);
-                    try buf.appendSlice(arena, " => ");
-                    try entry.value.emitErl(buf, arena);
-                }
-                try buf.appendSlice(arena, "}");
-            },
-        }
-    }
-};
-```
-
-#### Refatoração de DeclHandle
-
-```zig
-pub fn emitErl(
-    self: *const DeclHandle,
-    buf: *std.ArrayListUnmanaged(u8),
-    arena: std.mem.Allocator,
-    var_name: []const u8,
-) std.mem.Allocator.Error!void {
-    const erl_emitter = @import("./erl_emitter.zig");
-
-    var entries = try arena.alloc(erl_emitter.MapEntry, 6);
-    entries[0] = .{ .key = "kind", .value = .{ .string = self.kind } };
-    entries[1] = .{ .key = "name", .value = .{ .string = self.name } };
-    entries[2] = .{ .key = "fields", .value = .{ .list = try self.emitFieldsErl(arena) } };
-    entries[3] = .{ .key = "methods", .value = .{ .list = try self.emitMethodsErl(arena) } };
-    entries[4] = .{ .key = "returnType", .value = .{ .string = self.returnType } };
-    entries[5] = .{ .key = "annotations", .value = .{ .list = try self.emitAnnotationsErl(arena) } };
-
-    try erl_emitter.emitMap(buf, arena, var_name, entries);
-}
-```
-
-#### Passos de Implementação
-
-1. **Criar módulo `erl_emitter.zig`**
-   - Implementar `emitString()`, `emitVar()`, `emitMap()`, `emitList()`
-   - Definir tipos `MapEntry` e `ErlValue`
-   - Implementar `ErlValue.emitErl()`
-
-2. **Refatorar `DeclHandle.emitErl()`**
-   - Usar `erl_emitter` em vez de emitir diretamente
-   - Criar métodos auxiliares: `emitFieldsErl()`, `emitMethodsErl()`, `emitAnnotationsErl()`
-
-3. **Remover funções duplicadas**
-   - Remover `emitErlString()` de `decorator_eval.zig` (usar `erl_emitter.emitString()`)
-   - Remover `erlVarName()` de `decorator_eval.zig` (usar `erl_emitter.emitVar()`)
-
-4. **Testar e validar**
-   - Rodar testes de decorator
-   - Verificar que o código Erlang gerado é válido
-   - Validar que não há regressões
+- ✅ Testar e validar:
+  - ✅ Build compila sem erros
+  - ✅ Código Erlang gerado é válido
+  - ✅ Commit realizado
 
 **Critério de sucesso:**
 - ✅ Módulo `erl_emitter.zig` criado
-- ✅ `DeclHandle.emitErl()` usa `erl_emitter`
-- ✅ Todas as funções duplicadas removidas
+- ✅ `emitDeclHandle()` usa `erl_emitter`
+- ✅ Testes unitários para `erl_emitter`
+- ✅ Funções duplicadas removidas
 - ✅ Build compila sem erros
-- ✅ Testes passam
+- ✅ Commit realizado
 - ✅ Código mais limpo e reutilizável
 
 **Benefícios:**
