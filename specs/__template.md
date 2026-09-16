@@ -1,189 +1,172 @@
-# [SPEC NAME]
+# Template — a milestone and its fronts
 
-**Version:** 1.0.1-beta  
-**Status:** planning  
-**Priority:** [CRÍTICO | ALTA | MÉDIA | BAIXA]  
-**Created:** [DATE]  
-**Author:** [AUTHOR]  
-**Depends on:** [Other specs or none]  
-**Blocks:** [What this spec blocks]
+A milestone is a directory of **fronts**. A front is the unit of work: one worktree, one branch,
+one owner, one `todo.md`. Fronts are cut so that several can run at the same time, and the cut is
+by **ownership of files and of snapshot directories** — not by topic.
 
----
+Copy the skeletons below; delete what does not apply. English, in every file.
 
-## Status
+```
+specs/<version>/
+├── overview.md                     what the milestone is, the fronts, the order
+├── fronts.md                       ownership + conflict matrix (who may run together)
+├── <NN>-<front-name>/
+│   ├── README.md                   the front: problem, steps, acceptance, ownership, gate
+│   └── <topic>.md                  the deep dives (mechanism, blast radius, options, evidence)
+└── …
+```
 
-> **planning** → **in progress** → **completed** / **cancelled**
-
-**Current:** planning
-
-| Step | Title | Status | Branch |
-|------|-------|--------|--------|
-| Step 1 | [Step title] | pending | [branch-name] |
-
----
-
-## Objective
-
-[2-4 lines: what is achieved, what problem is solved.]
-
-**Motivation:**
-[Why is this needed? What problem does it solve?]
-
-**Success criteria:**
-- [ ] [Measurable outcome 1]
-- [ ] [Measurable outcome 2]
-- [ ] All tests pass
+Why a directory per front: the front is what becomes `.tasks/<front-name>` and `fix/<front-name>`,
+so the document a worker opens is the document that owns their branch. A deep dive that would bury
+the steps goes in its own file next to the README.
 
 ---
 
-## Prerequisites
+## `overview.md`
 
-- [Dependencies, related specs, blocking conditions]
-- [E.g.: Spec `X.md` completed]
-- [E.g.: `zig build test` passing]
-- [E.g.: Feature Y implemented]
+```markdown
+# Specs — <version>
 
----
+<2–4 lines: what this milestone is about and what it inherits from the previous one.>
 
-## Implementation Plan
+| Front | Priority | What |
+|---|---|---|
+| [`<NN>-<name>/`](./<NN>-<name>/README.md) | critical/high/medium/low | <one line> |
 
-### Architecture
+## Order
 
-[High-level description of the approach. Which compiler layers are affected?]
+```
+<front> ──┐  (runs alone: <why>)
+<front> ──┤
+          └──► <front> · <front> · <front>   (N in parallel)
+```
 
-**Layers affected:**
-- [ ] Lexer (`lexer.zig`)
-- [ ] Parser (`parser/`)
-- [ ] AST (`ast.zig`)
-- [ ] Type Inference (`comptime/infer.zig`)
-- [ ] Codegen (`codegen/`)
-- [ ] Formatter (`format.zig`)
-- [ ] Runtime (`comptime/runtime/`)
+<One paragraph: why the first front is first — in terms of what the others cannot verify
+without it, not in terms of importance.>
 
-### Implementation Steps
+## Rules carried forward
 
-Statuses: **pending** | **open** (in progress) | **completed** | **cancelled**
+<Rules earned in previous milestones that still bind — e.g. "a backend builds a model, an
+emitter renders it"; "the gate runs from a cold runtime cache"; "a snapshot is evidence, not a
+baseline".>
+```
 
-#### Step 1 — [Step title]
+## `fronts.md`
 
-**Status:** pending  
-**Branch:** `[branch-name]`  
-**Assignee:** [NAME]  
-**Estimated time:** [X hours]
+The parallelism plan. Two fronts may run at the same time only when they share **no source file
+and no snapshot directory** — a shared snapshot directory is the usual trap, because one change
+re-records the whole directory and the two fronts then fight over every file in it.
 
-**What to do:**
-1. [Action 1]
-2. [Action 2]
-3. [Action 3]
+```markdown
+## Ownership
 
-**Acceptance criteria:**
-- [ ] [Objective condition 1]
-- [ ] [Objective condition 2]
-- [ ] Tests added and passing
-- [ ] `zig build test` passes
+| Front | Source it owns | Snapshots it owns | Spec rows |
+|---|---|---|---|
+| **F1 <name>** | <paths> | <dir> (<count>) | <which steps> |
 
-**Files to modify:**
+## Conflict matrix
 
-| File | Purpose |
-|------|---------|
-| `path/to/file.zig` | What changes |
+|  | F1 | F2 | … |
+|---|---|---|---|
+| **F1** | — | yes | no¹ |
 
-**Tests to add:**
+<Numbered notes explaining every "no": which file or directory they share, and whether the
+answer is "sequence them" or "merge them into one front".>
 
-| Test file | Test name | What it verifies |
-|-----------|-----------|------------------|
-| `tests/file.zig` | `test name` | [Description] |
+## Order
 
----
-
-## Worktree Setup
-
-```bash
-# Create worktree for this spec
-git worktree add .tasks/[spec-name] -b [branch-name]
-
-# Initialize submodules
-cd .tasks/[spec-name]
-git submodule update --init --recursive
-
-# Build and test from the compiler workspace root
-cd repository/botopink-lang
-zig build test
+<The diagram from overview.md, plus which fronts are the critical path because they run alone.>
 ```
 
 ---
 
-## Testing Strategy
+## `<NN>-<front-name>/README.md`
 
-### Unit Tests
+```markdown
+# Front <NN> — <name>
 
-[What unit tests need to be added?]
-
-| Layer | Test file | What to test |
-|-------|-----------|--------------|
-| Parser | `parser/tests/[file].zig` | [Description] |
-| Inference | `comptime/tests/[file].zig` | [Description] |
-| Codegen | `codegen/tests/[file].zig` | [Description] |
-| Formatter | `format/tests/[file].zig` | [Description] |
-
-### Integration Tests
-
-[What integration tests verify the feature works end-to-end?]
-
-### Regression Tests
-
-[What existing tests might break? What regression tests should be added?]
+**Priority:** <critical | high | medium | low> — <why, in one clause>
+**Depends on:** <front(s) or none>
+**Owns:** <source paths> · <snapshot directories>
+**Does not touch:** <the paths other fronts own — name them, so a worker knows to stop and report>
 
 ---
 
-## Metrics
+## Problem
 
-| Metric | Before | After |
-|--------|--------|-------|
-| Tests passing | [X]/[Y] | [X]/[Y] |
-| Tests failing | [N] | 0 |
-| Code coverage | [X]% | [Y]% |
-| [Other metric] | [Value] | [Value] |
+<What is wrong, stated as behaviour a reader can reproduce. Command, output, exit code.>
 
----
+## Current state
 
-## Risks and Mitigations
+<Measured, not remembered: counts, which fixtures, which libraries. Say how it was measured
+(`scripts/…`, a suite run from a cold cache, running the emitted code) so the next person can
+repeat it.>
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| [Risk description] | [Low/Med/High] | [Low/Med/High] | [How to mitigate] |
+## Mechanism
 
----
+<Why it happens: the call path, the deciding line (`file:line`), and what that line decides.
+If the answer is long, this becomes `<topic>.md` and this section is its summary plus a link.>
 
-## Dependencies
+## Steps
 
-### Blocks
+### Step 1 — <what>
 
-- [What specs/steps does this block?]
-- [E.g.: Step 1 depends on this spec]
+<What to change, and the shape of the change. Where there is a choice, state the options and
+recommend one with its trade-off.>
 
-### Blocked by
+**Acceptance:**
+- [ ] <objective condition — a command and its expected result, not "works">
+- [ ] <the regression test that would have caught it>
 
-- [What specs/steps block this?]
-- [E.g.: Requires Spec X to be completed]
+## Gate
 
----
+- [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree
+- [ ] <the front's own check: a validator run, a library that must compile, snapshots
+      byte-identical for a refactor front>
+- [ ] `AGENTS.md` of every directory touched, updated in the same commit
+- [ ] Commit on `fix/<front-name>`; no push, no merge — landing is the maintainer's step
+
+## Blast radius
+
+<What else moves when this lands: how many snapshots, which libraries start or stop compiling,
+which other front has to re-record. A front that reds real code needs a migration plan here,
+not just a fix.>
 
 ## Notes
 
-- [Design decisions]
-- [Alternatives considered]
-- [Trade-offs made]
+<Decisions taken and why; what was deliberately not done and who owns it.>
+```
+
+## `<NN>-<front-name>/<topic>.md`
+
+One per deep dive. The README stays readable; the analysis lives here. Typical topics:
+
+| File | Holds |
+|---|---|
+| `mechanism.md` | the call path traced function by function, with `file:line` at HEAD |
+| `surface.md` | the full table of what works and what does not (per method, per backend, per fixture) |
+| `options.md` | fix options with cost, risk and interaction, ending in a recommendation |
+| `blast-radius.md` | what breaks when the permissive behaviour stops being permissive |
+| `evidence.md` | quoted output, minimal reproductions, and how each was produced |
 
 ---
 
-## Working Memory
+## Working a front
 
-Create a `_memory.md` sibling file to track live thinking during spec execution — current state, open questions, hunches, next actions. Do not commit it.
+1. `git worktree add .tasks/<front-name> -b fix/<front-name>` from the submodule that owns the
+   code; write `todo.md` at the worktree root from the front's README (steps as a checklist,
+   owned and forbidden paths, the gate). `todo.md` is git-ignored and never committed.
+2. Work only inside the worktree, only on owned files. **A front that needs a file it does not
+   own stops and reports it** — that is how a mirrored bug is found instead of papered over.
+3. Verify by running, not by reading: execute the emitted code, drive the server, run the CLI.
+   Re-record a snapshot only for a value that was verified.
+4. Land: merge into `feat`, suite green in the main checkout, push, submodule bump in the meta
+   repo, then delete the worktree and the branch.
 
-Two usage modes:
+## Conventions
 
-1. **Clean slate** — empty file; write whatever comes up while working.
-2. **Spec snapshot** — copy the Steps table and current status from this spec into `_memory.md` as a checklist; tick off items, add per-step notes, keep the live state in one place.
-
-Either way: update it liberally, delete it when the spec closes. Never commit it — it's transient scratch, not a design artifact.
+- Specs describe **current state and remaining work**. No status narratives, no commit hashes,
+  no superseded approaches — when a front lands, its README becomes the record of what shipped
+  and what it left, and the leftovers move to the next milestone.
+- Cite `file:line` at HEAD and say when a number was measured, because both drift.
+- A table beats a paragraph. A reproduction beats a description.

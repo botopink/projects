@@ -1,102 +1,55 @@
 # Specs — 1.0.2-beta
 
-What [`1.0.1-beta`](../1.0.1-beta/overview.md) left open, plus the library break it uncovered.
-1.0.1-beta made the suite tell the truth (a run is decided by the process exit status, a program
-that does not compile fails its test, every backend is compared) and gave each backend a code
-model with a single emitter. This milestone spends that: the defects the suite now shows are
-fixed, and the gate is widened to the libraries.
+What [`1.0.1-beta`](../1.0.1-beta/overview.md) left open, plus what a health check of the whole
+workspace found. 1.0.1-beta made the suite tell the truth (a run is decided by the process exit
+status, a program that does not compile fails its test, every backend is compared) and gave every
+backend a code model with a single emitter. This milestone spends that: the defects the suite now
+shows get fixed, and the gate is widened to the libraries it never compiled.
 
-| # | Spec | Priority | What |
-|---|------|----------|------|
-| 01 | [`01-comptime-untyped-dispatch.md`](./01-comptime-untyped-dispatch.md) | critical | A template body calling a primitive `default fn` produces calls to undefined functions, so every library with a template is uncompilable; `botopink test` hides the diagnostic; `zig build test-libs` is in no gate. |
-| 02 | [`02-type-system.md`](./02-type-system.md) | high | Checker correctness (`return` never unified with the declared return type, `case` typed as a fresh variable, swapped expected/found, type guards, the type builtins, permissive method/field checks), types as comptime values, narrowing. |
-| 03 | [`03-codegen-hardening.md`](./03-codegen-hardening.md) | high | The lowerings the backends still miss (beam `declare fn` externals, unresolved method calls, string `+`, generators; wasm lambdas/loops/`case` payloads), WAT execution, missing coverage, `persistent_erl` tests. |
-| 04 | [`04-emitter-centralization.md`](./04-emitter-centralization.md) | medium | The bridges that pin illegal shapes the lowering still emits (JS-1…JS-6, the erlang `raw` bug rows, the wat extern gap) — each one a commit that deletes its build sites. |
-| 05 | [`05-repo-hygiene.md`](./05-repo-hygiene.md) | low | Orphan std files, manifests, hooks, `wasm3` leftovers, CI comments, license, and the rest of the audit. |
-| 06 | [`06-snapshot-review.md`](./06-snapshot-review.md) | medium | The review's residual rows per report, the tracing/worksheet tooling, and the 4 byte-identical comptime copies per slug. |
-| 07 | [`07-suite-and-harness.md`](./07-suite-and-harness.md) | low | The one thing spec 01 of 1.0.1-beta left: the decorator regression tests were never mutation-checked. |
-| 08 | [`08-module-health.md`](./08-module-health.md) | critical | Four of six libraries cannot compile, three CLI commands report success on failure, and the gate never compiles a `.bp` library. |
+The work is cut into **twelve fronts** — one directory each, one worktree and branch each. The cut
+is by ownership of files and snapshot directories, so the fronts that do not share either run at
+the same time. [`fronts.md`](./fronts.md) holds the ownership table and the conflict matrix.
 
-## Waves
+## Fronts
 
-Each wave runs as one worktree per row under `.tasks/<name>`, with a `todo.md` carrying the
-row's steps, the owned and forbidden files, and the exit gate. A wave's rows are file-disjoint
-**and snapshot-disjoint** — that is what lets them run at the same time. A row lands by: merge
-into `feat`, suite green in the main checkout, push, submodule bump in the meta repo, then the
-worktree and branch are deleted.
-
-### Wave 0 — foundation (blocking, run alone)
-
-Everything downstream depends on these, and they regenerate snapshots across all four targets, so
-nothing else may run beside them. A health check of the workspace found four of six libraries
-uncompilable on **one** shared defect — the untyped comptime path — so that is the first row.
-
-| Row | Owns | Closes |
+| Front | Priority | What |
 |---|---|---|
-| comptime dispatch | `codegen/erlang.zig` (the `untyped` path), `comptime/**` | spec 01 step 1 + spec 08 steps 1–2: a primitive method in a template **or decorator** body, including a mutation (`push`) inside a closure |
-| CLI + gate | `modules/compiler-cli/**`, `build.zig`, `.github/workflows/**` | spec 01 steps 2–3 + spec 08 steps 4–5: commands that report success on failure, and a gate that compiles the libraries |
-| std surface | `libs/std/**` | spec 08 step 6 + spec 03's std rows: the unshipped `gleam_stdlib.mjs`, `string:suffix/2` (not an OTP function), `slice` arity, the three modules no `mod` tree reaches |
+| [`01-comptime-dispatch`](./01-comptime-dispatch/README.md) | critical | A template or decorator body calling a primitive method lowers to a bare local call nothing defines — four of six libraries cannot compile. The typed tables are already built; one `PrimKind` per call site is missing. Also the closure-mutation fold and the evidence for trailing defaults. |
+| [`02-cli-gate`](./02-cli-gate/README.md) | critical | CLI commands that report success on failure (`build` exits 0 after dropping a module, `test` exits 0 on a project that does not compile, `format --check` passes unparseable source, `build` executes the program), and a gate that never compiles a `.bp` library. |
+| [`03-std-surface`](./03-std-surface/README.md) | critical | `libs/std` does not compile on one blocker; the Gleam runtime file 22 primitives point at (removed, not shipped — own helpers are emitted per used function); how `#[@External…]` should be used. |
+| [`04-beam`](./04-beam/README.md) | high | 58 of 128 fixtures disagree; one guard turns an unresolvable identifier into an atom of its own name (22). |
+| [`05-erlang`](./05-erlang/README.md) | high | Record destructuring, binary segments, imported enum variants, `return` in a narrowed arm, the two-parameter `loop`; the remaining `raw` rows. |
+| [`06-wasm`](./06-wasm/README.md) | high | 64 of 128 correct; `emitWat` never receives `instance_lowerings` (27 traps); the exact condition for turning `executeWat` on. |
+| [`07-checker`](./07-checker/README.md) | high | C1–C13: `return` never unified, `case` untyped, pattern bindings unconstrained, permissive methods and fields — with the blast radius per row and the groups they must land in. |
+| [`08-js-bridges`](./08-js-bridges/README.md) | medium | The six bridges that pin illegal JS/`.d.ts` shapes, and the commonJS lowering causes. |
+| [`09-review-tooling`](./09-review-tooling/README.md) | medium | Orphan tracing, the review worksheet, the 777-row residual backlog, and four cross-backend semantics decisions nobody owned. |
+| [`10-comptime-dedup`](./10-comptime-dedup/README.md) | low | Four byte-identical copies per comptime slug, and a renderer that prints `?` and `"id": 0`. |
+| [`11-hygiene`](./11-hygiene/README.md) | low | The comptime frame protocol, the removed WAT runtime's leftovers, build files that lie, retired vocabulary, license and hooks. |
+| [`12-library-repos`](./12-library-repos/README.md) | medium | rakun's dependency that exists nowhere, erika's docs for an evaluator that no longer exists, emilia's missing gate, the extension's retired snippets, bpmp's git-dependency bugs. |
 
-**Gate for all three:** `zig build test && zig build test-libs` green, and `botopink test` passing
-in every checked-out sibling library.
-
-### Wave 1 — backend lowerings (parallel, 3 rows)
-
-| Row | Owns | Closes |
-|---|---|---|
-| beam | `codegen/beam_asm.zig`, `codegen/beam/beam_emitter.zig`, `snapshots/codegen/beam/` | the 11 wrong fixtures + the 2 latent register bugs (spec 03) |
-| erlang | `codegen/erlang.zig`, `codegen/beam/erl_ast.zig`, `codegen/beam/erl_emitter.zig`, `snapshots/codegen/erlang/` | the erlang residuals + the `raw` rows that are output bugs (specs 03/04) |
-| wasm | `codegen/wat.zig`, `codegen/wat/**`, `snapshots/codegen/wasm/` | lambdas as values, loop accumulation, `case` on variant payloads, `f64` aggregate precision, array methods, host externals; then the `executeWat` decision (spec 03 step 2) |
-
-### Wave 2 — checker (alone)
-
-`comptime/infer.zig` decides the typed AST every backend consumes, so its rows change comptime
-snapshots and can move codegen output. One worktree, spec 02 Part 0 first (the correctness rows),
-then Parts A and B.
-
-### Wave 3 — emitter bridges (parallel, 2 rows)
-
-Each bridge is one commit that deletes its build sites and changes snapshots, so the rows are
-split by backend and never share a snapshot directory.
-
-| Row | Owns | Closes |
-|---|---|---|
-| js bridges | `codegen/commonJS.zig`, `codegen/typescript.zig`, `codegen/js/**`, `snapshots/codegen/commonJS/` | JS-1…JS-6 |
-| erlang/wat bridges | `codegen/erlang.zig`, `codegen/wat/**` | the remaining `raw` rows, `Module.externs` |
-
-### Wave 4 — review residuals, hygiene and the library repos (parallel, 4 rows)
-
-| Row | Owns | Closes |
-|---|---|---|
-| review tooling + residuals | `utils/snap.zig`, `scripts/snap_audit.sh`, the test sources named in the reports | spec 06 |
-| comptime copy dedup | `comptime/snapshot.zig`, `comptime/tests/helpers.zig`, `snapshots/comptime/**` | spec 06 step 4 |
-| hygiene | `build.zig`, `scripts/**`, `.github/**`, `libs/std/botopink.json`, docs | spec 05 · spec 07 |
-| library repos | `repository/{rakun,erika,emilia,vscode-extension}` (one commit per repo) | spec 08 step 7: rakun's missing `server` dependency, erika's stale docs, emilia's missing hook/CI, the extension's retired snippets |
-
-## Dependencies
+## Order
 
 ```
-wave 0 (comptime dispatch · CLI + gate · std surface)
-  ├──► wave 1 (beam · erlang · wasm)   — the std rows unblock several fixtures
-  ├──► wave 2 (checker)                — trailing default params (spec 08 step 3) belongs here
-  │      └──► wave 3 (emitter bridges) — a bridge deletion changes snapshots the checker moves
-  └──► wave 4 (review residuals · hygiene · library repos)
+F2 cli-gate ───────┐                (widens the gate; land first)
+F9 review-tooling ─┤  run alone     (the harness every front triages against)
+F1 comptime-dispatch ──┤            (four libraries depend on it)
+F3 std-surface ────────┘  run alone (re-records every backend)
+        │
+        ├──► F4 beam · F5 erlang · F6 wasm · F8 js-bridges     (4 in parallel)
+        ├──► F7 checker  run alone ──► F12 library-repos
+        └──► F10 comptime-dedup
+
+F11 hygiene — frame protocol any time; each comment sweep after the front that owns the file
 ```
 
-Wave 0 first is not a preference: today the gate cannot see a broken library, and four of them are
-broken, so any backend fix in wave 1 would be verified with the libraries' eyes closed.
+The first row is not ordered by importance. Today the gate cannot see a broken library and four are
+broken, so a backend fix landed before F2 and F1 would be verified with the libraries' eyes closed.
 
 ## Rules carried from 1.0.1-beta
 
-- **A backend builds a model, an emitter renders it.** Hand-written target text is not
-  acceptable; when the model cannot express a construct, extend the model. `raw`-style nodes are
-  for genuine host text only, and every remaining one is named in spec 04.
-- **The gate is a cold runtime cache.** `.botopinkbuild/runtime-cache` is deleted before the run
-  that decides a merge, otherwise a stale entry can hide an unexecuted backend.
-- **A snapshot is evidence, not a baseline.** Re-record only a value you verified by running the
+- **A backend builds a model, an emitter renders it.** Hand-written target text is where the bugs
+  were; when the model cannot express a construct, extend the model.
+- **The gate is a cold runtime cache** — a stale entry can hide a backend that never ran.
+- **A snapshot is evidence, not a baseline** — re-record only a value verified by running the
   program; a fixture that pins known-wrong output says so in the test.
-
-## Branches
-
-Each row runs in its own worktree `.tasks/<name>` and branch — see
-[`../../AGENTS.md`](../../AGENTS.md#worktrees).
+- **A front never edits a file it does not own** — it stops and reports.
