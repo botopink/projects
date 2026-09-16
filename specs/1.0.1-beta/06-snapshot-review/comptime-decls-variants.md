@@ -8,6 +8,8 @@ Short names used below:
 - `VA` = `modules/compiler-core/src/comptime/tests/variants.zig`
 - `INF` = `modules/compiler-core/src/comptime/infer.zig`
 
+> **Status (1.0.1-beta close):** the harness defects this report leans on (H1-H10) are fixed: the RUN LOG is decided by the process exit status, an `erlc` warning no longer blanks a log, a program that does not compile fails its snapshot test (or records a `COMPILE DIAGNOSTIC`), every backend is compared in one round, and the 0-byte snapshots are gone. The checker rows below predate the comptime-folding wave and are otherwise untouched - re-derive each one at HEAD before acting on it. Residuals are tracked in [`1.0.2-beta/06-snapshot-review.md`](../../1.0.2-beta/06-snapshot-review.md). The tables below are the audit record and are kept verbatim.
+
 ## Re-check summary (2026-09-15, against HEAD)
 
 - Every non-`ok` row (59) and every cross-cutting finding (X1-X10) was re-checked against the current source and snapshots. Every claim marked "(CLI)" was re-run with `zig-out/bin/botopink check`, **now rebuilt from HEAD** (mtime 2026-09-15 19:48), in scratch projects under `scratchpad/rev-ct-errors-decls/p/`. `zig build` was not run.

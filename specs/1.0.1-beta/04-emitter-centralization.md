@@ -1,75 +1,107 @@
-# Spec 04 — Erlang emitter cleanup
+# Spec 04 — Emitter Centralization
 
 **Version:** 1.0.1-beta
-**Priority:** low — optional refactors
-**Depends on:** spec 01 (clean baseline for the byte-identical gate)
+**Status:** delivered
+**Carried forward:** [`../1.0.2-beta/04-emitter-centralization.md`](../1.0.2-beta/04-emitter-centralization.md)
 
 ---
 
 ## Objective
 
-Finish the optional parts of the `Term` / `erl_ast` migration so `codegen/erlang.zig` builds
-every Erlang construct as a node, with no ad-hoc text or per-call allocation left.
+Give every backend the split the Erlang side already had: **the backend builds a model, an
+emitter renders it**. A backend that writes target text by hand owns nothing — no type can
+refuse an illegal shape, and every defect is a text defect discovered by running the output.
+After this milestone no backend prints target syntax, and the shapes the lowering still gets
+wrong are *named* nodes rather than accidental strings.
 
 Paths are relative to `repository/botopink-lang/modules/compiler-core/src/codegen/`.
 
-## Current state
+## The rule that made it safe
 
-- `beam/term.zig` (`Term`) and `beam/erl_ast.zig` (`Expr`/`Clause`/`Body`/`Stmt`/`Comment`/
-  `Function`/`Form` + `Builder`) are rendered by `beam/erl_emitter.zig`; `beam/beam_emitter.zig`
-  renders `Term` as `.S` operands.
-- `erlang.zig` writes no Erlang text. Comments are already nodes: `%%` notes and source comments
-  are `erl_ast.Comment` in `Stmt`, `Expr` and `Form` position. `ComptimeModule.listing`
-  (`emitComptimeModule`) builds the `COMPTIME ERLANG` snapshot section from the same forms.
-- `Term` appears only as scalar leaves: `Term.str("~p")` (~432), `Term.int` (~2574) and
-  `Ast.str(...)` (~3019). Every tuple/list/map that `erlang.zig` builds mixes variables or
-  sub-nodes, so there is no constant aggregate left to move to `Term`.
-- `Body.raw_block`, `Form.raw` and `Form.attribute` have no producer anywhere in
-  `compiler-core` (only the render arms in `erl_emitter.zig` use them).
-- `Ast.Expr.r(` (`raw`) has **17** uses in `erlang.zig`:
+Each refactor is a pure refactor: the snapshots stay **byte-identical**. A step that changed
+a snapshot had hit a bug, and that part moved to spec 03 instead. All three refactors below
+landed byte-identical.
 
-| Kind | Sites (`erlang.zig`) | What is raw | Class |
-|---|---|---|---|
-| Host template text | ~1410 (`templateNode` `flush`); `emitStringifyOpen`/`Close` ~1427-1432 | The `#[@External.Erlang("…")]` text rendered by `comptime/primOpTemplate.zig`, including the `iolist_to_binary(io_lib:format("~p", [` … `]))` wrapper written for `$stringify(…)` (used by `Array.join` in `libs/std/src/primitives.bp`) | stays raw (host code), wrapper optional refactor |
-| Pre-spelled call head | ~3048 `headCall`, 9 callers (~1602, 2861, 2879, 2891, 2913, 2922, 2927, 2943, 3188) | `mod:fn` from `qualified`, mangled atoms, `Var` from `arenaVar` | refactor |
-| Unreachable fallbacks | ~2524 (unknown `__bp_result/option_*` op), ~2534 (`opArg` with no fn arg), ~2921 (`interfaceAssocAtom` buffer overflow), ~3123 (empty `or` pattern) | `r("")` | refactor |
-| Missing values | ~2696-2701 (`return`/`throw`/`try`/`break`/`yield` with no value), ~1886 (`yield;` item in an eager generator list), ~3008/3012 (comptime block without `break` value) | `r("")` | **bug → spec 03** |
-| Variant pattern | ~3104 `patternNode` `.variant` | `{tag, Ast.Expr.r(v.name), …}` | **bug → spec 03** |
-| Array spread name | ~2667 (`al.spread`) | `[1, 2, rest]` | **bug → spec 03** |
-| `dotIdent` | ~2610 | `.Foo` → `Foo` (a variable); `beam_asm.zig` ~1707 lowers it to the atom `'Foo'` | **bug → spec 03** |
+## What changed
 
-The bug rows change Erlang output, so they are fixed in spec 03 (spec 06 already routes the
-erlang root causes there), not here. Evidence:
+### beam — `beam/beam_emitter.zig`
 
-- Missing value: `snapshots/codegen/erlang/range_open_ended_range.snap.md` — `break;` inside
-  `if` renders `true ->` then `;` (erlc: `syntax error before: ';'`,
-  `06-snapshot-review/codegen-features.md` row `range_open_ended_range | erlang`).
-- Variant pattern: `narrow_case_enum_area_with_print`, `case_guard_variant_field_guard`,
-  `enum_payload_variants_with_method_using_variantfields_case`, `assert_pattern_with_*` —
-  `{tag, Circle, R} ->` binds `Circle` as a variable while constructors build `{'Circle', 2.0}`
-  (`06-snapshot-review/codegen-features.md` S6, `codegen-wat-narrowing.md`). Fix is
-  `{'Circle', R}` (`Ast.Expr.a(v.name)`, no `tag`).
-- Array spread: `array_prepend_with_identifier` — `[1, 2, rest]` instead of `[1, 2] ++ rest()`
-  (`06-snapshot-review/codegen-builtins-aggregates.md`).
-- `dotIdent`: no erlang snapshot reaches it; spec 03 needs a test with the fix.
+`beam_asm.zig` no longer prints `.S` syntax. It builds typed operands (`Op` / `Dst` =
+`beamEmitter.Operand` / `Dest`) and calls one `beam_emitter.write*` function per `.S` line —
+494 call sites. The emitter owns atom quoting, operand shape, indentation and the trailing
+`.`, and grew a typed instruction vocabulary for it (`writeMove`, `writeTest`,
+`writeTestHeap`, `writeGcBif`, `writeCall`, `writeCallFun`, `writeMakeFun3`, `writePutList`,
+`writePutTuple2`, `writeGetTupleElement`, `writeGetList`, `writeGetMapElements`,
+`writePutMap`, `writeAllocate` / `writeDeallocate` / `writeInitYregs`, `writeLabel`,
+`writeFunctionHeader`, `writeFuncInfo`, `writeLine`, the comment forms). A missing
+instruction is added to the vocabulary, never printed at the call site. The single verbatim
+passthrough is a `#[@External.Beam]` template body.
 
-## Rule
+### wasm — `wat/` (new)
 
-Every step below is a pure refactor: Erlang and beam snapshots stay **byte-identical**. A step
-that changes a snapshot has hit a bug — move that part to spec 03.
+| File | Role |
+|---|---|
+| `wat/wat_ast.zig` | The code model (`ValType`, `Stack`, `Instr`, `Line`, `Seq`, `Param`, `Local`, `Func`, `Global`, `Import`, `Memory`, `DataSegment`, `Item`, `Module`) plus `validateFunc` / `validateModule` / `declaresCall` and `Builder`. |
+| `wat/wat_emitter.zig` | The only writer of `.wat`: s-expressions, the item/body columns, `$`-prefixing, folded vs flat form, inline `if` arms, `offset=` suppression, data-segment escaping. |
+| `wat/wat_prelude.zig` | The runtime helpers wasm has no opcode for (`$__print_i32`, `$__print_str`, `$__print_bool`, `$__print_f64`, `$__str_concat`, `$__str_eq`, `$__str_slice`, `$__arr_at`, `$__memmove`) as built `Func` nodes, with the scratch layout they assume. |
 
----
+`wat.zig` went from 382 writer sites to **0**. The model is what now makes the five defects
+the previous wave had to repair unrepresentable: there is no local-declaration instruction
+(locals are `Func.locals`), every `Seq` carries the `Stack` it leaves and `Builder.func`
+refuses a body that disagrees with the declared `(result …)`, `Builder.param` refuses an
+unnamed parameter, `validateModule` walks every `call` against the module's functions,
+imports and declared externs before a byte is written, and `Builder.helper` is the only way
+to obtain a runtime helper's symbol — "called" and "defined" are one operation. There is
+deliberately **no** raw-text instruction: an unlowerable construct emits an honest
+`Instr.comment`.
 
-## Steps
+### JavaScript / TypeScript — `js/` (new)
 
-| Step | What | Acceptance |
-|---|---|---|
-| 1 | `headCall` → `.call{ .module, .name }` (heads from `qualified`/`calleeAtom`/`interfaceAssocAtom`) or `.apply{ .fun = .variable }` (~2879); delete `qualified` if unused | no `r(head)`; snapshots identical (if a spelled external symbol now gets quoted by `writeAtom`, that diff is a fix → spec 03) |
-| 2 | Unreachable fallbacks (~2524, ~2534, ~2921, ~3123) return an error (or assert) instead of `r("")` | no `r("")` in these 4 sites; snapshots identical |
-| 3 | Variable names without the scratch allocation: `erlangVar` (`= erlEmitter.varName`, dupe + uppercase) has 4 call sites (~1657, ~1658 `varRef`; ~1676 `bindExpr`; ~2240 `arenaVar`), fanned out to 20 `arenaVar` and 3 `varRef` callers. Each read allocates on `this.alloc`, then copies into `b.arena` (`dupe`/`allocPrint`) and frees. Build the name once in `b.arena` (`varName(b.arena, …)`, `Name@N` printed straight into the arena via `writeVar`) | no `this.alloc` allocation per variable; `erlangVar` alias removed if unused; snapshots identical |
-| 4 | Optional: `$stringify` wrapper as a `call` node (`iolist_to_binary(io_lib:format("~p", [Parts]))`, the shape `formatNode` ~2972 already builds) around the inner template parts, instead of open/close raw text | template `raw` is only host text; snapshots identical |
-| 5 | Optional: constant number leaves `.{ .number = "0" / "1" }` (~889, ~925, ~926, ~2685) → `Term.int` | snapshots identical |
-| 6 | Remove the dead bridge variants `Body.raw_block`, `Form.raw`, `Form.attribute` (and their `erl_emitter.zig` arms) | builds; snapshots identical |
-| 7 | Document why each remaining `raw` stays (host template text; the bug rows until spec 03 lands) | reasons in `codegen/beam/AGENTS.md`; `codegen/AGENTS.md` "Names" bullet matches |
+| File | Role |
+|---|---|
+| `js/js_ast.zig` | `Expr` / `Stmt` / `Pattern` / `Param` / `Block` / `Class` / `Item`, the `.d.ts` subset `TsType` / `TsField` / `TsParam` / `TsMember` / `TsDecl`, and `Builder`. |
+| `js/js_emitter.zig` | The only writer of JavaScript: the ES reserved-word rename (`delete` → `delete_`, never in property position), lexeme-string escaping, `writeExpr` / `writeStmt` / `writeBlock` / `writePattern` / `writeProgram`. |
+| `js/ts_emitter.zig` | The only writer of `.d.ts`. |
 
-Update `codegen/AGENTS.md` and `codegen/beam/AGENTS.md` in the same commit as each step.
+`commonJS.zig` and `typescript.zig` were migrated onto it and write no target text. The
+model carries the invariants the old string building could not: `Expr` and `Stmt` are
+different types (no `return for (…)` by accident), a rest element is a *field* of the
+pattern rather than an element of its list, an `if` carries an `Expr` condition, a `.d.ts`
+parameter carries a `TsType` rather than a possibly-empty string, and layout is part of the
+model wherever the emitted bytes depend on it (`Block.Layout`, `Array.Layout`,
+`Object.Layout` — the same rule `beam/erl_ast.zig` follows).
+
+### The bridges
+
+Where the lowering still produces a shape the model would otherwise forbid, the model
+carries a **named** node for it instead of letting the backend spell it out. Six of them
+exist on the JS side (`js/AGENTS.md`, JS-1…JS-6), one on the wat side (`Module.externs`),
+and the Erlang side keeps `Ast.Expr.r` for genuine host text. Each has to be named explicitly
+at the build site, so a grep finds every one, and fixing a defect means deleting its build
+site rather than its node. `Expr.host` (JS) and the `#[@External.Erlang]` / `#[@External.Beam]`
+template text are **not** bridges: they carry host code by definition.
+
+The remaining bridges are the inventory
+[`1.0.2-beta/04-emitter-centralization.md`](../1.0.2-beta/04-emitter-centralization.md)
+works through.
+
+### Erlang emitter leftovers closed in this milestone
+
+The variant-pattern, array-spread, `dotIdent` and bare-`break` `raw` rows were output bugs,
+and were fixed in spec 03 — which removed them from `erlang.zig`. `Ast.Expr.r(` went from 17
+uses to 13, and the remaining ones are host template text, pre-spelled call heads, and the
+missing-value / unreachable fallbacks that spec 04 in 1.0.2-beta still owns.
+
+## How it is verified today
+
+- `zig build test` is green from `repository/botopink-lang/`, with the codegen snapshots
+  byte-compared across all four targets.
+- No `print` / `writeAll` of target syntax outside the emitters:
+  `wat.zig`, `commonJS.zig`, `typescript.zig` and `erlang.zig` have **0** writer calls;
+  `beam_asm.zig` has **9**, all in the `.S` module preamble (`emitBeamAsm`, `:603-617`).
+- `Ast.Expr.r(` in `erlang.zig`: **13** uses.
+- Each emitter's rules are pinned in its own `AGENTS.md`
+  ([`beam/AGENTS.md`](../../repository/botopink-lang/modules/compiler-core/src/codegen/beam/AGENTS.md),
+  [`wat/AGENTS.md`](../../repository/botopink-lang/modules/compiler-core/src/codegen/wat/AGENTS.md),
+  [`js/AGENTS.md`](../../repository/botopink-lang/modules/compiler-core/src/codegen/js/AGENTS.md)),
+  and the emitters carry inline unit tests aggregated by `codegen/tests.zig`.

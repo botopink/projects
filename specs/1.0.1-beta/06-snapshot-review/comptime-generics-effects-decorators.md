@@ -3,6 +3,8 @@
 Repo: `/home/ericfillipe/develop/botopink-lang/repository/botopink-lang` (HEAD `96ff203`, re-checked 2026-09-15). All paths below are relative to `modules/compiler-core/` unless noted.
 Batch: `src/comptime/tests/{builtins_typeinfo(31), effects(28), infer_generics(25), generic_defaults(20), narrowing(19), decorators(17), decorator_invocation(12), decorator_regression(4), std_target_gating(3), eval_pipeline(2)}.zig` = **161 tests**.
 
+> **Status (1.0.1-beta close):** the harness defects this report leans on (H1-H10) are fixed: the RUN LOG is decided by the process exit status, an `erlc` warning no longer blanks a log, a program that does not compile fails its snapshot test (or records a `COMPILE DIAGNOSTIC`), every backend is compared in one round, and the 0-byte snapshots are gone. The checker rows below predate the comptime-folding wave and are otherwise untouched - re-derive each one at HEAD before acting on it. Residuals are tracked in [`1.0.2-beta/06-snapshot-review.md`](../../1.0.2-beta/06-snapshot-review.md). The tables below are the audit record and are kept verbatim.
+
 ## Re-check summary (2026-09-15, HEAD `96ff203`, rebuilt binary)
 
 The first pass ran against a stale `zig-out/bin/botopink` (built 2026-09-14) that could not run

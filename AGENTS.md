@@ -15,8 +15,9 @@ closest `AGENTS.md` in each directory you touch.
 | `repository/botopink-lang/` | Compiler (`modules/compiler-core`), CLI, language server, lib-test-runner, `libs/std` |
 | `repository/{emilia,erika,jhonstart,onze,rakun}/` | Libraries written in botopink |
 | `repository/vscode-extension/` | VS Code extension |
-| `specs/1.0.1-beta/` | Current milestone specs — index in `overview.md`; new specs start from `specs/__template.md` |
-| `specs/1.0.0-beta/` | Previous milestone (closed; open items carried into `1.0.1-beta`) |
+| `specs/1.0.2-beta/` | Current milestone specs — index in `overview.md`; new specs start from `specs/__template.md` |
+| `specs/1.0.1-beta/` | Previous milestone (delivered; open items carried into `1.0.2-beta`) |
+| `specs/1.0.0-beta/` | Closed |
 | `todo.md` | Live plan of the task in the current checkout/worktree — git-ignored, never committed |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |

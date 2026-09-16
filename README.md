@@ -22,8 +22,9 @@ and [`repository/botopink-lang/docs.md`](repository/botopink-lang/docs.md) (lang
 │   └── vscode-extension/   VS Code extension
 ├── specs/
 │   ├── __template.md       template for new specs
-│   ├── 1.0.0-beta/         specs for the 1.0.0-beta milestone (closed; leftovers moved to 1.0.1-beta)
-│   └── 1.0.1-beta/         specs for the 1.0.1-beta milestone (see overview.md)
+│   ├── 1.0.0-beta/         closed
+│   ├── 1.0.1-beta/         delivered; what it left open moved to 1.0.2-beta
+│   └── 1.0.2-beta/         current milestone (see overview.md)
 ├── architecture.md         comptime evaluation pipeline (current state)
 ├── CHANGELOG.md            release log
 └── AGENTS.md               guidance for AI agents working here
@@ -44,4 +45,4 @@ per-backend runtimes.
 
 ## Specs
 
-Current milestone: [`specs/1.0.1-beta/overview.md`](specs/1.0.1-beta/overview.md).
+Current milestone: [`specs/1.0.2-beta/overview.md`](specs/1.0.2-beta/overview.md).

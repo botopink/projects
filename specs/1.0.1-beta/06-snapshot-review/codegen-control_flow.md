@@ -16,6 +16,8 @@
 Path abbreviations used below (all under `modules/compiler-core/snapshots/codegen/`):
 `N/` = `commonJS/`, `E/` = `erlang/`, `B/` = `beam/`, `W/` = `wasm/`.
 
+> **Status (1.0.1-beta close):** the harness defects this report leans on (H1-H10) are fixed: the RUN LOG is decided by the process exit status, an `erlc` warning no longer blanks a log, a program that does not compile fails its snapshot test (or records a `COMPILE DIAGNOSTIC`), every backend is compared in one round, and the 0-byte snapshots are gone. The per-backend rows below predate the beam / erlang / wasm fix waves - re-derive each one at HEAD before acting on it. Residuals are tracked in [`1.0.2-beta/06-snapshot-review.md`](../../1.0.2-beta/06-snapshot-review.md). The tables below are the audit record and are kept verbatim.
+
 ## Re-check summary (2026-09-15, botopink-lang HEAD `96ff203`)
 
 - **Scope:** every non-`ok` row of the findings table (87 rows) and the 5 cross-cutting notes H1-H5 were re-checked against HEAD. The snapshot quotes were compared with the current `.snap.md` files, the cited `file:line` against the current sources, and the behaviour by re-running the generated code.

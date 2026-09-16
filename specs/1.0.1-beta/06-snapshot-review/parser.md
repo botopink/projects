@@ -4,6 +4,8 @@ Repo: `/home/ericfillipe/develop/botopink-lang/repository/botopink-lang` (paths 
 Scope: all 213 `snapshots/parser/*.snap.md`, the tests in `src/parser/tests/{declarations,expressions,destructuring,imports,errors,effect_rejections}.zig`, harness `src/parser/tests/helpers.zig`, and `src/parser/exprs.zig` (no inline `test` blocks there — verified by grep).
 Method: read-only. Every snapshot was decoded from JSON and read next to its test source (a compacted rendering was used for reading; every finding below was re-checked against the raw JSON). Columns were recomputed by hand for every `loc` in every snapshot.
 
+> **Status (1.0.1-beta close):** closed classes: the **whole location class** (multi-line and `\\` token lines, interpolation hole spans, the tagged-call loc key, and the col-stored-as-byte-offset bug that put every parse error on line 1), the **4 legacy-syntax rows** (spec 05 items 5.12/5.13 - `@[` is now rejected with its own diagnostic and the fixtures use `#[@External.<Target>(...)]` and camelCase), and both vacuous `errors.zig` tests (the helper now fails when no `parseError` is filled). What is left is test-quality. Residuals in [`1.0.2-beta/06-snapshot-review.md`](../../1.0.2-beta/06-snapshot-review.md). The tables below are the audit record and are kept verbatim.
+
 ## Re-check summary (second pass, at HEAD `96ff203` of `botopink-lang`)
 
 Every non-`ok` row and every cross-cutting note was re-derived from scratch against the current

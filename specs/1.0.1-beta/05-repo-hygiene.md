@@ -1,52 +1,88 @@
 # Spec 05 — Repo hygiene
 
 **Version:** 1.0.1-beta
+**Status:** closed — what this spec did not reach is carried by
+[`1.0.2-beta/05-repo-hygiene.md`](../1.0.2-beta/05-repo-hygiene.md)
 **Priority:** low
-**Depends on:** none
 
 ---
 
 ## Objective
 
 Close the findings of the 1.0.0-beta docs audit and the hygiene findings of the snapshot review
-(spec 06) that are not compiler bugs: orphan std files, broken scripts/manifests/hooks, dead build
-and test files, retired syntax still accepted, stale comments, ignore rules, license. Every item
-below was re-checked against HEAD; line numbers drift, so confirm again before acting.
+(spec 06) that are not compiler bugs. Seventeen items were opened (5.1–5.17); the milestone
+closed four of them. This file records what changed and how it is verified; the other thirteen
+keep their numbers in the 1.0.2-beta spec.
 
 Paths are relative to `repository/botopink-lang/` unless they start with `meta:`.
 
-Overlaps: 5.1/5.2 with spec 02 steps 4–5; 5.6/5.7 with spec 03 step 2 (WAT execution);
-5.10 with spec 03 (`persistent_erl` tests); 5.11 is spec 06 H7 and 5.15 is spec 06 step 1.2
-(do them once, in whichever branch lands first); 5.12/5.13 are the parser findings spec 06
-routes here.
+---
+
+## What the milestone delivered
+
+### 5.11 — Dead language-server test files (spec 06 H7)
+
+`modules/language-server/src/tests/snapshot_test.zig` (the unit tests of the snapshot renderers)
+was in no test root and would not have compiled; `src/tests/root.zig` was a stale second entry
+list that the build never read.
+
+| Change | Where |
+|---|---|
+| `snapshot_test.zig` registered in the build's test root | `src/test_root.zig:25` |
+| `appendSourceWithCursor` made `pub` so the unit tests can call it | `src/tests/snapshot.zig:664` |
+| The stale second entry list deleted | `src/tests/root.zig` (gone) |
+| Doc corrected — the file is the renderers' unit suite, not "the shared snapshot harness" | `src/tests/AGENTS.md:7,17` |
+
+**Verified:** `src/tests/` no longer contains `root.zig`; `test_root.zig` imports
+`./tests/snapshot_test.zig`; `zig build test` is green.
+
+### 5.12 — The retired `@[…]` annotation opener is rejected
+
+`parseAnnotations` accepted `@[…]` as a "legacy form (kept for migration)" and marked every
+annotation in it builtin. It is now a diagnostic of its own.
+
+| Change | Where |
+|---|---|
+| `ParseErrorType.retiredAnnotationBlock` added | `modules/compiler-core/src/parser.zig:122` |
+| `parseAnnotations` rejects `@[`, spanning the two opener characters | `parser.zig:678` (`fromTokenSpan(.retiredAnnotationBlock, …, "@[".len)`) |
+| Message, caret caption and hint naming the `#[@name(…)]` replacement | `modules/compiler-core/src/print.zig:124-128` |
+| The lookaheads still *recognise* `@[`, so a stale opener reaches this diagnostic instead of a bare "unexpected token" | `parser.zig:656-668`, `parser/AGENTS.md:118` |
+| Parser error test asserting the rejection and its rendered text | `parser/tests/errors.zig:141-160` |
+
+**Verified:** the rendered diagnostic is ``error: the `@[…]` annotation block was retired`` with
+``write `#[…]` instead`` under the caret; no `.bp` in the tree or in the sibling libraries uses `@[`.
+
+### 5.13 (parser fixtures) — Retired vocabulary migrated
+
+The parser fixtures that still carried the retired `@external(<target>, …)` form and snake_case
+names were rewritten and their snapshots re-recorded.
+
+| Fixture | Now |
+|---|---|
+| `parser/tests/declarations.zig:398-399`, `:598-599` | `#[@External.Erlang(…), @External.Node(…)]` |
+| `parser/tests/declarations.zig:406-410` | `absoluteValue` |
+| `parser/tests/expressions.zig:687` | `s?.toUpper()` |
+
+The comment sites and `comptime/tests/infer_decls.zig` were **not** rewritten — see 5.13 in the
+1.0.2-beta spec.
+
+### 5.15 — Ignore rules
+
+| Change | Where |
+|---|---|
+| `*.snap.md.new` ignored (spec 06 step 1.2 — a snapshot mismatch writes one next to the snapshot; 1.0.0-beta committed 9 by mistake) | `.gitignore` |
+| `erl_crash.dump` ignored in the compiler repo | `.gitignore` |
+| `erl_crash.dump` and `/.serena/` ignored in the meta repo | `meta:.gitignore` |
+
+**Verified:** `find modules -name '*.snap.md.new'` is empty and `git status` in either repo is
+clean of both patterns.
 
 ---
 
-## Items
+## Acceptance (met)
 
-| # | Finding (current state) | Decision / fix | Done |
-|---|---|---|---|
-| 5.1 | `libs/std/src/reflect.bp` (`mergeRecords`) and `types.bp` (`mapFields`, `partial`, `omit`, `pick`) are declared neither in `libs/std/src/root.bp` (`pub mod` list) nor in `build.zig` `std_core_files` (`:35-39`). The importable std set is derived from `root.bp` (`stdPkgFilesFromRoot`, `build.zig:56`, `:349+`), so neither file is embedded or compiled; `botopink test` in `libs/std` reports both as orphans. `libs/std/AGENTS.md` already lists them as "not declared". Neither has tests | Both are the `.bp` targets of spec 02 steps 4–5: keep them, add `pub mod reflect; pub mod types;` when 02 step 5 makes them executable (with tests); delete them if 02 drops the approach | [ ] |
-| 5.2 | `libs/std/src/primitives.bp` has 67 `test` blocks that never run. It is embedded only as a core file (`build.zig:35-39`, `comptime/stdlib/prelude.zig:12`) and flattened into the global env, never compiled in test mode. `botopink test` — used per lib by `botopink-lib-test` (`zig build test-libs`) and by the pre-commit loop — resolves `src/` from `root.bp` (`cli/sources.zig:44-68`), so `primitives.bp` is an orphan ("not reached by any `mod` path — not compiled"). `pub mod primitives` is not a fix: it would also register an importable `std/primitives` package and re-declare the global interfaces | Move the tests to `libs/std/test/primitives_test.bp` (`test/` is scanned directly, `cli/test_cmd.zig:73`, and sees the global env) or add a Zig test that compiles `primitives.bp` in test mode; run them on commonJS + erlang and register the failures (spec 06 already reports broken `.slice`, `string:suffix/2`) in spec 03 | [ ] |
-| 5.3 | `libs/std/botopink.json` `files` = `primitives.d.bp`, `array.d.bp`, `string.d.bp`, `builtins.d.bp`; only `builtins.d.bp` exists (`src/` has `primitives.bp`, `builtins.d.bp`, `builtins_fns.d.bp`). `files` is read by `cli/libs.zig:300`, which aborts on the first missing file; std itself is embedded, so the list only matters if something resolves `std` as a lib | Set `files` to the real core files (`primitives.bp`, `builtins.d.bp`, `builtins_fns.d.bp`) or drop the key after confirming nothing loads std through `libs.zig` (CLI, LSP `project_graph`) | [ ] |
-| 5.4 | `zig build test-vscode` runs `bash ../../scripts/test-vscode.sh` with cwd `repository/botopink-lang` (`build.zig:301-302`) → `meta:scripts/test-vscode.sh`; the meta repo has no `scripts/`, and `meta:repository/vscode-extension/scripts/` only holds `git-hooks/`. The step fails in the meta layout and cannot work in a standalone clone. `AGENTS.md:52` documents the break; `modules/AGENTS.md:65` and the comment at `build.zig:294-300` still describe a working wrapper | Remove the step (the extension runs `npm test` in its own repo/CI) or inline `npm ci && npm test` with cwd `../vscode-extension` guarded by an existence check; update `AGENTS.md:52`, `modules/AGENTS.md:65` and the build comment | [ ] |
-| 5.5 | Hooks. `scripts/git-hooks/pre-commit` delegates to `meta:scripts/git-hooks/lib/test-runner.sh` when it exists and otherwise sources `scripts/git-hooks/lib/runner-standalone.sh` (`pre-commit:12-23`), so the hook itself works — but the meta branch is dead (no `meta:scripts/`), and `runner-standalone.sh:3-4` still points at `botopink/projects' scripts/git-hooks/lib/runners/botopink-lang.sh`. The hook is not installed: `repository/botopink-lang/.git/hooks/` has only samples and no `core.hooksPath`; no script or doc says how to install it (`AGENTS.md:159-170` only describes it). `meta:.git/hooks/pre-commit` is a dangling symlink to `../../scripts/git-hooks/pre-commit`, so meta commits run no gate. `meta:repository/vscode-extension/scripts/git-hooks/pre-commit` carries the same meta-delegation shim | Make the hooks self-contained (drop the meta branch in botopink-lang and the siblings that ship the shim, fix the `runner-standalone.sh` header); document the install (`git config core.hooksPath scripts/git-hooks`) in `AGENTS.md` §Local gate; decide whether the meta repo needs a gate (it has no code) and remove or replace the dangling `meta:.git/hooks/pre-commit` | [ ] |
-| 5.6 | Leftovers of the removed `wasm3` / `wat_runtime` runtime (no `wasm3*`, `wat_runtime*`, `wat_to_wasm*` file exists): `build.zig:17-22` ("wasm3 needs libc", glibc pin), `build.zig:95` (dangling "wasm3 headers are accessed via `@cImport` in"), `build.zig:13-15,96,108` (`build_options` module with no options, imported by no source), `codegen/runtime.zig:384-400` (`executeWat` doc names `wasm3_host.runWat`) and `:1-6` (says WASM runs via wasmtime), `codegen/config.zig:20-24`, `codegen/wat.zig:64-69,845-849` (`emitFnWat` "called by the template evaluator … `wat_runtime` prelude … `wasm3_host.runWat`" — it has no caller; `codegen/AGENTS.md:325,385` still list it as a hook), `codegen/tests/features.zig:924-926`, `codegen/tests/wat.zig:397-401`, `comptime/tests/helpers.zig:91-97`, `libs/std/src/builtins.d.bp:268-279` (`#[@Host]` "implementation in `wat_runtime.zig`"; no `.bp` uses `#[@Host]`). Nothing links libc (no `link_libc`/`linkLibC`/`@cImport` in the tree), so the glibc pin (`libcResolvedTarget`, `build.zig:334-347`) is probably dead too | Rewrite the comments to the current state (comptime on persistent `erl`, `executeWat` stub until spec 03 step 2); delete `build_options` and the dangling line; drop `libcResolvedTarget` if `zig build` + `zig build test` pass without it on Linux-gnu (Arch glibc ≥ 2.41 and CI), else keep it with a comment that does not mention wasm3; delete `emitFnWat` (or keep it only if spec 03 step 2 uses it) and the `#[@Host]` annotation if nothing needs it | [ ] |
-| 5.7 | `.github/workflows/test.yml` stale comments/steps: `:1-6` calls `test-libs` "opt-in" but it is a job with `needs: test` and `allow_fail: false` on linux/macOS; `:44` says Zig is pinned to `build.zig.zon` `minimum_zig_version`, but there is no root `build.zig.zon`; `:49-54` cites "60 tests under `comptime/runtime/erlang.zig`" (file gone; the runtime is `comptime/runtime/persistent_erl.zig`; the OTP 27+ reason — `json:encode/1`, `comptime/template_eval.zig:169,248` — still holds); `:71-100` installs wasmtime for "26 wasm-codegen snapshot tests", but `executeWat` is a stub and the `test` job never runs wasmtime (only `test-backends`/`test-libs` wasm do) | Rewrite the comments; keep or drop the wasmtime install according to the spec 03 step 2 decision | [ ] |
-| 5.8 | `examples/hello.bp:3-4` says `botopink run examples/hello.bp` / `botopink check examples/hello.bp`. The CLI is project-based: `check` takes no arguments (`compiler-cli/src/main.zig:116-118`), `run` requires `botopink.json` (`cli/run.zig:28-35`), and `parseRunOpts` (`main.zig:176-199`) silently ignores the positional path. `examples/AGENTS.md:53-58` has the real invocation | Header → `botopink new demo && cp examples/hello.bp demo/src/main.bp && cd demo && botopink run`. Optional: make `run`/`check`/`build` reject unexpected positional arguments instead of ignoring them | [ ] |
-| 5.9 | `README.md:72-74` states MIT, but there is no `LICENSE` file — nor in `meta:repository/{emilia,erika,jhonstart,onze,rakun}` (each README also has a License section) or `meta:repository/vscode-extension` (no `license` field in `package.json`; `vsce package` warns) | Confirm the license with the maintainer; add `LICENSE` to all 7 repos and `"license"` to the extension's `package.json` | [ ] |
-| 5.10 | The OTP logger writes to **stdout**, which is the `persistent_erl` frame channel. Reproduced (OTP 29): `erl -noshell -eval 'os:cmd("kill -TERM "++os:getpid()), timer:sleep(2000), halt().'` prints `=INFO REPORT==== … SIGTERM received - shutting down` on stdout, stderr empty. `comptime/runtime/persistent_erl.zig` sends only erl's stderr to `erl.stderr.log` (`:185-193`); the server sets `latin1` (`:46`) but does not reconfigure the logger, and `Mod:main()` (`safe_call`, `:71-89`) shares the server's group leader, so any logger event or `io:format` in a comptime body lands in the frame stream. `readFrame` (`:221-229`) trusts the 4-byte length with no cap (`"=INF"` → ~1 GB allocation). `AGENTS.md:223` recommends `pkill -f botopink_comptime_server` (SIGTERM) | Guard the protocol: at server start move the default logger handler to `standard_error` (or remove it); run `Mod:main()` with a separate group leader that captures/discards its output; cap the frame length in `readFrame` and treat an oversize length as a transport failure. Add a test (spec 03 `persistent_erl` tests) and restore the `AGENTS.md` hint | [ ] |
-| 5.11 | Dead LSP test files (spec 06 H7). `modules/language-server/src/tests/snapshot_test.zig` (8 tests) is not imported by `src/test_root.zig` and calls `snapshot.appendSourceWithCursor`, which is private (`tests/snapshot.zig:540`), so it would not compile. `src/tests/root.zig` is a stale second entry list (14 imports; misses `_warmup`, `semantic_tokens`, `inlay_hints`, `sublanguage`, `lifecycle`, `cross_module`, `project_graph`) — the build uses `src/test_root.zig` (`build.zig:162`). `tests/AGENTS.md:14,18` describes `snapshot_test.zig` as "shared snapshot test harness" | Make `appendSourceWithCursor` `pub` and import `snapshot_test.zig` from `test_root.zig` (or delete it); delete `tests/root.zig`; fix `tests/AGENTS.md` | [ ] |
-| 5.12 | The retired `@[…]` annotation opener is still accepted: top-level dispatch `compiler-core/src/parser.zig:305-306`, `skipAnnotationsLookaheadFrom` (`:588-608`), `parseAnnotations` "legacy form (kept for migration)" (`:617-633`, marks every annotation builtin), `parser/decls.zig:644`; the comment at `parser.zig:318-319` still shows `@[external(…)]`. No `.bp` in botopink-lang or the sibling libs uses `@[`; no test asserts it is rejected | Remove the `.at` branches; emit a parse error with a hint to `#[@name(…)]`; add a parser error snapshot test | [ ] |
-| 5.13 | Retired vocabulary in fixtures and comments. Fixtures: `parser/tests/declarations.zig:399` and `:599` (`@external(node, …)`, inert — `ast.zig` `externalFor` only matches `External.*`), `:407,410` (`absolute_value`), `parser/tests/expressions.zig:685` (`s?.to_upper()`), `comptime/tests/infer_decls.zig:510` (`@external(node, …)`). Comments: ~35 sites describe `@external(<target>, …)` as the live form — `codegen/commonJS.zig`, `codegen/erlang.zig`, `codegen/beam_asm.zig`, `codegen/tests/externals.zig:117`, `comptime/infer.zig:6637,6700,7081`, `codegen/AGENTS.md:156` | Rewrite the fixtures to `#[@External.Node(…)]` and camelCase (`absoluteValue`, `toUpper`), re-record and review the snapshots; rewrite the comments to `#[@External.<Target>(…)]` | [ ] |
-| 5.14 | `primitives.d.bp` was renamed to `primitives.bp`, but ~30 comments still use the old name: `libs/std/src/root.bp:9-11`, `erlang.bp:22`, `math.bp:27`, `comptime/stdlib/prelude.zig:7`, `comptime.zig`, `comptime/env.zig:622`, `comptime/infer.zig:6556,6618`, `test_warmup.zig:3`, `codegen/{commonJS,erlang,beam_asm}.zig`, `codegen/tests/{features.zig:823,924, std_package.zig:11}`, `language-server/src/engine.zig:1073,1086`, `language-server/src/tests/hover.zig:174` (`cli/resolver.zig:635` and `lib-test-runner/src/discovery.zig:384` are legitimate `.d.bp` test literals) | Rename in comments; fix the `root.bp` header (the ambient files are `primitives.bp`, `builtins.d.bp`, `builtins_fns.d.bp`) | [ ] |
-| 5.15 | Ignore rules. `.gitignore` (7 entries) ignores neither `*.snap.md.new` (spec 06 step 1.2; 1.0.0-beta committed 9 by mistake) nor `erl_crash.dump`; `meta:.gitignore` does not ignore `erl_crash.dump`. `meta:erl_crash.dump` (2 MB, untracked) is a boot crash from a manual `erl -eval` that called `io:put_chars` on a frame binary (`badarg`), not from the server. `meta:.serena/` is also untracked and not ignored | Delete `meta:erl_crash.dump`; add `*.snap.md.new` and `erl_crash.dump` to `.gitignore`, `erl_crash.dump` to `meta:.gitignore`; ask the maintainer whether `.serena/` is ignored or removed | [ ] |
-| 5.16 | Stale build files. `meta:build.zig` is tracked, in Portuguese, and builds `modules/stdlib/src/prelude.zig` / `modules/compiler-core/…`, which do not exist in the meta repo (whose `AGENTS.md` says it holds no code). `modules/compiler-core/build.zig` hardcodes 5 std package modules (root.bp declares 23), has no `build_options`, and its header is the `zig init` template; `comptime/stdlib/AGENTS.md:38-45` tells editors to keep it in sync. `modules/{compiler-cli,language-server}/build.zig` (+ `.zon`, Portuguese step names) depend on it via `path = "../compiler-core"`. CI and every doc build from the workspace `build.zig` | Delete `meta:build.zig` (and the meta `.zig-cache/`/`zig-out/` it produced); delete the per-module `build.zig`/`build.zig.zon` files unless a use is found, and update `modules/compiler-core/AGENTS.md:15-16` and `comptime/stdlib/AGENTS.md` | [ ] |
-| 5.17 | Dead ad-hoc files at the repo root: `test_pub.zig` imports `modules/core/src/parser.zig` (does not exist); `test_format.zig` is a formatter smoke with its own `main`. Neither is in `build.zig`; both are listed in `AGENTS.md:22-23` (the meta copy of `test_pub.zig` is already gone) | Delete both; update the `AGENTS.md` tree | [ ] |
-
-## Acceptance
-
-- [ ] Every item fixed or closed with a written reason
-- [ ] Matching `AGENTS.md` files updated in the same commits
-- [ ] No `wasm3` / `wat_runtime` / `wasm3_host` mention left in the botopink-lang tree
-- [ ] `zig build`, `zig build test` and `zig build test-libs -- --target commonJS` still green (5.2 may add known failures, registered in spec 03)
+- [x] 5.11, 5.12, 5.15 fixed; 5.13 fixed for the parser fixtures
+- [x] The matching `AGENTS.md` files (`src/tests/AGENTS.md`, `parser/AGENTS.md`) updated with the change
+- [x] `zig build` and `zig build test` green
+- [x] Every item not closed here re-checked at HEAD and carried, with its number, to
+      [`1.0.2-beta/05-repo-hygiene.md`](../1.0.2-beta/05-repo-hygiene.md)
