@@ -64,6 +64,7 @@ Two deep dives:
 - [`node-externals.md`](./node-externals.md) — the `./gleam_stdlib.mjs` table: which of the 22
   declarations are inert, which 4 actually break, why the `default fn` prototype patch replaces a
   working native method with one that throws, and the shipping decision.
+- [`external-annotations.md`](./external-annotations.md) — every `#[@External.<Target>(…)]` form, its traps, per-target coverage of `primitives.bp`, and the rule per situation for rewriting `libs/std`.
 
 The remaining four defects — the manifest, the two unreachable modules, the 67 unreachable tests
 and the OTP function that never existed — are in [`surface.md`](./surface.md).
