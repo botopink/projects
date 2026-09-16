@@ -2,51 +2,44 @@
 
 ## Ownership
 
-| Front | Source it owns | Snapshots it owns | Spec rows |
+| Front | Source it owns | Snapshots it owns | Spec |
 |---|---|---|---|
-| **F1 parser + AST** | `lexer/token.zig`, `lexer.zig`, `parser/**`, `ast.zig` | — | spec 01 steps 1–4, spec 02 steps 1–2 |
-| **F2 comptime** | `comptime/types.zig`, `comptime/env.zig`, `comptime/infer.zig`, `comptime/transform.zig` | `snapshots/comptime/` | spec 01 step 5 |
-| **F3 formatter** | `format.zig` | `snapshots/format/` | spec 01 step 6, spec 02 step 3 |
-| **F4 dead keywords** | `lexer/token.zig`, `lexer.zig` | `snapshots/lexer/` | spec 03 steps 1–4 |
-| **F5 commonJS** | `codegen/commonJS.zig`, `codegen/typescript.zig`, `codegen/js/**` | `snapshots/codegen/commonJS/`, `snapshots/codegen/typescript/` | spec 01 step 7a |
-| **F6 erlang** | `codegen/erlang.zig`, `codegen/beam/erl_ast.zig`, `codegen/beam/erl_emitter.zig` | `snapshots/codegen/erlang/` | spec 01 step 7b |
-| **F7 beam** | `codegen/beam_asm.zig`, `codegen/beam/beam_emitter.zig` | `snapshots/codegen/beam/` | spec 01 step 7c |
-| **F8 wasm** | `codegen/wat.zig`, `codegen/wat/**` | `snapshots/codegen/wasm/` | spec 01 step 7d |
-| **F9 std + libs** | `libs/std/**`, `repository/{emilia,erika,jhonstart,onze,rakun}/**/*.bp` | — | spec 01 step 8, spec 02 step 4 |
-| **F10 tooling** | `modules/compiler-cli/**`, `modules/language-server/**`, `repository/vscode-extension/**` | — | spec 01 step 9, spec 02 step 5 |
+| **F1 dead-keywords** | `compiler-core/src/lexer.zig`, `lexer/token.zig`, `parser.zig` (`isMemberName`), `lexer/tests/**`, `parser/tests/{errors,declarations}.zig`, `codegen/js/ts_emitter.zig` (escape) · `language-server/src/engine.zig` (keyword tables) · `vscode-extension/syntaxes/botopink.tmLanguage.json` · `jhonstart/src/{router,server}.d.bp` | one new commonJS snapshot (`.d.ts` escape) | [`01-dead-keywords/`](./01-dead-keywords/README.md) |
+| **F2 migration-tooling** | `compiler-cli/src/cli/migrate_syntax.zig` (new), `migrate.zig` + `main.zig` flag wiring, `compiler-cli/tests/**` for it · `scripts/snap_audit.sh` | — (golden files under `compiler-cli/tests`) | [`02-migration-tooling/`](./02-migration-tooling/README.md) |
+| **F3 surface-cutover** | `compiler-core/src/**`, `language-server/src/**` (compile-level), `compiler-cli/src/cli/resolver.zig`, `libs/std/**`, `examples/**` | `compiler-core/snapshots/**` (2442 files), LSP snapshots | [`03-surface-cutover/`](./03-surface-cutover/README.md) |
+| **F4 ecosystem-migration** | `repository/{emilia,erika,jhonstart,onze,rakun}/**`; their submodule pointers in the meta repo | the libraries' own test outputs | [`04-ecosystem-migration/`](./04-ecosystem-migration/README.md) |
+| **F5 tooling-and-docs** | `language-server/src/engine.zig` (user-facing texts, completions, symbol kinds) · `repository/vscode-extension/**` · botopink-lang user docs | LSP hover/completion/symbol snapshots | [`05-tooling-and-docs/`](./05-tooling-and-docs/README.md) |
 
 ## Conflict matrix
 
-|  | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9 | F10 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| **F1** | — | no¹ | no¹ | no² | no¹ | no¹ | no¹ | no¹ | no¹ | no¹ |
-| **F2** | no¹ | — | no³ | no³ | no³ | no³ | no³ | no³ | no³ | no³ |
-| **F3** | no¹ | no³ | — | no⁴ | yes | yes | yes | yes | yes | yes |
-| **F4** | no² | no³ | no⁴ | — | yes | yes | yes | yes | yes | yes |
-| **F5** | no¹ | no³ | yes | yes | — | yes | yes | yes | yes | yes |
-| **F6** | no¹ | no³ | yes | yes | yes | — | yes | yes | yes | yes |
-| **F7** | no¹ | no³ | yes | yes | yes | yes | — | yes | yes | yes |
-| **F8** | no¹ | no³ | yes | yes | yes | yes | yes | — | yes | yes |
-| **F9** | no¹ | no³ | yes | yes | yes | yes | yes | yes | — | yes |
-| **F10** | no¹ | no³ | yes | yes | yes | yes | yes | yes | yes | — |
+`yes` = may run at the same time. `no` = must be sequenced.
 
-¹ F1 owns `ast.zig` and `parser/**` — every other front reads the AST. F1 must land first.
-² F4 owns `lexer/token.zig` and `lexer.zig` — F1 also touches these files. F1 and F4 must be sequenced or merged.
-³ F2 owns `comptime/**` — F3–F10 read the typed AST that comptime produces. F2 must land before F3–F10.
-⁴ F3 and F4 both touch `lexer/**` — they must be sequenced or merged into one front.
+|  | F1 | F2 | F3 | F4 | F5 |
+|---|---|---|---|---|---|
+| **F1** | — | yes | no¹ | no² | no³ |
+| **F2** | yes | — | no⁴ | no⁴ | yes |
+| **F3** | no¹ | no⁴ | — | no⁵ | no⁶ |
+| **F4** | no² | no⁴ | no⁵ | — | yes |
+| **F5** | no³ | yes | no⁶ | yes | — |
+
+¹ F1 and F3 both edit `lexer.zig`, `lexer/token.zig`, `parser.zig` and `language-server/src/engine.zig`. **Sequence: F1 first** — it is small and ready.
+² F1 edits `jhonstart/src/{router,server}.d.bp`, which F4 migrates. Sequence: F1 first (F4 follows F3 anyway).
+³ F1 and F5 both edit `engine.zig` keyword lists and the tmLanguage grammar. Sequence: F1 first.
+⁴ No shared file, but a **tool dependency**: F3 and F4 run F2's codemod and audit. F2 merges first.
+⁵ No shared file, but a **compiler dependency**: the libraries only compile against F3's compiler. F3 merges first.
+⁶ F3 and F5 both edit `language-server/src/engine.zig` (F3 to compile, F5 for user-facing text) and LSP snapshots. Sequence: F3 first.
+
+F4 and F5 share nothing: F4 owns the five library repositories, F5 owns the language server texts,
+the VS Code extension and botopink-lang's own docs.
 
 ## Order
 
 ```
-F1 (parser + AST) ──┬──► F2 (comptime) ──┬──► F3 (formatter) ──┐
-                    │                    ├──► F5 (commonJS)    ├──► F9 (std + libs) ──► F10 (tooling)
-                    │                    ├──► F6 (erlang)      │
-                    │                    ├──► F7 (beam)        │
-                    │                    └──► F8 (wasm) ───────┘
-                    └──► F4 (dead keywords)
+F1 dead-keywords ─────┐
+                      ├──► F3 surface-cutover ──┬──► F4 ecosystem-migration   (5 library worktrees in parallel)
+F2 migration-tooling ─┘                         └──► F5 tooling-and-docs
 ```
 
-F1 is the critical path. F2 is the second bottleneck. F4 (dead keywords) can run in parallel
-with F2 since they touch different files (F4: lexer only, F2: comptime). F5–F8 run in parallel
-(snapshot-disjoint). F9 starts once F2 lands (it needs comptime to compile the migrated `.bp`
-files). F10 lands last (LSP and extension need the compiler to be stable).
+Critical path: F1 ∥ F2 → F3 → F4 ∥ F5. F3 runs alone; inside it, four commits keep the gate green
+(unified AST → dual grammar → migrated sources → old surface removed). F4 fans out into one worktree
+per library, all file-disjoint.

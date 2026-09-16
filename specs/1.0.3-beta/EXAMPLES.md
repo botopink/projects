@@ -1,18 +1,15 @@
-# Examples — Before and After 1.0.3-beta
+# Examples — before and after 1.0.3-beta
 
-This document shows **complete, real-world examples** of how code changes from 1.0.2-beta to
-1.0.3-beta. Each example shows the full "before" and "after" so you can see the cumulative
-effect of all three fronts:
-
-- **F1**: `record`/`enum` → `type` (records use parentheses or `constructor` for fields)
-- **F2**: `interface` → `behavior`
-- **F3**: Dead keywords removed (`auto`, `derive`, `macro`, `get`, `opaque`, `private`, `set`)
+Every **Before** block was compiled and run with `botopink check` / `botopink run` at
+`botopink-lang` `41981e3` (commonJS target unless noted); the output is shown under it. The
+**After** blocks are the target surface — they are what F3's migrated fixtures must reproduce, with
+the same output.
 
 ---
 
-## Example 1 — Simple Record
+## 1 — Record, labeled and positional construction
 
-### Before (1.0.2-beta)
+**Before** — output `12`
 
 ```bp
 pub record Point {
@@ -20,108 +17,115 @@ pub record Point {
     y: i32,
 }
 
-pub fn main() -> i32 {
+pub fn main() {
     val p = Point(x: 10, y: 20);
-    return p.x + p.y;
+    val q = Point(1, 2);
+    @print(p.x + q.y);
 }
 ```
 
-### After (1.0.3-beta) — Form 1 (preferred)
+**After**
 
 ```bp
-pub type Point(x: i32, y: i32) {
-}
+pub type Point(x: i32, y: i32)
 
-pub fn main() -> i32 {
+pub fn main() {
     val p = Point(x: 10, y: 20);
-    return p.x + p.y;
+    val q = Point(1, 2);
+    @print(p.x + q.y);
 }
 ```
 
-### After (1.0.3-beta) — Form 2 (alternative)
-
-```bp
-pub type Point {
-    constructor(x: i32, y: i32)
-}
-
-pub fn main() -> i32 {
-    val p = Point(x: 10, y: 20);
-    return p.x + p.y;
-}
-```
-
-**Changes:** `record Point { fields }` → `type Point(fields) {}` OR `type Point { constructor(fields) }`
+The declaration and the construction now read the same way.
 
 ---
 
-## Example 2 — Generic Record with Methods
+## 2 — Generic record with methods
 
-### Before (1.0.2-beta)
+**Before** — output `3`
 
 ```bp
-pub record Dict<K, V> {
-    pairs: Array<#(K, V)>,
-
-    pub fn lookup(self: Self, key: K) -> ?V {
-        return self.pairs.find({ pair -> pair.0 == key }).map({ pair -> pair.1 });
-    }
-
-    pub fn hasKey(self: Self, key: K) -> bool {
-        return self.lookup(key) != null;
-    }
+pub record Stack<T> {
+    items: T[],
 
     pub fn size(self: Self) -> i32 {
-        return self.pairs.length;
+        return self.items.length;
     }
+
+    pub fn push(self: Self, item: T) -> Stack<T> {
+        return Stack(items: self.items.append([item]));
+    }
+}
+
+pub fn main() {
+    val s = Stack(items: [1, 2]).push(3);
+    @print(s.size());
 }
 ```
 
-### After (1.0.3-beta) — Form 1
+**After**
 
 ```bp
-pub type Dict<K, V>(pairs: Array<#(K, V)>) {
-    pub fn lookup(self: Self, key: K) -> ?V {
-        return self.pairs.find({ pair -> pair.0 == key }).map({ pair -> pair.1 });
-    }
-
-    pub fn hasKey(self: Self, key: K) -> bool {
-        return self.lookup(key) != null;
-    }
-
+pub type Stack<T>(items: T[]) {
     pub fn size(self: Self) -> i32 {
-        return self.pairs.length;
+        return self.items.length;
+    }
+
+    pub fn push(self: Self, item: T) -> Stack<T> {
+        return Stack(items: self.items.append([item]));
     }
 }
-```
 
-### After (1.0.3-beta) — Form 2
-
-```bp
-pub type Dict<K, V> {
-    constructor(pairs: Array<#(K, V)>)
-
-    pub fn lookup(self: Self, key: K) -> ?V {
-        return self.pairs.find({ pair -> pair.0 == key }).map({ pair -> pair.1 });
-    }
-
-    pub fn hasKey(self: Self, key: K) -> bool {
-        return self.lookup(key) != null;
-    }
-
-    pub fn size(self: Self) -> i32 {
-        return self.pairs.length;
-    }
+pub fn main() {
+    val s = Stack(items: [1, 2]).push(3);
+    @print(s.size());
 }
 ```
-
-**Changes:** `record Dict<K, V> { fields, methods }` → `type Dict<K, V>(fields) { methods }` OR `type Dict<K, V> { constructor(fields); methods }`
 
 ---
 
-## Example 3 — Simple Enum
+## 3 — Fields with a comment and defaults
 
-### Before (1.0.2-beta)
+**Before** — output `8080`
+
+```bp
+pub record Config {
+    // where the server listens
+    host: string = "0.0.0.0",
+    port: i32,
+    debug: bool = false,
+}
+
+pub fn main() {
+    val c = Config(host: "localhost", port: 8080, debug: true);
+    @print(c.port);
+}
+```
+
+**After**
+
+```bp
+pub type Config(
+    // where the server listens
+    host: string = "0.0.0.0",
+    port: i32,
+    debug: bool = false,
+)
+
+pub fn main() {
+    val c = Config(host: "localhost", port: 8080, debug: true);
+    @print(c.port);
+}
+```
+
+The trailing comma keeps one field per line; the comment stays attached to `host` (today the
+record parser drops it).
+
+---
+
+## 4 — Simple enum
+
+**Before** — output `1`
 
 ```bp
 pub enum Order {
@@ -132,14 +136,18 @@ pub enum Order {
 
 pub fn toInt(o: Order) -> i32 {
     return case o {
-        Lt -> -1,
-        Eq -> 0,
-        _ -> 1,
+        Lt -> -1;
+        Eq -> 0;
+        _ -> 1;
     };
+}
+
+pub fn main() {
+    @print(toInt(Order.Gt));
 }
 ```
 
-### After (1.0.3-beta)
+**After**
 
 ```bp
 pub type Order {
@@ -150,530 +158,329 @@ pub type Order {
 
 pub fn toInt(o: Order) -> i32 {
     return case o {
-        Lt -> -1,
-        Eq -> 0,
-        _ -> 1,
+        Lt -> -1;
+        Eq -> 0;
+        _ -> 1;
     };
 }
-```
 
-**Changes:** `enum` → `type` (1 line)
+pub fn main() {
+    @print(toInt(Order.Gt));
+}
+```
 
 ---
 
-## Example 4 — Generic Enum with Payloads
+## 5 — Enum with payloads and a method
 
-### Before (1.0.2-beta)
+**Before** — output `16` on the Erlang target. On commonJS it type-checks but fails at runtime
+(`Shape.Square(...).area is not a function`) — a 1.0.2-beta defect, see
+[`overview.md`](./overview.md#found-during-the-review--belongs-to-102-beta).
 
 ```bp
-pub enum Result<R, E> {
-    Ok(result: R),
-    Error(error: E),
+pub enum Shape {
+    Circle(radius: i32),
+    Square(side: i32),
+
+    pub fn area(self: Self) -> i32 {
+        return case self {
+            Circle(r) -> r * r * 3;
+            Square(s) -> s * s;
+        };
+    }
 }
 
-pub fn divide(a: i32, b: i32) -> Result<i32, string> {
-    if b == 0 {
-        return Result.Error(error: "division by zero");
-    }
-    return Result.Ok(result: a / b);
+pub fn main() {
+    @print(Shape.Square(side: 4).area());
 }
 ```
 
-### After (1.0.3-beta)
+**After**
 
 ```bp
-pub type Result<R, E> {
-    Ok(result: R),
-    Error(error: E),
+pub type Shape {
+    Circle(radius: i32),
+    Square(side: i32),
+
+    pub fn area(self: Self) -> i32 {
+        return case self {
+            Circle(r) -> r * r * 3;
+            Square(s) -> s * s;
+        };
+    }
 }
 
-pub fn divide(a: i32, b: i32) -> Result<i32, string> {
-    if b == 0 {
-        return Result.Error(error: "division by zero");
-    }
-    return Result.Ok(result: a / b);
+pub fn main() {
+    @print(Shape.Square(side: 4).area());
 }
 ```
-
-**Changes:** `enum` → `type` (1 line)
 
 ---
 
-## Example 5 — Enum with Sections
+## 6 — Enum with sections
 
-### Before (1.0.2-beta)
+**Before** — output `3`
 
 ```bp
 pub enum Token {
     Color {
-        Red { 100, 200, 300, 400, 500, 600, 700, 800, 900 },
-        Blue { 100, 200, 300, 400, 500, 600, 700, 800, 900 },
+        Red { 100, 500, 900 },
         Hex(value: string),
     }
     Pad {
-        X { 1, 2, 4, 8, 16 },
-        Y { 1, 2, 4, 8 },
+        X { 1, 2, 4 },
     }
     Hover(inner: Token[]),
 }
 
-pub fn main() -> string {
+pub fn main() {
     val tokens: Token[] = [
-        .Pad.All.__4,
+        .Pad.X.__4,
         .Color.Red.__500,
-        Token.Hover([.Color.Blue.__100]),
+        Token.Hover([.Color.Red.__100]),
     ];
-    return tokens.toString();
+    @print(tokens.length);
 }
 ```
 
-### After (1.0.3-beta)
+**After**
 
 ```bp
 pub type Token {
     Color {
-        Red { 100, 200, 300, 400, 500, 600, 700, 800, 900 },
-        Blue { 100, 200, 300, 400, 500, 600, 700, 800, 900 },
+        Red { 100, 500, 900 },
         Hex(value: string),
     }
     Pad {
-        X { 1, 2, 4, 8, 16 },
-        Y { 1, 2, 4, 8 },
+        X { 1, 2, 4 },
     }
     Hover(inner: Token[]),
 }
 
-pub fn main() -> string {
+pub fn main() {
     val tokens: Token[] = [
-        .Pad.All.__4,
+        .Pad.X.__4,
         .Color.Red.__500,
-        Token.Hover([.Color.Blue.__100]),
+        Token.Hover([.Color.Red.__100]),
     ];
-    return tokens.toString();
+    @print(tokens.length);
 }
 ```
 
-**Changes:** `enum` → `type` (1 line)
+Sections end with `}` and take no comma.
 
 ---
 
-## Example 6 — Record with `implement`
+## 7 — Record with no fields
 
-### Before (1.0.2-beta)
+**Before** — output `3`
 
 ```bp
-pub record Element implement @Context<Element, Element> {
-    tag: string,
-    value: string,
-    children: Array<Element>,
-    attrs: Array<#(string, string)>,
+pub record MathOps {
+    pub fn add(a: i32, b: i32) -> i32 {
+        return a + b;
+    }
+}
+
+pub fn main() {
+    @print(MathOps.add(1, 2));
 }
 ```
 
-### After (1.0.3-beta) — Form 1
+**After**
 
 ```bp
-pub type Element(tag: string, value: string, children: Array<Element>, attrs: Array<#(string, string)>) implement @Context<Element, Element> {
+pub type MathOps {
+    pub fn add(a: i32, b: i32) -> i32 {
+        return a + b;
+    }
+}
+
+pub fn main() {
+    @print(MathOps.add(1, 2));
 }
 ```
 
-### After (1.0.3-beta) — Form 2
-
-```bp
-pub type Element implement @Context<Element, Element> {
-    constructor(tag: string, value: string, children: Array<Element>, attrs: Array<#(string, string)>)
-}
-```
-
-**Changes:** `record Name implement X { fields }` → `type Name(fields) implement X {}` OR `type Name implement X { constructor(fields) }`
+No parentheses and no variant in the body → a record with no fields.
 
 ---
 
-## Example 7 — Anonymous Record Literal
+## 8 — Behavior implemented by a record
 
-### Before (1.0.2-beta)
-
-```bp
-pub fn createPoint() -> record { x: i32, y: i32 } {
-    return record { x: 10, y: 20 };
-}
-```
-
-### After (1.0.3-beta)
+**Before** — output `<p>hi</p>`
 
 ```bp
-pub fn createPoint() -> type { x: i32, y: i32 } {
-    return type { x: 10, y: 20 };
-}
-```
-
-**Changes:** `record { … }` → `type { … }` (2 occurrences). Note: literals still use `{ }`, not `( )` or `constructor`.
-
----
-
-## Example 8 — Simple Interface
-
-### Before (1.0.2-beta)
-
-```bp
-pub interface Printable {
-    fn print(self: Self) -> string,
+pub interface Renderable {
+    fn render(self: Self) -> string,
 }
 
-pub record Document implement Printable {
+pub record Document implement Renderable {
     content: string,
 
-    pub fn print(self: Self) -> string {
-        return self.content;
+    pub fn render(self: Self) -> string {
+        return "<p>" + self.content + "</p>";
     }
+}
+
+pub fn main() {
+    val d = Document(content: "hi");
+    @print(d.render());
 }
 ```
 
-### After (1.0.3-beta) — Form 1
+**After**
 
 ```bp
-pub behavior Printable {
-    fn print(self: Self) -> string,
+pub behavior Renderable {
+    fn render(self: Self) -> string;
 }
 
-pub type Document(content: string) implement Printable {
-    pub fn print(self: Self) -> string {
-        return self.content;
+pub type Document(content: string) implement Renderable {
+    pub fn render(self: Self) -> string {
+        return "<p>" + self.content + "</p>";
     }
 }
-```
 
-### After (1.0.3-beta) — Form 2
-
-```bp
-pub behavior Printable {
-    fn print(self: Self) -> string,
-}
-
-pub type Document implement Printable {
-    constructor(content: string)
-
-    pub fn print(self: Self) -> string {
-        return self.content;
-    }
+pub fn main() {
+    val d = Document(content: "hi");
+    @print(d.render());
 }
 ```
-
-**Changes:** `interface` → `behavior`, `record Name { fields, methods }` → `type Name(fields) { methods }` OR `type Name { constructor(fields); methods }`
 
 ---
 
-## Example 9 — Interface with `extends`
+## 9 — Behaviors with `extends` and a default method
 
-### Before (1.0.2-beta)
+**Before** — output `1`
 
 ```bp
 interface Number {
     fn min(self: Self, other: Self) -> Self,
     fn max(self: Self, other: Self) -> Self,
-
-    default fn clamp(self: Self, lo: Self, hi: Self) -> Self {
-        return self.max(lo).min(hi);
-    }
 }
 
 interface Integer extends Number {
     fn toString(self: Self) -> string,
-
     default fn isEven(self: Self) -> bool {
         return self % 2 == 0;
     }
 }
 
-interface Signed extends Integer {
-    fn abs(self: Self) -> Self,
+pub fn main() {
+    @print(1);
 }
-
-interface I32 extends Signed {}
 ```
 
-### After (1.0.3-beta)
+**After**
 
 ```bp
 behavior Number {
-    fn min(self: Self, other: Self) -> Self,
-    fn max(self: Self, other: Self) -> Self,
-
-    default fn clamp(self: Self, lo: Self, hi: Self) -> Self {
-        return self.max(lo).min(hi);
-    }
+    fn min(self: Self, other: Self) -> Self;
+    fn max(self: Self, other: Self) -> Self;
 }
 
 behavior Integer extends Number {
-    fn toString(self: Self) -> string,
+    fn toString(self: Self) -> string;
 
     default fn isEven(self: Self) -> bool {
         return self % 2 == 0;
     }
 }
 
-behavior Signed extends Integer {
-    fn abs(self: Self) -> Self,
+pub fn main() {
+    @print(1);
 }
-
-behavior I32 extends Signed {}
 ```
 
-**Changes:** `interface` → `behavior` (4 lines)
+Bodyless members end with `;`; the default method takes nothing after `}`.
 
 ---
 
-## Example 10 — Interface with Fields
+## 10 — Anonymous record → labeled tuple
 
-### Before (1.0.2-beta)
+**Before** — output `7` then `n,n`
 
 ```bp
-pub interface Request {
-    val method: HttpMethod,
-    val path: string,
+fn origin() -> { x: i32, y: i32 } {
+    return record { x: 0, y: 7 };
+}
 
-    fn param(self: Self, name: string) -> string,
-    fn query(self: Self, name: string) -> string,
-    fn header(self: Self, name: string) -> string,
-    fn body(self: Self) -> string,
+pub fn main() {
+    val o = origin();
+    val pairs = [1, 2].map({ i -> record { key: i, label: "n" } });
+    @print(o.y);
+    @print(pairs.map({ p -> p.label }).join(","));
 }
 ```
 
-### After (1.0.3-beta)
+**After** — same output; the values are tuples at runtime (`[0, 7]`, `[1, "n"]`)
 
 ```bp
-pub behavior Request {
-    val method: HttpMethod,
-    val path: string,
+fn origin() -> #(x: i32, y: i32) {
+    return #(x: 0, y: 7);
+}
 
-    fn param(self: Self, name: string) -> string,
-    fn query(self: Self, name: string) -> string,
-    fn header(self: Self, name: string) -> string,
-    fn body(self: Self) -> string,
+pub fn main() {
+    val o = origin();
+    val pairs = [1, 2].map({ i -> #(key: i, label: "n") });
+    @print(o.y);
+    @print(pairs.map({ p -> p.label }).join(","));
 }
 ```
-
-**Changes:** `interface` → `behavior` (1 line)
 
 ---
 
-## Example 11 — Standalone `implement` Block
+## 11 — Comptime template returning a labeled tuple
 
-### Before (1.0.2-beta)
-
-```bp
-record Circle {
-    radius: f64,
-}
-
-interface Drawable {
-    fn draw(self: Self) -> string,
-}
-
-val CircleDrawing = implement Drawable for Circle {
-    fn draw(self: Self) -> string {
-        return "Drawing circle with radius " + self.radius.toString();
-    }
-}
-```
-
-### After (1.0.3-beta) — Form 1
+**Before** — output `8003`
 
 ```bp
-type Circle(radius: f64) {
-}
-
-behavior Drawable {
-    fn draw(self: Self) -> string,
-}
-
-val CircleDrawing = implement Drawable for Circle {
-    fn draw(self: Self) -> string {
-        return "Drawing circle with radius " + self.radius.toString();
-    }
-}
-```
-
-### After (1.0.3-beta) — Form 2
-
-```bp
-type Circle {
-    constructor(radius: f64)
-}
-
-behavior Drawable {
-    fn draw(self: Self) -> string,
-}
-
-val CircleDrawing = implement Drawable for Circle {
-    fn draw(self: Self) -> string {
-        return "Drawing circle with radius " + self.radius.toString();
-    }
-}
-```
-
-**Changes:** `record` → `type` (with parentheses or constructor), `interface` → `behavior`. `implement` unchanged.
-
----
-
-## Example 12 — Multiple Interfaces
-
-### Before (1.0.2-beta)
-
-```bp
-interface UsbCharger {
-    fn connect(self: Self) -> string,
-}
-
-interface SolarCharger {
-    fn connect(self: Self) -> string,
-}
-
-record SmartCamera {
-    model: string,
-}
-
-val CameraPowerCharger = implement UsbCharger, SolarCharger for SmartCamera {
-    fn UsbCharger.connect(self: Self) -> string {
-        return "Connected via USB";
-    }
-    fn SolarCharger.connect(self: Self) -> string {
-        return "Connected via Solar";
-    }
-}
-```
-
-### After (1.0.3-beta) — Form 1
-
-```bp
-behavior UsbCharger {
-    fn connect(self: Self) -> string,
-}
-
-behavior SolarCharger {
-    fn connect(self: Self) -> string,
-}
-
-type SmartCamera(model: string) {
-}
-
-val CameraPowerCharger = implement UsbCharger, SolarCharger for SmartCamera {
-    fn UsbCharger.connect(self: Self) -> string {
-        return "Connected via USB";
-    }
-    fn SolarCharger.connect(self: Self) -> string {
-        return "Connected via Solar";
-    }
-}
-```
-
-### After (1.0.3-beta) — Form 2
-
-```bp
-behavior UsbCharger {
-    fn connect(self: Self) -> string,
-}
-
-behavior SolarCharger {
-    fn connect(self: Self) -> string,
-}
-
-type SmartCamera {
-    constructor(model: string)
-}
-
-val CameraPowerCharger = implement UsbCharger, SolarCharger for SmartCamera {
-    fn UsbCharger.connect(self: Self) -> string {
-        return "Connected via USB";
-    }
-    fn SolarCharger.connect(self: Self) -> string {
-        return "Connected via Solar";
-    }
-}
-```
-
-**Changes:** `interface` → `behavior` (2 lines), `record` → `type` (with parentheses or constructor). `implement` unchanged.
-
----
-
-## Example 13 — Comptime with Record Literal
-
-### Before (1.0.2-beta)
-
-```bp
-pub fn conf<T>(comptime q: @Expr<string>) -> @Expr<T> {
+pub fn conf(comptime q: @Expr<string>) -> @Expr<{ port: i32, debug: bool }> {
     val t = q.text();
     return @expr(record {
-        server: record { host: "0.0.0.0", port: 8000 + t.length },
+        port: 8000 + t.length,
         debug: true,
     });
 }
+
+pub fn main() {
+    val c = conf "abc";
+    @print(c.port);
+}
 ```
 
-### After (1.0.3-beta)
+**After**
 
 ```bp
-pub fn conf<T>(comptime q: @Expr<string>) -> @Expr<T> {
+pub fn conf(comptime q: @Expr<string>) -> @Expr<#(port: i32, debug: bool)> {
     val t = q.text();
-    return @expr(type {
-        server: type { host: "0.0.0.0", port: 8000 + t.length },
+    return @expr(#(
+        port: 8000 + t.length,
         debug: true,
-    });
+    ));
+}
+
+pub fn main() {
+    val c = conf "abc";
+    @print(c.port);
 }
 ```
 
-**Changes:** `record { … }` → `type { … }` (3 occurrences). Note: literals still use `{ }`.
-
 ---
 
-## Example 14 — Dead Keywords Become Identifiers
+## 12 — A small module
 
-### Before (1.0.2-beta)
-
-```bp
-// These would fail to parse:
-val auto = 10;          // ERROR: 'auto' is a reserved word
-val derive = "test";    // ERROR: 'derive' is a reserved word
-val macro = fn() {};    // ERROR: 'macro' is a reserved word
-val get = 42;           // ERROR: 'get' is a keyword
-val set = 99;           // ERROR: 'set' is a keyword
-```
-
-### After (1.0.3-beta)
+**Before** — output `hi /`
 
 ```bp
-// These now compile:
-val auto = 10;          // OK: 'auto' is a valid identifier
-val derive = "test";    // OK: 'derive' is a valid identifier
-val macro = fn() {};    // OK: 'macro' is a valid identifier
-val get = 42;           // OK: 'get' is a valid identifier
-val set = 99;           // OK: 'set' is a valid identifier
-```
-
-**Changes:** Dead keywords (`auto`, `derive`, `macro`, `get`, `set`) are now valid identifiers.
-
----
-
-## Example 15 — Complete Real-World Module
-
-### Before (1.0.2-beta) — `http.bp`
-
-```bp
-pub enum HttpMethod {
+pub enum Method {
     Get,
     Post,
-    Put,
-    Patch,
-    Delete,
-    Head,
-    Options,
 }
 
 pub record Request {
-    method: HttpMethod,
+    method: Method,
     path: string,
-    headers: Dict<string, string>,
-    body: string,
 }
 
 pub record Response {
@@ -685,138 +492,75 @@ pub interface Handler {
     fn handle(self: Self, req: Request) -> Response,
 }
 
-pub record Server {
-    port: i32,
-    handler: Handler,
+pub record Hello implement Handler {
+    greeting: string,
 
-    pub fn start(self: Self) {
-        @print("Starting server on port " + self.port.toString());
+    pub fn handle(self: Self, req: Request) -> Response {
+        return Response(status: 200, body: self.greeting + " " + req.path);
     }
+}
+
+pub fn main() {
+    val res = Hello(greeting: "hi").handle(Request(method: Method.Get, path: "/"));
+    @print(res.body);
 }
 ```
 
-### After (1.0.3-beta) — `http.bp` — Form 1
+**After**
 
 ```bp
-pub type HttpMethod {
+pub type Method {
     Get,
     Post,
-    Put,
-    Patch,
-    Delete,
-    Head,
-    Options,
 }
 
-pub type Request(method: HttpMethod, path: string, headers: Dict<string, string>, body: string) {
-}
+pub type Request(method: Method, path: string)
 
-pub type Response(status: i32, body: string) {
-}
+pub type Response(status: i32, body: string)
 
 pub behavior Handler {
-    fn handle(self: Self, req: Request) -> Response,
+    fn handle(self: Self, req: Request) -> Response;
 }
 
-pub type Server(port: i32, handler: Handler) {
-    pub fn start(self: Self) {
-        @print("Starting server on port " + self.port.toString());
+pub type Hello(greeting: string) implement Handler {
+    pub fn handle(self: Self, req: Request) -> Response {
+        return Response(status: 200, body: self.greeting + " " + req.path);
     }
+}
+
+pub fn main() {
+    val res = Hello(greeting: "hi").handle(Request(method: Method.Get, path: "/"));
+    @print(res.body);
 }
 ```
 
-### After (1.0.3-beta) — `http.bp` — Form 2
+---
+
+## 13 — Freed keywords and accessors
+
+**Before** — `val get = 42;` is a parse error today (and so are `auto`, `derive`, `macro`, `set`,
+`opaque`, `private`). jhonstart's `.d.bp` declares accessors that the parser already rejects:
 
 ```bp
-pub type HttpMethod {
-    Get,
-    Post,
-    Put,
-    Patch,
-    Delete,
-    Head,
-    Options,
-}
-
-pub type Request {
-    constructor(method: HttpMethod, path: string, headers: Dict<string, string>, body: string)
-}
-
-pub type Response {
-    constructor(status: i32, body: string)
-}
-
-pub behavior Handler {
-    fn handle(self: Self, req: Request) -> Response,
-}
-
-pub type Server {
-    constructor(port: i32, handler: Handler)
-
-    pub fn start(self: Self) {
-        @print("Starting server on port " + self.port.toString());
-    }
+pub interface Router {
+    get pathname(self: Self) -> string
+    get params(self: Self) -> Dict<string, string>
+    fn push(self: Self, href: string)
 }
 ```
 
-**Changes:** `enum` → `type`, `record Name { fields }` → `type Name(fields) {}` OR `type Name { constructor(fields) }`, `interface` → `behavior`
+**After**
 
----
+```bp
+val get = 42;
+val set = 99;
+val auto = 10;
 
-## Summary of Changes per Example
+pub behavior Router {
+    fn pathname(self: Self) -> string;
+    fn params(self: Self) -> Dict<string, string>;
+    fn push(self: Self, href: string);
+}
+```
 
-| # | Example | Lines Changed | Keywords Affected |
-|---|---------|---------------|-------------------|
-| 1 | Simple record | 1 | `record Point { x, y }` → `type Point(x, y) {}` OR `type Point { constructor(x, y) }` |
-| 2 | Generic record + methods | 1 | `record Dict<K,V> { fields, methods }` → `type Dict<K,V>(fields) { methods }` OR `type Dict<K,V> { constructor(fields); methods }` |
-| 3 | Simple enum | 1 | `enum` → `type` |
-| 4 | Generic enum + payloads | 1 | `enum` → `type` |
-| 5 | Enum with sections | 1 | `enum` → `type` |
-| 6 | Record with `implement` | 1 | `record Name implement X { fields }` → `type Name(fields) implement X {}` OR `type Name implement X { constructor(fields) }` |
-| 7 | Anonymous record literal | 2 | `record { … }` → `type { … }` (literals unchanged) |
-| 8 | Simple interface | 2 | `interface` → `behavior`, `record` → `type` (with parentheses or constructor) |
-| 9 | Interface with `extends` | 4 | `interface` → `behavior` (×4) |
-| 10 | Interface with fields | 1 | `interface` → `behavior` |
-| 11 | Standalone `implement` | 2 | `record` → `type` (with parentheses or constructor), `interface` → `behavior` |
-| 12 | Multiple interfaces | 3 | `interface` → `behavior` (×2), `record` → `type` (with parentheses or constructor) |
-| 13 | Comptime record literal | 3 | `record { … }` → `type { … }` (×3, literals unchanged) |
-| 14 | Dead keywords as identifiers | 5 | `auto`, `derive`, `macro`, `get`, `set` now valid |
-| 15 | Complete HTTP module | 5 | `enum` → `type`, `record` → `type` (×3, with parentheses or constructor), `interface` → `behavior` |
-
-**Total across all examples: 33 lines changed**
-
----
-
-## Key Syntax Difference
-
-**Record declaration — Form 1 (preferred):**
-- Before: `record Name { field: Type, ... }`
-- After: `type Name(field: Type, ...) { methods }`
-
-**Record declaration — Form 2 (alternative):**
-- Before: `record Name { field: Type, ... }`
-- After: `type Name { constructor(field: Type, ...); methods }`
-
-**Enum declaration:**
-- Before: `enum Name { Variant, ... }`
-- After: `type Name { Variant, ... }`
-
-**Record literal (expression):**
-- Before: `record { field: value, ... }`
-- After: `type { field: value, ... }` (still uses `{ }`, not `( )` or `constructor`)
-
-The key insight: **declarations** use `( )` or `constructor` for fields (mirroring constructor calls), but **literals** use `{ }` (mirroring object initialization). Both forms are equivalent and produce the same AST.
-
----
-
-## What Does NOT Change
-
-- `implement` keyword — unchanged
-- `extends` keyword — unchanged
-- Method syntax (`fn`, `default fn`, `declare fn`) — unchanged
-- Field syntax in interfaces (`val`) — unchanged
-- Constructor call syntax (`Point(x: 10, y: 20)`) — unchanged
-- Pattern matching (`case`) — unchanged
-- Generic syntax (`<T, E>`) — unchanged
-- Annotation syntax (`#[...]`) — unchanged
-- Runtime representation — unchanged
+`x.get(k)` and `x.set(v)` keep working — they are plain method names.

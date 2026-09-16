@@ -1,72 +1,83 @@
 # Specs — 1.0.3-beta
 
-Consolidation of the type-system surface: `record` and `enum` collapse into a single `type`
-keyword, and `interface` becomes `behavior`. The language keeps the same expressive power —
-named fields, variants with payloads, sections, generics, `implement`, methods — but with two
-keywords instead of four. The previous milestone (1.0.2-beta) stabilised the backends and the
-checker; this one spends that stability on the largest syntactic change since the comptime
-rewrite.
+The type-system surface shrinks. `record` and `enum` collapse into one `type` keyword, `interface`
+becomes `behavior`, the anonymous record becomes a **labeled tuple** `#(x: 10, y: 20)`, and seven
+keywords with no surface meaning leave the lexer. Separators get one rule: a comma separates data
+items, never declarations. The language keeps its expressive power — named fields, variants with
+payloads, sections, generics, `implement`, methods — with fewer keywords and one way to write each
+thing.
 
-| # | Spec | Priority | What |
-|---|------|----------|------|
-| 01 | [`01-type-keyword/`](./01-type-keyword/README.md) | critical | `record` and `enum` become `type`. The parser distinguishes fields (record) from variants (enum) by the shape of the body. |
-| 02 | [`02-behavior-keyword/`](./02-behavior-keyword/README.md) | critical | `interface` becomes `behavior`. Pure rename; no semantic change. |
-| 03 | [`03-dead-keywords/`](./03-dead-keywords/README.md) | medium | Remove 7 unused keywords (`auto`, `derive`, `macro`, `get`, `opaque`, `private`, `set`). They become valid identifiers. |
+**Entry criterion:** 1.0.2-beta is closed. This milestone rewrites the source of about 700
+snapshots and touches every file the twelve 1.0.2-beta fronts own; running both at once guarantees
+merge conflicts, and the library gate (`zig build test-libs`) cannot go green while `libs/std` and
+four libraries do not compile.
 
-## Waves
+## Decisions
 
-### Wave 0 — parser + AST (blocking, run alone)
+| Topic | Decision |
+|---|---|
+| Records | `type Name<G>(fields) implement B { methods }` — fields in parentheses, the declaration mirrors construction `Name(x: 1)`. One form only; no `constructor` keyword. Body optional. |
+| Enums | `type Name<G> { Variant, Variant(f: T), Section { … }, methods }` — a body with at least one variant or section. |
+| Record with no fields | `type Name { methods }` — a body with no variant. |
+| Field list | Shared by record declarations and variant payloads: annotations, comments, defaults, trailing comma. No `val` prefix — values are immutable. |
+| Anonymous record | Labeled tuple `#(x: 10, y: 20)`, type `#(x: i32, y: i32)`. Labels live in the type only; the runtime value **is** a tuple. Replaces `record { … }` literals and the `{ x: T }` type. |
+| Interfaces | `behavior Name { … }`. Same semantics. |
+| Separators | `,` separates data items (fields, variants, tuple elements, arguments); no trailing comma → compact on one line, trailing comma → one item per line; a `fn` definition is always open. Members are not comma-separated: a bodyless `fn` or a `val` field ends with `;`, a member that ends with `}` takes nothing. |
+| Dead keywords | `auto`, `derive`, `get`, `macro`, `opaque`, `private`, `set` become identifiers. |
+| Migration | Hard cutover, no deprecation window. A codemod (`botopink migrate --syntax`) does the rewrite; removed keywords get a targeted diagnostic pointing to it. |
+| Runtime | Unchanged for named records, enums and behaviors. Anonymous records change from map/object to tuple. |
 
-The lexer, parser and AST are the foundation every other layer reads. Nothing else can move
-until `type` and `behavior` are the only accepted surface and the old keywords are gone.
+## Fronts
 
-| Row | Owns | Closes |
+| Front | Priority | What |
 |---|---|---|
-| parser + AST | `lexer/**`, `parser/**`, `ast.zig` | spec 01 + spec 02: `type` replaces `record`/`enum`, `behavior` replaces `interface` |
+| [`01-dead-keywords/`](./01-dead-keywords/README.md) | medium | Drop seven keywords; `get`/`set` accessors become methods. Small, ready, runs first. |
+| [`02-migration-tooling/`](./02-migration-tooling/README.md) | critical | `botopink migrate --syntax` (token-level rewriter for `.bp`, Zig `\\` blocks and markdown fences) and `snap_audit.sh --mode=cutover` (classifies re-recorded snapshots). |
+| [`03-surface-cutover/`](./03-surface-cutover/README.md) | critical | `type`, `behavior`, labeled tuples and separators in the parser, the AST, every Zig consumer, `libs/std`, the embedded prelude, every Zig test source and every snapshot — landed through green commits with a transitional dual grammar that never ships. |
+| [`04-ecosystem-migration/`](./04-ecosystem-migration/README.md) | high | emilia, erika, jhonstart, onze, rakun migrated with the codemod; `test-libs` cells green; submodule sweep. |
+| [`05-tooling-and-docs/`](./05-tooling-and-docs/README.md) | high | Language-server texts and completions, VS Code grammar and snippets, user docs. |
 
-### Wave 1 — comptime + formatter (parallel, 2 rows)
-
-| Row | Owns | Closes |
-|---|---|---|
-| comptime | `comptime/**` | `registerRecord`/`registerEnum` accept the new `TypeDecl` node; record-literal expression uses `type { … }` |
-| formatter | `format.zig`, `format/tests/**` | round-trip: `format(parse(src))` re-parses to the same AST under the new keywords |
-| dead keywords | `lexer/token.zig`, `lexer.zig` | remove 7 unused keywords; they become valid identifiers |
-
-### Wave 2 — backends + cross-module (parallel, 4 rows)
-
-Each backend owns its own snapshot directory, so they are file-disjoint.
-
-| Row | Owns | Closes |
-|---|---|---|
-| commonJS | `codegen/commonJS.zig`, `snapshots/codegen/commonJS/` | `buildRecord`/`buildEnum` read the unified `TypeDecl` |
-| erlang | `codegen/erlang.zig`, `snapshots/codegen/erlang/` | `recordForms`/`enumForms` read the unified `TypeDecl` |
-| beam | `codegen/beam_asm.zig`, `snapshots/codegen/beam/` | `emitRecord`/`emitEnum` read the unified `TypeDecl` |
-| wasm | `codegen/wat.zig`, `snapshots/codegen/wasm/` | `lowerRecordCtor`/`lowerEnumCtor` read the unified `TypeDecl` |
-
-### Wave 3 — libraries + migration (parallel, 2 rows)
-
-| Row | Owns | Closes |
-|---|---|---|
-| std + libs | `libs/std/**`, `repository/{emilia,erika,jhonstart,onze,rakun}/**` | every `.bp` file migrated; `zig build test-libs` green |
-| tooling | `modules/compiler-cli/**`, `modules/language-server/**`, `repository/vscode-extension/**` | LSP completions, syntax highlighting, error messages use the new keywords |
-
-## Dependencies
+## Order
 
 ```
-wave 0 (parser + AST)
-  ├──► wave 1 (comptime · formatter)
-  │      └──► wave 2 (commonJS · erlang · beam · wasm)
-  └──► wave 3 (std + libs · tooling)   — can start once wave 1 lands, in parallel with wave 2
+F1 dead-keywords ─────┐
+                      ├──► F3 surface-cutover ──┬──► F4 ecosystem-migration
+F2 migration-tooling ─┘                         └──► F5 tooling-and-docs
 ```
 
-Wave 0 first is not a preference: the AST node change ripples through every layer, so no
-downstream work can start until the parser produces the new shape.
+F1 and F2 share no file and run in parallel. F3 waits for both: F1 edits the same lexer, parser
+and language-server files, and F3 migrates its own sources with F2's codemod and accepts its
+snapshots with F2's audit. F4 and F5 are file-disjoint and run in parallel once F3 lands — the
+libraries need the new compiler, the editor texts need the final grammar.
+
+F3 is the critical path. It cannot be cut by backend: `DeclKind` is a tagged union, and removing
+a variant stops every consumer from compiling, so the AST change and all its Zig consumers move
+together (see [`03-surface-cutover/README.md`](./03-surface-cutover/README.md#why-one-front)).
+
+## Found during the review — belongs to 1.0.2-beta
+
+Measured while validating the examples against the compiler at `botopink-lang` `41981e3`. None of
+these is caused or fixed by this milestone.
+
+| # | Where | Defect |
+|---|---|---|
+| 1 | commonJS | A record method named `print` lowers `d.print()` to `console.log(console.log())`. |
+| 2 | commonJS | A behavior `default fn` calling another member (`self.max(lo).min(hi)`) fails at runtime: `self.max is not a function`. |
+| 3 | commonJS | An enum method is not attached to variant values: `Shape.Square(4).area is not a function` (Erlang prints `16`). |
+| 4 | commonJS | `pair.0` is emitted verbatim (invalid JS); `?T.map` lowers to `Array.prototype.map`. |
+| 5 | checker | A record field typed by a behavior rejects an implementing record: `expected Handler, got H`. |
+| 6 | checker | A default on a non-last record field is not applied: `record P { x: i32 = 0, y: i32 }` then `P(y: 2)` → `'P' expects 2 argument(s)`. |
+| 7 | checker | `botopink check` does not report unknown type names (`NoSuchType`, `Dict` without import) nor `return "x"` in a function returning `i32`. |
+| 8 | CLI | Parse errors carry no location: `parse error in main`. |
+| 9 | docs | `docs.md` shows `implement A for B { … }` without `val`, which does not parse. |
 
 ## Rules carried from 1.0.2-beta
 
-- **A backend builds a model, an emitter renders it.** The unified `TypeDecl` feeds the same
-  per-backend models; the lowering does not change, only the AST node it reads from.
-- **The gate is a cold runtime cache.** The migration touches every snapshot directory, so
-  the gate must re-record from a cold cache after wave 2.
-- **A snapshot is evidence, not a baseline.** Re-record only after running the program; the
-  keyword rename must not alter runtime output.
+- **A backend builds a model, an emitter renders it.** The unified `TypeDecl` and the labeled
+  tuple feed the existing per-backend models.
+- **The gate is a cold runtime cache.** Every front's gate runs `zig build test` from a cold cache.
+- **A snapshot is evidence, not a baseline.** A re-recorded snapshot is accepted only when its
+  `RUN LOG` is unchanged or the change is explained; `snap_audit.sh --mode=cutover` separates
+  source-only diffs from output diffs so the second group is reviewed, not bulk-accepted.
+- **Every commit is green.** The pre-commit hook runs `zig build` and `zig build test`; no
+  `--no-verify`. F3 is sequenced into commits that each pass it.

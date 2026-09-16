@@ -1,162 +1,130 @@
-# Migration Summary — 1.0.3-beta Hard Cutover
+# Migrating to 1.0.3-beta
 
-This document summarizes the keyword changes in 1.0.3-beta. **There is no deprecation period.**
-The old keywords are removed immediately and produce parse errors.
+1.0.3-beta is a hard cutover: the old spellings are parse errors, with a diagnostic that names the
+replacement. `botopink migrate --syntax` rewrites a project; `botopink migrate --syntax --check`
+lists what is left.
 
-## Keyword Changes
+## Keywords
 
-| Old Keyword | New Keyword | Status |
-|---|---|---|
-| `record` | `type` | **Removed** — produces parse error |
-| `enum` | `type` | **Removed** — produces parse error |
-| `interface` | `behavior` | **Removed** — produces parse error |
-| `auto` | — | **Removed** — becomes valid identifier |
-| `derive` | — | **Removed** — becomes valid identifier |
-| `macro` | — | **Removed** — becomes valid identifier |
-| `get` | — | **Removed** — becomes valid identifier |
-| `opaque` | — | **Removed** — becomes valid identifier |
-| `private` | — | **Removed** — becomes valid identifier |
-| `set` | — | **Removed** — becomes valid identifier |
-| — | `type` | **Added** — replaces `record`/`enum` |
-| — | `behavior` | **Added** — replaces `interface` |
-| — | `constructor` | **Added** — for record form 2 |
+| 1.0.2-beta | 1.0.3-beta |
+|---|---|
+| `record Name { fields, methods }` | `type Name(fields) { methods }` |
+| `enum Name { variants, methods }` | `type Name { variants, methods }` |
+| `interface Name { … }` | `behavior Name { … }` |
+| `record { x: 1 }` (value) | `#(x: 1)` — labeled tuple |
+| `{ x: i32 }` (type) | `#(x: i32)` — labeled tuple type |
+| `record { }` / `{}` | `#()` |
+| `auto`, `derive`, `get`, `macro`, `opaque`, `private`, `set` | ordinary identifiers |
+| `get name(self: Self) -> T` (accessor in `.d.bp`) | `fn name(self: Self) -> T;` |
 
-## What Changes
+`type` keeps its existing meaning in type position (`comptime T: type`, `-> type`).
 
-### 1. Type Declarations (`record`/`enum` → `type`)
+## Records
 
-**Before (1.0.2-beta):**
 ```bp
-pub record Point { x: i32, y: i32 }
-pub enum Color { Red, Green, Blue }
-```
+// 1.0.2-beta
+pub record Config {
+    // where the server listens
+    host: string = "0.0.0.0",
+    port: i32,
 
-**After (1.0.3-beta) — Form 1 (preferred):**
-```bp
-pub type Point(x: i32, y: i32) {}
-pub type Color { Red, Green, Blue }
-```
+    pub fn url(self: Self) -> string {
+        return self.host + ":" + self.port.toString();
+    }
+}
 
-**After (1.0.3-beta) — Form 2 (alternative):**
-```bp
-pub type Point { constructor(x: i32, y: i32) }
-pub type Color { Red, Green, Blue }
-```
-
-The parser distinguishes record vs enum by:
-- `(fields)` before `{` OR `constructor(...)` inside `{` → record
-- Only `{variants}` → enum
-
-### 2. Type Literals (`record { … }` → `type { … }`)
-
-**Before:**
-```bp
-val p = record { x: 10, y: 20 };
-```
-
-**After:**
-```bp
-val p = type { x: 10, y: 20 };
-```
-
-Note: literals still use `{ }`, not `( )`. Only declarations use `( )` for fields.
-
-### 3. Interface Declarations (`interface` → `behavior`)
-
-**Before:**
-```bp
-pub interface Printable {
-    fn print(self: Self),
+// 1.0.3-beta
+pub type Config(
+    // where the server listens
+    host: string = "0.0.0.0",
+    port: i32,
+) {
+    pub fn url(self: Self) -> string {
+        return self.host + ":" + self.port.toString();
+    }
 }
 ```
 
-**After:**
+- Fields go in parentheses, like the call that builds the value: `Config(host: "h", port: 80)`.
+- Fields keep defaults, annotations and comments. The `val` prefix on a field is gone.
+- The body is optional: `pub type Point(x: i32, y: i32)`.
+- A record with no fields has no parentheses: `pub type MathOps { pub fn add(…) … }`.
+
+## Enums
+
 ```bp
-pub behavior Printable {
-    fn print(self: Self),
+pub type Shape {
+    Circle(radius: f64),
+    Square(side: f64),
+
+    pub fn area(self: Self) -> f64 { … }
 }
 ```
 
-## What Does NOT Change
+- A body with at least one variant or section is an enum.
+- Variants come before methods.
+- Variant payloads use the same field list as records (annotations and comments allowed).
 
-- `implement` keyword — unchanged
-- `extends` keyword — unchanged
-- Method syntax (`fn`, `default fn`, `declare fn`) — unchanged
-- Field syntax (`val`) — unchanged
-- Constructor call syntax (`Point(x: 10, y: 20)`) — unchanged
-- Pattern matching syntax — unchanged
-- Runtime representation (maps, classes, atoms, tagged tuples) — unchanged
-
-## Migration Scope
-
-| Category | Count | Effort |
-|---|---|---|
-| `record` declarations in std + libs | 70 | Mechanical: `record Name { fields }` → `type Name(fields) {}` OR `type Name { constructor(fields) }` |
-| `enum` declarations in std + libs | 30 | Mechanical: `enum` → `type` |
-| `interface` declarations in std + libs | 40 | Mechanical: `interface` → `behavior` |
-| `record { … }` literals | ~50 | Mechanical: `record` → `type` (still uses `{ }`) |
-| Snapshot tests to re-record | All | Automated: re-run tests with `--re-record` |
-| Dead keywords removed | 7 | No migration needed (never used) |
-
-**Total: ~190 declarations + ~50 literals + all snapshots**
-
-The 7 dead keywords (`auto`, `derive`, `macro`, `get`, `opaque`, `private`, `set`) are never
-used in any `.bp` file, so no library code needs migration for them. They simply become valid
-identifiers.
-
-Records have two equivalent forms — choose one style per codebase:
-- **Form 1** (preferred): `type Name(fields) { methods }` — fields in parentheses
-- **Form 2** (alternative): `type Name { constructor(fields); methods }` — constructor in body
-
-## Why Hard Cutover (No Deprecation)?
-
-1. **Mechanical migration** — every change is a simple keyword substitution
-2. **Manageable volume** — ~240 total changes across std + libs
-3. **No semantic change** — runtime behavior is identical
-4. **Avoids double maintenance** — no need to support two keywords, two AST paths, two sets of diagnostics for one milestone
-
-## Acceptance Criteria
-
-All old keywords must produce parse errors:
+## Behaviors
 
 ```bp
-record Point { x: i32 }     // ERROR: unknown keyword 'record'
-enum Color { Red }          // ERROR: unknown keyword 'enum'
-interface Printable { }     // ERROR: unknown keyword 'interface'
+pub behavior Request {
+    val method: HttpMethod;
+    val path: string;
+
+    fn param(self: Self, name: string) -> string;
+
+    default fn isGet(self: Self) -> bool {
+        return self.method == HttpMethod.Get;
+    }
+}
 ```
 
-Dead keywords become valid identifiers:
+Same semantics as `interface`. Members end with `;` when they have no body; nothing follows a `}`.
+
+## Labeled tuples
 
 ```bp
-val auto = 10;              // OK: 'auto' is a valid identifier
-val derive = "test";        // OK: 'derive' is a valid identifier
-val macro = fn() {};        // OK: 'macro' is a valid identifier
-val get = 42;               // OK: 'get' is a valid identifier
-val set = 99;               // OK: 'set' is a valid identifier
+val p = #(x: 10, y: 20);
+p.x;    // 10
+p._1;   // 20
+
+fn origin() -> #(x: i32, y: i32) {
+    return #(x: 0, y: 0);
+}
 ```
 
-All new keywords must work (both record forms):
+- A labeled tuple **is a tuple** at runtime: `[10, 20]` in JavaScript, `{10, 20}` in Erlang. Printing
+  it shows the elements, not the labels.
+- Labels and order are part of the type: `#(x: i32, y: i32)` ≠ `#(y: i32, x: i32)`.
+- A labeled tuple is accepted where the plain tuple `#(i32, i32)` is expected; the reverse needs a
+  literal.
+- A label cannot be read through an unbounded generic `T` or `any`.
 
-```bp
-type Point(x: i32, y: i32) {}               // OK: record-shaped TypeDecl (form 1)
-type Point { constructor(x: i32, y: i32) }  // OK: record-shaped TypeDecl (form 2)
-type Color { Red }                          // OK: enum-shaped TypeDecl
-behavior Printable { }                      // OK: BehaviorDecl
-```
+## Separators
 
-## Migration Checklist
+- `,` separates data: fields, variants, tuple elements, arguments.
+- The trailing comma picks the layout: none → compact on one line; present → one item per line.
+- A `fn` definition is always printed open.
+- Declarations are not separated by commas: `;` after a bodyless member, nothing after `}`.
 
-- [ ] Lexer: add `type`, `behavior`, `constructor` keywords; remove `record`, `enum`, `interface`
-- [ ] Lexer: remove dead keywords (`auto`, `derive`, `macro`, `get`, `opaque`, `private`, `set`)
-- [ ] Parser: unify `parseRecordDecl`/`parseEnumDecl` → `parseTypeDecl`
-- [ ] Parser: support both record forms — `type Name(fields) {}` and `type Name { constructor(fields) }`
-- [ ] Parser: rename `parseInterfaceDecl` → `parseBehaviorDecl`
-- [ ] AST: introduce `TypeDecl`, remove `RecordDecl`/`EnumDecl`
-- [ ] AST: rename `InterfaceDecl` → `BehaviorDecl`
-- [ ] Comptime: update `registerRecord`/`registerEnum` to accept `TypeDecl`
-- [ ] Comptime: rename `registerInterface` → `registerBehavior`
-- [ ] Formatter: update `fmtRecord`/`fmtEnum` → `fmtType`, `fmtInterface` → `fmtBehavior`
-- [ ] Codegen: update all backends to read `TypeDecl` and `BehaviorDecl`
-- [ ] Libraries: migrate all `.bp` files (mechanical substitution)
-- [ ] Tests: re-record all snapshots
-- [ ] Tooling: update LSP completions, syntax highlighting, error messages
+## What does not change
+
+- `implement`, `extends`, `default fn`, `declare fn`
+- Construction: `Point(x: 1, y: 2)`, `Point(1, 2)`, `Shape.Circle(radius: 1.0)`
+- `case` patterns, generics, annotations `#[…]`, effects
+- Runtime representation of named records, enums and behaviors
+
+## Diagnostics you will see
+
+| You wrote | Error |
+|---|---|
+| `record Point { … }` | `removed-keyword-record` — use `type Point(fields) { methods }` |
+| `enum Color { … }` | `removed-keyword-enum` — use `type Color { variants }` |
+| `interface Printable { … }` | `removed-keyword-interface` — use `behavior Printable { … }` |
+| `record { x: 1 }` | `removed-record-literal` — use `#(x: 1)` |
+| `fn f(p: { x: i32 })` | `removed-record-type` — use `#(x: i32)` |
+| `type P(x: i32) { A }` | `type-record-with-variants` |
+| `type P(val x: i32)` | `type-field-val-prefix` |
+| `fn f(self: Self) -> i32,` in a behavior | `member-comma-separator` |
+| `#(x: 1, 2)` | `tuple-mixed-labels` |
