@@ -20,3 +20,5 @@ testemd
 format.o
 /todo.md
 /.tasks/
+/.serena/
+erl_crash.dump
