@@ -128,13 +128,13 @@ exists or be deleted. Root `build.zig` and `.github/workflows/**` are
 [`../05-cli-residuals/`](../05-cli-residuals/README.md)'s — land after it or hand it the edit.
 
 **Acceptance:**
-- [ ] `zig build test-vscode` runs and passes, or the step and every reference to it are gone
+- [x] `zig build test-vscode` runs and passes, or the step and every reference to it are gone
 - [x] `zig build` from any directory either works or fails with "no build.zig"
-- [ ] No second list of std modules exists anywhere
+- [x] No second list of std modules exists anywhere
 - [x] No unreachable `.zig` file sits at a repo root, and `AGENTS.md` trees match the disk
 
 **Delivered 2026-09-17** (`botopink-lang` `e98a5da`, meta `build.zig` deleted): 5.16b/5.17 and 5.16a.
-`modules/lib-test-runner/build.zig` + `.zon` stay — its 36 unit tests run only through it; they go
+`modules/lib-test-runner/build.zig` + `.zon` were deleted in `8887865` (its 38 unit tests run under the root `zig build test`); before that its 36 unit tests ran only through it; they go
 once 05 adds them to the root `zig build test`. 5.4 (`test-vscode`) and the stale `build.zig.zon`
 comment in `.github/workflows/test.yml` are 05's.
 
