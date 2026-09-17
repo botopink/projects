@@ -1,6 +1,6 @@
 # Front 15 — language tests (`case`, tuples, `loop`)
 
-**Status:** **delivered** 2026-09-17 (`botopink-lang` `7dbe1ea`): 63 pass, 33 expected failures (owners 06 N19–N22/N26, 01 step 6), `zig build test-language` is gate stage 8 and a CI step. Open: the `1..9` range-pattern edge awaits a decision. Created 2026-09-17 by the maintainer: a front **only for
+**Status:** **delivered** 2026-09-17 (`botopink-lang` `7dbe1ea`): 63 pass, 33 expected failures (owners 06 N19–N22/N26, 01 step 6), `zig build test-language` is gate stage 8 and a CI step. Open: the range-pattern tests move to the inclusive `1...9` with 06 N22. Created 2026-09-17 by the maintainer: a front **only for
 tests written in botopink** that pin the language as
 [decision 8](../08-review-backlog/decision-8-language.md) defines it — `case` and patterns (§5), tuples
 and labels (§6), `loop` (§10), and what those scenarios need from `is` (§4), unions (§3), `unknown`
@@ -68,7 +68,7 @@ Each bullet is at least one test; the section numbers are decision 8's.
 - Arms `Pattern { body }` and `{ n -> body }` binding the whole value; the arm's last expression is its
   value (P1, P3); arms take no `;` (P2).
 - Primitive type arms on a union (`i32 { … } string { … }`) — exhaustive without `_` (§3.3, §5.4).
-- Literal arms (`0`, `"a"`, `true`), range arms (`1..9`), `_` and `_ { v -> … }`.
+- Literal arms (`0`, `"a"`, `true`), inclusive range arms (`1...9` — decided 2026-09-17), `1..9` in a pattern rejected with "use `1...9`", an open end as a guard, `_` and `_ { v -> … }`.
 - Variants by label and by position, `..` for the rest, `.Some(v)` / `.None` shorthand (P4, P7, P8);
   nested patterns (`Option.Some(#(a, b))`).
 - The bound variable's type from the matched value (P5): `Option<string>`, a union, `unknown`.

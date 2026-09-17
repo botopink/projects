@@ -266,7 +266,8 @@ return case x {
 | `i32`, `string`, `bool`, … | a primitive type |
 | `Point`, `Box<unknown>` | a named type |
 | `Option.Some(…)`, `.Some(…)` | a variant |
-| `0`, `"a"`, `true`, `1..9` | equal to this literal |
+| `0`, `"a"`, `true` | equal to this literal |
+| `1...9` | **an inclusive range** — both ends included (decided 2026-09-17, Zig's `switch` spelling). `..` is iteration only: `1..9` in a pattern is an error, "use `1...9`". An open end is a guard (`_ when (x < 0)`). A range never covers a type on its own, so `_` stays required |
 | `_` | any value |
 | a lower-case name **inside** `Some(…)` / `#(…)` | a variable |
 | a lower-case name **alone** as an arm | error: `use _ { n -> … }` |
@@ -404,6 +405,7 @@ outside a `#[@result]` fn stays an error.
 
 ```botopink
 loop (xs) { x -> … }              // a collection or generator
+// `..` belongs to iteration and slicing only; a pattern range is `A...B` (section 5)
 loop (0..n) { i -> … }            // a range
 loop (attempts < 3) { … }         // a condition: repeats while true
 loop { … break; }                 // until a break
