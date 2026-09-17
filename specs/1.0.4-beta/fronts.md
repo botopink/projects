@@ -23,7 +23,7 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/` unless a
 | **12** [`surface-cutover`](./12-surface-cutover/README.md) | `modules/compiler-core/src/**`, `modules/language-server/src/**` (compile-level), `cli/resolver.zig`, `libs/std/**`, `examples/**` | `modules/compiler-core/snapshots/**`, LSP snapshots | **delivered** 2026-09-17 — the old surface is gone; 7 library cells known-red until 13 |
 | **13** [`ecosystem-migration`](./13-ecosystem-migration/README.md) | `repository/{emilia,erika,jhonstart,onze,rakun}/**`; their meta submodule pointers | the libraries' own test outputs | not started |
 | **14** [`tooling-and-docs`](./14-tooling-and-docs/README.md) | `modules/language-server/src/{engine,server}.zig` (user-facing texts, completions, symbol kinds, completion in a non-compiling file), `repository/vscode-extension/**`, botopink-lang user docs | LSP hover/completion/symbol snapshots | not started |
-| **15** [`language-tests`](./15-language-tests/README.md) | `tests/language/**` (new) · the `test-language` step in `build.zig` · its stage in `scripts/gate.sh` | — | **in progress** — authored now against the `fix/surface-cutover` compiler; lands after 12 |
+| **15** [`language-tests`](./15-language-tests/README.md) | `tests/language/**` (new) · the `test-language` step in `build.zig` · its stage in `scripts/gate.sh` | — | **delivered** — gate stage 8; expected failures owned by 06 and 01 step 6 |
 
 `libs/std/**` code has **no owner** until 12. A fix that needs a `libs/std` edit stops and reports;
 the maintainer assigns it per case (std-split `c8c2541` was one). `scripts/known-red-libs.txt` is empty;

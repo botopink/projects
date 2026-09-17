@@ -1,6 +1,6 @@
 # Front 15 — language tests (`case`, tuples, `loop`)
 
-**Status:** in progress (`test/language`). Created 2026-09-17 by the maintainer: a front **only for
+**Status:** **delivered** 2026-09-17 (`botopink-lang` `7dbe1ea`): 63 pass, 33 expected failures (owners 06 N19–N22/N26, 01 step 6), `zig build test-language` is gate stage 8 and a CI step. Open: the `1..9` range-pattern edge awaits a decision. Created 2026-09-17 by the maintainer: a front **only for
 tests written in botopink** that pin the language as
 [decision 8](../08-review-backlog/decision-8-language.md) defines it — `case` and patterns (§5), tuples
 and labels (§6), `loop` (§10), and what those scenarios need from `is` (§4), unions (§3), `unknown`
