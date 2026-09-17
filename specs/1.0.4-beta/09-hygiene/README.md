@@ -172,7 +172,7 @@ not have a smallest fix; they have an answer someone has to give, and nothing in
 until they do. [`decisions.md`](./decisions.md).
 
 **Acceptance:**
-- [ ] `LICENSE` in all seven repos; `"license"` in `vscode-extension/package.json`
+- [x] `LICENSE` in all seven repos; `"license"` in `vscode-extension/package.json`
 - [x] `git config core.hooksPath scripts/git-hooks` (or the chosen equivalent) documented in every
       repo's `AGENTS.md`, and the hook demonstrably runs after following it
 - [x] `meta:.git/hooks/pre-commit` either resolves or is gone
