@@ -29,7 +29,7 @@ does not, the comment is the only place they meet.
 | AST | `InterfaceDecl` → `BehaviorDecl`, `InterfaceField` → `BehaviorField`, `InterfaceMethod` → `BehaviorMethod` (also used by `TypeDecl.methods`), `DeclKind.interface` → `DeclKind.behavior`, `CollectionExpr.kind.interfaceLit` (`@Name(f: v)`) → `behaviorLit`. Parser ids `behavior_NNNN`. |
 | Comptime | Behaviors live in `StringHashMap(ast.InterfaceDecl)` (`comptime/infer.zig:280–283`), not in `TypeDef` — the map is retyped. `registerInterfaceAssociatedFns` (`infer.zig:1043`) → `registerBehaviorAssociatedFns`; `assocInterfaceDecls` (`env.zig`) → `assocBehaviorDecls`. |
 | Diagnostics | Texts saying *interface* say *behavior*. Code `effect-on-interface-method-forbidden` → `effect-on-behavior-method-forbidden`. The comptime prelude's `DeclKind { Record, Struct, Enum, Interface … }` (`comptime.zig:541–594`) exposes `Type` and `Behavior` shapes instead. |
-| Codegen | `buildInterface` (`commonJS.zig:1296`), `typescript.zig:78–127`, `interfaceForms` (`erlang.zig:4004`), `reserveInterfaceMethods` / `emitInterfaceAssoc` (`beam_asm.zig`), wat decl readers — renamed consumers; output identical except comments naming the declaration. |
+| Codegen | `buildInterface` (`commonJS.zig:1296`), `typescript.zig:78–127`, `interfaceForms` (`erlang.zig:4004`), `reserveInterfaceMethods` / `emitInterfaceAssoc` (`beam_asm.zig`), wat decl readers — renamed consumers; output identical. The comments naming the declaration (`%% interface Name`, `// interface Name` — 48 snapshots at `4eadb70`) become `behavior` in **step 4**, not step 1 (decided 2026-09-17), so step 1 stays byte-identical. |
 
 ## Existing limitations kept as they are
 

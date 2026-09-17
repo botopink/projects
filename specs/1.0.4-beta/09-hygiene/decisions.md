@@ -72,6 +72,10 @@ It holds no code — only submodule pointers and `specs/`.
 
 ### Decide (b) — is the hook self-contained per repo, or does a shared runner come back?
 
+**Decided 2026-09-17 by the maintainer: self-contained per repo.** Each repo carries its own
+`scripts/git-hooks/` and documents `git config core.hooksPath scripts/git-hooks`; the dead meta
+delegation goes from every hook; emilia receives the same pair ([`../10-library-repos/`](../10-library-repos/README.md) step 2).
+
 Everything today points at a meta script that does not exist.
 
 | Option | What it implies |

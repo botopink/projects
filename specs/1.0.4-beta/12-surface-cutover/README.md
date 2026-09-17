@@ -112,11 +112,14 @@ Re-run the suite; classify snapshots manually (source-only vs output-changed vs 
 Delete `record`, `enum`, `interface` from the lexer; delete the `recordLit` and `record_type` paths;
 the parser raises the removed-keyword diagnostics
 ([`type-grammar.md`](./type-grammar.md#removed-keywords)); behavior bodies enforce the separator
-rule. Update `AGENTS.md` of every directory touched across the four commits.
+rule; the generated comments naming a declaration (`%% interface Name`, `// interface Name`) say
+`behavior` — deferred here so step 1 stays byte-identical (decided 2026-09-17). Update `AGENTS.md` of
+every directory touched across the four commits.
 
 **Acceptance:**
 - [ ] `record P { x: i32 }`, `enum E { A }`, `interface I {}`, `record { x: 1 }`, `fn f(p: { x: i32 })` produce their targeted diagnostic with a location (one error snapshot each)
 - [ ] `grep -rE '\b(record|enum|interface)\b'` over the owned `.bp` sources and Zig `\\` blocks matches only the removed-keyword diagnostic tests
+- [ ] The 48 snapshots whose only output change is the `%% interface` / `// interface` comment are re-recorded in this commit and classified output-changed (comment only)
 - [ ] `zig build test` green
 
 ## Gate
@@ -124,6 +127,7 @@ rule. Update `AGENTS.md` of every directory touched across the four commits.
 - [ ] `zig build test` from a **cold** runtime cache, green, at the tip of the front's worktree
 - [ ] `zig build test-libs` std cell green (the five library cells are 13's)
 - [ ] `botopink format --check` passes on `libs/std/**` and `examples/**`
+- [ ] The formatter keeps a declaration's visibility and form: `pub interface Router { … }` does not come back as `val Router = interface { … }` (a bug found by front 11, decided 2026-09-17 — it drops `pub`); a format snapshot pins `pub behavior Router { … }` round-tripping
 - [ ] Every commit of the front passed the pre-commit hook (no `--no-verify`)
 - [ ] `AGENTS.md` of every directory touched, updated in the commit that touched it
 - [ ] Branch `fix/surface-cutover`; no push, no merge
