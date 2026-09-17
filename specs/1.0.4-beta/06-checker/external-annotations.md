@@ -321,7 +321,7 @@ Corollaries that remove whole classes of the traps:
   until a backend reads them (T12); `when(argc == N)` removed — arity is fixed by the signature and
   trailing defaults are expanded before codegen once front 01 step 3 lands; the `inline:` flag
   removed (0 uses); the `symbol(args)` reorder removed (T10) once beam reads call-shaped templates.
-- **`$self` only on interface methods; `$N` on `declare fn`.** (T8)
+- **Markers are positional only: `$0`, `$1`, … over the declared parameters, `self` included; no `$self`.** (T8 — superseded 2026-09-17 by [decision 5](../08-review-backlog/semantics-decisions.md#decision-5), implemented in 12 step 3)
 - **A `default fn` never replaces a native method** — it is not a prototype patch at all (T3–T5).
 
 ### `libs/std` after the rules

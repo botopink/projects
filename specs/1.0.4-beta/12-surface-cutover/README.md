@@ -97,6 +97,7 @@ Migrate manually (beta phase — no automated codemod):
 - `libs/std/**` (22 records, 11 enums, 24 interfaces; `types.bp`/`reflect.bp` doc comments);
 - `examples/**` (yamlconf's `@expr(record { … })`);
 - about 25 single-line Zig test strings — edited by hand.
+- **template markers** ([decision 5](../08-review-backlog/semantics-decisions.md#decision-5)): every `#[@External…]` template becomes positional-only — `$self` → `$0`, `$N` → `$N+1` on methods (≈55 in `libs/std/src/primitives.bp`, 3 in `builtins.d.bp`, plus the Zig `\\` test sources); the erlang, commonJS and beam renderers drop `$self`; the checker refuses `$self` and an out-of-range `$N` with a location. Scripted, in one commit with the renderers.
 
 Re-run the suite; classify snapshots manually (source-only vs output-changed vs behaviour-changed).
 
@@ -105,6 +106,7 @@ Re-run the suite; classify snapshots manually (source-only vs output-changed vs 
 - [ ] Source-only snapshots (only parser ids and typed-AST keys changed) accepted
 - [ ] Output-changed snapshots (codegen changed, `RUN LOG` unchanged) reviewed per backend — expected only for anonymous-record fixtures moving to tuples — and accepted with the review note in the commit message
 - [ ] Behaviour-changed snapshots (a `RUN LOG` or a diagnostic changed beyond keyword wording) are empty, or every entry is explained in the commit message
+- [ ] No `$self` left; decision 5's acceptance holds (renumbering commit byte-identical in generated code and RUN LOGs)
 - [ ] `zig build test` green; `zig build test-libs` std cell green
 
 ### Step 4 — Remove the old surface

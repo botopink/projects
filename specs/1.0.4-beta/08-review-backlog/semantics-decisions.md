@@ -31,6 +31,7 @@ file closes.
 | [3](#decision-3) | The representation of `null` | C — box optionals on wasm; `0` stays null (beam half already closed) | 0 (two stale rows struck) |
 | [4](#decision-4) | The severity of `assert` outside test mode | A — always fatal, with message and location, on every backend | 1 |
 | [1a](#decision-1a) | The text `@print` produces for arrays and tuples | `[a,b]` and `#(a,b)`, a nested string quoted — on every backend | 0 (from WR4) |
+| [5](#decision-5) | The markers of an `#[@External…]` template | only positional `$0`, `$1`, … over the declared parameters, `self` included; `$self` is removed | 0 (fronts.md unowned item; replaces rule T8) |
 
 **Decided 2026-09-16 by the maintainer: every recommendation is accepted.** 1 → C (`__bp_print/1`
 helper on erlang and beam), 2 → B (a block is a statement; its value comes from `break`), 3 → C (box
@@ -164,6 +165,43 @@ printed tuple addresses; erlang/beam `[{1,<<"a">>},…]`, commonJS `[ [ 1, 'a' ]
 - [ ] `@print` of an array of tuples, an array of strings and a nested tuple produces the same bytes on
       commonJS, erlang, beam and wasm (one fixture each, RUN LOG verified by running)
 - [ ] `array_zip_via_external_node_template` loses its `KNOWN-WRONG` note
+
+---
+
+<a id="decision-5"></a>
+
+## Decision 5 — template markers are positional only
+
+**Decided 2026-09-17 by the maintainer.** A template names the parameters of the declaration it is
+attached to by position: `$0` is the first declared parameter, `$1` the second, … — on a method,
+`self` is a declared parameter and is `$0`. `$self` is removed. It replaces rule T8 of
+[`../06-checker/external-annotations.md`](../06-checker/external-annotations.md) (`$self` on interface
+methods, `$N` on `declare fn`) and closes the `$0` vs `$self` unowned item.
+
+| Declaration | Before | After |
+|---|---|---|
+| `fn contains(self: Self, sub: string) -> bool` | `(string:find($self, $0) =/= nomatch)` | `(string:find($0, $1) =/= nomatch)` |
+| `fn includes(self: Self, x: T) -> bool` | `lists:member($0, $self)` | `lists:member($1, $0)` |
+| `declare fn encode(text: string) -> string` | `base64:encode($0)` | unchanged |
+
+- **Why:** one rule, no receiver special case; the T8 failure (`$self` in a `declare fn`: a bare
+  `PrimOpRecvInUserTemplate` on erlang, always on commonJS, `check` clean) cannot be written.
+- **Unchanged:** `$args`, `$stringify(…)`, and the method-name bindings (`@External.Node("includes")`).
+- **Measured 2026-09-17:** 47 `$self` (44 `libs/std/src/primitives.bp`, 3 `builtins.d.bp`), about 55
+  method templates in `primitives.bp` to renumber, none in the sibling libraries; ~59 `$self`
+  references in the template renderers (erlang, commonJS, beam's `$self → {x,0}`, `$N → {x,N+1}`).
+- **The risk is silent:** a template left unrenumbered still compiles with its arguments swapped.
+  The renumbering is one scripted commit, together with the renderers, proven by
+  `libs/std/test/primitives_test.bp` on commonJS and erlang; the checker refuses `$self` and any
+  `$N` with N ≥ the declaration's parameter count, with a location.
+- **Owner:** [`../12-surface-cutover/`](../12-surface-cutover/README.md) step 3 — it owns `libs/std`, the
+  renderers and the checker at that point, and rewrites those files anyway.
+
+### Acceptance
+
+- [ ] No `$self` in any template, renderer or test source; `$self` in a template is a located check error
+- [ ] `$N` with N ≥ the parameter count is a located check error
+- [ ] Generated code and RUN LOGs byte-identical before and after the renumbering commit
 
 ---
 
