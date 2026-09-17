@@ -27,6 +27,12 @@ file closes.
 | [3](#decision-3) | The representation of `null` | C — box optionals on wasm; `0` stays null (beam half already closed) | 0 (two stale rows struck) |
 | [4](#decision-4) | The severity of `assert` outside test mode | A — always fatal, with message and location, on every backend | 1 |
 
+**Decided 2026-09-16 by the maintainer: every recommendation is accepted.** 1 → C (`__bp_print/1`
+helper on erlang and beam), 2 → B (a block is a statement; its value comes from `break`), 3 → C (box
+`?T` on wasm, `0` is null), 4 → A (`assert` is always fatal, with message and `file:line`). The
+owning fronts implement them: 1 → F5 + F4 (+ F1's untyped path), 2 → F7, 3 → F6, 4 → F4 + F6.
+Rows blocked on these decisions are unblocked.
+
 ---
 
 <a id="decision-1"></a>
