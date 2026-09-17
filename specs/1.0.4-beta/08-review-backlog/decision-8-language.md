@@ -316,6 +316,16 @@ There is no compiler-invented flat name (`TokenText`): a name the author cannot 
 collides with a user type of that name. A section handler never takes the whole enum, because that
 would force a permanent `_` that silently swallows a section added later — the opposite of 5.4.
 
+**Matching into a section** (settled 2026-09-17 while implementing N28): a pattern may reach in —
+`case t { Text(Bold) { … } }` — and it counts as a **refinement**, never as covering `Text`. The
+`case` still has to handle the section's other values or end in `_`, exactly as `Ok(1)` leaves
+`Ok` open. Counting a refinement as full coverage is what 5.4 forbids, and it is what the compiler
+did before N28.
+
+**Methods on a section** are not part of this decision: `EnumSection` has no slot for them, nothing
+declares one today, and a section body with a `fn` does not parse. This is an unimplemented
+capability, not a prohibition — a later front may add it without contradicting §5.3b.
+
 ### 5.4 Exhaustiveness
 
 A `case` needs a final `_` **unless no other value is possible** from its unguarded arms.
