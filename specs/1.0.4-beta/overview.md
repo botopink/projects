@@ -46,12 +46,12 @@ erlang) and jhonstart (commonJS) green.
 | Front | Priority | State | What |
 |---|---|---|---|
 | [`01-backend-residuals`](./01-backend-residuals/README.md) | medium | steps 1–3 delivered | Delivered: closure threading, `loop (xs, 1..)`, untyped `+` on beam/wasm/commonJS, commonJS's open range and CR4 rows, wasm's unresolved calls. Open: step 4 — the text of arrays and tuples on all four backends ([decision 1a](./08-review-backlog/semantics-decisions.md#decision-1a), absorbs WR4); step 5 — beam compiles `@External.Erlang` templates at build time (BR4 answered) |
-| [`05-cli-residuals`](./05-cli-residuals/README.md) | medium | not started | `generate` still executes what it compiles; diagnostics lost in `codegenEmit` and unlocated parse/lex errors; blind decorator tests; the gate installed and covering bpmp and test-less libraries |
+| [`05-cli-residuals`](./05-cli-residuals/README.md) | medium | **delivered** (6f waits on 5.5a) | Execute flag, failed modules carry their diagnostic, located lex/parse errors, decorator mutations, missing `files` entry, `test-bpmp` + beam audit + lib-test-runner units in the gate, self-contained hook installed |
 | [`06-checker`](./06-checker/README.md) | high | not started | C1–C13: the checker accepts wrong programs. Plus trailing defaults, decision 2's enforcement, the `#[@result]` wrap and binding patterns the backend fronts handed over, and the rest of the fifteen rows found since (N1–N15) |
 | [`07-comptime-dedup`](./07-comptime-dedup/README.md) | medium | not started | Four byte-identical copies per comptime slug; a renderer that prints `?` and `"id": 0` |
 | [`08-review-backlog`](./08-review-backlog/README.md) | medium | not started | The per-report residuals of the 1.0.1-beta snapshot review, in two waves |
 | [`09-hygiene`](./09-hygiene/README.md) | low | steps 1 and 3 (except 5.4) delivered | The removed WAT runtime's leftovers, build files that lie, retired vocabulary, license and meta gate decisions |
-| [`10-library-repos`](./10-library-repos/README.md) | medium | steps 1, 3, 4 delivered | emilia's gate (step 2, after 09's decision 5.5) |
+| [`10-library-repos`](./10-library-repos/README.md) | medium | **delivered** | erika 7b/7c, emilia's hook + CI, the CI defaults, rakun's exports. Found: `emilia-card` and four jhonstart examples do not compile (`expects 2 argument(s)`, `unbound variable 'html'`) — nothing gates examples |
 | [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md) | low | **delivered** | jhonstart's `get` accessors are methods; the VS Code grammar dropped the seven words. Notes left: `delegate`, `new`, `.@"const"` |
 | [`12-surface-cutover`](./12-surface-cutover/README.md) | critical | not started | `type`, `behavior`, labeled tuples and separators through the whole compiler, `libs/std`, every test source and snapshot |
 | [`13-ecosystem-migration`](./13-ecosystem-migration/README.md) | high | not started | emilia, erika, jhonstart, onze, rakun migrated to the new surface |
@@ -86,7 +86,7 @@ each thing.
 05 cli-residuals ─────── steps 1, 3–6 now; step 2 now, sequenced against 01's backend files
         │
         └──► 06 checker (alone, after 01 and 05 step 2) ──► 07 comptime-dedup ──► 08 review-backlog (wave A after 06, wave B after 07)
-10 library-repos ── erika now · emilia after 09's decision 5.5 · before 06's emilia migration
+10 library-repos ── delivered
 09 hygiene ─────── decisions now · each sweep after the owner of the file · closes last of 01–10
         │
         ▼  01–10 closed

@@ -173,10 +173,10 @@ until they do. [`decisions.md`](./decisions.md).
 
 **Acceptance:**
 - [ ] `LICENSE` in all seven repos; `"license"` in `vscode-extension/package.json`
-- [ ] `git config core.hooksPath scripts/git-hooks` (or the chosen equivalent) documented in every
+- [x] `git config core.hooksPath scripts/git-hooks` (or the chosen equivalent) documented in every
       repo's `AGENTS.md`, and the hook demonstrably runs after following it
 - [ ] `meta:.git/hooks/pre-commit` either resolves or is gone
-- [ ] No script or `AGENTS.md` references `meta:scripts/` or `botopink/projects`
+- [x] No script or `AGENTS.md` references `meta:scripts/` or `botopink/projects`
 
 ## Gate
 

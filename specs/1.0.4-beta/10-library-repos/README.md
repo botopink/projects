@@ -72,9 +72,9 @@ to `AGENTS.md`, run the declared tests. Install path per
 [`../09-hygiene/decisions.md`](../09-hygiene/decisions.md) 5.5. [`emilia.md`](./emilia.md).
 
 **Acceptance:**
-- [ ] emilia has a tracked hook source and a CI workflow matching its siblings
-- [ ] The hook is installable by the documented command and passes
-- [ ] The gate would reject a source file carrying markdown escapes
+- [x] emilia has a tracked hook source and a CI workflow matching its siblings
+- [x] The hook is installable by the documented command and passes
+- [x] The gate would reject a source file carrying markdown escapes
 
 ### Step 3 — the last two `BOTOPINK_LANG_REF` defaults
 

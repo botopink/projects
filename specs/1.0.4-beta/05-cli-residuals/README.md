@@ -1,5 +1,14 @@
 # Front 05 — cli-residuals
 
+**Status:** **delivered** 2026-09-17 (`botopink-lang` merge `440a1d3`), except `meta:.git/hooks/pre-commit`
+(decision 5.5a). Handoffs: the language-server half of step 5 — `project_graph.zig` still swallows
+a missing dependency (`:171`) and an unreadable file (`:210`) with `catch continue` — is an unowned
+item; `codegen.generate` drops failed-module entries because `tests/helpers.zig` renders its own
+diagnostic — reading `result.diagnostic` there is [`../08-review-backlog/`](../08-review-backlog/README.md)'s.
+The lib-test-runner's unit tests now run under the root `zig build test` (its own `build.zig` +
+`.zon` can go — [`../09-hygiene/`](../09-hygiene/README.md)). The hook is self-contained (5.5b) and
+`gate.sh` clears `GIT_DIR`/`GIT_INDEX_FILE` after the staged stage: without it the bpmp install tests
+ran `git` against the real repository from inside the hook.
 **Priority:** medium — the gate the 1.0.2-beta cli-gate front built is in use and catches a broken
 library; what is left is a driver that still runs the program it compiles, diagnostics that still
 die before the CLI can print them, three decorator tests that stay green under a mutation of their
@@ -64,10 +73,10 @@ language server do not. The facts and the measured cost are in
 [`command-contract.md` § two contract facts](./command-contract.md#two-contract-facts-that-hold-at-head-and-are-documented-nowhere).
 
 **Acceptance:**
-- [ ] `codegen.generate` takes the flag; `rg 'generate\(' modules/` shows every caller passing it
-- [ ] `botopink build` of a program whose body prints leaves no runtime-cache entry and spawns no
+- [x] `codegen.generate` takes the flag; `rg 'generate\(' modules/` shows every caller passing it
+- [x] `botopink build` of a program whose body prints leaves no runtime-cache entry and spawns no
       `node`/`erl`
-- [ ] Snapshots byte-identical, same pass count
+- [x] Snapshots byte-identical, same pass count
 
 ### Step 2 — the diagnostic travels in `ModuleOutput` (b)
 
@@ -76,9 +85,9 @@ diagnostic, and have the driver check read it instead of comparing module sets. 
 sites, no output change — [`command-contract.md` § the diagnostic exists and is discarded three times](./command-contract.md#the-diagnostic-exists-and-is-discarded-three-times).
 
 **Acceptance:**
-- [ ] No `codegenEmit` `continue`s on `.parseError` or `.typeError`
-- [ ] `build`, `check`, `test` still agree on the C1–C14 tests, now through one check
-- [ ] Snapshots byte-identical
+- [x] No `codegenEmit` `continue`s on `.parseError` or `.typeError`
+- [x] `build`, `check`, `test` still agree on the C1–C14 tests, now through one check
+- [x] Snapshots byte-identical
 
 ### Step 3 — located lex and parse errors (c, i)
 
@@ -89,10 +98,10 @@ printer `format` already uses). Then make `print((1);` fill `Parser.parseError`.
 reproduction over, keeping the acceptance here.
 
 **Acceptance:**
-- [ ] An unterminated string and an unbalanced paren each render with file, line and excerpt on
+- [x] An unterminated string and an unbalanced paren each render with file, line and excerpt on
       `build`, `check` and `test` — not `parse error in main`, not a bare `UnterminatedString`
-- [ ] `print((1);` reports a location
-- [ ] A CLI test per case under `modules/compiler-cli/tests/`
+- [x] `print((1);` reports a location
+- [x] A CLI test per case under `modules/compiler-cli/tests/`
 
 ### Step 4 — the decorator tests prove their lowering (d)
 
@@ -102,11 +111,11 @@ Record the matrix verdicts the cli-gate run produced in this front's notes befor
 so the tightening is checked against measured, not predicted, blindness.
 
 **Acceptance:**
-- [ ] Each of the 4 tests fails under every mutation in the matrix that targets its lowering,
+- [x] Each of the 4 tests fails under every mutation in the matrix that targets its lowering,
       M1/M2/M4/M10 included
-- [ ] `assertRejects` compares the full message; each call site names the lowering it guards
-- [ ] The `@emit` test asserts the contributed source text through `OkData.comptime_traces`
-- [ ] A decorator test exercises `lists:foldl/3` and reds when `foldFusionExpr` discards the
+- [x] `assertRejects` compares the full message; each call site names the lowering it guards
+- [x] The `@emit` test asserts the contributed source text through `OkData.comptime_traces`
+- [x] A decorator test exercises `lists:foldl/3` and reds when `foldFusionExpr` discards the
       accumulator
 
 ### Step 5 — the CLI half of what other fronts found
@@ -121,8 +130,8 @@ so the tightening is checked against measured, not predicted, blindness.
   [`../fronts.md`](../fronts.md#unowned-items) rather than editing it.
 
 **Acceptance:**
-- [ ] A missing `files` entry reports the path it looked for, with the manifest's location
-- [ ] No compiler test synthesises a library that does not exist
+- [x] A missing `files` entry reports the path it looked for, with the manifest's location
+- [x] No compiler test synthesises a library that does not exist
 - [ ] A missing dependency is reported the same way by the CLI and the language server, or the LSP
       half is registered as unowned
 
@@ -142,18 +151,18 @@ so the tightening is checked against measured, not predicted, blindness.
   record that the decision is still open.
 
 **Acceptance:**
-- [ ] `scripts/gate.sh` and CI run `test-bpmp` and `scripts/beam_export_audit.sh` (290/290 at `ed15323`)
-- [ ] A scratch library with source and no `test` block that does not compile reds `test-libs`
-- [ ] botopink-lang's `.git/hooks/pre-commit` resolves and runs `scripts/gate.sh --staged`
+- [x] `scripts/gate.sh` and CI run `test-bpmp` and `scripts/beam_export_audit.sh` (290/290 at `ed15323`)
+- [x] A scratch library with source and no `test` block that does not compile reds `test-libs`
+- [x] botopink-lang's `.git/hooks/pre-commit` resolves and runs `scripts/gate.sh --staged`
 - [ ] `meta:.git/hooks/pre-commit` resolves or is gone
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree (zig build, cold `zig build test`,
+- [x] `scripts/gate.sh --cold` green in this front's worktree (zig build, cold `zig build test`,
       `test-cli`, `test-libs`, and `test-bpmp` once step 6 lands)
-- [ ] Snapshots byte-identical across steps 1, 2 and 6; step 3 re-records only a snapshot that pins
+- [x] Snapshots byte-identical across steps 1, 2 and 6; step 3 re-records only a snapshot that pins
       an unlocated parse/lex message, each read
-- [ ] `modules/compiler-cli/AGENTS.md` and the `AGENTS.md` of every other directory touched, updated
+- [x] `modules/compiler-cli/AGENTS.md` and the `AGENTS.md` of every other directory touched, updated
       in the same commit
 - [ ] Commit on `fix/cli-residuals`; no push, no merge — landing is the maintainer's step
 
