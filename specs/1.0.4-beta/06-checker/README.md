@@ -1,6 +1,6 @@
 # Front 06 — checker
 
-**Status:** not started — opens **after [`../12-surface-cutover/`](../12-surface-cutover/README.md)** (reordered by the maintainer, 2026-09-17): its rules are written on the unified `TypeDecl`/`BehaviorDecl` AST. Carried whole from 1.0.2-beta front 07, plus the rows
+**Status:** in progress (`fix/checker`) — **step 1 (G0) delivered** 2026-09-17 (merge `13f61fa`: C4b, C6, C7, C11, C12 pipeline, N17, N26 with `loop (condition)` also lowered on the four backends — 01 step 6's D8-6 pulled forward — and N27). Left from G0: N4/N23, N5, C6's `@makeRecord`-with-comptime-binding case; a condition loop used as a value is refused on erlang/beam (`ConditionLoopValueUnsupported`, unlocated). Opens **after [`../12-surface-cutover/`](../12-surface-cutover/README.md)** (reordered by the maintainer, 2026-09-17): its rules are written on the unified `TypeDecl`/`BehaviorDecl` AST. Carried whole from 1.0.2-beta front 07, plus the rows
 collected since — [Step 0](#step-0--rows-added-in-104-beta), N1–N26, including the checker half of
 [decision 8](../08-review-backlog/decision-8-language.md).
 
