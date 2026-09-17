@@ -287,6 +287,35 @@ case b {
   is untouched).
 - `is` inside the guard narrows the variable in that arm's body.
 
+### 5.3b A section of an enum-shaped `type` is a type, named by its path
+
+**Decided 2026-09-17.** `type Token { Text { Bold, Italic, Size { Xs, Sm } }, Color { Red }, Hover(inner: Token[]) }`
+declares the types `Token`, `Token.Text` and `Token.Text.Size`: a type is written with the same path
+its values use (`Token.Text.Size.Sm`). Binding a section in a pattern gives that type, so a `case`
+over it is exhaustive on its own members.
+
+```botopink
+fn tokenToCss(t: Token) -> string {
+    return case t {
+        Text(inner)  { textTokenToCss(inner) }     // inner: Token.Text
+        Color(inner) { colorTokenToCss(inner) }
+        Hover(inner) { ":hover{" + tokensToCss(inner) + "}" }
+    };                                              // exhaustive, no _
+}
+
+fn textTokenToCss(t: Token.Text) -> string {
+    return case t {
+        Bold    { "font-weight:bold" }
+        Italic  { "font-style:italic" }
+        Size(s) { textSizeToCss(s) }                // s: Token.Text.Size
+    };                                              // exhaustive, no _
+}
+```
+
+There is no compiler-invented flat name (`TokenText`): a name the author cannot derive, and one that
+collides with a user type of that name. A section handler never takes the whole enum, because that
+would force a permanent `_` that silently swallows a section added later — the opposite of 5.4.
+
 ### 5.4 Exhaustiveness
 
 A `case` needs a final `_` **unless no other value is possible** from its unguarded arms.
