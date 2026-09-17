@@ -164,9 +164,9 @@ printed tuple addresses; erlang/beam `[{1,<<"a">>},…]`, commonJS `[ [ 1, 'a' ]
 
 ### Acceptance
 
-- [ ] `@print` of an array of tuples, an array of strings and a nested tuple produces the same bytes on
-      commonJS, erlang, beam and wasm (one fixture each, RUN LOG verified by running)
-- [ ] `array_zip_via_external_node_template` loses its `KNOWN-WRONG` note
+- [x] `@print` of an array of tuples, an array of strings and a nested tuple produces the same bytes on
+      commonJS, erlang, beam and wasm (one fixture each, RUN LOG verified by running) — beam pending PR3, after 06
+- [x] `array_zip_via_external_node_template` loses its `KNOWN-WRONG` note
 
 ---
 

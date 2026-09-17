@@ -1,9 +1,8 @@
 # Front 01 — backend-residuals
 
 **Status:** steps 1–3 **delivered** 2026-09-17 (merges `00b8975` beam, `4eadb70` wasm, `dbe2863`
-commonJS, on `botopink-lang` `feat`) — see [Delivered by this front](#delivered-by-this-front). Open:
-step 4 ([decision 1a](../08-review-backlog/semantics-decisions.md#decision-1a), which absorbed WR4)
-and step 5 (BR4 answered: compile the templates at build time). What the four backend fronts left when they landed on `botopink-lang`
+commonJS, on `botopink-lang` `feat`) — see [Delivered by this front](#delivered-by-this-front). Step 4 **delivered** for commonJS, erlang and wasm (PR1, PR2, PR4 — merge on `feat` after `af9b5b6`);
+PR3 (beam) and step 5 (BR5) run after 06. What the four backend fronts left when they landed on `botopink-lang`
 `origin/feat` = `ed15323` (2026-09-17): 01 beam (`a743955`), 02 erlang (`42429dc`), 03 wasm
 (`ed15323`), 04 js-bridges (`bd7836c`). Those numbers are retired; this front takes 01 — see
 [Delivered by the backend fronts](#delivered-by-the-backend-fronts).
