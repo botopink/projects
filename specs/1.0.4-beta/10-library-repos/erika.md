@@ -10,11 +10,13 @@ Two defects, in two places: **7b** is a compiler bug that erika exposes, **7c** 
 documentation.
 
 > **State for 1.0.4-beta.** The 13 dead template tests were the 1.0.2-beta comptime-dispatch
-> front's and closed with it. **7b** is handed to [`../02-erlang/`](../02-erlang/README.md) as its
-> H3; this front verifies it in erika. **7c is written** — staged in `.tasks/library-repos/erika`
-> on `fix/library-repos` together with erika's `BOTOPINK_LANG_REF` default — and cannot be committed
-> until 7b lands, because erika's pre-commit hook runs `botopink test`. Line numbers below were
-> measured at the 1.0.2-beta commit.
+> front's and closed with it. **7b landed** with the 1.0.4-beta erlang front (`42429dc`: the
+> two-parameter `loop` folds over `lists:enumerate`); this front verifies it in erika. **7c is
+> written** — staged in `.tasks/library-repos/erika` on `fix/library-repos` together with erika's
+> `BOTOPINK_LANG_REF` default — and still cannot be committed: erika's pre-commit hook runs
+> `botopink test`, which stays red on `libs/std`'s `String.split("")` (unowned — [`../fronts.md`](../fronts.md#unowned-items); patched
+> locally, erika passes 31/31 on commonJS and erlang). Line numbers below were measured at the
+> 1.0.2-beta commit.
 
 ---
 
@@ -73,11 +75,9 @@ Relax `:2547` to accept `params.len == 2` and fold over `lists:enumerate/1` with
 tuple parameter; relax `:3259` to fire on `params.len == 2` whether or not `indexRange` was
 written. Both must go in together — fixing only `:3259` leaves the accumulator lost.
 
-**Ownership.** `codegen/erlang.zig` is shared by [`../02-erlang/`](../02-erlang/README.md) (typed
-path) and `comptime-dispatch` (1.0.2-beta, landed) (`untyped` path), and
-neither lists this defect. The loop lowering is one code path serving both, so the fix is one change
-— hand it to 02-erlang, sequenced against 01 per [`../fronts.md`](../fronts.md) note 2. This front
-only verifies it in erika.
+**Ownership.** Delivered by the 1.0.4-beta erlang front, which held both paths of
+`codegen/erlang.zig` (the file is [`../01-backend-residuals/`](../01-backend-residuals/README.md)'s
+now). This front only verifies it in erika.
 
 ### Acceptance
 

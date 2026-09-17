@@ -161,12 +161,16 @@ last. B6 can start after G2 and finish after G4.
 
 ### B7 — where the bugs it finds go
 
+The four backend fronts landed 2026-09-17 (`ed15323`) and closed the backend rows below as measured
+at the 1.0.2-beta commit — wasm now executes. Re-derive each; what survives is
+[`01-backend-residuals`](../01-backend-residuals/README.md)'s.
+
 | Bug found at HEAD | Owner |
 |---|---|
-| JS destructuring payloads by binder name (`NaN`, `undefined` in `case_enum_area_with_print`, `case_result_ok_err_with_print`, `case_option_some_none`); `return if` in JS | [`04-js-bridges`](../04-js-bridges/README.md) |
-| erlang variant patterns | [`02-erlang`](../02-erlang/README.md) |
-| beam variant patterns; BEAM printing the unmatched `{ok,…}` tuple; beam's empty RUN LOGs | [`01-beam`](../01-beam/README.md) |
-| wasm narrowing bindings; every wasm RUN LOG empty (the WAT runner does not execute) | [`03-wasm`](../03-wasm/README.md) |
+| JS destructuring payloads by binder name (`NaN`, `undefined` in `case_enum_area_with_print`, `case_result_ok_err_with_print`, `case_option_some_none`); `return if` in JS | js-bridges — delivered (C4, C5, JS-1) |
+| erlang variant patterns | erlang — delivered |
+| beam variant patterns; BEAM printing the unmatched `{ok,…}` tuple; beam's empty RUN LOGs | beam — delivered (B8, B11) |
+| wasm narrowing bindings; every wasm RUN LOG empty (the WAT runner does not execute) | wasm — delivered (`executeWat` executes; W2, W6, W7) |
 | `type_guard_if_codegen` `true` vs `false` | first confirm C5 does not change it; then the backend that is wrong |
 | `else_if_chain_with_null_checks` has no null check | this front — a fixture defect in `codegen/tests/narrowing.zig`, whose harness is owned by [`08-review-backlog`](../08-review-backlog/README.md): coordinate |
 

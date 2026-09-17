@@ -34,13 +34,21 @@ file closes.
 **Decided 2026-09-16 by the maintainer: every recommendation is accepted.** 1 → C (`__bp_print/1`
 helper on erlang and beam), 2 → B (a block is a statement; its value comes from `break`), 3 → C (box
 `?T` on wasm, `0` is null), 4 → A (`assert` is always fatal, with message and `file:line`). The
-owning fronts implement them (1.0.4-beta numbering): 1 → [`02-erlang`](../02-erlang/README.md) H1
-(typed and comptime path) + [`01-beam`](../01-beam/README.md) H1, and wasm's `$__print_*` once it
-executes ([`03-wasm`](../03-wasm/README.md) H4); 2 → [`06-checker`](../06-checker/README.md) N6;
-3 → [`03-wasm`](../03-wasm/README.md) H1 (W7); 4 → [`01-beam`](../01-beam/README.md) H2 +
-[`03-wasm`](../03-wasm/README.md) H2, with [`02-erlang`](../02-erlang/README.md) H2 and
-[`04-js-bridges`](../04-js-bridges/README.md) H7 for the outside-test-mode half. Rows blocked on
-these decisions are unblocked.
+owning fronts implement them. Rows blocked on these decisions are unblocked.
+
+<a id="implementation-status"></a>
+
+### Implementation status
+
+Verified at `botopink-lang` `origin/feat` = `ed15323` (2026-09-17), after the four backend fronts
+landed (beam `a743955`, erlang `42429dc`, wasm `ed15323`, js-bridges `bd7836c`).
+
+| # | commonJS | erlang | beam | wasm | Left |
+|---|---|---|---|---|---|
+| 1 | implemented | implemented — `__bp_print/1`, typed and comptime path | implemented — `__bp_print/1` | implemented — `$__print_*` executes under `wasmtime run` | the numeric divergence is written in `src/codegen/AGENTS.md`; an array of tuples has no agreed text ([`01-backend-residuals`](../01-backend-residuals/README.md) WR4); `libs/std/src/builtins.d.bp` still documents `io:format("~p~n")` ([`../fronts.md`](../fronts.md#unowned-items)) |
+| 2 | — | — | — | — | **waits on the checker**: [`06-checker`](../06-checker/README.md#step-0--rows-added-in-104-beta) N6; the dead block-as-value lowerings follow it |
+| 3 | n/a (`null`) | n/a (`undefined`) | n/a (`undefined`) | implemented — boxed `?T`, `0` = null; the four-backend table is in `src/codegen/AGENTS.md` | — |
+| 4 | implemented | implemented | implemented — `{bp_assert, Msg, Loc}` | implemented — stderr message, then a trap | — |
 
 ---
 
@@ -77,10 +85,10 @@ is a different defect entirely (`String.prototype.slice` is patched to a
 `require("./gleam_stdlib.mjs")` that throws; owned by
 `std-surface` (1.0.2-beta, landed)).
 
-The per-backend fronts already compare RUN LOGs under a **representation mapping** that undoes `~p`
+The per-backend fronts compared RUN LOGs under a **representation mapping** that undoes `~p`
 (`<<"x">>` → `x`, `1.0` → `1`, `[ 2, 4 ]` → `[2,4]`; see
-[`../03-wasm/causes.md`](../03-wasm/causes.md) and its beam/erlang twins). That mapping is the
-workaround this decision removes for strings.
+[`../01-backend-residuals/measurement.md`](../01-backend-residuals/measurement.md#representation-mapping)).
+That mapping is the workaround this decision removes for strings.
 
 ### Options
 
@@ -98,8 +106,8 @@ the tree. Two things must be written down alongside it:
 - **Numeric formatting stays divergent.** `~p` of `1.0` is `1.0`; `console.log(1.0)` is `1`. That is
   `codegen-values-dispatch-externals.md:167` (`external_global_math`), already graded
   `ok (divergence noted)` — keep it graded that way and say so in `src/codegen/AGENTS.md`.
-- Once `executeWat` exists ([`../03-wasm/`](../03-wasm/README.md)), wasm's `$__print_*` family must
-  match the same rule.
+- Once `executeWat` exists, wasm's `$__print_*` family must match the same rule. (It executes since
+  1.0.4-beta wasm, and does — [implementation status](#implementation-status).)
 
 A multi-argument `@print` needs the same answer per argument: the widened `"~p ~p …~n"` forms
 (`erlang.zig:1500-1509`, `beam_asm.zig:3316-3350`) either call the helper per argument or build the
@@ -120,9 +128,9 @@ format string from the helper's per-term verb.
 
 ### Acceptance
 
-- [ ] `@print` of a string produces the same bytes on commonJS, erlang and beam, in typed and
+- [x] `@print` of a string produces the same bytes on commonJS, erlang and beam, in typed and
       comptime code
-- [ ] Numeric formatting divergence is stated as intended in `src/codegen/AGENTS.md`
+- [x] Numeric formatting divergence is stated as intended in `src/codegen/AGENTS.md`
 - [ ] The four "byte-identically" tests either hold or carry the name the decision implies
 
 ---
@@ -249,26 +257,23 @@ that checks a `?i32` for absence is unverifiable.
 It keeps `0 == null`, which the backend already assumes everywhere, and needs no signature changes.
 It costs a heap cell per non-null optional, which is the same price strings already pay.
 
-**Conflict to resolve before either front starts:** [`../03-wasm/README.md`](../03-wasm/README.md)
-step 6 (W7, "decide the `@Option` none carrier") and [`../03-wasm/causes.md`](../03-wasm/causes.md)
-suggest a sentinel — "a tagged pointer, or `-1`". A `-1` sentinel is option B above, rejected here
-for full-range `i32`; a tagged pointer is a variant of C. The wasm front implements the carrier; this
-file owns the rule. Agree one answer and have 03-wasm's step 6 cite it.
+**Conflict resolved:** the wasm front's W7 once suggested a sentinel ("a tagged pointer, or `-1`").
+It implemented C, citing this file (1.0.4-beta wasm, `672165c`).
 
 ### What depends on it
 
 - `codegen-wat-narrowing.md`'s `?i32` null-carrier finding — `## Cross-cutting observations`
   item 5 (`:156`, `optional_local_equals_null`; not counted as a verdict row) — and the narrowing
   rows around it in `## Non-ok findings`.
-- The four W7 fixtures in [`../03-wasm/causes.md`](../03-wasm/causes.md):
+- The four W7 fixtures of the landed wasm front:
   `array_at_lowers_byte_identically_across_backends`, `optional_fn_return_null_path`,
   `narrow_if_null_check_with_print`, `narrow_type_guard_if_codegen`.
-- Verification of any of them needs `executeWat` ([`../03-wasm/`](../03-wasm/README.md)).
+- Verification of any of them needs `executeWat` — it executes since 1.0.4-beta wasm.
 
 ### Acceptance
 
-- [ ] `null` and the integer `0` are distinguishable in a wasm `?i32`
-- [ ] The representation of `null` on all four backends is one table in `src/codegen/AGENTS.md`
+- [x] `null` and the integer `0` are distinguishable in a wasm `?i32`
+- [x] The representation of `null` on all four backends is one table in `src/codegen/AGENTS.md`
 - [ ] The two stale beam rows are struck in their reports with the reason
 
 ---
@@ -317,6 +322,6 @@ changed — B is not the no-work option it looks like.
 
 ### Acceptance
 
-- [ ] `assert false, "msg"` behaves identically on all four backends outside test mode
-- [ ] The failure names the message and the `file:line` on every backend that fails
+- [x] `assert false, "msg"` behaves identically on all four backends outside test mode
+- [x] The failure names the message and the `file:line` on every backend that fails
 - [ ] Test mode is unchanged: the runner catches per test and continues

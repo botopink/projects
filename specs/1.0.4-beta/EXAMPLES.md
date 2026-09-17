@@ -179,7 +179,7 @@ pub fn main() {
 
 **Before** — output `16` on the Erlang target. On commonJS it type-checks but fails at runtime
 (`Shape.Square(...).area is not a function`) — a commonJS defect, owned by
-[`04-js-bridges/`](./04-js-bridges/README.md#handoffs-added-in-104-beta) (H10).
+[`01-backend-residuals/`](./01-backend-residuals/README.md#step-3--commonjs) (CR4 — handed to the landed js-bridges front as H10, not claimed by it).
 
 ```bp
 pub enum Shape {

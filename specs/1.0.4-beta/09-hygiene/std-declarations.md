@@ -94,9 +94,9 @@ The 5.14 sweep edits comments in files other fronts own:
 
 | Files | Owner |
 |---|---|
-| `codegen/erlang.zig` | `comptime-dispatch` (1.0.2-beta, landed) (untyped path), [`../02-erlang/`](../02-erlang/README.md) (typed path) |
-| `codegen/beam_asm.zig` | [`../01-beam/`](../01-beam/README.md) |
-| `codegen/commonJS.zig` | [`../04-js-bridges/`](../04-js-bridges/README.md) |
+| `codegen/erlang.zig` | `comptime-dispatch` (1.0.2-beta, landed) (untyped path), [`../01-backend-residuals/`](../01-backend-residuals/README.md) (both paths now) |
+| `codegen/beam_asm.zig` | [`../01-backend-residuals/`](../01-backend-residuals/README.md) |
+| `codegen/commonJS.zig` | [`../01-backend-residuals/`](../01-backend-residuals/README.md) |
 | `comptime/infer.zig`, `comptime/env.zig` | [`../06-checker/`](../06-checker/README.md) |
 | `codegen/tests/**` | [`../08-review-backlog/`](../08-review-backlog/README.md) |
 | `libs/std/src/*.bp` | `std-surface` (1.0.2-beta, landed) |

@@ -110,9 +110,9 @@ flight, or hand that single row to whichever is. If the decision in step 3 makes
 
 | Files | Owner |
 |---|---|
-| `codegen/erlang.zig` | `comptime-dispatch` (1.0.2-beta, landed) (untyped path), [`../02-erlang/`](../02-erlang/README.md) (typed path) |
-| `codegen/commonJS.zig` | [`../04-js-bridges/`](../04-js-bridges/README.md) |
-| `codegen/beam_asm.zig` | [`../01-beam/`](../01-beam/README.md) |
+| `codegen/erlang.zig` | `comptime-dispatch` (1.0.2-beta, landed) (untyped path), [`../01-backend-residuals/`](../01-backend-residuals/README.md) (both paths now) |
+| `codegen/commonJS.zig` | [`../01-backend-residuals/`](../01-backend-residuals/README.md) |
+| `codegen/beam_asm.zig` | [`../01-backend-residuals/`](../01-backend-residuals/README.md) |
 | `comptime/infer.zig`, `comptime/env.zig`, `parser/decls.zig` | [`../06-checker/`](../06-checker/README.md) |
 | `codegen/tests/**`, `comptime/tests/**` | [`../08-review-backlog/`](../08-review-backlog/README.md) |
 | `libs/std/src/http.bp` | `std-surface` (1.0.2-beta, landed) |

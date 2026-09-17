@@ -128,6 +128,6 @@ decorator test reaches them. One test whose decorator body is
 lowers through `lists:foldl/3` and closes that, with the same accept/reject pair as the rows above.
 
 The *fix* for mutation through a closure landed on erlang with 1.0.2-beta comptime-dispatch; its beam
-half is [`../01-beam/`](../01-beam/README.md) H3 ([`closure-mutation.md`](../01-beam/closure-mutation.md)); the
+half landed with the 1.0.4-beta beam front ([`../01-backend-residuals/`](../01-backend-residuals/README.md#delivered-by-the-backend-fronts)); the
 test that proves the fold fusion is exercised at all is this front's, and it is worth adding whether
 or not that fix lands, because the fusion is live today and untested.

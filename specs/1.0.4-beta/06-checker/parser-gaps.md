@@ -91,8 +91,7 @@ table above is unchanged.
 ### What is safe and what is not
 
 The parser half is local and safe. The consumer half is not: the backend lowerings live in
-`codegen/**`, owned by [`01-beam`](../01-beam/README.md), [`02-erlang`](../02-erlang/README.md),
-[`03-wasm`](../03-wasm/README.md) and [`04-js-bridges`](../04-js-bridges/README.md). Landing the
+`codegen/**`, owned by [`01-backend-residuals`](../01-backend-residuals/README.md). Landing the
 parser half alone leaves a pattern the checker accepts and a backend cannot lower.
 
 **Recommendation: delete the three tests and record the decision here.** It is the most expensive

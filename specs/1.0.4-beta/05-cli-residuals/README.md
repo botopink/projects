@@ -4,10 +4,10 @@
 library; what is left is a driver that still runs the program it compiles, diagnostics that still
 die before the CLI can print them, three decorator tests that stay green under a mutation of their
 own lowering, and gate pieces that exist but are not installed or not wired
-**Depends on:** nothing for steps 1, 3–6 — they touch no file an in-flight front owns. **Step 2
-waits for [`../01-beam/`](../01-beam/README.md), [`../02-erlang/`](../02-erlang/README.md),
-[`../03-wasm/`](../03-wasm/README.md) and [`../04-js-bridges/`](../04-js-bridges/README.md) to land**:
-it edits one site in each of their files
+**Depends on:** nothing — the four backend fronts step 2 waited on landed 2026-09-17 (`ed15323`).
+Step 2 edits one site in each backend file, which
+[`../01-backend-residuals/`](../01-backend-residuals/README.md) now owns: sequence it against that
+front ([`../fronts.md`](../fronts.md#conflict-matrix) note 1)
 **Owns:** `modules/compiler-cli/**` · `modules/lib-test-runner/**` · `build.zig` · `.github/workflows/**`
 · `scripts/**` **except** `scripts/snap_audit.sh` · `src/codegen.zig` (the `generate` driver) ·
 `src/codegen/snapshot.zig` (only the call that sets the execute flag) · `src/comptime.zig`
@@ -15,8 +15,8 @@ it edits one site in each of their files
 commit) · `src/comptime/tests/decorator_regression.zig` (carved out of
 [`../08-review-backlog/`](../08-review-backlog/README.md)'s `comptime/tests/**`) · no snapshot
 directory
-**Does not touch:** any backend's lowering (01–04) · `src/codegen/runtime.zig` (contested by 03 and
-04 — see [`../fronts.md`](../fronts.md#conflict-matrix)) · `src/comptime/infer.zig` and
+**Does not touch:** any backend's lowering or `src/codegen/runtime.zig`
+([`../01-backend-residuals/`](../01-backend-residuals/README.md)) · `src/comptime/infer.zig` and
 `src/parser/{decls,exprs,patterns}.zig` ([`../06-checker/`](../06-checker/README.md)) ·
 `utils/snap.zig` and the rest of the test sources ([`../08-review-backlog/`](../08-review-backlog/README.md))
 · `libs/std/**` · `modules/language-server/**` (see step 5)
@@ -39,7 +39,8 @@ matrix of [`mutation-matrix.md`](./mutation-matrix.md) was run.
 
 ## Problem
 
-Nine things the cli-gate front did not reach, grouped by the file they need.
+Nine things the cli-gate front did not reach, grouped by the file they need, and one the beam
+front handed over.
 
 | # | Residual | Where |
 |---|---|---|
@@ -47,11 +48,12 @@ Nine things the cli-gate front did not reach, grouped by the file they need.
 | b | The four backends still `continue` on `.parseError`/`.typeError` in `codegenEmit`; the CLI's check lives in the driver, so any other caller of `generate` still loses the module silently | `codegen/{commonJS,erlang,beam_asm,wat}.zig` |
 | c | A lex or parse error carries **no location** in `ComptimeOutput.outcome` — `check` prints `parse error in main` (1.0.3-beta review row 8) | `src/comptime.zig` |
 | d | Step 6 of cli-gate — tighten the three blind decorator tests and add the fold-fusion test — was not done | `src/comptime/tests/decorator_regression.zig` |
-| e | `scripts/install-hooks.sh` exists but the pre-commit hook is **not installed** in botopink-lang; installing it before the in-flight worktrees rebase onto the new base would red their commits on a gate they were not cut against | local state |
+| e | `scripts/install-hooks.sh` exists but the pre-commit hook is **not installed** in botopink-lang; installing it before the live worktrees rebase onto a base at or after the backend landings (`ed15323`) would red their commits on a gate they were not cut against | local state |
 | f | The meta repository's `.git/hooks/pre-commit` is still a **dangling** symlink | meta repo |
 | g | `zig build test-bpmp` (108 tests) is in no gate | `scripts/gate.sh`, `.github/workflows/**` |
 | h | `modules/lib-test-runner` has no owner, and a library with **no tests** is never compiled by `test-libs` | `modules/lib-test-runner/**` |
 | i | `print((1);` fails with **no recorded location** — the parser returns an error without filling `Parser.parseError` | `src/parser.zig` or `src/parser/exprs.zig` |
+| j | `scripts/beam_export_audit.sh` (landed with 1.0.4-beta beam, 290/290) is in **no gate**: nothing stops a narrow `{exports, …}` form hiding a beam loader rejection again | `scripts/gate.sh`, `.github/workflows/**` |
 
 ## Steps
 
@@ -67,7 +69,7 @@ language server do not. The facts and the measured cost are in
       `node`/`erl`
 - [ ] Snapshots byte-identical, same pass count
 
-### Step 2 — the diagnostic travels in `ModuleOutput` (b) — after 01–04 land
+### Step 2 — the diagnostic travels in `ModuleOutput` (b)
 
 Replace the `continue` in each backend's `codegenEmit` with a `ModuleOutput` carrying the
 diagnostic, and have the driver check read it instead of comparing module sets. One commit, four
@@ -124,21 +126,23 @@ so the tightening is checked against measured, not predicted, blindness.
 - [ ] A missing dependency is reported the same way by the CLI and the language server, or the LSP
       half is registered as unowned
 
-### Step 6 — the gate is installed and covers what ships (e, f, g, h)
+### Step 6 — the gate is installed and covers what ships (e, f, g, h, j)
 
 - **(g)** `scripts/gate.sh` runs `zig build test-bpmp`; the CI workflow runs it.
+- **(j)** `scripts/gate.sh` and CI run `scripts/beam_export_audit.sh`; a rejected module names the
+  function and the reason.
 - **(h)** Take `modules/lib-test-runner` (it is the engine of `test-libs`): a library with no test
   block is still **compiled** per target and reported, so a library that never wrote a test cannot
   be broken silently.
-- **(e)** Run `scripts/install-hooks.sh` in botopink-lang **after** 01–04 have landed and every live
-  worktree is on the new base; say so in `AGENTS.md`'s gate section.
+- **(e)** Run `scripts/install-hooks.sh` in botopink-lang once every live worktree is on a base at or
+  after `ed15323` (the backend landings); say so in `AGENTS.md`'s gate section.
 - **(f)** Replace or delete `meta:.git/hooks/pre-commit` according to
   [`../09-hygiene/decisions.md`](../09-hygiene/decisions.md) item 5.5 (whether the meta repo has a
   gate). If 5.5 is unanswered when the rest of this step is done, delete the dangling link and
   record that the decision is still open.
 
 **Acceptance:**
-- [ ] `scripts/gate.sh` and CI run `test-bpmp`
+- [ ] `scripts/gate.sh` and CI run `test-bpmp` and `scripts/beam_export_audit.sh` (290/290 at `ed15323`)
 - [ ] A scratch library with source and no `test` block that does not compile reds `test-libs`
 - [ ] botopink-lang's `.git/hooks/pre-commit` resolves and runs `scripts/gate.sh --staged`
 - [ ] `meta:.git/hooks/pre-commit` resolves or is gone
@@ -167,10 +171,10 @@ so the tightening is checked against measured, not predicted, blindness.
 
 ## Notes
 
-- `scripts/beam_export_audit.sh` is written by [`../01-beam/`](../01-beam/README.md) (step 7); wiring
-  it into `scripts/gate.sh` and CI is this front's commit.
-- The `executeWat` decision ([`../03-wasm/`](../03-wasm/README.md) step 3) is not this front's; step 1
-  only separates "emit" from "execute" in the driver.
+- `scripts/beam_export_audit.sh` was written by the 1.0.4-beta beam front; wiring it into
+  `scripts/gate.sh` and CI is this front's step 6 (j).
+- `executeWat` now executes (1.0.4-beta wasm, `wasmtime run`); step 1 only separates "emit" from
+  "execute" in the driver, and the snapshot harness keeps executing wasm like the other three.
 - `comptime/error.zig` rendering `┌─ :L:C` with no file name is the checker's file and is listed
   there ([`../06-checker/README.md`](../06-checker/README.md)); step 3 must not render a second,
   different location format for parse errors — use the one the checker's fix produces, or agree it

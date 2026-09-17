@@ -5,19 +5,17 @@
 
 **Priority:** high — the checker accepts wrong programs, so a large share of the "happy path"
 suite asserts nothing
-**Depends on:** [`01-beam`](../01-beam/README.md), [`02-erlang`](../02-erlang/README.md),
-[`03-wasm`](../03-wasm/README.md), [`04-js-bridges`](../04-js-bridges/README.md) landed — this front
-moves the typed AST all four consume and can re-record their snapshot directories — and
+**Depends on:** [`01-backend-residuals`](../01-backend-residuals/README.md) landed — the four backend fronts landed 2026-09-17, and this front
+moves the typed AST all four backends consume and can re-record their snapshot directories — and
 [`05-cli-residuals`](../05-cli-residuals/README.md) step 2 (its four backend sites must land
-byte-identical before this front re-records). C9's measurement also needs erika compiling, which is
-[`02-erlang`](../02-erlang/README.md) H3
+byte-identical before this front re-records). C9's measurement also needs erika compiling: its
+compiler half landed with 1.0.4-beta erlang, and what is left is `libs/std`'s `String.split("")`
+([`../fronts.md`](../fronts.md#unowned-items))
 **Owns:** `comptime/infer.zig` · `comptime/types.zig` · `comptime/env.zig` · `comptime/unify.zig` ·
 `comptime/transform.zig` · `comptime/eval.zig` · `comptime/error.zig` ·
 `parser/{decls,exprs,patterns}.zig` (C5 and the parser gaps; no other front lists them) ·
 `snapshots/comptime/**`, and it can move **all four** codegen snapshot directories
-**Does not touch:** `codegen/**` (owned by [`01-beam`](../01-beam/README.md),
-[`02-erlang`](../02-erlang/README.md), [`03-wasm`](../03-wasm/README.md),
-[`04-js-bridges`](../04-js-bridges/README.md)) · `libs/std/**` (no owner
+**Does not touch:** `codegen/**` (owned by [`01-backend-residuals`](../01-backend-residuals/README.md)) · `libs/std/**` (no owner
 this milestone — stop and report) · `utils/snap.zig`, `comptime/snapshot.zig`
 and the test harness ([`08-review-backlog`](../08-review-backlog/README.md),
 [`07-comptime-dedup`](../07-comptime-dedup/README.md)). This front **runs alone**: it moves the
@@ -91,13 +89,12 @@ checker row was fixed.
 erika nothing until the comptime-dispatch front landed — which is exactly where C9's 79 swallowed
 method bodies live (39 of them erika's).
 
-**Since then** (library gate on `botopink-lang` `0552e32`): the comptime-dispatch front and C6's
+**Since then** (library gate on `botopink-lang` `ed15323`): the comptime-dispatch front, C6's
 shadowing half (the `env.lookup` guard at the type-manipulation intercept, landed by the 1.0.2-beta
-std-surface front) are in. `test-libs` passes emilia, onze and rakun; erika (commonJS + erlang),
-jhonstart (commonJS) and `libs/std` (commonJS + erlang) are known-red on
-[`02-erlang`](../02-erlang/README.md) H3–H5 and [`04-js-bridges`](../04-js-bridges/README.md) H1.
-Re-measure every library count in this front, and in [`blast-radius.md`](./blast-radius.md), after
-those land and before step 1.
+std-surface front) and the four backend fronts are in. `test-libs` passes emilia, onze, rakun and
+`libs/std` (commonJS + erlang); erika (commonJS + erlang) and jhonstart (commonJS) are known-red on
+`libs/std`'s `String.split("")` alone ([`../fronts.md`](../fronts.md#unowned-items)). Re-measure every
+library count in this front, and in [`blast-radius.md`](./blast-radius.md), before step 1.
 
 ## Mechanism
 
@@ -124,8 +121,9 @@ what breaks if a group is split, is [`groups.md`](./groups.md).
 ### Step 0 — rows added in 1.0.4-beta
 
 Found after this front's spec was written — by the 1.0.2-beta comptime-dispatch and review-tooling
-fronts, by the 1.0.3-beta example review (compiled at `botopink-lang` `41981e3`), and by the
-maintainer's decision 2. None is a new mechanism; each **lands with the group named**, in that
+fronts, by the 1.0.3-beta example review (compiled at `botopink-lang` `41981e3`), by the maintainer's
+decision 2, and by the four 1.0.4-beta backend landings (N10–N15, and new evidence on N5 and N6;
+[`../01-backend-residuals/`](../01-backend-residuals/README.md#routed-out)). None is a new mechanism; each **lands with the group named**, in that
 group's commit, so no family of snapshots is regenerated twice.
 
 | # | Row | Lands with | Evidence |
@@ -134,11 +132,17 @@ group's commit, so no family of snapshots is regenerated twice.
 | N2 | **A default on a non-last record field is not applied:** `record P { x: i32 = 0, y: i32 }` then `P(y: 2)` → `'P' expects 2 argument(s)` | with N1 (same arity checks, labelled form) | 1.0.3-beta review row 6 |
 | N3 | **`if (guard(v))` with `v: ?string`** reds `type mismatch expected bool, found string` (`narrow_type_guard_basic_codegen`) | G2 (step 3) — it is C5 seen from a call site | review report 3.3 (`codegen-wat-narrowing.md:65`) |
 | N4 | **The degraded completion path drops every `val`:** `infer.zig` ~`:235` `.val => {}`, so `usePost` is missing from its own completion list (LSP `completion_decorator_record`) | G0 (step 1) | review report 3.12 (`lsp.md:104`) |
-| N5 | **`transform.zig` `makeLiteralExpr` wraps a comptime array as a `numberLit`**, which erlang renders as a charlist | G0 (step 1) | review report 3.6 (`codegen-comptime-misc.md:186`) |
-| N6 | **Decision 2 — a block is a statement; its value comes from `break`.** The checker rejects a valueless block in value position and a non-`unit` fn that falls off its end (`case_nested_case_in_block_arm` becomes a checker error). This is the enforcement half of C1/C2 | G1 (step 2) | [`../08-review-backlog/semantics-decisions.md#decision-2`](../08-review-backlog/semantics-decisions.md#decision-2) (decided 2026-09-16) |
+| N5 | **`transform.zig` `makeLiteralExpr` wraps a comptime array as a `numberLit`**, which erlang renders as a charlist and beam now refuses: it aborts with `{unlowered_comptime_value, …}` | G0 (step 1) | review report 3.6 (`codegen-comptime-misc.md:186`); 1.0.4-beta beam |
+| N6 | **Decision 2 — a block is a statement; its value comes from `break`.** The checker rejects a valueless block in value position and a non-`unit` fn that falls off its end (`case_nested_case_in_block_arm` becomes a checker error). This is the enforcement half of C1/C2. It also settles `if_simple_conditional_in_fn_body` — a value-less `if` that still prints `undefined` / `ok` / `undefined` / `0` on the four backends after they landed | G1 (step 2) | [`../08-review-backlog/semantics-decisions.md#decision-2`](../08-review-backlog/semantics-decisions.md#decision-2) (decided 2026-09-16) |
 | N7 | **A record field typed by a behavior rejects an implementing record:** `expected Handler, got H` | G1 (step 2) — the unify direction it needs is C1's; move it to G3 if it proves to be method-table strictness | 1.0.3-beta review row 5 |
 | N8 | **`botopink check` misses unknown type names** (`NoSuchType`, `Dict` without its import) and `return "x"` in a fn returning `i32` — the CLI view of C10 and C1; add the two programs to their acceptance as `botopink check` runs, not only unit tests | G1 (step 2) | 1.0.3-beta review row 7 |
 | N9 | **Error snapshots render `┌─ :L:C` with no file name** (`comptime/error.zig` ~`:33`) — every error snapshot | G4 (step 5), which already rewrites that family | review-tooling step 4 (unowned until now) |
+| N10 | **E8 — the `#[@result]` wrap goes into each non-jumping arm.** `return case s { Ok -> 1; Fail -> throw "failed"; }` wraps the whole `case`, so a throwing arm answers `isOk()` `true` on erlang (`throw_inside_case_arm`); the wrap is decided in `transform.zig`, so fixing it once re-records erlang **and** commonJS. The erlang landing left it for want of an owner — **the maintainer confirms 06 takes it** | G1 (step 2) — it is the "return target inside an effect body" contract | 1.0.4-beta erlang (E8); [`../01-backend-residuals/measurement.md`](../01-backend-residuals/measurement.md#erlang-is-not-the-oracle) |
+| N11 | **JS-4 — a pattern in binding position.** `val Circle(r) = s` parses and the checker reports `r` unbound; `assert x is Some(n)` does not parse (`narrow_assert_pattern_with_print`). The commonJS lowering follows 06 — [`../01-backend-residuals/pattern-binding.md`](../01-backend-residuals/pattern-binding.md) | step 6 (the `assert x is P` form) with C8 (G1) | 1.0.4-beta js-bridges (`src/codegen/js/AGENTS.md` names the blocker) |
+| N12 | **`loop_break_with_value`: `fn find(arr) -> i32` returns a list.** commonJS and erlang print `[15, 20]`, wasm formats the array's address; which the program means is a return-type question | with N6 (G1) | 1.0.4-beta beam (old B7), wasm (`tests/control_flow.zig` `KNOWN-WRONG` note) |
+| N13 | **An undeclared name passes the check.** `val assert 42 = answer catch 0;` with `answer` unbound compiles on every backend; beam now aborts at run time with `{unresolved_identifier, answer}` — a backstop, not the diagnostic. Every read of an undeclared value name reds with a location | G1 (step 2), beside C10 — C12's `val assert` half (G2) is one instance | 1.0.4-beta beam (`tests/values.zig` "unresolved name aborts" test) |
+| N14 | **`run {…}` / `use effect {…}` arity mismatches** reach codegen: the block's parameters and the call's arguments disagree, and beam cannot lower them | with N1 (the arity checks) | 1.0.4-beta beam |
+| N15 | **No lowering is recorded for a method called on an associated fn's result** (`Array.range(…).map(…)`): inference leaves the receiver's type open, so erlang falls back to runtime dispatch | G3 (step 4) — method typing on a receiver whose type another call produced | 1.0.4-beta erlang |
 
 **Acceptance:**
 - [ ] N1: a free fn, a record constructor and an instance method each accept a call that omits a
@@ -154,6 +158,14 @@ group's commit, so no family of snapshots is regenerated twice.
 - [ ] N7: a behavior-typed field accepts an implementing record and rejects a non-implementing one
 - [ ] N8: both programs red under `botopink check`, exit 1, with a location
 - [ ] N9: every error snapshot's box names its file
+- [ ] N10: `throw_inside_case_arm` prints `true false` on all four backends; no emitted erlang carries
+      `{ok, {error, …}}`, and the commonJS module passes `node --check`
+- [ ] N11: `val Circle(r) = s` binds `r`; `assert x is Some(n)` parses and narrows
+- [ ] N12: `loop_break_with_value` either reds (a list is not `i32`) or is rewritten to what it means;
+      its `KNOWN-WRONG` note goes
+- [ ] N13: the "unresolved name aborts" program reds under `botopink check` with a location
+- [ ] N14: an arity mismatch in `run {…}` / `use effect {…}` reds at the call
+- [ ] N15: `Array.range(0, 3).map(…)` records a lowering; erlang emits no runtime dispatch for it
 
 ### Step 1 — G0, the free wins (C6, C4b, C11, C7, C12's pipeline half)
 
@@ -222,8 +234,8 @@ builds. Together with G1 these unblock [`narrowing.md`](./narrowing.md) step B6.
 Method bodies join the strict contract that `default fn` interface bodies already have. Before
 deciding whether C9 is one row or three, **instrument**: make `inferTypeMethods` count and
 print the swallowed errors (swallow site l.2970-2975) over `libs/std` plus the five siblings,
-and read the list. That measurement needs std compiling (step 1's C6), erika compiling
-([`02-erlang`](../02-erlang/README.md) H3) and G1 landed — many swallowed
+and read the list. That measurement needs std compiling (step 1's C6), erika compiling (its compiler
+half landed with 1.0.4-beta erlang; `libs/std`'s `String.split("")` is left) and G1 landed — many swallowed
 errors are `return`- and `case`-shaped.
 
 **Acceptance:**
@@ -326,7 +338,7 @@ file in the repository.
 
 This front can move all four codegen snapshot directories, because a fixture that **newly fails
 to compile** takes its codegen snapshots with it (all-or-nothing; codegen snapshots carry no
-type rendering). That is why it runs alone — see `fronts.md` note 3.
+type rendering). That is why it runs alone — see [`../fronts.md`](../fronts.md#conflict-matrix) note 4.
 
 ## Notes
 
@@ -335,8 +347,8 @@ type rendering). That is why it runs alone — see `fronts.md` note 3.
   it up before starting step 2.
 - **Decision 2 moves code this front does not own.** Once N6 lands, the block-as-value lowerings in
   the four backends (the erlang tail `case`, beam's `make_fun3`, commonJS's IIFE, wasm's
-  `;; lambda`) are dead. Deleting them is the backend owners' work, and those fronts will have
-  closed — it is registered in [`../fronts.md`](../fronts.md#unowned-items).
+  `;; lambda`) are dead. Deleting them is [`01-backend-residuals`](../01-backend-residuals/README.md)'s work if it is still open,
+  else a follow-up registered in [`../fronts.md`](../fronts.md#unowned-items).
 - **[`external-annotations.md`](./external-annotations.md)** is carried here as the reference for
   how `#[@External.<Target>(…)]` is used. Its `libs/std` half landed with 1.0.2-beta std-surface;
   its compiler-work rows C1 (one validator for every annotated declaration) and C8 (STD-001 keyed

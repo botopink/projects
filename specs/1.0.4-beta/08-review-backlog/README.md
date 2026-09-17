@@ -6,19 +6,19 @@ must reach the front that owns the file before that front closes
 **Status:** not started as a front. It is what is left of 1.0.2-beta front 09 (review-tooling),
 whose steps 1–3 landed — see [Delivered](#delivered-by-102-beta-review-tooling)
 **Depends on:** wave A (reports 3.1, 3.2, 3.4, 3.5) — [`../06-checker/`](../06-checker/README.md)
-landed. The backend fronts 01–04 add fixtures to the test sources this front owns and re-record
-the snapshots its rows cite, and the checker can move all four codegen directories again; a row
-re-derived before either lands is re-derived twice. Wave B (reports 3.7–3.10) —
+landed. The four backend fronts landed 2026-09-17 (`ed15323`) and re-recorded the snapshots its rows
+cite; [`../01-backend-residuals/`](../01-backend-residuals/README.md) and the checker can move them again; a row re-derived before either lands is
+re-derived twice. Wave B (reports 3.7–3.10) —
 [`../07-comptime-dedup/`](../07-comptime-dedup/README.md) step 2 landed
 **Owns:** `src/utils/snap.zig` · `scripts/snap_audit.sh` (+ its `scripts/AGENTS.md` section) ·
-`src/codegen/tests/**` (except `externals.zig`'s `gleam_stdlib` fixtures, carved out to
-[`../04-js-bridges/`](../04-js-bridges/README.md) H6) · `src/comptime/tests/**` (except
+`src/codegen/tests/**` (except the `KNOWN` notes of the fixtures carved out to
+[`../01-backend-residuals/`](../01-backend-residuals/README.md)) · `src/comptime/tests/**` (except
 `decorator_regression.zig`, carved out to [`../05-cli-residuals/`](../05-cli-residuals/README.md), and
 `helpers.zig`, which [`../07-comptime-dedup/`](../07-comptime-dedup/README.md) edits first) ·
 `src/parser/tests/**` · `modules/language-server/src/tests/**` · the per-report status lines in
 [`../../1.0.1-beta/06-snapshot-review/`](../../1.0.1-beta/06-snapshot-review/) · the decision
 reference [`semantics-decisions.md`](./semantics-decisions.md)
-**Does not touch:** any lowering (01–04), the checker and parser sources (06), `comptime/snapshot.zig`
+**Does not touch:** any lowering (01), the checker and parser sources (06), `comptime/snapshot.zig`
 (07), `libs/std/**`. A `wrong-output` row that needs one of these is **registered** in the owning
 front's README with its snapshot name, not fixed here.
 
@@ -70,13 +70,13 @@ Per-class counts, table shapes and where to read each report: [`backlog.md`](./b
 
 ### Step 1 — wave A: the codegen reports (3.1, 3.2, 3.4, 3.5, and 3.3's `:70`)
 
-After [`../06-checker/`](../06-checker/README.md) lands (and therefore after 01–05). For every non-`ok` row that is not withdrawn: re-derive it at the new HEAD —
+After [`../06-checker/`](../06-checker/README.md) lands (and therefore after 01 and 05 step 2). For every non-`ok` row that is not withdrawn: re-derive it at the new HEAD —
 many will have closed with the backend fronts, and the decisions turn the `uncertain` rows into
 ordinary verdicts — then fix the test (`wrong-test`, `weak`, `duplicate`, `skip-undocumented`) or
 register the `wrong-output` in the owning front ([`backlog.md` § where a closed row lands](./backlog.md#where-a-closed-row-lands)).
-Backend fronts will have closed by then: register a surviving `wrong-output` row in
-[`../fronts.md`](../fronts.md#unowned-items) for the maintainer to schedule, rather than reopening a
-landed front.
+The backend fronts have closed, and [`../01-backend-residuals/`](../01-backend-residuals/README.md) will have by then: register a surviving
+`wrong-output` row in [`../fronts.md`](../fronts.md#unowned-items) for the maintainer to schedule,
+rather than reopening a landed front.
 
 The four "lowers byte-identically across backends" tests are named by decision 1: they either hold
 once 01/02's H1 lands, or carry the name the decision implies.

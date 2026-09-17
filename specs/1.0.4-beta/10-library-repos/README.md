@@ -4,13 +4,14 @@
 is one default string per repo and one export the rakun bootstrap needs
 **Status:** carried from 1.0.2-beta front 12, whose rakun (7a), vscode-extension (7e, 7f, 7g) and
 bpmp (7h) items landed — see [Delivered](#delivered-by-102-beta-library-repos)
-**Depends on:** [`../02-erlang/`](../02-erlang/README.md) H3 for erika (7b, and the commit of 7c);
+**Depends on:** the `libs/std` `String.split("")` fix for erika — the commit of 7c; its compiler
+half, 7b, landed with 1.0.4-beta erlang (`42429dc`), and the fix has no owner ([`../fronts.md`](../fronts.md#unowned-items));
 [`../09-hygiene/decisions.md`](../09-hygiene/decisions.md) item 5.5 for emilia (7d). The
 `BOTOPINK_LANG_REF` defaults can land at any time
 **Owns:** `repository/erika/**` · `repository/emilia/**` · the one-line `BOTOPINK_LANG_REF` default
 in `repository/{jhonstart,onze}/.github/workflows/test.yml` — one commit per repo
-**Does not touch:** `modules/compiler-core/**` (erika's loop defect is
-[`../02-erlang/`](../02-erlang/README.md)'s; rakun's missing export is a codegen fix — see step 4) ·
+**Does not touch:** `modules/compiler-core/**` (rakun's missing export is a codegen fix — see
+step 4) · `libs/std/**` ·
 `modules/compiler-cli/**`, `build.zig`, `scripts/**` ([`../05-cli-residuals/`](../05-cli-residuals/README.md))
 · `repository/jhonstart/**` and `repository/onze/**` beyond the one line ·
 `repository/rakun/**` and `repository/vscode-extension/**` (delivered; no open item edits them)
@@ -34,22 +35,23 @@ Inside a per-repo file, bare paths are relative to that repo.
 
 | Repo | Open item | Blocked by | Deep dive |
 |---|---|---|---|
-| erika | **7b** — the two-parameter `loop` loses its accumulator; erika's `buildCmp` and lexer produce empty values and the erlang cell is red | [`../02-erlang/`](../02-erlang/README.md) H3 (compiler) | [`erika.md`](./erika.md) |
-| erika | **7c** — `AGENTS.md` documents a removed comptime evaluator. **Written and staged**, uncommitted: erika's hook runs `botopink test`, red until 7b | 7b | [`erika.md`](./erika.md) |
+| erika | **7b** — the two-parameter `loop` lost its accumulator. **Compiler fix landed** (1.0.4-beta erlang); verify in erika | — | [`erika.md`](./erika.md) |
+| erika | **7c** — `AGENTS.md` documents a removed comptime evaluator. **Written and staged**, uncommitted: erika's hook runs `botopink test`, red on `libs/std`'s `String.split("")` | the `libs/std` fix (unowned) | [`erika.md`](./erika.md) |
 | erika | stale comments in `src/erika.bp` that still describe the removed evaluator and the pre-1.0.2 `libs/std` layout | — | — |
 | emilia | **7d** — no hook source, no CI; nothing enforces the tests `AGENTS.md` declares | hygiene 5.5 | [`emilia.md`](./emilia.md) |
 | jhonstart, onze | the `BOTOPINK_LANG_REF` default in CI still names `main`, which lags `feat` (the last two of five) | — | — |
-| rakun | `botopink build` emits no `module.exports` for rakun's records: the emitted `bootstrap.js` does not export `Rakun`, so a consumer cannot `require` it | a codegen fix, owner to agree — most likely [`../04-js-bridges/`](../04-js-bridges/README.md) | — |
+| rakun | `botopink build` emits no `module.exports` for rakun's records: the emitted `bootstrap.js` does not export `Rakun`, so a consumer cannot `require` it | **probably closed** by 1.0.4-beta js-bridges (`aa02bb4`: every pub enum and record emits `exports.Name = Name;`) — step 4 verifies | — |
 
-The library gate (`zig build test-libs`, 2026-09-16, `botopink-lang` `0552e32`): emilia, onze and
-rakun pass; erika (commonJS + erlang) and jhonstart (commonJS) are known-red on
-[`../02-erlang/`](../02-erlang/README.md) H3–H4; `libs/std` on 02-erlang H5 and 04-js-bridges H1.
+The library gate (`zig build test-libs`, 2026-09-17, `botopink-lang` `ed15323`): emilia, onze,
+rakun and `libs/std` pass; erika (commonJS + erlang) and jhonstart (commonJS) are known-red on one
+`libs/std` line, `String.split("")` binding `string:split/3` with an empty separator ([`../fronts.md`](../fronts.md#unowned-items)).
+Patched locally, erika passes 31/31 on both targets and jhonstart 8/8.
 
 ## Steps
 
 ### Step 1 — erika: verify 7b, commit 7c (7b · 7c)
 
-After [`../02-erlang/`](../02-erlang/README.md) lands H3, rebase `.tasks/library-repos/erika` onto
+After the `libs/std` `String.split("")` fix lands, rebase `.tasks/library-repos/erika` onto
 erika's `feat`, rebuild the compiler from `botopink-lang` `feat`, and commit the staged 7c and
 `BOTOPINK_LANG_REF` change through the hook. Then sweep `src/erika.bp`'s comments against the
 constraints that still exist.
@@ -82,9 +84,10 @@ to `AGENTS.md`, run the declared tests. Install path per
 ### Step 4 — rakun's records are exported
 
 Not this front's fix: `botopink build` must emit `module.exports` for a module's public records
-(commonJS). Agree the owner (the maintainer, with [`../04-js-bridges/`](../04-js-bridges/README.md)
-if it is still open, else registered in [`../fronts.md`](../fronts.md#unowned-items)); this front
-verifies it in rakun.
+(commonJS). 1.0.4-beta js-bridges (`aa02bb4`) made every pub enum and record emit
+`exports.Name = Name;`, which should close it; this front verifies it in rakun, and a failure goes to
+[`../01-backend-residuals/`](../01-backend-residuals/README.md) if it is open, else to
+[`../fronts.md`](../fronts.md#unowned-items).
 
 **Acceptance:**
 - [ ] rakun's emitted `bootstrap.js` exports `Rakun`, and a scratch consumer `require`s it
@@ -99,7 +102,7 @@ verifies it in rakun.
 
 ## Blast radius
 
-- **erika goes green** once 02-erlang's H3 lands and step 1 commits; the `known-red-libs.txt` lines
+- **erika goes green** once the `libs/std` `String.split("")` fix lands and step 1 commits; the `known-red-libs.txt` lines
   for erika are deleted in botopink-lang.
 - **emilia gains a hook**, so every later emilia commit — including
   [`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md)'s migration — pays its gate.

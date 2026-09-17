@@ -6,10 +6,10 @@ after the front that owns the file it sweeps.
 
 **Priority:** low, except [5.16](./build-files.md) — the remaining items are cosmetic apart from one
 silently-wrong build
-**Depends on:** per step — group A waits on [`../03-wasm/`](../03-wasm/README.md)'s `executeWat`
-decision (its H3); group B's root `build.zig` and CI edits wait on
+**Depends on:** per step — group A's precondition is answered (1.0.4-beta wasm: `executeWat`
+executes) and it can start; group B's root `build.zig` and CI edits wait on
 [`../05-cli-residuals/`](../05-cli-residuals/README.md), which owns both; group C's and group D's
-comment sweeps wait on the fronts that own the swept files (01–08); 5.13's fixture waits on
+comment sweeps wait on the fronts that own the swept files (01, 05–08); 5.13's fixture waits on
 [`../07-comptime-dedup/`](../07-comptime-dedup/README.md); the decisions (step 6) wait on nobody but
 the maintainer
 **Owns:** `comptime/runtime/persistent_erl.zig` (the residual below) · `meta:build.zig`, root
@@ -50,8 +50,10 @@ Two facts decide the shape of two whole groups, and both contradict what the tre
 
 - **`wasm3` and `wat_runtime` are gone.** No file named `wasm3*`, `wat_runtime*` or `wat_to_wasm*`
   exists, there is no `vendor/`, and nothing in the tree calls `linkLibC`, `link_libc` or
-  `@cImport`. What is left is dead code, comments asserting the removed architecture in the present
-  tense, and a CI step that downloads a binary nothing invokes.
+  `@cImport`. What is left is dead code and comments asserting the removed architecture in the
+  present tense. *Since then:* 1.0.4-beta wasm made `executeWat` run `wasmtime run`, so the CI's
+  wasmtime install has a user, and deleted `emitFnWat`, `Module.externs` and the `wat_runtime`
+  comments inside `codegen/wat*`.
 - **Hooks are installed on this machine only, and not by anything in the repos.** erika, jhonstart,
   onze, rakun and vscode-extension have a working `pre-commit` symlink under
   `meta:.git/modules/repository/<repo>/hooks/`; `botopink-lang` (its own `.git/`) holds only
@@ -70,9 +72,9 @@ land together; the groups are file-disjoint from each other.
 | Group | Items | What it is | Order |
 |---|---|---|---|
 | E — the comptime frame protocol | 5.10 | The frame-protocol guard | **delivered** |
-| [A — the removed WAT runtime](./wat-runtime.md) | 5.6, 5.7 | Every trace of the removed wasm3/`wat_runtime` runtime, in source, comments and CI | 2nd — 5.7 is unactionable until 5.6's decision is made |
+| [A — the removed WAT runtime](./wat-runtime.md) | 5.6, 5.7 | Every trace of the removed wasm3/`wat_runtime` runtime, in source, comments and CI | 2nd — its decision is made; ready |
 | [B — build files that lie](./build-files.md) | 5.4, 5.16, 5.17 | Build files and root scripts that do not work, or work wrongly | 3rd |
-| [C — `libs/std` declarations and one stale filename](./std-declarations.md) | 5.1, 5.2, 5.3, 5.14 | `libs/std`'s declared surface (its code half landed with 1.0.2-beta std-surface), and the 33 comments still naming `primitives.d.bp` | sweep after 01–04 |
+| [C — `libs/std` declarations and one stale filename](./std-declarations.md) | 5.1, 5.2, 5.3, 5.14 | `libs/std`'s declared surface (its code half landed with 1.0.2-beta std-surface), and the 33 comments still naming `primitives.d.bp` | sweep after 01 |
 | [D — instructions and vocabulary that do not work](./vocabulary.md) | 5.8, 5.13, + 1.0.3-beta review row 9 | An example header, `docs.md`'s `implement` example, and ~24 comments teaching forms the compiler rejects | sweep after 01–07 |
 | [Decisions — not work](./decisions.md) | 5.9, 5.5 | License; whether the meta repo needs a gate at all | before their groups can close |
 
@@ -100,17 +102,16 @@ change.
 
 ### Step 2 — Erase the removed WAT runtime (group A, 5.6 · 5.7)
 
-**Settle first:** whether a WAT runtime is wired back in. `executeWat`
-(`codegen/runtime.zig:547-558`) returns `""` unconditionally and is honestly documented as a stub —
-it is the only accurate wasm3-adjacent comment in the tree. Everything in this group reads
-differently depending on that answer, so do not start until
-[`../03-wasm/`](../03-wasm/README.md) has made it (its step 3, handed over as its H3). Then delete the dead code, rewrite the comments
-that assert the removed architecture in the present tense, and fix the four CI claims.
+**Precondition answered.** The group waited on whether a WAT runtime is wired back in. It is:
+1.0.4-beta wasm (`ed15323`) made `executeWat` run each module under `wasmtime run`
+(`HARNESS_VERSION = "3-wasm-runs"`), not an embedded interpreter, and deleted `emitFnWat`,
+`Module.externs` and the `wat_runtime` comments in the files it owned. What is left is the comments in
+files it did not own, the dead build code, and CI text that now has a real user to describe.
 [`wat-runtime.md`](./wat-runtime.md).
 
 **Acceptance:**
 - [ ] No `wasm3` / `wat_runtime` / `wat_to_wasm` / `wasm3_host` mention left in the tree
-- [ ] `build_options` and `emitFnWat` deleted, or each has a named user
+- [ ] `build_options` deleted, or it has a named user (`emitFnWat` is gone)
 - [ ] `libcResolvedTarget` deleted, or its comment explains a reason that still exists
 - [ ] Every comment about the comptime runtime names the persistent `erl` server
 - [ ] `zig build` and `zig build test` green on Linux-gnu and on the CI runners
@@ -201,9 +202,9 @@ the work:
 
 | Where | What it touches | Whose file |
 |---|---|---|
-| 5.14 (33 sites), 5.13 (~24 sites) | comments in `codegen/erlang.zig`, `codegen/commonJS.zig`, `codegen/beam_asm.zig`, `comptime/infer.zig`, `comptime/env.zig`, `codegen/tests/**` | [`../01-beam/`](../01-beam/README.md), [`../02-erlang/`](../02-erlang/README.md), [`../04-js-bridges/`](../04-js-bridges/README.md), [`../06-checker/`](../06-checker/README.md), [`../08-review-backlog/`](../08-review-backlog/README.md) |
+| 5.14 (33 sites), 5.13 (~24 sites) | comments in `codegen/erlang.zig`, `codegen/commonJS.zig`, `codegen/beam_asm.zig`, `comptime/infer.zig`, `comptime/env.zig`, `codegen/tests/**` | [`../01-backend-residuals/`](../01-backend-residuals/README.md), [`../06-checker/`](../06-checker/README.md), [`../08-review-backlog/`](../08-review-backlog/README.md) |
 | 5.4, 5.16, A1 | root `build.zig` (the `test-vscode` step, `build_options`, `libcResolvedTarget`) and `.github/workflows/test.yml` | [`../05-cli-residuals/`](../05-cli-residuals/README.md) owns both |
-| A1 | `codegen/wat.zig:130` `emitFnWat`, `libs/std/src/builtins.d.bp:269-279` | [`../03-wasm/`](../03-wasm/README.md); `libs/std` has no owner this milestone, so this front takes the `builtins.d.bp` line |
+| A1, A2 | `libs/std/src/builtins.d.bp:269-279`, `codegen/crossModule.zig`, `codegen/config.zig`, `comptime/tests/helpers.zig`, `codegen/tests/features.zig` (`emitFnWat` was deleted by 1.0.4-beta wasm) | `libs/std` has no owner this milestone, so this front takes the `builtins.d.bp` lines; `crossModule.zig` and `config.zig` have none either; the tests are 08's and 07's — sweep after them |
 | E | `comptime/runtime/persistent_erl.zig` | this front (claimed in 1.0.2-beta; the residual only) |
 
 The practical rule: a comment-only edit in another front's file is safe to *make* and expensive to
@@ -212,10 +213,17 @@ have landed — or hand the sweep to them.
 
 ## Notes
 
-- `codegen/wat.zig:2416-2419` is a self-documented known gap in the same family as group A
-  (`$__emit`, `$__compilerError`, `$__binding_ref` "are defined by the `wat_runtime` prelude … In
-  the whole-program path nothing defines them"). It belongs to the WAT-execution decision, not
-  here — cross-reference it rather than editing it.
+- `codegen/wat.zig`'s `KNOWN GAP` block (`$__emit`, `$__compilerError`, `$__binding_ref` "defined by
+  the `wat_runtime` prelude") was deleted with `Module.externs` by 1.0.4-beta wasm — nothing left
+  here.
+- **Test comments the backend landings left behind** (a comment sweep in
+  [`../08-review-backlog/`](../08-review-backlog/README.md)'s files — after it, or handed to it): `codegen/tests/builtins.zig`
+  ~`:365` still says commonJS lowers `assert` to `console.assert` and erlang drops the message —
+  decision 4 is implemented on all four backends; `codegen/tests/control_flow.zig` ~`:308`,
+  `codegen/tests/features.zig` ~`:866` and `codegen/tests/values.zig` ~`:401` cite retired front
+  numbers (`06-wasm`, `07-checker`, `F7 checker`) — point them at
+  [`../01-backend-residuals/`](../01-backend-residuals/README.md) or
+  [`../06-checker/`](../06-checker/README.md) by name. Read at `ed15323`.
 - The `modules/compiler-core/build.zig` header is unmodified `zig init` boilerplate with a global
   `fu`→`f` corruption (`fnction` at `:3, 5, 111, 121`) — a reason to delete rather than repair.
 - 5.5's answer is a precondition for

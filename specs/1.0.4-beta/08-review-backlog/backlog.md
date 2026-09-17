@@ -104,8 +104,8 @@ and routes the rest:
 
 | Report | `wrong-output` owner |
 |---|---|
-| 3.1, 3.2, 3.4, 3.5, 3.6 | by backend: [`../01-beam/`](../01-beam/README.md), [`../02-erlang/`](../02-erlang/README.md), [`../03-wasm/`](../03-wasm/README.md), [`../04-js-bridges/`](../04-js-bridges/README.md) |
-| 3.3 | [`../03-wasm/`](../03-wasm/README.md) (WAT), [`../06-checker/`](../06-checker/README.md) (narrowing rules) |
+| 3.1, 3.2, 3.4, 3.5, 3.6 | [`../01-backend-residuals/`](../01-backend-residuals/README.md) if open, else [`../fronts.md`](../fronts.md#unowned-items) |
+| 3.3 | [`../01-backend-residuals/`](../01-backend-residuals/README.md) (WAT), [`../06-checker/`](../06-checker/README.md) (narrowing rules) |
 | 3.7, 3.8, 3.9, 3.10 | [`../06-checker/`](../06-checker/README.md); renderer rows (`?`, `"id": 0`, missing declaration kinds) to [`../07-comptime-dedup/`](../07-comptime-dedup/README.md) |
 | 3.11 | [`../06-checker/`](../06-checker/README.md) owns `parser/{decls,exprs,patterns}.zig` |
 | 3.12 | closed but for two rows: `completion_decorator_record` → [`../06-checker/`](../06-checker/README.md) N4; `hover_interface_method` → a maintainer decision, `engine.zig` unowned ([`../fronts.md`](../fronts.md#unowned-items)) |
@@ -114,32 +114,34 @@ Two rows closed from another front: the `pick`/`omit`/`partial`/`mergeRecords` i
 user fns (3.6) and "user `pick` vs the builtin" (3.3) are one defect, closed by the 1.0.2-beta
 std-surface front (6a); the "dangling import for template-only symbols" (3.6) closed with its 6d.
 Strike them, do not re-open them. The `.d.ts` half of the dangling import (3.6 `:195`) did **not**
-close — it is [`../04-js-bridges/`](../04-js-bridges/README.md) H5.
+close — it was js-bridges' H5, delivered with it (`aa02bb4`).
 
 <a id="registered-from-33-and-36"></a>
 
 ## Registered from 3.3 and 3.6
 
 The 1.0.2-beta re-derivation of these two reports sent each surviving `wrong-output` row to the front
-that owns it. Verify each at that front's landing; strike it in the report when it holds.
+that owns it. The four backend fronts have **landed** (merge commits in the Owner column): verify each
+of their rows at `ed15323` and strike it in the report when it holds; a row that does not hold goes to
+[`../01-backend-residuals/`](../01-backend-residuals/README.md). Rows for 06 and the std row are verified as before.
 
 | Report row | Owner | Cause |
 |---|---|---|
-| 3.3 `:61 :75 :78 :90 :94 :96` | [`../01-beam/`](../01-beam/README.md) | B3 — string `+` lowered as arithmetic |
-| 3.3 `:64 :67 :77` | [`../01-beam/`](../01-beam/README.md) | B4 — `slice/3` unresolved |
-| 3.3 `:68 :69 :71 :72` | [`../01-beam/`](../01-beam/README.md) | B5 — anonymous record literal |
-| 3.3 `:87 :89 :93` | [`../01-beam/`](../01-beam/README.md) | B8/B11 — binding-form `if`, `'Ok'` atom |
-| 3.3 `:63 :66 :67 :75 :77 :78 :80-:83` | [`../04-js-bridges/`](../04-js-bridges/README.md) | C3 — `.len` read as a property |
-| 3.3 `:88 :94` · `:89` · `:96` | [`../04-js-bridges/`](../04-js-bridges/README.md) | C4 — payload by binder name · C5 — `Ok` tag · JS-1 — `return if` |
-| 3.3 `:88 :89 :94` · `:96` | [`../03-wasm/`](../03-wasm/README.md) | W6 — `emitCaseArms` · W11 |
-| 3.3 `:90` · `:93` | [`../03-wasm/`](../03-wasm/README.md) | a null compare through `$__str_eq` · a bool printed by `$__print_str` (W3) — the first is not in `causes.md`; check it closes with W2/W6 |
-| 3.3 `:94 :96` · `:93` | [`../02-erlang/`](../02-erlang/README.md) | E2 — non-binary concat · E7 — `return` in a narrowed `if` |
+| 3.3 `:61 :75 :78 :90 :94 :96` | beam `a743955` | B3 — string `+` lowered as arithmetic |
+| 3.3 `:64 :67 :77` | beam `a743955` | B4 — `slice/3` unresolved |
+| 3.3 `:68 :69 :71 :72` | beam `a743955` | B5 — anonymous record literal |
+| 3.3 `:87 :89 :93` | beam `a743955` | B8/B11 — binding-form `if`, `'Ok'` atom |
+| 3.3 `:63 :66 :67 :75 :77 :78 :80-:83` | js-bridges `bd7836c` | C3 — `.len` read as a property |
+| 3.3 `:88 :94` · `:89` · `:96` | js-bridges `bd7836c` | C4 — payload by binder name · C5 — `Ok` tag · JS-1 — `return if` |
+| 3.3 `:88 :89 :94` · `:96` | wasm `ed15323` | W6 — `emitCaseArms` · W11 |
+| 3.3 `:90` · `:93` | wasm `ed15323` | a null compare through `$__str_eq` · a bool printed by `$__print_str` (W3) — the first is not in `causes.md`; check it closes with W2/W6 |
+| 3.3 `:94 :96` · `:93` | erlang `42429dc` | E2 — non-binary concat · E7 — `return` in a narrowed `if` |
 | 3.3 `:64 :67 :77` | 1.0.2-beta std-surface | C1 — `gleam_stdlib.mjs`; closed, re-derive |
 | 3.3 `:65` | [`../06-checker/`](../06-checker/README.md) | N1 trailing defaults; N3 `if (guard(v))` on `?string` |
 | 3.6 `:186` | [`../06-checker/`](../06-checker/README.md) | N5 — `makeLiteralExpr` array as `numberLit` |
-| 3.6 `:189` · `:199` | [`../01-beam/`](../01-beam/README.md) | H4 — outer `var` in `lists:foreach` · H5 — imported-enum arms |
-| 3.6 `:195` · `:199` | [`../04-js-bridges/`](../04-js-bridges/README.md) | H5 — `.d.ts` template-only imports, `toInt(o: )`, enum not exported |
-| 3.6 `:180 :183 :190-:194 :196 :197` (known) | 01 B1/H6 · 02 E5 · 03 W2/W5/W8 + `executeWat` | already tracked |
+| 3.6 `:189` · `:199` | beam `a743955` | H4 — outer `var` in `lists:foreach` · H5 — imported-enum arms |
+| 3.6 `:195` · `:199` | js-bridges `bd7836c` | H5 — `.d.ts` template-only imports, `toInt(o: )`, enum not exported |
+| 3.6 `:180 :183 :190-:194 :196 :197` (known) | beam B1/H6 · erlang E5 · wasm W2/W5/W8 + `executeWat` | delivered — verify and strike |
 
 **Watch when [`../06-checker/`](../06-checker/README.md) lands:** C1 is expected to red the
 `-> i32` anonymous-record fixtures of 3.3 `:68`/`:69`, and C3 may red `"value: " + v` in `:94`/`:96`.

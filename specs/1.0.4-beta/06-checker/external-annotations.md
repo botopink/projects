@@ -115,7 +115,8 @@ Measured with one scratch program per shape; "result" is the printed value.
 Code: commonJS `collectExternals` `codegen/commonJS.zig:980` → `buildFnItem` `:1125` (alias/require)
 or `renderDispatch` `:2620` (template); erlang `collectExternals` `codegen/erlang.zig:2181` →
 `plainCallNode` `:3430` / `userTemplateNode` `:1765`; beam has **no declare-fn reader at all** (the
-empty body lowers to `ok`; this is [`../01-beam/`](../01-beam/README.md) B2); wat skips the
+empty body lowers to `ok`; this was beam's B2, delivered by 1.0.4-beta beam —
+[`../01-backend-residuals/`](../01-backend-residuals/README.md#delivered-by-the-backend-fronts)); wat skips the
 declaration at `codegen/wat.zig:1059-1064` and traps at the call (`:3038`).
 
 **Cross-module (a std module's external, called as `math.abs(x)`):** measured with
@@ -307,7 +308,7 @@ Apply the first rule that matches.
 | **R1** | Expressible over other primitives with acceptable cost (no host representation, no host capability) | **(d)** botopink body, no annotation | `default fn clamp(self: Self, lo: Self, hi: Self) -> Self { … }` |
 | **R2** | A host operation whose semantics **match the signature exactly** on that host, expressible as one host call or expression | **(a)** per-target annotation: 2-arg `("module", "symbol")` for a host-global / OTP module in declaration order, else a `"""…"""` template, each marker at most once | `#[@External.Erlang("string", "uppercase"), @External.Node("toUpperCase")] fn toUpper(self: Self) -> string` |
 | **R3** | A host operation that exists but differs at the edges (indices, `-1` vs null, what is trimmed, iolist vs binary, float format), or an algorithm longer than one host expression | **(c)** compiler-owned helper, one per backend, emitted when called; the declaration names it **once** | `#[@Helper("stringCharAt")] fn charAt(self: Self, index: i32) -> ?string` (name of the annotation is the maintainer's choice) |
-| **R4** | Needs a host capability (clock, env, fs, process, crypto, regex, sockets) | **(a)** per target on a `declare fn`; wasm refuses at compile time (STD-001 with a location) until a WASI decision exists ([`../03-wasm/`](../03-wasm/README.md) W1) | `#[@External.Node("""process.cwd()"""), @External.Erlang("""(fun() -> {ok, P} = file:get_cwd(), list_to_binary(P) end)()""")] pub declare fn cwd() -> string;` |
+| **R4** | Needs a host capability (clock, env, fs, process, crypto, regex, sockets) | **(a)** per target on a `declare fn`; wasm refuses at compile time (STD-001 with a location) until a WASI decision exists (1.0.4-beta wasm decided instead that a host-backed `declare fn` traps at run time, written in `codegen/AGENTS.md` — [`../01-backend-residuals/`](../01-backend-residuals/README.md#delivered-by-the-backend-fronts)) | `#[@External.Node("""process.cwd()"""), @External.Erlang("""(fun() -> {ok, P} = file:get_cwd(), list_to_binary(P) end)()""")] pub declare fn cwd() -> string;` |
 | **R5** | Any binding kept under R2/R4 | a `test` in the module that asserts the **value**, run on commonJS and erlang (and beam once `botopink test` supports it) | — |
 | **R6** | Something a template or decorator body may call | must be R1, R3 (Erlang helper) or have an **Erlang** R2/R4 binding; a Node-only binding is refused inside a comptime body | — |
 | **—** | (b) relative/shipped file | **not used in `libs/std`**. For sibling libraries that own host state (rakun, onze), allowed only if the build verifies the file exists and the `require` is emitted lazily | — |
