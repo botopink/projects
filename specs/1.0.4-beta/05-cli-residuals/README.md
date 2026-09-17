@@ -1,7 +1,6 @@
 # Front 05 — cli-residuals
 
-**Status:** **delivered** 2026-09-17 (`botopink-lang` merge `440a1d3`), except `meta:.git/hooks/pre-commit`
-(decision 5.5a). Handoffs: the language-server half of step 5 — `project_graph.zig` still swallows
+**Status:** **delivered** 2026-09-17 (`botopink-lang` merge `440a1d3`). Handoffs: the language-server half of step 5 — `project_graph.zig` still swallows
 a missing dependency (`:171`) and an unreadable file (`:210`) with `catch continue` — is an unowned
 item; `codegen.generate` drops failed-module entries because `tests/helpers.zig` renders its own
 diagnostic — reading `result.diagnostic` there is [`../08-review-backlog/`](../08-review-backlog/README.md)'s.
@@ -154,7 +153,7 @@ so the tightening is checked against measured, not predicted, blindness.
 - [x] `scripts/gate.sh` and CI run `test-bpmp` and `scripts/beam_export_audit.sh` (290/290 at `ed15323`)
 - [x] A scratch library with source and no `test` block that does not compile reds `test-libs`
 - [x] botopink-lang's `.git/hooks/pre-commit` resolves and runs `scripts/gate.sh --staged`
-- [ ] `meta:.git/hooks/pre-commit` resolves or is gone
+- [x] `meta:.git/hooks/pre-commit` resolves or is gone (deleted — decision 5.5a: no meta gate)
 
 ## Gate
 

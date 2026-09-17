@@ -64,6 +64,9 @@ none, and a fresh clone of any repo runs none. Nothing tracked installs a hook �
 
 ### Decide (a) — does the meta repo need a pre-commit gate?
 
+**Decided 2026-09-17 by the maintainer: no gate.** The dangling `meta:.git/hooks/pre-commit` and
+`pre-commit.bak.20260614-175956` were deleted the same day.
+
 It holds no code — only submodule pointers and `specs/`.
 
 | Option | What it implies |

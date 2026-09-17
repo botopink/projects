@@ -143,6 +143,8 @@ group's commit, so no family of snapshots is regenerated twice.
 | N13 | **An undeclared name passes the check.** `val assert 42 = answer catch 0;` with `answer` unbound compiles on every backend; beam now aborts at run time with `{unresolved_identifier, answer}` — a backstop, not the diagnostic. Every read of an undeclared value name reds with a location | G1 (step 2), beside C10 — C12's `val assert` half (G2) is one instance | 1.0.4-beta beam (`tests/values.zig` "unresolved name aborts" test) |
 | N14 | **`run {…}` / `use effect {…}` arity mismatches** reach codegen: the block's parameters and the call's arguments disagree, and beam cannot lower them | with N1 (the arity checks) | 1.0.4-beta beam |
 | N15 | **No lowering is recorded for a method called on an associated fn's result** (`Array.range(…).map(…)`): inference leaves the receiver's type open, so erlang falls back to runtime dispatch | G3 (step 4) — method typing on a receiver whose type another call produced | 1.0.4-beta erlang |
+| N16 | **`while` is not part of the language** (decided 2026-09-17). `while (c) { … }` parses as a call to an unbound `while` with a block; the checker's "not in scope" is the right verdict, but the message should name it (`\`while\` does not exist — use \`loop\``), and commonJS's special case lowering that call to a JS `while` goes (01/12 files, handed over) | G0 (step 1) — a targeted diagnostic | maintainer decision C4 |
+| N17 | **The caret of a path error points at the last segment, not the offending one** (`path_access_with_bad_tail_raises_focused_error`, col 25 instead of 19; decided 2026-09-17) | G0 (step 1) | 1.0.1-beta report 3.8 |
 
 **Acceptance:**
 - [ ] N1: a free fn, a record constructor and an instance method each accept a call that omits a
@@ -166,6 +168,8 @@ group's commit, so no family of snapshots is regenerated twice.
 - [ ] N13: the "unresolved name aborts" program reds under `botopink check` with a location
 - [ ] N14: an arity mismatch in `run {…}` / `use effect {…}` reds at the call
 - [ ] N15: `Array.range(0, 3).map(…)` records a lowering; erlang emits no runtime dispatch for it
+- [ ] N16: `while (i < n) { … }` reds under `botopink check` with a located message naming `loop`; no backend lowers a `while` call
+- [ ] N17: the path error's caret points at the offending segment
 
 ### Step 1 — G0, the free wins (C6, C4b, C11, C7, C12's pipeline half)
 
