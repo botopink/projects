@@ -1,6 +1,6 @@
 # Front 09 — hygiene
 
-**Status:** step 1 (group E) **delivered** by 1.0.2-beta front 11, its residual documented with
+**Status:** steps 1, 2, 3, 4 and 6 **delivered** (step 5's doc sweep too — `botopink-lang` `03593dd`, `7d8d2f5`, `10546aa`); what is left are the sweeps of files still owned by an active front (erlang.zig, engine.zig, comptime/**, parser/**) and front 14's rewrite of the 10 cheat-sheet fences in docs.md. Step 1 (group E) **delivered** by 1.0.2-beta front 11, its residual documented with
 `botopink-lang` `e98a5da`; step 3 (group B) **delivered** except 5.4 (`e98a5da`, `meta:build.zig`
 deleted); step 6 **delivered** — 5.5a no meta gate, 5.5b a self-contained hook per repo, 5.9 MIT in
 the seven code repos. Open: steps 2, 4, 5, 5.4 and the lib-test-runner build files; each sweep runs

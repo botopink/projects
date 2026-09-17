@@ -65,7 +65,7 @@ examples; the ones that do not compile are listed in its `scripts/known-broken-e
 | [`06-checker`](./06-checker/README.md) | high | in progress — step 1 (G0) delivered | C1–C13: the checker accepts wrong programs. Plus trailing defaults, decision 2, the `#[@result]` wrap, binding patterns, and the rows found since (N1–N26), including decision 8's checker half, `while`, `new`/`delegate` |
 | [`07-comptime-dedup`](./07-comptime-dedup/README.md) | medium | not started | Four byte-identical copies per comptime slug; a renderer that prints `?` and `"id": 0` |
 | [`08-review-backlog`](./08-review-backlog/README.md) | medium | steps 1–3 delivered; decisions 1–8 taken | The per-report residuals of the 1.0.1-beta snapshot review, in two waves |
-| [`09-hygiene`](./09-hygiene/README.md) | low | steps 1, 3 (except 5.4) and 6 delivered | The removed WAT runtime's leftovers (step 2), `libs/std`'s declared surface (4), retired vocabulary (5), `test-vscode` (5.4), the lib-test-runner build files |
+| [`09-hygiene`](./09-hygiene/README.md) | low | steps 1–4 and 6 delivered; last sweeps wait for file owners | The removed WAT runtime's leftovers (step 2), `libs/std`'s declared surface (4), retired vocabulary (5), `test-vscode` (5.4), the lib-test-runner build files |
 | [`10-library-repos`](./10-library-repos/README.md) | medium | **delivered** | — |
 | [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md) | low | **delivered** | — |
 | [`12-surface-cutover`](./12-surface-cutover/README.md) | critical | **delivered** | `type`, `behavior`, tuples and separators through the whole compiler, `libs/std`, every test source and snapshot; decision 5's markers and decision 8's source migration |
