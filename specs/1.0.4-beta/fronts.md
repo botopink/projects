@@ -111,6 +111,8 @@ matrix is symmetric; the order is in the notes and in [Order](#order).
 
 The first 01–04 (beam, erlang, wasm, js-bridges) landed 2026-09-17.
 
+**Decision 8** (2026-09-17) adds 06 rows N18–N26 and 01 step 6, which runs **after 06 and before 12** (it re-records all four codegen directories).
+
 **Critical path:** 01 ∥ 05 step 2 → **06** → **07** → 08 → 09's last sweeps → **12** → 13 ∥ 14.
 06 and 12 run alone; 07 runs after 06 on the same snapshot tree.
 

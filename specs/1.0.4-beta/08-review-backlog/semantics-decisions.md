@@ -34,6 +34,7 @@ file closes.
 | [5](#decision-5) | The markers of an `#[@External…]` template | only positional `$0`, `$1`, … over the declared parameters, `self` included; `$self` is removed | 0 (fronts.md unowned item; replaces rule T8) |
 | [6](#decision-6) | Generics: written types, inference, `Self`, and the `unknown` type | every written generic type carries all its arguments (`Self` included); inference falls back to `unknown`, which nothing leaves unchecked; no `any` | 1 (`generic_enum_result_t_with_ok_and_err`) |
 | [7](#decision-7) | `val assert Ok(v) = …` on an effect's result | matches the `@Result` value itself; after `catch` the value is no longer a `Result` | 1 (`assert_pattern_with_enum_variant`) |
+| [8](./decision-8-language.md) | Types, `unknown`, unions, `is`, patterns, printing, effects, `loop` | one design, **supersedes 1a, 6 and 7** | — |
 
 **Decided 2026-09-16 by the maintainer: every recommendation is accepted.** 1 → C (`__bp_print/1`
 helper on erlang and beam), 2 → B (a block is a statement; its value comes from `break`), 3 → C (box
@@ -143,6 +144,8 @@ format string from the helper's per-term verb.
 
 ## Decision 1a — the text of an array and a tuple
 
+> **Superseded 2026-09-17 by [decision 8](./decision-8-language.md).** Kept for the record; implement decision 8.
+
 **Decided 2026-09-17 by the maintainer**, from WR4 (`array_zip_via_external_node_template`: wasm
 printed tuple addresses; erlang/beam `[{1,<<"a">>},…]`, commonJS `[ [ 1, 'a' ], … ]`).
 
@@ -210,6 +213,8 @@ methods, `$N` on `declare fn`) and closes the `$0` vs `$self` unowned item.
 <a id="decision-6"></a>
 
 ## Decision 6 — generics and the `unknown` type
+
+> **Superseded 2026-09-17 by [decision 8](./decision-8-language.md).** Kept for the record; implement decision 8.
 
 **Decided 2026-09-17 by the maintainer** (answers `generic_enum_result_t_with_ok_and_err`: a bare
 `Result` parameter accepted any instantiation while `Option.None` was refused against
@@ -334,6 +339,8 @@ Each with a location and the fix (`write Pair<…, …>`, `use if (c is i32) { �
 <a id="decision-7"></a>
 
 ## Decision 7 — `val assert Ok(v) = …` on an effect's result
+
+> **Superseded 2026-09-17 by [decision 8](./decision-8-language.md).** Kept for the record; implement decision 8.
 
 **Decided 2026-09-17 by the maintainer** (answers `assert_pattern_with_enum_variant`).
 

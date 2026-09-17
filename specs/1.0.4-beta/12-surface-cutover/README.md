@@ -24,7 +24,7 @@ directory touched
 
 Deep dives:
 - [`type-grammar.md`](./type-grammar.md) — the `type` declaration, shape resolution, field list, removed-keyword diagnostics, AST
-- [`labeled-tuples.md`](./labeled-tuples.md) — `#(x: 10)` replaces anonymous records; typing, runtime, comptime
+- [`labeled-tuples.md`](./labeled-tuples.md) — `#(…)` replaces anonymous records; **its label rules are superseded by [decision 8](../08-review-backlog/decision-8-language.md) §6 (T1–T7): construction has no labels, written types may, `row.label` is a compile-time index**
 - [`behavior.md`](./behavior.md) — `interface` → `behavior`
 - [`separators.md`](./separators.md) — the comma rule and the formatter's canonical output
 - [`remeasure.md`](./remeasure.md) — counts, drifted citations and risks at `4eadb70`
@@ -109,7 +109,7 @@ Migrate manually (beta phase — no automated codemod):
 - `examples/**` (yamlconf's `@expr(record { … })`);
 - about 25 single-line Zig test strings — edited by hand.
 - **template markers** ([decision 5](../08-review-backlog/semantics-decisions.md#decision-5)): every `#[@External…]` template becomes positional-only — `$self` → `$0`, `$N` → `$N+1` on methods (≈55 in `libs/std/src/primitives.bp`, 3 in `builtins.d.bp`, plus the Zig `\\` test sources); the erlang, commonJS and beam renderers drop `$self`; the checker refuses `$self` and an out-of-range `$N` with a location. Scripted, in one commit with the renderers.
-- **`Self` with its type arguments** ([decision 6](../08-review-backlog/semantics-decisions.md#decision-6) G5): in every generic `type` and `behavior`, `self: Self` → `self: Self<T>` and `-> Self` → `-> Self<T>` (`libs/std`'s `Array<T>` and the other generic primitive interfaces, the Zig test sources); a bare `Self` in a generic declaration is an error from step 4.
+- **[Decision 8](../08-review-backlog/decision-8-language.md) in the sources**: `Self<T>` in generic declarations (§1.2); `#[@result] … -> @Result<T, E>` (and the other effect wrappers, §9); annotations on the `val`/`var … = []` that would fall to `unknown` (§1.4 — 5 in `libs/std`); `while` → `loop (condition)` (§10); tuple labels per T1–T7 (§6); `Display` for `Dict` (§7). The earlier rule for `Self`: in every generic `type` and `behavior`, `self: Self` → `self: Self<T>` and `-> Self` → `-> Self<T>` (`libs/std`'s `Array<T>` and the other generic primitive interfaces, the Zig test sources); a bare `Self` in a generic declaration is an error from step 4.
 
 Re-run the suite; classify snapshots manually (source-only vs output-changed vs behaviour-changed).
 

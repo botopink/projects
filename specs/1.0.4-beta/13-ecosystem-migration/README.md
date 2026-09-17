@@ -39,6 +39,7 @@ For each library:
    - **jhonstart** — `@Context<Element, {}>` → `@Context<Element, #()>`; `record { }` → `#()`.
    - **onze** — `#[mock] behavior`; confirm the mock synthesis reads `DeclKind.behavior`.
    - **rakun** — its 15 `DeclKind.Record` checks in `src/decorators.bp` read `DeclKind.Type` (12 step 1 removed the old variants; delete rakun's `known-red-libs.txt` line in the landing); annotated fields keep their annotations inside the field list; records with no fields become `type Name { methods }`.
+2b. **[Decision 8](../08-review-backlog/decision-8-language.md)**: `Self<T>` in generic declarations, `@Result<T, E>` returns on effect fns, annotations on `[]` declarations (18 in erika, 4 in jhonstart), `while` → `loop (condition)`, anonymous records → tuples with labels in the types that cross functions (§6 T1–T7).
 3. **Examples** (decided 2026-09-17): every example compiles — they were not built by any gate and several broke (emilia `emilia-card`: `'h1' expects 2 argument(s)`; jhonstart `jhonstart-counter`/`-html`/`-todo`: `expects 2 argument(s)`, `jonhstar`: `unbound variable 'html'`); each library's gate builds its examples from then on, and the known-broken ones are listed until this step fixes them.
 4. `botopink format` over the library; `botopink format --check` passes.
 5. The library's test cell passes.

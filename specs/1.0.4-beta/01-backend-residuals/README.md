@@ -2,7 +2,7 @@
 
 **Status:** steps 1–3 **delivered** 2026-09-17 (merges `00b8975` beam, `4eadb70` wasm, `dbe2863`
 commonJS, on `botopink-lang` `feat`) — see [Delivered by this front](#delivered-by-this-front). Step 4 **delivered** for commonJS, erlang and wasm (PR1, PR2, PR4 — merge on `feat` after `af9b5b6`);
-PR3 (beam) and step 5 (BR5) run after 06. What the four backend fronts left when they landed on `botopink-lang`
+PR3 (beam) is absorbed by step 6's formatter; steps 5 (BR5) and 6 run after 06. What the four backend fronts left when they landed on `botopink-lang`
 `origin/feat` = `ed15323` (2026-09-17): 01 beam (`a743955`), 02 erlang (`42429dc`), 03 wasm
 (`ed15323`), 04 js-bridges (`bd7836c`). Those numbers are retired; this front takes 01 — see
 [Delivered by the backend fronts](#delivered-by-the-backend-fronts).
@@ -109,6 +109,23 @@ The maintainer answered BR4: beam stops evaluating `@External.Erlang` templates 
 | # | Row | Acceptance |
 |---|---|---|
 | BR5 | beam lowers an `@External.Erlang` template to direct BEAM code at build time (the erlang backend already renders the same template to source; reuse that rendering or a shared template walker, do not add a second template language) instead of `'__bp_erl_eval'/2` | no `'__bp_erl_eval'` left in any beam snapshot, or each remaining use named with the reason in `src/codegen/beam/AGENTS.md`; RUN LOGs unchanged; `beam_export_audit.sh` assembles every module |
+
+### Step 6 — decision 8 at run time (after 06)
+
+[Decision 8](../08-review-backlog/decision-8-language.md) moves every backend once 06 has typed it.
+Runs **after [`../06-checker/`](../06-checker/README.md)** and before 12.
+
+| # | Row |
+|---|---|
+| D8-1 | `x is T` by value on the four backends (§4): numeric ranges, integral floats converted, constructors, tuple arity; wasm reads the box tag |
+| D8-2 | `unknown` and unions at run time (§2, §3): wasm boxes a value entering them (the `?T` box generalised); equality with numbers by value when an operand is `unknown` |
+| D8-3 | `case` arms (§5): type tests, `..`, guards |
+| D8-4 | `row.label` → positional access (§6) — resolved by the checker, lowered as an index |
+| D8-5 | **The formatter** (§7): one derived formatter per type, source-shaped (`[1, 2]`, `#(1, "a")`, `Point(x: 1, y: 2)`, `f64` always `5.0`), `Display` honoured when nested; replaces the decision-1a printers on commonJS, erlang and wasm and gives beam its first (absorbs PR3) |
+| D8-6 | commonJS's `while` special case deleted (§10); `loop (condition)` lowered on all four |
+
+Every re-recorded RUN LOG is checked against §7; the snapshots recorded under decision 1a are
+re-recorded once, here.
 
 ## Routed out
 

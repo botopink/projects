@@ -145,12 +145,15 @@ group's commit, so no family of snapshots is regenerated twice.
 | N15 | **No lowering is recorded for a method called on an associated fn's result** (`Array.range(…).map(…)`): inference leaves the receiver's type open, so erlang falls back to runtime dispatch | G3 (step 4) — method typing on a receiver whose type another call produced | 1.0.4-beta erlang |
 | N16 | **`while` is not part of the language** (decided 2026-09-17). `while (c) { … }` parses as a call to an unbound `while` with a block; the checker's "not in scope" is the right verdict, but the message should name it (`\`while\` does not exist — use \`loop\``), and commonJS's special case lowering that call to a JS `while` goes (01/12 files, handed over) | G0 (step 1) — a targeted diagnostic | maintainer decision C4 |
 | N17 | **The caret of a path error points at the last segment, not the offending one** (`path_access_with_bad_tail_raises_focused_error`, col 25 instead of 19; decided 2026-09-17) | G0 (step 1) | 1.0.1-beta report 3.8 |
-| N18 | **G1/G6 — a written generic type without all its arguments is accepted** (`fn isOk(r: Result)`); decision 6. Measure every such site in `libs/std`, the libraries and the test sources first | G3 (generics) | decision 6 |
-| N19 | **G2/G3 — explicit type arguments at a use (`Option<i32>.None`, `first<i32>([])`) do not parse; a variant with no payload does not take its type from the context** (`val n: Option<i32> = Option.None` is refused) | G3 | decision 6 |
-| N20 | **G4 — the `unknown` type**: new type, one-way assignability, `is` / `case` narrowing with a mandatory `_`, the inference fallback, the `pub` warning; the run-time test on all four backends (wasm boxes with a type tag) | G3 + backends | decision 6 |
-| N21 | **G5 — `Self` without its type arguments in a generic type or behavior**; `Self<U>` in a generic behavior and the implementer-arity check | G3 (the error lands with 12 step 4) | decision 6 |
-| N22 | **`val assert Ok(v) = x catch d` type-checks** although `catch` already produced the success value; `val assert Ok(v) = fallibleCall()` must match the `@Result` | G2 (effects) | decision 7 |
+| N18 | **Decision 8 §1 — generic types**: written types carry all arguments (1.1), `Self<…>` in generic types and behaviors plus the non-generic implementer rule (1.2), explicit type arguments at a use (1.3), type arguments decided only where a value is born, with the `unknown` fallback warning (1.4) | G3 | decision 8 |
+| N19 | **Decision 8 §2 — `unknown`**: one-way assignability, allowed operations, value equality with numbers, `pub` inferred-`unknown` error, no `any` | G3 | decision 8 |
+| N20 | **Decision 8 §3 — union types**: `A \| B` syntax, inference from literals and branches (no error), errors at the use, joining of single-value immutable containers and `Dict`, not arrays | G3 | decision 8 |
+| N21 | **Decision 8 §4 — `is` by value**: the pattern forms, narrowing with conversion, the always-false warning | G3 | decision 8 |
+| N22 | **Decision 8 §5 — `case` arms**: `Pattern { n -> … }`, variant/tuple/literal/`_` patterns, `..`, `.Variant`, names in patterns, `when (…)`, exhaustiveness | G3 | decision 8 |
 | N23 | **The `@emit` fallback drops every module `val` binding** (`comptime/infer.zig` ~`:223-243`: the first pass skips `.val` because a body may cite code not yet emitted; when the second pass fails, `comptime.zig` ~`:529-547` returns that list). Infer `val`s tolerantly there — a failure leaves that one `val` unbound. Found by the B6 investigation (`completion_decorator_record`: `other` and `usePost` missing) | G0 (step 1) | 08 report 3.12, 2026-09-17 |
+| N24 | **Decision 8 §6 — tuple labels**: labels from construction variables and written types, `row.label` → index at compile time, labels ignored by type comparison, the mismatch warning | G3 | decision 8 |
+| N25 | **Decision 8 §9 — effects**: `#[@result]` requires `@Result<T, E>` (and the other effect/wrapper pairs); `val assert Ok/Err` on a `@Result`, refused after `catch` | G2 | decision 8 (was decision 7) |
+| N26 | **Decision 8 §10 — `loop (condition)`** and `while` refused with a located message (replaces N16's diagnostic text) | G0 | decision 8 |
 
 **Acceptance:**
 - [ ] N1: a free fn, a record constructor and an instance method each accept a call that omits a
@@ -176,8 +179,7 @@ group's commit, so no family of snapshots is regenerated twice.
 - [ ] N15: `Array.range(0, 3).map(…)` records a lowering; erlang emits no runtime dispatch for it
 - [ ] N16: `while (i < n) { … }` reds under `botopink check` with a located message naming `loop`; no backend lowers a `while` call
 - [ ] N17: the path error's caret points at the offending segment
-- [ ] N18–N21: decision 6's acceptance
-- [ ] N22: decision 7's three examples behave as annotated
+- [ ] N18–N22, N24–N26: every example of [decision 8](../08-review-backlog/decision-8-language.md) sections 1–6, 9, 10 compiles or fails exactly as annotated (checker half; run time is 01 step 6)
 - [ ] N23: a module with a failing `@emit` still binds its well-typed `val`s
 
 ### Step 1 — G0, the free wins (C6, C4b, C11, C7, C12's pipeline half)
