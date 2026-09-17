@@ -175,10 +175,10 @@ Separate design questions. They must not be lost when the decisions close.
 
 | Row | Question |
 |---|---|
-| `codegen-builtins-aggregates.md:102` `assert_pattern_with_enum_variant` | Is the `Ok` in `if ((_match instanceof Ok))` the `@Result` variant or a user enum? The source never declares it |
+| `codegen-builtins-aggregates.md:102` `assert_pattern_with_enum_variant` | Is the `Ok` in `if ((_match instanceof Ok))` the `@Result` variant or a user enum? The source never declares it · **Decided 2026-09-17:** [decision 7](./semantics-decisions.md#decision-7) |
 | `codegen-values-dispatch-externals.md:104` `operators_equality_maps_to` | beam emits `is_eq` (arithmetic) where erlang emits `=:=` (exact) — a bug, or guaranteed safe by the typing? · **Decided 2026-09-17: a bug.** beam emits `is_eq_exact`, like erlang's `=:=` — [`../01-backend-residuals/`](../01-backend-residuals/README.md) |
 | `codegen-values-dispatch-externals.md:183` `external_a3_result_template_owned_declare_fn` | The committed RUN LOG `42` came from a stale cache entry; a cold run would blank it. Is the pinned value trustworthy? · **Closed 2026-09-17:** every landing gate since ran with the runtime cache deleted (`gate.sh --cold`); the RUN LOG `42` on commonJS, erlang and beam is a cold-run value |
 | `comptime-decls-variants.md:139` `path_access_with_bad_tail_raises_focused_error` | The caret points at the last path segment (col 25), not the offending one (col 19) — intended? · **Decided 2026-09-17: not intended** — the caret points at the offending segment (col 19) — [`../06-checker/`](../06-checker/README.md) |
-| `comptime-generics-effects-decorators.md:113` `generic_enum_result_t_with_ok_and_err` | Bare generic `Result` accepts any instantiation while bare `Option.None` is rejected against `Option<i32>`. Is bare `Result` legal? |
+| `comptime-generics-effects-decorators.md:113` `generic_enum_result_t_with_ok_and_err` | Bare generic `Result` accepts any instantiation while bare `Option.None` is rejected against `Option<i32>`. Is bare `Result` legal? · **Decided 2026-09-17:** [decision 6](./semantics-decisions.md#decision-6) |
 | `lsp.md:103` `hover_interface_method` | `abs` is declared in `interface Signed`, not `I32` — should the hover footer name the declaring or the receiver interface? · **Decided 2026-09-17:** `*from interface Signed (via I32)*` |
 | `lsp.md:104` `completion_decorator_record` | `usePost` is missing from its own completion list — correct, or a sign the degraded path drops `val` bindings? |

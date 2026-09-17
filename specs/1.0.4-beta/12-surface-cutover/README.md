@@ -98,6 +98,7 @@ Migrate manually (beta phase — no automated codemod):
 - `examples/**` (yamlconf's `@expr(record { … })`);
 - about 25 single-line Zig test strings — edited by hand.
 - **template markers** ([decision 5](../08-review-backlog/semantics-decisions.md#decision-5)): every `#[@External…]` template becomes positional-only — `$self` → `$0`, `$N` → `$N+1` on methods (≈55 in `libs/std/src/primitives.bp`, 3 in `builtins.d.bp`, plus the Zig `\\` test sources); the erlang, commonJS and beam renderers drop `$self`; the checker refuses `$self` and an out-of-range `$N` with a location. Scripted, in one commit with the renderers.
+- **`Self` with its type arguments** ([decision 6](../08-review-backlog/semantics-decisions.md#decision-6) G5): in every generic `type` and `behavior`, `self: Self` → `self: Self<T>` and `-> Self` → `-> Self<T>` (`libs/std`'s `Array<T>` and the other generic primitive interfaces, the Zig test sources); a bare `Self` in a generic declaration is an error from step 4.
 
 Re-run the suite; classify snapshots manually (source-only vs output-changed vs behaviour-changed).
 

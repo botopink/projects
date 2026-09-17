@@ -145,6 +145,11 @@ group's commit, so no family of snapshots is regenerated twice.
 | N15 | **No lowering is recorded for a method called on an associated fn's result** (`Array.range(…).map(…)`): inference leaves the receiver's type open, so erlang falls back to runtime dispatch | G3 (step 4) — method typing on a receiver whose type another call produced | 1.0.4-beta erlang |
 | N16 | **`while` is not part of the language** (decided 2026-09-17). `while (c) { … }` parses as a call to an unbound `while` with a block; the checker's "not in scope" is the right verdict, but the message should name it (`\`while\` does not exist — use \`loop\``), and commonJS's special case lowering that call to a JS `while` goes (01/12 files, handed over) | G0 (step 1) — a targeted diagnostic | maintainer decision C4 |
 | N17 | **The caret of a path error points at the last segment, not the offending one** (`path_access_with_bad_tail_raises_focused_error`, col 25 instead of 19; decided 2026-09-17) | G0 (step 1) | 1.0.1-beta report 3.8 |
+| N18 | **G1/G6 — a written generic type without all its arguments is accepted** (`fn isOk(r: Result)`); decision 6. Measure every such site in `libs/std`, the libraries and the test sources first | G3 (generics) | decision 6 |
+| N19 | **G2/G3 — explicit type arguments at a use (`Option<i32>.None`, `first<i32>([])`) do not parse; a variant with no payload does not take its type from the context** (`val n: Option<i32> = Option.None` is refused) | G3 | decision 6 |
+| N20 | **G4 — the `unknown` type**: new type, one-way assignability, `is` / `case` narrowing with a mandatory `_`, the inference fallback, the `pub` warning; the run-time test on all four backends (wasm boxes with a type tag) | G3 + backends | decision 6 |
+| N21 | **G5 — `Self` without its type arguments in a generic type or behavior**; `Self<U>` in a generic behavior and the implementer-arity check | G3 (the error lands with 12 step 4) | decision 6 |
+| N22 | **`val assert Ok(v) = x catch d` type-checks** although `catch` already produced the success value; `val assert Ok(v) = fallibleCall()` must match the `@Result` | G2 (effects) | decision 7 |
 
 **Acceptance:**
 - [ ] N1: a free fn, a record constructor and an instance method each accept a call that omits a
@@ -170,6 +175,8 @@ group's commit, so no family of snapshots is regenerated twice.
 - [ ] N15: `Array.range(0, 3).map(…)` records a lowering; erlang emits no runtime dispatch for it
 - [ ] N16: `while (i < n) { … }` reds under `botopink check` with a located message naming `loop`; no backend lowers a `while` call
 - [ ] N17: the path error's caret points at the offending segment
+- [ ] N18–N21: decision 6's acceptance
+- [ ] N22: decision 7's three examples behave as annotated
 
 ### Step 1 — G0, the free wins (C6, C4b, C11, C7, C12's pipeline half)
 

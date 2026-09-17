@@ -32,6 +32,8 @@ file closes.
 | [4](#decision-4) | The severity of `assert` outside test mode | A — always fatal, with message and location, on every backend | 1 |
 | [1a](#decision-1a) | The text `@print` produces for arrays and tuples | `[a,b]` and `#(a,b)`, a nested string quoted — on every backend | 0 (from WR4) |
 | [5](#decision-5) | The markers of an `#[@External…]` template | only positional `$0`, `$1`, … over the declared parameters, `self` included; `$self` is removed | 0 (fronts.md unowned item; replaces rule T8) |
+| [6](#decision-6) | Generics: written types, inference, `Self`, and the `unknown` type | every written generic type carries all its arguments (`Self` included); inference falls back to `unknown`, which nothing leaves unchecked; no `any` | 1 (`generic_enum_result_t_with_ok_and_err`) |
+| [7](#decision-7) | `val assert Ok(v) = …` on an effect's result | matches the `@Result` value itself; after `catch` the value is no longer a `Result` | 1 (`assert_pattern_with_enum_variant`) |
 
 **Decided 2026-09-16 by the maintainer: every recommendation is accepted.** 1 → C (`__bp_print/1`
 helper on erlang and beam), 2 → B (a block is a statement; its value comes from `break`), 3 → C (box
@@ -202,6 +204,153 @@ methods, `$N` on `declare fn`) and closes the `$0` vs `$self` unowned item.
 - [ ] No `$self` in any template, renderer or test source; `$self` in a template is a located check error
 - [ ] `$N` with N ≥ the parameter count is a located check error
 - [ ] Generated code and RUN LOGs byte-identical before and after the renumbering commit
+
+---
+
+<a id="decision-6"></a>
+
+## Decision 6 — generics and the `unknown` type
+
+**Decided 2026-09-17 by the maintainer** (answers `generic_enum_result_t_with_ok_and_err`: a bare
+`Result` parameter accepted any instantiation while `Option.None` was refused against
+`Option<i32>`).
+
+### G1 — a written type carries all its type arguments
+
+In a parameter, a return type, a field and an annotation, at any depth.
+
+```botopink
+fn get(b: Box) -> i32 { … }                        // error: Box needs 1 type argument
+fn swap(p: Pair<i32>) -> Pair<i32> { … }           // error: Pair needs 2, got 1
+fn swap<A, B>(p: Pair<A, B>) -> Pair<B, A> { … }   // ok
+val xs: Box<Option<i32>>[] = [];                   // ok
+```
+
+### G2 — explicit type arguments at a use site, optional
+
+```botopink
+val z = Option<i32>.None;
+val c = first<i32>([]);
+val b = Box<string>(value: "");
+```
+
+The parser does not accept explicit type arguments on a call today; it does after this.
+
+### G3 — how a type argument is decided
+
+First match wins: (1) written at the use (G2); (2) the arguments passed; (3) the immediate context —
+return type, annotation, parameter; (4) later uses in the same scope; (5) nothing decided it →
+`unknown`.
+
+```botopink
+fn safeDiv(a: i32, b: i32) -> Option<i32> { if (b == 0) { return Option.None; }; … }  // (3)
+val z = Option.None; takesInt(z);      // (4) → Option<i32>
+var out = []; out = out.append([1]);   // (4) → i32[]
+val c = first([]);                     // (5) → unknown
+```
+
+A parameter or return type is never inferred as `unknown` (G1 makes it written). A `pub` declaration
+whose inferred type contains `unknown` is a **warning**.
+
+### G4 — the `unknown` type
+
+Every value is assignable to `unknown`; `unknown` is assignable only to `unknown`. Using it requires a
+type check: `is` narrows, a `case` over `unknown` narrows per arm and requires `_`. `@print` accepts
+it. There is **no `any`**.
+
+```botopink
+fn double(x: unknown) -> i32 {
+    if (x is i32) { return x * 2; };   // x is i32 inside
+    return 0;
+}
+val y: i32 = x;       // error: unknown is not i32 — check with `is`
+
+fn describe(x: unknown) -> string {
+    return case x {
+        n: i32          -> "number";
+        s: string       -> "text";
+        b: Box<unknown> -> "a box";
+        _               -> "other";
+    };
+}
+```
+
+A generic type is tested with `unknown` arguments only (`is Box<unknown>`; `is Box<i32>` is an error)
+— the runtime knows the constructor, not its argument. The `case` arm syntax above is a sketch for
+the implementing front.
+
+**All four backends, together.** commonJS, erlang and beam test the runtime representation
+(`typeof`, `is_integer/1`, record tags); **wasm boxes every `unknown` with a type tag** (the boxed
+`?T` mechanism of decision 3, generalised), and `is` reads the tag.
+
+### G5 — `Self` follows G1, in types and in behaviors alike
+
+| The declaration has type parameters? | `Self` | bare `Self` |
+|---|---|---|
+| no (`type Point(x: i32)`, `behavior Show`) | `Self` | the only form |
+| yes (`type Box<T>`, `behavior Mappable<T>`) | `Self<T>`, `Self<U>`, … — all arguments | error |
+
+```botopink
+type Box<T>(value: T) {
+    fn get(self: Self<T>) -> T { … }
+    fn map<U>(self: Self<T>, f: fn(x: T) -> U) -> Self<U> { … }   // returns Box<U>
+}
+behavior Mappable<T> {
+    fn map<U>(self: Self<T>, f: fn(x: T) -> U) -> Self<U>;
+}
+type Box<T>(value: T) implement Mappable<T> { … }   // ok: Box has 1 type parameter
+type Point(x: i32) implement Mappable<i32> { … }    // error: Point has none for Self<U>
+```
+
+In a behavior with type parameters, `Self<U>` is the implementing type with other arguments, so an
+implementer must have the same number of type parameters. Inside a non-generic behavior (`Show`),
+`Self` stays bare even when a generic type implements it; that implementation writes `Self<T>`.
+
+### G6 — diagnostics
+
+```
+error: `Pair` is generic and needs 2 type arguments, got 1
+error: `Box` is generic, so `Self` needs its type arguments — write Self<T>
+error: `c` is unknown — check its type before using it
+```
+
+Each with a location and the fix (`write Pair<…, …>`, `use if (c is i32) { … }`, `first<i32>([])`).
+
+### Where it lands
+
+- The checker rules (G1–G4, G6, G5's check) — [`../06-checker/`](../06-checker/README.md) N18–N21.
+- `unknown` at run time on the four backends — with 06's N20 (the typed AST decides every test).
+- Rewriting `self: Self` → `self: Self<T>` in every generic declaration (`libs/std`'s `Array<T>` and
+  the other generic primitive interfaces, tests, libraries) — [`../12-surface-cutover/`](../12-surface-cutover/README.md)
+  step 3, with the new surface; the bare-`Self` error lands in its step 4.
+
+### Acceptance
+
+- [ ] Every example above compiles or fails exactly as annotated, on all four backends
+- [ ] `grep` finds no written generic type without its arguments in `libs/std`, the libraries or the test sources
+
+---
+
+<a id="decision-7"></a>
+
+## Decision 7 — `val assert Ok(v) = …` on an effect's result
+
+**Decided 2026-09-17 by the maintainer** (answers `assert_pattern_with_enum_variant`).
+
+A fallible call is a `@Result` value until something handles it. `val assert Ok(n) = …` matches
+**that value**; `catch` handles it, and what `catch` produces is the success value, not a `Result`.
+
+```botopink
+#[@result]
+fn parse(s: string) -> @Result<i32> { … throw "invalid"; … }
+
+val assert Ok(n) = parse("42");            // ok: n is i32; a failure is a fatal assert (decision 4)
+val m = parse("42") catch 0;               // ok: m is i32
+val assert Ok(n) = parse("42") catch 0;    // error: after `catch` the value is i32, not @Result<i32>
+```
+
+The fixture is rewritten into two that declare and run what they use: one over a declared enum, one
+over an effect result as above.
 
 ---
 
