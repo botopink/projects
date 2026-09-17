@@ -1,6 +1,6 @@
 # Front 12 — Surface cutover (`type`, `behavior`, labeled tuples, separators)
 
-**Status:** not started. Carried from 1.0.3-beta front 02, amended by the maintainer's decisions of
+**Status:** in progress (`fix/surface-cutover`). **Reordered 2026-09-17 by the maintainer: 12 runs now, before 06.** 06 then writes its rules on the new AST instead of porting them twice. **Scope moved out:** the source migration that needs the checker to accept decision 8's forms — `Self<T>`, `#[@result] … -> @Result<T, E>`, annotations on `[]` that would fall to `unknown`, `while` → `loop (condition)`, `Display` for `Dict` — is [`../06-checker/`](../06-checker/README.md) step 9. Tuple labels (T1–T7) and decision 5's markers stay here. Carried from 1.0.3-beta front 02, amended by the maintainer's decisions of
 2026-09-17: [decision 5](../08-review-backlog/semantics-decisions.md#decision-5) (positional template
 markers), [decision 8](../08-review-backlog/decision-8-language.md) (tuple labels, `Self<T>`,
 `@Result<T, E>`, `loop (condition)`, the source migration of `unknown`-falling declarations), and the
@@ -11,8 +11,7 @@ the steps below do not yet cover; fold them in before step 1.
 
 **Priority:** critical — the milestone's change. Four keywords (`record`, `enum`, `interface`, plus
 the `record { }` literal) become two (`type`, `behavior`) and a tuple form, with one separator rule.
-**Depends on:** every 1.0.2-derived front closed (01–10) — this front touches every file they own,
-and the library gate cannot be read while they are open. [`../11-dead-keywords-residual/`](../11-dead-keywords-residual/README.md)
+**Depends on:** nothing open — reordered ahead of 06, 07, 08, 01 steps 5–6 and 09's sweeps, which then work on the new surface. Nothing else touches `modules/compiler-core/src/**`, `libs/std/**` or `examples/**` while it runs (09's `fix/hygiene-build` is limited to `build.zig`'s `test-vscode` step and the lib-test-runner build files). [`../11-dead-keywords-residual/`](../11-dead-keywords-residual/README.md)
 is delivered
 **Owns:** `modules/compiler-core/src/**` (lexer, parser, `ast.zig`, `comptime.zig` and its embedded
 prelude, `comptime/**` (the `.bp` prelude sources are `libs/std/src/*` embedded through `build.zig`, which is not this front's — [`remeasure.md`](./remeasure.md) R8), `format.zig`, `codegen/**` including
@@ -111,7 +110,7 @@ Migrate manually (beta phase — no automated codemod):
 - `examples/**` (yamlconf's `@expr(record { … })`);
 - about 25 single-line Zig test strings — edited by hand.
 - **template markers** ([decision 5](../08-review-backlog/semantics-decisions.md#decision-5)): every `#[@External…]` template becomes positional-only — `$self` → `$0`, `$N` → `$N+1` on methods (≈55 in `libs/std/src/primitives.bp`, 3 in `builtins.d.bp`, plus the Zig `\\` test sources); the erlang, commonJS and beam renderers drop `$self`; the checker refuses `$self` and an out-of-range `$N` with a location. Scripted, in one commit with the renderers.
-- **[Decision 8](../08-review-backlog/decision-8-language.md) in the sources**: `Self<T>` in generic declarations (§1.2); `#[@result] … -> @Result<T, E>` (and the other effect wrappers, §9); annotations on the `val`/`var … = []` that would fall to `unknown` (§1.4 — 5 in `libs/std`); `while` → `loop (condition)` (§10); tuple labels per T1–T7 (§6); `Display` for `Dict` (§7). The earlier rule for `Self`: in every generic `type` and `behavior`, `self: Self` → `self: Self<T>` and `-> Self` → `-> Self<T>` (`libs/std`'s `Array<T>` and the other generic primitive interfaces, the Zig test sources); a bare `Self` in a generic declaration is an error from step 4.
+- **[Decision 8](../08-review-backlog/decision-8-language.md) in the sources — moved to [06 step 9](../06-checker/README.md) by the 2026-09-17 reorder, except tuple labels (T1–T7, here)**: `Self<T>` in generic declarations (§1.2); `#[@result] … -> @Result<T, E>` (and the other effect wrappers, §9); annotations on the `val`/`var … = []` that would fall to `unknown` (§1.4 — 5 in `libs/std`); `while` → `loop (condition)` (§10); tuple labels per T1–T7 (§6); `Display` for `Dict` (§7). The earlier rule for `Self`: in every generic `type` and `behavior`, `self: Self` → `self: Self<T>` and `-> Self` → `-> Self<T>` (`libs/std`'s `Array<T>` and the other generic primitive interfaces, the Zig test sources); a bare `Self` in a generic declaration is an error from step 4.
 
 Re-run the suite; classify snapshots manually (source-only vs output-changed vs behaviour-changed).
 

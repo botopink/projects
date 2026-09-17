@@ -62,13 +62,13 @@ examples; the ones that do not compile are listed in its `scripts/known-broken-e
 |---|---|---|---|
 | [`01-backend-residuals`](./01-backend-residuals/README.md) | medium | steps 1–4 **delivered**; 5–6 after 06 | Open: step 5 — beam compiles `@External.Erlang` templates at build time (BR5; a partial start in `.tasks/beam-templates`); step 6 — [decision 8](./08-review-backlog/decision-8-language.md) at run time on the four backends (`is`, `unknown`/unions, `case` arms, tuple labels, the formatter, `loop (condition)`) |
 | [`05-cli-residuals`](./05-cli-residuals/README.md) | medium | **delivered** | — |
-| [`06-checker`](./06-checker/README.md) | high | not started — **next** | C1–C13: the checker accepts wrong programs. Plus trailing defaults, decision 2, the `#[@result]` wrap, binding patterns, and the rows found since (N1–N26), including decision 8's checker half, `while`, `new`/`delegate` |
+| [`06-checker`](./06-checker/README.md) | high | after 12 | C1–C13: the checker accepts wrong programs. Plus trailing defaults, decision 2, the `#[@result]` wrap, binding patterns, and the rows found since (N1–N26), including decision 8's checker half, `while`, `new`/`delegate` |
 | [`07-comptime-dedup`](./07-comptime-dedup/README.md) | medium | not started | Four byte-identical copies per comptime slug; a renderer that prints `?` and `"id": 0` |
 | [`08-review-backlog`](./08-review-backlog/README.md) | medium | steps 1–3 delivered; decisions 1–8 taken | The per-report residuals of the 1.0.1-beta snapshot review, in two waves |
 | [`09-hygiene`](./09-hygiene/README.md) | low | steps 1, 3 (except 5.4) and 6 delivered | The removed WAT runtime's leftovers (step 2), `libs/std`'s declared surface (4), retired vocabulary (5), `test-vscode` (5.4), the lib-test-runner build files |
 | [`10-library-repos`](./10-library-repos/README.md) | medium | **delivered** | — |
 | [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md) | low | **delivered** | — |
-| [`12-surface-cutover`](./12-surface-cutover/README.md) | critical | not started (re-measured) | `type`, `behavior`, tuples and separators through the whole compiler, `libs/std`, every test source and snapshot; decision 5's markers and decision 8's source migration |
+| [`12-surface-cutover`](./12-surface-cutover/README.md) | critical | in progress — ahead of 06 | `type`, `behavior`, tuples and separators through the whole compiler, `libs/std`, every test source and snapshot; decision 5's markers and decision 8's source migration |
 | [`13-ecosystem-migration`](./13-ecosystem-migration/README.md) | high | not started | emilia, erika, jhonstart, onze, rakun migrated to the new surface and to decision 8; the known-broken examples fixed |
 | [`14-tooling-and-docs`](./14-tooling-and-docs/README.md) | high | not started | Language-server texts and completions (including completion in a file that does not compile), VS Code grammar and snippets, user docs |
 

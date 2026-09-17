@@ -1,12 +1,12 @@
 # Front 06 — checker
 
-**Status:** not started — **the next front**. Carried whole from 1.0.2-beta front 07, plus the rows
+**Status:** not started — opens **after [`../12-surface-cutover/`](../12-surface-cutover/README.md)** (reordered by the maintainer, 2026-09-17): its rules are written on the unified `TypeDecl`/`BehaviorDecl` AST. Carried whole from 1.0.2-beta front 07, plus the rows
 collected since — [Step 0](#step-0--rows-added-in-104-beta), N1–N26, including the checker half of
 [decision 8](../08-review-backlog/decision-8-language.md).
 
 **Priority:** high — the checker accepts wrong programs, so a large share of the "happy path"
 suite asserts nothing
-**Depends on:** nothing open — [`01-backend-residuals`](../01-backend-residuals/README.md) steps 1–4
+**Depends on:** [`../12-surface-cutover/`](../12-surface-cutover/README.md) (landed first). Before the reorder: [`01-backend-residuals`](../01-backend-residuals/README.md) steps 1–4
 and [`05-cli-residuals`](../05-cli-residuals/README.md) landed (2026-09-17, `b4cf700`), and erika
 compiles for C9's measurement (`libs/std`'s `String.split("")` fixed, `c8c2541`). 01's steps 5–6 wait
 for this front
@@ -323,6 +323,19 @@ codegen decision, not a checker one.
       assertion is "it compiles"; dropped patterns are deleted from both test files
 - [ ] Each executing backend of a narrowing fixture prints the same, correct value under the
       decided string-rendering rule
+
+### Step 9 — Decision 8 in the sources (moved from 12)
+
+Once this front's checker accepts decision 8's forms, migrate the sources to them — compiler test
+sources, `libs/std`, `examples/` (the libraries are 13's): `Self<T>` in every generic `type` and
+`behavior` (§1.2, then a bare `Self` in a generic declaration is an error); `#[@result] … ->
+@Result<T, E>` and the other effect wrappers (§9); annotations on the `val`/`var … = []` that would
+fall to `unknown` (§1.4 — 5 in `libs/std`); `while` → `loop (condition)` (§10, `Array.chunked` /
+`sliding`); `Display` for `Dict` (§7). `libs/std` is in this step's scope by the reorder.
+
+**Acceptance:**
+- [ ] No bare `Self` in a generic declaration, no effect fn without its wrapper, no `while`, in the owned sources
+- [ ] `zig build test` and `test-libs` std cells green
 
 ## Gate
 

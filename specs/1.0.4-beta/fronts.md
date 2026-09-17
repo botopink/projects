@@ -14,13 +14,13 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/` unless a
 |---|---|---|---|
 | **01** [`backend-residuals`](./01-backend-residuals/README.md) | `src/codegen/beam_asm.zig`, `src/codegen/beam/**`, `src/codegen/erlang.zig`, `src/codegen/wat.zig`, `src/codegen/wat/**`, `src/codegen/commonJS.zig`, `src/codegen/typescript.zig`, `src/codegen/js/**`, `src/codegen/runtime.zig` (note 2) · the `KNOWN` notes and new fixtures of its rows in `src/codegen/tests/**` (carve-out) | `snapshots/codegen/{beam,erlang,wasm,commonJS}/` | steps 1–4 **delivered**; steps 5 (BR5) and 6 (decision 8 at run time) run **after 06** |
 | **05** [`cli-residuals`](./05-cli-residuals/README.md) | `modules/compiler-cli/**`, `modules/lib-test-runner/**`, `build.zig`, `.github/workflows/**`, `scripts/**` except `scripts/snap_audit.sh` | — | **delivered** (`440a1d3`); its files have no open row — a follow-up in them (09's 5.4, the lib-test-runner build files) is 09's |
-| **06** [`checker`](./06-checker/README.md) | `src/comptime/{infer,types,env,unify,transform,eval,error}.zig` · `src/parser/{decls,exprs,patterns}.zig` · `src/lexer.zig` and `src/lexer/**` for the `new`/`delegate`/`.@"const"` removal | `snapshots/comptime/**`, and it can move **all four** codegen directories and LSP completion snapshots | not started — **next** |
+| **06** [`checker`](./06-checker/README.md) | `src/comptime/{infer,types,env,unify,transform,eval,error}.zig` · `src/parser/{decls,exprs,patterns}.zig` · `src/lexer.zig` and `src/lexer/**` for the `new`/`delegate`/`.@"const"` removal | `snapshots/comptime/**`, and it can move **all four** codegen directories and LSP completion snapshots | not started — after 12 (reordered 2026-09-17) |
 | **07** [`comptime-dedup`](./07-comptime-dedup/README.md) | `src/comptime/snapshot.zig`, `src/comptime/tests/helpers.zig` | `snapshots/comptime/**` (layout: 3 of 4 copies deleted) | not started |
 | **08** [`review-backlog`](./08-review-backlog/README.md) | `src/utils/snap.zig`, `scripts/snap_audit.sh`, `src/codegen/tests/**`, `src/comptime/tests/**`, `src/parser/tests/**`, `modules/language-server/src/tests/**` (minus the carve-outs of 01 and 07) · status lines of the 1.0.1-beta reports (meta repo) | — (moves a snapshot only by renaming its test) | steps 1–3 delivered as 1.0.2-beta review-tooling; decisions 1–8 taken |
 | **09** [`hygiene`](./09-hygiene/README.md) | `src/comptime/runtime/persistent_erl.zig` · `modules/lib-test-runner/build.zig` + `.zon`, `build.zig`'s `test-vscode` step (5.4) · `libs/std/botopink.json`, `libs/std/AGENTS.md` · `examples/**`, `README.md`, `docs.md`, every `AGENTS.md`, comments (after owners) | — | steps 1, 3 (except 5.4) and 6 delivered; 2, 4, 5 open |
 | **10** [`library-repos`](./10-library-repos/README.md) | — | — | **delivered** |
 | **11** [`dead-keywords-residual`](./11-dead-keywords-residual/README.md) | — | — | **delivered** |
-| **12** [`surface-cutover`](./12-surface-cutover/README.md) | `modules/compiler-core/src/**`, `modules/language-server/src/**` (compile-level), `cli/resolver.zig`, `libs/std/**`, `examples/**` | `modules/compiler-core/snapshots/**`, LSP snapshots | not started; re-measured at `4eadb70` ([`remeasure.md`](./12-surface-cutover/remeasure.md)) |
+| **12** [`surface-cutover`](./12-surface-cutover/README.md) | `modules/compiler-core/src/**`, `modules/language-server/src/**` (compile-level), `cli/resolver.zig`, `libs/std/**`, `examples/**` | `modules/compiler-core/snapshots/**`, LSP snapshots | **in progress** — reordered ahead of 06 (2026-09-17); re-measured at `4eadb70` ([`remeasure.md`](./12-surface-cutover/remeasure.md)) |
 | **13** [`ecosystem-migration`](./13-ecosystem-migration/README.md) | `repository/{emilia,erika,jhonstart,onze,rakun}/**`; their meta submodule pointers | the libraries' own test outputs | not started |
 | **14** [`tooling-and-docs`](./14-tooling-and-docs/README.md) | `modules/language-server/src/{engine,server}.zig` (user-facing texts, completions, symbol kinds, completion in a non-compiling file), `repository/vscode-extension/**`, botopink-lang user docs | LSP hover/completion/symbol snapshots | not started |
 
@@ -67,21 +67,23 @@ notes and in [Order](#order).
 
 ## Order
 
+**Reordered 2026-09-17 by the maintainer: 12 runs now, before 06.** 06 then writes its rules on the
+unified AST once, and the source migration that needs decision 8's checker moves to 06 step 9.
+
 ```
 01 steps 1–4 · 05 · 10 · 11 ─── delivered
-09 hygiene ─── steps 2/4/5 after the owner of each file ─────────────────────────┐
-                                                                                 │
-06 checker (alone, next) ──► 01 steps 5–6 ──► 08 wave A                          │
-        │                                                                        │
-        └──► 07 comptime-dedup ──► 08 wave B                                     │
-                                                                                 ▼
-                                              all of 01–10 closed ──► 12 surface-cutover (alone)
-                                                                            │
-                                                             13 ecosystem-migration ∥ 14 tooling-and-docs
+12 surface-cutover (alone on compiler-core/src, libs/std, examples) ── now
+        │                                     09 fix/hygiene-build (build.zig test-vscode, lib-test-runner) beside it
+        ▼
+06 checker (incl. step 9: decision 8 in the sources) ──► 01 steps 5–6 ──► 08 wave A
+        │
+        └──► 07 comptime-dedup ──► 08 wave B
+09 sweeps after each owner
+13 ecosystem-migration ∥ 14 tooling-and-docs — after 12 (13's decision-8 items after 06)
 ```
 
-**Critical path:** **06** → 01 step 6 ∥ **07** → 08 → 09's last sweeps → **12** → 13 ∥ 14.
-06 and 12 run alone.
+**Critical path:** **12** → **06** → 01 step 6 ∥ **07** → 08 → 09's last sweeps; 13 ∥ 14 after 12.
+12 and 06 each run alone on their files.
 
 ## Rules for a front
 
