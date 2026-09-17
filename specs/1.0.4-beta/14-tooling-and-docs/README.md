@@ -43,6 +43,17 @@ Measured at `botopink-lang` `41981e3` and `vscode-extension` `8b1c083`:
 - [ ] LSP snapshots for hover, completion and document symbols re-recorded; manual classification (source-only vs output-changed)
 - [ ] No user-visible string in `engine.zig` says `record`, `enum` or `interface` as a keyword
 
+**Completion when the file does not compile** (B6 investigation, 2026-09-17 — measured against
+`botopink-lsp` over JSON-RPC): `server.zig` ~`:624-630` answers `null` whenever the module result is
+not `.ok`, so a file with any type error, or one being typed (`val x = oth▮`), gets **no completion
+at all**; the engine's degraded path that the unit tests exercise is never reached from the server.
+Call `engine.completion` anyway — with the last good bindings of the document cached, or with local
+bindings only. Also stop offering the binding being defined (`x` in `val x = ▮`) and `val`s declared
+after the cursor. The unit test `completion_decorator_body_locals` goes through the server, and the
+weak `completion_decorator_record` fixture is replaced by the scenarios "failing `@emit`", "type
+error elsewhere", "typing a prefix" and "the binding being defined" (with
+[`../08-review-backlog/`](../08-review-backlog/README.md), which owns the test sources).
+
 ### Step 2 — VS Code extension
 
 - tmLanguage: `type` (declaration position) and `behavior` as keywords; `record`, `enum`, `interface` removed; `#(` labeled-tuple labels scoped as property names.

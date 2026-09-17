@@ -150,6 +150,7 @@ group's commit, so no family of snapshots is regenerated twice.
 | N20 | **G4 — the `unknown` type**: new type, one-way assignability, `is` / `case` narrowing with a mandatory `_`, the inference fallback, the `pub` warning; the run-time test on all four backends (wasm boxes with a type tag) | G3 + backends | decision 6 |
 | N21 | **G5 — `Self` without its type arguments in a generic type or behavior**; `Self<U>` in a generic behavior and the implementer-arity check | G3 (the error lands with 12 step 4) | decision 6 |
 | N22 | **`val assert Ok(v) = x catch d` type-checks** although `catch` already produced the success value; `val assert Ok(v) = fallibleCall()` must match the `@Result` | G2 (effects) | decision 7 |
+| N23 | **The `@emit` fallback drops every module `val` binding** (`comptime/infer.zig` ~`:223-243`: the first pass skips `.val` because a body may cite code not yet emitted; when the second pass fails, `comptime.zig` ~`:529-547` returns that list). Infer `val`s tolerantly there — a failure leaves that one `val` unbound. Found by the B6 investigation (`completion_decorator_record`: `other` and `usePost` missing) | G0 (step 1) | 08 report 3.12, 2026-09-17 |
 
 **Acceptance:**
 - [ ] N1: a free fn, a record constructor and an instance method each accept a call that omits a
@@ -177,6 +178,7 @@ group's commit, so no family of snapshots is regenerated twice.
 - [ ] N17: the path error's caret points at the offending segment
 - [ ] N18–N21: decision 6's acceptance
 - [ ] N22: decision 7's three examples behave as annotated
+- [ ] N23: a module with a failing `@emit` still binds its well-typed `val`s
 
 ### Step 1 — G0, the free wins (C6, C4b, C11, C7, C12's pipeline half)
 
