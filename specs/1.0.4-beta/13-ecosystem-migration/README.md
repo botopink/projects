@@ -1,6 +1,6 @@
 # Front 13 — Ecosystem migration
 
-**Status:** not started. Carried from 1.0.3-beta front 03, amended by
+**Status:** 1.0.3 surface **delivered** for all five libraries 2026-09-17 (emilia `63f62d1`, erika `4a75280`, jhonstart `f2bf0e8`, onze `557fd9f`, rakun `0814492`; `known-red-libs.txt` empty at `botopink-lang` `aa24146`). Open: `format --check` on erika and jhonstart (formatter defects in `../fronts.md` unowned items), emilia's `format` reorders `Token`, decision 8's items after 06, the erlang cells blocked on C1/C2. Carried from 1.0.3-beta front 03, amended by
 [decision 8](../08-review-backlog/decision-8-language.md). The counts below were measured at the
 meta repository's `6ecfd7cf` and re-measured at each library's `origin/feat` after 10 and 11 landed —
 unchanged ([`../12-surface-cutover/remeasure.md`](../12-surface-cutover/remeasure.md) §4; the

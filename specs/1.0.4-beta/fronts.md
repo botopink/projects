@@ -126,6 +126,9 @@ milestone) before the front that would otherwise meet it closes.
 | **A label access on a lambda parameter inside a template body is not rewritten** — `t.kind` reaches comptime erlang as `maps:get` → `badmap` (jhonstart's html uses `t.0…t.6`) | `src/comptime/infer.zig` / template lowering | 13 jhonstart migration (also 12 step 2's risk) | 06 (N24) |
 | **`botopink format` produces code that does not compile on jhonstart** (`Unexpected token` at `element.bp:51`, `html.bp:125`; `use state(0)` then fails on `@Context`) — 13's `format --check` cannot pass | `src/format.zig` | 13 jhonstart migration | a formatter follow-up (12 delivered; `format.zig` is next touched by 06 step 9) |
 | **`botopink format` moves payload variants before sections**, reordering an enum-shaped `type` (emilia's `Token`) | `src/format.zig` | 13 emilia migration (also 12 step 2's risk) | the formatter follow-up above |
+| **`botopink format` drops the package handle of `import erika, {of} from "erika"`** (→ `unbound variable 'erika'`) | `src/format.zig` | 13 erika migration, 2026-09-17 | the formatter follow-up |
+| **`botopink format` drops the `;` after `if (c) { … };` inside a `loop` body**, producing code that does not parse (4-line repro in the erika migration report) | `src/format.zig` | 13 erika migration | the formatter follow-up |
+| **A tuple label does not resolve on a lambda parameter or an array element, even with an annotated type**, and a label access in an untyped comptime body lowers to `maps:get` (`badmap`) — erika reads rows with `val #(a, b) = r` and tokens positionally | `src/comptime/infer.zig`, comptime lowering | 13 erika migration | 06 (N24) |
 | `libs/std/**` code, beyond the rows above | — | — | none until 12; stop and report |
 
 Closed on 2026-09-17: `String.split("")` and the `builtins.d.bp` `@print` doc (std-split `c8c2541`);

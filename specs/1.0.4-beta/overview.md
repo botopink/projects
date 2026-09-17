@@ -69,7 +69,7 @@ examples; the ones that do not compile are listed in its `scripts/known-broken-e
 | [`10-library-repos`](./10-library-repos/README.md) | medium | **delivered** | — |
 | [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md) | low | **delivered** | — |
 | [`12-surface-cutover`](./12-surface-cutover/README.md) | critical | **delivered** | `type`, `behavior`, tuples and separators through the whole compiler, `libs/std`, every test source and snapshot; decision 5's markers and decision 8's source migration |
-| [`13-ecosystem-migration`](./13-ecosystem-migration/README.md) | high | not started | emilia, erika, jhonstart, onze, rakun migrated to the new surface and to decision 8; the known-broken examples fixed |
+| [`13-ecosystem-migration`](./13-ecosystem-migration/README.md) | high | 1.0.3 surface delivered; format and decision-8 items open | emilia, erika, jhonstart, onze, rakun migrated to the new surface and to decision 8; the known-broken examples fixed |
 | [`14-tooling-and-docs`](./14-tooling-and-docs/README.md) | high | not started | Language-server texts and completions (including completion in a file that does not compile), VS Code grammar and snippets, user docs |
 | [`15-language-tests`](./15-language-tests/README.md) | high | **delivered** | botopink tests pinning decision 8's `case`/patterns, tuples and labels, and `loop`, with an expected-failures list owned by 12, 06 and 01 step 6 |
 
