@@ -1,0 +1,6 @@
+$ cd jhonstart/examples/jhonstart-counter && botopink test --target commonJS --json
+exit code: 0
+ok    main :: the counter view renders its count and sign
+ok    main :: the state hook seeds the initial count and exposes a setter
+ok    main :: renderToString of a component consuming a hook produces the SSR string
+summary: passed=3 failed=0

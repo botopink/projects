@@ -1,0 +1,7 @@
+$ cd emilia/examples/emilia-card && botopink test --target commonJS --json
+exit code: 0
+ok    main :: page renders to the expected jhonstart tree
+ok    main :: all three style sites produce `e_<hash>`-shaped class names
+ok    main :: identical token lists collapse to the same class name
+ok    main :: flush returns a `<style>...</style>` block with the registered rules
+summary: passed=4 failed=0

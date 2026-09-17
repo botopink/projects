@@ -1,0 +1,9 @@
+$ cd jhonstart/examples/jhonstart-html && botopink build --out <out>
+build exit code: 0
+
+$ cd <out> && node main.js
+exit code: 0
+stdout:
+  <div><p>hello, world</p></div>
+stderr:
+  (empty)

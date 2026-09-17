@@ -1,0 +1,11 @@
+$ cd rakun && botopink test --target erlang --json
+exit code: 127
+ok    http :: rakun http: Response builders set status
+summary: passed=1 failed=0
+
+stderr:
+  escript: There were compilation errors.
+  escript: There were compilation errors.
+  escript: There were compilation errors.
+  escript: There were compilation errors.
+  escript: There were compilation errors.

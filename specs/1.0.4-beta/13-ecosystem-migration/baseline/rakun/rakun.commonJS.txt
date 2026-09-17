@@ -1,0 +1,59 @@
+$ cd rakun/examples/rakun && botopink build --out <out>
+build exit code: 0
+
+$ cd <out> && node main.js   (server on :8080, requests below, then stopped)
+
+http transcript (Date/Connection/Keep-Alive headers dropped):
+
+### http://127.0.0.1:8080/api/users/
+HTTP/1.1 200 OK
+Content-Length: 14
+
+ana, bob, cleo
+
+
+### http://127.0.0.1:8080/api/users/ana
+HTTP/1.1 200 OK
+Content-Length: 11
+
+Hello, ana!
+
+
+### http://127.0.0.1:8080/api/posts/
+HTTP/1.1 200 OK
+Content-Length: 25
+
+hello world | rakun rocks
+
+
+### -X POST --data hello world http://127.0.0.1:8080/api/posts/
+HTTP/1.1 201 Created
+Content-Length: 20
+
+created: hello world
+
+
+### -X POST --data  http://127.0.0.1:8080/api/posts/
+HTTP/1.1 400 Bad Request
+Content-Length: 23
+
+title must not be empty
+
+
+### -X DELETE http://127.0.0.1:8080/api/posts/7
+HTTP/1.1 204 No Content
+
+
+### http://127.0.0.1:8080/api/nope
+HTTP/1.1 404 Not Found
+Content-Length: 0
+
+
+### http://127.0.0.1:8080/
+HTTP/1.1 404 Not Found
+Content-Length: 0
+
+
+
+server stdout:
+server stderr:

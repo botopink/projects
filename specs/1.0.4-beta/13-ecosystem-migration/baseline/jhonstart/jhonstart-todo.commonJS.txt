@@ -1,0 +1,12 @@
+$ cd jhonstart/examples/jhonstart-todo && botopink build --out <out>
+build exit code: 0
+
+$ cd <out> && node main.js
+exit code: 1
+stdout:
+  (empty)
+stderr:
+  Error: Cannot find module '../module'
+  Require stack:
+  - <scratch>/out-jhonstart-todo/jhonstart/hooks.js
+  - <scratch>/out-jhonstart-todo/main.js

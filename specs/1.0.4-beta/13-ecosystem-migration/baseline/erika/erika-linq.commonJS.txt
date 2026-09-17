@@ -1,0 +1,14 @@
+$ cd erika/examples/erika-linq && botopink build --out <out>
+build exit code: 0
+
+$ cd <out> && node main.js
+exit code: 0
+stdout:
+  Ann, Cy
+  4-16-36
+  ANN / CY / DAN
+  Lyon, Paris
+  Lyon:5, Paris:9
+  sq
+stderr:
+  (empty)

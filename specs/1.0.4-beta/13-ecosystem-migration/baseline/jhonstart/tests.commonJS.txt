@@ -1,0 +1,15 @@
+$ cd jhonstart && botopink test --target commonJS --json
+exit code: 0
+ok    element :: leaf, fragment, and a nested tree render to HTML
+ok    element :: deeply nested lists build and render (list form)
+ok    element :: Children coercion: list / single / string all type-check (G4)
+ok    hooks :: state yields its initial value and a callable setter
+ok    hooks :: memo computes eagerly; ref/reducer seed their boxes
+ok    hooks :: a custom hook composes State and stays the {value,set} shape
+ok    html_test :: markup lowers to the builder pipeline and renders
+ok    html_test :: bracket-prop attribute parses and renders
+summary: passed=8 failed=0
+
+stderr:
+  (node:871982) Warning: Accessing non-existent property 'Element' of module exports inside circular dependency
+  (Use `node --trace-warnings ...` to show where the warning was created)

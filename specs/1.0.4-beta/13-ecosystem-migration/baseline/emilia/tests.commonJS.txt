@@ -1,0 +1,20 @@
+$ cd emilia && botopink test --target commonJS --json
+exit code: 0
+ok    emilia :: tokenToCss — Text.Bold lowers to font-weight:bold
+ok    emilia :: tokenToCss — Text.Size.Lg lowers to font-size:1.125rem
+ok    emilia :: tokenToCss — Color.Black lowers to color:#000000
+ok    emilia :: tokenToCss — Bg.White lowers to background:#ffffff
+ok    emilia :: tokenToCss — Layout.Flex lowers to display:flex
+ok    emilia :: tokenToCss — Border.Rounded.Full lowers to border-radius:9999px
+ok    emilia :: tokenToCss — Effect.Shadow.Md lowers to box-shadow:md
+ok    emilia :: tokenToCss — Hover modifier wraps inner CSS in :hover{...}
+ok    emilia :: tokenToCss — Md modifier wraps inner CSS in @media(min-width:768px){...}
+ok    emilia :: tokensToCss — composes a multi-token list with ';' separator
+ok    emilia :: tokenToCss — nested modifiers compose left-to-right
+ok    emilia :: emilia of an empty token list registers a (stable) empty-body class
+ok    emilia :: emilia of one text token produces a single-declaration rule
+ok    emilia :: emilia of mixed tokens joins declarations with ';'
+ok    emilia :: two emilia sites with the same token list collapse to one class
+ok    emilia :: Hover modifier wraps inner tokens in a ':hover{...}' block
+ok    emilia :: two consecutive flushes emit two independent blocks
+summary: passed=17 failed=0

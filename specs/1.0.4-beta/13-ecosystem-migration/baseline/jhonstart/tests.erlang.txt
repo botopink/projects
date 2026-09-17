@@ -1,0 +1,10 @@
+$ cd jhonstart && botopink test --target erlang --json
+exit code: 127
+ok    element :: leaf, fragment, and a nested tree render to HTML
+ok    element :: deeply nested lists build and render (list form)
+ok    element :: Children coercion: list / single / string all type-check (G4)
+summary: passed=3 failed=0
+
+stderr:
+  escript: There were compilation errors.
+  escript: There were compilation errors.

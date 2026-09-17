@@ -1,0 +1,10 @@
+$ cd jhonstart/examples/jhonstart-html && botopink test --target commonJS --json
+exit code: 0
+ok    main :: markup expands to the builder pipeline and renders
+ok    main :: a lowercase tag maps to its builder
+ok    main :: a ${...} hole splices the caller's value as a child
+ok    main :: a text run and a hole compose in the same element
+ok    main :: nested tags build a nested Element tree
+ok    main :: html-authored components compose by ordinary call
+ok    main :: deeply nested html with mixed text and holes renders the right tree
+summary: passed=7 failed=0

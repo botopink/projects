@@ -1,0 +1,20 @@
+$ cd rakun && botopink test --target commonJS --json
+exit code: 0
+ok    http :: rakun http: Response builders set status
+ok    di_test :: rakun di: #[service]/#[repository] records construct and run
+ok    di_test :: rakun scan: component decorators register every annotated record
+ok    overlapping_routes_test :: rakun: both overlapping-prefix controllers register a route
+ok    overlapping_routes_test :: rakun: dispatch on the shared prefix hits the prefix controller (leaf DI)
+ok    overlapping_routes_test :: rakun: dispatch on the deeper path hits the deeper controller
+ok    overlapping_routes_test :: rakun: a path that is only a prefix of a route does not match
+ok    router_test :: rakun router: GET a mapped route builds the DI chain and returns 200
+ok    router_test :: rakun router: an unmapped path returns 404
+ok    router_test :: rakun router: the mapped route is registered
+ok    scopes_test :: rakun scope: a 3-level diamond resolves ONE shared instance per type
+ok    scopes_test :: rakun value: #[value] fills a field from config, not the DI graph
+ok    scopes_test :: rakun bean: #[bean] output is injectable by its return type
+ok    server_test :: rakun http: GET a mapped route returns 200 with the joined list
+ok    server_test :: rakun http: a path param reaches the handler
+ok    server_test :: rakun http: query, header and body are populated on the live request
+ok    server_test :: rakun http: an unmapped path returns 404
+summary: passed=17 failed=0

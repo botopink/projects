@@ -1,0 +1,11 @@
+$ cd onze && botopink test --target commonJS --json
+exit code: 0
+ok    onze_test :: onze: an unstubbed method returns the type-default
+ok    onze_test :: onze: when(...).thenReturn stubs a return value
+ok    onze_test :: onze: eq(v) stubs only the matching argument
+ok    onze_test :: onze: anyInt() matches any argument
+ok    onze_test :: onze: the last matching stub wins
+ok    onze_test :: onze: verify atLeastOnce / times / never
+ok    onze_test :: onze: thenThrow raises when the call is matched
+ok    onze_test :: onze: verify checks each matcher independently after different-arg calls
+summary: passed=8 failed=0

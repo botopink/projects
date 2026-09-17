@@ -1,0 +1,9 @@
+$ cd onze/examples/onze && botopink build --out <out>
+build exit code: 0
+
+$ cd <out> && node main.js
+exit code: 0
+stdout:
+  can fulfil 3 widgets: true
+stderr:
+  (empty)

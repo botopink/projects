@@ -1,0 +1,12 @@
+$ cd erika/examples/erika-linq && botopink test --target commonJS --json
+exit code: 0
+ok    main :: list → query → join: adult names, sorted
+ok    main :: iterator fold over the query result sums the adult ages
+ok    main :: a number list piped through erika, then joined
+ok    main :: iterator map/join stand alone on a list
+ok    main :: erika "…" SQL sub-language runs cross-module (single-line)
+ok    main :: erika """…""" multi-line query runs cross-module
+ok    main :: erika where compares two columns (w = h) plus a column>literal
+ok    main :: erika "…" expands in argument position
+ok    main :: two erika strings in one scope expand to independent queries
+summary: passed=9 failed=0

@@ -1,0 +1,3 @@
+$ cd rakun/examples/rakun && botopink test --target commonJS --json
+exit code: 0
+(stdout) no test blocks found

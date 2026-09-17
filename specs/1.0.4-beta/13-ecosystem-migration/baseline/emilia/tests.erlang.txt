@@ -1,0 +1,6 @@
+$ cd emilia && botopink test --target erlang --json
+exit code: 1
+
+stderr:
+  error: compilation failed
+    MissingExternalTarget

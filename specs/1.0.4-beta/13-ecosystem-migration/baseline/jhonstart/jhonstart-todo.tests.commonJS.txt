@@ -1,0 +1,5 @@
+$ cd jhonstart/examples/jhonstart-todo && botopink test --target commonJS --json
+exit code: 0
+ok    main :: the todo view renders one li per item plus a count
+ok    main :: an empty list renders an empty ul
+summary: passed=2 failed=0

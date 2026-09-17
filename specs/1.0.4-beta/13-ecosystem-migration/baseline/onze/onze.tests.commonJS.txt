@@ -1,0 +1,7 @@
+$ cd onze/examples/onze && botopink test --target commonJS --json
+exit code: 0
+ok    main :: stubbed stock drives the fulfilment decision
+ok    main :: an unstubbed method returns the type-default (0 / empty string)
+ok    main :: matchers: anyString stubs every label; eq pins one
+ok    main :: verify counts each interaction independently
+summary: passed=4 failed=0

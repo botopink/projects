@@ -1,0 +1,34 @@
+$ cd erika && botopink test --target erlang --json
+exit code: 0
+ok    erika :: erika of/range/repeat/empty construct
+ok    erika :: erika where/select pipeline materializes
+ok    erika :: erika selectMany flattens per-item arrays
+ok    erika :: erika range where even sum is 2550
+ok    erika :: erika take/skip/takeWhile/skipWhile/reverse
+ok    erika :: erika orderBy ascending and descending are stable
+ok    erika :: erika orderBy by string key
+ok    erika :: erika distinct removes structural duplicates
+ok    erika :: erika concat/union/intersect/except
+ok    erika :: erika groupBy partitions by key
+ok    erika :: erika zip combines pairwise to shorter length
+ok    erika :: erika aggregate folds left like Array.fold
+ok    erika :: erika sum/average/min/max
+ok    erika :: erika first/firstWhere/last/single/elementAt return optionals
+ok    erika :: erika first on no match returns absent
+ok    erika :: erika any/anyWhere/all/contains quantifiers
+ok    erika :: erika query: select * returns the whole collection
+ok    erika :: erika query: where filters, order by sorts, select projects a field
+ok    erika :: erika query: order by desc reverses
+ok    erika :: erika query: where with a string literal
+ok    erika :: erika query: multi-field select projects an anonymous record
+ok    erika :: erika query: triple-quoted multi-line form tokenizes the same
+ok    erika :: erika query: where with and narrows both predicates
+ok    erika :: erika query: where with or unions predicates
+ok    erika :: erika query: where precedence is or over and over comparison
+ok    erika :: erika query: not-equal operator <> maps to !=
+ok    erika :: erika query: ${} interp inlines a runtime value as the right-hand operand
+ok    erika :: erika query: ${} interp inlines a runtime value on both sides
+ok    erika :: erika select over a var listas of records
+ok    erika :: erika select over a var listas of scalars
+ok    erika :: erika multi-field select over a var listas
+summary: passed=31 failed=0
