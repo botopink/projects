@@ -38,9 +38,10 @@ For each library:
    - **erika** — `erika.bp:570`: the generated projection becomes `#( … )` (`"#(" + parts.join(", ") + ")"`); the `Array<record { name, pop }>` comment in `examples/erika-linq/src/main.bp:95` becomes `Array<#(name: …, pop: …)>`. Rows are now tuples at runtime; the example's printed output is re-checked, not assumed.
    - **jhonstart** — `@Context<Element, {}>` → `@Context<Element, #()>`; `record { }` → `#()`.
    - **onze** — `#[mock] behavior`; confirm the mock synthesis reads `DeclKind.behavior`.
-   - **rakun** — annotated fields keep their annotations inside the field list; records with no fields become `type Name { methods }`.
-3. `botopink format` over the library; `botopink format --check` passes.
-4. The library's test cell passes.
+   - **rakun** — its 15 `DeclKind.Record` checks in `src/decorators.bp` read `DeclKind.Type` (12 step 1 removed the old variants; delete rakun's `known-red-libs.txt` line in the landing); annotated fields keep their annotations inside the field list; records with no fields become `type Name { methods }`.
+3. **Examples** (decided 2026-09-17): every example compiles — they were not built by any gate and several broke (emilia `emilia-card`: `'h1' expects 2 argument(s)`; jhonstart `jhonstart-counter`/`-html`/`-todo`: `expects 2 argument(s)`, `jonhstar`: `unbound variable 'html'`); each library's gate builds its examples from then on, and the known-broken ones are listed until this step fixes them.
+4. `botopink format` over the library; `botopink format --check` passes.
+5. The library's test cell passes.
 
 **Acceptance (per library):**
 - [ ] No `record`, `enum`, `interface` keyword and no `record {` literal left (manual verification)

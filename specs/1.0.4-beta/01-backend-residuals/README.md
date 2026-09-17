@@ -101,6 +101,10 @@ measure before starting; each re-recorded RUN LOG is checked against the rule, n
 
 ### Step 5 — `@External.Erlang` templates compiled at build time on beam (BR4 answered)
 
+**Moved after [`../06-checker/`](../06-checker/README.md)** (maintainer, 2026-09-17): a performance row
+that blocks no correctness work. Front 01 closes for 06's purposes when step 4 lands; a partial,
+untested start is kept in the `.tasks/beam-templates` worktree (branch `fix/beam-templates`).
+
 The maintainer answered BR4: beam stops evaluating `@External.Erlang` templates at run time.
 
 | # | Row | Acceptance |

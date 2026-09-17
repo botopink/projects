@@ -170,14 +170,14 @@ Unchanged and still correct:
   - beam `countFieldStaging` / `walk` over `recordLit` / `interfaceLit`.
 
   None of them is in the Codegen row of `behavior.md`.
-- **R2: `InstanceLowering.record` (`comptime/env.zig:294`) collides with the textual acceptance checks.** The new backend code has 9 `.record =>` / `.record = …` arms over this union, not over `DeclKind`. A `grep '\.record\b'` after step 1 will not reach zero. Either rename the tag (e.g. `.named`) in step 1, or exclude it from the check explicitly.
+- **R2 (decided 2026-09-17: renamed `.type_`, README step 1): `InstanceLowering.record` (`comptime/env.zig:294`) collides with the textual acceptance checks.** The new backend code has 9 `.record =>` / `.record = …` arms over this union, not over `DeclKind`. A `grep '\.record\b'` after step 1 will not reach zero. Either rename the tag (e.g. `.named`) in step 1, or exclude it from the check explicitly.
 - **R3: labeled tuples meet WR4, which is still open.** The spec says "anonymous records change from map/object to tuple".
   - After front 01, wasm prints a tuple as addresses, and the text of an array of tuples is waiting on a maintainer decision (WR4, decision 1). Erlang/beam print `{1,<<"a">>}`, commonJS `[ 1, 'a' ]`.
   - Every `@print` of a migrated anonymous record (erika rows, jhonstart tokens, yamlconf) will change its `RUN LOG` from map/object to that tuple text. That is the "behaviour-changed" class of step 3, not "output-changed" as the spec expects.
   - **Settle WR4 before step 2.**
 - **R4: bare-digit access `pair.0` → `pair[0]` is new in commonJS (CR4, `a9d8a23`).** Access by label `#(x: …).x` must lower to an index on all four backends (JS `[i]`, erlang `element(i+1, T)`, beam, wasm). The fresh `pair.0` path is the natural attachment point, but it exists only in commonJS; beam, wasm and erlang need their own check.
 - **R5: `%% interface Name` comments grew 36 → 48 snapshots.** Step 1's acceptance says "generated code unchanged", while `behavior.md` renames the comment to `%% behavior`. The spec contradicts itself. **Decided 2026-09-17: step 4** (README step 4 and `behavior.md` updated).
-- **R6: library comptime code reads the prelude's variants.** rakun `src/decorators.bp` has **15** `DeclKind.Record` checks (`decl.kind != DeclKind.Record`).
+- **R6 (decided 2026-09-17: `DeclKind` becomes `Type`/`Behavior` with no aliases; rakun known-red until 13, README step 1): library comptime code reads the prelude's variants.** rakun `src/decorators.bp` has **15** `DeclKind.Record` checks (`decl.kind != DeclKind.Record`).
   - The compiler has test uses too: `comptime/tests/decorator_invocation.zig` ×8, `codegen/tests/aggregates.zig` ×2, `decorator_eval.zig` ×2, `transform.zig`, `decorator_regression.zig`.
   - If `DeclKind` exposes `Type`/`Behavior` (behavior.md), rakun stops compiling at step 1 or 2, not at step 4 as the 13 README says. Front 13's rakun row does not mention it.
 - **R7: the prelude uses `val field: T`.** The "no `val` prefix" rule of the field list reaches the 9 prelude records and `decl.fields` read by libraries. `Field`/`RecordField` are exposed shapes: confirm their names are not renamed.

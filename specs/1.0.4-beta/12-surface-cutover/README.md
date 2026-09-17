@@ -69,8 +69,19 @@ Introduce `TypeDecl`/`TypeShape`/`Field`, `BehaviorDecl`/`BehaviorField`/`Behavi
 [`behavior.md`](./behavior.md#scope)). The parser still accepts only the 1.0.2 surface and builds
 the new nodes from it. Every consumer in the table above moves to the new nodes in this commit.
 
+Decided 2026-09-17 by the maintainer, for this step:
+- **The prelude's `DeclKind` becomes `Type` / `Behavior`** — no temporary `Record`/`Enum`/`Interface`
+  aliases. Library comptime code that reads the old variants stops compiling here: rakun's 15
+  `DeclKind.Record` checks (`src/decorators.bp`). Its `test-libs` cell is registered in
+  `scripts/known-red-libs.txt` in this commit, owner [`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md),
+  and the line is deleted when 13 migrates rakun. The check rakun makes ("a type with fields") must
+  stay expressible on the new `DeclKind`/`TypeShape` — verify before the commit.
+- **The compiler's internal `InstanceLowering.record` tag (`comptime/env.zig`) is renamed after the
+  new vocabulary — `.type_`** (and `.behavior` if a behavior-receiver arm exists or is split out), so
+  the step's textual check reaches zero without an exception.
+
 **Acceptance:**
-- [ ] `RecordDecl`, `EnumDecl`, `InterfaceDecl`, `DeclKind.record/.@"enum"/.interface` no longer exist
+- [ ] `RecordDecl`, `EnumDecl`, `InterfaceDecl`, `DeclKind.record/.@"enum"/.interface` no longer exist; `InstanceLowering` has no `.record` tag; the prelude's `DeclKind` names `Type`/`Behavior` only
 - [ ] Generated code, diagnostics and `RUN LOG`s are unchanged; snapshot diffs limited to parser ids (`record_N`/`enum_N` → `type_N`, `interface_N` → `behavior_N`) and typed-AST JSON keys
 - [ ] `zig build test` green
 

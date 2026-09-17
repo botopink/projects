@@ -34,7 +34,7 @@ all eight unless a row says otherwise.
 | **Different licenses per repo** (e.g. the compiler and the libraries apart) | Each repo gets its own `LICENSE`, and each README's License section is re-checked individually. The libraries ship code into user programs (`std`, `erika`, `jhonstart`, `rakun`, `onze`, `emilia` are compiled into consumers), so a copyleft choice there binds consumers in a way it would not for the compiler or the extension |
 | **Leave it undecided** | The extension stays published unlicensed; the README claim stays unbacked |
 
-**Decided 2026-09-17 by the maintainer: MIT in every repo.**
+**Decided 2026-09-17 by the maintainer: MIT in every repo, `Copyright (c) 2026 Eric Fillipe and botopink contributors`.**
 
 **Decide:** the license, and whether every repo takes the same one. Then add `LICENSE` to every
 repo and `"license"` to the extension's `package.json`. Until it is decided, the extension is
