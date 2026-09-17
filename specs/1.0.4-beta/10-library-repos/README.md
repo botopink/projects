@@ -57,12 +57,12 @@ erika's `feat`, rebuild the compiler from `botopink-lang` `feat`, and commit the
 constraints that still exist.
 
 **Acceptance:**
-- [ ] erika's `buildCmp` and its lexer produce their accumulated values (erlang)
-- [ ] `botopink check` and `botopink test` green in `repository/erika` on commonJS and erlang; the
+- [x] erika's `buildCmp` and its lexer produce their accumulated values (erlang)
+- [x] `botopink check` and `botopink test` green in `repository/erika` on commonJS and erlang; the
       `erika·*` lines deleted from `scripts/known-red-libs.txt` (a commit in botopink-lang — hand it
       to [`../05-cli-residuals/`](../05-cli-residuals/README.md) if that front is open)
-- [ ] 7c and the `BOTOPINK_LANG_REF` default committed through the hook, no `--no-verify`
-- [ ] No comment in `src/erika.bp` describes a JavaScript, wasm3 or WAT comptime runtime, or a
+- [x] 7c and the `BOTOPINK_LANG_REF` default committed through the hook, no `--no-verify`
+- [x] No comment in `src/erika.bp` describes a JavaScript, wasm3 or WAT comptime runtime, or a
       `libs/std` file that no longer exists
 
 ### Step 2 — emilia: give it a gate (7d)
