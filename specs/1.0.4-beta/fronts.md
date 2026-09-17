@@ -117,7 +117,6 @@ milestone) before the front that would otherwise meet it closes.
 | `src/comptime/template_eval.zig`, `src/comptime/decorator_eval.zig` (owned by 1.0.2-beta comptime-dispatch, landed) | — | — | 06 claims them if types-as-values A4 takes the `erl` path; 09 may take the transport-error one-liner |
 | **commonJS: a sibling-module import inside a dependency is emitted as `require("../module")`** — `emilia-card`, `jhonstart-counter`, `jhonstart-todo` build but fail at run time `Cannot find module '../module'` (`jhonstart/hooks.bp`, `emilia/emilia.bp` importing `Element`) | `src/codegen/commonJS.zig` (the require path of a dependency's sibling module) | 13 examples fix, 2026-09-17 | 12 while it holds `codegen/**`, else 01 step 6 |
 | **erlang test cells of four libraries do not run**: emilia and onze stop at `MissingExternalTarget`; jhonstart and rakun exit 127 (`escript: There were compilation errors.`) — allowed to fail in their CI, so no gate reads them | the libraries' erlang externals / the erlang backend | 13 baseline capture | 13 per library, with 01 where a codegen defect |
-| **`botopink build` of `onze/examples/onze` writes the `src/onze.mjs` sidecar beside `--out`**, not inside it | `modules/compiler-cli/src/cli/libs.zig` `shipMjsSidecars` (likely) | 13 baseline capture | a CLI follow-up (05 delivered) |
 | `libs/std/**` code, beyond the rows above | — | — | none until 12; stop and report |
 
 Closed on 2026-09-17: `String.split("")` and the `builtins.d.bp` `@print` doc (std-split `c8c2541`);
