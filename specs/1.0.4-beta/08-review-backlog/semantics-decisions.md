@@ -30,6 +30,7 @@ file closes.
 | [2](#decision-2) | The value of a block, and of a fn body's tail expression | B — a block is a statement; its value comes from `break`; the checker rejects the rest | 4 |
 | [3](#decision-3) | The representation of `null` | C — box optionals on wasm; `0` stays null (beam half already closed) | 0 (two stale rows struck) |
 | [4](#decision-4) | The severity of `assert` outside test mode | A — always fatal, with message and location, on every backend | 1 |
+| [1a](#decision-1a) | The text `@print` produces for arrays and tuples | `[a,b]` and `#(a,b)`, a nested string quoted — on every backend | 0 (from WR4) |
 
 **Decided 2026-09-16 by the maintainer: every recommendation is accepted.** 1 → C (`__bp_print/1`
 helper on erlang and beam), 2 → B (a block is a statement; its value comes from `break`), 3 → C (box
@@ -45,7 +46,7 @@ landed (beam `a743955`, erlang `42429dc`, wasm `ed15323`, js-bridges `bd7836c`).
 
 | # | commonJS | erlang | beam | wasm | Left |
 |---|---|---|---|---|---|
-| 1 | implemented | implemented — `__bp_print/1`, typed and comptime path | implemented — `__bp_print/1` | implemented — `$__print_*` executes under `wasmtime run` | the numeric divergence is written in `src/codegen/AGENTS.md`; an array of tuples has no agreed text ([`01-backend-residuals`](../01-backend-residuals/README.md) WR4); `libs/std/src/builtins.d.bp` still documents `io:format("~p~n")` ([`../fronts.md`](../fronts.md#unowned-items)) |
+| 1 | implemented | implemented — `__bp_print/1`, typed and comptime path | implemented — `__bp_print/1` | implemented — `$__print_*` executes under `wasmtime run` | the numeric divergence is written in `src/codegen/AGENTS.md`; the text of arrays and tuples is [decision 1a](#decision-1a), implemented by [`01-backend-residuals`](../01-backend-residuals/README.md) step 4 |
 | 2 | — | — | — | — | **waits on the checker**: [`06-checker`](../06-checker/README.md#step-0--rows-added-in-104-beta) N6; the dead block-as-value lowerings follow it |
 | 3 | n/a (`null`) | n/a (`undefined`) | n/a (`undefined`) | implemented — boxed `?T`, `0` = null; the four-backend table is in `src/codegen/AGENTS.md` | — |
 | 4 | implemented | implemented | implemented — `{bp_assert, Msg, Loc}` | implemented — stderr message, then a trap | — |
@@ -132,6 +133,37 @@ format string from the helper's per-term verb.
       comptime code
 - [x] Numeric formatting divergence is stated as intended in `src/codegen/AGENTS.md`
 - [ ] The four "byte-identically" tests either hold or carry the name the decision implies
+
+---
+
+<a id="decision-1a"></a>
+
+## Decision 1a — the text of an array and a tuple
+
+**Decided 2026-09-17 by the maintainer**, from WR4 (`array_zip_via_external_node_template`: wasm
+printed tuple addresses; erlang/beam `[{1,<<"a">>},…]`, commonJS `[ [ 1, 'a' ], … ]`).
+
+| Value | Text |
+|---|---|
+| an array | `[e1,e2]` — no spaces |
+| a tuple (labeled or not — labels live in the type only) | `#(e1,e2)` — the tuple literal of the 1.0.3 surface, no spaces |
+| a string **nested** in an array or a tuple | quoted, as in source: `"a"` |
+| a string at top level | bare, unchanged ([decision 1](#decision-1)) |
+
+`[1,2].zip(["a","b"])` prints `[#(1,"a"),#(2,"b")]`; `[#(1,2),#(17,1)]` prints as written.
+
+- **Every backend.** commonJS stops relying on `console.log`'s own array text; erlang and beam
+  extend `__bp_print/1` past `~p` for lists and tuples; wasm prints arrays of tuples.
+- **Unchanged:** the numeric divergence of decision 1 (erlang family `5.0`) and the text of records,
+  enums and maps — not decided here.
+- **Open for the implementing row:** escaping inside a nested string; the recommendation is the
+  source literal's escapes (`\"`, `\\`, `\n`).
+
+### Acceptance
+
+- [ ] `@print` of an array of tuples, an array of strings and a nested tuple produces the same bytes on
+      commonJS, erlang, beam and wasm (one fixture each, RUN LOG verified by running)
+- [ ] `array_zip_via_external_node_template` loses its `KNOWN-WRONG` note
 
 ---
 

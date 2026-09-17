@@ -37,21 +37,21 @@ is carried into the front named.
 | 1.0.4-beta **wasm** (first 03) | merge `ed15323`: trap block, W1 (unresolved calls 59 → 3), **`executeWat` executes**, W2–W11 (W7 per decision 3), `Module.externs`/`emitFnWat` deleted, decision 4; 143 snapshots gained a real RUN LOG | closure/loop/untyped-`+`, the tuple printer, 3 unresolved calls → 01 step 2; stale comments outside its files → [`09-hygiene`](./09-hygiene/README.md) step 2 |
 | 1.0.3-beta **dead-keywords** | the compiler side, `botopink-lang` `ecac19d` | jhonstart's accessors and the VS Code grammar — their commits were never pushed → [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md) |
 
-Library gate at `ed15323` (`zig build test-libs`): emilia, onze, rakun, `libs/std` commonJS and erlang
-pass; known-red erika commonJS + erlang and jhonstart commonJS — all three on `libs/std`'s
-`String.split("")`, which no front owns (the top row of [`fronts.md` § unowned items](./fronts.md#unowned-items)).
+Library gate at `botopink-lang` `c8c2541` (`zig build test-libs`): every checked-out library cell
+passes, no known-red line left — the `libs/std` `String.split("")` fix turned erika (commonJS +
+erlang) and jhonstart (commonJS) green.
 
 ## Fronts
 
 | Front | Priority | State | What |
 |---|---|---|---|
-| [`01-backend-residuals`](./01-backend-residuals/README.md) | medium | not started | What beam, erlang, wasm and js-bridges left: three fixtures known-wrong across backends (closure threading, `loop (xs, 1..)`, untyped `+`), wasm's tuple printer, commonJS's open range and `break` comprehensions, four unclaimed example rows, the `__bp_erl_eval` review |
+| [`01-backend-residuals`](./01-backend-residuals/README.md) | medium | steps 1–3 delivered | Delivered: closure threading, `loop (xs, 1..)`, untyped `+` on beam/wasm/commonJS, commonJS's open range and CR4 rows, wasm's unresolved calls. Open: step 4 — the text of arrays and tuples on all four backends ([decision 1a](./08-review-backlog/semantics-decisions.md#decision-1a), absorbs WR4); step 5 — beam compiles `@External.Erlang` templates at build time (BR4 answered) |
 | [`05-cli-residuals`](./05-cli-residuals/README.md) | medium | not started | `generate` still executes what it compiles; diagnostics lost in `codegenEmit` and unlocated parse/lex errors; blind decorator tests; the gate installed and covering bpmp and test-less libraries |
 | [`06-checker`](./06-checker/README.md) | high | not started | C1–C13: the checker accepts wrong programs. Plus trailing defaults, decision 2's enforcement, the `#[@result]` wrap and binding patterns the backend fronts handed over, and the rest of the fifteen rows found since (N1–N15) |
 | [`07-comptime-dedup`](./07-comptime-dedup/README.md) | medium | not started | Four byte-identical copies per comptime slug; a renderer that prints `?` and `"id": 0` |
 | [`08-review-backlog`](./08-review-backlog/README.md) | medium | not started | The per-report residuals of the 1.0.1-beta snapshot review, in two waves |
 | [`09-hygiene`](./09-hygiene/README.md) | low | step 1 delivered | The removed WAT runtime's leftovers, build files that lie, retired vocabulary, license and meta gate decisions |
-| [`10-library-repos`](./10-library-repos/README.md) | medium | partly delivered | erika's loop and docs, emilia's gate, two CI defaults, rakun's exports |
+| [`10-library-repos`](./10-library-repos/README.md) | medium | steps 3–4 delivered | erika's loop and docs (unblocked), emilia's gate |
 | [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md) | low | compiler half delivered | jhonstart's `get` accessors become methods; the VS Code grammar drops the seven words |
 | [`12-surface-cutover`](./12-surface-cutover/README.md) | critical | not started | `type`, `behavior`, labeled tuples and separators through the whole compiler, `libs/std`, every test source and snapshot |
 | [`13-ecosystem-migration`](./13-ecosystem-migration/README.md) | high | not started | emilia, erika, jhonstart, onze, rakun migrated to the new surface |
@@ -86,7 +86,7 @@ each thing.
 05 cli-residuals ─────── steps 1, 3–6 now; step 2 now, sequenced against 01's backend files
         │
         └──► 06 checker (alone, after 01 and 05 step 2) ──► 07 comptime-dedup ──► 08 review-backlog (wave A after 06, wave B after 07)
-10 library-repos ── erika after the libs/std split("") fix · emilia after 09's decision 5.5 · before 06's emilia migration
+10 library-repos ── erika now · emilia after 09's decision 5.5 · before 06's emilia migration
 09 hygiene ─────── decisions now · each sweep after the owner of the file · closes last of 01–10
         │
         ▼  01–10 closed

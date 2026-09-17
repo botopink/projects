@@ -1,11 +1,14 @@
 # Front 01 — backend-residuals
 
-**Status:** not started. What the four backend fronts left when they landed on `botopink-lang`
+**Status:** steps 1–3 **delivered** 2026-09-17 (merges `00b8975` beam, `4eadb70` wasm, `dbe2863`
+commonJS, on `botopink-lang` `feat`) — see [Delivered by this front](#delivered-by-this-front). Open:
+step 4 ([decision 1a](../08-review-backlog/semantics-decisions.md#decision-1a), which absorbed WR4)
+and step 5 (BR4 answered: compile the templates at build time). What the four backend fronts left when they landed on `botopink-lang`
 `origin/feat` = `ed15323` (2026-09-17): 01 beam (`a743955`), 02 erlang (`42429dc`), 03 wasm
 (`ed15323`), 04 js-bridges (`bd7836c`). Those numbers are retired; this front takes 01 — see
 [Delivered by the backend fronts](#delivered-by-the-backend-fronts).
 
-**Priority:** medium — every row below is a fixture pinned `KNOWN` in its test or a named gap; no
+**Priority:** medium — every open row below is a fixture pinned `KNOWN` in its test or a named gap; no
 backend prints a wrong answer the tree does not say is wrong
 **Depends on:** nothing open. [`../05-cli-residuals/`](../05-cli-residuals/README.md) step 2 edits one
 `codegenEmit` site in each backend file — sequence it against this front (see
@@ -36,6 +39,17 @@ Not to redo. Each landing ran `scripts/gate.sh --cold` green.
 | 03 wasm | `ed15323` | `RUNTIME TRAP (wasmtime):` block, W1 `instance_lowerings` (unresolved calls 59 → 3: `List.map` ×2, `new Error`), host-backed `declare fn` traps by decision, **`executeWat` executes** (`wasmtime run`, `HARNESS_VERSION = "3-wasm-runs"`), W2–W11 (W7 per decision 3), `Module.externs` / `emitFnWat` deleted, decision 4. 143 wasm snapshots gained a real RUN LOG: 97 match commonJS and erlang, 26 are right where another backend is wrong, 9 trap by decision or `@todo` |
 | 04 js-bridges | `bd7836c` | `COMPILE ERROR (node --check):` block, C3–C5, JS-1 (statement `if`/loops, loop-as-value IIFE, `return case`), JS-2, JS-3, JS-5, JS-6 (bare `throw` rejected on all backends), `while` lowering (std commonJS green), `pub` template externals export a function, on-demand helpers in `js/js_prelude.zig` (`charAt` → null out of range), `externals.zig` fixtures off `gleam_stdlib.mjs`, `.d.ts` without dangling template imports, every pub enum and record exported, decision 4 |
 
+## Delivered by this front
+
+| Step | Merge | Delivered |
+|---|---|---|
+| 1 beam | `00b8975` | BR1 closure threading, BR2 `loop (xs, 1..)`, BR3 operand-proven `+` (`'__bp_add'/2`) and float `/`; BR4 reviewed — `'__bp_erl_eval'/2` and its measured cost (~50× a direct call) in `src/codegen/beam/AGENTS.md`; `beam_export_audit.sh` 295/295 |
+| 2 wasm | `4eadb70` | WR1 closure captures, WR2 loop index start, WR3 untyped string `+` and float text, WR5 (`Ok`/`Err`/`new Error` build the Result pair; `List.map` listed in `src/codegen/AGENTS.md` as a shape no backend lowers) |
+| 3 commonJS | `dbe2863` | CR1 loop start, CR2 open range as the lazy `__bp_range_from`, CR3 struck (already printing since JS-1), CR4: a record method named `print`, enum methods on variant values, primitive-interface host members, interface defaults as class methods, `pair.0` — `?T.map` inside a record method body → 06 |
+
+The three cross-backend fixtures below print what the program means on all four backends; their
+`KNOWN` notes are gone.
+
 ## Problem
 
 Three fixtures are pinned known-wrong on more than one backend, and each backend has a short tail.
@@ -63,37 +77,35 @@ still not the oracle** — the value in "the program means" is the assertion; se
 
 ## Steps
 
-The three backends' rows are file-disjoint: steps 1–3 may run as three worktrees. Each fixture's
-`KNOWN` note is one comment in a shared test file; the step that closes the last backend on a
-fixture deletes the note.
+Steps 4 and 5 both edit `beam_asm.zig`: run them in sequence, or step 4's PR1/PR2/PR4 beside step 5.
+[`../05-cli-residuals/`](../05-cli-residuals/README.md) step 2 edits one site in every backend file —
+land it before either opens.
 
-### Step 1 — beam
+Steps 1–3 (beam, wasm, commonJS) are delivered — [Delivered by this front](#delivered-by-this-front).
 
-| # | Row | Acceptance |
-|---|---|---|
-| BR1 | A local closure reassigning outer vars prints ` 0` — the statement-loop `lists:foldl` threading does not reach a named closure called later | `lambda_a_local_closure_…` prints `<start><a><b> 3` |
-| BR2 | Two-parameter `loop (xs, 1..)` prints nothing | `loop_two_parameter_loop_…` prints `a-c` / `140` |
-| BR3 | Untyped `+` and float `/` print nothing | `operators_plus_on_untyped_…` prints `abcd` / `5.0` (the erlang family's numeric text) |
-| BR4 | **Review, not a fix:** B2 lowers an `@External.Beam` body to `call_ext`, and an `@External.Erlang` template is evaluated **at run time** by a generated `'__bp_erl_eval'/2` — correct, slow | the maintainer keeps it (written in `src/codegen/beam/AGENTS.md` with the cost) or asks for build-time compilation of the template, which then becomes a row here |
+### Step 4 — the text of arrays and tuples (decision 1a)
 
-### Step 2 — wasm
+[Decision 1a](../08-review-backlog/semantics-decisions.md#decision-1a): `[e1,e2]`, `#(e1,e2)`, a
+nested string quoted, on every backend. The rows touch every backend file and may run as one
+worktree or one per backend; `src/codegen/runtime.zig` is not needed (the text is the program's).
 
 | # | Row | Acceptance |
 |---|---|---|
-| WR1 | A local closure reassigning outer vars prints ` 0` | `lambda_a_local_closure_…` prints `<start><a><b> 3` |
-| WR2 | `loop (xs, 1..)` ignores the range start (prints `80`) | prints `140` |
-| WR3 | Untyped `+` adds two pointers (`520`); a float prints as its i32 bits (`1082480000`) | prints `abcd` / `5` |
-| WR4 | `array_zip_via_external_node_template` prints tuple addresses: no printer for an array of tuples. commonJS and erlang spell the value differently, so there is no agreed text yet | decide the text under [decision 1](../08-review-backlog/semantics-decisions.md#decision-1) first, then wasm prints it; the `KNOWN-WRONG` note in `tests/features.zig` goes |
-| WR5 | Three unresolved calls left: `List.map` ×2 (`List` exists nowhere) and `new Error` | each is either lowered or listed in `src/codegen/AGENTS.md` as a shape with no lowering anywhere |
+| PR1 | commonJS: `@print` of an array or a tuple goes through an on-demand prelude helper instead of `console.log`'s own text (`[ 1, 'a' ]`) | the decision's fixtures print their text under node |
+| PR2 | erlang: `__bp_print/1` renders lists and tuples by the rule instead of `~p` (`[{1,<<"a">>}]`) | the same fixtures under `erl` |
+| PR3 | beam: the same `__bp_print/1` change | the same fixtures; `beam_export_audit.sh` still assembles every module |
+| PR4 (was WR4) | wasm: a printer for arrays of tuples (and nested strings), type-directed in `wat_prelude.zig` | `array_zip_via_external_node_template` prints `[#(1,"a"),…]`; its `KNOWN-WRONG` note in `tests/features.zig` goes |
 
-### Step 3 — commonJS
+**Blast radius:** every snapshot whose RUN LOG prints an array or a tuple, on all four backends —
+measure before starting; each re-recorded RUN LOG is checked against the rule, not bulk-accepted.
+
+### Step 5 — `@External.Erlang` templates compiled at build time on beam (BR4 answered)
+
+The maintainer answered BR4: beam stops evaluating `@External.Erlang` templates at run time.
 
 | # | Row | Acceptance |
 |---|---|---|
-| CR1 | `loop (xs, 1..)` ignores the range start (prints `80`) | prints `140` |
-| CR2 | `range_open_ended_range` throws at run time | the module runs; an open range used as a value either lowers or is a located compile error |
-| CR3 | Four `break`-comprehension fixtures print nothing (reported by the js-bridges landing; a scan of the `b` snapshots at `ed15323` did not re-find them — name them before starting) | each prints the value the program means |
-| CR4 | **Not claimed by the js-bridges landing — re-verify first.** The four 1.0.3-beta example rows handed to it: a record method named `print` lowers `d.print()` to `console.log(console.log())`; a behavior `default fn` calling another member fails `self.max is not a function`; an enum method is not attached to variant values (`Shape.Square(4).area is not a function`, [`../EXAMPLES.md`](../EXAMPLES.md) §5); `pair.0` is emitted verbatim and `?T.map` lowers to `Array.prototype.map` | each row runs, or is struck with the commit that closed it |
+| BR5 | beam lowers an `@External.Erlang` template to direct BEAM code at build time (the erlang backend already renders the same template to source; reuse that rendering or a shared template walker, do not add a second template language) instead of `'__bp_erl_eval'/2` | no `'__bp_erl_eval'` left in any beam snapshot, or each remaining use named with the reason in `src/codegen/beam/AGENTS.md`; RUN LOGs unchanged; `beam_export_audit.sh` assembles every module |
 
 ## Routed out
 
@@ -115,21 +127,21 @@ Found by the backend fronts, owned elsewhere.
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] No `KNOWN` note left on the three cross-backend fixtures; each RUN LOG verified by running the
+- [x] Steps 1–3: `scripts/gate.sh --cold` green in each worktree and on `feat` after each merge
+- [x] No `KNOWN` note left on the three cross-backend fixtures; each RUN LOG verified by running the
       program, on all four backends
-- [ ] BR4 answered and written down; CR4 re-verified row by row
+- [x] BR4 answered (→ step 5); CR4 re-verified row by row
+- [ ] Step 4: decision 1a's acceptance; every re-recorded RUN LOG checked against the rule
+- [ ] Step 5: no run-time template evaluation left on beam, RUN LOGs unchanged
 - [ ] `src/codegen/AGENTS.md` and the backend's own `AGENTS.md` updated in the same commit as each row
-- [ ] Commit on `fix/backend-residuals` (or `fix/backend-residuals-<backend>`); no push, no merge
+- [ ] Commit on `fix/backend-residuals-<step>`; no push, no merge
 
 ## Blast radius
 
-- Each row moves its own backend's snapshot directory only. The three cross-backend fixtures move
-  one snapshot per backend they close.
-- WR4 waits on a text decision and may move commonJS or erlang too, if the agreed spelling is not
-  theirs.
-- CR4 may add fixtures (the example programs) to `src/codegen/tests/**` — a carve-out from 08 like
-  the `KNOWN` notes; name each in the landing note.
+- Step 4 moves all four codegen snapshot directories — every RUN LOG that prints an array or a tuple.
+- Step 5 moves `snapshots/codegen/beam/` (the `.S` text); RUN LOGs stay.
+- Either step may add fixtures to `src/codegen/tests/**` — a carve-out from 08 like the `KNOWN`
+  notes; name each in the landing note.
 
 ## Notes
 

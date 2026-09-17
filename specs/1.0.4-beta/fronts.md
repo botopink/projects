@@ -12,7 +12,7 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/` unless a
 
 | Front | Source it owns | Snapshots it owns | State |
 |---|---|---|---|
-| **01** [`backend-residuals`](./01-backend-residuals/README.md) | `src/codegen/beam_asm.zig`, `src/codegen/beam/**`, `src/codegen/erlang.zig`, `src/codegen/wat.zig`, `src/codegen/wat/**`, `src/codegen/commonJS.zig`, `src/codegen/typescript.zig`, `src/codegen/js/**`, `src/codegen/runtime.zig` (note 3) · the `KNOWN` notes of its fixtures in `src/codegen/tests/**` (carve-out) — its beam, wasm and commonJS rows are file-disjoint and may run as three worktrees | `snapshots/codegen/{beam,erlang,wasm,commonJS}/` | not started — the first 01–04 **delivered** 2026-09-17 |
+| **01** [`backend-residuals`](./01-backend-residuals/README.md) | `src/codegen/beam_asm.zig`, `src/codegen/beam/**`, `src/codegen/erlang.zig`, `src/codegen/wat.zig`, `src/codegen/wat/**`, `src/codegen/commonJS.zig`, `src/codegen/typescript.zig`, `src/codegen/js/**`, `src/codegen/runtime.zig` (note 3) · the `KNOWN` notes of its fixtures in `src/codegen/tests/**` (carve-out) — its beam, wasm and commonJS rows are file-disjoint and may run as three worktrees | `snapshots/codegen/{beam,erlang,wasm,commonJS}/` | steps 1–3 **delivered** 2026-09-17; steps 4 (decision 1a) and 5 (BR5) open |
 | **05** [`cli-residuals`](./05-cli-residuals/README.md) | `modules/compiler-cli/**`, `modules/lib-test-runner/**`, `build.zig`, `.github/workflows/**`, `scripts/**` except `scripts/snap_audit.sh` · `src/codegen.zig` · `src/codegen/snapshot.zig` (the execute flag) · `src/comptime.zig` · the four `codegenEmit` sites (step 2) · `src/comptime/tests/decorator_regression.zig` | — | not started |
 | **06** [`checker`](./06-checker/README.md) | `src/comptime/{infer,types,env,unify,transform,eval,error}.zig` · `src/parser/{decls,exprs,patterns}.zig` | `snapshots/comptime/**`, and it can move **all four** codegen directories and LSP completion snapshots | not started |
 | **07** [`comptime-dedup`](./07-comptime-dedup/README.md) | `src/comptime/snapshot.zig`, `src/comptime/tests/helpers.zig` | `snapshots/comptime/**` (layout: 3 of 4 copies deleted) | not started |
@@ -79,8 +79,8 @@ matrix is symmetric; the order is in the notes and in [Order](#order).
 9. **06's G1 migrates library code** (emilia's 92 sites, plus jhonstart and onze) while 10 adds
    emilia's gate. Land 10's emilia step first, so the migration commits pass through the gate —
    or hand emilia's migration commit to 10.
-10. **10 waits on decisions, not files:** erika on the `libs/std` `String.split("")` fix (unowned —
-    see [unowned items](#unowned-items)); emilia on 09's decision 5.5.
+10. **10 waits on a decision, not files:** emilia on 09's decision 5.5 (erika's `String.split("")`
+    blocker landed).
 11. **The surface cutover starts after every 1.0.2-derived front (01–10) closes** — 12 touches every
     file those fronts own, and the library gate cannot be read while they are open. 11 shares no
     file with 12 and runs beside it.
@@ -100,7 +100,7 @@ matrix is symmetric; the order is in the notes and in [Order](#order).
                                       06 checker (alone) ──► 07 comptime-dedup ──► 08 review-backlog
                                                                                    (wave A after 06,
                                                                                     wave B after 07)
-10 library-repos ─── erika after the libs/std split("") fix · emilia after 09's 5.5 · before 06's G1
+10 library-repos ─── erika now · emilia after 09's 5.5 · before 06's G1
 09 hygiene ───────── decisions now · each sweep after the file's owner · closes last of 01–10
                                                                         │
                               all of 01–10 closed ──────────────────────┘
@@ -136,14 +136,11 @@ milestone) before the front that would otherwise meet it closes.
 
 | Item | Where | Found by | Suggested owner |
 |---|---|---|---|
-| **Highest value.** `String.split("")` binds `string:split/3` with an empty separator, which answers the whole string. It is the **only** remaining cause of the erika (commonJS + erlang) and jhonstart (commonJS) known-red cells — verified by patching it locally: erika 31/31 on both targets, jhonstart 8/8. One fix turns three library cells green and unblocks 10's erika step | `libs/std/src/primitives.bp` | 1.0.4-beta erlang | the maintainer, now — a one-line `libs/std` change; the landing deletes the three `known-red-libs.txt` lines |
-| `builtins.d.bp` still documents `@print` as `io:format("~p~n")` — decision 1 replaced it with `__bp_print/1` | `libs/std/src/builtins.d.bp` | 1.0.4-beta erlang | with the row above, or 09 (it already takes a `builtins.d.bp` comment line) |
 | `Array.chunked` / `Array.sliding` are written with `while`, which checked code rejects as not in scope | `libs/std/src/primitives.bp` | 1.0.4-beta erlang | the maintainer (rewrite without `while`), or 06 if `while` in a checked body should be in scope |
 | JS-4's codegen half: once 06 N11 lands, a `ctor` destructuring lowers to a real JS test-plus-destructure and `Pattern.match` goes — [`01-backend-residuals/pattern-binding.md`](./01-backend-residuals/pattern-binding.md) | `src/codegen/commonJS.zig`, `src/codegen/js/**` | 1.0.4-beta js-bridges | 01 if still open, else a follow-up after 06 |
 | **`hover_interface_method`**: should the hover footer name the declaring interface (`Signed`) or the receiver's (`I32`)? An open decision | `modules/language-server/src/engine.zig` | 1.0.2-beta review-tooling (report 3.12) | decision first; then 14 (it owns user-facing `engine.zig` texts) or earlier as a one-line follow-up |
 | A missing dependency swallowed by the language server, if still open after 05 step 5 | `modules/language-server/src/project_graph.zig` (~`:171`) | 1.0.2-beta library-repos | none until 12; a one-line follow-up |
 | **`$0` (commonJS) vs `$self` (erlang)** naming the first template argument of an `#[@External…]` template | the commonJS and erlang template renderers | 1.0.2-beta std-surface | a decision; [`06-checker/external-annotations.md`](./06-checker/external-annotations.md#6-recommendation) rule T8 (`$self` on interface methods, `$N` on `declare fn`) is the recommended answer — implementation then spans `erlang.zig` and `commonJS.zig` (01 if open) |
-| rakun's records get no `module.exports`: the emitted `bootstrap.js` does not export `Rakun` | `src/codegen/commonJS.zig` (likely) | 1.0.2-beta library-repos | **probably closed** by js-bridges `aa02bb4` (every pub enum and record emits `exports.Name = Name;`); [`10-library-repos`](./10-library-repos/README.md) step 4 verifies, else 01 |
 | The block-as-value lowerings left dead in all four backends once 06 enforces decision 2 | `erlang.zig`, `beam_asm.zig`, `commonJS.zig`, `wat.zig` | decision 2 | 01 if still open when 06 lands N6, else a follow-up |
 | `wrong-output` rows that survive 08's wave A after their backend front has closed | the backend files | 08 | the next milestone, by name |
 | `src/comptime/template_eval.zig`, `src/comptime/decorator_eval.zig` (owned by 1.0.2-beta comptime-dispatch, landed) | — | — | 06 claims them if types-as-values A4 takes the `erl` path; 09 may take the transport-error one-liner |

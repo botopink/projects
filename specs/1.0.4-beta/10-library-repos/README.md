@@ -4,7 +4,7 @@
 is one default string per repo and one export the rakun bootstrap needs
 **Status:** carried from 1.0.2-beta front 12, whose rakun (7a), vscode-extension (7e, 7f, 7g) and
 bpmp (7h) items landed — see [Delivered](#delivered-by-102-beta-library-repos)
-**Depends on:** the `libs/std` `String.split("")` fix for erika — the commit of 7c; its compiler
+**Depends on:** the `libs/std` `String.split("")` fix for erika (**landed**, `botopink-lang` `c8c2541`) — the commit of 7c; its compiler
 half, 7b, landed with 1.0.4-beta erlang (`42429dc`), and the fix has no owner ([`../fronts.md`](../fronts.md#unowned-items));
 [`../09-hygiene/decisions.md`](../09-hygiene/decisions.md) item 5.5 for emilia (7d). The
 `BOTOPINK_LANG_REF` defaults can land at any time
@@ -79,7 +79,7 @@ to `AGENTS.md`, run the declared tests. Install path per
 ### Step 3 — the last two `BOTOPINK_LANG_REF` defaults
 
 **Acceptance:**
-- [ ] jhonstart's and onze's `test.yml` default to `feat`; all five defaults name the same branch
+- [x] jhonstart's and onze's `test.yml` default to `feat`; all five defaults name the same branch
 
 ### Step 4 — rakun's records are exported
 
@@ -90,7 +90,7 @@ Not this front's fix: `botopink build` must emit `module.exports` for a module's
 [`../fronts.md`](../fronts.md#unowned-items).
 
 **Acceptance:**
-- [ ] rakun's emitted `bootstrap.js` exports `Rakun`, and a scratch consumer `require`s it
+- [x] rakun's emitted `bootstrap.js` exports `Rakun`, and a scratch consumer `require`s it
 
 ## Gate
 
