@@ -1,13 +1,17 @@
-# Examples — before and after 1.0.3-beta
+# Examples — before and after 1.0.4-beta
 
 > **Naming.** Written for 1.0.3-beta, which was folded into 1.0.4-beta before it shipped. Here
 > "1.0.3" names the **new surface** and "1.0.2" the **old one**; both land in the 1.0.4-beta release
 > ([`overview.md`](./overview.md)).
 
-Every **Before** block was compiled and run with `botopink check` / `botopink run` at
-`botopink-lang` `41981e3` (commonJS target unless noted); the output is shown under it. The
-**After** blocks are the target surface — they are what F3's migrated fixtures must reproduce, with
-the same output.
+Every **Before** block in sections 1–13 was compiled and run with `botopink check` / `botopink run`
+at `botopink-lang` `41981e3` (commonJS target unless noted); the output is shown under it. The
+**After** blocks are the target surface — what the migrated fixtures of fronts 12 and 13 must
+reproduce, with the same output — and follow
+[decision 8](./08-review-backlog/decision-8-language.md) (2026-09-17): `Self<T>` in generic
+declarations, `case` arms as `Pattern { body }`, tuples without labels in construction. Sections
+14–17 show decision 8's additions; they have no 1.0.2 counterpart and were not compiled — *to verify
+when 06/12 land*.
 
 ---
 
@@ -71,11 +75,11 @@ pub fn main() {
 
 ```bp
 pub type Stack<T>(items: T[]) {
-    pub fn size(self: Self) -> i32 {
+    pub fn size(self: Self<T>) -> i32 {
         return self.items.length;
     }
 
-    pub fn push(self: Self, item: T) -> Stack<T> {
+    pub fn push(self: Self<T>, item: T) -> Self<T> {
         return Stack(items: self.items.append([item]));
     }
 }
@@ -85,6 +89,8 @@ pub fn main() {
     @print(s.size());
 }
 ```
+
+In a generic declaration `Self` carries its type arguments (decision 8 §1.2).
 
 ---
 
@@ -162,9 +168,9 @@ pub type Order {
 
 pub fn toInt(o: Order) -> i32 {
     return case o {
-        Lt -> -1;
-        Eq -> 0;
-        _ -> 1;
+        .Lt { -1 }
+        .Eq { 0 }
+        _ { 1 }
     };
 }
 
@@ -173,13 +179,17 @@ pub fn main() {
 }
 ```
 
+A `case` arm is `Pattern { body }` and takes no `;`; `.Lt` names the variant of the matched value's
+type (decision 8 §5).
+
 ---
 
 ## 5 — Enum with payloads and a method
 
-**Before** — output `16` on the Erlang target. On commonJS it type-checks but fails at runtime
-(`Shape.Square(...).area is not a function`) — a commonJS defect, owned by
-[`01-backend-residuals/`](./01-backend-residuals/README.md#step-3--commonjs) (CR4 — handed to the landed js-bridges front as H10, not claimed by it).
+**Before** — output `16` on the Erlang target. At `41981e3` commonJS type-checked it but failed at
+run time (`Shape.Square(...).area is not a function`); fixed by
+[`01-backend-residuals/`](./01-backend-residuals/README.md#delivered-by-this-front) step 3 (CR4,
+`dbe2863`) — `16` on commonJS too.
 
 ```bp
 pub enum Shape {
@@ -208,8 +218,8 @@ pub type Shape {
 
     pub fn area(self: Self) -> i32 {
         return case self {
-            Circle(r) -> r * r * 3;
-            Square(s) -> s * s;
+            .Circle(r) { r * r * 3 }
+            .Square(s) { s * s }
         };
     }
 }
@@ -400,7 +410,7 @@ Bodyless members end with `;`; the default method takes nothing after `}`.
 
 ---
 
-## 10 — Anonymous record → labeled tuple
+## 10 — Anonymous record → tuple
 
 **Before** — output `7` then `n,n`
 
@@ -417,20 +427,24 @@ pub fn main() {
 }
 ```
 
-**After** — same output; the values are tuples at runtime (`[0, 7]`, `[1, "n"]`)
+**After** — same output; the values are tuples at run time (`[0, 7]`, `[1, "n"]`)
 
 ```bp
 fn origin() -> #(x: i32, y: i32) {
-    return #(x: 0, y: 7);
+    return #(0, 7);
 }
 
 pub fn main() {
     val o = origin();
-    val pairs = [1, 2].map({ i -> #(key: i, label: "n") });
+    val pairs = [1, 2].map({ i -> #(i, "n") });
     @print(o.y);
-    @print(pairs.map({ p -> p.label }).join(","));
+    @print(pairs.map({ p -> p.1 }).join(","));
 }
 ```
+
+Construction takes no labels; `origin`'s written return type gives them, so `o.y` is `o.1` at
+compile time. The lambda's tuple has a label only for the variable element (`i`), so the literal is
+read by position (decision 8 §6).
 
 ---
 
@@ -459,8 +473,8 @@ pub fn main() {
 pub fn conf(comptime q: @Expr<string>) -> @Expr<#(port: i32, debug: bool)> {
     val t = q.text();
     return @expr(#(
-        port: 8000 + t.length,
-        debug: true,
+        8000 + t.length,
+        true,
     ));
 }
 
@@ -469,6 +483,9 @@ pub fn main() {
     @print(c.port);
 }
 ```
+
+The labels come from the written `@Expr<#(port: i32, debug: bool)>`; that they reach `c.port`
+through the template's expansion is *to verify when 06/12 land*.
 
 ---
 
@@ -542,8 +559,9 @@ pub fn main() {
 
 ## 13 — Freed keywords and accessors
 
-**Before** — `val get = 42;` is a parse error today (and so are `auto`, `derive`, `macro`, `set`,
-`opaque`, `private`). jhonstart's `.d.bp` declares accessors that the parser already rejects:
+**Before** — `val get = 42;` was a parse error at `41981e3` (and so were `auto`, `derive`, `macro`,
+`set`, `opaque`, `private`; the compiler half landed in `ecac19d`, jhonstart's accessors in
+`bf868ca`). `delegate` and `new` follow ([`06-checker/`](./06-checker/README.md) N27). jhonstart's `.d.bp` declares accessors that the parser already rejects:
 
 ```bp
 pub interface Router {
@@ -559,6 +577,8 @@ pub interface Router {
 val get = 42;
 val set = 99;
 val auto = 10;
+val delegate = 1;               // after 06 N27
+val new = 2;                    // after 06 N27 — `throw Error("x")`, not `throw new Error("x")`
 
 pub behavior Router {
     fn pathname(self: Self) -> string;
@@ -568,3 +588,95 @@ pub behavior Router {
 ```
 
 `x.get(k)` and `x.set(v)` keep working — they are plain method names.
+
+---
+
+## 14 — `unknown`, `is` and a guarded `case`
+
+*Decision 8 §2, §4, §5 — to verify when 06/12 land.* Output `number 3` then `other`
+
+```bp
+fn describe(x: unknown) -> string {
+    return case x {
+        i32 { n -> "number " + n }
+        string when (x == "") { "empty text" }
+        string { s -> "text " + s }
+        _ { "other" }
+    };
+}
+
+pub fn main() {
+    val a: unknown = 3.0;
+    @print(describe(a));          // 3.0 fits i32: the value is converted
+    @print(describe(true));
+}
+```
+
+`_` is required: the matched value is `unknown`, and guarded arms never make a `case` exhaustive.
+
+---
+
+## 15 — Unions
+
+*Decision 8 §3 — to verify when 06/12 land.* Output `2` then `1`
+
+```bp
+fn size(v: i32 | string) -> i32 {
+    return case v {
+        i32 { n -> n }
+        string { s -> s.length }
+    };
+}
+
+pub fn main() {
+    val a = if (true) { 2 } else { "a" };     // i32 | string
+    val xs = [1, "a"];                          // (i32 | string)[]
+    @print(size(a));
+    @print(size(xs[1]));
+}
+```
+
+No `_`: every member is covered.
+
+---
+
+## 16 — Effects and `loop (condition)`
+
+*Decision 8 §9, §10 — to verify when 06/12 land.* Output `3` then `0`
+
+```bp
+#[@result]
+fn parse(s: string) -> @Result<i32, string> {
+    if (s == "") { throw "empty"; };
+    return s.length;
+}
+
+pub fn main() {
+    var attempts = 0;
+    loop (attempts < 3) {
+        attempts = attempts + 1;
+    };
+    val assert Ok(n) = parse("abc");
+    @print(n);
+    @print(parse("") catch 0);
+}
+```
+
+`while` does not exist; `#[@result]` and `@Result<T, E>` go together.
+
+---
+
+## 17 — Printing
+
+*Decision 8 §7 — to verify when 01 step 6 lands.* The same text on every backend:
+
+```bp
+pub type Point(x: i32, y: i32)
+
+pub fn main() {
+    @print([Point(x: 1, y: 2)]);      // [Point(x: 1, y: 2)]
+    @print(#(1, "a\"b"));             // #(1, "a\"b")
+    @print(2.0);                       // 2.0
+    @print("hi");                      // hi
+}
+```

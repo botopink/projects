@@ -1,21 +1,17 @@
 # Front 05 — cli-residuals
 
-**Status:** **delivered** 2026-09-17 (`botopink-lang` merge `440a1d3`). Handoffs: the language-server half of step 5 — `project_graph.zig` still swallows
+**Status:** **delivered** 2026-09-17 (`botopink-lang` merge `440a1d3`); step 6 (f) closed by decision 5.5a (no meta gate, the dangling link deleted). Handoffs: the language-server half of step 5 — `project_graph.zig` still swallows
 a missing dependency (`:171`) and an unreadable file (`:210`) with `catch continue` — is an unowned
 item; `codegen.generate` drops failed-module entries because `tests/helpers.zig` renders its own
 diagnostic — reading `result.diagnostic` there is [`../08-review-backlog/`](../08-review-backlog/README.md)'s.
 The lib-test-runner's unit tests now run under the root `zig build test` (its own `build.zig` +
-`.zon` can go — [`../09-hygiene/`](../09-hygiene/README.md)). The hook is self-contained (5.5b) and
+`.zon` can go — [`../09-hygiene/`](../09-hygiene/README.md), which also takes 5.4's `test-vscode` step in the root `build.zig`). The hook is self-contained (5.5b) and
 `gate.sh` clears `GIT_DIR`/`GIT_INDEX_FILE` after the staged stage: without it the bpmp install tests
 ran `git` against the real repository from inside the hook.
-**Priority:** medium — the gate the 1.0.2-beta cli-gate front built is in use and catches a broken
-library; what is left is a driver that still runs the program it compiles, diagnostics that still
-die before the CLI can print them, three decorator tests that stay green under a mutation of their
-own lowering, and gate pieces that exist but are not installed or not wired
-**Depends on:** nothing — the four backend fronts step 2 waited on landed 2026-09-17 (`ed15323`).
-Step 2 edits one site in each backend file, which
-[`../01-backend-residuals/`](../01-backend-residuals/README.md) now owns: sequence it against that
-front ([`../fronts.md`](../fronts.md#conflict-matrix) note 1)
+**Priority:** medium (delivered). What it closed: a driver that ran the program it compiled,
+diagnostics that died before the CLI printed them, decorator tests that stayed green under a mutation
+of their own lowering, and gate pieces that were not installed or not wired
+**Depends on:** — (delivered)
 **Owns:** `modules/compiler-cli/**` · `modules/lib-test-runner/**` · `build.zig` · `.github/workflows/**`
 · `scripts/**` **except** `scripts/snap_audit.sh` · `src/codegen.zig` (the `generate` driver) ·
 `src/codegen/snapshot.zig` (only the call that sets the execute flag) · `src/comptime.zig`

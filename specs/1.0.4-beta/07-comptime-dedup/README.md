@@ -1,6 +1,6 @@
 # Front 07 — comptime-dedup
 
-**Status:** not started. Carried whole from 1.0.2-beta front 10.
+**Status:** not started; opens after [`../06-checker/`](../06-checker/README.md). Carried whole from 1.0.2-beta front 10.
 
 **Priority:** medium — nothing is wrong at run time, but every comptime snapshot change costs four
 files, and the typed-AST renderer hides what the checker does behind `?` and `"id": 0`

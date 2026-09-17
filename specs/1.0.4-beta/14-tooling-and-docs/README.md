@@ -1,14 +1,17 @@
 # Front 14 — Tooling and docs
 
-**Status:** not started. Carried whole from 1.0.3-beta front 04; `file:line` measured at
-`botopink-lang` `41981e3` and `vscode-extension` `8b1c083` — re-locate after 11 and 12 land.
+**Status:** not started. Carried from 1.0.3-beta front 04; `file:line` measured at `botopink-lang`
+`41981e3` and `vscode-extension` `8b1c083` — re-locate after 12 lands (11 landed: vscode-extension
+`eb870ac` rewrote the keyword pattern). Added 2026-09-17: the hover footer
+`*from behavior Signed (via I32)*`, completion in a file that does not compile (step 1), the grammar
+dropping `delegate` and `new`, and the texts for [decision 8](../08-review-backlog/decision-8-language.md)'s
+`unknown`, unions and tuple labels.
 
 **Priority:** high — after [`../12-surface-cutover/`](../12-surface-cutover/README.md) the editor still suggests and highlights `record`, `enum` and
 `interface`, and the user docs teach a surface that no longer parses.
 **Depends on:** [`../12-surface-cutover/`](../12-surface-cutover/README.md) (final grammar; shares
-`language-server/src/engine.zig`) · [`../11-dead-keywords-residual/`](../11-dead-keywords-residual/README.md)
-(shares the tmLanguage keyword pattern)
-**Owns:** `modules/language-server/src/engine.zig` user-facing texts, keyword lists, symbol and
+`language-server/src/engine.zig`)
+**Owns:** `modules/language-server/src/engine.zig` user-facing texts, `server.zig`'s completion request path, keyword lists, symbol and
 completion kinds · `repository/vscode-extension/**` · `repository/botopink-lang` user docs
 (`docs.md`, `README.md`, `libs/std/AGENTS.md` prose, the other markdown files that teach syntax)
 **Does not touch:** compiler-core, library repositories ([`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md)), historical `specs/` and `tasks/`

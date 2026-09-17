@@ -1,13 +1,14 @@
 # Front 10 — library repos
 
-**Priority:** medium — erika and emilia are the two libraries whose own work is unfinished; the rest
-is one default string per repo and one export the rakun bootstrap needs
-**Status:** carried from 1.0.2-beta front 12, whose rakun (7a), vscode-extension (7e, 7f, 7g) and
-bpmp (7h) items landed — see [Delivered](#delivered-by-102-beta-library-repos)
-**Depends on:** the `libs/std` `String.split("")` fix for erika (**landed**, `botopink-lang` `c8c2541`) — the commit of 7c; its compiler
-half, 7b, landed with 1.0.4-beta erlang (`42429dc`), and the fix has no owner ([`../fronts.md`](../fronts.md#unowned-items));
-[`../09-hygiene/decisions.md`](../09-hygiene/decisions.md) item 5.5 for emilia (7d). The
-`BOTOPINK_LANG_REF` defaults can land at any time
+**Status:** **delivered** 2026-09-17 — erika `051cd97` (7b verified, 7c), emilia `321981d` (7d, hook
++ CI), jhonstart `8668c40` and onze `2fcf860` (`BOTOPINK_LANG_REF` → `feat`), rakun's export verified
+(no commit). Afterwards every library's gate also builds its examples (erika `17728e3`, emilia
+`a167c06`, jhonstart `6c807d1`, onze `cda9d01`, rakun `d5ca84b`); the ones that do not compile are
+listed in each `scripts/known-broken-examples.txt` and belong to
+[`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md). Carried from 1.0.2-beta front 12,
+whose 7a and 7e–7h landed — see [Delivered](#delivered-by-102-beta-library-repos)
+**Priority:** medium (delivered)
+**Depends on:** — (delivered)
 **Owns:** `repository/erika/**` · `repository/emilia/**` · the one-line `BOTOPINK_LANG_REF` default
 in `repository/{jhonstart,onze}/.github/workflows/test.yml` — one commit per repo
 **Does not touch:** `modules/compiler-core/**` (rakun's missing export is a codegen fix — see
@@ -94,16 +95,17 @@ Not this front's fix: `botopink build` must emit `module.exports` for a module's
 
 ## Gate
 
-- [ ] erika, emilia: `botopink check` and `botopink test` green in the repo root, on commonJS and
-      erlang, with a compiler built from `botopink-lang` `feat`
-- [ ] `zig build test-libs` has no known-red line left that names a library this front owns
-- [ ] Each repo's `AGENTS.md` updated in the same commit
-- [ ] One commit per repo on `fix/library-repos`; no push, no merge
+- [x] erika, emilia: `botopink check` and `botopink test` green in the repo root (erika 31/31 on
+      commonJS and erlang; emilia 17/17 — it targets commonJS only), with a compiler built from
+      `botopink-lang` `feat`
+- [x] `zig build test-libs` has no known-red line left that names a library this front owns
+- [x] Each repo's `AGENTS.md` updated in the same commit
+- [x] One commit per repo on `fix/library-repos`, landed by the maintainer's sweep
 
 ## Blast radius
 
-- **erika goes green** once the `libs/std` `String.split("")` fix lands and step 1 commits; the `known-red-libs.txt` lines
-  for erika are deleted in botopink-lang.
+- **erika went green** with the `libs/std` `String.split("")` fix (`c8c2541`), which deleted its
+  `known-red-libs.txt` lines.
 - **emilia gains a hook**, so every later emilia commit — including
   [`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md)'s migration — pays its gate.
 - **The `BOTOPINK_LANG_REF` change** points jhonstart's and onze's CI at `feat`, which may red them
@@ -115,7 +117,6 @@ Not this front's fix: `botopink build` must emit `module.exports` for a module's
   edits jhonstart and [`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md) rewrites
   all five libraries; landing erika's 7c and emilia's gate first means the migration is verified
   by a working hook in both.
-- **Library hooks are local state.** In the maintainer's meta checkout the erika, jhonstart, onze,
-  rakun and vscode-extension hooks are installed as symlinks and resolve, so a red hook blocks
-  commits there; a fresh clone installs none. Measured detail in
-  [`../09-hygiene/decisions.md`](../09-hygiene/decisions.md).
+- **Library hooks are installed per repo** (decision 5.5b): `git config core.hooksPath
+  scripts/git-hooks`, documented in each `AGENTS.md`; the hook runs `botopink test`, then builds the
+  examples.

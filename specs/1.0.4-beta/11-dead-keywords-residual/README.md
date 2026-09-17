@@ -4,18 +4,11 @@
 both `feat`s with the meta bump. `botopink check` skips a library's `.d.bp`, so the parse was proven
 with `botopink format --check` (the formatter's own rewrite of `pub interface` to
 `val X = interface` was not adopted — a formatter question for 12/14).
-**Priority:** low — two small edits in two sibling repositories, left behind when the compiler half
-of 1.0.3-beta front 01 landed
-**Status:** the compiler side **landed** in `botopink-lang` `ecac19d` (lexer, `isMemberName`, the
-lexer/parser tests, the `.d.ts` reserved-word escape in `ts_emitter.zig`, the keyword tables in
-`language-server/src/engine.zig`). The jhonstart and vscode-extension commits of that front
-(`467505b`, `7256e25`) were never pushed and no longer exist; the meta repository kept the old
-submodule pointers. This front redoes those two commits.
-**Depends on:** every 1.0.2-derived front closed (01–10) — the surface fronts start on a settled
-base. Shares no file with [`../12-surface-cutover/`](../12-surface-cutover/README.md) (the compiler
-half it shared has landed), so the two may run together; it must land before
-[`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md) (jhonstart) and
-[`../14-tooling-and-docs/`](../14-tooling-and-docs/README.md) (the grammar)
+**Priority:** low (delivered). The compiler side had landed in `botopink-lang` `ecac19d`; the
+jhonstart and vscode-extension commits of 1.0.3-beta front 01 were never pushed, and this front redid
+them
+**Depends on:** — (delivered; it was advanced ahead of 01–10 by the maintainer, sharing no file with
+them)
 **Owns:** `repository/jhonstart/src/{router,server}.d.bp` and their call sites in jhonstart ·
 `repository/vscode-extension/syntaxes/botopink.tmLanguage.json` (the keyword pattern only)
 **Does not touch:** `repository/botopink-lang/**` (landed) · the rest of jhonstart
@@ -68,24 +61,24 @@ every other word — `record`, `enum`, `interface` leave with
 
 **Acceptance:**
 - [x] The pattern names none of the seven words
-- [ ] The extension's test asserting the grammar's keyword list against the compiler's
+- [x] The extension's test asserting the grammar's keyword list against the compiler's
       `keywordOrIdent` is green — or, if 1.0.2-beta 7e did not add one, it is added here
 - [x] `npm ci && npm test` green
 
 ## Gate
 
-- [ ] jhonstart: `botopink check` clean in the repo root with a compiler built from `botopink-lang`
+- [x] jhonstart: `botopink check` clean in the repo root with a compiler built from `botopink-lang`
       `feat`; its pre-commit hook passes (no `--no-verify`)
-- [ ] vscode-extension: `npm test` green, and its CI `compiler` job green
-- [ ] `AGENTS.md` of every directory touched, updated in the same commit
-- [ ] One commit per repo on `fix/dead-keywords`; no push, no merge
-- [ ] **Landing (the maintainer's step) includes the push of both repos and the meta submodule bump
+- [x] vscode-extension: `npm test` green, and its CI `compiler` job green
+- [x] `AGENTS.md` of every directory touched, updated in the same commit
+- [x] One commit per repo on `fix/dead-keywords`; no push, no merge
+- [x] **Landing (the maintainer's step) includes the push of both repos and the meta submodule bump
       in one sweep** — the previous attempt was lost exactly there: the commits existed only locally
       and the meta merge kept the old pointers
 
 ## Notes
 
-**Decided 2026-09-17 by the maintainer:** `delegate` and `new` stop being keywords — both lex as identifiers, and `throw new Error(…)` no longer parses (write `throw Error(…)`); the unmapped `.@"const"` token variant is deleted; the VS Code grammar stops highlighting `delegate` and `new`. A follow-up with the same shape as this front. The facts measured then:
+**Decided 2026-09-17 by the maintainer:** `delegate` and `new` stop being keywords — both lex as identifiers, and `throw new Error(…)` no longer parses (write `throw Error(…)`); the unmapped `.@"const"` token variant is deleted; the VS Code grammar stops highlighting `delegate` and `new`. Owned by [`../06-checker/`](../06-checker/README.md) N27 (lexer/parser) and [`../14-tooling-and-docs/`](../14-tooling-and-docs/README.md) (grammar). The facts measured then:
 - `delegate` is equally dead (no parser code matches `.delegate`; delegates are `declare fn`) and
   survives only in `isReservedWord`.
 - `new` is only skipped as an optional word after `throw`.

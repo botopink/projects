@@ -4,20 +4,23 @@
 suite and "every snapshot proves what its test claims", and the rows that name a compiler defect
 must reach the front that owns the file before that front closes
 **Status:** not started as a front. It is what is left of 1.0.2-beta front 09 (review-tooling),
-whose steps 1–3 landed — see [Delivered](#delivered-by-102-beta-review-tooling)
+whose steps 1–3 landed — see [Delivered](#delivered-by-102-beta-review-tooling). The decisions its
+rows waited on are taken: 1–5 in [`semantics-decisions.md`](./semantics-decisions.md), and
+[`decision-8-language.md`](./decision-8-language.md) (2026-09-17, supersedes 1a, 6 and 7); the
+`uncertain` rows those do not answer are decided in [`backlog.md`](./backlog.md#the-7-uncertain-rows-no-decision-answers)
 **Depends on:** wave A (reports 3.1, 3.2, 3.4, 3.5) — [`../06-checker/`](../06-checker/README.md)
-landed. The four backend fronts landed 2026-09-17 (`ed15323`) and re-recorded the snapshots its rows
-cite; [`../01-backend-residuals/`](../01-backend-residuals/README.md) and the checker can move them again; a row re-derived before either lands is
-re-derived twice. Wave B (reports 3.7–3.10) —
-[`../07-comptime-dedup/`](../07-comptime-dedup/README.md) step 2 landed
+and [`../01-backend-residuals/`](../01-backend-residuals/README.md) step 6 landed: both re-record the
+codegen snapshots its rows cite (step 6 re-records every print-text RUN LOG); a row re-derived before
+them is re-derived twice. Wave B (reports 3.7–3.10) —
+[`../07-comptime-dedup/`](../07-comptime-dedup/README.md) step 2 landed. Also takes 05's handoff:
+`tests/helpers.zig` reads the failed-module diagnostic `codegen.generate` now carries
 **Owns:** `src/utils/snap.zig` · `scripts/snap_audit.sh` (+ its `scripts/AGENTS.md` section) ·
 `src/codegen/tests/**` (except the `KNOWN` notes of the fixtures carved out to
 [`../01-backend-residuals/`](../01-backend-residuals/README.md)) · `src/comptime/tests/**` (except
-`decorator_regression.zig`, carved out to [`../05-cli-residuals/`](../05-cli-residuals/README.md), and
 `helpers.zig`, which [`../07-comptime-dedup/`](../07-comptime-dedup/README.md) edits first) ·
 `src/parser/tests/**` · `modules/language-server/src/tests/**` · the per-report status lines in
 [`../../1.0.1-beta/06-snapshot-review/`](../../1.0.1-beta/06-snapshot-review/) · the decision
-reference [`semantics-decisions.md`](./semantics-decisions.md)
+references [`semantics-decisions.md`](./semantics-decisions.md) and [`decision-8-language.md`](./decision-8-language.md)
 **Does not touch:** any lowering (01), the checker and parser sources (06), `comptime/snapshot.zig`
 (07), `libs/std/**`. A `wrong-output` row that needs one of these is **registered** in the owning
 front's README with its snapshot name, not fixed here.

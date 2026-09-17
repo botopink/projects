@@ -1,19 +1,21 @@
 # Front 12 — Surface cutover (`type`, `behavior`, labeled tuples, separators)
 
-**Status:** not started. Carried whole from 1.0.3-beta front 02. Counts and `file:line` were
-measured at `botopink-lang` `41981e3`; the 1.0.2-derived fronts (01–10) move many of them —
-re-measured at `4eadb70` in [`remeasure.md`](./remeasure.md) — counts barely moved, but the
+**Status:** not started. Carried from 1.0.3-beta front 02, amended by the maintainer's decisions of
+2026-09-17: [decision 5](../08-review-backlog/semantics-decisions.md#decision-5) (positional template
+markers), [decision 8](../08-review-backlog/decision-8-language.md) (tuple labels, `Self<T>`,
+`@Result<T, E>`, `loop (condition)`, the source migration of `unknown`-falling declarations), and the
+step-1 choices below (`DeclKind` `Type`/`Behavior` with no aliases, `InstanceLowering.type_`). Counts
+and `file:line` were measured at `botopink-lang` `41981e3` and re-measured at `4eadb70` in [`remeasure.md`](./remeasure.md) — counts barely moved, but the
 backend fronts added ~22 consumer sites step 1 must port and the document lists twelve risks (R1–R12)
 the steps below do not yet cover; fold them in before step 1.
 
 **Priority:** critical — the milestone's change. Four keywords (`record`, `enum`, `interface`, plus
 the `record { }` literal) become two (`type`, `behavior`) and a tuple form, with one separator rule.
 **Depends on:** every 1.0.2-derived front closed (01–10) — this front touches every file they own,
-and the library gate cannot be read while they are open. The dead-keywords compiler half it
-shared lexer/parser/LSP files with has landed; [`../11-dead-keywords-residual/`](../11-dead-keywords-residual/README.md)
-shares no file with this front and may run beside it
+and the library gate cannot be read while they are open. [`../11-dead-keywords-residual/`](../11-dead-keywords-residual/README.md)
+is delivered
 **Owns:** `modules/compiler-core/src/**` (lexer, parser, `ast.zig`, `comptime.zig` and its embedded
-prelude, `comptime/**` including `comptime/stdlib/*.bp`, `format.zig`, `codegen/**` including
+prelude, `comptime/**` (the `.bp` prelude sources are `libs/std/src/*` embedded through `build.zig`, which is not this front's — [`remeasure.md`](./remeasure.md) R8), `format.zig`, `codegen/**` including
 `crossModule.zig`, every Zig test source) · `modules/compiler-core/snapshots/**` ·
 `modules/language-server/src/**` (compile-level changes, LSP snapshots) ·
 `modules/compiler-cli/src/cli/resolver.zig` · `libs/std/**` · `examples/**` · `AGENTS.md` of every

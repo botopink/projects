@@ -1,19 +1,18 @@
 # Front 06 — checker
 
-**Status:** not started. Carried whole from 1.0.2-beta front 07, plus the rows collected since —
-[Step 0](#step-0--rows-added-in-104-beta).
+**Status:** not started — **the next front**. Carried whole from 1.0.2-beta front 07, plus the rows
+collected since — [Step 0](#step-0--rows-added-in-104-beta), N1–N26, including the checker half of
+[decision 8](../08-review-backlog/decision-8-language.md).
 
 **Priority:** high — the checker accepts wrong programs, so a large share of the "happy path"
 suite asserts nothing
-**Depends on:** [`01-backend-residuals`](../01-backend-residuals/README.md) landed — the four backend fronts landed 2026-09-17, and this front
-moves the typed AST all four backends consume and can re-record their snapshot directories — and
-[`05-cli-residuals`](../05-cli-residuals/README.md) step 2 (its four backend sites must land
-byte-identical before this front re-records). C9's measurement also needs erika compiling: its
-compiler half landed with 1.0.4-beta erlang, and what is left is `libs/std`'s `String.split("")`
-([`../fronts.md`](../fronts.md#unowned-items))
+**Depends on:** nothing open — [`01-backend-residuals`](../01-backend-residuals/README.md) steps 1–4
+and [`05-cli-residuals`](../05-cli-residuals/README.md) landed (2026-09-17, `b4cf700`), and erika
+compiles for C9's measurement (`libs/std`'s `String.split("")` fixed, `c8c2541`). 01's steps 5–6 wait
+for this front
 **Owns:** `comptime/infer.zig` · `comptime/types.zig` · `comptime/env.zig` · `comptime/unify.zig` ·
 `comptime/transform.zig` · `comptime/eval.zig` · `comptime/error.zig` ·
-`parser/{decls,exprs,patterns}.zig` (C5 and the parser gaps; no other front lists them) ·
+`parser/{decls,exprs,patterns}.zig` (C5, the parser gaps, decision 8's syntax) · `lexer.zig` and `lexer/**` (the `new`/`delegate`/`.@"const"` removal) ·
 `snapshots/comptime/**`, and it can move **all four** codegen snapshot directories
 **Does not touch:** `codegen/**` (owned by [`01-backend-residuals`](../01-backend-residuals/README.md)) · `libs/std/**` (no owner
 this milestone — stop and report) · `utils/snap.zig`, `comptime/snapshot.zig`
@@ -131,7 +130,7 @@ group's commit, so no family of snapshots is regenerated twice.
 | N1 | **Trailing default parameters at the call site.** `h1(x)` against `fn h1(children: Children, attrs: … = [])` reds `'h1' expects 2 argument(s), got 1`: inference rejects the call before `transform.expandTrailingDefaultsWithParams` can fill it. Relax the arity checks to the rule the decorator-application check already implements (`required ≤ args ≤ params.len`); record constructors are the same defect; instance methods must expand too (today they neither red nor expand). No codegen change | before G1 (step 2) — it was 1.0.2-beta comptime-dispatch step 3, never executed | [`trailing-defaults.md`](./trailing-defaults.md) |
 | N2 | **A default on a non-last record field is not applied:** `record P { x: i32 = 0, y: i32 }` then `P(y: 2)` → `'P' expects 2 argument(s)` | with N1 (same arity checks, labelled form) | 1.0.3-beta review row 6 |
 | N3 | **`if (guard(v))` with `v: ?string`** reds `type mismatch expected bool, found string` (`narrow_type_guard_basic_codegen`) | G2 (step 3) — it is C5 seen from a call site | review report 3.3 (`codegen-wat-narrowing.md:65`) |
-| N4 | **The degraded completion path drops every `val`:** `infer.zig` ~`:235` `.val => {}`, so `usePost` is missing from its own completion list (LSP `completion_decorator_record`) | G0 (step 1) | review report 3.12 (`lsp.md:104`) |
+| N4 | **(Investigated as N23; land them together.)** **The degraded completion path drops every `val`:** `infer.zig` ~`:235` `.val => {}`, so `usePost` is missing from its own completion list (LSP `completion_decorator_record`) | G0 (step 1) | review report 3.12 (`lsp.md:104`) |
 | N5 | **`transform.zig` `makeLiteralExpr` wraps a comptime array as a `numberLit`**, which erlang renders as a charlist and beam now refuses: it aborts with `{unlowered_comptime_value, …}` | G0 (step 1) | review report 3.6 (`codegen-comptime-misc.md:186`); 1.0.4-beta beam |
 | N6 | **Decision 2 — a block is a statement; its value comes from `break`.** The checker rejects a valueless block in value position and a non-`unit` fn that falls off its end (`case_nested_case_in_block_arm` becomes a checker error). This is the enforcement half of C1/C2. It also settles `if_simple_conditional_in_fn_body` — a value-less `if` that still prints `undefined` / `ok` / `undefined` / `0` on the four backends after they landed | G1 (step 2) | [`../08-review-backlog/semantics-decisions.md#decision-2`](../08-review-backlog/semantics-decisions.md#decision-2) (decided 2026-09-16) |
 | N7 | **A record field typed by a behavior rejects an implementing record:** `expected Handler, got H` | G1 (step 2) — the unify direction it needs is C1's; move it to G3 if it proves to be method-table strictness | 1.0.3-beta review row 5 |
@@ -143,7 +142,7 @@ group's commit, so no family of snapshots is regenerated twice.
 | N13 | **An undeclared name passes the check.** `val assert 42 = answer catch 0;` with `answer` unbound compiles on every backend; beam now aborts at run time with `{unresolved_identifier, answer}` — a backstop, not the diagnostic. Every read of an undeclared value name reds with a location | G1 (step 2), beside C10 — C12's `val assert` half (G2) is one instance | 1.0.4-beta beam (`tests/values.zig` "unresolved name aborts" test) |
 | N14 | **`run {…}` / `use effect {…}` arity mismatches** reach codegen: the block's parameters and the call's arguments disagree, and beam cannot lower them | with N1 (the arity checks) | 1.0.4-beta beam |
 | N15 | **No lowering is recorded for a method called on an associated fn's result** (`Array.range(…).map(…)`): inference leaves the receiver's type open, so erlang falls back to runtime dispatch | G3 (step 4) — method typing on a receiver whose type another call produced | 1.0.4-beta erlang |
-| N16 | **`while` is not part of the language** (decided 2026-09-17). `while (c) { … }` parses as a call to an unbound `while` with a block; the checker's "not in scope" is the right verdict, but the message should name it (`\`while\` does not exist — use \`loop\``), and commonJS's special case lowering that call to a JS `while` goes (01/12 files, handed over) | G0 (step 1) — a targeted diagnostic | maintainer decision C4 |
+| N16 | **(Folded into N26.)** **`while` is not part of the language** (decided 2026-09-17). `while (c) { … }` parses as a call to an unbound `while` with a block; the checker's "not in scope" is the right verdict, but the message should name it (`\`while\` does not exist — use \`loop\``), and commonJS's special case lowering that call to a JS `while` goes (01/12 files, handed over) | G0 (step 1) — a targeted diagnostic | maintainer decision C4 |
 | N17 | **The caret of a path error points at the last segment, not the offending one** (`path_access_with_bad_tail_raises_focused_error`, col 25 instead of 19; decided 2026-09-17) | G0 (step 1) | 1.0.1-beta report 3.8 |
 | N18 | **Decision 8 §1 — generic types**: written types carry all arguments (1.1), `Self<…>` in generic types and behaviors plus the non-generic implementer rule (1.2), explicit type arguments at a use (1.3), type arguments decided only where a value is born, with the `unknown` fallback warning (1.4) | G3 | decision 8 |
 | N19 | **Decision 8 §2 — `unknown`**: one-way assignability, allowed operations, value equality with numbers, `pub` inferred-`unknown` error, no `any` | G3 | decision 8 |
@@ -154,6 +153,7 @@ group's commit, so no family of snapshots is regenerated twice.
 | N24 | **Decision 8 §6 — tuple labels**: labels from construction variables and written types, `row.label` → index at compile time, labels ignored by type comparison, the mismatch warning | G3 | decision 8 |
 | N25 | **Decision 8 §9 — effects**: `#[@result]` requires `@Result<T, E>` (and the other effect/wrapper pairs); `val assert Ok/Err` on a `@Result`, refused after `catch` | G2 | decision 8 (was decision 7) |
 | N26 | **Decision 8 §10 — `loop (condition)`** and `while` refused with a located message (replaces N16's diagnostic text) | G0 | decision 8 |
+| N27 | **`delegate` and `new` stop being keywords** (`throw Error(…)`; `new` is no longer skipped after `throw`), and the unmapped `.@"const"` token variant is deleted (decided 2026-09-17; the VS Code grammar half is [`../14-tooling-and-docs/`](../14-tooling-and-docs/README.md)'s) | G0 | 1.0.4-beta 11 notes |
 
 **Acceptance:**
 - [ ] N1: a free fn, a record constructor and an instance method each accept a call that omits a
@@ -181,6 +181,7 @@ group's commit, so no family of snapshots is regenerated twice.
 - [ ] N17: the path error's caret points at the offending segment
 - [ ] N18–N22, N24–N26: every example of [decision 8](../08-review-backlog/decision-8-language.md) sections 1–6, 9, 10 compiles or fails exactly as annotated (checker half; run time is 01 step 6)
 - [ ] N23: a module with a failing `@emit` still binds its well-typed `val`s
+- [ ] N27: `val new = 1; val delegate = 2;` check; `throw new Error("x")` reds with a located message naming `throw Error(…)`; no `.@"const"` variant is left
 
 ### Step 1 — G0, the free wins (C6, C4b, C11, C7, C12's pipeline half)
 

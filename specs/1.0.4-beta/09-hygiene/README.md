@@ -1,19 +1,20 @@
 # Front 09 — hygiene
 
-**Status:** step 1 (group E, the frame protocol) **delivered** by 1.0.2-beta front 11 — see
-[Step 1](#step-1--close-the-frame-protocol-hole-group-e-510--delivered). Steps 2–6 carried; each sweep runs
+**Status:** step 1 (group E) **delivered** by 1.0.2-beta front 11, its residual documented with
+`botopink-lang` `e98a5da`; step 3 (group B) **delivered** except 5.4 (`e98a5da`, `meta:build.zig`
+deleted); step 6 **delivered** — 5.5a no meta gate, 5.5b a self-contained hook per repo, 5.9 MIT in
+the seven code repos. Open: steps 2, 4, 5, 5.4 and the lib-test-runner build files; each sweep runs
 after the front that owns the file it sweeps.
 
 **Priority:** low, except [5.16](./build-files.md) — the remaining items are cosmetic apart from one
 silently-wrong build
-**Depends on:** per step — group A's precondition is answered (1.0.4-beta wasm: `executeWat`
-executes) and it can start; group B's root `build.zig` and CI edits wait on
-[`../05-cli-residuals/`](../05-cli-residuals/README.md), which owns both; group C's and group D's
-comment sweeps wait on the fronts that own the swept files (01, 05–08); 5.13's fixture waits on
-[`../07-comptime-dedup/`](../07-comptime-dedup/README.md); the decisions (step 6) wait on nobody but
-the maintainer
-**Owns:** `comptime/runtime/persistent_erl.zig` (the residual below) · `meta:build.zig`, root
-`test_pub.zig`, `test_format.zig`, `modules/*/build.zig` + `.zon` (group B) · `libs/std/botopink.json`,
+**Depends on:** per step — group A (step 2) can start (its precondition, `executeWat` executing, is
+answered) for the files whose owner has closed; 5.4 and the lib-test-runner build files can start
+(05 delivered — the root `build.zig` and CI are this front's for these two edits); group C's and
+group D's comment sweeps wait on the fronts that own the swept files (01 step 6, 06–08); 5.13's
+fixture waits on [`../07-comptime-dedup/`](../07-comptime-dedup/README.md)
+**Owns:** `comptime/runtime/persistent_erl.zig` · `modules/lib-test-runner/build.zig` + `.zon`, the
+root `build.zig`'s `test-vscode` step and its CI reference (5.4) · `libs/std/botopink.json`,
 `libs/std/AGENTS.md` and comments in `libs/std/**` (group C) · `examples/**`, `README.md`, `docs.md`,
 every `AGENTS.md`, and comments
 **Does not touch:** any behaviour. Every edit outside groups E and B is a comment, a manifest, a
@@ -73,10 +74,10 @@ land together; the groups are file-disjoint from each other.
 |---|---|---|---|
 | E — the comptime frame protocol | 5.10 | The frame-protocol guard | **delivered** |
 | [A — the removed WAT runtime](./wat-runtime.md) | 5.6, 5.7 | Every trace of the removed wasm3/`wat_runtime` runtime, in source, comments and CI | 2nd — its decision is made; ready |
-| [B — build files that lie](./build-files.md) | 5.4, 5.16, 5.17 | Build files and root scripts that do not work, or work wrongly | 3rd |
+| [B — build files that lie](./build-files.md) | 5.4, 5.16, 5.17 | Build files and root scripts that do not work, or work wrongly | **delivered** except 5.4 and the lib-test-runner pair |
 | [C — `libs/std` declarations and one stale filename](./std-declarations.md) | 5.1, 5.2, 5.3, 5.14 | `libs/std`'s declared surface (its code half landed with 1.0.2-beta std-surface), and the 33 comments still naming `primitives.d.bp` | sweep after 01 |
 | [D — instructions and vocabulary that do not work](./vocabulary.md) | 5.8, 5.13, + 1.0.3-beta review row 9 | An example header, `docs.md`'s `implement` example, and ~24 comments teaching forms the compiler rejects | sweep after 01–07 |
-| [Decisions — not work](./decisions.md) | 5.9, 5.5 | License; whether the meta repo needs a gate at all | before their groups can close |
+| [Decisions — not work](./decisions.md) | 5.9, 5.5 | License; whether the meta repo needs a gate at all | **decided and delivered** |
 
 ## Steps
 
@@ -98,7 +99,7 @@ never reaches a diagnostic — no front owns those two files now; take it here i
 change.
 
 **Acceptance:**
-- [ ] `erl.stderr.log` is per spawn, or documented as shared and best-effort
+- [x] `erl.stderr.log` is per spawn, or documented as shared and best-effort (documented, `e98a5da`)
 
 ### Step 2 — Erase the removed WAT runtime (group A, 5.6 · 5.7)
 
@@ -208,7 +209,7 @@ the work:
 | Where | What it touches | Whose file |
 |---|---|---|
 | 5.14 (33 sites), 5.13 (~24 sites) | comments in `codegen/erlang.zig`, `codegen/commonJS.zig`, `codegen/beam_asm.zig`, `comptime/infer.zig`, `comptime/env.zig`, `codegen/tests/**` | [`../01-backend-residuals/`](../01-backend-residuals/README.md), [`../06-checker/`](../06-checker/README.md), [`../08-review-backlog/`](../08-review-backlog/README.md) |
-| 5.4, 5.16, A1 | root `build.zig` (the `test-vscode` step, `build_options`, `libcResolvedTarget`) and `.github/workflows/test.yml` | [`../05-cli-residuals/`](../05-cli-residuals/README.md) owns both |
+| 5.4, A1 | root `build.zig` (the `test-vscode` step, `build_options`, `libcResolvedTarget`) and `.github/workflows/test.yml` | [`../05-cli-residuals/`](../05-cli-residuals/README.md) delivered; this front takes these edits |
 | A1, A2 | `libs/std/src/builtins.d.bp:269-279`, `codegen/crossModule.zig`, `codegen/config.zig`, `comptime/tests/helpers.zig`, `codegen/tests/features.zig` (`emitFnWat` was deleted by 1.0.4-beta wasm) | `libs/std` has no owner this milestone, so this front takes the `builtins.d.bp` lines; `crossModule.zig` and `config.zig` have none either; the tests are 08's and 07's — sweep after them |
 | E | `comptime/runtime/persistent_erl.zig` | this front (claimed in 1.0.2-beta; the residual only) |
 
@@ -231,8 +232,5 @@ have landed — or hand the sweep to them.
   [`../06-checker/`](../06-checker/README.md) by name. Read at `ed15323`.
 - The `modules/compiler-core/build.zig` header is unmodified `zig init` boilerplate with a global
   `fu`→`f` corruption (`fnction` at `:3, 5, 111, 121`) — a reason to delete rather than repair.
-- 5.5's answer is a precondition for
-  [`../10-library-repos/emilia.md`](../10-library-repos/emilia.md): giving emilia the hook source
-  its siblings have does not give it a gate, because no sibling's hook is installed either. It is
-  also what [`../05-cli-residuals/`](../05-cli-residuals/README.md) step 6 (f) applies to the meta
-  repo's dangling link — answer it early; it blocks two fronts and costs no code.
+- 5.5 is answered and applied: every code repo installs its own hook with `git config core.hooksPath
+  scripts/git-hooks` (emilia included, `321981d`), and the meta repo has no gate.

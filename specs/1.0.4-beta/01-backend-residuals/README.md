@@ -1,17 +1,16 @@
 # Front 01 — backend-residuals
 
-**Status:** steps 1–3 **delivered** 2026-09-17 (merges `00b8975` beam, `4eadb70` wasm, `dbe2863`
-commonJS, on `botopink-lang` `feat`) — see [Delivered by this front](#delivered-by-this-front). Step 4 **delivered** for commonJS, erlang and wasm (PR1, PR2, PR4 — merge on `feat` after `af9b5b6`);
-PR3 (beam) is absorbed by step 6's formatter; steps 5 (BR5) and 6 run after 06. What the four backend fronts left when they landed on `botopink-lang`
-`origin/feat` = `ed15323` (2026-09-17): 01 beam (`a743955`), 02 erlang (`42429dc`), 03 wasm
-(`ed15323`), 04 js-bridges (`bd7836c`). Those numbers are retired; this front takes 01 — see
+**Status:** steps 1–4 **delivered** 2026-09-17 on `botopink-lang` `feat` — merges `00b8975` (beam),
+`4eadb70` (wasm), `dbe2863` (commonJS), `b4cf700` (step 4, decision 1a on commonJS, erlang and wasm);
+see [Delivered by this front](#delivered-by-this-front). **Open, after
+[`../06-checker/`](../06-checker/README.md):** step 5 (BR5) and step 6 (decision 8 at run time, which
+absorbs PR3). This front took 01 from the four backend fronts that landed at `ed15323` — see
 [Delivered by the backend fronts](#delivered-by-the-backend-fronts).
 
 **Priority:** medium — every open row below is a fixture pinned `KNOWN` in its test or a named gap; no
 backend prints a wrong answer the tree does not say is wrong
-**Depends on:** nothing open. [`../05-cli-residuals/`](../05-cli-residuals/README.md) step 2 edits one
-`codegenEmit` site in each backend file — sequence it against this front (see
-[`../fronts.md`](../fronts.md#conflict-matrix) note 1)
+**Depends on:** [`../06-checker/`](../06-checker/README.md) landed, for steps 5 and 6
+([`../fronts.md`](../fronts.md#conflict-matrix) note 1)
 **Owns:** `src/codegen/beam_asm.zig`, `src/codegen/beam/**` · `src/codegen/erlang.zig` (no open row;
 held so a follow-up has an owner) · `src/codegen/wat.zig`, `src/codegen/wat/**` ·
 `src/codegen/commonJS.zig`, `src/codegen/typescript.zig`, `src/codegen/js/**` ·
@@ -19,7 +18,7 @@ held so a follow-up has an owner) · `src/codegen/wat.zig`, `src/codegen/wat/**`
 out of [`../08-review-backlog/`](../08-review-backlog/README.md)) · `snapshots/codegen/{beam,erlang,wasm,commonJS}/`
 **Does not touch:** `src/comptime/**`, `src/parser/**` ([`../06-checker/`](../06-checker/README.md))
 · `libs/std/**` (no owner — [`../fronts.md`](../fronts.md#unowned-items)) · `scripts/**`, `build.zig`,
-`.github/**` ([`../05-cli-residuals/`](../05-cli-residuals/README.md)) · the rest of the test sources
+`.github/**` · the rest of the test sources
 
 Paths are relative to `repository/botopink-lang/modules/compiler-core/`, except those starting with
 `libs/` or `scripts/`, which are relative to `repository/botopink-lang/`. Test line numbers were read
@@ -44,6 +43,7 @@ Not to redo. Each landing ran `scripts/gate.sh --cold` green.
 |---|---|---|
 | 1 beam | `00b8975` | BR1 closure threading, BR2 `loop (xs, 1..)`, BR3 operand-proven `+` (`'__bp_add'/2`) and float `/`; BR4 reviewed — `'__bp_erl_eval'/2` and its measured cost (~50× a direct call) in `src/codegen/beam/AGENTS.md`; `beam_export_audit.sh` 295/295 |
 | 2 wasm | `4eadb70` | WR1 closure captures, WR2 loop index start, WR3 untyped string `+` and float text, WR5 (`Ok`/`Err`/`new Error` build the Result pair; `List.map` listed in `src/codegen/AGENTS.md` as a shape no backend lowers) |
+| 4 print text | `b4cf700` | PR1 commonJS, PR2 erlang, PR4 wasm (was WR4): arrays `[a,b]`, tuples `#(a,b)`, nested strings quoted with source escapes, under [decision 1a](../08-review-backlog/semantics-decisions.md#decision-1a) — **superseded by decision 8 §7** (the formatter of step 6); wasm string literals now store unescaped bytes. PR3 (beam) absorbed by step 6 |
 | 3 commonJS | `dbe2863` | CR1 loop start, CR2 open range as the lazy `__bp_range_from`, CR3 struck (already printing since JS-1), CR4: a record method named `print`, enum methods on variant values, primitive-interface host members, interface defaults as class methods, `pair.0` — `?T.map` inside a record method body → 06 |
 
 The three cross-backend fixtures below print what the program means on all four backends; their
@@ -57,9 +57,8 @@ cross-backend assertion the suite cannot make yet.
 
 ## Current state
 
-Library gate at `ed15323` (`zig build test-libs`): emilia, onze, rakun, std commonJS and std erlang
-pass; erika (commonJS + erlang) and jhonstart (commonJS) are known-red, on a `libs/std` defect, not a
-backend one ([`../fronts.md`](../fronts.md#unowned-items), first row).
+Library gate at `b4cf700` (`zig build test-libs`): every cell passes, no known-red line.
+`beam_export_audit.sh` assembles every module (302/302).
 
 ### The three cross-backend fixtures
 
@@ -76,13 +75,13 @@ still not the oracle** — the value in "the program means" is the assertion; se
 
 ## Steps
 
-Steps 4 and 5 both edit `beam_asm.zig`: run them in sequence, or step 4's PR1/PR2/PR4 beside step 5.
-[`../05-cli-residuals/`](../05-cli-residuals/README.md) step 2 edits one site in every backend file —
-land it before either opens.
+Steps 1–4 are delivered — [Delivered by this front](#delivered-by-this-front). Steps 5 and 6 both
+edit `beam_asm.zig` and open after 06: run them in sequence, or step 6's commonJS/erlang/wasm rows
+beside step 5.
 
-Steps 1–3 (beam, wasm, commonJS) are delivered — [Delivered by this front](#delivered-by-this-front).
+### Step 4 — the text of arrays and tuples (decision 1a) — delivered
 
-### Step 4 — the text of arrays and tuples (decision 1a)
+Delivered as `b4cf700` for PR1, PR2, PR4; PR3 moves to step 6. Kept for the record.
 
 [Decision 1a](../08-review-backlog/semantics-decisions.md#decision-1a): `[e1,e2]`, `#(e1,e2)`, a
 nested string quoted, on every backend. The rows touch every backend file and may run as one
@@ -101,8 +100,7 @@ measure before starting; each re-recorded RUN LOG is checked against the rule, n
 ### Step 5 — `@External.Erlang` templates compiled at build time on beam (BR4 answered)
 
 **Moved after [`../06-checker/`](../06-checker/README.md)** (maintainer, 2026-09-17): a performance row
-that blocks no correctness work. Front 01 closes for 06's purposes when step 4 lands; a partial,
-untested start is kept in the `.tasks/beam-templates` worktree (branch `fix/beam-templates`).
+that blocks no correctness work. A partial, untested start is kept in the `.tasks/beam-templates` worktree (branch `fix/beam-templates`).
 
 The maintainer answered BR4: beam stops evaluating `@External.Erlang` templates at run time.
 

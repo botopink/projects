@@ -1,14 +1,17 @@
 # Front 13 — Ecosystem migration
 
-**Status:** not started. Carried whole from 1.0.3-beta front 03; the counts below were measured at
-the meta repository's `6ecfd7cf` — re-measure after 10 and 11 land (both edit these libraries).
+**Status:** not started. Carried from 1.0.3-beta front 03, amended by
+[decision 8](../08-review-backlog/decision-8-language.md). The counts below were measured at the
+meta repository's `6ecfd7cf` and re-measured at each library's `origin/feat` after 10 and 11 landed —
+unchanged ([`../12-surface-cutover/remeasure.md`](../12-surface-cutover/remeasure.md) §4; the
+"113 declarations" of the blast radius is 53 by that table). New since: every library's gate builds
+its examples, and the broken ones listed in `scripts/known-broken-examples.txt` are this front's.
 
 **Priority:** high — after [`../12-surface-cutover/`](../12-surface-cutover/README.md) the five
 libraries do not compile against the compiler.
 **Depends on:** [`../12-surface-cutover/`](../12-surface-cutover/README.md) (the compiler that accepts
-only the 1.0.3 surface) · [`../11-dead-keywords-residual/`](../11-dead-keywords-residual/README.md)
-(jhonstart's `.d.bp` accessors) · [`../10-library-repos/`](../10-library-repos/README.md) (erika's
-7b/7c and emilia's gate)
+only the 1.0.3 surface) — [`../10-library-repos/`](../10-library-repos/README.md) and
+[`../11-dead-keywords-residual/`](../11-dead-keywords-residual/README.md) are delivered
 **Owns:** `repository/{emilia,erika,jhonstart,onze,rakun}/**` — sources, `.d.bp`, tests, examples,
 their markdown docs and `AGENTS.md` · the submodule pointers of those five in the meta repository
 **Does not touch:** `repository/botopink-lang/**` (12, 14), `repository/vscode-extension/**` (14)
