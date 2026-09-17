@@ -2,7 +2,9 @@
 
 **Status:** not started. Carried whole from 1.0.3-beta front 02. Counts and `file:line` were
 measured at `botopink-lang` `41981e3`; the 1.0.2-derived fronts (01–10) move many of them —
-re-measure the blast radius before step 1.
+re-measured at `4eadb70` in [`remeasure.md`](./remeasure.md) — counts barely moved, but the
+backend fronts added ~22 consumer sites step 1 must port and the document lists twelve risks (R1–R12)
+the steps below do not yet cover; fold them in before step 1.
 
 **Priority:** critical — the milestone's change. Four keywords (`record`, `enum`, `interface`, plus
 the `record { }` literal) become two (`type`, `behavior`) and a tuple form, with one separator rule.
@@ -25,6 +27,7 @@ Deep dives:
 - [`labeled-tuples.md`](./labeled-tuples.md) — `#(x: 10)` replaces anonymous records; typing, runtime, comptime
 - [`behavior.md`](./behavior.md) — `interface` → `behavior`
 - [`separators.md`](./separators.md) — the comma rule and the formatter's canonical output
+- [`remeasure.md`](./remeasure.md) — counts, drifted citations and risks at `4eadb70`
 
 ---
 
