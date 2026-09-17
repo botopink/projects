@@ -2,7 +2,7 @@
 
 **Version:** 1.0.1-beta
 **Status:** closed for the review and the harness — the findings the waves did not reach are
-carried by [`1.0.2-beta/09-review-tooling/README.md`](../1.0.2-beta/09-review-tooling/README.md)
+carried by [`1.0.4-beta/08-review-backlog/README.md`](../1.0.4-beta/08-review-backlog/README.md)
 **Priority:** critical — the snapshots are the oracle of most of the suite
 
 ---
@@ -167,5 +167,5 @@ Three backends were additionally rebuilt around a code model rendered by a singl
 
 Step 1's remaining tooling (the `BOTOPINK_SNAP_TRACE` orphan list, `snap_audit.sh --mode=review`),
 the per-report residual rows, the comptime copy deduplication and the closing criteria are in
-[`1.0.2-beta/09-review-tooling/README.md`](../1.0.2-beta/09-review-tooling/README.md). The wasm RUN LOGs (H5)
+[`1.0.4-beta/08-review-backlog/README.md`](../1.0.4-beta/08-review-backlog/README.md). The wasm RUN LOGs (H5)
 belong to the codegen-hardening spec, the checker root causes (C1–C13) to the type-system spec.

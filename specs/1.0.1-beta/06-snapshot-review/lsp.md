@@ -7,7 +7,7 @@ source in the test / the embedded std/primitives file); engine code read where t
 suspicious (`src/engine.zig`). Nothing was built or run in the first pass; the re-check below did
 exercise the already-built `zig-out/bin/botopink-lsp` / `botopink` binaries (never a build).
 
-> **Status (1.0.1-beta close):** closed classes: **every `wrong-output` row** (interface-member extraction, semantic-token classification, document-symbol kinds and children, signature-help parameter labels, member details, end-of-identifier cursors), **all snapshot-renderer findings** (the underline now uses the target file's source, code actions render their WorkspaceEdits, symbols render range and children, a missing snapshot no longer auto-creates) and 3 of the 5 duplicates. What is left is test-quality and the 2 design questions. Residuals in [`1.0.2-beta/09-review-tooling/README.md`](../../1.0.2-beta/09-review-tooling/README.md). The tables below are the audit record and are kept verbatim.
+> **Status (1.0.1-beta close):** closed classes: **every `wrong-output` row** (interface-member extraction, semantic-token classification, document-symbol kinds and children, signature-help parameter labels, member details, end-of-identifier cursors), **all snapshot-renderer findings** (the underline now uses the target file's source, code actions render their WorkspaceEdits, symbols render range and children, a missing snapshot no longer auto-creates) and 3 of the 5 duplicates. What is left is test-quality and the 2 design questions. Residuals in [`1.0.4-beta/08-review-backlog/README.md`](../../1.0.4-beta/08-review-backlog/README.md). The tables below are the audit record and are kept verbatim.
 
 ## Re-check summary (second pass, at HEAD `96ff203` of `botopink-lang`)
 

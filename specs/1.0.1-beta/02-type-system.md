@@ -2,7 +2,7 @@
 
 **Version:** 1.0.1-beta
 **Status:** partially delivered — the comptime folder; the checker work carried into
-`specs/1.0.2-beta/07-checker/README.md`
+`specs/1.0.4-beta/06-checker/README.md`
 
 ---
 
@@ -44,5 +44,5 @@ Fixtures that were documented skips and are now real assertions: `comptime_block
 
 ## Carried into 1.0.2-beta
 
-`specs/1.0.2-beta/07-checker/README.md` — Part 0 rows C1–C3 and C5–C13 (the checker), Part A
+`specs/1.0.4-beta/06-checker/README.md` — Part 0 rows C1–C3 and C5–C13 (the checker), Part A
 (types as comptime values) and Part B (narrowing). C4 is closed and is not repeated there.

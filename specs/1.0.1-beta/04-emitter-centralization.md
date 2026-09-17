@@ -2,7 +2,7 @@
 
 **Version:** 1.0.1-beta
 **Status:** delivered
-**Carried forward:** [`../1.0.2-beta/08-js-bridges/README.md`](../1.0.2-beta/08-js-bridges/README.md)
+**Carried forward:** [`../1.0.4-beta/04-js-bridges/README.md`](../1.0.4-beta/04-js-bridges/README.md)
 
 ---
 
@@ -82,7 +82,7 @@ site rather than its node. `Expr.host` (JS) and the `#[@External.Erlang]` / `#[@
 template text are **not** bridges: they carry host code by definition.
 
 The remaining bridges are the inventory
-[`1.0.2-beta/08-js-bridges/README.md`](../1.0.2-beta/08-js-bridges/README.md)
+[`1.0.4-beta/04-js-bridges/README.md`](../1.0.4-beta/04-js-bridges/README.md)
 works through.
 
 ### Erlang emitter leftovers closed in this milestone

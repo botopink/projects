@@ -2,7 +2,7 @@
 
 **Version:** 1.0.1-beta
 **Status:** delivered
-**Carried forward:** [`../1.0.2-beta/overview.md`](../1.0.2-beta/overview.md)
+**Carried forward:** [`../1.0.4-beta/overview.md`](../1.0.4-beta/overview.md) (1.0.2-beta was folded into 1.0.4-beta)
 
 ---
 

@@ -7,7 +7,7 @@ Snapshot root below: `modules/compiler-core/snapshots/codegen/` (abbrev. `S/`), 
 `S/errors/<target>/<slug>.snap.md` (`96ff203`, a pure move — every path in this document was
 rewritten, no content changed).
 
-> **Status (1.0.1-beta close):** the harness defects this report leans on (H1-H10) are fixed: the RUN LOG is decided by the process exit status, an `erlc` warning no longer blanks a log, a program that does not compile fails its snapshot test (or records a `COMPILE DIAGNOSTIC`), every backend is compared in one round, and the 0-byte snapshots are gone. The per-backend rows below predate the beam / erlang / wasm fix waves - re-derive each one at HEAD before acting on it. Residuals are tracked in [`1.0.2-beta/09-review-tooling/README.md`](../../1.0.2-beta/09-review-tooling/README.md). The tables below are the audit record and are kept verbatim.
+> **Status (1.0.1-beta close):** the harness defects this report leans on (H1-H10) are fixed: the RUN LOG is decided by the process exit status, an `erlc` warning no longer blanks a log, a program that does not compile fails its snapshot test (or records a `COMPILE DIAGNOSTIC`), every backend is compared in one round, and the 0-byte snapshots are gone. The per-backend rows below predate the beam / erlang / wasm fix waves - re-derive each one at HEAD before acting on it. Residuals are tracked in [`1.0.4-beta/08-review-backlog/README.md`](../../1.0.4-beta/08-review-backlog/README.md). The tables below are the audit record and are kept verbatim.
 
 ## Re-check summary (2026-09-15)
 

@@ -2,7 +2,7 @@
 
 **Version:** 1.0.1-beta
 **Status:** closed — what this spec did not reach is carried by
-[`1.0.2-beta/11-hygiene/README.md`](../1.0.2-beta/11-hygiene/README.md)
+[`1.0.4-beta/09-hygiene/README.md`](../1.0.4-beta/09-hygiene/README.md)
 **Priority:** low
 
 ---
@@ -85,4 +85,4 @@ clean of both patterns.
 - [x] The matching `AGENTS.md` files (`src/tests/AGENTS.md`, `parser/AGENTS.md`) updated with the change
 - [x] `zig build` and `zig build test` green
 - [x] Every item not closed here re-checked at HEAD and carried, with its number, to
-      [`1.0.2-beta/11-hygiene/README.md`](../1.0.2-beta/11-hygiene/README.md)
+      [`1.0.4-beta/09-hygiene/README.md`](../1.0.4-beta/09-hygiene/README.md)

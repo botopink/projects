@@ -1,7 +1,7 @@
 # Specs — 1.0.1-beta
 
 Delivered. What this milestone made true, and where each part lives. Everything it left open moved
-to [`1.0.2-beta`](../1.0.2-beta/overview.md).
+to [`1.0.2-beta`](../1.0.4-beta/overview.md) (folded into 1.0.4-beta).
 
 The milestone's subject turned out to be the suite itself: it was green on output nobody checked.
 A run was decided by whether a tool printed anything, so the BEAM backend never executed and its
