@@ -85,7 +85,7 @@ every other word — `record`, `enum`, `interface` leave with
 
 ## Notes
 
-Open, carried from 1.0.3-beta front 01 and not decided here:
+**Decided 2026-09-17 by the maintainer:** `delegate` and `new` stop being keywords — both lex as identifiers, and `throw new Error(…)` no longer parses (write `throw Error(…)`); the unmapped `.@"const"` token variant is deleted; the VS Code grammar stops highlighting `delegate` and `new`. A follow-up with the same shape as this front. The facts measured then:
 - `delegate` is equally dead (no parser code matches `.delegate`; delegates are `declare fn`) and
   survives only in `isReservedWord`.
 - `new` is only skipped as an optional word after `throw`.

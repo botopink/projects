@@ -136,7 +136,7 @@ milestone) before the front that would otherwise meet it closes.
 
 | Item | Where | Found by | Suggested owner |
 |---|---|---|---|
-| `Array.chunked` / `Array.sliding` are written with `while`, which checked code rejects as not in scope | `libs/std/src/primitives.bp` | 1.0.4-beta erlang | the maintainer (rewrite without `while`), or 06 if `while` in a checked body should be in scope |
+| `Array.chunked` / `Array.sliding` are written with `while`, which checked code rejects as not in scope — **decided 2026-09-17: rewrite them with `loop`** | `libs/std/src/primitives.bp` | 1.0.4-beta erlang | assigned by the maintainer as a one-off `libs/std` edit (like std-split) |
 | JS-4's codegen half: once 06 N11 lands, a `ctor` destructuring lowers to a real JS test-plus-destructure and `Pattern.match` goes — [`01-backend-residuals/pattern-binding.md`](./01-backend-residuals/pattern-binding.md) | `src/codegen/commonJS.zig`, `src/codegen/js/**` | 1.0.4-beta js-bridges | 01 if still open, else a follow-up after 06 |
 | **`hover_interface_method`**: should the hover footer name the declaring interface (`Signed`) or the receiver's (`I32`)? An open decision | `modules/language-server/src/engine.zig` | 1.0.2-beta review-tooling (report 3.12) | decision first; then 14 (it owns user-facing `engine.zig` texts) or earlier as a one-line follow-up |
 | A missing dependency (`:171`) and an unreadable `files` entry (`:210`) swallowed by the language server with `catch continue` — the CLI half landed with 05 step 5 | `modules/language-server/src/project_graph.zig` | 1.0.2-beta library-repos, re-confirmed by 05 | none until 12; a one-line follow-up |
