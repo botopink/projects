@@ -50,7 +50,7 @@ erlang) and jhonstart (commonJS) green.
 | [`06-checker`](./06-checker/README.md) | high | not started | C1–C13: the checker accepts wrong programs. Plus trailing defaults, decision 2's enforcement, the `#[@result]` wrap and binding patterns the backend fronts handed over, and the rest of the fifteen rows found since (N1–N15) |
 | [`07-comptime-dedup`](./07-comptime-dedup/README.md) | medium | not started | Four byte-identical copies per comptime slug; a renderer that prints `?` and `"id": 0` |
 | [`08-review-backlog`](./08-review-backlog/README.md) | medium | not started | The per-report residuals of the 1.0.1-beta snapshot review, in two waves |
-| [`09-hygiene`](./09-hygiene/README.md) | low | step 1 delivered | The removed WAT runtime's leftovers, build files that lie, retired vocabulary, license and meta gate decisions |
+| [`09-hygiene`](./09-hygiene/README.md) | low | steps 1 and 3 (except 5.4) delivered | The removed WAT runtime's leftovers, build files that lie, retired vocabulary, license and meta gate decisions |
 | [`10-library-repos`](./10-library-repos/README.md) | medium | steps 3–4 delivered | erika's loop and docs (unblocked), emilia's gate |
 | [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md) | low | **delivered** | jhonstart's `get` accessors are methods; the VS Code grammar dropped the seven words. Notes left: `delegate`, `new`, `.@"const"` |
 | [`12-surface-cutover`](./12-surface-cutover/README.md) | critical | not started | `type`, `behavior`, labeled tuples and separators through the whole compiler, `libs/std`, every test source and snapshot |

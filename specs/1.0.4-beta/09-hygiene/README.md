@@ -128,9 +128,14 @@ exists or be deleted. Root `build.zig` and `.github/workflows/**` are
 
 **Acceptance:**
 - [ ] `zig build test-vscode` runs and passes, or the step and every reference to it are gone
-- [ ] `zig build` from any directory either works or fails with "no build.zig"
+- [x] `zig build` from any directory either works or fails with "no build.zig"
 - [ ] No second list of std modules exists anywhere
-- [ ] No unreachable `.zig` file sits at a repo root, and `AGENTS.md` trees match the disk
+- [x] No unreachable `.zig` file sits at a repo root, and `AGENTS.md` trees match the disk
+
+**Delivered 2026-09-17** (`botopink-lang` `e98a5da`, meta `build.zig` deleted): 5.16b/5.17 and 5.16a.
+`modules/lib-test-runner/build.zig` + `.zon` stay — its 36 unit tests run only through it; they go
+once 05 adds them to the root `zig build test`. 5.4 (`test-vscode`) and the stale `build.zig.zon`
+comment in `.github/workflows/test.yml` are 05's.
 
 ### Step 4 — Make `libs/std`'s declared surface and its names true (group C, 5.1 · 5.2 · 5.3 · 5.14)
 
