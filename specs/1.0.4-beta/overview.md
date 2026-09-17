@@ -52,7 +52,7 @@ erlang) and jhonstart (commonJS) green.
 | [`08-review-backlog`](./08-review-backlog/README.md) | medium | not started | The per-report residuals of the 1.0.1-beta snapshot review, in two waves |
 | [`09-hygiene`](./09-hygiene/README.md) | low | step 1 delivered | The removed WAT runtime's leftovers, build files that lie, retired vocabulary, license and meta gate decisions |
 | [`10-library-repos`](./10-library-repos/README.md) | medium | steps 3–4 delivered | erika's loop and docs (unblocked), emilia's gate |
-| [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md) | low | compiler half delivered | jhonstart's `get` accessors become methods; the VS Code grammar drops the seven words |
+| [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md) | low | **delivered** | jhonstart's `get` accessors are methods; the VS Code grammar dropped the seven words. Notes left: `delegate`, `new`, `.@"const"` |
 | [`12-surface-cutover`](./12-surface-cutover/README.md) | critical | not started | `type`, `behavior`, labeled tuples and separators through the whole compiler, `libs/std`, every test source and snapshot |
 | [`13-ecosystem-migration`](./13-ecosystem-migration/README.md) | high | not started | emilia, erika, jhonstart, onze, rakun migrated to the new surface |
 | [`14-tooling-and-docs`](./14-tooling-and-docs/README.md) | high | not started | Language-server texts and completions, VS Code grammar and snippets, user docs |

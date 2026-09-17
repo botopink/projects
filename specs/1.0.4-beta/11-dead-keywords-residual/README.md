@@ -1,5 +1,9 @@
 # Front 11 — dead keywords, the residual
 
+**Status:** **delivered** 2026-09-17 — jhonstart `bf868ca`, vscode-extension `eb870ac`, pushed to
+both `feat`s with the meta bump. `botopink check` skips a library's `.d.bp`, so the parse was proven
+with `botopink format --check` (the formatter's own rewrite of `pub interface` to
+`val X = interface` was not adopted — a formatter question for 12/14).
 **Priority:** low — two small edits in two sibling repositories, left behind when the compiler half
 of 1.0.3-beta front 01 landed
 **Status:** the compiler side **landed** in `botopink-lang` `ecac19d` (lexer, `isMemberName`, the
@@ -52,9 +56,9 @@ Every `get name(self: Self) -> T` in `src/router.d.bp` and `src/server.d.bp` bec
 comment in `router.d.bp` (~`:8–10`), which cites getters as a blocker.
 
 **Acceptance:**
-- [ ] No `get name(self: Self)` or `set name(…)` accessor remains in any `.bp` / `.d.bp` in jhonstart
-- [ ] `botopink check` in `repository/jhonstart` reports no parse error in either file
-- [ ] `zig build test-libs` jhonstart cell no worse than before the front
+- [x] No `get name(self: Self)` or `set name(…)` accessor remains in any `.bp` / `.d.bp` in jhonstart
+- [x] `botopink check` in `repository/jhonstart` reports no parse error in either file
+- [x] `zig build test-libs` jhonstart cell no worse than before the front
 
 ### Step 2 — vscode-extension: the grammar stops highlighting the seven words
 
@@ -63,10 +67,10 @@ every other word — `record`, `enum`, `interface` leave with
 [`../14-tooling-and-docs/`](../14-tooling-and-docs/README.md), not here.
 
 **Acceptance:**
-- [ ] The pattern names none of the seven words
+- [x] The pattern names none of the seven words
 - [ ] The extension's test asserting the grammar's keyword list against the compiler's
       `keywordOrIdent` is green — or, if 1.0.2-beta 7e did not add one, it is added here
-- [ ] `npm ci && npm test` green
+- [x] `npm ci && npm test` green
 
 ## Gate
 
