@@ -24,7 +24,7 @@ four libraries do not compile.
 | Interfaces | `behavior Name { … }`. Same semantics. |
 | Separators | `,` separates data items (fields, variants, tuple elements, arguments); no trailing comma → compact on one line, trailing comma → one item per line; a `fn` definition is always open. Members are not comma-separated: a bodyless `fn` or a `val` field ends with `;`, a member that ends with `}` takes nothing. |
 | Dead keywords | `auto`, `derive`, `get`, `macro`, `opaque`, `private`, `set` become identifiers. |
-| Migration | Hard cutover, no deprecation window. A codemod (`botopink migrate --syntax`) does the rewrite; removed keywords get a targeted diagnostic pointing to it. |
+| Migration | Hard cutover, no deprecation window. Migration is manual (beta phase). Removed keywords get a targeted diagnostic. |
 | Runtime | Unchanged for named records, enums and behaviors. Anonymous records change from map/object to tuple. |
 
 ## Fronts
@@ -32,27 +32,24 @@ four libraries do not compile.
 | Front | Priority | What |
 |---|---|---|
 | [`01-dead-keywords/`](./01-dead-keywords/README.md) | medium | Drop seven keywords; `get`/`set` accessors become methods. Small, ready, runs first. |
-| [`02-migration-tooling/`](./02-migration-tooling/README.md) | critical | `botopink migrate --syntax` (token-level rewriter for `.bp`, Zig `\\` blocks and markdown fences) and `snap_audit.sh --mode=cutover` (classifies re-recorded snapshots). |
-| [`03-surface-cutover/`](./03-surface-cutover/README.md) | critical | `type`, `behavior`, labeled tuples and separators in the parser, the AST, every Zig consumer, `libs/std`, the embedded prelude, every Zig test source and every snapshot — landed through green commits with a transitional dual grammar that never ships. |
-| [`04-ecosystem-migration/`](./04-ecosystem-migration/README.md) | high | emilia, erika, jhonstart, onze, rakun migrated with the codemod; `test-libs` cells green; submodule sweep. |
-| [`05-tooling-and-docs/`](./05-tooling-and-docs/README.md) | high | Language-server texts and completions, VS Code grammar and snippets, user docs. |
+| [`02-surface-cutover/`](./02-surface-cutover/README.md) | critical | `type`, `behavior`, labeled tuples and separators in the parser, the AST, every Zig consumer, `libs/std`, the embedded prelude, every Zig test source and every snapshot — landed through green commits with a transitional dual grammar that never ships. |
+| [`03-ecosystem-migration/`](./03-ecosystem-migration/README.md) | high | emilia, erika, jhonstart, onze, rakun migrated manually; `test-libs` cells green; submodule sweep. |
+| [`04-tooling-and-docs/`](./04-tooling-and-docs/README.md) | high | Language-server texts and completions, VS Code grammar and snippets, user docs. |
 
 ## Order
 
 ```
-F1 dead-keywords ─────┐
-                      ├──► F3 surface-cutover ──┬──► F4 ecosystem-migration
-F2 migration-tooling ─┘                         └──► F5 tooling-and-docs
+F1 dead-keywords ──► F2 surface-cutover ──┬──► F3 ecosystem-migration
+                                          └──► F4 tooling-and-docs
 ```
 
-F1 and F2 share no file and run in parallel. F3 waits for both: F1 edits the same lexer, parser
-and language-server files, and F3 migrates its own sources with F2's codemod and accepts its
-snapshots with F2's audit. F4 and F5 are file-disjoint and run in parallel once F3 lands — the
-libraries need the new compiler, the editor texts need the final grammar.
+F1 runs first (small, ready). F2 waits for F1: it edits the same lexer, parser and language-server
+files. F3 and F4 are file-disjoint and run in parallel once F2 lands — the libraries need the new
+compiler, the editor texts need the final grammar.
 
-F3 is the critical path. It cannot be cut by backend: `DeclKind` is a tagged union, and removing
+F2 is the critical path. It cannot be cut by backend: `DeclKind` is a tagged union, and removing
 a variant stops every consumer from compiling, so the AST change and all its Zig consumers move
-together (see [`03-surface-cutover/README.md`](./03-surface-cutover/README.md#why-one-front)).
+together (see [`02-surface-cutover/README.md`](./02-surface-cutover/README.md#why-one-front)).
 
 ## Found during the review — belongs to 1.0.2-beta
 
@@ -77,7 +74,7 @@ these is caused or fixed by this milestone.
   tuple feed the existing per-backend models.
 - **The gate is a cold runtime cache.** Every front's gate runs `zig build test` from a cold cache.
 - **A snapshot is evidence, not a baseline.** A re-recorded snapshot is accepted only when its
-  `RUN LOG` is unchanged or the change is explained; `snap_audit.sh --mode=cutover` separates
+  `RUN LOG` is unchanged or the change is explained; manual classification separates
   source-only diffs from output diffs so the second group is reviewed, not bulk-accepted.
 - **Every commit is green.** The pre-commit hook runs `zig build` and `zig build test`; no
-  `--no-verify`. F3 is sequenced into commits that each pass it.
+  `--no-verify`. F2 is sequenced into commits that each pass it.

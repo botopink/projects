@@ -1,18 +1,16 @@
-# Front 03 — Surface cutover (`type`, `behavior`, labeled tuples, separators)
+# Front 02 — Surface cutover (`type`, `behavior`, labeled tuples, separators)
 
 **Priority:** critical — the milestone's change. Four keywords (`record`, `enum`, `interface`, plus
 the `record { }` literal) become two (`type`, `behavior`) and a tuple form, with one separator rule.
-**Depends on:** F1 (same lexer, parser and language-server files) · F2 (the codemod that rewrites
-this front's sources and the audit that classifies its snapshots)
+**Depends on:** F1 (same lexer, parser and language-server files)
 **Owns:** `modules/compiler-core/src/**` (lexer, parser, `ast.zig`, `comptime.zig` and its embedded
 prelude, `comptime/**` including `comptime/stdlib/*.bp`, `format.zig`, `codegen/**` including
 `crossModule.zig`, every Zig test source) · `modules/compiler-core/snapshots/**` ·
 `modules/language-server/src/**` (compile-level changes, LSP snapshots) ·
 `modules/compiler-cli/src/cli/resolver.zig` · `libs/std/**` · `examples/**` · `AGENTS.md` of every
 directory touched
-**Does not touch:** `modules/compiler-cli/src/cli/migrate*.zig`, `scripts/snap_audit.sh` (F2) ·
-`repository/{emilia,erika,jhonstart,onze,rakun}/**` (F4) · language-server user-facing texts,
-`repository/vscode-extension/**`, user docs (F5)
+**Does not touch:** `repository/{emilia,erika,jhonstart,onze,rakun}/**` (F3) · language-server user-facing texts,
+`repository/vscode-extension/**`, user docs (F4)
 
 Deep dives:
 - [`type-grammar.md`](./type-grammar.md) — the `type` declaration, shape resolution, field list, removed-keyword diagnostics, AST
@@ -62,7 +60,7 @@ the new nodes from it. Every consumer in the table above moves to the new nodes 
 
 **Acceptance:**
 - [ ] `RecordDecl`, `EnumDecl`, `InterfaceDecl`, `DeclKind.record/.@"enum"/.interface` no longer exist
-- [ ] Generated code, diagnostics and `RUN LOG`s are unchanged; snapshot diffs limited to parser ids (`record_N`/`enum_N` → `type_N`, `interface_N` → `behavior_N`) and typed-AST JSON keys — class A of `snap_audit.sh --mode=cutover`
+- [ ] Generated code, diagnostics and `RUN LOG`s are unchanged; snapshot diffs limited to parser ids (`record_N`/`enum_N` → `type_N`, `interface_N` → `behavior_N`) and typed-AST JSON keys
 - [ ] `zig build test` green
 
 ### Step 2 — Dual grammar (transitional, never released)
@@ -82,20 +80,20 @@ The formatter prints **only** the 1.0.3 surface.
 
 ### Step 3 — Migrate the sources
 
-Run `botopink migrate --syntax` (F2) over:
-- every Zig test source in `modules/compiler-core/src` and `modules/language-server/src` (`--zig`): about 220 record, 92 enum and 82 interface declarations and 20 literals in `\\` blocks;
+Migrate manually (beta phase — no automated codemod):
+- every Zig test source in `modules/compiler-core/src` and `modules/language-server/src`: about 220 record, 92 enum and 82 interface declarations and 20 literals in `\\` blocks;
 - the embedded prelude in `comptime.zig:541–594` and `comptime/stdlib/*.bp`;
 - `libs/std/**` (22 records, 11 enums, 24 interfaces; `types.bp`/`reflect.bp` doc comments);
 - `examples/**` (yamlconf's `@expr(record { … })`);
-- the about 25 single-line Zig test strings the codemod reports as unrewritten — edited by hand.
+- about 25 single-line Zig test strings — edited by hand.
 
-Re-run the suite; run `snap_audit.sh --mode=cutover`.
+Re-run the suite; classify snapshots manually (source-only vs output-changed vs behaviour-changed).
 
 **Acceptance:**
-- [ ] `botopink migrate --syntax --check` reports nothing left in the owned paths
-- [ ] Class A snapshots (source-only) accepted with `--accept`
-- [ ] Class B snapshots (codegen changed, `RUN LOG` unchanged) reviewed per backend — expected only for anonymous-record fixtures moving to tuples — and accepted with the review note in the commit message
-- [ ] Class C (a `RUN LOG` or a diagnostic changed beyond keyword wording) is empty, or every entry is explained in the commit message
+- [ ] No `record`, `enum`, `interface` keyword or `record {` literal left in the owned paths (manual verification)
+- [ ] Source-only snapshots (only parser ids and typed-AST keys changed) accepted
+- [ ] Output-changed snapshots (codegen changed, `RUN LOG` unchanged) reviewed per backend — expected only for anonymous-record fixtures moving to tuples — and accepted with the review note in the commit message
+- [ ] Behaviour-changed snapshots (a `RUN LOG` or a diagnostic changed beyond keyword wording) are empty, or every entry is explained in the commit message
 - [ ] `zig build test` green; `zig build test-libs` std cell green
 
 ### Step 4 — Remove the old surface
@@ -113,7 +111,7 @@ rule. Update `AGENTS.md` of every directory touched across the four commits.
 ## Gate
 
 - [ ] `zig build test` from a **cold** runtime cache, green, at the tip of the front's worktree
-- [ ] `zig build test-libs` std cell green (the five library cells are F4's)
+- [ ] `zig build test-libs` std cell green (the five library cells are F3's)
 - [ ] `botopink format --check` passes on `libs/std/**` and `examples/**`
 - [ ] Every commit of the front passed the pre-commit hook (no `--no-verify`)
 - [ ] `AGENTS.md` of every directory touched, updated in the commit that touched it
@@ -129,7 +127,7 @@ rule. Update `AGENTS.md` of every directory touched across the four commits.
 | Zig consumer files | ~20 (table above) |
 
 Nothing outside `botopink-lang` changes in this front. The five libraries stop compiling against the
-new compiler at step 4 — F4 migrates them.
+new compiler at step 4 — F3 migrates them.
 
 ## Notes
 

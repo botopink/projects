@@ -1,10 +1,10 @@
-# Front 04 — Ecosystem migration
+# Front 03 — Ecosystem migration
 
-**Priority:** high — after F3 the five libraries do not compile against the compiler.
-**Depends on:** F3 (the compiler that accepts only the 1.0.3 surface) · F2 (the codemod)
+**Priority:** high — after F2 the five libraries do not compile against the compiler.
+**Depends on:** F2 (the compiler that accepts only the 1.0.3 surface)
 **Owns:** `repository/{emilia,erika,jhonstart,onze,rakun}/**` — sources, `.d.bp`, tests, examples,
 their markdown docs and `AGENTS.md` · the submodule pointers of those five in the meta repository
-**Does not touch:** `repository/botopink-lang/**` (F3, F5), `repository/vscode-extension/**` (F5)
+**Does not touch:** `repository/botopink-lang/**` (F2, F4), `repository/vscode-extension/**` (F4)
 
 ---
 
@@ -26,18 +26,17 @@ Markdown teaching the old syntax: 12 files, 29 occurrences.
 
 For each library:
 
-1. `botopink migrate --syntax` over `src/`, `test/`, `examples/`; `--markdown` over its `.md` files.
-2. Resolve every "unclassified" report by hand.
-3. Library-specific edits:
+1. Migrate manually (beta phase — no automated codemod): `src/`, `test/`, `examples/`; `.md` files.
+2. Library-specific edits:
    - **erika** — `erika.bp:570`: the generated projection becomes `#( … )` (`"#(" + parts.join(", ") + ")"`); the `Array<record { name, pop }>` comment in `examples/erika-linq/src/main.bp:95` becomes `Array<#(name: …, pop: …)>`. Rows are now tuples at runtime; the example's printed output is re-checked, not assumed.
    - **jhonstart** — `@Context<Element, {}>` → `@Context<Element, #()>`; `record { }` → `#()`.
    - **onze** — `#[mock] behavior`; confirm the mock synthesis reads `DeclKind.behavior`.
    - **rakun** — annotated fields keep their annotations inside the field list; records with no fields become `type Name { methods }`.
-4. `botopink format` over the library; `botopink format --check` passes.
-5. The library's test cell passes.
+3. `botopink format` over the library; `botopink format --check` passes.
+4. The library's test cell passes.
 
 **Acceptance (per library):**
-- [ ] No `record`, `enum`, `interface` keyword and no `record {` literal left (`botopink migrate --syntax --check` exits 0)
+- [ ] No `record`, `enum`, `interface` keyword and no `record {` literal left (manual verification)
 - [ ] `botopink format --check` passes
 - [ ] `zig build test-libs` cell green, or no worse than its state at 1.0.2-beta close, with each remaining red linked to a 1.0.2-beta item
 - [ ] Example programs run and their output matches the pre-migration output (captured before step 1)

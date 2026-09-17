@@ -1,8 +1,7 @@
 # Migrating to 1.0.3-beta
 
 1.0.3-beta is a hard cutover: the old spellings are parse errors, with a diagnostic that names the
-replacement. `botopink migrate --syntax` rewrites a project; `botopink migrate --syntax --check`
-lists what is left.
+replacement. Migration is manual (beta phase).
 
 ## Keywords
 

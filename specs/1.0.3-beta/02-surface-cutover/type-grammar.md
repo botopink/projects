@@ -100,9 +100,9 @@ and raises a targeted error instead of a generic syntax error — the same patte
 
 | Source | Code | Message |
 |---|---|---|
-| `record Point { … }` | `removed-keyword-record` | `record` was replaced by `type Point(fields) { methods }` in 1.0.3 — run `botopink migrate --syntax` |
-| `enum Color { … }` | `removed-keyword-enum` | `enum` was replaced by `type Color { variants }` in 1.0.3 — run `botopink migrate --syntax` |
-| `interface Printable { … }` | `removed-keyword-interface` | `interface` was renamed to `behavior` in 1.0.3 — run `botopink migrate --syntax` |
+| `record Point { … }` | `removed-keyword-record` | `record` was replaced by `type Point(fields) { methods }` in 1.0.3 |
+| `enum Color { … }` | `removed-keyword-enum` | `enum` was replaced by `type Color { variants }` in 1.0.3 |
+| `interface Printable { … }` | `removed-keyword-interface` | `interface` was renamed to `behavior` in 1.0.3 |
 | `record { x: 1 }` (expression) | `removed-record-literal` | anonymous records are labeled tuples in 1.0.3: `#(x: 1)` |
 | `{ x: i32 }` (type position) | `removed-record-type` | anonymous record types are labeled tuples in 1.0.3: `#(x: i32)` |
 

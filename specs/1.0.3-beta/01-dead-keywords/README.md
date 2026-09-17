@@ -5,14 +5,14 @@ never consumed by the parser (`auto`, `derive`, `macro`, `opaque`, `private`). T
 are soft keywords left over from struct getters/setters — a construct that has no place in a
 language whose values are immutable. All seven are noise in the keyword table and confusion for
 language users.
-**Depends on:** none — runs before F3 (surface cutover), which edits the same `lexer/token.zig`,
-`lexer.zig`, `parser.zig` and `language-server/src/engine.zig`; parallel with F2 (migration tooling)
+**Depends on:** none — runs before F2 (surface cutover), which edits the same `lexer/token.zig`,
+`lexer.zig`, `parser.zig` and `language-server/src/engine.zig`
 **Owns:** `lexer/token.zig`, `lexer.zig`, `parser.zig` (`isMemberName` / `consumeMemberName` only),
 `lexer/tests/**`, `parser/tests/{errors,declarations}.zig` (reserved-word cases) ·
 `language-server/src/engine.zig` (keyword tables only) · `vscode-extension/syntaxes/botopink.tmLanguage.json` ·
 `jhonstart/src/{router,server}.d.bp` · `codegen/js/ts_emitter.zig` (reserved-word escape only)
 **Does not touch:** `parser/decls.zig`, `parser/exprs.zig` (call sites of `isMemberName` keep their
-shape), `comptime/**`, `format.zig`, the rest of `codegen/**` (F3), `modules/compiler-cli/**` (F2)
+shape), `comptime/**`, `format.zig`, the rest of `codegen/**` (F2)
 
 ---
 

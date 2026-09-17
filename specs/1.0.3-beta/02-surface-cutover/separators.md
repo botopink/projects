@@ -68,7 +68,7 @@ comma after a signature, used by the previous draft of this milestone and by 20 
 - In a behavior body, `,` after a member is `member-comma-separator` ("members end with `;`, not
   `,`"), with a fix-it.
 - A bodyless `fn` member without `;` is `member-missing-semicolon` (up to 32 library sites,
-  rewritten by the codemod).
+  rewritten manually).
 - In a `type` body, a `,` after a method is `member-comma-separator`.
 - Case arms keep accepting `,` or `;` — out of scope here.
 
