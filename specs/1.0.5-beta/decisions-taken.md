@@ -32,6 +32,8 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 25 | Does `is` carry a pattern? | no; `case` is the only construct that binds |
 | 27 | Who declares `behavior Display`? | `01-checker`, in `libs/std` |
 | 26 | `case` arms of different types | they union — inference may produce a union |
+| 35 | Structural equality | structural — it follows from 37 |
+| 37 | Is a record immutable? | **yes** — the checker rejects `p.f = v` |
 
 ---
 
@@ -872,3 +874,102 @@ chains. So nothing real is hidden by it today.
 
 `zig build test-libs` now prints **zero** `not reached by any mod path` lines, where it printed two per
 run, and stays 11 passed / 0 failed / 1 skipped.
+
+## 37. Is a record immutable?
+
+**Decided 2026-09-18 by the maintainer: (a) — a record is immutable.** `p.age = 31` must not happen.
+The checker rejects a field assignment with a located diagnostic naming the update form
+(`Person(..p, age: 31)`), which already works; the erlang emitter's comment path becomes dead code and
+stops producing a module that will not compile; and `val` starts meaning what it reads as.**Measured 2026-09-18**, after the maintainer asked whether the value could be immutable. It is not,
+and the three backends disagree in the worst available way. This program checks — on a `val`:
+
+```botopink
+type Person(name: string, age: i32)
+fn birthday(p: Person) { p.age = 99; }
+fn main() {
+    val p = Person(name: "a", age: 30);
+    val alias = p;
+    p.age = 31;
+    @print(p.age); @print(alias.age); birthday(p); @print(p.age);
+}
+```
+
+| backend | what happens |
+|---|---|
+| commonJS | `31` · `31` · `99` — it mutates, **the alias sees it**, and mutation through a parameter propagates: a record is a mutable reference |
+| wasm | `31` · `31` · `99` — identical |
+| erlang | **the module does not compile**: the emitter writes `%% field assignment is not directly supported in Erlang.` where the statement goes, leaving `birthday(P) ->` with an empty body → `syntax error before: '->'` |
+
+So the checker accepts, two backends make identity observable, and the third emits a comment where a
+statement belongs. The erlang emitter already knows the operation is impossible — it just says so in a
+place that cannot say anything.
+
+**Migration cost: zero.** `grep` over `libs/std`, `examples/**` and all five libraries finds **0**
+field assignments. Nothing written in this language mutates a field.
+
+**Options.** (a) A record is immutable: the checker rejects `p.f = v` with a located diagnostic naming
+the update form (`Person(..p, age: 31)`, which already works). (b) A record is mutable, and erlang
+learns to emit the copy-and-rebind that would make it work. (c) It stays as it is.
+
+**Recommendation: (a).** Three things fall out of it rather than having to be decided:
+
+1. **[Decision 35](#35-structural-equality-is-not-legislated) dissolves.** With no mutation, identity
+   is unobservable, so structural `==` is not a choice between semantics — it is the only one that can
+   be told apart from the other.
+2. The erlang comment path becomes **dead code**, and with it a module that does not compile.
+3. `val` starts meaning what it reads as. Today `val p` protects the binding and not the value.
+
+**On `Object.freeze`, which the maintainer raised** — measured, and it does not do the job alone:
+
+- Emitted modules carry **no `"use strict"`**, and in sloppy mode an assignment to a frozen property
+  **fails silently**: `Object.freeze({a:1}).a = 2` leaves `a` at 1 and throws nothing. Enforcement
+  without strict mode is theatre. Under `"use strict"` it throws `TypeError`.
+- It costs: 2 000 000 constructions took **2 ms** plain and **45 ms** frozen (node v25), ~21 ns per
+  value.
+
+So freeze is a **run-time** guard for something the checker can refuse at compile time, for free, on
+all four backends at once. Its remaining use is real but narrow: stopping *host* JavaScript from
+mutating a botopink value across the interop boundary. Worth keeping as an opt-in, not as the
+mechanism.
+
+**Blocks:** decision 35; `02-erlang` (a module that does not compile); `01-checker` (the diagnostic).
+
+---
+
+---
+
+## 35. Structural equality is not legislated
+
+**Answered 2026-09-18 by [decision 37](#37-is-a-record-immutable), not chosen on its own.** With a
+record immutable, identity is **unobservable** — no program can tell two structurally equal values
+apart except by `==` itself — so structural equality is not one semantics among three, it is the only
+one that can be distinguished from the others. `==` on two values of the same named type compares
+field by field, and the same rule covers arrays, tuples and variants.
+
+The work it leaves is per backend, and the measurement of it stands: erlang already answers
+structurally and keeps doing so under [decision 21](#21-t1-or-t2-for-the-erlang-record); commonJS and
+wasm answer `false` today for record, array, tuple and variant alike, so both need a structural
+compare — on JS a `__bp_eq` prelude helper (the mechanism already exists for `__bp_show`), and on wasm
+after the box of [decision 22](#22-wasm-has-no-identity-at-all). The remaining question is only where
+to call it: the commonJS emitter walks the **untyped** AST, so it cannot tell a primitive `==` from a
+composite one without the checker marking the site, the way `method_lowerings` already does by `Loc`.**Measured** (front 12, writing the type-identity cells): `Person(name: "Ana") == Person(name: "Ana")`
+answers **`false` on commonJS** and **`true` on erlang**. No decision covers it and no front owns it,
+so the cell that found it declares the omission in a comment rather than listing itself against a row
+that does not exist.
+
+**Options.** (a) `==` on two values of the same named type compares **structurally** — field by field.
+(b) It compares identity, and structural comparison is a method. (c) It stays backend-defined, which
+is what it is today.
+
+**Recommendation: (a), and written into decision 8.** The language has no reference semantics anywhere
+else the programmer can observe — records are values in the surface — and (c) is the one answer that
+cannot be taught: the same program answers two things on two backends. Note that (a) arrives anyway
+through [decision 21](./decisions-taken.md): once a record is a tagged tuple carrying its type, erlang's
+`==` already answers structurally, so the JS side is where the work is.
+
+**Blocks:** `12-language-tests`' equality cells; it is also the second half of `test/type_identity.bp`,
+which today fails only because the erlang record is a bare map.
+
+---
+
+---
