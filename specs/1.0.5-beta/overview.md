@@ -11,9 +11,10 @@ waited on them. Here the backends are **four file-disjoint fronts** (`02-erlang`
 `05-wasm`) that run at the same time, the checker is one front over `comptime/**`, and the seven
 support fronts touch none of those files at all.
 
-**Read [`decisions-pending.md`](./decisions-pending.md) first.** Twenty-three questions the milestone
-cannot answer for itself, each with its evidence and a recommendation — several block a front's first
-step, and two block work that is already written and cannot land.
+**Read [`decisions-pending.md`](./decisions-pending.md) first** — twenty questions the milestone cannot
+answer for itself, each with its evidence and a recommendation; several block a front's first step and
+two block work that is written and cannot land. What has been answered is in
+[`decisions-taken.md`](./decisions-taken.md), which is what the fronts implement against.
 
 ## Fronts
 
@@ -37,7 +38,7 @@ step, and two block work that is already written and cannot land.
 ## Order
 
 `14` first and `13` immediately after is the maintainer's decision of 2026-09-18
-([decision 4](./decisions-pending.md#4-the-order-that-dissolves-the-circular-dependency)); `06` before
+([decision 4](./decisions-taken.md#4-the-order-that-dissolves-the-circular-dependency--settled)); `06` before
 both, because it is what makes their snapshot re-recordings cheap.
 
 ```

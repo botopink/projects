@@ -1,21 +1,17 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-Twenty-six open questions and one settled decision, all of which the milestone cannot answer for itself. Each one is stated with the evidence that
-produced it, the options, a recommendation, and what it blocks. They were found by the fronts of
+Twenty open questions the milestone cannot answer for itself. Each is stated with the evidence that
+produced it, the options, a recommendation, and what it blocks. **The numbers are stable**: a question
+that has been answered leaves this file for [`decisions-taken.md`](./decisions-taken.md) and its number
+is not reused, so a front citing "decision 5" keeps citing the same thing. They were found by the fronts of
 1.0.4-beta while implementing, not while planning: every "measured" line below was produced by a
 command or by running a program, and the file or commit is named so it can be repeated.
 
 | # | Question | Blocks | Recommended |
 |---|---|---|---|
-| [1](#1-asyncgeneratort-does-not-exist) | `@AsyncGenerator<T>` or `@AsyncIterator<T>`? | decision 8 §9 being true | rename the spec |
-| [2](#2-optiont-does-not-exist-either) | Is `Option<T>` a spelling? | decision 8 §§2–5, 9 | `?T` stays the only one |
-| [3](#3-the-import-fence-in-docsmd) | How does `docs.md`'s import example compile? | an unresolved `import` reding | make it a real project |
-| [4](#4-the-order-that-dissolves-the-circular-dependency) | 14 → 13 → backends, or the named-type cut? | every backend front | adopt the order |
-| [5](#5-a-commonjs-unit-variant-is-a-bare-string) | Tag a unit variant, or change the `.d.ts`? | `is`, `case`, printing on JS | tag it |
-| [6](#6-the-erlang-output-layout) | `out/erl/<atom>.erl` flat, or nested? | 13's first half | flat |
-| [7](#7-a-types-methods-are-function-not-method) | Who gives way, the LSP or the Test Explorer? | an outline that names methods | teach the extension |
-| [8](#8-beam-as-a-target-of-the-language-suite) | Make `beam` executable for the suite? | 12's coverage on beam | not yet |
-| [9](#9-arrayunique-is-broken-on-both-backends) | Who owns a `libs/std` body no backend lowers? | `Array.unique` | 01 + a `libs/std` edit |
+| [3](#3-the-import-surface-and-the-fence-that-documents-it) | Is `import { X };` (no `from`) a form at all? | front 20's defect A, every import example | one form only |
+| [5](#5-what-a-value-is-on-the-js-backends) | What *is* a value on JS — object or prototype? | `is`, `case`, printing on JS | classes, as records already are |
+| [6](#6-the-erlang-output-layout--with-the-two-trees-written-out) | `out/erl/<atom>.erl` flat, or nested? | 13's first half, `botopink run` | flat |
 | [10](#10-code-is-taken-twice) | `@code(text)` and `#[@code]` share a name | 01's types-as-values step | rename the annotation |
 | [11](#11-pattern-as-name) | Implement `<Pattern> as <name>` or delete its tests? | 01's parser-gap step | delete |
 | [12](#12-unnamed-variant-payloads) | Keep unnamed variant payloads? | 01's parser-gap step | drop them |
@@ -37,190 +33,152 @@ command or by running a program, and the file or commit is named so it can be re
 
 ---
 
-## 1. `@AsyncGenerator<T>` does not exist
+## 3. The import surface, and the fence that documents it
 
-**Measured.** [`decision-8-language.md` §9](../1.0.4-beta/08-review-backlog/decision-8-language.md)
-pairs the annotation `#[@asyncGenerator]` with the return type `@AsyncGenerator<T>`. The annotation
-exists — `infer.zig` handles `.asyncGenerator` — but **the type does not**: `libs/std/src/builtins.d.bp`
-declares `behavior AsyncIterator`, and 39 files across the compiler and the standard library write
-`AsyncIterator`. Front 06 implemented N25 (an effect's annotation must agree with its wrapper) using
-the spelling that exists.
+**Reformulated 2026-09-18.** The question was put as "how do we keep the docs gate green", which is
+the wrong half. The maintainer's rule is the right half: *the documentation shows the current form,
+and a reference to another module is always written `import { <names> } from "<module>"`*. The fence
+is then a consequence, not a decision.
 
-**Options.** (a) Correct the spec to `@AsyncIterator<T>`. (b) Rename 39 files' worth of `AsyncIterator`
-to `AsyncGenerator`, and with it the `behavior` a user implements.
+**Measured.** Two import forms exist today:
 
-**Recommendation: (a).** The code is the reality here, the two names mean the same thing, and the
-rename would touch a public `behavior` name for no semantic gain. The spec is one table row.
+```botopink
+import { Element } from "element";   // names the module — always correct
+import { Element };                  // the shorthand — no module named
+```
 
-**Blocks:** decision 8 §9 being a true document; 03's N25 acceptance text.
+The shorthand is what broke three libraries. It emits `require("../module")` on commonJS —
+`emilia-card`, `jhonstart-counter`, `-html` and `-todo` all built and then died at run time with
+`Cannot find module '../module'` — and front 13 fixed all four by **writing the module name in a
+`from` clause**. It also passes `check` when the module does not exist at all, which is front 20's
+defect A, implemented and parked.
 
----
+**Counter-proposal.** Do not decide the fence. Decide the surface, and the fence follows:
 
-## 2. `Option<T>` does not exist either
+1. **`import { X } from "<module>";` is the only form.** The shorthand is removed, with a located
+   diagnostic naming the module the compiler would have guessed. One form, one meaning, and the
+   `require("../module")` defect has no way to be reached.
+2. **An unresolved import is a located error** — front 20's patch lands with it, no longer blocked.
+3. **`docs.md`'s import section becomes a real compiling cell** (`docs-check: project modules`): a
+   tiny project that declares `geometry` and `shapes/circle`, plus one line showing a library
+   dependency. It teaches the one true form and the gate proves it.
 
-**Measured.** `builtins.d.bp:56-58` says it in as many words: "The optional type is `?T` — the ONLY
-spelling. Optional is not a concrete named type: `Option<T>` / `Optional<T>` annotations are rejected
-with a pointed diagnostic." Decision 8 nonetheless writes `Option<i32>.None` and `Option.Some(v)`
-across seven sections, and `val z = Option<i32>.None;` answers `unbound variable 'Option'` (front 15,
-`example-programs.md`).
+**Cost, measured:** the shorthand appears in the five libraries only where front 13 already replaced
+it; `grep -rn "^import {[^}]*};" repository/*/src libs/std/src` is the migration list, and it is short.
 
-**Options.** (a) Correct decision 8 to `?T`, with `.Some` / `.None` in pattern position only.
-(b) Introduce `Option<T>` as a real named type alongside `?T`.
-
-**Recommendation: (a).** (b) buys a second spelling for one concept and costs inference, four
-backends, the printer and every document — while `.Some(v)` / `.None` already work as patterns, which
-is where decision 8 actually uses them. If the goal is a value-position constructor, that is a
-separate, smaller question: `?T`'s constructor, not a new type.
-
-**Blocks:** 02's `case` cells over optionals; the correctness of decision 8 §§2–5 and §9.
+**Blocks:** front 20's defect A; `08-hygiene` step 3; every import example in the documentation.
 
 ---
 
-## 3. The import fence in `docs.md`
+## 5. What a value *is* on the JS backends
 
-**Measured.** Front 20 implemented "an unresolved `import` is a located error" — today
-`import {area} from "geometry";` with no such module exits 0 from both `check` and `build` and emits
-code. The fix is written and **cannot land**: it reds `docs.md:78`, whose fence names `geometry`,
-`shapes.circle` and the `erika` dependency purely to illustrate the four import forms, and
-`zig build test-docs` is gate stage 9.
+**Reformulated 2026-09-18**, after the maintainer's answer: *"os tipos e variantes no JS devem ser
+vinculados ao polimorfismo prototype"*. That is a bigger and better question than the one asked, and
+the measurement supports it.
 
-**Options.** (a) Mark the fence `<!-- docs-check: skip … -->` with its reason. (b) Turn it into a
-`project modules` cell — the sibling modules exist, only the library dependency line stays
-illustrative and moves to its own skipped fence.
+**Measured** (`13-module-identity/representation.md`, from the emitted code):
 
-**Recommendation: (b).** The whole point of the docs gate is that no fence is vacuously green, and
-this is the fence the docs front itself named as the worst offender. (a) keeps the compiler honest
-and the documentation unverified, which is the trade the gate exists to refuse.
+| botopink | commonJS emits | Knows its own type? |
+|---|---|---|
+| `Person(name: "Ana", age: 30)` | `new Person("Ana", 30)` — **a real class** | **yes**, `instanceof` |
+| `Shape.Circle(radius: 5)` | `{ tag: "Circle", radius: 5 }` — a plain object | partly, by reading `.tag` |
+| `Shape.Dot` | `"Dot"` — **a bare string** | **no** |
+| any of them, in the `.d.ts` | `declare class Person` · `{ tag: "Circle" }` · `{ tag: "Dot" }` | the last one **contradicts the `.js`** |
 
-**Blocks:** front 20's defect A, implemented and stashed.
+So the backend is already half prototype-based: a record is a class, a variant is not. The
+inconsistency is the defect, and the bare string is only its sharpest edge.
 
----
+**Counter-proposal — finish what the backend already does for records.** A `type` emits a class per
+declaration and a subclass per variant:
 
-## 4. The order that dissolves the circular dependency — **settled**
+```js
+class Shape {}
+class Shape$Circle extends Shape { constructor(radius) { super(); this.radius = radius; } }
+class Shape$Dot    extends Shape {}
+const Dot = new Shape$Dot();            // a payload-less variant is a singleton
+```
 
-**Decided 2026-09-18 by the maintainer: `14-comptime-on-beam` first, then `13-module-identity`, then
-the backend fronts.** Kept here because it is the decision the rest of the order rests on, and because
-it has a price that has to stay visible.
+What each decision-8 feature then becomes, on this backend, for free:
 
-**What it dissolves.** Decision 8's run-time half needs a value that knows its own type — on erlang a
-record is a map with no tag, so `Person(name: "a", age: 1) == Vec(name: "a", age: 1)` answers **true**.
-That identity is 13's third half, and 13 used to be ordered *after* the backends, which is a cycle.
-With 13 first the identity already exists when 02–05 lower `is`, unions, `case` over named types and
-the per-type formatter. The cut that was going to break the cycle (backends keep primitives, tuples,
-the wasm box and `loop`; the named-type half goes to 13) is **no longer needed** — it survives in
-[`13-module-identity/halves-and-ordering.md`](./13-module-identity/halves-and-ordering.md) §5.2 as the
-fallback, and becomes necessary again only if 02 or 03 is opened before 13's second and third halves
-land.
+| Feature | Lowering |
+|---|---|
+| `x is Shape` | `x instanceof Shape` |
+| `case x { .Circle(r) { … } .Dot { … } }` | `instanceof` per arm — exhaustiveness is the class list |
+| §7 printing | a method on the prototype; a subclass overrides it |
+| a union of named types | `instanceof A \|\| instanceof B` |
+| the `.d.ts` | real classes, and the contradiction is gone |
 
-**It also settles two smaller things.** 14's step 2 makes the comptime module **keyed by declaration**,
-which is exactly the key `erlDeclAtom` wants, so 13 inherits `buildModule` instead of fighting it; and
-every snapshot is written once instead of 13 re-recording 318 cells on top of what the backends had
-just produced.
+It also explains a bug front 06 found and fixed by another route: commonJS emitted
+`_match instanceof Ok`, testing a class **no module emits**, so every `val assert Ok(…)` fell through
+to its handler. Under this proposal that code was right and the emitter was behind it.
 
-**The price, measured.** `02-erlang` and `03-beam` **stand still** while 13's second and third halves
-run: 13 owns `erlang.zig` and `beam_asm.zig` wholesale there and re-records **318** cells in their two
-directories. 13's first half is the exception — four atom sites, no emitted shape, a carve-out rather
-than a stop. `04-js` and `05-wasm` are unaffected and run throughout.
+**Cost, measured.** 315 commonJS snapshots change shape (25 of them carry a `tag:` object or a bare
+string today, so the rest change only where a variant is constructed or matched); cross-module variant
+identity needs the class imported, which the module system already does for types; a value handed to
+a host JS library is a class instance rather than a plain object, which `JSON.stringify` renders the
+same minus the `tag` field. `13-module-identity`'s third half then has **nothing to do on JS** — the
+prototype *is* the identity.
 
-**One ordering it does not settle** is `06-comptime-dedup` against 14, measured while verifying this
-one: dedup first → 14 re-records **5** comptime cells; 14 first → **20**, of which dedup then deletes
-15. Dedup first, by 15 mechanical re-recordings.
-
----
-
-## 5. A commonJS unit variant is a bare string
-
-**Measured.** `commonJS.zig:1563-1566` emits a unit variant as the string `"Dot"`, so `d is string`
-would answer true — while the `.d.ts` the same compiler emits declares `{ tag: "Dot" }` for that
-value. The `.js` and the `.d.ts` contradict each other, and **no snapshot covers it**.
-
-**Options.** (a) Tag unit variants like every other variant. (b) Change the `.d.ts` to say `string`.
-
-**Recommendation: (a).** `is`, `case` and per-type printing all need the tag, the `.d.ts` already
-promises it, and (b) would make the JS backend the only one where a variant is not a variant.
+**What the maintainer still owes:** confirmation that this is the shape wanted, since it is larger
+than the question asked — and whether a record's class should also carry the variant machinery, or
+only a `type` with variants gets subclasses.
 
 **Blocks:** `04-js`'s decision-8 half; `13-module-identity`'s third half on the JS side.
 
 ---
 
-## 6. The erlang output layout
+## 6. The erlang output layout — with the two trees written out
 
-**Measured.** `erlc` refuses a `-module` atom that does not match the file's basename, and
-`+no_error_module_mismatch` produces a `.beam` the code server then refuses to load
-(`beam_load.c(186)`). So the atom decides the file name, and an atom that encodes the source path
-cannot coexist with today's mirrored `out/<path>.erl` tree.
+**Reformulated 2026-09-18:** the question was asked without showing what either answer looks like.
+Here they are, for one project.
 
-**Options.** (a) `out/erl/<atom>.erl`, flat. (b) Keep a nested tree and accept that the leaf name is
-the full atom anyway.
+```
+src/main.bp
+src/models/user.bp        type Pessoa(nome: string, idade: i32)   behavior Greeter
+src/services/user.bp      fn load(id: i32) -> Pessoa
+```
 
-**Recommendation: (a).** Under policy 3 one `.bp` yields several modules; a nested tree then holds
-directories whose names repeat inside every file name in them.
+Under `13-module-identity` this program is **five** BEAM modules: the three files' own modules, plus
+one for `Pessoa` and one for `Greeter` (policy 3). `erlc` refuses a `-module` atom that does not equal
+the file's basename, so the file name *is* the atom either way. The only question is which directories
+hold them.
 
-**Blocks:** `13-module-identity` step 0.
+**(a) flat**
 
----
+```
+out/erl/main.erl
+out/erl/models@user.erl
+out/erl/models@user__t__pessoa.erl
+out/erl/models@user__b__greeter.erl
+out/erl/services@user.erl
+```
 
-## 7. A type's methods are `Function`, not `Method`
+**(b) nested**
 
-**Measured.** The language server reports a type's methods as `SymbolKind.Function`. Making them
-`Method` is correct for the outline and **breaks the VS Code Test Explorer**, which classifies every
-`Method` symbol as a `test "…"` block (`repository/vscode-extension/src/symbolNodes.ts`; the LSP
-protocol has no `Test` kind).
+```
+out/erl/main.erl
+out/erl/models/models@user.erl                ← the directory says "models", and so does the file
+out/erl/models/models@user__t__pessoa.erl
+out/erl/models/models@user__b__greeter.erl
+out/erl/services/services@user.erl
+```
 
-**Options.** (a) Teach the extension to recognise a test by its declaration (`test "…"`), not by the
-symbol kind, then emit `Method`. (b) Leave both as they are and document it.
+**The difference that decides it is not aesthetics, it is how the program is run.** The BEAM loads
+code from the directories on its path:
 
-**Recommendation: (a).** The outline is user-facing and wrong today; the Test Explorer's rule is an
-internal shortcut that the extension owns. The two land in one sweep across the two repositories.
+```
+(a)  erl -pa out/erl -s main _botopink_main
+(b)  erl -pa out/erl -pa out/erl/models -pa out/erl/services … -s main _botopink_main
+```
 
-**The sub-question (a) forces:** how does the extension then recognise a `test "…"` block? By a
-marker in the symbol's `detail`, by another `SymbolKind`, or **by its parent in the tree** — a `test`
-block is a child of the file, a method is a child of a type. The last is the cheapest and the only
-one that does not invent a convention; decide it with (a), because until then the language server is
-kept wrong on purpose so that the extension stays right.
+Under (b) the CLI has to walk the tree and pass one `-pa` per directory, and it has to do it again for
+every dependency — while the atom already carries the path that the directories repeat.
 
-**Blocks:** `11-tooling`.
+**Recommendation: (a), flat, one directory per target** (`out/erl/`, `out/js/`, `out/wasm/`). It is
+also what `botopink run --target erlang` needs in order to work at all: it runs `escript out/main.erl`
+today, which compiles only the file it is handed, and the fix is `erl -noshell -pa <one directory>`.
 
----
-
-## 8. `beam` as a target of the language suite
-
-**Measured — and this corrects an earlier recommendation.** `botopink test` refuses the beam target
-and `botopink run --target beam` writes `out/main.S` and stops, which is why `tests/language/AGENTS.md`
-records beam as non-executable. Front 06's support pass then ran the rest of the path: `erlc +from_asm
-main.S` produces `main.beam`, and `erl -noshell -pa . -eval 'main:main(), halt().'` prints the
-program's output. **The artefact executes, with a tool the gate already runs** (the beam export audit
-is stage 5). The recorded reason does not hold.
-
-**Options.** (a) Teach the runner the two extra commands and add beam as a third executable target.
-(b) Keep beam's coverage in the codegen snapshots.
-
-**Recommendation: (a), scheduled after [`13-module-identity`](./13-module-identity/).** The blocker
-was never execution, it was a missing two-line path — but 13's policy 3 changes how many `.S` files a
-program emits and where they live, so building the runner against today's layout means writing it
-twice. Add it as 13's landing step, not before.
-
-**Blocks:** `12-language-tests`'s coverage claim for beam, and `tests/language/AGENTS.md`, which
-states a reason that measurement contradicts.
-
----
-
-## 9. `Array.unique` is broken on both backends
-
-**Measured.** `[1, 1, 2].unique()` fails on erlang (`function unwrapOr/2 undefined`) and on node
-(`prev.unwrapOr is not a function`): its body calls a method on an optional (`prev.unwrapOr(x)`)
-inside a `default fn`, a shape no backend lowers. The body is in `libs/std`, which has no owner; the
-lowering is the checker's.
-
-**Options.** (a) `01-checker` lowers a method call on an optional inside a `default fn` body, and
-`libs/std` keeps the body it has. (b) Rewrite the body in `libs/std` to avoid the shape.
-
-**Recommendation: (a), with (b) as the fallback** if the lowering turns out to need the typed-method
-dispatch that is itself open. Either way the maintainer has to assign the `libs/std` edit, because no
-front owns that file.
-
-**Blocks:** a standard-library function that is documented and does not run.
-
+**Blocks:** `13-module-identity` step 0, and `10-cli-residuals`' three `modules/*` cells.
 
 ---
 
