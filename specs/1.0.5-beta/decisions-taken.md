@@ -31,6 +31,7 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 24 | Does step 3 of 14 happen? | every step — the principle governs |
 | 25 | Does `is` carry a pattern? | no; `case` is the only construct that binds |
 | 27 | Who declares `behavior Display`? | `01-checker`, in `libs/std` |
+| 26 | `case` arms of different types | they union — inference may produce a union |
 
 ---
 
@@ -752,5 +753,93 @@ already the step that puts decision 8 into `libs/std`.
 
 **Blocks:** the §7 step of `02-erlang`, `03-beam`, `04-js` and `05-wasm` — four fronts reading one
 missing declaration.
+
+---
+
+## 26. `case` arms of different types — and what an inferred union costs
+
+**Decided 2026-09-18 by the maintainer: (a) — the arms union.** Inference may produce a union type;
+a `case` whose arms disagree is not an error, it is a value of the union of their types.
+
+**What (a) commits the milestone to**, recorded here because these are its costs and they are now
+work, not arguments:
+
+1. **A union can appear in a type nobody wrote.** `val label = case n { 0 { "zero" } _ { n } };`
+   gives `label: string | i32` with no annotation in sight, so union types are no longer only an
+   annotation feature — they are part of ordinary inference (`01-checker` steps 2 and 4 become **one**
+   step: union inference and arm typing are the same problem under (a)).
+2. **Every backend carries a value whose type is a union**, which is the same requirement
+   [decision 22](./decisions-taken.md) places on the wasm boxed value, arriving by a second road —
+   `13-module-identity` designs one box that answers for both.
+3. **`@print` decides at run time what a union value is** (decision 8 §7): the per-type formatter must
+   dispatch on the value's own identity, not on a written type. On erlang and beam that is the tagged
+   tuple of decision 21; on JS the prototype of decision 5; on wasm the box of decision 22.
+4. **A diagnostic prints unions**: `expected string, got string | i32` has to read well, and the
+   union's member order has to be stable or the message is non-deterministic.
+5. The two fixture slugs named for this answer
+   (`case_arms_with_different_types_string_i32_union`) keep their names and become real.
+
+Zero migration today: all 32 `case`-as-value blocks across the six libraries are homogeneous.
+
+**Reformulated 2026-09-18**, with the examples the question was missing. The question is not really
+about `case`: it is about whether a **union type can be produced by inference**, or only by being
+written down.
+
+**The program in question.**
+
+```botopink
+fn describe(n: i32) -> string {
+    val label = case n {
+        0 { "zero" }        // this arm is a string
+        _ { n }             // this arm is an i32
+    };
+    return label;           // …so what is `label`?
+}
+```
+
+**(a) the arms union** — `label` is `string | i32`, and nothing more happens here. The cost lands on
+the next line: to *use* `label` you must narrow it, and the union travels through inference into
+places nobody wrote one:
+
+```botopink
+val label = case n { 0 { "zero" } _ { n } };   // label: string | i32
+@print(label);                                  // which formatter? the printer must handle both
+val up = label.toUpper();                       // error — `i32` has no `toUpper`
+if (label is string) { @print(label.toUpper()); }   // this is what the programmer must write
+```
+
+**(b) the arms must agree** — the `case` above is an error, and the programmer converts:
+
+```botopink
+val label = case n { 0 { "zero" } _ { n.toString() } };   // label: string
+```
+
+**(c) — the counter-proposal, which the file did not have: the arms must agree *unless the union is
+written*.**
+
+```botopink
+val a = case n { 0 { "zero" } _ { n } };                  // error: arms disagree —
+                                                          // annotate `string | i32` if that is meant
+val b: string | i32 = case n { 0 { "zero" } _ { n } };    // fine: the union is written
+```
+
+**Why (c).** Under (a) a union can appear in a type nobody wrote, and then every backend must carry a
+value whose type is a union, every error message must print one, and `@print` must decide what to do
+with it at run time — that is the same problem [decision 22](./decisions-taken.md) is solving for
+wasm, arriving by a second road. Under (c) unions stay a thing the programmer asks for, which is
+where decision 8 §3 actually uses them (annotations, parameters, returns), and the diagnostic teaches
+the annotation instead of silently widening.
+
+**Measured, so the cost of each is known:** all **32** `case`-as-value blocks across the six
+libraries are homogeneous — every arm already agrees. So (a), (b) and (c) cost **zero migration**
+today; the difference is entirely about what the language promises next. Two fixture slugs are named
+for answer (a) (`case_arms_with_different_types_string_i32_union`) and would be renamed under (b) or
+(c).
+
+**Recommendation: (c).** It is (b)'s cost with (a)'s expressiveness, and it is the only one of the
+three where an inferred type never contains a union the programmer did not write.
+
+**Blocks:** `01-checker`'s steps 2 and 4 — union inference and `case` arm typing are the same step
+under (a), and two different steps under (c).
 
 ---

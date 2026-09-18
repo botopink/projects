@@ -11,10 +11,15 @@ waited on them. Here the backends are **four file-disjoint fronts** (`02-erlang`
 `05-wasm`) that run at the same time, the checker is one front over `comptime/**`, and the seven
 support fronts touch none of those files at all.
 
-**Read [`decisions-pending.md`](./decisions-pending.md) first** — twenty questions the milestone cannot
-answer for itself, each with its evidence and a recommendation; several block a front's first step and
-two block work that is written and cannot land. What has been answered is in
-[`decisions-taken.md`](./decisions-taken.md), which is what the fronts implement against.
+**Read [`decisions-taken.md`](./decisions-taken.md) first** — twenty-seven decisions taken on
+2026-09-18, each with the evidence that produced it, the options that were on the table and the answer.
+They are what the fronts implement against, and several reshape a front rather than settle a detail:
+the JS value becomes a class per declaration and a subclass per variant (5); a record's identity on
+erlang is a tagged tuple (21); there is one range spelling, `..` (20), which reverses part of what the
+grammar half just landed; `case` arms union, so **inference may produce a union type** (26); rakun
+supports every target with `libs/std` growing underneath it (17); and `14-comptime-on-beam` runs every
+step, because the principle governs and not the build time (24).
+[`decisions-pending.md`](./decisions-pending.md) is empty for now, and says how to fill it.
 
 ## Fronts
 
