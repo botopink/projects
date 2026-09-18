@@ -1,15 +1,15 @@
 # Front 10 — library repos
 
-**Status:** **delivered** 2026-09-17 — erika `051cd97` (7b verified, 7c), emilia `321981d` (7d, hook
-+ CI), jhonstart `8668c40` and onze `2fcf860` (`BOTOPINK_LANG_REF` → `feat`), rakun's export verified
-(no commit). Afterwards every library's gate also builds its examples (erika `17728e3`, emilia
-`a167c06`, jhonstart `6c807d1`, onze `cda9d01`, rakun `d5ca84b`); the ones that do not compile are
-listed in each `scripts/known-broken-examples.txt` and belong to
-[`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md). Carried from 1.0.2-beta front 12,
-whose 7a and 7e–7h landed — see [Delivered](#delivered-by-102-beta-library-repos)
-**Priority:** medium (delivered)
-**Depends on:** — (delivered)
-**Owns:** `repository/erika/**` · `repository/emilia/**` · the one-line `BOTOPINK_LANG_REF` default
+**Delivered** 2026-09-17 — erika `051cd97` (7b verified, 7c), emilia `321981d` (7d, hook + CI),
+jhonstart `8668c40` and onze `2fcf860` (`BOTOPINK_LANG_REF` → `feat`), rakun's export verified (no
+commit). Afterwards every library's gate also builds its examples (erika `17728e3`, emilia `a167c06`,
+jhonstart `6c807d1`, onze `cda9d01`, rakun `d5ca84b`); the ones that did not compile were listed in
+each `scripts/known-broken-examples.txt` until
+[`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md) fixed them. Carried from
+1.0.2-beta front 12, whose 7a and 7e–7h landed — see
+[Delivered](#delivered-by-102-beta-library-repos).
+
+**Owned:** `repository/erika/**` · `repository/emilia/**` · the one-line `BOTOPINK_LANG_REF` default
 in `repository/{jhonstart,onze}/.github/workflows/test.yml` — one commit per repo
 **Does not touch:** `modules/compiler-core/**` (rakun's missing export is a codegen fix — see
 step 4) · `libs/std/**` ·
@@ -32,9 +32,9 @@ Inside a per-repo file, bare paths are relative to that repo.
 | 7g vscode-extension (+ rakun) | a CI `compiler` job (`BOTOPINK_LANG_REF \|\| 'feat'`) running `scripts/compilerCheck.ts`; rakun's default flipped to `feat` |
 | 7h bpmp | the resolver probes the store (`--frozen` miss → `DEP-005 FrozenStoreMiss`); `Action.ref` carries branch/tag/rev with hermetic git tests; `sync` resolves from each dep's `git:`. `zig build test-bpmp` 108/108 |
 
-## Problem
+## What it found and closed
 
-| Repo | Open item | Blocked by | Deep dive |
+| Repo | Item | Blocked by | Deep dive |
 |---|---|---|---|
 | erika | **7b** — the two-parameter `loop` lost its accumulator. **Compiler fix landed** (1.0.4-beta erlang); verify in erika | — | [`erika.md`](./erika.md) |
 | erika | **7c** — `AGENTS.md` documents a removed comptime evaluator. **Written and staged**, uncommitted: erika's hook runs `botopink test`, red on `libs/std`'s `String.split("")` | the `libs/std` fix (unowned) | [`erika.md`](./erika.md) |
@@ -101,6 +101,12 @@ Not this front's fix: `botopink build` must emit `module.exports` for a module's
 - [x] `zig build test-libs` has no known-red line left that names a library this front owns
 - [x] Each repo's `AGENTS.md` updated in the same commit
 - [x] One commit per repo on `fix/library-repos`, landed by the maintainer's sweep
+
+## What it left, and where
+
+Nothing. The one handoff it made — the examples listed in each `scripts/known-broken-examples.txt`
+(emilia `emilia-card`; jhonstart `-counter`, `-html`, `-todo`) — was closed by front 13, whose own
+residuals are carried from there.
 
 ## Blast radius
 

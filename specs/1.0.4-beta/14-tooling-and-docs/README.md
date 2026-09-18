@@ -1,22 +1,19 @@
 # Front 14 — Tooling and docs
 
-**Status:** **delivered** 2026-09-18, with two conditions **blocked on 06** (named below). Carried
-from 1.0.3-beta front 04. Landed in four waves: `botopink-lang` `26d4fdc` (hover and `renderType` in
+**Delivered** 2026-09-18, with two conditions it could not reach from its own files (named below).
+Carried from 1.0.3-beta front 04. Landed in four waves: `botopink-lang` `26d4fdc` (hover and `renderType` in
 the 1.0.3 surface), `dfc34a9` (completion while the file does not compile; the hover footer names the
 declaring behavior), `758dae4` (the user-docs half and its gate stage), `84e493a` + `63dd882` (the
 closeout: the project-graph diagnostics, enum sections in the outline, the two keyword completions,
 the variant-on-a-value fix); `vscode-extension` `e6abeb3` (pattern ranges and tuple labels),
 `1753104` + `b7c74c8` (the primitive-type list and the section fixture).
 
-**Priority:** high — after [`../12-surface-cutover/`](../12-surface-cutover/README.md) the editor still suggested and highlighted `record`, `enum` and
-`interface`, and the user docs taught a surface that no longer parses.
-**Depends on:** [`../12-surface-cutover/`](../12-surface-cutover/README.md) (final grammar; shares
-`language-server/src/engine.zig`) — **met**, 12 delivered 2026-09-17
-**Owns:** `modules/language-server/**` (source, tests, `snapshots/lsp/**`) · `repository/vscode-extension/**` · this directory
-**Does not touch:** compiler-core, `modules/compiler-cli/**`, `docs.md`, `README.md`, `scripts/**`,
-`build.zig`, `.github/**`, `libs/std/**`, `examples/**`, the library repositories
-([`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md)), historical `specs/` and
-`tasks/` documents (they record what was true then and are not rewritten)
+What it closed: after [`../12-surface-cutover/`](../12-surface-cutover/README.md) the editor still
+suggested and highlighted `record`, `enum` and `interface`, and the user docs taught a surface that
+no longer parses.
+
+**Owned:** `modules/language-server/**` (source, tests, `snapshots/lsp/**`) ·
+`repository/vscode-extension/**` · this directory.
 
 > The user-docs half of step 3 landed with `758dae4`, which also moved its files out of this front:
 > `docs.md`, `README.md`, `scripts/**`, `build.zig` and `.github/**` belong to 09 and 05 now. Step 3
@@ -151,24 +148,25 @@ Migrate the owned markdown manually; add a short "1.0.3 syntax changes" section 
 
 <a id="blocked"></a>
 
-## Blocked — reported, not patched
+## What it left, and where
 
-Neither can be met from this front's files.
+Three items, none of them reachable from this front's files.
 
-| Item | Why | Owner |
+| Item | Why | Owner in 1.0.5-beta |
 |---|---|---|
-| **A hover / completion `detail` still prints `record { name: string, count: i32 }`** (visible in `completion_decorator_record.snap.md`). `renderType` prints a type **name** verbatim, and the name is built by `comptime/infer.zig`'s `buildRecordDeclName` (`:1832`) and its two siblings `buildEnumDeclName` (`:1934`) / `buildInterfaceDeclName` (`:1891`), which spell a `type` declaration's constructor binding in the surface that no longer parses. This is the one exception to step 1's second acceptance condition. | `modules/compiler-core/src/comptime/infer.zig` is **06's** file; 14 owns no line of it | **06** — rename the three builders' output to the 1.0.3 surface, then re-record `completion_decorator_record` |
-| **The `Case expression` snippet still teaches `pattern -> result;` arms** | Decision 8 §5.1 P1/P2 (and `MIGRATION.md`'s `case` section) make an arm `Pattern { body }` with no `;`. Measured with `zig-out/bin/botopink check` at `2b098eda`: `case x { 0 { 1 } _ { 2 } }` is `error: Unexpected token` at the `{`, and `case x { 0 -> 1; _ -> 2; }` checks green. `npm run compiler-check` runs every snippet through the compiler, so flipping the snippet now reds the extension's own gate. Recorded in `vscode-extension/AGENTS.md` and `CHANGELOG.md`. | **06** (N22, the arm syntax) — then a one-commit follow-up in `vscode-extension` flips the snippet and adds the arm to the grammar fixture |
+| **A hover / completion `detail` still prints `record { name: string, count: i32 }`** (visible in `completion_decorator_record.snap.md`). `renderType` prints a type **name** verbatim, and the name is built by `comptime/infer.zig`'s `buildRecordDeclName` (`:1832`) and its two siblings `buildEnumDeclName` (`:1934`) / `buildInterfaceDeclName` (`:1891`), which spell a `type` declaration's constructor binding in the surface that no longer parses. This is the one exception to step 1's second acceptance condition | `infer.zig` is the checker's file; 14 owns no line of it | `01-checker` — rename the three builders' output, then re-record `completion_decorator_record` |
+| **The `Case expression` snippet still teaches `pattern -> result;` arms** | Decision 8 §5.1 P1/P2 make an arm `Pattern { body }` with no `;`. Measured with `zig-out/bin/botopink check` at `2b098eda`: `case x { 0 { 1 } _ { 2 } }` was `error: Unexpected token` at the `{`, and `case x { 0 -> 1; _ -> 2; }` checked green. The grammar for the new arms landed later (`dff3446`), but the checker half did not, and `npm run compiler-check` runs every snippet through the compiler — so flipping the snippet reds the extension's own gate until N22 is enforced. Recorded in `vscode-extension/AGENTS.md` and `CHANGELOG.md` | `01-checker` N22, then a one-commit follow-up in `11-tooling` |
+| **A type's methods keep `SymbolKind.Function`, not `Method`.** LSP-wise `Method` is the right kind for a member function, but the extension's Test Explorer classifies **every `Method` symbol as a test block** (`src/symbolNodes.ts:isTestSymbolNode`, a contract landed by tooling-update F3, since the LSP has no `Test` kind). Flipping the members without re-homing `test "…"` blocks onto some other kind would list every method as a runnable test. It is one coherent change across both repositories | deliberately left out of a closeout | `11-tooling` |
+
+**Also left, and named here because nobody has ever owned it:** `project_graph.zig`'s third
+`catch continue`, `loadSrcTree`'s read of a `.bp` under the project's own `src` (`:347` at
+`aed8a60`). A file the server cannot read drops out of the graph with no diagnostic, and the editor
+then blames whatever imported it. The fix is the `Problem` shape this front built, located at the
+file itself. Reported by front 20's step 4 → `11-tooling`.
 
 ## Deliberately not done
 
-- **A type's methods keep `SymbolKind.Function`, not `Method`.** LSP-wise `Method` is the right kind
-  for a member function, but the extension's Test Explorer classifies **every `Method` symbol as a
-  test block** (`src/symbolNodes.ts:isTestSymbolNode`, a contract landed by tooling-update F3, since
-  the LSP has no `Test` kind). Flipping the members without re-homing `test "…"` blocks onto some
-  other kind would list every method as a runnable test. It is one coherent change across both
-  repositories and does not belong in a closeout — **left for whoever takes the Test Explorer next.**
-- **The rest of the keyword completion table.** The step asks for `type` and `behavior`; offering a
+- **The rest of the keyword completion table.** Step 1 asks for `type` and `behavior`; offering a
   slice of the remaining 36 would be arbitrary, and offering all of them changes what every
   completion request returns. A front that wants keyword completion takes the whole set at once.
 
@@ -182,53 +180,4 @@ Neither can be met from this front's files.
       (`modules/language-server/AGENTS.md`, `src/AGENTS.md`, `src/tests/AGENTS.md`;
       `vscode-extension/AGENTS.md`, `CHANGELOG.md`, `docs.md`)
 - [x] Branch `fix/tooling-closeout` (botopink-lang, worktree `.tasks/tooling-closeout`) and `feat`
-      (vscode-extension, committed directly); no push, no merge, no submodule bump
-
----
-
-## Rows to paste
-
-The maintainer applies these; this front does not edit `fronts.md` or `overview.md`.
-
-**[`../fronts.md`](../fronts.md) — Ownership table, replace row 14:**
-
-```markdown
-| **14** [`tooling-and-docs`](./14-tooling-and-docs/README.md) | `modules/language-server/src/**` (user-facing texts, completions, symbol kinds, completion in a non-compiling file, the project graph's own diagnostics), `repository/vscode-extension/**` | LSP hover/completion/symbol snapshots | **delivered** 2026-09-18 — two conditions blocked on 06 (the `record { … }` type name `infer.zig` builds; the `case` snippet's arms) |
-```
-
-**[`../fronts.md`](../fronts.md) — Unowned items, replace the two rows 14 held:**
-
-```markdown
-| ~~`hover_interface_method`~~ — **closed** 2026-09-17 by `dfc34a9`: `*from `behavior Signed` (via I32)*`, and `*from `behavior Array`*` when the declaring behavior is the receiver's | `modules/language-server/src/engine.zig` | 1.0.2-beta review-tooling (report 3.12) | 14, **done** |
-| ~~A missing dependency (`:171`) and an unreadable `files` entry (`:210`) swallowed by the language server with `catch continue`~~ — **closed** 2026-09-18 by `84e493a`: both are diagnostics on the manifest that declares the entry, with the CLI's wording | `modules/language-server/src/project_graph.zig` | 1.0.2-beta library-repos, re-confirmed by 05 | 14, **done** |
-```
-
-**[`../fronts.md`](../fronts.md) — Unowned items, two new rows (both are 14's findings, neither is 14's to fix):**
-
-```markdown
-| **A `type` declaration's constructor binding is *named* `record { name: string, count: i32 }`** by `buildRecordDeclName` (and `enum {` / `interface ` by its two siblings), so hover and completion print a surface that no longer parses — the one user-visible string front 14 could not reach | `src/comptime/infer.zig` (`:1832`, `:1891`, `:1934`) | 1.0.4-beta 14 closeout, 2026-09-18 | 06 — then re-record `completion_decorator_record` |
-| **A type's methods are `SymbolKind.Function`, not `Method`**, because the VS Code Test Explorer classifies every `Method` symbol as a `test "…"` block (the LSP has no `Test` kind) — the two must move together, across both repositories | `modules/language-server/src/engine.zig` (`collectChildren`) + `repository/vscode-extension/src/symbolNodes.ts` | 1.0.4-beta 14 closeout, 2026-09-18 | whoever takes the Test Explorer next |
-```
-
-**[`../fronts.md`](../fronts.md) — Conflict matrix:** drop column and row **14** (a delivered front
-has no open row). The one residual interaction is the `case`-snippet follow-up, which is 06's to
-hand on.
-
-**[`../fronts.md`](../fronts.md) — Order:** in the diagram, `13 ecosystem-migration ∥ 14 tooling-and-docs — after 12`
-becomes `13 ecosystem-migration — after 12 (13's decision-8 items after 06)`, and in **Critical path**
-`13 ∥ 14 after 12` becomes `13 after 12`.
-
-**[`../overview.md`](../overview.md) — the front table, replace the row for 14 (`:75`):**
-
-```markdown
-| [`14-tooling-and-docs`](./14-tooling-and-docs/README.md) | high | **delivered** — 2 conditions blocked on 06 | Language-server texts and completions (including completion in a file that does not compile and the project graph's own diagnostics), VS Code grammar and snippets, user docs. Left to 06: the `record { … }` type name `infer.zig` builds, and the `case` snippet's arms |
-```
-
-**[`../overview.md`](../overview.md) — the order diagram (`:120`):**
-
-```
-                     12 surface-cutover (alone) ──► 13 ecosystem-migration   (14 tooling-and-docs delivered)
-```
-
-**[`../overview.md`](../overview.md) — the 1.0.3-beta carry row (`:55`)** keeps naming 14 beside 06:
-its grammar half (`eb870ac`, `a1216f5`) is delivered, and 06 still owns the lexer half.
+      (vscode-extension, committed directly), landed by the maintainer's sweep

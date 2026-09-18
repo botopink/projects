@@ -9,6 +9,22 @@
 1.0.4-beta is a hard cutover: the old spellings are parse errors, with a diagnostic that names the
 replacement. Migration is manual (beta phase).
 
+> **What the compiler enforces as of 1.0.4-beta.** Everything in *Keywords*, *Records*, *Enums*,
+> *Behaviors*, *Tuples*, *Effects*, *Loops* and *Separators* below is checked: the old spellings do
+> not parse, `#[@result]` requires `@Result<T, E>`, `while` is refused with a message naming `loop`,
+> and `row.label` resolves to an index — including through a generic instantiation and on a
+> function-typed element.
+>
+> Three sections describe the language as decision 8 defines it, and **the checker does not enforce
+> them yet**; write your code this way — the grammar accepts it — and expect the diagnostics to
+> arrive in 1.0.5-beta:
+>
+> | Section | State |
+> |---|---|
+> | *Generic types and `Self`* and *Declarations that would be `unknown`* | The forms parse. A bare `Self` in a generic declaration and an unannotated `[]` are still accepted, and `libs/std` itself has not been migrated to `Self<T>`. → 1.0.5-beta `01-checker` |
+> | *`case`, `is` and guards* and *`unknown` and unions* | The **grammar** shipped — `unknown`, `i32 \| string`, `x is T`, `Pattern { body }` arms, `when` guards, `A...B`, `.Variant`. The arm's binding type, exhaustiveness, `_` on `unknown` and the narrowing are not checked yet. → 1.0.5-beta `01-checker` |
+> | *Printing* | Not shipped on any backend. `@print` of an array or a tuple prints `[1, 2]` and `#(1, "a")` on commonJS, erlang and wasm; the one derived, source-shaped formatter per type — `Point(x: 1, y: 2)`, `5.0` for every `f64`, `Display` honoured when nested — is 1.0.5-beta's, one front per backend |
+
 ## Keywords
 
 | 1.0.2-beta | 1.0.4-beta |
@@ -185,7 +201,8 @@ return case s {
   `case` exhaustive.
 - `..` ignores the rest: `#(0, ..)`, `Shape.Rect(width: w, ..)`.
 - `x is i32` tests the value (a float with an integral value in range is an `i32`, converted inside
-  the block). *(The exact spelling of the 1.0.2 arms above is to verify when 06/12 land.)*
+  the block). *The new arm grammar shipped with 06's `d0c27f6`; the conversion and the exhaustiveness
+  rule are carried to 1.0.5-beta `01-checker`.*
 
 ## `unknown` and unions
 
@@ -237,6 +254,12 @@ loop { … break; }
 `Point(x: 1, y: 2)`, `Shape.Square(side: 4)`, `5.0` for an `f64`; a top-level string is printed bare,
 a nested one quoted. A type implementing `behavior Display` prints its `display()`.
 
+**Not shipped in 1.0.4-beta.** What landed is the array and tuple text — `[1, 2]`, `#(1, "a")`, a
+nested string quoted with its source escapes — on commonJS, erlang and wasm (decision 1a,
+`b4cf700`); beam has no printer of its own, an `f64` still prints `5` on commonJS, and a record
+prints its backend's own shape. The one derived formatter per type is 1.0.5-beta's, one front per
+backend.
+
 ## Separators
 
 - `,` separates data: fields, variants, tuple elements, arguments.
@@ -254,22 +277,28 @@ a nested one quoted. A type implementing `behavior Display` prints its `display(
 
 ## Diagnostics you will see
 
-| You wrote | Error |
-|---|---|
-| `record Point { … }` | `removed-keyword-record` — use `type Point(fields) { methods }` |
-| `enum Color { … }` | `removed-keyword-enum` — use `type Color { variants }` |
-| `interface Printable { … }` | `removed-keyword-interface` — use `behavior Printable { … }` |
-| `record { x: 1 }` | `removed-record-literal` — use `#(x)` or `#(1)` |
-| `fn f(p: { x: i32 })` | `removed-record-type` — use `#(x: i32)` |
-| `type P(x: i32) { A }` | `type-record-with-variants` |
-| `type P(val x: i32)` | `type-field-val-prefix` |
-| `fn f(self: Self) -> i32,` in a behavior | `member-comma-separator` |
-| `fn get(b: Box) -> i32` | `Box` is generic and needs 1 type argument |
-| `fn get(self: Self) -> T` in `type Box<T>` | `Self` needs its type arguments — write `Self<T>` |
-| `while (c) { … }` | `while` does not exist — use `loop (c)` |
-| `throw new Error("x")` | use `throw Error("x")` |
-| `#[@result] fn f() -> i32` | `#[@result]` requires the return type `@Result<T, E>` |
-| `row.name` where the type has no label | the written type has no label — use `row.N` |
-| `#(x: 1)` | a tuple is built without labels — write `#(1)`, or label it in the destination type |
+| You wrote | Error | Shipped |
+|---|---|---|
+| `record Point { … }` | `removed-keyword-record` — use `type Point(fields) { methods }` | yes |
+| `enum Color { … }` | `removed-keyword-enum` — use `type Color { variants }` | yes |
+| `interface Printable { … }` | `removed-keyword-interface` — use `behavior Printable { … }` | yes |
+| `record { x: 1 }` | `removed-record-literal` — use `#(x)` or `#(1)` | yes |
+| `fn f(p: { x: i32 })` | `removed-record-type` — use `#(x: i32)` | yes |
+| `type P(x: i32) { A }` | `type-record-with-variants` | yes |
+| `type P(val x: i32)` | `type-field-val-prefix` | yes |
+| `fn f(self: Self) -> i32,` in a behavior | `member-comma-separator` | yes |
+| `while (c) { … }` | `while` does not exist — use `loop (c)` | yes (06 N26) |
+| `throw new Error("x")` | use `throw Error("x")` | yes (06 N27) |
+| `#[@result] fn f() -> i32` | `#[@result]` requires the return type `@Result<T, E>` | yes (06 N25) |
+| `val assert Ok(n) = parse("42") catch 0;` | a `val assert` over a `@Result` takes no `catch` | yes (06 C12) |
+| `row.name` where the type has no label | the written type has no label — use `row.N` | yes (06 N24) |
+| `fn f(p: NoSuchType)` | `unknown type 'NoSuchType'`, with the caret on the annotation | yes (06 C10 + N30) |
+| `absVal(-3)` where `absVal` has no external target for the backend | `` `absVal` has no `#[@External.<Target>(…)]` for the erlang backend``, with the call site | yes (06 C13) |
+| `fn get(b: Box) -> i32` | `Box` is generic and needs 1 type argument | **not yet** — 1.0.5-beta `01-checker` (N18) |
+| `fn get(self: Self) -> T` in `type Box<T>` | `Self` needs its type arguments — write `Self<T>` | **not yet** — `01-checker` (N18) |
+| `#(x: 1)` | a tuple is built without labels — write `#(1)`, or label it in the destination type | **not yet** — `01-checker` (N24's warning half) |
+| a `case` that is not exhaustive, or `_` missing on `unknown` | `not exhaustive`, `use _ {` | **not yet** — `01-checker` (N22) |
 
-Error codes other than the first eight are sketches; the implementing fronts fix the wording.
+Error codes other than the first eight are sketches; the implementing fronts fix the wording. A row
+marked **not yet** parses today and is simply accepted; `tests/language/expected-failures.txt` lists
+the cell that will red when it lands.

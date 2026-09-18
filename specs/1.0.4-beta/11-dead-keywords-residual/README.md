@@ -1,15 +1,11 @@
 # Front 11 — dead keywords, the residual
 
-**Status:** **delivered** 2026-09-17 — jhonstart `bf868ca`, vscode-extension `eb870ac`, pushed to
-both `feat`s with the meta bump. `botopink check` skips a library's `.d.bp`, so the parse was proven
-with `botopink format --check` (the formatter's own rewrite of `pub interface` to
-`val X = interface` was not adopted — a formatter question for 12/14).
-**Priority:** low (delivered). The compiler side had landed in `botopink-lang` `ecac19d`; the
-jhonstart and vscode-extension commits of 1.0.3-beta front 01 were never pushed, and this front redid
-them
-**Depends on:** — (delivered; it was advanced ahead of 01–10 by the maintainer, sharing no file with
-them)
-**Owns:** `repository/jhonstart/src/{router,server}.d.bp` and their call sites in jhonstart ·
+**Delivered** 2026-09-17 — jhonstart `bf868ca`, vscode-extension `eb870ac`, pushed to both `feat`s
+with the meta bump. The compiler side had landed in `botopink-lang` `ecac19d`; the jhonstart and
+vscode-extension commits of 1.0.3-beta front 01 were never pushed, and this front redid them. It was
+advanced ahead of 01–10 by the maintainer, sharing no file with them.
+
+**Owned:** `repository/jhonstart/src/{router,server}.d.bp` and their call sites in jhonstart ·
 `repository/vscode-extension/syntaxes/botopink.tmLanguage.json` (the keyword pattern only)
 **Does not touch:** `repository/botopink-lang/**` (landed) · the rest of jhonstart
 ([`../13-ecosystem-migration/`](../13-ecosystem-migration/README.md)) · the rest of vscode-extension
@@ -76,10 +72,21 @@ every other word — `record`, `enum`, `interface` leave with
       in one sweep** — the previous attempt was lost exactly there: the commits existed only locally
       and the meta merge kept the old pointers
 
+## What it left, and where
+
+Nothing. The one item it handed on — **`delegate` and `new` stop being keywords**, decided by the
+maintainer 2026-09-17 — closed inside 1.0.4-beta: the lexer/parser half as 06 N27 (`cab0bf7`: both
+lex as identifiers, `throw new Error(…)` no longer parses, the unmapped `.@"const"` token variant is
+deleted) and the grammar half as 14's `a1216f5` in `vscode-extension`.
+
+The facts measured when the decision was taken, kept as the record: `delegate` was equally dead (no
+parser code matched `.delegate`; delegates are `declare fn`) and survived only in `isReservedWord`;
+`new` was only skipped as an optional word after `throw`; the `.@"const"` token variant had no lexer
+mapping.
+
 ## Notes
 
-**Decided 2026-09-17 by the maintainer:** `delegate` and `new` stop being keywords — both lex as identifiers, and `throw new Error(…)` no longer parses (write `throw Error(…)`); the unmapped `.@"const"` token variant is deleted; the VS Code grammar stops highlighting `delegate` and `new`. Owned by [`../06-checker/`](../06-checker/README.md) N27 (lexer/parser) and [`../14-tooling-and-docs/`](../14-tooling-and-docs/README.md) (grammar). The facts measured then:
-- `delegate` is equally dead (no parser code matches `.delegate`; delegates are `declare fn`) and
-  survives only in `isReservedWord`.
-- `new` is only skipped as an optional word after `throw`.
-- The `.@"const"` token variant has no lexer mapping. Re-check whether `ecac19d` removed it.
+`botopink check` skips a library's `.d.bp`, so the parse was proven with `botopink format --check`.
+The formatter's own rewrite of `pub interface` to `val X = interface` (it dropped `pub`) was not
+adopted — it was reported as a formatter question, and front 12's gate pins `pub behavior Router { … }`
+round-tripping instead.

@@ -3,6 +3,8 @@
 > Kept from `1.0.4-beta/04-js-bridges/bridges.md` (carried from 1.0.2-beta). The other five bridges
 > landed with js-bridges (`bd7836c`); this one waits on the checker. `file:line` was measured at the
 > 1.0.2-beta commit — re-locate by symbol.
+> **Not delivered in 1.0.4-beta.** It waits on the checker's N11, which did not land either. Both go
+> to 1.0.5-beta: the checker row to `01-checker`, this lowering to `04-js`.
 
 Paths are relative to `repository/botopink-lang/modules/compiler-core/`.
 

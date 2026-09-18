@@ -1,0 +1,460 @@
+# Front 01 — checker
+
+**Priority:** critical — it is the only front of this milestone that four other fronts read from.
+Decision 8's grammar parses and nothing types it, so `unknown`, unions, `is` and every `case` arm
+written in the decided spelling are accepted as syntax and refused as types
+**Depends on:** nothing. It runs from the first day
+**Owns:** `modules/compiler-core/src/comptime/{infer,types,unify,env,transform,eval,error}.zig` ·
+`modules/compiler-core/snapshots/comptime/**` · `modules/compiler-core/src/parser/{decls,exprs,patterns}.zig`
+(steps 4 and 10) · `libs/std/**` and `examples/**` (step 11 only)
+**Does not touch:** `src/codegen/**` — every backend file belongs to
+[`02-erlang`](../02-erlang/README.md), [`03-beam`](../03-beam/README.md),
+[`04-js`](../04-js/README.md), [`05-wasm`](../05-wasm/README.md) · `modules/compiler-cli/**` ·
+`modules/language-server/src/**` · `src/utils/snap.zig`, `src/comptime/snapshot.zig` and the test
+harness
+
+Paths are relative to `repository/botopink-lang/` unless a row says otherwise. Every `file:line`,
+count and output below was measured against `botopink-lang` `c2dd780` on 2026-09-18 — the command is
+given with the number.
+
+---
+
+## Problem
+
+Decision 8's grammar landed in `d0c27f6` (`unknown` as a keyword, `A | B` types, `x is T` as an
+expression, `Pattern { body }` arms with `when`, `1...9`, `.Variant`, labels and `..`). None of it is
+typed. Each commit said so at its definition site; this is what the compiler answers today
+(`zig-out/bin/botopink check` on a one-module project, `c2dd780`):
+
+```
+val a: unknown = 42;                          → type mismatch: expected unknown, got i32
+val v: i32 | string = 1;                      → type mismatch: expected |, got i32
+val b: bool = a is i32;                       → type mismatch: expected bool, got void
+case s { .Circle(r) { r } .Rect(w) { w } }    → non-exhaustive `case` on 'Shape':
+                                                missing variant(s) Circle, Rect
+case x { 0 { "zero" } _ { n -> "other" } }    → type mismatch: expected string, got function
+```
+
+and this is what it still accepts:
+
+```
+case x { 0 { "zero" } 1 { "one" } }           → Checked   (literal arms, no `_`, on i32)
+fn get(b: Box) -> i32                         → Checked   (Box<T> written without its argument)
+fn get(self: Self) -> T   in a type Box<T>    → Checked   (bare Self, §1.2)
+fn connect(host: string, port: i32 = 80)      → 'connect' expects 2 argument(s), got 1
+val n = 5; val x: n = 7;                       → Checked   (a value binding as a type)
+#[@external(node, "Math.abs($0)")]            → Checked, binds no host, no diagnostic
+fn f() -> i32 { val x = 1; }                   → Checked   (decision 2: no value, non-unit return)
+```
+
+## Current state
+
+`zig build test-language` at `c2dd780`: **205 passed, 54 expected failures, 0 failed**. **31** of the
+54 lines name a row of this front; of the other 23, 7 are [`02-erlang`](../02-erlang/README.md)'s,
+7 [`04-js`](../04-js/README.md)'s, 4 [`05-wasm`](../05-wasm/README.md)'s, 2 belong to
+[`13-module-identity`](../13-module-identity/README.md) (§7's record and variant text) and 3 to [`10-cli-residuals`](../10-cli-residuals/README.md). The 31 are listed
+in [Acceptance — the `expected-failures.txt` lines this front deletes](#acceptance--the-expected-failurestxt-lines-this-front-deletes)
+and they are this front's acceptance: a step is done when its lines are gone and the suite is still
+`0 failed`.
+
+What front 06 of 1.0.4-beta landed, and is **not** to be re-opened — each re-probed at `c2dd780`:
+
+| Row | Probe at `c2dd780` | Verdict |
+|---|---|---|
+| C1 `return` unified with the declared return type | `fn f() -> i32 { return "s"; }` reds | closed |
+| C2a/C2b `case` typed from its arms, `comptime` block from its `break` | `val a: bool = case 42 {…}` reds | closed |
+| C3 operand orientation, arithmetic operands | `1 && true` reds `expected bool, found i32` on `1`; `"a" * "b"`, `-"s"` red | closed |
+| C5 type guard typed `bool` | `if (isStr(y)) { val s: string = y; }` on `y: ?string` **checks** | closed (N3 with it) |
+| C8 pattern bindings typed, N28 sections | `A(v) -> f(v)` reds | closed |
+| C9 method bodies strict | `d.swim()` reds; an unannotated method's return type is stored | closed |
+| C10 + N30 unknown type names | `record Q { lat: bogusType }` reds **at the annotation** | closed |
+| C12 `val assert` | `val assert 42 = answer catch 0;` with `answer` unbound reds | closed |
+| C12 pipeline half | `val r: i32 = 1 \|> double;` **checks**; `1 \|> add(1, 2)` for 2-ary `add` reds at the RHS | closed — the 1.0.4 spec still lists it as open; it is not |
+| C4b, C6, C7, C11, N4/N23, N17, N26, N27 | G0 (`13f61fa`, `ada3911`, `cab0bf7`) | closed |
+| N9 `┌─` box with no file name — **the CLI half** | `botopink check` prints ` --> src/main.bp:5:12` | closed in the CLI renderer, **open in the snapshot renderer** — step 9 |
+| N13 an undeclared name passes the check | reds at the name | closed |
+| N24 tuple labels | `r.current` on `fn ref<T>() -> #(current: T)`; `c.set(9)` on a fn-typed element | closed |
+| N25 effect wrapper ↔ annotation | `-> @Result` without `#[@result]` reds | closed except three diagnostics — step 8 |
+
+The rows below reproduce. Nothing in this front is carried on trust.
+
+## Mechanism
+
+Two mechanisms produce the whole of steps 1–6, and they are the two the 1.0.4 spec named M1 and M2
+with the instances renamed:
+
+| # | Mechanism | Where | Rows |
+|---|---|---|---|
+| **G1** | **Decision 8's grammar landed as a reserved spelling, not as a type.** `unknown` is `TypeRef.named` under `ast.unknown_type_name`; a union is `TypeRef.generic` under `ast.union_type_name` (`"\|"`); `x is T` is the `is` builtin call with the type in the call's `isType` slot. Each was deliberately written that way — a new `ast.TypeRef` variant does not compile without edits to `comptime/infer.zig`, `codegen/typescript.zig`, `format.zig` and the language server. Inference has never been taught any of the three, so it compares the spelling nominally: `expected unknown`, `expected \|`, `expected bool, got void` | `comptime/infer.zig`, `comptime/types.zig`, `comptime/unify.zig` | N19, N20, N21 |
+| **G2** | **An arm's shape is not read back.** The `Pattern { body }` arm lands as the same lambda node the older block arm produced, and the dot shorthand keeps its leading `.` inside the pattern's name. Inference reads neither: it unifies the arm with a `function` type, and `.Circle` is matched against the variant table as the literal name `.Circle`, which no variant carries | `comptime/infer.zig` — the `case` arm walk and `bindPatternNamesForSubject` | N22, §5.4 |
+
+The remaining steps are unrelated single rows; each carries its own site.
+
+## Steps
+
+Steps 1–5 are decision 8's inference and land in that order: §3 needs §2's assignability rule, §4
+narrows into a union, §5's arms resolve against what §4 tests, and exhaustiveness counts what §5
+resolved. The full row-by-row statement, in decision 8's own words with the probe for each, is
+[`decision-8-inference.md`](./decision-8-inference.md); the rest is
+[`residual-rows.md`](./residual-rows.md); the counts are [`blast-radius.md`](./blast-radius.md).
+
+### Step 1 — `unknown` is a type (N19, decision 8 §2)
+
+`unknown` reaches inference as `TypeRef.named` spelled `ast.unknown_type_name`, and unifies
+nominally: nothing goes in and nothing comes out. §2 is the opposite — everything goes in, nothing
+comes out unchecked.
+
+| §    | Rule |
+|---|---|
+| 2.1 | every type is assignable **to** `unknown`; `unknown` is assignable to nothing but `unknown` |
+| 2.2 | allowed: `@print`, `==`, `!=`, assignment to `unknown`, passing to a generic (`T = unknown`). Refused, each with a location: arithmetic, field access, indexing, method calls |
+| 2.3 | `==` / `!=` with an `unknown` operand compares numbers by value (the run-time half is each backend's) |
+| 2.4 | a `pub` declaration whose **inferred** type contains `unknown` is an error; a written `unknown` is fine |
+| 1.4 | a non-`pub` binding that falls to `unknown` gets a warning naming the annotation to write |
+| 2.5 | there is no `any` |
+
+**Acceptance:**
+- [ ] `val a: unknown = 42;` checks and `val y: i32 = a;` reds with a location naming `is`
+- [ ] `a + 1`, `a.x`, `a[0]`, `a.len()` each red at the operation; `@print(a)` and `a == 2` check
+- [ ] `pub fn f() { … }` whose inferred return contains `unknown` reds; `pub fn parse(s: string) -> unknown` checks
+- [ ] `var out = [];` warns and names `var out: i32[] = [];`
+- [ ] `reject/case_unknown_without_wildcard.bp` and `reject/case_shorthand_on_unknown.bp` are rejected for **their own** reason (step 5 finishes them)
+
+### Step 2 — union types (N20, decision 8 §3)
+
+A union reaches inference as `TypeRef.generic` named `"|"` with its members as arguments, and
+`unionMembers()` reads them back. Give it a type kind, an assignability rule and a join.
+
+| § | Rule |
+|---|---|
+| 3.1 | `A \| B` in every type position; `(i32 \| string)[]` is an array of the union, `i32 \| string[]` is an `i32` or an array of `string` — the grammar already binds it that way |
+| 3.2 | inferred from array literals, `if` branches and `case` arms, **with no error**; a branch that `return`s / `throw`s / `break`s does not contribute; `1` and `null` give `?i32`; `[1, 2.5]` gives `f64[]` |
+| 3.3 | a use is allowed only when every member allows it, else narrow first; a `case` covering every member needs no `_` |
+| 3.4 | join `Option<A> \| Option<B>` → `Option<A\|B>`, same for `Box`, `@Result`, `Dict` (key and value); **arrays never join** |
+| — | the misuse is reported **at the use**, pointing at the branch that widened it (§3.2's diagnostic sketch) |
+
+**Acceptance:**
+- [ ] `val v: i32 | string = 1;` checks; `val n: i32 = v + 1;` reds at the use and names the widening branch
+- [ ] `val v = if (c) { 1 } else { "a" };` checks with no error and `v` is `i32 | string`
+- [ ] `i32[] | string[]` does not unify with `(i32 | string)[]`
+- [ ] `test/case_exhaustive.bp` compiles on commonJS and erlang
+
+### Step 3 — `is`, narrowing and the always-false warning (N21, decision 8 §4)
+
+The `is` call is typed `void`. Type it `bool`, narrow the tested binding inside the branch and inside
+the guarded arm's body, and convert an integral `f64` to the tested integer type inside the block.
+
+| § | Rule |
+|---|---|
+| 4.1 | numbers by range, not by origin: `2.0 is i32` is true, `2.5 is i32` is false, `x is f64` is true for any number; inside the block the value **is** the tested type |
+| 4.2 | what may follow `is`: a primitive, a named type's constructor, `#(…)` (arity + each element), `Box<unknown>` (`Box<i32>` is an error — the argument is not checkable). `Option.Some(v)` binding a payload is refused by the parser today (`is-variant-binding`); a payload is read in a `case` arm — decide whether `is` grows a pattern or the refusal stands |
+| 4.3 | `a is string` on a statically-known `i32` is a **warning**, always false |
+| — | narrowing also applies through `&&` (step 10's grammar), through a `when (…)` guard into that arm's body (§5.3), and through the type-guard fn form `-> x is T`, which already narrows (C5) |
+
+**Acceptance:**
+- [ ] `val b: bool = a is i32;` checks; `if (a is i32) { @print(a + 1); }` checks with `a: unknown`
+- [ ] `val a: i32 = 1; a is string` warns "always false" with a location, and still checks
+- [ ] `x is Box<i32>` reds naming §4.2; `x is Box<unknown>` checks
+- [ ] the `is` residual of §4.2 (a pattern after `is`) is decided and the decision is written in [`decision-8-inference.md`](./decision-8-inference.md)
+
+### Step 4 — `case` arm resolution (N22, decision 8 §5, §5.3b)
+
+Four independent defects behind one row. Each reproduces on its own.
+
+| # | Defect at `c2dd780` | Probe |
+|---|---|---|
+| a | a **lambda-shaped arm body** is unified as a `function` | `case x { 0 { "zero" } _ { n -> "other" } }` → `expected string, got function` |
+| b | a **dotted or shorthand variant path** is not resolved against the matched value's type | `case s { .Circle(r) { r } .Rect(w) { w } }` → `missing variant(s) Circle, Rect` |
+| c | **labels, `rest` and arity** in a variant payload are not checked (P4, P7) | `reject/case_arity_without_rest.bp` is rejected, but not by the missing-field diagnostic |
+| d | a **section** of an enum-shaped `type` is not a type named by its path, and a section value does not write in the leading-dot form either (N28's value side, N29) | `type Token { Text { Bold, Italic }, … }`: `Token.Text.Bold` → `unknown field 'Bold' on type 'Token'`; `val t: Token.Text = .Bold;` → `unbound variable 'Bold'` |
+
+P3 is the rule to implement for (a): the arm body is a **lambda body** — its last expression is the
+arm's value — and `{ n -> … }` binds the whole matched value, already narrowed (P1, P5). Matching
+into a section (`case t { Text(Bold) { … } }`) is a **refinement**, never coverage (§5.3b) — step 5
+depends on that distinction.
+
+The parser half of (d) is this front's too: a section body carrying a `fn` does not parse, and
+`EnumSection` has no method slot. §5.3b leaves that unimplemented on purpose — do not add it here.
+
+**Acceptance:**
+- [ ] `test/case_tuples.bp`, `test/case_guards.bp`, `test/case_variants.bp`, `run/case_values.bp` and `test/case_sections.bp` compile and run on commonJS and erlang
+- [ ] `reject/case_missing_variant.bp` is rejected **because `Rect` is missing**, not because `.Circle` does not resolve
+- [ ] `reject/case_arity_without_rest.bp` names the missing field
+- [ ] `val t: Token.Text = .Bold;` checks, `Token.Text.Bold` checks, and a `case` over `Token.Text` is exhaustive on its own members with no `_`
+
+### Step 5 — exhaustiveness (decision 8 §5.4)
+
+Exhaustiveness is checked (`infer.zig`, the `case` walk), but only over enum variants, and it counts
+an arm the moment its pattern names a variant.
+
+| Situation | Today at `c2dd780` | §5.4 |
+|---|---|---|
+| a guarded arm | **counted** — `case x { i32 when (x > 0) { … } i32 when (x <= 0) { … } }` compiles | never counts; `_` required |
+| literal arms only on `i32` / `string` | **not checked** — `case x { 0 { … } 1 { … } }` compiles | `_` required |
+| the matched value is `unknown` | reaches step 1's assignability first | `_` required |
+| every union member covered | no union type exists yet | no `_` |
+| a type covered whole (`i32 { … }` on an `i32`) | — | no `_` |
+| a refinement into a section (`Text(Bold)`) | — | does **not** cover `Text` (§5.3b) |
+
+**Acceptance:**
+- [ ] `reject/case_only_guarded_arms.bp` and `reject/case_literals_only.bp` are rejected, each with a located message naming `_`
+- [ ] `reject/case_unknown_without_wildcard.bp` is rejected **by exhaustiveness over `unknown`**, not by assignability
+- [ ] a `case` covering every member of a union needs no `_`; a `case` whose only coverage of a section is a refinement still needs one
+
+### Step 6 — generics §1.1 and §1.2 (N18)
+
+A written generic type without its arguments, and a bare `Self` inside a declaration with type
+parameters, both check (exit 0).
+
+**Acceptance:**
+- [ ] `fn get(b: Box) -> i32` reds "`Box` needs 1 type argument"; `Pair<i32>` for a 2-parameter `Pair` reds with both counts
+- [ ] inside `type Box<T>`, `self: Self` reds and names `Self<T>`; inside `type Point(x: i32)`, `Self` stays right
+- [ ] §1.2's A1 rule: a non-generic type implementing a generic behavior writes `Self` and binds the behavior's parameters to the implementation's arguments — `Point(x: 1).map({ x -> "a" })` reds, `Box(value: 1).map({ x -> "a" })` checks as `Box<string>`
+- [ ] `reject/generic_missing_argument.bp` and `reject/self_without_argument.bp` are rejected
+
+### Step 7 — arity and trailing defaults (N1, N2)
+
+`transform.expandTrailingDefaultsWithParams` is complete and unreachable: inference reds the call
+before the transform runs. The analysis, the nine arity-check sites and the one that is already
+correct (the decorator-application check, `required ≤ args ≤ params.len`) are carried whole in
+[`trailing-defaults.md`](./trailing-defaults.md).
+
+**Acceptance:**
+- [ ] a free fn, a record constructor and an instance method each accept a call that omits a trailing default, and the injected argument reaches codegen through `transform.zig`
+- [ ] a missing **required** argument still reds (diagnostic D3)
+- [ ] `type P(x: i32 = 0, y: i32)` then `P(y: 2)` checks and `x` is `0` at run time
+- [ ] `test/fn_defaults.bp` passes on commonJS and erlang
+
+### Step 8 — the rows other fronts handed over, and the checker's own tail
+
+Each reproduces; sites and probes in [`residual-rows.md`](./residual-rows.md).
+
+| # | Row | Probe at `c2dd780` |
+|---|---|---|
+| R1 | **A `type` declaration's constructor binding is named `record { … }`** — and its three siblings name `struct {`, `enum {` and `interface `, surfaces front 12 deleted. `infer.zig:1832` `buildRecordDeclName`, `:1859` `buildStructDeclName`, `:1891` `buildInterfaceDeclName`, `:1936` `buildEnumDeclName` | read at `c2dd780`; hover and completion print a surface that no longer parses |
+| R2 | **Importing a type requires importing its whole type closure** — a field's type and a method signature's types must each be named in the `from` clause | `import { User, makeUser } from "users";` where `User(role: Role)` → `unknown type 'Role'`, at the `makeUser` token; adding `Role` checks |
+| R3 | **`#[@external(node, "…")]` in lower case passes `check` and binds no host**, silently. Only `External.<Target>` matches `FnDecl.isExternal` | `#[@external(node, "Math.abs($0)")] declare fn absVal(x: i32) -> i32;` → `Checked` |
+| R4 | **A record field typed by a behavior rejects an implementing record** (1.0.4 N7) | `type Holder(h: Handler)` with `H implement Handler` → `expected Handler, got H` |
+| R5 | **A pattern in binding position binds nothing** (1.0.4 N11 / JS-4) | `val Circle(r) = s;` → `unbound variable 'r'` |
+| R6 | **No lowering is recorded for a method on an associated fn's result** (1.0.4 N15) | `Array.range(0, 3).map(…)` checks, and erlang falls back to `'__bp_prim_map'` run-time dispatch — the codegen half is [`02-erlang`](../02-erlang/README.md) |
+| R7 | **Decision 2 is not enforced** (1.0.4 N6): a valueless block in value position and a non-`unit` fn that falls off its end both check | `fn f() -> i32 { val x = 1; }` → `Checked`. This is what makes the four backends' block-as-value lowerings dead code; each backend deletes its own |
+| R8 | **`type` as a value is still any binding** (types-as-values A1; C10 left the bindings arm) | `val n = 5; val x: n = 7;` → `Checked` |
+| R9 | Three N25 diagnostics: `@Result<…>` without `#[@result]` is reported as a return-type mismatch at the `return`; `val assert Ok(n) = f() catch 0` is accepted and fails at run time; `two_effect_markers`' caret points at the body's `{` | `reject/wrapper_without_annotation.bp`, `reject/val_assert_after_catch.bp`, `reject/two_effect_markers.bp` |
+
+**Does not reproduce — do not carry:**
+
+| 1.0.4 row | Probe at `c2dd780` | Evidence |
+|---|---|---|
+| **A type error's location names the wrong module** | a `mod other;` whose `other.bp` writes `x: Nope` reds at `src/other.bp:1:17` and the failing module is named `other` | C10 + N30 gave `TypeRef` a `Loc` |
+| **C12's pipeline half** | `val r: i32 = 1 \|> double;` checks; `1 \|> add(1, 2)` reds at the RHS | G0 (`ada3911`) |
+| **N3** (`if (guard(v))` with `v: ?string`) | checks and narrows | C5 (`2b03e41`) |
+| **N13**, **N17**, **N23** | each reds / points as specified | landed |
+| **`while` in `libs/std`** | `grep -rn while libs/std --include=*.bp` → 5 hits, all comments | migrated |
+
+**Acceptance:** each row above reds or checks as its "Correct" column says, with a location, and R7
+is followed by a note to the four backend fronts naming the lowerings that become dead.
+
+### Step 9 — diagnostics: the `.withLoc` sweep and the error box's file name (C13 bulk, N9)
+
+One landing, because the family regenerates whole. Measured at `c2dd780`:
+
+| What | Count | Command |
+|---|---|---|
+| error snapshots | **270** (135 `comptime/node/errors`, 135 `comptime/erlang/errors`) | `find snapshots/comptime -path '*errors*' -type f \| wc -l` |
+| of those, the box reads `┌─ :L:C` with **no file name** (N9) | **226** | `grep -lE '┌─ :[0-9]+:[0-9]+'` over that set |
+| of those, **no box at all** (C13's unlocated raisers) | **44** (22 slugs × 2 dirs) | the same set, `'┌─' not in file` |
+| `TypeError` constructions in `comptime/unify.zig` | **27**, of which **0** call `.withLoc` | `grep -c` |
+| `TypeError.custom` sites in `comptime/infer.zig` | **92**, of which **9** carry `.withLoc` on the same line | `grep -c` |
+
+The 44 slugs are the interface/implement family (`implement_missing_a_required_interface_method`,
+`duplicate_method_across_interfaces_without_qualification`, …), the effect-wrapper family
+(`1g_rg3_future_rejects_t_is_required`, …) and the external family (`external_wrong_arity`,
+`external_builtin_typechecks_args`) — listed in [`blast-radius.md`](./blast-radius.md).
+
+Land this **last**: steps 1–8 add error snapshots, and every one written before the sweep is written
+in the old format.
+
+**Acceptance:**
+- [ ] every error snapshot's box names its file
+- [ ] 0 `TypeError` raised from `comptime/unify.zig` without a location; the two bare `unify` arithmetic call sites go through `unifyAt`
+- [ ] `#[@result] fn f() -> i32` reports `effect-missing-wrapper` at the **return type**, not at the first body statement
+- [ ] the 44 box-less snapshots have a box; the re-recorded 270 are **read** for expected/found orientation, not bulk-accepted
+
+### Step 10 — the parser gaps that are inference-side
+
+Five gaps, carried from 1.0.4's `parser-gaps.md`; all five reproduce at `c2dd780`. Two of them carry
+a recommendation to delete the tests rather than implement the grammar — the decision is the
+maintainer's and is listed in [Decisions the maintainer owes](#decisions-the-maintainer-owes).
+
+| Gap | Probe at `c2dd780` | Change | Blast radius |
+|---|---|---|---|
+| `if (a && b)` / `if (a \|\| b)` | `Unexpected token` at `&&` | `parser/exprs.zig` `prec.equality` → `prec.lowest` **at the `if` condition only**; the other eleven `prec.equality` sites stay | few — `if` parser snapshots. Needed by step 3's narrowing through `&&` |
+| `_` as an `if` binder | `Unexpected token` at `_` | also accept `.underscore` before `->`, `binding = null` | none |
+| `assert <expr> is <Pattern>` | `is-variant-binding` at the `(` | a statement form binding into the **enclosing** scope; needs step 4's pattern typing | few parser + new checker work |
+| `<Pattern> as <name>` | `Unexpected token` at `as` | a `Pattern.bound` variant — reaches all four backends' pattern lowerings | many. **Recommend: delete the three tests** |
+| unnamed variant payload (declaration half) | — | optional field names + a reflected surface | many. **Recommend: drop; keep `name: Type`.** The pattern half (`.Some(#(a, b))`) **landed** with `dff3446` |
+
+**Acceptance:**
+- [ ] `if (a && b)` and `if (a || b)` parse; every other `prec.equality` call site is unchanged
+- [ ] `if (x) { _ -> … }` parses with `binding = null`
+- [ ] `assert e is P;` either parses and binds into the enclosing scope, or its three tests are deleted and the decision recorded
+- [ ] `<Pattern> as <name>` and the unnamed-payload declaration are implemented or their tests deleted, each with the decision recorded in [`residual-rows.md`](./residual-rows.md)
+
+### Step 11 — decision 8 in the sources (`libs/std`, `examples`)
+
+Once steps 1–8 accept decision 8's forms, write them. Measured at `c2dd780`:
+
+| Migration | Count | Command |
+|---|---|---|
+| generic `type` / `behavior` declarations in `libs/std` writing a bare `Self` | **16 declarations**, `Self<…>` used **0** times | `grep -rnE '^(pub )?(type\|behavior) [A-Za-z0-9_]+<' libs/std --include=*.bp`; `grep -rn 'Self<' libs/std --include=*.bp` |
+| `self: Self` occurrences across `libs/std`, `examples` and the compiler's own `.bp` fixtures | **129** | `grep -rn 'self: Self[,)]' libs/std examples modules/compiler-core/src --include=*.bp` |
+| unannotated `val`/`var … = [];` (§1.4 would warn) | **5**, all in `libs/std` (`dict.bp:73`, `primitives.bp:489`, `:546`, `:561`, `:575`) | `grep -rnE '^\s*(val\|var)\s+\w+\s*=\s*\[\]\s*;' libs/std examples --include=*.bp` |
+| `while` in `libs/std` / `examples` code | **0** (5 hits, all comments) | `grep -rn while libs/std examples --include=*.bp` |
+| `-> @Result` in `libs/std` without `#[@result]` | **0 of 14** | measured by `3e7cd62` |
+| `behavior Display` declared anywhere in `libs/std` | **0** | `grep -rn 'behavior Display\|implement Display' libs/std --include=*.bp` |
+
+The last row is a gap decision 8 §7 assumes closed: "`libs/std` implements `Display` for `Dict`".
+`behavior Display` does not exist, and `Dict` does not implement it. The four backend fronts' §7
+acceptance ("`Display` honoured when nested") cannot be measured against `libs/std` until this step
+declares it — `tests/language/run/display_print.bp` declares its own, which is what the backends
+test against meanwhile.
+
+**Acceptance:**
+- [ ] no bare `Self` in a generic declaration in `libs/std` or `examples`; the 16 declarations carry `Self<…>`
+- [ ] the 5 unannotated `= []` bindings carry an annotation and §1.4 warns on none of them
+- [ ] `behavior Display` is declared in `libs/std` and `Dict<K, V>` implements it (§7's `Dict("a": 1, "b": 2)`)
+- [ ] `zig build test`, `test-libs` and `test-language` green
+
+## Acceptance — the `expected-failures.txt` lines this front deletes
+
+`repository/botopink-lang/tests/language/expected-failures.txt`, at `c2dd780`. **31 of 54.** A line
+goes with the step that makes it pass; the suite must stay `0 failed` after each deletion (a listed
+test that passes fails the run).
+
+| Step | Lines |
+|---|---|
+| 1 (`unknown`) | `* reject/case_unknown_without_wildcard.bp` · `* reject/case_shorthand_on_unknown.bp` (with step 5) · `commonJS \| test/case_unknown.bp` · `erlang \| test/case_unknown.bp` |
+| 2 (unions) | `commonJS \| test/case_exhaustive.bp` · `erlang \| test/case_exhaustive.bp` |
+| 3 (`is`) | contributes to `test/case_unknown.bp` |
+| 4 (arms) | `commonJS\|erlang \| test/case_arms.bp` (the cell writes `1..9`; §5.2 settled on `1...9` — the cell belongs to [`12-language-tests`](../12-language-tests/README.md), not to the compiler) · `commonJS\|erlang \| test/case_variants.bp` · `commonJS\|erlang \| test/case_tuples.bp` · `commonJS\|erlang \| test/case_guards.bp` · `commonJS\|erlang \| run/case_values.bp` · `wasm \| run/case_values.bp` · `commonJS\|erlang \| test/case_sections.bp` · `* reject/case_missing_variant.bp` · `* reject/case_arity_without_rest.bp` |
+| 5 (exhaustiveness) | `* reject/case_only_guarded_arms.bp` · `* reject/case_literals_only.bp` |
+| 6 (generics) | `* reject/generic_missing_argument.bp` · `* reject/self_without_argument.bp` |
+| 7 (defaults) | `commonJS \| test/fn_defaults.bp` · `erlang \| test/fn_defaults.bp` |
+| 8 (R3, R9) | `* reject/external_lowercase_target.bp` · `* reject/wrapper_without_annotation.bp` · `* reject/val_assert_after_catch.bp` · `* reject/two_effect_markers.bp` |
+
+Two lines are attributed to `06 N12` in the file and are **not** this front's: `commonJS |
+test/loop_break_value.bp` (both tests) is a commonJS lowering — `break <value>` yields a one-element
+array — and belongs to [`04-js`](../04-js/README.md). The same defect reproduces on wasm, where no
+line exists because `botopink test` does not run wasm.
+
+## Gate
+
+- [ ] `scripts/gate.sh --cold` green in this front's worktree (`zig build`, cold `zig build test`, `test-cli`, `test-libs`, `test-language`)
+- [ ] `botopink check` clean in `libs/std` and in every `examples/` project
+- [ ] the six sibling libraries still compile (`zig build test-libs`, 11 cells) — a library that reds gets a migration plan in this front's commit, not a `known-red-libs.txt` line
+- [ ] every re-recorded error snapshot **read** for expected/found orientation and for a `┌─` box that names its file
+- [ ] `AGENTS.md` of every directory touched, updated in the same commit
+- [ ] Commit on `fix/checker`; no push, no merge
+
+## Blast radius
+
+Measured at `c2dd780` — full tables in [`blast-radius.md`](./blast-radius.md).
+
+| What | Count |
+|---|---|
+| `snapshots/comptime/**` files this front owns | **1079** (`node` 337, `erlang` 337, `beam` 202, `wasm` 202, `templates` 1) |
+| of those, error snapshots | **270** — step 9 re-records the family whole |
+| error snapshots whose box gains a file name | **226** |
+| error snapshots that gain a box | **44** |
+| `TypeError` sites to locate | **27** in `unify.zig` (0 located today) + **83** unlocated `TypeError.custom` in `infer.zig` |
+| `libs/std` sites step 11 rewrites | 16 generic declarations · 5 `= []` bindings · 1 new `behavior Display` + its `Dict` implementation |
+
+**It can also move all four codegen snapshot directories** (1258 files), because a fixture that
+newly fails to compile takes its codegen snapshots with it. That is the one place this front meets
+the four backend fronts, and it is all-or-nothing: a codegen snapshot carries no type rendering, so a
+fixture that still compiles does not move. Steps 1–8 must therefore be run once against each backend
+directory before landing, and any fixture they kill is reported to the owning backend front rather
+than deleted.
+
+## Notes
+
+- **The four backend fronts read this front's output, not its files.** They share no source file and
+  no snapshot directory with it. Each depends on the **step** that feeds it, not on the whole front:
+  §7's formatter needs nothing from here, `is` / unions / `case` at run time need steps 1–5, and the
+  dead block-as-value lowerings need step 8's R7. That per-step dependency is repeated in each
+  backend README.
+- **A named type's run-time identity is not this front's.** Steps 1–5 type `is Person`, a union of
+  named types and a `case` over them; making a **value** answer which named type it is at run time is
+  [`13-module-identity`](../13-module-identity/README.md)'s third half. This front's acceptance stops at the checker.
+- **`format.zig` is not owned here** and it re-prints what the parser records. Step 10's grammar
+  changes and step 4's parser half must keep `botopink format` round-tripping; a formatter defect
+  found here is reported, not fixed.
+- **Do not parallelise inside this front.** Steps 1–8 and 11 all touch `comptime/infer.zig`; only
+  step 10's `parser/exprs.zig` half is independent of it.
+
+## Decisions the maintainer owes
+
+Four of these are already in [`../decisions-pending.md`](../decisions-pending.md) and are listed here
+only so the step that waits on one can find it: **D1 = #1**, **D2 = #11**, **D3 = #12**,
+**D7 = #10**, and R3's question (a lower-case `#[@external]`) = **#15**. **D4, D5 and D6 are new** —
+they were found probing `c2dd780` for this front and are not in that document yet.
+
+| # | Decision | Measured context |
+|---|---|---|
+| D1 (= #1) | **`@AsyncGenerator` or `@AsyncIterator`.** Decision 8 §9's table writes `#[@asyncGenerator]` → `@AsyncGenerator<T>`; the compiler (`EffectKind.returnWrapper`), `libs/std/src/builtins.d.bp`'s `behavior AsyncIterator<T, E, C>` and the docs write `AsyncIterator` | `grep -rn AsyncIterator --include=*.zig --include=*.bp --include=*.md` → **69** hits; `AsyncGenerator` → **1** (decision 8 itself). Renaming crosses `libs/std`, the user docs and the compiler; `3e7cd62` enforced the spelling that exists and recorded the discrepancy in `comptime/AGENTS.md` |
+| D2 (= #11) | **`<Pattern> as <name>`: implement or delete the three tests** (`comptime/tests/variants.zig:291`, `:309`, `:328`) | the parser half is local; the consumer half is a new `ast.Pattern` variant in four backend lowerings this front does not own. No library uses the form |
+| D3 (= #12) | **Unnamed variant payloads: drop or implement.** The pattern half landed with `dff3446`; the declaration half remains | it changes the reflected `TypeInfo`/`EnumVariant` surface as well as four backends |
+| D4 (**new**) | **`is` with a payload pattern.** The parser refuses `x is Some(v)` with a located `is-variant-binding`; §4.2 lists the form | decide whether `is` carries a pattern or the refusal stands and `case` is the only reader |
+| D5 (**new**) | **Mismatched `case` arms: a union or an error?** §3.2 says the union, and step 2 makes one implementable. Two fixture slugs were named for the union answer | all 32 `case`-as-value blocks in the six libraries are type-homogeneous, so either answer costs zero migration |
+| D6 (**new**) | **Who declares `behavior Display`.** §7 says `libs/std` implements it for `Dict`; `libs/std` declares no such behavior. Step 11 is scoped to do it — confirm, because four backend fronts' §7 acceptance reads it | `grep -rn 'behavior Display' libs/std` → 0 |
+| D7 (= #10) | **`#[@code]` shares the name of the existing `@code(text)` builtin** (valid only inside template fns). Needed before types-as-values A2 | `infer.zig` `@code` builtin; no syntactic clash, but the shared name should be intended |
+
+## Rows for `fronts.md`
+
+**Ownership row**
+
+| Front | Source it owns | Snapshots it owns | Spec rows |
+|---|---|---|---|
+| **01** [`checker`](./01-checker/README.md) | `modules/compiler-core/src/comptime/{infer,types,unify,env,transform,eval,error}.zig` · `modules/compiler-core/src/parser/{decls,exprs,patterns}.zig` (steps 4, 10) · `libs/std/**`, `examples/**` (step 11 only) | `modules/compiler-core/snapshots/comptime/**` (1079) | steps 1–11; 31 of the 54 `expected-failures.txt` lines |
+
+> **Beyond the coordinator's table.** The row above claims `src/parser/{decls,exprs,patterns}.zig`
+> and, for step 11 only, `libs/std/**` and `examples/**`. Neither was in the ownership line the
+> milestone plan gave this front, and both are unavoidable: steps 4 and 10 are grammar work the
+> checker cannot do from `comptime/**`, and step 11 *is* the source migration. If the maintainer
+> would rather cut them out, step 4's parser half and steps 10 and 11 move with them.
+
+**Conflict notes**
+
+1. **01 × 02/03/04/05 — `yes`, they run together.** No shared source file and no shared snapshot
+   directory. What they share is the typed AST 01 produces, so each backend front depends on the
+   **step** that feeds it (steps 1–5 for `is`/unions/arms, step 8's R7 for the dead block-as-value
+   lowerings, nothing at all for §7's formatter), not on the front. One caveat, and it is real: when
+   a step makes a fixture stop compiling, that fixture's codegen snapshots go with it in all four
+   directories. 01 reports such a fixture to the owning backend front instead of deleting it.
+2. **01 × [`13-module-identity`](../13-module-identity/README.md) — `no`.** 13 needs a value to answer which named type it is; 01 types
+   `is Person`, a union of named types and a `case` over them. The cut agreed with the maintainer is
+   that 01 owns the checker half and 13 the run-time half, but 13's checker-visible surface
+   (`@Decl`, the type-identity intercepts) lives in `comptime/infer.zig`, which 01 owns whole.
+   **Sequence: 01's steps 1–5 first**, then 13 — otherwise 13 writes identity rules against an
+   inference that does not yet know a union from a nominal type.
+3. **01 × [`14-comptime-on-beam`](../14-comptime-on-beam/README.md) — `no`.** 14 moves comptime evaluation onto beam; `comptime/eval.zig`
+   and `comptime/error.zig` are 01's. 01's use of them is small (step 8's R8, types-as-values A1);
+   hand 14 those two files as a carve-out, or sequence 14 after 01.
+4. **01 × [`06-comptime-dedup`](../06-comptime-dedup/README.md) — `no`.** It restructures `snapshots/comptime/**`, which 01
+   re-records. 01 first.
+5. **01 × [`07-review-backlog`](../07-review-backlog/README.md) — `no`.** It owns the test sources 01 adds fixtures to
+   (`src/comptime/tests/**`, `src/parser/tests/**`); 01's new fixtures and their `KNOWN` notes are a
+   carve-out, named in each landing note.
+6. **01 × [`08-hygiene`](../08-hygiene/README.md) — `no`.** Its comment sweeps touch every file 01 owns; each sweep lands
+   after 01.
+7. **01 × [`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md) — `seq`.** The six libraries compile against 01's checker; step 11
+   migrates `libs/std` and `examples`, [`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md) the libraries. 01 first.
+8. **01 × [`10-cli-residuals`](../10-cli-residuals/README.md) — `yes`.** No shared file. One file both touch by deletion only:
+   `tests/language/expected-failures.txt`, where each deletes the lines its rows close.
+9. **01 × [`12-language-tests`](../12-language-tests/README.md) — `yes`.** It adds cells and no source; it shares only
+   `expected-failures.txt`, delete-only. `test/case_arms.bp` writes `1..9` and needs **its** edit, not
+   a compiler change — 01 does not own that cell.
+
+**Front-table row**
+
+| [`01-checker/`](./01-checker/README.md) | critical | Decision 8's inference — `unknown`, unions, `is` and narrowing, `case` arms and exhaustiveness — plus generics §1, trailing defaults, the `.withLoc` diagnostic sweep, the parser gaps inference needs, and decision 8 written into `libs/std` and `examples` |

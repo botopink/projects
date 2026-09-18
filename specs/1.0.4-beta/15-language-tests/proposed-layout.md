@@ -1,5 +1,8 @@
 # Proposed layout — the suite after the gap analysis
 
+> **Executed by front 17** (`botopink-lang` `2f44b30`, `f699517`, `89f3761`) except the `crash/`
+> kind and the area directories, which go to 1.0.5-beta `12-language-tests`.
+
 What `tests/language/` becomes once the cells of [`example-programs.md`](./example-programs.md) land.
 Three changes to the shape, then the cell list with owners.
 

@@ -3,6 +3,9 @@
 > Carried from `1.0.3-beta/02-surface-cutover/` into 1.0.4-beta. `file:line` and counts were measured at that milestone's
 > commit — re-locate by symbol. `F1…F4` and bare front numbers are 1.0.3-beta's numbering: see
 > [`../fronts.md`](../fronts.md#old-front-numbers).
+> **Delivered** with front 12 (`botopink-lang` `ed575b5`). The acceptance lists below are the
+> front's original checklist, kept as the specification of the grammar that shipped; the gate that
+> passed is in [`README.md`](./README.md).
 
 Part of [front 03](./README.md). Replaces the `record { … }` literal and the `{ x: T }` type.
 

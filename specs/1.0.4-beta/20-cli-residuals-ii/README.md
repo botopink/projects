@@ -1,19 +1,14 @@
 # Front 20 — cli-residuals-ii
 
-**Priority:** medium — the defects are user-facing but none blocks another front; two of the four
-are closed, one is implemented and blocked on a file this front does not own
-**Depends on:** — ([`05-cli-residuals`](../05-cli-residuals/README.md) delivered the area; its files
-have had no owner since)
-**Owns:** `modules/compiler-cli/**` **except** `src/cli/build.zig` and `src/cli/run.zig`
-([`16-module-naming`](../16-module-naming/README.md) owns those two — the output layout and
-`botopink run --target erlang`) · `modules/lib-test-runner/**` where a fix needs it · this directory
-· no snapshot directory
-**Does not touch:** `modules/compiler-core/src/**` ([`06-checker`](../06-checker/README.md),
-[`01-backend-residuals`](../01-backend-residuals/README.md)) · `modules/language-server/**`
-([`14-tooling-and-docs`](../14-tooling-and-docs/README.md)) · `libs/std/**` · `examples/**` ·
-`docs.md`, `README.md` ([`09-hygiene`](../09-hygiene/README.md) step 5, 14) · `scripts/**`,
-`build.zig`, `.github/**` (05's, no open owner) · the sibling repositories under `repository/`
-([`13-ecosystem-migration`](../13-ecosystem-migration/README.md))
+**Delivered in part** 2026-09-18 — defects **B** (`de4aa87`) and **C** (`c01695f`) landed; **D** was
+verified closed on the CLI side and reported, not edited, on the language-server side, where
+[`14-tooling-and-docs`](../14-tooling-and-docs/README.md) landed it (`aed8a60`); **A** is implemented
+and verified but could not be committed, because it reds a `docs.md` fence this front does not own —
+see [Blocked on `docs.md`](#blocked-on-docsmd).
+
+**Owned:** `modules/compiler-cli/**` **except** `src/cli/build.zig` and `src/cli/run.zig` (held by
+the module-naming front — the output layout and `botopink run --target erlang`) ·
+`modules/lib-test-runner/**` where a fix needs it · this directory · no snapshot directory.
 
 Paths are relative to `repository/botopink-lang/`; `main.zig` and `cli/*.zig` live under
 `modules/compiler-cli/src/`. Line numbers were measured at `botopink-lang` `26d4fdc` (2026-09-18).
@@ -23,8 +18,8 @@ Paths are relative to `repository/botopink-lang/`; `main.zig` and `cli/*.zig` li
 ## Problem
 
 Four defects in `modules/compiler-cli/**`, each reported by another front and each reproducible.
-They are unrelated to one another; what they share is the directory and the fact that nobody has
-owned it since 05 delivered.
+They are unrelated to one another; what they share is the directory and the fact that nobody had
+owned it since [`05-cli-residuals`](../05-cli-residuals/README.md) delivered.
 
 | # | Defect | Where | Found by |
 |---|---|---|---|
@@ -181,7 +176,8 @@ is `std`, a package module (dotted path → the `mod` chain), or a declared depe
 - [x] `from "std"`, a package module, a nested `a.b` module, a declared dependency and a
       dependency's module all still resolve; `zig build test-cli` and `test-libs` unchanged
 - [x] Three resolver unit tests: the located rejection, the accepted shapes, the `null` no-op
-- [ ] **Landed.** Blocked — see [Blocked on `docs.md`](#blocked-on-docsmd) below
+- [ ] **Landed** — not met. The change is complete and verified but uncommittable; see
+      [Blocked on `docs.md`](#blocked-on-docsmd) below
 
 ### Step 2 — the scaffold prints (B)
 
@@ -277,72 +273,26 @@ defines `src/geometry.bp` and `src/shapes/mod.bp` — it would also need a `src/
 fence and a `pub mod circle;`), and leave only the `erika` line under a `skip`.
 
 Until one of the two lands, `zig build test-docs` — gate stage 9, run by the pre-commit hook —
-fails, so step 1 cannot be committed. Its implementation is complete and verified and is parked in
-this worktree's git stash, named
-`front 20 defect A — unresolved import source is a located error (blocked on docs.md:78)`.
+fails, so step 1 cannot be committed. **Its implementation is complete and verified, and is parked as
+`stash@{0}` in `botopink-lang`**, named
+`front 20 defect A — unresolved import source is a located error (blocked on docs.md:78)`, taken on
+branch `fix/cli` (worktree `.tasks/cli`, at `c01695f`). Confirmed present 2026-09-18.
+
+## What it left, and where
+
+| Residual | Owner in 1.0.5-beta |
+|---|---|
+| **Defect A** — an `import` naming nothing passes `check` and `build` in silence. Implemented (resolver pass F4, `UnresolvedImportSource`, located off the token stream, three unit tests) and parked in the stash above. It lands the moment `docs.md:78` carries a `docs-check` directive | `10-cli-residuals`, unblocked by `08-hygiene` |
+| **`loadSrcTree`'s `catch continue`** in `project_graph.zig` (`:347` at `aed8a60`) — a project `.bp` the server cannot read drops out of the graph with no diagnostic, and the editor then blames whatever imported it. Named by this front's step 4; nobody has ever owned it. The fix is the `Problem` shape front 14 built, located at the file itself | `11-tooling` |
+| **A located `UnresolvedImportSource` for the flat `test/` suite** — it loads through `scanner.zig`, not through the resolver, so an unresolved import in a `*_test.bp` stays silent even after defect A lands | `10-cli-residuals` |
+| **`shipErlSidecars` is wired into `botopink test` only.** `cli/build.zig` holds the `shipMjsSidecars` call site and was not this front's file; the one-line twin (`if (target == .erlang) { _ = libs.shipErlSidecars(gpa, io, outputs, out_dir, env_map) catch 0; }` beside the existing `if (target == .commonJS)`) is still to be added. It only becomes *useful* once an erlang `build`/`run` output can reach a sibling module at all — the same gap that keeps `examples/modules` red on erlang | `10-cli-residuals`, with the module-naming front |
+| **`ast.ImportDecl` carries no `Loc`.** Defect A reads its location off the token stream instead (`fromLocations` in `cli/resolver.zig`); if the checker gives `ImportDecl` a `Loc`, that token walk should be deleted in favour of it | `01-checker`, then `10-cli-residuals` |
 
 ## Notes
 
 - **The two import failures keep two messages.** "No such module" and "the module does not export
   this" have different fixes (declare the module or the dependency; declare the symbol `pub`), so
   F4 runs before F3 rather than folding into it.
-- **Step 1's location is read from tokens, not from the AST.** `ast.ImportDecl` has no `Loc`;
-  giving it one is [`06-checker`](../06-checker/README.md)'s file. If that front adds one, the
-  token walk (`fromLocations` in `cli/resolver.zig`) should be deleted in favour of it.
-- **Step 3 is wired into `botopink test` only.** `cli/build.zig` holds the `shipMjsSidecars` call
-  site and belongs to [`16-module-naming`](../16-module-naming/README.md); the one-line twin
-  (`if (target == .erlang) { _ = libs.shipErlSidecars(gpa, io, outputs, out_dir, env_map) catch 0; }`
-  beside the existing `if (target == .commonJS)`) is handed to it. It only becomes *useful* once an
-  erlang `build`/`run` output can reach a sibling module at all, which is the same gap that keeps
-  `examples/modules` red on erlang — 16's `botopink run --target erlang` row.
 - **Rakun's erlang cell is still skipped**, for its own reason (`botopink test` cannot run the
-  target, or the library's `targets` list excludes it), not for the missing `.erl` shipping. The
-  row in [`../fronts.md`](../fronts.md#unowned-items) that names host modules as its blocker can be
-  retired once 13 re-tests it against this front.
-- **Not done, and nobody's:** `loadSrcTree`'s `catch continue` in `project_graph.zig`; and a
-  located `UnresolvedImportSource` for the flat `test/` suite, which loads through `scanner.zig`
-  and not through the resolver, so an unresolved import in a `*_test.bp` is still silent.
-
-## Rows to add to `fronts.md` and `overview.md`
-
-Ownership table (`fronts.md` § Ownership), after front 17's row:
-
-```markdown
-| **20** [`cli-residuals-ii`](./20-cli-residuals-ii/README.md) | `modules/compiler-cli/**` **except** `src/cli/{build,run}.zig` (16's) · `modules/lib-test-runner/**` where a fix needs it | — | steps 2–4 **delivered** (`de4aa87`, `c01695f`); step 1 implemented and blocked on a `docs.md` fence (09/14) |
-```
-
-Conflict matrix (`fronts.md` § Conflict matrix) — a column `20` appended to the header and to every
-row, and a row `20` appended to the table:
-
-```markdown
-|  | 01 (5–6) | 06 | 07 | 08 | 09 | 12 | 13 | 14 | 16 | 17 | 20 |
-| **01 (5–6)** | … | yes |
-| **06** | … | yes |
-| **07** | … | yes |
-| **08** | … | yes |
-| **09** | … | no¹³ |
-| **12** | … | no⁶ |
-| **13** | … | yes |
-| **14** | … | no¹⁴ |
-| **16** | … | no¹⁵ |
-| **17** | … | yes |
-| **20** | yes | yes | yes | yes | no¹³ | no⁶ | yes | no¹⁴ | no¹⁵ | yes | — |
-```
-
-with the notes:
-
-```markdown
-13. **09 × 20 share `docs.md` and the `AGENTS.md` sweep.** 20's step 1 cannot land until `docs.md:78`
-    carries a `docs-check` directive (09 step 5 or 14); 09's comment sweep over
-    `modules/compiler-cli/**` lands after 20.
-14. **14 × 20 shared `modules/language-server/src/project_graph.zig`** — 20 only reported it
-    (step 4) and 14 landed the fix (`aed8a60`); what is left between them is `docs.md`, per note 13.
-15. **16 × 20 share `modules/compiler-cli/src/cli/{build,run}.zig`.** 16 owns both; 20 owns the rest
-    of `modules/compiler-cli/**` and hands 16 the one-line `shipErlSidecars` call site in `build.zig`.
-```
-
-Front table (`overview.md` § Fronts), after front 17's row:
-
-```markdown
-| [`20-cli-residuals-ii`](./20-cli-residuals-ii/README.md) | medium | steps 2–4 **delivered**; step 1 blocked on `docs.md` | The defects left in `modules/compiler-cli/**`, unowned since 05: an `import` naming nothing passed `check` and `build` in silence (step 1, implemented, blocked on a `docs.md` fence), `botopink new`'s template compiled to a program that printed nothing, a library could not ship an erlang host module (`.erl`, the counterpart of the `.mjs` sidecars), and `project_graph.zig`'s swallowed diagnostics — CLI half closed, language-server half reported to 14 |
-```
+  target, or the library's `targets` list excludes it), not for the missing `.erl` shipping — which
+  step 3 closed. The row that named host modules as its blocker is retired.

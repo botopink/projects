@@ -1,18 +1,15 @@
 # Front 05 — cli-residuals
 
-**Status:** **delivered** 2026-09-17 (`botopink-lang` merge `440a1d3`); step 6 (f) closed by decision 5.5a (no meta gate, the dangling link deleted). Handoffs: the language-server half of step 5 — `project_graph.zig` still swallows
-a missing dependency (`:171`) and an unreadable file (`:210`) with `catch continue` — is an unowned
-item; `codegen.generate` drops failed-module entries because `tests/helpers.zig` renders its own
-diagnostic — reading `result.diagnostic` there is [`../08-review-backlog/`](../08-review-backlog/README.md)'s.
-The lib-test-runner's unit tests now run under the root `zig build test` (its own `build.zig` +
-`.zon` can go — [`../09-hygiene/`](../09-hygiene/README.md), which also takes 5.4's `test-vscode` step in the root `build.zig`). The hook is self-contained (5.5b) and
-`gate.sh` clears `GIT_DIR`/`GIT_INDEX_FILE` after the staged stage: without it the bpmp install tests
-ran `git` against the real repository from inside the hook.
-**Priority:** medium (delivered). What it closed: a driver that ran the program it compiled,
+**Delivered** 2026-09-17 (`botopink-lang` merge `440a1d3`); step 6 (f) closed by decision 5.5a (no
+meta gate, the dangling link deleted). What it closed: a driver that ran the program it compiled,
 diagnostics that died before the CLI printed them, decorator tests that stayed green under a mutation
-of their own lowering, and gate pieces that were not installed or not wired
-**Depends on:** — (delivered)
-**Owns:** `modules/compiler-cli/**` · `modules/lib-test-runner/**` · `build.zig` · `.github/workflows/**`
+of their own lowering, and gate pieces that were not installed or not wired. The hook is
+self-contained (5.5b) and `gate.sh` clears `GIT_DIR`/`GIT_INDEX_FILE` after the staged stage: without
+it the bpmp install tests ran `git` against the real repository from inside the hook. The
+lib-test-runner's unit tests run under the root `zig build test`; its own `build.zig` + `.zon` were
+deleted by 09 (`8887865`).
+
+**Owned:** `modules/compiler-cli/**` · `modules/lib-test-runner/**` · `build.zig` · `.github/workflows/**`
 · `scripts/**` **except** `scripts/snap_audit.sh` · `src/codegen.zig` (the `generate` driver) ·
 `src/codegen/snapshot.zig` (only the call that sets the execute flag) · `src/comptime.zig`
 (`ComptimeOutput.outcome`) · the four `codegenEmit` early-`continue` sites (step 2, one mechanical
@@ -127,8 +124,9 @@ so the tightening is checked against measured, not predicted, blindness.
 **Acceptance:**
 - [x] A missing `files` entry reports the path it looked for, with the manifest's location
 - [x] No compiler test synthesises a library that does not exist
-- [ ] A missing dependency is reported the same way by the CLI and the language server, or the LSP
-      half is registered as unowned
+- [x] A missing dependency is reported the same way by the CLI and the language server — the LSP
+      half was registered as unowned here and closed by 14 (`84e493a`): both `:171` and `:210` are
+      diagnostics on the manifest that declares the entry, in the CLI's wording
 
 ### Step 6 — the gate is installed and covers what ships (e, f, g, h, j)
 
@@ -159,7 +157,17 @@ so the tightening is checked against measured, not predicted, blindness.
       an unlocated parse/lex message, each read
 - [x] `modules/compiler-cli/AGENTS.md` and the `AGENTS.md` of every other directory touched, updated
       in the same commit
-- [ ] Commit on `fix/cli-residuals`; no push, no merge — landing is the maintainer's step
+- [x] Landed by the maintainer as `440a1d3`
+
+## What it left, and where
+
+| Residual | Owner in 1.0.5-beta |
+|---|---|
+| `codegen.generate` drops failed-module entries because `tests/helpers.zig` renders its own diagnostic — reading `result.diagnostic` there is a test-source change | `07-review-backlog` |
+| The defects that surfaced in `modules/compiler-cli/**` after this front closed were taken by [`../20-cli-residuals-ii/`](../20-cli-residuals-ii/README.md); what that front could not land is carried from there | `10-cli-residuals` |
+
+Both `command-contract.md` and `mutation-matrix.md` stay: they are the record of the contract this
+front tested and of the mutations that proved the decorator tests.
 
 ## Blast radius
 

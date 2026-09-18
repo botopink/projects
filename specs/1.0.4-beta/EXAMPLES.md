@@ -6,12 +6,29 @@
 
 Every **Before** block in sections 1–13 was compiled and run with `botopink check` / `botopink run`
 at `botopink-lang` `41981e3` (commonJS target unless noted); the output is shown under it. The
-**After** blocks are the target surface — what the migrated fixtures of fronts 12 and 13 must
-reproduce, with the same output — and follow
+**After** blocks are the surface fronts 12 and 13 delivered, with the same output, and follow
 [decision 8](./08-review-backlog/decision-8-language.md) (2026-09-17): `Self<T>` in generic
 declarations, `case` arms as `Pattern { body }`, tuples without labels in construction. Sections
-14–17 show decision 8's additions; they have no 1.0.2 counterpart and were not compiled — *to verify
-when 06/12 land*.
+14–17 show decision 8's additions; they have no 1.0.2 counterpart and were written from the decision,
+not compiled.
+
+> **What of this 1.0.4-beta actually enforces.** The declaration surface of sections 1–13 shipped
+> whole: `type`, `behavior`, tuples, sections, separators and the freed keywords all parse and are
+> what `botopink format` prints. Three things in these pages are written the way the language
+> defines them and are **not yet checked**, and each is carried to 1.0.5-beta:
+>
+> - **`Self<T>` and written generic arguments** (§1.1/§1.2, section 2 below) parse, but a bare `Self`
+>   in a generic declaration is still accepted — 06 N18, carried to `01-checker`. `libs/std` has not
+>   been migrated to `Self<T>` either.
+> - **`case` arms, `is`, `unknown` and unions** (sections 14 and 15) parse — that grammar shipped
+>   with 06's `d0c27f6` — but the arm's binding type, exhaustiveness and narrowing are N19–N22's
+>   inference halves, carried to `01-checker`.
+> - **The printer of section 17** is decision 8 §7's formatter, which no backend has yet. What
+>   1.0.4-beta ships is decision 1a's array and tuple text on commonJS, erlang and wasm. Carried to
+>   `02-erlang` / `03-beam` / `04-js` / `05-wasm`.
+>
+> Section 16's `#[@result] … -> @Result<T, E>` **is** enforced (06 N25), and so is `loop (condition)`
+> with `while` refused (06 N26), on all four backends.
 
 ---
 
@@ -485,7 +502,8 @@ pub fn main() {
 ```
 
 The labels come from the written `@Expr<#(port: i32, debug: bool)>`; that they reach `c.port`
-through the template's expansion is *to verify when 06/12 land*.
+through the template's expansion was closed by 06 N24 (`174e0e4`): a label survives instantiation.
+A label access in an *untyped* comptime body still lowers to `maps:get` — carried to `01-checker`.
 
 ---
 
@@ -593,7 +611,9 @@ pub behavior Router {
 
 ## 14 — `unknown`, `is` and a guarded `case`
 
-*Decision 8 §2, §4, §5 — to verify when 06/12 land.* Output `number 3` then `other`
+*Decision 8 §2, §4, §5. The grammar shipped (06 `d0c27f6`); the arm typing, the conversion and the
+exhaustiveness rule are N19–N22's inference halves, carried to `01-checker`.* Output `number 3` then
+`other`
 
 ```bp
 fn describe(x: unknown) -> string {
@@ -618,7 +638,8 @@ pub fn main() {
 
 ## 15 — Unions
 
-*Decision 8 §3 — to verify when 06/12 land.* Output `2` then `1`
+*Decision 8 §3. `i32 | string` parses (06 `4a3449f`); inferring a union from branches and from an
+array literal is N20, carried to `01-checker`.* Output `2` then `1`
 
 ```bp
 fn size(v: i32 | string) -> i32 {
@@ -642,7 +663,9 @@ No `_`: every member is covered.
 
 ## 16 — Effects and `loop (condition)`
 
-*Decision 8 §9, §10 — to verify when 06/12 land.* Output `3` then `0`
+*Decision 8 §9, §10 — **enforced**: `#[@result]` requires `@Result<T, E>` (06 N25, `3e7cd62`), a
+`val assert Ok(n)` takes no `catch` and its pattern binds (06 C12, `d2b468d`), and `loop (condition)`
+lowers on all four backends with `while` refused (06 N26, `c51aadd`).* Output `3` then `0`
 
 ```bp
 #[@result]
@@ -668,7 +691,10 @@ pub fn main() {
 
 ## 17 — Printing
 
-*Decision 8 §7 — to verify when 01 step 6 lands.* The same text on every backend:
+*Decision 8 §7 — **not shipped**. No backend has the derived formatter; what 1.0.4-beta prints is
+decision 1a's array and tuple text on commonJS, erlang and wasm (`b4cf700`), and beam has no printer
+of its own. Carried to `02-erlang` / `03-beam` / `04-js` / `05-wasm`.* The text the decision asks for,
+the same on every backend:
 
 ```bp
 pub type Point(x: i32, y: i32)

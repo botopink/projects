@@ -1,8 +1,13 @@
-# Fronts — 1.0.4-beta: what can run at the same time
+# Fronts — 1.0.4-beta: who owned what
 
-The fronts say *what* to fix; this says *who may touch what, when*. A front is one worktree
-(`.tasks/<name>`), one branch, one `todo.md`, one owner. Two fronts may run at the same time only
-when they share **no source file and no snapshot directory**.
+A closed milestone has no schedule. What this file kept from the scheduling tool it used to be is the
+part that stays useful: **which front owned which files**, the items no front owned and what closed
+them, and the map from the old front numbers the carried deep dives cite.
+
+A front was one worktree (`.tasks/<name>`), one branch, one `todo.md`, one owner. Two fronts could
+run at the same time only when they shared **no source file and no snapshot directory** — the rule
+that produced the ownership table below, and the reason the two fronts that owned
+`modules/compiler-core/src/**` wholesale (12, then 06) each ran alone.
 
 Paths are relative to `repository/botopink-lang/modules/compiler-core/` unless a row says otherwise;
 `cli/`, `modules/`, `libs/`, `scripts/`, `build.zig` and `.github/` are relative to
@@ -10,151 +15,88 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/` unless a
 
 ## Ownership
 
-| Front | Source it owns | Snapshots it owns | State |
-|---|---|---|---|
-| **01** [`backend-residuals`](./01-backend-residuals/README.md) | `src/codegen/beam_asm.zig`, `src/codegen/beam/**`, `src/codegen/erlang.zig`, `src/codegen/wat.zig`, `src/codegen/wat/**`, `src/codegen/commonJS.zig`, `src/codegen/typescript.zig`, `src/codegen/js/**`, `src/codegen/runtime.zig` (note 2) · the `KNOWN` notes and new fixtures of its rows in `src/codegen/tests/**` (carve-out) | `snapshots/codegen/{beam,erlang,wasm,commonJS}/` | steps 1–4 **delivered**; steps 5 (BR5) and 6 (decision 8 at run time) run **after 06** |
-| **05** [`cli-residuals`](./05-cli-residuals/README.md) | `modules/compiler-cli/**`, `modules/lib-test-runner/**`, `build.zig`, `.github/workflows/**`, `scripts/**` except `scripts/snap_audit.sh` | — | **delivered** (`440a1d3`); its files have no open row — a follow-up in them (09's 5.4, the lib-test-runner build files) is 09's |
-| **06** [`checker`](./06-checker/README.md) | `src/comptime/{infer,types,env,unify,transform,eval,error}.zig` · `src/parser/{decls,exprs,patterns}.zig` · `src/lexer.zig` and `src/lexer/**` for the `new`/`delegate`/`.@"const"` removal | `snapshots/comptime/**`, and it can move **all four** codegen directories and LSP completion snapshots | not started — after 12 (reordered 2026-09-17) |
-| **07** [`comptime-dedup`](./07-comptime-dedup/README.md) | `src/comptime/snapshot.zig`, `src/comptime/tests/helpers.zig` | `snapshots/comptime/**` (layout: 3 of 4 copies deleted) | not started |
-| **08** [`review-backlog`](./08-review-backlog/README.md) | `src/utils/snap.zig`, `scripts/snap_audit.sh`, `src/codegen/tests/**`, `src/comptime/tests/**`, `src/parser/tests/**`, `modules/language-server/src/tests/**` (minus the carve-outs of 01 and 07) · status lines of the 1.0.1-beta reports (meta repo) | — (moves a snapshot only by renaming its test) | steps 1–3 delivered as 1.0.2-beta review-tooling; decisions 1–8 taken |
-| **09** [`hygiene`](./09-hygiene/README.md) | `src/comptime/runtime/persistent_erl.zig` · `modules/lib-test-runner/build.zig` + `.zon`, `build.zig`'s `test-vscode` step (5.4) · `libs/std/botopink.json`, `libs/std/AGENTS.md` · `examples/**`, `README.md`, `docs.md`, every `AGENTS.md`, comments (after owners) | — | steps 1, 3 (except 5.4) and 6 delivered; 2, 4, 5 open |
-| **10** [`library-repos`](./10-library-repos/README.md) | — | — | **delivered** |
-| **11** [`dead-keywords-residual`](./11-dead-keywords-residual/README.md) | — | — | **delivered** |
-| **12** [`surface-cutover`](./12-surface-cutover/README.md) | `modules/compiler-core/src/**`, `modules/language-server/src/**` (compile-level), `cli/resolver.zig`, `libs/std/**`, `examples/**` | `modules/compiler-core/snapshots/**`, LSP snapshots | **delivered** 2026-09-17 — the old surface is gone; 7 library cells known-red until 13 |
-| **13** [`ecosystem-migration`](./13-ecosystem-migration/README.md) | `repository/{emilia,erika,jhonstart,onze,rakun}/**`; their meta submodule pointers | the libraries' own test outputs | not started |
-| **14** [`tooling-and-docs`](./14-tooling-and-docs/README.md) | `modules/language-server/src/**` (user-facing texts, completions, symbol kinds, completion in a non-compiling file, the project graph's own diagnostics), `repository/vscode-extension/**` | LSP hover/completion/symbol snapshots | **delivered** 2026-09-18 — two conditions blocked on 06 (the `record { … }` type name `infer.zig` builds; the `case` snippet's arms) |
-| **15** [`language-tests`](./15-language-tests/README.md) | `tests/language/**` (new) · the `test-language` step in `build.zig` · its stage in `scripts/gate.sh` | — | **delivered** — gate stage 8; expected failures owned by 06 and 01 step 6 |
-| **16** [`module-naming`](./16-module-naming/README.md) | `src/codegen/crossModule.zig` · `src/codegen/{erlang.zig,beam_asm.zig,runtime.zig}` — the module-atom sites for steps 1–6, the files **wholesale** for steps 7–13 ([policy 3](./16-module-naming/policy-3-module-per-type.md)) · `modules/compiler-cli/src/cli/{build.zig,run.zig}` (the output layout and `botopink run --target erlang`) · the module-atom lines of `src/comptime/{template_eval,decorator_eval}.zig` (carve-out of 06) | ≈ 20 files (steps 1–6, names) then **188** (steps 7–13, shapes) in `snapshots/codegen/{erlang,beam}/` | not started — after 12 **and after 01 closes**; policy 3 decided 2026-09-17, one front |
-| **17** [`language-test-expansion`](./17-language-test-expansion/README.md) | `tests/language/**` (the new cells) · the lines it adds to `tests/language/expected-failures.txt` | — | not started — 15's analysis (`capability-inventory.md`, `gap-analysis.md`, `example-programs.md`, `proposed-layout.md`) is its input |
+| Front | Source it owned | Snapshots it owned |
+|---|---|---|
+| **01** [`backend-residuals`](./01-backend-residuals/README.md) | `src/codegen/beam_asm.zig`, `src/codegen/beam/**`, `src/codegen/erlang.zig`, `src/codegen/wat.zig`, `src/codegen/wat/**`, `src/codegen/commonJS.zig`, `src/codegen/typescript.zig`, `src/codegen/js/**`, `src/codegen/runtime.zig` (note 2) · the `KNOWN` notes and new fixtures of its rows in `src/codegen/tests/**` (carve-out) | `snapshots/codegen/{beam,erlang,wasm,commonJS}/` |
+| **05** [`cli-residuals`](./05-cli-residuals/README.md) | `modules/compiler-cli/**`, `modules/lib-test-runner/**`, `build.zig`, `.github/workflows/**`, `scripts/**` except `scripts/snap_audit.sh` | — |
+| **06** [`checker`](./06-checker/README.md) | `src/comptime/{infer,types,env,unify,transform,eval,error}.zig` · `src/parser/{decls,exprs,patterns}.zig` · `src/lexer.zig` and `src/lexer/**` | `snapshots/comptime/**`, and it could move **all four** codegen directories and the LSP completion snapshots |
+| **07** [`comptime-dedup`](./07-comptime-dedup/README.md) | `src/comptime/snapshot.zig`, `src/comptime/tests/helpers.zig` | `snapshots/comptime/**` (layout) |
+| **08** [`review-backlog`](./08-review-backlog/README.md) | `src/utils/snap.zig`, `scripts/snap_audit.sh`, `src/codegen/tests/**`, `src/comptime/tests/**`, `src/parser/tests/**`, `modules/language-server/src/tests/**` (minus the carve-outs of 01 and 07) · the status lines of the 1.0.1-beta reports (meta repo) · the decision references | — (moves a snapshot only by renaming its test) |
+| **09** [`hygiene`](./09-hygiene/README.md) | `src/comptime/runtime/persistent_erl.zig` · `modules/lib-test-runner/build.zig` + `.zon`, `build.zig`'s `test-vscode` step · `libs/std/botopink.json`, `libs/std/AGENTS.md` · `examples/**`, `README.md`, `docs.md`, every `AGENTS.md`, comments (after their owners) | — |
+| **10** [`library-repos`](./10-library-repos/README.md) | `repository/erika/**`, `repository/emilia/**`, the `BOTOPINK_LANG_REF` line in `repository/{jhonstart,onze}/.github/workflows/test.yml` | — |
+| **11** [`dead-keywords-residual`](./11-dead-keywords-residual/README.md) | `repository/jhonstart/src/{router,server}.d.bp` and their call sites · `repository/vscode-extension/syntaxes/botopink.tmLanguage.json` (the keyword pattern only) | — |
+| **12** [`surface-cutover`](./12-surface-cutover/README.md) | `modules/compiler-core/src/**`, `modules/language-server/src/**` (compile-level), `cli/resolver.zig`, `libs/std/**`, `examples/**` | `modules/compiler-core/snapshots/**`, LSP snapshots |
+| **13** [`ecosystem-migration`](./13-ecosystem-migration/README.md) | `repository/{emilia,erika,jhonstart,onze,rakun}/**`; their meta submodule pointers | the libraries' own test outputs |
+| **14** [`tooling-and-docs`](./14-tooling-and-docs/README.md) | `modules/language-server/src/**` (user-facing texts, completions, symbol kinds, completion in a non-compiling file, the project graph's own diagnostics), `repository/vscode-extension/**` | LSP hover/completion/symbol snapshots |
+| **15** [`language-tests`](./15-language-tests/README.md) | `tests/language/**` (new) · the `test-language` step in `build.zig` · its stage in `scripts/gate.sh` | — |
+| **17** [`language-test-expansion`](./17-language-test-expansion/README.md) | `tests/language/**` (the new cells) · the lines it added to `tests/language/expected-failures.txt` | — |
+| **20** [`cli-residuals-ii`](./20-cli-residuals-ii/README.md) | `modules/compiler-cli/**` **except** `src/cli/{build,run}.zig` · `modules/lib-test-runner/**` where a fix needed it | — |
 
-`libs/std/**` code has **no owner** until 12. A fix that needs a `libs/std` edit stops and reports;
-the maintainer assigns it per case (std-split `c8c2541` was one). `scripts/known-red-libs.txt` is empty;
-a front that adds a known-red cell names itself as owner, the front that turns it green deletes the
-line. Each library's `scripts/known-broken-examples.txt` is 13's.
+Two carve-outs and one hand-off shaped most of the boundaries, and they are worth keeping:
 
-## Conflict matrix
+1. **`src/codegen/runtime.zig` was 01's.** A change to it bumps `HARNESS_VERSION` in the same commit.
+2. **08 owned the test sources** that 01, 06 and 07 add fixtures to; 01's `KNOWN` notes were carved
+   out of it, and 07 edited `comptime/tests/helpers.zig` first.
+3. **`libs/std/**` had no owner until 12.** A fix that needed a `libs/std` edit stopped and reported,
+   and the maintainer assigned it per case — std-split `c8c2541` was one. From 12 onwards it is
+   ordinary owned source.
 
-Open fronts only. `yes` = may run at the same time · `no` = shares a file or a snapshot directory:
-sequence them · `seq` = no shared file, but the milestone orders them. Symmetric; the order is in the
-notes and in [Order](#order).
+`scripts/known-red-libs.txt` is empty and each library's `scripts/known-broken-examples.txt` is
+empty: no cell and no example is carried red.
 
-|  | 01 (5–6) | 06 | 07 | 08 | 09 | 12 | 13 | 14 | 16 | 17 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| **01 (5–6)** | — | no¹ | yes | no⁴ | no⁵ | no⁶ | seq⁷ | seq⁷ | no⁹ | yes¹² |
-| **06** | no¹ | — | no³ | no⁴ | no⁵ | no⁶ | seq⁷ | seq⁷ | no¹⁰ | yes¹² |
-| **07** | yes | no³ | — | no⁴ | no⁵ | no⁶ | seq⁷ | seq⁷ | yes | yes |
-| **08** | no⁴ | no⁴ | no⁴ | — | no⁵ | no⁶ | seq⁷ | seq⁷ | no⁴ | yes |
-| **09** | no⁵ | no⁵ | no⁵ | no⁵ | — | no⁶ | no⁸ | no⁸ | no⁵ | yes |
-| **12** | no⁶ | no⁶ | no⁶ | no⁶ | no⁶ | — | no⁸ | no⁸ | no⁶ | no⁶ |
-| **13** | seq⁷ | seq⁷ | seq⁷ | seq⁷ | no⁸ | no⁸ | — | yes | seq¹¹ | yes |
-| **14** | seq⁷ | seq⁷ | seq⁷ | seq⁷ | no⁸ | no⁸ | yes | — | yes | yes |
-| **16** | no⁹ | no¹⁰ | yes | no⁴ | no⁵ | no⁶ | seq¹¹ | yes | — | yes |
-| **17** | yes¹² | yes¹² | yes | yes | yes | no⁶ | yes | yes | yes | — |
+## Order, as it ran
 
-1. **06 before 01 steps 5–6.** 06 moves the typed AST every backend consumes and can re-record all four
-   codegen snapshot directories; decision 8's run time (step 6) lowers what 06 types (`is`, unions,
-   `case` arms, tuple labels), and BR5 was moved after 06 by the maintainer. 01's open steps start
-   when 06 has landed.
-2. **`src/codegen/runtime.zig` is 01's.** A change to it bumps `HARNESS_VERSION` in the same commit.
-3. **06 × 07 share `snapshots/comptime/**`**: 06 re-records it, 07 restructures it. 06 first.
-4. **08 owns the test sources** 01, 06 and 07 add fixtures to, and its rows cite snapshots they
-   re-record. Wave A (codegen reports) runs after 01 step 6 — which re-records every print-text RUN
-   LOG — and wave B (comptime reports) after 07 step 2. 01's `KNOWN` notes are a carve-out.
-5. **09's comment sweeps touch every other front's files.** Each sweep lands after the front that owns
-   the swept file, one commit per owning file; its behaviour edits (5.4, the lib-test-runner build
-   files, step 4's `libs/std` manifest) run at any time.
-6. **12 owns all of `modules/compiler-core/src/**`**, the LSP source, `libs/std/**` and `examples/**`
-   — every compiler front's files. It starts after 01–10 close, alone.
-7. **13 and 14 need 12's compiler.** The libraries compile only against the new surface; the grammar
-   and the language-server texts follow it.
-8. **12 × 13** is a compiler dependency; **12 × 14** share `language-server/src/engine.zig`;
-   **09 × 13/14** would share library and user docs if a sweep were still open.
-9. **01 × 16 share `erlang.zig`, `beam_asm.zig`, `runtime.zig` and
-   `snapshots/codegen/{erlang,beam}/`.** For its first half 16 takes only the module-atom sites, but
-   even that re-records ≈ 20 snapshots in directories 01 owns; its second half ([policy 3](./16-module-naming/policy-3-module-per-type.md),
-   decided 2026-09-17 to stay in the same front) owns those files wholesale and re-records 188.
-   **16 runs after 01 has closed**, and its own two halves land in order — the atom rename first and
-   alone, the emitter split after — so no re-recorded snapshot ever carries both reasons.
-10. **06 × 16 share `src/comptime/{template_eval,decorator_eval}.zig`.** 16 changes two literals in
-    them (the comptime module atom); 06 owns the files. 16 after 06, or the maintainer hands 16 the
-    two lines as a carve-out.
-11. **13 × 16.** The libraries need no source change, but a library's erlang cell executes the
-    output whose layout 16 changes; 13 re-runs after 16 lands.
-12. **17 runs beside every compiler front**: it adds no source change and re-records no snapshot.
-    The one file it shares is `tests/language/expected-failures.txt`, whose lines 06 and 01 step 6
-    delete as their rows land — a delete-only interaction that sequences a landing, not the work.
-
-## Order
-
-**Reordered 2026-09-17 by the maintainer: 12 runs now, before 06.** 06 then writes its rules on the
-unified AST once, and the source migration that needs decision 8's checker moves to 06 step 9.
+The milestone was planned as 01–10, then 12–14. The maintainer reordered it once, on 2026-09-17, to
+run **12 before 06** — so the checker wrote its rules on the unified AST once instead of porting them
+twice, and 12's decision-8 source migration moved to 06's step 9.
 
 ```
-01 steps 1–4 · 05 · 10 · 11 ─── delivered
-12 surface-cutover (alone on compiler-core/src, libs/std, examples) ── now
-        │                                     09 fix/hygiene-build (build.zig test-vscode, lib-test-runner) beside it
+01 steps 1–4 · 05 · 10 · 11 ─── first
+12 surface-cutover (alone on compiler-core/src, libs/std, examples)
+        │                       09 fix/hygiene-build beside it
         ▼
-06 checker (incl. step 9: decision 8 in the sources) ──► 01 steps 5–6 ──► 08 wave A
+15 language-tests ──► 13 ecosystem-migration · 14 tooling-and-docs · 17 language-test-expansion
         │
-        └──► 07 comptime-dedup ──► 08 wave B
-09 sweeps after each owner
-13 ecosystem-migration — after 12 (13's decision-8 items after 06; 14 delivered 2026-09-18)
+        ▼
+06 checker ── the five groups that landed · 20 cli-residuals-ii beside it
+        │
+        └─► 09's three comment sweeps, each after the front that owned the swept file
 ```
 
-**Critical path:** **12** → **06** → 01 step 6 ∥ **07** → 08 → 09's last sweeps; 13 after 12.
-12 and 06 each run alone on their files.
-
-## Rules for a front
-
-- One worktree under `.tasks/<front>`, one branch `fix/<front>`, a `todo.md` at its root carrying
-  the steps, the owned and forbidden paths, and the exit gate. `todo.md` is git-ignored.
-- **A front never edits a file it does not own.** If a fix needs one, it stops and reports.
-- The gate before landing: `scripts/gate.sh --cold` (zig build, cold `zig build test`, `test-cli`,
-  `test-libs`) green in the front's own worktree.
-- Landing: merge into `feat`, gate green in the main checkout, push, submodule bump in the meta repo
-  — for a front that commits in a sibling repository, push that repository in the same sweep —
-  then delete the worktree and the branch.
-- A refactor front lands **snapshot-byte-identical**; a fix front re-records only values it verified
-  by running the program.
+01's steps 5–6, 07 and 08's two waves never opened; they are 1.0.5-beta's.
 
 <a id="unowned-items"></a>
 
-## Unowned items
+## Unowned items closed during 1.0.4-beta
 
-Found by a front and owned by none. Each needs the maintainer to assign it (or push it to the next
-milestone) before the front that would otherwise meet it closes.
+Each was found by a front and owned by none, and each needed the maintainer to assign it. These are
+the ones that closed.
 
-| Item | Where | Found by | Suggested owner |
-|---|---|---|---|
-| `Array.chunked` / `Array.sliding` are written with `while`, which checked code rejects as not in scope — **decided 2026-09-17: rewrite them with `loop (condition)`** ([decision 8](./08-review-backlog/decision-8-language.md) §10) | `libs/std/src/primitives.bp` | 1.0.4-beta erlang | a one-off `libs/std` edit the maintainer assigns, or 12 step 3 |
-| `delegate` and `new` stop being keywords (`throw Error(…)`, not `throw new Error(…)`); the unmapped `.@"const"` token variant is deleted; the VS Code grammar stops highlighting `delegate` and `new` — **decided 2026-09-17** | `src/lexer.zig`, `src/lexer/token.zig`, `src/parser/exprs.zig`; `repository/vscode-extension/syntaxes/botopink.tmLanguage.json` | 1.0.4-beta 11 | 06 (lexer/parser) + 14 (grammar) |
-| JS-4's codegen half: once 06 N11 lands, a `ctor` destructuring lowers to a real JS test-plus-destructure and `Pattern.match` goes — [`01-backend-residuals/pattern-binding.md`](./01-backend-residuals/pattern-binding.md) | `src/codegen/commonJS.zig`, `src/codegen/js/**` | 1.0.4-beta js-bridges | 01 step 6 (decision 8's `case` arms reach the same code) |
-| ~~`hover_interface_method`~~ — **closed** 2026-09-17 by `dfc34a9`: `*from `behavior Signed` (via I32)*`, and `*from `behavior Array`*` when the declaring behavior is the receiver's | `modules/language-server/src/engine.zig` | 1.0.2-beta review-tooling (report 3.12) | 14, **done** |
-| ~~A missing dependency (`:171`) and an unreadable `files` entry (`:210`) swallowed by the language server with `catch continue`~~ — **closed** 2026-09-18 by `84e493a`: both are diagnostics on the manifest that declares the entry, with the CLI's wording | `modules/language-server/src/project_graph.zig` | 1.0.2-beta library-repos, re-confirmed by 05 | 14, **done** |
-| The block-as-value lowerings left dead in all four backends once 06 enforces decision 2 | `erlang.zig`, `beam_asm.zig`, `commonJS.zig`, `wat.zig` | decision 2 | 01 step 6 |
-| `wrong-output` rows that survive 08's wave A after their backend front has closed | the backend files | 08 | the next milestone, by name |
-| `src/comptime/template_eval.zig`, `src/comptime/decorator_eval.zig` (owned by 1.0.2-beta comptime-dispatch, landed) | — | — | 06 claims them if types-as-values A4 takes the `erl` path; 09 may take the transport-error one-liner |
-| **commonJS: a sibling-module import inside a dependency is emitted as `require("../module")`** — `emilia-card`, `jhonstart-counter`, `jhonstart-todo` build but fail at run time `Cannot find module '../module'` (`jhonstart/hooks.bp`, `emilia/emilia.bp` importing `Element`) | `src/codegen/commonJS.zig` (the require path of a dependency's sibling module) | 13 examples fix, 2026-09-17 | 12 while it holds `codegen/**`, else 01 step 6 |
-| **`MissingExternalTarget` has no location and no function name** — the CLI prints only the error name | `src/codegen/erlang.zig` (~`:4183`) + the CLI rendering | 13 erlang-cells investigation | 06 (diagnostics) or 01 |
-| **A library cannot ship an erlang host module** (`.erl`), only `.mjs` sidecars — prerequisite for any erlang port of rakun's `runtime.mjs` / HTTP server | `modules/compiler-cli/src/cli/libs.zig` (`shipMjsSidecars` has no `.erl` counterpart) | 13 erlang-cells investigation | a CLI follow-up; rakun's erlang cell stays allow-fail until then |
-| Erlang cells after the investigation (2026-09-17): emilia **17/17** (`8f93475`), erika 31/31 now a hard cell (`81e1f1c`), onze past `MissingExternalTarget` (`4707c83`) and blocked on C1, jhonstart blocked on C1/C2, rakun needs host modules | the libraries | — | 13 per library once C1/C2 land |
-| **Labels are lost when a generic labeled return is instantiated** — `fn ref<T>() -> #(current: T)`; `r.current` → "no element labeled" (jhonstart uses `r.0`) | `src/comptime/infer.zig` (label propagation through instantiation) | 13 jhonstart migration, 2026-09-17 | 06 (N24) |
-| **A label access on a lambda parameter inside a template body is not rewritten** — `t.kind` reaches comptime erlang as `maps:get` → `badmap` (jhonstart's html uses `t.0…t.6`) | `src/comptime/infer.zig` / template lowering | 13 jhonstart migration (also 12 step 2's risk) | 06 (N24) |
-| **The formatter cannot keep source order and trivia the AST does not record**: payload variants move before sections (emilia's `Token`), an end-of-line comment on a field or array element moves to the next line, blank lines inside `loop` bodies and `if` branches are dropped — `format` output compiles and is stable (`botopink-lang` `6bf0817`), but the parser keeps no member positions or trailing trivia | `src/parser/{decls,exprs}.zig` (positions / trailing comments), then `src/format.zig` | formatter follow-up, 2026-09-17 | 06 (parser files), then a formatter pass |
-| **A tuple label does not resolve on a lambda parameter or an array element, even with an annotated type**, and a label access in an untyped comptime body lowers to `maps:get` (`badmap`) — erika reads rows with `val #(a, b) = r` and tokens positionally | `src/comptime/infer.zig`, comptime lowering | 13 erika migration | 06 (N24) |
-| **`#[@external(node, "…")]` in lower case passes `check` and binds no host, silently** — only `External.<Target>` matches `FnDecl.isExternal`; it should be a located error | `src/parser/**` (the annotation grammar) | 09 step 5 sweep, 2026-09-17 | 06 |
-| **Two tests in `codegen/tests/externals.zig` (`:53`, `:65`) are named for an equivalence the compiler does not implement** — renaming moves snapshots | `src/codegen/tests/externals.zig` | 09 step 5 sweep | 08 |
-| **erlang: a host-backed `declare fn` with an inline template, used from another module, has nothing to call** — the owner emits no function and the template only renders at the call site; the fix is the owner emitting a wrapper with the template applied to its own parameters (the erlang twin of commonJS's `exports.name = name`). Keeps onze (`onzeInvoke`, `onzeKey`, `onzeNewMock`) and rakun (`rkScannedNames`) red on erlang | `src/codegen/erlang.zig` (`userTemplateNode`, the export pass) | erlang-calls fix, 2026-09-17 | 01 step 6, or a follow-up |
-| **A tuple label of function type called as a method** (`#(value: i32, set: fn(…))`, `c.set(9)`) is not rewritten to positional and fails on commonJS too | `src/comptime/infer.zig` | erlang-calls fix | 06 (N24) |
-| **Importing a type requires importing the whole type closure its declaration mentions** — a field's type and a method signature's types must each be imported by name, or the consumer reds with `unknown type '<Name>'`. Found migrating `examples/rakun`; worked around by naming every type in the `from` clause | the import/type registration path (`src/comptime/**` + `src/codegen/crossModule.zig`) | 13, 2026-09-18 | 06 |
-| **A type error's location names the wrong module** — `unknown type 'UserService'` was reported at `src/main.bp:48:14` for a declaration in `src/users.bp:48:14`, so the source line printed under the caret belongs to another file | the diagnostic's module attribution (`src/comptime/error.zig` + the CLI renderer) | 13, 2026-09-18 | 06 (G4 diagnostics) |
-| **A `type` declaration's constructor binding is *named* `record { name: string, count: i32 }`** by `buildRecordDeclName` (and `enum {` / `interface ` by its two siblings), so hover and completion print a surface that no longer parses — the one user-visible string front 14 could not reach | `src/comptime/infer.zig` (`:1832`, `:1891`, `:1934`) | 1.0.4-beta 14 closeout, 2026-09-18 | 06 — then re-record `completion_decorator_record` |
-| **A type's methods are `SymbolKind.Function`, not `Method`**, because the VS Code Test Explorer classifies every `Method` symbol as a `test "…"` block (the LSP has no `Test` kind) — the two must move together, across both repositories | `modules/language-server/src/engine.zig` (`collectChildren`) + `repository/vscode-extension/src/symbolNodes.ts` | 1.0.4-beta 14 closeout, 2026-09-18 | whoever takes the Test Explorer next |
-| `libs/std/**` code, beyond the rows above | — | — | none until 12; stop and report |
+| Item | Found by | Closed by |
+|---|---|---|
+| `Array.chunked` / `Array.sliding` were written with `while`, which checked code rejects as not in scope — **decided 2026-09-17: rewrite them with `loop (condition)`** | 1.0.4-beta erlang | 06 G0, `cab0bf7` — both are `loop (0..n)` now |
+| `delegate` and `new` stop being keywords (`throw Error(…)`, not `throw new Error(…)`); the unmapped `.@"const"` token variant is deleted; the VS Code grammar stops highlighting them — **decided 2026-09-17** | 1.0.4-beta 11 | 06 N27, `cab0bf7` (lexer/parser) + vscode-extension `a1216f5` (grammar) |
+| `hover_interface_method` — should the hover footer name the declaring interface or the receiver's? | 1.0.2-beta review-tooling (report 3.12) | 14, `dfc34a9`: `*from `behavior Signed` (via I32)*`, and `*from `behavior Array`*` when the declaring behavior is the receiver's |
+| A missing dependency (`:171`) and an unreadable `files` entry (`:210`) swallowed by the language server with `catch continue` | 1.0.2-beta library-repos, re-confirmed by 05 | 14, `84e493a`: both are diagnostics on the manifest that declares the entry, with the CLI's wording |
+| `libs/std`: `String.split("")` on erlang, and the `builtins.d.bp` `@print` doc | 1.0.4-beta erlang | std-split `c8c2541`, a one-off `libs/std` edit the maintainer assigned |
+| rakun's records are not exported (`exports.Rakun`) | 1.0.2-beta library-repos | 1.0.4-beta js-bridges `aa02bb4`, verified by 10 step 4 |
+| `$0` versus `$self` in `#[@External…]` templates | 1.0.2-beta std-surface | [decision 5](./08-review-backlog/semantics-decisions.md#decision-5), implemented by 12 step 3 (`c5b156a`) |
+| **`MissingExternalTarget` has no location and no function name** — the CLI printed only the error name | 13's erlang-cells investigation | 06 C13, `7b1db40`: it names the function, the backend and the call site, and the module fails alone instead of aborting the build |
+| **A library cannot ship an erlang host module** (`.erl`), only `.mjs` sidecars | 13's erlang-cells investigation | 20 step 3, `c01695f` — `libs.shipErlSidecars`, wired into `botopink test` |
+| **Labels are lost when a generic labeled return is instantiated** — `fn ref<T>() -> #(current: T)`, then `r.current` | 13 jhonstart migration | 06 N24, `174e0e4`: `instantiateType` carries `n.labels` |
+| **A tuple label of function type called as a method** (`#(value: i32, set: fn(…))`, `c.set(9)`) is not rewritten to positional | erlang-calls fix | 06 N24, `174e0e4`: `inferTupleLabelCall`, lowered on commonJS, erlang and beam |
+| **A tuple label does not resolve on a lambda parameter or an array element** | 13 erika migration | **struck by probe** with 06 N24: both check at that base. The spelling `#(a: i32, b: string)[]` does not parse — the array-suffix grammar, carried |
+| **erlang: a host-backed `declare fn` with an inline template, used from another module, has nothing to call** — kept onze and rakun red on erlang | erlang-calls fix, 2026-09-17 | `84a944b` (`063e16b`): the owner emits a wrapper with the template applied to its own parameters |
+| Erlang cells after the 2026-09-17 investigation | 13 | emilia 17/17 (`8f93475`, CI `e30228f`), erika 31/31 as a hard cell (`81e1f1c`), onze green (`4707c83`, `c4098c3`), jhonstart 8/8 (`4b85b43`). rakun's cell is still skipped, for its own reason |
 
-Closed on 2026-09-17: `String.split("")` and the `builtins.d.bp` `@print` doc (std-split `c8c2541`);
-rakun's `exports.Rakun` (verified by 10 step 4); `$0` vs `$self` ([decision 5](./08-review-backlog/semantics-decisions.md#decision-5),
-implemented by 12 step 3). Owned since 1.0.2-beta: `comptime/error.zig`'s `┌─ :L:C` → 06 N9.
+## Unowned items still open
+
+They leave with the milestone. **1.0.5-beta's `fronts.md` carries them**, each against the front that
+now owns the file — the checker's rows in `01-checker`, the run-time rows split per backend across
+`02-erlang` / `03-beam` / `04-js` / `05-wasm`, the test-source rows in `07-review-backlog`, the sweeps
+in `08-hygiene`, the library re-tests in `09-ecosystem-residuals`, the CLI rows in `10-cli-residuals`,
+and the language-server and Test Explorer rows in `11-tooling`. Each front's own
+**"What it left, and where"** section names the ones it found.
 
 <a id="old-front-numbers"></a>
 
@@ -164,20 +106,35 @@ The carried deep dives cite fronts by their old numbers. Map them here.
 
 | Old | Name | In 1.0.4-beta |
 |---|---|---|
-| 1.0.2-beta F1 | comptime-dispatch | **delivered** (steps 1, 2; the beam half of step 2 with 1.0.4-beta beam); step 3 → [`06-checker`](./06-checker/README.md) N1 |
+| 1.0.2-beta F1 | comptime-dispatch | **delivered** (steps 1, 2; the beam half of step 2 with 1.0.4-beta beam); step 3 → 06 N1, carried |
 | 1.0.2-beta F2 | cli-gate | **delivered**; residuals → [`05-cli-residuals`](./05-cli-residuals/README.md), **delivered** |
 | 1.0.2-beta F3 | std-surface | **delivered**; its backend residuals delivered with 1.0.4-beta beam, erlang, js-bridges; 05 step 5; its `external-annotations.md` → [`06-checker`](./06-checker/external-annotations.md) |
-| 1.0.2-beta F4 | beam | = 1.0.4-beta first 01 beam, **delivered** `a743955`; residuals → [`01-backend-residuals`](./01-backend-residuals/README.md) |
-| 1.0.2-beta F5 | erlang | = 1.0.4-beta 02 erlang, **delivered** `42429dc`; residuals → [`01-backend-residuals`](./01-backend-residuals/README.md#routed-out) |
-| 1.0.2-beta F6 | wasm | = 1.0.4-beta 03 wasm, **delivered** `ed15323`; residuals → [`01-backend-residuals`](./01-backend-residuals/README.md) |
-| 1.0.2-beta F7 | checker | [`06-checker`](./06-checker/README.md) |
-| 1.0.2-beta F8 | js-bridges | = 1.0.4-beta 04 js-bridges, **delivered** `bd7836c`; residuals → [`01-backend-residuals`](./01-backend-residuals/README.md) |
-| 1.0.2-beta F9 | review-tooling | steps 1–3 **delivered**; step 4 → [`08-review-backlog`](./08-review-backlog/README.md) |
-| 1.0.2-beta F10 | comptime-dedup | [`07-comptime-dedup`](./07-comptime-dedup/README.md) |
-| 1.0.2-beta F11 | hygiene | [`09-hygiene`](./09-hygiene/README.md) (steps 1, 3, 6 **delivered**) |
+| 1.0.2-beta F4 | beam | = 1.0.4-beta first 01 beam, **delivered** `a743955` |
+| 1.0.2-beta F5 | erlang | = 1.0.4-beta 02 erlang, **delivered** `42429dc` |
+| 1.0.2-beta F6 | wasm | = 1.0.4-beta 03 wasm, **delivered** `ed15323` |
+| 1.0.2-beta F7 | checker | [`06-checker`](./06-checker/README.md) — five groups delivered, the rest → 1.0.5-beta `01-checker` |
+| 1.0.2-beta F8 | js-bridges | = 1.0.4-beta 04 js-bridges, **delivered** `bd7836c` |
+| 1.0.2-beta F9 | review-tooling | steps 1–3 **delivered**; step 4 → [`08-review-backlog`](./08-review-backlog/README.md), carried |
+| 1.0.2-beta F10 | comptime-dedup | [`07-comptime-dedup`](./07-comptime-dedup/README.md) — never started → 1.0.5-beta `06-comptime-dedup` |
+| 1.0.2-beta F11 | hygiene | [`09-hygiene`](./09-hygiene/README.md), **delivered** |
 | 1.0.2-beta F12 | library-repos | [`10-library-repos`](./10-library-repos/README.md), **delivered** |
-| 1.0.4-beta 01–04 (until 2026-09-17) | beam, erlang, wasm, js-bridges | **delivered**; handoff ids (`B…`, `E…`, `W…`, `C…`, `JS-…`, `H…`) cited by the carried documents are closed unless [`01-backend-residuals`](./01-backend-residuals/README.md) names them (`BR5`, the `D8-…` rows) |
-| 1.0.3-beta F1 | dead-keywords | **delivered** (compiler half, then [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md)) |
-| 1.0.3-beta F2 | surface-cutover | [`12-surface-cutover`](./12-surface-cutover/README.md) |
-| 1.0.3-beta F3 | ecosystem-migration | [`13-ecosystem-migration`](./13-ecosystem-migration/README.md) |
-| 1.0.3-beta F4 | tooling-and-docs | [`14-tooling-and-docs`](./14-tooling-and-docs/README.md) |
+| 1.0.4-beta 01–04 (until 2026-09-17) | beam, erlang, wasm, js-bridges | **delivered**; the handoff ids (`B…`, `E…`, `W…`, `C…`, `JS-…`, `H…`) the carried documents cite are closed unless [`01-backend-residuals`](./01-backend-residuals/README.md) names them (`BR5`, the `D8-…` rows) |
+| 1.0.3-beta F1 | dead-keywords | **delivered** (compiler half `ecac19d`, then [`11-dead-keywords-residual`](./11-dead-keywords-residual/README.md)) |
+| 1.0.3-beta F2 | surface-cutover | [`12-surface-cutover`](./12-surface-cutover/README.md), **delivered** |
+| 1.0.3-beta F3 | ecosystem-migration | [`13-ecosystem-migration`](./13-ecosystem-migration/README.md), **delivered** |
+| 1.0.3-beta F4 | tooling-and-docs | [`14-tooling-and-docs`](./14-tooling-and-docs/README.md), **delivered** |
+
+## Rules a front ran under
+
+Kept because the carried documents assume them.
+
+- One worktree under `.tasks/<front>`, one branch `fix/<front>`, a git-ignored `todo.md` at its root
+  carrying the steps, the owned and forbidden paths, and the exit gate.
+- **A front never edits a file it does not own.** If a fix needs one, it stops and reports.
+- The gate before landing: `scripts/gate.sh --cold` (zig build, cold `zig build test`, `test-cli`,
+  `test-libs`, `test-language`, `test-docs`) green in the front's own worktree.
+- Landing: merge into `feat`, gate green in the main checkout, push, submodule bump in the meta repo
+  — for a front that commits in a sibling repository, push that repository in the same sweep — then
+  delete the worktree and the branch.
+- A refactor front lands **snapshot-byte-identical**; a fix front re-records only values it verified
+  by running the program.

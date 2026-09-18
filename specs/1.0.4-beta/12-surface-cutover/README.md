@@ -1,19 +1,24 @@
 # Front 12 — Surface cutover (`type`, `behavior`, labeled tuples, separators)
 
-**Status:** **delivered** 2026-09-17 (`botopink-lang` merge on `feat`, steps 1–4: `431f9bf` … `6a43124`, cold gate green with 7 library cells known-red, owner 13). **Reordered 2026-09-17 by the maintainer: 12 runs now, before 06.** 06 then writes its rules on the new AST instead of porting them twice. **Scope moved out:** the source migration that needs the checker to accept decision 8's forms — `Self<T>`, `#[@result] … -> @Result<T, E>`, annotations on `[]` that would fall to `unknown`, `while` → `loop (condition)`, `Display` for `Dict` — is [`../06-checker/`](../06-checker/README.md) step 9. Tuple labels (T1–T7) and decision 5's markers stay here. Carried from 1.0.3-beta front 02, amended by the maintainer's decisions of
-2026-09-17: [decision 5](../08-review-backlog/semantics-decisions.md#decision-5) (positional template
-markers), [decision 8](../08-review-backlog/decision-8-language.md) (tuple labels, `Self<T>`,
-`@Result<T, E>`, `loop (condition)`, the source migration of `unknown`-falling declarations), and the
-step-1 choices below (`DeclKind` `Type`/`Behavior` with no aliases, `InstanceLowering.type_`). Counts
-and `file:line` were measured at `botopink-lang` `41981e3` and re-measured at `4eadb70` in [`remeasure.md`](./remeasure.md) — counts barely moved, but the
-backend fronts added ~22 consumer sites step 1 must port and the document lists twelve risks (R1–R12)
-the steps below do not yet cover; fold them in before step 1.
+**Delivered** 2026-09-17 — `botopink-lang` merge `ed575b5` on `feat`, steps 1–4 (`431f9bf` …
+`6a43124`), cold gate green with 7 library cells known-red, owner 13. **This was the milestone's
+change:** four keywords (`record`, `enum`, `interface`, plus the `record { }` literal) became two
+(`type`, `behavior`) and a tuple form, with one separator rule.
 
-**Priority:** critical — the milestone's change. Four keywords (`record`, `enum`, `interface`, plus
-the `record { }` literal) become two (`type`, `behavior`) and a tuple form, with one separator rule.
-**Depends on:** nothing open — reordered ahead of 06, 07, 08, 01 steps 5–6 and 09's sweeps, which then work on the new surface. Nothing else touches `modules/compiler-core/src/**`, `libs/std/**` or `examples/**` while it runs (09's `fix/hygiene-build` is limited to `build.zig`'s `test-vscode` step and the lib-test-runner build files). [`../11-dead-keywords-residual/`](../11-dead-keywords-residual/README.md)
-is delivered
-**Owns:** `modules/compiler-core/src/**` (lexer, parser, `ast.zig`, `comptime.zig` and its embedded
+**Reordered 2026-09-17 by the maintainer: 12 ran before 06**, so the checker wrote its rules on the
+new AST instead of porting them twice. **Scope moved out then:** the source migration that needs the
+checker to accept decision 8's forms — `Self<T>`, `#[@result] … -> @Result<T, E>`, annotations on
+`[]` that would fall to `unknown`, `Display` for `Dict` — became 06's step 9 and is carried from
+there; the `while` → `loop (condition)` half of it landed early with 06's G0. Tuple labels (T1–T7)
+and decision 5's markers stayed here.
+
+Carried from 1.0.3-beta front 02, amended by the maintainer's decisions of 2026-09-17:
+[decision 5](../08-review-backlog/semantics-decisions.md#decision-5) (positional template markers),
+[decision 8](../08-review-backlog/decision-8-language.md), and the step-1 choices below (`DeclKind`
+`Type`/`Behavior` with no aliases, `InstanceLowering.type_`). Counts and `file:line` were measured at
+`botopink-lang` `41981e3` and re-measured at `4eadb70` in [`remeasure.md`](./remeasure.md).
+
+**Owned:** `modules/compiler-core/src/**` (lexer, parser, `ast.zig`, `comptime.zig` and its embedded
 prelude, `comptime/**` (the `.bp` prelude sources are `libs/std/src/*` embedded through `build.zig`, which is not this front's — [`remeasure.md`](./remeasure.md) R8), `format.zig`, `codegen/**` including
 `crossModule.zig`, every Zig test source) · `modules/compiler-core/snapshots/**` ·
 `modules/language-server/src/**` (compile-level changes, LSP snapshots) ·
@@ -82,9 +87,9 @@ Decided 2026-09-17 by the maintainer, for this step:
   the step's textual check reaches zero without an exception.
 
 **Acceptance:**
-- [ ] `RecordDecl`, `EnumDecl`, `InterfaceDecl`, `DeclKind.record/.@"enum"/.interface` no longer exist; `InstanceLowering` has no `.record` tag; the prelude's `DeclKind` names `Type`/`Behavior` only
-- [ ] Generated code, diagnostics and `RUN LOG`s are unchanged; snapshot diffs limited to parser ids (`record_N`/`enum_N` → `type_N`, `interface_N` → `behavior_N`) and typed-AST JSON keys
-- [ ] `zig build test` green
+- [x] `RecordDecl`, `EnumDecl`, `InterfaceDecl`, `DeclKind.record/.@"enum"/.interface` no longer exist; `InstanceLowering` has no `.record` tag; the prelude's `DeclKind` names `Type`/`Behavior` only
+- [x] Generated code, diagnostics and `RUN LOG`s are unchanged; snapshot diffs limited to parser ids (`record_N`/`enum_N` → `type_N`, `interface_N` → `behavior_N`) and typed-AST JSON keys
+- [x] `zig build test` green
 
 ### Step 2 — Dual grammar (transitional, never released)
 
@@ -96,10 +101,10 @@ in this commit; labeled tuples get the tuple runtime ([`labeled-tuples.md`](./la
 The formatter prints **only** the 1.0.3 surface.
 
 **Acceptance:**
-- [ ] Every parser acceptance case in [`type-grammar.md`](./type-grammar.md#parser-acceptance-cases) that does not involve a removed keyword passes
-- [ ] Every acceptance item in [`labeled-tuples.md`](./labeled-tuples.md#acceptance) passes on the four backends
-- [ ] Every acceptance item in [`behavior.md`](./behavior.md#acceptance) and [`separators.md`](./separators.md#acceptance) except the removed-keyword ones passes
-- [ ] Old-surface snapshots unchanged
+- [x] Every parser acceptance case in [`type-grammar.md`](./type-grammar.md#parser-acceptance-cases) that does not involve a removed keyword passes
+- [x] Every acceptance item in [`labeled-tuples.md`](./labeled-tuples.md#acceptance) passes on the four backends
+- [x] Every acceptance item in [`behavior.md`](./behavior.md#acceptance) and [`separators.md`](./separators.md#acceptance) except the removed-keyword ones passes
+- [x] Old-surface snapshots unchanged
 
 ### Step 3 — Migrate the sources
 
@@ -115,12 +120,12 @@ Migrate manually (beta phase — no automated codemod):
 Re-run the suite; classify snapshots manually (source-only vs output-changed vs behaviour-changed).
 
 **Acceptance:**
-- [ ] No `record`, `enum`, `interface` keyword or `record {` literal left in the owned paths (manual verification)
-- [ ] Source-only snapshots (only parser ids and typed-AST keys changed) accepted
-- [ ] Output-changed snapshots (codegen changed, `RUN LOG` unchanged) reviewed per backend — expected only for anonymous-record fixtures moving to tuples — and accepted with the review note in the commit message
-- [ ] Behaviour-changed snapshots (a `RUN LOG` or a diagnostic changed beyond keyword wording) are empty, or every entry is explained in the commit message
-- [ ] No `$self` left; decision 5's acceptance holds (renumbering commit byte-identical in generated code and RUN LOGs)
-- [ ] `zig build test` green; `zig build test-libs` std cell green
+- [x] No `record`, `enum`, `interface` keyword or `record {` literal left in the owned paths (manual verification)
+- [x] Source-only snapshots (only parser ids and typed-AST keys changed) accepted
+- [x] Output-changed snapshots (codegen changed, `RUN LOG` unchanged) reviewed per backend — expected only for anonymous-record fixtures moving to tuples — and accepted with the review note in the commit message
+- [x] Behaviour-changed snapshots (a `RUN LOG` or a diagnostic changed beyond keyword wording) are empty, or every entry is explained in the commit message
+- [x] No `$self` left; decision 5's acceptance holds (renumbering commit byte-identical in generated code and RUN LOGs)
+- [x] `zig build test` green; `zig build test-libs` std cell green
 
 ### Step 4 — Remove the old surface
 
@@ -132,20 +137,28 @@ rule; the generated comments naming a declaration (`%% interface Name`, `// inte
 every directory touched across the four commits.
 
 **Acceptance:**
-- [ ] `record P { x: i32 }`, `enum E { A }`, `interface I {}`, `record { x: 1 }`, `fn f(p: { x: i32 })` produce their targeted diagnostic with a location (one error snapshot each)
-- [ ] `grep -rE '\b(record|enum|interface)\b'` over the owned `.bp` sources and Zig `\\` blocks matches only the removed-keyword diagnostic tests
-- [ ] The 48 snapshots whose only output change is the `%% interface` / `// interface` comment are re-recorded in this commit and classified output-changed (comment only)
-- [ ] `zig build test` green
+- [x] `record P { x: i32 }`, `enum E { A }`, `interface I {}`, `record { x: 1 }`, `fn f(p: { x: i32 })` produce their targeted diagnostic with a location (one error snapshot each)
+- [x] `grep -rE '\b(record|enum|interface)\b'` over the owned `.bp` sources and Zig `\\` blocks matches only the removed-keyword diagnostic tests
+- [x] The 48 snapshots whose only output change is the `%% interface` / `// interface` comment are re-recorded in this commit and classified output-changed (comment only)
+- [x] `zig build test` green
 
 ## Gate
 
-- [ ] `zig build test` from a **cold** runtime cache, green, at the tip of the front's worktree
-- [ ] `zig build test-libs` std cell green (the five library cells are 13's)
-- [ ] `botopink format --check` passes on `libs/std/**` and `examples/**`
-- [ ] The formatter keeps a declaration's visibility and form: `pub interface Router { … }` does not come back as `val Router = interface { … }` (a bug found by front 11, decided 2026-09-17 — it drops `pub`); a format snapshot pins `pub behavior Router { … }` round-tripping
-- [ ] Every commit of the front passed the pre-commit hook (no `--no-verify`)
-- [ ] `AGENTS.md` of every directory touched, updated in the commit that touched it
-- [ ] Branch `fix/surface-cutover`; no push, no merge
+- [x] `zig build test` from a **cold** runtime cache, green, at the tip of the front's worktree
+- [x] `zig build test-libs` std cell green (the five library cells are 13's)
+- [x] `botopink format --check` passes on `libs/std/**` and `examples/**`
+- [x] The formatter keeps a declaration's visibility and form: `pub interface Router { … }` does not come back as `val Router = interface { … }` (a bug found by front 11, decided 2026-09-17 — it drops `pub`); a format snapshot pins `pub behavior Router { … }` round-tripping
+- [x] Every commit of the front passed the pre-commit hook (no `--no-verify`)
+- [x] `AGENTS.md` of every directory touched, updated in the commit that touched it
+- [x] Branch `fix/surface-cutover`, merged as `ed575b5`
+
+## What it left, and where
+
+| Residual | Owner in 1.0.5-beta |
+|---|---|
+| **Decision 8's source migration**, moved to 06's step 9 before this front started and never run: `Self<T>` in every generic `type` and `behavior`, `#[@result] … -> @Result<T, E>` on the effect fns, annotations on the `val`/`var … = []` that would fall to `unknown` (5 in `libs/std`), `Display` for `Dict`. Verified not landed: `grep -c 'Self<' libs/std/src/primitives.bp` is 0. The `while` → `loop (condition)` half landed early with 06's G0 | `01-checker` |
+| **The formatter keeps no member positions and no trailing trivia**, so `format` reorders payload variants before sections and moves an end-of-line comment to the next line. It was found here and by front 13; `6bf0817` made the output compile and be stable, which is as far as the AST allows | `01-checker` (the parser half), then a formatter pass |
+| The 7 library cells this front registered in `scripts/known-red-libs.txt` | **closed** by front 13 (`aa24146`) — the file has no line |
 
 ## Blast radius
 
