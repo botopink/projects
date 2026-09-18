@@ -1018,3 +1018,19 @@ is **step 7's blocker**: under policy 3 every type-bearing program is multi-modu
 `escript out/<mod>.erl` fails with `undefined function …:greet/1`
 ([E25](./atom-evidence.md#e25--botopink-run-breaks-under-policy-3)). The fix is the
 `erl -noinput -pa <dir> -s <entry>` shape `runtime.zig:581` already runs.
+
+---
+
+## Handed over by `14-comptime-on-beam` (2026-09-18, `bef762b`)
+
+**Step 3 of front 14 waits on this front, and its blocker is measurable here today.** The untyped
+comptime mode on beam cannot be written while the **typed** backend fails the same case:
+`"a b".split(" ").map({ x -> x.toUpper() })` with `--target beam` assembles and then dies at run time
+with `{unresolved_method, toUpper, 1}`, while straight-line typed code (`.trim()`, `.slice()`,
+`.split()`, `.join()`, a record field, an `if`) runs. In a comptime body **every** receiver is untyped,
+so that path is the whole feature. `beam_asm.zig` is 6 401 lines with **0** occurrences of
+`ComptimeModule`, `'__bp_len'`, `'__bp_json'` or `'__bp_prim_'`, and ~80 type-directed sites would have
+to grow an untyped arm.
+
+**And the prize shrank**, measured after 14's step 2 landed: step 3 would save ≈ 39 ms of a 645 ms
+erika-linq build (≈ 6 %), because the erl-side cost is now paid once per build instead of 18 times.

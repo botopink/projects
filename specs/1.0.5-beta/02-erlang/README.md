@@ -398,3 +398,19 @@ unrecognised-builtin path — the same place `x is T` sat before it was lowered.
 
 **`a ?? b` asks nothing of this backend.** It desugars in the parser into the optional-binding `if`
 the language already has (`ast.nullish_binding_name`), which this backend already emits.
+
+---
+
+## Handed over by `14-comptime-on-beam` (2026-09-18, `bef762b`)
+
+**One memo closes the rest of the comptime build cost.** After 14's step 2 the remaining per-evaluation
+cost is a single `emitComptimeModule`, and **16.1 ms of it** (measured over 20 `buildModule` calls) is
+`emitErlangModule` re-parsing the embedded `primitives.bp` and `erlang_bifs.d.bp` preludes on **every**
+emission — `collectPrimErlangDispatch` and `loadAutoImportedBifsFromPrelude`, both already documented
+in `erlang.zig` as per-emission throwaway. 14 cut the half that was a second rendering; the other half
+is a memo inside `emitErlangModule`, which is this front's shared body, not 14's carve-out. It is worth
+roughly half of the 9.4 ms per evaluation that remains.
+
+**Also note the `Form.import` variant** 14 added to `codegen/beam/erl_ast.zig` (additive; nothing
+existing changed shape) — a module now reaches the resident host glue by `-import` instead of carrying
+it.

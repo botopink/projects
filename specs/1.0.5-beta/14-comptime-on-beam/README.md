@@ -128,6 +128,91 @@ call sites have drifted to `:2341` and `:3522`.
 
 ---
 
+## Landed — 2026-09-18, merged into `feat` as `bef762b` (steps 0–2; step 3 not attempted)
+
+Four commits on `fix/comptimebeam`, cold gate green at the head and at each commit.
+
+| Commit | Step |
+|---|---|
+| `f0ec351` | **0** — `scripts/comptime_bench.sh`, so the cost is measured by the repository instead of quoted from a document |
+| `75d4ede` | **1** — the host glue is compiled once at server warmup. `-import`, not a remote call, **so no snapshot body changes**: byte-identical |
+| `bee9b85` | **2** — the capture travels as an ETF argument; one module serves every call site of a declaration |
+| `19a3b01` | **2 tail** — a broken erl stream says what broke instead of collapsing into `EvalFailed` |
+
+**Measured** — same machine, OTP 29, same command, minimum of 3 builds:
+
+```
+BOTOPINK_LIB_ROOTS=../../repository scripts/comptime_bench.sh \
+    --n 0,1,10,50,200 --repeat 3 --reps 10 \
+    --project ../../repository/erika/examples/erika-linq
+```
+
+| | before | step 1 | step 2 |
+|---|---:|---:|---:|
+| build, N=200 | 6 172 ms | 4 732 ms | **2 172 ms** |
+| ms per evaluation | 29.6 | 22.6 | **9.4** |
+| `.erl` modules at N=200 | 200 | 200 | **1** |
+| `.erl` bytes at N=200 | 2 833 290 | 2 452 690 | **875** |
+| in-node `compile:file`, N=200 | 2 024.9 ms | 1 186.6 ms | **3.8 ms** |
+| **erika-linq** build | 1 934 ms | 1 669 ms | **645 ms** |
+| erika-linq erl side (compile + load) | **1 039.3 ms** | 882.1 ms | **49.0 ms** |
+
+Step 2's acceptance was 960 ms → ≤ 60 ms for erika-linq. **Met: 1 039 → 49, 21×.**
+
+**Two acceptance numbers were not met, with the cause measured**: build N=200 ≤ 600 ms and
+≤ 1 ms/evaluation stayed at 2 172 ms / 9.4 ms. One `emitComptimeModule` per evaluation remains — it is
+where the module atom comes from — and **each emission re-parses the embedded `primitives.bp` and
+`erlang_bifs.d.bp` preludes** (`collectPrimErlangDispatch`, `loadAutoImportedBifsFromPrelude`, both
+documented in `erlang.zig` as per-emission throwaway). **16.1 ms per `buildModule`**, measured over 20
+calls; this step cut half of it by removing the second rendering. The other half needs a memo inside
+`emitErlangModule` — shared body of [`02-erlang`](../02-erlang/README.md), not this front's
+`ComptimeModule` carve-out. Reported, not widened.
+
+**Snapshots.** Counts re-measured after `06-comptime-dedup` restructured them (this README said
+48/48/56): **33** `COMPTIME ERLANG`, **33** `COMPTIME REPLY`, **47** `COMPTIME VALUES`. Step 1
+re-recorded **zero**. Step 2 re-recorded the 33 `COMPTIME ERLANG` cells and nothing else, each diff
+confined to the fence and always the same three things: `main() ->` becomes `main({Arg0}) ->` (or
+`{Arg0, Arg1, _}` for a decorator), the inline capture map becomes the bound name, and the same term
+reappears line for line as `%% Arg0 = …` — so nothing is lost from the record: the capture is the
+input half of the evaluation the reply answers.
+
+**Carve-outs used, named in the commits:** 02's `ComptimeModule`/`emitComptimeModule`; 03's
+`codegen/beam/{erl_ast,erl_emitter}.zig` — **additive only**, one `Form.import` variant and the arm
+that writes it; 08's eval-protocol half of `persistent_erl.zig`; 11's one script. **01's `infer.zig`
+was not touched at all** — zero edits, better than the carve-out allowed.
+
+### Step 3 is not attempted, and the reason is measured
+
+- `beam_asm.zig` is **6 401 lines** with **0** occurrences of `ComptimeModule`, `'__bp_len'`,
+  `'__bp_json'` or `'__bp_prim_'`. An untyped mode would cross ~80 type-directed sites
+  (`string_locals` 22, `isStringExpr` 16, `numKind` 15, primitive dispatch 14, `num_locals` 11,
+  `record_fields` 10, `instance_lowerings` 5).
+- **The typed beam backend already fails the case the untyped mode exists to serve**:
+  `"a b".split(" ").map({ x -> x.toUpper() })` with `--target beam` assembles and dies at run time
+  with `{unresolved_method, toUpper, 1}`, while the same straight-line typed code runs. In a comptime
+  body **every** receiver is untyped.
+- The file belongs to [`03-beam`](../03-beam/README.md) and
+  [`13-module-identity`](../13-module-identity/README.md) entirely, and
+  [decision 24](../decisions-taken.md#24-does-step-3-of-14-comptime-on-beam-happen-at-all) already
+  sequences step 3 after them.
+
+**And the value shrank, measured against the post-step-2 build**: erika's 47.7 ms of `compile:file` is
+now paid **once per build**, not 18 times, so step 3 would save ≈ 39 ms of a 645 ms build — ≈ 6 %,
+which is the front's own ≈ 5.6 % estimate, now confirmed rather than projected.
+
+### Also reported, not done
+
+- `botopink clean` already removed `tmp/template` and `tmp/decorator` — **verified by running it** —
+  so [`10-cli-residuals`](../10-cli-residuals/README.md)'s `cli/clean.zig` was left untouched.
+- The other half of 08's residual (`erl.stderr.log` per cwd rather than per spawn) is recorded as a
+  decision in its `AGENTS.md`; overturning a decision is not sweeping.
+- **A flat argument whose lexeme carries `\u{…}` stays a literal in the module.** The emitter renders
+  it as Erlang's `\x{…}`, which truncates the code point to one byte (`<<"a\x{263A}b">>` is
+  `<<97,58,98>>`). Reproducing that here would be a second — and wrong — definition of what a botopink
+  string literal is. It belongs to whoever owns `writeBinaryFromLexeme`.
+
+---
+
 ## The request, and the reading this front adopts
 
 The maintainer, 2026-09-17, verbatim:

@@ -2,17 +2,30 @@
 
 Visão geral de como o compilador (`repository/botopink-lang/modules/compiler-core/src/`)
 executa código em tempo de compilação. Detalhes de cada arquivo ficam nos `AGENTS.md`
-das pastas citadas; o trabalho pendente está em [`specs/1.0.1-beta/`](specs/1.0.1-beta/overview.md).
+das pastas citadas; o trabalho pendente está em [`specs/1.0.5-beta/`](specs/1.0.5-beta/overview.md).
 
 ## O que roda onde
 
 | Código comptime | Onde |
 |---|---|
 | `val x = comptime …` | Dobrado em Zig por `comptime/eval.zig` (literais, aritmética inteira, `@TypeOf`, valor de `break`). Nenhum runtime. Snapshots mostram a seção `COMPTIME VALUES` (`ct_N = literal`). |
-| Corpos de decorator (`comptime/decorator_eval.zig`) | Módulo Erlang gerado por `erlang.emitComptimeModule`, executado no `erl` persistente. |
+| Corpos de decorator (`comptime/decorator_eval.zig`) | Módulo Erlang gerado por `erlang.emitComptimeModule`, executado no `erl` persistente — **um módulo por declaração, não por avaliação**. |
 | Corpos de template (`comptime/template_eval.zig`) | Idem. |
 
 Não há runtime Node, wasm3 ou WAT para comptime.
+
+**Duas coisas mudaram em 2026-09-18** (frente `14-comptime-on-beam`, passos 1 e 2), e a tabela acima
+já as reflete:
+
+- **a cola de host é residente**: ela é compilada uma vez no warmup do servidor e cada módulo a
+  alcança por `-import`, em vez de ser reemitida em toda avaliação;
+- **a captura viaja como termo ETF**, argumento de `main/1`, em vez de ser um mapa embutido no texto
+  do módulo. Como o corpo deixa de depender do valor capturado, **um** módulo serve todos os sítios
+  de chamada de uma declaração.
+
+O efeito medido por `repository/botopink-lang/scripts/comptime_bench.sh`: com N=200 avaliações, 200
+módulos e 2,8 MB de `.erl` viraram **1 módulo e 875 bytes**, e o lado erl do `erika-linq`
+(compilar + carregar) caiu de 1 039 ms para **49 ms**.
 
 ## `erl` persistente
 
