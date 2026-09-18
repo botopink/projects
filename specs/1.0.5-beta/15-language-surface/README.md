@@ -170,7 +170,7 @@ exist (`removedKeywordWhile`, `removedErrorUnion`, `patternRangeExclusive` are t
 | Form | Kind | Message names |
 |---|---|---|
 | `??` | `nullishCoalescingAbsent` | `?.` for chaining and `catch` for a fallback |
-| `var` at module level | `moduleLevelVarAbsent` | `val`, and decision 2's "a module has no mutable state" |
+| `var` at module level | `moduleLevelVarAbsent` | **decision 28: it parses** — the earlier "contradicts decision 2" reading was wrong on both halves |
 | every other form step 2 records as a decision | one kind each | the form that replaces it, or that there is none |
 
 And change the catch-all's own hint. "Check the syntax around this position." tells a reader nothing;

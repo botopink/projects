@@ -41,6 +41,7 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 33 | A bodyless `fn` with no return type | **(b)** — it declares one; three `libs/std` lines gain `-> void` |
 | 34 | The `format --check` exemption | **(c)** — no exemption; decision 18's is withdrawn |
 | 36 | Does `..` exclude its end in a pattern? | yes — exclusive everywhere |
+| 28 | What decision 14 left unassigned | **every form parses**; five distinct forms, none absent |
 
 ---
 
@@ -488,9 +489,10 @@ compiler is consistent, the question is whether the language wants the form.
 **Recommendation:** make **four** parse — `adder(3)(4)` (a function is a value; not calling its
 result is arbitrary), `#(a: i32)[]` (decision 8 §6 writes labeled tuples, and an array of them is the
 obvious next line), and the two that decision 8 already implies. Record `??`, `var` at module level
-and the remaining form as **deliberately absent**: `??` duplicates `catch` and `?.`, and module-level
-`var` contradicts decision 2's "a module has no mutable state", which is the rule the whole comptime
-protocol rests on.
+and the remaining form as **deliberately absent**: `??` was thought to duplicate `catch` and `?.`,
+and module-level `var` to contradict decision 2 — **both readings were wrong, and decision 28 corrects
+them**: `catch` is `@Result`-only, and decision 2 is about the value of a block, not about module
+state.
 
 **Blocks:** `01-checker` and whatever picks up the grammar's tail.
 
@@ -1154,6 +1156,61 @@ missing is not the answer but the sentence: decision 8 §5 has to say it, and fr
 work-arounds into assertions.
 
 **Blocks:** `12-language-tests`' range cells.
+
+---
+
+---
+
+## 28. What decision 14 left unassigned
+
+**Decided 2026-09-18 by the maintainer: every form is supported.** Not "four parse, two absent" and not
+"four and three" — **all of them parse**, and the count closes at five distinct forms because two of
+the seven reported were one production and the seventh was never a missing form.
+
+| Reported form | Answer |
+|---|---|
+| `adder(3)(4)` — calling a call's result | parses |
+| `(expr).method` — one production, reported twice (`(sql "…").length`, `(a == b).toString()`, and plain `("ab").length` fail identically) | parses |
+| `#(a: i32, b: string)[]` — and its family: `@Result<…>[]`, `(i32 \| string)[]` | parses |
+| `??` | **parses** — reversing decision 14's "deliberately absent" |
+| `var` at module level | **parses** — reversing decision 14's "deliberately absent" |
+| a bare `if` not last in its block | never was a missing form; the `;` after it goes, by [decision 29](#29-does-a-block-shaped-statement-end-itself) |
+
+**Two corrections to what this file argued, both measured after the answer, both mine:**
+
+1. **`??` is not a duplicate of `catch` and `?.`.** `catch` is `@Result`-only — `val b = a catch 0;`
+   on an `a: ?i32` reds with `` `try` requires a @Result<D, E> value, found 'optional' ``. There is
+   **no** operator today that gives an optional a default; `?.` chains and `if (a) { v -> … }` is a
+   statement. So `??` fills a real gap, and the recommendation to drop it rested on a false premise.
+2. **Module-level `var` contradicts no decision.** This file, and front 15's documents, attributed
+   "a module has no mutable state" to decision 2 — decision 2 is about **the value of a block and of a
+   fn body's tail expression** and says nothing of the sort. The sentence comes from
+   `rakun/AGENTS.md:22` and `rakun/src/runtime.bp:4`, where a library *observes* the property while
+   working around it. It was an unstated property, not a taken decision, and the attribution was
+   propagated without being checked.
+
+**What module-level `var` costs, and what it may repay.** commonJS is a module-level `let` and wasm a
+mutable global; **erlang and beam have no module-level mutable storage at all**, so it needs the
+process dictionary (`put/get`) — which is exactly what emilia already does by hand through
+`@External.Erlang`. Against that: rakun keeps its scan registry, DI cache and router in **231 lines of
+`runtime.mjs`** *because* the language has no module state, and `rakun/AGENTS.md` says so in those
+words. Module-level `var` therefore reaches into
+[decision 17](#17-rakuns-erlang-story) — it may remove the reason that runtime exists, rather than
+porting it.
+
+**Blocks:** `15-language-surface` steps 1 and 4; and the `var` half should be scheduled **with**
+decision 17's `libs/std` work, not before it.
+
+**Measured.** Decision 14 said "four parse, three are deliberately absent" — but front 15 found the
+seven are **six**: `(sql "").length` and `(a == b).toString()` are the *same* production (any
+`(expr).method` fails, `("ab").length` included). And the seventh is not a missing form at all: `if`,
+`loop` and `case` do parse, with a `;`. Front 17's text, and decision 14's third "absent" slot, rest
+on a description that does not reproduce.
+
+**Recommendation.** The parenthesised pair is one production and counts once; the third absent slot is
+**empty**, and decision 14 is amended to "four parse, two absent" rather than inventing a third.
+
+**Blocks:** `15-language-surface` step 1.
 
 ---
 

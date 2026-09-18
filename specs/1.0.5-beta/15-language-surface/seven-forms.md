@@ -182,8 +182,12 @@ token" — see step 3 of the [README](./README.md).
 
 ## 6 — `var` at module level
 
-**Decision 14: deliberately absent.** It contradicts decision 2's "a module has no mutable state",
-which is what the comptime protocol rests on.
+**Decision 28 (2026-09-18): it parses** — reversing decision 14's "deliberately absent".
+The earlier reading, that it contradicts decision 2's "a module has no mutable state", was
+**wrong on both halves**: decision 2 is about the value of a block, and the sentence comes from
+`rakun/AGENTS.md:22`, where a library observes the property while working around it. The cost is
+real and per backend — commonJS a module `let`, wasm a mutable global, and erlang and beam the
+process dictionary, since neither has module-level mutable storage.
 
 ```botopink
 var counter = 0;
