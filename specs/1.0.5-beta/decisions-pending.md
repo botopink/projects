@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**Nine open**, all raised on 2026-09-18 by the fronts [`15-language-surface`](./15-language-surface/README.md)
+**Ten open**, all raised on 2026-09-18 by the fronts [`15-language-surface`](./15-language-surface/README.md)
 and [`16-formatter`](./16-formatter/README.md) while auditing the written surface against what the
 parser accepts. The twenty-seven already answered are in [`decisions-taken.md`](./decisions-taken.md).
 
@@ -15,6 +15,7 @@ parser accepts. The twenty-seven already answered are in [`decisions-taken.md`](
 | [34](#34-the-format---check-exemption-does-not-exist) | Decision 18 assumed a skip list that is not there | 16's exemption, 09's format step | a key in `botopink.json` |
 | [35](#35-structural-equality-is-not-legislated) | Is `Person(name: "Ana") == Person(name: "Ana")` true? | a cell that cannot name an owner | structural, and write it down |
 | [36](#36-does--exclude-its-end-in-a-pattern) | Does `..` exclude its end **in a pattern**? | 12's range cells, still working around it | exclusive, stated |
+| [37](#37-is-a-record-immutable) | Is a record immutable? | decision 35, and an erlang module that does not compile | yes — the checker rejects the assignment |
 
 ---
 
@@ -178,5 +179,64 @@ missing is not the answer but the sentence: decision 8 §5 has to say it, and fr
 work-arounds into assertions.
 
 **Blocks:** `12-language-tests`' range cells.
+
+---
+
+
+## 37. Is a record immutable?
+
+**Measured 2026-09-18**, after the maintainer asked whether the value could be immutable. It is not,
+and the three backends disagree in the worst available way. This program checks — on a `val`:
+
+```botopink
+type Person(name: string, age: i32)
+fn birthday(p: Person) { p.age = 99; }
+fn main() {
+    val p = Person(name: "a", age: 30);
+    val alias = p;
+    p.age = 31;
+    @print(p.age); @print(alias.age); birthday(p); @print(p.age);
+}
+```
+
+| backend | what happens |
+|---|---|
+| commonJS | `31` · `31` · `99` — it mutates, **the alias sees it**, and mutation through a parameter propagates: a record is a mutable reference |
+| wasm | `31` · `31` · `99` — identical |
+| erlang | **the module does not compile**: the emitter writes `%% field assignment is not directly supported in Erlang.` where the statement goes, leaving `birthday(P) ->` with an empty body → `syntax error before: '->'` |
+
+So the checker accepts, two backends make identity observable, and the third emits a comment where a
+statement belongs. The erlang emitter already knows the operation is impossible — it just says so in a
+place that cannot say anything.
+
+**Migration cost: zero.** `grep` over `libs/std`, `examples/**` and all five libraries finds **0**
+field assignments. Nothing written in this language mutates a field.
+
+**Options.** (a) A record is immutable: the checker rejects `p.f = v` with a located diagnostic naming
+the update form (`Person(..p, age: 31)`, which already works). (b) A record is mutable, and erlang
+learns to emit the copy-and-rebind that would make it work. (c) It stays as it is.
+
+**Recommendation: (a).** Three things fall out of it rather than having to be decided:
+
+1. **[Decision 35](#35-structural-equality-is-not-legislated) dissolves.** With no mutation, identity
+   is unobservable, so structural `==` is not a choice between semantics — it is the only one that can
+   be told apart from the other.
+2. The erlang comment path becomes **dead code**, and with it a module that does not compile.
+3. `val` starts meaning what it reads as. Today `val p` protects the binding and not the value.
+
+**On `Object.freeze`, which the maintainer raised** — measured, and it does not do the job alone:
+
+- Emitted modules carry **no `"use strict"`**, and in sloppy mode an assignment to a frozen property
+  **fails silently**: `Object.freeze({a:1}).a = 2` leaves `a` at 1 and throws nothing. Enforcement
+  without strict mode is theatre. Under `"use strict"` it throws `TypeError`.
+- It costs: 2 000 000 constructions took **2 ms** plain and **45 ms** frozen (node v25), ~21 ns per
+  value.
+
+So freeze is a **run-time** guard for something the checker can refuse at compile time, for free, on
+all four backends at once. Its remaining use is real but narrow: stopping *host* JavaScript from
+mutating a botopink value across the interop boundary. Worth keeping as an opt-in, not as the
+mechanism.
+
+**Blocks:** decision 35; `02-erlang` (a module that does not compile); `01-checker` (the diagnostic).
 
 ---
