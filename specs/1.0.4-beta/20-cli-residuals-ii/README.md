@@ -31,7 +31,7 @@ owned it since 05 delivered.
 | A | An `import` naming a module that does not exist passes `check` **and** `build` in silence — exit 0, code emitted | `cli/resolver.zig`, `cli/sources.zig` | the user-docs work: it is why every import example in `docs.md` is green |
 | B | `botopink new`'s template compiles to a program that prints nothing, so the README's quick start has no visible effect | `cli/new.zig` | this front |
 | C | A library cannot ship an erlang host module — `cli/libs.zig` has `shipMjsSidecars` and no `.erl` counterpart | `cli/libs.zig` | 13's erlang-cells investigation ([`../fronts.md`](../fronts.md#unowned-items)) |
-| D | A missing dependency and an unreadable `files` entry are swallowed with `catch continue` | `language-server/src/project_graph.zig` `:171`, `:210` | 1.0.2-beta library-repos, re-confirmed by 05 |
+| D | A missing dependency and an unreadable `files` entry are swallowed with `catch continue` — the CLI half only; the file is another front's | `language-server/src/project_graph.zig` `:171`, `:210` | 1.0.2-beta library-repos, re-confirmed by 05 |
 
 ## Current state
 
@@ -103,17 +103,24 @@ error: dependency 'halflib' lists "gone.bp" in `files`, but …/halflib/src/gone
   |                           ^^^^^^^^^
 ```
 
-**The language-server half is open and untouched.** `modules/language-server/src/project_graph.zig`
-still reads
+**The language-server half closed while this front ran.** At `26d4fdc`,
+`modules/language-server/src/project_graph.zig` still read
 
 ```zig
 :171                self.loadLib(a, &deps, roots, dep) catch continue;
 :210            const source = std.Io.Dir.cwd().readFileAlloc(self.io, path, a, …) catch continue;
 ```
 
-A third site (`:236`, a `.bp` under `src` that cannot be read) swallows the same way and was never
-registered. The file is [`14-tooling-and-docs`](../14-tooling-and-docs/README.md)'s area and was being edited in another
-worktree while this front ran, so it is reported here and not touched.
+[`14-tooling-and-docs`](../14-tooling-and-docs/README.md) owns the file and landed both as located
+`Problem`s on `feat` (`aed8a60`) — the same two messages the CLI prints, published against the
+manifest that names the entry. This front reported and did not touch it, which is what the two
+sessions overlapping on the same file required.
+
+**A third site is still open and no row has ever named it:** `loadSrcTree`'s read of a `.bp` under
+the project's own `src` (`catch continue`, `:347` at `aed8a60`). A file the server cannot read
+drops out of the graph with no diagnostic, and the editor then blames whatever imported it. It
+belongs to whoever next owns `modules/language-server/**`; the fix is the `Problem` shape 14 just
+built, located at the file itself.
 
 ## Mechanism
 
@@ -210,8 +217,10 @@ Verify the CLI half and report the rest.
 
 **Acceptance:**
 - [x] The CLI half is confirmed closed, with its output quoted (see Current state)
-- [x] The language-server half is confirmed open at `:171` and `:210`, plus a third site at `:236`
-      that no row had named, and is **reported, not edited**
+- [x] The language-server half was confirmed open at `:171` and `:210` at this front's base, was
+      **reported, not edited**, and has since landed with 14 (`aed8a60`)
+- [x] A third site, `loadSrcTree`'s read of a project `.bp` (`:347` at `aed8a60`), is named here —
+      still open, still nobody's
 
 ## Gate
 
@@ -290,9 +299,9 @@ this worktree's git stash, named
   target, or the library's `targets` list excludes it), not for the missing `.erl` shipping. The
   row in [`../fronts.md`](../fronts.md#unowned-items) that names host modules as its blocker can be
   retired once 13 re-tests it against this front.
-- **Not done, and nobody's:** the `:236` site in `project_graph.zig`; a located
-  `UnresolvedImportSource` for the flat `test/` suite, which loads through `scanner.zig` and not
-  through the resolver, so an unresolved import in a `*_test.bp` is still silent.
+- **Not done, and nobody's:** `loadSrcTree`'s `catch continue` in `project_graph.zig`; and a
+  located `UnresolvedImportSource` for the flat `test/` suite, which loads through `scanner.zig`
+  and not through the resolver, so an unresolved import in a `*_test.bp` is still silent.
 
 ## Rows to add to `fronts.md` and `overview.md`
 
@@ -326,8 +335,8 @@ with the notes:
 13. **09 × 20 share `docs.md` and the `AGENTS.md` sweep.** 20's step 1 cannot land until `docs.md:78`
     carries a `docs-check` directive (09 step 5 or 14); 09's comment sweep over
     `modules/compiler-cli/**` lands after 20.
-14. **14 × 20 share `modules/language-server/src/project_graph.zig`** — 20 only reports it (step 4),
-    14 owns the fix; and `docs.md`, per note 13.
+14. **14 × 20 shared `modules/language-server/src/project_graph.zig`** — 20 only reported it
+    (step 4) and 14 landed the fix (`aed8a60`); what is left between them is `docs.md`, per note 13.
 15. **16 × 20 share `modules/compiler-cli/src/cli/{build,run}.zig`.** 16 owns both; 20 owns the rest
     of `modules/compiler-cli/**` and hands 16 the one-line `shipErlSidecars` call site in `build.zig`.
 ```
