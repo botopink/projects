@@ -361,3 +361,17 @@ unrecognised-builtin path — the same place `x is T` sat before it was lowered.
 
 **`a ?? b` asks nothing of this backend.** It desugars in the parser into the optional-binding `if`
 the language already has (`ast.nullish_binding_name`), which this backend already emits.
+
+---
+
+## Handed over by `12-language-tests` (2026-09-18)
+
+The suite's new index cells name this front's owner row as `<front> handover 15`, because
+[decision 30](../decisions-taken.md#30-is-there-an-index-expression) says "one lowering in each of
+fronts 02–05" and this front carries it only as the handover section above, with no numbered step.
+Worth giving it a number when the step is planned.
+
+Measured while the cells were written: `case 9 { 1...9 { 1 } _ { 0 } }` prints `undefined` on
+commonJS, `0` on erlang and **`256` — a heap address — on wasm**, and written where its type is known
+it does not compile at all. The cells are owed once `01 step 4` lands.
+

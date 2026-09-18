@@ -326,3 +326,66 @@ belong in `expected-failures.txt` with those owners, not as passing cells.
 **Decision 29, when it lands**, moves **44** sites in this suite — not the 88 the decision estimated.
 The count is the compiler's, and the migration is coordinated with
 [`16-formatter`](../16-formatter/README.md) and [`15-language-surface`](../15-language-surface/README.md).
+
+---
+
+## Landed — 2026-09-18
+
+**This README's premise did not hold: step 1 had already landed at `7ab6a55`**, before this wave
+started. Every owner cell in `expected-failures.txt` already named a 1.0.5-beta front, re-checked one
+by one against `specs/1.0.5-beta/` — 01 steps 1–8, 02 steps 1/5/6/7, 03 steps 2/4, 05 steps 1/3, 13
+steps 2/15/17/18 — and **none is orphaned**. `reject/external_lowercase_target.bp`, "the row that
+never existed", is not listed at all any more: `e37186b` made the cell pass and deleted its line.
+Steps 2, 3, 4.1 and 5 had landed too (`fcc4b5b`, `eeff1e1`, `7b96ce7`). **The file was safe to delete
+lines from all along**, which means the wave's coordination rule — backends report, 12 deletes — was
+caution, not a dependency.
+
+| commit | what |
+|---|---|
+| `aab5489` | the header block re-derived from a run: it still claimed 205/54 at `c2dd780`, with seven `04-js` lines that no longer existed |
+| `7bfecf7` | `AGENTS.md`'s "shapes that do not parse" table re-measured — **5 of its 7 rows now parse** |
+| `5dfb638` | 7 new cells for decisions 28, 30 and 33 |
+| `23eea0b` | the header's numbers and base sha corrected after the cells moved them |
+
+| | before | after |
+|---|---|---|
+| `run.sh` (commonJS, erlang, wasm) | 218 passed / 53 expected / 0 failed | **250 / 61 / 0** |
+| `run.sh --target beam` | 13 / 19 / 0 | **14 / 20 / 0** |
+| `expected-failures.txt` lines | 61 | **70** |
+| cells on disk | 76 | **83** |
+
+Neither "53 lines" nor "54 rows" was right: the file was at 61 lines, and 53 is how many `--target all`
+exercises. **No line was found passing**, before or after.
+
+**Four defects the cells found, and nothing else had:**
+
+1. **beam drops an index silently and exits 0.** The other three targets die loudly (`SyntaxError`;
+   `'[]'/2 undefined`; wasm refuses to validate); beam prints the whole array for `xs[0]`, and `ok`
+   for `xs[0..2].length` and `rows[1][0]`. A backend that is wrong quietly is the reason a suite
+   exists — [`03-beam`](../03-beam/README.md).
+2. **commonJS: the optional-binding `if` emits `if (n !== null)` while `?.` answers `undefined`**, so
+   `o.inner?.v ?? 9` answers `undefined` on commonJS and `9` on erlang and wasm.
+   `test/optional.bp` never saw it because its optionals are explicit `null`s. **No step of
+   [`04-js`](../04-js/README.md) named this.**
+3. **commonJS: `42.toString()` emits `__bp_print(42.toString())`**, which node refuses — `42.` reads as
+   a float — while erlang and wasm print `42`. Recorded in a cell comment rather than asserted,
+   because a listed line needs a row.
+4. **A tuple label does not survive a generic array method** — `rs.at(0).b` answers `undefined` on
+   commonJS, raises `bad map: {1,<<"x">>}` on erlang and `0` on wasm. This one has rows, so it is
+   asserted: §6 T4 → `04 step 2`, `02 step 4`.
+
+**Two spec premises that did not reproduce**, both now corrected in the specs rather than here:
+decision 28's landing note read as if module-level `var` parses — it does not (`this token cannot
+appear here` at `1:1`), and its semantics are [`17-beam-memory`](../17-beam-memory/README.md); and
+decision 30's "one lowering in each of fronts 02–05" has no numbered step in any of those fronts, only
+a handover section, so the new owner cells read `<front> handover 15` and `AGENTS.md` documents the
+convention.
+
+**Deliberately left undone:** the range cells, because decision 36's sentence is still not in
+decision 8 §5 and the parser still refuses `1..9` in a pattern. The measurement was extended while
+looking: `val r = case 9 { 1...9 { 1 } _ { 0 } }; @print(r);` prints `undefined` on commonJS, `0` on
+erlang and **`256` — a heap address — on wasm**; written where its type is known it does not compile
+at all. Three backends, three wrong answers; the cell is owed once `01 step 4` lands. Also out:
+`d["k"]` (needs `from "std"`, whose own rows would hide the index reason) and `s[1]` (decision 30
+leaves a string element's type and printed form open).
+

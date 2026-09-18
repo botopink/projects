@@ -361,3 +361,20 @@ unrecognised-builtin path — the same place `x is T` sat before it was lowered.
 
 **`a ?? b` asks nothing of this backend.** It desugars in the parser into the optional-binding `if`
 the language already has (`ast.nullish_binding_name`), which this backend already emits.
+
+---
+
+## Handed over by `12-language-tests` (2026-09-18) — two defects no step of this front names
+
+1. **The optional-binding `if` and `?.` disagree about what absent means.** The lowering emits
+   `if (n !== null)` while `?.` answers `undefined`, so `o.inner?.v ?? 9` answers **`undefined` on
+   commonJS** and `9` on erlang and wasm. `test/optional.bp` never caught it because its optionals are
+   explicit `null`s. This matters more now that `??` exists (decision 28): every `??` after a `?.`
+   chain is wrong on this backend.
+2. **`42.toString()` emits `__bp_print(42.toString())`**, which node refuses — `42.` lexes as a float —
+   while erlang and wasm print `42`. The form landed today with front 15's `46f8c5d`.
+
+The suite records the index expression's owner cells as `04 handover 15`, because decision 30 says
+"one lowering in each of fronts 02–05" and this front has no numbered step for it — only the handover
+section above. Worth giving it a number when the step is planned.
+

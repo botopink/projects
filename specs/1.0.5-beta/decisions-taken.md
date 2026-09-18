@@ -1254,6 +1254,13 @@ included. `a ?? b` carries **no new AST node**: it desugars into the optional-bi
 already had, bound to `ast.nullish_binding_name`, so no backend has anything to do for it — only
 `16-formatter` has to print it back, which it does not yet.
 
+**Correction, 2026-09-18, measured by [`12-language-tests`](./12-language-tests/README.md):** this
+decision's landing note must not be read as saying module-level `var` parses. It does **not** —
+`var counter = 0;` and `pub var counter = 0;` are both `this token cannot appear here` at `1:1` at
+`109f6c9`. Front 15 measured the form and deliberately left it (*"the grammar is trivial; the
+semantics are the `@BeamMemory` design"*), and its semantics are now
+[`17-beam-memory`](./17-beam-memory/README.md), gated on [question 38](./decisions-pending.md).
+
 ---
 
 ---

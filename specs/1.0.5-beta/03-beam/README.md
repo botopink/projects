@@ -363,3 +363,22 @@ to grow an untyped arm.
 
 **And the prize shrank**, measured after 14's step 2 landed: step 3 would save ≈ 39 ms of a 645 ms
 erika-linq build (≈ 6 %), because the erl-side cost is now paid once per build instead of 18 times.
+
+---
+
+## Handed over by `12-language-tests` (2026-09-18) — beam is wrong *quietly*
+
+**The index expression is dropped and the program exits 0.** The other three targets fail loudly —
+`SyntaxError` on commonJS, `'[]'/2 undefined` on erlang, wasm refuses to validate — while beam prints
+the whole array for `xs[0]`, and `ok` for `xs[0..2].length` and `rows[1][0]`. A silent wrong answer is
+worse than a crash, and it is the reason the suite now runs `--target beam` at all (14 passed / 20
+expected / 0 failed).
+
+Also measured while writing the range cells: `case 9 { 1...9 { 1 } _ { 0 } }` prints `undefined` on
+commonJS, `0` on erlang and **`256` — a heap address — on wasm**. Three backends, three wrong answers;
+the cells are owed once `01 step 4` lands.
+
+The suite records the index expression's owner cells as `03 handover 15`, because decision 30 says
+"one lowering in each of fronts 02–05" and this front has no numbered step for it. Worth giving it a
+number when the step is planned.
+
