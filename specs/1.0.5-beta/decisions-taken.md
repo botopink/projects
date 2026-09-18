@@ -1006,6 +1006,18 @@ meet it separately. What is not taste: whichever answer, it should be the same f
 
 **Blocks:** `15-language-surface` step 2.
 
+**Re-measured 2026-09-18 by the compiler, while `15-language-surface` landed: 245 sites, not ~274** —
+and the distribution the estimate gave is wrong in both directions: `libs/std` **51** (estimated 23),
+`tests/language` **44** (estimated 88), erika 78, jhonstart 35, rakun **31** (unlisted before),
+examples and CLI tests 5, onze 1, and **emilia 0** (estimated 30).
+
+**The parser half is written and deliberately uncommitted.** A 76-line patch — `isBlockShapedStmt`
+plus a `blockStatementSemicolon` parse error with its localised message — is held by front 15, because
+rejecting the trailing `;` rejects `libs/std`'s embedded prelude: **every** compile fails, and no
+single front can land it with a green gate. The landing is one coordinated sequence:
+`16-formatter` stops printing the `;` → 15 applies the patch → `12-language-tests` (44),
+`libs/std` (51) and `09-ecosystem-residuals` (145 across the siblings) migrate in the same change.
+
 ---
 
 ---
@@ -1028,6 +1040,15 @@ documents assume it, the libraries work around it, and `at` returning an optiona
 feature, not a replacement.
 
 **Blocks:** the decision 8 sections that presuppose it; `15-language-surface` step 4.
+
+**Landed in the parser 2026-09-18** — `feat` `109f6c9`, front `15-language-surface`. Also with **no new
+AST variant**: an index is the builtin call `ast.index_builtin_name` (`"[]"`) over `(receiver, index)`,
+contract at `ast.zig:1681-1703`. One node serves indexing and slicing, because the index is an ordinary
+expression: `xs[0..2]` is the same call with a `range` argument, `d["k"]` with a string. What remains is
+`01-checker` typing it by the receiver (and refusing it on `unknown`, `decision-8:112`) and **one
+lowering in each of fronts 02–05**; until then it reaches the unrecognised-builtin path, where `x is T`
+used to be. `xs[0] = 5` — an index in write position — is still an error and needs assignment-target
+grammar, which decision 37 makes a question rather than a gap.
 
 ---
 
@@ -1088,6 +1109,12 @@ three of them**.
 declarations are wrong, and they read as deliberate.
 
 **Blocks:** `15-language-surface` step 4.
+
+**Landed 2026-09-18** — `feat` `109f6c9`. And the "three `libs/std` declarations" are, measured,
+**one**: `libs/std/src/builtins.d.bp:197` `fn emit(source: string)` → `-> void`. The others counted are
+different grammars — `:12`, `:16` and `:20` are `pub declare fn …;`, and `:398`/`:399`/`:463`/`:464`
+plus `primitives.bp:349`/`:377` are `behavior` members. **A second question follows from that**: should
+the three `declare fn` also name `-> void`, for the same reason? It is not what this decision answered.
 
 ---
 
@@ -1157,6 +1184,14 @@ work-arounds into assertions.
 
 **Blocks:** `12-language-tests`' range cells.
 
+**Not landed, and measured further on 2026-09-18.** Front 15 left the edit — ~10 lines in
+`parser/patterns.zig`'s `finishRangePattern` (`:269-274`) plus dropping `dotDotDot` from the lexer —
+because `patterns.zig` is `01-checker`'s step-4 grammar and the change re-records its `case` snapshots.
+**`1...9`, the spelling today's diagnostic recommends, works on no backend**: `case 9 { 1...9 { 1 } _ { 0 } }`
+answers `undefined` on commonJS and `0` on erlang, because a brace-arm of `case` is neither typed nor
+lowered — the defect already filed with `01-checker`. So the run-time semantics this decision asks for
+is the one that already exists; what is missing is the spelling and the sentence in decision 8 §5.
+
 ---
 
 ---
@@ -1211,6 +1246,11 @@ on a description that does not reproduce.
 **empty**, and decision 14 is amended to "four parse, two absent" rather than inventing a third.
 
 **Blocks:** `15-language-surface` step 1.
+
+**Landed 2026-09-18** — `feat` `109f6c9`, front `15-language-surface`. All five forms parse, `??`
+included. `a ?? b` carries **no new AST node**: it desugars into the optional-binding `if` the language
+already had, bound to `ast.nullish_binding_name`, so no backend has anything to do for it — only
+`16-formatter` has to print it back, which it does not yet.
 
 ---
 

@@ -396,3 +396,29 @@ rather than building it.
 ```markdown
 | [`16-formatter`](./16-formatter/README.md) | high | `format --check` is red on four of five libraries and the formatter is **idempotent**, so the reds look like disagreements about the canonical form. Four of the ten red files are not: `botopink format` **deletes the `default` keyword** — `pub default mod` / `pub default fn`, the package handle and its handler — which silently unbinds every consumer of a package whose names differ, and it **reorders 13 enum variants** above the sections they were written after. Both survive `format --check`, because a deletion is idempotent, and none of the 239 formatter tests would notice. The keyword is a missing printer arm for a flag the AST already carries; the order and three trailing-trivia slots are parser fields whose recommended shape touches 3 files and no backend |
 ```
+
+---
+
+## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
+
+**Three printer arms, one class: a form parses and `format` does not print it back.** The first two
+lose data, which is the same defect class as `pub default mod` — a deletion is idempotent, so
+`format --check` stays green over it:
+
+| Written | `format` prints | Why it matters |
+|---|---|---|
+| `(i32 \| string)[]` | `i32 \| string[]` | **a different type** — the parentheses are the array's element boundary |
+| `adder(3)(4)` | `(4)` | **the receiver is dropped** |
+| `xs[0]` | `@[](xs, 0)` | the desugaring leaks; `d["k"]` and `xs[0..2]` are the same node |
+| `a ?? 0` | the desugared `if` | pre-existing class, not new: `x is i32` already prints `@is(x)` |
+
+**And the second half of G6 is now yours alone.** After 15's `28e447e` a blank line inside a `loop`
+body **survives** `format`; inside an `if` branch it still does not, because `fmtBranchStmts` never
+reads `emptyLinesBefore` — the AST has carried it all along.
+
+**Decision 29's other half is written and waiting on you.** 15 holds a 76-line parser patch that
+rejects the trailing `;`; it cannot land alone, because it rejects `libs/std`'s embedded prelude and
+every compile fails. The coordinated landing is: this front stops printing the `;`, 15 applies the
+patch, [`12-language-tests`](../12-language-tests/README.md) migrates its 44 sites, `libs/std` its 51
+and [`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md) the siblings' 145 — **245 sites
+total**, counted by the compiler, against the ~274 the decision estimated (emilia has **0**, not 30).

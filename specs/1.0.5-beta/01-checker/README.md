@@ -458,3 +458,30 @@ they were found probing `c2dd780` for this front and are not in that document ye
 **Front-table row**
 
 | [`01-checker/`](./01-checker/README.md) | critical | Decision 8's inference — `unknown`, unions, `is` and narrowing, `case` arms and exhaustiveness — plus generics §1, trailing defaults, the `.withLoc` diagnostic sweep, the parser gaps inference needs, and decision 8 written into `libs/std` and `examples` |
+
+---
+
+## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
+
+Front 15 made two forms parse that nothing types. Neither is a new AST variant, by the argument `is`
+already used, so the work is inference-side only.
+
+1. **`adder(3)(4)` reaches inference as a call whose `callee` is empty**, and it answers
+   `unbound variable ''`. When a call's callee is itself an expression the node carries it in
+   `calleeExpr`; type that, then apply. The parser guarantees exactly one of the two is set.
+
+2. **`xs[0]` types as `void`.** The index is the builtin call `ast.index_builtin_name` (`"[]"`) over
+   `(receiver, index)` — `ast.zig:1681-1703` states the contract. Inference has to type it **by the
+   receiver**: the element type for an array, the value type for a dict, a character for a string, the
+   member type for a tuple with a constant index — decide whether the answer is `T` or `?T`, and
+   **refuse an index on `unknown`**, which `decision-8:112` already lists among the operations
+   `unknown` has none of. Slicing is the same node with a `range` second argument.
+
+**And one that is yours to spend, not 15's:**
+[decision 36](../decisions-taken.md#20-is-a-pattern-range-inclusive) is ~10 lines in
+`parser/patterns.zig`'s `finishRangePattern` (`:269-274`) plus dropping `dotDotDot` from the lexer —
+but `patterns.zig` is this front's step-4 grammar and the change re-records its `case` snapshots, so 15
+left it. Measured while it was there: `1...9`, the spelling today's diagnostic recommends, **works on
+no backend** — `case 9 { 1...9 { 1 } _ { 0 } }` answers `undefined` on commonJS and `0` on erlang,
+because a brace-arm is neither typed nor lowered. That is the same defect as the 17 lines already
+filed here.

@@ -27,6 +27,62 @@ in `repository/botopink-lang`, never in `.tasks/`.
 
 ---
 
+## Landed — 2026-09-18, merged into `feat` as `109f6c9`
+
+Eight commits on `fix/surface`, cold gate green at each one, **19 new parser snapshots and not one
+existing snapshot re-recorded** — the step-4 rule held. The merged suite reads **218 passed / 53
+expected failures / 0 failed**.
+
+| Commit | What now parses |
+|---|---|
+| `da942d7` | **R1** — the `T[]` suffix is the type's, applied **once at the exit** of `parseBaseTypeRef`: `#(a: i32, b: string)[]`, `@Result<i32, string>[]` and `(i32 \| string)[]` join `Box<i32>[]` |
+| `5da938f` | **R2** — a chain link chains from **every** receiver, and `adder(3)(4)` is one |
+| `46f8c5d` | **R3** — a `.` continues a number only before a **digit**, so `42.toString()` reads as a method on a literal |
+| `28e447e` | **R4** — one block body (`parseBlockBody`), so a `//` comment and a blank line belong to the block and not to the copy |
+| `6907119` | **R5** — [decision 30](../decisions-taken.md): `xs[0]`, `d["k"]`, `s[0]`, `xs[0..2]`, `xs[0..]`, `rows(1)[0]` |
+| `fb230e5` | **R8** — [decision 28](../decisions-taken.md): `a ?? 0` |
+| `9daf390` | **R7** — [decision 33](../decisions-taken.md): a bodyless `fn` declares its return type, and says so when it does not |
+| `e83c783` | The catch-all names the token it stopped on, so a deliberate refusal reads differently from a gap |
+
+**Three premises of this README were wrong, and the measurement is the correction.** The postfix chain
+had **four** copies, not one — `adder(3)(4)` only closed with the link in `parseExpr`; the inlined
+block loops were **five**, not two, and a `loop` body is not a lambda body; and `) -> noreturn` did
+**not** parse (only `) F` did).
+
+**Two forms carry no new AST variant**, by the same argument `is` used: an index is the builtin call
+`ast.index_builtin_name` (`"[]"`) over `(receiver, index)` — one node for indexing *and* slicing, since
+the index is an ordinary expression — and `a ?? b` desugars into the optional-binding `if` the language
+already has, bound to `ast.nullish_binding_name`. So `??` needs **nothing** from the backends, and the
+index needs one lowering from each.
+
+### What this front did not do, and why
+
+- **[Decision 29](../decisions-taken.md#29-does-a-block-shaped-statement-end-itself) — the parser half
+  is written and deliberately not committed.** Rejecting the trailing `;` rejects `libs/std`'s embedded
+  prelude, so **every** compile fails and no single front can land it green. The 76-line patch
+  (`isBlockShapedStmt` + `blockStatementSemicolon`, with the localised message) is held for the
+  coordinated landing described under decision 29 below. **245 sites**, counted by the compiler itself —
+  not the ~274 estimated: `libs/std` **51** (the estimate said 23), `tests/language` **44** (said 88),
+  erika 78, rakun 31, jhonstart 35, examples/CLI tests 5, onze 1, and **emilia 0** (said 30).
+- **[Decision 36](../decisions-taken.md#20-is-a-pattern-range-inclusive) — untouched**, because
+  `parser/patterns.zig` is the `case` grammar of [`01-checker`](../01-checker/README.md) step 4 and the
+  change re-records its snapshots. The edit is ~10 lines in `finishRangePattern` (`:269-274`) plus
+  removing `dotDotDot` from the lexer. **And a worse thing was measured:** `1...9` — the spelling the
+  diagnostic recommends — **works on no backend**. `case 9 { 1...9 { 1 } _ { 0 } }` answers `undefined`
+  on commonJS and `0` on erlang, because a brace-arm of `case` is neither typed nor lowered (the 17
+  lines already filed with 01). The run-time semantics decision 36 asks for is therefore the one that
+  already exists; what is missing is the spelling and the sentence.
+- **Module-level `var` — measured only**, as asked: today `unexpected `var`` at `1:1`. It needs a
+  `.@"var"` arm in `parser.zig:441`, beside `checkShorthand(.val)`, **and a `mutable` field on
+  `ast.ValDecl`**, which has none — a top-level binding is immutable by construction. The grammar is
+  trivial; the semantics are the `@BeamMemory` design.
+- **`xs[0] = 5` is still an error** — an index in write position needs assignment-target grammar, which
+  decision 37 makes a question rather than a gap.
+- **`val r = 1..9;`** (a range outside `loop` or an index) was already an error before this front —
+  verified against the fork.
+
+---
+
 ## Problem
 
 **A form the documents promise and the compiler rejects is either a decision or a defect, and today

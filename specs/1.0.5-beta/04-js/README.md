@@ -348,3 +348,16 @@ row.
 **Front-table row**
 
 | [`04-js/`](./04-js/README.md) | high | Decision 8 at run time on commonJS — the §7 formatter (`f64` as `5.0`, source-shaped records and variants), `is`, unions, `case` arms and tuple labels — plus `break <value>` returning a one-element array, `==` on tuples comparing references, the sibling-module `require("./module")`, a `.d.ts` that contradicts its own JavaScript, and JS-4's pattern binding |
+
+---
+
+## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
+
+**One lowering: the index expression.** [Decision 30](../decisions-taken.md) landed in the parser as a
+builtin call — `ast.index_builtin_name` (`"[]"`) over `(receiver, index)`, contract at
+`ast.zig:1681-1703` — so `xs[0]`, `d["k"]`, `s[0]` and the slice `xs[0..2]` (the same node with a
+`range` second argument) all arrive as one shape. Until this backend lowers it, the form falls into the
+unrecognised-builtin path — the same place `x is T` sat before it was lowered.
+
+**`a ?? b` asks nothing of this backend.** It desugars in the parser into the optional-binding `if`
+the language already has (`ast.nullish_binding_name`), which this backend already emits.

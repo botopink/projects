@@ -348,3 +348,16 @@ starting and record it in the landing note.
 **Front-table row**
 
 | [`05-wasm/`](./05-wasm/README.md) | high | Decision 8 at run time on wasm — the §7 formatter (a record prints as a raw heap address today), the box that carries `unknown` and unions, `is`, `case` arms and `loop` — plus a `Dict` lookup that answers the fallback with exit 0 and no diagnostic, `break <value>` returning a one-element array, `==` on tuples comparing references, and two string primitives that trap |
+
+---
+
+## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
+
+**One lowering: the index expression.** [Decision 30](../decisions-taken.md) landed in the parser as a
+builtin call — `ast.index_builtin_name` (`"[]"`) over `(receiver, index)`, contract at
+`ast.zig:1681-1703` — so `xs[0]`, `d["k"]`, `s[0]` and the slice `xs[0..2]` (the same node with a
+`range` second argument) all arrive as one shape. Until this backend lowers it, the form falls into the
+unrecognised-builtin path — the same place `x is T` sat before it was lowered.
+
+**`a ?? b` asks nothing of this backend.** It desugars in the parser into the optional-binding `if`
+the language already has (`ast.nullish_binding_name`), which this backend already emits.

@@ -309,3 +309,20 @@ Two interactions to plan for:
 ```markdown
 | [`12-language-tests`](./12-language-tests/README.md) | high | not started — step 1 first of the milestone | The suite is at 205 passed / 54 expected failures / 0 failed, and every one of those 54 owner rows names a 1.0.4-beta front number, one of them a row that never existed. Plus the cells still missing: nothing asserts that a value knows its own type — the whole subject of `13-module-identity` has no botopink-level test — and beam is excluded on a reason that does not hold: `erlc +from_asm out/main.S` and `erl -eval` run the artifact, with a tool the gate already has |
 ```
+
+---
+
+## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
+
+**`tests/language/AGENTS.md:183-186` is now doubly obsolete.** Its `??` and module-`var` lines still
+read "deliberately absent (14)", and [decision 28](../decisions-taken.md) reversed the first: `??`
+parses as of `fb230e5`. The `??` line also repeats the premise this milestone already measured as
+false — that `catch` covers it; `catch` is `@Result`-only.
+
+**Cells that can now be written** (the forms landed, the backends have not): `xs[0]` and `xs[0..2]`
+reach the unrecognised-builtin path on all four backends until fronts 02–05 lower them, so index cells
+belong in `expected-failures.txt` with those owners, not as passing cells.
+
+**Decision 29, when it lands**, moves **44** sites in this suite — not the 88 the decision estimated.
+The count is the compiler's, and the migration is coordinated with
+[`16-formatter`](../16-formatter/README.md) and [`15-language-surface`](../15-language-surface/README.md).
