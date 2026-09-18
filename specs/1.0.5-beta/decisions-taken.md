@@ -34,6 +34,13 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 26 | `case` arms of different types | they union — inference may produce a union |
 | 35 | Structural equality | structural — it follows from 37 |
 | 37 | Is a record immutable? | **yes** — the checker rejects `p.f = v` |
+| 29 | Does a block-shaped statement end itself? | **(c)** — no `;`; ~274 sites migrate |
+| 30 | Is there an index expression? | **yes** — `xs[0]` parses everywhere |
+| 31 | Does `any` exist? | deleted, for now; `Iterator` gets a real default |
+| 32 | `Option.None` / `Some(1)` in value position | removed from the documents; the optional is `?T` |
+| 33 | A bodyless `fn` with no return type | **(b)** — it declares one; three `libs/std` lines gain `-> void` |
+| 34 | The `format --check` exemption | **(c)** — no exemption; decision 18's is withdrawn |
+| 36 | Does `..` exclude its end in a pattern? | yes — exclusive everywhere |
 
 ---
 
@@ -969,6 +976,184 @@ through [decision 21](./decisions-taken.md): once a record is a tagged tuple car
 
 **Blocks:** `12-language-tests`' equality cells; it is also the second half of `test/type_identity.bp`,
 which today fails only because the erlang record is a bare map.
+
+---
+
+---
+
+## 29. Does a block-shaped statement end itself?
+
+**Decided 2026-09-18 by the maintainer: (c) — a block-shaped statement ends itself.** Against the
+recommendation, which was to keep the `;`. `if`, `loop` and `case` in statement position take **no**
+`;` after the closing brace; the rule is uniform across the three, as the question required.
+
+**What it costs, measured before the answer:** ~**274** `};` sites across the ecosystem
+(tests/language 88, erika 86, jhonstart 43, emilia 30, `libs/std` 23, examples 3, onze 1) — not all of
+them are a block in statement position, but that is the order of the migration. Two fronts move
+together: `15-language-surface` makes the parser reject the trailing `;`, and `16-formatter` stops
+printing it, or every formatted file re-grows what the parser now refuses.
+
+**Measured.** `if`, `loop` and `case` parse **with** a `;` after the closing brace. Whether that `;`
+should be required, optional or rejected is a question nobody has been asked; the grammar simply grew
+one answer.
+
+**Options.** (a) Required, as today. (b) Optional. (c) Rejected — a block-shaped statement ends itself.
+
+**No recommendation** — this is taste, and the point is to ask it **once** rather than let each front
+meet it separately. What is not taste: whichever answer, it should be the same for the three.
+
+**Blocks:** `15-language-surface` step 2.
+
+---
+
+---
+
+## 30. Is there an index expression?
+
+**Decided 2026-09-18 by the maintainer: (a) — the language gets an index expression.** `xs[0]` parses
+in every position, and the decision 8 sections that presuppose one stop being aspirational. It is
+parser work plus a lowering in each of the four backends, so it is the largest of the eight.
+
+**Measured.** `xs[0]` is a **parse error in any position** — there is no index expression in the
+language. Decision 8 presupposes one twice (`:112`, `:447`), and so does ordinary reading of every
+array example.
+
+**Options.** (a) Add it. (b) Keep arrays accessed only through methods (`at`, `first`, …) and correct
+decision 8.
+
+**Recommendation: (a).** An array with no index syntax is a surprise in every direction — the
+documents assume it, the libraries work around it, and `at` returning an optional is a different
+feature, not a replacement.
+
+**Blocks:** the decision 8 sections that presuppose it; `15-language-surface` step 4.
+
+---
+
+---
+
+## 31. Does `any` exist?
+
+**Decided 2026-09-18 by the maintainer: (a), for now.** `any` is deleted and `Iterator` gets a real
+default type argument. The "for now" is recorded as written: if a later need for an escape hatch
+appears, it comes back as its own decision rather than as a type that quietly disables the checker.
+
+**Measured.** `any` parses **and checks**, and `libs/std/src/builtins.d.bp:88` uses it as a default
+type argument — while decision 8 (`:129-133`) says in as many words that no type turns the checker
+off.
+
+**Options.** (a) Delete `any` and give `Iterator` a real default. (b) Keep it and correct decision 8.
+
+**Recommendation: (a).** A type that means "stop checking" is the one thing decision 8 refuses by
+name; the single use is a default that can be written properly.
+
+**Blocks:** `libs/std`'s `Iterator` declaration; `01-checker`'s source step.
+
+---
+
+---
+
+## 32. Are `Option.None` and `Some(1)` value names?
+
+**Decided 2026-09-18 by the maintainer: remove them and rewrite as `?T`.** Every `Option.None` and
+`Some(1)` in value position leaves the documents; the optional is `?T`, and `.Some` / `.None` stay
+patterns, as decision 2 settled.
+
+**Measured.** The documents write them in value position. Decision 2 already settled that `?T` is the
+only optional and `.Some` / `.None` are patterns — so the documents contradict a decision already
+taken.
+
+**Recommendation.** The documents are wrong; correct them rather than re-open decision 2.
+
+**Blocks:** the `docs.md` and decision-8 lines that write them.
+
+---
+
+---
+
+## 33. A bodyless `fn` with no return type
+
+**Decided 2026-09-18 by the maintainer: (b) — a bodyless `fn` declares its return type.** Against the
+recommendation. `fn f(x: string)` with no body and no `-> …` stays a parse error, and the **three
+`libs/std` declarations that write it are the ones that change**, gaining `-> void`. The rule reads:
+a declaration without a body says what it answers, even when the answer is nothing.
+
+**Measured.** `fn f(x: string)` — no body, no return type — does not parse, and `libs/std` **declares
+three of them**.
+
+**Options.** (a) Make it parse. (b) Require `-> void` or a body.
+
+**Recommendation: (a).** The standard library already writes the form; either it parses or those three
+declarations are wrong, and they read as deliberate.
+
+**Blocks:** `15-language-surface` step 4.
+
+---
+
+---
+
+## 34. The `format --check` exemption does not exist
+
+**Decided 2026-09-18 by the maintainer: (c), for now — no exemption mechanism.** Against the
+recommendation, and it **withdraws the exemption granted by [decision 18](#18-emilias-tokensbp-and-format---check)**:
+emilia's `tokens.bp` is formatted like every other file and the hoist is accepted.
+
+Two consequences to carry. The hoist is a **fidelity** loss, not a correctness one — front 16 measured
+that the emitted output is byte-identical on all four backends after it (13 variants at 4 sites). And
+`16-formatter` must land its `default`-deleting fix **before** `09-ecosystem-residuals` formats
+anything, or three files lose `pub default mod` / `pub default fn` and the check reports them clean.
+
+**Measured.** [Decision 18](./decisions-taken.md) exempted emilia's `tokens.bp` from `format --check`
+— but there is **no exemption mechanism**: `format_cmd.zig` has no skip list of any kind. The decision
+assumed a feature.
+
+**Options.** (a) A key in `botopink.json` (a list of paths the check skips, with a reason string).
+(b) A marker comment in the file itself. (c) No exemption — the file is formatted and the hoist
+accepted.
+
+**Recommendation: (a)**, built by `10-cli-residuals`, which owns `format_cmd.zig`. It keeps the reason
+next to the project rather than hidden in a file, and `--check` can print it, so a reader meets the
+defect instead of wondering why one file is exempt.
+
+**Blocks:** `16-formatter`'s exemption; `09-ecosystem-residuals`' format step.
+
+---
+
+
+This file stays because the fronts will fill it again. A front that meets a question it cannot answer
+from the code writes it here rather than guessing, in the shape the others used:
+
+> **Measured.** What was observed, with the command or program that produced it and the file or commit
+> that can be re-read.
+>
+> **Options.** Each one stated so that choosing between them is possible without reading the code.
+>
+> **Recommendation.** One, argued — a question with no recommendation is a question the front did not
+> finish thinking about.
+>
+> **Blocks.** The step, front or landed work that waits on the answer.
+
+Numbers are never reused: the next question added here is **28**, whatever has left the file since.
+
+---
+
+## 36. Does `..` exclude its end **in a pattern**?
+
+**Decided 2026-09-18 by the maintainer: (a) — `..` is exclusive everywhere**, in a pattern exactly as
+in a loop. It is one sentence in decision 8 §5, and front 12 turns its work-arounds into assertions.
+
+**Measured.** [Decision 20](./decisions-taken.md) removed `...` and made `..` the only range, "in
+patterns and in iteration alike". `loop (0..4)` is exclusive, so a pattern `1..9` is *implicitly*
+exclusive — but nothing says so, and front 12's cells still work around the boundary instead of
+asserting it.
+
+**Options.** (a) Exclusive, matching `loop`. (b) Inclusive in a pattern, exclusive in a loop — the same
+spelling meaning two things by position.
+
+**Recommendation: (a).** (b) is what decision 20 refused when it removed the second spelling. What is
+missing is not the answer but the sentence: decision 8 §5 has to say it, and front 12 turns the
+work-arounds into assertions.
+
+**Blocks:** `12-language-tests`' range cells.
 
 ---
 
