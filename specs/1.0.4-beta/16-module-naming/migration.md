@@ -146,3 +146,23 @@ and the gate cannot prove they were fixed. The front's step 4 adds the test that
 **2–3 days** for the quoting rule in every emitter and the ~620 snapshot re-records, each of which
 has to be classified rather than bulk-accepted (the rule carried forward in
 [`../overview.md`](../overview.md#rules-carried-forward)).
+
+---
+
+## 6. Policy 3 on top
+
+[Policy 3](./policy-3-module-per-type.md) (maintainer, 2026-09-17 — one BEAM module per `type` and
+per `behavior`) is a separate cost on top of everything above, and a different **kind** of cost:
+the numbers in §§ 1–5 are names changing, policy 3 is emitted shape changing.
+
+| | A + A2 (§§ 1–5) | Policy 3 |
+|---|---|---|
+| Snapshots | ≈ 20, one atom per file | **188** — 94 erlang + 94 beam, each gaining emitted sections ([§ 4](./policy-3-module-per-type.md#4-snapshot-cost--measured)) |
+| Compiler | ≈ 180 LOC, 9 files | the four `*Forms` emitters split, `codegenEmit` yields N artifacts, `build.zig` + `run.zig`, `beam_asm.zig` mirrored, three mangling helpers deleted |
+| Libraries | no `.bp` change | no `.bp` change; every erlang cell re-runs |
+| Runtime | none | +0.372 ns per method call ([E26](./evidence.md#e26--local-call-vs-remote-call)) |
+| Breaks on the way | nothing | `botopink run --target erlang` for every type-bearing program ([E25](./evidence.md#e25--botopink-run-breaks-under-policy-3)) |
+| Days | ≈ 3.5 | **+5–7** |
+
+Recommendation and the step cut are in
+[`policy-3-module-per-type.md` § 9](./policy-3-module-per-type.md#9-recommendation-on-sequencing--cut-it-out-of-front-16).

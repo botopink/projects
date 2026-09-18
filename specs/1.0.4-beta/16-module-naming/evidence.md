@@ -509,3 +509,112 @@ A source segment containing `__` would be read back as a declaration qualifier. 
 [`declaration-qualifier.md` § 4](./declaration-qualifier.md#4-__-is-reserved-and-what-that-costs):
 collapse runs of `_`, and diagnose the resulting `my__mod` / `my_mod` collision instead of picking a
 winner. No file or directory in the seven repositories uses `__` today.
+
+---
+
+The five experiments below were added for
+[policy 3](./policy-3-module-per-type.md) — one BEAM module per `type` and per `behavior`, decided
+by the maintainer on 2026-09-17.
+
+<a id="e22--four-sibling-s-modules-from-one-source-file"></a>
+
+## E22 — four sibling `.S` modules from one source file
+
+Hand-written `.S` files standing for one `src/models/user.bp` (the file's own module, two `type`s
+and a `behavior`), plus an `.erl` caller that `call_ext`s into three of them:
+
+```
+$ erlc +from_asm 'models@user.S' 'models@user__t__pessoa.S' \
+                 'models@user__t__empresa.S' 'models@user__b__greeter.S'
+erlc +from_asm exit=0
+
+$ erl -pa . -eval 'io:format("cross-call -> ~p~n",[caller3:go()])'
+cross-call -> {file_module,pessoa_v1,greeter_v1}
+```
+
+The BEAM backend carries policy 3 exactly as the erlang backend does.
+
+<a id="e23--hot-swapping-one-type-module"></a>
+
+## E23 — hot-swapping one type module, siblings untouched
+
+Re-assembling only `models@user__t__pessoa.S` and reloading it:
+
+```
+before      -> {file_module,pessoa_v1,greeter_v1}
+after  swap -> {file_module,pessoa_v2_HOTSWAPPED,greeter_v1}
+reloaded    -> {module,models@user__t__pessoa}
+```
+
+`code:load_file/1` on one type swaps that type alone. Under today's flat layout the whole file's
+module reloads, taking every type in it.
+
+<a id="e24--a-stack-trace-names-the-owning-type"></a>
+
+## E24 — a stack trace names the owning type
+
+The same failure, emitted the two ways. Today's shape — the type name fused into the function name,
+the module being the file:
+
+```erlang
+-module(main).
+pessoa_greet(P) when is_map(P) -> maps:get(nome, P).
+```
+
+Policy 3's shape:
+
+```erlang
+-module('models@user__t__pessoa3').
+greet(P) when is_map(P) -> maps:get(nome, P).
+```
+
+```
+today:   error:function_clause  {main,pessoa_greet,[notamap],
+                                      [{file,"today/main.erl"},{line,3}]}
+after:   error:function_clause  {models@user__t__pessoa3,greet,[notamap],
+                                      [{file,"models@user__t__pessoa3.erl"},{line,3}]}
+```
+
+The module names the owner and the function keeps the name the programmer wrote.
+
+<a id="e25--botopink-run-breaks-under-policy-3"></a>
+
+## E25 — `botopink run --target erlang` breaks under policy 3
+
+`cli/run.zig:66-71` runs the erlang target as `escript out/<mod>.erl`, with no `-pa`. escript
+compiles only the file it is handed:
+
+```
+$ escript main.erl          # main/1 calls 'models@user__t__pessoa':greet("ana")
+escript: exception error: undefined function models@user__t__pessoa:greet/1
+  in function  main_erl__escript__1789__697293__450783__2309:main/1 (main.erl:2)
+```
+
+Under policy 3 *every* program whose type has a method is a multi-module program, so this stops
+being the residual recorded in [`README.md`](./README.md) step 6 and becomes a **blocker**. The fix
+is the shape `runtime.zig:581` already uses: `erl -noinput -pa <dir> -s <entry> _botopink_main -s
+init stop`.
+
+(The escript trace also shows E20's convention once more: OTP named its own synthesised module
+`main_erl__escript__1789__697293__450783__2309`.)
+
+<a id="e26--local-call-vs-remote-call"></a>
+
+## E26 — local call vs remote call
+
+Identical one-line body, 10 000 000 calls, best of 5 `timer:tc` runs after a 100 000-call warm-up.
+`local_call` calls a function in its own module; `remote_call` calls `callee:greet/1`.
+
+```
+N            = 10000000 calls
+local  call  = 22234 us  (2.223 ns/call)
+remote call  = 25953 us  (2.595 ns/call)
+overhead     = 3719 us total, 0.372 ns/call, 16.7%
+```
+
+Linux 7.2.4-arch1-2, Erlang/OTP 29 (`erts-17.0.6`).
+
+The 16.7% is the **upper bound** of the relative overhead — the body is a single `+`, so the call is
+nearly the whole cost. In absolute terms it is **0.372 ns per call**: ten million method calls cost
+3.7 ms more. The erlang fixtures make tens to hundreds of calls. The cost is irrelevant at the scale
+of the programs this compiler generates.

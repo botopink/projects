@@ -25,7 +25,9 @@ Line numbers read at `botopink-lang` `dfc34a9`; re-locate by symbol.
 This front exists to answer a maintainer proposal. The proposal, the evidence for and against it,
 and the counter-proposal are in [`erlang-atoms.md`](./erlang-atoms.md),
 [`evidence.md`](./evidence.md), [`options.md`](./options.md) and
-[`declaration-qualifier.md`](./declaration-qualifier.md). **No decision is taken here** — the
+[`declaration-qualifier.md`](./declaration-qualifier.md). Two things are **already decided** and are
+not reopened here: option A + A2 (the atom), and
+[**policy 3**](./policy-3-module-per-type.md) — one BEAM module per `type` and per `behavior`. **No decision is taken here** — the
 front's step 0 is the maintainer choosing a scheme.
 
 ---
@@ -172,13 +174,43 @@ a source-derived name and generator discriminators is OTP's own convention — `
 synthesised module `whoami_escript__escript__1789__696388__940472__2306`
 ([E20](./evidence.md#e20--otps-own-escript-uses-__-the-same-way)).
 
+## Decided: policy 3 — one module per `type` and per `behavior`
+
+**Maintainer, 2026-09-17.** Not "slice when it collides" and not today's inlining: **every** `type`
+and `behavior` declaration gets its own BEAM module, named by A2 —
+`<pathAtom>__t__<decl>`, `__b__<decl>`, `__im__<decl>`. The full working-out, each claim measured or
+run, is [`policy-3-module-per-type.md`](./policy-3-module-per-type.md). In summary:
+
+| | |
+|---|---|
+| **Mechanically sound** | four sibling `.S` modules from one source assemble, load and `call_ext` into each other ([E22](./evidence.md#e22--four-sibling-s-modules-from-one-source-file)); one hot-swaps alone ([E23](./evidence.md#e23--hot-swapping-one-type-module)) |
+| **Runtime cost** | `call_ext` vs local call = **0.372 ns/call**, 16.7% on a one-`+` body (the upper bound). Ten million calls cost 3.7 ms more ([E26](./evidence.md#e26--local-call-vs-remote-call)) — irrelevant at the scale of the generated programs |
+| **Both manglings die** | `recordMethodAtom` (`erlang.zig:1841`), `interfaceAssocAtom` (`:1408`) and `record_method_collisions` (`:1743`) are deleted; 25 mangled names leave the snapshots |
+| **Stack traces name the owner** | `{main, pessoa_greet, …}` → `{models@user__t__pessoa, greet, …, [{file,…},{line,3}]}` ([E24](./evidence.md#e24--a-stack-trace-names-the-owning-type)) |
+| **Snapshot cost** | **188 files change shape** — 94 erlang + 94 beam, measured, against ≈ 20 for A2 alone ([`policy-3-module-per-type.md` § 4](./policy-3-module-per-type.md#4-snapshot-cost--measured)) |
+| **It breaks something** | `botopink run --target erlang` is `escript out/<mod>.erl` with no `-pa`, so **every** type-bearing program stops running ([E25](./evidence.md#e25--botopink-run-breaks-under-policy-3)). The recorded residual becomes a blocker |
+
+**Sequencing.** Front 16 is a *naming* front — 20 snapshots changing an atom on one line. Policy 3
+is a *code generation* front — 188 snapshots each gaining whole emitted sections, plus the behavior
+dispatch path and a `codegenEmit` signature change. Landing them together makes every one of those
+188 diffs carry two reasons at once, and a re-recorded snapshot must be **classified, not
+bulk-accepted** ([`../overview.md`](../overview.md#rules-carried-forward)).
+**Decided 2026-09-17 by the maintainer: one front, not two.** Policy 3 runs inside front 16 as
+steps 7–13, and the estimate goes from ≈ 3.5 days to **≈ 9**. The classification problem is met by
+ordering rather than by splitting: the atom rename lands first and alone (steps 1–6, ≈ 20 snapshots,
+names only), the emitter split after it (steps 7–13, 188 snapshots, shapes), so no commit and no
+re-recorded snapshot ever carries both reasons. The steps are in
+[`policy-3-module-per-type.md` § 9](./policy-3-module-per-type.md#9-sequencing--decided-2026-09-17-one-front-not-two).
+
 ## Steps
 
 ### Step 0 — the maintainer picks a scheme
 
-Read [`options.md`](./options.md) and choose P, A, B or C. Nothing below starts first; every later
-step's acceptance is written against the chosen rule. If the answer is A, also decide **A-flat**
-(`out/erl/<atom>.erl`, recommended) or **A-nested**.
+**Option A + A2 is chosen and policy 3 is decided.** What remains for step 0 is one layout call and
+one open question. Layout: **A-flat** (`out/erl/<atom>.erl`, recommended) or **A-nested** —
+policy 3 pushes hard toward A-flat, since one `.bp` now yields N files
+([`policy-3-module-per-type.md` § 7](./policy-3-module-per-type.md#7-layout-and-cli)). The
+sequencing call is closed: one front, ≈ 9 days.
 
 One open question that could move the recommendation from A to C: Elixir compiles `MyApp.User` to
 the atom `:"Elixir.MyApp.User"` and a flat `Elixir.MyApp.User.beam`. `elixir` is **not installed**
@@ -186,8 +218,10 @@ in this environment, so that is unverified. If it is right, C is industrial prio
 maintainer's dotted form and the quoting cost is a known, paid-for cost elsewhere.
 
 **Acceptance:**
-- [ ] The chosen rule is written in this README as prose a second person can implement from
-- [ ] The Elixir claim is verified or explicitly dropped
+- [ ] A-flat or A-nested recorded here in one line
+- [x] The split is rejected — policy 3 is this front's steps 7–13 (maintainer, 2026-09-17)
+- [ ] The Elixir claim is verified or explicitly dropped (it no longer changes the recommendation —
+      option A is chosen — but it is still an unverified sentence in [`options.md`](./options.md))
 
 ### Step 1 — one canonical identity, one renderer per backend
 
@@ -278,9 +312,11 @@ Record, do not fix:
 
 - `CrossModule.exports` keyed by the bare symbol name (`crossModule.zig:112-135`) — two libraries
   exporting `pub fn get` still collide. A separate front.
-- `botopink run --target erlang` is `escript out/<mod>.erl` with no `-pa`
-  (`cli/run.zig:66-71`), so a cross-module erlang program is not runnable from the CLI. Decide
-  here whether step 2 fixes it or it becomes an unowned item.
+- ~~`botopink run --target erlang` is `escript out/<mod>.erl` with no `-pa`~~ — **promoted to a
+  blocker by policy 3** ([E25](./evidence.md#e25--botopink-run-breaks-under-policy-3)): every
+  type-bearing program becomes multi-module, so this must be fixed before policy 3 lands. It is
+  **step 7** of this front ([the second half](./policy-3-module-per-type.md#9-sequencing--decided-2026-09-17-one-front-not-two)),
+  not a residual.
 - The comptime server never purges a loaded module (`runtime/persistent_erl.zig:63-73`, no
   `code:purge/1`) and never deletes `.botopinkbuild/tmp/{template,decorator}/*.erl`. Unbounded in a
   long-lived process; irrelevant for a one-shot build. Not this front's, but found by it.
@@ -301,25 +337,46 @@ Record, do not fix:
       `src/comptime/` — `src/codegen/AGENTS.md:64` currently documents
       `ownerModuleAtom(name)` / `moduleBasename(path)` as "`web/http` → `http`" and would be wrong
 - [ ] Every library still builds (`zig build test-libs`, `scripts/known-red-libs.txt` still empty)
+- [ ] The stale comment at `erlang.zig:5359` is corrected — it claims the associated fn is quoted
+      `'Array_range'`; `interfaceAssocAtom:1410` lowercases the first character, so the emitted atom
+      is bare `array_range` ([`policy-3-module-per-type.md` § 1.1](./policy-3-module-per-type.md#11-today-one-erl-per-bp-everything-flat-inside-it))
 - [ ] Commit on `fix/module-naming`; no push, no merge
+
+**Policy 3's half (steps 7–13) adds:**
+
+- [ ] `botopink run --target erlang` executes a type-bearing program (today it cannot —
+      [E25](./evidence.md#e25--botopink-run-breaks-under-policy-3))
+- [ ] `recordMethodAtom`, `isRecordMethodCollision`, `record_method_collisions` and
+      `interfaceAssocAtom` are **deleted**, not bypassed
+- [ ] Two types in one file both declaring `greet/1` compile and run on erlang and beam
+- [ ] A behavior consumed by three modules has exactly **one** emitted copy of its associated fn
+- [ ] The 188 re-recorded snapshots classified one by one — which gained a module, which turned a
+      local call into a `call_ext`; **no `RUN LOG` should change**, and one that does is a bug
 
 ## Blast radius
 
 | What moves | Size |
 |---|---|
-| Snapshots re-recorded, option A | **≈ 20** of 2519 (the 9 multi-module erlang fixtures + their beam twins) |
+| Snapshots re-recorded, option A + A2 (**name only**) | **≈ 20** of 2519 (the 9 multi-module erlang fixtures + their beam twins) |
+| Snapshots changing **shape**, policy 3 | **188** — 94 erlang + 94 beam, measured (`grep -rl '^%% \(type\|behavior\|implement\) '`); commonJS (313) and wasm (312) unaffected |
 | Snapshots re-recorded, option P or C | **≈ 620** — every `-module(main).` becomes `'main'` |
 | Compiler source, option A + A2 | ≈ 180 LOC across 9 files |
+| Compiler source, policy 3 | `recordForms`/`enumForms`/`interfaceForms`/`implementForms` split, `codegenEmit` yields N artifacts, `build.zig` + `run.zig`, `beam_asm.zig` mirrored, three mangling helpers deleted |
+| Runtime, policy 3 | **+0.372 ns per method call** ([E26](./evidence.md#e26--local-call-vs-remote-call)) — 3.7 ms per ten million calls |
 | `.bp` source in `libs/std` or any sibling library | **none** — no library writes a module atom |
 | commonJS / typescript / wasm output | unchanged by construction |
 | `out/` layout for erlang and beam | flat — anything scripted against `out/std/math.erl` breaks |
 
 The breakdown, with the commands that produced each number, is in
-[`migration.md`](./migration.md). Estimated **≈ 3.5 days** for option A + A2, 5–6 for P or C.
+[`migration.md`](./migration.md). Estimated **≈ 3.5 days** for option A + A2 and **+5–7 days** for policy 3 — **≈ 9 days** for the
+front, which is how it runs (decided 2026-09-17: one front, not two).
 
-The risk worth naming: this front fixes latent failures. Nothing red today turns green, so step 4's
-new cells are the only evidence the work did anything — a front that skips them lands 150 LOC and
-620 snapshot churn with no proof.
+Two risks worth naming. First, the naming half fixes **latent** failures: nothing red today turns
+green, so step 4's new cells are the only evidence the work did anything. Second, policy 3 is the
+opposite — it turns something green **red on the way**: `botopink run --target erlang` stops working
+for every type-bearing program until its `-pa` fix lands
+([E25](./evidence.md#e25--botopink-run-breaks-under-policy-3)), which is why that fix opens the
+second half instead of being a residual.
 
 ## Notes
 
@@ -340,65 +397,23 @@ new cells are the only evidence the work did anything — a front that skips the
 
 ## Rows to add to `fronts.md` and `overview.md`
 
-Paste as-is; this front does not edit either file.
+**16 is already registered** in [`../fronts.md`](../fronts.md) (ownership row, matrix column, notes
+9–11) and in [`../overview.md`](../overview.md); 17 has since been added beside it. What follows is
+what the **policy-3 decision** adds on top. Paste as-is; this front edits neither file.
 
-### `overview.md` — the front table
+### Applied — one front (maintainer, 2026-09-17)
 
-```markdown
-| [`16-module-naming`](./16-module-naming/README.md) | high | not started | The erlang/BEAM module atom is the source path's basename, so two modules with the same file name collide silently and eleven `libs/std` modules shadow an OTP module. Evaluates the maintainer's `'name@path#Decl'` proposal and counter-proposes an unquoted `@`-joined path atom |
-```
+The split into `16b` was **rejected**: policy 3 is this front's steps 7–13. The rows below were
+applied to [`../fronts.md`](../fronts.md) and [`../overview.md`](../overview.md) on 2026-09-17 —
+16's ownership row now says the codegen files are a carve-out for steps 1–6 and **wholesale** for
+steps 7–13, its snapshot cell reads "≈ 20 then 188", its state reads "after 12 **and after 01
+closes**", and note 9 carries the ordering rule (the atom rename lands first and alone). Nothing
+here is left to paste; what follows is the unowned-item row the decision changes.
 
-### `overview.md` — the Order diagram
+### The unowned-item row the decision changes
 
-```markdown
-12 surface-cutover (alone) ──► 06 checker ──► 01 steps 5–6 ──► 08 wave A
-                                   │
-                                   ├──► 07 comptime-dedup ──► 08 wave B
-                                   └──► 16 module-naming (codegen atom sites + CLI output layout)
-```
-
-### `fronts.md` — Ownership
-
-```markdown
-| **16** [`module-naming`](./16-module-naming/README.md) | `src/codegen/crossModule.zig` · the module-atom sites of `src/codegen/{erlang.zig,beam_asm.zig,runtime.zig}` (carve-out of 01) · `modules/compiler-cli/src/cli/{build.zig,run.zig}` (output naming only) · the module-atom lines of `src/comptime/{template_eval,decorator_eval}.zig` (carve-out of 06) | ≈ 20 files in `snapshots/codegen/{erlang,beam}/` | not started — after 12; needs step 0, a maintainer decision |
-```
-
-### `fronts.md` — Conflict matrix
-
-Add a `16` column and row; the existing rows gain one cell each.
-
-```markdown
-|  | 01 (5–6) | 06 | 07 | 08 | 09 | 12 | 13 | 14 | 16 |
-|---|---|---|---|---|---|---|---|---|---|
-| **01 (5–6)** | — | no¹ | yes | no⁴ | no⁵ | no⁶ | seq⁷ | seq⁷ | no⁹ |
-| **06** | no¹ | — | no³ | no⁴ | no⁵ | no⁶ | seq⁷ | seq⁷ | no¹⁰ |
-| **07** | yes | no³ | — | no⁴ | no⁵ | no⁶ | seq⁷ | seq⁷ | yes |
-| **08** | no⁴ | no⁴ | no⁴ | — | no⁵ | no⁶ | seq⁷ | seq⁷ | no⁴ |
-| **09** | no⁵ | no⁵ | no⁵ | no⁵ | — | no⁶ | no⁸ | no⁸ | no⁵ |
-| **12** | no⁶ | no⁶ | no⁶ | no⁶ | no⁶ | — | no⁸ | no⁸ | no⁶ |
-| **13** | seq⁷ | seq⁷ | seq⁷ | seq⁷ | no⁸ | no⁸ | — | yes | seq¹¹ |
-| **14** | seq⁷ | seq⁷ | seq⁷ | seq⁷ | no⁸ | no⁸ | yes | — | yes |
-| **16** | no⁹ | no¹⁰ | yes | no⁴ | no⁵ | no⁶ | seq¹¹ | yes | — |
-```
-
-New notes:
-
-```markdown
-9. **01 × 16 share `erlang.zig`, `beam_asm.zig`, `runtime.zig` and
-   `snapshots/codegen/{erlang,beam}/`.** 16 takes only the module-atom sites as a carve-out, but it
-   re-records ≈ 20 snapshots in directories 01 owns. Sequence them: 16 after 01 step 6, or 01 step 6
-   after 16 — not both at once.
-10. **06 × 16 share `src/comptime/{template_eval,decorator_eval}.zig`.** 16 changes two literals in
-    them (the comptime module atom); 06 owns the files. 16 after 06, or the maintainer hands 16 the
-    two lines as a carve-out.
-11. **13 × 16.** The libraries need no source change, but a library's erlang cell executes the
-    output whose layout 16 changes; 13 re-runs after 16 lands.
-```
-
-### `fronts.md` — Unowned items (rows this front hands back)
-
-```markdown
-| **`CrossModule.exports` is keyed by the bare exported symbol name** — two libraries each exporting `pub fn get` overwrite one another regardless of module naming; 16 fixes the module name space only | `src/codegen/crossModule.zig:112-135` | 16 module-naming | a follow-up front, or 01 |
-| **The comptime server never purges a loaded module and never deletes `.botopinkbuild/tmp/{template,decorator}/*.erl`** — bounded for a one-shot build, unbounded for a long-lived process (LSP, watch) | `src/comptime/runtime/persistent_erl.zig:63-73` | 16 module-naming | 09 hygiene, or 06 |
-| **`botopink run --target erlang` is `escript out/<mod>.erl` with no `-pa`** — a cross-module erlang program is not runnable from the CLI | `modules/compiler-cli/src/cli/run.zig:66-71` | 16 module-naming | 16 step 2, or 05's successor |
-```
+`fronts.md` — Unowned items: the `botopink run` row this front filed earlier is no longer a
+residual. It is **step 7's blocker**: under policy 3 every type-bearing program is multi-module, so
+`escript out/<mod>.erl` fails with `undefined function …:greet/1`
+([E25](./evidence.md#e25--botopink-run-breaks-under-policy-3)). The fix is the
+`erl -noinput -pa <dir> -s <entry>` shape `runtime.zig:581` already runs."

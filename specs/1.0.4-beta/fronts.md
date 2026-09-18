@@ -24,7 +24,7 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/` unless a
 | **13** [`ecosystem-migration`](./13-ecosystem-migration/README.md) | `repository/{emilia,erika,jhonstart,onze,rakun}/**`; their meta submodule pointers | the libraries' own test outputs | not started |
 | **14** [`tooling-and-docs`](./14-tooling-and-docs/README.md) | `modules/language-server/src/{engine,server}.zig` (user-facing texts, completions, symbol kinds, completion in a non-compiling file), `repository/vscode-extension/**`, botopink-lang user docs | LSP hover/completion/symbol snapshots | not started |
 | **15** [`language-tests`](./15-language-tests/README.md) | `tests/language/**` (new) · the `test-language` step in `build.zig` · its stage in `scripts/gate.sh` | — | **delivered** — gate stage 8; expected failures owned by 06 and 01 step 6 |
-| **16** [`module-naming`](./16-module-naming/README.md) | `src/codegen/crossModule.zig` · the module-atom sites of `src/codegen/{erlang.zig,beam_asm.zig,runtime.zig}` (carve-out of 01) · `modules/compiler-cli/src/cli/{build.zig,run.zig}` (output naming only) · the module-atom lines of `src/comptime/{template_eval,decorator_eval}.zig` (carve-out of 06) | ≈ 20 files in `snapshots/codegen/{erlang,beam}/` | not started — after 12; needs step 0, a maintainer decision |
+| **16** [`module-naming`](./16-module-naming/README.md) | `src/codegen/crossModule.zig` · `src/codegen/{erlang.zig,beam_asm.zig,runtime.zig}` — the module-atom sites for steps 1–6, the files **wholesale** for steps 7–13 ([policy 3](./16-module-naming/policy-3-module-per-type.md)) · `modules/compiler-cli/src/cli/{build.zig,run.zig}` (the output layout and `botopink run --target erlang`) · the module-atom lines of `src/comptime/{template_eval,decorator_eval}.zig` (carve-out of 06) | ≈ 20 files (steps 1–6, names) then **188** (steps 7–13, shapes) in `snapshots/codegen/{erlang,beam}/` | not started — after 12 **and after 01 closes**; policy 3 decided 2026-09-17, one front |
 | **17** [`language-test-expansion`](./17-language-test-expansion/README.md) | `tests/language/**` (the new cells) · the lines it adds to `tests/language/expected-failures.txt` | — | not started — 15's analysis (`capability-inventory.md`, `gap-analysis.md`, `example-programs.md`, `proposed-layout.md`) is its input |
 
 `libs/std/**` code has **no owner** until 12. A fix that needs a `libs/std` edit stops and reports;
@@ -70,9 +70,11 @@ notes and in [Order](#order).
 8. **12 × 13** is a compiler dependency; **12 × 14** share `language-server/src/engine.zig`;
    **09 × 13/14** would share library and user docs if a sweep were still open.
 9. **01 × 16 share `erlang.zig`, `beam_asm.zig`, `runtime.zig` and
-   `snapshots/codegen/{erlang,beam}/`.** 16 takes only the module-atom sites as a carve-out, but it
-   re-records ≈ 20 snapshots in directories 01 owns. Sequence them: 16 after 01 step 6, or 01 step 6
-   after 16 — not both at once.
+   `snapshots/codegen/{erlang,beam}/`.** For its first half 16 takes only the module-atom sites, but
+   even that re-records ≈ 20 snapshots in directories 01 owns; its second half ([policy 3](./16-module-naming/policy-3-module-per-type.md),
+   decided 2026-09-17 to stay in the same front) owns those files wholesale and re-records 188.
+   **16 runs after 01 has closed**, and its own two halves land in order — the atom rename first and
+   alone, the emitter split after — so no re-recorded snapshot ever carries both reasons.
 10. **06 × 16 share `src/comptime/{template_eval,decorator_eval}.zig`.** 16 changes two literals in
     them (the comptime module atom); 06 owns the files. 16 after 06, or the maintainer hands 16 the
     two lines as a carve-out.
