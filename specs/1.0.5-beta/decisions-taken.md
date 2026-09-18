@@ -20,7 +20,7 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 13 | `external-annotations.md`'s C1/C8 | steps of `01-checker` |
 | 14 | Seven forms that do not parse | four parse, three absent, the rest to `15-language-surface` |
 | 15 | A lower-case `#[@external(node, …)]` | a located error |
-| 16 | The `mod` path warning | fix the cause; do not exempt or document |
+| 16 | The `mod` path warning | fix the cause; do not exempt or document — **implemented 2026-09-18, and it converged on option (b); see the note below** |
 | 17 | rakun's erlang story | rakun supports every target; `libs/std` grows to carry it |
 | 18 | emilia's `tokens.bp` and `format --check` | exempt now; `16-formatter` audits the formatter |
 | 19 | The comptime renderer's `id` | removed |
@@ -843,3 +843,32 @@ three where an inferred type never contains a union the programmer did not write
 under (a), and two different steps under (c).
 
 ---
+
+
+---
+
+## 16 — how it was implemented, and why it looks like the option that was refused
+
+**`botopink-lang` `315a38f`, landed 2026-09-18.** The decision was *fix the cause, do not exempt and do
+not document*. The front did fix the cause — and the fix reads like option (b), the exemption. That is
+worth writing down rather than hiding, because the convergence is the finding:
+
+`collectOrphans` knew the `mod` chain and nothing else, so **anything a package ships by another route
+was an orphan by construction**. The manifest's `files` list is that other route: it is what
+`libs.loadDependencies` loads when the package is a dependency, so a module named there *is* reached —
+by whoever loads it. A module now has two ways into a build, and the warning means "neither".
+
+So the predicate changed, not a list of exceptions — but since `files` is where the second route is
+written, the code looks like an exemption for `files`. The front checked the alternatives before
+concluding that, and each is recorded: `build.zig`'s `std_core_files` is build-time and unreadable by
+the distributed binary; `prelude.zig` exposes the ambient files' **contents**, not their names, and
+naming them there would make the compiler know the standard library's internal file names, which
+`prelude.zig:31-33` and `build.zig:44-52` say is avoided on purpose.
+
+Two measurements that bound the change: only `primitives.bp` can trigger the warning at all (the two
+`.d.bp` files are skipped by `isSource`), and **`libs/std` is the only package in the checkout that
+warns** — the five libraries already reach every file of their `files` through their own `mod`
+chains. So nothing real is hidden by it today.
+
+`zig build test-libs` now prints **zero** `not reached by any mod path` lines, where it printed two per
+run, and stays 11 passed / 0 failed / 1 skipped.
