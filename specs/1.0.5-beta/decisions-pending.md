@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**Seven open**, all raised on 2026-09-18 by the fronts [`15-language-surface`](./15-language-surface/README.md)
+**Nine open**, all raised on 2026-09-18 by the fronts [`15-language-surface`](./15-language-surface/README.md)
 and [`16-formatter`](./16-formatter/README.md) while auditing the written surface against what the
 parser accepts. The twenty-seven already answered are in [`decisions-taken.md`](./decisions-taken.md).
 
@@ -13,6 +13,8 @@ parser accepts. The twenty-seven already answered are in [`decisions-taken.md`](
 | [32](#32-are-optionnone-and-some1-value-names) | Are `Option.None` / `Some(1)` value names? | the documents that write them | the documents are wrong |
 | [33](#33-a-bodyless-fn-with-no-return-type) | `fn f(x: string)` with no body and no return type | three `libs/std` declarations | make it parse |
 | [34](#34-the-format---check-exemption-does-not-exist) | Decision 18 assumed a skip list that is not there | 16's exemption, 09's format step | a key in `botopink.json` |
+| [35](#35-structural-equality-is-not-legislated) | Is `Person(name: "Ana") == Person(name: "Ana")` true? | a cell that cannot name an owner | structural, and write it down |
+| [36](#36-does--exclude-its-end-in-a-pattern) | Does `..` exclude its end **in a pattern**? | 12's range cells, still working around it | exclusive, stated |
 
 ---
 
@@ -137,3 +139,44 @@ from the code writes it here rather than guessing, in the shape the others used:
 > **Blocks.** The step, front or landed work that waits on the answer.
 
 Numbers are never reused: the next question added here is **28**, whatever has left the file since.
+
+
+## 35. Structural equality is not legislated
+
+**Measured** (front 12, writing the type-identity cells): `Person(name: "Ana") == Person(name: "Ana")`
+answers **`false` on commonJS** and **`true` on erlang**. No decision covers it and no front owns it,
+so the cell that found it declares the omission in a comment rather than listing itself against a row
+that does not exist.
+
+**Options.** (a) `==` on two values of the same named type compares **structurally** — field by field.
+(b) It compares identity, and structural comparison is a method. (c) It stays backend-defined, which
+is what it is today.
+
+**Recommendation: (a), and written into decision 8.** The language has no reference semantics anywhere
+else the programmer can observe — records are values in the surface — and (c) is the one answer that
+cannot be taught: the same program answers two things on two backends. Note that (a) arrives anyway
+through [decision 21](./decisions-taken.md): once a record is a tagged tuple carrying its type, erlang's
+`==` already answers structurally, so the JS side is where the work is.
+
+**Blocks:** `12-language-tests`' equality cells; it is also the second half of `test/type_identity.bp`,
+which today fails only because the erlang record is a bare map.
+
+---
+
+## 36. Does `..` exclude its end **in a pattern**?
+
+**Measured.** [Decision 20](./decisions-taken.md) removed `...` and made `..` the only range, "in
+patterns and in iteration alike". `loop (0..4)` is exclusive, so a pattern `1..9` is *implicitly*
+exclusive — but nothing says so, and front 12's cells still work around the boundary instead of
+asserting it.
+
+**Options.** (a) Exclusive, matching `loop`. (b) Inclusive in a pattern, exclusive in a loop — the same
+spelling meaning two things by position.
+
+**Recommendation: (a).** (b) is what decision 20 refused when it removed the second spelling. What is
+missing is not the answer but the sentence: decision 8 §5 has to say it, and front 12 turns the
+work-arounds into assertions.
+
+**Blocks:** `12-language-tests`' range cells.
+
+---
