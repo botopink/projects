@@ -97,6 +97,51 @@ The 24 traps are the honest part of this backend: `executeWat` runs (`HARNESS_VE
 nothing. The three heap addresses above are the dishonest part — they are not traps, they are wrong
 answers with exit 0.
 
+## Handed over by `01-checker` (2026-09-18) — three defects its step 4 exposes
+
+Front 01's `case`-arm typing is written and measured; six cells **compile** and then fail at run time
+on the backends, which is why that step waits for these three. Each is stated with the AST shape, so it
+can be implemented without re-deriving it.
+
+1. **A pattern's variant name reaches the backend with its written path.** The constructor emits the
+   **bare** name, the pattern emits what was written, so a dotted arm never matches:
+
+   ```js
+   if (_s.tag === ".Circle") { … }     // ctor wrote  Shape$Circle.prototype.tag = "Circle"
+   ```
+   ```erlang
+   area(S) -> case S of {'.Circle', R} -> …    %% ctor wrote  {'Circle', 2}
+   ```
+
+   Fix: take the last `.`-separated segment of `ast.Pattern.variant.name`, and of `ast.Pattern.ident`
+   when it contains a `.`. `infer.zig` already carries `bareVariantName` / `isVariantPath`. **No AST
+   change** — the written form is what `format.zig` round-trips.
+
+2. **An arm whose value is its final expression is emitted as a statement**, so the value is dropped
+   (commonJS, and beam/wasm through the same IIFE shape; erlang is already right):
+
+   ```js
+   if (_s.tag === "Circle") { const { r } = _s; ((r * r) * 3); }   // value discarded
+   ```
+
+   The `break` form already lowers correctly. Shape: `ast.Expr.function` with
+   `kind.syntax == .lambda` and `kind.params.len <= 1`; the value is the last statement of `kind.body`,
+   unless a `jump.@"break"` carries one, which wins.
+
+3. **A one-parameter binder arm never binds its parameter**, on all four:
+
+   ```js
+   { "other"; }     // missing `const n = _s;` — `case_guards` fails with "v is not defined"
+   ```
+
+   Fix: when `kind.params.len == 1`, bind `kind.params[0]` to the subject at the top of the arm. The
+   checker types it as the subject narrowed by that arm's pattern (`inferCaseArmBody`).
+
+Front 01 deliberately did **not** route 1 and 2 through `comptime/transform.zig`, which could reach
+them: 3 cannot be done there (binding the parameter needs the subject expression in each backend's arm
+scope), and splitting one row across two fronts would move all four codegen snapshot directories —
+1258 files — from fixtures that belong to the backends.
+
 ## Steps
 
 ### Step 1 — the §7 formatter
