@@ -16,7 +16,9 @@ guards, tuple labels as compile-time names, one source-shaped formatter per type
 [`06-checker`](./06-checker/README.md) N18–N26, the run-time half
 [`01-backend-residuals`](./01-backend-residuals/README.md) step 6, the source migration 12 and 13.
 
-The work was cut into **eleven fronts**, numbered in execution order: 01 and 05–14. Fronts 02–04
+The work was cut into **eleven fronts**, numbered in execution order: 01 and 05–14; two more were
+opened on 2026-09-17 by the maintainer — [`16-module-naming`](./16-module-naming/README.md) and
+[`17-language-test-expansion`](./17-language-test-expansion/README.md). Fronts 02–04
 landed with the first 01 and their numbers are retired. **05, 10 and 11 are delivered**; 01 is
 delivered except two steps that run after 06.
 [`fronts.md`](./fronts.md) holds the ownership table, the conflict matrix, the items no front owns,
@@ -72,6 +74,8 @@ examples; the ones that do not compile are listed in its `scripts/known-broken-e
 | [`13-ecosystem-migration`](./13-ecosystem-migration/README.md) | high | 1.0.3 surface delivered; format and decision-8 items open | emilia, erika, jhonstart, onze, rakun migrated to the new surface and to decision 8; the known-broken examples fixed |
 | [`14-tooling-and-docs`](./14-tooling-and-docs/README.md) | high | not started | Language-server texts and completions (including completion in a file that does not compile), VS Code grammar and snippets, user docs |
 | [`15-language-tests`](./15-language-tests/README.md) | high | **delivered** | botopink tests pinning decision 8's `case`/patterns, tuples and labels, and `loop`, with an expected-failures list owned by 12, 06 and 01 step 6 |
+| [`16-module-naming`](./16-module-naming/README.md) | high | not started — needs a maintainer decision | The erlang/BEAM module atom is the source path's basename, so two modules with the same file name collide silently and eleven `libs/std` modules shadow an OTP module. Evaluates the `'name@path#Decl'` proposal and counter-proposes an unquoted `@`-joined path atom |
+| [`17-language-test-expansion`](./17-language-test-expansion/README.md) | high | not started — 15's analysis is its input | The rest of the language in botopink-level tests: comptime parameters and templates, decorators, effects, generics and behaviors, modules, externals — 15 covers decision 8 alone |
 
 Cutover references: [`EXAMPLES.md`](./EXAMPLES.md) (before/after programs; the "before" side compiled
 at `botopink-lang` `41981e3`), [`MIGRATION.md`](./MIGRATION.md) (the user-facing migration guide) —

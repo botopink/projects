@@ -6,6 +6,22 @@ tests written in botopink** that pin the language as
 and labels (§6), `loop` (§10), and what those scenarios need from `is` (§4), unions (§3), `unknown`
 (§2) and printing (§7).
 
+**Phase 2, authored 2026-09-17:** a gap analysis of the suite against the *whole* language, not only
+decision 8, grounded in the compiler's own test suites, `libs/std`, `docs.md` and the five libraries.
+Three documents, all measured at `botopink-lang` `1193d3c`:
+
+| Document | What it holds |
+|---|---|
+| [`capability-inventory.md`](./capability-inventory.md) | every language capability that exists today, where its surface is defined, and whether `tests/language/**` pins it — plus what `docs.md` promises that nothing exercises |
+| [`gap-analysis.md`](./gap-analysis.md) | the fifteen gaps, ranked by risk, each with the program that demonstrates it and its owner; ends with four items to report to the maintainer before 06 starts |
+| [`example-programs.md`](./example-programs.md) | 21 concrete cells, 20 run to a measured result, each with the `expected-failures.txt` lines it needs |
+| [`proposed-layout.md`](./proposed-layout.md) | area directories, two new kinds (`modules/`, `crash/`), the cell list with owners, and the amended gate |
+
+The headline: outside `loop`, tuples and decision 8's `case`, the language has **no botopink-level
+test at all** — generics, behaviors, effects, comptime, decorators, externals, modules, closures,
+primitive methods and the printer are covered only by Zig unit tests and by snapshots that pin
+emitted text rather than observed behaviour.
+
 **Priority:** high — decision 8 is implemented across 12, 06 and 01 step 6; these tests are the
 acceptance each of them runs against, written once, before the implementation.
 **Depends on:** nothing to author. **Landing waits for [`../12-surface-cutover/`](../12-surface-cutover/README.md)**:
