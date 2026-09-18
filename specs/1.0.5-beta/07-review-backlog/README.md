@@ -112,6 +112,19 @@ re-recorded between `26d4fdc` and `c2dd780`** — 25 `parser`, 14 `codegen/wasm`
 and grammar waves alone. A row re-derived before
 [`01-checker`](../01-checker/README.md) closes is re-derived twice.
 
+## Rows handed over by front 06 (delivered 2026-09-18)
+
+Two, both verified by that front and left unedited because they are this front's files:
+
+- **`scripts/snap_audit.sh:501`'s per-backend arm is dead code.** Front 06's own README predicted the
+  classifier would break; it did not — the `else` arm picks up `comptime/ast`, `comptime/errors` and
+  `comptime/templates`, one line per slug, 0 orphans, exit 0, and the AST suite's label was renamed
+  from `comptime` to `comptime/ast`. What is left is removing the arm that can no longer match.
+- **`src/comptime/tests/infer_decls.zig:143`** is named `"infer: implement block is invisible to the
+  binding list"` and the behaviour it names is gone: `implement` blocks appear now, read from
+  `OkData.transformed.decls`. Renaming the test renames its snapshot slug, which is why it waits for
+  this front.
+
 ## Steps
 
 ### Step 1 — wave A: the codegen reports (3.1, 3.2, 3.4, 3.5, and 3.3's `:70`)

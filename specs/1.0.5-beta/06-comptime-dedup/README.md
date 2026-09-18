@@ -1,5 +1,34 @@
 # Front 06 — comptime-dedup
 
+**Status: delivered** 2026-09-18 — `botopink-lang` `9b483a2` (merge of `fix/dedup`: `579ab0d`,
+`b21373a`, `2ee2e24`), gate `--cold` green, worktree and branch removed. What it measured, in the end:
+
+| | Before | After |
+|---|---|---|
+| files in `snapshots/comptime/**` | 1079 (node 337 · erlang 337 · beam 202 · wasm 202 · templates 1) | **338** (ast 202 · errors 135 · templates 1) |
+| distinct contents (md5) | 332 | **332** — the same set |
+| `?` rendered in an AST dump | 69, in 42 files | **12, in 6** — exactly the six slugs the tripwire names, all `.unbound` |
+| `"id"` (always zero) | 71 in 65 files | removed |
+| `"indent"` misspelling | 148 in 102 files | `ident` |
+
+**Step 1 was proved a pure move three ways**, not assumed: 741 byte comparisons of each sibling
+against its `node` original (741/741 equal, no file present in a sibling and absent from `node`); the
+set of distinct md5s identical before and after; and each of the 338 surviving paths matched to the
+`node` original it replaces, hash equal (338/338).
+
+Three rendering calls were made during review, because the first candidate read worse than the
+original: `optional<T>` renders `?T` (as `array<T>` already rendered `T[]`) but falls back to the long
+form when the inner type is unknown, since `??` does not read; a block `case` arm names the value it
+produces, not the zero-parameter lambda; and a generic renders the type parameter's written name
+(`T`, not `'a`), paired through the annotation and never by position.
+
+Handed on, each verified and not edited: `scripts/snap_audit.sh:501`'s per-backend arm is now dead
+code — **the README's prediction that the classifier would break was wrong**, the `else` arm picks up
+the new paths and the audit reads 0 orphans, exit 0 (front 07 removes the dead arm); `src/comptime.zig`'s
+`type_ids` is dead after step 3, at `:114`, `:1311-1313`, `:1324`, `:1490-1492`, `:1503` (front 01);
+and `comptime/tests/infer_decls.zig:143` is now named for the old behaviour — `implement` blocks do
+appear in the binding list — and renaming it moves a snapshot, so it is front 07's.
+
 **Priority:** high — not because anything is wrong at run time, but because of **what it costs every
 other front**: every comptime snapshot is written four times, and [`01-checker`](../01-checker/README.md)
 re-records that directory in bulk. Paid before the checker runs, it is a one-time 741-file deletion;
