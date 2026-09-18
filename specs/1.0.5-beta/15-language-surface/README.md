@@ -60,8 +60,9 @@ index needs one lowering from each.
 - **[Decision 29](../decisions-taken.md#29-does-a-block-shaped-statement-end-itself) — the parser half
   is written and deliberately not committed.** Rejecting the trailing `;` rejects `libs/std`'s embedded
   prelude, so **every** compile fails and no single front can land it green. The 76-line patch
-  (`isBlockShapedStmt` + `blockStatementSemicolon`, with the localised message) is held for the
-  coordinated landing described under decision 29 below. **245 sites**, counted by the compiler itself —
+  (`isBlockShapedStmt` + `blockStatementSemicolon`, with the localised message) is kept beside this
+  README as [`decision-29-parser-half.patch`](./decision-29-parser-half.patch), for the coordinated
+  landing described under decision 29. It applies to `src/parser.zig` at `109f6c9`. **245 sites**, counted by the compiler itself —
   not the ~274 estimated: `libs/std` **51** (the estimate said 23), `tests/language` **44** (said 88),
   erika 78, rakun 31, jhonstart 35, examples/CLI tests 5, onze 1, and **emilia 0** (said 30).
 - **[Decision 36](../decisions-taken.md#20-is-a-pattern-range-inclusive) — untouched**, because

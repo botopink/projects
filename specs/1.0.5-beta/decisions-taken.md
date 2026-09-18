@@ -1012,7 +1012,9 @@ and the distribution the estimate gave is wrong in both directions: `libs/std` *
 examples and CLI tests 5, onze 1, and **emilia 0** (estimated 30).
 
 **The parser half is written and deliberately uncommitted.** A 76-line patch — `isBlockShapedStmt`
-plus a `blockStatementSemicolon` parse error with its localised message — is held by front 15, because
+plus a `blockStatementSemicolon` parse error with its localised message — is parked at
+[`15-language-surface/decision-29-parser-half.patch`](./15-language-surface/decision-29-parser-half.patch)
+and applies to `src/parser.zig` at `109f6c9`. It is not committed to the compiler because
 rejecting the trailing `;` rejects `libs/std`'s embedded prelude: **every** compile fails, and no
 single front can land it with a green gate. The landing is one coordinated sequence:
 `16-formatter` stops printing the `;` → 15 applies the patch → `12-language-tests` (44),
