@@ -1,7 +1,7 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**Six open — 38 to 43**, all raised by the `@BeamMemory` measurement and all listed below. The
-thirty-seven questions before them are answered, and the record the fronts implement against is
+**Seven open — 38 to 44.** Six were raised by the `@BeamMemory` measurement and one by front 11's
+re-verification; all are listed below. The thirty-seven questions before them are answered, and the record the fronts implement against is
 [`decisions-taken.md`](./decisions-taken.md).
 
 Two findings from front 01 (2026-09-18) sit below the level of a decision — they are defects with no
@@ -27,7 +27,7 @@ from the code writes it here rather than guessing, in the shape the others used:
 >
 > **Blocks.** The step, front or landed work that waits on the answer.
 
-Numbers are never reused: the next question added here is **44**.
+Numbers are never reused: the next question added here is **45**.
 
 ---
 
@@ -166,3 +166,30 @@ defensible; they have to be answered together, and step 3b of the front marks th
 
 **Blocks:** the size of [`17-beam-memory`](./17-beam-memory/README.md), and how much of it belongs to
 `libs/std` (front 09 under decision 17) rather than to the core.
+
+---
+
+## 44. Is `optional<i32>` a valid spelling?
+
+**Measured** by [`11-tooling`](./11-tooling/README.md) at `19a3b01`, while fixing the language
+server's half of it:
+
+```botopink
+val v: optional<i32> = null;   // passes `check` — `optional` is the checker's own internal name
+val w: Option<i32>   = null;   // error: "type mismatch: expected Option, got optional"
+```
+
+The second line is refused, but with the wrong message: `builtins.d.bp:56-58` documents a pointed
+diagnostic (use `?T`), and what comes out is a generic `type mismatch` **that leaks the internal
+name** (`infer.zig:4590`). [Decision 2](./decisions-taken.md) already settled that `?T` is the only
+optional spelling.
+
+**Options.** (a) Refuse `optional<T>` as well, with the pointed diagnostic the other two spellings are
+already owed. (b) Keep it as an undocumented alias.
+
+**Recommendation: (a).** Front 11 has just stopped the server from echoing the internal name back at
+users — including a code action that wrote `: optional<i32>` **into the user's file**. Leaving the
+checker accepting it re-opens the door from the other side.
+
+**Blocks:** nothing in 11 (the rendering half is fixed). The file is
+[`01-checker`](./01-checker/README.md)'s.

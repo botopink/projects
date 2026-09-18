@@ -300,3 +300,54 @@ After [`01-checker`](../01-checker/README.md) renames `buildRecordDeclName` and 
 ```markdown
 | [`11-tooling`](./11-tooling/README.md) | medium | not started | The residuals 1.0.4-beta's tooling front could not reach: the extension's `compiler-check` is red because its pinned keyword list predates `unknown`; a type's methods are still `SymbolKind.Function` because the Test Explorer reads every `Method` symbol as a `test "…"` block, which is one change across two repositories; the `case` snippet still teaches the arrow arms whose replacement now parses and runs; and `loadSrcTree`'s third `catch continue`, which drops an unreadable source file from the project graph with no diagnostic |
 ```
+
+---
+
+## Landed — 2026-09-18
+
+**The README's premise did not hold: steps 1–4 were already landed by the maintainer** on the morning
+of 2026-09-18 — `vscode-extension` `94c1366` (step 1, the `unknown` keyword pin and its CI row),
+`e553aa6` (step 2, the `case` snippet), `botopink-lang` `ae6476c` (step 3, the `loadSrcTree`
+diagnostic) and `9589971` + `43eabe5` (step 4, `SymbolKind.Method`). Step 4's decision was **already
+answered** too, at [decision 7](../decisions-taken.md) — option (a), resolved onto the parent-in-tree
+mechanism, which is this README's option C. Nothing was owed.
+
+Each acceptance was re-verified rather than trusted: `npm run compiler-check` passes, `npm test` reads
+**43/0** (this README's "37" is stale — the keyword-pin test *runs* rather than skips when
+`BOTOPINK_LANG` is set), the CI runs `compiler` on every push and PR **plus** a daily schedule, and
+`grep -n 'catch continue' modules/language-server/src/project_graph.zig` returns only the two
+explanatory comments.
+
+**What re-verifying found, and what landed for it** — `botopink-lang` `3c5e877`, `vscode-extension`
+`dd46d1f`:
+
+| | Before | After |
+|---|---|---|
+| hover | `val a : optional<i32>` | `?i32` |
+| inlay hint | `: fn(optional<i32>) -> optional<string>` | `: fn(?i32) -> ?string` |
+| signature help | `find(k: optional<string>, n: i32) -> optional<i32>` | `find(k: ?string, n: i32) -> ?i32` |
+| code action | `newText: ": optional<i32>"` | `": ?i32"` |
+| `a ?? b` in the grammar | **two** tokens, both `keyword.operator.optional` — the scope that paints the `?` of `?i32` | one `keyword.operator.nullish` |
+
+`engine.zig:1106 renderType` had arms for `array` → `T[]` and `tuple` → `#(…)` and **none for
+`optional`**, the checker's internal name (`infer.zig:4590`). The code-action row is the sharp one:
+that string is written **into the user's file**, one line under a declaration the same server renders
+as `fn find(k: ?string, …) -> ?i32`. **4 new LSP snapshots, 0 re-recorded** — none of the 114 existing
+cells contained `optional<`, which is why it survived. The grammar fix orders `\?\?` ahead of the bare
+`\?` exactly as `\.\.\.` is ordered ahead of `\.\.`.
+
+**The two forms that landed today were walked through the server**: `??` is clean everywhere — hover,
+definition, references, completion, semantic tokens, folding — and `__bp_nullish` never leaks into a
+response; the index expression is clean except that **its type is `void`**, which is front 01's row
+above.
+
+**Step 5 stays blocked on front 01**, confirmed: `buildRecordDeclName` still appends `"record"` at
+`comptime/infer.zig:1834`. A correction to this README's blast-radius estimate, measured rather than
+projected: the re-record is **one line** — `snapshots/lsp/completion_decorator_record.snap.md:17` —
+because hover and signature help over a `type`, a `behavior` and an `enum` already print the 1.0.3
+surface through `renderBindingHover`. The defect surfaces only inside a decorator body, where there is
+no source declaration to render from.
+
+**Closed elsewhere:** [`10-cli-residuals`](../10-cli-residuals/README.md)'s step-4 row about
+`project_graph.zig:347` is closed by `ae6476c`.
+

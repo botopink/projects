@@ -485,3 +485,21 @@ left it. Measured while it was there: `1...9`, the spelling today's diagnostic r
 no backend** — `case 9 { 1...9 { 1 } _ { 0 } }` answers `undefined` on commonJS and `0` on erlang,
 because a brace-arm is neither typed nor lowered. That is the same defect as the 17 lines already
 filed here.
+
+---
+
+## Handed over by `11-tooling` (2026-09-18)
+
+Three rows, each measured through `botopink check` rather than through the language server, so none of
+them is a rendering problem:
+
+1. **`xs[0]` types as `void`.** `val first: string = xs[0];` → `error: type mismatch: expected string,
+   got void`. `ast.zig:1734` already assigns the index expression's typing to this front; the
+   consequence 11 found is that hover, inlay hints and the annotation code action all offer `: void`
+   for every index expression.
+2. **`val v: optional<i32> = null;` checks clean** — the checker's internal name (`infer.zig:4590`) is
+   reachable as a type annotation, which [decision 2](../decisions-taken.md) and `builtins.d.bp:56-58`
+   say no spelling but `?T` is. Opened as [question 44](../decisions-pending.md).
+3. **`val v: Option<i32> = null;`** answers `type mismatch: expected Option, got optional` — not the
+   pointed diagnostic `builtins.d.bp:56-58` promises, and the message leaks the internal name.
+
