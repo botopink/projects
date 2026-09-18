@@ -467,3 +467,18 @@ every compile fails. The coordinated landing is: this front stops printing the `
 patch, [`12-language-tests`](../12-language-tests/README.md) migrates its 44 sites, `libs/std` its 51
 and [`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md) the siblings' 145 — **245 sites
 total**, counted by the compiler, against the ~274 the decision estimated (emilia has **0**, not 30).
+
+---
+
+## Handed over by `09-ecosystem-residuals` (2026-09-18)
+
+**One fidelity loss survived formatting all five libraries** — the only one, after this front's step
+4: `rakun/src/runtime.bp:13`, the continuation line of a trailing comment that was indented to align
+under the first, re-emitted at column 0. The text is intact; the alignment is not. It is the last live
+member of 09's R1 classes, and it belongs to the trivia fields this front now owns.
+
+Everything else came through clean, verified per file by token-stream equality and per project by a
+byte-identical `diff -r` of the emitted output — which is the strongest statement this milestone has
+that the formatter no longer loses anything: 874 changed lines over 8 files, 0 reordered members, 0
+deleted keywords, 11 passed / 0 failed in `test-libs`.
+

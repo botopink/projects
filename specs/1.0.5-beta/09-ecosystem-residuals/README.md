@@ -137,10 +137,61 @@ positions — formatting it reorders a public enum's variants.
 - [ ] The three information-losing classes are registered in
       [`01-checker`](../01-checker/README.md)'s README with the file and line that shows each
 
+### Step 1 — landed 2026-09-18
+
+Four commits, one per library, each through its own pre-commit gate; onze was already clean.
+
+| library | commit | changed lines | `format --check` | `check` | cells |
+|---|---|---|---|---|---|
+| emilia | `3e7ab05` | 385 (260+/125−) — `emilia.bp`, `tokens.bp` | 2 red files → **exit 0** | 0 | 17 → 17 |
+| erika | `02f4344` | 259 (145+/114−) — `erika.bp` | 1 red → **exit 0** | 0 | 31 → 31 |
+| jhonstart | `78e01ca` | 204 (111+/93−) — `element.bp`, `hooks.bp`, `html.bp` | 3 red → **exit 0** | 0 | 2 → 2 |
+| rakun | `6567b14` | 26 (7+/19−) — `decorators.bp`, `runtime.bp` | 2 red → **exit 0** | 0 | 4 → 4 |
+| onze | — | 0, already clean | exit 0 | 0 | 8 → 8 |
+
+**874 changed lines over 8 files**, not the 890 the handover from
+[`16-formatter`](../16-formatter/README.md) measured — because this was measured at `bef762b`, which
+carries front 14's merge as well as `37d3dc7`. The red-file counts shrank against this README's too
+(emilia 3→2, erika 2→1): 16's fixes took files off the list before this front reached them.
+
+**What was verified rather than assumed**, and this is the part that matters, because this front
+commits a machine's rewrite of five human-written libraries:
+
+- **Token-stream equality, per file.** The word-and-literal token sequence is byte-identical before
+  and after in all eight files. Every delta is punctuation: brace pairs collapsed where
+  `if (c) { x; }` becomes the expression form (erika 81, jhonstart 23), semicolons and trailing
+  commas, and in emilia `#[a, b]` split into `#[a]` `#[b]` at 3 sites. **0 reordered members, 0
+  deleted `default`** (emilia's `root.bp`: 3 before, 3 after).
+- **Emitted output unchanged.** Each of the six example projects was built at HEAD and at the
+  formatted source and `diff -r`'d: emilia-card, erika-linq, jhonstart-{counter,html,todo}, rakun —
+  all byte-identical. Nothing changed behaviour, so nothing went back to front 16.
+- `zig build test-libs` re-run from the main checkout after the four commits: **11 passed, 0 failed,
+  0 known red, 1 skipped** (rakun's erlang, step 2's subject), **2 without tests** — the baseline
+  exactly.
+
+**One fidelity loss survives, and it is registered rather than worked around:**
+`rakun/src/runtime.bp:13` — the continuation line of a trailing comment was indented to align under
+the first, and the formatter re-emits it at column 0. Text intact, alignment gone. It is the last live
+member of step 1's R1 classes and belongs to the trivia row of
+[`16-formatter`](../16-formatter/README.md), which now owns the AST's trivia fields.
+
+**Two documents were re-derived in the same commits**, because both had become false:
+`emilia/AGENTS.md` still carried *"`botopink format` is not applied to `tokens.bp`"* — decision 34
+withdrew the exemption and `37d3dc7` removed its cause; and `rakun/AGENTS.md` claimed a library cannot
+ship an erlang host module because the CLI has no `.erl` counterpart to `shipMjsSidecars`, which is
+false: `libs.shipErlSidecars` is at `modules/compiler-cli/src/cli/libs.zig:564`, called from
+`test_cmd.zig:194`.
+
 ### Step 2 — rakun's erlang cell: decide, then act
 
-The decision is [the maintainer's](#decisions-the-maintainer-owes). Whichever way it goes, the
-outcome is a written one, not a `"targets"` key that silently hides a gap.
+**Superseded 2026-09-18 by [decision 17](../decisions-taken.md#17-rakuns-erlang-story): none of A, B
+or C.** The maintainer answered that rakun supports **every** target and that `libs/std` grows the
+portable primitives its container, router and server rest on — so the gap is not rakun's to close
+alone, and the work is scoped as its own thing rather than as a residual here. The table below is kept
+as the measurement of what each option would have cost; **do not act on it**. What is still this
+front's: the `"targets"` key and the `allow_fail` rows stop being the place the gap is recorded, and
+`rakun/AGENTS.md:89-98` says what decision 17 says. One consequence is already measured, in step 1
+above: the CLI half is **not** a blocker — `libs.shipErlSidecars` exists and is called.
 
 | | Option | Cost |
 |---|---|---|
