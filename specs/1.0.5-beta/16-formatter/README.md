@@ -399,6 +399,51 @@ rather than building it.
 
 ---
 
+## Landed — 2026-09-18, merged into `feat` as `37d3dc7`
+
+Five commits on `fix/formatter`, cold gate green. Steps 3, 4 and 5 are done; the three
+information-losing classes decision 18 filed here are closed, and the property that would have caught
+them exists.
+
+| Commit | What it fixes |
+|---|---|
+| `098a493` | **D1** — `format` was **deleting** the `default` keyword. Two missing printer arms for flags `ast.zig` already recorded (`ModDecl.isDefault`, `FnDecl.isDefault`), both read by `comptime.zig:914-932` |
+| `9d1d067` | **G6** — an `if` branch is printed by the one statement-sequence printer, so an else-branch keeps its blank lines |
+| `fed06ac` | **G1–G4, parser half** — a member's written order and its trailing comment are recorded |
+| `b0cdf94` | **G1–G4, printer half** — an enum body is the **merge** of `variants` and `sections` by order, so nothing hoists; a field's trailing comment goes after the comma; a variant's comments print; `withTrailingComment` keeps a comment on its own line |
+| `a23ae79` | **Step 5** — `assertLossless`, the property the 239 tests did not have |
+
+**The D1 defect was proven both ways, not argued.** A package whose handle, module and handler have
+*different* names — `pub default mod zeta;`, `pub default fn query(…)`, a consumer doing
+`import zeta` and `zeta "hello"` — ran before formatting and answered `unbound variable 'zeta'` after
+it, while `format --check` reported the corrupted library **clean**. The three real occurrences
+survived only because in those packages the three names coincide: the loss was masked, not absent.
+
+**Why 239 tests saw none of it.** `assertFormat` asserts equality with a text a human wrote, and
+`assertIdempotent` asserts pass 2 equals pass 1 — and **a deletion is idempotent**. `assertLossless`
+lexes input and output and asserts token containment, with two written-out exemptions
+(`droppable_separators`, and the pre-1.0.3 `val Name = behavior { … }` binding form in exactly that
+shape). Order is deliberately not asserted: the first draft did, and failed on five idempotent cases
+where the canonical form *moves* a token and loses nothing. Run against this front's parent
+(`4841983`) it fails **4 of 5** probes; after the whole front, 0. `assertIdempotent` now calls it, so
+the pairing cannot come apart again.
+
+**The ecosystem diff, measured on scratch copies** (no file under `repository/<lib>/` written):
+923 → **890** changed lines, **13 reordered variants → 0**, **3 deleted `default` keywords → 0**, all
+five libraries still idempotent, `check` exit 0, cells passing (emilia 17, erika 31, jhonstart 2,
+onze 8, rakun 4).
+
+**emilia's `tokens.bp` formats without reordering now** — which is what
+[decision 18](../decisions-taken.md#18-emilias-tokensbp-and-format---check) held it back for. Under
+[decision 34](../decisions-taken.md)'s (c) there is no exemption mechanism to build or to lift: the
+file is formatted like every other one, and the hoist that would have been excused no longer happens.
+
+**Still open here:** steps 1–2 (the classification pass) and the printer arms
+[`15-language-surface`](../15-language-surface/README.md) hands over below, which are new — the forms
+did not parse when this front was written.
+
+---
+
 ## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
 
 **Three printer arms, one class: a form parses and `format` does not print it back.** The first two

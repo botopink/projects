@@ -283,3 +283,12 @@ No code. Register, in the owning front's README, with the reproduction:
 ```markdown
 | [`10-cli-residuals`](./10-cli-residuals/README.md) | medium | not started — step 1 parked in a stash, blocked on `docs.md:78` | An `import` naming a module that does not exist still passes `check` and `build` in silence, exit 0, code emitted — the fix is written, verified and stashed because it reds the one `docs.md` fence that is vacuously green for exactly that reason. Plus the flat `test/` suite, which never reaches the resolver at all, and a `botopink.json` `files` entry the compiler warns about as an unreached module on every gate run |
 ```
+
+---
+
+## Handed over by `16-formatter` (2026-09-18, `37d3dc7`)
+
+**Decision 34's exemption mechanism is not to be built.** The maintainer answered (c) — no exemption —
+and 16 removed the reason the question existed: emilia's `tokens.bp` formats **without reordering**
+now, so there is nothing for `format_cmd.zig` to skip. If a skip list appears later it will be for a
+new reason, not for [decision 18](../decisions-taken.md#18-emilias-tokensbp-and-format---check).

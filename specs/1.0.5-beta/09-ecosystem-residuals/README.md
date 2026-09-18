@@ -264,3 +264,18 @@ what closed.
 ```markdown
 | [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) | medium | not started | What the ecosystem migration left: `format --check` red in four of five libraries (canonical form in most files, but emilia's `Token` has its six payload variants hoisted above its sections and rakun loses a comment's indentation — the parser records no member positions or trailing trivia), rakun's erlang cell skipped by its own `targets` key because 17 host cells are node-only and `runtime.mjs` is 231 lines, decision 8's §5.1 arms and emilia's §5.3b section paths, and five `AGENTS.md` files naming blockers that have closed |
 ```
+
+---
+
+## Handed over by `16-formatter` (2026-09-18, `37d3dc7`)
+
+**The format step is unblocked, and it is smaller than it was.** Measured on scratch copies of the
+five libraries at `37d3dc7`: **890** changed lines (emilia 389, erika 261, jhonstart 210, rakun 30,
+onze already clean), down from 923 — and, more to the point, the diff no longer **loses** anything:
+**0** reordered enum variants (was 13 at four sites) and **0** deleted `default` keywords (was 3, in
+emilia's and erika's `root.bp` and in erika's `erika.bp`). All five are idempotent, `botopink check`
+exits 0 on each, and the cells pass (emilia 17, erika 31, jhonstart 2, onze 8, rakun 4).
+
+So formatting and committing the libraries is now a layout change, not a content change. Re-measure
+before committing — the numbers above are from the formatter as landed, and this front commits the
+result.
