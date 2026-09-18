@@ -378,3 +378,62 @@ The suite records the index expression's owner cells as `04 handover 15`, becaus
 "one lowering in each of fronts 02–05" and this front has no numbered step for it — only the handover
 section above. Worth giving it a number when the step is planned.
 
+---
+
+## Landed — 2026-09-18, merged into `feat` as `1379659`
+
+Six commits on `fix/js`, cold gate green, 4 of 315 snapshots re-recorded and each one classified.
+
+| commit | row |
+|---|---|
+| `f1757f4` | the three defects [`01-checker`](../01-checker/README.md) handed over |
+| `17e2059` | [decision 30](../decisions-taken.md#30-is-there-an-index-expression)'s index expression |
+| `6196b86` | step 2 **D4** — decision 8 §5's arm shapes |
+| `37efbd4` | step 6 **T3** — a union in the `.d.ts` |
+| `1b86bc3` | step 8 — the IIFE sites classified (docs only) |
+| `b5d63ac` | the optional-binding guard was loose — front 12's finding, owned by no step |
+
+**The three defects, measured on `case s { Shape.Circle(r) { @print(r); } _ { v -> @print(v); } }`:**
+
+```js
+// before
+if (_s.tag === "Shape.Circle") { const { r } = _s; __bp_print(r); }   // never matches; ctor wrote "Circle"
+{ __bp_print(v); }                                                     // ReferenceError: v
+// after
+if (_s.tag === "Circle") { const { radius: r } = _s; return __bp_print(r); }
+{ const v = _s; return __bp_print(v); }
+```
+
+Defect 2's fix also stopped **arm fall-through**: an un-returned arm ran the arms below it.
+`bareVariantName` / `isVariantPath` did **not** exist in `infer.zig` at `bef762b`, contrary to the
+handover's text; local helpers were written instead.
+
+**The snapshots.** One is a behaviour change worth naming: `case_nested_case_in_block_arm` — an arm
+`0 -> { case 1 {…}; }` dropped its nested `case` and `result` was `undefined`; it is now `54`. The
+other three are the operator-only `!==` → `!=` of `b5d63ac`, with no RUN LOG movement, because their
+optionals are explicit `null`s. D4's five shapes and the index expression moved **zero** snapshots.
+
+**`expected-failures.txt`:** the two commonJS lines this front made pass were deleted with the merge —
+`run/index_expression.bp` (prints `10 / 30 / 2 / 3`, byte-equal to its `.out`) and
+`test/nullish_default.bp::?? chains after ?.` (`o.inner?.v ?? 9` now answers `9`). Suite: **252 passed
+/ 59 expected / 0 failed**.
+
+**Three of this README's premises did not reproduce**, and the corrections are the measurement:
+
+- step 6's *"24 of 25 typedefs carry a botopink primitive name"* is now **0 of 25** — `d20ac68` closed
+  T1/T2 before this front opened;
+- step 8's **27** IIFE sites are **11** text hits and **10** build sites, of which exactly **one**
+  (`@block { body }`) is a block-as-value. Recorded in `js/AGENTS.md`;
+- the handover's `bareVariantName` / `isVariantPath` did not exist.
+
+**Left undone:** step 1 F2/F3/F4 (land with [`13-module-identity`](../13-module-identity/README.md);
+the commonJS half already passes) · step 7 / JS-4 — `val Circle(r) = s` still reds `unbound variable
+'r'`, waiting on 01 step 8 R5, so the 8 `Pattern.match` build sites stay · step 8's removal, which
+needs R7 · `d["k"]` on a `Dict`, which is [question 46](../decisions-pending.md) · `tsc --noEmit`,
+which the gate line asks for and which **could not be run** — there is no `tsc` in the checkout or on
+`PATH`, so it is unverified rather than claimed.
+
+**Three questions opened:** [45](../decisions-pending.md) (a member access on a `?T`, which also moves
+front 12's `§6 T4` owner row to 01), [46](../decisions-pending.md) (`d["k"]`) and
+[47](../decisions-pending.md) (`undefined` vs `null` for an out-of-range read).
+

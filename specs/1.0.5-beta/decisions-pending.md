@@ -1,7 +1,7 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**Seven open — 38 to 44.** Six were raised by the `@BeamMemory` measurement and one by front 11's
-re-verification; all are listed below. The thirty-seven questions before them are answered, and the record the fronts implement against is
+**Ten open — 38 to 47.** Six were raised by the `@BeamMemory` measurement, one by front 11's
+re-verification and three by front 04's; all are listed below. The thirty-seven questions before them are answered, and the record the fronts implement against is
 [`decisions-taken.md`](./decisions-taken.md).
 
 Two findings from front 01 (2026-09-18) sit below the level of a decision — they are defects with no
@@ -27,7 +27,7 @@ from the code writes it here rather than guessing, in the shape the others used:
 >
 > **Blocks.** The step, front or landed work that waits on the answer.
 
-Numbers are never reused: the next question added here is **45**.
+Numbers are never reused: the next question added here is **48**.
 
 ---
 
@@ -193,3 +193,70 @@ checker accepting it re-opens the door from the other side.
 
 **Blocks:** nothing in 11 (the rendering half is fixed). The file is
 [`01-checker`](./01-checker/README.md)'s.
+
+---
+
+## 45. Is a member access on a `?T` an error?
+
+**Measured** by [`04-js`](./04-js/README.md) while looking at front 12's tuple-label cell:
+`rs.at(0)` types as **`?#(a: i32, b: string)`** — an optional — so `infer.zig:6186`'s
+label-to-position rewrite never fires and the backend emits `.b` verbatim. The cell's owner row
+(`04 step 2`) is therefore mis-attributed: the fix is in `src/comptime/**`.
+
+Underneath it is a language question nobody has asked: **`.b` on a `?T` is accepted, with no
+narrowing and no `?.`**.
+
+```botopink
+val rs: #(a: i32, b: string)[] = [ #(a: 1, b: "x") ];
+val v = rs.at(0).b;      // accepted today — `rs.at(0)` is `?#(…)`
+```
+
+**Options.** (a) A member access on a `?T` is an error naming `?.` — which is what `?.` exists for.
+(b) It stays accepted and each backend decides what absent means, which is how the three of them came
+to disagree.
+
+**Recommendation: (a).** It is the same shape as decision 37 and question 38: the checker accepts
+something the backends then answer differently. And the `?.` spelling already exists, so the
+diagnostic writes itself.
+
+**Blocks:** front 12's `§6 T4` cell, whose owner row moves from `04 step 2` to
+[`01-checker`](./01-checker/README.md).
+
+---
+
+## 46. What does `d["k"]` answer on a `Dict`?
+
+**Measured.** A `Dict` is a record over `pairs`, so the read a user means is `d.lookup("k")`. The
+index expression ([decision 30](./decisions-taken.md#30-is-there-an-index-expression)) gives the
+backend no receiver type — `instanceLowerings` has no entry and the checker types the index call
+`void` — so commonJS emits a plain property read and the program answers **`undefined`**, silently.
+
+**Options.** (a) [`01-checker`](./01-checker/README.md) records the receiver kind at the index call
+site, as it already does for primitive method receivers, and each backend routes a dict index to
+`lookup`. (b) The language refuses an index on a dict, and `d.lookup("k")` stays the only spelling.
+
+**Recommendation: (a).** Decision 30's own text says a dict read is `d["k"]` — that is what the
+expression was added for. (b) would be defensible if the decision had not already written the form.
+
+**Blocks:** the `d["k"]` half of decision 30 in all four backends; front 12 left the cell out for
+exactly this reason.
+
+---
+
+## 47. Is an out-of-range read `undefined` or `null`?
+
+**Measured** on commonJS: `xs.at(9)` is declared `?T` and answers **`undefined`**; `xs[9]` does the
+same; but `"abc".charAt(9)` answers **`null`**, through `__bp_string_char_at`. Two spellings of
+absence in one backend, and the optional machinery now assumes one of them: front 04 had to loosen
+the optional guard to `!=` so that `?.` and `??` agree (question 44's sibling defect).
+
+**Options.** (a) One spelling of absent — an `array_at` prelude helper that answers `null`, matching
+the string helper. (b) `?T` means "`null` or `undefined`", which is what `==`/`!=` and the loosened
+guard already assume, written down as a rule.
+
+**Recommendation: (a).** (b) works today, but it puts two values behind one type and every future
+`===` in a hand-written host template is a bug waiting. The helper is the shape the string path
+already uses.
+
+**Blocks:** nothing today — it is a defect with no row, recorded so the next `?T` change does not
+re-derive it.
