@@ -33,6 +33,8 @@ it.
 | **12** [`language-tests`](./12-language-tests/README.md) | `repository/botopink-lang/tests/language/**` — the cells, `expected-failures.txt`, `run.sh`, `AGENTS.md` | — | not started — step 1 lands before any front deletes an expected-failure line |
 | **13** [`module-identity`](./13-module-identity/README.md) | `src/codegen/crossModule.zig` · `src/codegen/{erlang.zig,beam_asm.zig,runtime.zig}` — the **module-atom sites** for steps 1–6 (carve-out of 02 and 03), the two emitters **wholesale** for steps 7–20 · `modules/compiler-cli/src/cli/{build.zig,run.zig}` (the output layout, and `botopink run --target erlang`'s `-pa`) · the module-atom lines and `buildModule` signatures of `src/comptime/{template_eval,decorator_eval}.zig` (carve-out of 01) · the `tests/language/` cells for `is`, a named-type union `case` and decision 8 §7's printed form (coordinate with 12) | `snapshots/codegen/{erlang,beam}/`: **≈ 20** (half 1, names) then **188** (half 2, shapes) then **130** (half 3, value lines) | not started — **runs immediately after 14**; **02 and 03 stall while halves 2–3 run** (both emitters owned wholesale); steps 17–19 additionally after 01's N19–N22. Merged from 1.0.4-beta's 16 and 19 |
 | **14** [`comptime-on-beam`](./14-comptime-on-beam/README.md) | `src/comptime/{template_eval,decorator_eval}.zig` (unowned through 1.0.4-beta) · the eval-protocol half of `src/comptime/runtime/persistent_erl.zig` (carve-out of 08) · a new `src/comptime/runtime/prelude.zig` · the two `evaluate(…)` call sites and the memo cache of `src/comptime/infer.zig` (carve-out of 01) · `ComptimeModule` / `emitComptimeModule` in `src/codegen/erlang.zig` (carve-out of 02) and, for step 3, the untyped comptime mode of `src/codegen/beam_asm.zig` (carve-out of 03) · one new script in `scripts/` (carve-out of 11) | the 48 snapshots carrying `----- COMPTIME ERLANG` in `snapshots/{codegen,comptime}/**` | **first front of the milestone.** Steps 0–2 can start now with two named carve-outs (01's two `infer.zig` call sites; 08's eval-protocol half of `persistent_erl.zig`); **step 3 deferred** until 03 closes, and it needs a maintainer decision |
+| **15** [`language-surface`](./15-language-surface/README.md) | `modules/compiler-core/src/parser/types.zig` · `src/lexer.zig`, `src/lexer/token.zig` · `src/print.zig` and the `ParseErrorType` enum in `src/parser.zig` · four named sites in `src/parser/exprs.zig` — `parsePostfixChain` (`:845-877`), `parsePrimary`'s grouped arm (`:1221-1227`) and the two inlined block loops (`:162-179`, `:944-951`) — a carve-out of **01** · new cases in `src/parser/tests/**` (a carve-out of **07**) | — (step 4 is strictly accepting: no snapshot may re-record) | not started — steps 1–2 edit no source and can start now; steps 3–5 need the two carve-outs |
+| **16** [`formatter`](./16-formatter/README.md) | `modules/compiler-core/src/format.zig` · `modules/compiler-core/src/format/**` · the member-trivia and member-order fields of `modules/compiler-core/src/ast.zig` and the sites that fill them in `src/parser/decls.zig` (`parseEnumItem`, `parseFieldList`, `parseMethodDecl`) — a carve-out of **01**. **Not** `src/parser/exprs.zig`'s two inlined block loops (G5), which are **15**'s | — (the formatter has no snapshot directory; its 239 tests carry their expected text inline) | not started — steps 1–2 edit no source and can start now; step 3 is a two-arm fix in the front's own file; step 4 needs 01's carve-out; **09's format step lands after step 4** |
 
 ## Conflict matrix
 
@@ -98,6 +100,20 @@ it.
     `botopink run --target erlang` both change under it.
 16. **10 does not own `cli/build.zig` and `cli/run.zig`** — 13 does, for the output layout and the
     `-pa` fix. 10 owns the rest of `modules/compiler-cli/**`.
+17. **15 × 01 share `parser/exprs.zig`, by named site.** 01 takes `prec.equality` in an `if`
+    condition and the `_` binder; 15 takes four sites it names — `parsePostfixChain` (`:845-877`),
+    the parenthesised arm (`:1221-1227`) and the two inlined block loops (`:162-179`, `:944-951`).
+    No shared function. Fallback if that proves wrong: 15's step 4 after 01's step 10.
+18. **16 × 01 share `parser/decls.zig`, by named function.** 16 takes `parseEnumItem`,
+    `parseFieldList` and the two `method.comments` sites — the member positions and trailing trivia
+    the formatter needs; 01 keeps the section-body grammar. `src/ast.zig` had no owner; 16 claims the
+    trivia and member-order fields.
+19. **15 before 16** on the one row they split: 15 makes the two inlined block loops parse, 16 prints
+    them. Each new form should arrive with the formatter's round-trip confirmed.
+20. **16 steps 3–4 before 09's format step** — the formatter **deletes the word `default`**
+    (`pub default mod` → `pub mod`), so formatting the libraries first commits three files whose
+    package handle is silently gone.
+21. **16 claims `src/format/tests/**`**, which no front 07 list names.
 
 ## Order
 
