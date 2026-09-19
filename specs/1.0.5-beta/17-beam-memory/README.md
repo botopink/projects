@@ -1,6 +1,16 @@
 # Front 17 — beam-memory
 
-**Priority:** high — but **not startable now**, and the reason is the finding this front rests on.
+**Decided 2026-09-18.** Every question this front opened is answered —
+[38 to 44](../decisions-taken.md), plus three the same pass raised and answered: **48** (the
+formatter's `var` arm is a named carve-out of `16`, landed here in the same commit as the form),
+**49** (this front opens once [`01-checker`](../01-checker/README.md) has committed its step 4) and
+**50** (this milestone runs steps 0–3b; steps 4–8 become a spec for the milestone after
+[`13`](../13-module-identity/README.md)). Two sub-questions those answers exposed are open and block
+nothing now: [51](../decisions-pending.md) (the key of a `List` under `keyed`) and 52 (what a
+condition loop that never breaks answers).
+
+**Priority:** high — and startable the moment decision 49's condition is met. The reason it was not
+startable before is the finding this front rests on.
 A module-level `var` is [decision 28](../decisions-taken.md#28-what-decision-14-left-unassigned)'s
 last unlanded half; [`15-language-surface`](../15-language-surface/README.md) measured it and
 deliberately did not implement it ("the grammar is trivial; the semantics are the `@BeamMemory`
@@ -11,9 +21,12 @@ and the compiler says nothing.
 **Depends on:** [`13-module-identity`](../13-module-identity/README.md) (it owns `erlang.zig` and
 `beam_asm.zig` **wholesale** for its second and third halves — step 4 and step 5 here cannot run
 beside it), and a **named carve-out of [`01-checker`](../01-checker/README.md)** for two diagnostics
-in `src/comptime/infer.zig`. Steps 0–1 depend on nothing and can start immediately. **How much of
-this belongs in the compiler at all is question 43** — see [The two layers](#the-two-layers); the
-answer moves step 3b's work, and part of step 4's, out of the core and into `libs/std`.
+in `src/comptime/infer.zig`. Steps 0–1 depend on nothing and can start immediately. **Question 43 is answered: two layers** — see
+[The two layers](#the-two-layers). The ten host primitives live in `libs/std/src/beam.bp` as
+`#[@External.Erlang]` and the core only lowers a binding's read and write onto them, so no line of
+`.zig` names ETS, `persistent_term` or the process dictionary. Off the BEAM the **annotation** is a
+silent no-op while a hand-written `import { beam } from "std"` stays `std-unsupported-on-target` — the
+tension the option came with, decided as (a).
 
 **Owns:** `modules/compiler-core/src/parser.zig`'s top-level declaration dispatch — `:436` (the
 `checkShorthand(.val)` arm), `:445-458` (the annotated-declaration lookahead and its `switch`) and
@@ -39,6 +52,14 @@ matching site in `beam_asm.zig` ([`03`](../03-beam/README.md) / [`13`](../13-mod
 ([`16`](../16-formatter/README.md) — `var` needs a printer arm) · `src/comptime/infer.zig` beyond the
 two named diagnostics ([`01`](../01-checker/README.md)) · the module atoms of `buildModule`
 ([`13`](../13-module-identity/README.md))
+
+**The two exceptions decision 48 and decision 49 write into the lists above.** `src/format.zig` moves
+from *does not touch* to a **named carve-out**: one `ValDecl` printer arm reading the new `mutable`
+field and one `assertLossless` case, in the same commit that makes `var` parse — because `16-formatter`
+has landed (`37d3dc7`) and `09-ecosystem-residuals` has already committed the five libraries formatted,
+so an arm arriving one commit late edits committed files. And the `infer.zig` carve-out is granted
+**after** `01`'s step 4 is committed, not before: that front holds +208/−23 uncommitted lines in the
+same file, beside the same `:2742`.
 
 Paths are relative to `repository/botopink-lang/` unless a row says otherwise. Every count and
 `file:line` below was measured on 2026-09-18 at `botopink-lang` `bef762b`, in a detached scratch
@@ -223,6 +244,19 @@ write** — and learns nothing about ETS, `persistent_term` or the process dicti
 ---
 
 ## Steps
+
+**Scope, by decision 50.** Steps **0, 1, 2, 3 and 3b** run in 1.0.5-beta. Steps **4 to 8** — the three
+modes' emission, the registered ETS owner, the recomposition and post-load diagnostics, the cells and
+the rakun migration — become a spec for the milestone after `13-module-identity`, which owns
+`erlang.zig` and `beam_asm.zig` wholesale for the halves they need and has not started. Their text
+below stands as written; what changes is when they open. The consequence, said out loud: the 96 lines
+of `rakun/src/runtime.mjs` this front promised to remove leave with steps 4–8, not with this wave.
+
+**Two rows the answers rewrite.** Step 1's migration-cost box is **measured and zero** — 82 assignments
+to a bare name over `libs/std`, `examples/**` and the five libraries, all 82 to a name the same file
+declares `var`, zero to a `val` (decision 38); and step 3 validates the **three** members —
+`ProcessDict`, `Ets`, `PersistentTerm` — plus the argument names, which is decision 41 and matches what
+this README already answered: the explicit `ProcessDict` is the default said out loud.
 
 ### Step 0 — Re-run every measurement at this front's HEAD, and open the five questions
 

@@ -42,6 +42,19 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 34 | The `format --check` exemption | **(c)** — no exemption; decision 18's is withdrawn |
 | 36 | Does `..` exclude its end in a pattern? | yes — exclusive everywhere |
 | 28 | What decision 14 left unassigned | **every form parses**; five distinct forms, none absent |
+| 38 | Is a `val` immutable? | **yes** — assigning to one is a located error naming `var` |
+| 39 | Who creates the ETS table? | the module emits a registered owner process |
+| 40 | `+=` under `Ets` on a non-integer | **(a)** — refused, with the recomposition diagnostic |
+| 41 | Is a misspelled `@BeamMemory` an error? | **(a)** — the member and the argument names are validated; the three members stand |
+| 42 | A `Dict` under `Ets` with `keyed` unwritten | **(b)** — the default stands, no warning; `docs.md` carries it. `List<T>` joins `Dict` under `keyed` |
+| 43 | Where does `@BeamMemory` live? | **(b)** two layers; the no-op/hard-error tension resolves as **(a)**; `Cluster` stays out of the core |
+| 44 | Is `optional<i32>` a valid spelling? | **(a)** — refused; `?T` is the only spelling |
+| 45 | Is a member access on a `?T` an error? | **(a)** — yes, naming `?.` |
+| 46 | What does `d["k"]` answer on a `Dict`? | **(a)** — the checker records the receiver, each backend routes to `lookup` |
+| 47 | Is an out-of-range read `undefined` or `null`? | **(a)** — one spelling of absent: `null` |
+| 48 | Who teaches the formatter to print `var`? | **(a)** — a named carve-out of `format.zig` for `17`, in the same commit as the form |
+| 49 | When does `17` open? | **(a)** — after `01`'s step 4 is committed |
+| 50 | How much of `17` runs in 1.0.5-beta? | **(a)** — steps 0–3b; steps 4–8 become a spec for the milestone after `13` |
 
 ---
 
@@ -1263,4 +1276,281 @@ semantics are the `@BeamMemory` design"*), and its semantics are now
 
 ---
 
+## 38. A `val` is immutable
+
+**Decided 2026-09-18 by the maintainer: (a).** Assigning to a `val` — local or module-level — is a
+located error naming `var`; a `var` allows it.
+
+**Measured, 2026-09-18, at `feat` `1379659`.** The rule is not new; it is a rule one backend already
+enforces and the checker does not:
+
+```botopink
+fn main() { val x: i32 = 0; x = 1; @print(x); }
+```
+```
+$ botopink check
+   Checked in 62.09ms
+$ botopink run
+out/main.js:34    x = 1;
+TypeError: Assignment to constant variable.
+```
+
+`commonJS` emits `const` for a `val`, so node throws; the other three targets disagree in silence. The
+decision moves an existing rule from run time to compile time.
+
+**The migration cost is zero, and it is measured** — the acceptance box of `17`'s step 1 said
+"unmeasured today". Over `libs/std`, `examples/**` and the five libraries: **82** assignments to a bare
+name, and **all 82** to a name the same file declares `var` (`var out = self;` in
+`libs/std/src/dict.bp:57`, `var acc = initial;` in `:65`). **Zero** assignments to a `val`. The local
+`var` already exists and is written 109 times. *The query is textual and per file: it does not see a
+`val` shadowing a `var` of the same name in another scope, and field assignment (`self.x = …`) was
+decision 37's query, not this one.*
+
+**Blocks:** step 1 of [`17-beam-memory`](./17-beam-memory/README.md) — which needs `var` to mean
+something — and the two diagnostics it carves out of [`01-checker`](./01-checker/README.md).
+
 ---
+
+## 39. The module emits a registered owner for its ETS table
+
+**Decided 2026-09-18 by the maintainer: (a).** A module with a `var` under `Ets` emits an owner
+process, registered under a name qualified by the module, that re-creates the table when it dies (hot
+reload, crash), plus the `whereis` guard every read and write goes through. Roughly fifteen lines per
+module, `{heir, self(), undefined}` and the `{'ETS-TRANSFER', …}` receive included.
+
+**Measured.** Without the owner, five processes × three increments read `3, 3, 3, 3, 3` (total 0);
+with it, `3, 6, 9, 12, 15` (total 15). The guard costs +94% on a read and +69% on an increment
+(`ets:lookup_element` 15.38 ns → 29.76 ns with `whereis`; `ets:update_counter` 21.05 → 35.63) over
+2 000 000 operations — 15 ns nobody notices, and the design does not get to call it free.
+
+**Blocks:** step 4 of [`17-beam-memory`](./17-beam-memory/README.md), now deferred by decision 50.
+
+---
+
+## 40. `+=` under `Ets` is refused on a type that is not an integer
+
+**Decided 2026-09-18 by the maintainer: (a).** The recomposition diagnostic covers it.
+
+**Measured.** `ets:update_counter` answers `{ok, N}` for `i32`/`i64` and `{error, badarg}` for `f64`
+(with increment `1.0` **and** `1`), `bool` and binary — same table, same call. It is the only atomic
+read-modify-write the BEAM offers, so "`+=` is atomic under `Ets`" is an integer-only promise: on an
+`f64` the `+=` would become lookup + insert, the very pattern the rule beside it refuses.
+
+**Why not (b) or (c).** (b) makes the rule unpredictable from what the author wrote. (c), a
+`ets:select_replace` CAS loop, has no measured cost and serves a case nobody has asked for; it stays
+available as a *later* lowering, because it is compatible with (a) — the refusal becomes an emission
+and no program that compiled changes meaning.
+
+**Blocks:** the §5 text of `docs.md` (front 08 writes it), and rule (b)'s diagnostic in
+[`17-beam-memory`](./17-beam-memory/README.md).
+
+---
+
+## 41. A misspelled `@BeamMemory` is a compile error
+
+**Decided 2026-09-18 by the maintainer: (a).** The member and the argument names are validated in the
+commit the annotation is born in. The three members stand — **`ProcessDict`** (which is also what a
+`var` with no annotation means), **`Ets`** and **`PersistentTerm`**: writing the default out loud is a
+legitimate thing to do, and the front's own README had already answered it that way
+([`17-beam-memory`](./17-beam-memory/README.md), *"Does `ProcessDict` exist as an explicit spelling,
+being the default? **Yes.**"*).
+
+```botopink
+#[@BeamMemory.Etz] var x: i32 = 0;
+// error: unknown member `Etz` in `@BeamMemory` — expected `ProcessDict`, `Ets` or `PersistentTerm`
+
+#[@BeamMemory.Ets(keyd = true)] var x: i32 = 0;
+// error: unknown argument `keyd` — expected `keyed`
+
+#[@BeamMemory.Ets(keyed = true)] var n: i32 = 0;
+// error: `keyed` needs a keyed container — an `i32` has no key
+
+#[@BeamMemory.ProcessDict] var x: i32 = 0;
+// accepted — the default, said out loud
+```
+
+**Measured.** `#[@TotallyMadeUp.Nonsense(whatever = 42)]` on a `fn` **passes `check`** with no
+diagnostic, so without this the annotation would be accepted, ignored, and the state would sit
+somewhere other than where the author wrote it — the failure family decision 15 already named.
+
+**Blocks:** step 3 of [`17-beam-memory`](./17-beam-memory/README.md), which decision 50 keeps in this
+milestone.
+
+---
+
+## 42. A `Dict` under `Ets` with `keyed` unwritten keeps the default, with no warning
+
+**Decided 2026-09-18 by the maintainer: (b).** The default stays `keyed = false` and the compiler says
+nothing: replacing the whole container is a thing authors legitimately want. The behaviour **and the
+performance difference** are stated in `docs.md`, which front 08 writes.
+
+**And `List<T>` joins `Dict`** as a container that takes `keyed = true` (confirmation 1 of the same
+message). That half is specified, not yet designed: **what the key of a list element is** — its index
+or an identity — is [question 51](./decisions-pending.md) and it has to be answered before step 4
+writes a line of it. Both readings are written out there, with what each costs.
+
+**Measured.** `keyed = false` against `keyed = true`, per write: 10 keys 254 ns → 51 ns (4.9×), 1 000
+keys 25 190 → 47 ns (537×), 10 000 keys 301 864 → 60 ns (**5 061×**). Two processes writing
+**different** keys 20 000 times each under `keyed = false` lost **six** writes silently
+(`a => 19994`, `b => 20000`). The sentences `docs.md` must carry are in step 6 of the front.
+
+**Blocks:** step 6 of [`17-beam-memory`](./17-beam-memory/README.md) and the `docs.md` text; the list
+half additionally waits on question 51.
+
+---
+
+## 43. `@BeamMemory` lives in two layers — and off the BEAM the annotation is a no-op while the module is an error
+
+**Decided 2026-09-18 by the maintainer: (b), with the tension resolved as (a).**
+
+**Layer 1**, `libs/std/src/beam.bp` (no `.zig`, the shape `libs/std/src/erlang.bp` already has): ten
+`#[@External.Erlang]` primitives — `pdGet`/`pdPut`/`pdErase`, `etsWhereis`/`etsNew`/`etsGet`/`etsPut`/
+`etsBump`, `ptGet`/`ptPut` — and `pub mod beam;` in `root.bp`. **Layer 2**, the core: three mode names
+and how a binding's read and write lower onto layer 1. No line of `.zig` names ETS, `persistent_term`
+or the process dictionary. `libs/std/src/beam.bp` does **not** exist today (27 files in
+`libs/std/src`, none of them `beam`), and this front specifies it while front 09 lands it.
+
+**The tension the option came with, decided: (a).** The annotation is a silent no-op on commonJS and
+wasm; a hand-written `import { beam } from "std"` is `std-unsupported-on-target` there, the diagnostic
+`std/erlang` already gives. The two live at different levels of intent: the annotation says *where
+state lives when more than one place is possible*, and on a target with a single execution context it
+has nothing to say; the import says *give me the host primitives*, and there the error is the honest
+answer. What (a) obliges is one sentence in `docs.md` saying exactly that. Rejected: making the
+annotation an error off the BEAM (every program that names memory then needs a per-target
+conditional), and resolving `std/beam` everywhere (ten emissions per backend, and it invents a process
+dictionary for targets with no processes).
+
+**Confirmation 2 of the same message:** `Cluster` stays **out of the core** — it goes to `libs/std` as
+an explicit type with its consistency model declared.
+
+**Blocks:** the size of [`17-beam-memory`](./17-beam-memory/README.md), and its step 3b, which front
+09 lands.
+
+---
+
+## 44. `optional<i32>` is not a valid spelling
+
+**Decided 2026-09-18 by the maintainer: (a).** `optional<T>` is refused, with the pointed diagnostic
+`builtins.d.bp:56-58` already documents for the other two spellings (use `?T`).
+
+**Measured** by [`11-tooling`](./11-tooling/README.md) at `19a3b01`: `val v: optional<i32> = null;`
+**passes `check`** — `optional` is the checker's own internal name — while `val w: Option<i32> = null;`
+is refused with a generic `type mismatch` that *leaks that internal name* (`infer.zig:4590`). Front 11
+has just stopped the language server from echoing it back at users, including a code action that wrote
+`: optional<i32>` **into the user's file**; leaving the checker accepting it re-opens the door from the
+other side. Decision 2 already settled that `?T` is the only optional spelling.
+
+**Blocks:** a row of [`01-checker`](./01-checker/README.md).
+
+---
+
+## 45. A member access on a `?T` is an error naming `?.`
+
+**Decided 2026-09-18 by the maintainer: (a).**
+
+**Measured** by [`04-js`](./04-js/README.md): `rs.at(0).b` is accepted today, because `rs.at(0)` is
+`?#(a: i32, b: string)` — so the label-to-position rewrite (`infer.zig:6186`) never fires and the
+backend emits `.b` verbatim. It is the third appearance of one shape of defect in this milestone
+(decisions 37 and 38 are the others): the checker accepts something the backends then answer
+differently. The `?.` spelling already exists, so the diagnostic writes itself, and
+`val v = rs.at(0)?.b;` is the correction — where the label rewrite *does* fire.
+
+**Blocks:** front 12's `§6 T4` cell, whose owner row moves from `04 step 2` to
+[`01-checker`](./01-checker/README.md).
+
+---
+
+## 46. `d["k"]` on a `Dict` routes to `lookup`
+
+**Decided 2026-09-18 by the maintainer: (a).** The checker records the receiver kind at the index call
+site, as it already does for primitive method receivers, and each backend routes a dict index to
+`lookup`.
+
+**Measured.** Today the checker types the index call `void`, `instanceLowerings` has no entry, commonJS
+emits a plain property read and the program answers **`undefined`** — silently, on a `Dict` that holds
+the key. Decision 30's own text writes `d["k"]` as the dict read, so refusing the form would be
+withdrawing what that decision granted.
+
+**Sequencing, and it is why this was answered now rather than later:** the worktrees of `02-erlang`,
+`03-beam` and `05-wasm` are open **now** and each has just landed decision 30's index lowering, so the
+dict route is one more arm in code each front already wrote. Answered after they close, it is four
+fronts reopened for one arm each.
+
+**Blocks:** the `d["k"]` half of decision 30 in all four backends; front 12 left the cell out for
+exactly this reason.
+
+---
+
+## 47. Absent has one spelling: `null`
+
+**Decided 2026-09-18 by the maintainer: (a).** An `array_at` prelude helper answers `null`, matching
+the string helper.
+
+**Measured** on commonJS: `xs.at(9)` and `xs[9]` answer `undefined`, while `"abc".charAt(9)` answers
+`null` through `__bp_string_char_at` — two spellings of absence in one backend, and front 04 had to
+loosen the optional guard to `!=` so `?.` and `??` would agree. (b) — writing down that `?T` means
+"`null` or `undefined`" — works today only because of that loosening; it puts two values behind one
+type, and every future `===` in a hand-written host template is a bug waiting.
+
+**Priority.** The lowest of the three questions answered with it: it blocks nothing today, so it lands
+with [`01-checker`](./01-checker/README.md)'s own pass.
+
+---
+
+## 48. The formatter's `var` arm is a carve-out of `16`, landed by `17`
+
+**Decided 2026-09-18 by the maintainer: (a).** One `ValDecl` printer arm reading the new `mutable`
+field, and one `assertLossless` case, in the **same commit** that makes `var` parse — a named
+carve-out of `16-formatter`'s `src/format.zig`, not a reopening of that front.
+
+**Measured.** `var` is a lexer token (`src/lexer/token.zig:115`) that **no** parser or formatter line
+mentions at `feat` `1379659`. `16-formatter` landed steps 3–5 the same day (`37d3dc7`) — the front
+whose whole finding was that the formatter **deleted the word `default`** — and it landed
+`assertLossless` with it. `09-ecosystem-residuals` has already committed the five libraries formatted,
+so a printer arm arriving one commit late edits committed files.
+
+This is rule 19 of [`fronts.md`](./fronts.md) applied: a new form arrives with its round-trip
+confirmed. The alternatives both leave a window in which `botopink format` deletes `var` from a valid
+file.
+
+**Blocks:** step 1 of [`17-beam-memory`](./17-beam-memory/README.md).
+
+---
+
+## 49. `17` opens after `01`'s step 4 is committed
+
+**Decided 2026-09-18 by the maintainer: (a).**
+
+**Measured.** `01-checker` holds **+208/−23 uncommitted lines in `src/comptime/infer.zig`** in
+`.tasks/checker` — its step 4, the `case`-arm typing, which was blocked on three backend defects that
+are now fixed on all four backends. Front 17's steps 1 and 3 want two diagnostics in the same file,
+beside decision 37's at `:2742`. Waiting costs hours; not waiting costs a hand-merge of a working
+208-line diff in the hottest file of the milestone, which is the failure the project's own record
+describes as an auto-merge breaking parameter threading after a post-fork refactor.
+
+Rejected (c) — `01` writing both diagnostics itself — not because it is wrong, but because it moves
+decision 38's rule into the checker front's numbering and leaves decision 38 without a single owner.
+
+**Blocks:** the opening of [`17-beam-memory`](./17-beam-memory/README.md).
+
+---
+
+## 50. `17` runs steps 0–3b in this milestone; steps 4–8 become a spec for the next
+
+**Decided 2026-09-18 by the maintainer: (a).**
+
+**Measured.** Steps 4–5 — the three BEAM modes — need `13-module-identity`, which has not started, and
+`13` needs `06` → `14` first (`14` landed steps 0–2; `06` has not started). Steps 0, 1, 2, 3 and 3b
+need none of it.
+
+What lands in this wave: `var` parses at module level, a `val` is immutable (decision 38), commonJS and
+wasm carry a module `var`, the annotation is validated (decision 41), the formatter prints the form
+(decision 48), and `libs/std/src/beam.bp` is specified for front 09 (decision 43). What does not: the
+`Ets`, `PersistentTerm` and process-dictionary **emission**, and with it the 96 lines of
+`rakun/src/runtime.mjs` the front promised to remove — they need their owner.
+
+Rejected: the whole front after `13`, which makes `17` the critical path and lands nothing; and steps
+0–2 only, which is question 41's failure family by construction — `#[@BeamMemory.Etz]` accepted and
+ignored, an annotation born without being trustworthy.
+
+**Blocks:** nothing — it is the scope every other row of this front is read against.
