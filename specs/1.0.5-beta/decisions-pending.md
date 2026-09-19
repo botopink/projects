@@ -44,6 +44,11 @@ optional everywhere, so an out-of-range read is *typed*: by
 ecosystem grows a `?.` or an unwrap. **(c) By receiver:** `T` for an array, a tuple and a string, `?T` for
 a `Dict` — because a missing key is a dict's ordinary case and a missing element is an array's bug.
 
+**Ecosystem evidence, not only a unit test** (front 09, while reformatting): `libs/std/src/querystring.bp:38`
+carried a call that an *older* formatter had broken over three lines, and **both** the pre- and
+post-decision-61 formatters join it back into **95 columns** against `LINE_WIDTH = 80`. A broken `fits`
+does not only fail to break a line — it un-breaks one that was already broken.
+
 **Recommendation: (c).** It is the only one that keeps the decisions already taken: `at` returning an
 optional stays a *different feature* from indexing, which is decision 30's own argument for adding the
 form; decision 46's `lookup` keeps the type it has; and no line in `libs/std`, `examples/**` or the five
@@ -130,6 +135,19 @@ and type union; and any future reformat of the six trees — each construct enab
 `09-ecosystem-residuals` commit.
 
 ---
+
+- **The LSP's completion `detail` quotes source, so decision 61's rule 4 made it multi-line** (front 09,
+  found by a red cold gate at `snapshots/lsp/completion_array_methods.snap.md`): a method's `detail` is the
+  **raw source slice** of its signature, and `Array.fold<A>` is one of the nine signatures rule 4 breaks —
+  so an editor's completion list now shows a five-line detail **with its indentation**. The snapshot is
+  honest and the rule is right; `detail` should render a signature rather than quote source. Front 11's
+  row. The snapshot was regenerated rather than leaving `primitives.bp` unformatted to protect a
+  completion string.
+- **The formatter collapses a single-line triple-quoted sublanguage string** (front 09):
+  `html """<div><p>hi</p></div>"""` becomes `html "<div><p>hi</p></div>"` in
+  `jhonstart/test/html_test.bp`, deleting eight quote characters at two sites. The cell passes either way,
+  but a delimiter the author chose is a spelling decision and not layout — which is why that one file was
+  left out of the reformat, and why jhonstart's count is 106 rather than 112. Front 16's.
 
 Findings that sit below the level of a decision — defects with no row, not questions — recorded here
 until a front claims them:
@@ -294,6 +312,34 @@ from the code writes it here rather than guessing, in the shape the others used:
 >
 > **Blocks.** The step, front or landed work that waits on the answer.
 
-Numbers are never reused: the next question added here is **66**.
+Numbers are never reused: the next question added here is **67**.
 
 ---
+
+---
+
+## 66. Does `format --check` look at the whole tree?
+
+**Measured** by [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) while reformatting the six
+trees for [decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules). `format --check`'s
+default scan is `src/**` minus `.d.bp`, **and that is exactly where the rot collects**: 40 of `libs/std`'s
+48 pre-existing out-of-form lines were in places it never looks — 32 in `test/` and 8 in
+`builtins_fns.d.bp` — which is how they survived a whole milestone with the gate green. And it is not
+historical: `jhonstart/test/html_test.bp` is out of form **today** while `format --check` reports clean.
+
+**Options.** **(a) Widen the scan to every `.bp` and `.d.bp` in a project**, with the two files that cannot
+parse handled explicitly: `libs/std/src/builtins.d.bp` (`fn await(…)` — `await` is a keyword) and the three
+`examples/jhonstart-app` files whose `Link("/posts/1") { "first post" }` a trailing lambda's one-line body
+refuses. Both are recorded in this file already. **(b) Widen it to `test/**` only**, since that is where
+40 of the 48 were, and leave `.d.bp` out on the grounds that nothing compiles them. **(c) Leave the scan
+and write the convention down** — which is what front 09 did in `libs/std/AGENTS.md` for now.
+
+**Recommendation: (a), gated on the two parse defects.** A formatter gate that does not look at a
+directory is a gate that guarantees nothing about it, and the measurement is that the unwatched
+directories are precisely the ones that drift. But (a) cannot land before the two files parse — a widened
+scan reds on them — so the honest order is: fix the trailing-lambda body and `await`, then widen. (b) buys
+most of the coverage for none of that work and is the fallback if either parse defect stalls.
+
+**Blocks.** Nothing today. It decides whether `libs/std`'s convention note becomes a rule the tooling
+enforces, and it is the second time in this milestone that a gate's *scope* — not its logic — is what let
+something through (`beam_export_audit.sh` was the first: it cannot find a shape no snapshot has).
