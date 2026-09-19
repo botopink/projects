@@ -78,6 +78,7 @@ number it is corrected in place, in brackets.
 | [63](#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering) | Does an index answer `T` or `?T`? | **superseded 2026-09-19** — `xs[k]` is sugar for `xs.at(k)`, so the type is the method's: see the amendment below |
 | [66](#66-format---check-looks-at-the-whole-project--and-something-has-to-call-it) | Does `format --check` look at the whole tree? | **(a)** — every `.bp` and `.d.bp` of a project, gated on the parse defects, with `tests/language/reject/**` exempt; and it needs a **caller**, because no gate runs it today |
 | [64](#64-the-erlang-backend-emits-a-wrapper-per-host-bound-std-declare-fn--and-stdbeam-stays-its-own-module) | How does `@BeamMemory`'s layer 2 reach layer 1? | **(a)** — the erlang backend emits a wrapper per host-bound std `declare fn`; and **(i)**, `std/beam` stays its own module |
+| 65 | Does the formatter learn to measure width? | **yes, one construct at a time** — all-or-nothing per group, `+4` continuation, output a pure function of content |
 
 ---
 
@@ -2469,4 +2470,70 @@ ecosystem would grow a `?.` — is false, because none is written.
 
 Rows 1–4 are `libs/std`, which front **09** lands as it landed `std/beam`; row 5 is front **01**'s; row 6
 is front **08**'s.
+
+---
+
+## 65. The formatter learns to measure width — all-or-nothing per group, one construct at a time
+
+**Decided across 2026-09-19 by the maintainer**, in four parts, three of them given as rules rather than
+as answers to the options offered.
+
+**1. All-or-nothing per group.** *"a partir do momento que o primeiro teve quebra de linha os outros devem
+ter o mesmo padrão"*, completed by *"a menos que seja assim — `pessoa.correr().andar().ver();` — aí pode
+ser tudo da mesma linha"*. So a group fits on one line, or **every** element takes its own; there is no
+middle. What the formatter does today is the middle, and it is wrong rather than merely ugly:
+
+```botopink
+// today (measured)
+return of(people).where({ p -> p.age >= 18 }).orderBy({ p -> p.name }).select(
+    { p -> p.name }
+).toArray().join(", ");
+
+// the rule
+return of(people)
+    .where({ p -> p.age >= 18 })
+    .orderBy({ p -> p.name })
+    .select({ p -> p.name })
+    .toArray()
+    .join(", ");
+```
+
+**2. Formatting is a pure function of the file's content.** From *"não quero ter dependência de ter que
+olhar o git para isso"*: the output may not depend on what the file used to look like. That answers
+join-or-preserve as **join** — of the 21 hand-broken chains left in the tree, the 16 that fit (36 to 61
+columns) become one line each — and it rules out, for every construct and permanently, any
+"preserve what the author wrote" heuristic, which is the one place Prettier respects its input. It is the
+formatter's form of [decision 67](#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it).
+
+**3. A chain's continuation indents `+4` from the statement**, never aligned under the receiver. Measured:
+**21 of 21** hand-broken chains in the tree already do it, including the `erika-linq` chain the maintainer
+pointed at as correct. Alignment would make an identifier's width into layout, so a rename re-indents the
+chain and its diff carries lines whose content did not change.
+
+**4. The staging: one construct at a time.** The predicate is fixed first, with **every `group` pinned
+flat** so the commit changes no file at all — output byte-identical to today — and each construct is
+enabled afterwards, its canonical form **written down before** it is turned on. The method chain goes
+first, with the form above.
+
+**Why the predicate has to be fixed at all.** `fits` stops at the first `concat` and then answers "fits"
+for any non-negative budget, so **every** group in the formatter has always rendered flat and no construct
+in the language has ever broken by width. Decision 61's rule 4 landed by routing around it with a
+`Doc.widthChoice`, which is why a signature breaks and a call with the same arguments is joined to 135
+columns in the same run. And it does not only fail to break: `libs/std/src/querystring.bp:38` is a call an
+older formatter had broken over three lines that both the pre- and post-61 formatters **join back** to 95
+columns.
+
+**What it costs, measured over the six trees.** 8 184 `.bp` lines, **442** past 80 columns, of which the
+rule can fix **263** — 89 calls and comma lists, 83 array literals, 44 chains, 47 other code — while
+**179 stay long whatever happens**: 155 comments and 24 long strings, which no width rule breaks. The
+longest line in the ecosystem, `onze/src/onze.bp:43` at 1 568 columns, is a string. And 263 *sites* become
+more than 263 *lines*, since each break multiplies: the reformat will be larger than decision 61's 607
+lines, and is measured per tree before it is applied.
+
+**The rider that phasing must honour**, from the same instruction about git: what is canonical lives in
+the formatter's code and in `docs.md`, never in history. The word "commit" in the framing of this question
+was a unit of work, not a mechanism — no one should need `git log` to know what shape is correct.
+
+**Blocks:** nothing. It is front [`16-formatter`](./16-formatter/README.md)'s next row, and the reformat
+that follows each enabled construct is front 09's.
 
