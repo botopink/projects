@@ -136,6 +136,29 @@ and type union; and any future reformat of the six trees — each construct enab
 
 ---
 
+- **Fronts 03 and 05 carry all three of erlang's `patternNode` defects, and it is verified at line level**
+  (front 01, after front 02's `fe87db51`): `commonJS.zig` reads `Pattern.shape` (`:4231`, `:4567`, `:4576`)
+  and `Pattern.rest` (`:4239`); `erlang.zig` reads both now; `beam_asm.zig` reads **neither** — its four
+  `.shape` hits are all `tdecl.shape`, record against enum — and `wat.zig` reads neither either, its one
+  hit being `tdecl.shape`. commonJS is the oracle. And the way to catch them matters: `botopink test`
+  reaches neither target, so only a `run/` cell can, which means **`run/case_values.bp` passing on all four
+  is not evidence**.
+- **The ambient-behavior blind spot is the only half of decision 58 left** (front 01): an interface the
+  program does not *declare* is skipped in **both** the inline and the block form, so
+  `type Money(cents: i32) implement Display { }` still checks against `libs/std`'s ambient `Display`.
+  Closing it needs the interface-member registry and would red every implementation the registry cannot
+  open.
+- **`ast.Pattern` carries no `Loc`, and two `reject/` fixtures need one** (front 01):
+  `reject/case_shorthand_on_unknown.bp` wants `full name` at 11:9 and `reject/case_arity_without_rest.bp`
+  wants `height` at 11:9 — the pattern's own column, where only the arm's *body* has a location. Both lines
+  survive; giving `Pattern` a `Loc` crosses the parser, the formatter and four backends.
+- **A type pattern over a named type lowers to a variant-tag test on every backend** (front 01), so
+  `case v { Person { … } Vec { … } }` misses both arms and answers `undefined`. Two `expected-failures`
+  lines and three tests, `13 step 17` alone — the checker half is done.
+- **`open_case_domain_names` is `i32` + `string`, which is a language rule and not an implementation
+  choice** (front 01): `f64`, `bool` and the sized integers are the same unbounded domain, so
+  `case x { 0 { … } 1 { … } }` on an `f64` still compiles while the `i32` spelling now reds. It costs no
+  migration either way.
 - **The LSP's completion `detail` quotes source, so decision 61's rule 4 made it multi-line** (front 09,
   found by a red cold gate at `snapshots/lsp/completion_array_methods.snap.md`): a method's `detail` is the
   **raw source slice** of its signature, and `Array.fold<A>` is one of the nine signatures rule 4 breaks —
