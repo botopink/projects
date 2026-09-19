@@ -46,7 +46,8 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 39 | Who creates the ETS table? | the module emits a registered owner process |
 | 40 | `+=` under `Ets` on a non-integer | **(a)** — refused, with the recomposition diagnostic |
 | 41 | Is a misspelled `@BeamMemory` an error? | **(a)** — the member and the argument names are validated; the three members stand |
-| 42 | A `Dict` under `Ets` with `keyed` unwritten | **(b)** — the default stands, no warning; `docs.md` carries it. `List<T>` joins `Dict` under `keyed` |
+| 42 | A `Dict` under `Ets` with `keyed` unwritten | **(b)** — the default stands, no warning; `docs.md` carries it |
+| 51 | `keyed = true` on a `List<T>` | **(c)** — `keyed` is a `Dict`-only argument; on a list it is the "needs a keyed container" error |
 | 43 | Where does `@BeamMemory` live? | **(b)** two layers; the no-op/hard-error tension resolves as **(a)**; `Cluster` stays out of the core |
 | 44 | Is `optional<i32>` a valid spelling? | **(a)** — refused; `?T` is the only spelling |
 | 45 | Is a member access on a `?T` an error? | **(a)** — yes, naming `?.` |
@@ -1384,10 +1385,8 @@ milestone.
 nothing: replacing the whole container is a thing authors legitimately want. The behaviour **and the
 performance difference** are stated in `docs.md`, which front 08 writes.
 
-**And `List<T>` joins `Dict`** as a container that takes `keyed = true` (confirmation 1 of the same
-message). That half is specified, not yet designed: **what the key of a list element is** — its index
-or an identity — is [question 51](./decisions-pending.md) and it has to be answered before step 4
-writes a line of it. Both readings are written out there, with what each costs.
+**`keyed` is a `Dict`-only argument** — see decision 51 below; a `List<T>` under `Ets` stores its whole
+value like anything else.
 
 **Measured.** `keyed = false` against `keyed = true`, per write: 10 keys 254 ns → 51 ns (4.9×), 1 000
 keys 25 190 → 47 ns (537×), 10 000 keys 301 864 → 60 ns (**5 061×**). Two processes writing
@@ -1554,3 +1553,28 @@ Rejected: the whole front after `13`, which makes `17` the critical path and lan
 ignored, an annotation born without being trustworthy.
 
 **Blocks:** nothing — it is the scope every other row of this front is read against.
+
+---
+
+## 51. `keyed = true` is a `Dict`-only argument
+
+**Decided 2026-09-18 by the maintainer: (c).** `List<T>` does **not** join `Dict` under `keyed` — the
+half of confirmation 1 that proposed it was withdrawn together with the `ProcessDict` half. A list under
+`Ets` stores its whole value, and `#[@BeamMemory.Ets(keyed = true)]` on one is the same located error
+decision 41 already writes: *`keyed` needs a keyed container*.
+
+**Why it is the right shape, not just the smaller one.** In a `Dict` the element's key **is** the user's
+key, which is what makes the mode unambiguous and what the measurement measured (254 → 51 ns at 10 keys,
+301 864 → 60 ns at 10 000, and six of 40 000 writes lost silently under `keyed = false`). A list has no
+such key, and neither reading survives: with the **index** as the key, two processes appending at the
+same time choose the same index and the length becomes the contended row `keyed` exists to remove — so
+the mode would be honest for positional update only, never for append; with an **element identity**, the
+value is no longer a list but a `Dict<Id, T>` with an order, which is a type question wearing a storage
+answer.
+
+Positional update stays available later, as its own row with its own measurement; nothing about (c)
+forecloses it.
+
+**Blocks:** nothing. Step 3 of [`17-beam-memory`](./17-beam-memory/README.md) validates `keyed` against
+`Dict` only, and step 4 — deferred by decision 50 — has one container to emit instead of two.
+

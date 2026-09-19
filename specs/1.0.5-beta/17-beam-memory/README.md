@@ -5,9 +5,10 @@
 formatter's `var` arm is a named carve-out of `16`, landed here in the same commit as the form),
 **49** (this front opens once [`01-checker`](../01-checker/README.md) has committed its step 4) and
 **50** (this milestone runs steps 0–3b; steps 4–8 become a spec for the milestone after
-[`13`](../13-module-identity/README.md)). Two sub-questions those answers exposed are open and block
-nothing now: [51](../decisions-pending.md) (the key of a `List` under `keyed`) and 52 (what a
-condition loop that never breaks answers).
+[`13`](../13-module-identity/README.md)). **51** answers the one sub-question this design
+raised: `keyed = true` is a **`Dict`-only** argument — a `List<T>` under `Ets` stores its whole value, and
+`keyed` on one is decision 41's "needs a keyed container" error. Nothing of this front is open; the one
+question left from that pass, [52](../decisions-pending.md), belongs to the loop lowering.
 
 **Priority:** high — and startable the moment decision 49's condition is met. The reason it was not
 startable before is the finding this front rests on.
@@ -333,7 +334,8 @@ positionally. Nothing in the grammar changes; the validation is a lookup.
 **Acceptance:**
 - [ ] `#[@BeamMemory.<anything else>]` is a located error naming the three members
 - [ ] An unknown argument name under a known member is a located error naming `keyed`
-- [ ] `keyed` on a scalar-typed `var` is a located error — there is no key
+- [ ] `keyed` on anything but a `Dict` is a located error — there is no key (decision 51: scalars **and**
+      `List<T>`)
 - [ ] A `reject/` cell per diagnostic, specified here and handed to
       [`12-language-tests`](../12-language-tests/README.md)
 
