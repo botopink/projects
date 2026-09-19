@@ -75,7 +75,7 @@ number it is corrected in place, in brackets.
 | 49 | When does `17` open? | **(a)** — after `01`'s step 4 is committed |
 | 50 | How much of `17` runs in 1.0.5-beta? | **(a)** — steps 0–3b; steps 4–8 become a spec for the milestone after `13` |
 | [67](#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it) | How strict, and may it be configurable? | **the most restrictive behaviour, and no configuration that bypasses it** — a standing principle: stricter side by default, exemptions **structural** and never a knob |
-| [63](#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering) | Does an index answer `T` or `?T`? | **(a)**, stricter than as written — `T`; `null` only where the value type is `?V`; otherwise an absent key **fails**. TypeScript's default on the typing side, deliberately not TypeScript at run time: **commonJS is the outlier** |
+| [63](#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering) | Does an index answer `T` or `?T`? | **superseded 2026-09-19** — `xs[k]` is sugar for `xs.at(k)`, so the type is the method's: see the amendment below |
 | [66](#66-format---check-looks-at-the-whole-project--and-something-has-to-call-it) | Does `format --check` look at the whole tree? | **(a)** — every `.bp` and `.d.bp` of a project, gated on the parse defects, with `tests/language/reject/**` exempt; and it needs a **caller**, because no gate runs it today |
 | [64](#64-the-erlang-backend-emits-a-wrapper-per-host-bound-std-declare-fn--and-stdbeam-stays-its-own-module) | How does `@BeamMemory`'s layer 2 reach layer 1? | **(a)** — the erlang backend emits a wrapper per host-bound std `declare fn`; and **(i)**, `std/beam` stays its own module |
 
@@ -2399,4 +2399,74 @@ BIF table out of `erlang.bp` first.
 
 **Blocks:** it unblocks — step 3b's third acceptance bullet, and every read/write lowering of
 `17-beam-memory`'s steps 4–5.
+
+---
+
+## 63 · amendment, 2026-09-19 — an index is sugar for a method call, and the method comes from a behavior
+
+**Decided by the maintainer**, and it supersedes the answer recorded above. His words: *"`xs[0]` é só um
+alias para `xs.at(0)`"*, and then *"crie behavior para essas funções `at` e `slice`, para que outros tipos
+que implementem possam usar o mesmo recurso"*.
+
+**The rule.** The index expression has **no typing rule of its own**. It rewrites to a method call, and the
+type is whatever that method answers:
+
+| written | rewrites to | type |
+|---|---|---|
+| `xs[0]` | `xs.at(0)` | `?T` |
+| `d["k"]` | `d.at("k")` | `?V` |
+| `s[1]` | `s.at(1)` | `?string` |
+| `xs[0..2]` | `xs.slice(0, 2)` | `T[]` |
+| `xs[1..]` | `xs.slice(1, null)` | `T[]` |
+
+**And what the method *is* comes from a behavior**, so indexing stops being a privilege of three built-in
+types. Ambient, like `Display` (decision 27), and for the same reason: the syntax has to find the method
+without the author having imported anything.
+
+```botopink
+pub behavior Index<K, V> {
+    fn at(self: Self, key: K) -> ?V;
+}
+
+pub behavior Slice<V> {
+    fn slice(self: Self, start: i32, end: ?i32) -> V;
+}
+```
+
+`Array<T>` implements `Index<i32, T>` and `Slice<T[]>`; `string` implements `Index<i32, string>` and
+`Slice<string>`; `Dict<K, V>` implements `Index<K, V>`. A library's own `Matrix`, `Row` or `Buffer` becomes
+indexable without touching the compiler, which is what the core-stays-generic rule asks for.
+
+**Three measured facts the design had to respect.** There is **no `Range` type** — `start..end` is an AST
+node (`ast.zig:778`), not a value, which is why `slice` takes two arguments and an open end passes `null`.
+`string` spells its reader `charAt` (`primitives.bp:208`), so it renames or declares `at` beside it — the
+rename costs **one** call in the whole ecosystem. And **a tuple cannot be covered**: `t[0]` needs a
+*constant* index and answers a type *per position*, which `at(key: K) -> ?V` cannot express with one `V`,
+so the tuple stays a checker special case and the behavior covers the other three.
+
+**Why this replaces the earlier answer.** As recorded above, decision 63 cost four rows — the checker
+typing by receiver, plus three backends changing behaviour, with commonJS the outlier that had to start
+failing. As sugar for a method call it costs **one**: the rewrite. **No backend changes at all**, because
+the lowering becomes an ordinary method call that all four already emit and already test. Decision 46
+(`d["k"]` routes to `lookup`) becomes trivial — the route *is* the call — and decision 47's `null` keeps a
+single place to come out of.
+
+**Migration: zero, measured.** There are **5** index expressions in the entire ecosystem and **4 of them
+are the cell `tests/language/run/index_expression.bp`**; the fifth is inside a JavaScript template. The
+argument once made against "an index always answers an optional" — that every index written in the
+ecosystem would grow a `?.` — is false, because none is written.
+
+**The rows, and none of them waits on front 13:**
+
+| # | row | file | measured cost |
+|---|---|---|---|
+| 1 | the two behaviors | `libs/std/src/builtins.d.bp` | ~10 lines |
+| 2 | `Array` implements both | `libs/std/src/primitives.bp` | `at` exists; `slice` is new |
+| 3 | `string` implements both | `libs/std/src/primitives.bp` | `charAt` → `at`: **1** call; `slice` is new |
+| 4 | `Dict` implements `Index` | `libs/std/src/dict.bp` | `lookup` → `at`: 9 calls outside the file, 18 inside, **~83 snapshots** (the name reaches emitted code) |
+| 5 | the rewrite `xs[k]` → `.at(k)`, `xs[a..b]` → `.slice(a, b)` | `src/comptime/transform.zig` | **no backend moves** |
+| 6 | the form in `docs.md` | `docs.md` | one paragraph |
+
+Rows 1–4 are `libs/std`, which front **09** lands as it landed `std/beam`; row 5 is front **01**'s; row 6
+is front **08**'s.
 
