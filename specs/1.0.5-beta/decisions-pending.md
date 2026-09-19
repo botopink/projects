@@ -1,18 +1,20 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**Three open — 63, 64 and 65**, all opened 2026-09-18 by the decision-record audit and all written
-below.
+**Four open — 63, 64, 65 and 66**, all written below: 63 by the decision-record audit, 64 and 66 by
+[`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) — one while landing `libs/std/src/beam.bp`,
+the other while reformatting the six trees — and 65 by [`16-formatter`](./16-formatter/README.md) while
+landing [decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules)'s four rules.
 Every question before them — 38 to 62 — is answered and recorded in
-[`decisions-taken.md`](./decisions-taken.md). What is left after those two is the list of defects with an
-owner and no row, kept so they are not re-discovered; decision 62 says which three of them are this
-wave's. Questions 38 to 47 were answered on 2026-09-18, together with four the same
-pass raised and answered (48, 49, 50, 51); all of them are in
-[`decisions-taken.md`](./decisions-taken.md), which is the record the fronts implement against. The three
-were opened the same day by the fronts that landed — 53 by `08-hygiene`, 55 by `03-beam`, 56 by
-`10-cli-residuals` — and two more (52 and 54) were answered within hours of being written, so they are in
-`decisions-taken.md` already. 53 and 55 are each a form that **compiles and answers differently per
-backend**, which is why neither is a defect with an owner; 56 is a contract the command documentation
-states and a fix is about to change, so it has a deadline: front 13 is implementing that fix now.
+[`decisions-taken.md`](./decisions-taken.md), which is the record the fronts implement against: 38 to 47
+were answered on 2026-09-18 together with four the same pass raised and answered (48, 49, 50, 51), and 52
+to 62 followed within the day, several of them within hours of being written — among them the three that
+were open when this header last counted them, 53 opened by `08-hygiene`, 55 by `03-beam` and 56 by
+`10-cli-residuals`. What is left after those four is the list of defects with an owner and no row, kept so
+they are not re-discovered; decision 62 says which three of them are this wave's. None of the four open
+ones is a defect with an owner either: 63 and 65 are calls of the class decision 61 was — one about what a
+form *means* on four backends, one about how every library *looks* — 64 is a mechanism
+[decision 43](./decisions-taken.md#43-beammemory-lives-in-two-layers--and-off-the-beam-the-annotation-is-a-no-op-while-the-module-is-an-error)
+took without naming its dependency, and 66 is the scope of a gate.
 
 **53 and 55 both changed after they were opened**, and the new evidence is in their sections: Zig was
 measured (it has *both* spellings, in different positions, so the compiler is the Zig-consistent side and
@@ -136,6 +138,34 @@ and type union; and any future reformat of the six trees — each construct enab
 
 ---
 
+## 66. Does `format --check` look at the whole tree?
+
+**Measured** by [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) while reformatting the six
+trees for [decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules). `format --check`'s
+default scan is `src/**` minus `.d.bp`, **and that is exactly where the rot collects**: 40 of `libs/std`'s
+48 pre-existing out-of-form lines were in places it never looks — 32 in `test/` and 8 in
+`builtins_fns.d.bp` — which is how they survived a whole milestone with the gate green. And it is not
+historical: `jhonstart/test/html_test.bp` is out of form **today** while `format --check` reports clean.
+
+**Options.** **(a) Widen the scan to every `.bp` and `.d.bp` in a project**, with the two files that cannot
+parse handled explicitly: `libs/std/src/builtins.d.bp` (`fn await(…)` — `await` is a keyword) and the three
+`examples/jhonstart-app` files whose `Link("/posts/1") { "first post" }` a trailing lambda's one-line body
+refuses. Both are recorded in this file already. **(b) Widen it to `test/**` only**, since that is where
+40 of the 48 were, and leave `.d.bp` out on the grounds that nothing compiles them. **(c) Leave the scan
+and write the convention down** — which is what front 09 did in `libs/std/AGENTS.md` for now.
+
+**Recommendation: (a), gated on the two parse defects.** A formatter gate that does not look at a
+directory is a gate that guarantees nothing about it, and the measurement is that the unwatched
+directories are precisely the ones that drift. But (a) cannot land before the two files parse — a widened
+scan reds on them — so the honest order is: fix the trailing-lambda body and `await`, then widen. (b) buys
+most of the coverage for none of that work and is the fallback if either parse defect stalls.
+
+**Blocks.** Nothing today. It decides whether `libs/std`'s convention note becomes a rule the tooling
+enforces, and it is the second time in this milestone that a gate's *scope* — not its logic — is what let
+something through (`beam_export_audit.sh` was the first: it cannot find a shape no snapshot has).
+
+---
+
 - **Fronts 03 and 05 carry all three of erlang's `patternNode` defects, and it is verified at line level**
   (front 01, after front 02's `fe87db51`): `commonJS.zig` reads `Pattern.shape` (`:4231`, `:4567`, `:4576`)
   and `Pattern.rest` (`:4239`); `erlang.zig` reads both now; `beam_asm.zig` reads **neither** — its four
@@ -220,20 +250,16 @@ until a front claims them:
 - **Step 5 of `08-hygiene` has no test for its diagnostic**, only for the message: nothing asserts the
   `the <template|decorator> evaluator's erl runtime failed (…): …` text, and the frame-cap failure is
   unreachable from a fixture. Front 07 (`comptime/tests/**`) or front 14 (`template_eval.zig`).
-- **`libs/std` is no longer `format --check` clean** (front 16): `src/primitives.bp:549` (a braced
-  single-statement `if` inside a `loop`) and `src/querystring.bp:37` (a chain that now fits one line).
-  Both are canonical rules and lose no text, and **both predate front 16's commits** — verified by
-  building `format.zig` at `f8d97f95` and re-running. `examples/**` and all five siblings are clean.
-  `libs/std` is front 01's step 11 / front 08's.
+- ~~**`libs/std` is no longer `format --check` clean**~~ — **closed by front 09's `652b624c` and
+  `68093afc`, measured 2026-09-19:** all 26 `.bp` of `libs/std/src` answer `Unchanged` at exit 0, and so
+  do `builtins_fns.d.bp` and the three `test/*.bp` when they are named on the command line.
 - **The continuation line of a trailing comment re-emits at column 0** (front 16, front 09's last R1
   member): text intact, alignment lost. It needs a **recorded comment column**, not a printer arm — a
   comment reaches the AST as text with no column — and its site is `parseDecls`' top-level trailing
   comment, outside front 16's three named functions. No owner.
-- **Four layout rows for front 16's step 6**, each measured against front 09's 861 changed lines: a
-  lambda *argument*'s body indents 8 from the call line and its `});` lands at +4; `{ next -> }`
-  explodes into three lines whose middle line is **whitespace-only**; `{ -> 3 + 4 }` explodes while
-  `{ n -> n * 2 }` stays inline; and a hand-wrapped signature is joined into a **114-column** line
-  against `LINE_WIDTH = 80`, because a `fn` signature has no break available.
+- ~~**Four layout rows for front 16's step 6**~~ — **absorbed whole: rules 1 to 4 of
+  [decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules) *are* those four
+  items, in that order, and all four landed with front 16's step 6.**
 - **Front 15's handover note is stale in one line** (front 16): it says a blank line inside an `if`
   branch does not round-trip "because `fmtBranchStmts` never reads `emptyLinesBefore`" — that function
   was deleted by `9d1d067`, and after 15's `28e447e` the then-branch, the else-branch and the `loop`
@@ -336,33 +362,3 @@ from the code writes it here rather than guessing, in the shape the others used:
 > **Blocks.** The step, front or landed work that waits on the answer.
 
 Numbers are never reused: the next question added here is **67**.
-
----
-
----
-
-## 66. Does `format --check` look at the whole tree?
-
-**Measured** by [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) while reformatting the six
-trees for [decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules). `format --check`'s
-default scan is `src/**` minus `.d.bp`, **and that is exactly where the rot collects**: 40 of `libs/std`'s
-48 pre-existing out-of-form lines were in places it never looks — 32 in `test/` and 8 in
-`builtins_fns.d.bp` — which is how they survived a whole milestone with the gate green. And it is not
-historical: `jhonstart/test/html_test.bp` is out of form **today** while `format --check` reports clean.
-
-**Options.** **(a) Widen the scan to every `.bp` and `.d.bp` in a project**, with the two files that cannot
-parse handled explicitly: `libs/std/src/builtins.d.bp` (`fn await(…)` — `await` is a keyword) and the three
-`examples/jhonstart-app` files whose `Link("/posts/1") { "first post" }` a trailing lambda's one-line body
-refuses. Both are recorded in this file already. **(b) Widen it to `test/**` only**, since that is where
-40 of the 48 were, and leave `.d.bp` out on the grounds that nothing compiles them. **(c) Leave the scan
-and write the convention down** — which is what front 09 did in `libs/std/AGENTS.md` for now.
-
-**Recommendation: (a), gated on the two parse defects.** A formatter gate that does not look at a
-directory is a gate that guarantees nothing about it, and the measurement is that the unwatched
-directories are precisely the ones that drift. But (a) cannot land before the two files parse — a widened
-scan reds on them — so the honest order is: fix the trailing-lambda body and `await`, then widen. (b) buys
-most of the coverage for none of that work and is the fallback if either parse defect stalls.
-
-**Blocks.** Nothing today. It decides whether `libs/std`'s convention note becomes a rule the tooling
-enforces, and it is the second time in this milestone that a gate's *scope* — not its logic — is what let
-something through (`beam_export_audit.sh` was the first: it cannot find a shape no snapshot has).
