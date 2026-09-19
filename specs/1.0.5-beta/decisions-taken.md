@@ -77,6 +77,7 @@ number it is corrected in place, in brackets.
 | [67](#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it) | How strict, and may it be configurable? | **the most restrictive behaviour, and no configuration that bypasses it** — a standing principle: stricter side by default, exemptions **structural** and never a knob |
 | [63](#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering) | Does an index answer `T` or `?T`? | **(a)**, stricter than as written — `T`; `null` only where the value type is `?V`; otherwise an absent key **fails**. TypeScript's default on the typing side, deliberately not TypeScript at run time: **commonJS is the outlier** |
 | [66](#66-format---check-looks-at-the-whole-project--and-something-has-to-call-it) | Does `format --check` look at the whole tree? | **(a)** — every `.bp` and `.d.bp` of a project, gated on the parse defects, with `tests/language/reject/**` exempt; and it needs a **caller**, because no gate runs it today |
+| [64](#64-the-erlang-backend-emits-a-wrapper-per-host-bound-std-declare-fn--and-stdbeam-stays-its-own-module) | How does `@BeamMemory`'s layer 2 reach layer 1? | **(a)** — the erlang backend emits a wrapper per host-bound std `declare fn`; and **(i)**, `std/beam` stays its own module |
 
 ---
 
@@ -2355,3 +2356,47 @@ parse defects:
 `libs/std/src/builtins.d.bp`'s `await` (front 01's step 11 / front 08) and the trailing lambda's one-line
 body (front 15's parser surface, and the three `examples/jhonstart-app` files with it). And the three
 `tests/language/modules/*` cells are front 12's, so widening hands a row to a front that had none.
+
+---
+
+## 64. The erlang backend emits a wrapper per host-bound std `declare fn` — and `std/beam` stays its own module
+
+**Decided 2026-09-19 by the maintainer: (a) on the route, (i) on the sub-question.**
+
+**Measured** by [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) while landing
+`libs/std/src/beam.bp`, and reproduced twice since. The erlang backend emits **no wrapper for any
+host-bound std `declare fn`**: `out/erl/std@beam.erl` is 162 lines of which exactly one is code
+(`-module(std@beam).`), `out/erl/std@erlang.erl` has two, and commonJS at the same place emits
+`function cwd() { return process.cwd(); }`. So a qualified std host call resolves, type-checks, emits a
+correct call — and dies:
+
+```
+botopink run --target erlang, exit 1
+Runtime terminating during boot ({undef,[{'std@erlang',self,[],[]}, …]})
+```
+
+**The decisive fact is where it dies: in `std@erlang:self()`, not in `pdPut`.** The gap belongs to every
+host-bound declaration in `libs/std` on the BEAM — `erlang.bp` included — so the row pays for itself
+outside [`17-beam-memory`](./17-beam-memory/README.md), and it is what makes decision 43's two layers mean
+what they say. It lands as a numbered row of front **02** or front **13**, whichever holds `erlang.zig`
+when it is scheduled; 13 owns that file wholesale while its halves 2–3 run, which makes 13 the natural
+home.
+
+Rejected **(b)**, layer 2 emitting `erlang:put/2` and the ETS calls from `.zig`: it is precisely the bypass
+decision 67 forbids — it buys the behaviour by withdrawing a decision taken on purpose — and, measured, it
+does not even fix the general case, since `std@erlang:self()` stays `undef`. Rejected **(c)**, deferring
+layer 2 with steps 4–5: it leaves layer 1 in the tree with no caller and step 3b's third acceptance bullet
+permanently unrunnable, which is the shape decision 50 refused when it refused "steps 0–2 only".
+
+**The sub-question, and why the answer is two modules.** The maintainer asked whether `std/beam` needs to
+be separate from `std/erlang` at all, since `@External.Erlang` already covers both BEAM targets
+(`codegen.zig:74-77` maps `.erlang` and `.beam` to the same lookup name). It stays separate because
+`erlang.bp` is **read by the emitter at compile time** (`codegen/erlang.zig:184-206`) to build the
+auto-imported BIF table — it is compiler input, not only a list of declarations. Merging ten primitives
+nobody auto-imports into it makes the emitter read what does not concern it, and leaves the next reader to
+work out why half the file is not in the table. The honest version of one module is the reverse: move the
+BIF table out of `erlang.bp` first.
+
+**Blocks:** it unblocks — step 3b's third acceptance bullet, and every read/write lowering of
+`17-beam-memory`'s steps 4–5.
+

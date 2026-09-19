@@ -1,7 +1,6 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**Two open — 64 and 65**, both written below, and both opened 2026-09-18 by the front that met them: 64 by
-[`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) while landing `libs/std/src/beam.bp`, 65 by
+**One open — 65**, opened 2026-09-18 by
 [`16-formatter`](./16-formatter/README.md) while landing
 [decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules)'s four rules. **63 and 66
 were answered 2026-09-19** and have moved to [`decisions-taken.md`](./decisions-taken.md) with their
@@ -30,95 +29,33 @@ backends (four different answers, three of them order-dependent).
 
 ---
 
-## 64. How does `@BeamMemory`'s layer 2 reach layer 1, when the erlang backend emits no wrapper?
-
-**Measured** by [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) while landing
-`libs/std/src/beam.bp`, which is committed and gate-green.
-[Decision 43](./decisions-taken.md#43-beammemory-lives-in-two-layers--and-off-the-beam-the-annotation-is-a-no-op-while-the-module-is-an-error)
-split the feature in two: **layer 1**, ten `#[@External.Erlang]` primitives in `libs/std`, and **layer 2**,
-the core lowering a binding's read and write *onto those primitives*, with no line of `.zig` naming ETS,
-`persistent_term` or the process dictionary. Layer 1 exists. The route does not. A qualified std host call
-lowers to a call on the std module — `beam:pdPut(Slot, Slot)` — while the emitted `out/std/beam.erl` is
-`-module(beam).` **and nothing else**: no export, no function. It is not this module's doing:
-`out/std/process.erl` is `-module(process).` plus a `no_auto_import` line and no function either, where
-commonJS emits real wrappers (`function cwd() { return process.cwd(); }`). The erlang backend emits **no
-wrapper for a host-bound std `declare fn`** at all, so nothing on the BEAM can call layer 1. Front 17's
-step 3b therefore cannot meet its fourth acceptance bullet ("re-run under `erl`") today, whatever layer 1
-looks like.
-
-**Options.** **(a) Decision 43 gains a dependency:** the erlang backend emits a wrapper per host-bound std
-`declare fn` — an `-export` and a body calling the host BIF — as a numbered row of front 02, or of front
-13, which owns `erlang.zig` wholesale while its halves 2–3 run; layer 2 waits for it. **(b) Layer 2 emits
-`erlang:put/2` and the ETS calls from `.zig`**, which is what decision 43 chose against, and layer 1
-becomes documentation rather than the mechanism. **(c) Layer 2 goes with steps 4–5**, already outside this
-milestone by [decision 50](./decisions-taken.md#50-17-runs-steps-03b-in-this-milestone-steps-48-become-a-spec-for-the-next),
-and the wrapper row is scheduled beside them.
-
-**Recommendation: (a).** The gap is not a `@BeamMemory` problem: *every* host-bound std declaration on the
-BEAM has it, `libs/std/src/erlang.bp` included, so the row pays for itself outside this front, and it is
-the row that makes decision 43's two layers mean what they say. (b) buys the same behaviour by withdrawing
-a decision that was taken on purpose, and it is the version nobody can extend from `libs/std`. (c) is
-honest and free, but it leaves layer 1 in the tree with no caller and step 3b's acceptance permanently
-unrunnable — the shape decision 50 rejected when it refused "steps 0–2 only".
-
-**Blocks.** Step 3b's fourth acceptance bullet in [`17-beam-memory`](./17-beam-memory/README.md) and every
-read/write lowering of its steps 4–5; and whether decision 43's "no line of `.zig` names ETS" survives
-contact with the backends.
-
-**Correction, 2026-09-19, re-measured after front 13's half 1 renamed the std atoms.** The finding holds
-exactly as stated — zero `-export`, zero function, `undef` at run time, no wrapper for any host-bound std
-`declare fn` — and three of the spellings it is written in are stale, so a reader who greps for them finds
-nothing:
-
-- **`out/erl/std@beam.erl`**, not `out/std/beam.erl`. **`-module(std@beam).`**, not `-module(beam).`.
-  **`std@beam:pdPut(T, T)`**, not `beam:pdPut(Slot, Slot)`. The half-1 rename is why: the std module's atom
-  now carries its package.
-- **"`-module(beam).` and nothing else" is wrong about the file**, name aside. It is **162 lines** — the
-  `-module` attribute, then 161 lines of `beam.bp`'s `////` header re-emitted as blank-separated `%%%`
-  comments. Nothing else *executable*, which is the substance; but the emitted header is also why the gap
-  is invisible in a listing, and why "and nothing else" should not be read as "a two-line file".
-- **`libs/std/src/beam.bp`'s own header carries the same three stale spellings**, in the paragraph
-  beginning *"One thing layer 2 cannot yet do through this module, measured"*. That file is
-  [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md)'s and not this question's to edit —
-  recorded here so whoever owns it next can re-spell them, since that header is where a reader of layer 1
-  meets this finding first.
-- **It is step 3b's *third* acceptance bullet that fails, not its fourth**, here and in the Blocks line
-  above: the third is the one ending *"and re-run under `erl`"*. The fourth — *"**Not** a `.zig` line"* —
-  is **satisfied**: layer 1 landed with no `.zig`, which is decision 43's mechanism holding rather than
-  breaking. Option (b) is the one that would fail the fourth bullet, and naming the right bullet is what
-  makes that legible.
-
-**And option (b) is now out on principle, not only on preference.**
-[Decision 67](./decisions-taken.md#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it)
-— the most restrictive behaviour, and no configuration that bypasses it — reads on this question directly:
-emitting `erlang:put/2` and the ETS calls from `.zig` is the bypass of a decision already taken, which is
-the shape 67 refuses. The live choice is (a) against (c), and that is a question of *when* the wrapper row
-runs rather than of whether layer 1 is the mechanism.
-
-**Sub-question, raised by the maintainer 2026-09-19 and deliberately not answered here: does
-`libs/std/src/beam.bp` need to be a module separate from `libs/std/src/erlang.bp` at all?** In his words:
-*"não sei se precisa de um erlang e um beam separado."* It is a question about this front's shape rather than
-about the backend gap, and every measurement points the same way: `@External.Erlang` covers **both** BEAM
-targets (`codegen.zig:74-77` maps `.erlang` and `.beam` to the one lookup name), the missing wrapper is
-missing in the two files identically, and the program measured above dies in `std@erlang:self()` **before it
-ever reaches `pdPut`** — so `beam.bp` is not the module with the problem, it is the module that found it.
-
-- **One module** costs one wrapper row and gives an author one import and one place to add a host primitive.
-- **Two modules** keep the memory vocabulary — ten primitives over three storage families, each with a
-  policy layer above it — separable from the general BIF table, which is what lets `@BeamMemory`'s layer 1
-  be read as a unit and what makes `libs/std/src/beam.bp`'s header the design document it currently is.
-- **The strongest fact either way, and it cuts against merging:** `erlang.bp` is **read by the emitter at
-  compile time** (`codegen/erlang.zig:184-206`) to build the auto-imported BIF table, so it is *compiler
-  input* and not only a declaration list. Merging ten primitives that nothing auto-imports into it makes the
-  emitter read declarations that do not concern it, and makes the auto-import table's contents a question of
-  which memory primitive someone added last.
-
-It does not block the wrapper row either way: the wrapper is owed **per host-bound `declare fn`**, not per
-module.
-
----
-
 ## 65. Does the formatter learn to measure width?
+
+**Answered in part, 2026-09-19 — three of the four halves are settled and only the staging is open.**
+
+1. **All-or-nothing per group.** The maintainer's rule: *"a partir do momento que o primeiro teve quebra de
+   linha os outros devem ter o mesmo padrão"*, completed by *"a menos que seja assim —
+   `pessoa.correr().andar().ver();` — aí pode ser tudo da mesma linha"*. So: it fits on one line, or every
+   call takes its own — nothing in between. `pessoa.correr()\n      .andar().ver();` is wrong twice over:
+   the chain broke, so `.andar()` and `.ver()` each take a line.
+2. **Formatting is a pure function of the file's content.** From *"não quero ter dependência de ter que
+   olhar o git para isso"*: the output may not depend on what the file used to look like. That settles the
+   join-or-preserve question as **join** — of the 21 hand-broken chains left in the tree, the 16 that fit
+   (36 to 61 columns) become one line each — and it rules out, permanently and for every construct, any
+   "preserve what the author wrote" heuristic, which is the one place Prettier respects its input. It is
+   the formatter's form of [decision 67](./decisions-taken.md#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it).
+3. **A chain's continuation indents `+4` from the statement**, not aligned under the receiver. Measured:
+   **21 of 21** hand-broken chains in the tree already use `+4`, including the `erika-linq` chain the
+   maintainer pointed at as correct; alignment would make an identifier's width into layout, so a rename
+   re-indents the chain and its diff carries lines whose content did not change.
+
+**What is still open is only the staging**, and it is not a git question — the word "commit" in the
+earlier framing was a unit of work, not a mechanism: what is canonical lives in the formatter's code and in
+`docs.md`, never in history. The choice is **how many constructs start breaking by width at the same
+time**: all nine at once, or the predicate first with every `group` pinned flat (output byte-identical to
+today) and then one construct at a time, each with its canonical form written before it is enabled — the
+chain first, whose form is given above.
+
 
 **Measured** by [`16-formatter`](./16-formatter/README.md) while landing
 [decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules)'s four rules. `fmtParams`' `group`
