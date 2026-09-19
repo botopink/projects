@@ -47,6 +47,23 @@ until a front claims them:
 - **Step 5 of `08-hygiene` has no test for its diagnostic**, only for the message: nothing asserts the
   `the <template|decorator> evaluator's erl runtime failed (…): …` text, and the frame-cap failure is
   unreachable from a fixture. Front 07 (`comptime/tests/**`) or front 14 (`template_eval.zig`).
+- **beam drops `.length` on an index or slice receiver**, exit 0 (front 05, found by its second merge):
+  `rows[0].length` answers `[1, 2]`, `xs[0..2].length` answers `[10, 20]`, `s[1..3].length` answers `el`
+  — each meaning `2`. It is the beam twin of what front 05's `91b1553` fixed on wasm; `beam_asm.zig` is
+  front 03's.
+- **Two silent wrong answers left on wasm**, listed in `wat/AGENTS.md` (front 05): a string tuple element
+  printed as its address — `@print(t.1)` → `256` (means `x`), `@print(row.name)` → `256` (means `SP`).
+  The shape is known to `printShapeOf` and not to `isStringExpr`. Front 05's own.
+- **Three wasm `expected-failures.txt` reason texts are now false** (front 05): `run/print_formatter.bp`,
+  `run/display_print.bp` and `run/type_identity_print.bp` say "prints as its raw heap address"; they now
+  **trap**. A line may only be deleted here, never rewritten, so the correction is front 12's.
+- **Decision 47 has three backends to move** (front 05): it settled that absent has one spelling, `null`,
+  and today wasm, erlang and beam print `undefined` while commonJS prints `null` — and decision 8 §7
+  names neither. Also `index_an_index_past_the_end_answers_zero` answers `undefined` on three backends
+  and `0` on wasm. Those are rows under 47, not new questions.
+- **commonJS already answers §7's F2/F3** (front 05): a class instance carries its constructor's name, so
+  `Point(x: 1, y: 2)`, `Shape.Square(side: 4)` and `Shape.Nothing` print correctly there — that backend
+  needs no identity work from front 13 for the printed form; wasm, erlang and beam do.
 - **An associated `fn` on an `enum` is emitted as a tagged tuple named after it** (front 02, probing the
   neighbourhood of the imported-enum row): `memberCallNode`'s "qualified enum payload constructor" branch
   (`erlang.zig:5351`) fires on any `EnumName.callee(...)` without checking that `callee` names a variant,
