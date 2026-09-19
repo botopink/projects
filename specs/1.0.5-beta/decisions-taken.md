@@ -48,6 +48,14 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 41 | Is a misspelled `@BeamMemory` an error? | **(a)** — the member and the argument names are validated; the three members stand |
 | 42 | A `Dict` under `Ets` with `keyed` unwritten | **(b)** — the default stands, no warning; `docs.md` carries it |
 | 51 | `keyed = true` on a `List<T>` | **(c)** — `keyed` is a `Dict`-only argument; on a list it is the "needs a keyed container" error |
+| 52 | A condition loop that never breaks | **(a)** — `null` on every backend; erlang and beam stop answering the variable group |
+| 54 | The pattern surface of a `?T` | **(b)** — `null` and a binder; `.Some(v)` / `.None` on a `?T` becomes an error |
+| 57 | Does `comptime/**` get a warning channel? | **yes** — a `warnings` list on the `Env`, inside a row of `01-checker` |
+| 58 | Who owns the inline `implement { }` check? | `01-checker` — the same check as the separate block |
+| 59 | Who recounts `expected-failures.txt`'s tally? | whoever deletes a line, **from the file** — never from their own delta |
+| 53 | The range spelling | **(a)** — amend 20 and 36 to Zig's split: `...` inclusive in a pattern, `..` exclusive in a slice and a range |
+| 55 | `break <value>` in a collection loop | **(a)** — it contributes its value **and ends the loop** |
+| 56 | `run --target erlang`'s exit status | **(a)** — take `erl`'s `1`; the contract is amended in the same commit |
 | 43 | Where does `@BeamMemory` live? | **(b)** two layers; the no-op/hard-error tension resolves as **(a)**; `Cluster` stays out of the core |
 | 44 | Is `optional<i32>` a valid spelling? | **(a)** — refused; `?T` is the only spelling |
 | 45 | Is a member access on a `?T` an error? | **(a)** — yes, naming `?.` |
@@ -1577,4 +1585,174 @@ forecloses it.
 
 **Blocks:** nothing. Step 3 of [`17-beam-memory`](./17-beam-memory/README.md) validates `keyed` against
 `Dict` only, and step 4 — deferred by decision 50 — has one container to emit instead of two.
+
+---
+
+## 52. A condition loop that never breaks answers `null`
+
+**Decided 2026-09-18 by the maintainer: (a).** A loop with no `break <value>` has no value to give, on
+every backend.
+
+**Measured.** erlang printed **`3`** — the loop's variable group — where commonJS printed **`null`**, and
+front 04's landed test asserts `null` citing decision 8 §10. The divergence only became observable when
+front 02's `a9e9d03` made the program terminate at all.
+
+**What it costs, by backend.** commonJS is already right. erlang and beam print `undefined` for the
+exhausted loop and must print the `null` spelling instead — four snapshots pin the current text, and
+front 03's D6 fixture (`8 / 4 / 3 / undefined`) is one of them. wasm is the last backend where a
+condition loop still *collects*, so it owes §10 as a whole (`[8] / 4 / [3] / []`), not only this row.
+
+**Blocks:** nothing — but the four pinned snapshots mean the row cannot be landed by editing a text: it
+is one row per backend, and the cell comes first.
+
+---
+
+## 54. A `?T` is matched by `null` and a binder
+
+**Decided 2026-09-18 by the maintainer: (b).** `case x { null { … } v { … } }` — the shape `??` and `?.`
+already use — and **not** `.Some(v)` / `.None`, which becomes a located error.
+
+**Measured.** The optional had no working pattern form at all: `.Some(v)` / `.None` over a `?i32 = 5`
+**compiled and printed nothing** (exit 0), while `Option.Some(value: v)` fell through to `_`. Both
+silent. Decisions 2 and 32 had already removed `Option<T>` and `Option.Some` from the language.
+
+**What the answer obliges.** Three things, and the third is the one that would otherwise be forgotten:
+`null` and a binder are typed and lowered as a pattern (the binder is the payload, narrowed); a variant
+pattern over a `?T` is a located error naming the `null` form; and the `is-variant-binding` diagnostic's
+hint — which still recommends `case x { Option.Some(value: v) { … } }`, a spelling the language does not
+have — is corrected in the same pass. Rejected (a): it would have made the optional a variant everywhere
+except in `??` and `?.`, which are the two readers authors already use.
+
+**Blocks:** a row of [`01-checker`](./01-checker/README.md), and the cells
+[`12-language-tests`](./12-language-tests/README.md) writes for the optional.
+
+---
+
+## 57. `src/comptime/**` gets a warning channel
+
+**Decided 2026-09-18 by the maintainer: build it (a).** A `warnings` list on the `Env`, rendered like a
+`TypeError`, inside a row of [`01-checker`](./01-checker/README.md).
+
+**Measured.** `grep -rn warning modules/compiler-core/src/comptime/*.zig` → **0**. Four obligations want
+one and have been stuck behind it: decision 8 §1.4, §2.4, §4.3 and decision 42's `keyed`-on-a-`Dict`
+warning — which is why 42's own recommendation was written conditionally. It is the smallest piece of
+infrastructure in the milestone that unblocks the most rows, and the renderer already exists.
+
+**Blocks:** it *unblocks* — those four rows stop being "no channel, so error or `docs.md`".
+
+---
+
+## 58. The inline `implement <Behavior> { }` check is `01-checker`'s row
+
+**Decided 2026-09-18 by the maintainer: (a).** It is the same check as the separate `implement X for Y`
+block, applied to the inline form; it is not a question about meaning.
+
+**Measured.** `type Money(cents: i32) implement Display { }` **passes** — with a locally declared
+`Display` and with the long-registered `Generator` — while only the separate block is covered by the
+`implement_missing_a_required_interface_method` snapshot family. So the inline form asserts that a type
+satisfies a behavior and nothing verifies the assertion: the same family as decisions 37, 38 and 45, the
+checker accepting what a backend then answers on its own.
+
+**Blocks:** a row of [`01-checker`](./01-checker/README.md) — it had none.
+
+---
+
+## 59. Whoever deletes an `expected-failures.txt` line recounts its header from the file
+
+**Decided 2026-09-18 by the maintainer: (a).** The rule stays where it is written, in the file: recount
+**from the file**, never from your own delta. Moving the paragraph into `run.sh`'s output — the real fix
+for a number kept by hand in a file seven fronts share — is a row of
+[`12-language-tests`](./12-language-tests/README.md) for when it reopens, not a merge correction.
+
+**Measured, twice in one day.** The paragraph was two lines stale from front 04's landing, which deleted
+two lines without re-tallying; then fronts 02 and 03 rewrote the same block from different baselines and
+conflicted. Re-derived from the file, the truth was 58 lines / 53 under `--target all` / 5 beam-only, and
+both fronts' arithmetic was individually right and jointly wrong. One sub-claim in that paragraph is
+**still** stale and is front 12's to correct: it says "24 lines name a second row", and the count is 19.
+
+**Blocks:** nothing. It is the rule every front now follows, and the drift it catches is reported rather
+than silently adjusted.
+
+---
+
+## 53. The range spelling is Zig's split: `...` inclusive in a pattern, `..` exclusive in a slice
+
+**Decided 2026-09-18 by the maintainer: (a).** Decisions 20 and 36 are **amended**; the compiler's
+behaviour does not move.
+
+**Measured, and it is why the amendment goes this way.** Both decisions cite Zig as their reason, and the
+citation was wrong. `zig version` 0.16.0:
+
+```zig
+const r = switch (x) { 1...9 => true, else => false };   // passes — `...` in a pattern, INCLUSIVE
+for (0..3) |_| n += 1;                                   // passes — `..` in a for range, EXCLUSIVE
+try expect(xs[0..2].len == 2);                           // passes — `..` in a slice, EXCLUSIVE
+const r = switch (x) { 1..9 => true, else => false };    // error: expected '=>', found '..'
+```
+
+Zig has **both** spellings, in different positions, and `1..9` inside a `switch` does not exist there at
+all. So botopink's compiler — `...` inclusive in a pattern, `..` exclusive in a slice — was the
+Zig-consistent side, and "one spelling, `..`, as in Zig" was the divergent one. The maintainer confirmed
+after reading the measurement: *"o zig tem os dois `...` e `..`, então pode fazer igual"*.
+
+**What moves:** the text of decisions 20 and 36, and the `pattern-range-exclusive` diagnostic, which
+currently tells the author to write the spelling those decisions banned. **What does not move:** any
+emitter.
+
+**One defect survives the amendment, and it is the serious half.** `case 9 { 1...9 { 1 } _ { 0 } }`
+answers **1** on commonJS, **0** on erlang and **256** on wasm, and beam emits only `out/main.S`. That is
+the range pattern not being implemented on two backends, and it needs a cell in
+[`12-language-tests`](./12-language-tests/README.md) plus a row per backend under any spelling.
+
+---
+
+## 55. `break <value>` in a collection loop contributes its value and ends the loop
+
+**Decided 2026-09-18 by the maintainer: (a).** Written into decision 8 §10 rather than left to the
+emitters.
+
+**Measured on all four backends** — `val r = loop ([10, 20, 30]) { x -> … }; @print(r);`:
+
+| body | commonJS | beam | erlang | wasm |
+|---|---|---|---|---|
+| `yield x * 2;` | `[20, 40, 60]` | `[20, 40, 60]` | `[20,40,60]` | `[20,40,60]` |
+| `if (x == 20) { break x; };` | `[20]` | `[20]` | `[20]` | `[20]` |
+| `yield x * 2; if (x == 20) { break 99; };` | `[20, 40, 60]` | `[20, 40, 60]` | `[ok,99,ok]` | `[20,40,99,60]` |
+| `if (x == 20) { break 99; }; yield x * 2;` | `[20, 99, 60]` | `[20, 99, 60]` | `[20,40,60]` | `[20,99,40,60]` |
+| `yield x * 2; if (x == 20) { break; };` | `[20, 40, 60]` | `[20, 40, 60]` | `ok` | `[20, 40]` |
+
+The two ingredients agree on all four when they appear alone. Together, nothing does: **no backend stops
+the loop** in the third row, only wasm stops it in the fifth, erlang loses the accumulated values in
+both, and in three of the four **swapping two adjacent lines changes the answer**.
+
+**Under this decision** the three disagreeing rows are `[20, 40, 99]`, `[20, 99]` and `[20, 40]`, and
+today **wasm alone** answers one of them (the fifth). Rejected: answering only the value and discarding
+the accumulator, which would give one `val r = loop …` two possible types depending on which path ran at
+run time — something no other construct in the language does; and refusing the combination, which is
+cheap and honest but forbids "accumulate while searching, and record what you found".
+
+**Blocks:** a cell per row in [`12-language-tests`](./12-language-tests/README.md) — being written now,
+carrying this decision's column as its `.out` — and then one row per backend against it.
+
+---
+
+## 56. `botopink run --target erlang` takes `erl`'s exit status
+
+**Decided 2026-09-18 by the maintainer: (a).** The crash status becomes `1`, and
+`modules/compiler-cli/AGENTS.md`'s command contract is amended **in the same commit** as the runner fix,
+so the change is documented where it is read.
+
+**Measured** by [`10-cli-residuals`](./10-cli-residuals/README.md): the runner runs
+`escript out/main.erl`, which compiles only the file it is handed, so three `modules/*` cells and
+`examples/modules` fail on erlang with correct, qualified emitted code. The fix is `erlc -o <out_dir>`
+over every emitted `.erl` found recursively — the layout nests while the module atom is flat — then
+`erl -noshell -pa <out_dir> -eval "<module>:main([]), halt()."`, with `main([])` because `main/0` is only
+emitted when `main` is `pub`. At that shape all four projects print what they mean. A `1 / 0` program
+exits `127` under escript and `1` under `erl`.
+
+Rejected: mapping `erl`'s failure back onto `127`, which preserves an accident and leaves a mapping the
+next reader takes for meaning; and defining a status per outcome across four targets, which is a real
+command-contract row for when someone needs a distinguishable status, not a rider on a runner fix.
+
+**Blocks:** nothing now — front 13 has the answer and is implementing the runner row.
 

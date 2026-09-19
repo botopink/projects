@@ -1,12 +1,18 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**Five open — 52 to 56.** Questions 38 to 47 were answered on 2026-09-18, together with four the same
+**One open — 60.** Questions 38 to 47 were answered on 2026-09-18, together with four the same
 pass raised and answered (48, 49, 50, 51); all of them are in
 [`decisions-taken.md`](./decisions-taken.md), which is the record the fronts implement against. The four
-here were opened the same day by the fronts that landed: 52 by `02-erlang`, 53 and 54 by `08-hygiene`,
-55 by `03-beam`, 56 by `10-cli-residuals`. The first four are each a form that **compiles and answers
-differently per backend**, which is why none of them is a defect with an owner; 56 is a contract the
-command documentation states and a fix is about to change.
+were opened the same day by the fronts that landed — 53 by `08-hygiene`, 55 by `03-beam`, 56 by
+`10-cli-residuals` — and two more (52 and 54) were answered within hours of being written, so they are in
+`decisions-taken.md` already. 53 and 55 are each a form that **compiles and answers differently per
+backend**, which is why neither is a defect with an owner; 56 is a contract the command documentation
+states and a fix is about to change, so it has a deadline: front 13 is implementing that fix now.
+
+**53 and 55 both changed after they were opened**, and the new evidence is in their sections: Zig was
+measured (it has *both* spellings, in different positions, so the compiler is the Zig-consistent side and
+decisions 20/36 are not), and `yield` beside `break` in a collection loop was measured on all four
+backends (four different answers, three of them order-dependent).
 
 Findings that sit below the level of a decision — defects with no row, not questions — recorded here
 until a front claims them:
@@ -47,6 +53,24 @@ until a front claims them:
 - **Step 5 of `08-hygiene` has no test for its diagnostic**, only for the message: nothing asserts the
   `the <template|decorator> evaluator's erl runtime failed (…): …` text, and the frame-cap failure is
   unreachable from a fixture. Front 07 (`comptime/tests/**`) or front 14 (`template_eval.zig`).
+- **`libs/std` is no longer `format --check` clean** (front 16): `src/primitives.bp:549` (a braced
+  single-statement `if` inside a `loop`) and `src/querystring.bp:37` (a chain that now fits one line).
+  Both are canonical rules and lose no text, and **both predate front 16's commits** — verified by
+  building `format.zig` at `f8d97f95` and re-running. `examples/**` and all five siblings are clean.
+  `libs/std` is front 01's step 11 / front 08's.
+- **The continuation line of a trailing comment re-emits at column 0** (front 16, front 09's last R1
+  member): text intact, alignment lost. It needs a **recorded comment column**, not a printer arm — a
+  comment reaches the AST as text with no column — and its site is `parseDecls`' top-level trailing
+  comment, outside front 16's three named functions. No owner.
+- **Four layout rows for front 16's step 6**, each measured against front 09's 861 changed lines: a
+  lambda *argument*'s body indents 8 from the call line and its `});` lands at +4; `{ next -> }`
+  explodes into three lines whose middle line is **whitespace-only**; `{ -> 3 + 4 }` explodes while
+  `{ n -> n * 2 }` stays inline; and a hand-wrapped signature is joined into a **114-column** line
+  against `LINE_WIDTH = 80`, because a `fn` signature has no break available.
+- **Front 15's handover note is stale in one line** (front 16): it says a blank line inside an `if`
+  branch does not round-trip "because `fmtBranchStmts` never reads `emptyLinesBefore`" — that function
+  was deleted by `9d1d067`, and after 15's `28e447e` the then-branch, the else-branch and the `loop`
+  body all round-trip. G5/G6 are closed, and `f1881b5` now asserts it.
 - **beam drops `.length` on an index or slice receiver**, exit 0 (front 05, found by its second merge):
   `rows[0].length` answers `[1, 2]`, `xs[0..2].length` answers `[10, 20]`, `s[1..3].length` answers `el`
   — each meaning `2`. It is the beam twin of what front 05's `91b1553` fixed on wasm; `beam_asm.zig` is
@@ -106,145 +130,39 @@ Numbers are never reused: the next question added here is **57**.
 
 ---
 
-## 52. What does a condition loop that never breaks answer?
+## 60. Decision 29's landing order cannot be executed as written
 
-**Measured** by [`02-erlang`](./02-erlang/README.md) at `f547f99f`, and newly observable — before
-`a9e9d03` the program did not terminate:
+**Measured** by [`16-formatter`](./16-formatter/README.md).
+[Decision 29](./decisions-taken.md#29-does-a-block-shaped-statement-end-itself) records the order
+"16 stops printing the `;` → 15 applies the parser patch → 12, `libs/std` and 09 migrate". That order
+cannot run: a block-shaped statement **without** its `;` is a parse error today —
 
-```botopink
-var n = 0;
-val never = loop (n < 3) { n = n + 1; };
-@print(never);
+```
+fn f { … if (n > 1) { a = 2; } loop (3) { … } }
+error: unexpected `loop`   (hint: the statement before it may be missing its `;`)
 ```
 
-erlang prints **`3`** — the loop's variable group, which is what the new lowering answers when the
-condition runs out. commonJS prints **`null`**, and front 04's landed test asserts that, citing decision
-8 §10's "no value to give".
+— so a formatter that stopped printing the `;` would emit text its own parser refuses, and
+`assertIdempotent` re-parses pass 1: every formatter test would fail, and every formatted file would
+stop compiling. The two halves are not sequenceable.
 
-**Options.** (a) `null`/`undefined` everywhere: the loop that never breaks has no value, and erlang stops
-answering its group. (b) The group is the value on every backend, and decision 8 §10 is amended. (c) The
-form is refused in value position when the loop has no `break <value>`.
+**A second discrepancy inside the same decision.** Front 15's parked `isBlockShapedStmt` tests the
+**node**, so it rejects `if (c) return x;` — a braceless `if`, which has no closing brace to "end
+itself" — while the decision's wording is about the closing brace. The five libraries alone hold 30+
+braceless sites, so the two readings migrate different files.
 
-**Recommendation: (a).** It is the reading decision 8 §10 already has, the one front 04 implemented, and
-the only one where `val x = loop …;` means the same thing on four targets. (b) makes the value depend on
-which variables the loop happened to reassign; (c) is defensible but breaks programs that compile today
-on commonJS.
+**Options.** (a) The two halves land in **one** commit — parser and printer together, across fronts 15
+and 16, with one of them granted the other's file for that commit. (b) The parser first accepts **both**
+spellings (`semicolonPolicy` → optional) as its own landing, and only then does the printer pick a
+side; migration follows at leisure. (c) Decision 29 is narrowed to the braced form only, and a braceless
+`if` keeps its `;` — which is what front 15's patch already implements.
 
-**Blocks:** nothing today — no cell covers it. It needs one cell and erlang's spelling (`undefined`)
-before [`12-language-tests`](./12-language-tests/README.md) can pin it.
+**Recommendation: (b), plus (c) as the wording fix.** An optional-`;` parser is a strictly-accepting
+change that re-records nothing and can land in either front; it turns an impossible sequence into two
+ordinary ones. And (c) should be written down regardless, because the decision and the patch that
+implements it currently disagree about braceless statements — whichever is meant, only one of them can
+be.
 
----
-
-## 53. The range spelling is reversed in the compiler, and the reversal has no owner
-
-**Measured** by [`08-hygiene`](./08-hygiene/README.md) on 2026-09-18, by running each form.
-[Decision 20](./decisions-taken.md#20-is-a-pattern-range-inclusive) and
-[decision 36](./decisions-taken.md) are taken: `..` is the only spelling, it is exclusive, and `...`
-leaves the grammar. The compiler does the opposite of both:
-
-```botopink
-case n { 1..9 { 1 } _ { 0 } }     // error[pattern-range-exclusive] — "write `...`"
-case n { 1...9 { 1 } _ { 0 } }    // accepted, and inclusive
-```
-
-And as a value the accepted spelling answers three different things — `case 9 { 1...9 { 1 } _ { 0 } }`
-prints **1** on commonJS (new; the other fronts measured `undefined` at `c2dd780`), **0** on erlang,
-**256** on wasm, and beam emits only `out/main.S`.
-
-**Options.** (a) A front owns the reversal this milestone — it is the diagnostic, the grammar and the
-three value paths, so it is one row in `01-checker` plus one per backend. (b) The two decisions are
-amended to what the compiler does (`...`, inclusive), which contradicts decision 36's "exclusive
-everywhere" and Zig's spelling, the reason decision 20 gave. (c) It is scheduled for 1.0.6-beta with the
-measurement above pinned by a cell.
-
-**Recommendation: (c), with the cell now.** Three backends disagreeing on the *value* of an accepted
-form is worse than the spelling being wrong, and a cell in `12-language-tests` makes it impossible to
-land a backend change that silently moves one of the three. The spelling itself is cheap
-(`01-checker` calls decision 36 "~10 lines") but it cannot land alone: flipping the diagnostic without
-the value paths turns three wrong answers into three wrong answers on a form that now parses.
-
-**Blocks:** nothing today — every front that met it (`12`, `15`, `01`) measured it and moved on, which
-is why it is here.
-
----
-
-## 54. What is the pattern surface of a `?T`?
-
-**Measured** by [`08-hygiene`](./08-hygiene/README.md):
-
-```botopink
-val x: ?i32 = 5;
-case x { .Some(v) { @print(v); } .None { @print("none"); } };   // compiles, prints NOTHING, exit 0
-case x { Option.Some(value: v) { … } .None { … } };             // falls to `_`: prints "none"
-```
-
-So the optional has **no** working pattern form: one spelling matches nothing at all and the other
-matches the wrong arm, both silently. [Decision 2](./decisions-taken.md#2-optiont-does-not-exist-either)
-and [decision 32](./decisions-taken.md) removed `Option<T>` and `Option.Some` from the language, and the
-`is-variant-binding` diagnostic's own hint still recommends the removed spelling
-(*"use `case x { Option.Some(value: v) { … } }`"*).
-
-**Options.** (a) `?T` is matched by `.Some(v)` / `.None` — the variant spelling the language kept — and
-the arms are typed against the optional's payload. (b) `?T` is matched by `null` and a binder
-(`case x { null { … } v { … } }`), which is what `??` and `?.` already do. (c) A member pattern on `?T`
-is refused, and `if (x)`'s optional binding plus `??` stay the only readers — with the hint corrected.
-
-**Recommendation: (a).** It is the form both decisions leave standing, it is what every author who read
-the removed hint will write, and the payload type is already the thing `inferCaseArmBody` narrows. What
-cannot stay is the present state: two spellings, both accepted, both wrong, neither diagnosed.
-
-**Blocks:** a row of [`01-checker`](./01-checker/README.md) (its step 4/5 walk), the hint text, and any
-cell `12-language-tests` writes for the optional.
-
----
-
-## 55. Does `break <value>` out of a collection loop answer the value or a list?
-
-**Measured** by [`03-beam`](./03-beam/README.md) once beam started assembling the form: `break 20` out
-of `loop ([10, 20, 30]) { … }` answers **`[20]`**, not `20`, on **all four** backends.
-
-Decision 8 §10 says a `break <value>` is the loop's value; it does not say what happens when the loop is
-a collection loop whose body already accumulates. Four backends agreeing is not the same as four
-backends being right — they share the accumulator shape.
-
-**Options.** (a) `[20]`: a collection loop always answers a collection, and `break <value>` contributes
-its argument as the last element. (b) `20`: `break` out of any loop answers its argument, and the
-accumulator is discarded — then a value `break` and a `yield` cannot both appear in one loop. (c) The
-form is refused in a collection loop, and only a condition loop takes a value `break`.
-
-**Recommendation: (a)**, and write it into decision 8 §10 rather than leaving it to the emitters. It is
-what all four do, it composes with `yield`, and it is the only reading where the *type* of a collection
-loop does not depend on whether a `break` appears somewhere in its body.
-
-**Blocks:** nothing today — no cell pins it, which is the risk. It should become a cell in
-`12-language-tests` in the same pass that answers it.
-
----
-
-## 56. Does `botopink run --target erlang` keep escript's exit status?
-
-**Measured** by [`10-cli-residuals`](./10-cli-residuals/README.md) while turning its step 4 into an
-implementable row. The runner runs `escript out/main.erl`, which compiles only the file it is handed, so
-three `modules/*` language cells and `examples/modules` fail on erlang **with correct, qualified emitted
-code**. The fix — front 13's, in `cli/run.zig` — is `erlc -o <out_dir>` over every emitted `.erl` found
-recursively, then `erl -noshell -pa <out_dir> -eval "<module>:main([]), halt()."`; at that shape all four
-projects print what they mean (`3`/`0`, `circle`/`7`, `1`, `12`/`circle`/`7`).
-
-**The consequence.** A crashing erlang program's exit status changes from escript's **127** to `erl`'s
-**1** (measured on a `1 / 0` program), and `modules/compiler-cli/AGENTS.md`'s command contract says `run`
-exits with *"the program's own"* code.
-
-**Options.** (a) Accept `1` and amend the contract: what a program "returns" on the BEAM is what `erl`
-reports, and `127` was escript's artefact. (b) Preserve `127` by mapping `erl`'s failure exit onto it, so
-the observable contract does not move. (c) Define a status per outcome — compile failure, run-time crash,
-clean exit — and write all three into the contract, for every target.
-
-**Recommendation: (a), with the line in the contract changed in the same commit.** `127` never meant
-anything on purpose; it is what escript answers, and no test asserts it. (b) preserves an accident and
-costs a mapping that the next person will read as meaningful. (c) is the right long-term shape but it is a
-command-contract row across four targets, not a rider on a runner fix — and the right moment for it is
-when someone actually needs a distinguishable status.
-
-**Blocks:** nothing, but it should be answered **before** front 13 lands the runner fix, so the change of
-status is intentional rather than discovered.
+**Blocks:** the formatter half of decision 29, and with it front 16's step 6 ordering; front 15's parked
+patch; and the ~274 sites the decision says migrate.
 
