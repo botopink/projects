@@ -1,11 +1,12 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**Four open — 52 to 55.** Questions 38 to 47 were answered on 2026-09-18, together with four the same
+**Five open — 52 to 56.** Questions 38 to 47 were answered on 2026-09-18, together with four the same
 pass raised and answered (48, 49, 50, 51); all of them are in
 [`decisions-taken.md`](./decisions-taken.md), which is the record the fronts implement against. The four
 here were opened the same day by the fronts that landed: 52 by `02-erlang`, 53 and 54 by `08-hygiene`,
-55 by `03-beam`. Each one is a form that **compiles and answers differently per backend**, which is why
-none of them is a defect with an owner.
+55 by `03-beam`, 56 by `10-cli-residuals`. The first four are each a form that **compiles and answers
+differently per backend**, which is why none of them is a defect with an owner; 56 is a contract the
+command documentation states and a fix is about to change.
 
 Findings that sit below the level of a decision — defects with no row, not questions — recorded here
 until a front claims them:
@@ -46,6 +47,27 @@ until a front claims them:
 - **Step 5 of `08-hygiene` has no test for its diagnostic**, only for the message: nothing asserts the
   `the <template|decorator> evaluator's erl runtime failed (…): …` text, and the frame-cap failure is
   unreachable from a fixture. Front 07 (`comptime/tests/**`) or front 14 (`template_eval.zig`).
+- **An associated `fn` on an `enum` is emitted as a tagged tuple named after it** (front 02, probing the
+  neighbourhood of the imported-enum row): `memberCallNode`'s "qualified enum payload constructor" branch
+  (`erlang.zig:5351`) fires on any `EnumName.callee(...)` without checking that `callee` names a variant,
+  so `Shape.unit()` emits `{unit}` — `erlc` is clean and the program dies with
+  `{case_clause,{unit}}` in `area/1`. It reproduces **inside one module** and with or without the
+  `val s: Shape` annotation, so it is not an import row. commonJS with the annotation prints the right
+  answer; without it, it fails differently (`Shape.unit(...).area is not a function`), which is the
+  checker row `dispatch.zig` already pins. Owners: the erlang arm is front 02's or 13's depending on
+  ordering, the unannotated half is 01's R6. No `expected-failures.txt` line, no `KNOWN` note and no step
+  of front 02's nine covers it.
+- **`main/0` is exported only when `main` is `pub`** (front 10): `main/1`, escript's entry, is always
+  exported, so `examples/modules` (`fn main()`) carries just `-export(['_botopink_main'/0, main/1]).`
+  while the three `tests/language/modules/*` cells (`pub fn main()`) carry both arities. A runner that
+  calls `main:main()` therefore fails on the first and works on the other three. The asymmetry is in
+  `erlang.zig` — front 02 / front 13 — and it is either a rule that should be written down or a bug; it
+  is currently neither.
+- **An attribution survived three milestones because nobody re-ran the cell** (front 10): two statements
+  in `modules/compiler-cli/**` said `examples/modules` reds on erlang because "the backend emits
+  cross-module calls as bare local calls", and that the erlang front would fix it. Both false — the
+  emitted calls are qualified and correct, and the defect is the runner's. Corrected in `8babfa5`. The
+  pattern is the finding: a `KNOWN` note with no re-run date is a claim, not a measurement.
 - **Two `libs/std` headers still name 1.0.4 fronts** for gaps that now pass (front 08):
   `libs/std/test/primitives_gaps_test.bp` and `libs/std/src/primitives.bp:204` (`F5 erlang`,
   `F8 js-bridges`). `libs/std/**` beyond comments is front 01's step 11.
@@ -63,7 +85,7 @@ from the code writes it here rather than guessing, in the shape the others used:
 >
 > **Blocks.** The step, front or landed work that waits on the answer.
 
-Numbers are never reused: the next question added here is **56**.
+Numbers are never reused: the next question added here is **57**.
 
 ---
 
@@ -179,4 +201,33 @@ loop does not depend on whether a `break` appears somewhere in its body.
 
 **Blocks:** nothing today — no cell pins it, which is the risk. It should become a cell in
 `12-language-tests` in the same pass that answers it.
+
+---
+
+## 56. Does `botopink run --target erlang` keep escript's exit status?
+
+**Measured** by [`10-cli-residuals`](./10-cli-residuals/README.md) while turning its step 4 into an
+implementable row. The runner runs `escript out/main.erl`, which compiles only the file it is handed, so
+three `modules/*` language cells and `examples/modules` fail on erlang **with correct, qualified emitted
+code**. The fix — front 13's, in `cli/run.zig` — is `erlc -o <out_dir>` over every emitted `.erl` found
+recursively, then `erl -noshell -pa <out_dir> -eval "<module>:main([]), halt()."`; at that shape all four
+projects print what they mean (`3`/`0`, `circle`/`7`, `1`, `12`/`circle`/`7`).
+
+**The consequence.** A crashing erlang program's exit status changes from escript's **127** to `erl`'s
+**1** (measured on a `1 / 0` program), and `modules/compiler-cli/AGENTS.md`'s command contract says `run`
+exits with *"the program's own"* code.
+
+**Options.** (a) Accept `1` and amend the contract: what a program "returns" on the BEAM is what `erl`
+reports, and `127` was escript's artefact. (b) Preserve `127` by mapping `erl`'s failure exit onto it, so
+the observable contract does not move. (c) Define a status per outcome — compile failure, run-time crash,
+clean exit — and write all three into the contract, for every target.
+
+**Recommendation: (a), with the line in the contract changed in the same commit.** `127` never meant
+anything on purpose; it is what escript answers, and no test asserts it. (b) preserves an accident and
+costs a mapping that the next person will read as meaningful. (c) is the right long-term shape but it is a
+command-contract row across four targets, not a rider on a runner fix — and the right moment for it is
+when someone actually needs a distinguishable status.
+
+**Blocks:** nothing, but it should be answered **before** front 13 lands the runner fix, so the change of
+status is intentional rather than discovered.
 
