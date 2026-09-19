@@ -1,10 +1,13 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**None open.** Every question this milestone raised — 38 to 62 — is answered and recorded in
-[`decisions-taken.md`](./decisions-taken.md). What is left here is the list of defects with an owner and
-no row, kept so they are not re-discovered; decision 62 says which three of them are this wave's. Questions 38 to 47 were answered on 2026-09-18, together with four the same
+**Three open — 63, 64 and 65**, all opened 2026-09-18 by the decision-record audit and all written
+below.
+Every question before them — 38 to 62 — is answered and recorded in
+[`decisions-taken.md`](./decisions-taken.md). What is left after those two is the list of defects with an
+owner and no row, kept so they are not re-discovered; decision 62 says which three of them are this
+wave's. Questions 38 to 47 were answered on 2026-09-18, together with four the same
 pass raised and answered (48, 49, 50, 51); all of them are in
-[`decisions-taken.md`](./decisions-taken.md), which is the record the fronts implement against. The four
+[`decisions-taken.md`](./decisions-taken.md), which is the record the fronts implement against. The three
 were opened the same day by the fronts that landed — 53 by `08-hygiene`, 55 by `03-beam`, 56 by
 `10-cli-residuals` — and two more (52 and 54) were answered within hours of being written, so they are in
 `decisions-taken.md` already. 53 and 55 are each a form that **compiles and answers differently per
@@ -16,19 +19,139 @@ measured (it has *both* spellings, in different positions, so the compiler is th
 decisions 20/36 are not), and `yield` beside `break` in a collection loop was measured on all four
 backends (four different answers, three of them order-dependent).
 
+---
+
+## 63. Does an index expression answer `T` or `?T`?
+
+**Measured.** [Decision 30](./decisions-taken.md#30-is-there-an-index-expression) granted `xs[0]` in every position
+and [decision 47](./decisions-taken.md#47-absent-has-one-spelling-null) settled the *spelling* of absence (`null`),
+but neither says what an index **answers**, and the two documents that name the gap both leave it. Front
+15's handover to [`01-checker`](./01-checker/README.md) says it in as many words — inference must type
+`xs[0]` by the receiver, "the element type for an array, the value type for a dict, a character for a
+string, the member type for a tuple with a constant index — **decide whether the answer is `T` or `?T`**"
+— with `ast.zig:1734` assigning the typing to that front; today the checker types it `void`, so
+`val first: string = xs[0];` reds with *expected string, got void*. At run time the four backends already
+disagree about the out-of-range case: front 12's cell `index_an_index_past_the_end_answers_zero` answers
+`undefined` on three backends and `0` on wasm — a third word again, under a slug that names a fourth.
+[Decision 46](./decisions-taken.md#46-dk-on-a-dict-routes-to-lookup) settles the *route* of a dict index (`lookup`)
+and not its type, and a dict is the one receiver whose natural answer is already optional.
+
+**Options.** **(a) `T`.** An index answers the element type; an out-of-range read is a run-time matter and
+each backend answers decision 47's `null` there, unchecked — the shape C and JavaScript have, and the only
+one in which `rows[0].name` and `d["k"].name` read as they look. **(b) `?T`.** An index answers an
+optional everywhere, so an out-of-range read is *typed*: by
+[decision 45](./decisions-taken.md) every `xs[0].field` becomes the error naming `?.`, and every index written in the
+ecosystem grows a `?.` or an unwrap. **(c) By receiver:** `T` for an array, a tuple and a string, `?T` for
+a `Dict` — because a missing key is a dict's ordinary case and a missing element is an array's bug.
+
+**Recommendation: (c).** It is the only one that keeps the decisions already taken: `at` returning an
+optional stays a *different feature* from indexing, which is decision 30's own argument for adding the
+form; decision 46's `lookup` keeps the type it has; and no line in `libs/std`, `examples/**` or the five
+libraries grows a `?.`. (b) makes decision 45 fire on `rows[0].name`, which is among the most ordinary
+lines the language has, and (a) gives `d["k"]` a type that claims the key is always there. The cost of (c)
+is that the answer is receiver-dependent — which decision 46 has already made the index anyway: the
+checker records the receiver kind at the site.
+
+**Blocks.** `01-checker`'s `xs[0]` typing row (item 2 of front 15's handover) and, through it, the index
+lowering in all four backends; the expected text **and the slug** of
+`index_an_index_past_the_end_answers_zero`; and the three per-backend rows under decision 47.
+
+---
+
+## 64. How does `@BeamMemory`'s layer 2 reach layer 1, when the erlang backend emits no wrapper?
+
+**Measured** by [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) while landing
+`libs/std/src/beam.bp`, which is committed and gate-green.
+[Decision 43](./decisions-taken.md#43-beammemory-lives-in-two-layers--and-off-the-beam-the-annotation-is-a-no-op-while-the-module-is-an-error)
+split the feature in two: **layer 1**, ten `#[@External.Erlang]` primitives in `libs/std`, and **layer 2**,
+the core lowering a binding's read and write *onto those primitives*, with no line of `.zig` naming ETS,
+`persistent_term` or the process dictionary. Layer 1 exists. The route does not. A qualified std host call
+lowers to a call on the std module — `beam:pdPut(Slot, Slot)` — while the emitted `out/std/beam.erl` is
+`-module(beam).` **and nothing else**: no export, no function. It is not this module's doing:
+`out/std/process.erl` is `-module(process).` plus a `no_auto_import` line and no function either, where
+commonJS emits real wrappers (`function cwd() { return process.cwd(); }`). The erlang backend emits **no
+wrapper for a host-bound std `declare fn`** at all, so nothing on the BEAM can call layer 1. Front 17's
+step 3b therefore cannot meet its fourth acceptance bullet ("re-run under `erl`") today, whatever layer 1
+looks like.
+
+**Options.** **(a) Decision 43 gains a dependency:** the erlang backend emits a wrapper per host-bound std
+`declare fn` — an `-export` and a body calling the host BIF — as a numbered row of front 02, or of front
+13, which owns `erlang.zig` wholesale while its halves 2–3 run; layer 2 waits for it. **(b) Layer 2 emits
+`erlang:put/2` and the ETS calls from `.zig`**, which is what decision 43 chose against, and layer 1
+becomes documentation rather than the mechanism. **(c) Layer 2 goes with steps 4–5**, already outside this
+milestone by [decision 50](./decisions-taken.md#50-17-runs-steps-03b-in-this-milestone-steps-48-become-a-spec-for-the-next),
+and the wrapper row is scheduled beside them.
+
+**Recommendation: (a).** The gap is not a `@BeamMemory` problem: *every* host-bound std declaration on the
+BEAM has it, `libs/std/src/erlang.bp` included, so the row pays for itself outside this front, and it is
+the row that makes decision 43's two layers mean what they say. (b) buys the same behaviour by withdrawing
+a decision that was taken on purpose, and it is the version nobody can extend from `libs/std`. (c) is
+honest and free, but it leaves layer 1 in the tree with no caller and step 3b's acceptance permanently
+unrunnable — the shape decision 50 rejected when it refused "steps 0–2 only".
+
+**Blocks.** Step 3b's fourth acceptance bullet in [`17-beam-memory`](./17-beam-memory/README.md) and every
+read/write lowering of its steps 4–5; and whether decision 43's "no line of `.zig` names ETS" survives
+contact with the backends.
+
+---
+
+## 65. Does the formatter learn to measure width?
+
+**Measured** by [`16-formatter`](./16-formatter/README.md) while landing
+[decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules)'s four rules. `fmtParams`' `group`
+was never missing: **`fits` stops at the first `concat`** and then answers "fits" for any non-negative
+budget, so *every* group in the formatter renders flat, and no construct in the language has ever broken
+by width. Rule 4 landed by routing around it — a `Doc.widthChoice` whose flat width is measured at build
+time against the real column, which is why a method four columns in breaks four columns earlier and why
+the trailing ` {` or `;` counts, the boundary being exact at 80/81. The finding is written into
+`src/format/AGENTS.md` under *"`fits` does not fit"* so the next reader does not rediscover it. The cost
+of the rules that *did* land is the scale to read this against: **607 lines** across the six trees (erika
+165, `libs/std` 160, rakun 139, jhonstart 106, onze 37, emilia 0), rule 1 being 428 of them and rule 4
+123, with 48 of `libs/std`'s pre-existing because that tree had never been formatted.
+
+**Options.** **(a) Fix `fits` to measure through `concat`, `nest` and `group`.** Every array literal,
+call, type union and comma list then starts breaking at `LINE_WIDTH`, at once — a canonical-form choice
+per construct, and several hundred moved lines on top of the 607. **(b) Leave `fits` as it is and keep
+adding `widthChoice` per construct**, as rule 4 did: each construct that should break by width gets its
+own measured decision, and the general predicate stays a lie the `AGENTS.md` note explains. **(c) Fix
+`fits` and gate it**: land the correct predicate with every existing `group` pinned flat, then enable
+constructs one at a time, each with its own diff and its own reformat commit.
+
+**Recommendation: (c).** (a) is the honest engineering answer and the wrong landing: it changes how every
+library looks in one commit, which is exactly the class of call decision 61 was created to ask the
+maintainer rather than assume, and it would arrive mixed into 607 lines of someone else's churn. (b)
+leaves the formatter with a predicate that answers wrongly for every caller, so the next person to reach
+for `group` is misled again — and the `widthChoice` count only grows. (c) costs one extra step and makes
+each construct's canonical form a separate, reviewable choice with its own measurement, which is how
+decision 61's four rules were decided in the first place.
+
+**Blocks.** Whether `16-formatter` reopens; the canonical form of every comma list, array literal, call
+and type union; and any future reformat of the six trees — each construct enabled is another
+`09-ecosystem-residuals` commit.
+
+---
+
 Findings that sit below the level of a decision — defects with no row, not questions — recorded here
 until a front claims them:
 
-- **`src/comptime/**` has no warning channel at all** (`grep -rn warning comptime/*.zig` → 0), and
+- ~~**`src/comptime/**` has no warning channel at all**~~ (`grep -rn warning comptime/*.zig` → 0), and
   three separate obligations want one: decision 8 §1.4, §2.4 and §4.3. It is a `warnings` list on the
-  `Env`, rendered like a `TypeError`, and it unblocks all three at once.
-- **An inline `implement <Behavior> { }` inside a `type` checks nothing.**
+  `Env`, rendered like a `TypeError`, and it unblocks all three at once. **Claimed — this is now
+  [decision 57](./decisions-taken.md#57-srccomptime-gets-a-warning-channel), a row of
+  [`01-checker`](./01-checker/README.md), and the obligations are four: decision 42's `keyed` warning is
+  the fourth, though 42's answer is that the warning is not printed.**
+- ~~**An inline `implement <Behavior> { }` inside a `type` checks nothing.**~~
   `type Money(cents: i32) implement Display { }` passes — with a local `Display`, and with the
   long-registered `Generator`. Only the separate `implement X for Y` block is covered. No row exists.
-- **`tests/language/expected-failures.txt`'s distribution paragraph runs two ahead of the file**
+  **Claimed — this is now [decision 58](./decisions-taken.md#58-the-inline-implement-behavior---check-is-01-checkers-row):
+  the same check as the separate block, a row of [`01-checker`](./01-checker/README.md).**
+- ~~**`tests/language/expected-failures.txt`'s distribution paragraph runs two ahead of the file**~~
   (front 02, 2026-09-18): front 04's two deletions were never counted into it — `origin/feat` shows 68
   data lines under a `70 lines` header. Front 12's file; each front decrements its own lines and reports
-  the drift rather than rewriting another front's number.
+  the drift rather than rewriting another front's number. **Closed — this is
+  [decision 59](./decisions-taken.md#59-whoever-deletes-an-expected-failurestxt-line-recounts-its-header-from-the-file),
+  the header was re-derived from the file (58 / 53 / 5), and front 12 re-derived the one sub-claim 59 left:
+  the file already says 19, so nothing there is stale.**
 - **A yielding condition loop in expression position is still refused on erlang** (front 02):
   `val xs = loop (i < 3) { yield i; i = i + 1; };` gives `ConditionLoopValueUnsupported`, because it
   reaches `exprNode` rather than `mutatingExpr` and so has no variable group to join. commonJS collects
@@ -42,7 +165,8 @@ until a front claims them:
   `A`, and the `->` arm form works with a parameter. It is the block-arm value path, i.e.
   [`01-checker`](./01-checker/README.md)'s step 4 — whose uncommitted half may already close it; verify
   before writing a row.
-- **`Type.assoc()` gets no return type** (front 03): `val c = Counter.zero(); c.bump()` leaves
+- **`Type.assoc()` gets no return type** (front 03) — **one of the three
+  [decision 62](./decisions-taken.md#62-the-order-of-what-is-left-in-the-milestone) claims for this wave**: `val c = Counter.zero(); c.bump()` leaves
   `env.instanceLowerings` with no entry, so beam answers `{unresolved_method, bump, 1}` and wasm traps,
   while commonJS and erlang print `1` because neither needs the type. **Reproduces inside one module** —
   not an import row. `val c: Counter` fixes it; writing the return type as `Counter` instead of `Self`
@@ -73,7 +197,12 @@ until a front claims them:
   branch does not round-trip "because `fmtBranchStmts` never reads `emptyLinesBefore`" — that function
   was deleted by `9d1d067`, and after 15's `28e447e` the then-branch, the else-branch and the `loop`
   body all round-trip. G5/G6 are closed, and `f1881b5` now asserts it.
-- **beam drops `.length` on an index or slice receiver**, exit 0 (front 05, found by its second merge):
+- **beam drops `.length` on an index or slice receiver**, exit 0 (front 05, found by its second merge)
+  — **one of the three [decision 62](./decisions-taken.md#62-the-order-of-what-is-left-in-the-milestone) claims for
+  this wave**, and *not* the same fix as [decision 46](./decisions-taken.md#46-dk-on-a-dict-routes-to-lookup): erlang
+  gets this right through a type-free runtime helper (`__bp_len(Recv, Member)`, `erlang.zig:4804-4811`)
+  that fires when inference recorded nothing, while 46's receiver-kind route runs through
+  `instanceLowerings.put`, which fires only at method-call sites and has no index or slice arm:
   `rows[0].length` answers `[1, 2]`, `xs[0..2].length` answers `[10, 20]`, `s[1..3].length` answers `el`
   — each meaning `2`. It is the beam twin of what front 05's `91b1553` fixed on wasm; `beam_asm.zig` is
   front 03's.
@@ -86,7 +215,10 @@ until a front claims them:
 - **Decision 47 has three backends to move** (front 05): it settled that absent has one spelling, `null`,
   and today wasm, erlang and beam print `undefined` while commonJS prints `null` — and decision 8 §7
   names neither. Also `index_an_index_past_the_end_answers_zero` answers `undefined` on three backends
-  and `0` on wasm. Those are rows under 47, not new questions.
+  and `0` on wasm. Those are rows under 47, not new questions — **the spelling is. The *type* of an
+  out-of-range read is not settled by 46 and 47 together, and it is now
+  [question 63](#63-does-an-index-expression-answer-t-or-t); the cell's slug asserts a third answer
+  (`zero`) that no decision supports.**
 - **commonJS already answers §7's F2/F3** (front 05): a class instance carries its constructor's name, so
   `Point(x: 1, y: 2)`, `Shape.Square(side: 4)` and `Shape.Nothing` print correctly there — that backend
   needs no identity work from front 13 for the printed form; wasm, erlang and beam do.
@@ -99,7 +231,7 @@ until a front claims them:
   answer; without it, it fails differently (`Shape.unit(...).area is not a function`), which is the
   checker row `dispatch.zig` already pins. Owners: the erlang arm is front 02's or 13's depending on
   ordering, the unannotated half is 01's R6. No `expected-failures.txt` line, no `KNOWN` note and no step
-  of front 02's nine covers it.
+  of front 02's nine covers it. **One of the three [decision 62](./decisions-taken.md#62-the-order-of-what-is-left-in-the-milestone) claims for this wave.**
 - **`main/0` is exported only when `main` is `pub`** (front 10): `main/1`, escript's entry, is always
   exported, so `examples/modules` (`fn main()`) carries just `-export(['_botopink_main'/0, main/1]).`
   while the three `tests/language/modules/*` cells (`pub fn main()`) carry both arities. A runner that
@@ -115,6 +247,40 @@ until a front claims them:
   `libs/std/test/primitives_gaps_test.bp` and `libs/std/src/primitives.bp:204` (`F5 erlang`,
   `F8 js-bridges`). `libs/std/**` beyond comments is front 01's step 11.
 
+- **Front 13's half 3 claims "`RUN LOG`s that move: 0 — and one that moves is a bug"**, and one moves:
+  `print_a_record_and_a_variant_have_no_printed_form_yet_so_they_trap` already prints a composite on
+  erlang, so it must move under the identity. The claim is in
+  [`13-module-identity`](./13-module-identity/README.md) at two places (its half-3 table and the
+  identity-evidence E19 row) and the front that owns the file has to soften it, not delete the cell.
+- **Step 5 of front 13 cannot be finished inside the carve-out it was granted.** The comptime atom wants
+  the owning *file*, and the evaluator never sees one: `buildModule` gets an `ast.FnDecl` whose `Loc`
+  carries a line and a column and no file, and the template registry is a `StringHashMap(ast.FnDecl)`
+  with no owner. So `ui@panel__tpl__panel__<hash>` needs the module name carried on
+  `env.TemplateEvalCtx` — `src/comptime/env.zig` and `src/comptime.zig`, beyond the module-atom lines of
+  `template_eval.zig` / `decorator_eval.zig` that [`fronts.md`](./fronts.md) granted. It is a carve-out to
+  grant or a row to move, and front 13 stopped rather than take it.
+- **Two statements in front 17's README were overtaken by the decisions that answered them** (found by the
+  decision-record audit): its question-42 row still recommends "**a located warning, not an error**" with
+  a "**Conditional:** `src/comptime/**` has no warning channel" rider, and its step-6 checkbox still reads
+  "the `keyed`-on-a-`Dict` warning of question 42, **if** the warning channel exists". Both halves have
+  moved: [decision 57](./decisions-taken.md#57-srccomptime-gets-a-warning-channel) grants the channel and
+  [decision 42](./decisions-taken.md#42-a-dict-under-ets-with-keyed-unwritten-keeps-the-default-with-no-warning)
+  answers (b) — no warning at all, the sentence goes to `docs.md`. The README is front 17's file and 17
+  has not opened; the decisions are the record to implement against.
+
+- **A trailing lambda's one-line body is a parse error at every arity, and three committed example files
+  do not parse because of it** (front 16, landing decision 61's rule 3): `executar { ok }` is
+  *unexpected `}`* and so is `calcular(fator: 2) { a, b -> a + b }`, while `{ -> 42 }` and
+  `{ n -> n * 2 }` in argument position both parse. `examples/jhonstart-app/app/layout.bp`, `app/page.bp`
+  and `app/posts/[id]/page.bp` each contain `Link("/posts/1") { "first post" }` — exactly that form — so
+  **`botopink format` refuses three files that are committed in the repository**, and they escape
+  `format --check` today only because it scans `src/**`. It is why rule 3 of decision 61 stops at
+  `arrow_when_empty`. Owners: the form is the parser surface, front 15's ground; the three files are
+  front 09's or front 08's.
+- **`libs/std/src/builtins.d.bp:116` does not parse**: `fn await(self: Self) -> Result<T, E>;` — `await`
+  is a keyword (front 16). Doc-only, so nothing compiles it today, but a repository-wide format or parse
+  gate reds on it. Front 01's step 11 / front 08.
+
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
 
@@ -128,6 +294,6 @@ from the code writes it here rather than guessing, in the shape the others used:
 >
 > **Blocks.** The step, front or landed work that waits on the answer.
 
-Numbers are never reused: the next question added here is **63**.
+Numbers are never reused: the next question added here is **66**.
 
 ---
