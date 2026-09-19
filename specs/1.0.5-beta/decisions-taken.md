@@ -138,7 +138,10 @@ backends, the printer and every document — while `.Some(v)` / `.None` already 
 is where decision 8 actually uses them. If the goal is a value-position constructor, that is a
 separate, smaller question: `?T`'s constructor, not a new type.
 
-**Blocks:** 02's `case` cells over optionals; the correctness of decision 8 §§2–5 and §9.
+**Blocks:** 02's `case` cells over optionals *(1.0.4-beta's numbering — in this milestone the cells are
+[`12-language-tests`](./12-language-tests/README.md)'s, as
+[decision 54](#54-a-t-is-matched-by-null-and-a-binder) records)*; the correctness of decision 8
+§§2–5 and §9.
 
 ---
 
