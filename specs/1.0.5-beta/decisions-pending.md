@@ -1,6 +1,8 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**One open — 60.** Questions 38 to 47 were answered on 2026-09-18, together with four the same
+**None open.** Every question this milestone raised — 38 to 62 — is answered and recorded in
+[`decisions-taken.md`](./decisions-taken.md). What is left here is the list of defects with an owner and
+no row, kept so they are not re-discovered; decision 62 says which three of them are this wave's. Questions 38 to 47 were answered on 2026-09-18, together with four the same
 pass raised and answered (48, 49, 50, 51); all of them are in
 [`decisions-taken.md`](./decisions-taken.md), which is the record the fronts implement against. The four
 were opened the same day by the fronts that landed — 53 by `08-hygiene`, 55 by `03-beam`, 56 by
@@ -126,43 +128,6 @@ from the code writes it here rather than guessing, in the shape the others used:
 >
 > **Blocks.** The step, front or landed work that waits on the answer.
 
-Numbers are never reused: the next question added here is **57**.
+Numbers are never reused: the next question added here is **63**.
 
 ---
-
-## 60. Decision 29's landing order cannot be executed as written
-
-**Measured** by [`16-formatter`](./16-formatter/README.md).
-[Decision 29](./decisions-taken.md#29-does-a-block-shaped-statement-end-itself) records the order
-"16 stops printing the `;` → 15 applies the parser patch → 12, `libs/std` and 09 migrate". That order
-cannot run: a block-shaped statement **without** its `;` is a parse error today —
-
-```
-fn f { … if (n > 1) { a = 2; } loop (3) { … } }
-error: unexpected `loop`   (hint: the statement before it may be missing its `;`)
-```
-
-— so a formatter that stopped printing the `;` would emit text its own parser refuses, and
-`assertIdempotent` re-parses pass 1: every formatter test would fail, and every formatted file would
-stop compiling. The two halves are not sequenceable.
-
-**A second discrepancy inside the same decision.** Front 15's parked `isBlockShapedStmt` tests the
-**node**, so it rejects `if (c) return x;` — a braceless `if`, which has no closing brace to "end
-itself" — while the decision's wording is about the closing brace. The five libraries alone hold 30+
-braceless sites, so the two readings migrate different files.
-
-**Options.** (a) The two halves land in **one** commit — parser and printer together, across fronts 15
-and 16, with one of them granted the other's file for that commit. (b) The parser first accepts **both**
-spellings (`semicolonPolicy` → optional) as its own landing, and only then does the printer pick a
-side; migration follows at leisure. (c) Decision 29 is narrowed to the braced form only, and a braceless
-`if` keeps its `;` — which is what front 15's patch already implements.
-
-**Recommendation: (b), plus (c) as the wording fix.** An optional-`;` parser is a strictly-accepting
-change that re-records nothing and can land in either front; it turns an impossible sequence into two
-ordinary ones. And (c) should be written down regardless, because the decision and the patch that
-implements it currently disagree about braceless statements — whichever is meant, only one of them can
-be.
-
-**Blocks:** the formatter half of decision 29, and with it front 16's step 6 ordering; front 15's parked
-patch; and the ~274 sites the decision says migrate.
-

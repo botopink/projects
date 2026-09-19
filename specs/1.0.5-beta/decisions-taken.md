@@ -56,6 +56,9 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 53 | The range spelling | **(a)** — amend 20 and 36 to Zig's split: `...` inclusive in a pattern, `..` exclusive in a slice and a range |
 | 55 | `break <value>` in a collection loop | **(a)** — it contributes its value **and ends the loop** |
 | 56 | `run --target erlang`'s exit status | **(a)** — take `erl`'s `1`; the contract is amended in the same commit |
+| 60 | Decision 29's impossible order | **(b)** — the parser accepts `;` as optional first, as its own landing; **(c)** amends the wording |
+| 61 | The formatter's canonical layout | four rules, all the conventional form — see below; B4's shape **already parses** |
+| 62 | The order of what is left | 06 after 01's steps 4–5 · 13's halves 2–3 now · 14 step 3 after 13 · BR5 out of 1.0.5 · `std/beam` before 17 · three defects this wave |
 | 43 | Where does `@BeamMemory` live? | **(b)** two layers; the no-op/hard-error tension resolves as **(a)**; `Cluster` stays out of the core |
 | 44 | Is `optional<i32>` a valid spelling? | **(a)** — refused; `?T` is the only spelling |
 | 45 | Is a member access on a `?T` an error? | **(a)** — yes, naming `?.` |
@@ -1755,4 +1758,104 @@ next reader takes for meaning; and defining a status per outcome across four tar
 command-contract row for when someone needs a distinguishable status, not a rider on a runner fix.
 
 **Blocks:** nothing now — front 13 has the answer and is implementing the runner row.
+
+---
+
+## 60. The parser accepts an optional `;` before the formatter picks a side
+
+**Decided 2026-09-18 by the maintainer: (b), with (c) as the wording fix.**
+
+**Measured.** Decision 29's recorded order — *"16 stops printing the `;` → 15 applies the parser patch →
+12, `libs/std` and 09 migrate"* — cannot run, because a block-shaped statement without its `;` is a parse
+error today:
+
+```
+error: this token cannot appear here --> src/main.bp:3:5
+3 |     loop (3) { @print(1); };
+  |     ^^^^ unexpected `loop`
+  = hint: The statement before it may be missing its `;`
+```
+
+A formatter that stopped printing the `;` would emit text its own parser refuses, and `assertIdempotent`
+re-parses pass 1 — every formatter test would fail and every formatted file would stop compiling.
+
+**So the parser goes first**, accepting both spellings (`semicolonPolicy` → optional) as a landing of its
+own: strictly accepting, re-records nothing, breaks no file, and it turns an impossible sequence into two
+ordinary ones. Only then does the printer choose a side, and migration follows at leisure.
+
+**And (c) is written down too**, because the decision and the patch that implements it disagree: front
+15's parked `isBlockShapedStmt` tests the **node**, so it rejects `if (c) return x;` — a braceless `if`,
+which has no closing brace to end itself — while decision 29's wording is about the closing brace.
+Decision 29 is narrowed to the **braced** form; a braceless statement keeps its `;`. The five libraries
+alone hold 30+ braceless sites, so the two readings would have migrated different files.
+
+**Blocks:** it *unblocks* — the formatter half of decision 29, front 16's step 6 ordering, and front 15's
+parked patch.
+
+---
+
+## 61. The formatter's canonical layout — four rules
+
+**Decided 2026-09-18 by the maintainer: the conventional form in all four.** Front 16's step 6 says a
+rule that changes how every library looks is the maintainer's, and these are the four it stopped on. Each
+was re-measured by running `botopink format` over a hand-written file at `3cfb65c`.
+
+**1. A lambda *argument*'s body indents +4, and its closing `});` aligns with the call.** Today:
+
+```botopink
+    xs.forEach({ x ->
+            @print(x);          // +8 from the call line
+        });                     // +4
+```
+It is the largest single source of churn in front 09's diffs (erika and jhonstart).
+
+**2. A lambda with an empty body stays inline** — `{ next -> }`. Today it explodes into three lines whose
+middle line carries **eight spaces and nothing else**, in a formatter that avoids trailing whitespace
+everywhere else.
+
+**3. The one-line rule covers a parameterless lambda.** Today `{ -> 3 + 4 }` explodes while
+`{ n -> n * 2 }` stays inline — `fmtLambdaAt`'s one-line rule simply does not test the no-parameter case.
+
+**4. A `fn` signature that does not fit breaks one parameter per line, with a trailing comma**, closing
+on its own line:
+
+```botopink
+fn aVeryLongFunctionName(
+    firstParameter: i32,
+    secondParameter: string,
+    thirdParameter: bool,
+) -> string {
+```
+
+Today the formatter joins that into **104 columns** against `LINE_WIDTH = 80`, because a signature has no
+break available. **Measured, and it decides the cost: that shape already parses** — `botopink check` on
+exactly the text above answers `Checked in 66.60ms`, trailing comma included. So rule 4 is a printer-only
+change; no parser work, no grammar decision.
+
+**What it costs.** Rules 2 and 3 are corrections — the formatter contradicts itself — and move nothing
+committed. Rules 1 and 4 change the shape of committed files, which is why they were the maintainer's:
+front 09 reformats the five libraries in one commit, deliberately now, while its 861 changed lines are
+recent, rather than after more code is written in the old shape.
+
+**Blocks:** step 6 of [`16-formatter`](./16-formatter/README.md), then one reformat commit in
+[`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md).
+
+---
+
+## 62. The order of what is left in the milestone
+
+**Decided 2026-09-18 by the maintainer**, six calls, none of them about meaning and each of them costing
+rework in the wrong order:
+
+| call | answer | why |
+|---|---|---|
+| `06-comptime-dedup` before or after `01-checker`? | **After** 01's steps 4 and 5 | 01's step 4 waited the whole milestone for the four backends and is written; changing the snapshot layout underneath it is the worst of both. 06 stays a prerequisite for 01's steps 6–11 |
+| When do 13's halves 2–3 run? | **Now**, straight after half 1 | They own both emitters wholesale and re-record ≈318 cells — and fronts 02 and 03 have nothing actionable left (everything behind 01 or 13), so nothing is stalled |
+| Does `14-comptime-on-beam` step 3 happen? | **Deferred until after 13** | Its blocker is measured: the *typed* beam backend already fails the case the untyped mode exists for, and 13 is what fixes identity on beam |
+| beam's BR5 (string templates at 50×) | **Out of 1.0.5**, its own spec with the measurement | Re-measured: `base64:encode` 0.113 → 5.722 µs/call (**50.6×**). The block is structural — nothing in this compiler parses Erlang, and the parked branch is a 836-line Zig lexer+parser that no longer builds |
+| When does `libs/std/src/beam.bp` (17's step 3b) land? | **Before** front 17 opens — front 09 closes its part first | The module compiles per target under `test-libs` with no consumer, so it does not need 17 in flight |
+| The ~20 defects with an owner and no row | **Three this wave**, the rest a 1.0.6 list | `Type.assoc()`'s missing return type (front 01), `Shape.unit()` emitting `{unit}` (02/13), and beam swallowing `.length` on an index receiver (03). The first reproduces inside one module; the third is silent with exit 0 |
+
+**Blocks:** nothing — this *is* the schedule the remaining fronts are read against, and it supersedes the
+Order section of [`fronts.md`](./fronts.md) where the two differ.
 
