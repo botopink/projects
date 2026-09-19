@@ -3,45 +3,52 @@
 Answered by the maintainer, kept here as the record the fronts implement against. The numbering is
 the one they had in [`decisions-pending.md`](./decisions-pending.md), which never reuses a number.
 
+**One reading trap, because it is in several sections at once.** A front named by a number that
+[`fronts.md`](./fronts.md) does not carry — front 20 — or named in a past tense for work this
+milestone's front of that number has not started — front 06's grammar and support passes, front 17's
+cells, front 15's `example-programs.md` — is **1.0.4-beta's** numbering, kept as it was written. This
+milestone's owner is the one the *Decided* line names; where a `Blocks:` line still carries the old
+number it is corrected in place, in brackets.
+
 | # | Question | Answer |
 |---|---|---|
 | [1](#1-asyncgeneratort-does-not-exist) | `@AsyncGenerator<T>` or `@AsyncIterator<T>`? | correct the spec to `@AsyncIterator<T>` |
 | [2](#2-optiont-does-not-exist-either) | Is `Option<T>` a spelling? | no — `?T` is the only one |
-| [4](#4-the-order-that-dissolves-the-circular-dependency--settled) | The milestone's order | `06` → `14` → `13` → backends |
+| [4](#4-the-order-that-dissolves-the-circular-dependency--settled) | The milestone's order | `06` → `14` → `13` → backends — **amended by [62](#62-the-order-of-what-is-left-in-the-milestone)**, whose own correction then makes the question moot: `06`'s layout step landed before this session (`579ab0d`) |
 | [7](#7-a-types-methods-are-function-not-method) | LSP `Method` or Test Explorer? | the extension gives way |
 | [8](#8-beam-as-a-target-of-the-language-suite) | `beam` in the language suite? | yes — it executes |
 | [9](#9-arrayunique-is-broken-on-both-backends) | Who fixes `Array.unique`? | rewrite the body in `libs/std` |
 | 3 | Is `import { X };` a form at all? | both forms stay — the shorthand is made to resolve |
 | 5 | What *is* a value on the JS backends? | a class per declaration, a subclass per variant |
-| 6 | Flat or nested erlang output? | flat, one directory per target |
+| [6](#6-the-erlang-output-layout--with-the-two-trees-written-out) | Flat or nested erlang output? | flat, one directory per target — scope corrected: `out/erl/` and `out/beam/`; commonJS and wasm keep `out/<module path>` |
 | 10 | `@code` taken twice | rename the proposed annotation |
 | 11 | `<Pattern> as <name>` | delete the form and its tests |
 | 12 | Unnamed variant payloads | rejected, with a located diagnostic |
 | 13 | `external-annotations.md`'s C1/C8 | steps of `01-checker` |
-| 14 | Seven forms that do not parse | four parse, three absent, the rest to `15-language-surface` |
+| [14](#14-seven-forms-that-do-not-parse) | Seven forms that do not parse | four parse, three absent, the rest to `15-language-surface` — **amended by [28](#28-what-decision-14-left-unassigned)**: every form is supported, no slot is absent |
 | 15 | A lower-case `#[@external(node, …)]` | a located error |
 | 16 | The `mod` path warning | fix the cause; do not exempt or document — **implemented 2026-09-18, and it converged on option (b); see the note below** |
 | 17 | rakun's erlang story | rakun supports every target; `libs/std` grows to carry it |
-| 18 | emilia's `tokens.bp` and `format --check` | exempt now; `16-formatter` audits the formatter |
+| [18](#18-emilias-tokensbp-and-format---check) | emilia's `tokens.bp` and `format --check` | exempt now; `16-formatter` audits the formatter — the exemption is **withdrawn by [34](#34-the-format---check-exemption-does-not-exist)** |
 | 19 | The comptime renderer's `id` | removed |
-| 20 | Is a pattern range inclusive? | one spelling — `..`, as in Zig; `...` leaves the grammar |
-| 21 | Tagged map or tagged tuple? | T2, the tagged tuple |
+| [20](#20-is-a-pattern-range-inclusive) | Is a pattern range inclusive? | one spelling — `..`, as in Zig; `...` leaves the grammar — **amended by [53](#53-the-range-spelling-is-zigs-split--inclusive-in-a-pattern--exclusive-in-a-slice)**: `...` stays, inclusive, as the pattern spelling |
+| [21](#21-t1-or-t2-for-the-erlang-record) | Tagged map or tagged tuple? | T2, the tagged tuple — measured cost of the choice: **354 cell-writes over 210 files** |
 | 22 | Who designs wasm's boxed value? | `13-module-identity`, for every backend |
 | 23 | Does a `behavior` need an atom? | reserve `__b__`, emit nothing |
-| 24 | Does step 3 of 14 happen? | every step — the principle governs |
+| [24](#24-does-step-3-of-14-comptime-on-beam-happen-at-all) | Does step 3 of 14 happen? | every step — the principle governs; **[62](#62-the-order-of-what-is-left-in-the-milestone) defers it until after `13`** |
 | 25 | Does `is` carry a pattern? | no; `case` is the only construct that binds |
 | 27 | Who declares `behavior Display`? | `01-checker`, in `libs/std` |
 | 26 | `case` arms of different types | they union — inference may produce a union |
 | 35 | Structural equality | structural — it follows from 37 |
 | 37 | Is a record immutable? | **yes** — the checker rejects `p.f = v` |
-| 29 | Does a block-shaped statement end itself? | **(c)** — no `;`; ~274 sites migrate |
+| [29](#29-does-a-block-shaped-statement-end-itself) | Does a block-shaped statement end itself? | **(c)** — no `;` after a **braced** block ([60](#60-the-parser-accepts-an-optional--before-the-formatter-picks-a-side) narrows it); **245** sites migrate |
 | 30 | Is there an index expression? | **yes** — `xs[0]` parses everywhere |
-| 31 | Does `any` exist? | deleted, for now; `Iterator` gets a real default |
+| [31](#31-does-any-exist) | Does `any` exist? | deleted, for now; `Iterator` gets a real default — **not landed**, and `any` is the host vocabulary of `erlang.bp` / `beam.bp`, not one use |
 | 32 | `Option.None` / `Some(1)` in value position | removed from the documents; the optional is `?T` |
-| 33 | A bodyless `fn` with no return type | **(b)** — it declares one; three `libs/std` lines gain `-> void` |
+| [33](#33-a-bodyless-fn-with-no-return-type) | A bodyless `fn` with no return type | **(b)** — it declares one; **one** `libs/std` line gains `-> void` (measured; the estimate said three) |
 | 34 | The `format --check` exemption | **(c)** — no exemption; decision 18's is withdrawn |
-| 36 | Does `..` exclude its end in a pattern? | yes — exclusive everywhere |
-| 28 | What decision 14 left unassigned | **every form parses**; five distinct forms, none absent |
+| [36](#36-does--exclude-its-end-in-a-pattern) | Does `..` exclude its end in a pattern? | yes — exclusive everywhere — **amended by [53](#53-the-range-spelling-is-zigs-split--inclusive-in-a-pattern--exclusive-in-a-slice)**: `..` is not a pattern spelling; in a pattern it is `...`, inclusive |
+| [28](#28-what-decision-14-left-unassigned) | What decision 14 left unassigned | **every form is supported**; five distinct forms, none absent — module-level `var`'s grammar is the half still unlanded |
 | 38 | Is a `val` immutable? | **yes** — assigning to one is a located error naming `var` |
 | 39 | Who creates the ETS table? | the module emits a registered owner process |
 | 40 | `+=` under `Ets` on a non-integer | **(a)** — refused, with the recomposition diagnostic |
@@ -49,7 +56,7 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 42 | A `Dict` under `Ets` with `keyed` unwritten | **(b)** — the default stands, no warning; `docs.md` carries it |
 | 51 | `keyed = true` on a `List<T>` | **(c)** — `keyed` is a `Dict`-only argument; on a list it is the "needs a keyed container" error |
 | 52 | A condition loop that never breaks | **(a)** — `null` on every backend; erlang and beam stop answering the variable group |
-| 54 | The pattern surface of a `?T` | **(b)** — `null` and a binder; `.Some(v)` / `.None` on a `?T` becomes an error |
+| [54](#54-a-t-is-matched-by-null-and-a-binder) | The pattern surface of a `?T` | **(b)** — `null` and a binder; `.Some(v)` / `.None` on a `?T` becomes an error — and the `null` arm **does not parse yet**: a parser row as well as a checker one |
 | 57 | Does `comptime/**` get a warning channel? | **yes** — a `warnings` list on the `Env`, inside a row of `01-checker` |
 | 58 | Who owns the inline `implement { }` check? | `01-checker` — the same check as the separate block |
 | 59 | Who recounts `expected-failures.txt`'s tally? | whoever deletes a line, **from the file** — never from their own delta |
@@ -57,13 +64,13 @@ the one they had in [`decisions-pending.md`](./decisions-pending.md), which neve
 | 55 | `break <value>` in a collection loop | **(a)** — it contributes its value **and ends the loop** |
 | 56 | `run --target erlang`'s exit status | **(a)** — take `erl`'s `1`; the contract is amended in the same commit |
 | 60 | Decision 29's impossible order | **(b)** — the parser accepts `;` as optional first, as its own landing; **(c)** amends the wording |
-| 61 | The formatter's canonical layout | four rules, all the conventional form — see below; B4's shape **already parses** |
-| 62 | The order of what is left | 06 after 01's steps 4–5 · 13's halves 2–3 now · 14 step 3 after 13 · BR5 out of 1.0.5 · `std/beam` before 17 · three defects this wave |
-| 43 | Where does `@BeamMemory` live? | **(b)** two layers; the no-op/hard-error tension resolves as **(a)**; `Cluster` stays out of the core |
+| [61](#61-the-formatters-canonical-layout--four-rules) | The formatter's canonical layout | four rules, all the conventional form — see below; B4's shape **already parses**. **Landed**: 607 lines across six trees, and `fits` is broken underneath it ([question 65](./decisions-pending.md#65-does-the-formatter-learn-to-measure-width)) |
+| [62](#62-the-order-of-what-is-left-in-the-milestone) | The order of what is left | 06 after 01's steps 4–5 — **moot, 06 landed at `579ab0d`** · 13's halves 2–3 now · 14 step 3 after 13 · BR5 out of 1.0.5 · `std/beam` before 17 · three defects this wave |
+| [43](#43-beammemory-lives-in-two-layers--and-off-the-beam-the-annotation-is-a-no-op-while-the-module-is-an-error) | Where does `@BeamMemory` live? | **(b)** two layers; the no-op/hard-error tension resolves as **(a)**; `Cluster` stays out of the core — layer 1 landed; layer 2's route to it is [question 64](./decisions-pending.md#64-how-does-beammemorys-layer-2-reach-layer-1-when-the-erlang-backend-emits-no-wrapper) |
 | 44 | Is `optional<i32>` a valid spelling? | **(a)** — refused; `?T` is the only spelling |
 | 45 | Is a member access on a `?T` an error? | **(a)** — yes, naming `?.` |
 | 46 | What does `d["k"]` answer on a `Dict`? | **(a)** — the checker records the receiver, each backend routes to `lookup` |
-| 47 | Is an out-of-range read `undefined` or `null`? | **(a)** — one spelling of absent: `null` |
+| [47](#47-absent-has-one-spelling-null) | Is an out-of-range read `undefined` or `null`? | **(a)** — one spelling of absent: `null`; three backends to move, and the read's *type* is [question 63](./decisions-pending.md#63-does-an-index-expression-answer-t-or-t) |
 | 48 | Who teaches the formatter to print `var`? | **(a)** — a named carve-out of `format.zig` for `17`, in the same commit as the form |
 | 49 | When does `17` open? | **(a)** — after `01`'s step 4 is committed |
 | 50 | How much of `17` runs in 1.0.5-beta? | **(a)** — steps 0–3b; steps 4–8 become a spec for the milestone after `13` |
@@ -88,7 +95,8 @@ to `AsyncGenerator`, and with it the `behavior` a user implements.
 **Recommendation: (a).** The code is the reality here, the two names mean the same thing, and the
 rename would touch a public `behavior` name for no semantic gain. The spec is one table row.
 
-**Blocks:** decision 8 §9 being a true document; 03's N25 acceptance text.
+**Blocks:** decision 8 §9 being a true document; 03's N25 acceptance text *(read `01-checker`'s — the
+Decided line above names it, and `03` here is the previous milestone's numbering)*.
 
 ---
 
@@ -166,6 +174,18 @@ than a stop. `04-js` and `05-wasm` are unaffected and run throughout.
 one: dedup first → 14 re-records **5** comptime cells; 14 first → **20**, of which dedup then deletes
 15. Dedup first, by 15 mechanical re-recordings.
 
+**Amended 2026-09-18 by [decision 62](#62-the-order-of-what-is-left-in-the-milestone).** What this decision was taken for survives whole:
+`14-comptime-on-beam` before `13-module-identity`, and 13 before the backend fronts read the identity.
+What does not survive is the position of `06-comptime-dedup`. 14 landed its steps 0–2 without it, and 62
+puts 06 **after** `01-checker`'s steps 4–5, keeping it a prerequisite only for 01's steps 6–11 — so the
+order in the summary row, `06` → `14` → `13` → backends, is read from 62 for that one move, here as
+well as in [`fronts.md`](./fronts.md)'s Order section, which 62 also supersedes. The 15 mechanical
+re-recordings measured just above are what 62 traded away deliberately: 01's step 4 was written and
+waiting on the four backends, and re-laying the snapshot directory underneath it was the worse of the
+two costs. **And 2026-09-18 the question dissolved rather than being answered**: 06's work is already in
+`feat` at `579ab0d` — `snapshots/comptime/` holds the 338 files the front promised — so the first arrow of
+this order describes work that has landed, and nothing is sequenced behind it. See 62's correction.
+
 ---
 
 ---
@@ -220,6 +240,15 @@ lands as 13's closing step unless the maintainer wants beam coverage before then
 
 **Blocks:** `12-language-tests`'s coverage claim for beam, and `tests/language/AGENTS.md`, which
 states a reason that measurement contradicts.
+
+**Landed 2026-09-18, and not as scheduled.** The two-command path is in `run.sh` already, before 13's
+closing step: front 12's header is a run with a beam column (`beam 14/20/0`), front 03 reports
+`--target beam` at **18 / 16 / 0**, and the probe re-measured for
+[decision 53](#53-the-range-spelling-is-zigs-split--inclusive-in-a-pattern--exclusive-in-a-slice)
+runs on beam where it used to stop at `out/main.S`. So the scheduling paragraph above no longer describes
+the tree: what 13's policy 3 will change is how many `.S` files a program emits and where they live, and
+the runner written against today's layout is the one that has to be re-pointed then — which is a row of
+13, not a reason to wait.
 
 ---
 
@@ -290,7 +319,9 @@ defect A, implemented and parked.
 **Cost, measured:** the shorthand appears in the five libraries only where front 13 already replaced
 it; `grep -rn "^import {[^}]*};" repository/*/src libs/std/src` is the migration list, and it is short.
 
-**Blocks:** front 20's defect A; `08-hygiene` step 3; every import example in the documentation.
+**Blocks:** front 20's defect A *(1.0.4-beta's numbering — in this milestone the unresolved-import
+error is [`10-cli-residuals`](./10-cli-residuals/README.md)'s, and it is in `feat`)*; `08-hygiene`
+step 3; every import example in the documentation.
 
 ---
 
@@ -414,6 +445,17 @@ today, which compiles only the file it is handed, and the fix is `erl -noshell -
 
 **Blocks:** `13-module-identity` step 0, and `10-cli-residuals`' three `modules/*` cells.
 
+**Scope, corrected 2026-09-18 after [`13-module-identity`](./13-module-identity/README.md) implemented
+it.** The recommendation's parenthesis — `out/erl/`, `out/js/`, `out/wasm/` — reads as a move for all
+four targets, and front 13's step 2 kept commonJS and wasm at `out/<module path>`, with an acceptance
+that demands the **commonJS tree stay byte-identical**. Front 13 is the side to read, because this
+decision's own argument only reaches the BEAM: the whole "difference that decides it" is `erl -pa` — the
+BEAM loads code from the directories on its path, and a nested tree costs one `-pa` per directory and
+per dependency. Nothing equivalent is true of `require` or of a `.wasm` file. So what landed, and what
+this decision should be read as, is **`out/erl/` for erlang and `out/beam/` for beam, flat, with
+commonJS and wasm unchanged**. Moving those two as well is a separate row with a snapshot price
+(315 commonJS cells) and no `-pa` argument behind it; it has not been asked for.
+
 ---
 
 ---
@@ -520,6 +562,15 @@ them**: `catch` is `@Result`-only, and decision 2 is about the value of a block,
 state.
 
 **Blocks:** `01-checker` and whatever picks up the grammar's tail.
+
+**Amended 2026-09-18 by [decision 28](#28-what-decision-14-left-unassigned).** The "three recorded as
+deliberately absent" did not survive its own measurement, and the correction is 28's whole first half:
+two of the seven reported forms were **one production**, so the third absent slot was empty; and the two
+readings that made `??` and module-level `var` absent were both false — `catch` is `@Result`-only, and
+decision 2 is about the value of a block, not about module state. Read this decision's answer as *every
+form is supported*, with 28's table as the list and its count of five as the count. The one half of that
+list still unlanded is module-level `var`'s grammar, whose semantics are
+[`17-beam-memory`](./17-beam-memory/README.md)'s.
 
 
 ---
@@ -659,6 +710,15 @@ decision 8 §5 and let front 12 turn the work-arounds into assertions.
 
 **Blocks:** `12-language-tests`'s range cells.
 
+**Amended 2026-09-18 by [decision 53](#53-the-range-spelling-is-zigs-split--inclusive-in-a-pattern--exclusive-in-a-slice).** The reason
+this answer gave is the part that failed: Zig has **both** spellings, in different positions — `1...9`
+inclusive in a `switch` prong, `0..3` and `xs[0..2]` exclusive in a range and a slice — and `1..9`
+inside a `switch` does not exist there at all. So "one spelling, `..`, as in Zig" was the divergent
+reading and the compiler was the Zig-consistent side. **`...` does not leave the grammar**: it stays,
+inclusive, as the **pattern** spelling, and `..` stays exclusive in a slice and in iteration. Nothing in
+the compiler moves — `1...9` is what it already parses, and `dff3446` stands. Front 12's range cells are
+written against 53's split, not against this text.
+
 
 ---
 
@@ -681,6 +741,19 @@ the two are within 0.5 ns. What remains for T2 is 6 words per record, not speed.
 changes no existing pattern in `libs/std` or the five libraries.
 
 **Blocks:** `13-module-identity`'s third half.
+
+**The chosen option's cost, measured 2026-09-18 by
+[`13-module-identity`](./13-module-identity/README.md) while sizing halves 2–3 — and it is larger than
+the record said.** T1 was "one key in a map": construction gains a field, and access, destructuring and
+patterns are unchanged, because erlang's map matching is a subset match — 144 cells, one or two emitted
+lines each. **T2 rewrites construct *and* access *and* destructure *and* patterns**: 66 erlang cells
+(`maps:get` 40 · `#{… :=}` 5 · `#{… =>}` 53) and 73 beam cells (`get_map_elements` 42 ·
+`put_map_assoc` 55 · `is_map` 45). So half 3 becomes a **shape** change of the same size as half 2, and
+the milestone's largest snapshot movement is now **354 cell-writes over 210 distinct files** — 144 of
+them written twice, because half 3's set sits inside half 2's. **The answer does not move**: this
+decision already ruled that the maintainer's call is the shape and not the benchmark, and a price is not
+a new argument. It is recorded here so that the price is visible where the shape was chosen, and so that
+reopening it, if the maintainer wants to, starts from a number.
 
 ---
 
@@ -746,6 +819,14 @@ is the front, and its cost is the price of the principle.
 **Recommendation: stop at step 2**, and reopen step 3 as its own front if the principle is the goal.
 
 **Blocks:** `14-comptime-on-beam`'s scope, before its step 3 opens.
+
+**Sequenced 2026-09-18 by [decision 62](#62-the-order-of-what-is-left-in-the-milestone).** Step 3 still
+happens — the principle is not reopened — and 62 answers *when*: **deferred until after
+`13-module-identity`**, with the blocker this decision could only assert now measured. The *typed* beam
+backend already fails the case the untyped comptime mode exists for, and 13 is what fixes identity on
+beam. So the recommendation recorded below — *stop at step 2* — is not the milestone's order and never
+became it: the deferral is a place in the queue, not a withdrawal, and it is where this decision's own
+sentence ("it sequences after `03-beam` and `13-module-identity`") already pointed.
 
 ---
 
@@ -909,12 +990,16 @@ chains. So nothing real is hidden by it today.
 `zig build test-libs` now prints **zero** `not reached by any mod path` lines, where it printed two per
 run, and stays 11 passed / 0 failed / 1 skipped.
 
+---
+
 ## 37. Is a record immutable?
 
 **Decided 2026-09-18 by the maintainer: (a) — a record is immutable.** `p.age = 31` must not happen.
 The checker rejects a field assignment with a located diagnostic naming the update form
 (`Person(..p, age: 31)`), which already works; the erlang emitter's comment path becomes dead code and
-stops producing a module that will not compile; and `val` starts meaning what it reads as.**Measured 2026-09-18**, after the maintainer asked whether the value could be immutable. It is not,
+stops producing a module that will not compile; and `val` starts meaning what it reads as.
+
+**Measured 2026-09-18**, after the maintainer asked whether the value could be immutable. It is not,
 and the three backends disagree in the worst available way. This program checks — on a `val`:
 
 ```botopink
@@ -986,7 +1071,9 @@ wasm answer `false` today for record, array, tuple and variant alike, so both ne
 compare — on JS a `__bp_eq` prelude helper (the mechanism already exists for `__bp_show`), and on wasm
 after the box of [decision 22](#22-wasm-has-no-identity-at-all). The remaining question is only where
 to call it: the commonJS emitter walks the **untyped** AST, so it cannot tell a primitive `==` from a
-composite one without the checker marking the site, the way `method_lowerings` already does by `Loc`.**Measured** (front 12, writing the type-identity cells): `Person(name: "Ana") == Person(name: "Ana")`
+composite one without the checker marking the site, the way `method_lowerings` already does by `Loc`.
+
+**Measured** (front 12, writing the type-identity cells): `Person(name: "Ana") == Person(name: "Ana")`
 answers **`false` on commonJS** and **`true` on erlang**. No decision covers it and no front owns it,
 so the cell that found it declares the omission in a comment rather than listing itself against a row
 that does not exist.
@@ -1045,6 +1132,17 @@ single front can land it with a green gate. The landing is one coordinated seque
 `16-formatter` stops printing the `;` → 15 applies the patch → `12-language-tests` (44),
 `libs/std` (51) and `09-ecosystem-residuals` (145 across the siblings) migrate in the same change.
 
+**Amended 2026-09-18 by [decision 60](#60-the-parser-accepts-an-optional--before-the-formatter-picks-a-side), in both halves.**
+The landing sequence written just above **cannot run**: a block-shaped statement without its `;` is a
+parse error today, so a formatter that stopped printing it would emit text its own parser refuses, and
+`assertIdempotent` re-parses pass 1 — every formatter test would fail and every formatted file would
+stop compiling. The order is: the **parser** first, accepting the `;` as optional (`semicolonPolicy`) as
+a landing of its own, which re-records nothing and breaks no file; then the printer chooses a side; then
+12, `libs/std` and 09 migrate at leisure. And the rule is **narrowed to the braced form**: a braceless
+statement — `if (c) return x;` — has no closing brace to end itself and keeps its `;`. The five
+libraries alone hold 30+ braceless sites, so the two readings would have migrated different files. The
+site count to read is the re-measured **245**, not the estimate's ~274.
+
 ---
 
 ---
@@ -1097,6 +1195,18 @@ off.
 name; the single use is a default that can be written properly.
 
 **Blocks:** `libs/std`'s `Iterator` declaration; `01-checker`'s source step.
+
+**Correction, 2026-09-18, measured by [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md)**
+while landing `libs/std/src/beam.bp`. Two things here are wrong, and the second changes what "delete it"
+has to mean. **The count is wrong by roughly sixty**: `builtins.d.bp:88` is not the single use — every
+declaration in `libs/std/src/erlang.bp` writes `any`, and so do the ten new `#[@External.Erlang]`
+primitives of `beam.bp`. And **this decision has not landed**: `any` still parses and checks at
+`3cfb65cb`. What the same pass measured is that `any` is not the escape hatch the word suggests —
+**it unifies only with itself**. `beam.pdPut("k", 1)` reds with *expected any, got string* and
+`val a: any = 1` with *expected any, got i32*, while a value produced by another host call goes through.
+So `any` is a closed type that no botopink value inhabits, and what it actually serves is the **host
+vocabulary** of `erlang.bp` and `beam.bp`. Deleting it therefore owes those declarations a replacement
+spelling, not only a diagnostic; `Iterator`'s default is the smaller half.
 
 ---
 
@@ -1172,23 +1282,13 @@ defect instead of wondering why one file is exempt.
 
 **Blocks:** `16-formatter`'s exemption; `09-ecosystem-residuals`' format step.
 
----
-
-
-This file stays because the fronts will fill it again. A front that meets a question it cannot answer
-from the code writes it here rather than guessing, in the shape the others used:
-
-> **Measured.** What was observed, with the command or program that produced it and the file or commit
-> that can be re-read.
->
-> **Options.** Each one stated so that choosing between them is possible without reading the code.
->
-> **Recommendation.** One, argued — a question with no recommendation is a question the front did not
-> finish thinking about.
->
-> **Blocks.** The step, front or landed work that waits on the answer.
-
-Numbers are never reused: the next question added here is **28**, whatever has left the file since.
+**Withdrawn 2026-09-18 by [decision 34](#34-the-format---check-exemption-does-not-exist).** There was no
+exemption to grant: `format_cmd.zig` has no skip list of any kind, so this decision assumed a feature.
+`tokens.bp` is formatted like every other file and the variant hoist is accepted — front 16 measured the
+emitted output byte-identical on all four backends from both orderings, so it is a fidelity loss and not
+a correctness one. The second half of this decision stands and has been done: `16-formatter` audited the
+formatter, and [decision 61](#61-the-formatters-canonical-layout--four-rules) is the layout it stopped
+on.
 
 ---
 
@@ -1218,6 +1318,15 @@ because `patterns.zig` is `01-checker`'s step-4 grammar and the change re-record
 answers `undefined` on commonJS and `0` on erlang, because a brace-arm of `case` is neither typed nor
 lowered — the defect already filed with `01-checker`. So the run-time semantics this decision asks for
 is the one that already exists; what is missing is the spelling and the sentence in decision 8 §5.
+
+**Amended 2026-09-18 by [decision 53](#53-the-range-spelling-is-zigs-split--inclusive-in-a-pattern--exclusive-in-a-slice).** `..` is
+exclusive in a slice and in iteration, and it is **not a pattern spelling at all**: in a pattern the
+range is `...` and it *includes* its end — which is what the compiler already does, and what Zig does.
+Option (b) is not what 53 chose either: it is not one spelling meaning two things by position, it is two
+spellings in two positions, as in the language both decisions cited. So the ~10-line
+`finishRangePattern` edit this decision was waiting for is **not to be made**, `dotDotDot` stays in the
+lexer, and the sentence decision 8 §5 needs is 53's split. The surviving defect is the one the paragraph
+above names and 53 re-measured: a brace-armed `case` range is not lowered on every backend.
 
 ---
 
@@ -1284,7 +1393,9 @@ decision's landing note must not be read as saying module-level `var` parses. It
 `var counter = 0;` and `pub var counter = 0;` are both `this token cannot appear here` at `1:1` at
 `109f6c9`. Front 15 measured the form and deliberately left it (*"the grammar is trivial; the
 semantics are the `@BeamMemory` design"*), and its semantics are now
-[`17-beam-memory`](./17-beam-memory/README.md), gated on [question 38](./decisions-pending.md).
+[`17-beam-memory`](./17-beam-memory/README.md), gated on
+[decision 38](#38-a-val-is-immutable) — answered since — and on
+[decision 49](#49-17-opens-after-01s-step-4-is-committed) for when that front opens.
 
 ---
 
@@ -1388,6 +1499,15 @@ somewhere other than where the author wrote it — the failure family decision 1
 **Blocks:** step 3 of [`17-beam-memory`](./17-beam-memory/README.md), which decision 50 keeps in this
 milestone.
 
+**Correction, 2026-09-18, measured by [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md):**
+the four programs above cannot be measured in the position they are written in. `#[…]` above a
+**module-level binding** does not parse at `3cfb65cb` (`unexpected `#``), so this decision's measurement
+— `#[@TotallyMadeUp.Nonsense(whatever = 42)]` passing `check` — was taken on a `fn`, and the annotation
+can only be measured there until [`17-beam-memory`](./17-beam-memory/README.md)'s step 1 lands the
+`val`/`var` carrier. A confirmation rather than a surprise, and it does not move the answer: the
+validation is still born in the annotation's own commit (step 3), and step 1 is what gives the
+annotation a declaration to sit on.
+
 ---
 
 ## 42. A `Dict` under `Ets` with `keyed` unwritten keeps the default, with no warning
@@ -1404,8 +1524,17 @@ keys 25 190 → 47 ns (537×), 10 000 keys 301 864 → 60 ns (**5 061×**). Two 
 **different** keys 20 000 times each under `keyed = false` lost **six** writes silently
 (`a => 19994`, `b => 20000`). The sentences `docs.md` must carry are in step 6 of the front.
 
-**Blocks:** step 6 of [`17-beam-memory`](./17-beam-memory/README.md) and the `docs.md` text; the list
-half additionally waits on question 51.
+**Note after [decision 57](#57-srccomptime-gets-a-warning-channel).** The recommendation this answer
+overrode was written *conditionally*: front 17's README proposed a located warning "**if** the warning
+channel exists", and it did not (`grep -rn warning` over `comptime/*.zig` → 0). 57 has since granted the
+channel, as a `warnings` list on the `Env` inside a row of `01-checker`. **The answer does not move** —
+(b) stands, the compiler still says nothing, and `docs.md` carries the behaviour and the performance
+difference. What the channel removes is the *reasoning*: the warning is refused because replacing a whole
+container is a thing authors legitimately want, not because there was nowhere to print one.
+
+**Blocks:** step 6 of [`17-beam-memory`](./17-beam-memory/README.md) and the `docs.md` text. The list
+half waits on nothing: [decision 51](#51-keyed--true-is-a-dict-only-argument) answered it the same day — `keyed` is a `Dict`-only
+argument, and a `List<T>` under `Ets` stores its whole value.
 
 ---
 
@@ -1435,6 +1564,30 @@ an explicit type with its consistency model declared.
 
 **Blocks:** the size of [`17-beam-memory`](./17-beam-memory/README.md), and its step 3b, which front
 09 lands.
+
+**Landed 2026-09-18** — layer 1 is committed and gate-green. `libs/std/src/beam.bp` exists, with the ten
+`#[@External.Erlang]` primitives and `pub mod beam;` in `root.bp`, landed by
+[`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) **before front 17 opens**, which is what
+[decision 62](#62-the-order-of-what-is-left-in-the-milestone) ordered. Two corrections the landing measured, neither of them to the answer:
+
+- **The tension paragraph is right, and a call is not what triggers it.** `@External.Erlang` covers
+  *both* BEAM targets (`codegen.zig:74-77` maps `.erlang` and `.beam` to one lookup name), and
+  `std-unsupported-on-target` fires on the **import**: a bare `import { beam } from "std"` reds off the
+  BEAM before any call site is reached. Read "the module is an error there" as the import being the
+  error, not the tenth call.
+- **Layer 2 has no route to layer 1 through the erlang backend, and this decision never named the
+  dependency.** A qualified std host call lowers to a call on the std module — `beam:pdPut(Slot, Slot)`
+  — while the emitted `out/std/beam.erl` is `-module(beam).` **and nothing else**: no export, no
+  function. It is not this module's doing; `out/std/process.erl` is `-module(process).` plus a
+  `no_auto_import` line and no function either, where commonJS emits real wrappers
+  (`function cwd() { return process.cwd(); }`). The backend emits **no wrapper for a host-bound std
+  `declare fn`** at all. So front 17's step 3b cannot meet its fourth acceptance bullet ("re-run under
+  `erl`") today whatever layer 1 looks like, and layer 2 cannot lower a binding's read and write onto
+  layer 1 *as botopink calls* until that backend row lands — and that row is in front 02's, or 13's,
+  files. The one alternative, layer 2 emitting `erlang:put/2` from `.zig`, is precisely what this
+  decision chose against. Opened as [question 64](./decisions-pending.md#64-how-does-beammemorys-layer-2-reach-layer-1-when-the-erlang-backend-emits-no-wrapper),
+  because either this decision gains a dependency or its mechanism is reopened, and that is the
+  maintainer's call.
 
 ---
 
@@ -1489,6 +1642,17 @@ fronts reopened for one arm each.
 **Blocks:** the `d["k"]` half of decision 30 in all four backends; front 12 left the cell out for
 exactly this reason.
 
+**What this decision is not, measured 2026-09-18 by
+[`13-module-identity`](./13-module-identity/README.md):** it is not the same fix as "beam reaches parity
+with erlang on `.length` over an index receiver", and the two are easy to blur because both are index
+expressions whose member the checker never typed. erlang answers `xs[0].length` correctly through a
+**type-free runtime helper** — `__bp_len(Recv, Member)` at `erlang.zig:4804-4811` — which fires precisely
+*when inference recorded nothing*, not through a receiver kind. The receiver-kind route this decision
+asks for runs through `instanceLowerings.put`, and that fires only at **method-call** sites in
+`infer.zig`: there is no index or slice arm at all. So the beam `.length` defect — the third of the three
+[decision 62](#62-the-order-of-what-is-left-in-the-milestone) claims for this wave — is beam growing
+erlang's helper, and this decision is the checker growing an arm it does not have. Two rows, not one.
+
 ---
 
 ## 47. Absent has one spelling: `null`
@@ -1504,6 +1668,15 @@ type, and every future `===` in a hand-written host template is a bug waiting.
 
 **Priority.** The lowest of the three questions answered with it: it blocks nothing today, so it lands
 with [`01-checker`](./01-checker/README.md)'s own pass.
+
+**Measured after the answer, and "it blocks nothing" is true only of the helper.** The *spelling* has
+rows: front 05 reports the other word still printed where commonJS prints `null`, and front 12's cell
+`index_an_index_past_the_end_answers_zero` answers `undefined` on three backends and `0` on wasm — under
+a slug that asserts a third word again. [Decision 52](#52-a-condition-loop-that-never-breaks-answers-null) then needs this same spelling for an
+exhausted condition loop, where four snapshots pin the current text. Those are rows under this decision,
+one per backend, and `decision-8 §7` names neither word. What is **not** settled here is the *type* of
+an out-of-range read — `T` or `?T` — which is
+[question 63](./decisions-pending.md#63-does-an-index-expression-answer-t-or-t).
 
 ---
 
@@ -1560,10 +1733,21 @@ wasm carry a module `var`, the annotation is validated (decision 41), the format
 `rakun/src/runtime.mjs` the front promised to remove — they need their owner.
 
 Rejected: the whole front after `13`, which makes `17` the critical path and lands nothing; and steps
-0–2 only, which is question 41's failure family by construction — `#[@BeamMemory.Etz]` accepted and
+0–2 only, which is decision 41's failure family by construction — `#[@BeamMemory.Etz]` accepted and
 ignored, an annotation born without being trustworthy.
 
 **Blocks:** nothing — it is the scope every other row of this front is read against.
+
+**Re-read against [decision 62](#62-the-order-of-what-is-left-in-the-milestone) and what has landed since.** Two parentheses of the
+measurement above have moved, and the scope has not. `13-module-identity` **has** started — `.tasks/identity`,
+step 0 and half 1, with halves 2–3 running now by 62 — and 06 is no longer 13's prerequisite: 62 puts it
+after 01's steps 4–5 — and 62's own correction goes further: 06 has **already landed** (`579ab0d`, 338
+comptime snapshots), so "06 has not started" was never true of the tree this decision was measured
+against. Step 3b's module is now **landed** rather than pending: front 09 committed
+`libs/std/src/beam.bp` before 17 opens, which is 62's answer and [decision 43](#43-beammemory-lives-in-two-layers--and-off-the-beam-the-annotation-is-a-no-op-while-the-module-is-an-error)'s split. So
+what this front still owes step 3b is the acceptance run, and that run is blocked by
+[question 64](./decisions-pending.md#64-how-does-beammemorys-layer-2-reach-layer-1-when-the-erlang-backend-emits-no-wrapper).
+The scope stands exactly as decided: steps 0–3b this milestone, steps 4–8 a spec for after 13.
 
 ---
 
@@ -1608,6 +1792,14 @@ condition loop still *collects*, so it owes §10 as a whole (`[8] / 4 / [3] / []
 **Blocks:** nothing — but the four pinned snapshots mean the row cannot be landed by editing a text: it
 is one row per backend, and the cell comes first.
 
+**Correction, 2026-09-18, measured by [`12-language-tests`](./12-language-tests/README.md):** the
+paragraph above is wrong about three of the four backends. An exhausted condition loop prints **`3`** on
+erlang — the loop's variable group, which is what the divergence was always about — the atom **`ok`** on
+beam, and **`0`** on wasm. **None of them prints `undefined`**: that word is
+[decision 47](#47-absent-has-one-spelling-null)'s row, not this one, and the `[]` in the wasm quartet
+quoted above is `0` for this row, whatever the rest of §10 owes there. commonJS is still the backend that
+is already right, and the shape of the work does not move: one row per backend, the cell first.
+
 ---
 
 ## 54. A `?T` is matched by `null` and a binder
@@ -1628,6 +1820,19 @@ except in `??` and `?.`, which are the two readers authors already use.
 
 **Blocks:** a row of [`01-checker`](./01-checker/README.md), and the cells
 [`12-language-tests`](./12-language-tests/README.md) writes for the optional.
+
+**Correction, 2026-09-18, measured by [`12-language-tests`](./12-language-tests/README.md), twice over.**
+Neither half moves the answer, and both enlarge it:
+
+1. **The decided spelling does not parse.** `case x { null { … } v { … } }` is
+   `error: this token cannot appear here --> src/main.bp:21:22` with `^^^^ unexpected `null`` on **every**
+   target. This decision measured only the variant spelling, so its row is a **parser** row as much as a
+   checker one — and the honest statement of the state is that a `?T` has *no* working pattern form at
+   all: neither the one that is refused nor the one that is chosen.
+2. **The variant spelling does not "print nothing".** `.Some(v)` / `.None` over a `?i32 = 5` prints
+   `undefined` on commonJS, `0` on wasm and `5` on beam, and dies with `no case clause matching 5` on
+   erlang: four wrong answers, exit 0 on three of them. "Compiled and printed nothing, exit 0" was one
+   backend generalised to four.
 
 ---
 
@@ -1676,6 +1881,17 @@ both fronts' arithmetic was individually right and jointly wrong. One sub-claim 
 **Blocks:** nothing. It is the rule every front now follows, and the drift it catches is reported rather
 than silently adjusted.
 
+**Correction, 2026-09-18, re-derived from the file by
+[`12-language-tests`](./12-language-tests/README.md) at `b5a9b85d`:** the sub-claim this decision hands
+front 12 is **not** stale — this text is. The paragraph already says **19** lines name a second row, and
+19 is the count, so there is nothing to correct in the file. The rule stands, and so does its lesson,
+now applied to the decision that stated it: a number kept by hand in a file seven fronts share is
+re-derived from the file, including when the claim that it drifted is a decision's. And the numbers have
+moved again since — the fronts 12 × 13 merge conflicted on this very paragraph, both sides having
+rewritten it from different baselines, and re-deriving from the merged file gave **77 lines**, 66 under
+`--target all`, 11 beam-only, 12 starred and **23** naming a second row. Every figure in this decision is
+therefore a date, not a fact: read the file.
+
 ---
 
 ## 53. The range spelling is Zig's split: `...` inclusive in a pattern, `..` exclusive in a slice
@@ -1707,6 +1923,30 @@ answers **1** on commonJS, **0** on erlang and **256** on wasm, and beam emits o
 the range pattern not being implemented on two backends, and it needs a cell in
 [`12-language-tests`](./12-language-tests/README.md) plus a row per backend under any spelling.
 
+**Correction, 2026-09-18, re-measured by [`12-language-tests`](./12-language-tests/README.md)** at
+`b5a9b85d` and `3cfb65cb`, at five points instead of one — and the single point is why the paragraph
+above is wrong in two halves:
+
+| `case n { 1...9 { 1 } _ { 0 } }` | n=5 | n=1 | n=9 | n=0 | n=10 | the reading |
+|---|---|---|---|---|---|---|
+| commonJS | 1 | 1 | 1 | 0 | 0 | correct |
+| erlang | 0 | 0 | 0 | 0 | 0 | the arm **never** matches |
+| wasm | 0 | 0 | 0 | 0 | 0 | never — and **not** `256` |
+| beam | 1 | 1 | 1 | 1 | 1 | the arm **always** matches |
+
+So wasm answers `0`, not `256`, and beam **runs**: "emits only `out/main.S`" stopped being true when
+`run.sh` gained its beam path. At `n = 9` alone the four read `1 / 0 / 0 / 1`, which makes beam's `1`
+look like the right answer when it is a false positive — **a single-value probe cannot measure a
+range**, and that is worth keeping as a rule. The defect is also worse than recorded: not two backends
+missing the pattern, but two that never match and one that always does.
+
+**And the diagnostic does not move.** "What moves" lists `pattern-range-exclusive` beside the text of 20
+and 36, but that diagnostic fires on `1..9` *in a pattern* and recommends `1...9` — the spelling this
+amendment blesses ([20](#20-is-a-pattern-range-inclusive) records it landing in `dff3446`;
+[36](#36-does--exclude-its-end-in-a-pattern) calls it "the spelling today's diagnostic
+recommends"). What moves is the text of decisions 20 and 36, and nothing in the compiler, exactly as the
+first line of this decision says.
+
 ---
 
 ## 55. `break <value>` in a collection loop contributes its value and ends the loop
@@ -1736,6 +1976,21 @@ cheap and honest but forbids "accumulate while searching, and record what you fo
 
 **Blocks:** a cell per row in [`12-language-tests`](./12-language-tests/README.md) — being written now,
 carrying this decision's column as its `.out` — and then one row per backend against it.
+
+**Two things this decision owes its implementers, reported 2026-09-18 by
+[`12-language-tests`](./12-language-tests/README.md).**
+
+- **Front 02 has no step for it.** `04`'s step 3 and `05`'s step 4 are both titled `break <value>`, and
+  `03`'s step 3 carries D7's beam measurement, so three backends have a numbered home; front 02's step 5
+  is the **condition** loop, and nothing in its nine steps is §10's *collection* loop. The cells landed
+  carrying `02 (no step; decision 55, reported 2026-09-18)` rather than inventing a row. Either front
+  02's README gains the step, or this paragraph is the record of its absence.
+- **It turns a green cell red on all four backends** — the only place in the milestone where that
+  happened. `test/loop_collection.bp` asserted `3` / `2,4,6` for
+  `loop ([1, 2, 3]) { x -> break x * 2; }` and every backend agreed, because they share one accumulator
+  and none of them stops at a `break`; under this decision the answer is `[2]`. That agreement was
+  exactly the evidence the decision had to override, which is worth saying in as many words: four
+  backends agreeing is not four backends being right.
 
 ---
 
@@ -1840,6 +2095,23 @@ recent, rather than after more code is written in the old shape.
 **Blocks:** step 6 of [`16-formatter`](./16-formatter/README.md), then one reformat commit in
 [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md).
 
+**Landed 2026-09-18** — all four rules, and the measured cost is **607 lines** across the six trees:
+erika 165, `libs/std` 160, rakun 139, jhonstart 106, onze 37, emilia 0, of which rule 1 accounts for 428
+and rule 4 for 123. Forty-eight of `libs/std`'s belong to no rule — they are pre-existing, because that
+tree has never been formatted.
+
+**And rule 4 had to route around a broken predicate, which is the next decision of this class.**
+`fmtParams`' `group` was never missing: **`fits` stops at the first `concat`** and then answers "fits" for
+any non-negative budget, so *every* group in the formatter renders flat. Rule 4 therefore landed as a
+`Doc.widthChoice` whose flat width is measured at build time against the real column — which is why a
+method four columns in breaks four columns earlier, and why the trailing ` {` or `;` counts, the boundary
+being exact at 80/81. Teaching `fits` to measure through `concat`/`nest`/`group` would make array
+literals, calls, type unions and every comma list start breaking by width **at once**: a canonical-form
+choice per construct, and several hundred lines on top of these 607. That is the same class of call this
+decision was, so it is the maintainer's and not a front's — opened as
+[question 65](./decisions-pending.md#65-does-the-formatter-learn-to-measure-width). Rule 3 also stops at `arrow_when_empty`,
+for the parse-error reason recorded in [`decisions-pending.md`](./decisions-pending.md).
+
 ---
 
 ## 62. The order of what is left in the milestone
@@ -1849,7 +2121,7 @@ rework in the wrong order:
 
 | call | answer | why |
 |---|---|---|
-| `06-comptime-dedup` before or after `01-checker`? | **After** 01's steps 4 and 5 | 01's step 4 waited the whole milestone for the four backends and is written; changing the snapshot layout underneath it is the worst of both. 06 stays a prerequisite for 01's steps 6–11 |
+| `06-comptime-dedup` before or after `01-checker`? | **After** 01's steps 4 and 5 — **moot, see the correction below** | 01's step 4 waited the whole milestone for the four backends and is written; changing the snapshot layout underneath it is the worst of both. 06 stays a prerequisite for 01's steps 6–11 |
 | When do 13's halves 2–3 run? | **Now**, straight after half 1 | They own both emitters wholesale and re-record ≈318 cells — and fronts 02 and 03 have nothing actionable left (everything behind 01 or 13), so nothing is stalled |
 | Does `14-comptime-on-beam` step 3 happen? | **Deferred until after 13** | Its blocker is measured: the *typed* beam backend already fails the case the untyped mode exists for, and 13 is what fixes identity on beam |
 | beam's BR5 (string templates at 50×) | **Out of 1.0.5**, its own spec with the measurement | Re-measured: `base64:encode` 0.113 → 5.722 µs/call (**50.6×**). The block is structural — nothing in this compiler parses Erlang, and the parked branch is a 836-line Zig lexer+parser that no longer builds |
@@ -1857,5 +2129,22 @@ rework in the wrong order:
 | The ~20 defects with an owner and no row | **Three this wave**, the rest a 1.0.6 list | `Type.assoc()`'s missing return type (front 01), `Shape.unit()` emitting `{unit}` (02/13), and beam swallowing `.length` on an index receiver (03). The first reproduces inside one module; the third is silent with exit 0 |
 
 **Blocks:** nothing — this *is* the schedule the remaining fronts are read against, and it supersedes the
-Order section of [`fronts.md`](./fronts.md) where the two differ.
+Order section of [`fronts.md`](./fronts.md) where the two differ, and
+[decision 4](#4-the-order-that-dissolves-the-circular-dependency--settled) where they differ about 06.
+
+**Correction, 2026-09-18: the first call is moot, and it was answered against a stale row.**
+`06-comptime-dedup`'s work is **already in the tree**. `snapshots/comptime/` holds exactly **338**
+`.snap.md` files — the number `fronts.md` states as the front's *promise* — and the commit that did it is
+`579ab0d0`, *"refactor(comptime): one snapshot per test, not four byte-identical copies per slug"*, an
+ancestor of `feat` landed before this session. Front 13 met the same fact from the other side while
+re-deriving its step 0: it measured the corpus at 1 859 snapshots against its README's 2 573, for exactly
+this reason. So there is no snapshot layout left to change underneath 01's step 4, this row's *why* no
+longer describes anything, and — the half that matters for planning — **front 01's steps 6 to 11 are
+behind nothing.** Nothing else in this milestone should be sequenced behind 06; where a document still
+does (`fronts.md`'s 06 row and its conflict-matrix notes 2 and 13,
+[decision 4](#4-the-order-that-dissolves-the-circular-dependency--settled)'s order,
+[decision 50](#50-17-runs-steps-03b-in-this-milestone-steps-48-become-a-spec-for-the-next)'s measurement)
+it is reading a front that has already landed. What remains open is whether the front's *other* steps —
+the `id` field of [decision 19](#19-the-comptime-renderers-id-field) among them — are also in `579ab0d`;
+nobody has re-derived that, and it is the one thing left to check before the row is closed.
 
