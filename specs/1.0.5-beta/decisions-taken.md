@@ -70,10 +70,13 @@ number it is corrected in place, in brackets.
 | 44 | Is `optional<i32>` a valid spelling? | **(a)** — refused; `?T` is the only spelling |
 | 45 | Is a member access on a `?T` an error? | **(a)** — yes, naming `?.` |
 | 46 | What does `d["k"]` answer on a `Dict`? | **(a)** — the checker records the receiver, each backend routes to `lookup` |
-| [47](#47-absent-has-one-spelling-null) | Is an out-of-range read `undefined` or `null`? | **(a)** — one spelling of absent: `null`; three backends to move, and the read's *type* is [question 63](./decisions-pending.md#63-does-an-index-expression-answer-t-or-t) |
+| [47](#47-absent-has-one-spelling-null) | Is an out-of-range read `undefined` or `null`? | **(a)** — one spelling of absent: `null`; three backends to move, and the read's *type* is [decision 63](#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering) — `T`, with an absent key a **failure** |
 | 48 | Who teaches the formatter to print `var`? | **(a)** — a named carve-out of `format.zig` for `17`, in the same commit as the form |
 | 49 | When does `17` open? | **(a)** — after `01`'s step 4 is committed |
 | 50 | How much of `17` runs in 1.0.5-beta? | **(a)** — steps 0–3b; steps 4–8 become a spec for the milestone after `13` |
+| [67](#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it) | How strict, and may it be configurable? | **the most restrictive behaviour, and no configuration that bypasses it** — a standing principle: stricter side by default, exemptions **structural** and never a knob |
+| [63](#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering) | Does an index answer `T` or `?T`? | **(a)**, stricter than as written — `T`; `null` only where the value type is `?V`; otherwise an absent key **fails**. TypeScript's default on the typing side, deliberately not TypeScript at run time: **commonJS is the outlier** |
+| [66](#66-format---check-looks-at-the-whole-project--and-something-has-to-call-it) | Does `format --check` look at the whole tree? | **(a)** — every `.bp` and `.d.bp` of a project, gated on the parse defects, with `tests/language/reject/**` exempt; and it needs a **caller**, because no gate runs it today |
 
 ---
 
@@ -1293,6 +1296,14 @@ a correctness one. The second half of this decision stands and has been done: `1
 formatter, and [decision 61](#61-the-formatters-canonical-layout--four-rules) is the layout it stopped
 on.
 
+**Confirmed rather than reopened, 2026-09-19 by
+[decision 66](#66-format---check-looks-at-the-whole-project--and-something-has-to-call-it).** Widening the
+scan grants `tests/language/reject/**` an exemption, and it is deliberately **not** either mechanism this
+decision refused: the runner knows what that directory is, nothing declares the exemption and nothing opts
+into it. `format_cmd.zig` still gets no skip list — under
+[decision 67](#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it) that absence is a
+property to keep, not the gap this decision measured it as.
+
 ---
 
 ## 36. Does `..` exclude its end **in a pattern**?
@@ -1695,6 +1706,10 @@ it; a program that cannot run on two of four targets is the form being unusable,
 not a polish row beside decision 30's index — it is what makes `d["k"]` execute at all outside commonJS.
 And it is one more instance of the pattern the `.length` paragraph above names: what inference never
 recorded, each backend answers its own way.
+[Decision 63](#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering) then says what the route
+answers: the index consults `lookup` and **fails** on its empty answer, unless the declared value type is
+optional, in which case it returns it. So the arm this decision asks for is a lookup *and* a check, on all
+four backends.
 
 ---
 
@@ -1719,7 +1734,8 @@ a slug that asserts a third word again. [Decision 52](#52-a-condition-loop-that-
 exhausted condition loop, where four snapshots pin the current text. Those are rows under this decision,
 one per backend, and `decision-8 §7` names neither word. What is **not** settled here is the *type* of
 an out-of-range read — `T` or `?T` — which is
-[question 63](./decisions-pending.md#63-does-an-index-expression-answer-t-or-t).
+[decision 63](#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering), answered (a) with a
+rider: `T`, and an absent key fails rather than answering either word.
 
 ---
 
@@ -2191,3 +2207,151 @@ it is reading a front that has already landed. What remains open is whether the 
 the `id` field of [decision 19](#19-the-comptime-renderers-id-field) among them — are also in `579ab0d`;
 nobody has re-derived that, and it is the one thing left to check before the row is closed.
 
+---
+
+## 67. The most restrictive behaviour, and no configuration that bypasses it
+
+**Decided 2026-09-19 by the maintainer, as a standing principle rather than a row:** *"eu gosto de que seja
+sempre o mais restritivo possível e sem configuração para burlar isso"* — always the most restrictive
+behaviour available, and **no configuration through which anyone can get around it**.
+
+**What prompted it** belongs in the record, because it is the clearest example there is. Answering
+[question 63](#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering) he compared with
+TypeScript, where the strict index check *exists* and is called `noUncheckedIndexedAccess` — a **flag**, off
+by default, so the default lies: `const v: number = d["k"]` compiles and `v` can be `undefined`. The check
+is not missing there; it is optional, which under this principle amounts to the same thing, because the
+shape everyone actually gets is the loose one.
+
+**What it means for a question.** Where the options offer *refuse* against *accept*, or *fail* against
+*warn*, the recommendation defaults to the stricter side unless the strict side would have to invent new
+semantics in order to exist. A front writing an option list writes that default into it rather than
+discovering it here. And where an exemption cannot be avoided it is **structural** — a directory whose
+meaning the tool knows, a form the grammar does not admit — and never a knob: a skip list, a per-file pragma
+or an environment variable is precisely the configuration this principle refuses, because an exemption with
+a switch on it travels to wherever someone finds it convenient.
+
+**What it reinforces.** The no-`--no-verify` rule, from the other side: the gate is not skipped, and now it
+is not loosened either. And it rules a whole shape of answer out in advance — "keep the strict behaviour and
+add a flag for the people it inconveniences" is not an answer this record will recommend.
+
+**Consequences already recorded.** It is why
+[decision 63](#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering) departs from TypeScript
+at run time; why
+[decision 66](#66-format---check-looks-at-the-whole-project--and-something-has-to-call-it)'s `reject/**`
+exemption has to be structural and `format_cmd.zig` must **not** grow the skip list it currently lacks; why
+option (b) of
+[question 64](./decisions-pending.md#64-how-does-beammemorys-layer-2-reach-layer-1-when-the-erlang-backend-emits-no-wrapper)
+is out, emitting `erlang:put/2` from `.zig` being exactly the bypass of a decision already taken; and why
+option (b) of [question 65](./decisions-pending.md#65-does-the-formatter-learn-to-measure-width) is the
+weakest of its three, because it keeps a predicate that answers wrongly for every caller as the permanent
+state.
+
+**Blocks:** nothing, and everything after it — this is a rule for how the remaining options are written and
+chosen, not a row a front implements.
+
+---
+
+## 63. An index answers `T`, and an absent key fails rather than answering
+
+**Decided 2026-09-19 by the maintainer: (a), with a rule that is stricter than (a) as it was written.** In
+his words: *"nesse caso só pode ser atribuído null se o V for ?V — deveria falhar se não for esse caso e a
+key nem foi definida. Veja como typescript se comporta."* Three rules:
+
+- an index answers the element or the value type, **`T`** — not `?T`, and not the `void` the checker
+  answers today;
+- **`null` may come out only where the declared value type is itself optional**: `Dict<string, ?i32>`
+  indexes to `?i32`, and that is the one shape in which absence is a value;
+- where the value type is **not** optional and the key or the index is absent, the program **fails**. It
+  does not answer `undefined` and it does not answer `null`.
+
+**TypeScript, measured because the answer cites it** (`tsc 5.9.3`):
+
+```
+# strict: true, no noUncheckedIndexedAccess     → both compile, exit 0
+const v: number = d["k"];      // d: Record<string, number>
+const e: number = xs[9];       // xs: number[]
+
+# strict: true + noUncheckedIndexedAccess: true → exit 2
+a.ts(3,7): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+a.ts(4,7): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+```
+
+So TypeScript's **default** is this question's option (a) and its opt-in flag is option (b): on the typing
+side the answer is TS-default-shaped, `at` returning an optional stays the different feature decision 30
+argued it was, and no line in `libs/std`, `examples/**` or the five libraries grows a `?.`. **The rider
+departs from TypeScript at run time, on purpose, and that is
+[decision 67](#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it) in action.** TS's
+default answers `undefined` and says nothing — the hole option (a) is otherwise accepted with — and its
+strict form is a *flag*, which 67 counts as not having it. This closes the hole instead: the type is `T`
+because the ordinary case is a key that is there, and the extraordinary case is a *failure* rather than a
+value the type does not describe.
+
+**What it costs, and it inverts who owes the work.** Measured 2026-09-19, twice, on a dict that **holds**
+the key — the outputs in full are under [decision 46](#46-dk-on-a-dict-routes-to-lookup):
+
+| backend | today | what it owes |
+|---|---|---|
+| commonJS | `undefined`, silently | **the outlier.** It must start failing — the only backend whose current behaviour this decision rules out entirely |
+| erlang | the node dies: `{bp_unsupported_index, #{pairs => [{<<"k">>,1}]}, <<"k">>}` thrown from `__bp_index/2` | closest to intent, and still wrong: a crash during boot is not a **located** failure |
+| wasm | `unreachable` trap | in between — it stops, with nothing to read |
+
+Three per-backend rows, then, plus the checker row that types the index `T` (item 2 of front 15's handover,
+`ast.zig:1734`) and [decision 46](#46-dk-on-a-dict-routes-to-lookup)'s `lookup` route, which this answer
+turns from a neighbouring row into a **prerequisite**: a dict index has to consult `lookup` *and* fail on
+its empty answer, unless the value type is optional, in which case it returns it.
+
+**What it does not touch.** [Decision 47](#47-absent-has-one-spelling-null) stands where it applies: `at`
+answers `null`, and so does an index whose value type is `?T`. What 63 removes is `null` as the answer to an
+index whose type is *not* optional. And front 12's cell
+`index_an_index_past_the_end_answers_zero` now needs a third rewrite — its slug asserts `zero`, its text
+asserts `undefined`, and the answer is a failure on all four backends.
+
+**Blocks:** `01-checker`'s `xs[0]` typing row and, through it, the index lowering in all four backends; the
+three per-backend rows above; the slug and the expected text of
+`index_an_index_past_the_end_answers_zero`; and the three rows under decision 47.
+
+---
+
+## 66. `format --check` looks at the whole project — and something has to call it
+
+**Decided 2026-09-19 by the maintainer: (a).** The scan widens to every `.bp` **and** `.d.bp` of a project,
+gated on the parse defects, with a **declared exemption for `tests/language/reject/**`** — a corpus whose
+purpose is to be refused, and the one place where a red is the fixture working.
+
+**And the exemption is structural, by
+[decision 67](#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it): the runner knows
+what that directory is, and `format_cmd.zig` does not grow a skip list.** This inverts the finding front 16
+recorded at its step 7. "There is no exemption mechanism today — `format_cmd.zig` takes either an explicit
+file list or every `src/**.bp` the scanner names, with no skip list" was written as a gap to be filled; it
+is a **constraint to preserve**. `reject/**` is exempt because of what it *is*, one directory the tool
+recognises by name, and not because a configuration file says so — a knob would be the bypass 67 refuses,
+and the first file anyone added to it would be a file someone did not want to format.
+
+**This does not reopen [decision 34](#34-the-format---check-exemption-does-not-exist); it confirms it.** 34
+refused an exemption *mechanism* — a `botopink.json` key (its option (a)) and a marker comment in the file
+(its (b)) — and took (c), no mechanism at all, against its own recommendation. That is decision 67 before 67
+was written down. A structural `reject/**` arm is neither of the options 34 refused: no project declares it,
+nothing opts into it, and emilia's `tokens.bp` — the file 34 was about — stays formatted like every other.
+
+**Two measurements the decision carries with it, because without them widening the scan changes nothing.**
+
+**Fourteen of the twenty-seven directories that carry a `botopink.json` are red today, over 18 files, and
+not one of them for a `test/` or a `.d.bp` reason** — every one is inside that project's own `src/**`. Nine
+are outside the compiler: `examples/stdlib-tour`, `emilia/examples/emilia-card`,
+`erika/examples/erika-linq`, `jhonstart/examples/{jhonstart-counter,jhonstart-html,jhonstart-todo}` and the
+three `tests/language/modules/*` cells; five are fixtures under `modules/compiler-cli/tests/**`. So the
+third axis of scope — the **nested project** — is where the drift actually collected, and it contradicts
+`modules/compiler-core/src/format/AGENTS.md:111`. The five libraries' own `src/**` stay clean, which is why
+this was invisible: the check was run per library and the rot is in the projects nested inside them.
+
+**And no gate anywhere calls `format --check`.** `scripts/gate.sh` runs `zig fmt --check` over staged
+`.zig` and nothing else; `scripts/git-hooks/pre-commit` names neither `format` nor `fmt`; none of the three
+`.github/workflows/*.yml` does either. A widened scan that nothing invokes is a wider silence, so this
+decision is two changes and not one: the scan's scope, and a caller for it.
+
+**Blocks:** the gate itself (front 09's step 1) and the structural `reject/**` arm in `format_cmd.zig`,
+which is [`10-cli-residuals`](./10-cli-residuals/README.md)'s file — an arm, not a mechanism. Behind the two
+parse defects:
+`libs/std/src/builtins.d.bp`'s `await` (front 01's step 11 / front 08) and the trailing lambda's one-line
+body (front 15's parser surface, and the three `examples/jhonstart-app` files with it). And the three
+`tests/language/modules/*` cells are front 12's, so widening hands a row to a front that had none.

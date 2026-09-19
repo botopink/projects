@@ -1,95 +1,32 @@
 # Decisions the maintainer owes — 1.0.5-beta
 
-**Four open — 63, 64, 65 and 66**, all written below: 63 by the decision-record audit, 64 and 66 by
-[`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) — one while landing `libs/std/src/beam.bp`,
-the other while reformatting the six trees — and 65 by [`16-formatter`](./16-formatter/README.md) while
-landing [decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules)'s four rules.
-Every question before them — 38 to 62 — is answered and recorded in
-[`decisions-taken.md`](./decisions-taken.md), which is the record the fronts implement against: 38 to 47
-were answered on 2026-09-18 together with four the same pass raised and answered (48, 49, 50, 51), and 52
-to 62 followed within the day, several of them within hours of being written — among them the three that
-were open when this header last counted them, 53 opened by `08-hygiene`, 55 by `03-beam` and 56 by
-`10-cli-residuals`. What is left after those four is the list of defects with an owner and no row, kept so
-they are not re-discovered; decision 62 says which three of them are this wave's. None of the four open
-ones is a defect with an owner either: 63 and 65 are calls of the class decision 61 was — one about what a
-form *means* on four backends, one about how every library *looks* — 64 is a mechanism
+**Two open — 64 and 65**, both written below, and both opened 2026-09-18 by the front that met them: 64 by
+[`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) while landing `libs/std/src/beam.bp`, 65 by
+[`16-formatter`](./16-formatter/README.md) while landing
+[decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules)'s four rules. **63 and 66
+were answered 2026-09-19** and have moved to [`decisions-taken.md`](./decisions-taken.md) with their
+evidence: 63 as
+[an index answers `T`, and an absent key fails](./decisions-taken.md#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering),
+66 as
+[`format --check` looks at the whole project](./decisions-taken.md#66-format---check-looks-at-the-whole-project--and-something-has-to-call-it);
+the same message raised
+[decision 67](./decisions-taken.md#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it),
+the standing principle every option list from here is written against — the most restrictive behaviour, and
+no configuration that bypasses it. Every question before the two — 38 to 63, and 66 — is answered and
+recorded there, which is the record the fronts implement against: 38 to 47 were answered on 2026-09-18
+together with four the same pass raised and answered (48, 49, 50, 51), and 52 to 62 followed within the day,
+several of them within hours of being written — among them the three that were open when this header last
+counted them, 53 opened by `08-hygiene`, 55 by `03-beam` and 56 by `10-cli-residuals`. What is left after
+the two is the list of defects with an owner and no row, kept so they are not re-discovered; decision 62
+says which three of them are this wave's. Neither of the two is a defect with an owner: 64 is a mechanism
 [decision 43](./decisions-taken.md#43-beammemory-lives-in-two-layers--and-off-the-beam-the-annotation-is-a-no-op-while-the-module-is-an-error)
-took without naming its dependency, and 66 is the scope of a gate.
+took without naming its dependency, and 65 is how every library *looks* — a call of the class decision 61
+was.
 
 **53 and 55 both changed after they were opened**, and the new evidence is in their sections: Zig was
 measured (it has *both* spellings, in different positions, so the compiler is the Zig-consistent side and
 decisions 20/36 are not), and `yield` beside `break` in a collection loop was measured on all four
 backends (four different answers, three of them order-dependent).
-
----
-
-## 63. Does an index expression answer `T` or `?T`?
-
-**Measured.** [Decision 30](./decisions-taken.md#30-is-there-an-index-expression) granted `xs[0]` in every position
-and [decision 47](./decisions-taken.md#47-absent-has-one-spelling-null) settled the *spelling* of absence (`null`),
-but neither says what an index **answers**, and the two documents that name the gap both leave it. Front
-15's handover to [`01-checker`](./01-checker/README.md) says it in as many words — inference must type
-`xs[0]` by the receiver, "the element type for an array, the value type for a dict, a character for a
-string, the member type for a tuple with a constant index — **decide whether the answer is `T` or `?T`**"
-— with `ast.zig:1734` assigning the typing to that front; today the checker types it `void`, so
-`val first: string = xs[0];` reds with *expected string, got void*. At run time the four backends already
-disagree about the out-of-range case: front 12's cell `index_an_index_past_the_end_answers_zero` answers
-`undefined` on three backends and `0` on wasm — a third word again, under a slug that names a fourth.
-[Decision 46](./decisions-taken.md#46-dk-on-a-dict-routes-to-lookup) settles the *route* of a dict index (`lookup`)
-and not its type, and a dict is the one receiver whose natural answer is already optional.
-
-**Options.** **(a) `T`.** An index answers the element type; an out-of-range read is a run-time matter and
-each backend answers decision 47's `null` there, unchecked — the shape C and JavaScript have, and the only
-one in which `rows[0].name` and `d["k"].name` read as they look. **(b) `?T`.** An index answers an
-optional everywhere, so an out-of-range read is *typed*: by
-[decision 45](./decisions-taken.md) every `xs[0].field` becomes the error naming `?.`, and every index written in the
-ecosystem grows a `?.` or an unwrap. **(c) By receiver:** `T` for an array, a tuple and a string, `?T` for
-a `Dict` — because a missing key is a dict's ordinary case and a missing element is an array's bug.
-
-**Ecosystem evidence, not only a unit test** (front 09, while reformatting): `libs/std/src/querystring.bp:38`
-carried a call that an *older* formatter had broken over three lines, and **both** the pre- and
-post-decision-61 formatters join it back into **95 columns** against `LINE_WIDTH = 80`. A broken `fits`
-does not only fail to break a line — it un-breaks one that was already broken.
-
-**Recommendation: (c).** It is the only one that keeps the decisions already taken: `at` returning an
-optional stays a *different feature* from indexing, which is decision 30's own argument for adding the
-form; decision 46's `lookup` keeps the type it has; and no line in `libs/std`, `examples/**` or the five
-libraries grows a `?.`. (b) makes decision 45 fire on `rows[0].name`, which is among the most ordinary
-lines the language has, and (a) gives `d["k"]` a type that claims the key is always there. The cost of (c)
-is that the answer is receiver-dependent — which decision 46 has already made the index anyway: the
-checker records the receiver kind at the site.
-
-**Blocks.** `01-checker`'s `xs[0]` typing row (item 2 of front 15's handover) and, through it, the index
-lowering in all four backends; the expected text **and the slug** of
-`index_an_index_past_the_end_answers_zero`; and the three per-backend rows under decision 47.
-
-**Correction, 2026-09-19, measured twice on a rebuilt binary.** Two things this question leans on are
-larger than it says, and both make the answer more urgent rather than different.
-
-**Decision 46 measured one backend of three, so "a dict index answers `undefined`" is commonJS's answer
-alone.** On a `Dict` that **holds** the key, `@print(d["k"])` answers `undefined` on commonJS, brings the
-node down on erlang (`{bp_unsupported_index, #{pairs => [{<<"k">>,1}]}, <<"k">>}` thrown from
-`__bp_index/2`) and **traps** on wasm (`wasm trap: wasm 'unreachable' instruction executed`) — the three
-outputs are written out under
-[decision 46](./decisions-taken.md#46-dk-on-a-dict-routes-to-lookup). That changes what option (a) is
-being weighed against: the sentence above, that (a) "gives `d["k"]` a type that claims the key is always
-there", is a criticism of a backend that *answers*. On two of four targets there is no run-time answer to
-claim anything about, so 46's `lookup` route is a prerequisite of whichever of (a), (b) and (c) is chosen,
-not a neighbouring row — and (c), which gives a dict index `?T`, is the only option whose *type* matches
-what a `lookup` returns.
-
-**And the index's missing type loses its location in arithmetic position.** `val n = xs[0] + 1;` answers
-
-```
-error: type mismatch: expected void, got i32
- --> src/main.bp
-```
-
-— no line, no column, just the file — while the annotated case (`val first: string = xs[0];`) does carry
-one (`3:25`, the index itself). So the cost of leaving `xs[0]` typed `void` is not only a wrong word in a
-diagnostic: in the position an index most often appears in, the diagnostic cannot be navigated to, and an
-editor has nothing to underline. That belongs to this question's cost rather than to `01-checker`'s
-error-location step, because the location is missing precisely where the *type* is.
 
 ---
 
@@ -151,6 +88,34 @@ nothing:
   breaking. Option (b) is the one that would fail the fourth bullet, and naming the right bullet is what
   makes that legible.
 
+**And option (b) is now out on principle, not only on preference.**
+[Decision 67](./decisions-taken.md#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it)
+— the most restrictive behaviour, and no configuration that bypasses it — reads on this question directly:
+emitting `erlang:put/2` and the ETS calls from `.zig` is the bypass of a decision already taken, which is
+the shape 67 refuses. The live choice is (a) against (c), and that is a question of *when* the wrapper row
+runs rather than of whether layer 1 is the mechanism.
+
+**Sub-question, raised by the maintainer 2026-09-19 and deliberately not answered here: does
+`libs/std/src/beam.bp` need to be a module separate from `libs/std/src/erlang.bp` at all?** In his words:
+*"não sei se precisa de um erlang e um beam separado."* It is a question about this front's shape rather than
+about the backend gap, and every measurement points the same way: `@External.Erlang` covers **both** BEAM
+targets (`codegen.zig:74-77` maps `.erlang` and `.beam` to the one lookup name), the missing wrapper is
+missing in the two files identically, and the program measured above dies in `std@erlang:self()` **before it
+ever reaches `pdPut`** — so `beam.bp` is not the module with the problem, it is the module that found it.
+
+- **One module** costs one wrapper row and gives an author one import and one place to add a host primitive.
+- **Two modules** keep the memory vocabulary — ten primitives over three storage families, each with a
+  policy layer above it — separable from the general BIF table, which is what lets `@BeamMemory`'s layer 1
+  be read as a unit and what makes `libs/std/src/beam.bp`'s header the design document it currently is.
+- **The strongest fact either way, and it cuts against merging:** `erlang.bp` is **read by the emitter at
+  compile time** (`codegen/erlang.zig:184-206`) to build the auto-imported BIF table, so it is *compiler
+  input* and not only a declaration list. Merging ten primitives that nothing auto-imports into it makes the
+  emitter read declarations that do not concern it, and makes the auto-import table's contents a question of
+  which memory primitive someone added last.
+
+It does not block the wrapper row either way: the wrapper is owed **per host-bound `declare fn`**, not per
+module.
+
 ---
 
 ## 65. Does the formatter learn to measure width?
@@ -166,6 +131,13 @@ the trailing ` {` or `;` counts, the boundary being exact at 80/81. The finding 
 of the rules that *did* land is the scale to read this against: **607 lines** across the six trees (erika
 165, `libs/std` 160, rakun 139, jhonstart 106, onze 37, emilia 0), rule 1 being 428 of them and rule 4
 123, with 48 of `libs/std`'s pre-existing because that tree had never been formatted.
+
+**Ecosystem evidence, not only a unit test** (front 09, while reformatting; recorded under question 63 until
+that question was answered and moved, because the evidence is this question's):
+`libs/std/src/querystring.bp:38` carried a call that an *older* formatter had broken over three lines, and
+**both** the pre- and post-decision-61 formatters join it back into **95 columns** against
+`LINE_WIDTH = 80`. A broken `fits` does not only fail to break a line — it un-breaks one that was already
+broken.
 
 **Options.** **(a) Fix `fits` to measure through `concat`, `nest` and `group`.** Every array literal,
 call, type union and comma list then starts breaking at `LINE_WIDTH`, at once — a canonical-form choice
@@ -188,8 +160,8 @@ and type union; and any future reformat of the six trees — each construct enab
 `09-ecosystem-residuals` commit.
 
 **Correction, 2026-09-19: the un-breaking has committed evidence, and it is sharper than the line this
-record cites.** The `libs/std/src/querystring.bp:38` measurement — a call joined back to 95 columns,
-recorded under [question 63](#63-does-an-index-expression-answer-t-or-t) — is one line. The better witness
+record cites.** The `libs/std/src/querystring.bp:38` measurement above — a call joined back to 95 columns —
+is one line. The better witness
 is `examples/erika-linq/src/main.bp`, which is committed, which `format --check` reds today, and which
 `botopink format` turns from six hand-broken lines
 
@@ -221,82 +193,24 @@ than against it — under (b) the list of constructs that un-break committed fil
 nobody has reached yet — and it supplies (c) with its first gate: the call, whose flat form is the one
 measured above.
 
----
+**Constraint, 2026-09-19, from the maintainer: the method chain's canonical form is decided, and the current
+output is wrong rather than wide.** Shown the erika-linq hybrid above, his words were *"essa formatação tá
+errada para esse caso, deveria manter"* — followed by the six hand-broken lines, **one call per line**. So
+the target shape is given and this question no longer decides it: a method chain the author broke per call
+stays broken per call. What that does to each option is the same in kind and different in cost — under (a)
+the chain comes out that way the moment `fits` measures; under (b) the chain is the next `widthChoice`;
+under (c) it is the **first** construct enabled, with its expected text already written. What remains open is
+exactly the predicate and the staging — `fits` measuring through `concat`/`nest`/`group`, and whether every
+existing `group` is pinned flat while constructs are enabled one at a time — and not the chain's layout.
 
-## 66. Does `format --check` look at the whole tree?
-
-**Measured** by [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md) while reformatting the six
-trees for [decision 61](./decisions-taken.md#61-the-formatters-canonical-layout--four-rules). `format --check`'s
-default scan is `src/**` minus `.d.bp`, **and that is exactly where the rot collects**: 40 of `libs/std`'s
-48 pre-existing out-of-form lines were in places it never looks — 32 in `test/` and 8 in
-`builtins_fns.d.bp` — which is how they survived a whole milestone with the gate green. And it is not
-historical: `jhonstart/test/html_test.bp` is out of form **today** while `format --check` reports clean.
-
-**Options.** **(a) Widen the scan to every `.bp` and `.d.bp` in a project**, with the two files that cannot
-parse handled explicitly: `libs/std/src/builtins.d.bp` (`fn await(…)` — `await` is a keyword) and the three
-`examples/jhonstart-app` files whose `Link("/posts/1") { "first post" }` a trailing lambda's one-line body
-refuses. Both are recorded in this file already. **(b) Widen it to `test/**` only**, since that is where
-40 of the 48 were, and leave `.d.bp` out on the grounds that nothing compiles them. **(c) Leave the scan
-and write the convention down** — which is what front 09 did in `libs/std/AGENTS.md` for now.
-
-**Recommendation: (a), gated on the two parse defects.** A formatter gate that does not look at a
-directory is a gate that guarantees nothing about it, and the measurement is that the unwatched
-directories are precisely the ones that drift. But (a) cannot land before the two files parse — a widened
-scan reds on them — so the honest order is: fix the trailing-lambda body and `await`, then widen. (b) buys
-most of the coverage for none of that work and is the fallback if either parse defect stalls.
-
-**Blocks.** Nothing today. It decides whether `libs/std`'s convention note becomes a rule the tooling
-enforces, and it is the second time in this milestone that a gate's *scope* — not its logic — is what let
-something through (`beam_export_audit.sh` was the first: it cannot find a shape no snapshot has).
-
-**Correction, 2026-09-19, measured across every `.bp` in the seven repositories twice: the question is
-larger than the measurement it was opened with, in four ways, and two of them change option (a).**
-
-- **There is a third axis of scope, and it holds most of the drift: the nested project.**
-  `format --check` fails in **14 of the 27 directories that carry a `botopink.json`**, over **18 files,
-  every one of them inside that project's own `src/**`**. So this is neither a `test/**` nor a `.d.bp`
-  exemption — it is `src/**`, in a project nobody runs the check in, which no option above covers. Nine of
-  the fourteen are outside the compiler: `examples/stdlib-tour`, `emilia/examples/emilia-card`,
-  `erika/examples/erika-linq`, `jhonstart/examples/{jhonstart-counter,jhonstart-html,jhonstart-todo}` and
-  the three `tests/language/modules/*` cells (`mod_tree` alone contributes four files); five are fixtures
-  under `modules/compiler-cli/tests/**` — `backend_exec/numeric`, `backend_exec/records`,
-  `mutual_recursion`, `test_tooling/pass` and `test_tooling/fail`. It also contradicts
-  `modules/compiler-core/src/format/AGENTS.md:111`. Two things it does **not** contradict: each library's
-  own `src/**` is still clean (the drift is in the projects *nested inside* the repositories, not in the
-  five libraries front 16's row calls clean), and the three `tests/language/modules/*` cells are front
-  12's files rather than 09's — so widening the scan hands rows to a third front.
-- **There is no automatic `format --check` gate for `.bp` anywhere**, which makes this question not only
-  *what does the scan cover* but *who runs it at all*. `scripts/gate.sh` runs `zig fmt --check` over
-  staged `.zig` files and nothing else; `scripts/git-hooks/pre-commit` names neither `format` nor `fmt`;
-  none of the three `.github/workflows/*.yml` does either. Every number in this question was produced by
-  hand, and nothing in the repository would have produced any of them.
-- **A repository-wide scan reds on 12 files that do not parse, not 4 — and 6 of them exist in order not
-  to parse.** The four already recorded are `libs/std/src/builtins.d.bp` and the three
-  `examples/jhonstart-app` files, which option (a) above counts as *two* because they are two defects.
-  Beyond them: six `tests/language/reject/**` cells (`case_bare_name_arm`, `case_constant_pattern`,
-  `case_tuple_label`, `loop_while`, `two_effect_markers`, `bodyless_fn_no_return_type`),
-  `tests/language/run/optional_null_pattern.bp` —
-  [decision 54](./decisions-taken.md#54-a-t-is-matched-by-null-and-a-binder)'s form, which does not parse
-  — and `tests/language/test/case_arms.bp`, already carried by `expected-failures.txt`. So option (a)
-  needs an **exemption it does not currently mention**: `reject/**` is a corpus whose purpose is to be
-  refused, and a formatter gate that reds on it measures the fixtures instead of the tree. Front 16's step
-  7 measured the other half of that — **there is no exemption mechanism today**, `format_cmd.zig` taking
-  either an explicit file list or every `src/**.bp` the scanner names, with no skip list — and that file is
-  [`10-cli-residuals`](./10-cli-residuals/README.md)'s.
-- **And the worst answer in the set is a pass.** `jhonstart/examples/jhonstart-app` has no
-  `botopink.json` and no `src/`, so `format --check` there prints **zero bytes and exits 0** while three
-  of its four `.bp` files do not parse and the fourth is out of form — `main.bp` reports
-  `Formatted main.bp` and exit 1 the moment it is named. A vacuous pass is worse than a red: a red is a
-  row, and "clean" for a directory the tool never read is the failure this whole question is about, in its
-  purest form.
-
-What that does to the recommendation: its **order** survives — exempt and fix before widening, never the
-reverse — and its arithmetic does not. "Gated on the two parse defects" is now gated on two fixes (`await`,
-the trailing-lambda body), one exemption (`reject/**`), two files that are already declared failures
-(`optional_null_pattern.bp`, `case_arms.bp`), a scan that has to find a project with no manifest before any
-of it is reached, and a gate that has to exist at all before the scan's scope is worth deciding. (b) —
-`test/**` only — is no longer "most of the coverage": it reaches none of the 18 files above, all of which
-are in `src/**`.
+It also re-grades the finding. A formatter that joins a committed chain is not producing an unconventional
+layout that a maintainer may prefer differently; it is producing the **wrong** one, against a known target,
+in files that are committed. And
+[decision 67](./decisions-taken.md#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it)
+sharpens the ranking the recommendation already gave: under *the most restrictive behaviour, and no
+configuration that bypasses it*, **(b) is the weakest of the three** — it keeps a predicate that answers
+wrongly for every caller as the permanent state, with the `AGENTS.md` note standing in for the fix. (c)
+remains the recommendation and (a) its honest, worse-staged twin.
 
 ---
 
@@ -418,8 +332,9 @@ until a front claims them:
   names neither. Also `index_an_index_past_the_end_answers_zero` answers `undefined` on three backends
   and `0` on wasm. Those are rows under 47, not new questions — **the spelling is. The *type* of an
   out-of-range read is not settled by 46 and 47 together, and it is now
-  [question 63](#63-does-an-index-expression-answer-t-or-t); the cell's slug asserts a third answer
-  (`zero`) that no decision supports.**
+  [decision 63](./decisions-taken.md#63-an-index-answers-t-and-an-absent-key-fails-rather-than-answering) —
+  answered `T`, with an absent key a **failure** rather than either word, so the cell needs a third rewrite:
+  its slug asserts `zero`, its text asserts `undefined`, and the answer is that the program stops.**
 - **commonJS already answers §7's F2/F3** (front 05): a class instance carries its constructor's name, so
   `Point(x: 1, y: 2)`, `Shape.Square(side: 4)` and `Shape.Nothing` print correctly there — that backend
   needs no identity work from front 13 for the printed form; wasm, erlang and beam do.
@@ -488,7 +403,8 @@ until a front claims them:
   element name — so a fix verified against `Link(…) { … }` alone verifies one of the three.
   And the escape is worse than "it scans `src/**`": that directory has no `src/` and no `botopink.json`
   at all, so `format --check` there exits 0 having read nothing — recorded with
-  [question 66](#66-does-format---check-look-at-the-whole-tree).
+  [decision 66](./decisions-taken.md#66-format---check-looks-at-the-whole-project--and-something-has-to-call-it),
+  which answers (a) and widens the scan over it.
 - **`libs/std/src/builtins.d.bp:116` does not parse**: `fn await(self: Self) -> Result<T, E>;` — `await`
   is a keyword (front 16). Doc-only, so nothing compiles it today, but a repository-wide format or parse
   gate reds on it. Front 01's step 11 / front 08.
@@ -506,4 +422,6 @@ from the code writes it here rather than guessing, in the shape the others used:
 >
 > **Blocks.** The step, front or landed work that waits on the answer.
 
-Numbers are never reused: the next question added here is **67**.
+Numbers are never reused: the next question added here is **68** — 67 is the standing principle the
+maintainer raised with 63's answer, and it is in
+[`decisions-taken.md`](./decisions-taken.md#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it).
