@@ -63,6 +63,34 @@ checker records the receiver kind at the site.
 lowering in all four backends; the expected text **and the slug** of
 `index_an_index_past_the_end_answers_zero`; and the three per-backend rows under decision 47.
 
+**Correction, 2026-09-19, measured twice on a rebuilt binary.** Two things this question leans on are
+larger than it says, and both make the answer more urgent rather than different.
+
+**Decision 46 measured one backend of three, so "a dict index answers `undefined`" is commonJS's answer
+alone.** On a `Dict` that **holds** the key, `@print(d["k"])` answers `undefined` on commonJS, brings the
+node down on erlang (`{bp_unsupported_index, #{pairs => [{<<"k">>,1}]}, <<"k">>}` thrown from
+`__bp_index/2`) and **traps** on wasm (`wasm trap: wasm 'unreachable' instruction executed`) — the three
+outputs are written out under
+[decision 46](./decisions-taken.md#46-dk-on-a-dict-routes-to-lookup). That changes what option (a) is
+being weighed against: the sentence above, that (a) "gives `d["k"]` a type that claims the key is always
+there", is a criticism of a backend that *answers*. On two of four targets there is no run-time answer to
+claim anything about, so 46's `lookup` route is a prerequisite of whichever of (a), (b) and (c) is chosen,
+not a neighbouring row — and (c), which gives a dict index `?T`, is the only option whose *type* matches
+what a `lookup` returns.
+
+**And the index's missing type loses its location in arithmetic position.** `val n = xs[0] + 1;` answers
+
+```
+error: type mismatch: expected void, got i32
+ --> src/main.bp
+```
+
+— no line, no column, just the file — while the annotated case (`val first: string = xs[0];`) does carry
+one (`3:25`, the index itself). So the cost of leaving `xs[0]` typed `void` is not only a wrong word in a
+diagnostic: in the position an index most often appears in, the diagnostic cannot be navigated to, and an
+editor has nothing to underline. That belongs to this question's cost rather than to `01-checker`'s
+error-location step, because the location is missing precisely where the *type* is.
+
 ---
 
 ## 64. How does `@BeamMemory`'s layer 2 reach layer 1, when the erlang backend emits no wrapper?
@@ -100,6 +128,29 @@ unrunnable — the shape decision 50 rejected when it refused "steps 0–2 only"
 read/write lowering of its steps 4–5; and whether decision 43's "no line of `.zig` names ETS" survives
 contact with the backends.
 
+**Correction, 2026-09-19, re-measured after front 13's half 1 renamed the std atoms.** The finding holds
+exactly as stated — zero `-export`, zero function, `undef` at run time, no wrapper for any host-bound std
+`declare fn` — and three of the spellings it is written in are stale, so a reader who greps for them finds
+nothing:
+
+- **`out/erl/std@beam.erl`**, not `out/std/beam.erl`. **`-module(std@beam).`**, not `-module(beam).`.
+  **`std@beam:pdPut(T, T)`**, not `beam:pdPut(Slot, Slot)`. The half-1 rename is why: the std module's atom
+  now carries its package.
+- **"`-module(beam).` and nothing else" is wrong about the file**, name aside. It is **162 lines** — the
+  `-module` attribute, then 161 lines of `beam.bp`'s `////` header re-emitted as blank-separated `%%%`
+  comments. Nothing else *executable*, which is the substance; but the emitted header is also why the gap
+  is invisible in a listing, and why "and nothing else" should not be read as "a two-line file".
+- **`libs/std/src/beam.bp`'s own header carries the same three stale spellings**, in the paragraph
+  beginning *"One thing layer 2 cannot yet do through this module, measured"*. That file is
+  [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md)'s and not this question's to edit —
+  recorded here so whoever owns it next can re-spell them, since that header is where a reader of layer 1
+  meets this finding first.
+- **It is step 3b's *third* acceptance bullet that fails, not its fourth**, here and in the Blocks line
+  above: the third is the one ending *"and re-run under `erl`"*. The fourth — *"**Not** a `.zig` line"* —
+  is **satisfied**: layer 1 landed with no `.zig`, which is decision 43's mechanism holding rather than
+  breaking. Option (b) is the one that would fail the fourth bullet, and naming the right bullet is what
+  makes that legible.
+
 ---
 
 ## 65. Does the formatter learn to measure width?
@@ -136,6 +187,40 @@ decision 61's four rules were decided in the first place.
 and type union; and any future reformat of the six trees — each construct enabled is another
 `09-ecosystem-residuals` commit.
 
+**Correction, 2026-09-19: the un-breaking has committed evidence, and it is sharper than the line this
+record cites.** The `libs/std/src/querystring.bp:38` measurement — a call joined back to 95 columns,
+recorded under [question 63](#63-does-an-index-expression-answer-t-or-t) — is one line. The better witness
+is `examples/erika-linq/src/main.bp`, which is committed, which `format --check` reds today, and which
+`botopink format` turns from six hand-broken lines
+
+```botopink
+    return of(people)
+        .where({ p -> p.age >= 18 })
+        .orderBy({ p -> p.name })
+        .select({ p -> p.name })
+        .toArray()
+        .join(", ");
+```
+
+into an **82-column** hybrid — the whole chain joined back onto one line, one argument list pushed out to
+its own, and the result still two columns over `LINE_WIDTH = 80`:
+
+```botopink
+    return of(people).where({ p -> p.age >= 18 }).orderBy({ p -> p.name }).select(
+        { p -> p.name }
+    ).toArray().join(", ");
+```
+
+The same file emits **88** and **85** column lines by the same route (`…).toArray().fold(` and
+`…).toArray().join(`), from chains the author had broken one call per line. And in the same `botopink format`
+run a 90-column `fn` **signature** breaks one parameter per line — decision 61's rule 4, the construct that
+got a measured width — while a **call** carrying the same arguments is joined to **135** columns. That
+contrast is the sharpest statement of what `fits` does: the formatter breaks exactly where someone measured
+for it and joins everything else however long the line becomes. It argues for the recommendation rather
+than against it — under (b) the list of constructs that un-break committed files is the list of constructs
+nobody has reached yet — and it supplies (c) with its first gate: the call, whose flat form is the one
+measured above.
+
 ---
 
 ## 66. Does `format --check` look at the whole tree?
@@ -163,6 +248,55 @@ most of the coverage for none of that work and is the fallback if either parse d
 **Blocks.** Nothing today. It decides whether `libs/std`'s convention note becomes a rule the tooling
 enforces, and it is the second time in this milestone that a gate's *scope* — not its logic — is what let
 something through (`beam_export_audit.sh` was the first: it cannot find a shape no snapshot has).
+
+**Correction, 2026-09-19, measured across every `.bp` in the seven repositories twice: the question is
+larger than the measurement it was opened with, in four ways, and two of them change option (a).**
+
+- **There is a third axis of scope, and it holds most of the drift: the nested project.**
+  `format --check` fails in **14 of the 27 directories that carry a `botopink.json`**, over **18 files,
+  every one of them inside that project's own `src/**`**. So this is neither a `test/**` nor a `.d.bp`
+  exemption — it is `src/**`, in a project nobody runs the check in, which no option above covers. Nine of
+  the fourteen are outside the compiler: `examples/stdlib-tour`, `emilia/examples/emilia-card`,
+  `erika/examples/erika-linq`, `jhonstart/examples/{jhonstart-counter,jhonstart-html,jhonstart-todo}` and
+  the three `tests/language/modules/*` cells (`mod_tree` alone contributes four files); five are fixtures
+  under `modules/compiler-cli/tests/**` — `backend_exec/numeric`, `backend_exec/records`,
+  `mutual_recursion`, `test_tooling/pass` and `test_tooling/fail`. It also contradicts
+  `modules/compiler-core/src/format/AGENTS.md:111`. Two things it does **not** contradict: each library's
+  own `src/**` is still clean (the drift is in the projects *nested inside* the repositories, not in the
+  five libraries front 16's row calls clean), and the three `tests/language/modules/*` cells are front
+  12's files rather than 09's — so widening the scan hands rows to a third front.
+- **There is no automatic `format --check` gate for `.bp` anywhere**, which makes this question not only
+  *what does the scan cover* but *who runs it at all*. `scripts/gate.sh` runs `zig fmt --check` over
+  staged `.zig` files and nothing else; `scripts/git-hooks/pre-commit` names neither `format` nor `fmt`;
+  none of the three `.github/workflows/*.yml` does either. Every number in this question was produced by
+  hand, and nothing in the repository would have produced any of them.
+- **A repository-wide scan reds on 12 files that do not parse, not 4 — and 6 of them exist in order not
+  to parse.** The four already recorded are `libs/std/src/builtins.d.bp` and the three
+  `examples/jhonstart-app` files, which option (a) above counts as *two* because they are two defects.
+  Beyond them: six `tests/language/reject/**` cells (`case_bare_name_arm`, `case_constant_pattern`,
+  `case_tuple_label`, `loop_while`, `two_effect_markers`, `bodyless_fn_no_return_type`),
+  `tests/language/run/optional_null_pattern.bp` —
+  [decision 54](./decisions-taken.md#54-a-t-is-matched-by-null-and-a-binder)'s form, which does not parse
+  — and `tests/language/test/case_arms.bp`, already carried by `expected-failures.txt`. So option (a)
+  needs an **exemption it does not currently mention**: `reject/**` is a corpus whose purpose is to be
+  refused, and a formatter gate that reds on it measures the fixtures instead of the tree. Front 16's step
+  7 measured the other half of that — **there is no exemption mechanism today**, `format_cmd.zig` taking
+  either an explicit file list or every `src/**.bp` the scanner names, with no skip list — and that file is
+  [`10-cli-residuals`](./10-cli-residuals/README.md)'s.
+- **And the worst answer in the set is a pass.** `jhonstart/examples/jhonstart-app` has no
+  `botopink.json` and no `src/`, so `format --check` there prints **zero bytes and exits 0** while three
+  of its four `.bp` files do not parse and the fourth is out of form — `main.bp` reports
+  `Formatted main.bp` and exit 1 the moment it is named. A vacuous pass is worse than a red: a red is a
+  row, and "clean" for a directory the tool never read is the failure this whole question is about, in its
+  purest form.
+
+What that does to the recommendation: its **order** survives — exempt and fix before widening, never the
+reverse — and its arithmetic does not. "Gated on the two parse defects" is now gated on two fixes (`await`,
+the trailing-lambda body), one exemption (`reject/**`), two files that are already declared failures
+(`optional_null_pattern.bp`, `case_arms.bp`), a scan that has to find a project with no manifest before any
+of it is reached, and a gate that has to exist at all before the scan's scope is worth deciding. (b) —
+`test/**` only — is no longer "most of the coverage": it reaches none of the 18 files above, all of which
+are in `src/**`.
 
 ---
 
@@ -344,6 +478,17 @@ until a front claims them:
   `format --check` today only because it scans `src/**`. It is why rule 3 of decision 61 stops at
   `arrow_when_empty`. Owners: the form is the parser surface, front 15's ground; the three files are
   front 09's or front 08's.
+  **Correction, 2026-09-19, measured file by file:** the three fail at **three different sites**, not all
+  at `Link("/posts/1") { "first post" }` — `app/layout.bp:12:28` on `h1 { "my blog" },`,
+  `app/page.bp:12:54` on `li { Link("/posts/1") { "first post" } },`, where column 54 is the **inner**
+  lambda and not the `Link` call, and `app/posts/[id]/page.bp:32:29` on `h1 { post.title },`. The form is
+  one form and the diagnostic is the same in all three (*unexpected `}`*, with the missing-`;` hint), so
+  the defect does not multiply; what the single example understates is that only one of the three sites is
+  a trailing lambda on a call **with arguments**, and the other two are a trailing lambda on a bare
+  element name — so a fix verified against `Link(…) { … }` alone verifies one of the three.
+  And the escape is worse than "it scans `src/**`": that directory has no `src/` and no `botopink.json`
+  at all, so `format --check` there exits 0 having read nothing — recorded with
+  [question 66](#66-does-format---check-look-at-the-whole-tree).
 - **`libs/std/src/builtins.d.bp:116` does not parse**: `fn await(self: Self) -> Result<T, E>;` — `await`
   is a keyword (front 16). Doc-only, so nothing compiles it today, but a repository-wide format or parse
   gate reds on it. Front 01's step 11 / front 08.

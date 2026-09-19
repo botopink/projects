@@ -1592,6 +1592,27 @@ an explicit type with its consistency model declared.
   because either this decision gains a dependency or its mechanism is reopened, and that is the
   maintainer's call.
 
+**Correction, 2026-09-19, re-measured after front 13's half 1 renamed the std atoms.** The substance of the
+second bullet is intact and unchanged — zero `-export`, zero function, `undef` at run time, and the erlang
+backend still emits no wrapper for a host-bound std `declare fn` — but three of its spellings are stale and
+one of its claims was never right as written:
+
+- The path is **`out/erl/std@beam.erl`**, not `out/std/beam.erl`. The module line is
+  **`-module(std@beam).`**, not `-module(beam).`. The emitted call is **`std@beam:pdPut(T, T)`**, not
+  `beam:pdPut(Slot, Slot)`.
+- **"`-module(beam).` and nothing else"** is wrong about the file even with the name corrected. It is
+  **162 lines**: the `-module` attribute, then 161 lines carrying `beam.bp`'s own `////` header re-emitted
+  as blank-separated `%%%` comments. Nothing else *executable*, which is the point the bullet makes; but a
+  reader who goes looking for a two-line file will not find one, and the emitted header is the reason the
+  gap is invisible in a listing.
+- **`libs/std/src/beam.bp`'s own header carries all three stale spellings**, in the paragraph beginning
+  *"One thing layer 2 cannot yet do through this module, measured"*. That file is
+  [`09-ecosystem-residuals`](./09-ecosystem-residuals/README.md)'s; whoever next opens it should re-spell
+  them there, because that header is where a reader of layer 1 meets this finding first.
+- And front 17's step 3b fails its **third** acceptance bullet, not its fourth. The third is the one
+  ending *"and re-run under `erl`"*; the fourth is *"**Not** a `.zig` line"*, which layer 1 **satisfies** —
+  `libs/std/src/beam.bp` landed with no `.zig` at all, which is this decision's own mechanism holding.
+
 ---
 
 ## 44. `optional<i32>` is not a valid spelling
@@ -1655,6 +1676,25 @@ asks for runs through `instanceLowerings.put`, and that fires only at **method-c
 `infer.zig`: there is no index or slice arm at all. So the beam `.length` defect — the third of the three
 [decision 62](#62-the-order-of-what-is-left-in-the-milestone) claims for this wave — is beam growing
 erlang's helper, and this decision is the checker growing an arm it does not have. Two rows, not one.
+
+**Correction, 2026-09-19, measured twice on a rebuilt binary: the paragraph above measured one backend of
+three, and "silently" is true of that one.** On a `Dict` that **holds** the key, `@print(d["k"])` answers:
+
+```
+commonJS: undefined
+erlang:   Runtime terminating during boot ({{bp_unsupported_index,#{pairs=>[{<<"k">>,1}]},<<"k">>},
+          [{main,'__bp_index',2,[{file,"out/erl/main.erl"},{line,16}]}, …]})
+wasm:     wasm trap: wasm `unreachable` instruction executed
+```
+
+erlang **brings the node down** — `__bp_index/2` has no map clause and falls through to a
+`bp_unsupported_index` throw — and wasm **traps** on an `unreachable`. Three answers, not one. It does not
+move the answer, which was already (a); it moves the *urgency*, and in the direction this decision's own
+text understates. A silent `undefined` on one backend is a wrong answer to fix when the checker reaches
+it; a program that cannot run on two of four targets is the form being unusable, so the `lookup` route is
+not a polish row beside decision 30's index — it is what makes `d["k"]` execute at all outside commonJS.
+And it is one more instance of the pattern the `.length` paragraph above names: what inference never
+recorded, each backend answers its own way.
 
 ---
 
