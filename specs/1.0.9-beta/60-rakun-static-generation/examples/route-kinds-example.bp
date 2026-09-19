@@ -1,0 +1,59 @@
+// Front 60 — Rakun Static Generation
+//
+// What this demonstrates: the boundary artifact. The route-kind blob is produced
+// on the server and read in the browser by front 27's prefetcher, so the parser
+// is one botopink function compiled for both targets. The last test pins the
+// default front 27 relies on when the blob has not arrived.
+//
+// BOTH HALVES: `writeKinds`, `parseKinds` and `routeKindOf` carry no host cell,
+// so this file compiles for erlang and for commonJS and the tests run on both.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/components/link#prefetch
+//   https://nextjs.org/docs/app/getting-started/linking-and-navigating
+
+import {RouteKind, writeKinds, parseKinds, routeKindOf} from "rakun";
+
+test "the kind blob round-trips" {
+    val kinds = [
+        #("/", RouteKind.Static),
+        #("/blog/[slug]", RouteKind.Static),
+        #("/search", RouteKind.Dynamic),
+    ];
+    val wire = writeKinds(kinds);
+    val back = parseKinds(wire);
+    val blank = #("", RouteKind.Dynamic);
+    val first = back.at(0).unwrapOr(blank);
+    val last = back.at(2).unwrapOr(blank);
+    assert back.length == 3;
+    assert first.0 == "/";
+    assert last.0 == "/search";
+    assert last.1 == RouteKind.Dynamic;
+}
+
+test "a recorded pattern answers its kind" {
+    val wire = writeKinds([
+        #("/blog/[slug]", RouteKind.Static),
+        #("/search", RouteKind.Dynamic),
+    ]);
+    val blog = routeKindOf(wire, "/blog/[slug]");
+    val search = routeKindOf(wire, "/search");
+    assert blog == RouteKind.Static;
+    assert search == RouteKind.Dynamic;
+}
+
+test "an absent blob answers Dynamic, which is the conservative default" {
+    val absent = routeKindOf("", "/blog/[slug]");
+    assert absent == RouteKind.Dynamic;
+}
+
+test "a malformed blob answers Dynamic and does not raise" {
+    val garbage = routeKindOf("not a blob at all", "/blog/[slug]");
+    assert garbage == RouteKind.Dynamic;
+}
+
+test "an unrecorded pattern answers Dynamic" {
+    val wire = writeKinds([#("/", RouteKind.Static)]);
+    val missing = routeKindOf(wire, "/nowhere");
+    assert missing == RouteKind.Dynamic;
+}

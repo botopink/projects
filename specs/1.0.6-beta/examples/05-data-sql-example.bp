@@ -1,0 +1,204 @@
+//// F05 — Data Access (SQL)
+////
+//// Este exemplo demonstra acesso a dados SQL com DataSource, SqlTemplate,
+//// @repository com @query, e @transactional.
+////
+//// Documentação Spring Boot:
+//// - DataSource: https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.datasource
+//// - JdbcTemplate: https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.jdbc
+//// - Spring Data JPA: https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.jpa-and-spring-data
+//// - @Transactional: https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.jpa-and-spring-data.transactions
+
+import {Rakun, App, Request, Response} from "rakun";
+import {service, repository, restController, route, getMapping, postMapping, deleteMapping, configuration, bean, value, query, transactional} from "rakun";
+import {DataSource, SqlTemplate, PostgresDataSource} from "rakun-data";
+
+// ── Configuration: DataSource ───────────────────────────────────────────────
+//// application.yaml:
+//// spring:
+////   datasource:
+////     url: "postgresql://localhost:5432/mydb"
+////     username: "admin"
+////     password: "secret"
+////     hikari:
+////       maximum-pool-size: 10
+////       minimum-idle: 5
+
+#[configuration]
+pub type DataSourceConfig(
+    #[value("spring.datasource.url")] url: string,
+    #[value("spring.datasource.username")] username: string,
+    #[value("spring.datasource.password")] password: string,
+) {
+    #[bean]
+    pub fn dataSource(self: Self) -> DataSource {
+        // Auto-detects driver from URL (postgresql://, mysql://)
+        // Creates connection pool (HikariCP equivalent)
+        return PostgresDataSource(
+            url: self.url,
+            username: self.username,
+            password: self.password,
+            poolSize: 10,
+        );
+    }
+}
+
+// ── Domain Model ────────────────────────────────────────────────────────────
+pub type User(
+    id: i32,
+    name: string,
+    email: string,
+    createdAt: string,
+)
+
+pub type Order(
+    id: i32,
+    userId: i32,
+    amount: i32,
+    status: string,
+)
+
+// ── Repository with @query ──────────────────────────────────────────────────
+#[repository]
+pub type UserRepository(template: SqlTemplate) {
+    #[query("SELECT id, name, email, created_at FROM users WHERE id = $1")]
+    pub fn findById(self: Self, id: i32) -> @Result<?User, string>;
+
+    #[query("SELECT id, name, email, created_at FROM users WHERE email = $1")]
+    pub fn findByEmail(self: Self, email: string) -> @Result<?User, string>;
+
+    #[query("SELECT id, name, email, created_at FROM users ORDER BY created_at DESC LIMIT $1")]
+    pub fn findRecent(self: Self, limit: i32) -> @Result<Array<User>, string>;
+
+    #[query("INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id, name, email, created_at")]
+    pub fn save(self: Self, name: string, email: string) -> @Result<User, string>;
+
+    #[query("UPDATE users SET name = $1, email = $2 WHERE id = $3")]
+    pub fn update(self: Self, name: string, email: string, id: i32) -> @Result<i32, string>;
+
+    #[query("DELETE FROM users WHERE id = $1")]
+    pub fn deleteById(self: Self, id: i32) -> @Result<i32, string>;
+}
+
+#[repository]
+pub type OrderRepository(template: SqlTemplate) {
+    #[query("SELECT id, user_id, amount, status FROM orders WHERE user_id = $1")]
+    pub fn findByUserId(self: Self, userId: i32) -> @Result<Array<Order>, string>;
+
+    #[query("INSERT INTO orders (user_id, amount, status) VALUES ($1, $2, 'pending') RETURNING id")]
+    pub fn create(self: Self, userId: i32, amount: i32) -> @Result<i32, string>;
+
+    #[query("UPDATE orders SET status = $1 WHERE id = $2")]
+    pub fn updateStatus(self: Self, status: string, id: i32) -> @Result<i32, string>;
+}
+
+// ── Service with @transactional ─────────────────────────────────────────────
+#[service]
+pub type UserService(repo: UserRepository) {
+    pub fn getUser(self: Self, id: i32) -> @Result<?User, string> {
+        return self.repo.findById(id);
+    }
+
+    pub fn listUsers(self: Self) -> @Result<Array<User>, string> {
+        return self.repo.findRecent(10);
+    }
+
+    #[transactional]
+    pub fn createUser(self: Self, name: string, email: string) -> @Result<User, string> {
+        // Both operations in same transaction
+        val user = self.repo.save(name, email);
+        // Could add audit log, send notification, etc.
+        return user;
+    }
+}
+
+#[service]
+pub type OrderService(userRepo: UserRepository, orderRepo: OrderRepository) {
+    #[transactional]
+    pub fn placeOrder(self: Self, userId: i32, amount: i32) -> @Result<i32, string> {
+        // Validate user exists (same transaction)
+        val user = self.userRepo.findById(userId);
+        match user {
+            @Ok(@Some(_)) => {
+                val orderId = self.orderRepo.create(userId, amount);
+                return orderId;
+            }
+            _ => return @Err("User not found"),
+        }
+    }
+
+    #[transactional]
+    pub fn confirmOrder(self: Self, orderId: i32) -> @Result<void, string> {
+        self.orderRepo.updateStatus("confirmed", orderId);
+        // Could also update inventory, send notification, etc.
+        return @Ok(());
+    }
+}
+
+// ── Controller ──────────────────────────────────────────────────────────────
+#[restController]
+#[route("/api")]
+pub type UserController(service: UserService) {
+    #[getMapping("/users/:id")]
+    pub fn getUser(self: Self, req: Request) -> Response {
+        val id = req.param("id");
+        val result = self.service.getUser(id);
+        return match result {
+            @Ok(@Some(user)) => Response.json(serialize(user)),
+            @Ok(@None) => Response.notFound(),
+            @Err(e) => Response.status(500).body(e),
+        };
+    }
+
+    #[postMapping("/users")]
+    pub fn createUser(self: Self, req: Request) -> Response {
+        val name = req.query("name");
+        val email = req.query("email");
+        val result = self.service.createUser(name, email);
+        return match result {
+            @Ok(user) => Response.created(serialize(user)),
+            @Err(e) => Response.status(500).body(e),
+        };
+    }
+}
+
+fn main() {
+    // DataSource:
+    // - Connection pool created at startup
+    // - Connections reused across requests
+    // - Configurable pool size, timeouts
+    //
+    // @query:
+    // - SQL with $1, $2 parameters (prevents SQL injection)
+    // - Return type mapped from Row to domain type
+    // - Works for SELECT, INSERT, UPDATE, DELETE
+    //
+    // @transactional:
+    // - Wraps method in database transaction
+    // - Success → COMMIT
+    // - Exception → ROLLBACK
+    // - Nested @transactional joins existing transaction
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+//// Testes:
+////
+//// test "DataSource connects to PostgreSQL" {
+////     val ds = PostgresDataSource(...);
+////     val conn = ds.getConnection();
+////     assert conn != null;
+//// }
+////
+//// test "@query executes SQL" {
+////     val repo = UserRepository(template);
+////     val user = repo.findById(1);
+////     assert user == @Ok(@Some(User(...)));
+//// }
+////
+//// test "@transactional commits on success" {
+////     // Transaction commits, data persisted
+//// }
+////
+//// test "@transactional rolls back on error" {
+////     // Exception thrown, transaction rolled back
+//// }

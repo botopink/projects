@@ -1,0 +1,81 @@
+// Front 27 — jhonstart-link · examples/post-list-links-example.bp
+//
+// A blog index. The two header links prefetch as usual; the two hundred rows of
+// the archive do not, because § 8 *Prefetching* says to switch prefetch off for
+// large lists — otherwise entering the viewport queues two hundred route
+// requests.
+//
+// The anchor itself is pure and renders during the SERVER pass (front 23), so
+// this file's assertions run on either target. The prefetching, the click
+// interception and the transition are the BROWSER half: they happen after
+// front 29's hydration entry calls `__jhLinkMount()`.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/components/link
+//   https://nextjs.org/docs/app/getting-started/linking-and-navigating
+
+import { Element, div, h1, ul, li, span, text, renderToString } from "jhonstart";
+import { Link, linkProps, withPrefetch, withClass, prefetchMode } from "jhonstart";
+import { nav } from "jhonstart";
+
+// `nav` is not one of the eight builders `element.bp` ships. It comes from the
+// element-surface front of track C (number allocated from 54 up).
+
+pub type Post(slug: string, title: string)
+
+// The header: two links, prefetch left on. These are the links a reader almost
+// always follows, so warming them is the right trade.
+fn header() -> Element {
+    return nav([
+        Link(withClass(linkProps("/"), "brand"), [text("botopink", attrs: [])]),
+        Link(linkProps("/blog"), [text("Blog", attrs: [])]),
+    ], attrs: [#("class", "site-header")]);
+}
+
+// One archive row: prefetch off. Two hundred of these in a viewport would queue
+// two hundred prefetches, which is the case the upstream doc names.
+fn archiveRow(post: Post) -> Element {
+    val props = withPrefetch(linkProps("/blog/" + post.slug), false);
+    return li([
+        Link(props, [text(post.title, attrs: [])]),
+    ], attrs: [#("class", "archive-row")]);
+}
+
+pub fn BlogIndex(posts: Array<Post>) -> Element {
+    return div([
+        header(),
+        h1([text("Archive", attrs: [])], attrs: []),
+        span([text(posts.length.toString() + " posts", attrs: [])], attrs: [#("class", "count")]),
+        ul(posts.map({ p -> archiveRow(p) }), attrs: [#("class", "archive")]),
+    ], attrs: [#("class", "page")]);
+}
+
+test "a header link renders the plain two-attribute anchor" {
+    val el = Link(linkProps("/blog"), [text("Blog", attrs: [])]);
+    assert renderToString(el) == "<a href=\"/blog\" data-jh-link=\"1\">Blog</a>";
+}
+
+test "an archive row opts out of prefetching" {
+    val row = archiveRow(Post(slug: "hello", title: "Hello"));
+    val markup = renderToString(row);
+    assert markup.contains("href=\"/blog/hello\"");
+    assert markup.contains("data-jh-prefetch=\"0\"");
+}
+
+test "the prefetch mode follows the route kind" {
+    assert prefetchMode("static", false, true) == "full";
+    assert prefetchMode("dynamic", true, true) == "partial";
+    assert prefetchMode("dynamic", false, true) == "skip";
+    assert prefetchMode("static", true, false) == "skip";
+}
+
+test "the index renders every row" {
+    val posts = [
+        Post(slug: "one", title: "First"),
+        Post(slug: "two", title: "Second"),
+    ];
+    val markup = renderToString(BlogIndex(posts));
+    assert markup.contains("2 posts");
+    assert markup.contains("/blog/one");
+    assert markup.contains("/blog/two");
+}

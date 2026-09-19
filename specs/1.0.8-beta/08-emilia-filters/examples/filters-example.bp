@@ -1,0 +1,276 @@
+// F08 — Filters Example
+// Demonstrates: blur, brightness, contrast, drop-shadow, grayscale,
+// hue-rotate, invert, saturate, sepia + backdrop-filter
+//
+// Docs: https://tailwindcss.com/docs/filter
+//       https://tailwindcss.com/docs/filter-blur
+//       https://tailwindcss.com/docs/filter-brightness
+//       https://tailwindcss.com/docs/filter-contrast
+//       https://tailwindcss.com/docs/filter-drop-shadow
+//       https://tailwindcss.com/docs/filter-grayscale
+//       https://tailwindcss.com/docs/filter-hue-rotate
+//       https://tailwindcss.com/docs/filter-invert
+//       https://tailwindcss.com/docs/filter-saturate
+//       https://tailwindcss.com/docs/filter-sepia
+//       https://tailwindcss.com/docs/backdrop-filter
+//       https://tailwindcss.com/docs/backdrop-filter-blur
+//       https://tailwindcss.com/docs/backdrop-filter-brightness
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// Filter blur
+val blurTokens: Token[] = [
+    .Filter.Blur.None,
+    .Filter.Blur.Xs,
+    .Filter.Blur.Sm,
+    .Filter.Blur.Md,
+    .Filter.Blur.Lg,
+    .Filter.Blur.Xl,
+    .Filter.Blur.X2xl,
+    .Filter.Blur.X3xl,
+];
+val blurStyles = emilia(blurTokens);
+
+// Filter brightness
+val brightnessTokens: Token[] = [
+    .Filter.Brightness.__0,
+    .Filter.Brightness.__50,
+    .Filter.Brightness.__75,
+    .Filter.Brightness.__90,
+    .Filter.Brightness.__100,
+    .Filter.Brightness.__110,
+    .Filter.Brightness.__125,
+    .Filter.Brightness.__150,
+    .Filter.Brightness.__200,
+];
+val brightnessStyles = emilia(brightnessTokens);
+
+// Filter contrast
+val contrastTokens: Token[] = [
+    .Filter.Contrast.__0,
+    .Filter.Contrast.__50,
+    .Filter.Contrast.__100,
+    .Filter.Contrast.__125,
+    .Filter.Contrast.__150,
+    .Filter.Contrast.__200,
+];
+val contrastStyles = emilia(contrastTokens);
+
+// Filter drop shadow
+val dropShadowTokens: Token[] = [
+    .Filter.DropShadow.None,
+    .Filter.DropShadow.Xs,
+    .Filter.DropShadow.Sm,
+    .Filter.DropShadow.Md,
+    .Filter.DropShadow.Lg,
+    .Filter.DropShadow.Xl,
+    .Filter.DropShadow.X2xl,
+];
+val dropShadowStyles = emilia(dropShadowTokens);
+
+// Filter grayscale
+val grayscaleTokens: Token[] = [
+    .Filter.Grayscale.__0,
+    .Filter.Grayscale.Full,
+];
+val grayscaleStyles = emilia(grayscaleTokens);
+
+// Filter hue-rotate
+val hueRotateTokens: Token[] = [
+    .Filter.HueRotate.__0,
+    .Filter.HueRotate.__15,
+    .Filter.HueRotate.__30,
+    .Filter.HueRotate.__60,
+    .Filter.HueRotate.__90,
+    .Filter.HueRotate.__180,
+];
+val hueRotateStyles = emilia(hueRotateTokens);
+
+// Filter invert
+val invertTokens: Token[] = [
+    .Filter.Invert.__0,
+    .Filter.Invert.Full,
+];
+val invertStyles = emilia(invertTokens);
+
+// Filter saturate
+val saturateTokens: Token[] = [
+    .Filter.Saturate.__0,
+    .Filter.Saturate.__50,
+    .Filter.Saturate.__100,
+    .Filter.Saturate.__150,
+    .Filter.Saturate.__200,
+];
+val saturateStyles = emilia(saturateTokens);
+
+// Filter sepia
+val sepiaTokens: Token[] = [
+    .Filter.Sepia.__0,
+    .Filter.Sepia.Full,
+];
+val sepiaStyles = emilia(sepiaTokens);
+
+// Backdrop filter blur
+val backdropBlurTokens: Token[] = [
+    .BackdropFilter.Blur.None,
+    .BackdropFilter.Blur.Xs,
+    .BackdropFilter.Blur.Sm,
+    .BackdropFilter.Blur.Md,
+    .BackdropFilter.Blur.Lg,
+    .BackdropFilter.Blur.Xl,
+    .BackdropFilter.Blur.X2xl,
+    .BackdropFilter.Blur.X3xl,
+];
+val backdropBlurStyles = emilia(backdropBlurTokens);
+
+// Backdrop filter brightness
+val backdropBrightnessTokens: Token[] = [
+    .BackdropFilter.Brightness.__50,
+    .BackdropFilter.Brightness.__100,
+    .BackdropFilter.Brightness.__150,
+];
+val backdropBrightnessStyles = emilia(backdropBrightnessTokens);
+
+// Backdrop filter contrast
+val backdropContrastTokens: Token[] = [
+    .BackdropFilter.Contrast.__50,
+    .BackdropFilter.Contrast.__100,
+    .BackdropFilter.Contrast.__150,
+];
+val backdropContrastStyles = emilia(backdropContrastTokens);
+
+// Backdrop filter grayscale
+val backdropGrayscaleTokens: Token[] = [
+    .BackdropFilter.Grayscale.__0,
+    .BackdropFilter.Grayscale.Full,
+];
+val backdropGrayscaleStyles = emilia(backdropGrayscaleTokens);
+
+// Backdrop filter opacity
+val backdropOpacityTokens: Token[] = [
+    .BackdropFilter.Opacity.__0,
+    .BackdropFilter.Opacity.__50,
+    .BackdropFilter.Opacity.__100,
+];
+val backdropOpacityStyles = emilia(backdropOpacityTokens);
+
+// Backdrop filter saturate
+val backdropSaturateTokens: Token[] = [
+    .BackdropFilter.Saturate.__50,
+    .BackdropFilter.Saturate.__100,
+    .BackdropFilter.Saturate.__200,
+];
+val backdropSaturateStyles = emilia(backdropSaturateTokens);
+
+// Backdrop filter sepia
+val backdropSepiaTokens: Token[] = [
+    .BackdropFilter.Sepia.__0,
+    .BackdropFilter.Sepia.Full,
+];
+val backdropSepiaStyles = emilia(backdropSepiaTokens);
+
+// Combined filter example (glass morphism)
+val glassTokens: Token[] = [
+    .BackdropFilter.Blur.Md,
+    .Bg.White,
+    .Effect.Opacity.__80,
+];
+val glassStyles = emilia(glassTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F08: Filters Example ===");
+    @print("Blur: " + blurStyles);
+    @print("Brightness: " + brightnessStyles);
+    @print("Contrast: " + contrastStyles);
+    @print("Drop Shadow: " + dropShadowStyles);
+    @print("Grayscale: " + grayscaleStyles);
+    @print("Hue Rotate: " + hueRotateStyles);
+    @print("Invert: " + invertStyles);
+    @print("Saturate: " + saturateStyles);
+    @print("Sepia: " + sepiaStyles);
+    @print("Backdrop Blur: " + backdropBlurStyles);
+    @print("Backdrop Brightness: " + backdropBrightnessStyles);
+    @print("Backdrop Contrast: " + backdropContrastStyles);
+    @print("Backdrop Grayscale: " + backdropGrayscaleStyles);
+    @print("Backdrop Opacity: " + backdropOpacityStyles);
+    @print("Backdrop Saturate: " + backdropSaturateStyles);
+    @print("Backdrop Sepia: " + backdropSepiaStyles);
+    @print("Glass: " + glassStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "blur-sm generates correct CSS" {
+    val tokens: Token[] = [.Filter.Blur.Sm];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("filter:blur(8px)") != -1;
+}
+
+test "blur-lg generates correct CSS" {
+    val tokens: Token[] = [.Filter.Blur.Lg];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("filter:blur(16px)") != -1;
+}
+
+test "brightness-50 generates correct CSS" {
+    val tokens: Token[] = [.Filter.Brightness.__50];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("filter:brightness(0.5)") != -1;
+}
+
+test "contrast-200 generates correct CSS" {
+    val tokens: Token[] = [.Filter.Contrast.__200];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("filter:contrast(2)") != -1;
+}
+
+test "grayscale-full generates correct CSS" {
+    val tokens: Token[] = [.Filter.Grayscale.Full];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("filter:grayscale(100%)") != -1;
+}
+
+test "hue-rotate-90 generates correct CSS" {
+    val tokens: Token[] = [.Filter.HueRotate.__90];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("filter:hue-rotate(90deg)") != -1;
+}
+
+test "invert-full generates correct CSS" {
+    val tokens: Token[] = [.Filter.Invert.Full];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("filter:invert(100%)") != -1;
+}
+
+test "saturate-150 generates correct CSS" {
+    val tokens: Token[] = [.Filter.Saturate.__150];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("filter:saturate(1.5)") != -1;
+}
+
+test "backdrop-blur-md generates correct CSS" {
+    val tokens: Token[] = [.BackdropFilter.Blur.Md];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("backdrop-filter:blur(12px)") != -1;
+}
+
+test "backdrop-opacity-50 generates correct CSS" {
+    val tokens: Token[] = [.BackdropFilter.Opacity.__50];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("backdrop-filter:opacity(0.5)") != -1;
+}

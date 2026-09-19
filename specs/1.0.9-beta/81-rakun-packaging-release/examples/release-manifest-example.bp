@@ -1,0 +1,203 @@
+// Front 81 — rakun Packaging and Release · release-manifest-example.bp
+//
+// Demonstrates: the release an application describes, and the six artefacts
+// rendered from it — the `.rel` file, `vm.args`, `sys.config`, the Dockerfile,
+// the systemd unit and the CycloneDX SBOM. This is the whole of what a project
+// writes to become deployable.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/packaging/container-images/index.html
+//           https://docs.spring.io/spring-boot/how-to/deployment/installing.html
+//           08-container-images.md § Imagens Eficientes · Layering
+//           11-topicos-avancados.md § Servico de SO
+//           09-actuator.md § SBOM
+//
+// SERVER SIDE, and generation-time: nothing here runs while a request is in
+// flight. Every assertion below is a string assertion, which is what lets this
+// front be green in a gate with no container runtime.
+
+import {Release, VmArgs, LayerPlan, DockerOptions, UnitOptions} from "rakun-release";
+import {renderRel, renderVmArgs, renderSysConfig} from "rakun-release";
+import {renderDockerfile, renderSystemdUnit, renderKubernetes, renderSbom} from "rakun-release";
+import {resolveDependencies, Component} from "rakun-release";
+// Front 76 owns the probe paths; importing the constant is how the generated
+// manifest and the running application are kept from drifting apart.
+import {readinessPath, livenessPath} from "rakun-actuator";
+
+// ---- the release a project describes ------------------------------------------
+//
+// LANGUAGE GAP: comptime has no reflection over the project — there is no way to
+// enumerate a package's modules or read its manifest at compile time — so the
+// application list is written by hand and checked against the build-time
+// dependency walk. With `@Project.modules()` this array would be derived and
+// could not drift.
+
+pub fn shopRelease() -> Release {
+    val applications = [
+        "kernel",
+        "stdlib",
+        "ssl",
+        "public_key",
+        "rakun",
+        "rakun_web",
+        "rakun_data",
+        "shop",
+    ];
+    val vm = VmArgs(
+        nodeName: "shop@127.0.0.1",
+        cookieEnv: "SHOP_ERLANG_COOKIE",
+        schedulers: 0,
+        maxProcesses: 262144,
+        embedded: true,
+    );
+    return Release(
+        name: "shop",
+        version: "1.4.0",
+        erts: "bundled",
+        applications: applications,
+        vmArgs: vm,
+        configProfile: "prod",
+    );
+}
+
+// ---- the artefacts ------------------------------------------------------------
+//
+// One value in, six files out. `rakun build` (front 88) calls these; a project
+// that wants to inspect what it is about to ship calls them by hand.
+
+pub fn writeArtifacts() -> string[] {
+    val r = shopRelease();
+    val props = [
+        #("rakun.server.port", "8080"),
+        #("rakun.web.static.use-last-modified", "false"),
+    ];
+    val layers = LayerPlan(
+        erts: "erts-*",
+        otp: "lib/kernel-* lib/stdlib-* lib/ssl-* lib/public_key-*",
+        framework: "lib/rakun-* lib/rakun_web-* lib/rakun_data-*",
+        application: "lib/shop-*",
+    );
+    val docker = DockerOptions(
+        baseImage: "docker.io/library/debian:stable-slim",
+        user: "shop",
+        layers: layers,
+    );
+    val unit = UnitOptions(
+        user: "shop",
+        group: "shop",
+        root: "/opt/shop",
+        restartSeconds: 5,
+        terminationGraceSeconds: 45,
+    );
+    return [
+        renderRel(r),
+        renderVmArgs(r),
+        renderSysConfig(r, props),
+        renderDockerfile(r, docker),
+        renderSystemdUnit(r, unit),
+        renderKubernetes(r, unit),
+    ];
+}
+
+// ---- what the generated artefacts must be true of -----------------------------
+
+test "kernel and stdlib lead the application list whatever order it was written in" {
+    val applications = ["shop", "stdlib", "rakun", "kernel"];
+    val vm = VmArgs(
+        nodeName: "shop@127.0.0.1",
+        cookieEnv: "SHOP_ERLANG_COOKIE",
+        schedulers: 0,
+        maxProcesses: 262144,
+        embedded: true,
+    );
+    val r = Release(
+        name: "shop",
+        version: "1.4.0",
+        erts: "bundled",
+        applications: applications,
+        vmArgs: vm,
+        configProfile: "prod",
+    );
+    val lines = renderRel(r).split("\n");
+    val kernelLines = lines.filter({ l -> l.contains("kernel") }).length;
+    assert kernelLines == 1;
+    val kernelAt = renderRel(r).indexOf("kernel");
+    val stdlibAt = renderRel(r).indexOf("stdlib");
+    val shopAt = renderRel(r).indexOf("shop");
+    assert kernelAt < stdlibAt;
+    assert stdlibAt < shopAt;
+}
+
+test "the cookie is referenced, never written" {
+    val args = renderVmArgs(shopRelease());
+    assert args.contains("SHOP_ERLANG_COOKIE");
+    assert args.contains("-setcookie ") == false;
+    assert args.contains("-mode embedded");
+}
+
+test "rendering twice produces identical bytes" {
+    val a = renderSysConfig(shopRelease(), [#("rakun.server.port", "8080")]);
+    val b = renderSysConfig(shopRelease(), [#("rakun.server.port", "8080")]);
+    assert a == b;
+}
+
+test "the Dockerfile copies four layers in change-rate order" {
+    val layers = LayerPlan(
+        erts: "erts-*",
+        otp: "lib/kernel-* lib/stdlib-*",
+        framework: "lib/rakun-*",
+        application: "lib/shop-*",
+    );
+    val docker = DockerOptions(
+        baseImage: "docker.io/library/debian:stable-slim",
+        user: "shop",
+        layers: layers,
+    );
+    val text = renderDockerfile(shopRelease(), docker);
+    val copies = text.split("\n").filter({ l -> l.startsWith("COPY --from=build") });
+    assert copies.length == 4;
+    assert copies.at(0).unwrapOr("").contains("erts-");
+    assert copies.at(3).unwrapOr("").contains("lib/shop-");
+    assert text.contains("USER shop");
+    // The runtime stage carries no toolchain and no shell entry point.
+    assert text.contains("ENTRYPOINT [\"/opt/shop/bin/shop\"");
+    assert text.contains("sh -c") == false;
+}
+
+test "the unit supervises the node directly" {
+    val unit = UnitOptions(
+        user: "shop",
+        group: "shop",
+        root: "/opt/shop",
+        restartSeconds: 5,
+        terminationGraceSeconds: 45,
+    );
+    val text = renderSystemdUnit(shopRelease(), unit);
+    assert text.contains("ExecStart=/opt/shop/bin/shop foreground");
+    assert text.contains("Restart=on-failure");
+    assert text.contains("User=shop");
+    assert text.contains("RestartSec=5");
+}
+
+test "the Kubernetes probes point at front 76's own paths" {
+    val unit = UnitOptions(
+        user: "shop",
+        group: "shop",
+        root: "/opt/shop",
+        restartSeconds: 5,
+        terminationGraceSeconds: 45,
+    );
+    val text = renderKubernetes(shopRelease(), unit);
+    assert text.contains(readinessPath());
+    assert text.contains(livenessPath());
+    assert text.contains("terminationGracePeriodSeconds: 45");
+}
+
+test "the SBOM lists every resolved component exactly once" {
+    val components = resolveDependencies("./botopink.json");
+    val sbom = renderSbom(shopRelease(), components);
+    assert sbom.contains("\"bomFormat\":\"CycloneDX\"");
+    assert sbom.contains("\"specVersion\":\"1.5\"");
+    val names = components.map({ c -> c.name });
+    val rakunCount = names.filter({ n -> n == "rakun" }).length;
+    assert rakunCount == 1;
+}

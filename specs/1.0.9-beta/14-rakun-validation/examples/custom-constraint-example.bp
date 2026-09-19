@@ -1,0 +1,103 @@
+// Front 14 — rakun-validation · example 2 of 2
+//
+// An application constraint added through the SPI, a message template resolved
+// from configuration, a configuration record that refuses to boot when it is
+// wrong, and the constraint table the client mirrors.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/io/validation.html
+//           (07-io.md § Validacao — Customizando)
+//
+// Target: both — boundary for the validators and the table; the boot refusal is
+// server-side and runs once, before the first request.
+
+import {configuration, bean, service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {validated, notBlank, sizeBetween, minValue, maxValue, constraint} from "rakun-validation";
+import {Constraint, Violation, ValidationReport, registerConstraint} from "rakun-validation";
+import {checkNotBlank, checkSizeBetween, checkRange, checkRegistered} from "rakun-validation";
+
+// ── an application constraint ───────────────────────────────────────────────
+//
+// `check` returns "" when the value is acceptable and a message template
+// otherwise. A template, not a message: {field} and {value} are substituted by
+// the reporter, and `rakun.validation.messages.cpf` overrides the whole string
+// without touching this file.
+
+pub type CpfConstraint {
+    pub fn code(self: Self) -> string {
+        return "cpf";
+    }
+
+    pub fn check(self: Self, field: string, value: string) -> string {
+        val digits = value.replaceAll(".", "").replaceAll("-", "");
+        if (digits.length() != 11) {
+            return "{field} must be a CPF with 11 digits, got \"{value}\"";
+        };
+        val allSame = digits.split("").every({ c -> c == digits.slice(0, 1) });
+        if (allSame) {
+            return "{field} must not be a repeated-digit CPF";
+        };
+        return "";
+    }
+}
+
+// Registration is an ordinary module-level binding, so the constraint exists
+// from module load — the same way a rakun component registers itself with
+// `rkScan`.
+val __cpfRegistration = registerConstraint("cpf", CpfConstraint());
+
+// ── using it ────────────────────────────────────────────────────────────────
+
+#[validated]
+pub type TaxpayerRequest(
+    #[notBlank]
+    #[sizeBetween(2, 80)]
+    fullName: string,
+
+    #[notBlank]
+    #[constraint("cpf")]
+    document: string,
+)
+
+// ── a configuration record that refuses to boot ─────────────────────────────
+//
+// Front 05 binds this record from `app.billing.*` and then calls, by name, the
+// `validateBillingConfig` that #[validated] emitted here. A violation stops the
+// application with the property key printed — not the field name — so the
+// operator reads `app.billing.retry-limit` and knows what to change.
+
+#[validated]
+pub type BillingConfig(
+    #[notBlank]
+    #[value("app.billing.endpoint")]
+    endpoint: string,
+
+    #[minValue(1)]
+    #[maxValue(10)]
+    #[value("app.billing.retry-limit")]
+    retryLimit: i32,
+)
+
+#[configuration]
+pub type BillingSetup(
+    config: BillingConfig,
+) {
+    #[bean]
+    pub fn billingEndpoint(self: Self) -> string {
+        return self.config.endpoint;
+    }
+}
+
+// ── the table that crosses ──────────────────────────────────────────────────
+//
+// `constraintsOfTaxpayerRequest()` is the only thing serialized for a consumer
+// that is not botopink. A botopink client does not need it: it imports
+// `validateTaxpayerRequest` and runs the identical predicate.
+
+pub fn taxpayerConstraintTable() -> string {
+    return constraintsOfTaxpayerRequest();
+}
+
+// LANGUAGE GAP: declared parameter defaults are never applied, so a constraint
+// decorator cannot carry an optional argument. Spring writes `@Size(min = 2)`
+// and lets `max` default; `#[sizeBetween(2, 80)]` above must name both bounds.

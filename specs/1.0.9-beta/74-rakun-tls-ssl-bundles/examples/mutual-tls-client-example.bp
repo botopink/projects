@@ -1,0 +1,123 @@
+// Front 74 — rakun TLS: mutual authentication in both directions.
+//
+// This service demands a client certificate from its callers and presents one to
+// the internal API it calls. Three bundles, three postures, and no file path
+// anywhere in the code.
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/features/ssl.html#features.ssl.pem
+//   https://docs.spring.io/spring-boot/reference/io/rest-client.html#io.rest-client.webclient.ssl
+//   https://docs.spring.io/spring-boot/reference/actuator/monitoring.html#actuator.monitoring.customizing-management-server-ssl
+//
+// The configuration, in application.yaml (front 05 reads it):
+//
+//   rakun:
+//     ssl:
+//       bundle:
+//         pem:
+//           edge:                      # what the public listener presents
+//             keystore:
+//               certificate: /etc/rakun/tls/edge-fullchain.pem
+//               private-key: /etc/rakun/tls/edge-key.pem
+//             truststore:
+//               certificate: /etc/rakun/tls/partner-ca.pem
+//             client-auth: need
+//           internal:                  # what we present when calling inventory
+//             keystore:
+//               certificate: /etc/rakun/tls/client.pem
+//               private-key: /etc/rakun/tls/client-key.pem
+//             truststore:
+//               certificate: /etc/rakun/tls/internal-ca.pem
+//             verify: full
+//           management:                # the management listener, its own material
+//             keystore:
+//               certificate: /etc/rakun/tls/mgmt.pem
+//               private-key: /etc/rakun/tls/mgmt-key.pem
+//             client-auth: need
+//     server:
+//       ssl:
+//         bundle: edge
+//     management:
+//       server:
+//         port: 9443
+//         ssl:
+//           bundle: management
+//
+// `sslBundle` and `peerSubject` are delivered by this front. `RestClient` is
+// front 13; the management listener is front 76; `#[restController]`,
+// `#[getMapping]`, `Request` and `Response` already exist.
+
+import {service, restController, route, getMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {sslBundle, peerSubject} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkPropInt, rkRegisterRoute} from "rakun";
+import {RestClient} from "rakun-client";
+
+#[service]
+pub type InventoryClient(
+    // Front 13's builder takes the bundle by name. It never sees a file.
+    http: RestClient,
+) {
+    pub fn stock(self: Self, sku: string) -> string {
+        return self.http.getText("https://inventory.internal/stock/" + sku);
+    }
+}
+
+#[restController]
+#[route("/api")]
+pub type EdgeController(
+    inventory: InventoryClient,
+) {
+    // `client-auth: need` on the `edge` bundle means an unauthenticated caller
+    // never reaches this method — the connection is refused at handshake. So the
+    // subject here is always a verified one.
+    #[getMapping("/stock/:sku")]
+    pub fn stock(self: Self, req: Request) -> Response {
+        val caller = peerSubject(req);
+        if (caller == "") {
+            return Response.withStatus(401, "client certificate required");
+        };
+        return Response.json(self.inventory.stock(req.param("sku")));
+    }
+}
+
+test "the three bundles carry three different postures" {
+    var edgeAuth = "";
+    var internalVerify = "";
+    var mgmtAuth = "";
+    if (sslBundle("edge")) { b -> edgeAuth = b.clientAuth; };
+    if (sslBundle("internal")) { b -> internalVerify = b.verify; };
+    if (sslBundle("management")) { b -> mgmtAuth = b.clientAuth; };
+    assert edgeAuth == "need";
+    assert internalVerify == "full";
+    assert mgmtAuth == "need";
+}
+
+test "a client bundle may carry a trust store and a certificate of its own" {
+    var certificate = "";
+    var trust = "";
+    if (sslBundle("internal")) { b ->
+        certificate = b.certificateFile;
+        trust = b.trustStoreFile;
+    };
+    assert certificate == "/etc/rakun/tls/client.pem";
+    assert trust == "/etc/rakun/tls/internal-ca.pem";
+}
+
+test "the management listener does not share the public listener's material" {
+    assert rkProp("rakun.server.ssl.bundle") == "edge";
+    assert rkProp("rakun.management.server.ssl.bundle") == "management";
+}
+
+test "the edge bundle verifies callers against the partner CA, not against its own chain" {
+    var trust = "";
+    var certificate = "";
+    if (sslBundle("edge")) { b ->
+        trust = b.trustStoreFile;
+        certificate = b.certificateFile;
+    };
+    assert trust == "/etc/rakun/tls/partner-ca.pem";
+    assert certificate == "/etc/rakun/tls/edge-fullchain.pem";
+}

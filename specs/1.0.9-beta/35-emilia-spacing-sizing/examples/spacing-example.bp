@@ -1,0 +1,230 @@
+// Front 35 — emilia-spacing-sizing
+//
+// Padding and margin: nine directions each, the multiplier scale, half steps,
+// the pixel step, `auto`, negatives, and child spacing.
+//
+// Upstream: https://tailwindcss.com/docs/padding
+//           https://tailwindcss.com/docs/margin
+// Reference: TAILWIND_CSS_DOCS.md § 7. Espacamento, § 21.2 Escala de Espacamento
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// Everything below is delivered by front 35. Today `Pad` has three directions
+// and `padTokenToCss` emits `padding-x:`, which is not a CSS property.
+// Colour tokens come from front 33; modifiers from front 34.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── the scale ────────────────────────────────────────────────────────────────
+// A numeric leaf is bare digits in expression position. `0` is special-cased to
+// the bare `0` Tailwind emits, not `calc(var(--spacing) * 0)`.
+
+fn scaleLadder() -> Token[] {
+    val ladder: Token[] = [
+        .Pad.All.0,
+        .Pad.All.1,
+        .Pad.All.2,
+        .Pad.All.4,
+        .Pad.All.8,
+        .Pad.All.16,
+        .Pad.All.32,
+        .Pad.All.96,
+    ];
+    return ladder;
+}
+
+// `0.5` cannot be an enum leaf, so a half step reads as "one and a half":
+// `Half.1` is Tailwind's `1.5`. `Px` is the one-pixel step.
+
+fn subScaleSteps() -> Token[] {
+    val steps: Token[] = [
+        .Pad.All.Half.0,
+        .Pad.All.Half.1,
+        .Pad.All.Half.2,
+        .Pad.All.Half.3,
+        .Pad.All.Px,
+    ];
+    return steps;
+}
+
+// ── the nine padding directions ──────────────────────────────────────────────
+// `X` and `Y` each emit two declarations from one token; `S` and `E` are the
+// logical pair that flips with writing direction.
+
+fn paddingDirections() -> Token[] {
+    val directions: Token[] = [
+        .Pad.All.4,
+        .Pad.X.4,
+        .Pad.Y.4,
+        .Pad.T.4,
+        .Pad.R.4,
+        .Pad.B.4,
+        .Pad.L.4,
+        .Pad.S.4,
+        .Pad.E.4,
+    ];
+    return directions;
+}
+
+// ── margin, including auto and negatives ─────────────────────────────────────
+// `Auto` is on every direction, not only `X`. `Neg` is the `-mt-4` form; it
+// carries no `0` and no `Auto`, because neither is a utility.
+
+fn marginDirections() -> Token[] {
+    val directions: Token[] = [
+        .Margin.All.4,
+        .Margin.All.Auto,
+        .Margin.X.Auto,
+        .Margin.Y.8,
+        .Margin.T.2,
+        .Margin.B.2,
+        .Margin.S.4,
+        .Margin.E.4,
+    ];
+    return directions;
+}
+
+fn negativeMargins() -> Token[] {
+    val pulled: Token[] = [
+        .Margin.T.Neg.4,
+        .Margin.X.Neg.2,
+        .Margin.B.Neg.Px,
+    ];
+    return pulled;
+}
+
+// ── child spacing ────────────────────────────────────────────────────────────
+// A `Space` token emits a nested rule rather than a declaration: the spacing
+// lands on the children, not on the element. `tokensToCss` joins it with `;`
+// like anything else.
+
+fn childSpacing() -> Token[] {
+    val spacing: Token[] = [
+        .Space.Y.4,
+        .Space.X.2,
+    ];
+    return spacing;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// A comment thread: a padded card, a stack whose children are spaced by
+// `Space.Y`, and an avatar pulled up out of the card by a negative margin.
+
+#[@future]
+pub fn commentThread(author: string, body: string) -> @Future<string> {
+    val card: Token[] = [
+        .Pad.X.6,
+        .Pad.Y.5,
+        .Bg.Color.White,
+        .Border.Rounded.Lg,
+    ];
+
+    val stack: Token[] = [
+        .Space.Y.4,
+        .Margin.All.0,
+    ];
+
+    val avatar: Token[] = [
+        .Margin.T.Neg.8,
+        .Margin.X.Auto,
+        .Pad.All.Half.1,
+        .Bg.Color.Indigo.100,
+        .Border.Rounded.Full,
+    ];
+
+    val meta: Token[] = [
+        .Margin.B.1,
+        .Color.Slate.500,
+    ];
+
+    val cardClass = emilia(card);
+    val stackClass = emilia(stack);
+    val avatarClass = emilia(avatar);
+    val metaClass = emilia(meta);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + cardClass + "\">"
+        + "<div class=\"" + avatarClass + "\"></div>"
+        + "<div class=\"" + stackClass + "\">"
+        + "<p class=\"" + metaClass + "\">" + author + "</p>"
+        + "<p>" + body + "</p>"
+        + "</div></div>";
+    return styles + markup;
+}
+
+test "zero is emitted bare and every other step is a multiplier" {
+    val cls = emilia(scaleLadder());
+    val styles = await flush();
+    assert styles.contains("padding:0;padding:calc(var(--spacing) * 1)");
+    assert styles.contains("padding:calc(var(--spacing) * 96)");
+}
+
+test "half steps and the pixel step" {
+    val cls = emilia(subScaleSteps());
+    val styles = await flush();
+    assert styles.contains("padding:calc(var(--spacing) * 0.5)");
+    assert styles.contains("padding:calc(var(--spacing) * 1.5)");
+    assert styles.contains("padding:1px");
+}
+
+test "an axis direction emits two declarations from one token" {
+    val tokens: Token[] = [.Pad.X.4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{padding-left:calc(var(--spacing) * 4);padding-right:calc(var(--spacing) * 4)}</style>";
+}
+
+test "the logical directions emit padding-inline-start and -end" {
+    val tokens: Token[] = [.Pad.S.4, .Pad.E.4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{padding-inline-start:calc(var(--spacing) * 4)"
+        + ";padding-inline-end:calc(var(--spacing) * 4)}</style>";
+}
+
+test "no token emits a property CSS does not have" {
+    val cls = emilia(paddingDirections());
+    val styles = await flush();
+    assert !styles.contains("padding-x:");
+    assert !styles.contains("padding-y:");
+}
+
+test "margin auto works on every direction" {
+    val tokens: Token[] = [.Margin.All.Auto];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{margin:auto}</style>";
+}
+
+test "no margin token emits a Tailwind class fragment" {
+    val cls = emilia(marginDirections());
+    val styles = await flush();
+    assert !styles.contains("m-1");
+    assert !styles.contains("margin-auto;");
+    assert !styles.contains("margin-y:");
+}
+
+test "a negative margin multiplies by a negative" {
+    val tokens: Token[] = [.Margin.T.Neg.4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{margin-top:calc(var(--spacing) * -4)}</style>";
+}
+
+test "child spacing emits a nested rule beside a plain declaration" {
+    val tokens: Token[] = [.Pad.All.4, .Space.Y.4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{padding:calc(var(--spacing) * 4)"
+        + ";& > :not(:last-child){margin-block-end:calc(var(--spacing) * 4)}}</style>";
+}
+
+test "the comment thread pads, stacks and pulls up" {
+    val out = await commentThread("ana", "Looks right to me.");
+    assert out.startsWith("<style>");
+    assert out.contains("padding-left:calc(var(--spacing) * 6)");
+    assert out.contains("margin-top:calc(var(--spacing) * -8)");
+    assert out.contains("& > :not(:last-child){margin-block-end:calc(var(--spacing) * 4)}");
+}

@@ -1,0 +1,171 @@
+// F13 — SVG & Accessibility Example
+// Demonstrates: fill, stroke, stroke-width, sr-only, forced-color-adjust
+//
+// Docs: https://tailwindcss.com/docs/fill
+//       https://tailwindcss.com/docs/stroke
+//       https://tailwindcss.com/docs/stroke-width
+//       https://tailwindcss.com/docs/screen-readers (sr-only)
+//       https://tailwindcss.com/docs/forced-color-adjust
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// SVG Fill
+val svgFillTokens: Token[] = [
+    .Svg.Fill.None,
+    .Svg.Fill.Current,
+    .Svg.Fill.Red.__500,
+    .Svg.Fill.Blue.__500,
+    .Svg.Fill.Green.__500,
+    .Svg.Fill.Gray.__500,
+    .Svg.Fill.White,
+    .Svg.Fill.Black,
+];
+val svgFillStyles = emilia(svgFillTokens);
+
+// SVG Stroke
+val svgStrokeTokens: Token[] = [
+    .Svg.Stroke.None,
+    .Svg.Stroke.Current,
+    .Svg.Stroke.Red.__500,
+    .Svg.Stroke.Blue.__500,
+    .Svg.Stroke.Green.__500,
+    .Svg.Stroke.Gray.__500,
+    .Svg.Stroke.White,
+    .Svg.Stroke.Black,
+];
+val svgStrokeStyles = emilia(svgStrokeTokens);
+
+// SVG Stroke Width
+val svgStrokeWidthTokens: Token[] = [
+    .Svg.StrokeWidth.__0,
+    .Svg.StrokeWidth.__1,
+    .Svg.StrokeWidth.__2,
+];
+val svgStrokeWidthStyles = emilia(svgStrokeWidthTokens);
+
+// Accessibility — sr-only
+val srOnlyTokens: Token[] = [
+    .A11y.SrOnly,
+];
+val srOnlyStyles = emilia(srOnlyTokens);
+
+// Accessibility — not-sr-only
+val notSrOnlyTokens: Token[] = [
+    .A11y.NotSrOnly,
+];
+val notSrOnlyStyles = emilia(notSrOnlyTokens);
+
+// Accessibility — forced color adjust
+val forcedColorTokens: Token[] = [
+    .A11y.ForcedColorAdjust.Auto,
+    .A11y.ForcedColorAdjust.None,
+];
+val forcedColorStyles = emilia(forcedColorTokens);
+
+// Combined SVG example
+val iconTokens: Token[] = [
+    .Svg.Fill.Current,
+    .Svg.Stroke.None,
+    .Svg.StrokeWidth.__0,
+];
+val iconStyles = emilia(iconTokens);
+
+// Combined accessible example
+val accessibleTokens: Token[] = [
+    .A11y.SrOnly,
+];
+val accessibleStyles = emilia(accessibleTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F13: SVG & Accessibility Example ===");
+    @print("SVG Fill: " + svgFillStyles);
+    @print("SVG Stroke: " + svgStrokeStyles);
+    @print("SVG Stroke Width: " + svgStrokeWidthStyles);
+    @print("SR Only: " + srOnlyStyles);
+    @print("Not SR Only: " + notSrOnlyStyles);
+    @print("Forced Color: " + forcedColorStyles);
+    @print("Icon: " + iconStyles);
+    @print("Accessible: " + accessibleStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "svg-fill-none generates correct CSS" {
+    val tokens: Token[] = [.Svg.Fill.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("fill:none") != -1;
+}
+
+test "svg-fill-current generates correct CSS" {
+    val tokens: Token[] = [.Svg.Fill.Current];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("fill:currentColor") != -1;
+}
+
+test "svg-fill-red-500 generates correct CSS" {
+    val tokens: Token[] = [.Svg.Fill.Red.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("fill:#ef4444") != -1;
+}
+
+test "svg-stroke-current generates correct CSS" {
+    val tokens: Token[] = [.Svg.Stroke.Current];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("stroke:currentColor") != -1;
+}
+
+test "svg-stroke-blue-500 generates correct CSS" {
+    val tokens: Token[] = [.Svg.Stroke.Blue.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("stroke:#3b82f6") != -1;
+}
+
+test "svg-stroke-width-2 generates correct CSS" {
+    val tokens: Token[] = [.Svg.StrokeWidth.__2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("stroke-width:2") != -1;
+}
+
+test "sr-only generates correct CSS" {
+    val tokens: Token[] = [.A11y.SrOnly];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("position:absolute") != -1;
+    assert styles.indexOf("width:1px") != -1;
+    assert styles.indexOf("height:1px") != -1;
+    assert styles.indexOf("overflow:hidden") != -1;
+}
+
+test "not-sr-only generates correct CSS" {
+    val tokens: Token[] = [.A11y.NotSrOnly];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("position:static") != -1;
+    assert styles.indexOf("width:auto") != -1;
+    assert styles.indexOf("height:auto") != -1;
+}
+
+test "forced-color-adjust-none generates correct CSS" {
+    val tokens: Token[] = [.A11y.ForcedColorAdjust.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("forced-color-adjust:none") != -1;
+}
+
+test "forced-color-adjust-auto generates correct CSS" {
+    val tokens: Token[] = [.A11y.ForcedColorAdjust.Auto];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("forced-color-adjust:auto") != -1;
+}

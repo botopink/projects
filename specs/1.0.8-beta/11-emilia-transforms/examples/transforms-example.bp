@@ -1,0 +1,292 @@
+// F11 — Transforms Example
+// Demonstrates: rotate, scale, skew, translate, transform-origin,
+// perspective, backface-visibility, transform-style
+//
+// Docs: https://tailwindcss.com/docs/rotate
+//       https://tailwindcss.com/docs/scale
+//       https://tailwindcss.com/docs/skew
+//       https://tailwindcss.com/docs/translate
+//       https://tailwindcss.com/docs/transform-origin
+//       https://tailwindcss.com/docs/perspective
+//       https://tailwindcss.com/docs/backface-visibility
+//       https://tailwindcss.com/docs/transform-style
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// Rotate
+val rotateTokens: Token[] = [
+    .Transform.Rotate.__0,
+    .Transform.Rotate.__1,
+    .Transform.Rotate.__2,
+    .Transform.Rotate.__3,
+    .Transform.Rotate.__6,
+    .Transform.Rotate.__12,
+    .Transform.Rotate.__45,
+    .Transform.Rotate.__90,
+    .Transform.Rotate.__180,
+];
+val rotateStyles = emilia(rotateTokens);
+
+// Negative rotate
+val negRotateTokens: Token[] = [
+    .Transform.NegRotate.__1,
+    .Transform.NegRotate.__3,
+    .Transform.NegRotate.__6,
+    .Transform.NegRotate.__12,
+    .Transform.NegRotate.__45,
+    .Transform.NegRotate.__90,
+    .Transform.NegRotate.__180,
+];
+val negRotateStyles = emilia(negRotateTokens);
+
+// Scale
+val scaleTokens: Token[] = [
+    .Transform.Scale.__0,
+    .Transform.Scale.__50,
+    .Transform.Scale.__75,
+    .Transform.Scale.__90,
+    .Transform.Scale.__95,
+    .Transform.Scale.__100,
+    .Transform.Scale.__105,
+    .Transform.Scale.__110,
+    .Transform.Scale.__125,
+    .Transform.Scale.__150,
+];
+val scaleStyles = emilia(scaleTokens);
+
+// Scale X
+val scaleXTokens: Token[] = [
+    .Transform.ScaleX.__50,
+    .Transform.ScaleX.__100,
+    .Transform.ScaleX.__150,
+];
+val scaleXStyles = emilia(scaleXTokens);
+
+// Scale Y
+val scaleYTokens: Token[] = [
+    .Transform.ScaleY.__50,
+    .Transform.ScaleY.__100,
+    .Transform.ScaleY.__150,
+];
+val scaleYStyles = emilia(scaleYTokens);
+
+// Skew X
+val skewXTokens: Token[] = [
+    .Transform.SkewX.__0,
+    .Transform.SkewX.__1,
+    .Transform.SkewX.__2,
+    .Transform.SkewX.__3,
+    .Transform.SkewX.__6,
+    .Transform.SkewX.__12,
+];
+val skewXStyles = emilia(skewXTokens);
+
+// Skew Y
+val skewYTokens: Token[] = [
+    .Transform.SkewY.__0,
+    .Transform.SkewY.__1,
+    .Transform.SkewY.__2,
+    .Transform.SkewY.__3,
+    .Transform.SkewY.__6,
+    .Transform.SkewY.__12,
+];
+val skewYStyles = emilia(skewYTokens);
+
+// Translate X
+val translateXTokens: Token[] = [
+    .Transform.TranslateX.__0,
+    .Transform.TranslateX.__1,
+    .Transform.TranslateX.__4,
+    .Transform.TranslateX.__8,
+    .Transform.TranslateX.__16,
+    .Transform.TranslateX.Full,
+    .Transform.TranslateX.Half,
+];
+val translateXStyles = emilia(translateXTokens);
+
+// Negative translate X
+val negTranslateXTokens: Token[] = [
+    .Transform.NegTranslateX.__1,
+    .Transform.NegTranslateX.__4,
+    .Transform.NegTranslateX.Full,
+    .Transform.NegTranslateX.Half,
+];
+val negTranslateXStyles = emilia(negTranslateXTokens);
+
+// Translate Y
+val translateYTokens: Token[] = [
+    .Transform.TranslateY.__0,
+    .Transform.TranslateY.__1,
+    .Transform.TranslateY.__4,
+    .Transform.TranslateY.__8,
+    .Transform.TranslateY.Full,
+    .Transform.TranslateY.Half,
+];
+val translateYStyles = emilia(translateYTokens);
+
+// Transform origin
+val originTokens: Token[] = [
+    .Transform.Origin.Center,
+    .Transform.Origin.Top,
+    .Transform.Origin.TopRight,
+    .Transform.Origin.Right,
+    .Transform.Origin.BottomRight,
+    .Transform.Origin.Bottom,
+    .Transform.Origin.BottomLeft,
+    .Transform.Origin.Left,
+    .Transform.Origin.TopLeft,
+];
+val originStyles = emilia(originTokens);
+
+// Perspective
+val perspectiveTokens: Token[] = [
+    .Transform.Perspective.None,
+    .Transform.Perspective.Dramatic,
+    .Transform.Perspective.Near,
+    .Transform.Perspective.Normal,
+    .Transform.Perspective.Midrange,
+    .Transform.Perspective.Distant,
+];
+val perspectiveStyles = emilia(perspectiveTokens);
+
+// Perspective origin
+val perspOriginTokens: Token[] = [
+    .Transform.PerspectiveOrigin.Center,
+    .Transform.PerspectiveOrigin.Top,
+    .Transform.PerspectiveOrigin.Bottom,
+    .Transform.PerspectiveOrigin.Left,
+    .Transform.PerspectiveOrigin.Right,
+];
+val perspOriginStyles = emilia(perspOriginTokens);
+
+// Backface visibility
+val backfaceTokens: Token[] = [
+    .Transform.Backface.Visible,
+    .Transform.Backface.Hidden,
+];
+val backfaceStyles = emilia(backfaceTokens);
+
+// Transform style
+val transformStyleTokens: Token[] = [
+    .Transform.Style.Flat,
+    .Transform.Style.Preserve3d,
+];
+val transformStyleStyles = emilia(transformStyleTokens);
+
+// Combined transform example (card hover)
+val cardHoverTokens: Token[] = [
+    .Transform.Scale.__105,
+    .Transform.TranslateY.Neg4,
+];
+val cardHoverStyles = emilia(cardHoverTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F11: Transforms Example ===");
+    @print("Rotate: " + rotateStyles);
+    @print("Neg Rotate: " + negRotateStyles);
+    @print("Scale: " + scaleStyles);
+    @print("Scale X: " + scaleXStyles);
+    @print("Scale Y: " + scaleYStyles);
+    @print("Skew X: " + skewXStyles);
+    @print("Skew Y: " + skewYStyles);
+    @print("Translate X: " + translateXStyles);
+    @print("Neg Translate X: " + negTranslateXStyles);
+    @print("Translate Y: " + translateYStyles);
+    @print("Origin: " + originStyles);
+    @print("Perspective: " + perspectiveStyles);
+    @print("Perspective Origin: " + perspOriginStyles);
+    @print("Backface: " + backfaceStyles);
+    @print("Transform Style: " + transformStyleStyles);
+    @print("Card Hover: " + cardHoverStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "rotate-45 generates correct CSS" {
+    val tokens: Token[] = [.Transform.Rotate.__45];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transform:rotate(45deg)") != -1;
+}
+
+test "neg-rotate-90 generates correct CSS" {
+    val tokens: Token[] = [.Transform.NegRotate.__90];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transform:rotate(-90deg)") != -1;
+}
+
+test "scale-50 generates correct CSS" {
+    val tokens: Token[] = [.Transform.Scale.__50];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transform:scale(0.5)") != -1;
+}
+
+test "scale-x-150 generates correct CSS" {
+    val tokens: Token[] = [.Transform.ScaleX.__150];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transform:scaleX(1.5)") != -1;
+}
+
+test "skew-x-3 generates correct CSS" {
+    val tokens: Token[] = [.Transform.SkewX.__3];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transform:skewX(3deg)") != -1;
+}
+
+test "translate-x-4 generates correct CSS" {
+    val tokens: Token[] = [.Transform.TranslateX.__4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transform:translateX(1rem)") != -1;
+}
+
+test "translate-x-full generates correct CSS" {
+    val tokens: Token[] = [.Transform.TranslateX.Full];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transform:translateX(100%)") != -1;
+}
+
+test "neg-translate-y-2 generates correct CSS" {
+    val tokens: Token[] = [.Transform.NegTranslateY.__2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transform:translateY(-0.5rem)") != -1;
+}
+
+test "origin-center generates correct CSS" {
+    val tokens: Token[] = [.Transform.Origin.Center];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transform-origin:center") != -1;
+}
+
+test "perspective-normal generates correct CSS" {
+    val tokens: Token[] = [.Transform.Perspective.Normal];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("perspective:500px") != -1;
+}
+
+test "backface-hidden generates correct CSS" {
+    val tokens: Token[] = [.Transform.Backface.Hidden];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("backface-visibility:hidden") != -1;
+}
+
+test "transform-style-preserve-3d generates correct CSS" {
+    val tokens: Token[] = [.Transform.Style.Preserve3d];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transform-style:preserve-3d") != -1;
+}

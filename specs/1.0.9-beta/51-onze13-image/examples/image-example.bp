@@ -1,0 +1,99 @@
+// Front 51 — onze13 Image · examples/image-example.bp
+//
+// Demonstrates: the Image component from the app author's side — an
+// above-the-fold hero with `priority`, a lazy card image with `sizes`, and a
+// `fill` image inside a positioned box.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/components/image
+//           https://nextjs.org/docs/app/getting-started/images
+//           NEXTJS-DOCS.md § 16. Otimização de Imagens
+//
+// Target: the markup is produced on the ERLANG half (the component renders on
+// the server, and the optimizer it points `src` at runs there too). The JS half
+// owns what happens after: the browser honours `loading="lazy"`, picks a
+// candidate from `srcset` using `sizes`, and front 68's hydration entry swaps
+// the blur placeholder for the decoded image.
+//
+// Every ImageProps field is written out: botopink applies no declared
+// parameter defaults, so `defaultImageProps` plus a `with*` copy is how a
+// baseline is expressed.
+
+import {Element, div, h1, text, renderToString} from "jhonstart";
+import {emilia, Token} from "emilia";
+import {
+    Image,
+    ImageProps,
+    ImageConfig,
+    defaultImageProps,
+    defaultImageConfig,
+    withPriority,
+    withSizes,
+    withFill,
+} from "onze13";
+
+// Above the fold: eager, high priority, no lazy loading. `width`/`height`
+// reserve the box before the bytes arrive, which is the layout-shift fix.
+pub fn Hero(cfg: ImageConfig, publicDir: string) -> Element {
+    val base = defaultImageProps("/images/hero.jpg", "The blog's masthead", 1200, 600);
+    val props = withPriority(base, true);
+    val titleTokens: Token[] = [.Text.Size.X3xl, .Text.Bold];
+    val titleClass = emilia(titleTokens);
+    return div([
+        Image(props, cfg, publicDir),
+        h1([text("Notes", attrs: [])], attrs: [#("class", titleClass)]),
+    ], attrs: []);
+}
+
+// Below the fold: lazy by default, and `sizes` tells the browser how wide the
+// image will actually be rendered so it can pick the right srcset candidate
+// rather than the largest one.
+pub fn CardImage(cfg: ImageConfig, publicDir: string, src: string, alt: string) -> Element {
+    val base = defaultImageProps(src, alt, 640, 360);
+    val props = withSizes(base, "(max-width: 768px) 100vw, 33vw");
+    return Image(props, cfg, publicDir);
+}
+
+// `fill` drops width/height and fills the nearest positioned ancestor. The
+// ancestor's box is emilia's job; the image's absolute positioning is the
+// component's.
+pub fn Banner(cfg: ImageConfig, publicDir: string) -> Element {
+    val base = defaultImageProps("/images/banner.jpg", "Conference banner", 0, 0);
+    val sized = withSizes(base, "100vw");
+    val props = withFill(sized, true);
+    val boxTokens: Token[] = [.Layout.Block, .Margin.Y.8];
+    val boxClass = emilia(boxTokens);
+    return div([Image(props, cfg, publicDir)], attrs: [#("class", boxClass)]);
+}
+
+test "a priority image loads eagerly and reserves its box" {
+    val cfg = defaultImageConfig();
+    val markup = renderToString(Hero(cfg, "public"));
+    assert markup.contains("loading=\"eager\"");
+    assert markup.contains("fetchpriority=\"high\"");
+    assert markup.contains("width=\"1200\"");
+    assert markup.contains("height=\"600\"");
+    assert markup.contains("alt=\"The blog's masthead\"");
+}
+
+test "a default image is lazy and async-decoded" {
+    val cfg = defaultImageConfig();
+    val el = CardImage(cfg, "public", "/images/post-1.jpg", "Post one");
+    val markup = renderToString(el);
+    assert markup.contains("loading=\"lazy\"");
+    assert markup.contains("decoding=\"async\"");
+}
+
+test "sizes drives a multi-candidate srcset through the optimizer route" {
+    val cfg = defaultImageConfig();
+    val markup = renderToString(CardImage(cfg, "public", "/images/post-1.jpg", "Post one"));
+    assert markup.contains("sizes=\"(max-width: 768px) 100vw, 33vw\"");
+    assert markup.contains("/_onze13/image?src=");
+    assert markup.contains("640w");
+}
+
+test "fill drops the intrinsic dimensions and keeps the box" {
+    val cfg = defaultImageConfig();
+    val markup = renderToString(Banner(cfg, "public"));
+    assert markup.contains("width=\"0\"").negate();
+    assert markup.contains("position:absolute");
+}

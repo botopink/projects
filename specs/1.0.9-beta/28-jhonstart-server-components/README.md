@@ -1,0 +1,365 @@
+# Front 28 — Jhonstart Server Components
+
+**Track:** C jhonstart
+**Priority:** critical — this is the front the whole server/client split exists for; without it every component is a client component and the BEAM render has nothing to render
+**Target:** erlang (server)
+**Wave:** 2
+**Depends on:** 26 · 62 (request context, read-only)
+**Owns:** `repository/jhonstart/src/server.bp` (promoted from `server.d.bp`), `repository/jhonstart/test/server_test.bp`
+**Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (front 26), `src/link.bp` (front 27), `src/client.bp` (front 29)
+**Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` · `§ 9. Busca de Dados (Fetching)` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/getting-started/server-and-client-components · https://nextjs.org/docs/app/getting-started/fetching-data
+**Replaces:** `1.0.7-beta/04-jhonstart-server-components`
+
+---
+
+## Problem
+
+Every component jhonstart can express today is synchronous. `renderToString(e: Element) -> string`
+walks a finished tree (`element.bp:55-67`); there is no point at which a component can say "wait, I
+am fetching the post". A page that needs a database row has to be handed the row by someone else,
+which means the data layer and the component tree cannot be written in the same file — the thing
+server components exist to fix.
+
+`src/server.d.bp` is where the answer was supposed to live and it is 26 lines of declaration. Its
+header lists three blockers (`server.d.bp:9-17`): `request()` is host-bound, "the async SSR data
+layer … is gated on the effect-await surface", and `Http` is "a phantom `@Context` base (no
+members)". The first has a producer now — front 62 owns request scope on the BEAM. The second is
+closed: `#[@future] fn … -> @Future<T>` with `await` is landed and in production use
+(`repository/emilia/src/emilia.bp:62-65`). The third never worked and this front drops it; see
+*Language gaps*.
+
+The third problem is the one that bites hardest in practice. Next.js pages read `params` as a
+promise and destructure it (`NEXTJS-DOCS.md § 6`); jhonstart's route params arrive as
+`Array<#(string, string)>` from front 26's snapshot, and there is no shared vocabulary for "the
+value of `slug`, or `""`" anywhere in the tree except rakun's own `Request.param`
+(`repository/rakun/src/http.bp:38`). A server component front that does not settle that spelling
+leaves every page inventing it.
+
+## Current state
+
+- `src/server.d.bp` — `behavior Request` with three bodyless methods (`:19-23`), `request()` behind
+  `#[@External.Node("jhonstart/runtime", "request")]` (`:25-26`). Node-only, which a server front
+  may not carry.
+- `src/root.bp:15-17` — `server` is not a declared module; `.d.bp` files are not resolved by `mod`.
+- `repository/jhonstart/examples/jhonstart-app/app/posts/[id]/page.bp` is the intended shape and is
+  headed "⛔ GATED / ASPIRATIONAL EXAMPLE — does not build yet". It calls `use request()`,
+  `req.params().get("id").unwrapOr("0")` and `resp.json()` — none of which exist.
+- `#[@future]` works and is mandatory: `#[@result]` without `-> @Result<…>` is a located error
+  (`tests/language/reject/result_without_wrapper.bp`), and the inverse is rejected too.
+- `await` works directly inside a `test` block (`repository/emilia/src/emilia.bp:475-480`), which is
+  what makes this front testable at all.
+- `libs/std/src/http.bp:16-18` — "Erlang is eager: `@Future<T>` resolves to `T` … so the caller's
+  `await fetch(url)` is identity on that backend." There is no concurrent scheduler behind `@Future`
+  on the BEAM.
+- `libs/std/src/` has nineteen modules today and **no HTML escaping** among them. `escape.html` and
+  `escape.attribute` are front 01's, new.
+
+## Mechanism
+
+A Next.js Server Component is an `async function` that returns JSX; it runs once, on the server, and
+never ships to the browser (`NEXTJS-DOCS.md § 7`). jhonstart's equivalent is exact and needs no new
+language surface:
+
+```
+async function Page() { … }        →    #[@future] pub fn Page(…) -> @Future<Element>
+await getPost(slug)                →    await loadPost(slug)
+```
+
+`#[@future]` is not optional decoration — the annotation and the `@Future<…>` wrapper go together or
+the compiler rejects the declaration. This front's contribution is not the syntax, it is the five
+things around it.
+
+### 0. `@Future` is eager on erlang, and that changes the port
+
+This is the fact that most easily makes a server-component spec wrong. On the erlang backend a
+`@Future<T>` is not a handle to work in progress: `libs/std/src/http.bp:16-18` states it outright —
+"Erlang is eager: `@Future<T>` resolves to `T` in the eager-lowering arm documented in
+`codegen/erlang.zig`, so the caller's `await fetch(url)` is identity on that backend."
+
+The consequence is blunt. Two `#[@future]` server components do **not** load their data in parallel
+because they are futures. They run one after the other, in the order the enclosing body reaches
+them, and the page costs the sum of its loaders. The Next.js pattern this front ports assumes the
+opposite, so porting it shape-for-shape and stopping there would produce a page that is slower than
+the synchronous version and a spec that never says why.
+
+Parallel loading on the BEAM is a spawned process per unit of work, gathered by index. **Front 02
+provides that**, and it takes **unstarted tasks** — `Array<fn() -> @Future<T>>` — not futures that
+have already run. A page with independent loaders hands front 02 a list of thunks; a page with
+dependent loaders awaits in sequence and pays for it knowingly. This front provides neither
+mechanism and defers to front 02 by name, in the README and in every example that has more than one
+loader.
+
+### 1. `RequestData` — the request as a record
+
+One record, six fields, every plural field an `Array<#(string, string)>`. That is the same shape
+front 26's snapshot uses, the same shape `querystring.parse` produces
+(`libs/std/src/querystring.bp:35`), and the same shape `Element.attrs` uses — so a value read off
+the request can be handed straight to an attribute without a conversion. No `Dict`: naming
+`dict.Dict<string, string>` as a type across a module boundary is unexercised anywhere in the tree,
+and the pair list is what actually crosses the wire.
+
+### 2. Accessors that cannot fail
+
+`param`, `query`, `header` and `cookie` return a plain `string`, `""` when absent. This is not
+laziness; it is the ecosystem's decided shape — rakun's `Request` does exactly this and says so
+(`repository/rakun/src/http.bp:30-34`). An optional would force `.unwrapOr` at every call site in
+every page, and `?T` handling is the single most common place the old spec examples went wrong.
+
+### 3. Request scope comes from front 62, not from here
+
+`cookies()`, `headers()`, `after()`, `connection()`, `draftMode()` and per-request memoization are
+**front 62**'s (`rakun-request-context`). This front does not declare a parallel set. `server.bp`
+binds to front 62's erlang module by name:
+
+```bp
+#[@External.Erlang("rakun_request_context", "cookies")]
+declare fn __jhCookies() -> string;
+```
+
+The encoding is front 62's and is the same `k=v&k=v` string front 26 uses, decoded by
+`querystring.parse`. If front 62 changes the module name or the encoding, this file changes and
+nothing else in jhonstart does — which is the point of keeping it to five `declare fn` lines.
+
+### 4. The loader convention
+
+A loader is an ordinary `#[@future] fn` returning `@Future<T>` for a `T` the component can render.
+It is awaited in the component body, at statement level, never inside a closure — a closure body
+whose last statement is an `await` is not a form any file in the tree uses, and the lambda rule
+(`§2.38`: a lambda's last statement must be an implicit-return expression) makes it a poor bet.
+Components that need N rows await a loader that returns `Array<T>` and then map synchronously.
+
+### 5. Escaping is not optional and is not ours
+
+`renderToString` writes `e.value` straight into the output (`element.bp:56`) and every attribute
+value straight into a quoted pair (`element.bp:63-65`). Neither escapes. A server component renders
+attacker-influenced text — a post body, a comment, a search term echoed back — so every such value
+goes through **front 01**'s `escape.html` for text and `escape.attribute` for attribute values.
+std has no escaping today; front 01 adds both in pure botopink. This front hand-rolls neither, and
+its examples call them at the point the untrusted value enters the tree.
+
+### What crosses to the client
+
+Nothing from this file. A server component's output is markup; front 23 serializes the payload and
+front 29 decides which subtrees are client components. The one thing this front owes the boundary is
+that `RequestData` never appears in it: secrets read from a header must not be reachable from a
+serialized prop, and the check that they are not is front 68's build-time graph walk.
+
+## Steps
+
+### Step 1 — `RequestData` and its accessors
+
+```bp
+// src/server.bp
+import {Element} from "element";
+import {querystring} from "std";
+
+pub type RequestData(
+    method: string,
+    path: string,
+    params: Array<#(string, string)>,
+    query: Array<#(string, string)>,
+    headers: Array<#(string, string)>,
+    cookies: Array<#(string, string)>,
+) {
+    pub fn param(self: Self, name: string) -> string {
+        return pairValue(self.params, name);
+    }
+
+    pub fn queryParam(self: Self, name: string) -> string {
+        return pairValue(self.query, name);
+    }
+
+    pub fn header(self: Self, name: string) -> string {
+        return pairValue(self.headers, name);
+    }
+
+    pub fn cookie(self: Self, name: string) -> string {
+        return pairValue(self.cookies, name);
+    }
+}
+
+pub fn pairValue(pairs: Array<#(string, string)>, name: string) -> string {
+    val hit = pairs.find({ p -> p._0 == name });
+    val fallback = #("", "");
+    return hit.unwrapOr(fallback)._1;
+}
+```
+
+**Acceptance:**
+- [ ] each accessor returns `""` for an absent key and never raises
+- [ ] no field of `RequestData` shares a name with one of its methods
+- [ ] `RequestData` is constructible in a test with no host present
+- [ ] the body is the empty string nowhere: there is no `body` field, because a render never reads
+      one — form bodies are front 24's and route-handler bodies are front 25's
+
+### Step 2 — Binding front 62's request context
+
+```bp
+#[@External.Erlang("rakun_request_context", "method")]
+declare fn __jhMethod() -> string;
+
+#[@External.Erlang("rakun_request_context", "path")]
+declare fn __jhPath() -> string;
+
+#[@External.Erlang("rakun_request_context", "params")]
+declare fn __jhParams() -> string;
+
+#[@External.Erlang("rakun_request_context", "query")]
+declare fn __jhQuery() -> string;
+
+#[@External.Erlang("rakun_request_context", "headers")]
+declare fn __jhHeaders() -> string;
+
+#[@External.Erlang("rakun_request_context", "cookies")]
+declare fn __jhCookies() -> string;
+
+pub fn request() -> RequestData {
+    return RequestData(
+        method: __jhMethod(),
+        path: __jhPath(),
+        params: querystring.parse(__jhParams()),
+        query: querystring.parse(__jhQuery()),
+        headers: querystring.parse(__jhHeaders()),
+        cookies: querystring.parse(__jhCookies()),
+    );
+}
+
+pub fn cookies() -> Array<#(string, string)> {
+    return querystring.parse(__jhCookies());
+}
+
+pub fn headers() -> Array<#(string, string)> {
+    return querystring.parse(__jhHeaders());
+}
+```
+
+`request()` is a plain function, not a hook. See *Language gaps* for why `use request()` is not
+available and what would make it so.
+
+**Acceptance:**
+- [ ] every cell is `#[@External.Erlang]`; there is no `#[@External.Node]` cell in the file
+- [ ] every cell names front 62's erlang module, and the module name appears in exactly one place
+      per accessor
+- [ ] `cookies()` and `headers()` are the only two re-exported shortcuts; `after`, `connection`,
+      `draftMode` and memoization are called from front 62 directly and are not re-declared here
+- [ ] `request()` over a stubbed context reconstructs the six fields
+
+### Step 3 — The server-component convention
+
+A server component is a `#[@future] pub fn` taking its route params and returning `@Future<Element>`.
+`server.bp` ships no decorator for it: the marker is `#[@future]`, which the language already
+enforces, and a second marker would be a second thing to get wrong.
+
+```bp
+#[@future]
+pub fn renderServerComponent(component: fn() -> @Future<Element>) -> @Future<string> {
+    val tree = await component();
+    return renderToString(tree);
+}
+```
+
+**Acceptance:**
+- [ ] a `#[@future] fn … -> @Future<Element>` that awaits a loader compiles on erlang
+- [ ] omitting `#[@future]` is a compile error, and the test suite records the expected message
+- [ ] `renderServerComponent` awaits exactly once and renders synchronously afterwards
+- [ ] a component that awaits two loaders in sequence compiles and both awaits are at statement
+      level, not inside a closure
+
+### Step 4 — The loader convention
+
+A loader is `#[@future] fn name(args) -> @Future<T>`. `server.bp` ships **no** loader machinery:
+`libs/std/src/http.bp:55` already has `fetch(url) -> @Future<Response>`, a database loader is front
+08's, and parallel awaiting (`all`, `race`, `allSettled`) is front 02's. What this front owns is the
+rule about where an `await` may stand.
+
+Every `await` is at statement level in the component or loader body. It is never the last statement
+of a lambda: a lambda's last statement must be an implicit-return expression, and no file in the
+tree awaits inside one. So a component that needs N rows awaits **one** loader returning
+`Array<T>` and maps synchronously afterwards — not N awaits inside a `map`.
+
+```bp
+#[@future]
+fn loadPost(slug: string) -> @Future<Post> { … }
+
+#[@future]
+pub fn PostPage(params: Array<#(string, string)>) -> @Future<Element> {
+    val post = await loadPost(pairValue(params, "slug"));
+    val comments = await loadComments(post.id);
+    return article([ … comments.map({ c -> commentRow(c) }) … ], attrs: []);
+}
+```
+
+Two sequential awaits cost two round trips, and on erlang they cost them even when the results are
+independent, because `@Future` there is eager. When the loaders are independent the fix is front
+02's spawn-and-gather over **unstarted tasks** — `[{ -> loadPost(slug) }, { -> loadSidebar() }]` —
+not a `map` over futures, which would simply run them in order. This front's doc says so and does
+not provide a second answer.
+
+**Acceptance:**
+- [ ] the convention is written in `repository/jhonstart/docs.md` with the rule about lambdas
+- [ ] the test suite contains a component with two sequential awaits at statement level
+- [ ] `server.bp` exports no `awaitAll`-style helper, and the README says front 02 owns that
+- [ ] the doc names the erlang eager-`@Future` fact and cites `libs/std/src/http.bp:16-18`
+
+### Step 5 — Module promotion
+
+Delete `server.d.bp`; add `pub mod server;` to `src/root.bp`; replace `server.d.bp` with `server.bp`
+in `botopink.json` `files`. The `Http` phantom context base and the `Request` behavior do not come
+along.
+
+**Acceptance:**
+- [ ] `server.d.bp` is gone; `git grep -n "server.d.bp"` finds nothing outside the changelog
+- [ ] `src/root.bp` declares `pub mod server;`
+- [ ] `botopink.json` lists `server.bp`
+- [ ] `repository/jhonstart/AGENTS.md` records the promotion and the dropped `Http` base
+
+## Examples
+
+- [`examples/blog-post-page-example.bp`](./examples/blog-post-page-example.bp) — the `/blog/[slug]`
+  page: two loaders awaited in sequence, then a synchronous render.
+- [`examples/request-scope-example.bp`](./examples/request-scope-example.bp) — a greeting that reads
+  a cookie and a header, and the same page rendered from an explicit `RequestData` so it is testable
+  without a host.
+
+## Language gaps
+
+| Gap | Where | Nearest valid form today | Proposed surface |
+|---|---|---|---|
+| The `use` prefix is legal only on a `@Context<Element, _>`-returning call inside a fn whose return is `Element` (`hooks.bp:3-6`, `§4.4`). A server component returns `@Future<Element>`, so `use request()` cannot be written — the whole reason `server.d.bp` stayed gated | `request()`, `cookies()`, `headers()` in `server.bp` | plain functions over the BEAM process dictionary | let a `@Context<B, _>` capability be consumed inside a fn returning `@Future<B>`, not only `B` |
+| Declared parameter defaults are never applied | every `Element` builder call in both examples spells `attrs: []`, inner `text(…)` included | write every argument | apply the declared default when an argument is omitted |
+| `xs[0]` silently drops the index on the beam backend (`tests/language/expected-failures.txt`) | reading the first row of a loader's result | `.at(0).unwrapOr(default)` | make the index expression lower correctly on beam, or reject it there |
+
+## Test plan
+
+`repository/jhonstart/test/server_test.bp`, run by `botopink test --target erlang` from
+`repository/jhonstart`, and in the ecosystem gate by
+`zig build test-libs -- --target erlang --lib jhonstart`.
+
+Assertions:
+
+1. `RequestData` construction and each of the four accessors, present and absent.
+2. `pairValue` over an empty list, a single pair, and a duplicated key (first wins).
+3. `request()` over a stubbed `rakun_request_context` module: six strings in, the record out.
+4. A `#[@future]` component that awaits a stub loader and renders — `await` works directly in a
+   `test` block, so this runs without a host render loop.
+5. A component with two sequential awaits at statement level.
+
+The `commonJS` row is not this front's gate and this file must not pass it by accident: the six
+cells have no Node body, so a js run of `request()` is expected to fail at the first cell. The test
+file guards that by keeping every host-touching assertion in tests that are only meaningful on
+erlang, and by making every other assertion construct its `RequestData` explicitly.
+
+## Definition of done
+
+- [ ] `server.d.bp` removed, `server.bp` in the build tree, `root.bp` and `botopink.json` updated
+- [ ] `RequestData`, four accessors, `request`, `cookies`, `headers` all `pub` and tested
+- [ ] no `#[@External.Node]` cell in the file
+- [ ] the six cell names and the `k=v&k=v` encoding are agreed with front 62 and written down in
+      `repository/jhonstart/docs.md`
+- [ ] the `Http` phantom base and the `Request` behavior are gone, and `AGENTS.md` says why
+- [ ] every untrusted value in an example passes through front 01's `escape.html` /
+      `escape.attribute`; this front hand-rolls no escaping
+- [ ] the erlang eager-`@Future` fact is stated in the README and in `repository/jhonstart/docs.md`,
+      and every multi-loader example routes through front 02's unstarted-task list
+- [ ] all three language gaps appear in a `specs/1.0.10-beta/` spec
+- [ ] the front's tests are green on its assigned target

@@ -1,0 +1,181 @@
+// Front 33 — emilia-color-palette
+//
+// The full Tailwind v4 colour grid as `Token` paths: 26 families, 11 shades,
+// on both `color` and `background-color`, plus the five named colours.
+//
+// Upstream: https://tailwindcss.com/docs/colors
+//           https://tailwindcss.com/docs/text-color
+//           https://tailwindcss.com/docs/background-color
+// Reference: TAILWIND_CSS_DOCS.md § 3.6 Cores, § 21.1 Paleta de Cores Padrao
+//
+// emilia runs at comptime and emits a CSS string, so nothing in this file is
+// erlang- or js-specific. Every token below is delivered BY FRONT 33; today
+// `repository/emilia/src/tokens.bp` carries four families and discards the
+// shade.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── the shade axis ───────────────────────────────────────────────────────────
+// One family, every shade. The numeric leaf is bare digits in expression
+// position; `__500` is the `case`-pattern spelling and never appears here.
+
+fn shadeLadder() -> Token[] {
+    val ladder: Token[] = [
+        .Color.Sky.50,
+        .Color.Sky.100,
+        .Color.Sky.200,
+        .Color.Sky.300,
+        .Color.Sky.400,
+        .Color.Sky.500,
+        .Color.Sky.600,
+        .Color.Sky.700,
+        .Color.Sky.800,
+        .Color.Sky.900,
+        .Color.Sky.950,
+    ];
+    return ladder;
+}
+
+// ── the family axis ──────────────────────────────────────────────────────────
+// The seventeen chromatic families at shade 500.
+
+fn chromaticFamilies() -> Token[] {
+    val families: Token[] = [
+        .Color.Red.500,
+        .Color.Orange.500,
+        .Color.Amber.500,
+        .Color.Yellow.500,
+        .Color.Lime.500,
+        .Color.Green.500,
+        .Color.Emerald.500,
+        .Color.Teal.500,
+        .Color.Cyan.500,
+        .Color.Sky.500,
+        .Color.Blue.500,
+        .Color.Indigo.500,
+        .Color.Violet.500,
+        .Color.Purple.500,
+        .Color.Fuchsia.500,
+        .Color.Pink.500,
+        .Color.Rose.500,
+    ];
+    return families;
+}
+
+// The nine neutral families. `Mauve`, `Olive`, `Mist` and `Taupe` are the four
+// v4.3 additions over the v3 neutral set.
+
+fn neutralFamilies() -> Token[] {
+    val families: Token[] = [
+        .Color.Slate.500,
+        .Color.Gray.500,
+        .Color.Zinc.500,
+        .Color.Neutral.500,
+        .Color.Stone.500,
+        .Color.Mauve.500,
+        .Color.Olive.500,
+        .Color.Mist.500,
+        .Color.Taupe.500,
+    ];
+    return families;
+}
+
+// ── background-color ─────────────────────────────────────────────────────────
+// `Bg.Color` is the same grid on `background-color`. It is a four-segment path:
+// section, sub-section, family, shade.
+
+fn surfaces() -> Token[] {
+    val surfaces: Token[] = [
+        .Bg.Color.Slate.50,
+        .Bg.Color.Slate.900,
+        .Bg.Color.Indigo.600,
+        .Bg.Color.Rose.100,
+    ];
+    return surfaces;
+}
+
+// ── the named colours ────────────────────────────────────────────────────────
+
+fn namedColours() -> Token[] {
+    val named: Token[] = [
+        .Color.White,
+        .Color.Black,
+        .Color.Transparent,
+        .Color.Current,
+        .Color.Inherit,
+    ];
+    return named;
+}
+
+// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
+// constructed. `Token.Color.Hex("#316ff6")` reds "'Hex' is not declared in any
+// behavior implemented for 'Token'" and `val c: Token = .Color.Hex("#316ff6")`
+// reds "unbound variable 'Color'". The variant is declared in `tokens.bp:115`
+// and matched in `emilia.bp:164`, so the surface looks complete and no caller
+// can reach it. An arbitrary colour therefore has to arrive through a TOP-LEVEL
+// `Token` variant, which is the shape that does construct — that variant is
+// owned by the escape-hatch front, not by front 33.
+
+// ── the component ────────────────────────────────────────────────────────────
+// A price badge: dark surface, light text, an accent line and a muted caption.
+// Four colour tokens, one class, one flush.
+
+#[@future]
+pub fn priceBadge(amount: string, note: string) -> @Future<string> {
+    val shell: Token[] = [
+        .Bg.Color.Slate.900,
+        .Color.Slate.50,
+    ];
+    val accent: Token[] = [.Color.Emerald.400];
+    val caption: Token[] = [.Color.Slate.400];
+
+    val shellClass = emilia(shell);
+    val accentClass = emilia(accent);
+    val captionClass = emilia(caption);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + shellClass + "\">"
+        + "<span class=\"" + accentClass + "\">" + amount + "</span>"
+        + "<span class=\"" + captionClass + "\">" + note + "</span>"
+        + "</div>";
+    return styles + markup;
+}
+
+// `tokenToCss` is private to `emilia.bp`; a consumer asserts through the public
+// pair, `emilia(tokens)` then `await flush()`.
+
+test "every shade of one family resolves to its own custom property" {
+    val cls = emilia(shadeLadder());
+    val styles = await flush();
+    assert styles.contains("color:var(--color-sky-50);color:var(--color-sky-100)");
+    assert styles.contains("color:var(--color-sky-950)}</style>");
+}
+
+test "the four v4.3 neutral families resolve" {
+    val tokens: Token[] = [
+        .Color.Mauve.500,
+        .Color.Olive.500,
+        .Color.Mist.500,
+        .Color.Taupe.500,
+    ];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{color:var(--color-mauve-500);color:var(--color-olive-500)"
+        + ";color:var(--color-mist-500);color:var(--color-taupe-500)}</style>";
+}
+
+test "Bg.Color emits background-color, not the background shorthand" {
+    val tokens: Token[] = [.Bg.Color.Slate.900];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{background-color:var(--color-slate-900)}</style>";
+}
+
+test "the badge registers three classes and flushes them in one block" {
+    val out = await priceBadge("R$ 49", "per month");
+    assert out.startsWith("<style>");
+    assert out.contains("background-color:var(--color-slate-900)");
+    assert out.contains("color:var(--color-emerald-400)");
+    assert out.contains("color:var(--color-slate-400)");
+}

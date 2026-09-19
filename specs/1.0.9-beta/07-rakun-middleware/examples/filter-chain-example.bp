@@ -1,0 +1,163 @@
+// Front 07 — The Filter Chain: Middleware, CORS, Problem Details.
+//
+// The Spring entry point into the chain: a `#[filter]` component with an
+// explicit order, per-controller CORS, and a `#[controllerAdvice]` turning a
+// tagged raise into an RFC 9457 problem detail. Everything here runs on the
+// server; the chain lives inside front 04's `dispatch_http/5` seam.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/web/servlet.html
+//   https://www.rfc-editor.org/rfc/rfc9457
+
+import {Request, Response} from "rakun";
+import {service, restController, route, getMapping} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+import {managed} from "rakun";                       // front 06
+import {rkSetReplyHeader} from "rakun";              // front 04
+
+// Front 07's surface, from the rakun-web module.
+import {Filter, Chain, ProblemDetail} from "rakun-web";
+import {filter, order, crossOrigin} from "rakun-web";
+import {controllerAdvice, exceptionHandler} from "rakun-web";
+import {raiseProblem} from "rakun-web";
+import {rkRegisterFilter, rkChainNext, rkRegisterAdvice} from "rakun-web";
+
+// Test helpers rakun-web ships for driving the chain without a socket — the
+// in-process analogue of front 04's `rkDispatch`.
+import {rkTestRequest, rkTestRequestFrom, rkTestPreflight} from "rakun-web";
+import {rkReplyHeaderValue, rkReplyHeadersContain} from "rakun-web";
+
+// ---- a filter (server) ----
+
+// Order −400 puts this first: every later entry, including the security filter
+// and the error boundary, sees the id this one assigned.
+#[filter]
+#[order(-400)]
+#[managed]
+pub type RequestIdFilter implement Filter {
+    pub fn handle(self: Self, req: Request, chain: Chain) -> Response {
+        val incoming = req.header("x-request-id");
+        val id = if (incoming == "") "req-" + req.path.length().toString() else incoming;
+        val _h = rkSetReplyHeader("X-Request-Id", id);
+        // Calling `chain.next` is what makes this a pass-through filter. A filter
+        // that answers without calling it short-circuits and the handler never
+        // runs — that is how front 10's security entry returns 401.
+        return chain.next(req);
+    }
+}
+
+// A filter that also inspects the response on the way out.
+#[filter]
+#[order(-10)]
+#[managed]
+pub type SlowPathFilter implement Filter {
+    pub fn handle(self: Self, req: Request, chain: Chain) -> Response {
+        val out = chain.next(req);
+        val _h = if (out.status >= 500) rkSetReplyHeader("X-Degraded", "true") else 0;
+        return out;
+    }
+}
+
+// ---- the advice (server) ----
+
+// `#[controllerAdvice]` is type-level and does the wiring; `#[exceptionHandler]`
+// is a placement marker, because a method-level @Decl carries no owner. The tag
+// is a string, not a type name: botopink has no typed raise. See the README's
+// Language gaps.
+#[controllerAdvice]
+#[managed]
+pub type ApiProblems {
+    #[exceptionHandler("order.not-found")]
+    pub fn notFound(self: Self, tag: string, detail: string) -> ProblemDetail {
+        return ProblemDetail(
+            typeUri: "https://example.com/problems/order-not-found",
+            title: "Order not found",
+            status: 404,
+            detail: detail,
+            instance: "",
+        );
+    }
+
+    #[exceptionHandler("order.locked")]
+    pub fn locked(self: Self, tag: string, detail: string) -> ProblemDetail {
+        return ProblemDetail(
+            typeUri: "https://example.com/problems/order-locked",
+            title: "Order is locked",
+            status: 409,
+            detail: detail,
+            instance: "",
+        );
+    }
+}
+
+// ---- the domain (server) ----
+
+#[service]
+#[managed]
+pub type OrderLookup {
+    pub fn find(self: Self, id: string) -> string {
+        val known = ["o-1", "o-2"];
+        val hit = known.indexOf(id);
+        // LANGUAGE GAP: no typed raise — `raiseProblem` is a host cell that
+        // raises a tagged term, and the advice matches the tag as a string. With
+        // a typed raise this would be `throw OrderNotFound(id)` and the handler
+        // would be `#[exceptionHandler(OrderNotFound)]`.
+        if (hit == -1) raiseProblem("order.not-found", "no order " + id);
+        return "order " + id;
+    }
+}
+
+// ---- the web layer (server) ----
+
+// Per-controller CORS. The arguments are comma-joined strings, not arrays: a
+// decorator argument is a raw lexeme typed by the decorator's signature, and an
+// array literal there is unverified. See the README's Language gaps.
+#[restController]
+#[route("/api/orders")]
+#[crossOrigin("https://app.example.com", "GET,POST")]
+#[managed]
+pub type OrderApi(
+    lookup: OrderLookup,
+) {
+    #[getMapping("/:id")]
+    pub fn show(self: Self, req: Request) -> Response {
+        // No try/catch here on purpose: the error entry at order −100 owns the
+        // failure shape, so a handler stays about the happy path.
+        return Response.json(self.lookup.find(req.param("id")));
+    }
+}
+
+// ---- what the tests pin ----
+
+test "chain: a filter runs before the handler and its header reaches the response" {
+    val res = rkChainNext(0, rkTestRequest("GET", "/api/orders/o-1"));
+    assert res.status == 200;
+    assert rkReplyHeadersContain("X-Request-Id");
+}
+
+test "advice: a tagged raise becomes the mapped problem detail" {
+    val res = rkChainNext(0, rkTestRequest("GET", "/api/orders/o-9"));
+    assert res.status == 404;
+    assert res.body.contains("order-not-found");
+    assert res.body.contains("no order o-9");
+    assert rkReplyHeaderValue("Content-Type") == "application/problem+json";
+}
+
+test "advice: an unmatched raise becomes a 500 with a digest and no reason text" {
+    val res = rkChainNext(0, rkTestRequest("GET", "/api/orders/boom"));
+    assert res.status == 500;
+    assert res.body.contains("about:blank");
+    assert !res.body.contains("badarg");
+}
+
+test "cors: a preflight is answered by the chain and the handler never runs" {
+    val res = rkChainNext(0, rkTestPreflight("/api/orders/o-1", "https://app.example.com", "GET"));
+    assert res.status == 204;
+    assert rkReplyHeaderValue("Access-Control-Allow-Origin") == "https://app.example.com";
+}
+
+test "cors: an origin that is not allowed gets no CORS header at all" {
+    val res = rkChainNext(0, rkTestRequestFrom("GET", "/api/orders/o-1", "https://evil.example"));
+    assert res.status == 200;
+    assert rkReplyHeaderValue("Access-Control-Allow-Origin") == "";
+}

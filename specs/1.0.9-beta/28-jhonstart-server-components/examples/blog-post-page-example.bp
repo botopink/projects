@@ -1,0 +1,134 @@
+// Front 28 — jhonstart-server-components · examples/blog-post-page-example.bp
+//
+// The `/blog/[slug]` page, as a server component.
+//
+// Everything in this file runs on the BEAM, once, while the request is in
+// flight. `PostPage` is `#[@future]` and returns `@Future<Element>`; the two
+// loaders are awaited at statement level, one after the other, and the tree is
+// built synchronously from what they returned. Nothing here ships to the
+// browser — front 23 serializes the rendered markup, and the only thing the
+// client receives is HTML.
+//
+// The two awaits are sequential on purpose: the comments cannot be loaded until
+// the post's id is known. Sequential is also what they would be anyway — on the
+// erlang backend `@Future<T>` is EAGER (`libs/std/src/http.bp:16-18`), so two
+// futures do not overlap just by being futures. When two loaders ARE
+// independent, the parallel form is front 02's spawn-and-gather over UNSTARTED
+// tasks (`[{ -> loadPost(s) }, { -> loadSidebar() }]`), not a map over futures.
+//
+// The post body and every comment are attacker-influenced text, and
+// `renderToString` writes `value` out unescaped (`element.bp:56`). They go
+// through `escape.html`, which front 01 adds to std.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/fetching-data
+//   https://nextjs.org/docs/app/api-reference/file-conventions/page
+
+import { Element, div, h1, p, ul, li, span, text, renderToString } from "jhonstart";
+import { pairValue } from "jhonstart";
+import { article, section, h2 } from "jhonstart";
+import { escape } from "std";
+
+// `article`, `section` and `h2` are not among the eight builders `element.bp`
+// ships. They come from the element-surface front of track C (number allocated
+// from 54 up). `pairValue` is front 28's; `escape` is front 01's.
+
+pub type Post(id: string, title: string, body: string)
+
+pub type Comment(author: string, body: string)
+
+// The data source. On the BEAM a repository call is a host cell; front 08
+// delivers the real one. The rows come back `|`-delimited, which keeps the
+// example honest about what crosses an erlang boundary: strings.
+#[@External.Erlang("blog_repo", "post_by_slug")]
+declare fn postRow(slug: string) -> string;
+
+#[@External.Erlang("blog_repo", "comments_for")]
+declare fn commentRows(postId: string) -> string;
+
+// A loader: `#[@future]`, a `@Future<T>` return, and a body that does the
+// decoding. The marker is required — a `-> @Future<T>` without it is rejected.
+#[@future]
+fn loadPost(slug: string) -> @Future<Post> {
+    val parts = postRow(slug).split("|");
+    return Post(
+        id: parts.at(0).unwrapOr(""),
+        title: parts.at(1).unwrapOr(""),
+        body: parts.at(2).unwrapOr(""),
+    );
+}
+
+#[@future]
+fn loadComments(postId: string) -> @Future<Array<Comment>> {
+    val rows = commentRows(postId).split("\n").filter({ r -> r != "" });
+    return rows.map({ r -> decodeComment(r) });
+}
+
+fn decodeComment(row: string) -> Comment {
+    val parts = row.split("|");
+    return Comment(author: parts.at(0).unwrapOr(""), body: parts.at(1).unwrapOr(""));
+}
+
+// A synchronous view over loaded data. Keeping the markup in a pure function is
+// what makes the page testable without a host: the test builds the records and
+// renders, and only the loaders need the BEAM.
+fn commentRow(c: Comment) -> Element {
+    return li([
+        span([text(escape.html(c.author), attrs: [])], attrs: [#("class", "author")]),
+        p([text(escape.html(c.body), attrs: [])], attrs: []),
+    ], attrs: [#("class", "comment")]);
+}
+
+pub fn postView(post: Post, comments: Array<Comment>) -> Element {
+    return article([
+        h1([text(escape.html(post.title), attrs: [])], attrs: []),
+        p([text(escape.html(post.body), attrs: [])], attrs: [#("class", "body")]),
+        section([
+            h2([text(comments.length.toString() + " comments", attrs: [])], attrs: []),
+            ul(comments.map({ c -> commentRow(c) }), attrs: [#("class", "comments")]),
+        ], attrs: []),
+    ], attrs: [#("class", "post")]);
+}
+
+// The page itself. `params` is front 26's snapshot shape, handed down by
+// front 23 when it matched the route.
+#[@future]
+pub fn PostPage(params: Array<#(string, string)>) -> @Future<Element> {
+    val post = await loadPost(pairValue(params, "slug"));
+    val comments = await loadComments(post.id);
+    return postView(post, comments);
+}
+
+test "the view renders the title, the body and every comment" {
+    val post = Post(id: "7", title: "On BEAM rendering", body: "It is just a process.");
+    val comments = [
+        Comment(author: "ana", body: "agreed"),
+        Comment(author: "bob", body: "mostly"),
+    ];
+    val markup = renderToString(postView(post, comments));
+    assert markup.contains("<h1>On BEAM rendering</h1>");
+    assert markup.contains("2 comments");
+    assert markup.contains("agreed");
+    assert markup.contains("mostly");
+}
+
+test "a post with no comments still renders its heading" {
+    val post = Post(id: "8", title: "Quiet", body: "Nobody replied.");
+    val empty: Array<Comment> = [];
+    val markup = renderToString(postView(post, empty));
+    assert markup.contains("0 comments");
+    assert markup.contains("<ul class=\"comments\"></ul>");
+}
+
+test "a comment row decodes its pipe-delimited form" {
+    val c = decodeComment("ana|agreed");
+    assert c.author == "ana";
+    assert c.body == "agreed";
+}
+
+test "a comment body that looks like markup is escaped before it reaches the tree" {
+    val c = Comment(author: "mallory", body: "<script>steal()</script>");
+    val markup = renderToString(commentRow(c));
+    assert markup.contains("<script>") == false;
+    assert markup.contains("&lt;script&gt;");
+}

@@ -1,0 +1,245 @@
+//// F08 — Cache Abstraction
+////
+//// Este exemplo demonstra caching declarativo com @cacheable, @cacheEvict, @cachePut.
+////
+//// Documentação Spring Boot:
+//// - Caching: https://docs.spring.io/spring-boot/reference/io/caching.html
+//// - @Cacheable: https://docs.spring.io/spring-boot/reference/io/caching.html#io.caching.annotation
+//// - @CacheEvict: https://docs.spring.io/spring-boot/reference/io/caching.html#io.caching.annotation.evict
+//// - @CachePut: https://docs.spring.io/spring-boot/reference/io/caching.html#io.caching.annotation.put
+
+import {Rakun, App, Request, Response} from "rakun";
+import {service, repository, restController, route, getMapping, postMapping, deleteMapping, cacheable, cacheEvict, cachePut} from "rakun";
+import {CacheManager, ConcurrentMapCacheManager, RedisCacheManager} from "rakun-cache";
+
+// ── Configuration: Cache Manager ────────────────────────────────────────────
+//// application.yaml:
+//// spring:
+////   cache:
+////     type: redis  # ou "simple" para in-memory
+////     cache-names:
+////       - users
+////       - products
+////     redis:
+////       time-to-live: 600000  # 10 minutes
+////       cache-null-values: false
+
+#[configuration]
+pub type CacheConfig(
+    #[value("spring.cache.type")] cacheType: string,
+    #[value("spring.redis.host")] redisHost: string,
+    #[value("spring.redis.port")] redisPort: i32,
+) {
+    #[bean]
+    pub fn cacheManager(self: Self) -> CacheManager {
+        return if (self.cacheType == "redis") {
+            RedisCacheManager(host: self.redisHost, port: self.redisPort);
+        } else {
+            ConcurrentMapCacheManager();  // in-memory
+        };
+    }
+}
+
+// ── Domain Model ────────────────────────────────────────────────────────────
+pub type User(
+    id: i32,
+    name: string,
+    email: string,
+)
+
+pub type Product(
+    id: i32,
+    name: string,
+    price: i32,
+)
+
+// ── Repository (simulated slow data source) ────────────────────────────────
+#[repository]
+pub type UserRepository {
+    pub fn findById(self: Self, id: i32) -> ?User {
+        // Simulate slow database query
+        time.sleep(1000);  // 1 second
+        return @Some(User(id: id, name: "Alice", email: "alice@example.com"));
+    }
+
+    pub fn findAll(self: Self) -> Array<User> {
+        time.sleep(2000);  // 2 seconds
+        return [
+            User(id: 1, name: "Alice", email: "alice@example.com"),
+            User(id: 2, name: "Bob", email: "bob@example.com"),
+        ];
+    }
+
+    pub fn save(self: Self, user: User) -> User {
+        time.sleep(500);  // 500ms
+        return user;
+    }
+
+    pub fn deleteById(self: Self, id: i32) {
+        time.sleep(500);
+    }
+}
+
+#[repository]
+pub type ProductRepository {
+    pub fn findById(self: Self, id: i32) -> ?Product {
+        time.sleep(1000);
+        return @Some(Product(id: id, name: "Widget", price: 999));
+    }
+
+    pub fn save(self: Self, product: Product) -> Product {
+        time.sleep(500);
+        return product;
+    }
+}
+
+// ── Service with @cacheable ─────────────────────────────────────────────────
+#[service]
+pub type UserService(repo: UserRepository) {
+    // @cacheable: cache method result
+    // - Cache key: "users::" + id
+    // - If cache hit → return cached value (no DB call)
+    // - If cache miss → call method, cache result, return
+    #[cacheable("users")]
+    pub fn getUser(self: Self, id: i32) -> ?User {
+        print("Fetching user " + id.toString() + " from database");
+        return self.repo.findById(id);
+    }
+
+    // Cache with TTL
+    #[cacheable(value: "users", ttl: 300000)]  // 5 minutes
+    pub fn getUserWithTtl(self: Self, id: i32) -> ?User {
+        return self.repo.findById(id);
+    }
+
+    // Cache with condition
+    #[cacheable(value: "users", condition: "id > 0")]
+    pub fn getUserConditional(self: Self, id: i32) -> ?User {
+        return self.repo.findById(id);
+    }
+
+    // Cache all users
+    #[cacheable("allUsers")]
+    pub fn listUsers(self: Self) -> Array<User> {
+        print("Fetching all users from database");
+        return self.repo.findAll();
+    }
+
+    // @cachePut: always call method, update cache with result
+    // Use for create/update operations
+    #[cachePut("users")]
+    pub fn createUser(self: Self, name: string, email: string) -> User {
+        print("Creating user in database");
+        val user = User(id: generateId(), name: name, email: email);
+        return self.repo.save(user);
+    }
+
+    // @cacheEvict: remove entry from cache
+    // Use for delete operations
+    #[cacheEvict("users")]
+    pub fn deleteUser(self: Self, id: i32) {
+        print("Deleting user from database");
+        self.repo.deleteById(id);
+    }
+
+    // Evict all entries in cache
+    #[cacheEvict(value: "allUsers", allEntries: true)]
+    pub fn clearAllUsers(self: Self) {
+        print("Clearing all users cache");
+    }
+}
+
+#[service]
+pub type ProductService(repo: ProductRepository) {
+    #[cacheable("products")]
+    pub fn getProduct(self: Self, id: i32) -> ?Product {
+        return self.repo.findById(id);
+    }
+
+    #[cachePut("products")]
+    pub fn createProduct(self: Self, name: string, price: i32) -> Product {
+        val product = Product(id: generateId(), name: name, price: price);
+        return self.repo.save(product);
+    }
+
+    #[cacheEvict("products")]
+    pub fn deleteProduct(self: Self, id: i32) {
+        self.repo.deleteById(id);
+    }
+}
+
+// ── Controller ──────────────────────────────────────────────────────────────
+#[restController]
+#[route("/api")]
+pub type UserController(service: UserService) {
+    #[getMapping("/users/:id")]
+    pub fn getUser(self: Self, req: Request) -> Response {
+        val id = req.param("id");
+        val start = time.nowMillis();
+        val user = self.service.getUser(id);
+        val duration = time.nowMillis() - start;
+        // First call: ~1000ms (DB)
+        // Subsequent calls: ~1ms (cache)
+        return Response.json(serialize(user) + " (took " + duration.toString() + "ms)");
+    }
+
+    #[postMapping("/users")]
+    pub fn createUser(self: Self, req: Request) -> Response {
+        val name = req.query("name");
+        val email = req.query("email");
+        val user = self.service.createUser(name, email);
+        return Response.created(serialize(user));
+    }
+
+    #[deleteMapping("/users/:id")]
+    pub fn deleteUser(self: Self, req: Request) -> Response {
+        val id = req.param("id");
+        self.service.deleteUser(id);
+        return Response.status(204).body("");
+    }
+}
+
+fn main() {
+    // Cache behavior:
+    //
+    // @cacheable("users"):
+    // - Cache key: "users::" + id
+    // - First call: method executed, result cached
+    // - Subsequent calls: cached value returned (no method execution)
+    //
+    // @cachePut("users"):
+    // - Always executes method
+    // - Updates cache with result
+    // - Use for create/update operations
+    //
+    // @cacheEvict("users"):
+    // - Removes entry from cache
+    // - allEntries: true → clears entire cache
+    // - Use for delete operations
+    //
+    // Cache managers:
+    // - ConcurrentMapCacheManager: in-memory (dev/test)
+    // - RedisCacheManager: distributed (prod)
+    //
+    // TTL:
+    // - Configurable per cache
+    // - Default: no expiry
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+//// Testes:
+////
+//// test "@cacheable caches method result" {
+////     // First call: method executed
+////     // Second call: cached value returned
+//// }
+////
+//// test "@cachePut updates cache" {
+////     // Method always executed
+////     // Cache updated with result
+//// }
+////
+//// test "@cacheEvict removes from cache" {
+////     // Entry removed from cache
+////     // Next call hits database
+//// }

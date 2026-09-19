@@ -1,0 +1,144 @@
+// Front 22 — rakun file routing: the boundary artifact.
+//
+// The route table is the one thing this front produces that BOTH targets read.
+// The server matches a request against it on BEAM; the browser rebuilds it from
+// front 23's payload and matches `Link` targets against it to decide what to
+// prefetch. `parseTable` and `matchPath` below are ordinary botopink and are
+// compiled twice — once to BEAM, once to commonJS — so the two sides cannot
+// disagree about what a URL means.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes
+//   https://nextjs.org/docs/app/api-reference/file-conventions/route-groups
+//   https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes
+//
+// Wire format, one record per line:
+//
+//   kind|pattern|slot|verb
+//
+//   L layout   T template   P page        D default
+//   R route    S loading    E error       N not-found
+//
+// The blob is line-oriented rather than JSON because `std/json` is
+// `string -> @Result<string, string>` with no structured walker, and this parser
+// has to run on BEAM. Inside front 23's payload it is one escaped string field.
+//
+// An optional is read with `if (opt) { v -> … }` throughout: a `case` arm that is
+// a bare lower-case name is a located error (`use _ {`), so a `case` over a `?T`
+// cannot bind the matched value.
+
+import {parseTable, writeTable, matchPath, layoutChain, parseSegment, SegmentKind} from "rakun";
+
+// The table a small blog produces. Written out by hand here; at runtime it comes
+// from `rkAppTable()` on the server and from the payload's "t" field in the browser.
+val blogWire = "L|/||\nP|/||\nL|/blog||\nP|/blog||\nP|/blog/new||\nP|/blog/[slug]||\nP|/shop/[...slug]||\nP|/docs/[[...slug]]||\nD|/dashboard||\nL|/dashboard|team|\nR|/api/posts||GET\nR|/api/posts||POST";
+
+test "the wire format round-trips through both halves" {
+    val entries = parseTable(blogWire);
+    assert entries.length == 12;
+    assert writeTable(entries) == blogWire;
+}
+
+test "each record carries kind, pattern, slot and verb" {
+    val entries = parseTable(blogWire);
+    var kind = "";
+    var pattern = "?";
+    var slot = "?";
+    var verb = "?";
+    if (entries.first()) { e ->
+        kind = e.kind;
+        pattern = e.pattern;
+        slot = e.slot;
+        verb = e.verb;
+    };
+    assert kind == "L";
+    assert pattern == "/";
+    assert slot == "";
+    assert verb == "";
+}
+
+test "a slot entry names its slot and consumes no URL segment" {
+    val entries = parseTable(blogWire);
+    val slotted = entries.filter({ e -> e.slot == "team" });
+    assert slotted.length == 1;
+    var pattern = "";
+    if (slotted.first()) { e -> pattern = e.pattern; };
+    assert pattern == "/dashboard";
+}
+
+test "a static segment beats a dynamic one at the same position" {
+    val table = parseTable(blogWire);
+    var pattern = "";
+    if (matchPath(table, "/blog/new")) { m -> pattern = m.entry.pattern; };
+    assert pattern == "/blog/new";
+}
+
+test "a dynamic segment captures its parameter" {
+    val table = parseTable(blogWire);
+    var slug = "";
+    if (matchPath(table, "/blog/hello-world")) { m ->
+        slug = m.params.lookup("slug").unwrapOr("");
+    };
+    assert slug == "hello-world";
+}
+
+test "a catch-all captures one or more segments and refuses zero" {
+    val table = parseTable(blogWire);
+    var joined = "";
+    if (matchPath(table, "/shop/clothing/shirts")) { m ->
+        joined = m.params.lookup("slug").unwrapOr("");
+    };
+    assert joined == "clothing/shirts";
+
+    var matchedBare = false;
+    if (matchPath(table, "/shop")) { m -> matchedBare = true; };
+    assert matchedBare == false;
+}
+
+test "an optional catch-all matches zero segments as well" {
+    val table = parseTable(blogWire);
+    var bareLen = 0 - 1;
+    if (matchPath(table, "/docs")) { m -> bareLen = m.rest.length; };
+    assert bareLen == 0;
+
+    var deepLen = 0 - 1;
+    if (matchPath(table, "/docs/routing/dynamic")) { m -> deepLen = m.rest.length; };
+    assert deepLen == 2;
+}
+
+test "a pattern with a layout but no page is not public" {
+    val table = parseTable("L|/settings||");
+    var matched = false;
+    if (matchPath(table, "/settings")) { m -> matched = true; };
+    assert matched == false;
+}
+
+test "the layout chain is root-first and holds every layout above the match" {
+    val table = parseTable(blogWire);
+    val chain = layoutChain(table, "/blog/[slug]");
+    val patterns = chain.map({ e -> e.pattern });
+    assert patterns.join(",") == "/,/blog";
+}
+
+test "a route handler entry carries its verb and a page entry does not" {
+    val table = parseTable(blogWire);
+    val handlers = table.filter({ e -> e.kind == "R" });
+    assert handlers.length == 2;
+    val verbs = handlers.map({ e -> e.verb });
+    assert verbs.join(",") == "GET,POST";
+    val pages = table.filter({ e -> e.kind == "P" });
+    val pageVerbs = pages.map({ e -> e.verb });
+    assert pageVerbs.join("") == "";
+}
+
+test "segment classification covers all seven spellings" {
+    assert parseSegment("blog").kind == SegmentKind.Static;
+    assert parseSegment("[slug]").kind == SegmentKind.Dynamic;
+    assert parseSegment("[...slug]").kind == SegmentKind.CatchAll;
+    assert parseSegment("[[...slug]]").kind == SegmentKind.OptionalCatchAll;
+    assert parseSegment("(marketing)").kind == SegmentKind.Group;
+    assert parseSegment("@team").kind == SegmentKind.Slot;
+    assert parseSegment("_drafts").kind == SegmentKind.Private;
+    assert parseSegment("[slug]").name == "slug";
+    assert parseSegment("[[...slug]]").name == "slug";
+}

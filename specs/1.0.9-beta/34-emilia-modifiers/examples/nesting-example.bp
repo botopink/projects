@@ -1,0 +1,165 @@
+// Front 34 — emilia-modifiers
+//
+// How modifiers compose. A modifier carries `Token[]`, so a modifier may hold
+// another modifier and the CSS nests the same way the token list does.
+//
+// Upstream: https://tailwindcss.com/docs/responsive-design#targeting-a-breakpoint-range
+//           https://tailwindcss.com/docs/hover-focus-and-other-states#styling-based-on-sibling-state
+// Reference: TAILWIND_CSS_DOCS.md § 3.3 ("Faixa de Breakpoint"), § 3.2
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// Nesting is the one part of the modifier surface that works today
+// (repository/emilia/src/emilia.bp:455-461); front 34 keeps it and widens the
+// set of wrappers that can take part.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── a breakpoint range ───────────────────────────────────────────────────────
+// Tailwind writes `md:max-xl:flex`. There is no range variant: the outer token
+// is the lower bound and the inner one the upper.
+
+fn onlyBetweenMdAndXl() -> Token {
+    val row: Token[] = [.Layout.Flex, .Flex.Row];
+    val capped: Token[] = [Token.MaxXl(row)];
+    return Token.Md(capped);
+}
+
+// ── dark mode plus a state ───────────────────────────────────────────────────
+// `dark:hover:bg-slate-700`. The outermost token is the outermost block, so the
+// media query wraps the hover rule.
+
+fn darkHoverSurface() -> Token {
+    val surface: Token[] = [.Bg.Color.Slate.700];
+    val hovered: Token[] = [Token.Hover(surface)];
+    return Token.Dark(hovered);
+}
+
+// The other order is a different, equally valid rule: hover wraps the media
+// query. Both compile; the CSS differs and so does the cascade.
+
+fn hoverDarkSurface() -> Token {
+    val surface: Token[] = [.Bg.Color.Slate.700];
+    val dark: Token[] = [Token.Dark(surface)];
+    return Token.Hover(dark);
+}
+
+// ── three deep ───────────────────────────────────────────────────────────────
+// `dark:md:hover:font-bold`.
+
+fn threeDeep() -> Token {
+    val bold: Token[] = [.Text.Bold];
+    val hovered: Token[] = [Token.Hover(bold)];
+    val fromMd: Token[] = [Token.Md(hovered)];
+    return Token.Dark(fromMd);
+}
+
+// ── a parent state that only applies on a wide screen ────────────────────────
+// `lg:group-hover:text-white`.
+
+fn revealOnWideHover() -> Token {
+    val white: Token[] = [.Color.White];
+    val onGroupHover: Token[] = [Token.GroupHover(white)];
+    return Token.Lg(onGroupHover);
+}
+
+// ── a pseudo-element inside a state ──────────────────────────────────────────
+// `focus:placeholder:text-transparent`.
+
+fn hidePlaceholderOnFocus() -> Token {
+    val invisible: Token[] = [.Color.Transparent];
+    val onPlaceholder: Token[] = [Token.Placeholder(invisible)];
+    return Token.Focus(onPlaceholder);
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// An email field and its error message. The message is styled entirely from the
+// input's state through `peer-*`: invisible by default, visible when the peer is
+// invalid, and unstyled in print. The field itself trims its focus ring under a
+// reduced-motion preference.
+
+#[@future]
+pub fn emailField(label: string, message: string) -> @Future<string> {
+    val focusRing: Token[] = [.Border.Color.Indigo.500];
+    val noMotion: Token[] = [.Border.Color.Slate.400];
+    val focusUnderReducedMotion: Token[] = [Token.Focus(noMotion)];
+
+    val input: Token[] = [
+        .Border.W.1,
+        .Border.Color.Slate.300,
+        .Pad.X.3,
+        .Pad.Y.2,
+        Token.Focus(focusRing),
+        Token.MotionReduce(focusUnderReducedMotion),
+    ];
+
+    val shown: Token[] = [.Layout.Visibility.Visible, .Color.Pink.600];
+    val hiddenInPrint: Token[] = [.Layout.Hidden];
+
+    val error: Token[] = [
+        .Layout.Visibility.Invisible,
+        .Text.Size.Sm,
+        Token.PeerInvalid(shown),
+        Token.Print(hiddenInPrint),
+    ];
+
+    val inputClass = emilia(input);
+    val errorClass = emilia(error);
+    val styles = await flush();
+
+    val markup = "<label>" + label
+        + "<span class=\"peer " + inputClass + "\"></span>"
+        + "<span class=\"" + errorClass + "\">" + message + "</span>"
+        + "</label>";
+    return styles + markup;
+}
+
+test "a breakpoint range nests the upper bound inside the lower" {
+    val tokens: Token[] = [onlyBetweenMdAndXl()];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{@media (width >= 48rem){@media (width < 80rem){display:flex;flex-direction:row}}}</style>";
+}
+
+test "dark outside hover and hover outside dark are different rules" {
+    val a: Token[] = [darkHoverSurface()];
+    val clsA = emilia(a);
+    val stylesA = await flush();
+    assert stylesA.contains("@media (prefers-color-scheme: dark){@media (hover: hover){&:hover{");
+
+    val b: Token[] = [hoverDarkSurface()];
+    val clsB = emilia(b);
+    val stylesB = await flush();
+    assert stylesB.contains("@media (hover: hover){&:hover{@media (prefers-color-scheme: dark){");
+    assert clsA != clsB;
+}
+
+test "three modifiers nest in source order" {
+    val tokens: Token[] = [threeDeep()];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{@media (prefers-color-scheme: dark){@media (width >= 48rem)"
+        + "{@media (hover: hover){&:hover{font-weight:bold}}}}}</style>";
+}
+
+test "a group state may be scoped to a breakpoint" {
+    val tokens: Token[] = [revealOnWideHover()];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.contains("@media (width >= 64rem){&:is(:where(.group):hover *){color:var(--color-white)}}");
+}
+
+test "a pseudo-element may live inside a state" {
+    val tokens: Token[] = [hidePlaceholderOnFocus()];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.contains("&:focus{&::placeholder{color:transparent}}");
+}
+
+test "the email field drives its error message from the peer state" {
+    val out = await emailField("Email", "Enter a valid address.");
+    assert out.startsWith("<style>");
+    assert out.contains("&:is(:where(.peer):invalid ~ *){visibility:visible;color:var(--color-pink-600)}");
+    assert out.contains("@media print{display:none}");
+}

@@ -1,0 +1,114 @@
+// Front 07 — The Filter Chain: Middleware, CORS, Problem Details.
+//
+// The Next entry point into the SAME chain. This file is `middleware.bp` at the
+// project root: the file name is the discovery convention, the `#[middleware]`
+// decorator is the registration, and the entry it produces sits at order −50 —
+// after the framework's built-ins, before the application's own `#[filter]`s.
+//
+// The second half of the file writes the identical redirect as a `#[filter]` so
+// the two entry points can be compared line for line. Both run on the server.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/building-your-application/routing/middleware
+//   https://nextjs.org/docs/app/getting-started/proxy
+//   https://docs.spring.io/spring-boot/reference/web/servlet.html
+
+import {Request, Response} from "rakun";
+import {rkSetReplyHeader} from "rakun";              // front 04
+import {managed} from "rakun";                       // front 06
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+
+import {Filter, Chain, Next} from "rakun-web";
+import {middleware, matcher, filter, order} from "rakun-web";
+import {rkRegisterFilter, rkChainNext, rkChainNextFrom} from "rakun-web";
+import {rkTestRequest, rkTestRequestAuthed, rkReplyHeaderValue} from "rakun-web";
+
+// ---- entry point A: the file convention (server) ----
+
+// `#[matcher]` restricts the entry. The pattern grammar — `:path*`, globs, the
+// negative-lookahead form — is front 65's; front 07 only executes what 65
+// compiles. A request outside the matcher skips this entry entirely.
+#[middleware]
+#[matcher("/dashboard/:path*")]
+pub fn middleware(req: Request, chain: Chain) -> Response {
+    val token = req.header("authorization");
+
+    // Short-circuit: the handler never runs. `Next.redirect` sets Location
+    // through front 04's per-request header accumulator and answers 307, because
+    // the frozen `Response` record has no header field of its own.
+    val unauthenticated = token == "";
+    if (unauthenticated) {
+        return Next.redirect("/login");
+    };
+
+    // An internal rewrite: the client keeps the URL it asked for, a different
+    // route handles it. The new path travels as a process-local signal, not as a
+    // response header, so nothing leaks to the client.
+    val legacy = req.path == "/dashboard/old-reports";
+    if (legacy) {
+        return Next.rewrite("/dashboard/reports");
+    };
+
+    // A header set on the way through, then the chain continues. `chain.next` and
+    // `Next.pass()` reach the same place; `next` hands the response back so it can
+    // be inspected, `pass` does not.
+    val _h = rkSetReplyHeader("X-Gate", "middleware");
+    return chain.next(req);
+}
+
+// ---- entry point B: the same rule as a filter (server) ----
+
+// Identical behaviour, registered the other way. A library ships this shape; an
+// application ships the one above. There is one chain either way, and the only
+// difference is the default order and where the code lives.
+#[filter]
+#[order(-50)]
+#[managed]
+pub type DashboardGateFilter implement Filter {
+    pub fn handle(self: Self, req: Request, chain: Chain) -> Response {
+        val guarded = req.path.startsWith("/dashboard");
+        val token = req.header("authorization");
+        val deny = guarded;
+        if (deny) {
+            val missing = token == "";
+            if (missing) {
+                return Next.redirect("/login");
+            };
+        };
+        val _h = rkSetReplyHeader("X-Gate", "filter");
+        return chain.next(req);
+    }
+}
+
+// ---- what the tests pin ----
+
+test "middleware: an unauthenticated request to a matched path is redirected" {
+    val res = rkChainNext(0, rkTestRequest("GET", "/dashboard/reports"));
+    assert res.status == 307;
+    assert rkReplyHeaderValue("Location") == "/login";
+}
+
+test "middleware: a path outside the matcher skips the entry entirely" {
+    val res = rkChainNext(0, rkTestRequest("GET", "/public/about"));
+    assert res.status == 200;
+    assert rkReplyHeaderValue("X-Gate") == "";
+}
+
+test "middleware: a rewrite reaches the other handler and leaves the URL alone" {
+    val res = rkChainNext(0, rkTestRequestAuthed("GET", "/dashboard/old-reports"));
+    assert res.status == 200;
+    assert res.body == "reports";
+}
+
+test "middleware: the status-0 sentinel never reaches the wire" {
+    val res = rkChainNext(0, rkTestRequestAuthed("GET", "/dashboard/reports"));
+    assert res.status != 0;
+    assert res.status == 200;
+}
+
+test "middleware: the file convention and the filter form produce the same outcome" {
+    val viaMiddleware = rkChainNext(0, rkTestRequest("GET", "/dashboard/reports"));
+    val viaFilter = rkChainNextFrom("DashboardGateFilter", rkTestRequest("GET", "/dashboard/reports"));
+    assert viaMiddleware.status == viaFilter.status;
+    assert viaMiddleware.status == 307;
+}

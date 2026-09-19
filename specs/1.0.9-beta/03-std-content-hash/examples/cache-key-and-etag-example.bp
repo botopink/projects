@@ -1,0 +1,111 @@
+// Front 03 — std content hash · cache-key-and-etag-example.bp
+//
+// One request handler carrying all four uses of a content hash: a framed cache
+// key, a conditional-GET ETag check, an asset fingerprint, and the strong hash
+// at a trust boundary.
+//
+// Upstream: NEXTJS-DOCS.md § 11. Cache
+//           https://nextjs.org/docs/app/getting-started/caching
+//           https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
+//           https://www.rfc-editor.org/rfc/rfc9110#field.etag
+//
+// SERVER SIDE. Cache keys and ETags are computed while a request is in flight,
+// so this compiles for erlang with the rest of the render half — but the module
+// builds for both targets, and the client half uses `fingerprint` to resolve an
+// asset URL.
+
+import {content_hash} from "std";
+
+// The cache key for a rendered profile page. `cacheKey` length-prefixes each
+// part before hashing, so ["profile", "user:1", "en"] and ["profile", "user",
+// "1:en"] are different keys. Joining these with a separator instead would make
+// them the same key, and a cache that collides across a user boundary serves one
+// user another user's page.
+pub fn profileKey(userId: string, locale: string) -> string {
+    return content_hash.cacheKey(["profile", userId, locale]);
+}
+
+// The same shape at a trust boundary. `Accept-Language` comes off the wire, so
+// a caller who can choose it can choose a djb2 collision in seconds; the strong
+// hash is what stops that being a cache-poisoning primitive.
+pub fn negotiatedKey(path: string, acceptLanguage: string) -> string {
+    return content_hash.strongCacheKey(["page", path, acceptLanguage]);
+}
+
+// The ETag for a rendered body, quoted the way RFC 9110 wants it. The quotes are
+// part of the value — `content_hash.etag` adds them so no handler has to
+// remember to.
+pub fn bodyEtag(html: string) -> string {
+    return content_hash.etag(html);
+}
+
+// The conditional-GET decision. `matches` handles an exact match, the `*`
+// wildcard and a comma-separated candidate list, so the handler is three lines
+// rather than a header parser.
+pub fn statusFor(html: string, ifNoneMatch: string) -> i32 {
+    val unchanged = content_hash.matches(html, ifNoneMatch);
+    val status = if (unchanged) 304 else 200;
+    return status;
+}
+
+// What a route handler answers: 304 with no body when the client already holds
+// this version, 200 with the body when it does not.
+pub fn conditionalBody(html: string, ifNoneMatch: string) -> string {
+    val status = statusFor(html, ifNoneMatch);
+    val notModified = status == 304;
+    val body = if (notModified) "" else html;
+    return body;
+}
+
+// The asset name the optimizers write (fronts 51 and 52) and the client resolves.
+// `app.js` → `app.3f2a91c7.js`: the extension stays last, because a browser and
+// a CDN both dispatch on it.
+pub fn assetName(fileName: string, contents: string) -> string {
+    return content_hash.fingerprint(fileName, contents);
+}
+
+// A cache entry keyed by content rather than by name: two builds that produce
+// identical bytes reuse the same entry, which is what makes an incremental build
+// incremental.
+pub fn buildArtifactKey(fileName: string, contents: string) -> string {
+    return content_hash.cacheKey(["artifact", fileName, content_hash.contentHash(contents)]);
+}
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+test "the same body hashes to the same ETag" {
+    val a = content_hash.etag("<p>hi</p>");
+    val b = content_hash.etag("<p>hi</p>");
+    assert a == b;
+}
+
+test "a one-character change moves the ETag" {
+    val a = content_hash.etag("<p>hi</p>");
+    val b = content_hash.etag("<p>ho</p>");
+    assert a != b;
+}
+
+test "an ETag is quoted, as RFC 9110 requires" {
+    val e = content_hash.etag("<p>hi</p>");
+    assert e.startsWith("\"");
+    assert e.endsWith("\"");
+}
+
+test "cacheKey framing does not collide across part boundaries" {
+    val a = content_hash.cacheKey(["profile", "user:1", "en"]);
+    val b = content_hash.cacheKey(["profile", "user", "1:en"]);
+    assert a != b;
+}
+
+test "a matching If-None-Match answers 304" {
+    val html = "<p>hi</p>";
+    assert statusFor(html, content_hash.etag(html)) == 304;
+    assert statusFor(html, "\"stale\"") == 200;
+    assert statusFor(html, "*") == 304;
+}
+
+test "a fingerprinted name keeps its extension last" {
+    val name = content_hash.fingerprint("app.js", "console.log(1)");
+    assert name.startsWith("app.");
+    assert name.endsWith(".js");
+}

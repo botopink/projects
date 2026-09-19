@@ -1,0 +1,69 @@
+// Front 54 — emilia theme
+//
+// A project defines its own theme by extending emilia's default, clears the stock
+// colour namespace, reads a value back, and renders one card whose spacing resolves
+// against the theme's `--spacing` rather than against a hard-coded rem literal.
+//
+// https://tailwindcss.com/docs/theme
+// https://tailwindcss.com/docs/functions-and-directives
+// https://tailwindcss.com/docs/adding-custom-styles
+
+import { emilia, flush, Token } from "emilia";
+import { Theme, ThemeEntry, Ns, defaultTheme, extend, clearNamespace, themeValue, themeVar, spacing } from "emilia";
+// `defaultOptions`, `withTheme` and `flushWith` are provided by front 56.
+import { defaultOptions, withTheme, flushWith } from "emilia";
+
+// The brand theme of TAILWIND_CSS_DOCS.md § 21.7: start from emilia's defaults,
+// throw the stock colour namespace away, and declare four variables of our own.
+// `extend` refuses a name outside the nineteen known namespaces, so a typo such
+// as `--colour-lagoon` fails the build instead of silently doing nothing.
+fn brandTheme() -> Theme {
+    val stripped = clearNamespace(defaultTheme(), Ns.Color);
+    val brand: ThemeEntry[] = [
+        ThemeEntry(name: "--spacing", value: "4px"),
+        ThemeEntry(name: "--font-body", value: "Inter, sans-serif"),
+        ThemeEntry(name: "--color-lagoon", value: "oklch(0.72 0.11 221.19)"),
+        ThemeEntry(name: "--color-coral", value: "oklch(0.74 0.17 40.24)"),
+    ];
+    return extend(stripped, brand);
+}
+
+// One card. Nothing here mentions the theme: `Pad.All.4` lowers to
+// `calc(var(--spacing) * 4)`, so the same token list renders differently under a
+// theme whose `--spacing` is `4px` and one whose `--spacing` is `0.25rem`.
+fn card() -> string {
+    val tokens: Token[] = [.Bg.White, .Text.Bold, .Pad.All.4];
+    return emilia(tokens);
+}
+
+test "the brand theme keeps its own colours and drops the stock palette" {
+    val th = brandTheme();
+    assert themeValue(th, "--color-lagoon") == "oklch(0.72 0.11 221.19)";
+    assert themeValue(th, "--color-coral") == "oklch(0.74 0.17 40.24)";
+    assert themeValue(th, "--color-white") == "";
+}
+
+test "overriding a variable replaces it rather than appending a second one" {
+    val th = brandTheme();
+    assert themeValue(th, "--spacing") == "4px";
+    assert themeValue(defaultTheme(), "--spacing") == "0.25rem";
+}
+
+test "a spacing utility references the theme instead of resolving it" {
+    assert spacing(0) == "0";
+    assert spacing(4) == "calc(var(--spacing) * 4)";
+    assert spacing(-4) == "calc(var(--spacing) * -4)";
+}
+
+test "themeVar is the reference form a utility emits" {
+    assert themeVar("--color-lagoon") == "var(--color-lagoon)";
+}
+
+test "the flushed document carries the theme it was rendered with" {
+    val cls = card();
+    val opts = withTheme(defaultOptions(), brandTheme());
+    val css = await flushWith(opts);
+    assert css.contains("--spacing:4px");
+    assert css.contains("--color-lagoon:oklch(0.72 0.11 221.19)");
+    assert css.contains("." + cls);
+}

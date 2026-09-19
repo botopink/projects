@@ -1,0 +1,241 @@
+// Front 25 — rakun route handlers.
+//
+// `app/api/posts/route.bp`: a GET that lists and a POST that creates, plus a
+// streaming export beside it. Everything here is SERVER code — it compiles to
+// BEAM and nothing in this file has a browser half. A route handler is what a
+// non-browser client (a webhook, a probe, a mobile app) talks to.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/route-handlers-and-middleware
+//   https://nextjs.org/docs/app/api-reference/file-conventions/route
+//
+// The tree this file stands in for:
+//
+//   app/
+//   `-- api/
+//       |-- posts/
+//       |   |-- route.bp        -> #[getRoute("api/posts")] + #[postRoute("api/posts")]
+//       |   `-- [id]/
+//       |       `-- route.bp    -> #[getRoute("api/posts/[id]")]
+//       `-- export/
+//           `-- route.bp        -> #[getRoute("api/export")]  (streamed)
+//
+// LANGUAGE GAP: `@Future<T>` lowers eagerly on erlang, so `streamed` takes a list
+// of UNSTARTED thunks; a list of futures would already have been computed and
+// streaming it would buy nothing.
+// LANGUAGE GAP: botopink has no byte type — every host cell marshals through
+// `string` — so this file has no binary endpoint and refuses `multipart/form-data`
+// rather than reading it as lossy UTF-8.
+
+import {Request, HttpMethod} from "rakun";
+// This front's surface.
+import {getRoute, postRoute, HandlerResponse, bodyJson, streamed} from "rakun";
+// Front 22 registers the entries these decorators emit.
+import {rkAppRegisterHandler} from "rakun";
+import {dict} from "std";
+
+// A test double for the request. `Request` is a BEHAVIOR — the server supplies the
+// concrete instance at runtime (`repository/rakun/src/http.bp:22-34`) — so a test
+// cannot construct one and has to implement it. Front 19 (test utilities) should
+// own this type; it is written out here so the example stands alone.
+type FakeRequest(
+    method: HttpMethod,
+    path: string,
+    params: Dict<string, string>,
+    queries: Dict<string, string>,
+    heads: Dict<string, string>,
+    payload: string,
+) implement Request {
+    pub fn param(self: Self, name: string) -> string {
+        return self.params.lookup(name).unwrapOr("");
+    }
+
+    pub fn query(self: Self, name: string) -> string {
+        return self.queries.lookup(name).unwrapOr("");
+    }
+
+    pub fn header(self: Self, name: string) -> string {
+        return self.heads.lookup(name).unwrapOr("");
+    }
+
+    pub fn body(self: Self) -> string {
+        return self.payload;
+    }
+}
+
+// The app's own data layer — front 08 in a real application.
+#[@future]
+fn allPosts() -> @Future<string[]> {
+    return ["{\"id\":\"1\",\"title\":\"Hello\"}", "{\"id\":\"2\",\"title\":\"BEAM\"}"];
+}
+
+#[@future]
+fn onePost(id: string) -> @Future<string> {
+    return "{\"id\":\"" + id + "\",\"title\":\"Hello\"}";
+}
+
+#[@future]
+fn insertPost(payload: string) -> @Future<string> {
+    return "{\"id\":\"3\"}";
+}
+
+// ---- app/api/posts/route.bp — GET ---------------------------------------------
+
+#[getRoute("api/posts")]
+#[@future]
+pub fn listPosts(req: Request) -> @Future<HandlerResponse> {
+    val posts = await allPosts();
+    val body = "[" + posts.join(",") + "]";
+    return HandlerResponse.json(body);
+}
+
+// ---- app/api/posts/route.bp — POST --------------------------------------------
+//
+// `bodyJson` VALIDATES and returns the raw text: `std/json` is
+// `string -> @Result<string, string>` with no structured walker, so there is
+// nothing to walk. An application that needs fields hands the text to its own
+// decoder. Saying so here is cheaper than a reader discovering it.
+
+#[postRoute("api/posts")]
+#[@future]
+pub fn createPost(req: Request) -> @Future<HandlerResponse> {
+    val contentType = req.header("content-type");
+    val isMultipart = contentType.startsWith("multipart/form-data");
+    if (isMultipart) {
+        return HandlerResponse.unsupportedMedia("multipart/form-data is not supported");
+    };
+    val parsed = bodyJson(req);
+    val ok = parsed.isOk();
+    if (!ok) {
+        return HandlerResponse.badRequest("body is not valid JSON");
+    };
+    val payload = parsed.unwrapOr("{}");
+    val created = await insertPost(payload);
+    val res = HandlerResponse.created(created);
+    return res.withHeader("location", "/api/posts/3");
+}
+
+// ---- app/api/posts/[id]/route.bp — a dynamic segment --------------------------
+//
+// The param comes from front 22's matcher through the ordinary `Request`, exactly
+// as it does for a page. There is no second path parser.
+
+#[getRoute("api/posts/[id]")]
+#[@future]
+pub fn showPost(req: Request) -> @Future<HandlerResponse> {
+    val id = req.param("id");
+    val empty = id == "";
+    if (empty) {
+        return HandlerResponse.notFound();
+    };
+    val post = await onePost(id);
+    return HandlerResponse.json(post);
+}
+
+// ---- app/api/export/route.bp — a streamed response ----------------------------
+//
+// One chunk per row, written as each thunk completes, in index order. The thunks
+// are unstarted: front 30's flush primitive spawns one BEAM process per thunk,
+// which is where the concurrency comes from.
+
+#[@future]
+fn exportRow(n: i32) -> @Future<string> {
+    return "row " + n.toString() + "\n";
+}
+
+#[getRoute("api/export")]
+#[@future]
+pub fn exportPosts(req: Request) -> @Future<HandlerResponse> {
+    var tasks: Array<fn() -> @Future<string>> = [];
+    loop (0..3) { n ->
+        tasks.push({ -> exportRow(n) });
+    };
+    val res = streamed(200, tasks);
+    return res.withHeader("content-type", "text/plain; charset=utf-8");
+}
+
+// ---- test doubles -------------------------------------------------------------
+
+fn fakeGet(path: string, id: string) -> FakeRequest {
+    return FakeRequest(
+        method: HttpMethod.Get,
+        path: path,
+        params: dict.empty().insert("id", id),
+        queries: dict.empty(),
+        heads: dict.empty(),
+        payload: "",
+    );
+}
+
+fn fakePost(path: string, contentType: string, payload: string) -> FakeRequest {
+    return FakeRequest(
+        method: HttpMethod.Post,
+        path: path,
+        params: dict.empty(),
+        queries: dict.empty(),
+        heads: dict.empty().insert("content-type", contentType),
+        payload: payload,
+    );
+}
+
+fn headerOf(res: HandlerResponse, name: string) -> string {
+    var found = "";
+    loop (res.headers) { h ->
+        val hit = h._0 == name;
+        if (hit) {
+            found = h._1;
+        };
+    };
+    return found;
+}
+
+// ---- what the handlers answer -------------------------------------------------
+
+test "the list handler answers JSON with the right content type" {
+    val res = await listPosts(fakeGet("/api/posts", ""));
+    val body = res.chunks.join("");
+    assert res.status == 200;
+    assert body.startsWith("[{\"id\":\"1\"");
+    assert headerOf(res, "content-type") == "application/json";
+}
+
+test "a create with a valid body is 201 and points at the new resource" {
+    val res = await createPost(fakePost("/api/posts", "application/json", "{\"title\":\"x\"}"));
+    assert res.status == 201;
+    assert headerOf(res, "location") == "/api/posts/3";
+}
+
+test "a create with a malformed body is 400, not 500" {
+    val res = await createPost(fakePost("/api/posts", "application/json", "{not json"));
+    assert res.status == 400;
+}
+
+test "a multipart create is refused before the body is read" {
+    val res = await createPost(fakePost("/api/posts", "multipart/form-data; boundary=x", ""));
+    assert res.status == 415;
+}
+
+test "a dynamic segment reaches the handler as an ordinary request param" {
+    val res = await showPost(fakeGet("/api/posts/7", "7"));
+    val body = res.chunks.join("");
+    assert body.contains("\"id\":\"7\"");
+}
+
+test "a missing dynamic param is a 404, not an empty 200" {
+    val res = await showPost(fakeGet("/api/posts/", ""));
+    assert res.status == 404;
+}
+
+test "the export streams one chunk per row, in index order" {
+    val res = await exportPosts(fakeGet("/api/export", ""));
+    assert res.chunks.length == 3;
+    assert res.chunks.join("") == "row 0\nrow 1\nrow 2\n";
+    assert headerOf(res, "transfer-encoding") == "chunked";
+}
+
+test "withHeader returns a new response and leaves the original alone" {
+    val plain = HandlerResponse.json("{}");
+    val tagged = plain.withHeader("x-trace", "abc");
+    assert headerOf(tagged, "x-trace") == "abc";
+    assert headerOf(plain, "x-trace") == "";
+}

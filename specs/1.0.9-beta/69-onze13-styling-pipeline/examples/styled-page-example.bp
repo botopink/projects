@@ -1,0 +1,97 @@
+// Front 69 — onze13-styling-pipeline · examples/styled-page-example.bp
+//
+// The insertion seam in use. SERVER SIDE: every line here runs on BEAM while a
+// request is in flight.
+//
+// The rule the file demonstrates is one line long — render, then flush, then
+// serialize, once per chunk — and the reason it needs a front of its own is that
+// `emilia.flush()` CLEARS the sheet (repository/emilia/src/emilia.bp:53-56).
+// Flush before the tree is built and the block is empty; flush twice and the
+// second block is empty; flush once for a streamed response and everything the
+// late boundaries registered is lost.
+//
+// Each test drains the sheet first, because the sheet is a process-dictionary
+// cell shared by everything running in this BEAM process — which is also why two
+// concurrent requests, each in its own process, cannot leak classes into each
+// other.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/functions/use-server-inserted-html
+//   https://nextjs.org/docs/app/getting-started/css
+
+import { Element, h1, p, div, text, renderToString } from "jhonstart";
+import { emilia, flush, Token } from "emilia";
+import { StyleSink, openSink, collectHead, collectChunk, closeSink } from "onze13-assets";
+
+// The shell: what front 23 renders before the first unresolved boundary.
+fn shell() -> Element {
+    val tokens: Token[] = [.Bg.White, .Text.Bold];
+    val cls = emilia(tokens);
+    return h1([text("Blog", attrs: [])], attrs: [#("class", cls)]);
+}
+
+// A boundary that resolves later — a post list waiting on a query. Its classes
+// are registered when IT renders, which is after the head has gone to the wire.
+fn lateSection() -> Element {
+    val tokens: Token[] = [.Color.Black, .Layout.Flex];
+    val cls = emilia(tokens);
+    return p([text("three posts", attrs: [])], attrs: [#("class", cls)]);
+}
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+test "the shell's rules go in the head block and the late boundary's do not" {
+    val drained = await flush();
+    val sink = openSink([]);
+    val shellMarkup = renderToString(shell());
+    // LANGUAGE GAP: tuple labels are lost through generic instantiation — this
+    // would read `head.sink` / `head.markup`; positional below.
+    val head = await collectHead(sink);
+    val headMarkup = head.1;
+    assert headMarkup.contains("<style>");
+    assert headMarkup.contains("font-weight:bold");
+    assert headMarkup.contains("display:flex") == false;
+    assert shellMarkup.contains("class=\"e_");
+}
+
+test "a late boundary carries its own block, before its own markup" {
+    val drained = await flush();
+    val sink = openSink([]);
+    val shellMarkup = renderToString(shell());
+    val head = await collectHead(sink);
+    val afterHead = head.0;
+    val lateMarkup = renderToString(lateSection());
+    val chunk = await collectChunk(afterHead, "posts");
+    val chunkStyles = chunk.1;
+    assert chunkStyles.contains("data-onze13-chunk=\"posts\"");
+    assert chunkStyles.contains("display:flex");
+    assert chunkStyles.contains("font-weight:bold") == false;
+    val wire = chunkStyles + lateMarkup;
+    assert wire.indexOf("<style") < wire.indexOf("<p ");
+}
+
+test "a render that registers nothing emits no style element at all" {
+    val drained = await flush();
+    val sink = openSink([]);
+    val plain = renderToString(div([text("hi", attrs: [])], attrs: []));
+    val head = await collectHead(sink);
+    assert head.1.contains("<style") == false;
+    assert plain == "<div>hi</div>";
+}
+
+test "a chunk that registers nothing emits nothing" {
+    val drained = await flush();
+    val sink = openSink([]);
+    val head = await collectHead(sink);
+    val chunk = await collectChunk(head.0, "empty");
+    assert chunk.1 == "";
+}
+
+test "a drained sink closes clean" {
+    val drained = await flush();
+    val sink = openSink([]);
+    val shellMarkup = renderToString(shell());
+    val head = await collectHead(sink);
+    val closed = closeSink(head.0);
+    assert closed.1 == "";
+}

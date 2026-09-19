@@ -1,0 +1,98 @@
+// Front 69 — onze13-styling-pipeline · examples/css-module-example.bp
+//
+// The other half of §15: a CSS module's scoped names, the botopink module the
+// build generates from it, and the `public/` resolution rules — including the
+// three URL shapes that must resolve to 404 and never to a file.
+//
+// SERVER SIDE / BUILD TIME. The scoping runs when the app is built; the asset
+// resolution runs on BEAM while a request is in flight.
+//
+// The source this example is about:
+//
+//   app/blog/blog.module.css
+//       .container { padding: 24px; }
+//       .title     { font-size: 2rem; }
+//
+//   .onze13/styles/app_blog_blog.bp   (generated — do not edit)
+//       pub val container: string = "blog_container_4f21ab";
+//       pub val title: string = "blog_title_4f21ab";
+//
+// The suffix is front 03's content hash of the file, so two modules that each
+// define `.container` do not collide and an unchanged file keeps its names
+// across builds.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/css
+//   https://nextjs.org/docs/app/api-reference/file-conventions/public-folder
+
+import { StyleModule, compileStyleModule, generateStyleModuleSource, scopeName } from "onze13-assets";
+import { AssetResponse, resolveAsset, contentTypeOf } from "onze13-assets";
+
+val blogCss = ".container { padding: 24px; }\n.title { font-size: 2rem; }";
+val cardCss = ".container { display: flex; }";
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+test "two files defining the same class get two different scoped names" {
+    val blog = compileStyleModule("app/blog/blog.module.css", blogCss);
+    val card = compileStyleModule("app/ui/card.module.css", cardCss);
+    val blogContainer = scopeName("app/blog/blog.module.css", "container", blog.hash);
+    val cardContainer = scopeName("app/ui/card.module.css", "container", card.hash);
+    assert blogContainer != cardContainer;
+    assert blogContainer.startsWith("blog_container_");
+}
+
+test "an unchanged file keeps its names, so a cached page stays styled" {
+    val first = compileStyleModule("app/blog/blog.module.css", blogCss);
+    val second = compileStyleModule("app/blog/blog.module.css", blogCss);
+    assert first.hash == second.hash;
+    assert first.names.length == second.names.length;
+}
+
+test "every name in the generated module appears in the rewritten CSS" {
+    val blog = compileStyleModule("app/blog/blog.module.css", blogCss);
+    val source = generateStyleModuleSource(blog);
+    assert blog.names.length == 2;
+    loop (blog.names) { pair ->
+        assert source.contains(pair._0);
+        assert source.contains(pair._1);
+        assert blog.css.contains("." + pair._1);
+    };
+    assert blog.css.contains(".container {") == false;
+}
+
+test "the generated module is ordinary botopink a build can compile" {
+    val blog = compileStyleModule("app/blog/blog.module.css", blogCss);
+    val source = generateStyleModuleSource(blog);
+    assert source.contains("pub val container: string = \"");
+    assert source.contains("// generated — do not edit");
+}
+
+test "a fingerprinted asset is immutable; a plain public asset revalidates" {
+    val icon = resolveAsset("public", "/favicon.ico");
+    assert icon.status == 200;
+    assert icon.contentType == "image/x-icon";
+    assert icon.cacheControl.contains("must-revalidate");
+    val chunk = resolveAsset("public", "/_onze13/static/b7f2a1/app.2b91cc.css");
+    assert chunk.cacheControl.contains("immutable");
+    assert chunk.contentType == "text/css";
+}
+
+test "every escape from the public directory is a 404 with no path" {
+    val dotdot = resolveAsset("public", "/../secrets.env");
+    val encoded = resolveAsset("public", "/%2e%2e/secrets.env");
+    val absolute = resolveAsset("public", "/etc/passwd");
+    assert dotdot.status == 404;
+    assert encoded.status == 404;
+    assert absolute.status == 404;
+    assert dotdot.path == "";
+    assert encoded.path == "";
+    assert absolute.path == "";
+}
+
+test "an unknown extension is never served as HTML" {
+    assert contentTypeOf("ico") == "image/x-icon";
+    assert contentTypeOf("woff2") == "font/woff2";
+    assert contentTypeOf("weird") == "application/octet-stream";
+    assert contentTypeOf("") == "application/octet-stream";
+}

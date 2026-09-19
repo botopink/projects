@@ -1,0 +1,75 @@
+// Front 61 — Rakun Parallel and Intercepting Routes
+//
+// What this demonstrates: § 21's dashboard. One layout places two named slots
+// beside its children; each slot matches the URL on its own, and the slot that
+// does not match falls back to its own default.bp on a hard request. All of it
+// runs on the BEAM.
+//
+// The app tree this file populates:
+//
+//   app/
+//     dashboard/
+//       layout.bp          <- dashboardLayout, below
+//       page.bp            <- dashboardPage, below
+//       @analytics/
+//         page.bp          <- analyticsSlot
+//         default.bp       <- analyticsDefault
+//       @team/
+//         settings/
+//           page.bp        <- teamSettingsSlot
+//         default.bp       <- teamDefault
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes
+//   https://nextjs.org/docs/app/api-reference/file-conventions/default
+
+import {layout, page, defaultView, LayoutProps, PageContext} from "rakun";  // front 22
+import {Element, div, h1, p, text} from "jhonstart";
+
+// SERVER — the layout. `props.slots` is the ordered pair list front 61 composes
+// and front 23 hands over; the labels of a tuple are lost through generic
+// instantiation, so the pairs are read positionally.
+#[layout("dashboard")]
+pub fn dashboardLayout(props: LayoutProps) -> Element {
+    val panels = props.slots.map({ pair ->
+        div([pair.1], attrs: []);
+    });
+    return div([
+        h1([text("Dashboard", attrs: [])], attrs: []),
+        props.children,
+        div(panels, attrs: []),
+    ], attrs: []);
+}
+
+#[page("dashboard")]
+#[@future]
+pub fn dashboardPage(route: PageContext) -> @Future<Element> {
+    return p([text("overview", attrs: [])], attrs: []);
+}
+
+// SERVER — the @analytics slot. It matches /dashboard and nothing below it.
+#[page("dashboard/@analytics")]
+#[@future]
+pub fn analyticsSlot(route: PageContext) -> @Future<Element> {
+    return p([text("visits: 1204", attrs: [])], attrs: []);
+}
+
+// SERVER — what @analytics renders when the URL it does not match is loaded
+// directly. On a client navigation the slot keeps what it had instead, and the
+// payload says so with `U`.
+#[defaultView("dashboard/@analytics")]
+pub fn analyticsDefault(props: LayoutProps) -> Element {
+    return p([text("analytics unavailable for this view", attrs: [])], attrs: []);
+}
+
+// SERVER — the @team slot matches one segment deeper.
+#[page("dashboard/@team/settings")]
+#[@future]
+pub fn teamSettingsSlot(route: PageContext) -> @Future<Element> {
+    return p([text("team settings", attrs: [])], attrs: []);
+}
+
+#[defaultView("dashboard/@team")]
+pub fn teamDefault(props: LayoutProps) -> Element {
+    return p([text("no team selected", attrs: [])], attrs: []);
+}

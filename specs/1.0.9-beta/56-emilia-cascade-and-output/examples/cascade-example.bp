@@ -1,0 +1,88 @@
+// Front 56 — emilia cascade and output
+//
+// One card whose styles reach outside its own class body: a hover that becomes a
+// sibling rule rather than a nested block, a breakpoint that becomes a hoisted
+// @media, a reset supplied through Options, and a layered document that a project's
+// own CSS could deliberately beat.
+//
+// https://tailwindcss.com/docs/styling-with-utility-classes
+// https://tailwindcss.com/docs/hover-focus-and-other-states
+// https://tailwindcss.com/docs/adding-custom-styles
+
+import { emilia, flush, Token } from "emilia";
+import { defaultOptions, withBase, withPrefix, withImportant, withLayers, flushWith } from "emilia";
+// `preflightRules` is provided by front 55.
+import { preflightRules } from "emilia";
+
+// A card and its hover state. `Token.Hover` needs its inner list as a typed `val`
+// first: the dot-shorthand form `[.Bg.White]` inside the call argument does not
+// propagate the typed-array context (see repository/emilia/src/emilia.bp:498-503).
+fn card() -> string {
+    val hovered: Token[] = [.Bg.Gray.100];
+    val wide: Token[] = [.Pad.All.8];
+    val tokens: Token[] = [
+        .Bg.White,
+        .Text.Bold,
+        .Pad.All.4,
+        Token.Hover(hovered),
+        Token.Md(wide),
+    ];
+    return emilia(tokens);
+}
+
+test "a hover is a sibling rule, not a block nested in the class body" {
+    val cls = card();
+    val css = await flush();
+    assert css.contains("." + cls + "{background:#ffffff");
+    assert css.contains("." + cls + ":hover{");
+    assert css.contains("@media (width >= 48rem){." + cls + "{");
+}
+
+test "the document is layered and the layer order is declared up front" {
+    val _cls = card();
+    val css = await flush();
+    assert css.startsWith("<style>@layer theme, base, components, utilities;");
+    assert css.contains("@layer theme{:root{--spacing:0.25rem");
+    assert css.contains("@layer utilities{");
+    assert css.endsWith("</style>");
+}
+
+test "layers can be turned off for a page that owns its whole stylesheet" {
+    val _cls = card();
+    val opts = withLayers(defaultOptions(), false);
+    val css = await flushWith(opts);
+    assert css.contains("@layer") == false;
+}
+
+test "the reset arrives as an argument, never as ambient configuration" {
+    val _cls = card();
+    val opts = withBase(defaultOptions(), preflightRules());
+    val css = await flushWith(opts);
+    assert css.contains("@layer base{");
+    assert css.contains("box-sizing:border-box");
+}
+
+test "a class prefix is a plain concatenation because emilia names are hashes" {
+    val cls = card();
+    val opts = withPrefix(defaultOptions(), "tw_");
+    val css = await flushWith(opts);
+    assert css.contains(".tw_" + cls + "{");
+}
+
+test "the important flag applies per declaration" {
+    val tokens: Token[] = [.Text.Bold];
+    val _cls = emilia(tokens);
+    val opts = withImportant(defaultOptions(), true);
+    val css = await flushWith(opts);
+    assert css.contains("font-weight:bold!important");
+}
+
+// TAILWIND_CSS_DOCS.md § 3.1 Conflitos de Estilo: when two utilities set the same
+// property the last one in the stylesheet wins. Inside one emilia() call that is
+// the order of the token list.
+test "two tokens setting one property emit in list order" {
+    val tokens: Token[] = [.Layout.Grid, .Layout.Flex];
+    val cls = emilia(tokens);
+    val css = await flush();
+    assert css.contains("." + cls + "{display:grid;display:flex}");
+}

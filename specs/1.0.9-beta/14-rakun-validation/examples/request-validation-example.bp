@@ -1,0 +1,122 @@
+// Front 14 — rakun-validation · example 1 of 2
+//
+// A controller that binds path and query values, validates a request record, and
+// answers with ONE problem document listing every failure — not the first one.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/io/validation.html
+//           (07-io.md § Validacao)
+//
+// Target: both — boundary. `validateCreateUserRequest`, emitted by #[validated]
+// below, is plain botopink and compiles for erlang and commonJS from this one
+// source, so the server's verdict and the browser's verdict cannot drift. The
+// controller around it is server-only.
+
+import {service, restController, route, getMapping, postMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+// Provided by front 14. #[validated] splices `validateCreateUserRequest` and
+// `constraintsOfCreateUserRequest` into THIS module, and their bodies call the
+// constraint helpers, so those must resolve here too.
+import {validated, notBlank, notEmpty, sizeBetween, email, minValue, maxValue, pattern} from "rakun-validation";
+import {Violation, ValidationReport, checkNotBlank, checkSizeBetween, checkEmail, checkRange, checkPattern} from "rakun-validation";
+import {bindInt, bindRequired, bindingReport} from "rakun-validation";
+
+// ── the request record ──────────────────────────────────────────────────────
+//
+// #[validated] reflects these fields and emits, into this module:
+//
+//     pub fn validateCreateUserRequest(v: CreateUserRequest) -> ValidationReport
+//     pub fn constraintsOfCreateUserRequest() -> string
+//
+// Every constraint on a field runs; the first failure does not stop the second,
+// which is what makes a three-field form report three errors.
+
+#[validated]
+pub type CreateUserRequest(
+    #[notBlank]
+    #[sizeBetween(2, 50)]
+    name: string,
+
+    #[notBlank]
+    #[email]
+    email: string,
+
+    #[minValue(18)]
+    #[maxValue(120)]
+    age: i32,
+
+    #[pattern("^[0-9]{5}-[0-9]{3}$")]
+    postalCode: string,
+)
+
+// ── the handler ─────────────────────────────────────────────────────────────
+//
+// `Request`'s accessors all return `string` and all return "" when absent, so a
+// handler cannot tell a missing field from an empty one. The `bind*` family
+// makes that distinction and records a violation instead of silently yielding a
+// zero. Bind everything, then ask once.
+
+#[restController]
+#[route("/api/users")]
+pub type UserController(
+    users: UserService,
+) {
+    #[postMapping("/")]
+    pub fn create(self: Self, req: Request) -> Response {
+        val name = bindRequired("name", req.query("name"));
+        val mail = bindRequired("email", req.query("email"));
+        val age = bindInt("age", req.query("age"));
+        val postal = bindRequired("postalCode", req.query("postalCode"));
+
+        // Coercion failures first: a body that could not even be read into the
+        // record's shape is a different answer from a body that read fine and
+        // broke a rule.
+        val bound = bindingReport();
+        if (!bound.isValid()) {
+            return Response.withStatus(400, bound.toJson());
+        };
+
+        val request = CreateUserRequest(name: name, email: mail, age: age, postalCode: postal);
+        val report = validateCreateUserRequest(request);
+        if (!report.isValid()) {
+            return Response.withStatus(400, report.toJson());
+        };
+
+        return Response.created(self.users.create(request));
+    }
+
+    // Path values go through the same binder. `/api/users/abc` produces a
+    // typeMismatch violation naming `id`, not a lookup of user 0.
+    #[getMapping("/:id")]
+    pub fn show(self: Self, req: Request) -> Response {
+        val id = bindInt("id", req.param("id"));
+        val bound = bindingReport();
+        if (!bound.isValid()) {
+            return Response.withStatus(400, bound.toJson());
+        };
+        return Response.json(self.users.find(id));
+    }
+}
+
+#[service]
+pub type UserService {
+    pub fn create(self: Self, req: CreateUserRequest) -> string {
+        return "{\"name\":\"" + req.name + "\",\"email\":\"" + req.email + "\"}";
+    }
+
+    pub fn find(self: Self, id: i32) -> string {
+        return "{\"id\":" + id.toString() + "}";
+    }
+}
+
+// ── the same function, on the other side of the boundary ────────────────────
+//
+// Nothing here is server-specific: `validateCreateUserRequest` is string
+// comparisons, length checks and a regex. The browser bundle (front 68) calls
+// exactly this function against exactly this record, so a form that passes in
+// the browser passes on the server by construction rather than by review.
+
+pub fn previewValidation(name: string, mail: string, age: i32, postal: string) -> string {
+    val request = CreateUserRequest(name: name, email: mail, age: age, postalCode: postal);
+    return validateCreateUserRequest(request).toJson();
+}

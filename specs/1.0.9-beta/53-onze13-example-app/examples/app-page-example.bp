@@ -1,0 +1,81 @@
+// Front 53 — onze13 example app · examples/app-page-example.bp
+// App file: app/page.bp
+//
+// Demonstrates: the home page. A synchronous page (no data load, so no
+// `#[@future]` and front 50's scan emits `registerPage`, not
+// `registerAsyncPage`), an above-the-fold optimized image, and the segment
+// config that makes front 60 prerender this route at build time.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/page
+//           https://nextjs.org/docs/app/api-reference/components/image
+//           NEXTJS-DOCS.md § 5. Layouts e Páginas · § 16. Otimização de Imagens
+//
+// Target: erlang (server).
+
+import {Element, div, h1, p, text, renderToString} from "jhonstart";
+import {emilia, Token} from "emilia";
+import {Params, PageProps, SegmentConfig} from "onze13";
+// front 51 — the Image component and the optimizer behind it
+import {
+    Image,
+    ImageProps,
+    ImageConfig,
+    defaultImageProps,
+    defaultImageConfig,
+    withPriority,
+} from "onze13";
+// app-local
+import {section} from "@/components.tags";
+
+// front 60 — route segment config. `force-static` with `revalidate: 0` means
+// "prerender at build time and never revalidate"; front 60 reads this export
+// and puts `/` in the prerender manifest.
+pub fn segmentConfig() -> SegmentConfig {
+    return SegmentConfig(dynamicMode: "force-static", revalidate: 0);
+}
+
+// front 22 — `/` resolves to this fn. `PageProps` is empty here: no dynamic
+// segment, no search params read (reading them would make the render dynamic
+// and opt this route out of front 60's prerendering).
+pub fn HomePage(props: PageProps) -> Element {
+    val cfg = defaultImageConfig();
+
+    // front 51 — above the fold, so eager and high priority. The declared
+    // width and height reserve the box before the bytes arrive.
+    val heroBase = defaultImageProps("/images/hero.jpg", "Notes on botopink", 1200, 600);
+    val hero = withPriority(heroBase, true);
+
+    val titleTokens: Token[] = [.Text.Size.X3xl, .Text.Bold, .Color.Gray.900];
+    val leadTokens: Token[] = [.Pad.Y.4, .Color.Gray.700, .Text.Size.Lg];
+    val titleClass = emilia(titleTokens);
+    val leadClass = emilia(leadTokens);
+
+    return section([
+        Image(hero, cfg, "public"),
+        h1([text("Notes", attrs: [])], attrs: [#("class", titleClass)]),
+        p([text("A blog that exercises every front of 1.0.9-beta.", attrs: [])],
+          attrs: [#("class", leadClass)]),
+        div([], attrs: []),
+    ], attrs: []);
+}
+
+test "the home page renders its hero eagerly and reserves its box" {
+    val props = PageProps(params: Params(entries: []), search: Params(entries: []));
+    val markup = renderToString(HomePage(props));
+    assert markup.contains("loading=\"eager\"");
+    assert markup.contains("width=\"1200\"");
+    assert markup.contains("height=\"600\"");
+    assert markup.contains("alt=\"Notes on botopink\"");
+}
+
+test "the page is styled by emilia, not by inline attributes" {
+    val props = PageProps(params: Params(entries: []), search: Params(entries: []));
+    val markup = renderToString(HomePage(props));
+    assert markup.contains("class=\"e_");
+    assert markup.contains("style=").negate();
+}
+
+test "the segment is declared static, which is what front 60 prerenders on" {
+    assert segmentConfig().dynamicMode == "force-static";
+    assert segmentConfig().revalidate == 0;
+}

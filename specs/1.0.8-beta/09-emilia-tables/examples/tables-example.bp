@@ -1,0 +1,146 @@
+// F09 — Tables Example
+// Demonstrates: border-collapse, border-spacing, table-layout, caption-side
+//
+// Docs: https://tailwindcss.com/docs/border-collapse
+//       https://tailwindcss.com/docs/border-spacing
+//       https://tailwindcss.com/docs/table-layout
+//       https://tailwindcss.com/docs/caption-side
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// Border collapse
+val borderCollapseTokens: Token[] = [
+    .Table.BorderCollapse.Collapse,
+    .Table.BorderCollapse.Separate,
+];
+val borderCollapseStyles = emilia(borderCollapseTokens);
+
+// Border spacing
+val borderSpacingTokens: Token[] = [
+    .Table.BorderSpacing.__0,
+    .Table.BorderSpacing.__1,
+    .Table.BorderSpacing.__2,
+    .Table.BorderSpacing.__4,
+    .Table.BorderSpacing.__8,
+    .Table.BorderSpacing.__16,
+];
+val borderSpacingStyles = emilia(borderSpacingTokens);
+
+// Border spacing X
+val borderSpacingXTokens: Token[] = [
+    .Table.BorderSpacingX.__0,
+    .Table.BorderSpacingX.__2,
+    .Table.BorderSpacingX.__4,
+];
+val borderSpacingXStyles = emilia(borderSpacingXTokens);
+
+// Border spacing Y
+val borderSpacingYTokens: Token[] = [
+    .Table.BorderSpacingY.__0,
+    .Table.BorderSpacingY.__2,
+    .Table.BorderSpacingY.__4,
+];
+val borderSpacingYStyles = emilia(borderSpacingYTokens);
+
+// Table layout
+val tableLayoutTokens: Token[] = [
+    .Table.Layout.Auto,
+    .Table.Layout.Fixed,
+];
+val tableLayoutStyles = emilia(tableLayoutTokens);
+
+// Caption side
+val captionSideTokens: Token[] = [
+    .Table.CaptionSide.Top,
+    .Table.CaptionSide.Bottom,
+];
+val captionSideStyles = emilia(captionSideTokens);
+
+// Combined table example
+val tableTokens: Token[] = [
+    .Table.BorderCollapse.Collapse,
+    .Table.Layout.Fixed,
+    .Table.BorderSpacing.__0,
+];
+val tableStyles = emilia(tableTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F09: Tables Example ===");
+    @print("Border Collapse: " + borderCollapseStyles);
+    @print("Border Spacing: " + borderSpacingStyles);
+    @print("Border Spacing X: " + borderSpacingXStyles);
+    @print("Border Spacing Y: " + borderSpacingYStyles);
+    @print("Table Layout: " + tableLayoutStyles);
+    @print("Caption Side: " + captionSideStyles);
+    @print("Combined Table: " + tableStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "border-collapse generates correct CSS" {
+    val tokens: Token[] = [.Table.BorderCollapse.Collapse];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-collapse:collapse") != -1;
+}
+
+test "border-separate generates correct CSS" {
+    val tokens: Token[] = [.Table.BorderCollapse.Separate];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-collapse:separate") != -1;
+}
+
+test "border-spacing-4 generates correct CSS" {
+    val tokens: Token[] = [.Table.BorderSpacing.__4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-spacing:1rem") != -1;
+}
+
+test "border-spacing-x-2 generates correct CSS" {
+    val tokens: Token[] = [.Table.BorderSpacingX.__2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-spacing:0.5rem 0") != -1;
+}
+
+test "border-spacing-y-2 generates correct CSS" {
+    val tokens: Token[] = [.Table.BorderSpacingY.__2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-spacing:0 0.5rem") != -1;
+}
+
+test "table-layout-fixed generates correct CSS" {
+    val tokens: Token[] = [.Table.Layout.Fixed];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("table-layout:fixed") != -1;
+}
+
+test "table-layout-auto generates correct CSS" {
+    val tokens: Token[] = [.Table.Layout.Auto];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("table-layout:auto") != -1;
+}
+
+test "caption-side-top generates correct CSS" {
+    val tokens: Token[] = [.Table.CaptionSide.Top];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("caption-side:top") != -1;
+}
+
+test "caption-side-bottom generates correct CSS" {
+    val tokens: Token[] = [.Table.CaptionSide.Bottom];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("caption-side:bottom") != -1;
+}

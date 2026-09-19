@@ -1,0 +1,88 @@
+// Front 13 — rakun-client · example 2 of 2
+//
+// The declarative client. A `behavior` describes the remote API; `#[httpExchange]`
+// reflects it at comptime and emits the implementation, configured per group.
+// No hand-written request assembly anywhere in this file.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/io/rest-client.html#io.rest-client.httpinterface
+//           (07-io.md § HTTP Service Interfaces)
+//
+// Target: erlang (server).
+
+import {service, configuration, bean, restController, route, getMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+// Provided by front 13. `#[httpExchange]` splices the generated type and its
+// factory into THIS module, and the generated body calls `RestClient`, so both
+// the decorators and the client types must resolve here.
+import {httpExchange, getExchange, postExchange, deleteExchange} from "rakun-client";
+import {RestClient, RequestSpec, ClientResponse} from "rakun-client";
+
+// ── the remote API, as a contract ───────────────────────────────────────────
+//
+// `#[httpExchange("shipping")]` emits into this module:
+//
+//     type HttpShippingApi(client: RestClient) implement ShippingApi { … }
+//     pub fn httpShippingApi() -> ShippingApi
+//
+// The client it builds comes from `rakun.http.serviceclient.shipping.base-url`,
+// `.connect-timeout-millis` and `.read-timeout-millis`. A `:param` in a path is
+// substituted from the method parameter of the same name — `:trackingId` below
+// pairs with `trackingId`, and a mismatch is a comptime error naming both.
+
+#[httpExchange("shipping")]
+pub behavior ShippingApi {
+    #[getExchange("/shipments/:trackingId")]
+    fn shipment(self: Self, trackingId: string) -> string;
+
+    #[postExchange("/shipments")]
+    fn createShipment(self: Self, body: string) -> string;
+
+    #[deleteExchange("/shipments/:trackingId")]
+    fn cancelShipment(self: Self, trackingId: string) -> string;
+}
+
+// ── wiring ──────────────────────────────────────────────────────────────────
+//
+// The generated factory is an ordinary value, so it becomes injectable the same
+// way anything else does: a `#[bean]` whose return type is the behavior.
+
+#[configuration]
+pub type ShippingConfig {
+    #[bean]
+    pub fn shippingApi(self: Self) -> ShippingApi {
+        return httpShippingApi();
+    }
+}
+
+// ── use ─────────────────────────────────────────────────────────────────────
+
+#[service]
+pub type FulfillmentService(
+    shipping: ShippingApi,
+) {
+    pub fn track(self: Self, trackingId: string) -> string {
+        return self.shipping.shipment(trackingId);
+    }
+
+    pub fn ship(self: Self, orderJson: string) -> string {
+        return self.shipping.createShipment(orderJson);
+    }
+}
+
+#[restController]
+#[route("/api/fulfillment")]
+pub type FulfillmentController(
+    fulfillment: FulfillmentService,
+) {
+    #[getMapping("/track/:id")]
+    pub fn track(self: Self, req: Request) -> Response {
+        return Response.json(self.fulfillment.track(req.param("id")));
+    }
+}
+
+// LANGUAGE GAP: std has no structured JSON value — `json.parse` and
+// `json.stringify` both take and return `string` (libs/std/src/json.bp:36,45) —
+// so an exchange method cannot be declared `-> Shipment` the way Spring declares
+// `Map<?, ?> echo(...)`. Every method above returns the body as `string`; the
+// decoding step waits on a `JsonValue` model in std.

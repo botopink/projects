@@ -1,0 +1,59 @@
+// Front 73 — rakun starters: the version set, read back.
+//
+// One table answers three questions that would otherwise each get their own
+// answer: what does `/actuator/info` report, what does the starter lint check a
+// dependency name against, and which `rakun-data` is this. The table is authored
+// data; `test/version_set_test.bp` is what stops it drifting from the manifests.
+//
+// Server side — compiles to BEAM. It also compiles and passes on commonJS,
+// because nothing in it is target-specific; running it on both rows is free and
+// catches a `std/fs` divergence.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/appendix/dependency-versions/index.html
+//   https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.info
+//
+// `moduleVersions`, `versionOf` and `rakunVersion` are delivered by this front.
+
+import {rakunVersion, versionOf, moduleVersions, ModuleVersion} from "rakun";
+
+// What front 11's `info` contributor reports. Built here rather than there so
+// the shape is pinned by this front's own test.
+pub fn infoVersionLine() -> string {
+    val modules = moduleVersions().map({ m -> m.name + "@" + m.version });
+    return "rakun " + rakunVersion() + " [" + modules.join(" ") + "]";
+}
+
+test "the framework version is a single answer" {
+    assert rakunVersion() == "0.0.1";
+}
+
+test "a module's version comes from the table, not from its manifest at run time" {
+    assert versionOf("rakun-data") == "0.0.1";
+    assert versionOf("rakun-web") == "0.0.1";
+}
+
+test "an unpinned name answers empty rather than an optional" {
+    assert versionOf("rakun-graphql") == "";
+    assert versionOf("") == "";
+}
+
+test "every starter is in the table, not just every module" {
+    val names = moduleVersions().map({ m -> m.name });
+    assert names.contains("rakun-starter") == true;
+    assert names.contains("rakun-starter-web") == true;
+    assert names.contains("rakun-starter-data-sql") == true;
+}
+
+test "the info line names the framework and every pinned module" {
+    val line = infoVersionLine();
+    assert line.startsWith("rakun 0.0.1 [") == true;
+    assert line.contains("rakun-web@0.0.1") == true;
+    assert line.endsWith("]") == true;
+}
+
+test "the table has no duplicate rows" {
+    val names = moduleVersions().map({ m -> m.name });
+    val dupes = names.filter({ n -> names.count({ m -> m == n }) > 1 });
+    assert dupes.length == 0;
+}

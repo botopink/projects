@@ -1,0 +1,180 @@
+// F10 — Transitions & Animation Example
+// Demonstrates: transition-property/behavior/duration/timing/delay, animation
+//
+// Docs: https://tailwindcss.com/docs/transition-property
+//       https://tailwindcss.com/docs/transition-behavior
+//       https://tailwindcss.com/docs/transition-duration
+//       https://tailwindcss.com/docs/transition-timing-function
+//       https://tailwindcss.com/docs/transition-delay
+//       https://tailwindcss.com/docs/animation
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// Transition property
+val transitionPropTokens: Token[] = [
+    .Transition.None,
+    .Transition.All,
+    .Transition.Default,
+    .Transition.Colors,
+    .Transition.Opacity,
+    .Transition.Shadow,
+    .Transition.Transform,
+];
+val transitionPropStyles = emilia(transitionPropTokens);
+
+// Transition behavior
+val transitionBehaviorTokens: Token[] = [
+    .Transition.Behavior.Discrete,
+    .Transition.Behavior.Normal,
+];
+val transitionBehaviorStyles = emilia(transitionBehaviorTokens);
+
+// Transition duration
+val transitionDurationTokens: Token[] = [
+    .Transition.Duration.__0,
+    .Transition.Duration.__75,
+    .Transition.Duration.__100,
+    .Transition.Duration.__150,
+    .Transition.Duration.__200,
+    .Transition.Duration.__300,
+    .Transition.Duration.__500,
+    .Transition.Duration.__700,
+    .Transition.Duration.__1000,
+];
+val transitionDurationStyles = emilia(transitionDurationTokens);
+
+// Transition timing function
+val transitionEaseTokens: Token[] = [
+    .Transition.Ease.Linear,
+    .Transition.Ease.In,
+    .Transition.Ease.Out,
+    .Transition.Ease.InOut,
+];
+val transitionEaseStyles = emilia(transitionEaseTokens);
+
+// Transition delay
+val transitionDelayTokens: Token[] = [
+    .Transition.Delay.__0,
+    .Transition.Delay.__75,
+    .Transition.Delay.__100,
+    .Transition.Delay.__150,
+    .Transition.Delay.__200,
+    .Transition.Delay.__300,
+    .Transition.Delay.__500,
+    .Transition.Delay.__700,
+    .Transition.Delay.__1000,
+];
+val transitionDelayStyles = emilia(transitionDelayTokens);
+
+// Animation
+val animateTokens: Token[] = [
+    .Animate.None,
+    .Animate.Spin,
+    .Animate.Ping,
+    .Animate.Pulse,
+    .Animate.Bounce,
+];
+val animateStyles = emilia(animateTokens);
+
+// Combined transition example (button hover)
+val buttonTokens: Token[] = [
+    .Transition.Colors,
+    .Transition.Duration.__300,
+    .Transition.Ease.InOut,
+];
+val buttonStyles = emilia(buttonTokens);
+
+// Combined animation example (loading spinner)
+val spinnerTokens: Token[] = [
+    .Animate.Spin,
+];
+val spinnerStyles = emilia(spinnerTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F10: Transitions & Animation Example ===");
+    @print("Transition Property: " + transitionPropStyles);
+    @print("Transition Behavior: " + transitionBehaviorStyles);
+    @print("Transition Duration: " + transitionDurationStyles);
+    @print("Transition Ease: " + transitionEaseStyles);
+    @print("Transition Delay: " + transitionDelayStyles);
+    @print("Animate: " + animateStyles);
+    @print("Button: " + buttonStyles);
+    @print("Spinner: " + spinnerStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "transition-none generates correct CSS" {
+    val tokens: Token[] = [.Transition.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transition-property:none") != -1;
+}
+
+test "transition-all generates correct CSS" {
+    val tokens: Token[] = [.Transition.All];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transition-property:all") != -1;
+}
+
+test "transition-colors generates correct CSS" {
+    val tokens: Token[] = [.Transition.Colors];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transition-property:color") != -1;
+}
+
+test "transition-duration-300 generates correct CSS" {
+    val tokens: Token[] = [.Transition.Duration.__300];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transition-duration:300ms") != -1;
+}
+
+test "transition-ease-in-out generates correct CSS" {
+    val tokens: Token[] = [.Transition.Ease.InOut];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transition-timing-function:cubic-bezier(0.4,0,0.2,1)") != -1;
+}
+
+test "transition-delay-150 generates correct CSS" {
+    val tokens: Token[] = [.Transition.Delay.__150];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("transition-delay:150ms") != -1;
+}
+
+test "animate-spin generates correct CSS" {
+    val tokens: Token[] = [.Animate.Spin];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("animation:spin 1s linear infinite") != -1;
+}
+
+test "animate-pulse generates correct CSS" {
+    val tokens: Token[] = [.Animate.Pulse];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("animation:pulse") != -1;
+}
+
+test "animate-bounce generates correct CSS" {
+    val tokens: Token[] = [.Animate.Bounce];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("animation:bounce 1s infinite") != -1;
+}
+
+test "animate-none generates correct CSS" {
+    val tokens: Token[] = [.Animate.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("animation:none") != -1;
+}

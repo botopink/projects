@@ -1,0 +1,170 @@
+// Front 82 — rakun Static Assets · static-roots-example.bp
+//
+// Demonstrates: the static configuration an application writes, a fingerprinted
+// `emilia` stylesheet served with a year-long cache, and the assertions that
+// make the traversal and conditional-request policy falsifiable rather than
+// asserted in prose.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.spring-mvc.static-content
+//           04-web.md § Conteudo Estatico
+//           08-container-images.md § Reproducao e Cache
+//
+// SERVER SIDE. Note what is absent: no line below reads a file body. Bytes are
+// written to the socket by the host through `file:sendfile/5`, because botopink
+// has no byte-string type to hold them in — see the README's Language gaps.
+
+import {configuration, bean, value} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp} from "rakun";
+
+import {StaticRoot, registerStaticRoot, contentTypeOf, fingerprint} from "rakun-web";
+// The in-process fixtures this front ships: a scratch root, a request driver and
+// a filesystem-call counter, so "answers 404 without touching disk" is testable.
+import {fixtureRoot, fixtureGet, fixtureGetIfNoneMatch, statCalls} from "rakun-web";
+import {fixtureGetRange, fixtureGetAccepting} from "rakun-web";
+
+// ---- what an application configures -------------------------------------------
+//
+// Two roots with different policies, which is the whole of the design: a
+// content-hashed name is its own version and can be cached forever; a stable
+// name cannot say anything about its content and must be revalidated.
+
+#[configuration]
+pub type AssetConfig(
+    #[value("rakun.web.static.build-dir")] buildDir: string,
+    #[value("rakun.web.static.public-dir")] publicDir: string,
+) {
+    // Fingerprinted build output: `app.7f3a91.css`, `client.2b8e40.js`. The name
+    // changes when the content changes, so a client that has one never needs to
+    // ask again.
+    #[bean]
+    pub fn buildAssets(self: Self) -> StaticRoot {
+        return StaticRoot(
+            pattern: "/_assets/**",
+            directory: self.buildDir,
+            indexFile: "",
+            cacheSeconds: 31536000,
+            immutable: true,
+            useLastModified: false,
+            precompressed: true,
+        );
+    }
+
+    // Hand-written files under stable names: favicons, robots.txt, a logo. The
+    // name cannot carry a version, so every request revalidates and the common
+    // answer is a 304 with no body.
+    #[bean]
+    pub fn publicAssets(self: Self) -> StaticRoot {
+        return StaticRoot(
+            pattern: "/public/**",
+            directory: self.publicDir,
+            indexFile: "index.html",
+            cacheSeconds: 0,
+            immutable: false,
+            useLastModified: false,
+            precompressed: false,
+        );
+    }
+}
+
+// ---- naming a generated stylesheet --------------------------------------------
+//
+// `emilia` produces a CSS string at comptime (front 33 onward) and front 23
+// writes it into the page. `fingerprint` is what turns it into a URL that can be
+// cached for a year: same content, same name; one byte different, different name.
+
+pub fn stylesheetHref(css: string) -> string {
+    val hashed = fingerprint(css);
+    return "/_assets/app." + hashed + ".css";
+}
+
+// ---- what the policy must be true of ------------------------------------------
+
+test "content type comes from the extension, and an unknown one is not guessed" {
+    assert contentTypeOf("app.css") == "text/css; charset=utf-8";
+    assert contentTypeOf("client.mjs") == "text/javascript; charset=utf-8";
+    assert contentTypeOf("logo.svg") == "image/svg+xml";
+    assert contentTypeOf("font.woff2") == "font/woff2";
+    assert contentTypeOf("archive.zzz") == "application/octet-stream";
+}
+
+test "a traversal answers 404 without touching the filesystem" {
+    val root = fixtureRoot();
+    registerStaticRoot(root);
+    val before = statCalls();
+    val res = fixtureGet("/_assets/../../etc/passwd");
+    assert res.status == 404;
+    // The rejection happens on the decoded path, before the join — so no stat.
+    assert statCalls() == before;
+}
+
+test "an encoded traversal is rejected, and a doubly-encoded one is a bad request" {
+    val root = fixtureRoot();
+    registerStaticRoot(root);
+    assert fixtureGet("/_assets/%2e%2e%2fsecret.txt").status == 404;
+    assert fixtureGet("/_assets/%252e%252e%252fsecret.txt").status == 400;
+}
+
+test "a symlink out of the root is not a way out of the root" {
+    val root = fixtureRoot();
+    registerStaticRoot(root);
+    // `escape.txt` is a symlink to a file above the root; `inside.txt` is a
+    // symlink to a sibling within it.
+    assert fixtureGet("/_assets/escape.txt").status == 404;
+    assert fixtureGet("/_assets/inside.txt").status == 200;
+}
+
+test "a fingerprinted asset is immutable and revalidates to 304" {
+    val root = fixtureRoot();
+    registerStaticRoot(root);
+    val first = fixtureGet("/_assets/app.7f3a91.css");
+    assert first.status == 200;
+    assert first.header("cache-control") == "public, max-age=31536000, immutable";
+    val etag = first.header("etag");
+    assert etag != "";
+    val second = fixtureGetIfNoneMatch("/_assets/app.7f3a91.css", etag);
+    assert second.status == 304;
+    assert second.body == "";
+    // A 304 carries the same validators the 200 carried.
+    assert second.header("etag") == etag;
+    assert second.header("cache-control") == first.header("cache-control");
+}
+
+test "a reproducible build emits no Last-Modified" {
+    val root = fixtureRoot();
+    registerStaticRoot(root);
+    val res = fixtureGet("/_assets/app.7f3a91.css");
+    assert res.header("last-modified") == "";
+}
+
+test "a range answers 206 with exactly the bytes asked for" {
+    val root = fixtureRoot();
+    registerStaticRoot(root);
+    val res = fixtureGetRange("/_assets/app.7f3a91.css", "bytes=0-99");
+    assert res.status == 206;
+    assert res.header("content-range").startsWith("bytes 0-99/");
+    assert res.header("content-length") == "100";
+    val bad = fixtureGetRange("/_assets/app.7f3a91.css", "bytes=999999-1000000");
+    assert bad.status == 416;
+}
+
+test "a pre-compressed variant is chosen and the response varies on it" {
+    val root = fixtureRoot();
+    registerStaticRoot(root);
+    val br = fixtureGetAccepting("/_assets/app.7f3a91.css", "br, gzip");
+    assert br.header("content-encoding") == "br";
+    // The content type is the ORIGINAL file's, not the variant's.
+    assert br.header("content-type") == "text/css; charset=utf-8";
+    assert br.header("vary") == "Accept-Encoding";
+    val plain = fixtureGetAccepting("/_assets/app.7f3a91.css", "identity");
+    assert plain.header("content-encoding") == "";
+    // Vary is present even when nothing was negotiated.
+    assert plain.header("vary") == "Accept-Encoding";
+}
+
+test "a request matching no root falls through to the router" {
+    val root = fixtureRoot();
+    registerStaticRoot(root);
+    val res = fixtureGet("/api/users");
+    // 404 from the router, not from this filter — the filter set no headers.
+    assert res.header("cache-control") == "";
+}

@@ -1,0 +1,88 @@
+// Front 53 — onze13 example app · examples/blog-list-page-example.bp
+// App file: app/blog/page.bp
+//
+// Demonstrates: a server component that loads data, the load being cached under
+// a tag that a mutation will later expire, and the list streaming behind the
+// segment's own `loading.bp`.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/fetching-data
+//           https://nextjs.org/docs/app/api-reference/file-conventions/loading
+//           NEXTJS-DOCS.md § 9. Busca de Dados · § 11. Cache · § 13. Streaming
+//
+// Target: erlang (server). Nothing in this file has a browser half — the list
+// is rendered once, on the server, and the only interactive thing on the page
+// is the Link in each card, which front 27 owns.
+
+import {Element, div, h1, ul, li, text, renderToString} from "jhonstart";
+import {emilia, Token} from "emilia";
+import {Params, PageProps} from "onze13";
+// front 30 — an inline Suspense boundary beside the file-convention one
+import {suspense} from "jhonstart";
+// app-local
+import {Post, loadPosts} from "@/lib.db";
+import {PostCard} from "@/components.post_card";
+import {section} from "@/components.tags";
+
+// front 28 — a server component: `#[@future] … -> @Future<Element>`. Front 50's
+// scan reads that return type and emits `registerAsyncPage("/blog", …)`.
+//
+// front 12 — `loadPosts` calls `cacheTag("posts")` and `cacheLife("hours")`
+// before it reads, so `revalidateTag("posts")` in lib/actions.bp expires
+// exactly this entry and nothing else.
+#[@future]
+pub fn BlogPage(props: PageProps) -> @Future<Element> {
+    val posts = await loadPosts();
+    val titleTokens: Token[] = [.Text.Size.X2xl, .Text.Bold];
+    val listTokens: Token[] = [.Flex.Col, .Flex.Gap.4, .Layout.Flex];
+    val titleClass = emilia(titleTokens);
+    val listClass = emilia(listTokens);
+
+    val items = posts.map({ p -> li([PostCard(p)], attrs: []) });
+    return section([
+        h1([text("All posts", attrs: [])], attrs: [#("class", titleClass)]),
+        ul(items, attrs: [#("class", listClass)]),
+    ], attrs: []);
+}
+
+// front 30 — the same page with an inline boundary instead of the file
+// convention, for the case where only part of the page is slow. The shell and
+// the heading flush immediately; the list arrives in a later chunk.
+#[@future]
+pub fn BlogPageStreamed(props: PageProps) -> @Future<Element> {
+    val titleTokens: Token[] = [.Text.Size.X2xl, .Text.Bold];
+    val titleClass = emilia(titleTokens);
+    val fallback = div([text("Loading posts…", attrs: [])], attrs: []);
+    return section([
+        h1([text("All posts", attrs: [])], attrs: [#("class", titleClass)]),
+        suspense(fallback, { -> PostList() }),
+    ], attrs: []);
+}
+
+#[@future]
+fn PostList() -> @Future<Element> {
+    val posts = await loadPosts();
+    val items = posts.map({ p -> li([PostCard(p)], attrs: []) });
+    return ul(items, attrs: []);
+}
+
+test "the list renders one card per post" {
+    val props = PageProps(params: Params(entries: []), search: Params(entries: []));
+    val markup = renderToString(await BlogPage(props));
+    assert markup.contains("<ul");
+    assert markup.contains("<li>");
+    assert markup.contains("<article");
+}
+
+test "the shell renders before the list resolves" {
+    val props = PageProps(params: Params(entries: []), search: Params(entries: []));
+    val markup = renderToString(await BlogPageStreamed(props));
+    assert markup.contains("All posts");
+    assert markup.contains("Loading posts…");
+}
+
+test "two renders in one process both see the cached read, not two reads" {
+    val props = PageProps(params: Params(entries: []), search: Params(entries: []));
+    val a = renderToString(await BlogPage(props));
+    val b = renderToString(await BlogPage(props));
+    assert a == b;
+}

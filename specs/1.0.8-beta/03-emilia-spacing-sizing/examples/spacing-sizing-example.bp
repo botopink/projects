@@ -1,0 +1,305 @@
+// F03 — Spacing & Sizing Example
+// Demonstrates: full Pad/Margin scale (0–96 + px), Width/Height/Min/Max,
+// logical properties (inline/block-size)
+//
+// Docs: https://tailwindcss.com/docs/padding
+//       https://tailwindcss.com/docs/margin
+//       https://tailwindcss.com/docs/width
+//       https://tailwindcss.com/docs/min-width
+//       https://tailwindcss.com/docs/max-width
+//       https://tailwindcss.com/docs/height
+//       https://tailwindcss.com/docs/min-height
+//       https://tailwindcss.com/docs/max-height
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// Padding — full scale
+val padAllTokens: Token[] = [
+    .Pad.All.__0,
+    .Pad.All.__1,
+    .Pad.All.__2,
+    .Pad.All.__3,
+    .Pad.All.__4,
+    .Pad.All.__5,
+    .Pad.All.__6,
+    .Pad.All.__8,
+    .Pad.All.__10,
+    .Pad.All.__12,
+    .Pad.All.__16,
+    .Pad.All.__20,
+    .Pad.All.__24,
+    .Pad.All.__32,
+    .Pad.All.__40,
+    .Pad.All.__48,
+    .Pad.All.__56,
+    .Pad.All.__64,
+    .Pad.All.__72,
+    .Pad.All.__80,
+    .Pad.All.__96,
+    .Pad.All.Px,
+    .Pad.All.Full,
+];
+val padAllStyles = emilia(padAllTokens);
+
+// Padding — directional
+val padDirTokens: Token[] = [
+    .Pad.X.__4,
+    .Pad.Y.__4,
+    .Pad.T.__2,
+    .Pad.R.__2,
+    .Pad.B.__2,
+    .Pad.L.__2,
+    .Pad.S.__4,
+    .Pad.E.__4,
+];
+val padDirStyles = emilia(padDirTokens);
+
+// Margin — full scale
+val marginAllTokens: Token[] = [
+    .Margin.All.__0,
+    .Margin.All.__1,
+    .Margin.All.__4,
+    .Margin.All.__8,
+    .Margin.All.__16,
+    .Margin.All.__32,
+    .Margin.All.__64,
+    .Margin.All.__96,
+    .Margin.All.Px,
+];
+val marginAllStyles = emilia(marginAllTokens);
+
+// Margin — directional + auto
+val marginDirTokens: Token[] = [
+    .Margin.X.Auto,
+    .Margin.X.__4,
+    .Margin.Y.__4,
+    .Margin.T.__2,
+    .Margin.R.__2,
+    .Margin.B.__2,
+    .Margin.L.__2,
+    .Margin.S.__4,
+    .Margin.E.__4,
+];
+val marginDirStyles = emilia(marginDirTokens);
+
+// Negative margins
+val negMarginTokens: Token[] = [
+    .Margin.NegX.__1,
+    .Margin.NegX.__4,
+    .Margin.NegY.__1,
+    .Margin.NegT.__2,
+    .Margin.NegR.__2,
+    .Margin.NegB.__2,
+    .Margin.NegL.__2,
+];
+val negMarginStyles = emilia(negMarginTokens);
+
+// Width
+val widthTokens: Token[] = [
+    .Size.W.__0,
+    .Size.W.__1,
+    .Size.W.__4,
+    .Size.W.__16,
+    .Size.W.__32,
+    .Size.W.__64,
+    .Size.W.__96,
+    .Size.W.Px,
+    .Size.W.Auto,
+    .Size.W.Full,
+    .Size.W.Screen,
+    .Size.W.Svw,
+    .Size.W.Lvw,
+    .Size.W.Dvw,
+    .Size.W.Min,
+    .Size.W.Max,
+    .Size.W.Fit,
+];
+val widthStyles = emilia(widthTokens);
+
+// Min-width
+val minWidthTokens: Token[] = [
+    .Size.MinW.__0,
+    .Size.MinW.Full,
+    .Size.MinW.Min,
+    .Size.MinW.Max,
+    .Size.MinW.Fit,
+];
+val minWidthStyles = emilia(minWidthTokens);
+
+// Max-width
+val maxWidthTokens: Token[] = [
+    .Size.MaxW.__0,
+    .Size.MaxW.None,
+    .Size.MaxW.Xs,
+    .Size.MaxW.Sm,
+    .Size.MaxW.Md,
+    .Size.MaxW.Lg,
+    .Size.MaxW.Xl,
+    .Size.MaxW.X2xl,
+    .Size.MaxW.X3xl,
+    .Size.MaxW.X4xl,
+    .Size.MaxW.X5xl,
+    .Size.MaxW.X6xl,
+    .Size.MaxW.X7xl,
+    .Size.MaxW.Full,
+    .Size.MaxW.ScreenSm,
+    .Size.MaxW.ScreenMd,
+    .Size.MaxW.ScreenLg,
+    .Size.MaxW.ScreenXl,
+    .Size.MaxW.Screen2xl,
+    .Size.MaxW.Prose,
+];
+val maxWidthStyles = emilia(maxWidthTokens);
+
+// Height
+val heightTokens: Token[] = [
+    .Size.H.__0,
+    .Size.H.__4,
+    .Size.H.__16,
+    .Size.H.__64,
+    .Size.H.Auto,
+    .Size.H.Full,
+    .Size.H.Screen,
+    .Size.H.Svh,
+    .Size.H.Lvh,
+    .Size.H.Dvh,
+    .Size.H.Min,
+    .Size.H.Max,
+    .Size.H.Fit,
+];
+val heightStyles = emilia(heightTokens);
+
+// Min-height
+val minHeightTokens: Token[] = [
+    .Size.MinH.__0,
+    .Size.MinH.Full,
+    .Size.MinH.Screen,
+    .Size.MinH.Svh,
+    .Size.MinH.Lvh,
+    .Size.MinH.Dvh,
+    .Size.MinH.Fit,
+];
+val minHeightStyles = emilia(minHeightTokens);
+
+// Max-height
+val maxHeightTokens: Token[] = [
+    .Size.MaxH.__0,
+    .Size.MaxH.None,
+    .Size.MaxH.Full,
+    .Size.MaxH.Screen,
+    .Size.MaxH.Svh,
+    .Size.MaxH.Fit,
+];
+val maxHeightStyles = emilia(maxHeightTokens);
+
+// Logical properties
+val logicalTokens: Token[] = [
+    .Size.InlineSize.__4,
+    .Size.InlineSize.Full,
+    .Size.MinInlineSize.__0,
+    .Size.MinInlineSize.Full,
+    .Size.MaxInlineSize.__0,
+    .Size.MaxInlineSize.None,
+    .Size.BlockSize.__4,
+    .Size.BlockSize.Full,
+    .Size.MinBlockSize.__0,
+    .Size.MinBlockSize.Full,
+    .Size.MaxBlockSize.__0,
+    .Size.MaxBlockSize.None,
+];
+val logicalStyles = emilia(logicalTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F03: Spacing & Sizing Example ===");
+    @print("Pad All: " + padAllStyles);
+    @print("Pad Dir: " + padDirStyles);
+    @print("Margin All: " + marginAllStyles);
+    @print("Margin Dir: " + marginDirStyles);
+    @print("Neg Margin: " + negMarginStyles);
+    @print("Width: " + widthStyles);
+    @print("Min Width: " + minWidthStyles);
+    @print("Max Width: " + maxWidthStyles);
+    @print("Height: " + heightStyles);
+    @print("Min Height: " + minHeightStyles);
+    @print("Max Height: " + maxHeightStyles);
+    @print("Logical: " + logicalStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "padding scale generates correct CSS" {
+    val tokens: Token[] = [.Pad.All.__4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("padding:1rem") != -1;
+}
+
+test "padding 96 generates correct CSS" {
+    val tokens: Token[] = [.Pad.All.__96];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("padding:24rem") != -1;
+}
+
+test "padding px generates correct CSS" {
+    val tokens: Token[] = [.Pad.All.Px];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("padding:1px") != -1;
+}
+
+test "margin-x auto generates correct CSS" {
+    val tokens: Token[] = [.Margin.X.Auto];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("margin-left:auto") != -1;
+    assert styles.indexOf("margin-right:auto") != -1;
+}
+
+test "negative margin generates correct CSS" {
+    val tokens: Token[] = [.Margin.NegX.__4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("margin-left:-1rem") != -1;
+    assert styles.indexOf("margin-right:-1rem") != -1;
+}
+
+test "width full generates correct CSS" {
+    val tokens: Token[] = [.Size.W.Full];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("width:100%") != -1;
+}
+
+test "width screen generates correct CSS" {
+    val tokens: Token[] = [.Size.W.Screen];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("width:100vw") != -1;
+}
+
+test "max-width xl generates correct CSS" {
+    val tokens: Token[] = [.Size.MaxW.Xl];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("max-width:36rem") != -1;
+}
+
+test "height screen generates correct CSS" {
+    val tokens: Token[] = [.Size.H.Screen];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("height:100vh") != -1;
+}
+
+test "min-height screen generates correct CSS" {
+    val tokens: Token[] = [.Size.MinH.Screen];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("min-height:100vh") != -1;
+}

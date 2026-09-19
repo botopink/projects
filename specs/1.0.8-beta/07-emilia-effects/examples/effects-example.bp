@@ -1,0 +1,230 @@
+// F07 — Effects Example
+// Demonstrates: box-shadow expanded, text-shadow, opacity complete,
+// mix-blend-mode, background-blend-mode, mask-*
+//
+// Docs: https://tailwindcss.com/docs/box-shadow
+//       https://tailwindcss.com/docs/text-shadow
+//       https://tailwindcss.com/docs/opacity
+//       https://tailwindcss.com/docs/mix-blend-mode
+//       https://tailwindcss.com/docs/background-blend-mode
+//       https://tailwindcss.com/docs/mask-clip
+//       https://tailwindcss.com/docs/mask-composite
+//       https://tailwindcss.com/docs/mask-image
+//       https://tailwindcss.com/docs/mask-size
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// Box shadow — full scale
+val shadowTokens: Token[] = [
+    .Effect.Shadow.__2xs,
+    .Effect.Shadow.Xs,
+    .Effect.Shadow.Sm,
+    .Effect.Shadow.Md,
+    .Effect.Shadow.Lg,
+    .Effect.Shadow.Xl,
+    .Effect.Shadow.X2xl,
+    .Effect.Shadow.None,
+    .Effect.Shadow.Inner,
+];
+val shadowStyles = emilia(shadowTokens);
+
+// Inset shadow
+val insetShadowTokens: Token[] = [
+    .Effect.InsetShadow.__2xs,
+    .Effect.InsetShadow.Xs,
+    .Effect.InsetShadow.Sm,
+];
+val insetShadowStyles = emilia(insetShadowTokens);
+
+// Text shadow
+val textShadowTokens: Token[] = [
+    .Effect.TextShadow.__2xs,
+    .Effect.TextShadow.Xs,
+    .Effect.TextShadow.Sm,
+    .Effect.TextShadow.Md,
+    .Effect.TextShadow.Lg,
+    .Effect.TextShadow.None,
+];
+val textShadowStyles = emilia(textShadowTokens);
+
+// Opacity — full scale
+val opacityTokens: Token[] = [
+    .Effect.Opacity.__0,
+    .Effect.Opacity.__5,
+    .Effect.Opacity.__10,
+    .Effect.Opacity.__20,
+    .Effect.Opacity.__25,
+    .Effect.Opacity.__30,
+    .Effect.Opacity.__40,
+    .Effect.Opacity.__50,
+    .Effect.Opacity.__60,
+    .Effect.Opacity.__70,
+    .Effect.Opacity.__75,
+    .Effect.Opacity.__80,
+    .Effect.Opacity.__90,
+    .Effect.Opacity.__95,
+    .Effect.Opacity.__100,
+];
+val opacityStyles = emilia(opacityTokens);
+
+// Mix blend mode
+val blendTokens: Token[] = [
+    .Blend.Normal,
+    .Blend.Multiply,
+    .Blend.Screen,
+    .Blend.Overlay,
+    .Blend.Darken,
+    .Blend.Lighten,
+    .Blend.ColorDodge,
+    .Blend.ColorBurn,
+    .Blend.HardLight,
+    .Blend.SoftLight,
+    .Blend.Difference,
+    .Blend.Exclusion,
+    .Blend.Hue,
+    .Blend.Saturation,
+    .Blend.Color,
+    .Blend.Luminosity,
+    .Blend.PlusLighter,
+];
+val blendStyles = emilia(blendTokens);
+
+// Background blend mode
+val bgBlendTokens: Token[] = [
+    .BgBlend.Normal,
+    .BgBlend.Multiply,
+    .BgBlend.Screen,
+    .BgBlend.Overlay,
+    .BgBlend.Darken,
+    .BgBlend.Lighten,
+    .BgBlend.Difference,
+    .BgBlend.Exclusion,
+];
+val bgBlendStyles = emilia(bgBlendTokens);
+
+// Mask utilities
+val maskClipTokens: Token[] = [
+    .Mask.Clip.Border,
+    .Mask.Clip.Padding,
+    .Mask.Clip.Content,
+];
+val maskClipStyles = emilia(maskClipTokens);
+
+val maskCompositeTokens: Token[] = [
+    .Mask.Composite.Add,
+    .Mask.Composite.Subtract,
+    .Mask.Composite.Intersect,
+    .Mask.Composite.Exclude,
+];
+val maskCompositeStyles = emilia(maskCompositeTokens);
+
+val maskModeTokens: Token[] = [
+    .Mask.Mode.Alpha,
+    .Mask.Mode.Luminance,
+];
+val maskModeStyles = emilia(maskModeTokens);
+
+val maskSizeTokens: Token[] = [
+    .Mask.Size.Auto,
+    .Mask.Size.Cover,
+    .Mask.Size.Contain,
+];
+val maskSizeStyles = emilia(maskSizeTokens);
+
+val maskTypeTokens: Token[] = [
+    .Mask.Type.Alpha,
+    .Mask.Type.Luminance,
+];
+val maskTypeStyles = emilia(maskTypeTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F07: Effects Example ===");
+    @print("Shadow: " + shadowStyles);
+    @print("Inset Shadow: " + insetShadowStyles);
+    @print("Text Shadow: " + textShadowStyles);
+    @print("Opacity: " + opacityStyles);
+    @print("Blend: " + blendStyles);
+    @print("Bg Blend: " + bgBlendStyles);
+    @print("Mask Clip: " + maskClipStyles);
+    @print("Mask Composite: " + maskCompositeStyles);
+    @print("Mask Mode: " + maskModeStyles);
+    @print("Mask Size: " + maskSizeStyles);
+    @print("Mask Type: " + maskTypeStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "shadow-2xs generates correct CSS" {
+    val tokens: Token[] = [.Effect.Shadow.__2xs];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("box-shadow:") != -1;
+}
+
+test "shadow-none generates correct CSS" {
+    val tokens: Token[] = [.Effect.Shadow.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("box-shadow:none") != -1;
+}
+
+test "shadow-inner generates correct CSS" {
+    val tokens: Token[] = [.Effect.Shadow.Inner];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("box-shadow:inset") != -1;
+}
+
+test "text-shadow-sm generates correct CSS" {
+    val tokens: Token[] = [.Effect.TextShadow.Sm];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("text-shadow:") != -1;
+}
+
+test "opacity-50 generates correct CSS" {
+    val tokens: Token[] = [.Effect.Opacity.__50];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("opacity:0.5") != -1;
+}
+
+test "blend-multiply generates correct CSS" {
+    val tokens: Token[] = [.Blend.Multiply];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("mix-blend-mode:multiply") != -1;
+}
+
+test "bg-blend-screen generates correct CSS" {
+    val tokens: Token[] = [.BgBlend.Screen];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-blend-mode:screen") != -1;
+}
+
+test "mask-clip-content generates correct CSS" {
+    val tokens: Token[] = [.Mask.Clip.Content];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("mask-clip:content-box") != -1;
+}
+
+test "mask-composite-subtract generates correct CSS" {
+    val tokens: Token[] = [.Mask.Composite.Subtract];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("mask-composite:subtract") != -1;
+}
+
+test "mask-size-cover generates correct CSS" {
+    val tokens: Token[] = [.Mask.Size.Cover];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("mask-size:cover") != -1;
+}

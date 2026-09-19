@@ -1,0 +1,116 @@
+// Front 01 — std lib enablement · net-server-example.bp
+//
+// A TCP echo server and its client half, written the way an application writes
+// one: bind, accept, read, write, close. This is the primitive under rakun's
+// HTTP server (front 04) and the WebSocket upgrade (front 20) — neither of them
+// can exist until `std/net` does.
+//
+// Upstream: https://www.erlang.org/doc/apps/kernel/gen_tcp.html
+//           https://www.erlang.org/doc/apps/ssl/ssl.html
+//           https://nodejs.org/api/net.html
+//
+// SERVER SIDE. `std/net` is server-only: it declares an erlang cell and an
+// explicit commonJS refusal, so on the js target every call below answers
+// `Error("std/net: server-only")`. See the README's requirements table.
+//
+// `Listener`, `Socket` and `Peer` come into scope with the module import, the
+// way `Dict` does for `dict` — they are not named in the import list.
+
+import {net} from "std";
+
+// Serve one connection: read up to 4096 bytes, write the same bytes back, close.
+// Answers true when the whole exchange completed.
+fn echoOnce(sock: Socket) -> bool {
+    val received = net.recv(sock, 4096, 5000);
+    val handled = case received {
+        Ok(result) -> net.send(sock, result).isOk();
+        Error(error) -> false;
+    };
+    net.close(sock);
+    return handled;
+}
+
+// Accept up to `budget` connections, one at a time, and answer how many were
+// served. `budget` bounds the loop so the test harness terminates; a real server
+// loops forever and hands each socket to a worker.
+fn acceptLoop(listener: Listener, budget: i32) -> i32 {
+    var served = 0;
+    var attempts = 0;
+    loop (attempts < budget) {
+        attempts = attempts + 1;
+        val accepted = net.accept(listener, 30000);
+        val completed = case accepted {
+            Ok(result) -> echoOnce(result);
+            Error(error) -> false;
+        };
+        if (completed) {
+            served = served + 1;
+        };
+    };
+    net.closeListener(listener);
+    return served;
+}
+
+// Bind `port` and serve `budget` connections. A failed bind is an `Error`, not a
+// crash — the caller decides whether to retry on another port.
+pub fn serve(port: i32, budget: i32) -> i32 {
+    val bound = net.listen(port, 16);
+    val served = case bound {
+        Ok(result) -> acceptLoop(result, budget);
+        Error(error) -> -1;
+    };
+    return served;
+}
+
+// The client half. Front 13 (http clients) and front 08 (SQL drivers) both open
+// their connection exactly like this before speaking their own protocol.
+fn writeThenRead(sock: Socket, payload: string) -> string {
+    val written = net.send(sock, payload);
+    val answer = case written {
+        Ok(result) -> net.recv(sock, 0, 5000).unwrapOr("");
+        Error(error) -> "";
+    };
+    net.close(sock);
+    return answer;
+}
+
+pub fn echoRoundTrip(host: string, port: i32, payload: string) -> string {
+    val connected = net.connect(host, port, 5000);
+    val answer = case connected {
+        Ok(result) -> writeThenRead(result, payload);
+        Error(error) -> "";
+    };
+    return answer;
+}
+
+// TLS is the same six calls with the `ssl` application behind them. Front 10
+// (security) and front 13 (http clients) take this path for https; the
+// certificate and key are paths the caller owns, never bytes std holds.
+pub fn tlsRoundTrip(host: string, port: i32, payload: string) -> string {
+    val connected = net.tlsConnect(host, port, 5000);
+    val answer = case connected {
+        Ok(result) -> tlsWriteThenRead(result, payload);
+        Error(error) -> "";
+    };
+    return answer;
+}
+
+fn tlsWriteThenRead(sock: Socket, payload: string) -> string {
+    val written = net.tlsSend(sock, payload);
+    val answer = case written {
+        Ok(result) -> net.tlsRecv(sock, 0, 5000).unwrapOr("");
+        Error(error) -> "";
+    };
+    net.tlsClose(sock);
+    return answer;
+}
+
+// Who is on the other end — front 07 logs it, front 17 correlates by it.
+pub fn peerLabel(sock: Socket) -> string {
+    val p = net.peer(sock);
+    val label = case p {
+        Ok(result) -> result.host + ":" + result.port.toString();
+        Error(error) -> "unknown";
+    };
+    return label;
+}

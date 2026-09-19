@@ -1,0 +1,201 @@
+// Front 06 — Context API, Lifecycle and Application Events.
+//
+// A developer reaching the container: `#[managed]` to register a bean beyond
+// constructor injection, `#[postConstruct]`/`#[preDestroy]` for startup and
+// shutdown work, `#[provides]` with qualifiers for two beans of one type,
+// programmatic `ctx.resolve`, and an application event published from a
+// controller and observed by a listener. Everything here runs on the server.
+//
+// `#[managed]` stacks under the stereotype rather than replacing it, because
+// `decorators.bp` is frozen for this milestone and a decorator body cannot call
+// a sibling. See the front README, Mechanism.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html
+//   https://docs.spring.io/spring-boot/reference/features/spring-application.html#features.spring-application.application-events-and-listeners
+
+import {Rakun, App, Request, Response} from "rakun";
+import {service, repository, restController, route, getMapping, postMapping} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+
+// Front 06's surface.
+import {Context, Event} from "rakun";
+import {managed, provides, qualifier, primary, scope} from "rakun";
+import {postConstruct, preDestroy, eventListener, exitCode} from "rakun";
+import {rkRegisterBean, rkRegisterLifecycle, rkRegisterListener} from "rakun";
+import {context} from "rakun";
+
+// ---- two beans of one type, told apart by qualifier (server) ----
+
+pub type Clock(zone: string) {
+    pub fn stamp(self: Self) -> string {
+        return "<now@" + self.zone + ">";
+    }
+}
+
+#[provides]
+#[qualifier("system")]
+#[primary]
+pub fn systemClock() -> Clock {
+    return Clock(zone: "UTC");
+}
+
+#[provides]
+#[qualifier("fixed")]
+pub fn fixedClock() -> Clock {
+    return Clock(zone: "fixed");
+}
+
+// ---- a component with lifecycle work (server) ----
+
+#[repository]
+#[managed]
+pub type OrderRepository {
+    pub fn ids(self: Self) -> Array<string> {
+        return ["o-1", "o-2", "o-3"];
+    }
+}
+
+#[service]
+#[managed]
+pub type OrderCache(
+    repo: OrderRepository,
+    // Unqualified, so the #[primary] Clock wins.
+    clock: Clock,
+) {
+    #[postConstruct]
+    pub fn warm(self: Self) {
+        val n = self.repo.ids().length;
+        @print("order cache warmed with ${n} entries at " + self.clock.stamp());
+    }
+
+    #[preDestroy]
+    pub fn close(self: Self) {
+        @print("order cache released");
+    }
+
+    pub fn size(self: Self) -> i32 {
+        return self.repo.ids().length;
+    }
+}
+
+// ---- a listener (server) ----
+
+#[service]
+#[managed]
+pub type AuditListener {
+    #[eventListener("ApplicationReady")]
+    pub fn onReady(self: Self, ev: Event) {
+        @print("ready at ${ev.timestampMillis}");
+    }
+
+    #[eventListener("OrderPlaced")]
+    pub fn onOrderPlaced(self: Self, ev: Event) {
+        @print("order placed: " + ev.payload);
+    }
+}
+
+// ---- programmatic resolution + publishing (server) ----
+
+#[restController]
+#[route("/api/orders")]
+pub type OrderController(
+    // `Context` is injectable by type; front 06 emits its factory.
+    ctx: Context,
+) {
+    #[getMapping("/count")]
+    pub fn count(self: Self, req: Request) -> Response {
+        // The type comes from the annotated binding: explicit generic arguments
+        // do not parse at a call site, so the registry key travels as a string.
+        // LANGUAGE GAP: no `@typeName<T>()` and no `f<T>(args)` call form — the
+        // string and `T` are not checked against each other. With either, this
+        // would read `self.ctx.resolve<OrderCache>()`.
+        val cache: ?OrderCache = self.ctx.resolve("OrderCache");
+        var body = "no cache";
+        if (cache) { c -> body = c.size().toString(); };
+        return Response.ok(body);
+    }
+
+    #[postMapping("/")]
+    pub fn place(self: Self, req: Request) -> Response {
+        val payload = req.body();
+        val _p = self.ctx.publish(Event(
+            name: "OrderPlaced",
+            source: "OrderController",
+            payload: payload,
+            timestampMillis: 0,
+        ));
+        return Response.created("accepted");
+    }
+
+    #[getMapping("/clock")]
+    pub fn clock(self: Self, req: Request) -> Response {
+        val fixed: ?Clock = self.ctx.resolveNamed("Clock", "fixed");
+        var body = "unavailable";
+        if (fixed) { c -> body = c.stamp(); };
+        return Response.ok(body);
+    }
+}
+
+// ---- exit code (server) ----
+
+#[exitCode]
+pub fn drainExitCode() -> i32 {
+    return 0;
+}
+
+// ---- bootstrap (server) ----
+
+fn main() {
+    // Publishes ApplicationStarting → ApplicationEnvironmentPrepared →
+    // ApplicationContextInitialized → ApplicationPrepared, loads configuration,
+    // then constructs every registered bean (eager by default) and publishes
+    // ApplicationStarted. A missing property or a cycle fails HERE, not on the
+    // first request that touches it.
+    context.bootSequence();
+
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+// ---- what the tests pin ----
+
+test "context: a managed bean resolves to the same instance field injection gives" {
+    context.bootSequence();
+    val ctx = __rkMake_Context();
+    val cache: ?OrderCache = ctx.resolve("OrderCache");
+    assert ctx.has("OrderCache");
+    var size = -1;
+    if (cache) { c -> size = c.size(); };
+    assert size == 3;
+}
+
+test "context: two beans of one type are told apart by qualifier" {
+    context.bootSequence();
+    val ctx = __rkMake_Context();
+    val fixed: ?Clock = ctx.resolveNamed("Clock", "fixed");
+    var zone = "";
+    if (fixed) { c -> zone = c.zone; };
+    assert zone == "fixed";
+}
+
+test "context: an unregistered type resolves to null rather than raising" {
+    context.bootSequence();
+    val ctx = __rkMake_Context();
+    val missing: ?OrderCache = ctx.resolve("NoSuchBean");
+    var found = false;
+    if (missing) { c -> found = true; };
+    assert !ctx.has("NoSuchBean");
+    assert !found;
+}
+
+test "events: a published event reaches every registered listener" {
+    context.bootSequence();
+    val ctx = __rkMake_Context();
+    val delivered = ctx.publish(Event(
+        name: "OrderPlaced",
+        source: "test",
+        payload: "o-9",
+        timestampMillis: 1,
+    ));
+    assert delivered == 1;
+}

@@ -1,0 +1,227 @@
+//// F10 — Bean Validation
+////
+//// Este exemplo demonstra validação de beans com @notNull, @size, @email, @valid.
+////
+//// Documentação Spring Boot:
+//// - Validation: https://docs.spring.io/spring-boot/reference/io/validation.html
+//// - Bean Validation: https://docs.spring.io/spring-boot/reference/io/validation.html#io.validation
+
+import {Rakun, App, Request, Response} from "rakun";
+import {service, restController, route, postMapping, valid} from "rakun";
+import {notNull, notEmpty, notBlank, size, min, max, email, pattern, positive, positiveOrZero, past, future} from "rakun-validation";
+import {Validator, Violation} from "rakun-validation";
+
+// ── Domain Models with Validation ───────────────────────────────────────────
+pub type CreateUserRequest(
+    #[notBlank(message: "Name is required")]
+    #[size(min: 2, max: 50, message: "Name must be between 2 and 50 characters")]
+    name: string,
+
+    #[notNull(message: "Email is required")]
+    #[email(message: "Email must be valid")]
+    email: string,
+
+    #[min(value: 18, message: "Age must be at least 18")]
+    #[max(value: 120, message: "Age must be at most 120")]
+    age: i32,
+
+    #[pattern(regex: "^[A-Z]{2}-\\d{4}$", message: "Code must be format XX-0000")]
+    code: string,
+)
+
+pub type CreateProductRequest(
+    #[notBlank]
+    #[size(min: 1, max: 100)]
+    name: string,
+
+    #[positive(message: "Price must be positive")]
+    price: i32,
+
+    #[positiveOrZero]
+    stock: i32,
+
+    #[notNull]
+    category: string,
+)
+
+pub type CreateOrderRequest(
+    #[notNull]
+    userId: i32,
+
+    #[notEmpty]
+    items: Array<OrderItem>,
+
+    #[future(message: "Delivery date must be in the future")]
+    deliveryDate: string,
+)
+
+pub type OrderItem(
+    #[notNull]
+    productId: i32,
+
+    #[positive]
+    quantity: i32,
+)
+
+// ── Service ─────────────────────────────────────────────────────────────────
+#[service]
+pub type UserService {
+    pub fn createUser(self: Self, request: CreateUserRequest) -> string {
+        // If we get here, validation passed
+        return "User created: " + request.name;
+    }
+}
+
+#[service]
+pub type ProductService {
+    pub fn createProduct(self: Self, request: CreateProductRequest) -> string {
+        return "Product created: " + request.name;
+    }
+}
+
+#[service]
+pub type OrderService {
+    pub fn createOrder(self: Self, request: CreateOrderRequest) -> string {
+        return "Order created for user " + request.userId.toString();
+    }
+}
+
+// ── Controller with @valid ──────────────────────────────────────────────────
+#[restController]
+#[route("/api")]
+pub type UserController(service: UserService) {
+    // @valid triggers validation before method execution
+    // If validation fails → 400 Bad Request with violations
+    #[postMapping("/users")]
+    pub fn createUser(self: Self, #[valid] request: CreateUserRequest) -> Response {
+        val result = self.service.createUser(request);
+        return Response.created(result);
+    }
+}
+
+#[restController]
+#[route("/api")]
+pub type ProductController(service: ProductService) {
+    #[postMapping("/products")]
+    pub fn createProduct(self: Self, #[valid] request: CreateProductRequest) -> Response {
+        val result = self.service.createProduct(request);
+        return Response.created(result);
+    }
+}
+
+#[restController]
+#[route("/api")]
+pub type OrderController(service: OrderService) {
+    #[postMapping("/orders")]
+    pub fn createOrder(self: Self, #[valid] request: CreateOrderRequest) -> Response {
+        val result = self.service.createOrder(request);
+        return Response.created(result);
+    }
+}
+
+// ── Manual Validation ───────────────────────────────────────────────────────
+#[service]
+pub type ManualValidationService(validator: Validator) {
+    pub fn processUser(self: Self, request: CreateUserRequest) -> string {
+        // Manual validation
+        val violations = self.validator.validate(request);
+        if (violations.length > 0) {
+            return "Validation failed: " + violations.map({ v -> v.field + ": " + v.message }).join(", ");
+        }
+        return "User processed: " + request.name;
+    }
+}
+
+// ── Example Requests/Responses ──────────────────────────────────────────────
+//// POST /api/users
+//// Content-Type: application/json
+//// {
+////     "name": "A",              // Too short (min: 2)
+////     "email": "invalid",       // Invalid email
+////     "age": 15,                // Too young (min: 18)
+////     "code": "abc"             // Invalid format
+//// }
+////
+//// Response: 400 Bad Request
+//// {
+////     "errors": [
+////         {
+////             "field": "name",
+////             "message": "Name must be between 2 and 50 characters",
+////             "value": "A"
+////         },
+////         {
+////             "field": "email",
+////             "message": "Email must be valid",
+////             "value": "invalid"
+////         },
+////         {
+////             "field": "age",
+////             "message": "Age must be at least 18",
+////             "value": "15"
+////         },
+////         {
+////             "field": "code",
+////             "message": "Code must be format XX-0000",
+////             "value": "abc"
+////         }
+////     ]
+//// }
+////
+//// POST /api/users
+//// {
+////     "name": "Alice",
+////     "email": "alice@example.com",
+////     "age": 25,
+////     "code": "US-1234"
+//// }
+////
+//// Response: 201 Created
+//// "User created: Alice"
+
+fn main() {
+    // Validation constraints:
+    //
+    // String:
+    // - @notNull - not null
+    // - @notBlank - not null, not empty, not whitespace only
+    // - @notEmpty - not null, not empty
+    // - @size(min, max) - length between min and max
+    // - @email - valid email format
+    // - @pattern(regex) - matches regex
+    //
+    // Numbers:
+    // - @min(value) - minimum value
+    // - @max(value) - maximum value
+    // - @positive - > 0
+    // - @positiveOrZero - >= 0
+    //
+    // Dates:
+    // - @past - date in the past
+    // - @future - date in the future
+    //
+    // Collections:
+    // - @notEmpty - not null, not empty
+    // - @size(min, max) - size between min and max
+    //
+    // Nested:
+    // - @valid - validate nested objects
+    //
+    // Custom messages:
+    // - @notNull(message: "Custom message")
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+//// Testes:
+////
+//// test "validation passes for valid input" {
+////     // All constraints satisfied → method executed
+//// }
+////
+//// test "validation fails for invalid input" {
+////     // Constraint violated → 400 with violations
+//// }
+////
+//// test "multiple violations collected" {
+////     // All violations reported (not fail-fast)
+//// }

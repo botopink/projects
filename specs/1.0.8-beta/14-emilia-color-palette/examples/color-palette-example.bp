@@ -1,0 +1,433 @@
+// F14 — Color Palette Example
+// Demonstrates: full 17 color families × 11 tones + 9 neutrals + black/white
+//
+// Docs: https://tailwindcss.com/docs/colors
+//       https://tailwindcss.com/docs/background-color
+//       https://tailwindcss.com/docs/text-color
+//       https://tailwindcss.com/docs/border-color
+
+import { emilia, flush, Token } from "emilia";
+import { div, p, renderToString } from "jhonstart";
+
+// Red palette — all 11 tones
+val redTokens: Token[] = [
+    .Color.Red.__50,
+    .Color.Red.__100,
+    .Color.Red.__200,
+    .Color.Red.__300,
+    .Color.Red.__400,
+    .Color.Red.__500,
+    .Color.Red.__600,
+    .Color.Red.__700,
+    .Color.Red.__800,
+    .Color.Red.__900,
+    .Color.Red.__950,
+];
+val redStyles = emilia(redTokens);
+
+// Orange palette
+val orangeTokens: Token[] = [
+    .Color.Orange.__50,
+    .Color.Orange.__500,
+    .Color.Orange.__950,
+];
+val orangeStyles = emilia(orangeTokens);
+
+// Amber palette
+val amberTokens: Token[] = [
+    .Color.Amber.__50,
+    .Color.Amber.__500,
+    .Color.Amber.__950,
+];
+val amberStyles = emilia(amberTokens);
+
+// Yellow palette
+val yellowTokens: Token[] = [
+    .Color.Yellow.__50,
+    .Color.Yellow.__500,
+    .Color.Yellow.__950,
+];
+val yellowStyles = emilia(yellowTokens);
+
+// Lime palette
+val limeTokens: Token[] = [
+    .Color.Lime.__50,
+    .Color.Lime.__500,
+    .Color.Lime.__950,
+];
+val limeStyles = emilia(limeTokens);
+
+// Green palette
+val greenTokens: Token[] = [
+    .Color.Green.__50,
+    .Color.Green.__100,
+    .Color.Green.__200,
+    .Color.Green.__300,
+    .Color.Green.__400,
+    .Color.Green.__500,
+    .Color.Green.__600,
+    .Color.Green.__700,
+    .Color.Green.__800,
+    .Color.Green.__900,
+    .Color.Green.__950,
+];
+val greenStyles = emilia(greenTokens);
+
+// Emerald palette
+val emeraldTokens: Token[] = [
+    .Color.Emerald.__50,
+    .Color.Emerald.__500,
+    .Color.Emerald.__950,
+];
+val emeraldStyles = emilia(emeraldTokens);
+
+// Teal palette
+val tealTokens: Token[] = [
+    .Color.Teal.__50,
+    .Color.Teal.__500,
+    .Color.Teal.__950,
+];
+val tealStyles = emilia(tealTokens);
+
+// Cyan palette
+val cyanTokens: Token[] = [
+    .Color.Cyan.__50,
+    .Color.Cyan.__500,
+    .Color.Cyan.__950,
+];
+val cyanStyles = emilia(cyanTokens);
+
+// Sky palette
+val skyTokens: Token[] = [
+    .Color.Sky.__50,
+    .Color.Sky.__500,
+    .Color.Sky.__950,
+];
+val skyStyles = emilia(skyTokens);
+
+// Blue palette
+val blueTokens: Token[] = [
+    .Color.Blue.__50,
+    .Color.Blue.__100,
+    .Color.Blue.__200,
+    .Color.Blue.__300,
+    .Color.Blue.__400,
+    .Color.Blue.__500,
+    .Color.Blue.__600,
+    .Color.Blue.__700,
+    .Color.Blue.__800,
+    .Color.Blue.__900,
+    .Color.Blue.__950,
+];
+val blueStyles = emilia(blueTokens);
+
+// Indigo palette
+val indigoTokens: Token[] = [
+    .Color.Indigo.__50,
+    .Color.Indigo.__500,
+    .Color.Indigo.__950,
+];
+val indigoStyles = emilia(indigoTokens);
+
+// Violet palette
+val violetTokens: Token[] = [
+    .Color.Violet.__50,
+    .Color.Violet.__500,
+    .Color.Violet.__950,
+];
+val violetStyles = emilia(violetTokens);
+
+// Purple palette
+val purpleTokens: Token[] = [
+    .Color.Purple.__50,
+    .Color.Purple.__500,
+    .Color.Purple.__950,
+];
+val purpleStyles = emilia(purpleTokens);
+
+// Fuchsia palette
+val fuchsiaTokens: Token[] = [
+    .Color.Fuchsia.__50,
+    .Color.Fuchsia.__500,
+    .Color.Fuchsia.__950,
+];
+val fuchsiaStyles = emilia(fuchsiaTokens);
+
+// Pink palette
+val pinkTokens: Token[] = [
+    .Color.Pink.__50,
+    .Color.Pink.__500,
+    .Color.Pink.__950,
+];
+val pinkStyles = emilia(pinkTokens);
+
+// Rose palette
+val roseTokens: Token[] = [
+    .Color.Rose.__50,
+    .Color.Rose.__500,
+    .Color.Rose.__950,
+];
+val roseStyles = emilia(roseTokens);
+
+// Neutrals — Slate
+val slateTokens: Token[] = [
+    .Color.Slate.__50,
+    .Color.Slate.__500,
+    .Color.Slate.__950,
+];
+val slateStyles = emilia(slateTokens);
+
+// Neutrals — Gray
+val grayTokens: Token[] = [
+    .Color.Gray.__50,
+    .Color.Gray.__100,
+    .Color.Gray.__200,
+    .Color.Gray.__300,
+    .Color.Gray.__400,
+    .Color.Gray.__500,
+    .Color.Gray.__600,
+    .Color.Gray.__700,
+    .Color.Gray.__800,
+    .Color.Gray.__900,
+    .Color.Gray.__950,
+];
+val grayStyles = emilia(grayTokens);
+
+// Neutrals — Zinc
+val zincTokens: Token[] = [
+    .Color.Zinc.__50,
+    .Color.Zinc.__500,
+    .Color.Zinc.__950,
+];
+val zincStyles = emilia(zincTokens);
+
+// Neutrals — Neutral
+val neutralTokens: Token[] = [
+    .Color.Neutral.__50,
+    .Color.Neutral.__500,
+    .Color.Neutral.__950,
+];
+val neutralStyles = emilia(neutralTokens);
+
+// Neutrals — Stone
+val stoneTokens: Token[] = [
+    .Color.Stone.__50,
+    .Color.Stone.__500,
+    .Color.Stone.__950,
+];
+val stoneStyles = emilia(stoneTokens);
+
+// Special colors
+val specialTokens: Token[] = [
+    .Color.White,
+    .Color.Black,
+    .Color.Transparent,
+    .Color.Hex("#abc123"),
+];
+val specialStyles = emilia(specialTokens);
+
+// Background colors
+val bgRedTokens: Token[] = [
+    .Bg.Red.__50,
+    .Bg.Red.__500,
+    .Bg.Red.__950,
+];
+val bgRedStyles = emilia(bgRedTokens);
+
+val bgBlueTokens: Token[] = [
+    .Bg.Blue.__50,
+    .Bg.Blue.__500,
+    .Bg.Blue.__950,
+];
+val bgBlueStyles = emilia(bgBlueTokens);
+
+val bgSpecialTokens: Token[] = [
+    .Bg.White,
+    .Bg.Black,
+    .Bg.Transparent,
+    .Bg.Hex("#f0f0f0"),
+];
+val bgSpecialStyles = emilia(bgSpecialTokens);
+
+// Border colors
+val borderColorTokens: Token[] = [
+    .Border.Color.Red.__500,
+    .Border.Color.Blue.__500,
+    .Border.Color.Gray.__300,
+    .Border.Color.White,
+    .Border.Color.Black,
+    .Border.Color.Transparent,
+];
+val borderColorStyles = emilia(borderColorTokens);
+
+val page = div([
+    p([], []),
+], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F14: Color Palette Example ===");
+    @print("Red: " + redStyles);
+    @print("Orange: " + orangeStyles);
+    @print("Amber: " + amberStyles);
+    @print("Yellow: " + yellowStyles);
+    @print("Lime: " + limeStyles);
+    @print("Green: " + greenStyles);
+    @print("Emerald: " + emeraldStyles);
+    @print("Teal: " + tealStyles);
+    @print("Cyan: " + cyanStyles);
+    @print("Sky: " + skyStyles);
+    @print("Blue: " + blueStyles);
+    @print("Indigo: " + indigoStyles);
+    @print("Violet: " + violetStyles);
+    @print("Purple: " + purpleStyles);
+    @print("Fuchsia: " + fuchsiaStyles);
+    @print("Pink: " + pinkStyles);
+    @print("Rose: " + roseStyles);
+    @print("Slate: " + slateStyles);
+    @print("Gray: " + grayStyles);
+    @print("Zinc: " + zincStyles);
+    @print("Neutral: " + neutralStyles);
+    @print("Stone: " + stoneStyles);
+    @print("Special: " + specialStyles);
+    @print("Bg Red: " + bgRedStyles);
+    @print("Bg Blue: " + bgBlueStyles);
+    @print("Bg Special: " + bgSpecialStyles);
+    @print("Border Color: " + borderColorStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "color-red-50 generates correct CSS" {
+    val tokens: Token[] = [.Color.Red.__50];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#fef2f2") != -1;
+}
+
+test "color-red-500 generates correct CSS" {
+    val tokens: Token[] = [.Color.Red.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#ef4444") != -1;
+}
+
+test "color-red-950 generates correct CSS" {
+    val tokens: Token[] = [.Color.Red.__950];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#450a0a") != -1;
+}
+
+test "color-blue-500 generates correct CSS" {
+    val tokens: Token[] = [.Color.Blue.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#3b82f6") != -1;
+}
+
+test "color-orange-500 generates correct CSS" {
+    val tokens: Token[] = [.Color.Orange.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#f97316") != -1;
+}
+
+test "color-green-500 generates correct CSS" {
+    val tokens: Token[] = [.Color.Green.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#22c55e") != -1;
+}
+
+test "color-sky-500 generates correct CSS" {
+    val tokens: Token[] = [.Color.Sky.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#0ea5e9") != -1;
+}
+
+test "color-indigo-500 generates correct CSS" {
+    val tokens: Token[] = [.Color.Indigo.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#6366f1") != -1;
+}
+
+test "color-violet-500 generates correct CSS" {
+    val tokens: Token[] = [.Color.Violet.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#8b5cf6") != -1;
+}
+
+test "color-pink-500 generates correct CSS" {
+    val tokens: Token[] = [.Color.Pink.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#ec4899") != -1;
+}
+
+test "color-slate-500 generates correct CSS" {
+    val tokens: Token[] = [.Color.Slate.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#64748b") != -1;
+}
+
+test "color-zinc-500 generates correct CSS" {
+    val tokens: Token[] = [.Color.Zinc.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#71717a") != -1;
+}
+
+test "color-transparent generates correct CSS" {
+    val tokens: Token[] = [.Color.Transparent];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:transparent") != -1;
+}
+
+test "color-hex generates correct CSS" {
+    val tokens: Token[] = [.Color.Hex("#abc123")];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("color:#abc123") != -1;
+}
+
+test "bg-red-500 generates correct CSS" {
+    val tokens: Token[] = [.Bg.Red.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-color:#ef4444") != -1;
+}
+
+test "bg-blue-500 generates correct CSS" {
+    val tokens: Token[] = [.Bg.Blue.__500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-color:#3b82f6") != -1;
+}
+
+test "bg-white generates correct CSS" {
+    val tokens: Token[] = [.Bg.White];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-color:#ffffff") != -1;
+}
+
+test "bg-black generates correct CSS" {
+    val tokens: Token[] = [.Bg.Black];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-color:#000000") != -1;
+}
+
+test "bg-transparent generates correct CSS" {
+    val tokens: Token[] = [.Bg.Transparent];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-color:transparent") != -1;
+}

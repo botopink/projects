@@ -1,0 +1,70 @@
+// Front 55 — emilia preflight
+//
+// A page turns the base reset on through Options and renders a heading and a bordered
+// card. The two assertions at the end are the reason the reset exists: with it a
+// one-pixel border is visible, and a heading carries no inherited margin.
+//
+// https://tailwindcss.com/docs/preflight
+// https://tailwindcss.com/docs/border-width
+
+import { emilia, flush, Token } from "emilia";
+import { preflightRules, preflight } from "emilia";
+// `defaultOptions`, `withBase` and `flushWith` are provided by front 56.
+import { defaultOptions, withBase, flushWith } from "emilia";
+
+fn heading() -> string {
+    val tokens: Token[] = [.Text.Size.X2xl, .Font.Weight.Bold];
+    return emilia(tokens);
+}
+
+fn borderedCard() -> string {
+    val tokens: Token[] = [.Bg.White, .Pad.All.4, .Border.W.1, .Border.Rounded.Lg];
+    return emilia(tokens);
+}
+
+// The reset is opt-in: it arrives as an argument. There is no configuration file
+// and no global switch, because emilia renders into a page it does not own and a
+// library that silently resets the host document's headings is worse than one that
+// makes you ask for it.
+test "with the reset, a one-pixel border has a style to draw" {
+    val cls = borderedCard();
+    val opts = withBase(defaultOptions(), preflightRules());
+    val css = await flushWith(opts);
+    assert css.contains("@layer base{");
+    assert css.contains("border-width:0;border-style:solid");
+    assert css.contains("." + cls + "{background:#ffffff");
+}
+
+test "without the reset, nothing sets border-style and the same token draws nothing" {
+    val _cls = borderedCard();
+    val css = await flush();
+    assert css.contains("border-style") == false;
+    assert css.contains("@layer base{") == false;
+}
+
+test "headings lose the browser margin the utilities assume is gone" {
+    val cls = heading();
+    val opts = withBase(defaultOptions(), preflightRules());
+    val css = await flushWith(opts);
+    assert css.contains("h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit;margin:0}");
+    assert css.contains("." + cls + "{font-size:1.5rem");
+}
+
+test "the pseudo-element default is in place before any utility can override it" {
+    val _cls = heading();
+    val opts = withBase(defaultOptions(), preflightRules());
+    val css = await flushWith(opts);
+    val baseAt = css.indexOf("::before,::after{content:\"\"}");
+    val utilAt = css.indexOf("@layer utilities{");
+    assert baseAt > 0;
+    assert baseAt < utilAt;
+}
+
+// `preflight()` is the same content as a plain CSS fragment, for a project that
+// ships a static reset.css instead of letting flush() carry it.
+test "the rendered form is a fragment, not a document" {
+    val css = preflight();
+    assert css.startsWith("*,::before,::after{box-sizing:border-box");
+    assert css.contains("@layer") == false;
+    assert css.contains("<style>") == false;
+}

@@ -1,0 +1,132 @@
+// Front 33 — emilia-color-palette
+//
+// The opacity half of the colour system: Tailwind's `/N` suffix on a colour
+// utility, expressed as the `Alpha(percent, inner)` wrapper.
+//
+// Upstream: https://tailwindcss.com/docs/colors#adjusting-opacity
+//           https://tailwindcss.com/docs/background-color
+// Reference: TAILWIND_CSS_DOCS.md § 3.6 Cores ("Opacidade com cores")
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// `Alpha` is delivered by front 33. The modifiers it nests with (`Hover`) exist
+// today; the wider modifier set is front 34.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── the wrapper ──────────────────────────────────────────────────────────────
+// `Alpha` is a top-level payload variant, not a leaf under the family, because
+// a leaf under a section cannot be constructed (see palette-example.bp) and
+// because a second numeric level would be 26 x 11 x 21 leaves.
+//
+// It is built by name, like every payload variant: `Token.Alpha(percent: 50,
+// inner: tokens)`. The leading-dot shorthand is for unit leaves only.
+
+fn translucentSurface() -> Token {
+    val base: Token[] = [.Bg.Color.Red.500];
+    return Token.Alpha(percent: 50, inner: base);
+}
+
+fn translucentText() -> Token {
+    val base: Token[] = [.Color.Blue.600];
+    return Token.Alpha(percent: 80, inner: base);
+}
+
+// One `Alpha` may carry several colour declarations; each is rewritten.
+
+fn translucentPair() -> Token {
+    val base: Token[] = [.Bg.Color.Slate.900, .Color.Slate.50];
+    return Token.Alpha(percent: 90, inner: base);
+}
+
+// The percentage steps Tailwind's opacity scale uses.
+
+fn alphaLadder() -> Token[] {
+    val base: Token[] = [.Bg.Color.Indigo.500];
+    val ladder: Token[] = [
+        Token.Alpha(percent: 5, inner: base),
+        Token.Alpha(percent: 25, inner: base),
+        Token.Alpha(percent: 50, inner: base),
+        Token.Alpha(percent: 75, inner: base),
+        Token.Alpha(percent: 100, inner: base),
+    ];
+    return ladder;
+}
+
+// `Alpha` nests with the modifiers in both directions: a hover state may be
+// translucent, and a translucent colour may have a hover state.
+
+fn hoverFade() -> Token {
+    val base: Token[] = [.Bg.Color.Indigo.600];
+    val faded: Token[] = [Token.Alpha(percent: 80, inner: base)];
+    return Token.Hover(faded);
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// A modal overlay: an opaque panel over a translucent scrim, with a link whose
+// hover state fades. Three classes, one flush.
+
+#[@future]
+pub fn overlayPanel(title: string, body: string) -> @Future<string> {
+    val scrimBase: Token[] = [.Bg.Color.Slate.950];
+    val scrim: Token[] = [Token.Alpha(percent: 60, inner: scrimBase)];
+
+    val panel: Token[] = [
+        .Bg.Color.White,
+        .Color.Slate.900,
+    ];
+
+    val link: Token[] = [
+        .Color.Indigo.600,
+        hoverFade(),
+    ];
+
+    val scrimClass = emilia(scrim);
+    val panelClass = emilia(panel);
+    val linkClass = emilia(link);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + scrimClass + "\">"
+        + "<div class=\"" + panelClass + "\">"
+        + "<p>" + title + "</p><p>" + body + "</p>"
+        + "<span class=\"" + linkClass + "\">Dismiss</span>"
+        + "</div></div>";
+    return styles + markup;
+}
+
+test "Alpha rewrites a background-color into a color-mix" {
+    val tokens: Token[] = [translucentSurface()];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{background-color:color-mix(in oklab, var(--color-red-500) 50%, transparent)}</style>";
+}
+
+test "Alpha rewrites a text colour" {
+    val tokens: Token[] = [translucentText()];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{color:color-mix(in oklab, var(--color-blue-600) 80%, transparent)}</style>";
+}
+
+test "Alpha rewrites every declaration it wraps" {
+    val tokens: Token[] = [translucentPair()];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.contains("background-color:color-mix(in oklab, var(--color-slate-900) 90%, transparent)");
+    assert styles.contains("color:color-mix(in oklab, var(--color-slate-50) 90%, transparent)");
+}
+
+test "Alpha nests inside a modifier" {
+    val tokens: Token[] = [hoverFade()];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.contains(":hover{background-color:color-mix(in oklab, var(--color-indigo-600) 80%, transparent)}");
+}
+
+test "the overlay renders its scrim, panel and link" {
+    val out = await overlayPanel("Are you sure?", "This cannot be undone.");
+    assert out.startsWith("<style>");
+    assert out.contains("color-mix(in oklab, var(--color-slate-950) 60%, transparent)");
+    assert out.contains("background-color:var(--color-white)");
+}

@@ -1,0 +1,239 @@
+// F06 — Borders Example
+// Demonstrates: border-radius expanded, border-style, outline-width/color/style/offset
+//
+// Docs: https://tailwindcss.com/docs/border-radius
+//       https://tailwindcss.com/docs/border-width
+//       https://tailwindcss.com/docs/border-color
+//       https://tailwindcss.com/docs/border-style
+//       https://tailwindcss.com/docs/outline-width
+//       https://tailwindcss.com/docs/outline-color
+//       https://tailwindcss.com/docs/outline-style
+//       https://tailwindcss.com/docs/outline-offset
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// Border width
+val borderWidthTokens: Token[] = [
+    .Border.W.__0,
+    .Border.W.__1,
+    .Border.W.__2,
+    .Border.W.__4,
+    .Border.W.__8,
+];
+val borderWidthStyles = emilia(borderWidthTokens);
+
+// Border style
+val borderStyleTokens: Token[] = [
+    .Border.Style.Solid,
+    .Border.Style.Dashed,
+    .Border.Style.Dotted,
+    .Border.Style.Double,
+    .Border.Style.Hidden,
+    .Border.Style.None,
+];
+val borderStyleStyles = emilia(borderStyleTokens);
+
+// Border radius — full scale
+val borderRadiusTokens: Token[] = [
+    .Border.Rounded.None,
+    .Border.Rounded.Sm,
+    .Border.Rounded.Md,
+    .Border.Rounded.Lg,
+    .Border.Rounded.Xl,
+    .Border.Rounded.X2xl,
+    .Border.Rounded.X3xl,
+    .Border.Rounded.X4xl,
+    .Border.Rounded.Full,
+];
+val borderRadiusStyles = emilia(borderRadiusTokens);
+
+// Border radius — directional top
+val borderRoundedTTokens: Token[] = [
+    .Border.RoundedT.None,
+    .Border.RoundedT.Sm,
+    .Border.RoundedT.Md,
+    .Border.RoundedT.Lg,
+    .Border.RoundedT.Xl,
+    .Border.RoundedT.Full,
+];
+val borderRoundedTStyles = emilia(borderRoundedTTokens);
+
+// Border radius — directional right
+val borderRoundedRTokens: Token[] = [
+    .Border.RoundedR.None,
+    .Border.RoundedR.Lg,
+    .Border.RoundedR.Full,
+];
+val borderRoundedRStyles = emilia(borderRoundedRTokens);
+
+// Border radius — directional bottom
+val borderRoundedBTokens: Token[] = [
+    .Border.RoundedB.None,
+    .Border.RoundedB.Lg,
+    .Border.RoundedB.Full,
+];
+val borderRoundedBStyles = emilia(borderRoundedBTokens);
+
+// Border radius — directional left
+val borderRoundedLTokens: Token[] = [
+    .Border.RoundedL.None,
+    .Border.RoundedL.Lg,
+    .Border.RoundedL.Full,
+];
+val borderRoundedLStyles = emilia(borderRoundedLTokens);
+
+// Border radius — individual corners
+val borderCornerTokens: Token[] = [
+    .Border.RoundedTl.Full,
+    .Border.RoundedTr.Full,
+    .Border.RoundedBr.Full,
+    .Border.RoundedBl.Full,
+];
+val borderCornerStyles = emilia(borderCornerTokens);
+
+// Border color
+val borderColorTokens: Token[] = [
+    .Border.Color.Red.__500,
+    .Border.Color.Blue.__500,
+    .Border.Color.Gray.__300,
+    .Border.Color.White,
+    .Border.Color.Black,
+    .Border.Color.Transparent,
+    .Border.Color.Hex("#abc123"),
+];
+val borderColorStyles = emilia(borderColorTokens);
+
+// Outline width
+val outlineWidthTokens: Token[] = [
+    .Outline.W.__0,
+    .Outline.W.__1,
+    .Outline.W.__2,
+    .Outline.W.__4,
+    .Outline.W.__8,
+];
+val outlineWidthStyles = emilia(outlineWidthTokens);
+
+// Outline style
+val outlineStyleTokens: Token[] = [
+    .Outline.Style.None,
+    .Outline.Style.Solid,
+    .Outline.Style.Dashed,
+    .Outline.Style.Dotted,
+    .Outline.Style.Double,
+];
+val outlineStyleStyles = emilia(outlineStyleTokens);
+
+// Outline color
+val outlineColorTokens: Token[] = [
+    .Outline.Color.Red.__500,
+    .Outline.Color.Blue.__500,
+    .Outline.Color.White,
+    .Outline.Color.Black,
+    .Outline.Color.Transparent,
+];
+val outlineColorStyles = emilia(outlineColorTokens);
+
+// Outline offset
+val outlineOffsetTokens: Token[] = [
+    .Outline.Offset.__0,
+    .Outline.Offset.__1,
+    .Outline.Offset.__2,
+    .Outline.Offset.__4,
+    .Outline.Offset.__8,
+];
+val outlineOffsetStyles = emilia(outlineOffsetTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F06: Borders Example ===");
+    @print("Border Width: " + borderWidthStyles);
+    @print("Border Style: " + borderStyleStyles);
+    @print("Border Radius: " + borderRadiusStyles);
+    @print("Border Rounded T: " + borderRoundedTStyles);
+    @print("Border Rounded R: " + borderRoundedRStyles);
+    @print("Border Rounded B: " + borderRoundedBStyles);
+    @print("Border Rounded L: " + borderRoundedLStyles);
+    @print("Border Corners: " + borderCornerStyles);
+    @print("Border Color: " + borderColorStyles);
+    @print("Outline Width: " + outlineWidthStyles);
+    @print("Outline Style: " + outlineStyleStyles);
+    @print("Outline Color: " + outlineColorStyles);
+    @print("Outline Offset: " + outlineOffsetStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "border-width-2 generates correct CSS" {
+    val tokens: Token[] = [.Border.W.__2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-width:2px") != -1;
+}
+
+test "border-style dashed generates correct CSS" {
+    val tokens: Token[] = [.Border.Style.Dashed];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-style:dashed") != -1;
+}
+
+test "border-radius xl generates correct CSS" {
+    val tokens: Token[] = [.Border.Rounded.Xl];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-radius:0.75rem") != -1;
+}
+
+test "border-radius full generates correct CSS" {
+    val tokens: Token[] = [.Border.Rounded.Full];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-radius:9999px") != -1;
+}
+
+test "border-rounded-t-lg generates correct CSS" {
+    val tokens: Token[] = [.Border.RoundedT.Lg];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-top-left-radius:0.5rem") != -1;
+    assert styles.indexOf("border-top-right-radius:0.5rem") != -1;
+}
+
+test "border-rounded-tl-full generates correct CSS" {
+    val tokens: Token[] = [.Border.RoundedTl.Full];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-top-left-radius:9999px") != -1;
+}
+
+test "border-color hex generates correct CSS" {
+    val tokens: Token[] = [.Border.Color.Hex("#abc123")];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("border-color:#abc123") != -1;
+}
+
+test "outline-width-2 generates correct CSS" {
+    val tokens: Token[] = [.Outline.W.__2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("outline-width:2px") != -1;
+}
+
+test "outline-style dashed generates correct CSS" {
+    val tokens: Token[] = [.Outline.Style.Dashed];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("outline-style:dashed") != -1;
+}
+
+test "outline-offset-2 generates correct CSS" {
+    val tokens: Token[] = [.Outline.Offset.__2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("outline-offset:2px") != -1;
+}

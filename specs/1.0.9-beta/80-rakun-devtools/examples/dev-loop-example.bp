@@ -1,0 +1,140 @@
+// Front 80 — rakun DevTools · dev-loop-example.bp
+//
+// Demonstrates: the dev entry point a developer writes, the settings behind it,
+// and what a reload must guarantee. The spine is hot code loading — a source
+// edit is answered by new code on the next request, with no process restart, no
+// dropped connection and no doubled route table.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/using/devtools.html
+//           02-desenvolvendo-com-spring-boot.md § Developer Tools (DevTools)
+//           05-data.md § H2 Web Console
+//
+// SERVER SIDE. Every line compiles to BEAM. `code:load_file/1` has no commonJS
+// meaning, which is why this module has no js half at all.
+
+import {Rakun, App} from "rakun";
+import {rkRouteCount, rkRoutePaths, rkBuildCount, rkProp} from "rakun";
+
+import {DevtoolsSettings, settings, withProjectSettings, startDevtools} from "rakun-devtools";
+import {devReloadable, reloadNow, dropModule, traceCalls} from "rakun-devtools";
+// The pre-built fixture modules the front ships for its own reload tests.
+import {fixtureCompiledV1, fixtureCompiledV2, loadFixture, resolveFixtureService} from "rakun-devtools";
+
+// ---- the dev entry point ------------------------------------------------------
+//
+// A project keeps its production `main.bp` unchanged and adds this. `rakun run`
+// (front 88) calls it; a developer running by hand calls it too. Nothing below
+// exists in a production build, because the module is not in the production
+// manifest — which is also how the six dev property defaults switch themselves
+// off, since they are applied by this module's presence.
+
+fn main() {
+    val roots = ["src", "app"];
+    val exclude = ["static/**", "public/**"];
+    val local = DevtoolsSettings(
+        roots: roots,
+        exclude: exclude,
+        triggerFile: "",
+        pollMs: 300,
+        enabled: true,
+        remoteSecret: "",
+        dbConsole: true,
+    );
+    // Defaults, then $HOME/.config/rakun/devtools.yaml, then this. The project
+    // wins over the developer's home file, and front 05's environment variables
+    // win over both — devtools does not escape the property priority order.
+    val merged = withProjectSettings(local);
+    startDevtools(merged);
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+// ---- tagging a module so a reload knows what to drop --------------------------
+//
+// LANGUAGE GAP: `@Decl` carries no module or source identity, so a decorator
+// cannot learn which module it is expanding in. The module name has to be
+// repeated as an argument. With `decl.module()` this would be a bare
+// `#[devReloadable]` and a rename could not desynchronise it.
+//
+// The tag is what `rkDevDropModule` reads: front 04's route table is
+// append-only and its singleton cache is keyed by type name, so a reload that
+// only loads the new code leaves a doubled table and a stale singleton.
+
+#[devReloadable("orders")]
+pub fn ordersModuleTag() -> string {
+    return "orders";
+}
+
+// ---- tracing, with a limit that is not optional --------------------------------
+//
+// The BEAM's answer to a JDWP agent is `erl -remsh` into the live node. The one
+// guard rail this front adds is that a trace must carry a message limit: an
+// unbounded trace on a hot function is the classic way to take a BEAM node down
+// with a debugging tool.
+
+pub fn traceOrderLookups() -> i32 {
+    return traceCalls("orders", "lookup", 50);
+}
+
+// ---- what a reload must guarantee ---------------------------------------------
+
+test "settings merge lowest-first and the project wins" {
+    val roots = ["src"];
+    val exclude: string[] = [];
+    val project = DevtoolsSettings(
+        roots: roots,
+        exclude: exclude,
+        triggerFile: "",
+        pollMs: 120,
+        enabled: true,
+        remoteSecret: "",
+        dbConsole: false,
+    );
+    val merged = withProjectSettings(project);
+    // 120 came from the project; the home file in the fixture sets 900.
+    assert merged.pollMs == 120;
+    // dbConsole was set nowhere in the project, so the home file's value stands.
+    assert merged.dbConsole == true;
+}
+
+test "reloading an unchanged module does not double the route table" {
+    loadFixture(fixtureCompiledV1());
+    val before = rkRouteCount();
+    dropModule("fixture_orders");
+    loadFixture(fixtureCompiledV1());
+    assert rkRouteCount() == before;
+}
+
+test "reloading a changed module leaves exactly the new routes" {
+    loadFixture(fixtureCompiledV1());
+    val before = rkRouteCount();
+    dropModule("fixture_orders");
+    loadFixture(fixtureCompiledV2());
+    // V2 renames /orders to /orders/open and adds nothing else.
+    assert rkRouteCount() == before;
+    assert rkRoutePaths().contains("/orders/open");
+    assert rkRoutePaths().contains("/orders,") == false;
+}
+
+test "reloading a service discards its singleton" {
+    loadFixture(fixtureCompiledV1());
+    val built = rkBuildCount("FixtureOrderService");
+    dropModule("fixture_orders");
+    loadFixture(fixtureCompiledV2());
+    resolveFixtureService();
+    assert rkBuildCount("FixtureOrderService") == built + 1;
+}
+
+test "the dev property defaults sit below every other source" {
+    // Applied because this module is present and a dev profile is active.
+    assert rkProp("rakun.web.error.include-message") == "always";
+    // The fixture project file sets this one explicitly, and it wins.
+    assert rkProp("rakun.observability.sampling") == "0.1";
+}
+
+test "a trace without a limit is not expressible" {
+    // `traceCalls` has no arity that omits the limit, so the guard is a
+    // signature rather than a run-time check. What is testable is that the
+    // limit is honoured.
+    val fired = traceCalls("fixture_orders", "lookup", 3);
+    assert fired <= 3;
+}

@@ -1,0 +1,172 @@
+// F05 — Backgrounds Example
+// Demonstrates: bg-attachment, bg-clip, bg-image (gradients), bg-origin,
+// bg-position, bg-repeat, bg-size
+//
+// Docs: https://tailwindcss.com/docs/background-attachment
+//       https://tailwindcss.com/docs/background-clip
+//       https://tailwindcss.com/docs/background-color
+//       https://tailwindcss.com/docs/background-image
+//       https://tailwindcss.com/docs/background-origin
+//       https://tailwindcss.com/docs/background-position
+//       https://tailwindcss.com/docs/background-repeat
+//       https://tailwindcss.com/docs/background-size
+//       https://tailwindcss.com/docs/gradient-color-stops
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// Background attachment
+val bgAttachTokens: Token[] = [
+    .Bg.Attachment.Fixed,
+    .Bg.Attachment.Local,
+    .Bg.Attachment.Scroll,
+];
+val bgAttachStyles = emilia(bgAttachTokens);
+
+// Background clip
+val bgClipTokens: Token[] = [
+    .Bg.Clip.Border,
+    .Bg.Clip.Padding,
+    .Bg.Clip.Content,
+    .Bg.Clip.Text,
+];
+val bgClipStyles = emilia(bgClipTokens);
+
+// Background origin
+val bgOriginTokens: Token[] = [
+    .Bg.Origin.Border,
+    .Bg.Origin.Padding,
+    .Bg.Origin.Content,
+];
+val bgOriginStyles = emilia(bgOriginTokens);
+
+// Background position
+val bgPosTokens: Token[] = [
+    .Bg.Position.Bottom,
+    .Bg.Position.Center,
+    .Bg.Position.Left,
+    .Bg.Position.LeftBottom,
+    .Bg.Position.LeftTop,
+    .Bg.Position.Right,
+    .Bg.Position.RightBottom,
+    .Bg.Position.RightTop,
+    .Bg.Position.Top,
+];
+val bgPosStyles = emilia(bgPosTokens);
+
+// Background repeat
+val bgRepeatTokens: Token[] = [
+    .Bg.Repeat.Repeat,
+    .Bg.Repeat.NoRepeat,
+    .Bg.Repeat.RepeatX,
+    .Bg.Repeat.RepeatY,
+    .Bg.Repeat.Round,
+    .Bg.Repeat.Space,
+];
+val bgRepeatStyles = emilia(bgRepeatTokens);
+
+// Background size
+val bgSizeTokens: Token[] = [
+    .Bg.Size.Auto,
+    .Bg.Size.Cover,
+    .Bg.Size.Contain,
+];
+val bgSizeStyles = emilia(bgSizeTokens);
+
+// Gradient direction
+val gradDirTokens: Token[] = [
+    .Gradient.To.T,
+    .Gradient.To.Tr,
+    .Gradient.To.R,
+    .Gradient.To.Br,
+    .Gradient.To.B,
+    .Gradient.To.Bl,
+    .Gradient.To.L,
+    .Gradient.To.Tl,
+];
+val gradDirStyles = emilia(gradDirTokens);
+
+// Gradient color stops
+val gradFromTokens: Token[] = [
+    .Gradient.From.Red.__500,
+    .Gradient.From.Blue.__500,
+    .Gradient.From.Green.__500,
+    .Gradient.From.White,
+    .Gradient.From.Black,
+    .Gradient.From.Transparent,
+];
+val gradFromStyles = emilia(gradFromTokens);
+
+// Combined gradient example
+val gradientTokens: Token[] = [
+    .Gradient.To.R,
+];
+val gradientStyles = emilia(gradientTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F05: Backgrounds Example ===");
+    @print("Bg Attachment: " + bgAttachStyles);
+    @print("Bg Clip: " + bgClipStyles);
+    @print("Bg Origin: " + bgOriginStyles);
+    @print("Bg Position: " + bgPosStyles);
+    @print("Bg Repeat: " + bgRepeatStyles);
+    @print("Bg Size: " + bgSizeStyles);
+    @print("Gradient Direction: " + gradDirStyles);
+    @print("Gradient From: " + gradFromStyles);
+    @print("Gradient: " + gradientStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "bg-attachment fixed generates correct CSS" {
+    val tokens: Token[] = [.Bg.Attachment.Fixed];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-attachment:fixed") != -1;
+}
+
+test "bg-clip text generates correct CSS" {
+    val tokens: Token[] = [.Bg.Clip.Text];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-clip:text") != -1;
+}
+
+test "bg-position center generates correct CSS" {
+    val tokens: Token[] = [.Bg.Position.Center];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-position:center") != -1;
+}
+
+test "bg-repeat no-repeat generates correct CSS" {
+    val tokens: Token[] = [.Bg.Repeat.NoRepeat];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-repeat:no-repeat") != -1;
+}
+
+test "bg-size cover generates correct CSS" {
+    val tokens: Token[] = [.Bg.Size.Cover];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-size:cover") != -1;
+}
+
+test "gradient-to-r generates correct CSS" {
+    val tokens: Token[] = [.Gradient.To.R];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-image:linear-gradient(to right") != -1;
+}
+
+test "bg-origin padding generates correct CSS" {
+    val tokens: Token[] = [.Bg.Origin.Padding];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("background-origin:padding-box") != -1;
+}

@@ -1,0 +1,271 @@
+// Front 36 — emilia-layout
+//
+// Display, overflow, overscroll, visibility, float, clear, isolation,
+// object-fit/position, aspect-ratio, columns, fragmentation and box-sizing.
+//
+// Upstream: https://tailwindcss.com/docs/display
+//           https://tailwindcss.com/docs/overflow
+//           https://tailwindcss.com/docs/object-fit
+//           https://tailwindcss.com/docs/aspect-ratio
+// Reference: TAILWIND_CSS_DOCS.md § 5. Layout (5.1-5.15, 5.18, 5.19)
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// The six display leaves exist today (tokens.bp:185-192); everything else here
+// is delivered by front 36. Colours come from front 33, spacing from front 35,
+// modifiers from front 34.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── display ──────────────────────────────────────────────────────────────────
+// The display values stay bare leaves of `Layout`, so `.Layout.Flex` keeps the
+// spelling it has today.
+
+fn displayValues() -> Token[] {
+    val values: Token[] = [
+        .Layout.Block,
+        .Layout.InlineBlock,
+        .Layout.Inline,
+        .Layout.Flex,
+        .Layout.InlineFlex,
+        .Layout.Grid,
+        .Layout.InlineGrid,
+        .Layout.Contents,
+        .Layout.FlowRoot,
+        .Layout.ListItem,
+        .Layout.Hidden,
+    ];
+    return values;
+}
+
+// ── overflow ─────────────────────────────────────────────────────────────────
+
+fn overflowValues() -> Token[] {
+    val values: Token[] = [
+        .Layout.Overflow.Auto,
+        .Layout.Overflow.Hidden,
+        .Layout.Overflow.Clip,
+        .Layout.Overflow.Visible,
+        .Layout.Overflow.Scroll,
+        .Layout.Overflow.X.Auto,
+        .Layout.Overflow.Y.Scroll,
+        .Layout.Overscroll.Contain,
+        .Layout.Overscroll.Y.None,
+    ];
+    return values;
+}
+
+// ── visibility and isolation ─────────────────────────────────────────────────
+// `invisible` is one of the places where Tailwind's name and the CSS value
+// disagree: the value is `hidden`, not `invisible`.
+
+fn visibilityValues() -> Token[] {
+    val values: Token[] = [
+        .Layout.Visibility.Visible,
+        .Layout.Visibility.Invisible,
+        .Layout.Visibility.Collapse,
+        .Layout.Isolation.Isolate,
+        .Layout.Isolation.Auto,
+    ];
+    return values;
+}
+
+// ── float and clear ──────────────────────────────────────────────────────────
+// `float-start` and `clear-start` are logical: the CSS value is `inline-start`.
+
+fn floatValues() -> Token[] {
+    val values: Token[] = [
+        .Layout.Float.Start,
+        .Layout.Float.End,
+        .Layout.Float.Left,
+        .Layout.Float.Right,
+        .Layout.Float.None,
+        .Layout.Clear.Both,
+        .Layout.Clear.Start,
+        .Layout.Clear.None,
+    ];
+    return values;
+}
+
+// ── replaced content ─────────────────────────────────────────────────────────
+
+fn objectValues() -> Token[] {
+    val values: Token[] = [
+        .Layout.Object.Fit.Contain,
+        .Layout.Object.Fit.Cover,
+        .Layout.Object.Fit.Fill,
+        .Layout.Object.Fit.None,
+        .Layout.Object.Fit.ScaleDown,
+        .Layout.Object.Pos.Center,
+        .Layout.Object.Pos.LeftTop,
+        .Layout.Object.Pos.RightBottom,
+    ];
+    return values;
+}
+
+fn aspectValues() -> Token[] {
+    val values: Token[] = [
+        .Layout.Aspect.Auto,
+        .Layout.Aspect.Square,
+        .Layout.Aspect.Video,
+    ];
+    return values;
+}
+
+// ── multi-column and fragmentation ───────────────────────────────────────────
+
+fn columnValues() -> Token[] {
+    val values: Token[] = [
+        .Layout.Columns.2,
+        .Layout.Columns.Auto,
+        .Layout.Columns.Xs,
+        .Layout.Columns.X3xl,
+        .Layout.Break.Inside.Avoid,
+        .Layout.Break.After.Column,
+        .Layout.Break.Before.Page,
+    ];
+    return values;
+}
+
+fn boxValues() -> Token[] {
+    val values: Token[] = [
+        .Layout.Box.Border,
+        .Layout.Box.Content,
+        .Layout.BoxDecoration.Clone,
+        .Layout.BoxDecoration.Slice,
+    ];
+    return values;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// A media card: a 16:9 thumbnail that crops rather than stretches, a body that
+// clips its overflow, and a caption laid out in two columns on wide screens.
+
+#[@future]
+pub fn mediaCard(caption: string, body: string) -> @Future<string> {
+    val frame: Token[] = [
+        .Layout.Block,
+        .Layout.Overflow.Hidden,
+        .Layout.Aspect.Video,
+        .Layout.Isolation.Isolate,
+        .Border.Rounded.Lg,
+    ];
+
+    val image: Token[] = [
+        .Size.W.Full,
+        .Size.H.Full,
+        .Layout.Object.Fit.Cover,
+        .Layout.Object.Pos.Center,
+    ];
+
+    val twoColumns: Token[] = [.Layout.Columns.2];
+    val text: Token[] = [
+        .Layout.Box.Border,
+        .Pad.All.4,
+        .Layout.Overflow.Y.Auto,
+        .Size.MaxH.64,
+        Token.Lg(twoColumns),
+    ];
+
+    val label: Token[] = [
+        .Layout.Block,
+        .Color.Slate.500,
+        .Layout.Break.Inside.Avoid,
+    ];
+
+    val frameClass = emilia(frame);
+    val imageClass = emilia(image);
+    val textClass = emilia(text);
+    val labelClass = emilia(label);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + frameClass + "\">"
+        + "<span class=\"" + imageClass + "\"></span></div>"
+        + "<div class=\"" + textClass + "\">"
+        + "<span class=\"" + labelClass + "\">" + caption + "</span>"
+        + "<p>" + body + "</p></div>";
+    return styles + markup;
+}
+
+test "every display value of the reference has a token" {
+    val cls = emilia(displayValues());
+    val styles = await flush();
+    assert styles.contains("display:inline-flex");
+    assert styles.contains("display:inline-grid");
+    assert styles.contains("display:contents");
+    assert styles.contains("display:flow-root");
+    assert styles.contains("display:list-item");
+    assert styles.contains("display:none");
+}
+
+test "the six display paths that compile today are unchanged" {
+    val tokens: Token[] = [.Layout.Flex];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{display:flex}</style>";
+}
+
+test "overflow answers the shorthand and both axes" {
+    val cls = emilia(overflowValues());
+    val styles = await flush();
+    assert styles.contains("overflow:clip");
+    assert styles.contains("overflow-x:auto");
+    assert styles.contains("overflow-y:scroll");
+    assert styles.contains("overscroll-behavior:contain");
+    assert styles.contains("overscroll-behavior-y:none");
+}
+
+test "invisible is visibility hidden, not visibility invisible" {
+    val tokens: Token[] = [.Layout.Visibility.Invisible];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{visibility:hidden}</style>";
+}
+
+test "float-start and clear-start are the logical values" {
+    val tokens: Token[] = [.Layout.Float.Start, .Layout.Clear.Start];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{float:inline-start;clear:inline-start}</style>";
+}
+
+test "a two-word object position keeps its single space" {
+    val tokens: Token[] = [.Layout.Object.Pos.LeftTop, .Layout.Object.Pos.RightBottom];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{object-position:left top;object-position:right bottom}</style>";
+}
+
+test "the aspect ratios keep the spaces around the slash" {
+    val tokens: Token[] = [.Layout.Aspect.Square, .Layout.Aspect.Video];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{aspect-ratio:1 / 1;aspect-ratio:16 / 9}</style>";
+}
+
+test "columns answer integers and named widths" {
+    val cls = emilia(columnValues());
+    val styles = await flush();
+    assert styles.contains("columns:2");
+    assert styles.contains("columns:auto");
+    assert styles.contains("columns:20rem");
+    assert styles.contains("columns:48rem");
+    assert styles.contains("break-inside:avoid");
+}
+
+test "box-sizing and box-decoration-break" {
+    val cls = emilia(boxValues());
+    val styles = await flush();
+    assert styles.contains("box-sizing:border-box");
+    assert styles.contains("box-sizing:content-box");
+    assert styles.contains("box-decoration-break:clone");
+}
+
+test "the media card crops its image and clips its frame" {
+    val out = await mediaCard("From the archive", "…");
+    assert out.startsWith("<style>");
+    assert out.contains("aspect-ratio:16 / 9");
+    assert out.contains("object-fit:cover");
+    assert out.contains("overflow:hidden");
+    assert out.contains("@media (width >= 64rem){columns:2}");
+}

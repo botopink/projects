@@ -1,0 +1,95 @@
+// Front 60 — Rakun Static Generation
+//
+// What this demonstrates: a blog whose post pages are prerendered from an
+// enumerated slug list and refreshed hourly, next to a search page that stays
+// dynamic because it reads the query. Both run on the BEAM; the difference is
+// decided after a trial render, not declared.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/functions/generate-static-params
+//   https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config
+//   https://nextjs.org/docs/app/guides/incremental-static-regeneration
+
+import {
+    registerSegmentConfig,
+    registerStaticParams,
+    SegmentConfig,
+    DynamicMode,
+    FetchCache,
+    StaticParams,
+    ParamBinding,
+} from "rakun";
+import {page, PageContext} from "rakun";  // provided by front 22
+import {Element, div, h1, p, ul, li, text} from "jhonstart";
+
+pub type Post(
+    slug: string,
+    title: string,
+)
+
+// SERVER — stands in for the repository read from front 08.
+fn allPosts() -> Post[] {
+    return [
+        Post(slug: "hello", title: "Hello"),
+        Post(slug: "beam", title: "Why the BEAM"),
+    ];
+}
+
+fn findPost(slug: string) -> Post {
+    val hits = allPosts().filter({ post -> post.slug == slug });
+    return hits.at(0).unwrapOr(Post(slug: slug, title: "untitled"));
+}
+
+// ── the prerendered route ───────────────────────────────────────────────────
+
+// SERVER — the segment configuration. Every field is written out because a
+// declared parameter default is never applied at a call site.
+val _blogConfig = registerSegmentConfig("blog/[slug]", SegmentConfig(
+    dynamic: DynamicMode.Auto,
+    dynamicParams: true,
+    revalidate: 3600,
+    fetchCache: FetchCache.Auto,
+));
+
+// SERVER — called once at build time. Each row binds every dynamic segment of
+// the pattern; a row that misses one fails the build.
+#[@future]
+pub fn blogStaticParams() -> @Future<StaticParams[]> {
+    return allPosts().map({ post ->
+        StaticParams(bindings: [ParamBinding(name: "slug", value: post.slug)]);
+    });
+}
+
+val _blogParams = registerStaticParams("blog/[slug]", blogStaticParams);
+
+// SERVER — the page. It touches nothing request-specific, so the trial render
+// leaves `isDynamic()` false and the output is stored as a prerendered entry.
+#[page("blog/[slug]")]
+#[@future]
+pub fn blogPostPage(route: PageContext) -> @Future<Element> {
+    val slug = route.params.lookup("slug").unwrapOr("");
+    val post = findPost(slug);
+    return div([
+        h1([text(post.title, attrs: [])], attrs: []),
+        p([text("/blog/" + post.slug, attrs: [])], attrs: []),
+    ], attrs: []);
+}
+
+// ── the route that stays dynamic ────────────────────────────────────────────
+
+// SERVER — reading the query marks this render dynamic (front 62), so rule 4 of
+// the decision applies and nothing is prerendered. No configuration says so;
+// the trial render discovers it and the build report names `searchParams`.
+#[page("search")]
+#[@future]
+pub fn searchPage(route: PageContext) -> @Future<Element> {
+    val term = route.searchParams.lookup("q").unwrapOr("");
+    val hits = allPosts().filter({ post -> post.title.contains(term) });
+    val rows = hits.map({ post ->
+        li([text(post.title, attrs: [])], attrs: []);
+    });
+    return div([
+        h1([text("Results for " + term, attrs: [])], attrs: []),
+        ul(rows, attrs: []),
+    ], attrs: []);
+}

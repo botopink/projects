@@ -1,0 +1,106 @@
+// Front 72 — rakun auto-configuration: the module author's side.
+//
+// This is the file somebody writes when they ship a `rakun-*` module and want it
+// to configure itself. Nothing here runs unless three things are true at once:
+// the module is a declared dependency, the host property is set, and the
+// application has not already supplied its own `MailSender`. That triple is the
+// whole of Spring Boot's "add the starter and it works".
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/using/auto-configuration.html
+//   https://docs.spring.io/spring-boot/reference/features/developing-auto-configuration.html
+//
+// `#[autoConfiguration]` and the five condition markers are delivered by this
+// front. `#[bean]` and `#[value]` already exist (rakun/src/decorators.bp:198-215).
+// The `rk*` runtime functions are imported because the wiring the decorators
+// `@emit` is spliced into THIS module and calls them by name.
+
+import {autoConfiguration, conditionalOnModule, conditionalOnProperty} from "rakun";
+import {conditionalOnMissingBean, autoConfigureAfter, profile} from "rakun";
+import {bean, value, service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkPropInt} from "rakun";
+import {rkAutoRegister, rkAutoMatched, rkAutoConditions, rkAutoAfter} from "rakun";
+
+// The value the module provides. An ordinary record — nothing about it knows it
+// is going to be produced conditionally.
+pub type MailSender(
+    host: string,
+    port: i32,
+) {
+    pub fn send(self: Self, to: string, subject: string) -> string {
+        return "250 " + subject + " -> " + to + " via " + self.host + ":" + self.port.toString();
+    }
+}
+
+// The auto-configuration itself. Read the markers top to bottom: they are
+// conjunctive, and the apply pass reports the FIRST one that fails.
+//
+// LANGUAGE GAP: a decorator argument cannot name a type — decorator arguments are
+// ordinary values checked against the signature and there is no type-of-type, so
+// the bean condition below takes "MailSender" as a string rather than the type.
+#[autoConfiguration]
+#[conditionalOnModule("rakun-mail")]
+#[conditionalOnProperty("rakun.mail.host", "*")]
+#[autoConfigureAfter("RakunCoreAutoConfiguration")]
+pub type RakunMailAutoConfiguration(
+    #[value("rakun.mail.host")] host: string,
+    #[value("rakun.mail.port")] port: i32,
+) {
+    // `"*"` on the marker above means "set and non-empty". It is spelled out
+    // because declared parameter defaults are never applied at a call site, so a
+    // decorator cannot have an optional argument.
+    #[bean]
+    #[conditionalOnMissingBean("MailSender")]
+    pub fn mailSender(self: Self) -> MailSender {
+        return MailSender(host: self.host, port: self.port);
+    }
+}
+
+// A second configuration in the same module, gated on a profile instead. Two
+// configurations rather than one with a disjunction: there is no `anyOf`, and the
+// split is the form that reads correctly in the condition report.
+#[autoConfiguration]
+#[conditionalOnModule("rakun-mail")]
+#[profile("dev")]
+pub type RakunMailDevAutoConfiguration {
+    #[bean]
+    #[conditionalOnMissingBean("MailSender")]
+    pub fn mailSender(self: Self) -> MailSender {
+        return MailSender(host: "localhost", port: 1025);
+    }
+}
+
+// An ordinary component gated by profile. Same machinery, same report — this is
+// why `#[profile]` lives in this front rather than in front 05.
+#[service]
+#[profile("prod")]
+pub type MailAuditService(
+    sender: MailSender,
+) {
+    pub fn auditLine(self: Self, to: string) -> string {
+        return "audit " + self.sender.send(to, "receipt");
+    }
+}
+
+test "the mail configuration registers its conditions in source order" {
+    val blob = rkAutoConditions("RakunMailAutoConfiguration");
+    assert blob == "M|rakun-mail;P|rakun.mail.host|*";
+}
+
+test "a bean condition is registered against the method, not the type" {
+    val blob = rkAutoConditions("RakunMailAutoConfiguration.mailSender");
+    assert blob == "X|MailSender";
+}
+
+test "the dev configuration carries a profile record" {
+    val blob = rkAutoConditions("RakunMailDevAutoConfiguration");
+    assert blob == "M|rakun-mail;F|dev";
+}
+
+test "ordering is declared, not inferred from module load order" {
+    val after = rkAutoAfter("RakunMailAutoConfiguration");
+    assert after == "RakunCoreAutoConfiguration";
+    assert rkAutoAfter("RakunMailDevAutoConfiguration") == "";
+}

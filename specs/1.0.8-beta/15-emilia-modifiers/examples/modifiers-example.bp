@@ -1,0 +1,469 @@
+// F15 — Modifiers Example
+// Demonstrates: Sm, 2Xl, Dark, Visited, First, Last, Odd, Even, Disabled,
+// Required, Invalid, FocusVisible, GroupHover, GroupFocus, PeerFocus,
+// PeerChecked, Placeholder, Before, After, Selection, Marker, Print,
+// MotionReduce, MotionSafe, Portrait, Landscape, Rtl, Ltr, Open, Inert,
+// Container queries
+//
+// Docs: https://tailwindcss.com/docs/hover-focus-and-other-states
+//       https://tailwindcss.com/docs/responsive-design
+//       https://tailwindcss.com/docs/dark-mode
+//       https://tailwindcss.com/docs/container-queries
+
+import { emilia, flush, Token } from "emilia";
+import { div, p, renderToString } from "jhonstart";
+
+// Breakpoint modifiers
+val smInner: Token[] = [.Pad.All.__4];
+val smTokens: Token[] = [Token.Sm(smInner)];
+val smStyles = emilia(smTokens);
+
+val x2xlInner: Token[] = [.Text.Size.Xl];
+val x2xlTokens: Token[] = [Token.X2xl(x2xlInner)];
+val x2xlStyles = emilia(x2xlTokens);
+
+val maxSmInner: Token[] = [.Pad.All.__2];
+val maxSmTokens: Token[] = [Token.MaxSm(maxSmInner)];
+val maxSmStyles = emilia(maxSmTokens);
+
+// Dark mode
+val darkInner: Token[] = [.Bg.Black, .Color.White];
+val darkTokens: Token[] = [Token.Dark(darkInner)];
+val darkStyles = emilia(darkTokens);
+
+// Pseudo-class modifiers
+val visitedInner: Token[] = [.Color.Purple.__700];
+val visitedTokens: Token[] = [Token.Visited(visitedInner)];
+val visitedStyles = emilia(visitedTokens);
+
+val focusVisibleInner: Token[] = [.Outline.__2, .Outline.Offset.__2];
+val focusVisibleTokens: Token[] = [Token.FocusVisible(focusVisibleInner)];
+val focusVisibleStyles = emilia(focusVisibleTokens);
+
+val focusWithinInner: Token[] = [.Border.Blue.__500];
+val focusWithinTokens: Token[] = [Token.FocusWithin(focusWithinInner)];
+val focusWithinStyles = emilia(focusWithinTokens);
+
+val firstInner: Token[] = [.Margin.T.__0, .Pad.T.__0];
+val firstTokens: Token[] = [Token.First(firstInner)];
+val firstStyles = emilia(firstTokens);
+
+val lastInner: Token[] = [.Margin.B.__0, .Pad.B.__0];
+val lastTokens: Token[] = [Token.Last(lastInner)];
+val lastStyles = emilia(lastTokens);
+
+val onlyInner: Token[] = [.Pad.All.__0];
+val onlyTokens: Token[] = [Token.Only(onlyInner)];
+val onlyStyles = emilia(onlyTokens);
+
+val oddInner: Token[] = [.Bg.Gray.__100];
+val oddTokens: Token[] = [Token.Odd(oddInner)];
+val oddStyles = emilia(oddTokens);
+
+val evenInner: Token[] = [.Bg.White];
+val evenTokens: Token[] = [Token.Even(evenInner)];
+val evenStyles = emilia(evenTokens);
+
+val emptyInner: Token[] = [.Layout.Hidden];
+val emptyTokens: Token[] = [Token.Empty(emptyInner)];
+val emptyStyles = emilia(emptyTokens);
+
+// Form state modifiers
+val disabledInner: Token[] = [.Effect.Opacity.__50, .Interact.Cursor.NotAllowed];
+val disabledTokens: Token[] = [Token.Disabled(disabledInner)];
+val disabledStyles = emilia(disabledTokens);
+
+val enabledInner: Token[] = [.Hover([.Bg.Blue.__50])];
+val enabledTokens: Token[] = [Token.Enabled(enabledInner)];
+val enabledStyles = emilia(enabledTokens);
+
+val checkedInner: Token[] = [.Bg.Blue.__500, .Color.White];
+val checkedTokens: Token[] = [Token.Checked(checkedInner)];
+val checkedStyles = emilia(checkedTokens);
+
+val requiredInner: Token[] = [.Border.Red.__500];
+val requiredTokens: Token[] = [Token.Required(requiredInner)];
+val requiredStyles = emilia(requiredTokens);
+
+val invalidInner: Token[] = [.Border.Red.__500, .Color.Red.__700];
+val invalidTokens: Token[] = [Token.Invalid(invalidInner)];
+val invalidStyles = emilia(invalidTokens);
+
+val validInner: Token[] = [.Border.Green.__500];
+val validTokens: Token[] = [Token.Valid(validInner)];
+val validStyles = emilia(validTokens);
+
+// Group modifiers
+val groupHoverInner: Token[] = [.Color.White, .Bg.Blue.__600];
+val groupHoverTokens: Token[] = [Token.GroupHover(groupHoverInner)];
+val groupHoverStyles = emilia(groupHoverTokens);
+
+val groupFocusInner: Token[] = [.Outline.__2];
+val groupFocusTokens: Token[] = [Token.GroupFocus(groupFocusInner)];
+val groupFocusStyles = emilia(groupFocusTokens);
+
+// Peer modifiers
+val peerFocusInner: Token[] = [.Border.Blue.__500];
+val peerFocusTokens: Token[] = [Token.PeerFocus(peerFocusInner)];
+val peerFocusStyles = emilia(peerFocusTokens);
+
+val peerCheckedInner: Token[] = [.Bg.Blue.__50];
+val peerCheckedTokens: Token[] = [Token.PeerChecked(peerCheckedInner)];
+val peerCheckedStyles = emilia(peerCheckedTokens);
+
+val peerInvalidInner: Token[] = [.Color.Red.__700];
+val peerInvalidTokens: Token[] = [Token.PeerInvalid(peerInvalidInner)];
+val peerInvalidStyles = emilia(peerInvalidTokens);
+
+// Pseudo-element modifiers
+val placeholderInner: Token[] = [.Color.Gray.__400];
+val placeholderTokens: Token[] = [Token.Placeholder(placeholderInner)];
+val placeholderStyles = emilia(placeholderTokens);
+
+val beforeInner: Token[] = [.Color.Red.__500];
+val beforeTokens: Token[] = [Token.Before(beforeInner)];
+val beforeStyles = emilia(beforeTokens);
+
+val afterInner: Token[] = [.Color.Blue.__500];
+val afterTokens: Token[] = [Token.After(afterInner)];
+val afterStyles = emilia(afterTokens);
+
+val selectionInner: Token[] = [.Bg.Blue.__300, .Color.Blue.__900];
+val selectionTokens: Token[] = [Token.Selection(selectionInner)];
+val selectionStyles = emilia(selectionTokens);
+
+val markerInner: Token[] = [.Color.Sky.__400];
+val markerTokens: Token[] = [Token.Marker(markerInner)];
+val markerStyles = emilia(markerTokens);
+
+// Media query modifiers
+val printInner: Token[] = [.Layout.Hidden];
+val printTokens: Token[] = [Token.Print(printInner)];
+val printStyles = emilia(printTokens);
+
+val motionReduceInner: Token[] = [.Animate.None, .Transition.None];
+val motionReduceTokens: Token[] = [Token.MotionReduce(motionReduceInner)];
+val motionReduceStyles = emilia(motionReduceTokens);
+
+val motionSafeInner: Token[] = [.Animate.Spin];
+val motionSafeTokens: Token[] = [Token.MotionSafe(motionSafeInner)];
+val motionSafeStyles = emilia(motionSafeTokens);
+
+val portraitInner: Token[] = [.Layout.Hidden];
+val portraitTokens: Token[] = [Token.Portrait(portraitInner)];
+val portraitStyles = emilia(portraitTokens);
+
+val landscapeInner: Token[] = [.Layout.Hidden];
+val landscapeTokens: Token[] = [Token.Landscape(landscapeInner)];
+val landscapeStyles = emilia(landscapeTokens);
+
+val contrastMoreInner: Token[] = [.Border.Gray.__400];
+val contrastMoreTokens: Token[] = [Token.ContrastMore(contrastMoreInner)];
+val contrastMoreStyles = emilia(contrastMoreTokens);
+
+val forcedColorsInner: Token[] = [.A11y.ForcedColorAdjust.None];
+val forcedColorsTokens: Token[] = [Token.ForcedColors(forcedColorsInner)];
+val forcedColorsStyles = emilia(forcedColorsTokens);
+
+// Direction modifiers
+val rtlInner: Token[] = [.Margin.R.__4];
+val rtlTokens: Token[] = [Token.Rtl(rtlInner)];
+val rtlStyles = emilia(rtlTokens);
+
+val ltrInner: Token[] = [.Margin.L.__4];
+val ltrTokens: Token[] = [Token.Ltr(ltrInner)];
+val ltrStyles = emilia(ltrTokens);
+
+// State modifiers
+val openInner: Token[] = [.Bg.Gray.__100];
+val openTokens: Token[] = [Token.Open(openInner)];
+val openStyles = emilia(openTokens);
+
+val inertInner: Token[] = [.Effect.Opacity.__50];
+val inertTokens: Token[] = [Token.Inert(inertInner)];
+val inertStyles = emilia(inertTokens);
+
+// Container query modifiers
+val containerSmInner: Token[] = [.Flex.Row];
+val containerSmTokens: Token[] = [Token.ContainerSm(containerSmInner)];
+val containerSmStyles = emilia(containerSmTokens);
+
+val containerMdInner: Token[] = [.Flex.Row];
+val containerMdTokens: Token[] = [Token.ContainerMd(containerMdInner)];
+val containerMdStyles = emilia(containerMdTokens);
+
+// Nested modifiers
+val nestedInner: Token[] = [.Bg.Black];
+val nestedHoverInner: Token[] = [Token.Hover(nestedInner)];
+val nestedMdTokens: Token[] = [Token.Md(nestedHoverInner)];
+val nestedMdStyles = emilia(nestedMdTokens);
+
+// Triple nested: dark > md > hover
+val tripleInner: Token[] = [.Bg.Indigo.__600];
+val tripleHoverInner: Token[] = [Token.Hover(tripleInner)];
+val tripleMdInner: Token[] = [Token.Md(tripleHoverInner)];
+val tripleDarkTokens: Token[] = [Token.Dark(tripleMdInner)];
+val tripleDarkStyles = emilia(tripleDarkTokens);
+
+// Combined: responsive + dark + hover
+val combinedTokens: Token[] = [
+    .Bg.White,
+    .Color.Black,
+    Token.Hover([.Bg.Gray.__100]),
+    Token.Dark([.Bg.Gray.__900, .Color.White]),
+    Token.Md([.Pad.All.__8]),
+    Token.Lg([.Pad.All.__12]),
+];
+val combinedStyles = emilia(combinedTokens);
+
+val page = div([
+    p([], []),
+], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F15: Modifiers Example ===");
+    @print("Sm: " + smStyles);
+    @print("X2xl: " + x2xlStyles);
+    @print("MaxSm: " + maxSmStyles);
+    @print("Dark: " + darkStyles);
+    @print("Visited: " + visitedStyles);
+    @print("FocusVisible: " + focusVisibleStyles);
+    @print("FocusWithin: " + focusWithinStyles);
+    @print("First: " + firstStyles);
+    @print("Last: " + lastStyles);
+    @print("Only: " + onlyStyles);
+    @print("Odd: " + oddStyles);
+    @print("Even: " + evenStyles);
+    @print("Empty: " + emptyStyles);
+    @print("Disabled: " + disabledStyles);
+    @print("Enabled: " + enabledStyles);
+    @print("Checked: " + checkedStyles);
+    @print("Required: " + requiredStyles);
+    @print("Invalid: " + invalidStyles);
+    @print("Valid: " + validStyles);
+    @print("GroupHover: " + groupHoverStyles);
+    @print("GroupFocus: " + groupFocusStyles);
+    @print("PeerFocus: " + peerFocusStyles);
+    @print("PeerChecked: " + peerCheckedStyles);
+    @print("PeerInvalid: " + peerInvalidStyles);
+    @print("Placeholder: " + placeholderStyles);
+    @print("Before: " + beforeStyles);
+    @print("After: " + afterStyles);
+    @print("Selection: " + selectionStyles);
+    @print("Marker: " + markerStyles);
+    @print("Print: " + printStyles);
+    @print("MotionReduce: " + motionReduceStyles);
+    @print("MotionSafe: " + motionSafeStyles);
+    @print("Portrait: " + portraitStyles);
+    @print("Landscape: " + landscapeStyles);
+    @print("ContrastMore: " + contrastMoreStyles);
+    @print("ForcedColors: " + forcedColorsStyles);
+    @print("Rtl: " + rtlStyles);
+    @print("Ltr: " + ltrStyles);
+    @print("Open: " + openStyles);
+    @print("Inert: " + inertStyles);
+    @print("ContainerSm: " + containerSmStyles);
+    @print("ContainerMd: " + containerMdStyles);
+    @print("Nested (Md > Hover): " + nestedMdStyles);
+    @print("Triple Nested (Dark > Md > Hover): " + tripleDarkStyles);
+    @print("Combined: " + combinedStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "sm modifier generates correct CSS" {
+    val inner: Token[] = [.Pad.All.__4];
+    val tokens: Token[] = [Token.Sm(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("@media(min-width:640px){padding:1rem}") != -1;
+}
+
+test "2xl modifier generates correct CSS" {
+    val inner: Token[] = [.Text.Size.Xl];
+    val tokens: Token[] = [Token.X2xl(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("@media(min-width:1536px){font-size:1.25rem}") != -1;
+}
+
+test "dark modifier generates correct CSS" {
+    val inner: Token[] = [.Bg.Black];
+    val tokens: Token[] = [Token.Dark(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("@media(prefers-color-scheme:dark){background-color:#000000}") != -1;
+}
+
+test "hover modifier generates correct CSS" {
+    val inner: Token[] = [.Color.Red.__500];
+    val tokens: Token[] = [Token.Hover(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf(":hover{color:#ef4444}") != -1;
+}
+
+test "first modifier generates correct CSS" {
+    val inner: Token[] = [.Margin.T.__0];
+    val tokens: Token[] = [Token.First(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf(":first-child{margin-top:0}") != -1;
+}
+
+test "last modifier generates correct CSS" {
+    val inner: Token[] = [.Margin.B.__0];
+    val tokens: Token[] = [Token.Last(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf(":last-child{margin-bottom:0}") != -1;
+}
+
+test "odd modifier generates correct CSS" {
+    val inner: Token[] = [.Bg.Gray.__100];
+    val tokens: Token[] = [Token.Odd(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf(":nth-child(odd){background-color:#f3f4f6}") != -1;
+}
+
+test "even modifier generates correct CSS" {
+    val inner: Token[] = [.Bg.White];
+    val tokens: Token[] = [Token.Even(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf(":nth-child(even){background-color:#ffffff}") != -1;
+}
+
+test "disabled modifier generates correct CSS" {
+    val inner: Token[] = [.Effect.Opacity.__50];
+    val tokens: Token[] = [Token.Disabled(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf(":disabled{opacity:0.5}") != -1;
+}
+
+test "required modifier generates correct CSS" {
+    val inner: Token[] = [.Border.Red.__500];
+    val tokens: Token[] = [Token.Required(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf(":required{border-color:#ef4444}") != -1;
+}
+
+test "invalid modifier generates correct CSS" {
+    val inner: Token[] = [.Color.Red.__700];
+    val tokens: Token[] = [Token.Invalid(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf(":invalid{color:#b91c1c}") != -1;
+}
+
+test "group-hover modifier generates correct CSS" {
+    val inner: Token[] = [.Color.White];
+    val tokens: Token[] = [Token.GroupHover(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf(".group:hover &{color:#ffffff}") != -1;
+}
+
+test "peer-focus modifier generates correct CSS" {
+    val inner: Token[] = [.Border.Blue.__500];
+    val tokens: Token[] = [Token.PeerFocus(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf(".peer:focus ~ &{border-color:#3b82f6}") != -1;
+}
+
+test "placeholder modifier generates correct CSS" {
+    val inner: Token[] = [.Color.Gray.__400];
+    val tokens: Token[] = [Token.Placeholder(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("::placeholder{color:#9ca3af}") != -1;
+}
+
+test "before modifier generates correct CSS" {
+    val inner: Token[] = [.Color.Red.__500];
+    val tokens: Token[] = [Token.Before(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("::before{color:#ef4444}") != -1;
+}
+
+test "print modifier generates correct CSS" {
+    val inner: Token[] = [.Layout.Hidden];
+    val tokens: Token[] = [Token.Print(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("@media print{display:none}") != -1;
+}
+
+test "motion-reduce modifier generates correct CSS" {
+    val inner: Token[] = [.Animate.None];
+    val tokens: Token[] = [Token.MotionReduce(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("@media(prefers-reduced-motion:reduce){animation:none}") != -1;
+}
+
+test "portrait modifier generates correct CSS" {
+    val inner: Token[] = [.Layout.Hidden];
+    val tokens: Token[] = [Token.Portrait(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("@media(orientation:portrait){display:none}") != -1;
+}
+
+test "rtl modifier generates correct CSS" {
+    val inner: Token[] = [.Margin.R.__4];
+    val tokens: Token[] = [Token.Rtl(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("[dir=\"rtl\"] &{margin-right:1rem}") != -1;
+}
+
+test "ltr modifier generates correct CSS" {
+    val inner: Token[] = [.Margin.L.__4];
+    val tokens: Token[] = [Token.Ltr(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("[dir=\"ltr\"] &{margin-left:1rem}") != -1;
+}
+
+test "open modifier generates correct CSS" {
+    val inner: Token[] = [.Bg.Gray.__100];
+    val tokens: Token[] = [Token.Open(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("&[open]{background-color:#f3f4f6}") != -1;
+}
+
+test "container-md modifier generates correct CSS" {
+    val inner: Token[] = [.Flex.Row];
+    val tokens: Token[] = [Token.ContainerMd(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("@container(min-width:28rem){flex-direction:row}") != -1;
+}
+
+test "nested modifiers compose correctly" {
+    val inner: Token[] = [.Bg.Black];
+    val hoverInner: Token[] = [Token.Hover(inner)];
+    val tokens: Token[] = [Token.Md(hoverInner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("@media(min-width:768px){:hover{background-color:#000000}}") != -1;
+}
+
+test "triple nested modifiers compose correctly" {
+    val inner: Token[] = [.Bg.Indigo.__600];
+    val hoverInner: Token[] = [Token.Hover(inner)];
+    val mdInner: Token[] = [Token.Md(hoverInner)];
+    val tokens: Token[] = [Token.Dark(mdInner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("@media(prefers-color-scheme:dark){@media(min-width:768px){:hover{background-color:#4f46e5}}}") != -1;
+}

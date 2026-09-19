@@ -1,0 +1,267 @@
+// Front 37 — emilia-flexbox-and-grid
+//
+// The grid half: column and row templates, spans, starts and ends, auto-flow,
+// implicit track sizing, and the `Gap` section shared with flex.
+//
+// Upstream: https://tailwindcss.com/docs/grid-template-columns
+//           https://tailwindcss.com/docs/grid-column
+//           https://tailwindcss.com/docs/grid-auto-flow
+//           https://tailwindcss.com/docs/gap
+// Reference: TAILWIND_CSS_DOCS.md § 6. Flexbox & Grid (6.8-6.15)
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// The whole `Grid` section and the top-level `Gap` section are delivered by
+// front 37 — `display:grid` (front 36) is all emilia has today. Spacing scale
+// from front 35, colours from front 33, modifiers from front 34.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── templates ────────────────────────────────────────────────────────────────
+// A numeric leaf builds `repeat(N, minmax(0, 1fr))`; the two keyword leaves are
+// emitted straight.
+
+fn columnTemplates() -> Token[] {
+    val values: Token[] = [
+        .Grid.Cols.1,
+        .Grid.Cols.2,
+        .Grid.Cols.3,
+        .Grid.Cols.6,
+        .Grid.Cols.12,
+        .Grid.Cols.None,
+        .Grid.Cols.Subgrid,
+    ];
+    return values;
+}
+
+fn rowTemplates() -> Token[] {
+    val values: Token[] = [
+        .Grid.Rows.1,
+        .Grid.Rows.3,
+        .Grid.Rows.None,
+        .Grid.Rows.Subgrid,
+    ];
+    return values;
+}
+
+// ── placement ────────────────────────────────────────────────────────────────
+// A span emits the doubled form `span N / span N`; `Full` is the line-based
+// `1 / -1`. `Start` and `End` run to 13, because a twelve-column grid has
+// thirteen lines.
+
+fn columnPlacement() -> Token[] {
+    val values: Token[] = [
+        .Grid.Col.Auto,
+        .Grid.Col.Span.1,
+        .Grid.Col.Span.2,
+        .Grid.Col.Span.6,
+        .Grid.Col.Span.Full,
+        .Grid.Col.Start.1,
+        .Grid.Col.Start.13,
+        .Grid.Col.Start.Auto,
+        .Grid.Col.End.7,
+        .Grid.Col.End.Auto,
+    ];
+    return values;
+}
+
+fn rowPlacement() -> Token[] {
+    val values: Token[] = [
+        .Grid.Row.Auto,
+        .Grid.Row.Span.2,
+        .Grid.Row.Span.Full,
+        .Grid.Row.Start.1,
+        .Grid.Row.End.3,
+    ];
+    return values;
+}
+
+// ── flow and implicit tracks ─────────────────────────────────────────────────
+
+fn flowValues() -> Token[] {
+    val values: Token[] = [
+        .Grid.Flow.Row,
+        .Grid.Flow.Col,
+        .Grid.Flow.Dense,
+        .Grid.Flow.RowDense,
+        .Grid.Flow.ColDense,
+    ];
+    return values;
+}
+
+fn implicitTracks() -> Token[] {
+    val values: Token[] = [
+        .Grid.AutoCols.Auto,
+        .Grid.AutoCols.Min,
+        .Grid.AutoCols.Max,
+        .Grid.AutoCols.Fr,
+        .Grid.AutoRows.Auto,
+        .Grid.AutoRows.Min,
+        .Grid.AutoRows.Max,
+        .Grid.AutoRows.Fr,
+    ];
+    return values;
+}
+
+// ── gap ──────────────────────────────────────────────────────────────────────
+// `Gap` is its own top-level section because it applies to grid and flex alike.
+// The legacy `Flex.Gap` paths still work and emit the same declaration.
+
+fn gapValues() -> Token[] {
+    val values: Token[] = [
+        .Gap.All.0,
+        .Gap.All.4,
+        .Gap.All.Px,
+        .Gap.X.2,
+        .Gap.Y.6,
+    ];
+    return values;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// A dashboard: one column on phones, six from `md`, twelve from `lg`. The chart
+// panel takes the full width until `lg`, then two thirds of it; the sidebar
+// takes the rest and its rows size to content.
+
+#[@future]
+pub fn dashboard(chart: string, aside: string, footer: string) -> @Future<string> {
+    val sixFromMd: Token[] = [.Grid.Cols.6];
+    val twelveFromLg: Token[] = [.Grid.Cols.12];
+
+    val shell: Token[] = [
+        .Layout.Grid,
+        .Grid.Cols.1,
+        .Gap.All.4,
+        .Pad.All.6,
+        Token.Md(sixFromMd),
+        Token.Lg(twelveFromLg),
+    ];
+
+    val chartSpanLg: Token[] = [.Grid.Col.Span.8];
+    val chartPanel: Token[] = [
+        .Grid.Col.Span.Full,
+        .Bg.Color.White,
+        .Border.Rounded.Lg,
+        .Pad.All.4,
+        Token.Lg(chartSpanLg),
+    ];
+
+    val asideSpanLg: Token[] = [.Grid.Col.Span.4];
+    val asidePanel: Token[] = [
+        .Grid.Col.Span.Full,
+        .Grid.AutoRows.Min,
+        .Gap.Y.3,
+        .Bg.Color.Slate.50,
+        .Pad.All.4,
+        Token.Lg(asideSpanLg),
+    ];
+
+    val footerPanel: Token[] = [
+        .Grid.Col.Span.Full,
+        .Grid.Flow.ColDense,
+        .Flex.Place.Items.Center,
+        .Color.Slate.500,
+    ];
+
+    val shellClass = emilia(shell);
+    val chartClass = emilia(chartPanel);
+    val asideClass = emilia(asidePanel);
+    val footerClass = emilia(footerPanel);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + shellClass + "\">"
+        + "<div class=\"" + chartClass + "\">" + chart + "</div>"
+        + "<div class=\"" + asideClass + "\">" + aside + "</div>"
+        + "<div class=\"" + footerClass + "\">" + footer + "</div>"
+        + "</div>";
+    return styles + markup;
+}
+
+test "a numeric column template builds a repeat" {
+    val tokens: Token[] = [.Grid.Cols.12];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{grid-template-columns:repeat(12, minmax(0, 1fr))}</style>";
+}
+
+test "none and subgrid are emitted as keywords" {
+    val tokens: Token[] = [.Grid.Cols.None, .Grid.Rows.Subgrid];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{grid-template-columns:none;grid-template-rows:subgrid}</style>";
+}
+
+test "a span emits the doubled form and full emits the line form" {
+    val tokens: Token[] = [.Grid.Col.Span.2, .Grid.Col.Span.Full];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{grid-column:span 2 / span 2;grid-column:1 / -1}</style>";
+}
+
+test "a twelve-column grid has a thirteenth line" {
+    val tokens: Token[] = [.Grid.Col.Start.13];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{grid-column-start:13}</style>";
+}
+
+test "row placement mirrors column placement" {
+    val cls = emilia(rowPlacement());
+    val styles = await flush();
+    assert styles.contains("grid-row:auto");
+    assert styles.contains("grid-row:span 2 / span 2");
+    assert styles.contains("grid-row:1 / -1");
+    assert styles.contains("grid-row-start:1");
+    assert styles.contains("grid-row-end:3");
+}
+
+test "the two-word flow values keep a single space" {
+    val tokens: Token[] = [.Grid.Flow.RowDense, .Grid.Flow.ColDense];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{grid-auto-flow:row dense;grid-auto-flow:column dense}</style>";
+}
+
+test "the fr implicit track is a minmax" {
+    val tokens: Token[] = [.Grid.AutoCols.Fr, .Grid.AutoRows.Fr];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{grid-auto-columns:minmax(0, 1fr);grid-auto-rows:minmax(0, 1fr)}</style>";
+}
+
+test "gap answers the shorthand and both axes" {
+    val cls = emilia(gapValues());
+    val styles = await flush();
+    assert styles.contains("gap:0");
+    assert styles.contains("gap:calc(var(--spacing) * 4)");
+    assert styles.contains("gap:1px");
+    assert styles.contains("column-gap:calc(var(--spacing) * 2)");
+    assert styles.contains("row-gap:calc(var(--spacing) * 6)");
+}
+
+test "the legacy Flex.Gap path and the new Gap path agree" {
+    val legacy: Token[] = [.Flex.Gap.4];
+    val legacyClass = emilia(legacy);
+    val legacyStyles = await flush();
+
+    val current: Token[] = [.Gap.All.4];
+    val currentClass = emilia(current);
+    val currentStyles = await flush();
+
+    assert legacyClass == currentClass;
+    assert legacyStyles.contains("gap:calc(var(--spacing) * 4)");
+    assert currentStyles.contains("gap:calc(var(--spacing) * 4)");
+}
+
+test "the dashboard reflows from one column to twelve" {
+    val out = await dashboard("Revenue", "Filters", "Updated just now");
+    assert out.startsWith("<style>");
+    assert out.contains("grid-template-columns:repeat(1, minmax(0, 1fr))");
+    assert out.contains("@media (width >= 48rem){grid-template-columns:repeat(6, minmax(0, 1fr))}");
+    assert out.contains("@media (width >= 64rem){grid-column:span 8 / span 8}");
+    assert out.contains("grid-auto-rows:min-content");
+}

@@ -1,0 +1,55 @@
+// Front 86 — rakun messaging reliability: the publish side.
+//
+// Server-side file. `publishWithRetry` is a broker publish with a backoff policy
+// around it; `withProducerTransaction` is Kafka's producer transaction. On AMQP the
+// second one raises and names front 83's transactional outbox rather than pretending
+// channel transactions are equivalent.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/messaging/amqp.html
+//   https://docs.spring.io/spring-boot/reference/messaging/kafka.html
+
+import {service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {publish} from "rakun-messaging";
+import {retryPolicy, nextDelay, publishWithRetry, withProducerTransaction} from "rakun-messaging";
+
+// `publish` is provided by front 15; the rest is this front.
+
+// LANGUAGE GAP: a decorator cannot replace or wrap the body of the declaration it
+// annotates, so publish-side retry cannot be `#[retryable(policy)]` on `issue`.
+// Nearest valid form below: the combinator is called in the body.
+#[service]
+type Invoices {
+    pub fn issue(self: Self, id: string) -> i32 {
+        val policy = retryPolicy(initialMs: 500, multiplierPercent: 200, maxMs: 8000, maxAttempts: 4);
+        return publishWithRetry("invoices", "{\"id\":\"" + id + "\"}", policy);
+    }
+
+    pub fn issueBatch(self: Self, ids: Array<string>) -> i32 {
+        return withProducerTransaction("invoice-tx", { ->
+            val sent = ids.map({ id -> publish("invoices", "{\"id\":\"" + id + "\"}") });
+            sent.length;
+        });
+    }
+}
+
+test "the publish policy waits three and a half seconds across its first three retries" {
+    val policy = retryPolicy(initialMs: 500, multiplierPercent: 200, maxMs: 8000, maxAttempts: 4);
+    assert nextDelay(policy, 1) == 500;
+    assert nextDelay(policy, 2) == 1000;
+    assert nextDelay(policy, 3) == 2000;
+    val total = nextDelay(policy, 1) + nextDelay(policy, 2) + nextDelay(policy, 3);
+    assert total == 3500;
+}
+
+test "a policy never waits longer than its ceiling" {
+    val policy = retryPolicy(initialMs: 500, multiplierPercent: 200, maxMs: 8000, maxAttempts: 10);
+    assert nextDelay(policy, 9) == 8000;
+    assert nextDelay(policy, 10) == 8000;
+}
+
+test "an initial delay above the ceiling is clamped rather than honoured" {
+    val policy = retryPolicy(initialMs: 30000, multiplierPercent: 200, maxMs: 8000, maxAttempts: 3);
+    assert nextDelay(policy, 1) == 8000;
+}

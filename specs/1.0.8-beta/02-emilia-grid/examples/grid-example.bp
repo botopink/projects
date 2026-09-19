@@ -1,0 +1,343 @@
+// F02 — Grid Example
+// Demonstrates: grid-template-columns/rows, grid-column/row span, grid-auto-*,
+// gap expanded, justify/align/place complete
+//
+// Docs: https://tailwindcss.com/docs/grid-template-columns
+//       https://tailwindcss.com/docs/grid-column
+//       https://tailwindcss.com/docs/grid-template-rows
+//       https://tailwindcss.com/docs/grid-row
+//       https://tailwindcss.com/docs/grid-auto-flow
+//       https://tailwindcss.com/docs/grid-auto-columns
+//       https://tailwindcss.com/docs/grid-auto-rows
+//       https://tailwindcss.com/docs/gap
+//       https://tailwindcss.com/docs/justify-content
+//       https://tailwindcss.com/docs/align-items
+//       https://tailwindcss.com/docs/place-content
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// Grid template columns
+val gridColsTokens: Token[] = [
+    .Grid.Cols.__1,
+    .Grid.Cols.__2,
+    .Grid.Cols.__3,
+    .Grid.Cols.__4,
+    .Grid.Cols.__6,
+    .Grid.Cols.__12,
+    .Grid.Cols.None,
+    .Grid.Cols.Subgrid,
+];
+val gridColsStyles = emilia(gridColsTokens);
+
+// Grid column span
+val gridColTokens: Token[] = [
+    .Grid.Col.Auto,
+    .Grid.Col.Span1,
+    .Grid.Col.Span2,
+    .Grid.Col.Span3,
+    .Grid.Col.Span6,
+    .Grid.Col.Span12,
+    .Grid.Col.Full,
+];
+val gridColStyles = emilia(gridColTokens);
+
+// Grid column start/end
+val gridColStartTokens: Token[] = [
+    .Grid.ColStart.__1,
+    .Grid.ColStart.__2,
+    .Grid.ColStart.__3,
+    .Grid.ColStart.Auto,
+];
+val gridColStartStyles = emilia(gridColStartTokens);
+
+// Grid template rows
+val gridRowsTokens: Token[] = [
+    .Grid.Rows.__1,
+    .Grid.Rows.__2,
+    .Grid.Rows.__3,
+    .Grid.Rows.__6,
+    .Grid.Rows.None,
+];
+val gridRowsStyles = emilia(gridRowsTokens);
+
+// Grid row span
+val gridRowTokens: Token[] = [
+    .Grid.Row.Auto,
+    .Grid.Row.Span1,
+    .Grid.Row.Span2,
+    .Grid.Row.Span3,
+    .Grid.Row.Full,
+];
+val gridRowStyles = emilia(gridRowTokens);
+
+// Grid auto flow
+val gridAutoFlowTokens: Token[] = [
+    .Grid.AutoFlow.Row,
+    .Grid.AutoFlow.Col,
+    .Grid.AutoFlow.Dense,
+    .Grid.AutoFlow.RowDense,
+    .Grid.AutoFlow.ColDense,
+];
+val gridAutoFlowStyles = emilia(gridAutoFlowTokens);
+
+// Grid auto columns/rows
+val gridAutoColsTokens: Token[] = [
+    .Grid.AutoCols.Auto,
+    .Grid.AutoCols.Min,
+    .Grid.AutoCols.Max,
+    .Grid.AutoCols.Fr,
+];
+val gridAutoColsStyles = emilia(gridAutoColsTokens);
+
+// Gap expanded
+val gapTokens: Token[] = [
+    .Flex.Gap.__0,
+    .Flex.Gap.__1,
+    .Flex.Gap.__2,
+    .Flex.Gap.__4,
+    .Flex.Gap.__8,
+    .Flex.Gap.__12,
+    .Flex.Gap.__16,
+    .Flex.Gap.__24,
+];
+val gapStyles = emilia(gapTokens);
+
+// Gap X and Y
+val gapXYTokens: Token[] = [
+    .Flex.GapX.__2,
+    .Flex.GapX.__4,
+    .Flex.GapY.__2,
+    .Flex.GapY.__4,
+];
+val gapXYStyles = emilia(gapXYTokens);
+
+// Flex expanded - direction
+val flexDirTokens: Token[] = [
+    .Flex.Row,
+    .Flex.RowReverse,
+    .Flex.Col,
+    .Flex.ColReverse,
+];
+val flexDirStyles = emilia(flexDirTokens);
+
+// Flex wrap
+val flexWrapTokens: Token[] = [
+    .Flex.Wrap,
+    .Flex.WrapReverse,
+    .Flex.NoWrap,
+];
+val flexWrapStyles = emilia(flexWrapTokens);
+
+// Flex grow/shrink
+val flexGrowTokens: Token[] = [
+    .Flex.Grow,
+    .Flex.Grow0,
+    .Flex.Shrink,
+    .Flex.Shrink0,
+];
+val flexGrowStyles = emilia(flexGrowTokens);
+
+// Flex basis
+val flexBasisTokens: Token[] = [
+    .Flex.Basis.__0,
+    .Flex.Basis.__1,
+    .Flex.Basis.__4,
+    .Flex.Basis.Auto,
+    .Flex.Basis.Full,
+    .Flex.Basis.Half,
+];
+val flexBasisStyles = emilia(flexBasisTokens);
+
+// Flex order
+val flexOrderTokens: Token[] = [
+    .Flex.Order.__1,
+    .Flex.Order.__2,
+    .Flex.Order.__5,
+    .Flex.Order.First,
+    .Flex.Order.Last,
+    .Flex.Order.None,
+];
+val flexOrderStyles = emilia(flexOrderTokens);
+
+// Flex shorthand
+val flexShorthandTokens: Token[] = [
+    .Flex.Flex1,
+    .Flex.FlexAuto,
+    .Flex.FlexInitial,
+    .Flex.FlexNone,
+];
+val flexShorthandStyles = emilia(flexShorthandTokens);
+
+// Justify content
+val justifyTokens: Token[] = [
+    .Flex.Justify.Start,
+    .Flex.Justify.Center,
+    .Flex.Justify.End,
+    .Flex.Justify.Between,
+    .Flex.Justify.Around,
+    .Flex.Justify.Evenly,
+    .Flex.Justify.Stretch,
+];
+val justifyStyles = emilia(justifyTokens);
+
+// Align items
+val alignItemsTokens: Token[] = [
+    .Flex.Items.Start,
+    .Flex.Items.Center,
+    .Flex.Items.End,
+    .Flex.Items.Stretch,
+    .Flex.Items.Baseline,
+];
+val alignItemsStyles = emilia(alignItemsTokens);
+
+// Align content
+val alignContentTokens: Token[] = [
+    .Flex.AlignContent.Start,
+    .Flex.AlignContent.Center,
+    .Flex.AlignContent.End,
+    .Flex.AlignContent.Between,
+    .Flex.AlignContent.Around,
+    .Flex.AlignContent.Evenly,
+    .Flex.AlignContent.Stretch,
+];
+val alignContentStyles = emilia(alignContentTokens);
+
+// Align self
+val alignSelfTokens: Token[] = [
+    .Flex.AlignSelf.Auto,
+    .Flex.AlignSelf.Start,
+    .Flex.AlignSelf.Center,
+    .Flex.AlignSelf.End,
+    .Flex.AlignSelf.Stretch,
+    .Flex.AlignSelf.Baseline,
+];
+val alignSelfStyles = emilia(alignSelfTokens);
+
+// Place content/items/self
+val placeTokens: Token[] = [
+    .Flex.PlaceContent.Center,
+    .Flex.PlaceContent.Start,
+    .Flex.PlaceContent.Between,
+    .Flex.PlaceItems.Center,
+    .Flex.PlaceItems.Start,
+    .Flex.PlaceItems.Stretch,
+    .Flex.PlaceSelf.Center,
+    .Flex.PlaceSelf.Start,
+    .Flex.PlaceSelf.Stretch,
+];
+val placeStyles = emilia(placeTokens);
+
+// Grid justify/align
+val gridAlignTokens: Token[] = [
+    .Grid.JustifyItems.Start,
+    .Grid.JustifyItems.Center,
+    .Grid.JustifyItems.End,
+    .Grid.JustifyItems.Stretch,
+    .Grid.JustifySelf.Auto,
+    .Grid.JustifySelf.Start,
+    .Grid.JustifySelf.Center,
+    .Grid.JustifySelf.End,
+];
+val gridAlignStyles = emilia(gridAlignTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F02: Grid Example ===");
+    @print("Grid Cols: " + gridColsStyles);
+    @print("Grid Col: " + gridColStyles);
+    @print("Grid ColStart: " + gridColStartStyles);
+    @print("Grid Rows: " + gridRowsStyles);
+    @print("Grid Row: " + gridRowStyles);
+    @print("Grid AutoFlow: " + gridAutoFlowStyles);
+    @print("Grid AutoCols: " + gridAutoColsStyles);
+    @print("Gap: " + gapStyles);
+    @print("Gap XY: " + gapXYStyles);
+    @print("Flex Direction: " + flexDirStyles);
+    @print("Flex Wrap: " + flexWrapStyles);
+    @print("Flex Grow/Shrink: " + flexGrowStyles);
+    @print("Flex Basis: " + flexBasisStyles);
+    @print("Flex Order: " + flexOrderStyles);
+    @print("Flex Shorthand: " + flexShorthandStyles);
+    @print("Justify: " + justifyStyles);
+    @print("Align Items: " + alignItemsStyles);
+    @print("Align Content: " + alignContentStyles);
+    @print("Align Self: " + alignSelfStyles);
+    @print("Place: " + placeStyles);
+    @print("Grid Align: " + gridAlignStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "grid-cols generates correct CSS" {
+    val tokens: Token[] = [.Grid.Cols.__3];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("grid-template-columns:repeat(3,minmax(0,1fr))") != -1;
+}
+
+test "grid-col span generates correct CSS" {
+    val tokens: Token[] = [.Grid.Col.Span2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("grid-column:span 2 / span 2") != -1;
+}
+
+test "grid-col full generates correct CSS" {
+    val tokens: Token[] = [.Grid.Col.Full];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("grid-column:1 / -1") != -1;
+}
+
+test "grid-rows generates correct CSS" {
+    val tokens: Token[] = [.Grid.Rows.__2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("grid-template-rows:repeat(2,minmax(0,1fr))") != -1;
+}
+
+test "gap generates correct CSS" {
+    val tokens: Token[] = [.Flex.Gap.__4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("gap:1rem") != -1;
+}
+
+test "gap-x generates correct CSS" {
+    val tokens: Token[] = [.Flex.GapX.__2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("column-gap:0.5rem") != -1;
+}
+
+test "flex-row-reverse generates correct CSS" {
+    val tokens: Token[] = [.Flex.RowReverse];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("flex-direction:row-reverse") != -1;
+}
+
+test "flex-grow generates correct CSS" {
+    val tokens: Token[] = [.Flex.Grow];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("flex-grow:1") != -1;
+}
+
+test "justify-between generates correct CSS" {
+    val tokens: Token[] = [.Flex.Justify.Between];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("justify-content:space-between") != -1;
+}
+
+test "items-center generates correct CSS" {
+    val tokens: Token[] = [.Flex.Items.Center];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("align-items:center") != -1;
+}

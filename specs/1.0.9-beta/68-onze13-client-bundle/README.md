@@ -1,0 +1,487 @@
+# Front 68 — onze13 Client Bundle
+
+**Track:** E onze13
+**Priority:** critical — without it `onze13 build` ships a BEAM server and no browser half: every
+`'use client'` component renders once and is then dead HTML, and fronts 26, 27, 29, 31 and 67 deliver
+nothing that runs
+**Target:** both — the graph walk, the compile and the concatenation run at build time on the server
+side (under `onze13 build`, on BEAM); the artifact they produce is the js client half. One file,
+`manifest.bp`, compiles for both targets because the build host writes the manifest and the BEAM
+server reads it back to emit script tags
+**Wave:** 4
+**Depends on:** 29 (the boundary marker, the `server-only` marker and the hydrate entry point) · 49
+(config, `outDir`, and the `ONZE_PUBLIC_` rule this front enforces) · 03 (content hashes) · 50 (the
+CLI that invokes it) · 01 (`path.walk`, `path.glob`, `process.run`, `fs`) · 23 (the payload and the
+head it emits script tags into) · 27 (the link runtime the entry mounts) · 48 (the class names the
+tree carries) · 20 (the websocket the dev rebuild pushes over)
+**Owns:** `repository/onze13/modules/onze13-bundler/src/**`,
+`repository/onze13/modules/onze13-bundler/test/**`
+**Does not touch:** `repository/onze13/src/**` (front 49), `repository/onze13/modules/onze13-cli/**`
+(front 50), `repository/onze13/modules/onze13-assets/**` (front 69), `repository/jhonstart/src/**`,
+`repository/rakun/src/**`, `repository/emilia/src/**`
+**Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` (Regras fundamentais · Protegendo
+código server-only · `NEXT_PUBLIC_`), `§ 2. Instalação e Configuração` (scripts), `§ 25. Referência de
+Componentes` (`<Script>`), `§ 28. Configuração` (`env`, `generateBuildId`), `§ 29. CLI` (`next build`,
+`next dev`) ·
+<https://nextjs.org/docs/app/getting-started/server-and-client-components> ·
+<https://nextjs.org/docs/app/guides/environment-variables> ·
+<https://nextjs.org/docs/app/api-reference/components/script> ·
+<https://nextjs.org/docs/app/api-reference/cli/next>
+**Replaces:** new — admitted by the Next.js coverage audit, which calls it the second-largest hole in
+the milestone
+
+---
+
+## Problem
+
+Five fronts in this milestone compile for the browser: 26 (`useRouter`), 27 (`Link`), 29 (the
+`'use client'` boundary), 31 (error boundaries) and 67 (forms). Every one of them produces commonJS
+that nothing collects, nothing links, nothing serves and nothing starts. `onze13 build` as the
+milestone stands today walks `app/`, generates a route module, compiles the server to BEAM and stops.
+The browser receives HTML with `data-jh-link` attributes that no listener reads, forms with an
+`action` attribute and no interceptor, and client components that rendered exactly once.
+
+That is not a degraded experience, it is a different product. A `'use client'` directive whose only
+consequence is a marker in a manifest is a comment. `useState` never updates. `onClick` never fires.
+The whole of track C's client half, and all of front 67, deliver code with no delivery mechanism.
+
+The second problem is a security one, and it is why this front's failures are hard failures.
+`NEXTJS-DOCS.md § 7` states two rules: only `NEXT_PUBLIC_`-prefixed variables are available on the
+client, and a module that imports `server-only` fails the build when it reaches a client component.
+Both rules are enforced *by the bundler* — they are statements about what ends up in the file the
+browser downloads. Front 49 declares the prefix (`ONZE_PUBLIC_`, and it does not restate it here);
+front 29 declares the marker. Neither can enforce anything: enforcement is the graph walk, and the
+graph walk is this front. A miss here does not produce a bug report, it produces a database password
+in a file served to the public.
+
+## Current state
+
+- `repository/onze13/` does not exist. Front 49 creates it; `modules/onze13-bundler/` is created by
+  this front inside it.
+- Nothing in the workspace computes a module graph. The compiler resolves imports to compile them
+  (`pub mod` declarations plus `from "<lib>"`), and exposes none of that: `@Decl` gives a
+  declaration's kind, name, fields, methods and annotations (`libs/std/src/builtins.d.bp:425-477`)
+  and says nothing about what a module imports.
+- A decorator body runs in a minimal eval prelude with no filesystem and cannot call a sibling
+  function (`repository/rakun/src/decorators.bp:44-46`), so a comptime graph walk is not available
+  and was never the plan.
+- `botopink build` emits one `.js` file per module under `out/` — visible in the checkout at
+  `repository/jhonstart/out/element.js`, `hooks.js`, `html.js`, `root.js`. That is the compiler
+  output this front concatenates; it is not a bundle and there is no entry point among those files.
+- `repository/jhonstart/examples/jhonstart-counter/out/` shows the shape a consumer gets today: the
+  app's own `main.js` beside a copied `jhonstart/` directory of `require`-linked modules. A browser
+  cannot load that: there is no `require`.
+- No `<script>` tag is emitted by anything in the milestone, because nothing has a URL to put in one.
+
+## Mechanism
+
+Next's bundler does four jobs, and only the first three matter here: find the client modules, compile
+them, link them into loadable chunks, and (fourth) optimise. This front does the first three and
+declines the fourth. It is not webpack and does not try to be: there is no loader model, no plugin
+API, no tree shaking and no code splitting beyond one chunk per route group plus one shared chunk.
+The audit records the plugin surfaces as deliberately deferred.
+
+### Step 0 of everything — the graph is walked over files, not at comptime
+
+The compiler exposes no module-graph API, so the walk is textual and happens at build time inside the
+CLI, where `path.walk` and `fs.readText` (front 01) exist. `importsOf(source) -> Array<ImportRef>`
+reads the `import { … } from "…";` and `pub mod …;` lines of one `.bp` file. This is a real design
+cost and it is stated plainly rather than hidden: a dynamically constructed import would be invisible
+to it, and botopink has none — every import is a literal line at the top of a file, which is what
+makes a textual scan total rather than heuristic. The scan fails, loudly, on any `import` line it
+cannot parse, rather than silently dropping an edge.
+
+### The client module graph
+
+The roots are front 29's boundary markers. Front 29 marks a module as client-side; front 22's route
+table says which modules a route reaches; the intersection is the root set:
+
+1. For every route in the table, take the page, layout, loading, error and not-found modules.
+2. Walk their imports transitively, **on the server side**, until a module carrying front 29's
+   client marker is reached. That module is a **root**. The walk does not descend past it on the
+   server side — everything below it is client.
+3. From each root, walk imports transitively again. That closure is the **client graph**.
+4. A module reachable from a root is in the bundle whether or not it carries the marker. This is
+   `§ 7`'s first fundamental rule — "`'use client'` cria uma boundary — tudo importado a partir desse
+   arquivo vai para o bundle do cliente" — and it is the rule that makes the two refusals below
+   meaningful.
+
+`clientGraph(table, markers) -> ClientGraph` is the function. `ClientGraph` carries, for every module
+in it, the **import chain from the root that pulled it in**. Every refusal below prints that chain,
+because "module X reads a secret" is not enough to fix anything — what a developer needs is which
+client component dragged X into the browser.
+
+### Refusal 1 — `server-only` in the client graph
+
+Front 29 ships a marker module (`§ 7` *Protegendo código server-only*: `import 'server-only'`). If it
+appears anywhere in the client graph the build fails, printing the chain from the root to the
+offending module. There is no flag, no config key and no annotation that downgrades it, per the
+project's standing rule that the most restrictive behaviour wins and no knob gets around it.
+
+### Refusal 2 — the public environment prefix
+
+Front 49 owns the rule and the predicate (`isPublicEnvName`, `publicEnv`) and this front owns its
+enforcement. During the walk, every environment read in a client module is classified:
+
+| What the module wrote | Outcome |
+|---|---|
+| `env.read("ONZE_PUBLIC_…")` | inlined — the value goes into the manifest's public table and the read is rewritten to a table lookup |
+| `env.read("ANYTHING_ELSE")` | **build fails**, naming the variable, the module, and the chain from the client root |
+| `env.read(someExpression)` | **build fails** — a name the bundler cannot read is a name it cannot clear |
+| `env.vars()` | **build fails** — it returns every variable, and filtering it would still publish the names of the ones it filtered |
+| `env.write` / `env.clear` in a client module | **build fails** — a client has no environment to write |
+
+No flag, no config key, no annotation, no per-module exemption. The consequence of a miss is a secret
+in a public file, so the rule fails the build rather than warning. The values themselves reach the
+browser through the manifest's public table and the payload, never through a second mechanism.
+
+### Refusal 3 — an unresolvable `emilia` call in a client module
+
+This is the hydration-correctness rule, and it is the subtlest of the three. `emilia(tokens)` returns
+`"e_" + hashHex(rules)` and registers the rule on a process-local sheet
+(`repository/emilia/src/emilia.bp:46-51`). The server render put a class name in the HTML; the client
+bundle must produce the *same* name for the same tokens or hydration replaces correct markup with
+differently-classed markup and the page restyles itself on load.
+
+Three things guarantee it, and all three are this front's:
+
+1. **Same input, same function.** `hashHex` is defined for commonJS and for erlang over the same rule
+   string (`emilia.bp:36-39`). For ASCII rule bodies the two folds agree by construction. They can
+   disagree for astral characters — one codepoint on erlang, two UTF-16 units in JS, as emilia's own
+   comment records (`emilia.bp:31-35`). The bundler therefore **recomputes both hashes for every rule
+   body reachable from the client graph and fails the build when they differ**, naming the token list.
+   That check costs nothing and removes the whole class of bug.
+2. **Same tokens.** Every `emilia(...)` call in a client module must have a statically resolvable
+   `Token[]` argument — a literal, or a module-level `val` of literals. The bundler evaluates the rule
+   body at build time and records it in a `styleMap` (call-site id → class name + rule body). A call
+   the bundler cannot resolve fails the build naming the call site: a class name computed from runtime
+   data cannot be in the server's stylesheet, and a class with no rule is invisible breakage.
+3. **One stylesheet, and it is the server's.** The client bundle never calls `flush()` — front 49
+   states it, this front enforces it by refusing a `flush` reference in the client graph. Every
+   `styleMap` rule is handed to front 69, which puts it in the document's `<style>` block during the
+   server render. A client island that mounts after hydration finds its class already styled.
+
+### What the bundle contains
+
+Compilation is the compiler: `botopink build --target commonJS` over the client graph produces one
+`.js` per module under the project's build directory. Linking is concatenation plus a small
+module-registry prelude — the modules `require` each other, and the prelude is a fifteen-line
+`__onze13_require` over a table of factory functions, which is what makes concatenation sufficient.
+
+| Chunk | Contents | When it loads |
+|---|---|---|
+| `shared` | every client module reached by two or more routes, plus the jhonstart client runtime | every page, `defer` |
+| `route:<pattern>` | the client modules reached only by that route | on that route, `defer` |
+| `entry` | the generated hydration entry | last, `defer` |
+| `script:<id>` | one `<Script strategy="beforeInteractive">` per chunk | in `<head>`, blocking |
+| `worker:<id>` | a `<Script strategy="worker">` body | as a `Worker`, from the entry |
+
+Chunk file names are `<id>.<hash>.js` under `/_onze13/static/<buildId>/`, where `<hash>` is front 03's
+content hash of the chunk. A content-hashed URL is immutable, which is what lets front 69 serve it
+with a one-year cache header and what lets front 71 copy the tree into a release unchanged.
+
+### The bundle contract
+
+This is the interface every other front reads, and it is one record plus one text format.
+
+```bp
+// modules/onze13-bundler/src/manifest.bp — compiled for BOTH targets
+pub type ChunkRef(id: string, url: string, hash: string, bytes: i32)
+
+pub type ClientBundleManifest(
+    version: string,                        // "1" — the format version, checked on read
+    buildId: string,                        // front 03's build id, also the static path segment
+    entry: ChunkRef,
+    shared: Array<ChunkRef>,
+    chunks: Array<ChunkRef>,                // every route chunk and script chunk
+    routes: Array<#(string, string)>,       // route pattern -> chunk id
+    styles: Array<ChunkRef>,                // filled by front 69, carried in the same manifest
+    publicEnv: Array<#(string, string)>,    // every ONZE_PUBLIC_ name and its value, and nothing else
+)
+
+pub fn parseManifest(text: string) -> ClientBundleManifest
+pub fn formatManifest(m: ClientBundleManifest) -> string
+pub fn chunkFor(m: ClientBundleManifest, route: string) -> ChunkRef
+pub fn scriptTags(m: ClientBundleManifest, route: string) -> string
+```
+
+The on-disk form is `<outDir>/client-manifest.txt`, a line-oriented `|`-delimited table — the same
+shape front 22 uses for the route table, and for the same reason: `libs/std/src/json.bp:36,45` is
+`parse`/`stringify` over strings with no structured walker, so there is no JSON object to decode.
+
+```
+V|1|<buildId>
+E|entry|/_onze13/static/<buildId>/entry.<hash>.js|<hash>|<bytes>
+S|shared|/_onze13/static/<buildId>/shared.<hash>.js|<hash>|<bytes>
+C|route:/blog/[slug]|/_onze13/static/<buildId>/r3.<hash>.js|<hash>|<bytes>
+R|/blog/[slug]|route:/blog/[slug]
+Y|styles|/_onze13/static/<buildId>/app.<hash>.css|<hash>|<bytes>
+P|ONZE_PUBLIC_API_URL|https%3A%2F%2Fapi.example.com
+```
+
+`|` and newline may not appear in a field; every value is percent-encoded with front 01's encoder. A
+line whose kind byte is unknown is ignored, so front 69 and front 71 may add record kinds without
+breaking a reader. A `V` line with a version other than `1` is a hard error, not a best effort.
+
+`parseManifest` and `formatManifest` are pure botopink compiled to **both** targets, and this is the
+only reason this front is not js-only: the build host writes the file, and the BEAM server reads it on
+every render to emit the script tags for the matched route. One parser, two targets, one round-trip
+test — the alternative is two parsers that agree until they do not.
+
+**The emission order in `scriptTags`, which front 23 splices into the document, is fixed:**
+
+1. every `beforeInteractive` script chunk, blocking, in `<head>`
+2. `<script id="__onze13_payload" type="application/json">` — front 23's payload; this front owns only
+   the id and the guarantee that it precedes the entry
+3. `shared`, `defer`
+4. the route chunk for the matched pattern, `defer`
+5. `entry`, `defer`, last
+
+`afterInteractive` and `lazyOnload` scripts are not tags at all — the entry schedules them, which is
+what the strategy names mean.
+
+### The hydration entry, and how it finds its roots
+
+The entry is generated, not written: `generateEntry(graph, manifest) -> string` emits a `.bp` module
+under `<outDir>/client/entry.bp`, which is then compiled and concatenated like any other client
+module. Generating source rather than emitting JavaScript directly means the entry is type-checked by
+the same compiler as the rest of the app, and it means a developer can read it.
+
+Roots are found in the DOM, not in a side table. Front 29's boundary marker makes the server render
+wrap each client island in its element's `attrs` with:
+
+```
+data-onze13-island="<moduleId>#<n>"
+```
+
+`moduleId` is the module's package-relative path; `n` is the island's ordinal within the render, so a
+component used three times gives three roots. The entry:
+
+1. reads the payload from `#__onze13_payload`,
+2. takes the payload's `"i"` field — a `|`-table of `islandId|propsQuery`, where `propsQuery` is
+   form-urlencoded and read with `querystring.parse` (`libs/std/src/querystring.bp:35`),
+3. queries `[data-onze13-island]` in document order,
+4. pairs each element with the props for its id, and calls front 29's hydrate entry point for the
+   island's module,
+5. calls front 27's `__jhLinkMount()` and front 67's `__jhFormMount()` once, after every island is
+   mounted,
+6. schedules `afterInteractive` scripts, then `lazyOnload` ones.
+
+An island in the DOM with no entry in the payload, or an entry with no element, is a **hard error at
+run time with the island id in the message**, not a silent skip — a mismatch here is the failure mode
+that produces "it works in dev" bug reports, and it must announce itself.
+
+### Dev mode
+
+`onze13 dev` (front 50) builds the same graph and keeps it. On a file change: recompute the hash of
+the changed module, recompile it and the chunks that contain it, rewrite the manifest, and push the
+chunk id over front 20's websocket. The page replaces that chunk and re-runs the entry. Nothing else
+is rebuilt, because the graph already says which chunks a module is in. A change to an import line
+re-walks the graph, because that is the one edit that can change the graph's shape — and if the
+re-walk turns up a `server-only` module or a non-public environment read, dev fails with the same
+message `build` would give. The rules are not relaxed in dev; that is where a developer would
+otherwise learn to ignore them.
+
+## Steps
+
+### Step 1 — `importsOf` and the module scanner
+
+```bp
+pub type ImportRef(spec: string, names: Array<string>, isModDecl: bool)
+
+pub fn importsOf(source: string) -> Array<ImportRef>
+pub fn moduleIdOf(packageRoot: string, filePath: string) -> string
+```
+
+**Acceptance:**
+- [ ] `import { div, text } from "jhonstart";` yields one ref, spec `"jhonstart"`, two names
+- [ ] `import { perimeter };` — the sibling shorthand — yields a ref with an empty spec and
+      `isModDecl: false`
+- [ ] `pub mod tokens;` yields a ref with `isModDecl: true`
+- [ ] A commented-out import is not an edge
+- [ ] An `import` line the scanner cannot parse fails the scan, naming the file and the line
+- [ ] `moduleIdOf` is stable across platforms: a backslash path and a slash path give the same id
+
+### Step 2 — `clientGraph`
+
+```bp
+pub type GraphNode(moduleId: string, path: string, chain: Array<string>, isRoot: bool)
+pub type ClientGraph(nodes: Array<GraphNode>, roots: Array<string>)
+
+pub fn clientGraph(routeModules: Array<#(string, string)>, markers: Array<string>) -> ClientGraph
+pub fn chainOf(graph: ClientGraph, moduleId: string) -> Array<string>
+```
+
+**Acceptance:**
+- [ ] A module imported only by a server module is absent from the graph
+- [ ] A module imported by a client root is present even though it carries no marker
+- [ ] A module imported by two roots appears once, with the chain of the first root that reached it
+- [ ] An import cycle terminates and each module appears once
+- [ ] `chainOf` of a module three levels below a root returns four ids, root first
+
+### Step 3 — the three refusals
+
+```bp
+pub type BuildRefusal(kind: string, subject: string, moduleId: string, chain: Array<string>)
+pub type EmiliaCall(moduleId: string, literal: bool, rules: string, jsHash: string, beamHash: string)
+
+pub fn checkServerOnly(graph: ClientGraph) -> Array<BuildRefusal>
+pub fn checkEnvReads(graph: ClientGraph, reads: Array<#(string, string)>) -> Array<BuildRefusal>
+pub fn checkEmiliaCalls(graph: ClientGraph, calls: Array<EmiliaCall>) -> Array<BuildRefusal>
+pub fn refusalMessage(r: BuildRefusal) -> string
+```
+
+**Acceptance:**
+- [ ] `checkServerOnly` refuses a graph containing front 29's marker and the message contains every
+      id of the chain, root first
+- [ ] `checkEnvReads` passes `ONZE_PUBLIC_API_URL` and refuses `DATABASE_URL`, `onze_public_x`,
+      a non-literal name, `env.vars()`, `env.write` and `env.clear`
+- [ ] The refusal message names the variable **and** the chain — asserted on the string, because a
+      message that names only the module is a message that does not fix the problem
+- [ ] No configuration value, decorator or CLI flag changes any of these outcomes — asserted by a
+      test that builds with every config field set adversarially and still gets the refusal
+- [ ] `checkEmiliaCalls` refuses a non-literal token list, a `flush()` reference, and a rule body
+      whose commonJS and erlang hashes differ
+- [ ] A build with more than one refusal reports all of them, not the first
+
+### Step 4 — chunking and emission
+
+```bp
+pub fn planChunks(graph: ClientGraph, routes: Array<#(string, string)>) -> Array<ChunkPlan>
+pub fn emitChunk(plan: ChunkPlan, compiledDir: string) -> @Future<ChunkRef>
+```
+
+Compilation is `process.run` (front 01) over `botopink build --target commonJS`; concatenation is
+`fs.readText`/`fs.writeText` plus the module-registry prelude. `@Future` lowers eagerly on erlang
+(`libs/std/src/http.bp:16-18`), so chunk emission is sequential unless it is handed to front 02's
+task runner over unstarted tasks — the parallel path is front 02's, and this front does not fake it.
+
+**Acceptance:**
+- [ ] A module reached by two routes lands in `shared` and in no route chunk
+- [ ] A module reached by one route lands in that route's chunk only
+- [ ] Two builds of an unchanged tree produce identical chunk hashes — the build is reproducible
+- [ ] A chunk's URL contains its own hash, and changing one byte of one module changes exactly the
+      chunks containing it
+- [ ] The prelude resolves a `require` between two concatenated modules without a network fetch
+
+### Step 5 — the manifest
+
+As specified under *The bundle contract*.
+
+**Acceptance:**
+- [ ] `parseManifest(formatManifest(m))` equals `m` for a manifest with every field populated —
+      asserted on `commonJS` **and** on `erlang`, with the same literal
+- [ ] A `V` line with version `2` is an error naming the version
+- [ ] An unknown record kind is ignored, so a front-69 `Y` line does not break a front-68 reader
+- [ ] A value containing `|` round-trips, because it is percent-encoded
+- [ ] `scriptTags` emits the five groups in the documented order, and the entry is last
+- [ ] `scriptTags` for a route with no route chunk emits shared and entry, never an empty `src`
+
+### Step 6 — the hydration entry
+
+```bp
+pub fn generateEntry(graph: ClientGraph, manifest: ClientBundleManifest) -> string
+pub fn islandAttr(moduleId: string, ordinal: i32) -> #(string, string)
+pub fn parseIslandTable(payloadField: string) -> Array<#(string, Array<#(string, string)>)>
+```
+
+**Acceptance:**
+- [ ] `islandAttr("app.ui.like_button", 2)` is `#("data-onze13-island", "app.ui.like_button#2")` and
+      front 29 emits the same pair — one function, cited by both fronts
+- [ ] `parseIslandTable` of the payload's `"i"` field returns one entry per island with its props
+- [ ] The generated entry compiles: `botopink build` over `<outDir>/client/` succeeds
+- [ ] An island id present in the DOM and absent from the payload raises, with the id in the message
+- [ ] An island id present in the payload and absent from the DOM raises, with the id in the message
+- [ ] `__jhLinkMount` and `__jhFormMount` are called exactly once each, after the last island
+
+### Step 7 — `<Script>` and its four strategies
+
+```bp
+pub type ScriptDecl(id: string, src: string, strategy: string, onLoad: string)
+
+pub fn scriptChunks(decls: Array<ScriptDecl>) -> Array<ChunkPlan>
+pub fn scriptPlacement(strategy: string) -> string
+```
+
+**Acceptance:**
+- [ ] `beforeInteractive` is a blocking tag in `<head>`, before the payload
+- [ ] `afterInteractive` is scheduled by the entry after hydration completes
+- [ ] `lazyOnload` is scheduled after the load event
+- [ ] `worker` produces a worker chunk and a `Worker` construction in the entry; a `worker` script
+      that also declares `onLoad` is refused, naming the script, because the callback cannot run
+- [ ] An unknown strategy is refused, naming it and listing the four
+
+### Step 8 — dev rebuild
+
+```bp
+pub fn rebuild(graph: ClientGraph, changed: string) -> @Future<#(ClientGraph, Array<string>)>
+```
+
+**Acceptance:**
+- [ ] A change to a module body rebuilds only the chunks containing it
+- [ ] A change to an import line re-walks the graph
+- [ ] A change that introduces a `server-only` import fails dev with the same message `build` gives
+- [ ] A change that introduces a non-public env read fails dev with the same message `build` gives
+- [ ] The manifest on disk is rewritten before the websocket push, so a reload during a rebuild
+      never serves a URL the manifest does not name
+
+## Examples
+
+- [`examples/client-island-example.bp`](./examples/client-island-example.bp) — what a developer
+  writes: a client component that reads a public configuration value and hydrates. The only file in
+  this front an app author ever touches.
+- [`examples/bundle-manifest-example.bp`](./examples/bundle-manifest-example.bp) — the bundle
+  contract as code: the manifest record, its text form, the round trip both targets run, and the
+  script tags it produces for one route.
+- [`examples/env-refusal-example.bp`](./examples/env-refusal-example.bp) — the three refusals, each
+  as the code that triggers it and the message the build prints.
+
+## Language gaps
+
+| Gap | Where | Nearest valid form today | Proposed surface |
+|---|---|---|---|
+| No bitwise operators and no `toString(radix)` — also recorded by front 01 | chunk and build-id hashing in `emitChunk` | front 03's `content_hash`, whose fold lives in a host template | `&`, `|`, `^`, `<<`, `>>` on `i32`, and `i32.toString(radix)` |
+| No byte or binary type — also recorded by front 01 | `ChunkRef.bytes` counts characters, not octets; a font or image asset is copied by `process.run`, never read into botopink | keep binary assets out of botopink and move them with the filesystem | a `bytes` primitive with indexing and a length, and `fs.readBytes` |
+| No module-graph reflection: `@Decl` exposes declarations, not imports | `importsOf` is a textual scan of `import`/`pub mod` lines | scan the source text; fail loudly on an unparsable line | a comptime `@Module` with `imports()`, so the graph is the compiler's answer and not a parallel parser |
+| No array or tuple destructuring in a binding — also recorded by front 01 | `rebuild`'s `#(ClientGraph, Array<string>)` result is read as `r.0` / `r.1` | one `val` per element, read by index | `val #(graph, dirty) = rebuild(…);` |
+
+## Test plan
+
+`repository/onze13/modules/onze13-bundler/test/` — five files, run by `botopink test` from the module
+root and by `zig build test-libs`.
+
+| File | Target | What it asserts |
+|---|---|---|
+| `manifest_test.bp` | **both** | The round trip, the version check, the unknown-kind rule, the `\|` escape, and `scriptTags`'s order. The only test that must pass on erlang, and the reason it must is that the server reads what the build host wrote. |
+| `graph_test.bp` | commonJS | `importsOf` on fixture sources, `clientGraph` on a fixture tree with a shared module, a cycle and a server-only branch |
+| `refusal_test.bp` | commonJS | Every row of the environment table, the `server-only` chain, the emilia rules, and the adversarial-config test that no setting relaxes any of them |
+| `entry_test.bp` | commonJS | `islandAttr`, `parseIslandTable`, and both mismatch errors |
+| `chunk_test.bp` | commonJS | Chunk assignment, hash reproducibility, and that one changed module changes exactly the right chunk hashes |
+
+The graph, chunk and refusal suites run against **fixture source strings**, not against a real
+project on disk: `importsOf` takes a string, and `clientGraph` takes a module table. That keeps them
+fast, hermetic and free of `process.run`, and it means a failure names a rule rather than an
+environment. The end-to-end path — a real `app/` tree producing a real bundle a real browser loads —
+is front 53's example app, which is where a browser first enters the loop.
+
+Nothing in this front is exercised through `@External.Node`: the bundler owns no host cell. It reaches
+the filesystem and the compiler through `libs/std` (fronts 01 and 03), which is the milestone's
+*reuse std* rule and also the reason the erlang cell of `manifest_test.bp` is green rather than
+skipped.
+
+## Definition of done
+
+- [ ] `repository/onze13/modules/onze13-bundler/` exists with `botopink.json`, `src/root.bp` and the
+      modules named in *Steps*
+- [ ] `onze13 build` on front 53's example app writes `<outDir>/client-manifest.txt`, a chunk tree
+      under `<outDir>/client/`, and a generated `entry.bp` that compiles
+- [ ] Front 23 emits script tags by calling `scriptTags`, and no other front formats a `<script>` tag
+- [ ] The three refusals are covered by a test each **and** by an adversarial-config test proving no
+      setting relaxes them
+- [ ] `islandAttr` is called by front 29 and by this front's entry generator — one definition, cited
+      in both READMEs
+- [ ] The emilia hash-parity check runs on every build, not only on request
+- [ ] `repository/onze13/docs.md` carries the manifest format and the script-tag order verbatim,
+      because fronts 23, 50, 53, 69 and 71 all read them
+- [ ] The front's tests are green on its assigned targets — `commonJS` for the build half, and
+      `erlang` for `manifest_test.bp`

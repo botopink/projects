@@ -1,0 +1,79 @@
+// Front 52 — onze13 Font · examples/font-fallback-example.bp
+//
+// Demonstrates: the metric-adjusted fallback that removes the layout shift.
+// `font-display: swap` alone CAUSES the shift — it paints in a fallback whose
+// glyphs are a different size, then re-measures every line when the real face
+// arrives. The fix is four CSS descriptors computed from the real font's
+// metrics, so the fallback occupies the same space and the swap moves nothing.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/components/font#adjustfontfallback
+//           https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/size-adjust
+//           NEXTJS-DOCS.md § 17. Otimização de Fontes
+//
+// Target: erlang (server / build time) — these numbers are computed once, at
+// build time, and shipped as CSS. Nothing about them runs in the browser; the
+// browser only obeys them.
+
+import {FontMetrics, fallbackFace} from "onze13";
+
+// Inter's metrics, from the committed metrics table: units-per-em 2816,
+// ascent 2728, descent 680, line gap 0, average character width 1536.
+pub fn interMetrics() -> FontMetrics {
+    return FontMetrics(
+        unitsPerEm: 2816,
+        ascent: 2728,
+        descent: 680,
+        lineGap: 0,
+        avgCharWidth: 1536,
+    );
+}
+
+// Arial, the local fallback the table recommends for Inter.
+pub fn arialMetrics() -> FontMetrics {
+    return FontMetrics(
+        unitsPerEm: 2048,
+        ascent: 1854,
+        descent: 434,
+        lineGap: 67,
+        avgCharWidth: 1044,
+    );
+}
+
+pub fn interFallbackCss() -> string {
+    return fallbackFace("Inter Fallback", "Arial", interMetrics(), arialMetrics());
+}
+
+test "the fallback face carries all four descriptors" {
+    val css = interFallbackCss();
+    assert css.contains("@font-face");
+    assert css.contains("font-family:\"Inter Fallback\"");
+    assert css.contains("src:local(\"Arial\")");
+    assert css.contains("size-adjust:");
+    assert css.contains("ascent-override:");
+    assert css.contains("descent-override:");
+    assert css.contains("line-gap-override:");
+}
+
+test "ascent-override is the real font's ascent over its units-per-em" {
+    // 2728 / 2816 = 96.8750%
+    assert interFallbackCss().contains("ascent-override:96.88%");
+}
+
+test "descent-override and line-gap-override come from the same ratio" {
+    // 680 / 2816 = 24.1477%, 0 / 2816 = 0%
+    val css = interFallbackCss();
+    assert css.contains("descent-override:24.15%");
+    assert css.contains("line-gap-override:0.00%");
+}
+
+test "size-adjust is the ratio of the two average character widths" {
+    // (1536 / 2816) / (1044 / 2048) = 0.545454 / 0.509765 = 107.0011%
+    assert interFallbackCss().contains("size-adjust:107.00%");
+}
+
+test "identical metrics collapse to the identity, and the CSS still parses" {
+    val m = interMetrics();
+    val css = fallbackFace("Inter Fallback", "Inter", m, m);
+    assert css.contains("size-adjust:100.00%");
+    assert css.contains("ascent-override:96.88%");
+}

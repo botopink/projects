@@ -1,0 +1,365 @@
+// F04 — Typography Example
+// Demonstrates: font-smoothing, font-stretch, font-variant-numeric,
+// letter-spacing, line-clamp, line-height, list-*, text-decoration-*,
+// text-transform, text-overflow, text-wrap, vertical-align, white-space,
+// word-break, overflow-wrap, hyphens, content
+//
+// Docs: https://tailwindcss.com/docs/font-family
+//       https://tailwindcss.com/docs/font-size
+//       https://tailwindcss.com/docs/font-smoothing
+//       https://tailwindcss.com/docs/font-style
+//       https://tailwindcss.com/docs/font-weight
+//       https://tailwindcss.com/docs/font-stretch
+//       https://tailwindcss.com/docs/font-variant-numeric
+//       https://tailwindcss.com/docs/letter-spacing
+//       https://tailwindcss.com/docs/line-clamp
+//       https://tailwindcss.com/docs/line-height
+//       https://tailwindcss.com/docs/list-style-type
+//       https://tailwindcss.com/docs/text-align
+//       https://tailwindcss.com/docs/text-decoration-line
+//       https://tailwindcss.com/docs/text-transform
+//       https://tailwindcss.com/docs/text-overflow
+//       https://tailwindcss.com/docs/text-wrap
+//       https://tailwindcss.com/docs/vertical-align
+//       https://tailwindcss.com/docs/white-space
+//       https://tailwindcss.com/docs/word-break
+//       https://tailwindcss.com/docs/overflow-wrap
+//       https://tailwindcss.com/docs/hyphens
+
+import { emilia, flush, Token } from "emilia";
+import { div, p, renderToString } from "jhonstart";
+
+// Font family
+val fontFamilyTokens: Token[] = [
+    .Font.Sans,
+    .Font.Serif,
+    .Font.Mono,
+];
+val fontFamilyStyles = emilia(fontFamilyTokens);
+
+// Font weight — full scale
+val fontWeightTokens: Token[] = [
+    .Font.Weight.Thin,
+    .Font.Weight.Extralight,
+    .Font.Weight.Light,
+    .Font.Weight.Normal,
+    .Font.Weight.Medium,
+    .Font.Weight.Semibold,
+    .Font.Weight.Bold,
+    .Font.Weight.Extrabold,
+    .Font.Weight.Black,
+];
+val fontWeightStyles = emilia(fontWeightTokens);
+
+// Font smoothing
+val fontSmoothingTokens: Token[] = [
+    .Font.Smoothing.Antialiased,
+    .Font.Smoothing.Auto,
+];
+val fontSmoothingStyles = emilia(fontSmoothingTokens);
+
+// Font stretch
+val fontStretchTokens: Token[] = [
+    .Font.Stretch.UltraCondensed,
+    .Font.Stretch.Condensed,
+    .Font.Stretch.Normal,
+    .Font.Stretch.Expanded,
+    .Font.Stretch.UltraExpanded,
+];
+val fontStretchStyles = emilia(fontStretchTokens);
+
+// Font variant numeric
+val fontVariantTokens: Token[] = [
+    .Font.VariantNumeric.Normal,
+    .Font.VariantNumeric.Ordinal,
+    .Font.VariantNumeric.SlashedZero,
+    .Font.VariantNumeric.LiningNums,
+    .Font.VariantNumeric.OldstyleNums,
+    .Font.VariantNumeric.TabularNums,
+    .Font.VariantNumeric.DiagonalFractions,
+];
+val fontVariantStyles = emilia(fontVariantTokens);
+
+// Text size — expanded
+val textSizeTokens: Token[] = [
+    .Text.Size.Xs,
+    .Text.Size.Sm,
+    .Text.Size.Base,
+    .Text.Size.Lg,
+    .Text.Size.Xl,
+    .Text.Size.X2xl,
+    .Text.Size.X3xl,
+    .Text.Size.X4xl,
+    .Text.Size.X5xl,
+    .Text.Size.X6xl,
+    .Text.Size.X7xl,
+    .Text.Size.X8xl,
+    .Text.Size.X9xl,
+];
+val textSizeStyles = emilia(textSizeTokens);
+
+// Text decoration
+val textDecoTokens: Token[] = [
+    .Text.Decoration.Underline,
+    .Text.Decoration.Overline,
+    .Text.Decoration.LineThrough,
+    .Text.Decoration.None,
+];
+val textDecoStyles = emilia(textDecoTokens);
+
+// Text decoration style
+val textDecoStyleTokens: Token[] = [
+    .Text.DecorationStyle.Solid,
+    .Text.DecorationStyle.Double,
+    .Text.DecorationStyle.Dotted,
+    .Text.DecorationStyle.Dashed,
+    .Text.DecorationStyle.Wavy,
+];
+val textDecoStyleStyles = emilia(textDecoStyleTokens);
+
+// Text transform
+val textTransformTokens: Token[] = [
+    .Text.Transform.Uppercase,
+    .Text.Transform.Lowercase,
+    .Text.Transform.Capitalize,
+    .Text.Transform.None,
+];
+val textTransformStyles = emilia(textTransformTokens);
+
+// Text overflow & truncate
+val textOverflowTokens: Token[] = [
+    .Text.Overflow.Ellipsis,
+    .Text.Overflow.Clip,
+    .Text.Truncate,
+];
+val textOverflowStyles = emilia(textOverflowTokens);
+
+// Text wrap
+val textWrapTokens: Token[] = [
+    .Text.Wrap.Wrap,
+    .Text.Wrap.Nowrap,
+    .Text.Wrap.Balance,
+    .Text.Wrap.Pretty,
+];
+val textWrapStyles = emilia(textWrapTokens);
+
+// Text indent
+val textIndentTokens: Token[] = [
+    .Text.Indent.__0,
+    .Text.Indent.__1,
+    .Text.Indent.__4,
+    .Text.Indent.__8,
+];
+val textIndentStyles = emilia(textIndentTokens);
+
+// Line clamp
+val lineClampTokens: Token[] = [
+    .Text.LineClamp.__1,
+    .Text.LineClamp.__2,
+    .Text.LineClamp.__3,
+    .Text.LineClamp.__4,
+    .Text.LineClamp.__5,
+    .Text.LineClamp.__6,
+    .Text.LineClamp.None,
+];
+val lineClampStyles = emilia(lineClampTokens);
+
+// Line height
+val leadingTokens: Token[] = [
+    .Leading.__3,
+    .Leading.__4,
+    .Leading.__5,
+    .Leading.__6,
+    .Leading.None,
+    .Leading.Tight,
+    .Leading.Snug,
+    .Leading.Normal,
+    .Leading.Relaxed,
+    .Leading.Loose,
+];
+val leadingStyles = emilia(leadingTokens);
+
+// Letter spacing
+val trackingTokens: Token[] = [
+    .Tracking.Tighter,
+    .Tracking.Tight,
+    .Tracking.Normal,
+    .Tracking.Wide,
+    .Tracking.Wider,
+    .Tracking.Widest,
+];
+val trackingStyles = emilia(trackingTokens);
+
+// List styles
+val listTokens: Token[] = [
+    .List.None,
+    .List.Disc,
+    .List.Decimal,
+    .List.Inside,
+    .List.Outside,
+];
+val listStyles = emilia(listTokens);
+
+// Text alignment
+val textAlignTokens: Token[] = [
+    .Text.Left,
+    .Text.Center,
+    .Text.Right,
+    .Text.Justify,
+    .Text.Start,
+    .Text.End,
+];
+val textAlignStyles = emilia(textAlignTokens);
+
+// Vertical align
+val alignTokens: Token[] = [
+    .Align.Baseline,
+    .Align.Top,
+    .Align.Middle,
+    .Align.Bottom,
+    .Align.Sub,
+    .Align.Super,
+    .Align.TextTop,
+    .Align.TextBottom,
+];
+val alignStyles = emilia(alignTokens);
+
+// Whitespace
+val whitespaceTokens: Token[] = [
+    .Whitespace.Normal,
+    .Whitespace.Nowrap,
+    .Whitespace.Pre,
+    .Whitespace.PreLine,
+    .Whitespace.PreWrap,
+    .Whitespace.BreakSpaces,
+];
+val whitespaceStyles = emilia(whitespaceTokens);
+
+// Word break
+val breakTokens: Token[] = [
+    .Break.Normal,
+    .Break.Words,
+    .Break.All,
+    .Break.Keep,
+];
+val breakStyles = emilia(breakTokens);
+
+// Hyphens
+val hyphensTokens: Token[] = [
+    .Hyphens.None,
+    .Hyphens.Manual,
+    .Hyphens.Auto,
+];
+val hyphensStyles = emilia(hyphensTokens);
+
+// Underline offset
+val underlineOffsetTokens: Token[] = [
+    .Text.UnderlineOffset.Auto,
+    .Text.UnderlineOffset.__0,
+    .Text.UnderlineOffset.__2,
+    .Text.UnderlineOffset.__4,
+];
+val underlineOffsetStyles = emilia(underlineOffsetTokens);
+
+val page = div([
+    p([], []),
+], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F04: Typography Example ===");
+    @print("Font Family: " + fontFamilyStyles);
+    @print("Font Weight: " + fontWeightStyles);
+    @print("Font Smoothing: " + fontSmoothingStyles);
+    @print("Font Stretch: " + fontStretchStyles);
+    @print("Font Variant: " + fontVariantStyles);
+    @print("Text Size: " + textSizeStyles);
+    @print("Text Decoration: " + textDecoStyles);
+    @print("Text Transform: " + textTransformStyles);
+    @print("Text Overflow: " + textOverflowStyles);
+    @print("Text Wrap: " + textWrapStyles);
+    @print("Line Clamp: " + lineClampStyles);
+    @print("Leading: " + leadingStyles);
+    @print("Tracking: " + trackingStyles);
+    @print("List: " + listStyles);
+    @print("Text Align: " + textAlignStyles);
+    @print("Vertical Align: " + alignStyles);
+    @print("Whitespace: " + whitespaceStyles);
+    @print("Break: " + breakStyles);
+    @print("Hyphens: " + hyphensStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "font-weight thin generates correct CSS" {
+    val tokens: Token[] = [.Font.Weight.Thin];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("font-weight:100") != -1;
+}
+
+test "font-smoothing antialiased generates correct CSS" {
+    val tokens: Token[] = [.Font.Smoothing.Antialiased];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("-webkit-font-smoothing:antialiased") != -1;
+}
+
+test "text-transform uppercase generates correct CSS" {
+    val tokens: Token[] = [.Text.Transform.Uppercase];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("text-transform:uppercase") != -1;
+}
+
+test "text-truncate generates correct CSS" {
+    val tokens: Token[] = [.Text.Truncate];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("overflow:hidden") != -1;
+    assert styles.indexOf("text-overflow:ellipsis") != -1;
+    assert styles.indexOf("white-space:nowrap") != -1;
+}
+
+test "line-clamp-3 generates correct CSS" {
+    val tokens: Token[] = [.Text.LineClamp.__3];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("-webkit-line-clamp:3") != -1;
+}
+
+test "leading-tight generates correct CSS" {
+    val tokens: Token[] = [.Leading.Tight];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("line-height:1.25") != -1;
+}
+
+test "tracking-wide generates correct CSS" {
+    val tokens: Token[] = [.Tracking.Wide];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("letter-spacing:0.025em") != -1;
+}
+
+test "list-disc generates correct CSS" {
+    val tokens: Token[] = [.List.Disc];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("list-style-type:disc") != -1;
+}
+
+test "align-middle generates correct CSS" {
+    val tokens: Token[] = [.Align.Middle];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("vertical-align:middle") != -1;
+}
+
+test "whitespace-nowrap generates correct CSS" {
+    val tokens: Token[] = [.Whitespace.Nowrap];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("white-space:nowrap") != -1;
+}

@@ -1,0 +1,162 @@
+// Front 79 — rakun OAuth2 and SSO · oidc-login-example.bp
+//
+// Demonstrates: everything an application writes to log users in against an
+// OpenID Connect provider. A provider bean, a protected controller, and the
+// principal the flow produces. The authorization-code exchange, PKCE, the ID
+// token check and the JWKS cache are the front's work, not the application's —
+// nothing below mentions a token.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/web/spring-security.html
+//           04-web.md § OAuth2
+//
+// SERVER SIDE. Every line here compiles to BEAM. The client secret, the PKCE
+// verifier and the tokens are server state and never reach the browser; that is
+// the whole reason the authorization-code flow is run from the server.
+
+import {configuration, bean, value, service, restController, route, getMapping} from "rakun";
+import {Request, Response} from "rakun";
+// The module that carries decorated types must also import the runtime cells the
+// `@emit`ted wiring calls by name — the rule rakun's own example files follow.
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute, rkProp} from "rakun";
+
+import {OAuth2Provider, oauth2Provider, Principal, currentPrincipal} from "rakun-security";
+import {AuthorizationRequest, authorizationRequest} from "rakun-security";
+// `secured` is front 10's method security; the SCOPE_ authority it tests is
+// produced by this front's claim mapping (step 5).
+import {secured} from "rakun-security";
+// The in-process fixture provider and router this front ships for its own tests.
+import {fixtureRequest, fixtureDispatch} from "rakun-security";
+
+// LANGUAGE GAP: declared parameter defaults are never applied, so `OAuth2Provider`
+// is a record with every field written at the call site. With defaults applied,
+// `scopes`, `pkce` and `redirectPath` would all be omitted below.
+
+// ---- the provider ------------------------------------------------------------
+//
+// `issuerUri` is enough on its own: the front fetches
+// `<issuerUri>/.well-known/openid-configuration` once at boot and takes the
+// authorization, token, userinfo and JWKS endpoints from it. `#[oauth2Provider]`
+// checks at comptime that the method returns an `OAuth2Provider` with a literal
+// `id`, and emits the registration call.
+
+#[configuration]
+pub type SsoConfig(
+    #[value("rakun.security.oauth2.keycloak.client-id")] clientId: string,
+    #[value("rakun.security.oauth2.keycloak.client-secret")] clientSecret: string,
+    #[value("rakun.security.oauth2.keycloak.issuer-uri")] issuerUri: string,
+) {
+    #[bean]
+    #[oauth2Provider]
+    pub fn keycloak(self: Self) -> OAuth2Provider {
+        val scopes = ["openid", "profile", "email"];
+        return OAuth2Provider(
+            id: "keycloak",
+            clientId: self.clientId,
+            clientSecret: self.clientSecret,
+            issuerUri: self.issuerUri,
+            scopes: scopes,
+            pkce: true,
+            redirectPath: "/login/oauth2/code/keycloak",
+        );
+    }
+}
+
+// Registering that bean is the whole of the wiring. Two routes appear in the
+// same table every `#[getMapping]` lands in:
+//
+//   GET /oauth2/authorization/keycloak   -> 302 to the provider
+//   GET /login/oauth2/code/keycloak      -> exchange, verify, 302 back
+//
+// An unauthenticated browser hitting a `#[secured]` route is sent to the first
+// of those; the path it was aiming at is kept server-side and never appears in
+// the redirect URL, so there is no open-redirect parameter to forge.
+
+// ---- reading who is logged in -------------------------------------------------
+//
+// `currentPrincipal` is total: an anonymous request produces a `Principal` whose
+// `subject` is `""`. It never returns an optional, which keeps every call site
+// free of a `case` over `null`.
+
+#[service]
+pub type Greeter {
+    pub fn greet(self: Self, who: Principal) -> string {
+        val anon = who.subject == "";
+        return if (anon) "hello, stranger" else "hello, " + who.name;
+    }
+}
+
+#[restController]
+#[route("/api")]
+pub type MeController(
+    greeter: Greeter,
+) {
+    // Open: answers for anonymous and authenticated callers alike.
+    #[getMapping("/hello")]
+    pub fn hello(self: Self, req: Request) -> Response {
+        return Response.ok(self.greeter.greet(currentPrincipal(req)));
+    }
+
+    // Closed: front 10 answers 401 before this body runs when no principal is
+    // installed, and 403 when the principal carries no such authority. The
+    // authority itself comes from the ID token's `scope` claim, mapped by step 5.
+    #[getMapping("/orders")]
+    #[secured("SCOPE_orders:read")]
+    pub fn orders(self: Self, req: Request) -> Response {
+        val who = currentPrincipal(req);
+        return Response.json("{\"owner\":\"" + who.subject + "\",\"orders\":[]}");
+    }
+}
+
+// ---- what the flow guarantees -------------------------------------------------
+//
+// These run against the fixture provider the front ships in
+// `test/oauth2/fixture_provider.bp`: a discovery document, a JWKS and a token
+// endpoint served on the same in-process router, with a key pair generated at
+// test start. No test in this front reaches the network.
+
+test "the authorization request carries PKCE, state and nonce" {
+    val scopes = ["openid", "profile"];
+    val p = OAuth2Provider(
+        id: "fixture",
+        clientId: "web-app",
+        clientSecret: "s3cret",
+        issuerUri: "http://127.0.0.1:19080/realms/test",
+        scopes: scopes,
+        pkce: true,
+        redirectPath: "/login/oauth2/code/fixture",
+    );
+    val req = authorizationRequest(p, "/dashboard");
+    assert req.url.contains("response_type=code");
+    assert req.url.contains("client_id=web-app");
+    assert req.url.contains("code_challenge_method=S256");
+    assert req.verifier.length() >= 43;
+    assert req.state.length() > 0;
+    assert req.nonce.length() > 0;
+    // The return path is server state: it is not a query parameter.
+    assert req.url.contains("dashboard") == false;
+}
+
+test "two authorization requests never share a secret" {
+    val scopes = ["openid"];
+    val p = OAuth2Provider(
+        id: "fixture",
+        clientId: "web-app",
+        clientSecret: "s3cret",
+        issuerUri: "http://127.0.0.1:19080/realms/test",
+        scopes: scopes,
+        pkce: true,
+        redirectPath: "/login/oauth2/code/fixture",
+    );
+    val a = authorizationRequest(p, "/");
+    val b = authorizationRequest(p, "/");
+    assert a.state != b.state;
+    assert a.nonce != b.nonce;
+    assert a.verifier != b.verifier;
+}
+
+test "an anonymous request reaches an open handler and is refused a closed one" {
+    val anon = currentPrincipal(fixtureRequest("/api/hello"));
+    assert anon.subject == "";
+    val closed = fixtureDispatch("GET", "/api/orders");
+    assert closed.status == 401;
+}

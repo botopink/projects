@@ -1,0 +1,353 @@
+// F12 — Interactivity Example
+// Demonstrates: cursor, pointer-events, resize, scroll-*, touch-action,
+// user-select, will-change, appearance, accent-color, caret-color,
+// field-sizing, scrollbar-*, color-scheme
+//
+// Docs: https://tailwindcss.com/docs/cursor
+//       https://tailwindcss.com/docs/pointer-events
+//       https://tailwindcss.com/docs/resize
+//       https://tailwindcss.com/docs/scroll-behavior
+//       https://tailwindcss.com/docs/scroll-margin
+//       https://tailwindcss.com/docs/scroll-padding
+//       https://tailwindcss.com/docs/scroll-snap-align
+//       https://tailwindcss.com/docs/scroll-snap-stop
+//       https://tailwindcss.com/docs/scroll-snap-type
+//       https://tailwindcss.com/docs/touch-action
+//       https://tailwindcss.com/docs/user-select
+//       https://tailwindcss.com/docs/will-change
+//       https://tailwindcss.com/docs/appearance
+//       https://tailwindcss.com/docs/accent-color
+//       https://tailwindcss.com/docs/caret-color
+//       https://tailwindcss.com/docs/field-sizing
+//       https://tailwindcss.com/docs/scrollbar-width
+//       https://tailwindcss.com/docs/scrollbar-gutter
+//       https://tailwindcss.com/docs/color-scheme
+
+import { emilia, flush, Token } from "emilia";
+import { div, renderToString } from "jhonstart";
+
+// Cursor
+val cursorTokens: Token[] = [
+    .Interact.Cursor.Auto,
+    .Interact.Cursor.Default,
+    .Interact.Cursor.Pointer,
+    .Interact.Cursor.Wait,
+    .Interact.Cursor.Text,
+    .Interact.Cursor.Move,
+    .Interact.Cursor.Help,
+    .Interact.Cursor.NotAllowed,
+    .Interact.Cursor.None,
+    .Interact.Cursor.ContextMenu,
+    .Interact.Cursor.Progress,
+    .Interact.Cursor.Cell,
+    .Interact.Cursor.Crosshair,
+    .Interact.Cursor.VerticalText,
+    .Interact.Cursor.Alias,
+    .Interact.Cursor.Copy,
+    .Interact.Cursor.NoDrop,
+    .Interact.Cursor.Grab,
+    .Interact.Cursor.Grabbing,
+    .Interact.Cursor.AllScroll,
+    .Interact.Cursor.ColResize,
+    .Interact.Cursor.RowResize,
+    .Interact.Cursor.NResize,
+    .Interact.Cursor.EResize,
+    .Interact.Cursor.SResize,
+    .Interact.Cursor.WResize,
+    .Interact.Cursor.NeResize,
+    .Interact.Cursor.NwResize,
+    .Interact.Cursor.SeResize,
+    .Interact.Cursor.SwResize,
+    .Interact.Cursor.EwResize,
+    .Interact.Cursor.NsResize,
+    .Interact.Cursor.NeswResize,
+    .Interact.Cursor.NwseResize,
+    .Interact.Cursor.ZoomIn,
+    .Interact.Cursor.ZoomOut,
+];
+val cursorStyles = emilia(cursorTokens);
+
+// Pointer events
+val pointerEventsTokens: Token[] = [
+    .Interact.PointerEvents.None,
+    .Interact.PointerEvents.Auto,
+];
+val pointerEventsStyles = emilia(pointerEventsTokens);
+
+// Resize
+val resizeTokens: Token[] = [
+    .Interact.Resize.None,
+    .Interact.Resize.Y,
+    .Interact.Resize.X,
+    .Interact.Resize.Both,
+];
+val resizeStyles = emilia(resizeTokens);
+
+// Scroll behavior
+val scrollBehaviorTokens: Token[] = [
+    .Interact.ScrollBehavior.Auto,
+    .Interact.ScrollBehavior.Smooth,
+];
+val scrollBehaviorStyles = emilia(scrollBehaviorTokens);
+
+// Scrollbar width
+val scrollbarWidthTokens: Token[] = [
+    .Interact.ScrollbarWidth.Auto,
+    .Interact.ScrollbarWidth.Thin,
+    .Interact.ScrollbarWidth.None,
+];
+val scrollbarWidthStyles = emilia(scrollbarWidthTokens);
+
+// Scrollbar gutter
+val scrollbarGutterTokens: Token[] = [
+    .Interact.ScrollbarGutter.Auto,
+    .Interact.ScrollbarGutter.Stable,
+    .Interact.ScrollbarGutter.StableBothEdges,
+];
+val scrollbarGutterStyles = emilia(scrollbarGutterTokens);
+
+// Scroll snap align
+val snapAlignTokens: Token[] = [
+    .Interact.SnapAlign.Start,
+    .Interact.SnapAlign.End,
+    .Interact.SnapAlign.Center,
+    .Interact.SnapAlign.None,
+];
+val snapAlignStyles = emilia(snapAlignTokens);
+
+// Scroll snap stop
+val snapStopTokens: Token[] = [
+    .Interact.SnapStop.Normal,
+    .Interact.SnapStop.Always,
+];
+val snapStopStyles = emilia(snapStopTokens);
+
+// Scroll snap type
+val snapTypeTokens: Token[] = [
+    .Interact.SnapType.None,
+    .Interact.SnapType.X,
+    .Interact.SnapType.Y,
+    .Interact.SnapType.Both,
+];
+val snapTypeStyles = emilia(snapTypeTokens);
+
+// Scroll snap strictness
+val snapStrictnessTokens: Token[] = [
+    .Interact.SnapStrictness.Mandatory,
+    .Interact.SnapStrictness.Proximity,
+];
+val snapStrictnessStyles = emilia(snapStrictnessTokens);
+
+// Touch action
+val touchActionTokens: Token[] = [
+    .Interact.TouchAction.Auto,
+    .Interact.TouchAction.None,
+    .Interact.TouchAction.PanX,
+    .Interact.TouchAction.PanLeft,
+    .Interact.TouchAction.PanRight,
+    .Interact.TouchAction.PanY,
+    .Interact.TouchAction.PanUp,
+    .Interact.TouchAction.PanDown,
+    .Interact.TouchAction.PinchZoom,
+    .Interact.TouchAction.Manipulation,
+];
+val touchActionStyles = emilia(touchActionTokens);
+
+// User select
+val userSelectTokens: Token[] = [
+    .Interact.UserSelect.None,
+    .Interact.UserSelect.Text,
+    .Interact.UserSelect.All,
+    .Interact.UserSelect.Auto,
+];
+val userSelectStyles = emilia(userSelectTokens);
+
+// Will change
+val willChangeTokens: Token[] = [
+    .Interact.WillChange.Auto,
+    .Interact.WillChange.Scroll,
+    .Interact.WillChange.Contents,
+    .Interact.WillChange.Transform,
+];
+val willChangeStyles = emilia(willChangeTokens);
+
+// Appearance
+val appearanceTokens: Token[] = [
+    .Interact.Appearance.None,
+    .Interact.Appearance.Auto,
+];
+val appearanceStyles = emilia(appearanceTokens);
+
+// Accent color
+val accentColorTokens: Token[] = [
+    .Interact.AccentColor.Auto,
+    .Interact.AccentColor.Red.__500,
+    .Interact.AccentColor.Blue.__500,
+    .Interact.AccentColor.White,
+    .Interact.AccentColor.Black,
+];
+val accentColorStyles = emilia(accentColorTokens);
+
+// Caret color
+val caretColorTokens: Token[] = [
+    .Interact.CaretColor.Red.__500,
+    .Interact.CaretColor.Blue.__500,
+    .Interact.CaretColor.White,
+    .Interact.CaretColor.Black,
+];
+val caretColorStyles = emilia(caretColorTokens);
+
+// Field sizing
+val fieldSizingTokens: Token[] = [
+    .Interact.FieldSizing.Fixed,
+    .Interact.FieldSizing.Content,
+];
+val fieldSizingStyles = emilia(fieldSizingTokens);
+
+// Color scheme
+val colorSchemeTokens: Token[] = [
+    .Interact.ColorScheme.Normal,
+    .Interact.ColorScheme.Light,
+    .Interact.ColorScheme.Dark,
+    .Interact.ColorScheme.LightDark,
+    .Interact.ColorScheme.OnlyDark,
+    .Interact.ColorScheme.OnlyLight,
+];
+val colorSchemeStyles = emilia(colorSchemeTokens);
+
+// Scroll margin
+val scrollMarginTokens: Token[] = [
+    .Interact.ScrollMargin.__0,
+    .Interact.ScrollMargin.__4,
+    .Interact.ScrollMargin.__8,
+];
+val scrollMarginStyles = emilia(scrollMarginTokens);
+
+// Scroll padding
+val scrollPaddingTokens: Token[] = [
+    .Interact.ScrollPadding.__0,
+    .Interact.ScrollPadding.__4,
+    .Interact.ScrollPadding.__8,
+];
+val scrollPaddingStyles = emilia(scrollPaddingTokens);
+
+val page = div([], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F12: Interactivity Example ===");
+    @print("Cursor: " + cursorStyles);
+    @print("Pointer Events: " + pointerEventsStyles);
+    @print("Resize: " + resizeStyles);
+    @print("Scroll Behavior: " + scrollBehaviorStyles);
+    @print("Scrollbar Width: " + scrollbarWidthStyles);
+    @print("Scrollbar Gutter: " + scrollbarGutterStyles);
+    @print("Snap Align: " + snapAlignStyles);
+    @print("Snap Stop: " + snapStopStyles);
+    @print("Snap Type: " + snapTypeStyles);
+    @print("Snap Strictness: " + snapStrictnessStyles);
+    @print("Touch Action: " + touchActionStyles);
+    @print("User Select: " + userSelectStyles);
+    @print("Will Change: " + willChangeStyles);
+    @print("Appearance: " + appearanceStyles);
+    @print("Accent Color: " + accentColorStyles);
+    @print("Caret Color: " + caretColorStyles);
+    @print("Field Sizing: " + fieldSizingStyles);
+    @print("Color Scheme: " + colorSchemeStyles);
+    @print("Scroll Margin: " + scrollMarginStyles);
+    @print("Scroll Padding: " + scrollPaddingStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "cursor-pointer generates correct CSS" {
+    val tokens: Token[] = [.Interact.Cursor.Pointer];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("cursor:pointer") != -1;
+}
+
+test "cursor-not-allowed generates correct CSS" {
+    val tokens: Token[] = [.Interact.Cursor.NotAllowed];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("cursor:not-allowed") != -1;
+}
+
+test "pointer-events-none generates correct CSS" {
+    val tokens: Token[] = [.Interact.PointerEvents.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("pointer-events:none") != -1;
+}
+
+test "resize-y generates correct CSS" {
+    val tokens: Token[] = [.Interact.Resize.Y];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("resize:vertical") != -1;
+}
+
+test "scroll-behavior-smooth generates correct CSS" {
+    val tokens: Token[] = [.Interact.ScrollBehavior.Smooth];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("scroll-behavior:smooth") != -1;
+}
+
+test "scrollbar-width-thin generates correct CSS" {
+    val tokens: Token[] = [.Interact.ScrollbarWidth.Thin];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("scrollbar-width:thin") != -1;
+}
+
+test "snap-align-center generates correct CSS" {
+    val tokens: Token[] = [.Interact.SnapAlign.Center];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("scroll-snap-align:center") != -1;
+}
+
+test "snap-type-x generates correct CSS" {
+    val tokens: Token[] = [.Interact.SnapType.X];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("scroll-snap-type:x") != -1;
+}
+
+test "touch-action-none generates correct CSS" {
+    val tokens: Token[] = [.Interact.TouchAction.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("touch-action:none") != -1;
+}
+
+test "user-select-none generates correct CSS" {
+    val tokens: Token[] = [.Interact.UserSelect.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("user-select:none") != -1;
+}
+
+test "will-change-transform generates correct CSS" {
+    val tokens: Token[] = [.Interact.WillChange.Transform];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("will-change:transform") != -1;
+}
+
+test "appearance-none generates correct CSS" {
+    val tokens: Token[] = [.Interact.Appearance.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("appearance:none") != -1;
+}
+
+test "field-sizing-content generates correct CSS" {
+    val tokens: Token[] = [.Interact.FieldSizing.Content];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("field-sizing:content") != -1;
+}

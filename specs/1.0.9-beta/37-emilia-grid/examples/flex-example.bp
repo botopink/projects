@@ -1,0 +1,260 @@
+// Front 37 — emilia-flexbox-and-grid
+//
+// The flex half: direction, wrap, the `flex` shorthand, grow, shrink, basis,
+// order, and the whole alignment family.
+//
+// Upstream: https://tailwindcss.com/docs/flex-direction
+//           https://tailwindcss.com/docs/flex
+//           https://tailwindcss.com/docs/justify-content
+//           https://tailwindcss.com/docs/align-items
+// Reference: TAILWIND_CSS_DOCS.md § 6. Flexbox & Grid (6.1-6.7, 6.16-6.24)
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// `Flex.Row/Col/Wrap/NoWrap`, `Flex.Items` and `Flex.Justify` exist today
+// (tokens.bp:194-218); everything else here is delivered by front 37.
+// `display:flex` is a Layout token (front 36). Spacing from front 35, colours
+// from front 33, modifiers from front 34.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── direction and wrap ───────────────────────────────────────────────────────
+
+fn directionValues() -> Token[] {
+    val values: Token[] = [
+        .Flex.Row,
+        .Flex.RowReverse,
+        .Flex.Col,
+        .Flex.ColReverse,
+        .Flex.Wrap,
+        .Flex.WrapReverse,
+        .Flex.NoWrap,
+    ];
+    return values;
+}
+
+// ── the flex shorthand ───────────────────────────────────────────────────────
+// The sub-section is `Value`, not `Flex`: a section cannot carry a sub-section
+// of its own name.
+
+fn shorthandValues() -> Token[] {
+    val values: Token[] = [
+        .Flex.Value.One,
+        .Flex.Value.Auto,
+        .Flex.Value.Initial,
+        .Flex.Value.None,
+    ];
+    return values;
+}
+
+// ── grow, shrink, basis ──────────────────────────────────────────────────────
+// `Basis` shares front 35's spacing scale, so `basis-1` and `p-1` produce the
+// same length.
+
+fn itemSizing() -> Token[] {
+    val values: Token[] = [
+        .Flex.Grow.1,
+        .Flex.Grow.0,
+        .Flex.Shrink.1,
+        .Flex.Shrink.0,
+        .Flex.Basis.0,
+        .Flex.Basis.4,
+        .Flex.Basis.Auto,
+        .Flex.Basis.Full,
+        .Flex.Basis.Frac.Half,
+        .Flex.Basis.Frac.Third,
+        .Flex.Basis.Frac.TwoThirds,
+    ];
+    return values;
+}
+
+// ── order ────────────────────────────────────────────────────────────────────
+// `order-first` and `order-last` are sentinel integers, not keywords.
+
+fn orderValues() -> Token[] {
+    val values: Token[] = [
+        .Flex.Order.1,
+        .Flex.Order.2,
+        .Flex.Order.12,
+        .Flex.Order.First,
+        .Flex.Order.Last,
+        .Flex.Order.None,
+    ];
+    return values;
+}
+
+// ── alignment ────────────────────────────────────────────────────────────────
+// Tailwind is not internally consistent here and this front copies it rather
+// than smoothing it: `justify-content` and `align-items` take `flex-start`,
+// while `justify-items`, `justify-self` and `place-*` take `start`.
+
+fn mainAxisAlignment() -> Token[] {
+    val values: Token[] = [
+        .Flex.Justify.Normal,
+        .Flex.Justify.Start,
+        .Flex.Justify.End,
+        .Flex.Justify.Center,
+        .Flex.Justify.Between,
+        .Flex.Justify.Around,
+        .Flex.Justify.Evenly,
+        .Flex.Justify.Stretch,
+    ];
+    return values;
+}
+
+fn crossAxisAlignment() -> Token[] {
+    val values: Token[] = [
+        .Flex.Items.Start,
+        .Flex.Items.End,
+        .Flex.Items.Center,
+        .Flex.Items.Baseline,
+        .Flex.Items.Stretch,
+        .Flex.Self.Auto,
+        .Flex.Self.Start,
+        .Flex.Self.Center,
+        .Flex.Self.Baseline,
+        .Flex.Content.Between,
+        .Flex.Content.Evenly,
+    ];
+    return values;
+}
+
+fn bothAxesAlignment() -> Token[] {
+    val values: Token[] = [
+        .Flex.JustifyItems.Start,
+        .Flex.JustifySelf.Center,
+        .Flex.Place.Content.Between,
+        .Flex.Place.Items.Center,
+        .Flex.Place.Self.Stretch,
+    ];
+    return values;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// A toolbar: a row that wraps under `sm`, a title that takes the remaining
+// space, and a trailing action pinned last in the order.
+
+#[@future]
+pub fn toolbar(title: string, action: string) -> @Future<string> {
+    val stackUnderSm: Token[] = [.Flex.Col, .Flex.Items.Start];
+
+    val bar: Token[] = [
+        .Layout.Flex,
+        .Flex.Row,
+        .Flex.Wrap,
+        .Flex.Items.Center,
+        .Flex.Justify.Between,
+        .Gap.All.3,
+        .Pad.X.4,
+        .Pad.Y.2,
+        .Bg.Color.White,
+        Token.MaxSm(stackUnderSm),
+    ];
+
+    val heading: Token[] = [
+        .Flex.Value.One,
+        .Flex.Basis.0,
+        .Text.Bold,
+        .Color.Slate.900,
+    ];
+
+    val trailing: Token[] = [
+        .Flex.Shrink.0,
+        .Flex.Order.Last,
+        .Flex.Self.Center,
+        .Pad.X.3,
+        .Bg.Color.Indigo.600,
+        .Color.White,
+        .Border.Rounded.Md,
+    ];
+
+    val barClass = emilia(bar);
+    val headingClass = emilia(heading);
+    val trailingClass = emilia(trailing);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + barClass + "\">"
+        + "<span class=\"" + headingClass + "\">" + title + "</span>"
+        + "<span class=\"" + trailingClass + "\">" + action + "</span>"
+        + "</div>";
+    return styles + markup;
+}
+
+test "the reverse direction and wrap values" {
+    val cls = emilia(directionValues());
+    val styles = await flush();
+    assert styles.contains("flex-direction:row-reverse");
+    assert styles.contains("flex-direction:column-reverse");
+    assert styles.contains("flex-wrap:wrap-reverse");
+}
+
+test "the four flex paths that compile today are unchanged" {
+    val tokens: Token[] = [.Flex.Row, .Flex.Col, .Flex.Wrap, .Flex.NoWrap];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{flex-direction:row;flex-direction:column;flex-wrap:wrap;flex-wrap:nowrap}</style>";
+}
+
+test "the flex shorthand keeps its three components" {
+    val cls = emilia(shorthandValues());
+    val styles = await flush();
+    assert styles.contains("flex:1 1 0%");
+    assert styles.contains("flex:1 1 auto");
+    assert styles.contains("flex:0 1 auto");
+    assert styles.contains("flex:none");
+}
+
+test "basis and width agree on a fraction" {
+    val basisTokens: Token[] = [.Flex.Basis.Frac.Third];
+    val basisClass = emilia(basisTokens);
+    val basisStyles = await flush();
+
+    val widthTokens: Token[] = [.Size.W.Frac.Third];
+    val widthClass = emilia(widthTokens);
+    val widthStyles = await flush();
+
+    assert basisStyles.contains("flex-basis:33.333333%");
+    assert widthStyles.contains("width:33.333333%");
+}
+
+test "order-first and order-last are sentinel integers" {
+    val tokens: Token[] = [.Flex.Order.First, .Flex.Order.Last, .Flex.Order.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{order:-9999;order:9999;order:0}</style>";
+}
+
+test "justify-content takes flex-start and justify-items takes start" {
+    val tokens: Token[] = [.Flex.Justify.Start, .Flex.JustifyItems.Start];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{justify-content:flex-start;justify-items:start}</style>";
+}
+
+test "the alignment family covers all nine property groups" {
+    val cls = emilia(bothAxesAlignment());
+    val styles = await flush();
+    assert styles.contains("justify-items:start");
+    assert styles.contains("justify-self:center");
+    assert styles.contains("place-content:space-between");
+    assert styles.contains("place-items:center");
+    assert styles.contains("place-self:stretch");
+}
+
+test "align-content keeps the space- prefixes" {
+    val cls = emilia(crossAxisAlignment());
+    val styles = await flush();
+    assert styles.contains("align-items:baseline");
+    assert styles.contains("align-self:flex-start");
+    assert styles.contains("align-content:space-between");
+    assert styles.contains("align-content:space-evenly");
+}
+
+test "the toolbar gives its heading the remaining space" {
+    val out = await toolbar("Inbox", "Compose");
+    assert out.startsWith("<style>");
+    assert out.contains("flex:1 1 0%;flex-basis:0");
+    assert out.contains("justify-content:space-between");
+    assert out.contains("@media (width < 40rem){flex-direction:column;align-items:flex-start}");
+}

@@ -1,0 +1,149 @@
+// Front 05 — Externalized Configuration and Profiles.
+//
+// A developer binding typed configuration: one nested `#[configurationProperties]`
+// record, a `Duration` with a unit default, a `#[value]` field on an ordinary
+// service, and the boot-time load in `main`. Everything here runs on the server.
+//
+// The configuration it reads (application.yaml, loaded from ./ and ./config/):
+//
+//   billing:
+//     enabled: true
+//     endpoint: "https://billing.internal"
+//     request-timeout: 30          # seconds, per the #[unit] annotation
+//     max-body: 2MB
+//     retry:
+//       attempts: 3
+//       backoff: 250ms
+//   ---
+//   rakun.config.activate.on-profile: "prod"
+//   billing:
+//     endpoint: "https://billing.example.com"
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/features/external-config.html
+//   https://docs.spring.io/spring-boot/reference/features/profiles.html
+
+import {Rakun, App, Request, Response} from "rakun";
+import {service, restController, route, getMapping, value} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute, rkProp, rkPropInt} from "rakun";
+
+// Front 05's own surface: the binding decorators, the two typed values, and the
+// module namespaces for loading and for reading the resolved profile set.
+import {configurationProperties, nested, unit, validated} from "rakun";
+import {Duration, DataSize} from "rakun";
+import {config, profiles} from "rakun";
+import {rkPropBool, rkPropDuration, rkPropSize} from "rakun";
+
+// Front 14 supplies the constraints that `#[validated]` runs at boot.
+import {min, max, notBlank} from "rakun";
+
+// ---- typed configuration (server) ----
+
+// A nested block. It carries its own prefix so it can also be bound on its own;
+// when reached through `#[nested]` the parent passes `billing.retry` instead.
+#[configurationProperties("billing.retry")]
+pub type RetryProperties(
+    #[min(0)]
+    #[max(10)]
+    attempts: i32,
+    backoff: Duration,
+)
+
+#[configurationProperties("billing")]
+#[validated]
+pub type BillingProperties(
+    enabled: bool,
+    #[notBlank]
+    endpoint: string,
+    // Bare numbers in this field are seconds; `30s` and `PT30S` also parse.
+    #[unit("seconds")]
+    requestTimeout: Duration,
+    #[unit("megabytes")]
+    maxBody: DataSize,
+    #[nested]
+    retry: RetryProperties,
+)
+
+// ---- a service that consumes it (server) ----
+
+// The bound record is an ordinary managed singleton, injected by type. There is
+// no `#[enableConfigurationProperties]` here because `BillingProperties` lives in
+// a module this application imports.
+#[service]
+pub type BillingClient(
+    props: BillingProperties,
+    // `#[value]` still works for a single scalar; it reads the same table.
+    #[value("rakun.profiles.active")]
+    activeProfiles: string,
+) {
+    pub fn describe(self: Self) -> string {
+        val timeout = self.props.requestTimeout.millis;
+        val attempts = self.props.retry.attempts;
+        val where = self.props.endpoint;
+        val active = self.activeProfiles;
+        return "${where} timeout=${timeout}ms attempts=${attempts} profiles=${active}";
+    }
+
+    pub fn enabled(self: Self) -> bool {
+        return self.props.enabled;
+    }
+}
+
+// ---- web layer (server) ----
+
+#[restController]
+#[route("/api/billing")]
+pub type BillingController(
+    client: BillingClient,
+) {
+    #[getMapping("/config")]
+    pub fn describe(self: Self, req: Request) -> Response {
+        return if (self.client.enabled()) Response.ok(self.client.describe()) else Response.withStatus(503, "billing disabled");
+    }
+}
+
+// ---- bootstrap (server) ----
+
+fn main() {
+    // One call, before anything is constructed: read the locations in order,
+    // apply the active profiles, resolve placeholders, bind every
+    // `#[configurationProperties]` record and run `#[validated]` over them. It
+    // does not return a value to check — a bad configuration halts the boot with
+    // the key, the value and the file it came from.
+    config.load();
+
+    val active = profiles.active().join(",");
+    @print("active profiles: ${active}");
+
+    Rakun.run(App(port: rkPropInt("server.port"), basePath: "/api"));
+}
+
+// ---- what the tests pin ----
+
+test "config: a nested block binds under the parent prefix" {
+    config.loadFrom("./test/fixtures/config");
+    val props = __rkMake_BillingProperties();
+    assert props.endpoint == "https://billing.internal";
+    assert props.retry.attempts == 3;
+    assert props.retry.backoff.millis == 250;
+}
+
+test "config: a bare number takes the unit declared on the field" {
+    config.loadFrom("./test/fixtures/config");
+    val props = __rkMake_BillingProperties();
+    assert props.requestTimeout.millis == 30000;
+    assert props.maxBody.bytes == 2097152;
+}
+
+test "config: an active profile document overrides the base document" {
+    config.loadProfiles("./test/fixtures/config", ["prod"]);
+    val props = __rkMake_BillingProperties();
+    assert props.endpoint == "https://billing.example.com";
+    // The base document still supplies everything the profile document omits.
+    assert props.retry.attempts == 3;
+}
+
+test "config: a placeholder falls back to its declared default" {
+    config.loadFrom("./test/fixtures/config");
+    assert rkProp("billing.region") == "eu-west-1";
+}

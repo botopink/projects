@@ -1,0 +1,103 @@
+// Front 04 — rakun Erlang Runtime.
+//
+// The smallest rakun application that boots on the BEAM: repository → service →
+// REST controller, wired by constructor injection, served by `Rakun.run`. Every
+// declaration here runs on the erlang target. Nothing in the file is
+// Erlang-aware — that is the point of the front: the developer's code does not
+// change, only the host behind the `rk*` cells does.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html
+//   https://docs.spring.io/spring-boot/reference/web/servlet.html
+//   https://docs.spring.io/spring-boot/reference/features/spring-application.html
+//
+// Run: botopink test --target erlang   (a built/run output cannot load the
+// sidecar yet — see the front README's Blocked section).
+
+import {Rakun, App, Request, Response} from "rakun";
+import {repository, service, restController, route, getMapping, postMapping} from "rakun";
+
+// A module that carries decorated types must also import the runtime fns, because
+// the wiring the decorators @emit is spliced into THIS module and calls them by
+// name (repository/rakun/test/server_test.bp:13-18 does the same).
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+
+// `rkSetProp` is pre-existing. `rkBoot` and `rkSetReplyHeader` are the two
+// erlang-only cells front 04 appends to runtime.bp; they carry no Node form.
+import {rkSetProp, rkBoot, rkSetReplyHeader} from "rakun";
+
+// ---- data layer (server) ----
+
+#[repository]
+pub type NoteRepository {
+    pub fn all(self: Self) -> Array<string> {
+        return ["first note", "second note"];
+    }
+
+    pub fn at(self: Self, index: i32) -> string {
+        return self.all().at(index).unwrapOr("");
+    }
+}
+
+// ---- business layer (server) ----
+
+#[service]
+pub type NoteService(
+    repo: NoteRepository,
+) {
+    pub fn list(self: Self) -> string {
+        return self.repo.all().join(" | ");
+    }
+
+    pub fn show(self: Self, raw: string) -> string {
+        val index = raw.length();
+        val found = self.repo.at(index - index);
+        return if (found == "") "no such note" else found;
+    }
+}
+
+// ---- web layer (server) ----
+
+#[restController]
+#[route("/api/notes")]
+pub type NoteController(
+    svc: NoteService,
+) {
+    #[getMapping("/")]
+    pub fn index(self: Self, req: Request) -> Response {
+        // A reply header, set through front 04's per-request accumulator. On the
+        // BEAM the request IS a process, so this is process-local state and needs
+        // no field on the frozen `Response` record.
+        val _h = rkSetReplyHeader("Content-Type", "text/plain; charset=utf-8");
+        return Response.ok(self.svc.list());
+    }
+
+    #[getMapping("/:name")]
+    pub fn show(self: Self, req: Request) -> Response {
+        val name = req.param("name");
+        val body = self.svc.show(name);
+        return if (body == "no such note") Response.notFound() else Response.ok(body);
+    }
+
+    #[postMapping("/")]
+    pub fn create(self: Self, req: Request) -> Response {
+        val body = req.body();
+        return if (body == "") Response.badRequest("empty body") else Response.created("created: " + body);
+    }
+}
+
+// ---- bootstrap (server) ----
+
+fn main() {
+    // Every key front 04 reads is an ordinary property. Front 05 fills this table
+    // from application.yaml, the environment and the active profiles; until it
+    // lands, a program seeds what it needs explicitly.
+    val _backlog = rkSetProp("rakun.server.backlog", "256");
+    val _idle = rkSetProp("rakun.server.idle-timeout", "60000");
+
+    // `App(port, basePath)` is frozen, so the banner / headless / keep-alive
+    // options arrive through `rkBoot` (or through the same keys in a config file).
+    val _boot = rkBoot("{\"bannerMode\":\"console\",\"portFile\":\"./rakun.port\"}");
+
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}

@@ -1,0 +1,53 @@
+// Front 63 — Rakun Navigation Signals
+//
+// What this demonstrates: § 10's own pattern — a server action that writes,
+// revalidates, and then redirects. The redirect raised here does not become an
+// HTTP 307: the action dispatcher catches it and puts the wire form into the
+// action envelope, and front 26's client router performs the navigation without
+// a document reload. Server code; the browser half is front 26's file.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/updating-data
+//   https://nextjs.org/docs/app/api-reference/functions/redirect
+//   https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+
+import {redirect, signalToWire, takeSignal} from "rakun";
+import {action} from "rakun";                  // provided by front 24
+import {revalidatePath} from "rakun-cache";    // provided by front 12
+import {cookies} from "rakun";                 // provided by front 62
+
+pub type Draft(
+    title: string,
+    body: string,
+)
+
+// SERVER — stands in for the repository write from front 08.
+fn insertPost(slug: string, draft: Draft) -> i32 {
+    @print("inserted " + slug + ": " + draft.title);
+    return 1;
+}
+
+// SERVER — the action. The phase is Action, so the cookie write and the
+// revalidation are both legal here and both would raise during a render.
+#[action]
+pub fn createPost(title: string, body: string) -> string {
+    val session = cookies().get("session").unwrapOr("");
+    if (session == "") {
+        val _denied = redirect("/login");
+    };
+
+    val slug = title.toLower().replaceAll(" ", "-");
+    val _written = insertPost(slug, Draft(title: title, body: body));
+    val _revalidated = revalidatePath("/blog");
+
+    val _navigated = redirect("/blog/" + slug);
+    return slug;
+}
+
+// SERVER — what front 24's dispatcher does with the outcome. It is written out
+// here so the shape of the envelope field is visible from the consumer's side;
+// in an application nobody writes this function.
+pub fn envelopeFieldFor() -> string {
+    val outcome = takeSignal();
+    return signalToWire(outcome);
+}

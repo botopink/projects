@@ -1,0 +1,128 @@
+// Front 86 — rakun messaging reliability: what happens to a message that fails.
+//
+// Server-side file. Every function here compiles to BEAM and runs inside front 15's
+// dispatch loop. The listener answers with an `Outcome`; the dispatcher turns that
+// answer into an ack, a delayed redelivery or a dead-letter publish.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/messaging/amqp.html
+//   https://docs.spring.io/spring-boot/reference/messaging/kafka.html
+
+import {service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {rabbitListener, Delivery} from "rakun-messaging";
+import {Outcome, retryPolicy, nextDelay, nextAction, attemptOf, deadLetterOf, deadLetterName} from "rakun-messaging";
+
+// `rabbitListener` and `Delivery` are provided by front 15; everything else on the
+// second import line is this front's surface.
+
+#[@result]
+fn chargeCard(orderId: string) -> @Result<string, string> {
+    if (orderId == "gateway-down") {
+        throw "payment gateway timeout";
+    };
+    return "receipt-" + orderId;
+}
+
+// The handler body lives in a module-level function so it can be exercised without
+// standing up the container: the decorated method delegates to it.
+fn classifyOrder(delivery: Delivery) -> Outcome {
+    val id = delivery.header("order-id");
+    if (id == "") {
+        return Outcome.Reject(reason: "missing order-id header");
+    };
+    val charged = chargeCard(id);
+    val out = case charged {
+        Ok(result) -> Outcome.Done;
+        Error(error) -> Outcome.Retry(reason: error);
+    };
+    return out;
+}
+
+// LANGUAGE GAP: declared parameter defaults are never applied, so a decorator cannot
+// carry optional arguments — `#[rabbitListener("orders.confirm", maxAttempts: 3,
+// ackMode: "manual")]` would force every listener in the codebase to spell every
+// setting. Nearest valid form below: one required argument, and the rest read from
+// `rakun.messaging.listener.orders-confirm.*` at boot.
+#[service]
+type OrderConfirmations {
+    #[rabbitListener("orders.confirm")]
+    pub fn onOrder(self: Self, delivery: Delivery) -> Outcome {
+        return classifyOrder(delivery);
+    }
+}
+
+test "a missing header is rejected on first delivery, not retried" {
+    val delivery = Delivery(destination: "orders.confirm", body: "{}", headers: []);
+    val outcome = classifyOrder(delivery);
+    val kind = case outcome {
+        Done -> "done";
+        Retry(reason) -> "retry";
+        Reject(reason) -> "reject";
+    };
+    assert kind == "reject";
+}
+
+test "a gateway timeout is retryable and carries the failure reason" {
+    val delivery = Delivery(
+        destination: "orders.confirm",
+        body: "{}",
+        headers: [#("order-id", "gateway-down")],
+    );
+    val outcome = classifyOrder(delivery);
+    val why = case outcome {
+        Done -> "";
+        Retry(reason) -> reason;
+        Reject(reason) -> "";
+    };
+    assert why == "payment gateway timeout";
+}
+
+test "a transient failure retries until the ceiling, then dead-letters" {
+    val policy = retryPolicy(initialMs: 2000, multiplierPercent: 200, maxMs: 30000, maxAttempts: 3);
+    val transient = Outcome.Retry(reason: "payment gateway timeout");
+    assert nextAction(transient, policy, 1) == "retry";
+    assert nextAction(transient, policy, 2) == "retry";
+    assert nextAction(transient, policy, 3) == "dead-letter";
+}
+
+test "a rejection consumes no attempts" {
+    val policy = retryPolicy(initialMs: 2000, multiplierPercent: 200, maxMs: 30000, maxAttempts: 9);
+    val poison = Outcome.Reject(reason: "missing order-id header");
+    assert nextAction(poison, policy, 1) == "dead-letter";
+}
+
+test "the backoff doubles and stops at the ceiling" {
+    val policy = retryPolicy(initialMs: 2000, multiplierPercent: 200, maxMs: 30000, maxAttempts: 6);
+    assert nextDelay(policy, 1) == 2000;
+    assert nextDelay(policy, 2) == 4000;
+    assert nextDelay(policy, 3) == 8000;
+    assert nextDelay(policy, 4) == 16000;
+    assert nextDelay(policy, 5) == 30000;
+}
+
+test "the attempt count travels in the message, not in the process" {
+    val first = Delivery(destination: "orders.confirm", body: "{}", headers: []);
+    assert attemptOf(first) == 1;
+
+    val third = Delivery(
+        destination: "orders.confirm",
+        body: "{}",
+        headers: [#("x-rakun-attempt", "3")],
+    );
+    assert attemptOf(third) == 3;
+}
+
+test "the dead-letter envelope keeps the original destination and the reason" {
+    val delivery = Delivery(
+        destination: "orders.confirm",
+        body: "{\"id\":\"A-17\"}",
+        headers: [#("x-rakun-attempt", "3")],
+    );
+    val letter = deadLetterOf(delivery, "payment gateway timeout", 3);
+    assert letter.destination == "orders.confirm";
+    assert letter.body == "{\"id\":\"A-17\"}";
+    assert letter.reason == "payment gateway timeout";
+    assert letter.attempt == 3;
+    assert deadLetterName(delivery.destination) == "orders.confirm.dlq";
+}

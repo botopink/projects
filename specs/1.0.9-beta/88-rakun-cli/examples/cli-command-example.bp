@@ -1,0 +1,53 @@
+// Front 88 — rakun CLI: a project adding its own command, and the argv parsing
+// every command is built from.
+//
+// Server-side file. `#[cliCommand]` registers the method in the same table the
+// built-in commands live in, so `rakun seed --count 25` runs it with the container
+// wired and no listener bound. The return value is the process exit code.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/maven-plugin/run.html
+//   https://docs.spring.io/spring-boot/cli/index.html
+
+import {service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {cliCommand, commandOf, flagValue, hasFlag} from "rakun-cli";
+
+#[service]
+type Seeder {
+    #[cliCommand("seed")]
+    pub fn seed(self: Self, args: Array<string>) -> i32 {
+        val count = flagValue(args, "--count", "10");
+        val dry = hasFlag(args, "--dry-run");
+        if (dry) {
+            @print("would seed ${count} orders");
+            return 0;
+        };
+        @print("seeded ${count} orders");
+        return 0;
+    }
+}
+
+test "the command is the first argument, and an empty argv names none" {
+    assert commandOf(["seed", "--count", "25"]) == "seed";
+    assert commandOf([]) == "";
+    assert commandOf(["--help"]) == "";
+}
+
+test "a flag value reads in both spellings and falls back when absent" {
+    assert flagValue(["seed", "--count", "25"], "--count", "10") == "25";
+    assert flagValue(["seed", "--count=25"], "--count", "10") == "25";
+    assert flagValue(["seed"], "--count", "10") == "10";
+}
+
+test "a flag matches exactly, so a longer flag does not enable a shorter one" {
+    assert hasFlag(["run", "--watch"], "--watch");
+    assert !hasFlag(["run", "--watchdog"], "--watch");
+    assert !hasFlag(["run"], "--watch");
+}
+
+test "a dry run and a real run differ in effect, not in exit code" {
+    val seeder = Seeder();
+    assert seeder.seed(["seed", "--dry-run"]) == 0;
+    assert seeder.seed(["seed", "--count", "3"]) == 0;
+}

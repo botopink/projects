@@ -1,0 +1,117 @@
+// Front 68 — onze13-client-bundle · examples/env-refusal-example.bp
+//
+// The three refusals, each as the code that triggers it and the message the
+// build prints. All three are hard failures: no config key, no decorator, no CLI
+// flag turns any of them into a warning. A leak here is a server secret in a
+// file served to the public, so the build stops.
+//
+// The code that triggers each one is quoted in a comment rather than written,
+// because a file that contained it would be a file that must not compile.
+//
+//   Refusal 1 — a server-only module in the client graph
+//       // lib/db.bp
+//       import { serverOnly } from "jhonstart";   // front 29's marker
+//       …and a client component imports it, directly or four modules down.
+//
+//   Refusal 2 — a non-public environment read from a client module
+//       val key = env.read("DATABASE_URL").unwrapOr("");
+//       val all = env.vars();
+//       val name = "ONZE_PUBLIC_" + suffix;  val v = env.read(name);
+//
+//   Refusal 3 — an emilia call the bundler cannot resolve
+//       val cls = emilia(tokensFromProps(props));
+//       val sheet = await flush();            // never in a client module
+//
+// The prefix itself is front 49's (`ONZE_PUBLIC_`, `isPublicEnvName`); this file
+// does not restate it, it exercises where it is enforced.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/guides/environment-variables
+//   https://nextjs.org/docs/app/getting-started/server-and-client-components
+
+import { GraphNode, ClientGraph, BuildRefusal, EmiliaCall } from "onze13-bundler";
+import { checkServerOnly, checkEnvReads, checkEmiliaCalls, refusalMessage } from "onze13-bundler";
+
+// A three-module client graph: the island a route reaches, a formatter it
+// imports, and a data module the formatter imports. The chain is what every
+// refusal message prints, because "which module reads the secret" does not tell
+// anyone which client component dragged it into the browser.
+fn sampleGraph() -> ClientGraph {
+    val island = GraphNode(
+        moduleId: "app.ui.status_card",
+        path: "app/ui/status_card.bp",
+        chain: ["app.ui.status_card"],
+        isRoot: true,
+    );
+    val formatter = GraphNode(
+        moduleId: "lib.format",
+        path: "lib/format.bp",
+        chain: ["app.ui.status_card", "lib.format"],
+        isRoot: false,
+    );
+    val data = GraphNode(
+        moduleId: "lib.db",
+        path: "lib/db.bp",
+        chain: ["app.ui.status_card", "lib.format", "lib.db"],
+        isRoot: false,
+    );
+    return ClientGraph(nodes: [island, formatter, data], roots: ["app.ui.status_card"]);
+}
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+test "a public variable is inlined and nothing is refused" {
+    val reads = [#("app.ui.status_card", "ONZE_PUBLIC_API_URL")];
+    val refusals = checkEnvReads(sampleGraph(), reads);
+    assert refusals.length == 0;
+}
+
+test "a non-public variable fails the build and the message names it" {
+    val reads = [#("lib.db", "DATABASE_URL")];
+    val refusals = checkEnvReads(sampleGraph(), reads);
+    assert refusals.length == 1;
+    val first = refusals.at(0).unwrapOr(BuildRefusal(kind: "", subject: "", moduleId: "", chain: []));
+    val message = refusalMessage(first);
+    assert message.contains("DATABASE_URL");
+    assert message.contains("lib.db");
+    assert message.contains("app.ui.status_card");
+    assert message.contains("lib.format");
+}
+
+test "the prefix is case-sensitive: a lower-cased lookalike is refused" {
+    val reads = [#("lib.db", "onze_public_token")];
+    val refusals = checkEnvReads(sampleGraph(), reads);
+    assert refusals.length == 1;
+}
+
+test "a name the bundler cannot read is a name it cannot clear" {
+    val reads = [#("lib.format", "")];
+    val refusals = checkEnvReads(sampleGraph(), reads);
+    assert refusals.length == 1;
+    val first = refusals.at(0).unwrapOr(BuildRefusal(kind: "", subject: "", moduleId: "", chain: []));
+    assert first.kind == "env-dynamic";
+}
+
+test "every offending read is reported, not only the first" {
+    val reads = [#("lib.db", "DATABASE_URL"), #("lib.format", "SESSION_SECRET")];
+    val refusals = checkEnvReads(sampleGraph(), reads);
+    assert refusals.length == 2;
+}
+
+test "a server-only module anywhere in the graph stops the build, with the chain" {
+    val refusals = checkServerOnly(sampleGraph());
+    assert refusals.length == 1;
+    val first = refusals.at(0).unwrapOr(BuildRefusal(kind: "", subject: "", moduleId: "", chain: []));
+    assert first.moduleId == "lib.db";
+    assert first.chain.length == 3;
+    assert refusalMessage(first).contains("server-only");
+}
+
+test "an unresolvable emilia call and a client flush are both refused" {
+    val calls = [
+        EmiliaCall(moduleId: "app.ui.status_card", literal: false, rules: "", jsHash: "", beamHash: ""),
+        EmiliaCall(moduleId: "lib.format", literal: true, rules: "font-weight:bold", jsHash: "1a2b", beamHash: "1a2c"),
+    ];
+    val refusals = checkEmiliaCalls(sampleGraph(), calls);
+    assert refusals.length == 2;
+}

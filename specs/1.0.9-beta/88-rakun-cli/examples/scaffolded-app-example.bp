@@ -1,0 +1,59 @@
+// Front 88 — rakun CLI: the project `rakun new orders --template plain` generates.
+//
+// This is the generated `src/main.bp`, server-side and BEAM-targeted. It is a whole
+// project: one service, one controller, one `#[value]` binding, a health endpoint and
+// the test that makes `botopink test --target erlang` green before the first edit.
+// The scaffolder substitutes `@@name@@` — the name appears below already substituted,
+// as the developer first reads it.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/cli/index.html
+//   https://docs.spring.io/spring-boot/maven-plugin/run.html
+
+import {Rakun, App, Request, Response} from "rakun";
+import {service, restController, route, getMapping, value} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute, rkDispatchHttp} from "rakun";
+
+#[service]
+type OrdersService {
+    pub fn names(self: Self) -> Array<string> {
+        return ["first-order"];
+    }
+
+    pub fn count(self: Self) -> i32 {
+        return self.names().length;
+    }
+}
+
+#[restController]
+#[route("/api")]
+type OrdersController(
+    orders: OrdersService,
+) {
+    #[getMapping("/health")]
+    pub fn health(self: Self, req: Request) -> Response {
+        return Response.json("{\"status\":\"UP\"}");
+    }
+
+    #[getMapping("/orders")]
+    pub fn index(self: Self, req: Request) -> Response {
+        return Response.json(self.orders.names().join(", "));
+    }
+
+    #[getMapping("/orders/count")]
+    pub fn count(self: Self, req: Request) -> Response {
+        val n = self.orders.count();
+        val body = "{\"count\": ${n}}";
+        return Response.json(body);
+    }
+}
+
+fn main() {
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+test "the scaffold answers before anything is edited" {
+    val svc = OrdersService();
+    assert svc.count() == 1;
+    assert svc.names().join(",") == "first-order";
+}

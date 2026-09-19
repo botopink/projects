@@ -1,0 +1,95 @@
+// Front 15 — rakun-messaging · example 1 of 2
+//
+// One service consuming from three brokers through one registry, and publishing
+// to two of them. The handlers differ in nothing but their marker: same `Message`
+// shape, same container model, same acknowledgement rules.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/messaging/amqp.html
+//           https://docs.spring.io/spring-boot/reference/messaging/kafka.html
+//           (06-messaging.md § AMQP (RabbitMQ) · § Apache Kafka)
+//
+// Target: erlang (server). Every container here is a supervised worker set on
+// the BEAM; nothing in this file compiles for the browser.
+
+import {service, component} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+// Provided by front 15. #[listener] splices the registrations into THIS module,
+// and they call `rkRegisterListener`, so it must resolve here.
+import {listener, amqpListener, kafkaListener, redisListener} from "rakun-messaging";
+import {Message, AmqpTemplate, KafkaTemplate, RedisPubSubTemplate, rkRegisterListener} from "rakun-messaging";
+
+// ── the consumer ────────────────────────────────────────────────────────────
+//
+// `#[service]` makes it a managed singleton; `#[listener]` walks its methods and
+// emits one registration per broker marker. One instance handles every message —
+// the emitted closure goes through `__rkMake_OrderListeners()`, which is the
+// same singleton factory every other rakun component gets.
+
+#[service]
+#[listener]
+pub type OrderListeners(
+    orders: OrderService,
+) {
+    // A work queue. `rakun.messaging.listener.orders.concurrency` decides how
+    // many worker processes pull from it; at 1 the queue stays ordered.
+    #[amqpListener("orders")]
+    pub fn onOrderPlaced(self: Self, msg: Message) -> i32 {
+        return self.orders.place(msg.payload);
+    }
+
+    // An event log. The group id is not optional: declared parameter defaults
+    // are never applied, so both arguments are written out.
+    #[kafkaListener("order-events", "order-service")]
+    pub fn onOrderEvent(self: Self, msg: Message) -> i32 {
+        return self.orders.record(msg.key, msg.payload);
+    }
+
+    // Fire-and-forget. Redis pub/sub has no acknowledgement and no redelivery,
+    // so this container is required to run with ack-mode = none and a handler
+    // that misses a message has simply missed it.
+    #[redisListener("cache-invalidation")]
+    pub fn onInvalidate(self: Self, msg: Message) -> i32 {
+        return self.orders.forget(msg.payload);
+    }
+}
+
+// ── the work ────────────────────────────────────────────────────────────────
+//
+// A handler that raises is not caught here: the worker dies, its supervisor
+// restarts it with a fresh connection, and the message is redelivered under
+// ack-mode = auto. Catching it would lose the restart.
+
+#[service]
+pub type OrderService(
+    amqp: AmqpTemplate,
+    kafka: KafkaTemplate,
+) {
+    pub fn place(self: Self, payload: string) -> i32 {
+        val accepted = self.kafka.send("order-events", "placed", payload);
+        return accepted;
+    }
+
+    pub fn record(self: Self, key: string, payload: string) -> i32 {
+        return 0;
+    }
+
+    pub fn forget(self: Self, key: string) -> i32 {
+        return 0;
+    }
+
+    // Publishing is a plain method call on an injected template. A failed
+    // publish returns non-zero rather than raising — whether that is fatal is
+    // the caller's decision, not the transport's.
+    pub fn notifyShipped(self: Self, orderId: string) -> i32 {
+        val queued = self.amqp.send("shipping-notifications", "{\"orderId\":\"" + orderId + "\"}");
+        val logged = self.kafka.send("order-events", orderId, "{\"event\":\"shipped\"}");
+        val failures = if (queued == 0) { logged } else { queued };
+        return failures;
+    }
+}
+
+// LANGUAGE GAP: there is no byte or binary type — host cells marshal through
+// `string` — so `Message.payload` cannot carry an Avro record, a protobuf frame
+// or a compressed batch without corrupting it. Every payload above is text, and
+// an arm that receives a binary content-type refuses it with a named error
+// rather than handing the handler mojibake.

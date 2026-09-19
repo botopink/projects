@@ -1,0 +1,124 @@
+// Front 53 — onze13 example app · examples/blog-slug-page-example.bp
+// App file: app/blog/[slug]/page.bp
+//
+// Demonstrates: the dynamic segment. Five fronts meet on one value here — front
+// 22 extracts `slug` from the URL, front 49 wraps it in `Params`, front 28 reads
+// it in a server component, front 32 reads it again in `generateMetadata`, and
+// front 60 calls `generateStaticParams` at build time to learn every value it
+// can take. If those five disagree about the shape, this file is where it shows.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes
+//           https://nextjs.org/docs/app/api-reference/functions/generate-static-params
+//           https://nextjs.org/docs/app/api-reference/functions/not-found
+//           NEXTJS-DOCS.md § 6. Rotas Dinâmicas · § 18. Metadata · § 14. Tratamento de Erros
+//
+// Target: erlang (server).
+
+import {Element, div, h1, p, text, renderToString} from "jhonstart";
+import {emilia, Token} from "emilia";
+import {Params, PageProps, SegmentConfig} from "onze13";
+// front 32 — the metadata model and the head it produces
+import {Metadata} from "jhonstart";
+// front 63 — navigation signals; notFound() diverges, it does not return
+import {notFound} from "rakun";
+// app-local
+import {Post, loadPost, missingPost, listPosts} from "@/lib.db";
+import {article, h2, timeTag} from "@/components.tags";
+
+// front 60 — every value `[slug]` can take, computed at build time. Front 60
+// calls this once, expands each row into a concrete path, and prerenders it.
+// The return type is the same `Params` the page receives at request time, which
+// is the point: one vocabulary, not two.
+pub fn generateStaticParams() -> Params[] {
+    return listPosts().map({ p -> Params(entries: [#("slug", p.slug)]) });
+}
+
+pub fn segmentConfig() -> SegmentConfig {
+    return SegmentConfig(dynamicMode: "auto", revalidate: 3600);
+}
+
+// front 22 — the segment reaches the page as one `Params` entry keyed "slug".
+// front 28 — a server component, so `#[@future] … -> @Future<Element>`.
+#[@future]
+pub fn BlogPost(props: PageProps) -> @Future<Element> {
+    val slug = props.params.param("slug");
+    val found = await loadPost(slug);
+
+    // front 63 — notFound() unwinds to the nearest not-found.bp boundary, which
+    // for this route is app/blog/[slug]/not-found.bp, and sets status 404.
+    //
+    // LANGUAGE GAP: botopink has no bottom type, so a diverging call still
+    // leaves the caller obliged to produce a value — hence `missingPost(slug)`
+    // on the next line, which is unreachable. With a `never` return type the
+    // body would be `if (found.isEmpty()) { notFound(); }; val post = found.first();`
+    // and nothing else.
+    if (found.isEmpty()) {
+        notFound();
+    };
+    val post = found.first().unwrapOr(missingPost(slug));
+
+    val titleTokens: Token[] = [.Text.Size.X3xl, .Text.Bold, .Color.Gray.900];
+    val metaTokens: Token[] = [.Text.Size.Sm, .Color.Gray.500];
+    val bodyTokens: Token[] = [.Pad.Y.4, .Color.Gray.700];
+    val titleClass = emilia(titleTokens);
+    val metaClass = emilia(metaTokens);
+    val bodyClass = emilia(bodyTokens);
+
+    return article([
+        h1([text(post.title, attrs: [])], attrs: [#("class", titleClass)]),
+        timeTag(post.published, [text(post.published, attrs: [])], attrs: [#("class", metaClass)]),
+        p([text(post.body, attrs: [])], attrs: [#("class", bodyClass)]),
+    ], attrs: []);
+}
+
+// front 32 — the head for this route. It reads the SAME `PageProps` the page
+// reads, and front 62's request-scoped memoization is what stops the post being
+// loaded twice per request.
+#[@future]
+pub fn generateMetadata(props: PageProps) -> @Future<Metadata> {
+    val slug = props.params.param("slug");
+    val found = await loadPost(slug);
+    val post = found.first().unwrapOr(missingPost(slug));
+    return Metadata(
+        title: post.title + " — Notes",
+        description: post.excerpt,
+        canonical: "/blog/" + slug,
+        ogTitle: post.title,
+        ogDescription: post.excerpt,
+        ogImage: "/blog/" + slug + "/opengraph-image",
+        ogType: "article",
+        twitterCard: "summary_large_image",
+    );
+}
+
+test "the dynamic segment reaches the page as a Params entry named slug" {
+    val props = PageProps(
+        params: Params(entries: [#("slug", "hello-world")]),
+        search: Params(entries: []),
+    );
+    val markup = renderToString(await BlogPost(props));
+    assert markup.contains("<article");
+    assert markup.contains("<time datetime=");
+}
+
+test "generateStaticParams produces one row per post, in the page's own vocabulary" {
+    val rows = generateStaticParams();
+    assert rows.length == listPosts().length;
+    assert rows.all({ r -> r.param("slug") != "" });
+}
+
+test "generateMetadata reads the same props the page reads" {
+    val props = PageProps(
+        params: Params(entries: [#("slug", "hello-world")]),
+        search: Params(entries: []),
+    );
+    val m = await generateMetadata(props);
+    assert m.canonical == "/blog/hello-world";
+    assert m.ogType == "article";
+    assert m.title.endsWith(" — Notes");
+}
+
+test "the segment revalidates hourly rather than being frozen at build time" {
+    assert segmentConfig().revalidate == 3600;
+    assert segmentConfig().dynamicMode == "auto";
+}

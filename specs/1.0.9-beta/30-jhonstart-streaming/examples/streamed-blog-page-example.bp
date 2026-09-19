@@ -1,0 +1,116 @@
+// Front 30 — jhonstart-streaming · examples/streamed-blog-page-example.bp
+//
+// A blog index whose header costs nothing and whose post list costs 900ms.
+// The shell — header, heading, and a skeleton where the list will go — flushes
+// immediately; the list arrives as a second chunk.
+//
+// The boundary's child is a THUNK (`fn() -> @Future<Element>`), not a future.
+// That is not a style choice: `@Future` is eager on the BEAM
+// (`libs/std/src/http.bp:16-18`), so a boundary holding a future would hold a
+// result that had already been computed before the shell was written, and
+// nothing would stream. Front 23 spawns the thunk through front 02 and flushes
+// each chunk as its process reports.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/guides/streaming
+//   https://nextjs.org/docs/app/api-reference/file-conventions/loading
+
+import { Element, div, h1, ul, li, span, text, renderToString } from "jhonstart";
+import { Boundary, Suspense, boundaryId } from "jhonstart";
+import { Chunk, resolve, chunkHtml, shellHtml } from "jhonstart";
+import { header, section } from "jhonstart";
+import { escape } from "std";
+
+// `header` and `section` come from the element-surface front of track C
+// (number allocated from 54 up). `escape` is front 01's.
+
+pub type Post(slug: string, title: string)
+
+// The slow half. It is an ordinary `#[@future]` loader; nothing about it knows
+// it is inside a boundary.
+#[@External.Erlang("blog_repo", "recent_posts")]
+declare fn recentPostRows() -> string;
+
+#[@future]
+fn PostList() -> @Future<Element> {
+    val rows = recentPostRows().split("\n").filter({ r -> r != "" });
+    val posts = rows.map({ r -> decodePost(r) });
+    return ul(posts.map({ p -> postRow(p) }), attrs: [#("class", "posts")]);
+}
+
+fn decodePost(row: string) -> Post {
+    val parts = row.split("|");
+    return Post(slug: parts.at(0).unwrapOr(""), title: parts.at(1).unwrapOr(""));
+}
+
+fn postRow(p: Post) -> Element {
+    return li([
+        span([text(escape.html(p.title), attrs: [])], attrs: [#("class", "title")]),
+    ], attrs: [#("data-slug", escape.attribute(p.slug))]);
+}
+
+// The fallback: what the reader sees while the list is in flight.
+fn postsSkeleton() -> Element {
+    return div([
+        text("Loading posts…", attrs: []),
+    ], attrs: [#("class", "skeleton")]);
+}
+
+// The boundary. `{ -> PostList() }` is unstarted: building this record runs
+// nothing.
+pub fn postsBoundary(segments: Array<string>) -> Boundary {
+    return Boundary(
+        id: boundaryId(segments, "posts"),
+        fallback: postsSkeleton(),
+        child: { ->
+            PostList();
+        },
+    );
+}
+
+// The shell. Everything here is cheap, so it goes out first.
+pub fn BlogPage(segments: Array<string>) -> Element {
+    return div([
+        header([text("botopink", attrs: [])], attrs: [#("class", "site-header")]),
+        h1([text("Blog", attrs: [])], attrs: []),
+        section([
+            Suspense(postsBoundary(segments)),
+        ], attrs: [#("class", "main")]),
+    ], attrs: [#("class", "page")]);
+}
+
+test "the shell carries the fallback and no post" {
+    val html = shellHtml(BlogPage(["blog"]));
+    assert html.contains("data-jh-suspense=\"blog.posts\"");
+    assert html.contains("Loading posts…");
+    assert html.contains("class=\"posts\"") == false;
+}
+
+test "the boundary id is derived from the route segments" {
+    assert boundaryId(["blog"], "posts") == "blog.posts";
+    assert boundaryId(["docs", "api"], "posts") == "docs.api.posts";
+}
+
+test "a resolved chunk is wrapped in a template keyed to its boundary" {
+    val c = Chunk(id: "blog.posts", html: "<ul class=\"posts\"></ul>");
+    assert chunkHtml(c) ==
+        "<template data-jh-chunk=\"blog.posts\"><ul class=\"posts\"></ul></template>";
+}
+
+test "resolving a boundary renders its child, not its fallback" {
+    val b = Boundary(
+        id: "t.one",
+        fallback: div([text("wait", attrs: [])], attrs: []),
+        child: { ->
+            readyChild();
+        },
+    );
+    val c = await resolve(b);
+    assert c.id == "t.one";
+    assert c.html == "<div class=\"done\">ready</div>";
+}
+
+#[@future]
+fn readyChild() -> @Future<Element> {
+    return div([text("ready", attrs: [])], attrs: [#("class", "done")]);
+}

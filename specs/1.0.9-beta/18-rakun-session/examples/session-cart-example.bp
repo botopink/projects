@@ -1,0 +1,119 @@
+// Front 18 — rakun-session · example 1 of 1
+//
+// A shopping cart carried across requests: read the session, update it, save it,
+// and rotate the id at login. The session value is immutable, so every change is
+// a new value that must be saved — the one thing this API cannot do for you.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/web/spring-session.html
+//           (04-web.md § Spring Session)
+//
+// Target: erlang (server). The session lives in a store on the BEAM and its id
+// travels in a signed cookie; nothing in this file compiles for the browser.
+
+import {service, restController, route, getMapping, postMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+// Provided by front 18.
+import {Session, SessionStore, currentSession, rotate} from "rakun-session";
+import {sessionCookieHeader} from "rakun-session";
+// Provided by front 07 — the only way to attach a header to a Response, since
+// `http.bp` is frozen and carries no header surface.
+import {withHeader} from "rakun-web";
+
+// ── the cart ────────────────────────────────────────────────────────────────
+//
+// LANGUAGE GAP: there is no assignment to a `self` field, so Spring's
+// `session.setAttribute("cart", value)` has no spelling. `withAttribute` returns
+// a NEW session and the store call is a separate statement; a change that is not
+// saved is silently lost, and the compiler cannot warn about it.
+
+#[service]
+pub type CartService(
+    store: SessionStore,
+) {
+    pub fn read(self: Self, session: Session) -> string {
+        val raw = session.attribute("cart");
+        val cart = if (raw == "") { "[]" } else { raw };
+        return cart;
+    }
+
+    pub fn addItem(self: Self, session: Session, sku: string) -> Session {
+        val current = self.read(session);
+        val trimmed = current.slice(1, current.length() - 1);
+        val joined = if (trimmed == "") { "\"" + sku + "\"" } else { trimmed + ",\"" + sku + "\"" };
+        val next = session.withAttribute("cart", "[" + joined + "]");
+        // The save is the half that is easy to forget. It is written out on
+        // purpose rather than hidden inside `withAttribute`, because a method
+        // that silently writes to a store is worse than one that does not.
+        val _saved = self.store.save(next);
+        return next;
+    }
+
+    pub fn clear(self: Self, session: Session) -> Session {
+        val next = session.withoutAttribute("cart");
+        val _saved = self.store.save(next);
+        return next;
+    }
+}
+
+// ── the handlers ────────────────────────────────────────────────────────────
+//
+// No handler parses a cookie and no handler builds one. Front 07's session
+// filter has already verified the signature, loaded the session and put it on
+// the per-request context; `currentSession()` reads it from there.
+
+#[restController]
+#[route("/api/cart")]
+pub type CartController(
+    cart: CartService,
+) {
+    #[getMapping("/")]
+    pub fn show(self: Self, req: Request) -> Response {
+        val session = currentSession();
+        return Response.json(self.cart.read(session));
+    }
+
+    #[postMapping("/items")]
+    pub fn add(self: Self, req: Request) -> Response {
+        val session = currentSession();
+        val next = self.cart.addItem(session, req.query("sku"));
+        return Response.json(self.cart.read(next));
+    }
+
+    #[postMapping("/clear")]
+    pub fn clear(self: Self, req: Request) -> Response {
+        val session = currentSession();
+        val next = self.cart.clear(session);
+        return Response.json(self.cart.read(next));
+    }
+}
+
+// ── login, and why the id changes ───────────────────────────────────────────
+//
+// `rotate` issues a new id, copies the attributes, saves under the new id and
+// deletes the old. Without it, an attacker who plants a known id in the victim's
+// browser before login holds a valid authenticated session afterwards — session
+// fixation, which is invisible in normal use and is the reason this call is not
+// optional. Front 10 calls it on every successful authentication; an application
+// that authenticates by hand calls it here.
+
+#[restController]
+#[route("/api/auth")]
+pub type LoginController(
+    store: SessionStore,
+) {
+    #[postMapping("/login")]
+    pub fn login(self: Self, req: Request) -> Response {
+        val before = currentSession();
+        val rotated = rotate(before);
+        val authenticated = rotated.withAttribute("principal", req.query("user"));
+        val _saved = self.store.save(authenticated);
+
+        // The cookie is signed — `<id>.<base64url(hmacSha256(secret, id))>` — and
+        // carries HttpOnly, Secure and SameSite=Lax. There is no argument here
+        // that turns any of those off; `Secure` is dropped only when the listener
+        // is plain HTTP on loopback, which the runtime decides structurally.
+        val cookie = sessionCookieHeader("SESSION", authenticated.id, 1800, "/", "Lax");
+        return withHeader(Response.json("{\"ok\":true}"), "set-cookie", cookie);
+    }
+}

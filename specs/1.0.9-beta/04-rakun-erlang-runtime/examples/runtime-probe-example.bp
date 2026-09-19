@@ -1,0 +1,129 @@
+// Front 04 — rakun Erlang Runtime.
+//
+// What "the erlang row is green" actually asserts. The same DI + router wiring a
+// developer writes, inspected from `test` blocks through the host cells: the scan
+// registry, the singleton scope, the route table, the in-process dispatch, the
+// reply-header accumulator and the property store. Every assertion below must
+// give the SAME answer on `--target erlang` and `--target commonJS`; that
+// equality is the front's real acceptance criterion.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html
+//   https://docs.spring.io/spring-boot/reference/features/spring-application.html
+//
+// Run: botopink test --target erlang --filter "erlang runtime"
+
+import {Request, Response} from "rakun";
+import {repository, service, restController, route, getMapping} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+import {rkScannedNames, rkScannedCount, rkBuildCount} from "rakun";
+import {rkRouteCount, rkRoutePaths, rkDispatch} from "rakun";
+import {rkSetProp, rkProp, rkPropInt, rkSetReplyHeader, rkReplyHeaders} from "rakun";
+
+// ---- the wiring under test (server) ----
+
+#[repository]
+pub type ProbeRepo {
+    pub fn rows(self: Self) -> Array<string> {
+        return ["a", "b", "c"];
+    }
+}
+
+#[service]
+pub type ProbeService(
+    repo: ProbeRepo,
+) {
+    pub fn joined(self: Self) -> string {
+        return self.repo.rows().join(",");
+    }
+}
+
+// A second consumer of the same repository — the diamond that proves the
+// singleton scope: `ProbeRepo`'s constructor must still run exactly once.
+#[service]
+pub type ProbeAudit(
+    repo: ProbeRepo,
+) {
+    pub fn count(self: Self) -> i32 {
+        return self.repo.rows().length;
+    }
+}
+
+#[restController]
+#[route("/probe")]
+pub type ProbeController(
+    svc: ProbeService,
+    audit: ProbeAudit,
+) {
+    #[getMapping("/rows")]
+    pub fn rows(self: Self, req: Request) -> Response {
+        val _h = rkSetReplyHeader("X-Row-Count", self.audit.count().toString());
+        return Response.ok(self.svc.joined());
+    }
+
+    #[getMapping("/echo/:word")]
+    pub fn echo(self: Self, req: Request) -> Response {
+        return Response.ok(req.param("word"));
+    }
+}
+
+// ---- probes ----
+
+test "erlang runtime: the component scan sees every decorated type, in declaration order" {
+    val names = rkScannedNames();
+    assert names.contains("ProbeRepo");
+    assert names.contains("ProbeService");
+    assert names.contains("ProbeAudit");
+    assert names.contains("ProbeController");
+    assert rkScannedCount() >= 4;
+}
+
+test "erlang runtime: a diamond dependency constructs the shared component once" {
+    val res = rkDispatch("GET", "/probe/rows");
+    assert res.status == 200;
+    assert res.body == "a,b,c";
+    // Two services depend on ProbeRepo and the controller depends on both. One
+    // constructor run, no matter how many resolve sites.
+    assert rkBuildCount("ProbeRepo") == 1;
+}
+
+test "erlang runtime: the router keeps registration order and binds path params" {
+    assert rkRouteCount() >= 2;
+    val paths = rkRoutePaths();
+    assert paths.contains("GET /probe/rows");
+    assert paths.contains("GET /probe/echo/:word");
+
+    val hit = rkDispatch("GET", "/probe/echo/hello");
+    assert hit.status == 200;
+    assert hit.body == "hello";
+
+    val miss = rkDispatch("GET", "/probe/nothing-here");
+    assert miss.status == 404;
+    assert miss.body == "";
+}
+
+test "erlang runtime: reply headers accumulate per request and are readable back" {
+    val _r = rkDispatch("GET", "/probe/rows");
+    val headers = rkReplyHeaders();
+    assert headers.contains("X-Row-Count");
+    assert headers.contains("3");
+}
+
+test "erlang runtime: a later write to the same reply header replaces the earlier one" {
+    val _a = rkSetReplyHeader("X-Once", "first");
+    val _b = rkSetReplyHeader("X-Once", "second");
+    val headers = rkReplyHeaders();
+    assert headers.contains("second");
+    assert !headers.contains("first");
+}
+
+test "erlang runtime: the property store answers the documented defaults when a key is absent" {
+    assert rkProp("no.such.key") == "";
+    assert rkPropInt("no.such.key") == 0;
+
+    val _w = rkSetProp("rakun.server.backlog", "256");
+    assert rkPropInt("rakun.server.backlog") == 256;
+
+    val _bad = rkSetProp("rakun.server.idle-timeout", "12abc");
+    assert rkPropInt("rakun.server.idle-timeout") == 0;
+}

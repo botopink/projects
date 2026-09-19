@@ -1,0 +1,85 @@
+// Front 87 — rakun HTTP exchanges: the last hundred requests, and what is in them.
+//
+// Server-side file. The recorder is a filter in front 07's chain; what it keeps is
+// decided by the include list, and the projection that applies it is a pure function,
+// so the two headers that must never be stored are testable without a listener.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/actuator/tracing.html
+
+import {time} from "std";
+import {HttpExchange, exchangeFields, unknownIncludes, memoryExchangeRepository} from "rakun-actuator";
+
+// The headers a real request arrives with. `exchangeFields` decides which of them
+// survive into the stored record.
+val incoming: Array<#(string, string)> = [
+    #("accept", "application/json"),
+    #("user-agent", "curl/8.5.0"),
+    #("authorization", "Bearer eyJhbGciOi"),
+    #("cookie", "session=6f1c2a"),
+];
+
+test "with no include list an exchange keeps only method, uri, status and duration" {
+    val fields = exchangeFields([], incoming, "ana", "10.0.0.7", "6f1c2a");
+    assert fields.length == 0;
+}
+
+test "request-headers keeps the ordinary headers and refuses the two credentials" {
+    val fields = exchangeFields(["request-headers"], incoming, "ana", "10.0.0.7", "6f1c2a");
+    val keys = fields.map({ pair -> pair.0 });
+    assert keys.contains("request.header.accept");
+    assert keys.contains("request.header.user-agent");
+    assert !keys.contains("request.header.authorization");
+    assert !keys.contains("request.header.cookie");
+}
+
+test "the authorization header is recorded only by its own switch" {
+    val fields = exchangeFields(["authorization-header"], incoming, "ana", "10.0.0.7", "6f1c2a");
+    val keys = fields.map({ pair -> pair.0 });
+    assert keys.join(",") == "request.header.authorization";
+}
+
+test "principal, remote address and session id are each their own opt-in" {
+    val fields = exchangeFields(
+        ["principal", "remote-address", "session-id"],
+        incoming,
+        "ana",
+        "10.0.0.7",
+        "6f1c2a",
+    );
+    val keys = fields.map({ pair -> pair.0 });
+    assert keys.join(",") == "principal,remote.address,session.id";
+}
+
+test "an unknown include name is named back, so boot can refuse it" {
+    val bad = unknownIncludes(["request-headers", "user-agent", "everything"]);
+    assert bad.join(",") == "user-agent,everything";
+
+    val good = unknownIncludes(["request-headers", "response-headers", "principal"]);
+    assert good.length == 0;
+}
+
+test "the ring keeps the newest exchanges and reports its capacity" {
+    val repo = memoryExchangeRepository(2);
+    val base = time.nowMillis();
+    val _a = repo.record(HttpExchange(atMs: base, method: "GET", uri: "/a", status: 200, tookMs: 4, fields: []));
+    val _b = repo.record(HttpExchange(atMs: base + 1, method: "GET", uri: "/b", status: 200, tookMs: 7, fields: []));
+    val _c = repo.record(HttpExchange(atMs: base + 2, method: "POST", uri: "/c", status: 500, tookMs: 31, fields: []));
+
+    val kept = repo.recent();
+    assert kept.length == 2;
+    val uris = kept.map({ e -> e.uri });
+    assert uris.join(",") == "/c,/b";
+    assert repo.capacity() == 2;
+}
+
+test "a failed request is recorded with the status the error handler produced" {
+    val repo = memoryExchangeRepository(10);
+    val base = time.nowMillis();
+    val _a = repo.record(HttpExchange(atMs: base, method: "POST", uri: "/payouts", status: 500, tookMs: 12, fields: []));
+
+    val kept = repo.recent();
+    val first = kept.at(0).unwrapOr(HttpExchange(atMs: 0, method: "", uri: "", status: 0, tookMs: 0, fields: []));
+    assert first.status == 500;
+    assert first.uri == "/payouts";
+}

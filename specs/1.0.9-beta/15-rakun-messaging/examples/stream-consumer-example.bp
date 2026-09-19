@@ -1,0 +1,79 @@
+// Front 15 — rakun-messaging · example 2 of 2
+//
+// A RabbitMQ Streams offset consumer with manual acknowledgement and raised
+// concurrency. A stream is re-read from a position rather than consumed and
+// removed, which is why it is its own marker instead of a flag on the queue one.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/messaging/amqp.html#messaging.amqp.rabbit-streams
+//           (06-messaging.md § AMQP (RabbitMQ) — RabbitMQ Streams)
+//
+// Target: erlang (server).
+
+import {service, component} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {listener, streamListener} from "rakun-messaging";
+import {Message, StreamTemplate, rkRegisterListener, ackMessage, nackMessage} from "rakun-messaging";
+
+// ── the consumer ────────────────────────────────────────────────────────────
+//
+// The second argument is the starting offset: "first", "last", "next" or a
+// decimal number. Anything else fails at comptime, with the value in the
+// message — an offset typo that only shows up as "consumed nothing" three
+// hours into a replay is not a failure mode worth keeping.
+//
+// Container policy for this listener lives in configuration, not here:
+//
+//   rakun.messaging.listener.audit.concurrency = 4
+//   rakun.messaging.listener.audit.prefetch    = 50
+//   rakun.messaging.listener.audit.ack-mode    = manual
+//
+// At concurrency 4 the container starts four worker processes under its own
+// supervisor and per-stream ordering is NOT preserved; the container says so in
+// the startup log rather than leaving it to be discovered.
+
+#[service]
+#[listener]
+pub type AuditStreamListeners(
+    audit: AuditProjection,
+) {
+    #[streamListener("audit-stream", "first")]
+    pub fn onAuditRecord(self: Self, msg: Message) -> i32 {
+        val stored = self.audit.project(msg.offset, msg.payload);
+        // ack-mode = manual: nothing is acknowledged until this call. A worker
+        // that returns without acking causes redelivery from its offset, which
+        // is the behaviour a replayable stream is chosen for.
+        val acked = if (stored == 0) { ackMessage(msg) } else { nackMessage(msg) };
+        return acked;
+    }
+}
+
+// ── the projection ──────────────────────────────────────────────────────────
+
+#[service]
+pub type AuditProjection(
+    stream: StreamTemplate,
+) {
+    pub fn project(self: Self, offset: i64, payload: string) -> i32 {
+        val empty = payload.trim() == "";
+        if (empty) {
+            return 1;
+        };
+        return 0;
+    }
+
+    // Appending to a stream is the same one-line publish the queue arm uses.
+    pub fn append(self: Self, payload: string) -> i32 {
+        return self.stream.append("audit-stream", payload);
+    }
+}
+
+// ── replaying, in a test or an operator script ──────────────────────────────
+//
+// `rkDeliver` is the seam that pushes a message into the registry with no broker
+// running — the same trick `rkDispatch` plays for the HTTP router. It is what
+// makes the container tests hermetic, and it is also how an operator replays one
+// record by hand without touching the stream's offset.
+
+pub fn replayOne(payload: string) -> i32 {
+    return rkDeliver("stream", "audit-stream", payload);
+}

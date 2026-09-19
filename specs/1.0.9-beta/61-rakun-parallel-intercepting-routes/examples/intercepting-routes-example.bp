@@ -1,0 +1,107 @@
+// Front 61 — Rakun Parallel and Intercepting Routes
+//
+// What this demonstrates: § 21's modal-over-a-feed. The same URL renders as an
+// overlay when the user arrives by client navigation and as a full page when it
+// is requested directly. The gate is a request header, not an inference.
+//
+// The app tree this file populates:
+//
+//   app/
+//     feed/
+//       page.bp                        <- feedPage
+//       (.)photo/
+//         [photoId]/
+//           page.bp                    <- photoModal
+//     photo/
+//       [id]/
+//         page.bp                      <- photoPage
+//
+// The marker resolution below is pure botopink and compiles for both targets,
+// which is why its tests run on erlang and on commonJS.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/file-conventions/intercepting-routes
+//   https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes
+
+import {page, PageContext} from "rakun";  // provided by front 22
+import {InterceptKind, parseIntercept, resolveIntercept} from "rakun";
+import {Element, div, h1, p, ul, li, text} from "jhonstart";
+
+pub type Photo(
+    id: string,
+    caption: string,
+)
+
+fn allPhotos() -> Photo[] {
+    return [
+        Photo(id: "1", caption: "a beach"),
+        Photo(id: "2", caption: "a mountain"),
+    ];
+}
+
+fn findPhoto(id: string) -> Photo {
+    val hits = allPhotos().filter({ photo -> photo.id == id });
+    return hits.at(0).unwrapOr(Photo(id: id, caption: "missing"));
+}
+
+// SERVER — the feed.
+#[page("feed")]
+#[@future]
+pub fn feedPage(route: PageContext) -> @Future<Element> {
+    val rows = allPhotos().map({ photo ->
+        li([text(photo.caption, attrs: [])], attrs: []);
+    });
+    return div([
+        h1([text("Feed", attrs: [])], attrs: []),
+        ul(rows, attrs: []),
+    ], attrs: []);
+}
+
+// SERVER — the interception. It claims /feed/photo/[photoId] only when the
+// request carries `x-rakun-nav: soft`, which front 27's router sets on a client
+// navigation. A pasted URL or a reload renders `photoPage` below instead.
+#[page("feed/(.)photo/[photoId]")]
+#[@future]
+pub fn photoModal(route: PageContext) -> @Future<Element> {
+    val id = route.params.lookup("photoId").unwrapOr("");
+    val photo = findPhoto(id);
+    return div([
+        p([text("modal: " + photo.caption, attrs: [])], attrs: []),
+    ], attrs: []);
+}
+
+// SERVER — the full page, which is what a direct request gets.
+#[page("photo/[id]")]
+#[@future]
+pub fn photoPage(route: PageContext) -> @Future<Element> {
+    val id = route.params.lookup("id").unwrapOr("");
+    val photo = findPhoto(id);
+    return div([
+        h1([text(photo.caption, attrs: [])], attrs: []),
+        p([text("photo #" + photo.id, attrs: [])], attrs: []),
+    ], attrs: []);
+}
+
+// BOTH HALVES — marker parsing and resolution carry no host cell.
+
+test "the four marker spellings parse" {
+    val same = parseIntercept("(.)photo").unwrapOr(
+        Intercept(kind: InterceptKind.Root, target: "", raw: ""));
+    val up1 = parseIntercept("(..)photo").unwrapOr(
+        Intercept(kind: InterceptKind.Root, target: "", raw: ""));
+    assert same.kind == InterceptKind.Same;
+    assert same.target == "photo";
+    assert up1.kind == InterceptKind.Up1;
+}
+
+test "a route group is not an interception" {
+    val group = parseIntercept("(marketing)");
+    assert group == null;
+}
+
+test "a marker resolves against the pattern it sits in" {
+    val same = Intercept(kind: InterceptKind.Same, target: "photo", raw: "(.)photo");
+    val up2 = Intercept(kind: InterceptKind.Up2, target: "photo", raw: "(..)(..)photo");
+    assert resolveIntercept(same, "/feed/[id]") == "/feed/[id]/photo";
+    assert resolveIntercept(up2, "/feed/[id]") == "/photo";
+}

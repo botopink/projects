@@ -1,0 +1,216 @@
+// Front 36 — emilia-layout
+//
+// Position and the inset family: five position values, nine inset directions,
+// the spacing scale shared with front 35, fractions, negatives, and z-index.
+//
+// Upstream: https://tailwindcss.com/docs/position
+//           https://tailwindcss.com/docs/top-right-bottom-left
+//           https://tailwindcss.com/docs/z-index
+// Reference: TAILWIND_CSS_DOCS.md § 5.16, § 5.17, § 5.19
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// None of this exists in emilia today: the 1.0.8 draft wrote
+// `.Layout.Position.Absolute` and `.Layout.Inset.0` as if they did. Front 36 is
+// what makes those paths real. Spacing scale from front 35, colours from 33,
+// modifiers from 34.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── position ─────────────────────────────────────────────────────────────────
+
+fn positionValues() -> Token[] {
+    val values: Token[] = [
+        .Layout.Position.Static,
+        .Layout.Position.Relative,
+        .Layout.Position.Absolute,
+        .Layout.Position.Fixed,
+        .Layout.Position.Sticky,
+    ];
+    return values;
+}
+
+// ── the inset directions ─────────────────────────────────────────────────────
+// `All` is the real `inset` shorthand and emits one declaration. `X` and `Y`
+// have no CSS shorthand, so they emit two each — the form § 5.17 prints.
+
+fn insetDirections() -> Token[] {
+    val values: Token[] = [
+        .Layout.Inset.All.0,
+        .Layout.Inset.X.0,
+        .Layout.Inset.Y.0,
+        .Layout.Inset.T.0,
+        .Layout.Inset.R.0,
+        .Layout.Inset.B.0,
+        .Layout.Inset.L.0,
+        .Layout.Inset.S.0,
+        .Layout.Inset.E.0,
+    ];
+    return values;
+}
+
+// The numeric leaves are the spacing scale, so an inset and a padding of the
+// same leaf produce the same length text by construction.
+
+fn insetScale() -> Token[] {
+    val values: Token[] = [
+        .Layout.Inset.T.1,
+        .Layout.Inset.T.4,
+        .Layout.Inset.T.16,
+        .Layout.Inset.T.Px,
+        .Layout.Inset.T.Auto,
+        .Layout.Inset.T.Full,
+        .Layout.Inset.T.Frac.Half,
+    ];
+    return values;
+}
+
+// A negative inset is the `-top-4` form: a `Neg` sub-section under the
+// direction, exactly as `Margin` does it.
+
+fn negativeInsets() -> Token[] {
+    val values: Token[] = [
+        .Layout.Inset.T.Neg.4,
+        .Layout.Inset.R.Neg.2,
+        .Layout.Inset.All.Neg.1,
+    ];
+    return values;
+}
+
+// ── stacking ─────────────────────────────────────────────────────────────────
+// `z-index` takes a bare integer, never a length.
+
+fn stackingValues() -> Token[] {
+    val values: Token[] = [
+        .Layout.Z.0,
+        .Layout.Z.10,
+        .Layout.Z.20,
+        .Layout.Z.30,
+        .Layout.Z.40,
+        .Layout.Z.50,
+        .Layout.Z.Auto,
+    ];
+    return values;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// A panel with a sticky header and a corner badge. The header sticks to the top
+// of a scrolling body and stacks above it; the badge is pulled out of the
+// panel's top-right corner by a negative inset.
+
+#[@future]
+pub fn stickyPanel(heading: string, body: string, badge: string) -> @Future<string> {
+    val shell: Token[] = [
+        .Layout.Position.Relative,
+        .Layout.Overflow.Y.Auto,
+        .Size.MaxH.96,
+        .Bg.Color.White,
+        .Border.Rounded.Lg,
+    ];
+
+    val header: Token[] = [
+        .Layout.Position.Sticky,
+        .Layout.Inset.T.0,
+        .Layout.Z.10,
+        .Bg.Color.White,
+        .Pad.X.4,
+        .Pad.Y.3,
+    ];
+
+    val badgeStyle: Token[] = [
+        .Layout.Position.Absolute,
+        .Layout.Inset.T.Neg.2,
+        .Layout.Inset.R.Neg.2,
+        .Layout.Z.20,
+        .Bg.Color.Rose.500,
+        .Color.White,
+        .Pad.X.2,
+        .Border.Rounded.Full,
+    ];
+
+    val scrim: Token[] = [
+        .Layout.Position.Fixed,
+        .Layout.Inset.All.0,
+        .Layout.Z.0,
+        .Bg.Color.Slate.900,
+    ];
+
+    val shellClass = emilia(shell);
+    val headerClass = emilia(header);
+    val badgeClass = emilia(badgeStyle);
+    val scrimClass = emilia(scrim);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + scrimClass + "\"></div>"
+        + "<div class=\"" + shellClass + "\">"
+        + "<div class=\"" + headerClass + "\">" + heading + "</div>"
+        + "<span class=\"" + badgeClass + "\">" + badge + "</span>"
+        + "<p>" + body + "</p></div>";
+    return styles + markup;
+}
+
+test "the five position values" {
+    val cls = emilia(positionValues());
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{position:static;position:relative;position:absolute"
+        + ";position:fixed;position:sticky}</style>";
+}
+
+test "the axis insets emit two declarations, the shorthand emits one" {
+    val tokens: Token[] = [.Layout.Inset.All.0, .Layout.Inset.X.0, .Layout.Inset.Y.0];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{inset:0;left:0;right:0;top:0;bottom:0}</style>";
+}
+
+test "the logical insets emit inset-inline-start and -end" {
+    val tokens: Token[] = [.Layout.Inset.S.0, .Layout.Inset.E.0];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{inset-inline-start:0;inset-inline-end:0}</style>";
+}
+
+test "inset and padding agree on the length for the same leaf" {
+    val insetTokens: Token[] = [.Layout.Inset.T.4];
+    val insetClass = emilia(insetTokens);
+    val insetStyles = await flush();
+
+    val padTokens: Token[] = [.Pad.T.4];
+    val padClass = emilia(padTokens);
+    val padStyles = await flush();
+
+    assert insetStyles.contains("top:calc(var(--spacing) * 4)");
+    assert padStyles.contains("padding-top:calc(var(--spacing) * 4)");
+}
+
+test "a fractional inset is a percentage" {
+    val tokens: Token[] = [.Layout.Inset.T.Frac.Half];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{top:50%}</style>";
+}
+
+test "a negative inset multiplies by a negative" {
+    val tokens: Token[] = [.Layout.Inset.T.Neg.4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{top:calc(var(--spacing) * -4)}</style>";
+}
+
+test "z-index emits a bare integer" {
+    val cls = emilia(stackingValues());
+    val styles = await flush();
+    assert styles.contains("z-index:0;z-index:10");
+    assert styles.contains("z-index:50;z-index:auto");
+    assert !styles.contains("z-index:calc");
+}
+
+test "the sticky panel pins its header and pulls its badge out of the corner" {
+    val out = await stickyPanel("Activity", "…", "3");
+    assert out.startsWith("<style>");
+    assert out.contains("position:sticky;top:0;z-index:10");
+    assert out.contains("top:calc(var(--spacing) * -2);right:calc(var(--spacing) * -2)");
+    assert out.contains("position:fixed;inset:0");
+}

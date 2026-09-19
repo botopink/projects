@@ -1,0 +1,100 @@
+// Front 49 — onze13 stand-up · examples/integration-example.bp
+//
+// Demonstrates: the three render seams in one file.
+//   1. a page fn takes onze13's `PageProps` and returns a jhonstart `Element`
+//      — this is the value front 23's SSR pipeline consumes;
+//   2. `Params` carries the dynamic segment front 22 extracted from the URL;
+//   3. `renderDocument` builds the tree, then flushes emilia's sheet into the
+//      document head — exactly once, and in that order.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/layouts-and-pages
+//           https://nextjs.org/docs/app/api-reference/file-conventions/page
+//           NEXTJS-DOCS.md § 3. Estrutura do Projeto · § 5. Layouts e Páginas
+//
+// Target: erlang (server) for the render itself. The document this produces is
+// what the browser receives; the client bundle (front 68) reattaches to it and
+// never calls `flush()` — the sheet is a server-side value.
+
+import {Element, div, h1, p, text, renderToString} from "jhonstart";
+import {emilia, flush, Token} from "emilia";
+import {Onze13Config, defaultConfig} from "onze13";
+import {Params, PageProps, LayoutProps, renderDocument, wrapInLayout} from "onze13";
+
+// A page module. onze13 does not discover this fn by magic: `onze13 build`
+// (front 50) walks `app/`, sees `app/blog/[slug]/page.bp`, and emits
+// `registerPage("/blog/:slug", BlogPost)` into `.onze13/routes.bp`. Front 22
+// owns matching `/blog/:slug`; onze13 owns turning what it matched into
+// `PageProps`.
+pub fn BlogPost(props: PageProps) -> Element {
+    val titleTokens: Token[] = [.Text.Size.X2xl, .Text.Bold, .Color.Gray.900];
+    val bodyTokens: Token[] = [.Pad.All.4, .Color.Gray.700];
+    val titleClass = emilia(titleTokens);
+    val bodyClass = emilia(bodyTokens);
+
+    val slug = props.params.param("slug");
+    return div([
+        h1([text("Post: " + slug, attrs: [])], attrs: [#("class", titleClass)]),
+        p([text("Rendered on the server.", attrs: [])], attrs: [#("class", bodyClass)]),
+    ], attrs: []);
+}
+
+// A layout module — `app/blog/layout.bp`. Front 23 asks onze13 for the layout
+// chain above a route; `wrapInLayout` is how one link of that chain is applied.
+pub fn BlogLayout(props: LayoutProps) -> Element {
+    val shellTokens: Token[] = [.Bg.White, .Pad.All.8];
+    val shellClass = emilia(shellTokens);
+    return div([props.children], attrs: [#("class", shellClass)]);
+}
+
+test "a page receives the dynamic segment front 22 extracted" {
+    val props = PageProps(
+        params: Params(entries: [#("slug", "hello-world")]),
+        search: Params(entries: []),
+    );
+    val tree = BlogPost(props);
+    val markup = renderToString(tree);
+    assert markup.contains("Post: hello-world");
+    assert markup.contains("class=\"e_");
+}
+
+test "an absent param reads as empty, never as an error" {
+    val props = PageProps(params: Params(entries: []), search: Params(entries: []));
+    val tree = BlogPost(props);
+    assert renderToString(tree).contains("Post: ");
+}
+
+test "the layout wraps the page, outermost last applied" {
+    val props = PageProps(
+        params: Params(entries: [#("slug", "a")]),
+        search: Params(entries: []),
+    );
+    val page = BlogPost(props);
+    // The layout is passed as a lambda, not as a bare fn name: the generated
+    // manifest does the same, so page and layout references have one spelling
+    // everywhere and nothing depends on a top-level fn being a first-class value.
+    val wrapped = wrapInLayout({ p -> BlogLayout(p) }, page, props.params);
+    val markup = renderToString(wrapped);
+    assert markup.startsWith("<div class=\"e_");
+    assert markup.contains("<h1");
+}
+
+test "renderDocument flushes emilia's sheet into the head, once" {
+    val props = PageProps(
+        params: Params(entries: [#("slug", "css")]),
+        search: Params(entries: []),
+    );
+    val tree = BlogPost(props);
+    val doc = await renderDocument(defaultConfig(), "<title>blog</title>", tree);
+    assert doc.startsWith("<!DOCTYPE html>");
+    assert doc.contains("<style>");
+    assert doc.contains("font-weight:bold");
+    assert doc.contains("Post: css");
+}
+
+test "the sheet is cleared by the flush, so a second document has no styles" {
+    val props = PageProps(params: Params(entries: []), search: Params(entries: []));
+    val first = await renderDocument(defaultConfig(), "", BlogPost(props));
+    val second = await renderDocument(defaultConfig(), "", div([], attrs: []));
+    assert first.contains("font-weight:bold");
+    assert second.contains("<style></style>");
+}

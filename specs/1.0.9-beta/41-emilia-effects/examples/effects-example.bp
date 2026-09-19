@@ -1,0 +1,191 @@
+// Front 41 — emilia effects.
+//
+// The Effect / Blend / Mask catalogue as typed `Token[]` lists, then one photo
+// card that layers a shadow, a blend mode and an opacity under a `Hover`
+// modifier and flushes the sheet.
+//
+// Upstream:
+//   https://tailwindcss.com/docs/box-shadow
+//   https://tailwindcss.com/docs/text-shadow
+//   https://tailwindcss.com/docs/opacity
+//   https://tailwindcss.com/docs/mix-blend-mode
+//   https://tailwindcss.com/docs/mask-clip
+// Reference: TAILWIND_CSS_DOCS.md § 12. Efeitos (values from § 21.4)
+//
+// Spelling reminders, all three real and all three different:
+//   declaration     Opacity { 0, 5, 10, ... }
+//   expression      .Effect.Opacity.60
+//   `case` pattern  __60 -> "opacity:0.6";
+
+import {emilia, flush, Token} from "emilia";
+
+// ── box-shadow ───────────────────────────────────────────────────────────────
+
+val shadowScale: Token[] = [
+    .Effect.Shadow.X2xs,
+    .Effect.Shadow.Xs,
+    .Effect.Shadow.Sm,
+    .Effect.Shadow.Md,
+    .Effect.Shadow.Lg,
+    .Effect.Shadow.Xl,
+    .Effect.Shadow.X2xl,
+];
+
+val shadowEdges: Token[] = [
+    .Effect.Shadow.None,
+    .Effect.Shadow.Inner,
+];
+
+val insetShadows: Token[] = [
+    .Effect.InsetShadow.X2xs,
+    .Effect.InsetShadow.Xs,
+    .Effect.InsetShadow.Sm,
+];
+
+// LANGUAGE GAP: a dot-shorthand path ending in a payload call does not
+// propagate the typed-array context, so `[.Effect.Shadow.Raw("0 0 0 1px red")]`
+// trips the parser. The arbitrary-value escape hatch has to go through a fn.
+fn rawShadow(v: string) -> Token {
+    return Token.Effect.Shadow.Raw(value: v);
+}
+
+val ringLike: Token[] = [rawShadow("0 0 0 1px rgb(0 0 0 / 0.1)")];
+
+// ── text-shadow ──────────────────────────────────────────────────────────────
+//
+// `--text-shadow-*` has no literal anywhere in the reference, so these tokens
+// emit `text-shadow:var(--text-shadow-sm)` verbatim and stay inert until a
+// theme preamble defines the variable. `None` needs no theme.
+
+val textShadows: Token[] = [
+    .Effect.TextShadow.X2xs,
+    .Effect.TextShadow.Xs,
+    .Effect.TextShadow.Sm,
+    .Effect.TextShadow.Md,
+    .Effect.TextShadow.Lg,
+    .Effect.TextShadow.None,
+];
+
+// ── opacity ──────────────────────────────────────────────────────────────────
+
+val opacitySteps: Token[] = [
+    .Effect.Opacity.0,
+    .Effect.Opacity.5,
+    .Effect.Opacity.10,
+    .Effect.Opacity.20,
+    .Effect.Opacity.25,
+    .Effect.Opacity.30,
+    .Effect.Opacity.40,
+    .Effect.Opacity.50,
+    .Effect.Opacity.60,
+    .Effect.Opacity.70,
+    .Effect.Opacity.75,
+    .Effect.Opacity.80,
+    .Effect.Opacity.90,
+    .Effect.Opacity.95,
+    .Effect.Opacity.100,
+];
+
+// ── blend modes ──────────────────────────────────────────────────────────────
+
+val mixBlends: Token[] = [
+    .Blend.Mix.Normal,
+    .Blend.Mix.Multiply,
+    .Blend.Mix.Screen,
+    .Blend.Mix.Overlay,
+    .Blend.Mix.Darken,
+    .Blend.Mix.Lighten,
+    .Blend.Mix.ColorDodge,
+    .Blend.Mix.ColorBurn,
+    .Blend.Mix.HardLight,
+    .Blend.Mix.SoftLight,
+    .Blend.Mix.Difference,
+    .Blend.Mix.Exclusion,
+    .Blend.Mix.Hue,
+    .Blend.Mix.Saturation,
+    .Blend.Mix.Color,
+    .Blend.Mix.Luminosity,
+    .Blend.Mix.PlusLighter,
+];
+
+val bgBlends: Token[] = [
+    .Blend.Bg.Multiply,
+    .Blend.Bg.Screen,
+    .Blend.Bg.Overlay,
+    .Blend.Bg.Luminosity,
+];
+
+// ── masks ────────────────────────────────────────────────────────────────────
+
+val maskBoxes: Token[] = [
+    .Mask.Clip.Border,
+    .Mask.Clip.Padding,
+    .Mask.Clip.Content,
+    .Mask.Origin.Border,
+    .Mask.Origin.Padding,
+    .Mask.Origin.Content,
+];
+
+val maskPaint: Token[] = [
+    .Mask.Composite.Add,
+    .Mask.Composite.Subtract,
+    .Mask.Composite.Intersect,
+    .Mask.Composite.Exclude,
+    .Mask.Mode.Alpha,
+    .Mask.Mode.Luminance,
+    .Mask.Type.Alpha,
+    .Mask.Type.Luminance,
+];
+
+val maskPlacement: Token[] = [
+    .Mask.Image.None,
+    .Mask.Position.Center,
+    .Mask.Repeat.NoRepeat,
+    .Mask.Repeat.Repeat,
+    .Mask.Size.Cover,
+    .Mask.Size.Contain,
+];
+
+fn rawMaskImage(v: string) -> Token {
+    return Token.Mask.Image.Raw(value: v);
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+//
+// A photo card: a raised surface that lifts on hover, a caption image that
+// multiplies into the card behind it, and a fade-out mask on the bottom edge.
+// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `await` it.
+
+fn photoCardTokens() -> Token[] {
+    val lifted: Token[] = [.Effect.Shadow.Xl];
+    val base: Token[] = [
+        .Effect.Shadow.Md,
+        .Effect.Opacity.100,
+        Token.Hover(lifted),
+    ];
+    return base;
+}
+
+fn captionTokens() -> Token[] {
+    val fade = rawMaskImage("linear-gradient(to top, transparent, black 40%)");
+    val caption: Token[] = [
+        .Blend.Mix.Multiply,
+        .Effect.Opacity.90,
+        .Mask.Repeat.NoRepeat,
+        .Mask.Size.Cover,
+        fade,
+    ];
+    return caption;
+}
+
+#[@future]
+pub fn renderPhotoCard() -> @Future<string> {
+    val cardCls = emilia(photoCardTokens());
+    val captionCls = emilia(captionTokens());
+    val styles = await flush();
+    val markup = "<div class=\"" + cardCls + "\">"
+        + "<p class=\"" + captionCls + "\">Lagoa, 1998</p>"
+        + "</div>";
+    return markup + styles;
+}

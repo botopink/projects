@@ -1,0 +1,98 @@
+// Front 74 — rakun TLS: naming the material once and pointing the listener at it.
+//
+// The application never names a file. It names a bundle, and the bundle names the
+// files — which is what makes rotating a certificate one edit instead of five.
+//
+// Server side — every declaration below compiles to BEAM. OTP's `ssl` and
+// `public_key` do the protocol work; this front resolves configuration into an
+// option list and hands it over.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/features/ssl.html
+//   https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.embedded-container.customizing
+//
+// The configuration this file assumes, in application.yaml (front 05 reads it):
+//
+//   rakun:
+//     ssl:
+//       bundle:
+//         pem:
+//           public:
+//             keystore:
+//               certificate: /etc/rakun/tls/fullchain.pem
+//               private-key: /etc/rakun/tls/privkey.pem
+//             protocols: tlsv1.3,tlsv1.2
+//             client-auth: none
+//             reload-on-update: true
+//       health:
+//         warn-threshold: 14
+//     server:
+//       port: 8443
+//       ssl:
+//         bundle: public
+//
+// `sslBundle`, `sslBundleNames`, `sslExpiryDays` and `sslReload` are delivered by
+// this front. `autoConfigure` is front 72; `Rakun.run` already exists.
+
+import {Rakun, App} from "rakun";
+import {autoConfigure} from "rakun";
+import {sslBundle, sslBundleNames, sslExpiryDays, sslReload, SslBundle} from "rakun";
+import {rkProp, rkSetProp, rkSslLastError} from "rakun";
+
+// What an operator's dashboard asks for: one line per bundle, worst first.
+pub fn certificateSummary() -> string {
+    val lines = sslBundleNames().map({ n -> n + "=" + sslExpiryDays(n).toString() + "d" });
+    return lines.join(" ");
+}
+
+fn main() {
+    val _ = autoConfigure();
+    Rakun.run(App(port: 8443, basePath: "/api"));
+}
+
+test "a bundle resolves by name and carries the material the properties named" {
+    var certificate = "";
+    var protocols = "";
+    var clientAuth = "";
+    if (sslBundle("public")) { b ->
+        certificate = b.certificateFile;
+        protocols = b.protocols;
+        clientAuth = b.clientAuth;
+    };
+    assert certificate == "/etc/rakun/tls/fullchain.pem";
+    assert protocols == "tlsv1.3,tlsv1.2";
+    assert clientAuth == "none";
+}
+
+test "an unconfigured name resolves to nothing, and reading it is the optional idiom" {
+    var found = false;
+    if (sslBundle("internal")) { b -> found = true; };
+    assert found == false;
+}
+
+test "the listener's bundle is named by property, not by the application" {
+    assert rkProp("rakun.server.ssl.bundle") == "public";
+}
+
+test "expiry is reported in days and the summary is one line per bundle" {
+    assert sslExpiryDays("public") > 0;
+    assert sslExpiryDays("absent") == 0;
+    assert certificateSummary().contains("public=") == true;
+}
+
+test "a reload that fails keeps the previous material and says why" {
+    val _bad = rkSetProp("rakun.ssl.bundle.pem.public.keystore.private-key", "/etc/rakun/tls/wrong.pem");
+    val reloaded = sslReload("public");
+    assert reloaded == false;
+    assert rkSslLastError("public").contains("private key") == true;
+
+    var stillThere = "";
+    if (sslBundle("public")) { b -> stillThere = b.certificateFile; };
+    assert stillThere == "/etc/rakun/tls/fullchain.pem";
+}
+
+test "a successful reload clears the last error" {
+    val _good = rkSetProp("rakun.ssl.bundle.pem.public.keystore.private-key", "/etc/rakun/tls/privkey.pem");
+    assert sslReload("public") == true;
+    assert rkSslLastError("public") == "";
+}

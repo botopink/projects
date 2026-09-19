@@ -1,0 +1,101 @@
+// Front 72 — rakun auto-configuration: the application author's side.
+//
+// The application declares its own `MailSender`, so the module's default must not
+// be created. It also excludes one configuration outright, and reads the decision
+// table back to see what happened. Every assertion below is about a decision the
+// framework made, not about a value the framework computed — that is what the
+// condition report is for.
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/using/auto-configuration.html#using.auto-configuration.disabling-specific
+//   https://docs.spring.io/spring-boot/reference/actuator/endpoints.html
+//
+// `MailSender` and the two auto-configurations come from
+// ./mail-auto-configuration-example.bp. `autoConfigure` and the report functions
+// are delivered by this front; `#[bean]`, `#[configuration]` and `#[value]`
+// already exist.
+
+import {configuration, bean, value} from "rakun";
+import {autoConfigure, autoConfigureExcept, autoConfigurationReport, isAutoConfigured} from "rakun";
+import {Rakun, App} from "rakun";
+import {MailSender} from "mail_auto_configuration_example";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkPropInt, rkSetProp} from "rakun";
+
+// The application's own sender. An ordinary `#[bean]` — nothing marks it as an
+// override, because "the application declared one" is exactly what
+// `#[conditionalOnMissingBean("MailSender")]` asks about.
+#[configuration]
+pub type MyMailConfig(
+    #[value("app.smtp.host")] host: string,
+) {
+    #[bean]
+    pub fn mailSender(self: Self) -> MailSender {
+        return MailSender(host: self.host, port: 2525);
+    }
+}
+
+fn main() {
+    val _ = autoConfigure();
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+test "the application's bean wins and the module's default is not applied" {
+    val _h = rkSetProp("rakun.mail.host", "smtp.example.org");
+    val _a = rkSetProp("app.smtp.host", "smtp.internal");
+    val _p = rkSetProp("rakun.profiles.active", "prod");
+    val _ = autoConfigure();
+
+    assert isAutoConfigured("RakunMailAutoConfiguration") == true;
+    assert isAutoConfigured("RakunMailAutoConfiguration.mailSender") == false;
+
+    val cfg = MyMailConfig(host: rkProp("app.smtp.host"));
+    assert cfg.mailSender().host == "smtp.internal";
+}
+
+test "an unset property leaves the whole configuration unapplied" {
+    val _h = rkSetProp("rakun.mail.host", "");
+    val _ = autoConfigure();
+    assert isAutoConfigured("RakunMailAutoConfiguration") == false;
+}
+
+test "the report names the first failing condition and the value it saw" {
+    val _h = rkSetProp("rakun.mail.host", "");
+    val _ = autoConfigure();
+    val report = autoConfigurationReport();
+    assert report.contains("RakunMailAutoConfiguration") == true;
+    assert report.contains("P|rakun.mail.host|*") == true;
+    assert report.contains("property is empty") == true;
+}
+
+test "a profile that is not active is reported with the active set as the value" {
+    val _p = rkSetProp("rakun.profiles.active", "prod");
+    val _ = autoConfigure();
+    assert isAutoConfigured("RakunMailDevAutoConfiguration") == false;
+    val report = autoConfigurationReport();
+    assert report.contains("F|dev") == true;
+    assert report.contains("active profiles: prod") == true;
+}
+
+test "exclusion by property and by call reach the same list" {
+    val _h = rkSetProp("rakun.mail.host", "smtp.example.org");
+    val _e = rkSetProp("rakun.autoconfigure.exclude", "RakunMailAutoConfiguration");
+    val _ = autoConfigure();
+    assert isAutoConfigured("RakunMailAutoConfiguration") == false;
+    assert autoConfigurationReport().contains("excluded") == true;
+
+    val _c = rkSetProp("rakun.autoconfigure.exclude", "");
+    val _2 = autoConfigureExcept(["RakunMailAutoConfiguration"]);
+    assert isAutoConfigured("RakunMailAutoConfiguration") == false;
+}
+
+test "applying twice changes nothing" {
+    val _h = rkSetProp("rakun.mail.host", "smtp.example.org");
+    val _e = rkSetProp("rakun.autoconfigure.exclude", "");
+    val first = autoConfigure();
+    val firstReport = autoConfigurationReport();
+    val second = autoConfigure();
+    assert first == second;
+    assert firstReport == autoConfigurationReport();
+}

@@ -1,0 +1,292 @@
+// Front 34 — emilia-modifiers
+//
+// The variant surface: breakpoints both ways, dark mode, interaction and form
+// state, structural position, pseudo-elements, group/peer, direction.
+//
+// Upstream: https://tailwindcss.com/docs/hover-focus-and-other-states
+//           https://tailwindcss.com/docs/responsive-design
+//           https://tailwindcss.com/docs/dark-mode
+// Reference: TAILWIND_CSS_DOCS.md § 3.2 (Referencia Completa de Variantes),
+//            § 3.3 Design Responsivo, § 3.4 Dark Mode
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// Every modifier below is delivered by front 34 except Hover/Focus/Active/Md/Lg/Xl,
+// which exist today and are corrected by this front to the v4.3 spelling.
+// Colour tokens come from front 33; spacing from front 35; typography from front 38.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── breakpoints ──────────────────────────────────────────────────────────────
+// Mobile-first: an unprefixed token applies everywhere, a breakpoint token
+// applies at that width and above. `max-*` is the other direction.
+
+fn breakpointLadder() -> Token[] {
+    val small: Token[] = [.Text.Size.Sm];
+    val medium: Token[] = [.Text.Size.Base];
+    val large: Token[] = [.Text.Size.Lg];
+    val extra: Token[] = [.Text.Size.Xl];
+    val huge: Token[] = [.Text.Size.X2xl];
+    val ladder: Token[] = [
+        Token.Sm(small),
+        Token.Md(medium),
+        Token.Lg(large),
+        Token.Xl(extra),
+        Token.X2xl(huge),
+    ];
+    return ladder;
+}
+
+fn maxBreakpoints() -> Token[] {
+    val hidden: Token[] = [.Layout.Hidden];
+    val ladder: Token[] = [
+        Token.MaxSm(hidden),
+        Token.MaxMd(hidden),
+        Token.MaxLg(hidden),
+        Token.MaxXl(hidden),
+        Token.MaxX2xl(hidden),
+    ];
+    return ladder;
+}
+
+// ── dark mode and the other media variants ───────────────────────────────────
+
+fn mediaVariants() -> Token[] {
+    val dark: Token[] = [.Bg.Color.Slate.900, .Color.Slate.50];
+    val none: Token[] = [.Layout.Hidden];
+    val variants: Token[] = [
+        Token.Dark(dark),
+        Token.Print(none),
+        Token.Portrait(none),
+        Token.Landscape(none),
+        Token.MotionReduce(none),
+        Token.ForcedColors(none),
+    ];
+    return variants;
+}
+
+// ── interaction state ────────────────────────────────────────────────────────
+
+fn interactionStates() -> Token[] {
+    val accent: Token[] = [.Bg.Color.Indigo.700];
+    val ring: Token[] = [.Border.Color.Indigo.500];
+    val states: Token[] = [
+        Token.Hover(accent),
+        Token.Focus(ring),
+        Token.FocusVisible(ring),
+        Token.FocusWithin(ring),
+        Token.Active(accent),
+        Token.Visited(accent),
+        Token.Target(accent),
+    ];
+    return states;
+}
+
+// ── form state ───────────────────────────────────────────────────────────────
+
+fn formStates() -> Token[] {
+    val muted: Token[] = [.Bg.Color.Gray.50, .Color.Gray.400];
+    val bad: Token[] = [.Border.Color.Pink.500];
+    val good: Token[] = [.Border.Color.Emerald.500];
+    val states: Token[] = [
+        Token.Disabled(muted),
+        Token.Required(bad),
+        Token.Invalid(bad),
+        Token.Valid(good),
+        Token.Checked(good),
+        Token.PlaceholderShown(muted),
+        Token.ReadOnly(muted),
+    ];
+    return states;
+}
+
+// ── structural position ──────────────────────────────────────────────────────
+// `Nth` and `NthLast` take the index as an i32 payload beside the token list.
+
+fn structuralStates() -> Token[] {
+    val zeroTop: Token[] = [.Pad.T.0];
+    val zeroBottom: Token[] = [.Pad.B.0];
+    val striped: Token[] = [.Bg.Color.Gray.50];
+    val marked: Token[] = [.Text.Underline];
+    val states: Token[] = [
+        Token.First(zeroTop),
+        Token.Last(zeroBottom),
+        Token.Odd(striped),
+        Token.Even(striped),
+        Token.Only(zeroTop),
+        Token.Empty(zeroTop),
+        Token.Nth(index: 3, inner: marked),
+        Token.NthLast(index: 5, inner: marked),
+    ];
+    return states;
+}
+
+// ── pseudo-elements ──────────────────────────────────────────────────────────
+// `Before`/`After` need `Text.Content.*`, which front 38 delivers.
+
+fn pseudoElements() -> Token[] {
+    val star: Token[] = [.Text.Content.Empty, .Color.Red.500];
+    val faint: Token[] = [.Color.Gray.400];
+    val picked: Token[] = [.Bg.Color.Fuchsia.300, .Color.Fuchsia.900];
+    val bullets: Token[] = [.Color.Sky.400];
+    val elements: Token[] = [
+        Token.After(star),
+        Token.Before(star),
+        Token.Placeholder(faint),
+        Token.Selection(picked),
+        Token.Marker(bullets),
+        Token.FirstLetter(star),
+        Token.FirstLine(faint),
+    ];
+    return elements;
+}
+
+// ── parent and sibling state ─────────────────────────────────────────────────
+// emilia does not emit `.group` or `.peer`: the markup carries those class names
+// and the modifier only writes the selector that looks for them.
+
+fn relationalStates() -> Token[] {
+    val reveal: Token[] = [.Color.White];
+    val warn: Token[] = [.Layout.Visibility.Visible];
+    val states: Token[] = [
+        Token.GroupHover(reveal),
+        Token.GroupFocus(reveal),
+        Token.GroupDisabled(reveal),
+        Token.PeerHover(warn),
+        Token.PeerFocus(warn),
+        Token.PeerInvalid(warn),
+        Token.PeerChecked(warn),
+    ];
+    return states;
+}
+
+// ── direction and descent ────────────────────────────────────────────────────
+
+fn directionStates() -> Token[] {
+    val left: Token[] = [.Margin.L.3];
+    val right: Token[] = [.Margin.R.3];
+    val pill: Token[] = [.Border.Rounded.Full];
+    val states: Token[] = [
+        Token.Ltr(left),
+        Token.Rtl(right),
+        Token.Children(pill),
+        Token.Descendants(pill),
+    ];
+    return states;
+}
+
+// LANGUAGE GAP: an arbitrary variant — `[&.is-dragging]:`, `supports-[display:grid]:`,
+// `aria-checked:`, `data-[size=large]:`, `has-[…]:` — needs a modifier that carries
+// a raw selector string. A top-level payload variant carrying a `string` DOES
+// construct today, so this is a library gap rather than a compiler one; the
+// escape-hatch front owns `Token.Variant(selector: string, inner: Token[])`.
+// Front 34 ships no such variant.
+
+// ── the component ────────────────────────────────────────────────────────────
+// A navigation bar: hidden under `sm`, a row from `md` up, dark-mode surface,
+// hover and focus-visible states on the links, and a first/last rule that trims
+// the outer padding.
+
+#[@future]
+pub fn navBar(primary: string, secondary: string) -> @Future<string> {
+    val darkSurface: Token[] = [.Bg.Color.Slate.900, .Color.Slate.100];
+    val rowFromMd: Token[] = [.Flex.Row];
+    val hiddenUnderSm: Token[] = [.Layout.Hidden];
+
+    val shell: Token[] = [
+        .Layout.Flex,
+        .Flex.Col,
+        .Bg.Color.White,
+        .Color.Slate.800,
+        Token.Md(rowFromMd),
+        Token.Dark(darkSurface),
+        Token.MaxSm(hiddenUnderSm),
+    ];
+
+    val hoverAccent: Token[] = [.Color.Indigo.600];
+    val focusRing: Token[] = [.Border.Color.Indigo.500];
+    val trimFirst: Token[] = [.Pad.L.0];
+    val trimLast: Token[] = [.Pad.R.0];
+
+    val link: Token[] = [
+        .Pad.X.3,
+        .Color.Slate.700,
+        Token.Hover(hoverAccent),
+        Token.FocusVisible(focusRing),
+        Token.First(trimFirst),
+        Token.Last(trimLast),
+    ];
+
+    val shellClass = emilia(shell);
+    val linkClass = emilia(link);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + shellClass + "\">"
+        + "<span class=\"" + linkClass + "\">" + primary + "</span>"
+        + "<span class=\"" + linkClass + "\">" + secondary + "</span>"
+        + "</div>";
+    return styles + markup;
+}
+
+test "breakpoints emit the v4.3 rem queries" {
+    val cls = emilia(breakpointLadder());
+    val styles = await flush();
+    assert styles.contains("@media (width >= 40rem){font-size:var(--text-sm)}");
+    assert styles.contains("@media (width >= 96rem){font-size:var(--text-2xl)}");
+}
+
+test "max breakpoints emit the width-less-than form" {
+    val cls = emilia(maxBreakpoints());
+    val styles = await flush();
+    assert styles.contains("@media (width < 40rem){display:none}");
+    assert styles.contains("@media (width < 96rem){display:none}");
+}
+
+test "dark mode is a prefers-color-scheme query" {
+    val inner: Token[] = [.Bg.Color.Slate.900];
+    val tokens: Token[] = [Token.Dark(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{@media (prefers-color-scheme: dark){background-color:var(--color-slate-900)}}</style>";
+}
+
+test "hover is media-guarded and ampersand-anchored" {
+    val inner: Token[] = [.Text.Bold];
+    val tokens: Token[] = [Token.Hover(inner)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{@media (hover: hover){&:hover{font-weight:bold}}}</style>";
+}
+
+test "an indexed structural variant carries its index into the selector" {
+    val marked: Token[] = [.Text.Underline];
+    val tokens: Token[] = [Token.Nth(index: 3, inner: marked)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.contains("&:nth-child(3){text-decoration-line:underline}");
+}
+
+test "marker and selection keep the space before the double colon" {
+    val bullets: Token[] = [.Color.Sky.400];
+    val tokens: Token[] = [Token.Marker(bullets)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.contains("& ::marker{color:var(--color-sky-400)}");
+}
+
+test "a group variant looks for the group class without emitting it" {
+    val reveal: Token[] = [.Color.White];
+    val tokens: Token[] = [Token.GroupHover(reveal)];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.contains("&:is(:where(.group):hover *){color:var(--color-white)}");
+}
+
+test "the nav bar carries its breakpoint, dark and state blocks" {
+    val out = await navBar("Docs", "Blog");
+    assert out.startsWith("<style>");
+    assert out.contains("@media (width >= 48rem){flex-direction:row}");
+    assert out.contains("@media (prefers-color-scheme: dark){");
+    assert out.contains("&:first-child{padding-left:0}");
+}

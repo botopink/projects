@@ -1,0 +1,246 @@
+// Front 35 — emilia-spacing-sizing
+//
+// The `Size` section: width, height, the square `size-*` form, fractions,
+// viewport units, intrinsic sizes, min and max, and the logical inline/block
+// pair.
+//
+// Upstream: https://tailwindcss.com/docs/width
+//           https://tailwindcss.com/docs/height
+//           https://tailwindcss.com/docs/max-width
+// Reference: TAILWIND_CSS_DOCS.md § 8. Dimensionamento (8.1-8.7)
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// The whole `Size` section is delivered by front 35 — emilia has no width token
+// of any kind today. Colours come from front 33, modifiers from front 34.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── width ────────────────────────────────────────────────────────────────────
+// The numeric scale is the spacing scale; the keyword leaves are their own.
+
+fn widthForms() -> Token[] {
+    val widths: Token[] = [
+        .Size.W.0,
+        .Size.W.4,
+        .Size.W.64,
+        .Size.W.Px,
+        .Size.W.Full,
+        .Size.W.Auto,
+        .Size.W.Min,
+        .Size.W.Max,
+        .Size.W.Fit,
+    ];
+    return widths;
+}
+
+// A fraction is not a valid leaf, so it is named. `Frac.Third` is Tailwind's
+// `w-1/3` and emits six decimal places, the way § 8.1 prints it.
+
+fn fractionalWidths() -> Token[] {
+    val widths: Token[] = [
+        .Size.W.Frac.Half,
+        .Size.W.Frac.Third,
+        .Size.W.Frac.TwoThirds,
+    ];
+    return widths;
+}
+
+// The viewport units differ by axis: width takes `vw`, height takes `vh`, and
+// the small/large/dynamic variants follow the same split.
+
+fn viewportSizes() -> Token[] {
+    val sizes: Token[] = [
+        .Size.W.Screen,
+        .Size.W.Svw,
+        .Size.W.Lvw,
+        .Size.W.Dvw,
+        .Size.H.Screen,
+        .Size.H.Svh,
+        .Size.H.Lvh,
+        .Size.H.Dvh,
+    ];
+    return sizes;
+}
+
+// ── height ───────────────────────────────────────────────────────────────────
+
+fn heightForms() -> Token[] {
+    val heights: Token[] = [
+        .Size.H.0,
+        .Size.H.10,
+        .Size.H.Frac.Half,
+        .Size.H.Full,
+        .Size.H.Min,
+        .Size.H.Max,
+        .Size.H.Fit,
+        .Size.H.Auto,
+    ];
+    return heights;
+}
+
+// ── the square form ──────────────────────────────────────────────────────────
+// `size-12` sets both axes from one leaf, so one token emits two declarations.
+
+fn squareSizes() -> Token[] {
+    val squares: Token[] = [
+        .Size.Both.12,
+        .Size.Both.Full,
+    ];
+    return squares;
+}
+
+// ── min and max ──────────────────────────────────────────────────────────────
+// `MaxW` carries the named container widths as well as the scale, and a
+// `Screen` sub-section for the breakpoint-sized maxima.
+
+fn boundedWidths() -> Token[] {
+    val bounds: Token[] = [
+        .Size.MinW.0,
+        .Size.MinW.Full,
+        .Size.MinW.Fit,
+        .Size.MaxW.None,
+        .Size.MaxW.Xs,
+        .Size.MaxW.Md,
+        .Size.MaxW.X3xl,
+        .Size.MaxW.X7xl,
+        .Size.MaxW.Full,
+        .Size.MaxW.Screen.Lg,
+        .Size.MaxW.Screen.X2xl,
+    ];
+    return bounds;
+}
+
+fn boundedHeights() -> Token[] {
+    val bounds: Token[] = [
+        .Size.MinH.0,
+        .Size.MinH.Screen,
+        .Size.MinH.Dvh,
+        .Size.MinH.Fit,
+        .Size.MaxH.None,
+        .Size.MaxH.Full,
+        .Size.MaxH.Screen,
+    ];
+    return bounds;
+}
+
+// ── logical sizes ────────────────────────────────────────────────────────────
+// The writing-mode-relative pair: `inline-size` is width in horizontal writing,
+// `block-size` is height.
+
+fn logicalSizes() -> Token[] {
+    val sizes: Token[] = [
+        .Size.Inline.4,
+        .Size.MinInline.Full,
+        .Size.MaxInline.Md,
+        .Size.Block.4,
+        .Size.MinBlock.Full,
+        .Size.MaxBlock.Full,
+    ];
+    return sizes;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// An article shell: a full-bleed header, a centred column capped at `max-w-3xl`,
+// and a sidebar that is a third of the column on wide screens and full width
+// below. Four classes, one flush.
+
+#[@future]
+pub fn articleShell(title: string, body: string, aside: string) -> @Future<string> {
+    val header: Token[] = [
+        .Size.W.Full,
+        .Size.H.64,
+        .Bg.Color.Slate.900,
+        .Color.Slate.50,
+        .Pad.X.6,
+    ];
+
+    val column: Token[] = [
+        .Size.MaxW.X3xl,
+        .Size.W.Full,
+        .Margin.X.Auto,
+        .Pad.X.6,
+        .Pad.Y.10,
+    ];
+
+    val thirdOnWide: Token[] = [.Size.W.Frac.Third];
+    val sidebar: Token[] = [
+        .Size.W.Full,
+        .Size.MinH.Dvh,
+        .Pad.All.4,
+        Token.Lg(thirdOnWide),
+    ];
+
+    val headerClass = emilia(header);
+    val columnClass = emilia(column);
+    val sidebarClass = emilia(sidebar);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + headerClass + "\">" + title + "</div>"
+        + "<div class=\"" + columnClass + "\">" + body + "</div>"
+        + "<div class=\"" + sidebarClass + "\">" + aside + "</div>";
+    return styles + markup;
+}
+
+test "width takes the spacing scale and the keyword leaves" {
+    val cls = emilia(widthForms());
+    val styles = await flush();
+    assert styles.contains("width:0;width:calc(var(--spacing) * 4)");
+    assert styles.contains("width:100%");
+    assert styles.contains("width:min-content;width:max-content;width:fit-content");
+}
+
+test "a fraction keeps six decimal places" {
+    val cls = emilia(fractionalWidths());
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{width:50%;width:33.333333%;width:66.666667%}</style>";
+}
+
+test "the viewport unit follows the axis" {
+    val cls = emilia(viewportSizes());
+    val styles = await flush();
+    assert styles.contains("width:100vw");
+    assert styles.contains("width:100dvw");
+    assert styles.contains("height:100vh");
+    assert styles.contains("height:100dvh");
+}
+
+test "the square form emits both axes from one token" {
+    val tokens: Token[] = [.Size.Both.12];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{width:calc(var(--spacing) * 12);height:calc(var(--spacing) * 12)}</style>";
+}
+
+test "the named max widths match the reference table" {
+    val tokens: Token[] = [.Size.MaxW.Xs, .Size.MaxW.Md, .Size.MaxW.X3xl, .Size.MaxW.X7xl];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{max-width:20rem;max-width:28rem;max-width:48rem;max-width:80rem}</style>";
+}
+
+test "the breakpoint-sized maxima live under Screen" {
+    val tokens: Token[] = [.Size.MaxW.Screen.Lg, .Size.MaxW.Screen.X2xl];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{max-width:64rem;max-width:96rem}</style>";
+}
+
+test "the logical pair emits inline-size and block-size" {
+    val cls = emilia(logicalSizes());
+    val styles = await flush();
+    assert styles.contains("inline-size:calc(var(--spacing) * 4)");
+    assert styles.contains("max-inline-size:28rem");
+    assert styles.contains("block-size:calc(var(--spacing) * 4)");
+    assert styles.contains("max-block-size:100%");
+}
+
+test "the article shell centres a capped column and narrows its sidebar" {
+    val out = await articleShell("Release notes", "…", "On this page");
+    assert out.startsWith("<style>");
+    assert out.contains("max-width:48rem");
+    assert out.contains("margin-left:auto;margin-right:auto");
+    assert out.contains("@media (width >= 64rem){width:33.333333%}");
+}

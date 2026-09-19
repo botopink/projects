@@ -1,0 +1,266 @@
+// F01 — Layout Example
+// Demonstrates: display, position, overflow, visibility, z-index, float, clear,
+// isolation, object-fit, object-position, aspect-ratio, columns, break-*
+//
+// Docs: https://tailwindcss.com/docs/display
+//       https://tailwindcss.com/docs/position
+//       https://tailwindcss.com/docs/overflow
+//       https://tailwindcss.com/docs/visibility
+//       https://tailwindcss.com/docs/z-index
+//       https://tailwindcss.com/docs/float
+//       https://tailwindcss.com/docs/object-fit
+//       https://tailwindcss.com/docs/aspect-ratio
+
+import { emilia, flush, Token } from "emilia";
+import { div, p, renderToString } from "jhonstart";
+
+// Display utilities
+val displayTokens: Token[] = [
+    .Layout.Block,
+    .Layout.InlineBlock,
+    .Layout.Inline,
+    .Layout.Flex,
+    .Layout.InlineFlex,
+    .Layout.Grid,
+    .Layout.InlineGrid,
+    .Layout.Contents,
+    .Layout.FlowRoot,
+    .Layout.Hidden,
+];
+val displayStyles = emilia(displayTokens);
+
+// Position utilities
+val positionTokens: Token[] = [
+    .Layout.Position.Static,
+    .Layout.Position.Relative,
+    .Layout.Position.Absolute,
+    .Layout.Position.Fixed,
+    .Layout.Position.Sticky,
+];
+val positionStyles = emilia(positionTokens);
+
+// Overflow utilities
+val overflowTokens: Token[] = [
+    .Layout.Overflow.Auto,
+    .Layout.Overflow.Hidden,
+    .Layout.Overflow.Clip,
+    .Layout.Overflow.Visible,
+    .Layout.Overflow.Scroll,
+    .Layout.OverflowX.Auto,
+    .Layout.OverflowY.Scroll,
+];
+val overflowStyles = emilia(overflowTokens);
+
+// Z-index utilities
+val zIndexTokens: Token[] = [
+    .Layout.Z.__0,
+    .Layout.Z.__10,
+    .Layout.Z.__20,
+    .Layout.Z.__30,
+    .Layout.Z.__40,
+    .Layout.Z.__50,
+    .Layout.Z.Auto,
+];
+val zIndexStyles = emilia(zIndexTokens);
+
+// Float and clear utilities
+val floatTokens: Token[] = [
+    .Layout.Float.Right,
+    .Layout.Float.Left,
+    .Layout.Float.None,
+];
+val floatStyles = emilia(floatTokens);
+
+val clearTokens: Token[] = [
+    .Layout.Clear.Left,
+    .Layout.Clear.Right,
+    .Layout.Clear.Both,
+    .Layout.Clear.None,
+];
+val clearStyles = emilia(clearTokens);
+
+// Isolation utilities
+val isolationTokens: Token[] = [
+    .Layout.Isolation.Isolate,
+    .Layout.Isolation.Auto,
+];
+val isolationStyles = emilia(isolationTokens);
+
+// Object-fit and object-position utilities
+val objectTokens: Token[] = [
+    .Layout.ObjectFit.Contain,
+    .Layout.ObjectFit.Cover,
+    .Layout.ObjectFit.Fill,
+    .Layout.ObjectFit.None,
+    .Layout.ObjectFit.ScaleDown,
+    .Layout.ObjectPosition.Center,
+    .Layout.ObjectPosition.Top,
+    .Layout.ObjectPosition.Bottom,
+    .Layout.ObjectPosition.Left,
+    .Layout.ObjectPosition.Right,
+];
+val objectStyles = emilia(objectTokens);
+
+// Aspect-ratio utilities
+val aspectTokens: Token[] = [
+    .Layout.Aspect.Auto,
+    .Layout.Aspect.Square,
+    .Layout.Aspect.Video,
+];
+val aspectStyles = emilia(aspectTokens);
+
+// Columns utilities
+val columnsTokens: Token[] = [
+    .Layout.Columns.__1,
+    .Layout.Columns.__2,
+    .Layout.Columns.__3,
+    .Layout.Columns.__4,
+    .Layout.Columns.__6,
+    .Layout.Columns.__12,
+    .Layout.Columns.Auto,
+];
+val columnsStyles = emilia(columnsTokens);
+
+// Break utilities
+val breakTokens: Token[] = [
+    .Layout.BreakAfter.Auto,
+    .Layout.BreakAfter.Avoid,
+    .Layout.BreakAfter.All,
+    .Layout.BreakAfter.Page,
+    .Layout.BreakBefore.Auto,
+    .Layout.BreakBefore.Avoid,
+    .Layout.BreakInside.Auto,
+    .Layout.BreakInside.Avoid,
+    .Layout.BreakInside.AvoidPage,
+    .Layout.BreakInside.AvoidColumn,
+];
+val breakStyles = emilia(breakTokens);
+
+// Box-decoration-break and box-sizing
+val boxTokens: Token[] = [
+    .Layout.BoxDecoration.Clone,
+    .Layout.BoxDecoration.Slice,
+    .Layout.BoxSizing.Border,
+    .Layout.BoxSizing.Content,
+];
+val boxStyles = emilia(boxTokens);
+
+// Visibility utilities
+val visibilityTokens: Token[] = [
+    .Layout.Visibility.Visible,
+    .Layout.Visibility.Hidden,
+    .Layout.Visibility.Collapse,
+];
+val visibilityStyles = emilia(visibilityTokens);
+
+// Top/Right/Bottom/Left positioning
+val insetTokens: Token[] = [
+    .Layout.Top.__0,
+    .Layout.Top.__4,
+    .Layout.Top.Auto,
+    .Layout.Right.__0,
+    .Layout.Right.__4,
+    .Layout.Bottom.__0,
+    .Layout.Bottom.__4,
+    .Layout.Left.__0,
+    .Layout.Left.__4,
+    .Layout.Inset.__0,
+    .Layout.Inset.__4,
+];
+val insetStyles = emilia(insetTokens);
+
+val page = div([
+    p([], []),
+], []);
+
+#[@future]
+fn main() -> @Future<void> {
+    @print("=== F01: Layout Example ===");
+    @print("Display: " + displayStyles);
+    @print("Position: " + positionStyles);
+    @print("Overflow: " + overflowStyles);
+    @print("Z-Index: " + zIndexStyles);
+    @print("Float: " + floatStyles);
+    @print("Clear: " + clearStyles);
+    @print("Isolation: " + isolationStyles);
+    @print("Object: " + objectStyles);
+    @print("Aspect: " + aspectStyles);
+    @print("Columns: " + columnsStyles);
+    @print("Break: " + breakStyles);
+    @print("Box: " + boxStyles);
+    @print("Visibility: " + visibilityStyles);
+    @print("Inset: " + insetStyles);
+    @print(renderToString(page));
+    @print(await flush());
+}
+
+// Tests
+test "display utilities generate correct CSS" {
+    val tokens: Token[] = [.Layout.Flex];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("display:flex") != -1;
+}
+
+test "position utilities generate correct CSS" {
+    val tokens: Token[] = [.Layout.Position.Absolute];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("position:absolute") != -1;
+}
+
+test "overflow utilities generate correct CSS" {
+    val tokens: Token[] = [.Layout.Overflow.Hidden];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("overflow:hidden") != -1;
+}
+
+test "z-index utilities generate correct CSS" {
+    val tokens: Token[] = [.Layout.Z.__50];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("z-index:50") != -1;
+}
+
+test "float utilities generate correct CSS" {
+    val tokens: Token[] = [.Layout.Float.Right];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("float:right") != -1;
+}
+
+test "object-fit utilities generate correct CSS" {
+    val tokens: Token[] = [.Layout.ObjectFit.Cover];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("object-fit:cover") != -1;
+}
+
+test "aspect-ratio utilities generate correct CSS" {
+    val tokens: Token[] = [.Layout.Aspect.Video];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("aspect-ratio:16/9") != -1;
+}
+
+test "columns utilities generate correct CSS" {
+    val tokens: Token[] = [.Layout.Columns.__3];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("columns:3") != -1;
+}
+
+test "visibility utilities generate correct CSS" {
+    val tokens: Token[] = [.Layout.Visibility.Hidden];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("visibility:hidden") != -1;
+}
+
+test "inset utilities generate correct CSS" {
+    val tokens: Token[] = [.Layout.Inset.__0];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.indexOf("inset:0") != -1;
+}

@@ -1,0 +1,197 @@
+// Front 79 — rakun OAuth2 and SSO · service-token-and-ldap-example.bp
+//
+// Demonstrates: the two halves of this front that no browser takes part in.
+// A service calling another service with a client-credentials token it never
+// names, and username/password authentication against a directory over OTP's
+// `eldap`, registered into front 10's authentication manager.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/data/nosql.html#data.nosql.ldap
+//           05-data.md § LDAP
+//           06-messaging.md § Apache Pulsar · Autenticacao OAuth2 (the same grant)
+//
+// SERVER SIDE. `eldap` and `public_key` both ship with OTP, so neither half adds
+// a dependency to the release.
+
+import {configuration, bean, value, service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp} from "rakun";
+
+import {ClientRegistration, clientCredentials, TokenSet} from "rakun-security";
+import {registerClient, accessToken} from "rakun-security";
+import {LdapDirectory, LdapOutcome, ldapAuthentication, authenticate, canBind} from "rakun-security";
+import {Principal} from "rakun-security";
+// The in-process fixtures this front ships for its own tests.
+import {fixtureTokenRequestCount, fixtureDirectory, ldapOpenHandles} from "rakun-security";
+// Front 13's blocking client. Front 11's health value.
+import {RestClient} from "rakun-client";
+import {Health, healthIndicator, healthUp, healthDown} from "rakun-actuator";
+
+// ---- half one: a token for the call this service makes -----------------------
+//
+// A registration with the client-credentials grant. There is no user here and no
+// browser; the service authenticates as itself.
+
+#[configuration]
+pub type BillingClientConfig(
+    #[value("rakun.security.oauth2.billing.client-id")] clientId: string,
+    #[value("rakun.security.oauth2.billing.client-secret")] clientSecret: string,
+    #[value("rakun.security.oauth2.billing.token-uri")] tokenUri: string,
+) {
+    #[bean]
+    pub fn billingRegistration(self: Self) -> ClientRegistration {
+        val scopes = ["invoices:write"];
+        return ClientRegistration(
+            id: "billing-api",
+            clientId: self.clientId,
+            clientSecret: self.clientSecret,
+            tokenUri: self.tokenUri,
+            scopes: scopes,
+            refreshMarginSeconds: 30,
+        );
+    }
+}
+
+// `#[clientCredentials("billing-api")]` emits the interceptor that attaches a
+// bearer token to every call this client makes, refreshing it when less than
+// `refreshMarginSeconds` remain. The body below mentions no token, no header and
+// no expiry — which is the point: a token that appears in application code is a
+// token that ends up in a log line.
+
+#[service]
+pub type Invoicing(
+    #[clientCredentials("billing-api")] billing: RestClient,
+) {
+    pub fn raise(self: Self, orderId: string, cents: i32) -> string {
+        val body = "{\"order\":\"" + orderId + "\",\"cents\":" + cents.toString() + "}";
+        return self.billing.post("/invoices", body);
+    }
+}
+
+// ---- half two: authenticating against a directory ----------------------------
+//
+// Bind as the service account, search for the user, then bind as the found DN
+// with the supplied password. `userDnPattern` short-circuits the search when the
+// directory's DNs are formulaic; an empty pattern means "always search".
+
+#[configuration]
+#[ldapAuthentication]
+pub type DirectoryConfig(
+    #[value("rakun.security.ldap.urls")] urls: string,
+    #[value("rakun.security.ldap.bind-dn")] bindDn: string,
+    #[value("rakun.security.ldap.bind-password")] bindPassword: string,
+) {
+    #[bean]
+    pub fn directory(self: Self) -> LdapDirectory {
+        return LdapDirectory(
+            urls: self.urls,
+            bindDn: self.bindDn,
+            bindPassword: self.bindPassword,
+            userDnPattern: "",
+            searchBase: "ou=people,dc=example,dc=org",
+            searchFilter: "(uid={0})",
+            groupAttribute: "memberOf",
+            timeoutMs: 3000,
+        );
+    }
+
+    // Front 11 collects every `#[healthIndicator]` bean into `/actuator/health`.
+    // The indicator binds as the service account and reads nothing, so a DOWN
+    // answer means the directory is unreachable or the service account is wrong —
+    // and its detail map carries neither DN nor password. `self.directory()` is
+    // called rather than injected: an `LdapDirectory` is an immutable value, the
+    // second call yields an equal one, and `canBind` opens and closes its own
+    // handle either way.
+    #[bean]
+    #[healthIndicator("ldap")]
+    pub fn directoryHealth(self: Self) -> Health {
+        val dir = self.directory();
+        val reachable = canBind(dir);
+        return if (reachable) healthUp("ldap") else healthDown("ldap", "bind failed");
+    }
+}
+
+// The three outcomes are distinct on purpose. Front 10's authentication manager
+// must not treat `Unavailable` as `Rejected`: a directory that is down is not a
+// wrong password, and answering 401 for it locks every user out of an
+// application whose credentials were all correct.
+
+#[service]
+pub type SignIn(
+    directory: LdapDirectory,
+) {
+    pub fn describe(self: Self, user: string, password: string) -> string {
+        val outcome = authenticate(self.directory, user, password);
+        val label = case outcome {
+            Authenticated(principal) -> "ok:" + principal.subject;
+            Rejected(reason) -> "rejected:" + reason;
+            Unavailable(reason) -> "unavailable:" + reason;
+        };
+        return label;
+    }
+}
+
+// ---- what these two halves guarantee -----------------------------------------
+
+test "a cold token source fetches once for concurrent callers" {
+    val scopes = ["invoices:write"];
+    val reg = ClientRegistration(
+        id: "fixture-cc",
+        clientId: "svc",
+        clientSecret: "s3cret",
+        tokenUri: "http://127.0.0.1:19080/oauth2/token",
+        scopes: scopes,
+        refreshMarginSeconds: 30,
+    );
+    registerClient(reg);
+    val before = fixtureTokenRequestCount();
+    val a = accessToken("fixture-cc");
+    val b = accessToken("fixture-cc");
+    val c = accessToken("fixture-cc");
+    assert a == b;
+    assert b == c;
+    assert fixtureTokenRequestCount() - before == 1;
+}
+
+test "a wrong password and a missing user are indistinguishable" {
+    val dir = fixtureDirectory();
+    val wrongPassword = authenticate(dir, "ana", "not-her-password");
+    val noSuchUser = authenticate(dir, "nobody", "anything");
+    val a = case wrongPassword {
+        Authenticated(principal) -> "ok";
+        Rejected(reason) -> reason;
+        Unavailable(reason) -> "unavailable";
+    };
+    val b = case noSuchUser {
+        Authenticated(principal) -> "ok";
+        Rejected(reason) -> reason;
+        Unavailable(reason) -> "unavailable";
+    };
+    assert a == b;
+}
+
+test "an unreachable directory is unavailable, not a rejection" {
+    val dead = LdapDirectory(
+        urls: "ldap://127.0.0.1:1",
+        bindDn: "cn=svc,dc=example,dc=org",
+        bindPassword: "s3cret",
+        userDnPattern: "",
+        searchBase: "ou=people,dc=example,dc=org",
+        searchFilter: "(uid={0})",
+        groupAttribute: "memberOf",
+        timeoutMs: 200,
+    );
+    val outcome = authenticate(dead, "ana", "s3cret");
+    val label = case outcome {
+        Authenticated(principal) -> "ok";
+        Rejected(reason) -> "rejected";
+        Unavailable(reason) -> "unavailable";
+    };
+    assert label == "unavailable";
+}
+
+test "every handle opened is closed" {
+    val dir = fixtureDirectory();
+    val before = ldapOpenHandles();
+    val ok = authenticate(dir, "ana", "s3cret");
+    val bad = authenticate(dir, "ana", "wrong");
+    assert ldapOpenHandles() == before;
+}

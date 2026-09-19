@@ -1,0 +1,75 @@
+// Front 62 — Rakun Request Context
+//
+// What this demonstrates: the `React.cache` analogue. One `getPost` is called by
+// both `generateMetadata` and the page, and the record is loaded once per request;
+// the preload pattern starts a load before the blocking work that precedes it.
+// Server code: all of it runs on the BEAM.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/fetching-data#reusing-data-with-react-cache
+//   https://nextjs.org/docs/app/api-reference/functions/generate-metadata
+//   https://nextjs.org/docs/app/guides/lazy-loading
+
+import {memoize, memoKey, preload} from "rakun";
+import {page, PageContext} from "rakun";          // provided by front 22
+import {Metadata} from "jhonstart";               // provided by front 32
+import {Element, div, h1, p, text} from "jhonstart";
+
+pub type Post(
+    slug: string,
+    title: string,
+    author: string,
+)
+
+// SERVER — stands in for the database read. In a real app this is a
+// `#[repository]` method from front 08.
+fn loadPost(slug: string) -> Post {
+    return Post(slug: slug, title: "Post " + slug, author: "ana");
+}
+
+fn loadRelatedCount(slug: string) -> i32 {
+    return slug.length();
+}
+
+// SERVER — the memoized reader. Every caller in one request shares one load.
+// A second request loads again: this is request scope, not a cache. Caching
+// across requests is front 12.
+pub fn getPost(slug: string) -> Post {
+    val key = memoKey("getPost", [slug]);
+    return memoize(key, { ->
+        loadPost(slug);
+    });
+}
+
+// SERVER — metadata for the route. This runs before the page body and loads
+// the post; the page below calls `getPost` again and gets the stored value.
+pub fn postMetadata(route: PageContext) -> Metadata {
+    val slug = route.params.lookup("slug").unwrapOr("");
+    val post = getPost(slug);
+    return Metadata(title: post.title, description: "by " + post.author);
+}
+
+#[page("blog/[slug]")]
+#[@future]
+pub fn blogPostPage(route: PageContext) -> @Future<Element> {
+    val slug = route.params.lookup("slug").unwrapOr("");
+
+    // The preload: start the related-count load in its own BEAM process before
+    // the blocking read below. `@Future` is eager on erlang, so a future gives
+    // no parallelism here — the spawned process does.
+    val relatedKey = memoKey("relatedCount", [slug]);
+    val _started = preload(relatedKey, { ->
+        loadRelatedCount(slug);
+    });
+
+    val post = getPost(slug);
+    val related = memoize(relatedKey, { ->
+        loadRelatedCount(slug);
+    });
+
+    return div([
+        h1([text(post.title, attrs: [])], attrs: []),
+        p([text("by " + post.author, attrs: [])], attrs: []),
+        p([text("related: " + related.toString(), attrs: [])], attrs: []),
+    ], attrs: []);
+}

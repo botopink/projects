@@ -1,0 +1,129 @@
+// Front 17 — rakun-logging · example 1 of 1
+//
+// Levelled, structured logging with fields; a correlation id that spans a
+// handler and the service under it; and a failure logged with a digest that is
+// the only part of the error allowed to reach the browser.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/features/logging.html
+//           (03-recursos-principais.md § Logging)
+//           https://nextjs.org/docs/app/getting-started/error-handling  (error.digest)
+//
+// Target: erlang (server). Every record here goes to OTP `logger`; front 31
+// owns the browser half of the digest and nothing in this file compiles for it.
+
+import {service, repository, restController, route, getMapping, postMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+// Provided by front 17.
+import {Logger, Level, logger, correlationId, withCorrelationId} from "rakun-logging";
+import {errorDigest, logErrorWithDigest} from "rakun-logging";
+
+// ── one logger per module, named like the module ────────────────────────────
+//
+// The name is what `rakun.logging.level.*` resolves against, longest prefix
+// wins: `rakun.logging.level.app.billing` turns this one up without touching
+// anything else, and `/actuator/loggers` can do the same at run time.
+
+val log = logger("app.billing.invoices");
+
+#[repository]
+pub type InvoiceRepo {
+    pub fn find(self: Self, id: string) -> string {
+        return "";
+    }
+
+    pub fn charge(self: Self, id: string, cents: i32) -> i32 {
+        return 0;
+    }
+}
+
+#[service]
+pub type InvoiceService(
+    repo: InvoiceRepo,
+) {
+    // Fields go in the field list, not into the sentence. A structured log whose
+    // values are interpolated into the message is an unstructured log that costs
+    // more to produce.
+    pub fn charge(self: Self, invoiceId: string, cents: i32) -> i32 {
+        val _start = log.infoWith("charging invoice", [
+            #("invoice.id", invoiceId),
+            #("invoice.amount_cents", cents.toString()),
+        ]);
+
+        val result = self.repo.charge(invoiceId, cents);
+
+        // `isEnabled` first, so the expensive message is never built for a level
+        // that is off. The correlation id is already on the record — it does not
+        // have to be passed down, because front 62 keeps it on the request
+        // process and this service is running on that process.
+        if (log.isEnabled(Level.Debug)) {
+            val detail = "gateway result=" + result.toString() + " trace=" + correlationId();
+            val _d = log.debug(detail);
+        };
+
+        if (result != 0) {
+            val _w = log.warnWith("charge declined", [
+                #("invoice.id", invoiceId),
+                #("gateway.code", result.toString()),
+            ]);
+        };
+
+        return result;
+    }
+}
+
+// ── the handler, and the boundary ───────────────────────────────────────────
+
+#[restController]
+#[route("/api/invoices")]
+pub type InvoiceController(
+    invoices: InvoiceService,
+) {
+    #[getMapping("/:id")]
+    pub fn show(self: Self, req: Request) -> Response {
+        // No id is passed in: the request already carries one, taken from
+        // `traceparent` or `x-request-id` if the caller sent one and generated
+        // otherwise. Every record below shares it.
+        val _seen = log.infoWith("invoice requested", [#("invoice.id", req.param("id"))]);
+        return Response.json(self.invoices.repo.find(req.param("id")));
+    }
+
+    #[postMapping("/:id/charge")]
+    pub fn charge(self: Self, req: Request) -> Response {
+        val invoiceId = req.param("id");
+        val result = self.invoices.charge(invoiceId, 1999);
+        if (result == 0) {
+            return Response.json("{\"status\":\"ok\"}");
+        };
+
+        // The failure path. `logErrorWithDigest` writes ONE error record holding
+        // the full message and frames, and returns the digest. The digest is
+        // derived from the source — module, error class, message, top frames —
+        // and from nothing request-specific, so the same fault produces the same
+        // digest on every node and across restarts of this build.
+        //
+        // The response carries the digest and nothing else. That is the rule:
+        // the digest is the only part of a server error that crosses to the
+        // client. Front 31 renders it in the error boundary; an operator greps
+        // for it and finds the full record.
+        val digest = logErrorWithDigest(
+            log,
+            "app.billing.invoices",
+            "gateway_declined",
+            "charge declined for invoice " + invoiceId + " with code " + result.toString(),
+            "InvoiceService.charge/2 InvoiceRepo.charge/2 rakun.core.router.dispatch/1",
+        );
+        return Response.withStatus(500, "{\"digest\":\"" + digest + "\"}");
+    }
+}
+
+// ── carrying the id into background work ────────────────────────────────────
+//
+// A worker started by a request is a different process, so it does not inherit
+// the request's id. `withCorrelationId` hands it over, which is what keeps a
+// retry three seconds later greppable alongside the request that caused it.
+
+pub fn retryLater(invoiceId: string, traceId: string) -> i32 {
+    val _bound = withCorrelationId(traceId);
+    return log.infoWith("scheduled retry", [#("invoice.id", invoiceId)]);
+}

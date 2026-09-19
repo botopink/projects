@@ -1,0 +1,101 @@
+// Front 16 — rakun-scheduling · example 1 of 1
+//
+// One service with all three trigger kinds. The scheduled methods share their
+// instance with the rest of the application — the emitted registration goes
+// through the same `__rkMake_` singleton factory an HTTP handler does — so a
+// task and a controller see the same state.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/io/quartz.html
+//           (07-io.md § Quartz Scheduler)
+//
+// Target: erlang (server). Each task is a timer process under rakun's
+// supervision tree; a run is a fresh process, not a slot in a thread pool.
+
+import {service, repository, restController, route, getMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+// Provided by front 16. #[scheduler] splices the registrations into THIS module,
+// and they call the schedule seams, so those must resolve here.
+import {scheduler, scheduled, fixedRate, fixedDelay} from "rakun-scheduling";
+import {rkScheduleCron, rkScheduleFixedRate, rkScheduleFixedDelay, rkRunTaskNow} from "rakun-scheduling";
+// `time` is std and already exists: libs/std/src/time.bp:56,92.
+import {time} from "std";
+
+#[repository]
+pub type SessionRepo {
+    pub fn deleteExpired(self: Self, beforeMillis: i64) -> i32 {
+        return 0;
+    }
+
+    pub fn count(self: Self) -> i32 {
+        return 0;
+    }
+}
+
+// ── the tasks ───────────────────────────────────────────────────────────────
+//
+// `#[service]` makes it a managed singleton; `#[scheduler]` walks its methods
+// and emits one registration per trigger marker. A method may carry exactly one
+// trigger and must take nothing but `self` — a scheduler has no argument to give
+// it, and a parameter that would never be filled is refused at comptime.
+
+#[service]
+#[scheduler]
+pub type HousekeepingService(
+    sessions: SessionRepo,
+    #[value("app.housekeeping.retention-millis")]
+    retentionMillis: i32,
+) {
+    // Six fields: second minute hour day month weekday. On the hour, every hour.
+    // The expression is compiled and checked while this file compiles, so a typo
+    // is a build failure rather than a task that silently never fires.
+    //
+    // `rakun.scheduling.pruneSessions.cron` overrides it at boot without a
+    // rebuild; an unparseable override refuses the boot with the key named.
+    #[scheduled("0 0 * * * *")]
+    pub fn pruneSessions(self: Self) -> i32 {
+        val cutoff = time.nowMillis() - self.retentionMillis;
+        return self.sessions.deleteExpired(cutoff);
+    }
+
+    // Every five seconds measured from the previous START. If a run takes longer
+    // than five seconds it queues against itself — which is why the default
+    // overlap policy is `skip`, and why the `missed` counter exists.
+    #[fixedRate(5000)]
+    pub fn heartbeat(self: Self) -> i32 {
+        return self.sessions.count();
+    }
+
+    // Thirty seconds after the previous FINISH. This is the one to reach for
+    // when a run's duration varies and overlapping runs would be a data race.
+    #[fixedDelay(30000)]
+    pub fn compact(self: Self) -> i32 {
+        return 0;
+    }
+}
+
+// ── the same instance, from HTTP ────────────────────────────────────────────
+//
+// The controller injects `HousekeepingService` by type and gets the singleton
+// the scheduler is calling. There is no second copy and no second lifecycle.
+
+#[restController]
+#[route("/api/housekeeping")]
+pub type HousekeepingController(
+    housekeeping: HousekeepingService,
+) {
+    #[getMapping("/heartbeat")]
+    pub fn heartbeat(self: Self, req: Request) -> Response {
+        return Response.json("{\"sessions\":" + self.housekeeping.heartbeat().toString() + "}");
+    }
+}
+
+// ── running one out of band ─────────────────────────────────────────────────
+//
+// `rkRunTaskNow` executes a registered task once and records the run. It is what
+// the test suite uses instead of sleeping, and what `POST /actuator/scheduledtasks/
+// {name}/run` calls behind front 11's access control.
+
+pub fn pruneNow() -> i32 {
+    return rkRunTaskNow("HousekeepingService.pruneSessions");
+}

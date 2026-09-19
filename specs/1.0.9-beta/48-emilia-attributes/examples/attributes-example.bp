@@ -1,0 +1,217 @@
+// Front 48 — emilia attributes and the jhonstart slot.
+//
+// A card component whose elements carry emilia tokens through the attribute
+// slot, built with the jhonstart builders; the same markup through the
+// `html """..."""` DSL; the static-class merge; and the no-space rule shown as
+// the form that works.
+//
+// Upstream:
+//   https://tailwindcss.com/docs/styling-with-utility-classes
+//   https://nextjs.org/docs/app/getting-started/css
+// Reference: TAILWIND_CSS_DOCS.md § 3. Conceitos Fundamentais
+//
+// THE CONTRACT THIS FILE DEMONSTRATES:
+//   class = "e_" + djb2hex(tokensToCss(tokens))
+//   - a pure function of the token list, in author order
+//   - nothing else enters the hash
+//   - a static class merges BEFORE the emilia class, one ASCII space
+//   - the rule body must be ASCII, or the JS and erlang hashes diverge
+// The server renders this class into the HTML on BEAM; the client recomputes
+// it in JavaScript during hydration. If the two disagree, the page flashes.
+
+// From emilia: the slot (front 48), the DSL bridge (front 48), and the surface
+// that already exists today.
+import {styled, styledWith, className, cls, clsWith, flush, Token} from "emilia";
+
+// From jhonstart: the element builders and the html DSL that exist today, plus
+// the attribute plumbing this front adds. `bracketPair` is imported because the
+// html DSL lowers every `[name]={expr}` attribute to a call to it, resolved in
+// the CALLER's scope.
+import {
+    Element,
+    div,
+    span,
+    p,
+    h1,
+    text,
+    html,
+    bracketPair,
+    renderToString,
+} from "jhonstart";
+import {classAttr, withAttrs, attrValue} from "jhonstart";
+
+// ── the token lists, in named functions ──────────────────────────────────────
+//
+// Token lists live in functions rather than inline for two reasons, and both
+// are load-bearing. First, the `[class]={...}` hole in the html DSL may not
+// contain a space, so an inline array literal cannot go there. Second, the
+// server and the client must build the SAME list in the SAME order: one shared
+// function guarantees that, two inline copies do not.
+
+fn cardTokens() -> Token[] {
+    val hovered: Token[] = [.Effect.Shadow.Lg];
+    val card: Token[] = [
+        .Bg.White,
+        .Pad.All.4,
+        .Border.Rounded.Lg,
+        .Effect.Shadow.Md,
+        .Transition.Shadow,
+        .Transition.Duration.200,
+        Token.Hover(hovered),
+    ];
+    return card;
+}
+
+fn cardTitleTokens() -> Token[] {
+    val title: Token[] = [
+        .Text.Bold,
+        .Text.Size.Lg,
+        .Color.Gray.900,
+    ];
+    return title;
+}
+
+fn cardBodyTokens() -> Token[] {
+    val body: Token[] = [
+        .Color.Gray.700,
+        .Margin.Y.2,
+    ];
+    return body;
+}
+
+fn cardBadgeTokens() -> Token[] {
+    val badge: Token[] = [
+        .Bg.Blue.100,
+        .Color.Blue.700,
+        .Pad.X.2,
+        .Border.Rounded.Full,
+        .Text.Size.Xs,
+    ];
+    return badge;
+}
+
+// ── the slot, through the builders ───────────────────────────────────────────
+//
+// `styled(tokens)` is `#("class", emilia(tokens))` — the tuple drops straight
+// into any builder's `attrs:`. Every constructor call needs `attrs:` written
+// out, inner ones included: declared parameter defaults are never applied.
+
+pub fn CardBuilt() -> Element {
+    return div([
+            h1([text("Pedido #4821", attrs: [])], attrs: [styled(cardTitleTokens())]),
+            p([text("Entregue em 12 de setembro.", attrs: [])], attrs: [styled(cardBodyTokens())]),
+            span([text("pago", attrs: [])], attrs: [styled(cardBadgeTokens())]),
+        ], attrs: [styled(cardTokens())]);
+}
+
+// ── the static-class merge ───────────────────────────────────────────────────
+//
+// `styledWith(base, tokens)` puts the static class FIRST and the emilia class
+// second, separated by one ASCII space. The order is fixed because
+// `class="card e_1f3a9b"` and `class="e_1f3a9b card"` are the same CSS and two
+// different attribute strings, and a hydrator comparing strings sees two
+// different values.
+//
+// The base is passed through unchanged: no sorting, no de-duplication, no
+// trimming of interior spaces.
+
+pub fn CardWithLegacyClass() -> Element {
+    return div([
+            text("integra com a folha de estilos antiga", attrs: []),
+        ], attrs: [styledWith("legacy-card", cardTokens())]);
+}
+
+// ── mixing emilia with other attributes ──────────────────────────────────────
+//
+// `withAttrs` appends: base first, extra second, order preserved.
+// `renderToString` writes attributes in array order, so the attribute order in
+// the rendered tag is the array order — which is the fifth way the two halves
+// can disagree, and the reason there is one append function instead of a
+// convention.
+
+pub fn CardWithId() -> Element {
+    val base: Array<#(string, string)> = [#("id", "card-4821")];
+    val attrs = withAttrs(base, [styled(cardTokens())]);
+    return div([text("com id", attrs: [])], attrs: attrs);
+}
+
+// ── the same markup through the html DSL ─────────────────────────────────────
+//
+// The DSL's `[name]={expr}` attribute reaches `attrs` and resolves `expr` in
+// THIS scope. `cls(tokens)` returns the class name as a bare string, which is
+// exactly what the hole wants.
+//
+// THE NO-SPACE RULE. `html.bp` splits a tag's body on " " before parsing
+// attributes, so a hole containing a space is lexed as several attributes and
+// fails with a parse error carrying no line number. This does NOT work:
+//
+//     html """<div [class]={cls([.Text.Bold, .Color.Black])}>hi</div>"""
+//
+// Bind the value first. That is what the `val`s below are for, and it is also
+// why the token lists live in zero-argument functions.
+
+pub fn CardTemplated() -> Element {
+    val card = cls(cardTokens());
+    val title = cls(cardTitleTokens());
+    val body = cls(cardBodyTokens());
+    return html """<div [class]={card}><h1 [class]={title}>Pedido #4821</h1><p [class]={body}>Entregue em 12 de setembro.</p></div>""";
+}
+
+// The merge is available to the DSL too, under the same no-space rule.
+pub fn CardTemplatedWithLegacyClass() -> Element {
+    val card = clsWith("legacy-card", cardTokens());
+    return html """<div [class]={card}><p>integra com a folha antiga</p></div>""";
+}
+
+// ── the round trip ───────────────────────────────────────────────────────────
+//
+// One component, two authoring styles, one rendered string. A component may
+// move between builders and the DSL without changing the HTML the server
+// ships — which is what makes the two halves' agreement checkable rather than
+// hoped for.
+
+pub fn assertSameMarkup() -> bool {
+    val card = cls(cardTokens());
+    val built = div([p([text("hi", attrs: [])], attrs: [])], attrs: [classAttr(card)]);
+    val templated = html """<div [class]={card}><p>hi</p></div>""";
+    return renderToString(built) == renderToString(templated);
+}
+
+// Reading the class back out of a built tree: `attrValue` returns "" for an
+// absent name rather than `?string`, so no optional handling is needed at the
+// call site and none of it reaches a comptime body.
+
+pub fn cardClassOf(e: Element) -> string {
+    return attrValue(e.attrs, "class");
+}
+
+// ── order is identity ────────────────────────────────────────────────────────
+//
+// `tokensToCss` joins in list order, so reordering the tokens produces a
+// different rule body and therefore a different class. Both halves must build
+// the same list in the same order. This is the clause a shared token function
+// satisfies and two inline copies do not.
+
+pub fn orderChangesTheClass() -> bool {
+    val a: Token[] = [.Text.Bold, .Color.Black];
+    val b: Token[] = [.Color.Black, .Text.Bold];
+    return className(a) != className(b);
+}
+
+// ── the page ─────────────────────────────────────────────────────────────────
+//
+// The server render: build the tree, render it, flush the sheet, ship both.
+// The client does the same `emilia()` calls during hydration and gets the same
+// class names; its own `register` writes into a sheet it never flushes, because
+// the server already shipped the <style> block.
+//
+// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `await` it.
+
+#[@future]
+pub fn renderCardPage() -> @Future<string> {
+    val page = CardBuilt();
+    val markup = renderToString(page);
+    val styles = await flush();
+    return "<!doctype html><html><head>" + styles + "</head><body>" + markup + "</body></html>";
+}

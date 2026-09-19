@@ -1,0 +1,136 @@
+// Front 02 — std async primitives · parallel-fetch-example.bp
+//
+// A server-rendered dashboard that issues its three reads together instead of
+// one after another, renders without the optional widgets when they are down,
+// and puts a time budget on a slow dependency.
+//
+// Upstream: NEXTJS-DOCS.md § 9. Busca de Dados (Fetching)
+//           https://nextjs.org/docs/app/getting-started/fetching-data
+//           https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
+//
+// SERVER SIDE. This runs on the erlang target with the rest of the render half.
+// The `*Of` combinators take UNSTARTED tasks — `{ -> fetchBody(url) }` closures
+// rather than `fetchBody(url)` calls — because `@Future<T>` lowers eagerly on
+// erlang: a future that is already a value cannot be run in parallel with
+// anything. See the README's Mechanism section.
+
+import {async, http, time} from "std";
+
+// One read. An ordinary `#[@future]` fn: a live Promise on commonJS, an
+// already-resolved value on erlang.
+#[@future]
+fn fetchBody(url: string) -> @Future<string> {
+    val resp = await http.fetch(url);
+    return resp.body;
+}
+
+// The three reads the dashboard cannot render without. `allOf` starts all three
+// and answers them in input order; if any one fails the whole page fails, which
+// is what we want for required data.
+//
+// LANGUAGE GAP: no array destructuring in a binding — `val [users, posts, stats]
+// = parts;` does not parse. Read positionally with `.at(i).unwrapOr(…)`.
+#[@future]
+pub fn dashboardBody() -> @Future<string> {
+    val parts = await async.allOf([
+        { -> fetchBody("https://api.example.com/users") },
+        { -> fetchBody("https://api.example.com/posts") },
+        { -> fetchBody("https://api.example.com/stats") },
+    ]);
+    val users = parts.at(0).unwrapOr("");
+    val posts = parts.at(1).unwrapOr("");
+    val stats = parts.at(2).unwrapOr("");
+    return users + posts + stats;
+}
+
+// Two optional widgets from two independent services. `settleOf` never fails:
+// each element is an `@Result`, so the page renders whichever answered.
+#[@future]
+pub fn widgetStrip() -> @Future<string> {
+    val settled = await async.settleOf([
+        { -> fetchBody("https://a.example.com/widget") },
+        { -> fetchBody("https://b.example.com/widget") },
+    ]);
+    val answered = settled.filter({ r -> r.isOk() });
+    return answered.map({ r -> r.unwrapOr("") }).join("");
+}
+
+// Two mirrors of the same asset, first ANSWER wins — not first in the list.
+// `raceOf` can make that promise because the tasks are unstarted when it
+// receives them; the future-surface `race` cannot, and no server function here
+// uses it.
+#[@future]
+pub fn fastestMirror() -> @Future<string> {
+    return await async.raceOf([
+        { -> fetchBody("https://mirror-a.example.com/asset") },
+        { -> fetchBody("https://mirror-b.example.com/asset") },
+    ]);
+}
+
+// A report service that is sometimes slow. Two seconds is the page's whole
+// budget for it; past that the section renders a placeholder and the page still
+// ships. The task keeps running — there is no cancellation in botopink today.
+#[@future]
+pub fn reportSection() -> @Future<string> {
+    val answered = await async.timeout(
+        { -> fetchBody("https://slow.example.com/report") },
+        2000,
+        "",
+    );
+    return answered.unwrapOr("<p>report unavailable</p>");
+}
+
+// The whole page: the required reads and the optional ones, all started
+// together. Four tasks, one round trip's worth of latency.
+#[@future]
+pub fn renderDashboard() -> @Future<string> {
+    val sections = await async.allOf([
+        { -> dashboardBody() },
+        { -> widgetStrip() },
+        { -> reportSection() },
+    ]);
+    return sections.join("");
+}
+
+// ── tests ────────────────────────────────────────────────────────────────────
+// `delay` is the instrument: without a future of known duration there is no way
+// to tell a concurrent `allOf` from a sequential map.
+
+test "allOf answers input order, not completion order" {
+    val out = await async.allOf([
+        { -> async.delay(60, "a") },
+        { -> async.delay(20, "b") },
+        { -> async.delay(40, "c") },
+    ]);
+    assert out.join(",") == "a,b,c";
+}
+
+test "allOf runs its tasks concurrently" {
+    val start = time.nowMillis();
+    val out = await async.allOf([
+        { -> async.delay(60, "a") },
+        { -> async.delay(60, "b") },
+        { -> async.delay(60, "c") },
+    ]);
+    val elapsed = time.nowMillis() - start;
+    assert out.length == 3;
+    assert elapsed < 150;
+}
+
+test "raceOf answers the fastest task" {
+    val first = await async.raceOf([
+        { -> async.delay(80, "slow") },
+        { -> async.delay(10, "fast") },
+    ]);
+    assert first == "fast";
+}
+
+test "settleOf keeps one slot per input and never fails" {
+    val settled = await async.settleOf([
+        { -> async.delay(10, "ok") },
+        { -> async.failed("down") },
+    ]);
+    assert settled.length == 2;
+    assert settled.at(0).map({ r -> r.isOk() }).unwrapOr(false);
+    assert settled.at(1).map({ r -> r.isError() }).unwrapOr(false);
+}

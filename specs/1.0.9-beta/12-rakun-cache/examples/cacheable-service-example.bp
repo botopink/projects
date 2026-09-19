@@ -1,0 +1,129 @@
+// Front 12 — rakun-cache · example 1 of 2
+//
+// The Spring entry point. A `#[cached]` behavior gets a caching twin synthesized
+// from its own method annotations, and a `#[bean]` makes that twin the
+// implementation every component is injected with. Nothing in the controller or
+// the service knows a cache exists.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/io/caching.html
+//           (07-io.md § Caching — @Cacheable / @CacheEvict / CacheManager)
+//
+// Target: erlang (server). Every declaration in this file compiles to BEAM.
+
+import {service, configuration, bean, restController, route, getMapping, postMapping} from "rakun";
+import {Request, Response} from "rakun";
+// The component decorators splice their wiring INTO this module, so the runtime
+// fns that wiring calls must resolve here.
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute, rkProp} from "rakun";
+// Provided by front 12. `#[cached]` splices the twin type and its factory into
+// this module too, and the twin's body calls the store cells — same rule.
+import {cached, cacheable, cacheEvict} from "rakun-cache";
+import {cacheThrough, cachePolicy, cacheLife, CacheScope, cacheKey} from "rakun-cache";
+import {rkCacheEnabled, rkCacheLookup, rkCachePut, rkCacheEvict, rkCacheClear} from "rakun-cache";
+
+// ── the contract ────────────────────────────────────────────────────────────
+//
+// `#[cached]` reflects these signatures and emits, into this module:
+//
+//     type CachedProductCatalog(inner: ProductCatalog) implement ProductCatalog { … }
+//     pub fn cachedProductCatalog(inner: ProductCatalog) -> ProductCatalog
+//
+// `productJson` and `listJson` go through the "products" cache; `reprice`
+// delegates first and then clears it. `slugFor` carries no annotation, so the
+// twin passes it straight through and never touches the store.
+
+#[cached]
+pub behavior ProductCatalog {
+    #[cacheable("products")]
+    fn productJson(self: Self, id: string) -> string;
+
+    #[cacheable("products")]
+    fn listJson(self: Self, page: string) -> string;
+
+    #[cacheEvict("products", true)]
+    fn reprice(self: Self, id: string, body: string) -> string;
+
+    fn slugFor(self: Self, id: string) -> string;
+}
+
+// ── the real implementation ─────────────────────────────────────────────────
+//
+// An ordinary `#[service]`. It has no idea it will be wrapped; the only thing
+// caching asks of it is that the cached methods return `string`.
+
+#[service]
+pub type SqlProductCatalog(
+    #[value("app.catalog.currency")]
+    currency: string,
+) implement ProductCatalog {
+    pub fn productJson(self: Self, id: string) -> string {
+        return "{\"id\":\"" + id + "\",\"currency\":\"" + self.currency + "\"}";
+    }
+
+    pub fn listJson(self: Self, page: string) -> string {
+        return "{\"page\":\"" + page + "\",\"items\":[]}";
+    }
+
+    pub fn reprice(self: Self, id: string, body: string) -> string {
+        return "{\"id\":\"" + id + "\",\"repriced\":true,\"body\":\"" + body + "\"}";
+    }
+
+    pub fn slugFor(self: Self, id: string) -> string {
+        return "product-" + id;
+    }
+}
+
+// ── the wiring ──────────────────────────────────────────────────────────────
+//
+// This is the whole of it. `#[configuration]` emits `__rkMake_ProductCatalog()`
+// from the bean's RETURN TYPE, so every component below that declares a field of
+// type `ProductCatalog` is handed the caching twin. Delete the `cachedProductCatalog`
+// call and the application runs uncached with no other edit.
+
+#[configuration]
+pub type CatalogConfig(
+    real: SqlProductCatalog,
+) {
+    #[bean]
+    pub fn productCatalog(self: Self) -> ProductCatalog {
+        return cachedProductCatalog(self.real);
+    }
+}
+
+// ── the consumer ────────────────────────────────────────────────────────────
+
+#[restController]
+#[route("/api/products")]
+pub type ProductController(
+    catalog: ProductCatalog,
+) {
+    #[getMapping("/:id")]
+    pub fn show(self: Self, req: Request) -> Response {
+        return Response.json(self.catalog.productJson(req.param("id")));
+    }
+
+    #[getMapping("/")]
+    pub fn index(self: Self, req: Request) -> Response {
+        val page = req.query("page");
+        val wanted = if (page == "") { "1" } else { page };
+        return Response.json(self.catalog.listJson(wanted));
+    }
+
+    // Writes clear the cache. `#[cacheEvict("products", true)]` runs AFTER the
+    // delegate returns, so a failing write leaves the cached reads alone.
+    #[postMapping("/:id/price")]
+    pub fn reprice(self: Self, req: Request) -> Response {
+        return Response.json(self.catalog.reprice(req.param("id"), req.body()));
+    }
+}
+
+// ── reaching the same store by hand ─────────────────────────────────────────
+//
+// The decorator is sugar, not a second cache. This computes the key the twin
+// would compute for `productJson("7")` and reads the row the twin wrote.
+
+pub fn peekCachedProduct(id: string) -> string {
+    val key = cacheKey("products", ["productJson", id]);
+    val hit = rkCacheLookup("shared", "products", key);
+    return hit.unwrapOr("");
+}

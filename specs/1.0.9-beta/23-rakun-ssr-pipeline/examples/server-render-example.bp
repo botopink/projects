@@ -1,0 +1,164 @@
+// Front 23 — rakun SSR pipeline.
+//
+// A page that loads its data on the server and renders to HTML there. Everything
+// in this file except the last two tests runs on BEAM: `loadPost`, `loadComment`,
+// the page function and the escaping walker are server code. The only thing that
+// reaches the browser is the markup and the payload the last test inspects.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/layouts-and-pages
+//   https://nextjs.org/docs/app/getting-started/server-and-client-components
+//   https://nextjs.org/docs/app/api-reference/file-conventions/loading
+//
+// LANGUAGE GAP: a `#[@future]` fn cannot `await` inside a `loop` or a `.map`
+// closure, so `commentList` collects thunks and awaits them once through front
+// 02's `async.all`. With per-closure effect context it would be a plain
+// `ids.map({ id -> await loadComment(id) })`.
+// LANGUAGE GAP: `@Future<T>` lowers eagerly on erlang, so the type carries no
+// concurrency on the server target; the thunk list below is the shape that does.
+// LANGUAGE GAP: declared parameter defaults are never applied, so every element
+// constructor below passes `attrs:` explicitly.
+
+import {Element, bracketPair, div, h1, p, ul, li, text} from "jhonstart";
+// `page` + `PageContext` come from front 22; `renderNode`, `raw`, `Payload` and
+// `writePayload` are this front's surface.
+import {page, PageContext, rkAppRegisterPage} from "rakun";
+import {renderNode, raw, Payload, writePayload} from "rakun";
+import {dict} from "std";
+// `async.all` is front 02; `escape.html` / `escape.attribute`, which `renderNode`
+// calls, are new in front 01.
+import {async} from "std";
+
+type Post(
+    title: string,
+    body: string,
+)
+
+// ---- server-only loaders ------------------------------------------------------
+//
+// These run on BEAM inside the request scope opened by front 62. A loader is an
+// ordinary `#[@future]` fn; nothing marks it "server" because nothing else can
+// reach it — the client bundle is built from the `'use client'` graph only
+// (front 68).
+
+#[@future]
+fn loadPost(slug: string) -> @Future<Post> {
+    return Post(
+        title: "Hello, <world> & good morning",
+        body: "This paragraph was rendered by the BEAM, not by a browser.",
+    );
+}
+
+#[@future]
+fn loadComment(id: string) -> @Future<string> {
+    return "comment " + id;
+}
+
+// Sibling server components resolve concurrently. The loop builds UNSTARTED
+// thunks, never futures: `@Future<T>` lowers eagerly on erlang
+// (`libs/std/src/http.bp:16-18`), so an already-started future has already run
+// and gathering a list of them is sequential at full latency. Concurrency on the
+// server comes from front 02 spawning a BEAM process per thunk.
+#[@future]
+fn commentList(ids: string[]) -> @Future<Element> {
+    var tasks: Array<fn() -> @Future<string>> = [];
+    loop (ids) { id ->
+        tasks.push({ -> loadComment(id) });
+    };
+    val bodies = await async.all(tasks);
+    val items = bodies.map({ b -> li([text(b, attrs: [])], attrs: []) });
+    return ul(items, attrs: [bracketPair("data-onze-seg", "comments")]);
+}
+
+// ---- app/blog/[slug]/page.bp --------------------------------------------------
+
+#[page("blog/[slug]")]
+#[@future]
+pub fn postPage(route: PageContext) -> @Future<Element> {
+    // `postPageParams` is emitted by `#[page]` from its own segment argument
+    // (front 22, step 6). Visible under `botopink test` and `botopink build`;
+    // `botopink check` skips decorator invocation and reports it unbound.
+    val params = postPageParams(route);
+    val post = await loadPost(params.slug);
+    val comments = await commentList(["1", "2"]);
+    return div([
+        h1([text(post.title, attrs: [])], attrs: []),
+        p([text(post.body, attrs: [])], attrs: []),
+        comments,
+    ], attrs: [bracketPair("data-onze-seg", "post")]);
+}
+
+fn routeFor(slug: string) -> PageContext {
+    return PageContext(
+        pathname: "/blog/" + slug,
+        pattern: "/blog/[slug]",
+        params: dict.empty().insert("slug", slug),
+        query: dict.empty(),
+        rest: [],
+    );
+}
+
+// ---- what the server actually writes ------------------------------------------
+
+test "the page renders the data its loader fetched on the server" {
+    val el = await postPage(routeFor("hello"));
+    val markup = renderNode(el);
+    assert markup.contains("rendered by the BEAM");
+    assert markup.contains("<li>comment 1</li>");
+    assert markup.contains("<li>comment 2</li>");
+}
+
+test "text is escaped on the way into the document" {
+    val el = await postPage(routeFor("hello"));
+    val markup = renderNode(el);
+    assert markup.contains("&lt;world&gt; &amp; good morning");
+    assert markup.contains("<world>") == false;
+}
+
+test "a script tag in page data cannot become a script tag in the page" {
+    val hostile = h1([text("<script>alert(1)</script>", attrs: [])], attrs: []);
+    val markup = renderNode(hostile);
+    assert markup == "<h1>&lt;script&gt;alert(1)&lt;/script&gt;</h1>";
+}
+
+test "attribute values are escaped as well as text" {
+    val el = div([text("x", attrs: [])], attrs: [bracketPair("data-title", "a \" b")]);
+    val markup = renderNode(el);
+    assert markup.contains("&quot;");
+    assert markup.contains("=\"a \" b\"") == false;
+}
+
+test "raw is the one documented way past the escaper" {
+    assert renderNode(raw("<b>ok</b>")) == "<b>ok</b>";
+}
+
+// ---- the payload the client reconnects to -------------------------------------
+
+fn samplePayload(query: string) -> Payload {
+    return Payload(
+        build: "b_4f9c2a17",
+        pathname: "/blog/hello",
+        pattern: "/blog/[slug]",
+        params: "slug=hello",
+        query: query,
+        table: "L|/||\nP|/||\nL|/blog||\nP|/blog/[slug]||",
+        islands: [],
+        actions: [],
+        styles: "e_1a2b3c",
+        holes: [],
+        dynamic: false,
+    );
+}
+
+test "the payload names its version first and carries the route table verbatim" {
+    val json = writePayload(samplePayload(""));
+    assert json.startsWith("{\"v\":1");
+    assert json.contains("slug=hello");
+    assert json.contains("P|/blog/[slug]||");
+}
+
+test "a payload cannot close the script block that carries it" {
+    val json = writePayload(samplePayload("q=</script><script>alert(1)</script>"));
+    assert json.contains("</script>") == false;
+    assert json.contains("\\u003c");
+}

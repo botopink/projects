@@ -1,0 +1,132 @@
+// Front 13 — rakun-client · example 1 of 2
+//
+// A service that calls a partner API. One builder, two terminal operations —
+// `retrieve()` blocks, `retrieveFuture()` returns `@Future` — and a cached GET
+// that writes into front 12's store rather than a cache of its own.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/io/rest-client.html
+//           (07-io.md § REST Clients — RestClient / WebClient / Configuracao Global)
+//
+// Target: erlang (server). Every outbound call here runs on the BEAM while a
+// request is in flight; nothing in this file compiles for the browser.
+
+import {service, configuration, bean, restController, route, getMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+// Provided by front 13.
+import {RestClient, RestClientBuilder, RequestSpec, ClientResponse, HttpClientSettings} from "rakun-client";
+import {retrieveFuture} from "rakun-client";
+// Provided by front 12 — the cache the client writes through.
+import {cacheLife} from "rakun-cache";
+
+// ── the client, built once and injected by type ─────────────────────────────
+//
+// The builder starts from `rakun.http.clients.*`, so this only names what
+// differs. There is no timeout call here: the global default already applies,
+// and the address filter is not mentioned because it cannot be turned off.
+
+#[configuration]
+pub type PartnerClientConfig(
+    #[value("app.partner.base-url")]
+    baseUrl: string,
+    #[value("app.partner.token")]
+    token: string,
+) {
+    #[bean]
+    pub fn partnerClient(self: Self) -> RestClient {
+        return RestClient.builder()
+            .baseUrl(self.baseUrl)
+            .defaultHeader("accept", "application/json")
+            .defaultHeader("authorization", "Bearer " + self.token)
+            .readTimeout(2000)
+            .build();
+    }
+}
+
+// ── the blocking call ───────────────────────────────────────────────────────
+
+#[service]
+pub type PartnerCatalog(
+    client: RestClient,
+) {
+    // A plain GET. The response is returned whatever its status — `isOk()` is
+    // the caller's decision, not the client's.
+    pub fn productJson(self: Self, id: string) -> string {
+        val res = self.client.get("/products/" + id).retrieve();
+        val body = if (res.isOk()) { res.body } else { "{\"error\":" + res.status.toString() + "}" };
+        return body;
+    }
+
+    // The same call, cached. `.cached(...)` writes into the cache front 12 owns,
+    // under the key `cacheKey("upstream-products", [method, url, bodyHash])`, so
+    // `revalidateTag("products")` from anywhere in the application drops it.
+    pub fn cachedProductJson(self: Self, id: string) -> string {
+        val res = self.client.get("/products/" + id)
+            .cached("upstream-products", cacheLife("minutes"), ["products"])
+            .retrieve();
+        return res.body;
+    }
+
+    // The legacy `fetch(url, { next: { revalidate: 3600 } })` shorthand.
+    pub fn hourlyPriceJson(self: Self, id: string) -> string {
+        val res = self.client.get("/products/" + id + "/price").revalidate(3600).retrieve();
+        return res.body;
+    }
+
+    // A write. `.cached(...)` on a POST raises — a cached mutation is a bug
+    // that only shows up in production — so this one just posts.
+    pub fn submitOrder(self: Self, orderJson: string) -> string {
+        val res = self.client.post("/orders", orderJson)
+            .header("content-type", "application/json")
+            .retrieve();
+        return res.body;
+    }
+}
+
+// ── the non-blocking call ───────────────────────────────────────────────────
+//
+// This is the whole of Spring's WebClient: the same client, the same settings,
+// the same filter, the same cache — a different terminal operation. There is no
+// second builder and no second module.
+
+#[service]
+pub type PartnerCatalogAsync(
+    client: RestClient,
+) {
+    #[@future]
+    pub fn productJson(self: Self, id: string) -> @Future<string> {
+        val res = await retrieveFuture(self.client.get("/products/" + id));
+        return res.body;
+    }
+}
+
+// ── the consumer ────────────────────────────────────────────────────────────
+
+#[restController]
+#[route("/api/partner")]
+pub type PartnerController(
+    catalog: PartnerCatalog,
+) {
+    #[getMapping("/products/:id")]
+    pub fn show(self: Self, req: Request) -> Response {
+        return Response.json(self.catalog.cachedProductJson(req.param("id")));
+    }
+}
+
+// ── what the address filter does to a forwarded URL ──────────────────────────
+//
+// A handler that takes a URL from the caller is the classic SSRF shape. Nothing
+// below defends against it, and nothing has to: the filter resolves the host and
+// refuses every loopback, link-local and private address before a socket opens,
+// and returns status -1 with the blocked address named. There is no key in
+// rakun-client that changes that.
+
+#[service]
+pub type WebhookProbe(
+    client: RestClient,
+) {
+    pub fn probe(self: Self, url: string) -> string {
+        val res = self.client.head(url).retrieve();
+        return "{\"status\":" + res.status.toString() + ",\"detail\":\"" + res.body + "\"}";
+    }
+}

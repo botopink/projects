@@ -1,0 +1,121 @@
+// Front 87 — rakun auditing: recording who did what, and reading it back.
+//
+// Server-side file. The service records a domain event through the one-way seam
+// (`audit`), never through a repository field; the reviewer query and the redacting
+// wrapper below are the surface an application sees.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/actuator/auditing.html
+
+import {service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {time} from "std";
+import {AuditEvent, AuditRepository, audit, memoryAuditRepository} from "rakun-actuator";
+
+#[service]
+type Payouts {
+    pub fn approve(self: Self, payoutId: string, principal: string) -> string {
+        val _ev = audit("PAYOUT_APPROVED", principal, [
+            #("payout.id", payoutId),
+            #("payout.amount.cents", "120000"),
+        ]);
+        return "approved " + payoutId;
+    }
+
+    pub fn deny(self: Self, payoutId: string, principal: string, why: string) -> string {
+        val _ev = audit("PAYOUT_DENIED", principal, [
+            #("payout.id", payoutId),
+            #("reason", why),
+        ]);
+        return "denied " + payoutId;
+    }
+}
+
+// LANGUAGE GAP: a record cannot be mutated — there is no assignment to a `self` field
+// anywhere in the real libraries — so a repository cannot accumulate its own buffer in
+// a field. Nearest valid form below: wrap a repository that owns an ETS table, and add
+// only the filtering.
+type RedactingAuditRepository(inner: AuditRepository) implement AuditRepository {
+    fn record(self: Self, event: AuditEvent) -> i32 {
+        val safe = event.data.filter({ pair -> pair.0 != "password" });
+        val clean = AuditEvent(
+            atMs: event.atMs,
+            principal: event.principal,
+            kind: event.kind,
+            data: safe,
+        );
+        return self.inner.record(clean);
+    }
+
+    fn find(self: Self, principal: string, afterMs: i64, kind: string) -> Array<AuditEvent> {
+        return self.inner.find(principal, afterMs, kind);
+    }
+
+    fn dropped(self: Self) -> i32 {
+        return self.inner.dropped();
+    }
+}
+
+test "a reviewer finds one principal's failures without reading everyone's" {
+    val repo = memoryAuditRepository(100);
+    val now = time.nowMillis();
+    val _a = repo.record(AuditEvent(atMs: now, principal: "ana", kind: "AUTHENTICATION_FAILURE", data: []));
+    val _b = repo.record(AuditEvent(atMs: now, principal: "bob", kind: "AUTHENTICATION_FAILURE", data: []));
+    val _c = repo.record(AuditEvent(atMs: now, principal: "ana", kind: "AUTHENTICATION_SUCCESS", data: []));
+
+    // LANGUAGE GAP: declared parameter defaults are never applied, so "any" cannot be an
+    // omitted argument the way it is an omitted query parameter upstream. Nearest valid
+    // form: pass every argument, with "" and 0 as the documented "any" values.
+    val anaFailures = repo.find("ana", 0, "AUTHENTICATION_FAILURE");
+    assert anaFailures.length == 1;
+
+    val allFailures = repo.find("", 0, "AUTHENTICATION_FAILURE");
+    assert allFailures.length == 2;
+
+    val everything = repo.find("", 0, "");
+    assert everything.length == 3;
+}
+
+test "afterMs is exclusive, so paging cannot re-read the last event seen" {
+    val repo = memoryAuditRepository(100);
+    val base = time.nowMillis();
+    val _a = repo.record(AuditEvent(atMs: base, principal: "ana", kind: "LOGOUT", data: []));
+    val _b = repo.record(AuditEvent(atMs: base + 10, principal: "ana", kind: "LOGOUT", data: []));
+
+    val after = repo.find("", base, "");
+    assert after.length == 1;
+}
+
+test "the oldest event is dropped when the ring is full, and the drop is counted" {
+    val repo = memoryAuditRepository(2);
+    val base = time.nowMillis();
+    val _a = repo.record(AuditEvent(atMs: base, principal: "ana", kind: "LOGOUT", data: []));
+    val _b = repo.record(AuditEvent(atMs: base + 1, principal: "bob", kind: "LOGOUT", data: []));
+    val _c = repo.record(AuditEvent(atMs: base + 2, principal: "cam", kind: "LOGOUT", data: []));
+
+    val kept = repo.find("", 0, "");
+    assert kept.length == 2;
+    assert repo.dropped() == 1;
+
+    val names = kept.map({ e -> e.principal });
+    assert names.join(",") == "bob,cam";
+}
+
+test "a redacting wrapper drops a password pair and keeps the rest" {
+    val inner = memoryAuditRepository(10);
+    val repo = RedactingAuditRepository(inner: inner);
+    val now = time.nowMillis();
+    val _r = repo.record(AuditEvent(
+        atMs: now,
+        principal: "ana",
+        kind: "AUTHENTICATION_FAILURE",
+        data: [#("password", "hunter2"), #("remote.address", "10.0.0.7")],
+    ));
+
+    val found = repo.find("ana", 0, "");
+    assert found.length == 1;
+    val first = found.at(0).unwrapOr(AuditEvent(atMs: 0, principal: "", kind: "", data: []));
+    assert first.data.length == 1;
+    val keys = first.data.map({ pair -> pair.0 });
+    assert keys.join(",") == "remote.address";
+}
