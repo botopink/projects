@@ -327,6 +327,40 @@ test against meanwhile.
 - [ ] `behavior Display` is declared in `libs/std` and `Dict<K, V>` implements it (§7's `Dict("a": 1, "b": 2)`)
 - [ ] `zig build test`, `test-libs` and `test-language` green
 
+### Step 12 — one flat table under four symptoms (added 2026-09-21)
+
+Four defects that have been filed separately all resolve a **bare name** through one flat,
+program-wide table, and the table has no owner and no dissent check. Each was re-measured against
+`2e6bb4ac` on the date above; the command and the exact output are in `status.md` beside each row.
+
+| # | Spelling | What happens today |
+|---|---|---|
+| 1 | `.Red` where two enums each declare `Red` | commonJS: `ReferenceError: Red is not defined`. **erlang binds the *wrong enum's* variant** to a correctly-typed name and dies later at a `case` with no arm — `{case_clause, main__t__warm__v__red}` |
+| 2 | `.Zeta` against a section type `Token.Layout.Break` | `unbound variable 'Zeta'` on both targets, with **no collision anywhere in the program** — a section leaf has no shorthand at all |
+| 3 | the same, where a top-level payload variant shares the leaf's name | `type mismatch: expected __Token__Layout__Break, got function` — the lookup found the variant's *factory function* and reported a type problem for a resolution problem |
+| 4 | a leading-dot enum path resolved by hash order | **closed** (the resolver now reads the expected type), and it is the precedent: the fix was to ask the question the caller actually has instead of taking the first answer the table offers |
+
+Row 4 is why these belong together rather than in four commits: it fixed one consumer of the table
+and left the table alone. Rows 1–3 are the other consumers.
+
+**What the step has to decide first** — and it is a language question, not an implementation one:
+*does a section leaf have a shorthand?* Row 2 says it does not today, and the emilia track has ten
+landed fronts that write the full path everywhere, so nothing is blocked either way. If the answer
+is no, row 2's diagnostic should say so by name (`a section leaf has no leading-dot shorthand; write
+the full path`) rather than `unbound variable`, and row 3's must stop being a type error. If the
+answer is yes, all three rows are one fix.
+
+**Acceptance**
+- [ ] a bare name that two declarations claim is a **named refusal**, never a silent pick — decision 67, and the atom-collision check in `crossModule.zig` is the precedent for what loud looks like
+- [ ] row 1's erlang half cannot survive: binding one enum's variant to another enum's type is a wrong value, not a wrong message
+- [ ] row 3 reports a resolution failure, not a type mismatch
+- [ ] every one of the four has a language cell, and each cell is **proved able to fail** by planting the pre-fix behaviour
+- [ ] the two targets agree, and the cells say so — three of these four answer differently on commonJS and erlang, which is how they stayed open
+
+**Not this step.** The *cross-module* name-keyed registry (`CrossModule.exports`, `variant_enum`,
+`type_owner_path`, `imported_fns`) is the same shape one level up and is `02-erlang`'s, in worktree
+`.tasks/cross-module-exports`. The two should read each other's fix before either lands.
+
 ## Acceptance — the `expected-failures.txt` lines this front deletes
 
 `repository/botopink-lang/tests/language/expected-failures.txt`, at `c2dd780`. **31 of 54.** A line
