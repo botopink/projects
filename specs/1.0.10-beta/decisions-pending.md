@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Six open, 91 to 94, 97 and 99** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
+**Seven open, 91 to 94, 97, 99 and 100** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
 `04-jhonstart`, 93 by front 19 step 2's landing the same day, 94 by the wave sweep that followed.
 **91 and 93 are now questions about decision 95's chain** (`@Context` ⊃ `@Future` ⊃ `@Result`) and
 should be answered with it: 91 asks whether the context-owner unwrap follows the chain to any
@@ -158,3 +158,30 @@ consumer of the name is inside this repository — no library spells it today. T
 question and not a sweep is decision 98: the maintainer amended a rename mid-flight over exactly
 this class of change, so the name of a public builtin is his to take.
 **Blocks.** Nothing. Front 20 landed around it.
+
+## 100. Who owns the `ElementView<Element>` adapter — and what it costs the erlang row
+
+**Raised by:** jhonstart front 28, 2026-09-21, on landing without it and saying so.
+**Measured.** Front 23's handoff gives the adapter to front 26. Front 26 landed and its `AGENTS.md`
+hands it on to front 28 "together with the `dependencies` entry … and the targets decision that
+entry forces". Front 28's own README does not ask for it at all — rakun 23 and 62 are cited
+*read-only* there. So three specs name three owners and no front has it in its Definition of done.
+The obstacle is not the code: `ElementView<El>` is **rakun's** type, the adapter needs
+`import { ElementView } from "rakun"`, jhonstart declares no rakun dependency, and rakun's member is
+`"targets": ["commonJS"]` — so adding the entry reds the erlang row that front 28 and front 26 are
+both gated on. Front 28 declined to write it and declined to invent a substitute, which is the
+behaviour I want; it is recorded in its `AGENTS.md` as a disagreement, not resolved there.
+**Options.** (a) rakun widens its member to `["commonJS", "erlang"]` first (that is front 04's
+`targets` array, and the compiler ledger already measures the erlang row at 2 failed, both front
+04's own) and the adapter then goes to whichever of 26/28 the two specs are amended to agree on;
+(b) the adapter moves to **rakun** — it is rakun's type, so rakun exports the jhonstart-shaped view
+and jhonstart imports nothing; (c) it is deleted from all three specs and the seam is spelled
+structurally, with neither package naming the other's type.
+**Recommendation.** (b). The dependency direction in `02-packaging` runs from the app to the
+framework, and (b) is the only option where no new edge is added at all: jhonstart keeps declaring
+no rakun dependency, rakun keeps its own type, and the erlang-row cost disappears rather than being
+paid by somebody. (a) pays a real cost — widening a `targets` array is a front 04 landing, not a
+line — and (c) throws away a typed seam to avoid a naming problem.
+**Blocks.** Nothing that is running. It blocks front 26's "the router calls front 22's `matchPath`"
+Definition-of-done bullet, which is separately unsatisfiable for the same reason, and it should be
+answered together with that.
