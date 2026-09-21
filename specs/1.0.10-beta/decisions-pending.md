@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Seven open, 91 to 94, 97, 99 and 100** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
+**Eight open, 91 to 94, 97, 99, 100 and 101** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
 `04-jhonstart`, 93 by front 19 step 2's landing the same day, 94 by the wave sweep that followed.
 **91 and 93 are now questions about decision 95's chain** (`@Context` ⊃ `@Future` ⊃ `@Result`) and
 should be answered with it: 91 asks whether the context-owner unwrap follows the chain to any
@@ -185,3 +185,42 @@ line — and (c) throws away a typed seam to avoid a naming problem.
 **Blocks.** Nothing that is running. It blocks front 26's "the router calls front 22's `matchPath`"
 Definition-of-done bullet, which is separately unsatisfiable for the same reason, and it should be
 answered together with that.
+
+## 101. The hydration entry is spelled two ways, and the split is not a typo
+
+**Raised by:** jhonstart front 29 on landing, 2026-09-21, which reported it as "one of the two is
+wrong" and left it. Measuring it shows something more awkward than a typo.
+**Measured.** `grep -rn '__jhLinkMount\|__onzeLinkMount' specs/1.0.10-beta`:
+
+- **`__onzeLinkMount`** — front 27's README five times (including its `pub declare fn` at `:302` and
+  two acceptance checkboxes), front 29's README at `:275`, `04-jhonstart/modules.md` at `:166` and
+  `:227`, `04-jhonstart/test-snap.md` at `:476`, and front 27's own example file.
+- **`__jhLinkMount`** — front 67's README at `:160`, front 68's README at `:290` and its acceptance
+  checkbox at `:430`, `06-onze/test-snap.md` three times (including the generated entry's import
+  line and its ordering assertion), and **`contracts.md:334`**, the registry.
+
+So it is not one document against six; it is a consistent split with the **track boundary running
+through the middle of track C**: jhonstart's front 67 sides with onze and with the registry, while
+jhonstart's fronts 27 and 29 and that track's own `modules.md` and `test-snap.md` do not. Both
+spellings are inherited verbatim from `absorbed/1.0.9-beta/contracts.md:316`, so neither front
+invented it.
+**The sibling settles the logic, if logic is what decides it.** The form mount is `__jhFormMount`
+**everywhere**, with no competing spelling — front 67's own, front 68's entry, front 29's prose and
+`contracts.md`. Both mounts are *jhonstart's* functions, called once by onze's generated entry, so
+`__jhLinkMount` is the one that pairs with its sibling and matches the registry, and
+`__onzeLinkMount` is the outlier. The counter-argument is that `__onzeFill` and
+`__onzeClientPropsRaw` are also called by that entry and carry onze's prefix — but those are onze's
+own functions, which is the distinction the `__jh*` prefix is making.
+**Options.** (a) `__jhLinkMount` everywhere — it matches `__jhFormMount`, matches `contracts.md`,
+and the prefix then reliably names the package that *owns* the function; costs eight edits across
+front 27's README, front 29's README and track C's two shared documents. (b) `__onzeLinkMount`
+everywhere — costs six edits, including `contracts.md` and a generated-entry import line in
+`06-onze/test-snap.md`, and leaves `__jhFormMount` beside `__onzeLinkMount` with no rule explaining
+the difference. (c) leave both and let front 68 pick — rejected: front 68 imports it by name from a
+package, so "both" is a compile error, not an ambiguity.
+**Recommendation.** (a). The prefix is doing real work — `__jh*` for a function jhonstart declares,
+`__onze*` for one onze declares — and (b) breaks that rule for one name out of four.
+**Blocks.** Nothing, and that is why it is worth answering now rather than later: **front 27
+deliberately did not ship the cell** (it waits on front 68's bundle), so today this is a rename in
+prose only. The day front 68 writes its entry, it becomes a rename across two packages and a
+generated file.
