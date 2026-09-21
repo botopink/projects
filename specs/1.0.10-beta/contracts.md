@@ -322,9 +322,12 @@ contract 1 and for the same reason. Kinds `V` version · `E` entry · `S` shared
 ignored so 69 and 71 may add records; a `V` line other than `1` is a hard error.
 `parseManifest(formatManifest(m)) == m` is asserted on both targets with the same literal.
 
-**Emission order** (front 23 concatenates): 1 `beforeInteractive` chunks in `<head>` · 2 body ·
-3 `<script id="__onze">` last in `<body>` — **front 23's, never 68's** · 4 `shared` `defer` ·
-5 route chunk `defer` · 6 `entry` `defer`, last.
+**Emission order** in the document front 23 writes: 1 `beforeInteractive` chunks in `<head>` ·
+2 body · 3 `<script id="__onze">` last in `<body>` — **front 23's, never 68's** · 4 `shared` `defer` ·
+5 route chunk `defer` · 6 `entry` `defer`, last. Groups 1 and 4–6 are `headScriptTags(m)` and
+`scriptTags(m, route)`, which front 23 never calls: `Onze.run` installs them as
+`RenderHooks.headExtra` / `RenderHooks.bodyExtra` and the pipeline writes what the fields return
+(decision 77).
 
 **Hydration entry** (`<outDir>/client/entry.bp`, botopink source): reads `#__onze`, takes `i`,
 queries `[data-onze-i]` in document order, calls front 29's hydrate point per island, registers
@@ -343,10 +346,27 @@ field and still gets the refusal:
   build fails when JS and erlang disagree (contract 4 clause 3); the entry checks every class it
   computes against the payload's `s` at run time.
 
-## 6a · Style insertion seam — owned by front 69
+## 6a · Style insertion seam — four fields of front 23's `RenderHooks`, filled by front 69
 
 **Render, then flush, then serialize — once per chunk.** `emilia.flush()` clears the sheet, so
 there is exactly one correct consumer per render phase, and the sink is it.
+
+Front 23 does not call front 69. The four calls are **fields of the `RenderHooks` record front 23
+declares and reads** ([`03-rakun/23-rakun-ssr-pipeline/README.md`](./03-rakun/23-rakun-ssr-pipeline/README.md)
+§ *`RenderHooks`*), with working defaults that flush once into the head; front 69 implements them and
+`Onze.run` (front 49) installs its values at boot, so `repository/rakun/` names no module of onze
+(decision 77). The fields, as 23 declares them:
+
+```bp
+openSink: fn() -> void,                  // called before anything renders
+collectHead: fn() -> string,             // once, after the shell, before the head is serialised
+collectChunk: fn(string) -> string,      // holeId -> the block that precedes that chunk
+closeSink: fn() -> string,               // after the last chunk; "" when nothing was dropped
+```
+
+No field carries a sink value: the installed wrapper holds the `StyleSink` — and the manifest's
+stylesheet `<link>`s it opens with — in the request's own BEAM process, which is where emilia's sheet
+already lives. Front 69's module surface, which those wrappers close over:
 
 ```bp
 pub type StyleChunk(id: string, css: string, classes: Array<string>)
@@ -360,15 +380,15 @@ pub fn closeSink(sink: StyleSink) -> #(StyleSink, string)
 pub fn emittedClasses(sink: StyleSink) -> Array<string>
 ```
 
-| Call | When front 23 calls it | Returns |
+| Hook | When the pipeline calls it | Returns |
 |---|---|---|
-| `openSink(links)` | before anything renders | an empty sink carrying the manifest's stylesheet `<link>`s |
+| `openSink` | before anything renders | nothing; the wrapper opens a sink carrying the manifest's stylesheet `<link>`s |
 | `collectHead` | **once**, after the shell rendered to a string, before the head is serialized | `<link>`s + one `<style>`; nothing when nothing registered |
-| `collectChunk(sink, holeId)` | after a streamed boundary renders, **before** its markup goes to the wire | `<style data-onze-s="<holeId>">…</style>` or `""` |
+| `collectChunk(holeId)` | after a streamed boundary renders, **before** its markup goes to the wire | `<style data-onze-s="<holeId>">…</style>` or `""` |
 | `closeSink` | after the last chunk | `""`; a non-empty pending sheet is an error |
 
-`emittedClasses(sink)` is what front 23 writes into the payload's `s` key — recorded as the sink
-fills, never re-scanned out of the CSS. The sink never recomputes, re-hashes, sorts or dedups a
+`emittedClasses(sink)` is what the wrapper hands front 23 for the payload's `s` key — recorded as the
+sink fills, never re-scanned out of the CSS. The sink never recomputes, re-hashes, sorts or dedups a
 class; contract 4 is untouched. The client bundle never calls `flush()`, which front 68 enforces.
 
 ## 7 · Test and snapshot contract — owned by 01-std, consumed by every `-test` submodule

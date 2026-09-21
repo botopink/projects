@@ -5,7 +5,7 @@
 **Target:** js (client)
 **Wave:** 3
 **Depends on:** 28 · 23 (payload envelope, read-only) · 68 (soft — build-time enforcement; 29 lands without it) · 94 (element builders used by the examples)
-**Owns:** `repository/jhonstart/src/client.bp`, `repository/jhonstart/test/client_test.bp`
+**Owns:** `repository/jhonstart/src/client.bp` — including `islandAttr`, the island marker pair, which front 23 reads as `RenderHooks.islandAttr` and front 68's generated entry imports (decision 77: one definition, passed in, never two that must agree) — `repository/jhonstart/test/client_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` · `§ 27. Diretivas` · https://nextjs.org/docs/app/api-reference/directives/use-client · https://nextjs.org/docs/app/guides/server-and-client-boundary
 **Replaces:** `1.0.7-beta/05-jhonstart-client-directive`
@@ -136,6 +136,13 @@ pub fn islandEntry(island: Island) -> #(string, string, string) {
 Front 23 assigns the ids (`i0`, `i1`, … in render order), collects one `islandEntry` per island into
 the payload's `i` key, and escapes the whole script per `contracts.md § 2` — this front does not
 escape the payload and does not build it.
+
+**The pair itself is defined here, once.** `pub fn islandAttr(ordinal: i32) -> #(string, string)`
+returns the marker pair for an ordinal — `#("data-onze-i", "i0")` for `0` — and `clientMount` builds
+its `attrs` from it. This front decides *which* components are islands, so it owns the attribute the
+marker is written with; front 23 assigns the ordinals and reads the pair through
+`RenderHooks.islandAttr` rather than spelling it a second time, and front 68's generated entry
+imports the same function for the selector it walks (decision 77).
 
 `clientMount` touches no host cell, so it renders identically during front 23's BEAM pass and during
 a client re-render. The props encoding is `querystring.stringify` — the same `k=v&k=v` string
@@ -344,6 +351,8 @@ would be a boundary that never starts.
 - [ ] the five-row front-68 contract table is written down and cited by front 68
 - [ ] the island marker is `data-onze-i` and the props are in the payload's `i` key, per
       `contracts.md § 2`; nothing about the payload is escaped or built here
+- [ ] `islandAttr(ordinal)` is exported and is the only place the pair is spelled — front 23 reads it
+      as `RenderHooks.islandAttr` and front 68's entry imports it (decision 77)
 - [ ] the README states, in *Mechanism*, that 29 without 68 is a convention nobody checks
 - [ ] all four language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target

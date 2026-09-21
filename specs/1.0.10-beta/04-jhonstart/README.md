@@ -13,19 +13,19 @@ Front numbers are **1.0.9-beta identifiers** and are preserved: `26` is `26-jhon
 
 ## 1 · Fronts — in blocking order
 
-Ordered by the level each front occupies in the dependency graph (`../../fronts.md` computes waves from the unannotated `Depends on` edges; *(ro)* = read-only citation, not an edge). Priority and wave are the 1.0.9 values.
+Ordered by the level each front occupies in the dependency graph; *(ro)* = read-only citation, not an edge. **Wave (milestone)** is the level [`../../fronts.md`](../../fronts.md) § *Waves* computes across all five tracks from the unannotated `Depends on` edges — not a track-internal numbering, which is only a lower bound, and not the superseded diagram this table used to copy. It is regenerated there and copied here; a wave is corrected in `fronts.md` first. Priority is the 1.0.9 value.
 
-| # | Front | Priority | Wave | Submodule | Depends on (track C) | Depends on (other tracks) | Gate |
+| # | Front | Priority | Wave (milestone) | Submodule | Depends on (track C) | Depends on (other tracks) | Gate |
 |---|---|---|---|---|---|---|---|
 | **94** | [`94-jhonstart-element-surface`](./94-jhonstart-element-surface/README.md) | critical | 0 | `jhonstart` | — | — | both |
-| **26** | [`26-jhonstart-router`](./26-jhonstart-router/README.md) | critical | 2 | `jhonstart` | 94 (examples) | 01 std · 22 rakun file-routing (`matchPath`) · 23 rakun ssr *(ro)* | erlang |
-| **28** | [`28-jhonstart-server-components`](./28-jhonstart-server-components/README.md) | critical | 3 | `jhonstart` | 26 (`pairValue`) · 94 (examples) | 01 std (`escape`) · 62 rakun request-context *(ro)* · 23 *(ro)* | erlang |
+| **26** | [`26-jhonstart-router`](./26-jhonstart-router/README.md) | critical | 3 | `jhonstart` | 94 (examples) | 01 std · 22 rakun file-routing (`matchPath`) · 23 rakun ssr *(ro)* | erlang |
+| **28** | [`28-jhonstart-server-components`](./28-jhonstart-server-components/README.md) | critical | 4 | `jhonstart` | 26 (`pairValue`) · 94 (examples) | 01 std (`escape`) · 62 rakun request-context *(ro)* · 23 *(ro)* | erlang |
 | **27** | [`27-jhonstart-link`](./27-jhonstart-link/README.md) | critical | 4 | `jhonstart-link` | 26 · 94 (examples) | 60 rakun static-generation *(ro)* · 68 onze client-bundle *(ro)* · 23 *(ro)* | commonJS |
-| **29** | [`29-jhonstart-client-directive`](./29-jhonstart-client-directive/README.md) | high | 4 | `jhonstart` | 28 · 94 (examples) | 23 *(ro)* · 68 *(soft — enforces the boundary)* | commonJS |
-| **30** | [`30-jhonstart-streaming`](./30-jhonstart-streaming/README.md) | high | 4 | `jhonstart` | 28 · 94 (examples) | 02 std async (spawn/gather over thunks) · 23 *(ro)* | erlang |
-| **31** | [`31-jhonstart-error-boundaries`](./31-jhonstart-error-boundaries/README.md) | high | 6 | `jhonstart` | 28 · 94 (`htmlTag`/`body`) | 03 std content-hash · 17 rakun logging *(ro)* · 24 *(ro)* · 63 rakun navigation-signals *(ro)* | erlang |
-| **32** | [`32-jhonstart-metadata`](./32-jhonstart-metadata/README.md) | medium | 6 | `jhonstart` | 28 · 26 (`pairValue`) | 01 std (`escape`) · 66 rakun metadata-file-routes *(ro)* | erlang |
-| **67** | [`67-jhonstart-forms`](./67-jhonstart-forms/README.md) | high | 6 | `jhonstart-forms` | 29 · 94 · 26 (`push`) · 27 (prefetch) · 31 *(ro)* | 24 rakun server-actions (envelope) · 14 rakun validation *(ro)* · 63 *(ro)* · 01 std (percent encoding) | commonJS |
+| **29** | [`29-jhonstart-client-directive`](./29-jhonstart-client-directive/README.md) | high | 5 | `jhonstart` | 28 · 94 (examples) | 23 *(ro)* · 68 *(soft — enforces the boundary)* | commonJS |
+| **30** | [`30-jhonstart-streaming`](./30-jhonstart-streaming/README.md) | high | 5 | `jhonstart` | 28 · 94 (examples) | 02 std async (spawn/gather over thunks) · 23 *(ro)* | erlang |
+| **31** | [`31-jhonstart-error-boundaries`](./31-jhonstart-error-boundaries/README.md) | high | 5 | `jhonstart` | 28 · 94 (`htmlTag`/`body`) | 03 std content-hash · 17 rakun logging *(ro)* · 24 *(ro)* · 63 rakun navigation-signals *(ro)* | erlang |
+| **32** | [`32-jhonstart-metadata`](./32-jhonstart-metadata/README.md) | medium | 5 | `jhonstart` | 28 · 26 (`pairValue`) | 01 std (`escape`) · 66 rakun metadata-file-routes *(ro)* | erlang |
+| **67** | [`67-jhonstart-forms`](./67-jhonstart-forms/README.md) | high | 8 | `jhonstart-forms` | 29 · 94 · 26 (`push`) · 27 (prefetch) · 31 *(ro)* | 24 rakun server-actions (envelope) · 14 rakun validation *(ro)* · 63 *(ro)* · 01 std (percent encoding) | commonJS |
 
 Cross-track fronts that deliver **into** this repo or consume it: 48 emilia-attributes (owns `modules/jhonstart-html/src/html_attrs.bp`; depends on 26); 23 rakun-ssr-pipeline (renders every core module); 24 rakun-server-actions (builds its form from 94's constructors); 68 onze-client-bundle (generated entry calls 29's `hydrate()`, 27's `__onzeLinkMount()`, 67's `__jhFormMount()`); 53 onze-example-app (the browser-in-the-loop proof).
 

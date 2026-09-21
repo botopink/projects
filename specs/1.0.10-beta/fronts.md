@@ -342,7 +342,7 @@ no token section and no dispatcher, which is what makes it safe to run alongside
 | **F53 example-app** | `examples/blog/**` (a runnable example project: its own `botopink.json`, `src/`, `test/`, `__snapshots__/`) | `examples/blog/test/**` |
 
 | **F68 client-bundle** | `modules/onze-bundler/src/**`, | `modules/onze-bundler/test/**` |
-| **F69 styling-pipeline** | `modules/onze-assets/src/styling/**`, | `modules/onze-assets/test/styling_test.bp` |
+| **F69 styling-pipeline** | `modules/onze-assets/src/**` except `src/image.bp` (F51) and `src/font.bp` (F52) | `modules/onze-assets/test/**` except `test/image_test.bp` (F51) and `test/font_test.bp` (F52) |
 | **F70 image-response** | `modules/onze-assets/src/og/**`, `modules/onze-assets/test/og/**` | `modules/onze-assets/test/image_response_test.bp` |
 | **F71 release-packaging** | `modules/onze-release/src/**`, | `modules/onze-release/test/**` |
 
