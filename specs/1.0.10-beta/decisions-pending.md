@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Four open, 91 to 94** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
+**Five open, 91 to 94 and 97** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
 `04-jhonstart`, 93 by front 19 step 2's landing the same day, 94 by the wave sweep that followed.
 **91 and 93 are now questions about decision 95's chain** (`@Context` ⊃ `@Future` ⊃ `@Result`) and
 should be answered with it: 91 asks whether the context-owner unwrap follows the chain to any
@@ -8,7 +8,7 @@ payload, 93 whether `inContextFn` follows the same rule `annotated` does;
 91, 92 and 94 are **non-blocking**: the specs and the library compile either way, and each answer is a rewrite of
 prose, not of a landed refusal. The twenty questions raised while the milestone was cut and while
 front 19 landed (71–90) are answered in [`decisions-taken.md`](./decisions-taken.md). The next free
-number is **96**.
+number is **98**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -116,3 +116,26 @@ and that any `[data-onze-s]` selector — a reconciler query, a test, a devtool 
 checkbox (`:278`) and its hook row (`:121`), front 29's `serverSlot` checkbox (`:253`), and the two
 `06-onze/test-snap.md` lines — so it should be answered before front 69 writes `style_sink.bp` and
 before that snapshot is generated.
+
+## 97. Does a `#[@generator]` body answer `try`?
+
+**Raised by:** decision 95, 2026-09-21, by the maintainer while taking it: *"eu ainda não estou
+certo se o Generator eu quero que de suporte para 'try'"*.
+**Measured.** `@Generator<T, R>` (`libs/std/src/builtins.d.bp:109`) is the only effect wrapper with
+**no** error channel: `@Result<R, E>`, `@Future<T, E = any>`, `@Iterator<T, E = any, C = void>` and
+`@AsyncIterator<T, E = any, C = void>` all carry one, and the file's own § 1 prose lists the
+fallible-channel effects as *result, future, iterator, asyncGenerator* — generator excluded. So
+today a `#[@generator]` body may not `throw` or `try`, and decision 95's chain cannot reach it
+without changing the type's arity.
+**Options.** (a) `@Generator<T, R>` gains `E = any`, implements `@Result<T, E>`, and a generator body
+answers `try` and `throw` like every other effect — uniform, and the arity change is source-compatible
+because the parameter is defaulted; (b) the generator stays infallible: it is the one effect that
+cannot fail, `try` in its body is refused naming the reason, and the file says so where a reader
+meets it; (c) `@Generator` is folded into `@Iterator` (which already has both extra channels) and
+`#[@generator]` becomes a spelling of the same wrapper.
+**Recommendation.** (b) as the default until there is a body that needs it: it is the status quo,
+it is the most restrictive (decision 67), and (a) remains available at any time without breaking a
+signature, whereas removing the channel later would break every generator that used it. (c) is a
+larger question about whether two generator effects earn their keep, and belongs to front 15.
+**Blocks.** Front 20 step 2's generator row, and nothing else — the rest of decision 95's chain is
+implementable without it.

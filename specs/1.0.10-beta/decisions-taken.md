@@ -302,9 +302,10 @@ below it, and **the annotation grants every capability at or below its own level
 | Body | May write | Because the wrapper implements |
 |---|---|---|
 | `#[@context] fn … -> @Context<B, R>` (or a type implementing it, e.g. `Element`) | `use` · `await` · `try` | `@Context` ⊃ `@Future` ⊃ `@Result` |
-| `#[@asyncGenerator] fn … -> @AsyncGenerator<T>` | `await` · `try` · `yield` | `@AsyncGenerator` ⊃ `@Future` ⊃ `@Result` |
+| `#[@asyncGenerator] fn … -> @AsyncIterator<T, E, C>` | `await` · `try` · `yield` | `@AsyncIterator` ⊃ `@Future` ⊃ `@Result` |
 | `#[@future] fn … -> @Future<T, E>` | `await` · `try` | `@Future` ⊃ `@Result` |
-| `#[@generator]` · `#[@iterator]` | `try` · `yield` | `@Generator` / `@Iterator` ⊃ `@Result` |
+| `#[@iterator] fn … -> @Iterator<T, E, C>` | `try` · `yield` | `@Iterator` ⊃ `@Result` |
+| `#[@generator] fn … -> @Generator<T, R>` | `yield` · **`try` undecided** | question 97 — it is the one wrapper with no error channel |
 | `#[@result] fn … -> @Result<T, E>` | `try` | — it is the base |
 
 The rule that orders them, decided with the table: **every effectful body can fail**, so every
@@ -314,7 +315,11 @@ wrapper implements `@Result`; and a wrapper that suspends (`@Context`, `@AsyncGe
 
 `@Future<T, E = any>` already carries the error channel this needs (`builtins.d.bp:115`, with
 `return t` auto-wrapping to `Future.resolved(t)` and `throw e` to `Future.rejected(e)`), so
-`@Future<T, E>` implementing `@Result<T, E>` adds no parameter and invents no error type.
+`@Future<T, E>` implementing `@Result<T, E>` adds no parameter and invents no error type. The same
+holds for `@Iterator<T, E = any, C = void>`, whose body already carries `throw`. `@Generator<T, R>`
+(`:109`) is the exception and is **left out of this decision**: it has no error channel, the
+maintainer is not yet sure a generator should answer `try`, and the status quo — `throw`/`try` are
+not legal in a `#[@generator]` body — stands until question 97 answers it.
 
 What it does **not** change: R5 stands — one effect annotation per fn, and the chain is what makes
 that sufficient rather than restrictive, since the highest annotation already grants the rest.
@@ -323,9 +328,34 @@ Decision 88 stands: a component is `#[@context] fn … -> Element`, and `Element
 hooks without `#[@context]`, which is the one case the chain cannot spell because R5 forbids writing
 two annotations.
 
-Bears on: question 91 (whether the context-owner unwrap widens past `@Future`) is now a question
+Bears on: question 97 (the generator's row above); question 91 (whether the context-owner unwrap widens past `@Future`) is now a question
 about this chain, not about one type — the payload's owner is what decides; question 93
 (`@getContex` gated by `inContextFn` alone) is the same shape and should be answered with it.
 Implements: the `implement` clauses in `libs/std/src/builtins.d.bp`, the `try`/`await`/`use`/`yield`
 legality checks in `comptime/infer.zig`, and their refusals — a body that writes a capability above
 its level is refused, located, with no flag (decision 67).
+
+## 96. One `ContextBase` per function, and `Element` carries its base
+
+**Decided 2026-09-21 by the maintainer.** In his words: *"todos da mesma função deve usar o mesmo
+BaseContext não pode ser usar um BaseElement não se misturaria com um BaseQualquer outro tipo · no
+Element deve ter o type base"*. Two rules, one idea — the anchor is a property of the body, not of
+each call:
+
+1. **Every `use` in one function resolves against the same `ContextBase`.** Mixing hooks anchored at
+   two different bases in one body is refused, even where each `use` is legal on its own. Today
+   RC2 asks only that a hook be anchored at a **subtype** of the body's `Base`
+   (`builtins.d.bp` § 1C), so two different subtypes can meet in one function and nothing says no.
+   The refusal is located at the second `use` and names both bases (decision 67 — no flag).
+2. **`Element` carries its base type.** `Element` is its own base today
+   (`repository/jhonstart/modules/jhonstart/src/element.bp:8` — `implement @Context<Element, Element>`),
+   which makes "the same base" vacuous for every component and gives a library no way to state that
+   its hooks belong to one tree and not another. `Element` declares a base type and names it in its
+   `implement` clause; the name is jhonstart's to choose, and `@Context<ContextBase, Return>`
+   (`builtins.d.bp:177`) is what it fills.
+
+Bears on: decision 88 (a component is `#[@context] fn … -> Element`) is unchanged — what changes is
+what `Element`'s first type argument is. Decision 90's owner rule reads the same way. Question 92
+(whether a component that activates nothing carries the annotation) is untouched by this.
+Implements: the RC2 check in `comptime/infer.zig`, `Element`'s declaration in jhonstart, and front
+20, which owns the surface both live on.
