@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Five open, 91 to 94 and 97** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
+**Six open, 91 to 94, 97 and 99** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
 `04-jhonstart`, 93 by front 19 step 2's landing the same day, 94 by the wave sweep that followed.
 **91 and 93 are now questions about decision 95's chain** (`@Context` ⊃ `@Future` ⊃ `@Result`) and
 should be answered with it: 91 asks whether the context-owner unwrap follows the chain to any
@@ -8,7 +8,7 @@ payload, 93 whether `inContextFn` follows the same rule `annotated` does;
 91, 92 and 94 are **non-blocking**: the specs and the library compile either way, and each answer is a rewrite of
 prose, not of a landed refusal. The twenty questions raised while the milestone was cut and while
 front 19 landed (71–90) are answered in [`decisions-taken.md`](./decisions-taken.md). The next free
-number is **98**.
+number is **100**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -139,3 +139,22 @@ signature, whereas removing the channel later would break every generator that u
 larger question about whether two generator effects earn their keep, and belongs to front 15.
 **Blocks.** Front 20 step 2's generator row, and nothing else — the rest of decision 95's chain is
 implementable without it.
+
+## 99. `getContex` is missing a `t`
+
+**Raised by:** front 20 (C-28), 2026-09-21, as the one of its twelve findings no step owned.
+**Measured.** The context-retrieval intrinsic is spelled `getContex` everywhere it exists:
+`libs/std/src/builtins.d.bp`, `builtins_fns.d.bp`, `docs.md:631`, `comptime/stdlib/prelude.zig:16`,
+`comptime.zig`, `env.zig`, `infer.zig`, the diagnostic codes `context-getcontex-outside-context-fn`
+and `context-getcontex-expects-type` in `diagnostics.zig`, their rules RC4/RC5 in
+`comptime/tests/infer_errors.zig`, and three snapshots whose slug carries the name. It is a typo,
+not a convention — nothing else in the language drops a letter.
+**Options.** (a) rename to `getContext`, moving the two diagnostic codes and the three snapshot
+slugs with it; (b) keep the spelling, and write in `builtins.d.bp` that it is deliberate so no
+future reader 'fixes' it; (c) accept both, with `getContex` deprecated — rejected on sight by
+decision 67, which forbids two spellings of one thing.
+**Recommendation.** (a). It is mechanical, it is nine files plus three snapshot renames, and every
+consumer of the name is inside this repository — no library spells it today. The reason it is a
+question and not a sweep is decision 98: the maintainer amended a rename mid-flight over exactly
+this class of change, so the name of a public builtin is his to take.
+**Blocks.** Nothing. Front 20 landed around it.
