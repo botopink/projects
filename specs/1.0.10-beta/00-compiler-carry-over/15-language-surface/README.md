@@ -290,6 +290,40 @@ existing program changes meaning — see [Blast radius](#blast-radius).
       with [`16-formatter`](../16-formatter/README.md) — a form the parser accepts and the printer
       cannot print back is a new defect, not a closed one
 
+### Step 4b — Two forms measured after this front was written (added 2026-09-21)
+
+Both verified against compiler `ead0b645` with a control beside each, and both found by a library
+front paying a real cost for them rather than by a sweep.
+
+**A negative integer literal cannot be a decorator argument, and the diagnostic blames the wrong
+token.** `#[mark(20)]` on a `pub type` compiles and runs; `#[mark(-20)]` reds:
+
+```text
+error: this token cannot appear here
+ --> src/main.bp:3:9
+3 | #[mark(-20)]
+  |         ^^ unexpected `20`
+```
+
+The caret is on the **digits**. The parser consumed the `-` as something else and then reported the
+number it found, which sends a reader looking at the literal rather than at the sign. rakun front 07
+paid for this one: every order in its spec's band below zero became unwritable, and it shipped
+`#[order("-100")]` parsed through front 05's `toI32`, recording the deviation as forced rather than
+chosen. When the minus parses, that parameter goes back to `n: i32` and the `toI32(` wrapper is
+deleted — nothing else in that library moves.
+
+**A lambda body inside `loop` needs a `;` the block shape says it should not.**
+`loop (xs) { x -> @print(x) };` reds `this token cannot appear here`;
+`loop (xs) { x -> @print(x); };` compiles. It cost front 07 three compiles, and it belongs beside
+this front's standing row that a block-shaped statement ends itself.
+
+**Acceptance**
+- [ ] `#[mark(-20)]` compiles and the annotation receives `-20`
+- [ ] if the form is instead to be **refused**, the message names the **sign**, not the digits — the
+      present diagnostic is wrong under either answer, which is why this bullet is unconditional
+- [ ] `loop (xs) { x -> f(x) };` parses, or reports a located message naming the missing `;`
+- [ ] a cell for each, each proved able to fail by planting the pre-fix behaviour
+
 ### Step 5 — Hand the surface over
 
 Nothing here is finished until the language suite writes it and the documents say it.

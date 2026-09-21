@@ -362,6 +362,47 @@ answer is yes, all three rows are one fix.
 `type_owner_path`, `imported_fns`) is the same shape one level up and is `02-erlang`'s, in worktree
 `.tasks/cross-module-exports`. The two should read each other's fix before either lands.
 
+### Step 13 — a local binding escapes its function (added 2026-09-21)
+
+Found by jhonstart front 29, verified against `ead0b645` in two shapes.
+
+**Bare.** A `val` declared inside one function is visible to every top-level declaration *after* it:
+
+```bp
+fn holder() -> string { val v = "inner"; return v; }
+fn later()  -> string { return v; }
+```
+
+This **compiles**. commonJS then throws `ReferenceError: v is not defined` at run time and erlang's
+`erlc` refuses the emitted module with `variable 'V' is unbound`. The checker handed both backends a
+program that names something nothing declares — which is the whole defect: not that the program
+fails, but that it was accepted.
+
+**Shadowing**, which is the form that actually bites. A local whose name matches an exported
+declaration retypes that declaration for the *next* function:
+
+```bp
+pub fn p(label: string) -> string { … }
+fn first()  -> i32    { val p = Thing(n: 3); return p.n; }
+fn second() -> string { return p("x"); }      // error: expected string, got Thing
+```
+
+Inside a `#[@context]` body front 29 got the same error **with no line and no column**. In
+`repository/jhonstart` the exported tag constructors include `p`, `a`, `li`, `text`, `form`, `link`,
+`title` and `body`, so every file in that package is one declaration order away from it.
+
+Repro: `repository/jhonstart/repro/local-binding-leaks-to-later-decls/` — twelve lines, jhonstart-free.
+
+**Acceptance**
+- [ ] the bare shape is **refused at compile time**, located at the use, naming the function the
+      binding belongs to
+- [ ] the shadowing shape resolves `p` to the exported declaration, and a local named `p` shadows it
+      **only inside the function that declares it**
+- [ ] the `#[@context]` case carries a line and a column — a located message is not optional because
+      the body is a comptime one
+- [ ] cells for both, each proved able to fail by planting the pre-fix behaviour, and the bare one
+      asserted on **both** rows, since today it fails differently on each
+
 ## Acceptance — the `expected-failures.txt` lines this front deletes
 
 `repository/botopink-lang/tests/language/expected-failures.txt`, at `c2dd780`. **31 of 54.** A line
