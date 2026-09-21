@@ -38,6 +38,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [84](#84-the-comptime-runtime-follows-the-targets-vm-beam-by-default) | Default comptime runtime | beam for erlang/beam targets and by default; wat (wasm3) for js/node/wasm targets; server half → beam, client half → wat |
 | [85](#85-the-snapshot-tree-is-doubled-as-asked) | Double the snapshot tree? | (a) as asked — `codegen/{beam,wat}/<target>`, pair equality asserted |
 | [86](#86-opcodes-pinned-to-otp-28-with-the-stable-subset) | OTP opcode table | (a)+(c): OTP 28's table, the subset stable since OTP 24, refusal below the floor |
+| [87](#87-the-boundary-directives-stay-library-decorators--use-never-leaves-a-function-body) | Boundary directives | (a) `#[client]` / `#[server]` / `#[cache]` stay library decorators; `use` is never a module-level directive |
 | [88](#88-use-lowers-transparently-and-a-component-is-context-fn---element) | `use` lowering on commonJS | (a) transparent on every backend; **amended:** a component is `#[@Context] fn … -> Element` and `Element` implements the context behavior |
 | [89](#89-future-is-unwrapped-for-the-context-owner) | `use` in `-> @Future<Element>` | (a) unwrap `@Future<T>`; `request()` is `-> @Context<Element, Request>` |
 
@@ -181,6 +182,17 @@ harness asserting pair equality. Implements: `00 · 18-comptime-runtimes` step 4
 restricted to the subset stable since OTP 24, a `beam_lib` validator run in the test, and a clear
 refusal below the floor. Implements: `00 · 18-comptime-runtimes` step 1c.
 
+## 87. The boundary directives stay library decorators — `use` never leaves a function body
+
+**Decided 2026-09-20 by the maintainer: (a)**, first written as `[A]` and then confirmed with the
+reason, in his words: *"acho que o `use` não deve ser usado para `use client;` / `use server;` fora do
+corpo de uma função"*. `use` is the activation keyword inside a body (`val c = use state(0)`,
+decision 88) and does not take a second, module-level role; `#[client]`, `#[server]` and `#[cache]`
+remain decorators defined by the libraries (front 29 owns `#[client]`), the bundler (front 68) splits
+by reading the marker jhonstart emits, and the two refusals — an Erlang cell in a client module, a
+client hook in a server module — are the libraries' to implement. Front 19's step 4 closes with no
+compiler change; options (b), (c) and (d) are rejected, (d) for the reason quoted.
+
 ## 88. `use` lowers transparently, and a component is `#[@Context] fn … -> Element`
 
 **Decided 2026-09-20 by the maintainer: (a), amended.** `use f(x)` lowers to `f(x)` on every backend;
@@ -208,5 +220,5 @@ over `04-jhonstart/**` examples and maps, tracked in `status.md`.
 **Decided 2026-09-20 by the maintainer: (a).** `contextInfoFromReturn` looks through `@Future<T>` (and
 only `@Future`) and takes `T`'s owner, so `#[@future] fn … -> @Future<Element>` has owner `Element`
 and `request()` is declared `-> @Context<Element, Request>`. A client hook becomes type-legal in a
-server component; the client boundary (front 29's `#[client]`; question 87 decides its spelling) is the rule that says
+server component; the client boundary (front 29's `#[client]`, decision 87) is the rule that says
 which hooks a server body may activate. Closes `language-gaps.md` row 53.

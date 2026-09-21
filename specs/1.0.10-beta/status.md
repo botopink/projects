@@ -6,8 +6,8 @@ carry-over holds the only code in flight)
 
 Count: 27 compiler carry-over items (`00`, C-01…C-27) · `01-std` (6 steps + 3 carried std fronts) ·
 `02-packaging` · 51 rakun · 9 jhonstart · 22 emilia · 9 onze fronts. The percentage weighs items
-equally; it is a ratio, not a measurement. Open questions for the maintainer: 2
-([`decisions-pending.md`](./decisions-pending.md), 75 — the `workspaces` counter-proposal — and 87, answered ambiguously and held for confirmation); 71–74, 76–86, 88 and 89 were answered the same day ([`decisions-taken.md`](./decisions-taken.md)).
+equally; it is a ratio, not a measurement. Open questions for the maintainer: 1
+([`decisions-pending.md`](./decisions-pending.md), 75 — the `workspaces` counter-proposal); 71–74 and 76–89 were answered the same day ([`decisions-taken.md`](./decisions-taken.md)).
 
 ## Done
 - [x] 1.0.5-beta closed — [`../1.0.5-beta/closure.md`](../1.0.5-beta/closure.md); fronts 06 and 10 landed in full, 15 with three hold-backs, the rest partial (row by row there)
