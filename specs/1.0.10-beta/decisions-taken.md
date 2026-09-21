@@ -252,3 +252,41 @@ only `@Future`) and takes `T`'s owner, so `#[@future] fn … -> @Future<Element>
 and `request()` is declared `-> @Context<Element, Request>`. A client hook becomes type-legal in a
 server component; the client boundary (front 29's `#[client]`, decision 87) is the rule that says
 which hooks a server body may activate. Closes `language-gaps.md` row 53.
+
+## 90. A wrapper effect whose return owns a context activates on its own
+
+**Decided 2026-09-21 by the maintainer: (a), scoped to a wrapper effect.** In his words: *"crio que
+isso não é necessa já que o element implemente context e o @Context já implemente o comportamento
+para future"* — the second annotation says nothing the return type does not already say. A fn that
+carries a **wrapper effect** annotation (`#[@future]` today) and whose return type unwraps to a
+context owner (decision 89: through `@Future<T>`, to `T`'s owner) may activate hooks **without**
+`#[@context]`:
+
+```bp
+#[@future]
+fn Page() -> @Future<Element> {   // activates: the owner is Element
+    val r = use request();
+}
+
+#[@context]
+fn Widget() -> Element {          // no wrapper effect — the annotation is still required
+    val c = use state(0);
+}
+
+fn Widget2() -> Element {         // use-without-context-effect
+    val c = use state(0);
+}
+```
+
+What this does **not** change: R5 stands unamended — one effect annotation per fn, and
+`#[@future] #[@context]` is still `effect-duplicate-annotation`; option (b) (the wrapper/capability
+split of the duplicate rule) and (c) (a combined spelling) are rejected. Decision 88 stands wherever
+there is no wrapper effect: a body with **no** effect annotation that activates a hook is still
+`use-without-context-effect`, and `#[@context]` on a fn whose return type owns no context is still
+`effect-wrapper-mismatch` (decision 67 — the dispensation is not a way to switch a refusal off, it
+is the return type answering the same question the annotation would).
+
+The compiler half is front 19 step 2, with 89: `contextInfoFromReturn` looks through `@Future<T>`,
+and `FnContext.annotated` (`infer.zig:987`) is set either by `#[@context]` or by a wrapper effect
+whose unwrapped return type owns a context. Unblocks front 28's `request()` and every server
+component in `04-jhonstart` that reads the request scope.
