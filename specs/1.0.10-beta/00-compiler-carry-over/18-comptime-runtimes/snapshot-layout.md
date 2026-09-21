@@ -1,5 +1,7 @@
 # The snapshot re-layout: `codegen/{beam,wat}/{beam,commonJS,erlang,errors,wasm}`
 
+**Decided (85, 2026-09-20): the tree is doubled as asked — option (a) of § 7; `git mv` into `beam/`, `wat/` recorded once and audited pair by pair, the harness asserting pair equality; § 6's (b) stands for `comptime/`.**
+
 The directory rule, the harness change, the migration, the doubled counts, and how a per-runtime
 difference is reported. Counts measured 2026-09-20 ([`evidence.md`](./evidence.md) E-6).
 
@@ -116,11 +118,12 @@ recording the BEAM exchange and rely on `parity.zig` for wat. This front takes *
 runtime-independent by construction and stays single; the 5 exchanges become 10 files whose replies
 the audit compares like the codegen pairs. `comptime/errors/` (137) and `comptime/templates/` (1)
 carry no runtime section and do not move. This is the mirror of README question 3 for the
-`comptime/` tree; if the maintainer answers (a) there, the same answer applies here.
+`comptime/` tree; decision 85 answered (a) there, and (b) here is its application to a tree whose
+AST half cannot differ.
 
 ## 7. The doubled counts
 
-| | before | after (question 3 option a) | after (option c) |
+| | before | after (decision 85 — option a, taken) | after (option c, not taken) |
 |---|---:|---:|---:|
 | `codegen/` files | 1 346 | **2 692** | 1 346 + 28 = 1 374 |
 | `codegen/` bytes | 3.69 MB | ≈ 7.4 MB | ≈ 3.8 MB |
@@ -147,5 +150,5 @@ the new path if the rename is detected, and it is: 1 346 pure renames). The orde
 land the surviving worktrees first (their snapshot edits are few), then the layout commit; if the
 layout must go first, their edits are re-applied by `git mv`-aware rebase (`git rebase
 --rebase-merges` detects the renames). C-01 (`.tasks/identity`) re-records ≈ 318 cells under
-`codegen/{erlang,beam}/` — under the new tree that is 318 × 2 files; question 3's option (c) would
-make it 318 again.
+`codegen/{erlang,beam}/` — under the new tree that is 318 × 2 files (decision 85; option (c) would
+have made it 318 again).

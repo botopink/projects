@@ -1,5 +1,7 @@
 # The wat comptime runtime
 
+**Decided (84, 2026-09-20): this runtime is the comptime runtime of every build whose target is `commonJS`, `typescript` or `wasm`, and of the client half of a split project; erlang/beam targets and a build with no target use beam. No flag.**
+
 What a comptime body needs at run time, what `wat.zig` gives today, how the gap is closed, how
 wasm3 is embedded, and the wire encodings. Measured 2026-09-20 ([`evidence.md`](./evidence.md)
 E-8, E-9, E-10).
@@ -165,4 +167,5 @@ stays the snapshot's `COMPTIME WAT` section; the binary is never written to disk
 equivalent and none of the 183 modules does any of it (E-9: 0 `spawn`, 0 `receive`, 0 `ets`); a body
 that reaches an Erlang-only BIF is refused on wat and recorded as a parity gap, which is the honest
 shape: the BEAM runtime is the reference, and the wat runtime's coverage is a measured number that
-must reach 33/33 before question 2's default can flip.
+must reach 33/33 before a `commonJS`/`wasm`-target build is switched onto it (decision 84 names
+the target rule; step 2's acceptance is the gate for the switch).
