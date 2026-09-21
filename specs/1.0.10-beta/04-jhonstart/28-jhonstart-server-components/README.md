@@ -198,6 +198,33 @@ duplicated key.
 
 ### Step 2 — Binding front 62's request context
 
+> **Amended 2026-09-21, on landing (jhonstart `6d6c007`).** The six cells below are **not writable
+> as spelled**, in either direction, and both halves were measured rather than assumed:
+>
+> - an `#[@External.Erlang(…)]` cell with no `#[@External.Node]` sibling reds the **commonJS
+>   compile** at the wrapper's call site — `` `__jhMethod` has no `#[@External.<Target>(…)]` for the
+>   node backend `` — so one erlang-only accessor takes the whole member off the commonJS row even
+>   though nothing there calls it;
+> - and on erlang the cells resolve, then die `{error, undef}` at run time, because nothing named
+>   `rakun_request_context` is on the BEAM: rakun's module is not jhonstart's to load.
+>
+> What landed instead is front 26's precedent exactly: **dual-target cells against jhonstart's own**
+> `jhonstart_server` / `./server_runtime.mjs`, both halves shipped, with `fillRequest` as the single
+> `pub` writer that front 62's dispatcher calls once per request. That keeps the seam where
+> `02-packaging` puts it — the app names the framework, never the reverse — and if front 62 would
+> rather own the module atom, it is one line per accessor in `server.bp`.
+>
+> The three acceptance bullets naming `rakun_request_context` are amended with it. The compile-time
+> refusal itself is right under decision 67 and is recorded as a compiler row in `status.md`: the
+> open question there is whether the refusal can be owed by the **reachable call** rather than by
+> the declaration's presence.
+>
+> `querystring.parse` below is **front 26's `decodePairs`** in the landed file. `std/querystring` is
+> dead on the erlang row (`querystring.bp:22` emits a bare `slice/3` it never defines, `erlc`
+> refuses the module and the runner skips it silently — worktree `.tasks/std-slice-shim`), and this
+> front's gate is erlang. That also satisfies this track's own "one pair-list decoder in the
+> package" principle, so it stands whether or not std is fixed.
+
 ```bp
 #[@External.Erlang("rakun_request_context", "method")]
 declare fn __jhMethod() -> string;
@@ -513,6 +540,12 @@ Old acceptance (all restated in *Step 3* above): pattern compiles; `await` works
 > - `root.bp` gains `pub mod server;`
 
 Decided differently: front 94 owns `src/root.bp` and `botopink.json`; this front hands it `pub mod server;` and the `files` swap (*Step 5*).
+
+> **Amended 2026-09-21, on landing.** Front 28 made both edits itself — one line each. Front 94 had
+> already landed, so there was no one to hand them to, and the intermediate state the hand-off
+> implies does not build: deleting `server.d.bp` while `botopink.json` still lists it is not a tree
+> any gate passes. Routing a one-line edit through a front that has closed costs more than it
+> protects; if the ownership line matters more than the buildability, both lines revert trivially.
 
 ### Step 5 — test on `dict` and `req.path()`; commonJS + erlang gate (different decision)
 
