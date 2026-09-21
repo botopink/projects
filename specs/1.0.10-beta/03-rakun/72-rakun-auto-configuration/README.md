@@ -1,5 +1,42 @@
 # Front 72 — rakun Auto-Configuration
 
+> **Amended 2026-09-21, on landing (rakun `10b6898`, 302 → 346 · 300 → 344).** Five corrections the
+> front measured rather than assumed. Three are substantive.
+>
+> **1 · "erlang-only, and the lib test runner is told so" is not satisfiable.** There is no per-file
+> target gate. `botopink test` compiles every `test/*.bp` on **both** rows
+> (`compiler-cli/src/cli/test_cmd.zig`), and the only whitelist is per-**lib** (`botopink.json`
+> `targets`, `lib-test-runner/src/discovery.zig`), which for rakun core is `["commonJS"]`. An
+> erlang-only host cell would therefore red the node row *and* never run in the gate — the § Test
+> plan and the host-seam table are amended to front 06's precedent: both halves shipped.
+>
+> **2 · `rkAutoApply` / `rkAutoMatched` / `rkAutoReport` / `rkModulePresent` are botopink, not host
+> cells.** Names and signatures are unchanged. Nothing this front stores is a fun — four strings per
+> row — so by front 06's own measurement the host is an append-only table, and the sort, the
+> evaluator, the refusals and the renderer are one implementation compiled twice. Read "a new kind of
+> condition adds a branch in `rakun_autoconfig:evaluate/2`" as "a branch in `conditions.bp`'s
+> `evaluateRecord`".
+>
+> **3 · The registration signature was missing a datum.** A `#[bean]` method's *provided type* is not
+> derivable from `Type.method`, so an applied configuration would be invisible to a later
+> `#[conditionalOnMissingBean]`. It landed as a separate cell (`rkAutoProvides(name, typeName)` /
+> `rkAutoProvided(name)`) rather than a sixth letter in the `M|P|B|X|F` blob, specifically so
+> `rkAutoConditions` stays byte-equal to what this document's examples assert.
+>
+> **4 · `examples/override-and-report-example.bp` contradicts its own acceptance.** Its middle tests
+> call `autoConfigure()` again expecting re-evaluation after a property change; its last test asserts
+> idempotence. The acceptance won — `rkAutoUnseal()` exists for a test that wants a second pass.
+>
+> **5 · `examples/mail-auto-configuration-example.bp` will not compile as written.**
+> `RakunMailAutoConfiguration` and `RakunMailDevAutoConfiguration` both declare
+> `#[bean] mailSender -> MailSender`, which emits two `pub fn __rkMake_MailSender` in one module.
+>
+> One narrowing, recorded in the library's `AGENTS.md` and not a spec error: `#[profile]` cannot gate
+> `__rkMake_<Type>` while `decorators.bp` is frozen — it emits the factory unconditionally. The
+> marker therefore leaves the component **unbuilt** (`rkBuildCount` stays 0, asserted) and emits a
+> raiser carrying the diagnosis, rather than a duplicate factory. It goes away when `decorators.bp`
+> unfreezes.
+
 **Track:** B rakun
 **Priority:** critical — without it every `rakun-*` module must be wired by hand in every application, and "add the module, it configures itself" — the single promise that distinguishes Spring Boot from Spring — is absent from the port
 **Target:** erlang (server)
