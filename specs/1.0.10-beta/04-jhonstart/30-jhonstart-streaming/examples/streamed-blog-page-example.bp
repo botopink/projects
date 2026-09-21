@@ -74,6 +74,7 @@ pub fn postsBoundary(ordinal: i32) -> Boundary {
 }
 
 // The shell. Everything here is cheap, so it goes out first.
+#[@context]
 pub fn BlogPage(ordinal: i32) -> Element {
     return div([
         header([text("botopink", attrs: [])], attrs: [#("class", "site-header")]),

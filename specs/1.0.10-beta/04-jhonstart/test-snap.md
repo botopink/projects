@@ -595,6 +595,7 @@ import { assertHtml, assertClientBundleEntry, assertText } from "jhonstart-test"
 pub type LikeProps(postId: string, likes: i32)
 
 #[client]
+#[@context]
 pub fn LikeButton(props: LikeProps) -> Element {
     return button([text("♥ " + props.likes.toString(), attrs: [])], attrs: [#("data-post", props.postId)]);
 }
@@ -752,6 +753,7 @@ test "stream: two boundaries ---- declaration order in the harness" {
 ```
 
 ```bp
+#[@context]
 pub fn Loading() -> Element {
     return div([span([text("Loading…", attrs: [])], attrs: [#("class", "spinner")])], attrs: [#("class", "loading")]);
 }
@@ -889,6 +891,7 @@ signal=false true
 ```
 
 ```bp
+#[@context]
 pub fn GlobalError(info: ErrorInfo) -> Element {
     return htmlTag([
         head([title([text("Error", attrs: [])], attrs: [])], attrs: []),
@@ -917,6 +920,7 @@ test "boundary: global error owns its document" {
 ```
 
 ```bp
+#[@context]
 pub fn NotFound() -> Element {
     return section([h2([text("Not found", attrs: [])], attrs: []), p([a([text("Back to the blog", attrs: [])], attrs: [#("href", "/blog")])], attrs: [])], attrs: [#("class", "not-found")]);
 }

@@ -157,7 +157,7 @@ that survived a navigation would be a hole whose fill belongs to the previous pa
 
 ### `loading.bp`
 
-A segment's `loading.bp` exports `pub fn Loading() -> Element`. Front 22 discovers the file (kind `S`
+A segment's `loading.bp` exports `#[@context] pub fn Loading() -> Element`. Front 22 discovers the file (kind `S`
 in the route table, `contracts.md § 1`); front 23 builds
 `Boundary(id: holeId(n), fallback: Loading(), child: { -> Page(params) })` around the segment's page,
 with `n` the next ordinal. This front defines the record they build and asserts nothing about file
@@ -180,6 +180,7 @@ pub type Boundary(
     child: fn() -> @Future<Element>,
 )
 
+#[@context]
 pub fn Suspense(b: Boundary) -> Element {
     return Element(
         tag: "div",

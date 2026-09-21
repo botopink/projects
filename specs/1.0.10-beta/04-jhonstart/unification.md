@@ -441,3 +441,27 @@ Appended items: 7 subsections + 1 reference table (5 rows). Example files writte
 | helper `actionState(message)` | `newActionState(message)` | `67/README.md` (Step 1 + § *Naming under the `use` rule*), `67/examples/create-post-form-example.bp`, `modules.md`, `test-snap.md` — the hook took the noun |
 
 Not renamed, and why: `26/README.md:20`, `:42` quote `router.d.bp`'s current header and cells (the file being replaced); § 4 rows here name Next's API; `67/README.md` **Reference:** line names `NEXTJS-DOCS.md`'s section titles; upstream URLs.
+
+### 6b · The `#[@context]` sweep (decision 88)
+
+Decision 88 amended the same rule: a component is no longer "any `fn … -> Element`" but
+`#[@context] fn … -> Element`, with the lowercase effect the compiler actually implements — a capital
+`#[@Context]` is an unknown annotation, silently ignored (decision 67), and a body that activates a
+hook without the annotation is `use-without-context-effect`. **39** component declarations across this
+track now carry it: every `fn <PascalCase>(…) -> Element` in the fronts' examples, in the code blocks
+of `26`, `27`, `29`, `30` and in `test-snap.md`.
+
+Not annotated, and why:
+
+- **Server components.** `#[@future] fn … -> @Future<Element>` takes no second annotation — R5 allows
+  one effect annotation per fn, and decision 90 lets the wrapper effect activate on its own because
+  `@Future<Element>` unwraps to the owner `Element` (decision 89). `#[@future] #[@context]` is
+  `effect-duplicate-annotation`.
+- **`#[@result] fn … -> @Result<Element, string>`** (31's panels). Only `@Future` is unwrapped, so a
+  `@Result` return owns no context; these panels activate nothing and stay as they are.
+- **Element helpers with a lowercase name** (`documentShell`, `greetingBar`, `fallbackFor`, the
+  `…For` pure twins) — they build markup, they are not components and they activate nothing.
+- **Quoted 1.0.7 draft blocks that activate nothing**, under `## Carried from 1.0.7-beta` in `27`,
+  `30` and `31`, and `29`'s `TestComponent` inside a `test` body: they are the record of the old text.
+  The carried blocks that *do* activate (`26`'s two, `29`'s two `Counter`s) are annotated, as they
+  were already respelled by the sweep above.

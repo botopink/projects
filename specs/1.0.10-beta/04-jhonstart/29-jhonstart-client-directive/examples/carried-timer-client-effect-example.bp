@@ -4,6 +4,7 @@
 import {Element, div, p, text} from "jhonstart";
 import {state, effect} from "jhonstart";
 
+#[@context]
 pub fn Timer() -> Element {
     val seconds = use state(0);
     use effect({ ->

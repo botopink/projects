@@ -103,7 +103,7 @@ server on precedence (static > dynamic > catch-all > optional catch-all), and th
 up only on the routes nobody tested.
 
 The five hooks are thin. Each returns `@Context<Element, T>`, which is what makes `use` legal on it
-inside a `-> Element` body — the same capability `hooks.bp` uses for `state`/`memo`
+inside a `#[@context]` body whose owner is `Element` — the same capability `hooks.bp` uses for `state`/`memo`
 (`hooks.bp:30-60`).
 
 ### The js half — front 27 and front 29
@@ -260,7 +260,7 @@ pub fn selectedLayoutSegments() -> @Context<Element, Array<string>> {
 ```
 
 **Acceptance:**
-- [ ] `use pathname()` type-checks inside a `fn … -> Element` body — never the doubled `use` + `usePathname()`: the keyword is the activation, the name is the noun ([`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
+- [ ] `use pathname()` type-checks inside a `#[@context] fn … -> Element` body — never the doubled `use` + `usePathname()`: the keyword is the activation, the name is the noun; without the annotation the body is `use-without-context-effect` ([`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
 - [ ] `pathname()` called WITHOUT `use` also type-checks and returns the string — the server render calls hooks directly, as `jhonstart-counter`'s `StatefulBadge` does
 - [ ] `selectedLayoutSegments()` returns the segments root-first
 - [ ] all six are `pub`
@@ -370,6 +370,7 @@ Items of the 1.0.7 draft not restated above, quoted so nothing is lost; where th
 #[client]
 import {router} from "jhonstart";
 
+#[@context]
 pub fn Breadcrumb() -> Element {
     val r = use router();
     return div([span([text("Path: " + r.pathname())])], attrs: []);
@@ -377,6 +378,7 @@ pub fn Breadcrumb() -> Element {
 ```
 
 ```bp
+#[@context]
 pub fn BlogPost() -> Element {
     val r = use router();
     val slug = r.params().get("slug");

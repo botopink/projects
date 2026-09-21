@@ -25,6 +25,7 @@ pub val metadata: Metadata = Metadata(
     icons: Icons(icon: "/favicon.ico", apple: "/apple-icon.png"),
 );
 
+#[@context]
 pub fn AboutPage() -> Element {
     return div([
         h1([text("Sobre Nós", attrs: [])], attrs: []),

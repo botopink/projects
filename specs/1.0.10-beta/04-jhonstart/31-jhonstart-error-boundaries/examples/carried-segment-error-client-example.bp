@@ -3,6 +3,7 @@
 #[client]
 import {Element, div, h2, p, button, text} from "jhonstart";
 
+#[@context]
 pub fn Error(error: string, retry: fn()) -> Element {
     return div([
         h2([text("Algo deu errado!", attrs: [])], attrs: []),

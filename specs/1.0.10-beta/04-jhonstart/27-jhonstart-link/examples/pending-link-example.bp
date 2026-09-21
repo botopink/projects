@@ -26,6 +26,7 @@ fn checkoutLabel(status: LinkStatus, href: string) -> Element {
 
 // The component. `use linkStatus()` is the hook form; the server render
 // yields the idle status.
+#[@context]
 fn CheckoutLink() -> Element {
     val status = use linkStatus();
     val href = "/checkout";

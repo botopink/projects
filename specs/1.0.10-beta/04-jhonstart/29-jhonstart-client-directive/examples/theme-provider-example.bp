@@ -35,6 +35,7 @@ pub type ThemeProps(
 // `children` is a parameter, not a prop: it is not part of `ThemeProps` and it
 // is not serialized. That separation is the entire point of the pattern.
 #[client]
+#[@context]
 pub fn ThemeProvider(props: ThemeProps, children: Children) -> Element {
     val current = use state(props.theme);
     return div(children, attrs: [#("class", "theme-" + current.value)]);
@@ -43,6 +44,7 @@ pub fn ThemeProvider(props: ThemeProps, children: Children) -> Element {
 // ── the server half ─────────────────────────────────────────────────────────
 
 // A server component. It reads data the browser never sees and renders markup.
+#[@context]
 pub fn Dashboard(userName: string, openTickets: i32) -> Element {
     return section([
         h1([text("Hello, " + userName, attrs: [])], attrs: []),
@@ -56,6 +58,7 @@ pub fn themeIsland(id: string, theme: string) -> Island {
     return Island(id: id, component: "ThemeProvider", props: [#("theme", theme)]);
 }
 
+#[@context]
 pub fn RootLayout(theme: string, page: Element) -> Element {
     return clientMount(themeIsland("i0", theme), [
         serverSlot([page]),

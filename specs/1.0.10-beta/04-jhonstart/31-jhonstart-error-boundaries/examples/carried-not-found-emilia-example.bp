@@ -4,6 +4,7 @@ import {Element, div, h2, p, text} from "jhonstart";
 import {Link} from "jhonstart";
 import {emilia, Token} from "emilia";
 
+#[@context]
 pub fn NotFound() -> Element {
     val containerClass = emilia([.Pad.All.8, .Text.Center]);
     return div([

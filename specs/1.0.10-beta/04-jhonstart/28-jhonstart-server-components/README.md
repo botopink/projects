@@ -237,8 +237,8 @@ pub fn headers() -> Array<#(string, string)> {
 }
 ```
 
-`request()` is a plain function, not a hook. See *Language gaps* for why `use request()` is not
-available and what would make it so.
+`request()` is a plain function, not a hook, until front 19 step 2 lands. See *Language gaps* for
+what it becomes then (a `@Context<Element, Request>` hook activated inside the `#[@future]` body).
 
 **Acceptance:**
 - [ ] every cell is `#[@External.Erlang]`; there is no `#[@External.Node]` cell in the file
@@ -328,7 +328,7 @@ along.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| The `use` prefix is legal only on a `@Context<Element, _>`-returning call inside a fn whose return is `Element` (`hooks.bp:3-6`, `§4.4`). A server component returns `@Future<Element>`, so `use request()` cannot be written — the whole reason `server.d.bp` stayed gated | `request()`, `cookies()`, `headers()` in `server.bp` | plain functions over the BEAM process dictionary | let a `@Context<B, _>` capability be consumed inside a fn returning `@Future<B>`, not only `B` |
+| A server component returns `@Future<Element>`, and the compiler does not yet look through `@Future<T>` for the context owner, so `use request()` cannot be written — the reason `server.d.bp` stayed gated | `request()`, `cookies()`, `headers()` in `server.bp` | plain functions over the BEAM process dictionary | **decided, unwritten**: [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md) step 2 — decision 89 unwraps `@Future<T>` to `T`'s owner, decision 90 lets the wrapper effect activate on its own, so `#[@future] fn Page() -> @Future<Element>` writes `use request()` with no second annotation and `request()` is re-declared `-> @Context<Element, Request>` |
 | Declared parameter defaults are never applied | every `Element` builder call in both examples spells `attrs: []`, inner `text(…)` included | write every argument | apply the declared default when an argument is omitted |
 | `xs[0]` silently drops the index on the beam backend (`tests/language/expected-failures.txt`) | reading the first row of a loader's result | `.at(0).unwrapOr(default)` | make the index expression lower correctly on beam, or reject it there |
 
@@ -452,7 +452,7 @@ Old acceptance:
 |---|---|
 | one cell `getRequest` returning the record | six string cells (`method`, `path`, `params`, `query`, `headers`, `cookies`) decoded with `querystring.parse` (*Step 2*) |
 | `#[@External.Node("onze13/runtime", …)]` + `#[@External.Erlang("onze13_runtime", …)]` | `#[@External.Erlang("rakun_request_context", …)]` only; no Node cell in the file |
-| `request() -> @Context<Http, Request>`, consumed as `use request()` | `request() -> RequestData`, a plain function — `use` is legal only on `@Context<Element, _>` inside a fn returning `Element` (*Language gaps*, row 1) |
+| `request() -> @Context<Http, Request>`, consumed as `use request()` | `request() -> RequestData`, a plain function until front 19 step 2 lands decisions 89 and 90; then `request() -> @Context<Element, Request>`, activated as `use request()` inside the `#[@future]` body itself (*Language gaps*, row 1) |
 
 ### Old inline examples — `.then` closure and `use request()` (different decision)
 
@@ -482,7 +482,7 @@ pub fn SearchPage() -> @Future<Element> {
 }
 ```
 
-Decided differently: a loader is a named `#[@future] fn … -> @Future<T>` awaited at statement level, never a `.then` closure (*Mechanism § 4*, *Step 4*); `use request()` cannot be written (*Language gaps*); the query accessor is `queryParam` (*Step 1*); rendered untrusted text goes through front 01's `escape.html` (*Mechanism § 5*); `text(…)` and `h1(…)` spell `attrs: []` (*Language gaps*, row 2).
+Decided differently: a loader is a named `#[@future] fn … -> @Future<T>` awaited at statement level, never a `.then` closure (*Mechanism § 4*, *Step 4*); `use request()` is decided and waits on front 19 step 2 (*Language gaps*); the query accessor is `queryParam` (*Step 1*); rendered untrusted text goes through front 01's `escape.html` (*Mechanism § 5*); `text(…)` and `h1(…)` spell `attrs: []` (*Language gaps*, row 2).
 
 ### Step 3 pattern with `Dict` params
 
@@ -557,7 +557,7 @@ Decided differently: the `Request` behavior, the `Http` phantom base and the `@C
 
 > `Http` ContextBase is a phantom type supplied by the host — mirrors `Element` for client components.
 
-Decided differently: `Http` is dropped; the `use` prefix is bound to `@Context<Element, _>` inside `-> Element` bodies and the proposed surface is to let a `@Context<B, _>` be consumed in a fn returning `@Future<B>` (*Language gaps*, row 1).
+Decided differently: `Http` is dropped. Decision 89 makes `@Future<Element>` unwrap to the owner `Element`, so one base serves the whole render tree and a server hook is `-> @Context<Element, Request>`; decision 90 lets the `#[@future]` annotation activate on its own (*Language gaps*, row 1).
 
 ### Reference rows from 1.0.7 overview/fronts
 

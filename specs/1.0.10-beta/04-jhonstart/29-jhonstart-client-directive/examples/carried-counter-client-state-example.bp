@@ -4,6 +4,7 @@
 import {Element, div, button, p, text} from "jhonstart";
 import {state} from "jhonstart";
 
+#[@context]
 pub fn Counter() -> Element {
     val count = use state(0);
     return div([

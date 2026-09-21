@@ -218,7 +218,7 @@ The body calls no sibling function and contains no `//` comment — both are har
 decorator body.
 
 **Acceptance:**
-- [ ] `#[client]` on `fn X() -> Element` emits `__jhClient_X` returning `"X"`
+- [ ] `#[client]` on `#[@context] fn X() -> Element` emits `__jhClient_X` returning `"X"`
 - [ ] `#[client]` on a `type` fails with the placement message
 - [ ] `#[client]` on a fn returning `@Future<Element>` fails — a server component is not a client one
 - [ ] the emitted name is reachable at the application site, which must therefore import `client`;
@@ -358,7 +358,7 @@ Items of the 1.0.7 draft not restated above, quoted so nothing is lost; where th
 
 > The `use` prefix is legal in any `-> Element` body (context-inference).
 
-Not restated in this README; the rule (`use` only on `@Context<Element, _>` inside a fn returning `Element`, `hooks.bp:3-6`, `§4.4`) is stated in front 28's *Language gaps*.
+Superseded by decision 88: `use` is legal in a `#[@context]` body whose return type owns the context, not in *any* `-> Element` body — a component without the annotation is an ordinary function and a `use` in it is `use-without-context-effect`. The rule is [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md) § *The rule for libraries*; front 28's *Language gaps* carries the server-component half.
 
 ### Old inline examples — zero-param `Counter` and direct client call from a server component (different decision)
 
@@ -368,6 +368,7 @@ Client component with state:
 
 ```bp
 #[client]
+#[@context]
 pub fn Counter() -> Element {
     val count = use state(0);
     return div([
@@ -393,6 +394,7 @@ The *Mechanism* variant of `Counter` (`attrs: []` on every builder, `"count: "` 
 
 ```bp
 #[client]
+#[@context]
 pub fn Counter() -> Element {
     val c = use state(0);
     return div([

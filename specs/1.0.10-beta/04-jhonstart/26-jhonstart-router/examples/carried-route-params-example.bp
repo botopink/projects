@@ -5,6 +5,7 @@
 import {router} from "jhonstart";
 import {Element, div, h1, text} from "jhonstart";
 
+#[@context]
 pub fn BlogPost() -> Element {
     val r = use router();
     val slug = r.params().get("slug");

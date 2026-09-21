@@ -1,6 +1,15 @@
 # Front 19 — `use` surface, construct by construct
 
-Derived from the code at `botopink-lang` `d55a3b87` (paths relative to `modules/compiler-core/src/`); nothing here was compiled. A row marked **recorded** has a checked-in snapshot or unit cell that shows the outcome; every other row is derived from the cited lines. `Element` is `type Element(…) implement @Context<Element, Element>` (`repository/jhonstart/src/element.bp:8`).
+Derived from the code as it stood on 2026-09-20 (paths relative to `modules/compiler-core/src/`); nothing here was compiled. A row marked **recorded** has a checked-in snapshot or unit cell that shows the outcome; every other row is derived from the cited lines. `Element` is `type Element(…) implement @Context<Element, Element>` (`repository/jhonstart/src/element.bp:8`).
+
+## 0 · What steps 1 and 5 changed in this table
+
+This is the **baseline**, kept as the per-construct record of what the front found. Read every row below against these four corrections; [`README.md`](./README.md) § *Landed since* is the detail.
+
+1. **The commonJS column is obsolete everywhere it shows a rename.** `useState`, `useEffect`, `useMemo`, `useOptimistic`, the inferred dependency arrays and the "receiver calls unrenamed" exception are all gone (decision 88): commonJS lowers `use f(x)` to `f(x)`, exactly as erlang, wasm and beam do. § 3's commonJS row is a description of deleted code, and its closing paragraph about `jhonstart-counter/out/main.js` describes a bug that no longer exists.
+2. **The activating body needs `#[@context]`.** Every "Infers? yes" row below also requires the annotation on the enclosing fn (or, under decision 90, a wrapper effect whose unwrapped return owns a context). Without it the row is `use-without-context-effect`, a diagnostic that did not exist when this table was written. `#[@Context]` with a capital is an unknown annotation, silently ignored.
+3. **The two holes are closed.** The `val c = use …` after a `return` row and the `use` inside an `if`'s own block row are **parse errors**, not "yes (hole)".
+4. **§ 5's library sites are done** — the library front renamed `useRouter` → `router`, `useCounter` → `counter`, `useToggle` → `toggle` and put `#[@context]` on the activating bodies. What is left there is `server.d.bp`'s `request()`, whose owner becomes `Element` in step 2.
 
 ## 1 · The table
 

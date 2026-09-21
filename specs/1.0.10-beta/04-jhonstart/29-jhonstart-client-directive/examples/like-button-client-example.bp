@@ -42,6 +42,7 @@ pub type LikeProps(
 // The interactive component. `data-onze-on-click` names a handler the client
 // runtime binds after hydration; there is no JavaScript string in this file.
 #[client]
+#[@context]
 pub fn LikeButton(props: LikeProps) -> Element {
     val c = use state(props.likes);
     return button([
@@ -73,6 +74,7 @@ fn postRow(id: string, p: Post) -> Element {
 
 // A server component. Everything it renders is markup; the only client code on
 // the page is whatever `LikeButton` compiles to in front 68's bundle.
+#[@context]
 pub fn PostList(posts: Array<Post>) -> Element {
     return div([
         h1([text("Posts", attrs: [])], attrs: []),

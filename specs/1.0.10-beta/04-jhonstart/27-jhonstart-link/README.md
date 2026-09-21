@@ -151,7 +151,7 @@ primitives, and everything it decides is a pure function of two key lists.
 
 `linkStatus()` returns `LinkStatus(pending: bool, href: string)` from `__onzeLinkStatus()`, so a
 link can render a spinner while its own navigation is in flight. It is a hook —
-`@Context<Element, LinkStatus>` — and is legal under `use` inside a `-> Element` body, the same
+`@Context<Element, LinkStatus>` — and is legal under `use` inside a `#[@context] fn … -> Element` body, the same
 capability `hooks.bp` uses.
 
 ## Steps
@@ -204,6 +204,7 @@ pub fn withPrefetch(p: LinkProps, prefetch: bool) -> LinkProps {
 ### Step 2 — `Link`
 
 ```bp
+#[@context]
 pub fn Link(props: LinkProps, children: Children) -> Element {
     var pairs: Array<#(string, string)> = [#("href", props.href), #("data-onze-l", "1")];
     if (!props.prefetch) pairs = pairs.append([#("data-onze-prefetch", "0")]);
@@ -299,7 +300,7 @@ pub fn linkStatus() -> @Context<Element, LinkStatus> {
 **Acceptance:**
 - [ ] every cell in the file is `#[@External.Node]`; there is no `#[@External.Erlang]` cell
 - [ ] `linkStatus()` is idle (`pending == false`, `href == ""`) when nothing is in flight
-- [ ] `use linkStatus()` type-checks inside a `fn … -> Element` body — never the doubled `use` + `useLinkStatus()` ([`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
+- [ ] `use linkStatus()` type-checks inside a `#[@context] fn … -> Element` body — never the doubled `use` + `useLinkStatus()`; without the annotation the body is `use-without-context-effect` ([`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md))
 - [ ] `__onzeLinkMount()` is idempotent — calling it twice registers one listener
 
 ### Step 5 — Module wiring

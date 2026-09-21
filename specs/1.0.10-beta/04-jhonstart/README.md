@@ -82,12 +82,15 @@ Every front's tests assert string literals so that a divergence between the two 
 
 `modules/jhonstart/src/element.bp`, `modules/jhonstart/src/hooks.bp`, `modules/jhonstart-html/src/html.bp` — content frozen; the one relocation edit each of `html.bp` and 48's `html_attrs.bp` needs is listed in `modules.md § 1.3`. The consequences that shape every front: `renderToString` neither escapes nor knows void elements (front 23's `renderNode` does both; 94's `isVoidTag`/`isRawTextTag` feed it); declared parameter defaults are never applied, so every constructor call spells `attrs:`; a self-closing tag cannot be authored inside `html """…"""`.
 
-## 6 · Written with `use`
+## 6 · Written with `use`, under `#[@context]`
 
-Every hook in this track follows [`00-compiler-carry-over/19-use-activation`](../00-compiler-carry-over/19-use-activation/README.md):
+Every hook and every component in this track follows [`00-compiler-carry-over/19-use-activation`](../00-compiler-carry-over/19-use-activation/README.md) § *The rule for libraries*, as decisions 87–90 settled it:
 
-1. A hook is `pub fn <noun>(…) -> @Context<Element, R>` — `router`, `pathname`, `params`, `searchParams`, `selectedLayoutSegment(s)`, `linkStatus`, `formStatus`, `actionState`, `optimistic` — with **no `use` prefix in its name**; the keyword is the activation.
-2. It is activated as `val x = use <noun>(…)` in the static prefix of a `fn … -> Element` body (or a custom hook returning `@Context<Element, _>`); never the doubled `use` + `use<Noun>()`.
-3. Called without `use` it is an ordinary call — the server-pass value; that is what every `test` and every `sidebarFor`/`checkoutLinkFor`-style pure twin uses.
-4. The binding never reuses the hook's name (`val r = use router()`); type constructors stay PascalCase (`RouterState`, `LinkStatus`, `FormStatus`, `ActionState`) and helpers take a verb (`newActionState`, `parseActionState`).
-5. Server components (`-> @Future<Element>`) cannot activate a hook today — front 19 step 2 / question 86; the Next.js names appear only where a text names Next's API as the reference.
+1. A hook is `pub fn <noun>(…) -> @Context<Element, R>` — `router`, `pathname`, `params`, `searchParams`, `selectedLayoutSegment(s)`, `linkStatus`, `formStatus`, `actionState`, `optimistic`, `request` — with **no `use` prefix in its name** and no annotation of its own; the keyword is the activation.
+2. It is activated as `val x = use <noun>(…)` in the static prefix of an activating body; never the doubled `use` + `use<Noun>()`.
+3. **A component is `#[@context] fn … -> Element`** — no longer "any `fn … -> Element`" (decision 88). The annotation is the lowercase effect; a capital `#[@Context]` is an unknown annotation the compiler silently ignores, and a body that activates a hook without it is `use-without-context-effect`. A custom hook composing hooks carries it too: `#[@context] fn <noun>(…) -> @Context<Element, _>`.
+4. **A server component is `#[@future] fn … -> @Future<Element>`, with no second annotation** (decision 90): one effect annotation per fn, and the wrapper effect activates on its own because `@Future<Element>` unwraps to the owner `Element` (decision 89). `#[@future] #[@context]` is `effect-duplicate-annotation`.
+5. Called without `use` a hook is an ordinary call — the server-pass value; that is what every `test` and every `sidebarFor`/`checkoutLinkFor`-style pure twin uses, and the caller needs no annotation for it.
+6. The binding never reuses the hook's name (`val r = use router()`); type constructors stay PascalCase (`RouterState`, `LinkStatus`, `FormStatus`, `ActionState`) and helpers take a verb (`newActionState`, `parseActionState`). The Next.js names appear only where a text names Next's API as the reference.
+
+Item 4 is written in the specs and not yet in the compiler: front 19 step 2 is what makes `use request()` infer inside a `#[@future]` body, and front 28's `server.d.bp` stays gated until it lands.

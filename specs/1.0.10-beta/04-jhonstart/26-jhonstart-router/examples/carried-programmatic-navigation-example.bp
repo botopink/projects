@@ -6,6 +6,7 @@
 import {router} from "jhonstart";
 import {Element, form, input, button, text} from "jhonstart";
 
+#[@context]
 pub fn LoginForm() -> Element {
     val r = use router();
     return form([

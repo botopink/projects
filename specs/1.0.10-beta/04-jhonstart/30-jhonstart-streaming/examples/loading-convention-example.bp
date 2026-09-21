@@ -23,6 +23,7 @@ import { shellHtml } from "jhonstart";
 // ── what the developer writes: app/blog/loading.bp ──────────────────────────
 
 // One export, no arguments, no boundary name. This is the whole file.
+#[@context]
 pub fn Loading() -> Element {
     return div([
         span([text("Loading the blog…", attrs: [])], attrs: [#("class", "skeleton-line")]),

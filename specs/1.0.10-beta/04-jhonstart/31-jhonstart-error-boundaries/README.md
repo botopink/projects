@@ -115,9 +115,9 @@ type defined here — this front owns the type, not the dispatch.
 
 | File | Exports | Rendered when | Owns its document? |
 |---|---|---|---|
-| `error.bp` | `pub fn ErrorPage(info: ErrorInfo) -> Element` | the segment's subtree returns `Error(…)` | no |
-| `not-found.bp` | `pub fn NotFound() -> Element` | front 63's not-found signal reaches this segment | no |
-| `global-error.bp` | `pub fn GlobalError(info: ErrorInfo) -> Element` | the root segment fails, or no other boundary caught | **yes** — it renders its own `htmlTag` and `body` |
+| `error.bp` | `#[@context] pub fn ErrorPage(info: ErrorInfo) -> Element` | the segment's subtree returns `Error(…)` | no |
+| `not-found.bp` | `#[@context] pub fn NotFound() -> Element` | front 63's not-found signal reaches this segment | no |
+| `global-error.bp` | `#[@context] pub fn GlobalError(info: ErrorInfo) -> Element` | the root segment fails, or no other boundary caught | **yes** — it renders its own `htmlTag` and `body` |
 
 The export is `ErrorPage`, not `Error`, and the difference matters: `Error(error: E)` is the
 `@Result` variant (`libs/std/src/builtins.d.bp:24-27`). A module-level `pub fn Error` would shadow

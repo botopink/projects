@@ -41,6 +41,7 @@ fn archiveRow(post: Post) -> Element {
     ], attrs: [#("class", "archive-row")]);
 }
 
+#[@context]
 pub fn BlogIndex(posts: Array<Post>) -> Element {
     return div([
         header(),

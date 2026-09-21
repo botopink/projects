@@ -144,7 +144,7 @@ than sharing a parser between two targets that cannot share code.
 ### The three hooks, and what the server render sees
 
 All three are hooks in the existing sense: a fn returning `@Context<Element, _>`, legal under `use`
-inside a `-> Element` body (`hooks.bp:23-60`). During the server pass each yields its quiet value —
+inside a `#[@context] fn … -> Element` body (`hooks.bp:23-60`). During the server pass each yields its quiet value —
 `actionState` yields the initial state with `pending: false`, `formStatus` yields idle,
 `optimistic` yields the base value. That is not a stub; it is the correct first render. A spinner
 in the server HTML is a spinner nobody can stop, and an optimistic value in the server HTML is a lie

@@ -37,6 +37,7 @@ fn orderLabel(order: string) -> string {
 }
 
 // The toolbar as a server-rendered component.
+#[@context]
 fn ProductToolbar() -> Element {
     val search = use searchParams();
     val order = pairValue(search, "sort");

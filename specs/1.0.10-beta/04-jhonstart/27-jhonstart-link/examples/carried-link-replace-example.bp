@@ -4,6 +4,7 @@
 import {Link} from "jhonstart";
 import {Element, div, text} from "jhonstart";
 
+#[@context]
 pub fn SettingsPage() -> Element {
     return div([
         Link("/settings/profile", [text("Perfil", attrs: [])], replace: true),

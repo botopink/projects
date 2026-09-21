@@ -33,6 +33,7 @@ fn searchForm(props: SearchFormProps) -> Element {
     ], attrs: searchFormAttrs(props));
 }
 
+#[@context]
 fn SearchForm() -> Element {
     return searchForm(searchFormProps("/search"));
 }
