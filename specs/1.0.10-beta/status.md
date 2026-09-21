@@ -1,6 +1,6 @@
 # Status — 1.0.10-beta
 
-**Updated:** 2026-09-20 · **Progress:** ~9 % (9 of 119 work items landed, 4 worktrees open; the milestone was cut
+**Updated:** 2026-09-20 · **Progress:** ~10 % (10 of 119 work items landed, 5 worktrees open; the milestone was cut
 today — its specs are what is in analysis, no library front has started, and the compiler
 carry-over holds the only code in flight)
 
@@ -13,6 +13,7 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 1 
 - [x] 1.0.6 … 1.0.9-beta absorbed and deleted (decision 68) — every 1.0.9 front copied by name under its track; the merged drafts kept verbatim under [`absorbed/`](./absorbed/README.md); proof in [`unification.md`](./unification.md)
 - [x] Top-level documents — `overview.md`, `fronts.md`, `contracts.md` (+ contract 7, the test/snapshot contract), `deferred.md`, `language-gaps.md` (+ the `00` owner column and the `@src()` row), `unification.md`, `decisions-taken.md` (68–70), `decisions-pending.md` (71–82), this file
 - [x] `00-compiler-carry-over/README.md` — C-01…C-27 prioritised, with the 1.0.5 deep dives carried beside it (17 front directories)
+- [x] `00 · 18-comptime-runtimes` steps 0–1c (C-26, part) — landed on `feat` `85a8ab4e` (+ `361d255d`: release runners install OTP 28): `codegen/beam/beam_file.zig` writes a loadable `.beam` (FOR1 chunks, `LitT` stored zlib, `Line`), `opcodes.zig` generated from OTP 28's `genop.tab` (184, 118 emittable — the OTP-24-stable subset), three `erl`-validated round-trip tests; cmd 4 loads `.beam` bytes in-frame; the server and two preludes are compiled by `erlc` at `zig build` and embedded (`server_source.zig`, `render_resident.zig`) — `erlc` leaves the user's machine, OTP 28 floor refusal; erika-linq build 627 → 464 ms. Remaining C-26: the untyped BEAM lowering (`beam_asm.zig`, 1 500–2 500 LOC, after C-01), `persistent_wat.zig`, the selector (84), the `{beam,wat}` layout (85), the browser build
 - [x] `02-packaging` step 1 — landed on `feat` `81e10a18`: the shared manifest model `modules/manifest/` (workspace vs package, `workspaces` globs, members, `targets` inheritance), object-form `dependencies` only (`git`/`path`/`{ "workspace": true }`, one source, one pin), discovery via `manifest.scanRoots` in runner/loader/LSP/bpmp, `botopink test` per member with `✗ ships nothing` for a member without `files`, `docs/botopink-json.md`, 47 fixtures + tests; 20 located error messages
 - [x] `00` C-19, and the 1.0.5 worktrees `beammem` (C-05 steps 1–3), `identity` (C-03 erlang half), `ecosystem` (C-02 `libs/std` half) — landed on the compiler's `feat` on 2026-09-20 with a cold gate green each (`2788be9f`, `a6b5b62a`, `1769456d`; two real `at`-rename regressions fixed on the way); worktrees removed
 - [x] `00 · 19-use-activation` step 1 (C-27) — landed on `feat` `85f883bd`: `docs.md` documents `use`/`@Context`, the static-prefix guard holds at any nesting, the commonJS React rename is gone (`use f(x)` → `f(x)` everywhere), `#[@context]` is required to activate a hook (`use-without-context-effect`), 8 language cells (348/45/0). jhonstart is in `known-red-libs.txt` until its hooks gain `#[@context]`
@@ -29,10 +30,12 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 1 
 - [x] `06-onze/` — 9 fronts, `onze13` → `onze` normalised (34 identifiers); `README.md`, `modules.md` (7 submodules), `unification.md`, `test-snap.md` (55 cases), `test-snap-examples.md` (21 cases)
 
 ## In analysis
+- [ ] `02-packaging` step 2 (rakun) — worktree `.tasks/rakun-workspace` (`fix/workspace` in `repository/rakun`): umbrella → workspace, core → `modules/rakun/`, 13 submodules with `files` + `{ "workspace": true }`, `examples/rakun` as member
+- [ ] jhonstart made green under decision 88 — worktree `.tasks/jhonstart-context` (`fix/context` in `repository/jhonstart`): `#[@context]` on every activating body, hook nouns (`counter`, `router`, `toggle`), the client runtime for `state`/`effect`/`memo`; then the two `known-red-libs.txt` rows go
+- [ ] Spec maintenance — decisions 75/83–89 folded into `02-packaging`, front 18, front 19 and the `04-jhonstart` docs (`#[@context]` sweep)
 - [ ] `00` C-01 — worktree `.tasks/module-identity` (`fix/module-identity-halves`): policy 3 (one BEAM module per `type`/`behavior`) and the identity in the value on every backend (decisions 21/22/23/5)
 - [ ] `00` C-06 acceptance + C-16 — worktree `.tasks/language-cells` (`fix/language-cells`): the six wasm RUN LOGs verified under wasmtime, cells for decisions 52/53/55/63–66, the suite tally recounted from the files
 - [ ] `01-std` steps 1–3 — worktree `.tasks/src-builtin` (`fix/src-builtin`): `@src()` + the fallible test body (decisions 73/74), then `std/asserts`, then `std/snapshots` (72); commits on the branch, merge into `feat` by the coordinator
-- [ ] `00 · 18-comptime-runtimes` steps 0–1c — worktree `.tasks/beam-file` (`fix/beam-file`): the `.beam` container writer, the in-frame load command, the three resident modules embedded at build time (decisions 83/86); the untyped BEAM lowering in `beam_asm.zig` waits for the `identity` worktree to land
 
 ## Pending
 - [ ] `00` C-06 acceptance (wasm) — in `.tasks/language-cells`; C-12's is done
