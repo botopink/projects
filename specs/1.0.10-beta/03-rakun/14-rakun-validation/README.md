@@ -1,5 +1,54 @@
 # Front 14 — Rakun Validation
 
+> **Amended 2026-09-21, on landing (rakun `af933f7`, `modules/rakun-validation` 0 → 54/0 on both
+> rows).** Five corrections and two things this front could not reach.
+>
+> **`registerConstraint(name: string, c: Constraint)` does not compile.** A record that
+> `implement`s a behavior does not coerce to the behavior type — `type mismatch: expected Greeter,
+> got En` on both rows, for a parameter, a `val` and a return position alike (the return variant
+> prints the behavior body and truncates it). Shipped as `registerConstraint(name, code, check)`.
+> The `behavior Constraint` is still declared and application types still `implement` it, so the
+> shape stays compiler-checked. This is the **second** independent measurement of that refusal in
+> one day; see `status.md`.
+>
+> **`#[minValue]` / `#[maxValue]` on `i64` are refused**, with a located message. An integer literal
+> does not widen to `i64` in arithmetic (`x - 1000` where `x: i64` reds `expected i64, got i32`, and
+> *that* diagnostic has no line or column), and there is no `i64` literal spelling at all.
+> `#[positive]` / `#[positiveOrZero]` do work on `i64`, because a comparison against `0` widens, and
+> `#[pastDate]` / `#[futureDate]` are `i64`-only.
+>
+> **`#[notNull]` is admitted only where `typeName == ""`**, which covers `?T` *and* `T[]`, because
+> `@Decl.Field.typeName` cannot tell them apart. `Array<T>` spelled the long way renders `"Array"`
+> and is refused outright; spelling the array form as `Array<T>` is the honest workaround and is
+> documented in the library.
+>
+> **The helper names are `v*`, not the examples' `check*`, deliberately.** The mapping is 1:1 apart
+> from `checkRange`, which merges `#[minValue]` and `#[maxValue]` into one call while the Mechanism's
+> constraint table keeps them as separate markers — `#[minValue(18)]` alone has no `max` to pass.
+> Renaming requires changing the table first, which is a decision, not a rename.
+>
+> **Both § Examples programs use forms the compiler refuses or the tree forbids**: `!report.isValid()`
+> (the tree writes `== false`), `id.toString()` on an `i32`, `registerConstraint("cpf",
+> CpfConstraint())` (above), and `digits.split("")` + `digits.slice(0, 1)` — `String.slice`/`chars`
+> make the commonJS backend emit a self-recursive `String.prototype.charCodeAt` patch that kills the
+> module before a test runs, which `config.bp`'s own header already records. They will not compile as
+> written and were correctly left untouched.
+>
+> **Not reached.** Step 6's boot call: front 05's `config.bp` names `rkConfigValidate`, which does
+> not exist, and `modules/rakun/**` is not this front's — everything the call site needs is here and
+> exercised, and **front 05 owes the call** (`validate<TypeName>(bound)` +
+> `refuseInvalidConfig(typeName, prefix, report)`, after binding and before the first component).
+> And the halt itself: `refuseInvalidConfig` aborts the process, which a test cannot observe and
+> survive, so the refusal *text* is asserted directly and the abort needs front 19's `rakun-test`
+> subprocess harness.
+>
+> **Name collision, for whoever reads this next.** Front 05 declares a placement-only `#[validated]`
+> in `modules/rakun/src/config.bp`. This front's is a different decorator in a different package; an
+> application must import `validated` from `rakun-validation` and **must not import both names into
+> one module**. Importing front 05's leaves `validate<TypeName>` undefined and the red lands at the
+> **call site as an unbound variable**, nowhere near the annotation. Whether front 05's should be
+> deleted once this landed is an open question for `03-rakun`.
+
 **Track:** B rakun
 **Priority:** medium — it is the only front that both halves of the stack run, and front 05 cannot refuse a bad configuration at boot without it
 **Target:** both — boundary
