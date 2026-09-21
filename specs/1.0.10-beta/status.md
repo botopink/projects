@@ -1,6 +1,6 @@
 # Status — 1.0.10-beta
 
-**Updated:** 2026-09-20 · **Progress:** ~8 % (8 of 119 work items landed, 5 worktrees open; the milestone was cut
+**Updated:** 2026-09-20 · **Progress:** ~9 % (9 of 119 work items landed, 4 worktrees open; the milestone was cut
 today — its specs are what is in analysis, no library front has started, and the compiler
 carry-over holds the only code in flight)
 
@@ -13,6 +13,7 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 1 
 - [x] 1.0.6 … 1.0.9-beta absorbed and deleted (decision 68) — every 1.0.9 front copied by name under its track; the merged drafts kept verbatim under [`absorbed/`](./absorbed/README.md); proof in [`unification.md`](./unification.md)
 - [x] Top-level documents — `overview.md`, `fronts.md`, `contracts.md` (+ contract 7, the test/snapshot contract), `deferred.md`, `language-gaps.md` (+ the `00` owner column and the `@src()` row), `unification.md`, `decisions-taken.md` (68–70), `decisions-pending.md` (71–82), this file
 - [x] `00-compiler-carry-over/README.md` — C-01…C-27 prioritised, with the 1.0.5 deep dives carried beside it (17 front directories)
+- [x] `02-packaging` step 1 — landed on `feat` `81e10a18`: the shared manifest model `modules/manifest/` (workspace vs package, `workspaces` globs, members, `targets` inheritance), object-form `dependencies` only (`git`/`path`/`{ "workspace": true }`, one source, one pin), discovery via `manifest.scanRoots` in runner/loader/LSP/bpmp, `botopink test` per member with `✗ ships nothing` for a member without `files`, `docs/botopink-json.md`, 47 fixtures + tests; 20 located error messages
 - [x] `00` C-19, and the 1.0.5 worktrees `beammem` (C-05 steps 1–3), `identity` (C-03 erlang half), `ecosystem` (C-02 `libs/std` half) — landed on the compiler's `feat` on 2026-09-20 with a cold gate green each (`2788be9f`, `a6b5b62a`, `1769456d`; two real `at`-rename regressions fixed on the way); worktrees removed
 - [x] `00 · 19-use-activation` step 1 (C-27) — landed on `feat` `85f883bd`: `docs.md` documents `use`/`@Context`, the static-prefix guard holds at any nesting, the commonJS React rename is gone (`use f(x)` → `f(x)` everywhere), `#[@context]` is required to activate a hook (`use-without-context-effect`), 8 language cells (348/45/0). jhonstart is in `known-red-libs.txt` until its hooks gain `#[@context]`
 - [x] `00` C-11 + C-12 acceptance — landed on `feat` `f5c58e34`: `format --check` walks the whole project (`.bp` + `.d.bp`, nested projects), `reject/<n>.bp` beside its `.expect` is structurally exempt, `scripts/format-check.sh` is gate stage 3 for the trees that are canonical (`examples/modules` only today — the reds are listed in its header with owner), 3 unit + 1 contract tests; C-12 measured: 0 hunks outside the chain rule across six trees, 29 chains opened (12 of the 44 predicted were not chains), `fits` predicate tests added
@@ -31,7 +32,6 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 1 
 - [ ] `00` C-01 — worktree `.tasks/module-identity` (`fix/module-identity-halves`): policy 3 (one BEAM module per `type`/`behavior`) and the identity in the value on every backend (decisions 21/22/23/5)
 - [ ] `00` C-06 acceptance + C-16 — worktree `.tasks/language-cells` (`fix/language-cells`): the six wasm RUN LOGs verified under wasmtime, cells for decisions 52/53/55/63–66, the suite tally recounted from the files
 - [ ] `01-std` steps 1–3 — worktree `.tasks/src-builtin` (`fix/src-builtin`): `@src()` + the fallible test body (decisions 73/74), then `std/asserts`, then `std/snapshots` (72); commits on the branch, merge into `feat` by the coordinator
-- [ ] `02-packaging` step 1 — worktree `.tasks/workspaces` (`fix/workspaces`): the `workspaces` manifest, object-form `dependencies`, discovery in runner/loader/LSP/bpmp, `docs/botopink-json.md` (decisions 75/76)
 - [ ] `00 · 18-comptime-runtimes` steps 0–1c — worktree `.tasks/beam-file` (`fix/beam-file`): the `.beam` container writer, the in-frame load command, the three resident modules embedded at build time (decisions 83/86); the untyped BEAM lowering in `beam_asm.zig` waits for the `identity` worktree to land
 
 ## Pending
@@ -42,7 +42,8 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 1 
 - [ ] `01-std` steps 2–3 — `std/asserts` and `std/snapshots`: decision 72 taken; wait on step 1
 - [ ] `01-std` step 4 — retire the old `onze` mocking lib into `std/asserts` + `std/mocks` (decision 71): waits on step 2
 - [ ] `01-std` step 5 — `onze13` → `onze` name takeover (decision 79): waits on step 4 and on the maintainer tagging/archiving the old repo
-- [ ] `02-packaging` — decisions 75 (`workspaces` manifest) and 76 (object-form `dependencies`) taken; its README § Mechanism still describes routes A/B and is rewritten to the workspace rule; waits on `01-std` steps 2–3 for the `-test` submodules
+- [ ] `02-packaging` step 2 — each library's umbrella becomes a workspace (`workspaces: ["modules/*", "examples/*"]`, core moved under `modules/<lib>/` with `files`, submodules with `{ "workspace": true }`); rakun first (13 manifests would read `✗ ships nothing` today); the `-test` submodules wait on `01-std` steps 2–3
+- [ ] `02-packaging` README § Mechanism rewritten to the workspace rule (routes A/B kept as the record)
 - [ ] `04-jhonstart/**` sweep for decision 88 — every component becomes `#[@Context] fn … -> Element` in examples, maps and READMEs; `01-std` example 2 and front 19's *rule for libraries* re-stated
 - [ ] Specs updated for decisions 75, 83–86 and 88 (`02-packaging` § Mechanism; front 18 steps 1c/3/4; front 19 steps 1/4/5) — the READMEs still carry the pre-answer options
 - [ ] `00` C-01 — module identity (the spine): pulled ahead of wave 1; no worktree yet

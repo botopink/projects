@@ -135,6 +135,8 @@ is the one shape; every reader (`config.zig`, `bpmp/manifest.zig`, `project_grap
 `path` is honoured; the string array is a located error. Both-forms-forever is the configuration
 decision 67 refuses. Implements: `02-packaging` step 2; every `examples/<project>/botopink.json`.
 
+**Implemented 2026-09-20 on `feat` `81e10a18`** (`02-packaging` step 1) with one spelling detail: the pin is the existing `branch | tag | rev` (exactly one), not a literal `ref` — bpmp's clone needs the pin's kind, and a second spelling would be the knob decision 67 refuses. `path` is honoured; `{ "workspace": true }` is the sibling form.
+
 ## 77. `RenderHooks` keeps the dependency direction
 
 **Decided 2026-09-20 by the maintainer: (a).** rakun (front 23) defines `RenderHooks(headExtra,
