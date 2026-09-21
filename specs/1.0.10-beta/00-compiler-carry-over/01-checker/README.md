@@ -339,10 +339,11 @@ program-wide table, and the table has no owner and no dissent check. Each was re
 | 2 | `.Zeta` against a section type `Token.Layout.Break` | `unbound variable 'Zeta'` on both targets, with **no collision anywhere in the program** — a section leaf has no shorthand at all |
 | 3 | the same, where a top-level payload variant shares the leaf's name | `type mismatch: expected __Token__Layout__Break, got function` — the lookup found the variant's *factory function* and reported a type problem for a resolution problem |
 | 3b | `.Color.Hex("#abc")` annotated `: Token`, where front 54's `Ns` enum also has a `Color` member | `'Hex' is not declared in any behavior implemented for 'Ns'` — the resolver walked into `Ns`, a type the author never mentioned, ignoring the annotation written one token earlier |
+| 3c | `Shape.Circle(r: 3)` — **fully qualified** — where `Hole` also declares a `Circle` | `type mismatch: expected Shape, got Hole`. The qualification, which is the documented way to disambiguate, is ignored; with a control renaming `Hole.Circle` to `Hole.Round` the same program answers `9`. This is the row that matters most: it defeats the workaround the other rows rely on |
 | 4 | a leading-dot enum path resolved by hash order | **closed** (the resolver now reads the expected type), and it is the precedent: the fix was to ask the question the caller actually has instead of taking the first answer the table offers |
 
 Row 4 is why these belong together rather than in four commits: it fixed one consumer of the table
-and left the table alone. Rows 1–3b are the other consumers. Row 3b is the one that shows the table is consulted **before** the expected type is, even where the expected type is written on the same line.
+and left the table alone. Rows 1–3c are the other consumers. Row 3b shows the table is consulted **before** the expected type, even where the expected type is written on the same line. Row 3c shows it is consulted before the *qualification the author wrote*, which is why none of these can be worked around by spelling the path out — and why the acceptance below cannot be satisfied by a better diagnostic alone.
 
 **What the step has to decide first** — and it is a language question, not an implementation one:
 *does a section leaf have a shorthand?* Row 2 says it does not today, and the emilia track has ten
@@ -354,6 +355,7 @@ answer is yes, all three rows are one fix.
 **Acceptance**
 - [ ] a bare name that two declarations claim is a **named refusal**, never a silent pick — decision 67, and the atom-collision check in `crossModule.zig` is the precedent for what loud looks like
 - [ ] row 1's erlang half cannot survive: binding one enum's variant to another enum's type is a wrong value, not a wrong message
+- [ ] **row 3c is the gate for the whole step**: `Shape.Circle(…)` types as `Shape` whenever `Shape` declares `Circle`, regardless of what any other enum declares. If the fully-qualified spelling still resolves by table order, nothing else here is really closed
 - [ ] row 3 reports a resolution failure, not a type mismatch
 - [ ] every one of the four has a language cell, and each cell is **proved able to fail** by planting the pre-fix behaviour
 - [ ] the two targets agree, and the cells say so — three of these four answer differently on commonJS and erlang, which is how they stayed open
