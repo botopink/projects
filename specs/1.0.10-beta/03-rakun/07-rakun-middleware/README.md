@@ -1,5 +1,55 @@
 # Front 07 — The Filter Chain: Middleware, CORS, Problem Details
 
+> **Amended 2026-09-21, on landing (rakun `3243f4b`, `modules/rakun-web` 0 → 83/0 on both rows).**
+> Steps 1, 2, 3, 3b and 4 landed. Three deviations, each **forced** and each measured; two judgement
+> calls upheld; one step re-routed.
+>
+> **Forced — `#[order("-100")]`, not `#[order(-100)]`.** A negative integer literal does not parse as
+> a decorator argument: `#[mark(20)]` compiles, `#[mark(-20)]` reds `this token cannot appear here ·
+> unexpected ``20``` with the caret on the **digits**. Every order in this front's band below zero was
+> therefore unwritable. The marker takes a `string` and parses it through front 05's `toI32`; when
+> the parser accepts the sign, the parameter becomes `n: i32` and the `toI32(` wrapper is deleted and
+> nothing else in the library moves. Filed as `00 · 15-language-surface` step 4b.
+>
+> **Forced — `Filter.handle(self, req: WebRequest, chain: Chain)`, not `Request`.** A method on a
+> host-supplied `behavior` does not dispatch on erlang (`{badkey,param}` / `{badfun, …}` — front 04's
+> own two core reds), and a chain that cannot read a header cannot do CORS. The chain carries its own
+> `WebRequest` built from the same scalars, reading through front 62's
+> `headerLookup`/`headerNames`/`headerPresent`.
+>
+> **Forced — the erlang-only host cells in § Test plan.** There is no per-file target gate: `botopink
+> test` compiles every `test/*.bp` on both rows and the only whitelist is per-**lib**. Both host
+> halves ship, as fronts 06, 26 and 28 already do.
+>
+> **Corrected after measurement — `withHeaders` takes `#(string, string)[]`.** It shipped as a flat
+> `["name","value",…]` array on the reasoning that a decorator argument cannot carry a tuple-array
+> literal. That reasoning was borrowed from the `#[crossOrigin]` row and does not apply:
+> `withHeaders` is a free function and is never written inside an annotation. Measured: the
+> tuple-array **parameter type**, the **array literal of pair literals** and the **`.0`/`.1` reads**
+> all compile and answer correctly on both rows. The pair type makes *a name with no value*
+> **unrepresentable**, where the flat form could only refuse an odd-length array at run time — so
+> that `@panic` and its cell are gone. `#[crossOrigin("https://a.test", "GET,POST")]` keeps its
+> comma-joined strings; there the rule is real.
+>
+> **Upheld — a preflight from a disallowed origin answers 403 + `Vary: Origin`**, not a bare 204.
+> The spec pins the no-route case and the allowed case and not this one; 403 is decision 67's
+> reading.
+>
+> **Upheld — the matcher refuses `*`, `(`, `[`, `?`, `{`** with a message naming front 65, rather
+> than guessing a semantics front 65 has not defined. It executes exactly the three forms both
+> READMEs use in their own examples.
+>
+> **Re-routed — step 10's graceful shutdown is *not* blocked on front 76.** Front 76's
+> `readinessDrained()` is the soft half this spec says to land without. The hard half — "close the
+> listening socket, keep connection processes alive" — is `rakun_runtime.erl`'s socket, in
+> `modules/rakun/`, which is **front 04's**. Front 07 established the distinction rather than
+> reaching across, and step 10 now belongs to front 04.
+>
+> **Steps 5–9 not reached**, each with what it needs: 5 wants file IO from `src/` plus step 6's
+> `Accept` branch (its resolution order is already fixed in `convention.bp`); 6 wants a
+> `MessageConverter` behavior, a q-value parser and a media-type registry, with no blocker; 7 wants
+> step 6's registry first; 8 and 9 have no blocker.
+
 **Track:** B rakun
 **Priority:** high — every cross-cutting concern in track B enters here; without a chain, security, metrics, compression, error shape and API versioning each need their own hook into a frozen dispatcher
 **Target:** erlang (server)
