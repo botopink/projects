@@ -1,0 +1,220 @@
+// Front 78 — rakun entities: audit columns, optimistic locking, revision history.
+//
+// Two entities, deliberately different. `Account` is audited and versioned and
+// keeps a full revision trail; `SessionToken` keeps none of it, because an audit
+// trail that is on by default is a storage bill nobody agreed to. Opting in per
+// entity is the whole design.
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.jpa-and-spring-data
+//   https://docs.spring.io/spring-data/envers/reference/
+//
+// `#[version]`, `#[createdAt]`, `#[updatedAt]`, `#[createdBy]` and `#[revisions]`
+// are delivered by this front, as are the three revision read methods that
+// `#[entityRepository]` emits onto a repository whose entity is audited.
+// `SqlTemplate` is front 08's; the principal behind `#[createdBy]` is front 10's.
+
+import {repository, service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkPropInt} from "rakun";
+import {SqlTemplate} from "rakun-data";
+import {entity, id, generated, column, version, revisions} from "rakun-data";
+import {createdAt, updatedAt, createdBy, entityRepository, derived} from "rakun-data";
+import {Revision, entityColumns} from "rakun-data";
+
+#[entity("accounts")]
+#[revisions]
+pub type Account(
+    #[id]
+    #[generated]
+    id: i32,
+
+    email: string,
+
+    #[column("balance_cents")]
+    balanceCents: i32,
+
+    #[version]
+    revision: i32,
+
+    #[createdAt]
+    createdAt: string,
+
+    #[updatedAt]
+    updatedAt: string,
+
+    #[createdBy]
+    createdBy: string,
+)
+
+// No `#[revisions]`, no audit columns, no version. Nothing is generated for it
+// beyond the mapper, which is the point of the comparison.
+#[entity("session_tokens")]
+pub type SessionToken(
+    #[id]
+    token: string,
+
+    #[column("account_id")]
+    accountId: i32,
+)
+
+#[repository]
+#[entityRepository("Account")]
+pub type AccountRepo(
+    sql: SqlTemplate,
+) {
+    // LANGUAGE GAP: no bodyless method in a `type` body — with abstract methods
+    // this line would be `#[derived] pub fn findByEmail(self: Self, email: string) -> ?Account;`
+    // and the forwarder below would not exist.
+    #[derived]
+    pub fn findByEmail(self: Self, email: string) -> ?Account {
+        return __rkDerived_AccountRepo_findByEmail(self.sql, email);
+    }
+}
+
+#[service]
+pub type Ledger(
+    accounts: AccountRepo,
+) {
+    // LANGUAGE GAP: no assignment to a `self` field — a record is immutable, so
+    // the debited account is a NEW value and `update` hands back another one
+    // carrying the incremented version. The caller must use the return value.
+    pub fn debit(self: Self, account: Account, cents: i32) -> Account {
+        val next = Account(
+            id: account.id,
+            email: account.email,
+            balanceCents: account.balanceCents - cents,
+            revision: account.revision,
+            createdAt: account.createdAt,
+            updatedAt: account.updatedAt,
+            createdBy: account.createdBy,
+        );
+        return self.accounts.update(next);
+    }
+}
+
+test "save returns a new record carrying the generated id" {
+    val repo = AccountRepo(sql: SqlTemplate(dataSourceName: "default"));
+    val draft = Account(
+        id: 0,
+        email: "ana@example.org",
+        balanceCents: 1000,
+        revision: 0,
+        createdAt: "",
+        updatedAt: "",
+        createdBy: "",
+    );
+    val saved = repo.save(draft);
+    assert saved.id > 0;
+    assert draft.id == 0;
+}
+
+test "createdAt is written on insert and updatedAt on both" {
+    val repo = AccountRepo(sql: SqlTemplate(dataSourceName: "default"));
+    val draft = Account(
+        id: 0,
+        email: "bob@example.org",
+        balanceCents: 500,
+        revision: 0,
+        createdAt: "",
+        updatedAt: "",
+        createdBy: "",
+    );
+    val saved = repo.save(draft);
+    assert saved.createdAt != "";
+    assert saved.updatedAt != "";
+
+    val ledger = Ledger(accounts: repo);
+    val debited = ledger.debit(saved, 100);
+    assert debited.createdAt == saved.createdAt;
+    assert debited.updatedAt != saved.updatedAt;
+}
+
+test "update increments the version and leaves the caller's record alone" {
+    val repo = AccountRepo(sql: SqlTemplate(dataSourceName: "default"));
+    val draft = Account(
+        id: 0,
+        email: "cleo@example.org",
+        balanceCents: 900,
+        revision: 0,
+        createdAt: "",
+        updatedAt: "",
+        createdBy: "",
+    );
+    val saved = repo.save(draft);
+    val ledger = Ledger(accounts: repo);
+    val debited = ledger.debit(saved, 200);
+    assert debited.revision == saved.revision + 1;
+    assert saved.balanceCents == 900;
+    assert debited.balanceCents == 700;
+}
+
+test "a stale version raises rather than losing an update" {
+    val repo = AccountRepo(sql: SqlTemplate(dataSourceName: "default"));
+    val draft = Account(
+        id: 0,
+        email: "dee@example.org",
+        balanceCents: 900,
+        revision: 0,
+        createdAt: "",
+        updatedAt: "",
+        createdBy: "",
+    );
+    val saved = repo.save(draft);
+    val ledger = Ledger(accounts: repo);
+    val _first = ledger.debit(saved, 100);
+
+    val outcome = repo.tryUpdate(saved);
+    assert outcome.isError() == true;
+}
+
+test "an audited entity records one revision per write, in order" {
+    val repo = AccountRepo(sql: SqlTemplate(dataSourceName: "default"));
+    val draft = Account(
+        id: 0,
+        email: "eve@example.org",
+        balanceCents: 300,
+        revision: 0,
+        createdAt: "",
+        updatedAt: "",
+        createdBy: "",
+    );
+    val saved = repo.save(draft);
+    val ledger = Ledger(accounts: repo);
+    val _debited = ledger.debit(saved, 50);
+
+    val numbers = repo.revisionNumbers(saved.id);
+    assert numbers.length == 2;
+
+    val trail = repo.revisionsOf(saved.id);
+    val kinds = trail.map({ r -> r.revisionType });
+    assert kinds.join(",") == "insert,update";
+}
+
+test "an entity without the annotation generates no revision table" {
+    assert entityColumns("session_tokens_revisions") == "";
+    assert entityColumns("accounts_revisions") != "";
+}
+
+test "revisionAt returns the state as of an instant and nothing before the first write" {
+    val repo = AccountRepo(sql: SqlTemplate(dataSourceName: "default"));
+    val draft = Account(
+        id: 0,
+        email: "fay@example.org",
+        balanceCents: 400,
+        revision: 0,
+        createdAt: "",
+        updatedAt: "",
+        createdBy: "",
+    );
+    val saved = repo.save(draft);
+
+    var before = true;
+    if (repo.revisionAt(saved.id, "1970-01-01T00:00:00Z")) { r -> before = false; };
+    assert before == true;
+
+    var cents = 0 - 1;
+    if (repo.revisionAt(saved.id, "2999-01-01T00:00:00Z")) { r -> cents = r.balanceCents; };
+    assert cents == 400;
+}

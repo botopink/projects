@@ -1,0 +1,124 @@
+// Front 92 — rakun RSocket: the four interaction models, written as a developer writes
+// them.
+//
+// Server-side file. Nothing here is a reactive type: fire-and-forget is a spawned
+// process, request/response is a process whose return value is framed back, and a
+// stream is a producer process holding a credit counter. `@Future` appears only where
+// it is honest — as the requester's return shape — and the concurrency comes from
+// front 02's thunks, because `@Future` lowers eagerly on erlang.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/messaging/rsocket.html
+//   https://rsocket.io/about/protocol
+
+import {service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {async} from "std";
+import {Outcome} from "rakun-messaging";
+import {messageMapping, StreamHandle, Requester, rsocketRequester, requestResponse, fireAndForget, routeTag, parseRouteTag, grantCredit} from "rakun-rsocket";
+
+// LANGUAGE GAP: no byte or binary type and no bitwise operators, so the 24-bit length
+// prefix, the 31-bit stream id and the flag bits of an RSocket frame cannot be written
+// in botopink. Nearest valid form: the codec is one Erlang cell and nothing below ever
+// sees a frame.
+
+#[service]
+type UserEndpoint {
+    // Fire-and-forget: nothing goes back on the wire, so the handler answers with the
+    // same `Outcome` contract a broker message answers with.
+    #[messageMapping("user.seen")]
+    pub fn seen(self: Self, name: string) -> Outcome {
+        if (name == "") {
+            return Outcome.Reject(reason: "empty principal");
+        };
+        @print("seen ${name}");
+        return Outcome.Done;
+    }
+
+    // Request/response: an ordinary value. The handler runs in its own process, so it
+    // may block; the requester is the side that holds a future.
+    #[messageMapping("user.byId")]
+    pub fn byId(self: Self, id: string) -> string {
+        return "user:" + id;
+    }
+
+    // Request/stream: a producer that emits only what has been asked for. `REQUEST_N`
+    // is the demand signal, and it is the same demand front 89's stages exchange.
+    #[messageMapping("user.events")]
+    pub fn events(self: Self, id: string) -> StreamHandle {
+        return StreamHandle(source: "events:" + id, credit: 0);
+    }
+
+    // Channel: a stream in and a stream out over one stream id, each side carrying its
+    // own credit.
+    #[messageMapping("user.sync")]
+    pub fn sync(self: Self, incoming: StreamHandle) -> StreamHandle {
+        return StreamHandle(source: "sync:" + incoming.source, credit: 0);
+    }
+}
+
+#[@future]
+pub fn fetchUser(requester: Requester, id: string) -> @Future<string> {
+    return await requestResponse(requester, "user.byId", id);
+}
+
+// LANGUAGE GAP: `@Future<T>` lowers eagerly on erlang, so two `await`s in a row are two
+// sequential round trips. LANGUAGE GAP: `await` is not allowed inside a closure, which
+// is exactly why the thunk form works — each thunk returns the future and the gather
+// awaits. Nearest valid form below: front 02's thunk array, one process per thunk.
+#[@future]
+pub fn fetchBoth(requester: Requester) -> @Future<string> {
+    val thunks: Array<fn() -> @Future<string>> = [
+        { -> fetchUser(requester, "ana") },
+        { -> fetchUser(requester, "bob") },
+    ];
+    val both = await async.all(thunks);
+    return both.join(",");
+}
+
+#[service]
+type UserClient {
+    pub fn ping(self: Self, name: string) -> i32 {
+        val requester = rsocketRequester("tcp://example.org:9898");
+        return fireAndForget(requester, "user.seen", name);
+    }
+}
+
+test "a route tag round-trips through the routing metadata encoding" {
+    val encoded = routeTag("user.byId");
+    assert parseRouteTag(encoded) == "user.byId";
+
+    val nested = routeTag("user.events.v2");
+    assert parseRouteTag(nested) == "user.events.v2";
+}
+
+test "a request with no routing metadata names no route" {
+    assert parseRouteTag("") == "";
+}
+
+test "a producer may emit only what has been asked for" {
+    val handle = StreamHandle(source: "events:1", credit: 0);
+    val afterTwo = grantCredit(handle, 2);
+    assert afterTwo.credit == 2;
+
+    val afterOneMore = grantCredit(afterTwo, 1);
+    assert afterOneMore.credit == 3;
+}
+
+test "credit is per stream, so one stream's demand is not another's" {
+    val a = grantCredit(StreamHandle(source: "events:1", credit: 0), 5);
+    val b = StreamHandle(source: "events:2", credit: 0);
+    assert a.credit == 5;
+    assert b.credit == 0;
+}
+
+test "an empty principal is rejected rather than forwarded" {
+    val endpoint = UserEndpoint();
+    val kind = case endpoint.seen("") {
+        Done -> "done";
+        Retry(reason) -> "retry";
+        Reject(reason) -> "reject";
+    };
+    assert kind == "reject";
+    assert endpoint.byId("17") == "user:17";
+}

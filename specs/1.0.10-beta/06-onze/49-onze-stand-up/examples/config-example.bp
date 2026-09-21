@@ -1,0 +1,62 @@
+// Front 49 — onze stand-up · examples/config-example.bp
+//
+// Demonstrates: `onze.json` as a botopink value. The config is built once at
+// start-up, read by the erlang server half (port, basePath) and by the js build
+// half (appDir, outDir, publicDir), and it is immutable — an override returns a
+// new record, because botopink has no assignment to a `self` field.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/config/next-config-js
+//           NEXTJS-DOCS.md § 28. Configuração (next.config.js)
+//
+// Target: both. Nothing here is target-specific; that is the point — the same
+// value is what `onze dev` prints and what the BEAM server binds its listener
+// from.
+
+import {OnzeConfig, defaultConfig, withPort, withDev} from "onze";
+
+// A project writes `onze.json`; the CLI (front 50) parses it and hands the
+// app this value. Fields the file omits come from `defaultConfig()`.
+pub fn blogConfig() -> OnzeConfig {
+    return OnzeConfig(
+        name: "blog",
+        port: 3000,
+        basePath: "",
+        appDir: "app",
+        publicDir: "public",
+        outDir: ".onze",
+        dev: false,
+    );
+}
+
+// `onze dev -p 4000` does not mutate the config: it builds a new one.
+pub fn devConfig(port: i32) -> OnzeConfig {
+    val base = blogConfig();
+    val ported = withPort(base, port);
+    return withDev(ported, true);
+}
+
+test "defaultConfig supplies every field onze.json may omit" {
+    val c = defaultConfig();
+    assert c.port == 3000;
+    assert c.basePath == "";
+    assert c.appDir == "app";
+    assert c.publicDir == "public";
+    assert c.outDir == ".onze";
+    assert c.dev == false;
+}
+
+test "an override copies every other field" {
+    val a = blogConfig();
+    val b = withPort(a, 4000);
+    assert a.port == 3000;
+    assert b.port == 4000;
+    assert b.appDir == a.appDir;
+    assert b.outDir == a.outDir;
+    assert b.name == a.name;
+}
+
+test "origin is the URL the CLI prints and Link prefetches against" {
+    val c = devConfig(4000);
+    assert c.origin() == "http://localhost:4000";
+    assert c.dev == true;
+}

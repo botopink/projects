@@ -1,0 +1,16 @@
+// Carried from 1.0.7-beta examples-bp.md § F07 — notFound() em server component
+// app/blog/[slug]/page.bp
+import {Element, div, h1, text} from "jhonstart";
+import {notFound} from "jhonstart";
+
+#[@future]
+pub fn BlogPost(params: Dict<string, string>) -> @Future<Element> {
+    val slug = params.get("slug");
+    val post = await getPost(slug);
+    if (post == null) {
+        notFound();
+    };
+    return div([
+        h1([text(post.title, attrs: [])], attrs: []),
+    ], attrs: []);
+}

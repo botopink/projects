@@ -1,0 +1,42 @@
+// carried from specs/1.0.7-beta/examples-bp.md — ## F14 — Rakun File Routing
+//
+// Kept verbatim. app-tree-example.bp is the 1.0.9 form: `#[layout(seg)]` /
+// `#[page(seg)]` decorators, `LayoutProps`, `PageContext` and the emitted
+// `<page>Params(route)` accessor.
+
+// --- Layout aninhado (app/blog/layout.bp)
+// LANGUAGE GAP: declared parameter defaults are never applied — 22 replaces
+// `(children: Element)` with the single `LayoutProps(route, children, slots)` record so the
+// registry generates one arity; and `@Decl` carries no source location, so the layout needs
+// `#[layout("blog")]` with the segment as an argument.
+// LANGUAGE GAP: `Link("/blog", [text(...)])` relies on defaults for the remaining Link
+// parameters (27 § Problem); 1.0.9 spells `Link(linkProps(href), children)`.
+import {Element, div, nav, text} from "jhonstart";
+import {Link} from "jhonstart";
+
+pub fn BlogLayout(children: Element) -> Element {
+    return div([
+        nav([
+            Link("/blog", [text("Todos os Posts", attrs: [])]),
+            Link("/blog/tags", [text("Tags", attrs: [])]),
+        ], attrs: []),
+        div([children], attrs: []),
+    ], attrs: []);
+}
+
+// --- Dynamic segment (app/blog/[slug]/page.bp)
+// LANGUAGE GAP: `@Decl` carries no source location, so a page cannot learn its segment from
+// the file it sits in — 22 spells `#[page("blog/[slug]")] pub fn blogPostPage(route: PageContext)`
+// and emits `blogPostPageParams(route).slug`.
+// NOTE: `params.get("slug")` — every 1.0.9 example reads a Dict with `lookup(...).unwrapOr(...)`.
+import {Element, div, h1, p, text} from "jhonstart";
+
+#[@future]
+pub fn BlogPost(params: Dict<string, string>) -> @Future<Element> {
+    val slug = params.get("slug");
+    val post = await fetchPost(slug);
+    return div([
+        h1([text(post.title, attrs: [])], attrs: []),
+        p([text(post.content, attrs: [])], attrs: []),
+    ], attrs: []);
+}

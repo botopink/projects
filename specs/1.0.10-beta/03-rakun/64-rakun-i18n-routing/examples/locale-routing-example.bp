@@ -1,0 +1,79 @@
+// Front 64 — Rakun i18n Routing
+//
+// What this demonstrates: § 22 end to end. A closed locale set, the negotiation
+// filter installed at the front of front 07's chain, and a `[locale]` page that
+// reads the resolved locale. All of it runs on the BEAM; the browser sees the
+// locale only as an ordinary route param in the payload.
+//
+// The app tree this file populates:
+//
+//   app/
+//     [locale]/
+//       layout.bp      <- localeLayout, below
+//       page.bp        <- homePage, below
+//       about/
+//         page.bp
+//
+// Upstream:
+//   https://nextjs.org/docs/app/guides/internationalization
+
+import {LocaleSet, Alternate, registerLocales, localeOf, htmlLang, alternatesFor} from "rakun-i18n";
+import {localeFilter} from "rakun-i18n";
+import {registerFilter} from "rakun-web";                      // provided by front 07
+import {matcher} from "rakun-web";                             // provided by front 65
+import {page, layout, LayoutProps, PageContext} from "rakun";  // provided by front 22
+import {Element, div, h1, p, text} from "jhonstart";
+
+// SERVER — the locale set is declared once and is closed. A path prefixed with
+// anything not in this list is not a locale route, so /klingon/about 404s
+// instead of rendering in an undefined language.
+pub fn appLocales() -> LocaleSet {
+    return LocaleSet(locales: ["pt-BR", "en", "es"], defaultLocale: "pt-BR");
+}
+
+val _locales = registerLocales(appLocales());
+
+// SERVER — the negotiation filter. The exclusions are compiled once at startup,
+// not per request. /sitemap.xml and /robots.txt are on the list because front 66
+// serves them at fixed URLs and a locale redirect would break both.
+fn installLocaleFilter() -> i32 {
+    val assert Ok(excludeApi) = matcher("/api/:path*");
+    val assert Ok(excludeSitemap) = matcher("/sitemap.xml");
+    val assert Ok(excludeRobots) = matcher("/robots.txt");
+    val exclude = [excludeApi, excludeSitemap, excludeRobots];
+    return registerFilter(localeFilter(appLocales(), exclude));
+}
+
+val _filter = installLocaleFilter();
+
+// SERVER — the root layout for the locale subtree. `lang` is the resolved
+// locale rather than a literal.
+#[layout("[locale]")]
+pub fn localeLayout(props: LayoutProps) -> Element {
+    val lang = htmlLang();
+    return div([props.children], attrs: [#("lang", lang)]);
+}
+
+// SERVER — the page. Reading the resolved locale does not make this render
+// dynamic: the locale is a route param, and the route param is part of the URL.
+#[page("[locale]")]
+#[@future]
+pub fn homePage(route: PageContext) -> @Future<Element> {
+    val locale = localeOf();
+    val greeting = case locale {
+        "en" -> "Welcome";
+        "es" -> "Bienvenido";
+        _ -> "Bem-vindo";
+    };
+    return div([
+        h1([text(greeting, attrs: [])], attrs: []),
+        p([text("locale: " + locale, attrs: [])], attrs: []),
+    ], attrs: []);
+}
+
+// SERVER — the hreflang set front 32 renders: one entry per locale plus
+// x-default. The incoming pathname is stripped of its locale first, so calling
+// this from /pt-BR/about and from /about answers the same set.
+pub fn homeAlternates(route: PageContext) -> Alternate[] {
+    return alternatesFor(appLocales(), route.pathname);
+}

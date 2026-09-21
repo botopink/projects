@@ -1,0 +1,125 @@
+// Front 20 — rakun-web/websocket · example 1 of 1
+//
+// A chat endpoint. Everything in this file is the SERVER half and compiles to
+// BEAM: the upgrade, the connection process, the topic registry, the broadcast.
+//
+// The BROWSER half is not here and is not this front's to write. It is the
+// browser's own `WebSocket` object, written against this contract:
+//
+//   url          ws(s)://<host>/ws/chat?room=<room>
+//   subprotocol  "rakun.v1"
+//   frame        {"t":"<topic>","d":"<payload>"}   topic message
+//                {"t":"","d":"<payload>"}          direct message
+//   heartbeat    server pings every 30s; answer with pong
+//   close codes  1000 normal · 1008 unauthorized · 1009 frame too large
+//                1011 handler error · 1013 backpressure · 4001 session revoked
+//   payloads     text only — there is no byte type in botopink
+//
+// Upstream: https://docs.spring.io/spring-framework/reference/web/websocket.html
+//           (02-desenvolvendo-com-spring-boot.md § Starters — spring-boot-starter-websocket)
+
+import {service, restController, route, postMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+// Provided by front 20. #[wsEndpoint] splices the registration into THIS module
+// and it calls `rkWsRegister`, so that must resolve here.
+import {wsEndpoint, WsHandler, WsSession} from "rakun-web";
+import {subscribe, unsubscribe, broadcast, sessionsOn, rkWsRegister} from "rakun-web";
+import {Logger, logger} from "rakun-logging";
+
+val log = logger("app.chat");
+
+// ── the endpoint · SERVER ───────────────────────────────────────────────────
+//
+// `#[wsEndpoint]` walks this type for onOpen/onMessage/onClose and emits one
+// registration. `onMessage` is required — a socket endpoint that cannot receive
+// is a one-way channel, and refusing it at comptime is cheaper than discovering
+// it in staging. The other two are optional and are emitted as no-ops.
+//
+// `#[service]` is stacked so the endpoint is a managed singleton: ONE instance
+// serves every connection, and the HTTP controller further down shares it.
+// Per-connection state lives on the `WsSession`, not on this record — records
+// are immutable and a handler that tried to keep state in a field would be
+// keeping it for everyone.
+
+#[service]
+#[wsEndpoint("/ws/chat")]
+pub type ChatEndpoint(
+    rooms: RoomService,
+) {
+    pub fn onOpen(self: Self, session: WsSession) -> i32 {
+        // Authorization already happened, at the upgrade, on the HTTP request
+        // that carried the cookie. `session.principal` is what front 10 decided
+        // there; a frame arriving four minutes from now carries no credentials
+        // and cannot be re-authorized, which is why the check is not here.
+        val room = self.rooms.roomFor(session.path);
+        val _sub = subscribe(session, room);
+        val _joined = broadcast(room, "{\"t\":\"" + room + "\",\"d\":\"" + session.principal + " joined\"}");
+        return log.infoWith("ws open", [#("session.id", session.id), #("room", room)]);
+    }
+
+    pub fn onMessage(self: Self, session: WsSession, message: string) -> i32 {
+        // Text only. A binary frame never reaches here: the arm refuses it with
+        // a named error, because there is no byte type to receive it into.
+        //
+        // LANGUAGE GAP: no byte or binary type — a binary frame cannot be
+        // represented without corrupting it, so the transport refuses one rather
+        // than decoding it as UTF-8. Recorded in specs/1.0.9-beta/language-gaps.md.
+        val room = self.rooms.roomFor(session.path);
+        val clean = message.trim();
+        if (clean == "") {
+            return 0;
+        };
+        // Fire-and-forget: `broadcast` returns how many sessions it was sent to
+        // and does not wait for delivery. Waiting is how one slow client stalls
+        // a broadcast to a thousand fast ones.
+        return broadcast(room, "{\"t\":\"" + room + "\",\"d\":\"" + self.rooms.format(session.principal, clean) + "\"}");
+    }
+
+    pub fn onClose(self: Self, session: WsSession, code: i32, reason: string) -> i32 {
+        val room = self.rooms.roomFor(session.path);
+        val _un = unsubscribe(session, room);
+        return log.infoWith("ws close", [
+            #("session.id", session.id),
+            #("close.code", code.toString()),
+            #("close.reason", reason),
+        ]);
+    }
+}
+
+// ── the work · SERVER ───────────────────────────────────────────────────────
+
+#[service]
+pub type RoomService {
+    pub fn roomFor(self: Self, path: string) -> string {
+        val parts = path.split("?");
+        val query = parts.at(1).unwrapOr("");
+        val room = query.replace("room=", "");
+        val out = if (room == "") { "lobby" } else { room };
+        return out;
+    }
+
+    pub fn format(self: Self, who: string, text: string) -> string {
+        return who + ": " + text;
+    }
+}
+
+// ── pushing from outside a socket · SERVER ──────────────────────────────────
+//
+// `broadcast` is an ordinary call, so an HTTP handler, a scheduled task (front
+// 16) or a message listener (front 15) can all push to a topic. It goes through
+// OTP `pg`, so on a cluster this reaches subscribers connected to other nodes
+// with nothing extra to configure.
+
+#[restController]
+#[route("/api/chat")]
+pub type ChatController(
+    rooms: RoomService,
+) {
+    #[postMapping("/:room/announce")]
+    pub fn announce(self: Self, req: Request) -> Response {
+        val room = req.param("room");
+        val sent = broadcast(room, "{\"t\":\"" + room + "\",\"d\":\"" + req.body() + "\"}");
+        return Response.json("{\"sent\":" + sent.toString() + ",\"listeners\":" + sessionsOn(room).toString() + "}");
+    }
+}

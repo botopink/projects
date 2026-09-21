@@ -1,0 +1,174 @@
+// Front 53 — onze example app · examples/blog-slug-page-example.bp
+// App file: app/blog/[slug]/page.bp
+//
+// Demonstrates: the dynamic segment, where five fronts meet on one value. Front
+// 22 extracts `slug` into `route.params`; front 28 reads it in a server
+// component; front 32 reads it again in `generateMetadata`; front 60 calls
+// `blogStaticParams` at build time to learn every value it can take; front 63
+// turns a miss into a 404. If those five disagree about the shape, this file is
+// where it shows.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes
+//           https://nextjs.org/docs/app/api-reference/functions/generate-static-params
+//           https://nextjs.org/docs/app/api-reference/functions/not-found
+//           NEXTJS-DOCS.md § 6. Rotas Dinâmicas · § 18. Metadata · § 14. Erros
+//
+// Target: erlang (server).
+
+import {Element, div, h1, p, text, renderToString} from "jhonstart";
+import {article, h2, timeTag} from "jhonstart";             // provided by front 94
+import {styled, Token} from "emilia";                       // front 48
+import {page, PageContext} from "rakun";                    // front 22
+import {rkAppRegisterPage} from "rakun";
+import {notFound} from "rakun";                             // front 63
+import {
+    registerSegmentConfig,
+    registerStaticParams,
+    SegmentConfig,
+    DynamicMode,
+    FetchCache,
+    StaticParams,
+    ParamBinding,
+} from "rakun";                                             // front 60
+import {Metadata, OpenGraph, TwitterCard, Icons} from "jhonstart";   // front 32
+import {mergeMetadata, pairValue} from "jhonstart";                  // front 32
+import {dict} from "std";
+// app-local
+import {Post, findPost, listPosts, missingPost} from "@/lib.db";
+
+fn titleTokens() -> Token[] {
+    return [.Text.Size.X3xl, .Text.Bold, .Color.Gray.900];
+}
+
+fn metaTokens() -> Token[] {
+    return [.Text.Size.Sm, .Color.Gray.500];
+}
+
+fn bodyTokens() -> Token[] {
+    return [.Pad.Y.4, .Color.Gray.700];
+}
+
+// front 60 — the segment configuration. `Auto` with `revalidate: 3600`: the
+// three seeded posts are prerendered at build time and refreshed hourly, and a
+// slug that appears later is rendered on demand because `dynamicParams` is true.
+val _postConfig = registerSegmentConfig("blog/[slug]", SegmentConfig(
+    dynamic: DynamicMode.Auto,
+    dynamicParams: true,
+    revalidate: 3600,
+    fetchCache: FetchCache.Auto,
+));
+
+// front 60 — called once, at build time. Each row binds every dynamic segment
+// of the pattern; a row that misses one fails the build.
+#[@future]
+pub fn blogStaticParams() -> @Future<StaticParams[]> {
+    return listPosts().map({ post ->
+        StaticParams(bindings: [ParamBinding(name: "slug", value: post.slug)]);
+    });
+}
+
+val _postParams = registerStaticParams("blog/[slug]", blogStaticParams);
+
+// front 22 — the segment reaches the page through `route.params`, a `Dict`, so
+// it is read with `lookup(...).unwrapOr(...)` and never with `get`.
+// front 28 — a server component: `#[@future] … -> @Future<Element>`.
+#[page("blog/[slug]")]
+#[@future]
+pub fn blogPostPage(route: PageContext) -> @Future<Element> {
+    val slug = route.params.lookup("slug").unwrapOr("");
+    val found = findPost(slug);
+
+    // front 63 — `notFound()` unwinds to the nearest not-found.bp boundary,
+    // which for this route is `app/blog/[slug]/not-found.bp`, and sets 404.
+    //
+    // LANGUAGE GAP: botopink has no bottom type, so a diverging call still
+    // leaves the caller obliged to produce a value — hence the `missingPost`
+    // default on the next line, which is unreachable. With a `never` return the
+    // body would end at `val post = found.first();`.
+    if (found.isEmpty()) {
+        val _gone = notFound();
+    };
+    val post = found.first().unwrapOr(missingPost(slug));
+
+    return article([
+        h1([text(post.title, attrs: [])], attrs: [styled(titleTokens())]),
+        timeTag(post.published, [text(post.published, attrs: [])], attrs: [styled(metaTokens())]),
+        p([text(post.body, attrs: [])], attrs: [styled(bodyTokens())]),
+    ], attrs: []);
+}
+
+// front 32 — the head for this route, merged over the root layout's metadata by
+// front 32's own `mergeMetadata`. It reads the same params the page reads, and
+// front 62's request-scoped memoization is what stops the post being loaded
+// twice per request.
+#[@future]
+pub fn generateMetadata(params: Array<#(string, string)>) -> @Future<Metadata> {
+    val slug = pairValue(params, "slug");
+    val found = findPost(slug);
+    val post = found.first().unwrapOr(missingPost(slug));
+    return postMetadata(post);
+}
+
+// The pure half, so the merge with the root layout's metadata is testable
+// without a filesystem. The root layout owns `titleTemplate`; this segment
+// leaves it empty and front 32's `mergeMetadata` applies it once.
+pub fn postMetadata(post: Post) -> Metadata {
+    return Metadata(
+        title: post.title,
+        titleTemplate: "",
+        description: post.excerpt,
+        openGraph: OpenGraph(
+            title: post.title,
+            description: post.excerpt,
+            url: "https://example.dev/blog/" + post.slug,
+            ogType: "article",
+            siteName: "",
+            images: ["/blog/" + post.slug + "/opengraph-image"],
+        ),
+        twitter: TwitterCard(card: "summary_large_image", title: post.title, description: post.excerpt, images: []),
+        icons: Icons(icon: "", apple: ""),
+    );
+}
+
+fn postRoute(slug: string) -> PageContext {
+    return PageContext(
+        pathname: "/blog/" + slug,
+        pattern: "/blog/[slug]",
+        params: dict.empty().insert("slug", slug),
+        query: dict.empty(),
+        rest: [],
+    );
+}
+
+test "the dynamic segment reaches the page through route.params" {
+    val markup = renderToString(await blogPostPage(postRoute("hello-world")));
+    assert markup.contains("<article");
+    assert markup.contains("<time datetime=");
+}
+
+test "generateStaticParams produces one row per post, in front 60's vocabulary" {
+    val rows = await blogStaticParams();
+    assert rows.length == listPosts().length;
+    assert rows.all({ r -> r.bindings.length == 1 });
+}
+
+test "generateMetadata reads the same slug the page reads" {
+    val m = await generateMetadata([#("slug", "hello-world")]);
+    assert m.openGraph.url.endsWith("/blog/hello-world");
+    assert m.openGraph.ogType == "article";
+}
+
+test "the segment metadata merges over the layout's rather than replacing it" {
+    val root = Metadata(
+        title: "Notes",
+        titleTemplate: "%s | Notes",
+        description: "A blog.",
+        openGraph: OpenGraph(title: "", description: "", url: "", ogType: "website", siteName: "Notes", images: []),
+        twitter: TwitterCard(card: "", title: "", description: "", images: []),
+        icons: Icons(icon: "/favicon.ico", apple: ""),
+    );
+    val post = Post(slug: "s", title: "A post", published: "", excerpt: "e", body: "b");
+    val m = mergeMetadata(root, postMetadata(post));
+    assert m.title == "A post | Notes";
+    assert m.icons.icon == "/favicon.ico";
+}

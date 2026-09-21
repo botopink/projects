@@ -1,0 +1,120 @@
+// Front 66 — Rakun Metadata File Routes
+//
+// What this demonstrates: the four response-producing conventions of § 18's
+// Metadata Files table, for one blog. Each registration adds one GET route to
+// front 22's table; none of them changes the table's format.
+//
+// The app tree this file populates:
+//
+//   app/
+//     favicon.ico
+//     icon.png
+//     apple-icon.png
+//     sitemap.bp      <- sitemap, below
+//     robots.bp       <- robots, below
+//     manifest.bp     <- manifest, below
+//
+// SERVER — every function here answers a request on the BEAM.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/file-conventions/metadata/sitemap
+//   https://nextjs.org/docs/app/api-reference/file-conventions/metadata/robots
+//   https://nextjs.org/docs/app/api-reference/file-conventions/metadata/manifest
+//   https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons
+
+import {
+    SitemapEntry,
+    RobotRule,
+    Robots,
+    ManifestIcon,
+    WebManifest,
+    IconKind,
+    registerSitemap,
+    registerRobots,
+    registerManifest,
+    registerIconFile,
+} from "rakun";
+
+pub type Post(
+    slug: string,
+    updatedAt: string,
+)
+
+// SERVER — stands in for the repository read from front 08.
+fn allPosts() -> Post[] {
+    return [
+        Post(slug: "hello", updatedAt: "2026-01-04"),
+        Post(slug: "beam", updatedAt: "2026-02-11"),
+    ];
+}
+
+// SERVER — /sitemap.xml. Above 50 000 entries this is sharded automatically and
+// /sitemap.xml becomes the index; below it, it is the document itself.
+#[@future]
+pub fn sitemap() -> @Future<SitemapEntry[]> {
+    val roots = [
+        SitemapEntry(
+            loc: "https://example.com/",
+            lastModified: "2026-03-01",
+            changeFrequency: "daily",
+            priority: "1.0",
+        ),
+    ];
+    val posts = allPosts().map({ post ->
+        SitemapEntry(
+            loc: "https://example.com/blog/" + post.slug,
+            lastModified: post.updatedAt,
+            changeFrequency: "weekly",
+            priority: "0.7",
+        );
+    });
+    return roots.append(posts);
+}
+
+val _sitemap = registerSitemap(sitemap);
+
+// SERVER — /robots.txt. With no registration this URL answers 404 rather than
+// an empty file, because an empty robots.txt means "crawl everything" and that
+// is a policy decision the library does not make for an app.
+#[@future]
+pub fn robots() -> @Future<Robots> {
+    return Robots(
+        rules: [
+            RobotRule(
+                userAgent: "*",
+                allow: ["/"],
+                disallow: ["/dashboard", "/api"],
+            ),
+        ],
+        sitemap: "https://example.com/sitemap.xml",
+        host: "https://example.com",
+    );
+}
+
+val _robots = registerRobots(robots);
+
+// SERVER — /manifest.webmanifest.
+#[@future]
+pub fn manifest() -> @Future<WebManifest> {
+    return WebManifest(
+        name: "Example Blog",
+        shortName: "Blog",
+        startUrl: "/",
+        display: "standalone",
+        backgroundColor: "#ffffff",
+        themeColor: "#4f46e5",
+        icons: [
+            ManifestIcon(src: "/icon.png", sizes: "512x512", contentType: "image/png"),
+        ],
+    );
+}
+
+val _manifest = registerManifest(manifest);
+
+// SERVER — the icon family. In a real project front 50's CLI generates these
+// three lines from the files it finds under appDir; they are written out here so
+// the shape is visible. Each is served with a content hash in the query and a
+// one-year cache header, and each also becomes a <link> tag through front 32.
+val _favicon = registerIconFile(IconKind.Favicon, "", "favicon.ico", "image/x-icon", "");
+val _icon = registerIconFile(IconKind.Icon, "", "icon.png", "image/png", "512x512");
+val _apple = registerIconFile(IconKind.AppleIcon, "", "apple-icon.png", "image/png", "180x180");

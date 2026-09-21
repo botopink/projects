@@ -1,0 +1,125 @@
+// Front 76 — rakun actuator: default-deny, and what it costs to open a door.
+//
+// Almost every assertion in this file is negative. That is deliberate: an access
+// rule is only worth anything if the thing it forbids is actually unreachable,
+// and the only way to check that is to drive a real request through the
+// dispatcher and look at the status.
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.exposing
+//   https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.controlling-access
+//   https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.sanitization
+//
+// The configuration this file assumes, in application.yaml (front 05 reads it):
+//
+//   rakun:
+//     endpoints:
+//       access:
+//         default: read-only
+//         max-permitted: read-only
+//       web:
+//         base-path: /manage
+//         exposure:
+//           include: health,info,metrics,prometheus
+//           exclude: env
+//     endpoint:
+//       shutdown:
+//         access: unrestricted      # demoted to read-only by max-permitted
+//       env:
+//         show-values: when-authorized
+//         roles: admin
+//     management:
+//       server:
+//         port: 9090
+//         address: 127.0.0.1
+//         ssl:
+//           bundle: management
+//
+// `endpointExposed`, `endpointAccess`, `effectiveAccess`, `managementPort` and
+// `callEndpoint` are delivered by this front. The endpoints themselves are front
+// 11's; `prometheus` is front 75's; the TLS bundle is front 74's.
+
+import {Rakun, App} from "rakun";
+import {autoConfigure} from "rakun";
+import {endpointExposed, endpointAccess, effectiveAccess, managementPort} from "rakun-actuator";
+import {callEndpoint, sanitizedValue, accessReport} from "rakun-actuator";
+import {rkProp, rkSetProp} from "rakun";
+
+fn main() {
+    val _ = autoConfigure();
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+test "an application with no actuator configuration exposes health and nothing else" {
+    val _clear = rkSetProp("rakun.endpoints.web.exposure.include", "");
+    assert endpointExposed("health") == true;
+    assert endpointExposed("info") == false;
+    assert endpointExposed("env") == false;
+    assert endpointExposed("beans") == false;
+    assert endpointExposed("metrics") == false;
+}
+
+test "an unexposed endpoint is indistinguishable from one that does not exist" {
+    val _clear = rkSetProp("rakun.endpoints.web.exposure.include", "health");
+    val unexposed = callEndpoint("GET", "/manage/env");
+    val unknown = callEndpoint("GET", "/manage/there-is-no-such-thing");
+    assert unexposed.status == 404;
+    assert unknown.status == 404;
+    assert unexposed.body == unknown.body;
+}
+
+test "exclude wins over include, including over the wildcard" {
+    val _i = rkSetProp("rakun.endpoints.web.exposure.include", "*");
+    val _e = rkSetProp("rakun.endpoints.web.exposure.exclude", "env");
+    assert endpointExposed("beans") == true;
+    assert endpointExposed("env") == false;
+}
+
+test "the ceiling demotes an endpoint and nothing raises it back" {
+    val _i = rkSetProp("rakun.endpoints.web.exposure.include", "*");
+    val _e = rkSetProp("rakun.endpoints.web.exposure.exclude", "");
+    assert endpointAccess("shutdown") == "unrestricted";
+    assert effectiveAccess("shutdown") == "read-only";
+
+    val post = callEndpoint("POST", "/manage/shutdown");
+    assert post.status == 405;
+}
+
+test "access=none answers 404, not 403" {
+    val _a = rkSetProp("rakun.endpoint.beans.access", "none");
+    val res = callEndpoint("GET", "/manage/beans");
+    assert res.status == 404;
+}
+
+test "a sanitized key keeps its name and loses its value" {
+    val _s = rkSetProp("rakun.endpoint.env.show-values", "never");
+    assert sanitizedValue("rakun.datasource.password", "hunter2") == "******";
+    assert sanitizedValue("rakun.datasource.url", "postgres://db/app") == "postgres://db/app";
+}
+
+test "show-values=always still sanitizes a key matching the built-in patterns" {
+    val _s = rkSetProp("rakun.endpoint.env.show-values", "always");
+    assert sanitizedValue("app.api.token", "abc123") == "******";
+    assert sanitizedValue("app.name", "orders") == "orders";
+}
+
+test "additional keys are additive and nothing removes a built-in pattern" {
+    val _a = rkSetProp("rakun.endpoint.sanitize.additional-keys", "seed");
+    assert sanitizedValue("app.random.seed", "42") == "******";
+    assert rkProp("rakun.endpoint.sanitize.remove-keys") == "";
+}
+
+test "the report names the effective level and the listener, not the configured one" {
+    val report = accessReport();
+    assert report.contains("shutdown") == true;
+    assert report.contains("effective=read-only") == true;
+    assert report.contains("listener=management") == true;
+}
+
+test "the management listener is a separate port and the application listener serves no actuator path" {
+    assert managementPort() == 9090;
+    val onApp = callEndpoint("GET", "/api/manage/health");
+    assert onApp.status == 404;
+}

@@ -1,0 +1,129 @@
+// Front 53 — onze example app · examples/blog-list-page-example.bp
+// App file: app/blog/page.bp  (+ app/blog/layout.bp, app/blog/loading.bp)
+//
+// Demonstrates: a server component that loads data, the load cached under a tag
+// a mutation will later expire, and the list streaming behind the segment's own
+// `loading.bp`.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/fetching-data
+//           https://nextjs.org/docs/app/api-reference/file-conventions/loading
+//           NEXTJS-DOCS.md § 9. Busca de Dados · § 11. Cache · § 13. Streaming
+//
+// Target: erlang (server). Nothing here has a browser half — the list renders
+// once, on the server; the only interactive thing on the page is each card's
+// `Link`, which front 27 owns.
+
+import {Element, div, h1, ul, li, span, text, renderToString} from "jhonstart";
+import {section} from "jhonstart";                        // provided by front 94
+import {Boundary, Suspense, boundaryId, shellHtml} from "jhonstart";   // front 30
+import {styled, Token} from "emilia";                     // front 48
+import {page, layout, PageContext, LayoutProps} from "rakun";          // front 22
+import {rkAppRegisterPage, rkAppRegisterLayout} from "rakun";
+import {dict} from "std";
+// app-local
+import {Post, listPosts} from "@/lib.db";
+import {PostCard} from "@/components.post_card";
+
+fn titleTokens() -> Token[] {
+    return [.Text.Size.X2xl, .Text.Bold];
+}
+
+fn listTokens() -> Token[] {
+    return [.Layout.Flex, .Flex.Col, .Flex.Gap.4];
+}
+
+// front 22 — `app/blog/layout.bp`. Wraps /blog and everything under it, and is
+// NOT re-rendered when the client navigates between two routes that share it.
+#[layout("blog")]
+pub fn blogLayout(props: LayoutProps) -> Element {
+    return section([
+        h1([text("All posts", attrs: [])], attrs: [styled(titleTokens())]),
+        props.children,
+    ], attrs: []);
+}
+
+// front 30 — `app/blog/loading.bp`. One export, no arguments, no boundary name;
+// front 22 discovers the file and front 23 builds the boundary around the page.
+pub fn Loading() -> Element {
+    return div([
+        span([text("Loading the blog…", attrs: [])], attrs: [#("class", "skeleton-line")]),
+    ], attrs: [#("class", "skeleton")]);
+}
+
+// front 22 + front 28 — `app/blog/page.bp`, a server component. Front 12's
+// `listPosts` is a blocking call, not a future: on the BEAM a render is a
+// process, so a loader does not have to be coloured async to be concurrent.
+//
+// front 12 — `listPosts` reads through the `"posts"` tag, which is exactly what
+// `lib/actions.bp` expires after a write.
+#[page("blog")]
+#[@future]
+pub fn blogIndexPage(route: PageContext) -> @Future<Element> {
+    val posts = listPosts();
+    val items = posts.map({ p -> li([PostCard(p)], attrs: []) });
+    return ul(items, attrs: [styled(listTokens())]);
+}
+
+// front 30 — what front 23 builds around the two files above. The page becomes
+// an unstarted thunk; nothing runs when the boundary is constructed.
+//
+// `boundaryId` names the boundary for front 30's own bookkeeping. It is NOT the
+// wire id: `contracts.md § 2` pins a streaming hole as `<div data-onze-h="h0">`
+// with ORDINAL ids assigned by front 23 in shell order, never route-derived —
+// so the assertions below look for the ordinal marker, not for "blog.page".
+pub fn blogBoundary(route: PageContext) -> Boundary {
+    return Boundary(
+        id: boundaryId(["blog"], "page"),
+        fallback: Loading(),
+        child: { ->
+            blogIndexPage(route);
+        },
+    );
+}
+
+pub fn blogShell(route: PageContext) -> Element {
+    return div([Suspense(blogBoundary(route))], attrs: [#("class", "segment")]);
+}
+
+fn blogRoute() -> PageContext {
+    return PageContext(
+        pathname: "/blog",
+        pattern: "/blog",
+        params: dict.empty(),
+        query: dict.empty(),
+        rest: [],
+    );
+}
+
+test "the list renders one card per post" {
+    val markup = renderToString(await blogIndexPage(blogRoute()));
+    assert markup.contains("<ul");
+    assert markup.contains("<li>");
+    assert markup.contains("<article");
+}
+
+test "the shell shows the loading UI and not the list" {
+    val html = shellHtml(blogShell(blogRoute()));
+    assert html.contains("data-onze-h=\"h0\"");
+    assert html.contains("Loading the blog…");
+    assert html.contains("<article") == false;
+}
+
+test "building the boundary does not render the page" {
+    val b = blogBoundary(blogRoute());
+    assert renderToString(b.fallback).contains("skeleton");
+}
+
+test "the segment layout wraps the router's subtree, not the page fn" {
+    val leaf = text("inner", attrs: []);
+    val markup = renderToString(blogLayout(LayoutProps(children: leaf)));
+    assert markup.contains("<section");
+    assert markup.contains("All posts");
+    assert markup.contains("inner");
+}
+
+test "two renders in one process agree — the read went through the cache" {
+    val a = renderToString(await blogIndexPage(blogRoute()));
+    val b = renderToString(await blogIndexPage(blogRoute()));
+    assert a == b;
+}

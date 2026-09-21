@@ -1,0 +1,167 @@
+// Front 53 — onze example app · examples/new-post-form-example.bp
+// App file: app/dashboard/posts/new/page.bp (+ app/dashboard/layout.bp)
+//
+// Demonstrates: the write path's browser half, and the auth gate above it.
+//
+//   - front 62: the dashboard layout reads the session cookie out of the request
+//     frame. Reading it marks the render dynamic, so front 60 will not prerender
+//     the route, and `dynamicReason()` answers "cookies" in the build report.
+//   - front 63: no session means `redirect("/login")`, raised from a LAYOUT —
+//     nothing between it and the pipeline had to declare it might not return.
+//   - front 24: the form is bound to a server action by id, never by name.
+//   - front 67: `useActionState` supplies the returned message, the field it
+//     belongs to, and the pending flag. During the server pass `pending` is
+//     false, so the first HTML is a form an un-hydrated browser can submit.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/updating-data
+//           https://nextjs.org/docs/app/api-reference/functions/use-action-state
+//           https://nextjs.org/docs/app/guides/authentication
+//           NEXTJS-DOCS.md § 10. Mutação de Dados · § 23. Autenticação
+//
+// Target: both. The layout and the action are erlang; the pending state, the
+// disabled button and the in-place message are js.
+
+import {Element, div, h1, p, fragment, text, renderToString} from "jhonstart";
+import {form, input, label, button, section} from "jhonstart";  // provided by front 94
+import {ActionState, actionState, parseActionState} from "jhonstart";       // front 67
+import {FormBinding, formAction, formAttrs, useActionState} from "jhonstart";  // front 67
+import {styled, Token} from "emilia";                           // front 48
+import {layout, page, LayoutProps, PageContext} from "rakun";   // front 22
+import {rkAppRegisterLayout, rkAppRegisterPage} from "rakun";
+import {cookies} from "rakun";                                  // front 62
+import {redirect} from "rakun";                                 // front 63
+import {dict} from "std";
+
+fn panelTokens() -> Token[] {
+    return [.Pad.All.8, .Bg.White, .Border.Rounded.Md];
+}
+
+fn fieldTokens() -> Token[] {
+    return [.Layout.Block, .Margin.Y.2];
+}
+
+// ── app/dashboard/layout.bp — SERVER (front 62 + front 63) ──────────────────
+//
+// The layout is not dispatched by the router, so nobody hands it a `Request`; it
+// reads the cookie out of the request frame front 62 establishes. A cookie WRITE
+// here would raise — the render phase forbids it, and front 62 checks rather
+// than documents.
+#[layout("dashboard")]
+pub fn dashboardLayout(props: LayoutProps) -> Element {
+    val session = cookies().get("session").unwrapOr("");
+    if (session == "") {
+        val _gone = redirect("/login");
+    };
+    return section([
+        p([text("signed in as " + session, attrs: [])], attrs: []),
+        props.children,
+    ], attrs: [styled(panelTokens())]);
+}
+
+// ── the form, written against explicit state ────────────────────────────────
+//
+// Pure, so "does the message reach its own field" is a test and not a browser
+// session. The same function serves the component, the server render and the
+// tests below.
+
+fn fieldLine(state: ActionState, name: string) -> Element {
+    val message = state.fieldError(name);
+    val line = if (message == "") {
+        fragment([], attrs: [])
+    } else {
+        p([text(message, attrs: [])], attrs: [#("class", "field-error")])
+    };
+    return line;
+}
+
+fn submitAttrs(pending: bool) -> Array<#(string, string)> {
+    val base = [#("type", "submit")];
+    if (pending == false) return base;
+    return base.append([#("disabled", "disabled")]);
+}
+
+fn submitLabel(pending: bool) -> string {
+    val caption = if (pending) { "Publishing…" } else { "Publish" };
+    return caption;
+}
+
+pub fn newPostForm(binding: FormBinding, state: ActionState, pending: bool) -> Element {
+    return form([
+        label([text("Title", attrs: [])], attrs: [#("for", "title")]),
+        input([], attrs: [#("id", "title"), #("name", "title"), #("required", "required")]),
+        fieldLine(state, "title"),
+        label([text("Body", attrs: [])], attrs: [#("for", "body")]),
+        input([], attrs: [#("id", "body"), #("name", "body"), #("required", "required")]),
+        fieldLine(state, "body"),
+        input([], attrs: [#("id", "published"), #("name", "published"), #("type", "date")]),
+        button([text(submitLabel(pending), attrs: [])], attrs: submitAttrs(pending)),
+    ], attrs: formAttrs(binding));
+}
+
+// ── the client component — front 67 + front 68 ──────────────────────────────
+
+fn NewPostForm() -> Element {
+    // LANGUAGE GAP: tuple labels are lost through generic instantiation, so this
+    // reads positionally; with labels preserved it would be `s.state`,
+    // `s.binding`, `s.pending`.
+    val s = use useActionState("createPost", actionState(""));
+    val state = s.0;
+    val binding = s.1;
+    val pending = s.2;
+    return newPostForm(binding, state, pending);
+}
+
+// ── app/dashboard/posts/new/page.bp — SERVER renders what the CLIENT submits ─
+
+#[page("dashboard/posts/new")]
+#[@future]
+pub fn newPostPage(route: PageContext) -> @Future<Element> {
+    return div([
+        h1([text("New post", attrs: [])], attrs: []),
+        newPostForm(formAction("createPost"), actionState(""), false),
+    ], attrs: []);
+}
+
+fn newPostRoute() -> PageContext {
+    return PageContext(
+        pathname: "/dashboard/posts/new",
+        pattern: "/dashboard/posts/new",
+        params: dict.empty(),
+        query: dict.empty(),
+        rest: [],
+    );
+}
+
+test "the empty form carries what an un-hydrated browser needs to submit it" {
+    val markup = renderToString(newPostForm(formAction("createPost"), actionState(""), false));
+    assert markup.contains("method=\"post\"");
+    assert markup.contains("enctype=\"application/x-www-form-urlencoded\"");
+    assert markup.contains("data-onze-a=\"a_");
+    assert markup.contains("name=\"__onze_action\"");
+}
+
+test "the action is named by its id and never by its function name" {
+    val markup = renderToString(await newPostPage(newPostRoute()));
+    assert markup.contains("value=\"createPost\"") == false;
+    assert markup.contains("data-onze-a=\"a_");
+}
+
+test "a field message from the action lands beside its own field" {
+    val envelope = "ok=0&message=Title%20too%20short&redirect=&f.title=Too%20short";
+    val state = parseActionState(envelope);
+    val markup = renderToString(newPostForm(formAction("createPost"), state, false));
+    assert markup.contains("<p class=\"field-error\">Too short</p>");
+    assert state.fieldError("body") == "";
+}
+
+test "an in-flight submit disables the button and renames it" {
+    val markup = renderToString(newPostForm(formAction("createPost"), actionState(""), true));
+    assert markup.contains("disabled=\"disabled\"");
+    assert markup.contains("Publishing…");
+}
+
+test "an idle form carries no disabled attribute at all" {
+    val markup = renderToString(newPostForm(formAction("createPost"), actionState(""), false));
+    assert markup.contains("disabled") == false;
+    assert markup.contains("Publish");
+}

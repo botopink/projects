@@ -1,0 +1,70 @@
+// Front 65 — Rakun URL Rules
+//
+// What this demonstrates: an app served from /docs with a retired URL, an
+// internal rewrite, an external API proxy and a per-path security header. The
+// developer's whole contact with this front is one `UrlRules` value handed to
+// `compileRules` once at startup; front 07's chain runs the compiled result.
+//
+// SERVER — every rule below is executed on the BEAM. The `basePath` and the
+// redirect table also travel to the browser so <Link> emits the same hrefs;
+// that half is in base-path-example.bp.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/config/next-config-js/redirects
+//   https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites
+//   https://nextjs.org/docs/app/api-reference/config/next-config-js/headers
+//   https://nextjs.org/docs/app/api-reference/file-conventions/proxy
+
+import {
+    UrlRules,
+    RedirectRule,
+    RewriteRule,
+    HeaderRule,
+    compileRules,
+    urlRulesFilter,
+} from "rakun-web";
+import {registerFilter} from "rakun-web";  // provided by front 07
+
+// SERVER — every field is written out because a declared parameter default is
+// never applied at a call site.
+pub fn appUrlRules() -> UrlRules {
+    return UrlRules(
+        basePath: "/docs",
+        trailingSlash: false,
+        redirects: [
+            // The retired URL. `permanent: true` is 308, which a crawler caches.
+            RedirectRule(source: "/old", destination: "/new", permanent: true),
+            // A capture carried into the destination. A slug containing a space
+            // is percent-encoded on the way, not split into two segments.
+            RedirectRule(source: "/blog/:slug", destination: "/posts/:slug", permanent: false),
+        ],
+        rewrites: [
+            // Internal: the URL in the browser stays /shop/x, the route that
+            // renders is the one registered at /catalog/[...path].
+            RewriteRule(source: "/shop/:path*", destination: "/catalog/:path*"),
+            // External: a reverse proxy. The host must be on
+            // rakun.rules.allowedOrigins or this fails at startup, and the
+            // response body is relayed chunk by chunk rather than buffered.
+            RewriteRule(source: "/api/external/:path*", destination: "https://api.example.com/:path*"),
+        ],
+        headers: [
+            HeaderRule(source: "/api/:path*", name: "Access-Control-Allow-Origin", value: "*"),
+            HeaderRule(
+                source: "/((?!api).*)",
+                name: "Content-Security-Policy",
+                value: "default-src 'self'",
+            ),
+        ],
+    );
+}
+
+// SERVER — compiled once, at startup. A bad pattern, a destination naming a
+// capture the source does not have, a rewrite whose target is not in the route
+// table, or an external host that is not allow-listed all fail here, with the
+// offending rule named, rather than on the request that happens to hit them.
+fn installUrlRules() -> i32 {
+    val assert Ok(compiled) = compileRules(appUrlRules());
+    return registerFilter(urlRulesFilter(compiled));
+}
+
+val _rules = installUrlRules();

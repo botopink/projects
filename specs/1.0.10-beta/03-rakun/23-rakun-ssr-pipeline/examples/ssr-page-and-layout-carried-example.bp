@@ -1,0 +1,52 @@
+// carried from specs/1.0.7-beta/examples-bp.md — ## F09 — Rakun SSR Pipeline
+//
+// Kept verbatim. Where the 1.0.9 text settles a different shape, the note sits
+// above the snippet; the code itself is the 1.0.7 draft's.
+
+// --- Página SSR completa (app/page.bp)
+// NOTE: 23 § The document calls `emilia.flush()` exactly once, from `document(head, body, p)`;
+// a page in 1.0.9 returns its subtree and does not build `<html>`/`<head>` or flush itself.
+// NOTE: 94 spells the `<html>` constructor `htmlTag` — `html` is the `html """…"""` DSL fn.
+// LANGUAGE GAP: declared parameter defaults are never applied, so every `attrs:` is explicit.
+import {Element, html, head, body, div, h1, p, style, text} from "jhonstart";
+import {emilia, flush, Token} from "emilia";
+
+#[@future]
+pub fn HomePage() -> @Future<Element> {
+    val titleClass = emilia([.Text.Size.X4xl, .Text.Bold]);
+    val bodyClass = emilia([.Pad.All.8, .Bg.Gray100]);
+    val stats = await fetchStats();
+    val styles = await flush();
+    return html([
+        head([
+            style([text(styles, attrs: [])], attrs: []),
+        ], attrs: []),
+        body([
+            div([
+                h1([text("Minha Aplicação", attrs: [])], attrs: [#("class", titleClass)]),
+                p([text("Visitantes: " + stats.visitors.toString(), attrs: [])], attrs: []),
+            ], attrs: [#("class", bodyClass)]),
+        ], attrs: []),
+    ], attrs: []);
+}
+
+// --- Layout com SSR (app/layout.bp)
+// NOTE: 22 Step 2 pins a layout as `fn(props: LayoutProps) -> Element`; `lang="pt-BR"` is
+// written by 23 § The document, not by the root layout.
+// LANGUAGE GAP: declared parameter defaults are never applied — 52 spells
+// `googleFont(family, opts: GoogleFontOptions) -> @Future<Font>` and awaits it; the labelled
+// `subsets:` shorthand below relies on defaults for the remaining options.
+import {Element, html, head, body, div, text} from "jhonstart";
+import {googleFont} from "onze13";
+
+val inter = googleFont("Inter", subsets: ["latin"]);
+
+#[@future]
+pub fn RootLayout(children: Element) -> @Future<Element> {
+    return html([
+        head([text("", attrs: [])], attrs: []),
+        body([
+            div([children], attrs: [#("class", inter.className)]),
+        ], attrs: []),
+    ], attrs: [#("lang", "pt-BR")]);
+}

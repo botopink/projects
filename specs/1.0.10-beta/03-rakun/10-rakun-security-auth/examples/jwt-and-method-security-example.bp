@@ -1,0 +1,198 @@
+// Front 10 — Authentication, Authorization and Method Security.
+//
+// A developer securing an application: a path policy declared once, a handler
+// reading the authenticated principal, and an admin-only service method behind
+// `#[methodSecurity]` + `#[secured]`. All of it runs on the server.
+//
+// The configuration it reads:
+//   rakun.security.jwt.secret: "${JWT_SECRET}"
+//   rakun.security.jwt.issuer: "https://auth.example.com"
+//   rakun.security.jwt.audience: "orders-api"
+//   rakun.security.jwt.authorities-claim: "roles"
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/web/spring-security.html
+//   https://www.rfc-editor.org/rfc/rfc7519
+
+import {Request, Response} from "rakun";
+import {service, restController, route, getMapping, postMapping, deleteMapping} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+import {managed, provides} from "rakun";               // front 06
+import {raiseProblem} from "rakun-web";                // front 07
+
+// Front 10's surface.
+import {SecurityPolicy, PathRule, Authentication, Principal} from "rakun-security";
+import {methodSecurity, secured, permitAll} from "rakun-security";
+import {security} from "rakun-security";
+import {rkRequireAuthority} from "rakun-security";
+
+// ---- the policy (server) ----
+
+// Rules match in DECLARATION ORDER, first match wins — which is why the public
+// subtree comes before the rule that covers everything under /api. There is no
+// `defaultRequirement: "permitAll"`: a path nobody wrote a rule for is protected,
+// and making one public is a line a reviewer can see in a diff.
+//
+// The pattern grammar is front 65's, the same matcher front 07's #[matcher] uses.
+#[provides]
+pub fn apiSecurityPolicy() -> SecurityPolicy {
+    return SecurityPolicy(
+        rules: [
+            PathRule(pattern: "/api/public/:path*", requirement: "permitAll"),
+            PathRule(pattern: "/api/admin/:path*", requirement: "hasRole:ADMIN"),
+            PathRule(pattern: "/api/:path*", requirement: "authenticated"),
+        ],
+        defaultRequirement: "authenticated",
+    );
+}
+
+// ---- a service whose methods carry their own requirement (server) ----
+
+#[service]
+#[managed]
+pub type AuditRepository {
+    pub fn purgeOlderThan(self: Self, days: i32) -> i32 {
+        return days;
+    }
+
+    pub fn depth(self: Self) -> i32 {
+        return 42;
+    }
+}
+
+// `#[methodSecurity]` is type-level and emits `AdminServiceSec`, a proxy whose
+// methods wrap the call in an authority check. A decorator cannot rewrite the
+// body it annotates, so this is how method security is actually built — and
+// injecting `AdminService` rather than `AdminServiceSec` is a visible choice in
+// a field declaration, not a swap the container performs behind your back.
+#[service]
+#[methodSecurity]
+#[managed]
+pub type AdminService(
+    audit: AuditRepository,
+) {
+    #[secured("ROLE_ADMIN")]
+    pub fn purge(self: Self, olderThanDays: i32) -> i32 {
+        return self.audit.purgeOlderThan(olderThanDays);
+    }
+
+    // Either authority admits the caller.
+    #[secured("ROLE_ADMIN,ROLE_OPERATOR")]
+    pub fn depth(self: Self) -> i32 {
+        return self.audit.depth();
+    }
+
+    // Explicitly open. A method with NO marker would inherit the type's
+    // requirement, and an unmarked type requires authentication — the unmarked
+    // case is the protected case.
+    #[permitAll]
+    pub fn status(self: Self) -> string {
+        return "ok";
+    }
+}
+
+// ---- handlers (server) ----
+
+#[restController]
+#[route("/api")]
+#[managed]
+pub type OrdersApi(
+    admin: AdminServiceSec,
+) {
+    // Covered by the permitAll rule; no credentials are read.
+    #[getMapping("/public/health")]
+    pub fn publicHealth(self: Self, req: Request) -> Response {
+        return Response.ok(self.admin.status());
+    }
+
+    // Covered by the "authenticated" rule. By the time the handler runs the
+    // security entry has already answered 401 for anyone without a valid token,
+    // so the handler never checks — it only reads.
+    #[getMapping("/orders/mine")]
+    pub fn mine(self: Self, req: Request) -> Response {
+        val auth = security.current();
+        val who = auth.principal.name;
+        val roles = auth.principal.authorities.join(",");
+        return Response.json("{\"user\":\"${who}\",\"roles\":\"${roles}\"}");
+    }
+
+    // Covered by the hasRole:ADMIN rule at the path level AND by #[secured] at
+    // the method level. The two are not redundant: the path rule protects the
+    // route, the method rule protects the service from every other caller inside
+    // the application, including a scheduled job.
+    #[deleteMapping("/admin/audit")]
+    pub fn purge(self: Self, req: Request) -> Response {
+        val days = req.query("olderThanDays").length();
+        val removed = self.admin.purge(days);
+        return Response.ok("purged ${removed}");
+    }
+
+    // A subject check the expression language would have written. #[preAuthorize]
+    // is not ported — botopink has no expression language and inventing one
+    // inside a security front is how authorization bugs are written — so the rule
+    // is ordinary code a reviewer can read.
+    #[getMapping("/orders/:owner")]
+    pub fn byOwner(self: Self, req: Request) -> Response {
+        val auth = security.current();
+        val owner = req.param("owner");
+        val isSelf = owner == auth.principal.name;
+        val isAdmin = auth.principal.authorities.contains("ROLE_ADMIN");
+        val allowed = isSelf || isAdmin;
+        if (!allowed) raiseProblem("order.forbidden", "not your order");
+        return Response.json("orders for ${owner}");
+    }
+}
+
+// ---- what the tests pin ----
+
+test "policy: a path with no rule is protected" {
+    val res = security.probe("GET", "/internal/metrics", "");
+    assert res.status == 401;
+}
+
+test "policy: declaration order decides — the public subtree stays public" {
+    val res = security.probe("GET", "/api/public/health", "");
+    assert res.status == 200;
+}
+
+test "jwt: a valid token authenticates and its claims become the authorities" {
+    val token = security.testToken("ana", ["ROLE_USER"], 3600);
+    val res = security.probe("GET", "/api/orders/mine", token);
+    assert res.status == 200;
+    assert res.body.contains("ana");
+    assert res.body.contains("ROLE_USER");
+}
+
+test "jwt: alg none is rejected before the signature is considered" {
+    val res = security.probe("GET", "/api/orders/mine", security.testTokenAlgNone("ana"));
+    assert res.status == 401;
+}
+
+test "jwt: an expired token and a tampered one fail identically" {
+    val expired = security.probe("GET", "/api/orders/mine", security.testToken("ana", ["ROLE_USER"], -60));
+    val tampered = security.probe("GET", "/api/orders/mine", security.testTokenTampered("ana"));
+    assert expired.status == 401;
+    assert tampered.status == 401;
+    assert expired.body == tampered.body;
+}
+
+test "method security: an authenticated non-admin is refused by the proxy" {
+    val token = security.testToken("ana", ["ROLE_USER"], 3600);
+    val res = security.probe("DELETE", "/api/admin/audit?olderThanDays=30", token);
+    assert res.status == 403;
+    assert res.body.contains("ROLE_ADMIN");
+    assert !res.body.contains("ROLE_USER");
+}
+
+test "method security: either authority in a comma list admits the caller" {
+    val token = security.testToken("ops", ["ROLE_OPERATOR"], 3600);
+    val svc = __rkMake_AdminServiceSec();
+    val depth = security.withAuth(token, { -> svc.depth() });
+    assert depth == 42;
+}
+
+test "method security: a secured method called outside a request is a hard failure" {
+    val svc = __rkMake_AdminServiceSec();
+    val out = security.tryOutsideRequest({ -> svc.purge(30) });
+    assert out.isError();
+}

@@ -1,0 +1,90 @@
+// Front 32 — jhonstart-metadata · examples/viewport-example.bp
+//
+// `generateViewport`, and why it is a second export rather than a field of
+// `Metadata`.
+//
+// Viewport and theme colour merge down the segment chain like metadata does,
+// but independently: a page that sets a dark theme colour should not thereby
+// inherit a title template it never asked for. Upstream splits them for the
+// same reason.
+//
+// The theme colour here follows the reader's saved preference, read from a
+// cookie through front 28's request accessors — so this export is `#[@future]`
+// and takes the route params, exactly like `generateMetadata`.
+//
+// `generateViewport` does not appear in the local NEXTJS-DOCS.md; see the front
+// README's *Reference gaps*. It is implemented from the upstream page.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+
+import { Viewport, viewport, mergeViewport, renderViewport } from "jhonstart";
+import { RequestData, request } from "jhonstart";
+
+// ── app/layout.bp ───────────────────────────────────────────────────────────
+
+// The site default: a responsive viewport and a light theme colour.
+pub fn rootViewport() -> Viewport {
+    return Viewport(
+        width: "device-width",
+        initialScale: "1",
+        themeColor: "#ffffff",
+    );
+}
+
+// ── app/(reader)/layout.bp ──────────────────────────────────────────────────
+
+// The reading section overrides only the theme colour when the reader has asked
+// for a dark one. Every other field is `""`, so it inherits.
+pub fn readerViewport(req: RequestData) -> Viewport {
+    val preferred = req.cookie("theme");
+    val colour = if (preferred == "dark") { "#0b0b0b" } else { "" };
+    return Viewport(width: "", initialScale: "", themeColor: colour);
+}
+
+#[@future]
+pub fn generateViewport(params: Array<#(string, string)>) -> @Future<Viewport> {
+    return readerViewport(request());
+}
+
+// What front 23 does for this route.
+pub fn resolvedViewport(req: RequestData) -> Viewport {
+    return mergeViewport(rootViewport(), readerViewport(req));
+}
+
+fn fixture(theme: string) -> RequestData {
+    return RequestData(
+        method: "GET",
+        path: "/articles/eager-futures",
+        params: [],
+        query: [],
+        headers: [],
+        cookies: [#("theme", theme)],
+    );
+}
+
+test "a reader with no preference keeps the site default" {
+    val v = resolvedViewport(fixture(""));
+    assert v.themeColor == "#ffffff";
+    assert v.width == "device-width";
+    assert v.initialScale == "1";
+}
+
+test "a dark preference overrides only the colour" {
+    val v = resolvedViewport(fixture("dark"));
+    assert v.themeColor == "#0b0b0b";
+    assert v.width == "device-width";
+}
+
+test "the viewport renders both tags" {
+    val head = renderViewport(resolvedViewport(fixture("dark")));
+    assert head.contains("name=\"viewport\"");
+    assert head.contains("width=device-width");
+    assert head.contains("name=\"theme-color\"");
+    assert head.contains("#0b0b0b");
+}
+
+test "an empty viewport renders nothing" {
+    val empty = Viewport(width: "", initialScale: "", themeColor: "");
+    assert renderViewport(empty) == "";
+}

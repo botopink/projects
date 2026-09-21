@@ -1,0 +1,130 @@
+// Front 59 — emilia custom utilities and variants
+//
+// A small design system: three bundles, one custom variant, an @apply-style override
+// at a call site, and one named class whose name is part of the component's public API.
+// Every line here is an ordinary function over `Token[]` — no decorator, no comptime
+// block, no new Token variant, nothing the compiler has to learn.
+//
+// https://tailwindcss.com/docs/functions-and-directives
+// https://tailwindcss.com/docs/styling-with-utility-classes#managing-duplication
+// https://tailwindcss.com/docs/adding-custom-styles#using-custom-css
+
+import { emilia, flush, Token } from "emilia";
+import { compose, named, hocus, selector } from "emilia";
+// `Variant` comes from front 56; `arbValue` and `arbSel` from front 57.
+import { Variant, arbValue, arbSel } from "emilia";
+
+// TAILWIND_CSS_DOCS.md § 20.4 — the `@utility scrollbar-hidden` example, declaration
+// for declaration. In CSS this needs a directive because CSS has no functions; here it
+// is a `pub fn` that other packages import.
+pub fn scrollbarHidden() -> Token[] {
+    val hidden: Token[] = [arbValue("display", "none")];
+    return [
+        arbValue("scrollbar-width", "none"),
+        arbSel("&::-webkit-scrollbar", hidden),
+    ];
+}
+
+// The shape every button in this system shares.
+pub fn buttonBase() -> Token[] {
+    return [.Border.Rounded.Md, .Pad.X.4, .Pad.Y.2, .Font.Weight.Bold];
+}
+
+// § 20.3 — `@custom-variant hocus (&:hover, &:focus)`. A selector list in CSS is two
+// tokens here, which is why a custom variant returns `Token[]` rather than one `Token`.
+pub fn primarySkin() -> Token[] {
+    val lifted: Token[] = [.Bg.Blue.700];
+    val resting: Token[] = [.Bg.Blue.500, .Color.White];
+    return resting.append(hocus(lifted));
+}
+
+// § 3.2 — `@custom-variant theme-midnight (&:where([data-theme="midnight"] *))`.
+// A project registers a variant emilia has never heard of by building front 56's
+// `Variant` and wrapping the inner tokens with it.
+pub fn themeMidnight(inner: Token[]) -> Token[] {
+    val v = Variant(atRule: "", selector: "&:where([data-theme=\"midnight\"] *)");
+    return [selector(v, inner)];
+}
+
+// § 20.5 / § 3.1 — the `@apply` case. Composing bundles is array concatenation, and the
+// later bundle wins on a conflicting property because it is emitted second.
+fn primaryButton() -> string {
+    val dark: Token[] = [.Bg.Black, .Color.White];
+    val tokens = compose([buttonBase(), primarySkin(), themeMidnight(dark)]);
+    return emilia(tokens);
+}
+
+// The named-class escape. `.btn` is documented for consumers to override, so it cannot
+// be a content hash: the hash changes whenever a token in the bundle changes, and a
+// published selector that moves is not a selector. `named` registers in the
+// `components` layer, so a utility class on the same element still wins.
+fn publishedButton() -> string {
+    return named("btn", compose([buttonBase(), primarySkin()]));
+}
+
+test "a bundle is a function, and it emits what @utility would" {
+    val cls = emilia(scrollbarHidden());
+    val css = await flush();
+    assert css.contains("." + cls + "{scrollbar-width:none}");
+    assert css.contains("." + cls + "::-webkit-scrollbar{display:none}");
+}
+
+test "composing bundles concatenates them, and the later one wins" {
+    val a: Token[] = [.Bg.White, .Text.Bold];
+    val b: Token[] = [.Bg.Black];
+    val cls = emilia(compose([a, b]));
+    val css = await flush();
+    val whiteAt = css.indexOf("#ffffff");
+    val blackAt = css.indexOf("#000000");
+    assert whiteAt > 0;
+    assert whiteAt < blackAt;
+}
+
+test "a custom variant expands to a selector list, which is two rules" {
+    val bold: Token[] = [.Text.Bold];
+    val cls = emilia(hocus(bold));
+    val css = await flush();
+    assert css.contains("." + cls + ":hover{font-weight:bold}");
+    assert css.contains("." + cls + ":focus{font-weight:bold}");
+}
+
+test "a project variant the library never heard of needs only a Variant value" {
+    val white: Token[] = [.Color.White];
+    val cls = emilia(themeMidnight(white));
+    val css = await flush();
+    assert css.contains("." + cls + ":where([data-theme=\"midnight\"] *){color:#ffffff}");
+}
+
+test "a named class lands in components and a utility class still beats it" {
+    val name = publishedButton();
+    val plain: Token[] = [.Bg.Red.700];
+    val util = emilia(plain);
+    val css = await flush();
+    assert name == "btn";
+    assert css.contains("@layer components{.btn{");
+    assert css.contains("@layer utilities{." + util + "{");
+    val componentsAt = css.indexOf("@layer components{");
+    val utilitiesAt = css.indexOf("@layer utilities{");
+    assert componentsAt < utilitiesAt;
+}
+
+// Contract 4 (../../contracts.md § 4): the class scheme is a pure function of the token
+// list. `named` registers under an author-chosen name and never computes a hash, so a
+// list passed to both entry points still produces the same `e_` class it always did.
+test "naming a bundle does not disturb the hashed class for the same tokens" {
+    val tokens = compose([buttonBase(), primarySkin()]);
+    val before = emilia(tokens);
+    val _name = named("btn2", tokens);
+    val after = emilia(tokens);
+    assert before == after;
+    assert before.startsWith("e_");
+    val _css = await flush();
+}
+
+test "a full page composes the pieces without repeating a token list" {
+    val cls = primaryButton();
+    val css = await flush();
+    assert css.contains("." + cls + "{border-radius:");
+    assert css.contains("." + cls + ":hover{background");
+    assert css.contains("." + cls + ":where([data-theme=\"midnight\"] *){");
+}

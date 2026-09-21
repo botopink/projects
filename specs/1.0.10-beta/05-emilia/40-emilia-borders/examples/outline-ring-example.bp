@@ -1,0 +1,274 @@
+// Front 40 — emilia-borders
+//
+// The three families that are not `border-*`: outline, ring and divide.
+//
+// Upstream: https://tailwindcss.com/docs/outline-width
+//           https://tailwindcss.com/docs/outline-style
+//           https://tailwindcss.com/docs/box-shadow#adding-a-ring
+//           https://tailwindcss.com/docs/border-width#divide
+// Reference: TAILWIND_CSS_DOCS.md § 11.5-11.8 (outline).
+//            `ring-*` and `divide-*` are NOT in the local reference — they are
+//            specified from upstream and listed under `## Reference gaps` in
+//            this front's README. Nothing below may be trusted until that check
+//            has been done.
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// All three sections are delivered by front 40. `Ring` and `Divide` need a rule
+// that is not a bare declaration on the class, so their dispatchers return a
+// `Sheet` (front 56's second shape, contracts.md § 4a) rather than a string.
+// Colours are front 33's palette; `Effect.Shadow` is front 41; modifiers are
+// front 34; spacing is front 35.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── outline ──────────────────────────────────────────────────────────────────
+// An outline does not move layout, which is why it is the right focus indicator.
+
+fn outlineWidths() -> Token[] {
+    val values: Token[] = [
+        .Outline.W.0,
+        .Outline.W.1,
+        .Outline.W.2,
+        .Outline.W.4,
+        .Outline.W.8,
+    ];
+    return values;
+}
+
+fn outlineStyles() -> Token[] {
+    val values: Token[] = [
+        .Outline.Style.Solid,
+        .Outline.Style.Dashed,
+        .Outline.Style.Dotted,
+        .Outline.Style.Double,
+    ];
+    return values;
+}
+
+// `outline-none` is the trap in § 11.7: it is a TRANSPARENT outline, not an
+// absent one, so forced-colours mode still shows it. Two declarations, and
+// never `outline-style:none`.
+
+fn outlineNone() -> Token[] {
+    val values: Token[] = [.Outline.Style.None];
+    return values;
+}
+
+fn outlineOffsets() -> Token[] {
+    val values: Token[] = [
+        .Outline.Offset.0,
+        .Outline.Offset.1,
+        .Outline.Offset.2,
+        .Outline.Offset.4,
+        .Outline.Offset.8,
+        .Outline.Offset.Neg.1,
+    ];
+    return values;
+}
+
+// ── ring ─────────────────────────────────────────────────────────────────────
+// A ring is a box-shadow, so it must compose with `Effect.Shadow` rather than
+// overwrite it. Both write into the same custom properties and the `box-shadow`
+// declaration lists all three slots.
+
+fn ringWidths() -> Token[] {
+    val values: Token[] = [
+        .Ring.W.0,
+        .Ring.W.1,
+        .Ring.W.2,
+        .Ring.W.4,
+        .Ring.W.8,
+    ];
+    return values;
+}
+
+fn ringDressing() -> Token[] {
+    val values: Token[] = [
+        .Ring.Color.Indigo.500,
+        .Ring.Offset.W.2,
+        .Ring.Offset.Color.White,
+        .Ring.Inset,
+    ];
+    return values;
+}
+
+// ── divide ───────────────────────────────────────────────────────────────────
+// `divide-*` styles the element's children, not the element. Its dispatcher
+// returns a `Sheet` whose rule selects the siblings — the same child selector
+// front 35's `Space` family uses, and a test asserts the two agree.
+
+fn divideWidths() -> Token[] {
+    val values: Token[] = [
+        .Divide.X.1,
+        .Divide.X.2,
+        .Divide.Y.1,
+        .Divide.Y.2,
+    ];
+    return values;
+}
+
+fn divideDressing() -> Token[] {
+    val values: Token[] = [
+        .Divide.Color.Slate.200,
+        .Divide.Style.Dashed,
+        .Divide.XReverse,
+        .Divide.YReverse,
+    ];
+    return values;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// A settings panel: a segmented list whose rows are separated by `divide-y`
+// rather than by a border on every row, and a text field whose focus indicator
+// is an offset outline plus a ring that survives alongside the panel's shadow.
+
+#[@future]
+pub fn settingsPanel(label: string, rowA: string, rowB: string) -> @Future<string> {
+    val list: Token[] = [
+        .Divide.Y.1,
+        .Divide.Color.Slate.200,
+        .Border.W.1,
+        .Border.Color.Slate.200,
+        .Border.Rounded.Lg,
+        .Bg.Color.White,
+        .Effect.Shadow.Sm,
+    ];
+
+    val row: Token[] = [
+        .Pad.X.4,
+        .Pad.Y.3,
+        .Color.Slate.700,
+    ];
+
+    val focusRing: Token[] = [
+        .Outline.W.2,
+        .Outline.Style.Solid,
+        .Outline.Color.Indigo.500,
+        .Outline.Offset.2,
+        .Ring.W.4,
+        .Ring.Color.Indigo.100,
+    ];
+
+    val field: Token[] = [
+        .Border.W.1,
+        .Border.Color.Slate.300,
+        .Border.Rounded.Md,
+        .Pad.X.3,
+        .Pad.Y.2,
+        .Effect.Shadow.Sm,
+        Token.FocusVisible(focusRing),
+    ];
+
+    val listClass = emilia(list);
+    val rowClass = emilia(row);
+    val fieldClass = emilia(field);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + listClass + "\">"
+        + "<div class=\"" + rowClass + "\">" + rowA + "</div>"
+        + "<div class=\"" + rowClass + "\">" + rowB + "</div>"
+        + "</div>"
+        + "<label>" + label + "<span class=\"" + fieldClass + "\"></span></label>";
+    return styles + markup;
+}
+
+test "the five outline widths" {
+    val cls = emilia(outlineWidths());
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{outline-width:0px;outline-width:1px;outline-width:2px"
+        + ";outline-width:4px;outline-width:8px}</style>";
+}
+
+test "the four outline styles" {
+    val cls = emilia(outlineStyles());
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{outline-style:solid;outline-style:dashed"
+        + ";outline-style:dotted;outline-style:double}</style>";
+}
+
+test "outline-none is a transparent outline, not an absent one" {
+    val cls = emilia(outlineNone());
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{outline:2px solid transparent;outline-offset:2px}</style>";
+    assert !styles.contains("outline-style:none");
+}
+
+test "a negative outline offset emits a negative pixel value" {
+    val tokens: Token[] = [.Outline.Offset.Neg.1];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{outline-offset:-1px}</style>";
+}
+
+test "an outline colour is the palette on another property" {
+    val tokens: Token[] = [.Outline.Color.Blue.500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{outline-color:var(--color-blue-500)}</style>";
+}
+
+test "a ring sets its own custom property and a composed box-shadow" {
+    val tokens: Token[] = [.Ring.W.2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.contains("--tw-ring-shadow:");
+    assert styles.contains("box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)");
+}
+
+test "a ring and a shadow compose instead of overwriting each other" {
+    val tokens: Token[] = [.Effect.Shadow.Lg, .Ring.W.2, .Ring.Color.Indigo.500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.contains("--tw-ring-color:var(--color-indigo-500)");
+    assert styles.contains("var(--tw-ring-shadow), var(--tw-shadow)");
+}
+
+test "ring offset and inset are custom properties, not declarations" {
+    val cls = emilia(ringDressing());
+    val styles = await flush();
+    assert styles.contains("--tw-ring-offset-width:2px");
+    assert styles.contains("--tw-ring-offset-color:var(--color-white)");
+    assert styles.contains("--tw-ring-inset:inset");
+}
+
+test "divide puts its border on the children, not on the element" {
+    val tokens: Token[] = [.Divide.Y.2];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{& > :not(:last-child){border-top-width:0px;border-bottom-width:2px}}</style>";
+}
+
+test "divide width, colour and style land on one child rule" {
+    val tokens: Token[] = [.Divide.Y.1, .Divide.Color.Slate.200, .Divide.Style.Dashed];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles.contains("border-color:var(--color-slate-200)");
+    assert styles.contains("border-style:dashed");
+    assert styles.contains("& > :not(:last-child)");
+}
+
+test "divide and space use the same child selector" {
+    val divideTokens: Token[] = [.Divide.Y.1];
+    val divideClass = emilia(divideTokens);
+    val divideStyles = await flush();
+
+    val spaceTokens: Token[] = [.Space.Y.4];
+    val spaceClass = emilia(spaceTokens);
+    val spaceStyles = await flush();
+
+    assert divideStyles.contains("& > :not(:last-child){");
+    assert spaceStyles.contains("& > :not(:last-child){");
+}
+
+test "the settings panel separates its rows and rings its field on focus" {
+    val out = await settingsPanel("Display name", "Profile", "Notifications");
+    assert out.startsWith("<style>");
+    assert out.contains("& > :not(:last-child){border-top-width:0px;border-bottom-width:1px}");
+    assert out.contains("&:focus-visible{outline-width:2px");
+    assert out.contains("outline-offset:2px");
+    assert out.contains("--tw-ring-color:var(--color-indigo-100)");
+}

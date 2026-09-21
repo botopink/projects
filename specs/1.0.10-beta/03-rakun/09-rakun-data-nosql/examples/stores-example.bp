@@ -1,0 +1,207 @@
+// Front 09 — Document and Key-Value Stores.
+//
+// One application using both behaviors: a rate-limit counter and a session
+// token in the key-value store, a user profile document in the document store,
+// and the repository shape front 08 decided. All of it runs on the server.
+//
+// Under the `test` profile with no `rakun.nosql.url` configured, both stores are
+// the in-VM ETS arm — a real store with real TTL, not a mock. In production the
+// same code runs against `redis://` and `mongodb://`, or against `mnesia:cluster`
+// with no driver at all.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/data/nosql.html
+
+import {Request, Response} from "rakun";
+import {repository, service, restController, route, getMapping, postMapping} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+import {managed} from "rakun";                          // front 06
+import {raiseProblem} from "rakun-web";                 // front 07
+
+// Front 09's surface.
+import {KeyValueStore, DocumentStore} from "rakun-data";
+import {documentQuery, bind, param} from "rakun-data";
+import {healthIndicator, Health} from "rakun-actuator-api";      // front 11, wave 1
+import {rkRegisterQuery} from "rakun-data";
+
+// ---- the document side (server) ----
+
+// Documents are JSON strings in and out: std's `json` has no structured value,
+// so there is no typed document model in this front. Typed mapping is front 78's
+// `#[entity]`. See ../../language-gaps.md.
+#[repository]
+#[managed]
+pub type ProfileRepository(
+    docs: DocumentStore,
+) {
+    // The filter is a literal by construction, and `bind` escapes the value for
+    // the store's dialect. Concatenating a filter is the NoSQL injection, and the
+    // shape exists to make it awkward.
+    #[documentQuery("{\"email\": \":email\"}")]
+    pub fn findByEmail(self: Self, email: string) -> ?string {
+        val filter = bind(__rkQuery_findByEmail(), [param("email", email)]);
+        return self.docs.find("profiles", filter).first();
+    }
+
+    #[documentQuery("{\"plan\": \":plan\", \"active\": true}")]
+    pub fn findActiveOnPlan(self: Self, plan: string) -> string[] {
+        val filter = bind(__rkQuery_findActiveOnPlan(), [param("plan", plan)]);
+        return self.docs.find("profiles", filter);
+    }
+
+    pub fn save(self: Self, id: string, doc: string) -> i32 {
+        return self.docs.replace("profiles", id, doc);
+    }
+
+    pub fn byId(self: Self, id: string) -> ?string {
+        return self.docs.findById("profiles", id);
+    }
+}
+
+// ---- the key-value side (server) ----
+
+#[service]
+#[managed]
+pub type RateLimiter(
+    kv: KeyValueStore,
+) {
+    // `increment` starts an absent key at 0, so the first call answers 1 and the
+    // TTL is set once, on that first call.
+    pub fn hit(self: Self, who: string) -> i32 {
+        val key = "rate:" + who;
+        val n = self.kv.increment(key, 1);
+        val fresh = n == 1;
+        if (fresh) {
+            val _t = self.kv.putExpiring(key, "1", 60);
+        };
+        return n;
+    }
+
+    pub fn remaining(self: Self, who: string) -> i32 {
+        val key = "rate:" + who;
+        val used = self.kv.get(key);
+        var n = 0;
+        if (used) { v -> n = v.length(); };
+        return 100 - n;
+    }
+}
+
+#[service]
+#[managed]
+pub type SessionStore(
+    kv: KeyValueStore,
+) {
+    pub fn put(self: Self, token: string, userId: string) -> i32 {
+        return self.kv.putExpiring("session:" + token, userId, 1800);
+    }
+
+    pub fn userFor(self: Self, token: string) -> string {
+        val hit = self.kv.get("session:" + token);
+        var id = "";
+        if (hit) { v -> id = v; };
+        return id;
+    }
+
+    pub fn secondsLeft(self: Self, token: string) -> i32 {
+        return self.kv.ttl("session:" + token);
+    }
+}
+
+// ---- web layer (server) ----
+
+#[restController]
+#[route("/api/profiles")]
+#[managed]
+pub type ProfileApi(
+    profiles: ProfileRepository,
+    limiter: RateLimiter,
+    sessions: SessionStore,
+) {
+    #[getMapping("/:id")]
+    pub fn show(self: Self, req: Request) -> Response {
+        val caller = req.header("x-api-key");
+        val hits = self.limiter.hit(caller);
+        val overLimit = hits > 100;
+        if (overLimit) raiseProblem("rate.exceeded", "too many requests");
+
+        val doc = self.profiles.byId(req.param("id"));
+        var body = "";
+        if (doc) { d -> body = d; };
+        return if (body == "") Response.notFound() else Response.json(body);
+    }
+
+    #[getMapping("/by-email/:email")]
+    pub fn byEmail(self: Self, req: Request) -> Response {
+        val doc = self.profiles.findByEmail(req.param("email"));
+        var body = "";
+        if (doc) { d -> body = d; };
+        return if (body == "") Response.notFound() else Response.json(body);
+    }
+
+    #[postMapping("/:id")]
+    pub fn save(self: Self, req: Request) -> Response {
+        val token = req.header("x-session");
+        val owner = self.sessions.userFor(token);
+        val anonymous = owner == "";
+        if (anonymous) raiseProblem("session.missing", "no session");
+
+        val _n = self.profiles.save(req.param("id"), req.body());
+        return Response.ok("saved");
+    }
+}
+
+// ---- health (server) ----
+
+// One indicator per configured arm, registered with front 11 through the
+// contract front 11 defines. The indicator list is not front 11's work.
+#[healthIndicator("documents")]
+#[managed]
+pub type DocumentStoreHealth(
+    docs: DocumentStore,
+) {
+    pub fn check(self: Self) -> Health {
+        val n = self.docs.count("profiles", "{}");
+        val status = if (n >= 0) "UP" else "DOWN";
+        return Health(status: status, details: "{\"documents\": ${n}}");
+    }
+}
+
+// ---- what the tests pin ----
+
+test "kv: an expiring key reports a TTL and is gone afterwards" {
+    val kv = __rkMake_KeyValueStore();
+    val _p = kv.putExpiring("s:1", "user-7", 60);
+    assert kv.ttl("s:1") > 0;
+    val hit = kv.get("s:1");
+    var found = "";
+    if (hit) { v -> found = v; };
+    assert found == "user-7";
+}
+
+test "kv: increment on an absent key starts at zero" {
+    val kv = __rkMake_KeyValueStore();
+    assert kv.increment("counter:new", 1) == 1;
+    assert kv.increment("counter:new", 2) == 3;
+}
+
+test "kv: popRight on an empty list answers null, not the empty string" {
+    val kv = __rkMake_KeyValueStore();
+    val out = kv.popRight("list:empty");
+    var found = false;
+    if (out) { v -> found = true; };
+    assert !found;
+}
+
+test "documents: a bound filter keeps a hostile value a value" {
+    val repo = __rkMake_ProfileRepository();
+    val _s = repo.save("p-1", "{\"email\": \"a@example.com\", \"plan\": \"pro\", \"active\": true}");
+    val hit = repo.findByEmail("\" , \"active\": false, \"x\": \"");
+    var found = false;
+    if (hit) { d -> found = true; };
+    assert !found;
+}
+
+test "documents: #[documentQuery] registers the template it emitted" {
+    val declared = rkRegisteredQueries();
+    assert declared.contains("findActiveOnPlan");
+}

@@ -1,0 +1,231 @@
+// Front 39 — emilia-backgrounds
+//
+// The non-colour half of `Bg`: attachment, clip, origin, position, repeat,
+// size and `background-image:none`.
+//
+// Upstream: https://tailwindcss.com/docs/background-attachment
+//           https://tailwindcss.com/docs/background-clip
+//           https://tailwindcss.com/docs/background-position
+//           https://tailwindcss.com/docs/background-size
+// Reference: TAILWIND_CSS_DOCS.md § 10. Backgrounds (10.1, 10.2, 10.4-10.8)
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// `Bg` today is colour-only (tokens.bp:118-138); every sub-section here is
+// delivered by front 39. `Bg.Color` is front 33's. Sizing comes from front 35,
+// layout from front 36, modifiers from front 34.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── attachment ───────────────────────────────────────────────────────────────
+
+fn attachmentValues() -> Token[] {
+    val values: Token[] = [
+        .Bg.Attachment.Fixed,
+        .Bg.Attachment.Local,
+        .Bg.Attachment.Scroll,
+    ];
+    return values;
+}
+
+// ── clip and origin ──────────────────────────────────────────────────────────
+// Three of the four clip values are `*-box`; `Text` is the odd one, and it is
+// the one the gradient-text idiom needs.
+
+fn clipValues() -> Token[] {
+    val values: Token[] = [
+        .Bg.Clip.Border,
+        .Bg.Clip.Padding,
+        .Bg.Clip.Content,
+        .Bg.Clip.Text,
+    ];
+    return values;
+}
+
+fn originValues() -> Token[] {
+    val values: Token[] = [
+        .Bg.Origin.Border,
+        .Bg.Origin.Padding,
+        .Bg.Origin.Content,
+    ];
+    return values;
+}
+
+// ── position ─────────────────────────────────────────────────────────────────
+// The sub-section is `Pos`, so `.Bg.Pos.Center` cannot be confused with
+// `.Layout.Position.*` — two properties Tailwind spells with the same word.
+
+fn positionValues() -> Token[] {
+    val values: Token[] = [
+        .Bg.Pos.Top,
+        .Bg.Pos.Bottom,
+        .Bg.Pos.Left,
+        .Bg.Pos.Right,
+        .Bg.Pos.Center,
+        .Bg.Pos.LeftTop,
+        .Bg.Pos.LeftBottom,
+        .Bg.Pos.RightTop,
+        .Bg.Pos.RightBottom,
+    ];
+    return values;
+}
+
+// ── repeat and size ──────────────────────────────────────────────────────────
+
+fn repeatValues() -> Token[] {
+    val values: Token[] = [
+        .Bg.Repeat.Repeat,
+        .Bg.Repeat.None,
+        .Bg.Repeat.X,
+        .Bg.Repeat.Y,
+        .Bg.Repeat.Round,
+        .Bg.Repeat.Space,
+    ];
+    return values;
+}
+
+fn sizeValues() -> Token[] {
+    val values: Token[] = [
+        .Bg.Size.Auto,
+        .Bg.Size.Cover,
+        .Bg.Size.Contain,
+    ];
+    return values;
+}
+
+// ── image ────────────────────────────────────────────────────────────────────
+// `bg-none` is the only non-arbitrary `background-image` value the reference
+// documents outside the gradient family. `bg-[url(...)]` belongs to front 57.
+
+fn imageValues() -> Token[] {
+    val values: Token[] = [.Bg.Image.None];
+    return values;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// A hero panel: a photograph that covers its box, anchored to the top so faces
+// are not cropped, fixed on wide screens for a parallax effect and released to
+// `scroll` under a reduced-motion preference.
+
+#[@future]
+pub fn heroPanel(heading: string, kicker: string) -> @Future<string> {
+    val fixedFromLg: Token[] = [.Bg.Attachment.Fixed];
+    val releaseMotion: Token[] = [.Bg.Attachment.Scroll];
+
+    val hero: Token[] = [
+        .Layout.Position.Relative,
+        .Size.W.Full,
+        .Size.MinH.Dvh,
+        .Bg.Size.Cover,
+        .Bg.Pos.Top,
+        .Bg.Repeat.None,
+        .Bg.Origin.Border,
+        .Bg.Color.Slate.900,
+        Token.Lg(fixedFromLg),
+        Token.MotionReduce(releaseMotion),
+    ];
+
+    val plate: Token[] = [
+        .Layout.Position.Absolute,
+        .Layout.Inset.B.0,
+        .Size.W.Full,
+        .Bg.Color.Slate.950,
+        .Bg.Clip.Padding,
+        .Pad.All.8,
+        .Color.Slate.50,
+    ];
+
+    val label: Token[] = [
+        .Text.Transform.Uppercase,
+        .Text.Tracking.Widest,
+        .Text.Size.Sm,
+        .Color.Slate.400,
+    ];
+
+    val heroClass = emilia(hero);
+    val plateClass = emilia(plate);
+    val labelClass = emilia(label);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + heroClass + "\">"
+        + "<div class=\"" + plateClass + "\">"
+        + "<span class=\"" + labelClass + "\">" + kicker + "</span>"
+        + "<h1>" + heading + "</h1>"
+        + "</div></div>";
+    return styles + markup;
+}
+
+test "the three attachment values" {
+    val cls = emilia(attachmentValues());
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{background-attachment:fixed;background-attachment:local"
+        + ";background-attachment:scroll}</style>";
+}
+
+test "three clip values are box values and one is text" {
+    val cls = emilia(clipValues());
+    val styles = await flush();
+    assert styles.contains("background-clip:border-box");
+    assert styles.contains("background-clip:padding-box");
+    assert styles.contains("background-clip:content-box");
+    assert styles.contains("background-clip:text");
+}
+
+test "origin answers the three box values" {
+    val cls = emilia(originValues());
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{background-origin:border-box;background-origin:padding-box"
+        + ";background-origin:content-box}</style>";
+}
+
+test "a two-word background position keeps exactly one space" {
+    val tokens: Token[] = [.Bg.Pos.LeftTop, .Bg.Pos.RightBottom];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{background-position:left top;background-position:right bottom}</style>";
+}
+
+test "bg-no-repeat is spelled Repeat.None and emits no-repeat" {
+    val tokens: Token[] = [.Bg.Repeat.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{background-repeat:no-repeat}</style>";
+}
+
+test "the axis repeats keep their CSS spelling" {
+    val cls = emilia(repeatValues());
+    val styles = await flush();
+    assert styles.contains("background-repeat:repeat-x");
+    assert styles.contains("background-repeat:repeat-y");
+    assert styles.contains("background-repeat:round;background-repeat:space");
+}
+
+test "the three background sizes" {
+    val cls = emilia(sizeValues());
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{background-size:auto;background-size:cover;background-size:contain}</style>";
+}
+
+test "bg-none is a background-image, not a background-color" {
+    val cls = emilia(imageValues());
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{background-image:none}</style>";
+}
+
+test "the legacy Bg colour paths are untouched" {
+    val tokens: Token[] = [.Bg.White];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{background:#ffffff}</style>";
+}
+
+test "the hero covers, anchors to the top and releases under reduced motion" {
+    val out = await heroPanel("Built at comptime", "Release 1.0.9");
+    assert out.startsWith("<style>");
+    assert out.contains("background-size:cover;background-position:top;background-repeat:no-repeat");
+    assert out.contains("@media (width >= 64rem){background-attachment:fixed}");
+    assert out.contains("@media (prefers-reduced-motion: reduce){background-attachment:scroll}");
+}

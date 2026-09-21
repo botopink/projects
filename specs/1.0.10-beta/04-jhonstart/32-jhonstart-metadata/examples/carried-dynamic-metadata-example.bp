@@ -1,0 +1,41 @@
+// Carried from 1.0.7-beta examples-bp.md § F08 — Metadata dinâmico (dynamic metadata)
+// 1.0.9 decided differently: `generateMetadata(params: Array<#(string, string)>, parent)` with `pairValue`,
+// `OpenGraph.type` is `ogType`, every field is spelled (no optionals). Kept verbatim for the record.
+
+// app/blog/[slug]/page.bp
+import {Element, div, h1, p, text} from "jhonstart";
+import {Metadata} from "jhonstart";
+
+#[@future]
+pub fn generateMetadata(params: Dict<string, string>) -> @Future<Metadata> {
+    val slug = params.get("slug");
+    val post = await fetchPost(slug);
+    return Metadata(
+        title: post.title + " — Blog",
+        description: post.excerpt,
+        openGraph: OpenGraph(
+            title: post.title,
+            description: post.excerpt,
+            images: ["/og/blog/" + slug + ".png"],
+            url: "/blog/" + slug,
+            type: "article",
+        ),
+        twitter: TwitterCard(
+            card: "summary_large_image",
+            title: post.title,
+            description: post.excerpt,
+            images: [],
+        ),
+        icons: Icons(icon: "/favicon.ico", apple: ""),
+    );
+}
+
+#[@future]
+pub fn BlogPost(params: Dict<string, string>) -> @Future<Element> {
+    val slug = params.get("slug");
+    val post = await fetchPost(slug);
+    return div([
+        h1([text(post.title, attrs: [])], attrs: []),
+        p([text(post.content, attrs: [])], attrs: []),
+    ], attrs: []);
+}

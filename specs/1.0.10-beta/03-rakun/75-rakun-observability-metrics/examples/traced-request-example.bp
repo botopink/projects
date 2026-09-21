@@ -1,0 +1,109 @@
+// Front 75 — rakun observability: one trace across two services.
+//
+// The controller continues an incoming W3C trace, makes an outbound call that
+// carries it forward, and reads the ids back so front 17 can put them in the log
+// line. Nothing in this file threads a context object: on the BEAM a request is a
+// process, so per-process state is per-request state.
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/actuator/tracing.html
+//   https://www.w3.org/TR/trace-context/
+//
+// The configuration this file assumes, in application.yaml (front 05 reads it):
+//
+//   rakun:
+//     tracing:
+//       sampling:
+//         probability: 1.0
+//     metrics:
+//       export:
+//         otlp:
+//           endpoint: https://collector.internal:4318
+//           step: 10s
+//
+// `traceId`, `spanId`, `sampled`, `traceparent` and `startSpan` are delivered by
+// this front. The filter that parses the incoming header is registered into front
+// 07's chain; `RestClient` is front 13; the log formatter is front 17.
+
+import {service, restController, route, getMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkPropInt, rkRegisterRoute} from "rakun";
+import {traceId, spanId, parentSpanId, sampled, traceparent, startSpan, endSpan} from "rakun-metrics";
+import {adoptTraceparent, exportedSpanCount} from "rakun-metrics";
+import {RestClient} from "rakun-client";
+
+#[service]
+pub type PricingClient(
+    // Front 13's client injects the current `traceparent` on every request. The
+    // application never writes the header itself.
+    http: RestClient,
+) {
+    pub fn quote(self: Self, sku: string) -> string {
+        return self.http.getText("https://pricing.internal/quote/" + sku);
+    }
+}
+
+#[restController]
+#[route("/api")]
+pub type QuoteController(
+    pricing: PricingClient,
+) {
+    #[getMapping("/quote/:sku")]
+    pub fn quote(self: Self, req: Request) -> Response {
+        // The server span already exists: front 04's dispatcher opened it when the
+        // request arrived, and the filter in front 07's chain set the ids. A nested
+        // span is explicit because there is no way to wrap a method body — see
+        // front 12's language gap, which is the same one.
+        val span = startSpan("quote.assemble");
+        val body = self.pricing.quote(req.param("sku"));
+        val _ = endSpan(span);
+        return Response.json(body);
+    }
+
+    // What an operator curls when a request went missing. The trace id is the
+    // join key between this service's logs, the collector, and the next service.
+    #[getMapping("/whoami")]
+    pub fn whoami(self: Self, req: Request) -> Response {
+        return Response.json(traceId() + " " + spanId() + " " + sampled().toString());
+    }
+}
+
+test "an incoming traceparent continues the trace with a new span id" {
+    val incoming = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+    val _ = adoptTraceparent(incoming);
+    assert traceId() == "4bf92f3577b34da6a3ce929d0e0e4736";
+    assert spanId() != "00f067aa0ba902b7";
+    assert parentSpanId() == "00f067aa0ba902b7";
+    assert sampled() == true;
+}
+
+test "a malformed traceparent starts a new trace rather than failing the request" {
+    val _ = adoptTraceparent("not-a-header");
+    assert traceId().length() == 32;
+    assert parentSpanId() == "";
+}
+
+test "the incoming sampled flag wins over the local probability" {
+    val _ = adoptTraceparent("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00");
+    assert sampled() == false;
+    assert exportedSpanCount() == 0;
+}
+
+test "the outgoing header carries the current trace and the current span" {
+    val _ = adoptTraceparent("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01");
+    val outgoing = traceparent();
+    assert outgoing.startsWith("00-4bf92f3577b34da6a3ce929d0e0e4736-") == true;
+    assert outgoing.contains(spanId()) == true;
+    assert outgoing.endsWith("-01") == true;
+}
+
+test "a nested span is a child of the request span and closes in order" {
+    val _ = adoptTraceparent("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01");
+    val outer = spanId();
+    val span = startSpan("quote.assemble");
+    assert parentSpanId() == outer;
+    val _e = endSpan(span);
+    assert spanId() == outer;
+}

@@ -1,0 +1,118 @@
+// Front 70 — onze-image-response · examples/layout-subset-example.bp
+//
+// What the layout engine does, and what it refuses. SERVER SIDE, pure botopink,
+// no external tool — this is the half of an OG card that BEAM can do well.
+//
+// The refusals matter more than the placements. A card that silently ignores
+// `boxShadow` is a card whose author believes they have a shadow, and they find
+// out when someone shares a link. So an unsupported property is reported at
+// build time, naming the property and the route, and the supported set is
+// closed: the table in the README is the same list the code checks against.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/functions/image-response
+//   https://github.com/vercel/satori
+
+import { Element, div, span, text } from "jhonstart";
+import { ImageSize, FontMetrics, LayoutBox } from "onze-og";
+import { parseStyle, unsupportedProperties, layout, wrapText, measure } from "onze-og";
+
+val cardSize: ImageSize = ImageSize(width: 1200, height: 630);
+
+// A metrics table as front 52's sidecar supplies it: `unitsPerEm` plus one
+// advance per codepoint. Botopink cannot read a font file — there is no byte
+// type — so the widths arrive as text and are measured here.
+val fixtureMetrics: FontMetrics = FontMetrics(
+    family: "Inter",
+    weight: 700,
+    unitsPerEm: 1000,
+    advances: [#(32, 250), #(97, 500), #(98, 500), #(99, 500)],
+);
+
+fn row() -> Element {
+    val frame = "display:flex;flexDirection:row;justifyContent:space-between;width:1200px;height:200px";
+    val cell = "width:100px;height:100px;background:#ffffff";
+    return div([
+        span([text("a", attrs: [])], attrs: [#("style", cell)]),
+        span([text("b", attrs: [])], attrs: [#("style", cell)]),
+    ], attrs: [#("style", frame)]);
+}
+
+fn column() -> Element {
+    val frame = "display:flex;flexDirection:column;gap:16;padding:32;width:400px;height:400px";
+    val cell = "width:100px;height:50px;background:#ffffff";
+    return div([
+        span([text("a", attrs: [])], attrs: [#("style", cell)]),
+        span([text("b", attrs: [])], attrs: [#("style", cell)]),
+    ], attrs: [#("style", frame)]);
+}
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+test "a row with space-between puts the first child left and the second flush right" {
+    val box = layout(row(), cardSize, [fixtureMetrics]);
+    val first = box.children.at(0).unwrapOr(box);
+    val second = box.children.at(1).unwrapOr(box);
+    assert first.x == 0;
+    assert second.x == 1100;
+}
+
+test "a column applies padding to the content box and gap between siblings" {
+    val box = layout(column(), cardSize, [fixtureMetrics]);
+    val first = box.children.at(0).unwrapOr(box);
+    val second = box.children.at(1).unwrapOr(box);
+    assert first.x == 32;
+    assert first.y == 32;
+    assert second.y == 98;
+}
+
+test "text wraps at spaces and never mid-word" {
+    val lines = wrapText("aa bb cc", 600, fixtureMetrics, 100, 0);
+    assert lines.length == 2;
+    assert lines.at(0).unwrapOr("") == "aa bb";
+    assert lines.at(1).unwrapOr("") == "cc";
+}
+
+test "a single word wider than the box overflows rather than being cut" {
+    val lines = wrapText("aaaaaaaa", 200, fixtureMetrics, 100, 0);
+    assert lines.length == 1;
+    assert lines.at(0).unwrapOr("") == "aaaaaaaa";
+}
+
+test "maxLines truncates with an ellipsis that fits inside the width" {
+    val lines = wrapText("aa bb cc aa bb cc", 600, fixtureMetrics, 100, 2);
+    assert lines.length == 2;
+    assert lines.at(1).unwrapOr("").endsWith("…");
+}
+
+test "measure is zero for the empty string and grows with the text" {
+    assert measure(fixtureMetrics, "", 100) == 0;
+    val short = measure(fixtureMetrics, "a", 100);
+    val long = measure(fixtureMetrics, "aaa", 100);
+    assert short < long;
+}
+
+test "an unsupported property is reported, not honoured" {
+    val declared = "display:flex;boxShadow:0 2px 8px #000;transform:rotate(3deg)";
+    val bad = unsupportedProperties(declared);
+    assert bad.length == 2;
+    assert bad.contains("boxShadow");
+    assert bad.contains("transform");
+    val style = parseStyle(declared);
+    assert style.display == "flex";
+}
+
+test "parseStyle is total: malformed input is reported, never a silent zero" {
+    val declared = "padding:;fontSize:32px";
+    val bad = unsupportedProperties(declared);
+    assert bad.contains("padding");
+    val style = parseStyle(declared);
+    assert style.fontSize == 32;
+}
+
+test "property order does not change the result" {
+    val a = parseStyle("fontSize:32px;color:#fff");
+    val b = parseStyle("color:#fff;fontSize:32px");
+    assert a.fontSize == b.fontSize;
+    assert a.color == b.color;
+}

@@ -1,0 +1,187 @@
+// Front 11 — Actuator: Health, Info and the Endpoint Host.
+//
+// What an application adds: a health indicator of its own, an info contributor,
+// an application-specific actuator endpoint, and the `#[instrumentation]`
+// startup hook. All of it runs on the server.
+//
+// Note what is NOT here. Exposure and access control are front 76's, so nothing
+// below decides who may read these. Metrics and exporters are front 75's, so
+// nothing below registers a meter. Front 11 is the endpoint host and the two
+// registries.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/actuator/endpoints.html
+//   https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.health
+//   https://nextjs.org/docs/app/guides/instrumentation
+
+import {Request} from "rakun";
+import {service, repository} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {managed} from "rakun";                              // front 06
+
+// Front 11's surface.
+// The markers and the registration contract live in the dependency-free API
+// module (wave 1); the host that routes and aggregates is `rakun-actuator`.
+import {Health, HealthIndicator, InfoContributor, Endpoint, EndpointResponse} from "rakun-actuator-api";
+import {healthIndicator, infoContributor, endpoint, instrumentation} from "rakun-actuator-api";
+import {startSpan, endSpan} from "rakun-actuator-api";
+import {rkRegisterHealthIndicator, rkRegisterInfoContributor, rkRegisterEndpoint} from "rakun-actuator-api";
+
+// ---- the startup hook (server) ----
+
+// One per application, run before configuration is loaded and before any bean is
+// constructed. Two in one build is a boot failure naming both.
+#[instrumentation]
+pub fn instrumentation() {
+    @print("instrumentation: tracing enabled");
+}
+
+// ---- the domain this monitors (server) ----
+
+#[repository]
+#[managed]
+pub type QueueRepository {
+    pub fn depth(self: Self) -> i32 {
+        return 7;
+    }
+
+    pub fn oldestAgeSeconds(self: Self) -> i32 {
+        return 12;
+    }
+}
+
+// ---- a health indicator (server) ----
+
+// The contract front 11 defines: return a `Health`, never raise, keep `details`
+// free of anything secret, and finish inside the configured timeout. A raise is
+// caught and becomes DOWN with the reason; a timeout becomes UNKNOWN. Either way
+// the endpoint still answers — one bad indicator degrades one component, not the
+// probe.
+#[healthIndicator("workQueue")]
+#[managed]
+pub type WorkQueueHealth(
+    queue: QueueRepository,
+) {
+    pub fn check(self: Self) -> Health {
+        val depth = self.queue.depth();
+        val oldest = self.queue.oldestAgeSeconds();
+        val backedUp = depth > 1000;
+        val stale = oldest > 300;
+        val unhealthy = backedUp || stale;
+        val status = if (unhealthy) "DOWN" else "UP";
+        return Health(
+            status: status,
+            details: "{\"depth\": ${depth}, \"oldestAgeSeconds\": ${oldest}}",
+        );
+    }
+}
+
+// ---- an info contributor (server) ----
+
+// Contributions merge by TOP-LEVEL key. Two contributors claiming one key is a
+// boot failure naming both, not a silent last-wins.
+#[infoContributor("deployment")]
+#[managed]
+pub type DeploymentInfo {
+    pub fn contribute(self: Self) -> string {
+        return "{\"deployment\": {\"region\": \"eu-west-1\", \"replica\": \"blue\"}}";
+    }
+}
+
+// ---- an application endpoint (server) ----
+
+// Registered by id; front 11 owns the route. The base path, the segment name and
+// the response cache TTL are all configuration, which is why an endpoint never
+// writes a #[getMapping] of its own.
+//
+//   management.endpoints.web.base-path: /actuator
+//   management.endpoint.queue.cache.time-to-live: 5s
+#[endpoint("queue")]
+#[managed]
+pub type QueueEndpoint(
+    queue: QueueRepository,
+) implement Endpoint {
+    pub fn id(self: Self) -> string {
+        return "queue";
+    }
+
+    pub fn read(self: Self, req: Request) -> EndpointResponse {
+        val depth = self.queue.depth();
+        val oldest = self.queue.oldestAgeSeconds();
+        return EndpointResponse(
+            status: 200,
+            contentType: "application/json",
+            body: "{\"depth\": ${depth}, \"oldestAgeSeconds\": ${oldest}}",
+        );
+    }
+}
+
+// ---- a span around application work (server) ----
+
+// The four spans the server emits — request, render, action, handler — are
+// emitted by fronts 07, 23, 24 and 25 through this same API. An application
+// emits its own the same way. With no subscriber (front 75 absent) the pair is a
+// no-op; front 11 ships no exporter.
+#[service]
+#[managed]
+pub type ReportBuilder(
+    queue: QueueRepository,
+) {
+    pub fn build(self: Self, name: string) -> string {
+        val span = startSpan("report.build", "{\"report\": \"${name}\"}");
+        val depth = self.queue.depth();
+        val body = "report ${name}: ${depth} pending";
+        val _e = endSpan(span, "ok");
+        return body;
+    }
+}
+
+// ---- what the tests pin ----
+
+test "health: an application indicator reaches the aggregate" {
+    val body = __rkActuatorRead("health", "");
+    assert body.contains("workQueue");
+    assert body.contains("\"status\":\"UP\"");
+}
+
+test "health: one DOWN indicator makes the aggregate DOWN" {
+    val _d = __rkTestForceIndicator("workQueue", "DOWN");
+    val res = __rkActuatorReadResponse("health", "");
+    assert res.status == 503;
+    assert res.body.contains("\"status\":\"DOWN\"");
+}
+
+test "health: an indicator that raises becomes DOWN and the endpoint still answers" {
+    val _d = __rkTestRaisingIndicator("flaky");
+    val res = __rkActuatorReadResponse("health", "");
+    assert res.status == 503;
+    assert res.body.contains("flaky");
+}
+
+test "info: contributions merge by top-level key" {
+    val body = __rkActuatorRead("info", "");
+    assert body.contains("deployment");
+    assert body.contains("eu-west-1");
+    assert body.contains("otp");
+}
+
+test "endpoint: an application endpoint is reachable by id under the configured base path" {
+    val res = __rkActuatorReadResponse("queue", "");
+    assert res.status == 200;
+    assert res.contentType == "application/json";
+    assert res.body.contains("oldestAgeSeconds");
+}
+
+test "endpoint: an unknown id answers 404 through the problem-detail shape" {
+    val res = __rkActuatorReadResponse("nope", "");
+    assert res.status == 404;
+}
+
+test "spans: a child span carries its caller as parent" {
+    val outer = startSpan("outer", "{}");
+    val inner = startSpan("inner", "{}");
+    assert inner.parentId == outer.spanId;
+    assert inner.traceId == outer.traceId;
+    val _a = endSpan(inner, "ok");
+    val _b = endSpan(outer, "ok");
+}

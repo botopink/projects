@@ -1,0 +1,123 @@
+// Front 29 — jhonstart-client-directive · examples/like-button-client-example.bp
+//
+// The `§ 7. Padrão: Server + Client` shape: a server component lists the posts,
+// and each row embeds a CLIENT component that owns the like count.
+//
+// Three things are worth reading closely.
+//   - `LikeProps` carries `#[clientProps]`. Its two fields are a `string` and an
+//     `i32`, both on the serializable whitelist. A field typed `Element` would
+//     be rejected at comptime, with a message located at the declaration.
+//   - `LikeButton` carries `#[client]`. Its body uses `use state`, which only
+//     means anything in the browser; on the server it is never called.
+//   - `PostList` is a SERVER component. It does not call `LikeButton` — it emits
+//     the ISLAND, which is what front 23 serializes and front 68's bundle starts.
+//
+// The island marker is `<div data-onze-i="i0">` and the component name and props
+// live in the payload's `i` array, not on the element (`contracts.md § 2`).
+// Front 23 assigns the ids in render order; this file passes them in so the
+// example is deterministic and its assertions are literals.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/server-and-client-components
+//   https://nextjs.org/docs/app/api-reference/directives/use-client
+
+import { Element, div, ul, li, h1, span, text, renderToString } from "jhonstart";
+import { client, clientProps, clientMount, islandEntry, Island } from "jhonstart";
+import { state } from "jhonstart";
+import { button, h2 } from "jhonstart";
+
+// `button` and `h2` come from front 94 (jhonstart-element-surface). `client`, `clientProps` and `clientMount` are
+// front 29's; `state` is `hooks.bp`.
+
+pub type Post(id: string, title: string, likes: i32)
+
+// ── the client half ─────────────────────────────────────────────────────────
+
+#[clientProps]
+pub type LikeProps(
+    postId: string,
+    likes: i32,
+)
+
+// The interactive component. `data-onze-on-click` names a handler the client
+// runtime binds after hydration; there is no JavaScript string in this file.
+#[client]
+pub fn LikeButton(props: LikeProps) -> Element {
+    val c = use state(props.likes);
+    return button([
+        text(c.value.toString() + " likes", attrs: []),
+    ], attrs: [
+        #("data-onze-on-click", "LikeButton:like"),
+        #("data-onze-post", props.postId),
+    ]);
+}
+
+// ── the server half ─────────────────────────────────────────────────────────
+
+// What the server actually emits for a client component: the island. The
+// element carries only the id; the component name and the props go into the
+// payload's `i` array, which is what `islandEntry` builds.
+pub fn likeIsland(id: string, props: LikeProps) -> Island {
+    return Island(id: id, component: "LikeButton", props: [
+        #("postId", props.postId),
+        #("likes", props.likes.toString()),
+    ]);
+}
+
+fn postRow(id: string, p: Post) -> Element {
+    return li([
+        h2([text(p.title, attrs: [])], attrs: []),
+        clientMount(likeIsland(id, LikeProps(postId: p.id, likes: p.likes)), []),
+    ], attrs: [#("class", "post-row")]);
+}
+
+// A server component. Everything it renders is markup; the only client code on
+// the page is whatever `LikeButton` compiles to in front 68's bundle.
+pub fn PostList(posts: Array<Post>) -> Element {
+    return div([
+        h1([text("Posts", attrs: [])], attrs: []),
+        ul(postRows(posts), attrs: [#("class", "posts")]),
+    ], attrs: [#("class", "page")]);
+}
+
+// Front 23 assigns island ids in render order (`i0`, `i1`, …); a page that
+// emits its own does the same, so the ids in the markup and the ids in the
+// payload's `i` array agree. The counter is the accumulator's own length —
+// there is no separate `i32` to keep in step with it.
+fn postRows(posts: Array<Post>) -> Array<Element> {
+    var rows: Array<Element> = [];
+    loop (posts) { p ->
+        rows = rows.append([postRow("i" + rows.length.toString(), p)]);
+    };
+    return rows;
+}
+
+test "the island element carries the id and nothing else" {
+    val el = clientMount(likeIsland("i0", LikeProps(postId: "7", likes: 3)), []);
+    assert renderToString(el) == "<div data-onze-i=\"i0\"></div>";
+}
+
+test "the payload row carries the component name and the encoded props" {
+    val row = islandEntry(likeIsland("i0", LikeProps(postId: "7", likes: 3)));
+    assert row._0 == "i0";
+    assert row._1 == "LikeButton";
+    assert row._2 == "postId=7&likes=3";
+}
+
+test "a post row embeds the island, not the component" {
+    val markup = renderToString(postRow("i0", Post(id: "7", title: "On BEAM rendering", likes: 3)));
+    assert markup.contains("<h2>On BEAM rendering</h2>");
+    assert markup.contains("data-onze-i=\"i0\"");
+    assert markup.contains("data-onze-on-click") == false;
+}
+
+test "the list renders one island per post, numbered in render order" {
+    val posts = [
+        Post(id: "1", title: "First", likes: 0),
+        Post(id: "2", title: "Second", likes: 9),
+    ];
+    val markup = renderToString(PostList(posts));
+    assert markup.contains("data-onze-i=\"i0\"");
+    assert markup.contains("data-onze-i=\"i1\"");
+    assert markup.contains("LikeButton") == false;
+}

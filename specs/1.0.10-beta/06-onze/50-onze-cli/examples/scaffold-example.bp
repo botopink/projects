@@ -1,0 +1,82 @@
+// Front 50 — onze CLI · examples/scaffold-example.bp
+//
+// Demonstrates: what `onze create my-app --yes` writes. This is the whole of a
+// new app's source — a root layout and one page — and it is the first thing
+// `onze dev` serves. Both modules are shown here; in the scaffold they are
+// `app/layout.bp` and `app/page.bp`.
+//
+// The scaffold is written in front 22's vocabulary, not in one of onze's:
+// `#[layout("")]`, `#[page("")]`, `LayoutProps`, `PageContext`. The decorator
+// argument is the app-relative directory, and the check that it matches the
+// file's real location is this front's (see the README, *Generate*).
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/cli/create-next-app
+//           https://nextjs.org/docs/app/getting-started/layouts-and-pages
+//           NEXTJS-DOCS.md § 29. CLI · § 2. Instalação e Configuração
+//
+// Target: erlang (server) — the scaffold renders on BEAM. The CLI process that
+// wrote these files is the js half; nothing in the files themselves is.
+
+import {Element, div, h1, p, text, renderToString} from "jhonstart";
+import {styled, Token} from "emilia";                          // front 48
+import {page, layout, PageContext, LayoutProps} from "rakun";  // front 22
+import {rkAppRegisterPage, rkAppRegisterLayout} from "rakun";  // front 22 registry cells
+import {dict} from "std";
+
+// ── app/layout.bp ────────────────────────────────────────────────────────────
+//
+// The root layout returns the BODY subtree. The `<!DOCTYPE html><html><head>…`
+// shell belongs to front 23, and the moment the head is written belongs to front
+// 69 — the head has to be composed after the tree is built, because that is when
+// emilia's classes exist to flush.
+
+fn shellTokens() -> Token[] {
+    return [.Font.Sans, .Bg.White, .Color.Gray.900];
+}
+
+#[layout("")]
+pub fn rootLayout(props: LayoutProps) -> Element {
+    return div([props.children], attrs: [styled(shellTokens())]);
+}
+
+// ── app/page.bp ──────────────────────────────────────────────────────────────
+//
+// Every page is `#[@future]`: front 22's registry pins one shape so front 23's
+// pipeline has one shape to drive. A page that needs no data awaits nothing and
+// costs nothing.
+
+fn titleTokens() -> Token[] {
+    return [.Text.Size.X3xl, .Text.Bold];
+}
+
+fn leadTokens() -> Token[] {
+    return [.Pad.Y.4, .Color.Gray.700];
+}
+
+#[page("")]
+#[@future]
+pub fn homePage(route: PageContext) -> @Future<Element> {
+    return div([
+        h1([text("onze", attrs: [])], attrs: [styled(titleTokens())]),
+        p([text("Edit app/page.bp and reload.", attrs: [])], attrs: [styled(leadTokens())]),
+    ], attrs: []);
+}
+
+fn homeRoute() -> PageContext {
+    return PageContext(
+        pathname: "/",
+        pattern: "/",
+        params: dict.empty(),
+        query: dict.empty(),
+        rest: [],
+    );
+}
+
+test "the scaffold renders with no data, which is why create can verify it" {
+    val page = await homePage(homeRoute());
+    val body = rootLayout(LayoutProps(children: page));
+    val markup = renderToString(body);
+    assert markup.startsWith("<div class=\"e_");
+    assert markup.contains("<h1");
+    assert markup.contains("Edit app/page.bp and reload.");
+}

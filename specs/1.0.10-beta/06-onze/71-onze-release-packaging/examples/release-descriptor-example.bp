@@ -1,0 +1,109 @@
+// Front 71 — onze-release-packaging · examples/release-descriptor-example.bp
+//
+// Describing a deployable release, and the two things that make it trustworthy:
+// one build id derived once and verified everywhere, and a Dockerfile that is
+// generated and asserted rather than written and reviewed.
+//
+// BUILD TIME on the server side. The generators here are pure functions over
+// strings, which is why a container's most important properties — it does not
+// run as root, it bakes no configuration, it carries no source — are tests
+// instead of a code-review checklist.
+//
+// The build id is the sharp edge: `contracts.md § 2` puts it in every payload as
+// `b`, front 68 puts it in every asset URL, front 60 keys the prerender manifest
+// on it. Derive it twice and a deployment can serve a payload from one build
+// against a bundle from another.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/deploying
+//   https://nextjs.org/docs/app/api-reference/config/next-config-js/output
+//   https://www.erlang.org/doc/apps/sasl/systools.html
+
+import { ReleaseSpec, releaseSpec, withErts, generateBuildId, validateBuildId, verifyBuildId } from "onze-release";
+import { relFileText, vmArgsText, sysConfigText, generateDockerfile, generateDockerignore } from "onze-release";
+
+val moduleHashes = ["4f21ab", "7e0055", "9c1d40"];
+val manifestHash = "41ab08";
+
+fn spec() -> ReleaseSpec {
+    val id = generateBuildId(moduleHashes, manifestHash);
+    val base = releaseSpec("blog", "0.1.0", id);
+    return base;
+}
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+test "the build id is deterministic and independent of module order" {
+    val a = generateBuildId(moduleHashes, manifestHash);
+    val b = generateBuildId(["9c1d40", "4f21ab", "7e0055"], manifestHash);
+    assert a == b;
+}
+
+test "one changed module changes the build id" {
+    val a = generateBuildId(moduleHashes, manifestHash);
+    val b = generateBuildId(["4f21ab", "7e0055", "9c1d41"], manifestHash);
+    assert a != b;
+}
+
+test "a supplied build id must be usable in a URL path" {
+    assert validateBuildId("").length == 1;
+    assert validateBuildId("has/slash").length == 1;
+    assert validateBuildId("has space").length == 1;
+    assert validateBuildId("b7f2a1").length == 0;
+}
+
+test "the release, the manifest and the payload must agree on the id" {
+    val s = spec();
+    val agreeing = verifyBuildId(s, s.buildId, s.buildId);
+    assert agreeing.length == 0;
+    val disagreeing = verifyBuildId(s, s.buildId, "stale");
+    assert disagreeing.length == 1;
+    assert disagreeing.at(0).unwrapOr("").contains("payload");
+}
+
+test "the rel file names kernel and stdlib first and is a complete Erlang term" {
+    val text = relFileText(spec());
+    assert text.startsWith("{release,");
+    assert text.endsWith(".");
+    assert text.indexOf("kernel") < text.indexOf("onze");
+    assert text.indexOf("stdlib") < text.indexOf("onze");
+}
+
+test "the cookie comes from the environment, never from the artifact" {
+    val text = vmArgsText(spec());
+    assert text.contains("-setcookie") == false;
+    assert text.contains("RELEASE_COOKIE");
+}
+
+test "sys.config carries defaults and no resolved configuration" {
+    val text = sysConfigText(spec(), [#("port", "3000")]);
+    assert text.contains("3000");
+    assert text.contains("DATABASE_URL") == false;
+}
+
+test "the Dockerfile runs as a non-root user and carries no source" {
+    val text = generateDockerfile(spec());
+    assert text.contains("USER onze");
+    assert text.contains("USER root") == false;
+    assert text.contains("ENV PORT=3000");
+    // The only thing the runner stage copies is the assembled release; the
+    // source `COPY . .` belongs to the build stage and never survives it.
+    assert text.contains("COPY --from=build");
+    val runner = text.split("AS runner").at(1).unwrapOr("");
+    assert runner.contains("COPY . .") == false;
+    assert runner.contains("onze build") == false;
+}
+
+test "the runner base image follows the includeErts flag" {
+    val bundled = generateDockerfile(spec());
+    assert bundled.contains("FROM alpine");
+    val hosted = generateDockerfile(withErts(spec(), false));
+    assert hosted.contains("FROM erlang:");
+}
+
+test "the dockerignore keeps the build directory and the tests out" {
+    val text = generateDockerignore();
+    assert text.contains(".git");
+    assert text.contains(".onze");
+    assert text.contains("test/");
+}

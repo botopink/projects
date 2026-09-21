@@ -1,0 +1,18 @@
+// Carried from 1.0.7-beta examples-bp.md § F05 — Componente cliente com effect
+// components/timer.bp
+#[client]
+import {Element, div, p, text} from "jhonstart";
+import {state, effect} from "jhonstart";
+
+pub fn Timer() -> Element {
+    val seconds = use state(0);
+    use effect({ ->
+        val interval = setInterval({ ->
+            seconds.set(seconds.value + 1);
+        }, 1000);
+        return { -> clearInterval(interval); };
+    }, []);
+    return div([
+        p([text("Tempo: " + seconds.value.toString() + "s", attrs: [])], attrs: []),
+    ], attrs: []);
+}

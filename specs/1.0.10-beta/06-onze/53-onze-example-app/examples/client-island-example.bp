@@ -1,0 +1,134 @@
+// Front 53 — onze example app · examples/client-island-example.bp
+// App file: components/like_button.bp
+//
+// Demonstrates: the only genuinely interactive thing in the app, and the two
+// fronts it needs. Front 29 marks the boundary and turns the component into an
+// island; front 68 walks the import closure of every `#[client]` entry, compiles
+// it to commonJS, content-hashes the chunk, and generates the hydration entry
+// that reconnects it to the server-rendered DOM.
+//
+// The properties worth testing here are structural, and they are the ones that
+// break silently:
+//   - the markup the server emits and the markup the client re-renders are the
+//     same string, because the component is a pure function of its props;
+//   - the emilia class is computed from a LITERAL token list, so the bundler can
+//     evaluate the rule body — a class computed at run time is a class the
+//     stylesheet does not contain, which is invisible breakage;
+//   - `lib/db.bp` is not in this module's import closure, and the build fails if
+//     it ever is.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/server-and-client-components
+//           https://nextjs.org/docs/app/api-reference/directives/use-client
+//           NEXTJS-DOCS.md § 7. Server e Client Components
+//
+// Target: js (client) for the component's behaviour; the FIRST render of it
+// still happens on the server, which is why the markup is asserted here rather
+// than in a browser.
+
+import {Element, div, li, span, text, renderToString} from "jhonstart";
+import {button, h2} from "jhonstart";                              // provided by front 94
+import {client, clientProps, clientMount, Island} from "jhonstart"; // front 29
+import {state} from "jhonstart";                                    // hooks.bp
+import {emilia, Token} from "emilia";
+import {env} from "std";
+// app-local — TYPES only. `Post` is a record; importing `lib/db.bp`'s readers
+// here would put the filesystem in the client graph and fail front 68's build.
+import {Post} from "@/lib.db";
+
+// front 49's prefix rule, front 68's enforcement: `ONZE_PUBLIC_` names are
+// inlined into the bundle's public table. Any other name read from a client
+// module fails the build, with the variable named, and no flag disables it.
+val apiBase = env.read("ONZE_PUBLIC_API_URL").unwrapOr("http://localhost:3000");
+
+// A literal token list, evaluated at comptime, so the bundler can fold the rule
+// body and prove the class exists in the sheet.
+val likeTokens: Token[] = [.Text.Size.Sm, .Color.Gray.700, .Pad.X.2];
+
+val likeClass = emilia(likeTokens);
+
+#[clientProps]
+pub type LikeProps(
+    postSlug: string,
+    likes: i32,
+)
+
+// front 29 — the interactive component. `data-onze-on-click` names a handler the
+// client runtime binds after hydration; there is no JavaScript string in this
+// file, which is what keeps the component testable as markup.
+#[client]
+pub fn LikeButton(props: LikeProps) -> Element {
+    val c = use state(props.likes);
+    return likeButtonMarkup(props.postSlug, c.value);
+}
+
+// Pure, so the server pass and the post-hydration render produce the same
+// string — the property hydration depends on and the one a diff would catch.
+fn likeButtonMarkup(slug: string, likes: i32) -> Element {
+    return button([
+        text(likes.toString() + " likes", attrs: []),
+    ], attrs: [
+        #("class", likeClass),
+        #("data-onze-on-click", "LikeButton:like"),
+        #("data-onze-post", slug),
+        #("data-onze-api", apiBase),
+    ]);
+}
+
+// front 29 — what the SERVER emits for a client component: the island. The
+// element carries only the id; the component name and the props travel in the
+// payload's `i` array (contracts.md § 2).
+pub fn likeIsland(id: string, props: LikeProps) -> Island {
+    return Island(id: id, component: "LikeButton", props: [
+        #("postSlug", props.postSlug),
+        #("likes", props.likes.toString()),
+    ]);
+}
+
+// A server component mounting the island inside the post card's row.
+pub fn postRow(id: string, post: Post) -> Element {
+    return li([
+        h2([text(post.title, attrs: [])], attrs: []),
+        clientMount(likeIsland(id, LikeProps(postSlug: post.slug, likes: 0)), []),
+    ], attrs: [#("class", "post-row")]);
+}
+
+fn samplePost() -> Post {
+    return Post(
+        slug: "hello-world",
+        title: "Hello, world",
+        published: "2026-01-04",
+        excerpt: "The first post.",
+        body: "The first post, at length.",
+    );
+}
+
+test "the button carries the emilia class its literal token list produced" {
+    val markup = renderToString(likeButtonMarkup("hello-world", 3));
+    assert markup.contains("class=\"e_");
+    assert markup.contains("3 likes");
+}
+
+test "the handler is named, not inlined — no JavaScript in the markup" {
+    val markup = renderToString(likeButtonMarkup("hello-world", 0));
+    assert markup.contains("data-onze-on-click=\"LikeButton:like\"");
+    assert markup.contains("<script") == false;
+    assert markup.contains("onclick=") == false;
+}
+
+test "the island carries the id; the component name and props go in the payload" {
+    val island = likeIsland("i0", LikeProps(postSlug: "hello-world", likes: 3));
+    assert island.id == "i0";
+    assert island.component == "LikeButton";
+    assert island.props.length == 2;
+}
+
+test "the mount point names the island and nothing else" {
+    val markup = renderToString(postRow("i0", samplePost()));
+    assert markup.contains("data-onze-i=\"i0\"");
+    assert markup.contains("LikeProps") == false;
+}
+
+test "the public env value is the one that reaches the browser" {
+    val markup = renderToString(likeButtonMarkup("hello-world", 0));
+    assert markup.contains("data-onze-api=\"http");
+}

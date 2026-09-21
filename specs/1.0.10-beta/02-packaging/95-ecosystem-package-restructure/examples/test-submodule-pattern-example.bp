@@ -1,0 +1,112 @@
+// examples/test-submodule-pattern-example.bp
+//
+// Demonstrates how a -test submodule (using emilia-test as the concrete example)
+// imports std/asserts, adds domain-specific helpers, and exposes them to consumers.
+//
+// This is the shape of modules/emilia-test/src/root.bp in repository/emilia/.
+
+//// emilia-test — test helpers for the emilia library.
+////
+//// Depends on: std/asserts, emilia (core)
+//// Target: comptime (emilia runs at comptime and emits CSS)
+////
+//// This module provides:
+//// - Domain-specific assertion helpers for emilia types
+//// - Fixture builders for common emilia values
+//// - Re-exports of std/asserts for convenience
+
+import { asserts } from "std";
+import { Token, Element } from "emilia";
+
+// --- Domain-specific assertion helpers ---
+
+// Asserts that a token produces the expected CSS output.
+// This is the most common assertion in emilia tests — every utility test
+// checks that a token emits the right CSS string.
+pub fn expectTokenOutput(token: Token, expectedCss: string) -> bool {
+    val actual = token.toCss();
+    return asserts.equal(actual, expectedCss);
+}
+
+// Asserts that an element has the expected tag name.
+pub fn expectElementTag(element: Element, expectedTag: string) -> bool {
+    return asserts.equal(element.tagName, expectedTag);
+}
+
+// Asserts that an element has a specific class.
+pub fn expectElementHasClass(element: Element, className: string) -> bool {
+    val classes = element.getAttribute("class");
+    return asserts.contains(classes, className);
+}
+
+// Asserts that a CSS string contains a specific property.
+pub fn expectCssHasProperty(css: string, property: string) -> bool {
+    return asserts.contains(css, property);
+}
+
+// Asserts that a CSS string contains a specific value for a property.
+pub fn expectCssPropertyValue(css: string, property: string, value: string) -> bool {
+    val pattern = property + ":\\s*" + value;
+    return asserts.matches(pattern, css);
+}
+
+// --- Fixture builders ---
+
+// Creates a sample token for testing.
+pub fn sampleToken() -> Token {
+    // LANGUAGE GAP: Token construction depends on the emilia API.
+    // This is a placeholder showing the pattern.
+    return Token.padding(16);
+}
+
+// Creates a sample element for testing.
+pub fn sampleElement() -> Element {
+    // LANGUAGE GAP: Element construction depends on the emilia/jhonstart API.
+    // This is a placeholder showing the pattern.
+    return Element.div();
+}
+
+// Creates a fixture CSS string for testing.
+pub fn sampleCss() -> string {
+    return ".test { padding: 16px; margin: 8px; }";
+}
+
+// --- Re-exports for convenience ---
+
+// Consumers can import one module and get both emilia-test helpers and std/asserts.
+pub fn truthy(c: bool) -> bool { return asserts.truthy(c); }
+pub fn falsy(c: bool) -> bool { return asserts.falsy(c); }
+pub fn equal<T>(a: T, b: T) -> bool { return asserts.equal(a, b); }
+pub fn notEqual<T>(a: T, b: T) -> bool { return asserts.notEqual(a, b); }
+pub fn contains(haystack: string, needle: string) -> bool { return asserts.contains(haystack, needle); }
+pub fn matches(pattern: string, actual: string) -> bool { return asserts.matches(pattern, actual); }
+pub fn empty<T>(collection: Array<T>) -> bool { return asserts.empty(collection); }
+pub fn notEmpty<T>(collection: Array<T>) -> bool { return asserts.notEmpty(collection); }
+pub fn hasLength<T>(collection: Array<T>, expected: i32) -> bool { return asserts.hasLength(collection, expected); }
+pub fn fail(message: string) -> i32 { return asserts.fail(message); }
+
+// --- Example test using emilia-test ---
+
+test "sample token emits correct CSS" {
+    val token = sampleToken();
+    expectTokenOutput(token, "padding: 16px;");
+}
+
+test "sample element has correct tag" {
+    val element = sampleElement();
+    expectElementTag(element, "div");
+}
+
+test "sample CSS has padding property" {
+    val css = sampleCss();
+    expectCssHasProperty(css, "padding");
+    expectCssPropertyValue(css, "padding", "16px");
+}
+
+test "re-exported asserts work" {
+    truthy(1 == 1);
+    equal(42, 42);
+    contains("hello world", "world");
+    empty([]);
+    hasLength([1, 2, 3], 3);
+}

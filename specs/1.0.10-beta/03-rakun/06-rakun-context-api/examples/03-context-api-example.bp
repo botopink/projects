@@ -1,0 +1,167 @@
+// carried from specs/1.0.6-beta/examples/03-context-api-example.bp
+//// F03 — Context API & Application Events
+////
+//// Este exemplo demonstra a Context API para resolução programática de beans,
+//// lifecycle hooks (@postConstruct, @preDestroy), e event system.
+////
+//// Documentação Spring Boot:
+//// - ApplicationContext: https://docs.spring.io/spring-boot/reference/features/spring-application.html#features.spring-application.application-startup
+//// - Application Events: https://docs.spring.io/spring-boot/reference/features/spring-application.html#features.spring-application.application-events-and-listeners
+//// - Lifecycle: https://docs.spring.io/spring-boot/reference/features/spring-application.html#features.spring-application.application-availability
+//// - @PostConstruct/@PreDestroy: https://docs.spring.io/spring-boot/reference/features/spring-application.html
+
+import {Rakun, App, Request, Response} from "rakun";
+import {service, restController, route, getMapping, postConstruct, preDestroy, eventListener} from "rakun";
+import {Context, ApplicationEvent, ApplicationStartedEvent, ApplicationReadyEvent} from "rakun";
+
+// ── Context API: resolução programática de beans ────────────────────────────
+#[service]
+pub type DynamicServiceLoader(ctx: Context) {
+    pub fn loadService(self: Self, serviceName: string) -> ?string {
+        // Resolve bean by type at runtime
+        if (self.ctx.has<UserService>()) {
+            val userService = self.ctx.resolve<UserService>();
+            return @Ok("Loaded UserService");
+        }
+        return @Err("Service not found: " + serviceName);
+    }
+
+    pub fn listBeans(self: Self) -> Array<string> {
+        return self.ctx.getBeanNames();
+    }
+}
+
+// ── Lifecycle hooks ─────────────────────────────────────────────────────────
+#[service]
+pub type CacheService {
+    cache: Dict<string, string>,
+
+    #[postConstruct]
+    pub fn init(self: Self) {
+        // Called after construction, before the bean is available
+        print("CacheService initialized");
+        self.cache = Dict.empty();
+        // Warm up cache
+        self.cache = self.cache.insert("warmup", "done");
+    }
+
+    #[preDestroy]
+    pub fn cleanup(self: Self) {
+        // Called before shutdown
+        print("CacheService shutting down, clearing cache");
+        self.cache = Dict.empty();
+    }
+
+    pub fn get(self: Self, key: string) -> ?string {
+        return self.cache.lookup(key);
+    }
+
+    pub fn put(self: Self, key: string, value: string) {
+        self.cache = self.cache.insert(key, value);
+    }
+}
+
+// ── Application Events ──────────────────────────────────────────────────────
+#[service]
+pub type StartupListener {
+    #[eventListener]
+    pub fn onStarted(self: Self, event: ApplicationStartedEvent) {
+        print("Application started at " + event.timestamp.toString());
+    }
+
+    #[eventListener]
+    pub fn onReady(self: Self, event: ApplicationReadyEvent) {
+        print("Application ready to serve requests");
+    }
+}
+
+// ── Custom Events ───────────────────────────────────────────────────────────
+pub type OrderCreatedEvent(
+    orderId: string,
+    customerId: string,
+    amount: i32,
+)
+
+#[service]
+pub type OrderService {
+    pub fn createOrder(self: Self, customerId: string, amount: i32) -> string {
+        val orderId = "ORD-" + time.nowMillis().toString();
+        // Publish event
+        rkPublishEvent(OrderCreatedEvent(
+            orderId: orderId,
+            customerId: customerId,
+            amount: amount,
+        ));
+        return orderId;
+    }
+}
+
+#[service]
+pub type NotificationService {
+    #[eventListener]
+    pub fn onOrderCreated(self: Self, event: OrderCreatedEvent) {
+        print("Sending notification for order " + event.orderId +
+              " to customer " + event.customerId);
+    }
+}
+
+#[service]
+pub type AuditService {
+    #[eventListener]
+    pub fn onOrderCreated(self: Self, event: OrderCreatedEvent) {
+        print("Auditing order " + event.orderId + " amount: " + event.amount.toString());
+    }
+}
+
+// ── Controller usando Context API ───────────────────────────────────────────
+#[restController]
+#[route("/api")]
+pub type AdminController(loader: DynamicServiceLoader, cache: CacheService) {
+    #[getMapping("/beans")]
+    pub fn listBeans(self: Self, req: Request) -> Response {
+        val beans = self.loader.listBeans();
+        return Response.json(beans.join(", "));
+    }
+
+    #[postMapping("/cache")]
+    pub fn setCache(self: Self, req: Request) -> Response {
+        val key = req.query("key");
+        val value = req.body();
+        self.cache.put(key, value);
+        return Response.ok("Cached");
+    }
+}
+
+fn main() {
+    // Lifecycle:
+    // 1. All beans constructed (constructor injection)
+    // 2. @postConstruct methods called (in dependency order)
+    // 3. ApplicationStartedEvent published
+    // 4. HTTP server starts
+    // 5. ApplicationReadyEvent published
+    //
+    // Shutdown (SIGTERM):
+    // 1. @preDestroy methods called (reverse dependency order)
+    // 2. HTTP server stops
+    // 3. ApplicationStoppedEvent published
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+//// Testes:
+////
+//// test "context resolves beans" {
+////     val ctx = Context();
+////     assert ctx.has<UserService>() == true;
+////     val service = ctx.resolve<UserService>();
+////     assert service != null;
+//// }
+////
+//// test "lifecycle hooks called" {
+////     // @postConstruct called after construction
+////     // @preDestroy called before shutdown
+//// }
+////
+//// test "events published and received" {
+////     // ApplicationStartedEvent received by StartupListener
+////     // Custom events received by multiple listeners
+//// }

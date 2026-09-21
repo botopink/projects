@@ -1,0 +1,115 @@
+// Front 67 — jhonstart-forms · examples/create-post-form-example.bp
+//
+// The §10 form, whole: a form bound to a server action, the message the action
+// returned rendered beside the field it belongs to, and a submit button that
+// disables itself while the submit is in flight.
+//
+// This is the BROWSER half. The action `createPost` runs on BEAM and is front
+// 24's; this file never derives its id — front 24 does, and the server echoes it
+// into the markup (`contracts.md § 3`).
+// During the server pass `actionState` yields the initial state with
+// `pending: false`, so the first HTML is the empty form with an enabled button,
+// which is exactly the form an un-hydrated browser can submit on its own.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/updating-data
+//   https://nextjs.org/docs/app/api-reference/functions/use-action-state
+//   https://react.dev/reference/react/useActionState
+
+import { Element, text, fragment, p, renderToString } from "jhonstart";
+// provided by front 94 (`jhonstart-element-surface`, src/elements.bp) — front 67
+// defines no constructor of its own and `element.bp` stays frozen.
+import { form, input, label, button } from "jhonstart";
+import { ActionState, newActionState, parseActionState } from "jhonstart";
+import { FormBinding, formAction, formAttrs, hiddenActionField, actionState } from "jhonstart";
+
+// Front 24 derives the action id and the server echoes it into the markup; this
+// file never constructs one. `contracts.md § 3` pins its shape.
+val sampleActionId = "a_9f31c0d7a4b2e5081c6fa3d2";
+
+// The `state` value of front 24's response envelope, verbatim from the README —
+// the same literal front 24's encoder test asserts it produces.
+val goldenState = "message=Title%20must%20be%20at%20least%203%20characters&f.title=Too%20short";
+
+fn binding() -> FormBinding {
+    return formAction(sampleActionId, "/blog/new");
+}
+
+// The error line for one field. Pure, so "does the message reach the field"
+// is a test and not a browser session.
+fn fieldLine(state: ActionState, name: string) -> Element {
+    val message = state.fieldError(name);
+    val line = if (message == "") {
+        fragment([], attrs: [])
+    } else {
+        p([text(message, attrs: [])], attrs: [#("class", "field-error")])
+    };
+    return line;
+}
+
+fn submitAttrs(pending: bool) -> Array<#(string, string)> {
+    val base = [#("type", "submit")];
+    if (pending == false) return base;
+    return base.append([#("disabled", "disabled")]);
+}
+
+fn submitLabel(pending: bool) -> string {
+    val caption = if (pending) { "Creating…" } else { "Create post" };
+    return caption;
+}
+
+// The form itself, written against explicit state so the same function serves
+// the component, the server render and the tests below.
+fn createPostForm(binding: FormBinding, state: ActionState, pending: bool) -> Element {
+    return form([
+        hiddenActionField(binding),
+        label([text("Title", attrs: [])], attrs: [#("for", "title")]),
+        input([], attrs: [#("id", "title"), #("name", "title"), #("required", "required")]),
+        fieldLine(state, "title"),
+        label([text("Content", attrs: [])], attrs: [#("for", "content")]),
+        input([], attrs: [#("id", "content"), #("name", "content"), #("required", "required")]),
+        fieldLine(state, "content"),
+        button([text(submitLabel(pending), attrs: [])], attrs: submitAttrs(pending)),
+    ], attrs: formAttrs(binding));
+}
+
+// The component. `use actionState(...)` is the hook form; `newActionState("")` builds the
+// initial value (the hook owns the noun `actionState`; the helper takes a verb).
+fn CreatePostForm(actionId: string) -> Element {
+    // LANGUAGE GAP: tuple labels are lost through generic instantiation — this
+    // would read `s.state` / `s.action` / `s.pending`; positional below.
+    val s = use actionState(actionId, newActionState(""));
+    val state = s.0;
+    val binding = s.1;
+    val pending = s.2;
+    return createPostForm(binding, state, pending);
+}
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+test "the empty form carries the attributes an un-hydrated browser needs" {
+    val markup = renderToString(createPostForm(binding(), newActionState(""), false));
+    assert markup.contains("method=\"post\"");
+    assert markup.contains("action=\"/blog/new\"");
+    assert markup.contains("data-onze-a=\"" + sampleActionId + "\"");
+    assert markup.contains("name=\"__onze_action\"");
+}
+
+test "a field message from the action lands beside its own field" {
+    val state = parseActionState(goldenState);
+    val markup = renderToString(createPostForm(binding(), state, false));
+    assert markup.contains("<p class=\"field-error\">Too short</p>");
+    assert state.fieldError("content") == "";
+}
+
+test "an in-flight submit disables the button and renames it" {
+    val markup = renderToString(createPostForm(binding(), newActionState(""), true));
+    assert markup.contains("disabled=\"disabled\"");
+    assert markup.contains("Creating…");
+}
+
+test "an idle form has no disabled attribute at all" {
+    val markup = renderToString(createPostForm(binding(), newActionState(""), false));
+    assert markup.contains("disabled") == false;
+    assert markup.contains("Create post");
+}

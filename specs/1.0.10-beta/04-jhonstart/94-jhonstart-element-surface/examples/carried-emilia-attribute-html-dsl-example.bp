@@ -1,0 +1,15 @@
+// Carried from 1.0.7-beta examples-bp.md § F16 — Atributo [emilia] no html DSL ([emilia] attribute in the html DSL)
+// 1.0.9 decided differently: `html.bp` is frozen and has no `[emilia]` attribute; the class goes through the
+// existing `[class]={c}` hole with `c` pre-bound via front 48's `cls(tokens, th)`. Kept verbatim for the record.
+
+import {html, renderToString} from "jhonstart";
+
+val page = html """
+<div [emilia]={[.Pad.All.8, .Bg.Gray100]}>
+  <h1 [emilia]={[.Text.Size.X3xl, .Text.Bold]}>Título</h1>
+  <p [emilia]={[.Text.Size.Base, .Color.Gray500]}>Descrição</p>
+  <button [emilia]={[.Pad.X.4, .Pad.Y.2, .Bg.Blue500, .Hover([.Bg.Blue700])]}>
+    Clique aqui
+  </button>
+</div>
+""";

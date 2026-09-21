@@ -1,0 +1,185 @@
+// Front 53 — onze example app · examples/route-handler-example.bp
+// App file: app/api/posts/route.bp
+//
+// Demonstrates: the JSON half of the app. A `route.bp` exports one function per
+// verb; front 22 registers each as a route-table record carrying its verb, and
+// front 25 dispatches it. The param for a dynamic segment arrives through the
+// ordinary `Request` — there is no second path parser.
+//
+// Front 62 supplies `headers()` and `cookies()` inside the handler: the phase is
+// Handler, so both reads and a cookie write are legal here, and the same write
+// from a render would raise.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/route
+//           NEXTJS-DOCS.md § 19. Route Handlers (API)
+//
+// Target: erlang (server).
+
+import {Request, HttpMethod} from "rakun";
+import {getRoute, postRoute, HandlerResponse, bodyJson} from "rakun";  // front 25
+import {rkAppRegisterHandler} from "rakun";                            // front 22 registry cell
+// front 62 — a handler's phase permits BOTH reads and cookie writes, so
+// `cookies()`, `headers()` and `after()` are all legal inside these functions.
+// This example reads authorization through the ordinary `Request` instead, so
+// every handler below is testable without a live request frame; front 62's own
+// example shows the frame-bound form.
+import {cache} from "rakun-cache";                                     // front 12
+import {dict} from "std";
+// app-local
+import {Post, listPosts, findPost, writePost} from "@/lib.db";
+
+// `Request` is a BEHAVIOR, so a test cannot construct one and has to implement
+// it. Front 19 (test utilities) should own this type; it is written out here so
+// the example stands alone — see `language-gaps.md`, *Unowned surface*.
+type FakeRequest(
+    method: HttpMethod,
+    path: string,
+    params: Dict<string, string>,
+    queries: Dict<string, string>,
+    heads: Dict<string, string>,
+    payload: string,
+) implement Request {
+    pub fn param(self: Self, name: string) -> string {
+        return self.params.lookup(name).unwrapOr("");
+    }
+
+    pub fn query(self: Self, name: string) -> string {
+        return self.queries.lookup(name).unwrapOr("");
+    }
+
+    pub fn header(self: Self, name: string) -> string {
+        return self.heads.lookup(name).unwrapOr("");
+    }
+
+    pub fn body(self: Self) -> string {
+        return self.payload;
+    }
+}
+
+fn postJson(p: Post) -> string {
+    return "{\"slug\":\"" + p.slug + "\",\"title\":\"" + p.title + "\",\"published\":\"" + p.published + "\"}";
+}
+
+// ── app/api/posts/route.bp — GET ────────────────────────────────────────────
+//
+// front 12 — the same `"posts"`-tagged read the blog list uses, so a mutation
+// invalidates the page and the API together rather than one of them.
+#[getRoute("api/posts")]
+#[@future]
+pub fn listPostsHandler(req: Request) -> @Future<HandlerResponse> {
+    val rows = listPosts().map({ p -> postJson(p) });
+    return HandlerResponse.json("[" + rows.join(",") + "]");
+}
+
+// ── app/api/posts/route.bp — POST ───────────────────────────────────────────
+//
+// `bodyJson` VALIDATES and returns the raw text: `std/json` is
+// `string -> @Result<string, string>` with no structured walker, so there is
+// nothing to walk. This app hands the text to its own decoder — which here means
+// it refuses anything but the two form fields it can read.
+#[postRoute("api/posts")]
+#[@future]
+pub fn createPostHandler(req: Request) -> @Future<HandlerResponse> {
+    val authorization = req.header("authorization");
+    if (authorization == "") {
+        return HandlerResponse.withStatus(401, "");
+    };
+
+    val contentType = req.header("content-type");
+    val isMultipart = contentType.startsWith("multipart/form-data");
+    if (isMultipart) {
+        // There is no byte type in botopink, so a multipart body cannot be read
+        // without lossy UTF-8 marshalling. Refusing is the honest answer — see
+        // `language-gaps.md`, "No byte or binary type".
+        return HandlerResponse.unsupportedMedia("multipart/form-data is not supported");
+    };
+
+    val parsed = bodyJson(req);
+    val ok = parsed.isOk();
+    if (!ok) {
+        return HandlerResponse.badRequest("body is not valid JSON");
+    };
+
+    val title = req.query("title");
+    val body = req.query("body");
+    val wrote = writePost("api-" + title.toLower().replaceAll(" ", "-"), title, "2026-01-04", body);
+    if (wrote.isError()) {
+        return HandlerResponse.withStatus(500, "");
+    };
+
+    cache.revalidateTag("posts");
+    val res = HandlerResponse.created("{\"ok\":true}");
+    return res.withHeader("location", "/api/posts");
+}
+
+// ── app/api/posts/[slug]/route.bp — a dynamic segment ───────────────────────
+
+#[getRoute("api/posts/[slug]")]
+#[@future]
+pub fn showPostHandler(req: Request) -> @Future<HandlerResponse> {
+    val slug = req.param("slug");
+    val found = findPost(slug);
+    if (found.isEmpty()) {
+        return HandlerResponse.notFound();
+    };
+    val p = found.first().unwrapOr(Post(slug: slug, title: "", published: "", excerpt: "", body: ""));
+    return HandlerResponse.json(postJson(p));
+}
+
+fn getRequest(path: string, slug: string) -> FakeRequest {
+    return FakeRequest(
+        method: HttpMethod.Get,
+        path: path,
+        params: dict.empty().insert("slug", slug),
+        queries: dict.empty(),
+        heads: dict.empty(),
+        payload: "",
+    );
+}
+
+fn postRequest(contentType: string, authorization: string, payload: string) -> FakeRequest {
+    return FakeRequest(
+        method: HttpMethod.Post,
+        path: "/api/posts",
+        params: dict.empty(),
+        queries: dict.empty(),
+        heads: dict.empty()
+            .insert("content-type", contentType)
+            .insert("authorization", authorization),
+        payload: payload,
+    );
+}
+
+test "GET /api/posts answers JSON built from the same cached read as the page" {
+    val res = await listPostsHandler(getRequest("/api/posts", ""));
+    assert res.status == 200;
+    assert res.body.startsWith("[");
+}
+
+test "a dynamic segment reaches the handler through the ordinary Request" {
+    val res = await showPostHandler(getRequest("/api/posts/hello-world", "hello-world"));
+    assert res.status == 200;
+    assert res.body.contains("hello-world");
+}
+
+test "a missing slug is 404, not an empty 200" {
+    val res = await showPostHandler(getRequest("/api/posts/nope", "nope"));
+    assert res.status == 404;
+}
+
+test "an unauthenticated POST is 401 before the body is read" {
+    val res = await createPostHandler(postRequest("application/json", "", "{}"));
+    assert res.status == 401;
+}
+
+test "multipart is refused with 415 rather than read lossily" {
+    val res = await createPostHandler(postRequest("multipart/form-data; boundary=x", "Bearer t", ""));
+    assert res.status == 415;
+}
+
+test "a body that is not JSON is 400, and nothing is written" {
+    val before = listPosts().length;
+    val res = await createPostHandler(postRequest("application/json", "Bearer t", "not json"));
+    assert res.status == 400;
+    assert listPosts().length == before;
+}

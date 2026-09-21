@@ -1,0 +1,180 @@
+// Front 01 — std · examples/asserts-unit-example.bp
+//
+// Example 1: `std/asserts` on its own. A test file that imports nothing but
+// `asserts` and exercises the whole minimum surface — boolean, equality, nil,
+// result, string, collection, numeric, exception, `fail` — on both the pass and
+// the fail path. Every assertion answers `@Result<void, string>` and is
+// consumed with `try`; a failed `try` ends the test as
+// `FAIL <name> (<message>) at <file>:<line>`.
+//
+// Runs on commonJS and erlang under `botopink test`. Pure botopink apart from
+// the two private host cells `asserts` keeps for `matches`/`throws`.
+
+import {asserts} from "std";
+
+// A fallible function for the `@Result` assertions. `throw` inside a
+// `#[@result]` body produces the Error; `return` produces the Ok.
+#[@result]
+fn parsePort(s: string) -> @Result<i32, string> {
+    if (s == "") {
+        throw "empty input";
+    };
+    return 8080;
+}
+
+// A function that panics, for `throws`. The trailing `0;` is the sentinel the
+// `fn() -> i32` shape asks for (see asserts-api.md § Exceptions).
+fn explode() -> i32 {
+    @panic("boom: the widget is on fire");
+    return 0;
+}
+
+// ── boolean ────────────────────────────────────────────────────────────────
+
+test "asserts: isTrue and isFalse pass on the matching bool" {
+    try asserts.isTrue(1 + 1 == 2);
+    try asserts.isFalse("abc".startsWith("z"));
+}
+
+test "asserts: isTrue fails on false with its literal message" {
+    val r = asserts.isTrue(1 == 2);
+    try asserts.isError(r);
+}
+
+// ── equality ───────────────────────────────────────────────────────────────
+
+test "asserts: equals compares primitives" {
+    try asserts.equals(42, 42);
+    try asserts.equals("hello", "hello");
+    try asserts.equals(true, true);
+}
+
+test "asserts: notEquals passes when the values differ" {
+    try asserts.notEquals(1, 2);
+    try asserts.notEquals("a", "b");
+}
+
+test "asserts: equals fails on different values" {
+    val r = asserts.equals("ana", "bob");
+    try asserts.isError(r);
+}
+
+test "asserts: approxEquals accepts a value inside the tolerance" {
+    try asserts.approxEquals(3.14159, 3.14, 0.01);
+    val far = asserts.approxEquals(1.0, 2.0, 0.5);
+    try asserts.isError(far);
+}
+
+test "asserts: deepEquals compares arrays by content on every target" {
+    val left = [1, 2, 3];
+    val right = [1, 2, 3];
+    try asserts.deepEquals(left, right);
+    val r = asserts.deepEquals([1, 2], [2, 1]);
+    try asserts.isError(r);
+}
+
+// ── nil ────────────────────────────────────────────────────────────────────
+
+test "asserts: isNil and isNotNil read an optional" {
+    val xs = [10, 20, 30];
+    val present = xs.at(1);
+    val missing = xs.at(9);
+    try asserts.isNotNil(present);
+    try asserts.isNil(missing);
+}
+
+// ── result ─────────────────────────────────────────────────────────────────
+
+test "asserts: isOk and isError read a @Result" {
+    try asserts.isOk(parsePort("8080"));
+    try asserts.isError(parsePort(""));
+}
+
+test "asserts: the Ok payload is read with unwrapOr and compared with equals" {
+    val port = parsePort("8080").unwrapOr(0);
+    try asserts.equals(port, 8080);
+}
+
+// ── string ─────────────────────────────────────────────────────────────────
+
+test "asserts: contains, startsWith and endsWith over a string" {
+    try asserts.contains("hello world", "o w");
+    try asserts.notContains("hello world", "xyz");
+    try asserts.startsWith("/api/users", "/api");
+    try asserts.endsWith("page.bp", ".bp");
+}
+
+test "asserts: matches takes the actual first and the pattern second" {
+    try asserts.matches("555-1234", "^[0-9]{3}-[0-9]{4}$");
+    val r = asserts.matches("abc", "^[0-9]+$");
+    try asserts.isError(r);
+}
+
+// ── collection ─────────────────────────────────────────────────────────────
+
+test "asserts: isEmpty, isNotEmpty and lengthIs over an array" {
+    val none: i32[] = [];
+    try asserts.isEmpty(none);
+    try asserts.isNotEmpty([1]);
+    try asserts.lengthIs([1, 2, 3], 3);
+    try asserts.lengthIs(none, 0);
+}
+
+test "asserts: includes and notIncludes over an array" {
+    try asserts.includes([1, 2, 3], 2);
+    try asserts.notIncludes(["a", "b"], "z");
+    val r = asserts.includes([1, 2, 3], 4);
+    try asserts.isError(r);
+}
+
+// ── numeric ────────────────────────────────────────────────────────────────
+
+test "asserts: between is inclusive on both ends" {
+    try asserts.between(5, 1, 10);
+    try asserts.between(1, 1, 10);
+    try asserts.between(10, 1, 10);
+    val r = asserts.between(0, 1, 10);
+    try asserts.isError(r);
+}
+
+test "asserts: greaterThan and lessThan are strict" {
+    try asserts.greaterThan(3, 2);
+    try asserts.lessThan(2, 3);
+    val r = asserts.greaterThan(2, 2);
+    try asserts.isError(r);
+}
+
+// ── exceptions ─────────────────────────────────────────────────────────────
+
+test "asserts: throws catches a panicking body" {
+    try asserts.throws({ ->
+        explode();
+        0;
+    });
+}
+
+test "asserts: throwsWith checks the message" {
+    try asserts.throwsWith({ ->
+        explode();
+        0;
+    }, "on fire");
+    val r = asserts.throwsWith({ ->
+        explode();
+        0;
+    }, "not in the message");
+    try asserts.isError(r);
+}
+
+test "asserts: throws fails when the body completes" {
+    val r = asserts.throws({ ->
+        0;
+    });
+    try asserts.isError(r);
+}
+
+// ── fail ───────────────────────────────────────────────────────────────────
+
+test "asserts: fail always answers Error and carries the caller's text" {
+    val r = asserts.fail("this branch is unreachable");
+    try asserts.isError(r);
+}

@@ -1,0 +1,112 @@
+// Front 53 — onze example app · examples/server-action-example.bp
+// App file: lib/actions.bp
+//
+// Demonstrates: the mutation, and the ordering that makes it visible. Write the
+// file, invalidate the tag BEFORE the re-render so the document the browser gets
+// back is built from the refilled cache, then redirect. Get the order wrong and
+// the reader sees their own post missing from the list they were just sent to.
+//
+// Both halves are marked:
+//   SERVER (BEAM): `createPost` and everything it calls. The body never reaches
+//   the browser; only the action id does.
+//   CLIENT: the POST. With scripting off it is a plain form submission; with
+//   front 67 loaded it is the same POST carrying `X-Onze-Action`.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/updating-data
+//           https://nextjs.org/docs/app/api-reference/directives/use-server
+//           https://nextjs.org/docs/app/api-reference/functions/revalidateTag
+//           NEXTJS-DOCS.md § 10. Mutação de Dados · § 12. Revalidação
+//
+// Target: erlang (server).
+
+import {serverAction, FormData, ActionResult} from "rakun";     // front 24
+import {rkRegisterAction} from "rakun";                         // front 24 registry cell
+import {redirect} from "rakun";                                 // front 63
+import {cache} from "rakun-cache";                              // front 12
+import {dict} from "std";
+// app-local
+import {writePost, listPosts} from "@/lib.db";
+
+fn slugify(title: string) -> string {
+    val lowered = title.toLower().trim();
+    return lowered.replaceAll(" ", "-");
+}
+
+// front 24 — `#[serverAction]` is the inline `'use server'`. The id the browser
+// sends back is HMAC'd over module + function + build id (contracts.md § 3); it
+// is never the function's own name, because an unmarked `pub fn` must not be
+// reachable by naming it.
+#[serverAction]
+#[@future]
+pub fn createPost(form: FormData) -> @Future<ActionResult> {
+    val title = form.field("title");
+    val body = form.field("body");
+    val published = form.field("published");
+
+    // Validation comes back as STATE, not as an HTTP error: the browser
+    // re-renders the form with the message beside the field, and an
+    // un-hydrated browser gets a full document that says the same thing.
+    val tooShort = title.length() < 3;
+    if (tooShort) {
+        return ActionResult.invalid("title", "Title must be at least 3 characters");
+    };
+    val noBody = body.trim() == "";
+    if (noBody) {
+        return ActionResult.invalid("body", "A post needs a body");
+    };
+
+    val slug = slugify(title);
+    val wrote = writePost(slug, title, published, body);
+    if (wrote.isError()) {
+        return ActionResult.invalid("body", "Could not save the post");
+    };
+
+    // front 12 — invalidate BEFORE the re-render. `revalidateTag` expires the
+    // `"posts"` entry that `lib/db.bp` reads through, and `revalidatePath`
+    // expires the rendered list route.
+    cache.revalidateTag("posts");
+    cache.revalidatePath("/blog");
+
+    // front 63 — the redirect is raised, not returned. From a form POST it
+    // becomes a 307; from a scripted submit it becomes the `redirect` field of
+    // the result envelope and front 67's client router performs it without a
+    // document load. One signal, two encodings, tested as a round trip.
+    val _gone = redirect("/blog/" + slug);
+    return ActionResult.done();
+}
+
+fn submission(title: string, body: string) -> FormData {
+    return FormData(fields: dict.empty()
+        .insert("title", title)
+        .insert("body", body)
+        .insert("published", "2026-01-04"));
+}
+
+test "a short title comes back as state, not as an HTTP error" {
+    val result = await createPost(submission("hi", "a body"));
+    val message = result.state.lookup("title").unwrapOr("");
+    assert message == "Title must be at least 3 characters";
+}
+
+test "an empty body is rejected against its own field" {
+    val result = await createPost(submission("A good title", "   "));
+    assert result.state.lookup("body").unwrapOr("") == "A post needs a body";
+}
+
+test "a rejected submission mutates nothing and revalidates nothing" {
+    val before = cache.revalidatedPaths().length;
+    val countBefore = listPosts().length;
+    val _result = await createPost(submission("hi", "a body"));
+    assert cache.revalidatedPaths().length == before;
+    assert listPosts().length == countBefore;
+}
+
+test "a valid submission writes, invalidates the tag, and invalidates the route" {
+    val result = await createPost(submission("Rendering on BEAM", "a body"));
+    assert result.state.isEmpty();
+    assert cache.revalidatedPaths().contains("/blog");
+}
+
+test "the slug is derived from the title, so the redirect target is knowable" {
+    assert slugify("Rendering on BEAM") == "rendering-on-beam";
+}

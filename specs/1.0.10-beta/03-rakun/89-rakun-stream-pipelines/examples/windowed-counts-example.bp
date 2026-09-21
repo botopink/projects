@@ -1,0 +1,69 @@
+// Front 89 — rakun stream pipelines: the Kafka Streams case.
+//
+// Server-side file. Keyed counts in a tumbling window. The window arithmetic and the
+// state-store key are pure functions, so the part that is usually only observable
+// against a running cluster is assertable here.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/messaging/kafka.html#messaging.kafka.streams
+
+import {Stage, windowStart, windowKey, slidingStarts, runStages} from "rakun-stream";
+
+fn skuOf(line: string) -> string {
+    return line.split(" ").at(0).unwrapOr("");
+}
+
+// LANGUAGE GAP: tuple labels are lost through generic instantiation, so an aggregate
+// stage cannot hand the next stage a labelled `#(key: string, count: i32)` and have it
+// read back by name. Nearest valid form below: one payload type — a string — with the
+// pair encoded at the edge and read positionally where it is decoded.
+// LANGUAGE GAP: declared parameter defaults are never applied, so `windowMs` cannot be
+// omitted for the common one-minute case; every construction spells it.
+val counting: Array<Stage> = [
+    Stage.Transform(name: "to-sku", apply: { item -> skuOf(item) }),
+    Stage.Aggregate(name: "per-minute", key: { item -> item }, windowMs: 60000),
+];
+
+test "the sku is the aggregation key and the rest of the line is dropped" {
+    val out = runStages([Stage.Transform(name: "to-sku", apply: { item -> skuOf(item) })], [
+        "sku-1 10",
+        "sku-1 12",
+        "sku-2 3",
+    ]);
+    assert out.join(",") == "sku-1,sku-1,sku-2";
+}
+
+test "an event on the boundary belongs to the next window" {
+    assert windowStart(59999, 60000) == 0;
+    assert windowStart(60000, 60000) == 60000;
+    assert windowStart(60001, 60000) == 60000;
+}
+
+test "two events across a boundary are counted under two different keys" {
+    val early = windowKey("sku-1", windowStart(59999, 60000));
+    val late = windowKey("sku-1", windowStart(60001, 60000));
+    assert early == "sku-1@0";
+    assert late == "sku-1@60000";
+    assert early != late;
+}
+
+test "state-store keys are per key and per window, so two skus never collide" {
+    val a = windowKey("sku-1", windowStart(70000, 60000));
+    val b = windowKey("sku-2", windowStart(70000, 60000));
+    assert a == "sku-1@60000";
+    assert b == "sku-2@60000";
+}
+
+test "a sliding window of width 60s stepping 20s writes each event into three windows" {
+    val starts = slidingStarts(70000, 60000, 20000);
+    assert starts.length == 3;
+    val rendered = starts.map({ start -> "${start}" });
+    assert rendered.join(",") == "20000,40000,60000";
+}
+
+test "an event before the first full window lands in one window only" {
+    val starts = slidingStarts(10000, 60000, 20000);
+    assert starts.length == 1;
+    val rendered = starts.map({ start -> "${start}" });
+    assert rendered.join(",") == "0";
+}

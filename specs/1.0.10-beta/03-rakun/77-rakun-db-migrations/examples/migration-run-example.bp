@@ -1,0 +1,124 @@
+// Front 77 — rakun migrations: what a deploy actually does to the schema.
+//
+// Nothing in an application's botopink source names a migration. The files are
+// data, discovered from a directory; this file is the code that reads back what
+// happened, which is what an operator and a CI pipeline both want.
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/howto/data-initialization.html#howto.data-initialization.migration-tool
+//   https://docs.spring.io/spring-boot/reference/actuator/endpoints.html
+//
+// The migration directory this file assumes:
+//
+//   db/migration/
+//     V1__create_cities.sql        create table cities (...)
+//     V1.1__index_cities_state.sql create index ...
+//     V2__seed_cities.sql          insert into cities ...
+//     V10__add_population.sql      alter table cities add column population integer
+//     R__city_summary_view.sql     create or replace view ...
+//
+// The configuration, in application.yaml (front 05 reads it):
+//
+//   rakun:
+//     datasource:
+//       url: postgres://db/app
+//     migration:
+//       enabled: true
+//       validate-on-migrate: true
+//       lock-timeout: 30000
+//
+// `migrate`, `tryMigrate`, `pendingMigrations`, `appliedMigrations`,
+// `MigrationReport` and `Migration` are delivered by this front. `SqlTemplate` is
+// front 08's; `autoConfigure` is front 72's.
+
+import {service, restController, route, getMapping} from "rakun";
+import {Request, Response, Rakun, App} from "rakun";
+import {autoConfigure} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkPropInt, rkRegisterRoute} from "rakun";
+import {SqlTemplate, param} from "rakun-data";
+import {migrate, tryMigrate, pendingMigrations, appliedMigrations} from "rakun-data";
+import {Migration, MigrationReport} from "rakun-data";
+
+// What a deployment pipeline calls before it flips traffic: is there schema work
+// pending, and what is it. `dry-run` makes the same question answerable from the
+// shell with an exit status.
+#[service]
+pub type DeployGate(
+    sql: SqlTemplate,
+) {
+    pub fn pendingSummary(self: Self) -> string {
+        val names = pendingMigrations().map({ m -> m.version + " " + m.description });
+        return names.join(", ");
+    }
+
+    pub fn schemaVersion(self: Self) -> string {
+        val applied = appliedMigrations();
+        var latest = "";
+        if (applied.at(applied.length - 1)) { m -> latest = m.version; };
+        return latest;
+    }
+}
+
+fn main() {
+    val _ = autoConfigure();
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+test "versions sort component-wise, so V10 comes after V9 and V1.1 after V1" {
+    val plan = pendingMigrations().map({ m -> m.version });
+    assert plan.join(",") == "1,1.1,2,10";
+}
+
+test "a repeatable migration runs after every pending versioned one" {
+    val plan = pendingMigrations().map({ m -> m.script });
+    val last = plan.slice(plan.length - 1, plan.length).join("");
+    assert last == "R__city_summary_view.sql";
+}
+
+test "migrating applies everything once and leaves nothing pending" {
+    val report = migrate();
+    assert report.applied == 5;
+    assert report.failed == 0;
+    assert pendingMigrations().length == 0;
+}
+
+test "migrating again applies nothing" {
+    val _first = migrate();
+    val second = migrate();
+    assert second.applied == 0;
+    assert second.skipped == 5;
+}
+
+test "the history row carries the checksum and the execution time" {
+    val _ = migrate();
+    val applied = appliedMigrations();
+    var checksum = "";
+    var millis = 0 - 1;
+    if (applied.first()) { m ->
+        checksum = m.checksum;
+        millis = m.executionMillis;
+    };
+    assert checksum.length() == 64;
+    assert millis >= 0;
+}
+
+test "installed ranks are contiguous and ascending" {
+    val _ = migrate();
+    val ranks = appliedMigrations().map({ m -> m.installedRank });
+    assert ranks.join(",") == "1,2,3,4,5";
+}
+
+test "the deploy gate reports the pending set and the current version" {
+    val gate = DeployGate(sql: SqlTemplate(dataSourceName: "default"));
+    assert gate.pendingSummary().contains("10 add_population") == true;
+    val _ = migrate();
+    assert gate.pendingSummary() == "";
+    assert gate.schemaVersion() == "10";
+}
+
+test "the try form returns a result instead of raising" {
+    val outcome = tryMigrate();
+    assert outcome.isOk() == true;
+}

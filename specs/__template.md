@@ -10,6 +10,9 @@ Copy the skeletons below; delete what does not apply. English, in every file.
 specs/<version>/
 ├── overview.md                     what the milestone is, the fronts, the order
 ├── fronts.md                       ownership + conflict matrix (who may run together)
+├── status.md                       the living checklist: done · in analysis · pending · open, with a rough %
+├── decisions-pending.md            questions only the maintainer can answer, in the Measured/Options/Recommendation/Blocks shape
+├── decisions-taken.md              the answers, numbered, never renumbered — what the fronts implement against
 ├── <NN>-<front-name>/
 │   ├── README.md                   the front: problem, steps, acceptance, ownership, gate
 │   └── <topic>.md                  the deep dives (mechanism, blast radius, options, evidence)
@@ -77,6 +80,92 @@ answer is "sequence them" or "merge them into one front".>
 
 <The diagram from overview.md, plus which fronts are the critical path because they run alone.>
 ```
+
+## `status.md`
+
+The one file that is **always up to date**. It is a checklist, not a narrative: every front and
+every carried item appears once, under exactly one of four headings, with a rough percentage at
+the top. Update it in the same commit as the work it reflects — a merge, a step ticked in a
+`todo.md`, a front opened, analysed or deferred. A reader who opens only this file must know where
+the milestone stands.
+
+```markdown
+# Status — <version>
+
+**Updated:** <YYYY-MM-DD> · **Progress:** ~<N> % (<done> of <total> fronts landed; fronts in
+analysis count for their ticked steps)
+
+## Done
+- [x] `<NN>-<front>` — <what landed, one clause>
+
+## In analysis
+- [ ] `<NN>-<front>` — <step k of n> · worktree `.tasks/<name>` · <what is being worked, one clause>
+
+## Pending
+- [ ] `<NN>-<front>` — ready to start · waiting on <front, decision or maintainer step>
+
+## Open
+- [ ] `<NN>-<front>` — <priority> · not started, no owner · blocked on <front or nothing>
+
+## Deferred out of this milestone
+- `<NN>-<front>` → <where it went and why, one clause>
+```
+
+- **Done** landed on `feat`. **In analysis** has an owner and a worktree and is being worked or
+  measured right now. **Pending** is specified and ready but waits on something named (a blocking
+  front, a maintainer decision, a merge). **Open** has no owner yet.
+- The percentage is a rough ratio, not a measurement — do not spend time making it exact; do
+  spend the time keeping the four lists right.
+- Order inside each list follows `overview.md` (most blocking first).
+- A line moves between lists as the work moves; the percentage moves with it.
+- `status.md` is the only spec file allowed to carry status; every other file keeps describing
+  current state and remaining work (see *Conventions*).
+
+## `decisions-pending.md` and `decisions-taken.md`
+
+Every milestone has both, from day one, even when the pending file says *None open*. A front that
+meets a question it cannot answer from the code **writes it in `decisions-pending.md` rather than
+guessing**; the maintainer answers; the answer moves to `decisions-taken.md` with its evidence and
+the pending file's header says so. Numbers are allocated when a question is written and are
+**never reused or renumbered**, across milestones as well as within one — the next milestone
+continues where the previous record stopped, so that "decision 67" means the same thing in every
+directory under `specs/`.
+
+```markdown
+# Decisions the maintainer owes — <version>
+
+<Header: how many are open, which fronts raised them, what the next free number is.>
+
+## <N>. <question, as a sentence>
+
+**Raised by:** `<NN>-<front>` step <k>, <date>
+**Measured.** <What was observed, with the command or program that produced it and the file or
+commit that can be re-read.>
+**Options.** <Each one stated so that choosing between them is possible without reading the code.>
+**Recommendation.** <One, argued — a question with no recommendation is a question the front did
+not finish thinking about. The default is the most restrictive behaviour, and no configuration
+that bypasses it.>
+**Blocks.** <The step, front or landed work that waits on the answer.>
+```
+
+```markdown
+# Decisions taken — <version>
+
+<Header: where the numbering continues from; the standing principles inherited by reference.>
+
+| # | Question | Answer |
+|---|---|---|
+| [<N>](#n-slug) | <question, short> | <answer, short> |
+
+## <N>. <title>
+
+**Decided <date> by the maintainer:** <the answer, quoted where the maintainer's words matter>.
+<What prompted it; what it means for the fronts; what it amends (link the earlier number).>
+```
+
+- A decision is amended, never edited: the new number says what it changes in the old one, and the
+  old one gets a one-line pointer.
+- `status.md` counts an open question as a blocker of the step it names.
 
 ---
 
@@ -167,6 +256,8 @@ One per deep dive. The README stays readable; the analysis lives here. Typical t
 
 - Specs describe **current state and remaining work**. No status narratives, no commit hashes,
   no superseded approaches — when a front lands, its README becomes the record of what shipped
-  and what it left, and the leftovers move to the next milestone.
+  and what it left, and the leftovers move to the next milestone. The one exception is
+  `status.md`, the milestone's living checklist (done · in analysis · pending · open · rough %), which is
+  updated in the same commit as the work it reflects.
 - Cite `file:line` at HEAD and say when a number was measured, because both drift.
 - A table beats a paragraph. A reproduction beats a description.

@@ -1,0 +1,162 @@
+// Front 19 — rakun-test · example 1 of 1
+//
+// The shape every rakun handler test takes. `Request` is a `behavior`, so it
+// cannot be constructed — `FakeRequest` implements it and is accepted wherever
+// the real one is. The dispatch goes through the registered route table, the
+// dependency is an onze mock injected by `#[bean]`, and the singletons are
+// cleared between tests so the second one does not inherit the first.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/testing/
+//           (11-topicos-avancados.md § Test Auto-configuration Annotations)
+//
+// Target: erlang (server).
+
+import {service, repository, configuration, bean, restController, route, getMapping, postMapping} from "rakun";
+import {Request, Response, HttpMethod} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+// Provided by front 19.
+import {FakeRequest, fakeGet, fakePost, MockMvc} from "rakun-test";
+import {expectStatus, expectBodyContains, expectJsonField} from "rakun-test";
+import {resetSingletons, resetContext, contextSnapshot} from "rakun-test";
+// The mocking layer is onze, not a second one in rakun-test. `#[mock]` splices
+// the double and its factory into THIS module, so onze's host cells must resolve
+// here — the same rule every @emit-based decorator follows.
+import {mock, when, verify, eq, times, onzeInvoke, onzeKey, onzeNewMock} from "onze";
+
+// ── the unit under test ─────────────────────────────────────────────────────
+
+pub behavior UserRepo {
+    fn find(self: Self, id: string) -> string;
+    fn all(self: Self) -> Array<string>;
+}
+
+#[service]
+pub type UserService(
+    repo: UserRepo,
+) {
+    pub fn describe(self: Self, id: string) -> string {
+        val found = self.repo.find(id);
+        val out = if (found == "") { "{\"error\":\"not found\"}" } else { found };
+        return out;
+    }
+
+    pub fn list(self: Self) -> string {
+        return "[\"" + self.repo.all().join("\",\"") + "\"]";
+    }
+}
+
+#[restController]
+#[route("/api/users")]
+pub type UserController(
+    users: UserService,
+) {
+    #[getMapping("/:id")]
+    pub fn show(self: Self, req: Request) -> Response {
+        val body = self.users.describe(req.param("id"));
+        val status = if (body == "{\"error\":\"not found\"}") { 404 } else { 200 };
+        return Response.withStatus(status, body);
+    }
+
+    #[getMapping("/")]
+    pub fn index(self: Self, req: Request) -> Response {
+        return Response.json(self.users.list());
+    }
+
+    #[postMapping("/")]
+    pub fn create(self: Self, req: Request) -> Response {
+        return Response.created(req.body());
+    }
+}
+
+// ── the double ──────────────────────────────────────────────────────────────
+//
+// #[mock] reflects the behavior and emits `type MockUserRepo(...) implement
+// UserRepo` plus `mockUserRepo()`. #[bean] makes it the injected implementation:
+// `#[configuration]` emits `__rkMake_UserRepo()` from the bean's RETURN TYPE, so
+// `UserService`'s `repo: UserRepo` field is filled with the mock. That pairing
+// is Spring's @MockBean, built from two decorators that already exist.
+
+#[mock]
+pub behavior MockableUserRepo extends UserRepo {}
+
+#[configuration]
+pub type TestWiring {
+    #[bean]
+    pub fn userRepo(self: Self) -> UserRepo {
+        return mockUserRepo();
+    }
+}
+
+// ── the tests ───────────────────────────────────────────────────────────────
+
+test "GET /api/users/:id returns the stored user" {
+    // Registrations are cheap to keep and instances are expensive to share, so
+    // the singletons go and the route table stays. Without this line the second
+    // test below sees this test's stubbed repo.
+    val _reset = resetSingletons();
+
+    val repo = mockUserRepo();
+    val _stub = when(repo.find(eq("7"))).thenReturn("{\"id\":\"7\",\"name\":\"ana\"}");
+
+    val mvc = MockMvc.standalone();
+    val res = mvc.perform(fakeGet("/api/users/7"));
+
+    assert expectStatus(res, 200);
+    assert expectJsonField(res, "name", "ana");
+    // The dispatch went through the registered route table, so this also asserts
+    // that `/api/users/:id` is registered and that `:id` binds — a direct method
+    // call would prove neither.
+}
+
+test "GET /api/users/:id returns 404 for an unknown id" {
+    val _reset = resetSingletons();
+
+    val repo = mockUserRepo();
+    val _stub = when(repo.find(eq("99"))).thenReturn("");
+
+    val mvc = MockMvc.standalone();
+    val res = mvc.perform(fakeGet("/api/users/99"));
+
+    assert expectStatus(res, 404);
+    assert expectBodyContains(res, "not found");
+    val _v = verify(repo, times(1)).find(eq("99"));
+}
+
+test "a request carries query, headers and cookies through the real dispatch path" {
+    val _reset = resetSingletons();
+
+    // Builders rather than a seven-argument constructor: declared parameter
+    // defaults are never applied, so every omitted field would otherwise have to
+    // be written out at every call site.
+    val req = fakeGet("/api/users/")
+        .withQuery("page", "2")
+        .withHeader("Accept", "application/json")
+        .withCookie("SESSION", "s.abc");
+
+    // Header lookup is case-insensitive, because HTTP header names are.
+    assert req.header("accept") == "application/json";
+    assert req.query("page") == "2";
+    // Everything absent is "", matching the real `Request` rather than
+    // introducing a second convention for tests to learn.
+    assert req.query("sort") == "";
+
+    val mvc = MockMvc.standalone();
+    val res = mvc.perform(req);
+    assert expectStatus(res, 200);
+}
+
+test "POST /api/users/ echoes its body" {
+    val _reset = resetSingletons();
+    val mvc = MockMvc.standalone();
+    val res = mvc.perform(fakePost("/api/users/", "{\"name\":\"bob\"}"));
+    assert expectStatus(res, 201);
+    assert expectBodyContains(res, "bob");
+}
+
+test "resetContext empties the route table" {
+    val _reset = resetContext();
+    val mvc = MockMvc.standalone();
+    val res = mvc.perform(fakeGet("/api/users/7"));
+    assert expectStatus(res, 404);
+    assert contextSnapshot() == "{\"scanned\":[],\"routes\":[],\"listeners\":[]}";
+}

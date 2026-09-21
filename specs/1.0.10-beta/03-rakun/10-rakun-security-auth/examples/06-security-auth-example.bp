@@ -1,0 +1,219 @@
+// carried from specs/1.0.6-beta/examples/06-security-auth-example.bp
+//// F06 — Security (Authentication & Authorization)
+////
+//// Este exemplo demonstra autenticação JWT, Basic Auth, autorização com @secured
+//// e @preAuthorize, e proteção CSRF.
+////
+//// Documentação Spring Boot:
+//// - Spring Security: https://docs.spring.io/spring-boot/reference/web/spring-security.html
+//// - OAuth2: https://docs.spring.io/spring-boot/reference/web/spring-security.html#web.security.oauth2
+//// - Method Security: https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html
+
+import {Rakun, App, Request, Response} from "rakun";
+import {service, repository, restController, route, getMapping, postMapping, configuration, bean, value, secured, preAuthorize} from "rakun";
+import {SecurityFilterChain, JwtAuthenticationFilter, BasicAuthenticationFilter, UserDetailsService, UserDetails} from "rakun-security";
+
+// ── Configuration: Security ─────────────────────────────────────────────────
+//// application.yaml:
+//// rakun:
+////   security:
+////     jwt:
+////       secret: "my-secret-key-at-least-256-bits-long"
+////       expiration: 86400  # 24 hours in seconds
+////     users:
+////       - username: "admin"
+////         password: "$2a$10$..."  # bcrypt hashed
+////         roles: ["ADMIN", "USER"]
+////       - username: "user"
+////         password: "$2a$10$..."
+////         roles: ["USER"]
+
+#[configuration]
+pub type SecurityConfig(
+    #[value("rakun.security.jwt.secret")] jwtSecret: string,
+) {
+    #[bean]
+    pub fn securityFilterChain(self: Self) -> SecurityFilterChain {
+        return SecurityFilterChain()
+            .addFilter(JwtAuthenticationFilter(secret: self.jwtSecret))
+            .authorizeRequests({ requests ->
+                requests
+                    .antMatchers("/api/public/**").permitAll()
+                    .antMatchers("/api/admin/**").hasRole("ADMIN")
+                    .antMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
+                    .anyRequest().authenticated();
+            });
+    }
+
+    #[bean]
+    pub fn userDetailsService(self: Self) -> UserDetailsService {
+        return InMemoryUserDetailsService(users: [
+            UserDetails(username: "admin", password: "$2a$10$...", authorities: ["ROLE_ADMIN", "ROLE_USER"]),
+            UserDetails(username: "user", password: "$2a$10$...", authorities: ["ROLE_USER"]),
+        ]);
+    }
+}
+
+// ── JWT Authentication ──────────────────────────────────────────────────────
+//// POST /api/auth/login
+//// {
+////     "username": "admin",
+////     "password": "password123"
+//// }
+////
+//// Response:
+//// {
+////     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+////     "expiresIn": 86400
+//// }
+
+#[restController]
+#[route("/api/auth")]
+pub type AuthController(userDetailsService: UserDetailsService, #[value("rakun.security.jwt.secret")] secret: string) {
+    #[postMapping("/login")]
+    pub fn login(self: Self, req: Request) -> Response {
+        val username = req.query("username");
+        val password = req.query("password");
+
+        val user = self.userDetailsService.loadUserByUsername(username);
+        match user {
+            @Some(u) => {
+                if (passwordMatches(password, u.password)) {
+                    val token = generateJwt(u.username, u.authorities, self.secret);
+                    return Response.json("{\"token\": \"" + token + "\", \"expiresIn\": 86400}");
+                }
+            }
+            @None => {}
+        }
+        return Response.status(401).body("Invalid credentials");
+    }
+}
+
+// ── Public endpoints (no auth required) ─────────────────────────────────────
+#[restController]
+#[route("/api/public")]
+pub type PublicController {
+    #[getMapping("/health")]
+    pub fn health(self: Self, req: Request) -> Response {
+        return Response.ok("OK");
+    }
+
+    #[getMapping("/info")]
+    pub fn info(self: Self, req: Request) -> Response {
+        return Response.json("{\"version\": \"1.0.0\"}");
+    }
+}
+
+// ── User endpoints (ROLE_USER or ROLE_ADMIN) ────────────────────────────────
+#[restController]
+#[route("/api/user")]
+pub type UserController {
+    #[getMapping("/profile")]
+    pub fn getProfile(self: Self, req: Request) -> Response {
+        // Authentication already validated by filter
+        // Principal available in request context
+        val username = req.header("X-User-Principal");
+        return Response.json("{\"username\": \"" + username + "\"}");
+    }
+
+    #[secured("ROLE_USER")]
+    #[getMapping("/data")]
+    pub fn getUserData(self: Self, req: Request) -> Response {
+        return Response.json("{\"data\": \"user data\"}");
+    }
+}
+
+// ── Admin endpoints (ROLE_ADMIN only) ───────────────────────────────────────
+#[restController]
+#[route("/api/admin")]
+pub type AdminController {
+    #[secured("ROLE_ADMIN")]
+    #[getMapping("/users")]
+    pub fn listUsers(self: Self, req: Request) -> Response {
+        return Response.json("[{\"username\": \"admin\"}, {\"username\": \"user\"}]");
+    }
+
+    #[preAuthorize("hasRole('ADMIN') and #userId == authentication.principal")]
+    #[getMapping("/users/:userId")]
+    pub fn getUser(self: Self, req: Request) -> Response {
+        val userId = req.param("userId");
+        return Response.json("{\"userId\": \"" + userId + "\"}");
+    }
+
+    #[secured("ROLE_ADMIN")]
+    #[postMapping("/users")]
+    pub fn createUser(self: Self, req: Request) -> Response {
+        val username = req.query("username");
+        return Response.created("{\"username\": \"" + username + "\"}");
+    }
+}
+
+// ── Method-level security ───────────────────────────────────────────────────
+#[service]
+pub type AdminService {
+    #[secured("ROLE_ADMIN")]
+    pub fn adminOnly(self: Self) -> string {
+        return "Admin data";
+    }
+
+    #[preAuthorize("hasRole('ADMIN') or #userId == authentication.principal")]
+    pub fn userSpecific(self: Self, userId: string) -> string {
+        return "Data for user " + userId;
+    }
+
+    #[secured("ROLE_USER")]
+    pub fn userAccessible(self: Self) -> string {
+        return "User data";
+    }
+}
+
+// ── CSRF Protection ─────────────────────────────────────────────────────────
+//// CSRF token automatically:
+//// - Generated for state-changing requests (POST, PUT, DELETE)
+//// - Sent in X-CSRF-TOKEN response header
+//// - Validated on incoming requests
+//// - Invalid token → 403 Forbidden
+
+fn main() {
+    // Security filter chain:
+    // 1. JwtAuthenticationFilter - validates JWT token
+    // 2. AuthorizationFilter - checks roles/permissions
+    // 3. CsrfFilter - validates CSRF token
+    // 4. Controller handler
+    //
+    // Authentication:
+    // - JWT: Bearer token in Authorization header
+    // - Basic Auth: Base64 encoded username:password
+    //
+    // Authorization:
+    // - @secured("ROLE") - simple role check
+    // - @preAuthorize("expression") - SpEL-like expression
+    //
+    // CSRF:
+    // - Token in X-CSRF-TOKEN header
+    // - Validated on POST/PUT/DELETE
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+//// Testes:
+////
+//// test "JWT authentication works" {
+////     // Valid token → 200
+////     // Invalid token → 401
+////     // Expired token → 401
+//// }
+////
+//// test "role-based authorization works" {
+////     // ROLE_ADMIN can access /api/admin/**
+////     // ROLE_USER cannot access /api/admin/**
+//// }
+////
+//// test "method-level security works" {
+////     // @secured checks role
+////     // @preAuthorize evaluates expression
+//// }
+////
+//// test "CSRF protection works" {
+////     // POST without token → 403
+////     // POST with valid token → 200
+//// }

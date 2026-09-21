@@ -1,0 +1,155 @@
+// Front 94 — jhonstart element surface · examples/form-example.bp
+//
+// A real form, built only from the constructors this front delivers: `form`,
+// `label`, `input`, `select`, `option` and `button`. The binding is front 24's,
+// pinned in `contracts.md § 3` — `method="post"`, the current pathname as
+// `action`, `data-onze-a` carrying the action id, and a hidden `__onze_action`
+// field so that a browser with scripting disabled submits the same thing.
+//
+// This file writes no constructor of its own. That is the point of the front:
+// before it, front 24, front 67 and front 53 each built `form`/`input`/`button`
+// through the public `Element` record in their own files.
+//
+// TARGET: both. These constructors compile to BEAM for front 23's server render
+// and to commonJS for front 68's client rebuild, and every assertion below is a
+// string literal, so the two targets are held to the same answer.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/updating-data
+//   https://html.spec.whatwg.org/multipage/forms.html#the-form-element
+//   NEXTJS-DOCS.md § 10. Mutação de Dados
+//
+// LANGUAGE GAP: declared parameter defaults are never applied, so every
+// constructor call below spells `attrs:` — the inner `text(…)` calls included.
+
+import {Element, text, renderToString} from "jhonstart";
+// provided by front 94 (`jhonstart-element-surface`, src/elements.bp).
+import {form, label, input, select, option, button, isVoidTag} from "jhonstart";
+
+// Front 24 derives the action id on the server and the server echoes it into the
+// markup; nothing in the browser computes one. The literal is front 67's sample,
+// so the two files describe the same form.
+val sampleActionId = "a_9f31c0d7a4b2e5081c6fa3d2";
+
+// ── the binding, exactly as `contracts.md § 3` pins it ───────────────────────
+//
+// The helpers below are this file's own composition, not another front's
+// API. Front 24 exports `actionForm`/`hiddenField`/`textField`/`submitButton`
+// and front 67 exports `formAttrs`/`hiddenActionField`; what this example shows
+// is what those are made of once the element surface exists.
+
+fn actionFormAttrs(actionId: string, pathname: string) -> Array<#(string, string)> {
+    return [
+        #("method", "post"),
+        #("action", pathname),
+        #("data-onze-a", actionId),
+    ];
+}
+
+// A void element: `input` takes the same two parameters as every other
+// constructor and stores no children whatever it is handed.
+fn actionIdField(actionId: string) -> Element {
+    return input([], attrs: [
+        #("type", "hidden"),
+        #("name", "__onze_action"),
+        #("value", actionId),
+    ]);
+}
+
+fn postTextField(name: string, caption: string) -> Element {
+    return input([], attrs: [
+        #("type", "text"),
+        #("id", name),
+        #("name", name),
+        #("placeholder", caption),
+    ]);
+}
+
+fn fieldLabel(name: string, caption: string) -> Element {
+    return label([text(caption, attrs: [])], attrs: [#("for", name)]);
+}
+
+fn visibilityField() -> Element {
+    return select([
+        option([text("Public", attrs: [])], attrs: [#("value", "public")]),
+        option([text("Draft", attrs: [])], attrs: [#("value", "draft")]),
+    ], attrs: [#("id", "visibility"), #("name", "visibility")]);
+}
+
+// ── the form ────────────────────────────────────────────────────────────────
+
+pub fn newPostForm(actionId: string, pathname: string) -> Element {
+    return form([
+        actionIdField(actionId),
+        fieldLabel("title", "Title"),
+        postTextField("title", "Title"),
+        fieldLabel("body", "Body"),
+        postTextField("body", "Body"),
+        fieldLabel("visibility", "Visibility"),
+        visibilityField(),
+        button([text("Publish", attrs: [])], attrs: [#("type", "submit")]),
+    ], attrs: actionFormAttrs(actionId, pathname));
+}
+
+// ── what it renders ─────────────────────────────────────────────────────────
+
+test "the hidden field carries the action id and nothing else" {
+    val field = actionIdField(sampleActionId);
+    assert field.tag == "input";
+    assert renderToString(field)
+        == "<input type=\"hidden\" name=\"__onze_action\" value=\"a_9f31c0d7a4b2e5081c6fa3d2\"></input>";
+}
+
+test "the form names the action by id, on the form and in the hidden field" {
+    val markup = renderToString(newPostForm(sampleActionId, "/blog/new"));
+    assert markup.contains("<form method=\"post\" action=\"/blog/new\" data-onze-a=\"a_9f31c0d7a4b2e5081c6fa3d2\">");
+    assert markup.contains("name=\"__onze_action\"");
+    assert markup.contains("value=\"a_9f31c0d7a4b2e5081c6fa3d2\"");
+    assert markup.contains("</form>");
+}
+
+test "a label points at the control it names" {
+    val markup = renderToString(fieldLabel("title", "Title"));
+    assert markup == "<label for=\"title\">Title</label>";
+}
+
+test "select and option nest, and the option carries its value" {
+    val markup = renderToString(visibilityField());
+    assert markup
+        == "<select id=\"visibility\" name=\"visibility\"><option value=\"public\">Public</option><option value=\"draft\">Draft</option></select>";
+}
+
+test "the submit button is an ordinary element with a type attribute" {
+    val markup = renderToString(button([text("Publish", attrs: [])], attrs: [#("type", "submit")]));
+    assert markup == "<button type=\"submit\">Publish</button>";
+}
+
+test "a void constructor drops children instead of rendering them" {
+    val hostile = input([text("dropped", attrs: [])], attrs: [#("name", "title")]);
+    assert renderToString(hostile).contains("dropped") == false;
+}
+
+// The surface names the void set; the renderer that acts on it is front 23's
+// `renderNode`. jhonstart's own `renderToString` is frozen and writes a closing
+// tag for every tag, which is why the literals above spell `</input>` — see the
+// front's `## Blocked`. When `element.bp` is unfrozen, the `</input>` assertions
+// are the ones that change.
+test "the surface knows which of its tags are void" {
+    assert isVoidTag("input");
+    assert isVoidTag("form") == false;
+    assert renderToString(actionIdField(sampleActionId)).contains("</input>");
+}
+
+// ── attribute values are stored verbatim ────────────────────────────────────
+//
+// Escaping is `escape.attribute` from front 01, applied once by front 23's
+// walker. A constructor that escaped as well would double-escape every
+// attribute the moment both layers are present.
+
+test "a constructor stores the attribute value it was given, byte for byte" {
+    val field = postTextField("q", "a \" b & c");
+    val markup = renderToString(field);
+    assert markup.contains("placeholder=\"a \" b & c\"");
+    assert markup.contains("&quot;") == false;
+    assert markup.contains("&amp;") == false;
+}

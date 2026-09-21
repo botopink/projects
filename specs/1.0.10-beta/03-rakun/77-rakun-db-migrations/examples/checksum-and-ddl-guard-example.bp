@@ -1,0 +1,101 @@
+// Front 77 — rakun migrations: the three refusals.
+//
+// This front says no in three places, and each one looks harsh until you have
+// been on the wrong side of it: an edited migration that already ran, a schema
+// generator pointed at production, and two mechanisms both claiming to own the
+// schema. None of the three has a property that turns it off, and this file is
+// where that is asserted rather than promised.
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.jpa-and-spring-data.creating-and-dropping
+//   https://docs.spring.io/spring-boot/reference/features/profiles.html
+//
+// The configuration under test, in application.yaml (front 05 reads it):
+//
+//   rakun:
+//     profiles:
+//       active: prod
+//     migration:
+//       ddl-auto: none
+//       production-profiles: prod,production
+//       validate-on-migrate: true
+//
+// `migrate`, `validateChecksums`, `ddlAutoDecision`, `bootRefusal` and
+// `configurationKeys` are delivered by this front. Front 78 supplies the entity
+// metadata `ddl-auto: validate` compares against.
+
+import {migrate, validateChecksums, appliedMigrations} from "rakun-data";
+import {ddlAutoDecision, bootRefusal, configurationKeys} from "rakun-data";
+import {rkProp, rkSetProp} from "rakun";
+
+test "an edited applied migration fails the next boot, naming both checksums" {
+    val _ = migrate();
+    val _edit = rkSetProp("rakun.test.migration.rewrite", "V2__seed_cities.sql");
+    val outcome = validateChecksums();
+    assert outcome.isError() == true;
+
+    val refusal = bootRefusal();
+    assert refusal.contains("V2__seed_cities.sql") == true;
+    assert refusal.contains("recorded checksum") == true;
+    assert refusal.contains("current checksum") == true;
+}
+
+test "nothing downgrades the checksum failure to a warning" {
+    val keys = configurationKeys();
+    val downgrades = keys.filter({ k -> k.contains("ignore") });
+    assert downgrades.length == 0;
+    val skips = keys.filter({ k -> k.contains("allow-edited") });
+    assert skips.length == 0;
+}
+
+test "ddl-auto=validate is permitted under a production profile" {
+    val _p = rkSetProp("rakun.profiles.active", "prod");
+    val _d = rkSetProp("rakun.migration.ddl-auto", "validate");
+    assert ddlAutoDecision() == "permitted";
+}
+
+test "ddl-auto=create is refused under a production profile" {
+    val _p = rkSetProp("rakun.profiles.active", "prod");
+    val _d = rkSetProp("rakun.migration.ddl-auto", "create");
+    assert ddlAutoDecision() == "refused";
+
+    val refusal = bootRefusal();
+    assert refusal.contains("prod") == true;
+    assert refusal.contains("rakun.migration.ddl-auto") == true;
+    assert refusal.contains("create") == true;
+}
+
+test "the refusal is a boot failure, not a demotion to validate" {
+    val _p = rkSetProp("rakun.profiles.active", "production");
+    val _d = rkSetProp("rakun.migration.ddl-auto", "create-drop");
+    assert ddlAutoDecision() == "refused";
+    assert ddlAutoDecision() != "validate";
+}
+
+test "the production profile list is configurable and the refusal is not" {
+    val _list = rkSetProp("rakun.migration.production-profiles", "staging");
+    val _p = rkSetProp("rakun.profiles.active", "staging");
+    val _d = rkSetProp("rakun.migration.ddl-auto", "create");
+    assert ddlAutoDecision() == "refused";
+
+    val keys = configurationKeys();
+    val overrides = keys.filter({ k -> k.contains("force") });
+    assert overrides.length == 0;
+}
+
+test "ddl-auto and migration files cannot both own the schema" {
+    val _p = rkSetProp("rakun.profiles.active", "dev");
+    val _d = rkSetProp("rakun.migration.ddl-auto", "create");
+    assert ddlAutoDecision() == "refused";
+    assert bootRefusal().contains("db/migration") == true;
+}
+
+test "with ddl-auto none the migrations own the schema and boot proceeds" {
+    val _p = rkSetProp("rakun.profiles.active", "prod");
+    val _d = rkSetProp("rakun.migration.ddl-auto", "none");
+    assert ddlAutoDecision() == "permitted";
+    val report = migrate();
+    assert report.failed == 0;
+}

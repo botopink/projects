@@ -1,0 +1,268 @@
+// Front 85 — rakun Mail · transactional-mail-example.bp
+//
+// Demonstrates: a password-reset mail. The HTML body is a component rendered
+// through the same path a page is, the plain-text alternative goes with it, and
+// the send is tied to the transaction that created the token — so a rolled-back
+// reset sends nothing, and a node that dies after the commit still sends.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/io/email.html
+//           07-io.md § Email
+//           09-actuator.md § HealthIndicators Auto-configurados (mail)
+//
+// SERVER SIDE. Sending mail from a browser is not a thing; every line compiles
+// to BEAM.
+
+import {configuration, bean, value, service, repository} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+
+import {SqlTemplate} from "rakun-data";
+import {transactional} from "rakun-data";
+// Front 83: the outbox. A mail that must not outlive a rolled-back transaction
+// is enrolled there, not in a second durable queue here.
+import {OutboxMessage, publishAfterCommit} from "rakun-tx";
+// Front 11: the health value this front's indicator answers with.
+import {Health, healthIndicator, healthUp, healthDown} from "rakun-actuator";
+// jhonstart: the render path an HTML body is built with.
+import {Element, div, p, h1, text, renderToString} from "jhonstart";
+// std, through front 01.
+import {escape, clock} from "std";
+
+import {MailServer, TlsMode, Mail, Attachment, mailer, send, probe} from "rakun-mail";
+// The fixture SMTP server this front ships for its own tests: an ephemeral
+// listener that records the exact bytes it received and can be told to misbehave.
+import {resetFixtures, fixtureServer, captured, deadLetters, drainQueue} from "rakun-mail";
+import {fixtureMail, fixtureMailWithBcc, fixtureMailWithBody, attemptCount} from "rakun-mail";
+import {fixtureServerThatNeverAnswers, fixtureServerAnswering, fixtureServerWithoutStartTls} from "rakun-mail";
+
+// ---- the server ---------------------------------------------------------------
+
+#[configuration]
+pub type MailConfig(
+    #[value("rakun.mail.host")] host: string,
+    #[value("rakun.mail.port")] port: i32,
+    #[value("rakun.mail.username")] username: string,
+    #[value("rakun.mail.password")] password: string,
+) {
+    #[bean]
+    pub fn smtp(self: Self) -> MailServer {
+        return MailServer(
+            host: self.host,
+            port: self.port,
+            username: self.username,
+            password: self.password,
+            tlsMode: TlsMode.StartTls,
+            bundle: "smtp",
+            connectTimeoutMs: 5000,
+            readTimeoutMs: 3000,
+            writeTimeoutMs: 5000,
+        );
+    }
+
+    // Front 11 collects this into /actuator/health. It opens a connection,
+    // completes EHLO and STARTTLS, and quits WITHOUT sending: a health check
+    // that sends mail fills somebody's inbox every thirty seconds.
+    #[bean]
+    #[healthIndicator("mail")]
+    pub fn mailHealth(self: Self) -> Health {
+        val reachable = probe(self.smtp());
+        return if (reachable) healthUp("mail") else healthDown("mail", "smtp unreachable");
+    }
+}
+
+// ---- the body, as a component --------------------------------------------------
+//
+// The same `renderToString` front 23 uses for a page, so the escaping guarantees
+// are the same ones a page has — which matters more here, because a mail body
+// interpolating a display name is the classic injection vector.
+//
+// jhonstart has eight element constructors today and `a` is not one of them
+// (element.bp:10-53), so the reset link is rendered as its URL in text. That is
+// tracked as unowned surface in specs/1.0.9-beta/language-gaps.md; it is not a
+// workaround this file invents.
+
+pub fn resetBody(displayName: string, resetUrl: string) -> Element {
+    val safeName = escape.html(displayName);
+    return div([
+        h1([text("Password reset", attrs: [])], attrs: []),
+        p([text("Hello, " + safeName + ".", attrs: [])], attrs: []),
+        p([text("Open this link to choose a new password:", attrs: [])], attrs: []),
+        p([text(resetUrl, attrs: [])], attrs: []),
+        p([text("If you did not ask for this, nothing has changed.", attrs: [])], attrs: []),
+    ], attrs: []);
+}
+
+pub fn resetText(displayName: string, resetUrl: string) -> string {
+    return "Hello, " + displayName + ".\n\n"
+        + "Open this link to choose a new password:\n"
+        + resetUrl + "\n\n"
+        + "If you did not ask for this, nothing has changed.\n";
+}
+
+// ---- the send, tied to the transaction that created the token ------------------
+
+#[repository]
+pub type TokenRepo(
+    sql: SqlTemplate,
+) {
+    pub fn issue(self: Self, email: string, token: string) -> i32 {
+        return self.sql.update(
+            "insert into reset_tokens (email, token, expires_at) values ($1, $2, now() + interval '1 hour')",
+            [email, token],
+        );
+    }
+}
+
+#[service]
+pub type PasswordReset(
+    tokens: TokenRepo,
+) {
+    // One transaction covers the token row and the intent to send. If anything
+    // after `publishAfterCommit` raises, neither exists — and "your password was
+    // reset" for a reset that did not happen never goes out.
+    #[transactional]
+    pub fn request(self: Self, email: string, displayName: string, token: string) -> string {
+        self.tokens.issue(email, token);
+        val url = "https://shop.example/reset?t=" + token;
+        val headers = [#("content-type", "application/x-www-form-urlencoded")];
+        val payload = "to=" + email + "&name=" + displayName + "&url=" + url;
+        val intent = OutboxMessage(
+            aggregate: "reset:" + email,
+            topic: "mail.password-reset",
+            key: email,
+            payload: payload,
+            headers: headers,
+        );
+        publishAfterCommit(intent);
+        return token;
+    }
+}
+
+// The consumer of that topic composes and enqueues. `send` returns before a
+// socket is opened, so an unreachable SMTP server slows mail and nothing else.
+
+#[service]
+pub type ResetMailer(
+    server: MailServer,
+) {
+    pub fn deliver(self: Self, to: string, displayName: string, url: string) -> string {
+        val recipients = [to];
+        val none: string[] = [];
+        val noAttachments: Attachment[] = [];
+        val extraHeaders: Array<#(string, string)> = [];
+        val m = Mail(
+            from: "Shop <no-reply@shop.example>",
+            to: recipients,
+            cc: none,
+            bcc: none,
+            replyTo: "",
+            subject: "Reset your password",
+            text: resetText(displayName, url),
+            html: renderToString(resetBody(displayName, url)),
+            attachments: noAttachments,
+            headers: extraHeaders,
+        );
+        return send(mailer(self.server), m);
+    }
+}
+
+// ---- what the composer and the sender must be true of --------------------------
+
+test "text plus html produces multipart/alternative, plain part first" {
+    resetFixtures();
+    val server = fixtureServer();
+    val sender = ResetMailer(server: server);
+    sender.deliver("ana@example.org", "Ana", "https://shop.example/reset?t=abc");
+    drainQueue();
+    val wire = captured();
+    assert wire.contains("Content-Type: multipart/alternative");
+    val plainAt = wire.indexOf("text/plain");
+    val htmlAt = wire.indexOf("text/html");
+    assert plainAt < htmlAt;
+}
+
+test "a display name with markup is escaped in html and literal in plain" {
+    resetFixtures();
+    val server = fixtureServer();
+    val sender = ResetMailer(server: server);
+    sender.deliver("bob@example.org", "<script>x</script>", "https://shop.example/reset?t=abc");
+    drainQueue();
+    val wire = captured();
+    assert wire.contains("&lt;script&gt;");
+    assert wire.contains("<script>") == false;
+}
+
+test "a non-ascii subject is rfc 2047 encoded and an ascii one is not" {
+    resetFixtures();
+    val server = fixtureServer();
+    val ascii = fixtureMail(server, "Reset your password");
+    drainQueue();
+    assert captured().contains("Subject: Reset your password");
+    resetFixtures();
+    val accented = fixtureMail(fixtureServer(), "Redefinição de senha");
+    drainQueue();
+    assert captured().contains("Subject: =?UTF-8?B?");
+}
+
+test "bcc reaches RCPT TO and no header" {
+    resetFixtures();
+    val server = fixtureServer();
+    fixtureMailWithBcc(server, "ana@example.org", "audit@example.org");
+    drainQueue();
+    val wire = captured();
+    assert wire.contains("RCPT TO:<audit@example.org>");
+    assert wire.contains("Bcc:") == false;
+}
+
+test "no line exceeds 998 bytes and a leading dot is stuffed" {
+    resetFixtures();
+    val server = fixtureServer();
+    val long = "supercalifragilistic".repeat(120);
+    fixtureMailWithBody(server, ".leading dot\n" + long);
+    drainQueue();
+    val lines = captured().split("\r\n");
+    val tooLong = lines.filter({ l -> l.length() > 998 }).length;
+    assert tooLong == 0;
+    assert captured().contains("\r\n..leading dot");
+}
+
+test "send returns before a socket is opened" {
+    resetFixtures();
+    val server = fixtureServerThatNeverAnswers();
+    val sender = ResetMailer(server: server);
+    val started = clock.monotonicMs();
+    sender.deliver("ana@example.org", "Ana", "https://shop.example/reset?t=abc");
+    val elapsed = clock.monotonicMs() - started;
+    // The connect timeout is 5000 ms; enqueueing must cost nothing like it.
+    assert elapsed < 100;
+}
+
+test "a permanent failure dead-letters without consuming retries" {
+    resetFixtures();
+    val server = fixtureServerAnswering(550);
+    val sender = ResetMailer(server: server);
+    sender.deliver("nobody@example.org", "Nobody", "https://shop.example/reset?t=abc");
+    drainQueue();
+    assert deadLetters().length == 1;
+    assert deadLetters().at(0).unwrapOr("").contains("550");
+    assert attemptCount() == 1;
+}
+
+test "starttls cannot be downgraded" {
+    resetFixtures();
+    // The fixture omits STARTTLS from its EHLO response.
+    val server = fixtureServerWithoutStartTls();
+    val sender = ResetMailer(server: server);
+    sender.deliver("ana@example.org", "Ana", "https://shop.example/reset?t=abc");
+    drainQueue();
+    // Refused, not sent in the clear. There is no property that permits this.
+    assert captured().contains("DATA") == false;
+    assert deadLetters().at(0).unwrapOr("").contains("STARTTLS");
+}
+
+test "the health check connects and sends nothing" {
+    resetFixtures();
+    val server = fixtureServer();
+    assert probe(server) == true;
+    assert captured().contains("MAIL FROM") == false;
+    assert captured().contains("QUIT");
+}

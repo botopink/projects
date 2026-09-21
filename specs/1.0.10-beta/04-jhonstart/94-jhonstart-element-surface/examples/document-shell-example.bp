@@ -1,0 +1,128 @@
+// Front 94 — jhonstart element surface · examples/document-shell-example.bp
+//
+// The document shell: `htmlTag`, `head`, `body`, plus `title`, `meta` and
+// `link`. This is the shape front 31's `global-error.bp` needs — the root error
+// fallback is the one component that owns its whole document, because by the
+// time it runs the layout that would have produced `<html>` is the thing that
+// failed. Front 31 records `global-error.bp` as *Blocked* on this front; the
+// second half of this file is the form that unblocks it.
+//
+// `<html>` is spelled `htmlTag` here: `html` is already a `pub fn` in the same
+// package — the `html """…"""` template DSL (`src/html.bp:94`) — and one package
+// cannot export the name twice.
+//
+// TARGET: both. Front 23 renders this on BEAM; front 68 rebuilds the body
+// subtree in the browser. The shell itself is server-only in practice, but it is
+// ordinary `Element` construction and compiles to either target unchanged.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/file-conventions/layout
+//   https://nextjs.org/docs/app/api-reference/file-conventions/error#global-errortsx
+//   https://html.spec.whatwg.org/multipage/semantics.html#the-head-element
+//   NEXTJS-DOCS.md § 4. App Router — Fundamentos · Root Layout (obrigatório)
+//   NEXTJS-DOCS.md § 14. Tratamento de Erros
+//
+// LANGUAGE GAP: declared parameter defaults are never applied, so every
+// constructor call below spells `attrs:` — the inner `text(…)` calls included.
+
+import {Element, p, text, renderToString} from "jhonstart";
+// provided by front 94 (`jhonstart-element-surface`, src/elements.bp).
+import {htmlTag, head, body, title, meta, link, main, h2} from "jhonstart";
+
+// ── the shell ───────────────────────────────────────────────────────────────
+//
+// `meta` and `link` are void: they take the same two parameters as every other
+// constructor and store no children. `title` is not void — its text content is
+// what a browser puts in the tab.
+
+fn documentHead(pageTitle: string, styleHref: string) -> Element {
+    return head([
+        meta([], attrs: [#("charset", "utf-8")]),
+        meta([], attrs: [
+            #("name", "viewport"),
+            #("content", "width=device-width, initial-scale=1"),
+        ]),
+        title([text(pageTitle, attrs: [])], attrs: []),
+        link([], attrs: [#("rel", "stylesheet"), #("href", styleHref)]),
+    ], attrs: []);
+}
+
+pub fn documentShell(
+    lang: string,
+    pageTitle: string,
+    styleHref: string,
+    content: Element,
+) -> Element {
+    return htmlTag([
+        documentHead(pageTitle, styleHref),
+        body([content], attrs: []),
+    ], attrs: [#("lang", lang)]);
+}
+
+// The doctype is not an element and cannot be one: an `Element` always renders
+// as a tag pair, so `<!doctype html>` is a string prefix. Front 23's pipeline
+// prepends it at the same place (`23-rakun-ssr-pipeline/README.md:165`); a
+// caller that renders a shell on its own does it here.
+pub fn document(
+    lang: string,
+    pageTitle: string,
+    styleHref: string,
+    content: Element,
+) -> string {
+    return "<!doctype html>" + renderToString(documentShell(lang, pageTitle, styleHref, content));
+}
+
+// ── what front 31's `global-error.bp` becomes ───────────────────────────────
+//
+// SERVER (BEAM). The reader sees an opaque digest; the message that produced it
+// is front 17's to log and never reaches the markup. `ErrorInfo` and the digest
+// are front 31's; only the document shape is this front's.
+
+pub fn globalErrorDocument(digest: string) -> Element {
+    val message = "Something went wrong";
+    return documentShell("en", message, "/app.css", main([
+        h2([text(message, attrs: [])], attrs: []),
+        p([text("Reference: " + digest, attrs: [])], attrs: []),
+    ], attrs: [#("data-jh-boundary", "root")]));
+}
+
+// ── what it renders ─────────────────────────────────────────────────────────
+
+test "the shell nests head before body inside a lang-tagged html element" {
+    val markup = renderToString(documentShell("pt-BR", "Blog", "/app.css", p([text("hi", attrs: [])], attrs: [])));
+    assert markup.contains("<html lang=\"pt-BR\"><head>");
+    assert markup.contains("</head><body><p>hi</p></body></html>");
+}
+
+test "title carries text, and the two void head elements carry only attributes" {
+    val markup = renderToString(documentHead("Blog", "/app.css"));
+    assert markup.contains("<title>Blog</title>");
+    assert markup.contains("<meta charset=\"utf-8\">");
+    assert markup.contains("<link rel=\"stylesheet\" href=\"/app.css\">");
+}
+
+test "the doctype is a string prefix, not an element" {
+    val out = document("en", "Blog", "/app.css", p([text("hi", attrs: [])], attrs: []));
+    assert out.startsWith("<!doctype html><html lang=\"en\">");
+}
+
+test "the root error document owns its whole document and shows only the digest" {
+    val markup = renderToString(globalErrorDocument("d_41c9"));
+    assert markup.contains("<html lang=\"en\">");
+    assert markup.contains("<body><main data-jh-boundary=\"root\">");
+    assert markup.contains("<h2>Something went wrong</h2>");
+    assert markup.contains("Reference: d_41c9");
+}
+
+// jhonstart's `renderToString` is frozen and writes a closing tag for every tag,
+// so the two void head elements come back as `<meta charset="utf-8"></meta>` and
+// `<link rel="stylesheet" href="/app.css"></link>`. The assertions above use
+// `contains` on the opening tag, which is true under both renderers; the
+// assertion below is the one that pins today's wrong answer, and it is the one
+// that changes when `element.bp` is unfrozen. Front 23's `renderNode` consults
+// `isVoidTag` and emits neither closing tag. See the front's `## Blocked`.
+test "the frozen renderer still closes a void element — front 23's does not" {
+    val markup = renderToString(documentHead("Blog", "/app.css"));
+    assert markup.contains("</meta>");
+    assert markup.contains("</link>");
+}

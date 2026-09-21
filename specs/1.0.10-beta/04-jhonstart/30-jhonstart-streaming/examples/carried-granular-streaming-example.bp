@@ -1,0 +1,22 @@
+// Carried from 1.0.7-beta examples-bp.md § F06 — Streaming granular
+// app/dashboard/page.bp
+import {Element, div, h1, Suspense, text} from "jhonstart";
+
+#[@future]
+pub fn DashboardPage() -> @Future<Element> {
+    return div([
+        h1([text("Dashboard", attrs: [])], attrs: []),
+        div([
+            Suspense(SuspenseProps(
+                fallback: div([text("Carregando stats...", attrs: [])], attrs: []),
+                children: [await StatsPanel()],
+            )),
+        ], attrs: []),
+        div([
+            Suspense(SuspenseProps(
+                fallback: div([text("Carregando dados...", attrs: [])], attrs: []),
+                children: [await DataTable()],
+            )),
+        ], attrs: []),
+    ], attrs: []);
+}

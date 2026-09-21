@@ -1,0 +1,150 @@
+// Front 32 — jhonstart-metadata · examples/post-metadata-example.bp
+//
+// A blog post's metadata, and the two layers above it.
+//
+//   app/layout.bp          static metadata(): site name, title template, card type
+//   app/blog/layout.bp     static metadata(): section description, default OG image
+//   app/blog/[slug]/page.bp  generateMetadata(): the post's own title and image
+//
+// All three merge, and the rule is the part worth reading: a non-empty child
+// string replaces, a non-empty child LIST replaces wholesale, nested records
+// merge field by field, and the title template is applied once, by the parent
+// that declared it.
+//
+// This runs on the server, during the render, and produces a string front 23
+// splices into `<head>`. Every value goes through front 01's escaping — a post
+// title is attacker-influenced text landing in an attribute.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/metadata-and-og-images
+//   https://nextjs.org/docs/app/api-reference/functions/generate-metadata
+
+import { Metadata, OpenGraph, TwitterCard, Icons } from "jhonstart";
+import { emptyMetadata, emptyOpenGraph, mergeMetadata, renderHead } from "jhonstart";
+import { pairValue } from "jhonstart";          // provided by front 26
+
+// ── app/layout.bp ───────────────────────────────────────────────────────────
+
+pub fn rootMetadata() -> Metadata {
+    return Metadata(
+        title: "botopink",
+        titleTemplate: "%s | botopink",
+        description: "A language and the ecosystem around it.",
+        openGraph: OpenGraph(
+            title: "",
+            description: "",
+            url: "https://botopink.dev",
+            ogType: "website",
+            siteName: "botopink",
+            images: ["/og/default.png"],
+        ),
+        twitter: TwitterCard(card: "summary_large_image", title: "", description: "", images: []),
+        icons: Icons(icon: "/favicon.ico", apple: "/apple-icon.png"),
+    );
+}
+
+// ── app/blog/layout.bp ──────────────────────────────────────────────────────
+
+pub fn blogMetadata() -> Metadata {
+    return Metadata(
+        title: "",
+        titleTemplate: "",
+        description: "Notes on compilers, the BEAM, and everything in between.",
+        openGraph: emptyOpenGraph(),
+        twitter: TwitterCard(card: "", title: "", description: "", images: []),
+        icons: Icons(icon: "", apple: ""),
+    );
+}
+
+// ── app/blog/[slug]/page.bp ─────────────────────────────────────────────────
+
+pub type Post(slug: string, title: string, excerpt: string)
+
+#[@External.Erlang("blog_repo", "post_by_slug")]
+declare fn postRow(slug: string) -> string;
+
+#[@future]
+fn loadPost(slug: string) -> @Future<Post> {
+    val parts = postRow(slug).split("|");
+    return Post(
+        slug: slug,
+        title: parts.at(0).unwrapOr(""),
+        excerpt: parts.at(1).unwrapOr(""),
+    );
+}
+
+// The dynamic export. One await, at statement level.
+#[@future]
+pub fn generateMetadata(params: Array<#(string, string)>) -> @Future<Metadata> {
+    val post = await loadPost(pairValue(params, "slug"));
+    return postMetadata(post);
+}
+
+// The pure half, so the merge is testable without a database.
+pub fn postMetadata(post: Post) -> Metadata {
+    return Metadata(
+        title: post.title,
+        titleTemplate: "",
+        description: post.excerpt,
+        openGraph: OpenGraph(
+            title: post.title,
+            description: post.excerpt,
+            url: "https://botopink.dev/blog/" + post.slug,
+            ogType: "article",
+            siteName: "",
+            images: ["/og/" + post.slug + ".png"],
+        ),
+        twitter: TwitterCard(card: "", title: "", description: "", images: []),
+        icons: Icons(icon: "", apple: ""),
+    );
+}
+
+// What front 23 does for this route.
+pub fn resolvedFor(post: Post) -> Metadata {
+    val section = mergeMetadata(rootMetadata(), blogMetadata());
+    return mergeMetadata(section, postMetadata(post));
+}
+
+test "the page title is templated once, by the layout that declared the template" {
+    val m = resolvedFor(Post(slug: "eager-futures", title: "Eager futures", excerpt: "On BEAM."));
+    assert m.title == "Eager futures | botopink";
+}
+
+test "a segment with no title of its own inherits the parent's, untemplated" {
+    val section = mergeMetadata(rootMetadata(), blogMetadata());
+    assert section.title == "botopink";
+    assert section.description == "Notes on compilers, the BEAM, and everything in between.";
+}
+
+test "the page's image replaces the root's list wholesale" {
+    val m = resolvedFor(Post(slug: "eager-futures", title: "Eager futures", excerpt: "On BEAM."));
+    assert m.openGraph.images.length == 1;
+    assert m.openGraph.images.join(",") == "/og/eager-futures.png";
+}
+
+test "a nested record merges field by field" {
+    val m = resolvedFor(Post(slug: "eager-futures", title: "Eager futures", excerpt: "On BEAM."));
+    assert m.openGraph.ogType == "article";
+    assert m.openGraph.siteName == "botopink";
+    assert m.twitter.card == "summary_large_image";
+}
+
+test "the head renders in a fixed order and drops empty fields" {
+    val m = resolvedFor(Post(slug: "p", title: "T", excerpt: "E"));
+    val head = renderHead(m);
+    assert head.indexOf("<title>") < head.indexOf("og:title");
+    assert head.indexOf("og:title") < head.indexOf("twitter:card");
+    assert head == renderHead(m);
+}
+
+test "empty metadata renders nothing at all" {
+    assert renderHead(emptyMetadata()) == "";
+}
+
+test "a title that looks like markup is escaped before it reaches the head" {
+    val hostile = Post(slug: "x", title: "<script>steal()</script>", excerpt: "\"quoted\"");
+    val head = renderHead(resolvedFor(hostile));
+    assert head.contains("<script>") == false;
+    assert head.contains("&lt;script&gt;");
+    assert head.contains("&quot;quoted&quot;");
+}

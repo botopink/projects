@@ -1,0 +1,133 @@
+// Front 53 — onze example app · examples/lib-db-example.bp
+// App file: lib/db.bp
+//
+// Demonstrates: the store. Posts are text files under `content/posts/<slug>.md`
+// — line 1 is the title, line 2 the publication date, the rest is the body.
+// There is no database on purpose: front 08 (rakun-data-sql) is not on this
+// milestone's critical path, and a file is a mutation target with exactly the
+// same cache-invalidation problem a row has.
+//
+// Front 12's cache is synchronous, and deliberately: on the BEAM a render is a
+// process, so a loader does not have to return a future to be concurrent. That
+// is why nothing in this file is `#[@future]` — the futures in this app are in
+// the pages, where front 23's pipeline puts them.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/fetching-data
+//           https://nextjs.org/docs/app/api-reference/directives/use-cache
+//           NEXTJS-DOCS.md § 9. Busca de Dados (Fetching) · § 11. Cache
+//
+// Target: erlang (server). This module must never reach the client graph —
+// front 68 fails the build if a `#[client]` module imports it, which is one of
+// front 53's assertions.
+
+import {fs, path} from "std";
+// front 12 — the cache store, its scopes, its lifetimes and its tags
+import {cachePolicy, cacheThrough, cacheLife, CacheScope} from "rakun-cache";
+
+pub type Post(
+    slug: string,
+    title: string,
+    published: string,
+    excerpt: string,
+    body: string,
+)
+
+fn contentDir() -> string {
+    return path.join(["content", "posts"]);
+}
+
+fn readRaw(p: string) -> string {
+    return fs.readText(p).unwrapOr("");
+}
+
+fn slugOf(fileName: string) -> string {
+    val n = fileName.length();
+    return fileName.slice(0, n - 3);
+}
+
+// `.at(i)` and `.drop(n)` rather than `xs[0]` / `xs[1]`: the index expression is
+// silently dropped on the beam backend (see `language-gaps.md`), and this is a
+// server module.
+fn parsePost(slug: string, raw: string) -> Post {
+    val lines = raw.split("\n");
+    val title = lines.at(0).unwrapOr("(untitled)");
+    val published = lines.at(1).unwrapOr("");
+    val body = lines.drop(2).join("\n");
+    val excerpt = body.slice(0, 140);
+    return Post(
+        slug: slug,
+        title: title,
+        published: published,
+        excerpt: excerpt,
+        body: body,
+    );
+}
+
+fn readAll() -> Post[] {
+    val names = fs.list(contentDir()).unwrapOr([]);
+    val mds = names.filter({ n -> n.endsWith(".md") });
+    return mds.map({ n -> parsePost(slugOf(n), readRaw(path.join([contentDir(), n]))) });
+}
+
+// front 12 — one shared policy for every read of the post set. `CacheScope.Shared`
+// because posts are public; `cacheLife("hours")` because a blog index may be an
+// hour stale; the `"posts"` tag is what `lib/actions.bp` expires after a write.
+pub fn listPosts() -> Post[] {
+    val policy = cachePolicy(CacheScope.Shared, "posts", cacheLife("hours"), ["posts"]);
+    return cacheThrough(policy, ["listPosts"], { -> readAll() });
+}
+
+pub fn findPost(slug: string) -> Post[] {
+    val policy = cachePolicy(CacheScope.Shared, "posts", cacheLife("hours"), ["posts"]);
+    return cacheThrough(policy, ["findPost", slug], { ->
+        readAll().filter({ p -> p.slug == slug });
+    });
+}
+
+// A value a caller can name after front 63's `notFound()` has already diverged.
+// It exists only because the language has no bottom type — see the LANGUAGE GAP
+// in blog-slug-page-example.bp.
+pub fn missingPost(slug: string) -> Post {
+    return Post(slug: slug, title: "", published: "", excerpt: "", body: "");
+}
+
+#[@result]
+pub fn writePost(
+    slug: string,
+    title: string,
+    published: string,
+    body: string,
+) -> @Result<i32, string> {
+    val p = path.join([contentDir(), slug + ".md"]);
+    val raw = title + "\n" + published + "\n" + body;
+    val wrote = fs.writeText(p, raw);
+    if (wrote.isError()) {
+        throw "could not write " + p;
+    };
+    return 1;
+}
+
+test "a post file parses into title, date and body" {
+    val raw = "Hello World\n2026-01-04\nFirst line.\nSecond line.";
+    val p = parsePost("hello-world", raw);
+    assert p.slug == "hello-world";
+    assert p.title == "Hello World";
+    assert p.published == "2026-01-04";
+    assert p.body == "First line.\nSecond line.";
+    assert p.excerpt.startsWith("First line.");
+}
+
+test "a truncated file still parses, with named placeholders" {
+    val p = parsePost("empty", "");
+    assert p.title == "(untitled)";
+    assert p.published == "";
+    assert p.body == "";
+}
+
+test "a slug is the file name without its extension" {
+    assert slugOf("hello-world.md") == "hello-world";
+}
+
+test "a missing slug yields an empty list, not an error channel" {
+    assert findPost("definitely-not-a-post").isEmpty();
+}

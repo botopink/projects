@@ -1,0 +1,127 @@
+// carried from specs/1.0.6-beta/examples/02-config-profiles-example.bp
+//// F02 — Externalized Configuration & Profiles
+////
+//// Este exemplo demonstra configuração externalizada com YAML, environment variables,
+//// e profiles (dev, prod).
+////
+//// Documentação Spring Boot:
+//// - Externalized Configuration: https://docs.spring.io/spring-boot/reference/features/external-config.html
+//// - Profiles: https://docs.spring.io/spring-boot/reference/features/profiles.html
+//// - @ConfigurationProperties: https://docs.spring.io/spring-boot/reference/features/external-config.html#features.external-config.typesafe-configuration-properties
+//// - @Value: https://docs.spring.io/spring-boot/reference/features/external-config.html#features.external-config.value-annotation
+
+import {Rakun, App, Request, Response} from "rakun";
+import {service, restController, route, getMapping, configuration, bean, value} from "rakun";
+import {configurationProperties} from "rakun";  // NEW in F02
+
+// ── application.yaml (arquivo de configuração) ──────────────────────────────
+//// server:
+////   port: 8080
+////   host: localhost
+////
+//// app:
+////   name: "My Service"
+////   version: "1.0.0"
+////   description: "Example service with externalized config"
+////
+//// database:
+////   url: "postgresql://localhost:5432/mydb"
+////   username: "admin"
+////   password: "secret"
+////   pool-size: 10
+////
+//// rakun:
+////   profiles:
+////     active: "dev"  // ou "prod" via RAKUN_PROFILES_ACTIVE env var
+
+// ── @ConfigurationProperties: tipagem forte para configuração ───────────────
+#[configurationProperties("database")]
+pub type DatabaseConfig(
+    url: string,
+    username: string,
+    password: string,
+    poolSize: i32,  // kebab-case: pool-size → poolSize
+)
+
+#[configurationProperties("app")]
+pub type AppConfig(
+    name: string,
+    version: string,
+    description: string,
+)
+
+// ── @Value: injeção de propriedades individuais ─────────────────────────────
+#[service]
+pub type InfoService(
+    #[value("app.name")] appName: string,
+    #[value("app.version")] appVersion: string,
+    #[value("server.port")] serverPort: i32,
+) {
+    pub fn getInfo(self: Self) -> string {
+        return self.appName + " v" + self.appVersion + " on port " + self.serverPort.toString();
+    }
+}
+
+// ── Profile-specific configuration ──────────────────────────────────────────
+//// application-dev.yaml:
+//// database:
+////   url: "postgresql://localhost:5432/mydb_dev"
+////   pool-size: 5
+////
+//// application-prod.yaml:
+//// database:
+////   url: "postgresql://prod-server:5432/mydb_prod"
+////   pool-size: 20
+
+#[service]
+pub type DatabaseService(config: DatabaseConfig) {
+    pub fn connect(self: Self) -> string {
+        return "Connecting to " + self.config.url +
+               " with pool size " + self.config.poolSize.toString();
+    }
+}
+
+// ── Environment variable override ───────────────────────────────────────────
+//// RAKUN_SERVER_PORT=9090          → override server.port
+//// RAKUN_DATABASE_URL=...          → override database.url
+//// RAKUN_PROFILES_ACTIVE=prod      → activate prod profile
+
+#[restController]
+#[route("/api")]
+pub type ConfigController(info: InfoService, db: DatabaseService) {
+    #[getMapping("/info")]
+    pub fn info(self: Self, req: Request) -> Response {
+        return Response.ok(self.info.getInfo());
+    }
+
+    #[getMapping("/db")]
+    pub fn db(self: Self, req: Request) -> Response {
+        return Response.ok(self.db.connect());
+    }
+}
+
+fn main() {
+    // Config loading order (highest to lowest priority):
+    // 1. Command-line args: --server.port=9090
+    // 2. Environment variables: RAKUN_SERVER_PORT=9090
+    // 3. Profile-specific config: application-{profile}.yaml
+    // 4. Application config: application.yaml
+    // 5. Default values
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+//// Testes:
+////
+//// test "config loads from YAML" {
+////     // application.yaml é carregado automaticamente
+////     val config = DatabaseConfig(...);
+////     assert config.url == "postgresql://localhost:5432/mydb";
+//// }
+////
+//// test "env vars override file config" {
+////     // RAKUN_SERVER_PORT=9090 override server.port
+//// }
+////
+//// test "profiles work" {
+////     // rakun.profiles.active=dev carrega application-dev.yaml
+//// }

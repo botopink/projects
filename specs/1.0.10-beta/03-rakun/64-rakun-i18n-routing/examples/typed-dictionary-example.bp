@@ -1,0 +1,82 @@
+// Front 64 — Rakun i18n Routing
+//
+// What this demonstrates: the typed dictionary. § 22 loads a JSON file and reads
+// `dict.home.title`, so a missing key renders as an empty string in production.
+// botopink constructs a record by named arguments and rejects a missing field at
+// compile time, so a dictionary is a record type plus one constructor per locale.
+// Adding a field below breaks every locale that has not supplied it — which is
+// the whole reason for this shape.
+//
+// The library contributes one function here, `localeOf()`. Everything else is
+// the app's own code, and that is deliberate: there is nothing to configure.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/guides/internationalization
+
+import {localeOf} from "rakun-i18n";
+import {page, PageContext} from "rakun";  // provided by front 22
+import {Element, div, h1, p, text} from "jhonstart";
+
+// SERVER — the copy block. Every locale must supply every field.
+pub type HomeCopy(
+    title: string,
+    description: string,
+    readMore: string,
+)
+
+fn ptBR() -> HomeCopy {
+    return HomeCopy(
+        title: "Bem-vindo",
+        description: "Esta e a pagina inicial",
+        readMore: "Leia mais",
+    );
+}
+
+fn en() -> HomeCopy {
+    return HomeCopy(
+        title: "Welcome",
+        description: "This is the home page",
+        readMore: "Read more",
+    );
+}
+
+fn es() -> HomeCopy {
+    return HomeCopy(
+        title: "Bienvenido",
+        description: "Esta es la pagina de inicio",
+        readMore: "Leer mas",
+    );
+}
+
+// SERVER — the selector. The locale set is closed, so the `_` arm is the
+// default locale and not a hole.
+pub fn homeCopy(locale: string) -> HomeCopy {
+    return case locale {
+        "en" -> en();
+        "es" -> es();
+        _ -> ptBR();
+    };
+}
+
+#[page("[locale]")]
+#[@future]
+pub fn homePage(route: PageContext) -> @Future<Element> {
+    val copy = homeCopy(localeOf());
+    return div([
+        h1([text(copy.title, attrs: [])], attrs: []),
+        p([text(copy.description, attrs: [])], attrs: []),
+        p([text(copy.readMore, attrs: [])], attrs: []),
+    ], attrs: []);
+}
+
+test "every declared locale supplies every field" {
+    val pt = homeCopy("pt-BR");
+    val english = homeCopy("en");
+    val spanish = homeCopy("es");
+    assert pt.title == "Bem-vindo";
+    assert english.title == "Welcome";
+    assert spanish.title == "Bienvenido";
+    assert pt.readMore.length() > 0;
+    assert english.readMore.length() > 0;
+    assert spanish.readMore.length() > 0;
+}

@@ -1,0 +1,113 @@
+// Front 53 — onze example app · examples/post-card-example.bp
+// App file: components/post_card.bp
+//
+// Demonstrates: emilia styling through front 48's attribute slot. `styled(t)` is
+// `#("class", emilia(t))` and drops straight into any builder's `attrs:`;
+// `styledWith(base, t)` puts a static class first and the emilia class second,
+// separated by one ASCII space — the order is fixed because a hydrator comparing
+// attribute strings sees `"card e_1f3a"` and `"e_1f3a card"` as different values
+// (contracts.md § 4).
+//
+// Token lists live in named functions rather than inline. Both halves must build
+// the SAME list in the SAME order, because token order is class identity; one
+// shared function guarantees that and two inline copies do not.
+//
+// Upstream: https://nextjs.org/docs/app/getting-started/css
+//           NEXTJS-DOCS.md § 15. Estilização (CSS)
+//
+// Target: erlang (server) — the card renders on the server. The class string it
+// produces is also computed by the client bundle for the same token list, which
+// is the round trip front 48's shared fixture pins.
+
+import {Element, div, h1, p, span, text, renderToString} from "jhonstart";
+import {article, h2} from "jhonstart";                  // provided by front 94
+import {Link, linkProps} from "jhonstart";              // front 27
+import {styled, styledWith, withAttrs, Token} from "emilia";   // front 48
+// app-local
+import {Post} from "@/lib.db";
+
+// front 33 (palette) · front 35 (spacing) · front 40 (borders)
+fn cardTokens() -> Token[] {
+    return [
+        .Bg.White,
+        .Pad.All.4,
+        .Border.W.1,
+        .Border.Color.Gray.100,
+        .Border.Rounded.Md,
+    ];
+}
+
+fn cardTitleTokens() -> Token[] {
+    return [.Text.Size.Lg, .Text.Bold, .Color.Gray.900];
+}
+
+fn cardMetaTokens() -> Token[] {
+    return [.Text.Size.Sm, .Color.Gray.500];
+}
+
+fn cardBodyTokens() -> Token[] {
+    return [.Pad.Y.2, .Color.Gray.700];
+}
+
+pub fn PostCard(post: Post) -> Element {
+    return article([
+        h2([Link(linkProps("/blog/" + post.slug), [text(post.title, attrs: [])])],
+           attrs: [styled(cardTitleTokens())]),
+        span([text(post.published, attrs: [])], attrs: [styled(cardMetaTokens())]),
+        p([text(post.excerpt, attrs: [])], attrs: [styled(cardBodyTokens())]),
+    ], attrs: [styled(cardTokens())]);
+}
+
+// The same card inside a page that still carries the old stylesheet. The static
+// class is passed through unchanged: no sorting, no de-duplication, no trimming.
+pub fn PostCardLegacy(post: Post) -> Element {
+    return article([
+        h2([text(post.title, attrs: [])], attrs: [styled(cardTitleTokens())]),
+    ], attrs: [styledWith("legacy-card", cardTokens())]);
+}
+
+// emilia's tuple mixed with other attributes. `withAttrs` appends base first,
+// extra second, and `renderToString` writes attributes in array order — so the
+// attribute order in the tag is the array order, which is a fifth way the two
+// halves can disagree and the reason there is one append function.
+pub fn PostCardWithId(post: Post) -> Element {
+    val base: Array<#(string, string)> = [#("id", "post-" + post.slug)];
+    val attrs = withAttrs(base, [styled(cardTokens())]);
+    return article([text(post.title, attrs: [])], attrs: attrs);
+}
+
+fn samplePost() -> Post {
+    return Post(
+        slug: "hello-world",
+        title: "Hello, world",
+        published: "2026-01-04",
+        excerpt: "The first post.",
+        body: "The first post, at length.",
+    );
+}
+
+test "the card carries one emilia class per styled element" {
+    val markup = renderToString(PostCard(samplePost()));
+    assert markup.contains("<article class=\"e_");
+    assert markup.contains("<h2 class=\"e_");
+    assert markup.contains("href=\"/blog/hello-world\"");
+}
+
+test "a static class comes first and the emilia class second, one space apart" {
+    val markup = renderToString(PostCardLegacy(samplePost()));
+    assert markup.contains("class=\"legacy-card e_");
+}
+
+test "attribute order in the tag is attribute order in the array" {
+    val markup = renderToString(PostCardWithId(samplePost()));
+    assert markup.startsWith("<article id=\"post-hello-world\" class=\"e_");
+}
+
+test "token order is class identity, so two orders are two classes" {
+    val a: Token[] = [.Bg.White, .Text.Bold];
+    val b: Token[] = [.Text.Bold, .Bg.White];
+    val ca = styled(a);
+    val cb = styled(b);
+    val sameClass = ca._1 == cb._1;
+    assert sameClass == false;
+}

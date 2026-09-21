@@ -22,9 +22,8 @@ and [`repository/botopink-lang/docs.md`](repository/botopink-lang/docs.md) (lang
 │   └── vscode-extension/   VS Code extension
 ├── specs/
 │   ├── __template.md       template for new specs
-│   ├── 1.0.0-beta/         closed
-│   ├── 1.0.1-beta/         delivered; what it left open moved to 1.0.2-beta
-│   └── 1.0.4-beta/         current milestone — the open work of 1.0.2 and 1.0.3 (see overview.md)
+│   ├── 1.0.0-beta … 1.0.5-beta/   closed (1.0.5: closure.md; open work → 1.0.10-beta/00-compiler-carry-over)
+│   └── 1.0.10-beta/        current milestone (overview.md, status.md, fronts.md, decisions-*.md, 00-compiler-carry-over, 01-std, 02-packaging, 03-rakun, 04-jhonstart, 05-emilia, 06-onze; absorbed/ = the 1.0.6–1.0.9 originals)
 ├── architecture.md         comptime evaluation pipeline (current state)
 ├── CHANGELOG.md            release log
 └── AGENTS.md               guidance for AI agents working here
@@ -45,4 +44,4 @@ per-backend runtimes.
 
 ## Specs
 
-Current milestone: [`specs/1.0.4-beta/overview.md`](specs/1.0.4-beta/overview.md).
+Current milestone: [`specs/1.0.10-beta/overview.md`](specs/1.0.10-beta/overview.md) — the compiler carry-over of 1.0.5-beta plus the ecosystem fronts of 1.0.6–1.0.9-beta, cut once.

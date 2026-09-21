@@ -1,0 +1,96 @@
+// Front 71 — onze-release-packaging · examples/boot-and-shutdown-example.bp
+//
+// The two halves of a release's life that a container orchestrator actually
+// depends on: what the instance reads when it starts, and what it does when it
+// is told to stop.
+//
+// SERVER SIDE, on BEAM. One image serves every environment, which is the whole
+// reason configuration is read at boot rather than baked at build time — the
+// only values inside the artifact are the `ONZE_PUBLIC_` table front 68 inlined
+// into the client bundle, because a browser has no environment to read.
+//
+// The shutdown ORDER is the point. Flip readiness first and the load balancer
+// stops sending work before the socket closes; close the socket first and every
+// request in flight at that instant is lost. A drain that runs out of time exits
+// non-zero, because an orchestrator that records a clean shutdown for a lossy
+// one will keep doing it.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/deploying
+//   NEXTJS-DOCS.md § 24. Deploy — Self-hosting
+
+import { ReleaseSpec, releaseSpec, generateBuildId } from "onze-release";
+import { DrainReport, readinessChecks, shutdownOrder, bootScriptText } from "onze-release";
+import { env } from "std";
+
+fn spec() -> ReleaseSpec {
+    return releaseSpec("blog", "0.1.0", generateBuildId(["4f21ab"], "41ab08"));
+}
+
+// What the instance resolves at boot. Every one of these is absent from the
+// artifact; `PORT` has a default because an orchestrator may not set it, and a
+// database URL does not, because guessing one is worse than refusing to start.
+fn portSetting() -> string {
+    return env.read("PORT").unwrapOr("3000");
+}
+
+fn requiredSettings() -> Array<string> {
+    return ["DATABASE_URL", "RELEASE_COOKIE"];
+}
+
+fn missingSettings() -> Array<string> {
+    return requiredSettings().filter({ name -> env.read(name).unwrapOr("") == "" });
+}
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+test "readiness is stricter than liveness and names what it waits for" {
+    val checks = readinessChecks(spec());
+    assert checks.contains("route-table");
+    assert checks.contains("client-manifest");
+    assert checks.length >= 2;
+}
+
+test "the shutdown order stops traffic before it stops the socket" {
+    val steps = shutdownOrder();
+    assert steps.at(0).unwrapOr("") == "readiness-false";
+    assert steps.at(1).unwrapOr("") == "stop-accepting";
+    assert steps.at(2).unwrapOr("") == "drain-renders";
+    assert steps.at(3).unwrapOr("") == "drain-after";
+    assert steps.at(4).unwrapOr("") == "stop-supervision";
+}
+
+test "a clean drain reports nothing outstanding" {
+    val report = DrainReport(renders: 0, afterTasks: 0, timedOut: false);
+    assert report.timedOut == false;
+    assert report.renders == 0;
+    assert report.afterTasks == 0;
+}
+
+test "a drain that runs out of time says what was still running" {
+    val report = DrainReport(renders: 3, afterTasks: 7, timedOut: true);
+    assert report.timedOut;
+    assert report.renders + report.afterTasks == 10;
+}
+
+test "PORT defaults; a database URL does not" {
+    assert portSetting() != "";
+    assert requiredSettings().contains("PORT") == false;
+}
+
+test "a missing required setting is named, not defaulted" {
+    val missing = missingSettings();
+    loop (missing) { name ->
+        assert name != "";
+    };
+    assert requiredSettings().contains("DATABASE_URL");
+}
+
+test "the boot script verifies the build id before it starts anything" {
+    val script = bootScriptText(spec());
+    val verifyAt = script.indexOf("verify-build-id");
+    val startAt = script.indexOf("start.boot");
+    assert verifyAt < startAt;
+    assert script.contains("exec ");
+    assert script.contains("PORT");
+}

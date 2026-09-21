@@ -1,0 +1,146 @@
+// Front 24 — rakun server actions.
+//
+// A form whose submission mutates and revalidates. Both halves are marked:
+//
+//   SERVER (BEAM): `createPost` and everything it awaits. The action body never
+//   reaches the browser; only its id does.
+//   CLIENT (browser): the POST. With scripting off it is a plain form submission
+//   to the current pathname; with front 67 loaded it is the same POST carrying
+//   `X-Onze-Action` and receiving the result envelope instead of a document.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/updating-data
+//   https://nextjs.org/docs/app/api-reference/directives/use-server
+//
+// LANGUAGE GAP: declared parameter defaults are never applied, so every element
+// constructor below passes `attrs:` explicitly.
+
+import {Element, bracketPair, div, h1, p, text} from "jhonstart";
+// provided by front 94 — `form`/`input`/`button` live in jhonstart's `elements.bp`,
+// not in the frozen `element.bp`, and this front declares no element constructor.
+import {input, button} from "jhonstart";
+// This front's surface: the binding only.
+import {serverAction, FormData, ActionResult, actionForm} from "rakun";
+import {rkRegisterAction} from "rakun";
+// Front 22 (the page and its route) and front 23 (the escaping walker).
+import {page, PageContext, rkAppRegisterPage, renderNode} from "rakun";
+// provided by front 12 — `revalidatePath` and the `revalidatedPaths()` test seam.
+import {cache} from "rakun-cache";
+import {dict} from "std";
+
+// The app's own data layer — front 08 in a real application. Stubbed here so the
+// example is about the action, not about the store.
+#[@future]
+fn savePost(title: string, body: string) -> @Future<string> {
+    return "post_" + title;
+}
+
+// ---- app/blog/actions.bp — SERVER ---------------------------------------------
+//
+// `#[serverAction]` is the inline `'use server'`. The file-level directive is the
+// same decorator applied by the CLI to every `pub fn` of a file that opens with
+// `pub val useServer = true;` — one registration path, two spellings.
+//
+// The id the browser sends back is derived at module load from the module, the
+// function name and the build id, HMAC'd with the deployment secret. It is never
+// the function's own name: an unmarked `pub fn` must not be reachable by naming it.
+
+#[serverAction]
+#[@future]
+pub fn createPost(form: FormData) -> @Future<ActionResult> {
+    val title = form.field("title");
+    val body = form.field("body");
+    val tooShort = title.length() < 3;
+    if (tooShort) {
+        return ActionResult.invalid("title", "Title must be at least 3 characters");
+    };
+    val _id = await savePost(title, body);
+    // Invalidate before the re-render, so the document the browser gets back is
+    // built from the refilled cache and not from the entry this action just made
+    // stale. The ordering is the point.
+    cache.revalidatePath("/blog");
+    return ActionResult.done();
+}
+
+// ---- app/blog/new/page.bp — SERVER renders the form the CLIENT submits --------
+
+#[page("blog/new")]
+#[@future]
+pub fn newPostPage(route: PageContext) -> @Future<Element> {
+    val form = actionForm("createPost", [
+        input([], attrs: [bracketPair("type", "text"), bracketPair("name", "title")]),
+        input([], attrs: [bracketPair("type", "text"), bracketPair("name", "body")]),
+        button([text("Publish", attrs: [])], attrs: [bracketPair("type", "submit")]),
+    ], attrs: [bracketPair("data-onze-seg", "new-post")]);
+    return div([
+        h1([text("New post", attrs: [])], attrs: []),
+        form,
+    ], attrs: []);
+}
+
+fn newPostRoute() -> PageContext {
+    return PageContext(
+        pathname: "/blog/new",
+        pattern: "/blog/new",
+        params: dict.empty(),
+        query: dict.empty(),
+        rest: [],
+    );
+}
+
+fn submission(title: string, body: string) -> FormData {
+    return FormData(fields: dict.empty().insert("title", title).insert("body", body));
+}
+
+// ---- what the action does -----------------------------------------------------
+
+test "a title that is too short comes back as state, not as an HTTP error" {
+    val result = await createPost(submission("hi", "a body"));
+    val message = result.state.lookup("title").unwrapOr("");
+    assert message == "Title must be at least 3 characters";
+}
+
+test "a rejected submission mutates nothing and revalidates nothing" {
+    val before = cache.revalidatedPaths().length;
+    val _result = await createPost(submission("hi", "a body"));
+    assert cache.revalidatedPaths().length == before;
+}
+
+test "a valid submission clears the state and invalidates the list route" {
+    val result = await createPost(submission("Rendering on BEAM", "a body"));
+    assert result.state.isEmpty();
+    assert cache.revalidatedPaths().contains("/blog");
+}
+
+// ---- what the form looks like on the wire -------------------------------------
+
+test "the form names the action by its id and never by its name" {
+    val el = await newPostPage(newPostRoute());
+    val markup = renderNode(el);
+    assert markup.contains("method=\"post\"");
+    assert markup.contains("name=\"__onze_action\"");
+    assert markup.contains("value=\"a_");
+    assert markup.contains("value=\"createPost\"") == false;
+}
+
+test "the form submits without scripting: it is ordinary HTML" {
+    val el = await newPostPage(newPostRoute());
+    val markup = renderNode(el);
+    assert markup.contains("<form ");
+    assert markup.contains("</form>");
+    assert markup.contains("type=\"submit\"");
+    assert markup.contains("data-onze-a=\"a_");
+    assert markup.contains("</input>") == false;
+}
+
+test "a hostile field value cannot break out of the form" {
+    val el = actionForm("createPost", [
+        input([], attrs: [
+            bracketPair("name", "title"),
+            bracketPair("value", "a \" onfocus=\"alert(1)"),
+        ]),
+    ], attrs: []);
+    val markup = renderNode(el);
+    assert markup.contains("onfocus=\"alert(1)\"") == false;
+    assert markup.contains("&quot;");
+}

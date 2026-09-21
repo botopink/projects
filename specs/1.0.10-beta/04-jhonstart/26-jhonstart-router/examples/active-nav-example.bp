@@ -1,0 +1,76 @@
+// Front 26 — jhonstart-router · examples/active-nav-example.bp
+//
+// A documentation sidebar that marks the section the reader is in.
+//
+// This is a SERVER-rendered component: front 22 matches the URL, front 23 fills
+// the route snapshot before the render starts, and `pathname` /
+// `selectedLayoutSegment` read it. The same code re-renders in the browser
+// after a client navigation, from a snapshot the client rebuilt from
+// `window.location` — the component cannot tell which side it is on, which is
+// the whole point of the snapshot format.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/functions/use-pathname
+//   https://nextjs.org/docs/app/api-reference/functions/use-selected-layout-segment
+//   https://nextjs.org/docs/app/getting-started/linking-and-navigating
+
+import { Element, span, ul, li, text, renderToString } from "jhonstart";
+import { pathname, selectedLayoutSegment } from "jhonstart";
+import { Link, linkProps } from "jhonstart";
+import { nav } from "jhonstart";
+
+// `nav` is not one of the eight builders `element.bp` ships. It comes from
+// front 94 (jhonstart-element-surface). `Link`/`linkProps` come from front 27.
+
+// One row of the sidebar. `active` is decided by the caller, not by the row,
+// so the row stays a pure function of its arguments and is directly testable.
+fn navItem(href: string, label: string, active: bool) -> Element {
+    val cls = if (active) { "nav-item nav-item-active" } else { "nav-item" };
+    return li([
+        Link(linkProps(href), [text(label, attrs: [])]),
+    ], attrs: [#("class", cls)]);
+}
+
+// The sidebar itself. `use pathname()` and `use selectedLayoutSegment()`
+// are the hook form; both read the one snapshot the server filled.
+fn Sidebar() -> Element {
+    val path = use pathname();
+    val section = use selectedLayoutSegment();
+    val onGuides = section == "guides";
+    val onApi = section == "api";
+    return nav([
+        span([text("Docs", attrs: [])], attrs: [#("class", "nav-title")]),
+        ul([
+            navItem("/docs/guides", "Guides", onGuides),
+            navItem("/docs/api", "API reference", onApi),
+            navItem("/docs/changelog", "Changelog", section == "changelog"),
+        ], attrs: []),
+        span([text(path, attrs: [])], attrs: [#("class", "nav-breadcrumb")]),
+    ], attrs: [#("class", "sidebar")]);
+}
+
+// The same sidebar written against an explicit snapshot instead of the hooks —
+// this is what a server render does when it renders a layout for a route it
+// already matched, and it is the form a test can exercise without a host.
+fn sidebarFor(segment: string, path: string) -> Element {
+    return nav([
+        span([text("Docs", attrs: [])], attrs: [#("class", "nav-title")]),
+        ul([
+            navItem("/docs/guides", "Guides", segment == "guides"),
+            navItem("/docs/api", "API reference", segment == "api"),
+        ], attrs: []),
+        span([text(path, attrs: [])], attrs: [#("class", "nav-breadcrumb")]),
+    ], attrs: [#("class", "sidebar")]);
+}
+
+test "the row for the selected segment carries the active class" {
+    val markup = renderToString(sidebarFor("api", "/docs/api/use-router"));
+    assert markup.contains("class=\"nav-item nav-item-active\"");
+    assert markup.contains("API reference");
+}
+
+test "a segment nobody is on leaves every row inactive" {
+    val markup = renderToString(sidebarFor("changelog", "/docs/changelog"));
+    assert markup.contains("nav-item-active") == false;
+    assert markup.contains("/docs/changelog");
+}

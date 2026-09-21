@@ -1,0 +1,140 @@
+// Front 21 — rakun-hateoas · example 1 of 1
+//
+// A controller that answers HAL: a single resource with self and relation links,
+// and a paged collection with the full paging set. The serializer is generated at
+// comptime from the record's fields — there is no structured JSON value in std,
+// so nothing can walk an arbitrary record at run time.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/web/spring-hateoas.html
+//           (04-web.md § Spring HATEOAS)
+//
+// Target: erlang (server).
+
+import {service, repository, restController, route, getMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+// Provided by front 21. #[halResource] splices `userResourceToHal` into THIS
+// module and its body calls the rendering helpers, so those must resolve here.
+import {halResource, Link, link, linkTo, halCollection, halResponse} from "rakun-hateoas";
+import {renderLinks, quoteJsonString} from "rakun-hateoas";
+
+// ── the resource ────────────────────────────────────────────────────────────
+//
+// #[halResource] reflects these fields and emits:
+//
+//     pub fn userResourceToHal(v: UserResource, links: Array<Link>) -> string
+//
+// Strings are quoted and escaped; i32 and bool are rendered bare. A field whose
+// type the renderer does not know — a nested record, an array of records, an
+// optional — fails HERE, at comptime, naming the field. It does not emit a
+// function that produces something unparseable at 3am.
+
+#[halResource]
+pub type UserResource(
+    id: i32,
+    name: string,
+    email: string,
+    active: bool,
+)
+
+#[repository]
+pub type UserRepo {
+    pub fn find(self: Self, id: string) -> UserResource {
+        return UserResource(id: 1, name: "Alice", email: "alice@example.com", active: true);
+    }
+
+    pub fn page(self: Self, page: i32) -> Array<UserResource> {
+        return [
+            UserResource(id: 1, name: "Alice", email: "alice@example.com", active: true),
+            UserResource(id: 2, name: "Bob", email: "bob@example.com", active: false),
+        ];
+    }
+
+    pub fn pageCount(self: Self) -> i32 {
+        return 4;
+    }
+}
+
+// ── one resource ────────────────────────────────────────────────────────────
+//
+// `linkTo` is checked against the registered route table: a pattern nobody
+// serves raises here, with the nearest registered path in the message, rather
+// than shipping a 404 to a client that trusted the link.
+
+#[service]
+pub type UserResources(
+    repo: UserRepo,
+) {
+    pub fn one(self: Self, id: string) -> string {
+        val user = self.repo.find(id);
+        val links: Array<Link> = [
+            linkTo("self", "/api/users/:id", [#("id", id)]),
+            linkTo("orders", "/api/users/:id/orders", [#("id", id)]),
+            link("collection", "/api/users"),
+        ];
+        return userResourceToHal(user, links);
+    }
+
+    // ── a page of them ──────────────────────────────────────────────────────
+    //
+    // `halCollection` takes ALREADY-RENDERED strings. That is not an ergonomic
+    // choice: without a JSON value model there is no way to hand it an array of
+    // arbitrary records and have it render each one.
+    pub fn page(self: Self, page: i32) -> string {
+        val rows = self.repo.page(page).map({ u ->
+            userResourceToHal(u, [linkTo("self", "/api/users/:id", [#("id", u.id.toString())])]);
+        });
+
+        val last = self.repo.pageCount();
+        val prevPage = if (page > 1) { page - 1 } else { 1 };
+        val nextPage = if (page < last) { page + 1 } else { last };
+
+        // Order matters and is asserted as a literal in the tests: _embedded
+        // first, _links last, paging rels in this order.
+        val links: Array<Link> = [
+            link("self", "/api/users?page=" + page.toString()),
+            link("first", "/api/users?page=1"),
+            link("prev", "/api/users?page=" + prevPage.toString()),
+            link("next", "/api/users?page=" + nextPage.toString()),
+            link("last", "/api/users?page=" + last.toString()),
+        ];
+        return halCollection("users", rows, links);
+    }
+}
+
+// ── the controller ──────────────────────────────────────────────────────────
+//
+// `halResponse` sets `application/hal+json` through front 07's header mechanism.
+// `rakun.hateoas.use-hal-as-default-json-media-type=false` serves the same body
+// as `application/json` — the negotiation changes, the bytes do not.
+
+#[restController]
+#[route("/api/users")]
+pub type UserController(
+    resources: UserResources,
+) {
+    #[getMapping("/:id")]
+    pub fn show(self: Self, req: Request) -> Response {
+        return halResponse(self.resources.one(req.param("id")));
+    }
+
+    #[getMapping("/:id/orders")]
+    pub fn orders(self: Self, req: Request) -> Response {
+        return halResponse(halCollection("orders", [], [
+            link("self", "/api/users/" + req.param("id") + "/orders"),
+        ]));
+    }
+
+    #[getMapping("/")]
+    pub fn index(self: Self, req: Request) -> Response {
+        val raw = req.query("page");
+        val page = if (raw == "") { 1 } else { 2 };
+        return halResponse(self.resources.page(page));
+    }
+}
+
+// LANGUAGE GAP: std has no structured JSON value — `json.parse` and
+// `json.stringify` both take and return `string` (libs/std/src/json.bp:36,45) —
+// so a record cannot be serialized at run time. Every renderer above is emitted
+// at comptime from the record's declared fields, and `halCollection` takes
+// pre-rendered strings for the same reason.

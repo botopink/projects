@@ -1,0 +1,133 @@
+// Front 75 — rakun observability: registering metrics a dashboard can read.
+//
+// The translation of `09-actuator.md § Registrando Metricas Customizadas`. Spring
+// injects a `MeterRegistry` into a constructor and calls `registry.gauge(...)`;
+// here the registry is a managed component injected by field type, and the meters
+// are the same four kinds.
+//
+// Server side — every declaration below compiles to BEAM. Counters live in ETS and
+// are incremented by the calling process, so a hot path never sends a message.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/actuator/metrics.html#actuator.metrics.registering-custom
+//   https://docs.spring.io/spring-boot/reference/actuator/metrics.html#actuator.metrics.customizing.common-tags
+//
+// The configuration this file assumes, in application.yaml (front 05 reads it):
+//
+//   rakun:
+//     metrics:
+//       tags:
+//         region: us-east-1
+//         stack: prod
+//       enable:
+//         http.client: false
+//       distribution:
+//         percentiles-histogram:
+//           orders.settlement: true
+//         slo:
+//           orders.settlement: 100ms,200ms,500ms,1s
+//       export:
+//         prometheus:
+//           enabled: true
+//
+// `MeterRegistry`, `Tag`, `counter`, `gauge`, `timed`, `meterNames` and
+// `prometheusText` are delivered by this front. `#[service]`, `#[restController]`,
+// `#[getMapping]`, `Request` and `Response` already exist.
+
+import {service, restController, route, getMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkPropInt, rkRegisterRoute} from "rakun";
+import {MeterRegistry, Tag, counter, gauge, timed, meterNames, prometheusText} from "rakun-metrics";
+
+#[service]
+pub type SettlementService(
+    // Injected by type, exactly like any other managed component. The registry is
+    // a `#[component]` in rakun-metrics, so nothing here constructs it.
+    meters: MeterRegistry,
+) {
+    // A counter: monotonic, one series per tag set. The tag list is sorted on
+    // registration, so writing [status, method] here and [method, status]
+    // somewhere else is one series and not two.
+    pub fn settle(self: Self, amount: i32) -> i32 {
+        val tags = [Tag(key: "currency", value: "usd")];
+        val settled = timed("orders.settlement", tags, { ->
+            val cents = amount * 100;
+            cents;
+        });
+        val _ = counter("orders.settled", tags).increment(1);
+        return settled;
+    }
+
+    pub fn reject(self: Self, reason: string) -> i32 {
+        return counter("orders.rejected", [Tag(key: "reason", value: reason)]).increment(1);
+    }
+}
+
+#[service]
+pub type QueueDepthProbe(
+    meters: MeterRegistry,
+) {
+    // A gauge is a closure evaluated at scrape time, never on the hot path: it
+    // measures a thing that already exists, so sampling it on demand is both
+    // cheaper and more correct than pushing it.
+    pub fn register(self: Self) -> i32 {
+        return gauge("orders.pending", [], { -> pendingCount() });
+    }
+}
+
+// Stands in for whatever holds the backlog. The point of the example is the shape
+// of the registration, not the source of the number.
+pub fn pendingCount() -> i32 {
+    return 7;
+}
+
+#[restController]
+#[route("/ops")]
+pub type SettlementController(
+    svc: SettlementService,
+) {
+    #[getMapping("/settle/:amount")]
+    pub fn settle(self: Self, req: Request) -> Response {
+        val amount = req.param("amount").length();
+        return Response.json(self.svc.settle(amount).toString());
+    }
+}
+
+test "a timer returns the value its closure produced and records a sample" {
+    val svc = SettlementService(meters: MeterRegistry(name: "test"));
+    assert svc.settle(3) == 300;
+    assert meterNames().contains("orders.settlement") == true;
+}
+
+test "tag order does not create a second series" {
+    val a = [Tag(key: "method", value: "GET"), Tag(key: "status", value: "200")];
+    val b = [Tag(key: "status", value: "200"), Tag(key: "method", value: "GET")];
+    val _1 = counter("http.probe", a).increment(1);
+    val _2 = counter("http.probe", b).increment(1);
+    assert counter("http.probe", a).count() == 2;
+}
+
+test "a denied prefix is not registered at all" {
+    val _ = counter("http.client.requests", []).increment(1);
+    assert meterNames().contains("http.client.requests") == false;
+}
+
+test "common tags reach every series, including the BEAM ones" {
+    val text = prometheusText();
+    assert text.contains("region=\"us-east-1\"") == true;
+    assert text.contains("beam_memory_total") == true;
+}
+
+test "no JVM-named meter exists" {
+    val jvmNames = meterNames().filter({ n -> n.startsWith("jvm.") });
+    assert jvmNames.length == 0;
+}
+
+test "a timer renders as a histogram with cumulative buckets and an +Inf bucket" {
+    val svc = SettlementService(meters: MeterRegistry(name: "test"));
+    val _ = svc.settle(1);
+    val text = prometheusText();
+    assert text.contains("# TYPE orders_settlement_seconds histogram") == true;
+    assert text.contains("orders_settlement_seconds_bucket{currency=\"usd\",le=\"0.1\"") == true;
+    assert text.contains("le=\"+Inf\"") == true;
+}

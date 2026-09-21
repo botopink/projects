@@ -1,0 +1,327 @@
+// Front 38 — emilia-typography
+//
+// Family, size, weight, smoothing, stretch, variant-numeric, tracking, leading,
+// line-clamp, transform, text-overflow and text-wrap.
+//
+// Upstream: https://tailwindcss.com/docs/font-size
+//           https://tailwindcss.com/docs/font-weight
+//           https://tailwindcss.com/docs/letter-spacing
+//           https://tailwindcss.com/docs/line-clamp
+// Reference: TAILWIND_CSS_DOCS.md § 9. Tipografia (9.1-9.11, 9.15, 9.22-9.24),
+//            § 21.3 Tipografia Padrao
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// `Text.Bold/Italic/Underline/LineThrough`, the four alignment leaves, `Text.Size`
+// (Xs-X4xl), `Font.Sans/Serif/Mono` and `Font.Weight` (5 of 9) exist today.
+// Everything else is delivered by front 38, which also corrects four of the
+// existing tokens to the v4.3 form. Colours come from front 33, modifiers from
+// front 34, spacing from front 35. The `--text-*`, `--tracking-*` and
+// `--leading-*` theme entries live in front 54's theme layer.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── family and size ──────────────────────────────────────────────────────────
+// A size token emits TWO declarations: v4.3 pairs every font-size with the
+// line-height recorded beside it in the theme (§ 9.2). emilia drops the pairing
+// today, which is one of the four corrections this front makes.
+
+fn families() -> Token[] {
+    val values: Token[] = [
+        .Font.Sans,
+        .Font.Serif,
+        .Font.Mono,
+    ];
+    return values;
+}
+
+fn sizeLadder() -> Token[] {
+    val values: Token[] = [
+        .Text.Size.Xs,
+        .Text.Size.Sm,
+        .Text.Size.Base,
+        .Text.Size.Lg,
+        .Text.Size.Xl,
+        .Text.Size.X2xl,
+        .Text.Size.X3xl,
+        .Text.Size.X4xl,
+        .Text.Size.X5xl,
+        .Text.Size.X6xl,
+        .Text.Size.X7xl,
+        .Text.Size.X8xl,
+        .Text.Size.X9xl,
+    ];
+    return values;
+}
+
+// ── weight ───────────────────────────────────────────────────────────────────
+// Nine numeric weights. `.Text.Bold` is emilia's own leaf and keeps emitting the
+// keyword `bold`; `.Font.Weight.Bold` is the Tailwind row and emits `700`.
+
+fn weights() -> Token[] {
+    val values: Token[] = [
+        .Font.Weight.Thin,
+        .Font.Weight.Extralight,
+        .Font.Weight.Light,
+        .Font.Weight.Normal,
+        .Font.Weight.Medium,
+        .Font.Weight.Semibold,
+        .Font.Weight.Bold,
+        .Font.Weight.Extrabold,
+        .Font.Weight.Black,
+    ];
+    return values;
+}
+
+// ── smoothing, style, stretch, numerals ──────────────────────────────────────
+
+fn renderingControls() -> Token[] {
+    val values: Token[] = [
+        .Font.Smoothing.Antialiased,
+        .Font.Smoothing.Subpixel,
+        .Font.Style.Italic,
+        .Font.Style.Normal,
+        .Font.Stretch.Condensed,
+        .Font.Stretch.Normal,
+        .Font.Stretch.ExtraExpanded,
+        .Font.Nums.Tabular,
+        .Font.Nums.SlashedZero,
+        .Font.Nums.DiagonalFractions,
+    ];
+    return values;
+}
+
+// ── tracking and leading ─────────────────────────────────────────────────────
+// Every tracking value and five of six leading values are theme variables;
+// `leading-none` is the literal `1`.
+
+fn tracking() -> Token[] {
+    val values: Token[] = [
+        .Text.Tracking.Tighter,
+        .Text.Tracking.Tight,
+        .Text.Tracking.Normal,
+        .Text.Tracking.Wide,
+        .Text.Tracking.Wider,
+        .Text.Tracking.Widest,
+    ];
+    return values;
+}
+
+fn leading() -> Token[] {
+    val values: Token[] = [
+        .Text.Leading.None,
+        .Text.Leading.Tight,
+        .Text.Leading.Snug,
+        .Text.Leading.Normal,
+        .Text.Leading.Relaxed,
+        .Text.Leading.Loose,
+    ];
+    return values;
+}
+
+// ── clamp ────────────────────────────────────────────────────────────────────
+// One token, four declarations, in the order § 9.10 prints them.
+
+fn clamps() -> Token[] {
+    val values: Token[] = [
+        .Text.Clamp.1,
+        .Text.Clamp.3,
+        .Text.Clamp.6,
+        .Text.Clamp.None,
+    ];
+    return values;
+}
+
+// ── alignment, transform, overflow, wrap ─────────────────────────────────────
+
+fn alignment() -> Token[] {
+    val values: Token[] = [
+        .Text.Left,
+        .Text.Center,
+        .Text.Right,
+        .Text.Justify,
+        .Text.Start,
+        .Text.End,
+    ];
+    return values;
+}
+
+fn transforms() -> Token[] {
+    val values: Token[] = [
+        .Text.Transform.Uppercase,
+        .Text.Transform.Lowercase,
+        .Text.Transform.Capitalize,
+        .Text.Transform.None,
+    ];
+    return values;
+}
+
+fn overflowAndWrap() -> Token[] {
+    val values: Token[] = [
+        .Text.Truncate,
+        .Text.Overflow.Ellipsis,
+        .Text.Overflow.Clip,
+        .Text.Wrap.Wrap,
+        .Text.Wrap.Nowrap,
+        .Text.Wrap.Balance,
+        .Text.Wrap.Pretty,
+    ];
+    return values;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// An article header and its excerpt: a balanced display heading that grows with
+// the viewport, a tabular byline, and a three-line clamped excerpt that goes to
+// six lines on wide screens.
+
+#[@future]
+pub fn articleHeader(title: string, byline: string, excerpt: string) -> @Future<string> {
+    val biggerFromMd: Token[] = [.Text.Size.X5xl];
+    val biggerFromLg: Token[] = [.Text.Size.X7xl];
+
+    val heading: Token[] = [
+        .Font.Sans,
+        .Text.Size.X3xl,
+        .Font.Weight.Extrabold,
+        .Text.Tracking.Tight,
+        .Text.Leading.None,
+        .Text.Wrap.Balance,
+        .Color.Slate.900,
+        Token.Md(biggerFromMd),
+        Token.Lg(biggerFromLg),
+    ];
+
+    val meta: Token[] = [
+        .Font.Nums.Tabular,
+        .Text.Size.Sm,
+        .Text.Transform.Uppercase,
+        .Text.Tracking.Widest,
+        .Color.Slate.500,
+        .Margin.T.2,
+    ];
+
+    val sixLinesFromLg: Token[] = [.Text.Clamp.6];
+    val body: Token[] = [
+        .Font.Serif,
+        .Text.Size.Lg,
+        .Text.Leading.Relaxed,
+        .Text.Wrap.Pretty,
+        .Text.Clamp.3,
+        .Color.Slate.700,
+        .Margin.T.4,
+        Token.Lg(sixLinesFromLg),
+    ];
+
+    val headingClass = emilia(heading);
+    val metaClass = emilia(meta);
+    val bodyClass = emilia(body);
+    val styles = await flush();
+
+    val markup = "<h1 class=\"" + headingClass + "\">" + title + "</h1>"
+        + "<p class=\"" + metaClass + "\">" + byline + "</p>"
+        + "<p class=\"" + bodyClass + "\">" + excerpt + "</p>";
+    return styles + markup;
+}
+
+test "a family is a theme variable, not a literal stack" {
+    val tokens: Token[] = [.Font.Sans];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{font-family:var(--font-sans)}</style>";
+}
+
+test "a size token emits font-size and its paired line-height" {
+    val tokens: Token[] = [.Text.Size.Lg];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{font-size:var(--text-lg);line-height:var(--text-lg--line-height)}</style>";
+}
+
+test "the size ladder reaches 9xl" {
+    val cls = emilia(sizeLadder());
+    val styles = await flush();
+    assert styles.contains("font-size:var(--text-xs)");
+    assert styles.contains("font-size:var(--text-9xl)");
+    assert !styles.contains("font-size:1.125rem");
+}
+
+test "Text.Bold is emilia's own leaf and is left alone" {
+    val tokens: Token[] = [.Text.Bold];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{font-weight:bold}</style>";
+}
+
+test "the nine numeric weights" {
+    val cls = emilia(weights());
+    val styles = await flush();
+    assert styles.contains("font-weight:100");
+    assert styles.contains("font-weight:400");
+    assert styles.contains("font-weight:600");
+    assert styles.contains("font-weight:900");
+}
+
+test "antialiased emits both vendor properties from one token" {
+    val tokens: Token[] = [.Font.Smoothing.Antialiased];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}</style>";
+}
+
+test "not-italic is font-style normal" {
+    val tokens: Token[] = [.Font.Style.Normal];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{font-style:normal}</style>";
+}
+
+test "tracking is a variable and leading-none is a literal" {
+    val tokens: Token[] = [.Text.Tracking.Widest, .Text.Leading.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{letter-spacing:var(--tracking-widest);line-height:1}</style>";
+}
+
+test "line-clamp emits four declarations in the reference order" {
+    val tokens: Token[] = [.Text.Clamp.3];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical"
+        + ";-webkit-line-clamp:3}</style>";
+}
+
+test "line-clamp-none resets all four rather than omitting them" {
+    val tokens: Token[] = [.Text.Clamp.None];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{overflow:visible;display:block;-webkit-box-orient:horizontal"
+        + ";-webkit-line-clamp:none}</style>";
+}
+
+test "truncate is three declarations, text-ellipsis is one" {
+    val tokens: Token[] = [.Text.Truncate];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>";
+}
+
+test "text-align gains start and end" {
+    val cls = emilia(alignment());
+    val styles = await flush();
+    assert styles.contains("text-align:start;text-align:end");
+}
+
+test "the article header scales its title and clamps its excerpt" {
+    val out = await articleHeader("A stylesheet nobody writes", "19 SEP 2026", "…");
+    assert out.startsWith("<style>");
+    assert out.contains("font-size:var(--text-3xl);line-height:var(--text-3xl--line-height)");
+    assert out.contains("@media (width >= 80rem){font-size:var(--text-7xl)");
+    assert out.contains("font-variant-numeric:tabular-nums");
+    assert out.contains("-webkit-line-clamp:3");
+    assert out.contains("@media (width >= 64rem){overflow:hidden;display:-webkit-box");
+}

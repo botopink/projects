@@ -1,0 +1,90 @@
+// Front 53 — onze example app · examples/app-page-example.bp
+// App file: app/page.bp
+//
+// Demonstrates: the home page. `#[page("")]` registers `/`; the segment config
+// makes front 60 prerender it at build time; the hero is an optimized,
+// above-the-fold image from front 51.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/page
+//           https://nextjs.org/docs/app/api-reference/components/image
+//           NEXTJS-DOCS.md § 5. Layouts e Páginas · § 16. Otimização de Imagens
+//
+// Target: erlang (server). The image's lazy/eager behaviour is the browser's
+// half, but nothing on this page runs there.
+
+import {Element, div, h1, p, text, renderToString} from "jhonstart";
+import {section} from "jhonstart";                              // provided by front 94
+import {styled, Token} from "emilia";                           // front 48
+import {page, PageContext} from "rakun";                        // front 22
+import {rkAppRegisterPage} from "rakun";                        // front 22 registry cell
+import {dict} from "std";
+// front 60 — the segment configuration and the prerender decision
+import {registerSegmentConfig, SegmentConfig, DynamicMode, FetchCache} from "rakun";
+// front 51 — the Image component and the optimizer behind it
+import {
+    Image,
+    ImageConfig,
+    defaultImageProps,
+    defaultImageConfig,
+    withPriority,
+} from "onze";
+
+fn titleTokens() -> Token[] {
+    return [.Text.Size.X3xl, .Text.Bold, .Color.Gray.900];
+}
+
+fn leadTokens() -> Token[] {
+    return [.Pad.Y.4, .Color.Gray.700, .Text.Size.Lg];
+}
+
+// front 60 — `ForceStatic` with no revalidation: the home page is prerendered at
+// build time and served from the manifest until the next deploy. Every field is
+// written out because a declared parameter default is never applied.
+val _homeConfig = registerSegmentConfig("", SegmentConfig(
+    dynamic: DynamicMode.ForceStatic,
+    dynamicParams: false,
+    revalidate: 0,
+    fetchCache: FetchCache.Auto,
+));
+
+// front 22 — `/`. The page touches nothing request-specific, so front 60's trial
+// render leaves it static; reading `route.query` here would opt it out.
+#[page("")]
+#[@future]
+pub fn homePage(route: PageContext) -> @Future<Element> {
+    val cfg = defaultImageConfig();
+    // front 51 — above the fold, so eager and high priority. The declared width
+    // and height reserve the box before the bytes arrive.
+    val heroBase = defaultImageProps("/images/hero.jpg", "Notes on botopink", 1200, 600);
+    val hero = withPriority(heroBase, true);
+    return section([
+        Image(hero, cfg, "public"),
+        h1([text("Notes", attrs: [])], attrs: [styled(titleTokens())]),
+        p([text("A blog that exercises every front of 1.0.9-beta.", attrs: [])],
+          attrs: [styled(leadTokens())]),
+    ], attrs: []);
+}
+
+fn homeRoute() -> PageContext {
+    return PageContext(
+        pathname: "/",
+        pattern: "/",
+        params: dict.empty(),
+        query: dict.empty(),
+        rest: [],
+    );
+}
+
+test "the home page renders its hero eagerly and reserves its box" {
+    val markup = renderToString(await homePage(homeRoute()));
+    assert markup.contains("loading=\"eager\"");
+    assert markup.contains("width=\"1200\"");
+    assert markup.contains("height=\"600\"");
+    assert markup.contains("alt=\"Notes on botopink\"");
+}
+
+test "the page is styled by emilia, not by inline style attributes" {
+    val markup = renderToString(await homePage(homeRoute()));
+    assert markup.contains("class=\"e_");
+    assert markup.contains("style=") == false;
+}

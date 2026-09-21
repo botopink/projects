@@ -1,4 +1,13 @@
-# Specs — 1.0.5-beta
+# Specs — 1.0.5-beta (closed)
+
+**Closed 2026-09-20** at `botopink-lang` `feat` `d55a3b87`. [`closure.md`](./closure.md) is the closing
+record — per front what landed and with which commit, what did not, the state of the six `.tasks/*`
+worktrees, which of the sixty-seven decisions are implemented, partial or open, and the rules that
+still bind. Everything open or in progress moved, ranked, to
+[`specs/1.0.10-beta/00-compiler-carry-over/`](../1.0.10-beta/00-compiler-carry-over/README.md), with
+the deep dives that still apply copied beside it. [`decisions-taken.md`](./decisions-taken.md) stays
+here as the record the carry-over implements against. The rest of this file is the milestone as it was
+planned, kept as written.
 
 What 1.0.4-beta did not deliver, re-cut so that it can be worked in parallel.
 [1.0.4-beta](../1.0.4-beta/overview.md) shipped the surface cutover, the library migration, the

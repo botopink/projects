@@ -1,0 +1,81 @@
+// Front 66 — Rakun Metadata File Routes
+//
+// What this demonstrates: segment-scoped OG images. A root opengraph-image
+// covers the whole site; one registered at blog/[slug] overrides it for post
+// pages and for nothing else. The <meta> tags front 32 emits point at whichever
+// one won, and the URL carries a content hash so a redeploy does not leave a
+// stale card in a crawler's cache.
+//
+// The app tree this file populates:
+//
+//   app/
+//     opengraph-image.png        <- the site-wide card, a static file
+//     blog/
+//       [slug]/
+//         opengraph-image.bp     <- blogOgImage, below, rendered per post
+//
+// SERVER — both routes answer requests on the BEAM. The rendered form is handed
+// to front 70, which turns the element tree into SVG and optionally rasterizes
+// it; with front 70 absent that one route answers 501 and the <meta> tag is
+// still emitted, so the failure is one card and not a missing head.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/file-conventions/metadata/opengraph-image
+
+import {
+    ImageKind,
+    registerImageFile,
+    registerImageRoute,
+    imageUrlFor,
+    metaTagsFor,
+} from "rakun";
+import {PageContext} from "rakun";  // provided by front 22
+import {Element, div, h1, p, text} from "jhonstart";
+
+pub type Post(
+    slug: string,
+    title: string,
+    author: string,
+)
+
+fn findPost(slug: string) -> Post {
+    return Post(slug: slug, title: "Post " + slug, author: "ana");
+}
+
+// SERVER — the site-wide card: a static file beside the root. Front 50's CLI
+// generates this registration from the file it finds; it is written out here so
+// the shape is visible.
+val _rootOg = registerImageFile(
+    ImageKind.OpenGraph,
+    "",
+    "opengraph-image.png",
+    "image/png",
+    1200,
+    630,
+);
+
+// SERVER — the per-post card. It overrides the root registration for
+// /blog/<slug> and leaves every other route on the root one. Width, height and
+// content type are written out because a declared parameter default is never
+// applied at a call site.
+#[@future]
+pub fn blogOgImage(route: PageContext) -> @Future<Element> {
+    val slug = route.params.lookup("slug").unwrapOr("");
+    val post = findPost(slug);
+    return div([
+        h1([text(post.title, attrs: [])], attrs: []),
+        p([text("by " + post.author, attrs: [])], attrs: []),
+    ], attrs: []);
+}
+
+val _blogOg = registerImageRoute(ImageKind.OpenGraph, "blog/[slug]", blogOgImage);
+
+// SERVER — what front 32 puts in <head>. The resolution rule is nearest
+// ancestor, implemented once here and cited there.
+pub fn headTagsFor(pathname: string, pattern: string) -> Array<#(string, string)> {
+    return metaTagsFor(pattern);
+}
+
+pub fn cardUrlFor(pathname: string) -> string {
+    return imageUrlFor(ImageKind.OpenGraph, pathname).unwrapOr("");
+}

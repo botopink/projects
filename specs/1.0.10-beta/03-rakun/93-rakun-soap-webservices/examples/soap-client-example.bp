@@ -1,0 +1,159 @@
+// Front 93 — rakun SOAP: calling an enterprise endpoint that already exists.
+//
+// Server-side file. The two records and the operation below are what
+// `rakun ws generate --wsdl rates.wsdl --out src/rates/` emitted and the project checked
+// in — ordinary botopink, reviewable in a diff, with the compiler knowing nothing about
+// XML. The envelope and fault decoding are pure, so a SOAP client is testable entirely
+// from documents in the test directory.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/io/webservices.html
+
+import {service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {WsClient, SoapFault, wsCall, soapEnvelope, soapBody, parseFault} from "rakun-ws";
+
+// LANGUAGE GAP: a comptime body has no filesystem access, so `wsdl """rates.wsdl"""` as
+// a template function cannot read a schema. Nearest valid form: the CLI generated the
+// two records and the marshaller below, and they are checked in.
+
+// --- generated from rates.wsdl (sha256 4f9c…), do not edit ---
+
+pub type ConversionRequest(
+    from: string,
+    to: string,
+    amount: string,
+)
+
+pub type ConversionResponse(
+    rate: string,
+    converted: string,
+)
+
+fn conversionRequestToXml(req: ConversionRequest) -> string {
+    return "<Convert xmlns=\"urn:rates\">"
+        + "<From>" + req.from + "</From>"
+        + "<To>" + req.to + "</To>"
+        + "<Amount>" + req.amount + "</Amount>"
+        + "</Convert>";
+}
+
+fn between(xml: string, open: string, close: string) -> string {
+    val start = xml.indexOf(open);
+    if (start < 0) {
+        return "";
+    };
+    val from = start + open.length();
+    val end = xml.indexOf(close);
+    if (end < from) {
+        return "";
+    };
+    return xml.slice(from, end);
+}
+
+fn conversionResponseFromXml(xml: string) -> ConversionResponse {
+    return ConversionResponse(
+        rate: between(xml, "<Rate>", "</Rate>"),
+        converted: between(xml, "<Converted>", "</Converted>"),
+    );
+}
+
+// --- end generated ---
+
+#[@result]
+pub fn convert(client: WsClient, req: ConversionRequest) -> @Result<ConversionResponse, SoapFault> {
+    // LANGUAGE GAP: declared parameter defaults are never applied, so an optional
+    // element cannot be left out of a generated call. Nearest valid form: every field is
+    // passed, and a `minOccurs="0"` element is `?T` passed as null.
+    val body = conversionRequestToXml(req);
+    val answer = try wsCall(client, "urn:rates/Convert", body) catch "";
+    if (answer == "") {
+        throw SoapFault(code: "Client", reason: "no response body", actor: "", detail: "");
+    };
+    return conversionResponseFromXml(answer);
+}
+
+#[service]
+type Rates {
+    pub fn quote(self: Self, amount: string) -> string {
+        val client = WsClient(endpoint: "https://rates.example.com/soap", version: "1.1", timeoutMs: 5000);
+        val req = ConversionRequest(from: "EUR", to: "BRL", amount: amount);
+        val answered = convert(client, req);
+        val out = case answered {
+            Ok(result) -> result.converted;
+            Error(error) -> "fault:" + error.code;
+        };
+        return out;
+    }
+}
+
+test "an envelope carries its own version's namespace and gives the body back" {
+    val body = "<Convert xmlns=\"urn:rates\"><From>EUR</From></Convert>";
+    val v11 = soapEnvelope("1.1", body);
+    assert v11.contains("http://schemas.xmlsoap.org/soap/envelope/");
+    assert !v11.contains("http://www.w3.org/2003/05/soap-envelope");
+    assert soapBody(v11) == body;
+
+    val v12 = soapEnvelope("1.2", body);
+    assert v12.contains("http://www.w3.org/2003/05/soap-envelope");
+    assert soapBody(v12) == body;
+}
+
+test "a normal response body carries no fault" {
+    val ok = "<ConvertResponse xmlns=\"urn:rates\"><Rate>6.21</Rate></ConvertResponse>";
+    val fault = parseFault(ok);
+    val found = case fault {
+        null -> "none";
+        f -> f.code;
+    };
+    assert found == "none";
+}
+
+test "a 1.1 fault decodes into the same record as a 1.2 fault" {
+    val v11 = "<soap:Fault><faultcode>soap:Client</faultcode><faultstring>unknown currency</faultstring><faultactor>rates</faultactor><detail><Code>E42</Code></detail></soap:Fault>";
+    val v12 = "<env:Fault><env:Code><env:Value>env:Sender</env:Value></env:Code><env:Reason><env:Text>unknown currency</env:Text></env:Reason><env:Role>rates</env:Role><env:Detail><Code>E42</Code></env:Detail></env:Fault>";
+
+    val a = parseFault(v11);
+    val aReason = case a {
+        null -> "";
+        f -> f.reason;
+    };
+    assert aReason == "unknown currency";
+
+    val b = parseFault(v12);
+    val bReason = case b {
+        null -> "";
+        f -> f.reason;
+    };
+    assert bReason == "unknown currency";
+}
+
+test "the raw detail element survives, so an endpoint-specific code is readable" {
+    val doc = "<soap:Fault><faultcode>soap:Server</faultcode><faultstring>rate unavailable</faultstring><faultactor></faultactor><detail><Code>E77</Code></detail></soap:Fault>";
+    val parsed = parseFault(doc);
+    val detail = case parsed {
+        null -> "";
+        f -> f.detail;
+    };
+    assert detail.contains("E77");
+}
+
+test "a response unmarshals field by field, and a missing element is empty" {
+    val xml = "<ConvertResponse xmlns=\"urn:rates\"><Rate>6.21</Rate><Converted>621.00</Converted></ConvertResponse>";
+    val parsed = conversionResponseFromXml(xml);
+    assert parsed.rate == "6.21";
+    assert parsed.converted == "621.00";
+
+    val partial = conversionResponseFromXml("<ConvertResponse><Rate>6.21</Rate></ConvertResponse>");
+    assert partial.rate == "6.21";
+    assert partial.converted == "";
+}
+
+test "a marshalled request is the wrapped element the endpoint expects" {
+    val req = ConversionRequest(from: "EUR", to: "BRL", amount: "100.00");
+    val xml = conversionRequestToXml(req);
+    assert xml.startsWith("<Convert xmlns=\"urn:rates\">");
+    assert xml.contains("<From>EUR</From>");
+    assert xml.contains("<Amount>100.00</Amount>");
+    assert xml.endsWith("</Convert>");
+}

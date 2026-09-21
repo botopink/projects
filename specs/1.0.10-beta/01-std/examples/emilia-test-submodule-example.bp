@@ -1,0 +1,129 @@
+// Front 01 — std · examples/emilia-test-submodule-example.bp
+//
+// Example 2, part 1: a dedicated test submodule. This file is the shape of
+// `repository/emilia/modules/emilia-test/src/root.bp` — the `<lib>-test`
+// submodule every library gets (1.0.9 front 95 § 5; 1.0.10 05-emilia/modules.md).
+// It builds domain helpers on `std/asserts` + `std/snapshots` and exposes them
+// to the tests of emilia core and of emilia's consumers.
+//
+// Manifest beside it (`modules/emilia-test/botopink.json`):
+//   { "name": "emilia-test", "src": "src/", "entry": "root.bp",
+//     "targets": ["commonJS", "erlang"],
+//     "dependencies": { "emilia": { "path": "../emilia" } } }
+//
+// Depends on: std/asserts, std/snapshots, emilia (core).
+// Target: commonJS and erlang — the two `botopink test` targets.
+//
+// LANGUAGE GAP: `tokensToCss` is private in emilia core today (`emilia.bp:102`);
+// this submodule needs it `pub`. One-line visibility change owned by track D.
+
+//// emilia-test — test helpers for the emilia library.
+////
+//// Every `assert<Subject>(loc, …)` here is a thin wrapper: turn the domain
+//// value into a string, hand it to `snapshots.assertAs(loc, "<subject>", text)`.
+//// `loc` is ALWAYS the caller's `@src()`, taken inside the `test` body — a
+//// `@src()` written here would name this file and this fn, and every
+//// snapshot would land beside this module instead of beside the test.
+
+import {asserts, snapshots} from "std";
+import {tokensToCss, emilia, Token} from "emilia";
+
+// ── snapshot helpers ───────────────────────────────────────────────────────
+
+// The CSS a token list lowers to. Snapshot subject `css`; the file lands at
+// `<dir of the test's file>/__snapshots__/<suite>/<slug>.snap`.
+#[@result]
+pub fn assertCss(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
+    val css = tokensToCss(tokens);
+    try snapshots.assertAs(loc, "css", css);
+    return;
+}
+
+// The whole utility: the content-derived class name and its rule, the way it
+// appears in a flushed `<style>` block. Subject `utility`. The class is a
+// djb2 of the rule body (contract 4), so the body is stable across runs.
+#[@result]
+pub fn assertUtility(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
+    val cls = emilia(tokens);
+    val css = tokensToCss(tokens);
+    val rule = "." + cls + "{" + css + "}";
+    try snapshots.assertAs(loc, "utility", rule);
+    return;
+}
+
+// Two utilities side by side in one test: the second is named.
+#[@result]
+pub fn assertUtilityNamed(loc: SourceLocation, name: string, tokens: Token[]) -> @Result<void, string> {
+    val cls = emilia(tokens);
+    val css = tokensToCss(tokens);
+    val rule = "." + cls + "{" + css + "}";
+    try snapshots.assertNamedAs(loc, name, "utility", rule);
+    return;
+}
+
+// ── plain assertion helpers ────────────────────────────────────────────────
+
+// A token list must lower to exactly this declaration string. Not a snapshot:
+// the expected text is in the test, for the cases where the value is the point.
+#[@result]
+pub fn assertDeclaration(tokens: Token[], expected: string) -> @Result<void, string> {
+    val css = tokensToCss(tokens);
+    try asserts.equals(css, expected);
+    return;
+}
+
+// A token list's CSS must carry a given `property:value` pair somewhere.
+#[@result]
+pub fn assertHasDeclaration(tokens: Token[], declaration: string) -> @Result<void, string> {
+    val css = tokensToCss(tokens);
+    try asserts.contains(css, declaration);
+    return;
+}
+
+// Two token lists must produce the same class — the "token order is class
+// identity" clause of contract 4, asserted from the outside.
+#[@result]
+pub fn assertSameClass(a: Token[], b: Token[]) -> @Result<void, string> {
+    try asserts.equals(emilia(a), emilia(b));
+    return;
+}
+
+// ── fixture builders ───────────────────────────────────────────────────────
+
+// The list the contract-4 shared fixture hashes. One place, so the SSR test
+// (front 23) and the bundle test (front 68) build the same list.
+pub fn sharedFixtureTokens() -> Token[] {
+    val tokens: Token[] = [.Bg.White, .Text.Size.Lg];
+    return tokens;
+}
+
+// A hover-inside-md nesting, built through typed intermediates because a
+// payload call inside an array literal does not parse today
+// (language-gaps.md; emilia.bp:498-503).
+pub fn hoverOnMd(leaf: Token[]) -> Token[] {
+    val hovered: Token[] = [Token.Hover(leaf)];
+    val tokens: Token[] = [Token.Md(hovered)];
+    return tokens;
+}
+
+// ── the submodule's own tests ──────────────────────────────────────────────
+// (`modules/emilia-test/test/` is empty by design: a helper's tests are inline
+// here, and the helpers are exercised for real by emilia core's tests.)
+
+test "emilia-test: assertDeclaration compares the lowered CSS" {
+    val tokens: Token[] = [.Text.Bold];
+    try assertDeclaration(tokens, "font-weight:bold");
+}
+
+test "emilia-test: assertHasDeclaration finds one declaration in a list" {
+    try assertHasDeclaration(sharedFixtureTokens(), "font-size:1.125rem");
+}
+
+test "emilia-test: assertSameClass holds for the same list built twice" {
+    try assertSameClass(sharedFixtureTokens(), sharedFixtureTokens());
+}
+
+test "emilia-test: hoverOnMd nests hover inside the md breakpoint" {
+    val leaf: Token[] = [.Bg.Red.500];
+    try assertDeclaration(hoverOnMd(leaf), "@media(min-width:768px){:hover{background:red}}");
+}

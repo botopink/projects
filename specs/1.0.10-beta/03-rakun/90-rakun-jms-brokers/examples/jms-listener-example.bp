@@ -1,0 +1,102 @@
+// Front 90 — rakun JMS brokers: reaching an ActiveMQ estate without the JMS API.
+//
+// Server-side file. The destination model, the arm selection and the selector decision
+// are values, so the parts that decide correctness are assertable without a broker.
+// `#[jmsListener]` registers on front 15's registry — the same dispatch loop, the same
+// `Outcome` contract, the same retry and dead-letter path as the AMQP 0-9-1 arm.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/messaging/jms.html
+
+import {service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+import {Delivery, Outcome} from "rakun-messaging";
+import {Destination, armFor, jmsSend, jmsRequest, jmsListener, selectorSupport, destinationName} from "rakun-messaging";
+
+// `Delivery` and `Outcome` come from fronts 15 and 86; everything on the second line
+// is this front's surface.
+
+val shipping = Destination.Queue(name: "shipping.requests");
+val auditTopic = Destination.Topic(name: "audit.events");
+
+fn classifyShipment(delivery: Delivery) -> Outcome {
+    val order = delivery.header("order-id");
+    if (order == "") {
+        return Outcome.Reject(reason: "missing order-id header");
+    };
+    // LANGUAGE GAP: no byte or binary type, so a JMS BytesMessage cannot be read here
+    // at all. Nearest valid form: the codec refuses a non-text body before it reaches
+    // this handler, and the handler only ever sees text.
+    val body = delivery.body;
+    if (body == "") {
+        return Outcome.Retry(reason: "empty body, upstream may still be writing");
+    };
+    return Outcome.Done;
+}
+
+// LANGUAGE GAP: declared parameter defaults are never applied, so the decorator cannot
+// carry `selector:` or `durable:` as optional arguments. Nearest valid form below: one
+// destination argument, and the rest under `rakun.messaging.listener.shipping.*`.
+#[service]
+type ShippingListener {
+    #[jmsListener("shipping.requests")]
+    pub fn onShipment(self: Self, delivery: Delivery) -> Outcome {
+        return classifyShipment(delivery);
+    }
+}
+
+#[service]
+type ShippingClient {
+    pub fn request(self: Self, orderId: string) -> string {
+        return jmsRequest(shipping, "ship:" + orderId, 5000);
+    }
+
+    pub fn announce(self: Self, text: string) -> i32 {
+        return jmsSend(auditTopic, text);
+    }
+}
+
+test "the connection scheme picks the protocol arm" {
+    assert armFor("amqp://broker:5672") == "amqp10";
+    assert armFor("amqps://broker:5671") == "amqp10";
+    assert armFor("stomp://broker:61613") == "stomp";
+    assert armFor("stomp+ssl://broker:61614") == "stomp";
+    assert armFor("kafka://broker:9092") == "";
+}
+
+test "a destination renders to its broker name whichever kind it is" {
+    assert destinationName(shipping) == "shipping.requests";
+    assert destinationName(auditTopic) == "audit.events";
+}
+
+test "a selector is evaluated by the broker or the subscription is refused" {
+    assert selectorSupport("amqp10") == "broker";
+    assert selectorSupport("stomp") == "broker";
+    assert selectorSupport("none") == "refused";
+}
+
+test "a message with no order id is rejected rather than retried forever" {
+    val delivery = Delivery(destination: "shipping.requests", body: "ship:A-1", headers: []);
+    val outcome = classifyShipment(delivery);
+    val kind = case outcome {
+        Done -> "done";
+        Retry(reason) -> "retry";
+        Reject(reason) -> "reject";
+    };
+    assert kind == "reject";
+}
+
+test "an empty body is transient, because the publisher may still be writing" {
+    val delivery = Delivery(
+        destination: "shipping.requests",
+        body: "",
+        headers: [#("order-id", "A-1")],
+    );
+    val outcome = classifyShipment(delivery);
+    val kind = case outcome {
+        Done -> "done";
+        Retry(reason) -> "retry";
+        Reject(reason) -> "reject";
+    };
+    assert kind == "retry";
+}

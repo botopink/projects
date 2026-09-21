@@ -1,0 +1,76 @@
+diff --git i/modules/compiler-core/src/parser.zig w/modules/compiler-core/src/parser.zig
+index db01912..4cbc2fa 100644
+--- i/modules/compiler-core/src/parser.zig
++++ w/modules/compiler-core/src/parser.zig
+@@ -180,6 +180,9 @@ pub const ParseErrorType = enum {
+     templateSelfMarker,
+     /// `$N` in an `@External` template past the declaration's parameters.
+     templateMarkerOutOfRange,
++    /// `if (c) { … };` — a `;` after a block-shaped statement. Decision 29 (c):
++    /// an `if`, a `loop` or a `case` in statement position ends itself.
++    blockStatementSemicolon,
+ };
+ 
+ pub const ParseErrorInfo = struct {
+@@ -693,6 +696,23 @@ pub const Parser = struct {
+         useAfterBranchGuard: bool = false,
+     };
+ 
++    /// True when `expr` is a **block-shaped statement**: an `if`, a `loop` or a
++    /// `case` standing on its own in a statement list, whose closing brace ends
++    /// it (decision 29 (c)).
++    ///
++    /// It tests the statement's own node and does not descend, which is the
++    /// whole distinction: `val x = if (c) { 1 } else { 2 };` is a *binding*
++    /// whose value happens to be an `if`, and a binding ends with `;` like any
++    /// other. So does `return case s { … };`.
++    fn isBlockShapedStmt(expr: Expr) bool {
++        return switch (expr) {
++            .branch => |b| b.kind == .if_,
++            .loop => true,
++            .collection => |c| c.kind == .case,
++            else => false,
++        };
++    }
++
+     /// Parse `{ stmt; stmt; ... }`. The opening `{` must be the current token.
+     /// Unifies every brace-delimited block in the parser via `BlockParseOptions`.
+     pub fn parseBlock(this: *This, alloc: std.mem.Allocator, comptime opts: BlockParseOptions) ParseError![]Stmt {
+@@ -741,7 +761,18 @@ pub const Parser = struct {
+             }
+ 
+             const expr = try this.parseExpr(alloc);
+-            switch (opts.semicolonPolicy) {
++            // Decision 29 (c) — a block-shaped statement ends itself. An `if`,
++            // a `loop` or a `case` written as a STATEMENT takes no `;` after
++            // its closing brace, uniformly across the three. The same
++            // construct used as a VALUE is not a statement and is unaffected:
++            // `val x = if (c) { 1 } else { 2 };` keeps its `;`, because the
++            // statement there is the binding.
++            if (isBlockShapedStmt(expr)) {
++                if (this.check(.semicolon)) {
++                    this.parseError = ParseErrorInfo.fromToken(.blockStatementSemicolon, this.peek());
++                    return ParseError.UnexpectedToken;
++                }
++            } else switch (opts.semicolonPolicy) {
+                 .required => _ = try this.consume(.semicolon),
+                 .optional => _ = this.match(.semicolon),
+                 .requiredExceptLast => if (!this.match(.semicolon) and !this.check(.rightBrace))
+diff --git i/modules/compiler-core/src/print.zig w/modules/compiler-core/src/print.zig
+index b0782db..b539729 100644
+--- i/modules/compiler-core/src/print.zig
++++ w/modules/compiler-core/src/print.zig
+@@ -273,6 +273,13 @@ pub fn errorMessages(info: ParseErrorInfo) ErrorMessages {
+             .caretCaption = "past the last parameter",
+             .hint = "`$0` is the first declared parameter; the highest marker is one less than the parameter count.",
+         },
++        .blockStatementSemicolon => .{
++            .code = "block-statement-semicolon",
++            .message = "a block-shaped statement ends itself",
++            .caretCaption = "remove the `;`",
++            .note = "`if`, `loop` and `case` behave the same way here — the rule is the closing brace, not the keyword",
++            .hint = "A `;` still ends the statement when the construct is a VALUE: `val x = if (c) { 1 } else { 2 };` and `return case s { … };` both keep it, because the statement there is the binding or the `return`.",
++        },
+         .fnParamPositionalAfterNamed => .{
+             .message = "fn-param-positional-after-named: positional argument supplied after a named one.",
+             .hint = "Convert the trailing positional arg to a named one (`name: value`), or move the named argument to the end of the call.",

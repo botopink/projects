@@ -1,0 +1,77 @@
+// Front 65 — Rakun URL Rules
+//
+// What this demonstrates: the boundary half. `canonicalize` strips basePath and
+// normalizes the trailing slash on the server; `clientHref` is its inverse and
+// is what front 27's <Link> calls in the browser. They are one botopink
+// implementation compiled twice, so the two sides cannot disagree about what a
+// URL is — which they would, silently and site-wide, if each had its own copy.
+//
+// BOTH HALVES: neither function carries a host cell, so this file compiles for
+// erlang and for commonJS and the tests below run on both.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/config/next-config-js/basePath
+//   https://nextjs.org/docs/app/api-reference/config/next-config-js/trailingSlash
+
+import {UrlRules, canonicalize, clientHref} from "rakun-web";
+
+fn docsRules() -> UrlRules {
+    return UrlRules(
+        basePath: "/docs",
+        trailingSlash: false,
+        redirects: [],
+        rewrites: [],
+        headers: [],
+    );
+}
+
+fn rootRules() -> UrlRules {
+    return UrlRules(
+        basePath: "",
+        trailingSlash: true,
+        redirects: [],
+        rewrites: [],
+        headers: [],
+    );
+}
+
+test "basePath is stripped on the way in and restored on the way out" {
+    val rules = docsRules();
+    assert canonicalize(rules, "/docs/about") == "/about";
+    assert clientHref(rules, "/about") == "/docs/about";
+}
+
+test "the base path itself maps to the root" {
+    val rules = docsRules();
+    assert canonicalize(rules, "/docs") == "/";
+    assert clientHref(rules, "/") == "/docs";
+}
+
+test "a path outside the base path is left alone" {
+    val rules = docsRules();
+    assert canonicalize(rules, "/other/about") == "/other/about";
+}
+
+test "trailingSlash false removes the slash and leaves the root alone" {
+    val rules = docsRules();
+    assert canonicalize(rules, "/docs/about/") == "/about";
+    assert canonicalize(rules, "/docs/") == "/";
+}
+
+test "trailingSlash true adds the slash and leaves the root alone" {
+    val rules = rootRules();
+    assert clientHref(rules, "/about") == "/about/";
+    assert clientHref(rules, "/") == "/";
+}
+
+test "the two functions are inverses" {
+    val rules = docsRules();
+    val paths = ["/docs", "/docs/about", "/docs/blog/hello", "/docs/a%20b"];
+    val round = paths.map({ p -> clientHref(rules, canonicalize(rules, p)) });
+    assert round.join(",") == "/docs,/docs/about,/docs/blog/hello,/docs/a%20b";
+}
+
+test "decoding happens once, so an encoded slash stays encoded" {
+    val rules = rootRules();
+    assert canonicalize(rules, "/a%252Fb") == "/a%2Fb/";
+}

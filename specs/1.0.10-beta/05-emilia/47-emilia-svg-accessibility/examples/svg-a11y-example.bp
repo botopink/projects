@@ -1,0 +1,161 @@
+// Front 47 — emilia SVG and accessibility.
+//
+// The `Svg` and `A11y` catalogues, the gated `sr-only` pair marked at its
+// declaration site, then an icon-only close button whose visible glyph is a
+// stroked SVG and whose label is `sr-only`.
+//
+// Upstream:
+//   https://tailwindcss.com/docs/fill
+//   https://tailwindcss.com/docs/stroke
+//   https://tailwindcss.com/docs/stroke-width
+//   https://tailwindcss.com/docs/screen-readers
+//   https://tailwindcss.com/docs/forced-color-adjust
+// Reference: TAILWIND_CSS_DOCS.md § 18. SVG, § 19. Acessibilidade
+//
+// § 18 gives class names and HTML examples and NO property/value table. The
+// property comes from each subsection heading (`fill`, `stroke`,
+// `stroke-width`) and the value from the class suffix. `currentcolor` is the
+// one value in this file derived rather than transcribed.
+
+import {emilia, flush, Token} from "emilia";
+
+// `paletteVar(family, shade)` comes from front 33 and returns
+// `var(--color-red-500)`. Every colour in this file goes through it, so
+// `fill-red-500` and `bg-red-500` read one theme entry and cannot drift.
+import {paletteVar} from "emilia";
+
+// ── fill ─────────────────────────────────────────────────────────────────────
+
+val fillKeywords: Token[] = [
+    .Svg.Fill.Current,
+    .Svg.Fill.None,
+];
+
+// ── stroke ───────────────────────────────────────────────────────────────────
+
+val strokeKeywords: Token[] = [
+    .Svg.Stroke.Current,
+    .Svg.Stroke.None,
+];
+
+// ── stroke-width ─────────────────────────────────────────────────────────────
+//
+// Unitless: `stroke-width:2`, not `2px`. That is what the property takes in the
+// SVG coordinate system and what the class suffix says.
+//
+// `.Svg.StrokeWidth.0` and `.Svg.Stroke.None` are not the same thing: the first
+// draws a zero-width stroke in the stroke colour, the second draws none.
+
+val strokeWidths: Token[] = [
+    .Svg.StrokeWidth.0,
+    .Svg.StrokeWidth.1,
+    .Svg.StrokeWidth.2,
+];
+
+// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
+// constructed by any spelling (language-gaps.md row 52) — verified against the
+// real compiler. So these are TOP-LEVEL `Token` variants: `SvgFill`, not
+// `Svg.Fill.Color`. Contract § 4a states the rule.
+//
+// LANGUAGE GAP: their fields are `string` and not a colour section type,
+// because a section-typed value cannot be constructed standalone either
+// (row 53). The value is front 33's `paletteVar(...)` result.
+//
+// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
+// payload call does not propagate the typed-array context (row 51), so
+// construction goes through a fn.
+fn fillColor(v: string) -> Token {
+    return Token.SvgFill(value: v);
+}
+
+fn strokeColor(v: string) -> Token {
+    return Token.SvgStroke(value: v);
+}
+
+fn rawStrokeWidth(v: string) -> Token {
+    return Token.SvgStrokeWidthRaw(value: v);
+}
+
+val brandIcon: Token[] = [
+    fillColor(paletteVar("red", 500)),
+    strokeColor(paletteVar("blue", 500)),
+    rawStrokeWidth("1.5"),
+];
+
+// ── accessibility ────────────────────────────────────────────────────────────
+//
+// GATED. § 19.2 gives two HTML examples and no CSS: no property list, no
+// values, not even a count of declarations. These two tokens are declared here
+// and their bodies come from the upstream page, read in one sitting, with the
+// URL and the date recorded in the dispatcher comment in emilia.bp and a
+// checkbox in the front's TODO.md that must be ticked before the front lands.
+//
+// `.A11y.SrOnly` is a multi-declaration body and composes through the same `;`
+// join every other token uses.
+
+val screenReaderVisibility: Token[] = [
+    .A11y.SrOnly,
+    .A11y.NotSrOnly,
+];
+
+// § 19.1 is the only part of § 19 that gives a property/value table.
+
+val forcedColors: Token[] = [
+    .A11y.ForcedColorAdjust.Auto,
+    .A11y.ForcedColorAdjust.None,
+];
+
+// ── the component ────────────────────────────────────────────────────────────
+//
+// An icon-only close button. The glyph is an inline SVG: no fill, a stroke that
+// follows the button's own `color`, and a stroke width of 2 so it reads at
+// 16px. The accessible label sits inside the button, styled `sr-only`, so a
+// screen reader announces "Fechar" and the layout is unchanged.
+//
+// The icon turns red under the pointer, which is the realistic use of a `fill`
+// or `stroke` token under a modifier.
+//
+// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `await` it.
+
+fn closeIconTokens() -> Token[] {
+    val hovered: Token[] = [strokeColor(paletteVar("red", 500))];
+    val icon: Token[] = [
+        .Svg.Fill.None,
+        .Svg.Stroke.Current,
+        .Svg.StrokeWidth.2,
+        .A11y.ForcedColorAdjust.Auto,
+        Token.Hover(hovered),
+    ];
+    return icon;
+}
+
+fn closeButtonTokens() -> Token[] {
+    val button: Token[] = [
+        .Color.Gray.700,
+        .Pad.All.2,
+        .Border.Rounded.Full,
+        .Interact.Cursor.Pointer,
+    ];
+    return button;
+}
+
+fn srLabelTokens() -> Token[] {
+    val label: Token[] = [.A11y.SrOnly];
+    return label;
+}
+
+#[@future]
+pub fn renderCloseButton() -> @Future<string> {
+    val buttonCls = emilia(closeButtonTokens());
+    val iconCls = emilia(closeIconTokens());
+    val labelCls = emilia(srLabelTokens());
+    val styles = await flush();
+    val markup = "<button class=\"" + buttonCls + "\">"
+        + "<svg class=\"" + iconCls + "\" viewBox=\"0 0 24 24\">"
+        + "<path d=\"M6 6 L18 18 M18 6 L6 18\"></path>"
+        + "</svg>"
+        + "<span class=\"" + labelCls + "\">Fechar</span>"
+        + "</button>";
+    return markup + styles;
+}

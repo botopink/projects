@@ -1,0 +1,229 @@
+// Front 08 — SQL Data Access.
+//
+// One domain carried the whole way: `users` and `orders`, two repositories with
+// `#[query]` statements, a `#[transactional]` service that places an order and
+// writes an audit row as one unit of work, and the REST controller on top. All
+// of it runs on the server.
+//
+// The schema these statements expect (created by front 77's migrations; this
+// front creates no schema):
+//
+//   CREATE TABLE users  (id INT PRIMARY KEY, name TEXT, email TEXT);
+//   CREATE TABLE orders (id INT PRIMARY KEY, user_id INT, total INT, state TEXT);
+//   CREATE TABLE order_audit (order_id INT, action TEXT);
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/data/sql.html
+
+import {Request, Response} from "rakun";
+import {repository, service, restController, route, getMapping, postMapping} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+import {managed} from "rakun";                          // front 06
+import {raiseProblem} from "rakun-web";                 // front 07
+
+// Front 08's surface.
+import {SqlTemplate, Rows, Row, Param, Tx, param} from "rakun-data";
+import {query, transactional, noTransaction} from "rakun-data";
+import {healthIndicator, Health} from "rakun-actuator-api";  // front 11, wave 1
+import {rkRegisterQuery, rkTxRun, rkPoolStats} from "rakun-data";
+
+// ---- data layer (server) ----
+
+// A repository method has a BODY that calls the helper `#[query]` emits. A
+// bodyless method in a `type` body does not parse, which is why the Spring Data
+// shape cannot be written here. See the front README's Language gaps.
+#[repository]
+#[managed]
+pub type UserRepository(
+    sql: SqlTemplate,
+) {
+    #[query("SELECT id, name, email FROM users WHERE id = :id")]
+    pub fn findById(self: Self, id: i32) -> ?Row {
+        return self.sql.single(__rkQuery_findById(), [param("id", id.toString())]);
+    }
+
+    #[query("SELECT id, name, email FROM users ORDER BY name")]
+    pub fn findAll(self: Self) -> Rows {
+        return self.sql.query(__rkQuery_findAll(), []);
+    }
+
+    #[query("INSERT INTO users (id, name, email) VALUES (:id, :name, :email)")]
+    pub fn insert(self: Self, id: i32, name: string, email: string) -> i32 {
+        return self.sql.update(__rkQuery_insert(), [
+            param("id", id.toString()),
+            param("name", name),
+            param("email", email),
+        ]);
+    }
+}
+
+#[repository]
+#[managed]
+pub type OrderRepository(
+    sql: SqlTemplate,
+) {
+    #[query("SELECT id, user_id, total, state FROM orders WHERE user_id = :userId ORDER BY id")]
+    pub fn findByUser(self: Self, userId: i32) -> Rows {
+        return self.sql.query(__rkQuery_findByUser(), [param("userId", userId.toString())]);
+    }
+
+    #[query("INSERT INTO orders (id, user_id, total, state) VALUES (:id, :userId, :total, 'placed')")]
+    pub fn insert(self: Self, id: i32, userId: i32, total: i32) -> i32 {
+        return self.sql.update(__rkQuery_insert2(), [
+            param("id", id.toString()),
+            param("userId", userId.toString()),
+            param("total", total.toString()),
+        ]);
+    }
+
+    #[query("INSERT INTO order_audit (order_id, action) VALUES (:orderId, :action)")]
+    pub fn audit(self: Self, orderId: i32, action: string) -> i32 {
+        return self.sql.update(__rkQuery_audit(), [
+            param("orderId", orderId.toString()),
+            param("action", action),
+        ]);
+    }
+
+    #[query("SELECT COUNT(*) AS n FROM orders")]
+    pub fn count(self: Self) -> i32 {
+        val row = self.sql.single(__rkQuery_count(), []);
+        var n = 0;
+        if (row) { r -> n = r.int("n"); };
+        return n;
+    }
+}
+
+// ---- business layer (server) ----
+
+// `#[transactional]` on the TYPE emits `OrderServiceTx`, a proxy whose methods
+// run the original inside `rkTxRun`. A decorator cannot wrap the body it
+// annotates, so this is how a declarative transaction is actually built — and
+// injecting `OrderService` instead of `OrderServiceTx` is a visible choice
+// rather than a hidden one.
+#[service]
+#[transactional]
+#[managed]
+pub type OrderService(
+    sql: SqlTemplate,
+    users: UserRepository,
+    orders: OrderRepository,
+) {
+    pub fn place(self: Self, userId: i32, total: i32) -> i32 {
+        val owner = self.users.findById(userId);
+        var exists = false;
+        if (owner) { u -> exists = true; };
+        if (!exists) raiseProblem("user.not-found", "no user ${userId}");
+
+        val id = self.orders.count() + 1;
+        val _o = self.orders.insert(id, userId, total);
+        val _a = self.orders.audit(id, "placed");
+        return id;
+    }
+
+    // The explicit form, for the case where the boundary is narrower than the
+    // method. `tx` is the same checked-out connection both statements use, so
+    // either both land or neither does.
+    pub fn refund(self: Self, orderId: i32) -> i32 {
+        return self.sql.transaction({ tx ->
+            val _u = tx.update("UPDATE orders SET state = 'refunded' WHERE id = :id", [param("id", orderId.toString())]);
+            val _a = tx.update("INSERT INTO order_audit (order_id, action) VALUES (:id, 'refunded')", [param("id", orderId.toString())]);
+            orderId;
+        });
+    }
+
+    // A read that does not need a transaction and should not pay for one.
+    #[noTransaction]
+    pub fn history(self: Self, userId: i32) -> string {
+        val rows = self.orders.findByUser(userId);
+        return rows.toList().map({ r -> r.get("id") + ":" + r.get("total") }).join(",");
+    }
+}
+
+// ---- web layer (server) ----
+
+// Note the injected type: `OrderServiceTx`, the proxy. Injecting `OrderService`
+// here would work and would not be transactional, which is the point of making
+// the proxy a named type rather than an invisible wrapper.
+#[restController]
+#[route("/api/users")]
+#[managed]
+pub type UserOrdersApi(
+    users: UserRepository,
+    orders: OrderServiceTx,
+) {
+    #[getMapping("/")]
+    pub fn index(self: Self, req: Request) -> Response {
+        val rows = self.users.findAll();
+        return Response.json(rows.toList().map({ r -> r.get("name") }).join(", "));
+    }
+
+    #[getMapping("/:id/orders")]
+    pub fn history(self: Self, req: Request) -> Response {
+        val id = req.param("id").length();
+        return Response.json(self.orders.history(id));
+    }
+
+    #[postMapping("/:id/orders")]
+    pub fn place(self: Self, req: Request) -> Response {
+        val userId = req.param("id").length();
+        val total = req.body().length();
+        val orderId = self.orders.place(userId, total);
+        return Response.created("order ${orderId}");
+    }
+}
+
+// ---- health (server) ----
+
+// Front 08 ships its own indicator and registers it with front 11. The indicator
+// list is not front 11's work.
+#[healthIndicator("db")]
+#[managed]
+pub type DataSourceHealth(
+    sql: SqlTemplate,
+) {
+    pub fn check(self: Self) -> Health {
+        val r = self.sql.tryQuery("SELECT 1 AS ok", []);
+        val status = if (r.isOk()) "UP" else "DOWN";
+        val stats = rkPoolStats();
+        return Health(status: status, details: stats);
+    }
+}
+
+// ---- what the tests pin ----
+
+test "sql: a named parameter binds by name and a hostile value stays a value" {
+    val sql = __rkMake_SqlTemplate();
+    val _c = sql.update("CREATE TABLE users (id INT PRIMARY KEY, name TEXT, email TEXT)", []);
+    val _i = sql.update("INSERT INTO users (id, name, email) VALUES (:id, :name, :email)", [
+        param("id", "1"),
+        param("name", "'; DROP TABLE users; --"),
+        param("email", "a@example.com"),
+    ]);
+    val rows = sql.query("SELECT name FROM users WHERE id = :id", [param("id", "1")]);
+    assert rows.length() == 1;
+}
+
+test "sql: a transaction rolls back every statement when the work raises" {
+    val sql = __rkMake_SqlTemplate();
+    val before = __rkMake_OrderRepository().count();
+    val out = sql.tryTransaction({ tx ->
+        val _o = tx.update("INSERT INTO orders (id, user_id, total, state) VALUES (99, 1, 10, 'placed')", []);
+        raiseProblem("test.boom", "deliberate");
+        0;
+    });
+    assert out.isError();
+    assert __rkMake_OrderRepository().count() == before;
+}
+
+test "sql: placing an order writes the order and its audit row together" {
+    val svc = __rkMake_OrderServiceTx();
+    val id = svc.place(1, 250);
+    val history = svc.history(1);
+    assert history.contains(id.toString());
+}
+
+test "sql: #[query] registers every statement the application can issue" {
+    val declared = rkRegisteredQueries();
+    assert declared.contains("findByUser");
+    assert declared.contains("SELECT id, user_id, total, state FROM orders");
+}

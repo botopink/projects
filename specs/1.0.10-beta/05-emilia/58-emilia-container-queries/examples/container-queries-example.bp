@@ -1,0 +1,132 @@
+// Front 58 — emilia container queries
+//
+// One card that lays out as a column in a narrow slot and as a row in a wide one
+// without asking about the viewport, plus a named container so a nested card can
+// query the page shell rather than its own parent.
+//
+// https://tailwindcss.com/docs/responsive-design#container-queries
+// https://tailwindcss.com/docs/theme
+
+import { emilia, flush, Token } from "emilia";
+import { ContainerSize, containerKey, containerAt, containerNamed } from "emilia";
+import { containerAtMd, containerAt2xl } from "emilia";
+// `defaultTheme`, `extend`, `ThemeEntry`, `withTheme` and `flushWith` come from
+// fronts 54 and 56.
+import { ThemeEntry, defaultTheme, extend, defaultOptions, withTheme, flushWith } from "emilia";
+
+// The parent declares itself a container. `Container.Inline` carries no payload, so it
+// stays a section leaf; everything below that carries a payload is a top-level variant
+// reached through a builder. Nothing else about the parent changes: it is an ordinary
+// flex column that happens to answer questions about its own width.
+fn slot() -> string {
+    val tokens: Token[] = [.Container.Inline, .Layout.Flex, .Flex.Col, .Pad.All.4];
+    return emilia(tokens);
+}
+
+// The child asks about the space it was given, not about the window. At 28rem of
+// container width it becomes a row; below that it stays a column. The same token
+// list renders the same way in a three-column grid and in a 300px drawer.
+fn card() -> string {
+    val wide: Token[] = [.Flex.Row, .Flex.Items.Center, .Flex.Gap.4];
+    val roomy: Token[] = [.Pad.All.8];
+    val tokens: Token[] = [
+        .Bg.White,
+        .Layout.Flex,
+        .Flex.Col,
+        containerAtMd(wide),
+        containerAt2xl(roomy),
+    ];
+    return emilia(tokens);
+}
+
+// A named container. The shell names itself `page`; a card nested three levels down
+// queries `page` directly instead of the nearest container above it.
+fn shell() -> string {
+    val named = Token.ContainerNamed("page");
+    val tokens: Token[] = [named, .Layout.Block];
+    return emilia(tokens);
+}
+
+fn nestedCard() -> string {
+    val sideBySide: Token[] = [.Flex.Row];
+    val tokens: Token[] = [
+        .Layout.Flex,
+        .Flex.Col,
+        containerNamed(ContainerSize.X3xl, "page", sideBySide),
+    ];
+    return emilia(tokens);
+}
+
+test "the parent becomes a container without any other change in behaviour" {
+    val cls = slot();
+    val css = await flush();
+    assert css.contains("." + cls + "{container-type:inline-size;display:flex");
+}
+
+test "a size variant is a hoisted at-rule, not a block inside the class body" {
+    val cls = card();
+    val css = await flush();
+    assert css.contains("@container (width >= 28rem){." + cls + "{flex-direction:row");
+    assert css.contains("@container (width >= 42rem){." + cls + "{padding:calc(var(--spacing) * 8)}}");
+}
+
+test "the sizes come from the theme, so narrowing one narrows the rule" {
+    val narrower: ThemeEntry[] = [ThemeEntry(name: "--container-md", value: "20rem")];
+    val th = extend(defaultTheme(), narrower);
+    val cls = card();
+    val opts = withTheme(defaultOptions(), th);
+    val css = await flushWith(opts);
+    assert css.contains("@container (width >= 20rem){." + cls + "{flex-direction:row");
+    assert css.contains("@container (width >= 28rem){") == false;
+}
+
+test "naming a container also makes it one" {
+    val cls = shell();
+    val css = await flush();
+    assert css.contains("." + cls + "{container-type:inline-size;container-name:page;display:block}");
+}
+
+test "a named query carries the name between the at-rule and the condition" {
+    val cls = nestedCard();
+    val css = await flush();
+    assert css.contains("@container page (width >= 48rem){." + cls + "{flex-direction:row}}");
+}
+
+test "the size key is typed at the call site even though the token holds a string" {
+    assert containerKey(ContainerSize.X3xs) == "3xs";
+    assert containerKey(ContainerSize.Md) == "md";
+    assert containerKey(ContainerSize.X7xl) == "7xl";
+}
+
+// `containerAtMd(inner)` is the thirteen-name surface; `containerAt(size, inner)` is the
+// general form under it. Both build the same token, so both render the same rule.
+test "the named builder and the general builder agree" {
+    val wide: Token[] = [.Flex.Row];
+    val a: Token[] = [containerAtMd(wide)];
+    val b: Token[] = [containerAt(ContainerSize.Md, wide)];
+    assert emilia(a) == emilia(b);
+    val _css = await flush();
+}
+
+// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be constructed by
+// any spelling, so the size variants and the named container are top-level `Token`
+// variants and only the payload-free markers stay in the `Container` section.
+// LANGUAGE GAP: a section-typed value cannot be constructed standalone, so `ContainerAt`
+// carries its size as a `string` theme key and the typing lives in `ContainerSize` and
+// the thirteen builders.
+// LANGUAGE GAP: a dot-shorthand path followed by a payload call does not propagate the
+// typed-array context inside an array literal, so `[.ContainerAt(size: "md", inner: wide)]`
+// does not parse. The builders above are the nearest valid forms — the same workaround
+// repository/emilia/src/emilia.bp:498-503 already records. All three rows are in
+// ../../language-gaps.md; the rule they imply is stated in ../../contracts.md § 4a.
+
+// The pair is what makes it work: a size variant with no ancestor container matches
+// nothing, and a container with no queries does nothing. Both halves are in this file
+// on purpose.
+test "the container and its query land in the same document" {
+    val parent = slot();
+    val child = card();
+    val css = await flush();
+    assert css.contains("." + parent + "{container-type:inline-size");
+    assert css.contains("@container (width >= 28rem){." + child + "{");
+}

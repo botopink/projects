@@ -1,0 +1,86 @@
+// Front 53 — onze example app · examples/middleware-example.bp
+// App file: middleware.bp
+//
+// Demonstrates: the rules that decide whether a request reaches the app at all.
+// `#[matcher]` (front 65's grammar, front 07's execution) keeps this entry off
+// `/images/hero.jpg` and `/favicon.ico`, so the auth check runs on the routes it
+// is for and nowhere else. Front 62 supplies the session cookie; front 07 owns
+// the chain, the short-circuit and the rewrite.
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/middleware
+//           https://nextjs.org/docs/app/guides/authentication
+//           NEXTJS-DOCS.md § 20. Middleware e Proxy · § 23. Autenticação
+//
+// Target: erlang (server). Middleware never has a browser half — a gate the
+// client can skip is not a gate.
+
+import {Request, Response} from "rakun";
+import {rkSetReplyHeader} from "rakun";                              // front 04
+import {Filter, Chain, Next} from "rakun-web";                       // front 07
+import {middleware, matcher} from "rakun-web";                       // front 07 · matcher grammar from front 65
+import {rkRegisterFilter, rkChainNext} from "rakun-web";
+import {rkTestRequest, rkTestRequestAuthed, rkReplyHeaderValue} from "rakun-web";
+
+// front 07 + front 65 — the matcher restricts the entry. A request outside it
+// skips this function entirely, which is the difference between "the auth check
+// returned early" and "the auth check never ran".
+//
+// LANGUAGE GAP: `if (a && b)` does not parse in condition position, so each
+// conjunction below is bound to a `val` first — see `language-gaps.md`.
+#[middleware]
+#[matcher("/dashboard/:path*")]
+pub fn middleware(req: Request, chain: Chain) -> Response {
+    // front 62 — the session cookie reaches middleware through the ordinary
+    // `Request`, because middleware runs BEFORE the request frame a render uses.
+    val session = req.header("cookie");
+    val hasSession = session.contains("session=");
+
+    // Short-circuit: the handler never runs. `Next.redirect` sets Location
+    // through front 04's per-request header accumulator and answers 307, because
+    // the frozen `Response` record has no header field of its own.
+    if (hasSession == false) {
+        return Next.redirect("/login");
+    };
+
+    // An internal rewrite: the browser keeps the URL it asked for and a
+    // different route handles it. The new path travels as a process-local
+    // signal, not as a response header, so nothing leaks to the client.
+    val isLegacy = req.path == "/dashboard/old-posts";
+    if (isLegacy) {
+        return Next.rewrite("/dashboard/posts");
+    };
+
+    // A header set on the way through, then the chain continues.
+    val _h = rkSetReplyHeader("X-Onze-Gate", "middleware");
+    return chain.next(req);
+}
+
+test "an unauthenticated request to a matched path is redirected, not rendered" {
+    val res = rkChainNext(0, rkTestRequest("GET", "/dashboard/posts"));
+    assert res.status == 307;
+    assert rkReplyHeaderValue("Location") == "/login";
+}
+
+test "an authenticated request passes through and carries the gate header" {
+    val res = rkChainNext(0, rkTestRequestAuthed("GET", "/dashboard/posts"));
+    assert res.status == 200;
+    assert rkReplyHeaderValue("X-Onze-Gate") == "middleware";
+}
+
+test "a path outside the matcher skips the entry entirely" {
+    val res = rkChainNext(0, rkTestRequest("GET", "/images/hero.jpg"));
+    assert res.status == 200;
+    assert rkReplyHeaderValue("X-Onze-Gate") == "";
+}
+
+test "the blog is public — the gate does not run on it" {
+    val res = rkChainNext(0, rkTestRequest("GET", "/blog/hello-world"));
+    assert res.status == 200;
+    assert rkReplyHeaderValue("Location") == "";
+}
+
+test "a legacy dashboard path is rewritten without changing the browser's URL" {
+    val res = rkChainNext(0, rkTestRequestAuthed("GET", "/dashboard/old-posts"));
+    assert res.status == 200;
+    assert rkReplyHeaderValue("Location") == "";
+}

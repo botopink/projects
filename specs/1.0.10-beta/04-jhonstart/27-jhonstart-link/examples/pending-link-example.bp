@@ -1,0 +1,61 @@
+// Front 27 — jhonstart-link · examples/pending-link-example.bp
+//
+// A checkout link that shows a spinner while its own navigation is in flight.
+//
+// This is the BROWSER half of front 27. `linkStatus()` reads the client
+// runtime's in-flight href; during the server pass it is always idle, so the
+// first HTML carries the plain link and the spinner appears only after
+// hydration. That is deliberate: a spinner in the server HTML would be a
+// spinner nobody can stop.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/functions/use-link-status
+//   https://nextjs.org/docs/app/api-reference/components/link
+
+import { Element, div, span, text, renderToString } from "jhonstart";
+import { Link, linkProps, withClass, linkStatus, LinkStatus } from "jhonstart";
+
+// The label: the same link, with or without the trailing spinner. Pure, so the
+// decision is testable without a browser.
+fn checkoutLabel(status: LinkStatus, href: string) -> Element {
+    val busy = status.pending && status.href == href;
+    val cls = if (busy) { "cta cta-busy" } else { "cta" };
+    val suffix = if (busy) { " …" } else { "" };
+    return span([text("Checkout" + suffix, attrs: [])], attrs: [#("class", cls)]);
+}
+
+// The component. `use linkStatus()` is the hook form; the server render
+// yields the idle status.
+fn CheckoutLink() -> Element {
+    val status = use linkStatus();
+    val href = "/checkout";
+    return div([
+        Link(withClass(linkProps(href), "cta-link"), [checkoutLabel(status, href)]),
+    ], attrs: [#("class", "cart-footer")]);
+}
+
+// The explicit-status form, which is what a test and a server render both use.
+fn checkoutLinkFor(status: LinkStatus) -> Element {
+    val href = "/checkout";
+    return div([
+        Link(withClass(linkProps(href), "cta-link"), [checkoutLabel(status, href)]),
+    ], attrs: [#("class", "cart-footer")]);
+}
+
+test "an idle status renders the plain call to action" {
+    val markup = renderToString(checkoutLinkFor(LinkStatus(pending: false, href: "")));
+    assert markup.contains("class=\"cta\"");
+    assert markup.contains(">Checkout<");
+}
+
+test "a navigation to this link marks it busy" {
+    val markup = renderToString(checkoutLinkFor(LinkStatus(pending: true, href: "/checkout")));
+    assert markup.contains("class=\"cta cta-busy\"");
+    assert markup.contains("Checkout …");
+}
+
+test "a navigation to some other route leaves this link alone" {
+    val markup = renderToString(checkoutLinkFor(LinkStatus(pending: true, href: "/account")));
+    assert markup.contains("class=\"cta\"");
+    assert markup.contains("cta-busy") == false;
+}

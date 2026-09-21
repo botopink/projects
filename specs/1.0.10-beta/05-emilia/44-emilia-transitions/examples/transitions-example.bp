@@ -1,0 +1,195 @@
+// Front 44 — emilia transitions and animation.
+//
+// The `Transition` and `Animate` catalogues as typed `Token[]` lists, the
+// preset-then-override ordering shown as working code, then a submit button
+// that transitions its colours on hover and swaps to a spinner while the form
+// is in flight.
+//
+// Upstream:
+//   https://tailwindcss.com/docs/transition-property
+//   https://tailwindcss.com/docs/transition-duration
+//   https://tailwindcss.com/docs/transition-timing-function
+//   https://tailwindcss.com/docs/animation
+// Reference: TAILWIND_CSS_DOCS.md § 15 (animation literals from § 21.6)
+//
+// `.Transition.Base` is the bare `transition` utility. It is not spelled
+// `Default`, because `default` is in the language's keyword table and a leaf
+// that differs from a keyword only by case is an avoidable hazard.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── transition-property: the presets ─────────────────────────────────────────
+//
+// Each of these is ONE token that emits THREE declarations — property, timing
+// function and duration — exactly as the reference's column writes them. They
+// compose into a rule body through the same `;` join every other token uses.
+
+val transitionPresets: Token[] = [
+    .Transition.None,
+    .Transition.Base,
+    .Transition.All,
+    .Transition.Colors,
+    .Transition.Opacity,
+    .Transition.Shadow,
+    .Transition.Transform,
+];
+
+// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
+// constructed by any spelling (language-gaps.md row 52), so these are TOP-LEVEL
+// `Token` variants — `TransitionProperty` and `AnimateRaw`, not
+// `Transition.Property` and `Animate.Raw`. Contract § 4a states the rule.
+//
+// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
+// payload call does not propagate the typed-array context (row 51), so
+// construction goes through a fn.
+fn transitionProperty(v: string) -> Token {
+    return Token.TransitionProperty(value: v);
+}
+
+fn rawAnimate(v: string) -> Token {
+    return Token.AnimateRaw(value: v);
+}
+
+val widthOnly: Token[] = [transitionProperty("width")];
+
+// ── transition-behavior ──────────────────────────────────────────────────────
+//
+// `transition-discrete` emits `allow-discrete`, not `discrete`. The class name
+// and the CSS value do not match.
+
+val transitionBehaviors: Token[] = [
+    .Transition.Behavior.Normal,
+    .Transition.Behavior.Discrete,
+];
+
+// ── transition-duration ──────────────────────────────────────────────────────
+
+val durationScale: Token[] = [
+    .Transition.Duration.0,
+    .Transition.Duration.75,
+    .Transition.Duration.100,
+    .Transition.Duration.150,
+    .Transition.Duration.200,
+    .Transition.Duration.300,
+    .Transition.Duration.500,
+    .Transition.Duration.700,
+    .Transition.Duration.1000,
+];
+
+// ── transition-timing-function ───────────────────────────────────────────────
+//
+// `Linear` is the only one with a literal in the reference. The other three
+// emit `var(--ease-in)` and friends verbatim and stay inert until a theme
+// preamble defines them.
+
+val easings: Token[] = [
+    .Transition.Ease.Linear,
+    .Transition.Ease.In,
+    .Transition.Ease.Out,
+    .Transition.Ease.InOut,
+];
+
+// ── transition-delay ─────────────────────────────────────────────────────────
+
+val delayScale: Token[] = [
+    .Transition.Delay.0,
+    .Transition.Delay.75,
+    .Transition.Delay.100,
+    .Transition.Delay.150,
+    .Transition.Delay.200,
+    .Transition.Delay.300,
+    .Transition.Delay.500,
+    .Transition.Delay.700,
+    .Transition.Delay.1000,
+];
+
+// ── preset, then override ────────────────────────────────────────────────────
+//
+// A preset already sets duration and timing function. A later token in the same
+// list emits its own declaration, and CSS's last-wins rule makes it the
+// effective one. Order in the list IS the override order, and the class name is
+// a hash of the composed body — so reordering these three changes the class.
+
+val slowColorFade: Token[] = [
+    .Transition.Colors,
+    .Transition.Duration.700,
+    .Transition.Ease.Linear,
+];
+
+// ── animation ────────────────────────────────────────────────────────────────
+//
+// These emit `animation:var(--animate-spin)` and friends — themeVar lookups
+// from front 54, whose entries carry § 21.6's literals. Each also hoists its
+// `@keyframes` block through front 56's `blockSheet(header, body)`, which
+// `renderDocument` lifts to the top of the emitted stylesheet. `Animate` is the
+// one sub-dispatcher in this front that returns a `Sheet` rather than a
+// declaration string, because a keyframes block is not a class rule.
+
+val builtInAnimations: Token[] = [
+    .Animate.None,
+    .Animate.Spin,
+    .Animate.Ping,
+    .Animate.Pulse,
+    .Animate.Bounce,
+];
+
+val customAnimation: Token[] = [rawAnimate("fade 300ms ease-out")];
+
+// ── the component ────────────────────────────────────────────────────────────
+//
+// A submit button with two states. At rest it transitions its colours over
+// 200ms on hover and focus. While the form is in flight the caller swaps to the
+// busy class, which runs the spin animation and drops the pointer transition
+// entirely — a button that is already disabled should not animate its hover.
+//
+// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `await` it.
+
+fn submitButtonTokens() -> Token[] {
+    val hovered: Token[] = [.Bg.Blue.700];
+    val focused: Token[] = [.Effect.Shadow.Md];
+    val button: Token[] = [
+        .Bg.Blue.500,
+        .Pad.X.4,
+        .Pad.Y.2,
+        .Border.Rounded.Md,
+        .Transition.Colors,
+        .Transition.Duration.200,
+        Token.Hover(hovered),
+        Token.Focus(focused),
+    ];
+    return button;
+}
+
+fn busyButtonTokens() -> Token[] {
+    val busy: Token[] = [
+        .Bg.Gray.500,
+        .Pad.X.4,
+        .Pad.Y.2,
+        .Border.Rounded.Md,
+        .Transition.None,
+        .Effect.Opacity.75,
+    ];
+    return busy;
+}
+
+fn spinnerTokens() -> Token[] {
+    val spinner: Token[] = [
+        .Animate.Spin,
+        .Effect.Opacity.100,
+    ];
+    return spinner;
+}
+
+#[@future]
+pub fn renderSubmitButton(inFlight: bool) -> @Future<string> {
+    val tokens = if (inFlight) busyButtonTokens() else submitButtonTokens();
+    val buttonCls = emilia(tokens);
+    val spinnerCls = emilia(spinnerTokens());
+    val label = if (inFlight) "Enviando" else "Enviar";
+    val spinnerTag = "<span class=\"" + spinnerCls + "\"></span>";
+    val spinner = if (inFlight) spinnerTag else "";
+    val styles = await flush();
+    val markup = "<button class=\"" + buttonCls + "\">" + spinner + label + "</button>";
+    return markup + styles;
+}

@@ -1,0 +1,108 @@
+// Front 73 — rakun starters: what one dependency line buys.
+//
+// The whole point of a starter is that this file contains no wiring. There is no
+// DataSource construction, no pool sizing, no filter-chain assembly and no
+// registration of anything. Two starter names in the manifest, and front 72's
+// auto-configuration does the rest.
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/using/build-systems.html#using.build-systems.starters
+//   https://docs.spring.io/spring-boot/reference/using/auto-configuration.html
+//
+// The application's botopink.json, quoted because a manifest is not botopink.
+// The `path` sources are the interim form: a dependency cannot name a
+// subdirectory of a git repository today, so an out-of-tree consumer needs a
+// checkout of the rakun repository beside it. See this front's README.
+//
+//   {
+//     "name": "orders",
+//     "version": "0.1.0",
+//     "src": "src/",
+//     "entry": "main.bp",
+//     "target": "erlang",
+//     "targets": ["erlang"],
+//     "dependencies": {
+//       "rakun-starter-web":      { "path": "../rakun/starters/rakun-starter-web" },
+//       "rakun-starter-data-sql": { "path": "../rakun/starters/rakun-starter-data-sql" }
+//     }
+//   }
+//
+// `SqlTemplate` and `#[transactional]` are provided by front 08; the middleware
+// chain that answers CORS and problem details is front 07; the `DataSource` that
+// backs the template is created by front 72 from `rakun.datasource.url`, because
+// `rakun-starter-data-sql` put `rakun-data` in the resolved dependency set.
+
+import {service, restController, route, getMapping, postMapping} from "rakun";
+import {Request, Response, Rakun, App} from "rakun";
+import {autoConfigure, isAutoConfigured, rkModulePresent} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkPropInt, rkRegisterRoute} from "rakun";
+import {SqlTemplate, Param, param, transactional} from "rakun-data";
+
+// `#[transactional]` is a TYPE-level marker: front 08 emits a proxy type around
+// this one, because a decorator adds declarations and cannot rewrite the body it
+// annotates.
+#[service]
+#[transactional]
+pub type OrderService(
+    // Injected by type. Nothing in this file creates it: front 72's
+    // `RakunDataSourceAutoConfiguration` matched because `rakun-data` is in the
+    // resolved dependency set and the application declared no `SqlTemplate`.
+    sql: SqlTemplate,
+) {
+    pub fn total(self: Self, customer: string) -> i32 {
+        val rows = self.sql.query(
+            "select coalesce(sum(cents), 0) as cents from orders where customer = :customer",
+            [param("customer", customer)],
+        );
+        var cents = 0;
+        if (rows.first()) { r -> cents = r.int("cents"); };
+        return cents;
+    }
+
+    pub fn place(self: Self, customer: string, cents: i32) -> i32 {
+        return self.sql.update(
+            "insert into orders (customer, cents) values (:customer, :cents)",
+            [param("customer", customer), param("cents", cents.toString())],
+        );
+    }
+}
+
+#[restController]
+#[route("/api")]
+pub type OrderController(
+    svc: OrderService,
+) {
+    #[getMapping("/orders/:customer")]
+    pub fn total(self: Self, req: Request) -> Response {
+        return Response.json(self.svc.total(req.param("customer")).toString());
+    }
+
+    #[postMapping("/orders/:customer")]
+    pub fn place(self: Self, req: Request) -> Response {
+        val rows = self.svc.place(req.param("customer"), 1250);
+        return Response.created(rows.toString());
+    }
+}
+
+fn main() {
+    val _ = autoConfigure();
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+test "declaring the data starter is what makes the data auto-configuration eligible" {
+    val _ = autoConfigure();
+    assert isAutoConfigured("RakunDataSourceAutoConfiguration") == true;
+}
+
+test "a subsystem the application did not ask for is not configured" {
+    val _ = autoConfigure();
+    assert isAutoConfigured("RakunCacheAutoConfiguration") == false;
+}
+
+test "the starter's own name is visible to a module condition" {
+    assert rkModulePresent("rakun-starter-web") == true;
+    assert rkModulePresent("rakun-web") == true;
+    assert rkModulePresent("rakun-cache") == false;
+}

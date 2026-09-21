@@ -1,0 +1,158 @@
+// Front 83 — rakun Distributed Transactions · saga-example.bp
+//
+// Demonstrates: a three-step booking saga with a compensation per step, what
+// runs when step three fails, and what "parked" looks like when a compensation
+// itself cannot be completed. This is the mechanism for work that spans services
+// where every step has a sensible undo — the case JTA's XA coordinator covers on
+// the JVM and the case BEAM answers with a supervised coordinator instead.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/io/jta.html
+//           07-io.md § JTA (Transacoes Distribuidas)
+//
+// SERVER SIDE. The coordinator is a supervised process that persists its
+// position after every step; a node that dies mid-saga resumes where it stopped.
+
+import {service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+
+import {Saga, SagaStep, SagaState, startSaga, sagaState} from "rakun-tx";
+import {sagaHistory, sagaStatus} from "rakun-tx";
+// The in-process fixtures: three participant doubles with a switch that makes a
+// named call fail, and an injection point that kills the coordinator between two
+// persisted states.
+import {resetFixtures, seats, payments, tickets} from "rakun-tx";
+import {failNext, failAlways, killCoordinatorAfterStep, resumeCoordinator} from "rakun-tx";
+
+// LANGUAGE GAP: a decorator cannot read the body of the declaration it
+// annotates — `@Decl` exposes kind, name, fields, methods, params and
+// annotations and no statements — so `#[saga]` cannot pair each call in a method
+// with its compensation. A saga is a VALUE whose steps are function pairs. With
+// `decl.body()` this would be a decorated method and a missing compensation
+// would be a compile error instead of a review comment.
+//
+// LANGUAGE GAP: there is no assignment to a `self` field, so the context cannot
+// be mutated as it flows. Each step takes a context and returns a new one. That
+// reads better than mutation here, and it is recorded as a limitation rather
+// than a request — see specs/1.0.9-beta/language-gaps.md.
+
+// The context is querystring-encoded rather than JSON, for the same reason
+// front 24's action envelope is: `std/json` has no structured value, so a shape
+// that both halves can build and read with string operations is the honest one.
+// See specs/1.0.9-beta/contracts.md § 3.
+
+pub fn bookingSaga() -> Saga {
+    val steps = [
+        SagaStep(
+            name: "reserve-seat",
+            run: { ctx -> seats().reserve(ctx) },
+            compensate: { ctx -> seats().release(ctx) },
+        ),
+        SagaStep(
+            name: "charge-card",
+            run: { ctx -> payments().charge(ctx) },
+            compensate: { ctx -> payments().refund(ctx) },
+        ),
+        SagaStep(
+            name: "issue-ticket",
+            run: { ctx -> tickets().issue(ctx) },
+            compensate: { ctx -> tickets().void(ctx) },
+        ),
+    ];
+    return Saga(
+        name: "booking",
+        steps: steps,
+        retries: 3,
+        backoffMs: 250,
+    );
+}
+
+// Starting one is a single call. The id it answers is how an operator — or a
+// support tool, or front 11's actuator — asks what happened afterwards.
+
+#[service]
+pub type Bookings {
+    pub fn book(self: Self, customer: string, showing: string) -> string {
+        val ctx = "customer=" + customer + "&showing=" + showing;
+        return startSaga(bookingSaga(), ctx);
+    }
+}
+
+// Every forward action and every compensation must be idempotent: a coordinator
+// that dies with a step in flight re-runs that step on restart. The front does
+// not pretend to remove that requirement, and the participants below are written
+// with it in mind — `reserve` keyed by customer+showing, `refund` keyed by the
+// charge id the charge step put into the context.
+
+// ---- what the coordinator must be true of --------------------------------------
+
+test "every step succeeding completes the saga with no compensation" {
+    resetFixtures();
+    val id = startSaga(bookingSaga(), "customer=ana&showing=s1");
+    assert sagaStatus(id) == "completed";
+    val history = sagaHistory(id);
+    assert history.filter({ h -> h.contains("run:") }).length == 3;
+    assert history.filter({ h -> h.contains("compensate:") }).length == 0;
+    assert seats().reservations().length == 1;
+    assert tickets().issued().length == 1;
+}
+
+test "a failure at step three compensates two then one, in that order" {
+    resetFixtures();
+    failNext("issue-ticket");
+    val id = startSaga(bookingSaga(), "customer=bob&showing=s1");
+    assert sagaStatus(id) == "compensated";
+    val comps = sagaHistory(id).filter({ h -> h.contains("compensate:") });
+    assert comps.length == 2;
+    assert comps.at(0).unwrapOr("").contains("charge-card");
+    assert comps.at(1).unwrapOr("").contains("reserve-seat");
+    // The observable effect of "compensated" is that nothing is left behind.
+    assert seats().reservations().length == 0;
+    assert payments().settled().length == 0;
+    assert tickets().issued().length == 0;
+}
+
+test "a failure at step one compensates nothing" {
+    resetFixtures();
+    failNext("reserve-seat");
+    val id = startSaga(bookingSaga(), "customer=cleo&showing=s2");
+    assert sagaStatus(id) == "compensated";
+    assert sagaHistory(id).filter({ h -> h.contains("compensate:") }).length == 0;
+}
+
+test "a coordinator killed between steps resumes where it stopped" {
+    resetFixtures();
+    killCoordinatorAfterStep("charge-card");
+    val id = startSaga(bookingSaga(), "customer=dana&showing=s3");
+    assert sagaStatus(id) == "in-progress";
+    resumeCoordinator(id);
+    assert sagaStatus(id) == "completed";
+    // Step two ran once, not twice: the persisted position is what resumption
+    // reads, and `charge` is keyed so a re-run would be visible here.
+    assert payments().settled().length == 1;
+}
+
+test "a compensation that cannot complete parks, and never claims success" {
+    resetFixtures();
+    failNext("issue-ticket");
+    // The refund fails every time, past the saga's three retries.
+    failAlways("refund");
+    val id = startSaga(bookingSaga(), "customer=eve&showing=s4");
+    assert sagaStatus(id) == "needs-attention";
+    // It is not completed, not compensated, and not gone. The whole history is
+    // readable, because an unpaid refund that stops being retried without
+    // anybody knowing is the failure this state exists to prevent.
+    val history = sagaHistory(id);
+    assert history.length > 0;
+    assert history.filter({ h -> h.contains("refund") }).length == 3;
+    assert sagaState(id).reason.contains("refund");
+}
+
+test "two sagas of one definition run without sharing state" {
+    resetFixtures();
+    val a = startSaga(bookingSaga(), "customer=ana&showing=s5");
+    val b = startSaga(bookingSaga(), "customer=bob&showing=s5");
+    assert a != b;
+    assert sagaStatus(a) == "completed";
+    assert sagaStatus(b) == "completed";
+    assert seats().reservations().length == 2;
+}

@@ -1,0 +1,76 @@
+// Front 51 — onze Image · examples/image-config-example.bp
+//
+// Demonstrates: the remote-image allowlist as a value. `remotePatterns` is an
+// SSRF control — without it, any URL an attacker puts into a page becomes a
+// server-side fetch from inside the network — so the default is deny and there
+// is no entry that means "any host".
+//
+// Upstream: https://nextjs.org/docs/app/api-reference/config/next-config-js#remotepatterns
+//           NEXTJS-DOCS.md § 16. Otimização de Imagens · § 28. Configuração
+//
+// Target: erlang (server). This check runs twice on the server — once in the
+// component when the page renders, once in the `/_onze/image` handler when
+// the request arrives — and never in the browser, because a check the client
+// performs is not a check.
+
+import {
+    ImageConfig,
+    RemotePattern,
+    defaultImageConfig,
+    withRemotePatterns,
+    validateSource,
+} from "onze";
+
+// What an app writes when it serves post images from one CDN and nothing else.
+pub fn blogImageConfig() -> ImageConfig {
+    val base = defaultImageConfig();
+    val allowed = [
+        RemotePattern(
+            protocol: "https",
+            hostname: "cdn.example.com",
+            pathPrefix: "/photos/",
+            port: "",
+        ),
+    ];
+    return withRemotePatterns(base, allowed);
+}
+
+test "the default allowlist is empty, so every remote source is refused" {
+    val cfg = defaultImageConfig();
+    assert cfg.remotePatterns.isEmpty();
+    val r = validateSource(cfg, "public", "https://cdn.example.com/photos/a.jpg");
+    assert r.isError();
+}
+
+test "a local path under publicDir is always allowed" {
+    val cfg = defaultImageConfig();
+    val r = validateSource(cfg, "public", "/images/hero.jpg");
+    assert r.isOk();
+}
+
+test "a listed host with a listed path prefix is allowed" {
+    val cfg = blogImageConfig();
+    val r = validateSource(cfg, "public", "https://cdn.example.com/photos/a.jpg");
+    assert r.isOk();
+}
+
+test "a near miss still refuses — protocol, host, path prefix, port" {
+    val cfg = blogImageConfig();
+    assert validateSource(cfg, "public", "http://cdn.example.com/photos/a.jpg").isError();
+    assert validateSource(cfg, "public", "https://evil.example.com/photos/a.jpg").isError();
+    assert validateSource(cfg, "public", "https://cdn.example.com/private/a.jpg").isError();
+    assert validateSource(cfg, "public", "https://cdn.example.com:8443/photos/a.jpg").isError();
+}
+
+test "traversal is normalized before the prefix is compared, not after" {
+    val cfg = blogImageConfig();
+    assert validateSource(cfg, "public", "https://cdn.example.com/photos/../private/a.jpg").isError();
+    assert validateSource(cfg, "public", "/images/../../etc/passwd").isError();
+}
+
+test "non-http schemes are refused outright" {
+    val cfg = blogImageConfig();
+    assert validateSource(cfg, "public", "file:///etc/passwd").isError();
+    assert validateSource(cfg, "public", "data:image/png;base64,AAAA").isError();
+    assert validateSource(cfg, "public", "images/hero.jpg").isError();
+}

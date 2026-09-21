@@ -1,0 +1,290 @@
+// Front 38 — emilia-typography
+//
+// The decoration family, lists, whitespace, word breaking, overflow-wrap,
+// hyphens, indent, vertical-align, tab-size and `content`.
+//
+// Upstream: https://tailwindcss.com/docs/text-decoration-line
+//           https://tailwindcss.com/docs/list-style-type
+//           https://tailwindcss.com/docs/whitespace
+//           https://tailwindcss.com/docs/hyphens
+// Reference: TAILWIND_CSS_DOCS.md § 9. Tipografia (9.12-9.14, 9.17-9.21,
+//            9.25-9.32)
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// `.Text.Underline` and `.Text.LineThrough` exist today and emit the
+// `text-decoration` SHORTHAND; front 38 corrects them to the longhand so that a
+// line and a style can be set independently. Everything else here is new.
+// The decoration colour reuses front 33's palette helper; `Text.Indent` reuses
+// front 35's spacing scale.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── decoration line ──────────────────────────────────────────────────────────
+// The longhand is what makes `underline` and `decoration-dotted` compose: with
+// the shorthand, whichever came last would win.
+
+fn decorationLines() -> Token[] {
+    val values: Token[] = [
+        .Text.Underline,
+        .Text.Overline,
+        .Text.LineThrough,
+        .Text.NoUnderline,
+    ];
+    return values;
+}
+
+fn decorationStyles() -> Token[] {
+    val values: Token[] = [
+        .Text.Decoration.Style.Solid,
+        .Text.Decoration.Style.Double,
+        .Text.Decoration.Style.Dotted,
+        .Text.Decoration.Style.Dashed,
+        .Text.Decoration.Style.Wavy,
+    ];
+    return values;
+}
+
+fn decorationMetrics() -> Token[] {
+    val values: Token[] = [
+        .Text.Decoration.Thickness.Auto,
+        .Text.Decoration.Thickness.FromFont,
+        .Text.Decoration.Thickness.0,
+        .Text.Decoration.Thickness.1,
+        .Text.Decoration.Thickness.2,
+        .Text.Decoration.Thickness.4,
+        .Text.Decoration.Offset.Auto,
+        .Text.Decoration.Offset.0,
+        .Text.Decoration.Offset.2,
+        .Text.Decoration.Offset.4,
+    ];
+    return values;
+}
+
+// The decoration colour is the same grid front 33 delivers, on a different
+// property. It goes through front 33's helper rather than a second table.
+
+fn decorationColours() -> Token[] {
+    val values: Token[] = [
+        .Text.Decoration.Color.Red.500,
+        .Text.Decoration.Color.Sky.400,
+        .Text.Decoration.Color.Slate.300,
+    ];
+    return values;
+}
+
+// ── lists ────────────────────────────────────────────────────────────────────
+
+fn listStyles() -> Token[] {
+    val values: Token[] = [
+        .List.None,
+        .List.Disc,
+        .List.Decimal,
+        .List.Inside,
+        .List.Outside,
+        .List.ImageNone,
+    ];
+    return values;
+}
+
+// ── whitespace and breaking ──────────────────────────────────────────────────
+// `Break` is § 9.29 (`word-break`, plus an `overflow-wrap` on two of its rows)
+// and `OverflowWrap` is § 9.30. They overlap in effect and not in property, so
+// they stay separate sub-sections; merging them would lose `wrap-anywhere`.
+
+fn whitespaceValues() -> Token[] {
+    val values: Token[] = [
+        .Text.Whitespace.Normal,
+        .Text.Whitespace.Nowrap,
+        .Text.Whitespace.Pre,
+        .Text.Whitespace.PreLine,
+        .Text.Whitespace.PreWrap,
+        .Text.Whitespace.BreakSpaces,
+    ];
+    return values;
+}
+
+fn breakingValues() -> Token[] {
+    val values: Token[] = [
+        .Text.Break.Normal,
+        .Text.Break.Words,
+        .Text.Break.All,
+        .Text.Break.Keep,
+        .Text.OverflowWrap.Normal,
+        .Text.OverflowWrap.BreakWord,
+        .Text.OverflowWrap.Anywhere,
+        .Text.Hyphens.None,
+        .Text.Hyphens.Manual,
+        .Text.Hyphens.Auto,
+    ];
+    return values;
+}
+
+// ── indent, vertical-align, tab, content ─────────────────────────────────────
+
+fn flowValues() -> Token[] {
+    val values: Token[] = [
+        .Text.Indent.8,
+        .Text.Align.Baseline,
+        .Text.Align.Top,
+        .Text.Align.Middle,
+        .Text.Align.Bottom,
+        .Text.Align.TextTop,
+        .Text.Align.TextBottom,
+        .Text.Align.Sub,
+        .Text.Align.Super,
+        .Text.Tab.2,
+        .Text.Tab.4,
+        .Text.Tab.8,
+    ];
+    return values;
+}
+
+// `content` has exactly two non-arbitrary values. `content-['Hello']` needs a
+// string payload and belongs to front 57's escape hatches, not here.
+
+fn contentValues() -> Token[] {
+    val values: Token[] = [
+        .Text.Content.None,
+        .Text.Content.Empty,
+    ];
+    return values;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// A glossary entry: a definition list with markers, a wavy-underlined term, a
+// hyphenated body that breaks long identifiers, and a superscript footnote
+// marker built from `content` and front 34's `After` pseudo-element.
+
+#[@future]
+pub fn glossaryEntry(term: string, body: string) -> @Future<string> {
+    val list: Token[] = [
+        .List.Disc,
+        .List.Outside,
+        .Pad.L.5,
+    ];
+
+    val heading: Token[] = [
+        .Text.Underline,
+        .Text.Decoration.Style.Wavy,
+        .Text.Decoration.Thickness.2,
+        .Text.Decoration.Offset.4,
+        .Text.Decoration.Color.Sky.400,
+        .Font.Weight.Semibold,
+    ];
+
+    val marker: Token[] = [.Text.Content.Empty, .Color.Rose.500];
+    val footnote: Token[] = [
+        .Text.Align.Super,
+        .Text.Size.Xs,
+        Token.After(marker),
+    ];
+
+    val prose: Token[] = [
+        .Text.Hyphens.Auto,
+        .Text.Break.Words,
+        .Text.Whitespace.PreLine,
+        .Text.Indent.8,
+        .Text.Tab.4,
+        .Color.Slate.700,
+    ];
+
+    val listClass = emilia(list);
+    val headingClass = emilia(heading);
+    val footnoteClass = emilia(footnote);
+    val proseClass = emilia(prose);
+    val styles = await flush();
+
+    val markup = "<ul class=\"" + listClass + "\"><li>"
+        + "<span class=\"" + headingClass + "\">" + term + "</span>"
+        + "<span class=\"" + footnoteClass + "\"></span>"
+        + "<p class=\"" + proseClass + "\">" + body + "</p>"
+        + "</li></ul>";
+    return styles + markup;
+}
+
+test "the decoration line is the longhand, not the shorthand" {
+    val tokens: Token[] = [.Text.Underline, .Text.LineThrough];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{text-decoration-line:underline;text-decoration-line:line-through}</style>";
+    assert !styles.contains("text-decoration:underline");
+}
+
+test "a line and a style compose instead of overwriting" {
+    val tokens: Token[] = [.Text.Underline, .Text.Decoration.Style.Dotted];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{text-decoration-line:underline;text-decoration-style:dotted}</style>";
+}
+
+test "thickness and offset are pixel values, auto and from-font are keywords" {
+    val cls = emilia(decorationMetrics());
+    val styles = await flush();
+    assert styles.contains("text-decoration-thickness:auto");
+    assert styles.contains("text-decoration-thickness:from-font");
+    assert styles.contains("text-decoration-thickness:0px");
+    assert styles.contains("text-underline-offset:4px");
+}
+
+test "a decoration colour is the palette on another property" {
+    val tokens: Token[] = [.Text.Decoration.Color.Red.500];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{text-decoration-color:var(--color-red-500)}</style>";
+}
+
+test "lists cover type, position and image" {
+    val cls = emilia(listStyles());
+    val styles = await flush();
+    assert styles.contains("list-style-type:none;list-style-type:disc;list-style-type:decimal");
+    assert styles.contains("list-style-position:inside;list-style-position:outside");
+    assert styles.contains("list-style-image:none");
+}
+
+test "break-normal emits two declarations and break-words one" {
+    val tokens: Token[] = [.Text.Break.Normal, .Text.Break.Words];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{overflow-wrap:normal;word-break:normal;overflow-wrap:break-word}</style>";
+}
+
+test "wrap-anywhere survives because OverflowWrap is its own sub-section" {
+    val tokens: Token[] = [.Text.OverflowWrap.Anywhere];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{overflow-wrap:anywhere}</style>";
+}
+
+test "whitespace answers all six values" {
+    val cls = emilia(whitespaceValues());
+    val styles = await flush();
+    assert styles.contains("white-space:pre-line;white-space:pre-wrap;white-space:break-spaces");
+}
+
+test "indent uses the spacing scale and tab-size is a bare integer" {
+    val tokens: Token[] = [.Text.Indent.8, .Text.Tab.4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{text-indent:calc(var(--spacing) * 8);tab-size:4}</style>";
+}
+
+test "content has two non-arbitrary values and the empty one keeps its quotes" {
+    val cls = emilia(contentValues());
+    val styles = await flush();
+    assert styles.contains("content:none");
+    assert styles.contains("content:\"\"");
+}
+
+test "the glossary entry underlines its term and hyphenates its body" {
+    val out = await glossaryEntry("cascade", "The order in which…");
+    assert out.startsWith("<style>");
+    assert out.contains("text-decoration-line:underline;text-decoration-style:wavy");
+    assert out.contains("text-decoration-color:var(--color-sky-400)");
+    assert out.contains("hyphens:auto;overflow-wrap:break-word");
+    assert out.contains("&::after{content:\"\";color:var(--color-rose-500)}");
+}

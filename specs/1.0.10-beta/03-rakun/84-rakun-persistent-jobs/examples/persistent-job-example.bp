@@ -1,0 +1,198 @@
+// Front 84 — rakun Persistent Jobs · persistent-job-example.bp
+//
+// Demonstrates: a nightly invoice run written as a durable job. It survives a
+// restart, it fires once across three replicas, and a missed window has a
+// declared answer rather than a default that guesses.
+//
+// The contrast is the point: front 16's `#[scheduled]` is right for a cache
+// sweep — cheap, idempotent, meaningless to have missed. This is right for work
+// a person would notice was skipped.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/io/quartz.html
+//           07-io.md § Quartz Scheduler
+//           09-actuator.md § Endpoints (quartz)
+//
+// SERVER SIDE. A durable schedule has no browser half.
+
+import {service, repository} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
+
+import {SqlTemplate} from "rakun-data";
+// Front 16: the in-VM scheduler, for the job below that is allowed to be missed.
+import {scheduled} from "rakun-scheduling";
+// This front: everything durable.
+import {persistentJob, Trigger, MisfirePolicy, registerTrigger} from "rakun-scheduling";
+import {jobData, jobField, jobHistory, jobStatus} from "rakun-scheduling";
+// The in-process fixtures: three schedulers over one store, an injected clock,
+// and the kill point that makes a takeover testable.
+import {resetFixtures, schedulers, tickAll, advanceClock, killSchedulerAfterAcquire} from "rakun-scheduling";
+import {firedCount, invoiceRows, historyFor, triggerRows, jobRows} from "rakun-scheduling";
+import {failHandler, succeedHandler, restartStore, storedData} from "rakun-scheduling";
+
+// ---- the durable job ----------------------------------------------------------
+//
+// The handler signature is fixed: `(self, data: string) -> string`. `data` is
+// querystring-encoded because `std/json` has no structured value — the same
+// choice front 24's action envelope and front 83's saga context make. See
+// specs/1.0.9-beta/contracts.md § 3.
+
+#[repository]
+pub type InvoiceRepo(
+    sql: SqlTemplate,
+) {
+    pub fn billPeriod(self: Self, period: string) -> i32 {
+        return self.sql.update(
+            "insert into invoices (period, state) select $1, 'draft' where not exists (select 1 from invoices where period = $1)",
+            [period],
+        );
+    }
+}
+
+#[service]
+pub type Billing(
+    invoices: InvoiceRepo,
+) {
+    // Durable. A deploy at 03:00 does not lose this, and three replicas run it
+    // once between them.
+    //
+    // The handler is idempotent by construction — the insert is conditional on
+    // the period not already being billed — because the guarantee this front
+    // offers is at-least-once, not exactly-once. A node that completes the work
+    // and dies before recording it will have another node run it again.
+    #[persistentJob("nightly-invoices", "0 3 * * *")]
+    pub fn runInvoices(self: Self, data: string) -> string {
+        val period = jobField(data, "period");
+        val billed = self.invoices.billPeriod(period);
+        return "billed=" + billed.toString();
+    }
+
+    // In-VM, front 16. If a restart eats one sweep, nothing is lost and nobody
+    // is paged — which is exactly the test for which scheduler a job belongs to.
+    #[scheduled("*/5 * * * *")]
+    pub fn sweepDrafts(self: Self) -> string {
+        return "swept";
+    }
+}
+
+// ---- the trigger --------------------------------------------------------------
+//
+// The cron lives on the decorator; everything that is a *policy* lives on the
+// trigger, where an operator can see it. `FireAll` is chosen here because a
+// billing period that is skipped is revenue that is never invoiced — an accrual
+// must not lose a window.
+
+pub fn nightlyInvoiceTrigger() -> Trigger {
+    return Trigger(
+        name: "nightly-invoices",
+        job: "nightly-invoices",
+        cron: "0 3 * * *",
+        startAt: 0,
+        endAt: 0,
+        misfire: MisfirePolicy.FireAll,
+        retries: 3,
+        backoffMs: 2000,
+    );
+}
+
+pub fn registerBillingSchedule() -> i32 {
+    return registerTrigger(nightlyInvoiceTrigger(), jobData([#("period", "current")]));
+}
+
+// ---- what the store must be true of -------------------------------------------
+
+test "three schedulers over one store fire a due trigger once" {
+    resetFixtures();
+    registerBillingSchedule();
+    val nodes = schedulers(3);
+    advanceClock("2026-09-20T03:00:01Z");
+    tickAll(nodes);
+    assert firedCount("nightly-invoices") == 1;
+    assert invoiceRows().length == 1;
+    // The winner is recorded, so "which node ran it" is answerable afterwards.
+    assert historyFor("nightly-invoices").at(0).unwrapOr("").contains("owner=");
+}
+
+test "registration is idempotent across restarts" {
+    resetFixtures();
+    registerBillingSchedule();
+    registerBillingSchedule();
+    assert triggerRows("nightly-invoices").length == 1;
+    assert jobRows("nightly-invoices").length == 1;
+}
+
+test "a dead node's acquired trigger is reclaimed after its lease" {
+    resetFixtures();
+    registerBillingSchedule();
+    val nodes = schedulers(2);
+    killSchedulerAfterAcquire();
+    advanceClock("2026-09-20T03:00:01Z");
+    tickAll(nodes);
+    // Acquired, then the owner died: nothing completed yet.
+    assert jobStatus("nightly-invoices") == "acquired";
+    assert invoiceRows().length == 0;
+    // Past the lease, another node takes it over and records the takeover.
+    advanceClock("2026-09-20T03:02:01Z");
+    tickAll(nodes);
+    assert invoiceRows().length == 1;
+    val takeovers = historyFor("nightly-invoices").filter({ h -> h.contains("takeover") });
+    assert takeovers.length == 1;
+}
+
+test "FireAll replays every missed window in order" {
+    resetFixtures();
+    registerBillingSchedule();
+    val nodes = schedulers(1);
+    // The cluster was down for three nights.
+    advanceClock("2026-09-23T03:00:01Z");
+    tickAll(nodes);
+    assert firedCount("nightly-invoices") == 3;
+    val runs = historyFor("nightly-invoices");
+    assert runs.at(0).unwrapOr("").contains("2026-09-21");
+    assert runs.at(2).unwrapOr("").contains("2026-09-23");
+}
+
+test "SkipToNext fires nothing for a missed window" {
+    resetFixtures();
+    val t = Trigger(
+        name: "nightly-sweep",
+        job: "nightly-invoices",
+        cron: "0 3 * * *",
+        startAt: 0,
+        endAt: 0,
+        misfire: MisfirePolicy.SkipToNext,
+        retries: 0,
+        backoffMs: 0,
+    );
+    registerTrigger(t, jobData([#("period", "current")]));
+    val nodes = schedulers(1);
+    advanceClock("2026-09-23T03:00:01Z");
+    tickAll(nodes);
+    assert firedCount("nightly-sweep") == 1;
+}
+
+test "a failing handler retries to its ceiling and does not eat its next window" {
+    resetFixtures();
+    registerBillingSchedule();
+    failHandler("nightly-invoices", 99);
+    val nodes = schedulers(1);
+    advanceClock("2026-09-20T03:00:01Z");
+    tickAll(nodes);
+    val attempts = historyFor("nightly-invoices").filter({ h -> h.contains("attempt=") });
+    assert attempts.length == 4;
+    assert jobStatus("nightly-invoices") == "waiting";
+    // The next scheduled fire still happens: a broken job does not stop its own
+    // schedule, and it does not spin either.
+    succeedHandler("nightly-invoices");
+    advanceClock("2026-09-21T03:00:01Z");
+    tickAll(nodes);
+    assert invoiceRows().length == 1;
+}
+
+test "job data survives a restart and round-trips awkward characters" {
+    resetFixtures();
+    val data = jobData([#("period", "2026-09"), #("note", "a=b&c\nd")]);
+    registerTrigger(nightlyInvoiceTrigger(), data);
+    restartStore();
+    assert jobField(storedData("nightly-invoices"), "period") == "2026-09";
+    assert jobField(storedData("nightly-invoices"), "note") == "a=b&c\nd";
+}

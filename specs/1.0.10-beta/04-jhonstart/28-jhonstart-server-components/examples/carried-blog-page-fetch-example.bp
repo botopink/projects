@@ -1,0 +1,19 @@
+// Carried from 1.0.7-beta examples-bp.md § F04 — Server component com data fetching
+// app/blog/page.bp
+import {Element, div, h1, ul, li, p, text} from "jhonstart";
+
+#[@future]
+pub fn BlogPage() -> @Future<Element> {
+    val posts = await fetch("https://api.example.com/posts").then({ r -> r.json() });
+    return div([
+        h1([text("Blog", attrs: [])], attrs: []),
+        ul(
+            posts.map({ post ->
+                li([
+                    p([text(post.title, attrs: [])], attrs: []),
+                ], attrs: [])
+            }),
+            attrs: [],
+        ),
+    ], attrs: []);
+}

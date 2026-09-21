@@ -1,0 +1,14 @@
+// Carried from 1.0.7-beta examples-bp.md § F07 — error.bp por segmento
+// app/blog/error.bp
+#[client]
+import {Element, div, h2, p, button, text} from "jhonstart";
+
+pub fn Error(error: string, retry: fn()) -> Element {
+    return div([
+        h2([text("Algo deu errado!", attrs: [])], attrs: []),
+        p([text(error, attrs: [])], attrs: []),
+        button([text("Tentar novamente", attrs: [])], attrs: [
+            #("onClick", "retry"),
+        ]),
+    ], attrs: []);
+}

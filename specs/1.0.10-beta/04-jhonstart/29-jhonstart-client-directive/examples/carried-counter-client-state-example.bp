@@ -1,0 +1,15 @@
+// Carried from 1.0.7-beta examples-bp.md § F05 — Componente cliente com state
+// components/counter.bp
+#[client]
+import {Element, div, button, p, text} from "jhonstart";
+import {state} from "jhonstart";
+
+pub fn Counter() -> Element {
+    val count = use state(0);
+    return div([
+        p([text("Count: " + count.value.toString(), attrs: [])], attrs: []),
+        button([text("+1", attrs: [])], attrs: [
+            #("onClick", "increment"),
+        ]),
+    ], attrs: []);
+}

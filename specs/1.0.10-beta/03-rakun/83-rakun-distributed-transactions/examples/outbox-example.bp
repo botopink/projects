@@ -1,0 +1,212 @@
+// Front 83 — rakun Distributed Transactions · outbox-example.bp
+//
+// Demonstrates: the order service the README's Problem section opens with,
+// written so that the database write and the intent to publish commit or fail
+// together — and the consumer on the other side that processes a duplicated
+// delivery exactly once.
+//
+// Upstream: https://docs.spring.io/spring-boot/reference/io/jta.html
+//           07-io.md § JTA (Transacoes Distribuidas)
+//           06-messaging.md § Apache Kafka · Enviando · Transacoes
+//
+// SERVER SIDE. A browser has no transaction to enrol in; every line here
+// compiles to BEAM.
+
+import {service, repository, restController, route, postMapping} from "rakun";
+import {Request, Response} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
+
+// Front 08 owns the local transaction and the SQL template.
+import {transactional, SqlTemplate} from "rakun-data";
+// Front 15 owns the listener registry the consumer half registers into.
+import {messageListener, Delivery} from "rakun-messaging";
+// This front: the outbox write side and the inbox dedupe side.
+import {OutboxMessage, publishAfterCommit, onceOnly, OnceOutcome} from "rakun-tx";
+// The in-process fixtures this front ships for its own crash tests: front 08's
+// test datasource, front 19's broker double, and the injection points that kill
+// a relay or a handler at a named moment.
+import {resetFixtures, fixtureOrders, fixtureShipping, fixtureDelivery} from "rakun-tx";
+import {outboxPending, orderRows, shipmentRows, brokerMessages} from "rakun-tx";
+import {runRelays, killRelayAfterPublish, publishOutsideTransaction} from "rakun-tx";
+import {fixturePlaceThenRaise, fixtureHandleThenRaise, fixtureAmend} from "rakun-tx";
+
+// ---- the write side ------------------------------------------------------------
+//
+// `#[transactional]` (front 08) opens one local transaction around the method.
+// `publishAfterCommit` writes a row into `rakun_outbox` INSIDE that transaction,
+// so the intent to publish is committed by the same COMMIT that commits the
+// order. Calling it outside a transaction is an error, not a direct publish:
+// there is no shape of this API that lets a message escape the unit of work.
+
+#[repository]
+pub type OrderRepo(
+    sql: SqlTemplate,
+) {
+    pub fn insert(self: Self, id: string, customer: string, cents: i32) -> i32 {
+        return self.sql.update(
+            "insert into orders (id, customer, cents) values ($1, $2, $3)",
+            [id, customer, cents.toString()],
+        );
+    }
+}
+
+#[service]
+pub type Orders(
+    repo: OrderRepo,
+) {
+    #[transactional]
+    pub fn place(self: Self, id: string, customer: string, cents: i32) -> string {
+        self.repo.insert(id, customer, cents);
+        val headers = [
+            #("content-type", "application/json"),
+            #("order-id", id),
+        ];
+        val payload = "{\"id\":\"" + id + "\",\"customer\":\"" + customer + "\",\"cents\":" + cents.toString() + "}";
+        val event = OutboxMessage(
+            aggregate: "order:" + id,
+            topic: "order.placed",
+            key: id,
+            payload: payload,
+            headers: headers,
+        );
+        // Enrolled, not sent. The relay publishes after the commit; if this
+        // method throws on the next line, neither the row nor the message exists.
+        publishAfterCommit(event);
+        return id;
+    }
+}
+
+#[restController]
+#[route("/api/orders")]
+pub type OrderController(
+    orders: Orders,
+) {
+    #[postMapping("/")]
+    pub fn place(self: Self, req: Request) -> Response {
+        val id = req.query("id");
+        val customer = req.query("customer");
+        return Response.created(self.orders.place(id, customer, 4999));
+    }
+}
+
+// ---- the read side ------------------------------------------------------------
+//
+// The relay publishes at least once, so a consumer WILL see a duplicate
+// eventually. `onceOnly` inserts into `rakun_inbox` inside the handler's own
+// transaction: a conflict means the message was already processed, and the
+// handler's writes and the inbox row commit together, so "handled" and "recorded
+// as handled" are one event rather than two.
+
+#[service]
+pub type Shipping(
+    sql: SqlTemplate,
+) {
+    #[transactional]
+    pub fn onOrderPlaced(self: Self, d: Delivery) -> string {
+        val outcome = onceOnly("shipping", d.messageId);
+        val done = case outcome {
+            Seen -> "duplicate";
+            Fresh -> self.createShipment(d.payload);
+        };
+        return done;
+    }
+
+    fn createShipment(self: Self, payload: string) -> string {
+        self.sql.update(
+            "insert into shipments (order_payload, state) values ($1, 'pending')",
+            [payload],
+        );
+        return "created";
+    }
+}
+
+#[messageListener("order.placed")]
+pub fn shippingListener(shipping: Shipping, d: Delivery) -> string {
+    return shipping.onOrderPlaced(d);
+}
+
+// ---- what the outbox must be true of ------------------------------------------
+//
+// The fixtures are front 08's test datasource and front 19's in-process broker
+// double, so nothing below needs an external server. `killRelayAfterPublish`
+// is a test-only injection point: the relay is killed between the publish and
+// the mark, which is the crash this whole design exists to survive.
+
+test "a committed order leaves exactly one pending outbox row" {
+    resetFixtures();
+    val orders = fixtureOrders();
+    orders.place("o-1", "ana", 4999);
+    assert outboxPending("order:o-1").length == 1;
+    assert orderRows("o-1").length == 1;
+}
+
+test "a rolled-back order leaves neither the row nor the message" {
+    resetFixtures();
+    val orders = fixtureOrders();
+    // The fixture service raises after `publishAfterCommit` returns.
+    val failed = fixturePlaceThenRaise(orders, "o-2", "bob", 1200);
+    assert failed == "raised";
+    assert outboxPending("order:o-2").length == 0;
+    assert orderRows("o-2").length == 0;
+}
+
+test "publishing outside a transaction is refused, and publishes nothing" {
+    resetFixtures();
+    val headers: Array<#(string, string)> = [];
+    val m = OutboxMessage(
+        aggregate: "order:o-3",
+        topic: "order.placed",
+        key: "o-3",
+        payload: "{}",
+        headers: headers,
+    );
+    val refused = publishOutsideTransaction(m);
+    assert refused.contains("publishAfterCommit");
+    assert brokerMessages("order.placed").length == 0;
+}
+
+test "two messages for one aggregate keep their order under a concurrent relay" {
+    resetFixtures();
+    val orders = fixtureOrders();
+    orders.place("o-4", "cleo", 100);
+    fixtureAmend("o-4", 200);
+    runRelays(2);
+    val seen = brokerMessages("order.placed").filter({ m -> m.contains("o-4") });
+    assert seen.length == 2;
+    assert seen.at(0).unwrapOr("").contains("\"cents\":100");
+    assert seen.at(1).unwrapOr("").contains("\"cents\":200");
+}
+
+test "a relay killed between publish and mark republishes rather than losing" {
+    resetFixtures();
+    val orders = fixtureOrders();
+    orders.place("o-5", "dana", 700);
+    killRelayAfterPublish();
+    assert outboxPending("order:o-5").length == 1;
+    runRelays(1);
+    // At-least-once: the duplicate is the documented behaviour, and the inbox
+    // is what makes it harmless.
+    assert brokerMessages("order.placed").length == 2;
+    assert outboxPending("order:o-5").length == 0;
+}
+
+test "a duplicated delivery runs the handler once" {
+    resetFixtures();
+    val shipping = fixtureShipping();
+    val d = fixtureDelivery("m-1", "{\"id\":\"o-6\"}");
+    assert shipping.onOrderPlaced(d) == "created";
+    assert shipping.onOrderPlaced(d) == "duplicate";
+    assert shipmentRows().length == 1;
+}
+
+test "a handler that raises rolls back its writes and its inbox row" {
+    resetFixtures();
+    val shipping = fixtureShipping();
+    val d = fixtureDelivery("m-2", "{\"raise\":true}");
+    val failed = fixtureHandleThenRaise(shipping, d);
+    assert failed == "raised";
+    assert shipmentRows().length == 0;
+    // The message is not recorded as seen, so the redelivery will run it again.
+    val again = shipping.onOrderPlaced(fixtureDelivery("m-2", "{\"id\":\"o-7\"}"));
+    assert again == "created";
+}

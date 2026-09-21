@@ -1,0 +1,307 @@
+// Front 40 — emilia-borders
+//
+// Border width per side, border style, border colour, and the whole radius
+// family: shorthand, four sides, four physical corners and the logical forms.
+//
+// Upstream: https://tailwindcss.com/docs/border-width
+//           https://tailwindcss.com/docs/border-style
+//           https://tailwindcss.com/docs/border-color
+//           https://tailwindcss.com/docs/border-radius
+// Reference: TAILWIND_CSS_DOCS.md § 11. Bordas (11.1-11.4), § 21.5 Border
+//            Radius Padrao
+//
+// emilia runs at comptime and emits a CSS string; this file is target-independent.
+// `Border.W {0,1,2,4}`, `Border.Color` (2 families) and `Border.Rounded
+// {Sm,Md,Lg,Full}` exist today; the per-side widths, the style sub-section, the
+// full colour grid and every directional radius are delivered by front 40.
+// Colours are front 33's palette reached through `paletteVar`; the `--radius-*`
+// ladder lives in front 54's theme. Spacing from 35, layout from 36,
+// modifiers from 34.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── width ────────────────────────────────────────────────────────────────────
+// Tailwind's bare `border` is `border-width: 1px`, so `.Border.W.1` is its
+// token and there is no separate default leaf.
+
+fn widthValues() -> Token[] {
+    val values: Token[] = [
+        .Border.W.0,
+        .Border.W.1,
+        .Border.W.2,
+        .Border.W.4,
+        .Border.W.8,
+    ];
+    return values;
+}
+
+// Eight directional sub-sections, each carrying the same five widths. `X` and
+// `Y` emit two declarations; `S` and `E` are the logical pair.
+
+fn directionalWidths() -> Token[] {
+    val values: Token[] = [
+        .Border.W.X.1,
+        .Border.W.Y.1,
+        .Border.W.T.4,
+        .Border.W.R.2,
+        .Border.W.B.1,
+        .Border.W.L.1,
+        .Border.W.S.1,
+        .Border.W.E.1,
+    ];
+    return values;
+}
+
+// ── style ────────────────────────────────────────────────────────────────────
+
+fn styleValues() -> Token[] {
+    val values: Token[] = [
+        .Border.Style.Solid,
+        .Border.Style.Dashed,
+        .Border.Style.Dotted,
+        .Border.Style.Double,
+        .Border.Style.Hidden,
+        .Border.Style.None,
+    ];
+    return values;
+}
+
+// ── colour ───────────────────────────────────────────────────────────────────
+// The full palette, not the two families emilia carries today — and the shade
+// is no longer discarded.
+
+fn colourValues() -> Token[] {
+    val values: Token[] = [
+        .Border.Color.Slate.200,
+        .Border.Color.Red.500,
+        .Border.Color.Emerald.400,
+        .Border.Color.White,
+        .Border.Color.Transparent,
+        .Border.Color.Current,
+    ];
+    return values;
+}
+
+// LANGUAGE GAP: `Border.Color.Hex(value: string)` is declared at tokens.bp:238
+// and matched at emilia.bp:341, and no caller can construct it — a payload leaf
+// nested inside an enum section has no constructible spelling. Recorded once in
+// specs/1.0.9-beta/language-gaps.md. A string-carrying leaf has to be a
+// TOP-LEVEL `Token` variant to be built, which is front 57's shape; front 40
+// neither works around the gap nor builds on it.
+
+// ── radius ───────────────────────────────────────────────────────────────────
+// Ten leaves. `Full` is the one literal — § 11.1 prints `rounded-full` as
+// `9999px` — and the other nine are theme variables.
+
+fn radiusLadder() -> Token[] {
+    val values: Token[] = [
+        .Border.Rounded.None,
+        .Border.Rounded.Xs,
+        .Border.Rounded.Sm,
+        .Border.Rounded.Md,
+        .Border.Rounded.Lg,
+        .Border.Rounded.Xl,
+        .Border.Rounded.X2xl,
+        .Border.Rounded.X3xl,
+        .Border.Rounded.X4xl,
+        .Border.Rounded.Full,
+    ];
+    return values;
+}
+
+// A side form emits the two corner properties on that side; a corner form emits
+// one. Every directional sub-section carries the full ladder.
+
+fn radiusSides() -> Token[] {
+    val values: Token[] = [
+        .Border.Rounded.T.Lg,
+        .Border.Rounded.R.Lg,
+        .Border.Rounded.B.Lg,
+        .Border.Rounded.L.Lg,
+    ];
+    return values;
+}
+
+fn radiusCorners() -> Token[] {
+    val values: Token[] = [
+        .Border.Rounded.Tl.Lg,
+        .Border.Rounded.Tr.Lg,
+        .Border.Rounded.Br.Full,
+        .Border.Rounded.Bl.Xs,
+    ];
+    return values;
+}
+
+// The logical corner family is not in the local reference; this front's README
+// records it under `## Reference gaps` and it must be verified upstream.
+
+fn radiusLogical() -> Token[] {
+    val values: Token[] = [
+        .Border.Rounded.S.Lg,
+        .Border.Rounded.E.Lg,
+        .Border.Rounded.Ss.Md,
+        .Border.Rounded.Se.Md,
+        .Border.Rounded.Es.Md,
+        .Border.Rounded.Ee.Md,
+    ];
+    return values;
+}
+
+// ── the component ────────────────────────────────────────────────────────────
+// A pricing card that sits in a stack: rounded at the top, square at the bottom
+// so it butts against the next card, a hairline border all round, and a dashed
+// internal rule above the footer.
+
+#[@future]
+pub fn pricingCard(plan: string, price: string, note: string) -> @Future<string> {
+    val hoverBorder: Token[] = [.Border.Color.Indigo.400];
+
+    val card: Token[] = [
+        .Border.W.1,
+        .Border.Style.Solid,
+        .Border.Color.Slate.200,
+        .Border.Rounded.T.X2xl,
+        .Border.Rounded.B.None,
+        .Bg.Color.White,
+        .Pad.All.6,
+        Token.Hover(hoverBorder),
+    ];
+
+    val heading: Token[] = [
+        .Text.Size.Lg,
+        .Font.Weight.Semibold,
+        .Color.Slate.900,
+    ];
+
+    val amount: Token[] = [
+        .Text.Size.X4xl,
+        .Font.Weight.Extrabold,
+        .Color.Slate.900,
+        .Margin.T.2,
+    ];
+
+    val rule: Token[] = [
+        .Border.W.T.1,
+        .Border.Style.Dashed,
+        .Border.Color.Slate.300,
+        .Margin.T.6,
+        .Pad.T.4,
+        .Color.Slate.500,
+        .Text.Size.Sm,
+    ];
+
+    val cardClass = emilia(card);
+    val headingClass = emilia(heading);
+    val amountClass = emilia(amount);
+    val ruleClass = emilia(rule);
+    val styles = await flush();
+
+    val markup = "<div class=\"" + cardClass + "\">"
+        + "<p class=\"" + headingClass + "\">" + plan + "</p>"
+        + "<p class=\"" + amountClass + "\">" + price + "</p>"
+        + "<p class=\"" + ruleClass + "\">" + note + "</p>"
+        + "</div>";
+    return styles + markup;
+}
+
+test "the four widths that compile today are unchanged, and 8 is new" {
+    val cls = emilia(widthValues());
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{border-width:0px;border-width:1px;border-width:2px"
+        + ";border-width:4px;border-width:8px}</style>";
+}
+
+test "an axis width emits two declarations and a side width emits one" {
+    val tokens: Token[] = [.Border.W.X.1, .Border.W.T.4];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{border-left-width:1px;border-right-width:1px;border-top-width:4px}</style>";
+}
+
+test "the logical widths emit the inline-start and inline-end properties" {
+    val tokens: Token[] = [.Border.W.S.1, .Border.W.E.1];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{border-inline-start-width:1px;border-inline-end-width:1px}</style>";
+}
+
+test "the six border styles" {
+    val cls = emilia(styleValues());
+    val styles = await flush();
+    assert styles.contains("border-style:solid;border-style:dashed;border-style:dotted");
+    assert styles.contains("border-style:double;border-style:hidden;border-style:none");
+}
+
+test "the border colour no longer discards its shade" {
+    val tokens: Token[] = [.Border.Color.Slate.200];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls + "{border-color:var(--color-slate-200)}</style>";
+    assert !styles.contains("border-color:gray");
+}
+
+test "the border colour and the text colour name the same custom property" {
+    val borderTokens: Token[] = [.Border.Color.Red.500];
+    val borderClass = emilia(borderTokens);
+    val borderStyles = await flush();
+
+    val textTokens: Token[] = [.Color.Red.500];
+    val textClass = emilia(textTokens);
+    val textStyles = await flush();
+
+    assert borderStyles.contains("var(--color-red-500)");
+    assert textStyles.contains("var(--color-red-500)");
+}
+
+test "rounded-full stays a literal and the rest become theme variables" {
+    val tokens: Token[] = [.Border.Rounded.Full, .Border.Rounded.Lg];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{border-radius:9999px;border-radius:var(--radius-lg)}</style>";
+    assert !styles.contains("border-radius:0.5rem");
+}
+
+test "the radius ladder reaches 4xl and starts at none" {
+    val cls = emilia(radiusLadder());
+    val styles = await flush();
+    assert styles.contains("border-radius:0;border-radius:var(--radius-xs)");
+    assert styles.contains("border-radius:var(--radius-4xl)");
+}
+
+test "a side radius sets two corners and a corner radius sets one" {
+    val tokens: Token[] = [.Border.Rounded.T.Lg, .Border.Rounded.Bl.Xs];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{border-top-left-radius:var(--radius-lg);border-top-right-radius:var(--radius-lg)"
+        + ";border-bottom-left-radius:var(--radius-xs)}</style>";
+}
+
+test "every directional sub-section carries the full ladder" {
+    val cls = emilia(radiusCorners());
+    val styles = await flush();
+    assert styles.contains("border-bottom-right-radius:9999px");
+    assert styles.contains("border-bottom-left-radius:var(--radius-xs)");
+}
+
+test "the logical radius forms emit the start and end corner properties" {
+    val tokens: Token[] = [.Border.Rounded.Ss.Md, .Border.Rounded.Ee.Md];
+    val cls = emilia(tokens);
+    val styles = await flush();
+    assert styles == "<style>." + cls
+        + "{border-start-start-radius:var(--radius-md)"
+        + ";border-end-end-radius:var(--radius-md)}</style>";
+}
+
+test "the pricing card is rounded on top and square on the bottom" {
+    val out = await pricingCard("Team", "R$ 99", "Billed annually");
+    assert out.startsWith("<style>");
+    assert out.contains("border-top-left-radius:var(--radius-2xl)");
+    assert out.contains("border-bottom-left-radius:0");
+    assert out.contains("border-top-width:1px;border-style:dashed");
+    assert out.contains("@media (hover: hover){&:hover{border-color:var(--color-indigo-400)}}");
+}

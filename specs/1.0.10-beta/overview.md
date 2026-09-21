@@ -1,0 +1,112 @@
+# Specs — 1.0.10-beta: the milestone cut once
+
+1.0.10-beta is two things that were four. [1.0.5-beta](../1.0.5-beta/closure.md) was the compiler
+milestone; it closed on 2026-09-20 with seventeen fronts partly landed and its open rows carried here
+as one front. [1.0.9-beta](./absorbed/1.0.9-beta/overview.md) was the ecosystem milestone that had already
+merged the three drafts ([1.0.6](./absorbed/1.0.6-beta/overview.md) rakun, [1.0.7](./absorbed/1.0.7-beta/overview.md)
+onze/jhonstart, [1.0.8](./absorbed/1.0.8-beta/overview.md) emilia); it never started, and it was missing the
+one thing every library test stands on — the assertion library, the snapshot engine and the `@src()`
+builtin that names a snapshot. This milestone is those two programs in one directory, ordered by what
+blocks what, with nothing dropped: every 1.0.9 front keeps its number and its files, and every open
+1.0.5 row has an id. The lossless-merge proof is [`unification.md`](./unification.md); the raw originals of the merged
+drafts are kept verbatim under [`absorbed/`](./absorbed/README.md), and the four directories
+themselves were deleted (decision 68).
+
+**Where the milestone stands is [`status.md`](./status.md)** — the one file allowed to carry status,
+kept current in the same commit as the work it reflects. **What the maintainer has decided and still
+owes is [`decisions-taken.md`](./decisions-taken.md) and [`decisions-pending.md`](./decisions-pending.md)**
+— numbering continued from 1.0.5-beta (68 onwards), never reused.
+
+## Fronts
+
+A front here is a *directory of fronts*: the number is the blocking order, the sub-fronts inside keep
+their 1.0.9 numbers (identifiers, never reassigned — `03-rakun/23-rakun-ssr-pipeline/` is still
+"front 23").
+
+| Front | Priority | What |
+|---|---|---|
+| [`00-compiler-carry-over/`](./00-compiler-carry-over/README.md) | critical (two items pulled ahead), the rest beside | The open half of 1.0.5-beta as 25 prioritised items C-01…C-25: the type's identity in the value and one BEAM module per type (C-01), the index as a method call (C-02), the host-bound std wrapper (C-03), trailing defaults, module-level `var`, the run-time tails of decision 8, the parser gaps, the formatter's width, the optional `;` … Each item carries its 1.0.5 deep dives. The `.tasks/*` worktrees are its partial work. Two fronts added on 2026-09-20 sit inside it: [`18-comptime-runtimes`](./00-compiler-carry-over/18-comptime-runtimes/README.md) (C-26 — `.beam` emitted directly, a WAT comptime runtime on wasm3, snapshots per runtime, the compiler on wasm in the browser) and [`19-use-activation`](./00-compiler-carry-over/19-use-activation/README.md) (C-27 — the `use` construct hooks and components are written with) |
+| [`01-std/`](./01-std/README.md) | **critical — blocks everything** | `@src()` in the compiler → `import {asserts} from "std"` (`isTrue`, `isFalse`, `equals`, `notEquals`, `isNil`, `isNotNil`, `isOk`, `isError`, `contains`, `throws`, and the rest of the inventory) → the `std/snapshots` engine (`__snapshots__/<suite>/<slug>.snap`, `.new` on mismatch, no update flag) → the old `onze` mocking library retired into `std/asserts` → the orchestrator takes the name `onze` → the three std enablement fronts of 1.0.9 (01–03) |
+| [`02-packaging/`](./02-packaging/README.md) | high — lands alongside each library's first front | `repository/<lib>/modules/<lib>/`, `modules/<lib>-test/`, `modules/<lib>-<domain>/`, `examples/<project>/`; the manifest shapes the compiler actually parses; how `test-libs` discovers them; the dependency direction; front 95 carried beside it. Each library refines the cut in its own `modules.md` |
+| [`03-rakun/`](./03-rakun/README.md) | per front — see its README | 51 fronts (04–25 · 60–66 · 72–93): Spring Boot 4 parity plus the server half of Next.js. `modules.md` reconciles the 13 submodules already scaffolded under `repository/rakun/modules/` with the reference cut; `test-snap.md` / `test-snap-examples.md` are the preventive snapshot maps |
+| [`04-jhonstart/`](./04-jhonstart/README.md) | per front | 9 fronts (26–32 · 67 · 94): the React half of Next.js — router, link, server components, client directive, streaming, error boundaries, metadata, forms, the element surface |
+| [`05-emilia/`](./05-emilia/README.md) | per front — may start on day one | 22 fronts (33–48 · 54–59): Tailwind CSS v4 parity — theme and cascade first, then the utility catalogue, modifiers, preflight, escape hatches, container queries, custom utilities, the attribute slot. `reference-coverage.md` is the Tailwind walk 1.0.8 never wrote; `tailwind-mapping.md` is carried |
+| [`06-onze/`](./06-onze/README.md) | per front | 9 fronts (49–53 · 68–71): the orchestrator drafted as `onze13` — stand-up, CLI, image, font, the client bundle, the styling pipeline, image response, release packaging, and the example app that proves the whole stack |
+
+Top-level documents: [`fronts.md`](./fronts.md) (ownership, the conflict matrix, the waves, the exit
+gate) · [`contracts.md`](./contracts.md) (the cross-library contracts, now with contract 7 — the
+test/snapshot contract) · [`language-gaps.md`](./language-gaps.md) (every compiler gap a library
+front filed, each pointing at its `00` item) · [`deferred.md`](./deferred.md) (what has no path on
+BEAM and why) · [`unification.md`](./unification.md) (old path → new path, front 01–96).
+
+## Order
+
+```
+wave 0    01-std ───────────────────────────────────────────┐
+          @src() · asserts · snapshots · old onze retired ·  │
+          onze13 → onze · std enablement 01/02/03            │
+                                                             │
+          00: C-01 module identity ──── pulled ahead ────────┤   (every erlang cell re-runs after it)
+          00: @src() (01-std's carve-out into the compiler) ─┤   (contract 7: no snapshot test without it)
+                                                             ▼
+wave 1    02-packaging ── alongside the first front of each library:
+          03-rakun 04 · 05 · 22 · 72      04-jhonstart 26 · 94      05-emilia 54 · 56 · 33 · 34 · 35      06-onze 49
+                                                             │
+waves 2–5 the 1.0.9 waves, unchanged (fronts.md § Waves):    ▼
+          06 ► 07 · 08 · 11 · 12 · 13 · 14 · 15 · 16 · 17 · 19 · 21     22 ► 23 · 61 · 65     26 ► 27 · 28
+          07 ► 09 · 10 · 18 · 20 · 76 · 87      23 ► 24 · 25 · 66 · 69      28 ► 29 · 30 · 31 · 32
+          62 ► 60 · 64      29 ► 68      24 + 68 ► 67      26 + 48 ► 50 · 51 · 52 · 70 · 71 · 81
+          … ► 53-onze-example-app (the proof)
+
+beside    00-compiler-carry-over, C-02 … C-25 on its own order (C-01 is the spine); the libraries
+          consume what lands and file gaps for what does not.
+```
+
+**Why `01-std` is first, in terms of what the others cannot verify without it.** Every `<lib>-test`
+submodule is `assert<Subject>(loc, …)` helpers over `std/asserts` and `std/snapshots`, and every one
+of those helpers takes a `SourceLocation` that only `@src()` can produce. A library front that lands
+before `01-std` has tests it cannot write, or writes them against a private assertion copy that the
+restructure then deletes. The `onze` name is the second reason: the orchestrator cannot take a
+directory the mocking library still occupies.
+
+**Why `02-packaging` is second and not first.** It is the directory tree every library front writes
+into; but its `-test` submodules are built on `01-std`, so it cannot land before it. It lands beside
+each library's first front rather than as one big move, because a move of files no front has written
+yet moves nothing.
+
+**Why the compiler runs beside and not ahead.** `00` is months of work and the libraries do not wait
+on all of it. They wait on two items, which are named and pulled ahead; the rest lands on its own
+order, and a library front that meets a missing compiler feature files a row in `language-gaps.md`
+pointing at the `00` item that owns it, and works around it.
+
+## What this milestone delivers, in the order the plan gave it
+
+1. **The base and `std` (blocking).** The old `onze` mocking library is retired and 100 % of its
+   assertions live in `libs/std/src/asserts.bp`; `onze13` is renamed `onze`; `import {asserts} from
+   "std"` has at least the ten functions named above; `@src()` exists; snapshots have one engine and
+   one path rule.
+2. **Modules and submodules (structural).** Every library is `modules/**` (core, `<lib>-test`, the
+   domain submodules its `modules.md` argues for) and `examples/**` (runnable `.bp` projects). The
+   granularity is decided per library against its reference — Spring Boot 4 for rakun, Next.js for
+   jhonstart and onze, Tailwind CSS v4 for emilia — and recorded with keep/merge/split/drop verdicts.
+3. **Examples and validation.** `01-std/examples/` holds the two examples the plan asked for
+   (asserts alone; a `-test` submodule exposing custom helpers over std). Each library's
+   `test-snap.md` and `test-snap-examples.md` map, front by front, the snapshot tests to write —
+   `.bp` with `@src()` and `\\` line strings — and the exact `.snap` each one produces.
+
+## Rules carried forward
+
+- **The most restrictive behaviour, and no configuration that bypasses it** (1.0.5 decision 67).
+  A snapshot mismatch fails; nothing updates it but a person renaming the `.new` file. An unresolved
+  import fails `check` and `build`. There is no flag.
+- **The compiler knows none of the libraries** (1.0.9). Only `00-compiler-carry-over` touches
+  `repository/botopink-lang/modules/**`; `@src()` is its one named carve-out for `01-std`.
+- **One repo per front; target is assigned, not chosen; reuse std; additive only** — 1.0.9's rules,
+  carried in `fronts.md` with their named exceptions.
+- **Examples are code, not prose.** Every front carries `examples/*.bp` that compile against the
+  syntax that exists today; a needed-but-missing syntax is a `// LANGUAGE GAP:` line and a row in
+  `language-gaps.md`, never an invention.
+- **A snapshot is evidence, not a baseline; the gate runs from a cold runtime cache; a backend
+  builds a model and an emitter renders it** — 1.0.5's rules, still binding on `00`.
+- **`status.md` is the only file that carries status.** Every other spec describes current state and
+  remaining work; when a front lands its README becomes the record of what shipped and what it left.

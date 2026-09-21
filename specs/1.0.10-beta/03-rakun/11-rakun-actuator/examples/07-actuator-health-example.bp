@@ -1,0 +1,291 @@
+// carried from specs/1.0.6-beta/examples/07-actuator-health-example.bp
+//// F07 — Actuator (Health, Metrics, Info)
+////
+//// Este exemplo demonstra endpoints de monitoramento: health, info, metrics, env, beans.
+////
+//// Documentação Spring Boot:
+//// - Actuator: https://docs.spring.io/spring-boot/reference/actuator/index.html
+//// - Endpoints: https://docs.spring.io/spring-boot/reference/actuator/endpoints.html
+//// - Health: https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.health
+//// - Metrics: https://docs.spring.io/spring-boot/reference/actuator/metrics.html
+//// - Info: https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.info
+
+import {Rakun, App} from "rakun";
+import {service, component, configuration, bean, value} from "rakun";
+import {HealthIndicator, Health, InfoContributor, MetricRegistry, Counter, Timer} from "rakun-actuator";
+
+// ── Health Indicators ───────────────────────────────────────────────────────
+//// GET /actuator/health
+//// {
+////     "status": "UP",
+////     "components": {
+////         "diskSpace": { "status": "UP", "details": { "free": "10GB" } },
+////         "db": { "status": "UP", "details": { "database": "PostgreSQL" } },
+////         "redis": { "status": "UP" }
+////     }
+//// }
+
+#[component]
+pub type DatabaseHealthIndicator(dataSource: DataSource) {
+    pub fn health(self: Self) -> Health {
+        val conn = self.dataSource.getConnection();
+        return match conn {
+            @Ok(c) => {
+                c.close();
+                Health(status: "UP", details: Dict.empty().insert("database", "PostgreSQL"));
+            }
+            @Err(e) => Health(status: "DOWN", details: Dict.empty().insert("error", e));
+        };
+    }
+}
+
+#[component]
+pub type RedisHealthIndicator(
+    #[value("spring.redis.host")] host: string,
+    #[value("spring.redis.port")] port: i32,
+) {
+    pub fn health(self: Self) -> Health {
+        // Try to connect to Redis
+        return Health(status: "UP", details: Dict.empty());
+    }
+}
+
+#[component]
+pub type DiskSpaceHealthIndicator {
+    pub fn health(self: Self) -> Health {
+        val free = fs.diskFree();
+        val threshold = 100 * 1024 * 1024;  // 100 MB
+        return if (free < threshold) {
+            Health(status: "DOWN", details: Dict.empty().insert("free", free.toString() + " bytes"));
+        } else {
+            Health(status: "UP", details: Dict.empty().insert("free", free.toString() + " bytes"));
+        };
+    }
+}
+
+// ── Health Groups ───────────────────────────────────────────────────────────
+//// GET /actuator/health/liveness
+//// { "status": "UP" }
+////
+//// GET /actuator/health/readiness
+//// {
+////     "status": "UP",
+////     "components": {
+////         "db": { "status": "UP" },
+////         "redis": { "status": "UP" }
+////     }
+//// }
+
+#[configuration]
+pub type HealthGroupConfig {
+    #[bean]
+    pub fn livenessGroup(self: Self) -> HealthGroup {
+        return HealthGroup(
+            name: "liveness",
+            include: [],  // Only basic liveness check
+        );
+    }
+
+    #[bean]
+    pub fn readinessGroup(self: Self) -> HealthGroup {
+        return HealthGroup(
+            name: "readiness",
+            include: ["db", "redis"],  // Check dependencies
+        );
+    }
+}
+
+// ── Info Contributors ───────────────────────────────────────────────────────
+//// GET /actuator/info
+//// {
+////     "build": {
+////         "version": "1.0.0",
+////         "artifact": "my-service",
+////         "time": "2026-01-01T00:00:00Z"
+////     },
+////     "git": {
+////         "branch": "main",
+////         "commit": {
+////             "id": "abc123",
+////             "time": "2026-01-01T00:00:00Z"
+////         }
+////     },
+////     "env": {
+////         "profile": "prod",
+////         "java.version": "25"
+////     }
+//// }
+
+#[component]
+pub type BuildInfoContributor {
+    pub fn contribute(self: Self) -> Dict<string, string> {
+        return Dict.empty()
+            .insert("build.version", "1.0.0")
+            .insert("build.artifact", "my-service")
+            .insert("build.time", "2026-01-01T00:00:00Z");
+    }
+}
+
+#[component]
+pub type GitInfoContributor {
+    pub fn contribute(self: Self) -> Dict<string, string> {
+        return Dict.empty()
+            .insert("git.branch", "main")
+            .insert("git.commit.id", "abc123")
+            .insert("git.commit.time", "2026-01-01T00:00:00Z");
+    }
+}
+
+// ── Metrics ─────────────────────────────────────────────────────────────────
+//// GET /actuator/metrics
+//// {
+////     "names": [
+////         "http.server.requests",
+////         "jvm.memory.used",
+////         "db.connection.active",
+////         "custom.counter"
+////     ]
+//// }
+////
+//// GET /actuator/metrics/http.server.requests
+//// {
+////     "name": "http.server.requests",
+////     "measurements": [
+////         { "statistic": "COUNT", "value": 1234 },
+////         { "statistic": "TOTAL_TIME", "value": 45.678 },
+////         { "statistic": "MEAN", "value": 0.037 }
+////     ],
+////     "availableTags": {
+////         "method": ["GET", "POST"],
+////         "status": ["200", "404", "500"]
+////     }
+//// }
+
+#[service]
+pub type OrderService(registry: MetricRegistry) {
+    counter: Counter,
+    timer: Timer,
+
+    #[postConstruct]
+    pub fn init(self: Self) {
+        self.counter = self.registry.counter("orders.created", Dict.empty());
+        self.timer = self.registry.timer("orders.processing.time", Dict.empty());
+    }
+
+    pub fn createOrder(self: Self, amount: i32) -> string {
+        val start = time.nowMillis();
+
+        // Process order
+        val orderId = "ORD-" + time.nowMillis().toString();
+
+        // Record metrics
+        self.counter.increment();
+        self.timer.record(time.nowMillis() - start);
+
+        return orderId;
+    }
+}
+
+// ── Env Endpoint ────────────────────────────────────────────────────────────
+//// GET /actuator/env
+//// {
+////     "propertySources": [
+////         {
+////             "name": "systemEnvironment",
+////             "properties": {
+////                 "RAKUN_SERVER_PORT": "8080",
+////                 "RAKUN_DATABASE_URL": "****"  // sanitized
+////             }
+////         },
+////         {
+////             "name": "applicationConfig",
+////             "properties": {
+////                 "server.port": "8080",
+////                 "spring.datasource.password": "****"  // sanitized
+////             }
+////         }
+////     ]
+//// }
+
+// ── Beans Endpoint ──────────────────────────────────────────────────────────
+//// GET /actuator/beans
+//// {
+////     "contexts": {
+////         "application": {
+////             "beans": {
+////                 "userService": {
+////                     "type": "UserService",
+////                     "scope": "singleton",
+////                     "dependencies": ["userRepository"]
+////                 },
+////                 "userRepository": {
+////                     "type": "UserRepository",
+////                     "scope": "singleton",
+////                     "dependencies": ["dataSource"]
+////                 }
+////             }
+////         }
+////     }
+//// }
+
+// ── Kubernetes Probes ───────────────────────────────────────────────────────
+//// GET /actuator/health/liveness
+//// { "status": "UP" }
+////
+//// GET /actuator/health/readiness
+//// {
+////     "status": "UP",
+////     "components": {
+////         "db": { "status": "UP" },
+////         "redis": { "status": "UP" }
+////     }
+//// }
+////
+//// Kubernetes configuration:
+//// livenessProbe:
+////   httpGet:
+////     path: /actuator/health/liveness
+////     port: 8080
+//// readinessProbe:
+////   httpGet:
+////     path: /actuator/health/readiness
+////     port: 8080
+
+fn main() {
+    // Actuator endpoints:
+    // - /actuator/health - health check (UP, DOWN, OUT_OF_SERVICE)
+    // - /actuator/info - application info (build, git, env)
+    // - /actuator/metrics - metrics (JVM, HTTP, custom)
+    // - /actuator/env - environment properties (sanitized)
+    // - /actuator/beans - list of beans
+    // - /actuator/health/liveness - Kubernetes liveness probe
+    // - /actuator/health/readiness - Kubernetes readiness probe
+    //
+    // Health indicators:
+    // - Built-in: diskSpace, db, redis, rabbit, mail, etc.
+    // - Custom: implement HealthIndicator behavior
+    //
+    // Metrics:
+    // - Auto-instrumented: HTTP requests, JVM, DataSource
+    // - Custom: Counter, Timer, Gauge
+    //
+    // Info:
+    // - Built-in: build, git, env, java, os
+    // - Custom: implement InfoContributor behavior
+    Rakun.run(App(port: 8080, basePath: "/api"));
+}
+
+//// Testes:
+////
+//// test "health endpoint returns UP" {
+////     // All indicators UP → overall UP
+//// }
+////
+//// test "metrics endpoint returns metrics" {
+////     // HTTP request metrics recorded
+////     // Custom metrics visible
+//// }
+////
+//// test "info endpoint returns build info" {
+////     // Build, git, env info present
+//// }

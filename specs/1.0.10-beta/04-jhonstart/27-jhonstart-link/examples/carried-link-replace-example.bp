@@ -1,0 +1,12 @@
+// Carried from 1.0.7-beta examples-bp.md § F03 — Link com replace
+// app/settings/page.bp
+#[client]
+import {Link} from "jhonstart";
+import {Element, div, text} from "jhonstart";
+
+pub fn SettingsPage() -> Element {
+    return div([
+        Link("/settings/profile", [text("Perfil", attrs: [])], replace: true),
+        Link("/settings/security", [text("Segurança", attrs: [])], replace: true),
+    ], attrs: []);
+}

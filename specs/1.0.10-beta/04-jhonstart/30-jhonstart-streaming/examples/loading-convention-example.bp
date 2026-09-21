@@ -1,0 +1,79 @@
+// Front 30 — jhonstart-streaming · examples/loading-convention-example.bp
+//
+// The `loading.bp` convention, from both sides.
+//
+// A developer writes ONE function in `app/blog/loading.bp` and never names a
+// boundary. Front 22 discovers the file; front 23 builds the `Boundary` around
+// the segment's page with `Loading()` as its fallback and the page as its
+// unstarted child. This file shows the developer's half and then the wrapping
+// front 23 performs, so the contract is readable in one place.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/file-conventions/loading
+//   https://nextjs.org/docs/app/guides/streaming
+
+import { Element, div, span, text, renderToString } from "jhonstart";
+import { Boundary, Suspense, holeId } from "jhonstart";
+import { shellHtml } from "jhonstart";
+
+// The hole marker and the `h<n>` id spelling are `contracts.md § 2`'s; front 23
+// assigns the ordinal in shell render order, and front 22 discovers
+// `loading.bp` as a kind-`S` row of the route table (`contracts.md § 1`).
+
+// ── what the developer writes: app/blog/loading.bp ──────────────────────────
+
+// One export, no arguments, no boundary name. This is the whole file.
+pub fn Loading() -> Element {
+    return div([
+        span([text("Loading the blog…", attrs: [])], attrs: [#("class", "skeleton-line")]),
+        span([text("", attrs: [])], attrs: [#("class", "skeleton-line")]),
+    ], attrs: [#("class", "skeleton")]);
+}
+
+// ── what the developer writes: app/blog/page.bp ─────────────────────────────
+
+#[@future]
+pub fn Page(params: Array<#(string, string)>) -> @Future<Element> {
+    return div([
+        text("the real blog", attrs: []),
+    ], attrs: [#("class", "blog")]);
+}
+
+// ── what front 23 builds around them ────────────────────────────────────────
+
+// The wrapping is mechanical: the segment path gives the id, `loading.bp`'s
+// export gives the fallback, and the page becomes a thunk. Nothing runs here.
+pub fn segmentBoundary(ordinal: i32, params: Array<#(string, string)>) -> Boundary {
+    return Boundary(
+        id: holeId(ordinal),
+        fallback: Loading(),
+        child: { ->
+            Page(params);
+        },
+    );
+}
+
+// A layout renders the boundary's hole in the shell; the page itself arrives
+// later as a fill.
+pub fn segmentShell(ordinal: i32, params: Array<#(string, string)>) -> Element {
+    return div([
+        Suspense(segmentBoundary(ordinal, params)),
+    ], attrs: [#("class", "segment")]);
+}
+
+test "the segment shell shows the loading UI and not the page" {
+    val html = shellHtml(segmentShell(1, []));
+    assert html.contains("data-onze-h=\"h1\"");
+    assert html.contains("Loading the blog…");
+    assert html.contains("the real blog") == false;
+}
+
+test "a second boundary on the same page gets the next ordinal" {
+    assert segmentBoundary(1, []).id == "h1";
+    assert segmentBoundary(2, []).id == "h2";
+}
+
+test "building the boundary does not render the page" {
+    val b = segmentBoundary(1, []);
+    assert renderToString(b.fallback).contains("skeleton");
+}

@@ -1,0 +1,316 @@
+// Front 46 — emilia interactivity.
+//
+// The whole `Interact` catalogue, the scroll-snap pairing shown as working
+// code, then a horizontal image carousel that snaps, a drag handle that changes
+// cursor while held, and a non-interactive overlay.
+//
+// Upstream:
+//   https://tailwindcss.com/docs/cursor
+//   https://tailwindcss.com/docs/pointer-events
+//   https://tailwindcss.com/docs/scroll-snap-type
+//   https://tailwindcss.com/docs/user-select
+//   https://tailwindcss.com/docs/accent-color
+// Reference: TAILWIND_CSS_DOCS.md § 17. Interatividade (spacing base § 21.2)
+//
+// Scroll offsets are `spacing(n)` = `calc(var(--spacing) * n)`, never a
+// resolved `rem` (contract § 4a).
+//
+// Three class names in this section do not match the CSS value they emit:
+//   resize-y            -> resize:vertical
+//   resize-x            -> resize:horizontal
+//   will-change-scroll  -> will-change:scroll-position
+
+import {emilia, flush, Token} from "emilia";
+
+// `paletteVar(family, shade)` comes from front 33 and returns
+// `var(--color-indigo-600)`. Every colour in this file goes through it, so
+// `accent-indigo-600` and `bg-indigo-600` read one theme entry and cannot
+// drift. A hex literal here would be a second copy of a colour the theme owns.
+import {paletteVar} from "emilia";
+
+// ── cursor ───────────────────────────────────────────────────────────────────
+//
+// `.Interact.Cursor.Standard` is `cursor-default`. The leaf is not spelled
+// `Default`, because `default` is in the language's keyword table.
+
+val cursorsCommon: Token[] = [
+    .Interact.Cursor.Auto,
+    .Interact.Cursor.Standard,
+    .Interact.Cursor.Pointer,
+    .Interact.Cursor.Wait,
+    .Interact.Cursor.Text,
+    .Interact.Cursor.Move,
+    .Interact.Cursor.Help,
+    .Interact.Cursor.NotAllowed,
+    .Interact.Cursor.None,
+];
+
+val cursorsPointerStates: Token[] = [
+    .Interact.Cursor.ContextMenu,
+    .Interact.Cursor.Progress,
+    .Interact.Cursor.Cell,
+    .Interact.Cursor.Crosshair,
+    .Interact.Cursor.VerticalText,
+    .Interact.Cursor.Alias,
+    .Interact.Cursor.Copy,
+    .Interact.Cursor.NoDrop,
+    .Interact.Cursor.Grab,
+    .Interact.Cursor.Grabbing,
+    .Interact.Cursor.AllScroll,
+    .Interact.Cursor.ZoomIn,
+    .Interact.Cursor.ZoomOut,
+];
+
+val cursorsResize: Token[] = [
+    .Interact.Cursor.ColResize,
+    .Interact.Cursor.RowResize,
+    .Interact.Cursor.NResize,
+    .Interact.Cursor.EResize,
+    .Interact.Cursor.SResize,
+    .Interact.Cursor.WResize,
+    .Interact.Cursor.NeResize,
+    .Interact.Cursor.NwResize,
+    .Interact.Cursor.SeResize,
+    .Interact.Cursor.SwResize,
+    .Interact.Cursor.EwResize,
+    .Interact.Cursor.NsResize,
+    .Interact.Cursor.NeswResize,
+    .Interact.Cursor.NwseResize,
+];
+
+// ── form controls ────────────────────────────────────────────────────────────
+
+val formControls: Token[] = [
+    .Interact.Appearance.None,
+    .Interact.Appearance.Auto,
+    .Interact.FieldSizing.Fixed,
+    .Interact.FieldSizing.Content,
+];
+
+val colorSchemes: Token[] = [
+    .Interact.ColorScheme.Normal,
+    .Interact.ColorScheme.Light,
+    .Interact.ColorScheme.Dark,
+    .Interact.ColorScheme.LightDark,
+    .Interact.ColorScheme.OnlyDark,
+    .Interact.ColorScheme.OnlyLight,
+];
+
+// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
+// constructed by any spelling (language-gaps.md row 52) — verified against the
+// real compiler. So the three colour-carrying variants are TOP-LEVEL `Token`
+// variants: `InteractAccent`, not `Interact.Accent`. Contract § 4a states it.
+//
+// LANGUAGE GAP: their fields are `string` and not a colour section type,
+// because a section-typed value cannot be constructed standalone either
+// (row 53). The value is front 33's `paletteVar(...)` result.
+//
+// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
+// payload call does not propagate the typed-array context (row 51), so
+// construction goes through a fn.
+fn accent(v: string) -> Token {
+    return Token.InteractAccent(value: v);
+}
+
+fn caret(v: string) -> Token {
+    return Token.InteractCaret(value: v);
+}
+
+fn scrollbarColor(t: string, k: string) -> Token {
+    return Token.InteractScrollbarColor(thumb: t, track: k);
+}
+
+val brandedInput: Token[] = [
+    accent(paletteVar("indigo", 600)),
+    caret(paletteVar("indigo", 600)),
+    .Interact.Appearance.None,
+    .Interact.FieldSizing.Content,
+];
+
+// ── pointer, selection, hinting ──────────────────────────────────────────────
+
+val pointerEvents: Token[] = [
+    .Interact.PointerEvents.None,
+    .Interact.PointerEvents.Auto,
+];
+
+val resizeModes: Token[] = [
+    .Interact.Resize.None,
+    .Interact.Resize.Y,
+    .Interact.Resize.X,
+    .Interact.Resize.Both,
+];
+
+val selectModes: Token[] = [
+    .Interact.Select.None,
+    .Interact.Select.Text,
+    .Interact.Select.All,
+    .Interact.Select.Auto,
+];
+
+val willChangeHints: Token[] = [
+    .Interact.WillChange.Auto,
+    .Interact.WillChange.Scroll,
+    .Interact.WillChange.Contents,
+    .Interact.WillChange.Transform,
+];
+
+val touchActions: Token[] = [
+    .Interact.Touch.Auto,
+    .Interact.Touch.None,
+    .Interact.Touch.PanX,
+    .Interact.Touch.PanLeft,
+    .Interact.Touch.PanRight,
+    .Interact.Touch.PanY,
+    .Interact.Touch.PanUp,
+    .Interact.Touch.PanDown,
+    .Interact.Touch.PinchZoom,
+    .Interact.Touch.Manipulation,
+];
+
+// ── the scroll family ────────────────────────────────────────────────────────
+
+val scrollBehaviors: Token[] = [
+    .Interact.Scroll.Behavior.Auto,
+    .Interact.Scroll.Behavior.Smooth,
+];
+
+val scrollMargins: Token[] = [
+    .Interact.Scroll.M.0,
+    .Interact.Scroll.M.4,
+    .Interact.Scroll.Mx.4,
+    .Interact.Scroll.My.4,
+    .Interact.Scroll.Mt.4,
+    .Interact.Scroll.Mr.4,
+    .Interact.Scroll.Mb.4,
+    .Interact.Scroll.Ml.4,
+];
+
+val scrollPaddings: Token[] = [
+    .Interact.Scroll.P.0,
+    .Interact.Scroll.Px.4,
+    .Interact.Scroll.Py.4,
+    .Interact.Scroll.Pt.4,
+    .Interact.Scroll.Pr.4,
+    .Interact.Scroll.Pb.4,
+    .Interact.Scroll.Pl.4,
+];
+
+val scrollbarWidths: Token[] = [
+    .Interact.Scrollbar.Width.Auto,
+    .Interact.Scrollbar.Width.Thin,
+    .Interact.Scrollbar.Width.None,
+];
+
+val scrollbarGutters: Token[] = [
+    .Interact.Scrollbar.Gutter.Auto,
+    .Interact.Scrollbar.Gutter.Stable,
+    .Interact.Scrollbar.Gutter.StableBothEdges,
+];
+
+// ── the snap family and its --tw-* chain ─────────────────────────────────────
+//
+// `Snap.Type.X` emits `scroll-snap-type:x var(--tw-scroll-snap-strictness)` and
+// `Snap.Strictness.Mandatory` emits `--tw-scroll-snap-strictness:mandatory`.
+// Front 56's `Rule.declarations` keeps both in one rule, so the variable
+// resolves. Fronts 42 and 45 use the same shape for `filter` and `translate`.
+//
+// A `Snap.Type` token without a `Snap.Strictness` token falls back to front
+// 54's theme entry for the strictness, so it still renders.
+
+val snapAligns: Token[] = [
+    .Interact.Snap.Align.Start,
+    .Interact.Snap.Align.End,
+    .Interact.Snap.Align.Center,
+    .Interact.Snap.Align.None,
+];
+
+val snapStops: Token[] = [
+    .Interact.Snap.Stop.Normal,
+    .Interact.Snap.Stop.Always,
+];
+
+val snapTypesPaired: Token[] = [
+    .Interact.Snap.Type.X,
+    .Interact.Snap.Strictness.Mandatory,
+];
+
+// ── the components ───────────────────────────────────────────────────────────
+//
+// A horizontal carousel that snaps each slide to the start of the viewport, a
+// drag handle that grabs, and an overlay that is visible and non-interactive.
+//
+// `flush()` is `#[@future]`, so the caller must be `#[@future]` too and must
+// `await` it.
+
+fn carouselTrackTokens() -> Token[] {
+    val track: Token[] = [
+        .Layout.Flex,
+        .Flex.Row,
+        .Interact.Snap.Type.X,
+        .Interact.Snap.Strictness.Mandatory,
+        .Interact.Scroll.Behavior.Smooth,
+        .Interact.Scroll.Pl.4,
+        .Interact.Touch.PanX,
+        .Interact.Scrollbar.Width.None,
+        .Interact.WillChange.Scroll,
+    ];
+    return track;
+}
+
+fn carouselSlideTokens() -> Token[] {
+    val slide: Token[] = [
+        .Interact.Snap.Align.Start,
+        .Interact.Snap.Stop.Always,
+        .Interact.Scroll.Ml.4,
+        .Interact.Select.None,
+    ];
+    return slide;
+}
+
+fn dragHandleTokens() -> Token[] {
+    val held: Token[] = [.Interact.Cursor.Grabbing];
+    val handle: Token[] = [
+        .Interact.Cursor.Grab,
+        .Interact.Select.None,
+        .Interact.Touch.None,
+        .Interact.WillChange.Transform,
+        Token.Active(held),
+    ];
+    return handle;
+}
+
+fn overlayTokens() -> Token[] {
+    val overlay: Token[] = [
+        .Interact.PointerEvents.None,
+        .Interact.Select.None,
+        .Effect.Opacity.50,
+        .Bg.Black,
+    ];
+    return overlay;
+}
+
+fn scrollbarTokens() -> Token[] {
+    val bar: Token[] = [
+        .Interact.Scrollbar.Width.Thin,
+        .Interact.Scrollbar.Gutter.Stable,
+        scrollbarColor(paletteVar("red", 500), paletteVar("gray", 200)),
+    ];
+    return bar;
+}
+
+#[@future]
+pub fn renderCarousel() -> @Future<string> {
+    val trackCls = emilia(carouselTrackTokens());
+    val slideCls = emilia(carouselSlideTokens());
+    val handleCls = emilia(dragHandleTokens());
+    val overlayCls = emilia(overlayTokens());
+    val styles = await flush();
+    val markup = "<div class=\"" + trackCls + "\">"
+        + "<div class=\"" + slideCls + "\">1</div>"
+        + "<div class=\"" + slideCls + "\">2</div>"
+        + "</div>"
+        + "<span class=\"" + handleCls + "\">::</span>"
+        + "<div class=\"" + overlayCls + "\"></div>";
+    return markup + styles;
+}

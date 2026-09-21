@@ -1,0 +1,32 @@
+// carried from specs/1.0.7-beta/examples-bp.md — ## F13 — Rakun Cache
+//
+// Kept verbatim. use-cache-example.bp is the nearest valid 1.0.9 form of both
+// snippets over the same store.
+
+// --- Cache com cacheLife (lib/data.bp)
+// LANGUAGE GAP: a decorator cannot replace or wrap the body of the declaration it annotates,
+// so `#[cache]` with `cacheLife(...)` / `cacheTag(...)` as body statements is not expressible
+// (12 § Language gaps). 1.0.9 spells it `cacheThrough(cachePolicy(scope, name, life, tags), keys, load)`.
+import {cacheLife, cacheTag} from "rakun";
+
+#[cache]
+#[@future]
+pub fn getProducts() -> @Future<Product[]> {
+    cacheLife("hours");
+    cacheTag("products");
+    return await db.product.findAll();
+}
+
+// --- Cache com revalidação on-demand (lib/actions.bp)
+// NOTE: 1.0.9 imports `revalidateTag` from "rakun-cache" (12 § Package, module and import spellings);
+// the action shape (`FormData.field`, `@Future<ActionResult>`) is 24's.
+import {revalidateTag} from "rakun";
+
+#[serverAction]
+#[@future]
+pub fn updateProduct(formData: FormData) -> @Future<void> {
+    val id = formData.get("id");
+    val name = formData.get("name");
+    await db.product.update(id, name: name);
+    revalidateTag("products");
+}

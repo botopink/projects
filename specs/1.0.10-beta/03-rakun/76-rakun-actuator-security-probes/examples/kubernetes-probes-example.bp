@@ -1,0 +1,117 @@
+// Front 76 — rakun actuator: readiness, liveness, and the shutdown ordering.
+//
+// The ordering is the reason this front exists. Readiness has to flip false and
+// the load balancer has to notice BEFORE front 07 starts refusing connections; a
+// drain that begins while traffic is still being routed at the pod drops exactly
+// the requests the drain was supposed to save.
+//
+// Server side — every declaration below compiles to BEAM.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/deployment/cloud.html#deployment.cloud.kubernetes.container-lifecycle
+//   https://docs.spring.io/spring-boot/reference/features/spring-application.html#features.spring-application.application-availability
+//
+// The configuration this file assumes, in application.yaml (front 05 reads it):
+//
+//   rakun:
+//     endpoint:
+//       health:
+//         probes:
+//           enabled: true
+//           add-additional-paths: true
+//         group:
+//           liveness:
+//             include: node
+//           readiness:
+//             include: readinessState,db
+//     lifecycle:
+//       pre-drain-period: 5000
+//
+// The matching pod spec, quoted because YAML is not botopink:
+//
+//   livenessProbe:
+//     httpGet: { path: /actuator/health/liveness, port: 9090 }
+//   readinessProbe:
+//     httpGet: { path: /actuator/health/readiness, port: 9090 }
+//
+// `readinessState`, `setReadiness`, `livenessState`, `readinessDrained` and
+// `callEndpoint` are delivered by this front. `#[service]` and the application
+// events are front 06's; the drain is front 07's.
+
+import {service} from "rakun";
+import {rkScan, rkSingleton, rkEnter, rkDone, rkProp, rkSetProp} from "rakun";
+import {readinessState, livenessState, setReadiness, readinessDrained} from "rakun-actuator";
+import {callEndpoint, signalReady, signalShutdown} from "rakun-actuator";
+import {drainStartedAt, readinessFalseAt} from "rakun-actuator";
+
+// An application that must not take traffic until its cache is warm. Holding
+// readiness false is the supported way to say so — it is a state with an event
+// behind it, not a boolean somebody polls.
+#[service]
+pub type CatalogWarmer {
+    pub fn warm(self: Self) -> i32 {
+        val _notReady = setReadiness(false);
+        val loaded = loadCatalog();
+        val _ready = setReadiness(true);
+        return loaded;
+    }
+}
+
+pub fn loadCatalog() -> i32 {
+    return 1200;
+}
+
+test "readiness is false before the application is ready and true after" {
+    assert readinessState() == "REFUSING_TRAFFIC";
+    val _ = signalReady();
+    assert readinessState() == "ACCEPTING_TRAFFIC";
+}
+
+test "liveness does not depend on an external system" {
+    val _down = rkSetProp("rakun.test.indicator.db", "DOWN");
+    assert livenessState() == "CORRECT";
+    assert readinessState() == "REFUSING_TRAFFIC";
+}
+
+test "the probe paths answer the states with the right status codes" {
+    val _ = setReadiness(true);
+    assert callEndpoint("GET", "/actuator/health/readiness").status == 200;
+    assert callEndpoint("GET", "/actuator/health/liveness").status == 200;
+
+    val _off = setReadiness(false);
+    assert callEndpoint("GET", "/actuator/health/readiness").status == 503;
+    assert callEndpoint("GET", "/actuator/health/liveness").status == 200;
+}
+
+test "the additional paths on the application listener answer identically" {
+    val _ = setReadiness(false);
+    val managed = callEndpoint("GET", "/actuator/health/readiness");
+    val additional = callEndpoint("GET", "/readyz");
+    assert additional.status == managed.status;
+    assert additional.body == managed.body;
+}
+
+test "readiness goes false before the drain begins, by at least the pre-drain period" {
+    val _ = setReadiness(true);
+    val _sig = signalShutdown("SIGTERM");
+    val falseAt = readinessFalseAt();
+    val drainAt = drainStartedAt();
+    assert falseAt > 0;
+    assert drainAt > falseAt;
+    assert drainAt - falseAt >= 5000;
+}
+
+test "the pre-drain window elapses even with no in-flight requests" {
+    val _ = setReadiness(true);
+    val _sig = signalShutdown("SIGTERM");
+    assert readinessDrained() == true;
+    assert drainStartedAt() - readinessFalseAt() >= 5000;
+}
+
+test "an application can hold itself not-ready while it warms" {
+    val warmer = CatalogWarmer();
+    val _off = setReadiness(false);
+    assert readinessState() == "REFUSING_TRAFFIC";
+    assert warmer.warm() == 1200;
+    assert readinessState() == "ACCEPTING_TRAFFIC";
+}

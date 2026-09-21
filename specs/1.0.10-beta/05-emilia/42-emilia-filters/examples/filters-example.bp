@@ -1,0 +1,216 @@
+// Front 42 — emilia filters.
+//
+// The Filter and Backdrop catalogues as typed `Token[]` lists, the
+// one-Filter-per-list rule shown as working code and as the `Raw` composition
+// that replaces it, then a frosted navigation bar over a dimmed hero image.
+//
+// Upstream:
+//   https://tailwindcss.com/docs/filter
+//   https://tailwindcss.com/docs/blur
+//   https://tailwindcss.com/docs/backdrop-filter
+// Reference: TAILWIND_CSS_DOCS.md § 13. Filtros
+//
+// Every value is the reference's, character for character:
+//   brightness(.5), not brightness(0.5)
+//   grayscale(100%), not grayscale(1)
+//
+// Each filter leaf emits TWO declarations — its own `--tw-<family>` custom
+// property and the one `filter:var(--tw-filter)` shorthand that reads every
+// family back. Front 56's `Rule.declarations` keeps both in one rule, so two
+// filter tokens in a list compose instead of overwriting.
+
+import {emilia, flush, Token} from "emilia";
+
+// ── filter: blur ─────────────────────────────────────────────────────────────
+
+val blurScale: Token[] = [
+    .Filter.Blur.None,
+    .Filter.Blur.Xs,
+    .Filter.Blur.Sm,
+    .Filter.Blur.Md,
+    .Filter.Blur.Lg,
+    .Filter.Blur.Xl,
+    .Filter.Blur.X2xl,
+    .Filter.Blur.X3xl,
+];
+
+// ── filter: brightness / contrast ────────────────────────────────────────────
+
+val brightnessScale: Token[] = [
+    .Filter.Brightness.0,
+    .Filter.Brightness.50,
+    .Filter.Brightness.75,
+    .Filter.Brightness.90,
+    .Filter.Brightness.95,
+    .Filter.Brightness.100,
+    .Filter.Brightness.105,
+    .Filter.Brightness.110,
+    .Filter.Brightness.125,
+    .Filter.Brightness.150,
+    .Filter.Brightness.200,
+];
+
+val contrastScale: Token[] = [
+    .Filter.Contrast.0,
+    .Filter.Contrast.50,
+    .Filter.Contrast.75,
+    .Filter.Contrast.100,
+    .Filter.Contrast.125,
+    .Filter.Contrast.150,
+    .Filter.Contrast.200,
+];
+
+// ── filter: colour adjustment ────────────────────────────────────────────────
+
+val grayscaleSteps: Token[] = [
+    .Filter.Grayscale.0,
+    .Filter.Grayscale.100,
+];
+
+val hueRotateSteps: Token[] = [
+    .Filter.HueRotate.0,
+    .Filter.HueRotate.15,
+    .Filter.HueRotate.30,
+    .Filter.HueRotate.60,
+    .Filter.HueRotate.90,
+    .Filter.HueRotate.180,
+];
+
+val invertSteps: Token[] = [
+    .Filter.Invert.0,
+    .Filter.Invert.100,
+];
+
+val saturateScale: Token[] = [
+    .Filter.Saturate.0,
+    .Filter.Saturate.50,
+    .Filter.Saturate.100,
+    .Filter.Saturate.150,
+    .Filter.Saturate.200,
+];
+
+val sepiaSteps: Token[] = [
+    .Filter.Sepia.0,
+    .Filter.Sepia.100,
+];
+
+// ── filter: drop-shadow ──────────────────────────────────────────────────────
+//
+// `themeVar("drop-shadow-md")` lookups from front 54; the literals are theme
+// entries a project composes through `extend`. The reference never gives them
+// and the dispatcher never needs them. `None` is a keyword, not a lookup.
+
+val dropShadows: Token[] = [
+    .Filter.DropShadow.None,
+    .Filter.DropShadow.Xs,
+    .Filter.DropShadow.Sm,
+    .Filter.DropShadow.Md,
+    .Filter.DropShadow.Lg,
+    .Filter.DropShadow.Xl,
+    .Filter.DropShadow.X2xl,
+];
+
+// ── backdrop-filter ──────────────────────────────────────────────────────────
+
+val backdropBlurScale: Token[] = [
+    .Backdrop.Blur.None,
+    .Backdrop.Blur.Sm,
+    .Backdrop.Blur.Md,
+    .Backdrop.Blur.Lg,
+    .Backdrop.Blur.Xl,
+    .Backdrop.Blur.X2xl,
+    .Backdrop.Blur.X3xl,
+];
+
+val backdropAdjust: Token[] = [
+    .Backdrop.Brightness.110,
+    .Backdrop.Contrast.125,
+    .Backdrop.Grayscale.100,
+    .Backdrop.HueRotate.90,
+    .Backdrop.Invert.100,
+    .Backdrop.Saturate.150,
+    .Backdrop.Sepia.100,
+];
+
+val backdropOpacitySteps: Token[] = [
+    .Backdrop.Opacity.0,
+    .Backdrop.Opacity.50,
+    .Backdrop.Opacity.100,
+];
+
+// ── composition ──────────────────────────────────────────────────────────────
+//
+// CSS `filter` does not accumulate: two `filter:` declarations and the second
+// wins. Upstream, `blur-sm grayscale` works because each utility writes a
+// `--tw-*` custom property that one `filter` declaration reads back, and front
+// 56's `Rule.declarations` gives emilia the same shape: the list below writes
+// `--tw-blur`, `--tw-grayscale` and one idempotent `filter:var(--tw-filter)`
+// into a single rule, and both families survive.
+
+val composesThroughTheChain: Token[] = [.Filter.Blur.Sm, .Filter.Grayscale.100];
+
+// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be
+// constructed by any spelling (language-gaps.md row 52), so these are TOP-LEVEL
+// `Token` variants — `FilterRaw`, not `Filter.Raw`. Contract § 4a states it.
+//
+// LANGUAGE GAP: and even at top level, a dot-shorthand path followed by a
+// payload call does not propagate the typed-array context (row 51), so
+// `[.FilterRaw("blur(8px)")]` trips the parser and construction goes through
+// a fn.
+fn rawFilter(v: string) -> Token {
+    return Token.FilterRaw(value: v);
+}
+
+fn rawBackdrop(v: string) -> Token {
+    return Token.BackdropRaw(value: v);
+}
+
+// The `Raw` leaf stays, for a filter function the token set does not name.
+val rawStack: Token[] = [rawFilter("blur(8px) grayscale(100%) brightness(1.1)")];
+
+// ── the component ────────────────────────────────────────────────────────────
+//
+// A frosted navigation bar sitting over a hero image: the bar blurs and
+// saturates what is behind it, the image itself is dimmed and desaturated so
+// the bar's text stays legible. `flush()` is `#[@future]`, so the caller must
+// be `#[@future]` too and must `await` it.
+
+fn heroImageTokens() -> Token[] {
+    val dimmed: Token[] = [.Filter.Brightness.75, .Filter.Saturate.50];
+    return dimmed;
+}
+
+fn frostedBarTokens() -> Token[] {
+    val hovered: Token[] = [.Backdrop.Brightness.110];
+    val bar: Token[] = [
+        .Backdrop.Blur.Md,
+        Token.Hover(hovered),
+    ];
+    return bar;
+}
+
+fn frostedBarSaturationTokens() -> Token[] {
+    // `Backdrop.Blur` and `Backdrop.Saturate` each write their own
+    // `--tw-backdrop-<family>` property plus the shared
+    // `backdrop-filter:var(--tw-backdrop-filter)` shorthand, so both survive in
+    // one rule. `rawBackdrop` is still there for a function the tokens do not
+    // name.
+    val sat: Token[] = [.Backdrop.Blur.Md, .Backdrop.Saturate.150];
+    return sat;
+}
+
+fn frostedBarRawTokens() -> Token[] {
+    val sat: Token[] = [rawBackdrop("blur(12px) saturate(1.5) contrast(1.1)")];
+    return sat;
+}
+
+#[@future]
+pub fn renderFrostedHeader() -> @Future<string> {
+    val heroCls = emilia(heroImageTokens());
+    val barCls = emilia(frostedBarSaturationTokens());
+    val styles = await flush();
+    val markup = "<div class=\"" + heroCls + "\">"
+        + "<p class=\"" + barCls + "\">Arquivo</p>"
+        + "</div>";
+    return markup + styles;
+}

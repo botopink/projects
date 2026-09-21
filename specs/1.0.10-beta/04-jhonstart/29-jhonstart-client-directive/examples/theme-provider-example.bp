@@ -1,0 +1,90 @@
+// Front 29 — jhonstart-client-directive · examples/theme-provider-example.bp
+//
+// The Context Provider pattern, and the hole it leaves in the payload.
+//
+// A client provider wraps the whole server-rendered tree (§ 7, *Padrão: Context
+// Provider*). The provider is client code; its children are not. So the markup
+// carries an island (`<div data-onze-i="i0">`, `contracts.md § 2`) with a
+// `data-onze-s` subtree inside it, and the browser ADOPTS that subtree rather
+// than re-rendering it — it cannot re-render it, because rendering it needed
+// the server's data.
+//
+// The rule the shape enforces: server output reaches a client component as
+// CHILDREN, never as a PROP. `Element` is deliberately off the serializable
+// whitelist, so writing `ThemeProps(page: Element)` is a comptime failure with a
+// message located at the field.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/server-and-client-components
+//   https://nextjs.org/docs/app/guides/server-and-client-boundary
+
+import { Element, div, h1, p, text, renderToString } from "jhonstart";
+import { client, clientProps, clientMount, serverSlot, islandEntry, Island } from "jhonstart";
+import { state } from "jhonstart";
+import { section } from "jhonstart";
+
+// `section` comes from front 94 (jhonstart-element-surface).
+
+// ── the client half ─────────────────────────────────────────────────────────
+
+#[clientProps]
+pub type ThemeProps(
+    theme: string,
+)
+
+// `children` is a parameter, not a prop: it is not part of `ThemeProps` and it
+// is not serialized. That separation is the entire point of the pattern.
+#[client]
+pub fn ThemeProvider(props: ThemeProps, children: Children) -> Element {
+    val current = use state(props.theme);
+    return div(children, attrs: [#("class", "theme-" + current.value)]);
+}
+
+// ── the server half ─────────────────────────────────────────────────────────
+
+// A server component. It reads data the browser never sees and renders markup.
+pub fn Dashboard(userName: string, openTickets: i32) -> Element {
+    return section([
+        h1([text("Hello, " + userName, attrs: [])], attrs: []),
+        p([text(openTickets.toString() + " tickets open", attrs: [])], attrs: []),
+    ], attrs: [#("class", "dashboard")]);
+}
+
+// The root layout. The provider's placeholder wraps a marked server slot: the
+// browser starts `ThemeProvider` and re-parents the slot's DOM into it.
+pub fn themeIsland(id: string, theme: string) -> Island {
+    return Island(id: id, component: "ThemeProvider", props: [#("theme", theme)]);
+}
+
+pub fn RootLayout(theme: string, page: Element) -> Element {
+    return clientMount(themeIsland("i0", theme), [
+        serverSlot([page]),
+    ]);
+}
+
+test "the layout nests a server slot inside the island" {
+    val page = Dashboard("Ana", 4);
+    val markup = renderToString(RootLayout("dark", page));
+    assert markup.contains("data-onze-i=\"i0\"");
+    assert markup.contains("data-onze-s=\"1\"");
+    assert markup.contains("<h1>Hello, Ana</h1>");
+    assert markup.contains("ThemeProvider") == false;
+}
+
+test "the provider's props travel in the payload row, not in the markup" {
+    val row = islandEntry(themeIsland("i0", "dark"));
+    assert row._1 == "ThemeProvider";
+    assert row._2 == "theme=dark";
+}
+
+test "the server slot wraps the page and nothing else" {
+    val markup = renderToString(serverSlot([Dashboard("Bob", 0)]));
+    assert markup.contains("<div data-onze-s=\"1\"><section class=\"dashboard\">");
+    assert markup.contains("0 tickets open");
+}
+
+test "the server subtree is rendered once, by the server" {
+    val markup = renderToString(RootLayout("light", Dashboard("Ana", 1)));
+    val once = markup.split("1 tickets open");
+    assert once.length == 2;
+}

@@ -1,0 +1,64 @@
+// Front 89 — rakun stream pipelines: the enterprise-integration case.
+//
+// Server-side file. The pipeline is a value: a queue source, four stages and a publish
+// sink. Because it is a value, the whole stage list runs through `runStages` in one
+// process with no broker — which is how a topology gets unit-tested at all.
+//
+// Upstream:
+//   https://docs.spring.io/spring-boot/reference/messaging/spring-integration.html
+//   https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.integrationgraph
+
+import {Stage, Pipeline, Source, Sink, runStages, graphOf} from "rakun-stream";
+
+val stages: Array<Stage> = [
+    Stage.Filter(name: "paid-only", keep: { item -> item.startsWith("paid:") }),
+    Stage.Transform(name: "strip-prefix", apply: { item -> item.replace("paid:", "") }),
+    Stage.Split(name: "one-per-sku", explode: { item -> item.split(",") }),
+    Stage.Transform(name: "normalise", apply: { item -> item.trim().toUpper() }),
+];
+
+val ordersPipeline = Pipeline(
+    name: "orders",
+    source: Source.Queue(destination: "orders.paid", prefetch: 32),
+    stages: stages,
+    sink: Sink.Publish(destination: "orders.normalised"),
+);
+
+test "the pipeline keeps paid orders and yields one item per sku" {
+    val out = runStages(stages, ["paid:a1, b2", "refunded:c3", "paid:d4"]);
+    assert out.join("|") == "A1|B2|D4";
+}
+
+test "stage order is part of the topology, not a detail" {
+    val filterFirst: Array<Stage> = [
+        Stage.Filter(name: "paid-only", keep: { item -> item.startsWith("paid:") }),
+        Stage.Transform(name: "strip", apply: { item -> item.replace("paid:", "") }),
+    ];
+    val transformFirst: Array<Stage> = [
+        Stage.Transform(name: "strip", apply: { item -> item.replace("paid:", "") }),
+        Stage.Filter(name: "paid-only", keep: { item -> item.startsWith("paid:") }),
+    ];
+    val input = ["paid:a1", "refunded:c3"];
+    assert runStages(filterFirst, input).join(",") == "a1";
+    assert runStages(transformFirst, input).length == 0;
+}
+
+test "an empty stage list passes its input through unchanged" {
+    val empty: Array<Stage> = [];
+    assert runStages(empty, ["a", "b"]).join(",") == "a,b";
+}
+
+test "a filter that keeps nothing produces an empty result and does not raise" {
+    val none: Array<Stage> = [
+        Stage.Filter(name: "never", keep: { item -> item == "impossible" }),
+        Stage.Transform(name: "shout", apply: { item -> item.toUpper() }),
+    ];
+    assert runStages(none, ["a", "b"]).length == 0;
+}
+
+test "the graph is derived from the pipeline value, in order" {
+    val edges = graphOf(ordersPipeline);
+    val rendered = edges.map({ edge -> edge.0 + "->" + edge.1 });
+    val expected = "orders.paid->paid-only,paid-only->strip-prefix,strip-prefix->one-per-sku,one-per-sku->normalise,normalise->orders.normalised";
+    assert rendered.join(",") == expected;
+}

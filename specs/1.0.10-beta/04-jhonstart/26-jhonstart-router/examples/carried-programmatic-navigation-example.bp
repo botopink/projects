@@ -1,0 +1,17 @@
+// Carried from 1.0.7-beta examples-bp.md § F02 — Navegação programática
+// components/login-form.bp
+// Respelled under the `use` rule (00-compiler-carry-over/19): the draft's
+// `use router()` is `use router()`, and the binding never reuses the hook's name.
+#[client]
+import {router} from "jhonstart";
+import {Element, form, input, button, text} from "jhonstart";
+
+pub fn LoginForm() -> Element {
+    val r = use router();
+    return form([
+        input([attrs: [#("type", "email"), #("name", "email")]]),
+        button([text("Entrar", attrs: [])], attrs: [
+            #("onClick", "handleLogin"),
+        ]),
+    ], attrs: [#("action", "/api/login")]);
+}

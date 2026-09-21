@@ -1,0 +1,113 @@
+// Front 70 — onze-image-response · examples/og-image-example.bp
+//
+// A blog post's social card: `app/blog/[slug]/opengraph-image.bp`.
+//
+// SERVER SIDE. The tree→SVG half runs on BEAM with no external tool, which is
+// why the assertions below need nothing installed. Only SVG→PNG leaves the VM,
+// through a `resvg` port — and a route that asks for `image/png` on a machine
+// with no rasterizer fails the BUILD, naming the route. There is no fallback to
+// a broken image, because a broken social card is invisible until somebody
+// shares the link.
+//
+// The card carries no emilia class: SVG has no stylesheet a crawler will fetch,
+// so styles are inline records here rather than class names. That divergence is
+// deliberate and is stated in the README.
+//
+// Route registration is front 66's; the metadata that links this URL is front
+// 32's. This file owns only what the card looks like.
+//
+// Upstream:
+//   https://nextjs.org/docs/app/api-reference/functions/image-response
+//   https://nextjs.org/docs/app/api-reference/file-conventions/metadata/opengraph-image
+
+import { Element, div, span, text } from "jhonstart";
+import { RouteContext } from "onze";
+import { ImageSize, ImageResponse, FontRef, imageResponse, defaultSize } from "onze-og";
+import { toSvg, layout, parseStyle } from "onze-og";
+
+// The two exports §18 documents. Front 66 reads both when it registers the route.
+// LANGUAGE GAP: a module-level `pub val` of a user-defined type is unverified —
+// if it does not hold, the exports become `pub fn size() -> ImageSize` and
+// `pub fn contentType() -> string`, and front 66 calls them instead of reading them.
+pub val size: ImageSize = ImageSize(width: 1200, height: 630);
+pub val contentType: string = "image/svg+xml";
+
+// Front 52 downloads the face and emits the metrics sidecar beside it; a font
+// used by an image route with no sidecar fails the build, because measuring text
+// with a guessed advance width overflows some titles and not others.
+val inter: FontRef = FontRef(
+    family: "Inter",
+    weight: 700,
+    path: "public/fonts/inter-700.woff2",
+    metricsPath: "public/fonts/inter-700.metrics.txt",
+);
+
+// The card. Every style is a literal string parsed by `parseStyle`, and every
+// property it uses is in the supported subset — an unsupported one would fail
+// the build naming the property rather than being quietly dropped.
+fn card(title: string, author: string) -> Element {
+    val frame = "display:flex;flexDirection:column;justifyContent:center;width:1200px;height:630px;padding:64px;background:linear-gradient(90deg,#4f46e5,#7c3aed);color:#ffffff";
+    val heading = "fontSize:64px;fontWeight:700;fontFamily:Inter;lineHeight:76px;maxLines:3";
+    val byline = "fontSize:32px;fontWeight:700;fontFamily:Inter;opacity:80";
+    return div([
+        span([text(title, attrs: [])], attrs: [#("style", heading)]),
+        span([text(author, attrs: [])], attrs: [#("style", byline)]),
+    ], attrs: [#("style", frame)]);
+}
+
+#[@future]
+pub fn image(ctx: RouteContext) -> @Future<ImageResponse> {
+    val slug = ctx.params.param("slug");
+    val post = await loadPost(slug);
+    return imageResponse(card(post._0, post._1), size);
+}
+
+// Stand-in for the app's own loader — a real one reaches a database through
+// front 08. Kept here so the example is a file that compiles.
+#[@future]
+fn loadPost(slug: string) -> @Future<#(string, string)> {
+    return #("Hydration is a contract, not a hope", "ana");
+}
+
+// ── tests ────────────────────────────────────────────────────────────────────
+
+test "the card is a 1200x630 SVG document with no external stylesheet" {
+    val box = layout(card("Hello", "ana"), size, []);
+    val svg = toSvg(box, size, [inter]);
+    assert svg.startsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1200\" height=\"630\"");
+    assert svg.contains("<link") == false;
+    assert svg.contains("class=") == false;
+}
+
+test "a hostile title is escaped and produces no element" {
+    val box = layout(card("<script>alert(1)</script>", "ana"), size, []);
+    val svg = toSvg(box, size, [inter]);
+    assert svg.contains("<script") == false;
+    assert svg.contains("&lt;script&gt;");
+}
+
+test "the gradient is defined once and referenced once" {
+    val box = layout(card("Hello", "ana"), size, []);
+    val svg = toSvg(box, size, [inter]);
+    assert svg.contains("<linearGradient");
+    assert svg.split("<linearGradient").length == 2;
+}
+
+test "every text node carries its own font, size and fill" {
+    val box = layout(card("Hello", "ana"), size, []);
+    val svg = toSvg(box, size, [inter]);
+    assert svg.contains("font-family=\"Inter\"");
+    assert svg.contains("font-size=\"64\"");
+    assert svg.contains("fill=\"#ffffff\"");
+}
+
+test "the same tree renders byte-identically, which is what the cache key needs" {
+    val first = toSvg(layout(card("Hello", "ana"), size, []), size, [inter]);
+    val second = toSvg(layout(card("Hello", "ana"), size, []), size, [inter]);
+    assert first == second;
+}
+
+test "the defaults are the ones §18 documents" {
+    assert defaultSize().width == 1200;
+    assert defaultSize().height == 630;
+}

@@ -1,0 +1,11 @@
+// Carried from 1.0.7-beta examples-bp.md § F16 — Responsivo com modifiers (responsive with modifiers)
+// 1.0.9 decided differently: no `[emilia]` attribute in the frozen `html.bp`; bind `cls(tokens, th)` to a `val`
+// and use `[class]={c}`. Kept verbatim for the record.
+
+val card = html """
+<div [emilia]={[.Pad.All.4, .Md([.Pad.All.8]), .Lg([.Pad.All.16])]}>
+  <h2 [emilia]={[.Text.Size.Xl, .Md([.Text.Size.X2xl]), .Lg([.Text.Size.X3xl])]}>
+    Responsivo
+  </h2>
+</div>
+""";

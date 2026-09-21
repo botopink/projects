@@ -1,0 +1,119 @@
+// Front 57 — emilia escape hatches
+//
+// A brand button whose colour is in no palette, a custom property set on a container,
+// a drag-state selector the library does not know about, an arbitrary breakpoint, and
+// the payload that is refused rather than escaped.
+//
+// https://tailwindcss.com/docs/adding-custom-styles
+// https://tailwindcss.com/docs/hover-focus-and-other-states#using-arbitrary-variants
+// https://tailwindcss.com/docs/responsive-design#using-arbitrary-values
+
+import { emilia, flush, Token } from "emilia";
+import { arbValue, arbProp, arbSel, arbAt, arbMin, arbMax, cssValue, cssIdent, cssSelector, cssLength } from "emilia";
+// `spacing` and `themeVar` are provided by front 54.
+import { spacing, themeVar } from "emilia";
+
+// TAILWIND_CSS_DOCS.md § 3.1: bg-[#316ff6]. `Token.Arb(prop, value)` is a top-level
+// variant — a payload leaf nested in a section cannot be constructed at all — and the
+// builder below is what carries the run-time gate. The literal goes through `cssValue`,
+// which reads it at compile time and fails the build if it carries a character that
+// could close the rule body or the <style> element. There is no escaping step and no
+// option that skips the check.
+fn signInButton() -> string {
+    val brand = cssValue """#316ff6""";
+    val bg = arbValue("background-color", brand);
+    val tokens: Token[] = [bg, .Text.Bold, .Pad.All.4, .Border.Rounded.Md];
+    return emilia(tokens);
+}
+
+// LANGUAGE GAP: a payload leaf nested inside an enum section cannot be constructed by
+// any spelling, which is why `Arb` is a top-level `Token` variant rather than a section —
+// and why `Color.Hex(value: string)` in today's tokens.bp is dead surface.
+// LANGUAGE GAP: a dot-shorthand path followed by a payload call does not propagate the
+// typed-array context inside an array literal, so `[.Arb(prop: "background-color",
+// value: brand)]` does not parse even with the top-level shape. The builder call above is
+// the nearest valid form, and it is what repository/emilia/src/emilia.bp:498-503 already
+// recommends. Both rows are in ../../language-gaps.md; the rule they imply is stated in
+// ../../contracts.md § 4a.
+
+// § 3.1: [--gutter-width:1rem] on a container, read by its children.
+fn gutterContainer() -> string {
+    val name = cssIdent """--gutter-width""";
+    val gutter = arbProp(name, spacing(4));
+    val tokens: Token[] = [gutter, .Layout.Flex];
+    return emilia(tokens);
+}
+
+// § 3.2 Variantes Arbitrárias: [&.is-dragging]:cursor-grabbing. The selector must
+// contain exactly one `&`; emilia substitutes the generated class name for it.
+fn draggableRow() -> string {
+    val dragging = cssSelector """&.is-dragging""";
+    val lifted: Token[] = [.Effect.Shadow.Lg, .Effect.Opacity.75];
+    val tokens: Token[] = [.Bg.White, .Pad.All.2, arbSel(dragging, lifted)];
+    return emilia(tokens);
+}
+
+// § 3.2: [@supports(display:grid)]:grid. The condition is written without its leading
+// `@` — emilia adds it, and `cssQuery` refuses one that is already there.
+fn progressiveGrid() -> string {
+    val gridded: Token[] = [.Layout.Grid];
+    val tokens: Token[] = [.Layout.Flex, arbAt("supports(display:grid)", gridded)];
+    return emilia(tokens);
+}
+
+// § 3.3: min-[320px]: and max-[600px]:, for the two breakpoints that are not in the
+// theme's --breakpoint-* namespace.
+fn narrowAndWide() -> string {
+    val small = cssLength """320px""";
+    val large = cssLength """600px""";
+    val centred: Token[] = [.Text.Center];
+    val stacked: Token[] = [.Flex.Col];
+    val tokens: Token[] = [.Layout.Flex, arbMin(small, centred), arbMax(large, stacked)];
+    return emilia(tokens);
+}
+
+test "an arbitrary value reaches a property no token covers" {
+    val cls = signInButton();
+    val css = await flush();
+    assert css.contains("." + cls + "{background-color:#316ff6");
+}
+
+test "an arbitrary property sets a custom property from the theme scale" {
+    val cls = gutterContainer();
+    val css = await flush();
+    assert css.contains("--gutter-width:calc(var(--spacing) * 4)");
+    assert css.contains("." + cls + "{");
+}
+
+test "an arbitrary selector becomes its own rule with the class substituted in" {
+    val cls = draggableRow();
+    val css = await flush();
+    assert css.contains("." + cls + ".is-dragging{");
+}
+
+test "an arbitrary at-rule is hoisted, not nested in the class body" {
+    val cls = progressiveGrid();
+    val css = await flush();
+    assert css.contains("@supports(display:grid){." + cls + "{display:grid}}");
+}
+
+test "arbitrary breakpoints use the same range syntax as the named ones" {
+    val cls = narrowAndWide();
+    val css = await flush();
+    assert css.contains("@media (width >= 320px){." + cls + "{text-align:center}}");
+    assert css.contains("@media (width < 600px){." + cls + "{flex-direction:column}}");
+}
+
+test "an arbitrary value composes with a theme variable" {
+    val colour = arbValue("color", themeVar("--color-brand"));
+    val tokens: Token[] = [colour];
+    val cls = emilia(tokens);
+    val css = await flush();
+    assert css.contains("." + cls + "{color:var(--color-brand)}");
+}
+
+// The refusal path. `cssValue """red}</style><script>"""` does not compile: the build
+// stops and names the rejected text. A build that must fail is not a value a test can
+// read, so that case lives in the compiler's reject suite; what is assertable here is
+// the run-time gate on the builder, which refuses the same payload rather than
+// escaping it. emilia never sanitises a payload — it declines to emit one.
