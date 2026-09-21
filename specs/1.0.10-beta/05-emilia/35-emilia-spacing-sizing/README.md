@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** critical — padding, margin and width are the three utilities every component uses first. Thirteen padding values and one width token exist today; nothing can be laid out with that.
 **Target:** comptime — `emilia` runs at comptime and emits a CSS string. It is neither erlang- nor js-specific, and this front compiles for neither target in particular.
-**Wave:** 0
+**Wave:** 2
 **Depends on:** 54 (`Theme`, `spacing(n)`, `spacingHalf(n)`, `themeVar`), 56 (`declSheet` for `Pad`/`Margin`/`Size`; `Sheet` for `Space`)
 **Owns:** `repository/emilia/src/tokens.bp` (the `Pad`, `Margin`, `Size` and `Space` sections) · `repository/emilia/src/emilia.bp` (`padTokenToCss`, `marginTokenToCss`, `sizeTokenToCss`, `spaceTokenToSheet`) · `repository/emilia/test/spacing_test.bp`
 **Does not touch:** `Gap` — it belongs to front 37, next to the flex and grid containers it spaces; `Layout.Inset` — front 36, which spaces a positioned box rather than a flowed one

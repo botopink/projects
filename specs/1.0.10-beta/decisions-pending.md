@@ -77,3 +77,38 @@ is (b), the hint must change in the same commit — a diagnostic that asks for a
 worse than the gap it reports.
 **Blocks.** Front 28's `request()` reading a provider; every `04-jhonstart` server component that
 reads context rather than activating a hook. Nothing landed depends on it today.
+
+## 94. `data-onze-s` has two owners — front 29's server slot and front 69's style chunk
+
+**Raised by:** the `fronts.md` § Waves reconciliation sweep, 2026-09-21.
+**Measured.** `grep -rn 'data-onze-s' specs/1.0.10-beta` returns the same attribute spelled by two
+fronts. [`contracts.md`](./contracts.md) registers it once, in the marker registry that exists "so no
+front invents a prefix" — the row reads `data-onze-s` · owner **29** · "a server-rendered slot
+inside an island — the Context-Provider hole" (`contracts.md:61`) — and front 29 emits it on a `div`:
+`attrs: [#("data-onze-s", "1")]` (`04-jhonstart/29-jhonstart-client-directive/README.md:166`),
+asserted at `:253` and described at `:170` as "this front's one addition to the `data-onze-` marker
+family". The **same** attribute is also the style-chunk attribute of front 69's `collectChunk`:
+`<style data-onze-s="<holeId>">…</style>` in `contracts.md:387` § the `RenderHooks` table and in
+`06-onze/69-onze-styling-pipeline/README.md:121`, with the checkbox `chunkAttr("h1")` is
+`#("data-onze-s", "h1")` at `:278` and two snapshot lines asserting it —
+`<style data-onze-s="h0">` and `<style data-onze-s="h2">` (`06-onze/test-snap.md:1052`, `:1056`).
+Front 69's use is **not** in the registry at `contracts.md:58-67`. Both spellings are inherited
+verbatim from [`absorbed/1.0.9-beta/contracts.md`](./absorbed/1.0.9-beta/contracts.md) — `:59` for
+the marker row, `:352` for the hook row — so this is drift carried in, not a decision either front
+made. Nothing is landed yet; the collision is between two specs.
+**Options.** (a) front 69's style chunk is renamed to a free marker — `data-onze-c="<holeId>"`, say,
+for *chunk* — and registered in `contracts.md`'s marker table with owner 69; front 29 keeps
+`data-onze-s` exactly as registered; (b) front 29's slot marker is renamed instead — it is the
+`<div>` half, and `data-onze-s` reads naturally as *style* on a `<style>` element; (c) both keep the
+spelling and `contracts.md` records that the attribute is disambiguated by element name (`div` =
+slot, `style` = chunk), adding a second owner to the registry row.
+**Recommendation.** (a). Front 29's use is the one the registry actually carries (`contracts.md:61`)
+and the one a client reconciler adopts a subtree by (`29/README.md:175`); front 69's is unregistered,
+so renaming it costs one contract row, one README row, one checkbox and two snapshot lines, against
+front 29's row plus a reconciler rule. (c) is the least restrictive of the three and is rejected on
+decision 67's ground: it is only safe under an element-name side condition that no document states
+and that any `[data-onze-s]` selector — a reconciler query, a test, a devtool — is free to ignore.
+**Blocks.** Nothing landed. It decides `contracts.md:61` and `:387`, front 69's `chunkAttr`
+checkbox (`:278`) and its hook row (`:121`), front 29's `serverSlot` checkbox (`:253`), and the two
+`06-onze/test-snap.md` lines — so it should be answered before front 69 writes `style_sink.bp` and
+before that snapshot is generated.

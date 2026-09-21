@@ -3,7 +3,7 @@
 **Track:** C jhonstart
 **Priority:** critical — without `Link` every navigation is a full page load, and the client half of the milestone has nothing to intercept
 **Target:** js (client)
-**Wave:** 2
+**Wave:** 4
 **Depends on:** 26 · 60 (route-kind flag, read-only) · 23 (payload envelope, read-only) · 68 (generated entry + DOM primitives, read-only) · 94 (element builders used by the examples)
 **Owns:** `repository/jhonstart/src/link.bp`, `repository/jhonstart/src/reconcile.bp` (the client-navigation reconciler), `repository/jhonstart/test/link_test.bp`, `repository/jhonstart/test/reconcile_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (front 26), `src/client.bp` (front 29), `src/root.bp` and `botopink.json` (front 94)

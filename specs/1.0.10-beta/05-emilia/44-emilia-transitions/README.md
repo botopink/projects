@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — every hover, focus and open/close state `emilia` already emits snaps instantly today, because there is no transition token anywhere in the library
 **Target:** comptime
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 34 (modifiers — a transition is only observable when a state variant changes a property, so the examples pair every `Transition` token with a `Hover` or `Focus`)
 **Owns:** token sections `Transition`, `Animate` in `repository/emilia/src/tokens.bp` · dispatcher `transitionTokenToCss` (and its sibling `animateTokenToCss`) in `repository/emilia/src/emilia.bp` · `repository/emilia/test/transitions_test.bp`
 **Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`

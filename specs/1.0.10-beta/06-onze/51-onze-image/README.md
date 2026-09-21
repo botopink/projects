@@ -11,7 +11,7 @@ allowlist check, the resize/re-encode call, the cache lookup and the `/_onze/ima
 **js (client)** — the lazy behaviour: `loading="lazy"` handed to the browser, the blur placeholder
 swapped for the decoded image, and the `sizes`-driven `srcset` selection. The component itself renders
 on the server and emits markup both halves agree on
-**Wave:** 3
+**Wave:** 8
 **Depends on:** 49 (config, `publicDir`, `outDir`), 01 (`process` spawner, `path`), 03 (content hash
 for the cache key and the asset name), 12 (the cache store the optimized bytes live in), 25 (the route
 handler shape), 69 (the asset manifest and `public/` serving)

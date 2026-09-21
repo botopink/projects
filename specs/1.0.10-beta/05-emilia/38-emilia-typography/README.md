@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — `§ 9` is thirty-two property groups. emilia covers four of them, partially, and three of those four emit CSS that is not what Tailwind v4.3 emits.
 **Target:** comptime — `emilia` runs at comptime and emits a CSS string. It is neither erlang- nor js-specific, and this front compiles for neither target in particular.
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 54 (`Theme`, `themeVar`, `spacing(n)`), 56 (`declSheet` — this front emits declarations only, no selector), 33 (`Text.Decoration.Color` calls `paletteVar`)
 **Owns:** `repository/emilia/src/tokens.bp` (the `Text` and `Font` sections and the new `List` section) · `repository/emilia/src/emilia.bp` (`textTokenToCss`, `textSizeToCss`, `fontTokenToCss`, `fontWeightToCss`, `listTokenToCss` and the new sub-dispatchers) · `repository/emilia/test/typography_test.bp`
 **Does not touch:** `Color` (front 33) — `text-red-500` is a colour token, not a typography token

@@ -10,7 +10,7 @@ font files, downloading and self-hosting them, reading their metrics, generating
 the metric-adjusted fallback, and emitting the `<link rel="preload">` tags into the document head.
 **js (client)** — the behaviour those bytes describe: the browser paints with the adjusted fallback,
 swaps to the real face when it arrives, and the swap moves nothing
-**Wave:** 3
+**Wave:** 8
 **Depends on:** 49 (config, `outDir`, `publicDir`), 01 (`process` spawner for the fetch and the
 metrics probe, `path`), 03 (content hash for the self-hosted filename), 69 (the head seam the CSS is
 inserted through, and the asset manifest the files are listed in)

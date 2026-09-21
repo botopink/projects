@@ -6,7 +6,7 @@ request, a `generateStaticParams` in an app's source is silently ignored, a blog
 the database 10 000 times an hour, and the exit gate's claim that the example app "builds, serves, and
 renders its routes" is true only in the SSR sense
 **Target:** both — boundary. The two halves are named below and neither is optional
-**Wave:** 4
+**Wave:** 6
 **Depends on:** 22 (the route table), 23 (the renderer), 62 (the definition of dynamic), 12 (the store
 the prerendered entries live in), 03 (content hash), 02 (unstarted tasks, for the build fan-out),
 01 (`path.walk`, `path.glob`, `fs`, `clock`)

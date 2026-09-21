@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — and the highest-leverage front in track D. Roughly forty rows of the Tailwind coverage audit bottom out here: without a rule model, `group-*`, `peer-*`, `rtl`, `in-*`, `*`, `**`, `space-*`, `divide-*`, `@keyframes`, `@layer`, `@supports`, `@container` and the `important` flag have nowhere to go, and there is no defined winner when two tokens set the same property.
 **Target:** comptime
-**Wave:** 0 — second, immediately after 54. Fronts 33, 34 and 35 are wave 0 and all three consume the `Sheet`/`Variant` interface defined here.
+**Wave:** 1 — immediately after 54, which is wave 0. Fronts 33, 34 and 35 are wave 2 and all three consume the `Sheet`/`Variant` interface defined here.
 **Depends on:** 54 (the `Theme` that `Options` carries and the `themeCss`/`keyframeCss` strings the theme layer is built from)
 **Owns:** `repository/emilia/src/output.bp`; the host-cell and public-entry half of `repository/emilia/src/emilia.bp` (`register`, `flushSheet`, `hashHex`, `emilia`, `flush`, `tokenToCss`, `tokensToCss`), fenced under a banner naming this front; `repository/emilia/test/output_test.bp`, `repository/emilia/test/cascade_test.bp`; the `pub mod output;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** any `Token` section in `src/tokens.bp`, and any per-section sub-dispatcher in `src/emilia.bp` — those belong to fronts 33–47, 57 and 58

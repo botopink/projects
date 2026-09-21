@@ -3,7 +3,7 @@
 **Track:** C jhonstart
 **Priority:** critical — this is the front the whole server/client split exists for; without it every component is a client component and the BEAM render has nothing to render
 **Target:** erlang (server)
-**Wave:** 2
+**Wave:** 4
 **Depends on:** 26 · 01 (escaping) · 23 (payload envelope, read-only) · 62 (request context, read-only) · 94 (element builders used by the examples)
 **Owns:** `repository/jhonstart/src/server.bp` (promoted from `server.d.bp`), `repository/jhonstart/test/server_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (front 26), `src/link.bp` (front 27), `src/client.bp` (front 29), `src/root.bp` and `botopink.json` (front 94)

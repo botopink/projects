@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — without it any value outside the theme scale is unreachable, `emilia` is a closed set, and real applications route around it by writing raw CSS beside it, which defeats a typed token surface entirely. Tailwind has arbitrary values precisely because no scale is complete.
 **Target:** comptime
-**Wave:** 1 — both of its dependencies land in wave 0.
+**Wave:** 2 — 54 lands in wave 0 and 56 in wave 1.
 **Depends on:** 54 (arbitrary values sit next to theme lookups and must not bypass them silently), 56 (an arbitrary variant is a selector, and only 56 can emit one)
 **Owns:** `repository/emilia/src/arbitrary.bp`, `repository/emilia/test/arbitrary_test.bp`; six **top-level `Token` variants** appended to `src/tokens.bp` under a banner naming this front, and their six arms in `tokenToSheet`; the `pub mod arbitrary;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** any other front's token section or dispatcher; `src/output.bp`; `src/theme.bp`

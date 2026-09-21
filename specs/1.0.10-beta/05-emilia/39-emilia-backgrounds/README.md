@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — `Bg` today can set a colour and nothing else. No image, no gradient, no size, no position, no repeat: every hero, every card overlay and every progress bar in real Tailwind markup uses at least one of them.
 **Target:** comptime — `emilia` runs at comptime and emits a CSS string. It is neither erlang- nor js-specific, and this front compiles for neither target in particular.
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 33 (`Gradient` stops are palette entries and go through `paletteVar`), 54 (the `Theme` parameter every sub-dispatcher takes), 56 (`declSheet` — this front emits declarations only, no selector)
 **Owns:** `repository/emilia/src/tokens.bp` (the non-colour sub-sections of `Bg`, and the new `Gradient` section) · `repository/emilia/src/emilia.bp` (`bgTokenToCss` and its sub-dispatchers, `gradientTokenToCss`) · `repository/emilia/test/backgrounds_test.bp`
 **Does not touch:** `Bg.Color` — front 33 owns the colour grid on `background-color`; the legacy `Bg.Red`/`Bg.Blue`/`Bg.Gray`/`Bg.White`/`Bg.Black`/`Bg.Hex` leaves, which front 33 keeps working unchanged

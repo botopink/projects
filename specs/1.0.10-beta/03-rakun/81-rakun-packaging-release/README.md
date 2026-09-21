@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** high — nothing in the milestone produces a deployable artefact; fronts 04–25 are libraries an application has to be assembled from by hand
 **Target:** erlang (server)
-**Wave:** 2
+**Wave:** 6
 **Depends on:** 04 (the release boots front 04's application and supervision tree), 05 (`sys.config` is where front 05's property file lands on a real deployment), 01 (`fs`, `path`), 76 (the probe paths the Kubernetes fragments point at), 11 (serves the SBOM this front emits)
 **Owns:** `modules/rakun-release/botopink.json`, `modules/rakun-release/src/**`, `modules/rakun-release/templates/**` · `modules/rakun-release/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. It generates files; it changes no running code

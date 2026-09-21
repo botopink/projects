@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** low — a third broker behind an abstraction that already has two; valuable only to teams already on Pulsar, and nothing else in the milestone depends on it
 **Target:** erlang (server)
-**Wave:** 5
+**Wave:** 6
 **Depends on:** 15 (the listener registry it becomes a fourth arm of), 86 (retry, dead-letter, acknowledgement), 79 (the client-credentials flow Pulsar's OAuth2 authentication is), 83 (the transaction coordinator Pulsar transactions hand off to), 74 (TLS), 13 (the HTTP client the admin arm uses), 05 (configuration)
 **Owns:** `modules/rakun-messaging/src/pulsar/**`, `modules/rakun-messaging/test/pulsar/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. Inside `modules/rakun-messaging/`, `src/reliability/**` is front 86's, `src/jms/**` is front 90's, and everything else is front 15's; all three are read-only here.

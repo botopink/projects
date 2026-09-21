@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** critical — a modifier is the only way a token reaches a state, a breakpoint or a pseudo-element. Six of them exist; the other seventy are the difference between a demo and a stylesheet.
 **Target:** comptime — `emilia` runs at comptime and emits a CSS string. It is neither erlang- nor js-specific, and this front compiles for neither target in particular.
-**Wave:** 0
+**Wave:** 2
 **Depends on:** 56 (`Variant`, `nestVariant`, `Rule.selector` — front 34 writes the variant table and owns no wrapping logic), 54 (`Theme`)
 **Owns:** `repository/emilia/src/tokens.bp` (modifier variants only) · `repository/emilia/src/emilia.bp` (the modifier arms of `tokenToSheet`, and one `Variant`-returning fn per variant name) · `repository/emilia/test/modifiers_test.bp`
 **Does not touch:** any token section — this front adds no declaration, only wrappers around declarations other fronts produce

@@ -3,7 +3,7 @@
 **Track:** C jhonstart
 **Priority:** medium — a page with no `<title>` and no `og:image` is a page that cannot be shared or found; nothing else breaks without it
 **Target:** erlang (server)
-**Wave:** 3
+**Wave:** 5
 **Depends on:** 28 · 01 (escaping) · 26 (`pairValue`, the package's one pair-list decoder) · 66 (metadata file routes, read-only)
 **Owns:** `repository/jhonstart/src/metadata.bp`, `repository/jhonstart/test/metadata_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/suspense.bp`/`src/streaming.bp` (30), `src/error_boundary.bp` (31), `src/root.bp` and `botopink.json` (front 94)

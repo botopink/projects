@@ -3,7 +3,7 @@
 **Track:** C jhonstart
 **Priority:** high — without a boundary every component is a server component and nothing is interactive; without a *checked* boundary, a secret read on the server reaches the browser and nobody notices
 **Target:** js (client)
-**Wave:** 3
+**Wave:** 5
 **Depends on:** 28 · 23 (payload envelope, read-only) · 68 (soft — build-time enforcement; 29 lands without it) · 94 (element builders used by the examples)
 **Owns:** `repository/jhonstart/src/client.bp` — including `islandAttr`, the island marker pair, which front 23 reads as `RenderHooks.islandAttr` and front 68's generated entry imports (decision 77: one definition, passed in, never two that must agree) — `repository/jhonstart/test/client_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/root.bp` and `botopink.json` (front 94)

@@ -5,7 +5,7 @@
 hand-roll dictionary loading, and `hreflang`/`alternates` metadata never appears. Not fatal to a
 single-locale app, which is why it is medium and not high
 **Target:** erlang (server)
-**Wave:** 4
+**Wave:** 7
 **Depends on:** 22 (the `[locale]` dynamic segment and the route table), 07 (the filter chain the
 negotiation step installs into), 62 (reads `Accept-Language` and the locale cookie), 63 (the redirect
 from an unprefixed path), 32 (the `alternates` entries it hands over), 12 (caching a dictionary when

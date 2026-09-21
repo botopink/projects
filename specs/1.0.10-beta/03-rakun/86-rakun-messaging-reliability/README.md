@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** medium — front 15 can deliver a message to a handler and has nowhere to put it when the handler fails; on BEAM that failure mode is silent, because supervision restarts the consumer and the consumer re-reads the same message forever
 **Target:** erlang (server)
-**Wave:** 4
+**Wave:** 5
 **Depends on:** 15 (the listener registry and the dispatch loop it wraps), 05 (per-listener configuration), 01 (`clock` for the backoff timer), 83 (the outbox it hands off to when a broker has no transaction), 75 (registers its counters)
 **Owns:** `modules/rakun-messaging/src/reliability/**`, `modules/rakun-messaging/test/reliability/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. Inside `modules/rakun-messaging/`, everything outside `src/reliability/**` belongs to front 15 and is read-only here.

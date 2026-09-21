@@ -6,7 +6,7 @@ render Next.js performs on the server happens here, on BEAM, and everything the 
 starts from the bytes this front writes
 **Target:** both — boundary. The render, the escaping and the chunk writer are erlang; the payload
 reader and the streaming-hole swapper are js; the payload format is the contract between them
-**Wave:** 2
+**Wave:** 5
 **Depends on:** 04 (BEAM runtime), 22 (route table and layout chain), 06 (scopes), 62 (request
 context — `headers()`, `cookies()`, `after()`, per-request memoization), 28 (server components), 02
 (`async.all` over unstarted thunks), 01 (`escape.html` / `escape.attribute`), 03 (content hash for the

@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — a card without a shadow and a modal without a backdrop blend read as unfinished, and today `Effect.Shadow.Sm` emits `box-shadow:sm`, which no browser accepts
 **Target:** comptime
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 33 (the palette the coloured-shadow escape hatch resolves against), 34 (modifiers — the examples use the six that already exist)
 **Owns:** token sections `Effect`, `Blend`, `Mask` in `repository/emilia/src/tokens.bp` · dispatcher `effectTokenToCss` (plus `blendTokenToCss` and `maskTokenToCss`, its two siblings) in `repository/emilia/src/emilia.bp` · `repository/emilia/test/effects_test.bp`
 **Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`; `repository/emilia/src/root.bp` beyond nothing — this front adds no module

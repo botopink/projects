@@ -6,7 +6,7 @@ can miss has no 404 path, `§ 23`'s layout auth guard cannot redirect, and front
 (`revalidatePath` then `redirect`) does not compile; front 31 renders `not-found.bp` and nothing can
 trigger it
 **Target:** erlang (server)
-**Wave:** 3
+**Wave:** 6
 **Depends on:** 22 (the route table, to validate a redirect target), 23 (the render pipeline that
 unwinds), 62 (the request frame the outcome is recorded on)
 **Owns:** `repository/rakun/src/navigation.bp`,

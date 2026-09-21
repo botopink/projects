@@ -7,7 +7,7 @@
 at which to call it, so the CSS an app generates either arrives empty, arrives twice, or does not
 arrive; and nothing serves `public/`
 **Target:** erlang (server)
-**Wave:** 4 — after front 68 lands the manifest record this front appends to
+**Wave:** 7 — after front 68 lands the manifest record this front appends to
 **Depends on:** 48 (the attribute slot and the class the tree carries) · 49 (config, `publicDir`,
 `outDir`, and the ordering rule it states for the non-streaming case) · 23 (the pipeline this front
 inserts into) · 30 (the streamed boundaries it inserts per chunk) · 03 (fingerprints) · 68 (the

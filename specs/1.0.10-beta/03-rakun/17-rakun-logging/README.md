@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** low as a feature, high as a dependency — front 31's `error.digest` and every operator question about a running node route through it
 **Target:** erlang (server)
-**Wave:** 3
+**Wave:** 4
 **Depends on:** 03 (content hash, for the error digest), 05 (config and profiles), 06 (context), 11 (endpoint host), 62 (per-request context, for the correlation id)
 **Owns:** `modules/rakun-logging/src/**`, `modules/rakun-logging/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone

@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** low — nothing else in the milestone depends on it, and an application that needs push today polls
 **Target:** erlang (server)
-**Wave:** 4
+**Wave:** 5
 **Depends on:** 01 (`net`), 04 (the BEAM runtime and its supervision tree), 05 (config), 06 (context), 07 (the HTTP path the upgrade happens on), 10 (authorization at upgrade), 11 (health registry), 62 (per-request context)
 **Owns:** `modules/rakun-web/src/websocket/**`, `modules/rakun-web/test/websocket/**`
 **Does not touch:** `modules/rakun-web/src/*.bp` — front 07 owns those, and this front adds no arm to its filter chain. `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` are frozen for the milestone

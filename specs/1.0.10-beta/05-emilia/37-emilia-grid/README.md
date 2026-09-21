@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — emilia can say `display:flex` and then nothing. A flex item cannot grow, shrink, reorder or set a basis, and grid has no token at all, so no two-dimensional layout is expressible.
 **Target:** comptime — `emilia` runs at comptime and emits a CSS string. It is neither erlang- nor js-specific, and this front compiles for neither target in particular.
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 54 (`Theme`, `spacing(n)` — `Gap` and `Flex.Basis` call it), 56 (`declSheet` — this front emits declarations only, no selector)
 **Owns:** `repository/emilia/src/tokens.bp` (the `Flex` and `Grid` sections and the new top-level `Gap` section) · `repository/emilia/src/emilia.bp` (`flexTokenToCss`, `gridTokenToCss`, `gapTokenToCss` and their sub-dispatchers) · `repository/emilia/test/grid_test.bp`
 **Does not touch:** `Layout` (front 36) — `display:flex` and `display:grid` are display values and stay there; `Pad`/`Margin`/`Size` (front 35)

@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** medium — front 16 schedules in memory, so a restart loses pending work and N replicas each run the same nightly job N times
 **Target:** erlang (server)
-**Wave:** 4
+**Wave:** 5
 **Depends on:** 16 (the `#[scheduled]` surface and the cron parser this reuses), 08 (the job store's datasource and its local transaction), 77 (the migrations that create the tables), 05 (configuration), 11 (the `quartz`-equivalent endpoint is served there)
 **Owns:** `modules/rakun-scheduling/src/jobstore/**` · `modules/rakun-scheduling/test/jobstore/**`
 **Does not touch:** front 16's `modules/rakun-scheduling/src/*.bp` at the top level — the in-VM scheduler, `#[scheduled]`, the cron parser and the `scheduledtasks` endpoint are all front 16's and stay there. Also the four frozen files in `repository/rakun/src/`

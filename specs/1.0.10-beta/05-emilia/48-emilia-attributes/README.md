@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — every token the other fifteen emilia fronts deliver is unreachable from a jhonstart element until this front exists, and the class name it produces is read by both halves of the app
 **Target:** comptime — the class name is computed at comptime and emitted as a string. The attribute carrying it is consumed by **both** halves: the server render (erlang, front 23) writes it into the HTML, and the client (js) recomputes it during hydration. A class-name scheme that differs between the two halves breaks hydration, and preventing that is what this front is for.
-**Wave:** 2
+**Wave:** 4
 **Depends on:** 26 (jhonstart router — the wave-2 gate) · 33–47 for the tokens carried through the slot, though the slot itself is token-agnostic and carries any `Token[]`
 **Owns:** `repository/emilia/src/attributes.bp` · `repository/emilia/src/html_hook.bp` · `repository/jhonstart/src/html_attrs.bp` · `repository/emilia/test/attributes_test.bp` · `repository/emilia/test/integration_test.bp`
 **Does not touch:** `repository/emilia/src/tokens.bp` and `repository/emilia/src/emilia.bp` — no token section, no dispatcher, which is what makes this front safe to run alongside all fifteen others; `repository/jhonstart/src/element.bp`, `src/hooks.bp`, `src/html.bp` — frozen for the milestone

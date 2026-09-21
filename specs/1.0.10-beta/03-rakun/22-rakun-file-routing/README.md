@@ -5,7 +5,7 @@
 place to hang a server action; fronts 23, 24, 25, 27, 60, 61 and 66 all read what this front writes
 **Target:** both — boundary. The route table is matched on BEAM and prefetched in the browser, and it
 is the same matcher compiled twice
-**Wave:** 1
+**Wave:** 2
 **Depends on:** 01 (the directory walk — `path` is already complete), 05 (`appDir` as a config value)
 **Owns:** `repository/rakun/src/file_router.bp`, `repository/rakun/src/file_router.mjs`,
 `repository/rakun/src/sidecars/rakun_file_router.erl`, `repository/rakun/test/file_router_test.bp`

@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** medium-high — without it a consumer cannot name a reusable bundle or a project-specific variant, so every application re-lists the same twelve tokens at every call site. That is the duplication problem `§ 3.1` is entirely about, and `@apply` and `@utility` are the two most-used extension points in real Tailwind codebases.
 **Target:** comptime
-**Wave:** 1 — both dependencies land in wave 0.
+**Wave:** 3 — 56 lands in wave 1 and 34 in wave 2.
 **Depends on:** 34 (a custom variant is built out of the `Variant` shape front 34 defines for the named ones), 56 (`Variant`, `Sheet`, and the question of where a named utility lands in the cascade)
 **Owns:** `repository/emilia/src/compose.bp`, `repository/emilia/test/compose_test.bp`; the `pub mod compose;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** `src/tokens.bp` — this front adds **no** `Token` variant and **no** `tokenToSheet` arm, which is what makes it safe beside all twenty other track-D fronts; `src/output.bp`; any other front's dispatcher

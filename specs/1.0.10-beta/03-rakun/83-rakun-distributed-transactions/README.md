@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** medium — every messaging front can already publish and every data front can already write, and nothing in the milestone stops those two from disagreeing after a crash
 **Target:** erlang (server)
-**Wave:** 4
+**Wave:** 5
 **Depends on:** 08 (the local transaction every mechanism here is built on), 15 (the publisher and the listener registry), 16 (the relay's tick), 77 (the tables the outbox, the dedupe store and the decision log live in), 05 (configuration)
 **Owns:** `modules/rakun-tx/botopink.json`, `modules/rakun-tx/src/**` · `modules/rakun-tx/test/**`
 **Does not touch:** `modules/rakun-data/src/**` (front 08's, including `#[transactional]`), `modules/rakun-messaging/src/**` (front 15's), and the four frozen files in `repository/rakun/src/`

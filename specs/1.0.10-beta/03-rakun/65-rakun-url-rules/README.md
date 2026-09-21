@@ -9,7 +9,7 @@ the app at all, so they sit in front of everything
 **Target:** both — boundary. Rules are **executed** on BEAM by front 07's chain; `basePath`,
 `trailingSlash` and the redirect table are **mirrored** in the browser so `<Link>` produces the href
 the server would have produced. The two halves are named below
-**Wave:** 4
+**Wave:** 7
 **Depends on:** 07 (the filter chain these rules install into — this front defines them, that front
 runs them), 22 (the route table a rewrite target is checked against), 62 (the request frame a rule
 reads a header from), 63 (the redirect signal), 13 (the HTTP client an external rewrite proxies

@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** low — the JMS *API* is JVM-only, but ActiveMQ Classic and Artemis are common enough in enterprise estates that a rakun service may have to join one that already exists
 **Target:** erlang (server)
-**Wave:** 5
+**Wave:** 6
 **Depends on:** 15 (the listener registry this becomes a third arm of, and the publish seam), 86 (retry, dead-letter and acknowledgement modes), 74 (TLS bundles for `amqps`/`stomp+ssl`), 05 (connection configuration), 11 (health indicator)
 **Owns:** `modules/rakun-messaging/src/jms/**`, `modules/rakun-messaging/test/jms/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. Inside `modules/rakun-messaging/`, `src/reliability/**` is front 86's, `src/pulsar/**` is front 91's, and everything else is front 15's; all three are read-only here.

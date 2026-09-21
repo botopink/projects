@@ -4,7 +4,7 @@
 **Priority:** high — without it, one slow loader holds the whole page; the reader sees nothing until the slowest query returns
 **Target:** erlang (server)
 **Boundary:** the server produces the fills; the browser consumes them. The hole and fill markers are pinned in `contracts.md § 2` and owned by front 23; this front produces markup that matches them and carries no browser cell.
-**Wave:** 3
+**Wave:** 5
 **Depends on:** 28 · 02 (spawn/gather over unstarted tasks) · 23 (hole markers + flush transport, read-only) · 94 (element builders used by the examples)
 **Owns:** `repository/jhonstart/src/streaming.bp`, `repository/jhonstart/src/suspense.bp`, `repository/jhonstart/test/streaming_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/root.bp` and `botopink.json` (front 94)

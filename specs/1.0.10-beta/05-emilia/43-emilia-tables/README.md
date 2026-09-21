@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** low — four CSS properties, all of them table-only; nothing else in the milestone waits on this front, and no other front can substitute for it
 **Target:** comptime
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 35 (the spacing scale `border-spacing` is a multiple of — this front reuses the step values, not front 35's tokens)
 **Owns:** token section `Table` in `repository/emilia/src/tokens.bp` · dispatcher `tableTokenToCss` in `repository/emilia/src/emilia.bp` · `repository/emilia/test/tables_test.bp`
 **Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`

@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — `Border` has four widths, four radii and two colour families. Per-side widths, per-corner radii, border styles, outlines, rings and divided lists all have no token, and three of those five are how a real component shows focus, separation and state.
 **Target:** comptime — `emilia` runs at comptime and emits a CSS string. It is neither erlang- nor js-specific, and this front compiles for neither target in particular.
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 33 (`Border.Color`, `Outline.Color`, `Ring.Color` and `Divide.Color` all go through `paletteVar`), 54 (the `Theme` parameter and the `--radius-*` ladder), 56 (`Divide` needs a sibling selector, and `Ring` needs shadow composition — neither is expressible as a bare declaration)
 **Owns:** `repository/emilia/src/tokens.bp` (the `Border` section and the new `Outline`, `Ring` and `Divide` sections) · `repository/emilia/src/emilia.bp` (`borderTokenToCss` and its sub-dispatchers, `outlineTokenToCss`, `ringTokenToSheet`, `divideTokenToSheet`) · `repository/emilia/test/borders_test.bp`
 **Does not touch:** the colour grid itself (front 33); `Effect.Shadow` (front 41) — `Ring` composes with it and does not own it

@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** medium — without it component-scoped responsiveness is impossible and every `emilia`-styled `jhonstart` component stays coupled to the viewport. For a library whose only consumer is a component framework that is a structural limitation, not a missing utility.
 **Target:** comptime
-**Wave:** 1 — both dependencies land in wave 0.
+**Wave:** 2 — 54 lands in wave 0 and 56 in wave 1.
 **Depends on:** 54 (the `--container-*` namespace: the thirteen sizes are theme values, not constants), 56 (`@container` is an at-rule and has to be hoisted out of the class body)
 **Owns:** `repository/emilia/src/container.bp`, `repository/emilia/test/container_test.bp`; one payload-free `Container` section plus three **top-level `Token` variants** appended to `src/tokens.bp` under a banner naming this front, and their four arms in `tokenToSheet`; the `pub mod container;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** any other front's token section or dispatcher; `src/output.bp`; `src/theme.bp`

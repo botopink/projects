@@ -3,7 +3,7 @@
 **Track:** C jhonstart
 **Priority:** high — front 24 dispatches a server action and nothing in the browser binds a form to it, so the central example of `NEXTJS-DOCS.md § 10` and `§ 14` has no client half and no page can submit anything
 **Target:** js (client)
-**Wave:** 4
+**Wave:** 8
 **Depends on:** 24 (the action endpoint and its envelope) · 29 (the client boundary and the hydration entry) · 94 (`form`, `input`, `button`, `label` — this front defines no constructor) · 14 (the constraint set the client mirrors) · 26 (navigation after a submit) · 31 (which settled that an `ok: false` envelope is data, not a boundary) · 63 (a redirect returned from an action) · 01 (percent encoding)
 **Owns:** `repository/jhonstart/src/form.bp`, `repository/jhonstart/src/form_state.bp`, `repository/jhonstart/test/form_test.bp`, `repository/jhonstart/test/form_state_test.bp`
 **Does not touch:** `repository/jhonstart/src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen for the milestone), `src/elements.bp` (front 94), `src/router.bp` (front 26), `src/link.bp` (front 27), `src/client.bp` (front 29), `repository/rakun/src/actions.bp` (front 24)

@@ -8,7 +8,7 @@ shares one social card. Visible, not structural; and it is the one front in trac
 external dependency
 **Target:** erlang (server) — the element-tree→SVG half is pure botopink on BEAM; only SVG→PNG leaves
 the VM
-**Wave:** 4
+**Wave:** 9
 **Depends on:** 66 (which registers `opengraph-image.bp` as a route) · 32 (the metadata that links the
 card's URL) · 52 (the font files, and the metrics sidecar this front measures with) · 12 (cache — a
 card is rendered once per content hash) · 03 (that content hash) · 49 (`Params`, `RouteContext`) ·

@@ -6,7 +6,7 @@
 produces a response at a fixed URL — so they belong to the router, not to the metadata renderer, which
 is why folding them into front 32 would be wrong
 **Target:** erlang (server)
-**Wave:** 4
+**Wave:** 6
 **Depends on:** 22 (registering synthetic routes into the table), 32 (the metadata model whose `<link>`
 and `<meta>` tags this front feeds), 62 (the request frame a dynamic sitemap reads from), 03 (the
 content hash that fingerprints an image URL), 01 (`path.walk`, `path.glob`, `escape.attribute`,

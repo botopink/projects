@@ -7,7 +7,7 @@
 with a full toolchain present, and the milestone's exit gate requires `onze build && onze start`
 **Target:** both — the release descriptor and the build-id derivation are read by the BEAM server at
 boot and written by the build host; the client asset tree it packages is the js half
-**Wave:** 4 — after front 68's manifest and front 69's asset tree exist to be packaged
+**Wave:** 8 — after front 68's manifest and front 69's asset tree exist to be packaged
 **Depends on:** 04 (the BEAM runtime being packaged) · 50 (the CLI entry points; `onze start` runs
 what this front produces) · 68 (the client assets and the manifest) · 69 (the static asset tree and
 `public/`) · 60 (the prerender manifest) · 03 (the build id) · 05 (runtime configuration and

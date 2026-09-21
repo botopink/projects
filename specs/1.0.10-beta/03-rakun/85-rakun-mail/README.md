@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** medium — password reset, address verification and notification are table stakes for the kind of application this milestone is aimed at, and nothing in it can send an e-mail
 **Target:** erlang (server)
-**Wave:** 4
+**Wave:** 6
 **Depends on:** 01 (`net` for the SMTP socket, `escape.html` for templated bodies, `encoding` for base64 and quoted-printable, `clock` for the `Date` header), 05 (configuration), 74 (STARTTLS and implicit TLS through the bundle registry), 23 (the render path for an HTML body), 11 (registers the `mail` health indicator), 83 (a send that must be tied to a database write goes through the outbox, not through a second one here)
 **Owns:** `modules/rakun-mail/botopink.json`, `modules/rakun-mail/src/**` · `modules/rakun-mail/test/**`
 **Does not touch:** `modules/rakun-tx/**` (front 83's outbox — this front enqueues into it, it does not reimplement it), `repository/jhonstart/src/element.bp` (frozen), and the four frozen files in `repository/rakun/src/`

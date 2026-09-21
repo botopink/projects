@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — six display values is the whole of emilia's layout vocabulary. Nothing can be positioned, clipped, stacked or floated, which rules out every overlay, sticky header and scroll container.
 **Target:** comptime — `emilia` runs at comptime and emits a CSS string. It is neither erlang- nor js-specific, and this front compiles for neither target in particular.
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 54 (`Theme`, `spacing(n)`, `spacingHalf(n)`), 56 (`declSheet` — this front emits declarations only, no selector), 33 (nothing structural; the examples use colour tokens)
 **Owns:** `repository/emilia/src/tokens.bp` (the `Layout` section) · `repository/emilia/src/emilia.bp` (`layoutTokenToCss` and its sub-dispatchers) · `repository/emilia/test/layout_test.bp`
 **Does not touch:** `Flex` and `Grid` (front 37) — `display:flex` is here because it is a display value, the flex container's own properties are not; `Size` (front 35)

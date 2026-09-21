@@ -4,7 +4,7 @@
 **Priority:** critical — nothing downstream can ask "which route is this?"; `Link`, server components, streaming, error boundaries and metadata all read the answer this front produces
 **Target:** erlang (server)
 **Boundary:** the route snapshot is one of the three things `overview.md` says crosses. The server matches and fills it; the client rebuilds it from front 23's `__onze` payload after a client navigation. The payload envelope and the route table are **not** defined here — they are fronts 23 and 22; this front consumes both.
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 01 · 22 (route table + `matchPath`, read-only) · 23 (payload envelope, read-only) · 94 (element builders used by the examples)
 **Owns:** `repository/jhonstart/src/router.bp` (promoted from `router.d.bp`, and the package's one `pairValue` pair-list decoder), `repository/jhonstart/test/router_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/link.bp` (front 27), `src/server.bp` (front 28), `src/root.bp` and `botopink.json` (front 94)

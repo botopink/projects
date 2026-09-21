@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** medium — no filter token exists at all, so a frosted panel, a dimmed disabled control and a greyed-out avatar each have to leave `emilia` entirely
 **Target:** comptime
-**Wave:** 1
+**Wave:** 3
 **Depends on:** none of the emilia fronts directly — `Filter` and `Backdrop` are self-contained scales. Wave 1 places it after wave 0 (33 · 34 · 35) so the `tokenToCss` arms land in front-number order.
 **Owns:** token sections `Filter`, `Backdrop` in `repository/emilia/src/tokens.bp` · dispatcher `filterTokenToCss` (and its sibling `backdropTokenToCss`) in `repository/emilia/src/emilia.bp` · `repository/emilia/test/filters_test.bp`
 **Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`

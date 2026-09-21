@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** medium — without it every `#[service]` that reads twice reads twice, and the Next-style render pipeline in fronts 23–25 has nowhere to put a memoized segment
 **Target:** erlang (server)
-**Wave:** 3
+**Wave:** 5
 **Depends on:** 01 (`clock`), 03 (content hash), 05 (config), 06 (context), 11 (endpoint host + health registry), 13 (the Redis transport), 18 (session id for the private scope), 62 (per-request context)
 **Owns:** `modules/rakun-cache/src/**`, `modules/rakun-cache/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone

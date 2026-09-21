@@ -9,7 +9,7 @@ except this one
 **Target:** both — full stack. The pages, layouts, actions, handlers and middleware compile to BEAM;
 the client island, the `Link` navigation and the form's pending state compile to commonJS; the route
 table and the serialized payload cross
-**Wave:** 5
+**Wave:** 10
 **Depends on:** all — and specifically, in critical-path order, 01 → 04 · 22 · 26 → 06 · 23 · 28 · 62
 → 24 · 60 · 63 · 68 → 67 → this
 **Owns:** `examples/blog/**`, `examples/blog/test/**`

@@ -7,7 +7,7 @@ no meaning, and the modal-over-a-feed pattern of `§ 21` — the reason most rea
 Router at all — is unbuildable
 **Target:** both — boundary. The server resolves slots and decides interception; the client must tell
 it which navigation this is, and the two halves are named below
-**Wave:** 4
+**Wave:** 6
 **Depends on:** 22 (the `RouteNode` tree and the table), 23 (layout nesting and the payload), 27
 (client navigation, which sets the soft-navigation marker), 30 (per-slot `loading` boundaries),
 62 (the request frame the marker is read from)

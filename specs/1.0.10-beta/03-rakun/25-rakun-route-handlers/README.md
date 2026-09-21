@@ -6,7 +6,7 @@ application; this is also the only path by which a webhook, a health probe or a 
 reaches an `onze` app
 **Target:** erlang (server). Nothing here runs in a browser and nothing here declares an
 `@External.Node` cell — the exit gate checks that, and this front is the easiest place to break it
-**Wave:** 3
+**Wave:** 6
 **Depends on:** 22 (route table and the `R` registration cell), 06 (scopes), 62 (request context —
 `cookies()`, `headers()`, `after()`), 07 (the filter chain a handler runs inside), 23 (the shared
 dispatch entry), 30 (the flush primitive streaming reuses), 01 (percent-decoding for form bodies)

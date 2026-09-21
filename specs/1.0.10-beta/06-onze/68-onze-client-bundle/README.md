@@ -10,7 +10,7 @@ nothing that runs
 side (under `onze build`, on BEAM); the artifact they produce is the js client half. One file,
 `manifest.bp`, compiles for both targets because the build host writes the manifest and the BEAM
 server reads it back to emit script tags
-**Wave:** 4
+**Wave:** 6
 **Depends on:** 29 (the boundary marker, the `server-only` marker and the hydrate entry point) · 49
 (config, `outDir`, and the `ONZE_PUBLIC_` rule this front enforces) · 03 (content hashes) · 50 (the
 CLI that invokes it) · 01 (`path.walk`, `path.glob`, `process.run`, `fs`) · 23 (the payload and the

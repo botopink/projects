@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** high — without it `Border.W.1` means something different in emilia than `border` means in Tailwind, `before:`/`after:` render nothing, and every emilia page inherits browser defaults Tailwind removes. "Tailwind CSS v4 parity" is then unfalsifiable for the whole of track D, not just for this front.
 **Target:** comptime
-**Wave:** 1 — it needs 56's rule model, which lands in wave 0.
+**Wave:** 2 — it needs 56's rule model, which lands in wave 1.
 **Depends on:** 56 (a document-level rule is not a class body, and there is nowhere to put one until `Rule` and the `base` layer exist)
 **Owns:** `repository/emilia/src/preflight.bp`, `repository/emilia/test/preflight_test.bp`; the `pub mod preflight;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** `src/tokens.bp` (it adds no `Token`), `src/output.bp` (it consumes `Rule` and `Options`, and edits neither), any per-section dispatcher

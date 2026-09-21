@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** medium — twenty CSS properties that decide whether a page can be dragged, scrolled, selected or clicked, and `emilia` has a token for none of them
 **Target:** comptime
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 33 (the palette — `accent-color`, `caret-color` and `scrollbar-color` take colours, and this front takes them as payloads rather than duplicating front 33's families)
 **Owns:** token section `Interact` in `repository/emilia/src/tokens.bp` · dispatcher `interactTokenToCss` in `repository/emilia/src/emilia.bp` · `repository/emilia/test/interactivity_test.bp`
 **Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`

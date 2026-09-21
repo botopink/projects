@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** medium — a hover that lifts a card, a chevron that flips when a menu opens and a modal that scales in are all one property, and `emilia` has no token for it
 **Target:** comptime
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 44 (transitions — a transform without a transition snaps, so the examples pair the two; the dependency is on the token existing, not on its dispatcher)
 **Owns:** token section `Transform` in `repository/emilia/src/tokens.bp` · dispatcher `transformTokenToCss` in `repository/emilia/src/emilia.bp` · `repository/emilia/test/transforms_test.bp`
 **Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`

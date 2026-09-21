@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** medium — every application eventually needs something to happen on its own, and today the only way is an external cron calling an HTTP endpoint
 **Target:** erlang (server)
-**Wave:** 3
+**Wave:** 4
 **Depends on:** 01 (`clock`), 05 (config), 06 (context), 11 (endpoint host + health registry)
 **Owns:** `modules/rakun-scheduling/src/**`, `modules/rakun-scheduling/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone

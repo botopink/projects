@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** low — five CSS properties, and one of them (`sr-only`) is the difference between a screen reader announcing an icon button and announcing nothing
 **Target:** comptime
-**Wave:** 1
+**Wave:** 3
 **Depends on:** 33 (the palette — `fill` and `stroke` take colours, and this front takes them as payloads rather than duplicating front 33's families)
 **Owns:** token sections `Svg`, `A11y` in `repository/emilia/src/tokens.bp` · dispatchers `svgTokenToCss` and `a11yTokenToCss` in `repository/emilia/src/emilia.bp` · `repository/emilia/test/svg_a11y_test.bp`
 **Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`

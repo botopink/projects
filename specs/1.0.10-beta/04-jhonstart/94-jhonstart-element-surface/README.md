@@ -3,7 +3,7 @@
 **Track:** C jhonstart
 **Priority:** critical — front 31's `global-error.bp` cannot be written without it, and nine other fronts each carry a private copy of `form`/`input`/`button` that will drift the first time an attribute convention changes
 **Target:** both — the surface is rendered on the server by front 23 and hydrated in the browser by front 68, so every constructor must produce the identical `Element` on both targets
-**Wave:** 1
+**Wave:** 0
 **Depends on:** none — only the already-public `Element` record (`element.bp:3-8`)
 **Owns:** `repository/jhonstart/src/elements.bp` (plus its inline `test` blocks), `repository/jhonstart/test/elements_test.bp`, `repository/jhonstart/src/root.bp`, `repository/jhonstart/botopink.json`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/suspense.bp`/`src/streaming.bp` (30), `src/error_boundary.bp` (31), `src/metadata.bp` (32), `src/form.bp`/`src/form_state.bp` (67)

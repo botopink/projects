@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** critical — without it every one of fronts 33–47 hard-codes its own value ladder, which is what `emilia.bp` does today and which has already drifted: `marginScaleX` emits `m-0.25`, a string that is not CSS.
 **Target:** comptime
-**Wave:** 0 — and first inside wave 0. Fronts 33, 34 and 35 are also wave 0 and all three consume `spacing(n)` and `Theme`, so 54 lands before them.
+**Wave:** 0 — and first inside wave 0. Fronts 33, 34 and 35 are wave 2 and all three consume `spacing(n)` and `Theme`, so 54 lands before them.
 **Depends on:** none
 **Owns:** `repository/emilia/src/theme.bp`, `repository/emilia/src/spacing.bp`, `repository/emilia/test/theme_test.bp`, `repository/emilia/test/spacing_test.bp`; the `pub mod theme;` / `pub mod spacing;` lines in `src/root.bp` and the two matching entries in `botopink.json`
 **Does not touch:** `src/tokens.bp` (it adds no `Token` variant), `src/emilia.bp` (it adds no `tokenToCss` arm), and every other front's dispatcher

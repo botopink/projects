@@ -3,7 +3,7 @@
 **Track:** D emilia
 **Priority:** critical — every other emilia front that names a colour (borders, backgrounds, gradients, rings, shadows, SVG) resolves its value through this front's table. Until it lands they each invent a private one.
 **Target:** comptime — `emilia` runs at comptime and emits a CSS string. It is neither erlang- nor js-specific, and this front compiles for neither target in particular.
-**Wave:** 0
+**Wave:** 2
 **Depends on:** 54 (`Theme`, `themeVar`, `ThemeEntry`, `extend`), 56 (`declSheet` — this front emits declarations only)
 **Owns:** `repository/emilia/src/tokens.bp` (the `Color` section, the `Bg.Color` sub-section, the `Alpha` wrapper variant) · `repository/emilia/src/emilia.bp` (`colorTokenToCss`, `bgColorTokenToCss`, `paletteVar`, `alphaWrap`) · `repository/emilia/test/colors_test.bp`
 **Does not touch:** every other token section; `Bg`'s non-colour sub-sections (front 39); the modifier variants (front 34)

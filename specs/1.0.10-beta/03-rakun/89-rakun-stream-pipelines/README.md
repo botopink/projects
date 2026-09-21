@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** low — real work, but an application that never builds a processing topology never misses it; front 15 and front 86 already cover consume-one-message-and-handle-it
 **Target:** erlang (server)
-**Wave:** 5
+**Wave:** 6
 **Depends on:** 15 (the broker arms a source and a sink are built from), 86 (per-stage retry and the dead-letter path), 11 (hosts the graph endpoint), 08 (the durable state and metadata store arm), 05 (poller and topology configuration), 01/std `time`
 **Owns:** `modules/rakun-stream/src/**`, `modules/rakun-stream/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. `modules/rakun-messaging/**` belongs to fronts 15, 86, 90 and 91 and is read-only here.

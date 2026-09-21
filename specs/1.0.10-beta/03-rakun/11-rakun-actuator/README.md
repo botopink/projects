@@ -3,7 +3,7 @@
 **Track:** B rakun
 **Priority:** medium — an application nobody can ask "are you alive" is an application a load balancer cannot route to and an operator cannot diagnose
 **Target:** erlang (server)
-**Wave:** 1 (the API module) · 3 (the host)
+**Wave:** 3 (the host) · 1 (the API module)
 **Depends on:** none (the API module) · 06 (the host)
 **Owns:** `modules/rakun-actuator-api/src/**`, `modules/rakun-actuator-api/test/**` · `modules/rakun-actuator/src/*.bp`, `modules/rakun-actuator/src/sidecars/rakun_actuator.erl`, `modules/rakun-actuator/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · `modules/rakun-actuator/src/exposure.bp`, `access.bp`, `management_listener.bp`, `probes.bp`, `sanitize.bp`, which are front 76's · the metrics registry and exporters, which are front 75's
