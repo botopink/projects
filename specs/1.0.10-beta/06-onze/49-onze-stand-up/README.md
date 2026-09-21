@@ -110,7 +110,9 @@ serialises the sheet **and clears it** (`emilia.bp:53-56`). So the order is buil
 then serialise — and flushing before the tree is built yields `<style></style>`. Front 69
 (`onze-styling-pipeline`) owns the point in front 23's pipeline where that happens, through
 `openSink` / `collectHead` / `collectChunk` / `closeSink`, because only it knows whether the response
-is streaming and therefore whether a late chunk needs its own block.
+is streaming and therefore whether a late chunk needs its own block. Front 23 does not call them:
+they are fields of the `RenderHooks` record front 23 declares, and `Onze.run` — this front's
+`integration.bp` — is what installs 69's implementation into it at boot (decision 77).
 
 Front 48 owns the attribute end: `styled(tokens)` is `#("class", emilia(tokens))` and
 `styledWith(base, tokens)` merges a static class first, one ASCII space, no sorting
@@ -286,8 +288,10 @@ because an app author reads onze's docs and not rakun's internals.
 **Acceptance:**
 - [ ] `Onze.run(defaultConfig())` starts a listener on 3000 and answers `/` from the app's `#[page("")]`
 - [ ] `basePath: "/docs"` is passed through to `App` unchanged; onze does not reimplement prefixing
-- [ ] `integration.bp` imports nothing from front 23 or front 69 — if it needs to, the seam is in the
-      wrong place and the front says so under *Blocked* rather than reaching for it
+- [ ] `integration.bp` is the only file in onze that touches front 23's `RenderHooks`: it installs
+      `defaultHooks()` while 68 and 69 do not exist and is where their values are wired in when they
+      do (decision 77). Any other onze file reaching for the seam means the seam is in the wrong
+      place, and the front says so under *Blocked* rather than adding a second wiring point
 
 ### Step 5 — What this front deliberately does not build
 

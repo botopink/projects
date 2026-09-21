@@ -88,16 +88,16 @@ Edges, with the file that creates each:
 | `onze-release` | `onze-bundler` · `onze-assets` | `package.bp` verifies every chunk and `Y` record exists; copies `public/` |
 | `onze-cli` | everything | `build.bp` drives the bundler, the stylesheet build, the release; `start.bp` runs `bin/onze` |
 
-### Three seams that reverse the direction, and how each is turned around
+### The three seams that pointed the wrong way, and where each lives now
 
-The 1.0.9 READMEs describe rakun and jhonstart *calling into* onze. Each is a direction violation
-and is resolved by inversion, not by exception:
+The 1.0.9 READMEs described rakun and jhonstart *calling into* onze. Each was a direction violation,
+and decision 77 settled all three by inversion rather than by exception:
 
-| Seam as drafted | Violation | Resolution |
+| Seam as drafted in 1.0.9 | Violation | Where it lives now |
 |---|---|---|
-| Front 23 (`rakun/src/ssr.bp`) calls 69's `openSink` / `collectHead` / `collectChunk` / `closeSink` | rakun → onze-assets | 23 declares a `RenderHooks(openHead, collectHead, collectChunk, close)` record of fn values with a no-op default; `Onze.run` (core `integration.bp`) passes `onze-assets`'s implementation at boot. rakun never names onze |
-| Front 23 emits the bundle's `<script>` tags by calling 68's `headScriptTags` / `scriptTags` | rakun → onze-bundler | Same record: `RenderHooks.headScripts(route) -> string`, `RenderHooks.bodyScripts(route) -> string`. The payload tag stays 23's (`contracts.md § 2`) |
-| Front 29 (`jhonstart`) and 68's entry generator share `islandAttr(ordinal)` — "one definition, cited in both READMEs" | jhonstart → onze-bundler if the definition lives in the bundler | The definition lives in jhonstart (29 owns the island marker); `onze-bundler/src/entry.bp` imports it. `contracts.md § 2` is the text both cite |
+| Front 23 (`rakun/src/ssr.bp`) calls 69's `openSink` / `collectHead` / `collectChunk` / `closeSink` | rakun → onze-assets | Those four are fields of `RenderHooks`, declared by front 23 with working defaults; `Onze.run` (core `integration.bp`) installs `onze-assets`'s implementation at boot. rakun names no module of onze |
+| Front 23 emits the bundle's `<script>` tags by calling 68's `headScriptTags` / `scriptTags` | rakun → onze-bundler | Same record: `RenderHooks.headExtra(route) -> string` and `RenderHooks.bodyExtra(route) -> string`, filled from 68. The payload tag stays 23's (`contracts.md § 2`) |
+| Front 29 (`jhonstart`) and 68's entry generator share `islandAttr(ordinal)` — "one definition, cited in both READMEs" | jhonstart → onze-bundler if the definition lives in the bundler | The definition lives in jhonstart (29 owns the island marker); `onze-bundler/src/entry.bp` imports it and front 23 reads it as `RenderHooks.islandAttr`. `contracts.md § 2` is the text all three cite |
 
 The README of front 49 (*Step 4*) already requires `integration.bp` to be the place these are wired:
 "`Onze.run` … the entire seam". The hooks record is what makes that sentence true once 23, 68 and

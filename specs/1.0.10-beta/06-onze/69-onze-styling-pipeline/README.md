@@ -14,7 +14,10 @@ inserts into) · 30 (the streamed boundaries it inserts per chunk) · 03 (finger
 manifest it appends `Y` records to) · 01 (`escape.html`, `escape.attribute`, `process.run`, `fs`,
 `path`)
 **Owns:** `repository/onze/modules/onze-assets/src/**`,
-`repository/onze/modules/onze-assets/test/**`
+`repository/onze/modules/onze-assets/test/**` — including the four sink functions and the
+`RenderHooks.openSink`/`collectHead`/`collectChunk`/`closeSink` values built from them, which
+`Onze.run` (front 49) installs into front 23's record. The record itself is front 23's; this front
+defines nothing outside `repository/onze/` (decision 77)
 **Does not touch:** `repository/emilia/src/**` (emilia's `flush()` contract is consumed, never
 changed), `repository/onze/modules/onze-bundler/src/manifest.bp` (front 68 owns the record and
 the parser; this front hands it the style records), `repository/onze/src/integration.bp` (front 49),
@@ -72,7 +75,12 @@ nothing serves `public/` at all, so an app cannot ship a favicon.
 
 ### The seam
 
-One record and four functions, in `src/style_sink.bp`. Front 23 calls them; nothing else does.
+One record and four functions, in `src/style_sink.bp`. They are reached only as the
+`RenderHooks.openSink`/`collectHead`/`collectChunk`/`closeSink` values that `Onze.run` installs
+into front 23's record (decision 77): rakun declares the record and reads it, this front fills it,
+and no file in `repository/rakun/` names this module. The record's fields carry no sink value —
+the wrapper installed at boot holds the `StyleSink` in the request's own BEAM process, which is
+where emilia's sheet already lives.
 
 ```bp
 pub type StyleChunk(id: string, css: string, classes: Array<string>)
@@ -97,7 +105,7 @@ pub fn closeSink(sink: StyleSink) -> #(StyleSink, string)
 pub fn emittedClasses(sink: StyleSink) -> Array<string>
 ```
 
-`emittedClasses` is what front 23 writes into the payload's `s` key (`contracts.md § 2`): the class
+`emittedClasses` is what the pipeline writes into the payload's `s` key (`contracts.md § 2`): the class
 names already present in the server-emitted `<style>`. It is the runtime half of the class-name
 agreement — front 68's entry compares what its islands compute against that list — and it is a field
 of the sink rather than a re-scan of the CSS, because re-parsing the block to recover the names it was
@@ -106,7 +114,7 @@ built from is a second implementation of the thing that just ran.
 **The ordering rule, which is the whole front in one line: render, then flush, then serialize — once
 per chunk.**
 
-| When front 23 calls it | What it does | What it returns |
+| When the pipeline calls the hook | What it does | What it returns |
 |---|---|---|
 | `openSink(links)` | before anything renders | an empty sink carrying the stylesheet `<link>`s from the manifest |
 | `collectHead(sink)` | after the **shell** has been rendered to a string — everything above the first unresolved boundary — and before the head is serialized | the head fragment: the `<link>` tags, then one `<style>` block holding whatever the shell registered |
@@ -384,8 +392,9 @@ mistake, and ordering is exactly what a test can pin.
 
 - [ ] `repository/onze/modules/onze-assets/` exists with `botopink.json`, `src/root.bp`,
       `src/style_sink.bp`, `src/style_module.bp`, `src/stylesheet.bp`, `src/assets.bp`
-- [ ] Front 23 calls `openSink`/`collectHead`/`collectChunk`/`closeSink` and nothing else in the
-      milestone calls `emilia.flush()` — asserted by a grep in the front's own gate
+- [ ] The four calls reach front 23's pipeline as `RenderHooks` values installed by `Onze.run`, and
+      nothing else in the milestone calls `emilia.flush()` — asserted by a grep in the front's own
+      gate, which also checks that `repository/rakun/` names no module of this one (decision 77)
 - [ ] Exactly two URL prefixes are served, `public/` and `/_onze/static/<buildId>/`, with no
       configuration path to a third; `repository/onze/docs.md` states it, because front 53 depends
       on its `content/` directory being unreachable

@@ -17,7 +17,10 @@ CLI that invokes it) · 01 (`path.walk`, `path.glob`, `process.run`, `fs`) · 23
 head it emits script tags into) · 27 (the link runtime the entry mounts) · 48 (the class names the
 tree carries) · 20 (the websocket the dev rebuild pushes over)
 **Owns:** `repository/onze/modules/onze-bundler/src/**`,
-`repository/onze/modules/onze-bundler/test/**`
+`repository/onze/modules/onze-bundler/test/**` — including `headScriptTags`/`scriptTags` and the
+`RenderHooks.headExtra`/`bodyExtra` functions built from them, which `Onze.run` (front 49) installs
+into front 23's record. This front owns **no** definition in another repository: the record is front
+23's and `islandAttr` is front 29's, both imported here (decision 77)
 **Does not touch:** `repository/onze/src/**` (front 49), `repository/onze/modules/onze-cli/**`
 (front 50), `repository/onze/modules/onze-assets/**` (front 69), `repository/jhonstart/src/**`,
 `repository/rakun/src/**`, `repository/emilia/src/**`
@@ -254,9 +257,12 @@ This front emits everything else and respects that placement:
 | 6 | `entry`, `defer` | last | front 68 |
 
 `scriptTags(m, route)` returns groups 4-6 as one string and `headScriptTags(m)` returns group 1.
-Front 23 concatenates: head tags into `<head>`, its own payload, then `scriptTags`. This front never
-formats the payload tag and never moves it; it asserts only that the entry comes after it, because an
-entry that runs before `#__onze` exists finds no payload and hydrates nothing.
+Neither is called by front 23: they are wrapped as `RenderHooks.headExtra` and `RenderHooks.bodyExtra`
+and installed by `Onze.run`, so the pipeline writes the string this front returns without knowing
+where it came from (decision 77 — the record is declared by front 23, and the dependency points from
+here into rakun, never back). This front never formats the payload tag and never moves it; it asserts
+only that the entry comes after it, because an entry that runs before `#__onze` exists finds no
+payload and hydrates nothing.
 
 `afterInteractive` and `lazyOnload` scripts are not tags at all — the entry schedules them, which is
 what the strategy names mean.
@@ -405,13 +411,15 @@ As specified under *The bundle contract*.
 pub type Island(id: string, component: string, props: Array<#(string, string)>)
 
 pub fn generateEntry(graph: ClientGraph, manifest: ClientBundleManifest) -> string
-pub fn islandAttr(ordinal: i32) -> #(string, string)
 pub fn parseIslands(payloadField: string) -> Array<Island>
 ```
 
+`islandAttr(ordinal) -> #(string, string)` is **imported** from jhonstart (front 29), which owns the
+island marker; the generated entry calls it and this front defines no second copy (decision 77).
+
 **Acceptance:**
-- [ ] `islandAttr(0)` is `#("data-onze-i", "i0")`, matching `contracts.md § 2`, and front 29 emits the
-      same pair — one function, cited by both fronts
+- [ ] `islandAttr(0)` is `#("data-onze-i", "i0")`, matching `contracts.md § 2` — asserted here
+      against front 29's definition, not against a local one
 - [ ] `parseIslands` of the payload's `i` key returns one `Island` per triple, props parsed
 - [ ] The generated entry compiles: `botopink build` over `<outDir>/client/` succeeds
 - [ ] An island id present in the DOM and absent from the payload raises, with the id in the message
@@ -484,7 +492,7 @@ root and by `zig build test-libs`.
 | `manifest_test.bp` | **both** | The round trip, the version check, the unknown-kind rule, the `\|` escape, and `scriptTags`'s order. The only test that must pass on erlang, and the reason it must is that the server reads what the build host wrote. |
 | `graph_test.bp` | commonJS | `importsOf` on fixture sources, `clientGraph` on a fixture tree with a shared module, a cycle and a server-only branch |
 | `refusal_test.bp` | commonJS | Every row of the environment table, the `server-only` chain, the emilia rules, and the adversarial-config test that no setting relaxes any of them |
-| `entry_test.bp` | commonJS | `islandAttr`, `parseIslandTable`, and both mismatch errors |
+| `entry_test.bp` | commonJS | the imported `islandAttr`, `parseIslandTable`, and both mismatch errors |
 | `chunk_test.bp` | commonJS | Chunk assignment, hash reproducibility, and that one changed module changes exactly the right chunk hashes |
 
 The graph, chunk and refusal suites run against **fixture source strings**, not against a real
@@ -504,13 +512,16 @@ skipped.
       modules named in *Steps*
 - [ ] `onze build` on front 53's example app writes `<outDir>/client-manifest.txt`, a chunk tree
       under `<outDir>/client/`, and a generated `entry.bp` that compiles
-- [ ] Front 23 emits the bundle's script tags by calling `headScriptTags` and `scriptTags`, and no
-      other front formats one; front 23 keeps its own `<script id="__onze">` per `contracts.md § 2`
+- [ ] The bundle's script tags reach the document through `RenderHooks.headExtra`/`bodyExtra`,
+      installed by `Onze.run`; no other front formats one, and front 23 keeps its own
+      `<script id="__onze">` per `contracts.md § 2`
+- [ ] `repository/onze/modules/onze-bundler/` names rakun and jhonstart in its `botopink.json`, and
+      neither repository names `onze` — the seam is one-directional (decision 77)
 - [ ] `contracts.md § 6` is filled in from this front's *The bundle contract* section, verbatim
 - [ ] The three refusals are covered by a test each **and** by an adversarial-config test proving no
       setting relaxes them
-- [ ] `islandAttr` is called by front 29 and by this front's entry generator — one definition, cited
-      in both READMEs
+- [ ] `islandAttr` is defined by front 29 and imported by this front's entry generator — one
+      definition, in jhonstart, cited in both READMEs
 - [ ] The emilia hash-parity check runs on every build, not only on request
 - [ ] `repository/onze/docs.md` carries the manifest format and the script-tag order verbatim,
       because fronts 23, 50, 53, 69 and 71 all read them

@@ -11,11 +11,15 @@ reader and the streaming-hole swapper are js; the payload format is the contract
 context — `headers()`, `cookies()`, `after()`, per-request memoization), 28 (server components), 02
 (`async.all` over unstarted thunks), 01 (`escape.html` / `escape.attribute`), 03 (content hash for the
 build id), 94 (`isVoidTag`, `isRawTextTag`, and the element surface the walker renders)
-**Owns:** `repository/rakun/src/ssr.bp`, `repository/rakun/src/ssr.mjs`,
-`repository/rakun/src/sidecars/rakun_ssr.erl`, `repository/rakun/test/ssr_test.bp`
+**Owns:** `repository/rakun/src/ssr.bp` — including the `RenderHooks` record, its no-op default and
+every call site that reads it (decision 77: the head extras, the body scripts, the style sink and
+`islandAttr` are *fields of this record*, declared here and filled by whoever boots the app) —
+`repository/rakun/src/ssr.mjs`, `repository/rakun/src/sidecars/rakun_ssr.erl`,
+`repository/rakun/test/ssr_test.bp`
 **Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`,
-`src/runtime.mjs` (frozen), `repository/jhonstart/src/element.bp` (frozen), and the files owned by
-22 · 24 · 25
+`src/runtime.mjs` (frozen), `repository/jhonstart/src/element.bp` (frozen), the files owned by
+22 · 24 · 25, and `repository/onze/**` — no file of this front names a bundler, a stylesheet
+pipeline or the framework that installs them; they arrive as `RenderHooks` values
 **Reference:** `NEXTJS-DOCS.md § 5. Layouts e Páginas`, `§ 7. Server e Client Components`,
 `§ 13. Streaming`, `§ 4. Hierarquia de renderização` ·
 <https://nextjs.org/docs/app/getting-started/layouts-and-pages> ·
@@ -183,11 +187,11 @@ testing the wrong function, not finding a bug.
 
 ```html
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">…metadata from front 32…
-<style>…emilia flush()…</style></head><body>
+<style>…emilia flush()…</style>…RenderHooks.headExtra(route)…</head><body>
 <div data-onze-root="">…composed tree…</div>
 …fill chunks…
 <script id="__onze" type="application/json">{…payload…}</script>
-<script src="/_onze/client-<hash>.js" defer></script>
+…RenderHooks.bodyExtra(route)…
 </body></html>
 ```
 
@@ -197,6 +201,52 @@ first and writing the head second is why the pipeline builds the body string bef
 string rather than streaming the head first — except in streaming mode, where the head must go out
 early and the sheet is instead flushed into the shell's `<style>` with the class names of the
 already-rendered part, and later chunks carry their own `<style>` blocks.
+
+### `RenderHooks` — the one seam, and it points inwards
+
+A full-stack framework built on this pipeline has three things to add to a document: stylesheet
+`<link>`s and blocking scripts in the head, the deferred bundle tags after the payload, and a style
+sink that decides *when* the sheet is serialised in a streamed response. None of that may be reached
+for from here: an edge from `rakun` to a bundler would make the server depend on the toolchain that
+packages it, and `rakun` would stop being usable without one.
+
+So this front declares a record of function values and reads it; it never imports an implementation.
+
+```bp
+pub type RenderHooks(
+    headExtra: fn(string) -> string,           // route -> extra <head> markup; default ""
+    bodyExtra: fn(string) -> string,           // route -> markup after the payload tag; default ""
+    islandAttr: fn(i32) -> #(string, string),  // ordinal -> the marker pair; default per contracts.md § 2
+    openSink: fn() -> void,                    // called before anything renders
+    collectHead: fn() -> string,               // once, after the shell, before the head is serialised
+    collectChunk: fn(string) -> string,        // holeId -> the block that precedes that chunk
+    closeSink: fn() -> string,                 // after the last chunk; "" when nothing was dropped
+)
+
+pub fn defaultHooks() -> RenderHooks
+pub fn setHooks(h: RenderHooks) -> void
+```
+
+The four sink fields carry no state in their signatures: the sheet is already process-local
+(`emilia.bp:23-30`) and rakun serves each request in its own BEAM process, so the implementation
+holds whatever it needs and rakun holds nothing it would have to name a type for.
+
+`defaultHooks()` is a working document: no extra tags, the marker pair of `contracts.md § 2`, and a
+sink that flushes once into the head. An app with no bundler renders correctly through it. A
+framework installs its own at boot — the call is one line in *its* code, not in this front's — and
+the record is the whole of the seam: `ssr.bp` names no library that fills it, and the fronts that
+do (onze [68](../../06-onze/68-onze-client-bundle/README.md) for the tags,
+[69](../../06-onze/69-onze-styling-pipeline/README.md) for the sink) depend on this front, not the
+other way round. `islandAttr` is a field because the marker belongs to whoever decides *which*
+components are islands — jhonstart [29](../../04-jhonstart/29-jhonstart-client-directive/README.md)
+— while the ordinals are assigned here; one definition, passed in, never two that must agree.
+
+**Rules, checked by this front's gate:**
+- A document rendered with `defaultHooks()` contains no `<script src>` and exactly one `<style>`.
+- `grep` over `repository/rakun/src/` finds no occurrence of `onze` outside the `data-onze-*` marker
+  names and `__onzeFill`, which are `contracts.md § 2` strings, not module references.
+- Replacing one field leaves the others at their defaults — the record is filled field by field, not
+  all or nothing.
 
 ### The payload — the exact boundary format
 
@@ -244,9 +294,10 @@ find:
 `i0` indexes the payload's `i` array. **Island ids are assigned by this front, in render order**:
 `i0`, `i1`, `i2`, … The component name and the props live in `i`, never on the element. The client
 bundle (front 68) walks `[data-onze-i]` in document order, looks each id up, and mounts. Front 29
-decides *which* components are islands; this front assigns their ids and guarantees the marker and
-the index agree. The marker registry for every `data-onze-*` prefix is `contracts.md § 2`; no front
-invents one.
+decides *which* components are islands and defines the attribute pair; this front assigns the
+ordinals, reads the pair through `RenderHooks.islandAttr`, and guarantees the marker and the index
+agree. The marker registry for every `data-onze-*` prefix is `contracts.md § 2`; no front invents
+one.
 
 ### Streaming
 
@@ -470,6 +521,8 @@ class and the client's would first become visible, and where it is cheapest to c
 - The payload key table above is final for the milestone and is cited by fronts 24, 27, 29, 30, 60,
   61, 63 and 68 rather than re-derived. A change to it is a change to every one of them.
 - `repository/rakun/AGENTS.md` names `ssr.bp`, the payload version and the chunk protocol.
+- `RenderHooks`, its defaults and `setHooks` exist here, and `ssr.bp` imports nothing from
+  `repository/onze/` — the grep is part of the gate (decision 77).
 - The front's tests are green on its assigned target — here, on both.
 
 ## Carried from 1.0.7-beta F09 rakun-ssr-pipeline
