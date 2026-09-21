@@ -290,3 +290,42 @@ The compiler half is front 19 step 2, with 89: `contextInfoFromReturn` looks thr
 and `FnContext.annotated` (`infer.zig:987`) is set either by `#[@context]` or by a wrapper effect
 whose unwrapped return type owns a context. Unblocks front 28's `request()` and every server
 component in `04-jhonstart` that reads the request scope.
+
+## 95. The effects are a chain: `@Context` ⊃ `@Future` ⊃ `@Result`, and every effect can fail
+
+**Decided 2026-09-21 by the maintainer.** In his words: *"Future deve implementar o Result e se usar
+a anotação `#[future]` poderá resolver tanto try tanto await · `#[context]` resolve tanto try await e
+use · e ele `@Context` implementa o Future e o result · o Element implementa `@context`"*. The effect
+wrappers are not six unrelated types: they form a subsumption order, a wrapper implements the one
+below it, and **the annotation grants every capability at or below its own level**.
+
+| Body | May write | Because the wrapper implements |
+|---|---|---|
+| `#[@context] fn … -> @Context<B, R>` (or a type implementing it, e.g. `Element`) | `use` · `await` · `try` | `@Context` ⊃ `@Future` ⊃ `@Result` |
+| `#[@asyncGenerator] fn … -> @AsyncGenerator<T>` | `await` · `try` · `yield` | `@AsyncGenerator` ⊃ `@Future` ⊃ `@Result` |
+| `#[@future] fn … -> @Future<T, E>` | `await` · `try` | `@Future` ⊃ `@Result` |
+| `#[@generator]` · `#[@iterator]` | `try` · `yield` | `@Generator` / `@Iterator` ⊃ `@Result` |
+| `#[@result] fn … -> @Result<T, E>` | `try` | — it is the base |
+
+The rule that orders them, decided with the table: **every effectful body can fail**, so every
+wrapper implements `@Result`; and a wrapper that suspends (`@Context`, `@AsyncGenerator`) implements
+`@Future`. `yield` stays exclusive to the three generator wrappers and `use` stays exclusive to
+`@Context` — the chain grants downwards, never upwards.
+
+`@Future<T, E = any>` already carries the error channel this needs (`builtins.d.bp:115`, with
+`return t` auto-wrapping to `Future.resolved(t)` and `throw e` to `Future.rejected(e)`), so
+`@Future<T, E>` implementing `@Result<T, E>` adds no parameter and invents no error type.
+
+What it does **not** change: R5 stands — one effect annotation per fn, and the chain is what makes
+that sufficient rather than restrictive, since the highest annotation already grants the rest.
+Decision 88 stands: a component is `#[@context] fn … -> Element`, and `Element` implements
+`@Context`. Decision 90 stands: a wrapper effect whose unwrapped return owns a context activates
+hooks without `#[@context]`, which is the one case the chain cannot spell because R5 forbids writing
+two annotations.
+
+Bears on: question 91 (whether the context-owner unwrap widens past `@Future`) is now a question
+about this chain, not about one type — the payload's owner is what decides; question 93
+(`@getContex` gated by `inContextFn` alone) is the same shape and should be answered with it.
+Implements: the `implement` clauses in `libs/std/src/builtins.d.bp`, the `try`/`await`/`use`/`yield`
+legality checks in `comptime/infer.zig`, and their refusals — a body that writes a capability above
+its level is refused, located, with no flag (decision 67).
