@@ -1,6 +1,6 @@
 # Status — 1.0.10-beta
 
-**Updated:** 2026-09-20 · **Progress:** ~4 % (3 of 119 work items landed as-is; the milestone was cut
+**Updated:** 2026-09-20 · **Progress:** ~5 % (3 of 119 work items landed as-is, 6 worktrees open; the milestone was cut
 today — its specs are what is in analysis, no library front has started, and the compiler
 carry-over holds the only code in flight)
 
@@ -26,9 +26,12 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 0 
 - [x] `06-onze/` — 9 fronts, `onze13` → `onze` normalised (34 identifiers); `README.md`, `modules.md` (7 submodules), `unification.md`, `test-snap.md` (55 cases), `test-snap-examples.md` (21 cases)
 
 ## In analysis
-- [ ] `00` C-05 — module-level `var` + `@BeamMemory` carrier · worktree `.tasks/beammem` · steps 1–3 in code and unit tests; the pre-commit gate is red (`infer.zig:2870`, `comptime.types` has no `typeToString`) — not landed
-- [ ] `00` C-03 — a wrapper per host-bound std `declare fn` · worktree `.tasks/identity` · erlang side done, beam helper unwired; 7 snapshot mismatches in `codegen/erlang/external_*` keep the gate red — not landed
-- [ ] `00` C-02 — an index is a method call · worktree `.tasks/ecosystem` · the `libs/std` half; 8 snapshot mismatches keep the gate red — not landed
+- [ ] `01-std` steps 1–3 — worktree `.tasks/src-builtin` (`fix/src-builtin`): `@src()` + the fallible test body (decisions 73/74), then `std/asserts`, then `std/snapshots` (72); commits on the branch, merge into `feat` by the coordinator
+- [ ] `02-packaging` step 1 — worktree `.tasks/workspaces` (`fix/workspaces`): the `workspaces` manifest, object-form `dependencies`, discovery in runner/loader/LSP/bpmp, `docs/botopink-json.md` (decisions 75/76)
+- [ ] `00 · 19-use-activation` step 1 (+2) — worktree `.tasks/use-activation` (`fix/use-activation`): `use` documented, the static-prefix guard tightened, the commonJS React rename removed, `#[@Context]` on components, language cells (decisions 87/88/89)
+- [ ] `00 · 18-comptime-runtimes` steps 0–1c — worktree `.tasks/beam-file` (`fix/beam-file`): the `.beam` container writer, the in-frame load command, the three resident modules embedded at build time (decisions 83/86); the untyped BEAM lowering in `beam_asm.zig` waits for the `identity` worktree to land
+- [ ] `00` C-11 + C-12 acceptance — worktree `.tasks/format-check` (`fix/format-check`): `format --check` over the whole project with `reject/**` structurally exempt and a gate caller; the zero-bytes-moved proof of the landed formatter width work (decisions 65/66)
+- [ ] `00` C-02 / C-03 / C-05 — the worktrees `ecosystem`, `identity`, `beammem` being landed into `feat` with a green gate (no `--no-verify`), one at a time
 
 ## Pending
 - [ ] `00` C-06 / C-12 acceptance — the landed `wip` commits verified against the fronts' acceptance rows (formatter: zero bytes moved across the six trees, the 44 chains measured; wasm: the `expected-failures.txt` lines re-classified) — and the `wip(…)` subjects rewritten or the rows re-opened
