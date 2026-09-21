@@ -69,7 +69,7 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 1 
 - [ ] `04-jhonstart` 32/67/94 — decision 78 taken; the jhonstart hook cells on commonJS are unblocked now that the React rename is gone
 - [ ] `05-emilia` 54/56/34/46 — decisions 80–82 taken; ready when track D opens
 - [ ] `06-onze` — front 29's `Owns:` line must claim `islandAttr` (decision 77's jhonstart half), and `contracts.md` still describes the style sink as a surface front 23 calls directly
-- [ ] Merge or discard of the three 1.0.5 `.tasks/*` worktrees (`beammem`, `ecosystem`, `identity`, gates red) — the maintainer's step, per [`../1.0.5-beta/closure.md`](../1.0.5-beta/closure.md) § Worktrees
+- [x] The three 1.0.5 `.tasks/*` worktrees (`beammem`, `ecosystem`, `identity`) — closed: their work landed on the compiler's `feat` on 2026-09-20 (C-05 steps 1–3, C-03's erlang half, C-02's `libs/std` half) and the worktrees were removed. Nothing of theirs is outstanding
 
 ## Open
 - [ ] `00` C-04, C-07…C-11, C-13…C-18, C-20 (absorbed by C-26), C-21…C-25 — no worktree, no owner
