@@ -6,8 +6,8 @@ carry-over holds the only code in flight)
 
 Count: 27 compiler carry-over items (`00`, C-01…C-27) · `01-std` (6 steps + 3 carried std fronts) ·
 `02-packaging` · 51 rakun · 9 jhonstart · 22 emilia · 9 onze fronts. The percentage weighs items
-equally; it is a ratio, not a measurement. Open questions for the maintainer: 19
-([`decisions-pending.md`](./decisions-pending.md), 71–89).
+equally; it is a ratio, not a measurement. Open questions for the maintainer: 1
+([`decisions-pending.md`](./decisions-pending.md), 75 — the `workspaces` counter-proposal); 71–74 and 76–89 were answered the same day ([`decisions-taken.md`](./decisions-taken.md)).
 
 ## Done
 - [x] 1.0.5-beta closed — [`../1.0.5-beta/closure.md`](../1.0.5-beta/closure.md); fronts 06 and 10 landed in full, 15 with three hold-backs, the rest partial (row by row there)
@@ -33,15 +33,17 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 19
 ## Pending
 - [ ] `00` C-06 / C-12 acceptance — the landed `wip` commits verified against the fronts' acceptance rows (formatter: zero bytes moved across the six trees, the 44 chains measured; wasm: the `expected-failures.txt` lines re-classified) — and the `wip(…)` subjects rewritten or the rows re-opened
 - [ ] Meta-repo submodule bump to the compiler's new `feat` tip — the maintainer's commit (the meta working tree holds uncommitted spec edits)
-- [ ] `01-std` step 1 — `@src()` in the compiler (the `00` carve-out): waits on decisions 73 and 74
-- [ ] `01-std` steps 2–3 — `std/asserts` and `std/snapshots`: wait on step 1 and decision 72 (the `.snap` format)
-- [ ] `01-std` step 4 — retire the old `onze` mocking lib into `std/asserts` (+ `std/mocks`): waits on decision 71
-- [ ] `01-std` step 5 — `onze13` → `onze` name takeover: waits on decision 79 (what happens to the old repository)
-- [ ] `02-packaging` — waits on `01-std` steps 2–3 and on decisions 75 (discovery route) and 76 (`dependencies` shape)
+- [ ] `01-std` step 1 — `@src()` in the compiler (the `00` carve-out): decisions 73/74 taken; ready to open a worktree
+- [ ] `01-std` steps 2–3 — `std/asserts` and `std/snapshots`: decision 72 taken; wait on step 1
+- [ ] `01-std` step 4 — retire the old `onze` mocking lib into `std/asserts` + `std/mocks` (decision 71): waits on step 2
+- [ ] `01-std` step 5 — `onze13` → `onze` name takeover (decision 79): waits on step 4 and on the maintainer tagging/archiving the old repo
+- [ ] `02-packaging` — waits on `01-std` steps 2–3 and on decision 75 (the `workspaces` counter-proposal); decision 76 taken
+- [ ] `04-jhonstart/**` sweep for decision 88 — every component becomes `#[@Context] fn … -> Element` in examples, maps and READMEs; `01-std` example 2 and front 19's *rule for libraries* re-stated
+- [ ] Specs updated for decisions 83–86 and 88 (front 18 steps 1c/3/4; front 19 steps 1/4/5) — the READMEs still carry the pre-answer options
 - [ ] `00` C-01 — module identity (the spine): pulled ahead of wave 1; no worktree yet
-- [ ] `06-onze` 68/69 and `03-rakun` 23/29 `Owns:` lines — wait on decision 77 (`RenderHooks`, dependency direction)
-- [ ] `04-jhonstart` 32/67/94 first commits — wait on decision 78; every jhonstart hook cell on commonJS waits on decision 88 (today `use router()` would emit an undeclared `useRouter()`)
-- [ ] `05-emilia` 54/56/34/46 first commits — wait on decisions 80–82
+- [ ] `06-onze` 68/69 and `03-rakun` 23/29 `Owns:` lines — decision 77 taken (`RenderHooks`); rewrite pending
+- [ ] `04-jhonstart` 32/67/94 — decision 78 taken; the jhonstart hook cells on commonJS wait on decision 88's compiler half (the React rename removed)
+- [ ] `05-emilia` 54/56/34/46 — decisions 80–82 taken; ready when track D opens
 - [ ] `fronts.md` § Waves regenerated from `03-rakun/README.md`'s level table (60/61/63/65 sit above 23 there; 81/88 in wave 2) — a documentation defect, not a decision
 - [ ] Merge or discard of the three remaining `.tasks/*` worktrees (`beammem`, `ecosystem`, `identity`, gates red) — the maintainer's step, per [`../1.0.5-beta/closure.md`](../1.0.5-beta/closure.md) § Worktrees
 

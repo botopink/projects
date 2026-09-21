@@ -10,6 +10,9 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/` unless a
 
 ---
 
+
+> **Decisions taken 2026-09-20 (after this front was written):** [87](../../decisions-taken.md#87-the-boundary-directives-stay-library-decorators) — the boundary directives stay library decorators, step 4 closes with no compiler change; [88](../../decisions-taken.md#88-use-lowers-transparently-and-a-component-is-context-fn---element) — `use f(x)` lowers to `f(x)` on every backend **and a component is `#[@Context] fn … -> Element`**, with `Element` implementing the context behavior — this amends *The rule for libraries* below (a component was "any `fn … -> Element`"); [89](../../decisions-taken.md#89-future-is-unwrapped-for-the-context-owner) — `@Future<T>` is unwrapped for the owner. Steps 2, 4 and 5 implement the answers; the option text is kept as the record.
+
 ## Problem
 
 A reader of the jhonstart specs found `val router = use useRouter();` (`04-jhonstart/26-jhonstart-router/README.md:370`, `:377`, its examples, front 27's `use useLinkStatus()`, front 67's `use useActionState(…)` — 17 sites, `grep -rn "use use" specs/1.0.10-beta/04-jhonstart` before this front). The keyword and a React-style `use` prefix doubled, because nothing documents that the keyword *is* the activation and the name is the noun. The library itself has the same doubling: `router.d.bp:25` declares `useRouter`, `hooks.bp:100` a custom hook `useCounter`, `examples/jhonstart-todo/src/main.bp:28` writes `use useToggle(true)`. Only `hooks.bp:30-58` (`state`, `effect`, `memo`, `ref`, `reducer`) is spelled the way the language intends.

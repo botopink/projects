@@ -12,6 +12,9 @@
 
 ---
 
+
+> **Decision 75 was re-shaped on 2026-09-20:** the maintainer asked for an npm-`workspaces`-style counter-proposal — a `"workspaces": ["modules/*", "examples/*"]` array in the umbrella `botopink.json`, members named by their own manifests, `{ "workspace": true }` as the only sibling dependency. It is written in [`../decisions-pending.md` § 75](../decisions-pending.md#75-how-test-libs-and-the-dependency-loader-see-modules-and-examples--a-workspaces-manifest-npm-style) and, once taken, replaces routes A/B in § Mechanism below. Decision [76](../decisions-taken.md#76-dependencies-is-the-object-form-only) (object form only) is taken.
+
 ## Problem
 
 Front 95 said every library gets `modules/` + `examples/` and stopped at a picture. Four things the
