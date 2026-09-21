@@ -195,7 +195,7 @@ pub fn defaultTheme() -> Theme {
 
 `--color-*` carries only `black` and `white` here. The 26 families × 11 shades of `§ 21.1` are
 front 33's data, and front 33 hands them over as `paletteEntries() -> ThemeEntry[]`; the composed
-theme is `extend(defaultTheme(), paletteEntries())`. 54 does not import front 33, and front 33 does
+theme is `extendTheme(defaultTheme(), paletteEntries())`. 54 does not import front 33, and front 33 does
 not edit `theme.bp` — that is the whole interface between them.
 
 **Acceptance:**
@@ -214,7 +214,7 @@ Four operations, matching `§ 3.5`'s four headings. `extend` is also the overrid
 with the same name wins, which is what re-declaring a variable in `@theme` does.
 
 ```bp
-pub fn extend(th: Theme, entries: ThemeEntry[]) -> Theme
+pub fn extendTheme(th: Theme, entries: ThemeEntry[]) -> Theme   // not `extend` — a reserved keyword
 pub fn clearNamespace(th: Theme, ns: Ns) -> Theme
 pub fn emptyTheme() -> Theme
 pub fn themeValue(th: Theme, name: string) -> string
@@ -231,14 +231,14 @@ argument that relaxes it: an unknown prefix is a typo or a namespace this librar
 both are errors.
 
 **Acceptance:**
-- [ ] `themeValue(extend(th, [ThemeEntry(name: "--color-brand", value: "oklch(0.72 0.11 178)")]), "--color-brand")` returns the value.
+- [ ] `themeValue(extendTheme(th, [ThemeEntry(name: "--color-brand", value: "oklch(0.72 0.11 178)")]), "--color-brand")` returns the value.
 - [ ] Extending with a name already present returns a theme where `themeValue` gives the new value,
       and where `namespace(th, Ns.Color)` has the same length as before.
 - [ ] `clearNamespace(th, Ns.Color)` leaves `namespace(th, Ns.Color)` empty and leaves every other
       namespace unchanged in length.
 - [ ] `emptyTheme()` has zero entries and zero keyframes, and `themeValue` on it returns `""` for
       every name in `defaultTheme()`.
-- [ ] `extend(th, [ThemeEntry(name: "--gutter", value: "1rem")])` fails the build with a message
+- [ ] `extendTheme(th, [ThemeEntry(name: "--gutter", value: "1rem")])` aborts with a message
       naming the unknown prefix. A test asserts the *absence* of the entry, and the wrong-placement
       case is recorded in the compiler's own suite per the project convention.
 

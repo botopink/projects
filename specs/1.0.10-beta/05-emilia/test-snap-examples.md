@@ -104,7 +104,7 @@ test "theme: brand ---- the brand variables" {
         ThemeEntry(name: "--color-lagoon", value: "oklch(0.72 0.11 221.19)"),
         ThemeEntry(name: "--color-coral", value: "oklch(0.74 0.17 40.24)"),
     ];
-    try assertTheme(@src(), extend(emptyTheme(), brand));
+    try assertTheme(@src(), extendTheme(emptyTheme(), brand));
 }
 
 test "css: brand ---- the card references the theme" {
@@ -268,7 +268,7 @@ test "cascade: article ---- reset first then the heading" {
         ThemeEntry(name: "--tracking-tight", value: "-0.025em"),
     ];
     val lists: Token[][] = [heading()];
-    try assertCascade(@src(), lists, withBase(withTheme(defaultOptions(), extend(emptyTheme(), entries)), preflightRules()));
+    try assertCascade(@src(), lists, withBase(withTheme(defaultOptions(), extendTheme(emptyTheme(), entries)), preflightRules()));
 }
 ```
 

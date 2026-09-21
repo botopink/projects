@@ -104,7 +104,7 @@ test "ast: color ---- one declaration rule" {
 }
 
 test "theme: color ---- palette entries" {
-    try assertTheme(@src(), extend(emptyTheme(), paletteEntries()));
+    try assertTheme(@src(), extendTheme(emptyTheme(), paletteEntries()));
 }
 
 test "class: color ---- slate card" {
@@ -1525,7 +1525,7 @@ test "styled is the class pair" {
 
 test "a themed value is a different class" {
     val brand: ThemeEntry[] = [ThemeEntry(name: "--spacing", value: "4px")];
-    val other = extend(fullTheme(), brand);
+    val other = extendTheme(fullTheme(), brand);
     truthy(className(cardTokens(), fullTheme()) != className(cardTokens(), other));
 }
 
@@ -1615,7 +1615,7 @@ test "theme: extend ---- brand overrides and adds" {
         ThemeEntry(name: "--spacing", value: "4px"),
         ThemeEntry(name: "--color-lagoon", value: "oklch(0.72 0.11 221.19)"),
     ];
-    try assertTheme(@src(), extend(emptyTheme(), brand));
+    try assertTheme(@src(), extendTheme(emptyTheme(), brand));
 }
 
 test "theme: clear ---- colour namespace cleared" {
@@ -1623,7 +1623,7 @@ test "theme: clear ---- colour namespace cleared" {
         ThemeEntry(name: "--color-lagoon", value: "oklch(0.72 0.11 221.19)"),
         ThemeEntry(name: "--radius-pill", value: "9999px"),
     ];
-    val th = clearNamespace(extend(emptyTheme(), colours), Ns.Color);
+    val th = clearNamespace(extendTheme(emptyTheme(), colours), Ns.Color);
     try assertTheme(@src(), th);
 }
 
@@ -1648,7 +1648,7 @@ test "dark strategies" {
     val byAttr = Theme(entries: [], keyframes: [], darkMode: DarkMode.Attribute(name: "data-theme", value: "dark"));
     equal(darkSelector(byAttr), "&:where([data-theme=dark], [data-theme=dark] *)");
 }
-// `extend(th, [ThemeEntry(name: "--gutter", value: "1rem")])` fails the build naming `--gutter`;
+// `extendTheme(th, [ThemeEntry(name: "--gutter", value: "1rem")])` fails the build naming `--gutter`;
 // the case lives in the compiler suite.
 ```
 
@@ -1884,7 +1884,7 @@ fn tinyTheme() -> Theme {
         ThemeEntry(name: "--animate-spin", value: "spin 1s linear infinite"),
         ThemeEntry(name: "@keyframes spin", value: "to{transform:rotate(360deg)}"),
     ];
-    return extend(emptyTheme(), entries);
+    return extendTheme(emptyTheme(), entries);
 }
 
 fn tiny() -> Options {
@@ -2139,7 +2139,7 @@ test "css: container ---- narrowed theme changes the query" {
     val row: Token[] = [.Flex.Row];
     val narrow: ThemeEntry[] = [ThemeEntry(name: "--container-md", value: "20rem")];
     val tokens: Token[] = [containerAtMd(row)];
-    try assertCssWith(@src(), tokens, extend(fullTheme(), narrow));
+    try assertCssWith(@src(), tokens, extendTheme(fullTheme(), narrow));
 }
 
 test "keys and the thirteen sizes" {

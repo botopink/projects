@@ -25,7 +25,7 @@ fn brandTheme() -> Theme {
         ThemeEntry(name: "--color-lagoon", value: "oklch(0.72 0.11 221.19)"),
         ThemeEntry(name: "--color-coral", value: "oklch(0.74 0.17 40.24)"),
     ];
-    return extend(stripped, brand);
+    return extendTheme(stripped, brand);
 }
 
 // One card. Nothing here mentions the theme: `Pad.All.4` lowers to

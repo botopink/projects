@@ -83,7 +83,7 @@ composes them with `extend`; 56 says `defaultOptions()` carries `defaultTheme()`
 them by default, so a default document would reference `var(--color-red-500)` and never define it.
 The resolution here: **56 owns `fullTheme()`** in `emilia.bp` — `defaultTheme()` extended by every
 front's entries function, in front-number order — and `defaultOptions()` carries `fullTheme()`.
-Each front adds its one `extend(…)` line under its banner in `fullTheme()`, exactly as it adds its
+Each front adds its one `extendTheme(…)` line under its banner in `fullTheme()`, exactly as it adds its
 `tokenToSheet` arm. `defaultTheme()` itself stays 54's and stays palette-free.
 
 ## The tree
