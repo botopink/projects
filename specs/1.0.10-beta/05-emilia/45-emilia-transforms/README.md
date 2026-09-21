@@ -1,5 +1,49 @@
 # Front 45 — emilia transforms
 
+> **Amended 2026-09-21, on landing (emilia `9c19e22`, 528 → 569 on both rows).** Three acceptance
+> claims in this document are **falsified**, two of them by upstream itself. The front checked rather
+> than transcribing — and on the first, this spec had told it to.
+>
+> **§ 16.6's property column is wrong.** Upstream (`https://tailwindcss.com/docs/skew`, fetched
+> 2026-09-21) prints `transform: skewX(<n>deg)` / `transform: skewY(<n>deg)` and carries **no**
+> `--tw-skew-*` row. The twelve skew leaves emit upstream's property and `skew-x:` / `skew-y:` are
+> asserted **absent**. Consequence, recorded rather than glossed: both skew axes write `transform`,
+> so unlike rotate, scale and translate they do **not** compose.
+>
+> **Step 3's translate shape appears in neither source.** This document asks for
+> `--tw-translate-x:50%; translate:var(--tw-translate-x) var(--tw-translate-y)`. The reference file's
+> `§ 16.10` prints **one** declaration (`translate: 50% var(--tw-translate-y)`) and so does upstream,
+> which additionally carries the five `translate-y-*` rows the reference file omits — so the y mirror
+> is **confirmed, not interpolated**. Reference and upstream agree against this spec.
+>
+> That exposed a second error in the same step: **the `--tw-*` identity defaults cannot be theme
+> entries.** `extendTheme` `@panic`s on a name in no known namespace (`theme.bp:318`) and `--tw-` is
+> in none of `Ns`'s nineteen prefixes. Front 39's `cssVarOr` is the house answer and is **called, not
+> re-spelled**: every row carries `var(--tw-translate-y, 0)`, without which a lone `translate-x-4` is
+> invalid at computed-value time and moves nothing. So Step 3's acceptance bullet asserting *three
+> deduplicated declarations* is wrong, and what is asserted instead is the truth:
+> `[.TranslateX.Half, .TranslateY.Half]` does **not** compose — two declarations of one property,
+> last wins.
+>
+> **Step 6's "they now resolve" is false.** `§ 16.7`'s four shorthand rows read six `--tw-*`
+> variables that **no token in emilia sets** — `rotate-*` writes `rotate`, `scale-*` writes `scale`,
+> `translate-*` writes `translate`, `skew-*` writes its own `transform`. They are transcribed
+> **verbatim** (byte-equality is the gate) and **marked inert** at the declaration, in the `Token`
+> docblock, in `AGENTS.md`, in `docs.md` and in the example. They were deliberately given **no**
+> fallbacks: `.Shorthand.Cpu` would then emit an identity transform that silently overwrites the
+> `skewX` beside it. Making them resolve needs `@property` emission — a new output kind, and front
+> 56's — which is the condition under which the "inert" half of that test should be deleted.
+>
+> **Two smaller disagreements.** The *Definition of done* lists a `Translate` (both-axes) section
+> that this spec's own Step 3 table does not contain and `§ 16` does not enumerate; it was **not
+> declared**, and `rawTranslate` covers the use. And the acceptance names `rotateToCss` /
+> `rotateNegToCss`; the landed names are `transformRotateToCss` / `transformRotateNegToCss`, because
+> a bare `originToCss` / `styleToCss` / `scaleToCss` in a 16 000-line shared file collides in spirit
+> with fronts 35 and 37's `padScale*` / `gapScale*` families.
+>
+> **Nothing about perspective is provisional** — `§ 16.2` prints the variable *and* its length on all
+> five rows — which the front states explicitly as the contrast with front 44's three `--ease-*`.
+
 **Track:** D emilia
 **Priority:** medium — a hover that lifts a card, a chevron that flips when a menu opens and a modal that scales in are all one property, and `emilia` has no token for it
 **Target:** comptime
