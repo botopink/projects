@@ -391,7 +391,7 @@ What the tests assert:
 7. **Decoration** — style, thickness, offset and colour, with the colour asserted to equal
    front 33's `paletteVar` output.
 8. **Lists, whitespace, breaking, hyphens, align, tab, content** — one test each.
-9. **End to end** — `emilia([.Font.Sans, .Text.Size.X3xl, .Text.Tracking.Tight, .Text.Balance])`
+9. **End to end** — `emilia([.Font.Sans, .Text.Size.X3xl, .Text.Tracking.Tight, .Text.Wrap.Balance])`
    then `await flush()`, asserting the whole `<style>` block.
 
 ## Definition of done

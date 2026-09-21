@@ -9,6 +9,22 @@ dependency graph, the target, what `emilia-test` exposes, and the front → dire
 [95](../02-packaging/95-ecosystem-package-restructure/README.md)'s verdict (`emilia` + `emilia-test`,
 nothing else), and against what the language permits.
 
+> **Amended 2026-09-21, after fronts 54, 56, 33, 34, 35, 36, 37, 39, 40 and 38 landed.** The package
+> cut below (two members) is correct and is what the tree has. What is **not** in the tree is the
+> file split this document and every front's `Owns:` line describe:
+>
+> - paths are `repository/emilia/modules/emilia/src/…`, not `repository/emilia/src/…` — the repo
+>   became a workspace under `02-packaging` step 2 and the front specs predate it;
+> - there is **no `utilities/` directory** and **no `test/` directory**. Ten fronts have now landed
+>   the same way: banner-fenced blocks inside `modules/emilia/src/emilia.bp`, with inline `test {}`
+>   beside the code they test. That is the convention, and a front that creates `utilities/x.bp` to
+>   satisfy a table would be the only one;
+> - there is no `fullTheme()`; front 54's `defaultTheme()` is the theme a test passes.
+>
+> Every front's `Owns:` line should be read as *"the banner-fenced block for this domain"*. Whoever
+> does want the file split does it as its own front, across the whole file at once — doing it one
+> front at a time would leave the library half in each shape.
+
 ## Verdict
 
 Two submodules — front 95's cut survives the audit. The candidates it was tested against are below.
