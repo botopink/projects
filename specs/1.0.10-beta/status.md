@@ -6,8 +6,8 @@ carry-over holds the only code in flight)
 
 Count: 27 compiler carry-over items (`00`, C-01…C-27) · `01-std` (6 steps + 3 carried std fronts) ·
 `02-packaging` · 51 rakun · 9 jhonstart · 22 emilia · 9 onze fronts. The percentage weighs items
-equally; it is a ratio, not a measurement. Open questions for the maintainer: 1
-([`decisions-pending.md`](./decisions-pending.md), 75 — the `workspaces` counter-proposal); 71–74 and 76–89 were answered the same day ([`decisions-taken.md`](./decisions-taken.md)).
+equally; it is a ratio, not a measurement. Open questions for the maintainer: 0 — all nineteen (71–89) were answered the same day
+([`decisions-taken.md`](./decisions-taken.md)); [`decisions-pending.md`](./decisions-pending.md) is empty.
 
 ## Done
 - [x] 1.0.5-beta closed — [`../1.0.5-beta/closure.md`](../1.0.5-beta/closure.md); fronts 06 and 10 landed in full, 15 with three hold-backs, the rest partial (row by row there)
@@ -37,9 +37,9 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 1
 - [ ] `01-std` steps 2–3 — `std/asserts` and `std/snapshots`: decision 72 taken; wait on step 1
 - [ ] `01-std` step 4 — retire the old `onze` mocking lib into `std/asserts` + `std/mocks` (decision 71): waits on step 2
 - [ ] `01-std` step 5 — `onze13` → `onze` name takeover (decision 79): waits on step 4 and on the maintainer tagging/archiving the old repo
-- [ ] `02-packaging` — waits on `01-std` steps 2–3 and on decision 75 (the `workspaces` counter-proposal); decision 76 taken
+- [ ] `02-packaging` — decisions 75 (`workspaces` manifest) and 76 (object-form `dependencies`) taken; its README § Mechanism still describes routes A/B and is rewritten to the workspace rule; waits on `01-std` steps 2–3 for the `-test` submodules
 - [ ] `04-jhonstart/**` sweep for decision 88 — every component becomes `#[@Context] fn … -> Element` in examples, maps and READMEs; `01-std` example 2 and front 19's *rule for libraries* re-stated
-- [ ] Specs updated for decisions 83–86 and 88 (front 18 steps 1c/3/4; front 19 steps 1/4/5) — the READMEs still carry the pre-answer options
+- [ ] Specs updated for decisions 75, 83–86 and 88 (`02-packaging` § Mechanism; front 18 steps 1c/3/4; front 19 steps 1/4/5) — the READMEs still carry the pre-answer options
 - [ ] `00` C-01 — module identity (the spine): pulled ahead of wave 1; no worktree yet
 - [ ] `06-onze` 68/69 and `03-rakun` 23/29 `Owns:` lines — decision 77 taken (`RenderHooks`); rewrite pending
 - [ ] `04-jhonstart` 32/67/94 — decision 78 taken; the jhonstart hook cells on commonJS wait on decision 88's compiler half (the React rename removed)

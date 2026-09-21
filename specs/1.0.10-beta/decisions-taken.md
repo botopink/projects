@@ -27,6 +27,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [72](#72-the-snap-file-carries-a-header-and-one-slugifier) | `.snap` format and slug rule | Header (`botopink-snap 1` / `test:` / `subject:` / blank / body); the compiler's slugifier for both worlds |
 | [73](#73-srcfile-is-package-root-relative-fnname-is-the-test-name) | `@src().file` and `fnName` in a test | Package-root-relative with extension; the test name |
 | [74](#74-resultvoid-string-is-real-and-a-propagated-error-fails-the-test) | `@Result<void, string>` and `try` in a test body | Real `void` result; a propagated `error` is FAIL |
+| [75](#75-a-workspaces-manifest-npm-style-declares-a-librarys-members) | How `test-libs` and the loader see `modules/**` and `examples/**` | (C) a `workspaces` array in the umbrella `botopink.json`; `{ "workspace": true }` is the only sibling dependency; every refusal structural |
 | [76](#76-dependencies-is-the-object-form-only) | `dependencies` shape | Object form only; the string form is a located error |
 | [77](#77-renderhooks-keeps-the-dependency-direction) | onze's inverted seams | `RenderHooks` in rakun, filled by `Onze.run`; `islandAttr` in jhonstart; waves from the dependency lines |
 | [78](#78-the-readme-is-the-contract) | Two jhonstart signatures disagree | The README wins: `renderHead -> string`, `parseActionState(envelope)` |
@@ -105,6 +106,27 @@ confirming it is step 1's acceptance. Implements: `01-std` step 1 ([`src-builtin
 empty `return;` in the `ok` position; a test body is a fallible context in which a propagated
 `error` is a FAIL (today `try` inside `__bp_test_N` lowers as `TryForm.propagate`,
 `commonJS.zig:615`, and would end the test green). No `i32` sentinel. Implements: `01-std` steps 1–2.
+
+## 75. A `workspaces` manifest, npm-style, declares a library's members
+
+**Decided 2026-09-20 by the maintainer: (C)** — the counter-proposal he asked for (*"implementar algo
+parecido com o npm workspaces para bp"*), agreed as written. The umbrella `repository/<lib>/botopink.json`
+is a **workspace**, never a package: `"workspaces": ["modules/*", "examples/*"]`, no `src`/`files`/`entry`,
+importing it is a located error. Each glob expansion holds a `botopink.json` whose `name` is its import
+name (`from "rakun-web"`). `{ "workspace": true }` resolves a dependency to the sibling member by name
+and is the **only** way a member depends on a sibling — a `path` to a sibling is a located error, so the
+graph is always the workspace's own (the object form of decision 76 gains no second spelling).
+`test-libs` and `botopink test` run every member, examples included, and report per member; a member
+without `files` ships nothing and fails its own tests; two members with one `name` across roots is a
+located error (today first-root-wins, silent). Discovery is one shared function in the runner and the
+loader — read the umbrella, expand `workspaces`, treat each expansion as a lib-root entry — instead of
+recursion or an environment variable. Details proposed with it and not contradicted: the field is
+spelled `workspaces` (npm's name); a workspace may carry `targets` as a default its members inherit and
+may only restrict; each `repository/<lib>` is a workspace and the meta-repo is not (it has no manifest),
+so the gate iterates the workspaces. Cost: `discovery.zig`, `libs.zig`, `project_graph.zig`,
+`bpmp/manifest.zig` learn `workspaces`; `docs/botopink-json.md` documents it; rakun's thirteen
+manifests gain `files`. It is a `00 · 10-cli-residuals` carve-out. Implements: `02-packaging` step 1;
+routes A/B in its § Mechanism are superseded.
 
 ## 76. `dependencies` is the object form only
 

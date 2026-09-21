@@ -13,7 +13,7 @@
 ---
 
 
-> **Decision 75 was re-shaped on 2026-09-20:** the maintainer asked for an npm-`workspaces`-style counter-proposal — a `"workspaces": ["modules/*", "examples/*"]` array in the umbrella `botopink.json`, members named by their own manifests, `{ "workspace": true }` as the only sibling dependency. It is written in [`../decisions-pending.md` § 75](../decisions-pending.md#75-how-test-libs-and-the-dependency-loader-see-modules-and-examples--a-workspaces-manifest-npm-style) and, once taken, replaces routes A/B in § Mechanism below. Decision [76](../decisions-taken.md#76-dependencies-is-the-object-form-only) (object form only) is taken.
+> **Decision [75](../decisions-taken.md#75-a-workspaces-manifest-npm-style-declares-a-librarys-members) was taken on 2026-09-20:** the umbrella `botopink.json` is a workspace — `"workspaces": ["modules/*", "examples/*"]`, members named by their own manifests, `{ "workspace": true }` as the only sibling dependency, every refusal structural. Routes A and B in § Mechanism below are superseded by it and are kept only as the record of what was measured. Decision [76](../decisions-taken.md#76-dependencies-is-the-object-form-only) (object form only) is taken.
 
 ## Problem
 
