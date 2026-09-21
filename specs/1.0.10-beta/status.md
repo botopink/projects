@@ -1,6 +1,6 @@
 # Status — 1.0.10-beta
 
-**Updated:** 2026-09-20 · **Progress:** ~5 % (3 of 119 work items landed as-is, 6 worktrees open; the milestone was cut
+**Updated:** 2026-09-20 · **Progress:** ~8 % (8 of 119 work items landed, 5 worktrees open; the milestone was cut
 today — its specs are what is in analysis, no library front has started, and the compiler
 carry-over holds the only code in flight)
 
@@ -13,6 +13,9 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 1 
 - [x] 1.0.6 … 1.0.9-beta absorbed and deleted (decision 68) — every 1.0.9 front copied by name under its track; the merged drafts kept verbatim under [`absorbed/`](./absorbed/README.md); proof in [`unification.md`](./unification.md)
 - [x] Top-level documents — `overview.md`, `fronts.md`, `contracts.md` (+ contract 7, the test/snapshot contract), `deferred.md`, `language-gaps.md` (+ the `00` owner column and the `@src()` row), `unification.md`, `decisions-taken.md` (68–70), `decisions-pending.md` (71–82), this file
 - [x] `00-compiler-carry-over/README.md` — C-01…C-27 prioritised, with the 1.0.5 deep dives carried beside it (17 front directories)
+- [x] `00` C-19, and the 1.0.5 worktrees `beammem` (C-05 steps 1–3), `identity` (C-03 erlang half), `ecosystem` (C-02 `libs/std` half) — landed on the compiler's `feat` on 2026-09-20 with a cold gate green each (`2788be9f`, `a6b5b62a`, `1769456d`; two real `at`-rename regressions fixed on the way); worktrees removed
+- [x] `00 · 19-use-activation` step 1 (C-27) — landed on `feat` `85f883bd`: `docs.md` documents `use`/`@Context`, the static-prefix guard holds at any nesting, the commonJS React rename is gone (`use f(x)` → `f(x)` everywhere), `#[@context]` is required to activate a hook (`use-without-context-effect`), 8 language cells (348/45/0). jhonstart is in `known-red-libs.txt` until its hooks gain `#[@context]`
+- [x] `00` C-11 + C-12 acceptance — landed on `feat` `f5c58e34`: `format --check` walks the whole project (`.bp` + `.d.bp`, nested projects), `reject/<n>.bp` beside its `.expect` is structurally exempt, `scripts/format-check.sh` is gate stage 3 for the trees that are canonical (`examples/modules` only today — the reds are listed in its header with owner), 3 unit + 1 contract tests; C-12 measured: 0 hunks outside the chain rule across six trees, 29 chains opened (12 of the 44 predicted were not chains), `fits` predicate tests added
 - [x] `00 · 19-use-activation/` (C-27) — specified: README (steps 0–5: the language reference, `use` in `#[@future]` bodies, tuple destructuring, the boundary directives, the lowering contract), `surface.md` (construct × backend table), `evidence.md`; questions 87–89 raised; `04-jhonstart/**` swept to the rule (`use router()`, `use pathname()`, `use actionState(…)` — zero `use use` left)
 - [x] `00 · 18-comptime-runtimes/` (C-26) — specified: README (steps 0–5), `current-path.md`, `beam-file-format.md`, `wat-runtime.md`, `snapshot-layout.md`, `browser-build.md`, `evidence.md`; questions 83–86 raised
 - [x] `00` C-19 — declaration-name builders: landed on the compiler's `feat` on 2026-09-20 (`wip(tooling)` + merge `fix/tooling-step5`, pushed); gate green at the tip
@@ -25,16 +28,16 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 1 
 - [x] `06-onze/` — 9 fronts, `onze13` → `onze` normalised (34 identifiers); `README.md`, `modules.md` (7 submodules), `unification.md`, `test-snap.md` (55 cases), `test-snap-examples.md` (21 cases)
 
 ## In analysis
+- [ ] `00` C-01 — worktree `.tasks/module-identity` (`fix/module-identity-halves`): policy 3 (one BEAM module per `type`/`behavior`) and the identity in the value on every backend (decisions 21/22/23/5)
+- [ ] `00` C-06 acceptance + C-16 — worktree `.tasks/language-cells` (`fix/language-cells`): the six wasm RUN LOGs verified under wasmtime, cells for decisions 52/53/55/63–66, the suite tally recounted from the files
 - [ ] `01-std` steps 1–3 — worktree `.tasks/src-builtin` (`fix/src-builtin`): `@src()` + the fallible test body (decisions 73/74), then `std/asserts`, then `std/snapshots` (72); commits on the branch, merge into `feat` by the coordinator
 - [ ] `02-packaging` step 1 — worktree `.tasks/workspaces` (`fix/workspaces`): the `workspaces` manifest, object-form `dependencies`, discovery in runner/loader/LSP/bpmp, `docs/botopink-json.md` (decisions 75/76)
-- [ ] `00 · 19-use-activation` step 1 — DONE on `fix/use-activation` (`81416618`, merged with `feat` `1bbf46f9`, full gate green, pushed): `docs.md` section, static-prefix guard at any nesting, commonJS React rename deleted (−142 lines), `#[@context]` required to activate (`use-without-context-effect`), 8 language cells; **awaiting merge into `feat`**. Step 2 (decision 89) blocked on question 90 (`#[@future]` + `#[@context]` vs R5). jhonstart is red on purpose: `known-red-libs.txt` lists it until its hooks gain `#[@context]`
 - [ ] `00 · 18-comptime-runtimes` steps 0–1c — worktree `.tasks/beam-file` (`fix/beam-file`): the `.beam` container writer, the in-frame load command, the three resident modules embedded at build time (decisions 83/86); the untyped BEAM lowering in `beam_asm.zig` waits for the `identity` worktree to land
-- [ ] `00` C-11 + C-12 acceptance — worktree `.tasks/format-check` (`fix/format-check`): `format --check` over the whole project with `reject/**` structurally exempt and a gate caller; the zero-bytes-moved proof of the landed formatter width work (decisions 65/66)
-- [ ] `00` C-02 / C-03 / C-05 — the worktrees `ecosystem`, `identity`, `beammem` being landed into `feat` with a green gate (no `--no-verify`), one at a time
 
 ## Pending
-- [ ] `00` C-06 / C-12 acceptance — the landed `wip` commits verified against the fronts' acceptance rows (formatter: zero bytes moved across the six trees, the 44 chains measured; wasm: the `expected-failures.txt` lines re-classified) — and the `wip(…)` subjects rewritten or the rows re-opened
-- [ ] Meta-repo submodule bump to the compiler's new `feat` tip — the maintainer's commit (the meta working tree holds uncommitted spec edits)
+- [ ] `00` C-06 acceptance (wasm) — in `.tasks/language-cells`; C-12's is done
+- [ ] `00 · 19` step 2 (decision 89) — waits on question 90
+- [ ] jhonstart: `#[@context]` on every component and hook noun rename (`useCounter` → `counter`), then delete its two `known-red-libs.txt` lines — the library track's first commit
 - [ ] `01-std` step 1 — `@src()` in the compiler (the `00` carve-out): decisions 73/74 taken; ready to open a worktree
 - [ ] `01-std` steps 2–3 — `std/asserts` and `std/snapshots`: decision 72 taken; wait on step 1
 - [ ] `01-std` step 4 — retire the old `onze` mocking lib into `std/asserts` + `std/mocks` (decision 71): waits on step 2
