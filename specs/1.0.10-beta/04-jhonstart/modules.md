@@ -2,6 +2,33 @@
 
 **Repo:** `repository/jhonstart` · **Pattern:** front 95 (`../02-packaging/95-ecosystem-package-restructure/README.md`) — `modules/<name>/`, `modules/<name>-test/`, `modules/<name>-<domain>/`, `examples/**` · **Fronts delivering into it:** 26 · 27 · 28 · 29 · 30 · 31 · 32 · 67 · 94 (identifiers from 1.0.9-beta) · **Cross-track files landing here:** front 48's `html_attrs.bp` (emilia track)
 
+> **Amended 2026-09-21, after fronts 94, 26, 28 and 27 landed.** Three things in this document no
+> longer match the tree, and one of them is a contradiction rather than drift.
+>
+> **(a) The submodule split has not happened.** `repository/jhonstart/` has exactly **one** member,
+> `modules/jhonstart/`. `html.bp` — which § 6 assigns to `jhonstart-html` — is still in core, and so
+> are front 27's `link.bp` and `reconcile.bp`, landed there deliberately rather than creating a
+> member to satisfy a table. The cut below is a plan, not a description; whoever performs it does so
+> as its own front, and until then every front reads "core".
+>
+> **(b) § 4's `jhonstart-link` row cannot hold as written.** It declares `["commonJS", "erlang"]`
+> *and* says the member carries four `#[@External.Node]` cells. Measured against `2e6bb4ac`, in both
+> directions and with a control: a foreign cell that is **called** reds the other target's compile at
+> the caller's body (`` `__cellStatus` has no `#[@External.<Target>(…)]` for the erlang backend ``),
+> while the same cell **declared and never called** compiles clean there. So a member may hold a
+> node-only cell only if nothing on the erlang row calls it. Restricting `targets` to `["commonJS"]`
+> is the other way out, but it costs the same row's own claim that "one `Link` render assertion also
+> runs on erlang". Front 27 resolved it by shipping the **pure** half — `link.bp` and `reconcile.bp`
+> reach no host cell at all and all 35 assertions run on both rows — and leaving the four cells to
+> front 68. When they arrive they must be dual-target, or live behind a wrapper nothing on erlang
+> calls, or sit in a commonJS-only member; the row has to choose one and say which.
+>
+> **(c) `root.bp` and `botopink.json` are edited by the front that adds the module.** Several front
+> specs hand those two lines to front 94 and list both files under *Does not touch*. That was written
+> while 94 was open; it has closed, and the intermediate state the hand-off implies does not build.
+> Fronts 26, 94, 28 and 27 each appended their own line in their own commit, and that is the
+> convention — the package's `AGENTS.md` records it.
+
 ## 1 · The cut
 
 ```
@@ -144,7 +171,7 @@ Edges are `botopink.json` dependencies. Three facts the graph encodes:
 |---|---|---|---|
 | `jhonstart` | `["erlang", "commonJS"]` | **both** — 94's constructors must produce the identical `Element` on both; 26/28/30/31/32 assert on erlang; 29's markers assert on both | the server pass renders every module; front 68 re-renders the same code in the browser |
 | `jhonstart-html` | `["erlang", "commonJS"]` | both — the DSL is comptime; its output is a builder pipeline that runs wherever the builders do | same |
-| `jhonstart-link` | `["commonJS", "erlang"]` | **commonJS** — the four cells have no erlang body; one `Link` render assertion also runs on erlang to prove the server pass emits the anchor the runtime finds | `Link` is pure and is rendered by the server |
+| `jhonstart-link` | **unsettled — see the amendment at the top** | the pure half (`link.bp`, `reconcile.bp`) gates on **both**, as landed: 35 assertions, no host cell reached. The four `#[@External.Node]` cells are front 68's and cannot join a member that declares erlang unless nothing on that row calls them | `Link` is pure and is rendered by the server — which is exactly why the pure half and the cells cannot share one `targets` array without a decision |
 | `jhonstart-forms` | `["commonJS", "erlang"]` | **commonJS** — `form_state_test.bp` would pass on erlang and is deliberately not claimed there | `formAttrs`/`hiddenActionField` render in the server pass — the progressive-enhancement markup |
 | `jhonstart-test` | `["erlang", "commonJS"]` | runs under whichever target the consuming suite runs | helpers are pure over strings |
 

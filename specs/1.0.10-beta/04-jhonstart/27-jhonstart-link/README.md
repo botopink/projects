@@ -276,6 +276,27 @@ front 68's DOM primitives, adopting `data-onze-s` slots and re-anchoring `data-o
 
 ### Step 4 — The browser runtime cells and `linkStatus`
 
+
+> **Amended 2026-09-21, on landing (jhonstart `1707823`).** These four cells are **not shipped**, and
+> the front said so rather than stubbing them: each binds to front 68's generated client bundle,
+> which has not started, and `routeKind` additionally wants front 60's route-kind table. What landed
+> is the pure half — `link.bp` and `reconcile.bp` reach no host cell of any target, so all 35 new
+> assertions run on **both** rows. When the bundle exists, `linkStatus()` is literally
+> `return linkStatusOf(__onzeLinkStatus());` and nothing else in `link.bp` moves.
+>
+> Two things to settle before they are written:
+>
+> - **The module name.** The package already ships `./client_runtime.mjs` for `clientRender`. If
+>   front 68's bundle is a different module from that sidecar, the two names sitting side by side
+>   will read as a typo to the next person; if it is the same one, this block should spell it the way
+>   the tree does. Either way the spec has to say which.
+> - **The target cost.** A node-only cell that is **called** reds the erlang compile at the caller's
+>   body — measured in both directions against `2e6bb4ac`, with a declared-and-never-called control
+>   that is clean. `link.bp` lives in the core member, compiled on both rows, so a `linkStatus()`
+>   wrapper as written would take all 103 of the package's assertions off erlang. That is why the
+>   hook is absent rather than gated, and it is the same question `modules.md`'s amendment (b) puts
+>   to the `jhonstart-link` row.
+
 ```bp
 #[@External.Node("jhonstart/client-runtime", "linkMount")]
 pub declare fn __onzeLinkMount() -> i32;
