@@ -1,10 +1,10 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Two open, 91 and 92** — both raised on 2026-09-21 by the `#[@context]` sweep of `04-jhonstart`,
-both **non-blocking**: the specs and the library compile either way, and each answer is a rewrite of
+**Three open, 91, 92 and 93** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
+`04-jhonstart`, 93 by front 19 step 2's landing the same day; 91 and 92 are **non-blocking**: the specs and the library compile either way, and each answer is a rewrite of
 prose, not of a landed refusal. The twenty questions raised while the milestone was cut and while
 front 19 landed (71–90) are answered in [`decisions-taken.md`](./decisions-taken.md). The next free
-number is **93**.
+number is **94**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
@@ -53,3 +53,27 @@ enforces; (c) leave both, documented as style.
 type does not already say is not written. It also removes a standing drift between `04-jhonstart/**`
 and the library the front describes.
 **Blocks.** Nothing. It decides whether ~20 spec sites and ~20 library sites keep an annotation.
+
+## 93. A server component may activate a hook but may not read a provider
+
+**Raised by:** `00 · 19-use-activation` step 2, 2026-09-21, by the landing of decision 90.
+**Measured.** Decision 90 widened `FnContext.annotated` to "`#[@context]` **or** a wrapper effect
+whose unwrapped return owns a context", so `#[@future] fn Page() -> @Future<Element>` now activates
+hooks. `@getContex(T)` is gated by a **different** flag: `env.inContextFn`, set as `eff == .context`
+only (`comptime/infer.zig:3259`, the RC5 check at `:4498`). So the same server component that may
+call `use request()` is refused when it reads a provider —
+`context-getcontex-outside-context-fn` — and the diagnostic's hint tells it to mark itself
+`#[@context]`, which R5 refuses to parse beside `#[@future]`
+(`effect-duplicate-annotation`). The hint therefore instructs a fix the language forbids.
+**Options.** (a) `inContextFn` follows the same rule as `annotated` — a wrapper effect whose
+unwrapped return owns a context is inside a context fn, and `@getContex` works in a server
+component; (b) reading a provider stays restricted to a `#[@context]` body on purpose (a server
+component may activate hooks but not read the provider tree), and only the hint is corrected so it
+stops naming an impossible annotation; (c) the provider read is refused in a `#[@future]` body with
+a message of its own, naming the boundary rather than the annotation.
+**Recommendation.** (a), by the reasoning of decision 90: the owner type already answers the
+question the annotation would have, and one capability flag should not split in two. If the answer
+is (b), the hint must change in the same commit — a diagnostic that asks for a refused annotation is
+worse than the gap it reports.
+**Blocks.** Front 28's `request()` reading a provider; every `04-jhonstart` server component that
+reads context rather than activating a hook. Nothing landed depends on it today.
