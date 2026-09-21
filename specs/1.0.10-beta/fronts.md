@@ -32,7 +32,8 @@ wave 1    02-packaging ───────────────────
           examples/<project>/ · test-libs      │   (each library's modules.md refines the cut)
           discovery                            │
                                                ▼
-waves 1–7 03-rakun · 04-jhonstart · 05-emilia · 06-onze   — the 1.0.9 waves, unchanged
+waves 1–10 03-rakun · 04-jhonstart · 05-emilia · 06-onze  — the levels of § Waves, computed
+                                                            from the fronts' `Depends on` lines
 
 beside    00-compiler-carry-over — the open 1.0.5-beta compiler fronts, on their own order;
           two items PULLED AHEAD of wave 1:
@@ -422,31 +423,48 @@ above applies.
 9. Front 48's `html_attrs.bp` (note 7), and the shared literal of contract 4 asserted on both sides
    (emilia `test/integration_test.bp`, jhonstart/rakun 23, onze 68) — regenerated once when 56 lands.
 
-> The wave diagram below is carried from 1.0.9 and is known to disagree with the fronts' own
-> `Depends on` lines in six places (72 ← 06, 12 ← 18, 85 ← 83, 88 ← 81, 81 ← 76/11, and
-> 60/61/63/65 above 23). The per-track READMEs compute the order from the dependency lines —
-> [`03-rakun/README.md`](./03-rakun/README.md) § disagreements is the reference — and this section is
-> regenerated from them before the first library front opens (`status.md` § Pending).
-
 ## Waves
 
-The library waves, carried unchanged; `00-compiler-carry-over` runs beside every wave (its own order is in its README), with `13-module-identity` and `@src()` pulled ahead of wave 1 because the erlang fronts and the snapshot tests respectively cannot be verified without them.
+Regenerated on 2026-09-21 from every front README's `Depends on` line, across all five tracks at
+once — the 1.0.9 diagram this section used to carry disagreed with those lines in six places
+(72 ← 06, 12 ← 18, 85 ← 83, 88 ← 81, 81 ← 76/11, and 60/61/63/65 placed above 23) and put 22, 50,
+51 and 52 in wave 1 above fronts they consume. The inputs are the per-track computed tables —
+[`03-rakun/README.md`](./03-rakun/README.md) § *The fronts, in blocking order* (levels, with the
+seven corrections of its `modules.md`), [`05-emilia/README.md`](./05-emilia/README.md) § levels,
+[`04-jhonstart/README.md`](./04-jhonstart/README.md) and
+[`06-onze/README.md`](./06-onze/README.md) — lifted here by the cross-track edges, which a
+track-internal level cannot see: a track level is a lower bound, and this table is the milestone
+level. `00-compiler-carry-over` runs beside every wave (its own order is in its README), with
+`13-module-identity` and `@src()` pulled ahead of wave 1 because the erlang fronts and the snapshot
+tests respectively cannot be verified without them.
+
+Three `Depends on` pairs are mutual and would make the graph cyclic; each is resolved by the
+citation rule below and the resolution is recorded here rather than left to the reader: **24 ↔ 67**
+(24 cites "the browser half", 67 cites "the action endpoint and its envelope" — 24 lands first, as
+[`03-rakun/README.md`](./03-rakun/README.md)'s graph and
+[`04-jhonstart/README.md`](./04-jhonstart/README.md)'s critical path both have it), **68 ↔ 50** and
+**71 ↔ 50** (both cite the CLI that invokes them; the CLI consumes them, so it lands after —
+[`06-onze/README.md`](./06-onze/README.md)). Front 11's API module has no dependency at all and can
+land in wave 1; the wave below is its host half, which is what the fronts citing "11 (host)" wait on.
 
 
 | Wave | Fronts | Blocked by |
 |---|---|---|
 | **0** | 01 · 02 · 03 · 49 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` | nothing — except `@src()`, which needs `00`'s carve-out granted |
-| **1** | 04 · 05 · 22 · 50 · 51 · 52 · 56 | 01 · 49 · 54 |
-| **2** | 06 · 26 · 33 · 34 · 35 · 55 · 57 · 58 · 61 · 62 · 63 · 65 · 71 · 81 · 88 | 04 · 05 · 22 · 50 · 56 |
-| **3** | 07 · 08 · 11 · 12 · 13 · 14 · 15 · 16 · 17 · 19 · 28 · 36 · 37 · 38 · 39 · 40 · 41 · 42 · 43 · 44 · 45 · 46 · 47 · 48 · 59 · 60 · 64 · 72 · 75 · 80 · 85 | 06 · 26 · 33 · 34 · 35 · 62 · 65 |
-| **4** | 09 · 10 · 18 · 20 · 21 · 23 · 27 · 29 · 30 · 73 · 74 · 76 · 77 · 78 · 82 · 83 · 84 · 86 · 87 · 89 · 90 · 91 · 92 · 93 | 07 · 08 · 11 · 12 · 15 · 16 · 28 · 60 · 72 |
-| **5** | 24 · 25 · 66 · 68 · 69 · 70 · 79 | 10 · 23 · 29 · 30 |
-| **6** | 31 · 32 · 67 | 24 · 66 · 68 |
-| **7** | 53 | all |
+| **1** | 04 · 05 · 56 | 01 · 54 |
+| **2** | 06 · 22 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 56 |
+| **3** | 07 · 08 · 11 · 13 · 14 · 15 · 19 · 21 · 26 · 36 · 37 · 38 · 39 · 40 · 41 · 42 · 43 · 44 · 45 · 46 · 47 · 59 · 72 | 06 · 22 · 33 · 34 · 35 |
+| **4** | 09 · 10 · 16 · 17 · 18 · 27 · 28 · 48 · 73 · 75 · 77 · 78 · 82 · 93 | 07 · 08 · 11 · 13 · 14 · 26 · 72 |
+| **5** | 12 · 20 · 23 · 29 · 30 · 31 · 32 · 76 · 79 · 83 · 84 · 86 | 10 · 16 · 18 · 28 · 75 · 77 |
+| **6** | 25 · 60 · 61 · 63 · 66 · 68 · 81 · 85 · 87 · 89 · 90 · 91 · 92 | 12 · 20 · 23 · 29 · 30 · 32 · 76 · 79 · 83 · 86 |
+| **7** | 24 · 64 · 65 · 69 · 88 | 63 · 68 · 81 |
+| **8** | 51 · 52 · 67 · 71 | 24 · 69 |
+| **9** | 50 · 70 | 52 · 71 |
+| **10** | 53 | all |
 
-Within wave 0, front 54 lands before front 56: `Options.theme` is a `Theme` and `defaultOptions()`
-calls `defaultTheme()`, so without 54 the default `flush()` would emit no `--spacing` and every
-spacing utility would be dead.
+Front 54 is track D's only wave-0 front and 56 its only wave-1 front: `Options.theme` is a `Theme`
+and `defaultOptions()` calls `defaultTheme()`, so without 54 the default `flush()` would emit no
+`--spacing` and every spacing utility would be dead.
 
 A dependency annotated **`(soft)`** or **`(read-only)`** in a README's `Depends on` line is a
 citation, not an edge: the front lands without it and merely reads its contract. Only unannotated
@@ -455,16 +473,19 @@ enforce one thing (29 and 68), or own a store and its transport (12 and 13), or 
 shutdown (07 and 76).
 
 A wave is a **level in the dependency graph, not a sprint**: a front sits one level below everything
-it consumes, so no front shares a wave with something it reads. The table is computed from every front's `Depends on` line, not hand-placed — when a front's
-dependencies change, the table is regenerated, not edited. Front 26 sits a level below 22 because it
-calls 22's `matchPath` rather than shipping a second matcher; front 23 sits below 28 because it
-renders 28's components; front 67 waits on 24, 68 and 94, which makes it the deepest front in the
-milestone apart from the example app.
+it consumes, so no front shares a wave with something it reads. The table is computed from every
+front's `Depends on` line, not hand-placed — when a front's dependencies change, the table is
+regenerated, not edited. Front 22 sits below 05 because `appDir` is one of its config values; front
+26 below 22 because it calls 22's `matchPath` rather than shipping a second matcher; front 23 below
+28 because it renders 28's components; and onze's 68 and 69 below both, because they fill front 23's
+`RenderHooks` and are never called by it (decision 77).
 
-Wave 1 is 7 fronts wide, wave 3 is 31, wave 4 is 24. That is the point of the
-cut: the milestone's critical path is `01 → 22 → 26 → 28 → 23 → 24 → 31 → 53`, 7 levels deep,
-and the other 87 fronts are breadth. Ninety-five fronts is a large milestone, but it is not
-a long one — nothing waits on more than 6 levels ahead of it.
+Wave 3 is 23 fronts wide, wave 4 is 14 and wave 6 is 13 — that is the point of the cut. The critical
+path is `01 → 05 → 22 → 26 → 28 → 29 → 68 → 69 → 52 → 70 → 53`, 10 levels deep and every step of it
+one `Depends on` line; the other 84 fronts are breadth. The deep tail is the full-stack one:
+everything past wave 6 is a server action, a URL rule, the CLI, or an onze artifact that packages
+what the waves before it produced. Ninety-five fronts is a large milestone, and the levels say where
+it is long — tracks A–D reach wave 7, and only onze's own chain runs to 10.
 
 Two fronts earn their place in wave 0 by consequence rather than by convention. `54-emilia-theme`
 comes before the token fronts because four copies of the spacing ladder already exist in `emilia.bp`

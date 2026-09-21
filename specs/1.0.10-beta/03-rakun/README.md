@@ -119,13 +119,17 @@ case; the wave columns are kept as written so the other tracks' cross-references
   for): 22←05 · 23←06/62 · 61/63←23 · 65←07/13/63 · 12←13 · 15/16/17←11 · 20←10 · 24←12/63/14 ·
   25←07 · 75←11/13/74 · 76←10 · 79←10/18 · 81←76 · 82←07 · 83/84←77 · 85←83 · 86←75 · 87←76 ·
   88←80 · 89/90/92←86 · 91←86/79/83. The level column is that order.
-- **[`../fronts.md § Waves`](../fronts.md#waves)** (the third numbering, "computed") places 60,
-  61, 63 and 65 in waves 2–3 above 23 in wave 4, which all four depend on, and 81 and 88 in wave 2
-  although 81 depends on 76 (wave 4) and 88 on 81. When that table is regenerated, this one is the
-  input for track B.
-- **Cross-track:** 66 is level 3 in track B and depends on jhonstart 32, which is wave 6 in
-  [`../04-jhonstart/README.md`](../04-jhonstart/README.md); 61 on 27 (wave 4 there); 23 on 28
-  (wave 3 there); 24 on 67 (wave 6 there). A track-B level is a lower bound, not a date.
+- **[`../fronts.md § Waves`](../fronts.md#waves)** (the third numbering, "computed") was
+  regenerated from this table on 2026-09-21 and no longer disagrees: 60 · 61 · 63 · 65 sit below 23
+  there, and 81 · 88 are no longer in wave 2. Its numbers are the *milestone* levels — the levels
+  below, lifted by the cross-track edges a track-B level cannot see — so they are equal or larger,
+  never smaller: 23 is level 3 here and wave 5 there, because it renders jhonstart 28.
+- **Cross-track:** 66 is level 3 in track B and depends on jhonstart 32, which is wave 5 in the
+  regenerated [`../fronts.md § Waves`](../fronts.md#waves); 61 on 27 (wave 4); 23 on 28 (wave 4).
+  24 and 67 cite each other, and `fronts.md` resolves the pair with 24 first, because 67 consumes
+  the action envelope 24 defines. [`../04-jhonstart/README.md`](../04-jhonstart/README.md) still
+  carries its 1.0.9 wave column (28 = 3, 32 = 6, 67 = 6), which is the track's own numbering, not
+  the milestone's. A track-B level is a lower bound, not a date.
 
 ## Dependency graph
 
@@ -176,7 +180,7 @@ Module level, the same graph collapsed onto the 27 submodules, is drawn in
 | jhonstart → rakun | 31 | 17 (ro) · 24 (ro) · 63 (ro) | `error.digest`; the action envelope; the `jhonstart:` signal prefix |
 | jhonstart → rakun | 32 | 66 (ro) | the paths `openGraph.images` names |
 | jhonstart → rakun | 67 | 24 · 14 (ro) · 63 (ro) | the action envelope it decodes; constraints it mirrors |
-| onze → rakun | 68 · 69 · 50 · 51 · 70 · 71 · 53 | 04 · 05 · 07 · 11 · 12 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 63 · 65 · 66 | listed per front in [`../06-onze/README.md`](../06-onze/README.md); `examples/blog-server` here is the erlang half of `repository/onze/examples/blog` |
+| onze → rakun | 68 · 69 · 50 · 51 · 70 · 71 · 53 | 04 · 05 · 07 · 11 · 12 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 63 · 65 · 66 | listed per front in [`../06-onze/README.md`](../06-onze/README.md); 68 and 69 fill the `RenderHooks` record front 23 declares — the head extras, the body scripts and the style sink — and rakun names neither (decision 77); `examples/blog-server` here is the erlang half of `repository/onze/examples/blog` |
 | emilia → rakun | — | — | none; 82 serves emilia's emitted CSS as a file, which is consumption, not a dependency |
 
 The package-level consequence — `rakun` core depends on `std` only; `rakun-app` is the one submodule
