@@ -6,8 +6,7 @@ carry-over holds the only code in flight)
 
 Count: 27 compiler carry-over items (`00`, C-01…C-27) · `01-std` (6 steps + 3 carried std fronts) ·
 `02-packaging` · 51 rakun · 9 jhonstart · 22 emilia · 9 onze fronts. The percentage weighs items
-equally; it is a ratio, not a measurement. Open questions for the maintainer: 0 — all nineteen (71–89) were answered the same day
-([`decisions-taken.md`](./decisions-taken.md)); [`decisions-pending.md`](./decisions-pending.md) is empty.
+equally; it is a ratio, not a measurement. Open questions for the maintainer: 1 — 90 (`#[@future]` + `#[@context]` on a server component vs R5), raised by front 19's landing; 71–89 are in [`decisions-taken.md`](./decisions-taken.md).
 
 ## Done
 - [x] 1.0.5-beta closed — [`../1.0.5-beta/closure.md`](../1.0.5-beta/closure.md); fronts 06 and 10 landed in full, 15 with three hold-backs, the rest partial (row by row there)
@@ -28,7 +27,7 @@ equally; it is a ratio, not a measurement. Open questions for the maintainer: 0 
 ## In analysis
 - [ ] `01-std` steps 1–3 — worktree `.tasks/src-builtin` (`fix/src-builtin`): `@src()` + the fallible test body (decisions 73/74), then `std/asserts`, then `std/snapshots` (72); commits on the branch, merge into `feat` by the coordinator
 - [ ] `02-packaging` step 1 — worktree `.tasks/workspaces` (`fix/workspaces`): the `workspaces` manifest, object-form `dependencies`, discovery in runner/loader/LSP/bpmp, `docs/botopink-json.md` (decisions 75/76)
-- [ ] `00 · 19-use-activation` step 1 (+2) — worktree `.tasks/use-activation` (`fix/use-activation`): `use` documented, the static-prefix guard tightened, the commonJS React rename removed, `#[@Context]` on components, language cells (decisions 87/88/89)
+- [ ] `00 · 19-use-activation` step 1 — DONE on `fix/use-activation` (`81416618`, merged with `feat` `1bbf46f9`, full gate green, pushed): `docs.md` section, static-prefix guard at any nesting, commonJS React rename deleted (−142 lines), `#[@context]` required to activate (`use-without-context-effect`), 8 language cells; **awaiting merge into `feat`**. Step 2 (decision 89) blocked on question 90 (`#[@future]` + `#[@context]` vs R5). jhonstart is red on purpose: `known-red-libs.txt` lists it until its hooks gain `#[@context]`
 - [ ] `00 · 18-comptime-runtimes` steps 0–1c — worktree `.tasks/beam-file` (`fix/beam-file`): the `.beam` container writer, the in-frame load command, the three resident modules embedded at build time (decisions 83/86); the untyped BEAM lowering in `beam_asm.zig` waits for the `identity` worktree to land
 - [ ] `00` C-11 + C-12 acceptance — worktree `.tasks/format-check` (`fix/format-check`): `format --check` over the whole project with `reject/**` structurally exempt and a gate caller; the zero-bytes-moved proof of the landed formatter width work (decisions 65/66)
 - [ ] `00` C-02 / C-03 / C-05 — the worktrees `ecosystem`, `identity`, `beammem` being landed into `feat` with a green gate (no `--no-verify`), one at a time

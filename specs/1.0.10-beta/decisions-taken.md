@@ -237,6 +237,12 @@ A component therefore carries the `#[@Context]` effect annotation on the functio
 This amends front 19's *rule for libraries* (a component was "any `fn … -> Element`") and is a sweep
 over `04-jhonstart/**` examples and maps, tracked in `status.md`.
 
+**Implemented 2026-09-20 on `fix/use-activation` (front 19 step 1)** as the existing lowercase effect
+`#[@context]` — every effect annotation is lowercase (`#[@future]` → `@Future`), `#[@Context]` with a
+capital is an unknown annotation silently ignored, and no alias was added (decision 67). A body that
+activates a hook without it is `use-without-context-effect`. The collision with R5 on server components
+is question 90.
+
 ## 89. `@Future` is unwrapped for the context owner
 
 **Decided 2026-09-20 by the maintainer: (a).** `contextInfoFromReturn` looks through `@Future<T>` (and
