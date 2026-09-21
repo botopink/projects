@@ -1,8 +1,9 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**One open, 75** — re-shaped on 2026-09-20 by the maintainer's counter-request (*"implementar algo
-parecido com o npm workspaces para bp no `repository/rakun/botopink.json`; faça uma contraproposta"*).
-The eighteen others raised the same day (71–74, 76–89) were answered within the day and moved to
+**Two open, 75 and 87.** 75 was re-shaped on 2026-09-20 by the maintainer's counter-request (*"implementar
+algo parecido com o npm workspaces para bp no `repository/rakun/botopink.json`; faça uma contraproposta"*);
+87's answer was written as `[A]` where the recommendation was (d) and awaits confirmation. The seventeen
+others raised the same day (71–74, 76–86, 88, 89) were answered within the day and moved to
 [`decisions-taken.md`](./decisions-taken.md) with their evidence. The next free number is **90**.
 
 The shape every question uses — **Measured · Options · Recommendation · Blocks** — is the one 1.0.5
@@ -79,3 +80,24 @@ knob. Cost: `discovery.zig` + `libs.zig` + `project_graph.zig` + `bpmp/manifest.
 manifests gain `files`. It stays a `00 · 10-cli-residuals` carve-out as (B) would.
 **Blocks.** `02-packaging` step 1; the first `<lib>-test` submodule that a gate must run; every
 `modules/*/botopink.json` and `examples/*/botopink.json`.
+
+## 87. The boundary directives — `#[client]` decorator, `Name*;`, `#![client]`, or `use client;` / `use server;`
+
+**Raised by:** `00 · 19-use-activation` step 4 ([README § Step 4](./00-compiler-carry-over/19-use-activation/README.md#step-4--the-boundary-directives-question-87)).
+**Status.** Answered `[A]` on 2026-09-20 where the recommendation was (d); every other answer that day
+was the recommended option, so the answer is held for confirmation rather than recorded.
+**Measured.** Across the specs: `#[client]` 92 occurrences (front 29's decorator), `'use server'` 10
+(prose), `#[useCache]` 3 and one proposed `#![useCache]` nobody parses; the parser already has a
+module-level activation `Name*;` that inference always rejects. The compiler cannot act on a library
+decorator; the bundler (front 68) today assumes a marker jhonstart emits.
+**Options.** (a) keep the library decorators `#[client]` / `#[server]` / `#[cache]` — the bundler
+reads an emitted marker, the two refusals (an Erlang cell in a client module, a client hook in a server
+module) are the libraries' to implement, nothing changes in the specs now; (b) `client*;` on the
+existing activation form — overloads `*`; (c) an inner attribute `#![client]`, a new production the
+compiler still ignores; (d) `use client;` / `use server;` — a module-level `use <target>;` naming which
+half of the project's target split the module runs on: library-agnostic because a target is something
+the compiler already knows; the two refusals become located compiler errors, no flag; `cache` is not a
+target and stays a decorator either way.
+**Recommendation.** (d) for `client`/`server`, (a) for `cache`. If (a) is confirmed, front 19's step 4
+closes with no compiler change and the refusals stay with jhonstart/onze.
+**Blocks.** Nothing in 1.0.10's server fronts; (d) rewrites 29's 5, 26/27/31's 5 and 24's 2 occurrences.

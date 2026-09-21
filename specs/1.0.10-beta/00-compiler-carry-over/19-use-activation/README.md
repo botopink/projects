@@ -11,7 +11,7 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/` unless a
 ---
 
 
-> **Decisions taken 2026-09-20 (after this front was written):** [87](../../decisions-taken.md#87-the-boundary-directives-stay-library-decorators) — the boundary directives stay library decorators, step 4 closes with no compiler change; [88](../../decisions-taken.md#88-use-lowers-transparently-and-a-component-is-context-fn---element) — `use f(x)` lowers to `f(x)` on every backend **and a component is `#[@Context] fn … -> Element`**, with `Element` implementing the context behavior — this amends *The rule for libraries* below (a component was "any `fn … -> Element`"); [89](../../decisions-taken.md#89-future-is-unwrapped-for-the-context-owner) — `@Future<T>` is unwrapped for the owner. Steps 2, 4 and 5 implement the answers; the option text is kept as the record.
+> **Decisions taken 2026-09-20 (after this front was written):** 87 — answered `[A]` (library decorators) where (d) was recommended; held for confirmation in [`decisions-pending.md`](../../decisions-pending.md); [88](../../decisions-taken.md#88-use-lowers-transparently-and-a-component-is-context-fn---element) — `use f(x)` lowers to `f(x)` on every backend **and a component is `#[@Context] fn … -> Element`**, with `Element` implementing the context behavior — this amends *The rule for libraries* below (a component was "any `fn … -> Element`"); [89](../../decisions-taken.md#89-future-is-unwrapped-for-the-context-owner) — `@Future<T>` is unwrapped for the owner. Steps 2, 4 and 5 implement the answers; the option text is kept as the record.
 
 ## Problem
 
