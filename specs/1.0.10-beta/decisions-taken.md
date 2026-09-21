@@ -302,7 +302,7 @@ below it, and **the annotation grants every capability at or below its own level
 | Body | May write | Because the wrapper implements |
 |---|---|---|
 | `#[@context] fn … -> @Context<B, R>` (or a type implementing it, e.g. `Element`) | `use` · `await` · `try` | `@Context` ⊃ `@Future` ⊃ `@Result` |
-| `#[@asyncGenerator] fn … -> @AsyncGenerator<T, E, C>` | `await` · `try` · `yield` | `@AsyncGenerator` ⊃ `@Future` ⊃ `@Result` (decision 98) |
+| `#[@futureGenerator] fn … -> @FutureGenerator<T, E, C>` | `await` · `try` · `yield` | `@FutureGenerator` ⊃ `@Future` ⊃ `@Result` (decision 98) |
 | `#[@future] fn … -> @Future<T, E>` | `await` · `try` | `@Future` ⊃ `@Result` |
 | `#[@iterator] fn … -> @Iterator<T, E, C>` | `try` · `yield` | `@Iterator` ⊃ `@Result` |
 | `#[@generator] fn … -> @Generator<T, R>` | `yield` · **`try` undecided** | question 97 — it is the one wrapper with no error channel |
@@ -317,7 +317,7 @@ wrapper implements `@Result`; and a wrapper that suspends (`@Context`, `@AsyncGe
 `return t` auto-wrapping to `Future.resolved(t)` and `throw e` to `Future.rejected(e)`), so
 `@Future<T, E>` implementing `@Result<T, E>` adds no parameter and invents no error type. The same
 holds for `@Iterator<T, E = any, C = void>`, whose body already carries `throw`, and for
-`@AsyncGenerator` under its decision-98 name. `@Generator<T, R>`
+`@FutureGenerator` under its decision-98 name. `@Generator<T, R>`
 (`:109`) is the exception and is **left out of this decision**: it has no error channel, the
 maintainer is not yet sure a generator should answer `try`, and the status quo — `throw`/`try` are
 not legal in a `#[@generator]` body — stands until question 97 answers it.
@@ -361,38 +361,54 @@ what `Element`'s first type argument is. Decision 90's owner rule reads the same
 Implements: the RC2 check in `comptime/infer.zig`, `Element`'s declaration in jhonstart, and front
 20, which owns the surface both live on.
 
-## 98. The async-generator wrapper is `@AsyncGenerator`, not `@AsyncIterator`
+## 98. One word for suspension: `Future`. The async-generator effect is `#[@futureGenerator]` → `@FutureGenerator`
 
-**Decided 2026-09-21 by the maintainer**, asked as *"`@AsyncGenerator` faz mais sentido, que vc acha?
-fica muito estranho"* and taken after the argument below. `#[@asyncGenerator]`'s return wrapper is
-renamed `AsyncGenerator<T, E = any, C = void>`; its shape does not change
-(`fn next(self) -> @Future<@IteratorStep<T, E, C>, E>`).
+**Decided 2026-09-21 by the maintainer**, in two passes. He first asked whether `@AsyncGenerator`
+made more sense than the `@AsyncIterator` the tree carries — *"fica muito estranho"* — and then, with
+that on the table, named the thing underneath it: *"Async Future são duas nomenclaturas para mesma
+coisa"*. Both passes are answered by one rename: `#[@asyncGenerator]` becomes
+`#[@futureGenerator]` and its wrapper becomes `@FutureGenerator<T, E = any, C = void>`. The shape
+does not change (`fn next(self) -> @Future<@IteratorStep<T, E, C>, E>`).
 
-Three reasons, not one:
+**What it fixes.** Three things, in the order they were found:
 
-1. **It restores the original decision.** Decision 8 § 9's table already wrote
-   `#[@asyncGenerator]` → `@AsyncGenerator<T>`; the implementation drifted to `AsyncIterator`, and
-   `modules/compiler-core/src/comptime/AGENTS.md` carries a standing *"spelling note for the
-   maintainer"* saying the enforcement uses the spelling that exists, not the one decided.
-2. **It is the file's own rule.** `builtins.d.bp` states that an effect annotation "pairs with the
-   matching return wrapper"; `#[@asyncGenerator]` was the only one whose wrapper carried a different
-   name — `result`/`Result`, `future`/`Future`, `generator`/`Generator`, `iterator`/`Iterator`,
-   `context`/`Context` all agree.
-3. **It matches what the value is.** In JavaScript an `async function*` evaluates to an
-   **AsyncGenerator** object, which *implements* the AsyncIterator protocol — the same relation as
-   `function*` → a `Generator` implementing `Iterator`. So `Generator`/`AsyncGenerator` name what an
-   annotated body answers and `Iterator`/`AsyncIterator` name the protocol a type implements to be
-   iterated, which is already how `Iterable.iter(self) -> Iterator<T, E, C>` uses the name. The
-   TypeScript backend's mapping becomes TS's own `AsyncGenerator` rather than
-   `AsyncIterableIterator`.
+1. **The annotation and its wrapper disagreed.** `builtins.d.bp` states that an effect annotation
+   "pairs with the matching return wrapper", and every other pair shares a name — `result`/`Result`,
+   `future`/`Future`, `generator`/`Generator`, `iterator`/`Iterator`, `context`/`Context`. Only the
+   async generator's did not, and `modules/compiler-core/src/comptime/AGENTS.md` has carried a
+   standing *"spelling note for the maintainer"* about it, saying the enforcement uses the spelling
+   that exists rather than the one decision 8 § 9's table decided (`@AsyncGenerator<T>`).
+2. **The language had two words for one concept.** After fixing (1) with `Async`, suspension would
+   be spelled `Future` in one wrapper and `Async` in the other. It is one concept: the value that
+   is not here yet, which `await` unwraps. `Future` is the noun the language already chose, so it
+   is the one that stays, and `Async` leaves the vocabulary entirely.
+3. **`@Async` as a value type reads as an adjective standing in for a noun.** `val x: @Async<i32, string>`
+   says less than `val x: @Future<i32, string>`, and `await` reads over a future, not over an async.
 
-Cost, measured: 64 sites (`libs/std/src/builtins.d.bp`, `ast.zig`'s `EffectKind.returnWrapper`,
-`codegen/typescript.zig`'s type mapping, `codegen/wat.zig`'s wrapper test, comptime and codegen
-tests, snapshots, `docs.md`, `comptime/AGENTS.md`'s note, which goes). The `typescript.zig` and
-`wat.zig` edits are name mappings, not lowering changes, and are the one carve-out from front 20's
-"touches no `codegen/**`" rule.
+**The argument that was withdrawn.** The first pass of this decision also claimed that
+`AsyncGenerator` "matches what the value is" because an `async function*` evaluates to an
+AsyncGenerator in JavaScript. That reason does not survive: botopink does not use JavaScript's
+names anywhere — it is `@Future`, not `Promise`; `@Iterator`, not `IterableIterator` — and
+`codegen/typescript.zig` already translates every wrapper at the boundary. A reader coming from JS
+does not find `Promise` in botopink source either. Internal consistency decides this, not one
+backend's spelling; the TypeScript mapping simply gains one more row
+(`@FutureGenerator` → TS's `AsyncGenerator`).
 
-**`AsyncIterator` is not re-declared as a protocol** by this decision, and no `AsyncIterable` is
-added: nothing needs them yet, and unused surface is surface that drifts (decision 67's spirit).
-The asymmetry that remains — two sync wrappers (`Generator`, `Iterator`) and one async — is front
-15's question, not this one's. Implements: front 20 step 1 (F2).
+**The runner-up, and why it lost.** `@Stream` / `#[@stream]` is the name Rust and Dart give exactly
+this shape (a `next` answering a future of one step), it is one familiar word, and it sidesteps the
+adjective problem completely. It is rejected because this milestone ships `std/net` and `std/io`:
+"stream" will want to name a flow of bytes, and an effect wrapper colliding with the IO type a user
+reaches for costs more than `FutureGenerator` being a name nobody has seen. `FutureGenerator` is at
+least derivable — it is a `Generator` whose steps are `Future`s.
+
+**Cost, measured at `cbd5f1ec`:** 127 sites spell `asyncGenerator` and 64 spell `AsyncIterator`
+(32 snapshot files among them), across `libs/std/src/builtins.d.bp`, `ast.zig`'s `EffectKind`
+(the enum value renames too), `codegen/typescript.zig`'s type mapping, `codegen/wat.zig`'s wrapper
+test, the comptime and codegen tests, `docs.md`, and the `comptime/AGENTS.md` note, which goes. The
+`typescript.zig` and `wat.zig` edits are name mappings, not lowering changes, and are front 20's one
+carve-out from its "touches no `codegen/**`" rule.
+
+**`AsyncIterator` is not re-declared as a protocol** and no `AsyncIterable` is added: nothing needs
+them, and unused surface is surface that drifts (decision 67's spirit). The asymmetry that remains
+— two sync wrappers (`Generator`, `Iterator`) and one suspending — is front 15's question, not this
+one's. Implements: front 20 step 1 (F2).

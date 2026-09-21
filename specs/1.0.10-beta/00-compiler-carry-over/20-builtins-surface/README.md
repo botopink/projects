@@ -28,7 +28,7 @@ each read in the tree rather than inferred, with the line it sits on:
 | # | Finding | Where |
 |---|---|---|
 | F1 | **`Context` is declared twice in one module** — the hook wrapper `pub behavior Context<ContextBase, Return> { }` and the Expr-template record `pub type Context(source, text, multiline)`. One name, two unrelated meanings, same file | `:177` and `:404` |
-| F2 | **An effect's annotation and its wrapper disagree** — `#[@asyncGenerator]` requires the wrapper `AsyncIterator` (`EffectKind.returnWrapper`), and no `AsyncGenerator` type exists. **Decision 98 settles it**: the wrapper is renamed `AsyncGenerator`, 64 sites | `builtins.d.bp:123`, `ast.zig:2072` |
+| F2 | **An effect's annotation and its wrapper disagree** — `#[@asyncGenerator]` requires the wrapper `AsyncIterator` (`EffectKind.returnWrapper`), and no `AsyncGenerator` type exists. **Decision 98 settles it**: the effect is renamed `#[@futureGenerator]` → `@FutureGenerator`, so suspension has one word — 127 sites spell `asyncGenerator`, 64 spell `AsyncIterator` | `builtins.d.bp:123`, `ast.zig:2072` |
 | F3 | **`Generator<T, R>` has no error channel** while `Iterator<T, E = any, C = void>` has one — the one wrapper decision 95's chain cannot reach without changing an arity; it is question 97, and the status quo (no `throw`/`try` in a `#[@generator]` body) stands | `:109` vs `:88` |
 | F4 | **`Result`'s variants are `Ok` / `Error`, the prose says `Result::Ok` / `Result::Err`** — the auto-wrap paragraph and the R11/R12 rejection both name a variant the type does not declare | type at `:24`, prose at `:284-286` |
 | F5 | **`Future` proves the chain with a method, not a clause** — `fn await(self) -> Result<T, E>` already says a future answers a result; decision 95 makes that an `implement` clause, after which the method is the *unwrap*, not the proof | `:116` |
@@ -75,16 +75,17 @@ twelve findings above are claims about behaviour that the table either confirms 
 
 ### Step 1 — the file says one thing once
 
-F1 (rename one `Context`; the Expr-template record is the one with the narrower audience), F2 (decision 98: `AsyncIterator` → `AsyncGenerator`, 64 sites, shape
-unchanged — `codegen/typescript.zig`'s mapping to TS's own `AsyncGenerator` and `codegen/wat.zig`'s
-wrapper test are the one carve-out from this front's no-`codegen/**` rule, because both are name
-mappings rather than lowerings), F4 (`Ok`/`Error` everywhere, or
+F1 (rename one `Context`; the Expr-template record is the one with the narrower audience), F2 (decision 98: `#[@asyncGenerator]`/`@AsyncIterator` →
+`#[@futureGenerator]`/`@FutureGenerator`, including the `EffectKind` enum value; shape unchanged —
+`codegen/typescript.zig`'s mapping to TS's `AsyncGenerator` and `codegen/wat.zig`'s wrapper test are
+the one carve-out from this front's no-`codegen/**` rule, because both are name mappings rather than
+lowerings), F4 (`Ok`/`Error` everywhere, or
 `Ok`/`Err` everywhere — the type wins over the prose), F5, F10. No behaviour changes in this step:
 it is the file agreeing with itself and with `ast.zig`.
 
 **Acceptance:** `grep -c "^pub \(type\|behavior\) Context" builtins.d.bp` is 1 · every
 `EffectKind.returnWrapper` value names a type declared in the file, and each equals its annotation's
-name · `grep -rn AsyncIterator` over the repository finds nothing but a CHANGELOG line · the `Result::` spellings match
+name · `grep -rn "AsyncIterator\|asyncGenerator"` over the repository finds nothing but a CHANGELOG line, and `Async` is not a word the language spells anywhere · the `Result::` spellings match
 the declared variants · the five intrinsics read like the rest of the file · `zig build test` green
 with no snapshot moved.
 
