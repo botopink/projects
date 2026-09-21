@@ -6,7 +6,7 @@ a layout, theme personalization, draft mode, per-request deduplication and the d
 decision front 60 keys off are all unreachable; fronts 12, 18, 23, 24, 25, 32, 60, 63, 64, 65 and 66
 all read what this front writes
 **Target:** erlang (server)
-**Wave:** 2 — and it must land before `23` inside that wave, because `23` parses `searchParams` and has
+**Wave:** 2 — and it must land before `23` (wave 5), because `23` parses `searchParams` and has
 to mark the render dynamic through this front
 **Depends on:** 01 (`hmac`, `clock`, `random`, `encoding`), 04 (the supervision tree, the connection
 process and `rkSetReplyHeader`)

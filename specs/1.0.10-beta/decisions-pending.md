@@ -1,10 +1,11 @@
 # Decisions the maintainer owes — 1.0.10-beta
 
-**Three open, 91, 92 and 93** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
-`04-jhonstart`, 93 by front 19 step 2's landing the same day; 91 and 92 are **non-blocking**: the specs and the library compile either way, and each answer is a rewrite of
+**Four open, 91 to 94** — 91 and 92 raised on 2026-09-21 by the `#[@context]` sweep of
+`04-jhonstart`, 93 by front 19 step 2's landing the same day, 94 by the wave sweep that followed;
+91, 92 and 94 are **non-blocking**: the specs and the library compile either way, and each answer is a rewrite of
 prose, not of a landed refusal. The twenty questions raised while the milestone was cut and while
 front 19 landed (71–90) are answered in [`decisions-taken.md`](./decisions-taken.md). The next free
-number is **94**.
+number is **95**.
 
 This file stays because the fronts will fill it again. A front that meets a question it cannot answer
 from the code writes it here rather than guessing, in the shape the others used:
