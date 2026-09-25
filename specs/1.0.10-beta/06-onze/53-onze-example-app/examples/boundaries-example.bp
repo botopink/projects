@@ -22,7 +22,7 @@ import {Link, linkProps} from "jhonstart";              // front 27
 // front 31 — the boundary surface
 import {ErrorInfo, ErrorBoundary, catchError, renderBoundaryChecked, isSignal} from "jhonstart";
 import {styled, Token} from "emilia";                   // front 48
-import {notFound} from "rakun";                         // front 63
+import {notFound} from "jhonstart";                     // front 31 — a page's signals are jhonstart's (decision 115)
 // app-local
 import {Post, findPost, missingPost} from "@/lib.db";
 

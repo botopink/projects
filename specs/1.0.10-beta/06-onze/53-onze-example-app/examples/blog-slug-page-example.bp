@@ -19,7 +19,7 @@ import {Element, div, h1, p, text, renderToString} from "jhonstart";
 import {article, h2, timeTag} from "jhonstart";             // provided by front 94
 import {styled, Token} from "emilia";                       // front 48
 import {page, PageContext} from "jhonstart";                    // front 30
-import {notFound} from "rakun";                             // front 63
+import {notFound} from "jhonstart";                         // front 31 — a page's signals are jhonstart's (decision 115)
 import {
     registerSegmentConfig,
     registerStaticParams,
@@ -77,15 +77,16 @@ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
     val slug = route.params.lookup("slug").unwrapOr("");
     val found = findPost(slug);
 
-    // front 63 — `notFound()` unwinds to the nearest not-found.bp boundary,
-    // which for this route is `app/blog/[slug]/not-found.bp`, and sets 404.
+    // front 31 — jhonstart's `notFound()` is thrown and unwinds to the nearest
+    // not-found.bp boundary, which for this route is `app/blog/[slug]/not-found.bp`;
+    // raised before the first chunk, onze turns it into rakun's 404 (decision 115).
     //
-    // LANGUAGE GAP: botopink has no bottom type, so a diverging call still
-    // leaves the caller obliged to produce a value — hence the `missingPost`
-    // default on the next line, which is unreachable. With a `never` return the
-    // body would end at `val post = found.first();`.
+    // LANGUAGE GAP: botopink has no bottom type, so the caller is still obliged
+    // to produce a value after the `if` — hence the `missingPost` default on the
+    // next line, which is unreachable. With a `never` return the body would end
+    // at `val post = found.first();`.
     if (found.isEmpty()) {
-        val _gone = notFound();
+        throw notFound();
     };
     val post = found.first().unwrapOr(missingPost(slug));
 

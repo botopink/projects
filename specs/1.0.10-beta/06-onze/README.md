@@ -23,7 +23,7 @@ and is therefore ready one wave before 70, which waits on 52.
 | # | Front | Priority | Wave | Submodule | Depends on (track E) | Depends on (other tracks) |
 |---|---|---|---|---|---|---|
 | 1 | [`49-onze-stand-up`](./49-onze-stand-up/README.md) | **critical** | 5 | `modules/onze/` | — | jhonstart [`30`](../04-jhonstart/30-jhonstart-streaming/README.md) (render, `RenderPlugin`, the UI conventions, the `jhonstart-emilia` bridge) · [`28`](../04-jhonstart/28-jhonstart-server-components/README.md) (`RequestData`) · rakun [`23`](../03-rakun/23-rakun-ssr-pipeline/README.md) (`PageRenderer`, `ChunkWriter`) · [`22`](../03-rakun/22-rakun-file-routing/README.md) · [`24`](../03-rakun/24-rakun-server-actions/README.md) (the action wire names) · std [`01`](../01-std/) (`io.env`, `path`) |
-| 2 | [`68-onze-client-bundle`](./68-onze-client-bundle/README.md) | **critical** | 6 | `modules/onze-bundler/` | 49 | jhonstart [`29`](../04-jhonstart/29-jhonstart-client-directive/README.md) · [`27`](../04-jhonstart/27-jhonstart-link/README.md) · [`30`](../04-jhonstart/30-jhonstart-streaming/README.md) · [`67`](../04-jhonstart/67-jhonstart-forms/README.md) · rakun [`22`](../03-rakun/22-rakun-file-routing/README.md) (`rakun-routing`) · [`20`](../03-rakun/20-rakun-websocket/README.md) · emilia [`48`](../05-emilia/48-emilia-attributes/README.md) · [`56`](../05-emilia/56-emilia-cascade-and-output/README.md) · std 01 · 03 |
+| 2 | [`68-onze-client-bundle`](./68-onze-client-bundle/README.md) | **critical** | 6 | `modules/onze-bundler/` | 49 | jhonstart [`29`](../04-jhonstart/29-jhonstart-client-directive/README.md) · [`27`](../04-jhonstart/27-jhonstart-link/README.md) · [`30`](../04-jhonstart/30-jhonstart-streaming/README.md) · [`67`](../04-jhonstart/67-jhonstart-forms/README.md) · rakun [`20`](../03-rakun/20-rakun-websocket/README.md) · emilia [`48`](../05-emilia/48-emilia-attributes/README.md) · [`56`](../05-emilia/56-emilia-cascade-and-output/README.md) · std 01 · 03 |
 | 3 | [`69-onze-styling-pipeline`](./69-onze-styling-pipeline/README.md) | medium | 7 | `modules/onze-assets/` | 49 · 68 (the `Y` records) | std 01 · 03 |
 | 4 | [`52-onze-font`](./52-onze-font/README.md) | low | 8 | `modules/onze-assets/` | 49 · 69 (head seam, asset manifest) | std 01 · 03 |
 | 5 | [`51-onze-image`](./51-onze-image/README.md) | low | 8 | `modules/onze-assets/` | 49 · 69 (`public/`, asset manifest) | rakun [`25`](../03-rakun/25-rakun-route-handlers/README.md) · [`12`](../03-rakun/12-rakun-cache/README.md) · std 01 · 03 |
@@ -70,16 +70,18 @@ headers are left as written.
 ```
 
 Cross-track edges point **into** onze only, and onze is the one package that imports jhonstart,
-rakun, `rakun-routing` and the `jhonstart-emilia` bridge together (decisions 113, 114). jhonstart and
+rakun and the `jhonstart-emilia` bridge together (decisions 113, 114). jhonstart and
 rakun never import each other: rakun serves (route → the opaque `PageRenderer` onze registered for it
 → chunks through its `ChunkWriter`), jhonstart renders (front 30 owns the render, the UI conventions,
 `RenderHooks(headExtra, bodyExtra)` and the asynchronous `RenderPlugin` point), and onze wires them
 at boot — the bridge plugin registered with `app(plugins: [emiliaPlugin()])`, jhonstart's UI records
 copied into rakun's table with one renderer per page, `RequestData` built from rakun's `Request`,
-the action wire names (`__bp_action` / `X-Bp-Action` by default) set on both sides, 68's
-`headScriptTags`/`scriptTags` handed over as `headExtra`/`bodyExtra`, and `rakun-routing`'s matcher
-handed to jhonstart's router by the generated client entry. No onze front defines a style sink: the
-flush moments are jhonstart's.
+the action wire names (`__bp_action` / `X-Bp-Action` by default) set on both sides, every rakun key
+it needs written as `rakun.*` (`rakun.appDir`, `rakun.actions.bodyLimit` — decision 115), 68's
+`headScriptTags`/`scriptTags` handed over as `headExtra`/`bodyExtra`, and jhonstart's `notFound` /
+`redirect` outcome turned into rakun's 404 / 307 before the first chunk. The route matcher is not
+wired by onze: rakun and jhonstart each import the compiler-bundled library `routing` (decision
+115). No onze front defines a style sink: the flush moments are jhonstart's.
 
 **onze is where libraries meet in an example** (decision 114). Each library's examples and fixtures
 use that library only; an example that combines jhonstart, rakun and emilia is onze's, and front

@@ -12,15 +12,16 @@ server reads it back to emit script tags
 **Depends on:** 29 (the boundary marker, the `server-only` marker and the hydrate entry point) · 49
 (config, `outDir`, and the `ONZE_PUBLIC_` rule this front enforces) · 03 (content hashes) · 50 (the
 CLI that invokes it) · 01 (`path.walk`, `path.glob`, `process.run`, `fs`) · 30 (jhonstart's render:
-the payload, the globals registry, the router that receives `match`, and the `RenderHooks` head and body fields its tags fill) · 27 (the link runtime the entry mounts) · 22 (`rakun-routing`, the matcher the entry hands the router, compiled for commonJS) · 48 (the class names the
+the payload, the globals registry — `globals.fill` and `globals.signal` — and the `RenderHooks` head and body fields its tags fill) · 27 (the link runtime the entry mounts) · 48 (the class names the
 tree carries) · 20 (the websocket the dev rebuild pushes over)
 **Owns:** `repository/onze/modules/onze-bundler/src/**`,
 `repository/onze/modules/onze-bundler/test/**` — including `headScriptTags`/`scriptTags` and the
 `RenderHooks.headExtra`/`bodyExtra` values built from them, which `Onze.run` (front 49) hands to
 jhonstart's render at boot. This front owns **no** definition in another repository: `RenderHooks`,
 the payload and the globals registry are jhonstart front 30's, the island marker is front 29's, and
-`linkMount` / `formMount` are fronts 27's and 67's, and `parseTable` / `matchPath` are
-`rakun-routing`'s (front 22) — all imported here (decisions 113, 114)
+`linkMount` / `formMount` are fronts 27's and 67's — all imported here (decisions 113, 114). The
+entry imports nothing from the bundled library `routing`: jhonstart's router and `Link` import it
+themselves (decision 115)
 **Does not touch:** `repository/onze/src/**` (front 49), `repository/onze/modules/onze-cli/**`
 (front 50), `repository/onze/modules/onze-assets/**` (front 69), `repository/jhonstart/src/**`,
 `repository/rakun/src/**`, `repository/emilia/src/**`
@@ -291,10 +292,11 @@ invent a marker; it consumes that one. The entry:
 5. registers the fill function under `globals.fill` (`__bp1`) with `registerFill(globals.fill,
    payload.h)`, so front 30's `<template data-jh-f="h1">…</template><script>__bp1("h1")</script>`
    has a function to call when a late chunk lands,
-6. parses the payload's `t` with `rakun-routing`'s `parseTable` and hands jhonstart's router (front
-   26) `match: { path -> matchPath(table, path) }` — the one matcher the server also runs, imported
-   from the boundary module `rakun-routing` (`["erlang", "commonJS"]`, decision 114); jhonstart
-   imports neither rakun nor `rakun-routing`,
+6. registers the signal function under `globals.signal` (`__bp2`) with
+   `registerSignal(globals.signal)`, so a navigation signal front 30 writes after the first chunk
+   (`<template data-jh-g="…">…</template><script>__bp2()</script>`, decision 115) has a function to
+   call. The entry builds no matcher and hands the router nothing: front 26's router reads the
+   payload's `t` and matches with the bundled library `routing` itself,
 7. calls front 27's `linkMount()` and front 67's `formMount(actionHeader)` once, after every island
    is mounted — ordinary imports from `jhonstart-link` and `jhonstart-forms`, not globals; the header
    name is onze's configured value (`X-Bp-Action` by default), the same one front 49's boot sets in
@@ -443,9 +445,11 @@ render that writes them and the entry that reads them cannot diverge (decision 1
       precedes the island loop
 - [ ] `linkMount` and `formMount` are called exactly once each, after the last island, and
       `formMount` receives the configured `actionHeader`, not a literal of the bundler's own
-- [ ] The entry imports `parseTable` / `matchPath` from `rakun-routing` and hands the router `match`;
-      it contains no matcher and no table parser of its own, and the bundle's client graph reaches
-      `rakun-routing` compiled for commonJS
+- [ ] The entry registers `globals.signal` before the first streamed chunk can arrive, next to
+      `globals.fill`
+- [ ] The entry imports nothing from `routing` and hands the router no `match`; it contains no
+      matcher and no table parser, and the bundle's client graph reaches `routing` compiled for
+      commonJS only through jhonstart's router and `Link`
 - [ ] The generated entry contains no hand-written `__`-prefixed name: every global it reads is
       `globals.<name>` from jhonstart's registry
 - [ ] Every class name the entry's islands compute is present in the payload's `s` key — the runtime

@@ -25,6 +25,7 @@ pub fn blogConfig() -> OnzeConfig {
         publicDir: "public",
         outDir: ".onze",
         dev: false,
+        actionsBodyLimit: 1048576,
     );
 }
 
@@ -43,6 +44,7 @@ test "defaultConfig supplies every field onze.json may omit" {
     assert c.publicDir == "public";
     assert c.outDir == ".onze";
     assert c.dev == false;
+    assert c.actionsBodyLimit == 1048576;
 }
 
 test "an override copies every other field" {
