@@ -199,9 +199,9 @@ The row measured in [Problem](#problem): `{badfun, #{x=>1,y=>2}}`. The record's 
 (`7783fd6`, `1193d3c`) is the model: name the owning module and call `<module>:<method>/N`.
 
 **Acceptance:**
-- [ ] `modules/two_modules` and `modules/std_import`, assembled and run by hand, print `3`/`0` and `1`
-- [ ] a fixture in `src/codegen/tests/**` pins a method on an imported type, with a RUN LOG
-- [ ] `beam_export_audit.sh` still assembles every module
+- [x] `modules/two_modules` and `modules/std_import`, assembled and run by hand, print `3`/`0` and `1`
+- [x] a fixture in `src/codegen/tests/**` pins a method on an imported type, with a RUN LOG
+- [x] `beam_export_audit.sh` still assembles every module
 
 ### Step 5 — the block-as-value lowering decision 2 leaves dead
 
@@ -260,10 +260,10 @@ so no re-recorded snapshot ever carries both reasons; and F2/F3/F4 land inside
 ## Gate
 
 - [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] `scripts/beam_export_audit.sh` assembles every module, before and after each row
+- [x] `scripts/beam_export_audit.sh` assembles every module, before and after each row
 - [ ] every re-recorded RUN LOG **verified by running the program** — `erlc +from_asm out/*.S` then `erl -pa out -eval "main:'_botopink_main'()"` — and checked against decision 8 §7
 - [ ] every `tests/language` cell this front's rows touch run by hand on beam and matched against its `.out`, with the transcript in the landing note (the suite cannot do it)
-- [ ] `src/codegen/AGENTS.md` and `src/codegen/beam/AGENTS.md` updated in the same commit as each row
+- [x] `src/codegen/AGENTS.md` and `src/codegen/beam/AGENTS.md` updated in the same commit as each row
 - [ ] Commit on `fix/beam`; no push, no merge
 
 ## Blast radius
