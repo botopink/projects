@@ -52,7 +52,7 @@ item stands is `status.md`'s.
 | [C-13](#c-13--the-optional--and-the-braced-blocks-trailing-) | The optional `;`: parser first, printer second, 245 sites third | decisions 29, 60; 15's parked patch; 16 step 6; 12, `libs/std`, 09 migrate | **medium** | every `if`/`loop`/`case` statement in the ecosystem carries a `;` the language does not want | `15-language-surface/decision-29-parser-half.patch` (uncommittable alone) |
 | [C-14](#c-14--decision-8-in-the-sources) | Decision 8 in the sources: `Self<…>`, the five `= []` bindings, `Dict implements Display`, the libraries' `case` arms and section paths | 01 step 11 rest; 09 step 3 (N28) | **medium** | `tests/language/test/case_sections.bp`; emilia's 27 section annotations | none |
 | [C-15](#c-15--generics-carry-all-their-arguments) | A written generic type carries all its arguments; `Self<T>` | 01 step 6 (N18, §1.1/§1.2) | **medium** | two `reject/` cells; the `Box(value: 1).map` → `Box<string>` rule | none |
-| [C-16](#c-16--the-language-suites-residual-cells) | The language suite's residual cells and its tally | 12 steps 4.2–4.4; decision 59 (b); cells for 63–66; the `modules/*` cells of 66 | **medium** | nothing compiles-side; the suite's own claims | unverified whether 4.2–4.4 exist |
+| [C-16](#c-16--the-language-suites-residual-cells) | The language suite's residual cells and its tally | 12 steps 4.2–4.4; decision 59 (b); cells for 63–66; the `modules/*` cells of 66 | **medium** | nothing compiles-side; the suite's own claims | landed (`259916e1`, `ca477dec`) and **verified by running at `f58fd392`** (2026-09-25): 4.2–4.4 exist and pass on all four targets, 553 / 42 / 0; the verification found six unlisted beam failures, now listed and handed to 03 |
 | [C-17](#c-17--the-libraries-erlang-cells-after-identity) | Every library's erlang cell re-run after C-01, and `beam.bp`'s header re-spelled | 09 step 4; decision 43's correction | **medium** | the libraries' CI on the target they ship | none; after C-01 |
 | [C-18](#c-18--decided-checker-rows-with-no-step) | Decided checker rows with no step: 44, 45, 47, 57, 31, 9; the document corrections of 1, 2, 10, 25, 32; 04's `tsc` gate and `42.toString()` | 01 rows; decisions named; 04 step 6 gate | **medium** | `optional<i32>` reaches the checker; `x?.f` on a `?T` has no diagnostic naming `?.`; `any` still parses | none |
 | [C-19](#c-19--the-declaration-name-builders-spell-the-103-surface) | The declaration-name builders spell the 1.0.3 surface | 11 step 5 | **low** — ready to land | one LSP snapshot line; 07 step 3's last `uncertain` row | landed |
@@ -477,14 +477,23 @@ rewritten a third time (to `null`, `?T`); the three `tests/language/modules/*` c
 this front.
 **Priority:** medium — the suite is the milestone's evidence; a claim the suite does not make is a
 claim.
-**Partial work:** unverified whether 4.2–4.4 exist (`ls tests/language/modules/`).
+**Partial work:** landed at `259916e1` + `ca477dec` (`fix/language-cells`), and **verified at
+`f58fd392` on 2026-09-25 by front 12** (`ls tests/language/modules/` answers `local_dependency`
+among nine; `run/panic_aborts`, `run/todo_aborts` with `.exit`; `run/external_erlang_only` with two
+`.<target>.expect`) — [`12-language-tests/README.md`](./12-language-tests/README.md) § Landed —
+2026-09-25 has the table. The `index_an_index_past_the_end_answers_zero` named in Origin is a
+`src/codegen/tests` fixture, not a cell of the suite; the suite's statement is
+`run/index_past_the_end_is_null.bp`, renamed when C-02 landed.
 **Depends on:** C-02 for the index cell's new answer; C-11 for the formatted cells.
 **Acceptance:**
-- [ ] `zig build test-language` green with the new cells on every declared target; every added
+- [x] `zig build test-language` green with the new cells on every declared target; every added
       `expected-failures.txt` line names an existing row here; `AGENTS.md`'s "cannot be tested" list
-      loses the covered entries
-- [ ] `run.sh` prints the tally; the header stops carrying a number a human recounts
-- [ ] a cell per decision 63–66
+      loses the covered entries — 553 / 42 / 0 at `f58fd392`; the list keeps only `@typeInfo` /
+      `@makeRecord` / `partial` / `omit` / `pick`
+- [x] `run.sh` prints the tally; the header stops carrying a number a human recounts
+- [x] a cell per decision 63–66 — 63 `run/index_*`, 64 `run/std_erlang_node`, 66 the three
+      `modules/*` cells formatted; 65 is a sentence, since the formatter writes text and the suite
+      runs programs (`AGENTS.md` § Notes)
 
 ## C-17 — The libraries' erlang cells after identity
 
