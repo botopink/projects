@@ -35,7 +35,8 @@ policy. This front is that policy, expressed as values a test can check without 
 
 - `repository/rakun/modules/rakun-messaging/src/root.bp` — a four-line docblock and the comment
   *"Module contents will be added by the respective fronts."* No code, no `pub mod` line.
-- `repository/rakun/modules/rakun-messaging/botopink.json` — `"targets": ["commonJS", "erlang"]`,
+- `repository/rakun/modules/rakun-messaging/botopink.json` — `"targets": ["commonJS", "erlang"]` (the
+  scaffold's; the module's lowest-numbered front corrects it to `["erlang"]`, decision 113),
   depends on `rakun` by relative path. That is the whole module.
 - `repository/rakun/src/decorators.bp:48-238` — fifteen decorators, none of them a listener. Every
   decorator this front adds lives under `modules/rakun-messaging/src/reliability/`.
