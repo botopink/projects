@@ -400,10 +400,10 @@ pub declare fn uuidV4() -> string;
 ```
 
 **Acceptance:**
-- [ ] `random.secureToken(32)` answers 43 characters, containing none of `+`, `/`, `=`
-- [ ] two consecutive `random.secureToken(16)` calls differ, on both targets
-- [ ] `random.uuidV4()` matches `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$` on both targets
-- [ ] the existing eight `random` functions and `randomBytes` are byte-unchanged and `random.seed`/`seededFloat` still round-trip
+- [x] `random.secureToken(32)` answers 43 characters, containing none of `+`, `/`, `=`
+- [x] two consecutive `random.secureToken(16)` calls differ, on both targets
+- [x] `random.uuidV4()` matches `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$` on both targets
+- [x] the existing eight `random` functions and `randomBytes` are byte-unchanged and `random.seed`/`seededFloat` still round-trip
 
 ### Step 7 — `regex.bp` additions
 
