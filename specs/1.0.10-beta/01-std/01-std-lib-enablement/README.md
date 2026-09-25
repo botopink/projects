@@ -377,11 +377,11 @@ pub fn isExpired(at: i64) -> bool { return nowMillis() > at; }
 ```
 
 **Acceptance:**
-- [ ] `clock.parseIso8601(clock.formatIso8601(t))` answers `Ok(t)` truncated to whole seconds, on both targets
-- [ ] `clock.parseIso8601("not a date")` answers an `Error` on both targets
-- [ ] `clock.toCivil` of a fixed epoch reading answers the same `Civil` on both targets, and `weekday` follows ISO-8601 (Monday = 1)
-- [ ] `clock.isExpired(clock.deadline(clock.seconds(60)))` is false; `clock.isExpired(0)` is true
-- [ ] `clock.sleep(20)` returns after at least 20 monotonic milliseconds on both targets
+- [x] `clock.parseIso8601(clock.formatIso8601(t))` answers `Ok(t)` truncated to whole seconds, on both targets
+- [x] `clock.parseIso8601("not a date")` answers an `Error` on both targets
+- [x] `clock.toCivil` of a fixed epoch reading answers the same `Civil` on both targets, and `weekday` follows ISO-8601 (Monday = 1)
+- [x] `clock.isExpired(clock.deadline(clock.seconds(60)))` is false; `clock.isExpired(0)` is true
+- [x] `clock.sleep(20)` returns after at least 20 monotonic milliseconds on both targets
 
 ### Step 6 — `io/random.bp` additions
 
