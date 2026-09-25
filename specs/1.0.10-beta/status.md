@@ -1,15 +1,16 @@
 # Status — 1.0.10-beta
 
-**Updated:** 2026-09-26 · **Progress:** ~19 % (24 of 127 work items landed)
+**Updated:** 2026-09-26 · **Progress:** ~19 % (24 of 126 work items landed)
 
-Count: 31 compiler carry-over items (`00`, C-01…C-31) · `01-std` (6 steps + 3 carried std fronts + the bundled `routing`, `actions` and `validation` libraries + `07-std-json-writers`) ·
+Count: 31 compiler carry-over items (`00`, C-01…C-31) · `01-std` (6 steps + 3 carried std fronts + the bundled `routing`, `actions` and `validation` libraries) ·
 `02-packaging` · 51 rakun · 9 jhonstart · 22 emilia · 9 onze fronts. The percentage weighs items
 equally; it is a ratio, not a measurement. Open questions for the maintainer: none — 91, 92,
 93, 97 and 99 are answered by decisions 102–108, which open fronts `00 · 21-effect-chain`,
 `22-loops` and `23-std-purity`, and 94, 100 and 101 by decision 113 (the libraries split by
 concern), whose eight open seams decision 114 answers, and 114's five open points decision 115;
-decision 116 settles nine more pieces two libraries both run.
-Decisions 68–90, 95–116 are in
+decision 116 settles nine more pieces two libraries both run, and decision 117 the nine points
+113–116 left (page signals jhonstart's end to end, components, `json.decode`, `.bp`-only bundled
+libraries). Decisions 68–90, 95–117 are in
 [`decisions-taken.md`](./decisions-taken.md).
 
 ## Done
@@ -231,14 +232,14 @@ Decisions 68–90, 95–116 are in
 - [ ] Decision 113 in landed code — jhonstart 26, 27 and 29 carry a "decision 113's spellings" step (`data-jh-*`, `linkMount` / `formMount`, the router receiving `match`); rakun 23's render leaves `ssr.bp` / `ssr.mjs` once jhonstart front 30 lands; rakun 04 closes with the core on `["erlang"]` and `runtime.mjs` deleted; rakun 24's `actionForm` becomes `actionIdOf`. Decision 114 in landed code: rakun 22's page registry drops `LayoutProps` / `rkAppRegisterPage` over `Element` for an opaque `PageRenderer`; rakun 23's `setPageRender` / `RenderedPage` become `page(pattern, render)` over `ChunkWriter`; rakun 24 reads the wire names from `rakun.actions.field` / `rakun.actions.header`; jhonstart 28 drops `rakun_request_context` and `fillRequest` for the `RequestData` onze hands the render
 - [ ] Decision 115 in landed code — the matcher at rakun `modules/rakun/src/file_router.bp:49-479` moves to the bundled library `libs/routing` (`01-std/04-routing-lib`) and rakun 22 imports it (its Step 7); jhonstart 26's router imports `parseTable` / `matchPath` from `routing` and takes no `match`; `file_router.bp:795` reads `rakun.appDir` instead of `onze.appDir`; rakun 24's body limit is `rakun.actions.bodyLimit`; jhonstart 31 gains `redirect(url)` and 30 the late-signal markup (`data-jh-g`, `globals.signal`); onze 49 writes the `rakun.*` keys and 53's pages import `notFound` / `redirect` / `cookies` from jhonstart
 - [ ] Decision 116 in landed code — rakun front 63's vocabulary and `n` codec move to `routing`'s `navigation` with `nav:` reasons (no `jhonstart:` spelling left); rakun-web's `middleware.bp:60-110` / `filter.bp:545-565` matchers call `routing`'s `pattern` (front 07); rakun 24 and jhonstart 67 import `libs/actions` and the golden `state` literal leaves both test files; `modules/rakun-validation` (landed, 54/0) moves to `libs/validation` and rakun 14 Step 7 deletes the member, rakun's workspace root becoming `["erlang"]`; the JSON copies (`ssr.bp:641-676`, `report.bp:80`, `rakun-web/src/error.bp:131`, `config.bp:394-433`) go to std `json`; rakun's `request_context.bp:507-610` codec and jhonstart's `decodePairs` / `encodePairs` (`router.bp:123-162`) go to std `encoding`, with jhonstart 26's `a b` cell; emilia's `hashHex` (`emilia.bp:80`) goes to std `contentHash`; onze 69 configures rakun-web 82's static server
+- [ ] Decision 117 in landed code — jhonstart 30's render writes to a `Response(status, header, write, close)` and turns `notFound` / `redirect` into 404 / 307 itself, `globals.bp` gains `signal` (`__bp2`), the redirect target is checked against the table and `allowedRedirects`, and `#[layout]` / `#[page]` / `#[template]` refuse a function that is not `#[@use] … -> @Component<Element>`; jhonstart 26 gains `clientApp`; rakun 23's `ChunkWriter` gains `setStatus` / `setHeader` and a page renderer's signal becomes a 500, rakun 63 drops page signals and `boundaryFor`, rakun 24's action `redirect` goes into the envelope's `n`; onze 49 adapts the response with no signal `case` and writes `rakun.actions.bodyLimit` from `OnzeConfig.actionsBodyLimit`; onze 53's pages, layouts and templates are components; `01-std-lib-enablement` gains the JSON writers (front 07 folded in) and `Json` / `json.decode`, which rakun 05's config reader, `actions` and jhonstart's payload reader use; `routing`, `actions` and `validation` carry no sidecar; `rakun-test` is `["erlang"]`
 - [ ] `04-jhonstart` 32/67 — decision 78 taken; ready (94 landed)
 - [ ] `05-emilia` front 46 — decision 81 taken (`AccentAuto`); ready
 
 ## Open
 - [ ] `01-std/04-routing-lib` — critical · specified (decisions 115, 116), no owner; the library steps need only `01-std` step 2 (`navigation` and `pattern` included), the bundling step waits on `00 · 23-std-purity`; rakun 22 Step 7, 63 and 07 and jhonstart 26, 30 and 31 wait on it
-- [ ] `01-std/05-actions-lib` — high · specified (decision 116), no owner; waits on `01-std-lib-enablement` Step 3 (`encoding`), `07-std-json-writers` and routing-lib's `navigation`; rakun 24 and jhonstart 67 wait on it
+- [ ] `01-std/05-actions-lib` — high · specified (decision 116), no owner; waits on `01-std-lib-enablement` Step 3 (`encoding`), its JSON steps (the writers and `json.decode`, decision 117) and routing-lib's `navigation`; rakun 24 and jhonstart 67 wait on it
 - [ ] `01-std/06-validation-lib` — high · specified (decision 116), no owner; moves landed code (rakun `modules/rakun-validation`, 54 tests); rakun 14 Step 7 follows it
-- [ ] `01-std/07-std-json-writers` — high · specified (decision 116), no owner; `json.quote` and the writers from `01-std` step 2 on, `escape.scriptJson` after `01-std-lib-enablement` Step 1
 - [ ] `00` C-04, C-07…C-11, C-13…C-18, C-20 (absorbed by C-26), C-21…C-25 — no worktree, no owner
 - [ ] `03-rakun` — 51 fronts; **04, 05, 06, 07, 14, 22, 23, 62, 72 and 74 landed** (core 387/0 on commonJS, `rakun-web` 104/0, `rakun-validation` 54/0). Next unblocked: 08, 11, 13, 80
 - [ ] `04-jhonstart` — 9 fronts; 94, 26, 27, 28 and 29 landed (125 / 0 on both rows). Track C is now genuinely blocked: 30 wants `async`, 31 wants `content_hash`, 32 wants `escape` — all three `01-std` step 6, all specified, none written

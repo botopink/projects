@@ -86,15 +86,17 @@ none exists. The full registry is here so no front invents one:
 | `data-jh-on-click` | jhonstart · 29 | a handler id |
 | `data-jh-a` | jhonstart · 67 | a form bound to a server action; the id is front 24's (contract 3), handed to the form by onze |
 | `data-jh-sf="1"` | jhonstart · 67 | a client-enhanced search form (GET, no action) |
-| `data-jh-g="redirect"` + `data-jh-to` / `data-jh-g="not-found"` | jhonstart · 30 | a navigation signal raised after the first chunk, written as a `<template>` followed by `<script>__bp2()</script>`: the client runs `location.replace(data-jh-to)`, or swaps the template's not-found markup into `data-jh-root`; the status stays 200 (decision 115, § 5b) |
+| `data-jh-g="redirect"` + `data-jh-to` / `data-jh-g="not-found"` | jhonstart · 30 | a navigation signal raised after the first chunk, written as a `<template>` followed by `<script>__bp2()</script>`: the client navigates to `data-jh-to` as its router does (a relative target by `history.replaceState` and a client navigation, a listed absolute one by `location.replace`), or swaps the template's not-found markup into `data-jh-root`; the status stays 200 (decisions 115, 117, § 5b) |
 
 An example carrying `data-onze-*` on a framework marker is stale.
 
 **Browser globals** — only a value the HTML names by text is a global, and there are three:
 `globals.payload` (`__bp0`, the payload above), `globals.fill` (`__bp1`, the function a fill's
 `<script>` calls) and `globals.signal` (`__bp2`, the function a late signal's `<script>` calls —
-decision 115). Both are indexed aliases from jhonstart's globals registry (front 30), numbered
-in declaration order in jhonstart so the server and client builds agree. No hand-written `__jh*` or
+`pub val signal = alias("signal")`, decisions 115 and 117). All three are indexed aliases from
+jhonstart's globals registry (front 30), declared in the order `payload`, `fill`, `signal` and
+numbered in that order so the server and client builds agree; each does one thing, and the fill's
+function never reads a signal. No hand-written `__jh*` or
 `__onze*` global exists; link and form mount are the ordinary imports `linkMount` and `formMount`.
 A host cell (`declare fn` bound by `#[@External.…]`) is a module function, not a global, and keeps
 its owner's `__jh` prefix.
@@ -143,9 +145,10 @@ Response envelope:
 {"v":1,"ok":…,"state":"<querystring>","revalidated":[…],"redirect":"…","n":"…","payload":"…"}
 ```
 
-`state` is querystring-encoded rather than JSON because `std/json` has no walker; its grammar is
-`message` (the form-level message) and `f.<name>` (one field's message), percent-encoded with std's
-`encoding`. An `ok: false`
+`state` is querystring-encoded; its grammar is `message` (the form-level message) and `f.<name>`
+(one field's message), percent-encoded with std's `encoding`. The envelope and the JSON-RPC body are
+read with std's `json.decode` (decision 117) on both targets — `actions` carries no per-target JSON
+template and no sidecar. An `ok: false`
 envelope is **data handled by front 67**, never caught by a front-31 boundary; only a raised POST
 reaches a boundary.
 
@@ -153,7 +156,10 @@ The field **`n`** is the navigation signal (contract 5b) in `routing`'s `signalT
 no signal · `"N"` notFound · `"R|307|/login"` redirect · `"R|308|/new"` permanentRedirect.
 `location` is the remainder of the line, so a `|` in a path round-trips; the browser reads it with
 `signalFromWire` (front 26). **`redirect` is derived from `n`, never set independently** — `actions`'
-`writeEnvelope` takes no `redirect` argument.
+`writeEnvelope` takes no `redirect` argument. An action's `redirect(loc)` is **rakun's** (front 63,
+decision 117 rule 4): rakun writes it into `n` with `signalToWire`, jhonstart's client reads it and
+navigates, and neither imports the other. jhonstart's `redirect` is for pages, layouts and templates
+only.
 
 **Front 24 admits no configuration key that weakens the CSRF `Origin`/`Host` check**, and asserts
 the absence of one in a test. Nothing downstream may add one.
@@ -296,7 +302,7 @@ call `setPhase`** or every revalidation from an action raises:
 `strict` is set only by front 60's prerenderer: a dynamic read then raises instead of marking, which
 is how static export fails the build.
 
-## 5b · Navigation signals — the vocabulary is `routing`'s, the server half front 63's
+## 5b · Navigation signals — the vocabulary is `routing`'s, page signals jhonstart's, action and handler signals front 63's
 
 ```bp
 // routing/navigation — bundled, pure, both targets (decision 116; 01-std/04-routing-lib Step 7)
@@ -307,7 +313,7 @@ pub fn isSignalReason(reason: string) -> bool
 pub fn signalPrefixes() -> string[]
 pub fn signalToWire(out: NavOutcome) -> string / signalFromWire(wire: string) -> NavOutcome
 
-// rakun front 63 — the server half, erlang
+// rakun front 63 — server actions (24) and route handlers (25) only, erlang
 pub fn notFound() -> i32                           // never returns
 pub fn redirect(location: string) -> i32           // 307
 pub fn permanentRedirect(location: string) -> i32  // 308
@@ -318,18 +324,32 @@ pub fn takeSignal() -> NavOutcome
 A signal is a raised **prefixed string**, not a tagged tuple, and the prefix is `nav:` — the
 vocabulary lives in the bundled library `routing`, which names no framework, so rakun and jhonstart
 raise and read the same four reasons without importing each other and without either writing the
-other's name (decision 116). Front 63 keeps what only the server does: the throw host cell
-(`rakun_navigation`), the per-request capture, the redirect checks below and the response
-composition. A jhonstart page, layout or template does not call front 63's functions: its `notFound`
-and `redirect(url)` are jhonstart's own (front 31, decision 115), raising the same reasons through
-`signalReason`, and it reads cookies with jhonstart's `cookies()` (front 28) — it imports all three
-from `"jhonstart"`. Raised **before the render's first chunk**, onze translates them into rakun's 404
-and 307. Raised **after** it, the headers are gone: jhonstart's render (front 30) reads the reason
-with `signalFromReason` and writes it as markup (`data-jh-g`, § 2) that its client executes, the
-status stays 200, and a late redirect is written only for a relative target `routing`'s `matchPath`
-finds in the table — an absolute one fails the render, because the allow-list below cannot be
-consulted any more (decisions 67, 115). botopink's `try … catch` unwraps an `@Result` and nothing
-else, so **no construct can swallow a signal** — asserted by a test. Front 31's boundary matches
+other's name (decision 116).
+
+**A page signal is jhonstart's from raise to response** (decision 117). A jhonstart page, layout or
+template imports `notFound`, `redirect(url)` and `cookies()` from `"jhonstart"` (fronts 31 and 28);
+they raise the reasons below through `signalReason`, and jhonstart's render (front 30) catches them
+and writes the outcome to the generic `Response` of § 5d: **before the first chunk** a `redirect` is
+`status(307)` + `header("location", to)` and a `notFound` is `status(404)` with the route's not-found
+boundary as the document; **after it** the headers are gone, so the render reads the reason with
+`signalFromReason` and writes it as markup (`data-jh-g`, § 2) its client executes, and the status
+stays 200. A client-only app (`clientApp`, front 26) handles the same signals in the browser:
+`notFound` renders the route's not-found boundary with the URL unchanged, `redirect` navigates with
+`history.replaceState` (a listed absolute target with `location.replace`). onze has no `case` on a signal, and rakun knows no page signal — a reason
+raised out of a rakun page renderer is an error of that request (500).
+
+**jhonstart checks a page redirect's target**, identically before and after the first chunk and in
+the browser: a relative target must be found by `routing`'s `matchPath` in the route table the
+render or `clientApp` was handed; an absolute target is accepted only when listed in
+`app(allowedRedirects: [...])` / `clientApp(allowedRedirects: [...])`, whose empty default refuses
+every absolute target. Anything else fails the render (decision 67).
+
+**Front 63 keeps the signals of rakun's own code** — server actions (front 24, whose `redirect`
+reaches the browser as the envelope's `n`, § 3) and route handlers (front 25): the throw host cell
+(`rakun_navigation`), the per-request capture, the redirect checks below and the status and
+`Location` of the response.
+
+botopink's `try … catch` unwraps an `@Result` and nothing else, so **no construct can swallow a signal** — asserted by a test. Front 31's boundary matches
 with `isSignalReason` and its test asserts `signalPrefixes()`; no front keeps a copy of the table:
 
 | Raised by | Reason, literally | Status | `n` wire form |
@@ -348,9 +368,47 @@ artefacts — one crosses a stack frame, the other crosses to the browser in an 
 (§ 3), where jhonstart's router reads it with `signalFromWire` (front 26) — and `routing`'s test
 asserts that they agree case for case.
 
-A relative redirect target is matched against front 22's table at raise time and a miss raises. An
-absolute target is checked against `rakun.navigation.allowedHosts`, whose empty default disables
-absolute redirects entirely. No property turns either check off.
+For rakun's signals, a relative redirect target is matched against front 22's table at raise time
+and a miss raises; an absolute target is checked against `rakun.navigation.allowedHosts`, whose empty
+default disables absolute redirects entirely. No property turns either check off, on either side.
+
+## 5d · Page response — jhonstart's `Response`, adapted by onze over rakun's `ChunkWriter`
+
+```bp
+// jhonstart front 30 — what the render writes to
+pub type Response(
+    status: fn(code: i32) -> void,
+    header: fn(name: string, value: string) -> void,
+    write:  fn(chunk: string) -> @Future<void>,
+    close:  fn() -> @Future<void>,
+);
+
+// rakun front 23 — what a page renderer is handed
+pub type ChunkWriter(setStatus: fn(code: i32) -> void, setHeader: fn(name: string, value: string) -> void,
+                     write: fn(string) -> @Future<void>, close: fn() -> @Future<void>);
+pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Future<void>;
+
+// onze front 49 — the whole adapter; no `case` on a signal
+rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> @Future<void> {
+    return site.renderStream(input(req), requestData(req), Response(
+        status: fn(c) { out.setStatus(c); },
+        header: fn(n, v) { out.setHeader(n, v); },
+        write:  fn(chunk) { return out.write(chunk); },
+        close:  fn() { return out.close(); },
+    ));
+});
+```
+
+Status and headers are legal only before the first `write`; after it, `status` / `setStatus` and
+`header` / `setHeader` fail — the render on jhonstart's side, the request on rakun's. jhonstart calls
+`close` exactly once on every path (a page, a signal before the first chunk, a late signal); rakun
+closes the response only when the renderer's future resolves with it still open, and any call after
+`close` fails the request. A page with no signal is `200` with `Content-Type: text/html;
+charset=utf-8`, set by the render before its first `write`. Neither type names the other package;
+the literal both sides assert is the byte sequence on the socket for a page, a pre-first-chunk
+`redirect("/login")` (`307`, `location: /login`, empty body) and a pre-first-chunk `notFound()`
+(`404`, the not-found document) — rakun front 23 with a stub renderer, jhonstart front 30 with a
+recording `Response`. Owned by jhonstart front 30; consumed by rakun 23 and onze 49 (decision 117).
 
 ## 5c · Two small contracts between rakun fronts
 

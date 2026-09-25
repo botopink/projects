@@ -17,12 +17,12 @@ Paths are relative to the repository named in the section or row.
 
 ```
 wave 0    01-std ──────────────────────────────┐   asserts.bp · snapshots.bp · @src() · the
-          (std enablement 01/02/03 as before)  │   old onze dir removed · onze13 → onze rename
+          (std enablement 01/02/03 as before;  │   old onze dir removed · onze13 → onze rename
+           01 also json writers + json.decode) │
           01-std/04-routing-lib ───────────────┤   libs/routing: the matcher and the routing
                                                │   wires rakun 22 and jhonstart 26 import
           01-std/05-actions-lib ───────────────┤   libs/actions: the action protocol (24 · 67)
           01-std/06-validation-lib ────────────┤   libs/validation: rakun-validation, moved
-          01-std/07-std-json-writers ──────────┤   json.quote and the writers · escape.scriptJson
                                                │
 wave 1    02-packaging ────────────────────────┤   lands ALONGSIDE each library's first front:
           modules/<lib>/ · modules/<lib>-test/ │   rakun 04 · jhonstart 94 · emilia 54 · onze 49
@@ -140,7 +140,7 @@ test story stands on, and one compiler carve-out.
 
 | Front | Source it owns | Tests it owns |
 |---|---|---|
-| **F01 std-lib-enablement** | `src/net.bp`, `src/process.bp`, `src/path.bp`, `src/clock.bp`, `src/random.bp`, `src/regex.bp`, `src/encoding.bp`, `src/hmac.bp`, `src/escape.bp`, `src/root.bp` (exports only) | inline `test` blocks at the foot of each `src/*.bp` it owns |
+| **F01 std-lib-enablement** | `src/net.bp`, `src/process.bp`, `src/path.bp`, `src/clock.bp`, `src/random.bp`, `src/regex.bp`, `src/encoding.bp`, `src/hmac.bp`, `src/escape.bp` (with `scriptJson`), `src/root.bp` (exports only) · `src/json.bp`'s additions only — `quote`, `unquote`, `array`, `object`, `Json` and `decode`, at the foot; `parse` / `stringify` untouched (decisions 116, 117) | inline `test` blocks at the foot of each `src/*.bp` it owns |
 | **F02 std-async-primitives** | `src/async.bp` | inline `test` blocks in `src/async.bp` |
 | **F03 std-content-hash** | `src/content_hash.bp` | inline `test` blocks in `src/content_hash.bp` |
 
@@ -151,14 +151,11 @@ rakun's erlang runtime):
 | Front | Source it owns | Tests it owns |
 |---|---|---|
 | **routing-lib** ([`01-std/04-routing-lib/`](./01-std/04-routing-lib/README.md)) | `repository/botopink-lang/libs/routing/**` — `segment`, `table`, `match` (ported from rakun's `file_router.bp`), `route_kinds` (front 60's `k` codec), `slot_states` (61's `z` codec), `url_rules` (65's `canonicalize` / `clientHref` / redirect-table codec), `navigation` (63's signal vocabulary and `n` codec, `nav:` reasons — decision 116), `pattern` (rakun-web's `:param` grammar — decision 116) · **by carve-out from `00`**: the bundled-package registry in `build.zig` and the `"std"` package checks it generalises (named in its README) | `libs/routing/test/**`, both targets |
-| **actions-lib** ([`01-std/05-actions-lib/`](./01-std/05-actions-lib/README.md)) | `repository/botopink-lang/libs/actions/**` — `state` (`ActionState`, the `state` grammar), `envelope` (the v1 envelope, its flat form, `parseActionState`), `rpc` (the JSON-RPC body), `refresh` · the name `actions` in the bundled-package list (decision 116) | `libs/actions/test/**`, both targets |
+| **actions-lib** ([`01-std/05-actions-lib/`](./01-std/05-actions-lib/README.md)) | `repository/botopink-lang/libs/actions/**` — `state` (`ActionState`, the `state` grammar), `envelope` (the v1 envelope, read with std's `json.decode`, `parseActionState` — decision 117), `rpc` (the JSON-RPC body), `refresh` · the name `actions` in the bundled-package list (decision 116) | `libs/actions/test/**`, both targets |
 | **validation-lib** ([`01-std/06-validation-lib/`](./01-std/06-validation-lib/README.md)) | `repository/botopink-lang/libs/validation/**` — rakun front 14's `modules/rakun-validation` moved (all but `boot.bp`), the message source injected, the host tables as inline templates · the name `validation` in the bundled-package list (decision 116) | `libs/validation/test/**`, both targets |
 
-One std front of decision 116 edits std itself, beside F01–F03:
-
-| Front | Source it owns | Tests it owns |
-|---|---|---|
-| **std-json-writers** ([`01-std/07-std-json-writers/`](./01-std/07-std-json-writers/README.md)) | `src/json.bp` (`quote`, `unquote`, `array`, `object` — added at the foot; `parse` / `stringify` untouched) · `src/escape.bp` (`scriptJson`, appended after F01's four) | inline `test` blocks at the foot of both files |
+The bundled libraries ship `.bp` files only: target-native code is an inline `#[@External]`
+template, and no `.erl` / `.mjs` sidecar exists under `libs/` (decision 117).
 
 `src/root.bp` is the one shared file in track A. F01 owns it; F02 and F03 hand F01 their export
 lines rather than editing it, and F01 lands last of the three.
@@ -226,14 +223,14 @@ Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that i
 | **F20 websocket** | rakun-web | `modules/rakun-web/src/websocket/**`, `modules/rakun-web/test/websocket/**` | `modules/rakun-web/test/websocket/**` |
 | **F21 hateoas** | rakun-hateoas | `modules/rakun-hateoas/src/**`, `modules/rakun-hateoas/test/**` | `modules/rakun-hateoas/test/**` |
 | **F22 file-routing** | rakun-core | `src/file_router.bp` (the registry: `R` handlers, the opaque `PageRenderer` per page pattern, the UI records onze copies in, the scan; the matcher is imported from the bundled library `routing` — decision 115, `01-std/04-routing-lib`), `src/sidecars/rakun_file_router.erl` | `test/file_router_test.bp` |
-| **F23 ssr-pipeline** | rakun-core | `src/ssr.bp` (page serving: route → the route's `PageRenderer` onze registered → chunks through `ChunkWriter`), `src/sidecars/rakun_ssr.erl` | `test/ssr_test.bp` |
+| **F23 ssr-pipeline** | rakun-core | `src/ssr.bp` (page serving: route → the route's `PageRenderer` onze registered → chunks, status and headers through `ChunkWriter` — `setStatus` / `setHeader` before the first write; no page signal is translated — decision 117), `src/sidecars/rakun_ssr.erl` | `test/ssr_test.bp` |
 | **F24 server-actions** | rakun-core | `src/actions.bp` (the action id, the checks, dispatch over the wire names onze configures; the envelope, `state` and RPC texts are the bundled library `actions` — decision 116; the form markup is F67's) | `test/actions_test.bp` |
 | **F25 route-handlers** | rakun-core | `src/route_handler.bp`, `test/route_handler_test.bp` | `test/route_handler_test.bp` |
 
 | **F60 static-generation** | rakun-core | `src/static_gen.bp`, `src/segment_config.bp` (the `k` blob codec the browser reads is `routing`'s `route_kinds`), | `test/static_gen_test.bp` |
 | **F61 parallel-intercepting-routes** | rakun-core | `src/route_slots.bp`, `src/route_intercept.bp` (the `z` codec is `routing`'s `slot_states`), | `test/parallel_routes_test.bp` |
 | **F62 request-context** | rakun-core | `src/request_context.bp`, `src/request_memo.bp`, | `test/request_context_test.bp` |
-| **F63 navigation-signals** | rakun-core | `src/navigation.bp` (the throw, the capture, the redirect checks, the response composition; the vocabulary and the `n` codec are `routing`'s `navigation` — decision 116), `src/sidecars/rakun_navigation.erl` | `test/navigation_test.bp` |
+| **F63 navigation-signals** | rakun-core | `src/navigation.bp` (the signals of server actions and route handlers only — page signals are jhonstart's, decision 117: the throw, the capture, the redirect checks, the response composition; the vocabulary and the `n` codec are `routing`'s `navigation` — decision 116), `src/sidecars/rakun_navigation.erl` | `test/navigation_test.bp` |
 | **F64 i18n-routing** | rakun-core | `modules/rakun-i18n/botopink.json`, | `test/i18n_test.bp` |
 | **F65 url-rules** | rakun-web | `modules/rakun-web/src/rules/**` (`canonicalize`, `clientHref` and the redirect-table codec are `routing`'s `url_rules`), | `test/url_rules_test.bp` |
 | **F66 metadata-file-routes** | rakun-core | `src/metadata_routes.bp`, | `test/metadata_routes_test.bp` |
@@ -277,8 +274,8 @@ rakun targets erlang (decision 113): the core member is `"target": "erlang"`, `"
 ["erlang"]`, and so is every other member and the workspace root — what both sides run is a bundled
 library, not a rakun member: the matcher and the navigation vocabulary are `routing` (decisions 115,
 116), the action protocol is `actions`, and validation is `validation` (decision 116, which removed
-`rakun-validation`, the last member on commonJS); `rakun-test` follows the members it tests; erlang
-is the default target of `botopink run` / `test` in rakun. `repository/rakun/botopink.json` declares
+`rakun-validation`, the last member on commonJS); `rakun-test` is `["erlang"]` too — every rakun
+manifest is (decision 117); erlang is the default target of `botopink run` / `test` in rakun. `repository/rakun/botopink.json` declares
 `"targets": ["commonJS"]` at HEAD, so until front 04 sets those arrays **no rakun front can have a
 green erlang row** — which would make the exit gate unfalsifiable for the whole of track B. That
 change is front 04's, together with deleting `runtime.mjs` and the node server when it closes, and
@@ -297,11 +294,11 @@ README under *Blocked*; it does not edit them. `runtime.mjs` is F04's to delete 
 
 | Front | Source it owns | Tests it owns |
 |---|---|---|
-| **F26 router** | `src/router.bp` (promoted from `router.d.bp`, and the package's one `pairValue` pair-list decoder), `test/router_test.bp` | `test/router_test.bp` |
+| **F26 router** | `src/router.bp` (promoted from `router.d.bp`, and the package's one `pairValue` pair-list decoder; `clientApp` and the client half of page signals — decision 117), `test/router_test.bp` | `test/router_test.bp` |
 | **F27 link** | `src/link.bp`, `src/reconcile.bp` (the client-navigation reconciler), `test/link_test.bp`, `test/reconcile_test.bp` | `test/link_test.bp` |
 | **F28 server-components** | `src/server.bp` (promoted from `server.d.bp`), `test/server_test.bp` | `test/server_test.bp` |
 | **F29 client-directive** | `src/client.bp`, `test/client_test.bp` | `test/client_test.bp` |
-| **F30 render and streaming** | `src/render.bp` (the escaping walker, composition, the document, the payload — contract 2), `src/plugin.bp` (`RenderPlugin`, contract 6a), `src/globals.bp` (the `__bp<N>` registry), `src/render.mjs`, `src/streaming.bp`, `src/suspense.bp`, `src/routes.bp` (the UI file conventions — `#[page]` / `#[layout]` / `#[template]` / `#[defaultView]`, `PageContext`, `LayoutProps`, the parameter accessors; decision 114) with `src/routes.mjs` and `src/sidecars/jhonstart_routes.erl`, `test/render_test.bp`, `test/streaming_test.bp` · the bridge member `modules/jhonstart-emilia/**` (decision 113) | `test/render_test.bp`, `test/streaming_test.bp`, `modules/jhonstart-emilia/test/**` |
+| **F30 render and streaming** | `src/render.bp` (the escaping walker, composition, the document, the payload — contract 2), `src/plugin.bp` (`RenderPlugin`, contract 6a), `Response` and the page-signal translation (contract 5d, decision 117), `src/globals.bp` (the `__bp<N>` registry: `payload`, `fill`, `signal`), `src/render.mjs`, `src/streaming.bp`, `src/suspense.bp`, `src/routes.bp` (the UI file conventions — `#[page]` / `#[layout]` / `#[template]` / `#[defaultView]`, `PageContext`, `LayoutProps`, the parameter accessors; decision 114) with `src/routes.mjs` and `src/sidecars/jhonstart_routes.erl`, `test/render_test.bp`, `test/streaming_test.bp` · the bridge member `modules/jhonstart-emilia/**` (decision 113) | `test/render_test.bp`, `test/streaming_test.bp`, `modules/jhonstart-emilia/test/**` |
 | **F31 error-boundaries** | `src/error_boundary.bp`, `test/error_boundary_test.bp` | `test/error_boundary_test.bp` |
 | **F32 metadata** | `src/metadata.bp`, `test/metadata_test.bp` | `test/metadata_test.bp` |
 
@@ -432,8 +429,7 @@ files by design and are made disjoint by the banner convention above.
 | `00 · 23-std-purity` · `01-std` | `libs/std/src/**`, `root.bp`, `build.zig`'s `stdPkgFilesFromRoot` | 23 moves the modules fronts 01/02/03 land flat; it opens only after all three are merged, and `libs/std/src/**` is 23's from then until it lands |
 | `00 · 23-std-purity` · `01-std/04-routing-lib` | `build.zig`'s package registry, the `emitUse` of each backend, the CLI resolver's `"std"` exemption | routing-lib's bundling step is a **named carve-out** of `00`'s files, granted like `@src()`'s, and opens after 23 lands; its library steps (`libs/routing/**`) share nothing and run from wave 0 |
 | `01-std/04-routing-lib` · `05-actions-lib` · `06-validation-lib` | the bundled-package list in `build.zig` | 04 introduces the list (`std`, `routing`); 05 and 06 each add one name after 04's Step 2, under the same carve-out; their `libs/<name>/**` share nothing |
-| F01 · `01-std/07-std-json-writers` | `libs/std/src/escape.bp` | F01 creates it; 07 appends `scriptJson` after F01 merges and edits none of F01's four functions. 07's `json.bp` additions share nothing with F01 (`json.bp` is on F01's *Does not touch* list) |
-| `00 · 23-std-purity` · `01-std/07-std-json-writers` | `libs/std/src/json.bp`, `escape.bp` | 07 lands before 23 opens or after 23 lands, never while 23 holds `libs/std/src/**`; both files keep their root path through the move |
+| `00 · 23-std-purity` · F01's JSON steps | `libs/std/src/json.bp`, `escape.bp` | the writers, `scriptJson` and `json.decode` (decision 117, folded into F01) land before 23 opens or after 23 lands, never while 23 holds `libs/std/src/**`; both files keep their root path through the move |
 | `00 · 21` / `22` / `23` · `03-rakun` · `04-jhonstart` · every `-test` member | jhonstart's `#[@context]` / `@Context<` sites (21), rakun's and jhonstart's `loop (` sites (22), every `from "std"` line (23) | Each is a named sweep landed through `scripts/known-red-libs.txt`: the compiler commit lands with the library in the ledger, the library sweep follows, the ledger line is deleted in the next compiler commit — adjacent commits, never a standing red |
 
 
@@ -508,7 +504,7 @@ land in wave 1; the wave below is its host half, which is what the fronts citing
 
 | Wave | Fronts | Blocked by |
 |---|---|---|
-| **0** | 01 · 02 · 03 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` · `01-std/04-routing-lib` · `05-actions-lib` · `06-validation-lib` · `07-std-json-writers` (the libraries) | nothing — except `@src()`, which needs `00`'s carve-out granted, and the bundling steps of 04 / 05 / 06, which wait on `00 · 23-std-purity` (05 also waits on F01's `encoding` and 07; 07's `scriptJson` on F01's `escape.bp`) |
+| **0** | 01 · 02 · 03 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` · `01-std/04-routing-lib` · `05-actions-lib` · `06-validation-lib` (the libraries) | nothing — except `@src()`, which needs `00`'s carve-out granted, and the bundling steps of 04 / 05 / 06, which wait on `00 · 23-std-purity` (05 also waits on F01's `encoding`, JSON writers and `json.decode`) |
 | **1** | 04 · 05 · 26 · 56 | 01 · 54 · 94 · routing-lib |
 | **2** | 06 · 22 · 27 · 28 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 26 · 56 · routing-lib |
 | **3** | 07 · 08 · 11 · 13 · 14 · 15 · 19 · 21 · 23 · 29 · 31 · 32 · 36 · 37 · 38 · 39 · 40 · 41 · 42 · 43 · 44 · 45 · 46 · 47 · 59 · 72 | 06 · 22 · 28 · 33 · 34 · 35 · 62 |

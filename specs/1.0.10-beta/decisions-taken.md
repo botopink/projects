@@ -1675,7 +1675,7 @@ and rakun. `actions` and `validation` join `01-std/04-routing-lib`'s bundled-pac
    same import.
 
 8. **std `escape` gains `scriptJson`**: JSON placed inside a `<script>` element, escaping `&`, `<`,
-   `>` (as `&`, `<`, `>`) and U+2028 / U+2029 (as ` `, ` `) — the escape a
+   `>` (as `\u0026`, `\u003c`, `\u003e`) and U+2028 / U+2029 (as `\u2028`, `\u2029`) — the escape a
    payload needs and neither `escape.html` nor `escape.jsString` gives. jhonstart front 30's payload
    writer uses it; its private `payloadEscape` leaves.
 
