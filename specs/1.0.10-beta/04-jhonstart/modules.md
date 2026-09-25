@@ -56,7 +56,7 @@ One criterion decides core versus submodule, and it is checkable by grep: **core
 | `jhonstart-html` | `html.bp` | — (v0) | yes (one import line changes at the move, § 1.3) |
 | `jhonstart-html` | `html_attrs.bp` | 48 (track D) | — |
 | `jhonstart-link` | `link.bp`, `reconcile.bp` | 27 | — |
-| `jhonstart-forms` | `form.bp`, `form_state.bp` | 67 | — |
+| `jhonstart-forms` | `form.bp` | 67 | — |
 | `jhonstart-emilia` | `root.bp` (`plugin()`) | 30 | — |
 | `jhonstart-test` | one `assert_<subject>.bp` per front + `harness.bp` | all nine (§ 5) | — |
 
@@ -89,7 +89,7 @@ pub mod elements;        // front 94
 | `html.bp:92` | `import {Element} from "element";` | `import {Element} from "jhonstart";` | `element` is no longer a sibling module; `html.bp` is frozen for content, and this is the one line the relocation touches — the same allowance front 95 makes for `html_test.bp` |
 | `html_attrs.bp` (48) | "imports only `element`" | `import {Element} from "jhonstart";` | same |
 | `link.bp`, `reconcile.bp` (27) | `import {Element} from "element";` | `import {Element, RouterState} from "jhonstart";` | 27 reads `RouterState.segments()` for `layoutKeys` |
-| `form.bp`, `form_state.bp` (67) | `from "element"` | `import {Element, push, form, input, …} from "jhonstart"; import {prefetch} from "jhonstart-link";` | 67 depends on 26 (`push`), 27 (prefetch), 94 (constructors) |
+| `form.bp` (67) | `from "element"` | `import {Element, push, form, input, …} from "jhonstart"; import {prefetch} from "jhonstart-link";` | 67 depends on 26 (`push`), 27 (prefetch), 94 (constructors) |
 
 Every other `import {…} from "<sibling>"` in the fronts' step code stays a sibling import because both files land in the same submodule (`server.bp` ← `router`'s `pairValue`; `streaming.bp` ← `suspense`'s `Boundary`).
 
@@ -109,7 +109,7 @@ The fronts and their examples write `import {…} from "jhonstart"` for every sy
 | `Metadata`, `OpenGraph`, `TwitterCard`, `Icons`, `Viewport`, `emptyMetadata`, `emptyOpenGraph`, `mergeMetadata`, `mergeViewport`, `renderHead`, `renderViewport`, `pick`, `pickList`, `applyTemplate` (32) | `from "jhonstart"` |
 | `html` (DSL) · `html_attrs` surface (48) | `from "jhonstart-html"` |
 | `Link`, `LinkProps`, `linkProps`, `withPrefetch`/`withReplace`/`withScroll`/`withTarget`/`withClass`, `prefetchMode`, `layoutKey`, `layoutKeys`, `sharedDepth`, `reconcile`, `LinkStatus`, `linkStatus`, `linkMount`, `__jhLinkPrefetch` (27) | `from "jhonstart-link"` |
-| `ActionState`, `newActionState`, `parseActionState`, `FormBinding`, `formAction`, `formAttrs`, `hiddenActionField`, `actionState`, `FormStatus`, `formStatus`, `optimistic`, `applyOptimistic`, `SearchFormProps`, `searchFormProps`, `searchFormAttrs`, `formMount` (67) | `from "jhonstart-forms"` |
+| `FormBinding`, `formAction`, `formAttrs`, `hiddenActionField`, `actionState`, `FormStatus`, `formStatus`, `optimistic`, `applyOptimistic`, `SearchFormProps`, `searchFormProps`, `searchFormAttrs`, `formMount`, `invokeAction` (67) — `ActionState`, `newActionState` and `parseActionState` are the bundled library `actions`' (decision 116), imported `from "actions"` | `from "jhonstart-forms"` |
 | `assertHtml`, `assertStream`, … (§ 5) | `from "jhonstart-test"` (dev) |
 
 ## 2 · Candidate verdicts
@@ -125,9 +125,9 @@ The starting proposal was one submodule per front name. Each candidate against f
 | `jhonstart-server` | **merge into core** | `server.bp` reads the `RequestData` the render received — the server render itself. A core without it has nothing to render. |
 | `jhonstart-client` (29) | **merge into core** | `Island`, `clientMount`, `islandEntry`, `serverSlot` are called by front 30's render during the BEAM pass to build the payload's `i` rows; `#[client]`/`#[clientProps]` are applied in component files that are server-rendered. The one browser cell, `hydrate()`, is the per-island entry point front 68's generated module imports — one import from core. Splitting 29 would make the server pipeline depend on a submodule named "client". |
 | `jhonstart-streaming` | **merge into core** | `Suspense`/`resolve`/`fillHtml`/`shellHtml` are the flush contract of front 30's render, which lives beside them; erlang, with `render.mjs` as the browser half. |
-| `jhonstart-errors` | **merge into core** | `renderBoundaryChecked` is what front 30's `compose` calls around every segment; `isSignal` is front 63's discriminator; `global-error.bp` needs 94's `htmlTag`/`body`, both core. |
+| `jhonstart-errors` | **merge into core** | `renderBoundaryChecked` is what front 30's `compose` calls around every segment; `isSignal` is `routing`'s `navigation.isSignalReason` (decision 116); `global-error.bp` needs 94's `htmlTag`/`body`, both core. |
 | `jhonstart-metadata` | **merge into core** | `renderHead`/`mergeMetadata` run inside front 30's document build; imports `pairValue` (core) and std `escape`. |
-| `jhonstart-forms` | **keep** | Front 67 alone: `form.bp` + `form_state.bp`. js target; the deepest front in the track; the only jhonstart code pinned to a **rakun** contract literal (front 24's envelope and golden `state` fixture). A read-only site ships without it. Depends on core (`push`, `form`/`input`/`button`/`label`) and on `jhonstart-link` (`__jhLinkPrefetch` for the GET `<Form>`). Nothing depends on it. |
+| `jhonstart-forms` | **keep** | Front 67 alone: `form.bp`. js target; the deepest front in the track; it reads front 24's envelope and writes the JSON-RPC body through the bundled library `actions` (decision 116), so no contract literal is pinned on both sides. A read-only site ships without it. Depends on core (`push`, `form`/`input`/`button`/`label`) and on `jhonstart-link` (`__jhLinkPrefetch` for the GET `<Form>`). Nothing depends on it. |
 | `jhonstart-elements` (94) | **merge into core** | Front 94's own acceptance: "a reader cannot tell from a call site whether a tag came from `element.bp` or from `elements.bp`", and `isVoidTag`/`isRawTextTag` are consumed by front 30's `renderNode`. |
 | `jhonstart-emilia` | **keep** (new) | Decision 113's bridge: `plugin()` implements front 30's asynchronous `RenderPlugin` over emilia's `#[@future] flush()` and contributes the payload's `s` key (decision 114). A submodule because it is the one member that depends on emilia — core must not (a consumer without emilia ships without it), and emilia imports nobody. Owned by front 30. Its test is where the contract-4 class literal meets the rendered document, since core cannot import emilia — the one test that renders emilia classes with jhonstart (emilia's former integration test, decision 114). |
 | `jhonstart-hooks` | **drop** | Frozen `hooks.bp`, imports `Element`, one file — front 95's "would produce submodules with one file each". |
@@ -139,7 +139,8 @@ Net: **six directories** — core, `-html`, `-link`, `-forms`, `-emilia`, `-test
 
 ```
                     std (01 escape · 02 async · 03 hash · querystring · testing.asserts · testing.snapshots)
-                    routing (bundled, decision 115: table · match · route_kinds · slot_states · url_rules)
+                    routing (bundled, decisions 115/116: table · match · route_kinds · slot_states · url_rules · navigation · pattern)
+                    actions (bundled, decision 116: state · envelope · rpc · refresh — 26 and 67)
                      │
                      ▼
               ┌── jhonstart ──────────────────────────────────────────────────────────┐
@@ -174,7 +175,7 @@ Edges are `botopink.json` dependencies. Three facts the graph encodes:
 | `jhonstart` | `["erlang", "commonJS"]` | **both** — 94's constructors must produce the identical `Element` on both; 26/28/30/31/32 assert on erlang; 29's markers assert on both | the server pass renders every module; front 68 re-renders the same code in the browser |
 | `jhonstart-html` | `["erlang", "commonJS"]` | both — the DSL is comptime; its output is a builder pipeline that runs wherever the builders do | same |
 | `jhonstart-link` | **unsettled — see the amendment at the top** | the pure half (`link.bp`, `reconcile.bp`) gates on **both**, as landed: 35 assertions, no host cell reached. The four `#[@External.Node]` cells are front 68's and cannot join a member that declares erlang unless nothing on that row calls them | `Link` is pure and is rendered by the server — which is exactly why the pure half and the cells cannot share one `targets` array without a decision |
-| `jhonstart-forms` | `["commonJS", "erlang"]` | **commonJS** — `form_state_test.bp` would pass on erlang and is deliberately not claimed there | `formAttrs`/`hiddenActionField` render in the server pass — the progressive-enhancement markup |
+| `jhonstart-forms` | `["commonJS", "erlang"]` | **commonJS** — the envelope's own tests are `libs/actions`', on both targets | `formAttrs`/`hiddenActionField` render in the server pass — the progressive-enhancement markup |
 | `jhonstart-emilia` | `["erlang", "commonJS"]` | **both** — the plugin runs wherever front 30's render does | the render runs on erlang; the manifest matches core's so the bridge never narrows it |
 | `jhonstart-test` | `["erlang", "commonJS"]` | runs under whichever target the consuming suite runs | helpers are pure over strings |
 
@@ -214,7 +215,7 @@ One source directory per front. The `jhonstart-test` column is the helper file e
 | **30** render and streaming | `modules/jhonstart/src/` · `modules/jhonstart-emilia/` | `suspense.bp`, `streaming.bp`, `render.bp`, `plugin.bp`, `globals.bp`, `render.mjs` · the bridge's `botopink.json`, `src/root.bp`, `test/` | `assert_stream.bp`, `assert_render.bp`, `renderToStream` | both |
 | **31** error-boundaries | `modules/jhonstart/src/` | `error_boundary.bp` | `assert_error_boundary.bp` | erlang |
 | **32** metadata | `modules/jhonstart/src/` | `metadata.bp` | `assert_metadata.bp` | erlang |
-| **67** forms | `modules/jhonstart-forms/src/` | `form.bp`, `form_state.bp`, `root.bp`, `botopink.json` | `assert_form.bp`, `stubEnvelope` | commonJS |
+| **67** forms | `modules/jhonstart-forms/src/` | `form.bp`, `root.bp`, `botopink.json` | `assert_form.bp`, `stubEnvelope` | commonJS |
 | *48 (track D)* | `modules/jhonstart-html/src/` | `html_attrs.bp` | — (tested from emilia) | both |
 | *— (v0, frozen)* | `modules/jhonstart/src/` · `modules/jhonstart-html/src/` | `element.bp`, `hooks.bp` · `html.bp` | — | both |
 
@@ -227,12 +228,12 @@ Tests: each front's `test/<name>_test.bp` moves with its source into the same su
 | emilia (D) | **48** attributes | 48 owns `modules/jhonstart-html/src/html_attrs.bp` — the only cross-repo file. jhonstart stays emilia-unaware; `[class]={expr}` reaches `attrs` (`html.bp:234-241`) and emilia's `html_hook.bp` produces the class string without importing jhonstart. | a `#("class", "e_<hex>")` pair, nothing else |
 | emilia (D) | **56** cascade-and-output | `flush()` is what the `jhonstart-emilia` bridge (front 30) awaits from `RenderPlugin.head` / `chunk`; the classes it flushed become the payload's `s` through `RenderPlugin.payload`; emilia does not change for it and imports nobody. The bridge's test asserts contract 4's class literal on the jhonstart side. | the `<style>` string `flush()` returns |
 | rakun (B) | **23** ssr-pipeline | Imports nothing from jhonstart. It matches the route, opens the request scope, calls the opaque `PageRenderer` onze registered and writes the chunks front 30's `renderStream` hands the writer onze built over rakun's `ChunkWriter` — both ends wired by onze. | the chunk strings; the render outcome (`""` or a signal reason) that onze turns into a status |
-| rakun (B) | **24** server-actions | Owns the action id and envelope that `jhonstart-forms` carries and decodes; builds no markup — the form is 67's, and the id reaches it through onze. | the golden `state` fixture, asserted verbatim on both sides |
-| rakun (B) | **22** file-routing · **62** request-context · **63** navigation-signals · **66** metadata-file-routes | 22 scans `app/` for `loading.bp`/`error.bp`/`not-found.bp`/`global-error.bp` and specifies the matcher, which 26 imports from the bundled `routing` as rakun does; 62's request is what onze turns into the `RequestData` the render receives; 63's `jhonstart:` reasons are the ones `isSignal` and 31's own `notFound()` spell (a contract literal, `contracts.md § 5b`); 66 serves the paths `openGraph.images` names. | route table `t`; the `RequestData` onze builds; the signal prefix; image paths |
+| rakun (B) | **24** server-actions | Owns the action id and envelope that `jhonstart-forms` carries and decodes; builds no markup — the form is 67's, and the id reaches it through onze. | the envelope and the RPC body, through the bundled library `actions` (decision 116) — no literal asserted on both sides |
+| rakun (B) | **22** file-routing · **62** request-context · **63** navigation-signals · **66** metadata-file-routes | 22 scans `app/` for `loading.bp`/`error.bp`/`not-found.bp`/`global-error.bp` and specifies the matcher, which 26 imports from the bundled `routing` as rakun does; 62's request is what onze turns into the `RequestData` the render receives; the `nav:` reasons 63 and 31's own `notFound()` raise are `routing`'s `navigation` vocabulary (decision 116), which `isSignal`, 26 (`signalFromWire`) and 30 (the late signal) import; 66 serves the paths `openGraph.images` names. | route table `t`; the `RequestData` onze builds; the `nav:` reasons, through `routing`; image paths |
 | onze (E) | **49** stand-up | Boots the app: `app(plugins: [emiliaPlugin()])`, fills `RenderHooks`, copies front 30's `uiTable()` into rakun's table, registers one `PageRenderer` per page calling `renderStream(input, req, write)`, hands the action wire names to 67 and rakun (26 imports the matcher from `routing` itself). | the plugin list; `PageInput`; the `RequestData`; the writer; `actionField` / `actionHeader` |
 | onze (E) | **68** client-bundle | Generates the entry that calls `registerFill(globals.fill, …)`, `registerSignal(globals.signal)`, `hydrate()`, `linkMount()`, `formMount()`; enforces 29's boundary rules over the module graph. | `__jhClient_<Name>` markers; the `server-only` import predicate |
 | onze (E) | **53** example-app | The first place a browser is in the loop; imports every symbol in § 1.4. | — |
-| std (A) | **01** · **02** · **03** | `escape.html`/`escape.attribute` (28, 32); `async` spawn/gather over thunks (30); `hash.contentHash` (31). | — |
+| std (A) | **01** · **02** · **03** · **07** | `escape.html`/`escape.attribute` (28, 32); `encoding.formParse`/`formStringify` (26, 28 — decision 116); `async` spawn/gather over thunks (30); `hash.contentHash` (31); `json.quote`/`array`/`object` and `escape.scriptJson` (30's payload, `07-std-json-writers`). | — |
 
 ## 8 · `repository/jhonstart/examples/**`
 

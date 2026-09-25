@@ -4,7 +4,7 @@
 **Priority:** critical — this is the front the whole server/client split exists for; without it every component is a client component and the BEAM render has nothing to render
 **Target:** erlang (server)
 **Wave:** 4
-**Depends on:** 26 · 01 (escaping) · 30 (payload envelope, read-only; its `render` / `renderStream` receive the `RequestData` and enter it) · 94 (element builders used by the examples) — and no rakun module: the request reaches jhonstart as a `RequestData` onze builds from rakun's `Request` and hands to the render (decision 114, item 8)
+**Depends on:** 26 · 01 (escaping, `encoding.formParse`) · 30 (payload envelope, read-only; its `render` / `renderStream` receive the `RequestData` and enter it) · 94 (element builders used by the examples) — and no rakun module: the request reaches jhonstart as a `RequestData` onze builds from rakun's `Request` and hands to the render (decision 114, item 8)
 **Owns:** `repository/jhonstart/src/server.bp` (promoted from `server.d.bp`), `repository/jhonstart/test/server_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (front 26), `src/link.bp` (front 27), `src/client.bp` (front 29), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` · `§ 9. Busca de Dados (Fetching)` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/getting-started/server-and-client-components · https://nextjs.org/docs/app/getting-started/fetching-data
@@ -113,8 +113,9 @@ onze builds a `RequestData` from rakun's `Request` and passes it to front 30's
 `headers()` and `cookies()` read the value the render entered, from jhonstart's own
 `jhonstart_server` module (Step 2). No rakun code calls into jhonstart and no jhonstart cell names a
 rakun module — the two share nothing at run time. The stored encoding is the same `k=v&k=v` string
-front 26 uses, decoded by front 26's `decodePairs`; if it changes, this file changes and nothing else
-in jhonstart does.
+front 26 uses, decoded with std's `encoding.formParse` — the one percent-aware pair codec on both
+sides of the stack (decision 116 rule 4; front 26's stand-in `decodePairs` is deleted); if it
+changes, this file changes and nothing else in jhonstart does.
 
 `after()`, `connection()`, `draftMode()` and per-request memoization stay **front 62**'s
 (`rakun-request-context`): an application that needs them imports rakun itself. This front neither
@@ -155,7 +156,8 @@ the only escaping it performs is front 01's on values it renders into markup.
 ```bp
 // src/server.bp
 import {Element} from "element";
-import {pairValue, decodePairs} from "router";     // provided by front 26
+import {pairValue} from "router";                 // provided by front 26
+import {encoding} from "std";                     // formParse — decision 116 rule 4
 
 pub type RequestData(
     method: string,
@@ -209,11 +211,12 @@ sibling reds the **commonJS compile** at the wrapper's call site (`` `__jhMethod
 refusal is right under decision 67, and whether it can be owed by the **reachable call** rather than
 by the declaration's presence is a compiler row in `status.md`.
 
-The pair decoder is **front 26's `decodePairs`**, not `std/querystring`: `querystring.bp:22` emits a
-bare `slice/3` it never defines, `erlc` refuses the module and the runner skips it silently on the
-erlang row (worktree `.tasks/std-slice-shim`), and this front's gate is erlang. It also satisfies
-this track's "one pair-list decoder in the package" principle, so it stands whether or not std is
-fixed.
+The pair decoder is std's **`encoding.formParse`** (`01-std-lib-enablement` Step 3), not
+`std/querystring` — `querystring` is escape-naive, and `querystring.bp:22` emits a bare `slice/3` it
+never defines (worktree `.tasks/std-slice-shim`). The landed code used front 26's stand-in
+`decodePairs`, which does not percent-decode; decision 116 rule 4 deletes it, so a cookie or query
+value carrying `%20` reads as a space here exactly as it does in rakun. `pairValue` stays front 26's
+one lookup over the decoded list.
 
 ```bp
 #[@External.Node("./server_runtime.mjs", "method"),
@@ -231,19 +234,19 @@ pub fn request() -> RequestData {
     return RequestData(
         method: __jhMethod(),
         path: __jhPath(),
-        params: decodePairs(__jhParams()),
-        query: decodePairs(__jhQuery()),
-        headers: decodePairs(__jhHeaders()),
-        cookies: decodePairs(__jhCookies()),
+        params: encoding.formParse(__jhParams()),
+        query: encoding.formParse(__jhQuery()),
+        headers: encoding.formParse(__jhHeaders()),
+        cookies: encoding.formParse(__jhCookies()),
     );
 }
 
 pub fn cookies() -> Array<#(string, string)> {
-    return decodePairs(__jhCookies());
+    return encoding.formParse(__jhCookies());
 }
 
 pub fn headers() -> Array<#(string, string)> {
-    return decodePairs(__jhHeaders());
+    return encoding.formParse(__jhHeaders());
 }
 ```
 

@@ -6,7 +6,7 @@
 **Wave:** 0
 **Depends on:** none — only the already-public `Element` record (`element.bp:3-8`)
 **Owns:** `repository/jhonstart/src/elements.bp` (plus its inline `test` blocks), `repository/jhonstart/test/elements_test.bp`, `repository/jhonstart/src/root.bp`, `repository/jhonstart/botopink.json`
-**Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/suspense.bp`/`src/streaming.bp` (30), `src/error_boundary.bp` (31), `src/metadata.bp` (32), `src/form.bp`/`src/form_state.bp` (67)
+**Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/router.bp` (26), `src/link.bp` (27), `src/server.bp` (28), `src/client.bp` (29), `src/suspense.bp`/`src/streaming.bp` (30), `src/error_boundary.bp` (31), `src/metadata.bp` (32), `src/form.bp` (67)
 **Reference:** `NEXTJS-DOCS.md § 4. App Router — Fundamentos` · Root Layout (obrigatório) · `NEXTJS-DOCS.md § 10. Mutação de Dados` · <https://html.spec.whatwg.org/multipage/indices.html#elements-3> · <https://html.spec.whatwg.org/multipage/syntax.html#void-elements> · <https://nextjs.org/docs/app/api-reference/file-conventions/layout>
 
 ---
@@ -230,7 +230,6 @@ pub mod streaming;       // front 30
 pub mod error_boundary;  // front 31
 pub mod metadata;        // front 32
 pub mod form;            // front 67
-pub mod form_state;      // front 67
 pub mod elements;        // front 94
 ```
 

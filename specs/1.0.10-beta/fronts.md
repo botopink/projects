@@ -305,7 +305,7 @@ README under *Blocked*; it does not edit them. `runtime.mjs` is F04's to delete 
 | **F31 error-boundaries** | `src/error_boundary.bp`, `test/error_boundary_test.bp` | `test/error_boundary_test.bp` |
 | **F32 metadata** | `src/metadata.bp`, `test/metadata_test.bp` | `test/metadata_test.bp` |
 
-| **F67 forms** | `src/form.bp`, `src/form_state.bp`, `test/form_test.bp`, `test/form_state_test.bp` | `test/forms_test.bp` |
+| **F67 forms** | `src/form.bp` (the binding, the hooks, `invokeAction`; `ActionState` and the envelope reader are the bundled library `actions` — decision 116), `test/form_test.bp` | `test/form_test.bp` |
 | **F94 element-surface** | `src/elements.bp` (plus its inline `test` blocks), `test/elements_test.bp`, `src/root.bp`, `botopink.json` | inline tests in `src/elements.bp` |
 
 `repository/jhonstart/src/root.bp` and `botopink.json`'s `files` list are appended to by all nine

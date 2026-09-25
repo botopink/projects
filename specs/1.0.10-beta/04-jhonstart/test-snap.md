@@ -43,7 +43,7 @@ All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapsho
 | `assertForm(loc, f: Element)` (`assert_form.bp`) | `assertHtmlLines` under the `form` name |
 | `assertActionState(loc, s: ActionState)` (`assert_form.bp`) | `ok`, `message`, `redirectTo` lines, then one `f.<name>: <message>` line per field |
 | `assertOptimistic(loc, base: i32, actions: i32[])` (`assert_form.bp`) | `base`, `actions` (space-joined), `value` = `applyOptimistic(base, actions, { c, a -> c + a })` |
-| `stubEnvelope(ok: bool, state: string, redirect: string) -> string` (`harness.bp`) | the flat string `__jhFormSubmit` hands botopink: `ok=<1|0>&redirect=<pct>&state=<pct>&payload=` |
+| `stubEnvelope(ok: bool, state: string, redirect: string) -> string` (`harness.bp`) | the JSON envelope `__jhFormSubmit` returns unparsed, written with `actions`' `writeEnvelope` (`n` = `R\|307\|<redirect>` when `redirect` is not `""`) — decision 116 |
 
 Three facts the map relies on and states rather than assumes silently: `renderToString` is the frozen renderer, so a void element renders `<input …></input>` in every snapshot below (front 94 *Blocked*; front 30's `renderNode` is the shipping renderer and has its own section below, § 30 · render); `renderHead`/`renderViewport` write their own tags and emit no closing tag for `meta`/`link`; a fixture standing in for a server component is `#[@use] fn … -> @Component<Element>` even when it awaits nothing, because that is the thunk type `Boundary.child` and `renderServerComponent` take (decision 104), while a component that activates nothing is a bare `fn … -> Element` (question 92-b).
 
@@ -874,7 +874,7 @@ decision 113 — each asserts the document through `assertDocument` over `render
 | `render: layouts nest root-first and the page is innermost` | `compose` order over a two-layout chain |
 | `render: one segment holding all six conventions nests layout template error loading not-found page` | `data-jh-t`, `data-jh-e`, `data-jh-h`, `data-jh-n` in that nesting |
 | `render: a segment without a template contributes no wrapper` | no `data-jh-t` |
-| `render: a nested not-found boundary wins over the root one` | outcome `jhonstart:not-found`, the nearest `not-found` markup |
+| `render: a nested not-found boundary wins over the root one` | outcome `nav:not-found`, the nearest `not-found` markup |
 | `render: a param from the url is escaped on the way into the document` | `&lt;script&gt;` in the body, the escaped `m` in the payload |
 | `render: a three-deep layout chain receives depths 0 1 2` | `selected` per layout |
 | `render: fills are handed over in completion order` | two boundaries resolving in reverse order reach `write` as `h2` then `h1` |
@@ -930,7 +930,7 @@ The class names in the snapshot above are placeholders until front 56 fixes the 
 
 ```bp
 import { Element, div, p, h1, section, h2, button, main, htmlTag, head, body, title, a, text, renderToString } from "jhonstart";
-import { ErrorInfo, ErrorBoundary, renderBoundary, renderBoundaryChecked, catchError, infoFor, serverInfoFor, isSignal, wrap } from "jhonstart";
+import { ErrorInfo, ErrorBoundary, renderBoundary, renderBoundaryChecked, catchError, infoFor, serverInfoFor, isSignal, wrap, notFound } from "jhonstart";
 import { assertErrorBoundary, assertHtml, assertHtmlLines, assertText } from "jhonstart-test";
 
 fn fallback(info: ErrorInfo) -> Element {
@@ -949,7 +949,7 @@ fn failingPanel() -> @Result<Element, string> {
 
 #[@result]
 fn signallingPanel() -> @Result<Element, string> {
-    throw "jhonstart:not-found";
+    throw notFound();
 }
 
 #[@result]
@@ -985,7 +985,7 @@ test "boundary: a signal passes through uncaught" {
 ```
 `__snapshots__/boundary/a-signal-passes-through-uncaught.snap` — it leaves front 30's render as the outcome onze turns into rakun's 404; the boundary never renders a fallback for it
 ```
-outcome: error jhonstart:not-found
+outcome: error nav:not-found
 ```
 
 ```bp
@@ -1004,7 +1004,7 @@ test "boundary: the reader's digest is the server's digest" {
     val m = "boom";
     val same = infoFor(m).digest == serverInfoFor(m).digest;
     val nonEmpty = infoFor(m).digest != "";
-    try assertText(@src(), "same-digest=" + same.toString() + "\nnon-empty=" + nonEmpty.toString() + "\nclient-message=" + infoFor(m).message + "\nserver-message=" + serverInfoFor(m).message + "\nsignal=" + isSignal(m).toString() + " " + isSignal("jhonstart:redirect").toString());
+    try assertText(@src(), "same-digest=" + same.toString() + "\nnon-empty=" + nonEmpty.toString() + "\nclient-message=" + infoFor(m).message + "\nserver-message=" + serverInfoFor(m).message + "\nsignal=" + isSignal(m).toString() + " " + isSignal("nav:redirect:/login").toString());
 }
 ```
 `__snapshots__/boundary/the-reader-s-digest-is-the-server-s-digest.snap` — the digest literal itself is front 03's snapshot, not this one
@@ -1213,76 +1213,24 @@ test "metadata: an empty viewport renders nothing" {
 
 ---
 
-## 67 · forms — `modules/jhonstart-forms/test/form_state_test.bp` and `form_test.bp`
+## 67 · forms — `modules/jhonstart-forms/test/form_test.bp`
 
-Front 67 Step 1 names `parseActionState`'s parameter `envelope`; its example passes the bare `state` string. This map takes the README's signature — the flat string `__jhFormSubmit` returns — and `stubEnvelope` builds it.
-
-```bp
-// form_state_test.bp
-import { ActionState, actionState, parseActionState } from "jhonstart-forms";
-import { assertActionState, assertText, stubEnvelope } from "jhonstart-test";
-
-val goldenState = "message=Title%20must%20be%20at%20least%203%20characters&f.title=Too%20short";
-
-test "form-state: golden fixture decodes to a message and a field error" {
-    try assertActionState(@src(), parseActionState(stubEnvelope(false, goldenState, "")));
-}
-```
-`modules/jhonstart-forms/test/__snapshots__/form-state/golden-fixture-decodes-to-a-message-and-a-field-error.snap` — the same literal front 24's encoder test asserts it produces
-```
-ok: false
-message: Title must be at least 3 characters
-redirectTo: 
-f.title: Too short
-```
-
-```bp
-test "form-state: an empty envelope is idle, not a failure" {
-    try assertActionState(@src(), parseActionState(""));
-}
-```
-`__snapshots__/form-state/an-empty-envelope-is-idle-not-a-failure.snap` — equals `actionState("")`
-```
-ok: true
-message: 
-redirectTo: 
-```
-
-```bp
-test "form-state: ok and redirect come from the envelope, never from state" {
-    val state = "ok=0&message=Saved&redirect=%2Fevil";
-    try assertActionState(@src(), parseActionState(stubEnvelope(true, state, "/blog/hello")));
-}
-```
-`__snapshots__/form-state/ok-and-redirect-come-from-the-envelope-never-from-state.snap` — the `ok` and `redirect` keys inside `state` are neither `message` nor `f.`-prefixed and are ignored
-```
-ok: true
-message: Saved
-redirectTo: /blog/hello
-```
-
-```bp
-test "form-state: a percent-encoded value with ampersand and equals round-trips" {
-    val state = "message=a%26b%3Dc&f.q=x%3Dy%26z";
-    try assertActionState(@src(), parseActionState(stubEnvelope(false, state, "")));
-}
-```
-`__snapshots__/form-state/a-percent-encoded-value-with-ampersand-and-equals-round-trips.snap`
-```
-ok: false
-message: a&b=c
-redirectTo: 
-f.q: x=y&z
-```
+The envelope, the `state` grammar and `parseActionState` are the bundled library `actions`
+(`01-std/05-actions-lib`, decision 116), and their snapshot and literal tests — the fixture decoding,
+the empty envelope, `ok`/`redirect` read from the envelope and never from `state`, the
+percent-encoded round trip — are `libs/actions/test/`'s, on both targets. This map keeps only what
+the page renders from a parsed state; `stubEnvelope` builds a real envelope with `actions`'
+`writeEnvelope` / `writeState`, so the input is the text front 24 answers.
 
 ```bp
 // form_test.bp
 import { Element, text, fragment, p, form, input, label, button, renderToString } from "jhonstart";
-import { FormBinding, formAction, formAttrs, hiddenActionField, actionState, FormStatus, formStatus, applyOptimistic, SearchFormProps, searchFormProps, searchFormAttrs, ActionState, newActionState, parseActionState } from "jhonstart-forms";
+import { FormBinding, formAction, formAttrs, hiddenActionField, actionState, FormStatus, formStatus, applyOptimistic, SearchFormProps, searchFormProps, searchFormAttrs } from "jhonstart-forms";
+import { state: {ActionState, newActionState, writeState}, envelope: {parseActionState} } from "actions";
 import { assertForm, assertText, assertOptimistic, stubEnvelope } from "jhonstart-test";
 
 val actionId = "a_9f31c0d7a4b2e5081c6fa3d2";
-val goldenState = "message=Title%20must%20be%20at%20least%203%20characters&f.title=Too%20short";
+val failedState = writeState("Title must be at least 3 characters", [#("title", "Too short")]);
 
 fn createPostForm(binding: FormBinding, state: ActionState, pending: bool) -> Element {
     val message = state.fieldError("title");
@@ -1316,7 +1264,7 @@ test "form: binding attributes and the hidden action field" {
 
 ```bp
 test "form: a field message lands beside its field" {
-    val state = parseActionState(stubEnvelope(false, goldenState, ""));
+    val state = parseActionState(stubEnvelope(false, failedState, ""));
     try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new"), state, false));
 }
 ```
@@ -1437,4 +1385,4 @@ Not snapshotted: `__jhFormSubmit`/`__jhFormPending`/`__jhFormState`/`__jhFormMou
 | 30 · bridge | head once, fill carries its style first, `close` refuses a leftover, contract-4 class literal | emilia's own rule bodies (05-emilia) |
 | 31 | ok/error branches, empty client message, signal pass-through, handler outside the channel, digest agreement, `global-error` document, not-found page | `data-jh-e` routing of a transition failure (68), digest literal (03) |
 | 32 | empty, fixed order, template once, images wholesale, nested merge, three levels, inherit untemplated, escaping, viewport ×3 | — |
-| 67 | golden fixture, idle envelope, envelope-vs-state keys, percent round-trip, binding markup, field message in place, pending button, server pass of `actionState`, idle `formStatus`, optimistic ×2, GET form | browser cells, `redirectTo → push`, malformed id refusal |
+| 67 | binding markup, field message in place, pending button, server pass of `actionState`, idle `formStatus`, optimistic ×2, GET form | browser cells, `redirectTo → push`, malformed id refusal; the envelope and `state` grammar cells (`libs/actions`) |

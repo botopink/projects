@@ -104,7 +104,7 @@ test "blog: a missing slug raises the not-found signal through the boundary" {
 ```
 `__snapshots__/blog/a-missing-slug-raises-the-not-found-signal-through-the-boundary.snap` — `postPanel(slug)` returns the `#[@result]` thunk; the signal is jhonstart's `notFound()` (front 31), re-raised, and front 30's render renders `NotFound()`
 ```
-outcome: error jhonstart:not-found
+outcome: error nav:not-found
 ```
 
 ```bp
@@ -420,7 +420,8 @@ test/forms_test.bp
 ```bp
 // test/forms_test.bp
 import { Element, renderToString } from "jhonstart";
-import { ActionState, actionState, parseActionState, formAction, FormStatus, applyOptimistic, searchFormProps } from "jhonstart-forms";
+import { actionState, formAction, FormStatus, applyOptimistic, searchFormProps } from "jhonstart-forms";
+import { state: {ActionState, writeState}, envelope: {parseActionState} } from "actions";
 import { createPostForm } from "src/create_post";
 import { likeWidget, addLike } from "src/like";
 import { searchForm } from "src/search";
@@ -428,7 +429,7 @@ import { querystring } from "std";
 import { assertForm, assertActionState, assertOptimistic, assertText, stubEnvelope } from "jhonstart-test";
 
 val actionId = "a_9f31c0d7a4b2e5081c6fa3d2";
-val goldenState = "message=Title%20must%20be%20at%20least%203%20characters&f.title=Too%20short";
+val failedState = writeState("Title must be at least 3 characters", [#("title", "Too short")]);
 
 test "forms: create post ---- empty" {
     try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new"), actionState(""), false));
@@ -451,7 +452,7 @@ test "forms: create post ---- empty" {
 
 ```bp
 test "forms: create post ---- returned message beside the title" {
-    val state = parseActionState(stubEnvelope(false, goldenState, ""));
+    val state = parseActionState(stubEnvelope(false, failedState, ""));
     try assertForm(@src(), createPostForm(formAction(actionId, "/blog/new"), state, false));
 }
 ```
@@ -472,11 +473,11 @@ test "forms: create post ---- returned message beside the title" {
 ```
 
 ```bp
-test "forms: the golden state as the page sees it" {
-    try assertActionState(@src(), parseActionState(stubEnvelope(false, goldenState, "")));
+test "forms: a failed action's state as the page sees it" {
+    try assertActionState(@src(), parseActionState(stubEnvelope(false, failedState, "")));
 }
 ```
-`__snapshots__/forms/the-golden-state-as-the-page-sees-it.snap`
+`__snapshots__/forms/a-failed-action-s-state-as-the-page-sees-it.snap` — the `state` grammar itself is asserted in `libs/actions` (decision 116); this cell shows what the page receives
 ```
 ok: false
 message: Title must be at least 3 characters
