@@ -137,11 +137,11 @@ and its `errorMessages` arm deleted; `#[@generator] loop { … }` / `#[@resultGe
 name is 21's; the three generator names are identifiers); labels and `continue` on all three forms.
 
 **Acceptance:**
-- [ ] each form above has a `parser/tests/` case and a `format.zig` round-trip (`assertLossless`);
+- [x] each form above has a `parser/tests/` case and a `format.zig` round-trip (`assertLossless`);
       `loop (xs) { x -> }` reports the located message naming `for`
-- [ ] no existing parser snapshot re-records except the ones that spell `loop (…)`, each classified
+- [x] no existing parser snapshot re-records except the ones that spell `loop (…)`, each classified
       as the rename
-- [ ] `src/parser/AGENTS.md`, `src/lexer/AGENTS.md`, `src/format/AGENTS.md` in the same commit
+- [x] `src/parser/AGENTS.md`, `src/lexer/AGENTS.md`, `src/format/AGENTS.md` in the same commit
 
 ### Step 2 — the checker
 
