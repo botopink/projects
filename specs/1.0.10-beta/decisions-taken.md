@@ -54,6 +54,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [111](#111-collections-functions-are-scoped-to-the-type-they-build) | `empty` / `fromList` collide in `collections.bp` | Type-scoped: `Dict.empty()`, `Set.fromList(xs)`, `Queue.empty()`; the one exception to 106's "moves paths, not function names" |
 | [112](#112-dsl-hygiene-each-name-resolves-in-the-scope-of-whoever-wrote-it) | In which scope does DSL-generated code resolve names? | Hygiene (5-a): text the lib writes in `e.build` resolves in the lib's module, text from `e.text()` at the call site; `e.lookup(name)` resolves at the call site and returns the declaration's identity, never the alias |
 | [113](#113-the-libraries-split-by-concern-emilia-is-css-jhonstart-is-html-rakun-is-the-service-on-erlang-onze-wires-them) | Which library owns what, and who may import whom? | emilia CSS · jhonstart HTML · rakun the service, erlang first · onze wires them; jhonstart ⇄ rakun never import each other; the render and `RenderHooks` move to jhonstart; `ElementView` leaves; markers `data-jh-*`; globals `__bp<N>` from a registry; emilia enters through `jhonstart-emilia`; answers 94, 100, 101; amends 77 |
+| [114](#114-the-seams-decision-113-left-open-rakun-routing-an-async-renderplugin-with-a-payload-rakuns-opaque-page-renderer-examples-in-onze-action-names-and-the-request-handed-in-by-onze) | The eight seams 113 left open | (a) on all eight: `rakun-routing` (`["erlang", "commonJS"]`) holds the pure matcher; `RenderPlugin` is asynchronous and gains `payload` (emilia's bridge fills `s`); rakun holds an opaque `PageRenderer` per route over `ChunkWriter`; `LayoutProps` and the UI conventions are jhonstart's; combining examples live in onze; onze passes the action wire names (default `__bp_action` / `X-Bp-Action`) and the `RequestData`; amends 113 |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -1299,3 +1300,118 @@ Bears on: decision 77 (amended — `RenderHooks` is jhonstart's, `islandAttr` le
 Implements: jhonstart front 30 (`render.bp`, `plugin.bp`, `globals.bp`, the marker and global
 spellings, and the `jhonstart-emilia` member); rakun fronts 04 and 23 (the erlang core and the
 render leaving `ssr.bp`); onze fronts 49, 68 and 69 (the wiring, the entry, the plugin registration).
+
+## 114. The seams decision 113 left open: `rakun-routing`, an async `RenderPlugin` with a payload, rakun's opaque page renderer, examples in onze, action names and the request handed in by onze
+
+**Decided 2026-09-26 by the maintainer**, all eight on the recommended option (a). Applying
+decision 113 to the specs left eight places where the rule — *jhonstart and rakun never import each
+other; onze wires them; rakun runs on erlang; emilia enters through `jhonstart-emilia`* — did not
+settle the shape on its own. Each is answered below. Amends 113.
+
+1. **The route matcher is a boundary module, `rakun-routing`.** rakun's workspace gains
+   `repository/rakun/modules/rakun-routing`, `"targets": ["erlang", "commonJS"]` — the second
+   exception to rakun's erlang-only core, for the same reason as `rakun-validation`: the same code
+   runs on the server and in the browser. It holds **only the pure matcher** — the segment grammar,
+   the route table and its wire (contract 1), `matchPath`, `layoutChain` — with no HTTP, no host
+   cell and no registry. rakun's server imports it on erlang; onze's generated browser entry imports
+   it on commonJS and hands `match` to jhonstart's router. jhonstart imports neither rakun nor
+   `rakun-routing`.
+
+   ```bp
+   // onze — generated client entry
+   import {parseTable, matchPath} from "rakun-routing";
+   import {router, readPayload, globals} from "jhonstart";
+
+   val payload = readPayload(globals.payload);
+   val table = parseTable(payload.t);
+   val r = router(match: { path -> matchPath(table, path) });
+   ```
+
+2. **A render plugin contributes to the payload.** `RenderPlugin` gains
+   `fn payload(self: Self) -> @Future<?#(string, Json)>`, called once, after `close`; jhonstart
+   writes whatever a plugin returns under the key the plugin gives, and a key the render writes
+   itself (every key of `contracts.md § 2` but `s`), or given by two plugins, fails the render. The emilia bridge returns
+   `#("s", <the class names it flushed>)`, so the payload's `s` key keeps its meaning and the client
+   keeps `checkStyles(payload.s)`. The contract stays generic — jhonstart names no key a plugin may
+   give. `Json` is the maintainer's word; std has no structured JSON value (the reason contract 1 is
+   not JSON), so until it has one front 30 declares `Json` as JSON text the plugin serialised and
+   `writePayload` writes verbatim, as it writes `t`, `a` and `b`.
+3. **`RenderPlugin`'s methods are asynchronous.** The render is already streaming and `#[@future]`;
+   awaiting a plugin is its normal shape, and a later plugin (a font file read, say) may need it too:
+
+   ```bp
+   // jhonstart/src/plugin.bp
+   pub behavior RenderPlugin {
+       fn head(self: Self) -> @Future<string>;                    // once, after the shell
+       fn chunk(self: Self, holeId: string) -> @Future<string>;   // per boundary, before its markup
+       fn close(self: Self) -> @Future<@Result<void, string>>;    // at the end: nothing may be left
+       fn payload(self: Self) -> @Future<?#(string, Json)>;       // once, after close
+   }
+   ```
+
+   The bridge awaits emilia's `#[@future] flush()` in `head` and `chunk`; emilia does not change.
+4. **rakun's page registry holds an opaque renderer per route.** rakun registers a `PageRenderer`
+   (item 5) for a pattern and knows nothing else about the page. Layout, page, template, default,
+   `Element`, `PageContext` and `LayoutProps` are jhonstart's only: the UI file-convention decorators
+   (`#[page]`, `#[layout]`, `#[template]`, `#[defaultView]`), the records a page and a layout
+   receive, and the per-route parameter accessors move to jhonstart front 30, beside `Segment` and
+   `compose`. `LayoutProps` and `rkAppRegisterPage` over `Element` leave rakun. onze reads
+   jhonstart's UI registry at boot, registers each UI record in rakun's route table (so the table the
+   server matches and the payload's `t` are still one table, contract 1) and hands rakun one renderer
+   per page pattern.
+5. **rakun spells the renderer's type, without knowing HTML:**
+
+   ```bp
+   // rakun
+   pub type ChunkWriter(write: fn(string) -> @Future<void>, close: fn() -> @Future<void>);
+   pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Future<void>;
+   pub fn page(pattern: string, render: PageRenderer) -> i32
+
+   // onze, at boot
+   rakun.page(route, fn(req, out) {
+       return site.renderStream(page(req), requestData(req), fn(chunk) { return out.write(chunk); });
+   });
+   ```
+
+   jhonstart receives only a `fn(string) -> @Future<void>` writer and never sees `ChunkWriter`;
+   rakun calls the renderer inside the request scope (front 62, phase `Render`) and closes the
+   response when the renderer's future resolves. `setPageRender` and `RenderedPage` leave.
+6. **An example that combines libraries lives in onze.** Each library's examples and test fixtures
+   use that library only: rakun's answer text or JSON, emilia's produce CSS and assert the string.
+   Every rakun example that imported jhonstart is an onze example (front 53's application) or is
+   deleted where front 53 already shows it; emilia's `integration_test.bp` becomes the
+   `jhonstart-emilia` bridge's test, and contract 4's emilia-side literal is asserted by an emilia
+   test that renders no HTML. No library carries a dev-dependency on another.
+7. **onze passes the server-action wire names to both sides.** jhonstart's form binding (front 67)
+   receives `actionField` and `actionHeader`; rakun's action dispatcher (front 24) reads the same two
+   values from its configuration (`rakun.actions.field`, `rakun.actions.header`, front 05), which
+   onze sets. Neither library spells a name, and rakun with either key unset refuses to start the
+   dispatcher, naming the key. onze's defaults are `__bp_action` and `X-Bp-Action`;
+   `__onze_action` and `X-Onze-Action` leave.
+8. **onze hands the request to the render.** `site.renderStream(page, req: RequestData, write)` —
+   jhonstart front 28's `request()`, `headers()` and `cookies()` read from the `RequestData` the
+   render received, which onze builds from rakun's `Request`. The `rakun_request_context` host
+   binding and the `fillRequest` seam leave jhonstart front 28; jhonstart and rakun share nothing at
+   run time either.
+
+```bp
+// jhonstart (front 30)
+#[@future] pub fn renderStream(self: App, input: PageInput, req: RequestData,
+                               write: fn(string) -> @Future<void>) -> @Future<string>
+```
+
+What it does **not** change: the route table's wire and precedence (contract 1), the payload's key
+table (contract 2), the action id and envelope (contract 3, beyond the two wire names), the
+class-name scheme (contract 4), rakun's request context (contract 5), the navigation signals
+(contract 5b), emilia's API.
+
+Bears on: decision 113 (amended: item 7's three-method `RenderPlugin` gains `payload` and becomes
+asynchronous; item 3's `match` comes from `rakun-routing`; item 8's erlang-only core admits
+`rakun-routing` beside `rakun-validation`); `contracts.md` §§ 1, 2, 3, 4 and 6a; rakun fronts 05, 22,
+23, 24, 60–66 and 85 and `test-snap*.md`; jhonstart fronts 26, 28, 30 and 67; emilia's README,
+`modules.md`, examples and `test-snap*.md`; onze fronts 49, 53, 68 and 69.
+Implements: rakun front 22 (`modules/rakun-routing`, the opaque page registry), 23 (`ChunkWriter`,
+`PageRenderer`, `page`), 24 (the configured wire names); jhonstart front 28 (`RequestData` handed
+in), 30 (the UI conventions, the asynchronous `RenderPlugin` with `payload`, `renderStream`'s
+signature, the bridge's `s`), 67 (`actionField` / `actionHeader`); onze fronts 49 (the boot wiring),
+53 (the combined examples) and 68 (the entry importing `rakun-routing`).

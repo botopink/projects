@@ -3,8 +3,8 @@
 // A greeting bar that reads the reader's locale from a cookie and their client
 // from a header.
 //
-// Request scope is per-request state on the BEAM: front 62 fills it once per
-// request through `fillRequest`, and `request()` reads it back. It is called
+// The request is handed in: onze builds a `RequestData` from rakun's request and
+// passes it to front 30's render, which enters it; `request()` reads it back. It is called
 // plainly here — the server-pass value — so `GreetingBar` and `Page` activate
 // nothing and carry no annotation (decision 104). The hook form, `use request()`
 // inside a `#[@use] fn … -> @Component<Element>`, is the front README's
@@ -26,7 +26,7 @@ import { header } from "jhonstart";
 // `header` (the HTML element) is not among the eight builders `element.bp`
 // ships — it comes from front 94 (jhonstart-element-surface). `RequestData` and
 // `request` are front 28's; `pairValue` is front 26's, the package's one
-// pair-list decoder; the underlying request context is front 62's.
+// pair-list decoder; the value `request()` reads is the one the render received.
 
 fn greetingFor(locale: string) -> string {
     return case locale {

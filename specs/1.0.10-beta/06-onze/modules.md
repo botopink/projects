@@ -66,8 +66,9 @@ Seven submodules. Front 95 proposed five (`onze`, `onze-test`, `onze-cli`, `onze
 
 ```
    std ──────────────┐
-   rakun ────────────┤            (onze depends on rakun, jhonstart, jhonstart-emilia — never the reverse;
-   jhonstart ────────┼──► onze ──► onze-bundler ──► onze-assets ──► onze-og     emilia only through the bridge)
+   rakun ────────────┤            (onze depends on rakun, rakun-routing, jhonstart, jhonstart-emilia —
+   rakun-routing ────┤             never the reverse; emilia only through the bridge)
+   jhonstart ────────┼──► onze ──► onze-bundler ──► onze-assets ──► onze-og
    jhonstart-emilia ─┘     │              │              │
    rakun-cache · rakun-web ┘              └──► onze-release ◄┘
                                           
@@ -80,8 +81,9 @@ Edges, with the file that creates each:
 
 | From | To | Because |
 |---|---|---|
-| `onze` | `rakun` | `integration.bp`: `Rakun.run(App(port, basePath))`, and the page-render function rakun calls |
-| `onze` | `jhonstart` · `jhonstart-emilia` | `integration.bp`: `app(plugins: [emiliaPlugin()])`, the `RenderHooks` tag fields, the router's `match` (decision 113) |
+| `onze` | `rakun` | `integration.bp`: `Rakun.run(App(port, basePath))`, the UI records copied into rakun's route table, one `PageRenderer` per page through `page(pattern, render)` over rakun's `ChunkWriter`, and `rakun.actions.field` / `rakun.actions.header` set in rakun's configuration (decision 114) |
+| `onze` | `jhonstart` · `jhonstart-emilia` | `integration.bp`: `app(plugins: [emiliaPlugin()])`, the `RenderHooks` tag fields, `renderStream` handed `RequestData` built from rakun's `Request`, `actionField` / `actionHeader` (decisions 113, 114) |
+| `onze-bundler` | `rakun-routing` · `jhonstart` | `entry.bp` generates a client entry importing `parseTable` / `matchPath` from `rakun-routing` (compiled for commonJS) and handing jhonstart's router `match` (decision 114) |
 | `onze-bundler` | `onze` | `refusal.bp` calls `isPublicEnvName` — one definition of the prefix (49 · 68) |
 | `onze-assets` | `onze-bundler` | `stylesheet.bp` emits `Y` records `parseManifest` reads back; `image.bp`'s `data-src` swap is documented against the entry |
 | `onze-assets` | `jhonstart` · `rakun` · `rakun-cache` | `Element` · `Request`/`HandlerResponse` (25) · the optimizer cache (12) |
@@ -97,10 +99,12 @@ names onze; every value that crosses is handed across by `Onze.run` (core `integ
 
 | Seam | Direction it must not have | Where it lives |
 |---|---|---|
-| emilia's sheet reaches the head and each streamed chunk | onze → emilia `flush()`, or jhonstart → emilia | jhonstart front 30 declares `RenderPlugin` and calls it; the `jhonstart-emilia` bridge (`repository/jhonstart/modules/jhonstart-emilia`) adapts `flush()` to it; `Onze.run` registers it with `app(plugins: [emiliaPlugin()])`. onze defines no sink |
+| emilia's sheet reaches the head and each streamed chunk, and its class list the payload's `s` | onze → emilia `flush()`, or jhonstart → emilia | jhonstart front 30 declares the asynchronous `RenderPlugin` and awaits it; the `jhonstart-emilia` bridge (`repository/jhonstart/modules/jhonstart-emilia`) awaits `flush()` in `head` / `chunk` and returns `#("s", …)` from `payload()`; `Onze.run` registers it with `app(plugins: [emiliaPlugin()])`. onze defines no sink |
 | The bundle's `<script>` tags reach the document | jhonstart → onze-bundler | jhonstart's `RenderHooks.headExtra(route) -> string` and `RenderHooks.bodyExtra(route) -> string`, filled by `Onze.run` from 68's `headScriptTags` / `scriptTags`. The payload script stays jhonstart's render's (`contracts.md § 2`) |
 | 68's entry generator and the render agree on the island marker and the two browser globals | jhonstart → onze-bundler if the definitions live in the bundler | The island marker is jhonstart's (front 29) and the globals registry is jhonstart's (front 30, `globals.payload` / `globals.fill`); `onze-bundler/src/entry.bp` imports both. `contracts.md § 2` is the text all cite |
-| A matched route becomes a rendered page | rakun → jhonstart, or jhonstart → rakun | rakun matches (22) and serves (23) by calling the page-render function `Onze.run` hands it; jhonstart's render receives the segment chain and the payload's rakun-side strings (`t`, `a`, `b`); jhonstart's router receives front 22's matcher as `match`; jhonstart's not-found signal is translated by onze into rakun's 404 |
+| A matched route becomes a rendered page | rakun → jhonstart, or jhonstart → rakun | jhonstart's `#[page]` / `#[layout]` decorators (front 30) fill jhonstart's UI registry; `Onze.run` copies the records into rakun's table and registers one opaque `PageRenderer` per page (rakun 23, decision 114); rakun matches (22, through `rakun-routing`) and calls the renderer with its `Request` and `ChunkWriter`; the renderer calls `site.renderStream(page, requestData(req), write)`, so jhonstart receives the segment chain, the payload's rakun-side strings (`t`, `a`, `b`), the `RequestData` its `headers()` / `cookies()` read, and a plain `fn(string)` writer; jhonstart's router receives `rakun-routing`'s matcher as `match` from 68's client entry; jhonstart's not-found signal is translated by onze into rakun's 404 |
+| A form names its server action | jhonstart ↔ rakun spelling one name | onze passes the field and header names to both sides — `actionField` / `actionHeader` to jhonstart (67), `rakun.actions.field` / `rakun.actions.header` to rakun (24) — default `__bp_action` / `X-Bp-Action`; neither library spells them (decision 114) |
+| An example combines libraries | rakun or emilia examples importing jhonstart | onze: combined examples are front 53's application; each library's examples use that library only (decision 114) |
 
 ## What `onze-test` exposes
 

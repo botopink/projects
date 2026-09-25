@@ -10,7 +10,10 @@
 //   SERVER (BEAM): `createPost` and everything it calls. The body never reaches
 //   the browser; only the action id does.
 //   CLIENT: the POST. With scripting off it is a plain form submission; with
-//   front 67 loaded it is the same POST carrying `X-Onze-Action`.
+//   front 67 loaded it is the same POST carrying the action header. onze passes
+//   the field and header names to both sides — jhonstart's `actionField` /
+//   `actionHeader`, rakun's `rakun.actions.field` / `rakun.actions.header` —
+//   and its defaults are `__bp_action` / `X-Bp-Action` (decision 114).
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/updating-data
 //           https://nextjs.org/docs/app/api-reference/directives/use-server

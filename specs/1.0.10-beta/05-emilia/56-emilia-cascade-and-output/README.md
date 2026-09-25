@@ -160,8 +160,8 @@ are unchanged and this front keeps them:
   writes rules in that order;
 - still ASCII-only for the same reason — the JS cell folds UTF-16 units and the Erlang cell folds
   codepoints;
-- the shared fixture in `emilia/test/integration_test.bp` still asserts one literal hex string on
-  both targets.
+- the shared fixture in `emilia/modules/emilia/test/attributes_test.bp` (front 48) still asserts one
+  literal hex string on both targets.
 
 What does change is the literal itself: the fixture's expected hex is regenerated once, in this
 front, and fronts 23 and 68 take the new value. **The theme is now an input to the hash**, because

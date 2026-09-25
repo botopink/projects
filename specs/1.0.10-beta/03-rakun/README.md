@@ -4,7 +4,7 @@
 
 | Document | Holds |
 |---|---|
-| [`modules.md`](./modules.md) | The package cut: 27 submodules under `modules/`, `starters/`, 8 example projects, the dependency graph, targets, what `rakun-test` exposes, front → directory ownership, the reconciliation with the 13 scaffolds, what to reconsider |
+| [`modules.md`](./modules.md) | The package cut: 28 submodules under `modules/`, `starters/`, 8 example projects, the dependency graph, targets, what `rakun-test` exposes, front → directory ownership, the reconciliation with the 13 scaffolds, what to reconsider |
 | [`unification.md`](./unification.md) | The features and Spring Boot 4 reference sections no rakun front covers yet, each with its nearest front |
 | [`test-snap.md`](./test-snap.md) | The preventive snapshot-test map of the modules, front by front, with the exact `.snap` each case writes |
 | [`test-snap-examples.md`](./test-snap-examples.md) | The same map for `examples/**` |
@@ -39,7 +39,7 @@ half depends on 06, and a citation of 11 is read as one or the other). Ties brea
 |---|---|---|---|---|---|---|---|
 | 04 | [`04-rakun-erlang-runtime`](./04-rakun-erlang-runtime/README.md) | critical | 1 · 1 | 1 | `rakun` | — | std 01 |
 | 05 | [`05-rakun-config-profiles`](./05-rakun-config-profiles/README.md) | critical | 1 · 1 | 1 | `rakun` | — | std 01 |
-| 22 | [`22-rakun-file-routing`](./22-rakun-file-routing/README.md) | critical | 1 · 1 | 2 | `rakun-app` | 05 | std 01 |
+| 22 | [`22-rakun-file-routing`](./22-rakun-file-routing/README.md) | critical | 1 · 1 | 2 | `rakun-app` · `rakun-routing` | 05 | std 01 |
 | 72 | [`72-rakun-auto-configuration`](./72-rakun-auto-configuration/README.md) | critical | 1 · 3 | 3 | `rakun` | 04 · 05 · 06 | — |
 | 06 | [`06-rakun-context-api`](./06-rakun-context-api/README.md) | high | 2 · 2 | 2 | `rakun` | 04 · 05 | — |
 | 62 | [`62-rakun-request-context`](./62-rakun-request-context/README.md) | critical | 2 · 2 | 2 | `rakun` | 04 | std 01 |
@@ -154,7 +154,7 @@ L6  81 ◄ 76·11host   87 ◄ 07·08·10·76   24 ◄ 12·14·23·63   60 ◄ 1
 L7  88 ◄ 04·05·06·80·81
 ```
 
-Module level, the same graph collapsed onto the 27 submodules, is drawn in
+Module level, the same graph collapsed onto the 28 submodules, is drawn in
 [`modules.md § The graph`](./modules.md#the-graph).
 
 ## Cross-track dependencies
@@ -164,20 +164,20 @@ Module level, the same graph collapsed onto the 27 submodules, is drawn in
 | rakun → std | 04 · 05 · 10 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 64 · 65 · 66 · 79 · 80 · 81 · 82 · 85 · 86 · 87 · 88 · 89 · 92 | 01 | `net`, `path`, `fs`, `process`, `clock`, `random`, `hmac`, `encoding`, `regex`, `escape` — named per front in its `Depends on` line |
 | rakun → std | 23 · 60 · 92 | 02 | spawn/gather over unstarted thunks (`async.all`) — `@Future` carries no concurrency on BEAM |
 | rakun → std | 12 · 17 · 23 · 24 · 60 · 66 · 77 · 82 | 03 | content hash: cache keys, error digest, build id, fingerprints, migration checksums |
-| rakun ⇄ jhonstart, through onze | 23 | 30 (render) · 28 | onze hands 23 the page-render function; jhonstart builds the chunks, 23 writes them. No package edge either way (decision 113) |
-| rakun ⇄ jhonstart, through onze | 24 | 67 | 24's action id and envelope; 67 writes the form markup (`data-jh-a`, the hidden field) with the id onze hands it |
+| rakun ⇄ jhonstart, through onze | 23 | 30 (render) · 28 | onze registers one `PageRenderer` per page with 23 and builds 28's `RequestData` from rakun's `Request`; jhonstart writes the chunks through a `fn(string)` onze builds over 23's `ChunkWriter`. No package edge either way (decisions 113, 114) |
+| rakun ⇄ jhonstart, through onze | 24 | 67 | 24's action id and envelope; 67 writes the form markup (`data-jh-a`, the hidden field) with the id onze hands it; onze sets the field and header names on both sides (`rakun.actions.field` / `rakun.actions.header` here, `actionField` / `actionHeader` there — decision 114) |
 | rakun ⇄ jhonstart, through onze | 25 | 30 | the flush primitive a streaming handler reuses |
 | rakun ⇄ jhonstart, through onze | 61 | 27 · 30 | the soft-navigation marker `Link` sets; per-slot `loading` boundaries |
 | rakun ⇄ jhonstart, through onze | 64 · 66 | 32 | the metadata model (`alternates`, `<link>`/`<meta>` feeds) |
 | rakun → onze | 66 | 70 (optional) | dynamic OG image bodies — does not block 66 |
 | rakun → onze | 19 | — | the mocking library is retired and `#[mock]` is hosted by `rakun-test` ([`../02-packaging/README.md § 3`](../02-packaging/README.md), [`../01-std/onze-migration.md`](../01-std/onze-migration.md)) — no edge |
-| jhonstart ⇄ rakun, through onze | 26 | 22 | the router has no matcher and no table parser of its own; onze hands it `match` and the route table |
-| jhonstart ⇄ rakun, through onze | 28 · 29 · 30 | 62 · 23 | the erlang module `server.bp` binds by host-module name; the chunks 23 writes |
+| jhonstart ⇄ rakun, through onze | 26 · 27 | 22 · 60 · 61 · 65 | the router has no matcher and no table parser of its own; onze's client entry imports `rakun-routing` and hands it `match` (and 27 the route-kind, slot-state and `clientHref` functions) with the route table (decision 114) |
+| jhonstart ⇄ rakun, through onze | 28 · 30 | 62 · 23 | the `RequestData` onze builds from rakun's `Request` and hands to `renderStream` — no host-module binding (decision 114); the chunks 23 writes |
 | jhonstart ⇄ rakun, through onze | 27 | 60 | prefetch reads the static/dynamic decision |
 | jhonstart ⇄ rakun, through onze | 31 | 17 · 24 · 63 | `error.digest`; the action envelope; jhonstart's own not-found signal, which onze translates into rakun's 404 |
 | jhonstart ⇄ rakun, through onze | 32 | 66 | the paths `openGraph.images` names |
 | jhonstart ⇄ rakun, through onze | 67 | 24 · 14 · 63 | the action envelope it decodes; constraints it mirrors |
-| onze → rakun | 68 · 69 · 50 · 51 · 70 · 71 · 53 | 04 · 05 · 07 · 11 · 12 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 63 · 65 · 66 | listed per front in [`../06-onze/README.md`](../06-onze/README.md); onze hands front 23 the page-render function and rakun names no onze module (decision 113); `examples/blog-server` here is the erlang half of `repository/onze/examples/blog` |
+| onze → rakun | 68 · 69 · 50 · 51 · 70 · 71 · 53 | 04 · 05 · 07 · 11 · 12 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 63 · 65 · 66 | listed per front in [`../06-onze/README.md`](../06-onze/README.md); onze registers front 23's page renderers and rakun names no onze module (decisions 113, 114); `examples/blog-server` here answers the blog's routes with rakun alone, and the rendered blog is `repository/onze/examples/blog` |
 | emilia → rakun | — | — | none; 82 serves emilia's emitted CSS as a file, which is consumption, not a dependency |
 
 The package-level consequence — every rakun module depends on `std` and on rakun modules only; no
@@ -189,10 +189,12 @@ edge reaches `jhonstart`, `emilia` or `onze` (decision 113) — is in [`modules.
 |---|---|
 | 04–13 · 15–21 · 25 · 62–64 · 66 · 72–93 | **erlang** — runs while a request is in flight, or at build/dev time on the server box |
 | 22 · 23 · 24 · 60 · 61 · 65 | **erlang** — the route table, the page dispatch, the chunk writer and every handler run on BEAM |
-| 14 | **erlang, commonJS — boundary**: the constraints the server enforces are the ones the client's form mirrors; the one exception to rakun's erlang target (decision 113) |
+| 22 (Step 7) · 60 · 61 · 65 — `rakun-routing` | **erlang, commonJS — boundary**: the matcher and the codecs of the routing wires the browser reads are the same code on both sides (decision 114) |
+| 14 | **erlang, commonJS — boundary**: the constraints the server enforces are the ones the client's form mirrors (decision 113) |
 
 erlang comes first in every `targets` list and is the default target of `botopink run` / `botopink
-test` in rakun; the workspace root declares `["erlang", "commonJS"]` only to admit front 14.
+test` in rakun; the workspace root declares `["erlang", "commonJS"]` only to admit `rakun-routing`
+and `rakun-validation`.
 
 ## Rules
 

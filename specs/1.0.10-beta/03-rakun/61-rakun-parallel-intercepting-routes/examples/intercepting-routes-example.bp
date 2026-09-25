@@ -16,16 +16,16 @@
 //       [id]/
 //         page.bp                      <- photoPage
 //
-// The marker resolution below is pure botopink and compiles for both targets,
-// which is why its tests run on erlang and on commonJS.
+// The pages are opaque renderers writing plain text (front 23): rakun answers
+// the route, and a rendered page is jhonstart's and onze's (onze front 53).
+// Marker parsing and resolution are server-side (erlang).
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/file-conventions/intercepting-routes
 //   https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes
 
-import {page, PageContext} from "rakun";  // provided by front 22
+import {page, ChunkWriter, Request} from "rakun";  // fronts 23 and 04
 import {Intercept, InterceptKind, parseIntercept, resolveIntercept} from "rakun";
-import {Element, div, h1, p, ul, li, text} from "jhonstart";
 
 pub type Photo(
     id: string,
@@ -45,44 +45,26 @@ fn findPhoto(id: string) -> Photo {
 }
 
 // SERVER — the feed.
-#[page("feed")]
-#[@future]
-pub fn feedPage(route: PageContext) -> @Future<Element> {
-    val rows = allPhotos().map({ photo ->
-        li([text(photo.caption, attrs: [])], attrs: []);
-    });
-    return div([
-        h1([text("Feed", attrs: [])], attrs: []),
-        ul(rows, attrs: []),
-    ], attrs: []);
-}
+val _feed = page("feed", fn(req: Request, out: ChunkWriter) {
+    val captions = allPhotos().map({ photo -> photo.caption });
+    return out.write("Feed: " + captions.join(", "));
+});
 
 // SERVER — the interception. It claims /feed/photo/[photoId] only when the
 // request carries `x-rakun-nav: soft`, which front 27's router sets on a client
-// navigation. A pasted URL or a reload renders `photoPage` below instead.
-#[page("feed/(.)photo/[photoId]")]
-#[@future]
-pub fn photoModal(route: PageContext) -> @Future<Element> {
-    val id = route.params.lookup("photoId").unwrapOr("");
-    val photo = findPhoto(id);
-    return div([
-        p([text("modal: " + photo.caption, attrs: [])], attrs: []),
-    ], attrs: []);
-}
+// navigation. A pasted URL or a reload gets the `photo/[id]` renderer instead.
+val _modal = page("feed/(.)photo/[photoId]", fn(req: Request, out: ChunkWriter) {
+    val photo = findPhoto(req.param("photoId"));
+    return out.write("modal: " + photo.caption);
+});
 
 // SERVER — the full page, which is what a direct request gets.
-#[page("photo/[id]")]
-#[@future]
-pub fn photoPage(route: PageContext) -> @Future<Element> {
-    val id = route.params.lookup("id").unwrapOr("");
-    val photo = findPhoto(id);
-    return div([
-        h1([text(photo.caption, attrs: [])], attrs: []),
-        p([text("photo #" + photo.id, attrs: [])], attrs: []),
-    ], attrs: []);
-}
+val _photo = page("photo/[id]", fn(req: Request, out: ChunkWriter) {
+    val photo = findPhoto(req.param("id"));
+    return out.write(photo.caption + " — photo #" + photo.id);
+});
 
-// BOTH HALVES — marker parsing and resolution carry no host cell.
+// Marker parsing and resolution carry no host cell.
 
 test "the four marker spellings parse" {
     val same = parseIntercept("(.)photo").unwrapOr(

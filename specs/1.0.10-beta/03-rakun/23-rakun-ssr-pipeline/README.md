@@ -8,10 +8,10 @@ through the chunk writer this front owns
 **Wave:** 5
 **Depends on:** 04 (BEAM runtime, the transport that writes chunks), 22 (route table and layout
 chain), 06 (scopes), 62 (request context — the request scope, `setPhase`, `markDynamic`), 03
-(content hash for the build id). The page-render function arrives at boot from onze 49, which
-depends on this front — not the reverse
-**Owns:** `repository/rakun/src/ssr.bp` — `RenderedPage`, `toResponse`, the page dispatch and the
-one setter through which onze hands it the page-render function —
+(content hash for the build id). The page renderers arrive at boot from onze 49, which depends on
+this front — not the reverse
+**Owns:** `repository/rakun/src/ssr.bp` — `ChunkWriter`, `PageRenderer`, `page(pattern, render)`
+through which onze hands it one renderer per page pattern, and the page dispatch —
 `repository/rakun/src/sidecars/rakun_ssr.erl` (the chunk writer), `repository/rakun/test/ssr_test.bp`
 **Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`
 (frozen), the files owned by 22 · 24 · 25, and every file outside `repository/rakun/` — rakun
@@ -37,8 +37,9 @@ slow boundary does not hold the shell, and a URL with no page has to answer 404.
 
 What it does **not** do is build the markup. Under decision 113 HTML is jhonstart's: the walker, the
 escaping, the layout composition, the document and the payload live in jhonstart front 30. rakun and
-jhonstart never import each other, so the two meet through onze, which hands this front the function
-that turns a matched request into chunks. rakun writes what that function returns and nothing else.
+jhonstart never import each other, so the two meet through onze, which hands this front one opaque
+renderer per page pattern (decision 114). The renderer writes its chunks through the `ChunkWriter`
+rakun gives it; rakun writes them to the socket and knows nothing else about them.
 
 ## Current state
 
@@ -47,8 +48,10 @@ that turns a matched request into chunks. rakun writes what that function return
 - `repository/rakun/src/ssr.bp` exists and carries the render as well as the dispatch: the escaping
   walker (`renderNode`, `raw`), `compose`, `Payload` / `writePayload` / `payloadEscape` / `document`,
   the `RenderHooks` record with `defaultHooks` / `setHooks`, island and hole ordinals, and
-  `render` / `renderStreaming`. `repository/rakun/src/ssr.mjs` carries the fill function and the
-  payload reader. All of that is jhonstart's under decision 113 and leaves rakun in Step 5.
+  `render` / `renderStreaming`, and the dispatch's first seam, `RenderedPage` and
+  `setPageRender(fn(PageContext) -> @Future<RenderedPage>)`. `repository/rakun/src/ssr.mjs` carries
+  the fill function and the payload reader. The render is jhonstart's under decision 113 and leaves
+  rakun in Step 5; the seam becomes `ChunkWriter` / `PageRenderer` in Steps 1–2 (decision 114).
 
 ## Mechanism
 
@@ -56,46 +59,55 @@ that turns a matched request into chunks. rakun writes what that function return
 
 ```
 request
-  -> 22  matchPath(table, pathname)            the entry + params + rest; no entry -> 404
-  -> 22  layoutChain(table, pattern)           the layouts, root-first, handed on as data
+  -> 22  matchPath(table, pathname)            rakun-routing; the entry + params + rest; no entry -> 404
+  -> 22  the renderer registered for the matched pattern
   -> 62  request scope opens, setPhase(Render)   headers, cookies, memo cache
-  -> 23  pageRender(ctx)                        the function onze handed at boot: status, headers, chunks
+  -> 23  render(req, out)                       the renderer onze registered: it writes through `out`
+  -> 23  out.close() when the renderer's future resolves
   -> 62  previous phase restored, scope closed
-  -> 04  the BEAM transport writes the chunks, in order
 ```
 
-**One seam, and it points inwards.** This front declares the slot and never imports what fills it:
+**One seam, and it points inwards.** This front declares the types and the registration, and never
+imports what fills them (decision 114):
 
 ```bp
-pub type RenderedPage(
-    status: i32,
-    headers: Array<#(string, string)>,
-    chunks: string[],
-)
+pub type ChunkWriter(write: fn(string) -> @Future<void>, close: fn() -> @Future<void>);
+pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Future<void>;
 
-pub fn setPageRender(render: fn(PageContext) -> @Future<RenderedPage>) -> void
+pub fn page(pattern: string, render: PageRenderer) -> i32     // front 22's rkAppRegisterPage
 #[@future]
-pub fn servePage(pathname: string, query: string) -> @Future<RenderedPage>
-pub fn toResponse(page: RenderedPage) -> Response
+pub fn servePage(req: Request, out: ChunkWriter) -> @Future<i32>   // the status written
 ```
 
-onze installs the function at boot; inside it jhonstart renders the page (front 30) and onze adapts
-the chunks into a `RenderedPage`. rakun sees strings. The chunks arrive in the order jhonstart
-produced them — shell first, then one fill per resolved boundary, then the tail — and this front
-writes them in that order without reading them.
+onze registers one renderer per page pattern at boot; inside it jhonstart renders the page (front 30)
+and hands each chunk to a `fn(string) -> @Future<void>` writer onze builds over `out.write`:
 
-**Not found.** A URL that matches no page is this front's 404, answered before any render. A page
-that raises jhonstart's own not-found signal is translated by onze into a `RenderedPage` with status
-404 (decision 113); rakun names no jhonstart signal.
+```bp
+// onze, at boot — not rakun code
+rakun.page(route, fn(req, out) {
+    return site.renderStream(page(req), requestData(req), fn(chunk) { return out.write(chunk); });
+});
+```
 
-**The phase word.** The dispatch calls front 62's `setPhase(RequestPhase.Render)` before the render
-function runs and restores the previous phase when it returns. That is not bookkeeping: it is the
+rakun sees strings. `out.write` puts a chunk on the socket as it is handed over — shell first, then
+one fill per resolved boundary, then the tail, in the order jhonstart produced them — and this front
+writes them without reading them. When the renderer's future resolves the dispatch calls
+`out.close()`; the renderer never closes the response itself.
+
+**Status.** A page is `200` with `Content-Type: text/html; charset=utf-8`, sent with the first chunk.
+A URL that matches no page is this front's 404, answered before any renderer runs. A renderer that
+raises one of front 63's navigation signals before its first `out.write` is answered with that
+signal's status (404, 307, 308, 303); that is how onze translates jhonstart's own not-found into
+rakun's 404 — it raises front 63's `notFound()` inside the renderer (decision 113). rakun names no
+jhonstart signal.
+
+**The phase word.** The dispatch calls front 62's `setPhase(RequestPhase.Render)` before the renderer
+runs and restores the previous phase when its future resolves. That is not bookkeeping: it is the
 same word front 12's `rkCachePhase()` reads to decide whether a revalidation is legal, so a dispatch
 that skips it makes `revalidatePath` raise from inside an action (front 24 sets `Action`, front 25
 sets `Handler`). The phase table in `contracts.md § 5` is enforced, which also means
-`cookies().set(...)` from a render raises. `searchParams` marks the render dynamic through
-`markDynamic("searchParams")`, and `isDynamic()` is what onze reads to fill the payload's `d` key —
-the accessor marks it, not a flag this front keeps.
+`cookies().set(...)` from a render raises. A read of the query marks the render dynamic through
+`markDynamic("searchParams")`, and `isDynamic()` is what onze reads to fill the payload's `d` key.
 
 **What the payload needs from rakun.** The payload is jhonstart's (contract 2), but three of its
 values are rakun's: `t` is `rkAppTable()` (front 22), `a` lists the action ids a page references
@@ -104,41 +116,48 @@ nothing in rakun serialises a payload.
 
 ## Steps
 
-### Step 1 — The rendered page, and why it is not a `Response`
+### Step 1 — `ChunkWriter`, `PageRenderer` and `page`
 
 **Acceptance:**
-- [ ] `RenderedPage` carries headers and an ordered chunk list; `toResponse` joins the chunks and is
-      used only on the non-streaming path.
-- [ ] `Content-Type: text/html; charset=utf-8` is present on every `RenderedPage` this front writes.
+- [ ] `ChunkWriter` and `PageRenderer` are declared exactly as above; neither names a jhonstart,
+      emilia or onze type.
+- [ ] `page(pattern, render)` registers the renderer through front 22's `rkAppRegisterPage`; a second
+      `page` for one pattern fails at registration, naming the pattern.
+- [ ] The dispatch never builds a chunk: every byte of a page body on the socket came through
+      `out.write`.
 
 ### Step 2 — The dispatch
 
 **Acceptance:**
-- [ ] A URL with no matching page answers 404 without calling the render function.
-- [ ] A `RenderedPage` the render function returns with status 404 is written with status 404 — the
-      not-found translation is onze's, the status is honoured here.
+- [ ] A URL with no matching page answers 404 without calling any renderer.
+- [ ] A renderer that raises front 63's `notFound()` before its first `out.write` is answered 404;
+      `redirect(loc)` is answered 307 with `Location: loc`.
 - [ ] The whole call runs inside one request scope from front 62, with `setPhase(RequestPhase.Render)`
-      entered before the render function and the previous phase restored after. A
-      `cookies().set(...)` from inside the render raises, per the phase table in `contracts.md § 5`.
-- [ ] Reading `route.query` calls `markDynamic("searchParams")`; front 60's prerenderer with
-      `strict` set then raises instead of marking, which is how a static export fails the build.
-- [ ] With no render function installed, `servePage` fails loudly naming `setPageRender`; there is
-      no default page renderer in rakun.
+      entered before the renderer and the previous phase restored after its future resolves. A
+      `cookies().set(...)` from inside the renderer raises, per the phase table in `contracts.md § 5`.
+- [ ] A read of the request's query from the renderer calls `markDynamic("searchParams")`; front
+      60's prerenderer with `strict` set then raises instead of marking, which is how a static export
+      fails the build.
+- [ ] `out.close()` is called once, by the dispatch, after the renderer's future resolves — a renderer
+      that calls it itself fails the request, naming `ChunkWriter.close`.
 
 ### Step 3 — Writing the chunks
 
 **Acceptance:**
-- [ ] The chunks are written in the order the render function returned them, byte for byte; a test
-      over a fixed chunk list asserts the bytes on the socket.
-- [ ] The first chunk reaches the socket before the last one is produced when the render function
-      streams — asserted over `rakun_ssr.erl` with a render function that delays its second chunk.
+- [ ] The chunks reach the socket in the order the renderer wrote them, byte for byte; a test over a
+      renderer writing a fixed list asserts the bytes on the socket.
+- [ ] The first chunk reaches the socket before the last one is written when the renderer streams —
+      asserted over `rakun_ssr.erl` with a renderer that delays its second `out.write`.
+- [ ] `Content-Type: text/html; charset=utf-8` and status 200 go out with the first chunk.
 
-### Step 4 — The layout chain as data
+### Step 4 — The route data the renderer reads
 
 **Acceptance:**
-- [ ] The `PageContext` handed to the render function carries the pattern, the params, the query and
-      front 22's layout chain root-first; a three-deep chain arrives as three entries in that order.
-- [ ] Nothing in `ssr.bp` builds an element: the composition of that chain into a tree is jhonstart
+- [ ] The `Request` handed to the renderer answers `param(name)` for the matched pattern's dynamic
+      segments and `query(name)` for the search params; onze builds jhonstart's `RequestData` and the
+      segment chain from it and from front 22's `layoutChain`, never from a rakun type jhonstart
+      would have to name.
+- [ ] Nothing in `ssr.bp` builds an element: the composition of the chain into a tree is jhonstart
       front 30's `compose`.
 
 ### Step 5 — The render leaves `ssr.bp` (decision 113)
@@ -156,14 +175,16 @@ table and escaping, the island and hole ordinals, the fill protocol and their ac
 - [ ] `rtk proxy grep -rn 'from "jhonstart' repository/rakun/src` and
       `rtk proxy grep -rni 'onze' repository/rakun/src` are both empty — the grep is part of the gate.
 - [ ] `modules/rakun-app/botopink.json` lists neither `jhonstart` nor `emilia`.
-- [ ] The function handed through `setPageRender` is the only way HTML enters a rakun response on
-      the page path.
+- [ ] A `PageRenderer` registered through `page(pattern, render)` is the only way HTML enters a
+      rakun response on the page path; `RenderedPage`, `setPageRender` and `toResponse` are gone from
+      `ssr.bp` (decision 114).
 
 ## Examples
 
 - [`examples/server-render-example.bp`](./examples/server-render-example.bp) — a page dispatch with a
-  stub render function: the route is matched, the phase is set, the chunks the function returns are
-  written verbatim, and an unmatched URL answers 404. No HTML is built in rakun.
+  renderer that writes plain text through the `ChunkWriter`: the route is matched, the phase is set,
+  the chunks are written verbatim and the response closed once, and an unmatched URL answers 404. No
+  HTML is built in rakun. A page rendered by jhonstart through this seam is onze front 53's example.
 
 ## Language gaps
 
@@ -174,21 +195,21 @@ table and escaping, the island and hole ordinals, the fill protocol and their ac
 ## Blocked
 
 - `repository/rakun/src/http.bp` is frozen and `Response(status, body)` has no header list and no
-  streaming body. This front therefore defines `RenderedPage` in its own file and converts at the
-  boundary. When `http.bp` unfreezes, `RenderedPage` should collapse into `Response` and `toResponse`
-  should disappear.
+  streaming body. The page path therefore writes through `ChunkWriter` over `rakun_ssr.erl` rather
+  than through `Response`; when `http.bp` unfreezes, a streaming `Response` body can carry the same
+  writer.
 
 ## Test plan
 
-`repository/rakun/test/ssr_test.bp`, on `botopink test --target erlang`. The render function is a
-stub that returns fixed chunks, so every assertion is about dispatch, scope, phase, status and the
+`repository/rakun/test/ssr_test.bp`, on `botopink test --target erlang`. The renderer is a stub that
+writes fixed text chunks, so every assertion is about dispatch, scope, phase, status and the
 bytes written — never about markup. The markup, the escaping and the payload round trip are tested
 where they are built, in jhonstart front 30.
 
 ## Definition of done
 
-- The dispatch is one function, `servePage`, and the render function reaches it only through
-  `setPageRender`.
+- The dispatch is one function, `servePage`, and a page's renderer reaches it only through
+  `page(pattern, render)`; the renderer's type is `PageRenderer` over `ChunkWriter` (decision 114).
 - `repository/rakun/src/` builds no HTML and imports nothing from `jhonstart`, `emilia` or `onze`;
   the greps of Step 5 are part of the gate.
 - `repository/rakun/AGENTS.md` names `ssr.bp`, the dispatch and the chunk writer.

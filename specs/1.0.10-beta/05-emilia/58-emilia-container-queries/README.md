@@ -1,7 +1,7 @@
 # Front 58 — emilia container queries
 
 **Track:** D emilia
-**Priority:** medium — without it component-scoped responsiveness is impossible and every `emilia`-styled `jhonstart` component stays coupled to the viewport. For a library whose only consumer is a component framework that is a structural limitation, not a missing utility.
+**Priority:** medium — without it component-scoped responsiveness is impossible and every `emilia`-styled component stays coupled to the viewport. For a library whose consumers are components that is a structural limitation, not a missing utility.
 **Target:** comptime
 **Wave:** 2 — 54 lands in wave 0 and 56 in wave 1.
 **Depends on:** 54 (the `--container-*` namespace: the thirteen sizes are theme values, not constants), 56 (`@container` is an at-rule and has to be hoisted out of the class body)
@@ -19,7 +19,7 @@ Every conditional style `emilia` can express today is a viewport query. `Md`, `L
 same whether it is rendered full-bleed or inside a 300px sidebar, because it is asking about the
 window rather than about the space it was given.
 
-That is the wrong question for the one consumer emilia has. `jhonstart` components are composed —
+That is the wrong question for what emilia styles. Components are composed —
 the same card appears in a three-column grid and in a drawer — and the milestone's whole point is
 that `onze` assembles pages out of them (front 53). A card that can only ask about the viewport
 has to be parameterised by its context by hand, which means the layout decision leaks out of the

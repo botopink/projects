@@ -11,7 +11,6 @@
 //       https://tailwindcss.com/docs/container-queries
 
 import { emilia, flush, Token } from "emilia";
-import { div, p, renderToString } from "jhonstart";
 
 // Breakpoint modifiers
 val smInner: Token[] = [.Pad.All.__4];
@@ -216,10 +215,6 @@ val combinedTokens: Token[] = [
 ];
 val combinedStyles = emilia(combinedTokens);
 
-val page = div([
-    p([], []),
-], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F15: Modifiers Example ===");
@@ -268,7 +263,6 @@ fn main() -> @Future<void> {
     @print("Nested (Md > Hover): " + nestedMdStyles);
     @print("Triple Nested (Dark > Md > Hover): " + tripleDarkStyles);
     @print("Combined: " + combinedStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

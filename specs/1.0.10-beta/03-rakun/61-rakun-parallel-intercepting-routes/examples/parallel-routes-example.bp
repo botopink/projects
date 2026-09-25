@@ -1,75 +1,62 @@
 // Front 61 — Rakun Parallel and Intercepting Routes
 //
-// What this demonstrates: § 21's dashboard. One layout places two named slots
-// beside its children; each slot matches the URL on its own, and the slot that
-// does not match falls back to its own default.bp on a hard request. All of it
-// runs on the BEAM.
+// What this demonstrates: § 21's dashboard, from rakun's side. One layout
+// declares two named slots beside its children; each slot matches the URL on
+// its own, and the slot that does not match falls back to its own default.bp on
+// a hard request. All of it runs on the BEAM.
 //
-// The app tree this file populates:
+// The app tree whose records this file registers:
 //
 //   app/
 //     dashboard/
-//       layout.bp          <- dashboardLayout, below
-//       page.bp            <- dashboardPage, below
+//       layout.bp          L /dashboard
+//       page.bp            P /dashboard
 //       @analytics/
-//         page.bp          <- analyticsSlot
-//         default.bp       <- analyticsDefault
+//         page.bp          P /dashboard   slot analytics
+//         default.bp       D /dashboard   slot analytics
 //       @team/
 //         settings/
-//           page.bp        <- teamSettingsSlot
-//         default.bp       <- teamDefault
+//           page.bp        P /dashboard/settings   slot team
+//         default.bp       D /dashboard   slot team
+//
+// rakun answers resolutions — data. The layout that places the slots, and the
+// elements in them, are jhonstart's (front 30's `compose` and `LayoutProps`),
+// wired by onze; the rendered dashboard is onze front 53's. Here the records are
+// registered the way onze's boot registers them (front 22's
+// `rkAppRegisterEntry`), and the tests read the resolutions.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes
 //   https://nextjs.org/docs/app/api-reference/file-conventions/default
 
-import {layout, page, defaultView, LayoutProps, PageContext} from "rakun";  // front 22
-import {Element, div, h1, p, text} from "jhonstart";
+import {rkAppRegisterEntry, rkAppTable} from "rakun";                     // front 22
+import {parseTable} from "rakun-routing";                                  // front 22
+import {resolveSlots, SlotState, writeSlotStates} from "rakun";           // this front
 
-// SERVER — the layout. `props.slots` is the ordered pair list front 61 composes
-// and front 23 hands over; the labels of a tuple are lost through generic
-// instantiation, so the pairs are read positionally.
-#[layout("dashboard")]
-pub fn dashboardLayout(props: LayoutProps) -> Element {
-    val panels = props.slots.map({ pair ->
-        div([pair.1], attrs: []);
-    });
-    return div([
-        h1([text("Dashboard", attrs: [])], attrs: []),
-        props.children,
-        div(panels, attrs: []),
-    ], attrs: []);
+fn install() -> void {
+    rkAppRegisterEntry("L", "dashboard", "");
+    rkAppRegisterEntry("P", "dashboard", "");
+    rkAppRegisterEntry("P", "dashboard/@analytics", "analytics");
+    rkAppRegisterEntry("D", "dashboard/@analytics", "analytics");
+    rkAppRegisterEntry("P", "dashboard/@team/settings", "team");
+    rkAppRegisterEntry("D", "dashboard/@team", "team");
 }
 
-#[page("dashboard")]
-#[@future]
-pub fn dashboardPage(route: PageContext) -> @Future<Element> {
-    return p([text("overview", attrs: [])], attrs: []);
+test "a hard request for /dashboard matches analytics and defaults team" {
+    install();
+    val rs = resolveSlots(parseTable(rkAppTable()), "/dashboard", "/dashboard", false);
+    assert rs.length == 2;
+    assert rs.map({ r -> r.slot }).join(",") == "analytics,team";
+    var analytics = SlotState.Empty;
+    var team = SlotState.Empty;
+    if (rs.first()) { r -> analytics = r.state; };
+    if (rs.at(1)) { r -> team = r.state; };
+    assert analytics == SlotState.Matched;
+    assert team == SlotState.Defaulted;
 }
 
-// SERVER — the @analytics slot. It matches /dashboard and nothing below it.
-#[page("dashboard/@analytics")]
-#[@future]
-pub fn analyticsSlot(route: PageContext) -> @Future<Element> {
-    return p([text("visits: 1204", attrs: [])], attrs: []);
-}
-
-// SERVER — what @analytics renders when the URL it does not match is loaded
-// directly. On a client navigation the slot keeps what it had instead, and the
-// payload says so with `U`.
-#[defaultView("dashboard/@analytics")]
-pub fn analyticsDefault(props: LayoutProps) -> Element {
-    return p([text("analytics unavailable for this view", attrs: [])], attrs: []);
-}
-
-// SERVER — the @team slot matches one segment deeper.
-#[page("dashboard/@team/settings")]
-#[@future]
-pub fn teamSettingsSlot(route: PageContext) -> @Future<Element> {
-    return p([text("team settings", attrs: [])], attrs: []);
-}
-
-#[defaultView("dashboard/@team")]
-pub fn teamDefault(props: LayoutProps) -> Element {
-    return p([text("no team selected", attrs: [])], attrs: []);
+test "a soft navigation leaves the unmatched slot unchanged" {
+    install();
+    val rs = resolveSlots(parseTable(rkAppTable()), "/dashboard", "/dashboard/settings", true);
+    assert writeSlotStates(rs).contains("analytics|/dashboard|U");
 }

@@ -361,8 +361,7 @@ before implementation rather than trusted from this spec:
 
 ## Test plan
 
-`repository/emilia/test/colors_test.bp`, a flat suite that bare-imports across `src` (the form
-`repository/jhonstart/test/html_test.bp:1` uses). Run with `botopink test` from
+`repository/emilia/test/colors_test.bp`, a flat suite that bare-imports across `src`. Run with `botopink test` from
 `repository/emilia`, and in the ecosystem gate with `zig build test-libs --  --lib emilia`.
 
 Target: emilia has no target split, so the suite runs on **both** backends —

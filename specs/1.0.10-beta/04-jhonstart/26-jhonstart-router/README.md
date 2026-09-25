@@ -92,11 +92,13 @@ to agree between an Erlang term and a JS object.
 
 ### The route table is front 22's, and there is one parser
 
-`matchPath`, `parseTable` and `writeTable` are front 22's (`contracts.md § 1`). The table is
-line-oriented (`kind|pattern|slot|verb`, kinds `L T P D R S E N`) and travels in the payload's `t`
-key. This front **receives `match`** — front 22's matcher, handed in by onze, the one package that
-names both jhonstart and rakun (decision 113); it names no rakun module, contains no second matcher
-and does not parse the table itself. A router with its own matcher is a router that disagrees with the
+`matchPath`, `parseTable` and `writeTable` are front 22's, in the boundary module `rakun-routing`
+(`["erlang", "commonJS"]`, `contracts.md § 1`, decision 114). The table is line-oriented
+(`kind|pattern|slot|verb`, kinds `L T P D R S E N`) and travels in the payload's `t` key. This front
+**receives `match`** — onze's generated entry imports `parseTable` and `matchPath` from
+`rakun-routing` on commonJS and hands `{ path -> matchPath(table, path) }` to the router, and onze's
+server wiring does the same on erlang (decisions 113 and 114); the router names neither rakun nor
+`rakun-routing`, contains no second matcher and does not parse the table itself. A router with its own matcher is a router that disagrees with the
 server on precedence (static > dynamic > catch-all > optional catch-all), and the disagreement shows
 up only on the routes nobody tested.
 
@@ -355,8 +357,9 @@ type-checked, not executed, exactly as `hooks.bp:104-117` does for `Counter`.
 The router shipped naming front 22's `matchPath` as the thing it calls; under decision 113 jhonstart
 names no rakun symbol.
 
-- [ ] `router.bp` takes the matcher as a value (`match`) that onze hands in; no `matchPath`,
-      `parseTable` or `rakun` identifier appears under `modules/jhonstart/src/`
+- [ ] `router.bp` takes the matcher as a value (`match`) that onze hands in — `rakun-routing`'s
+      `matchPath` over the payload's table; no `matchPath`, `parseTable`, `rakun` or `rakun-routing`
+      identifier appears under `modules/jhonstart/src/`
 - [ ] the payload the client half reads is `globals.payload` (front 30's registry), never a literal
       `__onze`
 

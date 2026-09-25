@@ -20,9 +20,10 @@ by the modules' own tests.
 
 ## `examples/emilia-card` — the existing example, on the 1.0.10 surface
 
-`src/main.bp` keeps its three token lists (`cardTokens`, `titleTokens`, `bodyTokens`) and its
-jhonstart page; the numeric leaves keep the `.Pad.All.4` spelling and the palette moves to
-`.Color.Red.500` / `.Bg.Color.White`. `dependencies: ["emilia", "jhonstart"]`.
+`src/main.bp` keeps its three token lists (`cardTokens`, `titleTokens`, `bodyTokens`) and prints
+their class names and the flushed sheet — no markup; the numeric leaves keep the `.Pad.All.4`
+spelling and the palette moves to `.Color.Red.500` / `.Bg.Color.White`. `dependencies: ["emilia"]`,
+like every emilia example (decision 114).
 
 ```bp
 import { cardTokens, titleTokens, bodyTokens, tinyTheme } from "main";
@@ -657,15 +658,16 @@ pub fn primaryButton() -> Token[] {
 
 ---
 
-## `examples/jhonstart-attributes` — 48 (`dependencies: ["emilia", "jhonstart"]`)
+## `examples/class-attributes` — 48
 
-`src/main.bp`: `page()` builds one card through `styled` on a builder and one through `cls` in a
-`[class]={…}` hole, and `renderPage()` returns `renderToString(page) + await flush()`.
+`src/main.bp`: `cardAttrs(th)` builds one card's attribute array through `styled`, and
+`cardHole(th)` binds the class a `[class]={…}` hole would take through `cls`. Everything asserted is
+a class name, an attribute array or CSS text; the rendered page is the `jhonstart-emilia` bridge's
+test (jhonstart front 30) and onze's examples, never an emilia one.
 
 ```bp
-import { cardTokens, page, renderPage } from "main";
-import { Token, cls, styledWith, fullTheme, mergeClass } from "emilia";
-import { renderToString } from "jhonstart";
+import { cardTokens, cardAttrs, cardHole } from "main";
+import { Token, cls, styledWith, fullTheme, mergeClass, flush } from "emilia";
 import { assertClassName, assertCss } from "emilia-test";
 import { testing: { asserts: { equal, contains } } } from "std";
 
@@ -677,19 +679,20 @@ test "css: attributes ---- the card rules" {
     try assertCss(@src(), cardTokens());
 }
 
-test "both routes write the same class" {
+test "both routes carry the same class" {
     val th = fullTheme();
     val c = cls(cardTokens(), th);
-    val markup = renderToString(page());
-    equal(markup, "<div class=\"" + c + "\"><p>hi</p></div><div class=\"card " + c + "\"><p>hi</p></div>");
+    equal(cardHole(th), c);
+    equal(cardAttrs(th).at(0).unwrapOr(#("", ""))._1, c);
     equal(styledWith("card", cardTokens(), th)._1, mergeClass("card", c));
 }
 
-test "the document follows the markup" {
-    val out = await renderPage();
+#[@future]
+test "the flushed sheet selects the card class" {
     val c = cls(cardTokens(), fullTheme());
-    contains(out, "</div><style>@layer theme, base, components, utilities;");
-    contains(out, "." + c + "{background-color:var(--color-white)");
+    val sheet = await flush();
+    contains(sheet, "@layer theme, base, components, utilities;");
+    contains(sheet, "." + c + "{background-color:var(--color-white)");
 }
 ```
 
@@ -703,14 +706,14 @@ pub fn cardTokens() -> Token[] {
 }
 ```
 
-`examples/jhonstart-attributes/test/__snapshots__/class/attributes-the-page-card-is-the-shared-fixture.snap`
+`examples/class-attributes/test/__snapshots__/class/attributes-the-page-card-is-the-shared-fixture.snap`
 ```
 e_<hex>
 ```
 Byte-identical to `modules/emilia/test/__snapshots__/class/attributes-the-shared-fixture.snap`: the
 same token list under the same `fullTheme()`. A test in the module `contains`-checks this file.
 
-`examples/jhonstart-attributes/test/__snapshots__/css/attributes-the-card-rules.snap`
+`examples/class-attributes/test/__snapshots__/css/attributes-the-card-rules.snap`
 ```css
 .e{background-color:var(--color-white);padding:calc(var(--spacing) * 4);font-weight:bold}
 @media (hover: hover){.e:hover{background-color:var(--color-gray-100)}}
@@ -730,4 +733,4 @@ same token list under the same `fullTheme()`. A test in the module `contains`-ch
 | `dark-mode-nav` | the three `DarkMode` strategies on one token list — the class and attribute forms are the snapshots 34 owes |
 | `media-gallery` | `Alpha` + backdrop on one panel, a gradient with keyword stops, a filter that resets on hover |
 | `arbitrary-and-compose` | `components` beside `utilities` in one document with a real theme line |
-| `jhonstart-attributes` | the markup-then-document order onze 69 inserts, `mergeClass` on a rendered attribute, the fixture literal shared with the module test |
+| `class-attributes` | the class a builder's attribute array and a `[class]={…}` hole carry being one value, `mergeClass` on the attribute pair, the flushed sheet selecting the class, the fixture literal shared with the module test |

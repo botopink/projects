@@ -12,7 +12,6 @@
 //       https://tailwindcss.com/docs/transform-style
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // Rotate
 val rotateTokens: Token[] = [
@@ -181,8 +180,6 @@ val cardHoverTokens: Token[] = [
 ];
 val cardHoverStyles = emilia(cardHoverTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F11: Transforms Example ===");
@@ -202,7 +199,6 @@ fn main() -> @Future<void> {
     @print("Backface: " + backfaceStyles);
     @print("Transform Style: " + transformStyleStyles);
     @print("Card Hover: " + cardHoverStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

@@ -3,8 +3,8 @@
 // A real form, built only from the constructors this front delivers: `form`,
 // `label`, `input`, `select`, `option` and `button`. The binding is front 24's,
 // pinned in `contracts.md § 3` — `method="post"`, the current pathname as
-// `action`, `data-jh-a` carrying the action id, and a hidden `__onze_action`
-// field so that a browser with scripting disabled submits the same thing.
+// `action`, `data-jh-a` carrying the action id, and a hidden field whose name
+// onze passes in (`actionField`, decision 114 — `__bp_action` by default) so that a browser with scripting disabled submits the same thing.
 //
 // This file writes no constructor of its own. That is the point of the front:
 // before it, front 24, front 67 and front 53 each built `form`/`input`/`button`
@@ -48,10 +48,10 @@ fn actionFormAttrs(actionId: string, pathname: string) -> Array<#(string, string
 
 // A void element: `input` takes the same two parameters as every other
 // constructor and stores no children whatever it is handed.
-fn actionIdField(actionId: string) -> Element {
+fn actionIdField(actionField: string, actionId: string) -> Element {
     return input([], attrs: [
         #("type", "hidden"),
-        #("name", "__onze_action"),
+        #("name", actionField),
         #("value", actionId),
     ]);
 }
@@ -80,7 +80,7 @@ fn visibilityField() -> Element {
 
 pub fn newPostForm(actionId: string, pathname: string) -> Element {
     return form([
-        actionIdField(actionId),
+        actionIdField("__bp_action", actionId),
         fieldLabel("title", "Title"),
         postTextField("title", "Title"),
         fieldLabel("body", "Body"),
@@ -94,16 +94,16 @@ pub fn newPostForm(actionId: string, pathname: string) -> Element {
 // ── what it renders ─────────────────────────────────────────────────────────
 
 test "the hidden field carries the action id and nothing else" {
-    val field = actionIdField(sampleActionId);
+    val field = actionIdField("__bp_action", sampleActionId);
     assert field.tag == "input";
     assert renderToString(field)
-        == "<input type=\"hidden\" name=\"__onze_action\" value=\"a_9f31c0d7a4b2e5081c6fa3d2\"></input>";
+        == "<input type=\"hidden\" name=\"__bp_action\" value=\"a_9f31c0d7a4b2e5081c6fa3d2\"></input>";
 }
 
 test "the form names the action by id, on the form and in the hidden field" {
     val markup = renderToString(newPostForm(sampleActionId, "/blog/new"));
     assert markup.contains("<form method=\"post\" action=\"/blog/new\" data-jh-a=\"a_9f31c0d7a4b2e5081c6fa3d2\">");
-    assert markup.contains("name=\"__onze_action\"");
+    assert markup.contains("name=\"__bp_action\"");
     assert markup.contains("value=\"a_9f31c0d7a4b2e5081c6fa3d2\"");
     assert markup.contains("</form>");
 }
@@ -137,7 +137,7 @@ test "a void constructor drops children instead of rendering them" {
 test "the surface knows which of its tags are void" {
     assert isVoidTag("input");
     assert isVoidTag("form") == false;
-    assert renderToString(actionIdField(sampleActionId)).contains("</input>");
+    assert renderToString(actionIdField("__bp_action", sampleActionId)).contains("</input>");
 }
 
 // ── attribute values are stored verbatim ────────────────────────────────────

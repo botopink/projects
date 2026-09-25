@@ -37,7 +37,7 @@ Status: `covered` — the front's token surface delivers the row byte-equal to t
 |---|---|---|---|
 | § 1 Introdução | — | n/a | Prose. |
 | § 2 Instalação (2.1–2.5 Vite / PostCSS / CLI / Play CDN / framework guides) | — | n/a | emilia is a comptime library that hashes per call site; there is no build plugin, CLI or CDN to install. |
-| § 3.1 styling with utility classes | [48](./48-emilia-attributes/README.md) · [56](./56-emilia-cascade-and-output/README.md) | covered | `emilia(tokens)` returns `e_<hex>`; 48 carries it through jhonstart's `[class]={…}` hole (`styled`, `cls`, `clsWith`). 48 records that a `[class]={…}` hole may not contain a space (`html.bp` frozen). |
+| § 3.1 styling with utility classes | [48](./48-emilia-attributes/README.md) · [56](./56-emilia-cascade-and-output/README.md) | covered | `emilia(tokens)` returns `e_<hex>`; 48 hands it on as attribute data (`styled`, `styledWith`) and as the bare string a `[class]={…}` hole takes (`cls`, `clsWith`); emilia renders no HTML. 48 records that a `[class]={…}` hole may not contain a space (`html.bp` frozen). |
 | § 3.1 arbitrary values `bg-[#316ff6]` | [57](./57-emilia-escape-hatches/README.md) | covered | `Token.Arb(prop, value)` via `arbValue`, gated by `cssValue`/`cssIdent`; composes with `spacing(6)` and `themeVar`. |
 | § 3.1 arbitrary CSS properties `[--gutter-width:1rem]` | [57](./57-emilia-escape-hatches/README.md) | covered | `Token.ArbProp(name, value)` via `arbProp`. |
 | § 3.1 managing duplication (`@layer components { .btn-primary }`) | [59](./59-emilia-custom-utilities-and-variants/README.md) | covered | Bundles are `pub fn … -> Token[]`; `named("card", tokens)` lands in `@layer components`. |

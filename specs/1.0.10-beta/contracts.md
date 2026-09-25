@@ -25,9 +25,14 @@ kind|pattern|slot|verb
 are illegal inside a segment name. Match precedence is static > dynamic > catch-all > optional
 catch-all.
 
-`parseTable`, `writeTable` and `matchPath` are **one botopink implementation**, rakun's. The server
-matches with it; front 26's router receives it as `match` from onze and names no rakun module
-(decision 113). Neither side writes a second parser or a second precedence rule.
+`parseTable`, `writeTable` and `matchPath` are **one botopink implementation**, in rakun's boundary
+module `rakun-routing` (`["erlang", "commonJS"]`, owned by front 22 — decision 114). The server
+imports it on erlang (with the pure codecs of fronts 60, 61 and 65 that the browser also reads — the `k` and `z` blobs and the URL rules); onze's generated browser entry imports it on commonJS and hands
+`{ path -> matchPath(table, path) }` to front 26's router as `match`, so jhonstart names neither
+rakun nor `rakun-routing` (decision 113). Neither side writes a second parser or a second precedence
+rule. The `P` records carry no function on the wire or in the module: the renderer rakun calls for a
+page is an opaque `PageRenderer` registered by onze (decision 114), and the `L` / `T` / `P` / `D`
+records come from jhonstart's UI conventions (front 30), copied into rakun's table by onze at boot.
 
 ## 2 · Payload envelope — owned by jhonstart front 30
 
@@ -48,7 +53,7 @@ the render as strings handed in by onze; jhonstart names no rakun module.
 | `t` | the route-table blob |
 | `i` | islands, `[id, component, props]` |
 | `a` | actions, `[name, id]` |
-| `s` | emilia class names already present in the server-emitted `<style>` |
+| `s` | emilia class names already present in the server-emitted `<style>` — a render-plugin key (§ 6a), given by `jhonstart-emilia` |
 | `h` | open streaming holes |
 | `d` | dynamic flag |
 
@@ -101,9 +106,15 @@ Computed only on the server, echoed by the client, never derived in the browser.
 hashing module under decision 106 (`crypto` until `00 · 23-std-purity` lands).
 
 Form binding, written by jhonstart front 67 with the id onze hands it:
-`<form method="post" action="<pathname>" data-jh-a="<id>">` plus a hidden `__onze_action` field.
-Scripted invocation: the same POST carrying `X-Onze-Action`, or a JSON-RPC body
-`{"v":1,"id":…,"args":[…]}` — the same auth path, not a second door.
+`<form method="post" action="<pathname>" data-jh-a="<id>">` plus a hidden field named
+`actionField`. Scripted invocation: the same POST carrying the header named `actionHeader`, or a
+JSON-RPC body `{"v":1,"id":…,"args":[…]}` — the same auth path, not a second door.
+
+**The two wire names are onze's** (decision 114): onze passes `actionField` / `actionHeader` to
+jhonstart's form binding and sets the same values as rakun's `rakun.actions.field` /
+`rakun.actions.header` (front 05), which front 24's dispatcher reads. Neither library spells a
+name; rakun with either key unset refuses to start the dispatcher, naming the key. onze's defaults
+are `__bp_action` and `X-Bp-Action`, and the fixtures of every track assert those defaults.
 
 Response envelope:
 
@@ -136,7 +147,8 @@ Lowercase hex, seed 5381, multiplier 33, masked to 32 bits, folded over the enco
 static class present, the attribute value is `<static> + " " + <emilia class>`.
 
 The body hashed is `encodeSheet(tokensToSheet(tokens, th))` — front 56's rule model; the expected
-literal in the shared fixture is one value, and the `jhonstart-emilia` bridge test (front 30) and front 68 assert that value.
+literal in the shared fixture is one value, and emilia's own test, the `jhonstart-emilia` bridge test
+(front 30) and front 68 assert that value.
 
 Five clauses, each of them a test:
 
@@ -149,7 +161,7 @@ Five clauses, each of them a test:
    implementation (`mergeClass` in `emilia/modules/emilia/src/attributes.bp`) and nowhere else.
 5. Attribute array order is fixed, because `renderToString` writes attrs in array order.
 
-**The shared fixture:** `emilia/modules/emilia/test/integration_test.bp` asserts the class for a fixed token list as
+**The shared fixture:** `emilia/modules/emilia/test/attributes_test.bp` — an emilia test that renders no HTML — asserts the class for a fixed token list as
 a **literal hex string**, on both commonJS and erlang. The `jhonstart-emilia` bridge test (front 30) asserts the same literal
 for the same list, and front 68's bundle test asserts the client produces it too. If the three ever
 differ, hydration is broken and a test is red before a user sees it.
@@ -200,7 +212,9 @@ Two dispatcher rules binding on every token front:
 
 ## 5 · Request context — owned by front 62
 
-Consumed by fronts 12, 18, 23, 25, 28, 60 and the auth pattern. **Reading any accessor outside a
+Consumed by fronts 12, 18, 23, 25, 60 and the auth pattern. jhonstart does not read it: front 28's
+`request()` / `headers()` / `cookies()` read the `RequestData` onze builds from rakun's `Request` and
+hands to the render (decision 114). **Reading any accessor outside a
 request raises.** No `headersOr(default)`, no lenient property, no predicate to branch on — a
 predicate is an escape hatch with a different spelling.
 
@@ -347,9 +361,10 @@ installs them as jhonstart's `RenderHooks.headExtra` / `RenderHooks.bodyExtra` a
 what the fields return (decisions 77, 113).
 
 **Hydration entry** (`<outDir>/client/entry.bp`, botopink source): reads the payload through
-`readPayload(globals.payload)`, takes `i`, queries `[data-jh-i]` in document order, calls front 29's
+`readPayload(globals.payload)`, builds front 26's router with `match` over `parseTable(payload.t)`
+from `rakun-routing` (§ 1), takes `i`, queries `[data-jh-i]` in document order, calls front 29's
 hydrate point per island, registers the fill function under `globals.fill` for every `h`, then calls
-`linkMount()` and `formMount()` once each. No `__` name is written by hand in it.
+`linkMount()` and `formMount(actionHeader)` once each — `actionHeader` is the wire name onze configures (§ 3). No `__` name is written by hand in it.
 Front 29 owns the per-island hydrate point; front 68 owns the module that calls it. An id in the
 DOM with no payload entry, or the reverse, is a hard runtime error naming the id.
 
@@ -376,9 +391,10 @@ registers it at boot; emilia does not change and imports nobody (decision 113).
 ```bp
 // jhonstart/src/plugin.bp
 pub behavior RenderPlugin {
-    fn head(self: Self) -> string;                   // once, after the shell
-    fn chunk(self: Self, holeId: string) -> string;  // per boundary, before its markup
-    fn close(self: Self) -> @Result<void, string>;   // at the end: nothing may be left
+    fn head(self: Self) -> @Future<string>;                    // once, after the shell
+    fn chunk(self: Self, holeId: string) -> @Future<string>;   // per boundary, before its markup
+    fn close(self: Self) -> @Future<@Result<void, string>>;    // at the end: nothing may be left
+    fn payload(self: Self) -> @Future<?#(string, Json)>;       // once, after close
 }
 
 // onze, at boot
@@ -390,6 +406,7 @@ val site = app(plugins: [emiliaPlugin()]);           // {app} from "jhonstart", 
 | `head()` | **once**, after the shell rendered to a string, before the head is serialized | into `<head>`; `""` when nothing registered |
 | `chunk(holeId)` | after a streamed boundary renders, **before** its markup goes to the wire | first inside that boundary's fill: `<template data-jh-f="<holeId>"><style>…</style>…markup…</template>` — no marker of its own; `""` writes no `<style>` |
 | `close()` | after the last chunk | an error fails the render; a non-empty pending sheet is that error |
+| `payload()` | **once**, after `close` | written into the payload (§ 2) under the key the plugin gives; `null` writes nothing. A key the render writes itself (every § 2 key but `s`), or given by two plugins, fails the render. `Json` is JSON text the plugin serialised, written verbatim |
 
 The ordering rules — `head` once, CSS before the markup it styles, nothing left at `close` — are
 jhonstart's, because jhonstart is the caller; the adaptation to `flush()` is the bridge's. "Never an
@@ -397,9 +414,10 @@ unstyled paint" holds by construction: a fill's content reaches the document whe
 inserts style and markup together. The plugin never recomputes, re-hashes, sorts or dedups a class;
 contract 4 is untouched. The client bundle never calls `flush()`, which front 68 enforces.
 
-The payload's `s` key (§ 2) lists the class names already in the document's styles. The three
-methods return CSS text only, so how front 30's render obtains that list is not spelled by decision
-113; it is recorded as open in [`status.md`](./status.md).
+Every method is asynchronous (decision 114): the render is `#[@future]` and awaits each call, and
+the bridge awaits emilia's `#[@future] flush()` in `head` and `chunk`. The bridge's `payload()`
+returns `#("s", <the class names it flushed>)` — the payload's `s` key (§ 2) — and front 68's entry
+checks it with `checkStyles(payload.s)`. jhonstart names no plugin key.
 
 ## 7 · Test and snapshot contract — owned by 01-std, consumed by every `-test` submodule
 

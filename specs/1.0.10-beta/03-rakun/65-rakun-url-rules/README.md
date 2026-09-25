@@ -6,9 +6,10 @@
 header per path, no `basePath` for an app served from a sub-path, and `proxy.bp` — a top-level file
 convention in `§ 3` — has no implementation. These are the rules that decide whether a request reaches
 the app at all, so they sit in front of everything
-**Target:** both — boundary. Rules are **executed** on BEAM by front 07's chain; `basePath`,
-`trailingSlash` and the redirect table are **mirrored** in the browser so `<Link>` produces the href
-the server would have produced. The two halves are named below
+**Target:** erlang, with one boundary file. Rules are **executed** on BEAM by front 07's chain
+(`rakun-web`); `basePath`, `trailingSlash` and the redirect table are **mirrored** in the browser so
+`<Link>` produces the href the server would have produced, through pure botopink in the boundary
+member `rakun-routing` (`["erlang", "commonJS"]`, decision 114). The two halves are named below
 **Wave:** 7
 **Depends on:** 07 (the filter chain these rules install into — this front defines them, that front
 runs them), 22 (the route table a rewrite target is checked against), 62 (the request frame a rule
@@ -16,7 +17,11 @@ reads a header from), 63 (the redirect signal), 13 (the HTTP client an external 
 through), 01 (`regex.compile`, `regex.captures`, `encoding.percentEncode`/`percentDecode`)
 **Owns:** `repository/rakun/modules/rakun-web/src/rules/**`,
 `repository/rakun/modules/rakun-web/test/rules/**` — the same sub-directory carve-out front 20 uses
-for websockets, so front 07 keeps `modules/rakun-web/src/*.bp` untouched
+for websockets, so front 07 keeps `modules/rakun-web/src/*.bp` untouched — and
+`repository/rakun/modules/rakun-routing/src/url_rules.bp` with
+`modules/rakun-routing/test/url_rules_test.bp` (the boundary half: `UrlRules`, `canonicalize`,
+`clientHref`, `PathRules`, `RedirectRule` and the redirect-blob codec; one `pub mod` line handed
+to front 22)
 **Does not touch:** `modules/rakun-web/src/*.bp` (front 07) and `src/websocket/**` (front 20);
 `repository/rakun/src/**` in any form; `decorators.bp`, `http.bp`, `bootstrap.bp`, `runtime.mjs` —
 frozen
@@ -141,12 +146,16 @@ the external proxy, header application, and the registration-time checks.
 an app with `basePath: "/docs"` must emit `/docs/about` and the server must strip it back:
 
 ```bp
-pub fn canonicalize(rules: UrlRules, pathname: string) -> string
-pub fn clientHref(rules: UrlRules, pathname: string) -> string
+// modules/rakun-routing/src/url_rules.bp
+pub type PathRules(basePath: string, trailingSlash: bool)
+pub fn canonicalize(rules: PathRules, pathname: string) -> string
+pub fn clientHref(rules: PathRules, pathname: string) -> string
 ```
 
 `canonicalize` strips `basePath` and normalizes the trailing slash; `clientHref` is its inverse and is
-what front 27's `Link` calls. They are one botopink implementation compiled twice, which is the same
+what front 27's `Link` calls — handed to it by onze's client entry, which imports `rakun-routing`, so
+jhonstart names no rakun module (decision 114). They are one botopink implementation in
+`rakun-routing`, compiled twice, which is the same
 arrangement [`contracts.md` § 1](../../contracts.md) fixes for the route table, and for the same reason:
 if the two sides disagree about what a URL is, every fix downstream is a guess.
 
@@ -158,15 +167,15 @@ source|destination|permanent
 
 one record per line, `permanent` being `1` or `0`. `|` and newline are illegal in a source or a
 destination, matching the rule [`contracts.md` § 1](../../contracts.md) already applies to segment names.
-It rides in front 23's payload so a client navigation to a retired URL is redirected without a round
-trip. **This front adds no field and no kind letter to the route table**; the blob is separate and
+It rides in the payload (contract 2, written by jhonstart front 30 from the string onze hands it) so
+a client navigation to a retired URL is redirected without a round trip. **This front adds no field and no kind letter to the route table**; the blob is separate and
 joined by nothing.
 
 ### Target and sidecar naming
 
-The server half declares `#[@External.Erlang]` cells only; `canonicalize`, `clientHref`, the matcher
-translator and the blob codec are pure botopink with no host cell, so they compile for both targets
-without a second implementation. The module's host cells live in
+The server half declares `#[@External.Erlang]` cells only. `canonicalize`, `clientHref` and the blob
+codec are pure botopink with no host cell in `rakun-routing`, so they compile for both targets
+without a second implementation; the matcher translator is server-only and stays in `rakun-web`. The module's host cells live in
 `modules/rakun-web/src/rules/sidecars/rakun_url_rules.erl`; the atom carries the `rakun_` prefix
 because `shipErlSidecars` skips a qualifier matching a module this build emitted
 (`modules/compiler-cli/src/cli/libs.zig:596`) — the rule front 04 established.
@@ -211,6 +220,7 @@ most of this step's assertions because it needs no compiled handle.
 ### Step 2 — `canonicalize` and `clientHref`
 
 ```bp
+// rakun-web — the whole rule set, server-side
 pub type UrlRules(
     basePath: string,
     trailingSlash: bool,
@@ -218,10 +228,16 @@ pub type UrlRules(
     rewrites: Array<RewriteRule>,
     headers: Array<HeaderRule>,
 )
+pub fn pathRulesOf(rules: UrlRules) -> PathRules
 
-pub fn canonicalize(rules: UrlRules, pathname: string) -> string
-pub fn clientHref(rules: UrlRules, pathname: string) -> string
+// rakun-routing — the boundary half, both targets
+pub type PathRules(basePath: string, trailingSlash: bool)
+pub fn canonicalize(rules: PathRules, pathname: string) -> string
+pub fn clientHref(rules: PathRules, pathname: string) -> string
 ```
+
+`PathRules` is the two fields the browser needs, so `rakun-routing` carries no rewrite, header or
+origin rule; the server passes `pathRulesOf(rules)`.
 
 **Acceptance:**
 - [ ] With `basePath: "/docs"`, `canonicalize(rules, "/docs/about")` answers `/about` and
@@ -235,8 +251,8 @@ pub fn clientHref(rules: UrlRules, pathname: string) -> string
 - [ ] `trailingSlash: true` maps `/about` to `/about/` and leaves `/` alone.
 - [ ] Percent-decoding happens once: `/a%252Fb` decodes to `/a%2Fb` and not to `/a/b`, because
       double-decoding is a path-traversal primitive.
-- [ ] Every assertion in this step runs green on `--target erlang` and `--target commonJS` from the
-      same test file. This is the boundary half.
+- [ ] Every assertion in this step runs green on `--target erlang` and `--target commonJS` from
+      `modules/rakun-routing/test/url_rules_test.bp`. This is the boundary half.
 
 ### Step 3 — Redirects
 
@@ -249,6 +265,7 @@ pub type RedirectRule(
 
 pub fn interpolate(destination: string, m: Matcher, pathname: string) -> string
 pub fn redirectFor(rules: CompiledRules, pathname: string) -> ?RedirectRule
+// rakun-routing — RedirectRule and its codec cross to the browser
 pub fn writeRedirectTable(rs: Array<RedirectRule>) -> string
 pub fn parseRedirectTable(wire: string) -> Array<RedirectRule>
 ```
@@ -363,8 +380,8 @@ pub fn urlRulesFilter(compiled: CompiledRules) -> Filter
 - [`examples/url-rules-example.bp`](./examples/url-rules-example.bp) — an app served from `/docs` with
   a retired URL, an internal rewrite, an external API proxy and a CSP header, registered once at
   startup. The developer's whole contact with this front is one `UrlRules` value.
-- [`examples/base-path-example.bp`](./examples/base-path-example.bp) — the boundary half:
-  `canonicalize`/`clientHref` asserted as inverses in a `test` block that runs on both targets, which
+- [`examples/base-path-example.bp`](./examples/base-path-example.bp) — the boundary half, from
+  `rakun-routing`: `canonicalize`/`clientHref` asserted as inverses in a `test` block that runs on both targets, which
   is what keeps a `<Link>` href and a server match from disagreeing.
 
 ## Language gaps
@@ -381,13 +398,13 @@ No new gap. Every construct in this front's examples parses today.
 
 ## Test plan
 
-`repository/rakun/modules/rakun-web/test/rules/matcher_test.bp`, `canonicalize_test.bp`,
-`redirects_test.bp`, `rewrites_test.bp` and `apply_test.bp`, run by `botopink test --target erlang`
+`repository/rakun/modules/rakun-web/test/rules/matcher_test.bp`, `redirects_test.bp`,
+`rewrites_test.bp` and `apply_test.bp`, run by `botopink test --target erlang`
 from `modules/rakun-web/` and by `zig build test-libs -- --target erlang --lib rakun`.
 
-`canonicalize_test.bp` and the blob half of `redirects_test.bp` additionally run on
-`--target commonJS`: those are the boundary half, they carry no host cell, and a `basePath` the two
-sides disagree about breaks every link in the app at once. Everything that touches a socket, the route
+`modules/rakun-routing/test/url_rules_test.bp` — `canonicalize`/`clientHref` and the redirect-blob
+round trip — runs on `--target erlang` and `--target commonJS`: that is the boundary half, it carries
+no host cell, and a `basePath` the two sides disagree about breaks every link in the app at once. Everything that touches a socket, the route
 registry or the request frame is erlang only.
 
 What the tests assert, by step: the three matcher source forms, the literal-escaping case, `§ 20`'s
@@ -405,8 +422,8 @@ their message text for front 50's CLI suite. That split follows front 22's prece
 
 ## Definition of done
 
-- `modules/rakun-web/src/rules/**` compiles, and `canonicalize`, `clientHref`, the matcher translator
-  and the blob codec carry no host cell so they build for both targets.
+- `modules/rakun-web/src/rules/**` compiles on erlang; `canonicalize`, `clientHref` and the blob codec
+  are `rakun-routing`'s `src/url_rules.bp`, carry no host cell, and build for both targets.
 - `src/rules/sidecars/rakun_url_rules.erl` compiles under `erlc` with `-Werror` and its atom does not
   collide with a module rakun emits.
 - Front 07's `src/*.bp` is untouched: the only thing this front hands it is one `Filter` value.

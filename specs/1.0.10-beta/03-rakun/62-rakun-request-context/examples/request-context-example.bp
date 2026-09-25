@@ -1,6 +1,6 @@
 // Front 62 — Rakun Request Context
 //
-// What this demonstrates: reading a session cookie from a server-rendered layout,
+// What this demonstrates: reading a session cookie from a page renderer,
 // writing a cookie from a server action, deferring work past the response, and
 // reading a request header from a route handler. Every function in this file runs
 // on the BEAM while a request is in flight. Nothing here compiles for the browser.
@@ -12,43 +12,30 @@
 //   https://nextjs.org/docs/app/guides/authentication
 
 import {cookies, headers, after, CookieAttrs} from "rakun";
-import {layout, page, LayoutProps, PageContext} from "rakun";  // provided by front 22
+import {page, ChunkWriter} from "rakun";                       // provided by front 23
 import {action} from "rakun";                                  // provided by front 24
 import {getRoute} from "rakun";                                // provided by front 25
 import {redirect} from "rakun";                                // provided by front 63
 import {Request, Response} from "rakun";
-import {Element, div, p, h1, text} from "jhonstart";
 
-// SERVER — the auth guard of NEXTJS-DOCS.md § 23 "Layout with authentication".
-// The layout is not dispatched by the router, so nobody hands it a Request; it
-// reads the cookie out of the request frame this front establishes.
-#[layout("dashboard")]
-pub fn dashboardLayout(props: LayoutProps) -> Element {
+// SERVER — the auth guard of NEXTJS-DOCS.md § 23, on a page renderer (front 23).
+// The renderer reads the cookie out of the request frame this front
+// establishes; a missing session raises front 63's redirect before the first
+// write, so the dispatch answers 307. Reading a cookie marks the render
+// dynamic, so front 60 will not prerender this route, and `dynamicReason()`
+// answers "cookies" in the build report. In an application the renderer is
+// the one onze registers and the markup is jhonstart's (onze front 53).
+val _dashboard = page("dashboard", fn(req: Request, out: ChunkWriter) {
     val session = cookies().get("session").unwrapOr("");
     if (session == "") {
         val _gone = redirect("/login");
     };
-    return div([
-        p([text("signed in as " + session, attrs: [])], attrs: []),
-        props.children,
-    ], attrs: []);
-}
-
-// SERVER — a page under that layout. Reading a cookie here marks the render
-// dynamic, so front 60 will not prerender this route, and `dynamicReason()`
-// answers "cookies" in the build report.
-#[page("dashboard")]
-#[@future]
-pub fn dashboardPage(route: PageContext) -> @Future<Element> {
     val theme = cookies().get("theme").unwrapOr("system");
-    return div([
-        h1([text("Dashboard", attrs: [])], attrs: []),
-        p([text("theme: " + theme, attrs: [])], attrs: []),
-    ], attrs: []);
-}
+    return out.write("signed in as " + session + "; theme: " + theme);
+});
 
 // SERVER — a server action. The phase is Action, so a cookie write is legal.
-// The same call from `dashboardLayout` above would raise.
+// The same call from the page renderer above would raise.
 #[action]
 pub fn setTheme(theme: string) -> string {
     val attrs = CookieAttrs(

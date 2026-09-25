@@ -93,7 +93,7 @@ test "the empty form carries the attributes an un-hydrated browser needs" {
     assert markup.contains("method=\"post\"");
     assert markup.contains("action=\"/blog/new\"");
     assert markup.contains("data-jh-a=\"" + sampleActionId + "\"");
-    assert markup.contains("name=\"__onze_action\"");
+    assert markup.contains("name=\"__bp_action\"");
 }
 
 test "a field message from the action lands beside its own field" {

@@ -1,0 +1,9 @@
+// app/blog/loading.bp — jhonstart only (decision 114, item 6): the styled
+// version of this file, with an emilia class, is an onze example.
+import {Element, div, text} from "jhonstart";
+
+pub fn Loading() -> Element {
+    return div([
+        div([text("Loading...", attrs: [])], attrs: [#("class", "skeleton")]),
+    ], attrs: []);
+}

@@ -15,7 +15,6 @@
 //       https://tailwindcss.com/docs/place-content
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // Grid template columns
 val gridColsTokens: Token[] = [
@@ -241,8 +240,6 @@ val gridAlignTokens: Token[] = [
 ];
 val gridAlignStyles = emilia(gridAlignTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F02: Grid Example ===");
@@ -267,7 +264,6 @@ fn main() -> @Future<void> {
     @print("Align Self: " + alignSelfStyles);
     @print("Place: " + placeStyles);
     @print("Grid Align: " + gridAlignStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

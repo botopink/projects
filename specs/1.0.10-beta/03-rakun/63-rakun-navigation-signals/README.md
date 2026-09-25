@@ -227,8 +227,8 @@ pub fn peekSignal() -> NavOutcome
 
 ### Step 3 — Signals through `await`
 
-A page is `#[@future] fn(route: PageContext) -> @Future<Element>` (front 22), and a server component
-awaits others. On erlang `@Future` lowers eagerly, so the signal is raised during the awaited call and
+A page renderer is `fn(req: Request, out: ChunkWriter) -> @Future<void>` (front 23), and whatever
+it calls — a jhonstart server component, in an onze application — awaits others. On erlang `@Future` lowers eagerly, so the signal is raised during the awaited call and
 propagates as a plain throw.
 
 **Acceptance:**

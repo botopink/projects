@@ -7,7 +7,6 @@
 //       https://tailwindcss.com/docs/caption-side
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // Border collapse
 val borderCollapseTokens: Token[] = [
@@ -65,8 +64,6 @@ val tableTokens: Token[] = [
 ];
 val tableStyles = emilia(tableTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F09: Tables Example ===");
@@ -77,7 +74,6 @@ fn main() -> @Future<void> {
     @print("Table Layout: " + tableLayoutStyles);
     @print("Caption Side: " + captionSideStyles);
     @print("Combined Table: " + tableStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

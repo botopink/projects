@@ -12,12 +12,16 @@
 //     opengraph-image.png        <- the site-wide card, a static file
 //     blog/
 //       [slug]/
-//         opengraph-image.bp     <- blogOgImage, below, rendered per post
+//         opengraph-image.bp     <- rendered per post (jhonstart + onze front 70)
 //
-// SERVER — both routes answer requests on the BEAM. The rendered form is handed
-// to front 70, which turns the element tree into SVG and optionally rasterizes
-// it; with front 70 absent that one route answers 501 and the <meta> tag is
-// still emitted, so the failure is one card and not a missing head.
+// SERVER — both routes answer requests on the BEAM. rakun declares the dynamic
+// route, its URL and its <meta> tags; the card's body is an opaque renderer onze
+// sets with `setImageRenderer` — jhonstart renders the element tree and onze
+// front 70 turns it into SVG. With no renderer set (front 70 absent) the route
+// answers 501 and the <meta> tag is still emitted, so the failure is one card
+// and not a missing head. This file sets a stand-in renderer that writes an SVG
+// string, so the route is testable from rakun alone; the jhonstart card is onze
+// front 53's.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/file-conventions/metadata/opengraph-image
@@ -26,11 +30,11 @@ import {
     ImageKind,
     registerImageFile,
     registerImageRoute,
+    setImageRenderer,
     imageUrlFor,
     metaTagsFor,
 } from "rakun";
-import {PageContext} from "rakun";  // provided by front 22
-import {Element, div, h1, p, text} from "jhonstart";
+import {ChunkWriter, Request} from "rakun";  // provided by fronts 23 and 04
 
 pub type Post(
     slug: string,
@@ -58,19 +62,15 @@ val _rootOg = registerImageFile(
 // /blog/<slug> and leaves every other route on the root one. Width, height and
 // content type are written out because a declared parameter default is never
 // applied at a call site.
-#[@future]
-pub fn blogOgImage(route: PageContext) -> @Future<Element> {
-    val slug = route.params.lookup("slug").unwrapOr("");
-    val post = findPost(slug);
-    return div([
-        h1([text(post.title, attrs: [])], attrs: []),
-        p([text("by " + post.author, attrs: [])], attrs: []),
-    ], attrs: []);
-}
+val _blogOg = registerImageRoute(ImageKind.OpenGraph, "blog/[slug]", 1200, 630, "image/svg+xml");
 
-val _blogOg = registerImageRoute(ImageKind.OpenGraph, "blog/[slug]", blogOgImage);
+// SERVER — the stand-in body. In an application onze sets this renderer.
+val _blogOgBody = setImageRenderer(ImageKind.OpenGraph, "blog/[slug]", fn(req: Request, out: ChunkWriter) {
+    val post = findPost(req.param("slug"));
+    return out.write("<svg xmlns=\"http://www.w3.org/2000/svg\"><text>" + post.title + " by " + post.author + "</text></svg>");
+});
 
-// SERVER — what front 32 puts in <head>. The resolution rule is nearest
+// SERVER — what jhonstart front 32 puts in <head>, handed to it by onze. The resolution rule is nearest
 // ancestor, implemented once here and cited there.
 pub fn headTagsFor(pathname: string, pattern: string) -> Array<#(string, string)> {
     return metaTagsFor(pattern);

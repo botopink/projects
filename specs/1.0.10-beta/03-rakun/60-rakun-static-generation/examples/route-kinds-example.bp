@@ -12,7 +12,7 @@
 //   https://nextjs.org/docs/app/api-reference/components/link#prefetch
 //   https://nextjs.org/docs/app/getting-started/linking-and-navigating
 
-import {RouteKind, writeKinds, parseKinds, routeKindOf} from "rakun";
+import {RouteKind, writeKinds, parseKinds, routeKindOf} from "rakun-routing";  // front 60's boundary half
 
 test "the kind blob round-trips" {
     val kinds = [

@@ -55,7 +55,7 @@ gain the section and whose README gains a paragraph or a refusal; nothing here i
 | Section | Nearest front(s) | State | Absorb |
 |---|---|---|---|
 | `04-web.md § WebMvc.fn (Funcional)`, `§ WebFlux.fn (Funcional)` | 07 · 25 | no front names a programmatic route builder (`RouterFunction`); 04's decorators and 25's `route.bp` are the two registration forms | 25 — state whether a `routes()` builder over 22's table exists or is refused |
-| `04-web.md § Template Engines` (Thymeleaf, FreeMarker, Mustache, Groovy) | 23 | by design the engine is jhonstart's `html` DSL rendered by 23; no README says so | 23 — one refusal line |
+| `04-web.md § Template Engines` (Thymeleaf, FreeMarker, Mustache, Groovy) | 23 | by design rakun has no template engine: a page's HTML is written by the `PageRenderer` onze registers (jhonstart's render, decisions 113 and 114); no README says so | 23 — one refusal line |
 | `05-data.md § DataSource · Banco Embutido` (H2, HSQL, Derby), `§ H2 Web Console` | 08 · 19 · 80 | 08 mentions "Spring's embedded-database convenience" and names no engine; 19 declines Testcontainers-style services; 80 declines a database browser | 19 — an in-memory `SqlTemplate` double for slices, or 08 — refuse and name SQLite/`mnesia` as the local-dev answer |
 | `05-data.md § DataSource · Lazy Connection Proxy` | 08 | absent | 08 — one line: pool checkout is per call, there is no proxy to make lazy |
 | `05-data.md § Elasticsearch · Sniffer` | 09 | absent | 09 — node auto-discovery, or refuse |

@@ -12,14 +12,15 @@ server reads it back to emit script tags
 **Depends on:** 29 (the boundary marker, the `server-only` marker and the hydrate entry point) · 49
 (config, `outDir`, and the `ONZE_PUBLIC_` rule this front enforces) · 03 (content hashes) · 50 (the
 CLI that invokes it) · 01 (`path.walk`, `path.glob`, `process.run`, `fs`) · 30 (jhonstart's render:
-the payload, the globals registry, and the `RenderHooks` head and body fields its tags fill) · 27 (the link runtime the entry mounts) · 48 (the class names the
+the payload, the globals registry, the router that receives `match`, and the `RenderHooks` head and body fields its tags fill) · 27 (the link runtime the entry mounts) · 22 (`rakun-routing`, the matcher the entry hands the router, compiled for commonJS) · 48 (the class names the
 tree carries) · 20 (the websocket the dev rebuild pushes over)
 **Owns:** `repository/onze/modules/onze-bundler/src/**`,
 `repository/onze/modules/onze-bundler/test/**` — including `headScriptTags`/`scriptTags` and the
 `RenderHooks.headExtra`/`bodyExtra` values built from them, which `Onze.run` (front 49) hands to
 jhonstart's render at boot. This front owns **no** definition in another repository: `RenderHooks`,
 the payload and the globals registry are jhonstart front 30's, the island marker is front 29's, and
-`linkMount` / `formMount` are fronts 27's and 67's — all imported here (decision 113)
+`linkMount` / `formMount` are fronts 27's and 67's, and `parseTable` / `matchPath` are
+`rakun-routing`'s (front 22) — all imported here (decisions 113, 114)
 **Does not touch:** `repository/onze/src/**` (front 49), `repository/onze/modules/onze-cli/**`
 (front 50), `repository/onze/modules/onze-assets/**` (front 69), `repository/jhonstart/src/**`,
 `repository/rakun/src/**`, `repository/emilia/src/**`
@@ -167,11 +168,13 @@ Four things enforce it, and they are this front's:
    `styleMap` rule is handed to front 69, which puts it in the document's `<style>` block during the
    server render. A client island that mounts after hydration finds its class already styled.
 4. **Checkable at run time, not only at build time.** The payload's `s` key lists the class names
-   already present in the server-emitted `<style>` (`contracts.md § 2`). The generated entry compares
-   every name its islands compute against `s` and fails loudly in dev when one is missing. The shared
-   fixture in `emilia/test/integration_test.bp` — the literal hex for a fixed token list — is asserted
-   by this front's bundle test as well, which is the third of the three assertions `contracts.md § 4`
-   requires.
+   already present in the server-emitted `<style>` (`contracts.md § 2`); the `jhonstart-emilia`
+   bridge's `RenderPlugin.payload()` returns it under `"s"` and jhonstart's render writes it
+   (decision 114). The generated entry calls `checkStyles(payload.s)`, which compares every name its
+   islands compute against `s` and fails loudly in dev when one is missing. The shared fixture of
+   `contracts.md § 4` — the literal hex for a fixed token list, asserted by emilia's own test and by
+   the bridge's — is asserted by this front's bundle test as well, which is the third of the three
+   assertions the contract requires.
 
 ### What the bundle contains
 
@@ -288,9 +291,16 @@ invent a marker; it consumes that one. The entry:
 5. registers the fill function under `globals.fill` (`__bp1`) with `registerFill(globals.fill,
    payload.h)`, so front 30's `<template data-jh-f="h1">…</template><script>__bp1("h1")</script>`
    has a function to call when a late chunk lands,
-6. calls front 27's `linkMount()` and front 67's `formMount()` once, after every island is mounted —
-   ordinary imports from `jhonstart-link` and `jhonstart-forms`, not globals,
-7. schedules `afterInteractive` scripts, then `lazyOnload` ones.
+6. parses the payload's `t` with `rakun-routing`'s `parseTable` and hands jhonstart's router (front
+   26) `match: { path -> matchPath(table, path) }` — the one matcher the server also runs, imported
+   from the boundary module `rakun-routing` (`["erlang", "commonJS"]`, decision 114); jhonstart
+   imports neither rakun nor `rakun-routing`,
+7. calls front 27's `linkMount()` and front 67's `formMount(actionHeader)` once, after every island
+   is mounted — ordinary imports from `jhonstart-link` and `jhonstart-forms`, not globals; the header
+   name is onze's configured value (`X-Bp-Action` by default), the same one front 49's boot sets in
+   rakun's configuration, as the server render hands `actionField` (`__bp_action`) to front 67's
+   `formAction`,
+8. schedules `afterInteractive` scripts, then `lazyOnload` ones.
 
 An island in the DOM with no entry in the payload, or an entry with no element, is a **hard error at
 run time with the island id in the message**, not a silent skip — a mismatch here is the failure mode
@@ -431,7 +441,11 @@ render that writes them and the entry that reads them cannot diverge (decision 1
 - [ ] The fill function is registered under `globals.fill` before the first streamed chunk can
       arrive — asserted by generating an entry for a route with holes and checking the registration
       precedes the island loop
-- [ ] `linkMount` and `formMount` are called exactly once each, after the last island
+- [ ] `linkMount` and `formMount` are called exactly once each, after the last island, and
+      `formMount` receives the configured `actionHeader`, not a literal of the bundler's own
+- [ ] The entry imports `parseTable` / `matchPath` from `rakun-routing` and hands the router `match`;
+      it contains no matcher and no table parser of its own, and the bundle's client graph reaches
+      `rakun-routing` compiled for commonJS
 - [ ] The generated entry contains no hand-written `__`-prefixed name: every global it reads is
       `globals.<name>` from jhonstart's registry
 - [ ] Every class name the entry's islands compute is present in the payload's `s` key — the runtime

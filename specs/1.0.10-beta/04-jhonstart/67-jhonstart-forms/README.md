@@ -4,7 +4,7 @@
 **Priority:** high — front 24 dispatches a server action and nothing in the browser binds a form to it, so the central example of `NEXTJS-DOCS.md § 10` and `§ 14` has no client half and no page can submit anything
 **Target:** js (client)
 **Wave:** 8
-**Depends on:** 24 (the action endpoint and its envelope — contract literals only; jhonstart imports nothing from rakun, and the action id reaches the form from onze, decision 113) · 29 (the client boundary and the hydration entry) · 94 (`form`, `input`, `button`, `label` — this front defines no constructor) · 14 (the constraint set the client mirrors) · 26 (navigation after a submit) · 31 (which settled that an `ok: false` envelope is data, not a boundary) · 63 (a redirect returned from an action) · 01 (percent encoding)
+**Depends on:** 24 (the action endpoint and its envelope — contract literals only; jhonstart imports nothing from rakun, and the action id and the wire names `actionField` / `actionHeader` reach the form from onze, decisions 113 and 114) · 29 (the client boundary and the hydration entry) · 94 (`form`, `input`, `button`, `label` — this front defines no constructor) · 14 (the constraint set the client mirrors) · 26 (navigation after a submit) · 31 (which settled that an `ok: false` envelope is data, not a boundary) · 63 (a redirect returned from an action) · 01 (percent encoding)
 **Owns:** `repository/jhonstart/src/form.bp`, `repository/jhonstart/src/form_state.bp`, `repository/jhonstart/test/form_test.bp`, `repository/jhonstart/test/form_state_test.bp`
 **Does not touch:** `repository/jhonstart/src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen for the milestone), `src/elements.bp` (front 94), `src/router.bp` (front 26), `src/link.bp` (front 27), `src/client.bp` (front 29), `repository/rakun/src/actions.bp` (front 24)
 **Reference:** `NEXTJS-DOCS.md § 10. Mutação de Dados` (Formulários · useActionState · Invocando via event handlers · Segurança), `§ 14. Tratamento de Erros` (Erros esperados), `§ 25. Referência de Componentes` (`<Form>`) · `contracts.md § 3` (action id and
@@ -71,19 +71,25 @@ derivation — `"a_" + crypto.hmacSha256(buildSecret, module + "." + name + ":" 
 24 characters, computed on the server and never derived in the browser. This front echoes it and
 never constructs it.
 
-`formAction(id)` produces a `FormBinding`; `formAttrs(binding)` produces the `attrs` array a `form`
-element carries, and it is **front 24's markup, matched exactly**:
+`formAction(id, pathname, actionField)` produces a `FormBinding`; `formAttrs(binding)` produces the
+`attrs` array a `form` element carries, and it is **front 24's markup, matched exactly**:
 
 ```
 <form method="post" action="<pathname>" data-jh-a="<id>">
-  <input type="hidden" name="__onze_action" value="<id>">
+  <input type="hidden" name="<actionField>" value="<id>">
 ```
+
+**The wire names are handed in, never spelled here** (decision 114, item 7). The hidden field's name
+(`actionField`) and the header of the scripted POST (`actionHeader`) are values onze passes to this
+front and, with the same values, to rakun front 24's configuration (`rakun.actions.field`,
+`rakun.actions.header`). jhonstart holds no default and no literal for either; onze's defaults are
+`__bp_action` and `X-Bp-Action`, and every example and fixture in this track passes those.
 
 That set is not an implementation detail — it is the whole progressive-enhancement story. With no
 JavaScript the browser reads `action` and `method`, posts the fields to the current pathname, and the
-hidden `__onze_action` field tells front 24 which action ran. With the bundle loaded, front 68's
+hidden `actionField` field tells front 24 which action ran. With the bundle loaded, front 68's
 hydration entry finds every `[data-jh-a]`, attaches a submit listener, cancels the default, posts
-the same body with `fetch` plus the `X-Onze-Action` header, and applies the answer without a document
+the same body with `fetch` plus the `actionHeader` header, and applies the answer without a document
 navigation. Both paths hit the same URL through the same authorization path — front 24 admits no
 second door, and no configuration key weakens its `Origin`/`Host` check. This front adds neither.
 
@@ -153,12 +159,14 @@ the server told.
 The browser values come from four `#[@External.Node]` cells, all of them browser-only, none with an
 erlang twin:
 
-- `__jhFormSubmit(actionId, encodedBody) -> string` — posts and returns the envelope.
+- `__jhFormSubmit(actionId, encodedBody, actionHeader) -> string` — posts with the header onze named
+  and returns the envelope.
 - `__jhFormPending(actionId) -> string` — `"1"` while a submit for that id is in flight.
 - `__jhFormState(actionId) -> string` — the last envelope received for that id, `""` before the first.
-- `__jhFormMount()` — delegated submit interception over `[data-jh-a]`. It is private; the entry
-  imports the `pub fn formMount()` over it (an ordinary import, not a browser global — decision
-  113), called once by front 68's hydration entry alongside front 27's `linkMount()`.
+- `__jhFormMount(actionHeader)` — delegated submit interception over `[data-jh-a]`. It is private;
+  the entry imports the `pub fn formMount(actionHeader: string)` over it (an ordinary import, not a
+  browser global — decision 113), called once by front 68's hydration entry alongside front 27's
+  `linkMount()`, with the header name onze passes (decision 114).
 
 ### Optimistic updates
 
@@ -223,24 +231,27 @@ whole stack.
 `src/form.bp`.
 
 ```bp
-pub type FormBinding(actionId: string, pathname: string, method: string)
+pub type FormBinding(actionId: string, pathname: string, method: string, actionField: string)
 
-pub fn formAction(actionId: string, pathname: string) -> FormBinding
+pub fn formAction(actionId: string, pathname: string, actionField: string) -> FormBinding
 pub fn formAttrs(binding: FormBinding) -> Array<#(string, string)>
 pub fn hiddenActionField(binding: FormBinding) -> Element
 ```
 
 The markup is `contracts.md § 3`'s, matched exactly and not restated differently here: `method="post"`,
-`action` the current pathname, `data-jh-a` the action id, plus the hidden `__onze_action` field.
-`formAction` takes the pathname explicitly because there is no assignment to a `self` field and a
+`action` the current pathname, `data-jh-a` the action id, plus the hidden field named by
+`actionField`. `formAction` takes the pathname and the field name explicitly because there is no assignment to a `self` field and a
 declared default would never be applied — a builder pair would be two functions to get one string.
 
 **Acceptance:**
 - [ ] `formAttrs` emits exactly three pairs, in the order `method`, `action`, `data-jh-a`
-- [ ] `formAttrs(formAction("a_9f…", "/blog/hello"))` has `action="/blog/hello"` — the current
+- [ ] `formAttrs(formAction("a_9f…", "/blog/hello", "__bp_action"))` has `action="/blog/hello"` — the current
       pathname, never a synthesized endpoint
-- [ ] `hiddenActionField` renders `<input type="hidden" name="__onze_action" value="<id>">`, and a
-      form built without it fails its own test — the un-hydrated POST is unroutable without it
+- [ ] `hiddenActionField` renders `<input type="hidden" name="<actionField>" value="<id>">` — with
+      `"__bp_action"` passed, `name="__bp_action"` — and a form built without it fails its own test;
+      the un-hydrated POST is unroutable without it
+- [ ] no `__bp_action`, `X-Bp-Action` or other wire-name literal appears under `src/` — the names
+      reach this front only as `actionField` / `actionHeader` (grep in the gate)
 - [ ] `renderToString` of a complete form contains `method="post"` and the hidden field
 - [ ] An action id that does not start with `a_`, or contains `/`, a space or a quote, is rejected by
       `formAction` naming the id — this front echoes front 24's id and never constructs one
@@ -391,7 +402,7 @@ still run only on `commonJS`, because this front is assigned js and a green erla
 a claim the front does not make.
 
 `form_test.bp` is the attributes and the hooks' server-pass values: `formAttrs`'s three pairs and
-their order, the hidden `__onze_action` field, the idle `FormStatus`, and
+their order, the hidden field under the `actionField` passed in, the idle `FormStatus`, and
 `applyOptimistic`'s fold. The four `#[@External.Node]` cells cannot be exercised by
 `botopink test` — there is no DOM — so what is asserted is the boundary either side of them: the
 string handed to `__jhFormSubmit` and the `ActionState` decoded from what it returns. The submit
@@ -399,8 +410,8 @@ interception itself is covered by front 53's example app, which is the first pla
 in the loop.
 
 The progressive-enhancement claim is checked as a *markup* assertion, not a browser one: a rendered
-form must carry `method="post"`, the current pathname in `action`, and the hidden `__onze_action`
-field, and a test asserts the exact string. That is the property that makes the un-hydrated path
+form must carry `method="post"`, the current pathname in `action`, and the hidden field named by
+the `actionField` passed in (`__bp_action` in the test), and a test asserts the exact string. That is the property that makes the un-hydrated path
 work, and it is falsifiable without a browser.
 
 ## Definition of done

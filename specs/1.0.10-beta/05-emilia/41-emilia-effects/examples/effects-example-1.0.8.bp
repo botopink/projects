@@ -13,7 +13,6 @@
 //       https://tailwindcss.com/docs/mask-size
 
 import { emilia, flush, Token } from "emilia";
-import { div, renderToString } from "jhonstart";
 
 // Box shadow — full scale
 val shadowTokens: Token[] = [
@@ -138,8 +137,6 @@ val maskTypeTokens: Token[] = [
 ];
 val maskTypeStyles = emilia(maskTypeTokens);
 
-val page = div([], []);
-
 #[@future]
 fn main() -> @Future<void> {
     @print("=== F07: Effects Example ===");
@@ -154,7 +151,6 @@ fn main() -> @Future<void> {
     @print("Mask Mode: " + maskModeStyles);
     @print("Mask Size: " + maskSizeStyles);
     @print("Mask Type: " + maskTypeStyles);
-    @print(renderToString(page));
     @print(await flush());
 }
 

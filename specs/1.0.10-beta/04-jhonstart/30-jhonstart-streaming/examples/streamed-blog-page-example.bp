@@ -9,7 +9,7 @@
 // (`libs/std/src/http.bp:16-18`), so a boundary holding a future would hold a
 // result that had already been computed before the shell was written, and
 // nothing would stream. The render (`renderStream`) spawns the thunk through front 02 and hands
-// each chunk to rakun's writer as its process reports.
+// each chunk to the writer onze passed in (over rakun's ChunkWriter) as its process reports.
 //
 // The hole and fill markers are `contracts.md § 2`'s, not this front's:
 // `<div data-jh-h="h1">fallback</div>` in the shell, then

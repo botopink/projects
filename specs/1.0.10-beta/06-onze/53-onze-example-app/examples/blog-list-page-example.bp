@@ -17,8 +17,7 @@ import {Element, div, h1, ul, li, span, text, renderToString} from "jhonstart";
 import {section} from "jhonstart";                        // provided by front 94
 import {Boundary, Suspense, boundaryId, shellHtml} from "jhonstart";   // front 30
 import {styled, Token} from "emilia";                     // front 48
-import {page, layout, PageContext, LayoutProps} from "rakun";          // front 22
-import {rkAppRegisterPage, rkAppRegisterLayout} from "rakun";
+import {page, layout, PageContext, LayoutProps} from "jhonstart";          // front 30
 import {collections.Dict} from "std";
 // app-local
 import {Post, listPosts} from "@/lib.db";

@@ -34,8 +34,8 @@ values it can take at build time. Five fronts, one value, and each of them has i
 passes against its own idea of the shape. Nothing checks that the five ideas are the same idea.
 
 **Ordering.** `emilia(tokens)` registers a class and `flush()` clears the sheet. jhonstart's render
-(front 30) streams, and calls the `jhonstart-emilia` plugin front 49 registers for the head and for
-each chunk. Front 52 wants its preload links before any other style. Each of those is
+(front 30) streams, and awaits the `jhonstart-emilia` plugin front 49 registers for the head, for
+each chunk and for the payload's `s` key (decision 114). Front 52 wants its preload links before any other style. Each of those is
 testable alone and the composition is not, because the composition only exists once something renders
 a real document with fonts, styles, a streamed chunk and a late-arriving component in it.
 
@@ -91,14 +91,14 @@ names the front to look at.
 | File | Fronts | Proves |
 |---|---|---|
 | `app/layout.bp` | 49 · 52 · 27 · 69 · D | The root layout returns the body subtree; fonts, the nav, and emilia's sheet all reach the document head exactly once and in the right order |
-| `app/page.bp` | 22 · 51 · 60 | `/` resolves; the hero image is optimized and eager; the route is prerendered at build time and served from the manifest |
+| `app/page.bp` | 30 · 51 · 60 | `/` resolves; the hero image is optimized and eager; the route is prerendered at build time and served from the manifest |
 | `app/loading.bp` | 30 | A slow render flushes the shell and the fallback before the body |
 | `app/error.bp` | 31 · 17 | A thrown error renders the boundary and the digest, and the message never reaches the client |
 | `app/not-found.bp` | 31 · 63 | An unmatched URL renders the 404 page with status 404, not status 200 |
 | `app/blog/layout.bp` | 23 | Layout nesting: the blog shell wraps every `/blog/*` route and is not re-rendered on client navigation between them |
 | `app/blog/page.bp` | 28 · 12 · 30 | A server component loads posts, the load is cached under a tag, and the list streams behind `loading.bp` |
 | `app/blog/loading.bp` | 30 | The segment's own fallback, not the root one |
-| `app/blog/[slug]/page.bp` | 22 · 28 · 32 · 60 · 63 | The dynamic segment reaches the page as `route.params.lookup("slug").unwrapOr("")`; `generateStaticParams` prerenders all three posts; `generateMetadata` produces the head; a missing slug calls `notFound()` |
+| `app/blog/[slug]/page.bp` | 30 · 28 · 32 · 60 · 63 | The dynamic segment reaches the page as `route.params.lookup("slug").unwrapOr("")`; `generateStaticParams` prerenders all three posts; `generateMetadata` produces the head; a missing slug calls `notFound()` |
 | `app/blog/[slug]/loading.bp` | 30 | Per-post fallback |
 | `app/blog/[slug]/not-found.bp` | 31 · 63 | The signal from the page lands in *this* boundary, not the root one |
 | `app/blog/[slug]/opengraph-image.bp` | 66 · 70 · 32 · 52 | `image/svg+xml`, so the gate needs no rasterizer; `generateMetadata`'s `openGraph.images` points at it |
@@ -255,10 +255,11 @@ the app file named in its header.
 | Example | App file | Fronts it exercises |
 |---|---|---|
 | [`examples/lib-db-example.bp`](./examples/lib-db-example.bp) | `lib/db.bp` | 01 · std `io.fs`/`path` · 12 |
-| [`examples/app-layout-example.bp`](./examples/app-layout-example.bp) | `app/layout.bp` | 22 · 27 · 48 · 52 · 69 |
-| [`examples/app-page-example.bp`](./examples/app-page-example.bp) | `app/page.bp` | 22 · 51 · 60 |
-| [`examples/blog-list-page-example.bp`](./examples/blog-list-page-example.bp) | `app/blog/page.bp` + `layout.bp` + `loading.bp` | 22 · 28 · 12 · 30 |
-| [`examples/blog-slug-page-example.bp`](./examples/blog-slug-page-example.bp) | `app/blog/[slug]/page.bp` | 22 · 28 · 32 · 60 · 63 |
+| [`examples/app-tree-example.bp`](./examples/app-tree-example.bp) | the `app/` tree: root and blog layouts, home, a dynamic post and a route-group page | 30 · 22 · 23 |
+| [`examples/app-layout-example.bp`](./examples/app-layout-example.bp) | `app/layout.bp` | 30 · 27 · 48 · 52 · 69 |
+| [`examples/app-page-example.bp`](./examples/app-page-example.bp) | `app/page.bp` | 30 · 51 · 60 |
+| [`examples/blog-list-page-example.bp`](./examples/blog-list-page-example.bp) | `app/blog/page.bp` + `layout.bp` + `loading.bp` | 30 · 28 · 12 |
+| [`examples/blog-slug-page-example.bp`](./examples/blog-slug-page-example.bp) | `app/blog/[slug]/page.bp` | 30 · 28 · 32 · 60 · 63 |
 | [`examples/boundaries-example.bp`](./examples/boundaries-example.bp) | `app/loading.bp`, `app/error.bp`, `app/blog/[slug]/not-found.bp` | 30 · 31 · 63 · 17 |
 | [`examples/post-card-example.bp`](./examples/post-card-example.bp) | `components/post_card.bp` | 33 · 35 · 40 · 48 · 27 |
 | [`examples/server-action-example.bp`](./examples/server-action-example.bp) | `lib/actions.bp` | 24 · 12 · 63 |
@@ -285,7 +286,8 @@ example from what is still **assumed**, because only the second column is a risk
 |---|---|
 | 07 · 65 | `import {Filter, Chain, Next, middleware, matcher} from "rakun-web";` · `#[middleware] #[matcher("/dashboard/:path*")] pub fn middleware(req: Request, chain: Chain) -> Response` · `Next.redirect` / `Next.rewrite` / `chain.next(req)` · `rkSetReplyHeader`, `rkChainNext`, `rkTestRequest`, `rkTestRequestAuthed`, `rkReplyHeaderValue` |
 | 12 | `import {cachePolicy, cacheThrough, cacheLife, CacheScope} from "rakun-cache";` · `import {cache} from "rakun-cache";` for `cache.revalidateTag`, `cache.revalidatePath`, `cache.revalidatedPaths()` · **loaders are blocking, not `@Future`** |
-| 22 | `import {page, layout, PageContext, LayoutProps} from "rakun";` · `#[page("blog/[slug]")]` / `#[layout("blog")]`, argument = app-relative directory · `route.params.lookup(k).unwrapOr("")` (a `Dict`) · `PageContext(pathname, pattern, params, query, rest)` · `LayoutProps.children` · registry cells `rkAppRegisterPage`, `rkAppRegisterLayout`, `rkAppRegisterHandler`, `rkAppTable` must be imported by any module carrying a decorated declaration |
+| 30 | `import {page, layout, PageContext, LayoutProps} from "jhonstart";` · `#[page("blog/[slug]")]` / `#[layout("blog")]`, argument = app-relative directory, segment grammar front 22's · `route.params.lookup(k).unwrapOr("")` (a `Dict`) · `PageContext(pathname, pattern, params, query, rest)` · `LayoutProps.children` · the decorators fill jhonstart's UI registry; onze's boot copies each record into rakun's route table and hands rakun one `PageRenderer` per page (decision 114) |
+| 22 · 23 | no call surface in the app — rakun's route table and `page(pattern, render: PageRenderer)` over `ChunkWriter` are reached by onze's boot only; `rkAppRegisterHandler` is imported by any module carrying a front 25 route handler |
 | 24 | `import {serverAction, FormData, ActionResult} from "rakun";` · `#[serverAction] #[@future] fn(form: FormData) -> @Future<ActionResult>` · `form.field(name)` · `ActionResult.invalid(field, message)` / `ActionResult.done()` · `result.state.lookup(field)` |
 | 25 | `import {getRoute, postRoute, HandlerResponse, bodyJson} from "rakun";` · `#[getRoute("api/posts")] #[@future] fn(req: Request) -> @Future<HandlerResponse>` · `HandlerResponse.json/created/notFound/badRequest/unsupportedMedia/withStatus` + `.withHeader` |
 | 27 | `import {Link, linkProps, withPrefetch, withClass} from "jhonstart";` · `Link(linkProps("/blog"), [children])` |
@@ -305,14 +307,14 @@ example from what is still **assumed**, because only the second column is a risk
 
 | Front | Assumed shape | Why it is still open |
 |---|---|---|
-| 22 | `LayoutProps(children: leaf)` is constructible with one named field | Front 22's examples only ever *read* `props.children`; nothing constructs a `LayoutProps`, so the field list is unverified and three of this front's tests construct one |
+| 30 | `LayoutProps(children: leaf)` is constructible with one named field | `LayoutProps` is jhonstart front 30's record (decision 114); no example there constructs one, so the field list is unverified and three of this front's tests construct one |
 | 51 · 52 | `Image(props, cfg, publicDir)`, `googleFont(family, opts) -> @Future<Font>`, `fontHead(fonts) -> string` | These are fronts 51 and 52's own shapes, defined in this milestone by the same author; nothing external has confirmed them |
-| 30 | emilia's block reaches the head and each streamed chunk through the `jhonstart-emilia` plugin that front 49 registers (decision 113) | This front's layout produces the head string and hands it over; it does not call the plugin, so the seam is cited rather than exercised |
+| 30 | emilia's block reaches the head and each streamed chunk, and the payload's `s` key, through the asynchronous `jhonstart-emilia` plugin that front 49 registers (decisions 113, 114) | This front's layout produces the head string and hands it over; it does not call the plugin, so the seam is cited rather than exercised |
 | 12 | `cache.revalidatedPaths()` is a test seam available to an app's own tests | Front 12's example uses it, but it is described there as a seam rather than public surface |
 | 94 | how a void element (`input`, `img`) renders | Front 94 owns `elements.bp` and is settling it; this app's `input` assertions and front 51's `Image` both depend on the answer |
 
 Four rows that were open when this front was drafted have since been settled by their owners — the
-route-handler decorator (`#[getRoute]`), the form binding (`data-jh-a` + `__onze_action`), the
+route-handler decorator (`#[getRoute]`), the form binding (`data-jh-a` + the action field), the
 streaming marker (ordinal `data-jh-h`) and the element-surface front number (94). This front's
 examples were already written against the settled form in all four cases; the reasoning is kept under
 *Contradictions*.
@@ -350,7 +352,10 @@ registration. Front 25 owns `route_handler.bp`, so `#[getRoute]` wins and front 
 This app's `app/api/posts/route.bp` already uses `#[getRoute]` / `#[postRoute]`.
 
 **Two form bindings. — RESOLVED.** `contracts.md § 3` and front 24 agree: `data-jh-a="<id>"` plus a
-hidden `__onze_action` field, the action addressed by an HMAC'd id and never by its name. Front 67's
+hidden action field, the action addressed by an HMAC'd id and never by its name. The field's name
+(and the scripted header's) is passed by onze to both sides — `actionField` / `actionHeader` to
+jhonstart, `rakun.actions.field` / `rakun.actions.header` to rakun — and is `__bp_action` /
+`X-Bp-Action` by onze's default (decision 114). Front 67's
 example had asserted `data-jh-form="createPost"` and `action="/_onze/action/createPost"` — the
 function's own name in both the attribute and the URL, which is exactly what front 24 tests the absence
 of. Front 67 now follows `contracts.md`, and this app's form assertions were already written against it.
@@ -366,8 +371,10 @@ element-surface front of track C (number allocated from 54 up)" without naming i
 `94-jhonstart-element-surface`, owning `repository/jhonstart/src/elements.bp`, and those eight fronts
 have been substituted the way this front's examples were.
 
-**Registration is front 22's.** `#[page("…")]` / `#[layout("…")]` plus `rkAppRegisterPage` /
-`rkAppRegisterLayout`; front 49 defers to them, and nothing in this app calls an onze registry.
+**Registration is jhonstart's and rakun's, wired by onze.** `#[page("…")]` / `#[layout("…")]` are
+jhonstart front 30's and fill its UI registry; onze's boot (front 49) copies the records into rakun's
+route table and hands rakun one `PageRenderer` per page through `page(pattern, render)` (decision
+114). Nothing in this app calls an onze registry.
 
 **Wave 0 for front 49 is too early for its integration layer.** `fronts.md` puts front 49 in wave 0,
 blocked by nothing, but the wiring it was chartered to deliver reads fronts 22, 23 and 69. Front 49 now

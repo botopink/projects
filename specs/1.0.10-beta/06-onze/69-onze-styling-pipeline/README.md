@@ -36,8 +36,9 @@ jhonstart front 30's `RenderPlugin` calls, and the adaptation to `flush()` is th
 The route that does exist is not this front's. When emilia's sheet is flushed into a server render —
 once into the head after the shell, once per streamed boundary inside that boundary's fill
 `<template>`, nothing left at the end — is decided by the package that writes the HTML: jhonstart
-front 30 declares the `RenderPlugin` point and calls it, and the `jhonstart-emilia` bridge adapts
-`flush()` to it (decision 113). Next's `useServerInsertedHTML` is that seam, and it lives in
+front 30 declares the asynchronous `RenderPlugin` point and awaits it, and the `jhonstart-emilia`
+bridge awaits emilia's `#[@future] flush()` in `head` and `chunk` and returns the flushed class names
+from `payload()` as the payload's `s` key (decisions 113, 114). Next's `useServerInsertedHTML` is that seam, and it lives in
 jhonstart. onze's only part in it is front 49 registering the bridge at boot.
 
 ## Current state

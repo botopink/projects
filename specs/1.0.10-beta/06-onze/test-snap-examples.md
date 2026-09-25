@@ -189,10 +189,10 @@ content-type: image/jpeg
 test "e2e: action ---- an empty title re-renders the form with the message beside the field" {
     val app = await bootApp("examples/blog", "start");
     val page = await request(app, "GET", "/dashboard/posts/new", [#("cookie", "session=test-session")], "");
-    val actionId = page.body.split("name=\"__onze_action\" value=\"").at(1).unwrapOr("").split("\"").at(0).unwrapOr("");
+    val actionId = page.body.split("name=\"__bp_action\" value=\"").at(1).unwrapOr("").split("\"").at(0).unwrapOr("");
     val reply = await request(app, "POST", "/dashboard/posts/new",
         [#("cookie", "session=test-session"), #("origin", app.origin), #("content-type", "application/x-www-form-urlencoded")],
-        "__onze_action=" + actionId + "&title=&body=Some+text");
+        "__bp_action=" + actionId + "&title=&body=Some+text");
     await stopApp(app);
     try assertResponse(@src(), Reply(status: reply.status, headers: [], body: reply.body.split("<form").at(1).unwrapOr("").split("</form>").at(0).unwrapOr("")));
 }
@@ -203,21 +203,21 @@ test "e2e: action ---- an empty title re-renders the form with the message besid
 ```
 200
 
- method="post" data-jh-a="a1"><input type="hidden" name="__onze_action" value="a1"><label for="title">Title</label><input id="title" name="title" value=""><p class="e_f00d11" data-onze-field-error="title">Title is required</p><label for="body">Body</label><textarea id="body" name="body">Some text</textarea><button type="submit">Publish</button>
+ method="post" data-jh-a="a1"><input type="hidden" name="__bp_action" value="a1"><label for="title">Title</label><input id="title" name="title" value=""><p class="e_f00d11" data-onze-field-error="title">Title is required</p><label for="body">Body</label><textarea id="body" name="body">Some text</textarea><button type="submit">Publish</button>
 ```
 
 ```bp
 test "e2e: action ---- a valid post writes the file, redirects, and the list shows it" {
     val app = await bootApp("examples/blog", "start");
     val page = await request(app, "GET", "/dashboard/posts/new", [#("cookie", "session=test-session")], "");
-    val actionId = page.body.split("name=\"__onze_action\" value=\"").at(1).unwrapOr("").split("\"").at(0).unwrapOr("");
+    val actionId = page.body.split("name=\"__bp_action\" value=\"").at(1).unwrapOr("").split("\"").at(0).unwrapOr("");
     val posted = await request(app, "POST", "/dashboard/posts/new",
         [#("cookie", "session=test-session"), #("origin", app.origin), #("content-type", "application/x-www-form-urlencoded")],
-        "__onze_action=" + actionId + "&title=Fourth+post&body=The+fourth.");
+        "__bp_action=" + actionId + "&title=Fourth+post&body=The+fourth.");
     val list = await request(app, "GET", "/blog", [], "");
     val forged = await request(app, "POST", "/dashboard/posts/new",
         [#("cookie", "session=test-session"), #("origin", "https://evil.example"), #("content-type", "application/x-www-form-urlencoded")],
-        "__onze_action=" + actionId + "&title=X&body=Y");
+        "__bp_action=" + actionId + "&title=X&body=Y");
     await stopApp(app);
     val titles = list.body.split("<h2>").drop(1).map({ s -> s.split("</h2>").at(0).unwrapOr("") });
     try assertResponse(@src(), Reply(status: posted.status, headers: posted.headers.filter({ h -> h._0 == "location" }), body: titles.join("\n") + "\nforged: " + forged.status.toString()));
