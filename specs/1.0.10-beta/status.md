@@ -1,13 +1,14 @@
 # Status — 1.0.10-beta
 
-**Updated:** 2026-09-25 · **Progress:** ~20 % (24 of 123 work items landed)
+**Updated:** 2026-09-25 · **Progress:** ~20 % (24 of 124 work items landed)
 
-Count: 31 compiler carry-over items (`00`, C-01…C-31) · `01-std` (6 steps + 3 carried std fronts) ·
+Count: 31 compiler carry-over items (`00`, C-01…C-31) · `01-std` (6 steps + 3 carried std fronts + the bundled `routing` library) ·
 `02-packaging` · 51 rakun · 9 jhonstart · 22 emilia · 9 onze fronts. The percentage weighs items
 equally; it is a ratio, not a measurement. Open questions for the maintainer: none — 91, 92,
 93, 97 and 99 are answered by decisions 102–108, which open fronts `00 · 21-effect-chain`,
 `22-loops` and `23-std-purity`, and 94, 100 and 101 by decision 113 (the libraries split by
-concern), whose eight open seams decision 114 answers. Decisions 68–90, 95–114 are in
+concern), whose eight open seams decision 114 answers, and 114's five open points decision 115.
+Decisions 68–90, 95–115 are in
 [`decisions-taken.md`](./decisions-taken.md).
 
 ## Done
@@ -218,11 +219,13 @@ concern), whose eight open seams decision 114 answers. Decisions 68–90, 95–1
 - [ ] `00 · 05-wasm` — `$__print_str` does not guard its own null: an absent `?string` whose shape `optInfoOf` does not recognise is printed by loading a length from address 0 (the WASI iovec) and writing whatever bytes are there — exit 0, no diagnostic. Measured by disabling the `optInfoOf` arm: `@print(s.at(3))` on `"abc"` printed six spaces. The `?T` reader is a hand-maintained list (`optInfoOf`'s arms plus `fn_ret_typerefs`), so every new `?string`-valued lowering must be registered by hand or it answers garbage silently
 - [ ] `00 · 03-beam` — beam drops a function whose whole body is `@todo()`: the abort is `{undef, main:notReady/0}`, not the builtin's, so the language cell passes for the wrong reason (found by C-16; `beam_asm.zig` is `.tasks/module-identity`'s until C-01 lands)
 - [ ] `00 · 02-erlang` (C-03) — `std-unsupported-on-target` names the module's **first** declaration (`std/erlang.abs`) instead of the function actually called; a wording defect with a cell already in the suite. **Confirmed 2026-09-21 against `2e6bb4ac` with a distinguishing call**: `erlang.element(1, "x")` on commonJS reds `std-unsupported-on-target: std/erlang.abs has no ``@external`` for target 'node'`. `abs` is `erlang.bp`'s first `pub declare fn` and `element` is its fifth — the reader is sent to a function they did not call, and the location is the module rather than the call
-- [ ] Decision 113 in landed code — jhonstart 26, 27 and 29 carry a "decision 113's spellings" step (`data-jh-*`, `linkMount` / `formMount`, the router receiving `match`); rakun 23's render leaves `ssr.bp` / `ssr.mjs` once jhonstart front 30 lands; rakun 04 closes with the core on `["erlang"]` and `runtime.mjs` deleted; rakun 24's `actionForm` becomes `actionIdOf`. Decision 114 in landed code: rakun 22's matcher moves to `modules/rakun-routing` (`["erlang", "commonJS"]`) and its page registry drops `LayoutProps` / `rkAppRegisterPage` over `Element` for an opaque `PageRenderer`; rakun 23's `setPageRender` / `RenderedPage` become `page(pattern, render)` over `ChunkWriter`; rakun 24 reads the wire names from `rakun.actions.field` / `rakun.actions.header`; jhonstart 28 drops `rakun_request_context` and `fillRequest` for the `RequestData` onze hands the render
+- [ ] Decision 113 in landed code — jhonstart 26, 27 and 29 carry a "decision 113's spellings" step (`data-jh-*`, `linkMount` / `formMount`, the router receiving `match`); rakun 23's render leaves `ssr.bp` / `ssr.mjs` once jhonstart front 30 lands; rakun 04 closes with the core on `["erlang"]` and `runtime.mjs` deleted; rakun 24's `actionForm` becomes `actionIdOf`. Decision 114 in landed code: rakun 22's page registry drops `LayoutProps` / `rkAppRegisterPage` over `Element` for an opaque `PageRenderer`; rakun 23's `setPageRender` / `RenderedPage` become `page(pattern, render)` over `ChunkWriter`; rakun 24 reads the wire names from `rakun.actions.field` / `rakun.actions.header`; jhonstart 28 drops `rakun_request_context` and `fillRequest` for the `RequestData` onze hands the render
+- [ ] Decision 115 in landed code — the matcher at rakun `modules/rakun/src/file_router.bp:49-479` moves to the bundled library `libs/routing` (`01-std/04-routing-lib`) and rakun 22 imports it (its Step 7); jhonstart 26's router imports `parseTable` / `matchPath` from `routing` and takes no `match`; `file_router.bp:795` reads `rakun.appDir` instead of `onze.appDir`; rakun 24's body limit is `rakun.actions.bodyLimit`; jhonstart 31 gains `redirect(url)` and 30 the late-signal markup (`data-jh-g`, `globals.signal`); onze 49 writes the `rakun.*` keys and 53's pages import `notFound` / `redirect` / `cookies` from jhonstart
 - [ ] `04-jhonstart` 32/67 — decision 78 taken; ready (94 landed)
 - [ ] `05-emilia` front 46 — decision 81 taken (`AccentAuto`); ready
 
 ## Open
+- [ ] `01-std/04-routing-lib` — critical · specified (decision 115), no owner; the library steps need only `01-std` step 2, the bundling step waits on `00 · 23-std-purity`; rakun 22 Step 7 and jhonstart 26 wait on it
 - [ ] `00` C-04, C-07…C-11, C-13…C-18, C-20 (absorbed by C-26), C-21…C-25 — no worktree, no owner
 - [ ] `03-rakun` — 51 fronts; **04, 05, 06, 07, 14, 22, 23, 62, 72 and 74 landed** (core 387/0 on commonJS, `rakun-web` 104/0, `rakun-validation` 54/0). Next unblocked: 08, 11, 13, 80
 - [ ] `04-jhonstart` — 9 fronts; 94, 26, 27, 28 and 29 landed (125 / 0 on both rows). Track C is now genuinely blocked: 30 wants `async`, 31 wants `content_hash`, 32 wants `escape` — all three `01-std` step 6, all specified, none written

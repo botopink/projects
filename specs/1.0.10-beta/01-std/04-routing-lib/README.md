@@ -22,7 +22,7 @@ from its own directory as an ordinary package until Step 2 bundles it
 **Owns:** `repository/botopink-lang/libs/routing/**` (`botopink.json`, `AGENTS.md`, `src/root.bp`,
 `src/segment.bp`, `src/table.bp`, `src/match.bp`, `src/route_kinds.bp`, `src/slot_states.bp`,
 `src/url_rules.bp`, `test/**`) · the `routing` row of `repository/botopink-lang/libs/AGENTS.md` ·
-**by carve-out from `00`** (Step 2, granted in `00`'s README the way `@src()`'s was): the
+**by named carve-out from `00`** (Step 2 — recorded in `fronts.md` § *Conflict rules* beside `@src()`'s): the
 bundled-library registry in `build.zig`, the `"std"` package checks named in *Mechanism* in
 `modules/compiler-core/src/{comptime.zig, comptime/infer.zig, codegen/commonJS.zig,
 codegen/erlang.zig, codegen/beam_asm.zig}`, `modules/compiler-cli/src/cli/resolver.zig`,
@@ -46,10 +46,10 @@ table) · rakun fronts [22](../../03-rakun/22-rakun-file-routing/README.md) Step
 The server and the browser have to agree on which route a URL is, which routes are static, which
 parallel slots rendered, and what a URL looks like under `basePath`. Each of those is a small pure
 function over a line-oriented wire, and each must be **one** implementation compiled twice, or the
-two sides drift (`contracts.md § 1`). Decision 114 put them in a rakun member, `rakun-routing`, and
-had onze hand the matcher to jhonstart's router as a value, because jhonstart may not import rakun.
-Decision 115 moves them out of rakun altogether: a library neutral like std, bundled with the
-compiler, that rakun and jhonstart both import by name.
+two sides drift (`contracts.md § 1`). They belong to neither framework: rakun may not be imported by
+jhonstart, and jhonstart's router is where the browser half runs. Decision 115 gives them a library
+neutral like std, bundled with the compiler, that rakun and jhonstart both import by name — so no
+package hands the matcher to another as a value.
 
 Today there is no such library. The matcher exists, but inside rakun's core module, beside the
 registry host cells and the `app/` scan, and it imports rakun's own `config` and `runtime` modules;
@@ -294,7 +294,7 @@ inverses and the single decode.
   program that does not import `routing` is byte-identical. A project that happened to declare a
   disk library named `routing` is refused — none exists under `repository/`.
 - **rakun:** `file_router.bp` loses some 430 lines to an import (front 22 Step 7); the 26 moved tests leave
-  `file_router_test.bp`. `rakun-routing` is never created.
+  `file_router_test.bp`.
 - **jhonstart:** gains its first import of a package other than std (front 26); nothing of rakun's.
 - **onze:** the client entry stops building `match` (front 68).
 
