@@ -88,6 +88,7 @@ excerpt in [`evidence.md`](./evidence.md), the call path in [`current-path.md`](
 | measured after 1c (`comptime_bench.sh`, wiped `.botopinkbuild`): N=10 build 441 → 288 ms, N=200 1 666 → 1 491 ms, erika-linq 627 → 464 ms; in-node `compile:file` unchanged (generated modules are still `.erl` until 1b) | the landing commit | — |
 | **step 5, the build half** (`front/18-comptime-runtimes` `ed32ae82`, not merged): `zig build compiler-web` builds compiler-core for `wasm32-wasi` into `zig-out/web/` — ReleaseSmall **2.64 MB / 813 KB gzip / 48 s**, Debug 15.8 MB / 16 s (the native Debug CLI: 80 MB) — beside `glue.js` (a WASI shim serving `fd_write`/`clock_*`/`random_get`/`environ_*`/`fd_fdstat_get` and refusing by name the other 22 imports `std.Io`'s vtable declares; `Botopink.Compiler`; the Worker protocol) and `index.html`. `comptime/runtime/runtime.zig` (`can_spawn`, `active: ?ComptimeRuntime`) folds `persistent_erl.zig` and the RUN LOG executors out on wasm — the Debug build's DWARF file table names neither, nor `utils/snap.zig` — and both evaluators refuse a decorator or a template there with a located diagnostic naming the missing runtime, until step 2. One source change outside the gates: `erlang.zig`'s prelude spin lock yields with `spinLoopHint` (`Thread.yield` is glibc's `sched_yield` on wasi). `zig build test-web` (`tests/smoke.js`: four targets, a rendered diagnostic, the refusal, the Worker protocol under an emulated scope, the page's resource list) + the same step in `test.yml` | `modules/compiler-web/**`, `comptime/runtime/runtime.zig`, `codegen.zig`, `codegen/erlang.zig`, root `build.zig`, `.github/workflows/test.yml` | 67 |
 | `comptime_bench.sh --project` builds a **workspace member** (front 14's finding: it carried `path:` deps only, and erika-linq is `{ "erika": { "workspace": true } }` since erika became a workspace): the nearest ancestor `botopink.json` declaring `workspaces` is copied (no `.git`/`.botopinkbuild`/`out`) and the member built inside it; a member with no enclosing workspace is refused by name. erika-linq builds again (906 ms, one comptime module, `--repeat 1`) | `scripts/comptime_bench.sh`, `scripts/AGENTS.md` (`front/18-comptime-runtimes` `9515a2d4`) | — |
+| **step 2, the binary emitter** (`80a19bf7`): `codegen/wat/wasm_binary_emitter.zig` renders the `wat_ast.Module` to the binary format (every name resolved to an index; an unknown name, operator or numeral refused); `emitWat` returns text and binary (`GenerateResult.wasm`); `executeWat` runs the **binary** under wasmtime, so all 321 wasm RUN LOGs are the binary emitter's answer — equal, none re-recorded; the browser page runs the wasm target's output | `codegen/wat/wasm_binary_emitter.zig`, `wat.zig` (`emitWat`'s return), `moduleOutput.zig`, `codegen/runtime.zig` (`executeWat`), `modules/compiler-web/**` | — |
 
 **CI consequence.** `erlc` (OTP 28+) is now a dependency of *building* the compiler: every workflow
 that runs `zig build` — the release cross-builds included — installs OTP 28 (`erlef/setup-beam`,
@@ -157,7 +158,7 @@ What the runtime **returns** is JSON text produced in the node by the resident `
 
 ## Steps
 
-### Step 0 — measure at HEAD — LANDED with step 1
+### Step 0 — measure at HEAD — LANDED (the bench with step 1, the counts and the timing on 2026-09-25)
 
 Re-derive every row of *Current state* in the front's worktree before touching code; the numbers in
 this README are the 2026-09-20 baseline and drift.
@@ -165,10 +166,11 @@ this README are the 2026-09-20 baseline and drift.
 **Acceptance:**
 - [x] `scripts/comptime_bench.sh --n 0,10,200 --repeat 3 --project ../../repository/erika/examples/erika-linq`
       run — the baseline (`2788be9f`) and the post-1c columns are in the landing commit and in *Landed since*
-- [ ] the counts of E-6 (snapshots), E-8 (wat carriers), E-9 (body census) re-run by the commands
-      given there; any drift written down
-- [ ] `zig build test` from a cold cache timed once (`time zig build test`), the number recorded —
-      the suite time this front doubles is not in any `AGENTS.md` today (E-12)
+- [x] the counts of E-6 (snapshots), E-8 (wat carriers), E-9 (body census) re-run by the commands
+      given there; any drift written down — [`evidence.md`](./evidence.md) E-15 (1 346 → 1 382 codegen
+      files, 22 carriers and 33 `COMPTIME REPLY` unchanged, 29 on-disk modules)
+- [x] `zig build test` from a cold cache timed once (`time zig build test`), the number recorded —
+      **2 m 42 s** with the runtime cache cold, E-15
 
 ### Step 1 — the `.beam` path: the load command, the container, the residents, the untyped lowering
 
@@ -335,15 +337,19 @@ loop in `codegen/tests/helpers.zig:198` running `configs × runtimes`, not a `mv
 
 ### Step 5 — the browser build — LANDED in part: the build, the glue, the demo; its comptime half waits on step 2
 
-Specified in [`browser-build.md`](./browser-build.md). `zig build -Dtarget=wasm32-wasi
-compiler-web` builds `src/root.zig`'s API (`codegen.generate` takes sources in and gives text out —
-`codegen.zig:44`) with `persistent_beam` compiled out (`if (runtime.active == .beam)` is comptime-false
-on wasm) and the wat runtime's executor replaced by a host import `bp_host.run_module(ptr, len,
-arg_ptr, arg_len) → reply` that the JS glue serves with `WebAssembly.instantiate`. The compiler
+Specified in [`browser-build.md`](./browser-build.md). `zig build compiler-web` builds
+`src/root.zig`'s API (`codegen.generate` takes sources in and gives text out) for `wasm32-wasi` —
+the target is fixed in root `build.zig`, `-Dtarget` is not read — into `zig-out/web/`.
+`comptime/runtime/runtime.zig` decides at compile time what the host carries: `can_spawn`
+(`!builtin.cpu.arch.isWasm()`) and `active: ?ComptimeRuntime`, `.beam` where a process can be
+spawned and **null** on wasm, so `persistent_erl.zig` is never analysed there and both evaluators
+refuse a decorator or template with a located diagnostic. When step 2's wat runtime exists, `active`
+on wasm becomes `.wat` and its executor is a host import (`bp_host.run_module(ptr, len, arg_ptr,
+arg_len) → reply`, not built yet) that `glue.js` serves with `WebAssembly.instantiate`. The compiler
 needs from its host: source bytes (handed in, no fs walk), a clock (WASI `clock_time_get`),
-stdout/stderr (`fd_write`), randomness (`random_get`, for the scratch nonces — or none, since
-nothing is written), and **no** process spawn. The `RUN LOG` executors (`runtime.zig`) are not
-built for wasm (`execute = false`, `codegen.zig:93`).
+stdout/stderr (`fd_write`), randomness (`random_get`), and **no** process spawn. The `RUN LOG`
+executors (`codegen/runtime.zig`) are not built for wasm (`codegen.generateWith` refuses `execute`
+there, `error.NoExecutorOnThisHost`).
 
 Demo: `modules/compiler-web/` — `index.html` + `glue.js` + the built `botopink.wasm`; a `.bp` with a
 decorator **and** a template is compiled to `commonJS` and to `wasm`, and the `wasm` output is
@@ -357,7 +363,8 @@ instantiated and run in the same page.
       (DevTools network tab empty after `botopink.wasm` and `glue.js`); its `COMPTIME REPLY` equals
       the native one — the page references `glue.js` and `botopink.wasm` only (pinned by `tests/smoke.js`, not
       yet watched in a browser); the `COMPTIME REPLY` is the located refusal until step 2's `persistent_wat.zig`;
-      the `wasm` output is shown as `.wat` text, not instantiated, until the binary emitter
+      the `wasm` output **is** instantiated and run in the page since `80a19bf7` (the binary beside the
+      `.wat`, `glue.js` `run`, pinned by `tests/smoke.js`: `hello, web` from the binary)
 - [x] `grep -rn "std.process\|std.fs\." src/` reaches only files excluded from the wasm build — non-test hits are
       `codegen/runtime.zig`, `comptime/runtime/persistent_erl.zig`, `utils/snap.zig`, `render_resident.zig` and
       `beam_file.zig`'s tests; the Debug wasm's DWARF file table names none of them, and `template_eval.zig`'s
@@ -378,7 +385,7 @@ instantiated and run in the same page.
       `src/codegen/`, `src/codegen/beam/`, `src/codegen/wat/`, `src/codegen/tests/`, `snapshots/`
       (if it has one), `modules/wasm3/`, root `AGENTS.md` (the layout), `scripts/`;
       `meta:architecture.md`'s "O que roda onde" table names both runtimes
-- [ ] Commit on `fix/comptime-runtimes-<step>`; no push, no merge — landing is the maintainer's step
+- [ ] Commit on `front/18-comptime-runtimes`; no push, no merge — landing is the maintainer's step
 
 ## Blast radius
 
