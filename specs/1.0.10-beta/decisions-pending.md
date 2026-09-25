@@ -14,3 +14,100 @@ from the code writes it here rather than guessing, in the shape the others used:
 > **Recommendation.** One, argued — the default is the most restrictive behaviour, and no configuration
 > that bypasses it (decision 67).
 > **Blocks.** The step, front or landed work that waits on the answer.
+
+## Front 24 (effects by return) — choices made in implementation, to confirm
+
+Each one was decided by the implementation so the front could land; the maintainer confirms or
+reverses it. Numbered `24-a` … so they do not collide with the decision numbering.
+
+### 24-a · The effect codes the diagnostics table does not name (README open point 2)
+
+> **Raised by:** `00 · 24-effects-by-return` step E3, 2026-09-25
+> **Measured.** At compiler `86609a66`: `effect-missing-annotation`, `effect-missing-wrapper`,
+> `effect-duplicate-annotation`, `effect-on-declare-forbidden` and `effect-on-behavior-method-forbidden`
+> have no annotation left to be about; `for-over-fallible-generator` enforced a rule decision 122 deletes;
+> the guide spells a `throw` refusal with `effect-try-without-fallible-channel`.
+> **Options.** (a) delete the annotation codes, merge `effect-throw-without-fallible-channel` into
+> `effect-try-without-fallible-channel`, keep `effect-wrapper-mismatch` for the one mismatch left, keep
+> `yield-without-generator` / `generator-loop-closed-scope`; (b) keep a separate `throw` code.
+> **Recommendation.** (a), implemented: `comptime/diagnostics.zig` lists the survivors;
+> `effect-wrapper-mismatch` now means only "a component's `T` implements `@Context<B>` with a `B` other than
+> the `C` it is written with"; `for-over-future-generator` / `for-await-expects-future-generator` are renamed
+> `for-over-stream` / `for-await-expects-stream`. The guide's code-less refusals (a component `use`d, `use`
+> in a closure, `break :outer` out of a prefixed loop) keep their existing codes (`use-of-non-context-fn`,
+> `use-without-context-effect`, `generator-loop-closed-scope`).
+> **Blocks.** Nothing — reversible by renaming constants.
+
+### 24-b · `@Task`'s method set (README open point 4)
+
+> **Raised by:** step E1, 2026-09-25
+> **Measured.** `builtins.d.bp` had `Future.map` / `flatMap` / `await`; decision 120 says "`.map`,
+> `.then` and the like, without an error parameter".
+> **Options.** (a) `map` and `then` (the monadic bind under the name the guide uses); (b) add `flatMap` as
+> an alias of `then`.
+> **Recommendation.** (a), implemented — one spelling per operation (decision 67). `mapError` has nothing to
+> map. Neither method is lowered by a backend yet: they are declared (documentation, like the rest of
+> `builtins.d.bp`) and a call to them is not type-checked against the declaration until the behavior-method
+> registry reads wrappers.
+> **Blocks.** std/async (24-c) if it wants a combinator form.
+
+### 24-c · `iter for` / `iter while` as a desugared `loop`, and the label's place (README open point 9)
+
+> **Raised by:** step E2, 2026-09-25
+> **Measured.** The README asks for a `GenLoop { kind, loop }` node; the four backends each lower one
+> annotated-loop shape (the `loop` of 22-loops).
+> **Options.** (a) a new node and a fourth-times-four set of lowerings; (b) parse `iter for (xs) { … }` as
+> the prefixed `loop { for (xs) { … }; break; }` it means — decision 125's own equivalence — keeping the
+> written keyword in `LoopExpr.prefixedKeyword` for the formatter.
+> **Recommendation.** (b), implemented. The label stays where 105 writes it, after the loop keyword:
+> `iter loop :l { … }` labels the generator scope (`yield :l`, `break :l v`); `iter for :l (xs) { … }` labels
+> the written `for` (so `break :l` / `continue :l` keep their meaning) — `yield :l` there is then
+> `yield-label-not-generator`. If the maintainer wants the label of a prefixed `for` to name the generator
+> scope too, the parser moves it to the outer node; nothing else changes.
+> **Blocks.** Nothing.
+
+### 24-d · The codemod needs the old syntax; E2 refuses it at parse time
+
+> **Raised by:** the codemod thread (`front/24-codemod`, E6), 2026-09-25
+> **Measured.** `botopink migrate effects` type-checks the OLD program to decide `await` → `try await`.
+> At `86609a66` the parser refuses every removed annotation and wrapper (`effect-annotation-removed`,
+> `effect-type-removed`) and stops — there is no AST for the old program, and the checker no longer
+> knows `@Future` / `@ResultGenerator` / `@FutureGenerator`.
+> **Options.** (a) the codemod runs from a binary built at `feat` before E2 (its own build of the old
+> parser/checker, shipped only inside `migrate`); (b) a migration-only lenient mode in the parser
+> (record the annotation / old wrapper, report the refusal as a diagnostic, keep parsing) and the old
+> wrappers' typing reachable only from `migrate`; (c) the codemod rewrites textually and leaves
+> `await` → `try await` to the E3.9 type-error hint.
+> **Recommendation.** (a) — decision 67 wants no mode that accepts the old forms, and a mode reachable
+> only through `migrate` is still a second grammar to maintain. Not implemented in this front: the
+> refusal path stops at the first old form.
+> **Blocks.** Merging `front/24-codemod` into `front/24-effects-by-return` (its tests type-check the old
+> surface).
+
+### 24-e · `try` and `await` as operands
+
+> **Raised by:** step E2, 2026-09-25
+> **Measured.** `total + try r`, `(try batch).length` and `yield try x` are guide spellings; the parser
+> only read `try` / `await` at the start of an expression statement, and `yield` took an equality-level
+> operand.
+> **Options.** Parse them where a primary expression may stand (operand = the next primary, postfix chain
+> included), or keep them statement-only and rewrite the guide.
+> **Recommendation.** Parse them, implemented. Each backend now propagates a `try` that has no rest of
+> the function to nest in: commonJS through `__bp_try` + a per-function guard, erlang through
+> `throw({'__bp_try', E})` + a guard, beam by throwing out of a loop's fun to a catch section at the loop's
+> call site, wasm as before; inside a sequence whose item is a `@Result`, the failing `try` emits the
+> Error as the last item and ends (decision 122).
+> **Blocks.** Nothing.
+
+### 24-f · `test-libs` cannot be measured from a worktree nested in the meta checkout
+
+> **Raised by:** step E7, 2026-09-25
+> **Measured.** `zig build test-libs` from `.tasks/24-effects-by-return/repository/botopink-lang` sees
+> every sibling library twice (`.tasks/…/repository/<lib>` and the main checkout's
+> `repository/<lib>`) and every cell except std fails with "`<lib>` is declared by two libraries".
+> **Options.** (a) the lib-test-runner stops walking up past the first `repository/` ancestor;
+> (b) run `test-libs` only from a non-nested checkout.
+> **Recommendation.** (a), as a `lib-test-runner` fix outside this front. Until then front 24's ledger
+> lines (`scripts/known-red-libs.txt`, `restricted-targets.txt`) were written from a static reading of
+> which libraries spell the pre-118 surface, not from a measured run.
+> **Blocks.** The E7 acceptance box "test-libs green on every row".
