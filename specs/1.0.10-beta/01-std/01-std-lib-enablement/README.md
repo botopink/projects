@@ -313,12 +313,12 @@ pub fn formStringify(pairs: Array<#(string, string)>) -> string {
 ```
 
 **Acceptance:**
-- [ ] `encoding.hexEncode("hi")` answers `6869` on both targets, lowercase
-- [ ] `encoding.hexDecode("zz")` answers an `Error`, not a crash
-- [ ] `encoding.percentEncode("a b&c=d")` answers `a%20b%26c%3Dd` on both targets
-- [ ] `encoding.percentDecode(encoding.percentEncode(s)) == s` for a string containing space, `&`, `=`, `+`, `/` and a non-ASCII character
-- [ ] `encoding.formStringify([#("q", "a b")])` answers `q=a%20b` — the case `querystring.stringify` documents itself as not handling
-- [ ] `encoding.base64UrlEncode` output contains no `+`, `/` or `=`
+- [x] `encoding.hexEncode("hi")` answers `6869` on both targets, lowercase
+- [x] `encoding.hexDecode("zz")` answers an `Error`, not a crash
+- [x] `encoding.percentEncode("a b&c=d")` answers `a%20b%26c%3Dd` on both targets
+- [x] `encoding.percentDecode(encoding.percentEncode(s)) == s` for a string containing space, `&`, `=`, `+`, `/` and a non-ASCII character
+- [x] `encoding.formStringify([#("q", "a b")])` answers `q=a%20b` — the case `querystring.stringify` documents itself as not handling
+- [x] `encoding.base64UrlEncode` output contains no `+`, `/` or `=`
 
 ### Step 4 — `hash.bp`, the hmac half
 
