@@ -111,3 +111,26 @@ reverses it. Numbered `24-a` … so they do not collide with the decision number
 > lines (`scripts/known-red-libs.txt`, `restricted-targets.txt`) were written from a static reading of
 > which libraries spell the pre-118 surface, not from a measured run.
 > **Blocks.** The E7 acceptance box "test-libs green on every row".
+
+### 24-g · `std/async`'s shape under a Task that never fails (README open point 3)
+
+> **Raised by:** step E7, 2026-09-25
+> **Measured.** At compiler `f3ad584a`, `std/async` had a thunk surface (`allOf`, `settleOf`, `raceOf`,
+> `timeout` over `fn() -> @Future<T>`) and a started surface (`all`, `allSettled`, `race` over
+> `@Future<T>`), both built on a rejected future being the failure. The guide writes
+> `try await async.allOf([fetchUser(1), fetchUser(2)])` — started Tasks whose value is a `@Result` — and
+> the `front/24-cells` suite follows it; the `beam_memory_*` cells need unstarted thunks, because an eager
+> erlang Task has already run by the time a combinator receives it.
+> **Options.** (a) `allOf` over started `@Task<@Result<T, E>>` (stops at the first `Error` in input order)
+> plus a thunk surface under other names; (b) `allOf` over thunks, as `01-std/02` wrote it; (c) one
+> overloaded `allOf` for both element shapes (the language has no overloading by type).
+> **Recommendation.** (a), implemented: **started** — `allOf(Array<@Task<@Result<T, E>>>) ->
+> @Task<@Result<Array<T>, E>>`, `all(Array<@Task<T>>) -> @Task<Array<T>>` (both written in botopink over
+> `try await` / `await`), `race`; **unstarted** — `runAll(Array<fn() -> @Task<T>>) -> @Task<Array<T>>`
+> (spawned per task on erlang, `Promise.all` on node; over `@Result` thunks it is the settled view),
+> `raceOf`, `timeout(task, millis) -> @Task<@Result<T, string>>` answering `Error("timeout")` (a `string`,
+> as every std error is — no `TimeoutError` type, and a fallible task's own `Error` stays inside the `Ok`).
+> `failed(message)` answers `Error(message)` instead of rejecting. `allSettled`, `settleOf`, `unwrapAll`
+> and `attempt` are removed: a Task has no rejection to settle. A crash inside a spawned task is
+> re-raised (a crash is a bug, decision 120's fatal host failure).
+> **Blocks.** `01-std/02-std-async-primitives`, whose README still specifies the thunk-shaped `allOf`.
