@@ -174,7 +174,7 @@ Two of 1.0.4-beta's list are resolved:
 
 | Row | State at `c2dd780` |
 |---|---|
-| `lsp.md:104` `completion_decorator_record` | a checker defect: the degraded completion path drops every `val`. Owned by [`01-checker`](../01-checker/README.md). Still reproduces — `modules/language-server/snapshots/lsp/completion_decorator_record.snap.md:17` reads `PostService  [Struct]  detail: record { name: string, count: i32 }` |
+| `lsp.md:104` `completion_decorator_record` | **closed** by `f952bfc6` (C-19): line 17 reads `PostService  [Struct]  detail: type PostService(name: string, count: i32)`; the degraded path keeps every well-typed `val` since 06 N23 (`other` is completable, asserted by the test). Pinned with `completion_type_enum_detail` / `completion_behavior_detail` (front 11's carve-out) |
 | `lsp.md:103` `hover_interface_method` | **closed** 2026-09-17 by `dfc34a9`: the footer names the declaring behavior (`*from `behavior Signed` (via I32)*`) |
 
 **Acceptance:**
