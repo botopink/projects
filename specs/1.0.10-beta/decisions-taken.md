@@ -50,6 +50,9 @@ what was left, now `00-compiler-carry-over`'s order),
 | [107](#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope) | Import grammar | `import {a: {b: {c}}, x.y.z, e.t.r*}` — dotted path and braced group are one tree; only the leaf enters scope; `*` / `as` on the leaf; no `from` = the package root |
 | [108](#108-getcontex--getcontext) | `getContex` | Renamed `getContext` (99-a) |
 | [109](#109-the-declaration-boundary-in-a-module-atom-is--and-the-declaration-keeps-its-case) | How is a per-declaration BEAM module named? | `<path>@@<Decl>` — `@@` is the boundary, the path stays lowercase, the declaration keeps its case (`pond@@PatoNada` for `val PatoNada = implement …`); A2's `__t__`/`__b__` qualifiers leave |
+| [110](#110-import-aliases-reach-types-and-an-imported-folder-is-a-namespace-of-its-submodules) | `as` on a type; an imported folder | `as` binds a type too (`collections.Dict as D`), a checker-only local name — the emitted identity is unchanged; `import {io}` makes `io.fs.readText(p)` resolve; `as` on a `*` leaf stays refused (amends 107) |
+| [111](#111-collections-functions-are-scoped-to-the-type-they-build) | `empty` / `fromList` collide in `collections.bp` | Type-scoped: `Dict.empty()`, `Set.fromList(xs)`, `Queue.empty()`; the one exception to 106's "moves paths, not function names" |
+| [112](#112-dsl-hygiene-each-name-resolves-in-the-scope-of-whoever-wrote-it) | In which scope does DSL-generated code resolve names? | Hygiene (5-a): text the lib writes in `e.build` resolves in the lib's module, text from `e.text()` at the call site; `e.lookup(name)` resolves at the call site and returns the declaration's identity, never the alias |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -969,3 +972,132 @@ text (`declaration-qualifier.md`), which now describes this spelling.
 Implements: front 13 — the one renderer per backend (`erlang.zig`, `beam_asm.zig`, the commonJS
 and wasm identity string), the decoder, the snapshot re-record, `src/codegen/AGENTS.md`.
 
+
+## 110. Import aliases reach types, and an imported folder is a namespace of its submodules
+
+**Decided 2026-09-26 by the maintainer**, on the recommended options: *"`as` vale em tipo; pasta
+importada vira namespace; … `* as X` continua recusado"*. Three rules amend decision 107's leaf
+rules; its grammar is unchanged.
+
+1. **`as` binds a type leaf like any other leaf.** `import {collections.Dict as D} from "std"` and
+   `import {collections: {Dict as D}} from "std"` bring `D`. The alias is a local name **in the
+   checker only**: the emitted identity is the declaration's own (`std@collections@@Dict`, decision
+   109) on every backend, and no codegen sees `D`. Diagnostics and hover name both — `D` = `Dict` —
+   so a message about `D` still points at the declaration. The `import-alias-on-type` refusal is
+   removed.
+2. **An imported folder is a namespace of its submodules.** A leaf that names a directory module
+   (`pub mod io { pub mod fs; … }`) brings a namespace whose members are its submodules, so
+   `import {io} from "std"; io.fs.readText(p)` resolves. This is decision 107's "dotted and braced
+   are one tree" read from the use side: `io.fs.readText` means the same path whether the dots are
+   on the import line or in the expression.
+3. **`as` on a `*` leaf stays refused** (`import-alias-on-activation`). `Name*` activates every
+   extension the item carries; an alias would have nothing to name.
+
+```bp
+import {collections.Dict as D, io} from "std";
+
+val d: D<string, i32> = D.empty();        // D is Dict — hover: `D` = `Dict`
+val t = io.fs.readText("a.txt");          // folder namespace → submodule → fn
+
+import {collections: {ArraySets* as S}} from "std";
+// error[import-alias-on-activation]: `*` activates every name; an alias has nothing to name
+```
+
+What it does **not** change: decision 107's grammar, its only-the-leaf-enters-scope rule and
+`import-name-collision` (an alias is the leaf that is checked for collision); decision 109's
+identity.
+
+Bears on: decision 107 (amended as above); decision 109 (the identity an alias never alters).
+Implements: front 23 (`00-compiler-carry-over/23-std-purity`) — `project_graph.zig` (folder leaf
+as namespace), `comptime/infer.zig` (type alias as a checker-local name), the hover and diagnostic
+renderers.
+
+## 111. `collections` functions are scoped to the type they build
+
+**Decided 2026-09-26 by the maintainer**, on the recommended option: *"`collections` com métodos do
+tipo (`Dict.empty()`)"*. Merging `dict`, `sets`, `queue` and `order` into `collections.bp`
+(decision 106) collides two names: `empty` (dict, sets, queue) and `fromList` (sets, queue). The
+module-level constructors become **type-scoped**: each one is called on the type it builds.
+
+| Before | After |
+|---|---|
+| `dict.empty()` | `Dict.empty()` |
+| `sets.empty()` · `sets.fromList(xs)` | `Set.empty()` · `Set.fromList(xs)` |
+| `queue.empty()` · `queue.fromList(xs)` | `Queue.empty()` · `Queue.fromList(xs)` |
+
+```bp
+import {collections: {Dict, Set, Queue}} from "std";
+
+val d = Dict.empty();
+val s = Set.fromList([1, 2, 3]);
+val q = Queue.empty();
+```
+
+This is the **one exception** to decision 106's "moves paths, not function names": the name of the
+function stays (`empty`, `fromList`), its owner moves from the module to the type. Every other
+function of the merged modules keeps its name. If a `Type.fn()` static function does not yet
+compile on every backend, making it compile is a step of front 23, not a reason to keep
+module-level names.
+
+Bears on: decision 106 (amended as above); every `dict.` / `sets.` / `queue.` call in rakun,
+jhonstart, emilia and the `<lib>-test` members.
+Implements: front 23 (`00-compiler-carry-over/23-std-purity`) — `libs/std/src/collections.bp`, and
+type-scoped static functions on the four backends where they are missing.
+
+## 112. DSL hygiene: each name resolves in the scope of whoever wrote it
+
+**Decided 2026-09-26 by the maintainer: (a)**, with the lookup rule in his words: *"nesse caso
+quando usar o e.ref(\"surface\") a lib deve entender que esta falando do area"*. A DSL (a template
+returning `@ExprCustom`) produces code text compiled in the caller's module, and that text has two
+authors: the library writes the frame in `e.build`, the user writes what is between the quotes
+(`e.text()`). Each name resolves in the scope of the author who wrote it:
+
+- **Text the library writes in `e.build` resolves in the library's module** — private names
+  included — and carries that declaration's identity, `<lib>@<path>@@<Decl>` (decision 109).
+- **Text from `e.text()` resolves at the call site**, like any other code of the consumer's module:
+  its imports, its aliases (decision 110), its locals.
+- **`e.lookup(name)` resolves at the call site and returns the declaration's identity, never the
+  alias.** It is the library's way to ask about the user's names; the library's own names need no
+  lookup — writing them in `e.build` is enough.
+
+`e.build` already receives the two parts separately, so the compiler marks each span with its
+author; the DSL author writes nothing extra.
+
+```bp
+// lib "shapesdsl" — deps/shapesdsl/src/shapesdsl.bp
+pub fn area(w: i32, h: i32) -> i32 { return w * h; }
+
+fn double(x: i32) -> i32 { return x * 2; }        // private to the lib
+
+pub default fn shapesdsl<T>(comptime e: @Expr<string>) -> @ExprCustom<T> {
+    val code = e.build("double(" + e.text() + ")");   // `double(` … `)` is the lib's text,
+    …                                                 // `e.text()` is the user's
+    return e.custom(root, code);
+}
+```
+
+| Consumer | Resolves as | Result |
+|---|---|---|
+| `import shapesdsl, {area} from "shapesdsl";` `shapesdsl "area(4, 5)"` | `double` → `shapesdsl@shapesdsl@@double` (private, lib scope); `area` → call site | 40 |
+| `import shapesdsl, {area as surface} from "shapesdsl";` `shapesdsl "surface(4, 5)"` | `double` → lib; `surface` → call site → `area` | 40 |
+| `import shapesdsl, {area} from "shapesdsl";` `fn double(x: i32) -> i32 { return x + 1; }` `shapesdsl "area(4, 5)"` | `double` → lib's, not the consumer's; `area` → call site | 40 |
+
+The first case was `unbound variable 'double'`, the second the same, and the third compiled and
+printed 21 — the consumer's `double` silently captured. All three pass with 40.
+
+```bp
+// in the lib — "surface" came from e.text(), written by the user
+val r = e.lookup("surface");
+// r → shapesdsl@shapesdsl@@area — hover, go-to-definition and the CustomNode point at area
+```
+
+What it does **not** change: the `@Expr` / `@ExprCustom` surface (`e.build`, `e.text`,
+`e.custom`); decision 109's identity; decision 110's alias rule, which `e.lookup` applies.
+
+Bears on: decision 109 (the identity a lib-written name carries); decision 110 (an alias is a
+checker-local name, so `e.lookup` returns the declaration); every DSL that calls a private helper
+from its `e.build` text (erika, jhonstart's `html`, emilia).
+Implements: front 01 (`00-compiler-carry-over/01-checker`) — name resolution by span author in the
+generated text, `e.lookup`; front 12 (`00-compiler-carry-over/12-language-tests`) — three `run/`
+cells under `tests/language` (private helper, alias, consumer's own `double`), each printing 40; no
+`reject/` cell.
