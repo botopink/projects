@@ -22,7 +22,7 @@ and is therefore ready one wave before 70, which waits on 52.
 
 | # | Front | Priority | Wave | Submodule | Depends on (track E) | Depends on (other tracks) |
 |---|---|---|---|---|---|---|
-| 1 | [`49-onze-stand-up`](./49-onze-stand-up/README.md) | **critical** | 0 | `modules/onze/` | — | std [`01`](../01-std/) (`io.env`, `path`) |
+| 1 | [`49-onze-stand-up`](./49-onze-stand-up/README.md) | **critical** | 5 | `modules/onze/` | — | jhonstart [`30`](../04-jhonstart/30-jhonstart-streaming/README.md) (render, `RenderPlugin`, the `jhonstart-emilia` bridge) · rakun [`23`](../03-rakun/23-rakun-ssr-pipeline/README.md) · [`22`](../03-rakun/22-rakun-file-routing/README.md) · std [`01`](../01-std/) (`io.env`, `path`) |
 | 2 | [`68-onze-client-bundle`](./68-onze-client-bundle/README.md) | **critical** | 6 | `modules/onze-bundler/` | 49 | jhonstart [`29`](../04-jhonstart/29-jhonstart-client-directive/README.md) · [`27`](../04-jhonstart/27-jhonstart-link/README.md) · [`30`](../04-jhonstart/30-jhonstart-streaming/README.md) · rakun [`22`](../03-rakun/22-rakun-file-routing/README.md) · [`20`](../03-rakun/20-rakun-websocket/README.md) · emilia [`48`](../05-emilia/48-emilia-attributes/README.md) · [`56`](../05-emilia/56-emilia-cascade-and-output/README.md) · std 01 · 03 |
 | 3 | [`69-onze-styling-pipeline`](./69-onze-styling-pipeline/README.md) | medium | 7 | `modules/onze-assets/` | 49 · 68 (the `Y` records) | std 01 · 03 |
 | 4 | [`52-onze-font`](./52-onze-font/README.md) | low | 8 | `modules/onze-assets/` | 49 · 69 (head seam, asset manifest) | std 01 · 03 |

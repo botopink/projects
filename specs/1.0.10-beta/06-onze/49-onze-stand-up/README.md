@@ -5,8 +5,10 @@
 joins rakun's server to jhonstart's tree to emilia's stylesheet until this front says where the joint is
 **Target:** both — the config value and the route registry are read by the BEAM server half and by the
 JS build half; the render seam runs on erlang, the registry it reads is built by the js half
-**Wave:** 0
-**Depends on:** none
+**Wave:** 5 — after jhonstart front 30, whose render and bridge the boot wires (decision 113)
+**Depends on:** 30 (jhonstart's render: `app`, `RenderPlugin`, `RenderHooks`, and the
+`jhonstart-emilia` bridge member whose `plugin()` the boot registers) · 23 (the page dispatch the
+boot hands the render function to) · 22 (the matcher the boot hands jhonstart's router as `match`)
 **Owns:** `botopink.json`, `src/root.bp`, `src/types.bp`, `src/config.bp`, `src/integration.bp`,
 `test/config_test.bp`, `test/types_test.bp`
 **Does not touch:** `repository/jhonstart/**` (the render, `RenderHooks`, `RenderPlugin` and the

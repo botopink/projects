@@ -8,7 +8,8 @@ through the chunk writer this front owns
 **Wave:** 5
 **Depends on:** 04 (BEAM runtime, the transport that writes chunks), 22 (route table and layout
 chain), 06 (scopes), 62 (request context — the request scope, `setPhase`, `markDynamic`), 03
-(content hash for the build id), onze 49 (the page-render function it hands this front at boot)
+(content hash for the build id). The page-render function arrives at boot from onze 49, which
+depends on this front — not the reverse
 **Owns:** `repository/rakun/src/ssr.bp` — `RenderedPage`, `toResponse`, the page dispatch and the
 one setter through which onze hands it the page-render function —
 `repository/rakun/src/sidecars/rakun_ssr.erl` (the chunk writer), `repository/rakun/test/ssr_test.bp`

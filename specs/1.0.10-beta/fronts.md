@@ -480,15 +480,15 @@ land in wave 1; the wave below is its host half, which is what the fronts citing
 
 | Wave | Fronts | Blocked by |
 |---|---|---|
-| **0** | 01 · 02 · 03 · 49 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` | nothing — except `@src()`, which needs `00`'s carve-out granted |
-| **1** | 04 · 05 · 56 | 01 · 54 |
-| **2** | 06 · 22 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 56 |
-| **3** | 07 · 08 · 11 · 13 · 14 · 15 · 19 · 21 · 26 · 36 · 37 · 38 · 39 · 40 · 41 · 42 · 43 · 44 · 45 · 46 · 47 · 59 · 72 | 06 · 22 · 33 · 34 · 35 |
-| **4** | 09 · 10 · 16 · 17 · 18 · 27 · 28 · 48 · 73 · 75 · 77 · 78 · 82 · 93 | 07 · 08 · 11 · 13 · 14 · 26 · 72 |
-| **5** | 12 · 20 · 23 · 29 · 30 · 31 · 32 · 76 · 79 · 83 · 84 · 86 | 10 · 16 · 18 · 28 · 75 · 77 |
-| **6** | 25 · 60 · 61 · 63 · 66 · 68 · 81 · 85 · 87 · 89 · 90 · 91 · 92 | 12 · 20 · 23 · 29 · 30 · 32 · 76 · 79 · 83 · 86 |
-| **7** | 24 · 64 · 65 · 69 · 88 | 63 · 68 · 81 |
-| **8** | 51 · 52 · 67 · 71 | 24 · 69 |
+| **0** | 01 · 02 · 03 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` | nothing — except `@src()`, which needs `00`'s carve-out granted |
+| **1** | 04 · 05 · 26 · 56 | 01 · 54 · 94 |
+| **2** | 06 · 22 · 27 · 28 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 26 · 56 |
+| **3** | 07 · 08 · 11 · 13 · 14 · 15 · 19 · 21 · 23 · 29 · 31 · 32 · 36 · 37 · 38 · 39 · 40 · 41 · 42 · 43 · 44 · 45 · 46 · 47 · 59 · 72 | 06 · 22 · 28 · 33 · 34 · 35 · 62 |
+| **4** | 09 · 10 · 16 · 17 · 18 · 30 · 48 · 63 · 66 · 73 · 75 · 77 · 78 · 82 · 93 | 07 · 08 · 11 · 13 · 14 · 23 · 29 · 31 · 32 · 33–47 · 72 |
+| **5** | 12 · 20 · 25 · 49 · 61 · 65 · 76 · 79 · 83 · 84 · 86 | 10 · 16 · 18 · 30 · 63 · 75 · 77 |
+| **6** | 24 · 60 · 64 · 68 · 81 · 85 · 87 · 89 · 90 · 91 · 92 | 12 · 20 · 49 · 76 · 79 · 83 · 86 |
+| **7** | 67 · 69 · 88 | 24 · 68 · 81 |
+| **8** | 51 · 52 · 71 | 69 |
 | **9** | 50 · 70 | 52 · 71 |
 | **10** | 53 | all |
 
@@ -505,16 +505,19 @@ shutdown (07 and 76).
 A wave is a **level in the dependency graph, not a sprint**: a front sits one level below everything
 it consumes, so no front shares a wave with something it reads. The table is computed from every
 front's `Depends on` line, not hand-placed — when a front's dependencies change, the table is
-regenerated, not edited. Front 22 sits below 05 because `appDir` is one of its config values. Decision
-113 removed three of the edges the table was computed from — front 26 no
-longer calls 22's `matchPath` (onze hands it `match`), front 23 no longer renders 28's components
-(the render is jhonstart front 30's), and onze's 68 and 69 fill jhonstart's `RenderHooks` and
-`RenderPlugin` rather than front 23's — so it is regenerated from the amended `Depends on` lines
-before the next wave is cut.
+regenerated, not edited. Front 22 sits below 05 because `appDir` is one of its config values; front
+26 sits directly on 01 and 94, because it receives `match` from onze rather than calling 22's
+`matchPath`; front 23 sits below 22 and 62 only, because it serves a page and renders nothing;
+front 30 sits below 29, 31 and 32, because its render calls `islandAttr`, `renderBoundaryChecked`
+and `renderHead`; and onze's 49 sits below 30, 23 and 22, because its boot wires the render, the
+page dispatch and the matcher together — so every onze front that needs 49 follows the render
+(decision 113). The rakun corrections of [`03-rakun/modules.md § The graph`](./03-rakun/modules.md#the-graph)
+(09→07 and 21→22 read-only, 07→76 and 13→12 soft, 85→23 and 86→83 seams, 93→88 reversed) and the
+three mutual pairs above are applied before the levels are taken.
 
-Wave 3 is 23 fronts wide, wave 4 is 14 and wave 6 is 13 — that is the point of the cut. The critical
-path is `01 → 05 → 22 → 26 → 28 → 29 → 68 → 69 → 52 → 70 → 53`, 10 levels deep and every step of it
-one `Depends on` line; the other 84 fronts are breadth. The deep tail is the full-stack one:
+Wave 3 is 26 fronts wide, wave 4 is 15 and waves 5 and 6 are 11 — that is the point of the cut. The
+critical path is `01 → 26 → 28 → 29 → 30 → 49 → 68 → 69 → 52 → 70 → 53`, 10 levels deep and every
+step of it one `Depends on` line; the other 84 fronts are breadth. The deep tail is the full-stack one:
 everything past wave 6 is a server action, a URL rule, the CLI, or an onze artifact that packages
 what the waves before it produced. Ninety-five fronts is a large milestone, and the levels say where
 it is long — tracks A–D reach wave 7, and only onze's own chain runs to 10.
