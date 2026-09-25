@@ -3,16 +3,9 @@
 // What this demonstrates: § 22 end to end. A closed locale set, the negotiation
 // filter installed at the front of front 07's chain, and a `[locale]` page that
 // reads the resolved locale. All of it runs on the BEAM; the browser sees the
-// locale only as an ordinary route param in the payload.
-//
-// The app tree this file populates:
-//
-//   app/
-//     [locale]/
-//       layout.bp      <- localeLayout, below
-//       page.bp        <- homePage, below
-//       about/
-//         page.bp
+// locale only as an ordinary route param in the payload. The page is an opaque
+// renderer writing plain text (front 23); the `[locale]` layout that sets
+// `lang` from `htmlLang()` is jhonstart's, wired by onze (onze front 53).
 //
 // Upstream:
 //   https://nextjs.org/docs/app/guides/internationalization
@@ -21,8 +14,7 @@ import {LocaleSet, Alternate, registerLocales, localeOf, htmlLang, alternatesFor
 import {localeFilter} from "rakun-i18n";
 import {registerFilter} from "rakun-web";                      // provided by front 07
 import {matcher} from "rakun-web";                             // provided by front 65
-import {page, layout, LayoutProps, PageContext} from "rakun";  // provided by front 22
-import {Element, div, h1, p, text} from "jhonstart";
+import {page, ChunkWriter, Request} from "rakun";               // provided by fronts 23 and 04
 
 // SERVER — the locale set is declared once and is closed. A path prefixed with
 // anything not in this list is not a locale route, so /klingon/about 404s
@@ -46,34 +38,23 @@ fn installLocaleFilter() -> i32 {
 
 val _filter = installLocaleFilter();
 
-// SERVER — the root layout for the locale subtree. `lang` is the resolved
-// locale rather than a literal.
-#[layout("[locale]")]
-pub fn localeLayout(props: LayoutProps) -> Element {
-    val lang = htmlLang();
-    return div([props.children], attrs: [#("lang", lang)]);
-}
-
 // SERVER — the page. Reading the resolved locale does not make this render
 // dynamic: the locale is a route param, and the route param is part of the URL.
-#[page("[locale]")]
-#[@future]
-pub fn homePage(route: PageContext) -> @Future<Element> {
+// `htmlLang()` answers the same locale for the `lang` attribute a layout sets.
+val _home = page("[locale]", fn(req: Request, out: ChunkWriter) {
     val locale = localeOf();
     val greeting = case locale {
         "en" -> "Welcome";
         "es" -> "Bienvenido";
         _ -> "Bem-vindo";
     };
-    return div([
-        h1([text(greeting, attrs: [])], attrs: []),
-        p([text("locale: " + locale, attrs: [])], attrs: []),
-    ], attrs: []);
-}
+    return out.write(greeting + " (locale: " + locale + ", lang: " + htmlLang() + ")");
+});
 
-// SERVER — the hreflang set front 32 renders: one entry per locale plus
-// x-default. The incoming pathname is stripped of its locale first, so calling
-// this from /pt-BR/about and from /about answers the same set.
-pub fn homeAlternates(route: PageContext) -> Alternate[] {
-    return alternatesFor(appLocales(), route.pathname);
+// SERVER — the hreflang set jhonstart front 32 renders, handed to it by onze:
+// one entry per locale plus x-default. The incoming pathname is stripped of its
+// locale first, so calling this from /pt-BR/about and from /about answers the
+// same set.
+pub fn homeAlternates(pathname: string) -> Alternate[] {
+    return alternatesFor(appLocales(), pathname);
 }

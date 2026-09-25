@@ -1,0 +1,65 @@
+// Front 22 — rakun file routing: the registry.
+//
+// rakun's route table holds records and opaque page renderers, and names no UI
+// type (decision 114). The `app/` tree's layouts and pages are jhonstart's
+// (front 30's `#[layout]` / `#[page]`); at boot onze copies jhonstart's UI
+// records into this table with `rkAppRegisterEntry` and hands one renderer per
+// page pattern through front 23's `page(pattern, render)`. This file registers
+// them the way onze does, with renderers that write plain text, and reads the
+// table back. The same tree rendered by jhonstart is onze front 53's
+// `app-tree-example.bp`.
+//
+//   app/
+//   |-- layout.bp                 L /
+//   |-- page.bp                   P /
+//   |-- blog/
+//   |   |-- layout.bp             L /blog
+//   |   |-- page.bp               P /blog
+//   |   `-- [slug]/page.bp        P /blog/[slug]
+//   `-- (marketing)/about/page.bp P /about
+//
+// Upstream:
+//   https://nextjs.org/docs/app/getting-started/project-structure
+//   https://nextjs.org/docs/app/api-reference/file-conventions/route-groups
+
+import {rkAppRegisterEntry, rkAppTable} from "rakun";      // this front
+import {page, ChunkWriter, Request} from "rakun";          // front 23 · front 04
+import {parseTable, matchPath} from "rakun-routing";       // this front, the boundary member
+
+fn text(body: string) -> fn(Request, ChunkWriter) -> @Future<void> {
+    return fn(req: Request, out: ChunkWriter) { return out.write(body); };
+}
+
+fn install() -> void {
+    rkAppRegisterEntry("L", "", "");
+    rkAppRegisterEntry("L", "blog", "");
+    val _home = page("", text("home"));
+    val _blog = page("blog", text("blog index"));
+    val _post = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        return out.write("post " + req.param("slug"));
+    });
+    val _about = page("(marketing)/about", text("about"));
+}
+
+test "the registry holds one route-table record per convention file" {
+    install();
+    val lines = rkAppTable().split("\n");
+    assert lines.contains("L|/||");
+    assert lines.contains("L|/blog||");
+    assert lines.contains("P|/||");
+    assert lines.contains("P|/blog||");
+    assert lines.contains("P|/blog/[slug]||");
+    assert lines.contains("P|/about||");
+}
+
+test "a group segment is absent from every pattern it encloses" {
+    install();
+    assert rkAppTable().contains("(marketing)") == false;
+}
+
+test "the table the server serves is the table rakun-routing matches" {
+    install();
+    var pattern = "";
+    if (matchPath(parseTable(rkAppTable()), "/blog/hello")) { m -> pattern = m.entry.pattern; };
+    assert pattern == "/blog/[slug]";
+}

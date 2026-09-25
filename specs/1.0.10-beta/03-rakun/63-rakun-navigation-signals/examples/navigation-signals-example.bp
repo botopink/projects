@@ -1,10 +1,12 @@
 // Front 63 — Rakun Navigation Signals
 //
-// What this demonstrates: the two canonical uses. A `[slug]` page calls
-// `notFound()` when the record is missing, and a dashboard layout calls
-// `redirect("/login")` when there is no session. Both functions run on the BEAM
-// during the render; neither returns, and neither changes the signature of any
-// function between it and the pipeline.
+// What this demonstrates: the two canonical uses, on page renderers (front 23).
+// A `[slug]` renderer calls `notFound()` when the record is missing, and a
+// dashboard renderer calls `redirect("/login")` when there is no session. Both
+// run on the BEAM before the first write; neither returns, and the dispatch
+// answers the signal's status. A jhonstart page raises jhonstart's own
+// not-found, which onze translates into this front's (decision 113) — that
+// wiring is onze front 53's example.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/functions/not-found
@@ -13,8 +15,7 @@
 
 import {notFound, redirect} from "rakun";
 import {cookies} from "rakun";                                 // provided by front 62
-import {layout, page, LayoutProps, PageContext} from "rakun";  // provided by front 22
-import {Element, div, h1, p, text} from "jhonstart";
+import {page, ChunkWriter, Request} from "rakun";               // provided by fronts 23 and 04
 
 pub type Post(
     slug: string,
@@ -31,36 +32,24 @@ fn findPost(slug: string) -> @Result<Post, string> {
     throw "no such post: " + slug;
 }
 
-// SERVER — § 14 "Not Found". The signal unwinds to the nearest not-found.bp
-// boundary (front 31) and sets status 404. Nothing between here and the
-// pipeline had to declare that it might not produce an Element, and the
-// statements after `notFound()` are never reached.
-#[page("blog/[slug]")]
-#[@future]
-pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-    val slug = route.params.lookup("slug").unwrapOr("");
-    val found = findPost(slug);
+// SERVER — § 14 "Not Found". The signal unwinds to the dispatch, which answers
+// 404; the statements after `notFound()` are never reached.
+val _post = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+    val found = findPost(req.param("slug"));
     if (found.isError()) {
         val _gone = notFound();
     };
     val post = found.unwrapOr(Post(slug: "", title: "", body: ""));
-    return div([
-        h1([text(post.title, attrs: [])], attrs: []),
-        p([text(post.body, attrs: [])], attrs: []),
-    ], attrs: []);
-}
+    return out.write(post.title + "\n" + post.body);
+});
 
-// SERVER — § 23 "Layout with authentication". `redirect` answers 307 and the
-// destination is checked against the route table, so a typo fails here rather
-// than sending a browser to a 404.
-#[layout("dashboard")]
-pub fn dashboardLayout(props: LayoutProps) -> Element {
+// SERVER — § 23 "Layout with authentication", as a guard on the dashboard
+// renderer. `redirect` answers 307 and the destination is checked against the
+// route table, so a typo fails here rather than sending a browser to a 404.
+val _dashboard = page("dashboard", fn(req: Request, out: ChunkWriter) {
     val session = cookies().get("session").unwrapOr("");
     if (session == "") {
         val _gone = redirect("/login");
     };
-    return div([
-        p([text("signed in as " + session, attrs: [])], attrs: []),
-        props.children,
-    ], attrs: []);
-}
+    return out.write("signed in as " + session);
+});

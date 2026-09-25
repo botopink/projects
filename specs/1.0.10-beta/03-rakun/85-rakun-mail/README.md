@@ -4,9 +4,9 @@
 **Priority:** medium — password reset, address verification and notification are table stakes for the kind of application this milestone is aimed at, and nothing in it can send an e-mail
 **Target:** erlang (server)
 **Wave:** 6
-**Depends on:** 01 (`net` for the SMTP socket, `escape.html` for templated bodies, `encoding` for base64 and quoted-printable, `clock` for the `Date` header), 05 (configuration), 74 (STARTTLS and implicit TLS through the bundle registry), 23 (the render path for an HTML body), 11 (registers the `mail` health indicator), 83 (a send that must be tied to a database write goes through the outbox, not through a second one here)
+**Depends on:** 01 (`net` for the SMTP socket, `escape.html` for templated bodies, `encoding` for base64 and quoted-printable, `clock` for the `Date` header), 05 (configuration), 74 (STARTTLS and implicit TLS through the bundle registry), 11 (registers the `mail` health indicator), 83 (a send that must be tied to a database write goes through the outbox, not through a second one here)
 **Owns:** `modules/rakun-mail/botopink.json`, `modules/rakun-mail/src/**` · `modules/rakun-mail/test/**`
-**Does not touch:** `modules/rakun-tx/**` (front 83's outbox — this front enqueues into it, it does not reimplement it), `repository/jhonstart/src/element.bp` (frozen), and the four frozen files in `repository/rakun/src/`
+**Does not touch:** `modules/rakun-tx/**` (front 83's outbox — this front enqueues into it, it does not reimplement it), every jhonstart, emilia and onze file — an HTML body arrives as a string (decision 113), and the four frozen files in `repository/rakun/src/`
 **Reference:** `07-io.md § Email`, `§ Configuracao`, `§ JNDI Session` · `09-actuator.md § HealthIndicators Auto-configurados (mail)` · <https://docs.spring.io/spring-boot/reference/io/email.html>
 
 ---
@@ -39,7 +39,7 @@ reset that did not happen is worse than no mail at all.
 | A socket | front 01 delivers `io.net`; nothing today |
 | HTML escaping | front 01 delivers `escape.html`; nothing today |
 | TLS | front 74 delivers the bundle registry over OTP's `ssl` |
-| An HTML body | jhonstart's `Element` + `renderToString` (`repository/jhonstart/src/element.bp:55-67`), reachable on the server through front 23 |
+| An HTML body | a string the caller hands in; rakun builds no HTML (decision 113) — in an onze application it is jhonstart's render |
 | A durable queue | front 83 delivers the outbox; this front does not grow a second one |
 | `gen_smtp` | not present, and not installable by the path the test row loads code — see *Mechanism* |
 
@@ -107,18 +107,15 @@ for text and base64 for everything else. Every one of those is a place where a n
 produces mail that renders as mojibake in one client and fine in another, which is why each has its
 own acceptance line below.
 
-### HTML bodies are components, not strings
+### HTML bodies are strings the caller renders
 
-An HTML body is built from jhonstart elements and rendered with `renderToString` — the same render
-path front 23 uses for a page. That gives a mail template the same escaping guarantees a page has,
-which matters more here than it does in a page: a mail body interpolating a user-supplied display
-name is the classic injection vector, and `escape.html` from front 01 is applied at the same seam.
-
-One constraint the example makes visible: jhonstart has eight element constructors and `a` is not one
-of them (`repository/jhonstart/src/element.bp:10-53`). Until the element surface grows — tracked in
-[`../language-gaps.md`](../../language-gaps.md) under *Unowned surface* — a link in a mail body is
-rendered as its URL in text. That is not a workaround this front invents to dodge the problem; it is
-what the library can express today, and it is stated rather than hidden.
+rakun builds no HTML (decision 113), so `Mail.html` is a string the caller hands in. In an onze
+application the caller renders it with jhonstart — the same escaping walker a page goes through — and
+rakun never names jhonstart. What this front owns is everything after the string: the MIME part, its
+transfer encoding, and the plain-text part generated from it when the caller gave none. A mail body
+interpolating a user-supplied display name is the classic injection vector, so the caller escapes at
+its seam (`escape.html` from front 01 in a rakun-only application, jhonstart's walker in an onze one);
+this front never re-escapes or re-parses the markup it carries.
 
 ### The health indicator
 
@@ -199,13 +196,15 @@ and never passes through a botopink value.
 - [ ] `bcc` recipients appear in `RCPT TO` and in **no** header
 - [ ] The boundary string appears nowhere in any part's content — it is derived and checked, not assumed
 
-### Step 3 — HTML bodies through the render path
+### Step 3 — HTML bodies as strings
 
 **Acceptance:**
-- [ ] An `Element` tree renders to the HTML part through `renderToString`
-- [ ] A user-supplied value containing `<script>` is escaped in the HTML part and left literal in the plain part
+- [ ] `Mail.html` is written to the HTML part byte for byte, in its transfer encoding; the part is
+      never re-escaped or re-parsed
+- [ ] A value the caller escaped with `escape.html` containing `<script>` arrives escaped in the HTML
+      part and literal in the plain part the caller supplied
 - [ ] A message with an HTML body and no text body has a plain part generated from it, rather than being sent HTML-only
-- [ ] The rendered body is byte-identical to what front 23 would render for the same tree
+- [ ] `grep -rn jhonstart modules/rakun-mail` is empty
 
 ### Step 4 — The queue, retries and the dead-letter path
 
@@ -238,9 +237,8 @@ and never passes through a botopink value.
 
 No new rows. This front meets three that [`../language-gaps.md`](../../language-gaps.md) already
 records — **no byte or binary type** (an attachment is a path, and the file is encoded by a host cell),
-**declared parameter defaults are never applied** (`Mail` is a record with every field written, which
-is why the example spells `cc`, `bcc` and `replyTo` even when they are empty), and the unowned
-**jhonstart element constructors** row (no `a`, so a link in a mail body is rendered as its URL).
+and **declared parameter defaults are never applied** (`Mail` is a record with every field written, which
+is why the example spells `cc`, `bcc` and `replyTo` even when they are empty).
 
 ## Test plan
 
@@ -275,7 +273,7 @@ be a module that compiles and cannot work.
 - [ ] STARTTLS cannot be downgraded, and no configuration key permits it
 - [ ] All four MIME shapes are produced correctly, with RFC 2047 headers, dot-stuffing and the 998-byte
       line limit asserted on captured bytes
-- [ ] An HTML body is a component rendered through `renderToString`, escaped at the same seam a page is
+- [ ] An HTML body is a string the caller rendered; this front encodes it and names no HTML library
 - [ ] `send` never blocks a request, retries retryable failures, and dead-letters the rest with a reason
 - [ ] A send that must not outlive a rolled-back transaction goes through front 83's outbox, and this
       front grows no second durable queue

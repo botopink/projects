@@ -14,8 +14,7 @@
 //   https://nextjs.org/docs/app/guides/internationalization
 
 import {localeOf} from "rakun-i18n";
-import {page, PageContext} from "rakun";  // provided by front 22
-import {Element, div, h1, p, text} from "jhonstart";
+import {page, ChunkWriter, Request} from "rakun";  // provided by fronts 23 and 04
 
 // SERVER — the copy block. Every locale must supply every field.
 pub type HomeCopy(
@@ -58,16 +57,11 @@ pub fn homeCopy(locale: string) -> HomeCopy {
     };
 }
 
-#[page("[locale]")]
-#[@future]
-pub fn homePage(route: PageContext) -> @Future<Element> {
+// SERVER — the page, an opaque renderer writing plain text (front 23).
+val _home = page("[locale]", fn(req: Request, out: ChunkWriter) {
     val copy = homeCopy(localeOf());
-    return div([
-        h1([text(copy.title, attrs: [])], attrs: []),
-        p([text(copy.description, attrs: [])], attrs: []),
-        p([text(copy.readMore, attrs: [])], attrs: []),
-    ], attrs: []);
-}
+    return out.write(copy.title + "\n" + copy.description + "\n" + copy.readMore);
+});
 
 test "every declared locale supplies every field" {
     val pt = homeCopy("pt-BR");

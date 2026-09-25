@@ -1,7 +1,7 @@
 // Front 62 — Rakun Request Context
 //
 // What this demonstrates: the `React.cache` analogue. One `getPost` is called by
-// both `generateMetadata` and the page, and the record is loaded once per request;
+// both the title reader and the page renderer, and the record is loaded once per request;
 // the preload pattern starts a load before the blocking work that precedes it.
 // Server code: all of it runs on the BEAM.
 //
@@ -11,9 +11,7 @@
 //   https://nextjs.org/docs/app/guides/lazy-loading
 
 import {memoize, memoKey, preload} from "rakun";
-import {page, PageContext} from "rakun";          // provided by front 22
-import {Metadata} from "jhonstart";               // provided by front 32
-import {Element, div, h1, p, text} from "jhonstart";
+import {page, ChunkWriter, Request} from "rakun"; // provided by fronts 23 and 04
 
 pub type Post(
     slug: string,
@@ -41,18 +39,17 @@ pub fn getPost(slug: string) -> Post {
     });
 }
 
-// SERVER — metadata for the route. This runs before the page body and loads
-// the post; the page below calls `getPost` again and gets the stored value.
-pub fn postMetadata(route: PageContext) -> Metadata {
-    val slug = route.params.lookup("slug").unwrapOr("");
-    val post = getPost(slug);
-    return Metadata(title: post.title, description: "by " + post.author);
+// SERVER — the title for the route. It runs before the body is written and
+// loads the post; the renderer below calls `getPost` again and gets the stored
+// value. (A page's `Metadata` is jhonstart front 32's; onze would call a reader
+// like this one from it.)
+pub fn postTitle(slug: string) -> string {
+    return getPost(slug).title;
 }
 
-#[page("blog/[slug]")]
-#[@future]
-pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-    val slug = route.params.lookup("slug").unwrapOr("");
+val _post = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+    val slug = req.param("slug");
+    val title = postTitle(slug);
 
     // The preload: start the related-count load in its own BEAM process before
     // the blocking read below. `@Future` is eager on erlang, so a future gives
@@ -67,9 +64,5 @@ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
         loadRelatedCount(slug);
     });
 
-    return div([
-        h1([text(post.title, attrs: [])], attrs: []),
-        p([text("by " + post.author, attrs: [])], attrs: []),
-        p([text("related: " + related.toString(), attrs: [])], attrs: []),
-    ], attrs: []);
-}
+    return out.write(title + " — by " + post.author + " — related: " + related.toString());
+});

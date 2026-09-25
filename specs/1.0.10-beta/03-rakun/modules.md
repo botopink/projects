@@ -27,7 +27,10 @@ read through the ownership table below.
    `repository/rakun/src/` — the core — but a Spring-style REST service has no use for any of it, so
    the app router leaves the core: **`rakun-app`**. Under decision 113 rakun does not build HTML:
    `rakun-app` depends on neither `jhonstart` nor `emilia`. The HTML of a page arrives as the chunks
-   of a function onze hands `rakun-app` (front 23), and jhonstart and rakun never import each other.
+   an opaque `PageRenderer` onze registers per route writes through rakun's `ChunkWriter` (front 23,
+   decision 114), and jhonstart and rakun never import each other. The pure routing code both sides
+   run — the matcher and the codecs of the wires the browser reads — is the boundary member
+   **`rakun-routing`**, which onze's client entry imports on commonJS and hands to jhonstart.
 2. **Two module-level cycles hide in the front dependencies.** 20 (websocket, in `rakun-web`) depends
    on 10 (security), and 10 depends on 07 (in `rakun-web`): `rakun-web ⇄ rakun-security`. 86 (in
    `rakun-messaging`) depends on 83 (`rakun-tx`), and 83 depends on 15 (`rakun-messaging`):
@@ -52,11 +55,12 @@ is the normative graph and [§ The graph](#the-graph) draws it. `std` is implici
 |---|---|---|---|---|---|
 | `rakun` | erlang | 04 · 05 · 06 · 62 · 72 · 74 | — | `App`, `#[bean]`/`#[configuration]`/`#[value]`, `rkDispatchHttp`, `context` (resolve, scopes, lifecycle, events, exit codes), `config`/`profiles`, `autoconfig` + the condition report, request context (`cookies()`/`headers()`/`after()`, memo), SSL bundles | `spring-boot` + `spring-boot-autoconfigure` (`spring-boot-starter`) |
 | `rakun-actuator-api` | erlang | 11 (Step 0) | `rakun` | `Health`, `HealthIndicator`, `InfoContributor`, `Endpoint`, `Span`; `#[healthIndicator]`/`#[infoContributor]`/`#[endpoint]`; the three registration cells and their ETS sidecar | `spring-boot-actuator` (the API half) |
+| `rakun-routing` | erlang, commonJS — boundary | 22 (60 · 61 · 65 one file each) | — | the pure matcher: segment grammar, `RouteEntry`, `parseTable`/`writeTable`, `matchPath`, `layoutChain` (22); the pure codecs of the routing wires the browser reads — route kinds (60), slot states (61), `PathRules` + `canonicalize`/`clientHref` + the redirect table (65). No HTTP, no host cell, no registry (decision 114) | none — the Next.js router's shared half |
 | `rakun-validation` | erlang, commonJS — boundary | 14 | `rakun` | constraint decorators, `#[validated]`, the violation report | `spring-boot-starter-validation` |
 | `rakun-client` | erlang | 13 | `rakun` (12 soft) | `RestClient`/`WebClient` over one builder, `#[httpExchange]`, global + per-client settings, the SSRF address filter | `RestClient` / `WebClient` / HTTP service interfaces |
 | `rakun-logging` | erlang | 17 | `rakun`, `rakun-actuator-api` | `logger`, levels and groups, structured formats, file output/rotation, correlation id, the `loggers` endpoint | `spring-boot-starter-logging` |
 | `rakun-devtools` | erlang (dev only) | 80 | `rakun` | watcher + hot reload, dev property source, trigger file, remote shell | `spring-boot-devtools` |
-| `rakun-web` | erlang | 07 · 65 · 82 | `rakun`, `rakun-actuator-api`, `rakun-validation` (76 soft) | `#[middleware]`/`#[matcher]`, `Chain`/`Next`, `CorsPolicy`, RFC 9457 problem details, static error pages, API versioning, graceful drain, URL rules (`basePath`, trailing slash, rewrites, redirects), static assets (ETag, fingerprint), `tls.bp` listener arm | `spring-boot-starter-webmvc` |
+| `rakun-web` | erlang | 07 · 65 · 82 | `rakun`, `rakun-actuator-api`, `rakun-validation`, `rakun-routing` (65's boundary half; 76 soft) | `#[middleware]`/`#[matcher]`, `Chain`/`Next`, `CorsPolicy`, RFC 9457 problem details, static error pages, API versioning, graceful drain, URL rules (`basePath`, trailing slash, rewrites, redirects), static assets (ETag, fingerprint), `tls.bp` listener arm | `spring-boot-starter-webmvc` |
 | `rakun-data` | erlang | 08 · 09 · 77 · 78 | `rakun`, `rakun-actuator-api`, `rakun-validation` | `DataSource` + pool, `SqlTemplate`, `#[repository]`, `#[transactional]` (`<Type>Tx` proxy), NoSQL stores (Redis, Mongo, Neo4j, Elasticsearch, Cassandra, Couchbase; Redis pub/sub), migrations + `ddl-auto` refusal, entities + typed query builder | `-data-jpa` / `-data-jdbc` / `-data-mongodb` / `-data-redis` / `-flyway` / `-liquibase` |
 | `rakun-session` | erlang | 18 | `rakun`, `rakun-web`, `rakun-data`, `rakun-actuator-api` | session store (memory, SQL, Redis), cookie binding, the session filter | `spring-session-jdbc` / `spring-session-data-redis` |
 | `rakun-scheduling` | erlang | 16 · 84 | `rakun`, `rakun-actuator-api`, `rakun-data` | `#[scheduled]`, the cron parser, the executor, the durable job store (`rakun_job*` tables) | `@Scheduled` / `spring-boot-starter-quartz` |
@@ -66,7 +70,7 @@ is the normative graph and [§ The graph](#the-graph) draws it. `std` is implici
 | `rakun-messaging` | erlang | 15 · 86 · 90 | `rakun`, `rakun-actuator-api`, `rakun-metrics` (83 seam) | the listener registry and dispatch loop, AMQP + Kafka + RabbitMQ Streams + JMS (AMQP 1.0 / STOMP) arms, the publisher, retry / dead-letter / idempotency | `-amqp` / `-kafka` / `-activemq` / `-artemis` |
 | `rakun-tx` | erlang | 83 | `rakun`, `rakun-data`, `rakun-messaging`, `rakun-scheduling` | outbox + relay, saga + compensations, two-phase commit; the `Publisher` seam 86 hands off to | JTA (`07-io.md § JTA`) |
 | `rakun-actuator` | erlang | 11 (host) · 76 · 87 | `rakun`, `rakun-actuator-api`, `rakun-web`, `rakun-security`, `rakun-data` | the endpoint host (`/actuator/<id>`, TTL, CORS, path mapping), health/info aggregation, exposure + access levels, management listener, sanitization, probes + availability, audit events, HTTP exchanges | `spring-boot-starter-actuator` |
-| `rakun-app` | erlang | 22 · 23 · 24 · 25 · 60 · 61 · 63 · 64 · 66 | `rakun`, `rakun-web`, `rakun-cache` | the route table + `app/` convention, the page dispatch that writes the chunks onze's render function returns, server actions (id, envelope, dispatch), route handlers, static generation, slots + intercepts, navigation signals, i18n negotiation, metadata file routes | none — the server half of the Next.js `app/` router |
+| `rakun-app` | erlang | 22 · 23 · 24 · 25 · 60 · 61 · 63 · 64 · 66 | `rakun`, `rakun-routing`, `rakun-web`, `rakun-cache` | the route registry (table records + one opaque `PageRenderer` per page pattern) and the `app/` scan, the page dispatch that calls the renderer onze registered with a `ChunkWriter`, server actions (id, envelope, dispatch), route handlers, static generation, slots + intercepts, navigation signals, i18n negotiation, metadata file routes | none — the server half of the Next.js `app/` router |
 | `rakun-hateoas` | erlang | 21 | `rakun`, `rakun-app` (ro) | `#[halResource]`, `Link`, `linkTo` over the route table | `spring-boot-starter-hateoas` |
 | `rakun-websocket` | erlang | 20 | `rakun`, `rakun-web`, `rakun-security`, `rakun-actuator-api` | `#[wsEndpoint]`, upgrade on the HTTP path, sessions, broadcast | `spring-boot-starter-websocket` |
 | `rakun-stream` | erlang | 89 | `rakun`, `rakun-messaging`, `rakun-data`, `rakun-actuator-api` | topology builder, sources/sinks/stages over GenStage, durable state, the graph endpoint | `spring-boot-starter-integration` / Kafka Streams |
@@ -91,7 +95,8 @@ is the normative graph and [§ The graph](#the-graph) draws it. `std` is implici
 | `rakun-tx` | ownership row | **keep, separate** | Front 83 depends on 15 (publisher), 16 (relay tick) and 77 — a `rakun-data/src/tx/**` placement would make the data layer depend on messaging and scheduling. Spring's JTA support is its own module too. |
 | `rakun-security` | scaffold | **keep** | 10 core, 79 `src/oauth2/**`, `src/oidc/**`, `src/ldap/**`, `src/saml2/**`. Spring ships `-security`, `-security-oauth2-client`, `-security-saml2` as starters over one security module; the starter cut is 73's, not this one. |
 | `rakun-session` | scaffold | **keep** | Front 18. 12's private scope and 79's flow state key on it; both would otherwise depend on `rakun-web` for a session id. |
-| `rakun-validation` | scaffold | **keep** | Front 14. The one submodule that declares `["erlang", "commonJS"]` (decision 113): the constraints the server enforces are mirrored in the browser. Depends on core only, so `rakun-data` (78) and `rakun-web` (07) can both consume it. |
+| `rakun-routing` | new (decision 114) | **keep (create)** | Front 22 Step 7. The matcher runs on the server and in the browser, and rakun's core is erlang only (decision 113), so the pure code both sides run is its own member with `["erlang", "commonJS"]` — the second boundary exception. Depends on `std` only; `rakun-app` and `rakun-web` import it on erlang, onze's generated client entry on commonJS. jhonstart does not depend on it: onze hands it `match`. |
+| `rakun-validation` | scaffold | **keep** | Front 14. A submodule that declares `["erlang", "commonJS"]` (decision 113): the constraints the server enforces are mirrored in the browser. Depends on core only, so `rakun-data` (78) and `rakun-web` (07) can both consume it. |
 | `rakun-cache` | scaffold | **keep** | Front 12: both entry points, `#[cacheable]` and `'use cache'`. Depends on `rakun-session` (private scope) and `rakun-client` (Redis transport), never on `rakun-app` — 60 consumes it, not the reverse. |
 | `rakun-client` | scaffold | **keep** | Front 13, RestClient + WebClient over one builder. 12's dependency on it is what keeps 13 free of the cache. |
 | `rakun-actuator-api` | 11 Step 0 | **keep (create)** | Reason 3. `Health`, `HealthIndicator`, `InfoContributor`, `Endpoint`, `Span`, the four decorators, the three registration cells, the sidecar that owns the ETS registries. No rakun dependency beyond core. |
@@ -115,7 +120,7 @@ is the normative graph and [§ The graph](#the-graph) draws it. `std` is implici
 | `rakun-observability` | module column for 75 | **drop (alias)** | Same module as `rakun-metrics`. |
 | `rakun-core` | overview name | **drop (alias)** | The core is `rakun`. `import {…} from "rakun"` resolves through `modules/rakun/` (95 Step 5 acceptance). |
 
-**Final count: 27 submodules** under `modules/` (13 scaffolds kept, 14 created), plus `starters/`.
+**Final count: 28 submodules** under `modules/` (13 scaffolds kept, 15 created), plus `starters/`.
 
 ## The graph
 
@@ -123,7 +128,8 @@ Edges are package dependencies (`botopink.json` `dependencies`), derived from th
 `Depends on` lines of the front READMEs after the three corrections above (86→83 seam, 93→88
 reversed, 85→23 seam). `(ro)` marks a read-only edge: the consumer imports a type or a table and
 registers nothing back. `std` is below everything and omitted, and it is the only external edge:
-no rakun module depends on `jhonstart`, `emilia` or `onze` (decision 113).
+no rakun module depends on `jhonstart`, `emilia` or `onze` (decision 113). `rakun-routing` (22) depends
+on `std` alone and is not drawn: `rakun-app` and `rakun-web` point at it.
 
 ```
                                   rakun  (core: 04 05 06 62 72 74)
@@ -173,12 +179,13 @@ reversed or soft here, and the README's *Depends on* line is read through this t
 | Submodule | Target | Why |
 |---|---|---|
 | `rakun`, `rakun-app`, `rakun-web`, `rakun-websocket`, `rakun-data`, `rakun-tx`, `rakun-security`, `rakun-session`, `rakun-cache`, `rakun-client`, `rakun-actuator-api`, `rakun-actuator`, `rakun-metrics`, `rakun-logging`, `rakun-messaging`, `rakun-pulsar`, `rakun-stream`, `rakun-rsocket`, `rakun-scheduling`, `rakun-mail`, `rakun-hateoas`, `rakun-soap`, `rakun-devtools`, `rakun-release`, `rakun-cli` | **erlang** | rakun is the service, and the service runs on BEAM (decision 113). `botopink.json` declares `"target": "erlang"`, `"targets": ["erlang"]`; the scaffolds' `["commonJS", "erlang"]` is corrected by the lowest-numbered front of each module. The core reaches it when front 04 closes: `runtime.mjs`, the node server and the Node forms in `src/runtime.bp` leave, so there is no second runtime with the same semantics to keep. |
-| `rakun-validation` | **erlang, commonJS** — boundary | The constraints the server enforces are the constraints the client's form mirrors (14): a real client/server boundary, and the one exception. `"targets": ["erlang", "commonJS"]`. |
+| `rakun-routing` | **erlang, commonJS** — boundary | The matcher, and the codecs of the routing wires the browser reads, are the same code on both sides (22, decision 114). `"targets": ["erlang", "commonJS"]`. |
+| `rakun-validation` | **erlang, commonJS** — boundary | The constraints the server enforces are the constraints the client's form mirrors (14): a real client/server boundary. `"targets": ["erlang", "commonJS"]`. |
 | `rakun-test` | **erlang** | It follows the packages it tests. |
 | `starters/*` | none | Manifests. |
 
 The workspace root `repository/rakun/botopink.json` declares `"targets": ["erlang", "commonJS"]` only
-to admit `rakun-validation`'s exception. erlang is first in every list and is the default target of
+to admit the two boundary members, `rakun-routing` and `rakun-validation`. erlang is first in every list and is the default target of
 `botopink run` and `botopink test` in rakun.
 
 ## What `rakun-test` exposes
@@ -196,7 +203,7 @@ subject. Nothing here re-implements `testing.asserts` (95 § 5, rule 1).
 | Boot | `bootAndExit(app: App) -> i32` | 19 § 6 |
 | Mocking | `#[mock]` host runtime and the `#[mock]` + `#[bean]` pairing (the `@MockBean` equivalent); the assertion half is `testing.asserts` | 95 § 3 · 19 § 8 |
 | Test clock and seed | `testClock("2026-01-01T00:00:00Z")`, `testSeed(n)` — installed by every snapshot helper so no `.snap` holds a wall-clock or random value | [`test-snap.md`](./test-snap.md) |
-| Snapshot helpers | `assert<Subject>(loc: SourceLocation, …) -> @Result<void, string>` — one per subject, 56 in all, listed with their rendering rules in [`test-snap.md § Helpers`](./test-snap.md#helpers-rakun-test-exposes) | this milestone |
+| Snapshot helpers | `assert<Subject>(loc: SourceLocation, …) -> @Result<void, string>` — one per subject, 57 in all, listed with their rendering rules in [`test-snap.md § Helpers`](./test-snap.md#helpers-rakun-test-exposes) | this milestone |
 
 The package edge `rakun-test → <every module>` is a test-only edge: `modules/<x>/test/*.bp` imports
 `rakun-test`, and `rakun-test` imports `<x>`. The resolver must treat `<lib>-test` as a
@@ -218,7 +225,7 @@ rule). Sidecars are `src/sidecars/rakun_<name>.erl` in every module.
 | 72 auto-configuration | `rakun` | `src/autoconfig.bp`, `src/conditions.bp`, `src/condition_report.bp`, `src/autoconfig_registry.bp`, `src/sidecars/rakun_autoconfig.erl` |
 | 74 tls-ssl-bundles | `rakun` | `src/ssl_bundle.bp`, `src/sidecars/rakun_ssl.erl` · plus `modules/rakun-web/src/tls.bp` (the listener arm, read-only for 07) |
 | 07 middleware | `rakun-web` | `src/{middleware,cors,error,filter,convention}.bp`, `botopink.json`, `src/root.bp` |
-| 65 url-rules | `rakun-web` | `src/rules/**` |
+| 65 url-rules | `rakun-web` | `src/rules/**` · plus `modules/rakun-routing/src/url_rules.bp` |
 | 82 static-assets | `rakun-web` | `src/static/**` |
 | 20 websocket | `rakun-websocket` | `**` |
 | 08 data-sql | `rakun-data` | `src/datasource.bp`, `src/sql/**`, `botopink.json`, `src/root.bp` |
@@ -248,12 +255,12 @@ rule). Sidecars are `src/sidecars/rakun_<name>.erl` in every module.
 | 85 mail | `rakun-mail` | `**` |
 | 21 hateoas | `rakun-hateoas` | `**` |
 | 93 soap-webservices | `rakun-soap` | `**` |
-| 22 file-routing | `rakun-app` | `src/file_router.bp`, `src/route_table.bp`, `botopink.json`, `src/root.bp` |
-| 23 ssr-pipeline | `rakun-app` | `src/ssr.bp` (the page dispatch and the chunk writer; the render and the payload are jhonstart front 30's) |
+| 22 file-routing | `rakun-app` | `src/file_router.bp`, `src/route_table.bp`, `botopink.json`, `src/root.bp` · **and** `modules/rakun-routing/{botopink.json,src/root.bp,src/segment.bp,src/table.bp,src/match.bp}` (Step 7) |
+| 23 ssr-pipeline | `rakun-app` | `src/ssr.bp` (`ChunkWriter`, `PageRenderer`, `page`, the page dispatch; the render and the payload are jhonstart front 30's) |
 | 24 server-actions | `rakun-app` | `src/actions.bp` |
 | 25 route-handlers | `rakun-app` | `src/route_handler.bp` |
-| 60 static-generation | `rakun-app` | `src/static_gen.bp`, `src/segment_config.bp` |
-| 61 parallel-intercepting-routes | `rakun-app` | `src/route_slots.bp`, `src/route_intercept.bp` |
+| 60 static-generation | `rakun-app` | `src/static_gen.bp`, `src/segment_config.bp` · plus `modules/rakun-routing/src/route_kinds.bp` |
+| 61 parallel-intercepting-routes | `rakun-app` | `src/route_slots.bp`, `src/route_intercept.bp` · plus `modules/rakun-routing/src/slot_states.bp` |
 | 63 navigation-signals | `rakun-app` | `src/navigation.bp` |
 | 64 i18n-routing | `rakun-app` | `src/i18n/**` |
 | 66 metadata-file-routes | `rakun-app` | `src/metadata_routes.bp` |
@@ -293,7 +300,7 @@ are mapped in [`test-snap-examples.md`](./test-snap-examples.md).
 | `examples/rakun` (exists) | 04 · 05 · 06 — the sixty-second app; erlang, with 04 | `rakun` |
 | `examples/rest-service` | 05 · 06 · 07 · 08 · 11 · 14 · 17 · 19 · 72 · 77 · 78 — users and orders, CRUD, validation, migrations, health | `rakun-starter-web`, `rakun-starter-data-sql`, `rakun-starter-actuator`, `rakun-starter-test` |
 | `examples/secured-api` | 10 · 18 · 74 · 76 · 79 · 87 — JWT + OIDC login, sessions, HTTPS, guarded actuator, audit trail | `rakun-security`, `rakun-session`, `rakun-actuator`, `rakun-web` |
-| `examples/blog-server` | 12 · 22 · 23 · 24 · 25 · 60 · 61 · 62 · 63 · 64 · 65 · 66 · 82 — the server half of a Next-style blog (the browser half is `repository/onze/examples/blog`) | `rakun-app`, `rakun-web`, `rakun-cache`, `jhonstart` |
+| `examples/blog-server` | 12 · 22 · 23 · 24 · 25 · 60 · 61 · 62 · 63 · 64 · 65 · 66 · 82 — a blog's routes answered by rakun alone: pages are `PageRenderer`s writing text, handlers answer JSON (decision 114). The blog rendered by jhonstart and styled by emilia is onze's (`repository/onze/examples/blog`, onze front 53) | `rakun-app`, `rakun-web`, `rakun-cache` |
 | `examples/order-pipeline` | 15 · 16 · 83 · 84 · 85 · 86 · 89 · 90 — order events, outbox, saga, retry and dead-letter, nightly job, mail | `rakun-messaging`, `rakun-tx`, `rakun-stream`, `rakun-scheduling`, `rakun-mail`, `rakun-data` |
 | `examples/observed-service` | 11 · 12 · 13 · 17 · 21 · 75 · 76 · 87 — a service that calls another, with metrics, traces, structured logs, HAL | `rakun-actuator`, `rakun-metrics`, `rakun-logging`, `rakun-cache`, `rakun-client`, `rakun-hateoas` |
 | `examples/realtime-gateway` | 09 · 20 · 91 · 92 · 93 — chat over WebSocket and RSocket, a Pulsar feed, a SOAP bridge, a document store | `rakun-websocket`, `rakun-rsocket`, `rakun-pulsar`, `rakun-soap`, `rakun-data` |
@@ -303,11 +310,12 @@ are mapped in [`test-snap-examples.md`](./test-snap-examples.md).
 
 ```
 repository/rakun/
-├── botopink.json                  targets ["erlang","commonJS"] (commonJS only for rakun-validation); "rakun" = modules/rakun
+├── botopink.json                  targets ["erlang","commonJS"] (commonJS only for rakun-routing and rakun-validation); "rakun" = modules/rakun
 ├── src/                           the frozen four + runtime.bp + root.bp; core fronts append here
 ├── modules/
 │   ├── rakun/                     core re-export (95 Step 5)
 │   ├── rakun-actuator-api/
+│   ├── rakun-routing/
 │   ├── rakun-validation/
 │   ├── rakun-client/
 │   ├── rakun-logging/
@@ -362,7 +370,8 @@ differently, and each row's reason is in *Verdicts* or *The graph*.
 | 83 (conflict rule) | `modules/rakun-data/src/tx/**` | `modules/rakun-tx/**` (its own ownership row) |
 | 73 | module `rakun-starters` | `repository/rakun/starters/` |
 | 76 · 77 · 84 ([`../fronts.md § Conflict rules`](../fronts.md#conflict-rules), not the READMEs) | `src/security/**` + `src/probes/**`, `src/migrate/**`, `src/persistent/**` | the READMEs' own `Owns` lines: 76's six flat files, `src/migration/**`, `src/jobstore/**` |
-| 23 | `**Depends on:**` names jhonstart fronts | no package edge: `modules/rakun-app/botopink.json` lists neither `jhonstart` nor `emilia`; the page HTML arrives through the function onze hands 23 (decision 113) |
+| 23 | `**Depends on:**` names jhonstart fronts | no package edge: `modules/rakun-app/botopink.json` lists neither `jhonstart` nor `emilia`; the page HTML arrives through the `PageRenderer` onze registers (decisions 113, 114) |
+| 60 · 61 · 65 | `**Owns:**` a file in `modules/rakun-routing/src/` | that file only; front 22 owns the member's `botopink.json` and `src/root.bp`, and each front hands it one `pub mod` line |
 
 ## Reconsider
 

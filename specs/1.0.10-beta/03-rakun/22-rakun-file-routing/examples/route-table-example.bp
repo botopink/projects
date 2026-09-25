@@ -2,10 +2,11 @@
 //
 // The route table is the one thing this front produces that BOTH targets read.
 // The server matches a request against it on BEAM; the browser rebuilds it from
-// front 23's payload and matches `Link` targets against it to decide what to
-// prefetch. `parseTable` and `matchPath` below are ordinary botopink and are
-// compiled twice — once to BEAM, once to commonJS — so the two sides cannot
-// disagree about what a URL means.
+// the payload's "t" field and matches `Link` targets against it to decide what to
+// prefetch. `parseTable` and `matchPath` below live in the boundary member
+// `rakun-routing` (decision 114), compiled twice — once to BEAM, once to
+// commonJS — so the two sides cannot disagree about what a URL means. onze's
+// client entry hands `matchPath` to jhonstart's router as `match`.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes
@@ -21,13 +22,13 @@
 //
 // The blob is line-oriented rather than JSON because `std/json` is
 // `string -> @Result<string, string>` with no structured walker, and this parser
-// has to run on BEAM. Inside front 23's payload it is one escaped string field.
+// has to run on BEAM. Inside the payload (contract 2) it is one escaped string field.
 //
 // An optional is read with `if (opt) { v -> … }` throughout: a `case` arm that is
 // a bare lower-case name is a located error (`use _ {`), so a `case` over a `?T`
 // cannot bind the matched value.
 
-import {parseTable, writeTable, matchPath, layoutChain, parseSegment, SegmentKind} from "rakun";
+import {parseTable, writeTable, matchPath, layoutChain, parseSegment, SegmentKind} from "rakun-routing";
 
 // The table a small blog produces. Written out by hand here; at runtime it comes
 // from `rkAppTable()` on the server and from the payload's "t" field in the browser.

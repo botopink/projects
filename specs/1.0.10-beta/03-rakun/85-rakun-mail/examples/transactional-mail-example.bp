@@ -22,8 +22,6 @@ import {transactional} from "rakun-data";
 import {OutboxMessage, publishAfterCommit} from "rakun-tx";
 // Front 11: the health value this front's indicator answers with.
 import {Health, healthIndicator, healthUp, healthDown} from "rakun-actuator";
-// jhonstart: the render path an HTML body is built with.
-import {Element, div, p, h1, text, renderToString} from "jhonstart";
 // std, through front 01.
 import {escape, io.clock} from "std";
 
@@ -69,26 +67,22 @@ pub type MailConfig(
     }
 }
 
-// ---- the body, as a component --------------------------------------------------
+// ---- the body, as a string ------------------------------------------------------
 //
-// The same `renderToString` front 23 uses for a page, so the escaping guarantees
-// are the same ones a page has — which matters more here, because a mail body
-// interpolating a display name is the classic injection vector.
-//
-// jhonstart has eight element constructors today and `a` is not one of them
-// (element.bp:10-53), so the reset link is rendered as its URL in text. That is
-// tracked as unowned surface in specs/1.0.10-beta/language-gaps.md; it is not a
-// workaround this file invents.
+// rakun builds no HTML (decision 113): `Mail.html` is a string the caller hands
+// in. A rakun-only application writes it and escapes every interpolated value
+// with `escape.html` — a mail body interpolating a display name is the classic
+// injection vector. In an onze application the string is jhonstart's render,
+// and that example is onze's.
 
-pub fn resetBody(displayName: string, resetUrl: string) -> Element {
+pub fn resetBody(displayName: string, resetUrl: string) -> string {
     val safeName = escape.html(displayName);
-    return div([
-        h1([text("Password reset", attrs: [])], attrs: []),
-        p([text("Hello, " + safeName + ".", attrs: [])], attrs: []),
-        p([text("Open this link to choose a new password:", attrs: [])], attrs: []),
-        p([text(resetUrl, attrs: [])], attrs: []),
-        p([text("If you did not ask for this, nothing has changed.", attrs: [])], attrs: []),
-    ], attrs: []);
+    val safeUrl = escape.html(resetUrl);
+    return "<div><h1>Password reset</h1>"
+        + "<p>Hello, " + safeName + ".</p>"
+        + "<p>Open this link to choose a new password:</p>"
+        + "<p>" + safeUrl + "</p>"
+        + "<p>If you did not ask for this, nothing has changed.</p></div>";
 }
 
 pub fn resetText(displayName: string, resetUrl: string) -> string {
@@ -157,7 +151,7 @@ pub type ResetMailer(
             replyTo: "",
             subject: "Reset your password",
             text: resetText(displayName, url),
-            html: renderToString(resetBody(displayName, url)),
+            html: resetBody(displayName, url),
             attachments: noAttachments,
             headers: extraHeaders,
         );

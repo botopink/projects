@@ -119,7 +119,7 @@ only place all three inputs exist at once.
 
 **The form is not this front's.** rakun builds no HTML (decision 113). The markup that binds a form
 to an action — `method="post"`, the current pathname in `action`, the `data-jh-a` marker and the
-hidden `__onze_action` field — is written by jhonstart front 67 (`formAttrs`, `hiddenActionField`).
+hidden action field — is written by jhonstart front 67 (`formAttrs`, `hiddenActionField`).
 This front owns what that markup carries: the id, derived here and nowhere else. onze asks this
 front for the id of a registered action and hands it to the form; jhonstart never names rakun, and
 rakun never names an element:
@@ -130,10 +130,20 @@ pub fn actionIdOf(action: string) -> string   // the registered action's id; unk
 
 ```html
 <form method="post" action="/blog" data-jh-a="a_9f2c1b7e">
-  <input type="hidden" name="__onze_action" value="a_9f2c1b7e">
+  <input type="hidden" name="__bp_action" value="a_9f2c1b7e">
   …fields…
 </form>
 ```
+
+**The wire names are configuration onze sets.** The hidden field's name and the scripted path's
+header name are a text contract between jhonstart's form and this dispatcher, and neither library
+spells them (decision 114). This front reads both from its configuration (front 05):
+`rakun.actions.field` and `rakun.actions.header`. onze sets them at boot and passes the same two
+values to jhonstart front 67 as `actionField` / `actionHeader`; onze's defaults are `__bp_action`
+and `X-Bp-Action`, which is what the examples and fixtures below use. With either key unset this
+front refuses to start the dispatcher, naming the key — there is no default in rakun, so a
+mismatched pair cannot happen silently. Below, *the field* and *the header* mean those two
+configured names.
 
 **The phase word.** Before the action body runs, this front calls front 62's
 `setPhase(RequestPhase.Action)`. It is the same word front 12's `rkCachePhase()` reads to decide
@@ -148,7 +158,7 @@ The phase is restored before front 23's dispatch re-renders, so the re-render ru
 | | Progressive (no JS) | Scripted (front 67) |
 |---|---|---|
 | transport | `POST` to the current pathname, `application/x-www-form-urlencoded` | `POST` to the same pathname, `Accept: application/onze-action` |
-| names the action | the `__onze_action` field | the `X-Onze-Action` header, falling back to the field |
+| names the action | the field (`rakun.actions.field`) | the header (`rakun.actions.header`), falling back to the field |
 | the server answers with | a full document, or a 303 to the redirect target | the action result envelope, JSON |
 | runs | CSRF check, size check, decode, resolve, invoke, revalidate | the same six steps, same code |
 
@@ -204,7 +214,8 @@ user gets back is built from the invalidated-and-refilled cache rather than from
 mutation just made stale. The ordering is the whole point and it is tested.
 
 **`router.refresh()`.** Front 26 owns the client call; this front owns the endpoint. A POST with
-`X-Onze-Action: refresh` and no action id re-renders the current route through front 23 and returns
+the header set to `refresh` and no action id re-renders the current route through the page renderer
+front 23 dispatches and returns
 an envelope whose `payload` is the new payload and whose `state` is empty. The client re-reconciles
 without a document load. It runs the CSRF check like every other POST.
 
@@ -265,19 +276,25 @@ pub declare fn rkRegisterAction(
 - [ ] The id is 26 characters, `a_` plus 24 hex, and contains no character that needs escaping in an
       HTML attribute.
 - [ ] Two functions with the same name in different modules get different ids.
-- [ ] The function's name alone does not resolve: POSTing `__onze_action=createPost` is a 404.
+- [ ] The function's name alone does not resolve: POSTing `__bp_action=createPost` (the field
+      configured as `__bp_action`) is a 404.
+- [ ] With `rakun.actions.field` or `rakun.actions.header` unset, the dispatcher refuses to start and
+      the message names the missing key; no name is spelled in `src/actions.bp`, checked by grep for
+      `__bp_action`, `X-Bp-Action`, `__onze` and `X-Onze` in the gate.
+- [ ] With the field configured as `__x`, a POST carrying `__x=<id>` dispatches and one carrying
+      `__bp_action=<id>` does not — the configured name is the only one read.
 
 ### Step 3 — The id a form carries
 
 **Acceptance:**
 - [ ] `actionIdOf("createPost")` returns the same id `actionId` derives for the registered function,
-      and that id dispatches when POSTed as `__onze_action`.
+      and that id dispatches when POSTed under the configured field.
 - [ ] `actionIdOf` of a name that is not registered raises with the function name in the message — a
       form pointing at nothing is a bug that should not reach a browser.
 - [ ] This front declares no element constructor and imports nothing from `jhonstart`, checked by
       grep in its own gate; the form markup is jhonstart front 67's.
 - [ ] The progressive path is tested by driving the raw POST a scripting-disabled browser would send
-      (`__onze_action=<id>&…`), not by rendering a form.
+      (`__bp_action=<id>&…` with the field configured as `__bp_action`), not by rendering a form.
 
 ### Step 4 — Dispatch, and the checks that come before it
 
@@ -337,14 +354,17 @@ pub fn dispatchAction(
 - [ ] The RPC path runs the same CSRF and size checks — asserted by the same test bodies, parameterised
       over the two encodings, so the paths cannot drift.
 - [ ] An RPC body with an unknown `v` is a 400.
-- [ ] `X-Onze-Action: refresh` returns an envelope whose `payload` parses as a contract-2 payload with
-      the current pathname, and whose `state` is empty.
+- [ ] The header set to `refresh` (`X-Bp-Action: refresh` with the header configured as
+      `X-Bp-Action`) returns an envelope whose `payload` parses as a contract-2 payload with the
+      current pathname, and whose `state` is empty.
 
 ## Examples
 
-- [`examples/form-action-example.bp`](./examples/form-action-example.bp) — a form whose submission
-  mutates and revalidates: the action, the form that calls it, the validation failure that comes back
-  as state, and the assertion that the invalidation happened before the re-render.
+- [`examples/form-action-example.bp`](./examples/form-action-example.bp) — an action whose submission
+  mutates and revalidates: the action, the id a form carries, the raw POST a scripting-disabled
+  browser sends, the validation failure that comes back as state, and the assertion that the
+  invalidation happened before the re-render. The form that calls it is jhonstart's, wired by onze —
+  onze front 53's `new-post-form-example.bp`.
 
 ## Language gaps
 
@@ -357,8 +377,8 @@ pub fn dispatchAction(
 ## Blocked
 
 - `repository/rakun/src/http.bp` is frozen and `Response` has no header list, so an action cannot set
-  a cookie through it. Cookie writes go through front 62's queue, which front 23 applies when it
-  builds the `RenderedPage`. When `http.bp` unfreezes, that queue should become a header list on
+  a cookie through it. Cookie writes go through front 62's queue, which front 23's dispatch applies
+  before the first chunk is written. When `http.bp` unfreezes, that queue should become a header list on
   `Response`.
 - The body-size limit is enforced in `src/sidecars/rakun_actions.erl` rather than in botopink,
   because `Request.body()`

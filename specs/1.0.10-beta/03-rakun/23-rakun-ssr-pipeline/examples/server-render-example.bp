@@ -1,79 +1,95 @@
 // Front 23 — rakun SSR pipeline: the page dispatch.
 //
 // rakun matches the route, opens the request scope with the `Render` phase set,
-// calls the page-render function onze handed it at boot, and writes the chunks
-// that function returns. It builds no HTML and imports nothing from jhonstart,
-// emilia or onze (decision 113): in an application the function below is
-// installed by onze and its chunks are rendered by jhonstart front 30. Here a
-// stub stands in for it, so every assertion is about dispatch, scope, status
-// and bytes — never about markup.
+// calls the renderer registered for the matched pattern with the request and a
+// `ChunkWriter`, and closes the response when the renderer's future resolves.
+// It builds no HTML and imports nothing from jhonstart, emilia or onze
+// (decisions 113, 114): in an application the renderer is registered by onze
+// and its chunks are rendered by jhonstart front 30. Here a renderer that writes
+// plain text stands in for it, so every assertion is about dispatch, scope,
+// status and bytes — never about markup.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/getting-started/layouts-and-pages
 //   https://nextjs.org/docs/app/api-reference/file-conventions/loading
-//
-// LANGUAGE GAP: declared parameter defaults are never applied, so every
-// `RenderedPage(...)` below passes all three fields.
 
-// NOTE: front 22's `rkAppRegisterPage` takes a render function typed over
-// jhonstart's `Element`, which rakun cannot name under decision 113; the
-// pattern-only registration it needs is not specified yet. `rkAppRegisterPattern`
-// below stands for it.
-// `PageContext` and `rkAppRegisterPattern` are front 22's; `RenderedPage`,
-// `setPageRender`, `servePage` and `toResponse` are this front's; `requestPhase`
-// and `RequestPhase` are front 62's.
-import {PageContext, rkAppRegisterPattern} from "rakun";
-import {RenderedPage, setPageRender, servePage, toResponse} from "rakun";
-import {requestPhase, RequestPhase} from "rakun";
+// `ChunkWriter`, `PageRenderer`, `page` and `servePage` are this front's;
+// `notFound` is front 63's; `requestPhase` and `RequestPhase` are front 62's;
+// `Request` is front 04's; `fakeGet` is front 19's request double.
+import {ChunkWriter, PageRenderer, page, servePage} from "rakun";
+import {notFound} from "rakun";
+import {requestPhase, RequestPhase, Request} from "rakun";
+import {fakeGet} from "rakun-test";
 
-// ---- the stand-in for onze's render function ------------------------------------
+// ---- a recording ChunkWriter -------------------------------------------------------
 //
-// It records the phase it ran under and returns three fixed chunks: the shell,
-// one fill, the tail. rakun never looks inside them.
+// The socket stand-in: it records what the dispatch wrote and how many times it
+// closed the response.
+
+var written: string[] = [];
+var closes: i32 = 0;
+
+fn recorder() -> ChunkWriter {
+    written = [];
+    closes = 0;
+    return ChunkWriter(
+        write: fn(chunk: string) { written.push(chunk); },
+        close: fn() { closes = closes + 1; },
+    );
+}
+
+// ---- the stand-in renderers ----------------------------------------------------------
+//
+// The first records the phase it ran under and writes three fixed chunks: the
+// shell, one fill, the tail. rakun never looks inside them.
 
 var phaseSeen: string = "";
 
 #[@future]
-fn stubRender(ctx: PageContext) -> @Future<RenderedPage> {
+fn stubRender(req: Request, out: ChunkWriter) -> @Future<void> {
     phaseSeen = if (requestPhase() == RequestPhase.Render) { "render" } else { "other" };
-    return RenderedPage(
-        status: 200,
-        headers: [#("Content-Type", "text/html; charset=utf-8")],
-        chunks: ["<shell " + ctx.pattern + ">", "<fill h1>", "<tail>"],
-    );
+    await out.write("<shell " + req.param("slug") + ">");
+    await out.write("<fill h1>");
+    await out.write("<tail>");
 }
 
-fn install() -> void {
-    rkAppRegisterPattern("/blog/[slug]");
-    setPageRender({ ctx -> stubRender(ctx) });
+#[@future]
+fn missingRender(req: Request, out: ChunkWriter) -> @Future<void> {
+    val _gone = notFound();
+    await out.write("never written");
 }
 
-// ---- what the dispatch does ------------------------------------------------------
+val _post = page("blog/[slug]", stubRender);
+val _gone = page("gone", missingRender);
 
-test "a matched page is written as the chunks the render function returned" {
-    install();
-    val page = await servePage("/blog/hello", "");
-    assert page.status == 200;
-    assert page.chunks.join("|") == "<shell /blog/[slug]>|<fill h1>|<tail>";
+// ---- what the dispatch does ------------------------------------------------------------
+
+test "a matched page is written as the chunks the renderer wrote" {
+    val status = await servePage(fakeGet("/blog/hello"), recorder());
+    assert status == 200;
+    assert written.join("|") == "<shell hello>|<fill h1>|<tail>";
 }
 
-test "the render function runs under the Render phase" {
-    install();
-    val page = await servePage("/blog/hello", "");
+test "the dispatch closes the response once, after the renderer resolves" {
+    val _status = await servePage(fakeGet("/blog/hello"), recorder());
+    assert closes == 1;
+}
+
+test "the renderer runs under the Render phase" {
+    val _status = await servePage(fakeGet("/blog/hello"), recorder());
     assert phaseSeen == "render";
 }
 
 test "a url with no page answers 404 without rendering" {
-    install();
     phaseSeen = "";
-    val page = await servePage("/nowhere", "");
-    assert page.status == 404;
+    val status = await servePage(fakeGet("/nowhere"), recorder());
+    assert status == 404;
     assert phaseSeen == "";
+    assert written.length == 0;
 }
 
-test "the non-streaming path joins the chunks into one body" {
-    install();
-    val page = await servePage("/blog/hello", "");
-    val res = toResponse(page);
-    assert res.body == "<shell /blog/[slug]><fill h1><tail>";
+test "a not-found raised before the first write answers 404" {
+    val status = await servePage(fakeGet("/gone"), recorder());
+    assert status == 404;
+    assert written.length == 0;
 }

@@ -91,14 +91,14 @@ names the front to look at.
 | File | Fronts | Proves |
 |---|---|---|
 | `app/layout.bp` | 49 · 52 · 27 · 69 · D | The root layout returns the body subtree; fonts, the nav, and emilia's sheet all reach the document head exactly once and in the right order |
-| `app/page.bp` | 22 · 51 · 60 | `/` resolves; the hero image is optimized and eager; the route is prerendered at build time and served from the manifest |
+| `app/page.bp` | 30 · 51 · 60 | `/` resolves; the hero image is optimized and eager; the route is prerendered at build time and served from the manifest |
 | `app/loading.bp` | 30 | A slow render flushes the shell and the fallback before the body |
 | `app/error.bp` | 31 · 17 | A thrown error renders the boundary and the digest, and the message never reaches the client |
 | `app/not-found.bp` | 31 · 63 | An unmatched URL renders the 404 page with status 404, not status 200 |
 | `app/blog/layout.bp` | 23 | Layout nesting: the blog shell wraps every `/blog/*` route and is not re-rendered on client navigation between them |
 | `app/blog/page.bp` | 28 · 12 · 30 | A server component loads posts, the load is cached under a tag, and the list streams behind `loading.bp` |
 | `app/blog/loading.bp` | 30 | The segment's own fallback, not the root one |
-| `app/blog/[slug]/page.bp` | 22 · 28 · 32 · 60 · 63 | The dynamic segment reaches the page as `route.params.lookup("slug").unwrapOr("")`; `generateStaticParams` prerenders all three posts; `generateMetadata` produces the head; a missing slug calls `notFound()` |
+| `app/blog/[slug]/page.bp` | 30 · 28 · 32 · 60 · 63 | The dynamic segment reaches the page as `route.params.lookup("slug").unwrapOr("")`; `generateStaticParams` prerenders all three posts; `generateMetadata` produces the head; a missing slug calls `notFound()` |
 | `app/blog/[slug]/loading.bp` | 30 | Per-post fallback |
 | `app/blog/[slug]/not-found.bp` | 31 · 63 | The signal from the page lands in *this* boundary, not the root one |
 | `app/blog/[slug]/opengraph-image.bp` | 66 · 70 · 32 · 52 | `image/svg+xml`, so the gate needs no rasterizer; `generateMetadata`'s `openGraph.images` points at it |
@@ -255,10 +255,11 @@ the app file named in its header.
 | Example | App file | Fronts it exercises |
 |---|---|---|
 | [`examples/lib-db-example.bp`](./examples/lib-db-example.bp) | `lib/db.bp` | 01 · std `io.fs`/`path` · 12 |
-| [`examples/app-layout-example.bp`](./examples/app-layout-example.bp) | `app/layout.bp` | 22 · 27 · 48 · 52 · 69 |
-| [`examples/app-page-example.bp`](./examples/app-page-example.bp) | `app/page.bp` | 22 · 51 · 60 |
-| [`examples/blog-list-page-example.bp`](./examples/blog-list-page-example.bp) | `app/blog/page.bp` + `layout.bp` + `loading.bp` | 22 · 28 · 12 · 30 |
-| [`examples/blog-slug-page-example.bp`](./examples/blog-slug-page-example.bp) | `app/blog/[slug]/page.bp` | 22 · 28 · 32 · 60 · 63 |
+| [`examples/app-tree-example.bp`](./examples/app-tree-example.bp) | the `app/` tree: root and blog layouts, home, a dynamic post and a route-group page | 30 · 22 · 23 |
+| [`examples/app-layout-example.bp`](./examples/app-layout-example.bp) | `app/layout.bp` | 30 · 27 · 48 · 52 · 69 |
+| [`examples/app-page-example.bp`](./examples/app-page-example.bp) | `app/page.bp` | 30 · 51 · 60 |
+| [`examples/blog-list-page-example.bp`](./examples/blog-list-page-example.bp) | `app/blog/page.bp` + `layout.bp` + `loading.bp` | 30 · 28 · 12 |
+| [`examples/blog-slug-page-example.bp`](./examples/blog-slug-page-example.bp) | `app/blog/[slug]/page.bp` | 30 · 28 · 32 · 60 · 63 |
 | [`examples/boundaries-example.bp`](./examples/boundaries-example.bp) | `app/loading.bp`, `app/error.bp`, `app/blog/[slug]/not-found.bp` | 30 · 31 · 63 · 17 |
 | [`examples/post-card-example.bp`](./examples/post-card-example.bp) | `components/post_card.bp` | 33 · 35 · 40 · 48 · 27 |
 | [`examples/server-action-example.bp`](./examples/server-action-example.bp) | `lib/actions.bp` | 24 · 12 · 63 |

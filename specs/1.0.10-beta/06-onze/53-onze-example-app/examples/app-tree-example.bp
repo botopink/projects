@@ -1,8 +1,12 @@
-// Front 22 — rakun file routing.
+// Front 53 — onze example app · examples/app-tree-example.bp
+// App files: app/layout.bp · app/page.bp · app/blog/** · app/(marketing)/about/page.bp
 //
 // A realistic `app/` tree, and the `layout.bp` / `page.bp` bodies that populate it.
 // Everything below runs on BEAM: a layout and a page are server render functions.
-// The route table they build is the one artifact that also reaches the browser.
+// The decorators, `PageContext` and `LayoutProps` are jhonstart front 30's; at
+// boot onze (front 49) copies the UI records into rakun front 22's route table
+// and hands rakun one renderer per page (decision 114). The route table is the
+// one artifact that also reaches the browser, matched there by `rakun-routing`.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/getting-started/project-structure
@@ -31,11 +35,9 @@
 // fails the scan when the two disagree. They are gathered into one file here so
 // the example is one compilable unit.
 
-import {Element, bracketPair, div, h1, p, ul, li, text} from "jhonstart";
-import {page, layout, PageContext, LayoutProps} from "rakun";
-// The module carrying decorated declarations must also import the registry cells
-// the `@emit`ted wiring calls by name — the same rule as rakun's `rkScan`/`rkSingleton`.
-import {rkAppRegisterPage, rkAppRegisterLayout, rkAppTable} from "rakun";
+import {Element, bracketPair, div, h1, p, ul, li, text, renderToString} from "jhonstart";
+import {page, layout, PageContext, LayoutProps} from "jhonstart";   // front 30
+import {collections.Dict} from "std";
 
 // LANGUAGE GAP: `@Decl` carries no source location, so a decorator cannot read the file it
 // annotates; the app-relative directory has to be passed as an argument. With `decl.source()`
@@ -51,7 +53,7 @@ import {rkAppRegisterPage, rkAppRegisterLayout, rkAppTable} from "rakun";
 #[layout("")]
 pub fn rootLayout(props: LayoutProps) -> Element {
     val header = div([h1([text("onze", attrs: [])], attrs: [])], attrs: [
-        bracketPair("data-onze-chrome", "header"),
+        bracketPair("data-jh-chrome", "header"),
     ]);
     return div([header, props.children], attrs: [bracketPair("data-jh-root", "")]);
 }
@@ -60,18 +62,18 @@ pub fn rootLayout(props: LayoutProps) -> Element {
 //
 // Wraps /blog and everything under it. It is NOT re-rendered when the client
 // navigates between two routes that share it — that is the difference between
-// `layout.bp` and `template.bp`, and front 23 owns the distinction.
+// `layout.bp` and `template.bp`, and jhonstart front 30 owns the distinction.
 
 #[layout("blog")]
 pub fn blogLayout(props: LayoutProps) -> Element {
     val crumb = p([text("Blog", attrs: [])], attrs: []);
-    return div([crumb, props.children], attrs: [bracketPair("data-onze-seg", "blog")]);
+    return div([crumb, props.children], attrs: [bracketPair("data-jh-seg", "blog")]);
 }
 
 // ---- app/page.bp — the home page ----------------------------------------------
 //
-// Every page is `#[@future]`: the registry pins one shape, so the pipeline in
-// front 23 has one shape to drive. A page that needs no data awaits nothing and
+// Every page is `#[@future]`: jhonstart's registry pins one shape, so the
+// renderer onze hands rakun has one shape to drive. A page that needs no data awaits nothing and
 // costs nothing.
 
 #[@future]
@@ -97,7 +99,7 @@ pub fn homePage(route: PageContext) -> @Future<Element> {
 pub fn blogIndexPage(route: PageContext) -> @Future<Element> {
     val slugs = await recentSlugs();
     val items = slugs.map({ s -> li([text(s, attrs: [])], attrs: []) });
-    return ul(items, attrs: [bracketPair("data-onze-list", "posts")]);
+    return ul(items, attrs: [bracketPair("data-jh-list", "posts")]);
 }
 
 // ---- app/blog/[slug]/page.bp — a dynamic segment ------------------------------
@@ -120,7 +122,7 @@ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
     return div([
         h1([text(params.slug, attrs: [])], attrs: []),
         p([text(body, attrs: [])], attrs: []),
-    ], attrs: [bracketPair("data-onze-seg", "post")]);
+    ], attrs: [bracketPair("data-jh-seg", "post")]);
 }
 
 // ---- app/(marketing)/about/page.bp — a route group ----------------------------
@@ -138,20 +140,33 @@ pub fn aboutPage(route: PageContext) -> @Future<Element> {
     ], attrs: []);
 }
 
-// ---- what the five registrations above produce --------------------------------
+// ---- what the tree renders ------------------------------------------------------
+//
+// The table records these decorators produce reach rakun at boot (onze front 49);
+// rakun front 22's `page-registry-example.bp` asserts the table itself. Here the
+// jhonstart side is asserted: the page and the layouts render as the router
+// composes them.
 
-test "the app tree registers one route-table record per convention file" {
-    val wire = rkAppTable();
-    val lines = wire.split("\n");
-    assert lines.contains("L|/||");
-    assert lines.contains("L|/blog||");
-    assert lines.contains("P|/||");
-    assert lines.contains("P|/blog||");
-    assert lines.contains("P|/blog/[slug]||");
-    assert lines.contains("P|/about||");
+fn route(pattern: string, slug: string) -> PageContext {
+    return PageContext(
+        pathname: "/blog/" + slug,
+        pattern: pattern,
+        params: Dict.empty().insert("slug", slug),
+        query: Dict.empty(),
+        rest: [],
+    );
 }
 
-test "a group segment is absent from every pattern it encloses" {
-    val wire = rkAppTable();
-    assert wire.contains("(marketing)") == false;
+test "a dynamic page reads its segment through the emitted accessor" {
+    val tree = await blogPostPage(route("/blog/[slug]", "hello-world"));
+    assert renderToString(tree).contains("hello-world");
+}
+
+test "the root layout wraps the blog layout, which wraps the page" {
+    val leaf = await blogPostPage(route("/blog/[slug]", "hello-world"));
+    val inner = blogLayout(LayoutProps(route: route("/blog/[slug]", "hello-world"), children: leaf, slots: Dict.empty()));
+    val outer = rootLayout(LayoutProps(route: route("/blog/[slug]", "hello-world"), children: inner, slots: Dict.empty()));
+    val markup = renderToString(outer);
+    assert markup.indexOf("onze") < markup.indexOf("Blog");
+    assert markup.indexOf("Blog") < markup.indexOf("hello-world");
 }

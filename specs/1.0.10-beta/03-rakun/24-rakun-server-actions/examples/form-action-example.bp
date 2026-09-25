@@ -6,7 +6,11 @@
 //   reaches the browser; only its id does.
 //   CLIENT (browser): the POST. With scripting off it is a plain form submission
 //   to the current pathname; with front 67 loaded it is the same POST carrying
-//   `X-Onze-Action` and receiving the result envelope instead of a document.
+//   the action header and receiving the result envelope instead of a document.
+//
+// The field and header names are configuration onze sets (`rakun.actions.field`
+// / `rakun.actions.header`, decision 114); this example's configuration uses
+// onze's defaults, `__bp_action` and `X-Bp-Action`.
 //
 // The form itself is not here: rakun builds no HTML and imports nothing from
 // jhonstart (decision 113). jhonstart front 67 writes the form with the id onze
@@ -92,6 +96,6 @@ test "the id a form carries names the action by its id and never by its name" {
 test "a scripting-disabled submission is a raw POST carrying the id" {
     val id = actionIdOf("createPost");
     val _outcome = await dispatchAction("/blog/new", "https://app.example", "app.example",
-        "application/x-www-form-urlencoded", "__onze_action=" + id + "&title=Rendering+on+BEAM&body=x");
+        "application/x-www-form-urlencoded", "__bp_action=" + id + "&title=Rendering+on+BEAM&body=x");
     assert cache.revalidatedPaths().contains("/blog");
 }

@@ -19,7 +19,8 @@ neither blocks this front, and both are named where they attach
 **Does not touch:** `repository/rakun/src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`,
 `src/runtime.mjs` — frozen; `src/file_router.bp` (front 22) is read-only, and this front registers
 through its public API rather than editing its table format; `repository/jhonstart/src/metadata.bp` is
-front 32's
+jhonstart front 32's, and this front names no jhonstart type — a dynamic image's body is an opaque
+renderer onze registers (decision 114)
 **Reference:** `NEXTJS-DOCS.md § 18. Metadata e OG Images` (Metadata Files · OG Images dinâmicas),
 `§ 3. Estrutura do Projeto` (Exemplo de estrutura — `opengraph-image.tsx`) ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/metadata/sitemap> ·
@@ -53,8 +54,9 @@ needs the route tree — which front 22 has and front 32 does not.
 - `repository/rakun/src/file_router.bp` (front 22) — the `kind|pattern|slot|verb` table of
   [`contracts.md` § 1](../../contracts.md), with `R` reserved for route handlers. Its *Definition of done*
   names front 66 as a consumer. Nothing registers a synthetic route today.
-- `repository/jhonstart/src/metadata.bp` (front 32) — the `Metadata` record and `generateMetadata`.
-  Front 32 keeps both; this front hands it `<link>` and `<meta>` entries and takes none of its surface.
+- `repository/jhonstart/src/metadata.bp` (jhonstart front 32) — the `Metadata` record and
+  `generateMetadata`. Front 32 keeps both; onze hands it this front's `<link>` and `<meta>` entries, and
+  neither package imports the other.
 - `repository/rakun/src/http.bp:45-73` — `Response.ok/json/created/withStatus/notFound/badRequest`.
   There is no `Response` builder with a content type, which is why every route this front registers
   sets its content type through front 04's `rkSetReplyHeader`.
@@ -87,7 +89,7 @@ it removable.
 val _sitemap = registerSitemap(sitemap);
 val _robots = registerRobots(robots);
 val _manifest = registerManifest(manifest);
-val _ogBlog = registerImageRoute(ImageKind.OpenGraph, "blog/[slug]", blogOgImage);
+val _ogBlog = registerImageRoute(ImageKind.OpenGraph, "blog/[slug]", 1200, 630, "image/png");
 val _icon = registerIconFile(IconKind.Icon, "", "icon.png", "image/png", "512x512");
 ```
 
@@ -115,10 +117,13 @@ or over the rendered body (dynamic form). That is what lets the route carry a lo
 without a stale card surviving a redeploy, and it matches what Next does with the same convention.
 
 **The two image forms, and what each needs.** A static file beside the segment is served directly and
-needs nothing beyond front 01's `fs`. A `.bp` module whose exported function renders one is handed to
-front 70, which turns an element tree into SVG and optionally rasterizes it. Front 70 is optional here:
-with it absent, `registerImageRoute` still registers the route and the URL and the `<meta>` tag are
-still produced, and the route answers 501 with a message naming front 70 rather than a broken image.
+needs nothing beyond front 01's `fs`. A dynamic image is declared here by `registerImageRoute` — the
+URL, the size and the `<meta>` tags are rakun's — and its body is an opaque `PageRenderer` (front 23)
+onze hands in through `setImageRenderer`: jhonstart renders the card and onze front 70 turns the
+element tree into SVG and optionally rasterizes it, writing the bytes through the `ChunkWriter`.
+rakun names neither. Front 70 is optional here: with it absent onze registers no renderer, the route,
+the URL and the `<meta>` tag are still produced, and the route answers 501 with a message naming
+front 70 rather than a broken image.
 An explicit failure at one route is better than a site that half-works and better than blocking this
 front on a low-priority one.
 
@@ -287,7 +292,8 @@ pub type ImageRoute(
 )
 
 pub fn registerImageFile(kind: ImageKind, seg: string, file: string, contentType: string, width: i32, height: i32) -> i32
-pub fn registerImageRoute(kind: ImageKind, seg: string, render: fn(route: PageContext) -> @Future<Element>) -> i32
+pub fn registerImageRoute(kind: ImageKind, seg: string, width: i32, height: i32, contentType: string) -> i32
+pub fn setImageRenderer(kind: ImageKind, seg: string, render: PageRenderer) -> i32   // onze, with front 70
 pub fn resolveImage(kind: ImageKind, pattern: string) -> ?ImageRoute
 pub fn imageUrlFor(kind: ImageKind, pathname: string) -> ?string
 pub fn metaTagsFor(pattern: string) -> Array<#(string, string)>
@@ -306,8 +312,11 @@ declared parameter default is never applied ([`language-gaps.md`](../../language
       hash changes when the underlying file or rendered body changes by one byte.
 - [ ] `metaTagsFor` emits `og:image`, `og:image:width`, `og:image:height` and `og:image:type`, and the
       Twitter kind emits `twitter:image` and `twitter:card`.
-- [ ] A dynamic image route with front 70 absent answers 501 with a body naming front 70; the `<meta>`
-      tag is still emitted, so the failure is one route and not a missing head.
+- [ ] A dynamic image route with no renderer set (front 70 absent) answers 501 with a body naming
+      front 70; the `<meta>` tag is still emitted, so the failure is one route and not a missing head.
+- [ ] A dynamic image route with a renderer set answers the bytes the renderer wrote, with the
+      registered content type; `setImageRenderer` for a route that was never registered fails,
+      naming the segment.
 - [ ] A static image file is served with its own bytes and a one-year cache header.
 - [ ] Front 32 consumes `metaTagsFor` and `iconLinksFor` unchanged; the resolution rule is cited from
       here and implemented once.

@@ -13,7 +13,7 @@ that the fronts it exercises compose — not that each works alone. Every front 
 | `examples/rakun` | 04 · 05 · 06 | `rakun` | `rakun` |
 | `examples/rest-service` | 05 · 06 · 07 · 08 · 11 · 14 · 17 · 19 · 72 · 77 · 78 | `rakun-starter-web`, `rakun-starter-data-sql`, `rakun-starter-actuator`, `rakun-starter-test` | `rest-service` |
 | `examples/secured-api` | 10 · 18 · 74 · 76 · 79 · 87 | `rakun-security`, `rakun-session`, `rakun-actuator`, `rakun-web` | `secured-api` |
-| `examples/blog-server` | 12 · 22 · 23 · 24 · 25 · 60 · 61 · 62 · 63 · 64 · 65 · 66 · 82 | `rakun-app`, `rakun-web`, `rakun-cache`, `jhonstart` | `blog-server` |
+| `examples/blog-server` | 12 · 22 · 23 · 24 · 25 · 60 · 61 · 62 · 63 · 64 · 65 · 66 · 82 | `rakun-app`, `rakun-web`, `rakun-cache` | `blog-server` |
 | `examples/order-pipeline` | 15 · 16 · 83 · 84 · 85 · 86 · 89 · 90 | `rakun-messaging`, `rakun-tx`, `rakun-stream`, `rakun-scheduling`, `rakun-mail`, `rakun-data` | `order-pipeline` |
 | `examples/observed-service` | 11 · 12 · 13 · 17 · 21 · 75 · 76 · 87 | `rakun-actuator`, `rakun-metrics`, `rakun-logging`, `rakun-cache`, `rakun-client`, `rakun-hateoas` | `observed-service` |
 | `examples/realtime-gateway` | 09 · 20 · 91 · 92 · 93 | `rakun-websocket`, `rakun-rsocket`, `rakun-pulsar`, `rakun-soap`, `rakun-data` | `realtime-gateway` |
@@ -1295,13 +1295,15 @@ GET /api/nothing -> 404
 
 ## `examples/blog-server`
 
-**Fronts:** 12 · 22 · 23 · 24 · 25 · 60 · 61 · 62 · 63 · 64 · 65 · 66 · 82 · **Depends on:** `rakun-app`, `rakun-web`, `rakun-cache`, `jhonstart` · **Tests:** `examples/blog-server/test/blog-server_test.bp` · **Snapshots:** `examples/blog-server/test/__snapshots__/blog-server/` · **Target:** both — boundary (22 route matching, 23 render/payload, 24 action id + envelope, 60 route kinds, 61 slot states, 65 canonicalization run on both; every other front here is erlang-only; the browser half of the blog is `repository/onze/examples/blog`)
+**Fronts:** 12 · 22 · 23 · 24 · 25 · 60 · 61 · 62 · 63 · 64 · 65 · 66 · 82 · **Depends on:** `rakun-app`, `rakun-web`, `rakun-cache` · **Tests:** `examples/blog-server/test/blog-server_test.bp` · **Snapshots:** `examples/blog-server/test/__snapshots__/blog-server/` · **Target:** erlang (the boundary halves — 22's matcher, 60's route kinds, 61's slot states, 65's canonicalization — are `rakun-routing`'s and run on both targets in its own tests)
+
+rakun only (decision 114): every page is a `PageRenderer` writing plain text and every handler answers JSON. A `layout.bp` in a file list below is a table record the `rakun-test` helper registers the way onze's boot does (front 22's `rkAppRegisterEntry`); no layout function exists in this project. The blog rendered by jhonstart and styled by emilia — layouts, payload, forms, the browser half — is onze's (onze front 53, `repository/onze/examples/blog`).
 
 > helper gap: `assertSlots` renders the four slot states of the 61 wire (`matched`, `default`, `unchanged`, `empty`), not only the two the table lists — a soft navigation that keeps a slot has to say so.
 
 ```
 examples/blog-server/
-├── botopink.json                        dependencies: rakun-app · rakun-web · rakun-cache · jhonstart
+├── botopink.json                        dependencies: rakun-app · rakun-web · rakun-cache
 ├── application.yaml                     rakun.cache.type ets · rakun.cache.names products,prices · rakun.web.static.build-dir dist/ · rakun.web.static.public-dir public/ · onze.appDir app
 ├── src/main.bp                          Rakun.run(App(port: 8080, basePath: ""))
 ├── src/i18n.bp                          appLocales() -> LocaleSet(["pt-BR","en","es"], "pt-BR") · registerLocales · localeFilter excluding /api, /dashboard, /sitemap.xml, /robots.txt
@@ -1309,17 +1311,18 @@ examples/blog-server/
 ├── src/assets.bp                        AssetConfig (#[configuration] · buildAssets /_assets/** immutable · publicAssets /public/** index.html)
 ├── src/catalog.bp                       productsJson · priceJson · repriceProduct (cachePolicy · cacheThrough · updateTag · revalidateTag · revalidatePath)
 ├── src/posts.bp                         Post · findPost (#[@result]) · getPost (memoize) · allPosts
-├── app/layout.bp                        rootLayout (#[layout("")])            app/sitemap.bp · robots.bp · manifest.bp · favicon.ico · icon.png · opengraph-image.png
-├── app/[locale]/layout.bp · page.bp     localeLayout (#[layout("[locale]")]) · homePage (#[page("[locale]")])
-├── app/[locale]/blog/                   layout.bp blogLayout · page.bp blogIndexPage · new/page.bp newPostPage + createPost (#[serverAction]) · [slug]/page.bp blogPostPage (memoize · notFound · registerStaticParams) · [slug]/opengraph-image.bp blogOgImage
-├── app/dashboard/                       layout.bp dashboardLayout (cookies().get("session") → redirect("/login")) · page.bp · @analytics/{page,default}.bp · @team/settings/page.bp · @team/default.bp
+├── src/routes.bp                        the layout records (rkAppRegisterEntry "L" for /, /[locale], /[locale]/blog, /dashboard; "D" for the two slot defaults)
+├── app/                                 sitemap.bp · robots.bp · manifest.bp · favicon.ico · icon.png · opengraph-image.png
+├── app/[locale]/page.bp                 homePage — page("[locale]", renderer)
+├── app/[locale]/blog/                   page.bp blogIndexPage · new/page.bp createPost (#[serverAction]) · [slug]/page.bp blogPostPage (memoize · notFound · registerStaticParams) · [slug]/opengraph-image.bp (registerImageRoute; no renderer set, 501)
+├── app/dashboard/                       page.bp dashboardPage (cookies().get("session") → redirect("/login")) · @analytics/page.bp · @team/settings/page.bp
 └── app/api/posts/route.bp               listPosts (#[getRoute("api/posts")]) · createPost (#[postRoute("api/posts")])
 ```
 
-### `blog-server: the app tree registers pages, layouts, slots and handlers`
+### `blog-server: the app tree registers pages, layout records, slots and handlers`
 
 ```bp
-test "blog-server: the app tree registers pages, layouts, slots and handlers" {
+test "blog-server: the app tree registers pages, layout records, slots and handlers" {
     try assertRouteTree(@src(),
         [
             "app/layout.bp",
@@ -1341,7 +1344,7 @@ test "blog-server: the app tree registers pages, layouts, slots and handlers" {
 }
 ```
 
-`examples/blog-server/test/__snapshots__/blog-server/the-app-tree-registers-pages-layouts-slots-and-handlers.snap`
+`examples/blog-server/test/__snapshots__/blog-server/the-app-tree-registers-pages-layout-records-slots-and-handlers.snap`
 ```
 L / layouts=[] kind=static
 L /[locale] layouts=[/] kind=dynamic
@@ -1364,46 +1367,30 @@ R /api/posts layouts=[] kind=static
 /nope -> 404
 ```
 
-### `blog-server: a post renders through the root, locale and blog layouts with its payload`
+### `blog-server: a post page writes its text through the chunk writer`
 
 ```bp
-test "blog-server: a post renders through the root, locale and blog layouts with its payload" {
-    try assertSsr(@src(),
-        [
-            "app/layout.bp",
-            "app/[locale]/layout.bp",
-            "app/[locale]/page.bp",
-            "app/[locale]/blog/layout.bp",
-            "app/[locale]/blog/page.bp",
-            "app/[locale]/blog/[slug]/page.bp",
-        ],
-        "GET /en/blog/hello");
+test "blog-server: a post page writes its text through the chunk writer" {
+    try assertPageDispatch(@src(),
+        \\ import {page, ChunkWriter, Request} from "rakun";
+        \\ val _post = page("[locale]/blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     return out.write("Hello (" + req.param("locale") + "): first post");
+        \\ });
+        , "GET /en/blog/hello");
 }
 ```
 
-`examples/blog-server/test/__snapshots__/blog-server/a-post-renders-through-the-root-locale-and-blog-layouts-with-its-payload.snap`
+`examples/blog-server/test/__snapshots__/blog-server/a-post-page-writes-its-text-through-the-chunk-writer.snap`
 ```
 status 200
 headers:
 content-type: text/html; charset=utf-8
-html:
-<div data-jh-root=""><div data-onze-chrome="header"><h1>onze</h1></div><div lang="en"><div data-onze-seg="blog"><p>Blog</p><div data-onze-seg="post"><h1>Hello</h1><p>first post</p></div></div></div></div>
-payload:
-v=1
-b=b_test0001
-p=/en/blog/hello
-r=/[locale]/blog/[slug]
-m=locale=en&slug=hello
-q=
-t=L|/||\nL|/[locale]||\nP|/[locale]||\nL|/[locale]/blog||\nP|/[locale]/blog||\nP|/[locale]/blog/[slug]||
-i=[]
-a=[]
-s=
-h=[]
-d=false
-k=/[locale]/blog/[slug]=S
-z=
+chunks 1
+Hello (en): first post
+closed 1
 ```
+
+> helper gap: `assertPageDispatch` is front 23's dispatch helper (status, headers, the chunks the renderer wrote, how many times the dispatch closed the response); it replaces `assertSsr` in this project because the markup, the layouts and the payload are jhonstart's, asserted in onze's `examples/blog`.
 
 ### `blog-server: publishing a post revalidates the blog and a short title is invalid`
 
@@ -1520,7 +1507,6 @@ test "blog-server: the post page is static with its params and the dashboard is 
             "app/dashboard/page.bp",
         ],
         \\ import {registerSegmentConfig, registerStaticParams, SegmentConfig, DynamicMode, FetchCache, StaticParams, ParamBinding} from "rakun";
-        \\ import {page, PageContext} from "rakun";
         \\
         \\ val _blogConfig = registerSegmentConfig("[locale]/blog/[slug]", SegmentConfig(
         \\     dynamic: DynamicMode.Auto,
@@ -1592,9 +1578,7 @@ test "blog-server: dashboard slots resolve on a hard load and keep their state o
 test "blog-server: a post render reads the theme cookie and memoizes the post once" {
     try assertRequestContext(@src(),
         \\ import {cookies, headers, memoize, memoKey, preload} from "rakun";
-        \\ import {page, PageContext} from "rakun";
-        \\ import {Metadata} from "jhonstart";
-        \\ import {Element, div, h1, p, text} from "jhonstart";
+        \\ import {page, ChunkWriter, Request} from "rakun";
         \\
         \\ pub type Post(slug: string, title: string, body: string, author: string)
         \\
@@ -1613,16 +1597,13 @@ test "blog-server: a post render reads the theme cookie and memoizes the post on
         \\     });
         \\ }
         \\
-        \\ pub fn postMetadata(route: PageContext) -> Metadata {
-        \\     val slug = route.params.lookup("slug").unwrapOr("");
-        \\     val post = getPost(slug);
-        \\     return Metadata(title: post.title, description: "by " + post.author);
+        \\ pub fn postTitle(slug: string) -> string {
+        \\     return getPost(slug).title;
         \\ }
         \\
-        \\ #[page("[locale]/blog/[slug]")]
-        \\ #[@future]
-        \\ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-        \\     val slug = route.params.lookup("slug").unwrapOr("");
+        \\ val _post = page("[locale]/blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     val slug = req.param("slug");
+        \\     val title = postTitle(slug);
         \\     val theme = cookies().get("theme").unwrapOr("system");
         \\     val relatedKey = memoKey("relatedCount", [slug]);
         \\     val _started = preload(relatedKey, { ->
@@ -1632,11 +1613,8 @@ test "blog-server: a post render reads the theme cookie and memoizes the post on
         \\     val related = memoize(relatedKey, { ->
         \\         loadRelatedCount(slug);
         \\     });
-        \\     return div([
-        \\         h1([text(post.title, attrs: [])], attrs: []),
-        \\         p([text(post.body + " (" + related.toString() + " related, " + theme + ")", attrs: [])], attrs: []),
-        \\     ], attrs: []);
-        \\ }
+        \\     return out.write(title + ": " + post.body + " (" + related.toString() + " related, " + theme + ")");
+        \\ });
         , "GET /en/blog/hello Cookie: theme=dark");
 }
 ```
@@ -1662,8 +1640,7 @@ after:
 test "blog-server: a missing post signals not-found from inside the render" {
     try assertNavigation(@src(),
         \\ import {notFound, redirect} from "rakun";
-        \\ import {page, PageContext} from "rakun";
-        \\ import {Element, div, h1, p, text} from "jhonstart";
+        \\ import {page, ChunkWriter, Request} from "rakun";
         \\
         \\ pub type Post(slug: string, title: string, body: string)
         \\
@@ -1675,20 +1652,14 @@ test "blog-server: a missing post signals not-found from inside the render" {
         \\     throw "no such post: " + slug;
         \\ }
         \\
-        \\ #[page("[locale]/blog/[slug]")]
-        \\ #[@future]
-        \\ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
-        \\     val slug = route.params.lookup("slug").unwrapOr("");
-        \\     val found = findPost(slug);
+        \\ val _post = page("[locale]/blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     val found = findPost(req.param("slug"));
         \\     if (found.isError()) {
         \\         val _gone = notFound();
         \\     };
         \\     val post = found.unwrapOr(Post(slug: "", title: "", body: ""));
-        \\     return div([
-        \\         h1([text(post.title, attrs: [])], attrs: []),
-        \\         p([text(post.body, attrs: [])], attrs: []),
-        \\     ], attrs: []);
-        \\ }
+        \\     return out.write(post.title + ": " + post.body);
+        \\ });
         , "GET /en/blog/missing");
 }
 ```
@@ -2203,14 +2174,13 @@ job nightly-invoices state=acquired owner=node-b
 job nightly-invoices state=waiting owner=-
 ```
 
-### `order-pipeline: the reset mail is a multipart alternative with the rendered html body`
+### `order-pipeline: the reset mail is a multipart alternative with the html body`
 
 ```bp
-test "order-pipeline: the reset mail is a multipart alternative with the rendered html body" {
+test "order-pipeline: the reset mail is a multipart alternative with the html body" {
     try assertMail(@src(),
         \\ import {configuration, bean, value, service} from "rakun";
         \\ import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
-        \\ import {Element, div, p, h1, text, renderToString} from "jhonstart";
         \\ import {escape} from "std";
         \\ import {MailServer, TlsMode, Mail, Attachment, mailer, send} from "rakun-mail";
         \\
@@ -2241,15 +2211,11 @@ test "order-pipeline: the reset mail is a multipart alternative with the rendere
         \\     return "Hello, " + displayName + ". Open " + resetUrl + " to choose a new password.";
         \\ }
         \\
-        \\ pub fn resetBody(displayName: string, resetUrl: string) -> Element {
+        \\ pub fn resetBody(displayName: string, resetUrl: string) -> string {
         \\     val safeName = escape.html(displayName);
-        \\     return div([
-        \\         h1([text("Password reset", attrs: [])], attrs: []),
-        \\         p([text("Hello, " + safeName + ".", attrs: [])], attrs: []),
-        \\         p([text("Open this link to choose a new password:", attrs: [])], attrs: []),
-        \\         p([text(resetUrl, attrs: [])], attrs: []),
-        \\         p([text("If you did not ask for this, nothing has changed.", attrs: [])], attrs: []),
-        \\     ], attrs: []);
+        \\     return "<div><h1>Password reset</h1><p>Hello, " + safeName + ".</p>"
+        \\         + "<p>Open this link to choose a new password:</p><p>" + resetUrl + "</p>"
+        \\         + "<p>If you did not ask for this, nothing has changed.</p></div>";
         \\ }
         \\
         \\ #[service]
@@ -2269,7 +2235,7 @@ test "order-pipeline: the reset mail is a multipart alternative with the rendere
         \\             replyTo: "",
         \\             subject: "Reset your password",
         \\             text: resetText(displayName, url),
-        \\             html: renderToString(resetBody(displayName, url)),
+        \\             html: resetBody(displayName, url),
         \\             attachments: noAttachments,
         \\             headers: extraHeaders,
         \\         );
@@ -2280,7 +2246,7 @@ test "order-pipeline: the reset mail is a multipart alternative with the rendere
 }
 ```
 
-`examples/order-pipeline/test/__snapshots__/order-pipeline/the-reset-mail-is-a-multipart-alternative-with-the-rendered-html-body.snap`
+`examples/order-pipeline/test/__snapshots__/order-pipeline/the-reset-mail-is-a-multipart-alternative-with-the-html-body.snap`
 ```
 Content-Type: multipart/alternative; boundary="boundary-0001"
 Date: Thu, 01 Jan 2026 00:00:00 +0000
