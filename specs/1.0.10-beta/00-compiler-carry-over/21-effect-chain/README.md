@@ -207,21 +207,21 @@ after `#[@` — the same change 22-loops needs for `#[@generator] loop`, made he
 annotation to want.
 
 **Acceptance:**
-- [ ] `#[@use] fn counter() -> @Use<ElementBase, i32> { val s = use state(0); … }` and
+- [x] `#[@use] fn counter() -> @Use<ElementBase, i32> { val s = use state(0); … }` and
       `#[@use] fn Page() -> @Component<Element> { val n = use counter(); val d = await load(); val c = try read(); … }`
       infer and run on four targets, `Element implement @Context<ElementBase>` declared in the cell
-- [ ] `#[@future] fn Page() -> @Future<Element> { use pathname(); }` is `use-without-context-effect`
+- [x] `#[@future] fn Page() -> @Future<Element> { use pathname(); }` is `use-without-context-effect`
       naming `#[@use]`; `fn Loading() -> Element` with no annotation is an ordinary function;
       `#[@use] fn f() -> string` is `effect-wrapper-mismatch`; `#[@use] fn f() -> Element` (bare) is
       `effect-missing-wrapper`; `@Component<X>` with `X` not a `@Context` owner is
       `effect-wrapper-mismatch`
-- [ ] two bases in one body refused at the second `use` naming both (96, kept); `use Card()` where
+- [x] two bases in one body refused at the second `use` naming both (96, kept); `use Card()` where
       `Card: @Component<Element>` is refused — a component is called
-- [ ] `@getContext(T)` works in every `#[@use]` body and nowhere else; the hint no longer names an
+- [x] `@getContext(T)` works in every `#[@use]` body and nowhere else; the hint no longer names an
       annotation R5 refuses
-- [ ] commonJS: every `#[@use]` body is `async function`; the `contextShape` body scan is deleted;
+- [x] commonJS: every `#[@use]` body is `async function`; the `contextShape` body scan is deleted;
       erlang/wasm/beam output for the same programs differs only in the renamed atoms and strings
-- [ ] `grep -rn '#\[@context\]\|@Context<[^>]*,' modules/ libs/ tests/` finds nothing; the 36 + 84
+- [x] `grep -rn '#\[@context\]\|@Context<[^>]*,' modules/ libs/ tests/` finds nothing; the 36 + 84
       snapshots re-recorded and classified; the 8 `tests/language` `use` cells of front 19 re-spelled
       and green on four targets; `docs.md` § use and § effects carry the matrix above
 
