@@ -110,17 +110,35 @@ digit after `.`, and both inlined block loops go through `parseStmtListInBraces`
 
 Every form the language decides against gets a named `ParseErrorType` and a message that says what to
 write instead, following the 47 that exist (`removedErrorUnion` and `patternRangeExclusive` are the
-models; `removedKeywordWhile` leaves with decision 105).
+models; `removedKeywordWhile` leaves with decision 105). `??` is **not** among them: it parses
+(decision 28, R8), so the kind this step once named for it was never written.
 
-| Form | Kind | Message names |
-|---|---|---|
-| `??` | `nullishCoalescingAbsent` | `?.` for chaining and `catch` for a fallback |
-| every other form [`surface-gaps.md`](./surface-gaps.md) records as a decision | one kind each | the form that replaces it, or that there is none |
+Landed at `botopink-lang` `8d6fa0e7` — one kind per form of [`surface-gaps.md`](./surface-gaps.md)
+§ (b) that is a decision, raised **once at the site every spelling reaches**, never per arm
+(`src/parser/AGENTS.md` § *A decided-against form is refused by name*):
+
+| Form | Kind (code) | Raised at | Message names |
+|---|---|---|---|
+| `c ? 1 : 2` | `ternaryAbsent` | `parsePostfixChain`'s exit (`absentInfixKind`), at the `?` | `if (c) { a } else { b }` |
+| `1 << 2`, `a >> 1`, `a & b`, `a ^ b` | `bitwiseOperatorAbsent` | the same exit, at the operator — `&` and `^` lex as `ampersand`/`caret` now instead of stopping the lexer | that there is none; `&&`/`\|\|`, and a host function |
+| `'a'` | `charLiteralAbsent` | `parsePrimary`, at the literal — the lexer scans `'…'` as one `charLiteral` token | `"a"` |
+| `fn inner(…) { … }` in a body | `nestedFnDecl` | `parsePrimary`'s `fn` arm, at the `fn` | `val inner = { x -> … };` |
+| `[..a, 3]` | `listSpreadNotLast` (existed, never raised) | the array literal, at the element after the spread | `[1, 2, ..rest]` |
+| `[...a]` | `listSpreadDotDotDot` | the array literal, at the `...` | `..` |
+| `type P(…)` then `implement A for P { … }` | `implementClauseFor` | `types.zig` `parseImplementClause`, at the `for` — the bodyless type took `implement A` as its clause | `type P(…) implement A { … }` or `Impl implement A for P { … }` |
+| `#(x: 1, y: 2)` | `tupleLiteralLabel` | the tuple literal, at the label — replaces `novalBinding` at the value | `#(1, 2)`; the labeled construction is `01-checker`'s §6 |
+
+The call path of `parseExpr` (the statement-position chain) treats the infix tokens as "the
+expression continues" in `isBinaryOpNext` and rolls back to the climber, so `g(1) ? 1 : 2` reaches
+the one site. Two of `surface-gaps.md`'s step-3 rows needed nothing: `.Circle(radius: 1)` in
+expression position **parses** at HEAD (it fails in the checker as `unbound variable ''` — 01's),
+and a standalone `extend P { … }` already reports `anonymous-impl-extend`.
 
 **Acceptance:**
-- [ ] each decided-against form has its own `ParseErrorType` variant and an `errorMessages` arm,
-      asserted by `expectError(src, kind, line, col)` in `src/parser/tests/`
-- [ ] `grep -c unexpectedToken` over `src/parser/**` does not grow
+- [x] each decided-against form has its own `ParseErrorType` variant and an `errorMessages` arm,
+      asserted by `expectErrorAt(src, kind, line, col)` in `src/parser/tests/language_surface.zig`
+      (R10; the harness is `tests/helpers.zig`'s, shared with `surface.zig`)
+- [x] `grep -c unexpectedToken` over `src/parser/**` does not grow (13 before and after)
 - [ ] a `reject/` cell per form, handed to [`12-language-tests`](../12-language-tests/README.md) with
       the `.expect` first line and location
 
