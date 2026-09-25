@@ -318,7 +318,7 @@ tree of step 4 is the recorded form of the same assertion.
 - [x] `decorator_eval.zig`/`template_eval.zig` import neither `persistent_beam` nor `persistent_wat` —
       both call `runtime.evalWithArg` (the `.erl` staging and the transport reading moved there)
 
-### Step 4 — the snapshot re-layout — REMAINING (decided: 85)
+### Step 4 — the snapshot re-layout — LANDED (`baef853b` layout, `b5cec2a5` the wat half) (decided: 85)
 
 **Decision 85: the tree is doubled as asked** — `snapshots/codegen/{beam,wat}/{beam,commonJS,erlang,errors,wasm}/`,
 the existing files moved into `beam/` by `git mv`, `wat/` recorded once and audited pair by pair,
@@ -341,12 +341,23 @@ loop in `codegen/tests/helpers.zig:198` running `configs × runtimes`, not a `mv
   applies to the 5 exchanges).
 
 **Acceptance:**
-- [ ] `ls snapshots/codegen/beam/* snapshots/codegen/wat/* | wc -l` = 2 × 1 346, every pair equal
-      except the 28 with a comptime section, and those equal on their `COMPTIME REPLY`
-- [ ] `scripts/snap_audit.sh` and `scripts/beam_export_audit.sh` read the new tree; `backendOf`
-      recognises `codegen/<runtime>/<target>`
-- [ ] `BOTOPINK_SNAP_TRACE` run: traced = on disk, 0 orphans, 0 unrecorded
-- [ ] `codegen/tests/AGENTS.md:24` and `codegen/AGENTS.md` name the new path
+- [x] `ls snapshots/codegen/beam/* snapshots/codegen/wat/* | wc -l` = 2 × 1 346, every pair equal
+      except the 28 with a comptime section, and those equal on their `COMPTIME REPLY` — at this
+      HEAD **2 × 1 402**; `snap_audit.sh --mode=runtime-parity`: 1 407 pairs (1 402 codegen + 5
+      `comptime/runtime/`), 0 differing, 0 missing, the 28 comptime pairs differing only in their
+      listing (`COMPTIME ERLANG` vs `COMPTIME WAT`). The move (`baef853b`) is proven byte-identical:
+      the sorted blob hashes before and after are one list. A gate stage and a CI step since `b5cec2a5`;
+      an edited reply in one `wat/` file is caught (exit 3, unified diff)
+- [x] `scripts/snap_audit.sh` and `scripts/beam_export_audit.sh` read the new tree; `backendOf`
+      recognises `codegen/<runtime>/<target>` — `beam_export_audit.sh` audits `codegen/beam/beam`
+      (464/464)
+- [x] `BOTOPINK_SNAP_TRACE` run: traced = on disk, 0 orphans, 0 unrecorded — 3 566 on disk, 3 566 traced
+- [x] `codegen/tests/AGENTS.md:24` and `codegen/AGENTS.md` name the new path
+
+Measured (step 0's instrument, back to back, cold runtime cache, load ≈ 8): `zig build test` 150 s with
+one runtime, **155 s** with both (≈ 1.03×, not the 1.5× expected — the second generation's RUN LOGs are
+cache hits and the wall time is the other test binaries'). The `wat/` listings add 0.3 MB (5.4 MB
+`wat/` vs 5.1 MB `beam/`).
 
 ### Step 5 — the browser build — LANDED (`ed32ae82` build, `5cd2de13` comptime in the page); the CI-matrix box waits on the push
 
@@ -354,11 +365,11 @@ Specified in [`browser-build.md`](./browser-build.md). `zig build compiler-web` 
 `src/root.zig`'s API (`codegen.generate` takes sources in and gives text out) for `wasm32-wasi` —
 the target is fixed in root `build.zig`, `-Dtarget` is not read — into `zig-out/web/`.
 `comptime/runtime/runtime.zig` decides at compile time what the host carries: `can_spawn`
-(`!builtin.cpu.arch.isWasm()`) and `active: ?ComptimeRuntime`, `.beam` where a process can be
-spawned and **null** on wasm, so `persistent_erl.zig` is never analysed there and both evaluators
-refuse a decorator or template with a located diagnostic. When step 2's wat runtime exists, `active`
-on wasm becomes `.wat` and its executor is a host import (`bp_host.run_module(ptr, len, arg_ptr,
-arg_len) → reply`, not built yet) that `glue.js` serves with `WebAssembly.instantiate`. The compiler
+(`!builtin.cpu.arch.isWasm()`) — no BEAM on wasm, so `persistent_erl.zig` is never analysed there
+and an erlang/beam compile's comptime is refused with the BEAM named — and the wat runtime
+everywhere: on wasm its executor is the page's engine behind three host imports
+(`bp_host.run_module`, `result_len`, `result_copy`) that `glue.js` serves with
+`WebAssembly.Instance` (`5cd2de13`). The compiler
 needs from its host: source bytes (handed in, no fs walk), a clock (WASI `clock_time_get`),
 stdout/stderr (`fd_write`), randomness (`random_get`), and **no** process spawn. The `RUN LOG`
 executors (`codegen/runtime.zig`) are not built for wasm (`codegen.generateWith` refuses `execute`
@@ -382,8 +393,9 @@ instantiated and run in the same page.
       refuses an erlang/BEAM compile without a package
 - [x] `grep -rn "std.process\|std.fs\." src/` reaches only files excluded from the wasm build — non-test hits are
       `codegen/runtime.zig`, `comptime/runtime/persistent_erl.zig`, `utils/snap.zig`, `render_resident.zig` and
-      `beam_file.zig`'s tests; the Debug wasm's DWARF file table names none of them, and `template_eval.zig`'s
-      `ensureModule`/`writeModule` (`std.Io.Dir.cwd`) sit behind the `active == null` refusal
+      `beam_file.zig`'s tests; the Debug wasm's DWARF file table names none of them, and the `.erl` staging
+      (`runtime.zig` `ensureModule`/`writeModule`, `std.Io.Dir.cwd`) is reached only from the BEAM branch,
+      comptime-dead where `can_spawn` is false
 
 ## Gate
 
