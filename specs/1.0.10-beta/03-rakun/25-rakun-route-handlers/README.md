@@ -45,8 +45,6 @@ in its own file and converts at the boundary.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/src/decorators.bp:222-244` — `getMapping`/`postMapping`/`putMapping`/
   `patchMapping`/`deleteMapping`, all method-level, all taking a full path. No `head`/`options`
   mapping exists.
@@ -105,7 +103,6 @@ cell. That is what keeps this front pure server code with nothing to exempt from
 ```bp
 pub fn bodyText(req: Request) -> string
 pub fn bodyForm(req: Request) -> Dict<string, string>
-#[@result]
 pub fn bodyJson(req: Request) -> @Result<string, string>
 pub fn queryAll(req: Request) -> Dict<string, string>
 ```
@@ -159,12 +156,12 @@ single-chunk answer; the streaming path never calls it.
 
 **Streaming.** `§ 19` writes streaming endpoints as the normal shape for anything incremental. The
 response carries an ordered chunk list, and the same constraint front 23 works under applies here:
-`@Future<T>` lowers eagerly on erlang (`libs/std/src/http.bp:16-18`), so a list of futures is a list
+`@Task<T>` lowers eagerly on erlang (`libs/std/src/http.bp:16-18`), so a list of futures is a list
 of values that have already been computed and streaming them buys nothing. The source is therefore a
 list of **unstarted thunks**, driven by the same flush primitive front 30 uses:
 
 ```bp
-pub fn streamed(status: i32, tasks: Array<fn() -> @Future<string>>) -> HandlerResponse
+pub fn streamed(status: i32, tasks: Array<fn() -> @Task<string>>) -> HandlerResponse
 ```
 
 The transport (front 04) writes each chunk as its thunk completes, in index order, with
@@ -187,12 +184,12 @@ that precedence and tests it; it does not implement a second CORS policy.
 ### Step 1 — The seven verb decorators
 
 **Acceptance:**
-- [ ] `#[getRoute("api/posts")]` on a `#[@future] fn(req: Request) -> @Future<HandlerResponse>`
+- [ ] `#[getRoute("api/posts")]` on a `fn(req: Request) -> @Task<HandlerResponse>`
       compiles and adds `R|/api/posts||GET` to front 22's table.
 - [ ] Each of the seven verbs registers with its own verb string, and the set matches
       `HttpMethod` (`repository/rakun/src/http.bp:12-20`) exactly — no eighth verb, no missing one.
 - [ ] A verb decorator on a type fails with a message naming the decorator and `function`.
-- [ ] A handler that is not `#[@future]` fails, naming the required return type.
+- [ ] A handler whose return is not a `@Task` fails, naming the required return type.
 - [ ] Registering the same verb twice at one segment fails at module load, naming both functions.
 - [ ] `#[getRoute("blog/[slug]")]` binds `slug` through `req.param("slug")`, using front 22's matcher
       and not a second path parser.
@@ -232,7 +229,7 @@ that precedence and tests it; it does not implement a second CORS policy.
 - [ ] The response carries `Transfer-Encoding: chunked` and no `Content-Length`.
 - [ ] Three 50 ms thunks complete in well under 150 ms on `--target erlang`, which is the assertion
       that the thunks were spawned rather than awaited in sequence. The variant written over
-      already-started `@Future` values is kept as a failing regression case.
+      already-started `@Task` values is kept as a failing regression case.
 - [ ] A thunk that throws ends the stream and the already-written chunks stand; the status cannot be
       changed after the first chunk, and the test says what the client sees.
 
@@ -262,7 +259,7 @@ that precedence and tests it; it does not implement a second CORS policy.
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | No byte or binary type — every host cell marshals through `string` | a file download, an image endpoint, a `multipart/form-data` upload | text responses only; binary bodies are refused (415 in, unsupported out) rather than corrupted | a `bytes` type and `@External` cells that marshal a binary |
-| `@Future<T>` lowers eagerly on erlang (stated in full in front 23), so streaming cannot be driven by a list of futures | `streamed` | the source is `Array<fn() -> @Future<string>>`, spawned per thunk by front 30's flush primitive | a scheduler behind `@Future` on erlang, or an explicit `@Task<T>` |
+| `@Task<T>` lowers eagerly on erlang (stated in full in front 23), so streaming cannot be driven by a list of futures | `streamed` | the source is `Array<fn() -> @Task<string>>`, spawned per thunk by front 30's flush primitive | a scheduler behind `@Task` on erlang, or an explicitly unstarted task type |
 | Declared parameter defaults are never applied | every builder call that would otherwise take an optional header list | pass every argument explicitly | apply declared defaults at call sites |
 
 ## Blocked

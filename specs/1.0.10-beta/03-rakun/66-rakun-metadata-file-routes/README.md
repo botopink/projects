@@ -52,8 +52,6 @@ needs the route tree — which front 22 has and front 32 does not.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/src/file_router.bp` (front 22) — the `kind|pattern|slot|verb` table of
   [`contracts.md` § 1](../../contracts.md), with `R` reserved for route handlers. Its *Definition of done*
   names front 66 as a consumer. Nothing registers a synthetic route today.
@@ -169,7 +167,7 @@ pub type SitemapEntry(
     priority: string,
 )
 
-pub fn registerSitemap(produce: fn() -> @Future<SitemapEntry[]>) -> i32
+pub fn registerSitemap(produce: fn() -> @Task<SitemapEntry[]>) -> i32
 pub fn renderSitemap(entries: SitemapEntry[]) -> string
 pub fn shardEntries(entries: SitemapEntry[]) -> Array<SitemapEntry[]>
 pub fn renderSitemapIndex(shards: i32, origin: string) -> string
@@ -208,7 +206,7 @@ pub type Robots(
     host: string,
 )
 
-pub fn registerRobots(produce: fn() -> @Future<Robots>) -> i32
+pub fn registerRobots(produce: fn() -> @Task<Robots>) -> i32
 pub fn renderRobots(r: Robots) -> string
 ```
 
@@ -242,7 +240,7 @@ pub type WebManifest(
     icons: Array<ManifestIcon>,
 )
 
-pub fn registerManifest(produce: fn() -> @Future<WebManifest>) -> i32
+pub fn registerManifest(produce: fn() -> @Task<WebManifest>) -> i32
 pub fn renderManifest(m: WebManifest) -> string
 ```
 

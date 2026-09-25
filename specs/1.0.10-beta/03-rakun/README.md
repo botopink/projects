@@ -162,7 +162,7 @@ Module level, the same graph collapsed onto the 28 submodules, is drawn in
 | Direction | Front | Other track | What crosses |
 |---|---|---|---|
 | rakun → std | 04 · 05 · 10 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 64 · 65 · 66 · 79 · 80 · 81 · 82 · 85 · 86 · 87 · 88 · 89 · 92 | 01 | `net`, `path`, `fs`, `process`, `clock`, `random`, `hmac`, `encoding`, `regex`, `escape` — named per front in its `Depends on` line |
-| rakun → std | 23 · 60 · 92 | 02 | spawn/gather over unstarted thunks (`async.all`) — `@Future` carries no concurrency on BEAM |
+| rakun → std | 23 · 60 · 92 | 02 | spawn/gather over unstarted thunks (`async.all`) — `@Task` carries no concurrency on BEAM |
 | rakun → std | 12 · 17 · 23 · 24 · 60 · 66 · 77 · 82 | 03 | content hash: cache keys, error digest, build id, fingerprints, migration checksums |
 | rakun ⇄ jhonstart, through onze | 23 | 30 (render) · 28 | onze registers one `PageRenderer` per page with 23 and builds 28's `RequestData` from rakun's `Request`; jhonstart writes status, headers and chunks through its `Response`, which onze builds over 23's `ChunkWriter` (`setStatus` / `setHeader` / `write` / `close`). No package edge either way (decisions 113, 114, 117) |
 | rakun ⇄ jhonstart, through onze | 24 | 67 | 24's action id and envelope; 67 writes the form markup (`data-jh-a`, the hidden field) with the id onze hands it; onze sets the field and header names on both sides (`rakun.actions.field` / `rakun.actions.header` here, `actionField` / `actionHeader` there — decision 114) |

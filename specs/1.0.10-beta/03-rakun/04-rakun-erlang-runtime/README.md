@@ -36,8 +36,6 @@ them rather than emulating a single-threaded runtime on top of them.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 | Piece | Where it lives today | Erlang counterpart today |
 |---|---|---|
 | Component scan (`rkScan`/`rkScannedNames`/`rkScannedCount`) | `runtime.mjs:20-31`, a module-level array | none |
@@ -64,7 +62,7 @@ Spring offers a second stack for every blocking one — WebFlux beside MVC, R2DB
 threads under both. **None of those is a gap in this port, and none of them is a front.** BEAM
 processes already are the concurrency model: a request is a process, blocking a process blocks
 nothing else, and there is no thread pool to starve. Where the Spring documentation offers a reactive
-variant, the botopink answer is a `#[@future]`-annotated form of the same call, folded into the front
+variant, the botopink answer is a `@Task`-returning form of the same call, folded into the front
 that owns the blocking one (front 08 for queries, front 13 for HTTP clients). `spring.threads.virtual.enabled`,
 `WebApplicationType.REACTIVE` and the whole `Mono`/`Flux` return surface have no counterpart here
 because the problem they solve does not occur. This paragraph is the milestone's position; no other
@@ -458,7 +456,7 @@ The milestone register is [`language-gaps.md`](../../language-gaps.md); the rows
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | A sidecar `.erl` is loaded only for a `test` entry point. `__bp_load_siblings/0` is emitted under the test flag (`codegen/erlang.zig:1650-1670`); a `build`/`run` entry point emits no loader, so a built rakun program dies with `undefined function rakun_runtime:serve/2`. | `examples/minimal-app-example.bp` — the whole file is testable but not yet runnable on the erlang row | Run the example through `botopink test --target erlang`, which loads siblings | Emit the same sibling loader (or a `-pa` code-path entry) for `build`/`run` outputs. A toolchain gap, not a language one; recorded here because it decides whether front 04's *serve* half can be demonstrated at all |
-| A `fn` cannot forward a `@Result` value it received: `-> @Result<…>` requires `#[@result]`, and inside such a fn `return v` wraps `v` in `Ok`, so returning an already-wrapped value double-wraps. | Not used in this front's examples — avoided by keeping the runtime cells total. Bites fronts 08–10. | `.map` / `.flatMap` / `.unwrapOr`, or return the unwrapped value and `throw` on the error path | A forwarding return (`return! r;`) or an implicit-forward rule when the returned expression is already `@Result<D, E>` |
+| A `fn` cannot forward a `@Result` value it received: inside a `-> @Result<…>` fn `return v` wraps `v` in `Ok`, so returning an already-wrapped value double-wraps — until front 24 lands decision 119 (`return r` with `r` already a `@Result` passes through). | Not used in this front's examples — avoided by keeping the runtime cells total. Bites fronts 08–10. | `.map` / `.flatMap` / `.unwrapOr`, or return the unwrapped value and `throw` on the error path | A forwarding return (`return! r;`) or an implicit-forward rule when the returned expression is already `@Result<D, E>` |
 
 ## Test plan
 

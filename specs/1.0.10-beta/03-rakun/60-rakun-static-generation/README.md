@@ -52,8 +52,6 @@ does nothing is worse than one that is missing.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/src/file_router.bp` (front 22) — the route table: a line-oriented
   `kind|pattern|slot|verb` blob, `parseTable`, `matchPath`, `layoutChain`. No route kind, no
   revalidation deadline, no per-segment configuration.
@@ -122,7 +120,7 @@ call it and the compiler checks its type:
 val _params = registerStaticParams("blog/[slug]", blogStaticParams);
 ```
 
-**Enumeration.** `registerStaticParams` takes a `#[@future] fn() -> @Future<StaticParams[]>`. Each row
+**Enumeration.** `registerStaticParams` takes a `fn() -> @Task<StaticParams[]>`. Each row
 is a list of `ParamBinding(name, value)` rather than a `Dict`, because a row is small, ordered, and
 must survive being written into a manifest — and because `Dict` is immutable and iterating it to
 rebuild a path is more code than the array form. `expandParams(pattern, rows)` turns the rows into
@@ -133,10 +131,10 @@ back. A row that does not bind every dynamic segment of the pattern fails the bu
 pattern and the missing segment — a partially-bound row would silently prerender a path with a
 literal `[slug]` in it.
 
-**The build fan-out spawns; it does not await.** `@Future<T>` lowers eagerly on erlang
+**The build fan-out spawns; it does not await.** `@Task<T>` lowers eagerly on erlang
 (`libs/std/src/http.bp:17-19`), so prerendering N routes by mapping `await render(path)` over them is
 exactly N sequential renders. The fan-out uses front 02's unstarted-task form —
-`Array<fn() -> @Future<T>>` gathered by index — so a 10 000-post blog prerenders across schedulers
+`Array<fn() -> @Task<T>>` gathered by index — so a 10 000-post blog prerenders across schedulers
 instead of one at a time. Concurrency is bounded by `rakun.static.concurrency` (default: the scheduler
 count), because an unbounded fan-out over a connection pool is a self-inflicted outage.
 
@@ -296,7 +294,7 @@ the point: the rule table is a truth table and it is tested as one.
 pub type ParamBinding(name: string, value: string)
 pub type StaticParams(bindings: Array<ParamBinding>)
 
-pub fn registerStaticParams(seg: string, produce: fn() -> @Future<StaticParams[]>) -> i32
+pub fn registerStaticParams(seg: string, produce: fn() -> @Task<StaticParams[]>) -> i32
 pub fn expandParams(pattern: string, rows: StaticParams[]) -> string[]
 ```
 
@@ -341,7 +339,7 @@ pub fn lookupPrerendered(path: string) -> ?PrerenderEntry
       entry and reports one `skippedDynamic`, with the skipped route's `dynamicReason()` in `lines`.
 - [ ] The fan-out uses front 02's unstarted-task form, and a test asserts that prerendering N routes
       whose renderers each sleep `d` completes in well under `N * d` — the assertion that catches an
-      accidental `await` in a loop, which the eager `@Future` lowering makes invisible otherwise.
+      accidental `await` in a loop, which the eager `@Task` lowering makes invisible otherwise.
 - [ ] Concurrency never exceeds `rakun.static.concurrency`, asserted by a renderer that records its own
       high-water mark in ETS.
 - [ ] `prerenderPath` for a path whose route does not exist raises, naming the path.

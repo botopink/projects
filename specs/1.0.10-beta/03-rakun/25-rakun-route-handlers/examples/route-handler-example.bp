@@ -20,7 +20,7 @@
 //       `-- export/
 //           `-- route.bp        -> #[getRoute("api/export")]  (streamed)
 //
-// LANGUAGE GAP: `@Future<T>` lowers eagerly on erlang, so `streamed` takes a list
+// LANGUAGE GAP: `@Task<T>` lowers eagerly on erlang, so `streamed` takes a list
 // of UNSTARTED thunks; a list of futures would already have been computed and
 // streaming it would buy nothing.
 // LANGUAGE GAP: botopink has no byte type — every host cell marshals through
@@ -64,26 +64,22 @@ type FakeRequest(
 }
 
 // The app's own data layer — front 08 in a real application.
-#[@future]
-fn allPosts() -> @Future<string[]> {
+fn allPosts() -> @Task<string[]> {
     return ["{\"id\":\"1\",\"title\":\"Hello\"}", "{\"id\":\"2\",\"title\":\"BEAM\"}"];
 }
 
-#[@future]
-fn onePost(id: string) -> @Future<string> {
+fn onePost(id: string) -> @Task<string> {
     return "{\"id\":\"" + id + "\",\"title\":\"Hello\"}";
 }
 
-#[@future]
-fn insertPost(payload: string) -> @Future<string> {
+fn insertPost(payload: string) -> @Task<string> {
     return "{\"id\":\"3\"}";
 }
 
 // ---- app/api/posts/route.bp — GET ---------------------------------------------
 
 #[getRoute("api/posts")]
-#[@future]
-pub fn listPosts(req: Request) -> @Future<HandlerResponse> {
+pub fn listPosts(req: Request) -> @Task<HandlerResponse> {
     val posts = await allPosts();
     val body = "[" + posts.join(",") + "]";
     return HandlerResponse.json(body);
@@ -97,8 +93,7 @@ pub fn listPosts(req: Request) -> @Future<HandlerResponse> {
 // decoder. Saying so here is cheaper than a reader discovering it.
 
 #[postRoute("api/posts")]
-#[@future]
-pub fn createPost(req: Request) -> @Future<HandlerResponse> {
+pub fn createPost(req: Request) -> @Task<HandlerResponse> {
     val contentType = req.header("content-type");
     val isMultipart = contentType.startsWith("multipart/form-data");
     if (isMultipart) {
@@ -121,8 +116,7 @@ pub fn createPost(req: Request) -> @Future<HandlerResponse> {
 // as it does for a page. There is no second path parser.
 
 #[getRoute("api/posts/[id]")]
-#[@future]
-pub fn showPost(req: Request) -> @Future<HandlerResponse> {
+pub fn showPost(req: Request) -> @Task<HandlerResponse> {
     val id = req.param("id");
     val empty = id == "";
     if (empty) {
@@ -138,15 +132,13 @@ pub fn showPost(req: Request) -> @Future<HandlerResponse> {
 // are unstarted: front 30's flush primitive spawns one BEAM process per thunk,
 // which is where the concurrency comes from.
 
-#[@future]
-fn exportRow(n: i32) -> @Future<string> {
+fn exportRow(n: i32) -> @Task<string> {
     return "row " + n.toString() + "\n";
 }
 
 #[getRoute("api/export")]
-#[@future]
-pub fn exportPosts(req: Request) -> @Future<HandlerResponse> {
-    var tasks: Array<fn() -> @Future<string>> = [];
+pub fn exportPosts(req: Request) -> @Task<HandlerResponse> {
+    var tasks: Array<fn() -> @Task<string>> = [];
     for (0..3) { n ->
         tasks.push({ -> exportRow(n) });
     };

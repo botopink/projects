@@ -26,7 +26,7 @@ import {rkAppRegisterEntry, rkAppTable} from "rakun";      // this front
 import {page, ChunkWriter, Request} from "rakun";          // front 23 · front 04
 import {table.parseTable, match.matchPath} from "routing"; // bundled (decision 115)
 
-fn text(body: string) -> fn(Request, ChunkWriter) -> @Future<void> {
+fn text(body: string) -> fn(Request, ChunkWriter) -> @Task<void> {
     return fn(req: Request, out: ChunkWriter) { return out.write(body); };
 }
 

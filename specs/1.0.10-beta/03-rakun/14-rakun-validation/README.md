@@ -81,11 +81,9 @@ dispatch, which is emitted by `#[restController]` in `src/decorators.bp`, frozen
 Neither can be built.
 
 The temporal constraints are `#[pastDate]` and `#[futureDate]`; a decorator named `#[future]` would
-collide with the effect marker `#[@future]` (`repository/emilia/src/emilia.bp:62`).
+read as the removed effect annotation, which front 24 refuses with a fix-it (`effect-annotation-removed`).
 
 ## Current state
-
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
 
 - `repository/rakun/modules/rakun-validation/src/root.bp` — docblock and a TODO comment. No code.
 - `repository/rakun/src/http.bp:30-43` — `Request`'s four accessors, all `-> string`, all `""` when absent. The file's own comment says this is deliberate so handlers do not deal in optionals.

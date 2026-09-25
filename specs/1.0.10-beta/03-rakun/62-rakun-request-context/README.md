@@ -53,8 +53,6 @@ handlers. This front is that mechanism, and it is the only front that builds it.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/src/http.bp:30-43` — `behavior Request`. Four accessors, all returning plain
   `string` (`""` when absent, never `?string`), reachable only from a dispatched handler.
 - `repository/rakun/src/runtime.bp:56-66` — `rkSetProp`/`rkProp`/`rkPropInt`. Global, process-wide
@@ -198,13 +196,13 @@ frame; a miss runs `load` and stores; a hit returns the stored value. It is gene
 type the way `rkSingleton<T>` already is (`repository/rakun/src/runtime.bp:47`), so the caller keeps
 its own type instead of stringifying.
 
-`preload(key, load)` is `§ 9`'s preload pattern. **It cannot be built on `@Future`.** On erlang
-`@Future<T>` lowers eagerly — `libs/std/src/http.bp:17-19` says so in as many words: "Erlang is eager:
-`@Future<T>` resolves to `T` in the eager-lowering arm", so `await` is identity and a future is a
+`preload(key, load)` is `§ 9`'s preload pattern. **It cannot be built on `@Task`.** On erlang
+`@Task<T>` lowers eagerly — `libs/std/src/http.bp:17-19` says so in as many words: "Erlang is eager:
+`@Task<T>` resolves to `T` in the eager-lowering arm", so `await` is identity and a future is a
 value that has already been computed. `preload` therefore spawns a BEAM process and stores a pending
 marker holding the child's pid; a later `memoize` with the same key waits on that child's monitor
 rather than starting a second load. Front 02's async primitives take **unstarted** tasks
-(`Array<fn() -> @Future<T>>`) for the same reason, and a caller who wants several preloads in flight
+(`Array<fn() -> @Task<T>>`) for the same reason, and a caller who wants several preloads in flight
 should reach for them rather than calling `preload` in a loop.
 
 The three cases a caller can produce within one request, stated so the sidecar has nothing left to
@@ -216,7 +214,7 @@ decide:
 | a resolved value (a previous `memoize`, or a `preload` whose child finished) | answers the stored value; `load` is not called and not evaluated |
 | a pending marker (a `preload` whose child is still running) | waits on that child's monitor, stores the result, answers it; `load` is not called |
 
-A value stored by a resolved `@Future` is stored **after** the eager lowering has already run it, so
+A value stored by a resolved `@Task` is stored **after** the eager lowering has already run it, so
 there is no third state where the frame holds an unresolved future. That is a simplification the BEAM
 target gives away, and this front takes it rather than modelling a promise it cannot observe.
 
@@ -410,7 +408,7 @@ request-scoped table is small and a readable key is worth more than a fixed widt
 - [ ] Two `memoize` calls with one key run the loader once and answer the same value; `memoHits()` is
       1 and `memoMisses()` is 1. The second call does not evaluate its `load` argument at all — the
       loader increments an ETS counter and the counter reads 1.
-- [ ] The same holds when the loader is `#[@future]`-annotated and returns `@Future<T>`: the eager
+- [ ] The same holds when the loader returns `@Task<T>`: the eager
       erlang lowering means the first call stores a value, so the second call is the resolved-value
       row of the table above and never re-runs it.
 - [ ] Two requests with the same key run the loader twice — a memo that survives a request is a cache,

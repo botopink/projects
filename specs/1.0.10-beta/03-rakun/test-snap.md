@@ -2663,8 +2663,7 @@ test "action: a valid submission clears the state and revalidates the list route
         \\ import {serverAction, FormData, ActionResult, rkRegisterAction} from "rakun";
         \\ import {cache} from "rakun-cache";
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn createPost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn createPost(form: FormData) -> @Task<ActionResult> {
         \\     val title = form.field("title");
         \\     val tooShort = title.length() < 3;
         \\     if (tooShort) {
@@ -2692,8 +2691,7 @@ test "action: a title that is too short comes back as state not as an http error
         \\ import {serverAction, FormData, ActionResult, rkRegisterAction} from "rakun";
         \\ import {cache} from "rakun-cache";
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn createPost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn createPost(form: FormData) -> @Task<ActionResult> {
         \\     val title = form.field("title");
         \\     val tooShort = title.length() < 3;
         \\     if (tooShort) {
@@ -2720,8 +2718,7 @@ test "action: an action that throws is ok false with the message in state" {
     try assertAction(@src(),
         \\ import {serverAction, FormData, ActionResult, rkRegisterAction} from "rakun";
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn deletePost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn deletePost(form: FormData) -> @Task<@Result<ActionResult, string>> {
         \\     val id = form.field("id");
         \\     throw "no such post: " + id;
         \\ }
@@ -2744,8 +2741,7 @@ test "action: revalidateTag lands beside revalidatePath in the echoed list" {
         \\ import {serverAction, FormData, ActionResult, rkRegisterAction} from "rakun";
         \\ import {cache} from "rakun-cache";
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn publishPost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn publishPost(form: FormData) -> @Task<ActionResult> {
         \\     cache.revalidatePath("/blog");
         \\     cache.revalidateTag("posts");
         \\     return ActionResult.done();
@@ -2769,8 +2765,7 @@ test "action: redirect after the write is a 303 on the progressive path" {
         \\ import {serverAction, FormData, ActionResult, rkRegisterAction, redirect} from "rakun";
         \\ import {cache} from "rakun-cache";
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn createPost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn createPost(form: FormData) -> @Task<ActionResult> {
         \\     cache.revalidatePath("/blog");
         \\     val _navigated = redirect("/blog");
         \\     return ActionResult.done();
@@ -2795,8 +2790,7 @@ test "action: an origin that differs from host is refused before the body is rea
         \\ import {serverAction, FormData, ActionResult, rkRegisterAction} from "rakun";
         \\ import {cache} from "rakun-cache";
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn createPost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn createPost(form: FormData) -> @Task<ActionResult> {
         \\     cache.revalidatePath("/blog");
         \\     return ActionResult.done();
         \\ }
@@ -2818,8 +2812,7 @@ test "action: a post with no origin header is refused" {
     try assertAction(@src(),
         \\ import {serverAction, FormData, ActionResult, rkRegisterAction} from "rakun";
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn createPost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn createPost(form: FormData) -> @Task<ActionResult> {
         \\     return ActionResult.done();
         \\ }
         , "createPost Host: app.example | title=Rendering+on+BEAM");
@@ -2840,8 +2833,7 @@ test "action: multipart form data is refused with 415" {
     try assertAction(@src(),
         \\ import {serverAction, FormData, ActionResult, rkRegisterAction} from "rakun";
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn createPost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn createPost(form: FormData) -> @Task<ActionResult> {
         \\     return ActionResult.done();
         \\ }
         , "createPost Origin: https://app.example Host: app.example Content-Type: multipart/form-data; boundary=x | --x--");
@@ -2861,8 +2853,7 @@ revalidate []
 test "action: an unmarked pub fn is not reachable by its name" {
     try assertAction(@src(),
         \\ import {serverAction, FormData, ActionResult, rkRegisterAction} from "rakun";
-        \\ #[@future]
-        \\ pub fn savePost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn savePost(form: FormData) -> @Task<ActionResult> {
         \\     return ActionResult.done();
         \\ }
         , "savePost Origin: https://app.example Host: app.example | title=x");
@@ -2884,8 +2875,7 @@ test "action: the file-level useServer directive registers the same record as th
         \\ import {FormData, ActionResult, rkRegisterAction} from "rakun";
         \\ import {cache} from "rakun-cache";
         \\ pub val useServer = true;
-        \\ #[@future]
-        \\ pub fn createPost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn createPost(form: FormData) -> @Task<ActionResult> {
         \\     val title = form.field("title");
         \\     val tooShort = title.length() < 3;
         \\     if (tooShort) {
@@ -2916,8 +2906,7 @@ test "handler: get answers json with its content type" {
     try assertHandler(@src(),
         \\ import {Request, getRoute, HandlerResponse, rkAppRegisterHandler} from "rakun";
         \\ #[getRoute("api/posts")]
-        \\ #[@future]
-        \\ pub fn listPosts(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn listPosts(req: Request) -> @Task<HandlerResponse> {
         \\     return HandlerResponse.json("[{\"id\":\"1\"},{\"id\":\"2\"}]");
         \\ }
         , "GET /api/posts");
@@ -2939,8 +2928,7 @@ test "handler: a create with a valid body is 201 and points at the new resource"
     try assertHandler(@src(),
         \\ import {Request, postRoute, HandlerResponse, bodyJson, rkAppRegisterHandler} from "rakun";
         \\ #[postRoute("api/posts")]
-        \\ #[@future]
-        \\ pub fn createPost(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn createPost(req: Request) -> @Task<HandlerResponse> {
         \\     val parsed = bodyJson(req);
         \\     val ok = parsed.isOk();
         \\     if (!ok) {
@@ -2969,8 +2957,7 @@ test "handler: a malformed json body is 400 not 500" {
     try assertHandler(@src(),
         \\ import {Request, postRoute, HandlerResponse, bodyJson, rkAppRegisterHandler} from "rakun";
         \\ #[postRoute("api/posts")]
-        \\ #[@future]
-        \\ pub fn createPost(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn createPost(req: Request) -> @Task<HandlerResponse> {
         \\     val parsed = bodyJson(req);
         \\     val ok = parsed.isOk();
         \\     if (!ok) {
@@ -2997,8 +2984,7 @@ test "handler: multipart is refused with 415 before the body is read" {
     try assertHandler(@src(),
         \\ import {Request, postRoute, HandlerResponse, bodyForm, rkAppRegisterHandler} from "rakun";
         \\ #[postRoute("api/upload")]
-        \\ #[@future]
-        \\ pub fn upload(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn upload(req: Request) -> @Task<HandlerResponse> {
         \\     val fields = bodyForm(req);
         \\     return HandlerResponse.text(fields.lookup("name").unwrapOr(""));
         \\ }
@@ -3021,8 +3007,7 @@ test "handler: a dynamic segment reaches the handler as a request param" {
     try assertHandler(@src(),
         \\ import {Request, getRoute, HandlerResponse, rkAppRegisterHandler} from "rakun";
         \\ #[getRoute("api/posts/[id]")]
-        \\ #[@future]
-        \\ pub fn showPost(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn showPost(req: Request) -> @Task<HandlerResponse> {
         \\     val id = req.param("id");
         \\     val empty = id == "";
         \\     if (empty) {
@@ -3049,13 +3034,11 @@ test "handler: a verb the segment does not register answers 405 with allow" {
     try assertHandler(@src(),
         \\ import {Request, getRoute, postRoute, HandlerResponse, rkAppRegisterHandler} from "rakun";
         \\ #[getRoute("api/posts")]
-        \\ #[@future]
-        \\ pub fn listPosts(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn listPosts(req: Request) -> @Task<HandlerResponse> {
         \\     return HandlerResponse.json("[]");
         \\ }
         \\ #[postRoute("api/posts")]
-        \\ #[@future]
-        \\ pub fn createPost(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn createPost(req: Request) -> @Task<HandlerResponse> {
         \\     return HandlerResponse.created("{}");
         \\ }
         , "DELETE /api/posts");
@@ -3076,8 +3059,7 @@ test "handler: head falls back to get with the body dropped" {
     try assertHandler(@src(),
         \\ import {Request, getRoute, HandlerResponse, rkAppRegisterHandler} from "rakun";
         \\ #[getRoute("api/posts")]
-        \\ #[@future]
-        \\ pub fn listPosts(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn listPosts(req: Request) -> @Task<HandlerResponse> {
         \\     return HandlerResponse.json("[]");
         \\ }
         , "HEAD /api/posts");
@@ -3097,14 +3079,12 @@ chunks 0
 test "handler: the export streams one chunk per row in index order" {
     try assertHandler(@src(),
         \\ import {Request, getRoute, HandlerResponse, streamed, rkAppRegisterHandler} from "rakun";
-        \\ #[@future]
-        \\ fn exportRow(n: i32) -> @Future<string> {
+        \\ fn exportRow(n: i32) -> @Task<string> {
         \\     return "row " + n.toString() + "\n";
         \\ }
         \\ #[getRoute("api/export")]
-        \\ #[@future]
-        \\ pub fn exportPosts(req: Request) -> @Future<HandlerResponse> {
-        \\     var tasks: Array<fn() -> @Future<string>> = [];
+        \\ pub fn exportPosts(req: Request) -> @Task<HandlerResponse> {
+        \\     var tasks: Array<fn() -> @Task<string>> = [];
         \\     for (0..3) { n ->
         \\         tasks.push({ -> exportRow(n) });
         \\     };
@@ -3233,21 +3213,18 @@ test "static: generateStaticParams enumerates the paths to prerender" {
         \\     revalidate: 3600,
         \\     fetchCache: FetchCache.Auto,
         \\ ));
-        \\ #[@future]
-        \\ pub fn blogStaticParams() -> @Future<StaticParams[]> {
+        \\ pub fn blogStaticParams() -> @Task<StaticParams[]> {
         \\     return [
         \\         StaticParams(bindings: [ParamBinding(name: "slug", value: "hello")]),
         \\         StaticParams(bindings: [ParamBinding(name: "slug", value: "beam")]),
         \\     ];
         \\ }
         \\ val _blogParams = registerStaticParams("blog/[slug]", blogStaticParams);
-        \\ #[@future]
-        \\ pub fn shopStaticParams() -> @Future<StaticParams[]> {
+        \\ pub fn shopStaticParams() -> @Task<StaticParams[]> {
         \\     return [StaticParams(bindings: [ParamBinding(name: "slug", value: "clothing/shirts")])];
         \\ }
         \\ val _shopParams = registerStaticParams("shop/[...slug]", shopStaticParams);
-        \\ #[@future]
-        \\ pub fn docsStaticParams() -> @Future<StaticParams[]> {
+        \\ pub fn docsStaticParams() -> @Task<StaticParams[]> {
         \\     return [
         \\         StaticParams(bindings: [ParamBinding(name: "slug", value: "")]),
         \\         StaticParams(bindings: [ParamBinding(name: "slug", value: "routing/dynamic")]),
@@ -3289,8 +3266,7 @@ test "static: forceDynamic wins over generateStaticParams" {
         \\     revalidate: -1,
         \\     fetchCache: FetchCache.Auto,
         \\ ));
-        \\ #[@future]
-        \\ pub fn blogStaticParams() -> @Future<StaticParams[]> {
+        \\ pub fn blogStaticParams() -> @Task<StaticParams[]> {
         \\     return [StaticParams(bindings: [ParamBinding(name: "slug", value: "hello")])];
         \\ }
         \\ val _blogParams = registerStaticParams("blog/[slug]", blogStaticParams);
@@ -3374,8 +3350,7 @@ test "static: a segment inherits revalidate from its layout" {
         \\     revalidate: 600,
         \\     fetchCache: FetchCache.Auto,
         \\ ));
-        \\ #[@future]
-        \\ pub fn blogStaticParams() -> @Future<StaticParams[]> {
+        \\ pub fn blogStaticParams() -> @Task<StaticParams[]> {
         \\     return [StaticParams(bindings: [ParamBinding(name: "slug", value: "hello")])];
         \\ }
         \\ val _blogParams = registerStaticParams("blog/[slug]", blogStaticParams);
@@ -3553,8 +3528,7 @@ test "navigation: notFound from a route handler unwinds to 404" {
     try assertNavigation(@src(),
         \\ import {notFound, getRoute, HandlerResponse, Request} from "rakun";
         \\ #[getRoute("api/posts/[slug]")]
-        \\ #[@future]
-        \\ pub fn showPost(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn showPost(req: Request) -> @Task<HandlerResponse> {
         \\     val slug = req.param("slug");
         \\     val missing = slug != "hello";
         \\     if (missing) {
@@ -3580,8 +3554,7 @@ test "navigation: redirect from a route handler is 307 with location" {
     try assertNavigation(@src(),
         \\ import {redirect, cookies, getRoute, HandlerResponse, page, ChunkWriter, Request} from "rakun";
         \\ #[getRoute("api/account")]
-        \\ #[@future]
-        \\ pub fn account(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn account(req: Request) -> @Task<HandlerResponse> {
         \\     val session = cookies().get("session").unwrapOr("");
         \\     if (session == "") {
         \\         val _gone = redirect("/login");
@@ -3609,8 +3582,7 @@ test "navigation: permanentRedirect is 308" {
     try assertNavigation(@src(),
         \\ import {permanentRedirect, getRoute, HandlerResponse, page, ChunkWriter, Request} from "rakun";
         \\ #[getRoute("api/old")]
-        \\ #[@future]
-        \\ pub fn old(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn old(req: Request) -> @Task<HandlerResponse> {
         \\     val _moved = permanentRedirect("/new");
         \\     return HandlerResponse.json("{}");
         \\ }
@@ -3634,14 +3606,12 @@ location /new
 test "navigation: a signal inside try catch is not caught" {
     try assertNavigation(@src(),
         \\ import {notFound, getRoute, HandlerResponse, Request} from "rakun";
-        \\ #[@result]
         \\ fn loadPost(slug: string) -> @Result<string, string> {
         \\     val _gone = notFound();
         \\     return "unreachable";
         \\ }
         \\ #[getRoute("api/posts/[slug]")]
-        \\ #[@future]
-        \\ pub fn showPost(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn showPost(req: Request) -> @Task<HandlerResponse> {
         \\     val title = try loadPost(req.param("slug")) catch "fallback";
         \\     return HandlerResponse.json(title);
         \\ }
@@ -3662,19 +3632,16 @@ location -
 test "navigation: a signal crosses two levels of await" {
     try assertNavigation(@src(),
         \\ import {redirect, getRoute, HandlerResponse, page, ChunkWriter, Request} from "rakun";
-        \\ #[@future]
-        \\ fn inner() -> @Future<string> {
+        \\ fn inner() -> @Task<string> {
         \\     val _gone = redirect("/login");
         \\     return "unreachable";
         \\ }
-        \\ #[@future]
-        \\ fn outer() -> @Future<string> {
+        \\ fn outer() -> @Task<string> {
         \\     val v = await inner();
         \\     return v + "!";
         \\ }
         \\ #[getRoute("api/account")]
-        \\ #[@future]
-        \\ pub fn account(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn account(req: Request) -> @Task<HandlerResponse> {
         \\     val v = await outer();
         \\     return HandlerResponse.json(v);
         \\ }
@@ -3721,8 +3688,7 @@ test "navigation: redirect inside an action is 303 on the progressive path" {
         \\ import {redirect, serverAction, FormData, ActionResult, rkRegisterAction, page, ChunkWriter, Request} from "rakun";
         \\ import {cache} from "rakun-cache";
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn createPost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn createPost(form: FormData) -> @Task<ActionResult> {
         \\     cache.revalidatePath("/blog");
         \\     val _navigated = redirect("/blog");
         \\     return ActionResult.done();
@@ -3748,8 +3714,7 @@ test "navigation: notFound inside an action is 404 on the progressive path" {
     try assertNavigation(@src(),
         \\ import {notFound, serverAction, FormData, ActionResult, rkRegisterAction} from "rakun";
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn deletePost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn deletePost(form: FormData) -> @Task<ActionResult> {
         \\     val _gone = notFound();
         \\     return ActionResult.done();
         \\ }
@@ -7489,8 +7454,7 @@ test "client: retrieveFuture agrees with retrieve on the same spec" {
         \\         return self.client.get("/products/" + id).retrieve().body;
         \\     }
         \\
-        \\     #[@future]
-        \\     pub fn productJsonLater(self: Self, id: string) -> @Future<string> {
+        \\     pub fn productJsonLater(self: Self, id: string) -> @Task<string> {
         \\         val res = await retrieveFuture(self.client.get("/products/" + id));
         \\         return res.body;
         \\     }

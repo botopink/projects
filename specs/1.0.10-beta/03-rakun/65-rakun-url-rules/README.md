@@ -54,8 +54,6 @@ table and matches within it. The rules that run *before* a route is matched belo
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/modules/rakun-web/src/root.bp` — a docblock and a TODO comment. Front 07 will add
   `middleware.bp`, `cors.bp`, `error.bp`, `filter.bp` and `convention.bp`; `src/rules/` is empty and
   this front creates it.
@@ -194,7 +192,6 @@ pub type Matcher(
     compiled: Regex,
 )
 
-#[@result]
 pub fn matcher(source: string) -> @Result<Matcher, string>
 pub fn matches(m: Matcher, pathname: string) -> bool
 pub fn capturesOf(m: Matcher, pathname: string) -> Array<#(string, string)>
@@ -358,7 +355,6 @@ pub type RuleOutcome(
     target: string,
 )
 
-#[@result]
 pub fn compileRules(rules: UrlRules) -> @Result<CompiledRules, string>
 pub fn applyRules(compiled: CompiledRules, pathname: string) -> RuleOutcome
 pub fn urlRulesFilter(compiled: CompiledRules) -> Filter

@@ -54,8 +54,7 @@ val _blogConfig = registerSegmentConfig("blog/[slug]", SegmentConfig(
 
 // SERVER — called once at build time. Each row binds every dynamic segment of
 // the pattern; a row that misses one fails the build.
-#[@future]
-pub fn blogStaticParams() -> @Future<StaticParams[]> {
+pub fn blogStaticParams() -> @Task<StaticParams[]> {
     return allPosts().map({ post ->
         StaticParams(bindings: [ParamBinding(name: "slug", value: post.slug)]);
     });

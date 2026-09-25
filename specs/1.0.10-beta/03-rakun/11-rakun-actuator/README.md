@@ -68,8 +68,6 @@ One seam, here, is the point.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 | Piece | Where | State |
 |---|---|---|
 | Scan registry | `rkScannedNames`/`rkScannedCount` (`runtime.bp:22-26`) | exists; `beans` reads it |
@@ -375,7 +373,7 @@ None new. Two already in [`language-gaps.md`](../../language-gaps.md) shape this
   `EndpointResponse` body are all JSON **strings** built by the contributor, rather than a structured
   value the endpoint serializes. It is why the "two contributors claiming one key" check is done on
   top-level keys parsed in the sidecar rather than in botopink.
-- **`@Future<T>` lowers eagerly on erlang** — decides that concurrent indicator execution is one BEAM
+- **`@Task<T>` lowers eagerly on erlang** — decides that concurrent indicator execution is one BEAM
   process per indicator gathered by id, not `all(futures)`. Front 02's unstarted-thunk shape is what
   this front uses.
 

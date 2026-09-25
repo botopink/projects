@@ -67,8 +67,7 @@ fn recordThemeChange(theme: string) -> i32 {
 // SERVER — a route handler. The phase is Handler, so both reads and the cookie
 // write below are legal, and reading a header marks this response dynamic.
 #[getRoute("api/whoami")]
-#[@future]
-pub fn whoami(req: Request) -> @Future<Response> {
+pub fn whoami(req: Request) -> @Task<Response> {
     val authorization = headers().get("authorization").unwrapOr("");
     if (authorization == "") {
         return Response.withStatus(401, "");

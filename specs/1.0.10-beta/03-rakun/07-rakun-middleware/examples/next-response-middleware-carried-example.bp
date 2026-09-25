@@ -7,8 +7,7 @@
 // --- Authentication middleware (middleware.bp)
 import {Request, Response, NextResponse} from "rakun";
 
-#[@future]
-pub fn middleware(request: Request) -> @Future<Response> {
+pub fn middleware(request: Request) -> @Task<Response> {
     val token = request.header("Authorization");
     val path = request.path();
 
@@ -31,8 +30,7 @@ pub val config = MiddlewareConfig(
 import {Request, Response, NextResponse} from "rakun";
 import {io.clock} from "std";
 
-#[@future]
-pub fn middleware(request: Request) -> @Future<Response> {
+pub fn middleware(request: Request) -> @Task<Response> {
     val start = clock.nowMillis();
     val response = NextResponse.next();
     val duration = clock.nowMillis() - start;
@@ -43,8 +41,7 @@ pub fn middleware(request: Request) -> @Future<Response> {
 // --- F22 · middleware.bp (session-cookie gate from the example app)
 import {Request, Response, NextResponse} from "rakun";
 
-#[@future]
-pub fn middleware(request: Request) -> @Future<Response> {
+pub fn middleware(request: Request) -> @Task<Response> {
     val path = request.path();
     val sessionCookie = request.cookie("session");
 

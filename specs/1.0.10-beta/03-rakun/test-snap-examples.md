@@ -1310,7 +1310,7 @@ examples/blog-server/
 ├── src/rules.bp                         appUrlRules() -> UrlRules (trailingSlash false · /old→/new permanent · /blog/:slug→/en/blog/:slug · /shop/:path*→/catalog/:path* · /api/external/:path*→https://api.example.com/:path*)
 ├── src/assets.bp                        AssetConfig (#[configuration] · buildAssets /_assets/** immutable · publicAssets /public/** index.html)
 ├── src/catalog.bp                       productsJson · priceJson · repriceProduct (cachePolicy · cacheThrough · updateTag · revalidateTag · revalidatePath)
-├── src/posts.bp                         Post · findPost (#[@result]) · getPost (memoize) · allPosts
+├── src/posts.bp                         Post · findPost (-> @Result) · getPost (memoize) · allPosts
 ├── src/routes.bp                        the layout records (rkAppRegisterEntry "L" for /, /[locale], /[locale]/blog, /dashboard; "D" for the two slot defaults)
 ├── app/                                 sitemap.bp · robots.bp · manifest.bp · favicon.ico · icon.png · opengraph-image.png
 ├── app/[locale]/page.bp                 homePage — page("[locale]", renderer)
@@ -1402,14 +1402,12 @@ test "blog-server: publishing a post revalidates the blog and a short title is i
         \\ import {cache} from "rakun-cache";
         \\ import {collections.Dict} from "std";
         \\
-        \\ #[@future]
-        \\ fn savePost(title: string, body: string) -> @Future<string> {
+        \\ fn savePost(title: string, body: string) -> @Task<string> {
         \\     return title.toLower().replaceAll(" ", "-");
         \\ }
         \\
         \\ #[serverAction]
-        \\ #[@future]
-        \\ pub fn createPost(form: FormData) -> @Future<ActionResult> {
+        \\ pub fn createPost(form: FormData) -> @Task<ActionResult> {
         \\     val title = form.field("title");
         \\     val body = form.field("body");
         \\     val tooShort = title.length() < 3;
@@ -1441,27 +1439,23 @@ test "blog-server: the posts handler answers json with a location and refuses mu
         \\ import {rkAppRegisterHandler} from "rakun";
         \\ import {collections.Dict} from "std";
         \\
-        \\ #[@future]
-        \\ fn allPosts() -> @Future<string[]> {
+        \\ fn allPosts() -> @Task<string[]> {
         \\     return ["{\"slug\":\"hello\"}"];
         \\ }
         \\
-        \\ #[@future]
-        \\ fn insertPost(payload: string) -> @Future<string> {
+        \\ fn insertPost(payload: string) -> @Task<string> {
         \\     return "{\"id\":\"3\"}";
         \\ }
         \\
         \\ #[getRoute("api/posts")]
-        \\ #[@future]
-        \\ pub fn listPosts(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn listPosts(req: Request) -> @Task<HandlerResponse> {
         \\     val posts = await allPosts();
         \\     val body = "[" + posts.join(",") + "]";
         \\     return HandlerResponse.json(body);
         \\ }
         \\
         \\ #[postRoute("api/posts")]
-        \\ #[@future]
-        \\ pub fn createPost(req: Request) -> @Future<HandlerResponse> {
+        \\ pub fn createPost(req: Request) -> @Task<HandlerResponse> {
         \\     val contentType = req.header("content-type");
         \\     val isMultipart = contentType.startsWith("multipart/form-data");
         \\     if (isMultipart) {
@@ -1515,8 +1509,7 @@ test "blog-server: the post page is static with its params and the dashboard is 
         \\     fetchCache: FetchCache.Auto,
         \\ ));
         \\
-        \\ #[@future]
-        \\ pub fn blogStaticParams() -> @Future<StaticParams[]> {
+        \\ pub fn blogStaticParams() -> @Task<StaticParams[]> {
         \\     return [
         \\         StaticParams(bindings: [ParamBinding(name: "locale", value: "en"), ParamBinding(name: "slug", value: "hello")]),
         \\         StaticParams(bindings: [ParamBinding(name: "locale", value: "pt-BR"), ParamBinding(name: "slug", value: "hello")]),
@@ -1525,8 +1518,7 @@ test "blog-server: the post page is static with its params and the dashboard is 
         \\
         \\ val _blogParams = registerStaticParams("[locale]/blog/[slug]", blogStaticParams);
         \\
-        \\ #[@future]
-        \\ pub fn localeStaticParams() -> @Future<StaticParams[]> {
+        \\ pub fn localeStaticParams() -> @Task<StaticParams[]> {
         \\     return [
         \\         StaticParams(bindings: [ParamBinding(name: "locale", value: "en")]),
         \\         StaticParams(bindings: [ParamBinding(name: "locale", value: "pt-BR")]),
@@ -1646,7 +1638,6 @@ test "blog-server: a missing post answers 404 from its page renderer" {
         \\
         \\ pub type Post(slug: string, title: string, body: string)
         \\
-        \\ #[@result]
         \\ fn findPost(slug: string) -> @Result<Post, string> {
         \\     if (slug == "hello") {
         \\         return Post(slug: "hello", title: "Hello", body: "first post");
@@ -1848,7 +1839,7 @@ examples/order-pipeline/
 ├── src/main.bp            autoConfigure() · Rakun.run(App(port: 8080, basePath: "/api"))
 ├── src/orders.bp          OrderRepo · Orders (#[transactional] place → publishAfterCommit) · Shipping (onceOnly) · shippingListener (#[messageListener("order.placed")])
 ├── src/listeners.bp       OrderService (AmqpTemplate · KafkaTemplate) · OrderListeners (#[listener] · #[amqpListener("orders")] · #[kafkaListener("order-events", "order-service")])
-├── src/confirmations.bp   chargeCard (#[@result]) · classifyOrder · OrderConfirmations (#[rabbitListener("orders.confirm")])
+├── src/confirmations.bp   chargeCard (-> @Result) · classifyOrder · OrderConfirmations (#[rabbitListener("orders.confirm")])
 ├── src/booking.bp         bookingSaga() -> Saga (reserve-seat · charge-card · issue-ticket) · Bookings
 ├── src/billing.bp         InvoiceRepo · Billing (#[persistentJob("nightly-invoices", "0 3 * * *")] · #[scheduled("*/5 * * * *")]) · nightlyInvoiceTrigger
 ├── src/housekeeping.bp    SessionRepo · HousekeepingService (#[scheduler] · #[scheduled("0 0 * * * *")] · #[fixedRate(5000)] · #[fixedDelay(30000)])
@@ -2856,7 +2847,7 @@ examples/realtime-gateway/
 ├── src/profiles.bp        ProfileRepository (#[repository] #[managed] · #[documentQuery]) · RateLimiter · SessionStore (KeyValueStore) · DocumentStoreHealth (#[healthIndicator("documents")])
 ├── src/invoices.bp        classifyInvoice · InvoiceListener (#[pulsarListener("persistent://acme/billing/invoices")]) · InvoiceBacklog (#[pulsarReader(…, "earliest")]) · InvoicePublisher
 ├── src/users.bp           UserEndpoint (#[messageMapping] user.seen · user.byId · user.events · user.sync) · fetchUser · UserClient
-└── src/rates.bp           ConversionRequest · ConversionResponse · conversionRequestToXml · convert (#[@result]) · Rates (WsClient 1.1)
+└── src/rates.bp           ConversionRequest · ConversionResponse · conversionRequestToXml · convert (-> @Result) · Rates (WsClient 1.1)
 ```
 
 ### `realtime-gateway: the document store answers by email, by plan and by id`
@@ -3261,7 +3252,6 @@ test "realtime-gateway: a conversion call wraps its body in a soap 1.1 envelope 
         \\     );
         \\ }
         \\
-        \\ #[@result]
         \\ pub fn convert(client: WsClient, req: ConversionRequest) -> @Result<ConversionResponse, SoapFault> {
         \\     val body = conversionRequestToXml(req);
         \\     val answer = try wsCall(client, "urn:rates/Convert", body) catch "";
@@ -3318,7 +3308,6 @@ test "realtime-gateway: a soap fault is a distinguishable outcome with its code"
         \\         + "</Convert>";
         \\ }
         \\
-        \\ #[@result]
         \\ pub fn convert(client: WsClient, req: ConversionRequest) -> @Result<string, SoapFault> {
         \\     return wsCall(client, "urn:rates/Convert", conversionRequestToXml(req));
         \\ }

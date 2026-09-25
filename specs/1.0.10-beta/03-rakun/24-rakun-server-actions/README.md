@@ -49,8 +49,6 @@ the rejection is a 403, and there is no setting that turns it off.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/src/decorators.bp:222-244` — five route-mapping decorators, method-level, no
   function-level marker of any kind and no `'use server'` equivalent.
 - `repository/rakun/src/http.bp:35-43` — `Request.body()` returns the whole body as one `string`.
@@ -81,8 +79,7 @@ encrypted at build time; `Origin`/`Host` is checked automatically; the body is c
 
 ```bp
 #[serverAction]
-#[@future]
-pub fn createPost(form: FormData) -> @Future<ActionResult> { … }
+pub fn createPost(form: FormData) -> @Task<ActionResult> { … }
 ```
 
 That is the inline `'use server'`. The file-level directive is the same decorator applied by the CLI:
@@ -225,8 +222,7 @@ jhonstart's; neither side imports the other.
 import {serverAction, FormData, ActionResult, redirect} from "rakun";
 
 #[serverAction]
-#[@future]
-pub fn createPost(form: FormData) -> @Future<ActionResult> {
+pub fn createPost(form: FormData) -> @Task<ActionResult> {
     val id = await savePost(form.field("title"), form.field("body"));
     val _gone = redirect("/posts/" + id);     // raises; n: "R|307|/posts/<id>"
     return ActionResult.done();
@@ -278,11 +274,12 @@ field that is empty are the same thing to a validator, and optional unwrapping a
 nothing. `ActionResult.state` is a `Dict` in botopink and is querystring-encoded on the wire.
 
 **Acceptance:**
-- [ ] `#[serverAction]` on a `#[@future] fn(form: FormData) -> @Future<ActionResult>` compiles and
+- [ ] `#[serverAction]` on a `fn(form: FormData) -> @Task<ActionResult>`, and on one that can fail
+      (`-> @Task<@Result<ActionResult, E>>`, whose `Error` the dispatcher answers as a failed action), compiles and
       registers.
 - [ ] `#[serverAction]` on a type fails with `#[serverAction] must annotate a function`.
-- [ ] `#[serverAction]` on a function that is not `#[@future]` fails, naming the required return
-      type — an action is always async so the dispatcher has one shape.
+- [ ] `#[serverAction]` on a function whose return is neither of those two fails, naming the required return
+      type — an action is always a `@Task`, so the dispatcher always awaits it.
 - [ ] A file carrying `pub val useServer = true;` produces, for each of its `pub fn`s, the same
       registration record as the hand-written decorator — compared field by field, not by eyeball.
 - [ ] A `pub fn` in a file without the directive and without the decorator is not registered, and
@@ -296,7 +293,7 @@ pub fn actionId(module: string, name: string, buildId: string) -> string
 #[@External.Erlang("rakun_actions", "register")]
 pub declare fn rkRegisterAction(
     name: string,
-    run: fn(form: FormData) -> @Future<ActionResult>,
+    run: fn(form: FormData) -> @Task<ActionResult>,
 ) -> i32;
 ```
 
@@ -329,14 +326,13 @@ pub declare fn rkRegisterAction(
 ### Step 4 — Dispatch, and the checks that come before it
 
 ```bp
-#[@future]
 pub fn dispatchAction(
     pathname: string,
     origin: string,
     host: string,
     contentType: string,
     body: string,
-) -> @Future<ActionOutcome>
+) -> @Task<ActionOutcome>
 ```
 
 **Acceptance:**
@@ -405,7 +401,7 @@ pub fn dispatchAction(
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| A `#[@future]` fn cannot `await` inside a closure, and `@Future<T>` lowers eagerly on erlang (both stated in full in front 23) | validating N fields with an async check | build `Array<fn() -> @Future<T>>` and await front 02's `async.all` once | see front 23 |
+| A `@Task` fn cannot `await` inside a closure (an `async { }` block is its own Task, decision 124), and `@Task<T>` lowers eagerly on erlang (both stated in full in front 23) | validating N fields with an async check | build `Array<fn() -> @Task<T>>` and await front 02's `async.all` once | see front 23 |
 | No byte or binary type — every host cell marshals through `string` | reading a `multipart/form-data` body, whose parts are bytes | the body reaches botopink as a UTF-8 `string`, so this front supports `application/x-www-form-urlencoded` and the JSON-RPC encoding only, and rejects `multipart/form-data` with 415 rather than corrupting it silently | a `bytes` type, or `@External` cells that can marshal a binary |
 | `@Decl` carries no source location (stated in full in front 22) | the module half of the action id has to be supplied by the registration cell rather than read off the declaration | the host cell knows the module it was loaded from | `decl.source() -> Source` |
 

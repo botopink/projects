@@ -36,8 +36,6 @@ already, with nothing in botopink that reaches it.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 | Piece | Where it is today |
 |---|---|
 | `modules/rakun-security/` | `botopink.json` plus `src/root.bp`, whose entire body is the comment *"Module contents will be added by the respective fronts."* |
@@ -45,7 +43,7 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
 | `hash` · `io.random` | `sha256`, `sha512`, `md5`, `hmacSha256` and `randomBytes` — today in `libs/std/src/crypto.bp`, split by decision 106 into `hash` (digests) and `io.random` (`randomBytes`). Enough for PKCE and state; **not** enough for RSA/ECDSA signature verification |
 | `encoding` | `encode`, `decode`, `encodeUrlSafe`, `decodeUrlSafe` — today `libs/std/src/base64.bp`, `encoding` after decision 106. JWT segments are url-safe base64, so this is the right primitive already |
 | `json` | `parse`/`stringify`, both `string -> @Result<string, string>`; **no structured walker** (`libs/std/src/json.bp:9-16`). Reading a claim out of an ID token needs one |
-| `http.fetch` | `pub declare fn fetch(url: string) -> @Future<Response>` — `libs/std/src/http.bp:55`. GET only, no POST, no form body. Front 13 is the real client |
+| `http.fetch` | `pub declare fn fetch(url: string) -> @Task<Response>` — `libs/std/src/http.bp:55`. GET only, no POST, no form body. Front 13 is the real client |
 | An HTTP request's inputs | `req.header(name)`, `req.query(name)`, `req.param(name)`, `req.body()` — all plain `string`, `""` when absent (`src/http.bp:30-43`) |
 | A response's headers | there is no header field on `Response` and no builder for one. Front 04 adds `rkSetReplyHeader/2`; the redirect in step 3 depends on it |
 
@@ -332,7 +330,7 @@ window, the audience restriction and the `InResponseTo` correlation.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| A `fn` cannot forward a `@Result` it received. `-> @Result<…>` requires `#[@result]`, and inside such a fn `return v` wraps `v` again, so a token exchange that calls a fetch which already returns `@Result` double-wraps. | `examples/service-token-and-ldap-example.bp`, `tokenFor` — written as a total fn returning `""` on failure instead | `.map` / `.flatMap` / `.unwrapOr`, or unwrap and `throw` | A forwarding return (`return! r;`), or an implicit forward when the returned expression is already `@Result<D, E>`. Already recorded by front 04 |
+| A `fn` cannot forward a `@Result` it received until front 24 lands decision 119: inside a `-> @Result<…>` fn `return v` wraps `v` again, so a token exchange that calls a fetch which already returns `@Result` double-wraps. | `examples/service-token-and-ldap-example.bp`, `tokenFor` — written as a total fn returning `""` on failure instead | `.map` / `.flatMap` / `.unwrapOr`, or unwrap and `throw` | A forwarding return (`return! r;`), or an implicit forward when the returned expression is already `@Result<D, E>`. Already recorded by front 04 |
 | Declared parameter defaults are never applied, so an API with optional arguments has to be a record constructor or force every caller to write every argument. | `examples/oidc-login-example.bp`, `OAuth2Provider(...)` — seven named fields where four would do | Record construction with every field written | Apply declared defaults at the call site, which would let `OAuth2Provider` default `pkce`, `scopes` and `redirectPath` |
 
 ## Test plan

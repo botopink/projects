@@ -34,7 +34,7 @@ Upstream features no rakun front covers, verified by `grep -ril` over the 51 REA
 | `@SpringBootTest`, `@WebMvcTest`, `@DataJpaTest` names | 19 | slices and whole-context boot covered conceptually, names unmapped |
 | `MongoTemplate` / `RedisTemplate` / `ElasticsearchTemplate`; `eredis_cluster`; by-filter `update`/`delete`; one application holding two store arms at once | 09 | 09's stores are by-id only; `rakun.nosql.url` selects one arm |
 | `@ServerEndpoint` mapping; `onError(session, error)` | 20 | renamed `#[wsEndpoint]` without the mapping; a raising handler closes with `1011` and the handler is never told |
-| `bodyToMono`/`bodyToFlux`; a streamed response body (`@FutureGenerator<string, E>`, decision 103) | 13 | `ClientResponse.body` is one `string`; no chunked or iterated body for a large or server-sent response |
+| `bodyToMono`/`bodyToFlux`; a streamed response body (`@Stream<@Result<string, E>>`, decision 122) | 13 | `ClientResponse.body` is one `string`; no chunked or iterated body for a large or server-sent response |
 | `CollectionModel` / `EntityModel`; `Link.name`; `Links(self: Link, others)` — a type-level required `self` | 21 | `RepresentationModel` named, the collection type not; `Array<Link>` carries no guarantee that `self` is present |
 | `Accept: text/html` content negotiation between a `P` route and an `R` route | 22 · 25 | both decide by table kind only |
 | `<!DOCTYPE html>` / `<title>` assertion on the finished document | 23 · 32 | no acceptance asserts either from 23's side |

@@ -14,12 +14,12 @@
 ## Problem
 
 A rakun service has no way to call another HTTP service. `libs/std/src/http.bp` offers exactly one
-function — `fetch(url) -> @Future<Response>` (`http.bp:55`) — which does GET only, takes no headers, no
+function — `fetch(url) -> @Task<Response>` (`http.bp:55`) — which does GET only, takes no headers, no
 body, no timeout and no method, and whose erlang cell starts `inets` and calls `httpc:request/4`
 inline. `modules/rakun-client/` is a `botopink.json` and a `src/root.bp` containing a TODO comment.
 
 `RestClient` (a fluent blocking builder) and `WebClient` (the same builder whose entire difference
-is *"Returns `@Future<T>`"*) as two fronts would be two builders, two type hierarchies and two test
+is *"Returns `@Task<T>`"*) as two fronts would be two builders, two type hierarchies and two test
 files to express one transport and two terminal operations — a cost with no buyer. A fluent
 `RestClient.builder().build()` with bodyless methods declared inside a `type` body is also not legal
 (`docs.md:567`).
@@ -30,9 +30,7 @@ that forwards a user-supplied URL today would happily fetch `http://169.254.169.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
-- `libs/std/src/http.bp:55` — `pub declare fn fetch(url: string) -> @Future<Response>`; GET only, no headers, no timeout. `http.bp:71` — `fetchStatus`. That is the entire outbound surface in the ecosystem.
+- `libs/std/src/http.bp:55` — `pub declare fn fetch(url: string) -> @Task<Response>`; GET only, no headers, no timeout. `http.bp:71` — `fetchStatus`. That is the entire outbound surface in the ecosystem.
 - `libs/std/src/http.bp:25-29` — the file's own docblock states BEAM and wasm are out of scope and a caller on those backends fails with a missing-external diagnostic.
 - `repository/rakun/modules/rakun-client/src/root.bp` — docblock plus `// Module contents will be added by the respective fronts.`
 - `libs/std/src/json.bp:36,45` — `parse` and `stringify` both take and return `string`; there is no structured JSON value, so response decoding in this front stops at the body string.
@@ -49,11 +47,11 @@ that waits costs nothing, so there is no reactive stack to justify. Spring's `Re
 ported at all — upstream marks it legacy (`07-io.md § RestTemplate (Legacy)`) and porting a deprecated
 API to a new language is work nobody asked for.
 
-**What `@Future` does and does not mean here.** `@Future<T>` lowers **eagerly** on erlang —
+**What `@Task` does and does not mean here.** `@Task<T>` lowers **eagerly** on erlang —
 `libs/std/src/http.bp:16-18` — so `retrieveFuture()` is not a concurrent call. It is the same blocking
 request with a different return shape, which is exactly why it costs one method rather than a second
-stack. A service that wants two upstream calls to overlap does not get it from `@Future`; it gets it
-from front 02, which parallelises **unstarted** tasks (`Array<fn() -> @Future<T>>`). Any README, test
+stack. A service that wants two upstream calls to overlap does not get it from `@Task`; it gets it
+from front 02, which parallelises **unstarted** tasks (`Array<fn() -> @Task<T>>`). Any README, test
 name or comment in this module that implies otherwise is wrong and is a review failure.
 
 **The chain, and why it is records rather than interfaces.** Each step is a record with methods
@@ -63,7 +61,7 @@ body; every abstraction that needs one is a `behavior`.
 ```
 RestClient.builder() -> RestClientBuilder -> .build() -> RestClient
 RestClient.get(path) -> RequestSpec -> .header(n,v) -> .cached(...) -> .retrieve() -> ClientResponse
-                                                                   -> .retrieveFuture() -> @Future<ClientResponse>
+                                                                   -> .retrieveFuture() -> @Task<ClientResponse>
 ```
 
 **The transport is front 01, not a private host cell.** rakun-client declares no socket, TLS or DNS
@@ -227,13 +225,12 @@ pub type RequestSpec(
     pub fn retrieve(self: Self) -> ClientResponse { … }
 }
 
-#[@future]
-pub fn retrieveFuture(spec: RequestSpec) -> @Future<ClientResponse>
+pub fn retrieveFuture(spec: RequestSpec) -> @Task<ClientResponse>
 ```
 
 **Acceptance:**
 - [ ] `retrieve` and `retrieveFuture` on the same `RequestSpec` produce the same status, body and headers against the same stub server.
-- [ ] `retrieveFuture` is declared `#[@future]` and returns `@Future<ClientResponse>`; the marker and the wrapper go together (`tests/language/reject/result_without_wrapper.bp` covers the inverse).
+- [ ] `retrieveFuture` returns `@Task<ClientResponse>`; the return is the whole declaration of the effect (decision 118) — no annotation, and an alias of `@Task` does not activate `await` (`effect-wrapper-behind-alias`).
 - [ ] Two `retrieveFuture` calls issued before either is awaited do **not** overlap on erlang, and the test that measures it asserts that rather than the opposite — the concurrency story is front 02's.
 - [ ] A non-2xx response is returned, not raised — the caller decides, via `isOk()`.
 - [ ] A read timeout produces a `ClientResponse` with status `-1` and the reason in the body, matching the shape `libs/std/src/http.bp` already uses for a failed erlang fetch.

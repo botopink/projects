@@ -31,8 +31,6 @@ the same ETS row under the same key and are invalidated by the same `revalidateT
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `repository/rakun/modules/rakun-cache/botopink.json` — package metadata only, `"targets": ["commonJS", "erlang"]`, which this front corrects to `["erlang"]` (decision 113).
 - `repository/rakun/modules/rakun-cache/src/root.bp` — a docblock and a TODO comment. No `pub mod` line, no code.
 - `repository/rakun/src/runtime.bp:56-66` — the only key/value surface that exists in rakun today is the property store (`rkSetProp`/`rkProp`/`rkPropInt`), which is configuration, not cache: no expiry, no tags, no scope.
