@@ -124,7 +124,7 @@ modules/
 ├── rakun-security/            (auth, authz, JWT)
 ├── rakun-cache/               (cache abstraction, #[cacheable])
 ├── rakun-client/              (RestClient, WebClient)
-├── rakun-validation/          (constraints, violation report)
+├── rakun-validation/          (constraints, violation report — now the bundled `validation`, decision 116)
 ├── rakun-messaging/           (AMQP, Kafka listener registry)
 ├── rakun-scheduling/          (#[scheduled], cron)
 ├── rakun-logging/             (structured logging)
