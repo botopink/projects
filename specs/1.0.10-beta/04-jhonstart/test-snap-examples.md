@@ -2,7 +2,7 @@
 
 The same map as [`test-snap.md`](./test-snap.md) for `repository/jhonstart/examples/**` — the five projects `modules.md § 8` creates. Contract, helpers and style rules are `test-snap.md § 0`; nothing is restated here. Each project has `botopink.json` (dependencies as listed), `src/` or `app/`, `test/`, and `test/__snapshots__/` beside its tests. The paths under each case are relative to `repository/jhonstart/examples/<project>/test/`.
 
-The v0 projects `jhonstart-counter/`, `jhonstart-html/`, `jhonstart-todo/` keep their inline `assert` tests and gain no snapshots; `jhonstart-app/` is removed when `blog-ssr` lands (its three aspirational files are what `blog-ssr/app/` makes real).
+The v0 projects `jhonstart-counter/`, `jhonstart-markup/` (was `jhonstart-html/`), `jhonstart-todo/` keep their inline `assert` tests and gain no snapshots; `jhonstart-app/` is removed when `blog-ssr` lands (its three aspirational files are what `blog-ssr/app/` makes real).
 
 ---
 

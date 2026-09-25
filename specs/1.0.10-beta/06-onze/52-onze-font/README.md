@@ -13,9 +13,9 @@ swaps to the real face when it arrives, and the swap moves nothing
 metrics probe, `path`), 03 (content hash for the self-hosted filename), 69 (the asset manifest the files are listed in and
 `public/` serving) — the CSS reaches the head through jhonstart's `RenderHooks.headExtra`, which
 front 49 fills
-**Owns:** `src/font.bp`, `test/font_test.bp`
-**Does not touch:** `repository/onze/src/config.bp` · `types.bp` · `integration.bp` · `root.bp`
-(F49 — except the one `pub mod font;` export line, handed to F49), `src/image.bp` (F51),
+**Owns:** `modules/onze-assets/src/font.bp`, `modules/onze-assets/src/font_metrics.bp`, `modules/onze-assets/test/font_test.bp` (the member cut of [`../modules.md`](../modules.md))
+**Does not touch:** `repository/onze/modules/onze/**` (F49), `repository/onze/modules/onze-assets/src/root.bp` and its `botopink.json`
+(F69 — except the `pub mod font; pub mod font_metrics;` lines, handed to F69), `modules/onze-assets/src/image.bp` (F51),
 `repository/emilia/src/**` (track D), every other repository
 **Reference:** `NEXTJS-DOCS.md § 17. Otimização de Fontes`, `§ 15. Estilização (CSS)` (where the CSS
 lands) · <https://nextjs.org/docs/app/api-reference/components/font> ·

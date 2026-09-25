@@ -13,9 +13,9 @@ on the server and emits markup both halves agree on
 **Depends on:** 49 (config, `publicDir`, `outDir`), 01 (`process` spawner, `path`), 03 (content hash
 for the cache key and the asset name), 12 (the cache store the optimized bytes live in), 25 (the route
 handler shape), 69 (the asset manifest and `public/` serving)
-**Owns:** `src/image.bp`, `test/image_test.bp`
-**Does not touch:** `repository/onze/src/config.bp` · `types.bp` · `integration.bp` · `root.bp`
-(F49 — except the one `pub mod image;` export line, handed to F49), `src/font.bp` (F52),
+**Owns:** `modules/onze-assets/src/image.bp`, `modules/onze-assets/src/image_handler.bp`, `modules/onze-assets/test/image_test.bp` (the member cut of [`../modules.md`](../modules.md))
+**Does not touch:** `repository/onze/modules/onze/**` (F49), `repository/onze/modules/onze-assets/src/root.bp` and its `botopink.json`
+(F69 — except the `pub mod image; pub mod image_handler;` lines, handed to F69), `modules/onze-assets/src/font.bp` (F52),
 `repository/onze/modules/onze-og/**` (F70), `repository/jhonstart/src/element.bp` (frozen),
 every other repository
 **Reference:** `NEXTJS-DOCS.md § 16. Otimização de Imagens`, `§ 28. Configuração (next.config.js)`

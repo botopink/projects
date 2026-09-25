@@ -15,12 +15,12 @@ registry the boot hands one renderer per page) · 22 (rakun's route table and `r
 `rakun.i18n.exclude` into — fronts 22, 24 and 64 read them later and are not dependencies
 of the boot) · 82 (rakun-web's `registerStaticRoot`, which the boot calls with front 69's
 `staticRoots` — decision 116)
-**Owns:** `botopink.json`, `src/root.bp`, `src/types.bp`, `src/config.bp`, `src/integration.bp`,
-`test/config_test.bp`, `test/types_test.bp`
+**Owns:** `repository/onze/botopink.json` (the workspace), `modules/onze/botopink.json`, `modules/onze/src/root.bp`, `modules/onze/src/types.bp`, `modules/onze/src/config.bp`, `modules/onze/src/integration.bp`,
+`modules/onze/test/config_test.bp`, `modules/onze/test/types_test.bp` — the member cut of [`../modules.md`](../modules.md)
 **Does not touch:** `repository/jhonstart/**` (the render, `RenderHooks`, `RenderPlugin` and the
 `jhonstart-emilia` bridge are jhonstart front 30's), `repository/rakun/src/**`,
-`repository/emilia/src/**`, `libs/std/src/**`, `repository/onze/src/image.bp` (F51),
-`repository/onze/src/font.bp` (F52), `repository/onze/modules/onze-cli/**` (F50),
+`repository/emilia/src/**`, `libs/std/src/**`, `repository/onze/modules/onze-assets/src/image.bp` (F51),
+`repository/onze/modules/onze-assets/src/font.bp` (F52), `repository/onze/modules/onze-cli/**` (F50),
 `repository/onze/examples/blog/**` (F53)
 **Reference:** `NEXTJS-DOCS.md § 1. Introdução`, `§ 2. Instalação e Configuração` (alias de import),
 `§ 3. Estrutura do Projeto`, `§ 7. Server e Client Components` (`NEXT_PUBLIC_`),
