@@ -34,7 +34,9 @@ All in `modules/jhonstart-test/src/`. Every helper serialises and calls `snapsho
 | `assertClientBundleEntry(loc, islands: Array<Island>)` (`assert_island.bp`) | `--- payload i` then one `<id> <component> <props>` line per island (the `islandEntry` tuple, space-joined); `--- markup` then `renderToString(clientMount(island, []))` per island |
 | `assertStream(loc, chunks: Array<string>)` (`assert_stream.bp`) | for each chunk `--- chunk <n>` (`--- chunk 0 (shell)` for the first) followed by the chunk |
 | `assertDocument(loc, doc: string)` (`assert_render.bp`) | the document split one tag per line after `<body>`; the payload script's JSON one key per line |
-| `renderStreamCollect(a: App, input: PageInput, req: RequestData) -> @Future<Array<string>>` (`harness.bp`) | `renderStream` with a `write` (`fn(string) -> @Future<void>`) that appends to an array — the chunks in the order `write` received them |
+| `renderStreamCollect(a: App, input: PageInput, req: RequestData) -> @Future<Array<string>>` (`harness.bp`) | `renderStream` with a recording `Response` whose `write` appends to an array — the chunks in the order `write` received them |
+| `renderRecorded(a: App, input: PageInput, req: RequestData, streaming: bool) -> @Future<RecordedResponse>` (`harness.bp`) | `render` or `renderStream` over a recording `Response`: `RecordedResponse(status, headers, chunks, closed)` — `status` 200 when never set |
+| `assertResponse(loc, r: RecordedResponse)` (`assert_render.bp`) | `status <n>`, one `header <name>: <value>` line each, `chunks <n>`, `closed <n>` |
 | `fixtureRequest(path) -> RequestData` (`harness.bp`) | a `GET` `RequestData` for `path` with no params, query, headers or cookies — the value onze would build from rakun's `Request` |
 | `fixturePageOver(path, shell: Element, child: fn() -> @Component<Element>) -> PageInput` (`harness.bp`) | a `PageInput` over one root segment whose page is `shell` with one boundary over `child`, build id `build-0001` |
 | `renderToStream(shell: Element, boundaries: Array<Boundary>) -> @Future<Array<string>>` (`harness.bp`) | `[shellHtml(shell)] ++ [fillHtml(await resolve(b), "") …]` in **declaration** order, no plugin — the harness has no scheduler; completion order is front 30's `render_test.bp` |
@@ -866,7 +868,7 @@ test "render: the payload is one script assigning the registry's global" {
 ```
 
 The remaining render cases map one-to-one onto rakun's § 23 cases, with the markers and globals of
-decision 113 — each asserts the document through `assertDocument` over `render(app([]), input)`:
+decision 113 — each asserts the document through `assertDocument` over what `render(app([]), input, req, res)` wrote, or the response through `assertResponse` over `renderRecorded`:
 
 | Case | Asserts |
 |---|---|
@@ -874,7 +876,10 @@ decision 113 — each asserts the document through `assertDocument` over `render
 | `render: layouts nest root-first and the page is innermost` | `compose` order over a two-layout chain |
 | `render: one segment holding all six conventions nests layout template error loading not-found page` | `data-jh-t`, `data-jh-e`, `data-jh-h`, `data-jh-n` in that nesting |
 | `render: a segment without a template contributes no wrapper` | no `data-jh-t` |
-| `render: a nested not-found boundary wins over the root one` | outcome `nav:not-found`, the nearest `not-found` markup |
+| `render: a nested not-found boundary wins over the root one` | `status 404`, the document's body the nearest `not-found` markup, `closed 1` |
+| `render: a redirect before the first chunk is a 307` | `status 307`, `header location: /login`, `chunks 0`, `closed 1` |
+| `render: a layout's redirect stops the page` | the same 307, and the page's marker stays empty |
+| `render: an unlisted absolute redirect fails the render` | the future's error names the target; `status 200` (never set), `chunks 0`, `closed 1` |
 | `render: a param from the url is escaped on the way into the document` | `&lt;script&gt;` in the body, the escaped `m` in the payload |
 | `render: a three-deep layout chain receives depths 0 1 2` | `selected` per layout |
 | `render: fills are handed over in completion order` | two boundaries resolving in reverse order reach `write` as `h2` then `h1` |
@@ -922,7 +927,7 @@ test "bridge: a streamed boundary carries its style first, inside the fill" {
 | `bridge: the contract-4 class literal` | the fixed token list of `contracts.md § 4` renders the same literal hex class emilia's `modules/emilia/test/attributes_test.bp` asserts without HTML — jhonstart core cannot import emilia, so this is where the rendered document and emilia's class meet |
 
 The class names in the snapshot above are placeholders until front 56 fixes the body being hashed;
-`renderStreamCollect` is the harness helper that passes a collecting `write` (`fn(string) -> @Future<void>`) and a `RequestData` to `renderStream`.
+`renderStreamCollect` is the harness helper that passes a recording `Response` (front 30, decision 117) and a `RequestData` to `renderStream`.
 
 ---
 
@@ -983,7 +988,7 @@ test "boundary: a signal passes through uncaught" {
     try assertErrorBoundary(@src(), catchError("post", fallback, signallingPanel));
 }
 ```
-`__snapshots__/boundary/a-signal-passes-through-uncaught.snap` — it leaves front 30's render as the outcome onze turns into rakun's 404; the boundary never renders a fallback for it
+`__snapshots__/boundary/a-signal-passes-through-uncaught.snap` — it reaches front 30's render, which answers the 404 with the not-found document itself (decision 117); the boundary never renders a fallback for it
 ```
 outcome: error nav:not-found
 ```

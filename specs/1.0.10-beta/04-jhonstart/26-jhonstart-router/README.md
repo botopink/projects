@@ -2,13 +2,13 @@
 
 **Track:** C jhonstart
 **Priority:** critical — nothing downstream can ask "which route is this?"; `Link`, server components, streaming, error boundaries and metadata all read the answer this front produces
-**Target:** erlang (server)
+**Target:** erlang (server) · commonJS for `clientApp`, the client-only entry (decision 117)
 **Boundary:** the route snapshot is one of the three things `overview.md` says crosses. The server matches and fills it; the client rebuilds it from the payload (`globals.payload`, front 30) after a client navigation. The payload envelope and the route table are **not** defined here — they are front 30's and front 22's; this front consumes the envelope and imports the matcher from the compiler-bundled library `routing` (decision 115), which is neutral like std — jhonstart and rakun never import each other (decision 113), and both import `routing`.
 **Wave:** 3
-**Depends on:** 01 (`encoding.formParse` / `formStringify`) · `01-std/04-routing-lib` (`parseTable`, `matchPath`; Step 7's `navigation.signalFromWire`) · `01-std/05-actions-lib` (`refresh.refreshValue`) · 30 (payload envelope, read-only) · 94 (element builders used by the examples)
-**Owns:** `repository/jhonstart/src/router.bp` (promoted from `router.d.bp`, and the package's one `pairValue` pair-list decoder), `repository/jhonstart/test/router_test.bp`
+**Depends on:** 01 (`encoding.formParse` / `formStringify`; `json.decode` for the payload `clientApp` reads — decision 117 rule 7) · `01-std/04-routing-lib` (`parseTable`, `matchPath`; Step 7's `navigation.signalFromWire` / `isSignalReason` / `signalFromReason`) · `01-std/05-actions-lib` (`refresh.refreshValue`) · 30 (payload envelope, read-only; the `Response` translation `clientApp` mirrors) · 31 (`notFound` / `redirect`, the not-found boundary) · 94 (element builders used by the examples)
+**Owns:** `repository/jhonstart/src/router.bp` (promoted from `router.d.bp`, and the package's one `pairValue` pair-list decoder; `clientApp` and its signal handling), `repository/jhonstart/test/router_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/link.bp` (front 27), `src/server.bp` (front 28), `src/root.bp` and `botopink.json` (front 94)
-**Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/api-reference/functions/use-router · https://nextjs.org/docs/app/api-reference/functions/use-params · https://nextjs.org/docs/app/api-reference/functions/use-search-params
+**Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/api-reference/functions/use-router · https://nextjs.org/docs/app/api-reference/functions/use-params · https://nextjs.org/docs/app/api-reference/functions/use-search-params · [decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only)
 
 ---
 
@@ -139,7 +139,9 @@ onze, and this front only calls it. The request carries the action header onze n
 the parsed result) or the envelope a `refresh()` answers, it reads the `n` field with `routing`'s
 `navigation.signalFromWire` (decision 116 rule 1) — `""` nothing, `"N"` the nearest not-found,
 `"R|307|/login"` a `replace` to `/login` — and navigates from that, never from a second copy of the
-grammar. A malformed `n` reads as `None`, so a bad field from the network cannot crash a render.
+grammar. The `n` of an action envelope is written by rakun's `redirect`: a server action's
+`redirect` is rakun's, a page's is jhonstart's (decision 117 rule 4), and the router reads both
+through the same codec without importing rakun. A malformed `n` reads as `None`, so a bad field from the network cannot crash a render.
 
 Native History API use is also supported: the browser half listens for `popstate` and for a
 `pushState` the application performs itself (`NEXTJS-DOCS.md § 8`, *History API nativa*), rebuilds
@@ -147,6 +149,47 @@ Native History API use is also supported: the browser half listens for `popstate
 payload's `t` key, and re-renders. Because the rebuild goes through the same matcher and the same
 `encoding.formParse`, `searchParams()` reacts to a bare `pushState` without a reload, without a
 second parser, and without a second precedence rule.
+
+### Client-only apps — `clientApp`
+
+An application with no server runs the same pages under this router alone (decision 117 rule 1):
+
+```bp
+import {clientApp} from "jhonstart";
+
+clientApp(routes: routeTable, mount: "#root", allowedRedirects: []).start();
+```
+
+```bp
+pub type ClientApp(routes: string, mount: string, allowedRedirects: string[])
+pub fn clientApp(routes: string, mount: string, allowedRedirects: string[] = []) -> ClientApp
+pub fn start(self: ClientApp) -> @Future<void>
+```
+
+`routes` is the route table in contract 1's wire (the text a server writes into the payload's
+`t`), parsed once with `routing`'s `parseTable`; `mount` is the selector of the element the app
+renders into, written through the one browser-only cell `__jhMount(selector, html)`; history moves
+through `__jhNavigate`. `start()` matches `window.location` with `matchPath`, renders the matched chain with
+front 30's `compose` into `mount`, and listens for the navigations of *The js half*. A page, layout
+or template is the same `#[@use] fn … -> @Component<Element>` it is with a server, and a navigation
+signal it raises is handled here, as front 30's render handles it on the server:
+
+| Raised | `clientApp` does |
+|---|---|
+| `notFound()` | renders the matched route's nearest not-found boundary (front 31) into `mount`; the URL does not change |
+| `redirect(to)`, relative | `history.replaceState` to `to` and a client navigation to it, no reload |
+| `redirect(to)`, absolute and listed | `location.replace(to)` |
+
+The target check is front 30's rule with the table `clientApp` was given: a relative target must be
+found by `matchPath` in `routes`, an absolute one must be listed in `allowedRedirects` (empty by
+default, so every absolute target is refused), and anything else fails the render — the failure is
+the error `start()` answers or the nearest error boundary's, never a navigation (decision 67). The
+late-signal markup a server stream carries (`__bp2`, front 30) calls the same handler, so a signal
+behaves identically whether it was raised in the browser or written by a server.
+
+A server-rendered app does not call `clientApp`: onze front 68's entry hydrates the server's
+document instead, reading the payload with `readPayload(globals.payload)` — decoded with std's
+`json.decode` (decision 117 rule 7) — and taking the table from its `t`.
 
 ### What crosses
 
@@ -327,6 +370,25 @@ Delete `router.d.bp`. front 94 owns `src/root.bp` and `botopink.json`'s `files` 
       `src/root.bp` nor `botopink.json`
 - [ ] `repository/jhonstart/AGENTS.md` records the promotion in the same commit
 
+### Step 6 — `clientApp` (decision 117)
+
+**Acceptance:**
+- [ ] `clientApp(routes, mount, allowedRedirects).start()` renders the route `window.location`
+      matches into `mount`, with the layouts before the page, on `--target commonJS`
+- [ ] a page raising `notFound()` renders the route's not-found boundary into `mount` and leaves
+      `location.pathname` unchanged
+- [ ] a page or layout raising `redirect("/login")`, with `/login` in `routes`, performs
+      `history.replaceState` and a client navigation to `/login` with no reload; a layout's
+      redirect means the page's function is never called
+- [ ] `redirect("/nowhere")` (not in `routes`) and `redirect("https://evil.example")` with
+      `allowedRedirects` empty fail the render and navigate nowhere; the same absolute target listed
+      in `allowedRedirects` is a `location.replace`
+- [ ] the late-signal function front 30 registers under `globals.signal` and `clientApp` share one
+      handler: a `data-jh-g="redirect"` template and a raised `redirect` with the same target take
+      the same path
+- [ ] `clientApp` reads the table with `routing`'s `parseTable` and matches with `matchPath`; it
+      defines neither
+
 ## Examples
 
 - [`examples/active-nav-example.bp`](./examples/active-nav-example.bp) — a sidebar that highlights
@@ -367,8 +429,10 @@ Assertions:
 4. Each hook returns the field it names, called directly (no `use` prefix) so the test runs in a
    plain `botopink test` process — the same technique `jhonstart-counter` uses for `StatefulBadge`.
 5. Each navigation verb is callable and returns.
+7. `clientApp` (Step 6) on `--target commonJS`: the rendered route, the two signals, the target
+   check against `routes` and `allowedRedirects`, and one handler for raised and late signals.
 
-The `commonJS` row is not this front's gate. The navigation cell builds for both, so its js body is
+The `commonJS` row is this front's gate for `clientApp` only. The navigation cell builds for both, so its js body is
 exercised by front 27's `test/link_test.bp` on the js target; this front's erlang row proves the
 snapshot and the hooks, which is what the server render needs. The `use`-prefixed call form is
 type-checked, not executed, exactly as `hooks.bp:104-117` does for `Counter`.
@@ -407,6 +471,9 @@ jhonstart names no rakun symbol (decision 113); the matcher is `routing`'s (deci
 - [ ] the router has no matcher and no table parser of its own; it imports both from `routing`
 - [ ] the router has no pair codec and no signal-wire decoder of its own: std `encoding` and
       `routing`'s `navigation` (decision 116)
-- [ ] no `#[@External.Node]`-only cell in the file; the one dual-target cell is `__jhNavigate`
+- [ ] one `#[@External.Node]`-only cell in the file, `__jhMount(selector, html)`, which `clientApp`
+      renders through; history goes through `__jhNavigate`, the one dual-target cell
+- [ ] `clientApp` handles `notFound` / `redirect` in a client-only app as front 30's render does on
+      the server, with the same target check (decision 117)
 - [ ] both language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target
