@@ -186,7 +186,7 @@ Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that i
 
 | Front | Module | Source it owns | Tests it owns |
 |---|---|---|---|
-| **F04 erlang-runtime** | rakun-core | `src/sidecars/rakun_runtime.erl`, `src/runtime.bp` (`#[@external(erlang)]` block only), `src/root.bp`, `botopink.json` (the `targets` array only — the `files` list is `02-packaging`'s) · `test/erlang_runtime_test.bp` | `test/erlang_runtime_test.bp` |
+| **F04 erlang-runtime** | rakun-core | `src/sidecars/rakun_runtime.erl`, `src/runtime.bp` (the `#[@external(erlang)]` block, and the removal of the Node forms when it closes), `src/runtime.mjs` (its deletion), `src/root.bp`, `botopink.json` (the `targets` array only — the `files` list is `02-packaging`'s) · `test/erlang_runtime_test.bp` | `test/erlang_runtime_test.bp` |
 | **F05 config-profiles** | rakun-core | `src/config.bp`, `src/profiles.bp`, `src/sidecars/rakun_config.erl` · `test/config_test.bp` | `test/config_test.bp` |
 | **F06 context-api** | rakun-core | `src/context.bp`, `src/events.bp`, `src/lifecycle.bp`, `src/rakun.d.bp` (removal of the `Context` stub only), `src/sidecars/rakun_context.erl` · `test/context_test.bp`, `test/events_test.bp` | `test/context_test.bp`, `test/events_test.bp` |
 | **F07 middleware** | rakun-web | `modules/rakun-web/src/middleware.bp`, `cors.bp`, `error.bp`, `filter.bp`, `convention.bp` · `modules/rakun-web/test/middleware_test.bp`, `cors_test.bp`, `error_test.bp` | `modules/rakun-web/test/middleware_test.bp`, `cors_test.bp`, `error_test.bp` |
@@ -206,7 +206,7 @@ Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that i
 | **F21 hateoas** | rakun-hateoas | `modules/rakun-hateoas/src/**`, `modules/rakun-hateoas/test/**` | `modules/rakun-hateoas/test/**` |
 | **F22 file-routing** | rakun-core | `src/file_router.bp`, `src/file_router.mjs`, | `test/file_router_test.bp` |
 | **F23 ssr-pipeline** | rakun-core | `src/ssr.bp` (page serving: route → the render function onze hands → chunks), `src/sidecars/rakun_ssr.erl` | `test/ssr_test.bp` |
-| **F24 server-actions** | rakun-core | `src/actions.bp`, `src/actions.mjs`, | `test/actions_test.bp` |
+| **F24 server-actions** | rakun-core | `src/actions.bp` (the action id, the envelope, dispatch — the form markup is F67's) | `test/actions_test.bp` |
 | **F25 route-handlers** | rakun-core | `src/route_handler.bp`, `test/route_handler_test.bp` | `test/route_handler_test.bp` |
 
 | **F60 static-generation** | rakun-core | `src/static_gen.bp`, `src/segment_config.bp`, | `test/static_gen_test.bp` |
@@ -266,10 +266,10 @@ Front 22 also owns the host registration cell that puts a route handler into the
 (`rkAppRegisterHandler`, generic over the response type). That is what keeps front 25 free of host
 cells and true to its single-file ownership below.
 
-Four files in `repository/rakun/src/` are **frozen for the whole milestone**: `decorators.bp`,
-`http.bp`, `bootstrap.bp`, `runtime.mjs`. A front that believes it needs one of them stops and says
-so in its README under *Blocked*; it does not edit them. The exception is F04, which appends an
-`#[@external(erlang)]` block to `runtime.bp` and touches nothing else in that file.
+Three files in `repository/rakun/src/` are **frozen for the whole milestone**: `decorators.bp`,
+`http.bp`, `bootstrap.bp`. A front that believes it needs one of them stops and says so in its
+README under *Blocked*; it does not edit them. `runtime.mjs` is F04's to delete when it closes
+(decision 113); until then no other front edits it.
 
 ### Track C — jhonstart (`repository/jhonstart/`) — `04-jhonstart/`
 
