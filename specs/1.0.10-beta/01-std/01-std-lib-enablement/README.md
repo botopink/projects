@@ -453,11 +453,11 @@ front that needs them split on both targets is asking for a redirect through a t
 say so rather than assume.
 
 **Acceptance:**
-- [ ] `process.run("echo", ["hi"])` answers `Ok` with `status == 0` and `stdout` starting `hi`, on both targets
-- [ ] `process.run("definitely-not-a-binary", [])` answers an `Error` rather than crashing the caller
-- [ ] a non-zero exit is an `Ok` carrying that status, not an `Error` — the process ran, it just failed
-- [ ] `process.runShell("exit 3")` is documented as status-losing on Erlang (`os:cmd/1` answers output only) and the docblock says so
-- [ ] the five existing `process` functions are byte-unchanged
+- [x] `process.run("echo", ["hi"])` answers `Ok` with `status == 0` and `stdout` starting `hi`, on both targets
+- [x] `process.run("definitely-not-a-binary", [])` answers an `Error` rather than crashing the caller
+- [x] a non-zero exit is an `Ok` carrying that status, not an `Error` — the process ran, it just failed
+- [x] `process.runShell("exit 3")` is documented as status-losing on Erlang (`os:cmd/1` answers output only) and the docblock says so
+- [x] the five existing `process` functions are byte-unchanged
 
 ### Step 9 — `io/net.bp`
 
