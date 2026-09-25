@@ -193,14 +193,14 @@ node refused. Lands before the tree, so every consumer can write the new lines a
 modules and the sweep of step 5 is one edit per file.
 
 **Acceptance:**
-- [ ] `import {collections.Dict, io: {fs: {readText as read}, clock: {nowMillis}}, collections: {ArraySets*}} from "std";`
+- [x] `import {collections.Dict, io: {fs: {readText as read}, clock: {nowMillis}}, collections: {ArraySets*}} from "std";`
       parses, binds `Dict`, `read`, `nowMillis`, activates `ArraySets`, and runs on four targets
       (against step 2's tree; against the flat tree, the same shape over `dict.Dict`)
-- [ ] `import {url.parse, json.parse}` is `import-name-collision` at the second item;
+- [x] `import {url.parse, json.parse}` is `import-name-collision` at the second item;
       `import {url.parse as parseUrl, json: {parse as parseJson}}` compiles; `import {io* : {fs}}` is
       a parse error; `import {main as mainTag} from "jhonstart"` binds `mainTag` (the
       `language-gaps.md` alias row closes here)
-- [ ] `import {html: {Element, tag}, router.pathname};` inside jhonstart (no `from`) resolves against
+- [x] `import {html: {Element, tag}, router.pathname};` inside jhonstart (no `from`) resolves against
       the package root; the LSP resolves the same tree (`project_graph.zig`), one `lsp/` snapshot per
       spelling
 - [ ] `docs.md:756`'s grammar replaced; `src/parser/AGENTS.md` in the same commit; no existing
