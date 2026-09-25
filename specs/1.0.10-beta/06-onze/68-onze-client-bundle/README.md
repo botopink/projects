@@ -302,9 +302,9 @@ invent a marker; it consumes that one. The entry:
    payload.h)`, so front 30's `<template data-jh-f="h1">…</template><script>__bp1("h1")</script>`
    has a function to call when a late chunk lands,
 6. registers the signal function under `globals.signal` (`__bp2`) with
-   `registerSignal(globals.signal)`, so a navigation signal front 30 writes after the first chunk
-   (`<template data-jh-g="…">…</template><script>__bp2()</script>`, decision 115) has a function to
-   call, and hands it `OnzeConfig.allowedRedirects` — the list front 49 passes to `app(…)` on the
+   `registerSignal(globals.signal, allowedRedirects: …)`, so a navigation signal front 30 writes
+   after the first chunk (`<template data-jh-g="…">…</template><script>__bp2()</script>`, decision
+   115) has a function to call; the list it hands is `OnzeConfig.allowedRedirects` — the list front 49 passes to `app(…)` on the
    server, so a redirect the client router raises is checked against the same list (decision 117).
    The entry reads no signal itself: jhonstart's client acts on it. The entry builds no matcher and hands the router nothing: front 26's router reads the
    payload's `t` and matches with the bundled library `routing` itself,
