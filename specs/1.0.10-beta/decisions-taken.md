@@ -49,7 +49,7 @@ what was left, now `00-compiler-carry-over`'s order),
 | [106](#106-std-in-three-categories-a-pure-root-io-and-testing) | The shape of std | Pure root · `io/` · `testing/`; a root module imports nothing from `io/`; merge only where the name wins (`collections`, `hash`, `encoding`); 71 amended in path only |
 | [107](#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope) | Import grammar | `import {a: {b: {c}}, x.y.z, e.t.r*}` — dotted path and braced group are one tree; only the leaf enters scope; `*` / `as` on the leaf; no `from` = the package root |
 | [108](#108-getcontex--getcontext) | `getContex` | Renamed `getContext` (99-a) |
-| [109](#109-the-declaration-boundary-in-a-module-atom-is--and-the-declaration-keeps-its-case) | How is a per-declaration BEAM module named? | `<path>@@<Decl>` — `@@` is the boundary, the path stays lowercase, the declaration keeps its case, and `@@` chains (`pond@@Pato@@Swimmer`); A2's `__t__`/`__b__` qualifiers leave |
+| [109](#109-the-declaration-boundary-in-a-module-atom-is--and-the-declaration-keeps-its-case) | How is a per-declaration BEAM module named? | `<path>@@<Decl>` — `@@` is the boundary, the path stays lowercase, the declaration keeps its case (`pond@@PatoNada` for `val PatoNada = implement …`); A2's `__t__`/`__b__` qualifiers leave |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -924,14 +924,16 @@ boundary token:
 ```
 atom(module)       = lowercase(path), '/' → '@', [^a-z0-9_@] → '_'     (option A, unchanged)
 atom(decl)         = atom(module) ++ "@@" ++ <Decl>                      (case kept)
-atom(implement)    = atom(module) ++ "@@" ++ <Type> ++ "@@" ++ <Behavior>
 ```
+
+`<Decl>` is the declaration's own name: a `type`'s, or the `val` an `implement` is bound to.
 
 | Source | Atom |
 |---|---|
 | `type SourceLocation` in `src/main.bp` | `main@@SourceLocation` |
 | `type File` in `src/io/fs.bp` | `io@fs@@File` |
-| `implement Swimmer for Pato` in `src/pond.bp` | `pond@@Pato@@Swimmer` |
+| `val PatoNada = implement Swimmer for Pato { … }` in `src/pond.bp` | `pond@@PatoNada` |
+| `type Pato(…) implement Swimmer { … }` (inline clause) | `pond@@Pato` — the clause belongs to the type's module |
 
 Three properties decide it, each measured against the A2 spelling it replaces:
 
@@ -944,9 +946,12 @@ Three properties decide it, each measured against the A2 spelling it replaces:
    was written for. `main@@SourceLocation` is still a legal *unquoted* atom: it starts with a
    lowercase letter and holds only `[a-zA-Z0-9_@]` (E10). The module half stays lowercase because
    it is also a directory and file name.
-3. **It chains.** An `implement` block is a module under policy 3 and A2 had no qualifier for it;
-   each `@@` descends one declaration. A behavior module, if decision 23 is ever reopened, is
+3. **One rule for every declaration kind.** An `implement` block is a module under policy 3 and A2
+   had no qualifier for it; under 109 it is named by the `val` that binds it, like a `type` is
+   named by its own name. A behavior module, if decision 23 is ever reopened, is
    `<path>@@<Behavior>` like everything else, so the `__b__` reservation has nothing left to do.
+   Should the language ever nest a declaration inside another, each `@@` descends one level;
+   no construct does today.
 
 What it does **not** change: option A for the module half; decision 6's flat `out/erl/` and
 `out/beam/` (the file is still the atom: `io@fs@@File.erl`, and `@` was already in file names);
