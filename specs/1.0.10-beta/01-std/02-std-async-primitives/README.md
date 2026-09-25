@@ -8,9 +8,11 @@ trips deep before it renders its first byte
 **Depends on:** none
 **Owns:** `src/async.bp` — at the pure root (decision 106): combinators over `@Future`, no I/O of its own
 **Does not touch:** every other std module, including `io/http.bp` — this front adds combinators over
-`@Future`, it does not change what produces one. `src/root.bp` belongs to front 01; this front hands
-it the line `pub mod async;` and lands first. `00-compiler-carry-over/23-std-purity` moves nothing of
-this front's.
+`@Future`, it does not change what produces one. `src/root.bp` belongs to front 01; this front lands
+first and its commit appends the one line `pub mod async;` there, because a module `root.bp` does not
+name is not embedded and its inline tests never run (measured before step 1 — see § Step 6). Front
+01's `root.bp` commit inherits the line. `00-compiler-carry-over/23-std-purity` moves nothing of this
+front's.
 **Reference:** `NEXTJS-DOCS.md § 9. Busca de Dados (Fetching)` · [Fetching Data — parallel](https://nextjs.org/docs/app/getting-started/fetching-data) · [`Promise.all`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all) · [`Promise.allSettled`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled) · [Erlang processes](https://www.erlang.org/doc/system/ref_man_processes.html)
 
 ---
@@ -33,7 +35,20 @@ tasks**, not started futures.
 
 ## Current state
 
-- **No `async.bp`.** `libs/std/src/root.bp:13-36` lists twenty-four modules and none of them is it.
+- **`src/async.bp` exists** on `std/02-async-primitives` (505 lines): both surfaces, the two
+  instruments (`delay`, `failed`), `timeout`, the public reader `errorText` (the `Error` side of a
+  settled element — `@Result` has no builtin for it, and a caller that can see *that* a widget failed
+  but never *why* is the shape decision 67 refuses), and 25 inline tests — `botopink test [--target
+  erlang] --filter async` reads `25 passed, 0 failed` on both rows. `root.bp` names it as its
+  twenty-fifth module and `libs/std/AGENTS.md` names the file. Every acceptance box below is ticked
+  against that file. Still open: the merge into `feat`, which front 01's `root.bp` commit follows.
+- **`allOf`/`all` do not stop at the first failure** the way `Promise.all` does: every task is
+  settled and the one rejection names every task that failed (`async.allOf: 2 of 3 tasks failed: [0]
+  down; [2] boom`), through a private `unwrapAll` cell shared by both surfaces. `raceOf` re-raises a
+  winning failure and drops a loser's — the one loss in the module, asserted by its own test.
+- **The erlang cells tag every reply with a `make_ref()` unique to the call**, so an expired
+  `timeout` task or a `raceOf` loser that answers later cannot land in a later combinator's gather in
+  the same process — pinned by `async: timeout ---- an expired task cannot corrupt a later answer`.
 - **`@Future<T>` exists and works.** `#[@future]` marks the function, `await` unwraps inside it
   (`docs.md:530`; real use at `repository/emilia/src/emilia.bp:62-65`), and `await` is legal directly
   inside a `test` block (`emilia.bp:475-480`).
@@ -104,10 +119,10 @@ pub declare fn failed<T>(message: string) -> @Future<T>;
 ```
 
 **Acceptance:**
-- [ ] `await delay(20, "x")` answers `"x"` on both targets
-- [ ] the call takes at least 20 monotonic milliseconds on both targets
-- [ ] `delay` type-checks with `T` bound to a record as well as to a `string`
-- [ ] `failed("down")` inside a `settleOf` answers an `Error` element rather than taking the suite down, on both targets
+- [x] `await delay(20, "x")` answers `"x"` on both targets
+- [x] the call takes at least 20 monotonic milliseconds on both targets
+- [x] `delay` type-checks with `T` bound to a record as well as to a `string`
+- [x] `failed("down")` inside a `settleOf` answers an `Error` element rather than taking the suite down, on both targets
 
 ### Step 2 — `allOf`, the concurrent form
 
@@ -127,10 +142,10 @@ another task's slot. A task that never answers blocks the gather — that is wha
 is for.
 
 **Acceptance:**
-- [ ] `allOf` of three tasks delaying 60, 20 and 40 ms answers `["a", "b", "c"]` in input order on both targets
-- [ ] the whole call completes in under 120 ms on both targets — proving it did not run them serially
-- [ ] `allOf([])` answers `[]` rather than blocking
-- [ ] a task that throws fails the call on both targets, and the error reaches the caller's `catch`
+- [x] `allOf` of three tasks delaying 60, 20 and 40 ms answers `["a", "b", "c"]` in input order on both targets
+- [x] the whole call completes in under 120 ms on both targets — proving it did not run them serially
+- [x] `allOf([])` answers `[]` rather than blocking
+- [x] a task that throws fails the call on both targets, and the error reaches the caller's `catch`
 
 ### Step 3 — `settleOf` and `raceOf`
 
@@ -147,10 +162,10 @@ pub declare fn raceOf<T>(tasks: Array<fn() -> @Future<T>>) -> @Future<T>;
 ```
 
 **Acceptance:**
-- [ ] `settleOf` of one succeeding and one failing task answers a two-element array with one `Ok` and one `Error`, in input order, on both targets
-- [ ] `settleOf` never propagates a failure to its caller
-- [ ] `raceOf` of tasks delaying 80 and 10 ms answers the 10 ms one on both targets — the assertion the future-surface `race` cannot make
-- [ ] `raceOf([])` answers an error rather than blocking forever
+- [x] `settleOf` of one succeeding and one failing task answers a two-element array with one `Ok` and one `Error`, in input order, on both targets
+- [x] `settleOf` never propagates a failure to its caller
+- [x] `raceOf` of tasks delaying 80 and 10 ms answers the 10 ms one on both targets — the assertion the future-surface `race` cannot make
+- [x] `raceOf([])` answers an error rather than blocking forever
 
 ### Step 4 — the future surface, with its erlang behaviour written down
 
@@ -165,10 +180,10 @@ pub declare fn all<T>(futures: Array<@Future<T>>) -> @Future<Array<T>>;
 ```
 
 **Acceptance:**
-- [ ] `all` answers results in input order on both targets
-- [ ] `allSettled` answers one `@Result` per input on both targets and never fails
-- [ ] `race` answers the fastest on commonJS and element zero on erlang, and BOTH behaviours are asserted by the test file rather than one being treated as a bug
-- [ ] the module docblock states the erlang divergence, and each of the three functions repeats it in its own comment
+- [x] `all` answers results in input order on both targets
+- [x] `allSettled` answers one `@Result` per input on both targets and never fails
+- [x] `race` answers the fastest on commonJS and element zero on erlang, and BOTH behaviours are asserted by the test file rather than one being treated as a bug
+- [x] the module docblock states the erlang divergence, and each of the three functions repeats it in its own comment
 
 ### Step 5 — `timeout`
 
@@ -176,14 +191,20 @@ pub declare fn all<T>(futures: Array<@Future<T>>) -> @Future<Array<T>>;
 // `Ok(value)` when the task answered inside the budget, `Error("timeout")` when
 // it did not. The task keeps running; the caller stops waiting.
 #[@future]
-pub fn timeout<T>(task: fn() -> @Future<T>, millis: i32, fallback: T) -> @Future<@Result<T, string>>;
+pub fn timeout<T>(task: fn() -> @Future<T>, millis: i32) -> @Future<@Result<T, string>>;
 ```
 
+No `fallback` parameter: the answer is already a `@Result`, so the fallback is the caller's
+`unwrapOr`, and a third outcome is kept rather than folded — a task that fails *inside* the budget
+answers `Error(<its own message>)`, not `Error("timeout")`. The 50 ms budget is asserted as `elapsed
+< 150` rather than a tighter bound because the suite runs under `zig build test-libs` beside every
+other library's cells.
+
 **Acceptance:**
-- [ ] a 10 ms task under a 100 ms budget answers `Ok`
-- [ ] a 200 ms task under a 50 ms budget answers `Error("timeout")` in roughly 50 ms, on both targets
-- [ ] the timed-out task's later completion does not corrupt the caller's answer
-- [ ] `timeout` is expressed over `raceOf` + `delay` rather than a third host cell
+- [x] a 10 ms task under a 100 ms budget answers `Ok`
+- [x] a 200 ms task under a 50 ms budget answers `Error("timeout")` in roughly 50 ms, on both targets
+- [x] the timed-out task's later completion does not corrupt the caller's answer
+- [x] `timeout` is expressed over `raceOf` + `delay` rather than a third host cell
 
 ### Step 6 — export line and docs
 
@@ -191,10 +212,14 @@ pub fn timeout<T>(task: fn() -> @Future<T>, millis: i32, fallback: T) -> @Future
 listing gains `async.bp`. The module stays at the root of the tree in `../modules.md`.
 
 **Acceptance:**
-- [ ] `import {async} from "std";` resolves from a consumer package — `async` is not a keyword
-      (`modules/compiler-core/src/lexer.zig:721-767`), so the module name is legal
-- [ ] `libs/std/AGENTS.md` names the file in the same commit that adds it
-- [ ] front 01's `root.bp` commit carries the line
+- [x] `import {async} from "std";` resolves from a consumer package — `async` is not a keyword
+      (`modules/compiler-core/src/lexer.zig:721-767`), so the module name is legal; measured with a
+      scratch package (`"dependencies": {}`) calling `async.allOf`, `async.delay`, `async.timeout`
+      and `async.errorText`, 2 tests green on commonJS and erlang
+- [x] `libs/std/AGENTS.md` names the file in the same commit that adds it
+- [x] `root.bp` carries the line — in THIS front's commit, not front 01's: measured before step 1,
+      a module `root.bp` does not name is not embedded in the std build and `botopink test --filter
+      async` runs zero tests. Front 01's `root.bp` commit inherits it.
 
 ## Examples
 
