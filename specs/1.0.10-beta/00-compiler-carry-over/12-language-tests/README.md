@@ -213,6 +213,13 @@ Write them, one commit per capability group, each run on every target it declare
 3. **`@panic` / `@todo`** — a `run/` cell asserting stdout **and** a non-zero exit.
 4. **"no external target for the active backend"** — a `run/` cell on one target, per
    [P4](#p4--the-capabilities-no-cell-reaches).
+5. **DSL hygiene** ([decision 112](../../decisions-taken.md)) — three `run/` cells over one local
+   library `shapesdsl` whose template writes `e.build("double(" + e.text() + ")")` with `double`
+   **private** to the library: `shapesdsl "area(4, 5)"` with `{area}` imported; the same through
+   `{area as surface}` and `shapesdsl "surface(4, 5)"`; and a consumer that declares its own
+   `fn double(x: i32) -> i32 { return x + 1; }`. Each prints **40** (today: unbound, unbound, 21). No
+   `reject/` cell. Until [`01-checker`](../01-checker/README.md) step 14 lands, the three are
+   expected failures against it.
 
 **Acceptance:**
 - [ ] `zig build test-language` green, with the new cells, on every target each declares
