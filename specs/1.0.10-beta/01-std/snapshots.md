@@ -100,7 +100,7 @@ pub fn pathNamed(loc: SourceLocation, name: string) -> string
 pub fn suiteOf(testName: string) -> string        // "" when there is no ": "
 pub fn slugOf(text: string) -> string             // the slugify rule
 
-// The four entry points. All `#[@result]`, all `-> @Result<void, string>`.
+// The four entry points. All `-> @Result<void, string>`.
 pub fn assert(loc: SourceLocation, actual: string)                              // subject "text"
 pub fn assertAs(loc: SourceLocation, subject: string, actual: string)           // what a <lib>-test helper calls
 pub fn assertNamed(loc: SourceLocation, name: string, actual: string)           // two snapshots in one test
@@ -108,7 +108,7 @@ pub fn assertNamedAs(loc: SourceLocation, name: string, subject: string, actual:
 ```
 
 `assert`, `assertAs` and `assertNamed` are three-line wrappers over `assertNamedAs` — the same
-`try inner(); return;` shape every `-test` helper uses, because `return r` inside a `#[@result]`
+`try inner(); return;` shape every `-test` helper uses, because `return r` inside a `@Result`-returning
 body re-wraps (`language-gaps.md`).
 
 **Host cells — private, Node and Erlang.** A std module cannot call another std module, so
@@ -146,7 +146,6 @@ import {tokensToCss, emilia, Token} from "emilia";
 
 // The CSS a token list lowers to. `tokensToCss` must be `pub` in emilia core
 // (today it is private, `emilia.bp:102`) — a one-line change track D owns.
-#[@result]
 pub fn assertCss(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
     val css = tokensToCss(tokens);
     try snapshots.assertAs(loc, "css", css);
@@ -155,7 +154,6 @@ pub fn assertCss(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> 
 
 // The whole utility: class name + rule. The class is content-derived (contract 4),
 // so the body is stable across runs and targets for ASCII rule bodies.
-#[@result]
 pub fn assertUtility(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
     val cls = emilia(tokens);
     val css = tokensToCss(tokens);
@@ -208,10 +206,9 @@ file. The `.new` files a red run leaves behind are the review artefact; a green 
 ### 1 · `assertJsSingle(@src(), \\ …)` — a `\\` line-string source, snapshotted as JavaScript
 
 ```bp
-test "js: future ---- an async fn returns its argument" {
+test "js: task ---- an async fn returns its argument" {
     try assertJsSingle(@src(),
-        \\#[@future]
-        \\fn fetch(x: i32) -> @Future<i32> {
+        \\fn fetch(x: i32) -> @Task<i32> {
         \\    return x;
         \\}
     );
@@ -219,13 +216,13 @@ test "js: future ---- an async fn returns its argument" {
 ```
 
 `loc.file` is `test/codegen_test.bp`, say. `path(loc)` =
-`test/__snapshots__/js/future_an_async_fn_returns_its_argument.snap`, and the file recorded is —
+`test/__snapshots__/js/task_an_async_fn_returns_its_argument.snap`, and the file recorded is —
 body taken from the compiler's own fixture for the same source
 (`snapshots/codegen/commonJS/effect_annotation_future_iterator_asyncgenerator_result.snap.md`):
 
 ```
 botopink-snap 1
-test: js: future ---- an async fn returns its argument
+test: js: task ---- an async fn returns its argument
 subject: js
 
 async function fetch(x) {

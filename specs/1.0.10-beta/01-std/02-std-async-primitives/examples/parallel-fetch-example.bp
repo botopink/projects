@@ -10,17 +10,17 @@
 //
 // SERVER SIDE. This runs on the erlang target with the rest of the render half.
 // The `*Of` combinators take UNSTARTED tasks — `{ -> fetchBody(url) }` closures
-// rather than `fetchBody(url)` calls — because `@Future<T>` lowers eagerly on
+// rather than `fetchBody(url)` calls — because `@Task<T>` lowers eagerly on
 // erlang: a future that is already a value cannot be run in parallel with
 // anything. See the README's Mechanism section.
 
 import {async, io: {http, clock}} from "std";
 
-// One read. An ordinary `#[@future]` fn: a live Promise on commonJS, an
-// already-resolved value on erlang.
-#[@future]
-fn fetchBody(url: string) -> @Future<string> {
-    val resp = await http.fetch(url);
+// One read. A `@Task<@Result<…>>` return: a live Promise on commonJS, an
+// already-resolved value on erlang. The read can fail, so the failure is inside
+// the value; `try await` propagates the fetch's own `Error`.
+fn fetchBody(url: string) -> @Task<@Result<string, string>> {
+    val resp = try await http.fetch(url);
     return resp.body;
 }
 
@@ -30,9 +30,8 @@ fn fetchBody(url: string) -> @Future<string> {
 //
 // LANGUAGE GAP: no array destructuring in a binding — `val [users, posts, stats]
 // = parts;` does not parse. Read positionally with `.at(i).unwrapOr(…)`.
-#[@future]
-pub fn dashboardBody() -> @Future<string> {
-    val parts = await async.allOf([
+pub fn dashboardBody() -> @Task<@Result<string, string>> {
+    val parts = try await async.allOf([
         { -> fetchBody("https://api.example.com/users") },
         { -> fetchBody("https://api.example.com/posts") },
         { -> fetchBody("https://api.example.com/stats") },
@@ -44,9 +43,9 @@ pub fn dashboardBody() -> @Future<string> {
 }
 
 // Two optional widgets from two independent services. `settleOf` never fails:
-// each element is an `@Result`, so the page renders whichever answered.
-#[@future]
-pub fn widgetStrip() -> @Future<string> {
+// each element is the task's own `@Result`, so the page renders whichever
+// answered. Nothing propagates, so the return is a plain `@Task<string>`.
+pub fn widgetStrip() -> @Task<string> {
     val settled = await async.settleOf([
         { -> fetchBody("https://a.example.com/widget") },
         { -> fetchBody("https://b.example.com/widget") },
@@ -59,8 +58,7 @@ pub fn widgetStrip() -> @Future<string> {
 // `raceOf` can make that promise because the tasks are unstarted when it
 // receives them; the future-surface `race` cannot, and no server function here
 // uses it.
-#[@future]
-pub fn fastestMirror() -> @Future<string> {
+pub fn fastestMirror() -> @Task<@Result<string, string>> {
     return await async.raceOf([
         { -> fetchBody("https://mirror-a.example.com/asset") },
         { -> fetchBody("https://mirror-b.example.com/asset") },
@@ -70,8 +68,8 @@ pub fn fastestMirror() -> @Future<string> {
 // A report service that is sometimes slow. Two seconds is the page's whole
 // budget for it; past that the section renders a placeholder and the page still
 // ships. The task keeps running — there is no cancellation in botopink today.
-#[@future]
-pub fn reportSection() -> @Future<string> {
+// `answered` is the task's own `@Result` with the timeout's `Error` joined in.
+pub fn reportSection() -> @Task<string> {
     val answered = await async.timeout(
         { -> fetchBody("https://slow.example.com/report") },
         2000,
@@ -80,16 +78,17 @@ pub fn reportSection() -> @Future<string> {
     return answered.unwrapOr("<p>report unavailable</p>");
 }
 
-// The whole page: the required reads and the optional ones, all started
-// together. Four tasks, one round trip's worth of latency.
-#[@future]
-pub fn renderDashboard() -> @Future<string> {
-    val sections = await async.allOf([
-        { -> dashboardBody() },
+// The whole page: the optional sections started together, then the required
+// reads (three tasks started together themselves). The optional ones never
+// fail, so their `allOf` answers `@Task<Array<string>>`; the required one is the
+// only error that reaches the page.
+pub fn renderDashboard() -> @Task<@Result<string, string>> {
+    val optional = await async.allOf([
         { -> widgetStrip() },
         { -> reportSection() },
     ]);
-    return sections.join("");
+    val body = try await dashboardBody();
+    return body + optional.join("");
 }
 
 // ── tests ────────────────────────────────────────────────────────────────────
@@ -127,7 +126,7 @@ test "raceOf answers the fastest task" {
 
 test "settleOf keeps one slot per input and never fails" {
     val settled = await async.settleOf([
-        { -> async.delay(10, "ok") },
+        { -> async.delay(10, Ok("ok")) },
         { -> async.failed("down") },
     ]);
     assert settled.length == 2;

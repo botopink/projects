@@ -6,9 +6,9 @@ trips deep before it renders its first byte
 **Target:** both — std is the floor under both halves
 **Wave:** 0
 **Depends on:** none
-**Owns:** `src/async.bp` — at the pure root (decision 106): combinators over `@Future`, no I/O of its own
+**Owns:** `src/async.bp` — at the pure root (decision 106): combinators over `@Task`, no I/O of its own
 **Does not touch:** every other std module, including `io/http.bp` — this front adds combinators over
-`@Future`, it does not change what produces one. `src/root.bp` belongs to front 01; this front lands
+`@Task`, it does not change what produces one. `src/root.bp` belongs to front 01; this front lands
 first and its commit appends the one line `pub mod async;` there, because a module `root.bp` does not
 name is not embedded and its inline tests never run (measured before step 1 — see § Step 6). Front
 01's `root.bp` commit inherits the line. `00-compiler-carry-over/23-std-purity` moves nothing of this
@@ -24,9 +24,9 @@ site-wide stats writes three `await`s and pays for all three serially, which is 
 documents as the thing not to do. There is no `all`, no `allSettled`, no `race`, no timeout and no
 delay anywhere in std.
 
-`@Future<T>` **lowers eagerly on the erlang backend** — `libs/std/src/http.bp:16-18`: "Erlang is
-eager: `@Future<T>` resolves to `T` in the eager-lowering arm documented in `codegen/erlang.zig`, so
-the caller's `await fetch(url)` is identity on that backend." By the time an `Array<@Future<T>>`
+`@Task<T>` **lowers eagerly on the erlang backend** — `libs/std/src/http.bp:16-18`: "Erlang is
+eager: `@Task<T>` resolves to `T` in the eager-lowering arm documented in `codegen/erlang.zig`, so
+the caller's `await fetch(url)` is identity on that backend." By the time an `Array<@Task<T>>`
 reaches an `all` on erlang, every element has already run, in list order, serially. `all` over it is
 a map over finished values; `race` over it answers the first element rather than the fastest; a
 timeout over it cannot fire. On erlang — the target every server front in this milestone compiles
@@ -34,8 +34,6 @@ for — a surface over started futures buys nothing. The primary surface therefo
 tasks**, not started futures.
 
 ## Current state
-
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
 
 - **`src/async.bp` exists** on `std/02-async-primitives` (505 lines): both surfaces, the two
   instruments (`delay`, `failed`), `timeout`, the public reader `errorText` (the `Error` side of a
@@ -51,28 +49,32 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
 - **The erlang cells tag every reply with a `make_ref()` unique to the call**, so an expired
   `timeout` task or a `raceOf` loser that answers later cannot land in a later combinator's gather in
   the same process — pinned by `async: timeout ---- an expired task cannot corrupt a later answer`.
-- **`@Future<T>` exists and works.** `#[@future]` marks the function, `await` unwraps inside it
-  (`docs.md:530`; real use at `repository/emilia/src/emilia.bp:62-65`), and `await` is legal directly
-  inside a `test` block (`emilia.bp:475-480`).
+- **`await` works.** A `-> @Task<T>` return grants it and it unwraps inside the body (real use at
+  `repository/emilia/src/emilia.bp:62-65`), and `await` is legal directly inside a `test` block
+  (`emilia.bp:475-480`). `src/async.bp` and `http.bp` are still written in the effect spelling
+  decisions 118–128 replace; front 24 step E7 re-spells both over `@Task` — a fallible task is
+  `@Task<@Result<T, E>>`, `await` answers the `@Result` and `try await` propagates it — and settles the
+  shapes this front's signatures below are written in (its Notes, open point 3).
 - **The only std producer of a future is `http.fetch`** (`http.bp:55`). `emilia.flush()` is the only
   other one in the workspace.
 - **Node keeps the Promise live across `await`** (`http.bp:41-43`), so the commonJS lowering has real
   concurrency available to it.
-- **Erlang does not.** `http.bp:16-18`, quoted above. There is no `Task`, no `async/await`
+- **Erlang does not.** `http.bp:16-18`, quoted above. There is no lazy task, no `async/await`
   scheduler, and no cancellation surface anywhere in the language.
 
 ## Mechanism
 
 Two surfaces, and the README is explicit about which one a server front may rely on.
 
-**The task surface — `allOf`, `raceOf`, `settleOf` — takes `Array<fn() -> @Future<T>>`.** Because the
+**The task surface — `allOf`, `raceOf`, `settleOf` — takes `Array<fn() -> @Task<T>>`** (a task that
+can fail is `fn() -> @Task<@Result<T, E>>`, decision 120). Because the
 elements are unstarted, the erlang cell can start them: `spawn` one process per task, tag each by
 index, gather the replies into the original order. That is real BEAM concurrency, it is what the
 platform is good at, and it is what the server half of this milestone needs. The commonJS cell calls
 each thunk and hands the resulting Promises to `Promise.all`. Same semantics, both targets, actually
 concurrent on both.
 
-**The future surface — `all`, `allSettled`, `race` — takes `Array<@Future<T>>`** and exists for
+**The future surface — `all`, `allSettled`, `race` — takes `Array<@Task<T>>`** and exists for
 parity with the JavaScript the client half is written against. On commonJS it is `Promise.all` and
 friends. On erlang it is honest rather than concurrent: `all` is the identity map, `allSettled` wraps
 each already-resolved value in `Ok`, and `race` answers element zero. The module docblock says so and
@@ -99,25 +101,25 @@ could not carry the state. These templates can.
 The instrument first, because nothing after it is testable without a future of known duration.
 
 ```bp
-//// std/async — combinators over `@Future<T>`.
+//// std/async — combinators over `@Task<T>`.
 ////
 //// Two surfaces. `allOf`/`raceOf`/`settleOf` take UNSTARTED tasks and are
 //// concurrent on both targets. `all`/`allSettled`/`race` take started futures,
 //// are concurrent on commonJS, and are sequential on erlang because
-//// `@Future<T>` lowers eagerly there (`libs/std/src/http.bp:16-18`).
+//// `@Task<T>` lowers eagerly there (`libs/std/src/http.bp:16-18`).
 
-#[@future]
 #[@External.Node("""new Promise(__r => setTimeout(() => __r($1), $0))""")]
 #[@External.Erlang("""(fun(__M, __V) -> timer:sleep(__M), __V end)($0, $1)""")]
-pub declare fn delay<T>(millis: i32, value: T) -> @Future<T>;
+pub declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
 
-// The second instrument: a future that fails. `settleOf` and `timeout` cannot
+// The second instrument: a task that fails. `settleOf` and `timeout` cannot
 // be tested without one, and a test that reaches an unreachable host to get a
-// failure is a test that fails on a laptop with no network.
-#[@future]
+// failure is a test that fails on a laptop with no network. A `@Task` never
+// fails (decision 120): the failure is the `Error` inside it. The host boundary
+// turns the rejected Promise and the `{error, …}` tuple into that `Error`.
 #[@External.Node("""Promise.reject(new Error($0))""")]
-#[@External.Erlang("""erlang:error($0)""")]
-pub declare fn failed<T>(message: string) -> @Future<T>;
+#[@External.Erlang("""{error, $0}""")]
+pub declare fn failed<T>(message: string) -> @Task<@Result<T, string>>;
 ```
 
 **Acceptance:**
@@ -130,13 +132,13 @@ pub declare fn failed<T>(message: string) -> @Future<T>;
 
 ```bp
 // Run every task concurrently and answer their results in the ORDER OF THE
-// INPUT, not the order they finished. Fails the whole call if any task fails —
+// INPUT, not the order they finished. Answers `Error` if any task answers one —
 // `Promise.all` semantics, and the right default for a page that cannot render
-// without all of its data.
-#[@future]
+// without all of its data. Over infallible tasks the same combinator answers
+// `@Task<Array<T>>` (front 24 step E7 closes the pair).
 #[@External.Node("""Promise.all($0.map(__f => __f()))""")]
 #[@External.Erlang("""(fun(__Ts) -> __Me = self(), __N = length(__Ts), lists:foreach(fun(__I) -> spawn(fun() -> __Me ! {__I, (lists:nth(__I, __Ts))()} end) end, lists:seq(1, __N)), [receive {__I, __V} -> __V end || __I <- lists:seq(1, __N)] end)($0)""")]
-pub declare fn allOf<T>(tasks: Array<fn() -> @Future<T>>) -> @Future<Array<T>>;
+pub declare fn allOf<T, E>(tasks: Array<fn() -> @Task<@Result<T, E>>>) -> @Task<@Result<Array<T>, E>>;
 ```
 
 The erlang cell's collection loop receives by index, so a task that finishes first does not take
@@ -147,20 +149,18 @@ is for.
 - [x] `allOf` of three tasks delaying 60, 20 and 40 ms answers `["a", "b", "c"]` in input order on both targets
 - [x] the whole call completes in under 120 ms on both targets — proving it did not run them serially
 - [x] `allOf([])` answers `[]` rather than blocking
-- [x] a task that throws fails the call on both targets, and the error reaches the caller's `catch`
+- [x] a task that fails makes the call answer `Error` on both targets, and the error reaches the caller's `try … catch`
 
 ### Step 3 — `settleOf` and `raceOf`
 
 ```bp
-// Never fails. Each element is an `@Result<T, string>`, so a page can render the
-// widgets that answered and omit the ones that did not.
-#[@future]
-pub declare fn settleOf<T>(tasks: Array<fn() -> @Future<T>>) -> @Future<Array<@Result<T, string>>>;
+// Never fails. Each element is the task's own `@Result<T, E>`, so a page can render
+// the widgets that answered and omit the ones that did not.
+pub declare fn settleOf<T, E>(tasks: Array<fn() -> @Task<@Result<T, E>>>) -> @Task<Array<@Result<T, E>>>;
 
 // The first task to ANSWER, not the first in the list. The losers are left
 // running — there is no cancellation surface in botopink (see Language gaps).
-#[@future]
-pub declare fn raceOf<T>(tasks: Array<fn() -> @Future<T>>) -> @Future<T>;
+pub declare fn raceOf<T>(tasks: Array<fn() -> @Task<T>>) -> @Task<T>;
 ```
 
 **Acceptance:**
@@ -175,10 +175,9 @@ pub declare fn raceOf<T>(tasks: Array<fn() -> @Future<T>>) -> @Future<T>;
 // `Promise.all` parity for the client half. On erlang the futures have already
 // resolved by the time this is called, in list order: the result is correct and
 // the concurrency is absent. Use `allOf` on the server.
-#[@future]
 #[@External.Node("""Promise.all($0)""")]
 #[@External.Erlang("""$0""")]
-pub declare fn all<T>(futures: Array<@Future<T>>) -> @Future<Array<T>>;
+pub declare fn all<T>(futures: Array<@Task<T>>) -> @Task<Array<T>>;
 ```
 
 **Acceptance:**
@@ -192,8 +191,7 @@ pub declare fn all<T>(futures: Array<@Future<T>>) -> @Future<Array<T>>;
 ```bp
 // `Ok(value)` when the task answered inside the budget, `Error("timeout")` when
 // it did not. The task keeps running; the caller stops waiting.
-#[@future]
-pub fn timeout<T>(task: fn() -> @Future<T>, millis: i32) -> @Future<@Result<T, string>>;
+pub fn timeout<T>(task: fn() -> @Task<T>, millis: i32) -> @Task<@Result<T, string>>;
 ```
 
 No `fallback` parameter: the answer is already a `@Result`, so the fallback is the caller's
@@ -234,9 +232,9 @@ listing gains `async.bp`. The module stays at the root of the tree in `../module
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | No array destructuring in a binding — `val [a, b, c] = xs;` does not parse | every `all`/`allOf` call site reading its results | `val a = xs.at(0).unwrapOr(…);` per element | destructuring patterns in `val`/`var` bindings, at least for arrays and tuples |
-| `@Future<T>` lowers eagerly on the erlang backend | the whole future surface — `all` is a map, `race` is element zero, `timeout` cannot fire | take unstarted `fn() -> @Future<T>` tasks and `spawn` them in the host cell | a lazy `@Future` lowering on erlang, or a `@Task<T>` type that is explicitly unstarted on both targets |
-| No cancellation | `raceOf`'s losers and `timeout`'s expired task keep running | leave them running and document it | a cancellation token threaded through `#[@future]`, or `@Future.cancel` |
-| A generic parameter typed `Array<fn() -> @Future<T>>` is unverified | `allOf`, `settleOf`, `raceOf` signatures | if it does not check, drop to `Array<fn() -> T>` and lose the future element type | pin fn-typed elements inside a generic array in the inference tests |
+| `@Task<T>` lowers eagerly on the erlang backend | the whole future surface — `all` is a map, `race` is element zero, `timeout` cannot fire | take unstarted `fn() -> @Task<T>` tasks and `spawn` them in the host cell | a lazy `@Task` lowering on erlang, or a `@Task<T>` type that is explicitly unstarted on both targets |
+| No cancellation | `raceOf`'s losers and `timeout`'s expired task keep running | leave them running and document it | a cancellation token threaded through a `@Task` body, or `@Task.cancel` |
+| A generic parameter typed `Array<fn() -> @Task<T>>` is unverified | `allOf`, `settleOf`, `raceOf` signatures | if it does not check, drop to `Array<fn() -> T>` and lose the future element type | pin fn-typed elements inside a generic array in the inference tests |
 
 ## Test plan
 

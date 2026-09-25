@@ -7,7 +7,6 @@ builds on.
 ## The shape of every function
 
 ```bp
-#[@result]
 pub fn equals<T>(actual: T, expected: T) -> @Result<void, string> {
     if (actual != expected) {
         throw "asserts.equals: values differ";
@@ -18,7 +17,7 @@ pub fn equals<T>(actual: T, expected: T) -> @Result<void, string> {
 
 Five rules, each with its reason:
 
-1. **`#[@result]`, `-> @Result<void, string>`.** Success is `Ok`, failure is `Error(message)`.
+1. **`-> @Result<void, string>`.** Success is `Ok`, failure is `Error(message)`.
    The caller writes `try asserts.equals(a, b);` and a failure propagates to the enclosing
    `test` body, which ends as `FAIL <name> (<message>) at <file>:<line>` (`src-builtin.md` § *The
    test body as a fallible context*). A `-test` helper that is itself `-> @Result<void, string>`
@@ -84,7 +83,7 @@ sides render on the same target, so key order is the same on both.
 | `isError` | `<T, E>(result: @Result<T, E>)` | `result.isOk()` | `asserts.isError: result was Ok` |
 
 The payload is read by the caller with the builtin methods `builtins.d.bp:33-40` documents:
-`try asserts.equals(r.unwrapOr(0), 42);`. A `case` over `Ok(v)`/`Error(e)` inside a `#[@result]`
+`try asserts.equals(r.unwrapOr(0), 42);`. A `case` over `Ok(v)`/`Error(e)` inside a `@Result`-returning
 body is not exercised anywhere in the tree today, so the module does not depend on it.
 
 ### String
@@ -141,19 +140,19 @@ unify with `unit`, so callers end the body with `0;`. The old `throws(body, mess
 message and ignored it (`asserts.bp:73-76`); the new pair makes the check real and the name say so.
 
 To assert that a **`@Result`-returning** body fails, `throws` is the wrong tool — that is
-`isError(body())`. `throws` is for a `@panic` or a host throw from code that is not `#[@result]`.
+`isError(body())`. `throws` is for a `@panic` or a host throw from code that does not return a `@Result`.
 
 ### Utility
 
 | Function | Signature | Answers | Message |
 |---|---|---|---|
 | `fail` | `(message: string) -> @Result<void, string>` | always `Error` | `asserts.fail: <message>` |
-| `errorText` | `(r: @Result<void, string>) -> string` | never — not `#[@result]`; answers the `Error` payload, or `""` for `Ok` | — |
+| `errorText` | `(r: @Result<void, string>) -> string` | never — its return is not a `@Result`; answers the `Error` payload, or `""` for `Ok` | — |
 
 `fail` is the one function whose message carries caller text; it is the escape for a branch the
 test asserts is unreachable. `errorText` is how a test reads a failure message to snapshot it
 (`test-snap.md`): a plain `case r { Ok(v) -> ""; Error(e) -> e; }` — matching over the builtin
-`Result` enum (`builtins.d.bp:23-26`) in a function that is not itself `#[@result]`, which is the
+`Result` enum (`builtins.d.bp:23-26`) in a function that does not itself return a `@Result`, which is the
 one place the checker's manual-construction rule (`infer.zig:8214`) does not apply.
 
 ## Failure message format

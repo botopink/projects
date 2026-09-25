@@ -145,7 +145,7 @@ The contract writes `try assertCss(@src(), …);` directly inside a `test` block
   (`:2189`) sets `throwContext = .unchecked` and an implicit `.future` effect so `await` already
   works in a test (`emilia.bp:475-480`);
 - lowering is unverified — `codegen/commonJS.zig:615` classifies it as `TryForm.propagate`, whose
-  emission inside a `#[@result]` fn is `return { error: … }`; inside `async function __bp_test_N`
+  emission inside a `@Result`-returning fn is `return { error: … }`; inside `async function __bp_test_N`
   (`commonJS.zig:1518`) that return would end the test **green** with a value the runner ignores.
 
 The rule this front fixes: **inside a `test` body, a `try` whose operand is `Error(e)` ends the

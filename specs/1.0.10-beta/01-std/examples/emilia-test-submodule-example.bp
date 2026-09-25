@@ -32,7 +32,6 @@ import {tokensToCss, emilia, Token} from "emilia";
 
 // The CSS a token list lowers to. Snapshot subject `css`; the file lands at
 // `<dir of the test's file>/__snapshots__/<suite>/<slug>.snap`.
-#[@result]
 pub fn assertCss(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
     val css = tokensToCss(tokens);
     try snapshots.assertAs(loc, "css", css);
@@ -42,7 +41,6 @@ pub fn assertCss(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> 
 // The whole utility: the content-derived class name and its rule, the way it
 // appears in a flushed `<style>` block. Subject `utility`. The class is a
 // djb2 of the rule body (contract 4), so the body is stable across runs.
-#[@result]
 pub fn assertUtility(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
     val cls = emilia(tokens);
     val css = tokensToCss(tokens);
@@ -52,7 +50,6 @@ pub fn assertUtility(loc: SourceLocation, tokens: Token[]) -> @Result<void, stri
 }
 
 // Two utilities side by side in one test: the second is named.
-#[@result]
 pub fn assertUtilityNamed(loc: SourceLocation, name: string, tokens: Token[]) -> @Result<void, string> {
     val cls = emilia(tokens);
     val css = tokensToCss(tokens);
@@ -65,7 +62,6 @@ pub fn assertUtilityNamed(loc: SourceLocation, name: string, tokens: Token[]) ->
 
 // A token list must lower to exactly this declaration string. Not a snapshot:
 // the expected text is in the test, for the cases where the value is the point.
-#[@result]
 pub fn assertDeclaration(tokens: Token[], expected: string) -> @Result<void, string> {
     val css = tokensToCss(tokens);
     try asserts.equals(css, expected);
@@ -73,7 +69,6 @@ pub fn assertDeclaration(tokens: Token[], expected: string) -> @Result<void, str
 }
 
 // A token list's CSS must carry a given `property:value` pair somewhere.
-#[@result]
 pub fn assertHasDeclaration(tokens: Token[], declaration: string) -> @Result<void, string> {
     val css = tokensToCss(tokens);
     try asserts.contains(css, declaration);
@@ -82,7 +77,6 @@ pub fn assertHasDeclaration(tokens: Token[], declaration: string) -> @Result<voi
 
 // Two token lists must produce the same class — the "token order is class
 // identity" clause of contract 4, asserted from the outside.
-#[@result]
 pub fn assertSameClass(a: Token[], b: Token[]) -> @Result<void, string> {
     try asserts.equals(emilia(a), emilia(b));
     return;

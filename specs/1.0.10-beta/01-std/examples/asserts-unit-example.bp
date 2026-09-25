@@ -13,8 +13,7 @@
 import {testing.asserts} from "std";
 
 // A fallible function for the `@Result` assertions. `throw` inside a
-// `#[@result]` body produces the Error; `return` produces the Ok.
-#[@result]
+// `-> @Result<…>` body produces the Error; `return` produces the Ok.
 fn parsePort(s: string) -> @Result<i32, string> {
     if (s == "") {
         throw "empty input";
