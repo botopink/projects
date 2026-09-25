@@ -427,12 +427,12 @@ pub declare fn captures(pattern: string, input: string) -> ?Array<string>;
 ```
 
 **Acceptance:**
-- [ ] `regex.captures("^/blog/([^/]+)$", "/blog/hello")` answers a two-element array whose second element is `hello`, on both targets
-- [ ] `regex.captures("^/x$", "/y")` answers `null`, not an empty array
-- [ ] `regex.namedCaptures("(?<slug>[^/]+)", "/hello")` answers one `#("slug", "hello")` pair on both targets
-- [ ] `regex.compile("(")` answers an `Error`; `regex.runCompiled` of a compiled pattern agrees with `regex.matches` of the same source
-- [ ] `regex.escapeLiteral(".*")` answers a pattern that matches the literal `.*` and nothing else
-- [ ] the six existing `regex` functions and the `Match` record are unchanged
+- [x] `regex.captures("^/blog/([^/]+)$", "/blog/hello")` answers a two-element array whose second element is `hello`, on both targets
+- [x] `regex.captures("^/x$", "/y")` answers `null`, not an empty array
+- [x] `regex.namedCaptures("(?<slug>[^/]+)", "/hello")` answers one `#("slug", "hello")` pair on both targets
+- [x] `regex.compile("(")` answers an `Error`; `regex.runCompiled` of a compiled pattern agrees with `regex.matches` of the same source
+- [x] `regex.escapeLiteral(".*")` answers a pattern that matches the literal `.*` and nothing else
+- [x] the six existing `regex` functions and the `Match` record are unchanged
 
 ### Step 8 — `io/process.bp` additions
 
