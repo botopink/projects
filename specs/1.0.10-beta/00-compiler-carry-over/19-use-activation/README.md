@@ -2,10 +2,10 @@
 
 **Track:** compiler (carry-over item **C-27**)
 **Priority:** high — jhonstart's whole hook and component surface (fronts 26–32, 67, 94) is written
-against `use`; `docs.md` § *use — imports, activation, and hooks* documents it. What is left here is
-step 3 (tuple destructuring from a `use`); the grant is decision 104's and lands in
+against `use`; `docs.md` § *use — imports, activation, and hooks* documents it. Steps 0–5 are in the
+tree, step 3 (destructuring from a `use`) included; the grant is decision 104's and lands in
 [`21-effect-chain`](../21-effect-chain/README.md).
-**Depends on:** C-08 (parser gaps) for the tuple-pattern half of step 3;
+**Depends on:** C-08 (parser gaps) for the labeled-tuple half of step 3;
 [`21-effect-chain`](../21-effect-chain/README.md) for the spelling of every example below.
 **Owns:** the `use` rules in `src/parser.zig` (the activation statement `:394-397`,
 `useAfterBranchGuard` `:697`, `:737-745`, `:772`, `useBranchSeen`, `bindingUseLoc`, `freshUseScope`)
@@ -37,15 +37,12 @@ only `#[@use]` grants `use`; 89 and 90 revoked · [108](../../decisions-taken.md
 
 ## Problem
 
-Two things a framework needs from `use` are not in the tree:
+One thing a framework needs from `use` is not in the tree:
 
 1. **One grant.** `FnContext.annotated` is set by `#[@context]` or by a wrapper effect whose unwrapped
    return owns a context, and `env.inContextFn` (the `@getContex` gate) by `eff == .context` alone —
    two flags for one capability, and a hint that asks for an annotation R5 refuses beside
    `#[@future]`. Decision 104 makes them one flag set by `#[@use]`; 21-effect-chain lands it.
-2. **Tuple destructuring.** `val #(shown, push) = use optimistic(b, f)` parses and lowers, but every
-   element is a fresh type variable — `R`'s tuple element types are not propagated and no arity is
-   checked (`infer.zig:8194-8196`). Step 3.
 
 ## Current state
 
@@ -61,10 +58,10 @@ erlang, wasm and beam — 8 cells, none in `expected-failures.txt`.
 | 3 | `fn f() -> string { val x = use state(0); … }` | yes | **no** — `use-of-non-context-fn` | — | `infer.zig:8135-8142`; `effects.zig:293-302` |
 | 3b | `fn Widget() -> Element { val c = use state(0); }` — no annotation | yes | **no** — `use-without-context-effect`, naming the annotation | — | `comptime/error.zig`, `comptime/diagnostics.zig`; `reject/use_without_context_effect.bp` |
 | 4 | `use` after `if`/`return`/`loop`/`case` at the same block level; `val c = use …` after a `return`; `use` inside a branch's own block | **no** — `` `use` must be in static prefix`` | — | — | `parser.zig` (`useBranchSeen`, `bindingUseLoc`; `freshUseScope` for a fn, method, `test` or lambda body) · `parser/tests/errors.zig:52-69`; `reject/use_{after_return,inside_branch}.bp` |
-| 5 | `val f = { -> use state(0) }` inside a component | yes | yes — a lambda resets `throwContext`, `starFn` and labels, not `fnContext` | plain call inside the arrow | `infer.zig:9100-9121` — **derived, no cell** |
+| 5 | `val f = { -> use state(0) }` inside a component | yes | yes — a lambda resets `throwContext`, `starFn` and labels, not `fnContext` | plain call inside the arrow | `infer.zig:9100-9121` · `Deferred()` in `test/context_use.bp` and `run/context_use.bp`, four targets |
 | 6 | custom hook `#[@context] fn counter(n) -> @Context<Element, State<i32>> { return state(n); }`; `val c = use counter(5)` | yes | yes — the `return` is checked against `R` | `counter(5)` | `infer.zig:3360-3362`; `effects.zig:280-297` |
 | 7 | `val {value, set} = use state(0)` | yes | yes — each name bound to the field of `R` by name | plain call, then the destructure | `infer.zig:7371-7372`, `:8180-8193` · `codegen_use_object_destructure_*` |
-| 8 | `val #(shown, push) = use optimistic(b, f)` | yes (`parser/exprs.zig:661-676`) | yes, but every element is a **fresh type var** | plain call, then the tuple destructure | `infer.zig:8194-8196` · `codegen_use_tuple_destructure_*`, `codegen/tests/features.zig:209-221` |
+| 8 | `val #(shown, push) = use optimistic(b, f)` | yes (`parser/exprs.zig:661-676`) | yes — each name bound to the element of `R` at its position (`shown : i32`, `push : fn(action: i32) -> i32`); another arity, or a non-tuple `R`, is `use-tuple-arity` at the binding | plain call, then the tuple destructure | `infer.zig` `bindUseDestructure` · `codegen_use_tuple_destructure_*`, `codegen/tests/features.zig` · `Liked()` in the two `context_use` cells, `reject/use_tuple_{arity,of_non_tuple}.bp` |
 | 9 | hook called without `use`: `val c = state(7); c.value` | yes | the call is ordinary; `c` is the wrapper (`bindingSourceType` runs only under `use`) | plain call | `infer.zig:8150`; `run/context_use.bp` (`fn Plain() -> Element { val c = state(7); … }`) |
 | 10 | `Name*;` at module level | yes | **always an error**: `redundantActivation` for a local extension, else `notAnExtension` | emits nothing | `parser/decls.zig:219-225`, `:263-272`; `infer.zig:879-899` |
 | 11 | `import { x* } from "…"` | yes | `env.activations.put("x")` | a `require` / import form | `parser/decls.zig:247`; `infer.zig:897` |
@@ -97,7 +94,9 @@ reads the active provider of `T` under the same flag (104, 108).
 **What the binding gets.** The typed `useHook` node's type is `bindingSourceType(operand type)` — the
 `R` of the wrapper (`:1020-1027`, `:8150`): `val c = use state(0)` binds `c : State<i32>`;
 `val {value, set} = use state(0)` binds by field name (`:8180-8193`); `val #(a, b) = use …` binds
-fresh vars (`:8194-8196`). Without `use`, the call's type is the wrapper itself.
+each name to the element of a tuple `R` at its position, commits an unresolved `R` (a generic hook)
+to a tuple of the pattern's arity, and refuses another arity or a non-tuple `R` at the binding
+(`use-tuple-arity`, decision 67). Without `use`, the call's type is the wrapper itself.
 
 **Lowering.** `use f(x)` is `f(x)` on every backend (88): `commonJS.zig` `buildExpr(inner)` in
 statement and value position, `erlang.zig:5214-5216`, `wat.zig:2812-2814`, `beam_asm.zig:2910-2912`.
@@ -143,19 +142,26 @@ The normative surface under decisions 87, 88, 96, 102 and 104, spelled as 21-eff
 
 ### Step 3 — destructuring from a `use`
 
-`val {a, b} = use …` works (row 7). `val #(a, b) = use …` parses and lowers but its elements are
-fresh vars (row 8): `bindUseDestructure` (`infer.zig:8194-8196`) must bind each name to the
-corresponding element of `R` when `R` is a tuple type (`ast.zig:1763` `tuple_: []TypeRef`), and
-refuse an arity mismatch. The labeled-tuple half (`#(state: S, dispatch: fn(…))` losing its labels
-through generic instantiation, `hooks.bp:75-77`) stays with C-08 / 01-checker; this step is the
-positional half only.
+`val {a, b} = use …` works (row 7). `val #(a, b) = use …` (row 8): `bindUseDestructure` binds each
+name to the corresponding element of `R` when `R` is a tuple type, commits an `R` still unresolved
+after a generic hook's instantiation to a tuple of the pattern's arity, and refuses an arity
+mismatch or a non-tuple `R` at the binding — `use-tuple-arity`, located, no flag (decision 67).
+The labeled-tuple half (`#(state: S, dispatch: fn(…))` losing its labels through generic
+instantiation, `hooks.bp:75-77`) stays with C-08 / 01-checker; this step is the positional half
+only.
 
 **Acceptance:**
-- [ ] `val #(shown, push) = use optimistic(12, addLike)` binds `shown : i32`,
-      `push : fn(action: i32)`; a cell on four targets
-- [ ] `val #(a) = use optimistic(…)` is an arity error, located; a `reject/` cell
-- [ ] `67-jhonstart-forms/examples/optimistic-like-example.bp` compiles with the tuple form
-- [ ] row 5 — a `use` inside a nested closure — gets a cell, or stays recorded as derived
+- [x] `val #(shown, push) = use optimistic(12, addLike)` binds `shown : i32`,
+      `push : fn(action: i32)`; a cell on four targets — `Liked()` in `test/context_use.bp` and
+      `run/context_use.bp` (the hook takes a lambda: a named fn as a value is a pre-existing
+      erlang/beam gap outside this step)
+- [x] `val #(a) = use optimistic(…)` is an arity error, located; a `reject/` cell —
+      `reject/use_tuple_arity.bp`, and `reject/use_tuple_of_non_tuple.bp` for a hook whose `R` is
+      no tuple
+- [ ] `67-jhonstart-forms/examples/optimistic-like-example.bp` compiles with the tuple form — it
+      imports front 67's `optimistic` / `formStatus`, which jhonstart does not have yet, and is
+      spelled for 21-effect-chain; it compiles when 67 lands on 21's spelling
+- [x] row 5 — a `use` inside a nested closure — gets a cell: `Deferred()` in the same two cells
 
 Steps 0, 1, 4 and 5 (the measurement; the documentation and the static-prefix holes; the boundary
 directives — no compiler change, decision 87; the lowering contract — decision 88) are in the tree,
@@ -169,12 +175,12 @@ is 21-effect-chain step 2.
       own prefix
 - [x] `tests/language` has `use` cells green on commonJS, erlang, wasm and beam
 - [x] `use f(x)` is `f(x)` on every backend; `grep -rl useState snapshots/` is empty
-- [ ] `val #(a, b) = use …` binds element types — step 3
+- [x] `val #(a, b) = use …` binds element types — step 3
 - [x] every component and custom hook in `04-jhonstart` is `#[@use] fn … -> @Component<Element>` /
       `#[@use] fn <noun>(…) -> @Use<ElementBase, _>` (decisions 102/104);
       `grep -rn "use use" specs/1.0.10-beta/04-jhonstart repository/jhonstart` → 0
-- [ ] `AGENTS.md` of `src/comptime/` in the same commit as step 3; commit on `fix/use-activation`;
-      no push, no merge
+- [x] `AGENTS.md` of `src/comptime/` in the same commit as step 3; commit on the front's branch
+      (`front/19-use-activation`); no push, no merge
 
 ## Blast radius
 
