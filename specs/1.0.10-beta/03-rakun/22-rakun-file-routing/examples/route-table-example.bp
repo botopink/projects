@@ -20,9 +20,9 @@
 //   L layout   T template   P page        D default
 //   R route    S loading    E error       N not-found
 //
-// The blob is line-oriented rather than JSON because `std/json` is
-// `string -> @Result<string, string>` with no structured walker, and this parser
-// has to run on BEAM. Inside the payload (contract 2) it is one escaped string field.
+// The blob is line-oriented rather than JSON because contract 1 fixes that wire,
+// and this parser runs on BEAM as well as in the browser. Inside the payload
+// (contract 2) it is one escaped string field.
 //
 // An optional is read with `if (opt) { v -> … }` throughout: a `case` arm that is
 // a bare lower-case name is a located error (`use _ {`), so a `case` over a `?T`

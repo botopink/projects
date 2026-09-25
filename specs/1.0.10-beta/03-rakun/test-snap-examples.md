@@ -1304,7 +1304,7 @@ rakun only (decision 114): every page is a `PageRenderer` writing plain text and
 ```
 examples/blog-server/
 ├── botopink.json                        dependencies: rakun-app · rakun-web · rakun-cache
-├── application.yaml                     rakun.cache.type ets · rakun.cache.names products,prices · rakun.web.static.build-dir dist/ · rakun.web.static.public-dir public/ · onze.appDir app
+├── application.yaml                     rakun.cache.type ets · rakun.cache.names products,prices · rakun.web.static.build-dir dist/ · rakun.web.static.public-dir public/ · rakun.appDir app
 ├── src/main.bp                          Rakun.run(App(port: 8080, basePath: ""))
 ├── src/i18n.bp                          appLocales() -> LocaleSet(["pt-BR","en","es"], "pt-BR") · registerLocales · localeFilter excluding /api, /dashboard, /sitemap.xml, /robots.txt
 ├── src/rules.bp                         appUrlRules() -> UrlRules (trailingSlash false · /old→/new permanent · /blog/:slug→/en/blog/:slug · /shop/:path*→/catalog/:path* · /api/external/:path*→https://api.example.com/:path*)
@@ -1314,8 +1314,8 @@ examples/blog-server/
 ├── src/routes.bp                        the layout records (rkAppRegisterEntry "L" for /, /[locale], /[locale]/blog, /dashboard; "D" for the two slot defaults)
 ├── app/                                 sitemap.bp · robots.bp · manifest.bp · favicon.ico · icon.png · opengraph-image.png
 ├── app/[locale]/page.bp                 homePage — page("[locale]", renderer)
-├── app/[locale]/blog/                   page.bp blogIndexPage · new/page.bp createPost (#[serverAction]) · [slug]/page.bp blogPostPage (memoize · notFound · registerStaticParams) · [slug]/opengraph-image.bp (registerImageRoute; no renderer set, 501)
-├── app/dashboard/                       page.bp dashboardPage (cookies().get("session") → redirect("/login")) · @analytics/page.bp · @team/settings/page.bp
+├── app/[locale]/blog/                   page.bp blogIndexPage · new/page.bp createPost (#[serverAction]) · [slug]/page.bp blogPostPage (memoize · `out.setStatus(404)` on a miss · registerStaticParams) · [slug]/opengraph-image.bp (registerImageRoute; no renderer set, 501)
+├── app/dashboard/                       page.bp dashboardPage (cookies().get("session") → `out.setStatus(307)` + `location: /login`) · @analytics/page.bp · @team/settings/page.bp
 └── app/api/posts/route.bp               listPosts (#[getRoute("api/posts")]) · createPost (#[postRoute("api/posts")])
 ```
 
@@ -1634,12 +1634,14 @@ relatedCount[hello] hit
 after:
 ```
 
-### `blog-server: a missing post signals not-found from inside the render`
+### `blog-server: a missing post answers 404 from its page renderer`
+
+A rakun page answers a miss with its own status (decision 117): page-level `notFound` is jhonstart's,
+and a rakun renderer that raised front 63's would fail the request.
 
 ```bp
-test "blog-server: a missing post signals not-found from inside the render" {
-    try assertNavigation(@src(),
-        \\ import {notFound, redirect} from "rakun";
+test "blog-server: a missing post answers 404 from its page renderer" {
+    try assertPageDispatch(@src(),
         \\ import {page, ChunkWriter, Request} from "rakun";
         \\
         \\ pub type Post(slug: string, title: string, body: string)
@@ -1655,7 +1657,8 @@ test "blog-server: a missing post signals not-found from inside the render" {
         \\ val _post = page("[locale]/blog/[slug]", fn(req: Request, out: ChunkWriter) {
         \\     val found = findPost(req.param("slug"));
         \\     if (found.isError()) {
-        \\         val _gone = notFound();
+        \\         out.setStatus(404);
+        \\         return out.write("no such post");
         \\     };
         \\     val post = found.unwrapOr(Post(slug: "", title: "", body: ""));
         \\     return out.write(post.title + ": " + post.body);
@@ -1664,11 +1667,13 @@ test "blog-server: a missing post signals not-found from inside the render" {
 }
 ```
 
-`examples/blog-server/test/__snapshots__/blog-server/a-missing-post-signals-not-found-from-inside-the-render.snap`
+`examples/blog-server/test/__snapshots__/blog-server/a-missing-post-answers-404-from-its-page-renderer.snap`
 ```
-signal notFound
 status 404
-location -
+content-type: text/html; charset=utf-8
+chunks 1
+no such post
+closed 1
 ```
 
 ### `blog-server: the locale is negotiated from accept-language and the prefix is redirected in`

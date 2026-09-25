@@ -15,20 +15,22 @@ import {cookies, headers, after, CookieAttrs} from "rakun";
 import {page, ChunkWriter} from "rakun";                       // provided by front 23
 import {action} from "rakun";                                  // provided by front 24
 import {getRoute} from "rakun";                                // provided by front 25
-import {redirect} from "rakun";                                // provided by front 63
 import {Request, Response} from "rakun";
 
 // SERVER — the auth guard of NEXTJS-DOCS.md § 23, on a page renderer (front 23).
 // The renderer reads the cookie out of the request frame this front
-// establishes; a missing session raises front 63's redirect before the first
-// write, so the dispatch answers 307. Reading a cookie marks the render
+// establishes; a missing session sets 307 and `location` before the first
+// write — a page has no rakun `redirect` (decision 117; the jhonstart page's
+// `redirect` is jhonstart's own). Reading a cookie marks the render
 // dynamic, so front 60 will not prerender this route, and `dynamicReason()`
 // answers "cookies" in the build report. In an application the renderer is
 // the one onze registers and the markup is jhonstart's (onze front 53).
 val _dashboard = page("dashboard", fn(req: Request, out: ChunkWriter) {
     val session = cookies().get("session").unwrapOr("");
     if (session == "") {
-        val _gone = redirect("/login");
+        out.setStatus(307);
+        out.setHeader("location", "/login");
+        return out.close();
     };
     val theme = cookies().get("theme").unwrapOr("system");
     return out.write("signed in as " + session + "; theme: " + theme);

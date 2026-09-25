@@ -81,8 +81,8 @@ pub type FulfillmentController(
     }
 }
 
-// LANGUAGE GAP: std has no structured JSON value — `json.parse` and
-// `json.stringify` both take and return `string` (libs/std/src/json.bp:36,45) —
-// so an exchange method cannot be declared `-> Shipment` the way Spring declares
-// `Map<?, ?> echo(...)`. Every method above returns the body as `string`; the
-// decoding step waits on a `JsonValue` model in std.
+// LANGUAGE GAP: std reads JSON into a structured `Json` (`json.decode`,
+// decision 117) but derives no record from it, so an exchange method cannot be
+// declared `-> Shipment` the way Spring declares `Map<?, ?> echo(...)`. Every
+// method above returns the body as `string`; the typed step waits on a record
+// decoder over `Json`.

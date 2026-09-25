@@ -3540,56 +3540,62 @@ test "slots: a route group is not an interception" {
 
 ## 63-rakun-navigation-signals — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/navigation_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/navigation/` · **Target:** erlang · **Pins:** Step 1 `notFound()` never returns + `redirect` → 307 + `permanentRedirect` → 308, Step 2 a signal inside `try … catch` still reaches `captureSignals`, Step 3 a signal crosses `await` (one and two levels), Step 4 `statusFor`/`locationHeaderFor` (`null` for `NotFound`), § *Where a signal becomes a response* server-action row (`redirect` → 303 progressive, `notFound()` → 404) and front 24 Step 5
+**Test file:** `modules/rakun-app/test/navigation_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/navigation/` · **Target:** erlang · **Pins:** Step 1 `notFound()` never returns + `redirect` → 307 + `permanentRedirect` → 308, Step 2 a signal inside `try … catch` still reaches `captureSignals`, Step 3 a signal crosses `await` (one and two levels), Step 4 `statusFor`/`locationHeaderFor` (`null` for `NotFound`), Step 5 a page renderer's raise is a failed render, § *Where a signal becomes a response* route-handler and server-action rows (`redirect` → 303 progressive, `notFound()` → 404) and front 24 Step 5
 
 > helper gap: `location` has no value for `NotFound` (`locationHeaderFor` answers `null`) and renders as `location -`.
 
-### `navigation: notFound from a page unwinds to 404`
+> rakun's signals are raised from route handlers and server actions only. A page's `notFound` / `redirect` are jhonstart's and answered by jhonstart's render (decision 117 rule 1); their cells are jhonstart front 31's, in [`../04-jhonstart/test-snap.md`](../04-jhonstart/test-snap.md).
+
+### `navigation: notFound from a route handler unwinds to 404`
 
 ```bp
-test "navigation: notFound from a page unwinds to 404" {
+test "navigation: notFound from a route handler unwinds to 404" {
     try assertNavigation(@src(),
-        \\ import {notFound, page, ChunkWriter, Request} from "rakun";
-        \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\ import {notFound, getRoute, HandlerResponse, Request} from "rakun";
+        \\ #[getRoute("api/posts/[slug]")]
+        \\ #[@future]
+        \\ pub fn showPost(req: Request) -> @Future<HandlerResponse> {
         \\     val slug = req.param("slug");
         \\     val missing = slug != "hello";
         \\     if (missing) {
         \\         val _gone = notFound();
         \\     };
-        \\     return out.write(slug);
-        \\ });
-        , "GET /blog/nope");
+        \\     return HandlerResponse.json("{}");
+        \\ }
+        , "GET /api/posts/nope");
 }
 ```
 
-`modules/rakun-app/test/__snapshots__/navigation/notfound-from-a-page-unwinds-to-404.snap`
+`modules/rakun-app/test/__snapshots__/navigation/notfound-from-a-route-handler-unwinds-to-404.snap`
 ```
 signal notFound
 status 404
 location -
 ```
 
-### `navigation: redirect from a page is 307 with location`
+### `navigation: redirect from a route handler is 307 with location`
 
 ```bp
-test "navigation: redirect from a page is 307 with location" {
+test "navigation: redirect from a route handler is 307 with location" {
     try assertNavigation(@src(),
-        \\ import {redirect, cookies, page, ChunkWriter, Request} from "rakun";
-        \\ val _dashboardPage = page("dashboard", fn(req: Request, out: ChunkWriter) {
+        \\ import {redirect, cookies, getRoute, HandlerResponse, page, ChunkWriter, Request} from "rakun";
+        \\ #[getRoute("api/account")]
+        \\ #[@future]
+        \\ pub fn account(req: Request) -> @Future<HandlerResponse> {
         \\     val session = cookies().get("session").unwrapOr("");
         \\     if (session == "") {
         \\         val _gone = redirect("/login");
         \\     };
-        \\     return out.write("overview");
-        \\ });
+        \\     return HandlerResponse.json("{}");
+        \\ }
         \\ val _loginPage = page("login", fn(req: Request, out: ChunkWriter) {
         \\     return out.write("login");
         \\ });
-        , "GET /dashboard");
+        , "GET /api/account");
 }
 ```
 
-`modules/rakun-app/test/__snapshots__/navigation/redirect-from-a-page-is-307-with-location.snap`
+`modules/rakun-app/test/__snapshots__/navigation/redirect-from-a-route-handler-is-307-with-location.snap`
 ```
 signal redirect
 status 307
@@ -3601,15 +3607,17 @@ location /login
 ```bp
 test "navigation: permanentRedirect is 308" {
     try assertNavigation(@src(),
-        \\ import {permanentRedirect, page, ChunkWriter, Request} from "rakun";
-        \\ val _oldPage = page("old", fn(req: Request, out: ChunkWriter) {
+        \\ import {permanentRedirect, getRoute, HandlerResponse, page, ChunkWriter, Request} from "rakun";
+        \\ #[getRoute("api/old")]
+        \\ #[@future]
+        \\ pub fn old(req: Request) -> @Future<HandlerResponse> {
         \\     val _moved = permanentRedirect("/new");
-        \\     return out.write("old");
-        \\ });
+        \\     return HandlerResponse.json("{}");
+        \\ }
         \\ val _newPage = page("new", fn(req: Request, out: ChunkWriter) {
         \\     return out.write("new");
         \\ });
-        , "GET /old");
+        , "GET /api/old");
 }
 ```
 
@@ -3625,18 +3633,19 @@ location /new
 ```bp
 test "navigation: a signal inside try catch is not caught" {
     try assertNavigation(@src(),
-        \\ import {notFound, page, ChunkWriter, Request} from "rakun";
+        \\ import {notFound, getRoute, HandlerResponse, Request} from "rakun";
         \\ #[@result]
         \\ fn loadPost(slug: string) -> @Result<string, string> {
         \\     val _gone = notFound();
         \\     return "unreachable";
         \\ }
-        \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
-        \\     val slug = req.param("slug");
-        \\     val title = try loadPost(slug) catch "fallback";
-        \\     return out.write(title);
-        \\ });
-        , "GET /blog/hello");
+        \\ #[getRoute("api/posts/[slug]")]
+        \\ #[@future]
+        \\ pub fn showPost(req: Request) -> @Future<HandlerResponse> {
+        \\     val title = try loadPost(req.param("slug")) catch "fallback";
+        \\     return HandlerResponse.json(title);
+        \\ }
+        , "GET /api/posts/hello");
 }
 ```
 
@@ -3652,7 +3661,7 @@ location -
 ```bp
 test "navigation: a signal crosses two levels of await" {
     try assertNavigation(@src(),
-        \\ import {redirect, page, ChunkWriter, Request} from "rakun";
+        \\ import {redirect, getRoute, HandlerResponse, page, ChunkWriter, Request} from "rakun";
         \\ #[@future]
         \\ fn inner() -> @Future<string> {
         \\     val _gone = redirect("/login");
@@ -3663,14 +3672,16 @@ test "navigation: a signal crosses two levels of await" {
         \\     val v = await inner();
         \\     return v + "!";
         \\ }
-        \\ val _accountPage = page("account", fn(req: Request, out: ChunkWriter) {
+        \\ #[getRoute("api/account")]
+        \\ #[@future]
+        \\ pub fn account(req: Request) -> @Future<HandlerResponse> {
         \\     val v = await outer();
-        \\     return out.write(v);
-        \\ });
+        \\     return HandlerResponse.json(v);
+        \\ }
         \\ val _loginPage = page("login", fn(req: Request, out: ChunkWriter) {
         \\     return out.write("login");
         \\ });
-        , "GET /account");
+        , "GET /api/account");
 }
 ```
 
@@ -3679,6 +3690,27 @@ test "navigation: a signal crosses two levels of await" {
 signal redirect
 status 307
 location /login
+```
+
+### `navigation: a signal raised by a page renderer is a failed render`
+
+```bp
+test "navigation: a signal raised by a page renderer is a failed render" {
+    try assertPageDispatch(@src(),
+        \\ import {notFound, page, ChunkWriter, Request} from "rakun";
+        \\ val _blogPostPage = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+        \\     val _gone = notFound();
+        \\     return out.write("never");
+        \\ });
+        , "GET /blog/nope");
+}
+```
+
+`modules/rakun-app/test/__snapshots__/navigation/a-signal-raised-by-a-page-renderer-is-a-failed-render.snap`
+```
+status 500
+chunks 0
+closed 1
 ```
 
 ### `navigation: redirect inside an action is 303 on the progressive path`

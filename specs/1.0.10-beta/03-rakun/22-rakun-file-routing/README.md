@@ -102,7 +102,9 @@ The UI decorators, `PageContext`, `LayoutProps` and the per-route parameter acce
 front 30's: they fill jhonstart's UI registry, and onze copies that registry into this front's table
 at boot, so the table the server matches and the payload's `t` are one table (contract 1). A page's
 renderer is opaque here — `fn(req: Request, out: ChunkWriter) -> @Future<void>` (front 23); rakun
-calls it and never looks inside.
+calls it and never looks inside. A page's `notFound` / `redirect` are jhonstart's and never reach
+this table's dispatch as signals (decision 117 rule 1); an `N` record is the boundary jhonstart's
+render uses for its own 404.
 
 The registry lives in the host because botopink has no top-level mutable state — the same reason
 rakun's scan registry lives in a host file (`repository/rakun/src/runtime.bp:1-11`). This front's
@@ -122,9 +124,9 @@ registered something — a check the CLI runs, not the server.
 
 ### What crosses the boundary
 
-The route table, and only the route table. It crosses as a line-oriented blob, not as JSON, because
-`std/json` is `string -> @Result<string, string>` with no structured walker (`libs/std/src/json.bp:36`)
-and this front's parser has to compile to BEAM as well as to the browser:
+The route table, and only the route table. It crosses as a line-oriented blob, not as JSON — contract
+1 fixes that wire, and decision 117's `json.decode` does not change it — and its parser is compiled to
+BEAM as well as to the browser:
 
 ```
 kind|pattern|slot|verb

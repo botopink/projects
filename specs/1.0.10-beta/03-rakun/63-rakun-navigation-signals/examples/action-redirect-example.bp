@@ -6,6 +6,7 @@
 // action envelope, and front 26's client router performs the navigation without
 // a document reload. Server code; the wire form (`signalToWire`) is the bundled
 // library `routing`'s (`navigation`, decision 116), which the browser reads too.
+// An action's `redirect` is rakun's; a page's is jhonstart's (decision 117).
 //
 // Upstream:
 //   https://nextjs.org/docs/app/getting-started/updating-data
@@ -14,7 +15,7 @@
 
 import {redirect, takeSignal} from "rakun";
 import {navigation.signalToWire} from "routing";     // 01-std/04-routing-lib
-import {action} from "rakun";                  // provided by front 24
+import {serverAction} from "rakun";            // provided by front 24
 import {revalidatePath} from "rakun-cache";    // provided by front 12
 import {cookies} from "rakun";                 // provided by front 62
 
@@ -31,7 +32,7 @@ fn insertPost(slug: string, draft: Draft) -> i32 {
 
 // SERVER — the action. The phase is Action, so the cookie write and the
 // revalidation are both legal here and both would raise during a render.
-#[action]
+#[serverAction]
 pub fn createPost(title: string, body: string) -> string {
     val session = cookies().get("session").unwrapOr("");
     if (session == "") {

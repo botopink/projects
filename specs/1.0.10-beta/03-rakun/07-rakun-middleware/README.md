@@ -54,7 +54,7 @@
 **Priority:** high — every cross-cutting concern in track B enters here; without a chain, security, metrics, compression, error shape and API versioning each need their own hook into a frozen dispatcher
 **Target:** erlang (server)
 **Wave:** 3
-**Depends on:** 06 · `01-std/04-routing-lib` Step 8 (the `:param` grammar, `pattern`) · `01-std/07-std-json-writers` (the problem-detail body) · **76 (soft)** — front 07 lands without it; see *Graceful shutdown and draining*
+**Depends on:** 06 · `01-std/04-routing-lib` Step 8 (the `:param` grammar, `pattern`) · `01-std/01-std-lib-enablement` (the problem-detail body, std's JSON writers) · **76 (soft)** — front 07 lands without it; see *Graceful shutdown and draining*
 **Owns:** `modules/rakun-web/src/middleware.bp`, `cors.bp`, `error.bp`, `filter.bp`, `convention.bp` · `modules/rakun-web/test/middleware_test.bp`, `cors_test.bp`, `error_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · `modules/rakun-web/src/websocket/**`, which is front 20's · `modules/rakun-web/src/rules/**`, which is front 65's
 **Reference:** decision 116 rules 3 and 9 (std writes the JSON; `routing` owns the `:param` grammar) · `04-web.md § Aplicacoes Servlet (Spring MVC)` — Tratamento de Erros, CORS, API Versioning, Container Servlet Embutido · `04-web.md § Graceful Shutdown` · `NEXTJS-DOCS.md § 20. Middleware e Proxy` · <https://docs.spring.io/spring-boot/reference/web/servlet.html> · <https://nextjs.org/docs/app/building-your-application/routing/middleware> · <https://www.rfc-editor.org/rfc/rfc9457>
@@ -472,7 +472,7 @@ Create the module (`botopink.json` with `"target": "erlang"`, `src/root.bp`), th
 **Acceptance:**
 - [ ] `raiseProblem("order.not-found", "no order 42")` with a matching `#[exceptionHandler]` answers that handler's `ProblemDetail`
 - [ ] The response content type is `application/problem+json`
-- [ ] A `detail` carrying U+0001 and a `"` yields a body std's `json.parse` accepts; `grep -n "fn jsonEscape" modules/rakun-web/src/error.bp` is empty
+- [ ] A `detail` carrying U+0001 and a `"` yields a body std's `json.decode` answers `Ok` for; `grep -n "fn jsonEscape" modules/rakun-web/src/error.bp` is empty
 - [ ] An unmatched raise answers 500 with `about:blank`, a digest, and no reason text in the body
 - [ ] The digest appears in the log line for the same request
 - [ ] Two advice types both contribute; a tag registered twice fails at boot naming both

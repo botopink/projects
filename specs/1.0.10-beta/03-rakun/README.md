@@ -57,7 +57,7 @@ half depends on 06, and a citation of 11 is read as one or the other). Ties brea
 | 16 | [`16-rakun-scheduling`](./16-rakun-scheduling/README.md) | medium | 2 · 3 | 4 | `rakun-scheduling` | 05 · 06 · 11 (host) | std 01 |
 | 17 | [`17-rakun-logging`](./17-rakun-logging/README.md) | low (high as a dependency) | 2 · 3 | 4 | `rakun-logging` | 05 · 06 · 11 (host) · 62 | std 03 |
 | 61 | [`61-rakun-parallel-intercepting-routes`](./61-rakun-parallel-intercepting-routes/README.md) | high | 2 · 4 | 4 | `rakun-app` | 22 · 23 · 62 | jhonstart 27 · 30 |
-| 63 | [`63-rakun-navigation-signals`](./63-rakun-navigation-signals/README.md) | high | 2 · 3 | 4 | `rakun-app` | 22 · 23 · 62 | — |
+| 63 | [`63-rakun-navigation-signals`](./63-rakun-navigation-signals/README.md) | high | 2 · 3 | 4 | `rakun-app` | 22 · 62 | — |
 | 73 | [`73-rakun-starters`](./73-rakun-starters/README.md) | high | 2 · 4 | 4 | `starters/` | 04 · 72 · the modules each starter aggregates | — |
 | 75 | [`75-rakun-observability-metrics`](./75-rakun-observability-metrics/README.md) | high | 2 · 4 | 4 | `rakun-metrics` | 11 (API) · 13 · 74 · 17 (reads its correlation field, owns nothing there) | — |
 | 82 | [`82-rakun-static-assets`](./82-rakun-static-assets/README.md) | medium | 2 · 4 | 4 | `rakun-web` | 04 · 05 · 07 | std 01 · 03 |
@@ -164,7 +164,7 @@ Module level, the same graph collapsed onto the 28 submodules, is drawn in
 | rakun → std | 04 · 05 · 10 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 64 · 65 · 66 · 79 · 80 · 81 · 82 · 85 · 86 · 87 · 88 · 89 · 92 | 01 | `net`, `path`, `fs`, `process`, `clock`, `random`, `hmac`, `encoding`, `regex`, `escape` — named per front in its `Depends on` line |
 | rakun → std | 23 · 60 · 92 | 02 | spawn/gather over unstarted thunks (`async.all`) — `@Future` carries no concurrency on BEAM |
 | rakun → std | 12 · 17 · 23 · 24 · 60 · 66 · 77 · 82 | 03 | content hash: cache keys, error digest, build id, fingerprints, migration checksums |
-| rakun ⇄ jhonstart, through onze | 23 | 30 (render) · 28 | onze registers one `PageRenderer` per page with 23 and builds 28's `RequestData` from rakun's `Request`; jhonstart writes the chunks through a `fn(string)` onze builds over 23's `ChunkWriter`. No package edge either way (decisions 113, 114) |
+| rakun ⇄ jhonstart, through onze | 23 | 30 (render) · 28 | onze registers one `PageRenderer` per page with 23 and builds 28's `RequestData` from rakun's `Request`; jhonstart writes status, headers and chunks through its `Response`, which onze builds over 23's `ChunkWriter` (`setStatus` / `setHeader` / `write` / `close`). No package edge either way (decisions 113, 114, 117) |
 | rakun ⇄ jhonstart, through onze | 24 | 67 | 24's action id and envelope; 67 writes the form markup (`data-jh-a`, the hidden field) with the id onze hands it; onze sets the field and header names on both sides (`rakun.actions.field` / `rakun.actions.header` here, `actionField` / `actionHeader` there — decision 114) |
 | rakun ⇄ jhonstart, through onze | 25 | 30 | the flush primitive a streaming handler reuses |
 | rakun ⇄ jhonstart, through onze | 61 | 27 · 30 | the soft-navigation marker `Link` sets; per-slot `loading` boundaries |
@@ -174,7 +174,7 @@ Module level, the same graph collapsed onto the 28 submodules, is drawn in
 | jhonstart and rakun, through `routing` | 26 · 27 | 22 · 60 · 61 · 65 | the router and `Link` have no matcher, table parser or codec of their own; both sides import them from the bundled library `routing` — the route table, the route kinds, the slot states and `clientHref` — which is neutral like std and not an edge between the two (decision 115). The formats stay specified here |
 | jhonstart ⇄ rakun, through onze | 28 · 30 | 62 · 23 | the `RequestData` onze builds from rakun's `Request` and hands to `renderStream` — no host-module binding (decision 114); the chunks 23 writes |
 | jhonstart ⇄ rakun, through onze | 27 | 60 | prefetch reads the static/dynamic decision |
-| jhonstart ⇄ rakun, through onze | 31 | 17 · 24 · 63 | `error.digest`; the action envelope; jhonstart's own `notFound` / `redirect` signals, which onze translates into rakun's 404 / 307 before the first chunk — after it they are markup jhonstart's client executes, status 200 (decision 115) |
+| jhonstart ⇄ rakun, through onze | 31 | 17 · 24 · 63 | `error.digest`; the action envelope, whose `n` carries an action's rakun `redirect`; a page's `notFound` / `redirect` are jhonstart's own, which jhonstart's render turns into the 404 / 307 through the `ChunkWriter` onze adapts — after the first chunk they are markup jhonstart's client executes, status 200 — and never reach 63 (decisions 115, 117) |
 | jhonstart ⇄ rakun, through onze | 32 | 66 | the paths `openGraph.images` names |
 | jhonstart ⇄ rakun, through onze | 67 | 24 · 14 · 63 | the action envelope it decodes; constraints it mirrors |
 | onze → rakun | 68 · 69 · 50 · 51 · 70 · 71 · 53 | 04 · 05 · 07 · 11 · 12 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 63 · 65 · 66 | listed per front in [`../06-onze/README.md`](../06-onze/README.md); onze registers front 23's page renderers and rakun names no onze module (decisions 113, 114); `examples/blog-server` here answers the blog's routes with rakun alone, and the rendered blog is `repository/onze/examples/blog` |
@@ -192,7 +192,8 @@ edge reaches `jhonstart`, `emilia` or `onze` (decision 113) — is in [`modules.
 | 14 | **erlang** — the boot refusal and the message source; the constraints the client's form mirrors are the bundled library `validation`, erlang and commonJS (decision 116) |
 
 erlang comes first in every `targets` list and is the default target of `botopink run` / `botopink
-test` in rakun, and no rakun package declares commonJS — the workspace root is `["erlang"]`. What
+test` in rakun, and no rakun package declares commonJS — every manifest, `rakun-test` included, and
+the workspace root are `["erlang"]` (decision 117 rule 9). What
 both sides run is not rakun's: the matcher, the routing wires and the navigation vocabulary are the
 bundled library `routing` (decisions 115, 116), the server-action protocol is `actions`, and
 validation is `validation` (decision 116) — bundled libraries rakun imports.

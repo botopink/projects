@@ -1,21 +1,26 @@
 // Front 63 — Rakun Navigation Signals
 //
-// What this demonstrates: the two canonical uses, on page renderers (front 23).
-// A `[slug]` renderer calls `notFound()` when the record is missing, and a
-// dashboard renderer calls `redirect("/login")` when there is no session. Both
-// run on the BEAM before the first write; neither returns, and the dispatch
-// answers the signal's status. A jhonstart page raises jhonstart's own
-// not-found, which onze translates into this front's (decision 113) — that
-// wiring is onze front 53's example.
+// What this demonstrates: rakun's signals where rakun's code runs — a route
+// handler (front 25). A `[slug]` handler calls `notFound()` when the record is
+// missing, and an account handler calls `redirect("/login")` when there is no
+// session. Both run on the BEAM; neither returns, and the handler wrapper
+// answers the signal's status with no boundary rendering.
+//
+// A page's `notFound` / `redirect` are jhonstart's, not these: jhonstart's render
+// turns them into the 404 / 307 itself (decision 117) — that page is jhonstart
+// front 31's example and onze front 53's. A rakun page renderer that raises one
+// of these reasons fails its request (front 23).
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/functions/not-found
 //   https://nextjs.org/docs/app/api-reference/functions/redirect
-//   https://nextjs.org/docs/app/guides/authentication
+//   https://nextjs.org/docs/app/getting-started/route-handlers-and-middleware
 
 import {notFound, redirect} from "rakun";
-import {cookies} from "rakun";                                 // provided by front 62
-import {page, ChunkWriter, Request} from "rakun";               // provided by fronts 23 and 04
+import {cookies} from "rakun";                                     // provided by front 62
+import {Request} from "rakun";                                     // provided by front 04
+import {getRoute, HandlerResponse} from "rakun";                   // provided by front 25
+import {json} from "std";                                          // 01-std-lib-enablement
 
 pub type Post(
     slug: string,
@@ -32,24 +37,28 @@ fn findPost(slug: string) -> @Result<Post, string> {
     throw "no such post: " + slug;
 }
 
-// SERVER — § 14 "Not Found". The signal unwinds to the dispatch, which answers
-// 404; the statements after `notFound()` are never reached.
-val _post = page("blog/[slug]", fn(req: Request, out: ChunkWriter) {
+// SERVER — a missing record. The signal unwinds to front 25's handler wrapper,
+// which answers 404; the statements after `notFound()` are never reached.
+#[getRoute("api/posts/[slug]")]
+#[@future]
+pub fn showPost(req: Request) -> @Future<HandlerResponse> {
     val found = findPost(req.param("slug"));
     if (found.isError()) {
         val _gone = notFound();
     };
     val post = found.unwrapOr(Post(slug: "", title: "", body: ""));
-    return out.write(post.title + "\n" + post.body);
-});
+    return HandlerResponse.json(json.object([#("title", json.quote(post.title))]));
+}
 
-// SERVER — § 23 "Layout with authentication", as a guard on the dashboard
-// renderer. `redirect` answers 307 and the destination is checked against the
-// route table, so a typo fails here rather than sending a browser to a 404.
-val _dashboard = page("dashboard", fn(req: Request, out: ChunkWriter) {
+// SERVER — a guard. `redirect` answers 307 and the destination is checked
+// against the route table, so a typo fails here rather than sending a client
+// to a 404.
+#[getRoute("api/account")]
+#[@future]
+pub fn account(req: Request) -> @Future<HandlerResponse> {
     val session = cookies().get("session").unwrapOr("");
     if (session == "") {
         val _gone = redirect("/login");
     };
-    return out.write("signed in as " + session);
-});
+    return HandlerResponse.json(json.object([#("session", json.quote(session))]));
+}

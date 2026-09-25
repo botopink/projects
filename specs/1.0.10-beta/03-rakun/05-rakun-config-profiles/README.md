@@ -4,7 +4,7 @@
 **Priority:** critical — `#[value("key")]` reads a table that nothing fills; an application cannot change environment without changing source
 **Target:** erlang (server)
 **Wave:** 1
-**Depends on:** 01 · `01-std/07-std-json-writers` (`json.unquote` for the `.json` reader's string tokens) · `01-std/06-validation-lib` (the validator the boot runs)
+**Depends on:** 01 · `01-std/01-std-lib-enablement` (`json.decode`, the `.json` reader — decision 117) · `01-std/06-validation-lib` (the validator the boot runs)
 **Owns:** `src/config.bp`, `src/profiles.bp`, `src/sidecars/rakun_config.erl` · `test/config_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · `src/runtime.bp` and `src/sidecars/rakun_runtime.erl` belong to front 04
 **Reference:** `03-recursos-principais.md § Configuracao Externa` · `03-recursos-principais.md § Profiles` · <https://docs.spring.io/spring-boot/reference/features/external-config.html> · <https://docs.spring.io/spring-boot/reference/features/profiles.html>
@@ -87,12 +87,13 @@ precedence, resolved after it. An import cycle is a startup failure naming both 
 The sidecar reads three:
 
 - **`.properties`** — `key=value`, `#`/`!` comments, `\` continuations. Twenty lines of Erlang.
-- **`.json`** — OTP 27's `json:decode/1`, then flattened to dot keys. Arrays become indexed keys
-  (`spring.profiles.include[0]`), matching Spring's own relaxed list binding. The landed reader is a
-  hand scanner in botopink (`modules/rakun/src/config.bp`); its string reader
-  (`config.bp:394-433`, `jsonString` / `jsonUnquote` / `unescape`, which misreads `\b`, `\f`, `\/`
-  and `\u`) is deleted for std (decision 116): the document is checked with `json.parse` first, and
-  each string token is read with `json.unquote` (`01-std/07-std-json-writers`).
+- **`.json`** — std's `json.decode(text) -> @Result<Json, string>` (`01-std/01-std-lib-enablement`,
+  decision 117), then the `Json` tree flattened to dot keys: an `Obj` field extends the key, an `Arr`
+  becomes indexed keys (`spring.profiles.include[0]`), matching Spring's own relaxed list binding,
+  and a `Str` / `Num` / `Bool` is the value. The landed reader is a hand scanner in botopink
+  (`modules/rakun/src/config.bp`); it and its string reader (`config.bp:394-433`, `jsonString` /
+  `jsonUnquote` / `unescape`, which misreads `\b`, `\f`, `\/` and `\u`) are deleted for std
+  (decisions 116 and 117) — no token is sliced by hand.
 - **`.yaml` / `.yml`** — a **subset** decoder in the sidecar: block mappings, block sequences, plain
   and quoted scalars, `#` comments, `---` document separators. Anchors, aliases, flow style,
   multi-line scalar blocks and tags are **refused with a located error naming the line**, not
@@ -393,7 +394,7 @@ here only so the reasoning survives:
 - [ ] `src/config.bp` and `src/profiles.bp` exist; `src/sidecars/rakun_config.erl` compiles under `erlc`
 - [ ] All eight sources resolve in the documented order, each with its own test
 - [ ] `.properties`, `.json` and the documented YAML subset all load; an unsupported YAML construct is a located error
-- [ ] a `.json` value holding `\u0041`, `\b` and `\/` loads as `A`, U+0008 and `/`; a malformed document is refused by `json.parse` naming the file; `grep -n "fn jsonString\|fn jsonUnquote" src/config.bp` is empty
+- [ ] a `.json` value holding `\u0041`, `\b` and `\/` loads as `A`, U+0008 and `/`; a malformed document is refused with `json.decode`'s `Error` message, naming the file; `grep -n "fn jsonString\|fn jsonUnquote\|json\.unquote\|json\.parse" src/config.bp` is empty
 - [ ] `#[configurationProperties]` binds nested records, `Duration` and `DataSize`
 - [ ] A missing non-optional location, an unresolvable placeholder, a placeholder cycle, a profile-group cycle and an unparsable typed value each fail the boot with a message naming the input
 - [ ] `#[validated]` configuration refuses the boot on a violation
