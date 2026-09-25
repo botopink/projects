@@ -174,3 +174,12 @@ sig_interface_method, sig_non_function_null, sig_outside_call_null, sig_zero_par
 sublanguage_cross_module_tokens, sublanguage_hover_ref,
 symbols_empty, symbols_line_ranges, symbols_single_fn, symbols_single_val, symbols_test_block,
 type_definition_literal_null
+
+> **Status (1.0.10-beta · front 07 step 3, compiler `f58fd392`):** the two `uncertain` rows are
+> answered and the report is closed. `hover_interface_method` (`:103`): the footer names the
+> declaring behavior — ``*from `behavior Signed` (via I32)*`` — since `53dad5cc` (2026-09-17).
+> `completion_decorator_record` (`:104`): the degraded path keeps every well-typed `val` since
+> `574134a8` (06 N23); the fixture carries the suggested `val other = 1;` and asserts `other` is
+> listed and `usePost` — the binding the cursor's own line defines — is not; the detail spells the
+> 1.0.3 surface `type PostService(name: string, count: i32)` since `f952bfc6` (C-19). Column
+> covered: `lsp`. No `uncertain` row is carried forward.
