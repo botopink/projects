@@ -526,10 +526,10 @@ pub mod clock;
 Front 03 hands over no export line: its functions live in `hash.bp`, which is registered already.
 
 **Acceptance:**
-- [ ] the build embeds every registered module without a `build.zig` edit (`libs/std/AGENTS.md`)
+- [x] the build embeds every registered module without a `build.zig` edit (`libs/std/AGENTS.md`)
 - [ ] `import {escape, encoding, hash, io: {net, clock}} from "std";` resolves from a consumer package
 - [ ] `libs/std/AGENTS.md`'s tree listing names `io/net.bp` and `escape.bp` and lists the added functions on the rows of the eight modules extended
-- [ ] fronts 02 and 03 have landed first, so this commit adds front 02's line rather than waiting on it
+- [x] fronts 02 and 03 have landed first, so this commit adds front 02's line rather than waiting on it
 
 ## Examples
 
