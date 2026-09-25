@@ -177,18 +177,18 @@ iterable in any body, a plain `fn` included — that is what the infallible wrap
 - [ ] `grep -rn 'Iterator\b\|IteratorStep\|Yield<\|Iterable' libs/std/src/builtins.d.bp modules/`
       finds nothing; `EffectKind.all` has `resultGenerator` where it had `iterator`; the drift test
       green at every commit
-- [ ] a `#[@generator]` body with `try` is refused with the diagnostic above; a `#[@resultGenerator]`
+- [x] a `#[@generator]` body with `try` is refused with the diagnostic above; a `#[@resultGenerator]`
       body with `try` compiles; a `#[@futureGenerator]` body with `await` and `try` compiles — one
       `reject/` or `test/` cell each, on the four targets
 - [ ] `break v` in a `#[@generator] fn` emits `v` as the last item, run on all four;
       `run/loop_yield_then_break_value.bp` re-specified to that answer (its decision-55 reading is
       C-06's and is superseded — [`22-loops`](../22-loops/README.md))
-- [ ] a plain `fn` iterating a `@Generator<T>` compiles and runs; a plain `fn` iterating a
+- [x] a plain `fn` iterating a `@Generator<T>` compiles and runs; a plain `fn` iterating a
       `@ResultGenerator<T, E>` is refused naming `try` and the level; a `#[@result]` body iterating it
       compiles
-- [ ] the 38 + 40 iterator snapshots and the 19 + 6 + 15 generator snapshots re-recorded and
+- [x] the 38 + 40 iterator snapshots and the 19 + 6 + 15 generator snapshots re-recorded and
       classified: rename-only diffs, plus the RUN LOGs step 1 changes by running
-- [ ] `docs.md` § generators carries the three wrappers and `YieldStep`; `comptime/AGENTS.md` updated
+- [x] `docs.md` § generators carries the three wrappers and `YieldStep`; `comptime/AGENTS.md` updated
       in the same commit
 
 ### Step 2 — `@Context<Base>`, `@Use<C, T>`, `@Component<T>`, `#[@use]` (decisions 102 and 104)
@@ -207,21 +207,21 @@ after `#[@` — the same change 22-loops needs for `#[@generator] loop`, made he
 annotation to want.
 
 **Acceptance:**
-- [ ] `#[@use] fn counter() -> @Use<ElementBase, i32> { val s = use state(0); … }` and
+- [x] `#[@use] fn counter() -> @Use<ElementBase, i32> { val s = use state(0); … }` and
       `#[@use] fn Page() -> @Component<Element> { val n = use counter(); val d = await load(); val c = try read(); … }`
       infer and run on four targets, `Element implement @Context<ElementBase>` declared in the cell
-- [ ] `#[@future] fn Page() -> @Future<Element> { use pathname(); }` is `use-without-context-effect`
+- [x] `#[@future] fn Page() -> @Future<Element> { use pathname(); }` is `use-without-context-effect`
       naming `#[@use]`; `fn Loading() -> Element` with no annotation is an ordinary function;
       `#[@use] fn f() -> string` is `effect-wrapper-mismatch`; `#[@use] fn f() -> Element` (bare) is
       `effect-missing-wrapper`; `@Component<X>` with `X` not a `@Context` owner is
       `effect-wrapper-mismatch`
-- [ ] two bases in one body refused at the second `use` naming both (96, kept); `use Card()` where
+- [x] two bases in one body refused at the second `use` naming both (96, kept); `use Card()` where
       `Card: @Component<Element>` is refused — a component is called
-- [ ] `@getContext(T)` works in every `#[@use]` body and nowhere else; the hint no longer names an
+- [x] `@getContext(T)` works in every `#[@use]` body and nowhere else; the hint no longer names an
       annotation R5 refuses
-- [ ] commonJS: every `#[@use]` body is `async function`; the `contextShape` body scan is deleted;
+- [x] commonJS: every `#[@use]` body is `async function`; the `contextShape` body scan is deleted;
       erlang/wasm/beam output for the same programs differs only in the renamed atoms and strings
-- [ ] `grep -rn '#\[@context\]\|@Context<[^>]*,' modules/ libs/ tests/` finds nothing; the 36 + 84
+- [x] `grep -rn '#\[@context\]\|@Context<[^>]*,' modules/ libs/ tests/` finds nothing; the 36 + 84
       snapshots re-recorded and classified; the 8 `tests/language` `use` cells of front 19 re-spelled
       and green on four targets; `docs.md` § use and § effects carry the matrix above
 
@@ -250,13 +250,34 @@ and a listed cell that passes fails the gate, so the window is exactly one commi
 `grep -rn '#\[@context\]\|@Context<Element, ' repository/jhonstart` returns nothing;
 `known-red-libs.txt` back to its header; the meta submodule pointer bumped in the same sweep.
 
+### Step 5 — one context wrapper, `@Component<C, T>` (decision 128)
+
+`@Use<C, T>` and `@Component<T>` ≡ `@Use<B, T>` become one wrapper, `@Component<C, T>`, for hooks
+and components alike. `builtins.d.bp`: `pub behavior Component<C, T> extends Future { }`, `Use`
+deleted, `getContext` answers `Component<T, any>`; `effect_chain.zig`: `Component ⊃ Future`;
+`EffectKind.use.returnWrapper()` = `Component` (a set of one); `contextInfoFromReturn` reads `C`
+and nothing off `T`; a component is the `@Component<C, T>` whose `T` implements `@Context<C>`
+(`isComponentType`), which `use` refuses; a `T` owning a context at another base is
+`effect-wrapper-mismatch`; `@Component<T>` with one argument is an arity error. `typescript.zig`
+maps `@Component<C, T>` → `Promise<T>`. jhonstart: `@Use<ElementBase, X>` →
+`@Component<ElementBase, X>`, `@Component<Element>` → `@Component<ElementBase, Element>`.
+
+**Acceptance:**
+- [ ] `grep -rnE '@Use\b|\bUse<|@Component<[A-Za-z_]+>' modules/ libs/ tests/ docs.md repository/jhonstart`
+      finds nothing but prose naming the removed form
+- [ ] a hook and a component under the one wrapper compose; `use` of a component refused;
+      `@Component<Http, Element>` (`Element: @Context<Element>`) is `effect-wrapper-mismatch`;
+      `@Component<Element>` is an arity error
+- [ ] `zig build test`, `test-language` on four targets and jhonstart `test-libs` green; snapshots
+      re-recorded and classified (renamed wrapper strings only)
+
 ## Gate
 
 - [ ] `scripts/gate.sh --cold` green in this front's worktree at every commit; `test-libs` at
       baseline (jhonstart through the ledger during step 4 only)
 - [ ] `zig build test-language` green on the four targets with the cells above; every re-recorded
       RUN LOG verified by running
-- [ ] the `effect_chain.zig` drift test green with `builtins.d.bp` at its final shape
+- [x] the `effect_chain.zig` drift test green with `builtins.d.bp` at its final shape
 - [ ] `AGENTS.md` of `src/comptime/`, `src/codegen/`, `src/parser/`, `libs/std/` in the same commit
       as each change
 - [ ] Commit on `fix/effect-chain`; no push, no merge — landing is the maintainer's step
