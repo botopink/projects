@@ -1,0 +1,14 @@
+--- a/modules/compiler-core/src/format.zig	2026-09-25 05:12:08.316504719 -0300
++++ b/modules/compiler-core/src/format.zig	2026-09-25 05:12:08.387503141 -0300
+@@ -1413,9 +1413,10 @@
+                 // pinned and cannot break first: the middle decision 65 calls
+                 // wrong. Measured and parked (`format/AGENTS.md`); the enabling
+                 // is `groupMeasured` plus `ifBreak(",")` before the softline.
+-                break :blk try this.group(try this.concatAll(&.{
++                break :blk try this.groupMeasured(try this.concatAll(&.{
+                     try this.text("("),
+                     try this.nest(INDENT, try this.concat(this.softline(), inner)),
++                    try this.ifBreak(","),
+                     this.softline(),
+                     try this.text(")"),
+                 }));

@@ -108,7 +108,7 @@ arm for is a **printer** defect, and it is the whole of D1.
 
 **G6 is the formatter's too** — a field the parser records and one of the two statement-sequence
 printers does not read. Everything else the formatter cannot print back **is** a field the parser
-does not record. Six in all, measured, named and costed in
+does not record. Seven in all, measured, named and costed in
 [`parser-gaps.md`](./parser-gaps.md):
 
 | | Gap | Deciding line | Cost |
@@ -119,6 +119,7 @@ does not record. Six in all, measured, named and costed in
 | **G4** | a **trailing comment on a method**: `BehaviorMethod.comments` is leading-only | `ast.zig:1233-1236` | 3 files |
 | **G5** | **blank lines and comments in an `if` then-branch and a lambda body** — two block loops inlined before `parseBlock` grew its options, so neither records `emptyLinesBefore` and a `//` there is a **parse error** | `parser/exprs.zig:162-179` and `:944-951` | 2 call sites in 1 file — **and the parse-error half is [`15-language-surface`](../15-language-surface/README.md)'s** |
 | **G6** | an `if` **else**-branch's blank lines are recorded and **not printed**: there are two statement-sequence printers and only `fmtStmtSeq` reads the field | `format.zig:1116-1126` against `:345-368` | **1 function**, this front's own file |
+| **G7** | a **trailing comment on an array or tuple element** moves to the line below, where it reads as the next element's (09's probe row d, `erika-linq/src/main.bp:111-113`): `commentsPerElem` counts comments *before* each element and records no line | `ast.zig:786-802`; the literal loops in `parser/exprs.zig` | 1 additive field, 2 loops — **the parser half is [`15-language-surface`](../15-language-surface/README.md)'s file**; the printer half is this front's |
 
 `loop (…) { x -> … }`'s body **is** a lambda body, which is why the `loop` case is the one that gets
 noticed. The block-fidelity matrix — which block keeps a blank line, which keeps a comment, and why —
@@ -482,3 +483,17 @@ byte-identical `diff -r` of the emitted output — which is the strongest statem
 that the formatter no longer loses anything: 874 changed lines over 8 files, 0 reordered members, 0
 deleted keywords, 11 passed / 0 failed in `test-libs`.
 
+
+---
+
+## Open (re-measured 2026-09-25)
+
+| Row | State | Waits on |
+|---|---|---|
+| **C-12 — the call argument list**, the next construct under `fits` | `Doc.ifBreak` landed (the trailing comma of the open form, tested flat, broken and trailing); the construct stays **pinned**. Enabled as the signature's shape over the six trees at the pinned sibling commits (245 files): 105 files, 879 hunks, +11 718 −4 072, lines past 80 columns 5 601 → 2 903 — and ~1 480 of the ~2 770 lists it opens close on a line that continues with an operator or a member access, opened for what follows them because the enclosing binary expression, `assert` and `case` arm are pinned. The enabling is [`argument-list.patch`](./argument-list.patch) (two lines; the formatter's own tests move with it) | the maintainer: enable the enclosing constructs first, or the list with them (decision 65's "wrong middle") |
+| **C-12 — the six-trees claim** | re-verified at compiler `f58fd392` on the pinned siblings: `d55a3b87 → f9cf2ace` moves 24 files in 70 hunks and every one is whitespace-only; `f9cf2ace → HEAD` moves 0 bytes on the 191 files `f9cf2ace` parses | — |
+| **C-12 — the comment column** | not printed. Top-level half: `DeclKind.comment` has no column (`parser.zig`); statement half: the continuation is a separate comment statement. 09 already committed rakun's site at column 0, so no live site in the ecosystem reads it | a column on the comment node — `parser.zig` is not this front's |
+| **G7 — array/tuple element trailing comment** | loss reproduced; see [`parser-gaps.md`](./parser-gaps.md#g7--a-trailing-comment-on-an-array-or-tuple-element) | 15's `parser/exprs.zig` literal loops |
+| **C-13 — no `;` after a braced statement** (decision 29 (c)) | printer half not written: at `f58fd392` the parser still reads a block's statements with `requiredExceptLast`, so `if (c) { … }` followed by a statement without `;` is a parse error; printing it would emit code that does not parse | 15's parser half (`15-language-surface/decision-29-parser-half.patch`), then the 245-site migration |
+| `while` / `for` / annotated `loop` printer arms | not written here | front 22's carve-out |
+| C-11 parse defects | the trailing lambda's one-line body and `builtins.d.bp:116` `await` | 15; 01/08 |
