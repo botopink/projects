@@ -8,7 +8,7 @@
 //     `i32`, both on the serializable whitelist. A field typed `Element` would
 //     be rejected at comptime, with a message located at the declaration.
 //   - `LikeButton` carries `#[client]` and, because its body activates
-//     `use state`, `#[@use]` with a `@Component<Element>` return (decision 104).
+//     `use state`, a `@Component<ElementBase, Element>` return (decision 128).
 //     `use state` only means anything in the browser; on the server it is never
 //     called.
 //   - `PostList` is a SERVER component that activates nothing, so it is a plain
@@ -45,8 +45,7 @@ pub type LikeProps(
 // The interactive component. `data-jh-on-click` names a handler the client
 // runtime binds after hydration; there is no JavaScript string in this file.
 #[client]
-#[@use]
-pub fn LikeButton(props: LikeProps) -> @Component<Element> {
+pub fn LikeButton(props: LikeProps) -> @Component<ElementBase, Element> {
     val c = use state(props.likes);
     return button([
         text(c.value.toString() + " likes", attrs: []),

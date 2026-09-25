@@ -2,8 +2,7 @@
 import {Element, div, h1, ul, li, text} from "jhonstart";
 import {request} from "jhonstart";
 
-#[@use]
-pub fn SearchPage() -> @Component<Element> {
+pub fn SearchPage() -> @Component<ElementBase, Element> {
     val req = use request();
     val query = req.query("q");
     val results = await search(query);

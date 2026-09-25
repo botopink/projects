@@ -6,8 +6,7 @@ import {Element, div, h1, p, text} from "jhonstart";
 import {Metadata} from "jhonstart";
 import {collections.Dict} from "std";
 
-#[@future]
-pub fn generateMetadata(params: Dict<string, string>) -> @Future<Metadata> {
+pub fn generateMetadata(params: Dict<string, string>) -> @Task<Metadata> {
     val slug = params.get("slug");
     val post = await fetchPost(slug);
     return Metadata(
@@ -30,8 +29,7 @@ pub fn generateMetadata(params: Dict<string, string>) -> @Future<Metadata> {
     );
 }
 
-#[@use]
-pub fn BlogPost(params: Dict<string, string>) -> @Component<Element> {
+pub fn BlogPost(params: Dict<string, string>) -> @Component<ElementBase, Element> {
     val slug = params.get("slug");
     val post = await fetchPost(slug);
     return div([

@@ -3,8 +3,7 @@ import {Element, div, h1} from "jhonstart";
 import {Counter} from "@/components/counter";    // client component
 import {RecentPosts} from "@/components/posts";   // server component
 
-#[@use]
-pub fn DashboardPage() -> @Component<Element> {
+pub fn DashboardPage() -> @Component<ElementBase, Element> {
     return div([
         h1([text("Dashboard")], attrs: []),
         Counter(),               // hydrated on the client

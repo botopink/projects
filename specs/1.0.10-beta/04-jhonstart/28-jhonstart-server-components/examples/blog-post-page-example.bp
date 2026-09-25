@@ -3,16 +3,16 @@
 // The `/blog/[slug]` page, as a server component.
 //
 // Everything in this file runs on the BEAM, once, while the request is in
-// flight. `PostPage` is `#[@use]` and returns `@Component<Element>` (decision
-// 104: `@Component ⊃ @Future`, so a component awaits); the two loaders are
-// `#[@future]` and are awaited at statement level, one after the other, and the tree is
+// flight. `PostPage` returns `@Component<ElementBase, Element>` (decision 128;
+// `@Component ⊃ @Task`, so a component awaits); the two loaders return
+// `@Task<T>` and are awaited at statement level, one after the other, and the tree is
 // built synchronously from what they returned. Nothing here ships to the
 // browser — front 30's render serializes the markup, and the only thing the
 // client receives is HTML.
 //
 // The two awaits are sequential on purpose: the comments cannot be loaded until
 // the post's id is known. Sequential is also what they would be anyway — on the
-// erlang backend `@Future<T>` is EAGER (`libs/std/src/http.bp:16-18`), so two
+// erlang backend `@Task<T>` is EAGER (`libs/std/src/http.bp:16-18`), so two
 // futures do not overlap just by being futures. When two loaders ARE
 // independent, the parallel form is front 02's spawn-and-gather over UNSTARTED
 // tasks (`[{ -> loadPost(s) }, { -> loadSidebar() }]`), not a map over futures.
@@ -47,10 +47,10 @@ declare fn postRow(slug: string) -> string;
 #[@External.Erlang("blog_repo", "comments_for")]
 declare fn commentRows(postId: string) -> string;
 
-// A loader: `#[@future]`, a `@Future<T>` return, and a body that does the
-// decoding. The marker is required — a `-> @Future<T>` without it is rejected.
-#[@future]
-fn loadPost(slug: string) -> @Future<Post> {
+// A loader: a `@Task<T>` return and a body that does the decoding. The return
+// is the whole declaration of the effect (decision 118). The loader cannot fail,
+// so it is a plain `@Task<T>` and the page awaits it without a `try`.
+fn loadPost(slug: string) -> @Task<Post> {
     val parts = postRow(slug).split("|");
     return Post(
         id: parts.at(0).unwrapOr(""),
@@ -59,8 +59,7 @@ fn loadPost(slug: string) -> @Future<Post> {
     );
 }
 
-#[@future]
-fn loadComments(postId: string) -> @Future<Array<Comment>> {
+fn loadComments(postId: string) -> @Task<Array<Comment>> {
     val rows = commentRows(postId).split("\n").filter({ r -> r != "" });
     return rows.map({ r -> decodeComment(r) });
 }
@@ -93,8 +92,7 @@ pub fn postView(post: Post, comments: Array<Comment>) -> Element {
 
 // The page itself. `params` is front 26's snapshot shape, handed down by
 // front 30's render from the match onze made.
-#[@use]
-pub fn PostPage(params: Array<#(string, string)>) -> @Component<Element> {
+pub fn PostPage(params: Array<#(string, string)>) -> @Component<ElementBase, Element> {
     val post = await loadPost(pairValue(params, "slug"));
     val comments = await loadComments(post.id);
     return postView(post, comments);

@@ -24,7 +24,7 @@ header lists three blockers (`server.d.bp:9-17`): `request()` is host-bound, "th
 layer … is gated on the effect-await surface", and `Http` is "a phantom `@Context` base (no
 members)". The first has a producer now — onze hands every render the request as a `RequestData`
 (decision 114), and the render is what `request()` reads. The second is
-closed: `#[@future] fn … -> @Future<T>` with `await` is landed and in production use
+closed: `fn … -> @Task<T>` with `await` is landed and in production use
 (`repository/emilia/src/emilia.bp:62-65`). The third never worked and this front drops it; see
 *Language gaps*.
 
@@ -37,8 +37,6 @@ leaves every page inventing it.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - `src/server.d.bp` — `behavior Request` with three bodyless methods (`:19-23`), `request()` behind
   `#[@External.Node("jhonstart/runtime", "request")]` (`:25-26`). Node-only, which a server front
   may not carry.
@@ -46,12 +44,13 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
 - `repository/jhonstart/examples/jhonstart-app/app/posts/[id]/page.bp` is the intended shape and is
   headed "⛔ GATED / ASPIRATIONAL EXAMPLE — does not build yet". It calls `use request()`,
   `req.params().get("id").unwrapOr("0")` and `resp.json()` — none of which exist.
-- `#[@future]` works and is mandatory: `#[@result]` without `-> @Result<…>` is a located error
-  (`tests/language/reject/result_without_wrapper.bp`), and the inverse is rejected too.
+- `await` works under a `@Task` return. The compiler still wants the effect annotation beside the
+  wrapper (`tests/language/reject/result_without_wrapper.bp`); front 24 removes the annotation and
+  makes the return the whole declaration (decision 118).
 - `await` works directly inside a `test` block (`repository/emilia/src/emilia.bp:475-480`), which is
   what makes this front testable at all.
-- `libs/std/src/http.bp:16-18` — "Erlang is eager: `@Future<T>` resolves to `T` … so the caller's
-  `await fetch(url)` is identity on that backend." There is no concurrent scheduler behind `@Future`
+- `libs/std/src/http.bp:16-18` — "Erlang is eager: `@Task<T>` resolves to `T` … so the caller's
+  `await fetch(url)` is identity on that backend." There is no concurrent scheduler behind `@Task`
   on the BEAM.
 - `libs/std/src/` has nineteen modules today and **no HTML escaping** among them. `escape.html` and
   `escape.attribute` are front 01's, new.
@@ -63,19 +62,20 @@ never ships to the browser (`NEXTJS-DOCS.md § 7`). jhonstart's equivalent is ex
 language surface:
 
 ```
-async function Page() { … }        →    #[@use] pub fn Page(…) -> @Component<Element>
+async function Page() { … }        →    pub fn Page(…) -> @Component<ElementBase, Element>
 await getPost(slug)                →    await loadPost(slug)
 ```
 
-`#[@use]` is not optional decoration — the annotation and the `@Component<…>` wrapper go together or
-the compiler rejects the declaration (decision 102), and `@Component ⊃ @Future` is what lets the body
-`await` (decision 104). This front's contribution is not the syntax, it is the five things around it.
+The `@Component<ElementBase, …>` return is not optional decoration — it is the declaration of the effect
+(decision 118): without it `use` is refused, and `@Component ⊃ @Task` is what lets the body
+`await`. A failure the component awaits is handled in its body (`try await load() catch …`, a `case`,
+`notFound()`), because `Element` is not a `@Result` and a component never propagates (decision 121). This front's contribution is not the syntax, it is the five things around it.
 
-### 0. `@Future` is eager on erlang, and that changes the port
+### 0. `@Task` is eager on erlang, and that changes the port
 
 This is the fact that most easily makes a server-component spec wrong. On the erlang backend a
-`@Future<T>` is not a handle to work in progress: `libs/std/src/http.bp:16-18` states it outright —
-"Erlang is eager: `@Future<T>` resolves to `T` in the eager-lowering arm documented in
+`@Task<T>` is not a handle to work in progress: `libs/std/src/http.bp:16-18` states it outright —
+"Erlang is eager: `@Task<T>` resolves to `T` in the eager-lowering arm documented in
 `codegen/erlang.zig`, so the caller's `await fetch(url)` is identity on that backend."
 
 The consequence is blunt. Two server components do **not** load their data in parallel
@@ -85,7 +85,7 @@ opposite, so porting it shape-for-shape and stopping there would produce a page 
 the synchronous version and a spec that never says why.
 
 Parallel loading on the BEAM is a spawned process per unit of work, gathered by index. **Front 02
-provides that**, and it takes **unstarted tasks** — `Array<fn() -> @Future<T>>` — not futures that
+provides that**, and it takes **unstarted tasks** — `Array<fn() -> @Task<T>>` — not futures that
 have already run. A page with independent loaders hands front 02 a list of thunks; a page with
 dependent loaders awaits in sequence and pays for it knowingly. This front provides neither
 mechanism and defers to front 02 by name, in the README and in every example that has more than one
@@ -125,7 +125,7 @@ re-declares nor calls them.
 
 ### 4. The loader convention
 
-A loader is an ordinary `#[@future] fn` returning `@Future<T>` for a `T` the component can render.
+A loader is an ordinary `fn` returning `@Task<T>` for a `T` the component can render.
 It is awaited in the component body, at statement level, never inside a closure — a closure body
 whose last statement is an `await` is not a form any file in the tree uses, and the lambda rule
 (`§2.38`: a lambda's last statement must be an implicit-return expression) makes it a poor bet.
@@ -252,10 +252,9 @@ pub fn headers() -> Array<#(string, string)> {
 }
 ```
 
-`request()` is a plain function, not a hook, until the effect-chain task (front 19 step 2) lands
-`#[@use]`. See *Language gaps* for what it becomes then: `#[@use] fn request() -> @Use<ElementBase,
-RequestData>`, activated as `use request()` inside a `#[@use] fn … -> @Component<Element>` body
-(decision 104).
+`request()` is a plain function, not a hook, until front 24 lands the `@Component` return as the
+grant of `use`. See *Language gaps* for what it becomes then: `fn request() -> @Component<ElementBase,
+RequestData>`, activated as `use request()` inside a `fn … -> @Component<ElementBase, Element>` body.
 
 **Acceptance:**
 - [ ] every cell is dual-target — `#[@External.Erlang("jhonstart_server", …)]` with its
@@ -271,27 +270,28 @@ RequestData>`, activated as `use request()` inside a `#[@use] fn … -> @Compone
 
 ### Step 3 — The server-component convention
 
-A server component is a `#[@use] pub fn` taking its route params and returning `@Component<Element>`
-(decision 104): `@Component<Element>` is `@Use<ElementBase, Element>` for `Element: @Context<ElementBase>`
-(decision 102), and `@Component ⊃ @Future`, so the body awaits its loaders and may activate
-`request()` under the one annotation. A component that awaits nothing and activates nothing is a
+A server component is a `pub fn` taking its route params and returning `@Component<ElementBase, Element>`
+(decision 128): the base is written, `Element: @Context<ElementBase>` is the owner (decision 102),
+and `@Component ⊃ @Task`, so the body awaits its loaders and may activate `request()` under the one
+return. A component that awaits nothing and activates nothing is a
 plain `fn … -> Element` (question 92-b). `server.bp` ships no decorator for it: the marker is
-`#[@use]`, which the language already enforces, and a second marker would be a second thing to get
-wrong.
+the `@Component` return, which the language already enforces, and a second marker would be a second
+thing to get wrong.
 
 ```bp
-#[@future]
-pub fn renderServerComponent(component: fn() -> @Component<Element>) -> @Future<string> {
+pub fn renderServerComponent(component: fn() -> @Component<ElementBase, Element>) -> @Task<string> {
     val tree = await component();
     return renderToString(tree);
 }
 ```
 
 **Acceptance:**
-- [ ] a `#[@use] fn … -> @Component<Element>` that awaits a loader compiles on erlang
-- [ ] omitting `#[@use]` on a body that awaits is a compile error, and the test suite records the
-      expected message
-- [ ] on commonJS every `#[@use]` body is emitted as `async function` (decision 104), so
+- [ ] a `fn … -> @Component<ElementBase, Element>` that awaits a loader compiles on erlang
+- [ ] a body that awaits under a plain `-> Element` return is a compile error
+      (`effect-await-without-task`), and the test suite records the expected message
+- [ ] a component body that writes `try await loader()` without a `catch` is a compile error
+      (`effect-try-without-fallible-channel`: `Element` is not a `@Result`)
+- [ ] on commonJS every `@Component` body is emitted as `async function` (decision 104), so
       `renderServerComponent`'s `await component()` is a real await there
 - [ ] `renderServerComponent` awaits exactly once and renders synchronously afterwards
 - [ ] a component that awaits two loaders in sequence compiles and both awaits are at statement
@@ -299,8 +299,8 @@ pub fn renderServerComponent(component: fn() -> @Component<Element>) -> @Future<
 
 ### Step 4 — The loader convention
 
-A loader is `#[@future] fn name(args) -> @Future<T>`. `server.bp` ships **no** loader machinery:
-`libs/std/src/http.bp:55` already has `fetch(url) -> @Future<Response>`, a database loader is front
+A loader is `fn name(args) -> @Task<T>`. `server.bp` ships **no** loader machinery:
+`libs/std/src/http.bp:55` already has `fetch(url) -> @Task<Response>`, a database loader is front
 08's, and parallel awaiting (`all`, `race`, `allSettled`) is front 02's. What this front owns is the
 rule about where an `await` may stand.
 
@@ -310,11 +310,9 @@ tree awaits inside one. So a component that needs N rows awaits **one** loader r
 `Array<T>` and maps synchronously afterwards — not N awaits inside a `map`.
 
 ```bp
-#[@future]
-fn loadPost(slug: string) -> @Future<Post> { … }
+fn loadPost(slug: string) -> @Task<Post> { … }
 
-#[@use]
-pub fn PostPage(params: Array<#(string, string)>) -> @Component<Element> {
+pub fn PostPage(params: Array<#(string, string)>) -> @Component<ElementBase, Element> {
     val post = await loadPost(pairValue(params, "slug"));
     val comments = await loadComments(post.id);
     return article([ … comments.map({ c -> commentRow(c) }) … ], attrs: []);
@@ -322,7 +320,7 @@ pub fn PostPage(params: Array<#(string, string)>) -> @Component<Element> {
 ```
 
 Two sequential awaits cost two round trips, and on erlang they cost them even when the results are
-independent, because `@Future` there is eager. When the loaders are independent the fix is front
+independent, because `@Task` there is eager. When the loaders are independent the fix is front
 02's spawn-and-gather over **unstarted tasks** — `[{ -> loadPost(slug) }, { -> loadSidebar() }]` —
 not a `map` over futures, which would simply run them in order. This front's doc says so and does
 not provide a second answer.
@@ -331,7 +329,7 @@ not provide a second answer.
 - [ ] the convention is written in `repository/jhonstart/docs.md` with the rule about lambdas
 - [ ] the test suite contains a component with two sequential awaits at statement level
 - [ ] `server.bp` exports no `awaitAll`-style helper, and the README says front 02 owns that
-- [ ] the doc names the erlang eager-`@Future` fact and cites `libs/std/src/http.bp:16-18`
+- [ ] the doc names the erlang eager-`@Task` fact and cites `libs/std/src/http.bp:16-18`
 
 ### Step 5 — Module promotion
 
@@ -356,7 +354,7 @@ along.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| `#[@use]`, `@Component` and `@Use` are not in the compiler yet, so `use request()` cannot be written | `request()`, `cookies()`, `headers()` in `server.bp` | plain functions over the request the render entered, called without `use` | **decided, unwritten** (decision 104; [`19-use-activation`](../../00-compiler-carry-over/19-use-activation/README.md) step 2): `#[@use] fn Page() -> @Component<Element>` writes `use request()` and awaits its loaders under the one annotation, and `request()` is re-declared `#[@use] fn request() -> @Use<ElementBase, RequestData>` |
+| The `@Component<C, T>` return as the grant of `use` is not in the compiler yet (front 24), so `use request()` cannot be written | `request()`, `cookies()`, `headers()` in `server.bp` | plain functions over the request the render entered, called without `use` | **decided, unwritten** (decisions 118 and 128; [`24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)): `fn Page() -> @Component<ElementBase, Element>` writes `use request()` and awaits its loaders under the one return, and `request()` is re-declared `fn request() -> @Component<ElementBase, RequestData>` |
 | Declared parameter defaults are never applied | every `Element` builder call in both examples spells `attrs: []`, inner `text(…)` included | write every argument | apply the declared default when an argument is omitted |
 | `xs[0]` silently drops the index on the beam backend (`tests/language/expected-failures.txt`) | reading the first row of a loader's result | `.at(0).unwrapOr(default)` | make the index expression lower correctly on beam, or reject it there |
 
@@ -372,7 +370,7 @@ Assertions:
 2. Each accessor over an empty list, a single pair, and a duplicated key — `pairValue` itself is
    front 26's and is tested there, not re-tested here.
 3. `request()` after `enterRequest(req)`: the record in, the same record out.
-4. A `#[@use]` component that awaits a stub loader and renders — `await` works directly in a
+4. A `-> @Component<ElementBase, Element>` component that awaits a stub loader and renders — `await` works directly in a
    `test` block, so this runs without a host render loop.
 5. A component with two sequential awaits at statement level.
 
@@ -391,7 +389,7 @@ erlang, and makes every other assertion construct its `RequestData` explicitly.
 - [ ] the `Http` phantom base and the `Request` behavior are gone, and `AGENTS.md` says why
 - [ ] every untrusted value in an example passes through front 01's `escape.html` /
       `escape.attribute`; this front hand-rolls no escaping
-- [ ] the erlang eager-`@Future` fact is stated in the README and in `repository/jhonstart/docs.md`,
+- [ ] the erlang eager-`@Task` fact is stated in the README and in `repository/jhonstart/docs.md`,
       and every multi-loader example routes through front 02's unstarted-task list
 - [ ] all three language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target

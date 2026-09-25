@@ -29,10 +29,8 @@ string }`). jhonstart has neither the digest nor the logging it correlates with.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 - No error handling anywhere in `repository/jhonstart/src/`. `root.bp:15-17` declares three modules.
-- `#[@result] fn … -> @Result<D, E>` with `throw`/`try`/`case` is landed and documented
+- `fn … -> @Result<D, E>` with `throw`/`try`/`case` is landed and documented
   (`docs.md:513-524`). `@Result` variants are `Ok(result: R)` and `Error(error: E)`
   (`libs/std/src/builtins.d.bp:24-27`); there is no `Err` and no `.unwrap()`.
 - a stable content hash for the digest is front 03's `contentHash`, in std's `hash` module
@@ -57,7 +55,7 @@ Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([
 
 Upstream nests a boundary per route segment and lets each segment's `error.tsx` catch what its
 subtree throws (`NEXTJS-DOCS.md § 14`). jhonstart's version uses the language's own failure channel:
-a boundary's child is a `#[@result]` thunk, and the boundary is a `case` over its result. That is the
+a boundary's child is a thunk returning `@Result`, and the boundary is a `case` over its result. That is the
 only mechanism in botopink that can catch anything, and using anything else would be a fiction.
 
 ### The erlang half — this front
@@ -114,7 +112,7 @@ A jhonstart page signals "not found" and "go elsewhere" with **jhonstart's own**
 `redirect(url)`, declared in this front's `error_boundary.bp`; they raise the `nav:not-found`
 and `nav:redirect:<url>` reasons of `contracts.md § 5b` — spelled by `routing`'s
 `navigation.signalReason`, never by a literal here (decision 116) — and import nothing from rakun
-(decisions 113 and 115). A page, layout or template — each a `#[@use] fn … -> @Component<Element>`
+(decisions 113 and 115). A page, layout or template — each a `fn … -> @Component<ElementBase, Element>`
 (decision 117 rule 3) — imports `notFound`, `redirect` and `cookies` (front 28's reader, over the
 `RequestData` the render was handed) from `"jhonstart"` only, and a signal raised in a layout
 behaves as one raised in a page. rakun's front 63 raises the same reasons from route handlers and
@@ -286,12 +284,11 @@ pub fn redirect(url: string) -> string {         // the caller writes `throw red
 }                                                // 307 before the first chunk (front 30's render)
 ```
 
-`renderBoundary` re-raises a signal instead of catching it. Because `renderBoundary` is not itself
-`#[@result]`, the re-raise is done by the caller: `renderBoundary` returns the tree, and
-`renderBoundaryChecked` is the `#[@result]` wrapper front 30 calls.
+`renderBoundary` re-raises a signal instead of catching it. Because `renderBoundary` does not itself
+return a `@Result`, the re-raise is done by the caller: `renderBoundary` returns the tree, and
+`renderBoundaryChecked` is the `-> @Result<Element, string>` wrapper front 30 calls.
 
 ```bp
-#[@result]
 pub fn renderBoundaryChecked(b: ErrorBoundary) -> @Result<Element, string> {
     val outcome = b.child();
     return case outcome {

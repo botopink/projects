@@ -3,8 +3,7 @@
 import {Element, div, p, text} from "jhonstart";
 import {state, effect} from "jhonstart";
 
-#[@use]
-pub fn Timer() -> @Component<Element> {
+pub fn Timer() -> @Component<ElementBase, Element> {
     val seconds = use state(0);
     use effect({ ->
         val interval = setInterval({ ->

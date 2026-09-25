@@ -1,8 +1,7 @@
 // app/dashboard/page.bp
 import {Element, div, h1, Suspense, text} from "jhonstart";
 
-#[@use]
-pub fn DashboardPage() -> @Component<Element> {
+pub fn DashboardPage() -> @Component<ElementBase, Element> {
     return div([
         h1([text("Dashboard", attrs: [])], attrs: []),
         div([

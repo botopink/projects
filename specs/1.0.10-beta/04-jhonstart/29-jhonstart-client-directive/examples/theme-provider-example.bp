@@ -35,8 +35,7 @@ pub type ThemeProps(
 // `children` is a parameter, not a prop: it is not part of `ThemeProps` and it
 // is not serialized. That separation is the entire point of the pattern.
 #[client]
-#[@use]
-pub fn ThemeProvider(props: ThemeProps, children: Children) -> @Component<Element> {
+pub fn ThemeProvider(props: ThemeProps, children: Children) -> @Component<ElementBase, Element> {
     val current = use state(props.theme);
     return div(children, attrs: [#("class", "theme-" + current.value)]);
 }

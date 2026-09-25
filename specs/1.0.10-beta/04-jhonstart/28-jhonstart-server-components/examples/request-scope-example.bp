@@ -7,7 +7,7 @@
 // passes it to front 30's render, which enters it; `request()` reads it back. It is called
 // plainly here — the server-pass value — so `GreetingBar` and `Page` activate
 // nothing and carry no annotation (decision 104). The hook form, `use request()`
-// inside a `#[@use] fn … -> @Component<Element>`, is the front README's
+// inside a `fn … -> @Component<ElementBase, Element>`, is the front README's
 // *Language gaps* row 1 and waits on the effect-chain task (front 19 step 2).
 //
 // Nothing read here may cross to the client. The `authorization` header is the

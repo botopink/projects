@@ -4,8 +4,8 @@
 // The shell — header, heading, and a skeleton where the list will go — flushes
 // immediately; the list arrives as a second chunk.
 //
-// The boundary's child is a THUNK (`fn() -> @Component<Element>`), not a future.
-// That is not a style choice: `@Future` is eager on the BEAM
+// The boundary's child is a THUNK (`fn() -> @Component<ElementBase, Element>`), not a future.
+// That is not a style choice: `@Task` is eager on the BEAM
 // (`libs/std/src/http.bp:16-18`), so a boundary holding a future would hold a
 // result that had already been computed before the shell was written, and
 // nothing would stream. The render (`renderStream`) spawns the thunk through front 02 and hands
@@ -32,14 +32,13 @@ import { escape } from "std";
 
 pub type Post(slug: string, title: string)
 
-// The slow half: a server component, `#[@use] … -> @Component<Element>`
+// The slow half: a server component, `fn … -> @Component<ElementBase, Element>`
 // (decision 104), which is the thunk type `Boundary.child` takes. Nothing about
 // it knows it is inside a boundary.
 #[@External.Erlang("blog_repo", "recent_posts")]
 declare fn recentPostRows() -> string;
 
-#[@use]
-fn PostList() -> @Component<Element> {
+fn PostList() -> @Component<ElementBase, Element> {
     val rows = recentPostRows().split("\n").filter({ r -> r != "" });
     val posts = rows.map({ r -> decodePost(r) });
     return ul(posts.map({ p -> postRow(p) }), attrs: [#("class", "posts")]);
@@ -119,8 +118,7 @@ test "resolving a boundary renders its child, not its fallback" {
     assert c.html == "<div class=\"done\">ready</div>";
 }
 
-#[@use]
-fn readyChild() -> @Component<Element> {
+fn readyChild() -> @Component<ElementBase, Element> {
     return div([text("ready", attrs: [])], attrs: [#("class", "done")]);
 }
 
