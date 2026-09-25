@@ -83,9 +83,9 @@ F9: `External` gains `inline` everywhere or loses it, and says why it is not `Ta
 and one cell.
 
 **Acceptance:**
-- [ ] `inline` is symmetric across the five `External` variants, or its absence on `Wasm` /
+- [x] `inline` is symmetric across the five `External` variants, or its absence on `Wasm` /
       `Typescript` is stated in the file; a cell
-- [ ] `builtins.d.bp` says in one sentence why `External` is not `Target`
+- [x] `builtins.d.bp` says in one sentence why `External` is not `Target`
 
 Steps 0–3 and 5 (the measured table, the file agreeing with itself, the chain, one anchor per body,
 `docs.md` and the cells) are in the tree — *Current state* is their record. F3, F7, F8 and F12 land
@@ -94,5 +94,5 @@ with 21-effect-chain under decisions 103, 108, 102 and 103.
 ## Gate
 
 - [ ] `zig build test` green from a cold cache; `builtins.d.bp` formats; the drift test green
-- [ ] step 4's cell; `libs/std/AGENTS.md` in the same commit
-- [ ] Commit on `fix/effect-chain`; no push, no merge — landing is the maintainer's step
+- [x] step 4's cell; `libs/std/AGENTS.md` in the same commit
+- [x] Commit on `fix/effect-chain`; no push, no merge — landing is the maintainer's step
