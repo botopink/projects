@@ -8,8 +8,13 @@ decision-8 items the checker has not reached.
 changes the erlang output layout and makes `botopink run --target erlang` reach a sibling module ·
 [`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md) for the `.erl` half of `build`/`run`. Steps 1 and 2
 can start now
-**Owns:** `repository/{emilia,erika,jhonstart,onze,rakun}/**` — sources, `.d.bp`, tests, examples,
-their markdown docs and `AGENTS.md` · the submodule pointers of those five in the meta repository
+**Owns (1.0.5-beta):** `repository/{emilia,erika,jhonstart,onze,rakun}/**` — sources, `.d.bp`, tests,
+examples, their markdown docs and `AGENTS.md` · the submodule pointers of those five in the meta repository
+**Owns (1.0.10-beta, [`fronts.md`](../../fronts.md)):** `repository/erika/**` and the meta submodule
+pointers **only** — the other four trees are tracks B–E's ([`03-rakun`](../../03-rakun/README.md),
+[`04-jhonstart`](../../04-jhonstart/README.md), [`05-emilia`](../../05-emilia/README.md),
+[`06-onze`](../../06-onze/README.md)), and each track runs steps 3–5 on its own tree. Below, a row
+that names one of those four is that track's; what this front measures and lands is erika's
 **Does not touch:** `repository/botopink-lang/**` · `repository/vscode-extension/**`
 ([`11-tooling`](../11-tooling/README.md))
 
@@ -97,11 +102,12 @@ inline expression.
 
 `rakun/AGENTS.md:89-98` states the blocker as "the CLI has no `.erl` counterpart to `shipMjsSidecars`".
 **That is now out of date.** `libs.shipErlSidecars` landed at `botopink-lang` `c01695f` and is wired
-into `botopink test` (`modules/compiler-cli/src/cli/test_cmd.zig:189`). What is still missing is:
+into `botopink test` (`modules/compiler-cli/src/cli/test_cmd.zig:253` at `f58fd392`; the function is
+`libs.zig:803`). What is still missing is:
 
 - the port itself — 231 lines of `runtime.mjs` written as an `.erl` module;
-- `botopink build` / `run --target erlang` calling it. `cli/build.zig:215` calls `shipMjsSidecars`
-  only; the one-line twin is [`13-module-identity`](../13-module-identity/README.md)'s, which owns
+- `botopink build` / `run --target erlang` calling it. `cli/build.zig:290` calls `shipMjsSidecars`
+  only (re-read at `f58fd392`); the one-line twin is [`13-module-identity`](../13-module-identity/README.md)'s, which owns
   that file.
 
 ### R3 — the decision-8 items the checker has not reached
@@ -129,13 +135,19 @@ Concretely, emilia's `src/tokens.bp` **must not** be formatted until the parser 
 positions — formatting it reorders a public enum's variants.
 
 **Acceptance:**
-- [ ] `botopink format --check` passes in erika, jhonstart, onze and rakun
-- [ ] emilia's `format --check` passes for `src/emilia.bp` and `src/root.bp`; `src/tokens.bp` is
-      excluded with a one-line reason in `emilia/AGENTS.md` naming the parser row
-- [ ] Each library's cell and each of its examples still passes after formatting — run, not assumed
-- [ ] `botopink format` run twice is a no-op everywhere (idempotency, re-verified per library)
-- [ ] The three information-losing classes are registered in
-      [`01-checker`](../01-checker/README.md)'s README with the file and line that shows each
+- [x] `botopink format --check` passes in erika (`modules/erika`, re-verified at `f58fd392` after the
+      C-12 reformat below), jhonstart, onze and rakun (at their step-1 commits; their trees are
+      tracks B–E's in 1.0.10-beta and each re-measures after every formatter construct)
+- [x] emilia's `format --check` passes for `src/emilia.bp` and `src/root.bp`; `src/tokens.bp` is
+      no longer excluded — decision 34 withdrew the exemption and `37d3dc7` removed its cause
+- [x] Each library's cell and each of its examples still passes after formatting — run, not assumed
+      (the table below; erika re-run at `f58fd392`: 31/31 on both targets, the example 9/9 on both)
+- [x] `botopink format` run twice is a no-op everywhere (idempotency, re-verified per library; erika
+      again at `f58fd392`)
+- [x] The information-losing classes are registered with their owner — the trivia fields are
+      [`16-formatter`](../16-formatter/README.md)'s ("Handed over by `09-ecosystem-residuals`"), not
+      01's: rakun `runtime.bp:13`'s comment column (2026-09-18) and erika-linq `main.bp:111`'s
+      array-element trailing comment (2026-09-25, below)
 
 ### Step 1 — landed
 
@@ -180,7 +192,35 @@ member of step 1's R1 classes and belongs to the trivia row of
 withdrew the exemption and `37d3dc7` removed its cause; and `rakun/AGENTS.md` claimed a library cannot
 ship an erlang host module because the CLI has no `.erl` counterpart to `shipMjsSidecars`, which is
 false: `libs.shipErlSidecars` is at `modules/compiler-cli/src/cli/libs.zig:564`, called from
-`test_cmd.zig:194`.
+`test_cmd.zig:194` (at `bef762b`; `:803` and `:253` at `f58fd392`).
+
+### Step 1 — the reformat after C-12 (2026-09-25, `f58fd392`, erika)
+
+"09 reformats after each construct" ([C-12](../README.md#c-12--the-formatter-measures-width)), and
+the first construct came: the method-chain rule. Measured on erika, the one tree this front keeps:
+
+| file | `format --check` | hunks | verdict |
+|---|---|---|---|
+| `modules/erika/src/erika.bp` | red → **exit 0** | 57+/32−, ten sites, every one a chain of three or more calls broken one call per line at `+4` (`of(listas).where(…).select(…).toArray()`) or a hand-broken chain re-broken at the rule's column | canonical — **committed** |
+| `modules/erika/src/root.bp` | unchanged | 0 | — |
+| `examples/erika-linq/src/main.bp` | red, **stays red** | 95 lines: labelled-argument padding (`"Cy",  age` → `"Cy", age`), end-of-line comments unpadded, a hand-broken chain that fits joined (`loudNames`), a two-statement lambda opened — **and one hunk that loses information** | **left as written** |
+
+The losing hunk is `main.bp:111-113`: three array-literal elements each carry a trailing comment
+(`Box(label: "sq",   w: 4, h: 4),   // w == h, h > 2`), and the formatter prints each comment on its
+own line **below** its element, where it reads as the *next* element's — `// w == h, h > 2` now
+sits above `Box(label: "wide", …)`, which it is false of. Text intact, attachment lost: the same
+class as 16's probe (b) (a field's trailing comment re-attached to the next field), on an expression
+list rather than a member list. Registered in
+[`16-formatter`](../16-formatter/README.md#handed-over-by-09-ecosystem-residuals-2026-09-18)'s
+handover table; `erika/AGENTS.md` § Formatting says why the file stays red and that the comments
+are not to be rewritten to dodge it.
+
+What was verified before committing, as in the first pass: the word-and-literal token stream of
+`erika.bp` identical before and after; `format` idempotent on both members; the cells 31/31 on
+commonJS and erlang before and after; `examples/erika-linq` built at the old and the new source
+on both targets and `diff -r`'d — **byte-identical** on commonJS and on erlang (the example's own
+source unchanged). 1.0.4-beta's "an end-of-line comment moves to the next line" row, which this
+README said did not reproduce at `c2dd780`, **does** reproduce at `f58fd392` in this one shape.
 
 ### Step 2 — rakun's erlang cell: decide, then act
 
@@ -217,10 +257,15 @@ and can go first.
    binds sections by path.
 
 **Acceptance:**
-- [ ] No `pattern -> value;` arm left in any library's `.bp`
+- [x] No `pattern -> value;` arm left in **erika**'s `.bp` — it has no `case` statement at all
+      (`grep -c 'case ' modules/erika/src/*.bp examples/erika-linq/src/main.bp` → 0 at `bcdd05d`);
+      the "all five" above was emilia 31, onze 6, jhonstart 1 and erika 0. The three trees with
+      sites are tracks C, D and E's
 - [ ] `tests/language/test/case_sections.bp` passes (its `expected-failures.txt` lines are deleted by
-      [`01-checker`](../01-checker/README.md), not here) **before** emilia's §5.3b rewrite starts
-- [ ] Every library's cell and examples green after each rewrite
+      [`01-checker`](../01-checker/README.md), not here) **before** emilia's §5.3b rewrite starts —
+      emilia's (`05-emilia`)
+- [ ] Every library's cell and examples green after each rewrite — erika has no rewrite; the other
+      four are their tracks'
 
 ### Step 4 — re-run the erlang cells after the output layout changes
 
@@ -228,9 +273,24 @@ and can go first.
 output layout, and makes `botopink run --target erlang` reach a sibling module. Every library's erlang
 cell executes that output.
 
+**Measured at the shape C-01 halves 2–3 left (`f58fd392`, 2026-09-25, erika).** 13's per-type
+modules are in: the example's erlang output is `out/erl/erika@erika.erl`, `erika@root.erl`,
+`erika@erika__t__query.erl`, `erika@erika__t__grouping.erl`, `erika@erika__t__erikaproduct.erl`,
+`erika@erika__t__erikacity.erl`, `main.erl` and `main__t__{person,city,box}.erl` — A2's `__t__`
+spelling. At that shape `modules/erika` is **31/31** on erlang, `examples/erika-linq` **9/9**, and
+`botopink run --target erlang` in the example prints the same six lines the commonJS run prints
+(`erlc` warns about the compiler's unused `array_range/2` / `array_repeat/2` helpers; not erika's).
+**Decision 109 moves the atom once more** — `erika@erika@@Query`, the `@@` boundary with the
+declaration's case kept — and `erlang.zig` still spells `__t__` at `f58fd392`, so the boxes below
+stay open until front 13 lands it; nothing in erika names the atom, so the re-run is a measurement
+and not an edit.
+
 **Acceptance:**
-- [ ] `zig build test-libs` re-run after 13 lands: no cell worse than it is now
-- [ ] Each library's own gate (its examples included) re-run on `--target erlang`
+- [ ] `zig build test-libs` re-run after 13 lands (decision 109's atom): no cell worse than it is
+      now — erika 31/0 + 9/0 on erlang at `f58fd392`
+- [ ] Each library's own gate (its examples included) re-run on `--target erlang` — erika's done at
+      `f58fd392` (above); again after 109; the other four are their tracks' exit-gate step
+      ([`fronts.md`](../../fronts.md), conflict rules)
 - [ ] Any new red is registered in [`13-module-identity`](../13-module-identity/README.md), not fixed
       here
 
@@ -239,21 +299,49 @@ cell executes that output.
 Each of the five carries claims written when the cell was red. Re-derive them by running, and delete
 what closed.
 
+**erika, re-derived at `f58fd392` (2026-09-25).** Three claims had expired, each measured before it
+was struck: (1) the header and `docs.md` linked `tasks/v0.beta.7/specs/erika.md`, a path that no
+longer exists — both point at this README now; (2) the "three language-wide parser quirks" (`if (a
+&& b)`, `(expr).method()`, a `//` inside a closure body) **all parse, check and run** — one scratch
+project holding the three shapes, `check` exit 0, `run` prints `1` / `a,b` / `2` — so they moved
+to the "safe to simplify, not required" list (and C-08's "`if (a && b)` does not parse in
+condition position" is false at this compiler too); (3) nothing said what `format --check` answers
+per member or why — § Formatting does, and § Erlang output records step 4's shape. Every command
+the file tells a reader to run was run: `git config core.hooksPath scripts/git-hooks`, `botopink
+test` in `modules/erika` (both targets), `botopink build`/`run` in the example (both targets), and
+the `--lib erika` / `--lib erika-linq` rows of the lib-test runner on both targets (31/0, 31/0,
+9/0, 9/0). One thing to know about the last: **from a `.tasks/*` worktree, `zig build test-libs`
+refuses** — the runner walks up every ancestor's `repository/` and finds erika twice (the worktree's
+and the main checkout's: *"erika" is declared by two libraries … rename one of them*), which is
+decision 67 doing its job and not a red. The rows were run with `botopink-lib-test --bin <worktree
+botopink> --lib-root <worktree>/repository --lib <member> --target <t> --include-unsupported` from
+a directory outside the checkout, which is the same cell with one root. `rakun/AGENTS.md:89-98` was re-derived in step 1;
+its tree, and emilia's, jhonstart's and onze's `AGENTS.md`, are their tracks' to re-derive again.
+
 **Acceptance:**
-- [ ] No `AGENTS.md` names a blocker that does not reproduce — starting with `rakun/AGENTS.md:96-98`
-      (`shipMjsSidecars` has an `.erl` counterpart since `c01695f`)
-- [ ] Every command an `AGENTS.md` tells a reader to run, runs
-- [ ] The five submodule pointers bumped in the meta repository in one sweep, after each library's
-      branch merges into its own `feat`
+- [x] No `AGENTS.md` names a blocker that does not reproduce — `rakun/AGENTS.md:96-98` in step 1;
+      erika's three parser quirks and its dead spec link here. The other three files: their tracks
+- [x] Every command an `AGENTS.md` tells a reader to run, runs — erika's, listed above
+- [ ] The submodule pointers bumped in the meta repository in one sweep, after each library's
+      branch merges into its own `feat` — erika's pointer is bumped on this front's branch with its
+      commit; the sweep of the five after the merges is the maintainer's
 
 ## Gate
 
-- [ ] Per library: its own `scripts/git-hooks` gate green (cell + examples)
-- [ ] `zig build test-libs` from `botopink-lang`, no cell worse than 11 passed / 0 failed / 1 skipped
-- [ ] `botopink format --check` green per library, or the exclusion recorded with its parser row
-- [ ] `AGENTS.md` of every directory touched, updated in the same commit
-- [ ] Branch `fix/ecosystem-residuals` in each library; no push, no merge, no submodule bump until the
-      maintainer's sweep
+- [x] Per library: its own `scripts/git-hooks` gate green (cell + examples) — erika's, on every
+      commit of `front/09-ecosystem-residuals` (the pre-commit runs `botopink test` in
+      `modules/erika` and builds `examples/erika-linq`)
+- [x] `zig build test-libs` from `botopink-lang`, no cell worse than before — erika `modules/erika`
+      pass on commonJS and erlang, `erika-linq` pass on commonJS and its restricted erlang cell at
+      `0` failed (`scripts/restricted-targets.txt`), at `f58fd392`; the 1.0.5 tally
+      (11 / 0 / 1) no longer applies, the runner counts workspace members now
+- [x] `botopink format --check` green per library, or the exclusion recorded with its parser row —
+      erika: `modules/erika` exit 0; `examples/erika-linq` red with the row in 16's handover table
+      and the reason in `erika/AGENTS.md`
+- [x] `AGENTS.md` of every directory touched, updated in the same commit
+- [ ] Branch `front/09-ecosystem-residuals` in erika (1.0.5's name was `fix/ecosystem-residuals`); no
+      push, no merge; the erika pointer bumped on the meta branch of the same name, the sweep of
+      the five is the maintainer's
 
 ## Blast radius
 

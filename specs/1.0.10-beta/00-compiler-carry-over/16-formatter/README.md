@@ -482,3 +482,17 @@ byte-identical `diff -r` of the emitted output — which is the strongest statem
 that the formatter no longer loses anything: 874 changed lines over 8 files, 0 reordered members, 0
 deleted keywords, 11 passed / 0 failed in `test-libs`.
 
+**A second one, found by the reformat after C-12 (2026-09-25, `f58fd392`).** Probe (b)'s class —
+a trailing comment re-attached to the *next* item — reproduces on an **expression list**, not only
+on a member list: an array literal whose elements each carry a trailing comment.
+
+| | Written (`erika/examples/erika-linq/src/main.bp:111-113`) | `format` prints |
+|---|---|---|
+| d | `Box(label: "sq",   w: 4, h: 4),   // w == h, h > 2` `Box(label: "wide", w: 6, h: 2),   // w != h` | `Box(label: "sq", w: 4, h: 4),` `// w == h, h > 2` `Box(label: "wide", w: 6, h: 2),` `// w != h` — each comment now sits **above the element it is false of** |
+
+Idempotent, so `format --check` goes green over it once applied. 09 did **not** apply it: `main.bp`
+is left as written and stays red, with the reason in `erika/AGENTS.md` § Formatting; the file is
+the reproduction until the element's trailing comment is a recorded field and printed on its line.
+`modules/erika/src/erika.bp`, the other file C-12's chain rule touched, was committed formatted —
+ten chain hunks, token-identical, example output byte-identical on both targets.
+
