@@ -327,6 +327,43 @@ belong in `expected-failures.txt` with those owners, not as passing cells.
 The count is the compiler's, and the migration is coordinated with
 [`16-formatter`](../16-formatter/README.md) and [`15-language-surface`](../15-language-surface/README.md).
 
+## Handed over by `15-language-surface` steps 3 and 4b (`front/15-language-surface`)
+
+**Eight `reject/` cells, one per decided-against form.** Each form has a named kind now, raised once
+at the site every spelling reaches (15's README § step 3); the cell pins the code and the location.
+Every source below was run through `botopink check` on the front's compiler, and the `.expect` lines
+are what it printed. `reject/list_spread_not_last` is the one whose code did not exist before the
+front: the kind was in the enum and nothing raised it.
+
+| Cell | `src/main.bp` | `.expect` line 1 | line 2 |
+|---|---|---|---|
+| `reject/ternary_absent` | `pub fn main() {` · `    val c = true;` · `    val x = c ? 1 : 2;` · `    @print(x.toString());` · `}` | `ternary-absent` | `3:15` |
+| `reject/bitwise_operator_absent` | `pub fn main() {` · `    val x = 1 << 2;` · `    @print(x.toString());` · `}` | `bitwise-operator-absent` | `2:15` |
+| `reject/char_literal_absent` | `pub fn main() {` · `    val c = 'a';` · `    @print(c);` · `}` | `char-literal-absent` | `2:13` |
+| `reject/nested_fn_decl` | `pub fn main() {` · `    fn inner(x: i32) -> i32 { return x + 1; }` · `    @print(inner(1).toString());` · `}` | `nested-fn-decl` | `2:5` |
+| `reject/list_spread_not_last` | `pub fn main() {` · `    val a = [1, 2];` · `    val b = [..a, 3];` · `    @print(b.length.toString());` · `}` | `list-spread-not-last` | `3:19` |
+| `reject/list_spread_dot_dot_dot` | `pub fn main() {` · `    val a = [1, 2];` · `    val b = [...a, 3];` · `    @print(b.length.toString());` · `}` | `list-spread-dot-dot-dot` | `3:14` |
+| `reject/implement_clause_for` | `behavior Named { fn name(self: Self) -> string; }` · `type P(x: i32)` · `implement Named for P { fn name(self: Self) -> string { return "p"; } }` · `pub fn main() { @print(P(x: 1).name()); }` | `implement-clause-for` | `3:17` |
+| `reject/tuple_literal_label` | `pub fn main() {` · `    val t = #(x: 1, y: 2);` · `    @print(t.x.toString());` · `}` | `tuple-literal-label` | `2:15` |
+
+`a & b`, `a ^ b` and `'a'` used to be **lexer** errors ("unexpected character", no code), which no
+`reject/` cell could pin by name; they are parse errors now. `tests/language/AGENTS.md`'s list of
+deliberately absent forms gains these eight.
+
+**Two `run/` cells for step 4b**, each a form that was a parse error and now runs (proved on the
+front's compiler on commonJS and erlang):
+
+- `run/decorator_negative_argument` — `fn mark(comptime decl: @Decl, n: i32) { @emit("pub fn markedWith() -> i32 { return " + n.toString() + "; }"); }`,
+  `#[mark(-20)]` over `type Account(id: i32)`, and `pub fn main() { @print((markedWith() + 25).toString()); }`
+  with `.out` = `5`. The decorator receives the **number**: `-20`, one annotation argument.
+- `run/loop_one_line_body` — `fn f(x: i32) -> i32 { return x + 1; }`, then in `main`
+  `val xs = [1, 2];` · `var acc = 0;` · `loop (xs) { x -> acc = acc + f(x) };` ·
+  `val ys = xs.map { x -> f(x) };` · `@print(acc.toString() + ys.length.toString());`; `.out` = `52`. The
+  trailing lambda and the loop body take the fn body's semicolon policy (`requiredExceptLast`).
+
+Both are strictly accepting, so no `expected-failures.txt` line moves; the 4b probe in 15's README
+(`loop (xs) { x -> @print(x) };`) is the second cell's form.
+
 ---
 
 ## Landed — 2026-09-18
