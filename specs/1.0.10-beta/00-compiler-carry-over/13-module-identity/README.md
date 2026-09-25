@@ -510,10 +510,14 @@ in this environment, so that is unverified. If it is right, C is industrial prio
 maintainer's dotted form and the quoting cost is a known, paid-for cost elsewhere.
 
 **Acceptance:**
-- [ ] A-flat or A-nested recorded here in one line
+- [x] A-flat or A-nested recorded here in one line — **A-flat**
+      ([decision 6](../../../1.0.5-beta/decisions-taken.md#6-the-erlang-output-layout--with-the-two-trees-written-out)):
+      `out/erl/<atom>.erl` and `out/beam/<atom>.S`, one flat directory per BEAM target; commonJS and
+      wasm keep `out/<module path><ext>` (`crossModule.outputStem`, `cli/build.zig`)
 - [x] The split is rejected — policy 3 is this front's steps 7–13 (maintainer, 2026-09-17)
-- [ ] The Elixir claim is verified or explicitly dropped (it no longer changes the recommendation —
-      option A is chosen — but it is still an unverified sentence in [`options.md`](./atom-options.md))
+- [x] The Elixir claim is verified or explicitly dropped — **dropped**: `elixir` is not installed
+      here (re-checked 2026-09-25), option A is chosen, and the sentence in
+      [`atom-options.md`](./atom-options.md) now says so instead of asking to be confirmed
 
 ### Step 1 — one canonical identity, one renderer per backend
 
