@@ -767,31 +767,45 @@ tagged tuple in one mechanical commit.
 
 ### Halves 1 and 2
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree (zig build · cold `zig build test` ·
-      `test-bpmp` · beam export audit · `test-cli` · `test-libs` · `test-language`)
-- [ ] `scripts/beam_export_audit.sh` 295/295
-- [ ] The 303 `-module(main).` erlang snapshots and their 302 beam twins **byte-identical**; each of
+- [x] `scripts/gate.sh --cold` green in this front's worktree (zig build · cold `zig build test` ·
+      `test-bpmp` · beam export audit · `test-cli` · `test-libs` · `test-language`) — every commit
+      of this front runs it through the pre-commit hook (`--staged`); half 1 and half 2 each closed
+      on a cold run (`154f3bc9`, `cbd5f1ec`)
+- [x] `scripts/beam_export_audit.sh` 295/295 — 453/453 with policy 3's units
+- [x] The 303 `-module(main).` erlang snapshots and their 302 beam twins **byte-identical**; each of
       the ≈ 20 that moved classified in the commit message (atom rename vs. behaviour change) and
       its `RUN LOG` re-verified by executing, not by accepting
-- [ ] `AGENTS.md` updated in the same commit for `src/codegen/`, `modules/compiler-cli/src/cli/` and
-      `src/comptime/` — `src/codegen/AGENTS.md:64` currently documents
-      `ownerModuleAtom(name)` / `moduleBasename(path)` as "`web/http` → `http`" and would be wrong
-- [ ] Every library still builds (`zig build test-libs`, `scripts/known-red-libs.txt` still empty)
-- [ ] The stale comment at `erlang.zig:5359` is corrected — it claims the associated fn is quoted
+- [x] `AGENTS.md` updated in the same commit for `src/codegen/`, `modules/compiler-cli/src/cli/` and
+      `src/comptime/` — `src/codegen/AGENTS.md` now documents `erlAtom` / `erlDeclAtom` /
+      `typeAtom` / `variantAtom` / `outputStem` and keeps `moduleBasename` for source-level names only
+- [x] Every library still builds (`zig build test-libs`, `scripts/known-red-libs.txt` still empty) —
+      38 passed / 1 known red / 19 restricted at `4fe1747e` (the known red is registered against
+      its own front, not this one)
+- [x] The stale comment at `erlang.zig:5359` is corrected — it claims the associated fn is quoted
       `'Array_range'`; `interfaceAssocAtom:1410` lowercases the first character, so the emitted atom
       is bare `array_range` ([`policy-3-module-per-type.md` § 1.1](./policy-3-module-per-type.md#11-today-one-erl-per-bp-everything-flat-inside-it))
-- [ ] Commit on `fix/module-identity`; no push, no merge
+- [x] Commit on `fix/module-identity`; no push, no merge — half 1 on `fix/module-identity`, halves
+      2–3 on `fix/identity-half3`, the audit on `front/13-module-identity`
 
 **Policy 3's half (steps 7–13) adds:**
 
-- [ ] `botopink run --target erlang` executes a type-bearing program (today it cannot —
-      [E25](./atom-evidence.md#e25--botopink-run-breaks-under-policy-3))
-- [ ] `recordMethodAtom`, `isRecordMethodCollision`, `record_method_collisions` and
-      `interfaceAssocAtom` are **deleted**, not bypassed
-- [ ] Two types in one file both declaring `greet/1` compile and run on erlang and beam
-- [ ] A behavior consumed by three modules has exactly **one** emitted copy of its associated fn
-- [ ] The 188 re-recorded snapshots classified one by one — which gained a module, which turned a
-      local call into a `call_ext`; **no `RUN LOG` should change**, and one that does is a bug
+- [x] `botopink run --target erlang` executes a type-bearing program (today it cannot —
+      [E25](./atom-evidence.md#e25--botopink-run-breaks-under-policy-3)) — `erlc -o` over the
+      directory, then `erl -noshell -pa` (`cli/run.zig`); `examples/modules` runs
+- [x] `recordMethodAtom`, `isRecordMethodCollision`, `record_method_collisions` are **deleted**,
+      not bypassed. **`interfaceAssocAtom` stays**: [decision 23](../../../1.0.5-beta/decisions-taken.md#23-does-a-behavior-need-an-atom)
+      reserves `__b__` and emits nothing, so a behavior has no module for its associated
+      `default fn` to live in and the mangled local (`array_range/2`) is still emitted per consumer
+      — decision 23 is newer than policy 3 § 2.2 and wins (`src/codegen/AGENTS.md` § erlang)
+- [x] Two types in one file both declaring `greet/1` compile and run on erlang and beam —
+      `tests/language/modules/method_name_collision`
+- [ ] A behavior consumed by three modules has exactly **one** emitted copy of its associated fn —
+      **not under decision 23**: the copy per consumer is what "emit nothing for a behavior" means;
+      the one-copy shape needs the `__b__` module the decision declined. Reopen with the decision
+- [x] The 188 re-recorded snapshots classified one by one — which gained a module, which turned a
+      local call into a `call_ext`; **no `RUN LOG` should change**, and one that does is a bug —
+      25 erlang + 26 beam cells moved (a `type` with no bodied method emits no unit, so the 94/94
+      survey over-counted), all 51 `RUN LOG`s byte-identical (`cbd5f1ec`)
 
 ### Half 3
 
