@@ -256,7 +256,7 @@ and a listed cell that passes fails the gate, so the window is exactly one commi
       baseline (jhonstart through the ledger during step 4 only)
 - [ ] `zig build test-language` green on the four targets with the cells above; every re-recorded
       RUN LOG verified by running
-- [ ] the `effect_chain.zig` drift test green with `builtins.d.bp` at its final shape
+- [x] the `effect_chain.zig` drift test green with `builtins.d.bp` at its final shape
 - [ ] `AGENTS.md` of `src/comptime/`, `src/codegen/`, `src/parser/`, `libs/std/` in the same commit
       as each change
 - [ ] Commit on `fix/effect-chain`; no push, no merge — landing is the maintainer's step
