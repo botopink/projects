@@ -224,9 +224,9 @@ drift test reads the new file both ways. Before renaming, check that std does no
 not; re-measure at the step's base, and rename the std side first if it now does.
 
 **Acceptance:**
-- [ ] `builtins.d.bp` is the shape under *Mechanism*; `grep -rnE 'Future|Generator|IteratorStep|Iterable|Yield<|Use<' libs/std/src/builtins.d.bp` finds nothing
-- [ ] the prelude compiles on all backends (commonJS, erlang, beam, wasm) and no old symbol is exported
-- [ ] the `effect_chain.zig` drift test green with the new clauses; `comptime/AGENTS.md` and `libs/std/AGENTS.md` in the same commit
+- [x] `builtins.d.bp` is the shape under *Mechanism*; `grep -rnE 'Future|Generator|IteratorStep|Iterable|Yield<|Use<' libs/std/src/builtins.d.bp` finds nothing
+- [x] the prelude compiles on all backends (commonJS, erlang, beam, wasm) and no old symbol is exported
+- [x] the `effect_chain.zig` drift test green with the new clauses; `comptime/AGENTS.md` and `libs/std/AGENTS.md` in the same commit
 
 ### Step E2 — the parser
 
@@ -242,9 +242,9 @@ arms print the three prefixes back.
 
 **Acceptance:**
 - [ ] every new form in [`guide.md`](./guide.md) parses, each with a `parser/tests/` case and an `assertLossless` round-trip
-- [ ] every old form raises the right code with the fix-it located on the annotation / type argument — `reject/` cells per row of the diagnostics table below
+- [x] every old form raises the right code with the fix-it located on the annotation / type argument — `reject/` cells per row of the diagnostics table below
 - [ ] `g.iter()`, `val stream = 1`, `http.stream(…)`, `import {async} from "std"` and `async.allOf(…)` parse as identifiers (`test/contextual_words.bp`)
-- [ ] `src/parser/AGENTS.md`, `src/format/AGENTS.md` in the same commit
+- [x] `src/parser/AGENTS.md`, `src/format/AGENTS.md` in the same commit
 
 ### Step E3 — types and effects
 
@@ -282,8 +282,8 @@ existed for `@ResultGenerator` is removed; `for await` requires an await channel
 `@Component` return, an `async { }` block or a `stream`.
 
 **Acceptance:**
-- [ ] `for` with `try r` propagates, `for` with `case` continues (`run/iterator_result_items.bp`)
-- [ ] `for await` without an await channel is `effect-await-without-task` (`reject/for_await_without_task.bp`)
+- [x] `for` with `try r` propagates, `for` with `case` continues (`run/iterator_result_items.bp`)
+- [x] `for await` without an await channel is `effect-await-without-task` (`reject/for_await_without_task.bp`)
 
 ### Step E5 — the backends
 
@@ -328,7 +328,7 @@ commit with the library in the ledger, the library sweep, the ledger line delete
 compiler commit.
 
 **Acceptance:**
-- [ ] `std/async` and `std/http` signatures closed and green **before** the codemod runs on the libraries (§ *Merge order*, 5)
+- [x] `std/async` and `std/http` signatures closed and green **before** the codemod runs on the libraries (§ *Merge order*, 5)
 - [ ] `zig build test-libs` green on every row at its pre-sweep counts; `known-red-libs.txt` back to its header
 - [ ] `grep -rnE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@(Result|Future)?Generator<' repository/{jhonstart,rakun,emilia,onze,erika} libs/` finds nothing
 - [ ] the meta submodule pointers bumped in the same sweep
