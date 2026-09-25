@@ -303,10 +303,10 @@ re-keyed to `GenLoop`; the host rows of decision 126. TypeScript: `@Task` → `P
 § *Codemod* below. It runs first on the internal libraries (E7) to validate itself.
 
 **Acceptance:**
-- [ ] a snapshot of the codemod over one file holding every automatic pattern of § *Codemod* (`snapshots/cli/migrate_effects_all_patterns.snap.md` or wherever E6 puts CLI snapshots)
-- [ ] a second snapshot over the review patterns, each carrying `// TODO(migrate-effects)`
-- [ ] idempotent: a second run changes nothing; `--dry-run` reports without writing
-- [ ] `modules/compiler-cli/src/cli/AGENTS.md` in the same commit
+- [x] a snapshot of the codemod over one file holding every automatic pattern of § *Codemod* (`modules/compiler-cli/snapshots/cli/migrate_effects_all_patterns.snap.md`)
+- [x] a second snapshot over the review patterns, each carrying `// TODO(migrate-effects)` (`…/migrate_effects_review_patterns.snap.md`)
+- [x] idempotent: a second run changes nothing; `--dry-run` reports without writing (unit tests in `cli/migrate_effects.zig`, contract row C8b)
+- [x] `modules/compiler-cli/src/cli/AGENTS.md` in the same commit
 
 ### Step E7 — the libraries
 
@@ -430,7 +430,7 @@ generator and loop cells are re-spelled into these.
 - [ ] ✗ each old annotation gives `effect-annotation-removed` with the right fix-it
 - [ ] ✗ `@Future<…>` gives `effect-type-removed` suggesting `@Task<@Result<…>>`
 - [ ] ✗ `@Use<C, T>` gives `effect-type-removed` suggesting `@Component<C, T>`; `@Component<T>` (one argument) is a type-arity error
-- [ ] the codemod snapshot over a file with every pattern of § *Codemod* (E6)
+- [x] the codemod snapshot over a file with every pattern of § *Codemod* (E6)
 
 ## Codemod
 
@@ -465,7 +465,16 @@ generator and loop cells are re-spelled into these.
 - `case` over `YieldStep` with an `.Error` arm;
 - functions that called `.next()` by hand on a generator and handled `Error`;
 - wrapper aliases used as the return of an effect function;
-- JS code consuming botopink functions that expected a rejected Promise.
+- JS code consuming botopink functions that expected a rejected Promise;
+- a `@Future<T>` body that throws or tries (open point 5 — `E = any` was an error channel
+  `@Task<T>` does not have), and a `declare fn … -> @Future<T>` host binding (a rejection was its
+  error; under `@Task<T>` it is fatal, decision 126).
+
+The codemod first normalises the pre-121 spellings guide.md § 9 lists (`#[@context]` /
+`@Context<B, R>`, `@Use<C, T>`, `#[@iterator]` / `@Iterator<T, E>`, `#[@asyncGenerator]` /
+`@AsyncIterator`, `IteratorStep`, `loop (xs) { x -> }`, `loop (cond)`, `loop await`) to today's
+language, so the file type-checks; `Iterable` and `Yield<T, R>` are marked. A module that does not
+type-check has its `await` / `for await` sites marked instead of decided.
 
 Run it on the internal libraries first (E7), to validate it. The `await` → `try await` rewrite is
 reliable only where the function's return is known, which is why it needs the checker's types, not
