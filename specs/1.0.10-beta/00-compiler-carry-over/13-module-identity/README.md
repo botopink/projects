@@ -660,12 +660,16 @@ Beside step 1's `erlDeclAtom` in `crossModule.zig`, reusing its `Kind` enum and 
 variant atoms. **Nothing consumes them yet.**
 
 **Acceptance:**
-- [ ] Every snapshot in all four codegen directories byte-identical (`zig build test`)
-- [ ] Unit tests: a single-segment path, a multi-segment path, a reserved name, a type whose name
-      needs escaping, a variant whose name needs escaping, a name over 250 bytes
-- [ ] Two declarations rendering the same atom is a **located diagnostic**, with a test
-- [ ] A2 § 5's decoder, extended with the `__v__` clause, is a test — `variantAtom` round-trips to
-      `{variant, path, "t", decl, variant}` (E15)
+- [x] Every snapshot in all four codegen directories byte-identical (`zig build test`)
+- [x] Unit tests: a single-segment path, a multi-segment path, a reserved name, a type whose name
+      needs escaping, a variant whose name needs escaping, a name over 250 bytes —
+      `crossModule.zig` "typeAtom: …", "variantAtom: …", "build: an atom over the filename limit"
+- [x] Two declarations rendering the same atom is a **located diagnostic**, with a test —
+      `AtomFault.Reason.duplicate_decl`, raised through the erlang and beam `codegenEmit`s; the test
+      (`Person`/`person` → `main__t__person`) is new here and corrected the example the check
+      carried (`Foo_Bar`/`FooBar` do **not** collide — `Foo_Bar`/`Foo__Bar` do)
+- [x] A2 § 5's decoder, extended with the `__v__` clause, is a test — `variantAtom` round-trips to
+      `{variant, path, "t", decl, variant}` (E15) — "decodeAtom: a variant tag round-trips …"
 
 ### Step 15 — the tag in the value, erlang
 
@@ -678,15 +682,20 @@ pattern sites (`:5030`, `:5038-5048`) at once. Access, destructuring and `case` 
 **untouched**.
 
 **Acceptance:**
-- [ ] A new fixture: two types with identical fields are `!=`, executed on erlang (today `true`,
-      E11)
-- [ ] A new fixture: two enums declaring the same variant name, both `case`d in one program,
-      executed — today they produce the same term (E14)
-- [ ] Existing `#{x := X}` destructuring, `maps:get` access and every `case` cell still run
-      (E13 pins this on real emitted output)
-- [ ] The 62 erlang cells re-recorded and classified one by one; **no `RUN LOG` moves**
-- [ ] An imported type constructed in a consumer carries the **owner's** atom, executed
-      (`import_cross_module_record_construct_and_assoc_fn.snap.md` is the fixture to extend)
+- [x] A new fixture: two types with identical fields are `!=`, executed on erlang (today `true`,
+      E11) — `tests/language/run/type_identity_equality.bp`, all four backends
+- [x] A new fixture: two enums declaring the same variant name, both `case`d in one program,
+      executed — today they produce the same term (E14) — the qualified variant tag
+      (`main__t__shape__v__circle`), `tests/language/modules/package_variant_identity`
+- [x] Existing `#{x := X}` destructuring, `maps:get` access and every `case` cell still run
+      (E13 pins this on real emitted output) — under decision 21's **T2** the record is
+      `{TypeAtom, F1, …}` and those sites were rewritten with it, not kept; every cell re-run
+- [x] The 62 erlang cells re-recorded and classified one by one; **no `RUN LOG` moves** — 519 of
+      535 byte-identical, the 16 that moved each explained in `2dbd88bc`/`a8087490` (defects the
+      runs found, fixed on the way)
+- [x] An imported type constructed in a consumer carries the **owner's** atom, executed — the tag is
+      `typeAtom` of the module that **declares** the type (`src/codegen/AGENTS.md` § erlang), pinned
+      by the section-enum defect the half fixed (an identity taken from the writing module)
 
 ### Step 16 — the same on beam
 
@@ -696,12 +705,13 @@ name), and the two tests (`:5272-5286` `is_eq`, `:5333` `is_tagged_tuple`). Unde
 spelling **no arity and no opcode changes** — only the atom the tests compare against.
 
 **Acceptance:**
-- [ ] `scripts/beam_export_audit.sh` green at its current total
-- [ ] The erlang and beam `RUN LOG`s of every shared fixture agree, line for line
-- [ ] The 68 beam cells re-recorded and classified; no `RUN LOG` moves
-- [ ] `grep -c is_tagged_tuple` over `snapshots/codegen/beam/` is unchanged, and no
+- [x] `scripts/beam_export_audit.sh` green at its current total — 453/453
+- [x] The erlang and beam `RUN LOG`s of every shared fixture agree, line for line
+- [x] The 68 beam cells re-recorded and classified; no `RUN LOG` moves (`2ee4848c`)
+- [x] `grep -c is_tagged_tuple` over `snapshots/codegen/beam/` is unchanged, and no
       `is_tagged_tuple` arity argument differs from before — the check that the free spelling was
-      actually taken
+      actually taken — the variant tag is qualified in place; under T2 the record gained
+      `is_tagged_tuple` tests of its own, classified as the T2 shape, not as a variant change
 
 ### Step 17 — `is` and `case` over a named type — **after [`../01-checker/`](../01-checker/README.md)'s N20/N21/N22**
 
@@ -712,12 +722,14 @@ named-type half — the split the maintainer still owes (§ *Decisions*, and
 [`halves-and-ordering.md`](./halves-and-ordering.md) § 5).
 
 **Acceptance:**
-- [ ] `tests/language/` cells for `x is Point`, `x is Option.Some(v)`, and a `case` over
-      `Person | Car` with **no `_`**, passing on erlang and beam
-- [ ] The matching lines leave `tests/language/expected-failures.txt`
-- [ ] A `case` over a union is emitted as erlang patterns only — **no type test of the backend's
+- [x] `tests/language/` cells for `x is Point`, `x is Option.Some(v)`, and a `case` over
+      `Person | Car` with **no `_`**, passing on erlang and beam (`b6ac051e`)
+- [x] The matching lines leave `tests/language/expected-failures.txt` — 13 lines green by running;
+      what still names `13 step 17` there is decision 8's numeric half (`is i32` matching `3.0` by
+      value), re-classified to C-07
+- [x] A `case` over a union is emitted as erlang patterns only — **no type test of the backend's
       own**, and no catch-all ([E4](./identity-evidence.md#e4))
-- [ ] erlang, beam and commonJS agree on every cell
+- [x] erlang, beam and commonJS agree on every cell
 
 ### Step 18 — §7's formatter — **after step 17**
 
@@ -728,12 +740,18 @@ output. This is the **D8-5** row of [`../02-erlang/`](../02-erlang/README.md) an
 `Display` — again the pending split.
 
 **Acceptance:**
-- [ ] `@print(Point(x: 1, y: 2))` prints `Point(x: 1, y: 2)` on erlang and beam, `@print(Shape.Dot)`
+- [x] `@print(Point(x: 1, y: 2))` prints `Point(x: 1, y: 2)` on erlang and beam, `@print(Shape.Dot)`
       prints `Shape.Dot`, `@print(Shape.Circle(radius: 4))` prints `Shape.Circle(radius: 4)` — new
-      `tests/language/` cells, because **no existing snapshot prints a composite value** (E19)
-- [ ] A type implementing `Display` prints its `display()`, also when nested (decision 8 §7)
-- [ ] `'__bp_type'` appears in no printed output
-- [ ] The four backends produce the same text for the same program
+      `tests/language/` cells, because **no existing snapshot prints a composite value** (E19) —
+      `run/{display_print,print_formatter,type_identity_print}.bp`, `T:format/1` in the type's own
+      module (`'__bp_tagged'`)
+- [x] A type implementing `Display` prints its `display()`, also when nested (decision 8 §7) — on
+      erlang, beam and commonJS; on wasm the record text prints and the `Display` half is 05's
+      (`expected-failures.txt`, `run/display_print.bp`)
+- [x] `'__bp_type'` appears in no printed output — there is no such key: T2 carries the atom in
+      element 1 and the formatter never prints it
+- [x] The four backends produce the same text for the same program — for the record and variant
+      rows; wasm's `Display` row is the one exception above
 
 ### Step 19 — the commonJS unit-variant hole — **only if the maintainer assigns it**
 
@@ -748,9 +766,12 @@ Two ways out, and this front does not choose unilaterally because `commonJS.zig`
 | keep the string and make the checker refuse `is string` on an enum value | 0 snapshots; contradicts decision 8 §4.1 ("`is` tests the value, not the origin") |
 
 **Acceptance (either way):**
-- [ ] The `.js` and the `.d.ts` of the same program agree — a new fixture with a `pub` mixed enum,
-      which no snapshot has today
-- [ ] `x is string` answers `false` for a unit variant on commonJS, as it does on erlang
+- [x] The `.js` and the `.d.ts` of the same program agree — a new fixture with a `pub` mixed enum,
+      which no snapshot has today — taken with the first way: a unit variant is a class instance
+      whose `prototype.tag` is its name (`a71786b3`, "a variant's identity is its tag, not its
+      class"), so the `.d.ts`'s `{ tag: "Dot" }` is true
+- [x] `x is string` answers `false` for a unit variant on commonJS, as it does on erlang —
+      `run/type_identity_equality.bp` runs on commonJS too (`5b61297d`)
 
 ### Step 20 — decide T2
 
@@ -759,8 +780,13 @@ committing. If the space win holds, rewrite construct + access + destructure + p
 tagged tuple in one mechanical commit.
 
 **Acceptance:**
-- [ ] A maintainer decision recorded here, whichever way it goes, with the re-measured numbers —
-      **not** E10's, which do not survive (E18)
+- [x] A maintainer decision recorded here, whichever way it goes, with the re-measured numbers —
+      **not** E10's, which do not survive (E18) — **T2**, [decision 21](../../../1.0.5-beta/decisions-taken.md#21-t1-or-t2-for-the-erlang-record)
+      (2026-09-18): the tagged tuple `{TypeAtom, F1, …}`, chosen for the shape and against the
+      recommendation; the price recorded with it — 66 erlang + 73 beam cells rewriting construct,
+      access, destructure and patterns, 354 cell-writes over 210 files across halves 2–3 — and
+      landed (`2dbd88bc`, `2ee4848c`). What E10 claimed (2.5×) is withdrawn; what survives is
+      6 words per record against T1's 2, and the maintainer's call is the shape, not the benchmark
 
 
 ## Gate
@@ -809,18 +835,22 @@ tagged tuple in one mechanical commit.
 
 ### Half 3
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] `zig build test-libs` at its baseline — `9 passed, 0 failed, 0 known red, 3 skipped, 2 without
+- [x] `scripts/gate.sh --cold` green in this front's worktree (`a8087490`)
+- [x] `zig build test-libs` at its baseline — `9 passed, 0 failed, 0 known red, 3 skipped, 2 without
       tests` (measured at `26d4fdc`); `scripts/known-red-libs.txt` still empty (re-checked at `c2dd780`: header comments only)
-- [ ] `scripts/beam_export_audit.sh` green at its current total
-- [ ] Every re-recorded snapshot classified (construct line / variant atom / nothing else); **no
+      — the suite grew since: **38 passed / 1 known red / 19 restricted** at `4fe1747e`, the known
+      red registered by its own front in `scripts/known-red-libs.txt`, none against this one
+- [x] `scripts/beam_export_audit.sh` green at its current total — 453/453
+- [x] Every re-recorded snapshot classified (construct line / variant atom / nothing else); **no
       `RUN LOG` re-recorded in steps 14–16**, and one that is, is a bug with an explanation in the
-      commit message
-- [ ] erlang, beam and commonJS agree on `is`, on a union `case`, and on §7's print text
-- [ ] The invariant, as a test: **two values carry the same identity if and only if they were built
-      by the same declaration** — one cell per backend
-- [ ] `AGENTS.md` of every directory touched, updated in the same commit
-- [ ] The same branch, `fix/module-identity`; no push, no merge
+      commit message — 16 moved, each a defect the run found and the commit explains
+- [x] erlang, beam and commonJS agree on `is`, on a union `case`, and on §7's print text
+- [x] The invariant, as a test: **two values carry the same identity if and only if they were built
+      by the same declaration** — one cell per backend — `run/type_identity_equality.bp`, RUN on
+      all four (`5b61297d`)
+- [x] `AGENTS.md` of every directory touched, updated in the same commit
+- [x] The same branch, `fix/module-identity`; no push, no merge — `fix/identity-half3`, merged to
+      `feat` by the maintainer
 
 
 ## Blast radius
