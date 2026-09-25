@@ -142,7 +142,7 @@ argument grows by one". Under the recommended spelling it does not grow at all.
 
 | Term | Stays as it is | Why |
 |---|---|---|
-| `{ok, V}` / `{error, E}` | untouched | built by the `#[@result]` transform, not by a user `type`; `variantTag` already special-cases them (`erlang.zig:5074`, `beam_asm.zig:1685-1688`) |
+| `{ok, V}` / `{error, E}` | untouched | built by the `@Result` lowering, not by a user `type`; `variantTag` already special-cases them (`erlang.zig:5074`, `beam_asm.zig:1685-1688`) |
 | an anonymous record / tuple `#(1, "a")` → `{1, <<"a">>}` | untagged | decision 8 §6: a tuple is positional and compares without labels; `is #(i32, string)` stays an arity-plus-element test |
 | an enum **section**'s synthesised name (`__Token__Color`) | gets a `typeAtom` like any other | decision 8 §5.3b makes a section a type of its own; `enum_sections_path_access_lowers_to_qualified_ctor_calls.snap.md` already emits `{'Color', {'Red', '__500'}}` with a compiler-invented name — a precedent for ad-hoc mangling this front replaces |
 

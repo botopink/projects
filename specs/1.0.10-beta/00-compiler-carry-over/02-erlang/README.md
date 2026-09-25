@@ -38,8 +38,8 @@ Decision 8 §7 says one formatter per type, source-shaped, the same text on ever
 And a generator whose body is a condition loop crashes:
 
 ```
-#[@generator] fn nums(n: i32) -> @Generator<i32> { var i = 0; loop (i < n) { yield i; i = i + 1; }; }
-loop (nums(3)) { x -> acc = acc + x.toString(); };
+fn nums(n: i32) -> @Iterator<i32> { var i = 0; while (i < n) { yield i; i = i + 1; }; }
+for (nums(3)) { x -> acc = acc + x.toString(); };
 
   escript: exception error: no case clause matching 3
     in function lists:foldl/3 (lists.erl:2464)
@@ -174,13 +174,13 @@ is the loop's value — and the error kind is gone. Its `expected-failures.txt` 
 
 ### Step 6 — the generator protocol
 
-`#[@generator]` and `#[@resultGenerator]` compile on erlang and raise `case_clause` at run time, but only
+An `@Iterator<T>` function — and one whose item is a `@Result` — compiles on erlang and raises `case_clause` at run time, but only
 when the generator body drives itself with a **condition loop**:
 
 | Body | erlang |
 |---|---|
 | `yield 1; yield 2;` | works — prints `1`, `2` |
-| `var i = 0; loop (i < n) { yield i; i = i + 1; };` | `exception error: no case clause matching 3` in `lists:foldl/3` |
+| `var i = 0; while (i < n) { yield i; i = i + 1; };` | `exception error: no case clause matching 3` in `lists:foldl/3` |
 
 So the defect is in how the protocol's driver folds a *condition* loop's yields, not in `yield`
 itself. Fix that shape.
@@ -463,7 +463,7 @@ it does not compile at all. The cells are owed once `01 step 4` lands.
 3. **A `@Result` method inside a closure is an undefined function.** `table.filter({ s ->
    unquote(quote(s)).unwrapOr("<err>") != s })` compiles to `unwrapOr/2 undefined` on erlang (and
    `….unwrapOr is not a function` on commonJS); the same call in a named function is fine.
-4. **`try` inside a `while` body does not propagate.** In a `#[@result]` fn, `while (i < n) { val v =
+4. **`try` inside a `while` body does not propagate.** In a `-> @Result<…>` fn, `while (i < n) { val v =
    try check(i); acc = acc + v; i = i + 1; };` fails to compile on erlang (`variable 'Acc@2' unsafe in
    'case'`) and on commonJS the loop runs on past the failure (`sumTo(5).isError()` is false). Shared
    with `04-js`; std's `json.decode` loops test `isError()` instead of using `try`.

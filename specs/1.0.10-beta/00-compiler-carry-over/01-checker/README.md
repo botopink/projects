@@ -74,7 +74,7 @@ What front 06 of 1.0.4-beta landed, and is **not** to be re-opened — each re-p
 | N9 `┌─` box with no file name — **the CLI half** | `botopink check` prints ` --> src/main.bp:5:12` | closed in the CLI renderer, **open in the snapshot renderer** — step 9 |
 | N13 an undeclared name passes the check | reds at the name | closed |
 | N24 tuple labels | `r.current` on `fn ref<T>() -> #(current: T)`; `c.set(9)` on a fn-typed element | closed |
-| N25 effect wrapper ↔ annotation | `-> @Result` without `#[@result]` reds | closed except three diagnostics — step 8 |
+| N25 effect wrapper ↔ annotation | `-> @Result` without its effect annotation reds | closed except three diagnostics — step 8; the annotation itself leaves with C-32 (decision 118) |
 
 The rows below reproduce. Nothing in this front is carried on trust.
 
@@ -239,7 +239,7 @@ Each reproduces; sites and probes in [`residual-rows.md`](./residual-rows.md).
 | R6 | **Landed.** `Array.range(0, 3)` resolves through its behavior's name and types `array<i32>`, so `.map` records its lowering; erlang emits `lists:map(…, array_range(0, 3))` and prints `[2, 3, 4]` — no `'__bp_prim_map'` | cell: `comptime/tests/infer_errors.zig` `associated fn: …` |
 | R7 | **Decision 2 is not enforced** (1.0.4 N6): a valueless block in value position and a non-`unit` fn that falls off its end both check | `fn f() -> i32 { val x = 1; }` → `Checked`. This is what makes the four backends' block-as-value lowerings dead code; each backend deletes its own |
 | R8 | **Landed.** `val n = 5; val x: n = 7;` is `'n' is a value, not a type`, located; `val T = i32;` / `val U = T;` are types (`Env.typeValueNames`); function-typed and declaration bindings (imports, std's `Array`) keep resolving. The real `type` kind of A1 is not built | cells: `comptime/tests/infer_errors.zig` `type position: …` |
-| R9 | **Landed.** Each of the three N25 cells is refused for its own reason with the caret on the offending token: the return type (`@Result needs #[@result]`), the `catch` (`AssertPattern.catchLoc`), the second annotation's `#`; their lines left `expected-failures.txt` | `reject/wrapper_without_annotation.bp`, `reject/val_assert_after_catch.bp`, `reject/two_effect_markers.bp` |
+| R9 | **Landed.** Each of the three N25 cells is refused for its own reason with the caret on the offending token: the return type (the missing-annotation message), the `catch` (`AssertPattern.catchLoc`), the second annotation's `#`; their lines left `expected-failures.txt` | `reject/wrapper_without_annotation.bp`, `reject/val_assert_after_catch.bp`, `reject/two_effect_markers.bp` |
 
 **Does not reproduce — do not carry:**
 
@@ -277,7 +277,7 @@ in the old format.
 **Acceptance:**
 - [ ] every error snapshot's box names its file
 - [ ] 0 `TypeError` raised from `comptime/unify.zig` without a location; the two bare `unify` arithmetic call sites go through `unifyAt`
-- [ ] `#[@result] fn f() -> i32` reports `effect-missing-wrapper` at the **return type**, not at the first body statement
+- [ ] a `throw` under `fn f() -> i32` reports `effect-try-without-fallible-channel` at the `throw`, not at the first body statement (the annotated form this box named leaves with C-32, decision 118)
 - [ ] the 44 box-less snapshots have a box; the re-recorded 270 are **read** for expected/found orientation, not bulk-accepted
 
 ### Step 10 — the parser gaps that are inference-side
@@ -310,7 +310,7 @@ Once steps 1–8 accept decision 8's forms, write them. Measured at `c2dd780`:
 | `self: Self` occurrences across `libs/std`, `examples` and the compiler's own `.bp` fixtures | **129** | `grep -rn 'self: Self[,)]' libs/std examples modules/compiler-core/src --include=*.bp` |
 | unannotated `val`/`var … = [];` (§1.4 would warn) | **5**, all in `libs/std` (`dict.bp:73`, `primitives.bp:489`, `:546`, `:561`, `:575`) | `grep -rnE '^\s*(val\|var)\s+\w+\s*=\s*\[\]\s*;' libs/std examples --include=*.bp` |
 | `while` in `libs/std` / `examples` code | **0** (5 hits, all comments) | `grep -rn while libs/std examples --include=*.bp` |
-| `-> @Result` in `libs/std` without `#[@result]` | **0 of 14** | measured by `3e7cd62` |
+| `-> @Result` in `libs/std` without its effect annotation | **0 of 14** | measured by `3e7cd62` |
 | `behavior Display` declared anywhere in `libs/std` | **0** | `grep -rn 'behavior Display\|implement Display' libs/std --include=*.bp` |
 
 The last row is a gap decision 8 §7 assumes closed: "`libs/std` implements `Display` for `Dict`".
@@ -387,7 +387,7 @@ fn first()  -> i32    { val p = Thing(n: 3); return p.n; }
 fn second() -> string { return p("x"); }      // error: expected string, got Thing
 ```
 
-Inside a `#[@use]` body front 29 got the same error **with no line and no column**. In
+Inside a hook-activating body (a `@Component` return under decision 118) front 29 got the same error **with no line and no column**. In
 `repository/jhonstart` the exported tag constructors include `p`, `a`, `li`, `text`, `form`, `link`,
 `title` and `body`, so every file in that package is one declaration order away from it.
 
@@ -398,7 +398,7 @@ Repro: `repository/jhonstart/repro/local-binding-leaks-to-later-decls/` — twel
       binding belongs to
 - [ ] the shadowing shape resolves `p` to the exported declaration, and a local named `p` shadows it
       **only inside the function that declares it**
-- [ ] the `#[@use]` case carries a line and a column — a located message is not optional because
+- [ ] the `@Component`-body case carries a line and a column — a located message is not optional because
       the body is a comptime one
 - [ ] cells for both, each proved able to fail by planting the pre-fix behaviour, and the bare one
       asserted on **both** rows, since today it fails differently on each
@@ -504,7 +504,7 @@ they were found probing `c2dd780` for this front and are not in that document ye
 
 | # | Decision | Measured context |
 |---|---|---|
-| D1 (= #1) | **Settled by decision 103: `#[@futureGenerator]` → `@FutureGenerator<T, E>`.** Neither `AsyncGenerator` (decision 8 §9's table) nor `AsyncIterator` (the compiler's `EffectKind.returnWrapper`, `libs/std/src/builtins.d.bp`'s `behavior AsyncIterator<T, E, C>`, the docs) survives; the rename lands with [`21-effect-chain`](../21-effect-chain/README.md) | `grep -rn AsyncIterator --include=*.zig --include=*.bp --include=*.md` → **69** hits; `AsyncGenerator` → **1** (decision 8 itself). Renaming crosses `libs/std`, the user docs and the compiler; `3e7cd62` enforced the spelling that exists and recorded the discrepancy in `comptime/AGENTS.md` |
+| D1 (= #1) | **Settled by decision 103 (the async generator named `futureGenerator`), then by decision 122: `@Stream<T>`, no annotation.** Neither `AsyncGenerator` (decision 8 §9's table) nor `AsyncIterator` (the compiler's `EffectKind.returnWrapper`, `libs/std/src/builtins.d.bp`'s `behavior AsyncIterator<T, E, C>`, the docs) survives; the rename lands with [`21-effect-chain`](../21-effect-chain/README.md) | `grep -rn AsyncIterator --include=*.zig --include=*.bp --include=*.md` → **69** hits; `AsyncGenerator` → **1** (decision 8 itself). Renaming crosses `libs/std`, the user docs and the compiler; `3e7cd62` enforced the spelling that exists and recorded the discrepancy in `comptime/AGENTS.md` |
 | D2 (= #11) | **Decided: `<Pattern> as <name>` is not part of the language.** The three tests in `comptime/tests/variants.zig` and their snapshots are deleted | the parser half is local; the consumer half is a new `ast.Pattern` variant in four backend lowerings this front does not own. No library uses the form |
 | D3 (= #12) | **Unnamed variant payloads: drop or implement.** The pattern half landed with `dff3446`; the declaration half remains | it changes the reflected `TypeInfo`/`EnumVariant` surface as well as four backends |
 | D4 (**new**) | **`is` with a payload pattern.** The parser refuses `x is Some(v)` with a located `is-variant-binding`; §4.2 lists the form | decide whether `is` carries a pattern or the refusal stands and `case` is the only reader |

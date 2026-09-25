@@ -445,7 +445,7 @@ real code — 6 field-sets are shared by 18 differently-named types and `Circle`
 | a **record** | **T1** — one key, `#{'__bp_type' => 'myapp@app@models@@Person', name => …}` | +2 words; `maps:get` and `#{x := X}` patterns keep working unchanged ([E1](./identity-evidence.md#e1), re-confirmed on the compiler's own output in [E13](./identity-evidence.md#e13--both-spellings-applied-to-the-compilers-own-output)) |
 | an **enum variant** | **qualify the tag atom**, not prefix the term: `{'myapp@app@models@@Shape__v__circle', 5}` and `'myapp@app@models@@Shape__v__dot'` | **zero words** — an atom is an immediate and the tuple keeps its arity ([E16](./identity-evidence.md#e16--the-size-of-every-candidate)). No opcode changes: `is_eq` stays `is_eq`, `is_tagged_tuple` keeps `fields.len + 1` |
 | an **anonymous** record / tuple | untagged | decision 8 §6 — positional, compared without labels; `is #(i32, string)` stays an arity-plus-element test |
-| `{ok, V}` / `{error, E}` | untouched | built by the `#[@result]` transform, already special-cased in both `variantTag`s |
+| `{ok, V}` / `{error, E}` | untouched | built by the `@Result` lowering, already special-cased in both `variantTag`s |
 
 T2 (the whole record as a tagged tuple, 7 words instead of 13) stays open as step 20, and the reason
 to take it is **space, not time** — see the E10 correction above.

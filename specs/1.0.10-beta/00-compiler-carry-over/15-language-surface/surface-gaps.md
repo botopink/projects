@@ -89,8 +89,8 @@ C-items in [`../README.md`](../README.md).
 | Form | Written at | Today | Proposed owner |
 |---|---|---|---|
 | **`Option.None`, `Option<i32>.None`, `Some(1)`** | `decision-8:66`, `:84`, `docs.md:396` | `unbound variable 'Option'` / `'Some'` — no `Option` enum is in scope, although `?T` optionals and `.unwrapOr()` work | the documents are wrong — decisions 2 and 32: `?T` is the only spelling; C-18's document corrections |
-| **`any`** parses and checks, and `libs/std/src/builtins.d.bp` uses it as a default type argument on the generator wrappers (`@ResultGenerator<T, E = any>`, `@FutureGenerator<T, E = any>` under decision 103) | `decision-8:129-133` says `any` **does not exist** | accepted everywhere | C-18 (decision 31) — the standard library depends on a type the language decision deletes |
-| `#[@asyncGenerator] fn f() -> @AsyncGenerator<i32>` | `decision-8:436`, `MIGRATION.md:238` | the spelling is `#[@futureGenerator] fn f() -> @FutureGenerator<T, E>` (decisions 98 and 103); the two documents still write `@AsyncGenerator` | **08-hygiene** — decision 1 settled the compiler is right |
+| **`any`** parses and checks, and `libs/std/src/builtins.d.bp` uses it as a default type argument on the fallible wrappers' error parameter, which C-32 removes (decisions 120 and 122) | `decision-8:129-133` says `any` **does not exist** | accepted everywhere | C-18 (decision 31) — the standard library depends on a type the language decision deletes |
+| `#[@asyncGenerator] fn f() -> @AsyncGenerator<i32>` | `decision-8:436`, `MIGRATION.md:238` | the spelling is `fn f() -> @Stream<T>` with no annotation (decisions 118 and 122); the two documents still write `@AsyncGenerator` | **08-hygiene** — decision 1 settled the compiler is right |
 | `#[@External.Node("$stringify($0)")]` | `libs/std/src/builtins.d.bp:156` | `compilation failed  PrimOpStringifyUnsupported` on node; the erlang target accepts it | **04-js** |
 | `loop { break 1; }` yields an **array**, not the value | `docs.md:533` | an array | **22-loops** — decision 105: `break v` outside a generator scope is refused; a loop is a statement |
 

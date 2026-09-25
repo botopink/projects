@@ -44,8 +44,6 @@ and hands each library its `modules.md` to refine the cut.
 
 ## Current state
 
-Examples use the pre-118 effect annotations; front 24's codemod rewrites them ([`00 · 24-effects-by-return`](../00-compiler-carry-over/24-effects-by-return/README.md)).
-
 Measured by reading the trees on 2026-09-20.
 
 | Repository | `botopink.json` shape | `modules/` | `examples/` | Tests |
@@ -416,7 +414,7 @@ exported it.
 | Next.js | botopink | Library · front |
 |---|---|---|
 | React | `Element`, hooks, `html` DSL | jhonstart · 94 (+ the existing core) |
-| React Server Components | `#[@future] fn → @Future<Element>` | jhonstart · 28 |
+| React Server Components | `fn … -> @Component<ElementBase, Element>` that awaits | jhonstart · 28 |
 | `'use client'` | the boundary, hydrate point | jhonstart · 29; the bundle, onze · 68 |
 | `next/link` | `Link` | jhonstart · 27 |
 | `next/navigation` (`useRouter`) | `useRouter` | jhonstart · 26 |
