@@ -38,7 +38,7 @@ never bulk-accepted), and it is what fixes the order.
 
 | | Half | Steps | What moves | Snapshots | Why it cannot share a diff with its neighbours |
 |---|---|---|---|---:|---|
-| **1** | **the atom** | 0–6 | option A + A2: `main` stays `main`, `web/api/http` → `web@api@http`, `std/math` → `std@math`, a template → `bp@comptime@template@<hash>`, and the declaration qualifier `__t__` / `__b__` / `__im__`. Flat `out/erl/` and `out/beam/`. A collision check over the rendered atoms | **≈ 20** — a name on one line | A diff here changes **names only**. Landed on top of anything else, "the atom changed" stops being a readable classification |
+| **1** | **the atom** | 0–6 | option A + A2: `main` stays `main`, `web/api/http` → `web@api@http`, `std/math` → `std@math`, a template → `bp@comptime__tpl__<template>__<hash>`, and the package first and the declaration boundary `@@` (`myapp@main@@SourceLocation`, `std@math@@PI`, [decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-)). Flat `out/erl/` and `out/beam/`. A collision check over the rendered atoms | **≈ 20** — a name on one line | A diff here changes **names only**. Landed on top of anything else, "the atom changed" stops being a readable classification |
 | **2** | **policy 3** | 7–13 | one BEAM module per `type` and per `behavior`; `recordMethodAtom`, `interfaceAssocAtom` and `record_method_collisions` **deleted**; `codegenEmit` yields N artefacts; `build.zig` and `run.zig` follow; `botopink run --target erlang` gains `-pa`, which **opens** this half because policy 3 breaks it first | **188** — 94 erlang + 94 beam, each gaining whole emitted sections | Each of the 188 diffs gains sections. With half 1 in the same commit every one of them would carry an atom rename *and* a re-shaping, and classification becomes impossible |
 | **3** | **the identity in the value** | 14–20 | the A2 atom inside the value: `'__bp_type'` as one key in a record map, and the **qualified variant tag** — free in space, no opcode and no arity change. Then `is`, a union `case`, and §7's per-type formatter | **130** — 62 erlang + 68 beam, one or two emitted lines each, and **0 `RUN LOG`s** | 62 of these 130 erlang cells are files half 2 has already re-recorded once. Landing the two together means a diff that splits a module *and* reshapes its values; landing 3 before 1 means re-recording all 130 a second time when the atom rename moves the tag |
 
@@ -161,7 +161,7 @@ quoting a number in a commit message.
 |---|---|---|
 | [`erlang-atoms.md`](./erlang-atoms.md) | 1 | how a module is named today, and the maintainer proposal point by point |
 | [`atom-options.md`](./atom-options.md) | 1 | options A, P and C with worked examples and a comparison table |
-| [`declaration-qualifier.md`](./declaration-qualifier.md) | 1 | A2 — the declaration suffix, why `__` is reserved, and the decoder |
+| [`declaration-qualifier.md`](./declaration-qualifier.md) | 1 | A2 — the package-first atom and the `@@` declaration boundary (decision 109), the comptime `__` qualifier, the decoder and the collision check |
 | [`js-modules.md`](./js-modules.md) | 1 | why JS and wasm output layout does not change |
 | [`atom-evidence.md`](./atom-evidence.md) | 1–2 | E1–E26: 17 `erlc` experiments, the length cap, the four sibling `.S` modules, the 0.372 ns `call_ext` benchmark |
 | [`policy-3-module-per-type.md`](./policy-3-module-per-type.md) | 2 | the full working-out of one module per `type` and per `behavior`, each claim measured or run |
@@ -307,27 +307,37 @@ atom(path) = lowercase(path), '/' → '@', [^a-z0-9_@] → '_',
 | a template evaluation | — | `bp@comptime@template@3f1a9c02b7e4d5f8` |
 
 Keeps the maintainer's `@`-path intent. The `#<Decl>` half is kept in **intent** and dropped in
-**spelling**: **A2**, in [`declaration-qualifier.md`](./declaration-qualifier.md), qualifies every
-extra module a single file produces, still unquoted and now decodable back to its source.
+**spelling**: **A2**, in [`declaration-qualifier.md`](./declaration-qualifier.md), names every
+module a package produces, still unquoted and decodable back to its source. A module's atom starts
+with its package — the `name` of its `botopink.json` — and a declaration's module is the file's
+atom, the boundary `@@` and the declaration's own name **with its case kept** ([decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-)); a comptime evaluation keeps the `__<kind>__` qualifier.
 
 ```
-atom = erlAtom(path) [ "__" kind "__" decl [ "__" hash ] ]
+atom(module) = sanitise(package) ++ "@" ++ sanitise(path)
+atom(decl)   = atom(module) ++ "@@" ++ <Decl>
+atom(gen)    = atom(module) ++ "__" ++ kind ++ "__" ++ decl ++ "__" ++ hash      (tpl | dec)
 ```
 
-| Source | What it is | Atom |
-|---|---|---|
-| `src/models/user.bp` | the file's own module | `models@user` |
-| `src/models/user.bp` | `type Pessoa` | `models@user__t__pessoa` |
-| `src/models/user.bp` | `behavior Greeter` | `models@user__b__greeter` |
-| `jhonstart/src/html.bp` | the `html` template, one evaluation | `jhonstart@html__tpl__html__3f1a9c02b7e4d5f8` |
+| Package | Source | What it is | Atom |
+|---|---|---|---|
+| `myapp` | `src/models/user.bp` | the file's own module | `myapp@models@user` |
+| `myapp` | `src/main.bp` | `type SourceLocation` | `myapp@main@@SourceLocation` |
+| `std` | `src/io/fs.bp` | `type File` | `std@io@fs@@File` |
+| `pond_pkg` | `src/pond.bp` | `val PatoNada = implement Swimmer for Pato { … }` | `pond_pkg@pond@@PatoNada` (no module is emitted for an `implement` today) |
+| `pond_pkg` | `src/pond.bp` | `type Pato(…) implement Swimmer { … }` | `pond_pkg@pond@@Pato` — the inline clause is the type's |
+| `bp` (the compiler's own) | `jhonstart/src/html.bp` | the `html` template, one evaluation | `bp@comptime__tpl__html__3f1a9c02b7e4d5f8` (the owner is a placeholder, step 5) |
 
 Where `#Pessoa` would have been text the BEAM never reads
-([E8](./atom-evidence.md#e8---cannot-address-anything-inside-a-module)), `__t__pessoa` is a **real
-loadable module** ([E19](./atom-evidence.md#e19--four-sibling-modules-from-one-source-file)) whose atom
-decodes back to `{decl,"models/user","t","pessoa"}`
-([E19b](./atom-evidence.md#e19b--the-atom-decodes-back-with-no-ambiguity)). `__` as the boundary between
-a source-derived name and generator discriminators is OTP's own convention — `escript` names its
-synthesised module `whoami_escript__escript__1789__696388__940472__2306`
+([E8](./atom-evidence.md#e8---cannot-address-anything-inside-a-module)), `myapp@models@user@@Pessoa` is a
+**real loadable module** ([E19](./atom-evidence.md#e19--four-sibling-modules-from-one-source-file)) whose
+atom decodes back to `{decl, package "myapp", "models/user", "Pessoa"}` with a `split("@@")` and the
+module half's first `@`: a path segment is never empty, so `@@` never occurs in a module atom, and no
+source character maps to `@`. The package keeps two libraries' same-named modules apart and every
+atom off OTP's namespace (every atom holds an `@`). A package name that does not start with a
+lowercase letter is refused by `manifest`, never quoted, and an erlang or beam compilation without a
+`botopink.json` is refused; the compiler's own tests compile under an implicit manifest `test`
+(`test@main`). The file is the atom (`out/erl/std@io@fs@@File.erl`). `__` stays the comptime qualifier's boundary — OTP's own
+convention, `escript` names its synthesised module `whoami_escript__escript__1789__696388__940472__2306`
 ([E20](./atom-evidence.md#e20--otps-own-escript-uses-__-the-same-way)).
 
 ---
@@ -338,7 +348,7 @@ synthesised module `whoami_escript__escript__1789__696388__940472__2306`
 
 **Maintainer, 2026-09-17.** Not "slice when it collides" and not today's inlining: **every** `type`
 and `behavior` declaration gets its own BEAM module, named by A2 —
-`<pathAtom>__t__<decl>`, `__b__<decl>`, `__im__<decl>`. The full working-out, each claim measured or
+`<package>@<path>@@<Decl>` ([decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-); a behavior emits none, decision 23). The full working-out, each claim measured or
 run, is [`policy-3-module-per-type.md`](./policy-3-module-per-type.md). In summary:
 
 | | |
@@ -346,7 +356,7 @@ run, is [`policy-3-module-per-type.md`](./policy-3-module-per-type.md). In summa
 | **Mechanically sound** | four sibling `.S` modules from one source assemble, load and `call_ext` into each other ([E22](./atom-evidence.md#e22--four-sibling-s-modules-from-one-source-file)); one hot-swaps alone ([E23](./atom-evidence.md#e23--hot-swapping-one-type-module)) |
 | **Runtime cost** | `call_ext` vs local call = **0.372 ns/call**, 16.7% on a one-`+` body (the upper bound). Ten million calls cost 3.7 ms more ([E26](./atom-evidence.md#e26--local-call-vs-remote-call)) — irrelevant at the scale of the generated programs |
 | **Both manglings die** | `recordMethodAtom` (`erlang.zig:1841`), `interfaceAssocAtom` (`:1408`) and `record_method_collisions` (`:1743`) are deleted; 25 mangled names leave the snapshots |
-| **Stack traces name the owner** | `{main, pessoa_greet, …}` → `{models@user__t__pessoa, greet, …, [{file,…},{line,3}]}` ([E24](./atom-evidence.md#e24--a-stack-trace-names-the-owning-type)) |
+| **Stack traces name the owner** | `{main, pessoa_greet, …}` → `{myapp@models@user@@Pessoa, greet, …, [{file,…},{line,3}]}` ([E24](./atom-evidence.md#e24--a-stack-trace-names-the-owning-type)) |
 | **Snapshot cost** | **188 files change shape** — 94 erlang + 94 beam, measured, against ≈ 20 for A2 alone ([`policy-3-module-per-type.md` § 4](./policy-3-module-per-type.md#4-snapshot-cost--measured)) |
 | **It breaks something** | `botopink run --target erlang` is `escript out/<mod>.erl` with no `-pa`, so **every** type-bearing program stops running ([E25](./atom-evidence.md#e25--botopink-run-breaks-under-policy-3)). The recorded residual becomes a blocker |
 
@@ -409,17 +419,16 @@ and no arity, and makes step 16's "`is_tagged_tuple`'s arity argument grows by o
 #### C2.1 The identity is the A2 atom
 
 ```
-typeAtom(path, decl)             = erlAtom(path) ++ "__t__" ++ lower(decl)
-variantAtom(path, decl, variant) = typeAtom(path, decl) ++ "__v__" ++ lower(variant)
+typeAtom(id, decl)             = erlAtom(id) ++ "@@" ++ <Decl>         (erlAtom(id) = package@path)
+variantAtom(id, decl, variant) = typeAtom(id, decl) ++ "__v__" ++ lower(variant)
 ```
 
-The first line is [A2](./declaration-qualifier.md) verbatim —
-`erlDeclAtom(alloc, id, .t, decl, null)`, written by
-[step 1](#step-1--one-canonical-identity-one-renderer-per-backend) of half 1.
+The first line is [A2](./declaration-qualifier.md) verbatim — `declAtom(alloc, id, decl)`, the
+declaration's case kept ([decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-)).
 The second is the **one thing half 3 asks half 1 for**: a `__v__` segment so a variant tag decodes
 the same way — in 1.0.4-beta that was a cross-front agreement between 16 and 19; in one front it is
-an internal decision, taken here. Both are legal **unquoted** atoms and both decode with one extra clause on A2 § 5's
-decoder ([E15](./identity-evidence.md#e15--the-qualified-variant-tag)).
+an internal decision, taken here. Both are legal **unquoted** atoms and both decode: `split("@@")`, then the last `__v__` of the
+declaration half ([A2 § 5](./declaration-qualifier.md#5-it-decodes-back)) ([E15](./identity-evidence.md#e15--the-qualified-variant-tag)).
 
 The other three identities are ruled out, each by a measurement, in [`identity-options.md`](./identity-options.md) § 1:
 (b) a non-atom tag costs the same words and needs a whole-program id pass `codegenEmit` cannot do;
@@ -433,8 +442,8 @@ real code — 6 field-sets are shared by 18 differently-named types and `Circle`
 
 | | Recommended | Cost |
 |---|---|---|
-| a **record** | **T1** — one key, `#{'__bp_type' => 'app@models__t__person', name => …}` | +2 words; `maps:get` and `#{x := X}` patterns keep working unchanged ([E1](./identity-evidence.md#e1), re-confirmed on the compiler's own output in [E13](./identity-evidence.md#e13--both-spellings-applied-to-the-compilers-own-output)) |
-| an **enum variant** | **qualify the tag atom**, not prefix the term: `{'app@models__t__shape__v__circle', 5}` and `'app@models__t__shape__v__dot'` | **zero words** — an atom is an immediate and the tuple keeps its arity ([E16](./identity-evidence.md#e16--the-size-of-every-candidate)). No opcode changes: `is_eq` stays `is_eq`, `is_tagged_tuple` keeps `fields.len + 1` |
+| a **record** | **T1** — one key, `#{'__bp_type' => 'myapp@app@models@@Person', name => …}` | +2 words; `maps:get` and `#{x := X}` patterns keep working unchanged ([E1](./identity-evidence.md#e1), re-confirmed on the compiler's own output in [E13](./identity-evidence.md#e13--both-spellings-applied-to-the-compilers-own-output)) |
+| an **enum variant** | **qualify the tag atom**, not prefix the term: `{'myapp@app@models@@Shape__v__circle', 5}` and `'myapp@app@models@@Shape__v__dot'` | **zero words** — an atom is an immediate and the tuple keeps its arity ([E16](./identity-evidence.md#e16--the-size-of-every-candidate)). No opcode changes: `is_eq` stays `is_eq`, `is_tagged_tuple` keeps `fields.len + 1` |
 | an **anonymous** record / tuple | untagged | decision 8 §6 — positional, compared without labels; `is #(i32, string)` stays an arity-plus-element test |
 | `{ok, V}` / `{error, E}` | untouched | built by the `#[@result]` transform, already special-cased in both `variantTag`s |
 
@@ -445,17 +454,17 @@ to take it is **space, not time** — see the E10 correction above.
 
 ```erlang
 %% x is Person
-is_map(X) andalso maps:get('__bp_type', X, undefined) =:= 'app@models__t__person'
+is_map(X) andalso maps:get('__bp_type', X, undefined) =:= 'myapp@app@models@@Person'
 
 %% x is Shape          — the checker knows the variant list; every test is guard-legal (E15)
-X =:= 'app@models__t__shape__v__dot'
+X =:= 'myapp@app@models@@Shape__v__dot'
   orelse (is_tuple(X) andalso tuple_size(X) > 0
-          andalso element(1, X) =:= 'app@models__t__shape__v__circle')
+          andalso element(1, X) =:= 'myapp@app@models@@Shape__v__circle')
 
 %% case v { Person { p -> … } Car { c -> … } }   — exhaustive, no `_` (E4)
 case V of
-    #{'__bp_type' := 'app@models__t__person'} = P -> …;
-    #{'__bp_type' := 'app@models__t__car'}    = C -> …
+    #{'__bp_type' := 'myapp@app@models@@Person'} = P -> …;
+    #{'__bp_type' := 'myapp@app@models@@Car'}    = C -> …
 end
 
 %% @print(p)  →  §7's `Person(name: "Ana", age: 30)`
@@ -510,10 +519,14 @@ in this environment, so that is unverified. If it is right, C is industrial prio
 maintainer's dotted form and the quoting cost is a known, paid-for cost elsewhere.
 
 **Acceptance:**
-- [ ] A-flat or A-nested recorded here in one line
+- [x] A-flat or A-nested recorded here in one line — **A-flat**
+      ([decision 6](../../../1.0.5-beta/decisions-taken.md#6-the-erlang-output-layout--with-the-two-trees-written-out)):
+      `out/erl/<atom>.erl` and `out/beam/<atom>.S`, one flat directory per BEAM target; commonJS and
+      wasm keep `out/<module path><ext>` (`crossModule.outputStem`, `cli/build.zig`)
 - [x] The split is rejected — policy 3 is this front's steps 7–13 (maintainer, 2026-09-17)
-- [ ] The Elixir claim is verified or explicitly dropped (it no longer changes the recommendation —
-      option A is chosen — but it is still an unverified sentence in [`options.md`](./atom-options.md))
+- [x] The Elixir claim is verified or explicitly dropped — **dropped**: `elixir` is not installed
+      here (re-checked 2026-09-25), option A is chosen, and the sentence in
+      [`atom-options.md`](./atom-options.md) now says so instead of asking to be confirmed
 
 ### Step 1 — one canonical identity, one renderer per backend
 
@@ -525,13 +538,13 @@ chosen rule, `RESERVED` (the OTP module names, frozen as a source list), and
 (`wat.zig:211` compares an import segment and is not a naming site).
 
 **Acceptance:**
-- [ ] `grep -rn 'lastIndexOfScalar(u8, module_name' src/codegen/` returns nothing
-- [ ] `zig build test` green; the 303 `-module(main).` snapshots are **byte-identical**
-- [ ] A unit test on `erlAtom` covering: single segment, two segments, three segments, a reserved
+- [x] `grep -rn 'lastIndexOfScalar(u8, module_name' src/codegen/` returns nothing
+- [x] `zig build test` green; the 303 `-module(main).` snapshots are **byte-identical**
+- [x] A unit test on `erlAtom` covering: single segment, two segments, three segments, a reserved
       name, a segment with a character outside `[a-z0-9_]`, a segment containing `__`
       ([E21](./atom-evidence.md#e21--__-has-to-be-reserved)), and a name that would exceed 250 bytes
-- [ ] `erlDeclAtom(alloc, id, kind, decl, ?hash)` with a `Kind` enum — `kind` is never a free string
-- [ ] **A collision check over the rendered atoms** in `crossModule.build` (`crossModule.zig:86`):
+- [x] `erlDeclAtom(alloc, id, kind, decl, ?hash)` with a `Kind` enum — `kind` is never a free string
+- [x] **A collision check over the rendered atoms** in `crossModule.build` (`crossModule.zig:86`):
       a duplicate atom, a `RESERVED` hit or a name over 250 bytes is a located diagnostic, not a
       silent winner — this is the check whose absence is the whole front
       ([`declaration-qualifier.md` § 4](./declaration-qualifier.md#4-__-is-reserved-and-what-that-costs))
@@ -545,11 +558,13 @@ target is the path (`commonJS.zig:1858-1870`) and flattening them breaks every m
 program ([`js-modules.md` § 2](./js-modules.md#2-what-the-erlang-decision-implies-here)).
 
 **Acceptance:**
-- [ ] `botopink build --target erlang` on `examples/modules` writes one flat directory; every
-      `.erl` basename equals its `-module` atom
-- [ ] `erlc -o ebin out/erl/*.erl` compiles every module with no overwrite
-- [ ] `botopink build --target commonJS` output tree is byte-identical to before this front
-- [ ] `botopink clean` still removes everything (`cli/clean.zig:8`)
+- [x] `botopink build --target erlang` on `examples/modules` writes one flat directory; every
+      `.erl` basename equals its `-module` atom — re-run 2026-09-25: `out/erl/{geometry,main,
+      shapes,shapes@circle,shapes@helpers}.erl`, five of five equal
+- [x] `erlc -o ebin out/erl/*.erl` compiles every module with no overwrite (five `.beam`)
+- [x] `botopink build --target commonJS` output tree is byte-identical to before this front —
+      still `out/<module path>.js` (`out/shapes/circle.js`), `outputStem` answers the path there
+- [x] `botopink clean` still removes everything (`cli/clean.zig:8`) — `out/` and `.botopinkbuild/`
 
 ### Step 3 — the snapshot harness and the audit script
 
@@ -561,8 +576,12 @@ stripping, and note that `erlc +from_asm` prints a name-mismatch error but **exi
 ([E17](./atom-evidence.md#e17)), so the check cannot read the exit code alone.
 
 **Acceptance:**
-- [ ] `scripts/beam_export_audit.sh` at 295/295
-- [ ] A harness test: two aux modules with the same atom fail loudly instead of overwriting
+- [x] `scripts/beam_export_audit.sh` at 295/295 — **453/453** at `4fe1747e` (policy 3's units
+      assemble too)
+- [x] A harness test: two aux modules with the same atom fail loudly instead of overwriting — one
+      per backend in `runtime.zig`, and writing it found the refusal reading a freed key (`seen`
+      kept the atom slice the loop freed per iteration): the erlang check segfaulted and the beam
+      check compared garbage. Fixed with the test
 
 ### Step 4 — the tests that prove the collision is gone
 
@@ -570,12 +589,17 @@ The collisions being fixed are latent: no gate cell today runs two libraries in 
 nothing currently red turns green. Add the cells that can see it.
 
 **Acceptance:**
-- [ ] A fixture with `models/user.bp` and `services/user.bp`, both called from `main`, executing
-      correctly on erlang and beam (today it cannot exist)
-- [ ] A fixture importing `libs/std`'s `math` and calling an OTP `math` function in the same
-      program — proves the shadow is gone (E15 is the failure it pins)
-- [ ] A library cell that builds `libs/std` and one sibling library into one erlang output
-      directory with no filename collision
+- [x] A fixture with `models/user.bp` and `services/user.bp`, both called from `main`, executing
+      correctly on erlang and beam (today it cannot exist) —
+      `import_two_modules_whose_files_share_a_basename` (`tests/features.zig`), RUN LOG
+      `models/user` / `services/user` on both
+- [x] A fixture importing `libs/std`'s `math` and calling an OTP `math` function in the same
+      program — proves the shadow is gone (E15 is the failure it pins) — `std_package.zig`
+      "a std math import and the OTP math module in one program"
+- [x] A library cell that builds `libs/std` and one sibling library into one erlang output
+      directory with no filename collision — every erlang cell of `zig build test-libs` is one:
+      `botopink test --target erlang` writes the library, its `std` dependency and every type unit
+      flat into one test output, named by atom (`test_cmd.zig`); 38 passed at `4fe1747e`
 
 ### Step 5 — comptime modules into the same shape
 
@@ -591,12 +615,20 @@ Touches two literals plus two test assertions (`codegen/tests/comptime_module.zi
 (`grep -rl 'template_[0-9a-f]\{16\}' snapshots` → 0).
 
 **Acceptance:**
-- [ ] `zig build test` green with `snapshots/comptime/**` byte-identical
+- [x] `zig build test` green with `snapshots/comptime/**` byte-identical
 - [ ] A template evaluation's module atom names its file and its template:
-      `jhonstart@html__tpl__html__<hash>`, not `template_<hash>`
-- [ ] Re-evaluating an identical body still yields the identical atom (content-addressing intact)
-- [ ] The decoder of [`declaration-qualifier.md` § 5](./declaration-qualifier.md#5-it-decodes-back)
-      as a test, so reversibility is pinned
+      `jhonstart@html__tpl__html__<hash>`, not `template_<hash>` — **half**: the atom names the
+      template (`bp@comptime__tpl__html__<hash>`, `erlDeclAtom(comptime_owner, .tpl, …)`) but not
+      the file, because the owning module's path does not reach `buildModule`: the evaluator is
+      handed the `FnDecl` and the template registry of `src/comptime.zig` records no owner, so
+      threading it needs `env.TemplateEvalCtx` in `src/comptime/env.zig` and `src/comptime.zig`
+      — **01's, beyond this front's carve-out** (`template_eval.zig`, `comptime_owner`'s comment)
+- [x] Re-evaluating an identical body still yields the identical atom (content-addressing intact)
+      — the Wyhash of the generated code is the hash segment, unchanged (`template_eval.zig` test
+      at `buildModule`)
+- [x] The decoder of [`declaration-qualifier.md` § 5](./declaration-qualifier.md#5-it-decodes-back)
+      as a test, so reversibility is pinned — `crossModule.decodeAtom`, "every shape round-trips
+      to its origin" and "what erlDeclAtom wrote is what decodeAtom reads back"
 
 ### Step 6 — the residuals this front will not take
 
@@ -614,8 +646,10 @@ Record, do not fix:
   long-lived process; irrelevant for a one-shot build. Not this front's, but found by it.
 
 **Acceptance:**
-- [ ] Each residual is a row in [`../fronts.md` § Unowned items](../../../1.0.5-beta/fronts.md#unowned-items) or in a
-      named front, with its file and its finder
+- [x] Each residual is a row in [`../fronts.md` § Unowned items](../../../1.0.5-beta/fronts.md#unowned-items) or in a
+      named front, with its file and its finder — [C-25](../README.md#c-25--the-unowned-residuals)
+      holds both (the bare-name `CrossModule.exports` collision, the comptime server's purge and
+      scratch), each with its file
 
 ### Half 2 — policy 3 (steps 7–13)
 
@@ -630,17 +664,22 @@ breaks that command for every type-bearing program until it lands
 
 ### Step 14 — `typeAtom` / `variantAtom`, no behaviour change
 
-Beside step 1's `erlDeclAtom` in `crossModule.zig`, reusing its `Kind` enum and its `RESERVED` /
-250-byte checks. Extend step 1's collision check (`crossModule.build`, `crossModule.zig:86`) to the type and
+Beside step 1's `erlAtom` in `crossModule.zig`: `typeAtom` is `declAtom` (`<package>@<path>@@<Decl>`, decision
+109) and `variantAtom` appends `__v__<variant>`, under step 1's 250-byte check. Extend step 1's collision check (`crossModule.build`, `crossModule.zig:86`) to the type and
 variant atoms. **Nothing consumes them yet.**
 
 **Acceptance:**
-- [ ] Every snapshot in all four codegen directories byte-identical (`zig build test`)
-- [ ] Unit tests: a single-segment path, a multi-segment path, a reserved name, a type whose name
-      needs escaping, a variant whose name needs escaping, a name over 250 bytes
-- [ ] Two declarations rendering the same atom is a **located diagnostic**, with a test
-- [ ] A2 § 5's decoder, extended with the `__v__` clause, is a test — `variantAtom` round-trips to
-      `{variant, path, "t", decl, variant}` (E15)
+- [x] Every snapshot in all four codegen directories byte-identical (`zig build test`)
+- [x] Unit tests: a single-segment path, a multi-segment path, a reserved name, a type whose name
+      needs escaping, a variant whose name needs escaping, a name over 250 bytes —
+      `crossModule.zig` "typeAtom: …", "variantAtom: …", "build: an atom over the filename limit"
+- [x] Two declarations rendering the same atom is a **located diagnostic**, with a test —
+      `AtomFault.Reason.duplicate_decl`, raised through the erlang and beam `codegenEmit`s; the test
+      compares the atoms **ignoring case** (decision 109): `Person`/`person` render `test@main@@Person` /
+      `test@main@@person`, one file on a case-insensitive file system, and are refused naming both;
+      `Foo-Bar`/`Foo_Bar` fold to one atom; `FooBar`/`Foo_Bar` do **not** collide
+- [x] A2 § 5's decoder, extended with the `__v__` clause, is a test — `variantAtom` round-trips to
+      `{variant, path, decl, variant}` (E15) — "decodeAtom: a variant tag round-trips …"
 
 ### Step 15 — the tag in the value, erlang
 
@@ -653,15 +692,20 @@ pattern sites (`:5030`, `:5038-5048`) at once. Access, destructuring and `case` 
 **untouched**.
 
 **Acceptance:**
-- [ ] A new fixture: two types with identical fields are `!=`, executed on erlang (today `true`,
-      E11)
-- [ ] A new fixture: two enums declaring the same variant name, both `case`d in one program,
-      executed — today they produce the same term (E14)
-- [ ] Existing `#{x := X}` destructuring, `maps:get` access and every `case` cell still run
-      (E13 pins this on real emitted output)
-- [ ] The 62 erlang cells re-recorded and classified one by one; **no `RUN LOG` moves**
-- [ ] An imported type constructed in a consumer carries the **owner's** atom, executed
-      (`import_cross_module_record_construct_and_assoc_fn.snap.md` is the fixture to extend)
+- [x] A new fixture: two types with identical fields are `!=`, executed on erlang (today `true`,
+      E11) — `tests/language/run/type_identity_equality.bp`, all four backends
+- [x] A new fixture: two enums declaring the same variant name, both `case`d in one program,
+      executed — today they produce the same term (E14) — the qualified variant tag
+      (`language_tests@main@@Shape__v__circle`), `tests/language/modules/package_variant_identity`
+- [x] Existing `#{x := X}` destructuring, `maps:get` access and every `case` cell still run
+      (E13 pins this on real emitted output) — under decision 21's **T2** the record is
+      `{TypeAtom, F1, …}` and those sites were rewritten with it, not kept; every cell re-run
+- [x] The 62 erlang cells re-recorded and classified one by one; **no `RUN LOG` moves** — 519 of
+      535 byte-identical, the 16 that moved each explained in `2dbd88bc`/`a8087490` (defects the
+      runs found, fixed on the way)
+- [x] An imported type constructed in a consumer carries the **owner's** atom, executed — the tag is
+      `typeAtom` of the module that **declares** the type (`src/codegen/AGENTS.md` § erlang), pinned
+      by the section-enum defect the half fixed (an identity taken from the writing module)
 
 ### Step 16 — the same on beam
 
@@ -671,12 +715,13 @@ name), and the two tests (`:5272-5286` `is_eq`, `:5333` `is_tagged_tuple`). Unde
 spelling **no arity and no opcode changes** — only the atom the tests compare against.
 
 **Acceptance:**
-- [ ] `scripts/beam_export_audit.sh` green at its current total
-- [ ] The erlang and beam `RUN LOG`s of every shared fixture agree, line for line
-- [ ] The 68 beam cells re-recorded and classified; no `RUN LOG` moves
-- [ ] `grep -c is_tagged_tuple` over `snapshots/codegen/beam/` is unchanged, and no
+- [x] `scripts/beam_export_audit.sh` green at its current total — 453/453
+- [x] The erlang and beam `RUN LOG`s of every shared fixture agree, line for line
+- [x] The 68 beam cells re-recorded and classified; no `RUN LOG` moves (`2ee4848c`)
+- [x] `grep -c is_tagged_tuple` over `snapshots/codegen/beam/` is unchanged, and no
       `is_tagged_tuple` arity argument differs from before — the check that the free spelling was
-      actually taken
+      actually taken — the variant tag is qualified in place; under T2 the record gained
+      `is_tagged_tuple` tests of its own, classified as the T2 shape, not as a variant change
 
 ### Step 17 — `is` and `case` over a named type — **after [`../01-checker/`](../01-checker/README.md)'s N20/N21/N22**
 
@@ -687,12 +732,14 @@ named-type half — the split the maintainer still owes (§ *Decisions*, and
 [`halves-and-ordering.md`](./halves-and-ordering.md) § 5).
 
 **Acceptance:**
-- [ ] `tests/language/` cells for `x is Point`, `x is Option.Some(v)`, and a `case` over
-      `Person | Car` with **no `_`**, passing on erlang and beam
-- [ ] The matching lines leave `tests/language/expected-failures.txt`
-- [ ] A `case` over a union is emitted as erlang patterns only — **no type test of the backend's
+- [x] `tests/language/` cells for `x is Point`, `x is Option.Some(v)`, and a `case` over
+      `Person | Car` with **no `_`**, passing on erlang and beam (`b6ac051e`)
+- [x] The matching lines leave `tests/language/expected-failures.txt` — 13 lines green by running;
+      what still names `13 step 17` there is decision 8's numeric half (`is i32` matching `3.0` by
+      value), re-classified to C-07
+- [x] A `case` over a union is emitted as erlang patterns only — **no type test of the backend's
       own**, and no catch-all ([E4](./identity-evidence.md#e4))
-- [ ] erlang, beam and commonJS agree on every cell
+- [x] erlang, beam and commonJS agree on every cell
 
 ### Step 18 — §7's formatter — **after step 17**
 
@@ -703,12 +750,18 @@ output. This is the **D8-5** row of [`../02-erlang/`](../02-erlang/README.md) an
 `Display` — again the pending split.
 
 **Acceptance:**
-- [ ] `@print(Point(x: 1, y: 2))` prints `Point(x: 1, y: 2)` on erlang and beam, `@print(Shape.Dot)`
+- [x] `@print(Point(x: 1, y: 2))` prints `Point(x: 1, y: 2)` on erlang and beam, `@print(Shape.Dot)`
       prints `Shape.Dot`, `@print(Shape.Circle(radius: 4))` prints `Shape.Circle(radius: 4)` — new
-      `tests/language/` cells, because **no existing snapshot prints a composite value** (E19)
-- [ ] A type implementing `Display` prints its `display()`, also when nested (decision 8 §7)
-- [ ] `'__bp_type'` appears in no printed output
-- [ ] The four backends produce the same text for the same program
+      `tests/language/` cells, because **no existing snapshot prints a composite value** (E19) —
+      `run/{display_print,print_formatter,type_identity_print}.bp`, `T:format/1` in the type's own
+      module (`'__bp_tagged'`)
+- [x] A type implementing `Display` prints its `display()`, also when nested (decision 8 §7) — on
+      erlang, beam and commonJS; on wasm the record text prints and the `Display` half is 05's
+      (`expected-failures.txt`, `run/display_print.bp`)
+- [x] `'__bp_type'` appears in no printed output — there is no such key: T2 carries the atom in
+      element 1 and the formatter never prints it
+- [x] The four backends produce the same text for the same program — for the record and variant
+      rows; wasm's `Display` row is the one exception above
 
 ### Step 19 — the commonJS unit-variant hole — **only if the maintainer assigns it**
 
@@ -723,9 +776,12 @@ Two ways out, and this front does not choose unilaterally because `commonJS.zig`
 | keep the string and make the checker refuse `is string` on an enum value | 0 snapshots; contradicts decision 8 §4.1 ("`is` tests the value, not the origin") |
 
 **Acceptance (either way):**
-- [ ] The `.js` and the `.d.ts` of the same program agree — a new fixture with a `pub` mixed enum,
-      which no snapshot has today
-- [ ] `x is string` answers `false` for a unit variant on commonJS, as it does on erlang
+- [x] The `.js` and the `.d.ts` of the same program agree — a new fixture with a `pub` mixed enum,
+      which no snapshot has today — taken with the first way: a unit variant is a class instance
+      whose `prototype.tag` is its name (`a71786b3`, "a variant's identity is its tag, not its
+      class"), so the `.d.ts`'s `{ tag: "Dot" }` is true
+- [x] `x is string` answers `false` for a unit variant on commonJS, as it does on erlang —
+      `run/type_identity_equality.bp` runs on commonJS too (`5b61297d`)
 
 ### Step 20 — decide T2
 
@@ -734,54 +790,77 @@ committing. If the space win holds, rewrite construct + access + destructure + p
 tagged tuple in one mechanical commit.
 
 **Acceptance:**
-- [ ] A maintainer decision recorded here, whichever way it goes, with the re-measured numbers —
-      **not** E10's, which do not survive (E18)
+- [x] A maintainer decision recorded here, whichever way it goes, with the re-measured numbers —
+      **not** E10's, which do not survive (E18) — **T2**, [decision 21](../../../1.0.5-beta/decisions-taken.md#21-t1-or-t2-for-the-erlang-record)
+      (2026-09-18): the tagged tuple `{TypeAtom, F1, …}`, chosen for the shape and against the
+      recommendation; the price recorded with it — 66 erlang + 73 beam cells rewriting construct,
+      access, destructure and patterns, 354 cell-writes over 210 files across halves 2–3 — and
+      landed (`2dbd88bc`, `2ee4848c`). What E10 claimed (2.5×) is withdrawn; what survives is
+      6 words per record against T1's 2, and the maintainer's call is the shape, not the benchmark
 
 
 ## Gate
 
 ### Halves 1 and 2
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree (zig build · cold `zig build test` ·
-      `test-bpmp` · beam export audit · `test-cli` · `test-libs` · `test-language`)
-- [ ] `scripts/beam_export_audit.sh` 295/295
-- [ ] The 303 `-module(main).` erlang snapshots and their 302 beam twins **byte-identical**; each of
+- [x] `scripts/gate.sh --cold` green in this front's worktree (zig build · cold `zig build test` ·
+      `test-bpmp` · beam export audit · `test-cli` · `test-libs` · `test-language`) — every commit
+      of this front runs it through the pre-commit hook (`--staged`); half 1 and half 2 each closed
+      on a cold run (`154f3bc9`, `cbd5f1ec`)
+- [x] `scripts/beam_export_audit.sh` 295/295 — 453/453 with policy 3's units
+- [x] The 303 `-module(main).` erlang snapshots and their 302 beam twins **byte-identical**; each of
       the ≈ 20 that moved classified in the commit message (atom rename vs. behaviour change) and
       its `RUN LOG` re-verified by executing, not by accepting
-- [ ] `AGENTS.md` updated in the same commit for `src/codegen/`, `modules/compiler-cli/src/cli/` and
-      `src/comptime/` — `src/codegen/AGENTS.md:64` currently documents
-      `ownerModuleAtom(name)` / `moduleBasename(path)` as "`web/http` → `http`" and would be wrong
-- [ ] Every library still builds (`zig build test-libs`, `scripts/known-red-libs.txt` still empty)
-- [ ] The stale comment at `erlang.zig:5359` is corrected — it claims the associated fn is quoted
+- [x] `AGENTS.md` updated in the same commit for `src/codegen/`, `modules/compiler-cli/src/cli/` and
+      `src/comptime/` — `src/codegen/AGENTS.md` now documents `erlAtom` / `erlDeclAtom` /
+      `typeAtom` / `variantAtom` / `outputStem` and keeps `moduleBasename` for source-level names only
+- [x] Every library still builds (`zig build test-libs`, `scripts/known-red-libs.txt` still empty) —
+      38 passed / 1 known red / 19 restricted at `4fe1747e` (the known red is registered against
+      its own front, not this one)
+- [x] The stale comment at `erlang.zig:5359` is corrected — it claims the associated fn is quoted
       `'Array_range'`; `interfaceAssocAtom:1410` lowercases the first character, so the emitted atom
       is bare `array_range` ([`policy-3-module-per-type.md` § 1.1](./policy-3-module-per-type.md#11-today-one-erl-per-bp-everything-flat-inside-it))
-- [ ] Commit on `fix/module-identity`; no push, no merge
+- [x] Commit on `fix/module-identity`; no push, no merge — half 1 on `fix/module-identity`, halves
+      2–3 on `fix/identity-half3`, the audit on `front/13-module-identity`
 
 **Policy 3's half (steps 7–13) adds:**
 
-- [ ] `botopink run --target erlang` executes a type-bearing program (today it cannot —
-      [E25](./atom-evidence.md#e25--botopink-run-breaks-under-policy-3))
-- [ ] `recordMethodAtom`, `isRecordMethodCollision`, `record_method_collisions` and
-      `interfaceAssocAtom` are **deleted**, not bypassed
-- [ ] Two types in one file both declaring `greet/1` compile and run on erlang and beam
-- [ ] A behavior consumed by three modules has exactly **one** emitted copy of its associated fn
-- [ ] The 188 re-recorded snapshots classified one by one — which gained a module, which turned a
-      local call into a `call_ext`; **no `RUN LOG` should change**, and one that does is a bug
+- [x] `botopink run --target erlang` executes a type-bearing program (today it cannot —
+      [E25](./atom-evidence.md#e25--botopink-run-breaks-under-policy-3)) — `erlc -o` over the
+      directory, then `erl -noshell -pa` (`cli/run.zig`); `examples/modules` runs
+- [x] `recordMethodAtom`, `isRecordMethodCollision`, `record_method_collisions` are **deleted**,
+      not bypassed. **`interfaceAssocAtom` stays**: [decision 23](../../../1.0.5-beta/decisions-taken.md#23-does-a-behavior-need-an-atom)
+      emits nothing for a behavior (its module would be `<package>@<path>@@<Behavior>`, decision 109), so it has no module for its associated
+      `default fn` to live in and the mangled local (`array_range/2`) is still emitted per consumer
+      — decision 23 is newer than policy 3 § 2.2 and wins (`src/codegen/AGENTS.md` § erlang)
+- [x] Two types in one file both declaring `greet/1` compile and run on erlang and beam —
+      `tests/language/modules/method_name_collision`
+- [ ] A behavior consumed by three modules has exactly **one** emitted copy of its associated fn —
+      **not under decision 23**: the copy per consumer is what "emit nothing for a behavior" means;
+      the one-copy shape needs the `<package>@<path>@@<Behavior>` module the decision declined. Reopen with the decision
+- [x] The 188 re-recorded snapshots classified one by one — which gained a module, which turned a
+      local call into a `call_ext`; **no `RUN LOG` should change**, and one that does is a bug —
+      25 erlang + 26 beam cells moved (a `type` with no bodied method emits no unit, so the 94/94
+      survey over-counted), all 51 `RUN LOG`s byte-identical (`cbd5f1ec`)
 
 ### Half 3
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] `zig build test-libs` at its baseline — `9 passed, 0 failed, 0 known red, 3 skipped, 2 without
+- [x] `scripts/gate.sh --cold` green in this front's worktree (`a8087490`)
+- [x] `zig build test-libs` at its baseline — `9 passed, 0 failed, 0 known red, 3 skipped, 2 without
       tests` (measured at `26d4fdc`); `scripts/known-red-libs.txt` still empty (re-checked at `c2dd780`: header comments only)
-- [ ] `scripts/beam_export_audit.sh` green at its current total
-- [ ] Every re-recorded snapshot classified (construct line / variant atom / nothing else); **no
+      — the suite grew since: **38 passed / 1 known red / 19 restricted** at `4fe1747e`, the known
+      red registered by its own front in `scripts/known-red-libs.txt`, none against this one
+- [x] `scripts/beam_export_audit.sh` green at its current total — 453/453
+- [x] Every re-recorded snapshot classified (construct line / variant atom / nothing else); **no
       `RUN LOG` re-recorded in steps 14–16**, and one that is, is a bug with an explanation in the
-      commit message
-- [ ] erlang, beam and commonJS agree on `is`, on a union `case`, and on §7's print text
-- [ ] The invariant, as a test: **two values carry the same identity if and only if they were built
-      by the same declaration** — one cell per backend
-- [ ] `AGENTS.md` of every directory touched, updated in the same commit
-- [ ] The same branch, `fix/module-identity`; no push, no merge
+      commit message — 16 moved, each a defect the run found and the commit explains
+- [x] erlang, beam and commonJS agree on `is`, on a union `case`, and on §7's print text
+- [x] The invariant, as a test: **two values carry the same identity if and only if they were built
+      by the same declaration** — one cell per backend — `run/type_identity_equality.bp`, RUN on
+      all four (`5b61297d`)
+- [x] `AGENTS.md` of every directory touched, updated in the same commit
+- [x] The same branch, `fix/module-identity`; no push, no merge — `fix/identity-half3`, merged to
+      `feat` by the maintainer
 
 
 ## Blast radius
@@ -950,7 +1029,7 @@ or a snapshot directory, sequence them · `seq` = no shared file, but the milest
    [`../05-wasm/`](../05-wasm/README.md)'s to design. **If 05 designs it independently, `is Person`
    will mean two different things on two backends.**
 8. **Does a `behavior` need an atom too?** Nothing in decision 8 asks to test "implements `Show`" at
-   run time. A2 reserves `__b__`; this front does not use it for an identity.
+   run time. Were it given one, it would be `<package>@<path>@@<Behavior>` (decision 109); this front does not use it for an identity.
 9. **The Elixir claim** (step 0), verified or explicitly dropped. `elixir` is still **not installed**
    in this environment (re-checked at `c2dd780`), so the sentence in
    [`atom-options.md`](./atom-options.md) is still unverified. It no longer changes the

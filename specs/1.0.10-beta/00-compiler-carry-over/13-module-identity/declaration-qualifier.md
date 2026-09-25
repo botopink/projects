@@ -1,296 +1,173 @@
-# A2 — telling apart several modules born of the same source file
+# A2 — naming every module a package produces
 
 The maintainer accepted [option A](./atom-options.md#option-a--the-path-joined-with-) and asked for the
 half the `#Pessoa` suffix was reaching for: **when one `.bp` file produces more than one BEAM
-module, the atoms must say which declaration each one came from.** This file is that rule.
-
-It is an extension of option A, not a replacement: `erlAtom(path)` still names the module the file
-itself emits, unchanged. A2 only adds a suffix for the *extra* modules.
+module, the atoms must say which declaration each one came from.** He then asked that every atom
+start with the package it belongs to. This file is the rule, as
+[decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-)
+spells it.
 
 ---
 
-## 1. Where the need is real today
+## 1. Who produces a module
 
-One `.bp` file already produces more than one BEAM module — the comptime evaluators do it on every
-build, and their names carry **no origin at all**:
-
-| Producer | Atom today | Where |
+| Producer | Atom | Where |
 |---|---|---|
-| a template body | `template_3f1a9c02b7e4d5f8` | `src/comptime/template_eval.zig:340` |
-| a decorator body | `decorator_9c02b7e4d5f83f1a` | `src/comptime/decorator_eval.zig:238` |
+| a source file | `<package>@<path>` — `myapp@main`, `std@math` | `crossModule.erlAtom`, the `-module` of every erlang and BEAM file |
+| a `type` (policy 3, half 2) | `<package>@<path>@@<Type>` — `myapp@main@@SourceLocation` | `crossModule.declAtom` / `typeAtom`, emitted by `erlang.zig` and `beam_asm.zig` as `GenerateResult.units` |
+| an `implement` bound to a `val` | `<package>@<path>@@<val>` — `pond_pkg@pond@@PatoNada` | the name rule only: an `implement` block emits no module today, its methods stay in the file's module |
+| a `behavior` | none | decision 23 — a behavior has no run-time representation; were it reopened, `<package>@<path>@@<Behavior>` |
+| a template body evaluated at compile time | `bp@comptime__tpl__<template>__<16 hex>` | `comptime/template_eval.zig` |
+| a decorator body evaluated at compile time | `bp@comptime__dec__<decorator>__<16 hex>` | `comptime/decorator_eval.zig` |
 
-The hash is a Wyhash of the generated erlang source, so it is stable and unique — and it says
-neither which file the template was written in nor which template it was. A stack trace, a
-`.botopinkbuild/tmp/template/*.erl` listing, and an `erl.stderr.log` line all name a module nobody
-can trace back to source without re-hashing. That is the concrete, live case A2 fixes.
+An inline clause, `type Pato(…) implement Swimmer { … }`, is part of the type's declaration: its
+methods are `pond_pkg@pond@@Pato`'s.
 
-The second case is not live yet but the naming must not block it: if a `type` or a `behavior` ever
-gets a module of its own (a per-type dispatch module, a behaviour's `-callback` module), the scheme
-has to have room for it without another migration.
+The comptime atoms keep the `__<kind>__` qualifier and live in the compiler's own package, `bp`.
+Their path half, `comptime`, is a placeholder for the owning module, which does not reach the
+evaluator (step 5, § 7).
 
 ## 2. The rule
 
 ```
-atom = erlAtom(path) [ "__" kind "__" decl [ "__" hash ] ]
+atom(module)  = sanitise(package) ++ "@" ++ sanitise(path)             option A + decision 109
+atom(decl)    = atom(module) ++ "@@" ++ <Decl>                          decision 109
+atom(variant) = atom(decl) ++ "__v__" ++ lower(variant)                  half 3, the value tag
+atom(gen)     = atom(module) ++ "__" ++ kind ++ "__" ++ decl ++ "__" ++ hash
+
+sanitise: lowercase, '/' → '@', [^a-z0-9_@] → '_', a run of '_' collapsed to one
 ```
 
-- `erlAtom(path)` — option A's rule, unchanged.
-- `"__"` — the **in-file separator**, reserved (§ 4).
-- `kind` — a fixed two-or-three letter tag, never a free string:
+- `package` — the `name` of the `botopink.json` the module was loaded under. A dependency's module
+  path is already `<dep>/<stem>` (that is how `from "<dep>"` resolves), so the package is not written
+  twice: `std/math` is `std@math`. The embedded `std` is a dependency of every compilation.
+  Without a `botopink.json` there is no package, and an erlang or beam compilation is refused
+  (§ 6); the compiler's own tests compile under an implicit manifest named `test`.
+- `"@@"` — `crossModule.DECL_SEP`, the **declaration boundary** (§ 4).
+- `<Decl>` — the declaration's own name **with its case kept**; only a character outside
+  `[A-Za-z0-9_]` folds to `_`. A `type`'s name, or the `val` an `implement` is bound to.
+- `__v__<variant>` — a variant is a value tag, not a module: it qualifies the enum's atom, the
+  variant lowercased and its `_` runs collapsed, so it never holds `__`.
+- `kind` — `tpl` or `dec` (`crossModule.Kind`), never a free string. `hash` — 16 hex, the Wyhash
+  of the generated body, so an identical body is the identical module and re-loading it is a no-op.
 
-  | `kind` | Means | Live today |
-  |---|---|---|
-  | `t` | a `type` declared in that file | no — reserved |
-  | `b` | a `behavior` declared in that file | no — reserved |
-  | `im` | an `implement` block | no — reserved |
-  | `tpl` | a template body evaluated at compile time | **yes** |
-  | `dec` | a decorator body evaluated at compile time | **yes** |
-
-- `decl` — the declaration's own name, lowercased, `[^a-z0-9_]` → `_`.
-- `hash` — 16 hex, **only for a comptime producer**, because one template declaration evaluates to
-  many distinct generated bodies. It is the same Wyhash the evaluators already compute, so
-  content-addressing (and therefore the "identical body ⇒ identical module, re-load is a no-op"
-  property of `persistent_erl.zig:63-73`) is preserved exactly.
-
-Every form is a legal **unquoted** erlang atom
-([E18](./atom-evidence.md#e18--the-in-file-separator-candidates)).
+Every form is a legal **unquoted** atom: it starts with the package's lowercase letter and holds
+only `[a-zA-Z0-9_@]` ([E10](./atom-evidence.md#e10--what-is-and-is-not-a-legal-unquoted-atom)).
+A package whose `name` does not start with a lowercase letter is refused, never quoted (§ 6). The
+module half stays lowercase because it is also a file name; the declaration half keeps its case
+because that is what makes the atom decode back to its source.
 
 ## 3. Worked examples
 
-| Source | What it is | Atom |
-|---|---|---|
-| `src/models/user.bp` | the file's own module | `models@user` |
-| `src/models/user.bp` | `type Pessoa` | `models@user__t__pessoa` |
-| `src/models/user.bp` | `type Empresa` | `models@user__t__empresa` |
-| `src/models/user.bp` | `behavior Greeter` | `models@user__b__greeter` |
-| `src/services/user.bp` | `type Pessoa` (same decl name, other file) | `services@user__t__pessoa` |
-| `libs/std/src/math.bp` | `behavior Signed` | `std@math__b__signed` |
-| `jhonstart/src/html.bp` | the `html` template, one evaluation | `jhonstart@html__tpl__html__3f1a9c02b7e4d5f8` |
-| `onze/src/mock.bp` | the `mock` decorator, one evaluation | `onze@mock__dec__mock__9c02b7e4d5f83f1a` |
-| `src/web/api/http.bp` | the file's own module | `web@api@http` |
+| Package | Source | What it is | Atom |
+|---|---|---|---|
+| `myapp` | `src/main.bp` | the file's own module | `myapp@main` |
+| `myapp` | `src/main.bp` | `type SourceLocation` | `myapp@main@@SourceLocation` |
+| `myapp` | `src/models/user.bp` | `type Pessoa` | `myapp@models@user@@Pessoa` |
+| `myapp` | `src/services/user.bp` | `type Pessoa` (same name, other file) | `myapp@services@user@@Pessoa` |
+| `std` | `src/math.bp` | the file's own module (`pub val PI` lives in it) | `std@math` |
+| `std` | `src/io/fs.bp` | `type File` | `std@io@fs@@File` |
+| `std` | `src/dict.bp` | `type Dict` | `std@dict@@Dict` |
+| `pond_pkg` | `src/pond.bp` | `val PatoNada = implement Swimmer for Pato { … }` | `pond_pkg@pond@@PatoNada` |
+| `pond_pkg` | `src/pond.bp` | `type Pato(…) implement Swimmer { … }` | `pond_pkg@pond@@Pato` |
+| `myapp` | `src/main.bp` | `Shape.Circle`, the value tag | `myapp@main@@Shape__v__circle` |
+| `acme-web` | `src/main.bp` | the file's own module | `acme_web@main` |
+| `test` (implicit) | `main` in a compiler test | the file's own module | `test@main` |
+| — | the `html` template, one evaluation | comptime | `bp@comptime__tpl__html__3f1a9c02b7e4d5f8` |
 
-The four modules of one file compile, load and answer independently
-([E19](./atom-evidence.md#e19--four-sibling-modules-from-one-source-file)):
+The file is the atom (decision 6's flat `out/erl/` and `out/beam/`): `out/erl/std@io@fs@@File.erl`,
+`out/beam/myapp@main@@SourceLocation.S`. The type's atom is also the tag inside every value it
+builds (decision 21, T2): `{'std@io@fs@@File', …}` on erlang — the quotes are the emitter's habit,
+not a need — and `{myapp@main@@Shape__v__circle, 5}` for a variant. A host template that builds such
+a value spells the same atom (`{'std@regex@@Match', …}` in `libs/std/src/regex.bp`). commonJS and
+wasm carry no atom: a commonJS value's identity is its class prototype (decision 5), a wasm value's
+is its descriptor's address (decision 22), so there is no second spelling to keep in step, and their
+artifact paths stay the module path.
 
-```
-$ erlc models@user.erl models@user__t__pessoa.erl models@user__t__empresa.erl models@user__b__greeter.erl
-$ erl -pa . -eval 'lists:foreach(fun(M) -> io:format("~p -> ~p~n",[M, M:who()]) end, […])'
-models@user             -> models@user
-models@user__t__pessoa  -> models@user__t__pessoa
-models@user__t__empresa -> models@user__t__empresa
-models@user__b__greeter -> models@user__b__greeter
-```
+Sibling modules of one file compile, load and answer independently
+([E19](./atom-evidence.md#e19--four-sibling-modules-from-one-source-file),
+[E22](./atom-evidence.md#e22--four-sibling-s-modules-from-one-source-file)); `botopink run --target
+erlang` in a package `pond` whose `main.bp` declares `type Pato(…) implement Swimmer`,
+`type SourceLocation` and `type Duck` writes `pond@main.erl`, `pond@main@@Pato.erl`,
+`pond@main@@SourceLocation.erl` and `pond@main@@Duck.erl`, and runs `pond@main:main([])` with
+`erl -pa`.
 
-## 4. `__` is reserved, and what that costs
+## 4. Why the package, and why `@@`
 
-For the suffix to be decodable, `__` must never occur inside `erlAtom(path)`. Add one clause to
-option A's rule:
+1. **The package keeps libraries apart and every module off OTP's namespace.** Two libraries' `main`,
+   `http` or `root` are two atoms, and every atom holds an `@`, which no OTP module name does. Option
+   A's `RESERVED` list and its `bp@` prefix for a single-segment `math` have nothing left to do and
+   are deleted.
+2. **`@@` cannot collide.** A path segment is never empty, so `@@` never occurs in a module atom; and
+   the sanitiser maps every foreign character to `_`, so no source name produces `@`. The decoder
+   needs no qualifier table.
+3. **The declaration keeps its case.** A lowercased declaration (`main__t__sourcelocation`, the
+   spelling decision 109 replaced) stops decoding back to its source.
+4. **One rule for every declaration kind.** A `type`, an `implement` and — if decision 23 is ever
+   reopened — a `behavior` are all `<package>@<path>@@<Decl>`. Should the language ever nest a
+   declaration inside another, each `@@` descends one level; no construct does today, and the
+   decoder refuses a second boundary.
 
-```
-3b. collapse every run of two or more '_' in a segment to a single '_'
-```
-
-`my__mod/user` and `my_mod/user` then both render `my_mod@user`
-([E21](./atom-evidence.md#e21--__-has-to-be-reserved)) — a genuine, if pathological, collision. **The
-compiler must diagnose it**, not silently pick a winner: two source paths that render to the same
-atom is exactly the failure this whole front exists to remove, and the check is a hash-set over the
-rendered atoms at the point `crossModule.build` runs (`crossModule.zig:86`). One new diagnostic,
-and it also catches the `RESERVED` and length cases for free.
-
-Nothing in the seven repositories uses `__` in a file or directory name today, so the clause costs
-nothing now; it only has to exist before it can bite.
-
-**Why `__` and not `@@`.** Both scan as one unquoted atom
-([E18](./atom-evidence.md#e18--the-in-file-separator-candidates)), so the choice is readability and prior
-art. `@@` would overload the separator option A already spends on path segments — `web@api@@http`
-reads as a typo. `__` reads as a different kind of boundary, and it is what **OTP itself uses** for
-exactly this purpose: `escript` names the module it generates from a script with `__` separators
-([E20](./atom-evidence.md#e20--otps-own-escript-uses-__-the-same-way)):
-
-```
-$ escript whoami.escript      # main(_) -> io:format("~p~n",[?MODULE]).
-whoami_escript__escript__1789__696388__940472__2306
-```
+`__` stays reserved for the comptime qualifier, which is why a run of `_` collapses:
+`my__mod/user` and `my_mod/user` both render `<package>@my_mod@user`
+([E21](./atom-evidence.md#e21--__-has-to-be-reserved)), and `crossModule.build` refuses the pair.
+OTP's own `escript` uses `__` the same way
+([E20](./atom-evidence.md#e20--otps-own-escript-uses-__-the-same-way)).
 
 ## 5. It decodes back
 
-The atom is not just distinct, it is **reversible** — an operator, a log parser or a future
-`botopink explain <atom>` recovers the origin with a `string:split/3`
-([E19b](./atom-evidence.md#e19b--the-atom-decodes-back-with-no-ambiguity)):
-
-```erlang
-decode(A) ->
-  P = fun(X) -> lists:flatten(string:replace(X,"@","/",all)) end,
-  case string:split(atom_to_list(A), "__", all) of
-    [Path]             -> {module, P(Path)};
-    [Path,Kind,Decl]   -> {decl,   P(Path), Kind, Decl};
-    [Path,Kind,Decl,H] -> {gen,    P(Path), Kind, Decl, H}
-  end.
-```
+`crossModule.decodeAtom` recovers the origin — `split("@@")` for a declaration, the last `__v__` of
+the declaration half for a variant, the `__` qualifier for a comptime module, and the module half's
+first `@` for the package:
 
 ```
-models@user                                  {module,"models/user"}
-models@user__t__pessoa                       {decl,"models/user","t","pessoa"}
-std@math__b__signed                          {decl,"std/math","b","signed"}
-jhonstart@html__tpl__html__3f1a9c02b7e4d5f8  {gen,"jhonstart/html","tpl","html","3f1a9c02b7e4d5f8"}
-web@api@http                                 {module,"web/api/http"}
+myapp@models@user                         {module,  package "myapp", "models/user"}
+std@io@fs@@File                           {decl,    package "std",   "io/fs", "File"}
+pond_pkg@pond@@PatoNada                   {decl,    package "pond_pkg", "pond", "PatoNada"}
+myapp@app@models@@Shape__v__circle        {variant, package "myapp", "app/models", "Shape", "circle"}
+bp@comptime__tpl__panel__3f1a9c02b7e4d5f8 {gen,     package "bp", "comptime", "tpl", "panel", "3f1a…"}
 ```
 
-This is what the maintainer's `#Pessoa` was aiming at, and it is strictly more than `#` could have
-delivered: `#` produced text the BEAM never reads
-([E8](./atom-evidence.md#e8---cannot-address-anything-inside-a-module)), while `__` produces a **real
-module** that can be loaded, called and hot-swapped on its own.
+An atom with no `@` (`main`), `a@b@@B@@C`, `@@B` and `a@b@@` are refused (`error.UndecodableAtom`).
+The round trip is a unit test in `crossModule.zig` ("decodeAtom: every shape round-trips to its
+origin").
 
-## 6. Length
+This is what the maintainer's `#Pessoa` was aiming at, and more than `#` could deliver: `#`
+produced text the BEAM never reads ([E8](./atom-evidence.md#e8---cannot-address-anything-inside-a-module)),
+while `@@` names a **real module** that can be loaded, called and hot-swapped on its own
+([E23](./atom-evidence.md#e23--hot-swapping-one-type-module-siblings-untouched)).
 
-The worst case is a comptime module: `erlAtom(path)` + `__tpl__` + decl + `__` + 16 hex. The longest
-real example is 43 characters
-([E18](./atom-evidence.md#e18--the-in-file-separator-candidates)) against the 250-byte filename cap
-([E7](./atom-evidence.md#e7--the-real-length-cap-is-the-filename-not-the-atom)). The budget is comfortable,
-and § 4's collision check is the natural place to also reject an atom over 250 bytes with a located
-diagnostic instead of an `erlc: file name too long` from a build step.
+## 6. What the compiler refuses
 
-## 7. What it adds to the front
+A module of no package — compiled without a `botopink.json` — renders no atom
+(`MissingPackage`), and `build` turns that into the `no_package` fault: an erlang or beam
+compilation without a manifest is refused, with no fallback name. `manifest` refuses a `name` that
+does not start with a lowercase letter
+(`"name" must start with a lowercase letter — every erlang module atom of the package starts with
+it`) and the name `bp`, located at the key, for every tool; `botopink new` refuses the same names
+before it scaffolds. `crossModule.build` then renders every atom once and turns each collision into
+a located diagnostic (`AtomFault`, raised by the erlang and beam `codegenEmit`s; the module fails as
+a whole):
 
-| Step | Addition |
+| Reason | When |
 |---|---|
-| 1 | `erlAtom` gains clause 3b; a new `erlDeclAtom(alloc, id, kind, decl, ?hash)`; a `Kind` enum so `kind` can never be a free string |
-| 1 | **New:** a collision check over the rendered atoms in `crossModule.build` (`crossModule.zig:86`) — duplicate atom, reserved name, or over 250 bytes, each a located diagnostic |
-| 5 | the comptime rename becomes `erlDeclAtom(file_id, .tpl, template_name, hash)` instead of a flat prefix — the evaluators must therefore pass the **owning module's path and the declaration's name**, which they do not carry today (`template_eval.zig:329-343`, `decorator_eval.zig:227-243` see only the generated code). This is the one piece of real plumbing A2 adds: ~30 LOC threading two strings through `buildModule` |
-| — | Acceptance: `erlDeclAtom` unit tests for each `kind`; a fixture where one file's template and its own module are both called; the decoder in § 5 as a test, so the reversibility is pinned |
+| `duplicate` | two module paths render one atom (`my__mod/user`, `my_mod/user`) |
+| `no_package` | the module belongs to no package — compiled without a `botopink.json` |
+| `invalid_package` | the package cannot start an atom — for a driver that did not read a manifest |
+| `too_long` | a module or declaration atom over 250 bytes, the `<atom>.bea#` filename cap ([E7](./atom-evidence.md#e7--the-real-length-cap-is-the-filename-not-the-atom)) |
+| `duplicate_decl` | two types of one module whose atoms are equal **ignoring case** |
 
-Cost over plain option A: **+0.5 day**, almost all of it the plumbing in step 5. No extra snapshot
-churn — no snapshot records a comptime atom (`grep -rl 'template_[0-9a-f]\{16\}' snapshots` → 0).
+`duplicate_decl` is case-insensitive on purpose (decision 67): `Person` and `person` are two atoms,
+`myapp@main@@Person` and `myapp@main@@person`, but one `.erl` on a case-insensitive file system, so
+the pair is refused and the message names both atoms. `Foo-Bar` and `Foo_Bar` fold to one atom,
+and the message says so. `FooBar` and `Foo_Bar` are two atoms no file system folds together, and
+build.
 
----
+## 7. Where it lives
 
-## 8. Worked example, end to end
-
-A project that is impossible to build correctly on erlang today: two `user.bp` in different
-directories, a `http.bp` that collides with `libs/std`'s, and a `math.bp` name that shadows OTP.
-
-### The source tree
-
-```
-myapp/
-├── botopink.json            { "dependencies": ["std", "jhonstart"] }
-└── src/
-    ├── main.bp
-    ├── math.bp                        fn variance(xs) -> f64
-    ├── models/
-    │   └── user.bp                    type Pessoa(nome: string, idade: i32)
-    │                                  behavior Greeter { fn greet(self) -> string; }
-    └── services/
-        └── user.bp                    fn load(id: i32) -> Pessoa
-```
-
-plus the dependencies the resolver pulls in: `libs/std/src/{math,http,root}.bp`,
-`jhonstart/src/{html,hooks,root}.bp`.
-
-### The atoms
-
-| Module path | Kind | Atom | Why |
-|---|---|---|---|
-| `main` | file | `main` | single segment, not reserved — **unchanged from today** |
-| `math` | file | `bp@math` | single segment **and** an OTP module name → `bp@` prefix (rule 5) |
-| `models/user` | file | `models@user` | |
-| `models/user` | `type Pessoa` | `models@user__t__pessoa` | A2 |
-| `models/user` | `behavior Greeter` | `models@user__b__greeter` | A2 |
-| `services/user` | file | `services@user` | **no longer collides with `models/user`** |
-| `std/math` | file | `std@math` | has a segment → no OTP collision, no prefix |
-| `std/http` | file | `std@http` | |
-| `std/root` | file | `std@root` | **no longer collides with `jhonstart/root`** |
-| `jhonstart/html` | file | `jhonstart@html` | |
-| `jhonstart/html` | `html` template, eval #1 | `jhonstart@html__tpl__html__3f1a9c02b7e4d5f8` | A2 + content hash |
-| `jhonstart/html` | `html` template, eval #2 | `jhonstart@html__tpl__html__b7e4d5f83f1a9c02` | different body → different hash |
-| `jhonstart/root` | file | `jhonstart@root` | |
-
-Today the same project produces `main`, `math` (shadowing OTP), `user` **twice**, `math` again,
-`http`, `root` **twice**, `html`, `root` again, and two `template_<hash>` with no traceable origin.
-
-### What lands on disk
-
-```
-out/
-├── erl/                                     ← flat, because erlc demands atom == basename (E1)
-│   ├── main.erl
-│   ├── bp@math.erl
-│   ├── models@user.erl
-│   ├── models@user__t__pessoa.erl
-│   ├── models@user__b__greeter.erl
-│   ├── services@user.erl
-│   ├── std@math.erl   std@http.erl   std@root.erl
-│   └── jhonstart@html.erl   jhonstart@hooks.erl   jhonstart@root.erl
-├── main.js                                  ← commonJS keeps the mirrored tree, unchanged
-├── math.js
-├── models/user.js
-├── services/user.js
-├── std/{math,http,root}.js
-└── jhonstart/{html,hooks,root}.js
-```
-
-`erlc -o ebin out/erl/*.erl` compiles all eleven with no overwrite; `erl -pa ebin` loads all
-eleven with no shadowing. The comptime modules never reach `out/` — they stay in
-`.botopinkbuild/tmp/template/jhonstart@html__tpl__html__3f1a9c02b7e4d5f8.erl`.
-
-### What the emitted erlang reads like
-
-`out/erl/services@user.erl`, calling into the sibling `user.bp` and into `libs/std`:
-
-```erlang
--module(services@user).
--export([load/1]).
-
-load(Id) ->
-    Row  = std@http:get(<<"/users/">>, Id),
-    Name = std@math:clamp(maps:get(nome, Row), 1, 64),
-    models@user:pessoa(Name, maps:get(idade, Row)).
-```
-
-Every module name is a **bare word**: no quotes, greppable, and the directory it came from is
-legible in the name. Compare the same three call sites under the original proposal:
-
-```erlang
--module('user@services#Pessoa').
-load(Id) ->
-    Row  = 'http@std#Row':get(<<"/users/">>, Id),
-    Name = 'math@std#Clamp':clamp(maps:get(nome, Row), 1, 64),
-    'user@models#Pessoa':pessoa(Name, maps:get(idade, Row)).
-```
-
-### What a failure looks like
-
-A crash inside the template, today and after:
-
-```
-today:  {template_3f1a9c02b7e4d5f8, render, 2, []}       ← which file? which template?
-after:  {jhonstart@html__tpl__html__3f1a9c02b7e4d5f8, render, 2, []}
-```
-
-and the operator recovers the origin with the decoder of § 5:
-
-```
-{gen, "jhonstart/html", "tpl", "html", "3f1a9c02b7e4d5f8"}
-```
-
-### What the compiler now refuses
-
-The check added in § 4 and step 1 turns three silent failures into located diagnostics:
-
-```
-error: two modules render to the same erlang atom 'my_mod@user'
-  src/my__mod/user.bp
-  src/my_mod/user.bp
-  note: '__' is reserved as the in-file qualifier separator
-
-error: module 'math' would shadow the OTP module 'math'
-  src/math.bp
-  note: emitted as 'bp@math'                      ← rule 5, applied automatically
-
-error: module atom exceeds 250 bytes (filename limit)
-  src/a/very/deeply/nested/…/module.bp
-```
-
-The first and third are new; the second is the eleven-module `libs/std` problem
-([E14](./atom-evidence.md#e14--eleven-libsstd-module-names-are-already-otp-module-names)) closed by
-construction.
+| Step | What |
+|---|---|
+| 1 | `crossModule.zig`: `ModuleId{path, package, package_in_path}`, `Packages{root, deps}.idOf`, `erlAtom`, `declAtom`, `typeAtom`, `variantAtom`, `erlDeclAtom` (comptime only), `decodeAtom`, `DECL_SEP`, `QUALIFIER_SEP`, `COMPILER_PACKAGE`, `TEST_PACKAGE` / `test_packages`, `EMBEDDED_PACKAGE`, `Kind { tpl, dec }`, and the collision check in `build` / `buildIn`. `Config.packages` carries the packages into the erlang and beam `codegenEmit`s; `cli/libs.zig`'s `packagesOf` fills it from `botopink.json` for `build` and `test`, and `run` renders the entry's atom from it |
+| 5 | the comptime evaluators render `erlDeclAtom(comptime_owner, .tpl \| .dec, name, hash)`. `comptime_owner` is `comptime` of package `bp` because neither evaluator is handed the owning module's path: the template registry in `comptime.zig` is a `StringHashMap(ast.FnDecl)` and a `Loc` has no file. Threading the path onto `env.TemplateEvalCtx` is `env.zig` and `comptime.zig`, front 01's files |
+| 8–13 | `erlang.zig` / `beam_asm.zig` open one unit per `type` under `typeAtom`; `cli/build.zig` writes each flat and `removeStaleUnits` deletes a failed module's by the `<module atom>@@` prefix |
+| 14–16 | the same `typeAtom` / `variantAtom` is the tag inside the value |

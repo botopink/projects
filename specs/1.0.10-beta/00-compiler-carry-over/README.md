@@ -87,7 +87,7 @@ work that was already specified, measured and half-built.
 **Origin:** 13-module-identity halves 2 and 3 — steps 8–13 (policy 3, spelled out in
 [`13-module-identity/policy-3-module-per-type.md`](./13-module-identity/policy-3-module-per-type.md) §9)
 and steps 14–19 (the atom inside the value); decisions 21 (T2, the tagged tuple), 22 (13 designs the
-boxed value for every backend, wasm included), 23 (`__b__` reserved, nothing emitted), 5 (on JS the
+boxed value for every backend, wasm included), 23 (a behavior emits nothing), 5 (on JS the
 prototype *is* the identity, so half 3 has nothing to do there beyond step 19's unit variant).
 **Priority:** critical — every `is`, union `case` and per-type print on erlang and beam has nothing to
 test until a value knows its declaration; today two records with the same fields are `==` on erlang.
@@ -108,7 +108,7 @@ running. 142 new atoms ecosystem-wide; +0.372 ns per `call_ext`.
       `recordMethodAtom`, `record_method_collisions`, `isRecordMethodCollision`, `interfaceAssocAtom`
       **deleted, not bypassed** (steps 9–10)
 - [ ] a behavior consumed by three modules has exactly one emitted copy; `libs/std` green on erlang and
-      beam (step 10); an imported type's method links to `<path>__t__<decl>` and executes (step 11);
+      beam (step 10); an imported type's method links to `<package>@<path>@@<Decl>` (decision 109) and executes (step 11);
       `beam_export_audit.sh` green at its new total (step 12)
 - [ ] the 188 classified: which gained a module, which local call became `call_ext`, which RUN LOG
       changed — none should (step 13)
