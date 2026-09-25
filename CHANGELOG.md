@@ -1,5 +1,86 @@
 # Botopink Compiler — Summary of Recent Changes
 
+## Version: v1.0.10-beta (draft — effects by return type)
+
+### Overview
+
+The effect of a function is its return type (decisions 118–128). The six effect
+annotations leave, `@Future<T, E>` becomes `@Task<T>`, which never fails, and
+only `@Result` fails: a fallible task is `@Task<@Result<T, E>>`. Blocks and loops
+gain prefixes — `async { }`, `iter` and `stream` — and hooks and components share
+one wrapper, `@Component<C, T>`. There is no compatibility window (decision 127):
+the old forms are located compile errors with a fix-it, and
+`botopink migrate effects` rewrites them.
+
+---
+
+## Key Changes
+
+### 1. The return is the annotation
+
+| Before | After |
+|---|---|
+| `#[@X]` annotation + `@X` wrapper in the return | the wrapper in the return only (118) |
+| `@Future<T, E>` (may fail) | `@Task<T>` (never fails); failure is `@Task<@Result<T, E>>` (120) |
+| `await x` propagates the error | `await x` answers the `@Result`; `try await x` propagates (120) |
+| every hook and component may `throw` | `throw` / `try` only where the return carries a `@Result` (121) |
+| `@Use<C, T>` (hook) · `@Component<T>` (component) | one wrapper, `@Component<C, T>`, the base always written (128) |
+| `@Generator<T>` · `@ResultGenerator<T, E>` · `@FutureGenerator<T, E>` | `@Iterator<T>` · `@Iterator<@Result<T, E>>` · `@Stream<@Result<T, E>>` (122) |
+| `YieldStep<T, E>` with `Error` | `YieldStep<T>` = `{ Yield(value: T), Done }` (122) |
+| `for` over a fallible generator is an implicit `try` | `for` hands over the `@Result`; the `try` is explicit (122) |
+| `#[@generator] loop { … }` / `#[@futureGenerator] loop { … }` | `iter loop` · `iter while` · `iter for` / `stream loop` · `stream while` · `stream for` (125) |
+| — | `async { … }` → `@Task<T>`, in any function (124) |
+| `return r` re-wraps an existing `@Result` | `return` wraps a plain value and passes a wrapper-typed one through (119) |
+
+### 2. JavaScript interop — a failing Task resolves, it does not reject
+
+On commonJS a `@Task` (and `@Component`) function is still an `async function`,
+but **a `throw` in a `@Task<@Result<…>>` resolves the Promise with the `Error`
+value instead of rejecting it**. JavaScript that calls a botopink function and
+relied on `catch` / `.catch()` now reads the value it answers. In the other
+direction, an `#[@External.Node]` declared `-> @Task<@Result<T, E>>` turns a
+rejected Promise into `Error(…)`; declared `-> @Task<T>`, a rejection is a fatal
+host failure. On erlang an `{error, R}` from an `#[@External.Erlang]` declared
+`-> @Task<@Result<T, E>>` becomes `Error(R)`.
+
+### 3. New diagnostics
+
+`effect-annotation-removed`, `effect-type-removed`, `iterator-error-param-removed`
+(the migration errors, each with a fix-it); `effect-await-without-task` (was
+`effect-await-without-future`); `effect-wrapper-behind-alias`,
+`effect-return-ambiguous-nesting`, `iter-await`, `iter-mixed-yield-return`,
+`gen-infer-conflicting-errors`.
+
+### 4. The libraries and the reference
+
+std (`async`, `http`), jhonstart, rakun, emilia, onze and erika are rewritten to
+the new surface; `docs.md` documents it (§ *Effects*, *Results*, *Tasks*,
+*Iterators and streams*, *use*, *Loops*, *Host bindings*, *Migrating from the
+effect annotations*), and the 1.0.10-beta library specs' examples are written in
+it.
+
+---
+
+## Migration Guide
+
+Run `botopink migrate effects` (`--dry-run` reports without writing). It removes
+the annotations, renames the wrappers and loops, and writes `try await` where the
+function's return carries a `@Result`. It marks with `// TODO(migrate-effects)`
+what it cannot decide:
+
+- an `await` or `throw` in a hook or component whose `T` is not a `@Result` — the
+  error has nowhere to go: handle it with `try … catch`, `case` or a navigation
+  signal, or make the hook return `@Component<C, @Result<T, E>>`;
+- a `for` / `for await` over what was a fallible generator — add `try r` or a
+  `case`;
+- a `case` over `YieldStep` with an `.Error` arm, and code that called `.next()`
+  by hand and handled `Error`;
+- a wrapper alias used as a return;
+- JavaScript that expected a rejected Promise.
+
+---
+
+
 ## Version: v0.0.12-beta (April 2026)
 
 ### Overview
