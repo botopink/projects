@@ -541,22 +541,31 @@ gives them something to run against.
 
 ### Step 8 — The payoff, specified for `09-ecosystem-residuals`
 
-This front does not edit a library. It writes the migration and hands it over.
+This front does not edit a library. It writes the migration and hands it over —
+[`rakun-migration.md`](./rakun-migration.md) beside this file, re-derived at the pins of this
+worktree (rakun `10c63974`, emilia `9c19e22`) rather than carried from `bef762b`.
 
 **Acceptance:**
-- [ ] **rakun**: the mode per registry and the line ranges that go
-      (`runtime.mjs:16-32`, `:33-63`, `:64-79`, `:80-98`, `:107-123` = 96 lines) and the 13 of 16
-      `@External.Node` declarations in `runtime.bp` that go with them — handed to
-      [`09`](../09-ecosystem-residuals/README.md) and registered against
-      [decision 17](../../../1.0.5-beta/decisions-taken.md#17-rakuns-erlang-story)
-- [ ] **emilia** is the validation case for `ProcessDict`, not an entry of this front:
-      `emilia/src/emilia.bp:23-25` (`get` + `lists:keystore` + `put`) and `:27-30` (`erase`) are a
-      read-modify-write and a reset over one key, `'__emilia_sheet'`, whose scope is per-process **on
-      purpose** (`emilia.bp:3-8`). `erase` is **not** a blocker: both readers guard
-      `case … of undefined -> []; X__ -> X__ end`, so absent and `[]` are indistinguishable and
-      `sheet = []` reproduces it. The blocker is that the value is a host list of 2-tuples with
-      `keystore` upsert semantics, which needs an ordered dict in `libs/std` — decision 17's half,
-      not this one's
+- [x] **rakun**: the mode per registry and the line ranges that go — now
+      `modules/rakun/src/runtime.mjs:16-32`, `:33-63`, `:64-79`, `:80-98`, `:107-108` + `:113-123`
+      (**still 96 of 231 lines**), the 13 of 16 `@External.Node` declarations of
+      `modules/rakun/src/runtime.bp` that go with them (`rkDispatch`, `rkDispatchHttp`, `rkServe`
+      stay), **and** the erlang twin that did not exist at `bef762b`: `sidecars/rakun_runtime.erl`
+      (850 lines), whose five registry sections (`:171-297`) and the `rakun_registry` `gen_server`
+      that owns their tables — decision 39's owner, built by hand — go with them. The one caveat is
+      `singletons`: its erlang half is `ets:insert_new` (the loser discards its instance) and the
+      design's `Dict` lowering is an overwriting `ets:insert`; the file names three answers and
+      recommends the third (an `insertNew` form lowered to `ets:insert_new`, the shape decision 40
+      gave `+=`). Handed to [`09`](../09-ecosystem-residuals/README.md) — whose rakun half is now the [`03-rakun`](../../03-rakun/README.md) track — and
+      registered against [decision 17](../../../1.0.5-beta/decisions-taken.md#17-rakuns-erlang-story)
+- [x] **emilia** is the validation case for `ProcessDict`, not an entry of this front — the cell
+      moved to `modules/emilia/src/emilia.bp:53-55` (`register`: `get` + `lists:keystore` + `put`)
+      and `:58-60` (`drainRules`: `erase`), a read-modify-write and a reset over one key,
+      `'__emilia_sheet'`, whose scope is per-process **on purpose** (`:18-23`). `erase` is **not** a
+      blocker: the reader guards `case … of undefined -> []; X__ -> X__ end`, so absent and `[]` are
+      indistinguishable and `sheet = []` reproduces it. The blocker is that the value is a host list
+      of 2-tuples with `keystore` upsert semantics, which needs an ordered dict in `libs/std` —
+      decision 17's half, not this one's
 
 ---
 
