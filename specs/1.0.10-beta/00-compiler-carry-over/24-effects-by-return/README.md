@@ -272,7 +272,7 @@ arms print the three prefixes back.
 **Acceptance:**
 - [ ] every ✗ in [`guide.md`](./guide.md) answers exactly the code of the diagnostics table below, and every example without ✗ types
 - [ ] the *Return and effect mode*, *`@Task` and failure*, *Chain and `use`*, *`async { }`*, *Iterators* (type half) and *Prefixed loops* cells green on four targets
-- [ ] the hint of item 9 in a `reject/` cell's `.expect` for each of the three sources
+- [x] the hint of item 9 in a `reject/` cell's `.expect` for each of the three sources
 - [x] `comptime/AGENTS.md` in the same commit
 
 ### Step E4 — consumption (`for` / `for await`)
