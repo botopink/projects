@@ -53,10 +53,11 @@ what was left, now `00-compiler-carry-over`'s order),
 | [110](#110-import-aliases-reach-types-and-an-imported-folder-is-a-namespace-of-its-submodules) | `as` on a type; an imported folder | `as` binds a type too (`collections.Dict as D`), a checker-only local name — the emitted identity is unchanged; `import {io}` makes `io.fs.readText(p)` resolve; `as` on a `*` leaf stays refused (amends 107) |
 | [111](#111-collections-functions-are-scoped-to-the-type-they-build) | `empty` / `fromList` collide in `collections.bp` | Type-scoped: `Dict.empty()`, `Set.fromList(xs)`, `Queue.empty()`; the one exception to 106's "moves paths, not function names" |
 | [112](#112-dsl-hygiene-each-name-resolves-in-the-scope-of-whoever-wrote-it) | In which scope does DSL-generated code resolve names? | Hygiene (5-a): text the lib writes in `e.build` resolves in the lib's module, text from `e.text()` at the call site; `e.lookup(name)` resolves at the call site and returns the declaration's identity, never the alias |
-| [113](#113-the-libraries-split-by-concern-emilia-is-css-jhonstart-is-html-rakun-is-the-service-on-erlang-onze-wires-them) | Which library owns what, and who may import whom? | emilia CSS · jhonstart HTML · rakun the service, erlang first · onze wires them; jhonstart ⇄ rakun never import each other; the render and `RenderHooks` move to jhonstart; `ElementView` leaves; markers `data-jh-*`; globals `__bp<N>` from a registry; emilia enters through `jhonstart-emilia`; answers 94, 100, 101; amends 77 — **amended by 115 and 116** |
-| [114](#114-the-seams-decision-113-left-open-rakun-routing-an-async-renderplugin-with-a-payload-rakuns-opaque-page-renderer-examples-in-onze-action-names-and-the-request-handed-in-by-onze) | The eight seams 113 left open | (a) on all eight: `rakun-routing` (`["erlang", "commonJS"]`) holds the pure matcher; `RenderPlugin` is asynchronous and gains `payload` (emilia's bridge fills `s`); rakun holds an opaque `PageRenderer` per route over `ChunkWriter`; `LayoutProps` and the UI conventions are jhonstart's; combining examples live in onze; onze passes the action wire names (default `__bp_action` / `X-Bp-Action`) and the `RequestData`; amends 113 — **amended by 115 and 116** |
-| [115](#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun) | The five points 114 left open | (a) on the four: the bundled library `routing` (`libs/routing`, erlang + commonJS, pure) holds the matcher and the `k` / `z` / URL-rule codecs, and rakun and jhonstart import it directly — `rakun-routing` and onze's `match` leave; after the first chunk `notFound` / `redirect` are markup jhonstart's client executes, status 200; jhonstart gains `redirect(url)` and pages import signals and `cookies` from jhonstart; rakun reads `rakun.*` keys only (`rakun.actions.bodyLimit`, `rakun.appDir`); 114's invented names stay; amends 113 and 114 — **amended by 116** |
-| [116](#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json) | Nine more pieces two libraries both run | (a) on eight, (b) on validation: `routing` gains `navigation` (the signal vocabulary, neutral `nav:` reasons, the `n` codec) and `pattern` (the `:param` grammar); bundled libraries `actions` (the action envelope, `state` grammar, JSON-RPC body, `refresh`) and `validation` (rakun-validation moved, message lookup injected — rakun has no commonJS member left); std gains `json.quote` / `unquote` / `array` / `object` and `escape.scriptJson`, and `encoding` / `contentHash` replace every private copy; onze configures front 82's static server; amends 113, 114 and 115 |
+| [113](#113-the-libraries-split-by-concern-emilia-is-css-jhonstart-is-html-rakun-is-the-service-on-erlang-onze-wires-them) | Which library owns what, and who may import whom? | emilia CSS · jhonstart HTML · rakun the service, erlang first · onze wires them; jhonstart ⇄ rakun never import each other; the render and `RenderHooks` move to jhonstart; `ElementView` leaves; markers `data-jh-*`; globals `__bp<N>` from a registry; emilia enters through `jhonstart-emilia`; answers 94, 100, 101; amends 77 — **amended by 115, 116 and 117** |
+| [114](#114-the-seams-decision-113-left-open-rakun-routing-an-async-renderplugin-with-a-payload-rakuns-opaque-page-renderer-examples-in-onze-action-names-and-the-request-handed-in-by-onze) | The eight seams 113 left open | (a) on all eight: `rakun-routing` (`["erlang", "commonJS"]`) holds the pure matcher; `RenderPlugin` is asynchronous and gains `payload` (emilia's bridge fills `s`); rakun holds an opaque `PageRenderer` per route over `ChunkWriter`; `LayoutProps` and the UI conventions are jhonstart's; combining examples live in onze; onze passes the action wire names (default `__bp_action` / `X-Bp-Action`) and the `RequestData`; amends 113 — **amended by 115, 116 and 117** |
+| [115](#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun) | The five points 114 left open | (a) on the four: the bundled library `routing` (`libs/routing`, erlang + commonJS, pure) holds the matcher and the `k` / `z` / URL-rule codecs, and rakun and jhonstart import it directly — `rakun-routing` and onze's `match` leave; after the first chunk `notFound` / `redirect` are markup jhonstart's client executes, status 200; jhonstart gains `redirect(url)` and pages import signals and `cookies` from jhonstart; rakun reads `rakun.*` keys only (`rakun.actions.bodyLimit`, `rakun.appDir`); 114's invented names stay; amends 113 and 114 — **amended by 116 and 117** |
+| [116](#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json) | Nine more pieces two libraries both run | (a) on eight, (b) on validation: `routing` gains `navigation` (the signal vocabulary, neutral `nav:` reasons, the `n` codec) and `pattern` (the `:param` grammar); bundled libraries `actions` (the action envelope, `state` grammar, JSON-RPC body, `refresh`) and `validation` (rakun-validation moved, message lookup injected — rakun has no commonJS member left); std gains `json.quote` / `unquote` / `array` / `object` and `escape.scriptJson`, and `encoding` / `contentHash` replace every private copy; onze configures front 82's static server; amends 113, 114 and 115 — **amended by 117** |
+| [117](#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) | Nine points 113–116 left: who handles a page signal, the late-signal global, the layout form, the action `redirect`, the body limit, front 07, reading JSON, sidecars, rakun's targets | (a) on eight, (b) on front 07: jhonstart handles `redirect` / `notFound` itself over a generic `Response(status, header, write, close)`, server and client-only (`clientApp`) alike, and checks the target (`matchPath`, `allowedRedirects`); onze only adapts rakun's response, whose `ChunkWriter` gains `setStatus` / `setHeader`; rakun keeps `redirect` for actions only; `globals.signal` → `__bp2`; `#[layout]` / `#[page]` / `#[template]` require `#[@use] … -> @Component<Element>`; `OnzeConfig.actionsBodyLimit` (1 MiB); front 07 folded into `01-std-lib-enablement`; std `Json` + `json.decode`; bundled libraries `.bp` only; every rakun manifest `["erlang"]`; amends 113–116 |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -1307,6 +1308,8 @@ render leaving `ssr.bp`); onze fronts 49, 68 and 69 (the wiring, the entry, the 
 
 **Amended by [116](#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json):** consequence 8's exception ends — `rakun-validation` leaves rakun for the bundled library `validation`, so rakun's core, every member and the workspace root are `["erlang"]`; the signal reasons consequence 3 has jhonstart raise are `routing`'s `nav:` reasons.
 
+**Amended by [117](#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only):** consequence 3's translation leaves onze — jhonstart turns its own `notFound` / `redirect` into the 404 / 307 on a generic `Response` it writes to, and onze only adapts rakun's response to it.
+
 ## 114. The seams decision 113 left open: `rakun-routing`, an async `RenderPlugin` with a payload, rakun's opaque page renderer, examples in onze, action names and the request handed in by onze
 
 **Decided 2026-09-26 by the maintainer**, all eight on the recommended option (a). Applying
@@ -1429,6 +1432,8 @@ jhonstart import directly; onze no longer hands `match` to the router. Item 7's
 
 **Amended by [116](#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json):** item 7's names still come from onze, and the envelope, the `state` grammar and the JSON-RPC body both sides read and write are the bundled library `actions`; item 1's mention of `rakun-validation` as the other boundary member is void — validation is the bundled library `validation`.
 
+**Amended by [117](#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only):** item 5's `ChunkWriter` gains `setStatus` / `setHeader` (legal before the first `write` only) and a renderer may close it; a navigation reason raised out of a page renderer is an error, not a status. Item 8's `renderStream` takes a jhonstart `Response` in place of the `write` function and answers no reason.
+
 ## 115. Routing is a bundled library, a signal after the first chunk is markup, jhonstart gains `redirect`, rakun's keys are `rakun.*`
 
 **Decided 2026-09-26 by the maintainer**, on the recommended option (a) of the four points decision
@@ -1522,6 +1527,8 @@ rakun fronts 22 (`file_router.bp` importing `routing`, `rakun.appDir`) and 24
 (`rakun.actions.bodyLimit`); onze fronts 49 (the four keys at boot) and 53 (the pages' imports).
 
 **Amended by [116](#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json):** rule 1's library gains the modules `navigation` (the signal vocabulary and the `n` codec) and `pattern` (the `:param` grammar), and "rakun's erlang-only core keeps one boundary member, `rakun-validation`" ends — validation is the bundled library `validation`; rule 3's reason is `nav:redirect:<url>`, not `jhonstart:redirect:<url>`.
+
+**Amended by [117](#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only):** rule 2's pre-first-chunk translation is jhonstart's, not onze's, and the target check is jhonstart's too — relative through `matchPath`, absolute only when listed in `allowedRedirects`, the same before and after the first chunk; rule 3's `redirect` is never translated by onze, and a server action's `redirect` is rakun's.
 
 ## 116. Code two libraries both run is neutral: `routing` gains navigation and `:param`, `actions` and `validation` are bundled libraries, std writes JSON
 
@@ -1702,3 +1709,203 @@ envelope through `actions`), 63 (the vocabulary imported), 07 (the matcher throu
 `a b` cell), 30 (`escape.scriptJson`, the late signal through `signalFromReason`), 31 (the `nav:`
 reasons), 67 (`actions`); emilia front 56 (`contentHash`); onze fronts 68 (`contentHash`, emilia's
 build-time function) and 69 (front 82 configured).
+
+**Amended by [117](#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only):** rule 2's `actions` reads JSON through std's `json.decode`, not per-target templates; rule 3's configuration reader uses `json.decode`, and the writers are steps of `01-std-lib-enablement` (front 07 folded into it); rule 5's end state is stricter — every rakun manifest, `rakun-test` included, is `["erlang"]`.
+
+## 117. Navigation signals are jhonstart's end to end, pages and layouts are components, std reads JSON, bundled libraries are `.bp` only
+
+**Decided 2026-09-26 by the maintainer**, on nine points left by applying decisions 113–116: seven
+on the recommended option (a); on the first he went past the recommendation — *"o tratamento dos
+sinais sai do onze e fica todo no jhonstart, funcionando igual com servidor e sem servidor"* — and
+on the sixth he chose the other option, folding `01-std/07-std-json-writers` into
+`01-std-lib-enablement`. Amends 113 (consequence 3), 114 (items 5 and 8), 115 (rules 2 and 3) and
+116 (rules 2, 3 and 5).
+
+1. **A navigation signal is handled entirely inside jhonstart**, the same way with a server (SSR and
+   hydration) and without one (a client-only app). onze has no `case` on a signal and rakun knows
+   no page signal. A page is the same file in both modes and imports only jhonstart:
+
+   ```bp
+   // app/posts/[id]/page.bp
+   import {redirect, notFound, Element, PageContext} from "jhonstart";
+
+   #[page]
+   #[@use]
+   pub fn PostPage(ctx: PageContext) -> @Component<Element> {
+       val post = await loadPost(ctx.param("id"));
+       if (post == null) { notFound(); }
+       if (post.movedTo != "") { redirect("/posts/" + post.movedTo); }
+       return article([h1([text(post.title)]), Suspense(fallback: spinner(), children: [Comments(post.id)])]);
+   }
+   ```
+
+   **The render writes to a generic response and translates the signal itself.** jhonstart
+   declares the one output contract its render writes to — status and headers are legal only
+   before the first `write`, and a call after it fails the render (decision 67):
+
+   ```bp
+   // jhonstart/src/render.bp
+   pub type Response(
+       status: fn(code: i32) -> void,
+       header: fn(name: string, value: string) -> void,
+       write:  fn(chunk: string) -> @Future<void>,
+       close:  fn() -> @Future<void>,
+   );
+
+   #[@future] pub fn renderStream(self: App, input: PageInput, req: RequestData, res: Response) -> @Future<void>
+   ```
+
+   | A signal raised | jhonstart writes |
+   |---|---|
+   | `redirect(to)` before the first chunk | `res.status(307)`, `res.header("location", to)`, `res.close()` |
+   | `notFound()` before the first chunk | `res.status(404)`, the route's not-found boundary (front 31) as the document, `res.close()` |
+   | either, after the first chunk | the late-signal markup (rule 2), status stays 200, `res.close()` |
+
+   jhonstart calls `res.close()` on every path, once. `renderStream` answers no reason any more: it
+   resolves when the response is closed, and a failed render (rule 1's target check, a plugin's
+   `close`) is the future's error.
+
+   **Server and client: onze only adapts rakun's response to jhonstart's `Response`.**
+
+   ```bp
+   // onze/src/boot.bp
+   val ui = jhonstart.app(plugins: [jhonstartEmilia.plugin()], allowedRedirects: config.allowedRedirects);
+
+   rakun.page("/posts/:id", fn(req: Request, out: ChunkWriter) -> @Future<void> {
+       return ui.renderStream(input(req), requestData(req), Response(
+           status: fn(c) { out.setStatus(c); },
+           header: fn(n, v) { out.setHeader(n, v); },
+           write:  fn(chunk) { return out.write(chunk); },
+           close:  fn() { return out.close(); },
+       ));
+   });
+   ```
+
+   **Client only: `clientApp(routes, mount).start()`.** The same page runs in the browser under
+   jhonstart's router, which catches the signal and acts alone:
+
+   ```bp
+   import {clientApp} from "jhonstart";
+
+   clientApp(routes: routeTable, mount: "#root", allowedRedirects: []).start();
+   //  notFound()      → renders the route's not-found boundary (front 31); the URL does not change
+   //  redirect("/x")  → history.replaceState and a client navigation to /x, no reload
+   ```
+
+   **The redirect target is checked by jhonstart**, since jhonstart now writes the 307: a relative
+   target must be found by `routing`'s `matchPath` in the route table (`PageInput.table` on the
+   server, `clientApp`'s `routes` in the browser); an absolute target is accepted only when it is
+   listed in `jhonstart.app(allowedRedirects: [...])` — `clientApp` takes the same list — and with
+   the list empty (its default) every absolute target is refused. In an onze application the list is
+   `OnzeConfig.allowedRedirects` (default empty), which onze hands to `app` at boot and writes into
+   the entry it generates for the browser. Anything else fails the render.
+   The check is the same before and after the first chunk, so a late absolute redirect is written
+   when it is listed rather than always failing (115 rule 2's stricter half, now satisfiable).
+
+   **rakun loses page-level `redirect` / `notFound`.** Its response gains `setStatus` and `setHeader`
+   — 114's `ChunkWriter`, amended; the maintainer's sketch spells it `HttpResponse`, the name kept is
+   114's:
+
+   ```bp
+   // rakun (front 23)
+   pub type ChunkWriter(setStatus: fn(code: i32) -> void, setHeader: fn(name: string, value: string) -> void,
+                        write: fn(string) -> @Future<void>, close: fn() -> @Future<void>);
+   ```
+
+   `setStatus` / `setHeader` after the first `write` fail the request, naming the call. A page
+   renderer that closes the response is normal; the dispatch closes it only when the renderer's
+   future resolves with it still open, and any call after `close` fails the request. A navigation
+   reason raised out of a page renderer is not translated: it is an error of that request (500),
+   because page signals are jhonstart's. rakun's `notFound` / `redirect` / `permanentRedirect` /
+   `redirectWithStatus` stay for server actions (rule 4) and route handlers (front 25), with their
+   checks against `rakun.navigation.allowedHosts`; `boundaryFor` and every page-signal path leave
+   front 63.
+
+2. **The late signal calls a third registry global.** `globals.bp` declares, after `payload` and
+   `fill`, `pub val signal = alias("signal")` — `__bp2` — and the markup is:
+
+   ```html
+   <template data-jh-g="redirect" data-jh-to="/posts/99"></template><script>__bp2()</script>
+   <template data-jh-g="not-found">…the nearest not-found boundary's markup…</template><script>__bp2()</script>
+   ```
+
+   Each global does one thing; the fill keeps one meaning. The client's `__bp2` performs rule 1's
+   client-only behaviour.
+
+3. **`#[layout]`, `#[page]` and `#[template]` require `#[@use] fn … -> @Component<Element>`**
+   (decision 102). A layout, a page and a template are components: they may `await` and `use`
+   hooks. `use cookies()` and the other request hooks read the `RequestData` the render was handed
+   (114 item 8). A signal raised in a layout behaves as one raised in a page; the layout renders
+   before the page, so a signal a layout raises before the first chunk means the page never runs:
+
+   ```bp
+   import {redirect, cookies, Element, LayoutProps} from "jhonstart";
+
+   #[layout]
+   #[@use]
+   pub fn DashboardLayout(props: LayoutProps) -> @Component<Element> {
+       val jar = use cookies();
+       if (jar.get("session") == null) { redirect("/login"); }
+       return div([Sidebar(), props.children]);
+   }
+   ```
+
+   `fn(props) -> Element` without `#[@use]` under one of the three markers is a compile error raised
+   by the marker, naming the function and the form it needs — no plain-layout escape (decision 67).
+
+4. **A server action uses rakun's `redirect`.** An action runs inside rakun's action pipeline
+   (front 24), with no render and no `Response`; its `redirect(loc)` is rakun's, and rakun writes
+   the target into the `actions` envelope's `n` with `routing/navigation`'s `signalToWire`
+   (`"R|303|/posts/7"`). jhonstart's client reads `n` with `signalFromWire` and navigates. Nobody
+   imports anybody: page `redirect` is jhonstart's, action `redirect` is rakun's.
+
+5. **`OnzeConfig.actionsBodyLimit`, default 1048576 (1 MiB).** The application sets it on onze;
+   onze writes `rakun.actions.bodyLimit` at boot (beside 115 rule 4's keys); rakun front 24 reads
+   its own key and answers 413 above it. jhonstart takes no part.
+
+6. **`01-std/07-std-json-writers` is folded into `01-std/01-std-lib-enablement`.** Its steps —
+   `json.quote` / `unquote` / `array` / `object` and `escape.scriptJson` — become steps of 01's
+   README, appended at its end; the 07 directory is deleted and every reference points at 01.
+
+7. **std gains a structured JSON reader.**
+
+   ```bp
+   pub type Json { Null, Bool(bool), Num(f64), Str(string), Arr(Array<Json>), Obj(Array<#(string, Json)>) }
+   pub fn decode(s: string) -> @Result<Json, string>
+   ```
+
+   A step of `01-std-lib-enablement`, beside the folded writers. rakun's configuration reader
+   (front 05), the `actions` library's envelope and RPC readers and jhonstart's payload reader all
+   read through `json.decode`; the `json.parse` + `json.unquote` hand slicing leaves, and so do the
+   per-target `JSON.parse` / `json:decode` templates 116 rule 2 gave `actions`.
+
+8. **Bundled libraries ship `.bp` files only.** `routing`, `actions` and `validation` carry no
+   `.erl` / `.mjs` sidecar under `libs/`; target-native code is an inline `#[@External]` template in
+   the `.bp` file, as std's is. If something cannot be expressed inline, the front stops and raises
+   it in `decisions-pending.md` rather than adding a sidecar.
+
+9. **Every rakun manifest is `["erlang"]`**, `rakun-test` included — no member of rakun is on
+   commonJS.
+
+What it does **not** change: the four `nav:` reasons and the `n` wire forms (contract 5b), the
+route table's wire (contract 1), the payload keys (contract 2, beyond reading it with
+`json.decode`), the action id and envelope keys (contract 3), the marker registry's existing
+entries, emilia's API, `actionField` / `actionHeader` from onze.
+
+Bears on: decision 113 (consequence 3 — onze translates nothing); decision 114 (item 5 —
+`ChunkWriter` gains `setStatus` / `setHeader` and a renderer may close; item 8 — `renderStream`
+takes a `Response`); decision 115 (rule 2 — jhonstart turns the pre-first-chunk signal into 404 /
+307 itself and checks the target against the table and `allowedRedirects`; rule 3 — onze no longer
+translates `redirect`); decision 116 (rule 2 — `actions` reads JSON with `json.decode`; rule 3 — the
+configuration reader uses `json.decode`, and front 07 is part of `01-std-lib-enablement`; rule 5 —
+rakun has no commonJS manifest at all); `contracts.md` §§ 2, 3, 5b and 6a; `01-std` (its README,
+`01-std-lib-enablement`, `04-routing-lib`, `05-actions-lib`, `06-validation-lib`); rakun fronts 05,
+22, 23, 24 and 63; jhonstart fronts 26, 30 and 31; onze fronts 49 and 53; `fronts.md`,
+`overview.md`, `status.md`.
+Implements: `01-std/01-std-lib-enablement` (the folded writers, `Json`, `json.decode`); jhonstart
+fronts 30 (`Response`, `renderStream` over it, `globals.signal`, the target check, the three markers'
+refusal), 26 (`clientApp`, the client half of the signals) and 31 (the not-found boundary as a
+404 document); rakun fronts 23 (`setStatus` / `setHeader`, a renderer's signal is an error), 63
+(page signals leave), 24 (`redirect` into `n`) and 05 (`json.decode`); onze fronts 49 (the
+`Response` adapter, `actionsBodyLimit`, `allowedRedirects`) and 53 (every page, layout and template
+a component).
