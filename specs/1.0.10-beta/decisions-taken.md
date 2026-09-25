@@ -53,8 +53,9 @@ what was left, now `00-compiler-carry-over`'s order),
 | [110](#110-import-aliases-reach-types-and-an-imported-folder-is-a-namespace-of-its-submodules) | `as` on a type; an imported folder | `as` binds a type too (`collections.Dict as D`), a checker-only local name — the emitted identity is unchanged; `import {io}` makes `io.fs.readText(p)` resolve; `as` on a `*` leaf stays refused (amends 107) |
 | [111](#111-collections-functions-are-scoped-to-the-type-they-build) | `empty` / `fromList` collide in `collections.bp` | Type-scoped: `Dict.empty()`, `Set.fromList(xs)`, `Queue.empty()`; the one exception to 106's "moves paths, not function names" |
 | [112](#112-dsl-hygiene-each-name-resolves-in-the-scope-of-whoever-wrote-it) | In which scope does DSL-generated code resolve names? | Hygiene (5-a): text the lib writes in `e.build` resolves in the lib's module, text from `e.text()` at the call site; `e.lookup(name)` resolves at the call site and returns the declaration's identity, never the alias |
-| [113](#113-the-libraries-split-by-concern-emilia-is-css-jhonstart-is-html-rakun-is-the-service-on-erlang-onze-wires-them) | Which library owns what, and who may import whom? | emilia CSS · jhonstart HTML · rakun the service, erlang first · onze wires them; jhonstart ⇄ rakun never import each other; the render and `RenderHooks` move to jhonstart; `ElementView` leaves; markers `data-jh-*`; globals `__bp<N>` from a registry; emilia enters through `jhonstart-emilia`; answers 94, 100, 101; amends 77 |
-| [114](#114-the-seams-decision-113-left-open-rakun-routing-an-async-renderplugin-with-a-payload-rakuns-opaque-page-renderer-examples-in-onze-action-names-and-the-request-handed-in-by-onze) | The eight seams 113 left open | (a) on all eight: `rakun-routing` (`["erlang", "commonJS"]`) holds the pure matcher; `RenderPlugin` is asynchronous and gains `payload` (emilia's bridge fills `s`); rakun holds an opaque `PageRenderer` per route over `ChunkWriter`; `LayoutProps` and the UI conventions are jhonstart's; combining examples live in onze; onze passes the action wire names (default `__bp_action` / `X-Bp-Action`) and the `RequestData`; amends 113 |
+| [113](#113-the-libraries-split-by-concern-emilia-is-css-jhonstart-is-html-rakun-is-the-service-on-erlang-onze-wires-them) | Which library owns what, and who may import whom? | emilia CSS · jhonstart HTML · rakun the service, erlang first · onze wires them; jhonstart ⇄ rakun never import each other; the render and `RenderHooks` move to jhonstart; `ElementView` leaves; markers `data-jh-*`; globals `__bp<N>` from a registry; emilia enters through `jhonstart-emilia`; answers 94, 100, 101; amends 77 — **amended by 115** |
+| [114](#114-the-seams-decision-113-left-open-rakun-routing-an-async-renderplugin-with-a-payload-rakuns-opaque-page-renderer-examples-in-onze-action-names-and-the-request-handed-in-by-onze) | The eight seams 113 left open | (a) on all eight: `rakun-routing` (`["erlang", "commonJS"]`) holds the pure matcher; `RenderPlugin` is asynchronous and gains `payload` (emilia's bridge fills `s`); rakun holds an opaque `PageRenderer` per route over `ChunkWriter`; `LayoutProps` and the UI conventions are jhonstart's; combining examples live in onze; onze passes the action wire names (default `__bp_action` / `X-Bp-Action`) and the `RequestData`; amends 113 — **amended by 115** |
+| [115](#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun) | The five points 114 left open | (a) on the four: the bundled library `routing` (`libs/routing`, erlang + commonJS, pure) holds the matcher and the `k` / `z` / URL-rule codecs, and rakun and jhonstart import it directly — `rakun-routing` and onze's `match` leave; after the first chunk `notFound` / `redirect` are markup jhonstart's client executes, status 200; jhonstart gains `redirect(url)` and pages import signals and `cookies` from jhonstart; rakun reads `rakun.*` keys only (`rakun.actions.bodyLimit`, `rakun.appDir`); 114's invented names stay; amends 113 and 114 |
 
 ## 68. One milestone, the 1.0.9 numbers kept, the drafts deleted
 
@@ -1301,6 +1302,8 @@ Implements: jhonstart front 30 (`render.bp`, `plugin.bp`, `globals.bp`, the mark
 spellings, and the `jhonstart-emilia` member); rakun fronts 04 and 23 (the erlang core and the
 render leaving `ssr.bp`); onze fronts 49, 68 and 69 (the wiring, the entry, the plugin registration).
 
+**Amended by [115](#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun):** consequence 3's `match` is no longer handed in by onze — jhonstart's router imports the matcher from the bundled library `routing`.
+
 ## 114. The seams decision 113 left open: `rakun-routing`, an async `RenderPlugin` with a payload, rakun's opaque page renderer, examples in onze, action names and the request handed in by onze
 
 **Decided 2026-09-26 by the maintainer**, all eight on the recommended option (a). Applying
@@ -1415,3 +1418,100 @@ Implements: rakun front 22 (`modules/rakun-routing`, the opaque page registry), 
 in), 30 (the UI conventions, the asynchronous `RenderPlugin` with `payload`, `renderStream`'s
 signature, the bridge's `s`), 67 (`actionField` / `actionHeader`); onze fronts 49 (the boot wiring),
 53 (the combined examples) and 68 (the entry importing `rakun-routing`).
+
+**Amended by [115](#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun):**
+item 1's `rakun-routing` member is replaced by the bundled library `routing`, which rakun and
+jhonstart import directly; onze no longer hands `match` to the router. Item 7's
+`rakun.actions.field` / `.header` are joined by `rakun.actions.bodyLimit` and `rakun.appDir`.
+
+## 115. Routing is a bundled library, a signal after the first chunk is markup, jhonstart gains `redirect`, rakun's keys are `rakun.*`
+
+**Decided 2026-09-26 by the maintainer**, on the recommended option (a) of the four points decision
+114 left open, and on the fifth by leaving it as written. On the first he went past the
+recommendation — *"pode criar uma lib no repository/botopink-lang/libs para ajudar"* — so the
+shared routing code is not a rakun member but a library bundled with the compiler. Amends 113
+(consequence 3) and 114 (items 1 and 7).
+
+1. **The routing code server and browser share is the bundled library `routing`.** It lives at
+   `repository/botopink-lang/libs/routing/`, beside `libs/std`, and is neutral like std: it names no
+   library, speaks no HTTP, keeps no state and declares no host cell. `"targets": ["erlang",
+   "commonJS"]`. It holds every piece of routing code that both sides run:
+
+   | Module | Holds | Specified by |
+   |---|---|---|
+   | `segment` | `SegmentKind`, `Segment`, `parseSegment`, `parsePath`, `patternOf`, `slotOf` | rakun front 22, Step 1 |
+   | `table` | `RouteEntry`, `parseTable`, `writeTable`, `kindLabel` — the route table's wire | 22, Step 3; `contracts.md § 1` |
+   | `match` | `RouteMatch`, `matchPath`, `layoutChain`, `paramOf` | 22, Step 4 |
+   | `route_kinds` | `RouteKind`, `parseKinds`, `writeKinds`, `routeKindOf` — the `k` blob | rakun front 60, Step 6 |
+   | `slot_states` | `SlotState`, `parseSlotStates`, `writeSlotStates` — the `z` blob | rakun front 61, Step 5 |
+   | `url_rules` | `PathRules`, `canonicalize`, `clientHref`, `RedirectRule`, `parseRedirectTable`, `writeRedirectTable` | rakun front 65, Steps 2–3 |
+
+   rakun (the server) and jhonstart (the browser router and `Link`) both `import {…} from
+   "routing"`. A neutral library is not an edge between jhonstart and rakun — 113's rule is that the
+   two frameworks never name each other, and `routing` names neither — so the dependency diagram
+   gains one node both point at:
+
+   ```
+   onze ──► jhonstart ──► routing ◄── rakun ◄── onze
+   ```
+
+   onze no longer builds `match` for jhonstart's router: the router imports `parseTable` and
+   `matchPath` and reads the table from the payload's `t` itself (front 26). The `rakun-routing`
+   member of 114 item 1 does not exist; rakun's erlang-only core keeps one boundary member,
+   `rakun-validation`. `from "routing"` resolves the way `from "std"` does — bundled with the
+   compiler, never listed in a manifest's `dependencies` (the packaging rule std already has). Module
+   atoms follow decision 109: `routing@match`, `routing@match@@RouteMatch`,
+   `routing@url_rules@@PathRules`. The library, its embedding and its tests are front
+   `01-std/04-routing-lib`; the formats stay specified where they were (fronts 22, 60, 61 and 65),
+   and each of those fronts' server half imports the codec rather than owning it.
+
+2. **After the first chunk, a navigation signal is markup and the status stays 200** — as Next.js
+   does. Before the render's first `write`, jhonstart's `notFound` / `redirect` leave the render as
+   its outcome and onze turns them into rakun's 404 / 307, as 113 and 114 have it. Once a chunk has
+   been written the headers are gone, so jhonstart's render writes the signal into the stream as
+   markup its own client executes, writes no further fill, and ends; the response closes normally
+   with status 200:
+
+   ```html
+   <template data-jh-g="redirect" data-jh-to="/login"></template><script>__bp2()</script>
+   <template data-jh-g="not-found">…the nearest not-found boundary's markup…</template><script>__bp2()</script>
+   ```
+
+   The client navigates with `location.replace` for `redirect`, and for `not-found` replaces the
+   content of `data-jh-root` with the template's. `data-jh-g` joins the marker registry
+   (`contracts.md § 2`) and `__bp2` is a third global, `globals.signal`, from the same registry as
+   `__bp0` / `__bp1` (113 item 6). Because rakun's redirect checks (`contracts.md § 5b`: a relative
+   target must match the route table, an absolute one must be in `rakun.navigation.allowedHosts`)
+   cannot run once the stream has started, the render applies the stricter half itself: a late
+   redirect to a relative target is written only when `routing`'s `matchPath` finds it in the table
+   the render was handed, and a late redirect to an absolute target fails the render — decision 67;
+   no option writes it anyway.
+
+3. **jhonstart gains `redirect(url)`, a signal like `notFound`** (front 31). It raises the reason
+   `jhonstart:redirect:<url>` of `contracts.md § 5b`; onze translates it into rakun's `redirect`
+   (307) before the first chunk, and rule 2 applies after it. A page, layout or template — code
+   jhonstart's render runs — imports `notFound`, `redirect` and `cookies` from `"jhonstart"` only;
+   `cookies` is front 28's reader over the `RequestData` onze hands in (114 item 8). onze front 53's
+   pages and examples are written that way. A server action or a route handler is rakun's code and
+   keeps rakun's signals (front 63).
+4. **rakun reads `rakun.*` keys only.** Front 24's body limit is `rakun.actions.bodyLimit` (default
+   1 MiB, floor 4 KiB) and front 22's app directory is `rakun.appDir` (`app` when unset), beside
+   114's `rakun.actions.field` / `rakun.actions.header`. onze writes all four into rakun's
+   configuration at boot (front 49); no rakun front reads an `onze.` key.
+5. **The names 114's sweep chose stay as written** — `rkAppRegisterEntry`, `rkAppRegisterPage<R>`,
+   `servePage`, `setImageRenderer`, `PathRules`, `assertPageDispatch`, `jhRegisterPage` and its
+   siblings, the `jhonstart_routes` sidecar, `enterRequest` / `leaveRequest`, `Payload.extras`,
+   `PageContext.params` / `query` as pair lists, and `formMount(actionHeader)`.
+
+What it does **not** change: the route table's wire and precedence (contract 1), the `k` and `z`
+blob formats (fronts 60 and 61), the URL rules (front 65), the signal reasons (contract 5b), the
+action id and envelope (contract 3), emilia's API.
+
+Bears on: decision 113 (consequence 3 — `match` is imported, not handed in); decision 114 (item 1
+replaced, item 7 extended); `contracts.md` §§ 1, 2, 5b and 6; rakun fronts 04, 22, 23, 24, 60, 61
+and 65, the track README and `modules.md`; jhonstart fronts 26, 27, 30 and 31, the track README
+and `modules.md`; onze fronts 49, 53 and 68, the track README and `modules.md`; `02-packaging`.
+Implements: `01-std/04-routing-lib` (the library, its embedding, its tests); jhonstart front 26
+(the router importing `routing`), 30 (the late-signal markup, `globals.signal`), 31 (`redirect`);
+rakun fronts 22 (`file_router.bp` importing `routing`, `rakun.appDir`) and 24
+(`rakun.actions.bodyLimit`); onze fronts 49 (the four keys at boot) and 53 (the pages' imports).
