@@ -12,8 +12,8 @@ server-only refusal would reject it
 **Target:** both — erlang and commonJS, every module
 **Wave:** 0 — beside `01-std`'s steps; Steps 1–4 need only `01-std` step 2; Step 5 bundles it after
 `04-routing-lib` Step 2; rakun front 14's Step 7 (the member leaves rakun) follows Step 4
-**Depends on:** `01-std` step 2 (`testing.asserts`) · `01-std/07-std-json-writers` (`json.quote`,
-which replaces `report.bp:80`'s `jsonEscape`) · `01-std/04-routing-lib` Step 2 (the bundled-package
+**Depends on:** `01-std` step 2 (`testing.asserts`) · `01-std/01-std-lib-enablement` Step 11
+(`json.quote`, which replaces `report.bp:80`'s `jsonEscape`) · `01-std/04-routing-lib` Step 2 (the bundled-package
 registry, for Step 5 only). The code is landed (rakun front 14, rakun `af933f7`); this front moves
 it, so it waits on nothing of rakun's
 **Owns:** `repository/botopink-lang/libs/validation/**` (`botopink.json`, `AGENTS.md`,
@@ -28,6 +28,8 @@ generated entry (front 68); `repository/jhonstart/**` — jhonstart names no val
 client form's application code imports it)
 **Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
 rule 5 (validation is a bundled library; the message lookup is injected; the member leaves rakun) ·
+[decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rules 8 and 9 (`.bp` files only, target-native code inline; every rakun
+manifest `["erlang"]`) ·
 decision 113 item 8 (rakun's core is erlang-only — the fact that broke the old home) · decision 115
 (a bundled library is neutral and resolves like `from "std"`) · rakun front
 [14](../../03-rakun/14-rakun-validation/README.md) (the constraints, `#[validated]`, the SPI, the
@@ -98,11 +100,11 @@ their functions, names and tests; four changes only:
 
    onze sets the browser's in the entry it generates (front 68); with none set, the built-in texts
    answer. The library spells no `rakun.` key.
-2. **`jsonEscape` leaves** for std's `json.quote` (`07-std-json-writers`); `violationJson` and
+2. **`jsonEscape` leaves** for std's `json.quote` (`01-std-lib-enablement` Step 11); `violationJson` and
    `constraintTableJson` write with `json.quote` / `json.object` / `json.array`, and escape every
    control character.
-3. **The host tables are inline templates, not a sidecar.** A bundled library embeds its `.bp`
-   files only (`04-routing-lib` Step 2), so the twelve cells of `spi.bp` and `binding.bp` are
+3. **The host tables are inline templates, not a sidecar.** A bundled library ships `.bp` files
+   only (`04-routing-lib` Step 2; decision 117 rule 8), so the twelve cells of `spi.bp` and `binding.bp` are
    re-expressed as `#[@External.Erlang(…)]` / `#[@External.Node(…)]` templates, as std's cells are:
    on erlang the registry is a `persistent_term` entry keyed `{validation, constraints}` (written at
    registration, read per validation) and the accumulator the serving process's dictionary under
@@ -184,7 +186,7 @@ four that set a key with `rkSetProp` set a `MessageSource` over a test table ins
 **Acceptance:**
 - [ ] `violationJson` and `constraintTableJson` answer the literals `report_test.bp` and
       `table_test.bp` assert today, byte for byte
-- [ ] a message containing U+0001 and a `"` produces JSON std's `json.parse` accepts
+- [ ] a message containing U+0001 and a `"` produces JSON std's `json.decode` accepts
 - [ ] `grep -n "fn jsonEscape" libs/validation/src` is empty
 
 ### Step 5 — Bundle it
@@ -241,7 +243,8 @@ resolution; Step 4 the control-character case. `config_test.bp`'s six stay rakun
 
 ## Blast radius
 
-- **rakun:** one member fewer; the workspace root drops commonJS; `boot.bp` joins the core. An
+- **rakun:** one member fewer; the workspace root and every member, `rakun-test` included, are
+  `["erlang"]` (decision 117 rule 9); `boot.bp` joins the core. An
   application that imported `from "rakun-validation"` imports `from "validation"`.
 - **onze:** the client can validate without reaching an erlang-only package; the entry sets one
   message source.

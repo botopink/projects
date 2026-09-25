@@ -65,7 +65,7 @@ Verified by reading the trees at HEAD `b5ceb203` (meta) on 2026-09-20.
 | [`01-std-lib-enablement/`](./01-std-lib-enablement/README.md) · [`02-std-async-primitives/`](./02-std-async-primitives/README.md) · [`03-std-content-hash/`](./03-std-content-hash/README.md) | step 6 — the three std sub-fronts |
 | [`04-routing-lib/`](./04-routing-lib/README.md) | step 8 — the second bundled library, `libs/routing` (decision 115): the route matcher, the `k` / `z` / URL-rule codecs, the navigation vocabulary and the `:param` grammar (decision 116) rakun and jhonstart both import |
 | [`05-actions-lib/`](./05-actions-lib/README.md) · [`06-validation-lib/`](./06-validation-lib/README.md) | step 9 — the bundled libraries `libs/actions` (the server-action envelope, `state` grammar, JSON-RPC body, `refresh`) and `libs/validation` (rakun-validation moved, its message lookup injected) — decision 116 |
-| [`07-std-json-writers/`](./07-std-json-writers/README.md) | step 10 — std writes JSON: `json.quote` / `unquote` / `array` / `object` and `escape.scriptJson` (decision 116) |
+| [`01-std-lib-enablement/`](./01-std-lib-enablement/README.md) Steps 11–14 | step 10 — std reads and writes JSON: `json.quote` / `unquote` / `array` / `object`, `escape.scriptJson` (decision 116), the `Json` type and `json.decode` (decision 117) |
 
 ## Order
 
@@ -93,8 +93,9 @@ Verified by reading the trees at HEAD `b5ceb203` (meta) on 2026-09-20.
    libraries from step 2 on (actions after 01's encoding, 10 and 8's navigation); each bundled by
    adding its name to step 8's registry
 
-10 07-std-json-writers — json.quote and the writers from step 2 on; escape.scriptJson after 01's
-   escape.bp; both outside the window in which step 7 holds libs/std/src/**
+10 01-std-lib-enablement Steps 11–14 — json.quote, the writers and json.decode from step 2 on;
+   escape.scriptJson after 01's escape.bp; all outside the window in which step 7 holds
+   libs/std/src/**
 ```
 
 Step 1 is first because it is what the other steps verify with: `asserts.bp`'s own inline tests are
@@ -250,16 +251,19 @@ Each is bundled by adding its name to step 8's registry. Specified in
       no action-envelope or `state` literal is asserted under `repository/rakun/` or
       `repository/jhonstart/`
 
-### Step 10 — `07-std-json-writers`: std writes JSON
+### Step 10 — std reads and writes JSON (`01-std-lib-enablement` Steps 11–14)
 
-Decision 116 rules 3 and 8: `json.quote` (every control character escaped), `json.unquote`,
-`json.array`, `json.object`, and `escape.scriptJson`. Specified in
-[`07-std-json-writers/README.md`](./07-std-json-writers/README.md). A front of its own rather than
-steps in `01-std-lib-enablement`, whose ownership lines list `json.bp` as not touched and whose
-branch runs in parallel; `scriptJson` is one function appended to 01's `escape.bp` after it lands.
+Decision 116 rules 3 and 8 and [decision 117](../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rules 6 and 7: `json.quote` (every
+control character escaped), `json.unquote`, `json.array`, `json.object`, `escape.scriptJson`, and a
+structured reader — `pub type Json { Null, Bool(bool), Num(f64), Str(string), Arr(Array<Json>),
+Obj(Array<#(string, Json)>) }` with `json.decode(s: string) -> @Result<Json, string>`. rakun's
+configuration reader, the `actions` library and jhonstart's payload reader read through `decode`.
+Specified as Steps 11–14 of [`01-std-lib-enablement/README.md`](./01-std-lib-enablement/README.md),
+which carry their own ownership lines; `scriptJson` is appended to that front's `escape.bp` after its
+Step 1.
 
 **Acceptance:**
-- [ ] the sub-front's own *Gate* holds
+- [ ] `01-std-lib-enablement`'s *Gate (Steps 11–14)* holds
 
 ## Gate
 
@@ -282,7 +286,7 @@ branch runs in parallel; `scriptJson` is one function appended to 01's `escape.b
 | `01-std-lib-enablement` | `io/net.bp`, `escape.bp`, the hmac half of `hash.bp`, the codec half of `encoding.bp`, additions to six existing modules, `root.bp`, `io/mod.bp` | none once ordered |
 | `04-routing-lib` | `libs/routing/**`; by carve-out, the bundled-package registry in `build.zig` and the `"std"` package checks in compiler-core, the CLI resolver and the LSP (named in its README) | `00 · 23-std-purity` on `build.zig`'s registry and `emitUse` — resolved by order: its Step 2 opens after 23 lands; nothing on `libs/std/**` |
 | `05-actions-lib` · `06-validation-lib` | `libs/actions/**`, `libs/validation/**`; one name each in the bundled-package list | `04-routing-lib` on that list — resolved by order: each adds its name after 04's Step 2; nothing on `libs/std/**` |
-| `07-std-json-writers` | four functions at the foot of `json.bp`; `scriptJson` appended to `escape.bp` | `01-std-lib-enablement` on `escape.bp` — resolved by order: 07 appends after 01 lands; `00 · 23-std-purity` — 07 lands before 23 opens or after it lands |
+| `01-std-lib-enablement` Steps 11–14 | the functions, `Json` and `decode` at the foot of `json.bp`; `scriptJson` appended to `escape.bp` | Step 1 on `escape.bp` — resolved by order: Step 12 appends after Step 1; `00 · 23-std-purity` — these steps land before 23 opens or after it lands |
 | `00-compiler-carry-over/23-std-purity` | every path under `libs/std/src/` (the move), `root.bp`, `build.zig` `stdPkgFilesFromRoot`, `parser/decls.zig`, `project_graph.zig`, `emitUse` ×4 | runs after steps 2–6 and after `.tasks/std-async` has merged; nothing else in track A edits std after it |
 
 Tracks B–E consume `@src()`, `testing.asserts` and `testing.snapshots` and write their `-test`
