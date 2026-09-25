@@ -437,3 +437,13 @@ which the gate line asks for and which **could not be run** — there is no `tsc
 front 12's `§6 T4` owner row to 01), [46](../../../1.0.5-beta/decisions-pending.md) (`d["k"]`) and
 [47](../../../1.0.5-beta/decisions-pending.md) (`undefined` vs `null` for an out-of-range read).
 
+
+## Handed over by `01-std/01-std-lib-enablement` (2026-09-25)
+
+1. **`import {process} from "std"` shadows Node's global `process` in the generated test runner.** A
+   consumer test module importing it binds a local `process`, and the runner's own
+   `const filter = process.argv[2] || null;` throws `TypeError: Cannot read properties of undefined
+   (reading '2')` before any test runs. An imported module named after a host global needs a
+   renamed binding (or the runner must reach the global through `globalThis.process`).
+2. **`try` inside a `while` body does not propagate** (shared with `02-erlang`, repro there): the loop
+   keeps running after the `Error`, and the function answers `Ok`.

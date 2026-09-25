@@ -443,3 +443,27 @@ Measured while the cells were written: `case 9 { 1...9 { 1 } _ { 0 } }` prints `
 commonJS, `0` on erlang and **`256` — a heap address — on wasm**, and written where its type is known
 it does not compile at all. The cells are owed once `01 step 4` lands.
 
+
+## Handed over by `01-std/01-std-lib-enablement` (2026-09-25)
+
+1. **A one-argument `String.slice(start)` has no shim when std is compiled as a dependency.** A
+   consumer package importing `{encoding} from "std"` failed on erlang with `std/encoding.erl:190:13:
+   function string_slice/2 undefined, did you mean string_slice/3?`, and the runner refused the whole
+   module; std's own tests (std compiled as the package) were green. `encoding.bp` now writes
+   `f.slice(eq + 1, f.length)`; the repro is any std function with a one-argument `slice`, imported
+   from a scratch package and run with `botopink test --target erlang`.
+2. **A string literal's `\u{…}` above U+007F lowers to ONE latin1 byte.** `"\u{e7}"` is `<<"\x{e7}">>`
+   (one byte, not UTF-8 `C3 A7`), `"\u{2028}"` is `<<40>>` — the byte of `(` — and `"\u{1f600}"` is
+   `<<0>>`; commonJS answers the UTF-8 bytes (`c3a7`, `e280a8`, `f09f9880` through
+   `Buffer.from(s).toString('hex')`). `writeStringFromLexeme` (`codegen/beam/erl_emitter.zig`) emits
+   `\x{2028}` inside `<<"…">>`, which erlc truncates to 8 bits; raw non-ASCII source bytes go the same
+   way. It made `escape.jsString("f(x)")` answer `f x ` on erlang (fixed in std by building
+   U+2028/U+2029 in private host cells). The fix is to write each UTF-8 byte of the code point as
+   `\x{HH}`.
+3. **A `@Result` method inside a closure is an undefined function.** `table.filter({ s ->
+   unquote(quote(s)).unwrapOr("<err>") != s })` compiles to `unwrapOr/2 undefined` on erlang (and
+   `….unwrapOr is not a function` on commonJS); the same call in a named function is fine.
+4. **`try` inside a `while` body does not propagate.** In a `#[@result]` fn, `while (i < n) { val v =
+   try check(i); acc = acc + v; i = i + 1; };` fails to compile on erlang (`variable 'Acc@2' unsafe in
+   'case'`) and on commonJS the loop runs on past the failure (`sumTo(5).isError()` is false). Shared
+   with `04-js`; std's `json.decode` loops test `isError()` instead of using `try`.

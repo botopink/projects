@@ -626,3 +626,13 @@ them is a rendering problem:
 3. **`val v: Option<i32> = null;`** answers `type mismatch: expected Option, got optional` — not the
    pointed diagnostic `builtins.d.bp:56-58` promises, and the message leaks the internal name.
 
+
+## Handed over by `01-std/01-std-lib-enablement` (2026-09-25)
+
+1. **An integer literal is `i32` and never widens to `i64`.** With `n: i64`, `n * 1000` is `type
+   mismatch: expected i64, got i32`, and so are `val k: i64 = 1000;`, `t - (t % 1000)`, a literal or a
+   literal product (`3 * 86400000`) passed to an `i64` parameter, and `r.unwrapOr(0)` on an
+   `@Result<i64, _>` — the last one unlocated (`--> src/time.bp`, no line). `std/time` works around it
+   with a private identity cell `wide(n: i32) -> i64` (`libs/std/src/time.bp`), and its `Duration`
+   builders take `i32` because of it. The cell goes when a literal takes the integer type its context
+   asks for.

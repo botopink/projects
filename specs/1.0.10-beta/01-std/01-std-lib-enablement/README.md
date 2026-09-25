@@ -698,17 +698,17 @@ script parser would see.
 ### Step 11 — `json.quote`, `json.unquote`, `json.array`, `json.object`
 
 **Acceptance:**
-- [ ] `json.quote("a\"b\\c")` answers `"a\"b\\c"` (as text: quote, `a`, `\"`, `b`, `\\`, `c`, quote)
-- [ ] `json.quote` of a string holding U+0001, U+0008, U+000C, U+001F, a newline and a tab answers
+- [x] `json.quote("a\"b\\c")` answers `"a\"b\\c"` (as text: quote, `a`, `\"`, `b`, `\\`, `c`, quote)
+- [x] `json.quote` of a string holding U+0001, U+0008, U+000C, U+001F, a newline and a tab answers
       `"\u0001\b\f\u001f\n\t"`, identical on erlang and commonJS
-- [ ] `json.quote("ação")` answers `"ação"` — non-ASCII is not escaped
-- [ ] for every string `s` in the test table, `json.parse(json.quote(s))` is `Ok` and
+- [x] `json.quote("ação")` answers `"ação"` — non-ASCII is not escaped
+- [x] for every string `s` in the test table, `json.parse(json.quote(s))` is `Ok` and
       `json.unquote(json.quote(s))` is `Ok(s)`
-- [ ] `json.unquote("abc")`, `json.unquote("\"abc")` and `json.unquote("1")` answer an `Error`
-- [ ] `json.array([json.quote("a"), "1", "true"])` answers `["a",1,true]`; `json.array([])` answers `[]`
-- [ ] `json.object([#("v", "1"), #("ok", "true"), #("s", json.quote("x"))])` answers
+- [x] `json.unquote("abc")`, `json.unquote("\"abc")` and `json.unquote("1")` answer an `Error`
+- [x] `json.array([json.quote("a"), "1", "true"])` answers `["a",1,true]`; `json.array([])` answers `[]`
+- [x] `json.object([#("v", "1"), #("ok", "true"), #("s", json.quote("x"))])` answers
       `{"v":1,"ok":true,"s":"x"}` — order kept, keys quoted; `json.object([])` answers `{}`
-- [ ] a key containing `"` is quoted by `object`: `json.object([#("a\"b", "1")])` parses
+- [x] a key containing `"` is quoted by `object`: `json.object([#("a\"b", "1")])` parses
 
 ### Step 12 — `escape.scriptJson`
 
