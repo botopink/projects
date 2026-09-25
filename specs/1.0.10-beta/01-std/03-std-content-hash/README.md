@@ -6,12 +6,9 @@
 **Target:** both — std is the floor under both halves
 **Wave:** 0
 **Depends on:** none
-**Owns:** `src/content_hash.bp`
-**Does not touch:** every other std module, `crypto.bp` included — a std module cannot call another
-std module, so this one re-declares the digest it needs. `src/root.bp` belongs to front 01; this
-front hands it the line `pub mod content_hash;` and lands first.
+**Owns:** the content-hash half of `src/hash.bp` — `contentHash`, `strongHash`, `cacheKey`, `strongCacheKey`, `etag`, `weakEtag`, `matches`, `fingerprint` — appended below the hex digests and front 01's hmac half (decision 106). The file lands as `src/content_hash.bp` when the front merges and `00-compiler-carry-over/23-std-purity` folds it into `hash.bp`
+**Does not touch:** every other std module, and every function already in `hash.bp` (`sha256`, `sha512`, `md5`, `hmacSha256`; front 01's `hmacSha256Base64Url`, `sha1Base64`, `sha256Base64Url`, `equalsConstantTime`). `strongHash` keeps its own cell as written below; the truncation lives in the template. `src/root.bp` belongs to front 01; this front hands it no export line, because `hash` is registered already, and lands first.
 **Reference:** `NEXTJS-DOCS.md § 11. Cache` · [Caching](https://nextjs.org/docs/app/getting-started/caching) · [`ETag`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag) · [RFC 9110 § 8.8.3](https://www.rfc-editor.org/rfc/rfc9110#field.etag) · [`crypto:hash/2`](https://www.erlang.org/doc/apps/crypto/crypto.html#hash/2)
-**Replaces:** `1.0.7-beta/18-std-crypto-hash`
 
 ---
 
@@ -20,8 +17,8 @@ front hands it the line `pub mod content_hash;` and lands first.
 Four fronts in this milestone need to answer the question "is this the same content as last time?" —
 the cache keys entries by it (front 12), the SSR pipeline puts it in an `ETag` (front 23), and the
 image and font optimizers put it in a filename (fronts 51, 52). Nothing in std answers it. What std
-has is `crypto.sha256` (`crypto.bp:22`), which is a 64-character hex string: correct, and the wrong
-shape for a filename or a cache key, and slower than it needs to be for a value nobody is attacking.
+has is `sha256` (`crypto.bp:22`), which is a 64-character hex string: correct, and the wrong shape
+for a filename or a cache key, and slower than it needs to be for a value nobody is attacking.
 
 What exists instead is a private copy: `emilia` carries its own djb2 fold as `hashHex`
 (`repository/emilia/src/emilia.bp:40`), with a commonJS cell and an Erlang cell that were tuned until
@@ -29,28 +26,25 @@ they agreed byte-for-byte across targets. That function is the right primitive i
 the moment front 12 needs a cache key it will either import from `emilia`, which is absurd, or write
 a fifth copy of the same fold with its own subtly different rounding.
 
-The 1.0.7 draft proposed lifting it, and got the interface wrong in a way that matters. Its example
-key is `contentHash("user:123:profile")` — a hash over a string the caller built by joining parts
-with a separator. `["user:1", "profile"]` and `["user", "1:profile"]` join to the same string, hash
-to the same key, and a cache that collides across a user boundary serves one user their neighbour's
-page. That is the repair this front carries: the multi-part key is framed, not joined, and the
-separator-joined form is not offered at all.
+A multi-part key must be framed, not joined: `["user:1", "profile"]` and `["user", "1:profile"]`
+join to the same string, hash to the same key, and a cache that collides across a user boundary
+serves one user their neighbour's page. The separator-joined form is not offered at all.
 
 ## Current state
 
-- **No `content_hash.bp`.** `libs/std/src/root.bp:13-36` does not list it.
-- **`crypto.bp` has the strong digests and only in hex**: `sha256`, `sha512`, `md5`, `hmacSha256`,
-  `randomBytes` (`crypto.bp:22-77`). Every one renders its output as lowercase hex inside the host
-  template.
+- **No content hash in std.** The digest half of `hash.bp` (`crypto.bp:22-77` today) has `sha256`,
+  `sha512`, `md5`, `hmacSha256`, and only in hex: every one renders its output as lowercase hex inside
+  the host template.
 - **`emilia` has the fast one, privately**: `declare fn hashHex(s: string) -> string`
   (`repository/emilia/src/emilia.bp:40`), a djb2 fold with `#[@External.node]` and
   `#[@External.Erlang]` cells proven to agree for ASCII input. It is not `pub`, it is not in std, and
   its docblock notes that astral characters diverge (one codepoint on Erlang, two UTF-16 units in JS).
 - **`json.bp` has no structured value**: `parse` and `stringify` are both `string -> @Result<string,
   string>` (`json.bp:36,45`), and the module docblock says there is no `JsonValue` walker yet
-  (`json.bp:9-16`). The 1.0.7 draft's `contentHashObject(obj: any)` is therefore not expressible.
-- **No std module imports another** — zero `import` lines across `libs/std/src/`. This front cannot
-  call `crypto.sha256`; it re-declares the cell.
+  (`json.bp:9-16`). A `contentHashObject(obj: any)` is therefore not expressible.
+- **No std module imports another** — zero `import` lines across `libs/std/src/`. The content hashes
+  sit in the same file as the digests, so nothing is re-declared; `strongHash` still carries its own
+  cell, with the truncation in the template.
 
 ## Mechanism
 
@@ -85,33 +79,36 @@ wildcard, and a comma-separated list of candidates.
 breaks both.
 
 Every one of these is pure botopink except `contentHash` and `strongHash` themselves, which are
-`declare fn`s with one cell per target in the `crypto.bp` shape. There is no sidecar.
+`declare fn`s with one cell per target in the shape of the digests above them. There is no sidecar.
+
+**Where the functions sit.** `hash.bp` has one module docblock — the digest half's. This front's
+eight functions are appended below front 01's hmac half under the section comment below; the pure
+ones call `contentHash`/`strongHash` unqualified, as functions of the same file. A consumer writes
+`import {hash} from "std";` and `hash.cacheKey(…)`, `hash.etag(…)`, next to `hash.sha256(…)`.
 
 ## Steps
 
 ### Step 1 — `contentHash` and `strongHash`
 
 ```bp
-//// std/content_hash — stable content hashes for cache keys, ETags and asset
-//// fingerprints.
-////
-//// Reference:
-////   RFC 9110 § 8.8.3 — https://www.rfc-editor.org/rfc/rfc9110#field.etag
-////   Next.js caching  — https://nextjs.org/docs/app/getting-started/caching
-////   Erlang crypto    — https://www.erlang.org/doc/apps/crypto/crypto.html
-////
-//// TWO hashes, and the choice is not a matter of taste. `contentHash` is a
-//// djb2 fold rendered as 8 hex characters: fast, stable across both targets,
-//// and TRIVIAL TO COLLIDE ON PURPOSE. Use it when a collision costs a wrong
-//// cache hit you control — an asset filename, an internal fingerprint.
-//// `strongHash` is SHA-256 truncated to 32 hex characters. Use it whenever the
-//// hashed value came from outside: a request header, a client-supplied tag, a
-//// key that spans a user boundary.
-////
-//// The `contentHash` templates are lifted verbatim from
-//// `repository/emilia/src/emilia.bp:39-40`, where they were tuned until both
-//// targets agreed byte-for-byte. Astral characters diverge (one codepoint on
-//// Erlang, two UTF-16 units in JS) — the same caveat emilia carries.
+// ── content hashes — stable hashes for cache keys, ETags and asset fingerprints ──
+//
+// Reference:
+//   RFC 9110 § 8.8.3 — https://www.rfc-editor.org/rfc/rfc9110#field.etag
+//   Next.js caching  — https://nextjs.org/docs/app/getting-started/caching
+//
+// TWO hashes, and the choice is not a matter of taste. `contentHash` is a
+// djb2 fold rendered as 8 hex characters: fast, stable across both targets,
+// and TRIVIAL TO COLLIDE ON PURPOSE. Use it when a collision costs a wrong
+// cache hit you control — an asset filename, an internal fingerprint.
+// `strongHash` is SHA-256 truncated to 32 hex characters. Use it whenever the
+// hashed value came from outside: a request header, a client-supplied tag, a
+// key that spans a user boundary.
+//
+// The `contentHash` templates are lifted verbatim from
+// `repository/emilia/src/emilia.bp:39-40`, where they were tuned until both
+// targets agreed byte-for-byte. Astral characters diverge (one codepoint on
+// Erlang, two UTF-16 units in JS) — the same caveat emilia carries.
 
 #[@External.Node("""(function(__S){ var __H = 5381; for (var __I = 0; __I < __S.length; __I++) { __H = (Math.imul(__H, 33) + __S.charCodeAt(__I)) >>> 0; } return __H.toString(16); })($0)""")]
 #[@External.Erlang("""(fun(__S) -> __H = lists:foldl(fun(__C, __A) -> (__A * 33 + __C) band 16#FFFFFFFF end, 5381, unicode:characters_to_list(__S)), list_to_binary(string:lowercase(integer_to_list(__H, 16))) end)($0)""")]
@@ -215,15 +212,15 @@ pub fn fingerprint(fileName: string, contents: string) -> string {
 - [ ] the same contents answer the same filename on both targets
 - [ ] different contents answer different filenames for the same input name
 
-### Step 5 — export line and docs
+### Step 5 — docs
 
-`pub mod content_hash;` handed to front 01 (which owns `src/root.bp`), and `libs/std/AGENTS.md`'s
-tree listing gains `content_hash.bp`.
+No export line: `hash` is registered in `src/root.bp` already. `libs/std/AGENTS.md`'s `hash` row
+gains the eight functions.
 
 **Acceptance:**
-- [ ] `import {content_hash} from "std";` resolves from a consumer package
-- [ ] `libs/std/AGENTS.md` names the file in the same commit that adds it
-- [ ] a note in the module docblock records that `emilia.hashHex` is now a duplicate and that
+- [ ] `import {hash} from "std";` resolves from a consumer package and `hash.cacheKey`, `hash.etag`, `hash.fingerprint` type-check beside `hash.sha256`
+- [ ] `libs/std/AGENTS.md` lists the functions in the same commit that adds them
+- [ ] a note in the section comment records that `emilia.hashHex` is now a duplicate and that
       collapsing it is a later, `emilia`-owned change — this milestone is additive only
 
 ## Examples
@@ -237,12 +234,12 @@ tree listing gains `content_hash.bp`.
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | No bitwise operators and no `toString(radix)` on the integer behaviors | the djb2 fold needs `band 16#FFFFFFFF` and a base-16 rendering | do the fold and the rendering inside the host template — which is why `contentHash` is a `declare fn` and not four lines of `.bp` | `&`, `\|`, `^`, `<<`, `>>` on `Integer`, plus `fn toStringRadix(self: Self, radix: i32) -> string` |
-| Consequence of the row above: `contentHash` cannot run on the wat or BEAM backends | `src/content_hash.bp` as a whole | accept two-target coverage; `cacheKey`, `etag` and `fingerprint` are pure `.bp` and would work everywhere if the hash did | the same |
-| `std/json` has no structured value — `parse`/`stringify` are both `string -> @Result<string, string>` (`json.bp:36,45`) | the 1.0.7 draft's `contentHashObject(obj: any)`, dropped from this front's surface | hash the serialized string the caller already has, and frame multi-part keys with `cacheKey` | a `JsonValue` enum with a walker, so a hash can be taken over a canonical serialization rather than whatever the caller passed |
+| Consequence of the row above: `contentHash` cannot run on the wat or BEAM backends | the content-hash half of `src/hash.bp` | accept two-target coverage; `cacheKey`, `etag` and `fingerprint` are pure `.bp` and would work everywhere if the hash did | the same |
+| `std/json` has no structured value — `parse`/`stringify` are both `string -> @Result<string, string>` (`json.bp:36,45`) | a `contentHashObject(obj: any)` — not in this front's surface | hash the serialized string the caller already has, and frame multi-part keys with `cacheKey` | a `JsonValue` enum with a walker, so a hash can be taken over a canonical serialization rather than whatever the caller passed |
 
 ## Test plan
 
-Inline `test` blocks at the bottom of `src/content_hash.bp`, run by `botopink test --target commonJS`
+Inline `test` blocks at the bottom of `src/hash.bp`, suite `hash:`, run by `botopink test --target commonJS`
 and `--target erlang` from `libs/std/`, and by `zig build test-libs` as part of the ecosystem gate.
 Every test here is deterministic — no clock, no filesystem, no network — which makes this the
 cheapest front in track A to keep green and the one whose failures always mean something.
@@ -263,13 +260,12 @@ backends.
 
 ## Definition of done
 
-- `src/content_hash.bp` exists with `contentHash`, `strongHash`, `cacheKey`, `strongCacheKey`,
-  `etag`, `weakEtag`, `matches` and `fingerprint`.
+- `src/hash.bp` carries `contentHash`, `strongHash`, `cacheKey`, `strongCacheKey`, `etag`,
+  `weakEtag`, `matches` and `fingerprint` below its digests.
 - The two hash functions answer byte-identical output on commonJS and erlang, pinned by literal
   expectations in the tests.
 - No function in the module builds a multi-part key by joining without framing.
-- `pub mod content_hash;` is handed to front 01 and appears in `src/root.bp`.
-- `libs/std/AGENTS.md` names `content_hash.bp`, and the docblock records the `emilia.hashHex`
-  duplication as a later `emilia`-owned change.
+- `libs/std/AGENTS.md`'s `hash` row names the eight functions, and the section comment records the
+  `emilia.hashHex` duplication as a later `emilia`-owned change.
 - Every `// LANGUAGE GAP:` marker in the example appears in the table above.
 - The front's tests are green on its assigned target — here, both.

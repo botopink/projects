@@ -1,21 +1,21 @@
 // examples/test-submodule-pattern-example.bp
 //
 // Demonstrates how a -test submodule (using emilia-test as the concrete example)
-// imports std/asserts, adds domain-specific helpers, and exposes them to consumers.
+// imports std/testing/asserts, adds domain-specific helpers, and exposes them to consumers.
 //
 // This is the shape of modules/emilia-test/src/root.bp in repository/emilia/.
 
 //// emilia-test — test helpers for the emilia library.
 ////
-//// Depends on: std/asserts, emilia (core)
+//// Depends on: std/testing/asserts, emilia (core)
 //// Target: comptime (emilia runs at comptime and emits CSS)
 ////
 //// This module provides:
 //// - Domain-specific assertion helpers for emilia types
 //// - Fixture builders for common emilia values
-//// - Re-exports of std/asserts for convenience
+//// - Re-exports of std/testing/asserts for convenience
 
-import { asserts } from "std";
+import {testing.asserts} from "std";
 import { Token, Element } from "emilia";
 
 // --- Domain-specific assertion helpers ---
@@ -73,7 +73,7 @@ pub fn sampleCss() -> string {
 
 // --- Re-exports for convenience ---
 
-// Consumers can import one module and get both emilia-test helpers and std/asserts.
+// Consumers can import one module and get both emilia-test helpers and std/testing/asserts.
 pub fn truthy(c: bool) -> bool { return asserts.truthy(c); }
 pub fn falsy(c: bool) -> bool { return asserts.falsy(c); }
 pub fn equal<T>(a: T, b: T) -> bool { return asserts.equal(a, b); }

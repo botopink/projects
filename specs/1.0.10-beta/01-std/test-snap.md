@@ -1,17 +1,18 @@
 # std — the preventive snapshot-test map
 
-The `test-snap.md` of track A (`1.0.9-beta/tracks/README.md:22`): the tests std records as
-snapshots, written in `.bp` with `@src()` and `\\` line-strings, and the exact `.snap` each one
-produces. std has no `-test` submodule (`modules.md`), so the helpers here are `snapshots.assert`
-and `snapshots.assertAs` called directly, and every test sits inline at the foot of its own
-`src/*.bp`. All snapshot paths are therefore under `libs/std/src/__snapshots__/`.
+The tests std records as snapshots, written in `.bp` with `@src()` and `\\` line-strings, and the
+exact `.snap` each one produces. std has no `-test` submodule (`modules.md`), so the helpers here
+are `snapshots.assert` and `snapshots.assertAs` called directly, and every test sits inline at the
+foot of its own `.bp`. The path rule puts a snapshot beside the file that owns the test, so the
+root modules record under `libs/std/src/__snapshots__/` and the harness's own tests under
+`libs/std/src/testing/__snapshots__/`.
 
 What is snapshotted and what is not: a snapshot is for a value whose exact text *is* the
 contract — a failure message, a rendered path, an escaped string, a digest. A boolean outcome
 (`isOk`, a round-trip) is an `asserts` call, not a snapshot. The map keeps the two apart so that
 `__snapshots__/` holds evidence and not restatements of `true`.
 
-## `src/asserts.bp` — the messages, pinned
+## `src/testing/asserts.bp` — the messages, pinned
 
 The failure message of every assertion is part of its contract (`asserts-api.md` § *Failure message
 format*). Each is recorded once, so a message cannot drift without a `.new` appearing.
@@ -28,7 +29,7 @@ test "asserts: message ---- equals" {
 }
 ```
 
-→ `src/__snapshots__/asserts/message_equals.snap`
+→ `src/testing/__snapshots__/asserts/message_equals.snap`
 
 ```
 botopink-snap 1
@@ -73,7 +74,7 @@ One such test per function; the table is the full list.
 Every `.snap` above has the header `test: asserts: message ---- <fn>` and `subject: text`; the
 file name lowercases the fn (`slugify`), the header keeps the case.
 
-## `src/snapshots.bp` — the engine's own evidence
+## `src/testing/snapshots.bp` — the engine's own evidence
 
 The engine tests itself against a scratch directory under the host tmpdir, by building a
 `SourceLocation` by hand whose `file` points there, so the package tree is untouched and the three
@@ -87,7 +88,7 @@ test "snapshots: path ---- suite and slug from a test name" {
 }
 ```
 
-→ `src/__snapshots__/snapshots/path_suite_and_slug_from_a_test_name.snap`
+→ `src/testing/__snapshots__/snapshots/path_suite_and_slug_from_a_test_name.snap`
 
 ```
 botopink-snap 1
@@ -104,7 +105,7 @@ test "snapshots: path ---- named second snapshot" {
 }
 ```
 
-→ `src/__snapshots__/snapshots/path_named_second_snapshot.snap`, body
+→ `src/testing/__snapshots__/snapshots/path_named_second_snapshot.snap`, body
 `test/__snapshots__/route/two_tables.after_merge.snap`.
 
 ```bp
@@ -116,7 +117,7 @@ test "snapshots: slug ---- punctuation collapses to one underscore" {
 }
 ```
 
-→ `src/__snapshots__/snapshots/slug_punctuation_collapses_to_one_underscore.snap`, body
+→ `src/testing/__snapshots__/snapshots/slug_punctuation_collapses_to_one_underscore.snap`, body
 `modifiers_hover_on_md_breakpoint`.
 
 ```bp
@@ -127,7 +128,7 @@ test "snapshots: path ---- a name without a suite is refused" {
 }
 ```
 
-→ `src/__snapshots__/snapshots/path_a_name_without_a_suite_is_refused.snap`, body
+→ `src/testing/__snapshots__/snapshots/path_a_name_without_a_suite_is_refused.snap`, body
 `snapshots: test name needs a suite — write "<suite>: <description>"`.
 
 The three filesystem outcomes, each an `asserts` test (no snapshot of a snapshot):
@@ -142,7 +143,7 @@ The three filesystem outcomes, each an `asserts` test (no snapshot of a snapshot
 | `snapshots: engine ---- not a snapshot file` | `<path>` whose first line is `hello` | `isError(r)`; the text starts with `snapshots: not a snapshot file` |
 | `snapshots: engine ---- the header keeps the full test name` | a match, then read `<path>` back | `contains(text, "test: css: modifiers ---- hover on md breakpoint")` |
 
-## `src/mocks.bp` — the verify message
+## `src/testing/mocks.bp` — the verify message
 
 The one text the old library produced on failure is worth pinning, because it is the text a person
 reads when a mock's count is wrong, and its two templates were "kept in step by hand"
@@ -170,7 +171,7 @@ test "mocks: verify message ---- expected exactly one call" {
 keeps, answering the caught message or `""`. The Node and Erlang templates must produce the same
 bytes, which is exactly what one snapshot recorded on both targets proves:
 
-→ `src/__snapshots__/mocks/verify_message_expected_exactly_one_call.snap`
+→ `src/testing/__snapshots__/mocks/verify_message_expected_exactly_one_call.snap`
 
 ```
 botopink-snap 1
@@ -217,30 +218,30 @@ test "escape: jsString ---- a script close tag cannot survive" {
 → `src/__snapshots__/escape/jsstring_a_script_close_tag_cannot_survive.snap`, body
 `\u003c/script>\u003cscript>alert(1)\u003c/script>`.
 
-### `src/content_hash.bp` (03-std-content-hash)
+### `src/hash.bp` — the content-hash half (03-std-content-hash)
 
 ```bp
-test "content_hash: etag ---- quoted djb2 of hello" {
+test "hash: etag ---- quoted djb2 of hello" {
     try snapshots.assert(@src(), etag("hello"));
 }
 ```
 
-→ `src/__snapshots__/content_hash/etag_quoted_djb2_of_hello.snap`, body `"f923099"` (with the
+→ `src/__snapshots__/hash/etag_quoted_djb2_of_hello.snap`, body `"f923099"` (with the
 quotes — they are the value).
 
 ```bp
-test "content_hash: cacheKey ---- framing keeps two part lists apart" {
+test "hash: cacheKey ---- framing keeps two part lists apart" {
     val a = cacheKey(["user:1", "profile"]);
     val b = cacheKey(["user", "1:profile"]);
     try snapshots.assert(@src(), a + "\n" + b);
 }
 ```
 
-→ `src/__snapshots__/content_hash/cachekey_framing_keeps_two_part_lists_apart.snap`
+→ `src/__snapshots__/hash/cachekey_framing_keeps_two_part_lists_apart.snap`
 
 ```
 botopink-snap 1
-test: content_hash: cacheKey ---- framing keeps two part lists apart
+test: hash: cacheKey ---- framing keeps two part lists apart
 subject: text
 
 62d9003d
@@ -251,12 +252,12 @@ subject: text
 lines differing is the front's reason to exist, and the snapshot pins the values on both targets.)
 
 ```bp
-test "content_hash: fingerprint ---- extension stays last" {
+test "hash: fingerprint ---- extension stays last" {
     try snapshots.assert(@src(), fingerprint("app.js", "console.log(1)"));
 }
 ```
 
-→ `src/__snapshots__/content_hash/fingerprint_extension_stays_last.snap`, body `app.45ac5e8a.js`.
+→ `src/__snapshots__/hash/fingerprint_extension_stays_last.snap`, body `app.45ac5e8a.js`.
 
 ### `src/encoding.bp` (01-std-lib-enablement step 3)
 
@@ -268,15 +269,15 @@ test "encoding: percentEncode ---- reserved characters" {
 
 → `src/__snapshots__/encoding/percentencode_reserved_characters.snap`, body `a%20b%26c%3Dd`.
 
-### `src/hmac.bp` (01-std-lib-enablement step 4)
+### `src/hash.bp` — the hmac half (01-std-lib-enablement step 4)
 
 ```bp
-test "hmac: sha256Base64Url ---- of the empty string" {
+test "hash: sha256Base64Url ---- of the empty string" {
     try snapshots.assert(@src(), sha256Base64Url(""));
 }
 ```
 
-→ `src/__snapshots__/hmac/sha256base64url_of_the_empty_string.snap`, body
+→ `src/__snapshots__/hash/sha256base64url_of_the_empty_string.snap`, body
 `47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU`.
 
 ### `src/path.bp`
@@ -293,23 +294,25 @@ test "path: normalize ---- dot and dotdot segments" {
 
 | Module | Not snapshotted | Because |
 |---|---|---|
-| `time`, `clock`, `random` | any value | wall clock and randomness — `asserts` on shape and ordering only (01 § *Test plan*) |
-| `net`, `process`, `fs` | host output | a `.snap` of `ls /` is a `.snap` of the runner's machine |
+| `io/clock`, `io/random` | any value | wall clock and randomness — `asserts` on shape and ordering only (01 § *Test plan*) |
+| `io/net`, `io/process`, `io/fs` | host output | a `.snap` of `ls /` is a `.snap` of the runner's machine |
 | `async` | timings | elapsed-time budgets are `lessThan`, never a literal |
 | `regex` captures | arrays | `deepEquals` against a literal array says the same thing without a file |
 
 ## Directory after this front
 
 ```
-libs/std/src/__snapshots__/
+libs/std/src/testing/__snapshots__/
 ├── asserts/            27 files — the messages
 ├── snapshots/           4 files — the path rule
-├── mocks/               1 file
+└── mocks/               1 file
+
+libs/std/src/__snapshots__/
 ├── escape/              2 files
-├── content_hash/        3 files
+├── hash/                4 files — 3 content hashes, 1 hmac
 ├── encoding/            1 file
-├── hmac/                1 file
 └── path/                1 file
 ```
 
-Forty files, every one committed, none with a `.new` beside it on a green run.
+Forty files, every one committed, none with a `.new` beside it on a green run. No `io/` module
+records a snapshot, so there is no `src/io/__snapshots__/`.

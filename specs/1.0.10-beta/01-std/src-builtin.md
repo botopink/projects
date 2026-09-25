@@ -54,8 +54,7 @@ process's working directory with no further lookup.
 front end (`comptime.zig`, `Env`) never sees it; `file` is already unique inside a package, and the
 `-test` helpers do not need the package name. Adding a field later is **not** additive — a record
 constructor's arity changes and every hand-written `SourceLocation(…)` literal breaks — so the
-four-field record is the decision, and the 1.0.9 contract (`tracks/README.md:29`) already spells
-exactly these four.
+four-field record is the decision.
 
 ## What `fnName` is
 

@@ -1,16 +1,15 @@
-# `std/snapshots` — the snapshot engine
+# `std/testing/snapshots` — the snapshot engine
 
-Step 3 of the front. `import {snapshots} from "std";`. This is the `tracks/std/snapshots.md` that
-`1.0.9-beta/tracks/README.md:26-44` promised; the three rules it fixed are kept verbatim and given a
-mechanism.
+Step 3 of the front. `import {testing.snapshots} from "std";` — only the leaf `snapshots` enters
+scope (decision 107).
 
-## The three rules, restated
+## The three rules
 
 1. `snapshots.path(loc)` = `<dir of loc.file>/__snapshots__/<suite>/<slug>.snap`, where `suite` is
    the text before the first `": "` of the test name and `slug` is the slugified rest.
 2. A mismatch or a missing file writes `<path>.new` and fails the test. Nothing accepts a snapshot
    but a person renaming the `.new` file. **There is no update flag** — no CLI flag, no environment
-   variable, no `botopink.json` key. (1.0.5-beta decision 67.)
+   variable, no `botopink.json` key (decision 67).
 3. Every library, module and submodule owns the `__snapshots__/` beside its own tests and exposes,
    from `<lib>-test`, the `assert<Subject>(loc, …) -> @Result<void, string>` helpers that write them.
 
@@ -84,25 +83,16 @@ is the body.
 | write of `.new` fails | — | `Error("snapshots: cannot write <path>.new: <host error>")` — a full disk is a test failure, not a silent pass |
 
 A person accepts a snapshot by **renaming `<path>.new` to `<path>`** — `mv`, an editor, a review
-tool. That is the whole acceptance protocol. The compiler's own harness additionally records a
-missing snapshot when `BOTOPINK_SNAP_CREATE=1` is set (`utils/snap.zig:139-143`, documented in
-`comptime/tests/AGENTS.md:76`); the std engine does **not** copy that switch, and step 3's acceptance
+tool. That is the whole acceptance protocol (decision 67: the strict side, no knob). The compiler's
+own harness additionally records a missing snapshot when `BOTOPINK_SNAP_CREATE=1` is set
+(`utils/snap.zig:139-143`); the std engine does **not** copy that switch, and step 3's acceptance
 greps the module for any code path that writes `<path>` itself. Whether the compiler harness should
-lose its switch too is a question for the front that owns `utils/snap.zig`, recorded in
-`unification.md`, not here.
-
-## Why not something more permissive
-
-`--update-snapshots` (Jest), `-u`, `UPDATE_SNAPSHOTS=1`, `insta review --accept-all`: every one of
-them lets a run turn a failure into a baseline without a person reading the diff. The failure mode
-is the same each time — a test that started asserting the wrong thing is "fixed" by the flag, and
-the wrong thing is now the evidence. Decision 67 says the strict side by default and no knob; here
-the strict side costs a rename.
+lose its switch too is for the front that owns `utils/snap.zig`, recorded in `README.md` § *Not in this front*.
 
 ## The API
 
 ```bp
-//// std/snapshots — the snapshot engine every `<lib>-test` writes through.
+//// std/testing/snapshots — the snapshot engine every `<lib>-test` writes through.
 
 // The path rule. Pure; every backend.
 pub fn path(loc: SourceLocation) -> string
@@ -133,7 +123,7 @@ re-declares four private cells in the `fs.bp:30-33` shape and writes `dirname`/`
 | `removeFile(p) -> @Result<i32, string>` | `fs.rmSync(p, {force: true})` | `file:delete/1`, `enoent` is `ok` |
 | `exists(p) -> bool` | `fs.existsSync(p)` | `filelib:is_file/1` |
 
-Private, so STD-001 does not fire and `import {snapshots} from "std"` type-checks on beam and wasm;
+Private, so STD-001 does not fire and `import {testing.snapshots} from "std"` type-checks on beam and wasm;
 the four `assert*` are unresolved there at lowering, which does not matter because no test runs
 there. The docblock says so.
 
@@ -151,7 +141,7 @@ snapshot would land in `__snapshots__/<helper's suite>/…` beside the helper's 
 
 ```bp
 //// emilia-test — modules/emilia-test/src/root.bp
-import {snapshots} from "std";
+import {testing.snapshots} from "std";
 import {tokensToCss, emilia, Token} from "emilia";
 
 // The CSS a token list lowers to. `tokensToCss` must be `pub` in emilia core
@@ -213,7 +203,7 @@ file. The `.new` files a red run leaves behind are the review artefact; a green 
 - a `.snap` is reviewed in the same PR as the test that produced it. A `.snap` changed without a
   test or source change in the same diff is the review signal that a baseline moved.
 
-## The two examples from the plan
+## Two examples
 
 ### 1 · `assertJsSingle(@src(), \\ …)` — a `\\` line-string source, snapshotted as JavaScript
 
@@ -245,10 +235,9 @@ async function fetch(x) {
 
 ### 2 · the enum one — `assertCss(@src(), …)` over emilia tokens
 
-The contract's example writes `[.Md([.Hover([.Bg.Color.Red.500])])]` inline. That shape does not
-parse today (`language-gaps.md`: a dot-shorthand path followed by a payload call does not propagate
-the typed-array context inside an array literal — `emilia.bp:498-503`), and `Bg` has `Red.500`, not
-`Color.Red.500` (`tokens.bp:118-123`). The valid spelling binds each level to a typed `val`:
+`[.Md([.Hover([.Bg.Red.500])])]` inline does not parse today (`language-gaps.md`: a dot-shorthand
+path followed by a payload call does not propagate the typed-array context inside an array literal —
+`emilia.bp:498-503`). The valid spelling binds each level to a typed `val`:
 
 ```bp
 test "css: modifiers ---- hover on md breakpoint" {
@@ -292,5 +281,5 @@ full name with its `----` intact (the slug is for the filename, the header is fo
 |---|---|---|---|
 | A std module cannot call another std module | the four private cells duplicate `fs.bp`; `dirname` duplicates `path.bp` | re-declare | the cross-module bare-import fix `01-std-lib-enablement` records |
 | A function cannot forward a `@Result` | every `assert*` wrapper and every `-test` helper | `try inner(); return;` | pass-through `return` |
-| A dot-shorthand payload call inside an array literal does not parse | the contract's own example | typed `val` intermediates (example 2) | let the element type drive resolution through the call |
+| A dot-shorthand payload call inside an array literal does not parse | example 2's token list | typed `val` intermediates (example 2) | let the element type drive resolution through the call |
 | Test bodies run in one process per module, in order | two tests writing the same `.new` in the same run cannot both be seen | `assertNamed` | a runner that isolates tests, or a per-test scratch directory |

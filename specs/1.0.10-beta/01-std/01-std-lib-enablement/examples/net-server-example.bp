@@ -3,20 +3,21 @@
 // A TCP echo server and its client half, written the way an application writes
 // one: bind, accept, read, write, close. This is the primitive under rakun's
 // HTTP server (front 04) and the WebSocket upgrade (front 20) — neither of them
-// can exist until `std/net` does.
+// can exist until `std/io/net` does.
 //
 // Upstream: https://www.erlang.org/doc/apps/kernel/gen_tcp.html
 //           https://www.erlang.org/doc/apps/ssl/ssl.html
 //           https://nodejs.org/api/net.html
 //
-// SERVER SIDE. `std/net` is server-only: it declares an erlang cell and an
+// SERVER SIDE. `std/io/net` is server-only: it declares an erlang cell and an
 // explicit commonJS refusal, so on the js target every call below answers
-// `Error("std/net: server-only")`. See the README's requirements table.
+// `Error("std/io/net: server-only")`. See the README's requirements table.
 //
 // `Listener`, `Socket` and `Peer` come into scope with the module import, the
-// way `Dict` does for `dict` — they are not named in the import list.
+// way `Dict` does for `collections` — they are not named in the import list.
+// Only the leaf `net` enters scope (decision 107).
 
-import {net} from "std";
+import {io.net} from "std";
 
 // Serve one connection: read up to 4096 bytes, write the same bytes back, close.
 // Answers true when the whole exchange completed.
@@ -36,7 +37,7 @@ fn echoOnce(sock: Socket) -> bool {
 fn acceptLoop(listener: Listener, budget: i32) -> i32 {
     var served = 0;
     var attempts = 0;
-    loop (attempts < budget) {
+    while (attempts < budget) {
         attempts = attempts + 1;
         val accepted = net.accept(listener, 30000);
         val completed = case accepted {

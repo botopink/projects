@@ -18,7 +18,7 @@
 //   src/__snapshots__/utility/two_utilities_side_by_side.second.snap
 // and snapshots.md shows the exact bytes of the first two.
 
-import {asserts} from "std";
+import {testing.asserts} from "std";
 import {Token} from "emilia";
 import {assertCss, assertUtility, assertUtilityNamed, assertDeclaration, hoverOnMd, sharedFixtureTokens} from "emilia-test";
 

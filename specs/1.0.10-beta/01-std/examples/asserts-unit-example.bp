@@ -1,6 +1,6 @@
 // Front 01 — std · examples/asserts-unit-example.bp
 //
-// Example 1: `std/asserts` on its own. A test file that imports nothing but
+// Example 1: `std/testing/asserts` on its own. A test file that imports nothing but
 // `asserts` and exercises the whole minimum surface — boolean, equality, nil,
 // result, string, collection, numeric, exception, `fail` — on both the pass and
 // the fail path. Every assertion answers `@Result<void, string>` and is
@@ -10,7 +10,7 @@
 // Runs on commonJS and erlang under `botopink test`. Pure botopink apart from
 // the two private host cells `asserts` keeps for `matches`/`throws`.
 
-import {asserts} from "std";
+import {testing.asserts} from "std";
 
 // A fallible function for the `@Result` assertions. `throw` inside a
 // `#[@result]` body produces the Error; `return` produces the Ok.

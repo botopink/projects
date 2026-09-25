@@ -5,39 +5,30 @@
 **Target:** both — std is the floor under both halves
 **Wave:** 0
 **Depends on:** none
-**Owns:** `src/net.bp`, `src/process.bp`, `src/path.bp`, `src/clock.bp`, `src/random.bp`, `src/regex.bp`, `src/encoding.bp`, `src/hmac.bp`, `src/escape.bp`, `src/root.bp` (exports only)
-**Does not touch:** `src/primitives.bp`, `src/builtins.d.bp`, `src/builtins_fns.d.bp` (the three ambient files), and the std modules it does not own — `time.bp`, `crypto.bp`, `base64.bp`, `querystring.bp`, `url.bp`, `env.bp`, `os.bp`, `fs.bp`, `json.bp`, `http.bp`, `erlang.bp`, `beam.bp`, `dict.bp`, `sets.bp`, `queue.bp`, `order.bp`, `math.bp`, `string_builder.bp`, `asserts.bp`, `unicode.bp`
+**Owns:** two new files — `src/io/net.bp`, `src/escape.bp`; the hmac half of `src/hash.bp`; the codec half of `src/encoding.bp`; additions to `src/path.bp`, `src/io/fs.bp` (`walk`, `glob`), `src/io/clock.bp`, `src/io/random.bp`, `src/regex.bp`, `src/io/process.bp`; `src/root.bp` and `src/io/mod.bp` (exports only). Paths are the final tree of `../modules.md` (decision 106); the files land at `src/<name>.bp` when the front merges and `00-compiler-carry-over/23-std-purity` moves them
+**Does not touch:** `src/primitives.bp`, `src/builtins.d.bp`, `src/builtins_fns.d.bp` (the three ambient files); every function already in the modules it adds to (the readings in `io/clock.bp`, the digests in `hash.bp`, the base64 four in `encoding.bp`, the rand-backed eight in `io/random.bp`, the nine `path` calculations, the five `process` introspections, the six `regex` matchers); the std modules it does not own — `querystring.bp`, `url.bp`, `io/env.bp`, `io/os.bp`, `io/http.bp`, `json.bp`, `erlang.bp`, `beam.bp`, `collections.bp`, `math.bp`, `string_builder.bp`, `unicode.bp`, `async.bp`, `testing/**`
 **Reference:** Erlang/OTP — [`gen_tcp`](https://www.erlang.org/doc/apps/kernel/gen_tcp.html) · [`ssl`](https://www.erlang.org/doc/apps/ssl/ssl.html) · [`crypto`](https://www.erlang.org/doc/apps/crypto/crypto.html) · [`re`](https://www.erlang.org/doc/apps/stdlib/re.html) · [`filelib`](https://www.erlang.org/doc/apps/stdlib/filelib.html) · [`filename`](https://www.erlang.org/doc/apps/stdlib/filename.html) · [`calendar`](https://www.erlang.org/doc/apps/stdlib/calendar.html) · [`uri_string`](https://www.erlang.org/doc/apps/stdlib/uri_string.html). Node.js — [`net`](https://nodejs.org/api/net.html) · [`tls`](https://nodejs.org/api/tls.html) · [`child_process`](https://nodejs.org/api/child_process.html) · [`crypto`](https://nodejs.org/api/crypto.html) · [`path`](https://nodejs.org/api/path.html)
-**Replaces:** new
 
 ---
 
 ## Problem
 
-Every one of the three merged drafts was written as if std already did things std does not do. 1.0.6
-opens a socket in its data-source front and signs a JWT in its security front. 1.0.7 walks a
-directory in its file-router front and escapes HTML in its SSR front. Neither checked. The result is
-that fifty of the fifty-three fronts in this milestone name a primitive in their mechanism section
-that does not exist anywhere in `libs/std/src/`, and would therefore have to grow a private
-`#[@External.Node]` cell of their own — which is exactly what the overview's *Reuse std* rule
-forbids, and exactly what would leave the erlang half of this milestone unimplemented while the
-commonJS half looked finished.
+Fifty of the fifty-three fronts in this milestone name a primitive in their mechanism section that
+does not exist anywhere in `libs/std/src/`, and would otherwise grow a private `#[@External.Node]`
+cell of their own — which the overview's *Reuse std* rule forbids, and which would leave the erlang
+half of this milestone unimplemented while the commonJS half looked finished.
 
-The gap is not uniform, and the interesting part of this front is the audit rather than the code.
-std today has twenty-four modules and several of them are further along than the drafts assumed:
-`path.bp` is a complete posix path calculator written in pure botopink, `regex.bp` already wraps
-`re:run/3` with a capture-carrying `Match` record, `crypto.bp` already has SHA-256 and HMAC-SHA256,
-`time.bp` already reads both the wall clock and the monotonic clock on both targets. What is missing
-is narrower and sharper than "std has nothing": there is no socket at all, no directory walk, no
-child process, no percent-encoding, no constant-time compare, no base64url of a raw digest, and no
-HTML escaping. Those seven absences are what block the milestone.
+The gap is not uniform. `path.bp` is a complete posix path calculator in pure botopink, `regex.bp`
+wraps `re:run/3` with a capture-carrying `Match` record, the digests include SHA-256 and HMAC-SHA256,
+the clock readings cover wall and monotonic time on both targets. What is missing is narrower: there
+is no socket at all, no directory walk, no child process, no percent-encoding, no constant-time
+compare, no base64url of a raw digest, and no HTML escaping. Those seven absences are what block the
+milestone.
 
 Two of them are security requirements rather than conveniences. `escape.html` is what stands between
-the SSR pipeline (front 23) and a stored-XSS hole — a render path that interpolates a database string
-into markup without it is not a pipeline with a missing feature, it is a vulnerability with a
-release date. `hmac.equalsConstantTime` is what stands between the session-cookie check (front 18)
-and a byte-at-a-time signature oracle; `==` on two signature strings is a timing side channel on both
-backends.
+the SSR pipeline (front 23) and a stored-XSS hole. `hash.equalsConstantTime` is what stands between
+the session-cookie check (front 18) and a byte-at-a-time signature oracle; `==` on two signature
+strings is a timing side channel on both backends.
 
 ## Current state
 
@@ -74,8 +65,9 @@ Verified by reading `repository/botopink-lang/libs/std/src/` in full.
   that pre-escaping.
 - **`base64.bp` encodes text, not bytes**: `encode`, `decode`, `encodeUrlSafe`, `decodeUrlSafe`
   (`base64.bp:22-45`), all `string -> string` through UTF-8.
-- **There is no `net.bp`, no `clock.bp`, no `encoding.bp`, no `hmac.bp`, no `escape.bp`.** Nothing in
-  std opens a socket, and nothing in std escapes HTML.
+- **Nothing in std opens a socket, parses a timestamp, hex- or percent-encodes, answers a base64url
+  digest, or escapes HTML** — the surface `io/net.bp`, `io/clock.bp`, `encoding.bp`, `hash.bp` and
+  `escape.bp` carry after this front.
 - **No std module imports another.** Zero `import` lines across all twenty-seven files in
   `src/`. This is structural, not stylistic — see *Mechanism*.
 - **Tests live inline.** Every std module carries its `test` blocks at the bottom of its own source
@@ -113,10 +105,10 @@ is yes.
 | **path** — `split/isAbsolute/basename/dirname/extname/join/normalize/relative/resolve` | 22, 50, 51, 52 | **yes** — `path.bp:24-190`, pure `.bp` | pure `.bp` | pure `.bp` | no |
 | `withoutExtension(p)` | 22, 51, 52 | no | pure `.bp` | pure `.bp` | no |
 | `isInside(parent, child)` — traversal guard | 22, 25 | no | pure `.bp` | pure `.bp` | no |
-| `walk(root) -> @Result<string[], string>` | 22, 50 | no | `filelib:fold_files/5` | `fs.readdirSync(p, {recursive: true})` | no |
+| **fs** (`io/`) — `walk(root) -> @Result<string[], string>` | 22, 50 | no | `filelib:fold_files/5` | `fs.readdirSync(p, {recursive: true})` | no |
 | `glob(pattern, root) -> @Result<string[], string>` | 22, 50 | no | `filelib:wildcard/2` | `fs.globSync` | no |
 | **random** — `float/coin/bool/intInRange/pick/shuffle` | — | **yes** — `random.bp:17-116`, **not** a CSPRNG | `rand:uniform/0` | `Math.random` | no |
-| `secureBytesHex(n)` | 10, 18 | **yes** — `crypto.randomBytes`, `crypto.bp:77` (not owned here) | `crypto:strong_rand_bytes/1` | `crypto.randomBytes` | no |
+| `secureBytesHex(n)` | 10, 18 | **yes** — `randomBytes`, `crypto.bp:77` (in `io/random.bp` after decision 106; not owned here) | `crypto:strong_rand_bytes/1` | `crypto.randomBytes` | no |
 | `secureToken(bytes) -> base64url` | 10, 18 | no | `crypto:strong_rand_bytes/1` + `base64:encode/1` | `randomBytes(n).toString('base64url')` | no |
 | `uuidV4()` | 17, 18 | no | `crypto:strong_rand_bytes(16)` + version/variant rewrite | same | no |
 | **regex** — `matches/replace/replaceAll/splitOn/match/matchAll` | 07, 14, 22 | **yes** — `regex.bp:35-90` | `re:run/3`, `re:replace/4`, `re:split/3` | `RegExp` | no |
@@ -124,11 +116,11 @@ is yes.
 | `captures(pattern, input) -> ?Array<string>` | 14, 22 | no | `re:run(_, _, [{capture, all, binary}])` | `String#match` | no |
 | `namedCaptures(pattern, input) -> Array<#(string, string)>` | 22 | no | `re:inspect/2` + `{capture, all_names, binary}` | named groups | no |
 | `escapeLiteral(s)` | 07, 22 | no | pure `.bp` | pure `.bp` | no |
-| **encoding** — `base64Encode/Decode`, `base64UrlEncode/Decode` | 10, 13, 18 | **yes** — `base64.bp:22-45` (not owned here) | `base64:encode/1`, `base64:decode/1` | `Buffer` | no |
+| **encoding** — `base64Encode/Decode`, `base64UrlEncode/Decode` | 10, 13, 18 | **yes** — `base64.bp:22-45` (the base64 four of `encoding.bp`, under these names; not owned here) | `base64:encode/1`, `base64:decode/1` | `Buffer` | no |
 | `hexEncode(s)` / `hexDecode(s)` | 03, 10 | no | `binary:encode_hex/1`, `binary:decode_hex/1` | `Buffer#toString('hex')` | no |
 | `percentEncode(s)` / `percentDecode(s)` | 13, 22, 25 | no — `querystring.bp:10-15` defers it | `uri_string:quote/1`, `uri_string:unquote/1` | `encodeURIComponent` | no |
 | `formParse(q)` / `formStringify(pairs)` — percent-aware | 07, 24, 25 | partly — `querystring.bp:35,48` is escape-naive | `uri_string:dissect_query/1`, `uri_string:compose_query/1` | pure `.bp` over `percentEncode` | no |
-| **hmac** — `sha256Hex/sha512Hex/md5Hex/hmacSha256Hex` | 03, 10, 18 | **yes** — `crypto.bp:22-38` (not owned here) | `crypto:hash/2`, `crypto:mac/4` | `node:crypto` | no |
+| **hash** — `sha256/sha512/md5/hmacSha256` (hex) | 03, 10, 18 | **yes** — `crypto.bp:22-38` (the digest half of `hash.bp`; not owned here) | `crypto:hash/2`, `crypto:mac/4` | `node:crypto` | no |
 | `sha1Base64(data)` | 20 (WebSocket accept key) | no | `crypto:hash(sha, _)` + `base64:encode/1` | `createHash('sha1').digest('base64')` | no |
 | `sha256Base64Url(data)` | 03, 10 | no | `crypto:hash(sha256, _)` + base64url rewrite | `digest('base64url')` | no |
 | `hmacSha256Base64Url(key, data)` | 10 (JWT), 18 | no | `crypto:mac(hmac, sha256, _, _)` + base64url rewrite | `createHmac(...).digest('base64url')` | no |
@@ -139,8 +131,9 @@ is yes.
 | `jsString(s)` — the `<script>` payload block | 23, 24 | no | pure `.bp` | pure `.bp` | no |
 
 Read down the "Exists today" column and the front's real size appears: nineteen rows are already
-there, thirty-one are not, and the thirty-one cluster into exactly the five new modules plus five
-additions to modules that exist.
+there, thirty-one are not, and the thirty-one cluster into two new files (`io/net.bp`, `escape.bp`)
+plus additions to eight modules that exist (`path`, `io/fs`, `encoding`, `hash`, `io/clock`,
+`io/random`, `regex`, `io/process`).
 
 ## Mechanism
 
@@ -151,12 +144,12 @@ verified by reading the tree rather than assumed.
 twenty-seven files under `src/`. This is not a convention someone could relax: a cross-module bare
 import of an `#[@External.*]` symbol resolves at type level and is `undefined` at run time — the same
 lowering gap that made `emilia` fold its host cells back into `emilia.bp` instead of keeping a
-`stylesheet.bp`. The consequence for this front is concrete and slightly ugly: `clock.bp` cannot call
-`time.nowMillis()`, `hmac.bp` cannot call `crypto.sha256()`, `encoding.bp` cannot call
-`base64.encode()`. Each new module re-declares the host cell it needs. Where that produces a
-duplicate — `hmac.sha256Base64Url` and `crypto.sha256` both call `crypto:hash(sha256, _)` — the
-duplication is in the template string, not in behaviour, and the alternative is a module graph the
-compiler cannot lower.
+`stylesheet.bp`. Decision 106 puts each of this front's additions in the file that already holds
+what it extends — the clock readings and the parser in `io/clock.bp`, the digests and the base64url
+digests in `hash.bp`, the base64 four and the hex/percent codec in `encoding.bp` — so nothing here
+re-declares a sibling's cell. Where two cells in one file call the same host function
+(`sha256Base64Url` and `sha256` both call `crypto:hash(sha256, _)`), the duplication is in the
+template string, not in behaviour.
 
 **Every host call is a `declare fn` with one cell per target.** The shape is fixed by the rest of
 std: a `////` docblock naming both upstream APIs, then a `//` comment per fn explaining the two
@@ -166,7 +159,7 @@ implementation and this front copies it exactly.
 **Failure travels through `#[@result]`, and the template owns the wrapping.** `fs.bp:30-33` is the
 pattern: the Node cell is an IIFE with try/catch answering `{ ok: v }` or `{ error: msg }`, the
 Erlang cell is a `fun` answering `{ok, V}` or `{error, Bin}`, and the botopink signature is
-`-> @Result<T, string>`. Every fallible row in the table above — `net.*`, `path.walk`, `path.glob`,
+`-> @Result<T, string>`. Every fallible row in the table above — `net.*`, `fs.walk`, `fs.glob`,
 `process.run`, `clock.parseIso8601`, `regex.compile`, `encoding.hexDecode`, `encoding.percentDecode`
 — uses it. Nothing in this front returns a sentinel.
 
@@ -178,17 +171,17 @@ constructs. Opaque handles are `pub type Socket(handle: any)` — a single `any`
 port or the file descriptor, so the type system keeps a listener and a socket apart without the
 compiler needing to know what either is.
 
-**Server-only modules carry an explicit refusal on commonJS.** `net` is the one module in this front
-that has no browser meaning and no synchronous Node equivalent — Node's `net` is callback-driven and
-cannot answer `accept` inline. Rather than omit the Node cell and have std's commonJS build red at
-the first call site, `net.bp` declares the commonJS cell as a refusal that answers
-`Error("std/net: server-only")`. That has three properties worth the ugliness: std still compiles for
+**Server-only modules carry an explicit refusal on commonJS.** `io/net` is the one module in this
+front that has no browser meaning and no synchronous Node equivalent — Node's `net` is callback-driven
+and cannot answer `accept` inline. Rather than omit the Node cell and have std's commonJS build red at
+the first call site, `io/net.bp` declares the commonJS cell as a refusal that answers
+`Error("std/io/net: server-only")`. That has three properties worth the ugliness: std still compiles for
 both targets, the test file can *assert the refusal* rather than hoping nobody calls it, and a client
 front that reaches for a socket gets a clear `@Result` error instead of a lowering diagnostic nobody
 reads. This is the only module in track A that does it; every other row above is genuinely dual.
 
-Two modules are pure botopink with no host cell at all — `escape.bp` and the new additions to
-`path.bp`. They compose `String` methods (`replaceAll`, `split`, `slice`, `startsWith`) exactly the
+Two modules are pure botopink with no host cell at all — `escape.bp` and the additions to
+`path.bp`; both sit at the pure root (decision 106). They compose `String` methods (`replaceAll`, `split`, `slice`, `startsWith`) exactly the
 way `path.bp` already does, which is what makes them work on wat and BEAM as well as the two targets
 this milestone cares about. `escape.html` in particular must replace `&` first, or the ampersand it
 introduces for `<` gets re-escaped; that ordering is the whole correctness of the function and the
@@ -197,7 +190,9 @@ test file pins it.
 ## Steps
 
 The order is dependency order and also risk order: the pure modules land first and cannot break
-anything, `net` lands last because it is the one that needs an OTP application started.
+anything, `io/net` lands last because it is the one that needs an OTP application started. Every
+module below is named by its path in the final tree (`../modules.md`); its docblock header is written
+for that path.
 
 ### Step 1 — `escape.bp`
 
@@ -250,10 +245,11 @@ pub fn jsString(s: string) -> string {
 - [ ] `escape.jsString("</script>")` contains no literal `</script>` substring
 - [ ] the module declares no `#[@External.*]` cell and no `import`
 
-### Step 2 — `path.bp` additions
+### Step 2 — `path.bp` and `io/fs.bp` additions
 
-Four functions appended below the existing ones; nothing already in the file changes. `withoutExtension`
-and `isInside` are pure; `walk` and `glob` are the file's first host cells.
+Two pure functions appended to `path.bp` below the existing nine, and two host cells appended to
+`io/fs.bp` — `walk` and `glob` read the disk, so they cannot sit in a root module (decision 106).
+Nothing already in either file changes.
 
 ```bp
 pub fn withoutExtension(p: string) -> string {
@@ -287,14 +283,15 @@ pub declare fn glob(pattern: string, root: string) -> @Result<string[], string>;
 **Acceptance:**
 - [ ] `path.isInside("/app", "/app/blog/page.bp")` is true; `path.isInside("/app", "/app/../etc/passwd")` is false
 - [ ] `path.withoutExtension("page.bp")` answers `page`; `path.withoutExtension("noext")` answers `noext`
-- [ ] `path.walk` on a fixture tree answers the same *set* of relative paths on both targets (order is not asserted — `filelib:fold_files` and `readdirSync` do not agree on it)
-- [ ] `path.glob("**/page.bp", root)` finds a nested `page.bp` on both targets
-- [ ] the nine existing `path` functions are byte-unchanged
+- [ ] `fs.walk` on a fixture tree answers the same *set* of relative paths on both targets (order is not asserted — `filelib:fold_files` and `readdirSync` do not agree on it)
+- [ ] `fs.glob("**/page.bp", root)` finds a nested `page.bp` on both targets
+- [ ] the nine existing `path` functions and the existing `fs` functions are byte-unchanged; `path.bp` still declares no `#[@External.*]` cell
 
 ### Step 3 — `encoding.bp`
 
-Hex, percent-encoding, and the percent-aware form codec. It re-declares base64 rather than importing
-`base64.bp` (see *Mechanism*), so a caller needs one import for the whole wire-format surface.
+Hex, percent-encoding, and the percent-aware form codec, appended below the base64 four
+(`base64Encode`, `base64Decode`, `base64UrlEncode`, `base64UrlDecode`) that the same file holds, so
+a caller needs one import for the whole wire-format surface.
 
 ```bp
 #[@External.Node("""Buffer.from($0, 'utf8').toString('hex')""")]
@@ -323,10 +320,11 @@ pub fn formStringify(pairs: Array<#(string, string)>) -> string {
 - [ ] `encoding.formStringify([#("q", "a b")])` answers `q=a%20b` — the case `querystring.stringify` documents itself as not handling
 - [ ] `encoding.base64UrlEncode` output contains no `+`, `/` or `=`
 
-### Step 4 — `hmac.bp`
+### Step 4 — `hash.bp`, the hmac half
 
 The digests the security fronts actually need: base64url rather than hex, SHA-1 for the WebSocket
-handshake, and a constant-time compare.
+handshake, and a constant-time compare. Appended below the hex digests (`sha256`, `sha512`, `md5`,
+`hmacSha256`) the file already holds; front 03's content hashes follow below these.
 
 ```bp
 #[@External.Node("""require('crypto').createHmac('sha256', $0).update($1).digest('base64url')""")]
@@ -343,17 +341,17 @@ pub declare fn equalsConstantTime(a: string, b: string) -> bool;
 ```
 
 **Acceptance:**
-- [ ] `hmac.hmacSha256Base64Url("key", "The quick brown fox jumps over the lazy dog")` matches the RFC 4231 vector re-encoded as base64url, byte-identical on both targets
-- [ ] `hmac.sha1Base64` reproduces the RFC 6455 §1.3 WebSocket accept-key example
-- [ ] `hmac.sha256Base64Url("")` answers `47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU` on both targets
-- [ ] `hmac.equalsConstantTime` answers false for equal-length-different and for different-length inputs, and never throws
+- [ ] `hash.hmacSha256Base64Url("key", "The quick brown fox jumps over the lazy dog")` matches the RFC 4231 vector re-encoded as base64url, byte-identical on both targets
+- [ ] `hash.sha1Base64` reproduces the RFC 6455 §1.3 WebSocket accept-key example
+- [ ] `hash.sha256Base64Url("")` answers `47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU` on both targets
+- [ ] `hash.equalsConstantTime` answers false for equal-length-different and for different-length inputs, and never throws
 - [ ] a test asserts `equalsConstantTime(x, x)` for a 43-character base64url signature — the exact shape front 10 compares
 
-### Step 5 — `clock.bp`
+### Step 5 — `io/clock.bp` additions
 
-Parsing, civil breakdown, durations and deadlines. The three readings `time.bp` already has are
-re-declared here so a caller scheduling work needs one import rather than two; `time.bp` is not
-edited and its callers are unaffected.
+Parsing, civil breakdown, durations, deadlines and `sleep`, appended below the readings the file
+already holds (`nowMillis`, `monotonicMillis`, `formatIso8601`, `measureMillis`), which are not
+edited. One import covers reading the clock and scheduling against it.
 
 ```bp
 pub type Civil(
@@ -385,11 +383,11 @@ pub fn isExpired(at: i64) -> bool { return nowMillis() > at; }
 - [ ] `clock.isExpired(clock.deadline(clock.seconds(60)))` is false; `clock.isExpired(0)` is true
 - [ ] `clock.sleep(20)` returns after at least 20 monotonic milliseconds on both targets
 
-### Step 6 — `random.bp` additions
+### Step 6 — `io/random.bp` additions
 
-The CSPRNG surface, appended below the existing `rand`-backed functions, which do not change. The
-module docblock gains one sentence saying which half is which — a caller reaching for `float()` when
-they wanted `secureToken()` is the bug this front is trying not to ship.
+The CSPRNG surface, appended below the existing `rand`-backed functions and `randomBytes`, which do
+not change. The module docblock gains one sentence saying which half is which — a caller reaching
+for `float()` when they wanted `secureToken()` is the bug this front is trying not to ship.
 
 ```bp
 #[@External.Node("""require('crypto').randomBytes($0).toString('base64url')""")]
@@ -405,7 +403,7 @@ pub declare fn uuidV4() -> string;
 - [ ] `random.secureToken(32)` answers 43 characters, containing none of `+`, `/`, `=`
 - [ ] two consecutive `random.secureToken(16)` calls differ, on both targets
 - [ ] `random.uuidV4()` matches `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$` on both targets
-- [ ] the existing eight `random` functions are byte-unchanged and `random.seed`/`seededFloat` still round-trip
+- [ ] the existing eight `random` functions and `randomBytes` are byte-unchanged and `random.seed`/`seededFloat` still round-trip
 
 ### Step 7 — `regex.bp` additions
 
@@ -436,7 +434,7 @@ pub declare fn captures(pattern: string, input: string) -> ?Array<string>;
 - [ ] `regex.escapeLiteral(".*")` answers a pattern that matches the literal `.*` and nothing else
 - [ ] the six existing `regex` functions and the `Match` record are unchanged
 
-### Step 8 — `process.bp` additions
+### Step 8 — `io/process.bp` additions
 
 Child processes and signals, appended below the five introspection functions.
 
@@ -461,13 +459,13 @@ say so rather than assume.
 - [ ] `process.runShell("exit 3")` is documented as status-losing on Erlang (`os:cmd/1` answers output only) and the docblock says so
 - [ ] the five existing `process` functions are byte-unchanged
 
-### Step 9 — `net.bp`
+### Step 9 — `io/net.bp`
 
 Last, because it is the only module that needs an OTP application running and the only one that
 refuses one of the two targets.
 
 ```bp
-//// std/net — TCP and TLS sockets. SERVER-ONLY.
+//// std/io/net — TCP and TLS sockets. SERVER-ONLY.
 ////
 //// Reference:
 ////   Erlang — https://www.erlang.org/doc/apps/kernel/gen_tcp.html
@@ -475,7 +473,7 @@ refuses one of the two targets.
 ////   Node   — https://nodejs.org/api/net.html (for the shape only)
 ////
 //// The commonJS cells are explicit refusals answering
-//// `Error("std/net: server-only")`. Node's socket API is callback-driven and
+//// `Error("std/io/net: server-only")`. Node's socket API is callback-driven and
 //// cannot answer `accept` inline, and a browser has no listener at all. The
 //// refusal keeps std compiling for both targets and makes the absence
 //// assertable instead of hopeful.
@@ -485,12 +483,12 @@ pub type Socket(handle: any)
 pub type Peer(host: string, port: i32)
 
 #[@result]
-#[@External.Node("""({ error: 'std/net: server-only' })""")]
+#[@External.Node("""({ error: 'std/io/net: server-only' })""")]
 #[@External.Erlang("""(fun(__P, __B) -> case gen_tcp:listen(__P, [binary, {packet, raw}, {active, false}, {reuseaddr, true}, {backlog, __B}]) of {ok, __L} -> {ok, #{handle => __L}}; {error, __R} -> {error, iolist_to_binary(io_lib:format("~p", [__R]))} end end)($0, $1)""")]
 pub declare fn listen(port: i32, backlog: i32) -> @Result<Listener, string>;
 
 #[@result]
-#[@External.Node("""({ error: 'std/net: server-only' })""")]
+#[@External.Node("""({ error: 'std/io/net: server-only' })""")]
 #[@External.Erlang("""(fun(__L, __T) -> case gen_tcp:accept(maps:get(handle, __L), __T) of {ok, __S} -> {ok, #{handle => __S}}; {error, __R} -> {error, iolist_to_binary(io_lib:format("~p", [__R]))} end end)($0, $1)""")]
 pub declare fn accept(listener: Listener, timeoutMillis: i32) -> @Result<Socket, string>;
 ```
@@ -503,30 +501,35 @@ start `http.bp:54` already uses for `inets`.
 - [ ] on erlang, a test binds an ephemeral port, connects to itself, sends 11 bytes, receives the same 11 bytes, and closes both ends
 - [ ] `net.accept` with a 50 ms timeout and no pending connection answers `Error("timeout")` rather than blocking the test
 - [ ] `net.connect("127.0.0.1", <closed port>, 200)` answers an `Error` naming the refusal
-- [ ] on commonJS, every `net` function answers `Error("std/net: server-only")` — asserted, not assumed
+- [ ] on commonJS, every `net` function answers `Error("std/io/net: server-only")` — asserted, not assumed
 - [ ] `net.peer` of an accepted socket answers the loopback address
 - [ ] the TLS path completes a handshake against a self-signed fixture cert and round-trips a payload
 
-### Step 10 — `root.bp` exports
+### Step 10 — export lines
 
-The last commit of the front, and the only shared file in track A. Five new lines for this front plus
-the two that fronts 02 and 03 hand over:
+The last commit of the front, and the only shared file in track A. On the tree as it stands at the
+merge, the commit appends one `pub mod` line per file this front and fronts 02/03 add (`net`,
+`clock`, `encoding`, `hmac`, `escape`, `async`, `content_hash`). After `23-std-purity` the same
+exports read, in the final registry:
 
 ```bp
-pub mod net;
-pub mod clock;
-pub mod encoding;
-pub mod hmac;
+// src/root.bp — this front's and front 02's root modules; `hash` and `encoding` are already declared
 pub mod escape;
 pub mod async;          // front 02
-pub mod content_hash;   // front 03
+pub mod io;
+
+// src/io/mod.bp — this front's io modules
+pub mod net;
+pub mod clock;
 ```
 
+Front 03 hands over no export line: its functions live in `hash.bp`, which is registered already.
+
 **Acceptance:**
-- [ ] `root.bp` declares all thirty-one modules and the build embeds each without a `build.zig` edit (`libs/std/AGENTS.md`)
-- [ ] `import {net, clock, encoding, hmac, escape} from "std";` resolves from a consumer package
-- [ ] `libs/std/AGENTS.md`'s tree listing names the five new files
-- [ ] fronts 02 and 03 have landed first, so this commit adds their lines rather than waiting on them
+- [ ] the build embeds every registered module without a `build.zig` edit (`libs/std/AGENTS.md`)
+- [ ] `import {escape, encoding, hash, io: {net, clock}} from "std";` resolves from a consumer package
+- [ ] `libs/std/AGENTS.md`'s tree listing names `io/net.bp` and `escape.bp` and lists the added functions on the rows of the eight modules extended
+- [ ] fronts 02 and 03 have landed first, so this commit adds front 02's line rather than waiting on it
 
 ## Examples
 
@@ -544,10 +547,10 @@ pub mod content_hash;   // front 03
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
 | No bitwise operators (`&`, `\|`, `^`, `<<`, `>>`) | `random.uuidV4` must set the version/variant bits; `encoding.hexEncode` would fold nibbles | do the bit work inside the host template, in JS and Erlang | `&`, `\|`, `^`, `~`, `<<`, `>>` on the integer behaviors in `primitives.bp` |
-| No byte/binary type — every host cell marshals through `string` | `hmac.*` cannot take a raw key; `random.secureToken` must answer base64url text rather than bytes; `net.recv` answers a UTF-8 `string` for what is a byte stream | text-encode at the boundary (hex or base64url) and accept that a non-UTF-8 payload is lossy on the Node side | a `bytes` primitive with `length`, `at`, `slice`, `concat`, and `@External` marshalling to an Erlang binary and a JS `Buffer` |
-| A std module cannot call another std module | `clock.bp` re-declares `nowMillis`; `hmac.bp` re-declares SHA-256; `encoding.bp` re-declares base64 | re-declare the host cell in each module | make a cross-module bare import of an `#[@External.*]` symbol lower to the defining module's binding |
-| Declared parameter defaults are never applied | `net.accept(l, timeoutMillis)`, `path.glob(pattern, root)`, `process.run(cmd, args)` all want a default and cannot have one | every call passes every argument | apply defaults at the call site |
-| No `toString(radix)` on the integer behaviors | hex rendering in `encoding`, `hmac` and front 03 | render inside the host template | `fn toStringRadix(self: Self, radix: i32) -> string` on `Integer` |
+| No byte/binary type — every host cell marshals through `string` | `hash.hmacSha256Base64Url` cannot take a raw key; `random.secureToken` must answer base64url text rather than bytes; `net.recv` answers a UTF-8 `string` for what is a byte stream | text-encode at the boundary (hex or base64url) and accept that a non-UTF-8 payload is lossy on the Node side | a `bytes` primitive with `length`, `at`, `slice`, `concat`, and `@External` marshalling to an Erlang binary and a JS `Buffer` |
+| A std module cannot call another std module | nothing in this front any more — decision 106 puts each addition in the file it extends; `io/net.bp`, `io/fs.bp` and `io/process.bp` declare their own cells | one file per name | make a cross-module bare import of an `#[@External.*]` symbol lower to the defining module's binding |
+| Declared parameter defaults are never applied | `net.accept(l, timeoutMillis)`, `fs.glob(pattern, root)`, `process.run(cmd, args)` all want a default and cannot have one | every call passes every argument | apply defaults at the call site |
+| No `toString(radix)` on the integer behaviors | hex rendering in `encoding` and `hash` (both halves) | render inside the host template | `fn toStringRadix(self: Self, radix: i32) -> string` on `Integer` |
 | A closure passed to a host cell is unverified on the Erlang target | `process.onSignal(name, handler)` | leave signals out of the first cut; the CLI polls instead | pin fn-valued `$N` markers in the `@External.Erlang` template grammar |
 
 ## Test plan
@@ -562,34 +565,33 @@ What each module's tests assert:
 
 - `escape.bp`, `path.bp` — pure functions, exact string equality, identical on every backend. These
   are the only modules in the front whose tests are fully deterministic cross-target.
-- `encoding.bp`, `hmac.bp` — published vectors (RFC 4231 for HMAC-SHA256, RFC 6455 §1.3 for the
+- `encoding.bp`, `hash.bp` — published vectors (RFC 4231 for HMAC-SHA256, RFC 6455 §1.3 for the
   WebSocket accept key, the empty-string SHA-256), asserted byte-identical on both targets. A digest
   that differs between targets is a failure, not a platform difference.
-- `clock.bp` — round trips rather than absolutes (`parseIso8601(formatIso8601(t)) == t` to whole
+- `io/clock.bp` — round trips rather than absolutes (`parseIso8601(formatIso8601(t)) == t` to whole
   seconds), plus ordering assertions (`isExpired` before and after a `sleep`). Wall-clock values are
   never asserted directly.
-- `random.bp` — shape and distinctness, never a specific value: length, alphabet, the UUID v4
+- `io/random.bp` — shape and distinctness, never a specific value: length, alphabet, the UUID v4
   pattern, and two draws differing.
 - `regex.bp` — the same pattern and input on both targets must answer the same captures. PCRE and
   `re` agree on the constructs used here; a test that needs a construct they disagree on belongs in
   the front that needs it, with its divergence documented.
-- `process.bp` — `echo` and a missing binary, on both targets. `runShell`'s status-loss on Erlang is
+- `io/process.bp` — `echo` and a missing binary, on both targets. `runShell`'s status-loss on Erlang is
   asserted as the documented behaviour rather than treated as a bug.
-- `net.bp` — **erlang only for the real path**: bind, self-connect, round-trip, close. On commonJS
+- `io/net.bp` — **erlang only for the real path**: bind, self-connect, round-trip, close. On commonJS
   the suite asserts the refusal. This is the one module where one target's coverage is a refusal
   assertion rather than behaviour, and the README says so rather than letting a green commonJS cell
   imply sockets work there.
 
 ## Definition of done
 
-- Five new modules exist (`net`, `clock`, `encoding`, `hmac`, `escape`) and four existing ones gained
-  the functions in the requirements table (`path`, `random`, `regex`, `process`).
+- Two new files exist (`io/net.bp`, `escape.bp`) and eight existing modules gained the functions in
+  the requirements table (`path`, `io/fs`, `encoding`, `hash`, `io/clock`, `io/random`, `regex`,
+  `io/process`).
 - Every row of the requirements table is either implemented, or cited as already existing with its
   file and line.
-- No new module imports another std module; no existing std module was edited outside the four this
-  front owns.
-- `src/root.bp` declares all thirty-one modules, including front 02's `async` and front 03's
-  `content_hash`.
+- No module imports another std module; no function that existed before the front is edited.
+- The export lines of step 10 are in place, including front 02's `async`.
 - `libs/std/AGENTS.md`'s tree listing is updated in the same commit as the files it describes.
 - Every `// LANGUAGE GAP:` marker in this front's examples appears in the table above.
 - The front's tests are green on its assigned target — here, both.

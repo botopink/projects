@@ -4,7 +4,7 @@
 // one after another, renders without the optional widgets when they are down,
 // and puts a time budget on a slow dependency.
 //
-// Upstream: NEXTJS-DOCS.md § 9. Busca de Dados (Fetching)
+// Upstream: NEXTJS-DOCS.md § 9. Data Fetching
 //           https://nextjs.org/docs/app/getting-started/fetching-data
 //           https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
 //
@@ -14,7 +14,7 @@
 // erlang: a future that is already a value cannot be run in parallel with
 // anything. See the README's Mechanism section.
 
-import {async, http, time} from "std";
+import {async, io: {http, clock}} from "std";
 
 // One read. An ordinary `#[@future]` fn: a live Promise on commonJS, an
 // already-resolved value on erlang.
@@ -106,13 +106,13 @@ test "allOf answers input order, not completion order" {
 }
 
 test "allOf runs its tasks concurrently" {
-    val start = time.nowMillis();
+    val start = clock.nowMillis();
     val out = await async.allOf([
         { -> async.delay(60, "a") },
         { -> async.delay(60, "b") },
         { -> async.delay(60, "c") },
     ]);
-    val elapsed = time.nowMillis() - start;
+    val elapsed = clock.nowMillis() - start;
     assert out.length == 3;
     assert elapsed < 150;
 }

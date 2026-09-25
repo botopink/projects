@@ -1,8 +1,8 @@
-# `std/asserts` — the canonical assertion API
+# `std/testing/asserts` — the canonical assertion API
 
-`import {asserts} from "std";` then qualified calls, `try` at the call site. This document is the
-reference every `<lib>-test` submodule builds on; `1.0.9-beta/tracks/README.md:26` named it as
-`tracks/std/asserts.md` and it was never written.
+`import {testing.asserts} from "std";` then qualified calls, `try` at the call site — only the leaf
+`asserts` enters scope (decision 107). This document is the reference every `<lib>-test` submodule
+builds on.
 
 ## The shape of every function
 
@@ -32,7 +32,7 @@ Five rules, each with its reason:
    `at <file>:<line>` say where; the message says which check.
 4. **Pure botopink on the path that runs everywhere.** `!=`, `==`, `.negate()`, `.length()`,
    `.contains()`, `.startsWith()`, `.endsWith()`, `.isOk()`, `.isError()`, `.at()`, `!= null` —
-   the same primitives `content_hash.bp` and `path.bp` compose.
+   the same primitives `hash.bp` and `path.bp` compose.
 5. **No `pub declare fn` in the file.** STD-001 (`comptime/tests/std_target_gating.zig`,
    `infer.zig:85-93`) rejects an `import {…} from "std"` on a target where a *`pub`* `declare fn`
    has no `@External` cell; private cells are not gated. The four functions that need a host —
@@ -124,8 +124,8 @@ the element you extracted with `.at(i)`).
 | `lessThan` | `(actual: i32, bound: i32)` | `actual >= bound` | `asserts.lessThan: value not less` |
 
 `i32` only. A generic `T` cannot be compared with `<` under the current inference, and `f64` callers
-have `approxEquals`. 1.0.9 front 95's `positive`/`negative` are `greaterThan(x, 0)` /
-`lessThan(x, 0)` and are not separate functions.
+have `approxEquals`. `positive`/`negative` are `greaterThan(x, 0)` / `lessThan(x, 0)` and are not
+separate functions.
 
 ### Exceptions
 
@@ -182,12 +182,12 @@ reader can grep the message to the function.
 | beam | yes | pure functions yes; `matches`/`deepEquals`/`throws`/`throwsWith` unresolved at lowering | private cells carry no `@External.Beam`; the docblock names the four |
 | wasm | yes | as beam | `wat` renders no templates (`libs/std/AGENTS.md`) |
 
-"Compiles" means `import {asserts} from "std"` passes STD-001 on that target, which it does because
+"Compiles" means `import {testing.asserts} from "std"` passes STD-001 on that target, which it does because
 the file has no `pub declare fn`. `beam` and `wasm` are not `botopink test` targets
 (`compiler-cli/AGENTS.md` § *`botopink test` output format*), so no test executes there; the
 guarantee that matters is that a library compiled for beam/wasm can still import the module.
 
-## Migration table — old onze and old `asserts.bp` → `std/asserts`
+## Migration table — old onze and old `asserts.bp` → `std/testing/asserts`
 
 Every symbol the two old surfaces exported, and where it is now. "Behaviour" is byte-for-byte unless
 the row says otherwise.
@@ -205,14 +205,14 @@ the row says otherwise.
 | `type AssertError(message, file, line)` | `asserts.bp:57` | **removed** | constructed only by its own test; `@src()` now supplies file/line and the `@Result` channel carries the message |
 | `tryCatch` (private) | `asserts.bp:72` | `tryCatch` (private) | unchanged |
 | `regexMatches` (private) | `asserts.bp:85` | `regexMatches` (private) | unchanged |
-| `eq(v)` | `onze.bp:66` | `mocks.eq(v)` | a **matcher**, not an assertion — 1.0.9 front 95 § 3 filed it under assertions; it pushes onto the matcher stack and belongs with the runtime that reads it |
+| `eq(v)` | `onze.bp:66` | `mocks.eq(v)` | a **matcher**, not an assertion — it pushes onto the matcher stack and belongs with the runtime that reads it |
 | `anyInt()` / `anyString()` | `onze.bp:73-81` | `mocks.anyInt()` / `mocks.anyString()` | matchers — same reason |
 | `atLeastOnce()` / `times(n)` / `never()` | `onze.bp:87-97` | `mocks.atLeastOnce()` … | verification specs — `onze-migration.md` |
 | `onzeKey<T>(v)` | `onze.bp:39` | `asserts.canonical` (private) **and** `mocks.key` (`pub declare fn`) | the same two templates in two files, because a std module cannot call another |
-| — | 1.0.9 front 95 plan | `deepEquals`, `startsWith`, `endsWith`, `isEmpty` (was `empty`), `isNotEmpty` (was `notEmpty`), `lengthIs` (was `hasLength`), `includes`, `between`, `isOk`, `isError` (was `isErr`), `fail` | new; names aligned to the `is`/`Is` convention this document fixes |
-| — | 1.0.9 front 95 plan | `positive`, `negative` | **not shipped** — `greaterThan(x, 0)` / `lessThan(x, 0)` |
-| — | 1.0.9 front 95 plan | `isOkAnd`, `throwsType`, `typeOf` | **not shipped** — need a `case` over `@Result` inside a result body, a typed catch, and a type-name intrinsic respectively; none exists (`language-gaps.md`) |
-| — | 1.0.9 front 95 plan | `setup`, `teardown`, `setupAll`, `teardownAll` | **not shipped** — runner hooks are a toolchain gap (`unification.md`) |
+| — | — | `deepEquals`, `startsWith`, `endsWith`, `isEmpty`, `isNotEmpty`, `lengthIs`, `includes`, `between`, `isOk`, `isError`, `fail` | new; names follow the `is`/`Is` convention this document fixes |
+| — | — | `positive`, `negative` | **not shipped** — `greaterThan(x, 0)` / `lessThan(x, 0)` |
+| — | — | `isOkAnd`, `throwsType`, `typeOf` | **not shipped** — need a `case` over `@Result` inside a result body, a typed catch, and a type-name intrinsic respectively; none exists (`language-gaps.md`) |
+| — | — | `setup`, `teardown`, `setupAll`, `teardownAll` | **not shipped** — runner hooks are a toolchain gap (`README.md` § *Not in this front*) |
 
 ## The inline tests
 

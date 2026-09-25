@@ -3,7 +3,7 @@
 // Signing and verifying an HS256 token, deriving an ETag, and putting a signed
 // value on a URL. These are the three things fronts 10 (security), 18 (session)
 // and 03 (content hash) bottom out in, and none of them can be written against
-// std as it stands: `crypto.hmacSha256` answers hex, RFC 7515 wants base64url of
+// std as it stands: `hash.hmacSha256` answers hex, RFC 7515 wants base64url of
 // the raw digest, and nothing in std compares two signatures in constant time.
 //
 // Upstream: https://datatracker.ietf.org/doc/html/rfc7519  (JWT)
@@ -13,10 +13,10 @@
 //           https://nodejs.org/api/crypto.html
 //
 // SERVER SIDE. Both modules build for either target, but only the server ever
-// holds the signing key — a client front that imports `hmac` has a design error,
-// not a dependency.
+// holds the signing key — a client front that calls `hash.hmacSha256Base64Url`
+// has a design error, not a dependency.
 
-import {encoding, hmac} from "std";
+import {encoding, hash} from "std";
 
 // The JWS signing input: base64url(header) "." base64url(payload).
 fn signingInput(headerJson: string, payloadJson: string) -> string {
@@ -26,11 +26,11 @@ fn signingInput(headerJson: string, payloadJson: string) -> string {
 }
 
 // A complete HS256 token. `hmacSha256Base64Url` answers the base64url of the
-// RAW digest; `crypto.hmacSha256` answers hex, which is a different string and
+// RAW digest; `hash.hmacSha256` answers hex, which is a different string and
 // not the one a JWT verifier anywhere else will accept.
 pub fn signHs256(key: string, headerJson: string, payloadJson: string) -> string {
     val input = signingInput(headerJson, payloadJson);
-    val signature = hmac.hmacSha256Base64Url(key, input);
+    val signature = hash.hmacSha256Base64Url(key, input);
     return input + "." + signature;
 }
 
@@ -46,8 +46,8 @@ pub fn verifyHs256(key: string, token: string) -> bool {
     val header = parts.at(0).unwrapOr("");
     val payload = parts.at(1).unwrapOr("");
     val presented = parts.at(2).unwrapOr("");
-    val expected = hmac.hmacSha256Base64Url(key, header + "." + payload);
-    return hmac.equalsConstantTime(expected, presented);
+    val expected = hash.hmacSha256Base64Url(key, header + "." + payload);
+    return hash.equalsConstantTime(expected, presented);
 }
 
 // The claims half of a verified token, still base64url-encoded on the way in.
@@ -63,10 +63,10 @@ pub fn claimsOf(key: string, token: string) -> string {
     return encoding.base64UrlDecode(payload);
 }
 
-// A strong ETag for a rendered body. Front 03 wraps this as `content_hash.etag`;
+// A strong ETag for a rendered body. Front 03 wraps this as `hash.etag`;
 // the primitive underneath is a digest plus a base64url rendering.
 pub fn etagOf(body: string) -> string {
-    val digest = hmac.sha256Base64Url(body);
+    val digest = hash.sha256Base64Url(body);
     return "\"" + digest + "\"";
 }
 
@@ -75,7 +75,7 @@ pub fn etagOf(body: string) -> string {
 // `_` is safe but a state value containing `&` is not. `encoding.formStringify`
 // is the escaping form, and it is why `encoding` owns the query codec.
 pub fn callbackUrl(base: string, state: string, key: string) -> string {
-    val signature = hmac.hmacSha256Base64Url(key, state);
+    val signature = hash.hmacSha256Base64Url(key, state);
     val pairs = [#("state", state), #("sig", signature)];
     return base + "?" + encoding.formStringify(pairs);
 }
@@ -86,8 +86,8 @@ pub fn verifyCallback(query: string, key: string) -> bool {
     val pairs = encoding.formParse(query);
     val state = valueOf(pairs, "state");
     val presented = valueOf(pairs, "sig");
-    val expected = hmac.hmacSha256Base64Url(key, state);
-    return hmac.equalsConstantTime(expected, presented);
+    val expected = hash.hmacSha256Base64Url(key, state);
+    return hash.equalsConstantTime(expected, presented);
 }
 
 fn valueOf(pairs: Array<#(string, string)>, name: string) -> string {
@@ -99,5 +99,5 @@ fn valueOf(pairs: Array<#(string, string)>, name: string) -> string {
 // concatenated with the RFC 6455 GUID, base64 — not base64url, and not hex.
 pub fn websocketAccept(clientKey: string) -> string {
     val guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    return hmac.sha1Base64(clientKey + guid);
+    return hash.sha1Base64(clientKey + guid);
 }

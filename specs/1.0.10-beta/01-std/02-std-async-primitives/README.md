@@ -6,12 +6,12 @@ trips deep before it renders its first byte
 **Target:** both — std is the floor under both halves
 **Wave:** 0
 **Depends on:** none
-**Owns:** `src/async.bp`
-**Does not touch:** every other std module, including `http.bp` — this front adds combinators over
+**Owns:** `src/async.bp` — at the pure root (decision 106): combinators over `@Future`, no I/O of its own
+**Does not touch:** every other std module, including `io/http.bp` — this front adds combinators over
 `@Future`, it does not change what produces one. `src/root.bp` belongs to front 01; this front hands
-it the line `pub mod async;` and lands first.
+it the line `pub mod async;` and lands first. `00-compiler-carry-over/23-std-purity` moves nothing of
+this front's.
 **Reference:** `NEXTJS-DOCS.md § 9. Busca de Dados (Fetching)` · [Fetching Data — parallel](https://nextjs.org/docs/app/getting-started/fetching-data) · [`Promise.all`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all) · [`Promise.allSettled`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled) · [Erlang processes](https://www.erlang.org/doc/system/ref_man_processes.html)
-**Replaces:** `1.0.7-beta/17-std-async-primitives`
 
 ---
 
@@ -22,18 +22,14 @@ site-wide stats writes three `await`s and pays for all three serially, which is 
 documents as the thing not to do. There is no `all`, no `allSettled`, no `race`, no timeout and no
 delay anywhere in std.
 
-The 1.0.7 draft proposed those four and stopped there, and its proposal has a hole big enough to make
-the front pointless on the target this milestone cares about. `@Future<T>` **lowers eagerly on the
-erlang backend** — `libs/std/src/http.bp:16-18` states it in so many words: "Erlang is eager:
-`@Future<T>` resolves to `T` in the eager-lowering arm documented in `codegen/erlang.zig`, so the
-caller's `await fetch(url)` is identity on that backend." By the time an `Array<@Future<T>>` reaches
-an `all` on erlang, every element has already run, in list order, serially. `all` over it is a map
-over finished values; `race` over it answers the first element rather than the fastest; a timeout
-over it cannot fire. On erlang — the target every server front in this milestone compiles for — the
-1.0.7 design buys nothing.
-
-That is the repair this front carries, and it is a design change rather than a wording change: the
-primary surface takes **unstarted tasks**, not started futures.
+`@Future<T>` **lowers eagerly on the erlang backend** — `libs/std/src/http.bp:16-18`: "Erlang is
+eager: `@Future<T>` resolves to `T` in the eager-lowering arm documented in `codegen/erlang.zig`, so
+the caller's `await fetch(url)` is identity on that backend." By the time an `Array<@Future<T>>`
+reaches an `all` on erlang, every element has already run, in list order, serially. `all` over it is
+a map over finished values; `race` over it answers the first element rather than the fastest; a
+timeout over it cannot fire. On erlang — the target every server front in this milestone compiles
+for — a surface over started futures buys nothing. The primary surface therefore takes **unstarted
+tasks**, not started futures.
 
 ## Current state
 
@@ -76,9 +72,8 @@ future that takes a known amount of time, none of the combinators above can be t
 degrades a page instead of taking it down; it is built on `raceOf` over the task and a `delay`.
 
 Everything here is a `declare fn` with one cell per target, in the `fs.bp` shape. There is no sidecar
-`.mjs` — the 1.0.7 draft proposed one, and std ships exactly one sidecar today
-(`src/sidecars/random.mjs`), for a case where the template genuinely could not carry the state. These
-templates can.
+`.mjs`: std ships exactly one (`src/sidecars/random.mjs`), for a case where the template genuinely
+could not carry the state. These templates can.
 
 ## Steps
 
@@ -193,7 +188,7 @@ pub fn timeout<T>(task: fn() -> @Future<T>, millis: i32, fallback: T) -> @Future
 ### Step 6 — export line and docs
 
 `pub mod async;` handed to front 01 (which owns `src/root.bp`), and the `libs/std/AGENTS.md` tree
-listing gains `async.bp`.
+listing gains `async.bp`. The module stays at the root of the tree in `../modules.md`.
 
 **Acceptance:**
 - [ ] `import {async} from "std";` resolves from a consumer package — `async` is not a keyword

@@ -1,14 +1,13 @@
 # Front 02 — packaging: the module and example structure of every library
 
-**Track:** cross-cutting (A std · B rakun · C jhonstart · D emilia · E onze) — the packaging half of 1.0.9's front 95; the std/asserts half is [`../01-std/`](../01-std/)
+**Track:** cross-cutting (A std · B rakun · C jhonstart · D emilia · E onze) — the packaging half of [`95-ecosystem-package-restructure/`](./95-ecosystem-package-restructure/README.md), beside this file; the std/testing/asserts half is [`../01-std/`](../01-std/)
 **Priority:** high — every library front of this milestone writes into a directory this front creates, and every `-test` submodule and example project is invisible to the gate until the discovery change here lands
 **Target:** none of its own — a structural front; each submodule and example declares the target its library is assigned (`overview.md` § Which target runs what)
 **Wave:** 1, **alongside each library's first front** (rakun 04 · jhonstart 94 · emilia 54 · onze 49), after `01-std` (wave 0)
-**Depends on:** `01-std` (the `onze` directory is free, `std/asserts` and `std/snapshots` exist, `@src()` is specified) · read-only: `00 · 10-cli-residuals` for the discovery carve-out, if needed
+**Depends on:** `01-std` (the `onze` directory is free, `std/testing/asserts` and `std/testing/snapshots` exist, `@src()` is specified) · read-only: `00 · 10-cli-residuals` for the discovery carve-out, if needed
 **Owns:** the rows of `02-packaging` in [`../fronts.md`](../fronts.md): every `repository/<lib>/botopink.json`, every `modules/<lib>/` and `modules/<lib>-test/` skeleton, every `examples/<project>/botopink.json`, `repository/botopink-lang/scripts/test-libs.sh`, `scripts/known-red-libs.txt`, `docs/botopink-json.md`, and — by the carve-out decision 75 names, landed — `modules/manifest/**` and the `manifest.scanRoots` call sites in `lib-test-runner/src/discovery.zig`, `compiler-cli/src/cli/{config,libs}.zig`, `language-server/src/project_graph.zig`, `bpmp/src/manifest.zig`
 **Does not touch:** `libs/std/src/**` (01-std) · the source files inside any submodule (their fronts) · `repository/botopink-lang/modules/compiler-core/**` and `compiler-cli/**` (00) · the per-library cut beyond the three mandatory directories — that is each library's `modules.md`
 **Reference:** `repository/botopink-lang/docs/botopink-json.md` (the manifest, as landed) · `repository/rakun/modules/README.md` and the thirteen `modules/rakun-*/botopink.json` at HEAD · `repository/botopink-lang/modules/compiler-cli/src/cli/{config,libs}.zig` (what a manifest means to the compiler) · `modules/lib-test-runner/src/discovery.zig` (what the gate can see) · `libs/std/AGENTS.md` § Tests · Spring Boot 4 starters (`/home/ericfillipe/develop/spring-boot-4/docs/02-desenvolvendo-com-spring-boot.md` § Starters) · Next.js project structure (`NEXTJS-DOCS.md` § 3) · Tailwind's package cut (`TAILWIND_CSS_DOCS.md` § 2: one core, three integration packages)
-**Replaces:** the packaging half of [`95-ecosystem-package-restructure/`](./95-ecosystem-package-restructure/README.md), carried verbatim beside this file
 
 ---
 
@@ -189,10 +188,10 @@ first-root-wins rule decision 75 retires; two plain packages with one name keep 
 ```bp
 //// <lib>-test — test helpers for <lib>.
 ////
-//// Depends on: std (asserts, snapshots), <lib> (core, { "workspace": true })
+//// Depends on: std (testing.asserts, testing.snapshots), <lib> (core, { "workspace": true })
 //// Target: inherited from the workspace
 
-import { asserts, snapshots } from "std";
+import {testing: {asserts, snapshots}} from "std";
 import { Token, Theme, defaultTheme } from "emilia";
 
 // One assert<Subject>(loc, …) per thing the library produces. The location is
@@ -217,9 +216,9 @@ Rules, each checkable:
   for a module, `examples/<p>/test/__snapshots__/` for an example, `src/__snapshots__/` for a
   library whose tests are inline (`emilia`, `std`). `snapshots.path(loc)` derives it from
   `loc.file`; nothing configures it.
-- **A `-test` member re-exports nothing from std.** A consumer writes `import { asserts } from "std"`
+- **A `-test` member re-exports nothing from std.** A consumer writes `import {testing.asserts} from "std"`
   beside `import { assertCss } from "emilia-test"`.
-- **Mocking is `std/mocks`** (decision 71); a `-test` member keeps only the injection pairing.
+- **Mocking is `std/testing/mocks`** (decision 71); a `-test` member keeps only the injection pairing.
 - **The per-library `test-snap.md` is the map** of every `assert<Subject>`, every test that calls
   it and the `.snap` path it produces; `test-snap-examples.md` does the same for `examples/**`.
 
@@ -289,7 +288,7 @@ LSP.
 
 ### 9. Dependency direction
 
-Carried from 1.0.7's *Cross-repo Coordination* and extended to members. An edge is a
+The rule holds for libraries and members alike. An edge is a
 `dependencies` entry; the graph is acyclic and the gate checks it by building.
 
 ```
@@ -310,20 +309,20 @@ libraries:   emilia ──► jhonstart (Element)          rakun ──► (noth
 | `std` is never listed | It is embedded; listing it is a resolver error |
 | No edge from any library into `repository/botopink-lang/**` | The compiler knows none of this (`overview.md` § Rules) |
 
-Direction between libraries is unchanged from 1.0.7: `emilia` depends on `jhonstart` for `Element`
+Direction between libraries: `emilia` depends on `jhonstart` for `Element`
 (front 48), `onze` depends on the other three, `rakun` and `jhonstart` depend on nothing but std.
 
 ### 10. The `onze` name takeover
 
 The order is fixed by [`../fronts.md`](../fronts.md) § Conflict rules: `01-std` removes
-`repository/onze/` (the mocking library — its predicates are in `std/asserts`, its mocks in
-`std/mocks`, decision 71; the repository is tagged and archived, decision 79); then this front
+`repository/onze/` (the mocking library — its predicates are in `std/testing/asserts`, its mocks in
+`std/testing/mocks`, decision 71; the repository is tagged and archived, decision 79); then this front
 creates `repository/onze/` as the orchestrator workspace with the skeleton members (`onze`,
 `onze-test`, `onze-cli`, `onze-bundler`, `onze-assets`, `onze-release` — `06-onze/modules.md`
 decides whether release is its own); then front 49 fills `modules/onze/src/`. The two never hold
 the directory at once, and `grep -rl onze13 repository` is empty from the first commit of this
-front — as is every `**Owns:**` line and every manifest `name` under `specs/1.0.10-beta/`; the
-carried front 95 and `unification.md` keep the old name as history.
+front — as is every `**Owns:**` line and every manifest `name` under `specs/1.0.10-beta/`; front 95
+(beside this file) and `../unification.md` still carry the old name.
 
 ### 11. The migration each library track does
 
@@ -351,16 +350,16 @@ give them `asserts` and `snapshots` to stand on.
 ## Per-library proposal — the starting point
 
 **To be refined by each library's `modules.md`** (`../03-rakun/modules.md`, `../04-jhonstart/modules.md`,
-`../05-emilia/modules.md`, `../06-onze/modules.md`). This table is what front 95 and the 1.0.9
-ownership rows imply; the library agent owns the final cut and the front → directory table that
+`../05-emilia/modules.md`, `../06-onze/modules.md`). This table is what front 95 and the
+ownership rows of [`../fronts.md`](../fronts.md) imply; the library agent owns the final cut and the front → directory table that
 [`../fronts.md`](../fronts.md) copies.
 
 | Library | Core | `-test` | Domain submodules (proposed) | Cut follows |
 |---|---|---|---|---|
-| **rakun** — the 13 scaffolded dirs are being migrated to the workspace rule in `.tasks/rakun-workspace` (§ 11) | `rakun` — DI, `#[bean]`/`#[configuration]`/`#[value]`, `App`, bootstrap, config/profiles (05), context (06), the file router and SSR spine (22–25, 60–66, 72, 74) | `rakun-test` — `FakeRequest`, `MockMvc`, context reset, broker double (front 19) | `rakun-web` (07, 20, 65, 82) · `rakun-data` (08, 09, 77, 78, 83) · `rakun-security` (10, 79) · `rakun-actuator` + `rakun-actuator-api` (11, 76, 87) · `rakun-cache` (12) · `rakun-client` (13) · `rakun-validation` (14) · `rakun-messaging` (15, 86, 89–91) · `rakun-scheduling` (16, 84) · `rakun-logging` (17) · `rakun-session` (18) · `rakun-hateoas` (21) · and the 1.0.9 rows that name more: `rakun-i18n` (64), `rakun-starters` (73), `rakun-metrics`/`observability` (75), `rakun-devtools` (80), `rakun-release` (81), `rakun-tx` (83), `rakun-mail` (85), `rakun-cli` (88), `rakun-stream` (89), `rakun-rsocket` (92), `rakun-ws` (93) | Spring starters, one per `spring-boot-starter-*` a consumer takes alone |
+| **rakun** — the 13 scaffolded dirs are being migrated to the workspace rule in `.tasks/rakun-workspace` (§ 11) | `rakun` — DI, `#[bean]`/`#[configuration]`/`#[value]`, `App`, bootstrap, config/profiles (05), context (06), the file router and SSR spine (22–25, 60–66, 72, 74) | `rakun-test` — `FakeRequest`, `MockMvc`, context reset, broker double (front 19) | `rakun-web` (07, 20, 65, 82) · `rakun-data` (08, 09, 77, 78, 83) · `rakun-security` (10, 79) · `rakun-actuator` + `rakun-actuator-api` (11, 76, 87) · `rakun-cache` (12) · `rakun-client` (13) · `rakun-validation` (14) · `rakun-messaging` (15, 86, 89–91) · `rakun-scheduling` (16, 84) · `rakun-logging` (17) · `rakun-session` (18) · `rakun-hateoas` (21) · and the `../fronts.md` rows that name more: `rakun-i18n` (64), `rakun-starters` (73), `rakun-metrics`/`observability` (75), `rakun-devtools` (80), `rakun-release` (81), `rakun-tx` (83), `rakun-mail` (85), `rakun-cli` (88), `rakun-stream` (89), `rakun-rsocket` (92), `rakun-ws` (93) | Spring starters, one per `spring-boot-starter-*` a consumer takes alone |
 | **jhonstart** | `jhonstart` — `Element`, hooks, rendering, router (26), server components (28), streaming (30), boundaries (31), metadata (32), elements (94) | `jhonstart-test` — render helpers, element comparison, `assertElement(loc, …)`, `assertHtml(loc, …)` | `jhonstart-html` (the `html` DSL — 95's proposal, the byte-equality tests live there) · `jhonstart-forms` (67 — js-target, so a different target profile) · `jhonstart-router`? — 95 said no (one file, coupled to the core); `04-jhonstart/modules.md` decides | Next.js entry points: one package, a submodule only where the target profile differs (`'use client'` code is commonJS-only) |
 | **emilia** | `emilia` — tokens, every `<section>TokenToCss`, theme (54), preflight (55), cascade/output (56), escape hatches (57), containers (58), compose (59), attributes (48) | `emilia-test` — `assertCss(loc, tokens)`, `assertSheet(loc, …)`, `sampleTheme()`, the contract-4 literal fixture | `emilia-theme`? · `emilia-modifiers`? — 95 said **two submodules only**; the theme and the modifiers are layers of one pipeline and no consumer takes one without the others. Listed because the plan named them; `05-emilia/modules.md` confirms or refuses | Tailwind: one core, integrations apart. The integration here is front 48's html hook, which is part of the core because it is the only consumer |
-| **onze** | `onze` — orchestrator types, config, integration layer (49), the styling seam (69) | `onze-test` — app scaffolding helpers, route-table assertions, `assertRouteTable(loc, …)`, `assertPayload(loc, …)` | `onze-cli` (50) · `onze-bundler` (68) · `onze-assets` (51, 52, 69, 70) · `onze-release` (71) · `onze-pipeline`? — the plan named it; if it is 69's styling seam it belongs in `onze-assets` as 1.0.9's rows already say | Next.js `next` + `create-next-app`: the CLI and the bundler are what a deploy takes without the other |
+| **onze** | `onze` — orchestrator types, config, integration layer (49), the styling seam (69) | `onze-test` — app scaffolding helpers, route-table assertions, `assertRouteTable(loc, …)`, `assertPayload(loc, …)` | `onze-cli` (50) · `onze-bundler` (68) · `onze-assets` (51, 52, 69, 70) · `onze-release` (71) · `onze-pipeline`? — the plan named it; if it is 69's styling seam it belongs in `onze-assets` as the `../fronts.md` rows already say | Next.js `next` + `create-next-app`: the CLI and the bundler are what a deploy takes without the other |
 | **std** | — (not a package tree; `libs/std/src/*.bp` with `pub mod` in `root.bp`) | — (`asserts` and `snapshots` **are** the test surface every `-test` stands on) | — | `01-std/` |
 
 **rakun already has thirteen scaffolded submodules** under `repository/rakun/modules/` —
@@ -368,7 +367,7 @@ ownership rows imply; the library agent owns the final cut and the front → dir
 `rakun-messaging`, `rakun-scheduling`, `rakun-security`, `rakun-session`, `rakun-test`,
 `rakun-validation`, `rakun-web` — each with `botopink.json` (`entry root.bp`, `targets [commonJS,
 erlang]`, `dependencies {rakun: {path: ../../}}`, no `files`), a `src/root.bp` holding a comment, and
-an empty `test/`. `../03-rakun/modules.md` must reconcile them with the 1.0.9 ownership rows, which
+an empty `test/`. `../03-rakun/modules.md` must reconcile them with the `../fronts.md` ownership rows, which
 name eleven more (`rakun-i18n`, `rakun-starters`, `rakun-metrics`, `rakun-observability`,
 `rakun-devtools`, `rakun-release`, `rakun-tx`, `rakun-mail`, `rakun-cli`, `rakun-stream`,
 `rakun-rsocket`, `rakun-ws`, plus `rakun-actuator-api` from contract 5c) and one inconsistency
@@ -377,10 +376,9 @@ name eleven more (`rakun-i18n`, `rakun-starters`, `rakun-metrics`, `rakun-observ
 landed model every one of the thirteen reads `✗ ships nothing` and its `{ "path": "../../" }` is the
 *points at the workspace itself* refusal — `.tasks/rakun-workspace` is the migration (step 2).
 
-## Carried from 1.0.6-beta — module ↔ Spring starter
+## Module ↔ Spring starter
 
-`specs/1.0.6-beta/overview.md` § Mapeamento, re-pointed at 1.0.9 front numbers. It is the
-consumption-boundary argument for the rakun cut, and `repository/rakun/modules/README.md` carries the
+The consumption-boundary argument for the rakun cut; `repository/rakun/modules/README.md` carries the
 same table at HEAD.
 
 | Spring Boot 4 | rakun module | Fronts |
@@ -404,10 +402,9 @@ same table at HEAD.
 | `-webservices` | `rakun-ws` | 93 |
 | Erlang/BEAM runtime (no Spring analogue — the JVM) | `rakun` (core), `src/sidecars/rakun_runtime.erl` | 04 |
 
-## Carried from 1.0.7-beta — which library owns each Next.js surface, and convention over configuration
+## Which library owns each Next.js surface, and convention over configuration
 
-`specs/1.0.7-beta/overview.md` § Mapeamento Next.js → onze13, with `onze13` → `onze` and the 1.0.9
-front numbers. It is the cross-library ownership argument: a feature's package is decided by which
+The cross-library ownership argument: a feature's package is decided by which
 half of the boundary runs it (`overview.md` § Which target runs what), not by which upstream package
 exported it.
 
@@ -439,7 +436,7 @@ exported it.
 | `next.config.js` | `modules/onze/src/config.bp` | onze · 49 |
 | self-hosting, `output: standalone` | OTP release | onze · 71, rakun · 81 |
 
-**Convention over configuration** (1.0.7's rule, absent from 1.0.9's): file-system routing,
+**Convention over configuration:** file-system routing,
 decorator-based metadata and emilia tokens are conventions, not configuration — and so is this
 front's layout. `modules/<lib>/` is the core because of its **name**, `<lib>-test` is the test
 submodule because of its **suffix**, `examples/<p>/test/__snapshots__/` is where a snapshot goes
@@ -496,7 +493,7 @@ front's spec `examples/`. `examples/mock_synthesis.bp` leaves with the old `onze
 
 ### Step 4 — `<lib>-test` filled
 
-Waits on `01-std` steps 2–3 (`std/asserts`, `std/snapshots`). Each `-test` member gains its first
+Waits on `01-std` steps 2–3 (`std/testing/asserts`, `std/testing/snapshots`). Each `-test` member gains its first
 `assert<Subject>(loc, …)` and the `test-snap.md` row that names it; nothing else of this front
 depends on it.
 
@@ -509,7 +506,7 @@ depends on it.
 - [x] `zig build test` green in `repository/botopink-lang` with `modules/manifest/` (step 1, landed)
 - [ ] `zig build test-libs` green with the per-member row list as the acceptance artefact
 - [ ] `botopink format --check` clean in every moved tree
-- [ ] `grep -rl onze13 repository` empty; no `**Owns:**` line, manifest `name` or directory under `specs/1.0.10-beta/` carries `onze13` (history in `unification.md` and the carried front 95 excepted)
+- [ ] `grep -rl onze13 repository` empty; no `**Owns:**` line, manifest `name` or directory under `specs/1.0.10-beta/` carries `onze13` (`../unification.md` and front 95 excepted)
 - [ ] `AGENTS.md` of every directory touched, updated in the same commit
 - [ ] one worktree per repository moved; each lands as a merge into that repository's `feat`, then the meta submodule bump — the seven remotes unified at the end (`overview.md` exit gate)
 

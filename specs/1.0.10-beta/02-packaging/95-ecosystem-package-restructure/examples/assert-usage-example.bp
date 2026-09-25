@@ -1,14 +1,14 @@
 // examples/assert-usage-example.bp
 //
-// Demonstrates std/asserts in practice: boolean, equality, collection, result,
+// Demonstrates std/testing/asserts in practice: boolean, equality, collection, result,
 // string and numeric assertions. This is the shape of a test file that imports
-// only std/asserts — the foundation every -test submodule builds on.
+// only std/testing/asserts — the foundation every -test submodule builds on.
 //
 // LANGUAGE GAP: asserts.setup/teardown are specified but the test runner does
 // not yet call registered hooks. Until that lands, each test invokes its
 // setup manually.
 
-import { asserts } from "std";
+import {testing.asserts} from "std";
 
 // --- Boolean assertions ---
 

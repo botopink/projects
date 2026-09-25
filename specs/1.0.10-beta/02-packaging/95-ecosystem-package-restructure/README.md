@@ -1,16 +1,13 @@
-> Carried from `specs/1.0.9-beta/95-ecosystem-package-restructure/`; the std/asserts half is now specified in [`../../01-std/`](../../01-std/) (`asserts-api.md`, `snapshots.md`, `src-builtin.md`) and the packaging half is governed by [`../README.md`](../README.md). Relative links below are unchanged: the only ones are `./examples/*`.
-
 # Front 95 — Ecosystem Package and Test Infrastructure Restructure
 
-**Track:** cross-cutting (A std · B rakun · C jhonstart · D emilia · E onze)
+**Track:** cross-cutting (A std · B rakun · C jhonstart · D emilia · E onze) — the std/testing/asserts half is specified in [`../../01-std/`](../../01-std/) (`asserts-api.md`, `snapshots.md`, `src-builtin.md`); the packaging half is governed by [`../README.md`](../README.md)
 **Priority:** high — every front in the milestone writes tests against a library, and the library they test through does not yet exist under the name or shape the other fronts assume
-**Target:** both — std/asserts runs on every backend; each `-test` submodule runs on its library's assigned target
-**Wave:** 0 (std/asserts) · 1 (package restructure, parallel with each library's own wave)
-**Depends on:** none for the std/asserts half; the package restructure lands alongside each library's first front
-**Owns:** `libs/std/src/asserts.bp` (expands the existing module), `libs/std/src/root.bp` (no change needed — `pub mod asserts;` already exists); the `modules/` layout and `botopink.json` of every library package
+**Target:** both — std/testing/asserts runs on every backend; each `-test` submodule runs on its library's assigned target
+**Wave:** 0 (std/testing/asserts) · 1 (package restructure, parallel with each library's own wave)
+**Depends on:** none for the std/testing/asserts half; the package restructure lands alongside each library's first front
+**Owns:** `libs/std/src/testing/asserts.bp` (expands the existing module), `libs/std/src/testing/mod.bp` (no change needed — `pub mod asserts;` already exists); the `modules/` layout and `botopink.json` of every library package
 **Does not touch:** the source files inside each library's existing submodules — those are owned by their respective fronts; this front moves directories and renames exports, it does not rewrite behaviour
-**Reference:** the current `repository/onze/src/onze.bp` (assertion and mocking surface) · the `1.0.9-beta` overview tracks E (onze13) · `libs/std/src/asserts.bp` (current assertion primitives)
-**Replaces:** new — but dissolves the old `onze` lib (testing) and renames `onze13` → `onze`
+**Reference:** the current `repository/onze/src/onze.bp` (assertion and mocking surface) · [`../../overview.md`](../../overview.md) track E (the orchestrator, drafted as `onze13`) · `libs/std/src/testing/asserts.bp` (current assertion primitives)
 
 ---
 
@@ -67,9 +64,9 @@ Verified by reading the repository trees.
   `router.d.bp`, `server.d.bp`. No `modules/` directory.
 - **`repository/emilia/`** — flat library. `src/` holds `tokens.bp` and `emilia.bp`. No `modules/`
   directory.
-- **`libs/std/src/asserts.bp`** — 161 lines, nine assertion functions, ten inline `test` blocks.
+- **`libs/std/src/testing/asserts.bp`** — 161 lines, nine assertion functions, ten inline `test` blocks.
   Pure botopink plus two private host cells (`tryCatch`, `regexMatches`). Exported from
-  `root.bp` as `pub mod asserts;`.
+  `testing/mod.bp` as `pub mod asserts;`.
 
 ## Mechanism
 
@@ -98,7 +95,7 @@ repository/<name>/
 
 Three rules govern the pattern:
 
-- **Every package has a `<name>-test` submodule.** It imports `std/asserts` and re-exports
+- **Every package has a `<name>-test` submodule.** It imports `std/testing/asserts` and re-exports
   domain-specific test helpers. A consumer adds `"<name>-test"` to its dev-dependencies and
   gets assertion helpers, fixtures and builders that know the library's types.
 - **Additional submodules are cut at functional boundaries, not at file count.** A submodule
@@ -198,7 +195,7 @@ The current `repository/onze/` holds two kinds of functionality:
 
 | What | Where today | Where it goes |
 |---|---|---|
-| Assertion helpers (`eq`, `anyInt`, `anyString` — matchers used in test bodies) | `onze.bp` | `std/asserts` — these are general-purpose test predicates |
+| Assertion helpers (`eq`, `anyInt`, `anyString` — matchers used in test bodies) | `onze.bp` | `std/testing/asserts` — these are general-purpose test predicates |
 | Mocking decorators (`#[mock]`, `when`, `verify`, `thenReturn`, `thenThrow`) | `onze.bp` + `onze.mjs` | Each library's `-test` submodule re-exports a mocking convention built on `#[mock]` + `#[bean]`; the host runtime moves to the first `-test` submodule that needs it |
 | Verification specs (`times`, `atLeastOnce`, `never`) | `onze.bp` | Same — part of the mocking convention in `-test` |
 
@@ -208,7 +205,7 @@ module tree above. The old mocking code is archived in the milestone's `deferred
 source for the `-test` submodules' mocking conventions — it is not deleted until at least one
 `-test` submodule has absorbed its host runtime.
 
-### 4. `std/asserts` — the full surface
+### 4. `std/testing/asserts` — the full surface
 
 The existing `asserts.bp` is renamed to `assert.bp` and expanded. The table below lists every
 function, marks which ones exist today, and says which are new.
@@ -300,28 +297,28 @@ Every `-test` submodule follows the same shape:
 ```bp
 //// <name>-test — test helpers for the <name> library.
 ////
-//// Depends on: std/asserts, <name> (core)
+//// Depends on: std/testing/asserts, <name> (core)
 //// Target: <the library's assigned target>
 
-import { assert } from "std";
+import {testing.asserts} from "std";
 
 // Domain-specific assertion helpers
 pub fn expectShape(element: Element, tag: string) -> bool {
-    return assert.equal(element.tagName, tag);
+    return asserts.equal(element.tagName, tag);
 }
 
 // Fixture builders
 pub fn fixtureElement(tag: string) -> Element { … }
 
-// Re-export std/asserts for convenience — consumers import one module
-pub fn truthy(c: bool) -> bool { return assert.truthy(c); }
-pub fn equal<T>(a: T, b: T) -> bool { return assert.equal(a, b); }
+// Re-export std/testing/asserts for convenience — consumers import one module
+pub fn truthy(c: bool) -> bool { return asserts.truthy(c); }
+pub fn equal<T>(a: T, b: T) -> bool { return asserts.equal(a, b); }
 // …etc
 ```
 
 Three rules:
 
-- **Import `std/asserts`, do not re-implement.** A `-test` submodule that defines its own
+- **Import `std/testing/asserts`, do not re-implement.** A `-test` submodule that defines its own
   `equal` is a bug — the consumer now has two `equal` functions and no way to know which
   panic message they get.
 - **Expose builders and fixtures, not just assertions.** The value of a `-test` submodule is
@@ -340,10 +337,10 @@ In `libs/std/src/`:
 
 1. Keep the existing `asserts.bp` name and all existing functions byte-unchanged (the ten inline `test` blocks must still pass).
 2. Append the new functions from the table above.
-3. No `root.bp` change needed — `pub mod asserts;` already exists.
+3. No `root.bp` change needed — `testing/mod.bp` already has `pub mod asserts;`.
 
 **Acceptance:**
-- [ ] `import { asserts } from "std";` resolves from a consumer package (already works today)
+- [ ] `import {testing.asserts} from "std";` resolves from a consumer package (already works today)
 - [ ] `asserts.truthy`, `asserts.equal`, `asserts.contains`, `asserts.throws`, `asserts.matches` — all five existing functions, byte-unchanged, tests green
 - [ ] `asserts.deepEqual({a: 1, b: [2, 3]}, {a: 1, b: [2, 3]})` is true; `asserts.deepEqual({a: 1}, {a: 2})` panics with a message naming the `a` field
 - [ ] `asserts.empty([])` is true; `asserts.empty([1])` panics
@@ -511,7 +508,7 @@ The archived `repository/_archived/onze-mock/` is marked as deprecated. Its READ
 banner:
 
 ```
-> **Deprecated.** This library's assertion surface has moved to `std/asserts` (front 95).
+> **Deprecated.** This library's assertion surface has moved to `std/testing/asserts` (front 95).
 > Its mocking decorators (`#[mock]`, `when`, `verify`) are absorbed by each library's
 > `-test` submodule. This archive is preserved for the host runtime implementation and
 > will be removed once the first `-test` submodule has absorbed it.
@@ -525,25 +522,25 @@ banner:
 ## Examples
 
 - [`examples/assert-usage-example.bp`](./examples/assert-usage-example.bp) — demonstrates
-  `std/asserts` in practice: boolean, equality, collection, result, string and lifecycle
-  assertions. Shows the shape of a test file that imports only `std/asserts`.
+  `std/testing/asserts` in practice: boolean, equality, collection, result, string and lifecycle
+  assertions. Shows the shape of a test file that imports only `std/testing/asserts`.
 - [`examples/test-submodule-pattern-example.bp`](./examples/test-submodule-pattern-example.bp)
   — demonstrates how a `-test` submodule (using `emilia-test` as the concrete example)
-  imports `std/asserts`, adds domain-specific helpers, and exposes them to consumers.
+  imports `std/testing/asserts`, adds domain-specific helpers, and exposes them to consumers.
 
 ## Language gaps
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| `asserts.setup`/`teardown`/`setupAll`/`teardownAll` need test-runner hook support | `std/asserts` lifecycle | manual invocation at the top of each `test` block | the test runner calls registered hook functions around each `test` block, in registration order |
-| `asserts.deepEqual` needs structural equality for records | `std/asserts` | serialize both sides to JSON and compare strings (loses field-path information in the failure message) | a compiler-builtin structural equality that walks record fields and array elements, reporting the first differing path |
+| `asserts.setup`/`teardown`/`setupAll`/`teardownAll` need test-runner hook support | `std/testing/asserts` lifecycle | manual invocation at the top of each `test` block | the test runner calls registered hook functions around each `test` block, in registration order |
+| `asserts.deepEqual` needs structural equality for records | `std/testing/asserts` | serialize both sides to JSON and compare strings (loses field-path information in the failure message) | a compiler-builtin structural equality that walks record fields and array elements, reporting the first differing path |
 | A std module cannot call another std module | `asserts.deepEqual` wants to use `json.stringify` for the canonical form | inline the serialization in `assert.bp` (duplicates the host cell) | make a cross-module bare import of an `#[@External.*]` symbol lower to the defining module's binding (same gap front 01 records) |
 | Declared parameter defaults are never applied | `assert.between(value, low, high)` might want a default tolerance | every call passes every argument | apply defaults at the call site |
 
 ## Test plan
 
-The std/asserts tests are inline `test` blocks at the bottom of `libs/std/src/asserts.bp`,
-following the existing std convention (`time.bp:108`, `process.bp:66`). They run on both
+The std/testing/asserts tests are inline `test` blocks at the bottom of `libs/std/src/testing/asserts.bp`,
+following the existing std convention (`io/clock.bp`, `io/process.bp`). They run on both
 targets via `zig build test-libs`.
 
 The package-structure tests are structural: `zig build test-libs` must be green after each
@@ -563,7 +560,7 @@ valid, and every moved file is found at its new path.
 This front touches every package in the ecosystem, but it touches each one *structurally* —
 directory moves and `botopink.json` edits, not behaviour changes. The risk profile is:
 
-- **std/asserts expansion**: the existing `asserts.bp` module gains new functions; no rename,
+- **std/testing/asserts expansion**: the existing `asserts.bp` module gains new functions; no rename,
   no breaking change for existing consumers. The module name `asserts` is unchanged.
 - **`onze` → `onze` rename**: front 49 has not created the `onze13` repository yet, so there
   is no code to rename — only the spec documents update.
@@ -590,7 +587,7 @@ directory moves and `botopink.json` edits, not behaviour changes. The risk profi
 
 ## Definition of done
 
-- `libs/std/src/asserts.bp` exists with every original function
+- `libs/std/src/testing/asserts.bp` exists with every original function
   byte-unchanged and the new functions from the table above implemented and tested.
 - `libs/std/src/root.bp` exports `asserts` (unchanged — no rename).
 - `repository/onze/` is the new orchestrator package with five submodules (`onze`,

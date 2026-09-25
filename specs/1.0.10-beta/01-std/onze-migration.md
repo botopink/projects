@@ -2,7 +2,7 @@
 
 Steps 4 and 5 of the front. `repository/onze` today is a Mockito-style mocking library
 (`botopink.json` `"name": "onze"`, `"description": "Mockito-style mocking + verification for
-botopink unit tests"`). Every track-E front of 1.0.9 already writes `repository/onze/` as the
+botopink unit tests"`). Every track-E front (`../06-onze/`) writes `repository/onze/` as the
 orchestrator's home. This document is the inventory of what the old library is, where each piece
 goes, and the checklist that hands the name over. Measured 2026-09-20 at meta HEAD `b5ceb203`,
 submodule `repository/onze`.
@@ -82,40 +82,26 @@ orchestrator fronts (which mean the *new* onze):
 | Consumer | Line | Change |
 |---|---|---|
 | `repository/onze/src/onze.bp`, `README.md`, `docs.md`, `AGENTS.md`, `examples/**` | — | gone with the repository |
-| `specs/1.0.9-beta/19-rakun-test-utilities/examples/controller-test-example.bp` | 24 | not edited (1.0.9 is closed); its 1.0.10 copy under `03-rakun/19-…/examples/` becomes `import {mocks} from "std";` and `#[mocks.mock]` |
-| `specs/1.0.9-beta/19-rakun-test-utilities/README.md` | 7, 33-35, 43, 177-183, 245, 272, 282 | its 1.0.10 copy: "mocking is `std/mocks`, not a second layer"; the `#[mock]` + `#[bean]` pairing stands |
-| `specs/1.0.9-beta/95-ecosystem-package-restructure/README.md` § 3 | 193-207 | superseded by this document (`unification.md`) |
+| `../03-rakun/19-rakun-test-utilities/examples/controller-test-example.bp` | 24 | becomes `import {testing.mocks} from "std";` and `#[mocks.mock]` |
+| `../03-rakun/19-rakun-test-utilities/README.md` | 7, 35, 169-172, 234, 264, 267, 274 | "mocking is `std/testing/mocks`, not a second layer"; the `#[mock]` + `#[bean]` pairing stands |
 
 No `botopink.json` in `repository/{rakun,jhonstart,emilia,erika}` declares `onze` as a dependency
 (`grep -rn '"onze"' repository/*/botopink.json repository/*/modules/*/botopink.json` — none).
 
 ## Where the assertion surface goes
 
-`std/asserts` — every row of `asserts-api.md` § *Migration table*. Strictly, the old library
+`std/testing/asserts` — every row of `asserts-api.md` § *Migration table*. Strictly, the old library
 exported **no assertion**: `eq`/`anyInt`/`anyString` are matchers (they push onto a stack and return
-a dummy), and `verify` raises from inside a host cell. 1.0.9 front 95 § 3 filed the three matchers
-under "assertion helpers"; the inventory above corrects it. What the old library does contribute to
+a dummy), and `verify` raises from inside a host cell. What the old library does contribute to
 `asserts` is the `onzeKey` cell — the canonical renderer `deepEquals` needed.
 
 ## Where the mocking surface goes
 
-Two candidates were on the table (1.0.9 front 95 § 3 chose the second):
-
-| | `std/mocks` — one module in std | each `<lib>-test` submodule |
-|---|---|---|
-| copies of the runtime | one | one per library that mocks — rakun-test first, then jhonstart-test the day a hook test needs a double |
-| the Erlang and Node templates "kept in step by hand" (`onze/AGENTS.md`) | one pair | a pair per copy, drifting |
-| a library's tests depending on another library's `-test` for mocking | never | jhonstart-test → rakun-test, or a second copy |
-| `#[mock]` reachable from a plain project with no framework | yes — `import {mocks} from "std"` | no |
-| principle *no lib-specific code in core* | std is a library, not the compiler; the runtime is plain botopink + `@Decl` + `@emit` + host cells, exactly as it is today | same |
-| principle *one place, no drift* (decision 67 as applied to duplication) | satisfied | violated by construction |
-| what `-test` submodules still own | the **pairing** — how a mock is injected into *their* library (`#[mocks.mock]` + `#[bean]` for rakun, front 19 § 8) | the same pairing plus a runtime |
-
-**Recommendation: `std/mocks`.** The runtime is library-agnostic, small (one file, no sidecar), and
-already dual-target. The `-test` submodules keep what is genuinely theirs: the injection pattern,
-documented and tested in each. 1.0.9 front 95's phrase "the host runtime moves to the first `-test`
-submodule that needs it" would make rakun-test the mocking library of the ecosystem by accident of
-order.
+`std/testing/mocks` (decision 71; decision 106 sets the path): one copy of the runtime, in std, next
+to `asserts` — library-agnostic, one file, no sidecar, dual-target, reachable from a plain project
+with no framework (`import {testing.mocks} from "std"`). The `-test` submodules own the **pairing**:
+how a mock is injected into *their* library (`#[mocks.mock]` + `#[bean]` for rakun, front 19 § 8),
+documented and tested in each.
 
 **No sidecar.** `onze.mjs` exists because the recorder needs mutable, identity-based state. The
 Erlang side never needed a sidecar — it puts the same tables in the process dictionary inside the
@@ -123,11 +109,13 @@ template. The Node side can do the same with `globalThis`, as `emilia.bp:24` doe
 `(globalThis.__bp_mocks ||= {…})`. Every `onze.mjs` function is under twenty lines and becomes the
 body of an IIFE in the matching `@External.Node` template. std then ships exactly one sidecar, as it
 does today (`sidecars/random.mjs`), and `mocks` is subject to STD-001 like any std module: its cells
-are `pub declare fn` with Node and Erlang templates, so `import {mocks} from "std"` is refused on
+are `pub declare fn` with Node and Erlang templates, so `import {testing.mocks} from "std"` is refused on
 beam and wasm — honestly, since no test runs there.
 
 **Decorator resolution.** `#[mock]` today resolves the bare name `mock` imported from `"onze"`.
-With the decorator in std, the consumer writes `import {mocks} from "std";` and `#[mocks.mock]`.
+With the decorator in std, the consumer writes `import {testing.mocks} from "std";` and
+`#[mocks.mock]` — the leaf `mocks` is what enters scope (decision 107), so the annotation, `mocks.when`
+and `mocks.verify` are unchanged by the path.
 The parser accepts the dotted form (`parser.zig:899-902` reads an `.Ident` chain and lands
 `"mocks.mock"` as the annotation name — the same path `@External.Erlang` takes). Whether the
 decorator lookup resolves a qualified std name is the one compiler question step 4 carries; if it
@@ -138,15 +126,14 @@ one cross-module form that lowers today (`emilia/src/root.bp` note; `libs/std/AG
 
 ## Removing the repository and reusing the directory
 
-The 1.0.9 plan (`95` step 2) moved the old library to `repository/_archived/onze-mock/`. This front
-does not: a checked-out directory is scanned by `zig build test-libs`, read by every `grep -rn` in a
-gate, and is one more `AGENTS.md` to keep true. The old code is preserved where git preserves
-things — in its own repository, tagged.
+The old code is preserved where git preserves things — in its own repository, tagged — and not
+under `repository/_archived/`: a checked-out directory is scanned by `zig build test-libs`, read by
+every `grep -rn` in a gate, and is one more `AGENTS.md` to keep true.
 
 | # | Step | Where | Acceptance |
 |---|---|---|---|
-| 1 | `std/mocks` and the `asserts` migration are merged and green (step 4 above) | `libs/std` | `botopink test` + `--target erlang` green; the eight old tests pass in their new home |
-| 2 | In `botopink/onze` (the old repository): tag the last commit `mocking-lib-final`, add a README banner naming `std/mocks` and `std/asserts` as the successors, push, archive the repository on the remote | old remote | the tag resolves; the repository is read-only |
+| 1 | `std/testing/mocks` and the `asserts` migration are merged and green (step 4 above) | `libs/std` | `botopink test` + `--target erlang` green; the eight old tests pass in their new home |
+| 2 | In `botopink/onze` (the old repository): tag the last commit `mocking-lib-final`, add a README banner naming `std/testing/mocks` and `std/testing/asserts` as the successors, push, archive the repository on the remote | old remote | the tag resolves; the repository is read-only |
 | 3 | Front 49 creates the orchestrator repository under the name `onze` on the remote (`botopink/onze` if the old one was renamed first — e.g. to `botopink/onze-mocking` — otherwise a fresh name the `.gitmodules` `url` points at) | remote | `repository/onze/botopink.json` reads `"name": "onze"` |
 | 4 | Re-point the submodule: `.gitmodules` `[submodule "repository/onze"] url = <orchestrator url>`, `git submodule sync`, check out the orchestrator's `feat` at `repository/onze` | meta | `git submodule status` shows the orchestrator's commit at `repository/onze` |
 | 5 | `zig build test-libs` reads an `onze` cell for the orchestrator, none for the old library | `repository/botopink-lang` | green |
@@ -157,27 +144,24 @@ at. That is what "the directory name is then reused" means in practice.
 
 ## The `onze13 → onze` rename checklist
 
-1.0.9 already did most of this at the spec level: the track-E fronts are `49-onze-stand-up` …
-`53-onze-example-app`, `68-onze-client-bundle` … `71-onze-release-packaging`, and their **Owns**
-lines read `repository/onze/…`. What remains:
+The track-E fronts are `49-onze-stand-up` … `53-onze-example-app`, `68-onze-client-bundle` …
+`71-onze-release-packaging`, and their **Owns** lines read `repository/onze/…`. What remains:
 
 | Where | `onze13` today | Action |
 |---|---|---|
-| `specs/1.0.9-beta/{49,50,51,52,53}-onze-*/README.md` **Replaces:** lines | `1.0.7-beta/01-onze13-stand-up` etc. | historical — stays (they name the 1.0.7 directories, which are called that) |
-| `specs/1.0.9-beta/49-onze-stand-up/README.md:293` | prose | stays (1.0.9 is closed) |
-| `specs/1.0.9-beta/overview.md:80`, `:220`; `95-…/README.md` | "the orchestrator drafted as `onze13`" | stays; `unification.md` here records the takeover as done |
-| `specs/1.0.10-beta/06-onze/**` | none expected | `grep -rn onze13 specs/1.0.10-beta/` finds only **Replaces:** lines and `unification.md` |
+| `../02-packaging/95-ecosystem-package-restructure/README.md`, `../overview.md` | "the orchestrator drafted as `onze13`" | reads `onze` once the takeover lands |
+| `../06-onze/**` | none | nothing |
 | `repository/onze/botopink.json` | the old library's `"name": "onze"` | becomes the orchestrator's `"name": "onze"` (step 4 of the swap) |
 | `repository/onze/{README,AGENTS,docs}.md` | the mocking docs | the orchestrator's (front 49 writes them) |
 | `import {…} from "onze"` in the 1.0.10 copies of fronts 49–53, 68–71 | already `onze` | nothing |
-| `import {mock, …} from "onze"` (mocking) | front 19's example | `import {mocks} from "std"` |
+| `import {mock, …} from "onze"` (mocking) | front 19's example | `import {testing.mocks} from "std"` |
 | `.gitmodules` | old remote | orchestrator remote (swap step 4) |
-| `specs/1.0.9-beta/fronts.md`, `overview.md` Track E headers | already `onze` | nothing |
+| `../fronts.md`, `../overview.md` Track E headers | already `onze` | nothing |
 
-## `libs/std/src/mocks.bp` — the shape
+## `libs/std/src/testing/mocks.bp` — the shape
 
 ```bp
-//// std/mocks — Mockito-style mocks over a `behavior`: `#[mocks.mock]` synthesizes
+//// std/testing/mocks — Mockito-style mocks over a `behavior`: `#[mocks.mock]` synthesizes
 //// the double, `when(...)` stubs, `verify(...)` checks call counts.
 ////
 //// Lifted 100 % from the retired `onze` library (`botopink/onze`, tag
@@ -214,7 +198,7 @@ pub fn mock(comptime decl: @Decl)
 A consumer:
 
 ```bp
-import {asserts, mocks} from "std";
+import {testing: {asserts, mocks}} from "std";
 
 #[mocks.mock]
 behavior UserRepo {

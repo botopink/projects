@@ -2,8 +2,8 @@
 //
 // Example 2, part 1: a dedicated test submodule. This file is the shape of
 // `repository/emilia/modules/emilia-test/src/root.bp` — the `<lib>-test`
-// submodule every library gets (1.0.9 front 95 § 5; 1.0.10 05-emilia/modules.md).
-// It builds domain helpers on `std/asserts` + `std/snapshots` and exposes them
+// submodule every library gets (05-emilia/modules.md).
+// It builds domain helpers on `std/testing/asserts` + `std/testing/snapshots` and exposes them
 // to the tests of emilia core and of emilia's consumers.
 //
 // Manifest beside it (`modules/emilia-test/botopink.json`):
@@ -11,7 +11,7 @@
 //     "targets": ["commonJS", "erlang"],
 //     "dependencies": { "emilia": { "path": "../emilia" } } }
 //
-// Depends on: std/asserts, std/snapshots, emilia (core).
+// Depends on: std/testing/asserts, std/testing/snapshots, emilia (core).
 // Target: commonJS and erlang — the two `botopink test` targets.
 //
 // LANGUAGE GAP: `tokensToCss` is private in emilia core today (`emilia.bp:102`);
@@ -25,7 +25,7 @@
 //// `@src()` written here would name this file and this fn, and every
 //// snapshot would land beside this module instead of beside the test.
 
-import {asserts, snapshots} from "std";
+import {testing: {asserts, snapshots}} from "std";
 import {tokensToCss, emilia, Token} from "emilia";
 
 // ── snapshot helpers ───────────────────────────────────────────────────────

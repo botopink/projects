@@ -9,17 +9,18 @@
 //           https://www.erlang.org/doc/apps/stdlib/filename.html
 //           https://www.erlang.org/doc/apps/stdlib/filelib.html
 //
-// SERVER SIDE. `path` is pure botopink and runs on every backend; `process.run`
-// carries both an erlang and a commonJS cell, so the CLI works under `node` and
-// under the BEAM.
+// SERVER SIDE. `path` is pure botopink and runs on every backend; `fs.walk` and
+// `process.run` carry both an erlang and a commonJS cell, so the CLI works under
+// `node` and under the BEAM. The two that touch the disk and the process table
+// come from `io/` (decision 106); `path` stays at the pure root.
 
-import {path, process} from "std";
+import {path, io: {fs, process}} from "std";
 
-// Every `page.bp` under `root`. `path.walk` is the recursive directory walk
+// Every `page.bp` under `root`. `fs.walk` is the recursive directory walk
 // front 22 cannot exist without — today std can read a directory but not
 // descend into it.
 fn pageFiles(root: string) -> string[] {
-    val walked = path.walk(root);
+    val walked = fs.walk(root);
     val all = walked.unwrapOr([]);
     return all.filter({ p -> path.basename(p) == "page.bp" });
 }
