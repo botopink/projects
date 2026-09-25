@@ -341,11 +341,11 @@ pub declare fn equalsConstantTime(a: string, b: string) -> bool;
 ```
 
 **Acceptance:**
-- [ ] `hash.hmacSha256Base64Url("key", "The quick brown fox jumps over the lazy dog")` matches the RFC 4231 vector re-encoded as base64url, byte-identical on both targets
-- [ ] `hash.sha1Base64` reproduces the RFC 6455 §1.3 WebSocket accept-key example
-- [ ] `hash.sha256Base64Url("")` answers `47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU` on both targets
-- [ ] `hash.equalsConstantTime` answers false for equal-length-different and for different-length inputs, and never throws
-- [ ] a test asserts `equalsConstantTime(x, x)` for a 43-character base64url signature — the exact shape front 10 compares
+- [x] `hash.hmacSha256Base64Url("key", "The quick brown fox jumps over the lazy dog")` matches the RFC 4231 vector re-encoded as base64url, byte-identical on both targets
+- [x] `hash.sha1Base64` reproduces the RFC 6455 §1.3 WebSocket accept-key example
+- [x] `hash.sha256Base64Url("")` answers `47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU` on both targets
+- [x] `hash.equalsConstantTime` answers false for equal-length-different and for different-length inputs, and never throws
+- [x] a test asserts `equalsConstantTime(x, x)` for a 43-character base64url signature — the exact shape front 10 compares
 
 ### Step 5 — `io/clock.bp` additions
 
