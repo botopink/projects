@@ -18,7 +18,6 @@ and no `.mjs`
 **Reference:** `NEXTJS-DOCS.md § 19. Route Handlers (API)` ·
 <https://nextjs.org/docs/app/getting-started/route-handlers-and-middleware> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/route>
-**Replaces:** `1.0.7-beta/11-rakun-route-handlers`
 
 ---
 
@@ -297,41 +296,3 @@ asserted from the CLI suite (front 50) and from front 22's scan, following the p
 - `repository/rakun/AGENTS.md` names `route_handler.bp`, the verb set and the `page`/`route`
   exclusivity rule.
 - The front's tests are green on its assigned target — here, erlang.
-
-## Carried from 1.0.7-beta F11 rakun-route-handlers
-
-Source: `specs/1.0.7-beta/11-rakun-route-handlers/README.md` and `specs/1.0.7-beta/examples-bp.md § F11`.
-Items below are absent from the 1.0.9 text above; items the merge already covers elsewhere are listed
-at the end with the front that holds them.
-
-### Reference rows
-
-| 1.0.7 reference | 1.0.9 status |
-|---|---|
-| `[Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers)` (header, line 3) | 25 cites the renamed page `getting-started/route-handlers-and-middleware`; same content |
-
-### Requirements and API names (quoted)
-
-| # | 1.0.7 item | Where in 1.0.7 | Note |
-|---|---|---|---|
-| 1 | Export-name convention: "Exports `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS` functions · Each receives `Request` and returns `Response`" — `#[@future] pub fn GET(request: Request) -> @Future<Response>` | Step 1, Mechanism | superseded by: 25 § Seven decorators ("The export-name convention (`export function GET`) has no botopink analogue … The verb goes in the marker instead") |
-| 2 | "File router (F14) detects `route.bp` files and registers them" — `pub fn scanRouteHandlers(appDir: string) { // Find all route.bp files // Register each with the appropriate HTTP method }` in `file_router.bp`; acceptance "`route.bp` files are detected · HTTP methods are registered" | Steps 1–2 | superseded by: 22 § Problem (registration-driven; no runtime load by path) and 25 § Seven decorators (`rkAppRegisterHandler("GET", "api/posts", listPosts)`) |
-| 3 | `Response.json(posts)` / `Response.created(post)` with a non-string argument; `Response.json(json.stringify(posts))` over an array | Mechanism, examples | 25 § Writing the response: `HandlerResponse.json(body: string)`; `std/json.stringify` is `string -> @Result<string, string>` (25 § Current state), so `json.stringify(posts)` over a record array has no 1.0.9 spelling |
-| 4 | `val body = await request.json();` — a JSON accessor on `Request` | Mechanism, examples | 25 § Reading the request: free fn `bodyJson(req) -> @Result<string, string>` returning the raw text |
-| 5 | Acceptance: "Route handlers can return JSON, text, redirects" | Step 3 | JSON/text → 25 Step 3; redirect from a handler → 63 § Where a signal becomes a response ("a route handler | the same status codes, with no boundary rendering"). `HandlerResponse` itself has no redirect builder |
-| 6 | Acceptance: "Route handlers can access request params, query, headers, body" | Step 3 | params/body → 25 Step 2; headers → 62 `headers()`; `queryAll(req)` → 25 § Reading the request |
-| 7 | Test: `test "route.bp files are detected" { // Mock file system with route.bp // Verify handlers are registered }` | Step 5 | superseded by: 25 § Test plan (registration is a module-load fact; scan failures live in the CLI suite, front 50) |
-| 8 | Gate: "Commit on `fix/rakun-route-handlers`" | Gate | Branch-naming convention; 1.0.9 fronts name no branch |
-| 9 | Blast radius: "File router updated to detect `route.bp` files" | Blast radius | Not carried; see row 2 |
-
-### Example material (quoted from `examples-bp.md § F11`)
-
-Carried verbatim to [`examples/verb-exports-carried-example.bp`](./examples/verb-exports-carried-example.bp). The `GET` list / `POST` create / dynamic `[id]` GET are covered by [`examples/route-handler-example.bp`](./examples/route-handler-example.bp) in the 1.0.9 shape; the `DELETE` handler (`return Response(status: 204, body: "");` → 25's `HandlerResponse.noContent()`) has no 1.0.9 example and is the reason the file exists. The verb-as-export-name spelling is marked as a language gap in the file (no export-name reflection, no `@Decl` source location — 25 § Seven decorators, 22 § Language gaps).
-
-### Covered elsewhere (not carried)
-
-- "Coexists with `page.bp` in the same segment (but not at the same level)" / "A route segment can have either `page.bp` OR `route.bp`, not both" / "Clear error if both exist" → 22 Step 5, 25 Step 5.
-- Tree `app/blog/page.bp → HTML · app/api/posts/route.bp → JSON` → 22 examples header, 25 example header.
-- "Route handlers are the file-based equivalent of `#[restController]`. They coexist with controllers — you can use either pattern." → 25 § Problem ("That is Spring's model, and it stays").
-- "Route handlers are async because they may need to fetch data." → 25 Step 1 ("A handler that is not `#[@future]` fails").
-- `Response.notFound()` on a missing param → 25 example `showPost`.

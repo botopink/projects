@@ -4,11 +4,10 @@
 **Priority:** medium — a security decision nobody recorded cannot be reviewed, and an HTTP exchange log is the cheapest production-debugging tool there is; both are missing and neither is anyone else's work
 **Target:** erlang (server)
 **Wave:** 6
-**Depends on:** 11 (endpoint infrastructure hosts the two endpoints), 10 (publishes the authentication and authorization events), 07 (the filter chain the recorder sits in), 76 (default-deny exposure and access control over both endpoints), 08 (the durable repository arm), 01/std `time` (timestamps)
+**Depends on:** 11 (endpoint infrastructure hosts the two endpoints), 10 (publishes the authentication and authorization events), 07 (the filter chain the recorder sits in), 76 (default-deny exposure and access control over both endpoints), 08 (the durable repository arm), 01/std `io.clock` (timestamps)
 **Owns:** `modules/rakun-actuator/src/audit/**`, `modules/rakun-actuator/src/exchanges/**`, `modules/rakun-actuator/test/audit/**`, `modules/rakun-actuator/test/exchanges/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. Inside `modules/rakun-actuator/`, everything outside `src/audit/**` and `src/exchanges/**` belongs to front 11 or front 76 and is read-only here.
 **Reference:** `09-actuator.md § Auditing` · `§ HTTP Exchanges` · `§ Endpoints` (`auditevents`, `httpexchanges`) · https://docs.spring.io/spring-boot/reference/actuator/auditing.html · https://docs.spring.io/spring-boot/reference/actuator/tracing.html
-**Replaces:** new
 
 ---
 
@@ -42,7 +41,7 @@ metrics; the metrics front counts and times; neither answers *who* or *what was 
 - `repository/rakun/src/http.bp:35-43` — `Request` exposes `method`, `path`, `param`, `query`,
   `header` and `body`, all returning plain strings. That is enough to record an exchange and it is
   frozen, so the recorder reads it and adds nothing to it.
-- `libs/std/src/time.bp:56` — `time.nowMillis() -> i64` and `time.formatIso8601(epochMillis)` exist
+- `libs/std/src/time.bp:56` — `time.nowMillis() -> i64` and `time.formatIso8601(epochMillis)` exist today (`clock.nowMillis` and `clock.formatIso8601` under `io.clock`, decision 106)
   today; this front needs no new clock primitive.
 - `libs/std/src/json.bp:9-16,36` — `json.parse` is `string -> @Result<string, string>` with no
   structured walker. That single fact shapes the event model below.
@@ -298,3 +297,4 @@ There is no commonJS row. This front is server-only by the milestone's target sp
 - Both language gaps above appear as `// LANGUAGE GAP:` markers in the examples and in a `specs/1.0.10-beta/` spec.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the surface in the same commit.
 - The front's tests are green on erlang.
+

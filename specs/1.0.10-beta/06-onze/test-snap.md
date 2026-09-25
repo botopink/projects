@@ -716,7 +716,7 @@ test "refusal: env ---- every row of the environment table" {
         \\ #[page("")] pub fn home(route: PageContext) -> Element { … }
         \\ == components/widget.bp
         \\ #[client]
-        \\ import { env } from "std";
+        \\ import { io.env } from "std";
         \\ val a = env.read("ONZE_PUBLIC_API_URL");
         \\ val b = env.read("DATABASE_URL");
         \\ val c = env.read("onze_public_x");
@@ -750,7 +750,7 @@ test "refusal: adversarial config ---- no setting relaxes anything" {
         \\ #[page("")] pub fn home(route: PageContext) -> Element { … }
         \\ == components/widget.bp
         \\ #[client]
-        \\ import { env } from "std";
+        \\ import { io.env } from "std";
         \\ val b = env.read("DATABASE_URL");
         \\ pub fn Widget(props: P) -> Element { … }
     ,
@@ -833,7 +833,7 @@ test "manifest: text ---- one client island" {
         \\ #[page("")] pub fn home(route: PageContext) -> Element { … }
         \\ == components/like_button.bp
         \\ #[client]
-        \\ import { env } from "std";
+        \\ import { io.env } from "std";
         \\ val api = env.read("ONZE_PUBLIC_API_URL").unwrapOr("");
         \\ pub fn LikeButton(props: LikeProps) -> Element { … }
     );
@@ -923,7 +923,7 @@ pub fn main() {
     val payload = readPayload("__onze");
     registerFill("__onzeFill", payload.h);
     val islands = payload.i;
-    loop (islands) { island ->
+    for (islands) { island ->
         val el = document.query("[data-onze-i=\"" + island.id + "\"]");
         val mounted = if (island.component == "Nav") hydrateIsland(el, Nav, island.props)
             else if (island.component == "LikeButton") hydrateIsland(el, LikeButton, island.props)

@@ -9,7 +9,7 @@
 
 import {service} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
-import {time} from "std";
+import {io.clock} from "std";
 import {AuditEvent, AuditRepository, audit, memoryAuditRepository} from "rakun-actuator";
 
 #[service]
@@ -58,7 +58,7 @@ type RedactingAuditRepository(inner: AuditRepository) implement AuditRepository 
 
 test "a reviewer finds one principal's failures without reading everyone's" {
     val repo = memoryAuditRepository(100);
-    val now = time.nowMillis();
+    val now = clock.nowMillis();
     val _a = repo.record(AuditEvent(atMs: now, principal: "ana", kind: "AUTHENTICATION_FAILURE", data: []));
     val _b = repo.record(AuditEvent(atMs: now, principal: "bob", kind: "AUTHENTICATION_FAILURE", data: []));
     val _c = repo.record(AuditEvent(atMs: now, principal: "ana", kind: "AUTHENTICATION_SUCCESS", data: []));
@@ -78,7 +78,7 @@ test "a reviewer finds one principal's failures without reading everyone's" {
 
 test "afterMs is exclusive, so paging cannot re-read the last event seen" {
     val repo = memoryAuditRepository(100);
-    val base = time.nowMillis();
+    val base = clock.nowMillis();
     val _a = repo.record(AuditEvent(atMs: base, principal: "ana", kind: "LOGOUT", data: []));
     val _b = repo.record(AuditEvent(atMs: base + 10, principal: "ana", kind: "LOGOUT", data: []));
 
@@ -88,7 +88,7 @@ test "afterMs is exclusive, so paging cannot re-read the last event seen" {
 
 test "the oldest event is dropped when the ring is full, and the drop is counted" {
     val repo = memoryAuditRepository(2);
-    val base = time.nowMillis();
+    val base = clock.nowMillis();
     val _a = repo.record(AuditEvent(atMs: base, principal: "ana", kind: "LOGOUT", data: []));
     val _b = repo.record(AuditEvent(atMs: base + 1, principal: "bob", kind: "LOGOUT", data: []));
     val _c = repo.record(AuditEvent(atMs: base + 2, principal: "cam", kind: "LOGOUT", data: []));
@@ -104,7 +104,7 @@ test "the oldest event is dropped when the ring is full, and the drop is counted
 test "a redacting wrapper drops a password pair and keeps the rest" {
     val inner = memoryAuditRepository(10);
     val repo = RedactingAuditRepository(inner: inner);
-    val now = time.nowMillis();
+    val now = clock.nowMillis();
     val _r = repo.record(AuditEvent(
         atMs: now,
         principal: "ana",

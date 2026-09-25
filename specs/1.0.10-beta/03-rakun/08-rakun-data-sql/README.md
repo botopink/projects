@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-data/src/datasource.bp`, `modules/rakun-data/src/sql/**` · `modules/rakun-data/test/sql/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · `modules/rakun-data/src/nosql/**`, which is front 09's · `modules/rakun-data/src/migration/**` (77) and `src/orm/**` (78)
 **Reference:** `05-data.md § Bancos SQL` — DataSource, Connection Pools, JdbcTemplate, JdbcClient · <https://docs.spring.io/spring-boot/reference/data/sql.html>
-**Replaces:** `1.0.6-beta/05-data-sql`
 
 ---
 
@@ -26,8 +25,8 @@ cannot open a socket to PostgreSQL, cannot send a parameterized statement, and c
 writes so they commit together. The first two are what a repository is; the third is what makes a
 write correct when something fails in the middle.
 
-There is a second, quieter problem: the shape the old draft proposed does not parse. It wrote
-bodyless methods inside a `type` body —
+There is a second, quieter problem: the Spring Data shape — bodyless methods inside a `type`
+body — does not parse:
 
 ```bp
 #[query("SELECT * FROM users WHERE id = $1")]
@@ -376,7 +375,7 @@ The milestone register is [`language-gaps.md`](../../language-gaps.md); the rows
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| A bodyless method in a `type` body does not parse (`docs.md:183-196`), so `#[query("…")] pub fn findById(…);` — the shape the 1.0.6 draft and every Spring Data tutorial use — is not writable. | `examples/user-orders-example.bp`, every repository method | A real body calling the emitted `__rkQuery_<name>()` helper | Abstract methods in a `type` body, filled in by the decorator's emission. This is the single change that would make the repository surface read like its upstream |
+| A bodyless method in a `type` body does not parse (`docs.md:183-196`), so `#[query("…")] pub fn findById(…);` — the shape every Spring Data tutorial uses — is not writable. | `examples/user-orders-example.bp`, every repository method | A real body calling the emitted `__rkQuery_<name>()` helper | Abstract methods in a `type` body, filled in by the decorator's emission. This is the single change that would make the repository surface read like its upstream |
 | A method-level `@Decl` exposes no parameter list, so `#[query]` cannot check its placeholders against the method's parameters. | same file — the check is documented as absent | Check only what the statement text shows | `decl.params` on a `DeclKind.Method` handle (also front 06's gap) |
 | A decorator cannot rewrite the body it annotates (`decorators.bp:48-240`), so `#[transactional]` cannot open a transaction around the annotated method. | `examples/user-orders-example.bp`, `#[transactional]` on `OrderService` emitting `OrderServiceTx` | A type-level decorator emitting a proxy type, and injecting the proxy | `decl.wrapBody(expr)`, or a body-rewriting emission. Shared with fronts 06, 07 and 10 |
 | A function cannot forward a `@Result` value: `-> @Result<…>` requires `#[@result]` and `return r` re-wraps. Every layer would have to unwrap and re-wrap. | `examples/user-orders-example.bp` — the repositories use the raising `query`, not `tryQuery` | Two surfaces: a raising form and a `try*` form | A forwarding return, or letting `return` pass an already-`@Result` value through unchanged |
@@ -436,208 +435,3 @@ reading a counter the pool maintains for the test's benefit.
 - [ ] The `db` health indicator registers with front 11
 - [ ] `repository/rakun/AGENTS.md` documents the repository shape decided here, and front 09 follows it
 - [ ] The front's tests are green on its assigned target
-
-## Carried from 1.0.6-beta F05 data-sql
-
-Material present in `specs/1.0.6-beta/05-data-sql/README.md` and absent from the text above. Code is verbatim; prose is quoted. *superseded by* marks a conscious replacement.
-
-### 1. `DataSource` / `Connection` behaviors (1.0.6 Step 1)
-
-```bp
-// datasource.bp
-pub behavior DataSource {
-    fn getConnection(self: Self) -> @Result<Connection, string>;
-    fn close(self: Self);
-}
-
-pub behavior Connection {
-    fn execute(self: Self, sql: string, params: Array<string>) -> @Result<i32, string>;
-    fn query(self: Self, sql: string, params: Array<string>) -> @Result<Array<Row>, string>;
-    fn close(self: Self);
-}
-```
-
-superseded by: *Contradictions with fronts.md* 3 — `DataSource` is generic over SQL and document stores (`connect`, `close`, `stats`) and "leaves the statement surface to each arm". Step 1 above declares a `Connection` behavior but spells out no method on it; this is the last written proposal for that surface.
-
-### 2. Driver components and the URL dispatcher (1.0.6 Steps 1, 6)
-
-```bp
-// postgres_datasource.bp
-#[component]
-pub type PostgresDataSource(
-    #[value("spring.datasource.url")] url: string,
-    #[value("spring.datasource.username")] username: string,
-    #[value("spring.datasource.password")] password: string,
-) {
-    pub fn getConnection(self: Self) -> @Result<Connection, string> {
-        // use epgsql (Erlang PostgreSQL driver)
-    }
-}
-```
-
-```bp
-#[component]
-pub type MySqlDataSource(
-    #[value("spring.datasource.url")] url: string,
-    #[value("spring.datasource.username")] username: string,
-    #[value("spring.datasource.password")] password: string,
-) {
-    pub fn getConnection(self: Self) -> @Result<Connection, string> {
-        // use mysql-otp (Erlang MySQL driver)
-    }
-}
-```
-
-```bp
-pub fn createDataSource(url: string) -> DataSource {
-    if (url.startsWith("postgresql://")) return PostgresDataSource(url);
-    if (url.startsWith("mysql://")) return MySqlDataSource(url);
-    panic("Unsupported database: " + url);
-}
-```
-
-- Acceptance: "PostgreSQL implementation connects" · "MySQL driver connects" · "Auto-detection from URL works" · "Both PostgreSQL and MySQL tested".
-- superseded by: *Drivers, and what ships in the box* (arm table keyed on `rakun.datasource.url`; unloadable driver is a boot failure, not a fallback) and *Test plan* (opt-in suite on `RAKUN_TEST_PG_URL` / `RAKUN_TEST_MYSQL_URL`). Not stated above: the `username`/`password` keys (`rakun.datasource.username`, `rakun.datasource.password`) — only `.url` and `.pool.size` are named.
-
-### 3. `SqlTemplate` with positional parameters and `@Result` returns (1.0.6 Step 2)
-
-```bp
-// sql_template.bp
-#[service]
-pub type SqlTemplate(dataSource: DataSource) {
-    pub fn query(self: Self, sql: string, params: Array<string>) -> @Result<Array<Row>, string> {
-        val conn = self.dataSource.getConnection();
-        val result = conn.query(sql, params);
-        conn.close();
-        return result;
-    }
-
-    pub fn update(self: Self, sql: string, params: Array<string>) -> @Result<i32, string> {
-        val conn = self.dataSource.getConnection();
-        val result = conn.execute(sql, params);
-        conn.close();
-        return result;
-    }
-}
-```
-
-```bp
-#[service]
-pub type UserRepository(template: SqlTemplate) {
-    pub fn findById(self: Self, id: i32) -> @Result<?User, string> {
-        val rows = self.template.query("SELECT * FROM users WHERE id = $1", [id.toString()]);
-        return rows.map({ r -> mapRow(r) });
-    }
-}
-```
-
-- Acceptance: "Connections returned to pool after use" · "Works on both targets".
-- superseded by: *`SqlTemplate` and the fluent client* — `SqlTemplate(dataSourceName)`, named `Param[]` instead of `Array<string>`/`$1`, raising `query`/`update` plus `tryQuery`/`tryUpdate` (the `@Result`-forwarding gap), `Rows`/`Row` string layer; `mapRow`-style typed mapping is 78-rakun-orm-entities.
-
-### 4. `#[query]` emission sketch (1.0.6 Step 3)
-
-```bp
-pub fn query(comptime decl: @Decl, sql: string) {
-    @emit("pub fn " + decl.name + "(self: Self, " + /* params */ ") -> @Result<" + /* return type */ ", string> { return self.template.query(\"" + sql + "\", [" + /* args */ "]); }");
-}
-```
-
-- Acceptance: "Return type mapped from `Row` to domain type" · "Works for SELECT, INSERT, UPDATE, DELETE".
-- superseded by: *The repository shape, decided once* — `#[query]` emits `__rkQuery_<name>()` + `rkRegisterQuery`, never a method body (a decorator cannot rewrite the annotated declaration; a bodyless method does not parse — *Problem*).
-
-### 5. Pool configuration in Spring spelling (1.0.6 Step 4)
-
-```bp
-#[configuration]
-pub type DataSourceConfig {
-    #[bean]
-    pub fn dataSource(self: Self) -> DataSource {
-        return PostgresDataSource(
-            url: self.url,
-            username: self.username,
-            password: self.password,
-            poolSize: 10,
-        );
-    }
-}
-```
-
-```yaml
-spring:
-  datasource:
-    url: postgresql://localhost:5432/mydb
-    username: user
-    password: secret
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-```
-
-- Acceptance: "Connection pool created at startup" · "Connections reused across requests" · "Pool size configurable" · "Idle connections closed".
-- superseded by: *Pooling on the BEAM* — `rakun.datasource.pool.size` (default 10), fixed-size, `minimum-idle` "meaningless"; "Idle connections closed" is therefore intentionally not a behaviour. The `#[bean]` factory form is 06's `#[provides]`. `connection-timeout` is named above without its full key.
-
-### 6. Method-level `#[transactional]` and the runtime wrapper (1.0.6 Step 5)
-
-```bp
-#[service]
-pub type UserService(repo: UserRepository) {
-    #[transactional]
-    pub fn createUser(self: Self, name: string, email: string) -> @Result<User, string> {
-        val id = self.repo.save(name, email);
-        self.repo.saveAudit(id, "created");  // same transaction
-        return self.repo.findById(id);
-    }
-}
-```
-
-```bp
-pub fn transactional(comptime decl: @Decl) {
-    @emit("pub fn " + decl.name + "(self: Self, " + /* params */ ") -> " + /* return type */ " { return rkTransactional({ -> /* original body */ }); }");
-}
-```
-
-```js
-export function transactional(fn) {
-    const conn = dataSource.getConnection();
-    conn.beginTransaction();
-    try {
-        const result = fn(conn);
-        conn.commit();
-        return result;
-    } catch (e) {
-        conn.rollback();
-        throw e;
-    } finally {
-        conn.close();
-    }
-}
-```
-
-superseded by: *Transactions, and why `#[transactional]` is a proxy* — type-level decorator emitting `<Type>Tx`, `rkTxRun(name, "required", thunk)`; `rkTransactional` and the Node runtime have no counterpart (erlang-only). The `saveAudit` "same transaction" example is what `examples/user-orders-example.bp` carries.
-
-### 7. Module layout (1.0.6 Step 7)
-
-```
-modules/rakun-data/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   ├── datasource.bp
-│   ├── sql_template.bp
-│   ├── postgres_datasource.bp
-│   ├── mysql_datasource.bp
-│   └── transactional.bp
-└── test/
-    ├── datasource_test.bp
-    ├── sql_template_test.bp
-    └── transactional_test.bp
-```
-
-- Acceptance: "All tests pass on commonJS and Erlang" · "Example app uses `rakun-data` with PostgreSQL".
-- superseded by: **Owns** (`src/sql/**`; sidecar `src/sidecars/rakun_sql.erl` per *Contradictions* 2) and *Test plan* (`template_test.bp`, `pool_test.bp`, `transaction_test.bp`, `query_decorator_test.bp`; commonJS *skipped*; every test on the ETS arm). Wiring `examples/rakun` to a real database is not an acceptance item above.
-
-### 8. Dependencies and notes (1.0.6 Blast radius, Notes)
-
-- "**Dependencies** — `epgsql`, `mysql-otp` (Erlang), `pg`, `mysql` (Node.js)" · "Connection pool: `poolboy` (Erlang), `generic-pool` (Node.js)" — superseded by: *Pooling on the BEAM* (supervised `gen_server` processes, no `poolboy`) and the erlang-only target (no Node driver).
-- "Transaction propagation: REQUIRED (default), REQUIRES_NEW, NESTED — start with REQUIRED only" — covered; above additionally rejects the other two explicitly.
-- "No ORM in this front (Spring Data JPA equivalent is a separate front)" · "Future: add `rakun-data-jpa` for ORM-like experience" — covered by *Adjacent fronts* (78-rakun-orm-entities).

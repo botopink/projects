@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-data/src/migration/**` · `modules/rakun-data/test/migration/**`
 **Does not touch:** `modules/rakun-data/src/datasource.bp` and `src/sql/**` — front 08's, consumed read-only · `modules/rakun-data/src/orm/**` — front 78's, consumed read-only for the schema generator · `modules/rakun-data/src/nosql/**` — front 09's
 **Reference:** `09-actuator.md § Endpoints (flyway, liquibase)` · `05-data.md § Configuracao JPA` (`ddl-auto`, the mechanism this front replaces) · `11-topicos-avancados.md § Auto-configuration Classes` · <https://docs.spring.io/spring-boot/reference/howto/data-initialization.html#howto.data-initialization.migration-tool>
-**Replaces:** new — no front in `1.0.6-beta` proposed it
 
 ---
 
@@ -41,7 +40,7 @@ boot.
 | Any schema management | none |
 | Any schema history | none |
 | Filesystem reads | `libs/std/src/fs.bp` — `readText` (`:33`), `list` (`:61`), `exists` (`:53`) |
-| Content hashing | front 03, `libs/std/src/content_hash.bp` |
+| Content hashing | front 03, `hash.contentHash` (decision 106) |
 | Entity metadata to generate a schema from | front 78 |
 | `flyway`/`liquibase` actuator endpoints | listed upstream; nothing behind them |
 | Cluster coordination | nothing; front 04's supervision tree is per node |
@@ -338,3 +337,4 @@ Node form in this module's manifest.
   lifts the refusal, asserted by a test that enumerates the configuration keys
 - `modules/README.md` records the migration surface in the same commit
 - The front's tests are green on its assigned target
+

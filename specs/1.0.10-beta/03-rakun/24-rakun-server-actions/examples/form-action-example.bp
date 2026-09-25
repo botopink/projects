@@ -26,7 +26,7 @@ import {rkRegisterAction} from "rakun";
 import {page, PageContext, rkAppRegisterPage, renderNode} from "rakun";
 // provided by front 12 — `revalidatePath` and the `revalidatedPaths()` test seam.
 import {cache} from "rakun-cache";
-import {dict} from "std";
+import {collections.Dict} from "std";
 
 // The app's own data layer — front 08 in a real application. Stubbed here so the
 // example is about the action, not about the store.
@@ -82,14 +82,14 @@ fn newPostRoute() -> PageContext {
     return PageContext(
         pathname: "/blog/new",
         pattern: "/blog/new",
-        params: dict.empty(),
-        query: dict.empty(),
+        params: Dict.empty(),
+        query: Dict.empty(),
         rest: [],
     );
 }
 
 fn submission(title: string, body: string) -> FormData {
-    return FormData(fields: dict.empty().insert("title", title).insert("body", body));
+    return FormData(fields: Dict.empty().insert("title", title).insert("body", body));
 }
 
 // ---- what the action does -----------------------------------------------------

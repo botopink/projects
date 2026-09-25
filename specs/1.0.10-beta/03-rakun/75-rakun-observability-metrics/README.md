@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-metrics/botopink.json`, `modules/rakun-metrics/src/**`, `modules/rakun-metrics/test/**`, `modules/rakun-metrics/src/sidecars/rakun_metrics.erl`
 **Does not touch:** `modules/rakun-actuator/src/**` — front 11 owns the endpoint infrastructure and front 76 owns its exposure; `modules/rakun-logging/src/**` — front 17 owns logs; `modules/rakun-web/src/middleware.bp` — this front registers a filter into front 07's chain, it does not edit the chain
 **Reference:** `09-actuator.md § Metrics` (Micrometer, Prometheus, Customizando, Tags Comuns via Properties, Per-Meter, Metricas Automaticas, Registrando Metricas Customizadas, MeterFilter, Endpoint Metrics), `§ JMX`, `§ Endpoints (prometheus, threaddump, heapdump)` · `02-desenvolvendo-com-spring-boot.md § DevTools (management.tracing.sampling.probability)` · <https://docs.spring.io/spring-boot/reference/actuator/metrics.html> · <https://docs.spring.io/spring-boot/reference/actuator/tracing.html>
-**Replaces:** new — no front in `1.0.6-beta` proposed it
 
 ---
 
@@ -37,7 +36,7 @@ dashboard full of zeros and would leave out everything an operator actually page
 |---|---|
 | `rakun-metrics` module | does not exist |
 | Metrics endpoint | front 11, `modules/rakun-actuator/src/**` — names and values, no registry model |
-| HTTP request timing | front 11 ships `http.server.requests` per `1.0.6-beta` F07 step 5; it has nowhere to send it |
+| HTTP request timing | front 11 ships `http.server.requests`; it has nowhere to send it |
 | Any exporter | none |
 | Any tracing | none — no context propagation, no span, no sampler |
 | `:telemetry` | not a dependency, and not in OTP |
@@ -392,3 +391,4 @@ library stays unambiguous.
 - `/actuator/processes` and `/actuator/vm` in place of `threaddump` and `heapdump`, both default-denied
 - `modules/README.md` and `repository/rakun/AGENTS.md` record the new module in the same commit
 - The front's tests are green on its assigned target
+

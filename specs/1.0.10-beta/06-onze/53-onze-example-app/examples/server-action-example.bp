@@ -15,7 +15,7 @@
 // Upstream: https://nextjs.org/docs/app/getting-started/updating-data
 //           https://nextjs.org/docs/app/api-reference/directives/use-server
 //           https://nextjs.org/docs/app/api-reference/functions/revalidateTag
-//           NEXTJS-DOCS.md § 10. Mutação de Dados · § 12. Revalidação
+//           NEXTJS-DOCS.md § 10. Data Mutation · § 12. Revalidation
 //
 // Target: erlang (server).
 
@@ -23,7 +23,7 @@ import {serverAction, FormData, ActionResult} from "rakun";     // front 24
 import {rkRegisterAction} from "rakun";                         // front 24 registry cell
 import {redirect} from "rakun";                                 // front 63
 import {cache} from "rakun-cache";                              // front 12
-import {dict} from "std";
+import {collections.Dict} from "std";
 // app-local
 import {writePost, listPosts} from "@/lib.db";
 
@@ -76,7 +76,7 @@ pub fn createPost(form: FormData) -> @Future<ActionResult> {
 }
 
 fn submission(title: string, body: string) -> FormData {
-    return FormData(fields: dict.empty()
+    return FormData(fields: Dict.empty()
         .insert("title", title)
         .insert("body", body)
         .insert("published", "2026-01-04"));

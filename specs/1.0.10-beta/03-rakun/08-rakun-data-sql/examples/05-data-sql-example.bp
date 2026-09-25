@@ -1,10 +1,9 @@
-// carried from specs/1.0.6-beta/examples/05-data-sql-example.bp
 //// F05 — Data Access (SQL)
 ////
-//// Este exemplo demonstra acesso a dados SQL com DataSource, SqlTemplate,
-//// @repository com @query, e @transactional.
+//// This example shows SQL data access with DataSource, SqlTemplate,
+//// @repository with @query, and @transactional.
 ////
-//// Documentação Spring Boot:
+//// Spring Boot documentation:
 //// - DataSource: https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.datasource
 //// - JdbcTemplate: https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.jdbc
 //// - Spring Data JPA: https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.jpa-and-spring-data
@@ -182,7 +181,7 @@ fn main() {
     Rakun.run(App(port: 8080, basePath: "/api"));
 }
 
-//// Testes:
+//// Tests:
 ////
 //// test "DataSource connects to PostgreSQL" {
 ////     val ds = PostgresDataSource(...);

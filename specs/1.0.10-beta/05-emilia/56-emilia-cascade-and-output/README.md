@@ -8,7 +8,6 @@
 **Owns:** `repository/emilia/src/output.bp`; the host-cell and public-entry half of `repository/emilia/src/emilia.bp` (`register`, `flushSheet`, `hashHex`, `emilia`, `flush`, `tokenToCss`, `tokensToCss`), fenced under a banner naming this front; `repository/emilia/test/output_test.bp`, `repository/emilia/test/cascade_test.bp`; the `pub mod output;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** any `Token` section in `src/tokens.bp`, and any per-section sub-dispatcher in `src/emilia.bp` — those belong to fronts 33–47, 57 and 58
 **Reference:** `TAILWIND_CSS_DOCS.md § 3.1 Conflitos de Estilo`, `§ 3.2 Referência Completa de Variantes`, `§ 3.5 Animações Customizadas`, `§ 3.7 CSS Customizado com @layer`, `§ 20.1 @import "tailwindcss"` · https://tailwindcss.com/docs/styling-with-utility-classes
-**Replaces:** new — from the Tailwind coverage audit
 
 ---
 
@@ -430,3 +429,4 @@ the wrong number of `&`, and a declaration containing a codec separator.
 - Document assembly happens once, in botopink, not twice in two `#[@External]` templates.
 - The six modifier tests in `emilia.bp` are rewritten to the hoisted shape and cite `§ 3.2`.
 - The front's tests are green on its assigned target — for track D, both of them.
+

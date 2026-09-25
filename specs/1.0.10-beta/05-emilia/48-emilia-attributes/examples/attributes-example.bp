@@ -8,7 +8,7 @@
 // Upstream:
 //   https://tailwindcss.com/docs/styling-with-utility-classes
 //   https://nextjs.org/docs/app/getting-started/css
-// Reference: TAILWIND_CSS_DOCS.md § 3. Conceitos Fundamentais
+// Reference: TAILWIND_CSS_DOCS.md § 3. Core Concepts
 //
 // THE CONTRACT THIS FILE DEMONSTRATES:
 //   class = "e_" + djb2hex(tokensToCss(tokens))
@@ -117,7 +117,7 @@ pub fn CardBuilt() -> Element {
 
 pub fn CardWithLegacyClass() -> Element {
     return div([
-            text("integra com a folha de estilos antiga", attrs: []),
+            text("integrates with the legacy stylesheet", attrs: []),
         ], attrs: [styledWith("legacy-card", cardTokens())]);
 }
 
@@ -160,7 +160,7 @@ pub fn CardTemplated() -> Element {
 // The merge is available to the DSL too, under the same no-space rule.
 pub fn CardTemplatedWithLegacyClass() -> Element {
     val card = clsWith("legacy-card", cardTokens());
-    return html """<div [class]={card}><p>integra com a folha antiga</p></div>""";
+    return html """<div [class]={card}><p>integrates with the legacy stylesheet</p></div>""";
 }
 
 // ── the round trip ───────────────────────────────────────────────────────────

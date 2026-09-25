@@ -7,7 +7,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/fetching-data
 //           https://nextjs.org/docs/app/api-reference/file-conventions/loading
-//           NEXTJS-DOCS.md § 9. Busca de Dados · § 11. Cache · § 13. Streaming
+//           NEXTJS-DOCS.md § 9. Data Fetching · § 11. Cache · § 13. Streaming
 //
 // Target: erlang (server). Nothing here has a browser half — the list renders
 // once, on the server; the only interactive thing on the page is each card's
@@ -19,7 +19,7 @@ import {Boundary, Suspense, boundaryId, shellHtml} from "jhonstart";   // front 
 import {styled, Token} from "emilia";                     // front 48
 import {page, layout, PageContext, LayoutProps} from "rakun";          // front 22
 import {rkAppRegisterPage, rkAppRegisterLayout} from "rakun";
-import {dict} from "std";
+import {collections.Dict} from "std";
 // app-local
 import {Post, listPosts} from "@/lib.db";
 import {PostCard} from "@/components.post_card";
@@ -89,8 +89,8 @@ fn blogRoute() -> PageContext {
     return PageContext(
         pathname: "/blog",
         pattern: "/blog",
-        params: dict.empty(),
-        query: dict.empty(),
+        params: Dict.empty(),
+        query: Dict.empty(),
         rest: [],
     );
 }

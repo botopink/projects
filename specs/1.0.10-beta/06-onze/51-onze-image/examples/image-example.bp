@@ -6,7 +6,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/components/image
 //           https://nextjs.org/docs/app/getting-started/images
-//           NEXTJS-DOCS.md § 16. Otimização de Imagens
+//           NEXTJS-DOCS.md § 16. Image Optimization
 //
 // Target: the markup is produced on the ERLANG half (the component renders on
 // the server, and the optimizer it points `src` at runs there too). The JS half

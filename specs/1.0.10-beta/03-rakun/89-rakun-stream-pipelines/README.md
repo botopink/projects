@@ -4,11 +4,10 @@
 **Priority:** low — real work, but an application that never builds a processing topology never misses it; front 15 and front 86 already cover consume-one-message-and-handle-it
 **Target:** erlang (server)
 **Wave:** 6
-**Depends on:** 15 (the broker arms a source and a sink are built from), 86 (per-stage retry and the dead-letter path), 11 (hosts the graph endpoint), 08 (the durable state and metadata store arm), 05 (poller and topology configuration), 01/std `time`
+**Depends on:** 15 (the broker arms a source and a sink are built from), 86 (per-stage retry and the dead-letter path), 11 (hosts the graph endpoint), 08 (the durable state and metadata store arm), 05 (poller and topology configuration), 01/std `io.clock`
 **Owns:** `modules/rakun-stream/src/**`, `modules/rakun-stream/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. `modules/rakun-messaging/**` belongs to fronts 15, 86, 90 and 91 and is read-only here.
 **Reference:** `06-messaging.md § Spring Integration` (Configuracao, RSocket com Integration) · `§ Apache Kafka · Kafka Streams` · `09-actuator.md § Endpoints` (`integrationgraph`) · https://docs.spring.io/spring-boot/reference/messaging/spring-integration.html · https://docs.spring.io/spring-boot/reference/messaging/kafka.html#messaging.kafka.streams
-**Replaces:** new
 
 ---
 
@@ -41,7 +40,7 @@ no error message.
   front consumes their source and sink arms rather than dialling a broker of its own.
 - `repository/rakun/src/runtime.bp:19-117` — no process-topology surface of any kind. The only
   supervision rakun has today is whatever `rkServe` sets up for the listener.
-- `libs/std/src/time.bp:56,80` — `time.nowMillis()` and `time.monotonicMillis()` exist; windowing
+- `libs/std/src/time.bp:56,80` — `time.nowMillis()` and `time.monotonicMillis()` exist today (`clock.nowMillis`/`clock.monotonicMillis` under `io.clock`, decision 106); windowing
   uses the first for event time and the second for poller intervals.
 
 ## Mechanism
@@ -260,3 +259,4 @@ There is no commonJS row. This front is server-only by the milestone's target sp
 - Both language gaps above appear as `// LANGUAGE GAP:` markers in the examples and in a `specs/1.0.10-beta/` spec.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module in the same commit.
 - The front's tests are green on erlang.
+

@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-client/src/**`, `modules/rakun-client/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `07-io.md § REST Clients` (WebClient · RestClient · RestTemplate · HTTP Service Interfaces · Configuracao Global · SSRF Protection) · https://docs.spring.io/spring-boot/reference/io/rest-client.html
-**Replaces:** `1.0.6-beta/09-rest-client` + `1.0.6-beta/19-web-client-reactive`
 
 ---
 
@@ -19,13 +18,10 @@ function — `fetch(url) -> @Future<Response>` (`http.bp:55`) — which does GET
 body, no timeout and no method, and whose erlang cell starts `inets` and calls `httpc:request/4`
 inline. `modules/rakun-client/` is a `botopink.json` and a `src/root.bp` containing a TODO comment.
 
-The two drafts this replaces described one thing twice. 1.0.6-beta F09 specified `RestClient` — a
-fluent blocking builder — over six steps. 1.0.6-beta F19 specified `WebClient` as a separate front with
-its own module file, its own builder type and its own spec types, whose entire stated difference was
-*"Returns `@Future<T>` (Botopink's async type)"*. Two builders, two type hierarchies and two test files
-to express one transport and two terminal operations is a cost with no buyer. Worse, both drafts
-assumed a fluent surface botopink cannot express as written — `RestClient.builder().build()` with
-bodyless methods declared inside a `type` body (`09-rest-client/README.md` step 1), which is not legal
+`RestClient` (a fluent blocking builder) and `WebClient` (the same builder whose entire difference
+is *"Returns `@Future<T>`"*) as two fronts would be two builders, two type hierarchies and two test
+files to express one transport and two terminal operations — a cost with no buyer. A fluent
+`RestClient.builder().build()` with bodyless methods declared inside a `type` body is also not legal
 (`docs.md:567`).
 
 There is also nothing between a service and the network. Spring ships an `InetAddressFilter` for SSRF
@@ -341,135 +337,3 @@ There is no commonJS row; this front is server-only by the milestone's target sp
 - Every `// LANGUAGE GAP:` marker in the examples appears in the table above.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module's surface in the same commit.
 - The front's tests are green on erlang.
-
-## Carried from 1.0.6-beta F19 web-client-reactive
-
-Items in `specs/1.0.6-beta/19-web-client-reactive/README.md` with no counterpart above. Covered and not
-repeated: `WebClient` as a second type/builder/module file (superseded by *Mechanism*, "one builder, one
-transport, two terminal operations"), `@Future<T>` return (`retrieveFuture()`), `WebClientBuilder.baseUrl`/
-`defaultHeader`/`build` (Step 1 above), `httpc`/`gun` (superseded by *Definition of done* grep), both
-targets (superseded by *Target*), "Reactor/Flux: not available in Botopink" (`04-rakun-erlang-runtime §
-One statement about reactive`).
-
-| Item | 1.0.6 text | Status |
-|---|---|---|
-| URI template on the request chain | `webClient.get().uri("/users/{id}", [id])` (Step 2 usage) — `{id}` placeholders with positional values | absent: `RestClient.get(path)` takes a finished path; `:param` substitution exists only inside `#[httpExchange]` (Step 5), not on `RequestSpec`, so a hand-built client concatenates and percent-encodes by itself |
-| Typed body terminals | `pub fn bodyToFuture<T>(self: Self, type: T) -> @Future<T>;` and `pub fn bodyToFlux<T>(self: Self, type: T) -> @Future<Array<T>>;` on `ResponseSpec` | superseded by: *Language gaps* (no JSON value → body stays `string`) and *Out of scope* (typed response decoding) |
-| Streaming responses | Notes: "For streaming: `@Future<Array<T>>` or `@Iterator<T>`" | absent: `ClientResponse.body` is one `string`; no chunked/iterated body for a large or server-sent response is named here or in any 1.0.9 rakun front (`grep -rl '@Iterator' specs/1.0.9-beta/*rakun*` is empty) |
-| `@Future` block wrapper | Step 3 snippet, below — `@Future({ … })` over `std.http.fetch` | superseded by: *The transport is front 01* and *What `@Future` does and does not mean here* (eager on erlang) |
-| Non-blocking claim | Notes: "Non-blocking on Erlang via `httpc` async mode" | superseded by: *What `@Future` does and does not mean here* (a `retrieveFuture` is the same blocking call; overlap is front 02's) |
-
-Step 3 — Implementation (verbatim; superseded by: *Mechanism*):
-
-```bp
-pub fn bodyToFuture<T>(self: Self, type: T) -> @Future<T> {
-    return @Future({
-        val response = std.http.fetch(self.url, self.options);
-        return json.parse(response.body);
-    });
-}
-```
-
-## Carried from 1.0.6-beta F09 rest-client
-
-Source: `specs/1.0.6-beta/09-rest-client/README.md`. Items below are present there and absent from the text above.
-
-### 1. Step 5 — client request interceptors
-
-```bp
-pub behavior ClientHttpRequestInterceptor {
-    fn intercept(self: Self, request: HttpRequest, next: fn(HttpRequest) -> HttpResponse) -> HttpResponse;
-}
-
-val client = RestClient.builder()
-    .interceptor(LoggingInterceptor())
-    .build();
-```
-
-> - [ ] Interceptors can modify request
-> - [ ] Interceptors can modify response
-> - [ ] Multiple interceptors chain
-
-- No interceptor seam is defined above (`RestClientBuilder` has `baseUrl`, `defaultHeader`, `connectTimeout`, `readTimeout`, `redirects`). `79-rakun-oauth2-sso` lines 112 and 282 say `#[clientCredentials]` "emits the interceptor that attaches" a token to a front-13 client field — a consumer of a seam this front never declares.
-
-### 2. Step 1 — URI templates on the fluent client
-
-```bp
-val response = RestClient.create()
-    .get()
-    .uri("https://api.example.com/users/{id}", id)
-    .retrieve()
-    .body(User);
-```
-
-```bp
-pub type RequestHeadersUriSpec {
-    pub fn uri(self: Self, url: string, params: Array<string>) -> RequestHeadersSpec;
-}
-```
-
-> - [ ] URI template with params
-
-- 1.0.9 `RestClient.get(path)` takes a literal path; `{id}`/`:id` substitution exists only for `#[httpExchange]` methods. The type names `RequestHeadersUriSpec`, `RequestHeadersSpec`, `ResponseSpec` are superseded by: *Mechanism · The chain* (`RequestSpec`, `ClientResponse`; bodyless methods in a `type` body are illegal).
-
-### 3. Step 3 — serialization and `Content-Type`
-
-> - [ ] JSON response deserialized to type
-> - [ ] JSON request body serialized from type
-> - [ ] Content-Type header set automatically
-
-- `body<T>(type)` typed decoding — superseded by: *Language gaps* row 1 (no JSON value model; body stays `string`).
-- Automatic `Content-Type` on a request that carries a body — absent above (`RequestSpec.body: string`, header assembly tested, no default content type named).
-
-### 4. Step 4 — exception and `onStatus` handler
-
-```bp
-pub type RestClientException(
-    status: i32,
-    body: string,
-    message: string,
-)
-
-pub type ResponseSpec {
-    pub fn onStatus(self: Self, status: i32, handler: fn(Response) -> @Result<void, string>) -> ResponseSpec;
-}
-```
-
-> - [ ] Non-2xx responses throw exception
-> - [ ] Custom error handlers can be registered
-
-- superseded by: Step 2 — "A non-2xx response is returned, not raised — the caller decides, via `isOk()`"; timeout/refusal are `status: -1` with the reason in `body`. No per-status handler registration.
-
-### 5. Notes — timeout default, transport, retry
-
-> - Uses `std.http.fetch` under the hood
-> - Blocking only (WebClient/reactive is separate front)
-> - Timeout: configurable (default: 30s)
-> - Retry: not in this front (add later)
-
-| Old | 1.0.9 |
-|---|---|
-| `std.http.fetch` transport | superseded by: *The transport is front 01* (`net`; grep for `httpc` must find nothing) |
-| WebClient separate front | superseded by: *Replaces* — F19 merged as `retrieveFuture()` |
-| 30 s default timeout | superseded by: settings table — connect `2000` ms, read `1000` ms, `0` refused |
-| Retry deferred "later" | no retry policy, key or decision anywhere in this front; `retry` appears in 1.0.9 only in fronts 15, 24, 75, 79, 83–86, 89–91 (messaging/jobs), never for the HTTP client |
-
-### 6. Step 6 — proposed source layout
-
-```
-modules/rakun-client/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   └── rest.bp
-└── test/
-    └── rest_test.bp
-```
-
-- 1.0.9 owns `src/**` and names five test files; no `src/` file layout.
-
-### 7. Gate — both targets
-
-> - [ ] `botopink test` green on both targets
-
-- superseded by: *Target* — erlang; no commonJS row.

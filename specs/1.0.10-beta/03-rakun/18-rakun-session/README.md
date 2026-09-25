@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-session/src/**`, `modules/rakun-session/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `04-web.md § Spring Session` · https://docs.spring.io/spring-boot/reference/web/spring-session.html
-**Replaces:** `1.0.6-beta/14-session-management`
 
 ---
 
@@ -20,12 +19,6 @@ holding a TODO comment. `Request` can read a header (`repository/rakun/src/http.
 cookie accessor, and `Response` is a status and a body with no header surface at all
 (`repository/rakun/src/http.bp:45-73`), so there is not even a way to set a cookie today.
 
-The 1.0.6-beta draft this replaces had the right nouns and a design that cannot be built. Its
-`InMemorySessionRepository` was a `#[component]` with one method and three unimplemented ones, its
-session id was `generateUuid()` with no generator named, its signing was absent entirely — a session
-cookie whose value is the raw store key lets anyone with a key guess another — and its `SessionFilter`
-read `request.cookie("SESSION")`, an accessor that does not exist on a frozen interface.
-
 The security properties are the deliverable here. A session store is easy; a session store whose ids are
 unguessable, whose cookies are tamper-evident, whose comparison is not a timing oracle, and whose id
 rotates on privilege change is the thing worth writing down.
@@ -35,7 +28,7 @@ rotates on privilege change is the thing worth writing down.
 - `repository/rakun/modules/rakun-session/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `repository/rakun/src/http.bp:35-43` — `Request` has `param`, `query`, `header`, `body`. No cookie accessor. The file is frozen, so cookie parsing happens in this module over `req.header("cookie")`.
 - `repository/rakun/src/http.bp:45-73` — `Response` has six builders and no header surface. Setting `Set-Cookie` needs front 07's response-header mechanism; this front produces the header value and hands it over.
-- `libs/std/src/crypto.bp:38` — `hmacSha256(key, data) -> string` already exists. `crypto.bp:77` — `randomBytes(n) -> string`. Both are usable today; front 01 adds base64url of a raw digest and a **constant-time compare**, which this front requires and which std does not have.
+- `libs/std/src/crypto.bp:38` — `hmacSha256(key, data) -> string` already exists. `crypto.bp:77` — `randomBytes(n) -> string`. Both are usable today (`hash.hmacSha256` and `random.randomBytes` under `io.random` after decision 106); front 01 adds base64url of a raw digest and a **constant-time compare**, which this front requires and which std does not have.
 - `libs/std/src/time.bp:56` — `nowMillis()` exists, so expiry arithmetic needs no new primitive.
 
 ## Mechanism
@@ -268,68 +261,3 @@ There is no commonJS row; this front is server-only by the milestone's target sp
 - Every `// LANGUAGE GAP:` marker in the example appears in the table above.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module's surface in the same commit.
 - The front's tests are green on erlang.
-
-## Carried from 1.0.6-beta F14 session-management
-
-Items in `specs/1.0.6-beta/14-session-management/README.md` with no counterpart above. Covered and not
-repeated: `Session` fields (`id`, `createdAt`, `lastAccessedAt`, `maxInactiveInterval` → `maxInactiveSeconds`),
-`SessionRepository` → `SessionStore` (`createSession`/`save`/`findById`/`deleteById` → `create`/`save`/`findById`/`deleteById`),
-in-memory + Redis backends (ETS + Redis arms), cookie `SESSION` configurable, 30-minute default,
-expired-session cleanup (`deleteExpired` + front 16 sweeper), Hazelcast (*Out of scope*).
-
-| Item | 1.0.6 text | Status |
-|---|---|---|
-| Spring enablers | Mechanism: "`@EnableRedisHttpSession` → Redis-backed sessions", "`@EnableJdbcHttpSession` → JDBC-backed sessions" | covered by `rakun.session.store=redis` / `=sql`; the Spring names are not mapped above |
-| Attribute container | `attributes: Dict<string, string>` (Step 1) | above uses `Array<#(string, string)>`; the Dict form is neither adopted nor rejected — `dict.insert` is cited as an immutability precedent, so the choice of `Array` is unexplained |
-| Session id | Notes: "Session ID: UUID"; Step 2: `id: generateUuid()` | superseded by: *Ids, signing and comparison* rule 1 (32 random bytes, "Not a UUID") |
-| In-memory repository | Step 2 snippet, below | superseded by: *Problem* and the ETS arm |
-| Filter marker and order | Step 4 snippet, below — `#[filter]`, `#[order(-50)]`, `doFilter(request, response, chain: FilterChain)` | absent: *The filter* says "ordered before authentication" but names no marker, no order value and no `FilterChain` signature; front 07 owns the chain, so the `-50` slot needs recording there or here |
-| Module layout | Step 5 tree, below | absent: no file layout is given above |
-| Both targets | Gate: "`botopink test` green on both targets" | superseded by: *Target* |
-
-Step 2 — In-memory session repository (verbatim; superseded by: *Problem*):
-
-```bp
-#[component]
-pub type InMemorySessionRepository {
-    pub fn createSession(self: Self) -> Session {
-        return Session(
-            id: generateUuid(),
-            attributes: Dict.empty(),
-            createdAt: time.nowMillis(),
-            lastAccessedAt: time.nowMillis(),
-            maxInactiveInterval: 1800,  // 30 minutes
-        );
-    }
-}
-```
-
-Step 4 — Session filter (verbatim; `request.cookie("SESSION")` does not exist on the frozen `Request` — see *Current state*):
-
-```bp
-#[filter]
-#[order(-50)]
-pub type SessionFilter(repo: SessionRepository) {
-    pub fn doFilter(self: Self, request: Request, response: Response, chain: FilterChain) -> Response {
-        val sessionId = request.cookie("SESSION");
-        val session = if (sessionId != "") self.repo.findById(sessionId) else null;
-        // attach session to request context
-        return chain.doFilter(request);
-    }
-}
-```
-
-Step 5 — Module structure (verbatim):
-
-```
-modules/rakun-session/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   ├── session.bp
-│   ├── in_memory_repo.bp
-│   ├── redis_repo.bp
-│   └── session_filter.bp
-└── test/
-    └── session_test.bp
-```

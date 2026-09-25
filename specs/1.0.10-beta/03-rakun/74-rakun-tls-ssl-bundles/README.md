@@ -8,7 +8,6 @@
 **Owns:** `src/ssl_bundle.bp`, `src/sidecars/rakun_ssl.erl`, `modules/rakun-web/src/tls.bp` · `test/ssl_bundle_test.bp`, `modules/rakun-web/test/tls_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs`; `modules/rakun-web/src/middleware.bp`, `cors.bp`, `error.bp`, `filter.bp`, `convention.bp` — front 07's files
 **Reference:** `04-web.md § Container Servlet Embutido · Customizando o servidor` · `05-data.md § Redis · SSL`, `§ Couchbase · Autenticacao com Certificado` · `07-io.md § WebClient (Reativo) · SSL` · `09-actuator.md § SSL Diferente para Management`, `§ HealthIndicators Auto-configurados`, `§ InfoContributors Auto-configurados` · <https://docs.spring.io/spring-boot/reference/features/ssl.html>
-**Replaces:** new — no front in `1.0.6-beta` proposed it
 
 ---
 
@@ -41,7 +40,7 @@ expires in four days. Those are the cases where a proxy does not help.
 | Any certificate handling anywhere | none |
 | Any use of OTP `ssl` or `public_key` | none |
 | Configuration reader | `rkProp`/`rkPropInt` (`src/runtime.bp`), fed by front 05 |
-| `std` crypto surface | `libs/std/src/crypto.bp`; front 01 adds `hmac`, `encoding` — neither reads a certificate |
+| `std` crypto surface | `libs/std/src/crypto.bp`; front 01 adds `hmac` and `encoding` (`hash` and `encoding` under decision 106) — neither reads a certificate |
 | `ssl` health indicator | listed by `09 § HealthIndicators Auto-configurados`; front 11 has the SPI, nothing implements this key |
 | `ssl` info contributor | listed by `09 § InfoContributors Auto-configurados`; same |
 
@@ -183,7 +182,7 @@ before it reaches `ssl:listen/2`. A consumer never parses it — it passes it ba
 ### Step 1 — the registry: configuration to resolved material
 
 `sslBundles()` walks front 05's property table for `rakun.ssl.bundle.pem.*`, groups by the `<name>`
-segment, reads each file once through `std/fs`, and stores the resolved material in ETS. A bundle with
+segment, reads each file once through `io.fs`, and stores the resolved material in ETS. A bundle with
 a certificate and no key, or a key and no certificate, is a startup failure naming the bundle and the
 missing half.
 
@@ -310,3 +309,4 @@ shipper for the reason front 04 documented.
 - The `ssl` health indicator distinguishes "no TLS configured", "expiring", "expired" and "broken"
 - JKS is refused with an actionable message and no property accepts it
 - The front's tests are green on its assigned target
+

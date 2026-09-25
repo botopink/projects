@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-release/botopink.json`, `modules/rakun-release/src/**`, `modules/rakun-release/templates/**` · `modules/rakun-release/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. It generates files; it changes no running code
 **Reference:** `08-container-images.md § Imagens Eficientes · Layering`, `§ Dockerfiles`, `§ Cloud Native Buildpacks`, `§ Reproducao e Cache` · `10-otimizacao-producao.md § Deployments Eficientes`, `§ Checkpoint e Restore (CRaC)` · `11-topicos-avancados.md § Deploy de Aplicacoes`, `§ Servico de SO`, `§ Apendice · Executable Jars` · `09-actuator.md § SBOM` · <https://docs.spring.io/spring-boot/reference/packaging/container-images/index.html> · <https://docs.spring.io/spring-boot/reference/packaging/efficient.html> · <https://docs.spring.io/spring-boot/how-to/deployment/installing.html>
-**Replaces:** new — proposed by the Spring Boot 4 coverage audit, § 2 `NN-rakun-packaging-release`, plus the fold-in rows *SBOM generation*, *Reproducible-build resource metadata* and *systemd unit*
 
 ---
 
@@ -298,3 +297,4 @@ This front is erlang-only and has no client half: a release is a BEAM artefact.
 - [ ] The README states the CRaC position: the mechanism is deferred, the operational goal is step 5
 - [ ] `repository/rakun/AGENTS.md` documents the release layout and the layer split
 - [ ] The front's tests are green on its assigned target
+

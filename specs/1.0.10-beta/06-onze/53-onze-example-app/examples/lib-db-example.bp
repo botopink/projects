@@ -14,13 +14,13 @@
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/fetching-data
 //           https://nextjs.org/docs/app/api-reference/directives/use-cache
-//           NEXTJS-DOCS.md § 9. Busca de Dados (Fetching) · § 11. Cache
+//           NEXTJS-DOCS.md § 9. Data Fetching · § 11. Cache
 //
 // Target: erlang (server). This module must never reach the client graph —
 // front 68 fails the build if a `#[client]` module imports it, which is one of
 // front 53's assertions.
 
-import {fs, path} from "std";
+import {path, io.fs} from "std";
 // front 12 — the cache store, its scopes, its lifetimes and its tags
 import {cachePolicy, cacheThrough, cacheLife, CacheScope} from "rakun-cache";
 

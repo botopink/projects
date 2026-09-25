@@ -7,7 +7,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/components/font
 //           https://nextjs.org/docs/app/getting-started/fonts
-//           NEXTJS-DOCS.md § 17. Otimização de Fontes
+//           NEXTJS-DOCS.md § 17. Font Optimization
 //
 // Target: the fetch, the metrics lookup and the CSS generation run on the
 // ERLANG half at build time; the `<head>` this produces is served from there.

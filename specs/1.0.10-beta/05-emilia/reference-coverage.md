@@ -1,6 +1,5 @@
 # Reference coverage — Tailwind CSS v4 against the emilia fronts
 
-This file replaces the never-written `specs/1.0.8-beta/closure.md`.
 Reference: `/home/ericfillipe/develop/tailwindcss/TAILWIND_CSS_DOCS.md` (Tailwind v4.3, § 3–§ 21 plus the *Referência Rápida*), walked against the 22 emilia fronts 33–48 and 54–59 in this directory.
 Status: `covered` — the front's token surface delivers the row byte-equal to the reference (or to what the reference prints); `partial` — a named subset, a value the front itself flags as unverified, or a mechanism split across fronts that neither claims; `missing` — no front declares it; `n/a` — a build-time or scanner concern emilia has no counterpart for (emilia hashes per call site and has no scanner).
 
@@ -363,40 +362,29 @@ Category: (a) 1.0.10 follow-up for an existing front · (b) intentionally out of
 - **`transform`/`transform-cpu` are one token** (`Shorthand.Cpu`) because § 16.7 gives them the same value — [45](./45-emilia-transforms/README.md).
 - **Keyframes are hoisted outside every layer and deduplicated by header;** placement "is written down here so it is not re-litigated" — [56](./56-emilia-cascade-and-output/README.md).
 
-## Ordering, carried from the drafts
+## Ordering
 
-The 1.0.8 draft ordered its fifteen fronts in four phases and named three of them foundation:
+Three fronts are foundation: the palette (33) is transversal — borders, backgrounds, text, shadows,
+drop-shadows all name a colour; the modifiers (34) wrap tokens of every section, so without
+`Sm`/`2Xl`/`Dark`/`GroupHover` nothing added later is usable responsively or in a state; and
+`Width`/`Height`/`Gap`/`Pad`/`Margin` (35) are in every layout, so the full scale precedes layout and
+grid.
 
-```
-Phase 1 (Foundation — parallel):   14-color-palette · 15-modifiers · 03-spacing-sizing
-Phase 2 (Core utilities):          01-layout · 02-grid · 04-typography · 05-backgrounds · 06-borders
-Phase 3 (Advanced):                07-effects · 08-filters · 09-tables · 10-transitions · 11-transforms
-Phase 4 (Polish):                  12-interactivity · 13-svg-a11y
-Critical path: F14 → F05 (backgrounds use colours) → F07 (effects use colours for shadow)
-```
+Two fronts come *in front of them*: 54 theme, because four copies of the spacing ladder already exist
+in `emilia.bp` and have drifted (`marginScaleX` emits `m-0.25`, which is not CSS), so every front
+admitted before a theme would add a fifth; and 56 cascade-and-output, because the nested class body
+emilia emits cannot carry `@media` beside `@layer`, cannot hold `@keyframes`, and cannot express
+`group-*`, `peer-*`, `rtl`, `space-*` or `divide-*` — fronts 34, 40, 44, 55 and 58 all emit through it,
+and building them first means building them twice. 54 lands before 56 inside that pair:
+`Options.theme` is a `Theme` and `defaultOptions()` calls `defaultTheme()`. The resulting levels are
+the table in [`README.md`](./README.md).
 
-with the reasons: the palette is transversal (borders, backgrounds, text, shadows, drop-shadows all
-name a colour); the modifiers wrap tokens of every section, so without `Sm`/`2Xl`/`Dark`/`GroupHover`
-nothing added later is usable responsively or in a state; and `Width`/`Height`/`Gap`/`Pad`/`Margin`
-are in every layout, so the full scale precedes layout and grid.
-
-1.0.9 kept the three foundation fronts (now 33 · 34 · 35) and put two fronts *in front of them*:
-54 theme, because four copies of the spacing ladder already existed in `emilia.bp` and had drifted
-(`marginScaleX` emits `m-0.25`, which is not CSS), so every front admitted before a theme would add
-a fifth; and 56 cascade-and-output, because the nested class body emilia emits cannot carry `@media`
-beside `@layer`, cannot hold `@keyframes`, and cannot express `group-*`, `peer-*`, `rtl`, `space-*`
-or `divide-*` — fronts 34, 40, 44, 55 and 58 all emit through it, and building them first means
-building them twice. 54 lands before 56 inside that pair: `Options.theme` is a `Theme` and
-`defaultOptions()` calls `defaultTheme()`. The resulting levels are the table in
-[`README.md`](./README.md).
-
-The 1.0.8 conflict matrix (15 × 15, `no¹` on every pair that shares `tokens.bp`) reduced to one
-footnote — *all fronts touch `tokens.bp` and `emilia.bp`; each adds only its own section and
-dispatcher; merge manually* — and that footnote is what the shared-file rule below replaces.
+All fronts touch `tokens.bp` and `emilia.bp`; each adds only its own section and dispatcher, and the
+shared-file rule below is what makes that mergeable.
 
 ## The shared files — sixteen fronts, one enum
 
-The rule 1.0.9 `fronts.md` states for track D, carried here so a front never has to find it:
+The rule for the shared files:
 
 > **How eighteen fronts share `tokens.bp` and `emilia.bp`.** They do not merge into the same lines.
 > The rule is one variant block per front in `tokens.bp` and one sub-dispatcher per front in
@@ -417,7 +405,7 @@ The rule 1.0.9 `fronts.md` states for track D, carried here so a front never has
 > another front's line.** A merge conflict on either file is resolved by re-sorting, not by choosing
 > a side.
 
-The three exceptions 1.0.9 lists for track D: **33 · 39** share the `Bg { … }` section (33 owns
+The three exceptions for track D: **33 · 39** share the `Bg { … }` section (33 owns
 `Bg.Color`, 39 everything else under `Bg`; 33 lands first and 39 appends after its block);
 **35 · 40** share the sibling selector for `space-*` and `divide-*` (neither is documented upstream;
 both READMEs require a cross-front test asserting the two selectors are byte-identical); **56** owns

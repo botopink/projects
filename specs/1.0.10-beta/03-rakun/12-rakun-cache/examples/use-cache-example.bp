@@ -7,7 +7,7 @@
 // Upstream: https://nextjs.org/docs/app/api-reference/directives/use-cache
 //           https://nextjs.org/docs/app/api-reference/functions/revalidateTag
 //           https://nextjs.org/docs/app/api-reference/functions/updateTag
-//           (NEXTJS-DOCS.md § 11. Cache · § 12. Revalidação)
+//           (NEXTJS-DOCS.md § 11. Cache · § 12. Revalidation)
 //
 // Target: erlang (server). These functions run during a render, a route handler
 // or a server action — never in the browser.

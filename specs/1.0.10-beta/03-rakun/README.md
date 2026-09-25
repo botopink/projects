@@ -1,32 +1,30 @@
 # Track B — rakun
 
-**Track:** B — rakun · **Repo:** `repository/rakun` · **Reference:** Spring Boot 4 (`/home/ericfillipe/develop/spring-boot-4/docs/`, 13 files) + the server half of Next.js (`/home/ericfillipe/develop/nextjs/NEXTJS-DOCS.md`) · **Cut:** [`modules.md`](./modules.md) · **Maps:** [`test-snap.md`](./test-snap.md) · [`test-snap-examples.md`](./test-snap-examples.md) · **Proof:** [`unification.md`](./unification.md) · **Target:** erlang, except the boundary fronts named below
+**Track:** B — rakun · **Repo:** `repository/rakun` · **Reference:** Spring Boot 4 (`/home/ericfillipe/develop/spring-boot-4/docs/`, 13 files) + the server half of Next.js (`/home/ericfillipe/develop/nextjs/NEXTJS-DOCS.md`) · **Cut:** [`modules.md`](./modules.md) · **Maps:** [`test-snap.md`](./test-snap.md) · [`test-snap-examples.md`](./test-snap-examples.md) · **Gaps:** [`unification.md`](./unification.md) · **Target:** erlang, except the boundary fronts named below
 
 | Document | Holds |
 |---|---|
 | [`modules.md`](./modules.md) | The package cut: 27 submodules under `modules/`, `starters/`, 8 example projects, the dependency graph, targets, what `rakun-test` exposes, front → directory ownership, the reconciliation with the 13 scaffolds, what to reconsider |
-| [`unification.md`](./unification.md) | Proof of lossless carry from 1.0.6-beta (20 fronts, 10 examples) and 1.0.7-beta (6 rakun fronts, 15 snippets): per old front what was appended, where the old top-level rows live, and the reference sections still missed |
+| [`unification.md`](./unification.md) | The features and Spring Boot 4 reference sections no rakun front covers yet, each with its nearest front |
 | [`test-snap.md`](./test-snap.md) | The preventive snapshot-test map of the modules, front by front, with the exact `.snap` each case writes |
 | [`test-snap-examples.md`](./test-snap-examples.md) | The same map for `examples/**` |
-| `NN-<name>/README.md` | The 51 front specifications, carried verbatim from `specs/1.0.9-beta/` (now [`../absorbed/1.0.9-beta/`](../absorbed/1.0.9-beta/) for its top-level documents) plus `## Carried from …` sections (26 of them) |
+| `NN-<name>/README.md` | The 51 front specifications |
 
 ## How the numbering works
 
-A front number is an identifier allocated by 1.0.9-beta, not a position. `04–25` were allocated
-when the 1.0.6/1.0.7/1.0.8 drafts were merged; `60–66` and `72–93` when the Spring Boot and Next.js
-references were audited end to end. Numbers are never reassigned: the ownership table, the
-conflict rules, the test maps and every example header cite them, and a jhonstart, emilia, onze or
-std document that says "front 62" means the same thing this one does. The directory names are the
-1.0.9 names, unchanged. **Read the table below for order; read the number for identity.**
+A front number is an identifier, not a position. Numbers are never reassigned: the ownership table,
+the conflict rules, the test maps and every example header cite them, and a jhonstart, emilia, onze or
+std document that says "front 62" means the same thing this one does. **Read the table below for
+order; read the number for identity.**
 
-Rakun holds 51 of the 1.0.9 numbers: 04–25 (22), 60–66 (7), 72–93 (22). Everything else is another
+Rakun holds 51 numbers: 04–25 (22), 60–66 (7), 72–93 (22). Everything else is another
 track: 01–03 [`../01-std/`](../01-std/) · 26–32, 67, 94 [`../04-jhonstart/`](../04-jhonstart/) ·
 33–48, 54–59 [`../05-emilia/`](../05-emilia/) · 49–53, 68–71 [`../06-onze/`](../06-onze/) ·
 95 [`../02-packaging/`](../02-packaging/).
 
 ## The fronts, in blocking order
 
-Three wave numberings exist for these fronts and they do not agree: the 1.0.9 [`overview.md § Order`](../absorbed/1.0.9-beta/overview.md)
+Three wave numberings exist for these fronts and they do not agree: the 1.0.9 `overview.md § Order`
 diagram (three bands: wave 1 = 04 · 05 · 22 · 72; wave 2 = 06 · 62 · 63 · 23 · 61 · 65 · 07 · 08 ·
 11–17 · 19 · 21 · 73–75 · 80 · 82 · 85 · 88; wave 3 = the rest), each README's own `**Wave:**`
 header, and the computed table in [`../fronts.md § Waves`](../fronts.md#waves). The order below
@@ -53,7 +51,7 @@ half depends on 06, and a citation of 11 is read as one or the other). Ties brea
 | 13 | [`13-rakun-http-clients`](./13-rakun-http-clients/README.md) | medium | 2 · 3 | 3 | `rakun-client` | 05 · 06 · 12 (soft) | std 01 |
 | 14 | [`14-rakun-validation`](./14-rakun-validation/README.md) | medium | 2 · 3 | 3 | `rakun-validation` | 05 · 06 | std 01 |
 | 15 | [`15-rakun-messaging`](./15-rakun-messaging/README.md) | medium | 2 · 3 | 3 | `rakun-messaging` | 05 · 06 · 11 (API) | std 01 |
-| 19 | [`19-rakun-test-utilities`](./19-rakun-test-utilities/README.md) | low (blocking as a dependency) | 2 · 3 | 3 | `rakun-test` | 04 · 06 | `repository/onze` for mocking in 1.0.9 — closed: `#[mock]` is `rakun-test`'s ([`../02-packaging/README.md § 3`](../02-packaging/README.md)) |
+| 19 | [`19-rakun-test-utilities`](./19-rakun-test-utilities/README.md) | low (blocking as a dependency) | 2 · 3 | 3 | `rakun-test` | 04 · 06 | `#[mock]` is `rakun-test`'s ([`../02-packaging/README.md § 3`](../02-packaging/README.md)) |
 | 21 | [`21-rakun-hateoas`](./21-rakun-hateoas/README.md) | low | 2 · 3 | 3 | `rakun-hateoas` | 06 · 22 (ro) | — |
 | 23 | [`23-rakun-ssr-pipeline`](./23-rakun-ssr-pipeline/README.md) | critical | 2 · 2 | 3 | `rakun-app` | 04 · 06 · 22 · 62 | jhonstart 28 · 94 · emilia `flush()` (23 line 61) · std 01 · 02 · 03 |
 | 16 | [`16-rakun-scheduling`](./16-rakun-scheduling/README.md) | medium | 2 · 3 | 4 | `rakun-scheduling` | 05 · 06 · 11 (host) | std 01 |
@@ -173,7 +171,7 @@ Module level, the same graph collapsed onto the 27 submodules, is drawn in
 | rakun → jhonstart | 64 · 66 | 32 | the metadata model (`alternates`, `<link>`/`<meta>` feeds) |
 | rakun → emilia | 23 | 56 (`flush()`, `repository/emilia/src/emilia.bp:62-65`) | one `<style>` block per document; 48's attribute hook is reached through jhonstart, never directly. `modules/rakun-app/botopink.json` lists `emilia` as well as `jhonstart` |
 | rakun → onze | 66 | 70 (optional) | dynamic OG image bodies — does not block 66 |
-| rakun → onze | 19 | — | 1.0.9 said `repository/onze` for mocking; the mocking library is retired and `#[mock]` is hosted by `rakun-test` ([`../02-packaging/README.md § 3`](../02-packaging/README.md), [`../01-std/onze-migration.md`](../01-std/onze-migration.md)) — no edge |
+| rakun → onze | 19 | — | the mocking library is retired and `#[mock]` is hosted by `rakun-test` ([`../02-packaging/README.md § 3`](../02-packaging/README.md), [`../01-std/onze-migration.md`](../01-std/onze-migration.md)) — no edge |
 | jhonstart → rakun | 26 | 22 (`matchPath`) · 23 (ro) | one matcher, not two |
 | jhonstart → rakun | 28 · 29 · 30 | 62 (ro) · 23 (ro) | the erlang module `server.bp` binds; the payload shape |
 | jhonstart → rakun | 27 | 60 (ro) · 23 (ro) | prefetch reads the static/dynamic decision |
@@ -194,7 +192,7 @@ with edges to other libraries — is in [`modules.md § Three facts`](./modules.
 | 14 | **both — boundary**: the constraints the server enforces are the ones the client mirrors |
 | 22 · 23 · 24 · 60 · 61 · 65 | **both — boundary**: the route table is matched on BEAM and prefetched in the browser; the payload is serialized on BEAM and reconnected in the browser; `basePath`/trailing-slash rules are read by both. The render, the escaping, the chunk writer and every handler are erlang |
 
-## Rules carried from 1.0.9, unchanged
+## Rules
 
 - One repo per front; the compiler knows none of this; target is assigned, not chosen; reuse `std`;
   additive only; examples are code, not prose — [`../contracts.md`](../contracts.md).

@@ -1,7 +1,5 @@
 # Front 70 — onze Image Response
 
-> Drafted as `onze13` (new in 1.0.9-beta; no 1.0.7-beta predecessor); took the name `onze` when the old mocking library was retired (see [`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)).
-
 **Track:** E onze
 **Priority:** low — without it `opengraph-image` can only be a static file and every post of a blog
 shares one social card. Visible, not structural; and it is the one front in track E with a genuine
@@ -22,7 +20,6 @@ Metadata Files) ·
 <https://nextjs.org/docs/app/api-reference/functions/image-response> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/metadata/opengraph-image> ·
 <https://github.com/vercel/satori>
-**Replaces:** new — admitted by the Next.js coverage audit
 
 ---
 
@@ -334,3 +331,4 @@ font than the one embedded, and that failure looks like "the text sometimes over
 - [ ] `repository/onze/docs.md` records the rasterizer decision — port by default, NIF opt-in, and
       why — because front 71 has to package whichever one a deployment chose
 - [ ] The front's tests are green on its assigned target — `erlang`
+

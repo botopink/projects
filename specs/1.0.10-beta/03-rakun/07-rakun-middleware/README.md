@@ -58,15 +58,13 @@
 **Owns:** `modules/rakun-web/src/middleware.bp`, `cors.bp`, `error.bp`, `filter.bp`, `convention.bp` · `modules/rakun-web/test/middleware_test.bp`, `cors_test.bp`, `error_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · `modules/rakun-web/src/websocket/**`, which is front 20's · `modules/rakun-web/src/rules/**`, which is front 65's
 **Reference:** `04-web.md § Aplicacoes Servlet (Spring MVC)` — Tratamento de Erros, CORS, API Versioning, Container Servlet Embutido · `04-web.md § Graceful Shutdown` · `NEXTJS-DOCS.md § 20. Middleware e Proxy` · <https://docs.spring.io/spring-boot/reference/web/servlet.html> · <https://nextjs.org/docs/app/building-your-application/routing/middleware> · <https://www.rfc-editor.org/rfc/rfc9457>
-**Replaces:** `1.0.6-beta/04-web-middleware` + `1.0.7-beta/12-rakun-middleware` (merged)
 
 ---
 
-## Why these two were one front
+## One chain, two entry points
 
-The 1.0.6 draft asked for Spring filters and interceptors. The 1.0.7 draft asked for a Next-style
-`middleware.bp` at the project root. Read side by side they describe the same thing from two
-directions: something that sees a request before the handler, may answer it instead, may change it,
+Spring's filters and interceptors and a Next-style `middleware.bp` at the project root describe the
+same thing from two directions: something that sees a request before the handler, may answer it instead, may change it,
 and sees the response on the way out.
 
 They are not two mechanisms and must not become two. If `middleware.bp` were its own pipeline, a
@@ -188,8 +186,6 @@ pub fn middleware(req: Request, chain: Chain) -> Response {
 The decorator does the registration. The *file name* is a convention front 22's scanner honours — it
 compiles `middleware.bp` whether or not it is named in a `pub mod` line — but the registration path is
 the decorator, so there is one mechanism and the file convention is a discovery rule on top of it.
-That is the whole difference from the 1.0.7 draft, which proposed a separate invocation inside the SSR
-pipeline.
 
 `#[matcher(...)]` restricts the entry to matching paths. **The matcher grammar is front 65's**
 (`/:path*`, globs, the negative-lookahead form from §20's own example), compiled once at startup.
@@ -279,8 +275,7 @@ the CORS entry without reaching the handler.
 
 botopink has no exception hierarchy. `throw` is legal only inside a `#[@result]` function and produces
 an `Error(e)` **value**, not a raise (`libs/std/src/builtins.d.bp:52-54`); `try … catch` works over
-`@Result` and nothing else. So `#[exceptionHandler("NotFoundException")]` as the 1.0.6 draft wrote it
-has nothing to catch.
+`@Result` and nothing else. So a type-keyed `#[exceptionHandler("NotFoundException")]` has nothing to catch.
 
 What exists on the BEAM is a raise, and rakun-web gives it one shape:
 
@@ -620,237 +615,3 @@ convention has no client half — front 27's `Link` prefetch reads the route tab
       asserted by two recorded timestamps
 - [ ] `repository/rakun/AGENTS.md` documents the order band and the two entry points
 - [ ] The front's tests are green on its assigned target
-
-## Carried from 1.0.6-beta F04 web-middleware
-
-Material present in `specs/1.0.6-beta/04-web-middleware/README.md` and absent from the text above. Code is verbatim; prose is quoted. *superseded by* marks a conscious replacement.
-
-### 1. Filter/chain surface and the registration runtime (1.0.6 Step 1, Step 2)
-
-```bp
-// filter.bp
-pub behavior Filter {
-    fn doFilter(self: Self, request: Request, response: Response, chain: FilterChain) -> Response;
-}
-
-pub type FilterChain {
-    pub fn doFilter(self: Self, request: Request) -> Response {
-        // call next filter or handler
-    }
-}
-```
-
-```js
-const filters = []; // [{ order, filter }]
-
-export function registerFilter(order, filter) {
-    filters.push({ order, filter });
-    filters.sort((a, b) => a.order - b.order);
-}
-```
-
-```bp
-pub fn filter(comptime decl: @Decl) {
-    @emit("val __rkFilter_" + decl.name + " = rkRegisterFilter(" + /* order */ "1, __rkMake_" + decl.name + "());");
-    if (decl.kind != DeclKind.Type) decl.fail("#[filter] must annotate a type");
-}
-```
-
-| 1.0.6 | above |
-|---|---|
-| `Filter.doFilter(request, response, chain)` | `Filter.handle(req, chain)` |
-| `FilterChain.doFilter(request)` | `Chain.next(req)` |
-| `rkRegisterFilter(order, instance)` | `rkRegisterFilter(name, order, { req, chain -> … })` |
-| `request.withHeader(...)` (request mutation) | none — `withHeader` above is response-side only |
-| `response.withHeader(...)` (method) | `withHeader(res, name, value)` (free fn) |
-
-- Acceptance: "Filter can modify request before passing to chain" — no request-side header/attribute mutation exists above; a filter can only pass the `Request` it received or short-circuit.
-- superseded by: *The chain* (ordered ETS table keyed `{Order, Seq}`; no response argument on the way in).
-
-### 2. Global CORS via `#[configuration]`/`#[bean]`, and the CORS filter order (1.0.6 Step 3)
-
-```bp
-#[crossOrigin(origins: ["https://example.com"], methods: ["GET", "POST"])]
-#[restController]
-pub type MyController { }
-```
-
-```bp
-#[configuration]
-pub type CorsConfig {
-    #[bean]
-    pub fn corsConfiguration(self: Self) -> CorsConfiguration {
-        return CorsConfiguration(
-            allowedOrigins: ["https://example.com"],
-            allowedMethods: ["GET", "POST", "PUT", "DELETE"],
-            allowedHeaders: ["Content-Type", "Authorization"],
-        );
-    }
-}
-```
-
-```bp
-#[filter]
-#[order(-100)]  // early in chain
-pub type CorsFilter(config: CorsConfiguration) {
-    pub fn doFilter(self: Self, request: Request, response: Response, chain: FilterChain) -> Response {
-        val origin = request.header("Origin");
-        if (self.config.isAllowed(origin)) {
-            response = response.withHeader("Access-Control-Allow-Origin", origin);
-            // add other CORS headers
-        }
-        return chain.doFilter(request);
-    }
-}
-```
-
-superseded by: *CORS* — `CorsPolicy` (adds `exposedHeaders`, `allowCredentials`, `maxAgeSeconds`) provided through `#[provides]`; `#[crossOrigin("https://example.com", "GET,POST")]` with comma-joined strings (*Language gaps*, row 3); CORS sits at −200 in the order band, −100 is the error boundary. `CorsConfiguration.isAllowed(origin)` has no named counterpart.
-
-### 3. Exception handlers keyed on a type name (1.0.6 Step 4)
-
-```bp
-#[controllerAdvice]
-pub type GlobalExceptionHandler {
-    #[exceptionHandler("NotFoundException")]
-    pub fn handleNotFound(self: Self, ex: NotFoundException) -> Response {
-        return Response.status(404).body(ex.message);
-    }
-
-    #[exceptionHandler("ValidationException")]
-    pub fn handleValidation(self: Self, ex: ValidationException) -> Response {
-        return Response.status(400).body(ex.errors.join(", "));
-    }
-}
-```
-
-```bp
-pub fn controllerAdvice(comptime decl: @Decl) {
-    decl.methods.forEach({ m ->
-        m.annotations.forEach({ a ->
-            if (a.name == "exceptionHandler") {
-                val exType = a.args[0];
-                @emit("val __rkExceptionHandler_" + decl.name + "_" + m.name + " = rkRegisterExceptionHandler(\"" + exType + "\", { ex -> __rkMake_" + decl.name + "()." + m.name + "(ex) });");
-            }
-        });
-    });
-}
-```
-
-- Acceptance: "Handler's `Response` returned instead of 500" · "Multiple handlers for different exception types".
-- superseded by: *RFC 9457 problem details, and what an "exception" is here* — tags are strings (`raiseProblem(tag, detail)`), handlers return `ProblemDetail`, and `Response.status(404).body(…)` is not on the frozen `Response` (`ok/json/created/withStatus/notFound/badRequest` only). The advice-walks-`decl.methods` emission shape is what *`#[controllerAdvice]` is a type-level decorator … the advice does the wiring* describes without code; `rkRegisterExceptionHandler` is not named above.
-
-### 4. Problem-detail wire sample and field name (1.0.6 Step 5)
-
-```bp
-pub type ProblemDetail(
-    type: string,        // URI reference
-    title: string,       // short human-readable summary
-    status: i32,         // HTTP status code
-    detail: string,      // human-readable explanation
-    instance: string,    // URI reference for specific occurrence
-)
-```
-
-```json
-{
-    "type": "https://example.com/problems/not-found",
-    "title": "Resource Not Found",
-    "status": 404,
-    "detail": "User 'alice' not found",
-    "instance": "/api/users/alice"
-}
-```
-
-- Acceptance: "`spring.mvc.problemdetails.enabled=true` equivalent" → `rakun.web.problemdetails.enabled` above.
-- Field `type` is `typeUri` above; the JSON member on the wire must still be `type` (RFC 9457 §3.1) — the serializer mapping is not stated above.
-
-### 5. Built-in filters (1.0.6 Step 6, Notes)
-
-- `RequestIdFilter` — adds `X-Request-Id` header
-- `LoggingFilter` — logs request/response
-- `TimingFilter` — adds `X-Response-Time` header
-
-```bp
-#[filter]
-#[order(-200)]
-pub type RequestIdFilter {
-    pub fn doFilter(self: Self, request: Request, response: Response, chain: FilterChain) -> Response {
-        val requestId = request.header("X-Request-Id");
-        if (requestId == "") {
-            requestId = generateUuid();
-        }
-        val result = chain.doFilter(request.withHeader("X-Request-Id", requestId));
-        return result.withHeader("X-Request-Id", requestId);
-    }
-}
-```
-
-- Acceptance: "`RequestIdFilter` adds/propagates request ID" · "`LoggingFilter` logs request method, path, status, duration" · "`TimingFilter` adds `X-Response-Time` header" · "Filters can be enabled/disabled via config".
-- Notes: "Built-in filters: enabled by default, can be disabled via config".
-- Coverage above: the order band has "request id" at −400 with no header name, no honour-incoming rule and no echo-on-response rule (`X-Request-Id` appears only in `examples/filter-chain-example.bp`; 17-rakun-logging stores the id via front 62). A per-request access-log line (method, path, status, duration) and an `X-Response-Time` header are in no 1.0.9 rakun front (75 ships the `http.server.requests` timer, no header). A per-filter enable/disable key set is not defined.
-
-### 6. Module layout (1.0.6 Step 7)
-
-```
-modules/rakun-web/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   ├── filter.bp
-│   ├── cors.bp
-│   ├── error.bp
-│   └── builtin_filters.bp
-└── test/
-    ├── filter_test.bp
-    ├── cors_test.bp
-    └── error_test.bp
-```
-
-- Acceptance: "All tests pass on commonJS and Erlang" · "Example app uses `rakun-web` features".
-- superseded by: **Owns** (`middleware.bp`, `convention.bp` instead of `builtin_filters.bp`; `middleware_test.bp` instead of `filter_test.bp`; sidecar `src/sidecars/rakun_chain.erl`) and *Test plan* (erlang-only, commonJS cell *skipped*). Wiring `examples/rakun` to rakun-web is not an acceptance item above.
-
-## Carried from 1.0.7-beta F12 rakun-middleware
-
-Source: `specs/1.0.7-beta/12-rakun-middleware/README.md`, `specs/1.0.7-beta/examples-bp.md § F12`, and
-the `middleware.bp` snippet of `examples-bp.md § F22`. Items below are absent from the 1.0.9 text
-above; items the merge already covers elsewhere are listed at the end with the front that holds them.
-
-### Reference rows
-
-| 1.0.7 reference | 1.0.9 status |
-|---|---|
-| `[Proxy](https://nextjs.org/docs/app/getting-started/proxy)` (header, line 3) | Cited only in `examples/middleware-convention-example.bp`; the README header lists `routing/middleware` and `NEXTJS-DOCS.md § 20`. 65 covers the proxy/rewrite content |
-
-### Requirements and API names (quoted)
-
-| # | 1.0.7 item | Where in 1.0.7 | Note |
-|---|---|---|---|
-| 1 | `pub type NextResponse { pub fn next() -> Response { return Response(status: 200, body: ""); } pub fn redirect(url: string) -> Response { return Response(status: 307, body: "").withHeader("Location", url); } pub fn rewrite(url: string) -> Response { return Response(status: 200, body: "").withHeader("X-Rewrite", url); } }` — the `NextResponse` name and a status-200 empty body as the continue sentinel | Step 1 | superseded by: 07 § `Next`, and why the sentinel is status 0 ("Zero is not a valid HTTP status, so it is a safe in-band sentinel") |
-| 2 | Rewrite carried as a response header: `if (middlewareResponse.hasHeader("X-Rewrite")) { path = middlewareResponse.getHeader("X-Rewrite"); };` in `handleRequest(path, request)` "In ssr.bp" | Step 2 | superseded by: 07 § `Next` ("`rewrite` records the new path through a process-local signal (`rkChainSignal`) rather than smuggling it in a header, so nothing leaks to the client") |
-| 3 | "The SSR pipeline checks for `middleware.bp` and invokes it before routing" — `val middlewareResponse = await invokeMiddleware(request); if (middlewareResponse.status == 307) { return middlewareResponse; };`; Gate "SSR pipeline integration works"; Blast radius "SSR pipeline updated to invoke middleware" | Step 2, Gate, Blast radius | superseded by: 07 § The `middleware.bp` convention ("That is the whole difference from the 1.0.7 draft, which proposed a separate invocation inside the SSR pipeline") |
-| 4 | `pub val config = MiddlewareConfig(matcher: ["/dashboard/*", "/api/*"]);` — a `config` value beside `middleware`; acceptance "Middleware only runs on matched paths · Wildcard patterns work" | Step 3 | superseded by: 07 § The `middleware.bp` convention (`#[matcher("/dashboard/:path*")]` stacked on the fn) — the grammar (path globs, `:param`, `:path*`, negative lookahead) is 65 § `config.matcher`. A list of several matchers on one entry is not stated in 07 or 65 — open row |
-| 5 | Location: "Single file at project root (or `app/middleware.bp`)" | Mechanism | superseded by: 22 Step 5 ("A `middleware.bp` at the **project root** — beside `botopink.json`, not under `appDir`") |
-| 6 | Signature `#[@future] pub fn middleware(request: Request) -> @Future<Response>`; Note "Middleware is async because it may need to check auth (DB, external service)." | Mechanism, Notes | 07 pins `pub fn middleware(req: Request, chain: Chain) -> Response` (sync). Not explicitly rejected; on erlang `@Future<T>` lowers eagerly (23 § Mechanism), so the async marker carries nothing on the target 07 compiles for |
-| 7 | "Runs before every request (SSR and API)" / acceptance "Middleware runs before route matching" | Mechanism, Step 2 | 07 § Where the chain hooks in: the chain runs inside `dispatch_http/5` for every request; a `Next.rewrite` re-targets the handler (Step 2 acceptance). Whether the chain runs *before* or *after* 22's `matchPath` is not stated in 07 — open row |
-| 8 | `Response.withHeader("Location", url)` as a **method** on `Response`; test `res.getHeader("Location") == "/login"` and `middlewareResponse.hasHeader("X-Rewrite")` | Steps 1, 2, 4 | 07 § `withHeader`: free fn `withHeader(res, name, value)` over a frozen `Response`; header reads in tests go through `rkReplyHeaderValue` / `rkReplyHeadersContain` (examples). No `getHeader`/`hasHeader` on `Response` |
-| 9 | "Tests pass on commonJS + erlang" | Step 4 | 07 § Test plan: erlang only; the commonJS cell reports *skipped* |
-| 10 | Gate: "Commit on `fix/rakun-middleware`" | Gate | Branch-naming convention; 1.0.9 fronts name no branch |
-| 11 | Logging middleware — `val start = nowMillis(); val response = NextResponse.next(); val duration = nowMillis() - start; print(request.method() + " " + request.path() + " — " + duration.toString() + "ms");` | `examples-bp.md § F12 · Middleware de logging` | No 07 example times a request; the metrics entry is +100 (11/75). Carried in the example file |
-
-### Example material (quoted from `examples-bp.md § F12` and `§ F22 · middleware.bp`)
-
-Carried verbatim to [`examples/next-response-middleware-carried-example.bp`](./examples/next-response-middleware-carried-example.bp): the auth middleware (redirect for `/dashboard`, JSON 401 for `/api/`), the logging middleware, and the F22 session-cookie gate. The auth redirect with a matcher is covered by [`examples/middleware-convention-example.bp`](./examples/middleware-convention-example.bp); the 401-for-API branch, the timing/`print` middleware and the `request.cookie("session")` accessor are not.
-
-| 1.0.7 example | 1.0.9 counterpart |
-|---|---|
-| `import {Request, Response, NextResponse} from "rakun";` | `import {Filter, Chain, Next} from "rakun-web"; import {middleware, matcher} from "rakun-web";` |
-| `return Response(status: 401, body: "{\"error\":\"Unauthorized\"}");` from middleware for `/api/*` | 07 § The chain: a filter that does not call `chain.next` short-circuits ("how a security filter answers 401"); 10 registers at −300 |
-| `request.cookie("session")` | 62 Step 3 `cookies().get("session")`; 18 § Problem records that `request.cookie` "does not exist on a frozen interface" |
-| `request.method()` / `request.path()` / `request.header("Authorization")` | `req.path`, `req.header("authorization")` (07 examples); `HttpMethod` on `Request` (`http.bp:12-20`) |
-
-### Covered elsewhere (not carried)
-
-- "Can redirect, rewrite, modify headers, set cookies" → 07 Step 2 (`Next.redirect`/`Next.rewrite`), 07 § `withHeader`, 62 phase table (`Middleware` row: `cookies().set/delete` yes).
-- "Middleware runs on every request (unless matcher excludes it)." → 07 Step 2 acceptance ("a non-matching path skips it entirely").
-- `NextResponse.redirect` → 307 + `Location` → 07 Step 2 acceptance.
-- "Rakun has `#[filter]` decorators (from 1.0.6-beta F04)" → 07 § Why these two were one front.

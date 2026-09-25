@@ -7,8 +7,8 @@
 //           https://tailwindcss.com/docs/border-style
 //           https://tailwindcss.com/docs/border-color
 //           https://tailwindcss.com/docs/border-radius
-// Reference: TAILWIND_CSS_DOCS.md § 11. Bordas (11.1-11.4), § 21.5 Border
-//            Radius Padrao
+// Reference: TAILWIND_CSS_DOCS.md § 11. Borders (11.1-11.4), § 21.5 Border
+//            Radius (default scale)
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
 // `Border.W {0,1,2,4}`, `Border.Color` (2 families) and `Border.Rounded
@@ -85,7 +85,7 @@ fn colourValues() -> Token[] {
 // LANGUAGE GAP: `Border.Color.Hex(value: string)` is declared at tokens.bp:238
 // and matched at emilia.bp:341, and no caller can construct it — a payload leaf
 // nested inside an enum section has no constructible spelling. Recorded once in
-// specs/1.0.9-beta/language-gaps.md. A string-carrying leaf has to be a
+// specs/1.0.10-beta/language-gaps.md. A string-carrying leaf has to be a
 // TOP-LEVEL `Token` variant to be built, which is front 57's shape; front 40
 // neither works around the gap nor builds on it.
 

@@ -1,10 +1,9 @@
-// carried from specs/1.0.6-beta/examples/06-security-auth-example.bp
 //// F06 — Security (Authentication & Authorization)
 ////
-//// Este exemplo demonstra autenticação JWT, Basic Auth, autorização com @secured
-//// e @preAuthorize, e proteção CSRF.
+//// This example shows JWT authentication, Basic Auth, authorization with @secured
+//// and @preAuthorize, and CSRF protection.
 ////
-//// Documentação Spring Boot:
+//// Spring Boot documentation:
 //// - Spring Security: https://docs.spring.io/spring-boot/reference/web/spring-security.html
 //// - OAuth2: https://docs.spring.io/spring-boot/reference/web/spring-security.html#web.security.oauth2
 //// - Method Security: https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html
@@ -195,7 +194,7 @@ fn main() {
     Rakun.run(App(port: 8080, basePath: "/api"));
 }
 
-//// Testes:
+//// Tests:
 ////
 //// test "JWT authentication works" {
 ////     // Valid token → 200

@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-test/src/**`, `modules/rakun-test/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `11-topicos-avancados.md § Test Auto-configuration Annotations` · `06-messaging.md § Testes com Embedded Kafka` · https://docs.spring.io/spring-boot/reference/testing/
-**Replaces:** `1.0.6-beta/15-test-utilities`
 
 ---
 
@@ -18,7 +17,7 @@
 test cannot build one, so **no rakun front can call a handler directly**. Every handler test in the
 milestone must either start a server and speak HTTP to it, or write its own `FakeRequest` — and front
 25's example already writes one inline and flags it as this front's to own.
-`specs/1.0.9-beta/language-gaps.md` records it under *Unowned surface*; this front is where it stops
+[`../../language-gaps.md`](../../language-gaps.md) records it under *Unowned surface*; this front is where it stops
 being unowned.
 
 That is the sharp edge. The blunt one is everything around it. `modules/rakun-test/` is a
@@ -27,13 +26,6 @@ beyond comparing two fields by hand; no way to clear the DI container between tw
 file, so the second test sees the first one's singletons; no way to deliver a message to a listener
 without a broker; and no way for CI to answer the one question that matters before a deploy — does
 this application actually wire up.
-
-The 1.0.6-beta draft this replaces proposed `MockMvc.builder().controller(UserController).build()`,
-passing a *type* as a value, and `@mockBean(UserService)`, a builtin that does not exist. Neither
-parses. It also did not notice that `repository/onze` already is the mocking library — `#[mock]`
-synthesizes a double from a `behavior` and `when`/`verify` drive it
-(`repository/onze/src/onze.bp:196-219`) — so a second mocking layer here would be a competing answer
-to a solved problem.
 
 ## Current state
 
@@ -79,7 +71,7 @@ Four rules make it a stable API rather than a convenience:
 - **Builders, not defaults.** `fakeGet(path)` and `fakePost(path, body)` start it, and
   `.withQuery(n, v)`, `.withHeader(n, v)`, `.withCookie(n, v)`, `.withParam(n, v)` each return a new
   value. Declared parameter defaults are never applied
-  (`specs/1.0.9-beta/language-gaps.md`), so a seven-argument constructor at every call site is the
+  ([`../../language-gaps.md`](../../language-gaps.md)), so a seven-argument constructor at every call site is the
   alternative, and it is worse.
 
 ### 2. Response assertions
@@ -204,7 +196,7 @@ erlang. Test helpers that run on the server target, testing server code.
 **Acceptance:**
 - [ ] Each helper returns `true` on success and raises on failure.
 - [ ] A failure message carries the expected value, the actual value and the response status.
-- [ ] `expectJsonField` finds a top-level string field without a JSON walker, and says plainly in its own docblock that it is a substring check over a known shape rather than parsing — `std/json` has no structured value (`specs/1.0.9-beta/language-gaps.md`, *Unowned surface*).
+- [ ] `expectJsonField` finds a top-level string field without a JSON walker, and says plainly in its own docblock that it is a substring check over a known shape rather than parsing — `std/json` has no structured value ([`../../language-gaps.md`](../../language-gaps.md), *Unowned surface*).
 
 ### Step 3 — `MockMvc`
 
@@ -295,54 +287,3 @@ There is no commonJS row; this front is server-only by the milestone's target sp
 - The test-seam convention is stated in `repository/rakun/AGENTS.md`, with `revalidatedPaths()` and `published()` named as its instances.
 - No runner, and no mocking implementation, is added by this front.
 - The front's tests are green on erlang.
-
-## Carried from 1.0.6-beta F15 test-utilities
-
-Items in `specs/1.0.6-beta/15-test-utilities/README.md` with no counterpart above. Covered and not
-repeated: `MockMvc.perform` in-process with no socket (§3), request/response assertions (§2),
-`@mockBean` → onze `#[mock]` + `#[bean]` (§8), test slices → module graph + `resetSingletons` (§4),
-`@SpringBootTest`-style whole-context boot → `bootAndExit` (§6).
-
-| Item | 1.0.6 text | Status |
-|---|---|---|
-| Request/result records | Step 1 snippet, below — `MockRequest(method: string, path, headers: Dict, body)`, `MockResult(status, headers: Dict, body)` | superseded by: §1 `FakeRequest implement Request` and the real `Response`; `MockResult.headers` has no home because `Response` has no header surface (§2, front 07) |
-| Standalone controller | `MockMvc.builder().controller(UserController).build()` | superseded by: *Problem* (type passed as value does not parse) and §3 `MockMvc.standalone()` |
-| Mock DSL | `val mockService = @mockBean(UserService); mockService.when("list").thenReturn(["alice", "bob"]);` | superseded by: §8 (onze `when(...).thenReturn`, string-named method lookup not adopted) |
-| Slice names | Problem/Notes: "`@WebMvcTest` → controller slice test", "Test slices: later (WebMvcTest, DataJpaTest)" | concept covered by §4; the two Spring names are not mapped above and appear in no 1.0.9 rakun front |
-| Module layout | Step 3 tree, below | absent: no file layout is given above |
-| Both targets | Gate: "`botopink test` green on both targets" | superseded by: *Target* |
-
-Step 1 — MockMvc (verbatim; superseded by: §1–§3):
-
-```bp
-// mock_mvc.bp
-pub type MockMvc {
-    pub fn perform(self: Self, request: MockRequest) -> MockResult;
-}
-
-pub type MockRequest(
-    method: string,
-    path: string,
-    headers: Dict<string, string>,
-    body: string,
-)
-
-pub type MockResult(
-    status: i32,
-    headers: Dict<string, string>,
-    body: string,
-)
-```
-
-Step 3 — Module structure (verbatim):
-
-```
-modules/rakun-test/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   ├── mock_mvc.bp
-│   └── mock_bean.bp
-└── test/
-    └── mock_mvc_test.bp
-```

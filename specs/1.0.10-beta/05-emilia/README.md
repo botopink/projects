@@ -3,7 +3,7 @@
 **Track:** D — emilia · **Repo:** `repository/emilia` · **Reference:** Tailwind CSS v4 docs (`/home/ericfillipe/develop/tailwindcss/TAILWIND_CSS_DOCS.md`, v4.3)
 
 Type-safe CSS: a `Token` enum walked at comptime, resolved through a theme, emitted through a rule
-model as a layered document. Twenty-two fronts, carried from `specs/1.0.9-beta/` with their numbers.
+model as a layered document. Twenty-two fronts.
 Target: comptime — compiled and tested on both `commonJS` and `erlang`; front 48 is the one front
 whose output both halves of an app read.
 
@@ -11,15 +11,15 @@ whose output both halves of an app read.
 |---|---|
 | [`modules.md`](./modules.md) | the package cut — `emilia` · `emilia-test` (the domain candidates and `emilia-jhonstart` evaluated and dropped), the `tokens.bp` resolution, ownership, examples |
 | [`reference-coverage.md`](./reference-coverage.md) | the Tailwind v4 walk against the 22 fronts; ordering and the shared-file rule |
-| [`unification.md`](./unification.md) | old path → new path, what the 1.0.8/1.0.7 drafts still had to contribute |
-| [`tailwind-mapping.md`](./tailwind-mapping.md) | the 1.0.8 utility → token mapping, verbatim |
+| [`unification.md`](./unification.md) | what no front owns yet, or two fronts state differently |
+| [`tailwind-mapping.md`](./tailwind-mapping.md) | the utility → token mapping |
 | [`test-snap.md`](./test-snap.md) | the snapshot-test map of the modules |
 | [`test-snap-examples.md`](./test-snap-examples.md) | the snapshot-test map of `examples/**` |
 
 ## The fronts, in blocking order
 
 Level = distance from the root of the track's dependency graph; a front sits one level below
-everything it consumes (`Depends on` lines, unannotated edges only — as in 1.0.9 `fronts.md`).
+everything it consumes (`Depends on` lines, unannotated edges only — as in [`../fronts.md`](../fronts.md)).
 Fronts on one level may run in parallel; the two shared files are fenced per
 [`modules.md`](./modules.md).
 
@@ -48,7 +48,7 @@ Fronts on one level may run in parallel; the two shared files are fenced per
 | 59 | [emilia-custom-utilities-and-variants](./59-emilia-custom-utilities-and-variants/README.md) | medium-high | 3 | `emilia` (`compose.bp`) | 34 · 56 |
 | 48 | [emilia-attributes](./48-emilia-attributes/README.md) | high | 3 | `emilia` (`attributes.bp`, `html_hook.bp`; `jhonstart` dev-only for the integration test) + `repository/jhonstart/src/html_attrs.bp` | [26](../04-jhonstart/26-jhonstart-router/README.md) · 33–47 (the slot is token-agnostic; the tokens are what it carries) |
 
-Why 54 and 56 are first, in the 1.0.9 words: 54 *because four copies of the spacing ladder already
+Why 54 and 56 are first: 54 *because four copies of the spacing ladder already
 exist in `emilia.bp` and have already drifted; every front admitted after it would add a fifth*;
 56 *because the shape emilia emits today cannot express `@media` beside `@layer`, cannot hold
 `@keyframes`, and cannot carry `group-*`, `peer-*`, `rtl`, `space-*` or `divide-*` — fronts 34, 40,
@@ -85,9 +85,7 @@ Outbound:  48 ──► jhonstart (html_attrs.bp)      56 ──► onze 69 (flu
 
 ## Numbering
 
-Front numbers are identifiers, not positions: 33–48 are the sixteen utility fronts the 1.0.8-beta
-draft (F01–F15) and the 1.0.7-beta attribute fronts (F15, F16) became in 1.0.9; 54–59 are the six
-fronts the Tailwind coverage audit added (the CSS-authored half: theme, reset, cascade, escape
-hatches, container queries, custom utilities). 49–53 between them are onze, not gaps. Directory
-names are the exact 1.0.9 names; the `Replaces:` line in each README records the older draft it
-absorbed, and [`unification.md`](./unification.md) records what the absorption still owed.
+Front numbers are identifiers, not positions: 33–48 are the sixteen utility fronts; 54–59 are the six
+CSS-authored fronts (theme, reset, cascade, escape hatches, container queries, custom utilities).
+49–53 between them are onze, not gaps. [`unification.md`](./unification.md) records what no front
+owns yet.

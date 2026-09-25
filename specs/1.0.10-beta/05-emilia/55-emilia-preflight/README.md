@@ -8,7 +8,6 @@
 **Owns:** `repository/emilia/src/preflight.bp`, `repository/emilia/test/preflight_test.bp`; the `pub mod preflight;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** `src/tokens.bp` (it adds no `Token`), `src/output.bp` (it consumes `Rule` and `Options`, and edits neither), any per-section dispatcher
 **Reference:** `TAILWIND_CSS_DOCS.md § 4. Estilos Base (Preflight)`, with `§ 3.2 Pseudo-elementos` for the `::before`/`::after` precondition and `§ 11.2 border-width` for the border default · https://tailwindcss.com/docs/preflight
-**Replaces:** new — from the Tailwind coverage audit
 
 ---
 
@@ -200,3 +199,4 @@ it.
 - The non-claim — parity with `§ 4`, not byte-equality with upstream `preflight.css` — is in the
   README and repeated in the test file header.
 - The front's tests are green on its assigned target — for track D, both of them.
+

@@ -6,7 +6,7 @@
 // is no entry that means "any host".
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/config/next-config-js#remotepatterns
-//           NEXTJS-DOCS.md § 16. Otimização de Imagens · § 28. Configuração
+//           NEXTJS-DOCS.md § 16. Image Optimization · § 28. Configuration
 //
 // Target: erlang (server). This check runs twice on the server — once in the
 // component when the page renders, once in the `/_onze/image` handler when

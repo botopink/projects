@@ -1,9 +1,8 @@
-// carried from specs/1.0.6-beta/examples/07-actuator-health-example.bp
 //// F07 — Actuator (Health, Metrics, Info)
 ////
-//// Este exemplo demonstra endpoints de monitoramento: health, info, metrics, env, beans.
+//// This example shows the monitoring endpoints: health, info, metrics, env, beans.
 ////
-//// Documentação Spring Boot:
+//// Spring Boot documentation:
 //// - Actuator: https://docs.spring.io/spring-boot/reference/actuator/index.html
 //// - Endpoints: https://docs.spring.io/spring-boot/reference/actuator/endpoints.html
 //// - Health: https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.health
@@ -13,6 +12,7 @@
 import {Rakun, App} from "rakun";
 import {service, component, configuration, bean, value} from "rakun";
 import {HealthIndicator, Health, InfoContributor, MetricRegistry, Counter, Timer} from "rakun-actuator";
+import {collections.Dict, io: {clock, fs}} from "std";
 
 // ── Health Indicators ───────────────────────────────────────────────────────
 //// GET /actuator/health
@@ -173,14 +173,14 @@ pub type OrderService(registry: MetricRegistry) {
     }
 
     pub fn createOrder(self: Self, amount: i32) -> string {
-        val start = time.nowMillis();
+        val start = clock.nowMillis();
 
         // Process order
-        val orderId = "ORD-" + time.nowMillis().toString();
+        val orderId = "ORD-" + clock.nowMillis().toString();
 
         // Record metrics
         self.counter.increment();
-        self.timer.record(time.nowMillis() - start);
+        self.timer.record(clock.nowMillis() - start);
 
         return orderId;
     }
@@ -275,7 +275,7 @@ fn main() {
     Rakun.run(App(port: 8080, basePath: "/api"));
 }
 
-//// Testes:
+//// Tests:
 ////
 //// test "health endpoint returns UP" {
 ////     // All indicators UP → overall UP

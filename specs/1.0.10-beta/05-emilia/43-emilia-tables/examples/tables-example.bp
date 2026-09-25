@@ -8,7 +8,7 @@
 //   https://tailwindcss.com/docs/border-spacing
 //   https://tailwindcss.com/docs/table-layout
 //   https://tailwindcss.com/docs/caption-side
-// Reference: TAILWIND_CSS_DOCS.md § 14. Tabelas (spacing base from § 21.2)
+// Reference: TAILWIND_CSS_DOCS.md § 14. Tables (spacing base from § 21.2)
 //
 // The spacing steps are `spacing(n)` = `calc(var(--spacing) * n)`, never a
 // resolved `rem` (contract § 4a). They are the same steps `Pad` and `Margin`

@@ -64,7 +64,7 @@ pub type ChatEndpoint(
         //
         // LANGUAGE GAP: no byte or binary type — a binary frame cannot be
         // represented without corrupting it, so the transport refuses one rather
-        // than decoding it as UTF-8. Recorded in specs/1.0.9-beta/language-gaps.md.
+        // than decoding it as UTF-8. Recorded in specs/1.0.10-beta/language-gaps.md.
         val room = self.rooms.roomFor(session.path);
         val clean = message.trim();
         if (clean == "") {

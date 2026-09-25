@@ -6,7 +6,7 @@
 // Upstream: https://tailwindcss.com/docs/hover-focus-and-other-states
 //           https://tailwindcss.com/docs/responsive-design
 //           https://tailwindcss.com/docs/dark-mode
-// Reference: TAILWIND_CSS_DOCS.md § 3.2 (Referencia Completa de Variantes),
+// Reference: TAILWIND_CSS_DOCS.md § 3.2 (Complete Variant Reference),
 //            § 3.3 Design Responsivo, § 3.4 Dark Mode
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.

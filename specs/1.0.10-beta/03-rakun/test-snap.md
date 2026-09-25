@@ -3098,7 +3098,7 @@ test "handler: the export streams one chunk per row in index order" {
         \\ #[@future]
         \\ pub fn exportPosts(req: Request) -> @Future<HandlerResponse> {
         \\     var tasks: Array<fn() -> @Future<string>> = [];
-        \\     loop (0..3) { n ->
+        \\     for (0..3) { n ->
         \\         tasks.push({ -> exportRow(n) });
         \\     };
         \\     val res = streamed(200, tasks);
@@ -11595,7 +11595,7 @@ route user.byId model=rr
 **Test file:** `modules/rakun-soap/test/soap_test.bp` · **Snapshots:** `modules/rakun-soap/test/__snapshots__/soap/` · **Target:** erlang · **Pins:** a 1.1 envelope carries `http://schemas.xmlsoap.org/soap/envelope/` and a 1.2 envelope `http://www.w3.org/2003/05/soap-envelope`, never the other; a 200 with a normal body is `Ok`; a 500 with a `soap:Fault` body is `Error` carrying the decoded fault; a 500 with a non-XML body is a transport fault, distinguishably; a timeout is a transport error and never a fault; both fault shapes decode into one `SoapFault` record; `detail` preserves the raw element
 
 > helper gap: `assertSoap` renders no request headers, so the `SOAPAction` header (1.1) versus `Content-Type` `action` parameter (1.2) split of step 4 is not pinnable here.
-> The 1.0.9 README names the module `rakun-ws`; 1.0.10 renames it `rakun-soap`. `call` is `"<action> <bodyXml> | <status> <responseBody>"` — the stub answers with the given SOAP Body content, or `| timeout` for a connection that never answers. The second line is `<status> body <text>` or `<status> fault code=<c> reason=<r> actor=<a> detail=<d>` (transport faults carry `code=Transport`, name per README § Step 4; a timeout renders status `0`).
+> 93's README names the module `rakun-ws`; the cut names it `rakun-soap` ([`modules.md`](./modules.md)). `call` is `"<action> <bodyXml> | <status> <responseBody>"` — the stub answers with the given SOAP Body content, or `| timeout` for a connection that never answers. The second line is `<status> body <text>` or `<status> fault code=<c> reason=<r> actor=<a> detail=<d>` (transport faults carry `code=Transport`, name per README § Step 4; a timeout renders status `0`).
 
 ### `soap: a 1.1 call sends the 1.1 envelope and returns the body`
 

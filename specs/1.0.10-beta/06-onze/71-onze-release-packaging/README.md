@@ -1,7 +1,5 @@
 # Front 71 — onze Release Packaging
 
-> Drafted as `onze13` (new in 1.0.9-beta; no 1.0.7-beta predecessor); took the name `onze` when the old mocking library was retired (see [`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)).
-
 **Track:** E onze
 **Priority:** medium — without it `onze build` produces artifacts that only run from the source tree
 with a full toolchain present, and the milestone's exit gate requires `onze build && onze start`
@@ -24,7 +22,6 @@ not contain it), `repository/onze/modules/onze-bundler/**` (front 68),
 <https://nextjs.org/docs/app/getting-started/deploying> ·
 <https://nextjs.org/docs/app/api-reference/config/next-config-js/output> ·
 <https://www.erlang.org/doc/apps/sasl/systools.html>
-**Replaces:** new — admitted by the Next.js coverage audit, which deliberately did **not** defer it
 
 ---
 
@@ -374,3 +371,4 @@ every artifact the gate needs exists and carries the same build id.
       and any operator read them
 - [ ] The front's tests are green on its assigned targets — both for the text generators, `erlang` for
       packaging
+

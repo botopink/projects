@@ -96,7 +96,7 @@ test "the sink reports the classes front 23 publishes as the payload's s key" {
     val chunk = await collectChunk(head.0, "h1");
     val names = emittedClasses(chunk.0);
     assert names.length == 2;
-    loop (names) { name ->
+    for (names) { name ->
         assert name.startsWith("e_");
     };
 }

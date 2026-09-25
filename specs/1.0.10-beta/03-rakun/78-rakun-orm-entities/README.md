@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-data/src/orm/**` · `modules/rakun-data/test/orm/**`
 **Does not touch:** `modules/rakun-data/src/datasource.bp` and `src/sql/**` — front 08's, consumed read-only · `modules/rakun-data/src/migration/**` — front 77's · `modules/rakun-data/src/nosql/**` — front 09's · `src/decorators.bp` and the other three frozen files
 **Reference:** `05-data.md § JPA e Spring Data JPA` (Entity, Repository, Configuracao JPA), `§ Spring Data JDBC`, `§ Spring Data Envers`, `§ jOOQ` · <https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.jpa-and-spring-data>
-**Replaces:** new — no front in `1.0.6-beta` proposed it
 
 ---
 
@@ -439,3 +438,4 @@ reports *skipped*.
 - Both language-gap rows above are reflected in [`language-gaps.md`](../../language-gaps.md) with 78 added
   to their *Bites* column
 - The front's tests are green on its assigned target
+

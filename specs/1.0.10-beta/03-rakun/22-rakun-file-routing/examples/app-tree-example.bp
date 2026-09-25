@@ -127,7 +127,7 @@ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
 //
 // `(marketing)` is transparent to the URL: this page answers `/about`, not
 // `/marketing/about`. The group still owns its own layout subtree, which is how
-// `§ 5. Múltiplos Root Layouts` is expressed.
+// `§ 5. Multiple Root Layouts` is expressed.
 
 #[page("(marketing)/about")]
 #[@future]

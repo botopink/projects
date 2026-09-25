@@ -1,17 +1,16 @@
-// carried from specs/1.0.6-beta/examples/01-erlang-runtime-example.bp
-//// F01 — Erlang Runtime: Exemplo de aplicação rodando no BEAM
+//// F01 — Erlang Runtime: an application running on the BEAM
 ////
-//// Este exemplo demonstra o Rakun rodando em Erlang/BEAM usando cowboy como HTTP server.
-//// Documentação Spring Boot: https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.embedded-container
+//// This example shows Rakun running on Erlang/BEAM with cowboy as the HTTP server.
+//// Spring Boot documentation: https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.embedded-container
 ////
-//// O runtime.erl implementa toda a infraestrutura de DI, router e HTTP server
-//// usando ETS tables para estado mutável e cowboy para o servidor HTTP.
+//// runtime.erl implements the whole DI, router and HTTP-server infrastructure,
+//// using ETS tables for mutable state and cowboy for the HTTP server.
 
 import {Rakun, App, Request, Response} from "rakun";
 import {service, restController, route, getMapping, postMapping} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
 
-// ── Service: lógica de negócio ──────────────────────────────────────────────
+// ── Service: business logic ─────────────────────────────────────────────────
 #[service]
 pub type GreetingService {
     pub fn greet(self: Self, name: string) -> string {
@@ -19,7 +18,7 @@ pub type GreetingService {
     }
 }
 
-// ── Repository: acesso a dados (mock) ───────────────────────────────────────
+// ── Repository: data access (mock) ──────────────────────────────────────────
 #[repository]
 pub type UserRepository {
     pub fn findAll(self: Self) -> Array<string> {
@@ -59,17 +58,17 @@ pub type GreetingController(service: GreetingService, repo: UserRepository) {
     }
 }
 
-// ── Bootstrap: inicia o servidor ────────────────────────────────────────────
+// ── Bootstrap: starts the server ────────────────────────────────────────────
 fn main() {
-    // Em Erlang, isso inicia cowboy na porta 8080
-    // O runtime.erl cuida de:
-    // - ETS tables para DI registry, singleton cache, router
-    // - cowboy para HTTP server
-    // - Pattern matching para rotas com :params
+    // On Erlang this starts cowboy on port 8080.
+    // runtime.erl takes care of:
+    // - ETS tables for the DI registry, singleton cache, router
+    // - cowboy for the HTTP server
+    // - pattern matching for routes with :params
     Rakun.run(App(port: 8080, basePath: "/api"));
 }
 
-//// Testes (rodando em Erlang):
+//// Tests (running on Erlang):
 ////
 //// test "greeting service works on BEAM" {
 ////     val service = GreetingService();
@@ -77,7 +76,7 @@ fn main() {
 //// }
 ////
 //// test "HTTP server responds on Erlang" {
-////     // Inicia servidor em background
-////     // Faz request HTTP
-////     // Verifica resposta
+////     // Start the server in the background
+////     // Make an HTTP request
+////     // Check the response
 //// }

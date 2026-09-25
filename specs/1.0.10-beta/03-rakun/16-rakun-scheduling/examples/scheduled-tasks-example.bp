@@ -18,8 +18,8 @@ import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
 // and they call the schedule seams, so those must resolve here.
 import {scheduler, scheduled, fixedRate, fixedDelay} from "rakun-scheduling";
 import {rkScheduleCron, rkScheduleFixedRate, rkScheduleFixedDelay, rkRunTaskNow} from "rakun-scheduling";
-// `time` is std and already exists: libs/std/src/time.bp:56,92.
-import {time} from "std";
+// `io.clock` is std (decision 106): `now` and `formatIso8601` live there.
+import {io.clock} from "std";
 
 #[repository]
 pub type SessionRepo {
@@ -54,7 +54,7 @@ pub type HousekeepingService(
     // rebuild; an unparseable override refuses the boot with the key named.
     #[scheduled("0 0 * * * *")]
     pub fn pruneSessions(self: Self) -> i32 {
-        val cutoff = time.nowMillis() - self.retentionMillis;
+        val cutoff = clock.nowMillis() - self.retentionMillis;
         return self.sessions.deleteExpired(cutoff);
     }
 

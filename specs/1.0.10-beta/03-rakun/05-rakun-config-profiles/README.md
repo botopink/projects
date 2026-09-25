@@ -8,7 +8,6 @@
 **Owns:** `src/config.bp`, `src/profiles.bp`, `src/sidecars/rakun_config.erl` · `test/config_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · `src/runtime.bp` and `src/sidecars/rakun_runtime.erl` belong to front 04
 **Reference:** `03-recursos-principais.md § Configuracao Externa` · `03-recursos-principais.md § Profiles` · <https://docs.spring.io/spring-boot/reference/features/external-config.html> · <https://docs.spring.io/spring-boot/reference/features/profiles.html>
-**Replaces:** `1.0.6-beta/02-config-profiles`
 
 ---
 
@@ -43,7 +42,7 @@ runtime surprise. This front is the largest of the rakun core fronts for that re
 | Profiles | — | none |
 | Typed binding | — | none |
 | Ordering between sources | — | none; there is one source |
-| `std` pieces this front stands on | `libs/std/src/fs.bp:33,61`, `env.bp:24,44,57`, `path`/`random` from front 01 | `fs`/`env` exist today; `path`/`random` are front 01's |
+| `std` pieces this front stands on | `libs/std/src/fs.bp:33,61`, `env.bp:24,44,57` (`io.fs`, `io.env` after decision 106), `path`/`io.random` from front 01 | `fs`/`env` exist today; `path`/`io.random` are front 01's |
 | JSON decoding | `libs/std/src/json.bp:36-45` returns `@Result<string, string>` — **there is no structured walker** (`json.bp:9-16`) | insufficient in botopink; decoding happens in the sidecar over OTP's `json` module |
 
 That last row decides the shape of the front. Flattening `{"server": {"port": 8080}}` into
@@ -394,105 +393,3 @@ here only so the reasoning survives:
 - [ ] The key catalogue lists every key rakun reads
 - [ ] `repository/rakun/AGENTS.md` documents the source order, the location syntax and the YAML subset
 - [ ] The front's tests are green on its assigned target
-
-## Carried from 1.0.6-beta F02 config-profiles
-
-Material present in `specs/1.0.6-beta/02-config-profiles/README.md` and absent from the text above. Code is verbatim; prose is quoted. *superseded by* marks a conscious replacement.
-
-### 1. botopink-side loader API (1.0.6 Steps 1–4)
-
-```bp
-// config.bp
-import {fs, json} from "std";
-
-pub fn loadConfigFile(path: string) -> @Result<Dict<string, string>, string> {
-    val content = fs.readText(path);
-    // flatten nested JSON to dot-notation keys
-    // { "server": { "port": 8080 } } → { "server.port": "8080" }
-}
-
-pub fn loadEnvVars() -> Dict<string, string> {
-    val vars = env.vars();
-    // filter RAKUN_* prefix, strip prefix, lowercase, replace _ with .
-    // RAKUN_SERVER_PORT → server.port
-}
-
-pub fn loadProfileConfig(profiles: Array<string>) -> Dict<string, string> {
-    // for each profile, load application-{profile}.yaml
-    // later profiles override earlier ones
-}
-
-pub fn resolveProperty(key: string) -> string {
-    // check in order: cliArgs, envVars, profileConfig, baseConfig, defaults
-}
-```
-
-superseded by: *Where the property table lives* and *Current state* (JSON row) — one loader cell `rkConfigLoad`, readers `read_properties/1`/`read_json/1`/`read_yaml/1`/`read_tree/1` in the sidecar, because std `json` has no structured walker. `env.vars()` as the environment reader is not named above (only `env.args()` and `env.write`).
-
-### 2. Sidecar export list (1.0.6 Step 6)
-
-```erlang
--module(rakun_config).
--export([load_file/1, load_env/0, resolve/1, set_prop/2, get_prop/1]).
-
-load_file(Path) ->
-    {ok, Content} = file:read_file(Path),
-    % parse JSON/YAML, flatten, store in ETS
-    ok.
-
-load_env() ->
-    % read os:getenv(), filter RAKUN_, map to keys
-    ok.
-```
-
-- Acceptance: "ETS table stores resolved properties" · "`get_prop/1` returns correct value with priority".
-- superseded by: *Where the property table lives* — "Two modules, one table, no second store"; the sidecar writes through `rakun_runtime:set_prop/2` and owns no `get_prop`/`resolve`.
-
-### 3. Non-prefixed environment variables (1.0.6 Step 2)
-
-- [ ] Non-`RAKUN_` vars ignored
-
-The source table above gives the `RAKUN_SERVER_PORT → server.port` mapping but never states that a variable without the prefix contributes nothing.
-
-### 4. Profile list read through `#[value]` (1.0.6 Step 3)
-
-```bp
-#[value("rakun.profiles.active")]
-profiles: string,  // "dev,prod"
-```
-
-Above, the resolved list is exposed as `profiles.active()` (Step 6). Since `rakun.profiles.active` is an ordinary key, the `#[value]` form also works, but returns the *configured* string, not the expanded list after `include`/`group` resolution — worth one sentence in `AGENTS.md`.
-
-### 5. Decorator signature (1.0.6 Step 5)
-
-```bp
-pub fn configurationProperties(comptime decl: @Decl, prefix: string) {
-    // @emit a factory that reads each field from config
-    // field name → prefix + "." + kebab-case(field-name)
-    // type coercion: string → bool, i32, etc.
-}
-```
-
-*Typed binding* above shows the emitted output and never the decorator's own signature.
-
-### 6. Bootstrap integration (1.0.6 Step 7)
-
-```bp
-pub fn run(app: App) {
-    rkLoadConfig();  // load files, env, profiles
-    val _port = rkServe(rkPropInt("server.port"), ...);
-}
-```
-
-- Acceptance: "`Rakun.run()` loads `application.yaml` automatically" · "`server.port` from config used instead of `App.port`" · "Profiles activated before server starts".
-- superseded by: **Does not touch** (`src/bootstrap.bp` frozen) — the load is called from `main` (see `examples/typed-config-example.bp`). The rule "configured `server.port` beats `App.port`" has no home above or in front 04, which names `rakun.server.port` only in its failure table.
-
-### 7. commonJS row and the example app (1.0.6 Gate, Blast radius)
-
-- [ ] `botopink test --target commonJS` green — superseded by: *Test plan* ("This front is erlang-only").
-- "**Example app** can now use `application.yaml` instead of manual prop seeding" — converting `examples/rakun/src/config.bp` (named in *Problem*) is not an acceptance item above.
-
-### 8. Notes (1.0.6)
-
-- "No encryption support in this front (Spring Cloud Vault is out of scope)" — no 1.0.9 rakun front names Vault or encrypted property sources.
-- "YAML support: start with JSON (valid YAML subset), add full YAML later if needed" — superseded by: *Formats* (YAML subset decoder in the sidecar; unsupported constructs refused with a located error).

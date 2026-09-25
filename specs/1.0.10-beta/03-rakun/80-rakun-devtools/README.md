@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-devtools/botopink.json`, `modules/rakun-devtools/src/**` · `modules/rakun-devtools/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. It reads front 04's registry through the `rk*` cells and adds none of its own to `src/runtime.bp`
 **Reference:** `02-desenvolvendo-com-spring-boot.md § Developer Tools (DevTools)` (all sub-sections) · `01-primeiros-passos.md § Executando o Exemplo · Debug Remoto` · `05-data.md § H2 Web Console` · <https://docs.spring.io/spring-boot/reference/using/devtools.html>
-**Replaces:** new — proposed by the Spring Boot 4 coverage audit, § 2 `NN-rakun-devtools`, plus the fold-in rows *Remote debugging / tracing attach*, *DevTools global settings file* and *H2 console equivalent*
 
 ---
 
@@ -43,7 +42,7 @@ application; rakun ships nothing, and the actuator (front 11) is deliberately no
 | A file watcher | nothing. `libs/std/src/fs.bp` has `stat(path) -> @Result<FileStat, string>` and `list(path) -> @Result<string[], string>`, which is enough to poll |
 | The registry a reload must invalidate | front 04's four ETS tables: scan list, singleton cache, property map, route table. `rkRegisterRoute` **appends** — `runtime.mjs:113-121` — so reloading a controller twice registers its routes twice |
 | Dev-profile defaults | front 05 delivers profiles; no front delivers a default set that a module's presence switches on |
-| Global configuration | front 05's search locations are project-relative (`1.0.6-beta` F02 notes "cwd-only for now") |
+| Global configuration | front 05's search locations are project-relative (cwd-only) |
 | A database browser | nothing, and front 08 has no read-only query path |
 | Tracing | `libs/std/src/beam.bp` exposes the process dictionary, ETS and `persistent_term`; no `dbg`, no `recon` |
 
@@ -190,7 +189,7 @@ the trigger file's mtime moves.
 
 ### Step 3 — Compile and load
 
-The changed module is compiled by a child process (`std/process`, front 01) running the botopink CLI
+The changed module is compiled by a child process (`io.process`, front 01) running the botopink CLI
 for the erlang target, and the resulting module is loaded. A compile failure reports the compiler's
 own error text and leaves the running code exactly as it was.
 
@@ -292,3 +291,4 @@ of this module would be an empty shell that claims a feature it cannot have.
 - [ ] Remote loading carries all four guards and no bypass
 - [ ] `repository/rakun/AGENTS.md` documents the reload sequence and the `erl -remsh` debugging path
 - [ ] The front's tests are green on its assigned target
+

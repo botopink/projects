@@ -57,7 +57,6 @@
 **Owns:** `modules/rakun-validation/src/**`, `modules/rakun-validation/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `07-io.md § Validacao` · https://docs.spring.io/spring-boot/reference/io/validation.html
-**Replaces:** `1.0.6-beta/10-validation`
 
 ---
 
@@ -70,16 +69,13 @@ handler that wants to know whether a field was missing or empty cannot tell the 
 that wants to reject three bad fields at once and report all three has to write the accumulation loop
 itself. `modules/rakun-validation/` is a `botopink.json` and a `src/root.bp` holding a TODO comment.
 
-The 1.0.6-beta draft this replaces sketched the decorators but not the mechanism. Its constraint
-functions had empty bodies with `// register constraint` for a comment, its `Validator` was a
-`#[service]` with a bodyless generic method inside a `type` body — which does not parse
-(`docs.md:567`) — and its `#[valid]` was to be applied to a controller method *parameter*, hooking
-into route dispatch. Route dispatch is emitted by `#[restController]` in `src/decorators.bp`, which is
-frozen for this milestone. That design cannot be built.
+A `Validator` as a `#[service]` with a bodyless generic method inside a `type` body does not parse
+(`docs.md:567`), and a `#[valid]` applied to a controller method *parameter* would hook into route
+dispatch, which is emitted by `#[restController]` in `src/decorators.bp`, frozen for this milestone.
+Neither can be built.
 
-It also named a decorator `#[future]`, which collides with the effect marker `#[@future]`
-(`repository/emilia/src/emilia.bp:62`). The temporal constraints here are `#[pastDate]` and
-`#[futureDate]`.
+The temporal constraints are `#[pastDate]` and `#[futureDate]`; a decorator named `#[future]` would
+collide with the effect marker `#[@future]` (`repository/emilia/src/emilia.bp:62`).
 
 ## Current state
 
@@ -361,22 +357,3 @@ agreeing is the deliverable.
 - Every `// LANGUAGE GAP:` marker in the examples appears in the table above.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module's surface in the same commit.
 - The front's tests are green on both of its assigned targets.
-
-## Carried from 1.0.6-beta F10 validation
-
-Source: `specs/1.0.6-beta/10-validation/README.md`. Every constraint, the `#[valid]` parameter hook, the `#[service] Validator`, the 400 body and the both-targets gate are either present above or explicitly superseded in *Problem* / *Where enforcement happens* / *The violation report on the wire*. One item is absent:
-
-### 1. Step 5 — proposed source layout
-
-```
-modules/rakun-validation/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   ├── constraints.bp
-│   └── validator.bp
-└── test/
-    └── validation_test.bp
-```
-
-- 1.0.9 owns `src/**` and names seven test files; no `src/` file layout.

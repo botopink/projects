@@ -32,7 +32,7 @@ Two submodules — front 95's cut survives the audit. The candidates it was test
 | Submodule | Holds | Target | Depends on |
 |---|---|---|---|
 | **`emilia`** (core) | the `Token` enum, theme, spacing, the rule model and renderer, the variant table, the sixteen utility dispatchers, preflight, escape hatches, container queries, compose, the attribute slot (`styled`, `cls`, `mergeClass`) | comptime — compiled and tested on **both** `commonJS` and `erlang`; a string that differs by backend is a defect | `std`; dev-only: `emilia-test`, `jhonstart` (the integration test renders a page) |
-| **`emilia-test`** | `assert<Subject>(loc, …) -> @Result<void, string>` snapshot helpers over compiled CSS and over the style AST | same as core — the `.snap` files are shared by both targets, which is how byte-equality across backends is enforced | `emilia`, `std` (`asserts`, `snapshots`) |
+| **`emilia-test`** | `assert<Subject>(loc, …) -> @Result<void, string>` snapshot helpers over compiled CSS and over the style AST | same as core — the `.snap` files are shared by both targets, which is how byte-equality across backends is enforced | `emilia`, `std` (`testing.asserts`, `testing.snapshots`) |
 
 ## The candidates, each with its verdict
 
@@ -45,7 +45,7 @@ Two submodules — front 95's cut survives the audit. The candidates it was test
 | `emilia-container` | 58 | **merge** (language constraint) | Same: one section plus three top-level variants on `Token` |
 | `emilia-compose` | 59 | **merge**; keep as `compose.bp` | Functions over `Token[]` and `Variant`, nothing core reads back. It is the one file that *could* leave core later with no surface change; splitting one file into a package is the "one file each" anti-pattern front 95 names |
 | `emilia-utilities-<domain>` (layout, typography, …) | 33 · 35–47 | **drop** | A sub-dispatcher takes `Token.<Section>` and is called from `tokenToSheet`'s exhaustive `case` in core. Moving it out makes core depend on the domain package and the domain package on core's `Token` — a cycle for each of fourteen packages |
-| `emilia-jhonstart` | 48 | **drop** — evaluated because dependency direction would have justified it, dropped because the direction does not exist | Front 48's source is jhonstart-free: `styled(tokens, th) -> #("class", string)`, `styledWith`, `className`, `mergeClass`, `assertAsciiBody` (`attributes.bp`) and `cls`/`clsWith` (`html_hook.bp`) return tuples and strings; the one jhonstart file (`repository/jhonstart/src/html_attrs.bp`) imports only `element` and a test asserts the string `emilia` is absent from `repository/jhonstart/src/`. Only `integration_test.bp` renders a page. A package that holds tests and no source is not a package; `jhonstart` is a **dev-dependency** of core instead. **The trigger that makes it one:** the day jhonstart ships a handler registry that emilia must *import* to register itself (the 1.0.7 `[name]={expr}` design, rejected in 1.0.9 because `html.bp` is frozen), the bridge moves to `modules/emilia-jhonstart/` and core's dev-dependency on jhonstart goes away |
+| `emilia-jhonstart` | 48 | **drop** — evaluated because dependency direction would have justified it, dropped because the direction does not exist | Front 48's source is jhonstart-free: `styled(tokens, th) -> #("class", string)`, `styledWith`, `className`, `mergeClass`, `assertAsciiBody` (`attributes.bp`) and `cls`/`clsWith` (`html_hook.bp`) return tuples and strings; the one jhonstart file (`repository/jhonstart/src/html_attrs.bp`) imports only `element` and a test asserts the string `emilia` is absent from `repository/jhonstart/src/`. Only `integration_test.bp` renders a page. A package that holds tests and no source is not a package; `jhonstart` is a **dev-dependency** of core instead. **The trigger that makes it one:** the day jhonstart ships a handler registry that emilia must *import* to register itself (a `[name]={expr}` handler registry — not built, because `html.bp` is frozen), the bridge moves to `modules/emilia-jhonstart/` and core's dev-dependency on jhonstart goes away |
 
 Tailwind's own shape is the tie-breaker everywhere a call was close: one package (`tailwindcss`),
 with `theme.css`, `preflight.css` and `utilities.css` as files inside it, imported into named
@@ -56,7 +56,7 @@ preamble.
 ## The `tokens.bp` problem, resolved
 
 Sixteen fronts (33–47, 57, 58 — and 34 for the modifier variants) add variants to one `pub type
-Token { … }`. In 1.0.9 they also added a sub-dispatcher each to one `emilia.bp`. Two files, sixteen
+Token { … }`. Each also adds a sub-dispatcher to one `emilia.bp`. Two files, sixteen
 writers each, fenced by comment banners.
 
 **What the language allows.** `Token` is one declaration. A section is a type written by its path
@@ -68,7 +68,7 @@ So **`tokens.bp` stays one file, and that is a constraint, not a choice.**
 
 **What moves.** Everything that is not the enum body leaves the shared files:
 
-| Was (1.0.9) | Becomes (1.0.10) | Writers |
+| Was | Becomes | Writers |
 |---|---|---|
 | `src/tokens.bp` — sections + payload variants | `modules/emilia/src/tokens.bp` — **unchanged role**; one contiguous banner block per front, appended in front-number order | 16 fronts, one block each |
 | `src/emilia.bp` — `tokenToCss` + sixteen sub-dispatchers + their value ladders + host cells + public entry | `modules/emilia/src/emilia.bp` — host cells, `emilia`/`emiliaWith`/`flush`/`flushWith`, and `tokenToSheet` **only**; one arm block per front under its banner | 56 owns the file; 16 fronts add one contiguous arm block each |
@@ -82,7 +82,7 @@ today. So the package restructure (front 95's emilia step, or 56 if 95 has lande
 docblock naming its front. Every utility front then edits only its own stub. No front appends to
 `utilities/mod.bp`; a merge conflict on it is a design error.
 
-`root.bp` and `botopink.json` keep the 1.0.9 rule for the fronts that still add a module file
+`root.bp` and `botopink.json` keep the rule for the fronts that still add a module file
 (48 · 54 · 55 · 56 · 57 · 58 · 59): **append in front-number order, never reorder, never edit another
 front's line; a conflict is resolved by re-sorting.**
 
@@ -153,7 +153,7 @@ repository/emilia/
 └── examples/                            see below
 ```
 
-The three modules the 1.0.9 `root.bp` docblock wanted (`tokens` / `stylesheet` / `emilia`) are here
+The three modules `root.bp`'s docblock wanted (`tokens` / `stylesheet` / `emilia`) are here
 as `tokens.bp` / `output.bp` + the cells in `emilia.bp` / `emilia.bp`. The host cells cannot leave
 `emilia.bp`: a cross-module bare import of an `#[@External.…]` declaration is `undefined` at run time
 (`repository/emilia/src/root.bp:9-22`). `output.bp` declares no externals and is pure.
@@ -249,10 +249,10 @@ always through front 56's renderer under `defaultOptions()` unless the helper ta
 
 What it does not do: refusals. A `Variant` with two `&`, an `extend` with an unknown prefix, an
 `Arb` carrying a codec separator — these are build failures, not values a test can read. They are
-recorded in the test file as notes and carried into the compiler's suite, as every 1.0.9 front says.
+recorded in the test file as notes and carried into the compiler's suite, as every front says.
 
-`emilia-test` imports `std/asserts` and `std/snapshots` and nothing from `jhonstart`. Front 48's
-rendered-HTML checks compare `renderToString` output with `std/asserts.equal` in
+`emilia-test` imports `testing.asserts` and `testing.snapshots` and nothing from `jhonstart`. Front 48's
+rendered-HTML checks compare `renderToString` output with `testing.asserts.equal` in
 `modules/emilia/test/integration_test.bp`.
 
 ## Front → directory ownership

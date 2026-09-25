@@ -9,7 +9,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/installation
 //           https://nextjs.org/docs/app/guides/environment-variables
-//           NEXTJS-DOCS.md § 2. Instalação e Configuração · § 7. Server e Client Components
+//           NEXTJS-DOCS.md § 2. Installation and Configuration · § 7. Server and Client Components
 //
 // Target: both — the alias map is a build-time (js half) concern, the env split
 // decides what the js half is allowed to contain and is therefore enforced

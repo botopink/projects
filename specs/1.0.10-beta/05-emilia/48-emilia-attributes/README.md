@@ -8,7 +8,6 @@
 **Owns:** `repository/emilia/src/attributes.bp` · `repository/emilia/src/html_hook.bp` · `repository/jhonstart/src/html_attrs.bp` · `repository/emilia/test/attributes_test.bp` · `repository/emilia/test/integration_test.bp`
 **Does not touch:** `repository/emilia/src/tokens.bp` and `repository/emilia/src/emilia.bp` — no token section, no dispatcher, which is what makes this front safe to run alongside all fifteen others; `repository/jhonstart/src/element.bp`, `src/hooks.bp`, `src/html.bp` — frozen for the milestone
 **Reference:** `TAILWIND_CSS_DOCS.md § 3. Conceitos Fundamentais` (utility-first: the class attribute is the whole interface) · https://tailwindcss.com/docs/styling-with-utility-classes · `NEXTJS-DOCS.md` CSS / hydration
-**Replaces:** `1.0.7-beta/15-emilia-attributes` + `1.0.7-beta/16-emilia-jhonstart-integration`
 
 ---
 
@@ -200,10 +199,10 @@ pub fn attrValue(attrs: Array<#(string, string)>, name: string) -> string { … 
 can read a class back out of a built tree without indexing, which is what makes the round-trip
 assertion in Step 5 possible.
 
-### Why the 1.0.7 design does not survive contact with the language
+### Why the attribute slot is a function, not a decorator
 
-The two fronts this replaces proposed `#[emilia([.Pad.All.4])] div(...)` — a decorator on an
-expression — and an extension to `html.bp`'s parser. Neither is available:
+A decorator on an expression (`#[emilia([.Pad.All.4])] div(...)`) or an extension to `html.bp`'s
+parser would be the two other shapes. Neither is available:
 
 - A decorator function is `@Decl`-first and annotates a **declaration**
   (`repository/rakun/src/decorators.bp:222-224`). There is no expression-position decorator in
@@ -340,7 +339,7 @@ pub fn withAttrs(
 
 pub fn attrValue(attrs: Array<#(string, string)>, name: string) -> string {
     var found = "";
-    loop (attrs) { a ->
+    for (attrs) { a ->
         if (a._0 == name) found = a._1;
     };
     return found;
@@ -419,7 +418,7 @@ test "builders and the html DSL produce the same markup" {
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| There is no expression-position decorator. A decorator function is `@Decl`-first and annotates a declaration, so `#[emilia([.Pad.All.4])] div(…)` — the 1.0.7 design — cannot exist | the whole attribute slot; it is why this front ships functions instead of an annotation | a plain call in the `attrs:` argument: `div([…], attrs: [styled(cardTokens())])` | allow an annotation on an expression that receives the expression as `@Expr<T>` and returns a replacement, so `#[styled([.Pad.All.4])] div(…)` expands to the call above |
+| There is no expression-position decorator. A decorator function is `@Decl`-first and annotates a declaration, so `#[emilia([.Pad.All.4])] div(…)` cannot exist | the whole attribute slot; it is why this front ships functions instead of an annotation | a plain call in the `attrs:` argument: `div([…], attrs: [styled(cardTokens())])` | allow an annotation on an expression that receives the expression as `@Expr<T>` and returns a replacement, so `#[styled([.Pad.All.4])] div(…)` expands to the call above |
 | A decorator body cannot call sibling functions — only the decorator itself is emitted into the evaluation script | a hypothetical declaration-level `#[styled]`, which could not call `emilia()` even if the first gap were closed | inline the whole body, or do not use a decorator — this front does the latter | emit the decorator's module scope into the evaluation script, so a decorator may call the library it belongs to |
 | A dot-shorthand path ending in a payload call does not propagate the typed-array context | a token list written inline in a `styled([…])` argument when it contains a payload leaf | bind the list to a typed `val` first, or build it in a named function — which this front does anyway, for the no-space rule below | let a leading-dot path carry a payload call inside a typed array literal |
 
@@ -484,215 +483,3 @@ front 68's bundle test assert the same literal for the same token list and theme
       regenerated exactly once, when 56 landed.
 - [ ] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
       because agreement between the two is the deliverable.
-
-## Carried from 1.0.7-beta F15 emilia-attributes
-
-Everything below was in the 1.0.7 draft and is not stated above. The 1.0.10 text explains under
-*Why the 1.0.7 design does not survive contact with the language* why the decorator form was
-dropped; the concrete surface it proposed is quoted here so the record is complete.
-
-**Header as first drafted** — complements the header; missing because 1.0.10 re-sourced the
-references and renumbered the dependency. `**Referência Next.js:** CSS / Tailwind
-(https://nextjs.org/docs/app/getting-started/css) · **Análogo:** Tailwind CSS
-(https://tailwindcss.com/docs/utility-first)`; `Depends on: F02 (jhonstart-router)` — front 26
-today, the same gate; `Owns: repository/emilia/src/attributes.bp`; `Does not touch: emilia.bp,
-tokens.bp, root.bp`. (1.0.10 additionally owns `html_hook.bp`, `html_attrs.bp` and the two test
-files, and additionally does not touch jhonstart's `element.bp`, `hooks.bp`, `html.bp`.)
-
-**The `#[emilia([...])]` builder annotation** — complements *Language gaps* row 1; the 1.0.10 text
-names the form and rejects it, but does not quote the expansion. The 1.0.7 mechanism:
-
-```bp
-#[emilia([.Pad.All.4, .Bg.White])]
-div([text("Hello", attrs: [])], attrs: [])
-```
-
-expands to:
-
-```bp
-div([text("Hello", attrs: [])], attrs: [#("class", emilia([.Pad.All.4, .Bg.White]))])
-```
-
-with the decorator declared in `src/attributes.bp` as
-`pub fn emilia(comptime tokens: @Expr<Token[]>) { /* transform the annotated builder call; add class attribute with emilia(tokens) */ }`.
-Step 1 acceptance: `#[emilia]` decorator compiles; can be applied to element builders; transforms
-the call to add the class attr. **Superseded** by the plain call `attrs: [styled(tokens, th)]`.
-
-**Class composition across multiple annotations** — complements Step 1's `mergeClass`; missing
-because 1.0.10 merges one static class with one emilia class and does not state the N-annotation
-case. The 1.0.7 draft:
-
-```bp
-#[emilia([.Pad.All.4])]
-#[emilia([.Bg.White])]
-div([...])
-// → class="e_abc123 e_def456"
-```
-
-Acceptance: multiple emilia decorators compose; class names are space-separated. In 1.0.10 terms
-this is `mergeClass(className(a, th), className(b, th))` → `"e_abc123 e_def456"` — two classes, two
-rules, author order, one ASCII space — and it is the only reading of `mergeClass` where **both**
-arguments are emilia classes. Not asserted above; if wanted it is one more `attributes_test.bp` line.
-
-**Conditional tokens** — no 1.0.10 counterpart. The 1.0.7 draft proposed:
-
-```bp
-#[emilia([.Bg.White, if (isActive) .Text.Bold])]
-div([...])
-```
-
-Acceptance: conditional tokens work; only applied tokens generate classes. A bare `if` without
-`else` is not an expression in botopink (`if` is an expression and needs an `else`), so the form as
-written does not parse; the 1.0.10-compatible spelling is a token-list function that branches —
-`fn tokens(isActive: bool) -> Token[] { val on: Token[] = [.Bg.White, .Text.Bold]; val off: Token[] = [.Bg.White]; return if (isActive) on else off; }`
-— which also satisfies clause 2 (order is identity) because both branches are built in one place.
-
-**Step 4 test as first drafted** — complements *Test plan*; the test name is not used above:
-
-```bp
-test "#[emilia] adds class attribute" {
-    val el = #[emilia([.Pad.All.4])] div([text("hi", attrs: [])], attrs: []);
-    val html = renderToString(el);
-    assert html.contains("class=\"e_");
-}
-```
-
-Acceptance: tests pass on commonJS + erlang. The 1.0.10 equivalent is
-`renderToString(div([text("hi", attrs: [])], attrs: [styled(tokens, th)]))` containing `class="e_`.
-
-**Examples in bp** — complements *Examples*; the two snippets were inline in the 1.0.7 README (there
-was no `examples/` directory):
-
-```bp
-// Emilia in builders
-pub fn Card() -> Element {
-    val cardClass = emilia([.Pad.All.4, .Bg.White, .Border.Rounded.Lg]);
-    return div([
-        h1([text("Título")], attrs: [#("class", emilia([.Text.Bold]))]),
-    ], attrs: [#("class", cardClass)]);
-}
-```
-
-```bp
-// Modifiers
-val buttonClass = emilia([
-    .Pad.X.4, .Bg.Blue500,
-    .Hover([.Bg.Blue700]),
-    .Md([.Pad.X.8]),
-]);
-```
-
-(`.Bg.Blue500` is the pre-front-33 spelling; today it is `.Bg.Blue.500`, and `.Hover([...])` needs
-a typed `val` intermediate — `Token.Hover(hovered)` — per the dot-shorthand gap.)
-
-**Gate, blast radius and notes as first drafted** — complement *Definition of done*:
-
-- [ ] `botopink test` green
-- [ ] `attributes.bp` in `botopink.json` and `root.bp`
-- [ ] AGENTS.md updated
-- [ ] Commit on `fix/emilia-attributes`
-
-Blast radius: new file `attributes.bp`; no changes to existing emilia or jhonstart files; consumers
-can use `#[emilia]` on builders.
-
-Notes: the decorator is a comptime transformation — it modifies the AST before codegen; class names
-are generated at runtime by `emilia(tokens)` — the decorator just wires it up; future:
-`[emilia]={expr}` syntax in the `html` DSL (F16).
-
-Examples carried: none — `specs/1.0.7-beta/15-emilia-attributes/` has no `examples/` directory.
-
-## Carried from 1.0.7-beta F16 emilia-jhonstart-integration
-
-Everything below was in the 1.0.7 draft and is not stated above. 1.0.10 replaces the
-`[emilia]={…}` DSL attribute with the existing `[class]={…}` hole (see *Blocked — constraints of
-frozen files*); the proposed surface is quoted here so the record is complete.
-
-**Header as first drafted** — complements the header. `**Referência Next.js:** CSS
-(https://nextjs.org/docs/app/getting-started/css) · **Análogo:** Tailwind CSS
-(https://tailwindcss.com/docs/utility-first)`; `Depends on: F15 (emilia-attributes)` — folded into
-this front; `Owns: repository/emilia/src/html_hook.bp, repository/jhonstart/src/html_attrs.bp`
-(1.0.10 keeps both paths); `Does not touch: emilia.bp, tokens.bp, attributes.bp, element.bp, html.bp`.
-
-**The `[emilia]={…}` html DSL attribute** — complements *Blocked* row 2; 1.0.10 says it would be
-"a one-arm addition to `attrBracketProp`" but does not quote the form. The 1.0.7 mechanism:
-
-```bp
-val page = html """
-<div [emilia]={[.Pad.All.4, .Bg.White]}>
-  <p>Hello</p>
-</div>
-""";
-```
-
-expands to:
-
-```bp
-div([p([text("Hello", attrs: [])], attrs: [])], attrs: [#("class", emilia([.Pad.All.4, .Bg.White]))])
-```
-
-The 1.0.7 example in bp:
-
-```bp
-val page = html """
-<div [emilia]={[.Pad.All.8, .Bg.Gray100]}>
-  <h1 [emilia]={[.Text.Size.X3xl, .Text.Bold]}>Título</h1>
-  <button [emilia]={[.Pad.X.4, .Bg.Blue500, .Hover([.Bg.Blue700])]}>
-    Clique
-  </button>
-</div>
-""";
-```
-
-Note that every one of these holes contains a space and would be lexed as several attributes under
-`html.bp:109` — the no-space rule above applies to any `[name]={…}` hole, not only `[class]`.
-**Superseded** by `val card = cls(tokens, th); html """<div [class]={card}>…</div>"""`.
-
-**The generic `[name]={expr}` handler registry** — no 1.0.10 counterpart; 1.0.10 keeps `html.bp`
-frozen and needs no registry because `[class]={expr}` resolves `expr` in the caller's scope. The
-1.0.7 steps:
-
-- Step 1 — html DSL extension. In `html.bp`'s parser, when encountering `[name]={expr}`: 1. look up
-  `name` in registered annotation handlers; 2. pass `expr` to the handler; 3. replace with the
-  handler's output (e.g. `class="emilia(...)"`). Acceptance: html DSL parses `[name]={expr}`; looks
-  up handler by name; passes expr to handler.
-- Step 2 — emilia handler registration, `src/html_hook.bp`:
-  `pub fn registerEmiliaHandler() { /* register emilia as an html attribute handler; when html sees [emilia]={tokens}, call emilia(tokens) */ }`.
-  Acceptance: emilia registered as html handler; `[emilia]={tokens}` calls `emilia(tokens)`.
-- Step 3 — jhonstart `src/html_attrs.bp`: bridge between jhonstart's html DSL and emilia; provides
-  the handler registration. Acceptance: bridge module created; jhonstart and emilia both updated.
-
-In 1.0.10 `html_hook.bp` exports `cls`/`clsWith` instead of a registration function, and
-`html_attrs.bp` is emilia-unaware by contract (a test asserts the string `emilia` is absent from
-`repository/jhonstart/src/`) — the 1.0.7 "bridge" direction is reversed on purpose.
-
-**Step 4 test as first drafted** — complements *Test plan*; the test name is not used above:
-
-```bp
-test "html DSL supports [emilia] attribute" {
-    val page = html """<div [emilia]={[.Pad.All.4]}>Hello</div>""";
-    val html = renderToString(page);
-    assert html.contains("class=\"e_");
-}
-```
-
-Acceptance: tests pass on commonJS + erlang. The 1.0.10 equivalent is Step 5's
-`"builders and the html DSL produce the same markup"`.
-
-**Gate, blast radius and notes as first drafted** — complement *Definition of done*:
-
-- [ ] `botopink test` green
-- [ ] `html_hook.bp` and `html_attrs.bp` in place
-- [ ] html DSL integration works
-- [ ] AGENTS.md updated (both repos)
-- [ ] Commit on `fix/emilia-jhonstart-integration`
-
-Blast radius: new files `html_hook.bp` (emilia), `html_attrs.bp` (jhonstart); html DSL extended with
-`[name]={expr}` syntax; both emilia and jhonstart updated.
-
-Notes: this front touches two repos — coordination required; the `[name]={expr}` syntax is generic
-— other libs can register handlers; future: more attribute handlers (data attributes, ARIA, etc.).
-The last two notes have no 1.0.10 home: `[name]={expr}` already lowers to `bracketPair(name, expr)`
-for any `name` (`html.bp:240`), so data-/ARIA attributes need no handler — `[data-id]={x}` and
-`[aria-label]={l}` work today under the same no-space rule.
-
-Examples carried: none — `specs/1.0.7-beta/16-emilia-jhonstart-integration/` has no `examples/` directory.

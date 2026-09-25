@@ -1,7 +1,5 @@
 # Front 49 — onze Stand-up
 
-> Drafted as `onze13` (`specs/1.0.7-beta/01-onze13-stand-up`); took the name `onze` when the old mocking library was retired (see [`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)).
-
 **Track:** E onze
 **Priority:** critical — no other track-E front has a package to land in, and nothing in the milestone
 joins rakun's server to jhonstart's tree to emilia's stylesheet until this front says where the joint is
@@ -21,7 +19,6 @@ JS build half; the render seam runs on erlang, the registry it reads is built by
 <https://nextjs.org/docs/app/getting-started/project-structure> ·
 <https://nextjs.org/docs/app/api-reference/config/next-config-js> ·
 <https://nextjs.org/docs/app/guides/environment-variables>
-**Replaces:** the 1.0.7-beta draft named in the note above
 
 ---
 
@@ -37,8 +34,7 @@ has no idea which layouts wrap a page, and `emilia`'s stylesheet is flushed eith
 built (giving `<style></style>`) or twice (giving one real block and one empty one).
 
 `repository/onze/` does not exist. Nothing in the tree references it — `grep -r onze repository/`
-returns nothing outside `specs/`. The name appears in `specs/1.0.7-beta/` as a plan and in
-`specs/1.0.9-beta/overview.md` as track E, and that is the whole of its current existence.
+returns nothing outside `specs/`.
 
 The consequence is not that onze is missing a feature. It is that fronts 50–53 have no package to
 write into, and fronts 22, 23, 24 and 25 have no consumer — they will build a file router, an SSR
@@ -70,8 +66,8 @@ three things, except the router is rakun, the renderer is jhonstart, the stylesh
 build tool is front 50. onze itself is **the joint** — five files that agree on the vocabulary the
 three libraries do not share.
 
-What onze actually contributes, once fronts 22, 23, 48 and 69 exist, is smaller than the 1.0.7 draft
-assumed and is worth stating plainly: one config record (`OnzeConfig`), one import-alias map, one
+What onze actually contributes, once fronts 22, 23, 48 and 69 exist, is small and worth stating
+plainly: one config record (`OnzeConfig`), one import-alias map, one
 environment-variable rule, one project-file vocabulary the CLI and front 22 both read, and one boot
 adapter. Everything else in track E stands on those five and on the other fronts' own surfaces.
 
@@ -143,8 +139,7 @@ author who never opens the bundler's front.
 
 ### What onze does not do
 
-It does not re-export jhonstart, rakun or emilia. The 1.0.7 draft proposed a `reexports.bp` and it is
-dropped: a consumer writes `import {div, text} from "jhonstart";` because that is where `div` lives,
+It does not re-export jhonstart, rakun or emilia: a consumer writes `import {div, text} from "jhonstart";` because that is where `div` lives,
 and a re-export layer buys one shorter import line at the cost of a second name for every symbol in
 three libraries. onze's public surface is only the vocabulary the three do not share.
 
@@ -154,7 +149,9 @@ three libraries. onze's public surface is only the vocabulary the three do not s
 
 Copy the shape the workspace already uses. `botopink.json` mirrors `repository/emilia/botopink.json`
 and `repository/jhonstart/botopink.json`: `name`, `version`, `description`, `src`, `targets`, `files`.
-The `dependencies` map mirrors `repository/rakun/modules/rakun-web/botopink.json`.
+The `dependencies` map mirrors `repository/rakun/modules/rakun-web/botopink.json`. `bpmp` resolves
+`onze`, `onze-cli`, `onze-bundler`, `onze-assets`, `onze-og`, `onze-release` and `onze-test` as sibling
+libraries — front 50's `create` writes them into a scaffolded `botopink.json`.
 
 ```json
 {
@@ -295,15 +292,16 @@ because an app author reads onze's docs and not rakun's internals.
 
 ### Step 5 — What this front deliberately does not build
 
-Written down because an earlier draft built all four, and because the next person to read
-the 1.0.7-beta draft (named in the note above) will be tempted again.
+Written down so the question is answered before it is asked.
 
-| Proposed in the 1.0.7 draft | Why it is not here |
+| Not built | Why it is not here |
 |---|---|
 | `reexports.bp` | A consumer writes `import {div, text} from "jhonstart";` because that is where `div` lives. A re-export layer buys one shorter import line for a second name for every symbol in three libraries |
 | `PageProps` / `LayoutProps` / `Params` | Front 22 delivers `PageContext` and `LayoutProps`, and `params` is a `std` `Dict` read with `lookup(k).unwrapOr("")`. A second vocabulary is a translation layer and a class of bugs |
 | `registerPage` / `registerLayout` / `registerAction` | Front 22's `#[page]` / `#[layout]` decorators and `rkAppRegisterPage` / `rkAppRegisterLayout` do this, and front 50's CLI generates the `pub mod` lines that make the decorated modules load |
 | `renderDocument` | Front 69 owns the head-insertion point, because only it knows whether the response is streaming |
+| `ActionResponse<S>(state, success, message)` | Front 24's `ActionResult` is the action envelope |
+| `RouteSegmentConfig(dynamic, revalidate)` | Front 60's `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` |
 
 **Acceptance:**
 - [ ] `repository/onze/src/` contains no type whose name also exists in rakun or jhonstart
@@ -424,20 +422,7 @@ live with the examples.
 - [ ] The four seams are documented in `docs.md` with the same precision as the *Mechanism* section
       here, because fronts 22, 23, 48, 50, 53, 68 and 69 all read them
 - [ ] `docs.md` carries the *What this front deliberately does not build* table
+- [ ] `docs.md` states that onze is opt-in: nothing in `libs/std` or the compiler references it
 - [ ] `docs.md` states the OTP version onze requires, as the replacement for Next's
       "Node.js >= 20.9" system requirement (`NEXTJS-DOCS.md § 2`)
 - [ ] The front's tests are green on its assigned target — both, here
-
-## Carried from 1.0.7-beta F01 onze13-stand-up
-
-Everything in the draft is covered above except the rows below, quoted from
-`specs/1.0.7-beta/01-onze13-stand-up/README.md` (the draft is in Portuguese; quotes are verbatim, name
-normalised to `onze` [sic: onze13]).
-
-| 1.0.7 item | Quote | Status here |
-|---|---|---|
-| Two integration types the *What this front deliberately does not build* table omits | `pub type ActionResponse<S>(state: S, success: bool, message: string)` · `pub type RouteSegmentConfig(dynamic: string, revalidate: i32)` | Superseded, not lost: `ActionResponse` is front 24's `ActionResult` (`../../03-rakun/24-rakun-server-actions/`); `RouteSegmentConfig` is front 60's `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` (`../../03-rakun/60-rakun-static-generation/`). Both rows belong in the table in *Step 5* and in `docs.md` |
-| Package-manager registration | "**bpmp registry** precisa reconhecer onze como lib válida" (*Blast radius*) | Not stated above. `bpmp` must resolve `"onze"` as a sibling library before front 50's `create` can write it into a scaffolded `botopink.json` — acceptance for *Step 1*: `bpmp` resolves `onze`, `onze-cli`, `onze-bundler`, `onze-assets`, `onze-og`, `onze-release`, `onze-test` |
-| Opt-in | "onze é opt-in: um projeto botopink não precisa usar onze" (*Notes*) | Not stated above; kept as a `docs.md` line. Nothing in `libs/std` or the compiler references onze |
-| Dependency map spelling | `"requires": { "jhonstart": "feat", "rakun": "feat", "emilia": "feat" }` | Superseded by the `"dependencies": { "<lib>": { "path": "../<lib>" } }` map in *Step 1*, which is the shape `repository/rakun/modules/*/botopink.json` already uses; the draft's branch-pinned form is not a manifest shape the resolver knows |
-| Draft layout `examples/blog/` under the stand-up front | tree in *Step 1* of the draft | Owned by front 53 (`examples/blog/**`), see `modules.md` |

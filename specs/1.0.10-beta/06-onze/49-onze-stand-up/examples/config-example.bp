@@ -6,7 +6,7 @@
 // new record, because botopink has no assignment to a `self` field.
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/config/next-config-js
-//           NEXTJS-DOCS.md § 28. Configuração (next.config.js)
+//           NEXTJS-DOCS.md § 28. Configuration (next.config.js)
 //
 // Target: both. Nothing here is target-specific; that is the point — the same
 // value is what `onze dev` prints and what the BEAM server binds its listener

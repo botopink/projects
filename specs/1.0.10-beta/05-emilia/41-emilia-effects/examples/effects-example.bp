@@ -10,7 +10,7 @@
 //   https://tailwindcss.com/docs/opacity
 //   https://tailwindcss.com/docs/mix-blend-mode
 //   https://tailwindcss.com/docs/mask-clip
-// Reference: TAILWIND_CSS_DOCS.md § 12. Efeitos (values from § 21.4)
+// Reference: TAILWIND_CSS_DOCS.md § 12. Effects (values from § 21.4)
 //
 // Spelling reminders, all three real and all three different:
 //   declaration     Opacity { 0, 5, 10, ... }

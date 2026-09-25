@@ -13,7 +13,7 @@
 // shared function guarantees that and two inline copies do not.
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/css
-//           NEXTJS-DOCS.md § 15. Estilização (CSS)
+//           NEXTJS-DOCS.md § 15. Styling (CSS)
 //
 // Target: erlang (server) — the card renders on the server. The class string it
 // produces is also computed by the client bundle for the same token list, which

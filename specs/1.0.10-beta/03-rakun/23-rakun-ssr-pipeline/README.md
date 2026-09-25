@@ -25,7 +25,6 @@ pipeline or the framework that installs them; they arrive as `RenderHooks` value
 <https://nextjs.org/docs/app/getting-started/layouts-and-pages> ·
 <https://nextjs.org/docs/app/getting-started/server-and-client-components> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/loading>
-**Replaces:** `1.0.7-beta/09-rakun-ssr-pipeline`
 
 ---
 
@@ -122,7 +121,7 @@ the target this front compiles for is a value that has already been computed. Ca
 awaiting both afterwards runs them one after the other, at full latency, and no test that only checks
 the markup will ever say so.
 
-Second: a `#[@future]` fn cannot `await` inside a `loop` or a `.map` closure — the effect marker
+Second: a `#[@future]` fn cannot `await` inside a `for` or a `.map` closure — the effect marker
 attaches to the function, not to the closure, and no library in the checkout does it.
 
 So the pipeline never awaits in a loop, and it never hands anything an already-started future. It
@@ -133,7 +132,7 @@ streaming has the same constraint, and this front hands it thunks for the same r
 
 ```bp
 var tasks: Array<fn() -> @Future<Element>> = [];
-loop (children) { c ->
+for (children) { c ->
     tasks.push({ -> renderChild(c) });
 };
 val rendered = await async.all(tasks);
@@ -524,49 +523,3 @@ class and the client's would first become visible, and where it is cheapest to c
 - `RenderHooks`, its defaults and `setHooks` exist here, and `ssr.bp` imports nothing from
   `repository/onze/` — the grep is part of the gate (decision 77).
 - The front's tests are green on its assigned target — here, on both.
-
-## Carried from 1.0.7-beta F09 rakun-ssr-pipeline
-
-Source: `specs/1.0.7-beta/09-rakun-ssr-pipeline/README.md` and `specs/1.0.7-beta/examples-bp.md § F09`.
-Items below are absent from the 1.0.9 text above; items the merge already covers elsewhere are listed
-at the end with the front that holds them.
-
-### Reference rows
-
-| 1.0.7 reference | 1.0.9 status |
-|---|---|
-| `[Rendering](https://nextjs.org/docs/app/building-your-application/rendering)` (header, line 3) | URL not cited by any rakun front; the topic is split across 23 (render), 28 (server components), 29 (client directive) |
-
-### Requirements and API names (quoted)
-
-| # | 1.0.7 item | Where in 1.0.7 | Note |
-|---|---|---|---|
-| 1 | `Accept`-based split at the transport: "Check if request wants HTML (`Accept: text/html`)" — `val accept = rkGetHeader(headersJson, "accept"); if (accept.contains("text/html")) { … renderPageToHtml(path) … } else { rkDispatchHttp(method, path, headersJson, queryJson, body); }` inside `pub fn run(app: App)` in `bootstrap.bp`; acceptance "HTML requests go through SSR pipeline · API requests go through route handlers" | Step 4 | Not carried. 1.0.9 decides page-vs-handler from the route-table kind (`P` vs `R`, front 22 § What crosses the boundary; 25 § Coexistence with pages), not from `Accept`; `bootstrap.bp` is frozen (23 **Does not touch**). No 1.0.9 front states what a `GET /api/posts` with `Accept: text/html` receives — open row |
-| 2 | `pub fn wrapInHtmlDocument(body: string, metadata: Metadata) -> string { val headHtml = renderMetadataToHtml(metadata); return "<!DOCTYPE html><html><head>" + headHtml + "</head><body>" + body + "</body></html>"; }` — acceptance "Produces valid HTML5 document · Includes metadata in `<head>`" | Step 2 | superseded by: 23 § The document (`document(head, body, p)`) + 32 § Mechanism (`renderHead(m) -> string`) |
-| 3 | `val metadata = await collectMetadata(route);` — "Collects metadata (from page/layout exports)"; Note: "Metadata collection is a separate step; the pipeline orchestrates it." | Mechanism steps 5–6, Notes | superseded by: 32 § Current state — "The 1.0.7 draft proposed `pub val metadata: Metadata = Metadata(...)` and a `collectMetadata()` host cell. Both are dropped" |
-| 4 | Test: `val meta = Metadata(title: "Test", description: "", ...); val html = wrapInHtmlDocument(body, meta); assert html.startsWith("<!DOCTYPE html>"); assert html.contains("<title>Test</title>"); assert html.contains("<div>Hello</div>");` | Step 5 | No 1.0.9 acceptance asserts `startsWith("<!DOCTYPE html>")` on the finished document or `<title>` presence from 23's side; 32 Step acceptance covers `renderHead`. Open assertion for 23's `document` |
-| 5 | `// src/ssr.mjs (sidecar) — import { renderToString } from "jhonstart/element"; export async function renderPage(path) { const route = matchRoute(path); const component = await loadPageComponent(route); const html = renderToString(component); return html; }` — acceptance "`ssr.mjs` sidecar created · Exports `renderPage` function" | Step 3 | superseded by: 23 header **Target** ("The render, the escaping and the chunk writer are erlang; the payload reader and the streaming-hole swapper are js") and Step 3 ("No path in `ssr.bp` calls `renderToString`") |
-| 6 | `val route = await matchRoute(path); val page = await loadPageComponent(route);` — "Loads the page component (and layouts)" by path at request time | Mechanism, Step 1 | superseded by: 22 § Problem ("a `.bp` file is not loadable at runtime … A file-convention router in botopink therefore has to be registration-driven") |
-| 7 | `#[@future] pub fn renderPageToHtml(path: string) -> @Future<string>` — a single-string return | Step 1 | superseded by: 23 Step 1 (`RenderedPage(status, headers, chunks)` + `toResponse`) |
-| 8 | Note: "The SSR pipeline uses jhonstart's `renderToString` — it doesn't reimplement rendering." | Notes | superseded by: 23 § Escaping is the render ("`renderNode` is a full re-implementation of the walk in `element.bp:55-67`") and *Blocked* |
-| 9 | Gate: "Commit on `fix/rakun-ssr-pipeline`" | Gate | Branch-naming convention; 1.0.9 fronts name no branch |
-| 10 | Blast radius: "`bootstrap.bp` updated to route HTML requests through SSR" | Blast radius | Not carried; see row 1 |
-
-### Example material (quoted from `examples-bp.md § F09`)
-
-Carried verbatim to [`examples/ssr-page-and-layout-carried-example.bp`](./examples/ssr-page-and-layout-carried-example.bp). What differs from the 1.0.9 shape:
-
-| 1.0.7 example | 1.0.9 counterpart |
-|---|---|
-| The page builds the whole shell itself: `return html([head([style([text(styles, attrs: [])], attrs: [])], attrs: []), body([...], attrs: [])], attrs: []);` and calls `val styles = await flush();` inside `HomePage` | superseded by: 23 § The document — "`emilia.flush()` is called exactly once per document, after the tree is rendered and before the head is written … the pipeline has exactly one place it may be called". The shell is `document(head, body, p)`; a page returns its subtree |
-| `import {Element, html, head, body, div, h1, p, style, text} from "jhonstart";` | 94 § tag table: the `<html>` constructor is `htmlTag` ("`html` is already a `pub fn` in the same package — the `html """…"""` template fn"); `head`/`body`/`style` are 94's |
-| `val inter = googleFont("Inter", subsets: ["latin"]); … attrs: [#("class", inter.className)]` in `RootLayout` | 52 § `pub fn googleFont(family: string, opts: GoogleFontOptions) -> @Future<Font>` (awaited; options record — parameter-defaults gap) |
-| `pub fn RootLayout(children: Element) -> @Future<Element>` with `html([...], attrs: [#("lang", "pt-BR")])` | 22 Step 2 `LayoutProps(route, children, slots)`; `lang="pt-BR"` is written by 23 § The document |
-| `#("class", titleClass)` attribute pairs | 1.0.9 examples spell `bracketPair("class", x)`; both are `#(string, string)` |
-
-### Covered elsewhere (not carried)
-
-- "SSR is async because page components may be `#[@future]`" → 22 Step 2 (`#[@future] fn(route: PageContext) -> @Future<Element>` is the pinned page shape).
-- "Returns full HTML document" / `<!DOCTYPE html>…</html>` shape → 23 § The document.
-- "Tests pass on commonJS + erlang" → 23 § Test plan (both rows required).
-- Layout nesting → 22 `layoutChain` + 23 `compose`.

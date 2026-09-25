@@ -10,7 +10,7 @@
 //   https://tailwindcss.com/docs/scroll-snap-type
 //   https://tailwindcss.com/docs/user-select
 //   https://tailwindcss.com/docs/accent-color
-// Reference: TAILWIND_CSS_DOCS.md § 17. Interatividade (spacing base § 21.2)
+// Reference: TAILWIND_CSS_DOCS.md § 17. Interactivity (spacing base § 21.2)
 //
 // Scroll offsets are `spacing(n)` = `calc(var(--spacing) * n)`, never a
 // resolved `rem` (contract § 4a).

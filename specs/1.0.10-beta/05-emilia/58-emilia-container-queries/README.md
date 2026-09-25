@@ -8,7 +8,6 @@
 **Owns:** `repository/emilia/src/container.bp`, `repository/emilia/test/container_test.bp`; one payload-free `Container` section plus three **top-level `Token` variants** appended to `src/tokens.bp` under a banner naming this front, and their four arms in `tokenToSheet`; the `pub mod container;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** any other front's token section or dispatcher; `src/output.bp`; `src/theme.bp`
 **Reference:** `TAILWIND_CSS_DOCS.md § 3.3 Container Queries`, with its thirteen-row container-size table, and `§ 3.5 Namespaces de Variáveis de Tema` for `--container-*` · https://tailwindcss.com/docs/responsive-design#container-queries
-**Replaces:** new — from the Tailwind coverage audit
 
 ---
 
@@ -269,3 +268,4 @@ is why that test is written first.
 - All three language-gap rows are marked in the example and already carried in
   [`../language-gaps.md`](../../language-gaps.md).
 - The front's tests are green on its assigned target — for track D, both of them.
+

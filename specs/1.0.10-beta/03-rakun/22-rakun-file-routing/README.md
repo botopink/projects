@@ -17,7 +17,6 @@ is the same matcher compiled twice
 <https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/route-groups> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes>
-**Replaces:** `1.0.7-beta/14-rakun-file-routing`
 
 ---
 
@@ -39,8 +38,8 @@ whether a `Link` target is worth prefetching, front 60 cannot enumerate what to 
 61 has no tree to hang `@slot` and `(.)` interception off. There is no such list today, and nothing
 produces one.
 
-There is also a mechanical problem the 1.0.7 draft did not see. Its plan was to scan `app/` at
-startup with a host cell and load the matched page module by path. botopink compiles only declared
+There is also a mechanical constraint: scanning `app/` at startup with a host cell and loading the
+matched page module by path cannot work. botopink compiles only declared
 modules (`pub mod` in the package root, `docs.md:34-46`); a `.bp` file is not loadable at runtime, and
 `@Decl` carries no source location, so a decorator cannot learn which file it was written in. A
 file-convention router in botopink therefore has to be registration-driven, and the file path has to
@@ -418,47 +417,3 @@ specified. That split follows the precedent in `repository/rakun/test/di_test.bp
   cited by fronts 23, 25, 27, 60, 61 and 66 rather than re-derived.
 - `repository/rakun/AGENTS.md` names `file_router.bp` and the wire format.
 - The front's tests are green on its assigned target — here, on both.
-
-## Carried from 1.0.7-beta F14 rakun-file-routing
-
-Source: `specs/1.0.7-beta/14-rakun-file-routing/README.md` and `specs/1.0.7-beta/examples-bp.md § F14`.
-Items below are absent from the 1.0.9 text above; items the merge already covers elsewhere are listed
-at the end with the front that holds them.
-
-### Reference rows
-
-All four 1.0.7 references (Project Structure · Dynamic Routes · Route Groups · Parallel Routes) are
-cited in the 1.0.9 header. "Depends on: F01 (onze13-stand-up)" → 49-onze-stand-up.
-
-### Requirements and API names (quoted)
-
-| # | 1.0.7 item | Where in 1.0.7 | Note |
-|---|---|---|---|
-| 1 | Startup scan as a host cell: `#[@External.Node("rakun/file_router", "scanAppDir")] #[@External.Erlang("rakun_file_router", "scan_app_dir")] declare fn scanAppDir(appDir: string) -> RouteNode[];` — "Scans `app/` directory at startup"; acceptance "`scanAppDir` scans directory recursively · Returns tree of `RouteNode` · Detects special files" | Mechanism, Step 1 | superseded by: 22 § Problem ("Its plan was to scan `app/` at startup with a host cell and load the matched page module by path. botopink compiles only declared modules … A file-convention router in botopink therefore has to be registration-driven"). The scan survives as a CLI-side verification (22 Step 5), not as the source of routes |
-| 2 | `pub type RouteNode(path: string, filePath: string, segment: string, isDynamic: bool, isCatchAll: bool, isGroup: bool, children: RouteNode[], hasPage: bool, hasLayout: bool, hasLoading: bool, hasError: bool, hasNotFound: bool, hasRoute: bool)` — a tree with per-convention flags | Step 1 | superseded by: 22 § What crosses the boundary — flat `RouteEntry(kind, pattern, slot, verb)` records, one per convention file, eight `kind` letters. `filePath` has no 1.0.9 counterpart (`@Decl` carries no source location; 22 § Language gaps) |
-| 3 | `pub fn matchRoute(path: string, routes: RouteNode[]) -> ?RouteMatch` with `pub type RouteMatch(node: RouteNode, params: Dict<string, string>)`; comments "Match static segments exactly · Match dynamic segments ([slug]) and capture params · Match catch-all ([...slug]) and capture remaining · Skip route groups ((group))" | Step 2 | Covered by 22 Step 4 `matchPath(table, pathname) -> ?RouteMatch` with `RouteMatch(entry, params, rest, chain)`; precedence static > dynamic > catch-all > optional catch-all is 22's addition |
-| 4 | `pub fn renderWithLayouts(node: RouteNode, page: Element) -> Element { var content = page; loop (node.layouts) { layout -> content = layout(content); }; return content; }` — "Wrap in each layout from root to leaf"; acceptance "Layouts nest correctly · Root layout wraps all pages · Segment layouts wrap their children" | Step 3 | Covered by 22 Step 4 `layoutChain` (root-first) + 23 Step 2 `compose(chain, page)`. Note the 1.0.7 loop wraps root-first, which yields the root layout **innermost**; 23 wraps "from the inside out" so the root layout is outermost |
-| 5 | `// src/file_router.mjs (sidecar) import fs from "fs"; import path from "path"; export function scanAppDir(appDir) { … node.hasPage = files.includes("page.bp"); node.hasLayout = files.includes("layout.bp"); … files.filter(f => fs.statSync(path.join(dir, f)).isDirectory()).forEach(subdir => { const child = createNode(subdir); node.children.push(child); scan(path.join(dir, subdir), child); }); … }`; acceptance "`scanAppDir` implemented in JS · Erlang equivalent implemented · Both targets work" | Step 4 | superseded by: 22 § How it maps ("`file_router.mjs` is the browser one and holds only the table"); the directory walk is front 01's, used by the CLI (22 Step 5) |
-| 6 | `// In ssr.bp … val routes = scanAppDir("app"); val match = matchRoute(path, routes); if (match == null) { return renderNotFound(); }; val page = await loadPageComponent(match.node); val withLayouts = renderWithLayouts(match.node, page); return renderToString(withLayouts);` | Step 5 | superseded by: 22 § Problem (no load by path), 23 § Mechanism pipeline (`matchPath → layoutChain → compose → renderNode`), 23 Step 3 (no `renderToString`) |
-| 7 | Tests: `val routes = [RouteNode(path: "/blog", ...), RouteNode(path: "/about", ...)]; val match = matchRoute("/blog", routes); assert match != null; assert match.node.path == "/blog";` and `assert match.params.get("slug") == "hello";` | Step 6 | Covered by 22 Step 4 acceptance and `examples/route-table-example.bp` (optional read via `if (matchPath(...)) { m -> … }`; `params.lookup("slug").unwrapOr("")`) |
-| 8 | Note: "The file router scans at startup; changes require restart (dev mode can watch)." | Notes | 50 § `dev` ("Editing `app/page.bp` re-renders on the next request without restarting the node · Adding `app/about/page.bp` makes `/about` resolve without a restart"; polling, not `fs.watch`) and 80 (devtools restart classes) |
-| 9 | Gate: "Commit on `fix/rakun-file-routing`" | Gate | Branch-naming convention; 1.0.9 fronts name no branch |
-| 10 | Blast radius: "SSR pipeline uses file router · No breaking changes to existing decorator-based routing" | Blast radius | 23 depends on 22; 22 § Problem ("That model works and this front does not replace it") |
-
-### Example material (quoted from `examples-bp.md § F14`)
-
-Carried verbatim to [`examples/layout-and-params-carried-example.bp`](./examples/layout-and-params-carried-example.bp). The file tree (`Estrutura de arquivos`) is covered by the header comment of [`examples/app-tree-example.bp`](./examples/app-tree-example.bp) (plus `api/posts/route.bp` in 25's example). The two `.bp` snippets differ in shape and are marked as language gaps in the file:
-
-| 1.0.7 example | 1.0.9 counterpart |
-|---|---|
-| `pub fn BlogLayout(children: Element) -> Element` — a positional `children` parameter, no decorator | 22 Step 2 `#[layout("blog")] pub fn blogLayout(props: LayoutProps) -> Element` — "one uniform arity is the only shape that survives the gap" (declared parameter defaults never applied) |
-| `Link("/blog", [text("Todos os Posts", attrs: [])])` inside a layout's `nav` | 27 § Problem records the 1.0.7 `Link("/about", [text("About")])` form and its six-parameter gap; 1.0.9 spelling is `Link(linkProps(href), children)` |
-| `#[@future] pub fn BlogPost(params: Dict<string, string>) -> @Future<Element>` with `params.get("slug")`, no decorator | 22 Step 2 `#[page("blog/[slug]")] pub fn blogPostPage(route: PageContext)` + the emitted `blogPostPageParams(route).slug` (Step 6). `Dict` reads are `lookup(...).unwrapOr(...)` in every 1.0.9 example |
-
-### Covered elsewhere (not carried)
-
-- "Detects special files: `page.bp`, `layout.bp`, `loading.bp`, `error.bp`, `not-found.bp`, `route.bp`" → 22 kind table (`P`/`L`/`S`/`E`/`N`/`R`; 30, 31, 25 register the last three).
-- "Handles dynamic segments `[slug]`, catch-all `[...slug]`, route groups `(group)`" → 22 Step 1 (`parseSegment`, seven kinds incl. `[[...slug]]`, `@slot`, `_private`).
-- "Route groups `(group)` are transparent in the URL but can have their own layouts." → 22 Step 1 (`patternOf` drops groups) and Step 5 (two root layouts).
-- "Maps folder structure to URL paths" → 22 `patternOf(parsePath(seg))`.
-- Tree `(marketing)/about/page.bp → /about (group ignored in URL)` · `api/posts/route.bp → /api/posts` → 22 and 25 example headers.

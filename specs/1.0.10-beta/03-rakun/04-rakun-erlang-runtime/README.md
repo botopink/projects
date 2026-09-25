@@ -8,7 +8,6 @@
 **Owns:** `src/sidecars/rakun_runtime.erl`, `src/runtime.bp` (`#[@external(erlang)]` block only), `src/root.bp`, `botopink.json` · `test/erlang_runtime_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — the four files frozen for the milestone
 **Reference:** `02-desenvolvendo-com-spring-boot.md § Beans e Injecao de Dependencias` · `03-recursos-principais.md § SpringApplication` · `04-web.md § Container Servlet Embutido` · <https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html> · <https://docs.spring.io/spring-boot/reference/features/spring-application.html> · <https://docs.spring.io/spring-boot/reference/web/servlet.html>
-**Replaces:** `1.0.6-beta/01-erlang-runtime`
 
 ---
 
@@ -216,8 +215,7 @@ is data, extended by later fronts (08 adds the bad-DB-URL row) through `rakun_ru
 
 ### Why `gen_tcp` and not cowboy
 
-The old draft chose cowboy (`1.0.6-beta/01-erlang-runtime/README.md`, step 3). That does not survive
-contact with how the sidecar is loaded: `__bp_load_siblings/0` calls `compile:file/2` on the source at
+cowboy does not survive contact with how the sidecar is loaded: `__bp_load_siblings/0` calls `compile:file/2` on the source at
 run time, with no rebar, no `.app` file and no code path beyond the output directory. A sidecar that
 calls `cowboy:start_clear/3` compiles fine and then dies with `undefined function cowboy:start_clear/3`
 on every machine that has not separately installed cowboy — and rakun's test row would depend on an
@@ -253,9 +251,8 @@ named in one place.
 
 `rkServe` blocks. On Node the listening socket keeps the event loop alive; on the BEAM the escript's
 `main/1` returning halts the node, so `serve/2` starts the listener under `rakun_sup` and then waits
-(`receive after infinity -> ok end`). The difference from the old draft's `timer:sleep(infinity)` is
-that the socket is already supervised by the time the wait begins, so a crash in the acceptor is
-restarted rather than losing the port. In headless mode there is no listener and the same wait is what
+(`receive after infinity -> ok end`). Unlike a bare `timer:sleep(infinity)` in `main/1`, the socket is already supervised by the time
+the wait begins, so a crash in the acceptor is restarted rather than losing the port. In headless mode there is no listener and the same wait is what
 `rakun.main.keep-alive` controls.
 
 ## Steps
@@ -512,140 +509,3 @@ Recorded here because `fronts.md` must stay true; this front does not edit it.
 - [ ] `repository/rakun/AGENTS.md` documents the host module, its OTP shape, the sidecar path and the
       `rakun.main.*` / `rakun.server.*` key set
 - [ ] The front's tests are green on its assigned target
-
-## Carried from 1.0.6-beta F01 erlang-runtime
-
-Material present in `specs/1.0.6-beta/01-erlang-runtime/README.md` and absent from the text above. Code is verbatim; prose is quoted. An item labelled *superseded by* was consciously replaced by the named section; it is kept so the decision stays visible.
-
-### 1. Export list with arities, and the module-level `init()` (1.0.6 Step 1)
-
-```erlang
--module(rakun_runtime).
--export([scan/1, scanned_names/0, scanned_count/0,
-         singleton/2, build_count/1,
-         enter/1, done/1,
-         set_prop/2, prop/1, prop_int/1,
-         register_route/3, route_count/0, route_paths/0,
-         dispatch/2, dispatch_http/5,
-         serve/2]).
-
-% ETS tables (created on module load)
--define(SCAN_TABLE, rakun_scan).
--define(SINGLETON_TABLE, rakun_singletons).
--define(PROPS_TABLE, rakun_props).
--define(ROUTES_TABLE, rakun_routes).
-
-init() ->
-    ets:new(?SCAN_TABLE, [set, named_table, public]),
-    ets:new(?SINGLETON_TABLE, [set, named_table, public]),
-    ets:new(?PROPS_TABLE, [set, named_table, public]),
-    ets:new(?ROUTES_TABLE, [ordered_set, named_table, public]).
-```
-
-- Acceptance carried: "All 17 functions exported with correct arities" · "ETS tables created on `init()`".
-- The arity list is the only place the sixteen host arities are written down in one block; *The seventeen cells, paired* gives the name mapping but omits `scannedCount → scanned_count`.
-- superseded by: *Step 1 — `rakun_registry`: the table owner* — tables are created by `rakun_registry`'s `init/1` under `rakun_sup` (plus a fifth table `?BUILDS`), not by a module-level `init()`; `-behaviour(application)` replaces the bare module.
-
-### 2. Concern → storage mapping (1.0.6 Mechanism)
-
-- Component scan → ETS table or process dictionary
-- Singleton cache → ETS table (keyed by atom name)
-- Cycle guard → process dictionary (per-construction stack)
-- Config props → ETS table
-- Router → ETS table + pattern matching
-- HTTP server → `cowboy` or `ranch` ("Erlang's standard HTTP server")
-
-superseded by: *What the OTP pieces are, and why each one* — same storage for the first five rows; the HTTP row is `gen_tcp` with `{packet, http_bin}`, cowboy as optional adapter, ranch not named.
-
-### 3. `botopink check` acceptance (1.0.6 Step 2)
-
-- [ ] `botopink check` passes on `src/runtime.bp`
-
-Not present in any acceptance list above; the closest is Step 10's `botopink test --target erlang`.
-
-### 4. Cowboy listener (1.0.6 Step 3, Gate, Blast radius, Notes)
-
-```erlang
-serve(Port, DispatchFn) ->
-    cowboy:start_clear(rakun_http, [{port, Port}], #{
-        env => #{dispatch => cowboy_router:compile([
-            {'_', [{'_', rakun_handler, #{dispatch_fn => DispatchFn}}]}
-        ])}
-    }),
-    timer:sleep(infinity).  % keep alive
-```
-
-- Acceptance: "`Rakun.run(App(port: 8080, basePath: "/"))` starts cowboy on port 8080" · "GET request to registered route returns 200" · "GET request to unregistered route returns 404".
-- Gate: "Cowboy dependency declared in example app's rebar.config".
-- Blast radius: "Example app needs cowboy dependency + `rebar.config`".
-- Notes: "Cowboy chosen over `gen_tcp` because it handles HTTP parsing, keep-alive, and SSL out of the box" · "Future: consider `ranch` instead of `cowboy` for lighter weight, but cowboy's HTTP handling is worth the dependency" · "The `serve/2` function blocks (`timer:sleep(infinity)`) to keep the BEAM node alive — matches Node.js's event loop behavior".
-
-superseded by: *Why `gen_tcp` and not cowboy*, *Step 9 — Transport seam for cowboy*, *Where this front stops* (`receive after infinity` under `rakun_sup`). A `rakun_cowboy` adapter, if built, is `src/sidecars/rakun_cowboy.erl` (*Contradictions* 1); a `rebar.config` for it has no owner above (81-rakun-packaging-release owns the release script only).
-
-### 5. Router matching sketch (1.0.6 Step 4)
-
-```erlang
-match(Verb, Path) ->
-    Segs = string:split(Path, "/", all),
-    Routes = ets:tab2list(?ROUTES_TABLE),
-    find_match(Verb, Segs, Routes).
-
-find_match(_Verb, _Segs, []) -> not_found;
-find_match(Verb, Segs, [{_, RVerb, RSegs, Handler} | Rest]) ->
-    case match_segs(Verb, RVerb, Segs, RSegs, #{}) of
-        {ok, Params} -> {ok, Handler, Params};
-        no_match -> find_match(Verb, Segs, Rest)
-    end.
-```
-
-*Step 4 — Router* above states the same algorithm in prose only. Acceptance "Multiple routes with same prefix resolve correctly" maps to `test/overlapping_routes_test.bp` passing unchanged.
-
-### 6. Singleton via `lookup`/`insert` (1.0.6 Step 5)
-
-```erlang
-singleton(Name, BuildFn) ->
-    case ets:lookup(?SINGLETON_TABLE, Name) of
-        [{_, Value}] -> Value;
-        [] ->
-            Value = BuildFn(),
-            ets:insert(?SINGLETON_TABLE, {Name, Value}),
-            Value
-    end.
-```
-
-superseded by: *Step 2 — Scan, singleton scope and the cycle guard* — `ets:insert_new/2` so a race between two request processes keeps one instance; `ets:insert/2` as above lets the second builder overwrite the first.
-
-### 7. `done/1` (1.0.6 Step 6)
-
-```erlang
-done(Name) ->
-    Building = get(rakun_building) orelse [],
-    put(rakun_building, lists:delete(Name, Building)).
-```
-
-Step 2 above shows `enter/1` only. Note: `get(...) orelse []` is a `badarg` when the key is unset (`undefined` is not a boolean); the `case get(rakun_building) of undefined -> []; S -> S end` form used in `enter/1` above is the one to mirror.
-
-### 8. CI `allow_fail: true` (1.0.6 Current state, Step 7, Gate)
-
-- "CI `erlang` rows have `allow_fail: true`"
-- [ ] "CI `erlang` row goes from `allow_fail: true` to green"
-- [ ] "CI erlang row green (remove `allow_fail: true`)"
-
-superseded by: *Step 10 — Manifest and the ecosystem gate* — the red-cell mechanism is `scripts/known-red-libs.txt`, not a per-row `allow_fail` flag.
-
-### 9. Build-path sidecar shipping (1.0.6 Step 8)
-
-- [ ] `botopink build --target erlang` copies sidecar to output
-- [ ] Built Erlang application starts and serves HTTP
-
-superseded by: *Blocked* and the *Language gaps* row — `build`/`run` outputs emit no sibling loader, so only the `test` path is claimed above. These two boxes are the demonstration target once the `codegen/erlang.zig` emitter gap closes.
-
-### 10. Blast radius lines (1.0.6)
-
-- "**CI** erlang row goes from red to green — all libs that depend on rakun (examples) now compile on Erlang" — the downstream claim about `examples/rakun` is not restated above.
-- "**No compiler changes** — all within rakun's own source" — *How a host cell reaches Erlang* agrees for the test path; *Blocked* names one emitter change for the run path. Both statements are true of different paths.
-
-### 11. Notes (1.0.6)
-
-- "ETS tables are per-BEAM-node (one VM = one set of tables) — matches Node.js module-global semantics" — implied by the OTP table above, not stated.
-- "Process dictionary for cycle guard is per-process — matches the per-construction semantics (each factory call is in the calling process)" — covered by *What the OTP pieces are* (cycle-guard row).

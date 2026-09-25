@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-logging/src/**`, `modules/rakun-logging/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `03-recursos-principais.md § Logging` (Formato · Niveis · Grupos · Output para Arquivo · Rotacao · Log Estruturado · Extensions) · https://docs.spring.io/spring-boot/reference/features/logging.html
-**Replaces:** `1.0.6-beta/13-logging-structured`
 
 ---
 
@@ -21,17 +20,12 @@ no correlation, so two log lines from the same request cannot be shown to be fro
 because there is no logger at all, a library like `rakun-data` cannot report a slow query without
 printing to whatever the application's stdout happens to be.
 
-The 1.0.6-beta draft this replaces declared five free functions with `self: Self` parameters and no
-enclosing type — `pub fn info(self: Self, message: string);` at module level, bodyless, which is
-neither a method nor a legal declaration (`docs.md:567`). It also proposed nothing for correlation
-beyond the letters MDC in a closing note.
-
 ## Current state
 
 - `repository/rakun/modules/rakun-logging/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `repository/rakun/` — every diagnostic in the tree is `@print`. The decorators, the runtime and the bootstrap all emit nothing at all.
 - `libs/std/src/time.bp:92` — `formatIso8601(epochMillis) -> string` already exists, so timestamps do not need a new primitive.
-- `libs/std/src/` has no content-hash module; front 03 delivers it and the error digest is one of its first consumers.
+- `libs/std/src/` has no content-hash module; front 03 delivers it as `hash.contentHash` (decision 106) and the error digest is one of its first consumers.
 - OTP's `logger` is present in every BEAM release and is what this front configures; nothing in rakun touches it today.
 
 ## Mechanism
@@ -313,37 +307,3 @@ inspecting stdout. There is no commonJS row; this front is server-only by the mi
 - The startup summary prints elapsed time, PID, node, port and profiles.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module's surface and the front-75 boundary in the same commit.
 - The front's tests are green on erlang.
-
-## Carried from 1.0.6-beta F13 logging-structured
-
-Items in `specs/1.0.6-beta/13-logging-structured/README.md` with no counterpart above. Covered and not
-repeated: five levels, ECS/GELF/Logstash schemas, `logging.level.root|rakun|myapp` →
-`rakun.logging.level.*`, `logging.structured.format.console` → `rakun.logging.structured.format.console`,
-log groups, console + file output, MDC → *Correlation* (and front 75 reads the same trace id).
-
-| Item | 1.0.6 text | Status |
-|---|---|---|
-| Factory name | `pub fn getLogger(name: string) -> Logger { return Logger(name: name); }` | renamed to `logger(name)` above; the mapping is not stated |
-| Sample ECS line | Step 2 output, below | absent as a literal; *Structured output* lists the ECS field set but gives no example record |
-| Log4j2 | Mechanism: "Logback/Log4j2 integration" | absent: *External configuration* maps `logback-spring.xml` → `sys.config`; Log4j2 is not named in any 1.0.9 rakun front (`grep -ril log4j specs/1.0.9-beta/*rakun*` is empty) — no BEAM meaning, record as not ported |
-| Module layout | Step 4 tree, below | absent: no file layout is given above |
-| Both targets | Gate: "`botopink test` green on both targets" | superseded by: *Target* |
-
-Step 2 — Structured logging, sample output (verbatim):
-
-```json
-{"@timestamp":"2026-01-01T00:00:00Z","log.level":"INFO","message":"Starting application","service.name":"myapp"}
-```
-
-Step 4 — Module structure (verbatim):
-
-```
-modules/rakun-logging/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   ├── logger.bp
-│   └── structured.bp
-└── test/
-    └── logging_test.bp
-```

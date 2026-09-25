@@ -5,7 +5,7 @@
 //
 // Upstream: https://tailwindcss.com/docs/colors#adjusting-opacity
 //           https://tailwindcss.com/docs/background-color
-// Reference: TAILWIND_CSS_DOCS.md § 3.6 Cores ("Opacidade com cores")
+// Reference: TAILWIND_CSS_DOCS.md § 3.6 Colors ("Opacity with colors")
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
 // `Alpha` is delivered by front 33. The modifiers it nests with (`Hover`) exist

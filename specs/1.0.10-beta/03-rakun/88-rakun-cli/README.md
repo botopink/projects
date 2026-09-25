@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-cli/src/**`, `modules/rakun-cli/templates/**`, `modules/rakun-cli/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. It does not write to `repository/onze/` either; front 50 owns that CLI and this one never reaches across.
 **Reference:** `12-upgrading.md § Spring Boot CLI` · `01-primeiros-passos.md § Executando o Exemplo` (Via IDE, Via Linha de Comando, Com Maven, Com Gradle) · `11-topicos-avancados.md § Plugins de Build` · https://docs.spring.io/spring-boot/cli/index.html · https://docs.spring.io/spring-boot/maven-plugin/index.html
-**Replaces:** new
 
 ---
 
@@ -248,3 +247,4 @@ There is no commonJS row. The CLI ships as an escript on BEAM by the milestone's
 - The boundary table in step 7 appears in both this README and front 50's.
 - `repository/rakun/AGENTS.md`, `modules/README.md` and the repository README record the commands in the same commit.
 - The front's tests are green on erlang.
+

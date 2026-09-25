@@ -34,7 +34,7 @@ import {failHandler, succeedHandler, restartStore, storedData} from "rakun-sched
 // The handler signature is fixed: `(self, data: string) -> string`. `data` is
 // querystring-encoded because `std/json` has no structured value — the same
 // choice front 24's action envelope and front 83's saga context make. See
-// specs/1.0.9-beta/contracts.md § 3.
+// specs/1.0.10-beta/contracts.md § 3.
 
 #[repository]
 pub type InvoiceRepo(

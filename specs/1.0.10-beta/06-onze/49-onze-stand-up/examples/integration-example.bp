@@ -12,7 +12,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/layouts-and-pages
 //           https://nextjs.org/docs/app/api-reference/config/next-config-js
-//           NEXTJS-DOCS.md § 3. Estrutura do Projeto · § 5. Layouts e Páginas
+//           NEXTJS-DOCS.md § 3. Project Structure · § 5. Layouts and Pages
 //
 // Target: erlang (server) for the render and the listener. The config value is
 // also read by the js half at build time, which is why front 49's target is both.
@@ -22,7 +22,7 @@ import {styled, Token} from "emilia";                          // front 48
 import {page, layout, PageContext, LayoutProps} from "rakun";  // front 22
 import {rkAppRegisterPage, rkAppRegisterLayout} from "rakun";  // front 22 registry cells
 import {Onze, OnzeConfig, defaultConfig, withPort} from "onze";
-import {dict} from "std";
+import {collections.Dict} from "std";
 
 fn shellTokens() -> Token[] {
     return [.Bg.White, .Color.Gray.900, .Pad.All.4];
@@ -63,8 +63,8 @@ fn postRoute(slug: string) -> PageContext {
     return PageContext(
         pathname: "/blog/" + slug,
         pattern: "/blog/[slug]",
-        params: dict.empty().insert("slug", slug),
-        query: dict.empty(),
+        params: Dict.empty().insert("slug", slug),
+        query: Dict.empty(),
         rest: [],
     );
 }
@@ -79,8 +79,8 @@ test "an absent param reads as empty, never as an error" {
     val empty = PageContext(
         pathname: "/blog/",
         pattern: "/blog/[slug]",
-        params: dict.empty(),
-        query: dict.empty(),
+        params: Dict.empty(),
+        query: Dict.empty(),
         rest: [],
     );
     assert renderToString(await blogPostPage(empty)).contains("Post: ");

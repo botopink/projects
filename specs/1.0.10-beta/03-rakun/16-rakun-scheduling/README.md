@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-scheduling/src/**`, `modules/rakun-scheduling/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `07-io.md § Quartz Scheduler` · https://docs.spring.io/spring-boot/reference/io/quartz.html
-**Replaces:** `1.0.6-beta/12-scheduling`
 
 ---
 
@@ -19,21 +18,15 @@ a cache warm-up that should happen at boot happens on the first slow request; a 
 prove the process is alive proves nothing. `modules/rakun-scheduling/` is a `botopink.json` and a
 `src/root.bp` holding a TODO comment.
 
-The 1.0.6-beta draft this replaces was four steps long and three of them were a sentence. Its `Step 2 —
-Task executor` was, in full, two comment lines: `% Erlang: use timer:send_interval or gen_server` and
-`// Node.js: use setInterval`. Its cron parser was a signature with a comment for a body. Its
-`#[scheduled(cron: "0 0 * * * *")]` used a labelled annotation argument, which nothing in the real
-decorator surface does — every existing marker takes positional arguments
-(`repository/rakun/src/decorators.bp:210-240`) — and combining a labelled argument with the fact that
-declared parameter defaults are never applied (`docs.md:502-505`) means a single `#[scheduled]` with
-three optional forms cannot be built at all.
-
-Three markers, one per trigger kind, each with the arguments it actually needs.
+A single `#[scheduled(cron: …)]` with labelled, optional arguments cannot be built: every existing
+marker takes positional arguments (`repository/rakun/src/decorators.bp:210-240`) and declared
+parameter defaults are never applied (`docs.md:502-505`). So: three markers, one per trigger kind,
+each with the arguments it actually needs.
 
 ## Current state
 
 - `repository/rakun/modules/rakun-scheduling/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
-- `libs/std/src/time.bp:56,80,92` — `nowMillis()`, `monotonicMillis()` and `formatIso8601(epochMillis)` all exist today. The scheduler needs both clocks and has both; front 01 extends this file rather than replacing it.
+- `libs/std/src/time.bp:56,80,92` — `nowMillis()`, `monotonicMillis()` and `formatIso8601(epochMillis)` all exist today. The scheduler needs both clocks and has both; front 01 ships them as `io.clock` (`now`, `monotonic`, `formatIso8601` — decision 106).
 - `repository/rakun/src/runtime.bp` — no timer seam of any kind. The only periodic thing in rakun is the HTTP server's accept loop, which front 04 owns.
 - `repository/rakun/src/decorators.bp` — no `#[scheduled]`, and frozen.
 
@@ -205,7 +198,7 @@ second answer.
 
 **Acceptance:**
 - [ ] The listing reports, per task, the trigger kind, the expression, the last start, the last finish, the last result, the next fire, and the run/failure/missed counters.
-- [ ] Timestamps are RFC 3339 via `time.formatIso8601`, not raw millis.
+- [ ] Timestamps are RFC 3339 via `clock.formatIso8601`, not raw millis.
 - [ ] `POST .../run` on an unknown name returns 404; on a known one it returns 202 and the run appears in the next listing.
 - [ ] Both routes are refused with front 11's standard response when the caller is not authorized, and no key in this module changes that.
 - [ ] `schedulingHealth()` reports DOWN when any enabled task's timer process is not alive, naming the task.
@@ -253,41 +246,3 @@ There is no commonJS row; this front is server-only by the milestone's target sp
 - No test in the suite sleeps.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module's surface and the front-84 boundary in the same commit.
 - The front's tests are green on erlang.
-
-## Carried from 1.0.6-beta F12 scheduling
-
-Items in `specs/1.0.6-beta/12-scheduling/README.md` with no counterpart above. Covered and not repeated:
-the three trigger kinds (`cron`, `fixedRate`, `fixedDelay`) as `#[scheduled]`/`#[fixedRate]`/`#[fixedDelay]`,
-six-field cron (second minute hour day month weekday), `timer:send_interval` / `gen_server` (quoted in
-*Problem*), "tasks run in separate process" (*The executor*), durable/Quartz → front 84.
-
-| Item | 1.0.6 text | Status |
-|---|---|---|
-| Enable switch | Mechanism: "`@EnableScheduling` → enable scheduling" | covered by `#[scheduler]` + `rakun.scheduling.enabled`; the Spring name is not mapped above |
-| Public parser API | Step 3 snippet, below — `parseCron(expr: string) -> CronExpression` | absent by name: *Cron* says the parser is "an ordinary compiled function" but names neither the function nor a `CronExpression` type; front 84 depends on "the cron parser this reuses", so the public name is load-bearing |
-| Labelled arguments | `#[scheduled(cron: "0 0 * * * *")]`, `#[scheduled(fixedRate: 5000)]` | superseded by: *Problem* (labelled annotation arguments rejected) |
-| Pool size | Notes: "Task executor: configurable pool size" | superseded by: *The executor is a supervised worker set, and the pool-size keys are not ported* |
-| Node arm | Step 2: "`// Node.js: use setInterval`"; Gate: "`botopink test` green on both targets" | superseded by: *Target* |
-| Module layout | Step 4 tree, below | absent: no file layout is given above |
-
-Step 3 — Cron parser (verbatim):
-
-```bp
-pub fn parseCron(expr: string) -> CronExpression {
-    // parse "second minute hour day month weekday"
-}
-```
-
-Step 4 — Module structure (verbatim):
-
-```
-modules/rakun-scheduling/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   ├── scheduled.bp
-│   ├── cron.bp
-│   └── task_executor.bp
-└── test/
-    └── scheduling_test.bp
-```

@@ -50,7 +50,7 @@ pub fn blogPostPage(route: PageContext) -> @Future<Element> {
     ], attrs: []);
 }
 
-// SERVER — § 23 "Layout com autenticação". `redirect` answers 307 and the
+// SERVER — § 23 "Layout with authentication". `redirect` answers 307 and the
 // destination is checked against the route table, so a typo fails here rather
 // than sending a browser to a 404.
 #[layout("dashboard")]

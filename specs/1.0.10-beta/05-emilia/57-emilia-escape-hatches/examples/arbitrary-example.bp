@@ -44,7 +44,7 @@ fn gutterContainer() -> string {
     return emilia(tokens);
 }
 
-// § 3.2 Variantes Arbitrárias: [&.is-dragging]:cursor-grabbing. The selector must
+// § 3.2 Arbitrary Variants: [&.is-dragging]:cursor-grabbing. The selector must
 // contain exactly one `&`; emilia substitutes the generated class name for it.
 fn draggableRow() -> string {
     val dragging = cssSelector """&.is-dragging""";

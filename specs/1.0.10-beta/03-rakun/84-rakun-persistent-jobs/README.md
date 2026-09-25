@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-scheduling/src/jobstore/**` · `modules/rakun-scheduling/test/jobstore/**`
 **Does not touch:** front 16's `modules/rakun-scheduling/src/*.bp` at the top level — the in-VM scheduler, `#[scheduled]`, the cron parser and the `scheduledtasks` endpoint are all front 16's and stay there. Also the four frozen files in `repository/rakun/src/`
 **Reference:** `07-io.md § Quartz Scheduler`, `§ Configuracao`, `§ Definindo Jobs`, `§ DataSource Dedicado` · `09-actuator.md § Endpoints (quartz, scheduledtasks)` · <https://docs.spring.io/spring-boot/reference/io/quartz.html>
-**Replaces:** new — proposed by the Spring Boot 4 coverage audit, § 2 `NN-rakun-persistent-jobs`
 
 ---
 
@@ -46,7 +45,7 @@ that may be missed; this front owns work that may not.**
 | `#[scheduled]`, cron parsing, the in-VM timer | front 16 delivers them; nothing exists today |
 | `modules/rakun-scheduling/src/jobstore/` | does not exist — this front creates it |
 | A durable job store, a cluster lease, a misfire policy | nothing, in rakun or in std |
-| A clock | front 01 delivers `std/clock`; `libs/std/src/time.bp` exists today but front 01 owns the monotonic and wall-clock split this front needs |
+| A clock | front 01 delivers `io.clock` (decision 106); `libs/std/src/time.bp` exists today but front 01 owns the monotonic and wall-clock split this front needs |
 | Node identity | front 04's release gives the node a name; `erlang:node/0` behind a cell is the only identifier needed |
 
 ## Mechanism
@@ -257,7 +256,7 @@ under front 80, and it costs this front six copied lines rather than a design ch
 `modules/rakun-scheduling/test/jobstore/`, run with `botopink test --target erlang` from
 `modules/rakun-scheduling/`, and in the gate as `zig build test-libs -- --target erlang --lib rakun`.
 
-Time is injected, never slept. The scheduler takes its clock from front 01's `std/clock` behind a
+Time is injected, never slept. The scheduler takes its clock from front 01's `io.clock` behind a
 test double, so "three missed windows" is three clock advances and the whole suite runs in
 milliseconds. A scheduling test that sleeps is a scheduling test that flakes on a loaded machine and
 adds minutes to every gate run.
@@ -286,3 +285,4 @@ This front is erlang-only. A durable schedule has no browser half.
 - [ ] The README's at-least-once statement is in `repository/rakun/AGENTS.md` too, next to front 16's
       at-most-once one — the two guarantees are the reason there are two fronts
 - [ ] The front's tests are green on its assigned target
+

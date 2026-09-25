@@ -12,7 +12,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/cli/create-next-app
 //           https://nextjs.org/docs/app/getting-started/layouts-and-pages
-//           NEXTJS-DOCS.md § 29. CLI · § 2. Instalação e Configuração
+//           NEXTJS-DOCS.md § 29. CLI · § 2. Installation and Configuration
 //
 // Target: erlang (server) — the scaffold renders on BEAM. The CLI process that
 // wrote these files is the js half; nothing in the files themselves is.
@@ -21,7 +21,7 @@ import {Element, div, h1, p, text, renderToString} from "jhonstart";
 import {styled, Token} from "emilia";                          // front 48
 import {page, layout, PageContext, LayoutProps} from "rakun";  // front 22
 import {rkAppRegisterPage, rkAppRegisterLayout} from "rakun";  // front 22 registry cells
-import {dict} from "std";
+import {collections.Dict} from "std";
 
 // ── app/layout.bp ────────────────────────────────────────────────────────────
 //
@@ -66,8 +66,8 @@ fn homeRoute() -> PageContext {
     return PageContext(
         pathname: "/",
         pattern: "/",
-        params: dict.empty(),
-        query: dict.empty(),
+        params: Dict.empty(),
+        query: Dict.empty(),
         rest: [],
     );
 }

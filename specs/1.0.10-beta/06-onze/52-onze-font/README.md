@@ -1,7 +1,5 @@
 # Front 52 — onze Font
 
-> Drafted as `onze13` (`specs/1.0.7-beta/21-onze13-font-optimization`); took the name `onze` when the old mocking library was retired (see [`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)).
-
 **Track:** E onze
 **Priority:** low — a page with an unoptimized webfont still works; it reflows once, leaks the
 visitor's IP to a third party, and blocks the first paint, and none of those block another front
@@ -21,7 +19,6 @@ inserted through, and the asset manifest the files are listed in)
 **Reference:** `NEXTJS-DOCS.md § 17. Otimização de Fontes`, `§ 15. Estilização (CSS)` (where the CSS
 lands) · <https://nextjs.org/docs/app/api-reference/components/font> ·
 <https://nextjs.org/docs/app/getting-started/fonts>
-**Replaces:** the 1.0.7-beta draft named in the note above
 
 ---
 
@@ -34,8 +31,7 @@ text re-measures and the page jumps — a layout shift that arrives after the vi
 reading, which is the worst possible moment for one.
 
 `font-display: swap` fixes the blocking and makes the shift worse: now the page paints immediately in
-a fallback face with different metrics, and then reflows. The 1.0.7 draft proposed exactly this and
-called it "zero layout shift", which it is not.
+a fallback face with different metrics, and then reflows — that is not "zero layout shift".
 
 Nothing in the workspace addresses fonts at all. `emilia`'s `Font` token section
 (`repository/emilia/src/tokens.bp:59-70`) offers `Sans`, `Serif`, `Mono` and five weights — three
@@ -122,6 +118,7 @@ pub type Font(
     variable: string,     // "--font-inter" — or "" when not requested
     css: string,          // @font-face + the adjusted fallback + the class rule
     preload: string,      // <link rel="preload" …> tags, or "" when preload is off
+    style: string,        // font-family:"Inter","Inter Fallback",… — for a style attribute
 )
 ```
 
@@ -133,6 +130,10 @@ An app writes `attrs: [#("class", inter.className)]`, or asks for `variable` and
 `css` and `preload` are inserted into the document head by front 69's seam — the same one that carries
 emilia's `flush()` output. The order matters and front 69 owns it: preload links first, then font CSS,
 then the component styles, so the font request starts before the style that will use it is parsed.
+
+`style` is the `font-family` declaration as a plain string, for a `style` attribute when a class is
+not applicable (an email template, an SVG `<text>` for front 70); `font_test.bp` asserts it. Variable
+fonts (`axes: ["wght"]`, one file for a weight range) are not chartered — `../../deferred.md`.
 
 ## Steps
 
@@ -278,15 +279,3 @@ visual property and the test asserts the four descriptors that cause it, not the
 - [ ] `docs.md` states the probe-absent degradation and names it as a degradation
 - [ ] Front 70's README can point at this front for glyph metrics without this front changing shape
 - [ ] The front's tests are green on its assigned target — both, here
-
-## Carried from 1.0.7-beta F21 onze13-font-optimization
-
-Quoted from `specs/1.0.7-beta/21-onze13-font-optimization/README.md` and the F21 section of
-`specs/1.0.7-beta/examples-bp.md` (name normalised to `onze` [sic: onze13]).
-
-| 1.0.7 item | Quote | Status here |
-|---|---|---|
-| The `style` field of a font value | `pub type Font(className: string, css: string, style: string)` | Not in the `Font` record above. `next/font` exposes `.style` (`{ fontFamily, fontWeight, fontStyle }`) for inline use; here `style` is the string `font-family:"<family>","<family> Fallback",<fallbacks>` an app can put in a `style` attribute when a class is not applicable (an email template, an SVG `<text>` for front 70). Added as a sixth field, pure string, asserted in `font_test.bp` |
-| Two Google families in one layout | `val firaCode = googleFont("Fira Code", subsets: ["latin"]);` beside Inter (examples-bp F21) | Covered by `fontHead([inter, firaCode])` (*Step 4*); the deduplication acceptance there is what the two-family case needs |
-| Roadmap | "Future: variable fonts, font subsetting, preconnect hints." | Subsetting: `subsets` option (*Step 1*). Preconnect: unnecessary once self-hosted (no third-party host at request time). **Variable fonts** (`axes: ["wght"]`, one file for a weight range) are not chartered — `../../deferred.md` |
-| Inline `<style>` in the layout | `head([style([text(inter.css + myFont.css, attrs: [])], attrs: [])])` | Superseded: the CSS reaches the head through front 69's sink (`fontHead` is the string it inserts), never through a `<style>` element the layout builds — a layout that builds it flushes emilia's sheet twice |

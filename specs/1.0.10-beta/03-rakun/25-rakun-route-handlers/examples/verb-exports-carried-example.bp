@@ -1,7 +1,5 @@
-// carried from specs/1.0.7-beta/examples-bp.md — ## F11 — Rakun Route Handlers
-//
-// Kept verbatim. The GET list, the POST create and the dynamic-segment GET have
-// 1.0.9 counterparts in route-handler-example.bp; the DELETE handler does not.
+// NOTE: the GET list, the POST create and the dynamic-segment GET have
+// counterparts in route-handler-example.bp; the DELETE handler does not.
 //
 // LANGUAGE GAP: nothing reflects a module's export names and `@Decl` carries no
 // source location, so `pub fn GET` in a `route.bp` cannot register itself — 25
@@ -13,6 +11,7 @@
 
 // --- GET handler (app/api/posts/route.bp)
 import {Request, Response} from "rakun";
+import {json} from "std";
 
 #[@future]
 pub fn GET(request: Request) -> @Future<Response> {
@@ -22,6 +21,7 @@ pub fn GET(request: Request) -> @Future<Response> {
 
 // --- POST handler (app/api/posts/route.bp)
 import {Request, Response} from "rakun";
+import {json} from "std";
 
 #[@future]
 pub fn POST(request: Request) -> @Future<Response> {
@@ -32,6 +32,7 @@ pub fn POST(request: Request) -> @Future<Response> {
 
 // --- Dynamic route handler (app/api/posts/[id]/route.bp)
 import {Request, Response} from "rakun";
+import {json} from "std";
 
 #[@future]
 pub fn GET(request: Request) -> @Future<Response> {

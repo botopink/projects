@@ -33,12 +33,12 @@ import {failNext, failAlways, killCoordinatorAfterStep, resumeCoordinator} from 
 // LANGUAGE GAP: there is no assignment to a `self` field, so the context cannot
 // be mutated as it flows. Each step takes a context and returns a new one. That
 // reads better than mutation here, and it is recorded as a limitation rather
-// than a request — see specs/1.0.9-beta/language-gaps.md.
+// than a request — see specs/1.0.10-beta/language-gaps.md.
 
 // The context is querystring-encoded rather than JSON, for the same reason
 // front 24's action envelope is: `std/json` has no structured value, so a shape
 // that both halves can build and read with string operations is the honest one.
-// See specs/1.0.9-beta/contracts.md § 3.
+// See specs/1.0.10-beta/contracts.md § 3.
 
 pub fn bookingSaga() -> Saga {
     val steps = [

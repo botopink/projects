@@ -1,7 +1,5 @@
 # Front 69 — onze Styling Pipeline
 
-> Drafted as `onze13` (new in 1.0.9-beta; no 1.0.7-beta predecessor); took the name `onze` when the old mocking library was retired (see [`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)).
-
 **Track:** E onze
 **Priority:** medium — `emilia.flush()` exists and nothing in the render pipeline has a defined moment
 at which to call it, so the CSS an app generates either arrives empty, arrives twice, or does not
@@ -28,7 +26,6 @@ the parser; this front hands it the style records), `repository/onze/src/integra
 <https://nextjs.org/docs/app/getting-started/css> ·
 <https://nextjs.org/docs/app/api-reference/functions/use-server-inserted-html> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/public-folder>
-**Replaces:** new — admitted by the Next.js coverage audit
 
 ---
 
@@ -360,7 +357,7 @@ pub fn preprocess(command: string, inputPath: string) -> @Future<string>
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| `#[@future]` and `#[@iterator]` are separate effect markers and a fn carries one wrapper, so a streamed render cannot be an async iterator | `collectChunk` is called per boundary by front 30 rather than driving an `@Iterator<string>` | a callback per chunk, with the sink threaded through the return | one fn able to carry both effects, or an `@Stream<T>` wrapper |
+| The streamed render is not a generator: `#[@futureGenerator] fn … -> @FutureGenerator<string, string>` can `await` and `yield` in one body (decision 103), but nothing in front 30's streaming consumes one | `collectChunk` is called per boundary by front 30 rather than driving a `@FutureGenerator<string, string>` | a callback per chunk, with the sink threaded through the return | front 30 consuming the chunks with `for await` (decision 105) |
 | No byte or binary type — also recorded by front 01 | `public/` binaries are moved by path; this front only chooses headers | keep binary assets out of botopink | a `bytes` primitive plus `fs.readBytes` |
 | No assignment to a `self` field | every sink call returns a new `StyleSink` instead of mutating one | thread the sink through the return as `#(StyleSink, string)` | mutable record fields, or a `with` expression |
 | Tuple labels are lost through generic instantiation | `collectHead`'s `#(StyleSink, string)` is read as `r.0` / `r.1` | one `val` per element | preserve written labels through instantiation |
@@ -404,3 +401,4 @@ mistake, and ordering is exactly what a test can pin.
 - [ ] `repository/onze/docs.md` carries the ordering rule and the four-call sequence verbatim,
       because fronts 23, 30, 49 and 53 all read them
 - [ ] The front's tests are green on its assigned target — `erlang`
+

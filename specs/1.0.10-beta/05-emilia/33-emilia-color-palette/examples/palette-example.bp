@@ -6,7 +6,7 @@
 // Upstream: https://tailwindcss.com/docs/colors
 //           https://tailwindcss.com/docs/text-color
 //           https://tailwindcss.com/docs/background-color
-// Reference: TAILWIND_CSS_DOCS.md § 3.6 Cores, § 21.1 Paleta de Cores Padrao
+// Reference: TAILWIND_CSS_DOCS.md § 3.6 Colors, § 21.1 Default Color Palette
 //
 // emilia runs at comptime and emits a CSS string, so nothing in this file is
 // erlang- or js-specific. Every token below is delivered BY FRONT 33; today

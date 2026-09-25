@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-messaging/src/pulsar/**`, `modules/rakun-messaging/test/pulsar/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. Inside `modules/rakun-messaging/`, `src/reliability/**` is front 86's, `src/jms/**` is front 90's, and everything else is front 15's; all three are read-only here.
 **Reference:** `06-messaging.md § Apache Pulsar` (Conectando, Autenticacao OAuth2, Enviando Mensagens, Recebendo Mensagens, Lendo Mensagens, Transacoes) · https://docs.spring.io/spring-boot/reference/messaging/pulsar.html · https://pulsar.apache.org/docs/next/developing-binary-protocol/
-**Replaces:** new
 
 ---
 
@@ -213,3 +212,4 @@ There is no commonJS row. This front is server-only by the milestone's target sp
 - Both language-gap rows are cited from the example and already appear in [`language-gaps.md`](../../language-gaps.md).
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the arm in the same commit.
 - The front's tests are green on erlang.
+

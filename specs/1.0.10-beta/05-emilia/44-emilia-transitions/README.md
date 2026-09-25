@@ -8,7 +8,6 @@
 **Owns:** token sections `Transition`, `Animate` in `repository/emilia/src/tokens.bp` · dispatcher `transitionTokenToCss` (and its sibling `animateTokenToCss`) in `repository/emilia/src/emilia.bp` · `repository/emilia/test/transitions_test.bp`
 **Does not touch:** every other token section and sub-dispatcher; `emilia()`, `flush()`, `tokensToCss`, `hashHex`, `register`, `flushSheet`
 **Reference:** `TAILWIND_CSS_DOCS.md § 15. Transições & Animação` (animation literals from `§ 21.6`) · https://tailwindcss.com/docs/transition-property
-**Replaces:** `1.0.8-beta/10-emilia-transitions`
 
 ---
 
@@ -370,79 +369,3 @@ What the tests assert:
       the keyframes gate.
 - [ ] The front's tests are green on its assigned target — here, both `commonJS` and `erlang`,
       because comptime output must not differ between them.
-
-## Carried from 1.0.8-beta F10 emilia-transitions
-
-Everything below was in the 1.0.8 draft and is not stated above. Where the 1.0.10 text supersedes
-the old value the old value is still quoted, marked as superseded, so the change is visible rather
-than silent.
-
-**The easing literals** — complements Step 3; missing because 1.0.10 emits `themeVar("ease-…")`
-and says the reference never prints the cubic-beziers. The 1.0.8 draft recorded them as leaf
-comments, and they are the values front 54's theme entries resolve to under `defaultTheme()`:
-
-```bp
-Ease {
-    Linear,
-    In,           // cubic-bezier(0.4, 0, 1, 1)
-    Out,          // cubic-bezier(0, 0, 0.2, 1)
-    InOut,        // cubic-bezier(0.4, 0, 0.2, 1)
-}
-```
-
-i.e. `--ease-in: cubic-bezier(0.4, 0, 1, 1)`, `--ease-out: cubic-bezier(0, 0, 0.2, 1)`,
-`--ease-in-out: cubic-bezier(0.4, 0, 0.2, 1)`.
-
-**The 1.0.8 leaf spellings** — complements Step 1 and Step 2; missing because 1.0.10 renamed or
-reordered them. The bare `transition` utility was `Transition.Default` (now `.Transition.Base`, because
-`default` is a keyword); the old `Default` comment read
-`transition: color, bg, border, text-decoration, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter`.
-`Behavior` was declared `{ Discrete, Normal }` (1.0.10 declares `{ Normal, Discrete }`). Numeric
-leaves were written `__N` in expression position (`Transition.Duration.__300`).
-
-**The 1.0.8 acceptance list, with resolved values** — complements Steps 1, 3 and 4; missing because
-contract `§ 4a` forbids resolving a theme variable in a dispatcher, and because the old draft
-stripped the spaces after commas that byte-equality now requires:
-
-- [ ] `Transition.None` → `transition-property:none`
-- [ ] `Transition.All` → `transition-property:all;transition-timing-function:cubic-bezier(0,0,0.2,1);transition-duration:150ms` — **superseded**: `.Transition.All` emits `transition-property:all;transition-timing-function:var(--ease-out);transition-duration:150ms`
-- [ ] `Transition.Colors` → `transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;...` — **superseded**: the 1.0.10 row keeps a space after each comma (`color, background-color, …`)
-- [ ] `Transition.Duration.__300` → `transition-duration:300ms`
-- [ ] `Transition.Delay.__150` → `transition-delay:150ms`
-- [ ] `Transition.Ease.InOut` → `transition-timing-function:cubic-bezier(0.4,0,0.2,1)` — **superseded**: emits `transition-timing-function:var(--ease-in-out)`
-- [ ] `Animate.Spin` → `animation:spin 1s linear infinite` — **superseded**: emits `animation:var(--animate-spin)`; the literal is the `--animate-spin` theme entry
-- [ ] `Animate.Pulse` → `animation:pulse 2s cubic-bezier(0.4,0,0.6,1) infinite` — **superseded**: emits `animation:var(--animate-pulse)`; theme entry `pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite`
-- [ ] `Animate.Bounce` → `animation:bounce 1s infinite` — **superseded**: emits `animation:var(--animate-bounce)`; theme entry `bounce 1s infinite`
-
-**Dependency as first drafted** — complements the header. The 1.0.8 draft read
-`Depends on: F15 (modifiers)`, which is front 34 today — the same dependency, renumbered.
-
-**Gate** — complements *Test plan* and *Definition of done*; covered above, old wording kept:
-
-- [ ] `botopink test` green on commonJS and erlang
-- [ ] Every new token mapped to the correct CSS
-
-**Blast radius** — no 1.0.10 counterpart; the section was dropped in the rewrite:
-
-- `tokens.bp`: +~50 lines
-- `emilia.bp`: +~80 lines
-- `test/transitions_test.bp`: new file, ~20 tests
-
-**Notes** — complements Step 4 and the *Deferred* table; the second note is the pre-front-56 output
-model and is superseded by `blockSheet` + `renderDocument`:
-
-- `Animate.Spin`/`Pulse`/`Bounce` require `@keyframes` in the CSS output
-- The `@keyframes` are emitted as part of the `<style>` block in `flush()` — **superseded**: front 56's `Sheet.blocks` carries them and `renderDocument` hoists them to the top level of the emitted stylesheet
-
-**Test names in the 1.0.8 example** — complements *Test plan*; the 1.0.10 example has no inline
-`test` blocks. The old file asserted with `styles.indexOf("<css>") != -1` after `await flush()`
-under these names: `"transition-none generates correct CSS"`, `"transition-all generates correct CSS"`
-(asserted `transition-property:all`), `"transition-colors generates correct CSS"` (`transition-property:color`),
-`"transition-duration-300 generates correct CSS"`, `"transition-ease-in-out generates correct CSS"`
-(`transition-timing-function:cubic-bezier(0.4,0,0.2,1)`), `"transition-delay-150 generates correct CSS"`,
-`"animate-spin generates correct CSS"` (`animation:spin 1s linear infinite`),
-`"animate-pulse generates correct CSS"` (`animation:pulse`), `"animate-bounce generates correct CSS"`
-(`animation:bounce 1s infinite`), `"animate-none generates correct CSS"` (`animation:none`).
-
-Examples carried:
-- [`./examples/transitions-example-1.0.8.bp`](./examples/transitions-example-1.0.8.bp) — the 1.0.8 file, kept beside the 1.0.10 rewrite because the two differ (`cmp`); it uses `.Transition.Default`, `__N` numeric leaves and resolved `cubic-bezier`/`animation` literals, and is reference material, not a build target.

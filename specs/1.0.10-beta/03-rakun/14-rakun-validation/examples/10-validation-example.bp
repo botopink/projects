@@ -1,9 +1,8 @@
-// carried from specs/1.0.6-beta/examples/10-validation-example.bp
 //// F10 — Bean Validation
 ////
-//// Este exemplo demonstra validação de beans com @notNull, @size, @email, @valid.
+//// This example shows bean validation with @notNull, @size, @email, @valid.
 ////
-//// Documentação Spring Boot:
+//// Spring Boot documentation:
 //// - Validation: https://docs.spring.io/spring-boot/reference/io/validation.html
 //// - Bean Validation: https://docs.spring.io/spring-boot/reference/io/validation.html#io.validation
 
@@ -213,7 +212,7 @@ fn main() {
     Rakun.run(App(port: 8080, basePath: "/api"));
 }
 
-//// Testes:
+//// Tests:
 ////
 //// test "validation passes for valid input" {
 ////     // All constraints satisfied → method executed

@@ -7,7 +7,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/page
 //           https://nextjs.org/docs/app/api-reference/components/image
-//           NEXTJS-DOCS.md § 5. Layouts e Páginas · § 16. Otimização de Imagens
+//           NEXTJS-DOCS.md § 5. Layouts and Pages · § 16. Image Optimization
 //
 // Target: erlang (server). The image's lazy/eager behaviour is the browser's
 // half, but nothing on this page runs there.
@@ -17,7 +17,7 @@ import {section} from "jhonstart";                              // provided by f
 import {styled, Token} from "emilia";                           // front 48
 import {page, PageContext} from "rakun";                        // front 22
 import {rkAppRegisterPage} from "rakun";                        // front 22 registry cell
-import {dict} from "std";
+import {collections.Dict} from "std";
 // front 60 — the segment configuration and the prerender decision
 import {registerSegmentConfig, SegmentConfig, DynamicMode, FetchCache} from "rakun";
 // front 51 — the Image component and the optimizer behind it
@@ -69,8 +69,8 @@ fn homeRoute() -> PageContext {
     return PageContext(
         pathname: "/",
         pattern: "/",
-        params: dict.empty(),
-        query: dict.empty(),
+        params: Dict.empty(),
+        query: Dict.empty(),
         rest: [],
     );
 }

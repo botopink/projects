@@ -17,7 +17,6 @@ submits; the id that names the action and the envelope that carries the result c
 **Reference:** `NEXTJS-DOCS.md § 10. Mutação de Dados`, `§ 27. Diretivas` ·
 <https://nextjs.org/docs/app/getting-started/updating-data> ·
 <https://nextjs.org/docs/app/api-reference/directives/use-server>
-**Replaces:** `1.0.7-beta/10-rakun-server-actions`
 
 ---
 
@@ -101,7 +100,7 @@ val __rkAction_createPost = rkRegisterAction("createPost", createPost);
 id = "a_" + crypto.hmacSha256(buildSecret, module + "." + name + ":" + buildId).slice(0, 24)
 ```
 
-`crypto.hmacSha256` exists in std today (`libs/std/src/crypto.bp:38`) and needs nothing from front 01;
+`hash.hmacSha256` exists in std today as `crypto.hmacSha256` (`libs/std/src/crypto.bp:38`; `hash` after decision 106) and needs nothing from front 01;
 what this front does need from front 01 is the **constant-time compare** used when the id from a
 request is checked against the registry, so that id lookup does not leak a prefix through timing.
 `buildId` is front 03's content hash of the build, and `buildSecret` is a per-deployment secret from
@@ -401,50 +400,3 @@ the connection closes — lives in `src/sidecars/rakun_actions.erl`'s own suite,
   than re-derived.
 - `repository/rakun/AGENTS.md` names `actions.bp`, the id derivation and the envelope version.
 - The front's tests are green on its assigned target — here, on both.
-
-## Carried from 1.0.7-beta F10 rakun-server-actions
-
-Source: `specs/1.0.7-beta/10-rakun-server-actions/README.md` and `specs/1.0.7-beta/examples-bp.md § F10`.
-Items below are absent from the 1.0.9 text above; items the merge already covers elsewhere are listed
-at the end with the front that holds them.
-
-### Reference rows
-
-| 1.0.7 reference | 1.0.9 status |
-|---|---|
-| `[Server Actions](https://nextjs.org/docs/app/guides/server-actions)` (header, line 3) | URL not cited by any rakun front; content covered by 24 § What Next.js does |
-| `[Mutating Data](https://nextjs.org/docs/app/getting-started/mutating-data)` | same page as 24's `getting-started/updating-data` (renamed upstream) |
-
-### Requirements and API names (quoted)
-
-| # | 1.0.7 item | Where in 1.0.7 | Note |
-|---|---|---|---|
-| 1 | The form names the action by function name: `], attrs: [#("action", "createPost")]);` and "The action name is passed as a hidden field (`_action`) in the form." — `val actionName = formData.get("_action");` | Mechanism, Step 3, Notes | superseded by: 24 § The form (`__onze_action` carries the derived id) and Step 2 ("The function's name alone does not resolve: POSTing `__onze_action=createPost` is a 404") |
-| 2 | `#[@future] pub fn handleFormSubmission(path: string, formData: FormData) -> @Future<void> { val actionName = formData.get("_action"); await rkInvokeAction(actionName, formData); }` placed "In SSR pipeline (ssr.bp)"; Blast radius "SSR pipeline updated to handle form submissions" | Step 3, Blast radius | superseded by: 24 Step 4 `dispatchAction(pathname, origin, host, contentType, body)` in `actions.bp`; 24 **Does not touch** the files owned by 23 |
-| 3 | Step 3 sequence: "1. The browser POSTs to the current URL with `action=createPost` in the body · 2. The SSR pipeline detects the action and invokes it · 3. After the action completes, the page is re-rendered" | Step 3 | Steps 1 and 3 covered by 24 § Two dispatch paths (progressive column); step 2's by-name detection superseded as in row 1 |
-| 4 | Host cells: `#[@External.Node("rakun/actions", "registerAction")] #[@External.Erlang("rakun_actions", "register_action")] declare fn rkRegisterAction(name: string, fn: fn(FormData) -> @Future<void>) -> void;` and `#[@External.Node("rakun/actions", "invokeAction")] #[@External.Erlang("rakun_actions", "invoke_action")] declare fn rkInvokeAction(name: string, formData: FormData) -> @Future<void>;` | Step 2 | 24 Step 2 keeps `rkRegisterAction` with cells `("rakun_actions", "register")` / `("./actions.mjs", "register")`, return `i32`, and the run type `fn(form: FormData) -> @Future<ActionResult>`. `rkInvokeAction` has no 1.0.9 counterpart (dispatch resolves the id in `dispatchAction`) |
-| 5 | `actions.mjs` registry: `const actions = new Map(); export function registerAction(name, fn) { actions.set(name, fn); return 0; } export async function invokeAction(name, formData) { const fn = actions.get(name); if (!fn) throw new Error(\`Action '${name}' not found\`); return await fn(formData); }` | Step 2 | 24 owns `actions.mjs` but gives it no body; the Node side of `register` is unspecified in 1.0.9. Note 24 Step 4: an unknown id "gives 404 with an empty body — not a message naming known ids" |
-| 6 | Action signature `#[serverAction] #[@future] pub fn createPost(formData: FormData) -> @Future<void>` and `formData.get("title")` | Mechanism | 24 Step 1 pins `-> @Future<ActionResult>` and `form.field("title")` (returns `""` when absent) |
-| 7 | Decorator body: `pub fn serverAction(comptime decl: @Decl) { if (decl.kind != DeclKind.Fn) decl.fail("#[serverAction] must annotate a function"); @emit("val __rakun_action_" + decl.name + " = rkRegisterAction(\"" + decl.name + "\", " + decl.name + ");"); }` | Step 1 | 24 Step 1 keeps the failure text verbatim; the emitted `val` is spelled `__rkAction_<name>` in 24 § How it maps |
-| 8 | `revalidatePath` / `revalidateTag` declared in `actions.bp` as `#[@External.Node("rakun/cache", "revalidatePath")] #[@External.Erlang("rakun_cache", "revalidate_path")] declare fn revalidatePath(path: string) -> void;` (and `revalidateTag` / `revalidate_tag`) | Step 4 | superseded by: 24 § Revalidation on mutation ("`revalidatePath(path)` and `revalidateTag(tag)` are front 12's") and 12 Step 5 (botopink fns with the phase check) |
-| 9 | Note: "Server actions are POST-only (forms use POST)." | Notes | No 1.0.9 acceptance names what a `GET` to an action id answers. Open row: 405 vs 404 is undecided |
-| 10 | Test: a decorated fn nested inside a `test` body — `test "#[serverAction] decorator can be applied" { #[serverAction] #[@future] fn testAction(formData: FormData) -> @Future<void> { } assert true; }` | Step 5 | Not carried: 24's tests are module-level; whether a decorator on a fn declared inside a `test` block is accepted is unexercised anywhere in the milestone |
-| 11 | Gate: "Commit on `fix/rakun-server-actions`" | Gate | Branch-naming convention; 1.0.9 fronts name no branch |
-
-### Example material (quoted from `examples-bp.md § F10`)
-
-Carried verbatim to [`examples/action-by-name-carried-example.bp`](./examples/action-by-name-carried-example.bp). What differs from the 1.0.9 shape:
-
-| 1.0.7 example | 1.0.9 counterpart |
-|---|---|
-| `import {createPost} from "@/lib/actions";` — a `@/` path alias | No alias exists in botopink imports; 1.0.9 examples import from a package name or a sibling module |
-| `form([... ], attrs: [#("action", "createPost")])` and `input([attrs: [...]])` / `textarea([attrs: [...]])` (children array holding a labelled `attrs:`) | superseded by: 24 § The form — `actionForm("createPost", children, attrs)` emits `method="post"`, the pathname as `action`, `data-onze-a` and the hidden id. `input([], attrs: [...])` is the 94 spelling |
-| `redirect("/dashboard")` from `login` after `await session.create(user)`; early `return;` when `user == null` | 63 § Where a signal becomes a response (server-action row) and `63/examples/action-redirect-example.bp`; session write → 18 |
-| `revalidatePath("/blog")` imported from `"rakun"` | 12 § Package, module and import spellings: `import {cache} from "rakun-cache"; cache.revalidatePath(p)` |
-
-### Covered elsewhere (not carried)
-
-- "Page re-renders after action completes" → 24 § Two dispatch paths (progressive: "a full document, or a 303").
-- "Can be applied to async functions" / "must annotate a function" → 24 Step 1 acceptance.
-- "Revalidation (cache invalidation) is a separate concern (F13), but actions can trigger it." → 12 + 24 § Revalidation on mutation.
-- "Form submissions work end-to-end" → 24 § Test plan (round-trip test).

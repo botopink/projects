@@ -8,7 +8,6 @@
 **Owns:** `starters/rakun-starter-*/botopink.json`, `starters/rakun-starter-*/src/root.bp`, `starters/README.md`, `src/version_set.bp` · `test/version_set_test.bp`, `test/starter_manifest_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs`; and no `modules/rakun-*/botopink.json` — a starter names a module, it does not edit one
 **Reference:** `02-desenvolvendo-com-spring-boot.md § Starters`, `§ Sistemas de Build · Gerenciamento de Dependencias` · `11-topicos-avancados.md § Dependency Versions` · <https://docs.spring.io/spring-boot/reference/using/build-systems.html#using.build-systems.starters>
-**Replaces:** new — no front in `1.0.6-beta` proposed it
 
 ---
 
@@ -97,7 +96,7 @@ pins. It exists because three things need the same answer and would otherwise ea
 
 It is authored data, and it is kept honest by a test rather than by discipline: `test/version_set_test.bp`
 reads every `modules/rakun-*/botopink.json` and every `starters/rakun-starter-*/botopink.json` through
-`std/fs` and fails when a manifest's `version` disagrees with the table, when a module exists with no
+`io.fs` and fails when a manifest's `version` disagrees with the table, when a module exists with no
 table row, or when a table row names a module that does not exist. A version set that can drift from
 the manifests is a table of claims, not a version set.
 
@@ -265,9 +264,9 @@ where a walker would be asked for.
 
 `test/version_set_test.bp` and `test/starter_manifest_test.bp`, run with `botopink test --target erlang`
 from `repository/rakun/` and in the gate as `zig build test-libs -- --target erlang --lib rakun`. Both
-read the repository's own manifests through `std/fs` (`readText`, `list` — `libs/std/src/fs.bp:33,61`),
+read the repository's own manifests through `io.fs` (`readText`, `list` — `libs/std/src/fs.bp:33,61`),
 so they are filesystem tests and they run on both rows: nothing in them is target-specific, and running
-them on commonJS as well costs nothing and catches a `std/fs` divergence.
+them on commonJS as well costs nothing and catches an `io.fs` divergence.
 
 What they cannot cover: that a *published* starter resolves for a consumer outside this repository.
 That path runs through `bpmp` and git, and it is blocked by the subdirectory gap above. The honest
@@ -283,3 +282,4 @@ achievable this milestone; `starters/README.md` says so in the same words.
 - `starters/README.md` states the subdirectory limitation and the interim form
 - The subdirectory gap appears in a `specs/1.0.10-beta/` spec
 - The front's tests are green on its assigned target
+

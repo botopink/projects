@@ -7,7 +7,7 @@
 //           https://tailwindcss.com/docs/list-style-type
 //           https://tailwindcss.com/docs/whitespace
 //           https://tailwindcss.com/docs/hyphens
-// Reference: TAILWIND_CSS_DOCS.md § 9. Tipografia (9.12-9.14, 9.17-9.21,
+// Reference: TAILWIND_CSS_DOCS.md § 9. Typography (9.12-9.14, 9.17-9.21,
 //            9.25-9.32)
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.

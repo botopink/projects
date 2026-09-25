@@ -8,7 +8,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/components/font#adjustfontfallback
 //           https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/size-adjust
-//           NEXTJS-DOCS.md § 17. Otimização de Fontes
+//           NEXTJS-DOCS.md § 17. Font Optimization
 //
 // Target: erlang (server / build time) — these numbers are computed once, at
 // build time, and shipped as CSS. Nothing about them runs in the browser; the

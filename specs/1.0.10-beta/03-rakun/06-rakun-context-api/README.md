@@ -8,7 +8,6 @@
 **Owns:** `src/context.bp`, `src/events.bp`, `src/lifecycle.bp`, `src/rakun.d.bp` (removal of the `Context` stub only), `src/sidecars/rakun_context.erl` · `test/context_test.bp`, `test/events_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · conditional registration, which is front 72's
 **Reference:** `02-desenvolvendo-com-spring-boot.md § Beans e Injecao de Dependencias` · `02 § Classes de Configuracao` · `03-recursos-principais.md § Eventos da Aplicacao` · `03 § Disponibilidade da Aplicacao` · `03 § Saida da Aplicacao` · <https://docs.spring.io/spring-boot/reference/using/spring-beans-and-dependency-injection.html> · <https://docs.spring.io/spring-boot/reference/features/spring-application.html#features.spring-application.application-events-and-listeners>
-**Replaces:** `1.0.6-beta/03-context-api`
 
 ---
 
@@ -99,9 +98,8 @@ registered bean says so.
 `#[postConstruct]`, `#[preDestroy]` and `#[eventListener("ApplicationReady")]` are **placement checks
 only**. They emit nothing, because a method-level `@Decl` carries no owner and no parameter list —
 `Decl` exposes `kind`, `name`, `returnType` and `annotations`, and `params` exists only on the
-`Method` entries inside a *type* decl (`builtins.d.bp:459-477`). The old draft's
-`decl.parameters[0].typeName` inside an `#[eventListener]` body
-(`1.0.6-beta/03-context-api/README.md`, step 5) cannot be written.
+`Method` entries inside a *type* decl (`builtins.d.bp:459-477`), so `decl.parameters[0].typeName`
+inside an `#[eventListener]` body cannot be written.
 
 This is not a workaround, it is the pattern the whole library already follows: `#[getMapping]` checks
 placement (`decorators.bp:222-224`) and `#[restController]` does the wiring (`:152-159`). Front 06
@@ -430,139 +428,3 @@ Erlang-only. The commonJS row has no bean registry and is not expected to grow o
 - [ ] The pre-destroy pass runs in reverse registration order
 - [ ] `repository/rakun/AGENTS.md` documents `#[managed]` and why it stacks rather than replaces
 - [ ] The front's tests are green on its assigned target
-
-## Carried from 1.0.6-beta F03 context-api
-
-Material present in `specs/1.0.6-beta/03-context-api/README.md` and absent from the text above. Code is verbatim; prose is quoted. *superseded by* marks a conscious replacement.
-
-### 1. Spring surface named, and the publisher behavior (1.0.6 Mechanism, Step 4)
-
-- `getBean(Class<T>)` → resolve by type · `containsBean(String)` → check existence · `ApplicationListener` → lifecycle events · `ApplicationEventPublisher` → publish events
-
-```bp
-pub behavior ApplicationEventPublisher {
-    fn publishEvent(self: Self, event: ApplicationEvent);
-}
-```
-
-superseded by: *`Context`* — `ctx.publish(event: Event) -> i32` on the concrete `Context`; no separate publisher behavior is declared.
-
-### 2. Runtime-side resolve sketches (1.0.6 Step 1)
-
-```js
-export function resolve(name) {
-    const factory = factories.get(name);
-    return factory ? factory() : null;
-}
-```
-
-```erlang
-resolve(Name) ->
-    case ets:lookup(?SINGLETON_TABLE, Name) of
-        [{_, Value}] -> Value;
-        [] ->
-            case ets:lookup(?SCAN_TABLE, Name) of
-                [{_, _}] ->
-                    Factory = erlang:list_to_existing_atom("__rkMake_" ++ Name),
-                    Factory();
-                [] -> undefined
-            end
-    end.
-```
-
-- Acceptance: "Works on both commonJS and Erlang".
-- superseded by: *`#[managed]`* ("A registry holding factories, not names") and *Test plan* ("The commonJS row has no bean registry and is not expected to grow one"). The Erlang sketch also cannot run as written — an atom is not callable; it would need `apply/3` with a module.
-
-### 3. Renamed identifiers
-
-| 1.0.6 | above |
-|---|---|
-| `Context.getBeanNames() -> Array<string>` | `Context.beanNames()` |
-| `rkResolve<T>()`, `rkHas<T>()` | `rkResolve/1`, `rkHasBean/1` (string-keyed) |
-| `rkRegisterEventListener(eventType, fn)` | `rkRegisterListener(eventName, owner, fn)` |
-| `rkRegisterLifecycle(name, "postConstruct"/"preDestroy", fn)` | `rkRegisterLifecycle(name, "post"/"pre", order, fn)` |
-
-### 4. Lifecycle decorator emission (1.0.6 Step 3)
-
-```bp
-pub fn postConstruct(comptime decl: @Decl) {
-    @emit("val __rkPostConstruct_" + decl.name + " = rkRegisterLifecycle(\"" + decl.name + "\", \"postConstruct\", { instance -> instance." + decl.name + "() });");
-    if (decl.kind != DeclKind.Method) decl.fail("#[postConstruct] must annotate a method");
-}
-```
-
-superseded by: *Method-level markers* — a method `@Decl` carries no owner, so the marker is placement-only and `#[managed]` emits the registration.
-
-### 5. Typed event records (1.0.6 Steps 4, 7)
-
-```bp
-pub type ApplicationEvent(
-    source: string,
-    timestamp: i64,
-)
-
-pub type ApplicationStartedEvent(source: string, timestamp: i64)
-pub type ApplicationReadyEvent(source: string, timestamp: i64)
-pub type ContextRefreshedEvent(source: string, timestamp: i64)
-```
-
-plus `ApplicationStoppedEvent`, published on shutdown (Step 7).
-
-superseded by: *Events* — one `Event(name, source, payload, timestampMillis)` record. Not carried into the nine-event boot list: `ContextRefreshedEvent` and any shutdown-time event (`ApplicationStoppedEvent` / Spring's `ContextClosedEvent`); *Shutdown* above runs the pre-destroy pass and publishes nothing.
-
-### 6. `#[eventListener]` emission (1.0.6 Step 5)
-
-```bp
-pub fn eventListener(comptime decl: @Decl) {
-    val eventType = decl.parameters[0].typeName;
-    @emit("val __rkEventListener_" + decl.name + " = rkRegisterEventListener(\"" + eventType + "\", { event -> __rkMake_" + /* owner type */ "()." + decl.name + "(event) });");
-    if (decl.kind != DeclKind.Method) decl.fail("#[eventListener] must annotate a method");
-}
-```
-
-- Acceptance: "Event type matching is exact (no inheritance yet)".
-- superseded by: *Method-level markers* (explicitly: `decl.parameters[0].typeName` "cannot be written") and the string-named `Event`.
-
-### 7. Bootstrap publishing (1.0.6 Step 6)
-
-```bp
-pub fn run(app: App) {
-    rkLoadConfig();
-    rkPublishEvent(ApplicationStartedEvent(...));
-    val _port = rkServe(app.port, ...);
-    rkPublishEvent(ApplicationReadyEvent(...));
-}
-```
-
-superseded by: *Events* — `context.bootSequence()` called from `main`, because `src/bootstrap.bp` is frozen.
-
-### 8. Shutdown wiring (1.0.6 Step 7, Notes)
-
-```js
-// runtime.mjs
-process.on('SIGTERM', () => {
-    invokePreDestroy();
-    publishEvent(new ApplicationStoppedEvent());
-    server.close();
-});
-```
-
-```erlang
-% runtime.erl
-application:set_env(rakun, shutdown_hook, fun() ->
-    invoke_pre_destroy(),
-    publish_event(application_stopped),
-    cowboy:stop_listener(rakun_http)
-end).
-```
-
-- Acceptance: "SIGTERM triggers `#[preDestroy]` methods" · "Shutdown completes gracefully (in-flight requests finish)" · "Works on both targets".
-- Notes: "SIGTERM handling: Node.js `process.on`, Erlang `application:set_env` + trap_exit"; the heading names "SIGTERM/SIGINT".
-- superseded by: *Shutdown, the pre-destroy pass, and exit codes* (`rakun_context:terminate/2`; draining is front 07's). `SIGINT` is named by no 1.0.9 rakun front.
-
-### 9. Notes (1.0.6)
-
-- "Events are synchronous for now (async events later)" — synchronous dispatch is kept above; no async follow-up is recorded anywhere.
-- "Lifecycle order: `@postConstruct` in dependency order, `@preDestroy` in reverse" — the `pre` half is stated above; the `post` half is implied by "after the instance is constructed" and not stated as an ordering rule.
-- "`Context` is a special component — not subject to cycle detection (it's a meta-component)" — covered by *`Context`*.
-- Gate "`botopink test --target commonJS` green" — superseded by: *Test plan* ("Erlang-only").

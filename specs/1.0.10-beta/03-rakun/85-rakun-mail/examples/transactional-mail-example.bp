@@ -25,7 +25,7 @@ import {Health, healthIndicator, healthUp, healthDown} from "rakun-actuator";
 // jhonstart: the render path an HTML body is built with.
 import {Element, div, p, h1, text, renderToString} from "jhonstart";
 // std, through front 01.
-import {escape, clock} from "std";
+import {escape, io.clock} from "std";
 
 import {MailServer, TlsMode, Mail, Attachment, mailer, send, probe} from "rakun-mail";
 // The fixture SMTP server this front ships for its own tests: an ephemeral
@@ -77,7 +77,7 @@ pub type MailConfig(
 //
 // jhonstart has eight element constructors today and `a` is not one of them
 // (element.bp:10-53), so the reset link is rendered as its URL in text. That is
-// tracked as unowned surface in specs/1.0.9-beta/language-gaps.md; it is not a
+// tracked as unowned surface in specs/1.0.10-beta/language-gaps.md; it is not a
 // workaround this file invents.
 
 pub fn resetBody(displayName: string, resetUrl: string) -> Element {
@@ -229,9 +229,9 @@ test "send returns before a socket is opened" {
     resetFixtures();
     val server = fixtureServerThatNeverAnswers();
     val sender = ResetMailer(server: server);
-    val started = clock.monotonicMs();
+    val started = clock.monotonicMillis();
     sender.deliver("ana@example.org", "Ana", "https://shop.example/reset?t=abc");
-    val elapsed = clock.monotonicMs() - started;
+    val elapsed = clock.monotonicMillis() - started;
     // The connect timeout is 5000 ms; enqueueing must cost nothing like it.
     assert elapsed < 100;
 }

@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-web/src/websocket/**`, `modules/rakun-web/test/websocket/**`
 **Does not touch:** `modules/rakun-web/src/*.bp` — front 07 owns those, and this front adds no arm to its filter chain. `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` are frozen for the milestone
 **Reference:** `02-desenvolvendo-com-spring-boot.md § Starters` (`spring-boot-starter-websocket`) · `06-messaging.md § RSocket` (the WebSocket transport) · https://docs.spring.io/spring-framework/reference/web/websocket.html
-**Replaces:** `1.0.6-beta/18-web-websocket`
 
 ---
 
@@ -18,12 +17,6 @@ rakun speaks request and response. An application that needs to tell a browser s
 changed, a job finished, another user typed — has no way to do it except to have the browser ask
 again. `modules/rakun-web/src/websocket/` does not exist; `modules/rakun-web/` is a `botopink.json` and
 a `src/root.bp` with a TODO comment.
-
-The 1.0.6-beta draft this replaces had the right shape and two problems. Its `WebSocketSession` was a
-`pub type` with a field and two bodyless methods in a `type` body, which does not parse
-(`docs.md:567`). And it listed *"Broadcasting: use ETS to track sessions (Erlang), Map (Node.js)"* as
-a closing note — treating the browser half and the server half as two implementations of one front,
-when they are two sides of a boundary this milestone has already decided how to draw.
 
 ## Which side each API lives on
 
@@ -140,7 +133,7 @@ The part the browser has to agree with, stated once so both halves can be writte
 | Max frame | `rakun.websocket.max-frame-bytes`, default 65536; a larger frame closes with `1009` |
 
 Payloads are text. There is no byte or binary type in botopink
-(`specs/1.0.9-beta/language-gaps.md`), so a binary frame cannot be represented without corrupting it
+([`../../language-gaps.md`](../../language-gaps.md)), so a binary frame cannot be represented without corrupting it
 and is refused at the arm rather than read lossily.
 
 ### Target
@@ -205,7 +198,7 @@ pub fn websocketHealth() -> HealthReport
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| There is no byte or binary type, so a binary WebSocket frame cannot be represented. Recorded in `specs/1.0.9-beta/language-gaps.md`. | `onMessage` in the example | Text frames only; a binary frame is refused at the arm with a named error. | A `Bytes` primitive with a declared encoding boundary |
+| There is no byte or binary type, so a binary WebSocket frame cannot be represented. Recorded in [`../../language-gaps.md`](../../language-gaps.md). | `onMessage` in the example | Text frames only; a binary frame is refused at the arm with a named error. | A `Bytes` primitive with a declared encoding boundary |
 
 ## Test plan
 
@@ -249,47 +242,3 @@ side, which is how the two halves are kept in step.
 - Not one line of JavaScript, no `.mjs` sidecar, and no `@External.Node` cell in the module.
 - Every `// LANGUAGE GAP:` marker in the example appears in the table above.
 - The front's tests are green on erlang.
-
-## Carried from 1.0.6-beta F18 web-websocket
-
-Items in `specs/1.0.6-beta/18-web-websocket/README.md` with no counterpart above. Covered and not
-repeated: `WebSocketHandler` → `WsHandler` (`onOpen`/`onMessage`/`onClose`), `WebSocketSession` → `WsSession`
-(`id`, `send`, `close`), `@serverEndpoint("/ws/chat")` → `#[wsEndpoint("/ws/chat")]`, `cowboy_websocket`,
-STOMP and SockJS (*Out of scope*), "Broadcasting: use ETS" (superseded by `pg`, *Topics and broadcast*),
-multiple clients (*One process per connection*), `ws` (Node.js) (superseded by *Target*).
-
-| Item | 1.0.6 text | Status |
-|---|---|---|
-| Error callback | `fn onError(self: Self, session: WebSocketSession, error: string);` on `WebSocketHandler` (Step 1) | absent: `WsHandler` has three callbacks; a raising handler closes with `1011` (*Step 1*) and the handler is never told — no hook to log, clean up per-connection state or send a final frame |
-| No-arg close | `pub fn close(self: Self);` on `WebSocketSession` | covered by `close(code, reason)`; the no-arg form is blocked by the declared-defaults gap and is not listed in *Language gaps* here |
-| Cowboy callbacks | Step 3 snippet, below — `websocket_handle/2`, `websocket_info/2` | absent as text: *Upgrade* cites only `init/2`; `websocket_info/2` is the seam `broadcast` and `session.send` deliver through |
-| Module layout | Step 4 tree, below | absent: no file layout is given above |
-| Both targets | Gate: "`botopink test` green on both targets" | superseded by: *Which side each API lives on* |
-
-Step 3 — Erlang implementation (verbatim):
-
-```erlang
--module(chat_ws_handler).
--behaviour(cowboy_websocket).
-
-init(Req, State) ->
-    {cowboy_websocket, Req, State}.
-
-websocket_handle({text, Msg}, State) ->
-    {reply, {text, "Echo: " ++ Msg}, State};
-websocket_handle(_Data, State) ->
-    {ok, State}.
-
-websocket_info(_Info, State) ->
-    {ok, State}.
-```
-
-Step 4 — Module structure (verbatim):
-
-```
-modules/rakun-web/
-└── src/
-    └── websocket/
-        ├── websocket_handler.bp
-        └── server_endpoint.bp
-```

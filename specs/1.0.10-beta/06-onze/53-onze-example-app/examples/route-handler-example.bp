@@ -24,7 +24,7 @@ import {rkAppRegisterHandler} from "rakun";                            // front 
 // every handler below is testable without a live request frame; front 62's own
 // example shows the frame-bound form.
 import {cache} from "rakun-cache";                                     // front 12
-import {dict} from "std";
+import {collections.Dict} from "std";
 // app-local
 import {Post, listPosts, findPost, writePost} from "@/lib.db";
 
@@ -130,9 +130,9 @@ fn getRequest(path: string, slug: string) -> FakeRequest {
     return FakeRequest(
         method: HttpMethod.Get,
         path: path,
-        params: dict.empty().insert("slug", slug),
-        queries: dict.empty(),
-        heads: dict.empty(),
+        params: Dict.empty().insert("slug", slug),
+        queries: Dict.empty(),
+        heads: Dict.empty(),
         payload: "",
     );
 }
@@ -141,9 +141,9 @@ fn postRequest(contentType: string, authorization: string, payload: string) -> F
     return FakeRequest(
         method: HttpMethod.Post,
         path: "/api/posts",
-        params: dict.empty(),
-        queries: dict.empty(),
-        heads: dict.empty()
+        params: Dict.empty(),
+        queries: Dict.empty(),
+        heads: Dict.empty()
             .insert("content-type", contentType)
             .insert("authorization", authorization),
         payload: payload,

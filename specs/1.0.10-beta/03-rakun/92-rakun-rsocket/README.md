@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-rsocket/src/**`, `modules/rakun-rsocket/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. `modules/rakun-web/src/websocket/**` is front 20's and is consumed read-only.
 **Reference:** `06-messaging.md § RSocket` (Server, Client) · `§ Spring Integration · RSocket com Integration` · https://docs.spring.io/spring-boot/reference/messaging/rsocket.html · https://rsocket.io/about/protocol
-**Replaces:** new
 
 ---
 
@@ -200,3 +199,4 @@ scope by the milestone's target split.
 - All three language-gap rows are cited from the example and already appear in [`language-gaps.md`](../../language-gaps.md).
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module in the same commit.
 - The front's tests are green on erlang.
+

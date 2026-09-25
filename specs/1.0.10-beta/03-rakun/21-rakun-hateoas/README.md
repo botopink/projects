@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-hateoas/src/**`, `modules/rakun-hateoas/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `04-web.md § Spring HATEOAS` · https://docs.spring.io/spring-boot/reference/web/spring-hateoas.html
-**Replaces:** `1.0.6-beta/20-hateoas`
 
 ---
 
@@ -21,19 +20,17 @@ release. HAL exists to move that knowledge into the response.
 
 `modules/rakun-hateoas/` is a `botopink.json` and a `src/root.bp` holding a TODO comment.
 
-The 1.0.6-beta draft this replaces had three problems worth naming, because each of them is a thing
-this front has to answer rather than repeat. Its `Link` record had a field called `type`, which is a
-keyword (`modules/compiler-core/src/lexer.zig:721-767`). Its `RepresentationModel<T>` held a `content:
-T` and its serializer called `json.stringify(model.content)` — but `json.stringify` takes and returns
-`string` (`libs/std/src/json.bp:45`), so a generic record cannot be serialized that way and the
-function as written would have returned the wrong thing silently. And its `linkTo(controller: type,
-method: string, …)` passed a type as a value and called an `rkGetRoute` that does not exist.
+Three constraints shape the design. `type` is a keyword (`modules/compiler-core/src/lexer.zig:721-767`),
+so a `Link` field cannot be called `type`. `json.stringify` takes and returns `string`
+(`libs/std/src/json.bp:45`), so a generic `RepresentationModel<T>` cannot be serialized through it.
+And a type cannot be passed as a value, so a `linkTo(controller: type, method: string, …)` is not
+writable.
 
 ## Current state
 
 - `repository/rakun/modules/rakun-hateoas/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `repository/rakun/src/http.bp:45-73` — `Response` has six builders: `ok`, `json`, `created`, `withStatus`, `notFound`, `badRequest`. No header surface, so the `application/hal+json` content type is set through front 07's response-header mechanism.
-- `libs/std/src/json.bp:36,45` — `parse` and `stringify` both take and return `string`. There is no structured JSON value in the ecosystem (`specs/1.0.9-beta/language-gaps.md`, *Unowned surface*), which decides this front's whole serialization strategy.
+- `libs/std/src/json.bp:36,45` — `parse` and `stringify` both take and return `string`. There is no structured JSON value in the ecosystem ([`../../language-gaps.md`](../../language-gaps.md), *Unowned surface*), which decides this front's whole serialization strategy.
 - `repository/rakun/src/runtime.bp:88-92` — `rkRouteCount()` and `rkRoutePaths()` exist. The route table holds a verb, a path and a handler closure and **does not hold the controller or method name** (`repository/rakun/src/runtime.bp:78-86`), which decides `linkTo`'s shape.
 
 ## Mechanism
@@ -98,7 +95,7 @@ pub fn link(rel: string, href: string) -> Link
 
 `mediaType`, not `type` — `type` is a keyword. Empty strings are omitted from the rendered object
 rather than emitted as `""`, and `templated` is emitted only when true. Declared parameter defaults are
-never applied (`specs/1.0.9-beta/language-gaps.md`), so `link(rel, href)` is a named constructor for
+never applied ([`../../language-gaps.md`](../../language-gaps.md)), so `link(rel, href)` is a named constructor for
 the common case rather than a default-argument form.
 
 ### Building a link
@@ -213,7 +210,7 @@ pub fn halResponse(body: string) -> Response
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| There is no structured JSON value in std (`libs/std/src/json.bp:36,45`), so nothing can serialize an arbitrary record at run time. Recorded in `specs/1.0.9-beta/language-gaps.md` under *Unowned surface*. | `examples/hal-resource-example.bp`, every `…ToHal` call and `halCollection` | Reflect the record at comptime with `#[halResource]` and emit a concrete renderer; refuse a field type the renderer does not know. Collections take already-rendered strings. | A `JsonValue` sum type in std with a writer, which would also let `halCollection` take records |
+| There is no structured JSON value in std (`libs/std/src/json.bp:36,45`), so nothing can serialize an arbitrary record at run time. Recorded in [`../../language-gaps.md`](../../language-gaps.md) under *Unowned surface*. | `examples/hal-resource-example.bp`, every `…ToHal` call and `halCollection` | Reflect the record at comptime with `#[halResource]` and emit a concrete renderer; refuse a field type the renderer does not know. Collections take already-rendered strings. | A `JsonValue` sum type in std with a writer, which would also let `halCollection` take records |
 | Declared parameter defaults are never applied, so `Link` cannot have optional attributes the way HAL's model does. | `link(rel, href)` in the example | A named constructor for the common case and the full constructor otherwise. | Apply declared defaults at call sites |
 
 ## Test plan
@@ -252,34 +249,3 @@ There is no commonJS row; this front is server-only by the milestone's target sp
 - Every `// LANGUAGE GAP:` marker in the example appears in the table above.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module's surface in the same commit.
 - The front's tests are green on erlang.
-
-## Carried from 1.0.6-beta F20 hateoas
-
-Items in `specs/1.0.6-beta/20-hateoas/README.md` with no counterpart above. Covered and not repeated:
-`Link(rel, href, type)` → `Link(rel, href, mediaType, title, templated)` (`type` is a keyword), HAL
-`_links`/`_embedded` shapes (both sample documents), `toHal<T>` over `json.stringify(model.content)` and
-`linkTo(controller: type, method, params)` over `rkGetRoute` (both rejected in *Problem*),
-`linkTo` needing route introspection (*Building a link*), Affordances / JSON:API / Collection+JSON (*Out of scope*).
-
-| Item | 1.0.6 text | Status |
-|---|---|---|
-| Link `name` | `name: ?string,     // link name` on `Link` (Step 1) | absent: HAL's `name` attribute (secondary key when a rel is an array — the case *Step 1* above renders) is not among `mediaType`, `title`, `templated` |
-| Required self link | `pub type Links(self: Link, others: Array<Link>)` (Step 1) | absent: `Array<Link>` above carries no type-level guarantee that `self` is present; a HAL resource without `self` is emitted silently |
-| Generic model types | `pub type RepresentationModel<T>(content: T, links: Array<Link>)` (Step 2) and `pub type CollectionModel<T>(content: Array<T>, links: Array<Link>)` (Step 5) | superseded by: *Serialization is comptime* (`#[halResource]` emits `<typeName>ToHal`; `halCollection` takes rendered strings) |
-| Module layout | Step 6 tree, below | absent: no file layout is given above |
-| Both targets | Gate: "`botopink test` green on both targets" | superseded by: *Target* |
-
-Step 6 — Module structure (verbatim):
-
-```
-modules/rakun-hateoas/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   ├── link.bp
-│   ├── representation_model.bp
-│   ├── collection_model.bp
-│   └── hal_serializer.bp
-└── test/
-    └── hateoas_test.bp
-```

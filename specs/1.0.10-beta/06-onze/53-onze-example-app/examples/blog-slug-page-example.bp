@@ -11,7 +11,7 @@
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes
 //           https://nextjs.org/docs/app/api-reference/functions/generate-static-params
 //           https://nextjs.org/docs/app/api-reference/functions/not-found
-//           NEXTJS-DOCS.md § 6. Rotas Dinâmicas · § 18. Metadata · § 14. Erros
+//           NEXTJS-DOCS.md § 6. Dynamic Routes · § 18. Metadata · § 14. Errors
 //
 // Target: erlang (server).
 
@@ -32,7 +32,7 @@ import {
 } from "rakun";                                             // front 60
 import {Metadata, OpenGraph, TwitterCard, Icons} from "jhonstart";   // front 32
 import {mergeMetadata, pairValue} from "jhonstart";                  // front 32
-import {dict} from "std";
+import {collections.Dict} from "std";
 // app-local
 import {Post, findPost, listPosts, missingPost} from "@/lib.db";
 
@@ -134,8 +134,8 @@ fn postRoute(slug: string) -> PageContext {
     return PageContext(
         pathname: "/blog/" + slug,
         pattern: "/blog/[slug]",
-        params: dict.empty().insert("slug", slug),
-        query: dict.empty(),
+        params: Dict.empty().insert("slug", slug),
+        query: Dict.empty(),
         rest: [],
     );
 }

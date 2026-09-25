@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-tx/botopink.json`, `modules/rakun-tx/src/**` · `modules/rakun-tx/test/**`
 **Does not touch:** `modules/rakun-data/src/**` (front 08's, including `#[transactional]`), `modules/rakun-messaging/src/**` (front 15's), and the four frozen files in `repository/rakun/src/`
 **Reference:** `07-io.md § JTA (Transacoes Distribuidas)`, `§ JMS com JTA` · `06-messaging.md § Apache Kafka · Enviando · Transacoes`, `§ Apache Pulsar · Transacoes` · <https://docs.spring.io/spring-boot/reference/io/jta.html>
-**Replaces:** new — proposed by the Spring Boot 4 coverage audit, § 2 `NN-rakun-distributed-transactions`
 
 ---
 
@@ -249,9 +248,8 @@ pub fn sagaState(id: string) -> SagaState
 
 ## Language gaps
 
-Both rows below belong in [`../language-gaps.md`](../../language-gaps.md). The second is already there,
-carried from the ground truth with the note that no front had needed it yet — this is the front that
-needs it. The first is new.
+Both rows below belong in [`../../language-gaps.md`](../../language-gaps.md). The second is already
+there; this is the front that needs it. The first is new.
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
@@ -295,3 +293,4 @@ transaction to enrol in.
 - [ ] `repository/rakun/AGENTS.md` records the boundary with front 08: one resource is front 08, more
       than one is here
 - [ ] The front's tests are green on its assigned target
+

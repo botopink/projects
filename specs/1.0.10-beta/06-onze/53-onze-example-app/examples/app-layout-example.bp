@@ -9,7 +9,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/layout
 //           https://nextjs.org/docs/app/getting-started/fonts
-//           NEXTJS-DOCS.md § 5. Layouts e Páginas · § 15. Estilização · § 17. Fontes
+//           NEXTJS-DOCS.md § 5. Layouts and Pages · § 15. Styling · § 17. Fonts
 //
 // Target: erlang (server). The nav it renders contains `Link` elements whose
 // click behaviour is the JS half (front 27, shipped by front 68); the markup is

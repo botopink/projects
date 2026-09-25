@@ -1,12 +1,10 @@
-// carried from specs/1.0.7-beta/examples-bp.md — ## F12 — Rakun Middleware (+ ## F22 · middleware.bp)
-//
-// Kept verbatim. 07 spells the surface `#[middleware]` + `#[matcher(...)]` on
+// NOTE: 07 spells the surface `#[middleware]` + `#[matcher(...)]` on
 // `pub fn middleware(req: Request, chain: Chain) -> Response`, with `Next.pass()` /
-// `Next.redirect()` / `Next.rewrite()` and a status-0 sentinel; the draft below
+// `Next.redirect()` / `Next.rewrite()` and a status-0 sentinel; this example
 // uses `NextResponse.next()` / `.redirect()` and a `pub val config = MiddlewareConfig(...)`.
 // `request.cookie(...)` is `cookies().get(...)` in 62.
 
-// --- Middleware de autenticação (middleware.bp)
+// --- Authentication middleware (middleware.bp)
 import {Request, Response, NextResponse} from "rakun";
 
 #[@future]
@@ -29,14 +27,15 @@ pub val config = MiddlewareConfig(
     matcher: ["/dashboard/*", "/api/*"],
 );
 
-// --- Middleware de logging (middleware.bp)
+// --- Logging middleware (middleware.bp)
 import {Request, Response, NextResponse} from "rakun";
+import {io.clock} from "std";
 
 #[@future]
 pub fn middleware(request: Request) -> @Future<Response> {
-    val start = nowMillis();
+    val start = clock.nowMillis();
     val response = NextResponse.next();
-    val duration = nowMillis() - start;
+    val duration = clock.nowMillis() - start;
     print(request.method() + " " + request.path() + " — " + duration.toString() + "ms");
     return response;
 }

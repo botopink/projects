@@ -8,7 +8,7 @@ fronts land into.
 
 Sources: `NEXTJS-DOCS.md` §§ 2, 3, 7, 15, 16, 17, 18, 24, 28, 29 (the framework half);
 `../02-packaging/95-ecosystem-package-restructure/README.md` § 2 (the five-submodule proposal);
-the 1.0.9 `fronts.md` Track E ownership table; the front READMEs in this directory;
+the [`../fronts.md`](../fronts.md) Track E ownership table; the front READMEs in this directory;
 `repository/botopink-lang/modules/compiler-cli/src/cli/` (one file per subcommand, pure `parseXxxOpts`,
 no parser drops a token — the shape `onze-cli` copies).
 
@@ -39,7 +39,7 @@ Seven submodules. Front 95 proposed five (`onze`, `onze-test`, `onze-cli`, `onze
 | Candidate | Proposed by | Verdict | Reason |
 |---|---|---|---|
 | `onze` (core) | 95 · 49 | **keep** | The vocabulary the three libraries do not share: `OnzeConfig`, `OnzeProject`, `AppFile`, `AliasMap`/`resolveAlias`, `publicEnvPrefix`/`isPublicEnvName`/`publicEnv`, `Onze.run`. Its `test/` imports only `std` (49 *Test plan*), so nothing heavier may live here |
-| `onze-core` | 1.0.7 overview | **drop** (renamed) | 95's pattern names the core after the package: `modules/onze/` |
+| `onze-core` | — | **drop** (renamed) | 95's pattern names the core after the package: `modules/onze/` |
 | `onze-test` | 95 | **keep** | Every library has one; this one also owns the E2E runner (`bootApp`, `request`) because booting a built app and hitting routes is what onze's tests are |
 | `onze-cli` | 95 · 50 | **keep** | Runs on a developer's machine before any BEAM node exists (commonJS only); a production deploy never loads it. Copies `compiler-cli`'s shape: `main.bp` dispatch + one file per command + pure option parsers |
 | `onze-bundler` | 95 · 68 | **keep, one module, two targets** | The build half (graph, refusals, chunks, entry) runs in the CLI process; `manifest.bp` compiles for both because the BEAM server reads the manifest on every render. Splitting a `onze-manifest` out would be a submodule with one file whose only consumer is the sibling next to it — 68's own argument ("one parser, two targets, one round-trip test") holds better inside one module |
@@ -72,7 +72,7 @@ Seven submodules. Front 95 proposed five (`onze`, `onze-test`, `onze-cli`, `onze
    rakun-cache · rakun-web ┘              └──► onze-release ◄┘
                                           
    onze-cli  ──► onze · onze-bundler · onze-assets · onze-release · std      (commonJS)
-   onze-test ──► std/asserts · std/snapshots · every submodule above          (both)
+   onze-test ──► testing.asserts · testing.snapshots · every submodule above          (both)
    examples/* ──► onze · onze-assets · onze-og · rakun* · jhonstart* · emilia · std
 ```
 
@@ -88,12 +88,11 @@ Edges, with the file that creates each:
 | `onze-release` | `onze-bundler` · `onze-assets` | `package.bp` verifies every chunk and `Y` record exists; copies `public/` |
 | `onze-cli` | everything | `build.bp` drives the bundler, the stylesheet build, the release; `start.bp` runs `bin/onze` |
 
-### The three seams that pointed the wrong way, and where each lives now
+### The three seams, and where each lives (decision 77)
 
-The 1.0.9 READMEs described rakun and jhonstart *calling into* onze. Each was a direction violation,
-and decision 77 settled all three by inversion rather than by exception:
+rakun and jhonstart never call into onze; the three seams that would are inverted, not excepted:
 
-| Seam as drafted in 1.0.9 | Violation | Where it lives now |
+| Seam | Direction it must not have | Where it lives |
 |---|---|---|
 | Front 23 (`rakun/src/ssr.bp`) calls 69's `openSink` / `collectHead` / `collectChunk` / `closeSink` | rakun → onze-assets | Those four are fields of `RenderHooks`, declared by front 23 with working defaults; `Onze.run` (core `integration.bp`) installs `onze-assets`'s implementation at boot. rakun names no module of onze |
 | Front 23 emits the bundle's `<script>` tags by calling 68's `headScriptTags` / `scriptTags` | rakun → onze-bundler | Same record: `RenderHooks.headExtra(route) -> string` and `RenderHooks.bodyExtra(route) -> string`, filled from 68. The payload tag stays 23's (`contracts.md § 2`) |
@@ -121,7 +120,7 @@ The README of front 49 (*Step 4*) already requires `integration.bp` to be the pl
 | E2E (53) | `bootApp(dir, mode) -> @Future<RunningApp>`, `stopApp`, `assertResponse`, `assertBundle`, `assertCss`, `assertServeGate` | status + headers + body (hashes literal, build id masked to `<buildId>` only in `assertServeGate`); the chunk tree; a stylesheet; the dev-vs-start diff |
 | builders | `fixtureTree(text) -> Fixture` (`== path` headers), `fixtureGraph(text)`, `tmpProject(fixture)` (under `.botopinkbuild/tmp/`), `sampleManifest()`, `sampleSpec()` | — |
 
-Rules (95 § 5): import `std/asserts`, never re-implement; no mocking runtime here — a doubled encoder is
+Rules (95 § 5): import `testing.asserts`, never re-implement; no mocking runtime here — a doubled encoder is
 a config value (`encoder: "/bin/true"`), a doubled datasource is front 19's.
 
 ## Front → submodule ownership
@@ -142,7 +141,7 @@ Each front lands in exactly one directory. Shared files inside a submodule follo
 | 71 release-packaging | `modules/onze-release/` | `botopink.json`, `src/root.bp`, `src/spec.bp`, `otp.bp`, `docker.bp`, `package.bp`, `lifecycle.bp`, `export.bp` | `test/build_id_test.bp` (both), `release_text_test.bp` (both), `dockerfile_test.bp`, `package_test.bp` | — |
 | `onze-test` | `modules/onze-test/` | filled by each front for its own `assert<Subject>`; `root.bp` owned by 49, each front hands its `pub mod` line | `test/helpers_test.bp` (49) | 49 owns `root.bp` |
 
-Lines in the 1.0.9 READMEs that this table supersedes: 49 *Owns* (`src/…` → `modules/onze/src/…`);
+Lines in the front READMEs that this table supersedes: 49 *Owns* (`src/…` → `modules/onze/src/…`);
 49 *Does not touch* (`repository/onze/src/image.bp` → `modules/onze-assets/src/image.bp`); 51 and
 52 *Owns* and *Does not touch*; 50 *Does not touch* (`repository/onze/src/**`); 68 *Does not touch*
 (`repository/onze/src/**` → `modules/onze/src/**`).

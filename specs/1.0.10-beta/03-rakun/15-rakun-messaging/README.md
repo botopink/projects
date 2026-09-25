@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-messaging/src/**`, `modules/rakun-messaging/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `06-messaging.md § AMQP (RabbitMQ)` · `06-messaging.md § Apache Kafka` · https://docs.spring.io/spring-boot/reference/messaging/amqp.html · https://docs.spring.io/spring-boot/reference/messaging/kafka.html
-**Replaces:** `1.0.6-beta/11-messaging-amqp` + `1.0.6-beta/16-messaging-kafka`
 
 ---
 
@@ -18,13 +17,10 @@ Nothing in rakun receives a message. `modules/rakun-messaging/` is a `botopink.j
 holding a TODO comment; there is no broker connection, no listener, no publish call, and no way for one
 service to tell another that something happened except by making an HTTP request and waiting for it.
 
-The two drafts this replaces are the same document with the nouns swapped. 1.0.6-beta F11 proposed
-`RabbitTemplate` plus `@rabbitListener` in four steps; 1.0.6-beta F16 proposed `KafkaTemplate` plus
-`@kafkaListener` in four steps, and declared `Depends on: F11 (messaging-amqp)` without saying what it
-depended on — because the answer was "nothing, it is a copy". Both had a `pub type` with bodyless
-methods inside a `type` body, which does not parse (`docs.md:567`), and both proposed a module layout
-(`src/amqp/**` and `src/kafka/**`) that puts the shared half — the registry, the dispatch loop, the
-worker supervision, the acknowledgement policy — in neither.
+`RabbitTemplate` + `@rabbitListener` and `KafkaTemplate` + `@kafkaListener` are the same design with
+the nouns swapped. A `pub type` with bodyless methods inside a `type` body does not parse
+(`docs.md:567`), and a layout of `src/amqp/**` beside `src/kafka/**` puts the shared half — the
+registry, the dispatch loop, the worker supervision, the acknowledgement policy — in neither.
 
 One registry, one dispatch loop, one container model, and a broker arm per transport behind it. Adding
 Redis pub/sub after that is a file, not a front.
@@ -33,7 +29,7 @@ Redis pub/sub after that is a file, not a front.
 
 - `repository/rakun/modules/rakun-messaging/src/root.bp` — docblock and `// Module contents will be added by the respective fronts.`
 - `repository/rakun/src/runtime.bp` — the only registry rakun has is the HTTP route table (`rkRegisterRoute`, `rkRouteCount`, `rkRoutePaths`, `rkDispatch`). It is a good model for this one and it is not reusable for it: routes are matched by verb and path, listeners by broker and destination.
-- `libs/std/src/` has **no socket module**. Every broker connection in this front waits on front 01's `net`; there is nothing under it today.
+- `libs/std/src/` has **no socket module**. Every broker connection in this front waits on front 01's `io.net`; there is nothing under it today.
 - `repository/rakun/src/decorators.bp` — no listener markers, and frozen.
 - No supervision surface is exposed to a rakun library today; front 04's BEAM runtime owns the supervision tree this front's containers attach to.
 
@@ -287,91 +283,3 @@ Also out of scope here: message conversion beyond text (see *Language gaps*), an
 - Every `// LANGUAGE GAP:` marker in the examples appears in the table above.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module's surface, including the out-of-scope map, in the same commit.
 - The front's tests are green on erlang.
-
-## Carried from 1.0.6-beta F11 messaging-amqp
-
-Items in `specs/1.0.6-beta/11-messaging-amqp/README.md` with no counterpart above. Renamed items
-(`RabbitTemplate` → `AmqpTemplate`, `@rabbitListener` → `#[amqpListener]`, `spring.rabbitmq.*` →
-`rakun.messaging.amqp.*`, retry → front 86, `spring-boot-starter-amqp` → front 73's
-`rakun-starter-messaging`) are covered and not repeated.
-
-| Item | 1.0.6 text | Status |
-|---|---|---|
-| Synchronous pull | `pub fn receive(self: Self, queue: string) -> ?string;` on `RabbitTemplate` (Step 1) — a one-shot `basic.get` with no listener container | absent: the template surface above is publish-only and consumption is listener-only; no 1.0.9 rakun front names a pull/poll receive |
-| Typed publish | `pub fn convertAndSend<T>(self: Self, queue: string, message: T);` + Mechanism bullet "Message conversion (JSON)" + Notes "JSON message conversion" | superseded by: *Out of scope* ("message conversion beyond text") and *Language gaps* (no `bytes`, no JSON value) |
-| Connection factory | Step 3 snippet, below | absent as text; the arm names `amqp_client` but no connection call |
-| Module layout | Step 4 tree, below | superseded by: *Problem* (`src/amqp/**` layout rejected — shared half in neither) |
-| Node arm | Notes: "Uses `amqp_client` (Erlang), `amqplib` (Node.js)"; Gate: "`botopink test` green on both targets" | superseded by: *Target* (erlang only, no commonJS row) |
-
-Step 3 — Connection factory (verbatim):
-
-```erlang
-% amqp_connection in Erlang (amqp_client library)
-{ok, Connection} = amqp_connection:start(#amqp_params_network{
-    host = Host,
-    port = Port,
-    username = Username,
-    password = Password
-}).
-```
-
-Step 4 — Module structure (verbatim; superseded by: *Problem*):
-
-```
-modules/rakun-messaging/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   └── amqp/
-│       ├── rabbit_template.bp
-│       └── rabbit_listener.bp
-└── test/
-    └── amqp_test.bp
-```
-
-## Carried from 1.0.6-beta F16 messaging-kafka
-
-Items in `specs/1.0.6-beta/16-messaging-kafka/README.md` with no counterpart above. Covered and not
-repeated: `KafkaTemplate.send(topic, key, value)`, `@kafkaListener` → `#[kafkaListener(topic, groupId)]`,
-`spring.kafka.bootstrap-servers` → `rakun.messaging.kafka.bootstrap-servers`, consumer groups (*The four
-broker arms*), `brod` as the BEAM driver, Kafka Streams → front 89 (*Out of scope*).
-
-| Item | 1.0.6 text | Status |
-|---|---|---|
-| Key-less publish | `pub fn sendDefault(self: Self, topic: string, value: string);` (Step 1) | absent by name; *Publishing* says "an optional key" but declares only `KafkaTemplate.send(topic, key, payload)` and declared defaults are never applied, so a second method is the only spelling |
-| Labelled listener form + `(key, value)` handler | Step 2 snippet, below | superseded by: *Step 3* (positional `#[kafkaListener("t", "g")]`) and *Step 1* (handler takes `Message`) |
-| Explicit partition on produce | Step 3 snippet, below — `brod:produce_sync(Client, Topic, Partition, Key, Value)` | absent: no template call or `Message` field lets a publisher choose a partition; `Message.offset` exists, partition does not |
-| Ordering | Notes: "Partition awareness for ordering" — same key → same partition → ordered | absent as a stated guarantee; *Containers* covers ordering only via `concurrency = 1`, not via key→partition |
-| Module layout | Step 4 tree, below | superseded by: *Problem* |
-| Node arm | Notes: "Uses `brod` (Erlang), `kafkajs` (Node.js)"; Gate: both targets | superseded by: *Target* |
-| Draft dependency | "**Depends on:** F11 (messaging-amqp)" | superseded by: *Problem* ("nothing, it is a copy") |
-
-Step 2 — `@kafkaListener` (verbatim; superseded by: *Step 3*):
-
-```bp
-#[service]
-pub type OrderEventProcessor {
-    #[kafkaListener(topics: "orders", groupId: "order-service")]
-    pub fn processOrder(self: Self, key: string, value: string) {
-        print("Processing order: " + key + " = " + value);
-    }
-}
-```
-
-Step 3 — Erlang implementation (verbatim):
-
-```erlang
-{ok, Client} = brod:start_client([{Host, Port}], client1),
-{ok, Producer} = brod:start_producer(Client, Topic, _ProducerConfig=[]),
-brod:produce_sync(Client, Topic, Partition, Key, Value).
-```
-
-Step 4 — Module structure (verbatim; superseded by: *Problem*):
-
-```
-modules/rakun-messaging/
-└── src/
-    └── kafka/
-        ├── kafka_template.bp
-        └── kafka_listener.bp
-```

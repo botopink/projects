@@ -10,7 +10,7 @@
 //   https://tailwindcss.com/docs/stroke-width
 //   https://tailwindcss.com/docs/screen-readers
 //   https://tailwindcss.com/docs/forced-color-adjust
-// Reference: TAILWIND_CSS_DOCS.md § 18. SVG, § 19. Acessibilidade
+// Reference: TAILWIND_CSS_DOCS.md § 18. SVG, § 19. Accessibility
 //
 // § 18 gives class names and HTML examples and NO property/value table. The
 // property comes from each subsection heading (`fill`, `stroke`,

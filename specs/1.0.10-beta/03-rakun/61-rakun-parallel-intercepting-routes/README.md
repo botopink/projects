@@ -23,7 +23,6 @@ here; this front adds no file to `repository/jhonstart/`
 layouts) · <https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/intercepting-routes> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/default>
-**Replaces:** `new` — 1.0.7-beta's file-routing front named `@slots` and specified nothing behind it
 
 ---
 
@@ -331,3 +330,4 @@ precedent front 22 sets and `repository/rakun/test/di_test.bp:14-16` before it.
 - `repository/rakun/AGENTS.md` names `route_slots.bp`, `route_intercept.bp` and the slot wire format.
 - The front's tests are green on its assigned target — here, erlang for the server half and both for
   the two boundary artifacts.
+

@@ -8,13 +8,12 @@
 **Owns:** `modules/rakun-actuator-api/src/**`, `modules/rakun-actuator-api/test/**` · `modules/rakun-actuator/src/*.bp`, `modules/rakun-actuator/src/sidecars/rakun_actuator.erl`, `modules/rakun-actuator/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · `modules/rakun-actuator/src/exposure.bp`, `access.bp`, `management_listener.bp`, `probes.bp`, `sanitize.bp`, which are front 76's · the metrics registry and exporters, which are front 75's
 **Reference:** `09-actuator.md` — Endpoints, Health, Info, Monitoramento HTTP, JMX · `03-recursos-principais.md § Disponibilidade da Aplicacao` · <https://docs.spring.io/spring-boot/reference/actuator/index.html>
-**Replaces:** `1.0.6-beta/07-actuator-health`
 
 ---
 
 ## Scope, first — because this front was cut in three
 
-The Spring Boot audit split what the old draft called "actuator" into three fronts, and the boundary
+"Actuator" is three fronts, and the boundary
 is worth stating before the problem statement, because most of what a reader expects here is not here.
 
 | Front | Owns |
@@ -86,8 +85,7 @@ One seam, here, is the point.
 
 ### An endpoint is a registration, not a controller
 
-The old draft wrote each endpoint as a `#[restController]` with a `#[getMapping]`
-(`1.0.6-beta/07-actuator-health/README.md`, steps 1–7). That cannot work once front 76 exists: the
+An endpoint written as a `#[restController]` with a `#[getMapping]` cannot work once front 76 exists: the
 base path, the per-endpoint path and the management listener are all configuration, and a
 `#[getMapping("/health")]` is a compile-time constant. It also means an application could not add an
 endpoint without also owning a route prefix.
@@ -448,143 +446,3 @@ Erlang-only. There is no client half: a browser reads these endpoints over HTTP 
       named as the analogues
 - [ ] Front 11 exposes only `health` by default and defers every access decision to front 76
 - [ ] The front's tests are green on its assigned target
-
-## Carried from 1.0.6-beta F07 actuator-health
-
-Source: `specs/1.0.6-beta/07-actuator-health/README.md`. The 1.0.9 text deliberately cut metrics (front 75), `env`/sanitization/exposure (front 76) and audit (front 87) out of this front. Items that live there are cited, not carried. Items below are absent from all four.
-
-### Covered by sibling fronts (cited, not carried)
-
-| Old item | Where it lives in 1.0.9 |
-|---|---|
-| Step 4 `Counter`, `Timer`, `MetricRegistry`, `/actuator/metrics` | `75-rakun-observability-metrics` — *Mechanism* meter table, Step 1 (`Counter(name, tagKey)`, `Timer(name, tagKey)`, `counter()/timer()/summary()`), `/actuator/metrics` at line 17 |
-| Step 5 `MetricsFilter` timing `http.server.requests` with tags `method`, `path`, `status` | `75` line 40 cites "front 11 ships `http.server.requests` per `1.0.6-beta` F07 step 5"; `75` Step 2 records it with tags `method`, `route`, `status` (route pattern, not concrete path) |
-| Step 6 `/actuator/env` with `isSensitive(key)` masking `password`/`secret`/`token` as `***` | `76-rakun-actuator-security-probes` § *Sanitization* — pattern set `password`, `secret`, `key`, `token`, `credentials`, `vcap_services`, `sun.java.command` + `rakun.endpoint.sanitize.additional-keys`; `rakun.endpoint.env.show-values` |
-| Notes: "Prometheus: separate front", "Micrometer integration later" | `75` Step 4 Prometheus exporter, `/actuator/prometheus` |
-| Notes: "Logging: separate front" | `17-rakun-logging` (`loggers`, `logfile` endpoints, per *Adjacent fronts* above) |
-| Step 2 `DataSourceHealthIndicator` | front 08 ships `db`, per *The health-indicator registration contract* above |
-
-### 1. Step 1 — `DiskSpaceHealthIndicator` and its threshold
-
-```bp
-#[component]
-pub type DiskSpaceHealthIndicator {
-    pub fn health(self: Self) -> Health {
-        val free = fs.diskFree();
-        val threshold = 100 * 1024 * 1024;  // 100 MB
-        return if (free < threshold) Health(status: "DOWN", details: {"free": free.toString()})
-            else Health(status: "UP", details: {"free": free.toString()});
-    }
-}
-```
-
-- 1.0.9 names the `diskSpace` indicator but states no threshold, no `free` detail, and no configuration key. Spring's `management.health.diskspace.threshold` / `.path` appear in no 1.0.9 rakun front (grep).
-
-### 2. Step 2 — `DataSourceHealthIndicator` acceptance (owner is front 08)
-
-> - [ ] DataSource health indicator checks connection
-> - [ ] UP when connection succeeds
-> - [ ] DOWN when connection fails
-> - [ ] Error message included in details
-
-```bp
-#[component]
-pub type DataSourceHealthIndicator(dataSource: DataSource) {
-    pub fn health(self: Self) -> Health {
-        val conn = self.dataSource.getConnection();
-        return match conn {
-            @Ok(c) => {
-                c.close();
-                Health(status: "UP", details: {"database": "connected"});
-            }
-            @Err(e) => Health(status: "DOWN", details: {"error": e});
-        };
-    }
-}
-```
-
-- Ownership moved to front 08 (`db` id); the four acceptance rows are not restated in `08-rakun-data-sql`'s health text and are carried here for the owner.
-
-### 3. Step 3 — info contributor fields not in the 1.0.9 set
-
-```bp
-#[component]
-pub type BuildInfoContributor {
-    pub fn contribute(self: Self) -> Dict<string, string> {
-        return Dict.empty()
-            .insert("version", "1.0.0")
-            .insert("buildTime", "2026-01-01T00:00:00Z");
-    }
-}
-
-#[component]
-pub type EnvInfoContributor {
-    pub fn contribute(self: Self) -> Dict<string, string> {
-        return Dict.empty()
-            .insert("profile", rkProp("rakun.profiles.active"))
-            .insert("java.version", erlang.systemInfo("version"));
-    }
-}
-```
-
-| Old key | 1.0.9 |
-|---|---|
-| `build.version` | covered — `build` (name and version from `botopink.json`) |
-| `build.buildTime` | absent |
-| `profile` (`rakun.profiles.active`) | absent from `build`/`otp`/`os`/`process`; `env` reads only `info.*` |
-| `java.version` | covered — `otp` (release, ERTS version, schedulers) |
-
-### 4. Step 1 — old `Health`/`HealthIndicator` shape
-
-```bp
-pub type Health(
-    status: string,  // UP, DOWN, OUT_OF_SERVICE, UNKNOWN
-    details: Dict<string, string>,
-)
-
-pub behavior HealthIndicator {
-    fn health(self: Self) -> Health;
-}
-```
-
-- superseded by: *The health-indicator registration contract* (`details: string` JSON object; method renamed `check`) and *Language gaps* (no std JSON walker).
-
-### 5. Steps 1–7 — one `#[restController]` per endpoint
-
-```bp
-#[restController]
-#[route("/actuator")]
-pub type HealthController(indicators: Array<HealthIndicator>) {
-    #[getMapping("/health")]
-    pub fn health(self: Self, req: Request) -> Response { … }
-}
-```
-
-- superseded by: *An endpoint is a registration, not a controller* (`#[endpoint("id")]`, one route `<base-path>/:endpoint/:path*`).
-
-### 6. Step 8 — proposed source layout
-
-```
-modules/rakun-actuator/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   ├── health.bp
-│   ├── info.bp
-│   ├── metrics.bp
-│   ├── env.bp
-│   └── beans.bp
-└── test/
-    ├── health_test.bp
-    ├── info_test.bp
-    └── metrics_test.bp
-```
-
-- 1.0.9 names `instrumentation.bp`, the two sidecars and the test files; no `src/` layout for health/info/beans. `metrics.bp` → front 75; `env.bp` → front 76 (`sanitize.bp`, `exposure.bp`).
-
-### 7. Gate — both targets
-
-> - [ ] `botopink test --target commonJS` green
-> - [ ] All tests pass on commonJS and Erlang
-
-- superseded by: `Target: erlang (server)`; commonJS cell reports *skipped*.

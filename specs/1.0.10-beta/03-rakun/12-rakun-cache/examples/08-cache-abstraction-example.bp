@@ -1,9 +1,8 @@
-// carried from specs/1.0.6-beta/examples/08-cache-abstraction-example.bp
 //// F08 — Cache Abstraction
 ////
-//// Este exemplo demonstra caching declarativo com @cacheable, @cacheEvict, @cachePut.
+//// This example shows declarative caching with @cacheable, @cacheEvict, @cachePut.
 ////
-//// Documentação Spring Boot:
+//// Spring Boot documentation:
 //// - Caching: https://docs.spring.io/spring-boot/reference/io/caching.html
 //// - @Cacheable: https://docs.spring.io/spring-boot/reference/io/caching.html#io.caching.annotation
 //// - @CacheEvict: https://docs.spring.io/spring-boot/reference/io/caching.html#io.caching.annotation.evict
@@ -12,12 +11,13 @@
 import {Rakun, App, Request, Response} from "rakun";
 import {service, repository, restController, route, getMapping, postMapping, deleteMapping, cacheable, cacheEvict, cachePut} from "rakun";
 import {CacheManager, ConcurrentMapCacheManager, RedisCacheManager} from "rakun-cache";
+import {io.clock} from "std";
 
 // ── Configuration: Cache Manager ────────────────────────────────────────────
 //// application.yaml:
 //// spring:
 ////   cache:
-////     type: redis  # ou "simple" para in-memory
+////     type: redis  # or "simple" for in-memory
 ////     cache-names:
 ////       - users
 ////       - products
@@ -59,12 +59,12 @@ pub type Product(
 pub type UserRepository {
     pub fn findById(self: Self, id: i32) -> ?User {
         // Simulate slow database query
-        time.sleep(1000);  // 1 second
+        clock.sleep(1000);  // 1 second
         return @Some(User(id: id, name: "Alice", email: "alice@example.com"));
     }
 
     pub fn findAll(self: Self) -> Array<User> {
-        time.sleep(2000);  // 2 seconds
+        clock.sleep(2000);  // 2 seconds
         return [
             User(id: 1, name: "Alice", email: "alice@example.com"),
             User(id: 2, name: "Bob", email: "bob@example.com"),
@@ -72,24 +72,24 @@ pub type UserRepository {
     }
 
     pub fn save(self: Self, user: User) -> User {
-        time.sleep(500);  // 500ms
+        clock.sleep(500);  // 500ms
         return user;
     }
 
     pub fn deleteById(self: Self, id: i32) {
-        time.sleep(500);
+        clock.sleep(500);
     }
 }
 
 #[repository]
 pub type ProductRepository {
     pub fn findById(self: Self, id: i32) -> ?Product {
-        time.sleep(1000);
+        clock.sleep(1000);
         return @Some(Product(id: id, name: "Widget", price: 999));
     }
 
     pub fn save(self: Self, product: Product) -> Product {
-        time.sleep(500);
+        clock.sleep(500);
         return product;
     }
 }
@@ -176,9 +176,9 @@ pub type UserController(service: UserService) {
     #[getMapping("/users/:id")]
     pub fn getUser(self: Self, req: Request) -> Response {
         val id = req.param("id");
-        val start = time.nowMillis();
+        val start = clock.nowMillis();
         val user = self.service.getUser(id);
-        val duration = time.nowMillis() - start;
+        val duration = clock.nowMillis() - start;
         // First call: ~1000ms (DB)
         // Subsequent calls: ~1ms (cache)
         return Response.json(serialize(user) + " (took " + duration.toString() + "ms)");
@@ -228,7 +228,7 @@ fn main() {
     Rakun.run(App(port: 8080, basePath: "/api"));
 }
 
-//// Testes:
+//// Tests:
 ////
 //// test "@cacheable caches method result" {
 ////     // First call: method executed

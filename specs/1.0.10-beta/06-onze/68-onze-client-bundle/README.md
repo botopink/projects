@@ -1,7 +1,5 @@
 # Front 68 — onze Client Bundle
 
-> Drafted as `onze13` (new in 1.0.9-beta; no 1.0.7-beta predecessor); took the name `onze` when the old mocking library was retired (see [`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)).
-
 **Track:** E onze
 **Priority:** critical — without it `onze build` ships a BEAM server and no browser half: every
 `'use client'` component renders once and is then dead HTML, and fronts 26, 27, 29, 31 and 67 deliver
@@ -33,7 +31,6 @@ scheme, front 48) ·
 <https://nextjs.org/docs/app/guides/environment-variables> ·
 <https://nextjs.org/docs/app/api-reference/components/script> ·
 <https://nextjs.org/docs/app/api-reference/cli/next>
-**Replaces:** new — admitted by the Next.js coverage audit, which calls it the second-largest hole in
 the milestone
 
 ---
@@ -527,3 +524,4 @@ skipped.
       because fronts 23, 50, 53, 69 and 71 all read them
 - [ ] The front's tests are green on its assigned targets — `commonJS` for the build half, and
       `erlang` for `manifest_test.bp`
+

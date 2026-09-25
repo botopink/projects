@@ -16,7 +16,7 @@
 // Upstream: https://nextjs.org/docs/app/getting-started/updating-data
 //           https://nextjs.org/docs/app/api-reference/functions/use-action-state
 //           https://nextjs.org/docs/app/guides/authentication
-//           NEXTJS-DOCS.md § 10. Mutação de Dados · § 23. Autenticação
+//           NEXTJS-DOCS.md § 10. Data Mutation · § 23. Authentication
 //
 // Target: both. The layout and the action are erlang; the pending state, the
 // disabled button and the in-place message are js.
@@ -30,7 +30,7 @@ import {layout, page, LayoutProps, PageContext} from "rakun";   // front 22
 import {rkAppRegisterLayout, rkAppRegisterPage} from "rakun";
 import {cookies} from "rakun";                                  // front 62
 import {redirect} from "rakun";                                 // front 63
-import {dict} from "std";
+import {collections.Dict} from "std";
 
 fn panelTokens() -> Token[] {
     return [.Pad.All.8, .Bg.White, .Border.Rounded.Md];
@@ -100,7 +100,8 @@ pub fn newPostForm(binding: FormBinding, state: ActionState, pending: bool) -> E
 
 // ── the client component — front 67 + front 68 ──────────────────────────────
 
-fn NewPostForm() -> Element {
+#[@use]
+fn NewPostForm() -> @Component<Element> {
     // LANGUAGE GAP: tuple labels are lost through generic instantiation, so this
     // reads positionally; with labels preserved it would be `s.state`,
     // `s.binding`, `s.pending`.
@@ -126,8 +127,8 @@ fn newPostRoute() -> PageContext {
     return PageContext(
         pathname: "/dashboard/posts/new",
         pattern: "/dashboard/posts/new",
-        params: dict.empty(),
-        query: dict.empty(),
+        params: Dict.empty(),
+        query: Dict.empty(),
         rest: [],
     );
 }

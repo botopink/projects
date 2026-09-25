@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-ws/src/**`, `modules/rakun-ws/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. `modules/rakun-web/src/websocket/**` is front 20's and is unrelated: `rakun-ws` is *web services*, and the WebSocket module is `rakun-web`. The two names are close and the module README says so on its first line.
 **Reference:** `07-io.md § Web Services (SOAP)` (Configuracao, WebServiceTemplate) · https://docs.spring.io/spring-boot/reference/io/webservices.html
-**Replaces:** new
 
 ---
 
@@ -228,3 +227,4 @@ There is no commonJS row. This front is server-only by the milestone's target sp
 - Both language-gap rows appear in [`language-gaps.md`](../../language-gaps.md) — the comptime-filesystem row is new and is filed there by this front.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module in the same commit.
 - The front's tests are green on erlang.
+

@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-data/src/nosql/**` · `modules/rakun-data/test/nosql/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen · `modules/rakun-data/src/sql/**` and `datasource.bp`, which are front 08's (consumed read-only) · `modules/rakun-data/src/migration/**` (77) and `src/orm/**` (78)
 **Reference:** `05-data.md § Bancos NoSQL` — Redis, MongoDB, Neo4j, Elasticsearch, Cassandra, Couchbase, LDAP · <https://docs.spring.io/spring-boot/reference/data/nosql.html>
-**Replaces:** `1.0.6-beta/17-data-nosql`
 
 ---
 
@@ -292,32 +291,3 @@ covered rather than reading a green run as full coverage.
 - [ ] Opt-in suites report *skipped* with the missing variable named
 - [ ] `repository/rakun/AGENTS.md` documents the arm table and the supported filter subset
 - [ ] The front's tests are green on its assigned target
-
-## Carried from 1.0.6-beta F17 data-nosql
-
-Items in `specs/1.0.6-beta/17-data-nosql/README.md` with no counterpart above. Covered and not repeated:
-Redis commands (`get`/`set`/`setEx`/`del`/`hGet`/`hSet`/`lPush`/`lPop` → `get`/`put`/`putExpiring`/`remove`/
-`fieldGet`/`fieldPut`/`pushLeft`/`popRight`), `insert`/`find`/`findById` on documents, Elasticsearch
-`index`/`get`/`search`/`delete` over HTTP (Step 6), `eredis` and `mongodb` drivers, health per arm,
-"Reactive variants: separate front" → `04-rakun-erlang-runtime § One statement about reactive`.
-
-| Item | 1.0.6 text | Status |
-|---|---|---|
-| Update / delete by filter | `pub fn update(self: Self, collection: string, query: string, update: string);` and `pub fn delete(self: Self, collection: string, query: string);` on `MongoTemplate` (Step 1) | absent: `DocumentStore` has `replace(collection, id, doc)` and `remove(collection, id)` — by id only; no partial update, no multi-document mutation by filter |
-| Typed document API | `insert<T>(collection, doc: T)`, `find<T>(...) -> Array<T>`, `findById<T>(...) -> ?T`, `index<T>`, `get<T>`, `search<T>` | superseded by: *Two behaviors, many arms* (documents are JSON strings; std JSON walker gap) |
-| Per-store configuration | `#[value("spring.mongodb.uri")] uri`, `#[value("spring.redis.host")] host` + `.port`, `#[value("spring.elasticsearch.uris")] uris` — three templates, three key sets, all live at once | absent: above, `rakun.nosql.url` "selects **an** arm" (singular); no key shape lets one application hold a Redis key-value store and a Mongo document store simultaneously, which the draft's per-template `#[value]` keys did |
-| Redis Cluster | Step 2: "Erlang: use `eredis` or `eredis_cluster`." | absent: no cluster-mode client is named in any 1.0.9 rakun front |
-| Positional query placeholder | `#[query("{email: $1}")]` on `UserRepository(template: MongoTemplate)` (Step 4) | superseded by: *The repository shape* (`#[documentQuery]` with `:name` placeholders and `bind`) |
-| Node drivers | Notes: "`mongodb` (Node.js)", "`ioredis` (Node.js)", "HTTP REST API (both targets)"; Gate: both targets | superseded by: *Test plan* (manifest `"target": "erlang"`, commonJS cell skipped) |
-| Module layout | Step 5 tree, below | absent: above names `src/nosql/**` and a `sidecars/rakun_nosql.erl` but no per-arm file names |
-
-Step 5 — Module structure (verbatim):
-
-```
-modules/rakun-data/
-└── src/
-    └── nosql/
-        ├── mongo_template.bp
-        ├── redis_template.bp
-        └── elasticsearch_template.bp
-```

@@ -11,7 +11,7 @@
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/loading
 //           https://nextjs.org/docs/app/api-reference/file-conventions/error
 //           https://nextjs.org/docs/app/api-reference/file-conventions/not-found
-//           NEXTJS-DOCS.md § 13. Streaming · § 14. Tratamento de Erros
+//           NEXTJS-DOCS.md § 13. Streaming · § 14. Error Handling
 //
 // Target: erlang (server). `reset` on the error boundary is the one browser-side
 // affordance here, and front 68 is what ships it.

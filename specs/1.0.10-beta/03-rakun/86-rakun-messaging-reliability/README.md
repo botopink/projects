@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-messaging/src/reliability/**`, `modules/rakun-messaging/test/reliability/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. Inside `modules/rakun-messaging/`, everything outside `src/reliability/**` belongs to front 15 and is read-only here.
 **Reference:** `06-messaging.md § AMQP (RabbitMQ) · Enviando Mensagens · Retry no template` · `§ Recebendo Mensagens · Tipo de container` · `§ Recebendo Mensagens · Retry no listener` · `§ Apache Kafka · Enviando Mensagens · Transacoes` · https://docs.spring.io/spring-boot/reference/messaging/amqp.html · https://docs.spring.io/spring-boot/reference/messaging/kafka.html
-**Replaces:** new
 
 ---
 
@@ -144,7 +143,7 @@ pub fn retryPolicy(initialMs: i32, multiplierPercent: i32, maxMs: i32, maxAttemp
 pub fn nextDelay(policy: RetryPolicy, attempt: i32) -> i32 {
     var delay = policy.initialMs;
     var n = 1;
-    loop (n < attempt) {
+    while (n < attempt) {
         delay = delay * policy.multiplierPercent / 100;
         n = n + 1;
     };
@@ -332,3 +331,4 @@ There is no commonJS row. This front is server-only by the milestone's target sp
 - Both language gaps above appear as `// LANGUAGE GAP:` markers in the examples and in a `specs/1.0.10-beta/` spec.
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the surface in the same commit.
 - The front's tests are green on erlang.
+

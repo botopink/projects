@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-mail/botopink.json`, `modules/rakun-mail/src/**` · `modules/rakun-mail/test/**`
 **Does not touch:** `modules/rakun-tx/**` (front 83's outbox — this front enqueues into it, it does not reimplement it), `repository/jhonstart/src/element.bp` (frozen), and the four frozen files in `repository/rakun/src/`
 **Reference:** `07-io.md § Email`, `§ Configuracao`, `§ JNDI Session` · `09-actuator.md § HealthIndicators Auto-configurados (mail)` · <https://docs.spring.io/spring-boot/reference/io/email.html>
-**Replaces:** new — proposed by the Spring Boot 4 coverage audit, § 2 `NN-rakun-mail`
 
 ---
 
@@ -20,8 +19,8 @@ password reset. Any application with an account needs to tell somebody that some
 None of those is a feature anyone writes a spec about, and all of them block a release.
 
 The absence is total. There is no SMTP client anywhere in the workspace — not in rakun, not in std,
-not behind a host cell. `std/http` can fetch a URL (`libs/std/src/http.bp:55`) and that is the whole
-of the outbound networking botopink has today. Front 01 adds `std/net`, which gives a socket; from a
+not behind a host cell. `io.http` can fetch a URL (`libs/std/src/http.bp:55`) and that is the whole
+of the outbound networking botopink has today. Front 01 adds `io.net`, which gives a socket; from a
 socket to a delivered message is a protocol, a MIME encoder, a TLS negotiation and a retry policy.
 
 There is a second problem behind the first, and it is the one that produces incidents. Sending mail
@@ -37,7 +36,7 @@ reset that did not happen is worse than no mail at all.
 | `modules/rakun-mail/` | does not exist — this front creates it |
 | An SMTP client | nothing, in rakun or in std |
 | MIME encoding | nothing. `libs/std/src/base64.bp` has `encode`/`decode`; quoted-printable and RFC 2047 header encoding do not exist |
-| A socket | front 01 delivers `std/net`; nothing today |
+| A socket | front 01 delivers `io.net`; nothing today |
 | HTML escaping | front 01 delivers `escape.html`; nothing today |
 | TLS | front 74 delivers the bundle registry over OTP's `ssl` |
 | An HTML body | jhonstart's `Element` + `renderToString` (`repository/jhonstart/src/element.bp:55-67`), reachable on the server through front 23 |
@@ -59,7 +58,7 @@ dies with `undefined function` on every machine that has not separately installe
 gate. Front 04 resolved this by writing its transport over `gen_tcp`, which is in `kernel`, and
 leaving cowboy as a configured adapter. This front does the same thing for the same reason:
 
-- **Default transport:** an SMTP client written here over `std/net` and OTP's `ssl`. EHLO, AUTH
+- **Default transport:** an SMTP client written here over `io.net` and OTP's `ssl`. EHLO, AUTH
   (PLAIN and LOGIN), STARTTLS, MAIL FROM, RCPT TO, DATA, QUIT. It is perhaps 300 lines, it has no
   dependency, and it is what the test row exercises.
 - **Configured transport:** `rakun.mail.transport=gen_smtp` delegates to a `rakun_mail_gen_smtp`
@@ -284,3 +283,4 @@ be a module that compiles and cannot work.
 - [ ] `repository/rakun/AGENTS.md` records the transport decision and its parallel with front 04's
       cowboy seam
 - [ ] The front's tests are green on its assigned target
+

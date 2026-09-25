@@ -7,7 +7,7 @@
 // Upstream:
 //   https://docs.spring.io/spring-boot/reference/actuator/tracing.html
 
-import {time} from "std";
+import {io.clock} from "std";
 import {HttpExchange, exchangeFields, unknownIncludes, memoryExchangeRepository} from "rakun-actuator";
 
 // The headers a real request arrives with. `exchangeFields` decides which of them
@@ -61,7 +61,7 @@ test "an unknown include name is named back, so boot can refuse it" {
 
 test "the ring keeps the newest exchanges and reports its capacity" {
     val repo = memoryExchangeRepository(2);
-    val base = time.nowMillis();
+    val base = clock.nowMillis();
     val _a = repo.record(HttpExchange(atMs: base, method: "GET", uri: "/a", status: 200, tookMs: 4, fields: []));
     val _b = repo.record(HttpExchange(atMs: base + 1, method: "GET", uri: "/b", status: 200, tookMs: 7, fields: []));
     val _c = repo.record(HttpExchange(atMs: base + 2, method: "POST", uri: "/c", status: 500, tookMs: 31, fields: []));
@@ -75,7 +75,7 @@ test "the ring keeps the newest exchanges and reports its capacity" {
 
 test "a failed request is recorded with the status the error handler produced" {
     val repo = memoryExchangeRepository(10);
-    val base = time.nowMillis();
+    val base = clock.nowMillis();
     val _a = repo.record(HttpExchange(atMs: base, method: "POST", uri: "/payouts", status: 500, tookMs: 12, fields: []));
 
     val kept = repo.recent();

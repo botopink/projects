@@ -77,7 +77,7 @@ test "the important flag applies per declaration" {
     assert css.contains("font-weight:bold!important");
 }
 
-// TAILWIND_CSS_DOCS.md § 3.1 Conflitos de Estilo: when two utilities set the same
+// TAILWIND_CSS_DOCS.md § 3.1 Style Conflicts: when two utilities set the same
 // property the last one in the stylesheet wins. Inside one emilia() call that is
 // the order of the token list.
 test "two tokens setting one property emit in list order" {

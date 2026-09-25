@@ -8,7 +8,7 @@
 //   https://tailwindcss.com/docs/filter
 //   https://tailwindcss.com/docs/blur
 //   https://tailwindcss.com/docs/backdrop-filter
-// Reference: TAILWIND_CSS_DOCS.md § 13. Filtros
+// Reference: TAILWIND_CSS_DOCS.md § 13. Filters
 //
 // Every value is the reference's, character for character:
 //   brightness(.5), not brightness(0.5)

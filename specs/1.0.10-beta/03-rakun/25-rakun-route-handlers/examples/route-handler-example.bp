@@ -32,7 +32,7 @@ import {Request, HttpMethod} from "rakun";
 import {getRoute, postRoute, HandlerResponse, bodyJson, streamed} from "rakun";
 // Front 22 registers the entries these decorators emit.
 import {rkAppRegisterHandler} from "rakun";
-import {dict} from "std";
+import {collections.Dict} from "std";
 
 // A test double for the request. `Request` is a BEHAVIOR — the server supplies the
 // concrete instance at runtime (`repository/rakun/src/http.bp:22-34`) — so a test
@@ -147,7 +147,7 @@ fn exportRow(n: i32) -> @Future<string> {
 #[@future]
 pub fn exportPosts(req: Request) -> @Future<HandlerResponse> {
     var tasks: Array<fn() -> @Future<string>> = [];
-    loop (0..3) { n ->
+    for (0..3) { n ->
         tasks.push({ -> exportRow(n) });
     };
     val res = streamed(200, tasks);
@@ -160,9 +160,9 @@ fn fakeGet(path: string, id: string) -> FakeRequest {
     return FakeRequest(
         method: HttpMethod.Get,
         path: path,
-        params: dict.empty().insert("id", id),
-        queries: dict.empty(),
-        heads: dict.empty(),
+        params: Dict.empty().insert("id", id),
+        queries: Dict.empty(),
+        heads: Dict.empty(),
         payload: "",
     );
 }
@@ -171,16 +171,16 @@ fn fakePost(path: string, contentType: string, payload: string) -> FakeRequest {
     return FakeRequest(
         method: HttpMethod.Post,
         path: path,
-        params: dict.empty(),
-        queries: dict.empty(),
-        heads: dict.empty().insert("content-type", contentType),
+        params: Dict.empty(),
+        queries: Dict.empty(),
+        heads: Dict.empty().insert("content-type", contentType),
         payload: payload,
     );
 }
 
 fn headerOf(res: HandlerResponse, name: string) -> string {
     var found = "";
-    loop (res.headers) { h ->
+    for (res.headers) { h ->
         val hit = h._0 == name;
         if (hit) {
             found = h._1;

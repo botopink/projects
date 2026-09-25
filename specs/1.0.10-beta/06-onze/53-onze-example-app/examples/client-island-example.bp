@@ -19,7 +19,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/server-and-client-components
 //           https://nextjs.org/docs/app/api-reference/directives/use-client
-//           NEXTJS-DOCS.md § 7. Server e Client Components
+//           NEXTJS-DOCS.md § 7. Server and Client Components
 //
 // Target: js (client) for the component's behaviour; the FIRST render of it
 // still happens on the server, which is why the markup is asserted here rather
@@ -30,7 +30,7 @@ import {button, h2} from "jhonstart";                              // provided b
 import {client, clientProps, clientMount, Island} from "jhonstart"; // front 29
 import {state} from "jhonstart";                                    // hooks.bp
 import {emilia, Token} from "emilia";
-import {env} from "std";
+import {io.env} from "std";
 // app-local — TYPES only. `Post` is a record; importing `lib/db.bp`'s readers
 // here would put the filesystem in the client graph and fail front 68's build.
 import {Post} from "@/lib.db";
@@ -56,7 +56,8 @@ pub type LikeProps(
 // client runtime binds after hydration; there is no JavaScript string in this
 // file, which is what keeps the component testable as markup.
 #[client]
-pub fn LikeButton(props: LikeProps) -> Element {
+#[@use]
+pub fn LikeButton(props: LikeProps) -> @Component<Element> {
     val c = use state(props.likes);
     return likeButtonMarkup(props.postSlug, c.value);
 }

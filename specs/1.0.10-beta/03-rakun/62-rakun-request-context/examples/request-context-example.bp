@@ -19,7 +19,7 @@ import {redirect} from "rakun";                                // provided by fr
 import {Request, Response} from "rakun";
 import {Element, div, p, h1, text} from "jhonstart";
 
-// SERVER — the auth guard of NEXTJS-DOCS.md § 23 "Layout com autenticação".
+// SERVER — the auth guard of NEXTJS-DOCS.md § 23 "Layout with authentication".
 // The layout is not dispatched by the router, so nobody hands it a Request; it
 // reads the cookie out of the request frame this front establishes.
 #[layout("dashboard")]

@@ -8,7 +8,6 @@
 **Owns:** `repository/emilia/src/theme.bp`, `repository/emilia/src/spacing.bp`, `repository/emilia/test/theme_test.bp`, `repository/emilia/test/spacing_test.bp`; the `pub mod theme;` / `pub mod spacing;` lines in `src/root.bp` and the two matching entries in `botopink.json`
 **Does not touch:** `src/tokens.bp` (it adds no `Token` variant), `src/emilia.bp` (it adds no `tokenToCss` arm), and every other front's dispatcher
 **Reference:** `TAILWIND_CSS_DOCS.md § 3.5 Variáveis de Tema`, `§ 3.9 Funções e Diretivas`, `§ 20.2 @theme`, `§ 20.8 Função --spacing()`, `§ 20.9 Função theme()`, `§ 21.1–§ 21.7` · https://tailwindcss.com/docs/theme
-**Replaces:** new — the 1.0.8-beta draft had no theme front; this one comes out of the Tailwind coverage audit
 
 ---
 
@@ -373,3 +372,4 @@ the case itself in the compiler's Zig suite.
 - `themeCss` and `keyframeCss` produce the strings front 56 wraps.
 - Front 33's `paletteEntries()` interface is written down here and in 33, identically.
 - The front's tests are green on its assigned target — for track D, both of them.
+

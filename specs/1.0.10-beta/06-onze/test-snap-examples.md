@@ -426,7 +426,7 @@ prerendered on start: 4 (/, /blog/hello-world, /blog/second-post, /blog/third-po
 
 ### `unit_test.bp` (both targets — the pure functions, no server)
 
-These are plain `assert` tests carried from the 1.0.9 examples (`lib/db.bp` parse/list/read/write,
+These are plain `assert` tests over the app's pure functions (`lib/db.bp` parse/list/read/write,
 `post_card` class, `generateStaticParams`, `generateMetadata`, the middleware decision, each page fn
 given a `PageContext`) and are listed here because they run under `zig build test-libs` beside the
 snapshots. One of them is a snapshot:

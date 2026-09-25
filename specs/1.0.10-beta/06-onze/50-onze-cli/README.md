@@ -1,7 +1,5 @@
 # Front 50 — onze CLI
 
-> Drafted as `onze13` (`specs/1.0.7-beta/19-onze13-cli`); took the name `onze` when the old mocking library was retired (see [`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)).
-
 **Track:** E onze
 **Priority:** medium — an app that cannot be scaffolded, served or built is a library with no users;
 but nothing else in the milestone is blocked by it, which is why it is medium and not high
@@ -21,7 +19,6 @@ drives), 71 (the release `start` runs), 60 (the prerender pass `build` invokes)
 `§ 24. Deploy` (what `start` runs) ·
 <https://nextjs.org/docs/app/api-reference/cli/next> ·
 <https://nextjs.org/docs/app/api-reference/cli/create-next-app>
-**Replaces:** the 1.0.7-beta draft named in the note above
 
 ---
 
@@ -268,11 +265,15 @@ paths use them.
 | `--import-alias <prefix>` | `@/` | the alias prefix written into `botopink.json` |
 | `--emilia` / `--no-emilia` | on | scaffold with emilia tokens in the layout, or with a bare `<style>` |
 | `--example <name>` | none | copy `examples/<name>` instead of the minimal scaffold |
+| `--lang <tag>` | `en` | the `lang` attribute, written once on the document element in `app/layout.bp` |
 | `--yes` | off | take every default and skip the prompts |
 
 Without `--yes` and with a TTY, `create` prompts for project name, port, alias prefix and `--src-dir`,
 in that order, each prompt showing its default. With `--yes`, or without a TTY (CI), it takes the
 defaults and prints the resolved set before writing. A flag given explicitly is never prompted for.
+`create` writes the `dependencies` map **and** runs `bpmp install`, so the scaffolded app passes
+`botopink check` with no manual step on a clean machine. `onze add <lib>` (a wrapper over `bpmp add`)
+is not chartered — `../../deferred.md`.
 
 The scaffold it writes:
 
@@ -281,7 +282,7 @@ my-app/
 ├── botopink.json      # deps: onze, jhonstart, rakun, emilia, std; alias map
 ├── onze.json        # name, port, basePath, appDir, publicDir, outDir
 ├── app/
-│   ├── layout.bp      # root layout: #[layout("")], emilia tokens
+│   ├── layout.bp      # root layout: #[layout("")], emilia tokens, lang on <html>
 │   └── page.bp        # one page
 └── public/
 ```
@@ -438,16 +439,3 @@ gate that already exists.
 - [ ] `modules/onze-cli/AGENTS.md` written, per the standing rule that a layout change updates the
       matching `AGENTS.md` in the same commit
 - [ ] The front's tests are green on its assigned target — commonJS, for the reason stated above
-
-## Carried from 1.0.7-beta F19 onze13-cli
-
-Quoted from `specs/1.0.7-beta/19-onze13-cli/README.md` and the F19 section of
-`specs/1.0.7-beta/examples-bp.md` (name normalised to `onze` [sic: onze13]).
-
-| 1.0.7 item | Quote | Status here |
-|---|---|---|
-| `create` installs dependencies | "Installs dependencies (jhonstart, rakun, emilia, onze)" (*Step 2 · Acceptance*) | Not stated in *Step 5*. `create` writes the `dependencies` map **and** runs `bpmp install` so the scaffolded app passes `botopink check` with no manual step — otherwise the *Step 5* acceptance "passes `botopink check` immediately after `create`" cannot hold on a clean machine |
-| `bpmp` integration | "Future: integrate with `bpmp` for dependency management." (*Notes*) | Partly absorbed by the row above; `onze add <lib>` (a wrapper over `bpmp add`) is not chartered and goes to `../../deferred.md` |
-| `dev` as a wrapper | "`onze dev` is `botopink dev` + file watching + hot reload." | Superseded: there is no `botopink dev`; `dev` is `botopink build --target erlang` + the polling loop + front 68 incremental (*Step 6*) |
-| Scaffolded `layout.bp` sets the document language | `], attrs: [#("lang", "pt-BR")]);` on the `html` element (examples-bp F19, *layout.bp gerado*) | Not in *Step 5*'s scaffold table. The scaffold's root layout carries `lang` on the document element; the value is a `create` flag `--lang <tag>` defaulting to `en`, written once into `app/layout.bp` |
-| Test shape | `test "create command scaffolds app" { // Mock file system … }` | Superseded by `create_test.bp` over a real temp directory (*Test plan*); no filesystem mock exists or is wanted |

@@ -23,7 +23,6 @@ and `modules/rakun-cache/**` (front 12) are read-only here
 <https://nextjs.org/docs/app/api-reference/functions/generate-static-params> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config> ·
 <https://nextjs.org/docs/app/guides/static-exports>
-**Replaces:** `new` — 1.0.7-beta covered SSR only
 
 ---
 
@@ -475,3 +474,4 @@ the `strict`-frame raise (front 62 owns it and asserts it) and the CLI wiring of
 - `repository/rakun/AGENTS.md` names `static_gen.bp`, `segment_config.bp` and the kind blob.
 - The front's tests are green on its assigned target — here, erlang for the server half and both for
   the boundary half.
+

@@ -1,10 +1,9 @@
-// carried from specs/1.0.6-beta/examples/02-config-profiles-example.bp
 //// F02 — Externalized Configuration & Profiles
 ////
-//// Este exemplo demonstra configuração externalizada com YAML, environment variables,
-//// e profiles (dev, prod).
+//// This example shows externalized configuration with YAML, environment variables,
+//// and profiles (dev, prod).
 ////
-//// Documentação Spring Boot:
+//// Spring Boot documentation:
 //// - Externalized Configuration: https://docs.spring.io/spring-boot/reference/features/external-config.html
 //// - Profiles: https://docs.spring.io/spring-boot/reference/features/profiles.html
 //// - @ConfigurationProperties: https://docs.spring.io/spring-boot/reference/features/external-config.html#features.external-config.typesafe-configuration-properties
@@ -14,7 +13,7 @@ import {Rakun, App, Request, Response} from "rakun";
 import {service, restController, route, getMapping, configuration, bean, value} from "rakun";
 import {configurationProperties} from "rakun";  // NEW in F02
 
-// ── application.yaml (arquivo de configuração) ──────────────────────────────
+// ── application.yaml (configuration file) ───────────────────────────────────
 //// server:
 ////   port: 8080
 ////   host: localhost
@@ -32,9 +31,9 @@ import {configurationProperties} from "rakun";  // NEW in F02
 ////
 //// rakun:
 ////   profiles:
-////     active: "dev"  // ou "prod" via RAKUN_PROFILES_ACTIVE env var
+////     active: "dev"  // or "prod" via the RAKUN_PROFILES_ACTIVE env var
 
-// ── @ConfigurationProperties: tipagem forte para configuração ───────────────
+// ── @ConfigurationProperties: strongly typed configuration ──────────────────
 #[configurationProperties("database")]
 pub type DatabaseConfig(
     url: string,
@@ -50,7 +49,7 @@ pub type AppConfig(
     description: string,
 )
 
-// ── @Value: injeção de propriedades individuais ─────────────────────────────
+// ── @Value: injecting individual properties ──────────────────────────────────
 #[service]
 pub type InfoService(
     #[value("app.name")] appName: string,
@@ -110,18 +109,18 @@ fn main() {
     Rakun.run(App(port: 8080, basePath: "/api"));
 }
 
-//// Testes:
+//// Tests:
 ////
 //// test "config loads from YAML" {
-////     // application.yaml é carregado automaticamente
+////     // application.yaml is loaded automatically
 ////     val config = DatabaseConfig(...);
 ////     assert config.url == "postgresql://localhost:5432/mydb";
 //// }
 ////
 //// test "env vars override file config" {
-////     // RAKUN_SERVER_PORT=9090 override server.port
+////     // RAKUN_SERVER_PORT=9090 overrides server.port
 //// }
 ////
 //// test "profiles work" {
-////     // rakun.profiles.active=dev carrega application-dev.yaml
+////     // rakun.profiles.active=dev loads application-dev.yaml
 //// }

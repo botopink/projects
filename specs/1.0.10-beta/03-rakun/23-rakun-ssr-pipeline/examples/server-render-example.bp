@@ -24,7 +24,7 @@ import {Element, bracketPair, div, h1, p, ul, li, text} from "jhonstart";
 // `writePayload` are this front's surface.
 import {page, PageContext, rkAppRegisterPage} from "rakun";
 import {renderNode, raw, Payload, writePayload} from "rakun";
-import {dict} from "std";
+import {collections.Dict} from "std";
 // `async.all` is front 02; `escape.html` / `escape.attribute`, which `renderNode`
 // calls, are new in front 01.
 import {async} from "std";
@@ -62,7 +62,7 @@ fn loadComment(id: string) -> @Future<string> {
 #[@future]
 fn commentList(ids: string[]) -> @Future<Element> {
     var tasks: Array<fn() -> @Future<string>> = [];
-    loop (ids) { id ->
+    for (ids) { id ->
         tasks.push({ -> loadComment(id) });
     };
     val bodies = await async.all(tasks);
@@ -92,8 +92,8 @@ fn routeFor(slug: string) -> PageContext {
     return PageContext(
         pathname: "/blog/" + slug,
         pattern: "/blog/[slug]",
-        params: dict.empty().insert("slug", slug),
-        query: dict.empty(),
+        params: Dict.empty().insert("slug", slug),
+        query: Dict.empty(),
         rest: [],
     );
 }

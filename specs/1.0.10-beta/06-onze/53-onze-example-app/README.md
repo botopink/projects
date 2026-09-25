@@ -1,7 +1,5 @@
 # Front 53 — onze Example App
 
-> Drafted as `onze13` (`specs/1.0.7-beta/22-onze13-example-app`); took the name `onze` when the old mocking library was retired (see [`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)).
-
 **Track:** E onze
 **Priority:** medium — nothing depends on it, and it is the only front that can falsify the other
 fifty-two. A milestone whose fronts are individually green and collectively unusable passes every gate
@@ -22,7 +20,6 @@ made here
 `§ 20. Middleware`, plus the *Guia de Referência Rápida* structure ·
 <https://nextjs.org/learn/dashboard-app> ·
 <https://nextjs.org/docs/app/getting-started/project-structure>
-**Replaces:** the 1.0.7-beta draft named in the note above
 
 ---
 
@@ -70,7 +67,7 @@ one piece of genuinely interactive UI.
 Posts live on disk as Markdown-ish text files under `content/posts/<slug>.md` — line 1 is the title,
 line 2 the publication date, the rest is the body. There is no database, and that is deliberate: front
 08 is `rakun-data-sql` and it is not on this front's critical path, so introducing Postgres here would
-make the milestone's proof depend on a service being installed. `std`'s `fs` and `path` already exist,
+make the milestone's proof depend on a service being installed. `std`'s `io.fs` and `path` already exist,
 and a file is a mutation target with the same cache-invalidation problem a row has.
 
 ## The acceptance script
@@ -103,10 +100,13 @@ names the front to look at.
 | `app/blog/[slug]/page.bp` | 22 · 28 · 32 · 60 · 63 | The dynamic segment reaches the page as `route.params.lookup("slug").unwrapOr("")`; `generateStaticParams` prerenders all three posts; `generateMetadata` produces the head; a missing slug calls `notFound()` |
 | `app/blog/[slug]/loading.bp` | 30 | Per-post fallback |
 | `app/blog/[slug]/not-found.bp` | 31 · 63 | The signal from the page lands in *this* boundary, not the root one |
+| `app/blog/[slug]/opengraph-image.bp` | 66 · 70 · 32 · 52 | `image/svg+xml`, so the gate needs no rasterizer; `generateMetadata`'s `openGraph.images` points at it |
 | `app/(marketing)/about/page.bp` | 22 | The route group contributes no URL segment: the page serves at `/about`, not `/(marketing)/about` |
 | `app/dashboard/layout.bp` | 62 · 63 | The layout reads the session cookie and redirects — an auth gate above the page, which is the pattern `NEXTJS-DOCS.md § 23` describes |
+| `app/dashboard/page.bp` | 62 · 63 | Lists the author's posts and links to `posts/new`; the route the middleware redirect lands on when the cookie is present |
 | `app/dashboard/posts/new/page.bp` | 24 · 67 | A form bound to a server action: pending state, a returned validation message rendered beside the field, and a redirect on success |
 | `app/api/posts/route.bp` | 25 · 62 | `GET /api/posts` returns JSON; `POST` reads the body and the `Authorization` header |
+| `app/globals.css` | 69 | One fingerprinted `<link>` in the head, before the module CSS |
 
 ### `components/`
 
@@ -120,8 +120,13 @@ names the front to look at.
 
 | File | Fronts | Proves |
 |---|---|---|
-| `lib/db.bp` | 01 (`path`) · std `fs` · 12 | The store: list, read, write, every read through front 12's `"posts"` tag. Blocking, not `@Future` — on the BEAM a render is a process |
+| `lib/db.bp` | 01 (`path`) · std `io.fs` · 12 | The store: list, read, write, every read through front 12's `"posts"` tag. Blocking, not `@Future` — on the BEAM a render is a process |
 | `lib/actions.bp` | 24 · 12 · 63 | The mutation: write the file, `cache.revalidateTag("posts")`, `redirect("/blog/<slug>")` — and the list page shows the new post on the next request, which is the whole point of the tag |
+| `lib/auth.bp` | 62 · 10 | `sessionOf(cookies) -> ?Session`, read by `middleware.bp` and `app/dashboard/layout.bp`, so the cookie name is spelled once |
+
+Also committed: `public/images/hero.jpg` (the hero on `app/page.bp`) and `public/favicon.ico`, so
+front 69's `public/` row has a file to serve; and `examples/blog/DEPLOY.md` — the `generateDockerfile`
+output and the three commands that build and run the image (front 71).
 
 ### The four commands
 
@@ -248,7 +253,7 @@ the app file named in its header.
 
 | Example | App file | Fronts it exercises |
 |---|---|---|
-| [`examples/lib-db-example.bp`](./examples/lib-db-example.bp) | `lib/db.bp` | 01 · std `fs`/`path` · 12 |
+| [`examples/lib-db-example.bp`](./examples/lib-db-example.bp) | `lib/db.bp` | 01 · std `io.fs`/`path` · 12 |
 | [`examples/app-layout-example.bp`](./examples/app-layout-example.bp) | `app/layout.bp` | 22 · 27 · 48 · 52 · 69 |
 | [`examples/app-page-example.bp`](./examples/app-page-example.bp) | `app/page.bp` | 22 · 51 · 60 |
 | [`examples/blog-list-page-example.bp`](./examples/blog-list-page-example.bp) | `app/blog/page.bp` + `layout.bp` + `loading.bp` | 22 · 28 · 12 · 30 |
@@ -291,7 +296,7 @@ example from what is still **assumed**, because only the second column is a risk
 | 60 | `import {registerSegmentConfig, registerStaticParams, SegmentConfig, DynamicMode, FetchCache, StaticParams, ParamBinding} from "rakun";` · `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` · `StaticParams(bindings: [ParamBinding(name, value)])` |
 | 62 | `import {cookies, headers, after, CookieAttrs} from "rakun";` · `cookies().get(name) -> ?string` · a cookie write is legal in an action or a handler and raises from a render |
 | 63 | `import {notFound, redirect} from "rakun";` · both diverge and are called as `val _gone = notFound();` · inside a `#[@result]` fn the form is `throw notFound();` |
-| 67 | `import {ActionState, actionState, parseActionState, FormBinding, formAction, formAttrs, useActionState} from "jhonstart";` · `use useActionState(name, initial)` read POSITIONALLY (`s.0` state, `s.1` binding, `s.2` pending) · `state.fieldError(name)` |
+| 67 | `import {ActionState, actionState, parseActionState, FormBinding, formAction, formAttrs, useActionState} from "jhonstart";` · `use useActionState(name, initial)` inside a `#[@use] fn … -> @Component<Element>` (decision 104) read POSITIONALLY (`s.0` state, `s.1` binding, `s.2` pending) · `state.fieldError(name)` |
 | 68 | no call surface — the bundle is produced from front 29's markers; the env prefix is `ONZE_PUBLIC_`, matching front 49 |
 | 94 | `import {nav, header, main, section, article, h2, form, input, label, button, timeTag} from "jhonstart";` — `repository/jhonstart/src/elements.bp` |
 
@@ -360,10 +365,8 @@ element-surface front of track C (number allocated from 54 up)" without naming i
 `94-jhonstart-element-surface`, owning `repository/jhonstart/src/elements.bp`, and those eight fronts
 have been substituted the way this front's examples were.
 
-**Front 49's registry is superseded by front 22's decorators.** An earlier draft of front 49 proposed a
-`registerPage` / `registerLayout` registry in `onze/src/integration.bp`. Front 22 delivers
-`#[page("…")]` / `#[layout("…")]` plus `rkAppRegisterPage` / `rkAppRegisterLayout`. Front 49 has been
-rewritten to defer to it, and nothing in this app calls an onze registry.
+**Registration is front 22's.** `#[page("…")]` / `#[layout("…")]` plus `rkAppRegisterPage` /
+`rkAppRegisterLayout`; front 49 defers to them, and nothing in this app calls an onze registry.
 
 **Wave 0 for front 49 is too early for its integration layer.** `fronts.md` puts front 49 in wave 0,
 blocked by nothing, but the wiring it was chartered to deliver reads fronts 22, 23 and 69. Front 49 now
@@ -418,18 +421,3 @@ rather than claiming hydration is tested.
 - [ ] Every `// front NN` comment names a front that exists
 - [ ] Every `// LANGUAGE GAP:` marker in `examples/blog/**` appears in a `specs/1.0.10-beta/` spec
 - [ ] The front's tests are green on its assigned target — both, here
-
-## Carried from 1.0.7-beta F22 onze13-example-app
-
-Quoted from `specs/1.0.7-beta/22-onze13-example-app/README.md` and the F22 section of
-`specs/1.0.7-beta/examples-bp.md` (name normalised to `onze` [sic: onze13]).
-
-| 1.0.7 item | Quote | Status here |
-|---|---|---|
-| A dashboard index page | `│   ├── dashboard/ … │   │   ├── page.bp            # Dashboard home` | Absent from the acceptance script, which has only `app/dashboard/layout.bp` and `app/dashboard/posts/new/page.bp`. Added: `app/dashboard/page.bp` (fronts 62 · 63) — lists the author's posts and links to `posts/new`; it is the route the middleware redirect test lands on when the cookie is present |
-| An auth helper | `│   ├── auth.bp                # Auth utilities` under `lib/` | Absent. Added: `lib/auth.bp` (fronts 62 · 10) — `sessionOf(cookies) -> ?Session` read by `middleware.bp` and `app/dashboard/layout.bp`, so the cookie name is spelled once |
-| Global styles file | `│   ├── globals.bp             # Global emilia styles` | Superseded by front 69's `app/globals.css` (*Global CSS*), a config path, not a `.bp` module; the acceptance script gains a row: `app/globals.css` (69) — one fingerprinted `<link>` in the head, before the module CSS |
-| OG image route | "Metadata (SEO, OG images)" (*Mechanism*), `images: ["/og/" + slug + ".png"]` (*Step 10*) | Absent from the acceptance script even though front 70's own example is `app/blog/[slug]/opengraph-image.bp`. Added row: `app/blog/[slug]/opengraph-image.bp` (66 · 70 · 32 · 52) — `image/svg+xml`, so the gate needs no rasterizer; `generateMetadata`'s `openGraph.images` points at it |
-| Hero image on disk | `└── public/ └── images/ └── hero.jpg           # Sample image` | Implied by `app/page.bp`'s hero; stated: `public/images/hero.jpg` is committed, and `public/favicon.ico` with it (front 69's `public/` row needs a file to serve) |
-| Deployment | "Future: add authentication, database integration, deployment guide." (*Notes*) | Authentication: the dashboard gate (fronts 62 · 10). Database: deliberately files, not front 08 (*What the app is*). **Deployment guide**: `examples/blog/DEPLOY.md` — the `generateDockerfile` output committed and the three commands to build and run the image (front 71) |
-| Middleware matcher as a value | `pub val config = MiddlewareConfig(matcher: ["/dashboard/*"]);` (examples-bp F22) | Superseded by front 65's `#[matcher("/dashboard/:path*")]` (*Verified against the owning front's example*) |

@@ -27,7 +27,6 @@ front 32's
 <https://nextjs.org/docs/app/api-reference/file-conventions/metadata/manifest> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons> ·
 <https://nextjs.org/docs/app/api-reference/file-conventions/metadata/opengraph-image>
-**Replaces:** `new` — 1.0.7-beta's metadata front said "OG images" and specified no file convention
 
 ---
 
@@ -391,3 +390,4 @@ also use.
   the key.
 - `repository/rakun/AGENTS.md` names `metadata_routes.bp` and the eight conventions it serves.
 - The front's tests are green on its assigned target — here, erlang.
+

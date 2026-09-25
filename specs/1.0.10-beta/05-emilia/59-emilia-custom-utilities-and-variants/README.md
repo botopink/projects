@@ -8,7 +8,6 @@
 **Owns:** `repository/emilia/src/compose.bp`, `repository/emilia/test/compose_test.bp`; the `pub mod compose;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** `src/tokens.bp` — this front adds **no** `Token` variant and **no** `tokenToSheet` arm, which is what makes it safe beside all twenty other track-D fronts; `src/output.bp`; any other front's dispatcher
 **Reference:** `TAILWIND_CSS_DOCS.md § 3.1 Gerenciando Duplicação`, `§ 3.7 CSS Customizado com @layer`, `§ 3.9 Funções e Diretivas`, `§ 20.3 @custom-variant`, `§ 20.4 @utility`, `§ 20.5 @apply`, `§ 20.7 @variant` · https://tailwindcss.com/docs/functions-and-directives
-**Replaces:** new — from the Tailwind coverage audit
 
 ---
 
@@ -260,3 +259,4 @@ broken without a token front noticing.
 - Contract 4 is re-asserted from this front's own test file, with the same literal hex the shared
   fixture uses.
 - The front's tests are green on its assigned target — for track D, both of them.
+

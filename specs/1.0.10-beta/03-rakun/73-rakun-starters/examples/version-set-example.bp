@@ -7,7 +7,7 @@
 //
 // Server side — compiles to BEAM. It also compiles and passes on commonJS,
 // because nothing in it is target-specific; running it on both rows is free and
-// catches a `std/fs` divergence.
+// catches an `io.fs` divergence.
 //
 // Upstream:
 //   https://docs.spring.io/spring-boot/appendix/dependency-versions/index.html

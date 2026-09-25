@@ -21,7 +21,7 @@
 
 import { ReleaseSpec, releaseSpec, generateBuildId } from "onze-release";
 import { DrainReport, readinessChecks, shutdownOrder, bootScriptText } from "onze-release";
-import { env } from "std";
+import { io.env } from "std";
 
 fn spec() -> ReleaseSpec {
     return releaseSpec("blog", "0.1.0", generateBuildId(["4f21ab"], "41ab08"));
@@ -80,7 +80,7 @@ test "PORT defaults; a database URL does not" {
 
 test "a missing required setting is named, not defaulted" {
     val missing = missingSettings();
-    loop (missing) { name ->
+    for (missing) { name ->
         assert name != "";
     };
     assert requiredSettings().contains("DATABASE_URL");

@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-security/src/oauth2/**`, `modules/rakun-security/src/oidc/**`, `modules/rakun-security/src/ldap/**`, `modules/rakun-security/src/saml2/**` · `modules/rakun-security/test/oauth2/**`, `test/oidc/**`, `test/ldap/**`, `test/saml2/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. Also `modules/rakun-security/src/*.bp` at the top level, which is front 10's
 **Reference:** `04-web.md § OAuth2` · `04-web.md § SAML 2.0` · `05-data.md § LDAP` · `06-messaging.md § Apache Pulsar · Autenticacao OAuth2` · <https://docs.spring.io/spring-boot/reference/web/spring-security.html> · <https://docs.spring.io/spring-boot/reference/data/nosql.html#data.nosql.ldap>
-**Replaces:** new — proposed by the Spring Boot 4 coverage audit, § 2 `NN-rakun-oauth2-sso`, plus the fold-in rows *SAML 2.0* and *LDAP / directory authentication*
 
 ---
 
@@ -41,8 +40,8 @@ already, with nothing in botopink that reaches it.
 |---|---|
 | `modules/rakun-security/` | `botopink.json` plus `src/root.bp`, whose entire body is the comment *"Module contents will be added by the respective fronts."* |
 | Anything OAuth2, OIDC, SAML or LDAP | does not exist, in rakun or in std |
-| `crypto` | `sha256`, `sha512`, `md5`, `hmacSha256`, `randomBytes` — `libs/std/src/crypto.bp`. Enough for PKCE and state; **not** enough for RSA/ECDSA signature verification |
-| `base64` | `encode`, `decode`, `encodeUrlSafe`, `decodeUrlSafe` — `libs/std/src/base64.bp`. JWT segments are url-safe base64, so this is the right primitive already |
+| `hash` · `io.random` | `sha256`, `sha512`, `md5`, `hmacSha256` and `randomBytes` — today in `libs/std/src/crypto.bp`, split by decision 106 into `hash` (digests) and `io.random` (`randomBytes`). Enough for PKCE and state; **not** enough for RSA/ECDSA signature verification |
+| `encoding` | `encode`, `decode`, `encodeUrlSafe`, `decodeUrlSafe` — today `libs/std/src/base64.bp`, `encoding` after decision 106. JWT segments are url-safe base64, so this is the right primitive already |
 | `json` | `parse`/`stringify`, both `string -> @Result<string, string>`; **no structured walker** (`libs/std/src/json.bp:9-16`). Reading a claim out of an ID token needs one |
 | `http.fetch` | `pub declare fn fetch(url: string) -> @Future<Response>` — `libs/std/src/http.bp:55`. GET only, no POST, no form body. Front 13 is the real client |
 | An HTTP request's inputs | `req.header(name)`, `req.query(name)`, `req.param(name)`, `req.body()` — all plain `string`, `""` when absent (`src/http.bp:30-43`) |
@@ -217,7 +216,7 @@ pub fn authorizationRequest(p: OAuth2Provider, returnTo: string) -> Authorizatio
 **Acceptance:**
 - [ ] The URL carries `response_type=code`, `client_id`, `redirect_uri`, `scope`, `state`, `nonce`, `code_challenge` and `code_challenge_method=S256`
 - [ ] `verifier.length() >= 43` and every character is in the unreserved set
-- [ ] `challenge == base64.encodeUrlSafe(crypto.sha256(verifier))` with no `=` padding
+- [ ] `challenge == encoding.encodeUrlSafe(hash.sha256(verifier))` with no `=` padding
 - [ ] Two calls a millisecond apart produce different `state`, `nonce` and `verifier`
 - [ ] `returnTo` is stored server-side and never appears in the redirect URL, so an open-redirect parameter cannot be forged
 - [ ] A `returnTo` that is not a path on this application is replaced by `/`
@@ -367,3 +366,4 @@ compiles.
 - [ ] No cell in this module carries a Node form
 - [ ] `modules/rakun-security/AGENTS.md` documents the front-10 boundary table above
 - [ ] The front's tests are green on its assigned target
+

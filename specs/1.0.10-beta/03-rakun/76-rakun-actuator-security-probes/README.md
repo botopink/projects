@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-actuator/src/exposure.bp`, `src/access.bp`, `src/management_listener.bp`, `src/probes.bp`, `src/sanitize.bp`, `src/availability.bp` · `modules/rakun-actuator/test/exposure_test.bp`, `test/access_test.bp`, `test/probes_test.bp`, `test/sanitize_test.bp`
 **Does not touch:** the rest of `modules/rakun-actuator/src/**` — front 11 owns the endpoint infrastructure, the health and info registries and every endpoint body. This front owns who may reach them, on which listener, and what the response is allowed to contain
 **Reference:** `09-actuator.md § Controlando Acesso`, `§ Expondo Endpoints`, `§ Path e Porta`, `§ SSL Diferente para Management`, `§ Sanitizacao`, `§ CORS`, `§ Seguranca`, `§ Health Groups`, `§ Kubernetes Probes` · `03-recursos-principais.md § Disponibilidade da Aplicacao` · <https://docs.spring.io/spring-boot/reference/actuator/endpoints.html> · <https://docs.spring.io/spring-boot/reference/deployment/cloud.html#deployment.cloud.kubernetes>
-**Replaces:** new — no front in `1.0.6-beta` proposed it
 
 ---
 
@@ -311,3 +310,4 @@ form. A commonJS run compiles the `.bp` and fails at the first dispatch.
 - Liveness cannot be made to depend on an external system, enforced at boot
 - `/livez` and `/readyz` exist on the application listener when probes are enabled
 - The front's tests are green on its assigned target
+

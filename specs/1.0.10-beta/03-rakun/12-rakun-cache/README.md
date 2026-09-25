@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-cache/src/**`, `modules/rakun-cache/test/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
 **Reference:** `07-io.md § Caching` · `NEXTJS-DOCS.md § 11. Cache` · `NEXTJS-DOCS.md § 12. Revalidação` · https://docs.spring.io/spring-boot/reference/io/caching.html · https://nextjs.org/docs/app/api-reference/directives/use-cache · https://nextjs.org/docs/app/api-reference/functions/revalidateTag
-**Replaces:** `1.0.6-beta/08-cache-abstraction` + `1.0.7-beta/13-rakun-cache`
 
 ---
 
@@ -20,13 +19,11 @@ exactly two files — `botopink.json` and a `src/root.bp` whose body is the comm
 will be added by the respective fronts."* A developer who needs caching today writes a `Dict` field on
 a record, discovers records are immutable, and gives up or reaches for a host cell of their own.
 
-The two drafts this front replaces each solved half of it and neither knew about the other. 1.0.6-beta
-F08 proposed Spring's declarative surface — `@Cacheable`, `@CacheEvict`, `@CachePut`, a `CacheManager`
-over ConcurrentMap or Redis. 1.0.7-beta F13 proposed Next's directive surface — `'use cache'`,
-`cacheLife`, `cacheTag`, `revalidateTag`, `revalidatePath` — and explicitly said it *"extends the
-existing module from 1.0.6-beta"* without saying how the key spaces, the lifetimes or the eviction
-paths relate. Two entry points into two stores is two caches, and two caches that can each hold the
-same row is a correctness bug, not a performance feature.
+Spring's declarative surface — `@Cacheable`, `@CacheEvict`, `@CachePut`, a `CacheManager` over
+ConcurrentMap or Redis — and Next's directive surface — `'use cache'`, `cacheLife`, `cacheTag`,
+`revalidateTag`, `revalidatePath` — are two entry points. Two entry points into two stores is two
+caches, and two caches that can each hold the same row is a correctness bug, not a performance
+feature.
 
 This front is the single store, the single key protocol and the single lifetime model, with both entry
 points spelled on top of it. `#[cacheable("products")]` and `cacheThrough(policy, keys, load)` write
@@ -38,8 +35,8 @@ the same ETS row under the same key and are invalidated by the same `revalidateT
 - `repository/rakun/modules/rakun-cache/src/root.bp` — a docblock and a TODO comment. No `pub mod` line, no code.
 - `repository/rakun/src/runtime.bp:56-66` — the only key/value surface that exists in rakun today is the property store (`rkSetProp`/`rkProp`/`rkPropInt`), which is configuration, not cache: no expiry, no tags, no scope.
 - `repository/rakun/src/decorators.bp` — fifteen decorators, none of them `#[cacheable]`. The file is frozen; every decorator this front adds lives in `modules/rakun-cache/src/`.
-- `libs/std/src/` has no content-hash module; front 03 delivers it, and this front's key protocol is its first consumer.
-- `libs/std/src/time.bp:56,80,92` already has `nowMillis`, `monotonicMillis` and `formatIso8601`. Freshness arithmetic uses the monotonic clock, not the system one, so a clock step does not resurrect an expired entry; front 01 extends that file rather than replacing it.
+- `libs/std/src/` has no content-hash module; front 03 delivers it as `hash.contentHash` (decision 106), and this front's key protocol is its first consumer.
+- `libs/std/src/time.bp:56,80,92` already has `nowMillis`, `monotonicMillis` and `formatIso8601`. Freshness arithmetic uses the monotonic clock, not the system one, so a clock step does not resurrect an expired entry; front 01 ships them as `io.clock` (`now`, `monotonic`, `formatIso8601` — decision 106).
 
 ## Mechanism
 
@@ -123,7 +120,7 @@ Front 24 already imports it in its example.
 | Qualified form | `import {cache} from "rakun-cache";` then `cache.revalidateTag(t)`, `cache.revalidatePath(p)`, `cache.updateTag(t)`, `cache.cacheThrough(…)` |
 | Bare form | `import {revalidateTag, revalidatePath, cacheThrough} from "rakun-cache";` |
 
-The qualified form is the std-lib pattern (`import {dict} from "std"; dict.empty()` —
+The qualified form is the std-lib pattern (`import {collections.Dict} from "std"; Dict.empty()` —
 `examples/stdlib-tour/src/main.bp:9,16`) and is what a caller should reach for; the bare form works and
 is what a module carrying `@emit`ted wiring needs, since spliced code resolves names in the module it
 was spliced into. Both are supported and both are tested, because a front that imports one and finds
@@ -488,189 +485,3 @@ and always runs.
 - Every `// LANGUAGE GAP:` marker in the examples appears in the table above and in [`../language-gaps.md`](../../language-gaps.md).
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the module's surface in the same commit.
 - The front's tests are green on erlang.
-
-## Carried from 1.0.6-beta F08 cache-abstraction
-
-Source: `specs/1.0.6-beta/08-cache-abstraction/README.md`. Items below are present there and absent from the text above.
-
-### 1. Step 5 — `#[cachePut]`
-
-`@CachePut` is named above only as what F08 proposed (*Problem*). No `#[cachePut]` marker ships in Step 4 (`#[cacheable]`, `#[cacheEvict]` only) and no decision declines it.
-
-```bp
-#[service]
-pub type UserService(repo: UserRepository) {
-    #[cachePut("users")]
-    pub fn updateUser(self: Self, id: i32, user: User) -> User {
-        return self.repo.update(id, user);
-    }
-}
-```
-
-> - [ ] `#[cachePut("name")]` updates cache with result
-> - [ ] Method always called (unlike `@cacheable`)
-> - [ ] Cache updated with return value
-
-### 2. Step 1 — programmatic `Cache` / `CacheManager` handles
-
-```bp
-pub behavior Cache {
-    fn get(self: Self, key: string) -> ?string;
-    fn put(self: Self, key: string, value: string);
-    fn evict(self: Self, key: string);
-    fn clear(self: Self);
-    fn name(self: Self) -> string;
-}
-
-pub behavior CacheManager {
-    fn getCache(self: Self, name: string) -> Cache;
-    fn getCacheNames(self: Self) -> Array<string>;
-}
-```
-
-> - [ ] Interface is backend-agnostic
-
-- 1.0.9 exposes `cacheThrough`/`cacheFn`, the revalidation verbs, `CacheCustomizer` and the `caches` endpoint; there is no per-cache handle behavior and no `getCacheNames()` (the `caches` endpoint lists names over HTTP only).
-
-### 3. Step 2 — `ConcurrentMapCache*`, `rkCache*` cells, ETS lookup
-
-```bp
-#[component]
-pub type ConcurrentMapCacheManager {
-    pub fn getCache(self: Self, name: string) -> Cache {
-        return ConcurrentMapCache(name: name);
-    }
-}
-
-pub type ConcurrentMapCache(name: string) {
-    pub fn get(self: Self, key: string) -> ?string { return rkCacheGet(self.name, key); }
-    pub fn put(self: Self, key: string, value: string) { rkCachePut(self.name, key, value); }
-    pub fn evict(self: Self, key: string) { rkCacheEvict(self.name, key); }
-    pub fn clear(self: Self) { rkCacheClear(self.name); }
-}
-```
-
-```erlang
-cache_get(CacheName, Key) ->
-    case ets:lookup({rakun_cache, CacheName}, Key) of
-        [{_, Value}] -> Value;
-        [] -> undefined
-    end.
-```
-
-| Old cell | 1.0.9 cell |
-|---|---|
-| `rkCacheGet(name, key)` | `rkCacheLookup(scopeTag, name, key)` |
-| `rkCachePut(name, key, value)` | `rkCachePut(scopeTag, name, key, value, expire, tags)` |
-| `rkCacheEvict(name, key)` / `rkCacheClear(name)` | no named cells; eviction via the `#[cached]` twin and `rkCacheMarkStale`/`rkCacheExpireNow` by tag |
-| `rkCacheKey(method, args)` | `cacheKey(namespace, parts)` |
-| `ets:lookup({rakun_cache, CacheName}, Key)` (tuple-keyed) | superseded by: *Providers* — `ets:new(rakun_cache_<name>, [set, public, named_table])`, one table per cache name, supervisor-owned |
-
-### 4. Step 6 — Redis configuration keys and serialization
-
-```bp
-#[component]
-pub type RedisCacheManager(
-    #[value("spring.redis.host")] host: string,
-    #[value("spring.redis.port")] port: i32,
-) { … }
-```
-
-> - [ ] Serialization (JSON)
-> - Serialization: JSON for Redis, identity for in-memory
-
-- superseded by: *Providers* — `rakun.cache.redis.url` (single URL, boot failure when missing), values stored as strings with server-side TTL, transport is front 13's client.
-
-### 5. Step 4 — named-argument spelling
-
-```bp
-#[cacheEvict("users", allEntries: true)]
-pub fn deleteAll(self: Self);
-```
-
-- superseded by: *Language gaps* row 3 — positional `#[cacheEvict("products", true)]`, every argument explicit.
-
-### 6. Notes — key rule and defaults
-
-> - Cache key: method name + serialized arguments
-> - TTL: configurable per cache (default: no expiry)
-> - Max size: configurable (default: unlimited)
-> - Future: add Caffeine (high-performance in-memory)
-
-| Old | 1.0.9 |
-|---|---|
-| key = method name + args | `cacheKey(<cache name>, <method args>)` — the namespace is the cache name, not the method name; two `#[cacheable("users")]` methods with equal argument lists therefore share a row. Not stated above. |
-| TTL default: no expiry | superseded by: config table — `rakun.cache.<name>.ttl-seconds` default `3600` |
-| max size default: unlimited | superseded by: config table — `rakun.cache.<name>.max-entries` default `10000`; `0` unbounded |
-| Caffeine later | superseded by: *Providers* — declined with reason |
-
-### 7. Step 7 — proposed source layout
-
-```
-modules/rakun-cache/
-├── botopink.json
-├── src/
-│   ├── root.bp
-│   ├── cache.bp
-│   ├── concurrent_map_cache.bp
-│   ├── redis_cache.bp
-│   └── decorators.bp
-└── test/
-    ├── cache_test.bp
-    └── decorators_test.bp
-```
-
-- 1.0.9 names `src/cache.bp` and seven test files; no other `src/` file layout.
-
-### 8. Gate — both targets
-
-> - [ ] `botopink test` green on both targets
-> - [ ] Works on both targets
-
-- superseded by: *Target* — erlang only, `#[@External.Erlang]` cells, no commonJS row.
-
-## Carried from 1.0.7-beta F13 rakun-cache
-
-Source: `specs/1.0.7-beta/13-rakun-cache/README.md` and `specs/1.0.7-beta/examples-bp.md § F13`.
-Items below are absent from the 1.0.9 text above; items the merge already covers elsewhere are listed
-at the end with the front that holds them.
-
-### Reference rows
-
-| 1.0.7 reference | 1.0.9 status |
-|---|---|
-| `[Caching](https://nextjs.org/docs/app/getting-started/caching)` (header, line 3) | URL not cited by any rakun front; content covered by 12 (`NEXTJS-DOCS.md § 11`) and 60 |
-| `[Revalidating](https://nextjs.org/docs/app/getting-started/revalidating)` (header, line 3) | URL not cited by any rakun front; content covered by 12 § Revalidation (`§ 12`) |
-
-### Requirements and API names (quoted)
-
-| # | 1.0.7 item | Where in 1.0.7 | Note |
-|---|---|---|---|
-| 1 | `#[cache]` on a function with `cacheLife("hours"); cacheTag("posts");` as body statements: `#[cache] #[@future] pub fn getPosts() -> @Future<Post[]> { cacheLife("hours"); cacheTag("posts"); return await db.post.findAll(); }`; decorator body `pub fn cache(comptime decl: @Decl) { if (decl.kind != DeclKind.Fn) decl.fail("#[cache] must annotate a function"); @emit("val __rakun_cached_" + decl.name + " = rkCacheWrap(\"" + decl.name + "\", " + decl.name + ");"); }` | Mechanism, Step 1 | superseded by: 12 § Language gaps ("a transparent `'use cache'` / `#[useCache]` on a plain function is not expressible") — the 1.0.9 spelling is `cacheThrough(cachePolicy(scope, name, life, tags), keys, load)`; `cacheTag` as a statement has no counterpart, tags travel in `CachePolicy.tags` |
-| 2 | `pub type CacheLifeProfile { Seconds, Minutes, Hours, Days, Weeks, Max }` with the per-variant comment `// stale: 30s, revalidate: 1s, expire: 1min` … `// stale: 5min, revalidate: 30d, expire: 1y`; `pub fn cacheLife(profile: string) { rkSetCacheLife(profile); }` | Step 2 | 12 Step 2 keeps the six profiles as strings in `cacheLife(profile: string) -> CacheLife` with the same numbers; the enum type is not carried and the statement form is superseded as in row 1 |
-| 3 | `pub fn cacheTag(tag: string) { rkAddCacheTag(tag); } pub fn revalidateTag(tag: string) { rkInvalidateCacheTag(tag); } pub fn revalidatePath(path: string) { rkInvalidateCachePath(path); }` — host-cell names `rkCacheWrap`, `rkSetCacheLife`, `rkAddCacheTag`, `rkInvalidateCacheTag`, `rkInvalidateCachePath` | Steps 1–3 | 12's cell set is `rkCacheEnabled`, `rkCacheLookup`, `rkCachePut`, `rkCacheEvict`, `rkCacheClear`, `rkCacheMarkStale`, `rkCacheExpireNow`, `rkCachePhase` (Steps 3, 5; examples). `revalidateTag`/`revalidatePath` return `i32` and check the phase |
-| 4 | `// modules/rakun-cache/src/cache.mjs (sidecar) const cache = new Map(); const tags = new Map(); export function cacheWrap(name, fn, life) { return async function(...args) { const key = name + JSON.stringify(args); if (cache.has(key)) { const entry = cache.get(key); if (!isExpired(entry, life)) return entry.value; } const value = await fn(...args); cache.set(key, { value, timestamp: Date.now() }); return value; }; } export function invalidateTag(tag) { const keys = tags.get(tag) \|\| new Set(); keys.forEach(key => cache.delete(key)); tags.delete(tag); }`; acceptance "Cache stores values with timestamps · Expiration works based on profile · Tag-based invalidation works" | Step 4 | superseded by: 12 § Target ("The module declares no `@External.Node` cell; its host cells are `#[@External.Erlang]` over ETS, the Redis client and the phase word") and Step 1 acceptance (grep for `External.Node` returns nothing) |
-| 5 | Note: "Cache keys include function name + arguments." — `const key = name + JSON.stringify(args);` | Notes, Step 4 | 12 § The key protocol: `cacheKey(namespace, parts)` hashed with front 03's content hash; the twin passes `[method, args…]` as parts (example: `cacheKey("products", ["productJson", id])`) |
-| 6 | Note: "Cache is in-memory by default (per-instance). Future: Redis/external cache." | Notes | 12 § Per-cache configuration: `rakun.cache.type` defaults to **`none`**, not to an in-memory store; `ets` is the local provider and `redis` ships in the same front. The 1.0.7 default is the one thing here that 1.0.9 reverses |
-| 7 | Note: "Tag-based revalidation is more flexible than path-based." | Notes | Rationale not restated in 12; 12 keeps both verbs and adds `updateTag` |
-| 8 | Test: `assert cacheLifeProfile("hours").revalidate == 3600;` | Step 5 | Covered by 12 Step 2 ("The six profiles return exactly the table above"); the accessor is spelled `cacheLife("hours").revalidate` |
-| 9 | Test: `test "revalidateTag invalidates cached data" { // Cache some data with tag // Revalidate tag // Verify data is re-fetched }` | Step 5 | Covered by 12 Step 5 ("After `revalidateTag("t")`, the next read returns the previous value and the refresh runs; the read after that returns the new value") — stale-then-fresh, not immediate re-fetch |
-| 10 | "Tests pass on commonJS + erlang" | Step 5 | 12 § Test plan: erlang only ("There is no commonJS row") |
-| 11 | Gate: "Commit on `fix/rakun-cache`"; "`rakun-cache` module complete" | Gate | Branch-naming convention; 1.0.9 fronts name no branch |
-| 12 | Owns: `repository/rakun/modules/rakun-cache/src/**` — 1.0.7 wrote it as "extends existing module from 1.0.6-beta" | Header, Blast radius | 12 § Problem quotes and resolves this ("two caches that can each hold the same row is a correctness bug") |
-
-### Example material (quoted from `examples-bp.md § F13`)
-
-Carried verbatim to [`examples/use-cache-directive-carried-example.bp`](./examples/use-cache-directive-carried-example.bp), marked `// LANGUAGE GAP:` per 12 § Language gaps. [`examples/use-cache-example.bp`](./examples/use-cache-example.bp) holds the nearest valid form of the same two features (a cached loader with a profile and a tag; a mutation that revalidates the tag).
-
-| 1.0.7 example | 1.0.9 counterpart |
-|---|---|
-| `#[cache] … cacheLife("hours"); cacheTag("products"); return await db.product.findAll();` returning `@Future<Product[]>` | `productsJson(page)` in `use-cache-example.bp` — `cacheThrough(policy, keys, { -> load() })` returning `string` (the store holds strings; 12 Step 4 "the cached methods return `string`") |
-| `#[serverAction] … await db.product.update(id, name: name); revalidateTag("products");` with `import {revalidateTag} from "rakun";` | `repriceProduct` in `use-cache-example.bp`; import spelling `from "rakun-cache"` (12 § Package, module and import spellings); action shape is 24's |
-
-### Covered elsewhere (not carried)
-
-- `revalidateTag(tag)` / `revalidatePath(path)` semantics and legality → 12 Step 5 and § Revalidation.
-- "Predefined profiles: seconds, minutes, hours, days, weeks, max · Custom profiles supported" → 12 Step 2 (`cacheLifeOf`).
-- "Server actions can trigger revalidation" / "Integration with server actions works" → 24 § Revalidation on mutation, `revalidatedPaths()` seam.
-- "No `'use cache'` directive equivalent · No tag-based revalidation · No cache lifetime profiles" (Current state) → 12 § Problem.

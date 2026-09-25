@@ -26,7 +26,7 @@ Rules specific to example projects:
 - A project's `botopink.json` depends on starters or modules, never on `repository/rakun/src/`
   directly; `rakun-test` is its test-scope dependency.
 - `examples/rakun` is the existing project; its tests are added, its sources are not rewritten
-  (1.0.9 *additive only*). It gains `"targets": ["commonJS", "erlang"]` with front 04 and its
+  (*additive only*). It gains `"targets": ["commonJS", "erlang"]` with front 04 and its
   snapshots are the first boundary check that the two runtimes answer alike.
 - `examples/blog-server` is the erlang half of `repository/onze/examples/blog`; the browser half and
   the hydration round trip are onze's ([`../06-onze/`](../06-onze/)), not this project's.
@@ -1416,7 +1416,7 @@ test "blog-server: publishing a post revalidates the blog and a short title is i
         \\ import {rkRegisterAction} from "rakun";
         \\ import {page, PageContext, rkAppRegisterPage, renderNode} from "rakun";
         \\ import {cache} from "rakun-cache";
-        \\ import {dict} from "std";
+        \\ import {collections.Dict} from "std";
         \\
         \\ #[@future]
         \\ fn savePost(title: string, body: string) -> @Future<string> {
@@ -1469,7 +1469,7 @@ test "blog-server: the posts handler answers json with a location and refuses mu
         \\ import {Request, HttpMethod} from "rakun";
         \\ import {getRoute, postRoute, HandlerResponse, bodyJson, streamed} from "rakun";
         \\ import {rkAppRegisterHandler} from "rakun";
-        \\ import {dict} from "std";
+        \\ import {collections.Dict} from "std";
         \\
         \\ #[@future]
         \\ fn allPosts() -> @Future<string[]> {
@@ -1965,7 +1965,7 @@ test "order-pipeline: housekeeping tasks fire on the fixed clock by trigger kind
         \\ import {scheduler, scheduled, fixedRate, fixedDelay} from "rakun-scheduling";
         \\ import {rkScheduleCron, rkScheduleFixedRate, rkScheduleFixedDelay, rkRunTaskNow} from "rakun-scheduling";
         \\ import {value} from "rakun";
-        \\ import {time} from "std";
+        \\ import {io.clock} from "std";
         \\
         \\ #[repository]
         \\ pub type SessionRepo {
@@ -1987,7 +1987,7 @@ test "order-pipeline: housekeeping tasks fire on the fixed clock by trigger kind
         \\ ) {
         \\     #[scheduled("0 0 * * * *")]
         \\     pub fn pruneSessions(self: Self) -> i32 {
-        \\         val cutoff = time.nowMillis() - self.retentionMillis;
+        \\         val cutoff = clock.nowMillis() - self.retentionMillis;
         \\         return self.sessions.deleteExpired(cutoff);
         \\     }
         \\

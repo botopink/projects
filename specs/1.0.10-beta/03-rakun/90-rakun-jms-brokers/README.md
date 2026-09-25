@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-messaging/src/jms/**`, `modules/rakun-messaging/test/jms/**`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone. Inside `modules/rakun-messaging/`, `src/reliability/**` is front 86's, `src/pulsar/**` is front 91's, and everything else is front 15's; all three are read-only here.
 **Reference:** `06-messaging.md § JMS` (ActiveMQ Classic, ActiveMQ Artemis, JNDI ConnectionFactory, Enviando Mensagens JMS, Recebendo Mensagens JMS) · https://docs.spring.io/spring-boot/reference/messaging/jms.html
-**Replaces:** new
 
 ---
 
@@ -212,3 +211,4 @@ There is no commonJS row. This front is server-only by the milestone's target sp
 - Both language-gap rows are cited from the examples and already appear in [`language-gaps.md`](../../language-gaps.md).
 - `repository/rakun/AGENTS.md` and `modules/README.md` record the arm in the same commit.
 - The front's tests are green on erlang.
+

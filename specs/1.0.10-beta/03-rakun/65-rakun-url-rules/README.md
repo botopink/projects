@@ -26,7 +26,6 @@ frozen
 <https://nextjs.org/docs/app/api-reference/config/next-config-js/redirects> ·
 <https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites> ·
 <https://nextjs.org/docs/app/api-reference/config/next-config-js/basePath>
-**Replaces:** `new` — 1.0.6-beta's middleware front covered the chain and none of the rules
 
 ---
 
@@ -420,3 +419,4 @@ their message text for front 50's CLI suite. That split follows front 22's prece
 - `repository/rakun/AGENTS.md` names `modules/rakun-web/src/rules/`.
 - The front's tests are green on its assigned target — here, erlang for the rule engine and both for
   the canonicalization and redirect-blob halves.
+

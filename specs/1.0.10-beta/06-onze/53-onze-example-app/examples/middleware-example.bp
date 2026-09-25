@@ -9,7 +9,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/middleware
 //           https://nextjs.org/docs/app/guides/authentication
-//           NEXTJS-DOCS.md § 20. Middleware e Proxy · § 23. Autenticação
+//           NEXTJS-DOCS.md § 20. Middleware and Proxy · § 23. Authentication
 //
 // Target: erlang (server). Middleware never has a browser half — a gate the
 // client can skip is not a gate.

@@ -1,21 +1,21 @@
-> Carried verbatim from `specs/1.0.8-beta/tailwind-mapping.md` (the 1.0.8-beta Tailwind v4.3 utility → emilia token mapping; Portuguese as authored). Status glyphs reflect the 1.0.8 view — the 1.0.10 coverage verdicts are in [`reference-coverage.md`](./reference-coverage.md), the module cut in [`modules.md`](./modules.md).
-
 # Tailwind CSS → Emilia Mapping Reference
 
-> Mapeamento completo de todos os utilitários do Tailwind CSS v4.3 para os tokens do emilia.
-> Este documento serve como referência para implementação e como guia de uso para consumidores.
+> The complete mapping of every Tailwind CSS v4.3 utility to emilia tokens.
+> This document is the implementation reference and the usage guide for consumers. The status
+> glyphs are the mapping's own view; the per-front coverage verdicts are in
+> [`reference-coverage.md`](./reference-coverage.md), the module cut in [`modules.md`](./modules.md).
 
 ---
 
-## Convenções
+## Conventions
 
-| Símbolo | Significado |
+| Symbol | Meaning |
 |---------|------------|
-| ✅ | Implementado (v0 ou v1) |
-| 🔲 | A implementar neste milestone (1.0.8-beta) |
-| ❌ | Não aplicável / sem equivalente |
+| ✅ | Implemented (v0 or v1) |
+| 🔲 | To implement in this milestone |
+| ❌ | Not applicable / no equivalent |
 
-**Escala de spacing:** `1 = 0.25rem`, `2 = 0.5rem`, `3 = 0.75rem`, `4 = 1rem`, `8 = 2rem`, `12 = 3rem`, `16 = 4rem`, `20 = 5rem`, `24 = 6rem`, `32 = 8rem`, `40 = 10rem`, `48 = 12rem`, `56 = 14rem`, `64 = 16rem`, `72 = 18rem`, `80 = 20rem`, `96 = 24rem`
+**Spacing scale:** `1 = 0.25rem`, `2 = 0.5rem`, `3 = 0.75rem`, `4 = 1rem`, `8 = 2rem`, `12 = 3rem`, `16 = 4rem`, `20 = 5rem`, `24 = 6rem`, `32 = 8rem`, `40 = 10rem`, `48 = 12rem`, `56 = 14rem`, `64 = 16rem`, `72 = 18rem`, `80 = 20rem`, `96 = 24rem`
 
 ---
 
@@ -170,16 +170,16 @@
 
 | Tailwind | CSS | Emilia Token | Status |
 |----------|-----|-------------|--------|
-| `p-0` – `p-96` | `padding: N` | `Pad.All.__0` – `.__96` | 🔲 (scale expandida) |
-| `px-*` | `padding-left/right: N` | `Pad.X.*` | 🔲 (scale expandida) |
-| `py-*` | `padding-top/bottom: N` | `Pad.Y.*` | 🔲 (scale expandida) |
+| `p-0` – `p-96` | `padding: N` | `Pad.All.__0` – `.__96` | 🔲 (expanded scale) |
+| `px-*` | `padding-left/right: N` | `Pad.X.*` | 🔲 (expanded scale) |
+| `py-*` | `padding-top/bottom: N` | `Pad.Y.*` | 🔲 (expanded scale) |
 | `pt-*` | `padding-top: N` | `Pad.T.*` | 🔲 |
 | `pr-*` | `padding-right: N` | `Pad.R.*` | 🔲 |
 | `pb-*` | `padding-bottom: N` | `Pad.B.*` | 🔲 |
 | `pl-*` | `padding-left: N` | `Pad.L.*` | 🔲 |
 | `ps-*` | `padding-inline-start: N` | `Pad.S.*` | 🔲 |
 | `pe-*` | `padding-inline-end: N` | `Pad.E.*` | 🔲 |
-| `m-0` – `m-96` | `margin: N` | `Margin.All.*` | 🔲 (scale expandida) |
+| `m-0` – `m-96` | `margin: N` | `Margin.All.*` | 🔲 (expanded scale) |
 | `mx-auto` | `margin-left/right: auto` | `Margin.X.Auto` | ✅ |
 | `mx-*` | `margin-left/right: N` | `Margin.X.*` | 🔲 |
 | `my-*` | `margin-top/bottom: N` | `Margin.Y.*` | 🔲 |
@@ -217,7 +217,7 @@
 | `h-screen` | `height: 100vh` | `Size.H.Screen` | 🔲 |
 | `min-h-screen` | `min-height: 100vh` | `Size.MinH.Screen` | 🔲 |
 | `max-h-screen` | `max-height: 100vh` | `Size.MaxH.Screen` | 🔲 |
-| `size-*` | `width: N; height: N` | ❌ (combinar Size.W + Size.H) | — |
+| `size-*` | `width: N; height: N` | ❌ (combine Size.W + Size.H) | — |
 
 ---
 
@@ -236,7 +236,7 @@
 | `antialiased` | `-webkit-font-smoothing: antialiased` | `Font.Smoothing.Antialiased` | 🔲 |
 | `subpixel-antialiased` | `-webkit-font-smoothing: auto` | `Font.Smoothing.Auto` | 🔲 |
 | `italic` | `font-style: italic` | `Text.Italic` | ✅ |
-| `not-italic` | `font-style: normal` | ❌ (não aplicar Text.Italic) | — |
+| `not-italic` | `font-style: normal` | ❌ (do not apply Text.Italic) | — |
 | `font-thin` | `font-weight: 100` | `Font.Weight.Thin` | 🔲 |
 | `font-extralight` | `font-weight: 200` | `Font.Weight.Extralight` | 🔲 |
 | `font-light` | `font-weight: 300` | `Font.Weight.Light` | ✅ |
@@ -304,7 +304,7 @@
 | `bg-clip-padding` | `background-clip: padding-box` | `Bg.Clip.Padding` | 🔲 |
 | `bg-clip-content` | `background-clip: content-box` | `Bg.Clip.Content` | 🔲 |
 | `bg-clip-text` | `background-clip: text` | `Bg.Clip.Text` | 🔲 |
-| `bg-{color}` | `background-color: {color}` | `Bg.{Color}.*` | 🔲 (expandido F14) |
+| `bg-{color}` | `background-color: {color}` | `Bg.{Color}.*` | 🔲 (expanded by F14) |
 | `bg-none` | `background-image: none` | ❌ (default) | — |
 | `bg-gradient-to-t` | `background-image: linear-gradient(...)` | `Gradient.To.T` | 🔲 |
 | `bg-gradient-to-r` | `background-image: linear-gradient(...)` | `Gradient.To.R` | 🔲 |
@@ -382,7 +382,7 @@
 | `shadow-none` | `box-shadow: none` | `Effect.Shadow.None` | 🔲 |
 | `shadow-inner` | `box-shadow: inset 0 2px 4px ...` | `Effect.Shadow.Inner` | 🔲 |
 | `text-shadow-*` | `text-shadow: ...` | `Effect.TextShadow.*` | 🔲 |
-| `opacity-0` – `opacity-100` | `opacity: N` | `Effect.Opacity.*` | 🔲 (scale expandida) |
+| `opacity-0` – `opacity-100` | `opacity: N` | `Effect.Opacity.*` | 🔲 (expanded scale) |
 | `mix-blend-*` | `mix-blend-mode: *` | `Blend.*` | 🔲 |
 | `bg-blend-*` | `background-blend-mode: *` | `BgBlend.*` | 🔲 |
 | `mask-*` | `mask-*: *` | `Mask.*` | 🔲 |
@@ -545,7 +545,7 @@
 
 ---
 
-## 16. Modifiers (Variantes)
+## 16. Modifiers (Variants)
 
 | Tailwind Prefix | CSS | Emilia Modifier | Status |
 |----------------|-----|----------------|--------|
@@ -604,9 +604,9 @@
 
 ---
 
-## Resumo de Cobertura
+## Coverage Summary
 
-| Categoria | Tailwind Utils | Emilia Atual | Emilia 1.0.8-beta | Cobertura Final |
+| Category | Tailwind Utils | Emilia Today | Emilia After This Milestone | Final Coverage |
 |-----------|---------------|-------------|-------------------|----------------|
 | Layout | ~60 | 6 | ~60 | 100% |
 | Flexbox & Grid | ~60 | 14 | ~60 | 100% |

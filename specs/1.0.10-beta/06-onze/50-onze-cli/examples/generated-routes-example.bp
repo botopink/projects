@@ -28,7 +28,7 @@
 //   app/_drafts/                   -> not staged, not routed
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/project-structure
-//           NEXTJS-DOCS.md § 3. Estrutura do Projeto · § 29. CLI
+//           NEXTJS-DOCS.md § 3. Project Structure · § 29. CLI
 //
 // Target: both — the generated module compiles for erlang (the server registers
 // and serves these routes) and the route table it produces is the artifact front
@@ -72,7 +72,7 @@ pub type TreeError(
 
 pub fn checkTree(files: AppFile[], declared: Array<#(string, string)>) -> TreeError[] {
     var errors: TreeError[] = [];
-    loop (files) { f ->
+    for (files) { f ->
         val says = declaredFor(declared, f.authoredPath);
         val agrees = says == f.segment;
         if (agrees == false) {
@@ -88,7 +88,7 @@ pub fn checkTree(files: AppFile[], declared: Array<#(string, string)>) -> TreeEr
 
 fn declaredFor(declared: Array<#(string, string)>, authoredPath: string) -> string {
     var found = "";
-    loop (declared) { d ->
+    for (declared) { d ->
         if (d._0 == authoredPath) found = d._1;
     };
     return found;

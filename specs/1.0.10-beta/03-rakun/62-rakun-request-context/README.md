@@ -24,7 +24,6 @@ two `pub mod` lines in `repository/rakun/src/root.bp`
 <https://nextjs.org/docs/app/api-reference/functions/draftMode> ·
 <https://nextjs.org/docs/app/api-reference/functions/connection> ·
 <https://nextjs.org/docs/app/api-reference/functions/after>
-**Replaces:** `new` — no front in the three drafts proposed it
 
 ---
 
@@ -167,8 +166,8 @@ it is unit-testable without a socket.
 ### Draft mode
 
 `draftMode()` is a signed cookie, `__rakun_draft`, whose value is `token + "." + signature` with
-`signature = hmac.hmacSha256Base64Url(secret, token)` (front 01) and `token = random.secureToken(16)`.
-`isEnabled()` recomputes the signature and compares with `hmac.equalsConstantTime`; a forged or
+`signature = hash.hmacSha256Base64Url(secret, token)` (front 01, under `hash` per decision 106) and `token = random.secureToken(16)` (`io.random`).
+`isEnabled()` recomputes the signature and compares with `hash.equalsConstantTime`; a forged or
 truncated cookie is simply not enabled, and the comparison is constant-time because the alternative is
 a signing oracle. The secret is `rkProp("rakun.draft.secret")` (front 05); an empty secret makes
 `enable()` raise at the first call rather than issuing an unsigned bypass cookie.
@@ -506,3 +505,4 @@ choosing a raise over a silent default.
 - `repository/rakun/AGENTS.md` names `request_context.bp`, `request_memo.bp`, the frame key and the
   epoch rule.
 - The front's tests are green on its assigned target — here, erlang.
+

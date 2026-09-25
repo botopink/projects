@@ -20,7 +20,6 @@ autenticação), `§ 26. Referência de Funções` (Navegação), `§ 10. Mutaç
 <https://nextjs.org/docs/app/api-reference/functions/not-found> ·
 <https://nextjs.org/docs/app/api-reference/functions/redirect> ·
 <https://nextjs.org/docs/app/api-reference/functions/permanentRedirect>
-**Replaces:** `new` — no front in the three drafts proposed it
 
 ---
 
@@ -400,3 +399,4 @@ source, and a fifth verb added without a prefix reds both.
   turns the check off.
 - `repository/rakun/AGENTS.md` names `navigation.bp`, the nav tuple and the wire format.
 - The front's tests are green on its assigned target — here, erlang.
+

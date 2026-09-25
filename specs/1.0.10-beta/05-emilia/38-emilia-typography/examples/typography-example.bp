@@ -7,8 +7,8 @@
 //           https://tailwindcss.com/docs/font-weight
 //           https://tailwindcss.com/docs/letter-spacing
 //           https://tailwindcss.com/docs/line-clamp
-// Reference: TAILWIND_CSS_DOCS.md § 9. Tipografia (9.1-9.11, 9.15, 9.22-9.24),
-//            § 21.3 Tipografia Padrao
+// Reference: TAILWIND_CSS_DOCS.md § 9. Typography (9.1-9.11, 9.15, 9.22-9.24),
+//            § 21.3 Default Typography
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
 // `Text.Bold/Italic/Underline/LineThrough`, the four alignment leaves, `Text.Size`

@@ -5,7 +5,7 @@
 //
 // Upstream: https://tailwindcss.com/docs/padding
 //           https://tailwindcss.com/docs/margin
-// Reference: TAILWIND_CSS_DOCS.md § 7. Espacamento, § 21.2 Escala de Espacamento
+// Reference: TAILWIND_CSS_DOCS.md § 7. Spacing, § 21.2 Spacing Scale
 //
 // emilia runs at comptime and emits a CSS string; this file is target-independent.
 // Everything below is delivered by front 35. Today `Pad` has three directions

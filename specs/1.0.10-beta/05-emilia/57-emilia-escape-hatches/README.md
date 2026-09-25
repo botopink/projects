@@ -8,7 +8,6 @@
 **Owns:** `repository/emilia/src/arbitrary.bp`, `repository/emilia/test/arbitrary_test.bp`; six **top-level `Token` variants** appended to `src/tokens.bp` under a banner naming this front, and their six arms in `tokenToSheet`; the `pub mod arbitrary;` line in `src/root.bp` and its entry in `botopink.json`
 **Does not touch:** any other front's token section or dispatcher; `src/output.bp`; `src/theme.bp`
 **Reference:** `TAILWIND_CSS_DOCS.md § 3.1 Valores Arbitrários`, `§ 3.1 Propriedades CSS Arbitrárias`, `§ 3.2 Variantes Arbitrárias`, `§ 3.3 Valores Arbitrários` (breakpoints), `§ 3.7 Usando Arbitrary Values` · https://tailwindcss.com/docs/adding-custom-styles
-**Replaces:** new — from the Tailwind coverage audit
 
 ---
 
@@ -324,3 +323,4 @@ The security cases are not optional coverage. A test that only asserts the happy
 - Both language-gap rows are marked in the example and already carried in
   [`../language-gaps.md`](../../language-gaps.md).
 - The front's tests are green on its assigned target — for track D, both of them.
+

@@ -1,7 +1,5 @@
 # Front 51 — onze Image
 
-> Drafted as `onze13` (`specs/1.0.7-beta/20-onze13-image-optimization`); took the name `onze` when the old mocking library was retired (see [`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)).
-
 **Track:** E onze
 **Priority:** low — an unoptimized image is slow, not broken; the front is low because nothing else
 depends on it, and it is not lower because its remote-image allowlist is a server-side request
@@ -24,7 +22,6 @@ every other repository
 (`images.remotePatterns`, `images.formats`) ·
 <https://nextjs.org/docs/app/api-reference/components/image> ·
 <https://nextjs.org/docs/app/getting-started/images>
-**Replaces:** the 1.0.7-beta draft named in the note above
 
 ---
 
@@ -136,10 +133,13 @@ render reports the URL — a silent fallback would turn the control into a delay
 
 ### The route handler
 
-`/_onze/image` is a built-in route carrying front 25's `#[getRoute("_onze/image")]`, registered when `onze`'s own module tree loads rather than from the app's `app/` directory. It takes `src`, `w`, `q` and `f`, revalidates them against the same rules the component applied
+`/_onze/image` is a built-in route carrying front 25's `#[getRoute("_onze/image")]`, registered when `onze`'s own module tree loads rather than from the app's `app/` directory. It takes `src`, `w`, `q` and `f` — no `h`: the height follows the source's aspect ratio at `w`, as `next/image` does, and a height the caller could set independently is a way to request a distorted image — revalidates them against the same rules the component applied
 (the component's checks are for the author, the handler's are for the request), looks the result up in
 front 12's cache by content hash, and on a miss spawns the encoder and stores the output. The cache key
 is the hash of `#(src, w, q, f, encoderVersion)` so an encoder upgrade does not serve stale artifacts.
+The encoded files live under `<outDir>/images/<hash>.<ext>` and front 12's store holds the key → path
+mapping, so `onze build` clears them with the rest of `<outDir>` and front 71 leaves them out of the
+release (they are regenerated on demand).
 
 ## Steps
 
@@ -298,16 +298,3 @@ key and the response headers.
 - [ ] Every prop in `NEXTJS-DOCS.md § 16`'s table is honoured or explicitly listed as out of scope
 - [ ] `docs.md` documents the pass-through degradation and the no-NIF rule
 - [ ] The front's tests are green on its assigned target — both, here
-
-## Carried from 1.0.7-beta F20 onze13-image-optimization
-
-Quoted from `specs/1.0.7-beta/20-onze13-image-optimization/README.md` (name normalised to `onze`
-[sic: onze13]).
-
-| 1.0.7 item | Quote | Status here |
-|---|---|---|
-| Height in the optimizer URL | `` `/_onze/image?src=${src}&w=${width}&h=${height}` `` and `.resize(width, height)` | Not carried: the handler above takes `src`, `w`, `q`, `f` and **no `h`**. The height is derived from the source's aspect ratio at `w`, which is what `next/image` does; a `h` the caller could set independently is a way to request a distorted image. Stated here so the omission is a decision |
-| Redirect from the handler | `return Response.redirect(optimized);` (*Step 3*) | Superseded: `/_onze/image` serves the bytes with `Cache-Control … immutable` and an `ETag` (*Step 5*); a redirect adds a round trip to every image and defeats the immutable cache |
-| On-disk cache location | "Optimized images are cached in `.onze/images/`." (*Notes*) | Not stated above: front 12's store holds the key → path mapping, and the encoded files live under `<outDir>/images/<hash>.<ext>`, so `onze build` can clear them with the rest of `<outDir>` and front 71 can leave them out of the release (they are regenerated on demand) |
-| `sharp` sidecar | `// src/image.mjs (sidecar) import sharp from "sharp";` | Superseded by the `ImageEncoder` seam bound to the platform codec on js (*Mechanism*); no `.mjs` in a server front (exit gate) |
-| Roadmap | "Future: support for AVIF, blur placeholders, responsive images." | All three are in *Steps 1–3* (`formats`, `placeholder: "blur"`, `sizes`/`srcset`) |

@@ -95,7 +95,7 @@ leaves — so the card uses `arbValue("background-color", themeVar("--color-lago
 import { brandTheme, card } from "main";
 import { Token, ThemeEntry, defaultOptions, withTheme, themeValue, defaultTheme, emptyTheme, extend, clearNamespace, Ns } from "emilia";
 import { assertTheme, assertCssWith, assertCascade } from "emilia-test";
-import { equal } from "std/asserts";
+import { testing.asserts.equal } from "std";
 
 test "theme: brand ---- the brand variables" {
     val brand: ThemeEntry[] = [
@@ -667,7 +667,7 @@ import { cardTokens, page, renderPage } from "main";
 import { Token, cls, styledWith, fullTheme, mergeClass } from "emilia";
 import { renderToString } from "jhonstart";
 import { assertClassName, assertCss } from "emilia-test";
-import { equal, contains } from "std/asserts";
+import { testing: { asserts: { equal, contains } } } from "std";
 
 test "class: attributes ---- the page card is the shared fixture" {
     try assertClassName(@src(), cardTokens());

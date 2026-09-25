@@ -53,7 +53,7 @@ test "every name in the generated module appears in the rewritten CSS" {
     val blog = compileStyleModule("app/blog/blog.module.css", blogCss);
     val source = generateStyleModuleSource(blog);
     assert blog.names.length == 2;
-    loop (blog.names) { pair ->
+    for (blog.names) { pair ->
         assert source.contains(pair._0);
         assert source.contains(pair._1);
         assert blog.css.contains("." + pair._1);

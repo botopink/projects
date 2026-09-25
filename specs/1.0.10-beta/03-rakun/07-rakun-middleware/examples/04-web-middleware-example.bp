@@ -1,9 +1,8 @@
-// carried from specs/1.0.6-beta/examples/04-web-middleware-example.bp
 //// F04 — Web Middleware, CORS & Error Handling
 ////
-//// Este exemplo demonstra middleware chain, CORS support, e error handling com RFC 9457.
+//// This example shows the middleware chain, CORS support, and error handling with RFC 9457.
 ////
-//// Documentação Spring Boot:
+//// Spring Boot documentation:
 //// - Filters: https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.embedded-container.servlets-filters-listeners
 //// - CORS: https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.cors
 //// - Error Handling: https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.spring-mvc.error-handling
@@ -12,18 +11,19 @@
 import {Rakun, App, Request, Response} from "rakun";
 import {service, restController, route, getMapping, postMapping, filter, order, crossOrigin, controllerAdvice, exceptionHandler} from "rakun";
 import {FilterChain, ProblemDetail} from "rakun-web";
+import {io.clock} from "std";
 
 // ── Middleware: Logging Filter ───────────────────────────────────────────────
 #[filter]
 #[order(-100)]  // Early in chain
 pub type LoggingFilter {
     pub fn doFilter(self: Self, request: Request, response: Response, chain: FilterChain) -> Response {
-        val start = time.nowMillis();
+        val start = clock.nowMillis();
         print("→ " + request.method + " " + request.path);
 
         val result = chain.doFilter(request);
 
-        val duration = time.nowMillis() - start;
+        val duration = clock.nowMillis() - start;
         print("← " + result.status + " (" + duration.toString() + "ms)");
         return result;
     }
@@ -121,7 +121,7 @@ pub type GlobalExceptionHandler {
     }
 }
 
-// ── Controller que lança exceções ───────────────────────────────────────────
+// ── Controller that throws exceptions ───────────────────────────────────────────
 #[restController]
 #[route("/api")]
 pub type UserController {
@@ -161,7 +161,7 @@ fn main() {
     Rakun.run(App(port: 8080, basePath: "/api"));
 }
 
-//// Testes:
+//// Tests:
 ////
 //// test "filters execute in order" {
 ////     // RequestIdFilter → LoggingFilter → AuthFilter → handler

@@ -8,7 +8,6 @@
 **Owns:** `repository/emilia/src/tokens.bp` (the non-colour sub-sections of `Bg`, and the new `Gradient` section) · `repository/emilia/src/emilia.bp` (`bgTokenToCss` and its sub-dispatchers, `gradientTokenToCss`) · `repository/emilia/test/backgrounds_test.bp`
 **Does not touch:** `Bg.Color` — front 33 owns the colour grid on `background-color`; the legacy `Bg.Red`/`Bg.Blue`/`Bg.Gray`/`Bg.White`/`Bg.Black`/`Bg.Hex` leaves, which front 33 keeps working unchanged
 **Reference:** `TAILWIND_CSS_DOCS.md § 10. Backgrounds` (10.1–10.8) · https://tailwindcss.com/docs/background-attachment
-**Replaces:** `1.0.8-beta/05-emilia-backgrounds`
 
 ---
 
@@ -288,54 +287,3 @@ What the tests assert:
 - [ ] one arm added to the top-level dispatcher, in front-number order
 - [ ] `repository/emilia/AGENTS.md` and the `////` header of `tokens.bp` record the new sections
 - [ ] the front's tests are green on its assigned target — here, both backends, since emilia is comptime
-
-## Carried from 1.0.8-beta F05 emilia-backgrounds
-
-The 1.0.8 draft (`1.0.8-beta/05-emilia-backgrounds`, Portuguese) was compared section by section
-with the front above. Every sub-section and leaf of the 1.0.8 draft is present above — three of
-them under a different path, listed first — and two details are not.
-
-### Path renames — mapping only, nothing missing
-
-Complements *Token surface*:
-
-| 1.0.8 path | 1.0.10 path above |
-|---|---|
-| `Bg.Position.{Bottom, Center, Left, LeftBottom, LeftTop, Right, RightBottom, RightTop, Top}` | `.Bg.Pos.*` |
-| `Bg.Repeat.NoRepeat` / `Bg.Repeat.RepeatX` / `Bg.Repeat.RepeatY` | `.Bg.Repeat.None` / `.Bg.Repeat.X` / `.Bg.Repeat.Y` |
-| `Gradient.To.{Red…, White, Black, Transparent}` (the colour stop) | `.Gradient.Stop.*` — `.Gradient.To.*` stays the direction |
-
-### The v3-shaped gradient-stop acceptance
-
-Complements *Gradient stops* and the first *Reference gaps* row (`from-*`, `via-*`, `to-*` are
-unverified): the 1.0.8 draft pinned the stop in the Tailwind v3 shape — a resolved hex literal and a
-`transparent` fallback on the terminal stop — which the front above replaced with `paletteVar` and a
-bare `var(--tw-gradient-to)`. Kept as the alternative shape to weigh in the upstream check:
-
-- [ ] `Gradient.To.R` → `background-image:linear-gradient(to right,var(--tw-gradient-stops))` — no
-      space after the comma in 1.0.8; the front above pins exactly one space
-- [ ] `Gradient.From.Red.__500` → `--tw-gradient-from:#ef4444;--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to,transparent)`
-
-The remaining 1.0.8 acceptance bullets appear above under the renamed paths, declaration for
-declaration:
-
-- [ ] `Bg.Attachment.Fixed` → `background-attachment:fixed`
-- [ ] `Bg.Clip.Text` → `background-clip:text`
-- [ ] `Bg.Position.Center` → `background-position:center`
-- [ ] `Bg.Repeat.NoRepeat` → `background-repeat:no-repeat`
-- [ ] `Bg.Size.Cover` → `background-size:cover`
-
-### Gate and blast radius
-
-Complements *Definition of done*; missing because the 1.0.10 fronts carry no size estimate.
-
-- [ ] `botopink test` green on commonJS and erlang
-- [ ] every new token mapped to the correct CSS
-
-Blast radius: `tokens.bp` +~80 lines · `emilia.bp` +~120 lines · `test/backgrounds_test.bp` new
-file, ~25 tests.
-
-Examples carried:
-- [`./examples/backgrounds-example-1.0.8.bp`](./examples/backgrounds-example-1.0.8.bp) — the 1.0.8
-  example (attachment, clip, gradients, origin, position, repeat, size); a same-named file already
-  exists above and differs, so the older one is kept with the `-1.0.8` suffix.

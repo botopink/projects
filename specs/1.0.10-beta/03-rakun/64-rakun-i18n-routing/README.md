@@ -18,7 +18,6 @@ module, so it collides with no existing owner
 **Reference:** `NEXTJS-DOCS.md § 22. Internacionalização (i18n)` (Estrutura com route groups ·
 Middleware de detecção de locale · Dicionários de tradução), `§ 18. Metadata e OG Images` (alternates) ·
 <https://nextjs.org/docs/app/guides/internationalization>
-**Replaces:** `new` — no front in the three drafts proposed it
 
 ---
 
@@ -339,3 +338,4 @@ with the message text specified above — the same split fronts 22 and 61 use.
   and cited by fronts 07, 32, 50 and 66 rather than re-derived.
 - `repository/rakun/AGENTS.md` and `modules/README.md` name `rakun-i18n`.
 - The front's tests are green on its assigned target — here, erlang.
+

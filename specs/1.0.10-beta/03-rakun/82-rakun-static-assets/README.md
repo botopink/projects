@@ -8,7 +8,6 @@
 **Owns:** `modules/rakun-web/src/static/**` · `modules/rakun-web/test/static/**`
 **Does not touch:** front 07's `modules/rakun-web/src/*.bp` at the top level, front 20's `src/websocket/**`, and the four frozen files in `repository/rakun/src/`
 **Reference:** `04-web.md § Conteudo Estatico` · `04-web.md § Auto-configuracao Spring MVC` · `08-container-images.md § Reproducao e Cache` · <https://docs.spring.io/spring-boot/reference/web/servlet.html#web.servlet.spring-mvc.static-content>
-**Replaces:** new — proposed by the Spring Boot 4 coverage audit, § 2 `NN-rakun-static-assets`
 
 ---
 
@@ -41,7 +40,7 @@ get those three wrong once, centrally, as to make a CSS file reachable.
 | Reply headers | front 04 adds `rkSetReplyHeader(name, value)`; there is no other way to set one |
 | Reading a file | `fs.readText(path) -> @Result<string, string>` — `libs/std/src/fs.bp:33`. Text only, whole file, into memory |
 | File metadata | `fs.stat(path) -> @Result<FileStat, string>` — `fs.bp:99` |
-| Path manipulation | front 01 delivers `std/path`; there is nothing today |
+| Path manipulation | front 01 delivers `path`; there is nothing today |
 | A content hash | front 03 delivers it; `crypto.sha256` exists in the meantime |
 | Content-type by extension | nothing, anywhere |
 
@@ -256,3 +255,4 @@ consumes these URLs rather than implementing them.
 - [ ] No botopink value in this module ever holds a file body
 - [ ] `repository/rakun/AGENTS.md` documents the resolution order and why containment precedes `stat`
 - [ ] The front's tests are green on its assigned target
+

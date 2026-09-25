@@ -45,7 +45,6 @@
 **Owns:** `src/autoconfig.bp`, `src/conditions.bp`, `src/condition_report.bp`, `src/autoconfig_registry.bp`, `src/sidecars/rakun_autoconfig.erl` · `test/autoconfig_test.bp`, `test/conditions_test.bp`
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — the four files frozen for the milestone. Also not `src/context.bp`/`src/events.bp`/`src/lifecycle.bp`: front 06 owns the registry, this front owns only the predicate over it.
 **Reference:** `02-desenvolvendo-com-spring-boot.md § Auto-configuracao`, `§ @SpringBootApplication · Personalizando` · `11-topicos-avancados.md § Auto-configuration Classes` · `09-actuator.md § Endpoints (conditions)` · <https://docs.spring.io/spring-boot/reference/using/auto-configuration.html> · <https://docs.spring.io/spring-boot/reference/features/developing-auto-configuration.html>
-**Replaces:** new — no front in `1.0.6-beta` proposed it
 
 ---
 
@@ -452,3 +451,4 @@ time.
 - `#[profile]` works on an ordinary component and appears in the same report
 - Both language gaps above appear in a `specs/1.0.10-beta/` spec
 - The front's tests are green on its assigned target
+
