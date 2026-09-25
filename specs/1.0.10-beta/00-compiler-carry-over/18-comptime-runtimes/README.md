@@ -22,7 +22,7 @@ and of `src/codegen/wat.zig` (the dynamic-term
 lowering mode and the binary emitter `src/codegen/wat/wasm_binary_emitter.zig`) ·
 `src/codegen/snapshot.zig` + `src/comptime/snapshot.zig` + `src/utils/snap.zig` (directory
 selection) · `snapshots/codegen/**` (the re-layout, all 1 346 files) · root `build.zig` (the
-`render-resident` + `erlc` step, landed; the wasm build of compiler-core, remaining) · `modules/wasm3/**` (re-vendored) · `scripts/comptime_bench.sh`
+`render-resident` + `erlc` step and the `compiler-web` wasm build, landed) · `modules/compiler-web/**` (landed) · `modules/wasm3/**` (re-vendored) · `scripts/comptime_bench.sh`
 **Does not touch:** the run-time halves of `beam_asm.zig`, `erlang.zig`, `wat.zig`, `commonJS.zig`
 (C-01, C-06, C-07 own them; this front adds a *mode*, never edits a typed lowering) · the five
 library repositories · `src/comptime/eval.zig` (Zig-folded `COMPTIME VALUES`, runtime-independent) ·
@@ -86,6 +86,8 @@ excerpt in [`evidence.md`](./evidence.md), the call path in [`current-path.md`](
 | the three resident modules are `.beam` bytes **embedded** in the compiler: `zig build` runs `render_resident` on the host (writes `botopink_comptime_server.erl` from `server_source.source`, `bp_comptime_template.erl` and `bp_comptime_decorator.erl` from `prelude.modules`), runs `erlc +deterministic -o <out>`, hands the `.beam`s to compiler-core as anonymous imports; `persistent_erl.zig` `@embedFile`s them (`resident_beams`) and the spawn is `erl -noshell -eval <bootstrap>`, one cmd-4 frame per module over stdin. `prepareServer`, the `erlc` warm-up and the hashed `-pa` directory are gone; `.botopinkbuild/tmp/persistent_erl/` holds only `erl.stderr.log` | `server_source.zig`, `render_resident.zig`, root `build.zig` (`render-resident`, `erlc_run`) | 83 |
 | the floor: the bootstrap refuses an `erl` below OTP 28 before any module is loaded (`__BP_ERL_BELOW_FLOOR__` naming both releases → `error.PersistentErlBelowFloor`); a `.beam` compiled by a newer `erlc` than the machine's `erl` is refused as `__BP_ERL_LOAD_ERROR__` + `badfile`; neither configurable | `persistent_erl.zig` (`bootstrap_eval`) | 86, 67 |
 | measured after 1c (`comptime_bench.sh`, wiped `.botopinkbuild`): N=10 build 441 → 288 ms, N=200 1 666 → 1 491 ms, erika-linq 627 → 464 ms; in-node `compile:file` unchanged (generated modules are still `.erl` until 1b) | the landing commit | — |
+| **step 5, the build half** (`front/18-comptime-runtimes` `ed32ae82`, not merged): `zig build compiler-web` builds compiler-core for `wasm32-wasi` into `zig-out/web/` — ReleaseSmall **2.64 MB / 813 KB gzip / 48 s**, Debug 15.8 MB / 16 s (the native Debug CLI: 80 MB) — beside `glue.js` (a WASI shim serving `fd_write`/`clock_*`/`random_get`/`environ_*`/`fd_fdstat_get` and refusing by name the other 22 imports `std.Io`'s vtable declares; `Botopink.Compiler`; the Worker protocol) and `index.html`. `comptime/runtime/runtime.zig` (`can_spawn`, `active: ?ComptimeRuntime`) folds `persistent_erl.zig` and the RUN LOG executors out on wasm — the Debug build's DWARF file table names neither, nor `utils/snap.zig` — and both evaluators refuse a decorator or a template there with a located diagnostic naming the missing runtime, until step 2. One source change outside the gates: `erlang.zig`'s prelude spin lock yields with `spinLoopHint` (`Thread.yield` is glibc's `sched_yield` on wasi). `zig build test-web` (`tests/smoke.js`: four targets, a rendered diagnostic, the refusal, the Worker protocol under an emulated scope, the page's resource list) + the same step in `test.yml` | `modules/compiler-web/**`, `comptime/runtime/runtime.zig`, `codegen.zig`, `codegen/erlang.zig`, root `build.zig`, `.github/workflows/test.yml` | 67 |
+| `comptime_bench.sh --project` builds a **workspace member** (front 14's finding: it carried `path:` deps only, and erika-linq is `{ "erika": { "workspace": true } }` since erika became a workspace): the nearest ancestor `botopink.json` declaring `workspaces` is copied (no `.git`/`.botopinkbuild`/`out`) and the member built inside it; a member with no enclosing workspace is refused by name. erika-linq builds again (906 ms, one comptime module, `--repeat 1`) | `scripts/comptime_bench.sh`, `scripts/AGENTS.md` (`front/18-comptime-runtimes` `9515a2d4`) | — |
 
 **CI consequence.** `erlc` (OTP 28+) is now a dependency of *building* the compiler: every workflow
 that runs `zig build` — the release cross-builds included — installs OTP 28 (`erlef/setup-beam`,
@@ -222,6 +224,11 @@ the emitter re-parsing its preludes (front 14 § *Landed*) — not this front's,
 - [ ] the fallback count recorded (N of 39 template + 33 decorator bodies still on `.erl`)
 - [ ] `scripts/comptime_bench.sh` re-run; erika-linq erl side ≤ 3 ms once the fallback count is 0
 - [ ] `scripts/beam_export_audit.sh` still 295/295
+- [ ] **remaining, not this front's:** the per-emission prelude re-parse in `emitErlangModule`
+      (`collectPrimErlangDispatch`, `loadAutoImportedBifsFromPrelude` — 16.1 ms of every `buildModule`,
+      front 14 § *Landed*) keeps front 14 step 2's per-evaluation budget (≤ 1 ms/eval, N=200 ≤ 600 ms)
+      unmet at 9.4 ms/eval whatever this front's lowering does; the memo belongs in the shared body of
+      `02-erlang`'s `emitErlangModule`, outside this front's `ComptimeModule` carve-out
 
 ### Step 2 — `persistent_wat.zig`: comptime bodies on wasm3, in-process — REMAINING
 
@@ -326,7 +333,7 @@ loop in `codegen/tests/helpers.zig:198` running `configs × runtimes`, not a `mv
 - [ ] `BOTOPINK_SNAP_TRACE` run: traced = on disk, 0 orphans, 0 unrecorded
 - [ ] `codegen/tests/AGENTS.md:24` and `codegen/AGENTS.md` name the new path
 
-### Step 5 — the browser build — REMAINING
+### Step 5 — the browser build — LANDED in part: the build, the glue, the demo; its comptime half waits on step 2
 
 Specified in [`browser-build.md`](./browser-build.md). `zig build -Dtarget=wasm32-wasi
 compiler-web` builds `src/root.zig`'s API (`codegen.generate` takes sources in and gives text out —
@@ -343,12 +350,18 @@ decorator **and** a template is compiled to `commonJS` and to `wasm`, and the `w
 instantiated and run in the same page.
 
 **Acceptance:**
-- [ ] `zig build -Dtarget=wasm32-wasi compiler-web` green on the CI matrix; the artefact size and
-      the build time recorded (budget: ≤ 8 MB uncompressed, to be measured against the native CLI)
+- [ ] `zig build compiler-web` green on the CI matrix — linux green (the target is fixed in `build.zig`, `-Dtarget` is not
+      read; the `test-web` step is in `test.yml`, the matrix run follows the push); recorded: ReleaseSmall
+      **2.64 MB · 813 KB gzip · 48 s**, Debug 15.8 MB · 16 s, the native Debug CLI 80 MB (budget ≤ 8 MB / ≤ 2.5 MB gzip: held)
 - [ ] the demo compiles the decorator+template program with **no network request after load**
       (DevTools network tab empty after `botopink.wasm` and `glue.js`); its `COMPTIME REPLY` equals
-      the native one
-- [ ] `grep -rn "std.process\|std.fs\." src/` reaches only files excluded from the wasm build
+      the native one — the page references `glue.js` and `botopink.wasm` only (pinned by `tests/smoke.js`, not
+      yet watched in a browser); the `COMPTIME REPLY` is the located refusal until step 2's `persistent_wat.zig`;
+      the `wasm` output is shown as `.wat` text, not instantiated, until the binary emitter
+- [x] `grep -rn "std.process\|std.fs\." src/` reaches only files excluded from the wasm build — non-test hits are
+      `codegen/runtime.zig`, `comptime/runtime/persistent_erl.zig`, `utils/snap.zig`, `render_resident.zig` and
+      `beam_file.zig`'s tests; the Debug wasm's DWARF file table names none of them, and `template_eval.zig`'s
+      `ensureModule`/`writeModule` (`std.Io.Dir.cwd`) sit behind the `active == null` refusal
 
 ## Gate
 
