@@ -15,8 +15,10 @@ fronts own
 
 Paths are relative to `repository/botopink-lang/`. Item numbers are kept from
 [`../../1.0.1-beta/05-repo-hygiene.md`](../../../1.0.1-beta/05-repo-hygiene.md) so existing
-cross-references still resolve. Everything below was re-measured at `botopink-lang` `c2dd780`
-(2026-09-18).
+cross-references still resolve. Everything below was measured at `botopink-lang` `c2dd780`
+(2026-09-18) and re-measured at `f58fd392` (2026-09-25): steps 1–5 landed in 1.0.5-beta (merge
+`6df4eed2`, with 14's `19a3b01c` for step 5) and this milestone's residue is the sweeps in other
+fronts' files (C-23) plus the boxes below that name them.
 
 ---
 
@@ -27,13 +29,13 @@ left, each "after the front that owns the swept file". **Most of those fronts ha
 re-measuring at `c2dd780` shows that two of the three open steps have largely closed with them. What
 is left is smaller than the 1.0.4-beta document implies, and one item in it is new.
 
-| 1.0.4-beta step | Group | State at `c2dd780` |
-|---|---|---|
-| 2 — the removed WAT runtime (5.6, 5.7) | A | **one line left**, and another front deletes it — [step 1](#step-1--close-group-a-one-line-and-one-verification) |
-| 4 — `libs/std`'s declared surface (5.1–5.3, 5.14) | C | 19 stale comments in 6 files, plus one new warning — [step 2](#step-2--libsstds-names-and-one-warning-group-c) |
-| 5 — vocabulary and instructions (5.8, 5.13, docs) | D | 5.8 closed, the `implement` example closed, `test-docs` green; ~30 comments and a stale `docs.md` table left — [step 3](#step-3--stop-teaching-what-the-compiler-no-longer-does-group-d) |
-| 5.4 + the lib-test-runner build files | B | **closed** — [step 4](#step-4--confirm-group-b-closed-and-say-so) |
-| step 1's residual (5.10) | E | half closed; `lastTransportError()` still has no caller — [step 5](#step-5--a-comptime-transport-error-reaches-a-diagnostic-group-e-residual) |
+| 1.0.4-beta step | Group | State at `c2dd780` | State at `f58fd392` |
+|---|---|---|---|
+| 2 — the removed WAT runtime (5.6, 5.7) | A | **one line left**, and another front deletes it — [step 1](#step-1--close-group-a-one-line-and-one-verification) | **closed** — the grep returns nothing |
+| 4 — `libs/std`'s declared surface (5.1–5.3, 5.14) | C | 19 stale comments in 6 files, plus one new warning — [step 2](#step-2--libsstds-names-and-one-warning-group-c) | the warning's cause fixed (10, decision 16); 5 comments swept; **14 left in 01's, 02's and 07's files** |
+| 5 — vocabulary and instructions (5.8, 5.13, docs) | D | 5.8 closed, the `implement` example closed, `test-docs` green; ~30 comments and a stale `docs.md` table left — [step 3](#step-3--stop-teaching-what-the-compiler-no-longer-does-group-d) | the table re-derived twice (12 → 5 rows); the fixture rewritten; D3 decided and implemented; **the comments left in 01's, 02's, 07's, 15's and 21's files** |
+| 5.4 + the lib-test-runner build files | B | **closed** — [step 4](#step-4--confirm-group-b-closed-and-say-so) | closed, recorded |
+| step 1's residual (5.10) | E | half closed; `lastTransportError()` still has no caller — [step 5](#step-5--a-comptime-transport-error-reaches-a-diagnostic-group-e-residual) | **closed** in code (`transportFailure`, 14's `19a3b01c`); the test that asserts the diagnostic's text is still unwritten |
 
 ## Current state, measured
 
@@ -47,7 +49,9 @@ modules/compiler-core/src/comptime/tests/helpers.zig
 
 **One file, one line**: `helpers.zig:129`, inside the comment block that explains the four-copy
 comptime layout — and [`06-comptime-dedup`](../../../1.0.5-beta/06-comptime-dedup/README.md) step 1 deletes that block
-(`:129-133`) as part of its own change.
+(`:129-133`) as part of its own change. At `f58fd392` the block is gone; the one survivor was
+`comptime/tests/AGENTS.md:21` (06's record of the collapse, naming the `wasm3-unified-runtime` spec),
+reworded by this front so the grep returns nothing.
 
 The other two acceptance conditions are met without an edit:
 
@@ -75,7 +79,12 @@ $ grep -rIn 'primitives\.d\.bp' … | wc -l
 | `modules/language-server/src/tests/hover.zig` | 1 | stale comment |
 | `modules/compiler-cli/src/cli/resolver.zig:634`, `modules/lib-test-runner/src/discovery.zig:405` | 2 | **not stale** — the two extension-assertion tests (`expect(!isSource("primitives.d.bp"))`) the 1.0.4-beta acceptance carves out |
 
-**19 stale, 2 legitimate.** The other three acceptance conditions are met:
+**19 stale, 2 legitimate.** At `f58fd392`, after `21d33c85` swept `engine.zig` (4) and `prelude.zig`
+(1): **14 stale** — `codegen/erlang.zig` ×10 (`:2326`, `:2357`, `:2439`, `:2678`, `:2998`, `:3018`,
+`:3020`, `:3031`, `:4317`, `:7565`; 02's), `comptime/infer.zig:9085,9226` and `comptime/env.zig:773`
+(01's), `language-server/src/tests/hover.zig:181` (07's) — and the two legitimate tests moved to
+`cli/resolver.zig:876` and `lib-test-runner/src/discovery.zig:414`. The other three acceptance
+conditions are met:
 
 - every `files` entry in every `botopink.json` in the workspace resolves (`zig build test-libs` reads
   **11 passed, 0 failed, 0 known red, 1 skipped, 2 without tests**);
@@ -91,8 +100,11 @@ warning: 1 module(s) not reached by any `mod` path were not compiled
 
 for `libs/std` itself. `primitives.bp` is a **core** file — flattened into the global type env through
 `std_core_files` in `build.zig` and listed in `libs/std/botopink.json`'s `files` — so it is
-deliberately not in `root.bp`'s `pub mod` chain. The warning is a false positive on the standard
-library, printed on every gate run.
+deliberately not in `root.bp`'s `pub mod` chain. The warning was a false positive on the standard
+library, printed on every gate run. **Closed by its cause** (step 2.2's option B, decision 16):
+[`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md)'s `f0e6cbd4` exempts a module the
+manifest's `files` declares, and `zig build test-libs` at `f58fd392` prints no `not reached by any`
+line.
 
 ### Group D — vocabulary and instructions (5.8, 5.13, docs)
 
@@ -122,6 +134,18 @@ The rest present it as the current form in doc comments — `codegen/erlang.zig`
 `comptime/tests/infer_decls.zig:540`, which writes `@external(node, "./gleam_stdlib.mjs", "string_length")`
 in the source it snapshots.
 
+At `f58fd392` the fixture is rewritten (`infer_decls.zig:542` names the lower-case form as the
+located error it is) and the comments that still teach `@external(<target>, …)` or `@[external(…)]`
+as current are, by owner: `codegen/erlang.zig` ×18 (`:2310`, `:2422`, `:2425`, `:2434`, `:2666`,
+`:2673`, `:2808`, `:2814`, `:2858`, `:2891`, `:2987`, `:3029`, `:3039`, `:3104`, `:3129`, `:3148`,
+`:4247`, `:6180`, `:7565`, `:7580` — 02's); `comptime/infer.zig` (`:92`, `:3170`, `:3183`, `:9005`,
+`:9007`, `:9228`, `:9245`, `:9279`, `:9280`, `:9308`, `:10026`), `comptime/env.zig:629`,
+`comptime/diagnostics.zig:207` (01's); `ast.zig:1263,2136,2181` (21's `EffectKind` file);
+`parser.zig:491`, `parser/decls.zig:285,454` (15's); `comptime/tests/std_target_gating.zig:6`,
+`comptime/tests/infer_errors.zig:493` (07's). Two test **names** in `codegen/tests/externals.zig:55,67`
+mention `@external(target, template)` as the form `External.<Target>` is equivalent to; renaming a
+test re-keys its snapshot, so they stay.
+
 **D2 — `docs.md`'s "Decided, not yet implemented" table is stale, in both columns.** `docs.md:521-540`
 lists twelve rules, each with a "Today" description and a "Closes with" front row. The grammar for four
 of them landed (`d0c27f6`, `4a3449f`, `6c849ae`, `3b491e3`) and the table still says "not parsed":
@@ -138,10 +162,22 @@ And every "Closes with" cell names `06 N…` — 1.0.4-beta's front 06, which is
 [`01-checker`](../01-checker/README.md) in this milestone. `docs.md:18` links to
 `specs/1.0.4-beta/MIGRATION.md`.
 
+At `f58fd392` the table is **five rows**, each re-derived by running the form in a scratch project
+(`7fa248f2` in 1.0.5-beta, again by this front): `break <value>` still answers `[3]` on three
+backends (now decision 105's row, C-30); `Self<T>` still reds `expected Self, got Holder` (C-15);
+the trailing `;` is still required (C-13); `case 9 { 1...9 { 1 } _ { 0 } }` prints `1` on commonJS
+**and on wasm** (C-06's wasm half; it printed `256`) and `0` on erlang; `await` in a `#[@context]` body
+no longer reds commonJS with a `SyntaxError` — `async function` is emitted and the caller receives a
+Promise (`Widget(1).count` prints `undefined` against `2` on erlang and wasm; C-29). The row front 20
+added for an effect annotation on a record method left: commonJS emits `*iter()` and runs it.
+`docs.md:18`'s link is the GitHub URL of `specs/1.0.4-beta/MIGRATION.md`, which exists.
+
 **D3 — whether a lower-case `@external` is rejected is still not decided.** It has a `reject/` cell
 (`tests/language/reject/external_lowercase_target.bp`), and `expected-failures.txt` lists it against
 "`06` … (fronts.md § unowned items)" — a row that names no front. See
-[Decisions the maintainer owes](#decisions-the-maintainer-owes).
+[Decisions the maintainer owes](#decisions-the-maintainer-owes). **Decided and landed at `f58fd392`:**
+a lower-case `@external(node, …)` is a located error naming the capitalised form (`docs.md:1097`), the
+`reject/` cell passes and is no longer in `expected-failures.txt`.
 
 ### Group B — 5.4 and the lib-test-runner build files
 
@@ -179,6 +215,12 @@ $ grep -n 'evalDetailed' modules/compiler-core/src/comptime/template_eval.zig
 that corrupted the protocol all reach the user as `EvalFailed`, with the message sitting unread in
 `lastTransportError()`.
 
+At `f58fd392` both evaluators read it: `transportFailure` (`template_eval.zig:255`,
+`decorator_eval.zig:123`, 14's `19a3b01c`) answers `the <template|decorator> evaluator's erl runtime
+failed (<error name>): <message>`, and a failure with no message stays `error.EvalFailed` because that
+case is `erl` missing and the caller's hint names `PATH`. `runtime/AGENTS.md:73` names the two readers.
+No test asserts the diagnostic's text yet — see step 5.
+
 ## Steps
 
 ### Step 1 — close group A: one line, and one verification
@@ -188,13 +230,15 @@ that corrupted the protocol all reach the user as `EvalFailed`, with the message
 after that front lands, and record the two conditions that are already met.
 
 **Acceptance:**
-- [ ] After [`06-comptime-dedup`](../../../1.0.5-beta/06-comptime-dedup/README.md) step 1:
+- [x] After [`06-comptime-dedup`](../../../1.0.5-beta/06-comptime-dedup/README.md) step 1:
       `grep -rIl 'wasm3\|wat_runtime\|wat_to_wasm\|wasm3_host'` over the tree (excluding `.git`,
-      `.botopinkbuild`, `zig-out`, `.zig-cache`) returns **nothing**
-- [ ] `build_options` has no occurrence in any `build.zig` — recorded here, no edit
-- [ ] `libcResolvedTarget` is kept and its comment (`build.zig:395-398`) names a reason that still
-      holds — recorded here, no edit
-- [ ] `zig build` and `zig build test` green on linux-gnu and on the CI runners
+      `.botopinkbuild`, `zig-out`, `.zig-cache`) returns **nothing** — since this front's reword of
+      `comptime/tests/AGENTS.md:21`
+- [x] `build_options` has no occurrence in any `build.zig` — recorded here, no edit
+- [x] `libcResolvedTarget` is kept and its comment (`build.zig:550-554` at `f58fd392`) names a reason
+      that still holds — recorded here, no edit
+- [ ] `zig build` and `zig build test` green on linux-gnu (verified by every gate run of this front)
+      and on the CI runners (not verified — this front does not push)
 
 ### Step 2 — `libs/std`'s names, and one warning (group C)
 
@@ -215,10 +259,11 @@ after that front lands, and record the two conditions that are already met.
 
 **Acceptance:**
 - [ ] `grep -rIn 'primitives\.d\.bp'` returns exactly the two extension-assertion tests
-      (`cli/resolver.zig:634`, `lib-test-runner/src/discovery.zig:405`)
-- [ ] `zig build test-libs` prints no `not reached by any mod path` line for `libs/std`, **or**
-      `libs/std/AGENTS.md` says in one sentence why it does and that it is expected
-- [ ] `libs/std/AGENTS.md`'s tree still matches `src/` after any change
+      (`cli/resolver.zig:876`, `lib-test-runner/src/discovery.zig:414` at `f58fd392`) — 14 comments
+      left, in 02's, 01's and 07's files; each sweep lands after its owner (C-23)
+- [x] `zig build test-libs` prints no `not reached by any mod path` line for `libs/std` — the cause
+      fixed by 10's `f0e6cbd4`
+- [x] `libs/std/AGENTS.md`'s tree still matches `src/` after any change
 
 ### Step 3 — stop teaching what the compiler no longer does (group D)
 
@@ -248,12 +293,14 @@ after that front lands, and record the two conditions that are already met.
 
 **Acceptance:**
 - [ ] No comment, fixture or `.bp` file presents `@external(<target>, …)` or `@[external(…)]` as
-      current; the four sites that name it as retired are unchanged
-- [ ] Every row of `docs.md:521-540` re-derived by running the form at HEAD, and every "Closes with"
-      cell names a 1.0.5-beta front
-- [ ] `zig build test-docs` green **with** [`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md) step 1
-      applied — that is the condition this step exists for; run it against that front's branch
-- [ ] `docs.md:18`'s migration link resolves
+      current; the four sites that name it as retired are unchanged — the fixture and every `.bp`
+      are done; the comments are listed under [D1](#group-d--vocabulary-and-instructions-58-513-docs)
+      by owner and land after each (C-23)
+- [x] Every row of the table (`docs.md:1398` at `f58fd392`) re-derived by running the form at HEAD,
+      and every "Closes with" cell names a row of this milestone's `00` (C-30, C-15, C-13, C-06, C-29)
+- [x] `zig build test-docs` green **with** [`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md) step 1
+      applied — 10 step 1 is in `feat`; `test-docs` reads 67 fences, 57 checked, 5 skipped, 0 failed
+- [x] `docs.md:18`'s migration link resolves
 
 ### Step 4 — confirm group B closed, and say so
 
@@ -262,8 +309,10 @@ No edit. Record the measurement so the next reader does not re-open it.
 **Acceptance:**
 - [x] `zig build test-vscode` runs and passes (37 tests, `scripts/test-vscode.sh` exists)
 - [x] `modules/lib-test-runner/` holds `AGENTS.md` and `src/` only — no `build.zig`, no `.zon`
-- [ ] Both facts written into this README's current state and into
-      `modules/lib-test-runner/AGENTS.md` if it still claims its own build
+- [x] Both facts written into this README's current state and into
+      `modules/lib-test-runner/AGENTS.md` if it still claims its own build — it does not:
+      `modules/lib-test-runner/AGENTS.md:30` says "built and tested by the workspace build.zig (no
+      build.zig of its own)"; `zig build test-vscode` is 43/43 at `f58fd392`
 
 ### Step 5 — a comptime transport error reaches a diagnostic (group E residual)
 
@@ -277,9 +326,13 @@ sites and an error payload, agreed with that front or landed after it.
 
 **Acceptance:**
 - [ ] A comptime body that exceeds the 16 MiB frame cap produces a diagnostic quoting
-      `lastTransportError()`'s message, not `EvalFailed` — reproduced by a test, not by reading
-- [ ] The three existing `persistent_erl.zig` regression tests (`:455`, `:480`, `:546`) still pass
-- [ ] `src/comptime/runtime/AGENTS.md` says who reads `lastTransportError()`
+      `lastTransportError()`'s message, not `EvalFailed` — reproduced by a test, not by reading.
+      The code path exists (`transportFailure`); the test does not: it would live in
+      `template_eval.zig` or `persistent_erl.zig`, which [`18-comptime-runtimes`](../18-comptime-runtimes/README.md)
+      is replacing (`persistent_beam.zig`) — write it there, against the runtime that survives
+- [x] The three existing `persistent_erl.zig` regression tests (`:554`, `:579`, `:614` at `f58fd392`)
+      still pass
+- [x] `src/comptime/runtime/AGENTS.md` says who reads `lastTransportError()` (`:73`)
 
 ### Step 6 — the comment sweeps in other fronts' test files
 
@@ -288,24 +341,32 @@ Five sites left of the 1.0.4-beta list; the rest drifted out of existence. All f
 
 | Site | Says | Should say |
 |---|---|---|
-| `src/codegen/tests/builtins.zig:382` | commonJS "still lowers to `console.assert`" and erlang drops the message | decision 4 is implemented on all four backends |
+| `src/codegen/tests/builtins.zig:382` (`:372-374` at `f58fd392`) | commonJS "still lowers to `console.assert`" and erlang drops the message | decision 4 is implemented on all four backends |
 | `src/codegen/tests/control_flow.zig:73` | "pinned, 06-wasm" | [`05-wasm`](../05-wasm/README.md) |
 | `src/codegen/tests/control_flow.zig:76` | "07-checker's to land" | [`01-checker`](../01-checker/README.md) |
-| `src/codegen/tests/narrowing.zig:105` | "registered with 07-checker" | [`01-checker`](../01-checker/README.md) |
-| `src/codegen/tests/wat.zig:86` | "owner: 07-checker (analysed in 01-comptime-dispatch/trailing-defaults.md)" | [`01-checker`](../01-checker/README.md), and the deep dive's new path |
+| `src/codegen/tests/narrowing.zig:105` (`:91` at `f58fd392`) | "registered with 07-checker" | [`01-checker`](../01-checker/README.md) |
+| `src/codegen/tests/wat.zig:86` | "owner: 07-checker (analysed in 01-comptime-dispatch/trailing-defaults.md)" | **closed** — C-04 rewrote the comment; the test pins the filled default |
+
+Two more hits of the acceptance grep were in `AGENTS.md` files, which this front owns and swept:
+`codegen/AGENTS.md:2206` ("the decision (06-wasm step 3)") and `codegen/js/AGENTS.md:143`
+("Blocked (F7 checker)", now C-09 / `01-checker` step 8).
 
 **Acceptance:**
-- [ ] `grep -rn '06-wasm\|07-checker\|F7 checker' src/` returns nothing
+- [ ] `grep -rn '06-wasm\|07-checker\|F7 checker' src/` returns nothing — three sites left, all in
+      `codegen/tests/{control_flow,narrowing}.zig` (07's)
 - [ ] No comment in `src/codegen/tests/**` describes a lowering the four backend fronts have changed
+      — `builtins.zig:372-374` still does
 - [ ] One commit per owning file, landed after
       [`07-review-backlog`](../07-review-backlog/README.md) or handed to it
 
 ## Gate
 
-- [ ] `scripts/gate.sh --cold` green in this front's worktree
-- [ ] Every item fixed, or closed with a written reason in this front's files
-- [ ] Matching `AGENTS.md` files updated in the same commits
-- [ ] Commit on `fix/hygiene`; no push, no merge
+- [ ] `scripts/gate.sh --cold` green in this front's worktree — the pre-commit gate (warm) is green
+      at every commit of `front/08-hygiene`
+- [ ] Every item fixed, or closed with a written reason in this front's files — the sweeps in other
+      fronts' files are the open items, each named by owner above
+- [x] Matching `AGENTS.md` files updated in the same commits
+- [x] Commit on this milestone's `front/08-hygiene` (1.0.5-beta's was `fix/hygiene`); no push, no merge
 
 ## Blast radius
 
@@ -344,13 +405,14 @@ those files have landed — or hand the sweep to them.
 
 ## Decisions the maintainer owes
 
-1. **`docs.md:78`** — the skip directive or the richer `project modules` rewrite (step 3.3). Until one
-   lands, [`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md) step 1 cannot be committed.
-2. **Is a lower-case `#[@external(node, …)]` a located error?** It passes `check` today, binds no host,
-   and produces no diagnostic. A `reject/` cell asserts the error and is listed as an expected failure
-   against a row that names no front. The decision, and then its owner
-   ([`01-checker`](../01-checker/README.md), the annotation grammar).
-3. **The `libs/std` "not reached by any `mod` path" warning** — A, B or C in step 2.2.
+All three are closed at `f58fd392`:
+
+1. **`docs.md:78`** — the richer `project modules` rewrite landed (`docs.md:80-122` is the `project
+   imports` group with `src/shapes/circle.bp`), and
+   [`10-cli-residuals`](../../../1.0.5-beta/10-cli-residuals/README.md) step 1 is in `feat`.
+2. **A lower-case `#[@external(node, …)]` is a located error** naming `External.<Target>`
+   (`docs.md:1097`; the `reject/` cell passes).
+3. **The `libs/std` warning** — option B, by its cause: 10's `f0e6cbd4` (decision 16).
 
 ## Notes
 
@@ -371,7 +433,7 @@ those files have landed — or hand the sweep to them.
 **Ownership table:**
 
 ```markdown
-| **08** [`hygiene`](./README.md) | `src/comptime/runtime/persistent_erl.zig` (residual) · the transport-error call sites of `src/comptime/{template_eval,decorator_eval}.zig` (carve-out of 14) · `libs/std/botopink.json`, `libs/std/AGENTS.md` · `examples/**`, `README.md`, `docs.md`, every `AGENTS.md`, comments (after owners) | — | not started — steps 1, 2, 4 ready; step 3 blocks 10; steps 5–6 after their owners |
+| **08** [`hygiene`](./README.md) | `src/comptime/runtime/persistent_erl.zig` (residual) · the transport-error call sites of `src/comptime/{template_eval,decorator_eval}.zig` (carve-out of 14) · `libs/std/botopink.json`, `libs/std/AGENTS.md` · `examples/**`, `README.md`, `docs.md`, every `AGENTS.md`, comments (after owners) | — | steps 1–5 landed; the comment sweeps (2.1, 3.1, 6) wait on 01, 02, 07, 15, 21 — C-23 |
 ```
 
 **Conflict notes** (against the other thirteen fronts):
@@ -393,5 +455,5 @@ those files have landed — or hand the sweep to them.
 **Front-table row (`overview.md`):**
 
 ```markdown
-| [`08-hygiene`](./README.md) | low | not started — step 3 blocks 10 | What 1.0.4-beta's hygiene front left, re-measured: the WAT runtime's last mention (one line another front deletes), 19 comments naming a `libs/std` file that was renamed, ~30 comments teaching the retired `@external(<target>, …)` form, a `docs.md` "not yet implemented" table whose Today column is wrong in five rows, the `docs.md:78` fence that blocks `10-cli-residuals`, and the comptime transport error that never reaches a diagnostic |
+| [`08-hygiene`](./README.md) | low | steps 1–5 landed; the sweeps wait on their owners (C-23) | What 1.0.4-beta's hygiene front left, re-measured: the WAT runtime's last mention (gone), 14 comments naming a `libs/std` file that was renamed, the comments teaching the retired `@external(<target>, …)` form, a `docs.md` "not yet implemented" table re-derived by running every row, the `docs.md:78` fence (landed; 10 step 1 is in `feat`), and the comptime transport error that now reaches a diagnostic (its test still unwritten) |
 ```
