@@ -42,6 +42,11 @@ beside    00-compiler-carry-over — the open 1.0.5-beta compiler fronts, on the
             · 21-effect-chain → 22-loops → 23-std-purity   (decisions 102–108; 23 opens only
                                     after 01-std's fronts 01/02/03 merge, because it moves
                                     their modules)
+          then, alone:
+            · 24-effects-by-return (decisions 118–127: re-cuts what 21 and 22 built; opens
+                                    once 21 is merged or closed; its E7 sweep rewrites every
+                                    library's effect annotations, its E8 every library
+                                    front's examples)
 ```
 
 Why this order and not another: `01-std` first because every `-test` submodule imports
@@ -85,6 +90,21 @@ lowering of the four codegens, the `while`/`for` printer arms in `format.zig` (a
 included), `libs/std/AGENTS.md`, `docs.md` § imports / std, and the consumers' `from "std"` lines;
 it opens only after `01-std`'s fronts 01, 02 and 03 have merged, because it moves their modules.
 
+**24-effects-by-return** (C-32) follows decisions 118–127 and runs **alone** among the surface
+fronts — it rewrites what 21 and 22 wrote (`builtins.d.bp`, `EffectKind`, `effect_chain.zig`,
+`parser/{decls,exprs}.zig`, `comptime/infer.zig`, the four codegens) and opens once 21 is merged or
+closed (its README, open point 1). It owns the effect behaviors in `builtins.d.bp`, `EffectKind` and
+the new `AsyncBlock` / `GenLoop` nodes in `ast.zig`, `comptime/effect_chain.zig`, the annotation
+refusals in `parser/decls.zig`, the `async` / `iter` / `stream` prefixes in `parser/exprs.zig`, the
+effect legality, `return` and `await` typing and the `use` gate in `comptime/infer.zig`, the effect
+codes in `comptime/diagnostics.zig`, the effect lowering of the four codegens and
+`codegen/typescript.zig`'s mapping, the three prefix printer arms in `format.zig` (a carve-out of
+16), `modules/compiler-cli/src/cli/migrate.zig` and its dispatch (a carve-out of 10), `docs.md`
+§ Loops / use / Effects / Results / Iterators / Host bindings, E7's signatures in
+`libs/std/src/{async,http}.bp` (shared with `01-std/02` and 23 — below), and, through
+`scripts/known-red-libs.txt`, every effect annotation and wrapper in jhonstart, rakun, emilia, onze
+and erika.
+
 **The compiler fronts are the only fronts that touch the compiler.** No library front, no packaging
 step and no std front edits a file under `repository/botopink-lang/modules/**` — with one named
 exception, `@src()` (below). A library front that needs a compiler change files a row in
@@ -118,6 +138,7 @@ The sub-areas, so that a library front can name the one its gap belongs to:
 | **21-effect-chain** | `libs/std/src/builtins.d.bp` · `ast.zig`'s `EffectKind` · `comptime/effect_chain.zig` · the annotation names, `parseAnnotations` and the post-return label in `parser/decls.zig` · the effect legality and `use` owner rules in `comptime/infer.zig` · `comptime/stdlib/prelude.zig` (`getContext`) · the name mappings in `codegen/{typescript,wat}.zig` · `fnKeyword` in `codegen/commonJS.zig` · `docs.md` § effects / generators / use · `scripts/known-red-libs.txt` (during the jhonstart sweep) | every snapshot spelling an effect name (≈ 250) |
 | **22-loops** | `lexer.zig` (`while`) · the loop forms in `parser/exprs.zig` · the loop typing and generator scope in `comptime/infer.zig` · the loop lowering of the four codegens · the `while`/`for` printer arms in `format.zig` (carve-out of 16) · `docs.md` § loops · `tests/language`'s loop cells · `scripts/known-red-libs.txt` (during the rakun/jhonstart sweep) | the loop snapshots of four backends |
 | **23-std-purity** | `parseImportItem` in `parser/decls.zig` · the import binding in `comptime/infer.zig` · the four `emitUse` · `modules/language-server/src/project_graph.zig` (carve-out of 11) · `build.zig`'s `stdPkgFilesFromRoot` · `libs/std/src/**`, `libs/std/AGENTS.md` · `docs.md` § imports / std · `scripts/known-red-libs.txt` (during the consumer sweep) | every snapshot carrying a std module name |
+| **24-effects-by-return** | `libs/std/src/builtins.d.bp` · `ast.zig`'s `EffectKind`, `AsyncBlock`, `GenLoop` · `comptime/effect_chain.zig` · the annotation refusals in `parser/decls.zig` · the `async` / `iter` / `stream` prefixes in `parser/exprs.zig` · the effect legality, `return`, `await` and `use` rules in `comptime/infer.zig` · the effect codes in `comptime/diagnostics.zig` · the effect lowering of the four codegens and `codegen/typescript.zig`'s mapping · the prefix printer arms in `format.zig` (carve-out of 16) · `compiler-cli/src/cli/migrate.zig` (carve-out of 10) · `docs.md` § effects / results / iterators / use / loops / host bindings · `libs/std/src/{async,http}.bp` (E7 signatures) · `scripts/known-red-libs.txt` (during the library sweeps) | every snapshot spelling an effect name or an effect's lowering (≈ 930 matches at `0beaa1f9`) |
 
 Two items are **pulled ahead** of the library waves: `13-module-identity` (its halves 2–3 re-record
 the erlang/beam corpus and change the record representation every server front's erlang cell runs
@@ -425,12 +446,15 @@ files by design and are made disjoint by the banner convention above.
 | `00` · `01-std` | the compiler files of `@src()` | `@src()` is a builtin: `01-std` specifies it and lands it through a **named carve-out** of `00`'s files (the builtin table in `comptime/`, the four backends' lowering of a `SourceLocation` literal). `00` grants the carve-out in its README or `@src()` does not open; `00`'s other rows do not wait on it |
 | `00` · every library track | `repository/{emilia,erika,jhonstart,onze,rakun}/**` | 1.0.5's `09-ecosystem-residuals` owned the library trees. Here it does not: the trees are tracks B–E's. `09` keeps `repository/erika/**` (no track) and the meta submodule pointers, and its "re-run every library's erlang cell after 13" is an exit-gate step, run by each track after `00 · 13-module-identity` lands |
 | `00 · 13-module-identity` · every erlang front | the erlang/beam emitters, ≈318 re-recorded cells | No shared file, but every server front's erlang cell re-runs after 13 (the module atom and the record representation change under it). A server front that lands before 13 re-verifies after; one that lands after never sees the old shape. This is why 13 is **pulled ahead** |
-| `00 · 21-effect-chain` · `00 · 22-loops` · `00 · 23-std-purity` · `00 · 15` / `16` / `01` / `04` and the backend fronts | `parser/{decls,exprs}.zig`, `lexer.zig`, `format.zig`, `comptime/infer.zig`, the four codegens | 21 and 22 rewrite the parser and every codegen, 23 the import path through parser, checker, codegens and the LSP: they run **one at a time, 21 → 22 → 23**, and never beside 15-language-surface, 16-formatter, 01-checker or a backend front. The `format.zig` printer arms are 16's carve-out to 22; `project_graph.zig` is 11's carve-out to 23 |
+| `00 · 21-effect-chain` · `00 · 22-loops` · `00 · 23-std-purity` · `00 · 24-effects-by-return` · `00 · 15` / `16` / `01` / `04` and the backend fronts | `parser/{decls,exprs}.zig`, `lexer.zig`, `format.zig`, `comptime/infer.zig`, the four codegens | 21 and 22 rewrite the parser and every codegen, 23 the import path through parser, checker, codegens and the LSP: they run **one at a time, 21 → 22 → 23**, then **24 alone**, and never beside 15-language-surface, 16-formatter, 01-checker or a backend front. The `format.zig` printer arms are 16's carve-out to 22; `project_graph.zig` is 11's carve-out to 23 |
 | `00 · 23-std-purity` · `01-std` | `libs/std/src/**`, `root.bp`, `build.zig`'s `stdPkgFilesFromRoot` | 23 moves the modules fronts 01/02/03 land flat; it opens only after all three are merged, and `libs/std/src/**` is 23's from then until it lands |
 | `00 · 23-std-purity` · `01-std/04-routing-lib` | `build.zig`'s package registry, the `emitUse` of each backend, the CLI resolver's `"std"` exemption | routing-lib's bundling step is a **named carve-out** of `00`'s files, granted like `@src()`'s, and opens after 23 lands; its library steps (`libs/routing/**`) share nothing and run from wave 0 |
 | `01-std/04-routing-lib` · `05-actions-lib` · `06-validation-lib` | the bundled-package list in `build.zig` | 04 introduces the list (`std`, `routing`); 05 and 06 each add one name after 04's Step 2, under the same carve-out; their `libs/<name>/**` share nothing |
 | `00 · 23-std-purity` · F01's JSON steps | `libs/std/src/json.bp`, `escape.bp` | the writers, `scriptJson` and `json.decode` (decision 117, folded into F01) land before 23 opens or after 23 lands, never while 23 holds `libs/std/src/**`; both files keep their root path through the move |
 | `00 · 21` / `22` / `23` · `03-rakun` · `04-jhonstart` · every `-test` member | jhonstart's `#[@context]` / `@Context<` sites (21), rakun's and jhonstart's `loop (` sites (22), every `from "std"` line (23) | Each is a named sweep landed through `scripts/known-red-libs.txt`: the compiler commit lands with the library in the ledger, the library sweep follows, the ledger line is deleted in the next compiler commit — adjacent commits, never a standing red |
+| `00 · 24-effects-by-return` · `00 · 21-effect-chain` · `00 · 22-loops` | `builtins.d.bp`, `EffectKind`, `effect_chain.zig`, `parser/{decls,exprs}.zig`, `comptime/infer.zig`, the four codegens, the effect / generator / loop cells | 24 re-cuts 21's generators and `#[@use]` and 22's `#[@X] loop`: it opens after 21 is merged into `feat` or closed unmerged (the maintainer's call, 24's open point 1), never while 21 holds a worktree; 22 has landed and 24 re-keys its annotated-loop lowering to `GenLoop` |
+| `00 · 24-effects-by-return` · `01-std` · `00 · 23-std-purity` | `libs/std/src/async.bp`, `http.bp` | 24's E7 respells `std/async` and `std/http` to `@Task`; `01-std/02-std-async-primitives` owns `async.bp`'s behaviour and 23 moves `http.bp` to `io/`: E7's signature commit lands after 02 merges and before or after 23 holds `libs/std/src/**`, never during |
+| `00 · 24-effects-by-return` · `03-rakun` · `04-jhonstart` · `05-emilia` · `06-onze` · `01-std` · `02-packaging` | every effect annotation and wrapper in the libraries (E7); every library front's examples (E8) | the libraries' sources through `scripts/known-red-libs.txt` as 21/22's sweeps; the spec examples are rewritten by 24's codemod in E8 — a library front that lands before E8 keeps the pre-118 spelling and is swept with the rest, one that lands after writes the new one |
 
 
 ## Who may run together — section level
@@ -459,8 +483,9 @@ above applies.
    `00 · 10-cli-residuals`, granted the same way as note 1.
 3. A library compiles against the compiler: no shared file, but every library's erlang cells re-run
    after `00 · 13-module-identity`, every `format --check` row re-runs after `00 · 16-formatter`, and
-   `00 · 21` / `22` / `23` each rewrite library sources in a named sweep (jhonstart's effect
-   annotations, the `loop (` sites, the `from "std"` lines) through `scripts/known-red-libs.txt`.
+   `00 · 21` / `22` / `23` / `24` each rewrite library sources in a named sweep (jhonstart's effect
+   annotations, the `loop (` sites, the `from "std"` lines, every library's effect annotations and
+   wrappers) through `scripts/known-red-libs.txt`.
    The order is *13 first*, which is why it is pulled ahead.
 4. `repository/onze/`: `01-std` removes the mocking library, `02-packaging` creates the orchestrator
    tree at the same path. Removal first; never both in flight.
