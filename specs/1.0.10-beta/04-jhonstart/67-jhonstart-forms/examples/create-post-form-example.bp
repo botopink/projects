@@ -92,7 +92,7 @@ test "the empty form carries the attributes an un-hydrated browser needs" {
     val markup = renderToString(createPostForm(binding(), newActionState(""), false));
     assert markup.contains("method=\"post\"");
     assert markup.contains("action=\"/blog/new\"");
-    assert markup.contains("data-onze-a=\"" + sampleActionId + "\"");
+    assert markup.contains("data-jh-a=\"" + sampleActionId + "\"");
     assert markup.contains("name=\"__onze_action\"");
 }
 

@@ -149,9 +149,10 @@ one record per line, `\n`-separated, in registration order. `kind` is one letter
 slot name for an `@slot` entry. `verb` is `""` for UI entries and the HTTP method for an `R` entry.
 Neither `|` nor a newline may appear in a segment name, and the scan fails if one does.
 
-The server reads the table from its own registry. The client reads it out of the `"t"` field of front
-23's payload and rebuilds it with `parseTable`, which is the same botopink function the server uses.
-`matchPath` is likewise one function compiled to both targets. That is what makes this a boundary
+The server reads the table from its own registry. jhonstart imports nothing from this front
+(decision 113): its router has no matcher and no table parser of its own, and onze hands it the
+table and a `match` function. The table reaches the browser in the `"t"` field of the payload, and
+`parseTable` and `matchPath` are one botopink function each, compiled to both targets. That is what makes this a boundary
 front: if the two sides can disagree about which route a URL is, every fix downstream is a guess.
 
 ## Steps

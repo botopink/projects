@@ -25,12 +25,17 @@ kind|pattern|slot|verb
 are illegal inside a segment name. Match precedence is static > dynamic > catch-all > optional
 catch-all.
 
-`parseTable`, `writeTable` and `matchPath` are **one botopink implementation compiled twice**. The
-server matches with it; front 26's client router prefetches with it. Neither writes a second parser.
+`parseTable`, `writeTable` and `matchPath` are **one botopink implementation**, rakun's. The server
+matches with it; front 26's router receives it as `match` from onze and names no rakun module
+(decision 113). Neither side writes a second parser or a second precedence rule.
 
-## 2 · Payload envelope — owned by front 23
+## 2 · Payload envelope — owned by jhonstart front 30
 
-One `<script id="__onze" type="application/json">`, placed last in `<body>`, before the bundle.
+One `<script>window.__bp0 = {…}</script>`, placed last in `<body>`, before the bundle, written by
+jhonstart's render. `__bp0` is not spelled by hand: it is `globals.payload`, read from jhonstart's
+globals registry by the render that writes it and by the client entry that reads it (decision 113).
+The values that come from rakun — the route table `t`, the actions `a` — and the build id `b` reach
+the render as strings handed in by onze; jhonstart names no rakun module.
 
 | Key | Meaning |
 |---|---|
@@ -50,30 +55,41 @@ One `<script id="__onze" type="application/json">`, placed last in `<body>`, bef
 Escaping inside that script: `<`, `>` and `&` become `<`, `>`, `&`, plus U+2028 and
 U+2029. `</script` is therefore **unrepresentable by construction** rather than filtered.
 
-Two more keys, allocated by front 23 for fronts that publish a separate blob joined on `pattern` so
+Two more keys, allocated by front 30 for fronts that publish a separate blob joined on `pattern` so
 that contract 1 stays untouched: `k` — route kinds (front 60: static/dynamic/revalidate per pattern);
 `z` — slot states (front 61: which `@slot` rendered for which pattern).
 
-Markers — all `data-onze-*`, and the full registry is here so no front invents a prefix:
+Markers — the prefix is the package that writes the marker (decision 113). jhonstart writes every
+marker in use, so every one is `data-jh-*`; a marker onze itself wrote would be `data-onze-*`, and
+none exists. The full registry is here so no front invents one:
 
-| Marker | Owner | Meaning |
+| Marker | Written by | Meaning |
 |---|---|---|
-| `data-onze-i="i0"` | 29 | an island; ids assigned by front 23 in render order; component name and props are in `i`, not on the element |
-| `data-onze-s` | 29 | a server-rendered slot inside an island — the Context-Provider hole |
-| `data-onze-h="h1"` / `data-onze-f="h1"` | 30 | a streaming hole and its fill; ids are ordinals in shell order, assigned by front 23, **not** route-derived. A fill is `<template data-onze-f="h1">…</template><script>__onzeFill("h1")</script>` |
-| `data-onze-e` / `data-onze-reset` | 31 | an error boundary and its reset control |
-| `data-onze-l` / `-prefetch` / `-replace` / `-scroll` | 27 | a client link and its options |
-| `data-onze-on-click` | 29 | a handler id |
-| `data-onze-a` | 24 | a form bound to a server action (contract 3) |
-| `data-onze-sf="1"` | 67 | a client-enhanced search form (GET, no action) |
+| `data-jh-i="i0"` | jhonstart · 29 | an island; ids assigned by front 30's render in render order; component name and props are in `i`, not on the element |
+| `data-jh-s` | jhonstart · 29 | a server-rendered slot inside an island — the Context-Provider hole. Nothing else carries it |
+| `data-jh-h="h1"` / `data-jh-f="h1"` | jhonstart · 30 | a streaming hole and its fill; ids are ordinals in shell order, assigned by front 30, **not** route-derived. A fill is `<template data-jh-f="h1">…</template><script>__bp1("h1")</script>`; a boundary's CSS, when it has any, is a bare `<style>` first inside that `<template>` (§ 6a) |
+| `data-jh-root` / `data-jh-t="<pattern>#<nav>"` | jhonstart · 30 | the document's root element; a `template` segment's per-navigation key |
+| `data-jh-e` / `data-jh-reset` | jhonstart · 31 | an error boundary and its reset control |
+| `data-jh-l` / `-prefetch` / `-replace` / `-scroll` | jhonstart · 27 | a client link and its options |
+| `data-jh-on-click` | jhonstart · 29 | a handler id |
+| `data-jh-a` | jhonstart · 67 | a form bound to a server action; the id is front 24's (contract 3), handed to the form by onze |
+| `data-jh-sf="1"` | jhonstart · 67 | a client-enhanced search form (GET, no action) |
 
-`data-jh-*` is not a marker prefix; an example carrying it is stale.
+An example carrying `data-onze-*` on a framework marker is stale.
+
+**Browser globals** — only a value the HTML names by text is a global, and there are two:
+`globals.payload` (`__bp0`, the payload above) and `globals.fill` (`__bp1`, the function a fill's
+`<script>` calls). Both are indexed aliases from jhonstart's globals registry (front 30), numbered
+in declaration order in jhonstart so the server and client builds agree. No hand-written `__jh*` or
+`__onze*` global exists; link and form mount are the ordinary imports `linkMount` and `formMount`.
+A host cell (`declare fn` bound by `#[@External.…]`) is a module function, not a global, and keeps
+its owner's `__jh` prefix.
 
 Router state (front 26) maps one-to-one onto `p`/`m`/`q`/`r`; `segments` is derived from `r` by
 splitting on `/` with the bracket spelling kept, never transported. The one router value with no
-payload key is `selected` — the layout depth — which front 23 passes into each layout render.
+payload key is `selected` — the layout depth — which front 30's render passes into each layout.
 
-Consumed by fronts 26, 27, 28, 29, 30, 31, 60, 61, 68.
+Consumed by fronts 26, 27, 28, 29, 31, 60, 61, 68.
 
 ## 3 · Action id and envelope — owned by front 24
 
@@ -84,9 +100,10 @@ id = "a_" + hash.hmacSha256(buildSecret, module + "." + name + ":" + buildId).sl
 Computed only on the server, echoed by the client, never derived in the browser. `hash` is std's
 hashing module under decision 106 (`crypto` until `00 · 23-std-purity` lands).
 
-Form binding: `<form method="post" action="<pathname>" data-onze-a="<id>">` plus a hidden
-`__onze_action` field. Scripted invocation: the same POST carrying `X-Onze-Action`, or a JSON-RPC
-body `{"v":1,"id":…,"args":[…]}` — the same auth path, not a second door.
+Form binding, written by jhonstart front 67 with the id onze hands it:
+`<form method="post" action="<pathname>" data-jh-a="<id>">` plus a hidden `__onze_action` field.
+Scripted invocation: the same POST carrying `X-Onze-Action`, or a JSON-RPC body
+`{"v":1,"id":…,"args":[…]}` — the same auth path, not a second door.
 
 Response envelope:
 
@@ -119,7 +136,7 @@ Lowercase hex, seed 5381, multiplier 33, masked to 32 bits, folded over the enco
 static class present, the attribute value is `<static> + " " + <emilia class>`.
 
 The body hashed is `encodeSheet(tokensToSheet(tokens, th))` — front 56's rule model; the expected
-literal in the shared fixture is one value, and fronts 23 and 68 assert that value.
+literal in the shared fixture is one value, and the `jhonstart-emilia` bridge test (front 30) and front 68 assert that value.
 
 Five clauses, each of them a test:
 
@@ -133,7 +150,7 @@ Five clauses, each of them a test:
 5. Attribute array order is fixed, because `renderToString` writes attrs in array order.
 
 **The shared fixture:** `emilia/modules/emilia/test/integration_test.bp` asserts the class for a fixed token list as
-a **literal hex string**, on both commonJS and erlang. Front 23's SSR test asserts the same literal
+a **literal hex string**, on both commonJS and erlang. The `jhonstart-emilia` bridge test (front 30) asserts the same literal
 for the same list, and front 68's bundle test asserts the client produces it too. If the three ever
 differ, hydration is broken and a test is red before a user sees it.
 
@@ -253,7 +270,9 @@ pub fn signalToWire(out: NavOutcome) -> string / signalFromWire(wire: string) ->
 ```
 
 A signal is a raised **prefixed string**, not a tagged tuple — a tuple could not be matched from
-jhonstart without a rakun dependency. botopink's `try … catch` unwraps an `@Result` and nothing
+jhonstart without a rakun dependency.
+A jhonstart page does not call this front's functions: its `notFound` is jhonstart's own signal
+(front 31), which onze translates into rakun's 404 (decision 113). botopink's `try … catch` unwraps an `@Result` and nothing
 else, so **no construct can swallow a signal** — asserted by a test. Front 63 owns the list; front
 31 matches it through `signalPrefixes()` rather than a copy of the table:
 
@@ -320,16 +339,17 @@ contract 1 and for the same reason. Kinds `V` version · `E` entry · `S` shared
 ignored so 69 and 71 may add records; a `V` line other than `1` is a hard error.
 `parseManifest(formatManifest(m)) == m` is asserted on both targets with the same literal.
 
-**Emission order** in the document front 23 writes: 1 `beforeInteractive` chunks in `<head>` ·
-2 body · 3 `<script id="__onze">` last in `<body>` — **front 23's, never 68's** · 4 `shared` `defer` ·
-5 route chunk `defer` · 6 `entry` `defer`, last. Groups 1 and 4–6 are `headScriptTags(m)` and
-`scriptTags(m, route)`, which front 23 never calls: `Onze.run` installs them as
-`RenderHooks.headExtra` / `RenderHooks.bodyExtra` and the pipeline writes what the fields return
-(decision 77).
+**Emission order** in the document front 30's render writes: 1 `beforeInteractive` chunks in
+`<head>` · 2 body · 3 the payload `<script>window.__bp0 = …</script>` last in `<body>` — **front
+30's, never 68's** · 4 `shared` `defer` · 5 route chunk `defer` · 6 `entry` `defer`, last. Groups 1
+and 4–6 are `headScriptTags(m)` and `scriptTags(m, route)`, which the render never calls: onze
+installs them as jhonstart's `RenderHooks.headExtra` / `RenderHooks.bodyExtra` and the render writes
+what the fields return (decisions 77, 113).
 
-**Hydration entry** (`<outDir>/client/entry.bp`, botopink source): reads `#__onze`, takes `i`,
-queries `[data-onze-i]` in document order, calls front 29's hydrate point per island, registers
-`__onzeFill(holeId)` for every `h`, then calls `__jhLinkMount()` and `__jhFormMount()` once each.
+**Hydration entry** (`<outDir>/client/entry.bp`, botopink source): reads the payload through
+`readPayload(globals.payload)`, takes `i`, queries `[data-jh-i]` in document order, calls front 29's
+hydrate point per island, registers the fill function under `globals.fill` for every `h`, then calls
+`linkMount()` and `formMount()` once each. No `__` name is written by hand in it.
 Front 29 owns the per-island hydrate point; front 68 owns the module that calls it. An id in the
 DOM with no payload entry, or the reverse, is a hard runtime error naming the id.
 
@@ -344,50 +364,42 @@ field and still gets the refusal:
   build fails when JS and erlang disagree (contract 4 clause 3); the entry checks every class it
   computes against the payload's `s` at run time.
 
-## 6a · Style insertion seam — four fields of front 23's `RenderHooks`, filled by front 69
+## 6a · Style insertion — jhonstart's `RenderPlugin`, implemented by `jhonstart-emilia`, owned by front 30
 
-**Render, then flush, then serialize — once per chunk.** `emilia.flush()` clears the sheet, so
-there is exactly one correct consumer per render phase, and the sink is it.
+**Render, then flush, then serialize — once per chunk.** `emilia.flush()` clears the sheet, so there
+is exactly one correct consumer per render phase, and the render plugin is it.
 
-Front 23 does not call front 69. The four calls are **fields of the `RenderHooks` record front 23
-declares and reads** ([`03-rakun/23-rakun-ssr-pipeline/README.md`](./03-rakun/23-rakun-ssr-pipeline/README.md)
-§ *`RenderHooks`*), with working defaults that flush once into the head; front 69 implements them and
-`Onze.run` (front 49) installs its values at boot, so `repository/rakun/` names no module of onze
-(decision 77). The fields, as 23 declares them:
+jhonstart declares the point and is its only caller; the bridge member
+`repository/jhonstart/modules/jhonstart-emilia` implements it over emilia's `flush()`; onze
+registers it at boot; emilia does not change and imports nobody (decision 113).
 
 ```bp
-openSink: fn() -> void,                  // called before anything renders
-collectHead: fn() -> string,             // once, after the shell, before the head is serialised
-collectChunk: fn(string) -> string,      // holeId -> the block that precedes that chunk
-closeSink: fn() -> string,               // after the last chunk; "" when nothing was dropped
+// jhonstart/src/plugin.bp
+pub behavior RenderPlugin {
+    fn head(self: Self) -> string;                   // once, after the shell
+    fn chunk(self: Self, holeId: string) -> string;  // per boundary, before its markup
+    fn close(self: Self) -> @Result<void, string>;   // at the end: nothing may be left
+}
+
+// onze, at boot
+val site = app(plugins: [emiliaPlugin()]);           // {app} from "jhonstart", {plugin as emiliaPlugin} from "jhonstart-emilia"
 ```
 
-No field carries a sink value: the installed wrapper holds the `StyleSink` — and the manifest's
-stylesheet `<link>`s it opens with — in the request's own BEAM process, which is where emilia's sheet
-already lives. Front 69's module surface, which those wrappers close over:
-
-```bp
-pub type StyleChunk(id: string, css: string, classes: Array<string>)
-pub type StyleSink(chunks: Array<StyleChunk>, links: Array<#(string,string)>,
-                   emitted: Array<string>, headWritten: bool)
-
-pub fn openSink(links: Array<#(string, string)>) -> StyleSink
-#[@future] pub fn collectHead(sink: StyleSink) -> @Future<#(StyleSink, string)>
-#[@future] pub fn collectChunk(sink: StyleSink, holeId: string) -> @Future<#(StyleSink, string)>
-pub fn closeSink(sink: StyleSink) -> #(StyleSink, string)
-pub fn emittedClasses(sink: StyleSink) -> Array<string>
-```
-
-| Hook | When the pipeline calls it | Returns |
+| Call | When front 30's render makes it | Its result goes |
 |---|---|---|
-| `openSink` | before anything renders | nothing; the wrapper opens a sink carrying the manifest's stylesheet `<link>`s |
-| `collectHead` | **once**, after the shell rendered to a string, before the head is serialized | `<link>`s + one `<style>`; nothing when nothing registered |
-| `collectChunk(holeId)` | after a streamed boundary renders, **before** its markup goes to the wire | `<style data-onze-s="<holeId>">…</style>` or `""` |
-| `closeSink` | after the last chunk | `""`; a non-empty pending sheet is an error |
+| `head()` | **once**, after the shell rendered to a string, before the head is serialized | into `<head>`; `""` when nothing registered |
+| `chunk(holeId)` | after a streamed boundary renders, **before** its markup goes to the wire | first inside that boundary's fill: `<template data-jh-f="<holeId>"><style>…</style>…markup…</template>` — no marker of its own; `""` writes no `<style>` |
+| `close()` | after the last chunk | an error fails the render; a non-empty pending sheet is that error |
 
-`emittedClasses(sink)` is what the wrapper hands front 23 for the payload's `s` key — recorded as the
-sink fills, never re-scanned out of the CSS. The sink never recomputes, re-hashes, sorts or dedups a
-class; contract 4 is untouched. The client bundle never calls `flush()`, which front 68 enforces.
+The ordering rules — `head` once, CSS before the markup it styles, nothing left at `close` — are
+jhonstart's, because jhonstart is the caller; the adaptation to `flush()` is the bridge's. "Never an
+unstyled paint" holds by construction: a fill's content reaches the document when the fill function
+inserts style and markup together. The plugin never recomputes, re-hashes, sorts or dedups a class;
+contract 4 is untouched. The client bundle never calls `flush()`, which front 68 enforces.
+
+The payload's `s` key (§ 2) lists the class names already in the document's styles. The three
+methods return CSS text only, so how front 30's render obtains that list is not spelled by decision
+113; it is recorded as open in [`status.md`](./status.md).
 
 ## 7 · Test and snapshot contract — owned by 01-std, consumed by every `-test` submodule
 

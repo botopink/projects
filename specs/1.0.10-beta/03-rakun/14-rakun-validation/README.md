@@ -51,7 +51,7 @@
 
 **Track:** B rakun
 **Priority:** medium — it is the only front that both halves of the stack run, and front 05 cannot refuse a bad configuration at boot without it
-**Target:** both — boundary
+**Target:** both — boundary (`"targets": ["erlang", "commonJS"]`, erlang first — the one rakun module that keeps commonJS, decision 113)
 **Wave:** 3
 **Depends on:** 01 (`regex`), 05 (config, and the boot-time contract below), 06 (context)
 **Owns:** `modules/rakun-validation/src/**`, `modules/rakun-validation/test/**`

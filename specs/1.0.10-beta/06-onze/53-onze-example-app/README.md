@@ -33,12 +33,13 @@ in a server component; front 32 reads it again in `generateMetadata`; front 60 p
 values it can take at build time. Five fronts, one value, and each of them has its own test that
 passes against its own idea of the shape. Nothing checks that the five ideas are the same idea.
 
-**Ordering.** `emilia(tokens)` registers a class and `flush()` clears the sheet. Front 23 streams. Front
-69 inserts into the head. Front 52 wants its preload links before any other style. Each of those is
+**Ordering.** `emilia(tokens)` registers a class and `flush()` clears the sheet. jhonstart's render
+(front 30) streams, and calls the `jhonstart-emilia` plugin front 49 registers for the head and for
+each chunk. Front 52 wants its preload links before any other style. Each of those is
 testable alone and the composition is not, because the composition only exists once something renders
 a real document with fonts, styles, a streamed chunk and a late-arriving component in it.
 
-**The halves.** Front 29 marks a client boundary, front 68 bundles it, front 23 serializes a payload
+**The halves.** Front 29 marks a client boundary, front 68 bundles it, jhonstart's render (front 30) serializes a payload
 and front 67 reconnects a form to it. Four fronts, two targets, one round trip. The exit gate says no
 server front carries an `@External.Node` cell and no client front carries an `#[@external(erlang)]`
 cell — a static property. Whether the two halves actually meet is a dynamic one.
@@ -306,13 +307,13 @@ example from what is still **assumed**, because only the second column is a risk
 |---|---|---|
 | 22 | `LayoutProps(children: leaf)` is constructible with one named field | Front 22's examples only ever *read* `props.children`; nothing constructs a `LayoutProps`, so the field list is unverified and three of this front's tests construct one |
 | 51 · 52 | `Image(props, cfg, publicDir)`, `googleFont(family, opts) -> @Future<Font>`, `fontHead(fonts) -> string` | These are fronts 51 and 52's own shapes, defined in this milestone by the same author; nothing external has confirmed them |
-| 69 | the head is composed by `openSink` / `collectHead` / `closeSink` from `"onze-assets"` | This front's layout produces the head string and hands it over; it does not call the sink, so the seam is cited rather than exercised |
+| 30 | emilia's block reaches the head and each streamed chunk through the `jhonstart-emilia` plugin that front 49 registers (decision 113) | This front's layout produces the head string and hands it over; it does not call the plugin, so the seam is cited rather than exercised |
 | 12 | `cache.revalidatedPaths()` is a test seam available to an app's own tests | Front 12's example uses it, but it is described there as a seam rather than public surface |
 | 94 | how a void element (`input`, `img`) renders | Front 94 owns `elements.bp` and is settling it; this app's `input` assertions and front 51's `Image` both depend on the answer |
 
 Four rows that were open when this front was drafted have since been settled by their owners — the
-route-handler decorator (`#[getRoute]`), the form binding (`data-onze-a` + `__onze_action`), the
-streaming marker (ordinal `data-onze-h`) and the element-surface front number (94). This front's
+route-handler decorator (`#[getRoute]`), the form binding (`data-jh-a` + `__onze_action`), the
+streaming marker (ordinal `data-jh-h`) and the element-surface front number (94). This front's
 examples were already written against the settled form in all four cases; the reasoning is kept under
 *Contradictions*.
 
@@ -348,16 +349,16 @@ and `#[postRoute("api/posts")]`; front 62's example wrote `#[getHandler("api/who
 registration. Front 25 owns `route_handler.bp`, so `#[getRoute]` wins and front 62 is being corrected.
 This app's `app/api/posts/route.bp` already uses `#[getRoute]` / `#[postRoute]`.
 
-**Two form bindings. — RESOLVED.** `contracts.md § 3` and front 24 agree: `data-onze-a="<id>"` plus a
+**Two form bindings. — RESOLVED.** `contracts.md § 3` and front 24 agree: `data-jh-a="<id>"` plus a
 hidden `__onze_action` field, the action addressed by an HMAC'd id and never by its name. Front 67's
 example had asserted `data-jh-form="createPost"` and `action="/_onze/action/createPost"` — the
 function's own name in both the attribute and the URL, which is exactly what front 24 tests the absence
 of. Front 67 now follows `contracts.md`, and this app's form assertions were already written against it.
 
-**Two streaming markers, and one retired prefix. — RESOLVED.** Front 30's example had asserted
-`data-jh-suspense="blog.page"` — a retired `data-jh-` prefix and a route-derived id. `contracts.md § 2`
-pins the streaming hole as `<div data-onze-h="h0">` with ORDINAL ids assigned by front 23 in shell
-order. Front 30 now emits the ordinal form; `boundaryId` remains front 30's own bookkeeping name and is
+**Two streaming markers. — RESOLVED.** Front 30's example had asserted
+`data-jh-suspense="blog.page"` — a route-derived id. `contracts.md § 2` pins the streaming hole as
+`<div data-jh-h="h0">` with ORDINAL ids assigned by jhonstart's render in shell order. Front 30 now
+emits the ordinal form; `boundaryId` remains front 30's own bookkeeping name and is
 not the wire id, which is the distinction worth keeping written down.
 
 **The element surface is front 94. — RESOLVED.** Fronts 26–31, 67 and 68 had all cited "the

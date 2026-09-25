@@ -3,9 +3,9 @@
 **Track:** C jhonstart
 **Priority:** critical — nothing downstream can ask "which route is this?"; `Link`, server components, streaming, error boundaries and metadata all read the answer this front produces
 **Target:** erlang (server)
-**Boundary:** the route snapshot is one of the three things `overview.md` says crosses. The server matches and fills it; the client rebuilds it from front 23's `__onze` payload after a client navigation. The payload envelope and the route table are **not** defined here — they are fronts 23 and 22; this front consumes both.
+**Boundary:** the route snapshot is one of the three things `overview.md` says crosses. The server matches and fills it; the client rebuilds it from the payload (`globals.payload`, front 30) after a client navigation. The payload envelope and the route table are **not** defined here — they are front 30's and front 22's; this front consumes the envelope and receives the matcher from onze. jhonstart and rakun never import each other (decision 113).
 **Wave:** 3
-**Depends on:** 01 · 22 (route table + `matchPath`, read-only) · 23 (payload envelope, read-only) · 94 (element builders used by the examples)
+**Depends on:** 01 · 30 (payload envelope, read-only) · 94 (element builders used by the examples)
 **Owns:** `repository/jhonstart/src/router.bp` (promoted from `router.d.bp`, and the package's one `pairValue` pair-list decoder), `repository/jhonstart/test/router_test.bp`
 **Does not touch:** `src/element.bp`, `src/hooks.bp`, `src/html.bp` (frozen), `src/link.bp` (front 27), `src/server.bp` (front 28), `src/root.bp` and `botopink.json` (front 94)
 **Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/api-reference/functions/use-router · https://nextjs.org/docs/app/api-reference/functions/use-params · https://nextjs.org/docs/app/api-reference/functions/use-search-params
@@ -71,16 +71,16 @@ exercised.
 
 The snapshot is filled from five `#[@External.Erlang]` cells that read what front 22 put in the
 request's process dictionary before dispatch. Every one of them returns a `string`, and each maps
-one-to-one onto a key of front 23's payload envelope, so the server record and the client record are
+one-to-one onto a key of front 30's payload envelope, so the server record and the client record are
 built from the same five values:
 
-| `RouterState` field | cell | payload key (front 23) |
+| `RouterState` field | cell | payload key (front 30) |
 |---|---|---|
 | `path` | `__jhRoutePath()` | `p` — pathname |
 | `params` | `__jhRouteParams()` | `m` — querystring-encoded |
 | `search` | `__jhRouteSearch()` | `q` — querystring-encoded |
 | `pattern` | `__jhRoutePattern()` | `r` — the matched pattern, bracket spelling kept |
-| `selected` | `__jhRouteSelected()` | — per-layout, supplied by front 23 during the render |
+| `selected` | `__jhRouteSelected()` | — per-layout, supplied by front 30's render |
 
 `segments` is **derived**, not transported: it is `pattern` split on `/` with the empty parts
 dropped. One value, one source; a transported segment list could disagree with the pattern it came
@@ -92,10 +92,11 @@ to agree between an Erlang term and a JS object.
 
 ### The route table is front 22's, and there is one parser
 
-`matchPath`, `parseTable` and `writeTable` are front 22's, written once in botopink and compiled
-twice. The table is line-oriented (`kind|pattern|slot|verb`, kinds `L T P D R S E N`) and travels in
-the payload's `t` key. This front **calls** `matchPath`; it does not contain a second matcher and
-does not parse the table itself. A router with its own matcher is a router that disagrees with the
+`matchPath`, `parseTable` and `writeTable` are front 22's (`contracts.md § 1`). The table is
+line-oriented (`kind|pattern|slot|verb`, kinds `L T P D R S E N`) and travels in the payload's `t`
+key. This front **receives `match`** — front 22's matcher, handed in by onze, the one package that
+names both jhonstart and rakun (decision 113); it names no rakun module, contains no second matcher
+and does not parse the table itself. A router with its own matcher is a router that disagrees with the
 server on precedence (static > dynamic > catch-all > optional catch-all), and the disagreement shows
 up only on the routes nobody tested.
 
@@ -120,20 +121,20 @@ reason is that they mean different things on each side rather than the same thin
 | `prefetch(href)` | no-op | warms the client route cache; front 27 drives it |
 
 `refresh()` is shared with front 24: a server action that mutates data calls the same re-request
-path, so the payload endpoint and its revalidation semantics are front 23/24's, and this front only
-calls it.
+path, so the payload endpoint and its revalidation semantics are rakun's (fronts 23/24), reached through
+onze, and this front only calls it.
 
 Native History API use is also supported: the browser half listens for `popstate` and for a
 `pushState` the application performs itself (`NEXTJS-DOCS.md § 8`, *History API nativa*), rebuilds
-`RouterState` by running front 22's `matchPath` against `window.location` and the table in the
+`RouterState` by running the `match` onze handed in against `window.location` and the table in the
 payload's `t` key, and re-renders. Because the rebuild goes through the same matcher and the same
 `querystring.parse`, `searchParams()` reacts to a bare `pushState` without a reload, without a
 second parser, and without a second precedence rule.
 
 ### What crosses
 
-One direction, one format. The server writes `p`, `m`, `q`, `r` and `t` into the `__onze` payload
-front 23 serializes; the client reads them on hydration and recomputes `p`/`m`/`q`/`r` from `t` on
+One direction, one format. The server writes `p`, `m`, `q`, `r` and `t` into the payload
+front 30's render writes (`globals.payload`); the client reads them on hydration and recomputes `p`/`m`/`q`/`r` from `t` on
 every transition. A component sees `RouterState` and cannot tell which side it is on.
 
 ## Steps
@@ -349,6 +350,16 @@ exercised by front 27's `test/link_test.bp` on the js target; this front's erlan
 snapshot and the hooks, which is what the server render needs. The `use`-prefixed call form is
 type-checked, not executed, exactly as `hooks.bp:104-117` does for `Counter`.
 
+### Decision 113's spellings
+
+The router shipped naming front 22's `matchPath` as the thing it calls; under decision 113 jhonstart
+names no rakun symbol.
+
+- [ ] `router.bp` takes the matcher as a value (`match`) that onze hands in; no `matchPath`,
+      `parseTable` or `rakun` identifier appears under `modules/jhonstart/src/`
+- [ ] the payload the client half reads is `globals.payload` (front 30's registry), never a literal
+      `__onze`
+
 ## Definition of done
 
 - [ ] `router.d.bp` removed, `router.bp` in the build tree, its `root.bp` and `files` lines handed
@@ -358,7 +369,7 @@ type-checked, not executed, exactly as `hooks.bp:104-117` does for `Counter`.
 - [ ] the five cells map one-to-one onto payload keys `p`/`m`/`q`/`r` plus the per-layout
       `selected`, and the mapping table is in `repository/jhonstart/docs.md`
 - [ ] `segments` is derived from `pattern`, never transported
-- [ ] the router calls front 22's `matchPath` and contains no second matcher and no table parser
+- [ ] the router has no matcher and no table parser of its own; it receives `match` from onze
 - [ ] no `#[@External.Node]`-only cell in the file; the one dual-target cell is `__jhNavigate`
 - [ ] both language gaps appear in a `specs/1.0.10-beta/` spec
 - [ ] the front's tests are green on its assigned target

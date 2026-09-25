@@ -11,21 +11,22 @@ server reads it back to emit script tags
 **Wave:** 6
 **Depends on:** 29 (the boundary marker, the `server-only` marker and the hydrate entry point) · 49
 (config, `outDir`, and the `ONZE_PUBLIC_` rule this front enforces) · 03 (content hashes) · 50 (the
-CLI that invokes it) · 01 (`path.walk`, `path.glob`, `process.run`, `fs`) · 23 (the payload and the
-head it emits script tags into) · 27 (the link runtime the entry mounts) · 48 (the class names the
+CLI that invokes it) · 01 (`path.walk`, `path.glob`, `process.run`, `fs`) · 30 (jhonstart's render:
+the payload, the globals registry, and the `RenderHooks` head and body fields its tags fill) · 27 (the link runtime the entry mounts) · 48 (the class names the
 tree carries) · 20 (the websocket the dev rebuild pushes over)
 **Owns:** `repository/onze/modules/onze-bundler/src/**`,
 `repository/onze/modules/onze-bundler/test/**` — including `headScriptTags`/`scriptTags` and the
-`RenderHooks.headExtra`/`bodyExtra` functions built from them, which `Onze.run` (front 49) installs
-into front 23's record. This front owns **no** definition in another repository: the record is front
-23's and `islandAttr` is front 29's, both imported here (decision 77)
+`RenderHooks.headExtra`/`bodyExtra` values built from them, which `Onze.run` (front 49) hands to
+jhonstart's render at boot. This front owns **no** definition in another repository: `RenderHooks`,
+the payload and the globals registry are jhonstart front 30's, the island marker is front 29's, and
+`linkMount` / `formMount` are fronts 27's and 67's — all imported here (decision 113)
 **Does not touch:** `repository/onze/src/**` (front 49), `repository/onze/modules/onze-cli/**`
 (front 50), `repository/onze/modules/onze-assets/**` (front 69), `repository/jhonstart/src/**`,
 `repository/rakun/src/**`, `repository/emilia/src/**`
 **Reference:** `NEXTJS-DOCS.md § 7. Server e Client Components` (Regras fundamentais · Protegendo
 código server-only · `NEXT_PUBLIC_`), `§ 2. Instalação e Configuração` (scripts), `§ 25. Referência de
 Componentes` (`<Script>`), `§ 28. Configuração` (`env`, `generateBuildId`), `§ 29. CLI` (`next build`,
-`next dev`) · `../../contracts.md § 2` (payload envelope, front 23) and `§ 4` (class-name
+`next dev`) · `../../contracts.md § 2` (payload envelope, jhonstart front 30) and `§ 4` (class-name
 scheme, front 48) ·
 <https://nextjs.org/docs/app/getting-started/server-and-client-components> ·
 <https://nextjs.org/docs/app/guides/environment-variables> ·
@@ -41,8 +42,8 @@ Five fronts in this milestone compile for the browser: 26 (`useRouter`), 27 (`Li
 `'use client'` boundary), 31 (error boundaries) and 67 (forms). Every one of them produces commonJS
 that nothing collects, nothing links, nothing serves and nothing starts. `onze build` as the
 milestone stands today walks `app/`, generates a route module, compiles the server to BEAM and stops.
-The browser receives HTML with `data-onze-l` attributes that no listener reads, `data-onze-a` forms
-with no interceptor, `data-onze-on-click` handler ids bound to nothing, and client components that
+The browser receives HTML with `data-jh-l` attributes that no listener reads, `data-jh-a` forms
+with no interceptor, `data-jh-on-click` handler ids bound to nothing, and client components that
 rendered exactly once.
 
 That is not a degraded experience, it is a different product. A `'use client'` directive whose only
@@ -240,26 +241,27 @@ only reason this front is not js-only: the build host writes the file, and the B
 every render to emit the script tags for the matched route. One parser, two targets, one round-trip
 test — the alternative is two parsers that agree until they do not.
 
-**The emission order is fixed, and it straddles two fronts.** `contracts.md § 2` places front 23's
-payload — one `<script id="__onze" type="application/json">` — last in `<body>`, before the bundle.
-This front emits everything else and respects that placement:
+**The emission order is fixed, and it straddles two packages.** `contracts.md § 2` places the
+payload that jhonstart's render writes — one `<script>window.__bp0 = {…}</script>`, the global named
+by jhonstart's registry as `globals.payload` — last in `<body>`, before the bundle. This front emits
+the script tags and respects that placement:
 
 | # | What | Where | Owner |
 |---|---|---|---|
 | 1 | every `beforeInteractive` script chunk, blocking | `<head>` | front 68 |
-| 2 | the document's markup | `<body>` | front 23 |
-| 3 | `<script id="__onze" type="application/json">` | end of `<body>` | **front 23** (`contracts.md § 2`) |
+| 2 | the document's markup | `<body>` | jhonstart front 30's render |
+| 3 | the payload script, `<script>window.__bp0 = {…}</script>` | end of `<body>` | **front 30's render, never 68's** (`contracts.md § 2`) |
 | 4 | `shared`, `defer` | after the payload | front 68 |
 | 5 | the route chunk for the matched pattern, `defer` | after `shared` | front 68 |
 | 6 | `entry`, `defer` | last | front 68 |
 
 `scriptTags(m, route)` returns groups 4-6 as one string and `headScriptTags(m)` returns group 1.
-Neither is called by front 23: they are wrapped as `RenderHooks.headExtra` and `RenderHooks.bodyExtra`
-and installed by `Onze.run`, so the pipeline writes the string this front returns without knowing
-where it came from (decision 77 — the record is declared by front 23, and the dependency points from
-here into rakun, never back). This front never formats the payload tag and never moves it; it asserts
-only that the entry comes after it, because an entry that runs before `#__onze` exists finds no
-payload and hydrates nothing.
+Neither is called by jhonstart: they are wrapped as `RenderHooks.headExtra` and
+`RenderHooks.bodyExtra` and handed to jhonstart's render by `Onze.run`, so the render writes the
+string this front returns without knowing where it came from (decision 113 — the record is
+jhonstart's, and the dependency points from onze into jhonstart, never back). This front never
+formats the payload tag and never moves it; it asserts only that the entry comes after it, because
+an entry that runs before `globals.payload` exists finds no payload and hydrates nothing.
 
 `afterInteractive` and `lazyOnload` scripts are not tags at all — the entry schedules them, which is
 what the strategy names mean.
@@ -272,26 +274,28 @@ module. Generating source rather than emitting JavaScript directly means the ent
 the same compiler as the rest of the app, and it means a developer can read it.
 
 Roots are found in the DOM, not in a side table, and the marker is `contracts.md § 2`'s: an island is
-`<div data-onze-i="i0">`, and the payload's `i` key carries `[id, component, props]` — the id that
+`<div data-jh-i="i0">`, and the payload's `i` key carries `[id, component, props]` — the id that
 appears in the attribute, the component that renders it, and its serialized props. This front does not
 invent a marker; it consumes that one. The entry:
 
-1. reads the payload from `#__onze` — the script front 23 wrote last in `<body>`,
+1. reads the payload through `readPayload(globals.payload)` — the global jhonstart's render wrote
+   last in `<body>`, named by jhonstart's globals registry (`__bp0`), never by a hand-written string,
 2. reads the `i` triples, `props` being form-urlencoded and parsed with `querystring.parse`
    (`libs/std/src/querystring.bp:35`),
-3. queries `[data-onze-i]` in document order,
+3. queries `[data-jh-i]` in document order,
 4. pairs each element with the triple whose id matches, and calls front 29's hydrate entry point for
    that component,
-5. registers `__onzeFill(holeId)` for every hole in the payload's `h` key, so front 30's
-   `<template data-onze-f="h1">` replacement has a function to call when a late chunk lands,
-6. calls front 27's `__jhLinkMount()` and front 67's `__jhFormMount()` once, after every island is
-   mounted,
+5. registers the fill function under `globals.fill` (`__bp1`) with `registerFill(globals.fill,
+   payload.h)`, so front 30's `<template data-jh-f="h1">…</template><script>__bp1("h1")</script>`
+   has a function to call when a late chunk lands,
+6. calls front 27's `linkMount()` and front 67's `formMount()` once, after every island is mounted —
+   ordinary imports from `jhonstart-link` and `jhonstart-forms`, not globals,
 7. schedules `afterInteractive` scripts, then `lazyOnload` ones.
 
 An island in the DOM with no entry in the payload, or an entry with no element, is a **hard error at
 run time with the island id in the message**, not a silent skip — a mismatch here is the failure mode
 that produces "it works in dev" bug reports, and it must announce itself. The same applies to a hole
-id in `h` with no `[data-onze-h]` element.
+id in `h` with no `[data-jh-h]` element.
 
 ### Dev mode
 
@@ -399,8 +403,8 @@ As specified under *The bundle contract*.
 - [ ] `scriptTags` emits `shared`, then the route chunk, then the entry, and nothing else
 - [ ] `headScriptTags` emits only `beforeInteractive` chunks, and never a `defer` attribute
 - [ ] `scriptTags` for a route with no route chunk emits shared and entry, never an empty `src`
-- [ ] Neither function emits a `<script id="__onze">` tag — the payload is front 23's and this front
-      formats no part of it
+- [ ] Neither function emits the payload script (`window.__bp0 = …`) — the payload is jhonstart
+      front 30's render and this front formats no part of it
 
 ### Step 6 — the hydration entry
 
@@ -412,19 +416,24 @@ pub fn parseIslands(payloadField: string) -> Array<Island>
 ```
 
 `islandAttr(ordinal) -> #(string, string)` is **imported** from jhonstart (front 29), which owns the
-island marker; the generated entry calls it and this front defines no second copy (decision 77).
+island marker; the generated entry calls it and this front defines no second copy. The globals the
+entry names — `globals.payload`, `globals.fill` — come from jhonstart's registry (front 30), so the
+render that writes them and the entry that reads them cannot diverge (decision 113).
 
 **Acceptance:**
-- [ ] `islandAttr(0)` is `#("data-onze-i", "i0")`, matching `contracts.md § 2` — asserted here
+- [ ] `islandAttr(0)` is `#("data-jh-i", "i0")`, matching `contracts.md § 2` — asserted here
       against front 29's definition, not against a local one
 - [ ] `parseIslands` of the payload's `i` key returns one `Island` per triple, props parsed
 - [ ] The generated entry compiles: `botopink build` over `<outDir>/client/` succeeds
 - [ ] An island id present in the DOM and absent from the payload raises, with the id in the message
 - [ ] An island id present in the payload and absent from the DOM raises, with the id in the message
-- [ ] A hole id in the payload's `h` key with no `[data-onze-h]` element raises, with the id
-- [ ] `__onzeFill` is registered before the first streamed chunk can arrive — asserted by generating
-      an entry for a route with holes and checking the registration precedes the island loop
-- [ ] `__jhLinkMount` and `__jhFormMount` are called exactly once each, after the last island
+- [ ] A hole id in the payload's `h` key with no `[data-jh-h]` element raises, with the id
+- [ ] The fill function is registered under `globals.fill` before the first streamed chunk can
+      arrive — asserted by generating an entry for a route with holes and checking the registration
+      precedes the island loop
+- [ ] `linkMount` and `formMount` are called exactly once each, after the last island
+- [ ] The generated entry contains no hand-written `__`-prefixed name: every global it reads is
+      `globals.<name>` from jhonstart's registry
 - [ ] Every class name the entry's islands compute is present in the payload's `s` key — the runtime
       half of the class-name check, failing loudly in dev
 
@@ -509,11 +518,11 @@ skipped.
       modules named in *Steps*
 - [ ] `onze build` on front 53's example app writes `<outDir>/client-manifest.txt`, a chunk tree
       under `<outDir>/client/`, and a generated `entry.bp` that compiles
-- [ ] The bundle's script tags reach the document through `RenderHooks.headExtra`/`bodyExtra`,
-      installed by `Onze.run`; no other front formats one, and front 23 keeps its own
-      `<script id="__onze">` per `contracts.md § 2`
-- [ ] `repository/onze/modules/onze-bundler/` names rakun and jhonstart in its `botopink.json`, and
-      neither repository names `onze` — the seam is one-directional (decision 77)
+- [ ] The bundle's script tags reach the document through jhonstart's `RenderHooks.headExtra` /
+      `bodyExtra`, handed over by `Onze.run`; no other front formats one, and jhonstart's render
+      keeps its own payload script per `contracts.md § 2`
+- [ ] `repository/onze/modules/onze-bundler/` names jhonstart in its `botopink.json`, and jhonstart
+      does not name `onze` — the seam is one-directional (decision 113)
 - [ ] `contracts.md § 6` is filled in from this front's *The bundle contract* section, verbatim
 - [ ] The three refusals are covered by a test each **and** by an adversarial-config test proving no
       setting relaxes them
@@ -521,7 +530,7 @@ skipped.
       definition, in jhonstart, cited in both READMEs
 - [ ] The emilia hash-parity check runs on every build, not only on request
 - [ ] `repository/onze/docs.md` carries the manifest format and the script-tag order verbatim,
-      because fronts 23, 50, 53, 69 and 71 all read them
+      because fronts 30, 49, 50, 53, 69 and 71 all read them
 - [ ] The front's tests are green on its assigned targets — `commonJS` for the build half, and
       `erlang` for `manifest_test.bp`
 

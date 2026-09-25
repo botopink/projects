@@ -13,11 +13,11 @@
 //     called.
 //   - `PostList` is a SERVER component that activates nothing, so it is a plain
 //     `fn … -> Element`. It does not call `LikeButton` — it emits the ISLAND,
-//     which is what front 23 serializes and front 68's bundle starts.
+//     which is what front 30 serializes and front 68's bundle starts.
 //
-// The island marker is `<div data-onze-i="i0">` and the component name and props
+// The island marker is `<div data-jh-i="i0">` and the component name and props
 // live in the payload's `i` array, not on the element (`contracts.md § 2`).
-// Front 23 assigns the ids in render order; this file passes them in so the
+// Front 30 assigns the ids in render order; this file passes them in so the
 // example is deterministic and its assertions are literals.
 //
 // Upstream:
@@ -42,7 +42,7 @@ pub type LikeProps(
     likes: i32,
 )
 
-// The interactive component. `data-onze-on-click` names a handler the client
+// The interactive component. `data-jh-on-click` names a handler the client
 // runtime binds after hydration; there is no JavaScript string in this file.
 #[client]
 #[@use]
@@ -51,7 +51,7 @@ pub fn LikeButton(props: LikeProps) -> @Component<Element> {
     return button([
         text(c.value.toString() + " likes", attrs: []),
     ], attrs: [
-        #("data-onze-on-click", "LikeButton:like"),
+        #("data-jh-on-click", "LikeButton:like"),
         #("data-onze-post", props.postId),
     ]);
 }
@@ -84,7 +84,7 @@ pub fn PostList(posts: Array<Post>) -> Element {
     ], attrs: [#("class", "page")]);
 }
 
-// Front 23 assigns island ids in render order (`i0`, `i1`, …); a page that
+// Front 30 assigns island ids in render order (`i0`, `i1`, …); a page that
 // emits its own does the same, so the ids in the markup and the ids in the
 // payload's `i` array agree. The counter is the accumulator's own length —
 // there is no separate `i32` to keep in step with it.
@@ -98,7 +98,7 @@ fn postRows(posts: Array<Post>) -> Array<Element> {
 
 test "the island element carries the id and nothing else" {
     val el = clientMount(likeIsland("i0", LikeProps(postId: "7", likes: 3)), []);
-    assert renderToString(el) == "<div data-onze-i=\"i0\"></div>";
+    assert renderToString(el) == "<div data-jh-i=\"i0\"></div>";
 }
 
 test "the payload row carries the component name and the encoded props" {
@@ -111,8 +111,8 @@ test "the payload row carries the component name and the encoded props" {
 test "a post row embeds the island, not the component" {
     val markup = renderToString(postRow("i0", Post(id: "7", title: "On BEAM rendering", likes: 3)));
     assert markup.contains("<h2>On BEAM rendering</h2>");
-    assert markup.contains("data-onze-i=\"i0\"");
-    assert markup.contains("data-onze-on-click") == false;
+    assert markup.contains("data-jh-i=\"i0\"");
+    assert markup.contains("data-jh-on-click") == false;
 }
 
 test "the list renders one island per post, numbered in render order" {
@@ -121,7 +121,7 @@ test "the list renders one island per post, numbered in render order" {
         Post(id: "2", title: "Second", likes: 9),
     ];
     val markup = renderToString(PostList(posts));
-    assert markup.contains("data-onze-i=\"i0\"");
-    assert markup.contains("data-onze-i=\"i1\"");
+    assert markup.contains("data-jh-i=\"i0\"");
+    assert markup.contains("data-jh-i=\"i1\"");
     assert markup.contains("LikeButton") == false;
 }

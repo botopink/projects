@@ -115,7 +115,7 @@ and resolution, the conflict checks, and the composition of the slot results int
 
 1. `x-rakun-nav: soft` — the request marker front 27 sets and this front reads. One header name, one
    value, written down here so neither side spells it differently.
-2. The slot section of front 23's payload: `slot|pattern|state` lines, `state` being `M` matched,
+2. The slot section of the payload (contract 2, jhonstart front 30): `slot|pattern|state` lines, `state` being `M` matched,
    `D` default, `U` unchanged, `E` empty. Front 27 reads `U` and keeps the DOM it has; anything else
    it replaces. `parseSlotStates`/`writeSlotStates` are the shared functions and they compile for both
    targets.

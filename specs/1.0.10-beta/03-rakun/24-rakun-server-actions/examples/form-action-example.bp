@@ -1,6 +1,6 @@
 // Front 24 — rakun server actions.
 //
-// A form whose submission mutates and revalidates. Both halves are marked:
+// An action whose submission mutates and revalidates. Both halves are named:
 //
 //   SERVER (BEAM): `createPost` and everything it awaits. The action body never
 //   reaches the browser; only its id does.
@@ -8,22 +8,16 @@
 //   to the current pathname; with front 67 loaded it is the same POST carrying
 //   `X-Onze-Action` and receiving the result envelope instead of a document.
 //
+// The form itself is not here: rakun builds no HTML and imports nothing from
+// jhonstart (decision 113). jhonstart front 67 writes the form with the id onze
+// asks this front for (`actionIdOf`); this file tests the id and the POST.
+//
 // Upstream:
 //   https://nextjs.org/docs/app/getting-started/updating-data
 //   https://nextjs.org/docs/app/api-reference/directives/use-server
-//
-// LANGUAGE GAP: declared parameter defaults are never applied, so every element
-// constructor below passes `attrs:` explicitly.
 
-import {Element, bracketPair, div, h1, p, text} from "jhonstart";
-// provided by front 94 — `form`/`input`/`button` live in jhonstart's `elements.bp`,
-// not in the frozen `element.bp`, and this front declares no element constructor.
-import {input, button} from "jhonstart";
-// This front's surface: the binding only.
-import {serverAction, FormData, ActionResult, actionForm} from "rakun";
-import {rkRegisterAction} from "rakun";
-// Front 22 (the page and its route) and front 23 (the escaping walker).
-import {page, PageContext, rkAppRegisterPage, renderNode} from "rakun";
+// This front's surface.
+import {serverAction, FormData, ActionResult, actionIdOf, dispatchAction} from "rakun";
 // provided by front 12 — `revalidatePath` and the `revalidatedPaths()` test seam.
 import {cache} from "rakun-cache";
 import {collections.Dict} from "std";
@@ -62,32 +56,6 @@ pub fn createPost(form: FormData) -> @Future<ActionResult> {
     return ActionResult.done();
 }
 
-// ---- app/blog/new/page.bp — SERVER renders the form the CLIENT submits --------
-
-#[page("blog/new")]
-#[@future]
-pub fn newPostPage(route: PageContext) -> @Future<Element> {
-    val form = actionForm("createPost", [
-        input([], attrs: [bracketPair("type", "text"), bracketPair("name", "title")]),
-        input([], attrs: [bracketPair("type", "text"), bracketPair("name", "body")]),
-        button([text("Publish", attrs: [])], attrs: [bracketPair("type", "submit")]),
-    ], attrs: [bracketPair("data-onze-seg", "new-post")]);
-    return div([
-        h1([text("New post", attrs: [])], attrs: []),
-        form,
-    ], attrs: []);
-}
-
-fn newPostRoute() -> PageContext {
-    return PageContext(
-        pathname: "/blog/new",
-        pattern: "/blog/new",
-        params: Dict.empty(),
-        query: Dict.empty(),
-        rest: [],
-    );
-}
-
 fn submission(title: string, body: string) -> FormData {
     return FormData(fields: Dict.empty().insert("title", title).insert("body", body));
 }
@@ -112,35 +80,18 @@ test "a valid submission clears the state and invalidates the list route" {
     assert cache.revalidatedPaths().contains("/blog");
 }
 
-// ---- what the form looks like on the wire -------------------------------------
+// ---- what a form carries on the wire -------------------------------------------
 
-test "the form names the action by its id and never by its name" {
-    val el = await newPostPage(newPostRoute());
-    val markup = renderNode(el);
-    assert markup.contains("method=\"post\"");
-    assert markup.contains("name=\"__onze_action\"");
-    assert markup.contains("value=\"a_");
-    assert markup.contains("value=\"createPost\"") == false;
+test "the id a form carries names the action by its id and never by its name" {
+    val id = actionIdOf("createPost");
+    assert id.startsWith("a_");
+    assert id.length() == 26;
+    assert id != "createPost";
 }
 
-test "the form submits without scripting: it is ordinary HTML" {
-    val el = await newPostPage(newPostRoute());
-    val markup = renderNode(el);
-    assert markup.contains("<form ");
-    assert markup.contains("</form>");
-    assert markup.contains("type=\"submit\"");
-    assert markup.contains("data-onze-a=\"a_");
-    assert markup.contains("</input>") == false;
-}
-
-test "a hostile field value cannot break out of the form" {
-    val el = actionForm("createPost", [
-        input([], attrs: [
-            bracketPair("name", "title"),
-            bracketPair("value", "a \" onfocus=\"alert(1)"),
-        ]),
-    ], attrs: []);
-    val markup = renderNode(el);
-    assert markup.contains("onfocus=\"alert(1)\"") == false;
-    assert markup.contains("&quot;");
+test "a scripting-disabled submission is a raw POST carrying the id" {
+    val id = actionIdOf("createPost");
+    val _outcome = await dispatchAction("/blog/new", "https://app.example", "app.example",
+        "application/x-www-form-urlencoded", "__onze_action=" + id + "&title=Rendering+on+BEAM&body=x");
+    assert cache.revalidatedPaths().contains("/blog");
 }

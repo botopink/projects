@@ -167,7 +167,7 @@ shape and the discovery mechanism that finds it.
 
 | Item | Source it owns | Tests it owns |
 |---|---|---|
-| **rakun tree** | `repository/rakun/botopink.json` (the `files` list and the `targets` array — F04 appends `"erlang"`, `02-packaging` adds no target) · `modules/rakun/{botopink.json,src/root.bp}` (new core, re-exports `../../src/**` until `03-rakun/modules.md` moves the core) · `modules/rakun-test/botopink.json` (the `files` list; F19 owns `src/**`) · `modules/README.md` | structural: `zig build test-libs` lists every submodule cell |
+| **rakun tree** | `repository/rakun/botopink.json` (the `files` list and the `targets` array — F04 sets the arrays of decision 113, `02-packaging` adds no target) · `modules/rakun/{botopink.json,src/root.bp}` (new core, re-exports `../../src/**` until `03-rakun/modules.md` moves the core) · `modules/rakun-test/botopink.json` (the `files` list; F19 owns `src/**`) · `modules/README.md` | structural: `zig build test-libs` lists every submodule cell |
 | **jhonstart tree** | `repository/jhonstart/botopink.json` · `modules/jhonstart/{botopink.json,src/root.bp}` · `modules/jhonstart-test/{botopink.json,src/root.bp}` (skeleton; fronts 26–32/67/94 fill it) · the directory moves `src/*.bp → modules/jhonstart/src/`, `test/html_test.bp → modules/jhonstart/test/` — the split into `jhonstart-html` and any further submodule is `04-jhonstart/modules.md`'s | `modules/jhonstart/test/html_test.bp` green at its new path |
 | **emilia tree** | `repository/emilia/botopink.json` · `modules/emilia/{botopink.json,src/root.bp}` · `modules/emilia-test/{botopink.json,src/root.bp}` (skeleton; F33's snapshot helper is the first content) · the moves `src/{tokens,emilia}.bp → modules/emilia/src/` | inline tests green at the new paths |
 | **onze tree** | `repository/onze/botopink.json` (`"name": "onze"`, the five submodules) · `modules/{onze,onze-test,onze-cli,onze-bundler,onze-assets,onze-release}/{botopink.json,src/root.bp}` skeletons — F49 owns the *content* of `modules/onze/src/**` | `zig build test-libs` does not red on the empty modules |
@@ -186,7 +186,7 @@ Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that i
 
 | Front | Module | Source it owns | Tests it owns |
 |---|---|---|---|
-| **F04 erlang-runtime** | rakun-core | `src/sidecars/rakun_runtime.erl`, `src/runtime.bp` (`#[@external(erlang)]` block only), `src/root.bp`, `botopink.json` (the `targets` array only — the `files` list is `02-packaging`'s) · `test/erlang_runtime_test.bp` | `test/erlang_runtime_test.bp` |
+| **F04 erlang-runtime** | rakun-core | `src/sidecars/rakun_runtime.erl`, `src/runtime.bp` (the `#[@external(erlang)]` block, and the removal of the Node forms when it closes), `src/runtime.mjs` (its deletion), `src/root.bp`, `botopink.json` (the `targets` array only — the `files` list is `02-packaging`'s) · `test/erlang_runtime_test.bp` | `test/erlang_runtime_test.bp` |
 | **F05 config-profiles** | rakun-core | `src/config.bp`, `src/profiles.bp`, `src/sidecars/rakun_config.erl` · `test/config_test.bp` | `test/config_test.bp` |
 | **F06 context-api** | rakun-core | `src/context.bp`, `src/events.bp`, `src/lifecycle.bp`, `src/rakun.d.bp` (removal of the `Context` stub only), `src/sidecars/rakun_context.erl` · `test/context_test.bp`, `test/events_test.bp` | `test/context_test.bp`, `test/events_test.bp` |
 | **F07 middleware** | rakun-web | `modules/rakun-web/src/middleware.bp`, `cors.bp`, `error.bp`, `filter.bp`, `convention.bp` · `modules/rakun-web/test/middleware_test.bp`, `cors_test.bp`, `error_test.bp` | `modules/rakun-web/test/middleware_test.bp`, `cors_test.bp`, `error_test.bp` |
@@ -205,8 +205,8 @@ Rows carried as written in 1.0.9: rakun-core paths read `src/…` because that i
 | **F20 websocket** | rakun-web | `modules/rakun-web/src/websocket/**`, `modules/rakun-web/test/websocket/**` | `modules/rakun-web/test/websocket/**` |
 | **F21 hateoas** | rakun-hateoas | `modules/rakun-hateoas/src/**`, `modules/rakun-hateoas/test/**` | `modules/rakun-hateoas/test/**` |
 | **F22 file-routing** | rakun-core | `src/file_router.bp`, `src/file_router.mjs`, | `test/file_router_test.bp` |
-| **F23 ssr-pipeline** | rakun-core | `src/ssr.bp`, `src/ssr.mjs`, | `test/ssr_test.bp` |
-| **F24 server-actions** | rakun-core | `src/actions.bp`, `src/actions.mjs`, | `test/actions_test.bp` |
+| **F23 ssr-pipeline** | rakun-core | `src/ssr.bp` (page serving: route → the render function onze hands → chunks), `src/sidecars/rakun_ssr.erl` | `test/ssr_test.bp` |
+| **F24 server-actions** | rakun-core | `src/actions.bp` (the action id, the envelope, dispatch — the form markup is F67's) | `test/actions_test.bp` |
 | **F25 route-handlers** | rakun-core | `src/route_handler.bp`, `test/route_handler_test.bp` | `test/route_handler_test.bp` |
 
 | **F60 static-generation** | rakun-core | `src/static_gen.bp`, `src/segment_config.bp`, | `test/static_gen_test.bp` |
@@ -252,19 +252,24 @@ appended to by every core front that adds a module (05, 06, 22, 23, 24, 25, 60, 
 reorder. Each `modules/<name>/` directory's `botopink.json` and `src/root.bp` are owned by the
 **lowest-numbered front in that module** and appended to by the rest under the same rule.
 
-`repository/rakun/botopink.json` today declares `"targets": ["commonJS"]`. Until front 04 adds
-`"erlang"` to it, **no rakun front can have a green erlang row** — which would make the exit gate
-unfalsifiable for the whole of track B. That one-line change is front 04's, and it is why the
-manifest is in its ownership row.
+rakun targets erlang (decision 113): the core member is `"target": "erlang"`, `"targets":
+["erlang"]`; `rakun-validation` is the one member on `["erlang", "commonJS"]`, because the same
+validation runs in the client's form; `rakun-test` follows the members it tests; the workspace root
+is `["erlang", "commonJS"]` only to admit that exception; erlang is first in every list and the
+default target of `botopink run` / `test` in rakun. `repository/rakun/botopink.json` declares
+`"targets": ["commonJS"]` at HEAD, so until front 04 sets those arrays **no rakun front can have a
+green erlang row** — which would make the exit gate unfalsifiable for the whole of track B. That
+change is front 04's, together with deleting `runtime.mjs` and the node server when it closes, and
+it is why the manifest is in its ownership row.
 
 Front 22 also owns the host registration cell that puts a route handler into the app
 (`rkAppRegisterHandler`, generic over the response type). That is what keeps front 25 free of host
 cells and true to its single-file ownership below.
 
-Four files in `repository/rakun/src/` are **frozen for the whole milestone**: `decorators.bp`,
-`http.bp`, `bootstrap.bp`, `runtime.mjs`. A front that believes it needs one of them stops and says
-so in its README under *Blocked*; it does not edit them. The exception is F04, which appends an
-`#[@external(erlang)]` block to `runtime.bp` and touches nothing else in that file.
+Three files in `repository/rakun/src/` are **frozen for the whole milestone**: `decorators.bp`,
+`http.bp`, `bootstrap.bp`. A front that believes it needs one of them stops and says so in its
+README under *Blocked*; it does not edit them. `runtime.mjs` is F04's to delete when it closes
+(decision 113); until then no other front edits it.
 
 ### Track C — jhonstart (`repository/jhonstart/`) — `04-jhonstart/`
 
@@ -274,7 +279,7 @@ so in its README under *Blocked*; it does not edit them. The exception is F04, w
 | **F27 link** | `src/link.bp`, `src/reconcile.bp` (the client-navigation reconciler), `test/link_test.bp`, `test/reconcile_test.bp` | `test/link_test.bp` |
 | **F28 server-components** | `src/server.bp` (promoted from `server.d.bp`), `test/server_test.bp` | `test/server_test.bp` |
 | **F29 client-directive** | `src/client.bp`, `test/client_test.bp` | `test/client_test.bp` |
-| **F30 streaming** | `src/streaming.bp`, `src/suspense.bp`, `test/streaming_test.bp` | `test/streaming_test.bp` |
+| **F30 render and streaming** | `src/render.bp` (the escaping walker, composition, the document, the payload — contract 2), `src/plugin.bp` (`RenderPlugin`, contract 6a), `src/globals.bp` (the `__bp<N>` registry), `src/render.mjs`, `src/streaming.bp`, `src/suspense.bp`, `test/render_test.bp`, `test/streaming_test.bp` · the bridge member `modules/jhonstart-emilia/**` (decision 113) | `test/render_test.bp`, `test/streaming_test.bp`, `modules/jhonstart-emilia/test/**` |
 | **F31 error-boundaries** | `src/error_boundary.bp`, `test/error_boundary_test.bp` | `test/error_boundary_test.bp` |
 | **F32 metadata** | `src/metadata.bp`, `test/metadata_test.bp` | `test/metadata_test.bp` |
 
@@ -347,6 +352,8 @@ another front's block has found a design error, not a merge conflict, and files 
 F48 owns `repository/emilia/src/attributes.bp` and `repository/emilia/src/html_hook.bp`, plus
 `repository/jhonstart/src/html_attrs.bp` — the single cross-repo front in the milestone. It touches
 no token section and no dispatcher, which is what makes it safe to run alongside all fifteen others.
+`html_hook.bp` is jhonstart-free (it returns strings and pairs), so emilia keeps importing nobody
+(decision 113); the one package that knows both is jhonstart's `jhonstart-emilia` bridge (F30).
 
 ### Track E — onze (`repository/onze/`, recreated) — `06-onze/`
 
@@ -442,10 +449,11 @@ above applies.
    (04 · 94 · 54 · 49) lands in the same wave, after the tree. Later fronts never see the old paths.
 7. Front 48 is the one cross-repository front: it adds `repository/jhonstart/src/html_attrs.bp` and
    edits nothing there. It is a track-D front; 04-jhonstart's rows do not touch that file.
-8. `06-onze` consumes rakun (22–25, 62, 63), jhonstart (26–32, 94) and emilia (48) by contract; front
-   53 consumes everything read-only. No shared file; the waves carry the order.
+8. `06-onze` consumes rakun (22–25, 62, 63), jhonstart (26–32, 94) and the `jhonstart-emilia`
+   bridge (30) by contract, and is the one package that imports jhonstart and rakun together
+   (decision 113); front 53 consumes everything read-only. No shared file; the waves carry the order.
 9. Front 48's `html_attrs.bp` (note 7), and the shared literal of contract 4 asserted on both sides
-   (emilia `test/integration_test.bp`, jhonstart/rakun 23, onze 68) — regenerated once when 56 lands.
+   (emilia `test/integration_test.bp`, the `jhonstart-emilia` bridge test of F30, onze 68) — regenerated once when 56 lands.
 
 ## Waves
 
@@ -472,15 +480,15 @@ land in wave 1; the wave below is its host half, which is what the fronts citing
 
 | Wave | Fronts | Blocked by |
 |---|---|---|
-| **0** | 01 · 02 · 03 · 49 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` | nothing — except `@src()`, which needs `00`'s carve-out granted |
-| **1** | 04 · 05 · 56 | 01 · 54 |
-| **2** | 06 · 22 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 56 |
-| **3** | 07 · 08 · 11 · 13 · 14 · 15 · 19 · 21 · 26 · 36 · 37 · 38 · 39 · 40 · 41 · 42 · 43 · 44 · 45 · 46 · 47 · 59 · 72 | 06 · 22 · 33 · 34 · 35 |
-| **4** | 09 · 10 · 16 · 17 · 18 · 27 · 28 · 48 · 73 · 75 · 77 · 78 · 82 · 93 | 07 · 08 · 11 · 13 · 14 · 26 · 72 |
-| **5** | 12 · 20 · 23 · 29 · 30 · 31 · 32 · 76 · 79 · 83 · 84 · 86 | 10 · 16 · 18 · 28 · 75 · 77 |
-| **6** | 25 · 60 · 61 · 63 · 66 · 68 · 81 · 85 · 87 · 89 · 90 · 91 · 92 | 12 · 20 · 23 · 29 · 30 · 32 · 76 · 79 · 83 · 86 |
-| **7** | 24 · 64 · 65 · 69 · 88 | 63 · 68 · 81 |
-| **8** | 51 · 52 · 67 · 71 | 24 · 69 |
+| **0** | 01 · 02 · 03 · 54 · 94 · `02-packaging` (was 95) · `01-std`'s asserts/snapshots/`@src()` | nothing — except `@src()`, which needs `00`'s carve-out granted |
+| **1** | 04 · 05 · 26 · 56 | 01 · 54 · 94 |
+| **2** | 06 · 22 · 27 · 28 · 33 · 34 · 35 · 55 · 57 · 58 · 62 · 74 · 80 | 04 · 05 · 26 · 56 |
+| **3** | 07 · 08 · 11 · 13 · 14 · 15 · 19 · 21 · 23 · 29 · 31 · 32 · 36 · 37 · 38 · 39 · 40 · 41 · 42 · 43 · 44 · 45 · 46 · 47 · 59 · 72 | 06 · 22 · 28 · 33 · 34 · 35 · 62 |
+| **4** | 09 · 10 · 16 · 17 · 18 · 30 · 48 · 63 · 66 · 73 · 75 · 77 · 78 · 82 · 93 | 07 · 08 · 11 · 13 · 14 · 23 · 29 · 31 · 32 · 33–47 · 72 |
+| **5** | 12 · 20 · 25 · 49 · 61 · 65 · 76 · 79 · 83 · 84 · 86 | 10 · 16 · 18 · 30 · 63 · 75 · 77 |
+| **6** | 24 · 60 · 64 · 68 · 81 · 85 · 87 · 89 · 90 · 91 · 92 | 12 · 20 · 49 · 76 · 79 · 83 · 86 |
+| **7** | 67 · 69 · 88 | 24 · 68 · 81 |
+| **8** | 51 · 52 · 71 | 69 |
 | **9** | 50 · 70 | 52 · 71 |
 | **10** | 53 | all |
 
@@ -498,13 +506,18 @@ A wave is a **level in the dependency graph, not a sprint**: a front sits one le
 it consumes, so no front shares a wave with something it reads. The table is computed from every
 front's `Depends on` line, not hand-placed — when a front's dependencies change, the table is
 regenerated, not edited. Front 22 sits below 05 because `appDir` is one of its config values; front
-26 below 22 because it calls 22's `matchPath` rather than shipping a second matcher; front 23 below
-28 because it renders 28's components; and onze's 68 and 69 below both, because they fill front 23's
-`RenderHooks` and are never called by it (decision 77).
+26 sits directly on 01 and 94, because it receives `match` from onze rather than calling 22's
+`matchPath`; front 23 sits below 22 and 62 only, because it serves a page and renders nothing;
+front 30 sits below 29, 31 and 32, because its render calls `islandAttr`, `renderBoundaryChecked`
+and `renderHead`; and onze's 49 sits below 30, 23 and 22, because its boot wires the render, the
+page dispatch and the matcher together — so every onze front that needs 49 follows the render
+(decision 113). The rakun corrections of [`03-rakun/modules.md § The graph`](./03-rakun/modules.md#the-graph)
+(09→07 and 21→22 read-only, 07→76 and 13→12 soft, 85→23 and 86→83 seams, 93→88 reversed) and the
+three mutual pairs above are applied before the levels are taken.
 
-Wave 3 is 23 fronts wide, wave 4 is 14 and wave 6 is 13 — that is the point of the cut. The critical
-path is `01 → 05 → 22 → 26 → 28 → 29 → 68 → 69 → 52 → 70 → 53`, 10 levels deep and every step of it
-one `Depends on` line; the other 84 fronts are breadth. The deep tail is the full-stack one:
+Wave 3 is 26 fronts wide, wave 4 is 15 and waves 5 and 6 are 11 — that is the point of the cut. The
+critical path is `01 → 26 → 28 → 29 → 30 → 49 → 68 → 69 → 52 → 70 → 53`, 10 levels deep and every
+step of it one `Depends on` line; the other 84 fronts are breadth. The deep tail is the full-stack one:
 everything past wave 6 is a server action, a URL rule, the CLI, or an onze artifact that packages
 what the waves before it produced. Ninety-five fronts is a large milestone, and the levels say where
 it is long — tracks A–D reach wave 7, and only onze's own chain runs to 10.
@@ -526,13 +539,13 @@ The milestone closes when, on `feat`, all of the following hold at once:
   project** — a submodule or example the runner does not discover is not tested, and the gate says so
   by listing the discovered cells
 - every front's own test file green on **its assigned target** — erlang for the server fronts, js
-  for the client fronts, both for the three boundary fronts (22 · 23 · 24) and for track A
+  for the client fronts, both for the boundary fronts named in their READMEs and for track A
 - no server front carries a **new** `@External.Node` cell, and no client front carries an
   `#[@external(erlang)]` cell; the target split in the overview is checked, not assumed. Two things
   are not violations: an **explicit refusal cell** — a host cell that exists only to return an error
   naming the target it does not serve, as std's `io.net` does on commonJS — and the **seventeen
-  pre-existing Node forms in `rakun/src/runtime.bp`**, which front 04 leaves in place and adds
-  Erlang forms beside
+  pre-existing Node forms in `rakun/src/runtime.bp`** until front 04 closes, when they leave with
+  `runtime.mjs` (decision 113)
 - every erlang sidecar is named `src/sidecars/rakun_<name>.erl`, and no `.mjs` file exists in a
   server front
 - `repository/onze/examples/blog` builds, serves, and renders its routes under both `onze dev`

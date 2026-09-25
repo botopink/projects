@@ -2341,9 +2341,14 @@ P /blog/[slug] layouts=[/,/blog] kind=dynamic
 
 ## 23-rakun-ssr-pipeline — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/ssr_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/ssr/` · **Target:** both — boundary (render, escaping and document are erlang; the payload block is what the commonJS row parses and re-serialises against the same file) · **Pins:** Step 1 `Content-Type: text/html; charset=utf-8` on every page, Step 2 six-convention nesting + root outermost/page innermost + no empty wrapper without `template.bp` + `data-onze-t="<pattern>#<nav>"` + `selected` depth 0/1/2, Step 3 text and attribute escaping, Step 4 `v` first = `1` + `t` verbatim + payload escaping leaves no `<`, Step 6 404 renders the nearest `not-found` boundary
+> These cases render markup, and under decision 113 the render is jhonstart front 30's: when front
+> 23's Step 5 removes the walker, the document and the payload from `ssr.bp`, this section moves to
+> [`../04-jhonstart/test-snap.md`](../04-jhonstart/test-snap.md) under front 30, and what stays here
+> is the dispatch — status, phase, and the chunks a stub render function returns, written verbatim.
 
-> helper gap: `assertSsr` takes a tree, not a source, so the convention files render as the helper's stubs: layout → `<div data-onze-seg="<pattern>"><span>layout <depth></span>…</div>`, template → `<div data-onze-t="<pattern>#<nav>">…</div>` (`nav` = 1 in a fresh scratch context), error → `<div data-onze-e="<pattern>">…</div>`, loading → `<div data-onze-h="h1">…</div>` (resolved before the shell flush, so `h` stays `[]`), not-found → `<div data-onze-n="<pattern>">…</div>` as a boundary and `<span>not-found <pattern></span>` as the 404 body, page → `<main>page <pattern>[ <params qs>]</main>`. The payload block renders `key: <json value>` in the key order of § *The payload*; the `__onze` script's JSON is elided as `{…}` in the html block because the payload block is where it is rendered. Build id from the test seed is `build-0001`. `d: true` (route.query / cookies()) needs a source and is pinned in 60's `static` suite; the streaming chunk protocol (`renderStreaming`, `h`, fills) has no helper.
+**Test file:** `modules/rakun-app/test/ssr_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/ssr/` · **Target:** both — boundary (render, escaping and document are erlang; the payload block is what the commonJS row parses and re-serialises against the same file) · **Pins:** Step 1 `Content-Type: text/html; charset=utf-8` on every page, Step 2 six-convention nesting + root outermost/page innermost + no empty wrapper without `template.bp` + `data-jh-t="<pattern>#<nav>"` + `selected` depth 0/1/2, Step 3 text and attribute escaping, Step 4 `v` first = `1` + `t` verbatim + payload escaping leaves no `<`, Step 6 404 renders the nearest `not-found` boundary
+
+> helper gap: `assertSsr` takes a tree, not a source, so the convention files render as the helper's stubs: layout → `<div data-jh-seg="<pattern>"><span>layout <depth></span>…</div>`, template → `<div data-jh-t="<pattern>#<nav>">…</div>` (`nav` = 1 in a fresh scratch context), error → `<div data-jh-e="<pattern>">…</div>`, loading → `<div data-jh-h="h1">…</div>` (resolved before the shell flush, so `h` stays `[]`), not-found → `<div data-jh-n="<pattern>">…</div>` as a boundary and `<span>not-found <pattern></span>` as the 404 body, page → `<main>page <pattern>[ <params qs>]</main>`. The payload block renders `key: <json value>` in the key order of § *The payload*; the payload script's value (`window.__bp0 = …`) is elided as `{…}` in the html block because the payload block is where it is rendered. Build id from the test seed is `build-0001`. `d: true` (route.query / cookies()) needs a source and is pinned in 60's `static` suite; the streaming chunk protocol (`renderStreaming`, `h`, fills) has no helper.
 
 ### `ssr: a static page renders inside the root layout`
 
@@ -2360,7 +2365,7 @@ test "ssr: a static page renders inside the root layout" {
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><main>page /</main></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><main>page /</main></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2393,7 +2398,7 @@ test "ssr: layouts nest root-first and the page is innermost" {
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><div data-onze-seg="/blog"><span>layout 1</span><main>page /blog/[slug] slug=hello</main></div></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><div data-jh-seg="/blog"><span>layout 1</span><main>page /blog/[slug] slug=hello</main></div></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2426,7 +2431,7 @@ test "ssr: one segment holding all six conventions nests layout template error l
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><div data-onze-t="/#1"><div data-onze-e="/"><div data-onze-h="h1"><div data-onze-n="/"><main>page /</main></div></div></div></div></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><div data-jh-t="/#1"><div data-jh-e="/"><div data-jh-h="h1"><div data-jh-n="/"><main>page /</main></div></div></div></div></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2459,7 +2464,7 @@ test "ssr: a segment without a template contributes no wrapper" {
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><div data-onze-t="/#1"><div data-onze-seg="/blog"><span>layout 1</span><main>page /blog</main></div></div></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><div data-jh-t="/#1"><div data-jh-seg="/blog"><span>layout 1</span><main>page /blog</main></div></div></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2492,7 +2497,7 @@ test "ssr: an unmatched url answers 404 with the root not-found boundary" {
 status 404
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><span>not-found /</span></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><span>not-found /</span></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2525,7 +2530,7 @@ test "ssr: a nested not-found boundary wins over the root one" {
 status 404
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><div data-onze-seg="/blog"><span>layout 1</span><span>not-found /blog</span></div></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><div data-jh-seg="/blog"><span>layout 1</span><span>not-found /blog</span></div></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2558,7 +2563,7 @@ test "ssr: a param from the url is escaped on the way into the document" {
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><main>page /blog/[slug] slug=&lt;script&gt;alert(1)&lt;/script&gt;</main></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><main>page /blog/[slug] slug=&lt;script&gt;alert(1)&lt;/script&gt;</main></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2591,7 +2596,7 @@ test "ssr: a query that tries to close the script block is escaped in the payloa
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><main>page /</main></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><main>page /</main></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2624,7 +2629,7 @@ test "ssr: a three-deep layout chain receives depths 0 1 2" {
 status 200
 content-type: text/html; charset=utf-8
 html:
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-onze-root=""><div data-onze-seg="/"><span>layout 0</span><div data-onze-seg="/docs"><span>layout 1</span><div data-onze-seg="/docs/[[...slug]]"><span>layout 2</span><main>page /docs/[[...slug]] slug=routing%2Fdynamic</main></div></div></div></div><script id="__onze" type="application/json">{…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style></style></head><body><div data-jh-root=""><div data-jh-seg="/"><span>layout 0</span><div data-jh-seg="/docs"><span>layout 1</span><div data-jh-seg="/docs/[[...slug]]"><span>layout 2</span><main>page /docs/[[...slug]] slug=routing%2Fdynamic</main></div></div></div></div><script>window.__bp0 = {…}</script><script src="/_onze/client-build-0001.js" defer></script></body></html>
 payload:
 v: 1
 b: "build-0001"
@@ -2644,7 +2649,7 @@ z: ""
 
 ## 24-rakun-server-actions — `rakun-app`
 
-**Test file:** `modules/rakun-app/test/actions_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/action/` · **Target:** both — boundary (decorator, id, CSRF, size, dispatch, revalidation and redirect are erlang; the envelope/form reader is commonJS over the same fixture) · **Pins:** Step 1 both spellings produce the same record + an unmarked `pub fn` is 404 not 500, Step 2 the name alone does not resolve, Step 4 `Origin`≠`Host` → 403 before the body + no `Origin` → 403 + `multipart/form-data` → 415 + unknown id → 404 empty, Step 5 `ok: true` with state + throw → `ok: false` and 200 + `revalidatePath` echoed + `redirect` → 303 progressive + `v: 1` first
+**Test file:** `modules/rakun-app/test/actions_test.bp` · **Snapshots:** `modules/rakun-app/test/__snapshots__/action/` · **Target:** erlang (decorator, id, `actionIdOf`, CSRF, size, dispatch, revalidation and redirect; the form and the envelope reader are jhonstart front 67's, tested there over the same fixture — decision 113) · **Pins:** Step 1 both spellings produce the same record + an unmarked `pub fn` is 404 not 500, Step 2 the name alone does not resolve, Step 4 `Origin`≠`Host` → 403 before the body + no `Origin` → 403 + `multipart/form-data` → 415 + unknown id → 404 empty, Step 5 `ok: true` with state + throw → `ok: false` and 200 + `revalidatePath` echoed + `redirect` → 303 progressive + `v: 1` first
 
 > helper gap: the `form` argument's shape is not in the table; these cases write it as `<name>[ <header>: <v>]* | <urlencoded body>`, mirroring `request`. `result <value>` renders the envelope as `ok <state qs>` / `err <state qs>` and a refused dispatch as `refused <status>`; `revalidate […]` is always written, `redirect` only when a signal was raised. `notFound()` inside an action is pinned in 63's `navigation` suite, whose helper has a `status` line.
 

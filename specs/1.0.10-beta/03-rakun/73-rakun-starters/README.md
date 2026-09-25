@@ -34,8 +34,8 @@ for the data subsystem", not "some transitive edge dragged it in".
 
 | Piece | Where it is today | Shape |
 |---|---|---|
-| Module manifests | `modules/rakun-*/botopink.json` (14 of them) | `name`, `version: "0.0.1"`, `src`, `entry: "root.bp"` is implicit, `target: "commonJS"`, `targets: ["commonJS", "erlang"]`, `dependencies: { "rakun": { "path": "../../" } }` |
-| rakun's own manifest | `repository/rakun/botopink.json` | `targets: ["commonJS"]` — front 04 adds `erlang`; `files` lists the five modules a consumer loads |
+| Module manifests | `modules/rakun-*/botopink.json` (14 of them) | `name`, `version: "0.0.1"`, `src`, `entry: "root.bp"` is implicit, `target: "commonJS"`, `target: "erlang"`, `targets: ["erlang"]` (decision 113), `dependencies: { "rakun": { "path": "../../" } }` |
+| rakun's own manifest | `repository/rakun/botopink.json` | `targets: ["commonJS"]` — decision 113 makes it `["erlang", "commonJS"]` at the root, `["erlang"]` for the core, with front 04; `files` lists the five modules a consumer loads |
 | Dependency shapes accepted | `modules/compiler-cli/src/cli/config.zig:64-73` | Both `["a","b"]` and `{ "a": { "git": …, "branch": … } }`, normalised to `[]DepEntry`; diagnostics `DEP-001` invalid shape, `DEP-002` no source, `DEP-003` ambiguous ref |
 | What a dependency source may be | `config.zig:42-46` — `DepSpec { git, path, ref }` | A git URL, or a filesystem path. **No subdirectory field.** |
 | Lockfile | `modules/bpmp/src/lockfile.zig:1-40` — `botopink.lock.json`, schema 1 | Pins every package and the toolchain by git commit SHA, carrying `version`, `commit`, `tag`, `constraint`, `sha256`, `source`, `requires[]` |
@@ -127,7 +127,7 @@ module.
 ### Step 1 — the starter package shape
 
 One directory per starter under `starters/`, each with `botopink.json` and `src/root.bp`. The manifest
-carries `name`, `version` from the version set, `description`, `src`, `targets: ["commonJS", "erlang"]`
+carries `name`, `version` from the version set, `description`, `src`, `target: "erlang"`, `targets: ["erlang"]` (decision 113)
 and `dependencies` in the object form. The root file declares no `mod` and holds a `////` docblock
 listing what the starter pulls and what an application gets by declaring it.
 
@@ -140,7 +140,7 @@ listing what the starter pulls and what an application gets by declaring it.
   "src": "src/",
   "entry": "root.bp",
   "target": "erlang",
-  "targets": ["commonJS", "erlang"],
+  "targets": ["erlang"],
   "dependencies": {
     "rakun-starter":    { "path": "../rakun-starter" },
     "rakun-web":        { "path": "../../modules/rakun-web" },

@@ -137,14 +137,14 @@ test "the empty form carries what an un-hydrated browser needs to submit it" {
     val markup = renderToString(newPostForm(formAction("createPost"), actionState(""), false));
     assert markup.contains("method=\"post\"");
     assert markup.contains("enctype=\"application/x-www-form-urlencoded\"");
-    assert markup.contains("data-onze-a=\"a_");
+    assert markup.contains("data-jh-a=\"a_");
     assert markup.contains("name=\"__onze_action\"");
 }
 
 test "the action is named by its id and never by its function name" {
     val markup = renderToString(await newPostPage(newPostRoute()));
     assert markup.contains("value=\"createPost\"") == false;
-    assert markup.contains("data-onze-a=\"a_");
+    assert markup.contains("data-jh-a=\"a_");
 }
 
 test "a field message from the action lands beside its own field" {

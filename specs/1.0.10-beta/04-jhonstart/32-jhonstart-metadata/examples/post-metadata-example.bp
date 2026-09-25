@@ -11,7 +11,7 @@
 // merge field by field, and the title template is applied once, by the parent
 // that declared it.
 //
-// This runs on the server, during the render, and produces a string front 23
+// This runs on the server, during the render, and produces a string front 30
 // splices into `<head>`. Every value goes through front 01's escaping — a post
 // title is attacker-influenced text landing in an attribute.
 //
@@ -99,7 +99,7 @@ pub fn postMetadata(post: Post) -> Metadata {
     );
 }
 
-// What front 23 does for this route.
+// What front 30 does for this route.
 pub fn resolvedFor(post: Post) -> Metadata {
     val section = mergeMetadata(rootMetadata(), blogMetadata());
     return mergeMetadata(section, postMetadata(post));

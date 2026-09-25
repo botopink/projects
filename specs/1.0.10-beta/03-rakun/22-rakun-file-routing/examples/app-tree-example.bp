@@ -53,7 +53,7 @@ pub fn rootLayout(props: LayoutProps) -> Element {
     val header = div([h1([text("onze", attrs: [])], attrs: [])], attrs: [
         bracketPair("data-onze-chrome", "header"),
     ]);
-    return div([header, props.children], attrs: [bracketPair("data-onze-root", "")]);
+    return div([header, props.children], attrs: [bracketPair("data-jh-root", "")]);
 }
 
 // ---- app/blog/layout.bp — a segment layout ------------------------------------

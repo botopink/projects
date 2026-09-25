@@ -26,8 +26,8 @@ Rules specific to example projects:
 - A project's `botopink.json` depends on starters or modules, never on `repository/rakun/src/`
   directly; `rakun-test` is its test-scope dependency.
 - `examples/rakun` is the existing project; its tests are added, its sources are not rewritten
-  (*additive only*). It gains `"targets": ["commonJS", "erlang"]` with front 04 and its
-  snapshots are the first boundary check that the two runtimes answer alike.
+  (*additive only*). It declares `"targets": ["erlang"]` with front 04 (decision 113), and its
+  snapshots are the first check that the BEAM runtime answers as the node one did.
 - `examples/blog-server` is the erlang half of `repository/onze/examples/blog`; the browser half and
   the hydration round trip are onze's ([`../06-onze/`](../06-onze/)), not this project's.
 - Every helper installs the test clock `2026-01-01T00:00:00Z` and seed ids (`req-0001`, `sess-0001`,
@@ -1387,7 +1387,7 @@ status 200
 headers:
 content-type: text/html; charset=utf-8
 html:
-<div data-onze-root=""><div data-onze-chrome="header"><h1>onze</h1></div><div lang="en"><div data-onze-seg="blog"><p>Blog</p><div data-onze-seg="post"><h1>Hello</h1><p>first post</p></div></div></div></div>
+<div data-jh-root=""><div data-onze-chrome="header"><h1>onze</h1></div><div lang="en"><div data-onze-seg="blog"><p>Blog</p><div data-onze-seg="post"><h1>Hello</h1><p>first post</p></div></div></div></div>
 payload:
 v=1
 b=b_test0001
@@ -1410,11 +1410,8 @@ z=
 ```bp
 test "blog-server: publishing a post revalidates the blog and a short title is invalid" {
     try assertAction(@src(),
-        \\ import {Element, bracketPair, div, h1, p, text} from "jhonstart";
-        \\ import {input, button} from "jhonstart";
-        \\ import {serverAction, FormData, ActionResult, actionForm} from "rakun";
+        \\ import {serverAction, FormData, ActionResult} from "rakun";
         \\ import {rkRegisterAction} from "rakun";
-        \\ import {page, PageContext, rkAppRegisterPage, renderNode} from "rakun";
         \\ import {cache} from "rakun-cache";
         \\ import {collections.Dict} from "std";
         \\
@@ -1435,20 +1432,6 @@ test "blog-server: publishing a post revalidates the blog and a short title is i
         \\     val _id = await savePost(title, body);
         \\     cache.revalidatePath("/en/blog");
         \\     return ActionResult.done();
-        \\ }
-        \\
-        \\ #[page("[locale]/blog/new")]
-        \\ #[@future]
-        \\ pub fn newPostPage(route: PageContext) -> @Future<Element> {
-        \\     val form = actionForm("createPost", [
-        \\         input([], attrs: [bracketPair("type", "text"), bracketPair("name", "title")]),
-        \\         input([], attrs: [bracketPair("type", "text"), bracketPair("name", "body")]),
-        \\         button([text("Publish", attrs: [])], attrs: [bracketPair("type", "submit")]),
-        \\     ], attrs: [bracketPair("data-onze-seg", "new-post")]);
-        \\     return div([
-        \\         h1([text("New post", attrs: [])], attrs: []),
-        \\         form,
-        \\     ], attrs: []);
         \\ }
         , "title=Hello world&body=first");
 }

@@ -56,8 +56,10 @@ exist in `emilia.bp` and have already drifted; every front admitted after it wou
 0/1, 54 lands before 56: `Options.theme` is a `Theme` and `defaultOptions()` calls `defaultTheme()`.
 
 Track D needs nothing from tracks A, B, C or E to start: no socket, no clock, no filesystem. Its
-only contacts are outbound — front 48 into jhonstart, and onze [69](../06-onze/69-onze-styling-pipeline/README.md)
-/ [68](../06-onze/68-onze-client-bundle/README.md) reading `flushWith` and the contract 4 literal.
+only contacts are outbound — front 48 into jhonstart, the `jhonstart-emilia` bridge (jhonstart
+[30](../04-jhonstart/30-jhonstart-streaming/README.md)) reading `flush` / `flushWith`, and onze
+[68](../06-onze/68-onze-client-bundle/README.md) reading the contract 4 literal. emilia imports
+nobody (decision 113).
 
 ## Dependency graph
 
@@ -80,7 +82,7 @@ L3    │  │  └───── 38 typography      37 grid ◄── 54 · 56
                                                                            │
 L3   48 attributes ◄── jhonstart 26 (router gate) · the tokens of 33–47 ◄──┘
 
-Outbound:  48 ──► jhonstart (html_attrs.bp)      56 ──► onze 69 (flushWith)   48 ──► onze 68 (class literal)
+Outbound:  48 ──► jhonstart (html_attrs.bp)      56 ──► jhonstart-emilia (flush/flushWith)   48 ──► onze 68 (class literal)
 ```
 
 ## Numbering

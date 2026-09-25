@@ -26,9 +26,9 @@ import {collections.Dict} from "std";
 // ── app/layout.bp ────────────────────────────────────────────────────────────
 //
 // The root layout returns the BODY subtree. The `<!DOCTYPE html><html><head>…`
-// shell belongs to front 23, and the moment the head is written belongs to front
-// 69 — the head has to be composed after the tree is built, because that is when
-// emilia's classes exist to flush.
+// shell belongs to jhonstart's render (front 30), and so does the moment the head
+// is written — the head has to be composed after the tree is built, because that
+// is when emilia's classes exist to flush (through the jhonstart-emilia plugin).
 
 fn shellTokens() -> Token[] {
     return [.Font.Sans, .Bg.White, .Color.Gray.900];
@@ -41,8 +41,8 @@ pub fn rootLayout(props: LayoutProps) -> Element {
 
 // ── app/page.bp ──────────────────────────────────────────────────────────────
 //
-// Every page is `#[@future]`: front 22's registry pins one shape so front 23's
-// pipeline has one shape to drive. A page that needs no data awaits nothing and
+// Every page is `#[@future]`: front 22's registry pins one shape so the render
+// onze hands to rakun has one shape to drive. A page that needs no data awaits nothing and
 // costs nothing.
 
 fn titleTokens() -> Token[] {

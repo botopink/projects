@@ -53,7 +53,7 @@ half depends on 06, and a citation of 11 is read as one or the other). Ties brea
 | 15 | [`15-rakun-messaging`](./15-rakun-messaging/README.md) | medium | 2 · 3 | 3 | `rakun-messaging` | 05 · 06 · 11 (API) | std 01 |
 | 19 | [`19-rakun-test-utilities`](./19-rakun-test-utilities/README.md) | low (blocking as a dependency) | 2 · 3 | 3 | `rakun-test` | 04 · 06 | `#[mock]` is `rakun-test`'s ([`../02-packaging/README.md § 3`](../02-packaging/README.md)) |
 | 21 | [`21-rakun-hateoas`](./21-rakun-hateoas/README.md) | low | 2 · 3 | 3 | `rakun-hateoas` | 06 · 22 (ro) | — |
-| 23 | [`23-rakun-ssr-pipeline`](./23-rakun-ssr-pipeline/README.md) | critical | 2 · 2 | 3 | `rakun-app` | 04 · 06 · 22 · 62 | jhonstart 28 · 94 · emilia `flush()` (23 line 61) · std 01 · 02 · 03 |
+| 23 | [`23-rakun-ssr-pipeline`](./23-rakun-ssr-pipeline/README.md) | critical | 2 · 2 | 3 | `rakun-app` | 04 · 06 · 22 · 62 | onze 49 (the render function it hands) · std 01 · 02 · 03 |
 | 16 | [`16-rakun-scheduling`](./16-rakun-scheduling/README.md) | medium | 2 · 3 | 4 | `rakun-scheduling` | 05 · 06 · 11 (host) | std 01 |
 | 17 | [`17-rakun-logging`](./17-rakun-logging/README.md) | low (high as a dependency) | 2 · 3 | 4 | `rakun-logging` | 05 · 06 · 11 (host) · 62 | std 03 |
 | 61 | [`61-rakun-parallel-intercepting-routes`](./61-rakun-parallel-intercepting-routes/README.md) | high | 2 · 4 | 4 | `rakun-app` | 22 · 23 · 62 | jhonstart 27 · 30 |
@@ -79,7 +79,7 @@ half depends on 06, and a citation of 11 is read as one or the other). Ties brea
 | 83 | [`83-rakun-distributed-transactions`](./83-rakun-distributed-transactions/README.md) | medium | 3 · 4 | 5 | `rakun-tx` | 05 · 08 · 15 · 16 · 77 | — |
 | 84 | [`84-rakun-persistent-jobs`](./84-rakun-persistent-jobs/README.md) | medium | 3 · 4 | 5 | `rakun-scheduling` | 05 · 08 · 11 (host) · 16 · 77 | — |
 | 86 | [`86-rakun-messaging-reliability`](./86-rakun-messaging-reliability/README.md) | medium | 3 · 4 | 5 | `rakun-messaging` | 05 · 15 · 75 · 83 (seam) | std 01 |
-| 24 | [`24-rakun-server-actions`](./24-rakun-server-actions/README.md) | critical | 3 · 3 | 6 | `rakun-app` | 06 · 12 · 14 · 22 · 23 · 62 · 63 | jhonstart 67 · 94 · std 01 · 03 |
+| 24 | [`24-rakun-server-actions`](./24-rakun-server-actions/README.md) | critical | 3 · 3 | 6 | `rakun-app` | 06 · 12 · 14 · 22 · 23 · 62 · 63 | jhonstart 67 (through onze) · std 01 · 03 |
 | 60 | [`60-rakun-static-generation`](./60-rakun-static-generation/README.md) | critical | 3 · 4 | 6 | `rakun-app` | 12 · 22 · 23 · 62 | std 01 · 02 · 03 |
 | 64 | [`64-rakun-i18n-routing`](./64-rakun-i18n-routing/README.md) | medium | 3 · 4 | 6 | `rakun-app` | 07 · 12 · 22 · 62 · 63 | jhonstart 32 · std 01 |
 | 81 | [`81-rakun-packaging-release`](./81-rakun-packaging-release/README.md) | high | 3 · 2 | 6 | `rakun-release` | 04 · 05 · 11 (host) · 76 | std 01 |
@@ -121,7 +121,7 @@ case; the wave columns are kept as written so the other tracks' cross-references
   regenerated from this table on 2026-09-21 and no longer disagrees: 60 · 61 · 63 · 65 sit below 23
   there, and 81 · 88 are no longer in wave 2. Its numbers are the *milestone* levels — the levels
   below, lifted by the cross-track edges a track-B level cannot see — so they are equal or larger,
-  never smaller: 23 is level 3 here and wave 5 there, because it renders jhonstart 28.
+  never smaller: 23 is level 3 here and wave 5 there, because it serves pages jhonstart 28 renders.
 - **Cross-track:** 66 is level 3 in track B and depends on jhonstart 32, which is wave 5 in the
   regenerated [`../fronts.md § Waves`](../fronts.md#waves); 61 on 27 (wave 4); 23 on 28 (wave 4).
   24 and 67 cite each other, and `fronts.md` resolves the pair with 24 first, because 67 consumes
@@ -164,41 +164,45 @@ Module level, the same graph collapsed onto the 27 submodules, is drawn in
 | rakun → std | 04 · 05 · 10 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 64 · 65 · 66 · 79 · 80 · 81 · 82 · 85 · 86 · 87 · 88 · 89 · 92 | 01 | `net`, `path`, `fs`, `process`, `clock`, `random`, `hmac`, `encoding`, `regex`, `escape` — named per front in its `Depends on` line |
 | rakun → std | 23 · 60 · 92 | 02 | spawn/gather over unstarted thunks (`async.all`) — `@Future` carries no concurrency on BEAM |
 | rakun → std | 12 · 17 · 23 · 24 · 60 · 66 · 77 · 82 | 03 | content hash: cache keys, error digest, build id, fingerprints, migration checksums |
-| rakun → jhonstart | 23 | 28 · 94 | server components rendered by the pipeline; `isVoidTag`/`isRawTextTag` and the element surface the walker renders |
-| rakun → jhonstart | 24 | 67 · 94 | the browser half of a server action; `form`/`input`/`button` constructors for the action form |
-| rakun → jhonstart | 25 | 30 | the flush primitive a streaming handler reuses |
-| rakun → jhonstart | 61 | 27 · 30 | the soft-navigation marker `Link` sets; per-slot `loading` boundaries |
-| rakun → jhonstart | 64 · 66 | 32 | the metadata model (`alternates`, `<link>`/`<meta>` feeds) |
-| rakun → emilia | 23 | 56 (`flush()`, `repository/emilia/src/emilia.bp:62-65`) | one `<style>` block per document; 48's attribute hook is reached through jhonstart, never directly. `modules/rakun-app/botopink.json` lists `emilia` as well as `jhonstart` |
+| rakun ⇄ jhonstart, through onze | 23 | 30 (render) · 28 | onze hands 23 the page-render function; jhonstart builds the chunks, 23 writes them. No package edge either way (decision 113) |
+| rakun ⇄ jhonstart, through onze | 24 | 67 | 24's action id and envelope; 67 writes the form markup (`data-jh-a`, the hidden field) with the id onze hands it |
+| rakun ⇄ jhonstart, through onze | 25 | 30 | the flush primitive a streaming handler reuses |
+| rakun ⇄ jhonstart, through onze | 61 | 27 · 30 | the soft-navigation marker `Link` sets; per-slot `loading` boundaries |
+| rakun ⇄ jhonstart, through onze | 64 · 66 | 32 | the metadata model (`alternates`, `<link>`/`<meta>` feeds) |
 | rakun → onze | 66 | 70 (optional) | dynamic OG image bodies — does not block 66 |
 | rakun → onze | 19 | — | the mocking library is retired and `#[mock]` is hosted by `rakun-test` ([`../02-packaging/README.md § 3`](../02-packaging/README.md), [`../01-std/onze-migration.md`](../01-std/onze-migration.md)) — no edge |
-| jhonstart → rakun | 26 | 22 (`matchPath`) · 23 (ro) | one matcher, not two |
-| jhonstart → rakun | 28 · 29 · 30 | 62 (ro) · 23 (ro) | the erlang module `server.bp` binds; the payload shape |
-| jhonstart → rakun | 27 | 60 (ro) · 23 (ro) | prefetch reads the static/dynamic decision |
-| jhonstart → rakun | 31 | 17 (ro) · 24 (ro) · 63 (ro) | `error.digest`; the action envelope; the `jhonstart:` signal prefix |
-| jhonstart → rakun | 32 | 66 (ro) | the paths `openGraph.images` names |
-| jhonstart → rakun | 67 | 24 · 14 (ro) · 63 (ro) | the action envelope it decodes; constraints it mirrors |
-| onze → rakun | 68 · 69 · 50 · 51 · 70 · 71 · 53 | 04 · 05 · 07 · 11 · 12 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 63 · 65 · 66 | listed per front in [`../06-onze/README.md`](../06-onze/README.md); 68 and 69 fill the `RenderHooks` record front 23 declares — the head extras, the body scripts and the style sink — and rakun names neither (decision 77); `examples/blog-server` here is the erlang half of `repository/onze/examples/blog` |
+| jhonstart ⇄ rakun, through onze | 26 | 22 | the router has no matcher and no table parser of its own; onze hands it `match` and the route table |
+| jhonstart ⇄ rakun, through onze | 28 · 29 · 30 | 62 · 23 | the erlang module `server.bp` binds by host-module name; the chunks 23 writes |
+| jhonstart ⇄ rakun, through onze | 27 | 60 | prefetch reads the static/dynamic decision |
+| jhonstart ⇄ rakun, through onze | 31 | 17 · 24 · 63 | `error.digest`; the action envelope; jhonstart's own not-found signal, which onze translates into rakun's 404 |
+| jhonstart ⇄ rakun, through onze | 32 | 66 | the paths `openGraph.images` names |
+| jhonstart ⇄ rakun, through onze | 67 | 24 · 14 · 63 | the action envelope it decodes; constraints it mirrors |
+| onze → rakun | 68 · 69 · 50 · 51 · 70 · 71 · 53 | 04 · 05 · 07 · 11 · 12 · 20 · 22 · 23 · 24 · 25 · 60 · 62 · 63 · 65 · 66 | listed per front in [`../06-onze/README.md`](../06-onze/README.md); onze hands front 23 the page-render function and rakun names no onze module (decision 113); `examples/blog-server` here is the erlang half of `repository/onze/examples/blog` |
 | emilia → rakun | — | — | none; 82 serves emilia's emitted CSS as a file, which is consumption, not a dependency |
 
-The package-level consequence — `rakun` core depends on `std` only; `rakun-app` is the one submodule
-with edges to other libraries — is in [`modules.md § Three facts`](./modules.md#three-facts-that-decide-the-cut).
+The package-level consequence — every rakun module depends on `std` and on rakun modules only; no
+edge reaches `jhonstart`, `emilia` or `onze` (decision 113) — is in [`modules.md § Three facts`](./modules.md#three-facts-that-decide-the-cut).
 
 ## Targets
 
 | Fronts | Target |
 |---|---|
 | 04–13 · 15–21 · 25 · 62–64 · 66 · 72–93 | **erlang** — runs while a request is in flight, or at build/dev time on the server box |
-| 14 | **both — boundary**: the constraints the server enforces are the ones the client mirrors |
-| 22 · 23 · 24 · 60 · 61 · 65 | **both — boundary**: the route table is matched on BEAM and prefetched in the browser; the payload is serialized on BEAM and reconnected in the browser; `basePath`/trailing-slash rules are read by both. The render, the escaping, the chunk writer and every handler are erlang |
+| 22 · 23 · 24 · 60 · 61 · 65 | **erlang** — the route table, the page dispatch, the chunk writer and every handler run on BEAM |
+| 14 | **erlang, commonJS — boundary**: the constraints the server enforces are the ones the client's form mirrors; the one exception to rakun's erlang target (decision 113) |
+
+erlang comes first in every `targets` list and is the default target of `botopink run` / `botopink
+test` in rakun; the workspace root declares `["erlang", "commonJS"]` only to admit front 14.
 
 ## Rules
 
 - One repo per front; the compiler knows none of this; target is assigned, not chosen; reuse `std`;
   additive only; examples are code, not prose — [`../contracts.md`](../contracts.md).
 - Every erlang host module is `src/sidecars/rakun_<name>.erl`, never a bare `<name>.erl`.
-- `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` are frozen; 04 appends
-  one `#[@external(erlang)]` block to `src/runtime.bp` and touches nothing else there.
+- `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp` are frozen; 04 appends one
+  `#[@external(erlang)]` block to `src/runtime.bp`, and when it closes `src/runtime.mjs` and the Node
+  forms leave the core (decision 113).
+- rakun imports nothing from `jhonstart`, `emilia` or `onze`, and builds no HTML (decision 113).
 - `botopink.json` and `src/root.bp` of a shared module belong to the lowest-numbered front in it;
   the rest append their lines in front-number order and never reorder.
 - A front that needs a compiler change files a row in [`../language-gaps.md`](../language-gaps.md)

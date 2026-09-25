@@ -408,7 +408,7 @@ pub fn staticExport(outDir: string) -> PrerenderReport
 **Partial Prerendering is not specified here and is not a gap.** PPR needs a prerendered shell whose
 Suspense holes are resumed within the same response, which means this front and front 30 must agree on
 a resume protocol before either can implement it — a protocol neither front has, and one that would
-change front 23's payload format. It is also absent from the doc revision this milestone tracks: `PPR`
+change the payload format (contract 2, jhonstart front 30). It is also absent from the doc revision this milestone tracks: `PPR`
 and `partial` have zero occurrences in `NEXTJS-DOCS.md`. It is recorded for **1.0.10-beta**, gated on
 fronts 60 and 30 being landed and stable, and it is written here so the omission reads as a decision
 rather than an oversight.

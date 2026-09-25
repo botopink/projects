@@ -5,10 +5,10 @@
 // large lists — otherwise entering the viewport queues two hundred route
 // requests.
 //
-// The anchor itself is pure and renders during the SERVER pass (front 23), so
+// The anchor itself is pure and renders during the SERVER pass (front 30), so
 // this file's assertions run on either target. The prefetching, the click
 // interception and the transition are the BROWSER half: they happen after
-// front 29's hydration entry calls `__onzeLinkMount()`.
+// front 29's hydration entry calls `linkMount()`.
 //
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/components/link
@@ -52,14 +52,14 @@ pub fn BlogIndex(posts: Array<Post>) -> Element {
 
 test "a header link renders the plain two-attribute anchor" {
     val el = Link(linkProps("/blog"), [text("Blog", attrs: [])]);
-    assert renderToString(el) == "<a href=\"/blog\" data-onze-l=\"1\">Blog</a>";
+    assert renderToString(el) == "<a href=\"/blog\" data-jh-l=\"1\">Blog</a>";
 }
 
 test "an archive row opts out of prefetching" {
     val row = archiveRow(Post(slug: "hello", title: "Hello"));
     val markup = renderToString(row);
     assert markup.contains("href=\"/blog/hello\"");
-    assert markup.contains("data-onze-prefetch=\"0\"");
+    assert markup.contains("data-jh-prefetch=\"0\"");
 }
 
 test "the prefetch mode follows the route kind" {

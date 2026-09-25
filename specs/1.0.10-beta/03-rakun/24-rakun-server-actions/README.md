@@ -3,17 +3,19 @@
 **Track:** B rakun
 **Priority:** critical — a page that can only be read is half an application; this is the only path by
 which a browser changes server state, and it is the path an attacker will try first
-**Target:** both — boundary. The action body runs on BEAM; the form that calls it is HTML the browser
-submits; the id that names the action and the envelope that carries the result cross between them
+**Target:** erlang (server). The action body, the id, the checks and the envelope are BEAM code; the
+form that calls it is HTML jhonstart front 67 writes with the id onze hands it, and the envelope is
+what crosses back (decision 113)
 **Wave:** 7
-**Depends on:** 23 (payload, render pipeline), 22 (route table), 06 (scopes), 62 (request context —
-`cookies()`, `after()`), 12 (`revalidatePath`/`revalidateTag`), 63 (`redirect`), 01 (constant-time compare, percent-encoding), 03
-(build id), 14 (constraint mirroring), 67 (the browser half), 94 (`form`/`input`/`button`)
-**Owns:** `repository/rakun/src/actions.bp`, `repository/rakun/src/actions.mjs`,
-`repository/rakun/src/sidecars/rakun_actions.erl`, `repository/rakun/test/actions_test.bp`
-**Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`,
-`src/runtime.mjs` (frozen), `repository/jhonstart/src/element.bp` (frozen),
-`repository/jhonstart/src/elements.bp` (front 94's), and the files owned by 22 · 23 · 25
+**Depends on:** 23 (the page dispatch the re-render goes through), 22 (route table), 06 (scopes), 62
+(request context — `cookies()`, `after()`), 12 (`revalidatePath`/`revalidateTag`), 63 (`redirect`),
+01 (constant-time compare, percent-encoding), 03 (build id), 14 (constraint mirroring); jhonstart 67
+writes the form, reached through onze only
+**Owns:** `repository/rakun/src/actions.bp`, `repository/rakun/src/sidecars/rakun_actions.erl`,
+`repository/rakun/test/actions_test.bp`
+**Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`
+(frozen), the files owned by 22 · 23 · 25, and every file outside `repository/rakun/` — this front
+builds no element and imports nothing from `jhonstart` (decision 113)
 **Reference:** `NEXTJS-DOCS.md § 10. Mutação de Dados`, `§ 27. Diretivas` ·
 <https://nextjs.org/docs/app/getting-started/updating-data> ·
 <https://nextjs.org/docs/app/api-reference/directives/use-server>
@@ -51,9 +53,6 @@ the rejection is a 403, and there is no setting that turns it off.
   host cell, not in botopink.
 - `repository/rakun/src/http.bp:45-73` — `Response` carries no headers, so no `Set-Cookie`, which is
   what a session-writing action needs. Frozen; see *Blocked*.
-- `repository/jhonstart/src/element.bp:10-53` — eight constructors, none of them `form`, `input`,
-  `button` or `label`. The file is frozen; front 94 adds those in
-  `repository/jhonstart/src/elements.bp`, and this front imports them rather than growing its own.
 - `libs/std/src/crypto.bp:38` — `hmacSha256(key, data) -> string` already exists, so the id
   derivation needs no new primitive. What does not exist is a constant-time compare; front 01 adds it.
 - `libs/std/src/querystring.bp` exists; percent-encoding of a form body does not, and front 01 adds
@@ -118,37 +117,30 @@ evaluator emits only the decorator into the eval script (`repository/rakun/src/d
 so `crypto.hmacSha256` is unreachable from inside it. Deriving the id at module load is not a workaround, it is the
 only place all three inputs exist at once.
 
-**The form.** `form`, `input` and `button` are **front 94's** (`repository/jhonstart/src/elements.bp`);
-this front builds none of its own and imports them. What it adds is the binding — the one function
-that turns an action name into a form that names it correctly:
+**The form is not this front's.** rakun builds no HTML (decision 113). The markup that binds a form
+to an action — `method="post"`, the current pathname in `action`, the `data-jh-a` marker and the
+hidden `__onze_action` field — is written by jhonstart front 67 (`formAttrs`, `hiddenActionField`).
+This front owns what that markup carries: the id, derived here and nowhere else. onze asks this
+front for the id of a registered action and hands it to the form; jhonstart never names rakun, and
+rakun never names an element:
 
 ```bp
-pub fn actionForm(action: string, children: Children, attrs: Array<#(string, string)>) -> Element
+pub fn actionIdOf(action: string) -> string   // the registered action's id; unknown name raises
 ```
 
-`actionForm` resolves the action's id, emits the hidden `__onze_action` field and the `data-onze-a`
-attribute, and composes front 94's `form` around the caller's children. Fields and buttons are
-written with front 94's constructors directly; there is no `textField`/`submitButton` wrapper here,
-because a wrapper over someone else's element surface is a second surface to keep in step.
-
-`actionForm` renders:
-
 ```html
-<form method="post" action="/blog" data-onze-a="a_9f2c1b7e">
+<form method="post" action="/blog" data-jh-a="a_9f2c1b7e">
   <input type="hidden" name="__onze_action" value="a_9f2c1b7e">
   …fields…
 </form>
 ```
-
-Void elements render correctly because front 23's walker knows the void set; jhonstart's
-`renderToString` would emit `<input></input>`, which is one more reason nothing in this front calls it.
 
 **The phase word.** Before the action body runs, this front calls front 62's
 `setPhase(RequestPhase.Action)`. It is the same word front 12's `rkCachePhase()` reads to decide
 whether a revalidation is legal, so **without it every `revalidatePath` from an action raises** —
 front 12 rejects a revalidation issued during `Render`. Setting `Action` is also what makes
 `cookies().set(...)` legal inside an action, which it is not inside a render (`contracts.md § 5`).
-The phase is restored before front 23 re-renders, so the re-render runs as `Render` and a
+The phase is restored before front 23's dispatch re-renders, so the re-render runs as `Render` and a
 `cookies().set(...)` from it still raises.
 
 **Two dispatch paths, one authorization path.**
@@ -196,7 +188,7 @@ version that lets a 2 GB upload exhaust the node before the check runs.
 | `revalidated` | the paths and tags the action invalidated, echoed so the client can drop its own caches |
 | `redirect` | the plain `Location` target, derived from `n` for the progressive path's 303, or `""` |
 | `n` | the navigation signal from front 63 in its wire form (`contracts.md § 5b`): `""` no signal · `"N"` notFound · `"R\|307\|/login"` redirect · `"R\|308\|/new"` permanentRedirect. `location` is the remainder of the line, so a `\|` in a path round-trips |
-| `payload` | a fresh front-23 payload for the current route when the action requested a refresh, or `""` |
+| `payload` | a fresh payload (contract 2, rendered by jhonstart front 30 through front 23's dispatch) for the current route when the action requested a refresh, or `""` |
 
 `state` is querystring-encoded for the same reason front 23's params are: both halves must read it
 with the same botopink code and `std/json` has no structured walker. `n` is produced by front 63's
@@ -261,7 +253,6 @@ nothing. `ActionResult.state` is a `Dict` in botopink and is querystring-encoded
 pub fn actionId(module: string, name: string, buildId: string) -> string
 
 #[@External.Erlang("rakun_actions", "register")]
-#[@External.Node("./actions.mjs", "register")]
 pub declare fn rkRegisterAction(
     name: string,
     run: fn(form: FormData) -> @Future<ActionResult>,
@@ -276,19 +267,17 @@ pub declare fn rkRegisterAction(
 - [ ] Two functions with the same name in different modules get different ids.
 - [ ] The function's name alone does not resolve: POSTing `__onze_action=createPost` is a 404.
 
-### Step 3 — The form
+### Step 3 — The id a form carries
 
 **Acceptance:**
-- [ ] `actionForm` emits `method="post"`, the current pathname as `action`, `data-onze-a` carrying
-      the id, and the hidden `__onze_action` field carrying the same id.
-- [ ] `form`, `input` and `button` come from front 94; this front declares no element constructor,
-      checked by grep in its own gate.
-- [ ] The form renders through front 23's walker: `<input>` has no closing tag and a field value
-      containing `"` is escaped.
-- [ ] The rendered form is submittable with scripting disabled — the progressive path is tested by
-      driving the raw POST, not by assuming it.
-- [ ] `actionForm` refuses an id that is not registered, at render time, with the function name in the
-      message. A form pointing at nothing is a bug that should not reach a browser.
+- [ ] `actionIdOf("createPost")` returns the same id `actionId` derives for the registered function,
+      and that id dispatches when POSTed as `__onze_action`.
+- [ ] `actionIdOf` of a name that is not registered raises with the function name in the message — a
+      form pointing at nothing is a bug that should not reach a browser.
+- [ ] This front declares no element constructor and imports nothing from `jhonstart`, checked by
+      grep in its own gate; the form markup is jhonstart front 67's.
+- [ ] The progressive path is tested by driving the raw POST a scripting-disabled browser would send
+      (`__onze_action=<id>&…`), not by rendering a form.
 
 ### Step 4 — Dispatch, and the checks that come before it
 
@@ -348,7 +337,7 @@ pub fn dispatchAction(
 - [ ] The RPC path runs the same CSRF and size checks — asserted by the same test bodies, parameterised
       over the two encodings, so the paths cannot drift.
 - [ ] An RPC body with an unknown `v` is a 400.
-- [ ] `X-Onze-Action: refresh` returns an envelope whose `payload` parses as a front-23 payload with
+- [ ] `X-Onze-Action: refresh` returns an envelope whose `payload` parses as a contract-2 payload with
       the current pathname, and whose `state` is empty.
 
 ## Examples
@@ -361,7 +350,6 @@ pub fn dispatchAction(
 
 | Gap | Where | Nearest valid form today | Proposed surface |
 |---|---|---|---|
-| Declared parameter defaults are never applied | every `attrs:` in the example, and the reason `actionForm` takes all three arguments | pass every argument explicitly | apply declared defaults at call sites |
 | A `#[@future]` fn cannot `await` inside a closure, and `@Future<T>` lowers eagerly on erlang (both stated in full in front 23) | validating N fields with an async check | build `Array<fn() -> @Future<T>>` and await front 02's `async.all` once | see front 23 |
 | No byte or binary type — every host cell marshals through `string` | reading a `multipart/form-data` body, whose parts are bytes | the body reaches botopink as a UTF-8 `string`, so this front supports `application/x-www-form-urlencoded` and the JSON-RPC encoding only, and rejects `multipart/form-data` with 415 rather than corrupting it silently | a `bytes` type, or `@External` cells that can marshal a binary |
 | `@Decl` carries no source location (stated in full in front 22) | the module half of the action id has to be supplied by the registration cell rather than read off the declaration | the host cell knows the module it was loaded from | `decl.source() -> Source` |
@@ -378,15 +366,15 @@ pub fn dispatchAction(
 
 ## Test plan
 
-`repository/rakun/test/actions_test.bp`. The decorator, id derivation, dispatch, CSRF, size limit,
-revalidation ordering and redirect run on `botopink test --target erlang`. The envelope reader and the
-form serializer run on `botopink test --target commonJS` against the same fixture strings. The exit
-gate names 24 as a boundary front, so both rows are required.
+`repository/rakun/test/actions_test.bp`, on `botopink test --target erlang`: the decorator, id
+derivation, `actionIdOf`, dispatch, CSRF, size limit, revalidation ordering and redirect. The
+envelope reader is jhonstart front 67's and is tested there against the same fixture strings.
 
-The round-trip test is the one that matters: the erlang row renders a form and writes the markup to a
-fixture; the commonJS row parses the markup, extracts the id, builds the POST body the browser would
-send, and the erlang row dispatches it. Testing the two halves separately would pass with an id the
-two sides spell differently, which is the exact failure this front exists to prevent.
+The round trip that matters — the id `actionIdOf` returns, stamped into front 67's form by onze,
+POSTed back and dispatched here — crosses all three packages, so it is asserted where all three meet:
+onze's example app (front 53). Inside this front the same property is asserted without markup: the
+id `actionIdOf` returns is the one that dispatches, and a hand-built POST body carrying it runs the
+action.
 
 CSRF and size-limit behaviour that cannot be expressed as a runtime `assert` — the byte count at which
 the connection closes — lives in `src/sidecars/rakun_actions.erl`'s own suite, invoked from the same test file.
@@ -399,4 +387,4 @@ the connection closes — lives in `src/sidecars/rakun_actions.erl`'s own suite,
 - The envelope key table above is final for the milestone and is cited by fronts 63, 67 and 68 rather
   than re-derived.
 - `repository/rakun/AGENTS.md` names `actions.bp`, the id derivation and the envelope version.
-- The front's tests are green on its assigned target — here, on both.
+- The front's tests are green on its assigned target — erlang.

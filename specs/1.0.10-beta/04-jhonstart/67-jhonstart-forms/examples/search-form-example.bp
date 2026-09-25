@@ -43,8 +43,8 @@ test "a search form is a GET form and is not claimed by the action interceptor" 
     val markup = renderToString(searchForm(searchFormProps("/search")));
     assert markup.contains("method=\"get\"");
     assert markup.contains("action=\"/search\"");
-    assert markup.contains("data-onze-a") == false;
-    assert markup.contains("data-onze-sf=\"1\"");
+    assert markup.contains("data-jh-a") == false;
+    assert markup.contains("data-jh-sf=\"1\"");
 }
 
 test "the hydrated navigation target equals the URL a plain GET submit produces" {
