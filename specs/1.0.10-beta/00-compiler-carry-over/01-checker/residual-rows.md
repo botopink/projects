@@ -100,6 +100,7 @@ the import list. Fix both.
 | **Why** | the bindings arm is load-bearing for imported records/enums, where the import binds a constructor value while the typedef stays in the defining module |
 | **Correct** | types-as-values **A1**: a real `type` kind in `comptime/types.zig`. `val T = i32` is a type value; `val n = 5; val x: n = 7` reds; the constructor carve-out becomes a property of the `type` kind rather than of any binding |
 | **Probe** | `val n = 5; val x: n = 7;` → `Checked` (while `val T = i32; val x: T = "s";` correctly reds) |
+| **Landed (narrow)** | `Env.resolveTypeName`'s bindings arm accepts a function-typed binding, a declaration's own binding, a primitive and a `val` recorded in `Env.typeValueNames`; any other binding is refused. A1's `type` kind itself is not built — the arm is narrowed, not deleted |
 | **Acceptance** | `val n = 5; val x: n = 7;` reds; `val T = i32; val x: T = 1;` checks; every existing import of a type still checks |
 
 A2–A5 of types-as-values (`#[@code]`, `@typeInfo` as a value, a comptime eval loop, std type
